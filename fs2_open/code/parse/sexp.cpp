@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.226 $
- * $Date: 2006-02-25 17:34:23 $
- * $Author: karajorma $
+ * $Revision: 2.227 $
+ * $Date: 2006-02-25 20:18:14 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.226  2006/02/25 17:34:23  karajorma
+ * Added Seeding functions to Rand and Rand-Multiple SEXPs
+ *
  * Revision 2.225  2006/02/24 07:30:23  taylor
  * compiler warning fixage
  *
@@ -1784,8 +1787,6 @@ int get_sexp(char *token);
 void build_extended_sexp_string(int cur_node, int level, int mode);
 void update_sexp_references(char *old_name, char *new_name, int format, int node);
 int sexp_determine_team(char *subj);
-int sexp_distance2(int obj1, char *subj);
-int sexp_distance3(int obj1, int obj2);
 int extract_sexp_variable_index(int node);
 void init_sexp_vars();
 int eval_num(int node);
@@ -1943,7 +1944,7 @@ int find_free_sexp()
 
 // sexp_mark_persistent() marks a whole sexp tree with the persistent flag so that it won't
 // get re-used between missions
-void sexp_mark_persistent( int n )
+void sexp_mark_persistent(int n)
 {
 	if (n == -1){
 		return;
@@ -1963,7 +1964,7 @@ void sexp_mark_persistent( int n )
 }
 
 // sexp_unmark_persistent() removes the persistent flag from all nodes in the tree
-void sexp_unmark_persistent( int n )
+void sexp_unmark_persistent(int n)
 {
 	if (n == -1){
 		return;
@@ -4272,7 +4273,7 @@ int sexp_and_in_sequence(int n)
 // with.  We have sexpressions operators that might return a NAN type return value (such as the distance
 // between two ships when one of the ships is destroyed or departed).  These operations need to check for
 // this special NAN value and adjust their return types accordingly.  NAN values represent false return values
-int sexp_not( int n )
+int sexp_not(int n)
 {
 	int result = 0;
 
@@ -4389,6 +4390,150 @@ int sexp_string_compare(int n, int op)
 	return SEXP_TRUE;
 }
 
+#define OSWPT_TYPE_NONE			0
+#define OSWPT_TYPE_SHIP			1
+#define OSWPT_TYPE_WING			2
+#define OSWPT_TYPE_WAYPOINT		3
+#define OSWPT_TYPE_TEAM			4
+#define OSWPT_TYPE_PARSE_OBJECT	5
+#define OSWPT_TYPE_EXITED		6
+
+// Goober5000
+typedef struct object_ship_wing_point_team
+{
+	char *object_name;
+	int type;
+
+	p_object *p_objp;
+	object *objp;
+	ship *shipp;
+	wing *wingp;
+	object *waypointp;
+	int team;
+}
+object_ship_wing_point_team;
+
+// Goober5000
+void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, char *object_name)
+{
+	int team, ship_num, wing_num, object_num;
+	p_object *p_objp;
+
+	Assert(oswpt != NULL);
+	Assert(object_name != NULL);
+
+	oswpt->object_name = object_name;
+	oswpt->type = OSWPT_TYPE_NONE;
+
+	oswpt->p_objp = NULL;
+	oswpt->objp = NULL;
+	oswpt->shipp = NULL;
+	oswpt->waypointp = NULL;
+	oswpt->wingp = NULL;
+	oswpt->team = -1;
+
+
+	// check to see if ship destroyed or departed.  In either case, do nothing.
+	if (mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL))
+	{
+		oswpt->type = OSWPT_TYPE_EXITED;
+		return;
+	}
+
+	// the object might be the name of a wing.  Check to see if the wing is destroyed or departed.
+	if (mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL)) 
+	{
+		oswpt->type = OSWPT_TYPE_EXITED;
+		return;
+	}
+
+
+	// if we have a team type, pick the first ship of that team
+	team = sexp_determine_team(object_name);
+	if (team >= 0)
+	{
+		for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+		{
+			object *objp = &Objects[so->objnum];
+			ship *shipp = &Ships[objp->instance];
+
+			if (shipp->team == team)
+			{
+				oswpt->type = OSWPT_TYPE_TEAM;
+
+				oswpt->team = team;
+				oswpt->objp = objp;
+				oswpt->shipp = shipp;
+
+				return;
+			}			
+		}
+
+		// no match
+		return;
+	}
+
+
+	// at this point, we must have a ship, wing, or point for a target
+	ship_num = ship_name_lookup(object_name);
+	if (ship_num >= 0)
+	{
+		oswpt->type = OSWPT_TYPE_SHIP;
+
+		oswpt->shipp = &Ships[ship_num];
+		oswpt->objp = &Objects[oswpt->shipp->objnum];
+
+		return;
+	}
+
+
+	// check to see if we have a parse object instead
+	p_objp = mission_parse_get_arrival_ship(object_name);
+	if (p_objp != NULL)
+	{
+		oswpt->type = OSWPT_TYPE_PARSE_OBJECT;
+
+		oswpt->p_objp = p_objp;
+
+		return;
+	}
+
+
+	// at this point, we must have a wing or point for a target
+	wing_num = wing_name_lookup(object_name);
+	if (wing_num >= 0)
+	{
+		// make sure at least one ship exists
+		if (oswpt->wingp->current_count >= 0)
+		{
+			oswpt->type = OSWPT_TYPE_WING;
+
+			// point to wing leader
+			oswpt->wingp = &Wings[wing_num];
+			oswpt->shipp = &Ships[oswpt->wingp->ship_index[oswpt->wingp->special_ship]];
+			oswpt->objp = &Objects[oswpt->shipp->objnum];
+		}
+
+		return;
+	}
+
+
+	// at this point, we must have a point for a target
+	object_num = waypoint_lookup(object_name);
+	if (object_num >= 0)
+	{
+		oswpt->type = OSWPT_TYPE_WAYPOINT;
+
+		oswpt->waypointp = oswpt->objp = &Objects[object_num];
+
+		return;
+	}
+
+
+	// we apparently don't have anything legal
+	return;
+}
+
 //return the number of ships of a given team in the area battle
 int sexp_num_ships_in_battle(int n)
 {
@@ -4465,59 +4610,20 @@ int sexp_get_real_speed(object *obj)
 //Uses a lot of code shamelessly ripped from get_object_coordinates
 int sexp_current_speed(int n)
 {
-	char* object_name = CTEXT(n);
+	object_ship_wing_point_team oswpt;
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 
-	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
-		return SEXP_NAN;
-
-	// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL) ) 
-		return SEXP_NAN;
-
-/*	int team = sexp_determine_team(object_name);
-	if (team >= 0)	// we have a team type, so pick the first ship of that type
+	switch (oswpt.type)
 	{
-		ship_obj *so = GET_FIRST(&Ship_obj_list);
-		while (so != END_OF_LIST(&Ship_obj_list))
-		{
-			if (Ships[Objects[so->objnum].instance].team == team)
-			{
-				return sexp_get_real_speed(&Objects[so->objnum]);
-			}
+		case OSWPT_TYPE_EXITED:
+			return SEXP_NAN;
 
-			so = GET_NEXT(so);
-		}
-
-		return SEXP_NAN;	// if no match
-	}*/
-
-	// at this point, we must have a wing, ship or point for a target
-	int obj = ship_name_lookup(object_name);
-	if (obj >= 0)
-	{
-		return sexp_get_real_speed(&Objects[Ships[obj].objnum]);
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+			return sexp_get_real_speed(oswpt.objp);
 	}
 
-	// at this point, we must have a wing or point for a target
-/*	obj = waypoint_lookup(object_name);
-	if (obj >= 0)
-	{
-		//Waypoints don't move.
-		return 0;
-	}*/
-		
-	// at this point, we must have a wing for a target
-	obj = wing_name_lookup(object_name);
-	if (obj < 0)
-		return SEXP_NAN;  // we apparently don't have anything legal
-
-	// make sure at least one ship exists
-	if (!Wings[obj].current_count)
-		return SEXP_NAN;
-
-	// point to wing leader
-	return sexp_get_real_speed(&Objects[Ships[Wings[obj].ship_index[0]].objnum]);
+	return 0;
 }
 
 // Evaluate if given ship is destroyed.
@@ -4743,7 +4849,7 @@ int sexp_is_disabled( int n, fix *latest_time )
 }
 
 // function to determine if a ship is done flying waypoints
-int sexp_are_waypoints_done( int n )
+int sexp_are_waypoints_done(int n)
 {
 	char *ship_name, *waypoint_name;
 
@@ -4831,7 +4937,7 @@ int sexp_is_destroyed_delay(int n)
 	return SEXP_FALSE;
 }
 
-int sexp_is_subsystem_destroyed_delay( int n )
+int sexp_is_subsystem_destroyed_delay(int n)
 {
 	char *ship_name, *subsys_name;
 	fix delay, time;
@@ -4857,7 +4963,7 @@ int sexp_is_subsystem_destroyed_delay( int n )
 	return SEXP_FALSE;
 }
 
-int sexp_is_disabled_delay( int n )
+int sexp_is_disabled_delay(int n)
 {
 	fix delay, time;
 	int val;
@@ -4883,7 +4989,7 @@ int sexp_is_disabled_delay( int n )
 	return SEXP_FALSE;
 }
 
-int sexp_is_disarmed_delay( int n )
+int sexp_is_disarmed_delay(int n)
 {
 	fix delay, time;
 	int val;
@@ -4909,7 +5015,7 @@ int sexp_is_disarmed_delay( int n )
 	return SEXP_FALSE;
 }
 
-int sexp_has_docked_delay( int n )
+int sexp_has_docked_delay(int n)
 {
 	char *docker = CTEXT(n);
 	char *dockee = CTEXT(CDR(n));
@@ -4936,7 +5042,7 @@ int sexp_has_docked_delay( int n )
 		return SEXP_FALSE;
 }
 
-int sexp_has_undocked_delay( int n )
+int sexp_has_undocked_delay(int n)
 {
 	char *docker = CTEXT(n);
 	char *dockee = CTEXT(CDR(n));
@@ -4965,7 +5071,7 @@ int sexp_has_undocked_delay( int n )
 		return SEXP_FALSE;
 }
 
-int sexp_has_arrived_delay( int n )
+int sexp_has_arrived_delay(int n)
 {
 	fix delay, time;
 	int val;
@@ -4991,7 +5097,7 @@ int sexp_has_arrived_delay( int n )
 	return SEXP_FALSE;
 }
 
-int sexp_has_departed_delay( int n )
+int sexp_has_departed_delay(int n)
 {
 	fix delay, time;
 	int val;
@@ -5019,7 +5125,7 @@ int sexp_has_departed_delay( int n )
 }
 
 // function to determine if a ship is done flying waypoints after N seconds
-int sexp_are_waypoints_done_delay( int n )
+int sexp_are_waypoints_done_delay(int n)
 {
 	char *ship_name, *waypoint_name;
 	fix time, delay;
@@ -5052,7 +5158,7 @@ int sexp_are_waypoints_done_delay( int n )
 }
 
 // function to determine is all of a given ship type are destroyed
-int sexp_ship_type_destroyed( int n )
+int sexp_ship_type_destroyed(int n)
 {
 	int percent;
 	uint type;
@@ -5505,167 +5611,167 @@ int sexp_determine_team(char *subj)
 	return iff_lookup(team_name);
 }
 
+// check distance between two given objects
+int sexp_distance3(object *objp1, object *objp2)
+{
+	// if either object isn't present in the mission now
+	if (objp1 == NULL || objp2 == NULL)
+		return SEXP_NAN;
+
+	if ((objp1->type == OBJ_SHIP) && (objp2->type == OBJ_SHIP))
+	{
+		if (Player_obj == objp1)
+			return (int) hud_find_target_distance(objp2, objp1);
+		else
+			return (int) hud_find_target_distance(objp1, objp2);
+	}
+	else
+	{
+		return (int) vm_vec_dist_quick(&objp1->pos, &objp2->pos);
+	}
+}
+
+// check distance between a given ship and a given subject (ship, wing, any <team>).
+int sexp_distance2(object *objp1, object_ship_wing_point_team *oswpt2)
+{
+	int dist, dist_min = 0, inited = 0;
+
+	switch (oswpt2->type)
+	{
+		// we have a team type, so check all ships of that type
+		case OSWPT_TYPE_TEAM:
+		{
+			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+			{
+				if (Ships[Objects[so->objnum].instance].team == oswpt2->team)
+				{
+					dist = sexp_distance3(objp1, &Objects[so->objnum]);
+					if (dist != SEXP_NAN)
+					{
+						if (!inited || (dist < dist_min))
+						{
+							dist_min = dist;
+							inited = 1;
+						}
+					}
+				}
+			}
+
+			// no objects were checked
+			if (!inited)
+				return SEXP_NAN;
+
+			return dist_min;
+		}
+
+		// check ships and points
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WAYPOINT:
+		{
+			return sexp_distance3(objp1, oswpt2->objp);
+		}
+
+		// check wings
+		case OSWPT_TYPE_WING:
+		{
+			for (int i = 0; i < oswpt2->wingp->current_count; i++)
+			{
+				dist = sexp_distance3(objp1, &Objects[Ships[oswpt2->wingp->ship_index[i]].objnum]);
+				if (dist != SEXP_NAN)
+				{
+					if (!inited || (dist < dist_min))
+					{
+						dist_min = dist;
+						inited = 1;
+					}
+				}
+			}
+
+			// no objects were checked
+			if (!inited)
+				return SEXP_NAN;
+
+			return dist_min;
+		}
+	}
+
+	return SEXP_NAN;
+}
+
 // returns the distance between two objects.  If a wing is specified as one (or both) of the arguments
 // to this function, we are looking for the closest distance
 int sexp_distance(int n)
 {
-	int i, team, obj, dist, dist_min = 0, inited = 0;
-	char *sname1, *sname2;
-	wing *wingp;
-	ship_obj *so;
+	int dist, dist_min = 0, inited = 0;
+	object_ship_wing_point_team oswpt1, oswpt2;
 
-	Assert( n >= 0 );
+	sexp_get_object_ship_wing_point_team(&oswpt1, CTEXT(n));
+	sexp_get_object_ship_wing_point_team(&oswpt2, CTEXT(CDR(n)));
 
-	sname1 = CTEXT(n);
-	sname2 = CTEXT(CDR(n));
-
-	// check to see if either ship was destroyed or departed.  If so, then make this node known
-	// false
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, sname1, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, sname1, NULL, NULL) ||
-		  mission_log_get_time(LOG_SHIP_DESTROYED, sname2, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, sname2, NULL, NULL) ) 
+	// check to see if either object was destroyed or departed
+	if (oswpt1.type == OSWPT_TYPE_EXITED || oswpt2.type == OSWPT_TYPE_EXITED)
 		return SEXP_NAN_FOREVER;
 
-	// one of the names might be the name of a wing.  Check to see if the wing is destroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, sname1, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, sname1, NULL, NULL) ||
-		  mission_log_get_time(LOG_WING_DESTROYED, sname2, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, sname2, NULL, NULL) ) 
-		return SEXP_NAN_FOREVER;
+	switch (oswpt1.type)
+	{
+		// we have a team type, so check all ships of that type
+		case OSWPT_TYPE_TEAM:
+		{
+			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+			{
+				if (Ships[Objects[so->objnum].instance].team == oswpt1.team)
+				{
+					dist = sexp_distance2(&Objects[so->objnum], &oswpt2);
+					if (dist != SEXP_NAN)
+					{
+						if (!inited || (dist < dist_min))
+						{
+							dist_min = dist;
+							inited = 1;
+						}
+					}
+				}
+			}
 
-	team = sexp_determine_team(sname1);
-	if (team >= 0) {  // we have a team type, so check all ships of that type
-		so = GET_FIRST(&Ship_obj_list);
-		while (so != END_OF_LIST(&Ship_obj_list)) {
-			if (Ships[Objects[so->objnum].instance].team == team) {
-				obj = so->objnum;
-				dist = sexp_distance2(obj, sname2);
-				if (dist != SEXP_NAN) {
-					if (!inited || (dist < dist_min)) {
+			// no objects were checked
+			if (!inited)
+				return SEXP_NAN;
+
+			return dist_min;
+		}
+
+		// check ships and points
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WAYPOINT:
+		{
+			return sexp_distance2(oswpt1.objp, &oswpt2);
+		}
+
+		// check wings
+		case OSWPT_TYPE_WING:
+		{
+			for (int i = 0; i < oswpt1.wingp->current_count; i++)
+			{
+				dist = sexp_distance2(&Objects[Ships[oswpt1.wingp->ship_index[i]].objnum], &oswpt2);
+				if (dist != SEXP_NAN)
+				{
+					if (!inited || (dist < dist_min))
+					{
 						dist_min = dist;
 						inited = 1;
 					}
 				}
 			}
 
-			so = GET_NEXT(so);
-		}
+			// no objects were checked
+			if (!inited)
+				return SEXP_NAN;
 
-		if (!inited)  // no objects were checked
-			return SEXP_NAN;
-
-		return dist_min;
-	}
-
-	// at this point, we must have a wing, ship or point for a subj
-	obj = ship_name_lookup(sname1);
-	if (obj >= 0)
-		return sexp_distance2(Ships[obj].objnum, sname2);
-
-	// at this point, we must have a wing or point for a subj
-	obj = waypoint_lookup(sname1);
-	if (obj >= 0)
-		return sexp_distance2(obj, sname2);
-		
-	// at this point, we must have a wing for a subj
-	obj = wing_name_lookup(sname1);
-	if (obj < 0)
-		return SEXP_NAN;  // we apparently don't have anything legal
-
-	wingp = &Wings[obj];
-	for (i=0; i<wingp->current_count; i++) {
-		obj = Ships[wingp->ship_index[i]].objnum;
-		dist = sexp_distance2(obj, sname2);
-		if (dist != SEXP_NAN) {
-			if (!inited || (dist < dist_min)) {
-				dist_min = dist;
-				inited = 1;
-			}
+			return dist_min;
 		}
 	}
 
-	if (!inited)  // no objects were checked
-		return SEXP_NAN;
-
-	return dist_min;
-}
-
-// check distance between a given ship and a given subject (ship, wing, any <team>).
-int sexp_distance2(int obj1, char *subj)
-{
-	int i, team, obj2, dist, dist_min = 0, inited = 0;
-	wing *wingp;
-	ship_obj	*so;
-	
-	team = sexp_determine_team(subj);
-	if (team >= 0) {  // we have a team type, so check all ships of that type
-		so = GET_FIRST(&Ship_obj_list);
-		while (so != END_OF_LIST(&Ship_obj_list)) {
-			if (Ships[Objects[so->objnum].instance].team == team) {
-				obj2 = so->objnum;
-				dist = sexp_distance3(obj1, obj2);
-				if (dist != SEXP_NAN) {
-					if (!inited || (dist < dist_min)) {
-						dist_min = dist;
-						inited = 1;
-					}
-				}
-			}
-
-			so = GET_NEXT(so);
-		}
-
-		if (!inited)  // no objects were checked
-			return SEXP_NAN;
-
-		return dist_min;
-	}
-
-	// at this point, we must have a wing, ship or point for a subj
-	obj2 = ship_name_lookup(subj);
-	if (obj2 >= 0)
-		return sexp_distance3(obj1, Ships[obj2].objnum);
-
-	// at this point, we must have a wing or point for a subj
-	obj2 = waypoint_lookup(subj);
-	if (obj2 >= 0)
-		return sexp_distance3(obj1, obj2);
-		
-	// at this point, we must have a wing for a subj
-	obj2 = wing_name_lookup(subj);
-	if (obj2 < 0)
-		return SEXP_NAN;  // we apparently don't have anything legal
-
-	wingp = &Wings[obj2];
-	for (i=0; i<wingp->current_count; i++) {
-		obj2 = Ships[wingp->ship_index[i]].objnum;
-		dist = sexp_distance3(obj1, obj2);
-		if (dist != SEXP_NAN) {
-			if (!inited || (dist < dist_min)) {
-				dist_min = dist;
-				inited = 1;
-			}
-		}
-	}
-
-	if (!inited)  // no objects were checked
-		return SEXP_NAN;
-
-	return dist_min;
-}
-
-// check distance between two given objects
-int sexp_distance3(int obj1, int obj2)
-{
-	if ( (obj1 == -1) || (obj2 == -1) )				// if either object isn't present in the mission now
-		return SEXP_NAN;									// return a really small number
-
-	if ( (Objects[obj1].type == OBJ_SHIP) && (Objects[obj2].type == OBJ_SHIP) ) {
-		if (OBJ_INDEX(Player_obj) == obj1)
-			return (int) hud_find_target_distance( &Objects[obj2], &Objects[obj1] );
-		else
-			return (int) hud_find_target_distance( &Objects[obj1], &Objects[obj2] );
-
-	} else {
-		return (int) vm_vec_dist_quick( &Objects[obj1].pos, &Objects[obj2].pos );
-	}
+	return SEXP_NAN;
 }
 
 // locate the subsystem on a ship - Goober5000
@@ -5700,56 +5806,76 @@ void sexp_get_subsystem_world_pos(vec3d *subsys_world_pos, int shipnum, char *su
 	Int3();
 }
 
+// Goober5000
 // returns the distance between an object and a ship subsystem.  If a wing is specified as the object argument
 // to this function, we are looking for the closest distance
-int sexp_distance_subsystem(int n)	// Goober5000
+int sexp_distance_subsystem(int n)
 {
-	int i, team, dist, obj, dist_min = 0, inited = 0;
-	char *obj_name, *ship_with_subsys, *subsys_name;
+	int ship_with_subsys_num, dist, dist_min = 0, inited = 0;
+	char *ship_with_subsys_name, *subsys_name;
 	vec3d subsys_pos;
-	wing *wingp;
-	ship_obj *so;
+	object_ship_wing_point_team oswpt;
 
-	Assert( n >= 0 );
-
-	obj_name = CTEXT(n);
-	ship_with_subsys = CTEXT(CDR(n));
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
+	ship_with_subsys_name = CTEXT(CDR(n));
 	subsys_name = CTEXT(CDR(CDR(n)));
 
-	// check to see if either ship was destroyed or departed.  If so, then make this node known
-	// false
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, obj_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, obj_name, NULL, NULL) ||
-		  mission_log_get_time(LOG_SHIP_DESTROYED, ship_with_subsys, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_with_subsys, NULL, NULL) ) 
+	// for the ship with the subsystem - see if it was destroyed or departed
+	if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_with_subsys_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPART, ship_with_subsys_name, NULL, NULL))
 		return SEXP_NAN_FOREVER;
 
-	// the object might a wing.  Check to see if the wing is destroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, obj_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, obj_name, NULL, NULL) ) 
+	// check the other ship too
+	if (oswpt.type == OSWPT_TYPE_EXITED)
 		return SEXP_NAN_FOREVER;
 
-	// find the ship with the subsystem
-	obj = ship_name_lookup( ship_with_subsys );
-	if ( obj < 0 )		// hmm... must not have arrived yet
-	{
+	// for the ship with the subsystem - get its index
+	ship_with_subsys_num = ship_name_lookup(ship_with_subsys_name);
+	if (ship_with_subsys_num < 0)
 		return SEXP_NAN;
-	}
 
 	// get the subsystem's coordinates
-	sexp_get_subsystem_world_pos(&subsys_pos, obj, subsys_name);
+	sexp_get_subsystem_world_pos(&subsys_pos, ship_with_subsys_num, subsys_name);
 
-	// check if the first object is on a team
-	team = sexp_determine_team(obj_name);
-	if (team >= 0)	// we have a team type, so check all ships of that type
+	switch (oswpt.type)
 	{
-		so = GET_FIRST(&Ship_obj_list);
-		while (so != END_OF_LIST(&Ship_obj_list))
+		// we have a team type, so check all ships of that type
+		case OSWPT_TYPE_TEAM:
 		{
-			// do we check this ship?
-			if (Ships[Objects[so->objnum].instance].team == team)
+			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
-				// compute distance
-				dist = (int) vm_vec_dist_quick( &Objects[so->objnum].pos, &subsys_pos );
-				
-				// check for minimum
+				if (Ships[Objects[so->objnum].instance].team == oswpt.team)
+				{
+					dist = (int) vm_vec_dist_quick(&Objects[so->objnum].pos, &subsys_pos);
+
+					if (!inited || (dist < dist_min))
+					{
+						dist_min = dist;
+						inited = 1;
+					}
+				}
+			}
+
+			// no objects were checked
+			if (!inited)
+				return SEXP_NAN;
+
+			return dist_min;
+		}
+
+		// check ships and points
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WAYPOINT:
+		{
+			return (int) vm_vec_dist_quick(&oswpt.objp->pos, &subsys_pos);
+		}
+
+		// check wings
+		case OSWPT_TYPE_WING:
+		{
+			for (int i = 0; i < oswpt.wingp->current_count; i++)
+			{
+				dist = (int) vm_vec_dist_quick(&Objects[Ships[oswpt.wingp->ship_index[i]].objnum].pos, &subsys_pos);
+
 				if (!inited || (dist < dist_min))
 				{
 					dist_min = dist;
@@ -5757,57 +5883,15 @@ int sexp_distance_subsystem(int n)	// Goober5000
 				}
 			}
 
-			so = GET_NEXT(so);
-		}
+			// no objects were checked
+			if (!inited)
+				return SEXP_NAN;
 
-		if (!inited)  // no objects were checked
-			return SEXP_NAN;
-
-		return dist_min;
-	}
-
-	// at this point, we must have a wing, ship or point for a subj
-	obj = ship_name_lookup(obj_name);
-	if ( obj >= 0 )	// do we have a ship?
-	{
-		return (int) vm_vec_dist_quick( &Objects[Ships[obj].objnum].pos, &subsys_pos );
-	}
-
-	// at this point, we must have a wing or point for a subj
-	obj = waypoint_lookup(obj_name);
-	if ( obj >= 0 )	// do we have a point?
-	{
-		return (int) vm_vec_dist_quick( &Objects[obj].pos, &subsys_pos );
-	}
-		
-	// at this point, we must have a wing for a subj
-	obj = wing_name_lookup(obj_name);
-	if (obj < 0)
-	{
-		return SEXP_NAN;  // we apparently don't have anything legal
-	}
-
-	// check all ships in the wing
-	wingp = &Wings[obj];
-	for (i=0; i<wingp->current_count; i++)
-	{
-		// compute distance
-		dist = (int) vm_vec_dist_quick( &Objects[Ships[wingp->ship_index[i]].objnum].pos, &subsys_pos );
-				
-		// check for minimum
-		if (!inited || (dist < dist_min))
-		{
-			dist_min = dist;
-			inited = 1;
+			return dist_min;
 		}
 	}
 
-	if (!inited)  // no objects were checked
-	{
-		return SEXP_NAN;
-	}
-
-	return dist_min;
+	return SEXP_NAN;
 }
 
 bool sexp_helper_is_within_box(float *box_vals, vec3d *pos)
@@ -5871,10 +5955,10 @@ int sexp_num_within_box(int n)
 	}
 
 	return retval;
-}
+}	
 
 // Goober5000
-void sexp_set_object_speed(object *objp, int speed, int axis, bool subjective)
+void sexp_set_object_speed(object *objp, int speed, int axis, int subjective)
 {
 	Assert(axis >= 0 && axis <= 2);
 
@@ -5902,11 +5986,10 @@ void sexp_set_object_speed(int n, int axis)
 {
 	Assert(n >= 0);
 
-	char *object_name = NULL;
-	int speed, team, obj;
-	bool subjective;
+	int speed, subjective;
+	object_ship_wing_point_team oswpt;
 
-	object_name = CTEXT(n);
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 	n = CDR(n);
 
 	speed = eval_num(n);
@@ -5914,84 +5997,19 @@ void sexp_set_object_speed(int n, int axis)
 
 	if (n >= 0)
 	{
-		int result = eval_sexp(n);
+		subjective = is_sexp_true(n);
 		n = CDR(n);
-
-		subjective = ((result == SEXP_TRUE) || (result == SEXP_KNOWN_TRUE));
 	}
 
-
-	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
-		return;
-
-	// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL) ) 
-		return;
-
-
-	// if we have a team type, pick the first ship of that team
-	team = sexp_determine_team(object_name);
-	if (team >= 0)
+	switch (oswpt.type)
 	{
-		ship_obj *so;
-
-		for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
-		{
-			object *objp = &Objects[so->objnum];
-
-			if (Ships[objp->instance].team == team)
-			{
-				sexp_set_object_speed(objp, speed, axis, subjective);
-				return;
-			}			
-		}
-
-		// no match
-		return;
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_TEAM:
+			sexp_set_object_speed(oswpt.objp, speed, axis, subjective);
+			break;
 	}
-
-
-	// at this point, we must have a wing, ship or point for a target
-	obj = ship_name_lookup(object_name);
-	if (obj >= 0)
-	{
-		object *objp = &Objects[Ships[obj].objnum];
-
-		sexp_set_object_speed(objp, speed, axis, subjective);
-		return;
-	}
-
-
-	// at this point, we must have a wing or point for a target
-	obj = waypoint_lookup(object_name);
-	if (obj >= 0)
-	{
-		object *objp = &Objects[obj];
-
-		sexp_set_object_speed(objp, speed, axis, subjective);
-		return;
-	}
-
-
-	// at this point, we must have a wing for a target
-	obj = wing_name_lookup(object_name);
-	if (obj >= 0)
-	{
-		// make sure at least one ship exists
-		if (Wings[obj].current_count >= 0)
-		{
-			// point to wing leader
-			object *objp = &Objects[Ships[Wings[obj].ship_index[Wings[obj].special_ship]].objnum];
-
-			sexp_set_object_speed(objp, speed, axis, subjective);
-			return;
-		}
-	}
-
-
-	// we apparently don't have anything legal
-	return;
 }
 
 // Goober5000
@@ -6021,11 +6039,11 @@ int sexp_get_object_coordinate(int n, int axis)
 {
 	Assert(n >= 0);
 
-	char *object_name = NULL, *subsystem_name = NULL;
-	int team, obj;
-	vec3d *relative_location = NULL, relative_location_buf;
+	char *subsystem_name = NULL;
+	vec3d *pos, *relative_location = NULL, relative_location_buf, subsys_pos_buf;
+	object_ship_wing_point_team oswpt;
 
-	object_name = CTEXT(n);
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 	n = CDR(n);
 
 	if (n >= 0)
@@ -6046,182 +6064,101 @@ int sexp_get_object_coordinate(int n, int axis)
 		}
 	}
 
-
-	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
-		return SEXP_NAN;
-
-	// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL) ) 
-		return SEXP_NAN;
-
-
-	// if we have a team type, pick the first ship of that team
-	team = sexp_determine_team(object_name);
-	if (team >= 0)
+	switch (oswpt.type)
 	{
-		ship_obj *so;
+		case OSWPT_TYPE_EXITED:
+			return SEXP_NAN_FOREVER;
 
-		for (so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
-		{
-			object *objp = &Objects[so->objnum];
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_TEAM:
+			pos = &oswpt.objp->pos;
+			break;
 
-			if (Ships[objp->instance].team == team)
-			{
-				return sexp_calculate_coordinate(&objp->pos, &objp->orient, relative_location, axis);
-			}			
-		}
-
-		// no match
-		return SEXP_NAN;
+		default:
+			return SEXP_NAN;
 	}
 
-
-	// at this point, we must have a wing, ship or point for a target
-	obj = ship_name_lookup(object_name);
-	if (obj >= 0)
+	// see if we have a subsys
+	if (oswpt.objp->type == OBJ_SHIP)
 	{
-		vec3d *pos, subsys_pos_buf;
-		object *objp = &Objects[Ships[obj].objnum];
-
-		// see if we have a subsys
 		if ((subsystem_name != NULL) && stricmp(subsystem_name, SEXP_NONE_STRING) && stricmp(subsystem_name, SEXP_HULL_STRING))
 		{
 			pos = &subsys_pos_buf;
-			sexp_get_subsystem_world_pos(pos, obj, subsystem_name);
-		}
-		// plain old ship
-		else
-		{
-			pos = &objp->pos;
-		}
-
-		return sexp_calculate_coordinate(pos, &objp->orient, relative_location, axis);
-	}
-
-
-	// at this point, we must have a wing or point for a target
-	obj = waypoint_lookup(object_name);
-	if (obj >= 0)
-	{
-		object *objp = &Objects[obj];
-
-		return sexp_calculate_coordinate(&objp->pos, &objp->orient, relative_location, axis);
-	}
-
-
-	// at this point, we must have a wing for a target
-	obj = wing_name_lookup(object_name);
-	if (obj >= 0)
-	{
-		// make sure at least one ship exists
-		if (Wings[obj].current_count >= 0)
-		{
-			// point to wing leader
-			object *objp = &Objects[Ships[Wings[obj].ship_index[Wings[obj].special_ship]].objnum];
-
-			return sexp_calculate_coordinate(&objp->pos, &objp->orient, relative_location, axis);
+			sexp_get_subsystem_world_pos(pos, oswpt.objp->instance, subsystem_name);
 		}
 	}
 
-
-	// we apparently don't have anything legal
-	return SEXP_NAN;
+	return sexp_calculate_coordinate(pos, &oswpt.objp->orient, relative_location, axis);
 }
 
 void sexp_set_object_position(int n) 
 {
-	ship_obj *so;
-	object* objp;
-	int team, obj,i;
+	vec3d target_vec, orig_leader_vec;
+	object_ship_wing_point_team oswpt;
 
-	Assert( n >= 0 );
-
-	char *object_name = CTEXT(n);
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 	n = CDR(n);
 
-	vec3d targetvec,orig_leader_vector;
-
-	targetvec.xyz.x = i2fl(eval_num(n));
+	target_vec.xyz.x = i2fl(eval_num(n));
 	n = CDR(n);
-	targetvec.xyz.y = i2fl(eval_num(n));
+	target_vec.xyz.y = i2fl(eval_num(n));
 	n = CDR(n);
-	targetvec.xyz.z = i2fl(eval_num(n));
+	target_vec.xyz.z = i2fl(eval_num(n));
+	n = CDR(n);
 
-	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL) )
-		return;
-
-	// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL) ) 
-		return;
-
-	i = 0;
-	team = sexp_determine_team(object_name);
-	if (team >= 0)	// we have a team type, so pick the first ship of that type
+	switch (oswpt.type)
 	{
-		so = GET_FIRST(&Ship_obj_list);
-		while (so != END_OF_LIST(&Ship_obj_list))
+		case OSWPT_TYPE_TEAM:
 		{
-			objp = &Objects[so->objnum];
-			if (Ships[objp->instance].team == team)
+			// move the first one first
+			orig_leader_vec = oswpt.objp->pos;
+			oswpt.objp->pos = target_vec;
+
+			// move everything on the team
+			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 			{
-				if(i == 0)
+				object *objp = &Objects[so->objnum];
+
+				if ((Ships[objp->instance].team == oswpt.team) && (objp != oswpt.objp))
 				{
-					orig_leader_vector = objp->pos;
-					objp->pos = targetvec;
-				}
-				else
-				{
-					vm_vec_sub2(&objp->pos, &orig_leader_vector);
-					vm_vec_add2(&objp->pos, &targetvec);
+					vm_vec_sub2(&objp->pos, &orig_leader_vec);
+					vm_vec_add2(&objp->pos, &target_vec);
 				}
 			}
 
-			so = GET_NEXT(so);
+			return;
 		}
 
-		return;	// if no match
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WAYPOINT:
+		{
+			oswpt.objp->pos = target_vec;
+			return;
+		}
+
+		case OSWPT_TYPE_WING:
+		{
+			// move the wing leader first
+			orig_leader_vec = oswpt.objp->pos;
+			oswpt.objp->pos = target_vec;
+
+			// move everything in the wing
+			for (int i = 0; i < oswpt.wingp->current_count; i++)
+			{
+				object *objp = &Objects[Ships[oswpt.wingp->ship_index[i]].objnum];
+
+				if (objp != oswpt.objp)
+				{
+					vm_vec_sub2(&objp->pos, &orig_leader_vec);
+					vm_vec_add2(&objp->pos, &target_vec);
+				}
+			}
+
+			return;
+		}
 	}
-
-	// at this point, we must have a wing, ship or point for a target
-	obj = ship_name_lookup(object_name);
-	if (obj >= 0)
-	{
-		Objects[Ships[obj].objnum].pos = targetvec;
-		return;
-	}
-
-	// at this point, we must have a wing or point for a target
-	obj = waypoint_lookup(object_name);
-	if (obj >= 0)
-	{
-		Objects[obj].pos = targetvec;
-		return;
-	}
-		
-	// at this point, we must have a wing for a target
-	obj = wing_name_lookup(object_name);
-	if (obj < 0)
-		return;  // we apparently don't have anything legal
-
-	// make sure at least one ship exists
-	if (!Wings[obj].current_count)
-		return;
-
-	// point to wing leader
-	//This is fun - move the entire wing.
-	objp = &Objects[Ships[Wings[obj].ship_index[0]].objnum];
-	orig_leader_vector = objp->pos;
-	objp->pos = targetvec;
-
-	for(i = 1; i < Wings[obj].current_count; i++)
-	{
-		objp = &Objects[Ships[Wings[obj].ship_index[i]].objnum];
-		vm_vec_sub2(&objp->pos, &orig_leader_vector);
-		vm_vec_add2(&objp->pos, &targetvec);
-	}
-	return;
 }
 
 // Goober5000
@@ -6229,8 +6166,6 @@ void sexp_set_ship_position(int n)
 {
 	char *ship_name;
 	int ship_num, x, y, z;
-
-	Assert( n >= 0 );
 
 	ship_name = CTEXT(n);
 	n = CDR(n);
@@ -6240,6 +6175,7 @@ void sexp_set_ship_position(int n)
 	y = eval_num(n);
 	n = CDR(n);
 	z = eval_num(n);
+	n = CDR(n);
 
 	// check to see if the ship was destroyed or departed.  If so, then make this node known false
 	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) ) 
@@ -6253,9 +6189,9 @@ void sexp_set_ship_position(int n)
 		return;
 
 	// set position
-	Objects[Ships[ship_num].objnum].pos.xyz.x = (float)x;
-	Objects[Ships[ship_num].objnum].pos.xyz.y = (float)y;
-	Objects[Ships[ship_num].objnum].pos.xyz.z = (float)z;
+	Objects[Ships[ship_num].objnum].pos.xyz.x = (float) x;
+	Objects[Ships[ship_num].objnum].pos.xyz.y = (float) y;
+	Objects[Ships[ship_num].objnum].pos.xyz.z = (float) z;
 }
 
 // Goober5000
@@ -6350,17 +6286,16 @@ void sexp_set_ship_facing(int n)
 // Goober5000
 void sexp_set_ship_facing_object(int n)
 {
-	ship_obj *so;
 	char *ship_name;
-	char *target_name;
-	int ship_num, team, obj;
+	int ship_num;
 	int turn_time, bank;
+	object_ship_wing_point_team oswpt;
 
 	Assert( n >= 0 );
 
 	ship_name = CTEXT(n);
 	n = CDR(n);
-	target_name = CTEXT(n);
+	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 	n = CDR(n);
 
 	// get optional turn_time and bank
@@ -6376,9 +6311,12 @@ void sexp_set_ship_facing_object(int n)
 		n = CDR(n);
 	}
 
-	// check to see if either ship was destroyed or departed.  If so, then make this node known false
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) ||
-		  mission_log_get_time(LOG_SHIP_DESTROYED, target_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, target_name, NULL, NULL) ) 
+	// check to see if ship was destroyed or departed.  If so, then make this node known false
+	if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL))
+		return;
+
+	// check other ship too
+	if (oswpt.type == OSWPT_TYPE_EXITED)
 		return;
 
 	// get ship number
@@ -6388,60 +6326,20 @@ void sexp_set_ship_facing_object(int n)
 	if (ship_num < 0)
 		return;
 
-	// the second name might be the name of a wing.  Check to see if the wing is destroyed or departed
-	if ( mission_log_get_time(LOG_WING_DESTROYED, target_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, target_name, NULL, NULL) ) 
-		return;
-
-	team = sexp_determine_team(target_name);
-	if (team >= 0)	// we have a team type, so pick the first ship of that type
+	switch (oswpt.type)
 	{
-		so = GET_FIRST(&Ship_obj_list);
-		while (so != END_OF_LIST(&Ship_obj_list))
-		{
-			if (Ships[Objects[so->objnum].instance].team == team)
-			{
-				sexp_set_ship_orient(ship_num, &Objects[so->objnum].pos, turn_time, bank);
-				return;
-			}
-
-			so = GET_NEXT(so);
-		}
-
-		return;	// if no match
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		case OSWPT_TYPE_TEAM:
+			sexp_set_ship_orient(ship_num, &oswpt.objp->pos, turn_time, bank);
+			return;
 	}
-
-	// at this point, we must have a wing, ship or point for a target
-	obj = ship_name_lookup(target_name);
-	if (obj >= 0)
-	{
-		sexp_set_ship_orient(ship_num, &Objects[Ships[obj].objnum].pos, turn_time, bank);
-		return;
-	}
-
-	// at this point, we must have a wing or point for a target
-	obj = waypoint_lookup(target_name);
-	if (obj >= 0)
-	{
-		sexp_set_ship_orient(ship_num, &Objects[obj].pos, turn_time, bank);
-		return;
-	}
-		
-	// at this point, we must have a wing for a target
-	obj = wing_name_lookup(target_name);
-	if (obj < 0)
-		return;  // we apparently don't have anything legal
-
-	// make sure at least one ship exists
-	if (!Wings[obj].current_count)
-		return;
-
-	// point to wing leader
-	sexp_set_ship_orient(ship_num, &Objects[Ships[Wings[obj].ship_index[0]].objnum].pos, turn_time, bank);
 }
 
 // funciton to determine when the last meaningful order was given to one or more ships.  Returns
 // true or false depending on whether or not a meaningful order was received
-int sexp_last_order_time( int n )
+int sexp_last_order_time(int n)
 {
 	int instance, i;
 	fix time;
@@ -6501,7 +6399,7 @@ int sexp_num_players()
 
 // expression to determine if the current skill level of the game is at least
 // the skill level given in the sexpression
-int sexp_skill_level_at_least( int n )
+int sexp_skill_level_at_least(int n)
 {
 	int i;
 	char *level_name;
@@ -6622,7 +6520,7 @@ int sexp_percent_ships_depart_destroy_disarm_disable(int n, int what)
 
 // function to tell is a list of ships has departed from within a radius of a given jump node.
 // returns true N seconds after the list of ships have departed
-int sexp_depart_node_delay( int n )
+int sexp_depart_node_delay(int n)
 {
 	int delay, count, num_departed;
 	char *jump_node_name, *name;
@@ -6666,7 +6564,7 @@ int sexp_depart_node_delay( int n )
 
 // sexpression which returns true when the listed ships/wings have all been destroyed or
 // have departed.
-int sexp_destroyed_departed_delay( int n )
+int sexp_destroyed_departed_delay(int n)
 {
 	int count, total;
 	fix delay, latest_time;
@@ -7283,7 +7181,7 @@ int eval_when(int n, int use_arguments)
 }
 
 // eval_cond() evaluates the cond conditional
-int eval_cond( int n )
+int eval_cond(int n)
 {
 	int cond = 0, node, val = SEXP_FALSE;
 
@@ -7530,83 +7428,71 @@ void sexp_invalidate_argument(int n)
 	}
 }
 
-// Goober5000
-int sexp_ingame_ship_is_iff(int ship_num, int check_team)
-{
-	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
-
-	return (Ships[ship_num].team == check_team);
-}
-
 // Goober5000 - added wing capability
-int sexp_is_iff( int n )
+int sexp_is_iff(int n)
 {
-	char *ship_or_wing_name;
-	int i, ship_num, wing_num, team;
-	wing *wingp;
+	int i, team;
 
-	Assert ( n >= 0 );
-
-	// iff value is the first parameter, second is a list of one or more ships to check to see if the
+	// iff value is the first parameter, second is a list of one or more ships/wings to check to see if the
 	// iff value matches
 	team = iff_lookup(CTEXT(n));
 
 	n = CDR(n);
 	for ( ; n != -1; n = CDR(n) )
 	{
-		ship_or_wing_name = CTEXT(n);
+		object_ship_wing_point_team oswpt;
+		sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_or_wing_name, NULL, NULL) )
-			continue;
-
-		// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
-		if ( mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) ) 
-			continue;
-
-		// see if we can find anything
-		ship_num = ship_name_lookup(ship_or_wing_name);
-		wing_num = wing_name_lookup(ship_or_wing_name);
-
-		if (ship_num != -1)
+		switch (oswpt.type)
 		{
-			// if the team doesn't match the team specified, return false immediately
-			if (!sexp_ingame_ship_is_iff(ship_num, team))
-			{
-				return SEXP_FALSE;
-			}
-		}
-
-		if (wing_num != -1)
-		{
-			wingp = &Wings[wing_num];
-			
-			for (i=0; i<wingp->current_count; i++)
+			case OSWPT_TYPE_SHIP:
 			{
 				// if the team doesn't match the team specified, return false immediately
-				if (!sexp_ingame_ship_is_iff(wingp->ship_index[i], team))
-				{
+				if (oswpt.shipp->team != team)
 					return SEXP_FALSE;
-				}
+
+				break;
 			}
+
+			case OSWPT_TYPE_PARSE_OBJECT:
+			{
+				// if the team doesn't match the team specified, return false immediately
+				if (oswpt.p_objp->team != team)
+					return SEXP_FALSE;
+
+				break;
+			}
+
+			case OSWPT_TYPE_WING:
+			{
+				for (i = 0; i < oswpt.wingp->current_count; i++)
+				{
+					// if the team doesn't match the team specified, return false immediately
+					if (Ships[oswpt.wingp->ship_index[i]].team != team)
+						return SEXP_FALSE;
+				}
+
+				break;
+			}
+	
 		}
+
 	}
 
-	// got this far: we must be okay for all ships
+	// got this far: we must be okay for all ships/wings
 	return SEXP_TRUE;
 }
 
 // Goober5000
-void sexp_ingame_ship_change_iff(int ship_num, int new_team)
+void sexp_ingame_ship_change_iff(ship *shipp, int new_team)
 {
-	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
+	Assert(shipp != NULL);
 
-	Ships[ship_num].team = new_team;
+	shipp->team = new_team;
 
 	// send a network packet if we need to
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Ships[ship_num].objnum >= 0)){
-		send_change_iff_packet(Objects[Ships[ship_num].objnum].net_signature, new_team);
-	}
+	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (shipp->objnum >= 0))
+		send_change_iff_packet(Objects[shipp->objnum].net_signature, new_team);
 }
 
 // Goober5000
@@ -7618,68 +7504,58 @@ void sexp_parse_ship_change_iff(p_object *parse_obj, int new_team)
 }
 
 // Goober5000 - added wing capability
-void sexp_change_iff( int n )
+void sexp_change_iff(int n)
 {
-	char *ship_or_wing_name;
-	int i, ship_num, wing_num, new_team;
-	wing *wingp;
-	p_object *p_objp;
+	int new_team;
 
-	Assert ( n >= 0 );
 	new_team = iff_lookup(CTEXT(n));
 	n = CDR(n);
 
 	for ( ; n != -1; n = CDR(n) )
 	{
-		ship_or_wing_name = CTEXT(n);
+		object_ship_wing_point_team oswpt;
+		sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_or_wing_name, NULL, NULL) )
-			continue;
-
-		// the object might be the name of a wing.  Check to see if the wing is destroyed or departed
-		if ( mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) ) 
-			continue;
-
-		// search for it
-		ship_num = ship_name_lookup(ship_or_wing_name);
-		wing_num = wing_name_lookup(ship_or_wing_name);
-
-		// change ingame ship
-		if (ship_num != -1)
+		switch (oswpt.type)
 		{
-			sexp_ingame_ship_change_iff(ship_num, new_team);
-		}
-		// change ship yet to arrive
-		else if (p_objp = mission_parse_get_arrival_ship(ship_or_wing_name), p_objp)
-		{
-			sexp_parse_ship_change_iff(p_objp, new_team);
-		}
-		// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
-		else if (wing_num != -1)
-		{
-			wingp = &Wings[wing_num];
-			
-			// current ships
-			for (i = 0; i < wingp->current_count; i++)
+			// change ingame ship
+			case OSWPT_TYPE_SHIP:
 			{
-				sexp_ingame_ship_change_iff(wingp->ship_index[i], new_team);
+				sexp_ingame_ship_change_iff(oswpt.shipp, new_team);
+
+				break;
 			}
 
-			// ships yet to arrive
-			for (p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			// change ship yet to arrive
+			case OSWPT_TYPE_PARSE_OBJECT:
 			{
-				if (p_objp->wingnum == wing_num)
+				sexp_parse_ship_change_iff(oswpt.p_objp, new_team);
+
+				break;
+			}
+
+			// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
+			case OSWPT_TYPE_WING:
+			{
+				// current ships
+				for (int i = 0; i < oswpt.wingp->current_count; i++)
+					sexp_ingame_ship_change_iff(&Ships[oswpt.wingp->ship_index[i]], new_team);
+
+				// ships yet to arrive
+				for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 				{
-					sexp_parse_ship_change_iff(p_objp, new_team);
+					if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+						sexp_parse_ship_change_iff(p_objp, new_team);
 				}
+
+				break;
 			}
 		}
 	}
 }
 
 // Goober5000
-int sexp_is_ship_class( int n )
+int sexp_is_ship_class(int n)
 {
 	int ship_num, ship_class_num;
 
@@ -7712,7 +7588,7 @@ int sexp_is_ship_class( int n )
 }
 
 // Goober5000
-int sexp_is_ship_type( int n )
+int sexp_is_ship_type(int n)
 {
 	int ship_num, ship_type_num;
 
@@ -7746,7 +7622,7 @@ int sexp_is_ship_type( int n )
 
 // Goober5000
 // ai class value is the first parameter, second is a ship, rest are subsystems to check
-int sexp_is_ai_class( int n )
+int sexp_is_ai_class(int n)
 {
 	char *ship_name, *subsystem;
 	int i, ship_num, ai_class, class_to_test;
@@ -7820,7 +7696,7 @@ int sexp_is_ai_class( int n )
 }
 
 // Goober5000
-void sexp_change_ai_class( int n )
+void sexp_change_ai_class(int n)
 {
 	int i, ship_num, new_ai_class;
 
@@ -7877,7 +7753,7 @@ void sexp_change_ai_class( int n )
 // passed in should be an ai-goal of the proper form.  The code in MissionGoal should
 // check the syntax.
 
-void sexp_add_ship_goal( int n )
+void sexp_add_ship_goal(int n)
 {
 	int num, sindex;
 	char *ship_name;
@@ -7893,7 +7769,7 @@ void sexp_add_ship_goal( int n )
 }
 
 // identical to above, except add a wing
-void sexp_add_wing_goal( int n )
+void sexp_add_wing_goal(int n)
 {
 	int num, sindex;
 	char *wing_name;
@@ -7910,7 +7786,7 @@ void sexp_add_wing_goal( int n )
 
 // sexp_add_goal adds a goal to the specified entiry (ships and wings have unique names between
 // the two sets).
-void sexp_add_goal( int n )
+void sexp_add_goal(int n)
 {
 	int num, sindex;
 	char *name;
@@ -7928,7 +7804,7 @@ void sexp_add_goal( int n )
 }
 
 // clears out all ai goals for a ship
-void sexp_clear_ship_goals( int n )
+void sexp_clear_ship_goals(int n)
 {
 	int num;
 	char *ship_name;
@@ -7940,7 +7816,7 @@ void sexp_clear_ship_goals( int n )
 }
 
 // clears out ai goals for a wing
-void sexp_clear_wing_goals( int n )
+void sexp_clear_wing_goals(int n)
 {
 	int num;
 	char *wing_name;
@@ -7954,7 +7830,7 @@ void sexp_clear_wing_goals( int n )
 }
 
 // this function clears all ai goals for the given ship or wing
-void sexp_clear_goals( int n )
+void sexp_clear_goals(int n)
 {
 	int num;
 	char *name;
@@ -7969,86 +7845,6 @@ void sexp_clear_goals( int n )
 
 		n = CDR(n);
 	}
-}
-
-// this function get called by send-message or send-message random with the name of the message, sender,
-// and priority.
-void sexp_send_one_message( char *name, char *who_from, char *priority, int group, int delay )
-{
-	int ipriority, num, ship_index, source;
-	ship *shipp;
-
-	if(physics_paused){
-		return;
-	}
-
-	Assert( (name != NULL) && (who_from != NULL) && (priority != NULL) );
-
-	// determine the priority of the message
-	if ( !stricmp(priority, "low") )
-		ipriority = MESSAGE_PRIORITY_LOW;
-	else if ( !stricmp(priority, "normal") )
-		ipriority = MESSAGE_PRIORITY_NORMAL;
-	else if ( !stricmp(priority, "high") )
-		ipriority = MESSAGE_PRIORITY_HIGH;
-	else {
-		Int3();
-		ipriority = MESSAGE_PRIORITY_NORMAL;
-	}
-
-	// check to see if the 'who_from' string is a ship that had been destroyed or departed.  If so,
-	// then don't send the message.  We must look at 'who_from' to determine what to look for.  who_from
-	// may be any allied person, any wingman, a wingman from a specific wing, or a specific ship
-	ship_index = -1;
-	shipp = NULL;
-	source = MESSAGE_SOURCE_COMMAND;
-	if ( who_from[0] == '#' ) {
-		message_send_unique_to_player( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay );
-		return;
-	} else if (!stricmp(who_from, "<any allied>")) {
-		//Int3();			// no longer supported
-		return;
-	} else if ( (num = wing_name_lookup(who_from)) != -1 ) {
-		// message from a wing
-		// this will be an invalid case soon
-		// Int3();
-		// choose wing leader to speak for wing (hence "1" at end of ship_get_random_ship_in_wing)
-		ship_index = ship_get_random_ship_in_wing( num, SHIP_GET_NO_PLAYERS, 1 );
-		if ( ship_index == -1 ) {
-			if ( ipriority != MESSAGE_PRIORITY_HIGH )
-				return;
-		}
-
-	} else if ( mission_log_get_time(LOG_SHIP_DESTROYED, who_from, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPART, who_from, NULL, NULL) 
-		|| mission_log_get_time(LOG_WING_DESTROYED, who_from, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, who_from, NULL, NULL) ) {
-		// getting into this if statement means that the ship or wing (sender) is no longer in the mission
-		// if message is high priority, make it come from Terran Command
-		if ( ipriority != MESSAGE_PRIORITY_HIGH )
-			return;
-		
-		source = MESSAGE_SOURCE_COMMAND;
-
-	} else if ( !stricmp(who_from, "<any wingman>") || (wing_name_lookup(who_from) != -1) ) {
-		source = MESSAGE_SOURCE_WINGMAN;
-	} else {
-		// Message from a apecific ship
-		// bail if not high priority, otherwise reroute to command
-		source = MESSAGE_SOURCE_SHIP;
-		ship_index = ship_name_lookup(who_from);
-		if ( ship_index == -1 ) {
-			if ( ipriority != MESSAGE_PRIORITY_HIGH )
-				return;
-			source = MESSAGE_SOURCE_COMMAND;
-		}
-	}
-
-	if ( ship_index == -1 ){
-		shipp = NULL;
-	} else {
-		shipp = &Ships[ship_index];
-	}
-
-	message_send_unique_to_player( name, shipp, source, ipriority, group, delay );
 }
 
 // Goober5000
@@ -8545,7 +8341,87 @@ void sexp_warp_effect(int n)
 	fireball_create(&origin, fireball_type, -1, (float)radius, 0, NULL, (float)duration, -1, &m_orient, 0, extra_flags, warp_open_sound_index, warp_close_sound_index);
 }
 
-void sexp_send_message( int n )
+// this function get called by send-message or send-message random with the name of the message, sender,
+// and priority.
+void sexp_send_one_message( char *name, char *who_from, char *priority, int group, int delay )
+{
+	int ipriority, num, ship_index, source;
+	ship *shipp;
+
+	if(physics_paused){
+		return;
+	}
+
+	Assert( (name != NULL) && (who_from != NULL) && (priority != NULL) );
+
+	// determine the priority of the message
+	if ( !stricmp(priority, "low") )
+		ipriority = MESSAGE_PRIORITY_LOW;
+	else if ( !stricmp(priority, "normal") )
+		ipriority = MESSAGE_PRIORITY_NORMAL;
+	else if ( !stricmp(priority, "high") )
+		ipriority = MESSAGE_PRIORITY_HIGH;
+	else {
+		Int3();
+		ipriority = MESSAGE_PRIORITY_NORMAL;
+	}
+
+	// check to see if the 'who_from' string is a ship that had been destroyed or departed.  If so,
+	// then don't send the message.  We must look at 'who_from' to determine what to look for.  who_from
+	// may be any allied person, any wingman, a wingman from a specific wing, or a specific ship
+	ship_index = -1;
+	shipp = NULL;
+	source = MESSAGE_SOURCE_COMMAND;
+	if ( who_from[0] == '#' ) {
+		message_send_unique_to_player( name, &(who_from[1]), MESSAGE_SOURCE_SPECIAL, ipriority, group, delay );
+		return;
+	} else if (!stricmp(who_from, "<any allied>")) {
+		//Int3();			// no longer supported
+		return;
+	} else if ( (num = wing_name_lookup(who_from)) != -1 ) {
+		// message from a wing
+		// this will be an invalid case soon
+		// Int3();
+		// choose wing leader to speak for wing (hence "1" at end of ship_get_random_ship_in_wing)
+		ship_index = ship_get_random_ship_in_wing( num, SHIP_GET_NO_PLAYERS, 1 );
+		if ( ship_index == -1 ) {
+			if ( ipriority != MESSAGE_PRIORITY_HIGH )
+				return;
+		}
+
+	} else if ( mission_log_get_time(LOG_SHIP_DESTROYED, who_from, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPART, who_from, NULL, NULL) 
+		|| mission_log_get_time(LOG_WING_DESTROYED, who_from, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, who_from, NULL, NULL) ) {
+		// getting into this if statement means that the ship or wing (sender) is no longer in the mission
+		// if message is high priority, make it come from Terran Command
+		if ( ipriority != MESSAGE_PRIORITY_HIGH )
+			return;
+		
+		source = MESSAGE_SOURCE_COMMAND;
+
+	} else if ( !stricmp(who_from, "<any wingman>") || (wing_name_lookup(who_from) != -1) ) {
+		source = MESSAGE_SOURCE_WINGMAN;
+	} else {
+		// Message from a apecific ship
+		// bail if not high priority, otherwise reroute to command
+		source = MESSAGE_SOURCE_SHIP;
+		ship_index = ship_name_lookup(who_from);
+		if ( ship_index == -1 ) {
+			if ( ipriority != MESSAGE_PRIORITY_HIGH )
+				return;
+			source = MESSAGE_SOURCE_COMMAND;
+		}
+	}
+
+	if ( ship_index == -1 ){
+		shipp = NULL;
+	} else {
+		shipp = &Ships[ship_index];
+	}
+
+	message_send_unique_to_player( name, shipp, source, ipriority, group, delay );
+}
+
+void sexp_send_message(int n)
 {
 	char *name, *who_from, *priority, *tmp;
 
@@ -8569,7 +8445,7 @@ void sexp_send_message( int n )
 	sexp_send_one_message( name, who_from, priority, 0, 0 );
 }
 
-void sexp_send_message_list( int n )
+void sexp_send_message_list(int n)
 {
 	char *name, *who_from, *priority;
 	int delay;
@@ -8615,7 +8491,7 @@ void sexp_send_message_list( int n )
 	}
 }
 
-void sexp_send_random_message( int n )
+void sexp_send_random_message(int n)
 {
 	char *name, *who_from, *priority;
 	int temp, num_messages, message_num;
@@ -8653,7 +8529,7 @@ void sexp_send_random_message( int n )
 	sexp_send_one_message( name, who_from, priority, 0, 0 );
 }
 
-void sexp_self_destruct( int n )
+void sexp_self_destruct(int n)
 {
 	char *ship_name;
 	int shipnum;
@@ -8670,7 +8546,7 @@ void sexp_self_destruct( int n )
 	}
 }
 
-void sexp_next_mission( int n )
+void sexp_next_mission(int n)
 {
 	char *mission_name;
 	int i;
@@ -8691,7 +8567,7 @@ void sexp_next_mission( int n )
 }
 
 // function to deal with the end-of-campaign sexpression.  
-void sexp_end_of_campaign( int n )
+void sexp_end_of_campaign(int n)
 {
 	// this is really a do-nothing sexpression.  It is pretty much a placeholder to allow
 	// campaigns to have repeat-mission branches at the end of the campaign.  By not setting
@@ -8703,7 +8579,7 @@ void sexp_end_of_campaign( int n )
 // sexpression to end everything.  One parameter is the movie to play when this is over.
 // Goober5000 - edited to only to the FS2-specific code when actually ending the FS2 main
 // campaign, and otherwise to do the conventional code
-void sexp_end_campaign( int n )
+void sexp_end_campaign(int n)
 {
 	// in FS2 our ending is a bit wacky. we'll just flag the mission as having ended the campaign	
 	//
@@ -8721,7 +8597,7 @@ void sexp_end_campaign( int n )
 
 // sabotage subsystem reduces the strength of a subsystem by the given percentage.  If it is reduced to
 // below 0%, then the hits of the subsystem are set to 0
-void sexp_sabotage_subsystem( int n )
+void sexp_sabotage_subsystem(int n)
 {
 	char *shipname, *subsystem;
 	int	percentage, shipnum, index;
@@ -8783,7 +8659,7 @@ void sexp_sabotage_subsystem( int n )
 
 // repair_subsystem adds some percentage of hits to a subsystem.  Anything repaired about 100% is
 // set to max hits
-void sexp_repair_subsystem( int n )
+void sexp_repair_subsystem(int n)
 {
 	char *shipname, *subsystem;
 	int	percentage, shipnum, index, do_submodel_repair;
@@ -8847,7 +8723,7 @@ void sexp_repair_subsystem( int n )
 }
 
 // sexpression code to set a subsystem of a ship at a specific percentage
-void sexp_set_subsystem_strength( int n )
+void sexp_set_subsystem_strength(int n)
 {
 	char *shipname, *subsystem;
 	int	percentage, shipnum, index, do_submodel_repair;
@@ -9112,7 +8988,7 @@ void sexp_set_cargo(int n)
 }
 
 // function to transfer cargo from one ship to another
-void sexp_transfer_cargo( int n )
+void sexp_transfer_cargo(int n)
 {
 	char *shipname1, *shipname2;
 	int shipnum1, shipnum2, i;
@@ -9164,7 +9040,7 @@ void sexp_transfer_cargo( int n )
 }
 
 // this function exchanges cargo between two ships
-void sexp_exchange_cargo( int n )
+void sexp_exchange_cargo(int n)
 {
 	char *shipname1, *shipname2;
 	int shipnum1, shipnum2, temp;
@@ -9219,7 +9095,7 @@ void sexp_cap_waypoint_speed(int n)
 }
 
 // this function causes a ship to jettison its cargo
-void sexp_jettison_cargo( int n )
+void sexp_jettison_cargo(int n)
 {
 	char *shipname;
 	int jettison_delay, ship_index;	
@@ -9263,7 +9139,7 @@ void sexp_jettison_cargo( int n )
 	}
 }
 
-void sexp_cargo_no_deplete( int n )
+void sexp_cargo_no_deplete(int n)
 {
 	char *shipname;
 	int ship_index, no_deplete = 1;
@@ -9549,7 +9425,7 @@ void sexp_nebula_toggle_poof(int n)
 
 
 // sexpression to end the mission!  Fixed by EdrickV, implemented by Sesquipedalian
-void sexp_end_mission( int n )
+void sexp_end_mission(int n)
 {
 		// we have a special debriefing screen for multiplayer furballs
 	if((Game_mode & GM_MULTIPLAYER) && (The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)){
@@ -9564,7 +9440,7 @@ void sexp_end_mission( int n )
 // funciton to toggle the status bit for the AI code which tells the AI if it is a good time
 // to rearm.  The status being set means good time.  Status not being set (unset), means bad time.
 // designers must implement this.
-void sexp_good_time_to_rearm( int n )
+void sexp_good_time_to_rearm(int n)
 {
 	int team, time;
 
@@ -9590,7 +9466,7 @@ void sexp_grant_promotion()
 }
 
 // function which gives the named medal to the players in the mission
-void sexp_grant_medal( int n )
+void sexp_grant_medal(int n)
 {
 	int i;
 	char *medal_name;
@@ -9702,7 +9578,7 @@ void sexp_tech_reset_to_default()
 
 // function to set variables needed to grant a new ship/weapon to the player during the course
 // of a mission
-void sexp_allow_ship( int n )
+void sexp_allow_ship(int n)
 {
 	int sindex;
 	char *name;
@@ -9721,7 +9597,7 @@ void sexp_allow_ship( int n )
 	mission_campaign_save_persistent( CAMPAIGN_PERSISTENT_SHIP, sindex );
 }
 
-void sexp_allow_weapon( int n )
+void sexp_allow_weapon(int n)
 {
 	int sindex;
 	char *name;
@@ -9863,7 +9739,7 @@ void sexp_deal_with_warp( int n, int repairable, int damage_it )
 
 // function which is used to tell the AI when it is okay to fire certain secondary
 // weapons at other ships.
-void sexp_good_secondary_time( int n )
+void sexp_good_secondary_time(int n)
 {
 	char *team_name, *weapon_name, *ship_name;
 	int num_weapons, weapon_index, team;
@@ -10126,7 +10002,7 @@ int sexp_event_delay_status( int n, int want_true )
 }
 
 // function which returns true if the given event is still incomplete
-int sexp_event_incomplete( int n )
+int sexp_event_incomplete(int n)
 {
 	char *name;
 	int i;
@@ -10184,7 +10060,7 @@ int sexp_goal_delay_status( int n, int want_true )
 }
 
 // function which returns true if the given goal is still incomplete
-int sexp_goal_incomplete( int n )
+int sexp_goal_incomplete(int n)
 {
 	char *name;
 
@@ -10616,7 +10492,7 @@ void sexp_ship_vanish_helper(object *objp, dock_function_info *infop)
 }
 
 // make ship vanish without a trace (and what its docked to)
-void sexp_ship_vanish( int n )
+void sexp_ship_vanish(int n)
 {
 	char *ship_name;
 	int num;
@@ -10643,30 +10519,17 @@ void sexp_ship_vanish( int n )
 	}
 }
 
-
-void sexp_ship_lights_on(int node)	//-WMCoolmon
-{
-	//Insert sexp here
-}
-
-void sexp_ship_lights_off(int node) //-WMCoolmon
-{
-	//Insert sexp here
-}
-
 void sexp_shields_off(int n, int shields_off ) //-Sesquipedalian
 {
 	sexp_deal_with_ship_flag(n, OF_NO_SHIELDS, 0, 0, 0, P_OF_NO_SHIELDS, 0, shields_off);
 }
 
 // Goober5000
-void sexp_ingame_ship_kamikaze(int ship_num, int kdamage)
+void sexp_ingame_ship_kamikaze(ship *shipp, int kdamage)
 {
-	ai_info * aip;
+	Assert(shipp);
 
-	Assert(ship_num >= 0 && ship_num < MAX_SHIPS);
-
-	aip = &Ai_info[Ships[ship_num].ai_index];
+	ai_info *aip = &Ai_info[shipp->ai_index];
 
 	if (kdamage > 0)
 	{
@@ -10700,12 +10563,8 @@ void sexp_parse_ship_kamikaze(p_object *parse_obj, int kdamage)
 // Goober5000 - redone, added wing stuff
 void sexp_kamikaze(int n, int kamikaze)
 {
-	int i, ship_num, wing_num;
 	int kdamage;
-	char *ship_or_wing_name;
-	wing *wingp;
-	p_object *p_objp;
-	
+
 	kdamage = 0;
 	if (kamikaze)
 	{
@@ -10715,47 +10574,39 @@ void sexp_kamikaze(int n, int kamikaze)
 
 	for ( ; n != -1; n = CDR(n) )
 	{
-		ship_or_wing_name = CTEXT(n);
+		object_ship_wing_point_team oswpt;
+		sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_or_wing_name, NULL, NULL) )
-			continue;
-
-		// might be a wing - check to see if wing destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) )
-			continue;
-
-		// search for it
-		ship_num = ship_name_lookup(ship_or_wing_name);
-		wing_num = wing_name_lookup(ship_or_wing_name);
-
-		// change ingame ship
-		if (ship_num != -1)
+		switch (oswpt.type)
 		{
-			sexp_ingame_ship_kamikaze(ship_num, kdamage);
-		}
-		// change ship yet to arrive
-		else if (p_objp = mission_parse_get_arrival_ship(ship_or_wing_name), p_objp)
-		{
-			sexp_parse_ship_kamikaze(p_objp, kdamage);
-		}
-		// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
-		else if (wing_num != -1)
-		{
-			wingp = &Wings[wing_num];
-			
-			// current ships
-			for (i = 0; i < wingp->current_count; i++)
+			// change ingame ship
+			case OSWPT_TYPE_SHIP:
 			{
-				sexp_ingame_ship_kamikaze(wingp->ship_index[i], kdamage);
+				sexp_ingame_ship_kamikaze(oswpt.shipp, kdamage);
+
+				break;
 			}
 
-			// ships yet to arrive
-			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			// change ship yet to arrive
+			case OSWPT_TYPE_PARSE_OBJECT:
 			{
-				if (p_objp->wingnum == wing_num)
+				sexp_parse_ship_kamikaze(oswpt.p_objp, kdamage);
+
+				break;
+			}
+
+			// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
+			case OSWPT_TYPE_WING:
+			{
+				// current ships
+				for (int i = 0; i < oswpt.wingp->current_count; i++)
+					sexp_ingame_ship_kamikaze(&Ships[oswpt.wingp->ship_index[i]], kdamage);
+
+				// ships yet to arrive
+				for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 				{
-					sexp_parse_ship_kamikaze(p_objp, kdamage);
+					if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+						sexp_parse_ship_kamikaze(p_objp, kdamage);
 				}
 			}
 		}
@@ -10763,25 +10614,25 @@ void sexp_kamikaze(int n, int kamikaze)
 }
 
 // Goober5000
-void sexp_ingame_ship_alt_name(int ship_num, char *alt_name)
+void sexp_ingame_ship_alt_name(ship *shipp, char *alt_name)
 {
-	Assert( (ship_num >= 0) && (ship_num < MAX_SHIPS) && (alt_name != NULL) );
+	Assert((shipp != NULL) && (alt_name != NULL));
 
 	// see if this is actually the ship class
-	if (!stricmp(Ship_info[Ships[ship_num].ship_info_index].name, alt_name))
+	if (!stricmp(Ship_info[shipp->ship_info_index].name, alt_name))
 	{
-		Ships[ship_num].alt_type_index = -1;
+		shipp->alt_type_index = -1;
 		return;
 	}
 
 	// see if we can add the new name (it will automatically reset if there's no space on the alt-type list)
-	Ships[ship_num].alt_type_index = (char)mission_parse_add_alt(alt_name);
+	shipp->alt_type_index = (char) mission_parse_add_alt(alt_name);
 }
 
 // Goober5000
 void sexp_parse_ship_alt_name(p_object *parse_obj, char *alt_name)
 {
-	Assert( (parse_obj != NULL) && (alt_name != NULL) );
+	Assert((parse_obj != NULL) && (alt_name != NULL));
 
 	// see if this is actually the ship class
 	if (!stricmp(Ship_class_names[parse_obj->ship_class], alt_name))
@@ -10791,16 +10642,13 @@ void sexp_parse_ship_alt_name(p_object *parse_obj, char *alt_name)
 	}
 
 	// see if we can add the new name (it will automatically reset if there's no space on the alt-type list)
-	parse_obj->alt_type_index = (char)mission_parse_add_alt(alt_name);
+	parse_obj->alt_type_index = (char) mission_parse_add_alt(alt_name);
 }
 
 // Goober5000
 void sexp_ship_change_alt_name(int n)
 {
-	int i, ship_num, wing_num;
-	char *ship_or_wing_name, *new_alt_name;
-	p_object *p_objp;
-	wing *wingp;
+	char *new_alt_name;
 
 	// get the alt-name
 	new_alt_name = CTEXT(n);
@@ -10808,47 +10656,39 @@ void sexp_ship_change_alt_name(int n)
 
 	for ( ; n != -1; n = CDR(n) )
 	{
-		ship_or_wing_name = CTEXT(n);
+		object_ship_wing_point_team oswpt;
+		sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
 
-		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_or_wing_name, NULL, NULL) )
-			continue;
-
-		// might be a wing - check to see if wing destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_WING_DEPART, ship_or_wing_name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, ship_or_wing_name, NULL, NULL) )
-			continue;
-
-		// search for it
-		ship_num = ship_name_lookup(ship_or_wing_name);
-		wing_num = wing_name_lookup(ship_or_wing_name);
-
-		// change ingame ship
-		if (ship_num != -1)
+		switch (oswpt.type)
 		{
-			sexp_ingame_ship_alt_name(ship_num, new_alt_name);
-		}
-		// change ship yet to arrive
-		else if (p_objp = mission_parse_get_arrival_ship(ship_or_wing_name), p_objp)
-		{
-			sexp_parse_ship_alt_name(p_objp, new_alt_name);
-		}
-		// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
-		else if (wing_num != -1)
-		{
-			wingp = &Wings[wing_num];
-			
-			// current ships
-			for (i = 0; i < wingp->current_count; i++)
+			// change ingame ship
+			case OSWPT_TYPE_SHIP:
 			{
-				sexp_ingame_ship_alt_name(wingp->ship_index[i], new_alt_name);
+				sexp_ingame_ship_alt_name(oswpt.shipp, new_alt_name);
+
+				break;
 			}
 
-			// ships yet to arrive
-			for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
+			// change ship yet to arrive
+			case OSWPT_TYPE_PARSE_OBJECT:
 			{
-				if (p_objp->wingnum == wing_num)
+				sexp_parse_ship_alt_name(oswpt.p_objp, new_alt_name);
+
+				break;
+			}
+
+			// change wing (we must set the flags for all ships present as well as all ships yet to arrive)
+			case OSWPT_TYPE_WING:
+			{		
+				// current ships
+				for (int i = 0; i < oswpt.wingp->current_count; i++)
+					sexp_ingame_ship_alt_name(&Ships[oswpt.wingp->ship_index[i]], new_alt_name);
+	
+				// ships yet to arrive
+				for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 				{
-					sexp_parse_ship_alt_name(p_objp, new_alt_name);
+					if (p_objp->wingnum == WING_INDEX(oswpt.wingp))
+						sexp_parse_ship_alt_name(p_objp, new_alt_name);
 				}
 			}
 		}
@@ -13736,73 +13576,27 @@ void sexp_set_camera_facing_object(int n)
 			rot_acc_time = eval_num(n) / 1000.0f;
 	}
 
-	//Check if it's destroyed
-	if(mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL)
-		|| mission_log_get_time( LOG_SHIP_DEPART, object_name, NULL, NULL)
-		|| mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL)
-		|| mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL))
-	{
-		Warning(LOCATION, "Camera tried to face destroyed/departed object %s", object_name);
-		return;
-	}
+	object_ship_wing_point_team oswpt;
+	sexp_get_object_ship_wing_point_team(&oswpt, object_name);
 
-	//Team for target
-//	vec3d destvec;
-	ship_obj *so;
-	int index;
-
-	index = sexp_determine_team(object_name);
-	if(index >= 0)
+	switch (oswpt.type)
 	{
-		so = GET_FIRST(&Ship_obj_list);
-		while (so != END_OF_LIST(&Ship_obj_list))
+		case OSWPT_TYPE_EXITED:
 		{
-			if (Ships[Objects[so->objnum].instance].team == index)
-			{
-				Viewer_mode |= VM_FREECAMERA;
-				Free_camera->set_rotation_facing(&Objects[so->objnum].pos, rot_time, rot_acc_time);
-				return;
-			}
-
-			so = GET_NEXT(so);
+			Warning(LOCATION, "Camera tried to face destroyed/departed object %s", object_name);
+			return;
 		}
 
-		return;
+		case OSWPT_TYPE_TEAM:
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WING:
+		case OSWPT_TYPE_WAYPOINT:
+		{
+			Viewer_mode |= VM_FREECAMERA;
+			Free_camera->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time);
+			return;
+		}
 	}
-
-	//Ship for target
-	index = ship_name_lookup(object_name);
-	if(index >= 0)
-	{
-		Viewer_mode |= VM_FREECAMERA;
-		Free_camera->set_rotation_facing(&Objects[Ships[index].objnum].pos, rot_time, rot_acc_time);
-		return;
-	}
-
-	//Point for target
-	index = waypoint_lookup(object_name);
-	if(index >= 0)
-	{
-		Viewer_mode |= VM_FREECAMERA;
-		Free_camera->set_rotation_facing(&Objects[index].pos, rot_time, rot_acc_time);
-	}
-
-	//Wing for target
-	index = wing_name_lookup(object_name);
-
-	//Um...oops
-	if(index < 0)
-	{
-		return;
-	}
-	
-	//Oops again
-	if(!Wings[index].current_count)
-		return;
-
-	//Point to wing leader
-	Viewer_mode |= VM_FREECAMERA;
-	Free_camera->set_rotation_facing(&Objects[Ships[Wings[index].ship_index[0]].objnum].pos, rot_time, rot_acc_time);
 }
 
 extern float Viewer_zoom, VIEWER_ZOOM_DEFAULT;
