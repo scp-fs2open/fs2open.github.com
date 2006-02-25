@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.227 $
- * $Date: 2006-02-24 07:34:07 $
- * $Author: taylor $
+ * $Revision: 2.228 $
+ * $Date: 2006-02-25 06:57:58 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.227  2006/02/24 07:34:07  taylor
+ * fix custom loading screens that I manage to break yet again
+ * add a "MaxFPS" registry/ini option to specify a FPS cap, useful if you can't make use of v-sync for some reason
+ *
  * Revision 2.226  2006/02/20 07:30:14  taylor
  * updated to newest dynamic starfield code
  *  - this mainly is to just better support SEXP based starfield bitmap changes (preloading, better in-mission stuff loading)
@@ -3624,6 +3628,7 @@ void game_init()
 	script_init();			//WMC
 
 //#if defined(FS2_DEMO) || defined(OEM_BUILD)
+	gr_font_init();					// loads up all fonts
 	// add title screen
 	if(!Is_standalone){
 		// #Kazan# - moved this down - WATCH THESE calls - anything that shares code between standalone and normal
@@ -3752,8 +3757,7 @@ void game_init()
 
 	init_animating_pointer();	
 	asteroid_init();
-	mission_brief_common_init();	// Mark all the briefing structures as empty.		
-	gr_font_init();					// loads up all fonts		
+	mission_brief_common_init();	// Mark all the briefing structures as empty.
 
 	neb2_init();						// fullneb stuff
 	nebl_init();
