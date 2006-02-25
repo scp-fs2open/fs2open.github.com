@@ -4,11 +4,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.22 $
- * $Date: 2005-08-23 09:18:08 $
+ * $Revision: 1.23 $
+ * $Date: 2006-02-25 21:42:31 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2005/08/23 09:18:08  Goober5000
+ * ensure init/reset of goals works cleanly
+ * --Goober5000
+ *
  * Revision 1.21  2005/07/23 16:25:32  Goober5000
  * remove an extraneous extern
  * --Goober5000
@@ -93,12 +97,13 @@
 #include "object/object.h"
 #include "parse/sexp.h"
 #include "freespace2/freespace.h"
+#include "globalincs/linklist.h"
+#include "iff_defs/iff_defs.h"
 
 
 
 // Extern functions/variables
 extern int		Player_use_ai;
-extern int sexp_distance2(int obj1, char *subj);
 
 
 // Module variables
@@ -163,20 +168,16 @@ bool Sel_NextNav()
 
 
 // ********************************************************************************************
-vec3d NavPoint::GetPosition()
+vec3d *NavPoint::GetPosition()
 {
-	vec3d position;
-
 	if (flags & NP_WAYPOINT)
 	{
-		position = ((waypoint_list*)target_obj)->waypoints[waypoint_num-1];
+		return &((waypoint_list*) target_obj)->waypoints[waypoint_num-1];
 	}
 	else
 	{
-		position = Objects[((ship*)target_obj)->objnum].pos;
+		return &Objects[((ship*) target_obj)->objnum].pos;
 	}
-
-	return position;
 }
 
 char* NavPoint::GetInteralName()
@@ -211,22 +212,27 @@ char* NavPoint::GetInteralName()
 //        * Destination > 1,000 meters away
 bool CanAutopilot()
 {
-	bool CanAuto = true;
-	CanAuto = CanAuto && CurrentNav != -1;
+	if (CurrentNav == -1)
+		return false;
 
-	int dist = sexp_distance2(Player_ship->objnum, "<any hostile>");
+	// dunno what this is for, but Kazan used it
+	if (vm_vec_dist_quick(&Player_obj->pos, Navs[CurrentNav].GetPosition()) < 1000)
+		return false;
 
-	CanAuto = CanAuto && (5000 <= dist || dist == SEXP_NAN);
-	
-
-	if (CanAuto) // protect against no currentNav
+	// see if any hostiles are nearby
+	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
-		char *name = Navs[CurrentNav].GetInteralName();
-		CanAuto = CanAuto && (1000 <= sexp_distance2(Player_ship->objnum, name));
-		delete[] name;
+		object *other_objp = &Objects[so->objnum];
+
+		// attacks player?
+		if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)))
+		{
+			if (vm_vec_dist_quick(&Player_obj->pos, &other_objp->pos) < 1000)
+				return false;
+		}
 	}
 
-	return CanAuto;
+	return true;
 }
 
 // ********************************************************************************************
@@ -805,17 +811,7 @@ unsigned int DistanceTo(int nav)
 	if (nav > MAX_NAVPOINTS && nav < 0)
 		return 0xFFFFFFFF;
 
-	char *name = Navs[nav].GetInteralName();
-
-	if (name == NULL)
-		return 0xFFFFFFFF;
-
-	int distance = sexp_distance2(Player_ship->objnum, name);
-	delete[] name;
-
-	if (distance == SEXP_NAN)
-		return 0xFFFFFFFF;
-	return distance;
+	return vm_vec_dist_quick(&Player_obj->pos, Navs[nav].GetPosition());
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
