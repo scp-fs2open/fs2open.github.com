@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.38 $
- * $Date: 2006-01-14 19:54:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.39 $
+ * $Date: 2006-02-25 21:47:07 $
+ * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.37  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -160,7 +163,7 @@
  * --Goober5000
  *
  * Revision 2.2  2002/10/19 19:29:28  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move
@@ -624,7 +627,7 @@ physics_info Descent_physics;			// used when we want to control the player like 
 ////////////////////////////////////////////////////////////
 // Module data
 ////////////////////////////////////////////////////////////
-static int Player_all_alone_msg_inited=0;	// flag used for initalizing a player-specific voice msg
+static int Player_all_alone_msg_inited=0;	// flag used for initializing a player-specific voice msg
 
 #ifndef NDEBUG
 	int Show_killer_weapon = 0;

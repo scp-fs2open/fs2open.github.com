@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.177  2006/02/16 05:48:48  taylor
+ * keep weapon model refcount correct (this is admittedly strange, but safer than before)
+ *
  * Revision 2.176  2006/02/15 07:26:52  wmcoolmon
  * Blah, pulled a Goober.
  *
@@ -623,7 +626,7 @@
  * Parser error handling for fighter flak, it didn't want flak on player weapons, now it doesn't care
  *
  * Revision 2.2  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  * Revision 2.1.2.2  2002/09/28 22:13:43  randomtiger
  * Sorted out some bits and pieces. The background nebula blends now which is nice.  RT
  *
@@ -1066,7 +1069,7 @@ int Player_weapon_precedence[MAX_WEAPON_TYPES];	// Array of weapon types, preced
 // This will elimate the odd "stereo" effect that occurs when two weapons impact at 
 // nearly the same time, like from a double laser (also saves sound channels!)
 #define	IMPACT_SOUND_DELTA	50		// in milliseconds
-int		Weapon_impact_timer;			// timer, initalized at start of each mission
+int		Weapon_impact_timer;			// timer, initialized at start of each mission
 
 // energy suck defines
 #define ESUCK_DEFAULT_WEAPON_REDUCE				(10.0f)

@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.11 $
- * $Date: 2006-02-20 02:13:07 $
+ * $Revision: 1.12 $
+ * $Date: 2006-02-25 21:46:59 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2006/02/20 02:13:07  Goober5000
+ * added ai-ignore-new which hopefully should fix the ignore bug
+ * --Goober5000
+ *
  * Revision 1.10  2006/02/19 22:00:09  Goober5000
  * restore original ignore behavior and remove soon-to-be-obsolete ai-chase-any-except
  * --Goober5000
@@ -135,7 +139,7 @@
  * Full-fledged ballistic primary support added!  Try it and see! :)
  *
  * Revision 2.2  2002/10/19 19:29:28  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move

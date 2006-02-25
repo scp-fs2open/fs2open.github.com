@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.93 $
- * $Date: 2006-01-30 06:40:49 $
- * $Author: taylor $
+ * $Revision: 2.94 $
+ * $Date: 2006-02-25 21:46:59 $
+ * $Author: Goober5000 $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2006/01/30 06:40:49  taylor
+ * better lighting for OpenGL
+ * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
+ * some basic lighting code cleanup
+ *
  * Revision 2.92  2006/01/18 16:14:04  taylor
  * allow gr_render_buffer() to take TMAP flags
  * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
@@ -828,7 +833,7 @@ struct Vertex_buffer{
 
 enum stage_state{
 	NONE = -1, 
-	INITAL = 0, 
+	INITIAL = 0, 
 	DEFUSE = 1, 
 	GLOW_MAPPED_DEFUSE = 2, 
 	NONMAPPED_SPECULAR = 3, 
@@ -1060,7 +1065,7 @@ void d3d_stop_frame()
 // This function calls these render state one when the device is initialised and when the device is lost.
 void d3d_set_initial_render_state(bool set)
 {
-	if(current_render_state == INITAL)return;
+	if(current_render_state == INITIAL)return;
 
 	if(current_render_state == NONE){//this only needs to be done the first time-Bobboau
 		d3d_SetRenderState(D3DRS_DITHERENABLE, TRUE );
@@ -1096,8 +1101,8 @@ void d3d_set_initial_render_state(bool set)
 	d3d_SetTextureStageState( 3, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 	d3d_SetTextureStageState( 4, D3DTSS_COLOROP, D3DTOP_DISABLE, set, set);
 
-	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(inital_state_block);
-	current_render_state = INITAL;
+	if(!set)GlobalD3DVars::lpD3DDevice->ApplyStateBlock(initial_state_block);
+	current_render_state = INITIAL;
 }
 
 //BACKGROUND_FOG
@@ -1506,7 +1511,7 @@ void set_stage_for_mapped_environment_mapping(){
 		d3d_SetTextureStageState( 0, D3DTSS_COLOROP, D3DTOP_SELECTARG1);
 	}
 
-	state = INITAL;*/
+	state = INITIAL;*/
 }
 
 extern bool d3d_init_device();

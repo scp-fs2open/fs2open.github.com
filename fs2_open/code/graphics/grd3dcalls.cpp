@@ -160,13 +160,13 @@ void d3d_reset_render_states()
  *
  * @return HRESULT - directx error code
  */
-HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_state, bool set, bool initaliseing )
+HRESULT d3d_SetRenderState( D3DRENDERSTATETYPE render_state_type,  DWORD render_state, bool set, bool initializing )
 {
 	Assert(render_state_type < NUM_STATES);
 
 #ifdef D3D_CALLS_CHECK
 	// If the state is already set to that parameter
-	if(!initaliseing && current_render_states[render_state_type] == render_state) {
+	if(!initializing && current_render_states[render_state_type] == render_state) {
 		// Leave without setting
 		return S_OK;
 	}
@@ -370,12 +370,12 @@ void d3d_reset_texture_stage_states()
  *
  * @return HRESULT - DirectX error code
  */
-HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value, bool set, bool initaliseing)
+HRESULT d3d_SetTextureStageState(DWORD stage, D3DTEXTURESTAGESTATETYPE type, DWORD value, bool set, bool initializing)
 {
 	// Only for first stage because it has different default properties to the others but
 	// since they are not even in use, who cares!
 #ifdef D3D_CALLS_CHECK
-	if(!initaliseing && stage == 0 && current_stages_zero[type] == value) {
+	if(!initializing && stage == 0 && current_stages_zero[type] == value) {
 		return S_OK;
 	}
 #endif

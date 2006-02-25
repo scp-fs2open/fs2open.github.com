@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.24 $
- * $Date: 2005-07-25 05:24:17 $
+ * $Revision: 2.25 $
+ * $Date: 2006-02-25 21:47:08 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2005/07/25 05:24:17  Goober5000
+ * cleaned up some command line and mission flag stuff
+ * --Goober5000
+ *
  * Revision 2.23  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -91,7 +95,7 @@
  * It turns out the version in the CVS did not toggle the ship trails with the flag...fixed this.
  *
  * Revision 2.3  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * 
  * 5     4/25/99 3:02p Dave

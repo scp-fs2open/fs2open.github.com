@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.11 $
- * $Date: 2005-12-14 08:07:33 $
- * $Author: phreak $
+ * $Revision: 2.12 $
+ * $Date: 2006-02-25 21:47:19 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/12/14 08:07:33  phreak
+ * Handling of exit explosions for beams when a ship is about to get destroyed, or according to the code: "tooled".
+ * Bumped beam frame collisions to 10 to compensate.
+ *
  * Revision 2.10  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -48,7 +52,7 @@
  * some general improvement to fighter beams,
  *
  * Revision 2.3  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.2  2002/08/01 01:41:10  penguin
  * The big include file move

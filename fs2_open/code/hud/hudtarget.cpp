@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.83 $
- * $Date: 2006-02-19 00:59:49 $
+ * $Revision: 2.84 $
+ * $Date: 2006-02-25 21:47:00 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2006/02/19 00:59:49  Goober5000
+ * breathalyzer for WMC, stat!
+ * --Goober5000
+ *
  * Revision 2.82  2006/01/27 06:21:10  Goober5000
  * replace quick sort with insertion sort in many places
  * --Goober5000
@@ -1519,7 +1523,7 @@ void hud_target_hotkey_select( int k )
 	Players[Player_num].current_hotkey_set = k;
 }
 
-// hud_init_targeting_colors() will initalize the shader and gradient objects used
+// hud_init_targeting_colors() will initialize the shader and gradient objects used
 // on the HUD
 //
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.13 $
- * $Date: 2006-01-22 01:31:44 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2006-02-25 21:47:00 $
+ * $Author: Goober5000 $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/01/22 01:31:44  taylor
+ * no real need to cast these so just get it right in the first place
+ *
  * Revision 2.12  2005/07/13 03:15:50  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -52,7 +55,7 @@
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
  * Revision 2.2  2002/12/07 01:37:42  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
  * it needs a better renderer, but is in prety good shape for now,
  * I also (think) I squashed a bug in the warpmodel code

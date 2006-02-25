@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.228 $
- * $Date: 2006-02-25 06:57:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.229 $
+ * $Date: 2006-02-25 21:46:59 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.228  2006/02/25 06:57:58  wmcoolmon
+ * Fix no text for splash screen scripting problem
+ *
  * Revision 2.227  2006/02/24 07:34:07  taylor
  * fix custom loading screens that I manage to break yet again
  * add a "MaxFPS" registry/ini option to specify a FPS cap, useful if you can't make use of v-sync for some reason
@@ -3035,7 +3038,7 @@ int game_start_mission()
 		Do_model_timings_test();	
 	}
 #endif
-	//set the inital animation positions
+	//set the initial animation positions
 /*
 		ship_obj *moveup = GET_FIRST(&Ship_obj_list);
 		ship *shipp;
@@ -3047,7 +3050,7 @@ int game_start_mission()
 			}
 			shipp = &Ships[Objects[moveup->objnum].instance];
 
-			ship_animation_set_inital_states(shipp);
+			ship_animation_set_initial_states(shipp);
 
 			moveup = GET_NEXT(moveup);
 		}

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.17 $
- * $Date: 2005-07-13 03:35:29 $
+ * $Revision: 2.18 $
+ * $Date: 2006-02-25 21:47:08 $
  * $Author: Goober5000 $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/07/13 03:35:29  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.16  2005/05/12 17:49:16  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -429,11 +433,11 @@ public:
 //	flash_ball():ray(NULL),n_rays(0){}
 	flash_ball(int number, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255)
 		:ray(NULL),n_rays(0)
-		{initalise(number, min_ray_width, max_ray_width , dir , center , outer , inner , max_r , max_g , max_b , min_r , min_g ,min_b);}
+		{initialize(number, min_ray_width, max_ray_width , dir , center , outer , inner , max_r , max_g , max_b , min_r , min_g ,min_b);}
 	~flash_ball(){if(ray)vm_free(ray);}
 
-	void initalise(int number, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
-	void initalise(ubyte *bsp_data, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
+	void initialize(int number, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
+	void initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width = 0, vec3d* dir = &vmd_zero_vector, vec3d*center = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
 	void render(float rad, float intinsity, float life);
 };
 #endif

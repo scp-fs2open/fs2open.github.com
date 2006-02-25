@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-02-20 07:30:14 $
- * $Author: taylor $
+ * $Revision: 1.4 $
+ * $Date: 2006-02-25 21:46:59 $
+ * $Author: Goober5000 $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/02/20 07:30:14  taylor
+ * updated to newest dynamic starfield code
+ *  - this mainly is to just better support SEXP based starfield bitmap changes (preloading, better in-mission stuff loading)
+ *  - also fixes index_buffer related double-free()
+ *  - done waste memory for env index buffer if env is not enabled
+ *  - address a couple of bm load/release issues and comment a little to tell why
+ *
  * Revision 1.2  2006/01/30 06:27:59  taylor
  * dynamic starfield bitmaps
  *
@@ -1303,7 +1310,7 @@ void bg_bitmap_dlg::OnImportBackground()
 		}
 		else return;
 
-		//reinitalize the dialog
+		//reinitialize the dialog
 		sun_data_init();
 		bitmap_data_init();
 		OnFullNeb();

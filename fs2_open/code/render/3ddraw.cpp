@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.46 $
- * $Date: 2005-10-28 14:45:55 $
- * $Author: taylor $
+ * $Revision: 2.47 $
+ * $Date: 2006-02-25 21:47:08 $
+ * $Author: Goober5000 $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2005/10/28 14:45:55  taylor
+ * more TMAP_MAX_VERTS overflow protection for non-HTL usage (these are the things that need to be addressed to fix non-HTL)
+ * fix some compiler warning messages
+ * don't do any decal processing if decals are disabled, the math was a waste of CPU cycles in that case
+ *
  * Revision 2.45  2005/08/25 22:32:55  taylor
  * since the geomtry_batcher can send more verts than non-HTL code can handle, avoid drawing in that case to avoid crashing
  *
@@ -2803,8 +2808,10 @@ void g3_draw_htl_sphere(vec3d* position, float radius)
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++//
 //flash ball stuff
 
-void flash_ball::initalise(int number, float min_ray_width, float max_ray_width, vec3d* dir, vec3d*pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b){
-	if(number < 1)return;
+void flash_ball::initialize(int number, float min_ray_width, float max_ray_width, vec3d* dir, vec3d*pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
+{
+	if(number < 1)
+		return;
 
 	center = *pcenter;
 
@@ -2945,7 +2952,8 @@ void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
 }
 
 
-void flash_ball::initalise(ubyte *bsp_data, float min_ray_width, float max_ray_width, vec3d* dir , vec3d*pcenter , float outer , float inner , ubyte max_r , ubyte max_g , ubyte max_b , ubyte min_r , ubyte min_g , ubyte min_b ){
+void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width, vec3d* dir , vec3d*pcenter , float outer , float inner , ubyte max_r , ubyte max_g , ubyte max_b , ubyte min_r , ubyte min_g , ubyte min_b )
+{
 	center = *pcenter;
 	vm_vec_negate(&center);
 	parse_bsp(0,bsp_data);

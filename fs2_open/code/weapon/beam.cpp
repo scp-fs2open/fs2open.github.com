@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.65 $
- * $Date: 2006-01-15 18:56:45 $
- * $Author: taylor $
+ * $Revision: 2.66 $
+ * $Date: 2006-02-25 21:47:19 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2006/01/15 18:56:45  taylor
+ * another NULL VEC3D warning fix
+ *
  * Revision 2.64  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -238,7 +241,7 @@
  * DTP FIX, fast fix to the beam/shield bug problem. will maybe commit later when i find out why this is getting triggered when it should not
  *
  * Revision 2.6  2002/12/07 01:37:43  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
  * it needs a better renderer, but is in prety good shape for now,
  * I also (think) I squashed a bug in the warpmodel code
@@ -249,7 +252,7 @@
  * some general improvement to fighter beams,
  *
  * Revision 2.4  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.3  2002/08/01 01:41:10  penguin
  * The big include file move

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.11 $
- * $Date: 2005-10-11 05:24:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2006-02-25 21:47:07 $
+ * $Author: Goober5000 $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/10/11 05:24:34  wmcoolmon
+ * Gliding
+ *
  * Revision 2.10  2005/07/13 03:35:35  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -43,7 +46,7 @@
  * since the afterburners are routed through the physics engine, i needed to route the boost pod through here too
  *
  * Revision 2.2  2002/10/19 19:29:28  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.1  2002/08/01 01:41:09  penguin
  * The big include file move

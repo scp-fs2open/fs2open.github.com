@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TrainingMenu.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-02-23 04:55:07 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2006-02-25 21:47:00 $
+ * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Training user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/02/23 04:55:07  taylor
+ * more bm_unload() -> bm_release() changes
+ *
  * Revision 2.5  2004/07/26 20:47:37  Kazan
  * remove MCD complete
  *
@@ -110,7 +113,7 @@
  * menu
  * 
  * 9     11/20/96 12:33p Lawrance
- * fixed problem when index for adding regions was not being initalized to
+ * fixed problem when index for adding regions was not being initialized to
  * 0 in the menu init() function
  * 
  * 8     11/19/96 5:20p Lawrance

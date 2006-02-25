@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.39 $
- * $Date: 2006-01-31 06:43:21 $
- * $Author: wmcoolmon $
+ * $Revision: 1.40 $
+ * $Date: 2006-02-25 21:47:00 $
+ * $Author: Goober5000 $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39  2006/01/31 06:43:21  wmcoolmon
+ * Debug warning; compiler warning fix.
+ *
  * Revision 1.38  2006/01/30 06:52:15  taylor
  * better lighting for OpenGL
  * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
@@ -316,7 +319,7 @@ uint opengl_create_vbo(uint size, GLfloat *data)
 
 	// Kazan: A) This makes that if (buffer_name) work correctly (false = 0, true = anything not 0)
 	//				if glGenBuffersARB() doesn't initialized it for some reason
-	//        B) It shuts up MSVC about may be used without been initalized
+	//        B) It shuts up MSVC about may be used without been initialized
 	GLuint buffer_name=0;
 
 	glGenBuffersARB(1, &buffer_name);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Fvi.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-04-16 03:36:13 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2006-02-25 21:47:00 $
+ * $Author: Goober5000 $
  *
  * Routines to find intersections of various 3d things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/04/16 03:36:13  wmcoolmon
+ * Minor changes; made even more fields in ships.tbl optional.
+ *
  * Revision 2.5  2005/04/05 05:53:18  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -26,7 +29,7 @@
  * MCD - define _MCD_CHECK to use memory tracking
  *
  * Revision 2.2  2002/12/07 01:37:41  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code it's only references are in,
+ * initial decals code, if you are worried a bug is being caused by the decals code it's only references are in,
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
  * it needs a better renderer, but is in prety good shape for now,
  * I also (think) I squashed a bug in the warpmodel code

@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.315 $
- * $Date: 2006-02-24 05:13:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.316 $
+ * $Date: 2006-02-25 21:47:08 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.315  2006/02/24 05:13:26  wmcoolmon
+ * Maybe fix ships-limit bug
+ *
  * Revision 2.314  2006/02/24 05:02:34  Goober5000
  * remove my old anti-frustration thing since it's not what retail does
  * --Goober5000
@@ -1213,7 +1216,7 @@
  * Transports can now dock with fighters, bombers, & stealth ships.
  *
  * Revision 2.12  2002/12/07 01:37:42  bobboau
- * inital decals code, if you are worried a bug is being caused by the decals code, its only references are in
+ * initial decals code, if you are worried a bug is being caused by the decals code, its only references are in
  * collideshipweapon.cpp line 262, beam.cpp line 2771, and modelinterp.cpp line 2949.
  * it needs a better renderer, but is in pretty good shape for now,
  * I also (think) I squashed a bug in the warpmodel code
@@ -1234,7 +1237,7 @@
  * Fighter flak code, it doesn't blow up in your face anymore!
  *
  * Revision 2.7  2002/10/19 19:29:29  bobboau
- * inital commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
+ * initial commit, trying to get most of my stuff into FSO, there should be most of my fighter beam, beam rendering, beam shield hit, ABtrails, and ssm stuff. one thing you should be happy to know is the beam texture tileing is now set in the beam section section of the weapon table entry
  *
  * Revision 2.6.2.1  2002/09/24 18:56:45  randomtiger
  * DX8 branch commit
@@ -2316,15 +2319,21 @@ void parse_engine_wash(bool replace)
 	}
 }
 
-int match_type(char *p){
-	
-	for(int i = 0; i<MAX_TRIGGER_ANIMATION_TYPES; i++){
-		if(!strncmp(p,animation_type_names[i],strlen(animation_type_names[i]))){
+int match_type(char *p)
+{	
+	if (!strnicmp(p, "inital", 6))
+	{
+		Warning(LOCATION, "Spelling error in table file.  Please change \"inital\" to \"initial\".");
+		return TRIGGER_TYPE_INITIAL;
+	}
+
+	for(int i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++)
+	{
+		if (!strnicmp(p, animation_type_names[i], strlen(animation_type_names[i])))
 			return i;
-		}
-	}	
-	return-1;
-	
+	}
+
+	return -1;
 }
 
 
@@ -3853,8 +3862,8 @@ strcpy(parse_error_text, temp_error);
 					}
 
 
-					if(current_trigger->type == TRIGGER_TYPE_INITAL){
-						//the only thing inital animation type needs is the angle, 
+					if(current_trigger->type == TRIGGER_TYPE_INITIAL){
+						//the only thing initial animation type needs is the angle, 
 						//so to save space lets just make everything optional in this case
 
 						if(optional_string("+delay:"))
@@ -8223,7 +8232,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	// call the contrail system
 	ct_ship_create(shipp);
 
-	ship_animation_set_inital_states(shipp);
+	ship_animation_set_initial_states(shipp);
 /*
 	polymodel *pm = model_get(shipp->modelnum);
 	if(shipp->debris_flare)vm_free(shipp->debris_flare);
@@ -8232,7 +8241,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	for(i = 0; i<shipp->n_debris_flare; i++){
 		bsp_info *debris = &pm->submodel[pm->debris_objects[i]];
-		shipp->debris_flare[i].initalise(debris->bsp_data, 0.1f,0.3f, &vmd_zero_vector, &debris->offset);
+		shipp->debris_flare[i].initialize(debris->bsp_data, 0.1f,0.3f, &vmd_zero_vector, &debris->offset);
 	}
 	*/
 	return objnum;
@@ -8544,7 +8553,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	for( i = 0; i<MAX_SHIP_SECONDARY_BANKS;i++){
 			swp->secondary_animation_position[i] = false;
 	}
-	ship_animation_set_inital_states(sp);
+	ship_animation_set_initial_states(sp);
 
 	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
 		if(Weapon_info[swp->secondary_bank_weapons[i]].fire_wait == 0.0){
@@ -15107,7 +15116,7 @@ int ship_get_animation_time_type(ship *shipp, int animation_type, int subtype){
 
 }
 
-void ship_animation_set_inital_states(ship *shipp){
+void ship_animation_set_initial_states(ship *shipp){
 
 	ship_weapon	*swp = &shipp->weapons;
 	int i;
@@ -15134,7 +15143,7 @@ void ship_animation_set_inital_states(ship *shipp){
 					pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
 				}else{
 					if(
-						psub->triggers[i].type == TRIGGER_TYPE_INITAL
+						psub->triggers[i].type == TRIGGER_TYPE_INITIAL
 						){
 						psub->trigger.set_to_end(&psub->triggers[i]);
 					}

@@ -37,7 +37,7 @@ of the management functions it is never used directly)
 polygon mamagement is on the other hand signifigant enough to warent it's own section.
 
 Low Level Polygon Management
-initaly I thought of useing a similar simple lookup system as thedecal management, but the 
+initially I thought of useing a similar simple lookup system as thedecal management, but the 
 lookup of polygons is both more frequent (about a dozen times per created decal) and more 
 intinsive (there are MAX_GLOBAL_DECAL_POLYS to sort through, at the time of documentation 
 this was defined as _11000_ !). I had to devise something a bit more clever. the big_ol_decal_poly_array

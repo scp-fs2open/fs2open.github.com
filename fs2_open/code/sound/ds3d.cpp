@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds3d.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-04-05 11:48:23 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2006-02-25 21:47:19 $
+ * $Author: Goober5000 $
  *
  * C file for interface to DirectSound3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/04/05 11:48:23  taylor
+ * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
+ * better error handling for OpenAL functions
+ * Windows can now build properly with OpenAL
+ * extra check to make sure we don't try and use too many hardware bases sources
+ * fix memory error from OpenAL extension list in certain instances
+ *
  * Revision 2.8  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -395,7 +402,7 @@ void ds3d_close_listener()
 // ---------------------------------------------------------------------------------------
 // ds3d_init()
 //
-// Initialize the DirectSound3D system.  Call the initalization for the pDS3D_listener
+// Initialize the DirectSound3D system.  Call the initialization for the pDS3D_listener
 // 
 // returns:     -1	=> init failed
 //              0		=> success
