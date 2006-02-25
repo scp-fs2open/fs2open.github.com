@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.162 $
- * $Date: 2006-02-24 07:34:07 $
- * $Author: taylor $
+ * $Revision: 2.163 $
+ * $Date: 2006-02-25 22:06:57 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.162  2006/02/24 07:34:07  taylor
+ * fix custom loading screens that I manage to break yet again
+ * add a "MaxFPS" registry/ini option to specify a FPS cap, useful if you can't make use of v-sync for some reason
+ *
  * Revision 2.161  2006/02/17 08:36:16  Goober5000
  * bother those variables
  *
@@ -1856,6 +1860,11 @@ void parse_music(mission *pm, int flags)
 		stuff_string(temp, F_NAME, NULL);
 		event_music_set_score(SCORE_DEBRIEF_FAIL, temp);
 	}
+
+
+	// Goober5000 - if briefing not specified in import, default to BRIEF1
+	if (!stricmp(pm->briefing_music_name, "none") && (flags & MPF_IMPORT_FSM))
+		strcpy(pm->briefing_music_name, "BRIEF1");
 
 
 	// Goober5000 - grab substitute tracks to play instead (provided they exist)
