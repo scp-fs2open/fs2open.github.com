@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.6 $
- * $Date: 2006-02-26 00:43:09 $
+ * $Revision: 1.7 $
+ * $Date: 2006-02-26 01:32:23 $
  * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/02/26 00:43:09  Goober5000
+ * fix subsystems for get-object-*
+ *
  * Revision 1.5  2006/02/04 07:05:03  Goober5000
  * fixed several IFF bugs in FRED (plus one or two other bugs)
  * --Goober5000
@@ -4556,7 +4559,7 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			break;
 
 		case OPF_SUBSYSTEM_OR_NONE:
-			list = list = get_listing_opf_subsystem(parent_node, arg_index);
+			list = get_listing_opf_subsystem_or_none(parent_node, arg_index);
 			break;
 
 		case OPF_JUMP_NODE_NAME:

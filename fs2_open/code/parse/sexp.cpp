@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.229 $
- * $Date: 2006-02-26 00:43:09 $
+ * $Revision: 2.230 $
+ * $Date: 2006-02-26 01:32:23 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.229  2006/02/26 00:43:09  Goober5000
+ * fix subsystems for get-object-*
+ *
  * Revision 2.228  2006/02/26 00:22:15  Goober5000
  * some paring down of sexps
  *
@@ -17840,6 +17843,12 @@ void sexp_variable_block_free(const char *ship_name, int start_index, int block_
 // evaluate number which may result from an operator or may be text
 int eval_num(int n)
 {
+	if (n < 0)
+	{
+		Int3();
+		return 0;
+	}
+
 	if (CAR(n) != -1)				// if argument is a sexp
 		return eval_sexp(CAR(n));
 	else
