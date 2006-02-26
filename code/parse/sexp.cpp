@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.230 $
- * $Date: 2006-02-26 01:32:23 $
+ * $Revision: 2.231 $
+ * $Date: 2006-02-26 22:47:11 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.230  2006/02/26 01:32:23  Goober5000
+ * bah
+ *
  * Revision 2.229  2006/02/26 00:43:09  Goober5000
  * fix subsystems for get-object-*
  *
@@ -9105,9 +9108,11 @@ void sexp_jettison_cargo(int n)
 	// no arguments - jettison all docked objects
 	if (n == -1)
 	{
-		for (dock_instance *ptr = parent_objp->dock_list; ptr != NULL; ptr = ptr->next)
+		// Goober5000 - as with do_dying_undock_physics, we can't simply iterate through the dock list while we're
+		// undocking things.  So just repeatedly jettison the first object.
+		while (object_is_docked(parent_objp))
 		{
-			object_jettison_cargo(parent_objp, ptr->docked_objp);
+			object_jettison_cargo(parent_objp, dock_get_first_docked_object(parent_objp));
 		}
 	}
 	// arguments - jettison only those objects
