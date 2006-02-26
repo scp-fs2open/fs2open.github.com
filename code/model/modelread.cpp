@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.93 $
- * $Date: 2006-02-25 21:47:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.94 $
+ * $Date: 2006-02-26 11:09:31 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2006/02/25 21:47:07  Goober5000
+ * spelling
+ *
  * Revision 2.92  2006/02/24 07:32:11  taylor
  * vm_extract_angles_vector() doesn't do the same thing that this code used to so don't use it
  *
@@ -3969,6 +3972,7 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	gun->angs.h = offset_barrel_h;
 	model_find_world_dir(&fvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
 
+	base->angs.h = -PI/2.0f + offset_base_h;
 	gun->angs.p = -PI/2.0f;
 	gun->angs.h = offset_barrel_h;
 	model_find_world_dir(&rvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
