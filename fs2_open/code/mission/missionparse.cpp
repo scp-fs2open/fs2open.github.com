@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.165 $
- * $Date: 2006-02-26 08:06:57 $
- * $Author: taylor $
+ * $Revision: 2.166 $
+ * $Date: 2006-02-26 23:23:30 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.165  2006/02/26 08:06:57  taylor
+ * another non-linear campaign fix, this one affected PVs
+ *
  * Revision 2.164  2006/02/26 05:32:38  Goober5000
  * guess this is still needed
  *
@@ -1239,7 +1242,7 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 	"red-alert-carry",
 	"beam-protect-ship",
 	"guardian",
-	"special-warp"
+	"special-warp",
 };
 
 char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
@@ -1248,7 +1251,8 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"nav-carry-status",
 	"no-bank",
 	"affected-by-gravity",
-	"toggle-subsystem-scanning"
+	"toggle-subsystem-scanning",
+	"targetable-as-bomb",
 };
 
 
@@ -2741,8 +2745,11 @@ int parse_create_object_sub(p_object *objp)
 	// mwa -- 1/30/98.  Do both flags.  Fred uses the ship flag, and FreeSpace will use the object
 	// flag. I'm to lazy at this point to deal with consolidating them.
 	if ( objp->flags & P_SF_INVULNERABLE ) {
-		Ships[shipnum].flags |= SF_INVULNERABLE;
 		Objects[objnum].flags |= OF_INVULNERABLE;
+	}
+
+	if(objp->flags & P2_SF2_TARGETABLE_AS_BOMB) {
+		Objects[objnum].flags |= OF_TARGETABLE_AS_BOMB;
 	}
 
 	if ( objp->flags & P_SF_GUARDIAN ) {

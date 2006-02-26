@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.80 $
- * $Author: taylor $
- * $Date: 2006-02-24 07:34:07 $
+ * $Revision: 2.81 $
+ * $Author: wmcoolmon $
+ * $Date: 2006-02-26 23:23:30 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2006/02/24 07:34:07  taylor
+ * fix custom loading screens that I manage to break yet again
+ * add a "MaxFPS" registry/ini option to specify a FPS cap, useful if you can't make use of v-sync for some reason
+ *
  * Revision 2.79  2006/02/12 01:27:47  Goober5000
  * more cool work on importing, music handling, etc.
  * --Goober5000
@@ -832,7 +836,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	6
+#define MAX_PARSE_OBJECT_FLAGS_2	7
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -840,6 +844,7 @@ typedef struct p_object {
 #define P2_SF2_NO_BANK						(1<<3)
 #define P2_SF2_AFFECTED_BY_GRAVITY			(1<<4)
 #define P2_SF2_TOGGLE_SUBSYSTEM_SCANNING	(1<<5)
+#define P2_SF2_TARGETABLE_AS_BOMB			(1<<6)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

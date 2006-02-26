@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.231 $
- * $Date: 2006-02-26 22:47:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.232 $
+ * $Date: 2006-02-26 23:23:30 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.231  2006/02/26 22:47:11  Goober5000
+ * wow, over a year later and I'm still finding docking bugs :p
+ *
  * Revision 2.230  2006/02/26 01:32:23  Goober5000
  * bah
  *
@@ -1496,7 +1499,9 @@ sexp_oper Operators[] = {
 	{ "distance-to-nav",			OP_NAV_DISTANCE,				1, 1 }, // Kazan
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
-	{ "ship-vulnerable",				OP_SHIP_VULNERABLE,			1, INT_MAX	},
+	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
+	{ "ship-targetable-as-bomb",	OP_SHIP_BOMB_TARGETABLE,			1, INT_MAX	},
+	{ "ship-nontargetable-as-bomb",	OP_SHIP_BOMB_NONTARGETABLE,			1, INT_MAX	},
 	{ "ship-guardian",				OP_SHIP_GUARDIAN,				1, INT_MAX	},
 	{ "ship-no-guardian",			OP_SHIP_NO_GUARDIAN,			1, INT_MAX	},
 	{ "ship-guardian-threshold",	OP_SHIP_GUARDIAN_THRESHOLD,				2, INT_MAX	},
@@ -10218,6 +10223,11 @@ void sexp_ships_invulnerable( int n, int invulnerable )
 	sexp_deal_with_ship_flag(n, OF_INVULNERABLE, 0, 0, 0, P_SF_INVULNERABLE, 0, invulnerable);
 }
 
+void sexp_ships_bomb_targetable(int n, int targetable)
+{
+	sexp_deal_with_ship_flag(n, OF_TARGETABLE_AS_BOMB, 0, 0, 0, 0, P2_SF2_TARGETABLE_AS_BOMB, targetable);
+}
+
 // Goober5000
 void sexp_ship_guardian_threshold(int n)
 {
@@ -14325,6 +14335,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SHIP_BOMB_TARGETABLE:
+			case OP_SHIP_BOMB_NONTARGETABLE:
+				sexp_ships_invulnerable( node, (op_num==OP_SHIP_BOMB_TARGETABLE?1:0) );
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SHIP_GUARDIAN:
 			case OP_SHIP_NO_GUARDIAN:
 				sexp_ships_guardian( node, (op_num==OP_SHIP_GUARDIAN?1:0) );
@@ -15588,6 +15604,8 @@ int query_operator_return_type(int op)
 		case OP_SHIP_UNTAG:
 		case OP_SHIP_VULNERABLE:
 		case OP_SHIP_INVULNERABLE:
+		case OP_SHIP_BOMB_TARGETABLE:
+		case OP_SHIP_BOMB_NONTARGETABLE:
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_GUARDIAN_THRESHOLD:
@@ -15860,6 +15878,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_VISIBLE:	
 		case OP_SHIP_INVULNERABLE:
 		case OP_SHIP_VULNERABLE:
+		case OP_SHIP_BOMB_TARGETABLE:
+		case OP_SHIP_BOMB_NONTARGETABLE:
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_VANISH:
@@ -17912,6 +17932,8 @@ int get_subcategory(int sexp_id)
 			
 		case OP_SHIP_INVULNERABLE:
 		case OP_SHIP_VULNERABLE:
+		case OP_SHIP_BOMB_TARGETABLE:
+		case OP_SHIP_BOMB_NONTARGETABLE:
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_GUARDIAN_THRESHOLD:
@@ -19316,6 +19338,16 @@ sexp_help_struct Sexp_help[] = {
 		"\tCauses the ships listed in this sexpression to be invulnerable to weapons.  Use with caution!!!!\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\t1+:\tName of ships to make invulnerable to weapons." },
+
+	{ OP_SHIP_BOMB_TARGETABLE, "ship-targetable-as-bomb\r\n"
+		"\tCauses the ships listed in this sexpression to be targetable with bomb targetting key.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1+:\tName of ships to make targetable with bomb targeting key." },
+
+	{ OP_SHIP_BOMB_NONTARGETABLE, "ship-nontargetable-as-bomb\r\n"
+		"\tCauses the ships listed in this sexpression to not be targetable with bomb targetting key.\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1+:\tName of ships to make nontargetable with bomb targeting key." },
 
 	{ OP_SHIELDS_ON, "shields-on\r\n" //-Sesquipedalian
 		"\tCauses the ship listed in this sexpression to have their shields activated.\r\n\r\n"

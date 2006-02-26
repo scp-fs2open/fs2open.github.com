@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.137 $
- * $Date: 2006-02-26 22:23:01 $
+ * $Revision: 2.138 $
+ * $Date: 2006-02-26 23:23:31 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.137  2006/02/26 22:23:01  wmcoolmon
+ * SF2_TARGETABLE_AS_BOMBER flag, Lua gr_bitmap_ex fix
+ *
  * Revision 2.136  2006/02/25 21:47:08  Goober5000
  * spelling
  *
@@ -1037,7 +1040,7 @@ typedef struct ship_subsys_info {
 #define	SF_NO_ARRIVAL_WARP		(1 << 4)		// no arrival warp in effect
 #define	SF_NO_DEPARTURE_WARP		(1 << 5)		// no departure warp in effect
 #define	SF_LOCKED					(1 << 6)		// can't manipulate ship in loadout screens
-#define	SF_INVULNERABLE			(1 << 7)
+//#define	SF_INVULNERABLE			(1 << 7)
 
 // high bits are for internal flags not saved to mission files
 // Go from bit 31 down to bit 3
@@ -1088,7 +1091,6 @@ typedef struct ship_subsys_info {
 #define SF2_AFFECTED_BY_GRAVITY				(1<<8)		// Goober5000 - ship affected by gravity points
 #define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<9)		// Goober5000 - switch whether subsystems are scanned
 #define SF2_VANISHED				(1<<10)		//WMC - ship has vanished, used mostly for ship_wing_cleanup
-#define SF2_TARGETABLE_AS_BOMBER			(1<<11)		//WMC - ship is targettable with 'B' key
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;

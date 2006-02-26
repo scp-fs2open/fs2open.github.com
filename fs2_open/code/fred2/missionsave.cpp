@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.9 $
- * $Date: 2006-02-20 02:13:07 $
- * $Author: Goober5000 $
+ * $Revision: 1.10 $
+ * $Date: 2006-02-26 23:23:30 $
+ * $Author: wmcoolmon $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/02/20 02:13:07  Goober5000
+ * added ai-ignore-new which hopefully should fix the ignore bug
+ * --Goober5000
+ *
  * Revision 1.8  2006/02/19 00:49:41  Goober5000
  * fixed saving of special tags
  * --Goober5000
@@ -1592,7 +1596,7 @@ int CFred_mission_save::save_objects()
 			fout(" \"no-departure-warp\"");
 		if (Ships[i].flags & SF_LOCKED)
 			fout(" \"locked\"");
-		if (Ships[i].flags & SF_INVULNERABLE)
+		if (Objects[i].flags & OF_INVULNERABLE)
 			fout(" \"invulnerable\"");
 		if (Ships[i].flags & SF_HIDDEN_FROM_SENSORS)
 			fout(" \"hidden-from-sensors\"");
@@ -1627,6 +1631,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"affected-by-gravity\"");
 			if (Ships[i].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING)
 				fout(" \"toggle-subsystem-scanning\"");
+			if (Objects[i].flags & OF_TARGETABLE_AS_BOMB)
+				fout(" \"targetable-as-bomb\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

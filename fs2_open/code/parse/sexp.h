@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.111 $
- * $Author: Goober5000 $
- * $Date: 2006-02-26 00:43:10 $
+ * $Revision: 2.112 $
+ * $Author: wmcoolmon $
+ * $Date: 2006-02-26 23:23:31 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.111  2006/02/26 00:43:10  Goober5000
+ * fix subsystems for get-object-*
+ *
  * Revision 2.110  2006/02/26 00:22:15  Goober5000
  * some paring down of sexps
  *
@@ -1231,6 +1234,8 @@ struct ship_subsys;
 #define OP_SET_PRIMARY_AMMO					(0x00c3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SET_SECONDARY_AMMO				(0x00c4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 
+#define OP_SHIP_BOMB_TARGETABLE				(0x00c5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//WMC
+#define OP_SHIP_BOMB_NONTARGETABLE			(0x00c6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//WMC
 
 /* made obsolete by Goober5000
 // debugging sexpressions
