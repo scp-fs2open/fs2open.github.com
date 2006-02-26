@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.85 $
- * $Date: 2006-02-26 22:23:00 $
+ * $Revision: 2.86 $
+ * $Date: 2006-02-26 23:23:30 $
  * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2006/02/26 22:23:00  wmcoolmon
+ * SF2_TARGETABLE_AS_BOMBER flag, Lua gr_bitmap_ex fix
+ *
  * Revision 2.84  2006/02/25 21:47:00  Goober5000
  * spelling
  *
@@ -2034,7 +2037,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 		if ( (aip->target_objnum != -1)
 			&& (Objects[aip->target_objnum].type == OBJ_SHIP)
 			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & SIF_BOMBER)
-				|| (Ships[Objects[aip->target_objnum].instance].flags2 & SF2_TARGETABLE_AS_BOMBER))) {
+				|| (Objects[aip->target_objnum].flags & OF_TARGETABLE_AS_BOMB))) {
 			int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
 			start = get_ship_obj_ptr_from_index(index);
 		} else {
@@ -2059,7 +2062,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 			}
 
 			// check if ship type is bomber
-			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags & SIF_BOMBER) && !(Ships[A->instance].flags2 & SF2_TARGETABLE_AS_BOMBER) ) {
+			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags & SIF_BOMBER) && !(A->flags & OF_TARGETABLE_AS_BOMB) ) {
 				continue;
 			}
 

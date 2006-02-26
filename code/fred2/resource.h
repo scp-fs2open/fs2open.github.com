@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by FRED.rc
+// Microsoft Visual C++ generated include file.
+// Used by fred.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -862,6 +862,8 @@
 #define IDC_MESSAGE_NAME                1467
 #define IDC_INVULNERABLE                1469
 #define IDC_SINGLE                      1470
+#define IDC_INVULNERABLE2               1470
+#define IDC_TARGETABLE_AS_BOMB          1470
 #define IDC_MULTI                       1471
 #define IDC_HIDDEN_FROM_SENSORS         1471
 #define IDC_TRAINING                    1472

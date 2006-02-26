@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.19 $
- * $Date: 2006-01-17 04:11:26 $
+ * $Revision: 2.20 $
+ * $Date: 2006-02-26 23:23:30 $
  * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/01/17 04:11:26  wmcoolmon
+ * Removed #ifdef around Object_type_names extern
+ *
  * Revision 2.18  2006/01/12 17:42:56  wmcoolmon
  * Even more scripting stuff.
  *
@@ -483,6 +486,7 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_BEAM_PROTECTED			(1<<12)	// don't fire beam weapons at this type of object, probably mission critical.
 #define OF_SPECIAL_WARP				(1<<13)	// Object has special warp-in enabled.
 #define OF_DOCKED_ALREADY_HANDLED	(1<<14)	// Goober5000 - a docked object that we already moved
+#define OF_TARGETABLE_AS_BOMB		(1<<15)
 
 // Flags used by Fred
 #define OF_MARKED			(1<<17)	// Object is marked (Fred).  Can be reused in Freespace for anything that won't be used by Fred.
