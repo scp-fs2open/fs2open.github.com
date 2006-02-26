@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.163 $
- * $Date: 2006-02-25 22:06:57 $
+ * $Revision: 2.164 $
+ * $Date: 2006-02-26 05:32:38 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.163  2006/02/25 22:06:57  Goober5000
+ * import tweak
+ *
  * Revision 2.162  2006/02/24 07:34:07  taylor
  * fix custom loading screens that I manage to break yet again
  * add a "MaxFPS" registry/ini option to specify a FPS cap, useful if you can't make use of v-sync for some reason
@@ -1323,6 +1326,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 {
 	int i;
 	char game_string[NAME_LENGTH];
+
+	// Goober5000
+	skip_to_start_of_string("#Mission Info");
 
 	required_string("#Mission Info");
 	
