@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.164 $
- * $Date: 2006-02-26 05:32:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.165 $
+ * $Date: 2006-02-26 08:06:57 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.164  2006/02/26 05:32:38  Goober5000
+ * guess this is still needed
+ *
  * Revision 2.163  2006/02/25 22:06:57  Goober5000
  * import tweak
  *
@@ -5038,8 +5041,11 @@ void parse_variables()
 		// Goober5000 - now set the default value, if it's a campaign-persistent variable
 		// look through all previous missions (by doing it this way, we will continually
 		// overwrite the variable with the most recent information)
-		for (i=0; i<Campaign.num_missions_completed; i++)
+		for (i=0; i<Campaign.num_missions; i++)
 		{
+			if (Campaign.missions[i].completed != 1)
+				continue;
+
 			// loop through this particular previous mission's variables
 			for (j=0; j<Campaign.missions[i].num_saved_variables; j++)
 			{
