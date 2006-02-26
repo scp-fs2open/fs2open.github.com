@@ -229,6 +229,7 @@ public:
 	sexp_list_item *get_listing_opf_ssm_class();
 	sexp_list_item *get_listing_opf_flexible_argument();
 	sexp_list_item *get_listing_opf_ship_or_none();
+	sexp_list_item *get_listing_opf_subsystem_or_none(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_turret_target_order();
 	// ---------------------------------------------------------
 

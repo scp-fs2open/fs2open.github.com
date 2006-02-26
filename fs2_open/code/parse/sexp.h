@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.110 $
+ * $Revision: 2.111 $
  * $Author: Goober5000 $
- * $Date: 2006-02-26 00:22:15 $
+ * $Date: 2006-02-26 00:43:10 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.110  2006/02/26 00:22:15  Goober5000
+ * some paring down of sexps
+ *
  * Revision 2.109  2006/02/23 01:37:51  karajorma
  * Added the String-to-int SEXP.
  *
@@ -840,6 +843,7 @@ struct ship_subsys;
 #define OPF_NEBULA_STORM_TYPE	57		// phreak - name a nebula storm
 #define OPF_NEBULA_POOF			58		// phreak - name of a nebula poof
 #define OPF_TURRET_TARGET_ORDER	59		// WMC - name of a turret target type (see aiturret.cpp)
+#define OPF_SUBSYSTEM_OR_NONE	60		// Goober5000 - an "optional" subsystem argument
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
