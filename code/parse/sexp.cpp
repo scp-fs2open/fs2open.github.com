@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.228 $
- * $Date: 2006-02-26 00:22:15 $
+ * $Revision: 2.229 $
+ * $Date: 2006-02-26 00:43:09 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.228  2006/02/26 00:22:15  Goober5000
+ * some paring down of sexps
+ *
  * Revision 2.227  2006/02/25 20:18:14  Goober5000
  * added function for retrieving a ship, wing, waypoint, or team from a sexp argument
  * --Goober5000
@@ -2578,6 +2581,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_AWACS_SUBSYSTEM:
 			case OPF_ROTATING_SUBSYSTEM:
 			case OPF_SUBSYSTEM:
+			case OPF_SUBSYSTEM_OR_NONE:
 			{
 				char *shipname;
 				int shipnum,ship_class;
@@ -2587,11 +2591,17 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
 
+				// none is okay for subsys_or_none
+				if (type == OPF_SUBSYSTEM_OR_NONE && !stricmp(CTEXT(node), SEXP_NONE_STRING))
+				{
+					break;
+				}
+
 				// we must get the model of the ship that is part of this sexpression and find a subsystem
 				// with that name.  This code assumes by default that the ship is *always* the first name
 				// in the sexpression.  If this is ever not the case, the code here must be changed to
 				// get the correct ship name.
-				switch(Operators[get_operator_index(CTEXT(op_node))].value)
+				switch(get_operator_const(CTEXT(op_node)))
 				{
 					case OP_CAP_SUBSYS_CARGO_KNOWN_DELAY:
 					case OP_DISTANCE_SUBSYSTEM:
@@ -2601,32 +2611,40 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					case OP_IS_AI_CLASS:
 					case OP_MISSILE_LOCKED:
 					case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
-						ship_index = Sexp_nodes[Sexp_nodes[op_node].rest].rest;
+						ship_index = CDR(CDR(op_node));
 						break;
 
 					case OP_BEAM_FIRE:
 						if(argnum == 1){
-							ship_index = Sexp_nodes[op_node].rest;
+							ship_index = CDR(op_node);
 						} else {
-							ship_index = Sexp_nodes[Sexp_nodes[Sexp_nodes[op_node].rest].rest].rest;
+							ship_index = CDR(CDR(CDR(op_node)));
 						}
 						break;
 	
 					default :
-						ship_index = Sexp_nodes[op_node].rest;
+						ship_index = CDR(op_node);
 						break;
 				}
 
 				shipname = CTEXT(ship_index);
 				shipnum = ship_name_lookup(shipname, 1);
-				if (shipnum >= 0){
+				if (shipnum >= 0)
+				{
 					ship_class = Ships[shipnum].ship_info_index;
-				} else {
+				}
+				else
+				{
 					// must try to find the ship in the arrival list
 					p_object *p_objp = mission_parse_get_arrival_ship(shipname);
 
 					if (!p_objp)
-						return SEXP_CHECK_INVALID_SHIP;
+					{
+						if (type == OPF_SUBSYSTEM_OR_NONE)
+							break;
+						else
+							return SEXP_CHECK_INVALID_SHIP;
+					}
 
 					ship_class = p_objp->ship_class;
 				}
@@ -15961,7 +15979,7 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0)
 				return OPF_SHIP_WING_POINT;
 			else if (argnum == 1)
-				return OPF_SUBSYSTEM;
+				return OPF_SUBSYSTEM_OR_NONE;
 			else
 				return OPF_NUMBER;
 

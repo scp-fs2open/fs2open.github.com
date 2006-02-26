@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-02-04 07:05:03 $
+ * $Revision: 1.6 $
+ * $Date: 2006-02-26 00:43:09 $
  * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/02/04 07:05:03  Goober5000
+ * fixed several IFF bugs in FRED (plus one or two other bugs)
+ * --Goober5000
+ *
  * Revision 1.4  2006/02/02 07:00:29  Goober5000
  * consolidated comm order stuff
  * --Goober5000
@@ -2997,6 +3001,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 			break;
 
 		case OPF_SHIP_OR_NONE:
+		case OPF_SUBSYSTEM_OR_NONE:
 			str = SEXP_NONE_STRING;
 			break;
 
@@ -3134,6 +3139,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_ANYTHING:
 		case OPF_SKYBOX_MODEL_NAME:
 		case OPF_SHIP_OR_NONE:
+		case OPF_SUBSYSTEM_OR_NONE:
 		case OPF_BACKGROUND_BITMAP:
 		case OPF_SUN_BITMAP:
 		case OPF_NEBULA_STORM_TYPE:
@@ -4390,7 +4396,7 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		case OPF_AWACS_SUBSYSTEM:
 		case OPF_ROTATING_SUBSYSTEM:
 		case OPF_SUBSYSTEM:
-			list = get_listing_opf_subsystem(parent_node, arg_index);			
+			list = get_listing_opf_subsystem(parent_node, arg_index);
 			break;
 
 		case OPF_POINT:
@@ -4547,6 +4553,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 		case OPF_SHIP_OR_NONE:
 			list = get_listing_opf_ship_or_none();
+			break;
+
+		case OPF_SUBSYSTEM_OR_NONE:
+			list = list = get_listing_opf_subsystem(parent_node, arg_index);
 			break;
 
 		case OPF_JUMP_NODE_NAME:
@@ -5561,6 +5571,16 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_or_none()
 
 	head.add_data(SEXP_NONE_STRING);
 	head.add_list(get_listing_opf_ship());
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_subsystem_or_none(int parent_node, int arg_index)
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+	head.add_list(get_listing_opf_subsystem(parent_node, arg_index));
 
 	return head.next;
 }
