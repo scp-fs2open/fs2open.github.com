@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.84 $
- * $Date: 2006-02-25 21:47:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.85 $
+ * $Date: 2006-02-26 22:23:00 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2006/02/25 21:47:00  Goober5000
+ * spelling
+ *
  * Revision 2.83  2006/02/19 00:59:49  Goober5000
  * breathalyzer for WMC, stat!
  * --Goober5000
@@ -2028,7 +2031,10 @@ void hud_target_missile(object *source_obj, int next_flag)
 	// if no bomb is found, search for bombers
 		ship_obj *start, *so;
 
-		if ( (aip->target_objnum != -1) && (Objects[aip->target_objnum].type == OBJ_SHIP) && (Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & SIF_BOMBER) ) {
+		if ( (aip->target_objnum != -1)
+			&& (Objects[aip->target_objnum].type == OBJ_SHIP)
+			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags & SIF_BOMBER)
+				|| (Ships[Objects[aip->target_objnum].instance].flags2 & SF2_TARGETABLE_AS_BOMBER))) {
 			int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
 			start = get_ship_obj_ptr_from_index(index);
 		} else {
@@ -2053,7 +2059,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 			}
 
 			// check if ship type is bomber
-			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags & SIF_BOMBER) ) {
+			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags & SIF_BOMBER) && !(Ships[A->instance].flags2 & SF2_TARGETABLE_AS_BOMBER) ) {
 				continue;
 			}
 
