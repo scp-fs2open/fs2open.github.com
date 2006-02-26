@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-02-20 02:13:07 $
+ * $Revision: 1.6 $
+ * $Date: 2006-02-26 05:32:55 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/02/20 02:13:07  Goober5000
+ * added ai-ignore-new which hopefully should fix the ignore bug
+ * --Goober5000
+ *
  * Revision 1.4  2006/02/11 02:58:23  Goober5000
  * yet more various and sundry fixes
  * --Goober5000
@@ -3012,12 +3016,10 @@ void stuff_special_arrival_anchor_name(char *buf, int iff_index, int restrict_to
 	if (retail_format && !stricmp(iff_name, "hostile") && !restrict_to_players)
 		iff_name = "enemy";
 
-	sprintf(buf, "<any %s", iff_name);
-
 	if (restrict_to_players)
-		sprintf(buf, " player");
-
-	sprintf(buf, ">");
+		sprintf(buf, "<any %s player>", iff_name);
+	else
+		sprintf(buf, "<any %s>", iff_name);
 
 	strlwr(buf);
 }
