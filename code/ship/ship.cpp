@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.316 $
- * $Date: 2006-02-25 21:47:08 $
+ * $Revision: 2.317 $
+ * $Date: 2006-02-26 18:49:07 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.316  2006/02/25 21:47:08  Goober5000
+ * spelling
+ *
  * Revision 2.315  2006/02/24 05:13:26  wmcoolmon
  * Maybe fix ships-limit bug
  *
@@ -13311,6 +13314,7 @@ void ship_maybe_lament()
 #define PLAYER_MAX_SCREAMS				10
 
 // play a death scream for a ship
+extern int Cmdline_wcsaga;
 void ship_scream(ship *sp)
 {
 	int multi_team_filter = -1;
@@ -13325,7 +13329,11 @@ void ship_scream(ship *sp)
 
 	message_send_builtin_to_player(MESSAGE_WINGMAN_SCREAM, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
 	Player->allow_scream_timestamp = timestamp(PLAYER_SCREAM_INTERVAL);
-	Player->scream_count++;
+
+	// Goober5000
+	if (!Cmdline_wcsaga || Player_ship->team == sp->team)
+		Player->scream_count++;
+
 	sp->flags |= SF_SHIP_HAS_SCREAMED;
 
 	// prevent overlap with help messages
@@ -13336,27 +13344,35 @@ void ship_scream(ship *sp)
 // ship has just died, maybe play a scream.
 //
 // NOTE: this is only called for ships that are in a player wing (and not player ship)
-extern int Cmdline_wcsaga;
 void ship_maybe_scream(ship *sp)
 {
-	if ( rand()&1 )
+	if (rand() & 1)
 		return;
 
-	// First check if the player has reached the maximum number of screams for a mission
-	if ( Player->scream_count >= PLAYER_MAX_SCREAMS ) {
-		return;
+	// Goober5000 - WCSaga wants some screwy tweaks
+	if (Cmdline_wcsaga)
+	{
+		// everyone screams, but only check the limit for friendlies
+		if (Player_ship->team == sp->team)
+		{
+			if (Player->scream_count >= PLAYER_MAX_SCREAMS)
+				return;
+		}
 	}
+	else
+	{
+		// if on different teams (i.e. team v. team games in multiplayer), no scream
+		if (Player_ship->team != sp->team)
+			return;
 
-	// if on different teams (i.e. team v. team games in multiplayer), no scream
-	// (WCSaga wants everybody to scream)
-	if ( !Cmdline_wcsaga && (sp->team != Player_ship->team) ) {
-		return;
+		// Check if the player has reached the maximum number of screams for a mission
+		if (Player->scream_count >= PLAYER_MAX_SCREAMS)
+			return;
 	}
 
 	// Check if enough time has elapsed since last scream, if not - leave
-	if ( !timestamp_elapsed(Player->allow_scream_timestamp) ) {
+	if (!timestamp_elapsed(Player->allow_scream_timestamp))
 		return;
-	}
 
 	ship_scream(sp);
 }
