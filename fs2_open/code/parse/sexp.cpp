@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.227 $
- * $Date: 2006-02-25 20:18:14 $
+ * $Revision: 2.228 $
+ * $Date: 2006-02-26 00:22:15 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.227  2006/02/25 20:18:14  Goober5000
+ * added function for retrieving a ship, wing, waypoint, or team from a sexp argument
+ * --Goober5000
+ *
  * Revision 2.226  2006/02/25 17:34:23  karajorma
  * Added Seeding functions to Rand and Rand-Multiple SEXPs
  *
@@ -1388,13 +1392,17 @@ sexp_oper Operators[] = {
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
 	{ "num-within-box",				OP_NUM_WITHIN_BOX,					7,	INT_MAX},	//WMC
 	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
+
 	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,				2,	3	},	// WMC
 	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,				2,	3	},	// WMC
 	{ "set-object-speed-z",				OP_SET_OBJECT_SPEED_Z,				2,	3	},	// WMC
 	{ "get-object-x",				OP_GET_OBJECT_X,				1,	5	},	// Goober5000
 	{ "get-object-y",				OP_GET_OBJECT_Y,				1,	5	},	// Goober5000
 	{ "get-object-z",				OP_GET_OBJECT_Z,				1,	5	},	// Goober5000
-	{ "set-object-position",		OP_SET_OBJECT_POSITION,				4,	4	},	//WMC
+	{ "set-object-position",		OP_SET_OBJECT_POSITION,			4,	4	},	// WMC
+	{ "set-object-facing",			OP_SET_OBJECT_FACING,				4,	6	},	// Goober5000
+	{ "set-object-facing-object",	OP_SET_OBJECT_FACING_OBJECT,		2,	4	},	// Goober5000
+
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
 	{ "num-players",					OP_NUM_PLAYERS,				0, 0, },
@@ -1552,10 +1560,6 @@ sexp_oper Operators[] = {
 	{ "activate-glow-maps",			OP_ACTIVATE_GLOW_MAPS,			1, INT_MAX },	//-Bobboau
 	{ "deactivate-glow-point-bank",	OP_DEACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINTS },	//-Bobboau
 	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINTS },	//-Bobboau
-
-	{ "set-ship-position",			OP_SET_SHIP_POSITION,			4,	4	},	// Goober5000
-	{ "set-ship-facing",			OP_SET_SHIP_FACING,				4,	6	},	// Goober5000
-	{ "set-ship-facing-object",		OP_SET_SHIP_FACING_OBJECT,		2,	4	},	// Goober5000
 
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
@@ -3432,7 +3436,7 @@ void get_sexp_text_for_variable(char *text, char *token)
 // recursive function - always sets first and then rest
 int get_sexp(char *token)
 {
-	int start, node, last, len, op, count;
+	int start, node, last, op, count;
 	char variable_text[TOKEN_LENGTH];
 
 	// start - the node allocated in first instance of fuction
@@ -3454,7 +3458,7 @@ int get_sexp(char *token)
 
 		} else if (*Mp == '\"')	{
 			// Sexp string
-			len = strcspn(Mp + 1, "\"");
+			int len = strcspn(Mp + 1, "\"");
 			
 			Assert(Mp[len + 1] == '\"');    // hit EOF first (unterminated string)
 			Assert(len < TOKEN_LENGTH);  // token is too long.
@@ -3483,7 +3487,7 @@ int get_sexp(char *token)
 
 		} else {
 			// Sexp operator or number
-			len = 0;
+			int len = 0;
 			bool variable = false;
 			while (*Mp != ')' && !is_white_space(*Mp)) {
 				if ( (len == 0) && (*Mp == SEXP_VARIABLE_CHAR) ) {
@@ -3495,9 +3499,16 @@ int get_sexp(char *token)
 				Assert(len < TOKEN_LENGTH - 1);
 				token[len++] = *Mp++;
 			}
-
 			token[len] = 0;
-			len = 0;
+
+			// Goober5000 - maybe replace deprecated names
+			if (!stricmp(token, "set-ship-position"))
+				strcpy(token, "set-object-position");
+			else if (!stricmp(token, "set-ship-facing"))
+				strcpy(token, "set-object-facing");
+			else if (!stricmp(token, "set-ship-facing-object"))
+				strcpy(token, "set-object-facing-object");
+
 			op = get_operator_index(token);
 			if (op != -1) {
 				node = alloc_sexp(token, SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, -1);
@@ -6093,6 +6104,7 @@ int sexp_get_object_coordinate(int n, int axis)
 	return sexp_calculate_coordinate(pos, &oswpt.objp->orient, relative_location, axis);
 }
 
+// Goober5000
 void sexp_set_object_position(int n) 
 {
 	vec3d target_vec, orig_leader_vec;
@@ -6162,48 +6174,12 @@ void sexp_set_object_position(int n)
 }
 
 // Goober5000
-void sexp_set_ship_position(int n)
+void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int bank)
 {
-	char *ship_name;
-	int ship_num, x, y, z;
-
-	ship_name = CTEXT(n);
-	n = CDR(n);
-
-	x = eval_num(n);
-	n = CDR(n);
-	y = eval_num(n);
-	n = CDR(n);
-	z = eval_num(n);
-	n = CDR(n);
-
-	// check to see if the ship was destroyed or departed.  If so, then make this node known false
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) ) 
-		return;
-
-	// get ship number
-	ship_num = ship_name_lookup(ship_name);
-
-	// if the ship isn't in the mission, do nothing
-	if (ship_num < 0)
-		return;
-
-	// set position
-	Objects[Ships[ship_num].objnum].pos.xyz.x = (float) x;
-	Objects[Ships[ship_num].objnum].pos.xyz.y = (float) y;
-	Objects[Ships[ship_num].objnum].pos.xyz.z = (float) z;
-}
-
-// Goober5000
-void sexp_set_ship_orient(int ship_num, vec3d *location, int turn_time, int bank)
-{
-	Assert(location);
+	Assert(objp && location);
 
 	vec3d v_orient;
 	matrix m_orient;
-	object *obj;
-
-	obj = &Objects[Ships[ship_num].objnum];
 
 
 	// are we doing this via ai? -------------------
@@ -6213,7 +6189,7 @@ void sexp_set_ship_orient(int ship_num, vec3d *location, int turn_time, int bank
 		bank = bank ? AITTV_IGNORE_BANK : 0;
 
 		// turn
-		ai_turn_towards_vector(location, obj, flFrametime, float(turn_time)/(1000.0f), NULL, NULL, 0.0f, 0, NULL, (AITTV_VIA_SEXP | bank));
+		ai_turn_towards_vector(location, objp, flFrametime, float(turn_time)/(1000.0f), NULL, NULL, 0.0f, 0, NULL, (AITTV_VIA_SEXP | bank));
 
 		// return
 		return;
@@ -6223,7 +6199,7 @@ void sexp_set_ship_orient(int ship_num, vec3d *location, int turn_time, int bank
 	// calculate orientation matrix ----------------
 	memset(&v_orient, 0, sizeof(vec3d));
 
-	vm_vec_sub(&v_orient, location, &obj->pos);
+	vm_vec_sub(&v_orient, location, &objp->pos);
 
 	if (IS_VEC_NULL(&v_orient))
 	{
@@ -6235,27 +6211,85 @@ void sexp_set_ship_orient(int ship_num, vec3d *location, int turn_time, int bank
 
 
 	// set orientation -----------------------------
-	obj->orient = m_orient;
+	objp->orient = m_orient;
 }
 
 // Goober5000
-void sexp_set_ship_facing(int n)
+void sexp_set_oswpt_facing(object_ship_wing_point_team *oswpt, vec3d *location, int turn_time = 0, int bank = 0)
 {
-	vec3d location;
-	char *ship_name;
-	int ship_num, turn_time, bank;
+	Assert(oswpt && location);
 
-	Assert( n >= 0 );
+	switch (oswpt->type)
+	{
+		case OSWPT_TYPE_TEAM:
+		{
+			for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != GET_LAST(&Ship_obj_list); so = GET_NEXT(so))
+			{
+				object *objp = &Objects[so->objnum];
 
-	ship_name = CTEXT(n);
+				if (obj_team(objp) == oswpt->team)
+					sexp_set_object_orient(objp, location, turn_time, bank);
+			}
+
+			break;
+		}
+
+		case OSWPT_TYPE_SHIP:
+		case OSWPT_TYPE_WAYPOINT:
+			sexp_set_object_orient(oswpt->objp, location, turn_time, bank);
+			break;
+
+		case OSWPT_TYPE_WING:
+		{
+			for (int i = 0; i < oswpt->wingp->current_count; i++)
+			{
+				object *objp = &Objects[Ships[oswpt->wingp->ship_index[i]].objnum];
+
+				sexp_set_object_orient(objp, location, turn_time, bank);
+			}
+
+			break;
+		}
+	}
+}
+
+// Goober5000
+void sexp_set_object_facing(int n, bool facing_object)
+{
+	vec3d *location, location_buf;
+	int turn_time, bank;
+	object_ship_wing_point_team oswpt1, oswpt2;
+
+	sexp_get_object_ship_wing_point_team(&oswpt1, CTEXT(n));
 	n = CDR(n);
 
-	location.xyz.x = (float)eval_num(n);
-	n = CDR(n);
-	location.xyz.y = (float)eval_num(n);
-	n = CDR(n);
-	location.xyz.z = (float)eval_num(n);
-	n = CDR(n);
+	// ensure it's valid
+	if (oswpt1.objp == NULL)
+		return;
+
+	// get location
+	if (facing_object)
+	{
+		sexp_get_object_ship_wing_point_team(&oswpt2, CTEXT(n));
+		n = CDR(n);
+
+		// ensure it's valid
+		if (oswpt2.objp == NULL)
+			return;
+
+		location = &oswpt2.objp->pos;
+	}
+	else
+	{
+		location = &location_buf;
+
+		location->xyz.x = (float) eval_num(n);
+		n = CDR(n);
+		location->xyz.y = (float) eval_num(n);
+		n = CDR(n);
+		location->xyz.z = (float) eval_num(n);
+		n = CDR(n);
+	}
 
 	// get optional turn time and bank
 	turn_time = bank = 0;
@@ -6269,72 +6303,7 @@ void sexp_set_ship_facing(int n)
 		bank = eval_num(n);
 	}
 
-	// check to see if the ship was destroyed or departed.  If so, then make this node known false
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) ) 
-		return;
-
-	// get ship number
-	ship_num = ship_name_lookup(ship_name);
-
-	// if the ship isn't in the mission, do nothing
-	if (ship_num < 0)
-		return;
-
-	sexp_set_ship_orient(ship_num, &location, turn_time, bank);
-}
-
-// Goober5000
-void sexp_set_ship_facing_object(int n)
-{
-	char *ship_name;
-	int ship_num;
-	int turn_time, bank;
-	object_ship_wing_point_team oswpt;
-
-	Assert( n >= 0 );
-
-	ship_name = CTEXT(n);
-	n = CDR(n);
-	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
-	n = CDR(n);
-
-	// get optional turn_time and bank
-	turn_time = bank = 0;
-	if (n != -1)
-	{
-		turn_time = eval_num(n);
-		n = CDR(n);
-	}
-	if (n != -1)
-	{
-		bank = eval_num(n);
-		n = CDR(n);
-	}
-
-	// check to see if ship was destroyed or departed.  If so, then make this node known false
-	if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL))
-		return;
-
-	// check other ship too
-	if (oswpt.type == OSWPT_TYPE_EXITED)
-		return;
-
-	// get ship number
-	ship_num = ship_name_lookup(ship_name);
-
-	// if the ship isn't in the mission, do nothing
-	if (ship_num < 0)
-		return;
-
-	switch (oswpt.type)
-	{
-		case OSWPT_TYPE_SHIP:
-		case OSWPT_TYPE_WING:
-		case OSWPT_TYPE_WAYPOINT:
-		case OSWPT_TYPE_TEAM:
-			sexp_set_ship_orient(ship_num, &oswpt.objp->pos, turn_time, bank);
-			return;
-	}
+	sexp_set_oswpt_facing(&oswpt1, location, turn_time, bank);
 }
 
 // funciton to determine when the last meaningful order was given to one or more ships.  Returns
@@ -14713,18 +14682,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-			case OP_SET_SHIP_POSITION:
-				sexp_set_ship_position(node);
-				sexp_val = SEXP_TRUE;
-				break;
-
-			case OP_SET_SHIP_FACING:
-				sexp_set_ship_facing(node);
-				sexp_val = SEXP_TRUE;
-				break;
-
-			case OP_SET_SHIP_FACING_OBJECT:
-				sexp_set_ship_facing_object(node);
+			case OP_SET_OBJECT_FACING:
+			case OP_SET_OBJECT_FACING_OBJECT:
+				sexp_set_object_facing(node, op_num == OP_SET_OBJECT_FACING_OBJECT);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -15659,10 +15619,9 @@ int query_operator_return_type(int op)
 		case OP_PLAY_SOUND_FROM_TABLE:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
-		case OP_SET_SHIP_POSITION:
 		case OP_SET_OBJECT_POSITION:
-		case OP_SET_SHIP_FACING:
-		case OP_SET_SHIP_FACING_OBJECT:
+		case OP_SET_OBJECT_FACING:
+		case OP_SET_OBJECT_FACING_OBJECT:
 		case OP_HUD_DISABLE:
 		case OP_HUD_DISABLE_EXCEPT_MESSAGES:
 		case OP_KAMIKAZE:
@@ -16012,25 +15971,19 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_NUMBER;
 
-		case OP_SET_SHIP_POSITION:
+		case OP_SET_OBJECT_FACING:
 			if (argnum == 0)
-				return OPF_SHIP;
-			else
-				return OPF_NUMBER;
-
-		case OP_SET_SHIP_FACING:
-			if (argnum==0)
-				return OPF_SHIP;
-			else if (argnum<4)
+				return OPF_SHIP_WING_POINT;
+			else if (argnum < 4)
 				return OPF_NUMBER;
 			else
 				return OPF_POSITIVE;
 
-		case OP_SET_SHIP_FACING_OBJECT:
-			if (argnum==0)
-				return OPF_SHIP;
-			else
+		case OP_SET_OBJECT_FACING_OBJECT:
+			if (argnum == 0 || argnum == 1)
 				return OPF_SHIP_WING_POINT;
+			else
+				return OPF_POSITIVE;
 
 		case OP_MODIFY_VARIABLE:
 			if (argnum == 0) {
@@ -17987,9 +17940,9 @@ int get_subcategory(int sexp_id)
 		case OP_ACTIVATE_GLOW_POINT_BANK:
 			return CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES;
 
-		case OP_SET_SHIP_POSITION:
-		case OP_SET_SHIP_FACING:
-		case OP_SET_SHIP_FACING_OBJECT:
+		case OP_SET_OBJECT_POSITION:
+		case OP_SET_OBJECT_FACING:
+		case OP_SET_OBJECT_FACING_OBJECT:
 		case OP_SET_OBJECT_SPEED_X:
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
@@ -18231,10 +18184,10 @@ sexp_help_struct Sexp_help[] = {
 		"\t5: The relative Z coordinate (optional).\r\n" },
 
 		// Goober5000
-	{ OP_SET_SHIP_POSITION, "set-ship-position\r\n"
-		"\tInstantaneously sets a ship's spatial coordinates."
+	{ OP_SET_OBJECT_POSITION, "set-object-position\r\n"
+		"\tInstantaneously sets an object's spatial coordinates."
 		"Takes 4 arguments...\r\n"
-		"\t1: The name of a ship.\r\n"
+		"\t1: The name of an object.\r\n"
 		"\t2: The new X coordinate.\r\n"
 		"\t3: The new Y coordinate.\r\n"
 		"\t4: The new Z coordinate." },
@@ -18886,20 +18839,24 @@ sexp_help_struct Sexp_help[] = {
 		"\t12: Shape (0 for 2-D [default], 1 for 3-D)" },
 
 	// Goober5000
-	{ OP_SET_SHIP_FACING, "set-ship-facing\r\n"
-		"\tSets a ship's orientation to face the specified coordinates.  "
+	{ OP_SET_OBJECT_FACING, "set-object-facing\r\n"
+		"\tSets an object's orientation to face the specified coordinates.  "
 		"Takes 4 arguments...\r\n"
-		"\t1: The name of a ship.\r\n"
+		"\t1: The name of an object.\r\n"
 		"\t2: The X coordinate to face.\r\n"
 		"\t3: The Y coordinate to face.\r\n"
-		"\t4: The Z coordinate to face." },
+		"\t4: The Z coordinate to face.\r\n"
+		"\t5: Turn time (optional)\r\n"
+		"\t6: Bank (optional)" },
 
 	// Goober5000
-	{ OP_SET_SHIP_FACING_OBJECT, "set-ship-facing-object\r\n"
-		"\tSets a ship's orientation to face the specified object.  "
+	{ OP_SET_OBJECT_FACING_OBJECT, "set-object-facing-object\r\n"
+		"\tSets an object's orientation to face the specified object.  "
 		"Takes 2 arguments...\r\n"
-		"\t1: The name of a ship.\r\n"
-		"\t2: The object to face." },
+		"\t1: The name of an object.\r\n"
+		"\t2: The object to face.\r\n"
+		"\t3: Turn time (optional)\r\n"
+		"\t4: Bank (optional)" },
 
 	// Goober5000
 	{ OP_SHIP_TAG, "ship-tag\r\n"
