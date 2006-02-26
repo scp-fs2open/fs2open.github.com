@@ -4071,7 +4071,7 @@ LUA_FUNC(drawImage, l_Graphics, "{Image name, Texture handle}, x, y, [Width to s
 		sy = rh + sy;
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,lua_Opacity);
-	gr_bitmap_ex(x, y, w, h, sx, sy);
+	gr_bitmap_ex(x, y, w, h, sx, sy, false);
 
 	return LUA_RETURN_TRUE;
 }

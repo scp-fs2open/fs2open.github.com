@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.136 $
- * $Date: 2006-02-25 21:47:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.137 $
+ * $Date: 2006-02-26 22:23:01 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.136  2006/02/25 21:47:08  Goober5000
+ * spelling
+ *
  * Revision 2.135  2006/02/16 05:44:53  taylor
  * remove reset of modelnums on level start (more properly moved to model_unload())
  * minor change ship class fixage to clear out old model
@@ -1085,6 +1088,7 @@ typedef struct ship_subsys_info {
 #define SF2_AFFECTED_BY_GRAVITY				(1<<8)		// Goober5000 - ship affected by gravity points
 #define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<9)		// Goober5000 - switch whether subsystems are scanned
 #define SF2_VANISHED				(1<<10)		//WMC - ship has vanished, used mostly for ship_wing_cleanup
+#define SF2_TARGETABLE_AS_BOMBER			(1<<11)		//WMC - ship is targettable with 'B' key
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
