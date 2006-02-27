@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.94 $
- * $Date: 2006-02-26 11:09:31 $
- * $Author: taylor $
+ * $Revision: 2.95 $
+ * $Date: 2006-02-27 00:40:34 $
+ * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2006/02/26 11:09:31  taylor
+ * one friggin line, should have been able to notice that sooner
+ *
  * Revision 2.93  2006/02/25 21:47:07  Goober5000
  * spelling
  *
@@ -2495,9 +2498,18 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 								n_slots = cfread_int( fp );
 								subsystemp->turret_gun_sobj = physical_parent;
-								Assert(n_slots <= MAX_TFP);		// only MAX_TFP firing points per model_subsystem
+								if(n_slots > MAX_TFP) {
+									Warning(LOCATION, "Model %s has too many turret firing points on subsystem %s", subsystemp->name);
+								}
+
 								for (j = 0; j < n_slots; j++ )	{
-									cfread_vector( &subsystemp->turret_firing_point[j], fp );
+									if(j < MAX_TFP)
+										cfread_vector( &subsystemp->turret_firing_point[j], fp );
+									else
+									{
+										vec3d bogus;
+										cfread_vector(&bogus, fp);
+									}
 								}
 								Assert( n_slots > 0 );
 

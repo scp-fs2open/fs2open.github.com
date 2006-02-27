@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-01-26 04:01:58 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2006-02-27 00:40:34 $
+ * $Author: wmcoolmon $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/26 04:01:58  Goober5000
+ * spelling
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -718,6 +721,14 @@ void CMissionNotesDlg::OnSquadLogo()
 	}	
 }
 
+char *Load_screen_ext =	"Image Files (*.dds, *.pcx, *.jpg, *.tga)|*.dds;*.pcx;*.jpg;*.tga|"
+						"DDS Files (*.dds)|*.dds|"
+						"PCX Files (*.pcx)|*.pcx|"
+						"JPG Files (*.jpg)|*.jpg|"
+						"TGA Files (*.tga)|*.tga|"
+						"All Files (*.*)|*.*|"
+						"|";
+
 void CMissionNotesDlg::OnLoad1024()
 {
 	CString filename;
@@ -727,7 +738,7 @@ void CMissionNotesDlg::OnLoad1024()
 
 	// get list of
 	z = cfile_push_chdir(CF_TYPE_DATA);
-	CFileDialog dlg(TRUE, "pcx", filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Pcx Files (*.pcx)|*.pcx");
+	CFileDialog dlg(TRUE, NULL, filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Load_screen_ext);
 
 	// if we have a result
 	if (dlg.DoModal() == IDOK) {
@@ -752,7 +763,7 @@ void CMissionNotesDlg::OnLoad640()
 
 	// get list of
 	z = cfile_push_chdir(CF_TYPE_DATA);
-	CFileDialog dlg(TRUE, "pcx", filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Pcx Files (*.pcx)|*.pcx");
+	CFileDialog dlg(TRUE, NULL, filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Load_screen_ext);
 
 	// if we have a result
 	if (dlg.DoModal() == IDOK) {
