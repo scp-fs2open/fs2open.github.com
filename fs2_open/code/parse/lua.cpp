@@ -3973,47 +3973,6 @@ LUA_FUNC(drawCurve, l_Graphics, "x, y, Radius, Direction", NULL, "Draws a curve"
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name, x, y, [Width to show, Height to show, X start, Y start, Mirror]", "Whether image was drawn", "Draws a monochrome image using the current color")
-{
-	if(!Gr_inited)
-		return LUA_RETURN_NIL;
-
-	int x,y;
-	int rw,rh;
-	char *s;
-	int w=0;
-	int h=0;
-	int sx=0;
-	int sy=0;
-	bool m = false;
-
-	if(!lua_get_args(L, "sii|iiiib", &s,&x,&y,&w,&h,&sx,&sy,&m))
-		return LUA_RETURN_NIL;
-
-	int idx = bm_load(s);
-
-	if(idx < 0)
-		return lua_set_args(L, "b", false);
-
-	bm_get_info(idx, &rw, &rh);
-
-	if(w==0)
-		w = rw;
-	if(h==0)
-		h = rw;
-
-	if(sx < 0)
-		sx = rw + sx;
-
-	if(sy < 0)
-		sy = rh + sy;
-
-	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,lua_Opacity);
-	gr_aabitmap_ex(x, y, w, h, sx, sy, false, m);
-
-	return lua_set_args(L, "b", true);
-}
-
 LUA_FUNC(createTexture, l_Graphics, "Width, Height, Type", "Handle to new texture", "Creates a texture for rendering to. Types are static - for infrequent rendering - and dynamic - for frequent rendering.")
 {
 	int w,h;
@@ -4060,24 +4019,25 @@ LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation, No drop
 	return lua_set_args(L, "o", l_Texture.Set(idx));
 }
 
-LUA_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x, y, [Width to show, Height to show, X start, Y start]", "Whether image or texture was drawn",
-		 "Draws an image or texture. Any image extension passed will be ignored.")
+LUA_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, X start, Y start]", "Whether image or texture was drawn",
+		 "Draws an image or texture. Any image extension passed will be ignored."
+		 "Width and height to show specify the number of pixels from the left and top boundaries that will be drawn."
+		 "X start and Y start specify the left and top bounaries, respectively.")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
 
 	int idx;
 	int x,y;
-	int rw,rh;
-	int w=0;
-	int h=0;
+	int x2=INT_MAX;
+	int y2=INT_MAX;
 	int sx=0;
 	int sy=0;
 
 	if(lua_isstring(L, 1))
 	{
-		char *s;
-		if(!lua_get_args(L, "sii|iiii", &s,&x,&y,&w,&h,&sx,&sy))
+		char *s = NULL;
+		if(!lua_get_args(L, "sii|iiii", &s,&x,&y,&x2,&y2,&sx,&sy))
 			return LUA_RETURN_NIL;
 
 		idx = Script_system.LoadBm(s);
@@ -4087,26 +4047,80 @@ LUA_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x, y, [Width to show
 	}
 	else
 	{
-		if(!lua_get_args(L, "oii|biiii", l_Texture.Get(&idx),&x,&y,&w,&h,&sx,&sy))
+		if(!lua_get_args(L, "oii|biiii", l_Texture.Get(&idx),&x,&y,&x2,&y2,&sx,&sy))
 			return LUA_RETURN_NIL;
 	}
 
-	if(bm_get_info(idx, &rw, &rh) < 0)
+	int w, h;
+	if(bm_get_info(idx, &w, &h) < 0)
 		return LUA_RETURN_FALSE;
 
-	if(w==0)
-		w = rw;
-	if(h==0)
-		h = rw;
-
 	if(sx < 0)
-		sx = rw + sx;
+		sx = w + sx;
 
 	if(sy < 0)
-		sy = rh + sy;
+		sy = h + sy;
+	
+	if(x2!=INT_MAX)
+		w = x2-x;
+
+	if(y2!=INT_MAX)
+		h = y2-x;
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,lua_Opacity);
 	gr_bitmap_ex(x, y, w, h, sx, sy, false);
+
+	return LUA_RETURN_TRUE;
+}
+
+LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, X start, Y start, Mirror]", "Whether image was drawn", "Draws a monochrome image using the current color")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+
+	int idx;
+	int x,y;
+	int x2=INT_MAX;
+	int y2=INT_MAX;
+	int sx=0;
+	int sy=0;
+	bool m = false;
+
+	if(lua_isstring(L, 1))
+	{
+		char *s = NULL;
+		if(!lua_get_args(L, "sii|iiiib", &s,&x,&y,&x2,&y2,&sx,&sy,&m))
+			return LUA_RETURN_NIL;
+
+		idx = Script_system.LoadBm(s);
+
+		if(idx < 0)
+			return LUA_RETURN_FALSE;
+	}
+	else
+	{
+		if(!lua_get_args(L, "oii|biiiib", l_Texture.Get(&idx),&x,&y,&x2,&y2,&sx,&sy,&m))
+			return LUA_RETURN_NIL;
+	}
+
+	int w, h;
+	if(bm_get_info(idx, &w, &h) < 0)
+		return LUA_RETURN_FALSE;
+
+	if(sx < 0)
+		sx = w + sx;
+
+	if(sy < 0)
+		sy = h + sy;
+	
+	if(x2!=INT_MAX)
+		w = x2-x;
+
+	if(y2!=INT_MAX)
+		h = y2-x;
+
+	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,lua_Opacity);
+	gr_aabitmap_ex(x, y, w, h, sx, sy, false, m);
 
 	return LUA_RETURN_TRUE;
 }
