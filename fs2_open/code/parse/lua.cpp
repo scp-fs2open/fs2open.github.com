@@ -1543,21 +1543,20 @@ LUA_VAR(TechDescription, l_Shipclass, "String", "Ship class tech description")
 		return lua_set_args(L, "s", "");
 }
 
-LUA_VAR(HitpointsMax, l_Shipclass, "Number", "Ship class hitpoints")
+LUA_VAR(AfterburnerFuelMax, l_Shipclass, "Number", "Afterburner fuel capacity")
 {
 	int idx;
-	float f = -1.0f;
-	if(!lua_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
+	float fuel = -1.0f;
+	if(!lua_get_args(L, "o|f", l_Shipclass.Get(&idx), &fuel))
 		return LUA_RETURN_NIL;
 
 	if(idx < 0 || idx > Num_ship_classes)
 		return LUA_RETURN_NIL;
 
-	if(LUA_SETTING_VAR && f >= 0.0f) {
-		Ship_info[idx].max_hull_strength = f;
-	}
+	if(LUA_SETTING_VAR && fuel >= 0.0f)
+		Ship_info[idx].afterburner_fuel_capacity = fuel;
 
-	return lua_set_args(L, "f", Ship_info[idx].max_hull_strength);
+	return lua_set_args(L, "f", Ship_info[idx].afterburner_fuel_capacity);
 }
 
 LUA_VAR(CountermeasuresMax, l_Shipclass, "Number", "Ship class countermeasure max")
@@ -1575,6 +1574,23 @@ LUA_VAR(CountermeasuresMax, l_Shipclass, "Number", "Ship class countermeasure ma
 	}
 
 	return lua_set_args(L, "i", Ship_info[idx].cmeasure_max);
+}
+
+LUA_VAR(HitpointsMax, l_Shipclass, "Number", "Ship class hitpoints")
+{
+	int idx;
+	float f = -1.0f;
+	if(!lua_get_args(L, "o|f", l_Shipclass.Get(&idx), &f))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_ship_classes)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && f >= 0.0f) {
+		Ship_info[idx].max_hull_strength = f;
+	}
+
+	return lua_set_args(L, "f", Ship_info[idx].max_hull_strength);
 }
 
 LUA_VAR(Species, l_Shipclass, "Species", "Ship class species")
@@ -2628,7 +2644,7 @@ LUA_VAR(Name, l_Ship, "String", "Ship name")
 	return lua_set_args(L, "s", shipp->ship_name);
 }
 
-LUA_VAR(AfterburnerFuel, l_Ship, "Number", "Afterburner fuel amount")
+LUA_VAR(AfterburnerFuelLeft, l_Ship, "Number", "Afterburner fuel left")
 {
 	object_h *objh;
 	float fuel = -1.0f;
@@ -2644,6 +2660,24 @@ LUA_VAR(AfterburnerFuel, l_Ship, "Number", "Afterburner fuel amount")
 		shipp->afterburner_fuel = fuel;
 
 	return lua_set_args(L, "f", shipp->afterburner_fuel);
+}
+
+LUA_VAR(AfterburnerFuelMax, l_Ship, "Number", "Afterburner fuel capacity")
+{
+	object_h *objh;
+	float fuel = -1.0f;
+	if(!lua_get_args(L, "o|f", l_Ship.GetPtr(&objh), &fuel))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship_info *sip = &Ship_info[Ships[objh->objp->instance].ship_info_index];
+
+	if(LUA_SETTING_VAR && fuel >= 0.0f)
+		sip->afterburner_fuel_capacity = fuel;
+
+	return lua_set_args(L, "f", sip->afterburner_fuel_capacity);
 }
 
 LUA_VAR(Class, l_Ship, "shipclass", "Ship class")
@@ -4004,7 +4038,7 @@ LUA_FUNC(createTexture, l_Graphics, "Width, Height, Type", "Handle to new textur
 LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation, No drop frames]", "Texture handle, false if invalid name",
 		 "Gets a handle to a texture. If second argument is set to true, animations will also be loaded."
 		 "If third argument is set to true, every other animation frame will not be loaded if system has less than 48 MB memory."
-		 "<br><strong>IMPORTANT:</strong> Textures will not be unloaded unless you explicitly tell them to do so."
+		 "<br><strong>IMPORTANT:</strong> Textures will not be unload themselves unless you explicitly tell them to do so."
 		 "When you are done with a texture, call the Unload() function to free up memory.")
 {
 	char *s;
@@ -4026,7 +4060,8 @@ LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation, No drop
 	return lua_set_args(L, "o", l_Texture.Set(idx));
 }
 
-LUA_FUNC(drawImage, l_Graphics, "{Image name, Texture handle}, x, y, [Width to show, Height to show, X start, Y start]", "Whether image or texture was drawn", "Draws an image or texture.")
+LUA_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x, y, [Width to show, Height to show, X start, Y start]", "Whether image or texture was drawn",
+		 "Draws an image or texture. Any image extension passed will be ignored.")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
@@ -4789,9 +4824,21 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 
 		for(; var < var_end; var++)
 		{
-			if(var->Type != NULL) {
-				fprintf(fp, "<dt><i>%s</i> <b>%s</b></dt>", var->Type, var->Name);
-			} else {
+			if(var->Type != NULL)
+			{
+				uint idx;
+				for(idx = 0; idx < lua_Objects.size(); idx++)
+				{
+					if(!stricmp(lua_Objects[idx].Name, var->Type))
+						break;
+				}
+				if(idx < lua_Objects.size())
+					fprintf(fp, "<dt><a href=\"#%s\"><i>%s</i></a> <b>%s</b></dt>", var->Type, var->Type, var->Name);
+				else
+					fprintf(fp, "<dt><i>%s</i> <b>%s</b></dt>", var->Type, var->Name);
+			}
+			else
+			{
 				fprintf(fp, "<dt><b>%s</b></dt>", var->Name);
 			}
 
