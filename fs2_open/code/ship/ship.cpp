@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.317 $
- * $Date: 2006-02-26 18:49:07 $
+ * $Revision: 2.318 $
+ * $Date: 2006-02-27 04:17:11 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.317  2006/02/26 18:49:07  Goober5000
+ * some more WCSaga stuff
+ *
  * Revision 2.316  2006/02/25 21:47:08  Goober5000
  * spelling
  *
@@ -14361,8 +14364,11 @@ void object_jettison_cargo(object *objp, object *cargo_objp)
 	vec3d impulse, pos;
 
 	// undock the objects
-	ai_do_objects_undocked_stuff( objp, cargo_objp );
-	
+	ai_do_objects_undocked_stuff(objp, cargo_objp);
+
+	// Goober5000 - add log
+	mission_log_add_entry(LOG_SHIP_UNDOCK, Ships[objp->instance].ship_name, Ships[cargo_objp->instance].ship_name);
+
 	// physics stuff
 	vm_vec_sub(&pos, &cargo_objp->pos, &objp->pos);
 	impulse = pos;
