@@ -3696,6 +3696,14 @@ LUA_FUNC(clearScreen, l_Graphics, "[Red, green, blue]", NULL, "Clears the screen
 	return LUA_RETURN_NIL;
 }
 
+LUA_FUNC(getFontHeight, l_Graphics, NULL, "Font height", "Gets current font's height")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+	
+	return lua_set_args(L, "i", gr_get_font_height());
+}
+
 LUA_FUNC(getScreenWidth, l_Graphics, NULL, "Width in pixels (Number)", "Gets screen width")
 {
 	if(!Gr_inited)
@@ -3791,6 +3799,107 @@ LUA_FUNC(setFont, l_Graphics, "Font index", NULL, "Sets current font")
 	return 0;
 }
 
+LUA_FUNC(drawCircle, l_Graphics, "Radius, x, y", NULL, "Draws a circle")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+
+	int x,y,ra;
+
+	if(!lua_get_args(L, "iii", &ra,&x,&y))
+		return LUA_RETURN_NIL;
+
+	gr_circle(x,y, ra, false);
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(drawCurve, l_Graphics, "x, y, Radius, Direction", NULL, "Draws a curve")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+
+	int x,y,ra,d;
+
+	if(!lua_get_args(L, "iiii", &x,&y,&ra,&d))
+		return LUA_RETURN_NIL;
+
+	gr_curve(x,y,ra,d);
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(drawGradientLine, l_Graphics, "x1, y1, x2, y2", NULL, "Draws a line that steadily fades out")
+{
+	if(!Gr_inited)
+		return 0;
+
+	int x1,y1,x2,y2;
+
+	if(!lua_get_args(L, "iiii", &x1, &y1, &x2, &y2))
+		return LUA_RETURN_NIL;
+
+	gr_gradient(x1,y1,x2,y2,false);
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(drawLine, l_Graphics, "x1, y1, x2, y2", NULL, "Draws a line with the current color")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+
+	int x1,y1,x2,y2;
+
+	if(!lua_get_args(L, "iiii", &x1, &y1, &x2, &y2))
+		return LUA_RETURN_NIL;
+
+	gr_line(x1,y1,x2,y2,false);
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(drawPixel, l_Graphics, "x, y", NULL, "Sets pixel to current color")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+
+	int x,y;
+
+	if(!lua_get_args(L, "ii", &x, &y))
+		return LUA_RETURN_NIL;
+
+	gr_pixel(x,y,false);
+
+	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(drawRectangle, l_Graphics, "x1, y1, x2, y2, [Filled]", NULL, "Draws a rectangle with the current color; default is filled")
+{
+	if(!Gr_inited)
+		return LUA_RETURN_NIL;
+
+	int x1,y1,x2,y2;
+	bool f=true;
+
+	if(!lua_get_args(L, "iiii|b", &x1, &y1, &x2, &y2, &f))
+		return LUA_RETURN_NIL;
+
+	if(f)
+	{
+		gr_rect(x1, y1, x2-x1, y2-y1, false);
+	}
+	else
+	{
+		gr_line(x1,y1,x2,y1,false);	//Top
+		gr_line(x1,y2,x2,y2,false); //Bottom
+		gr_line(x1,y1,x1,y2,false);	//Left
+		gr_line(x2,y1,x2,y2,false);	//Right
+	}
+
+	return LUA_RETURN_NIL;
+}
+
 #define MAX_TEXT_LINES		256
 
 LUA_FUNC(drawString, l_Graphics, "String, x1, y1, [x2, y2]", NULL, "Draws a string")
@@ -3848,7 +3957,7 @@ LUA_FUNC(drawString, l_Graphics, "String, x1, y1, [x2, y2]", NULL, "Draws a stri
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(getTextWidth, l_Graphics, "Text to get width of", "Text width", "Gets text width")
+LUA_FUNC(getStringWidth, l_Graphics, "String to get width of", "String width", "Gets string width")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
@@ -3862,115 +3971,6 @@ LUA_FUNC(getTextWidth, l_Graphics, "Text to get width of", "Text width", "Gets t
 	gr_get_string_size(&w, NULL, s);
 	
 	return lua_set_args(L, "i", w);
-}
-
-LUA_FUNC(getTextHeight, l_Graphics, NULL, "Text height", "Gets current font's height")
-{
-	if(!Gr_inited)
-		return LUA_RETURN_NIL;
-	
-	return lua_set_args(L, "i", gr_get_font_height());
-}
-
-LUA_FUNC(drawPixel, l_Graphics, "x, y", NULL, "Sets pixel to current color")
-{
-	if(!Gr_inited)
-		return LUA_RETURN_NIL;
-
-	int x,y;
-
-	if(!lua_get_args(L, "ii", &x, &y))
-		return LUA_RETURN_NIL;
-
-	gr_pixel(x,y,false);
-
-	return LUA_RETURN_NIL;
-}
-
-LUA_FUNC(drawLine, l_Graphics, "x1, y1, x2, y2", NULL, "Draws a line with the current color")
-{
-	if(!Gr_inited)
-		return LUA_RETURN_NIL;
-
-	int x1,y1,x2,y2;
-
-	if(!lua_get_args(L, "iiii", &x1, &y1, &x2, &y2))
-		return LUA_RETURN_NIL;
-
-	gr_line(x1,y1,x2,y2,false);
-
-	return LUA_RETURN_NIL;
-}
-
-LUA_FUNC(drawRectangle, l_Graphics, "x1, y1, x2, y2, [Filled]", NULL, "Draws a rectangle with the current color; default is filled")
-{
-	if(!Gr_inited)
-		return LUA_RETURN_NIL;
-
-	int x1,y1,x2,y2;
-	bool f=true;
-
-	if(!lua_get_args(L, "iiii|b", &x1, &y1, &x2, &y2, &f))
-		return LUA_RETURN_NIL;
-
-	if(f)
-	{
-		gr_rect(x1, y1, x2-x1, y2-y1, false);
-	}
-	else
-	{
-		gr_line(x1,y1,x2,y1,false);	//Top
-		gr_line(x1,y2,x2,y2,false); //Bottom
-		gr_line(x1,y1,x1,y2,false);	//Left
-		gr_line(x2,y1,x2,y2,false);	//Right
-	}
-
-	return LUA_RETURN_NIL;
-}
-
-LUA_FUNC(drawGradientLine, l_Graphics, "x1, y1, x2, y2", NULL, "Draws a line that steadily fades out")
-{
-	if(!Gr_inited)
-		return 0;
-
-	int x1,y1,x2,y2;
-
-	if(!lua_get_args(L, "iiii", &x1, &y1, &x2, &y2))
-		return LUA_RETURN_NIL;
-
-	gr_gradient(x1,y1,x2,y2,false);
-
-	return LUA_RETURN_NIL;
-}
-
-LUA_FUNC(drawCircle, l_Graphics, "Radius, x, y", NULL, "Draws a circle")
-{
-	if(!Gr_inited)
-		return LUA_RETURN_NIL;
-
-	int x,y,ra;
-
-	if(!lua_get_args(L, "iii", &ra,&x,&y))
-		return LUA_RETURN_NIL;
-
-	gr_circle(x,y, ra, false);
-
-	return LUA_RETURN_NIL;
-}
-
-LUA_FUNC(drawCurve, l_Graphics, "x, y, Radius, Direction", NULL, "Draws a curve")
-{
-	if(!Gr_inited)
-		return LUA_RETURN_NIL;
-
-	int x,y,ra,d;
-
-	if(!lua_get_args(L, "iiii", &x,&y,&ra,&d))
-		return LUA_RETURN_NIL;
-
-	gr_curve(x,y,ra,d);
-
-	return LUA_RETURN_NIL;
 }
 
 LUA_FUNC(createTexture, l_Graphics, "Width, Height, Type", "Handle to new texture", "Creates a texture for rendering to. Types are static - for infrequent rendering - and dynamic - for frequent rendering.")
@@ -4065,7 +4065,7 @@ LUA_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, X s
 		w = x2-x;
 
 	if(y2!=INT_MAX)
-		h = y2-x;
+		h = y2-y;
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,lua_Opacity);
 	gr_bitmap_ex(x, y, w, h, sx, sy, false);
@@ -4117,7 +4117,7 @@ LUA_FUNC(drawMonochromeImage, l_Graphics, "Image name/Texture handle, x1, y1, [x
 		w = x2-x;
 
 	if(y2!=INT_MAX)
-		h = y2-x;
+		h = y2-y;
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,lua_Opacity);
 	gr_aabitmap_ex(x, y, w, h, sx, sy, false, m);
