@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.73 $
- * $Date: 2006-02-25 21:47:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.74 $
+ * $Date: 2006-02-27 00:51:03 $
+ * $Author: wmcoolmon $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2006/02/25 21:47:07  Goober5000
+ * spelling
+ *
  * Revision 2.72  2006/01/18 16:14:04  taylor
  * allow gr_render_buffer() to take TMAP flags
  * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
@@ -634,7 +637,7 @@ struct object;
 
 #define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
 
-#define MAX_TFP						4				// maximum number of turret firing points
+#define MAX_TFP						10				// maximum number of turret firing points
 
 #define MAX_SPLIT_PLANE				3				// number of artist specified split planes (used in big ship explosions)
 
