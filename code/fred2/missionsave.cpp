@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.10 $
- * $Date: 2006-02-26 23:23:30 $
- * $Author: wmcoolmon $
+ * $Revision: 1.11 $
+ * $Date: 2006-02-28 07:37:12 $
+ * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2006/02/26 23:23:30  wmcoolmon
+ * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
+ *
  * Revision 1.9  2006/02/20 02:13:07  Goober5000
  * added ai-ignore-new which hopefully should fix the ignore bug
  * --Goober5000
@@ -3076,13 +3079,24 @@ int CFred_mission_save::save_music()
 
 	// Goober5000
 	// This doesn't need Format_fs2_open because it uses the special comment prefix. :)
-	if (strlen(The_mission.substitute_event_music_name) && strlen(The_mission.substitute_briefing_music_name))
+	if (strlen(The_mission.substitute_event_music_name) || strlen(The_mission.substitute_briefing_music_name))
 	{
 		char *ch;
 
 		fout("\n");
-		fout(";;FSO 3.6.8;; $Substitute Music:");
-		fout(" %s, %s", The_mission.substitute_event_music_name, The_mission.substitute_briefing_music_name);
+		fout(";;FSO 3.6.8;; $Substitute Music: ");
+
+		if (strlen(The_mission.substitute_event_music_name))
+			fout(The_mission.substitute_event_music_name);
+		else
+			fout("None");
+
+		fout(", ");
+
+		if (strlen(The_mission.substitute_briefing_music_name))
+			fout(The_mission.substitute_briefing_music_name);
+		else
+			fout("None");
 
 		// bypass the comment that's already there so it doesn't show up twice
 		ch = strstr(raw_ptr, ";;FSO 3.6.8;; $Substitute Music:");
