@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.39 $
- * $Date: 2005-12-06 03:14:45 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2006-02-28 06:59:28 $
+ * $Author: Goober5000 $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2005/12/06 03:14:45  taylor
+ * fix for string overwrites with get_version_string()
+ *
  * Revision 2.38  2005/12/04 19:06:01  wmcoolmon
  * Slightly better main hall error handling
  *
@@ -542,7 +545,8 @@ typedef struct main_hall_defines {
 	char mask[MAX_FILENAME_LEN+1];
 
 	// music
-	char music[MAX_FILENAME_LEN+1];
+	char music_name[MAX_FILENAME_LEN+1];
+	char substitute_music_name[MAX_FILENAME_LEN+1];
 
 	// intercom defines -------------------
 	
@@ -1634,27 +1638,48 @@ void main_hall_close()
 void main_hall_start_music()
 {
 #ifndef NO_SOUND
+	int index;
+
 	// start a looping ambient sound
 	main_hall_start_ambient();
 
 	// if we have selected no music, then don't do this
-	if ( Cmdline_freespace_no_music ) {
+	if (Cmdline_freespace_no_music)
 		return;
+
+	// Goober5000 - try substitute first
+	index = event_music_get_spooled_music_index(Main_hall->substitute_music_name);
+	if ((index >= 0) && (Spooled_music[index].flags & EMF_VALID))
+		goto main_hall_got_music_index;
+
+	// now try regular
+	index = event_music_get_spooled_music_index(Main_hall->music_name);
+	if ((index >= 0) && (Spooled_music[index].flags & EMF_VALID))
+		goto main_hall_got_music_index;
+
+	// meh
+	nprintf(("Warning", "No music file exists to play music at the main menu!\n"));
+	return;
+
+
+main_hall_got_music_index:
+	if (Main_hall_music_handle < 0)
+	{
+		char *filename = Spooled_music[index].filename;
+		Assert(filename != NULL);
+
+		Main_hall_music_handle = audiostream_open(filename, ASF_EVENTMUSIC);
+		if (Main_hall_music_handle >= 0)
+		{
+			audiostream_play(Main_hall_music_handle, Master_event_music_volume, 1);
+			return;
+		}
 	}
 
-	int main_hall_spooled_music_index = event_music_get_spooled_music_index(Main_hall->music);
-	
-	if ((Main_hall_music_handle == -1) && (main_hall_spooled_music_index != -1)) {
-		char *music_wavfile_name = Spooled_music[main_hall_spooled_music_index].filename;
-		if (music_wavfile_name != NULL) {
-				Main_hall_music_handle = audiostream_open( music_wavfile_name, ASF_EVENTMUSIC );
-				if ( Main_hall_music_handle != -1 )
-					audiostream_play(Main_hall_music_handle, Master_event_music_volume, 1);
-		}
-		else {
-			nprintf(("Warning", "No music file exists to play music at the main menu!\n"));
-		}
-	}
+	// meh
+	nprintf(("Warning", "No music file exists to play music at the main menu!\n"));
+	return;
+
 #endif  // ifndef NO_SOUND
 }
 
@@ -2239,9 +2264,14 @@ void main_hall_read_table()
 			stuff_string(m->bitmap, F_NAME, NULL, MAX_FILENAME_LEN);
 			required_string("+Mask:");
 			stuff_string(m->mask, F_NAME, NULL, MAX_FILENAME_LEN);
+
 #ifndef FS2_DEMO
 			required_string("+Music:");
-			stuff_string(m->music, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(m->music_name, F_NAME, NULL, MAX_FILENAME_LEN);
+
+			// Goober5000
+			if (optional_string("+Substitute Music:"))
+				stuff_string(m->substitute_music_name, F_NAME, NULL, MAX_FILENAME_LEN);
 #endif
 
 			// intercom sounds
