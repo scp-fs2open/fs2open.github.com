@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.232 $
- * $Date: 2006-02-26 23:23:30 $
+ * $Revision: 2.233 $
+ * $Date: 2006-02-28 07:52:04 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.232  2006/02/26 23:23:30  wmcoolmon
+ * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
+ *
  * Revision 2.231  2006/02/26 22:47:11  Goober5000
  * wow, over a year later and I'm still finding docking bugs :p
  *
@@ -14337,7 +14340,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_SHIP_BOMB_TARGETABLE:
 			case OP_SHIP_BOMB_NONTARGETABLE:
-				sexp_ships_invulnerable( node, (op_num==OP_SHIP_BOMB_TARGETABLE?1:0) );
+				sexp_ships_bomb_targetable( node, (op_num==OP_SHIP_BOMB_TARGETABLE?1:0) );
 				sexp_val = SEXP_TRUE;
 				break;
 
