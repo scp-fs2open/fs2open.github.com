@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.318 $
- * $Date: 2006-02-27 04:17:11 $
+ * $Revision: 2.319 $
+ * $Date: 2006-02-28 05:16:55 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.318  2006/02/27 04:17:11  Goober5000
+ * add log entry for jettison-cargo
+ *
  * Revision 2.317  2006/02/26 18:49:07  Goober5000
  * some more WCSaga stuff
  *
@@ -2327,16 +2330,36 @@ void parse_engine_wash(bool replace)
 
 int match_type(char *p)
 {	
-	if (!strnicmp(p, "inital", 6))
+	int i;
+
+	// standard match
+	for(i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++)
+	{
+		if (!strnicmp(p, animation_type_names[i], strlen(animation_type_names[i])))
+			return i;
+	}
+
+	// Goober5000 - misspelling
+	if (!strnicmp(p, "inital", 6) || !strnicmp(p, "\"inital\"", 8))
 	{
 		Warning(LOCATION, "Spelling error in table file.  Please change \"inital\" to \"initial\".");
 		return TRIGGER_TYPE_INITIAL;
 	}
 
-	for(int i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++)
+	// Goober5000 - with quotes
+	for(i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++)
 	{
-		if (!strnicmp(p, animation_type_names[i], strlen(animation_type_names[i])))
+		char name[NAME_LENGTH];
+
+		strcpy(name, "\"");
+		strcat(name, animation_type_names[i]);
+		strcat(name, "\"");
+
+		if (!strnicmp(p, name, strlen(name)))
+		{
+			Warning(LOCATION, "Old usage warning: Please remove quotes from animation type %s.", name);
 			return i;
+		}
 	}
 
 	return -1;
