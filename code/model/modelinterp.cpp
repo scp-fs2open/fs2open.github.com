@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.146 $
- * $Date: 2006-02-25 21:47:07 $
+ * $Revision: 2.147 $
+ * $Date: 2006-02-28 05:16:54 $
  * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.146  2006/02/25 21:47:07  Goober5000
+ * spelling
+ *
  * Revision 2.145  2006/02/16 05:31:00  taylor
  * NULL vec warning fix (basically just setup as if it were NULL and skip the extra work if needed)
  * more bmpman related fixes, mainly addresses the condition where it would try to render textures that have been released
@@ -6438,13 +6441,13 @@ void get_silhouette_from_point(vec3d *point_list, ubyte *bsp_data, vec3d* point)
 
 char* animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
 {
-	"\"initial\"",
-	"\"docking\"",
-	"\"docked\"",
-	"\"primary_bank\"",
-	"\"secondary_bank\"",
-	"\"door\"",
-	"\"afterburner\"",
+	"initial",
+	"docking",
+	"docked",
+	"primary_bank",
+	"secondary_bank",
+	"door",
+	"afterburner",
 };
 
 
