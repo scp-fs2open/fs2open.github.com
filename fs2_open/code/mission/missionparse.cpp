@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.166 $
- * $Date: 2006-02-26 23:23:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.167 $
+ * $Date: 2006-03-01 00:46:11 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.166  2006/02/26 23:23:30  wmcoolmon
+ * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
+ *
  * Revision 2.165  2006/02/26 08:06:57  taylor
  * another non-linear campaign fix, this one affected PVs
  *
@@ -2142,11 +2145,43 @@ void parse_briefing(mission *pm, int flags)
 					// someone changed the jump node icon to a Knossos, so change it back
 					if (bi->type == ICON_KNOSSOS_DEVICE)
 						bi->type = ICON_JUMP_NODE;
+
+					// change largeship to transport
+					else if (bi->type == ICON_LARGESHIP)
+						bi->type = ICON_TRANSPORT;
+
+					// ditto
+					else if (bi->type == ICON_LARGESHIP_WING)
+						bi->type = ICON_TRANSPORT_WING;
 				}
 
 				find_and_stuff("$team:", &bi->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
 				find_and_stuff("$class:", &bi->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
+
+				// Goober5000 - import
+				if (flags & MPF_IMPORT_FSM)
+				{
+					// the Faustus is a largeship
+					if (!strnicmp(Ship_info[bi->ship_class].name, "GTSC Faustus", 12))
+					{
+						if (bi->type == ICON_CRUISER)
+							bi->type = ICON_LARGESHIP;
+
+						else if (bi->type == ICON_CRUISER_WING)
+							bi->type = ICON_LARGESHIP_WING;
+					}
+					// the Demon is a support ship :p
+					else if (!strnicmp(Ship_info[bi->ship_class].name, "SD Demon", 8))
+					{
+						bi->type = ICON_SUPPORT_SHIP;
+					}
+					// the Hades is a supercap
+					else if (!strnicmp(Ship_info[bi->ship_class].name, "GTD Hades", 9))
+					{
+						bi->type = ICON_SUPERCAP;
+					}
+				}
 
 				required_string("$pos:");
 				stuff_vector(&bi->pos);
