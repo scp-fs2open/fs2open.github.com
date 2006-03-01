@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.40 $
- * $Date: 2006-02-28 06:59:28 $
+ * $Revision: 2.41 $
+ * $Date: 2006-03-01 04:01:15 $
  * $Author: Goober5000 $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/02/28 06:59:28  Goober5000
+ * cool stuff with main hall music tracks
+ *
  * Revision 2.39  2005/12/06 03:14:45  taylor
  * fix for string overwrites with get_version_string()
  *
@@ -1103,7 +1106,7 @@ void main_hall_init(int main_hall_num)
 	if(Main_hall == &Main_hall_defines[gr_screen.res][0]) {
 		Main_hall_overlay_id = MH_OVERLAY;
 	} else {
-		Assert(Main_hall == &Main_hall_defines[gr_screen.res][1]);
+//		Assert(Main_hall == &Main_hall_defines[gr_screen.res][1]);
 		Main_hall_overlay_id = MH2_OVERLAY;
 	}
 	help_overlay_load(Main_hall_overlay_id);
