@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.236 $
- * $Date: 2006-03-01 20:54:35 $
+ * $Revision: 2.237 $
+ * $Date: 2006-03-01 23:22:25 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.236  2006/03/01 20:54:35  karajorma
+ * Added the random-multiple-of SEXP and fixed random-of to work as designed
+ *
  * Revision 2.235  2006/03/01 14:53:15  karajorma
  * Changed text FRED displays for Fade-In and Fade-Out SEXPs
  *
@@ -4117,9 +4120,10 @@ int rand_sexp(int n, int multiple=0)
 
 			// get high
 			high = eval_num(CDR(n));
-
+			
 			// is there a seed provided?
-			seed = eval_num(CDR(n+1));
+			int seed = eval_num(CDR(CDR(n)));
+			
 
 			if (!seed) 
 			{
@@ -4151,8 +4155,11 @@ int rand_multiple_sexp(int n)
 
 	// get upper bound
 	int high = eval_num(CDR(n));
-	
-	int seed = eval_num(CDR(n+1));
+
+	n = CDR(n);
+	int seed = eval_num(CDR(n));
+
+	// Check whether a seed was provided
 	if (!seed)
 	{
 		// get the random number
@@ -4161,7 +4168,7 @@ int rand_multiple_sexp(int n)
 	else 
 	{
 		// Set the seed to a new seeded random value.
-		sprintf(Sexp_nodes[n+2].text, "%d", seeded_rand_internal(low, high, seed));
+		sprintf(Sexp_nodes[n+1].text, "%d", seeded_rand_internal(low, high, seed));
 		return seeded_rand_internal(low, high, seed);
 	}
 
@@ -11362,7 +11369,8 @@ void sexp_set_primary_ammo (int node)
 	}
 
 	//  Get the number of weapons requested
-	requested_weapons = eval_num(CDR(node+1)); 
+	node = CDR(node);
+	requested_weapons = eval_num(node); 
 	if (requested_weapons < 0)
 	{
 		return ;
@@ -11458,8 +11466,9 @@ void sexp_set_secondary_ammo (int node)
 		return ;
 	}
 
-	//  Get the number of weapons requested
-	requested_weapons = eval_num(CDR(node+1)); 
+	//  Get the number of weapons requested	
+	node = CDR(node);
+	requested_weapons = eval_num(node); 
 	if (requested_weapons < 0)
 	{
 		return ;
