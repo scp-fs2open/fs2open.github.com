@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.7 $
- * $Date: 2006-02-26 01:32:23 $
+ * $Revision: 1.8 $
+ * $Date: 2006-03-01 04:01:37 $
  * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2006/02/26 01:32:23  Goober5000
+ * bah
+ *
  * Revision 1.6  2006/02/26 00:43:09  Goober5000
  * fix subsystems for get-object-*
  *
@@ -5440,7 +5443,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_order()
 	int i;
 	sexp_list_item head;
 
-	for (i=0; i<Num_comm_orders; i++)
+	for (i=0; i<NUM_COMM_ORDER_ITEMS; i++)
 		head.add_data(Comm_orders[i].name);
 
 	return head.next;

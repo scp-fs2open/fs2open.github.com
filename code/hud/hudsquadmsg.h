@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.14 $
- * $Date: 2006-02-02 07:00:29 $
+ * $Revision: 2.15 $
+ * $Date: 2006-03-01 04:01:37 $
  * $Author: Goober5000 $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/02/02 07:00:29  Goober5000
+ * consolidated comm order stuff
+ * --Goober5000
+ *
  * Revision 2.13  2006/02/02 06:22:58  Goober5000
  * replaced Fred_comm_orders with proper Comm_orders, just for WMC ;)
  * --Goober5000
@@ -200,6 +204,9 @@ struct object;
 
 // defines for messages that can be sent from the player.  Defined at bitfields so that we can enable
 // and disable messages on a message by message basis
+
+#define NUM_COMM_ORDER_ITEMS		16
+
 #define ATTACK_TARGET_ITEM			(1<<0)
 #define DISABLE_TARGET_ITEM			(1<<1)
 #define DISARM_TARGET_ITEM			(1<<2)
@@ -225,10 +232,12 @@ struct object;
 
 
 // data structure to hold character string of commands for comm menu
-typedef flag_def_list comm_order;
+typedef struct comm_order {
+	char name[NAME_LENGTH];
+	int item;
+} comm_order;
 
 extern comm_order Comm_orders[];
-extern const int Num_comm_orders;
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages

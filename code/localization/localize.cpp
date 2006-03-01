@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-12-28 22:06:48 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2006-03-01 04:01:37 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/12/28 22:06:48  taylor
+ * fix up cf_find_file_location() and related elements so that it's safer (based on WMC's work, but actually safe this time ;))
+ *
  * Revision 2.17  2005/10/16 23:15:46  wmcoolmon
  * Hardened cfile against array overflows
  *
@@ -1008,18 +1011,21 @@ void lcl_ext_localize(char *in, char *out, int max_len, int *id)
 // translate the specified string based upon the current language
 char *XSTR(char *str, int index)
 {
-	if(!Xstr_inited){
+	if(!Xstr_inited)
+	{
+		Int3();
 		return str;
 	}
 
 	// perform a lookup
-	if (index >= 0 && index < XSTR_SIZE) {
-		if (Xstr_table[index].str){
-			return Xstr_table[index].str;  // return translation of string
-		}
+	if (index >= 0 && index < XSTR_SIZE)
+	{
+		// return translation of string
+		if (Xstr_table[index].str)
+			return Xstr_table[index].str;
 	}
 
-	// can't translate, return original english string
+	// can't translate; return original english string
 	return str;
 }
 
