@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/IgnoreOrdersDlg.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-02-02 07:00:29 $
+ * $Revision: 1.4 $
+ * $Date: 2006-03-01 04:01:37 $
  * $Author: Goober5000 $
  *
  * C code for dialog to set which orders from the player that a particular ship should ignore
@@ -113,9 +113,9 @@ BOOL ignore_orders_dlg::OnInitDialog()
 
 	// set the checkboxes for the orders accepted
 	m_num_checks_active = 0;
-	for (i = 0; i < Num_comm_orders; i++ )
+	for (i = 0; i < NUM_COMM_ORDER_ITEMS; i++ )
 	{
-		if (default_orders & Comm_orders[i].def)
+		if (default_orders & Comm_orders[i].item)
 		{
 			// Not enough space to display checkboxes for all comm orders!
 			// Need to add more checkboxes.
@@ -126,7 +126,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 			}
 
 			check_boxes[m_num_checks_active].button->SetWindowText(Comm_orders[i].name);
-			check_boxes[m_num_checks_active].id = Comm_orders[i].def;
+			check_boxes[m_num_checks_active].id = Comm_orders[i].item;
 			m_num_checks_active++;
 		}
 	}
