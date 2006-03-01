@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.112 $
- * $Author: wmcoolmon $
- * $Date: 2006-02-26 23:23:31 $
+ * $Revision: 2.113 $
+ * $Author: karajorma $
+ * $Date: 2006-03-01 20:54:35 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.112  2006/02/26 23:23:31  wmcoolmon
+ * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
+ *
  * Revision 2.111  2006/02/26 00:43:10  Goober5000
  * fix subsystems for get-object-*
  *
@@ -1051,6 +1054,7 @@ struct ship_subsys;
 #define OP_RANDOM_OF						(0x0006 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_NUMBER_OF						(0x0007 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_INVALIDATE_ARGUMENT				(0x0008 | OP_CATEGORY_CONDITIONAL)	// Goober5000
+#define OP_RANDOM_MULTIPLE_OF				(0x0009 | OP_CATEGORY_CONDITIONAL)	// Karajorma
 
 // sexpressions with side-effects
 #define OP_CHANGE_IFF						(0x0000 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)

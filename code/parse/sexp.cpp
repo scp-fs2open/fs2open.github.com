@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.235 $
- * $Date: 2006-03-01 14:53:15 $
+ * $Revision: 2.236 $
+ * $Date: 2006-03-01 20:54:35 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.235  2006/03/01 14:53:15  karajorma
+ * Changed text FRED displays for Fade-In and Fade-Out SEXPs
+ *
  * Revision 2.234  2006/03/01 03:14:22  Goober5000
  * oswpt wing fix
  *
@@ -1452,6 +1455,7 @@ sexp_oper Operators[] = {
 	{ "any-of",					OP_ANY_OF,				1, INT_MAX, },	// Goober5000
 	{ "every-of",				OP_EVERY_OF,			1, INT_MAX, },	// Goober5000
 	{ "random-of",				OP_RANDOM_OF,			1, INT_MAX, },	// Goober5000
+	{ "random-multiple-of",		OP_RANDOM_MULTIPLE_OF,	1, INT_MAX, },	// Karajorma
 	{ "number-of",				OP_NUMBER_OF,			2, INT_MAX, },	// Goober5000
 	{ "invalidate-argument",	OP_INVALIDATE_ARGUMENT,	1, INT_MAX, },	// Goober5000
 
@@ -7358,8 +7362,49 @@ int eval_random_of(int arg_handler_node, int condition_node)
 			n = CDR(n);
 		}
 
-		Sexp_nodes[n].value |= SNF_ARGUMENT_SELECT;
+		Sexp_nodes[n].flags |= SNF_ARGUMENT_SELECT;
 	}
+
+	// only eval this argument if it's valid
+	val = SEXP_FALSE;
+	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
+	{
+		// flush stuff
+		Sexp_applicable_argument_list.expunge();
+		flush_sexp_tree(condition_node);
+
+		// evaluate conditional for current argument
+		Sexp_current_replacement_argument = Sexp_nodes[n].text;
+		val = eval_sexp(condition_node);
+
+		// true?
+		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+		{
+			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+		}
+	}
+
+	// clear argument, but not list, as we'll need it later
+	Sexp_current_replacement_argument = NULL;
+
+	// true if our selected argument is true
+	return val;
+}
+
+// Karajorma - Standing on Goobers shoulders somewhat for this one. It's the same as 
+// random-of except that it doesn't have the code for setting the SNF_ARGUMENT_SELECT flag
+// As such it will return a different argument every time it's called. 
+int eval_random_multiple_of(int arg_handler_node, int condition_node)
+{
+	int n, i, val;
+	Assert(arg_handler_node != -1 && condition_node != -1);
+
+	n = CDR(arg_handler_node);
+	for (i = 0; i < rand_internal(0, query_sexp_args_count(arg_handler_node) - 1); i++)
+	{
+		n = CDR(n);
+	}
+	
 
 	// only eval this argument if it's valid
 	val = SEXP_FALSE;
@@ -7408,7 +7453,7 @@ void sexp_invalidate_argument(int n)
 	// get the first op of the grandparent, which should be a _of operator
 	arg_handler = CADR(grandparent);
 	op = get_operator_const(CTEXT(arg_handler));
-	if (op != OP_ANY_OF && op != OP_EVERY_OF && op != OP_NUMBER_OF && op != OP_RANDOM_OF)
+	if (op != OP_ANY_OF && op != OP_EVERY_OF && op != OP_NUMBER_OF && op != OP_RANDOM_OF && op != OP_RANDOM_MULTIPLE_OF)
 		return;
 
 	// loop through arguments
@@ -14251,6 +14296,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_random_of( cur_node, referenced_node );
 				break;
 
+			// Karajorma
+			case OP_RANDOM_MULTIPLE_OF:
+				sexp_val = eval_random_multiple_of( cur_node, referenced_node );
+				break;
+
 			// Goober5000
 			case OP_NUMBER_OF:
 				sexp_val = eval_number_of( cur_node, referenced_node );
@@ -15770,6 +15820,7 @@ int query_operator_return_type(int op)
 		case OP_ANY_OF:
 		case OP_EVERY_OF:
 		case OP_RANDOM_OF:
+		case OP_RANDOM_MULTIPLE_OF:
 		case OP_NUMBER_OF:
 			return OPR_FLEXIBLE_ARGUMENT;
 
@@ -16163,6 +16214,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_ANY_OF:
 		case OP_EVERY_OF:
 		case OP_RANDOM_OF:
+		case OP_RANDOM_MULTIPLE_OF:
 			return OPF_ANYTHING;
 
 		case OP_NUMBER_OF:
@@ -18666,6 +18718,13 @@ sexp_help_struct Sexp_help[] = {
 
 	// Goober5000
 	{ OP_RANDOM_OF, "Random-of (Conditional operator)\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  A random supplied argument will be selected to satisfy the expression(s) "
+		"in which " SEXP_ARGUMENT_STRING " is used. The same argument will be returned by all subsequent calls\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
+
+	// Karajorma
+	{ OP_RANDOM_MULTIPLE_OF, "Random-multiple-of (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  A random supplied argument will be selected to satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
