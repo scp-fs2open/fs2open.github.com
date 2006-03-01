@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.234 $
- * $Date: 2006-03-01 03:14:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.235 $
+ * $Date: 2006-03-01 14:53:15 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.234  2006/03/01 03:14:22  Goober5000
+ * oswpt wing fix
+ *
  * Revision 2.233  2006/02/28 07:52:04  wmcoolmon
  * Silly mistake
  *
@@ -20107,13 +20110,13 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_CUTSCENES_FADE_IN, "fade-in\r\n"
 		"\tFades in  "
 		"Takes 0 or 1 arguments...\r\n"
-		"\t1:\tTime to fade in\r\n"
+		"\t1:\tTime to fade in (in milliseconds)\r\n"
 	},
 
 	{ OP_CUTSCENES_FADE_OUT, "fade-out\r\n"
 		"\tFades in  "
 		"Takes 0 to 2 arguments...\r\n"
-		"\t1:\tTime to fade in\r\n"
+		"\t1:\tTime to fade in (in milliseconds)\r\n"
 		"\t2:\tColor to fade to - 1 for white, 2 for red, default is black\r\n"
 	},
 
