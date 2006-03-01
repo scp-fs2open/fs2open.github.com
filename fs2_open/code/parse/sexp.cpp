@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.233 $
- * $Date: 2006-02-28 07:52:04 $
- * $Author: wmcoolmon $
+ * $Revision: 2.234 $
+ * $Date: 2006-03-01 03:14:22 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.233  2006/02/28 07:52:04  wmcoolmon
+ * Silly mistake
+ *
  * Revision 2.232  2006/02/26 23:23:30  wmcoolmon
  * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
  *
@@ -4546,14 +4549,16 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	wing_num = wing_name_lookup(object_name);
 	if (wing_num >= 0)
 	{
+		wing *wingp = &Wings[wing_num];
+
 		// make sure at least one ship exists
-		if (oswpt->wingp->current_count >= 0)
+		if (wingp->current_count >= 0)
 		{
 			oswpt->type = OSWPT_TYPE_WING;
 
 			// point to wing leader
-			oswpt->wingp = &Wings[wing_num];
-			oswpt->shipp = &Ships[oswpt->wingp->ship_index[oswpt->wingp->special_ship]];
+			oswpt->wingp = wingp;
+			oswpt->shipp = &Ships[wingp->ship_index[wingp->special_ship]];
 			oswpt->objp = &Objects[oswpt->shipp->objnum];
 		}
 
