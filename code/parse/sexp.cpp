@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.237 $
- * $Date: 2006-03-01 23:22:25 $
- * $Author: karajorma $
+ * $Revision: 2.238 $
+ * $Date: 2006-03-02 04:05:27 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.237  2006/03/01 23:22:25  karajorma
+ * Fixed a bunch of bugs with Set-x-ammo and Rand SEXPs.
+ *
  * Revision 2.236  2006/03/01 20:54:35  karajorma
  * Added the random-multiple-of SEXP and fixed random-of to work as designed
  *
@@ -4020,23 +4023,20 @@ int mod_sexps(int n)
 	return sum;
 }
 
-int rand_internal(int low, int high)
+int rand_internal(int low, int high, int seed = 0)
 {
 	int diff;
 
+	// maybe seed it
+	if (seed != 0)
+		srand(seed);
+
 	// get diff - don't allow negative or zero
 	diff = high - low;
-	if (diff < 0) {
+	if (diff < 0)
 		diff = 0;
-	}
 
 	return (low + rand() % (diff + 1));
-}
-
-int seeded_rand_internal(int low, int high, int seed)
-{
-	srand(seed) ;
-	return rand_internal (low, high);
 }
 
 // Goober5000
@@ -4097,81 +4097,47 @@ int avg_sexp(int n)
 	return (int) floor(((double) avg_val / num) + 0.5);
 }
 
-// Karajorma - Added the ability to specify a seed. 
-int rand_sexp(int n, int multiple=0)
+// seeding added by Karajorma and Goober5000
+int rand_sexp(int n, bool multiple)
 {
-	int low = 0;
-	int high = 0;
-	int rand_num = 0;
-	int seed = 0;
+	int low, high, rand_num, seed;
 
-	if (n != -1) {
-		if (Sexp_nodes[n].value == SEXP_NUM_EVAL) {
-			// don't regenerate new random number
-			rand_num = atoi(CTEXT(n));
-		} else {
-			// get low
-//			if (Sexp_nodes[n].first != -1) {
-//				low = eval_sexp(Sexp_nodes[n].first);
-//			} else {
-//				low = atoi(CTEXT(n));
-//			}
-			low = eval_num(n);
+	// when getting a saved value
+	if (Sexp_nodes[n].value == SEXP_NUM_EVAL)
+	{
+		// don't regenerate new random number
+		return atoi(CTEXT(n));
+	}
 
-			// get high
-			high = eval_num(CDR(n));
+	// get low
+//	if (Sexp_nodes[n].first != -1) {
+//		low = eval_sexp(Sexp_nodes[n].first);
+//	} else {
+//		low = atoi(CTEXT(n));
+//	}
+	low = eval_num(n);
+
+	// get high
+	high = eval_num(CDR(n));
 			
-			// is there a seed provided?
-			int seed = eval_num(CDR(CDR(n)));
-			
+	// is there a seed provided?
+	if (CDR(CDR(n)) != -1)
+		seed = eval_num(CDR(CDR(n)));
+	else
+		seed = 0;
 
-			if (!seed) 
-			{
-				// get the random number
-				rand_num = rand_internal(low, high);
-			}
-			else 
-			{
-				rand_num = seeded_rand_internal (low, high, seed); 
-			}
+	// get the random number
+	rand_num = rand_internal(low, high, seed);
 
-			if (!multiple) {
-				// set .value and .text so random number is generated only once.
-				Sexp_nodes[n].value = SEXP_NUM_EVAL;
-				sprintf(Sexp_nodes[n].text, "%d", rand_num);
-			}
-		}
+	// when saving the value
+	if (!multiple)
+	{
+		// set .value and .text so random number is generated only once.
+		Sexp_nodes[n].value = SEXP_NUM_EVAL;
+		sprintf(Sexp_nodes[n].text, "%d", rand_num);
 	}
 
 	return rand_num;
-}
-
-// Goober5000 
-// Karajorma - Added seeding funtionality. 
-int rand_multiple_sexp(int n)
-{
-	// get lower bound
-	int low = eval_num(n);
-
-	// get upper bound
-	int high = eval_num(CDR(n));
-
-	n = CDR(n);
-	int seed = eval_num(CDR(n));
-
-	// Check whether a seed was provided
-	if (!seed)
-	{
-		// get the random number
-		return rand_internal(low, high);
-	}
-	else 
-	{
-		// Set the seed to a new seeded random value.
-		sprintf(Sexp_nodes[n+1].text, "%d", seeded_rand_internal(low, high, seed));
-		return seeded_rand_internal(low, high, seed);
-	}
-
 }
 
 // boolean evaluation functions.  Evaluate all sexpressions in the 'or' operator.  Needed to mark
@@ -7346,72 +7312,43 @@ int eval_number_of(int arg_handler_node, int condition_node)
 // this works a little differently... we randomly pick one argument to use
 // for our condition, but this argument must be saved among sexp calls...
 // so we select an argument and set its flag
-int eval_random_of(int arg_handler_node, int condition_node)
+// addendum: hook karajorma's random-multiple-of into the same sexp
+int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 {
-	int n, i, val;
+	int n = -1, i, val, random_argument;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
-	// find which argument we picked
-	n = CDR(arg_handler_node);
-	while (n != -1)
+	// find which argument we picked, if we picked one
+	if (!multiple)
 	{
-		if (Sexp_nodes[n].flags & SNF_ARGUMENT_SELECT)
-			break;
-		n = CDR(n);
+		n = CDR(arg_handler_node);
+
+		// iterate to the argument we previously selected
+		for ( ; n != -1; n = CDR(n))
+		{
+			if (Sexp_nodes[n].flags & SNF_ARGUMENT_SELECT)
+				break;
+		}
 	}
 
-	// if arg not found, we have to pick one
+	// if argument not found (or never specified in the first place), we have to pick one
 	if (n == -1)
 	{
 		n = CDR(arg_handler_node);
-		for (i = 0; i < rand_internal(0, query_sexp_args_count(arg_handler_node) - 1); i++)
+
+		// pick an argument and iterate to it
+		random_argument = rand_internal(0, query_sexp_args_count(arg_handler_node) - 1);
+		for (i = 0; i < random_argument; i++)
 		{
 			n = CDR(n);
 		}
 
-		Sexp_nodes[n].flags |= SNF_ARGUMENT_SELECT;
-	}
-
-	// only eval this argument if it's valid
-	val = SEXP_FALSE;
-	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
-	{
-		// flush stuff
-		Sexp_applicable_argument_list.expunge();
-		flush_sexp_tree(condition_node);
-
-		// evaluate conditional for current argument
-		Sexp_current_replacement_argument = Sexp_nodes[n].text;
-		val = eval_sexp(condition_node);
-
-		// true?
-		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+		// save it, if we're saving
+		if (!multiple)
 		{
-			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+			Sexp_nodes[n].flags |= SNF_ARGUMENT_SELECT;
 		}
 	}
-
-	// clear argument, but not list, as we'll need it later
-	Sexp_current_replacement_argument = NULL;
-
-	// true if our selected argument is true
-	return val;
-}
-
-// Karajorma - Standing on Goobers shoulders somewhat for this one. It's the same as 
-// random-of except that it doesn't have the code for setting the SNF_ARGUMENT_SELECT flag
-// As such it will return a different argument every time it's called. 
-int eval_random_multiple_of(int arg_handler_node, int condition_node)
-{
-	int n, i, val;
-	Assert(arg_handler_node != -1 && condition_node != -1);
-
-	n = CDR(arg_handler_node);
-	for (i = 0; i < rand_internal(0, query_sexp_args_count(arg_handler_node) - 1); i++)
-	{
-		n = CDR(n);
-	}
-	
 
 	// only eval this argument if it's valid
 	val = SEXP_FALSE;
@@ -7457,7 +7394,7 @@ void sexp_invalidate_argument(int n)
 	if (op != OP_WHEN_ARGUMENT && op != OP_EVERY_TIME_ARGUMENT)
 		return;
 
-	// get the first op of the grandparent, which should be a _of operator
+	// get the first op of the grandparent, which should be a *_of operator
 	arg_handler = CADR(grandparent);
 	op = get_operator_const(CTEXT(arg_handler));
 	if (op != OP_ANY_OF && op != OP_EVERY_OF && op != OP_NUMBER_OF && op != OP_RANDOM_OF && op != OP_RANDOM_MULTIPLE_OF)
@@ -13936,11 +13873,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_RAND:
-				sexp_val = rand_sexp( node );
-				break;
-
 			case OP_RAND_MULTIPLE:
-				sexp_val = rand_multiple_sexp( node );
+				sexp_val = rand_sexp( node, (op_num == OP_RAND_MULTIPLE) );
 				break;
 
 			case OP_ABS:
@@ -13959,7 +13893,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = avg_sexp( node );
 				break;
 
-		// boolean operators can have one of the special sexp values (known true, known false, unknown)
+			// boolean operators can have one of the special sexp values (known true, known false, unknown)
 			case OP_TRUE:
 				sexp_val = SEXP_KNOWN_TRUE;
 				break;
@@ -14300,14 +14234,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_every_of( cur_node, referenced_node );
 				break;
 
-			// Goober5000
+			// Goober5000 and Karajorma
 			case OP_RANDOM_OF:
-				sexp_val = eval_random_of( cur_node, referenced_node );
-				break;
-
-			// Karajorma
 			case OP_RANDOM_MULTIPLE_OF:
-				sexp_val = eval_random_multiple_of( cur_node, referenced_node );
+				sexp_val = eval_random_of( cur_node, referenced_node, (op_num == OP_RANDOM_MULTIPLE_OF) );
 				break;
 
 			// Goober5000
