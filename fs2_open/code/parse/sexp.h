@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.113 $
- * $Author: karajorma $
- * $Date: 2006-03-01 20:54:35 $
+ * $Revision: 2.114 $
+ * $Author: Goober5000 $
+ * $Date: 2006-03-03 06:14:41 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.113  2006/03/01 20:54:35  karajorma
+ * Added the random-multiple-of SEXP and fixed random-of to work as designed
+ *
  * Revision 2.112  2006/02/26 23:23:31  wmcoolmon
  * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
  *
@@ -1599,7 +1602,6 @@ extern int is_sexp_top_level( int node );
 extern int get_operator_index(char *token);
 extern int get_operator_const(char *token);
 
-extern int query_sexp_args_count(int node);
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, int mode = 0);
 extern int get_sexp_main(void);	//	Returns start node
 extern int stuff_sexp_variable_list();
