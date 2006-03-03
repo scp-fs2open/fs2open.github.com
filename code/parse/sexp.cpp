@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.238 $
- * $Date: 2006-03-02 04:05:27 $
+ * $Revision: 2.239 $
+ * $Date: 2006-03-03 06:14:41 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.238  2006/03/02 04:05:27  Goober5000
+ * took care of (hopefully) the rest of Karajorma's SEXP node handle conflicts, plus merged the random sexps with their multiple variants
+ *
  * Revision 2.237  2006/03/01 23:22:25  karajorma
  * Fixed a bunch of bugs with Set-x-ammo and Rand SEXPs.
  *
@@ -2311,13 +2314,16 @@ int get_operator_const(char *token)
 	return Operators[idx].value;
 }
 
-int query_sexp_args_count(int node)
+int query_sexp_args_count(int node, bool only_valid_args = false)
 {
 	int count = 0;
 
-	while (CDR(node) != -1){
+	for ( ; CDR(node) != -1; node = CDR(node))
+	{
+		if (only_valid_args && !(Sexp_nodes[node].flags & SNF_ARGUMENT_VALID))
+			continue;
+
 		count++;
-		node = CDR(node);
 	}
 
 	return count;
@@ -7315,7 +7321,7 @@ int eval_number_of(int arg_handler_node, int condition_node)
 // addendum: hook karajorma's random-multiple-of into the same sexp
 int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 {
-	int n = -1, i, val, random_argument;
+	int n = -1, i, val, num_valid_args, random_argument;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	// find which argument we picked, if we picked one
@@ -7336,11 +7342,21 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	{
 		n = CDR(arg_handler_node);
 
+		// get the number of valid arguments
+		num_valid_args = query_sexp_args_count(arg_handler_node, true);
+		if (num_valid_args == 0)
+		{
+			Sexp_current_replacement_argument = NULL;
+			return SEXP_FALSE;
+		}
+
 		// pick an argument and iterate to it
-		random_argument = rand_internal(0, query_sexp_args_count(arg_handler_node) - 1);
+		random_argument = rand_internal(0, num_valid_args - 1);
 		for (i = 0; i < random_argument; i++)
 		{
-			n = CDR(n);
+			do {
+				n = CDR(n);
+			} while (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID));
 		}
 
 		// save it, if we're saving
