@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.239 $
- * $Date: 2006-03-03 06:14:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.240 $
+ * $Date: 2006-03-04 11:05:47 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.239  2006/03/03 06:14:41  Goober5000
+ * fix the random-of sexps to only choose valid arguments
+ *
  * Revision 2.238  2006/03/02 04:05:27  Goober5000
  * took care of (hopefully) the rest of Karajorma's SEXP node handle conflicts, plus merged the random sexps with their multiple variants
  *
@@ -11323,7 +11326,7 @@ void sexp_set_primary_ammo (int node)
 
 	//  Get the number of weapons requested
 	node = CDR(node);
-	requested_weapons = eval_num(node); 
+	requested_weapons = eval_num(CDR(node)); 
 	if (requested_weapons < 0)
 	{
 		return ;
@@ -11421,7 +11424,7 @@ void sexp_set_secondary_ammo (int node)
 
 	//  Get the number of weapons requested	
 	node = CDR(node);
-	requested_weapons = eval_num(node); 
+	requested_weapons = eval_num(CDR(node)); 
 	if (requested_weapons < 0)
 	{
 		return ;
