@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.26 $
- * $Date: 2006-02-25 21:47:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.27 $
+ * $Date: 2006-03-05 21:45:12 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2006/02/25 21:47:07  Goober5000
+ * spelling
+ *
  * Revision 2.25  2006/02/15 07:19:49  wmcoolmon
  * Various weapon and team related scripting functions; $Collide Ship and $Collide Weapon hooks
  *
@@ -367,19 +370,27 @@ extern int Framecount;
 int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float time_limit = 0.0f, int *next_hit=NULL)
 {
 	mc_info mc;
-	int	num;
 	ship	*shipp;
-	weapon	*wp = &Weapons[weapon_obj->instance];
-	weapon_info	*wip = &Weapon_info[wp->weapon_info_index];
+	ship_info *sip;
+	weapon	*wp;
+	weapon_info	*wip;
 
+	Assert( ship_obj != NULL );
 	Assert( ship_obj->type == OBJ_SHIP );
+	Assert( ship_obj->instance >= 0 );
+
+	shipp = &Ships[ship_obj->instance];
+	sip = &Ship_info[shipp->ship_info_index];
+
+	Assert( weapon_obj != NULL );
 	Assert( weapon_obj->type == OBJ_WEAPON );
+	Assert( weapon_obj->instance >= 0 );
 
-	num = ship_obj->instance;
-	Assert( num >= 0 );
-	Assert( Ships[num].objnum == OBJ_INDEX(ship_obj));
+	wp = &Weapons[weapon_obj->instance];
+	wip = &Weapon_info[wp->weapon_info_index];
 
-	shipp = &Ships[num];
+
+	Assert( shipp->objnum == OBJ_INDEX(ship_obj));
 
 	// Make ships that are warping in not get collision detection done
 	if ( shipp->flags & SF_ARRIVING ) return 0;
@@ -441,15 +452,15 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 				// AL 1-14-97: "Puncture" doesn't mean penetrate shield anymore, it means that it punctures
 				//					hull do inflict maximum subsystem damage
 
-				if ( Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS )	{
+				if ( wip->wi_flags2 & WIF2_PIERCE_SHIELDS )	{
 					// If this weapon punctures the shield, then do
 					// the hit effect, but act like a shield collision never occurred.
 					quadrant_num = -1;	// ignore shield hit
-					add_shield_point(ship_obj-Objects, mc.shield_hit_tri, &mc.hit_point);
+					add_shield_point(OBJ_INDEX(ship_obj), mc.shield_hit_tri, &mc.hit_point);
 				} else {
 					valid_hit_occured = 1;
 					// shield effect
-					add_shield_point(ship_obj-Objects, mc.shield_hit_tri, &mc.hit_point);
+					add_shield_point(OBJ_INDEX(ship_obj), mc.shield_hit_tri, &mc.hit_point);
 					do_model_check = 0;	// since we hit the shield, no need to check the model
 				}
 			} else {
@@ -471,8 +482,8 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 		&& do_model_check
 		&& !(ship_obj->flags & OF_NO_SHIELDS)
 		&& quadrant_num == -1
-		&& !(Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].wi_flags2 & WIF2_PIERCE_SHIELDS)
-		&& (Ship_info[shipp->ship_info_index].flags2 & SIF2_SURFACE_SHIELDS))
+		&& !(wip->wi_flags2 & WIF2_PIERCE_SHIELDS)
+		&& (sip->flags2 & SIF2_SURFACE_SHIELDS))
 	{
 		// _argv[-1], 16 Jan 2005: Surface shields.
 		// Surface shields allow for shields on a ship without a shield mesh.  Good for putting real shields
@@ -526,7 +537,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 				if (!(shipp->flags2 & SF2_DONT_COLLIDE_INVIS)) {
 					wp->lifeleft = 0.001f;
 					if (ship_obj == Player_obj)
-						nprintf(("Jim", "Frame %i: Weapon %i set to detonate, dist = %7.3f.\n", Framecount, weapon_obj-Objects, dist));
+						nprintf(("Jim", "Frame %i: Weapon %i set to detonate, dist = %7.3f.\n", Framecount, OBJ_INDEX(weapon_obj), dist));
 					valid_hit_occured = 1;
 				}
 			}

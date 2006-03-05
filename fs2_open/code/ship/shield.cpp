@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.38 $
- * $Date: 2006-02-25 21:47:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.39 $
+ * $Date: 2006-03-05 21:45:12 $
+ * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2006/02/25 21:47:08  Goober5000
+ * spelling
+ *
  * Revision 2.37  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -714,7 +717,7 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 	}
 
 	//	At detail levels 1, 3, animations play at double speed to reduce load.
-	if (!D3D_enabled || !OGL_enabled ||  (Detail.shield_effects == 1) || (Detail.shield_effects == 3)) {
+	if ((!D3D_enabled && !OGL_enabled) ||  (Detail.shield_effects == 1) || (Detail.shield_effects == 3)) {
 		Shield_hits[shield_num].start_time -= Frametime;
 	}
 
