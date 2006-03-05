@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-02-25 21:47:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2006-03-05 18:00:55 $
+ * $Author: taylor $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/02/25 21:47:07  Goober5000
+ * spelling
+ *
  * Revision 2.12  2006/01/18 16:14:04  taylor
  * allow gr_render_buffer() to take TMAP flags
  * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
@@ -1108,28 +1111,18 @@ int model_collide(mc_info * mc_info)
 
 	}
 
-	//moved this here from check_subobj to help increase speed
-	//Ok, so this breaks collisions...maybe not -WMC
-	/*
-	if (!mc_ray_boundingbox( &Mc_pm->mins, &Mc_pm->maxs, &Mc_p0, &Mc_direction, NULL))
-		return 0;*/
+	if ( Mc->flags & MC_SUBMODEL )	{
+		// Check only one subobject
+		mc_check_subobj( Mc->submodel_num );
+		// Check submodel and any children
+	} else if (Mc->flags & MC_SUBMODEL_INSTANCE) {
+		mc_check_subobj(Mc->submodel_num);
+	} else {
+		// Check all the the highest detail model polygons and subobjects for intersections
 
-	// Check shield if we're supposed to
-	if ((Mc->flags & MC_CHECK_SHIELD) && (Mc_pm->shield.ntris > 0 ))
-		mc_check_shield();
-
-	if(!Mc->num_hits)
-	{
-		if ( Mc->flags & MC_SUBMODEL || Mc->flags & MC_SUBMODEL_INSTANCE)	{
-			// Check submodel and any children
-			mc_check_subobj(Mc->submodel_num);
-		} else {
-			// Check all the the highest detail model polygons and subobjects for intersections
-
-			// Don't check it or its children if it is destroyed
-			if (!Mc_pm->submodel[Mc_pm->detail[0]].blown_off)	{	
-				mc_check_subobj( Mc_pm->detail[0] );
-			}
+		// Don't check it or its children if it is destroyed
+		if (!Mc_pm->submodel[Mc_pm->detail[0]].blown_off)	{	
+			mc_check_subobj( Mc_pm->detail[0] );
 		}
 	}
 
