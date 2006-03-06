@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.81 $
- * $Date: 2006-02-23 06:21:56 $
+ * $Revision: 2.82 $
+ * $Date: 2006-03-06 16:30:06 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2006/02/23 06:21:56  taylor
+ * attempt to fix bad out-of-bounds (and related) issues when weaponchoice icon is missing
+ * be sure to always initialize frame count and FPS with bm_load_animation() calls in case caller got lazy
+ *
  * Revision 2.80  2006/02/16 05:00:01  taylor
  * various bmpman related fixes
  *  - some new error checking (and fixes related to that) and cleanup
@@ -1360,8 +1364,10 @@ int bm_load( char * real_filename )
 
 	// safety catch for strcat...
 	// MAX_FILENAME_LEN-5 == '.' plus 3 letter ext plus NULL terminator
-	if (strlen(filename) > MAX_FILENAME_LEN-5)
-		Error( LOCATION, "Passed filename, '%s', is too long to support an extension!!\n\nMaximum length, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-5 );
+	if (strlen(filename) > MAX_FILENAME_LEN-5) {
+		Warning( LOCATION, "Passed filename, '%s', is too long to support an extension!!\n\nMaximum length, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-5 );
+		return -1;
+	}
 
 	// Lets find out what type it is
 	{
@@ -1667,7 +1673,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	// safety catch for strcat...
 	// MAX_FILENAME_LEN-5 == '.' plus 3 letter ext plus NULL terminator
 	if (strlen(filename) > MAX_FILENAME_LEN-5) {
-		Error( LOCATION, "Passed filename, '%s', is too long to support an extension!!\n\nMaximum length, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-5 );
+		Warning( LOCATION, "Passed filename, '%s', is too long to support an extension!!\n\nMaximum length, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-5 );
+		return -1;
 	}
 
 	// used later if EFF type
@@ -1716,7 +1723,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	// MAX_FILENAME_LEN-10 == 5 character frame designator plus '.' plus 3 letter ext plus NULL terminator
 	// we only check for -5 here since the filename should already have the extension on it, and it must have passed the previous check
 	if (strlen(filename) > MAX_FILENAME_LEN-5) {
-		Error( LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-10 );
+		Warning( LOCATION, "Passed filename, '%s', is too long to support an extension and frames!!\n\nMaximum length for an ANI/EFF, minus the extension, is %i characters.\n", filename, MAX_FILENAME_LEN-10 );
+		return -1;
 	}
 
 	// it's an effect file, any readable image type with eff being txt
