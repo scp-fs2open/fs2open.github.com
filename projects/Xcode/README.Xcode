@@ -1,0 +1,4 @@
+By default the Xcode project will build a universal binary.  The Frameworks
+for SDL, Ogg, and Vorbis, compatible with a universal binary, are included
+in "Frameworks.zip".  Extract that zip in the current directory and the
+Xcode project file will use these Frameworks as the default.
