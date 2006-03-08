@@ -10,13 +10,31 @@ EXTRA_DIST =	\
 	projects/MSVC_2005/Freespace2.sln	\
 	projects/MSVC_2005/Freespace2.vcproj	\
 	projects/MSVC_2005/code.vcproj	\
+	projects/MSVC_6/Fred2.dsp	\
 	projects/MSVC_6/Freespace2.dsp	\
 	projects/MSVC_6/Freespace2.dsw	\
 	projects/MSVC_6/code.dsp	\
 	projects/MSVC_6/libjpeg.dsp	\
+	projects/MSVC_6/liblua.dsp	\
 	projects/MSVC_6/wxFRED2.dsp	\
+	projects/MSVC_7/Freespace2.sln	\
+	projects/MSVC_7/Freespace2.vcproj	\
+	projects/MSVC_7/code.vcproj	\
+	projects/MSVC_7/fred2_open.vcproj	\
+	projects/MSVC_7/libjpeg.vcproj	\
+	projects/MSVC_7/lua.vcproj	\
+	projects/MSVC_7/wxFRED2.vcproj	\
 	projects/anjuta1/FS2_Open.prj	\
-	projects/anjuta1/README
+	projects/anjuta1/README	\
+	projects/Xcode/English.lproj/InfoPlist.strings	\
+	projects/Xcode/FS2_Open.icns	\
+	projects/Xcode/FS2_Open.xcodeproj/project.pbxproj	\
+	projects/Xcode/Frameworks.zip	\
+	projects/Xcode/Info-debug.plist	\
+	projects/Xcode/Info.plist	\
+	projects/Xcode/README.Xcode	\
+	projects/Xcode/SDLMain.h	\
+	projects/Xcode/SDLMain.m
 
 
 # D_ variants are defaults and should always be used
