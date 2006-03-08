@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.95 $
- * $Date: 2006-02-27 00:40:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.96 $
+ * $Date: 2006-03-08 05:15:20 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2006/02/27 00:40:34  wmcoolmon
+ * Consistency in Lua 2D funcs; fix FRED2 loading screen images dialog boxes.
+ *
  * Revision 2.94  2006/02/26 11:09:31  taylor
  * one friggin line, should have been able to notice that sooner
  *
@@ -4646,6 +4649,8 @@ void model_duplicate_reskin(int modelnum, char *ship_name)
 }
 
 #if BYTE_ORDER == BIG_ENDIAN
+extern void model_allocate_interp_data(int, int);
+
 // tigital -
 void swap_bsp_defpoints(ubyte * p)
 {
