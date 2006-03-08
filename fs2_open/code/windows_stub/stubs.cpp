@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.28 $
- * $Date: 2006-01-31 15:44:55 $
+ * $Revision: 2.29 $
+ * $Date: 2006-03-08 05:22:14 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2006/01/31 15:44:55  taylor
+ * remove USE_LUA
+ *
  * Revision 2.27  2006/01/21 00:11:51  taylor
  * fix for LuaError change, *again*  ;)
  *
@@ -503,22 +506,10 @@ int MulDiv(int number, int numerator, int denominator)
 	if (denominator == 0)
 		return 0;
 
-#if defined(__i386__) && !defined(_DEBUG)
-	__asm(
-		"movl  %1,%%eax\n"
-		"movl  %2,%%ebx\n"
-		"imul  %%ebx\n"
-		"movl  %3,%%ebx\n"
-		"idiv  %%ebx\n"
-		: "=eax" (result)
-		: "m" (number), "m" (numerator), "m" (denominator)
-		: "ebx","edx");
-#else
 	longlong tmp;
 	tmp = ((longlong) number) * ((longlong) numerator);
 	tmp /= (longlong) denominator;
 	result = (int) tmp;
-#endif
 
 	return result;
 }
