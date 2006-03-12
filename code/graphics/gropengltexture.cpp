@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.42 $
- * $Date: 2006-01-30 06:52:15 $
+ * $Revision: 1.43 $
+ * $Date: 2006-03-12 07:34:39 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.42  2006/01/30 06:52:15  taylor
+ * better lighting for OpenGL
+ * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
+ *
  * Revision 1.41  2006/01/14 06:23:39  taylor
  * be sure to account for skipped mipmap levels in calculation of textures in VRAM
  *
@@ -1327,6 +1331,7 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 	GLint compressed_size = 0;
 	ubyte *out_data = NULL;
 	GLint testing = 0;
+	GLenum texFormat = (alpha) ? GL_UNSIGNED_INT_8_8_8_8_REV : GL_UNSIGNED_BYTE;
 
 	if ( !Texture_compression_available )
 		return 0;
@@ -1335,7 +1340,7 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 	glBindTexture(GL_TEXTURE_2D, tex);
 
 	// a quick proxy test.  this will tell us if it's possible without wasting a lot of time and resources in the attempt
-	glTexImage2D(GL_PROXY_TEXTURE_2D, 0, (alpha) ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, 0, (alpha) ? GL_BGRA_EXT : GL_BGR_EXT, GL_UNSIGNED_BYTE, in_data);
+	glTexImage2D(GL_PROXY_TEXTURE_2D, 0, (alpha) ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, 0, (alpha) ? GL_BGRA_EXT : GL_BGR_EXT, texFormat, in_data);
 	glGetTexLevelParameteriv(GL_PROXY_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_ARB, &compressed);
 	glGetTexLevelParameteriv(GL_PROXY_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &testing);
 
@@ -1345,7 +1350,7 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 	}
 
 	// alright, it should work if we are still here, now do it for real
-	glTexImage2D(GL_TEXTURE_2D, 0, (alpha) ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, 0, (alpha) ? GL_BGRA_EXT : GL_BGR_EXT, GL_UNSIGNED_BYTE, in_data);
+	glTexImage2D(GL_TEXTURE_2D, 0, (alpha) ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, 0, (alpha) ? GL_BGRA_EXT : GL_BGR_EXT, texFormat, in_data);
 
 	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_ARB, &compressed);
 

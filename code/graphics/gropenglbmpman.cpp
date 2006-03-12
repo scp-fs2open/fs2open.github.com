@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.13 $
- * $Date: 2006-02-16 05:00:01 $
+ * $Revision: 1.14 $
+ * $Date: 2006-03-12 07:34:39 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2006/02/16 05:00:01  taylor
+ * various bmpman related fixes
+ *  - some new error checking (and fixes related to that) and cleanup
+ *  - fix EFFs not getting released/unloaded properly (was in a local tree but apparently missed CVS)
+ *  - minor fixes for bm_release() to produce a more properly cleaned slot
+ *  - use fast unloading for page_in stuff since we don't actually want really want the load count changing for texture maps
+ *    and to make sure that we free the memory usage regardless of load count
+ *
  * Revision 1.12  2005/11/13 06:44:18  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -362,16 +370,7 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 
 		return 1;
 	}
-/*
-	if ( bpp == 32 ) {
-		uint *swap_tmp;
 
-		for (int i = 0; i < (bmp->w * bmp->h * byte_size); i += byte_size) {
-			swap_tmp = (uint*)((ubyte*)data + i);
-			*swap_tmp = SWAPINT(*swap_tmp);
-		}
-	}
-*/
 	// now for the attempt to compress the data
 	out_size = opengl_compress_image(&compressed_data, data, bmp->w, bmp->h, alpha);
 
