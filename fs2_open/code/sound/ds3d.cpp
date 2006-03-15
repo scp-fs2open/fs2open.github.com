@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds3d.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-02-25 21:47:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2006-03-15 17:30:47 $
+ * $Author: taylor $
  *
  * C file for interface to DirectSound3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/02/25 21:47:19  Goober5000
+ * spelling
+ *
  * Revision 2.9  2005/04/05 11:48:23  taylor
  * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
  * better error handling for OpenAL functions
@@ -142,11 +145,9 @@
 #if !(defined(__APPLE__) || defined(_WIN32))
 	#include <AL/al.h>
 	#include <AL/alc.h>
-	#include <AL/alut.h>
 #else
 	#include "al.h"
 	#include "alc.h"
-	#include "alut.h"
 #endif // !__APPLE__ && !_WIN32
 #endif // USE_OPENAL
 

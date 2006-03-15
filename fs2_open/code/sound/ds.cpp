@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-01-30 07:14:32 $
+ * $Revision: 2.38 $
+ * $Date: 2006-03-15 17:30:47 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/01/30 07:14:32  taylor
+ * make sure to init dest and dest_size for any calling functions that don't
+ *
  * Revision 2.36  2005/12/06 03:17:48  taylor
  * cleanup some debug log messages:
  *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
@@ -467,11 +470,9 @@
 #if !(defined(__APPLE__) || defined(_WIN32))
 	#include <AL/al.h>
 	#include <AL/alc.h>
-	#include <AL/alut.h>
 #else
 	#include "al.h"
 	#include "alc.h"
-	#include "alut.h"
 #endif // !__APPLE__ && !_WIN32
 #else
 #include "sound/channel.h"
