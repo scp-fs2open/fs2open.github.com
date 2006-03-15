@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.26 $
- * $Date: 2006-02-16 04:55:53 $
+ * $Revision: 1.27 $
+ * $Date: 2006-03-15 17:33:05 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2006/02/16 04:55:53  taylor
+ * couple more lighting value tweaks
+ *
  * Revision 1.25  2006/01/30 06:40:49  taylor
  * better lighting for OpenGL
  * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
@@ -507,8 +510,8 @@ void opengl_default_light_settings(int ambient = 1, int emission = 1, int specul
 		return;
 
 	if (ambient) {
-		glMaterialfv( GL_FRONT_AND_BACK, GL_DIFFUSE, GL_light_color );
-		glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT, GL_light_ambient );
+		glMaterialfv( GL_FRONT/*_AND_BACK*/, GL_DIFFUSE, GL_light_color );
+		glMaterialfv( GL_FRONT/*_AND_BACK*/, GL_AMBIENT, GL_light_ambient );
 	} else {
 		if (GL_center_alpha) {
 			glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, GL_light_true_zero );
