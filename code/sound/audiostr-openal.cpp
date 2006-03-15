@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.23 $
- * $Date: 2006-02-20 07:25:14 $
+ * $Revision: 1.24 $
+ * $Date: 2006-03-15 17:30:46 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2006/02/20 07:25:14  taylor
+ * handle badly encoded (has short reads due to strange block/data size ratio) ADPCM files a little better in debug builds
+ *
  * Revision 1.22  2006/02/16 05:47:32  taylor
  * I never did really like the old audiostr OpenAL change here, this just seems safer
  * initialize si->data and si->size before loading sound buffer (fixes OGG issue for plats that don't zero-initialize <vector>, this will be handled differently in the new code)
@@ -112,11 +115,9 @@
 #if !(defined(__APPLE__) || defined(_WIN32))
 	#include <AL/al.h>
 	#include <AL/alc.h>
-	#include <AL/alut.h>
 #else
 	#include "al.h"
 	#include "alc.h"
-	#include "alut.h"
 #endif // !__APPLE__ && !_WIN32
 
 #define NEED_STRHDL		// for STRHTL struct in audiostr.h
