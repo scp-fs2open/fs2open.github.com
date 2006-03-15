@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.43 $
- * $Date: 2006-03-12 07:34:39 $
+ * $Revision: 1.44 $
+ * $Date: 2006-03-15 17:33:05 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.43  2006/03/12 07:34:39  taylor
+ * when I forget that I'm an idiot little things like this slip through (me == moron)
+ *
  * Revision 1.42  2006/01/30 06:52:15  taylor
  * better lighting for OpenGL
  * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
@@ -1196,17 +1199,19 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 	}
 
 	// everything went ok
-	if(ret_val && (t->texture_id) && !vram_full){
+	if (ret_val && t->texture_id && !vram_full) {
 		*u_scale = t->u_scale;
 		*v_scale = t->v_scale;
 
-		
 		glBindTexture (GL_TEXTURE_2D, t->texture_id );
 
 		// OGL expects mipmap levels all the way down to 1x1 but I think this will avoid white texture
 		// issues when we have fewer levels than that, it caps the total number of levels available with 0 as min value
-		if ( t->mipmap_levels > 1 )
+		if ( t->mipmap_levels > 1 ) {
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, t->mipmap_levels - 1);
+			// also set the filter type again, just to make sure it's correct
+			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (GL_mipmap_filter) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST);
+		}
 
 		GL_last_bitmap_id = t->bitmap_handle;
 		GL_last_bitmap_type = bitmap_type;
