@@ -526,6 +526,16 @@ int joy_init()
 		}
 	}
 
+	// we poll for axis type motion so be sure to ignore that during normal event state polling
+	SDL_EventState( SDL_JOYAXISMOTION, SDL_IGNORE );
+	SDL_EventState( SDL_JOYBALLMOTION, SDL_IGNORE );
+
+	// we do want to make sure that hat/button presses go through event polling though
+	// (should be on by default already, just here as a reminder)
+	SDL_EventState( SDL_JOYBUTTONDOWN, SDL_ENABLE );
+	SDL_EventState( SDL_JOYBUTTONUP, SDL_ENABLE );
+	SDL_EventState( SDL_JOYHATMOTION, SDL_ENABLE );
+
 	Joy_inited = 1;
 
 	return joy_num_sticks;

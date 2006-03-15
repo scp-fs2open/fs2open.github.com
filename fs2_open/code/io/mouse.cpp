@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.14 $
- * $Date: 2006-01-12 04:18:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15 $
+ * $Date: 2006-03-15 17:35:24 $
+ * $Author: taylor $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/01/12 04:18:10  wmcoolmon
+ * Finished committing codebase
+ *
  * Revision 2.13  2005/07/18 03:45:07  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -284,6 +287,16 @@ void mouse_init()
 		Mouse_mode = MOUSE_MODE_WIN;
 #else
 	Mouse_mode = MOUSE_MODE_WIN;
+#endif
+
+#ifdef SCP_UNIX
+	// we poll for mouse motion events so be sure to skip those in normal event polling
+	SDL_EventState( SDL_MOUSEMOTION, SDL_IGNORE );
+
+	// we do want to make sure that button presses go through event polling though
+	// (should be on by default already, just here as a reminder)
+	SDL_EventState( SDL_MOUSEBUTTONDOWN, SDL_ENABLE );
+	SDL_EventState( SDL_MOUSEBUTTONUP, SDL_ENABLE );
 #endif
 
 	LEAVE_CRITICAL_SECTION( mouse_lock );	
