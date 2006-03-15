@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.29 $
- * $Date: 2006-03-08 05:22:14 $
+ * $Revision: 2.30 $
+ * $Date: 2006-03-15 17:32:13 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2006/03/08 05:22:14  taylor
+ * remove asm from MulDiv() since Intel Mac doesn't like it very much, and it doesn't do exactly what it should anyway
+ *
  * Revision 2.28  2006/01/31 15:44:55  taylor
  * remove USE_LUA
  *
@@ -121,7 +124,8 @@
 bool env_enabled = false;
 bool cell_enabled = false;
 
-static char buffer[200], buffer_tmp[200];
+#define MAX_BUF_SIZE	240
+static char buffer[MAX_BUF_SIZE], buffer_tmp[MAX_BUF_SIZE];
 
 
 char *strnset( char* string, int fill, size_t count)
