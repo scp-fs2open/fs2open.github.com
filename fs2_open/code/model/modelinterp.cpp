@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.147 $
- * $Date: 2006-02-28 05:16:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.148 $
+ * $Date: 2006-03-16 14:23:35 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.147  2006/02/28 05:16:54  Goober5000
+ * fix the animation type triggers
+ *
  * Revision 2.146  2006/02/25 21:47:07  Goober5000
  * spelling
  *
@@ -1120,8 +1123,22 @@ void model_allocate_interp_data(int n_verts = 0, int n_norms = 0)
 		// Interp_norms can't be reliably realloc'd so free and malloc it on each resize (not data needs to be carried over)
 		Interp_norms = (vec3d**) vm_malloc( n_norms * sizeof(vec3d) );
 
-		Interp_light_applied = (ubyte*) vm_realloc( Interp_light_applied, n_norms * sizeof(ubyte) );
-		Interp_lighting_temp.lights = (model_light*) vm_realloc( Interp_lighting_temp.lights, n_norms * sizeof(model_light) );
+		// these next two lighting things aren't values that need to be carried over, but we need to make sure they are 0 by default
+		if (Interp_light_applied != NULL) {
+			vm_free(Interp_light_applied);
+			Interp_light_applied = NULL;
+		}
+
+		if (Interp_lighting_temp.lights != NULL) {
+			vm_free(Interp_lighting_temp.lights);
+			Interp_lighting_temp.lights = NULL;
+		}
+
+		Interp_light_applied = (ubyte*) vm_malloc( n_norms * sizeof(ubyte) );
+		Interp_lighting_temp.lights = (model_light*) vm_malloc( n_norms * sizeof(model_light) );
+
+		memset( Interp_light_applied, 0, n_norms * sizeof(ubyte) );
+		memset( Interp_lighting_temp.lights, 0, n_norms * sizeof(model_light) );
 
 		Num_interp_norms_allocated = n_norms;
 	}
@@ -1403,12 +1420,17 @@ void model_interp_splode_defpoints(ubyte * p, polymodel *pm, bsp_info *sm, float
 	int n;
 	int nverts = w(p+8);	
 	int offset = w(p+16);
+	int nnorms = 0;
 
 	ubyte * normcount = p+20;
 	vertex *dest = Interp_splode_points;
 	vec3d *src = vp(p+offset);
 
-	model_allocate_interp_data(nverts, nverts);
+	for (n = 0; n < nverts; n++) {
+		nnorms += normcount[n];
+	}
+
+	model_allocate_interp_data(nverts, nnorms);
 
 	vec3d dir;
 
@@ -1678,8 +1700,8 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 
 	// slow?  yes.  safe?  yes.
 	for (i = 0; i < nv; i++) {
-		max_n_verts = MAX(verts[i*2+0], max_n_verts);
-		max_n_norms = MAX(verts[i*2+1], max_n_norms);
+		max_n_verts = MAX(verts[i*2+0] + 1, max_n_verts);
+		max_n_norms = MAX(verts[i*2+1] + 1, max_n_norms);
 	}
 
 	model_allocate_interp_data(max_n_verts, max_n_norms);
@@ -1819,8 +1841,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	int max_n_norms = 0;
 
 	for (i = 0; i < nv; i++) {
-		max_n_verts = MAX(verts[i].vertnum, max_n_verts);
-		max_n_norms = MAX(verts[i].normnum, max_n_norms);
+		max_n_verts = MAX(verts[i].vertnum + 1, max_n_verts);
+		max_n_norms = MAX(verts[i].normnum + 1, max_n_norms);
 	}
 
 	model_allocate_interp_data(max_n_verts, max_n_norms);
@@ -4870,12 +4892,17 @@ static int submodel_get_points_internal(int model_num, int submodel_num)
 		case OP_DEFPOINTS:	{
 				int n;
 				int nverts = w(p+8);				
-				int offset = w(p+16);				
+				int offset = w(p+16);
+				int nnorms = 0;			
 
 				ubyte * normcount = p+20;
 				vec3d *src = vp(p+offset);
 
-				model_allocate_interp_data(nverts, nverts);
+				for (n = 0; n < nverts; n++) {
+					nnorms += normcount[n];
+				}
+
+				model_allocate_interp_data(nverts, nnorms);
 
 				// this must happen only after the interp_data allocation call (since the address changes)
 				vec3d **verts = Interp_verts;
