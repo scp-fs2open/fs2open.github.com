@@ -411,24 +411,27 @@ void geometry_batcher::draw_quad(vertex* verts){
 }
 
 
-void geometry_batcher::draw_beam(vec3d*start,vec3d*end, float width, float intinsity){
+void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float intinsity)
+{
 	vec3d p[4];
 	vertex *P = &vert[n_to_render*3];
 
 	vec3d fvec, uvecs, uvece, evec;
 
-	vm_vec_sub(&fvec, end, start);
-	vm_vec_normalize(&fvec);
+	vm_vec_sub(&fvec, start, end);
+	vm_vec_normalize_safe(&fvec);
 
 	vm_vec_sub(&evec, &View_position, start);
-	vm_vec_normalize(&evec);
+	vm_vec_normalize_safe(&evec);
 
-	vm_vec_crossprod(&uvecs, &evec, &fvec);
+	vm_vec_crossprod(&uvecs, &fvec, &evec);
+	vm_vec_normalize_safe(&uvecs);
 
 	vm_vec_sub(&evec, &View_position, end);
-	vm_vec_normalize(&evec);
+	vm_vec_normalize_safe(&evec);
 
-	vm_vec_crossprod(&uvece, &evec, &fvec);
+	vm_vec_crossprod(&uvece, &fvec, &evec);
+	vm_vec_normalize_safe(&uvece);
 
 
 	vm_vec_scale_add(&p[0], start, &uvecs, width);
