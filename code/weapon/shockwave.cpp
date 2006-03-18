@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.24 $
- * $Date: 2006-02-13 00:20:46 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2006-03-18 09:25:55 $
+ * $Author: wmcoolmon $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2006/02/13 00:20:46  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.23  2005/12/28 22:17:02  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -406,6 +410,7 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 	//Find the info_index and model
 	int info_index = 0;
 	int model = -1;
+	bool no_model = false;
 	if(strlen(sci->name))
 	{
 		info_index = shockwave_add(sci->name);
@@ -414,7 +419,10 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 		}
 	}
 	if(strlen(sci->pof_name)) {
-		model = model_load(sci->pof_name, 0, NULL);
+		if(stricmp("none", sci->pof_name))
+			model = model_load(sci->pof_name, 0, NULL);
+		else
+			no_model = true;
 	}
 
 	// real_parent is the guy who caused this shockwave to happen
@@ -428,7 +436,10 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 
 	sw = &Shockwaves[i];
 
-	sw->model = (model < 0) ? default_shockwave_model : model;
+	if(!no_model)
+		sw->model = (model < 0) ? default_shockwave_model : model;
+	else
+		sw->model = -1;
 
 	sw->flags = (SW_USED | flag);
 	sw->speed = sci->speed;
