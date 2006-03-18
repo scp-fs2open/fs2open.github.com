@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.40 $
- * $Date: 2006-03-18 07:12:07 $
+ * $Revision: 2.41 $
+ * $Date: 2006-03-18 22:43:16 $
  * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/03/18 07:12:07  Goober5000
+ * add ship-subsys-targetable and ship-subsys-untargetable
+ * --Goober5000
+ *
  * Revision 2.39  2006/02/25 21:47:07  Goober5000
  * spelling
  *
@@ -1685,6 +1689,8 @@ void player_level_init()
 	Player_all_alone_msg_inited=0;
 	Player->flags &= ~PLAYER_FLAGS_NO_CHECK_ALL_ALONE_MSG;
 
+	Player->death_message[0] = '\0';
+
 	// Player->insignia_bitmap = -1;
 }
 
@@ -2067,96 +2073,130 @@ void player_generate_killer_weapon_name(int weapon_info_index, int killer_specie
 	}
 }
 
-// function to generate the text for death of a player given the information stored in the player object.
-// a pointer to the text is returned
-char *player_generate_death_text( player *player_p, char *death_text )
+// function to generate the message for death of a player given the information stored in the player object.
+void player_generate_death_message(player *player_p)
 {
 	char weapon_name[NAME_LENGTH];
+	char *msg = player_p->death_message;
 	weapon_name[0] = 0;	
 	int ship_index;
 
 	player_generate_killer_weapon_name(player_p->killer_weapon_index, player_p->killer_species, weapon_name);
 
-	switch ( player_p->killer_objtype ) {
-	case OBJ_SHOCKWAVE:
-		if ( weapon_name[0] ) {
-//			sprintf(death_text, XSTR("%s was killed by a shockwave from a %s, fired by %s",-1), player_p->callsign, weapon_name, player_p->killer_parent_name);
-			sprintf(death_text, XSTR( "%s was killed by a missile shockwave", 92), player_p->callsign);
-		} else {
-			sprintf(death_text, XSTR( "%s was killed by a shockwave from %s exploding", 93), player_p->callsign, player_p->killer_parent_name);
-		}
-		break;
-	case OBJ_WEAPON:
-		Assert(weapon_name[0]);
+	switch (player_p->killer_objtype)
+	{
+		case OBJ_SHOCKWAVE:
+			if (weapon_name[0])
+			{
+//				sprintf(msg, XSTR("%s was killed by a shockwave from a %s, fired by %s",-1), player_p->callsign, weapon_name, player_p->killer_parent_name);
+				sprintf(msg, XSTR( "%s was killed by a missile shockwave", 92), player_p->callsign);
+			}
+			else
+			{
+				sprintf(msg, XSTR( "%s was killed by a shockwave from %s exploding", 93), player_p->callsign, player_p->killer_parent_name);
+			}
+			break;
 
-		// is this from a friendly ship?
-		ship_index = ship_name_lookup(player_p->killer_parent_name, 1);
-		if((ship_index >= 0) && (Player_ship != NULL) && (Player_ship->team == Ships[ship_index].team)){
-			sprintf(death_text, XSTR( "%s was killed by friendly fire from %s", 1338), player_p->callsign, player_p->killer_parent_name);
-		} else {
-			sprintf(death_text, XSTR( "%s was killed by %s", 94), player_p->callsign, player_p->killer_parent_name);
-		}
-		break;
-	case OBJ_SHIP:
-		if ( player_p->flags & PLAYER_FLAGS_KILLED_BY_EXPLOSION ) {
-			sprintf(death_text, XSTR( "%s was killed by a blast from %s exploding", 95), player_p->callsign, player_p->killer_parent_name);
-		} else if (player_p->flags & PLAYER_FLAGS_KILLED_BY_ENGINE_WASH) {
-			sprintf(death_text, XSTR( "%s was killed by engine wash from %s", 1494), player_p->callsign, player_p->killer_parent_name);
-		} else {
-			sprintf(death_text, XSTR( "%s was killed by a collision with %s", 96), player_p->callsign, player_p->killer_parent_name);
-		}
-		break;
-	case OBJ_DEBRIS:
-		sprintf(death_text, XSTR( "%s was killed by a collision with debris", 97), player_p->callsign);
-		break;
-	case OBJ_ASTEROID:
-		sprintf(death_text, XSTR( "%s was killed by a collision with an asteroid", 98), player_p->callsign);
-		break;
-	case OBJ_BEAM:
-		if(strlen(player_p->killer_parent_name) <= 0){			
-			Int3();
-			sprintf(death_text, XSTR( "%s was killed by a beam from an unknown source", 1081), player_p->callsign);
-		} else {					
+		case OBJ_WEAPON:
+			Assert(weapon_name[0]);
+
 			// is this from a friendly ship?
 			ship_index = ship_name_lookup(player_p->killer_parent_name, 1);
-			if((ship_index >= 0) && (Player_ship != NULL) && (Player_ship->team == Ships[ship_index].team)){
-				sprintf(death_text, XSTR( "%s was destroyed by friendly beam fire from %s", 1339), player_p->callsign, player_p->killer_parent_name);
-			} else {
-				sprintf(death_text, XSTR( "%s was destroyed by a beam from %s", 1082), player_p->callsign, player_p->killer_parent_name);
-			}			
-		}
-		break;
-	default:
-		sprintf(death_text, XSTR( "%s was killed", 99), player_p->callsign);
-		break;
-	}
+			if ((ship_index >= 0) && (Player_ship != NULL) && (Player_ship->team == Ships[ship_index].team))
+			{
+				sprintf(msg, XSTR( "%s was killed by friendly fire from %s", 1338), player_p->callsign, player_p->killer_parent_name);
+			}
+			else
+			{
+				sprintf(msg, XSTR( "%s was killed by %s", 94), player_p->callsign, player_p->killer_parent_name);
+			}
+			break;
 
-	return death_text;
+		case OBJ_SHIP:
+			if (player_p->flags & PLAYER_FLAGS_KILLED_BY_EXPLOSION)
+			{
+				sprintf(msg, XSTR( "%s was killed by a blast from %s exploding", 95), player_p->callsign, player_p->killer_parent_name);
+			}
+			else if (player_p->flags & PLAYER_FLAGS_KILLED_BY_ENGINE_WASH)
+			{
+				sprintf(msg, XSTR( "%s was killed by engine wash from %s", 1494), player_p->callsign, player_p->killer_parent_name);
+			}
+			else
+			{
+				sprintf(msg, XSTR( "%s was killed by a collision with %s", 96), player_p->callsign, player_p->killer_parent_name);
+			}
+			break;
+
+		case OBJ_DEBRIS:
+			sprintf(msg, XSTR( "%s was killed by a collision with debris", 97), player_p->callsign);
+			break;
+
+		case OBJ_ASTEROID:
+			sprintf(msg, XSTR( "%s was killed by a collision with an asteroid", 98), player_p->callsign);
+			break;
+
+		case OBJ_BEAM:
+			if (strlen(player_p->killer_parent_name) <= 0)
+			{
+				Int3();
+				sprintf(msg, XSTR( "%s was killed by a beam from an unknown source", 1081), player_p->callsign);
+			}
+			else
+			{
+				// is this from a friendly ship?
+				ship_index = ship_name_lookup(player_p->killer_parent_name, 1);
+				if ((ship_index >= 0) && (Player_ship != NULL) && (Player_ship->team == Ships[ship_index].team))
+				{
+					sprintf(msg, XSTR( "%s was destroyed by friendly beam fire from %s", 1339), player_p->callsign, player_p->killer_parent_name);
+				}
+				else
+				{
+					sprintf(msg, XSTR( "%s was destroyed by a beam from %s", 1082), player_p->callsign, player_p->killer_parent_name);
+				}			
+			}
+			break;
+
+		default:
+			sprintf(msg, XSTR( "%s was killed", 99), player_p->callsign);
+			break;
+	}
 }
 
 // display what/who killed the player
 void player_show_death_message()
 {
-	char death_text[256];
+	char *msg = Player->death_message;
 
-	// check if player killed self
-	if ( Player->flags & PLAYER_KILLED_SELF ) {
-		// reasons he killed himself
-		if(Player->flags & PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE){
-			sprintf(death_text, XSTR( "You have killed yourself with a shockwave from your own weapon", 1421));			
+	// make sure we don't already have a death message
+	if (!strlen(msg))
+	{
+		// check if player killed self
+		if (Player->flags & PLAYER_KILLED_SELF)
+		{
+			// reasons he killed himself
+			if (Player->flags & PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE)
+			{
+				sprintf(msg, XSTR("You have killed yourself with a shockwave from your own weapon", 1421));			
+			}
+			else if (Player->flags & PLAYER_FLAGS_KILLED_SELF_MISSILES)
+			{
+				sprintf(msg, XSTR("You have killed yourself with your own missiles", 1422));			
+			}
+			else
+			{
+				sprintf(msg, XSTR("You have killed yourself", 100));
+			}
+	
+			Player->flags &= ~PLAYER_KILLED_SELF;
 		}
-		else if(Player->flags & PLAYER_FLAGS_KILLED_SELF_MISSILES){
-			sprintf(death_text, XSTR( "You have killed yourself with your own missiles", 1422));			
-		} else {
-			sprintf(death_text, XSTR( "You have killed yourself", 100));
+		else
+		{
+			player_generate_death_message(Player);
 		}
-
-		Player->flags &= ~(PLAYER_FLAGS_KILLED_SELF_MISSILES | PLAYER_FLAGS_KILLED_SELF_SHOCKWAVE);
-	} else {
-		player_generate_death_text( Player, death_text );
 	}
 
-	HUD_fixed_printf(30.0f, death_text);
+	// display the message
+	HUD_fixed_printf(30.0f, msg);
 }
 
 /*
