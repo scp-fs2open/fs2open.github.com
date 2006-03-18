@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FredStubs.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-01-20 05:35:59 $
- * $Author: wmcoolmon $
+ * $Revision: 1.3 $
+ * $Date: 2006-03-18 21:23:38 $
+ * $Author: taylor $
  *
  * Bogus C file for functions and variable stubs that Fred needs because it
  * includes some libraries that makes functions calls to other libraries that FRED
@@ -20,6 +20,9 @@
  * to each other.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/20 05:35:59  wmcoolmon
+ * Updated FREDStubs.cpp to most current version
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -678,6 +681,7 @@ void game_tst_mark(struct object *, struct ship *){}
 int tst;
 int game_do_cd_mission_check(char *){return 1;}
 int Player_multi_died_check;
+int Show_framerate = 0;
 
 void game_feature_not_in_demo_popup() {}
 int Nebedit_running = 0;
