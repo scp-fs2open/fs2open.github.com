@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.134 $
- * $Date: 2006-02-24 07:36:49 $
+ * $Revision: 2.135 $
+ * $Date: 2006-03-18 10:17:58 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.134  2006/02/24 07:36:49  taylor
+ * try and make some sense out of that cmdline option mess, maybe it will stay sane for a few days at least :)
+ *
  * Revision 2.133  2006/02/01 23:35:31  phreak
  * -ingame should be -ingame_join
  *
@@ -813,6 +816,7 @@ static int Parm_list_inited = 0;
 
 extern float VIEWER_ZOOM_DEFAULT;
 extern float Viewer_zoom;
+extern int Show_framerate;	// from freespace.cpp
 
 
 enum
@@ -1154,7 +1158,6 @@ int Cmdline_dis_weapons = 0;
 int Cmdline_noparseerrors = 0;
 int Cmdline_nowarn = 0; // turn warnings off in FRED
 int Cmdline_rt = 0;
-int Cmdline_show_fps = 0;
 int Cmdline_show_mem_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
@@ -1796,7 +1799,7 @@ bool SetCmdlineParams()
 
 	if (fps_arg.found())
 	{
-		Cmdline_show_fps = 1;
+		Show_framerate = 1;
 	}
 
 	if(pos_arg.found())

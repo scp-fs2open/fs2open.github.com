@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.85 $
- * $Date: 2006-02-24 07:36:49 $
+ * $Revision: 2.86 $
+ * $Date: 2006-03-18 10:17:58 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2006/02/24 07:36:49  taylor
+ * try and make some sense out of that cmdline option mess, maybe it will stay sane for a few days at least :)
+ *
  * Revision 2.84  2006/01/10 18:37:45  randomtiger
  * Improvements to voice recognition system.
  * Also function put on -voicer launcher option.
@@ -656,7 +659,6 @@ extern int Cmdline_dis_weapons;
 extern int Cmdline_noparseerrors;
 extern int Cmdline_nowarn;
 extern int Cmdline_rt;
-extern int Cmdline_show_fps;	// DTP moved here because it is the correct place for it to be.
 extern int Cmdline_show_mem_usage;
 extern int Cmdline_show_pos;
 extern int Cmdline_show_stats;

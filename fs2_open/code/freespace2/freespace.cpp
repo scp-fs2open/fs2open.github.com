@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.229 $
- * $Date: 2006-02-25 21:46:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.230 $
+ * $Date: 2006-03-18 10:17:59 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.229  2006/02/25 21:46:59  Goober5000
+ * spelling
+ *
  * Revision 2.228  2006/02/25 06:57:58  wmcoolmon
  * Fix no text for splash screen scripting problem
  *
@@ -2117,7 +2120,7 @@ void game_framerate_check()
 		Gf_critical_time += flFrametime;
 	}	
 
-	if((!Show_framerate) || (!Cmdline_show_fps)) {
+	if (!Show_framerate) {
 		return;
 	}
 
@@ -3875,7 +3878,7 @@ void game_get_framerate()
 	}
 	Framecount++;
 
-	if ((Show_framerate) || (Cmdline_show_fps))	{
+	if (Show_framerate)	{
 		gr_string( 20, 100, text );
 	}
 
