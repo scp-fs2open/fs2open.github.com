@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.148 $
- * $Date: 2006-03-16 14:23:35 $
+ * $Revision: 2.149 $
+ * $Date: 2006-03-18 10:23:46 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.148  2006/03/16 14:23:35  taylor
+ * beyond some possible out-of-bounds issues, I think this stuff was messing up non-HTL lighting too
+ *
  * Revision 2.147  2006/02/28 05:16:54  Goober5000
  * fix the animation type triggers
  *
@@ -948,6 +951,8 @@ static vertex *Interp_splode_points = NULL;
 vec3d *Interp_splode_verts = NULL;
 static int Interp_num_verts = 0;
 
+static vertex **Interp_list = NULL;
+static int  Num_interp_list_verts_allocated = 0;
 
 // -------------------------------------------------------------------
 // lighting save stuff 
@@ -1084,9 +1089,9 @@ void model_deallocate_interp_data()
 extern void model_collide_allocate_point_list(int n_points);
 extern void model_collide_free_point_list();
 
-void model_allocate_interp_data(int n_verts = 0, int n_norms = 0)
+void model_allocate_interp_data(int n_verts = 0, int n_norms = 0, int n_list_verts = 0)
 {
-	static int dealloc = 0;
+	static ubyte dealloc = 0;
 
 	if (!dealloc) {
 		atexit(model_deallocate_interp_data);
@@ -1094,8 +1099,8 @@ void model_allocate_interp_data(int n_verts = 0, int n_norms = 0)
 		dealloc = 1;
 	}
 
-	Assert( (n_verts >= 0) && (n_norms >= 0) );
-	Assert( (n_verts || Num_interp_verts_allocated) && (n_norms || Num_interp_norms_allocated) );
+	Assert( (n_verts >= 0) && (n_norms >= 0) && (n_list_verts >= 0) );
+	Assert( (n_verts || Num_interp_verts_allocated) && (n_norms || Num_interp_norms_allocated) /*&& (n_list_verts || Num_interp_list_verts_allocated)*/ );
 
 	if (n_verts > Num_interp_verts_allocated) {
 		if (Interp_verts != NULL) {
@@ -1120,7 +1125,7 @@ void model_allocate_interp_data(int n_verts = 0, int n_norms = 0)
 			vm_free(Interp_norms);
 			Interp_norms = NULL;
 		}
-		// Interp_norms can't be reliably realloc'd so free and malloc it on each resize (not data needs to be carried over)
+		// Interp_norms can't be reliably realloc'd so free and malloc it on each resize (no data needs to be carried over)
 		Interp_norms = (vec3d**) vm_malloc( n_norms * sizeof(vec3d) );
 
 		// these next two lighting things aren't values that need to be carried over, but we need to make sure they are 0 by default
@@ -1141,6 +1146,19 @@ void model_allocate_interp_data(int n_verts = 0, int n_norms = 0)
 		memset( Interp_lighting_temp.lights, 0, n_norms * sizeof(model_light) );
 
 		Num_interp_norms_allocated = n_norms;
+	}
+
+	// we should only get here if we are not in HTL mode
+	if ( n_list_verts > Num_interp_list_verts_allocated ) {
+		if (Interp_list != NULL) {
+			vm_free(Interp_list);
+			Interp_list = NULL;
+		}
+
+		Interp_list = (vertex**) vm_malloc( n_list_verts * sizeof(vertex) );
+		Verify( Interp_list != NULL );
+
+		Num_interp_list_verts_allocated = n_list_verts;
 	}
 
 
@@ -1675,21 +1693,17 @@ extern bool cell_enabled;
 // +44     nverts*short*short  vertlist, smoothlist
 void model_interp_flatpoly(ubyte * p,polymodel * pm)
 {
-	vertex *Interp_list[TMAP_MAX_VERTS];
 	int nv = w(p+36);
 
-	if ( nv < 0 )	return;
-
-	if ( nv > TMAP_MAX_VERTS ) {
-		Int3();
+	if ( nv < 0 )
 		return;
-	}
 
 	#ifndef NDEBUG
 	modelstats_num_polys++;
 	#endif
 
-	if (!g3_check_normal_facing(vp(p+20),vp(p+8)) ) return;
+	if ( !g3_check_normal_facing(vp(p+20), vp(p+8)) )
+		return;
 	
 
 	int i;
@@ -1704,7 +1718,7 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 		max_n_norms = MAX(verts[i*2+1] + 1, max_n_norms);
 	}
 
-	model_allocate_interp_data(max_n_verts, max_n_norms);
+	model_allocate_interp_data(max_n_verts, max_n_norms, nv);
 
 	for (i=0;i<nv;i++)	{
 		Interp_list[i] = &Interp_points[verts[i*2]];
@@ -1795,7 +1809,6 @@ ubyte Interp_subspace_b = 255;
 
 void model_interp_tmappoly(ubyte * p,polymodel * pm)
 {
-	vertex *Interp_list[TMAP_MAX_VERTS];
 	int i;
 	int nv;
 	model_tmap_vert *verts;
@@ -1827,13 +1840,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	modelstats_num_polys++;
 	#endif
 
-	if ( nv < 0 ) return;
-
-	// if we have too many verts to stick into Vbuf0 then bail out and don't draw anything
-	if ( nv > TMAP_MAX_VERTS ) {
-		Int3();
+	if ( nv < 0 )
 		return;
-	}
 
 	verts = (model_tmap_vert *)(p+44);
 
@@ -1845,7 +1853,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 		max_n_norms = MAX(verts[i].normnum + 1, max_n_norms);
 	}
 
-	model_allocate_interp_data(max_n_verts, max_n_norms);
+	model_allocate_interp_data(max_n_verts, max_n_norms, nv);
 
 	if(!Cmdline_nohtl) {
 		if((Warp_Map < 0)){

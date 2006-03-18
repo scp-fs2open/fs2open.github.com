@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-04-05 05:53:24 $
+ * $Revision: 2.21 $
+ * $Date: 2006-03-18 10:23:46 $
  * $Author: taylor $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/04/05 05:53:24  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.19  2005/01/28 11:06:22  Goober5000
  * changed a bunch of transpose-rotate sequences to use unrotate instead
  * --Goober5000
@@ -213,9 +216,6 @@ float			Canv_h2;				// Canvas_height / 2
 vec3d Object_position;
 matrix	Object_matrix;			// Where the opject is pointing in World coordinates
 
-//vertex buffers for polygon drawing and clipping
-vertex * Vbuf0[TMAP_MAX_VERTS];
-vertex * Vbuf1[TMAP_MAX_VERTS];
 
 #define MAX_INSTANCE_DEPTH	5
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.47 $
- * $Date: 2006-02-25 21:47:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.48 $
+ * $Date: 2006-03-18 10:23:46 $
+ * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2006/02/25 21:47:08  Goober5000
+ * spelling
+ *
  * Revision 2.46  2005/10/28 14:45:55  taylor
  * more TMAP_MAX_VERTS overflow protection for non-HTL usage (these are the things that need to be addressed to fix non-HTL)
  * fix some compiler warning messages
@@ -381,6 +384,52 @@
 #include "io/key.h"
 
 
+//vertex buffers for polygon drawing and clipping
+static vertex **Vbuf0 = NULL;
+static vertex **Vbuf1 = NULL;
+static int Num_vbufs_allocated = 0;
+
+
+static void g3_deallocate_vbufs()
+{
+	if (Vbuf0 != NULL) {
+		vm_free(Vbuf0);
+		Vbuf0 = NULL;
+	}
+
+	if (Vbuf1 != NULL) {
+		vm_free(Vbuf1);
+		Vbuf1 = NULL;
+	}
+}
+
+static void g3_allocate_vbufs(int nv)
+{
+	static ubyte dealloc = 0;
+
+	Assert( nv >= 0 );
+	Assert( nv || Num_vbufs_allocated );
+
+	if (!dealloc) {
+		atexit(g3_deallocate_vbufs);
+		dealloc = 1;
+	}
+
+	if (nv > Num_vbufs_allocated) {
+		g3_deallocate_vbufs();
+
+		Vbuf0 = (vertex**) vm_malloc( nv * sizeof(vertex) );
+		Vbuf1 = (vertex**) vm_malloc( nv * sizeof(vertex) );
+
+		Num_vbufs_allocated = nv;
+	}
+
+	// make sure everything is valid
+	Verify( Vbuf0 != NULL );
+	Verify( Vbuf1 != NULL );
+}
+
+
 //deal with a clipped line
 int must_clip_line(vertex *p0,vertex *p1,ubyte codes_or, uint flags)
 {
@@ -560,11 +609,7 @@ int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags)
 		return 0;
 	}
 
-	// if we have too many verts to stick into Vbuf0 then bail out and don't draw anything
-	if ( nv > TMAP_MAX_VERTS ) {
-		Int3();
-		return 1;
-	}
+	g3_allocate_vbufs(nv);
 
 	cc.cc_or = 0;
 	cc.cc_and = 0xff;
@@ -667,10 +712,7 @@ int g3_draw_poly_constant_sw(int nv,vertex **pointlist,uint tmap_flags, float co
 		return 0;
 	}
 
-	if ( nv > TMAP_MAX_VERTS ) {
-		Int3();
-		return 1;
-	}
+	g3_allocate_vbufs(nv);
 
 	cc.cc_or = 0; cc.cc_and = 0xff;
 
@@ -1456,10 +1498,12 @@ float g3_draw_poly_constant_sw_area(int nv, vertex **pointlist, uint tmap_flags,
 
 	Assert( G3_count == 1 );
 
-	if ( nv > TMAP_MAX_VERTS ) {
-		Int3();
-		return 0.0f;
-	}
+//	if ( nv > TMAP_MAX_VERTS ) {
+//		Int3();
+//		return 0.0f;
+//	}
+
+	g3_allocate_vbufs(nv);
 
 	cc.cc_or = 0;
 	cc.cc_and = 0xff;

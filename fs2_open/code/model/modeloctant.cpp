@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelOctant.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-01-30 06:36:35 $
+ * $Revision: 2.11 $
+ * $Date: 2006-03-18 10:23:46 $
  * $Author: taylor $
  *
  * Routines for model octants
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/01/30 06:36:35  taylor
+ * handle Interp data allocation a little better
+ *
  * Revision 2.9  2006/01/18 16:14:04  taylor
  * allow gr_render_buffer() to take TMAP flags
  * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
@@ -136,7 +139,7 @@
 #include "model/modelsinc.h"
 #include "cmdline/cmdline.h"
 
-extern void model_allocate_interp_data(int n_verts, int n_norms);
+extern void model_allocate_interp_data(int n_verts, int n_norms, int n_list_verts = 0);
 
 
 // returns 1 if a point is in an octant.
