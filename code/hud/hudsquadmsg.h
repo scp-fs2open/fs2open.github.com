@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.15 $
- * $Date: 2006-03-01 04:01:37 $
+ * $Revision: 2.16 $
+ * $Date: 2006-03-18 22:00:43 $
  * $Author: Goober5000 $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/03/01 04:01:37  Goober5000
+ * fix comm message localization
+ *
  * Revision 2.14  2006/02/02 07:00:29  Goober5000
  * consolidated comm order stuff
  * --Goober5000
@@ -282,6 +285,7 @@ extern int Multi_squad_msg_local;
 extern int Multi_squad_msg_targ; 
 
 extern void hud_init_squadmsg();
+extern void hud_init_comm_orders();
 extern void hud_squadmsg_toggle();						// toggles the state of messaging mode
 extern void hud_squadmsg_shortcut( int command );	// use of a shortcut key
 extern int hud_squadmsg_hotkey_select( int k );	// a hotkey was hit -- maybe send a message to those ship(s)

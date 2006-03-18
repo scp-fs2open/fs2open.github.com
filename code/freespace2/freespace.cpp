@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.230 $
- * $Date: 2006-03-18 10:17:59 $
- * $Author: taylor $
+ * $Revision: 2.231 $
+ * $Date: 2006-03-18 22:00:43 $
+ * $Author: Goober5000 $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.230  2006/03/18 10:17:59  taylor
+ * we already have a variable to show the framerate so lets just use the one
+ *
  * Revision 2.229  2006/02/25 21:46:59  Goober5000
  * spelling
  *
@@ -1504,6 +1507,8 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "hud/hudshield.h"
 #include "hud/hudtargetbox.h"
 #include "hud/hudparse.h"
+#include "hud/hudsquadmsg.h"
+#include "iff_defs/iff_defs.h"
 #include "io/joy.h"
 #include "io/joy_ff.h"
 #include "io/key.h"
@@ -3696,16 +3701,15 @@ void game_init()
 	// load non-darkening pixel defs
 	palman_load_pixels();
 
-	extern void iff_init();
 	iff_init();						// Goober5000 - this must be done even before species_defs :p
-
-	extern void species_init();
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
 
 	brief_parse_icon_tbl();
 
 	// hud shield icon stuff
 	//hud_shield_game_init(); No longer needed; see ships.tbl -C
+
+	hud_init_comm_orders();	// Goober5000
 
 	control_config_common_init();				// sets up localization stuff in the control config
 

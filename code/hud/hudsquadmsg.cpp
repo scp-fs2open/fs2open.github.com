@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.27 $
- * $Date: 2006-03-01 04:01:37 $
+ * $Revision: 2.28 $
+ * $Date: 2006-03-18 22:00:43 $
  * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/03/01 04:01:37  Goober5000
+ * fix comm message localization
+ *
  * Revision 2.26  2006/02/20 02:13:08  Goober5000
  * added ai-ignore-new which hopefully should fix the ignore bug
  * --Goober5000
@@ -488,7 +491,7 @@ comm_order Comm_orders[NUM_COMM_ORDER_ITEMS];
 
 // Goober5000
 // this is stupid, but localization won't work otherwise
-void init_comm_orders()
+void hud_init_comm_orders()
 {
 	int i;
 
@@ -2543,9 +2546,6 @@ void hud_squadmsg_save_keys( int do_scroll )
 void hud_init_squadmsg( void ) 
 {
 	int i;
-
-	// Goober5000
-	init_comm_orders();
 
 	if ( !Mbox_frames_loaded ) {
 		for ( i = 0; i < NUM_MBOX_FRAMES; i++ ) {
