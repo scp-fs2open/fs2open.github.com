@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-04-05 05:53:25 $
+ * $Revision: 2.26 $
+ * $Date: 2006-03-18 10:28:58 $
  * $Author: taylor $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.24  2005/02/20 23:11:51  wmcoolmon
  * Fix0r3d trails
  *
@@ -342,6 +345,8 @@ void trail_render( trail * trailp )
 	ubyte l;
 	vec3d centerv;
 
+	memset( &v_list, 0, sizeof(vertex) * MAX_TRAIL_POLYS );
+
 	for (i=0; i<num_sections; i++ )	{
 
 	if(nv>MAX_TRAIL_POLYS-3)Error( LOCATION, "too many verts in trail render\n" );
@@ -377,7 +382,10 @@ void trail_render( trail * trailp )
 		}
 			
 		trail_calc_facing_pts( &topv, &botv, fvec, &pos, w );
-	
+
+		memset( &top, 0, sizeof(vertex) );
+		memset( &bot, 0, sizeof(vertex) );
+
 		if(!Cmdline_nohtl){
 			g3_transfer_vertex( &top, &topv );
 			g3_transfer_vertex( &bot, &botv );
@@ -397,32 +405,31 @@ void trail_render( trail * trailp )
 				}else{
 					g3_rotate_vertex( &v_list[nv+2], &centerv );
 				}
+
 				v_list[nv].a = l;	
 
 				vlist[nv] = &v_list[nv];
 				vlist[nv]->u = float(i);  vlist[nv]->v = 1.0f; 
-				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l; vlist[nv]->spec_r=vlist[nv]->spec_g=vlist[nv]->spec_b=0;
+				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l;
 				nv++;
 				vlist[nv] = &v_list[nv];
 				vlist[nv]->u = float(i);  vlist[nv]->v = 0.0f; 
-				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l; vlist[nv]->spec_r=vlist[nv]->spec_g=vlist[nv]->spec_b=0;
+				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l;
 				nv++;
 				vlist[nv] = &v_list[nv];
 				vlist[nv]->u = float(i+1);  vlist[nv]->v = 0.5f; 
-				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=0; vlist[nv]->spec_r=vlist[nv]->spec_g=vlist[nv]->spec_b=0;
+				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=0;
 				nv++;
-
-
 
 			} else {
 
 				vlist[nv] = &v_list[nv];
 				vlist[nv]->u = float(i);  vlist[nv]->v = 1.0f; 
-				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l; vlist[nv]->spec_r=vlist[nv]->spec_g=vlist[nv]->spec_b=0;
+				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l;
 				nv++;
 				vlist[nv] = &v_list[nv];
 				vlist[nv]->u = float(i);  vlist[nv]->v = 0.0f; 
-				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l; vlist[nv]->spec_r=vlist[nv]->spec_g=vlist[nv]->spec_b=0;
+				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l;
 				nv++;
 
 			}
@@ -433,12 +440,14 @@ void trail_render( trail * trailp )
 		v_list[nv] = top;
 		v_list[nv+1] = bot;
 	}
-	if(!nv) {
+
+	if (!nv) {
 		return;
 	}
+
 	if(nv<3)Error( LOCATION, "too few verts in trail render\n" );
 	if(nv>MAX_TRAIL_POLYS-1)Error( LOCATION, "too many verts in trail render\n" );
-	if(nv%2 != 1)Warning( LOCATION, "even number of verts verts in trail render\n" );//there should always be three virts in the last section and 2 everyware else, therefore there should always be an odd number of verts
+	if(nv%2 != 1)Warning( LOCATION, "even number of verts in trail render\n" );//there should always be three virts in the last section and 2 everyware else, therefore there should always be an odd number of verts
 
 	gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 	if(Cmdline_nohtl)	g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TRISTRIP );
