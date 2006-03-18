@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.242 $
- * $Date: 2006-03-18 10:26:42 $
- * $Author: taylor $
+ * $Revision: 2.243 $
+ * $Date: 2006-03-18 22:43:16 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.242  2006/03/18 10:26:42  taylor
+ * make sure errors in rand_sexp() and rand_internal() are properly handled
+ *
  * Revision 2.241  2006/03/18 07:12:07  Goober5000
  * add ship-subsys-targetable and ship-subsys-untargetable
  * --Goober5000
@@ -1486,7 +1489,8 @@ sexp_oper Operators[] = {
 	{ "scramble-messages",			OP_SCRAMBLE_MESSAGES,		0,	0,},
 	{ "unscramble-messages",		OP_UNSCRAMBLE_MESSAGES,		0,	0,},
 
-	{ "add-goal",						OP_ADD_GOAL,				2, 2,			},
+	{ "add-goal",					OP_ADD_GOAL,					2, 2, },
+	{ "remove-goal",				OP_REMOVE_GOAL,					2, 2, },			// Goober5000
 	{ "add-ship-goal",				OP_ADD_SHIP_GOAL,				2, 2,			},
 	{ "add-wing-goal",				OP_ADD_WING_GOAL,				2, 2,			},
 	{ "clear-goals",					OP_CLEAR_GOALS,				1, INT_MAX,	},
@@ -1634,6 +1638,7 @@ sexp_oper Operators[] = {
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",			OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
+	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -7831,6 +7836,11 @@ void sexp_add_goal(int n)
 		ai_add_wing_goal_sexp( sindex, AIG_TYPE_EVENT_WING, num );
 }
 
+// Goober5000
+void sexp_remove_goal(int n)
+{
+}
+
 // clears out all ai goals for a ship
 void sexp_clear_ship_goals(int n)
 {
@@ -10752,6 +10762,17 @@ void sexp_ship_change_alt_name(int n)
 			}
 		}
 	}
+}
+
+// Goober5000
+void sexp_set_death_message(int n)
+{
+	strcpy(Player->death_message, CTEXT(n));
+
+	extern void lcl_replace_stuff(char *text, unsigned int max_len);
+	lcl_replace_stuff(Player->death_message, 256);
+
+	sexp_replace_variable_names_with_values(Player->death_message, 256);
 }
 
 int sexp_key_pressed(int node)
@@ -14326,6 +14347,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_REMOVE_GOAL:
+				sexp_remove_goal(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_CLEAR_SHIP_GOALS:
 				sexp_clear_ship_goals(node);
 				sexp_val = SEXP_TRUE;
@@ -14380,6 +14406,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_SHIP_CHANGE_ALT_NAME:
 				sexp_ship_change_alt_name(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_SET_DEATH_MESSAGE:
+				sexp_set_death_message(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -15540,7 +15571,7 @@ int query_operator_return_type(int op)
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_IS_CARGO:
 		case OP_MISSILE_LOCKED:
-		case OP_NAV_ISVISITED:	//Kazan
+		case OP_NAV_ISVISITED:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -15558,7 +15589,7 @@ int query_operator_return_type(int op)
 		case OP_GET_OBJECT_Z:
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_STRING:
-		case OP_STRING_TO_INT:		// Karajorma
+		case OP_STRING_TO_INT:
 			return OPR_NUMBER;
 
 		case OP_ABS:
@@ -15586,15 +15617,15 @@ int query_operator_return_type(int op)
 		case OP_WEAPON_RECHARGE_PCT:
 		case OP_PRIMARY_AMMO_PCT:
 		case OP_SECONDARY_AMMO_PCT:
-		case OP_GET_PRIMARY_AMMO:	// Karajorma
-		case OP_GET_SECONDARY_AMMO:	// Karajorma
+		case OP_GET_PRIMARY_AMMO:
+		case OP_GET_SECONDARY_AMMO:
 		case OP_SPECIAL_WARP_DISTANCE:
 		case OP_IS_SHIP_VISIBLE:
 		case OP_TEAM_SCORE:
 		case OP_NUM_SHIPS_IN_BATTLE:
-		case OP_NUM_SHIPS_IN_WING: // Karajorma
+		case OP_NUM_SHIPS_IN_WING:
 		case OP_CURRENT_SPEED:
-		case OP_NAV_DISTANCE:	//kazan
+		case OP_NAV_DISTANCE:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -15611,6 +15642,7 @@ int query_operator_return_type(int op)
 		case OP_ADD_SHIP_GOAL:
 		case OP_ADD_WING_GOAL:
 		case OP_ADD_GOAL:
+		case OP_REMOVE_GOAL:
 		case OP_PROTECT_SHIP:
 		case OP_UNPROTECT_SHIP:
 		case OP_BEAM_PROTECT_SHIP:
@@ -15740,24 +15772,25 @@ int query_operator_return_type(int op)
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
-		case OP_NAV_ADD_WAYPOINT:	//kazan
-		case OP_NAV_ADD_SHIP:		//kazan
-		case OP_NAV_DEL:			//kazan
-		case OP_NAV_HIDE:			//kazan
-		case OP_NAV_RESTRICT:		//kazan
-		case OP_NAV_UNHIDE:			//kazan
-		case OP_NAV_UNRESTRICT:		//kazan
-		case OP_NAV_SET_VISITED:	//kazan
-		case OP_NAV_UNSET_VISITED:	//kazan
-		case OP_NAV_SET_CARRY:		//kazan
-		case OP_NAV_UNSET_CARRY:	//kazan
-		case OP_HUD_SET_TEXT:		//WMC
-		case OP_HUD_SET_TEXT_NUM:	//WMC
-		case OP_HUD_SET_COORDS:		//WMC
-		case OP_HUD_SET_FRAME:		//WMC
-		case OP_HUD_SET_COLOR:		//WMC
-		case OP_RADAR_SET_MAXRANGE: //Kazan
+		case OP_NAV_ADD_WAYPOINT:
+		case OP_NAV_ADD_SHIP:
+		case OP_NAV_DEL:
+		case OP_NAV_HIDE:
+		case OP_NAV_RESTRICT:
+		case OP_NAV_UNHIDE:
+		case OP_NAV_UNRESTRICT:
+		case OP_NAV_SET_VISITED:
+		case OP_NAV_UNSET_VISITED:
+		case OP_NAV_SET_CARRY:
+		case OP_NAV_UNSET_CARRY:
+		case OP_HUD_SET_TEXT:
+		case OP_HUD_SET_TEXT_NUM:
+		case OP_HUD_SET_COORDS:
+		case OP_HUD_SET_FRAME:
+		case OP_HUD_SET_COLOR:
+		case OP_RADAR_SET_MAXRANGE:
 		case OP_SHIP_CHANGE_ALT_NAME:
+		case OP_SET_DEATH_MESSAGE:
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -15782,7 +15815,7 @@ int query_operator_return_type(int op)
 		case OP_SET_OBJECT_SPEED_X:
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
-		case OP_SHIP_CREATE: //WMC
+		case OP_SHIP_CREATE:
 		case OP_WEAPON_CREATE:
 		case OP_MISSION_SET_NEBULA:
 		case OP_ADD_BACKGROUND_BITMAP:
@@ -15791,8 +15824,8 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
-		case OP_SET_PRIMARY_AMMO:	// Karajorma
-		case OP_SET_SECONDARY_AMMO:	// Karajorma
+		case OP_SET_PRIMARY_AMMO:
+		case OP_SET_SECONDARY_AMMO:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -16058,6 +16091,10 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP_WING;
 
+		case OP_SET_DEATH_MESSAGE:
+			if (argnum == 0)
+				return OPF_STRING;
+
 		case OP_DISTANCE:
 			return OPF_SHIP_WING_POINT;
 
@@ -16197,6 +16234,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_AI_GOAL;
 
 		case OP_ADD_GOAL:
+		case OP_REMOVE_GOAL:
 			if ( argnum == 0 )
 				return OPF_SHIP_WING;
 			else
@@ -16339,10 +16377,8 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_HUD_SET_TEXT:
-			if(argnum == 0)
-				return OPF_STRING;
-			if(argnum == 1)
-				return OPF_STRING;
+			return OPF_STRING;
+
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
@@ -17966,6 +18002,7 @@ int get_subcategory(int sexp_id)
 			return CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS;
 			
 		case OP_ADD_GOAL:
+		case OP_REMOVE_GOAL:
 		case OP_CLEAR_GOALS:
 		case OP_GOOD_REARM_TIME:
 		case OP_GOOD_SECONDARY_TIME:
@@ -18101,6 +18138,7 @@ int get_subcategory(int sexp_id)
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 		case OP_SET_SUPPORT_SHIP:
 		case OP_SHIP_CHANGE_ALT_NAME:
+		case OP_SET_DEATH_MESSAGE:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
 			return CHANGE_SUBCATEGORY_SPECIAL;
@@ -18830,8 +18868,15 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_ADD_GOAL, "Add goal (Action operator)\r\n"
 		"\tAdds a goal to a ship or wing.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tName of ship or wing to all goal to.\r\n"
+		"\t1:\tName of ship or wing to add goal to.\r\n"
 		"\t2:\tGoal to add." },
+
+	// Goober5000
+	{ OP_REMOVE_GOAL, "Remove goal (Action operator)\r\n"
+		"\tRemoves a goal from a ship or wing.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tName of ship or wing to remove goal from.\r\n"
+		"\t2:\tGoal to remove." },
 
 	{ OP_SABOTAGE_SUBSYSTEM, "Sabotage subystem (Action operator)\r\n"
 		"\tReduces the specified subsystem integrity by the specified percentage."
@@ -19510,8 +19555,14 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_SHIP_CHANGE_ALT_NAME, "ship-change-alt-name\r\n"
 		"\tChanges the alternate ship class name displayed in the HUD target window.  Takes 2 or more arguments...\r\n"
-		"\t1:The ship class name to display\r\n"
-		"\tRest: The ships to display the new class name" },
+		"\t1:\tThe ship class name to display\r\n"
+		"\tRest:\tThe ships to display the new class name" },
+
+	// Goober5000
+	{ OP_SET_DEATH_MESSAGE, "set-death-message\r\n"
+		"\tSets the message displayed when the specified players are killed.  Takes 1 or more arguments...\r\n"
+		"\t1:\tThe message\r\n"
+		"\tRest:\tThe players for whom this message is displayed (optional) (currently not implemented)" },
 
 	{ OP_PERCENT_SHIPS_DEPARTED, "percent-ships-departed\r\n"
 		"\tBoolean function which returns true if the percentage of ships in the listed ships and wings "

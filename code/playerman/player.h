@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/Player.h $
- * $Revision: 2.8 $
- * $Date: 2005-10-20 06:38:18 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2006-03-18 22:43:16 $
+ * $Author: Goober5000 $
  *
  *  Header file for player information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/10/20 06:38:18  wmcoolmon
+ * More player warpout speed stuff
+ *
  * Revision 2.7  2005/07/13 03:35:32  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -366,6 +369,8 @@ typedef struct player {
 	// player-persistent variables - Goober5000
 	int				num_variables;
 	sexp_variable	player_variables[MAX_SEXP_VARIABLES];
+
+	char death_message[256];								// Goober5000
 } player;
 
 extern player Players[MAX_PLAYERS];
@@ -412,7 +417,7 @@ extern void toggle_player_object();		// toggles between descent-style ship and p
 extern void read_player_controls( object *obj, float frametime);
 extern void player_control_reset_ci( control_info *ci );
 
-char *player_generate_death_text( player *player_p, char *text );
+void player_generate_death_message(player *player_p);
 void player_show_death_message();
 void player_maybe_fire_turret(object *objp);
 void player_maybe_play_all_alone_msg();
