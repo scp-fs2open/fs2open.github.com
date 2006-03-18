@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dInternal.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:35:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2006-03-18 10:23:46 $
+ * $Author: taylor $
  *
  * Used internally by the 3d renderer lib
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:35:29  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -64,11 +68,6 @@ extern int free_point_num;
 extern float View_zoom;
 extern vec3d View_position,Matrix_scale;
 extern matrix View_matrix,Unscaled_matrix;
-
-
-//vertex buffers for polygon drawing and clipping
-extern vertex *Vbuf0[];
-extern vertex *Vbuf1[];
 
 extern void free_temp_point(vertex *p);
 extern vertex **clip_polygon(vertex **src,vertex **dest,int *nv,ccodes *cc,uint flags);
