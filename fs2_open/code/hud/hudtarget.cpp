@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.86 $
- * $Date: 2006-02-26 23:23:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.87 $
+ * $Date: 2006-03-18 07:12:07 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2006/02/26 23:23:30  wmcoolmon
+ * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
+ *
  * Revision 2.85  2006/02/26 22:23:00  wmcoolmon
  * SF2_TARGETABLE_AS_BOMBER flag, Lua gr_bitmap_ex fix
  *
@@ -1799,7 +1802,7 @@ void hud_target_subobject_common(int next_flag)
 			continue;
 		}
 
-		if ( !A->system_info->targetable ) {
+		if ( A->flags & SSF_UNTARGETABLE ) {
 			continue;
 		}
 
@@ -2675,7 +2678,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 	if (Ship_info[esct->shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) {
 		for (ss=GET_FIRST(&esct->shipp->subsys_list); ss!=END_OF_LIST(&esct->shipp->subsys_list); ss=GET_NEXT(ss)) {
 
-			if (!ss->system_info->targetable)
+			if (ss->flags & SSF_UNTARGETABLE)
 				continue;
 
 			if ( (ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits > 0) ) {
@@ -3182,7 +3185,7 @@ void hud_target_subsystem_in_reticle()
 	for (subsys = GET_FIRST(&Ships[shipnum].subsys_list); subsys != END_OF_LIST(&Ships[shipnum].subsys_list)  ; subsys = GET_NEXT( subsys ) ) {
 		
 		//if the subsystem isn't targetable, skip it
-		if(!subsys->system_info->targetable)
+		if (subsys->flags & SSF_UNTARGETABLE)
 			continue;
 
 		get_subsystem_world_pos(targetp, subsys, &subobj_pos);
@@ -4248,7 +4251,7 @@ void hud_show_hostile_triangle()
 		// check if any turrets on ship are firing at the player (only on non fighter-bombers)
 		if ( !(Ship_info[sp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER)) ) {
 			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
-				if (!ss->system_info->targetable)
+				if (ss->flags & SSF_UNTARGETABLE)
 					continue;
 
 				if ( (ss->system_info->type == SUBSYSTEM_TURRET) && (ss->current_hits > 0) ) {

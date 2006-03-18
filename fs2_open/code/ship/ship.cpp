@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.319 $
- * $Date: 2006-02-28 05:16:55 $
+ * $Revision: 2.320 $
+ * $Date: 2006-03-18 07:12:08 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.319  2006/02/28 05:16:55  Goober5000
+ * fix the animation type triggers
+ *
  * Revision 2.318  2006/02/27 04:17:11  Goober5000
  * add log entry for jettison-cargo
  *
@@ -3775,8 +3778,7 @@ strcpy(parse_error_text, temp_error);
 				sp->dead_snd = -1;
 				sp->rotation_snd = -1;
 				
-				sp->targetable = 1;
-				sp->carry_no_damage = 0;
+				sp->flags = 0;
 				
 				sp->n_triggers = 0;
 				sp->triggers = NULL;
@@ -3861,11 +3863,17 @@ strcpy(parse_error_text, temp_error);
 				sip->flags |= SIF_HAS_AWACS;
 			}
 
-			if(optional_string("+non-targetable"))
-				sp->targetable = 0;
+			if (optional_string("+untargetable"))
+				sp->flags |= MSS_FLAG_UNTARGETABLE;
+
+			if (optional_string("+non-targetable"))
+			{
+				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");
+				sp->flags |= MSS_FLAG_UNTARGETABLE;
+			}
 
 			if(optional_string("+carry-no-damage"))
-				sp->carry_no_damage = 1;
+				sp->flags |= MSS_FLAG_CARRY_NO_DAMAGE;
 
 			while(optional_string("$animation:"))
 			{
@@ -5242,7 +5250,13 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->system_info = model_system;				// set the system_info pointer to point to the data read in from the model
 
-		ship_system->subsys_guardian_threshold = 0;
+		// zero flags
+		ship_system->flags = 0;
+		ship_system->weapons.flags = 0;
+
+		// Goober5000
+		if (model_system->flags & MSS_FLAG_UNTARGETABLE)
+			ship_system->flags |= SSF_UNTARGETABLE;
 
 		// Goober5000 - this has to be moved outside back to parse_create_object, because
 		// a lot of the ship creation code is duplicated in several points and overwrites
@@ -5254,8 +5268,10 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		} else {
 			ship_system->current_hits = 0.0f;				// Jason wants this to be 0 in Fred.
 		}
-		ship_system->turret_next_fire_stamp = timestamp(0);
 
+		ship_system->subsys_guardian_threshold = 0;
+
+		ship_system->turret_next_fire_stamp = timestamp(0);
 		ship_system->turret_next_enemy_check_stamp = timestamp(0);
 		ship_system->turret_enemy_objnum = -1;
 		ship_system->turret_next_fire_stamp = timestamp((int) frand_range(1.0f, 500.0f));	// next time this turret can fire
@@ -5272,12 +5288,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		}
 
 		ship_system->subsys_cargo_name = -1;
-		ship_system->subsys_cargo_revealed = 0;
 		ship_system->time_subsys_cargo_revealed = 0;
 		
-		// zero flags
-		ship_system->weapons.flags = 0;
-
 		j = 0;
 		for (k=0; k<MAX_SHIP_PRIMARY_BANKS; k++){
 			if (model_system->primary_banks[k] != -1) {
@@ -13629,7 +13641,7 @@ void ship_do_cargo_revealed( ship *shipp, int from_network )
 void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int from_network )
 {
 	// don't do anything if we already know the cargo
-	if ( subsys->subsys_cargo_revealed ) {
+	if (subsys->flags & SSF_CARGO_REVEALED) {
 		return;
 	}
 
@@ -13642,7 +13654,7 @@ void ship_do_cap_subsys_cargo_revealed( ship *shipp, ship_subsys *subsys, int fr
 		send_subsystem_cargo_revealed_packet( shipp, subsystem_index );		
 	}
 
-	subsys->subsys_cargo_revealed = 1;
+	subsys->flags |= SSF_CARGO_REVEALED;
 	subsys->time_subsys_cargo_revealed = Missiontime;
 
 	// if the cargo is something other than "nothing", then make a log entry
@@ -13676,7 +13688,7 @@ void ship_do_cargo_hidden( ship *shipp, int from_network )
 void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, int from_network )
 {
 	// don't do anything if the cargo is already hidden
-	if ( !subsys->subsys_cargo_revealed )
+	if (!(subsys->flags & SSF_CARGO_REVEALED))
 	{
 		return;
 	}
@@ -13690,7 +13702,7 @@ void ship_do_cap_subsys_cargo_hidden( ship *shipp, ship_subsys *subsys, int from
 		send_subsystem_cargo_hidden_packet( shipp, subsystem_index );		
 	}
 
-	subsys->subsys_cargo_revealed = 0;
+	subsys->flags &= ~SSF_CARGO_REVEALED;
 
 	// don't log that the cargo was hidden and don't reset the time cargo revealed
 }

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.240 $
- * $Date: 2006-03-04 11:05:47 $
- * $Author: karajorma $
+ * $Revision: 2.241 $
+ * $Date: 2006-03-18 07:12:07 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.240  2006/03/04 11:05:47  karajorma
+ * Bah. Error in secondary and primary ammo SEXPs fixed
+ *
  * Revision 2.239  2006/03/03 06:14:41  Goober5000
  * fix the random-of sexps to only choose valid arguments
  *
@@ -1525,8 +1528,6 @@ sexp_oper Operators[] = {
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
-	{ "ship-targetable-as-bomb",	OP_SHIP_BOMB_TARGETABLE,			1, INT_MAX	},
-	{ "ship-nontargetable-as-bomb",	OP_SHIP_BOMB_NONTARGETABLE,			1, INT_MAX	},
 	{ "ship-guardian",				OP_SHIP_GUARDIAN,				1, INT_MAX	},
 	{ "ship-no-guardian",			OP_SHIP_NO_GUARDIAN,			1, INT_MAX	},
 	{ "ship-guardian-threshold",	OP_SHIP_GUARDIAN_THRESHOLD,				2, INT_MAX	},
@@ -1537,6 +1538,10 @@ sexp_oper Operators[] = {
 	{ "ship-unstealthy",			OP_SHIP_UNSTEALTHY,				1, INT_MAX },			// Goober5000
 	{ "friendly-stealth-invisible",	OP_FRIENDLY_STEALTH_INVISIBLE,	1, INT_MAX },	// Goober5000
 	{ "friendly-stealth-visible",	OP_FRIENDLY_STEALTH_VISIBLE,	1, INT_MAX },	// Goober5000
+	{ "ship-targetable-as-bomb",	OP_SHIP_BOMB_TARGETABLE,			1, INT_MAX	},
+	{ "ship-untargetable-as-bomb",	OP_SHIP_BOMB_UNTARGETABLE,			1, INT_MAX	},
+	{ "ship-subsys-targetable",		OP_SHIP_SUBSYS_TARGETABLE,		2, INT_MAX },	// Goober5000
+	{ "ship-subsys-untargetable",	OP_SHIP_SUBSYS_UNTARGETABLE,	2, INT_MAX },	// Goober5000
 	{ "ship-vaporize",				OP_SHIP_VAPORIZE,				1, INT_MAX },	// Goober5000
 	{ "ship-no-vaporize",			OP_SHIP_NO_VAPORIZE,			1, INT_MAX },	// Goober5000
 	{ "break-warp",					OP_WARP_BROKEN,					1, INT_MAX,	},
@@ -6753,7 +6758,7 @@ void get_cap_subsys_cargo_flags(int shipnum, char *subsys_name, int *known, fix 
 		if ( !subsystem_stricmp(ss->system_info->subobj_name, subsys_name))
 		{
 			// set the flags
-			*known = ss->subsys_cargo_revealed;
+			*known = (ss->flags & SSF_CARGO_REVEALED);
 			*time_revealed = ss->time_subsys_cargo_revealed;
 
 			subsys_set = 1;
@@ -10175,6 +10180,30 @@ void sexp_friendly_stealth_invisible(int n, int invisible)
 			if (Ships[shipnum].flags & SF_ESCORT)
 				hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
 		}
+	}
+}
+
+// Goober5000
+void sexp_ship_subsys_untargetable(int n, int untargetable)
+{
+	// get the ship
+	int ship_num = ship_name_lookup(CTEXT(n));
+	if (ship_num < 0)
+		return;
+	n = CDR(n);
+
+	// get the subsystems
+	for (; n >= 0; n = CDR(n))
+	{
+		char *subsystem_name = CTEXT(n);
+		ship_subsys *ss = ship_get_subsys(&Ships[ship_num], CTEXT(n));
+		if (ss == NULL)
+			continue;
+
+		if (untargetable)
+			ss->flags |= SSF_UNTARGETABLE;
+		else
+			ss->flags &= ~SSF_UNTARGETABLE;
 	}
 }
 
@@ -13872,23 +13901,23 @@ int eval_sexp(int cur_node, int referenced_node)
 		switch ( op_num ) {
 		// arithmetic operators will always return just their value
 			case OP_PLUS:
-				sexp_val = add_sexps( node );
+				sexp_val = add_sexps(node);
 				break;
 
 			case OP_MINUS:
-				sexp_val = sub_sexps( node );
+				sexp_val = sub_sexps(node);
 				break;
 
 			case OP_MUL:
-				sexp_val = mul_sexps( node );
+				sexp_val = mul_sexps(node);
 				break;
 
 			case OP_MOD:
-				sexp_val = mod_sexps( node );
+				sexp_val = mod_sexps(node);
 				break;
 
 			case OP_DIV:
-				sexp_val = div_sexps( node );
+				sexp_val = div_sexps(node);
 				break;
 
 			case OP_RAND:
@@ -13897,19 +13926,19 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_ABS:
-				sexp_val = abs_sexp( node );
+				sexp_val = abs_sexp(node);
 				break;
 
 			case OP_MIN:
-				sexp_val = min_sexp( node );
+				sexp_val = min_sexp(node);
 				break;
 
 			case OP_MAX:
-				sexp_val = max_sexp( node );
+				sexp_val = max_sexp(node);
 				break;
 
 			case OP_AVG:
-				sexp_val = avg_sexp( node );
+				sexp_val = avg_sexp(node);
 				break;
 
 			// boolean operators can have one of the special sexp values (known true, known false, unknown)
@@ -13922,15 +13951,15 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_OR:
-				sexp_val = sexp_or( node );
+				sexp_val = sexp_or(node);
 				break;
 
 			case OP_AND:
-				sexp_val = sexp_and( node );
+				sexp_val = sexp_and(node);
 				break;
 
 			case OP_AND_IN_SEQUENCE:
-				sexp_val = sexp_and_in_sequence( node );
+				sexp_val = sexp_and_in_sequence(node);
 				break;
 
 			case OP_GREATER_THAN:
@@ -13946,11 +13975,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_IFF:
-				sexp_val = sexp_is_iff( node );
+				sexp_val = sexp_is_iff(node);
 				break;
 
 			case OP_NOT:
-				sexp_val = sexp_not( node );
+				sexp_val = sexp_not(node);
 				break;
 
 			case OP_PREVIOUS_GOAL_TRUE:
@@ -13998,13 +14027,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_EVENT_INCOMPLETE:
-				sexp_val = sexp_event_incomplete( node );
+				sexp_val = sexp_event_incomplete(node);
 				if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
 					Sexp_useful_number = 0;  // indicate sexp isn't current yet
 				break;
 
 			case OP_GOAL_INCOMPLETE:
-				sexp_val = sexp_goal_incomplete( node );
+				sexp_val = sexp_goal_incomplete(node);
 				break;
 
 			// destroy type sexpressions
@@ -14013,11 +14042,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_IS_SUBSYSTEM_DESTROYED:
-				sexp_val = sexp_is_subsystem_destroyed( node );
+				sexp_val = sexp_is_subsystem_destroyed(node);
 				break;
 
 			case OP_HAS_DOCKED:
-				sexp_val = sexp_has_docked( node );
+				sexp_val = sexp_has_docked(node);
 				break;
 
 			case OP_HAS_ARRIVED:
@@ -14029,7 +14058,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_HAS_UNDOCKED:
-				sexp_val = sexp_has_undocked( node );
+				sexp_val = sexp_has_undocked(node);
 				break;
 
 			case OP_IS_DISABLED:
@@ -14041,82 +14070,82 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_WAYPOINTS_DONE:
-				sexp_val = sexp_are_waypoints_done( node );
+				sexp_val = sexp_are_waypoints_done(node);
 				break;
 
 			// objective operators that use a delay
 			case OP_IS_DESTROYED_DELAY:
-				sexp_val = sexp_is_destroyed_delay( node );
+				sexp_val = sexp_is_destroyed_delay(node);
 				break;
 
 			case OP_IS_SUBSYSTEM_DESTROYED_DELAY:
-				sexp_val = sexp_is_subsystem_destroyed_delay( node );
+				sexp_val = sexp_is_subsystem_destroyed_delay(node);
 				break;
 
 			case OP_HAS_DOCKED_DELAY:
-				sexp_val = sexp_has_docked_delay( node );
+				sexp_val = sexp_has_docked_delay(node);
 				break;
 
 			case OP_HAS_ARRIVED_DELAY:
-				sexp_val = sexp_has_arrived_delay( node );
+				sexp_val = sexp_has_arrived_delay(node);
 				break;
 
 			case OP_HAS_DEPARTED_DELAY:
-				sexp_val = sexp_has_departed_delay( node );
+				sexp_val = sexp_has_departed_delay(node);
 				break;
 
 			case OP_HAS_UNDOCKED_DELAY:
-				sexp_val = sexp_has_undocked_delay( node );
+				sexp_val = sexp_has_undocked_delay(node);
 				break;
 
 			case OP_IS_DISABLED_DELAY:
-				sexp_val = sexp_is_disabled_delay( node );
+				sexp_val = sexp_is_disabled_delay(node);
 				break;
 
 			case OP_IS_DISARMED_DELAY:
-				sexp_val = sexp_is_disarmed_delay( node );
+				sexp_val = sexp_is_disarmed_delay(node);
 				break;
 
 			case OP_WAYPOINTS_DONE_DELAY:
-				sexp_val = sexp_are_waypoints_done_delay( node );
+				sexp_val = sexp_are_waypoints_done_delay(node);
 				break;
 
 			case OP_SHIP_TYPE_DESTROYED:
-				sexp_val = sexp_ship_type_destroyed( node );
+				sexp_val = sexp_ship_type_destroyed(node);
 				break;
 
 			// time based sexpressions
 			case OP_HAS_TIME_ELAPSED:
-				sexp_val = sexp_has_time_elapsed( node );
+				sexp_val = sexp_has_time_elapsed(node);
 				break;
 
 			case OP_MODIFY_VARIABLE:
-				sexp_modify_variable( node );
+				sexp_modify_variable(node);
 				sexp_val = SEXP_TRUE;	// SEXP_TRUE means only do once.
 				break;
 
 			case OP_TIME_SHIP_DESTROYED:
-				sexp_val = sexp_time_destroyed( node );
+				sexp_val = sexp_time_destroyed(node);
 				break;
 			
 			case OP_TIME_WING_DESTROYED:
-				sexp_val = sexp_time_wing_destroyed( node );
+				sexp_val = sexp_time_wing_destroyed(node);
 				break;
 			
 			case OP_TIME_SHIP_ARRIVED:
-				sexp_val = sexp_time_ship_arrived( node );
+				sexp_val = sexp_time_ship_arrived(node);
 				break;
 			
 			case OP_TIME_WING_ARRIVED:
-				sexp_val = sexp_time_wing_arrived( node );
+				sexp_val = sexp_time_wing_arrived(node);
 				break;
 			
 			case OP_TIME_SHIP_DEPARTED:
-				sexp_val = sexp_time_ship_departed( node );
+				sexp_val = sexp_time_ship_departed(node);
 				break;
 			
 			case OP_TIME_WING_DEPARTED:
-				sexp_val = sexp_time_wing_departed( node );
+				sexp_val = sexp_time_wing_departed(node);
 				break;
 
 			case OP_MISSION_TIME:
@@ -14124,60 +14153,60 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_TIME_DOCKED:
-				sexp_val = sexp_time_docked( node );
+				sexp_val = sexp_time_docked(node);
 				break;
 
 			case OP_TIME_UNDOCKED:
-				sexp_val = sexp_time_undocked( node );
+				sexp_val = sexp_time_undocked(node);
 				break;
 
 			// info based sexpressions (like shields, hits
 			case OP_SHIELDS_LEFT:
-				sexp_val = sexp_shields_left( node );
+				sexp_val = sexp_shields_left(node);
 				break;
 
 			case OP_HITS_LEFT:
-				sexp_val = sexp_hits_left( node );
+				sexp_val = sexp_hits_left(node);
 				break;
 
 			case OP_HITS_LEFT_SUBSYSTEM:
-				sexp_val = sexp_hits_left_subsystem( node );
+				sexp_val = sexp_hits_left_subsystem(node);
 				break;
 
 			case OP_SPECIAL_WARP_DISTANCE:
-				sexp_val = sexp_special_warp_dist( node );
+				sexp_val = sexp_special_warp_dist(node);
 				break;
 
 			case OP_DISTANCE:
-				sexp_val = sexp_distance( node );
+				sexp_val = sexp_distance(node);
 				break;
 
 			case OP_DISTANCE_SUBSYSTEM:
-				sexp_val = sexp_distance_subsystem( node );
+				sexp_val = sexp_distance_subsystem(node);
 				break;
 
 			case OP_NUM_WITHIN_BOX:
-				sexp_val = sexp_num_within_box( node );
+				sexp_val = sexp_num_within_box(node);
 				break;
 
 			case OP_IS_SHIP_VISIBLE:
-				sexp_val = sexp_is_ship_visible( node );
+				sexp_val = sexp_is_ship_visible(node);
 				break;
 
 			case OP_IS_SHIP_STEALTHY:
-				sexp_val = sexp_is_ship_stealthy( node );
+				sexp_val = sexp_is_ship_stealthy(node);
 				break;
 
 			case OP_IS_FRIENDLY_STEALTH_VISIBLE:
-				sexp_val = sexp_is_friendly_stealth_visible( node );
+				sexp_val = sexp_is_friendly_stealth_visible(node);
 				break;
 
 			case OP_TEAM_SCORE:
-				sexp_val = sexp_team_score( node );
+				sexp_val = sexp_team_score(node);
 				break;
 
 			case OP_LAST_ORDER_TIME:
-				sexp_val = sexp_last_order_time( node );
+				sexp_val = sexp_last_order_time(node);
 				break;
 
 			case OP_NUM_PLAYERS:
@@ -14185,7 +14214,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SKILL_LEVEL_AT_LEAST:
-				sexp_val = sexp_skill_level_at_least( node );
+				sexp_val = sexp_skill_level_at_least(node);
 				break;
 
 			case OP_IS_CARGO_KNOWN:
@@ -14217,11 +14246,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_DEPART_NODE_DELAY:
-				sexp_val = sexp_depart_node_delay( node );
+				sexp_val = sexp_depart_node_delay(node);
 				break;
 
 			case OP_DESTROYED_DEPARTED_DELAY:
-				sexp_val = sexp_destroyed_departed_delay( node );
+				sexp_val = sexp_destroyed_departed_delay(node);
 				break;
 
 			// conditional sexpressions
@@ -14231,7 +14260,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_COND:
-				sexp_val = eval_cond( node );
+				sexp_val = eval_cond(node);
 				break;
 
 			// Goober5000: special case; evaluate like when, but flush the sexp tree
@@ -14239,7 +14268,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_EVERY_TIME:
 			case OP_EVERY_TIME_ARGUMENT:
 				eval_when( node, (op_num == OP_EVERY_TIME_ARGUMENT) );
-				flush_sexp_tree( node );
+				flush_sexp_tree(node);
 				sexp_val = SEXP_NAN;
 				break;
 
@@ -14266,80 +14295,80 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			// Goober5000
 			case OP_INVALIDATE_ARGUMENT:
-				sexp_invalidate_argument( node );
+				sexp_invalidate_argument(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			// sexpressions with side effects
 			case OP_CHANGE_IFF:
-				sexp_change_iff( node );
+				sexp_change_iff(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ADD_SHIP_GOAL:
-				sexp_add_ship_goal( node );
+				sexp_add_ship_goal(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ADD_WING_GOAL:
-				sexp_add_wing_goal( node );
+				sexp_add_wing_goal(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ADD_GOAL:
-				sexp_add_goal( node );
+				sexp_add_goal(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CLEAR_SHIP_GOALS:
-				sexp_clear_ship_goals( node );
+				sexp_clear_ship_goals(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CLEAR_WING_GOALS:
-				sexp_clear_wing_goals( node );
+				sexp_clear_wing_goals(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CLEAR_GOALS:
-				sexp_clear_goals( node );
+				sexp_clear_goals(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_PROTECT_SHIP:
 			case OP_UNPROTECT_SHIP:
-				sexp_protect_ships( node, (op_num==OP_PROTECT_SHIP?1:0) );
+				sexp_protect_ships(node, (op_num == OP_PROTECT_SHIP));
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_BEAM_PROTECT_SHIP:
 			case OP_BEAM_UNPROTECT_SHIP:
-				sexp_beam_protect_ships( node, (op_num==OP_BEAM_PROTECT_SHIP?1:0) );
+				sexp_beam_protect_ships(node, (op_num == OP_BEAM_PROTECT_SHIP));
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_STEALTHY:
 			case OP_SHIP_UNSTEALTHY:
-				sexp_ships_stealthy( node, (op_num == OP_SHIP_STEALTHY) );
+				sexp_ships_stealthy(node, (op_num == OP_SHIP_STEALTHY));
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_FRIENDLY_STEALTH_INVISIBLE:
 			case OP_FRIENDLY_STEALTH_VISIBLE:
-				sexp_friendly_stealth_invisible( node, (op_num == OP_FRIENDLY_STEALTH_INVISIBLE) );
+				sexp_friendly_stealth_invisible(node, (op_num == OP_FRIENDLY_STEALTH_INVISIBLE));
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_INVISIBLE:
 			case OP_SHIP_VISIBLE:
-				sexp_ships_visible( node, (op_num==OP_SHIP_VISIBLE?1:0) );
+				sexp_ships_visible(node, (op_num == OP_SHIP_VISIBLE));
 				sexp_val = SEXP_TRUE;
 				break;
 
 			// Goober5000
 			case OP_SHIP_TAG:
 			case OP_SHIP_UNTAG:
-				sexp_ship_tag(node, op_num==OP_SHIP_TAG?1:0);
+				sexp_ship_tag(node, (op_num == OP_SHIP_TAG));
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -14350,19 +14379,19 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_SHIP_VULNERABLE:
 			case OP_SHIP_INVULNERABLE:
-				sexp_ships_invulnerable( node, (op_num==OP_SHIP_INVULNERABLE?1:0) );
+				sexp_ships_invulnerable(node, (op_num == OP_SHIP_INVULNERABLE));
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_BOMB_TARGETABLE:
-			case OP_SHIP_BOMB_NONTARGETABLE:
-				sexp_ships_bomb_targetable( node, (op_num==OP_SHIP_BOMB_TARGETABLE?1:0) );
+			case OP_SHIP_BOMB_UNTARGETABLE:
+				sexp_ships_bomb_targetable(node, (op_num == OP_SHIP_BOMB_TARGETABLE));
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_GUARDIAN:
 			case OP_SHIP_NO_GUARDIAN:
-				sexp_ships_guardian( node, (op_num==OP_SHIP_GUARDIAN?1:0) );
+				sexp_ships_guardian(node, (op_num == OP_SHIP_GUARDIAN));
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -14375,32 +14404,38 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_ship_subsys_guardian_threshold(node);
 				sexp_val = SEXP_TRUE;
 				break;
-			
+
+			case OP_SHIP_SUBSYS_TARGETABLE:
+			case OP_SHIP_SUBSYS_UNTARGETABLE:
+				sexp_ship_subsys_untargetable(node, (op_num == OP_SHIP_SUBSYS_UNTARGETABLE));
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SHIP_CREATE:
-				sexp_ship_create ( node );
+				sexp_ship_create(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_WEAPON_CREATE:
-				sexp_weapon_create ( node );
+				sexp_weapon_create(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SHIP_VANISH:
-				sexp_ship_vanish( node );
+				sexp_ship_vanish(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			//-Sesquipedalian
 			case OP_SHIELDS_ON: 
 			case OP_SHIELDS_OFF:
-				sexp_shields_off( node, (op_num==OP_SHIELDS_OFF?1:0) );
+				sexp_shields_off(node, (op_num == OP_SHIELDS_OFF));
 				sexp_val = SEXP_TRUE;
 				break;
 
 			//-Sesquipedalian
 			case OP_KAMIKAZE: 
-				sexp_kamikaze(node, op_num==OP_KAMIKAZE?1:0);
+				sexp_kamikaze(node, (op_num == OP_KAMIKAZE));
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -14510,52 +14545,52 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SEND_MESSAGE:
-				sexp_send_message( node );
+				sexp_send_message(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SEND_MESSAGE_LIST:
-				sexp_send_message_list( node );
+				sexp_send_message_list(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SEND_RANDOM_MESSAGE:
-				sexp_send_random_message( node );
+				sexp_send_random_message(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SELF_DESTRUCT:
-				sexp_self_destruct( node );
+				sexp_self_destruct(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_NEXT_MISSION:
-				sexp_next_mission( node );
+				sexp_next_mission(node);
 				sexp_val = SEXP_TRUE;
 				break;
 				
 			case OP_END_OF_CAMPAIGN:
-				sexp_end_of_campaign( node );
+				sexp_end_of_campaign(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_END_CAMPAIGN:
-				sexp_end_campaign( node );
+				sexp_end_campaign(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SABOTAGE_SUBSYSTEM:
-				sexp_sabotage_subsystem( node );
+				sexp_sabotage_subsystem(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_REPAIR_SUBSYSTEM:
-				sexp_repair_subsystem( node );
+				sexp_repair_subsystem(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_SET_SUBSYSTEM_STRNGTH:
-				sexp_set_subsystem_strength( node );
+				sexp_set_subsystem_strength(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -14566,23 +14601,23 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_TRANSFER_CARGO:
-				sexp_transfer_cargo( node );
+				sexp_transfer_cargo(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_EXCHANGE_CARGO:
-				sexp_exchange_cargo( node );
+				sexp_exchange_cargo(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 
 			case OP_JETTISON_CARGO:
-				sexp_jettison_cargo( node );
+				sexp_jettison_cargo(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_CARGO_NO_DEPLETE:
-				sexp_cargo_no_deplete( node );
+				sexp_cargo_no_deplete(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -14593,13 +14628,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SET_SPECIAL_WARPOUT_NAME:
-				sexp_special_warpout_name( node );
+				sexp_special_warpout_name(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			//-WMC
 			case OP_MISSION_SET_NEBULA:
-				sexp_mission_set_nebula( node );
+				sexp_mission_set_nebula(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -14634,7 +14669,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_END_MISSION:
-				sexp_end_mission( node );
+				sexp_end_mission(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -14646,7 +14681,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 				// sexpressions for setting flag for good/bad time for someone to reasm
 			case OP_GOOD_REARM_TIME:
-				sexp_good_time_to_rearm( node );
+				sexp_good_time_to_rearm(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -14656,7 +14691,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_GRANT_MEDAL:
-				sexp_grant_medal( node );
+				sexp_grant_medal(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -14683,18 +14718,18 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_GOOD_SECONDARY_TIME:
-				sexp_good_secondary_time( node );
+				sexp_good_secondary_time(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			// sexpressions to allow shpis/weapons during the course of a mission
 			case OP_ALLOW_SHIP:
-				sexp_allow_ship( node );
+				sexp_allow_ship(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_ALLOW_WEAPON:
-				sexp_allow_weapon( node );
+				sexp_allow_weapon(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -15624,7 +15659,7 @@ int query_operator_return_type(int op)
 		case OP_SHIP_VULNERABLE:
 		case OP_SHIP_INVULNERABLE:
 		case OP_SHIP_BOMB_TARGETABLE:
-		case OP_SHIP_BOMB_NONTARGETABLE:
+		case OP_SHIP_BOMB_UNTARGETABLE:
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_GUARDIAN_THRESHOLD:
@@ -15636,6 +15671,8 @@ int query_operator_return_type(int op)
 		case OP_SHIP_UNSTEALTHY:
 		case OP_FRIENDLY_STEALTH_INVISIBLE:
 		case OP_FRIENDLY_STEALTH_VISIBLE:
+		case OP_SHIP_SUBSYS_TARGETABLE:
+		case OP_SHIP_SUBSYS_UNTARGETABLE:
 		case OP_RED_ALERT:
 		case OP_MODIFY_VARIABLE:
 		case OP_BEAM_FIRE:
@@ -15899,7 +15936,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_INVULNERABLE:
 		case OP_SHIP_VULNERABLE:
 		case OP_SHIP_BOMB_TARGETABLE:
-		case OP_SHIP_BOMB_NONTARGETABLE:
+		case OP_SHIP_BOMB_UNTARGETABLE:
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_VANISH:
@@ -15948,6 +15985,13 @@ int query_operator_argument_type(int op, int argnum)
 			if (argnum == 0)
 				return OPF_POSITIVE;
 			else if (argnum == 1)
+				return OPF_SHIP;
+			else
+				return OPF_SUBSYSTEM;
+
+		case OP_SHIP_SUBSYS_TARGETABLE:
+		case OP_SHIP_SUBSYS_UNTARGETABLE:
+			if (argnum == 0)
 				return OPF_SHIP;
 			else
 				return OPF_SUBSYSTEM;
@@ -17954,7 +17998,7 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_INVULNERABLE:
 		case OP_SHIP_VULNERABLE:
 		case OP_SHIP_BOMB_TARGETABLE:
-		case OP_SHIP_BOMB_NONTARGETABLE:
+		case OP_SHIP_BOMB_UNTARGETABLE:
 		case OP_SHIP_GUARDIAN:
 		case OP_SHIP_NO_GUARDIAN:
 		case OP_SHIP_GUARDIAN_THRESHOLD:
@@ -17965,6 +18009,8 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_UNSTEALTHY:
 		case OP_FRIENDLY_STEALTH_INVISIBLE:
 		case OP_FRIENDLY_STEALTH_VISIBLE:
+		case OP_SHIP_SUBSYS_TARGETABLE:
+		case OP_SHIP_SUBSYS_UNTARGETABLE:
 		case OP_WARP_BROKEN:
 		case OP_WARP_NOT_BROKEN:
 		case OP_WARP_NEVER:
@@ -19372,7 +19418,7 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 1 or more arguments...\r\n"
 		"\t1+:\tName of ships to make targetable with bomb targeting key." },
 
-	{ OP_SHIP_BOMB_NONTARGETABLE, "ship-nontargetable-as-bomb\r\n"
+	{ OP_SHIP_BOMB_UNTARGETABLE, "ship-untargetable-as-bomb\r\n"
 		"\tCauses the ships listed in this sexpression to not be targetable with bomb targetting key.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\t1+:\tName of ships to make nontargetable with bomb targeting key." },
@@ -19440,6 +19486,20 @@ sexp_help_struct Sexp_help[] = {
 		"stealth friendlies.  Does not affect their visibility as stealth hostiles.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of ships" },
+
+	// Goober5000
+	{ OP_SHIP_SUBSYS_TARGETABLE, "ship-subsys-targetable\r\n"
+		"\tCauses the specified ship subsystem(s) to be targetable on radar.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of a ship\r\n"
+		"\tRest: Name of the ship's subsystem(s)" },
+
+	// Goober5000
+	{ OP_SHIP_SUBSYS_UNTARGETABLE, "ship-subsys-untargetable\r\n"
+		"\tCauses the specified ship subsystem(s) to not be targetable on radar.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tName of a ship\r\n"
+		"\tRest: Name of the ship's subsystem(s)" },
 
 	// Goober5000
 	{ OP_SHIP_CHANGE_ALT_NAME, "ship-change-alt-name\r\n"

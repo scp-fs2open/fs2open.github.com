@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.138 $
- * $Date: 2006-02-26 23:23:31 $
- * $Author: wmcoolmon $
+ * $Revision: 2.139 $
+ * $Date: 2006-03-18 07:12:08 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.138  2006/02/26 23:23:31  wmcoolmon
+ * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
+ *
  * Revision 2.137  2006/02/26 22:23:01  wmcoolmon
  * SF2_TARGETABLE_AS_BOMBER flag, Lua gr_bitmap_ex fix
  *
@@ -958,6 +961,10 @@ extern std::vector<ArmorType> Armor_types;
 #define NUM_TURRET_ORDER_TYPES		3
 extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 
+// Goober5000
+#define SSF_CARGO_REVEALED		(1 << 0)
+#define SSF_UNTARGETABLE		(1 << 1)
+
 // structure definition for a linked list of subsystems for a ship.  Each subsystem has a pointer
 // to the static data for the subsystem.  The obj_subsystem data is defined and read in the model
 // code.  Other dynamic data (such as current_hits) should remain in this structure.
@@ -966,6 +973,8 @@ typedef	struct ship_subsys {
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
 	float		current_hits;							// current number of hits this subsystem has left.
 	float		max_hits;
+
+	int flags;						// Goober5000
 
 	int subsys_guardian_threshold;	// Goober5000
 
@@ -1011,7 +1020,6 @@ typedef	struct ship_subsys {
 	int disruption_timestamp;							// time at which subsystem isn't disrupted
 
 	int subsys_cargo_name;			// cap ship cargo on subsys
-	int subsys_cargo_revealed;
 	fix time_subsys_cargo_revealed;	// added by Goober5000
 } ship_subsys;
 
