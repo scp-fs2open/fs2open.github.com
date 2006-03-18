@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-12-29 08:08:42 $
+ * $Revision: 2.21 $
+ * $Date: 2006-03-18 20:24:54 $
  * $Author: wmcoolmon $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.19  2005/11/21 02:43:30  Goober5000
  * change from "setting" to "profile"; this way makes more sense
  * --Goober5000
@@ -324,7 +327,7 @@ void afterburners_start(object *objp)
 	percent_left = shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 
 	//Do anim
-	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCK_BAY_DOOR, 0, 1);
+	ship_start_animation_type(shipp, TRIGGER_TYPE_AFTERBURNER, ANIMATION_SUBTYPE_ALL, 1);
 
 	if ( objp == Player_obj ) {
 		Player_afterburner_start_time = timer_get_milliseconds();
@@ -504,7 +507,7 @@ void afterburners_stop(object *objp, int key_released)
 	percent_left = shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 
 	//Do anim
-	ship_start_animation_type(shipp, TRIGGER_TYPE_DOCK_BAY_DOOR, 0, -1);
+	ship_start_animation_type(shipp, TRIGGER_TYPE_AFTERBURNER, ANIMATION_SUBTYPE_ALL, -1);
 
 	if ( objp == Player_obj ) {
 
