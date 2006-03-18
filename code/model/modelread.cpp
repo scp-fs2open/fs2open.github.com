@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.96 $
- * $Date: 2006-03-08 05:15:20 $
+ * $Revision: 2.97 $
+ * $Date: 2006-03-18 10:25:05 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2006/03/08 05:15:20  taylor
+ * add model_allocate_interp_data() extern for PPC machines
+ *
  * Revision 2.95  2006/02/27 00:40:34  wmcoolmon
  * Consistency in Lua 2D funcs; fix FRED2 loading screen images dialog boxes.
  *
@@ -2859,7 +2862,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	//a quick hack for glow mapping-Bobboau
 	//redid the way glowmaps are handeled
 
-	if (Cmdline_noglow) {
+	if (Cmdline_noglow || (pm->textures[i] < 0)) {
 		pm->glow_textures[i] = -1;
 		pm->glow_original_textures[i] = -1;
 		pm->glow_is_ani[i] = 0;
@@ -2893,7 +2896,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		pm->glow_original_textures[i] = pm->glow_textures[i];
 	}
 
-	if (Cmdline_nospec) {
+	if (Cmdline_nospec || (pm->textures[i] < 0)) {
 		pm->specular_textures[i] = -1;
 		pm->specular_original_textures[i] = -1;
 	} else {
@@ -2911,6 +2914,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		pm->specular_original_textures[i] = pm->specular_textures[i];
 	}
 
+#ifdef BUMPMAPPING
 	//WMC: BUMP mapping
 	if(1)
 	{
@@ -2924,6 +2928,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
 		}
 	}
+#endif
 }
 
 
