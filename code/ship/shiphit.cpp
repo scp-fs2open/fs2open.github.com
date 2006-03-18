@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.61 $
- * $Date: 2006-02-25 21:47:08 $
+ * $Revision: 2.62 $
+ * $Date: 2006-03-18 07:12:08 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2006/02/25 21:47:08  Goober5000
+ * spelling
+ *
  * Revision 2.60  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -1266,7 +1269,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	//WMC - MK, whoever you are, thank you for that comment.
 	if(count)
 	{
-		if(subsys_list[0].ptr->system_info->carry_no_damage)
+		if(subsys_list[0].ptr->system_info->flags & MSS_FLAG_CARRY_NO_DAMAGE)
 		{
 			return damage_left;
 		}

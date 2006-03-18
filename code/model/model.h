@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.74 $
- * $Date: 2006-02-27 00:51:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.75 $
+ * $Date: 2006-03-18 07:12:07 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2006/02/27 00:51:03  wmcoolmon
+ * Bump MAX_TFP to 10
+ *
  * Revision 2.73  2006/02/25 21:47:07  Goober5000
  * spelling
  *
@@ -659,14 +662,16 @@ typedef struct submodel_instance_info {
 #define MAX_MODEL_SUBSYSTEMS		200				// used in ships.cpp (only place?) for local stack variable DTP; bumped to 200
 													// when reading in ships.tbl
 
-#define MSS_FLAG_ROTATES			(1<<0)		// This means the object rotates automatically with "turn_rate"
-#define MSS_FLAG_STEPPED_ROTATE		(1<<1)		// This means that the rotation occurs in steps
-#define MSS_FLAG_AI_ROTATE			(1<<2)		// This means that the rotation is controlled by ai
-#define MSS_FLAG_CREWPOINT			(1<<3)		// If set, this is a crew point.
-#define MSS_FLAG_TURRET_MATRIX		(1<<4)		// If set, this has it's turret matrix created correctly.
-#define MSS_FLAG_AWACS				(1<<5)		// If set, this subsystem has AWACS capability
-#define MSS_FLAG_ARTILLERY			(1<<6)		// if this rotates when weapons are fired - Goober5000
-#define MSS_FLAG_TRIGGERED			(1<<7)		// rotates when triggered by something
+#define MSS_FLAG_ROTATES			(1 << 0)		// This means the object rotates automatically with "turn_rate"
+#define MSS_FLAG_STEPPED_ROTATE		(1 << 1)		// This means that the rotation occurs in steps
+#define MSS_FLAG_AI_ROTATE			(1 << 2)		// This means that the rotation is controlled by ai
+#define MSS_FLAG_CREWPOINT			(1 << 3)		// If set, this is a crew point.
+#define MSS_FLAG_TURRET_MATRIX		(1 << 4)		// If set, this has it's turret matrix created correctly.
+#define MSS_FLAG_AWACS				(1 << 5)		// If set, this subsystem has AWACS capability
+#define MSS_FLAG_ARTILLERY			(1 << 6)		// if this rotates when weapons are fired - Goober5000
+#define MSS_FLAG_TRIGGERED			(1 << 7)		// rotates when triggered by something
+#define MSS_FLAG_UNTARGETABLE		(1 << 8)		// Goober5000
+#define MSS_FLAG_CARRY_NO_DAMAGE	(1 << 9)		// WMC
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -781,6 +786,7 @@ public:
 
 // definition for model subsystems.
 typedef struct model_subsystem {					/* contains rotation rate info */
+
 	uint		flags;									// See MSS_FLAG_* defines above
 	char		name[MAX_NAME_LEN];					// name of the subsystem.  Probably displayed on HUD
 	char		subobj_name[MAX_NAME_LEN];			// Temporary (hopefully) parameter used to match stuff in ships.tbl
@@ -831,12 +837,9 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	decal_system model_decal_system;
 
 	triggered_rotation trigger;		//the actual currently running animation and assosiated states
-
 	int n_triggers;
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
 
-	ubyte	targetable;	//can you target this thing
-	ubyte	carry_no_damage; //does it carry damage? -C
 } model_subsystem;
 
 typedef struct model_special {

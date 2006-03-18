@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.39 $
- * $Date: 2006-02-25 21:47:07 $
+ * $Revision: 2.40 $
+ * $Date: 2006-03-18 07:12:07 $
  * $Author: Goober5000 $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2006/02/25 21:47:07  Goober5000
+ * spelling
+ *
  * Revision 2.38  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -1959,7 +1962,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	}
 
 	// if cargo is already revealed
-	if ( subsys->subsys_cargo_revealed ) {
+	if (subsys->flags & SSF_CARGO_REVEALED) {
 		char *cargo_name;
 		if (subsys->subsys_cargo_name == -1) {
 			cargo_name = XSTR("Nothing", 1493);

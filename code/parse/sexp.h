@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.115 $
- * $Author: taylor $
- * $Date: 2006-03-12 07:35:33 $
+ * $Revision: 2.116 $
+ * $Author: Goober5000 $
+ * $Date: 2006-03-18 07:12:07 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.115  2006/03/12 07:35:33  taylor
+ * bump sexp nodes to 4000 for TBP, really needs to go dynamic soon
+ *
  * Revision 2.114  2006/03/03 06:14:41  Goober5000
  * fix the random-of sexps to only choose valid arguments
  *
@@ -1247,7 +1250,11 @@ struct ship_subsys;
 #define OP_SET_SECONDARY_AMMO				(0x00c4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 #define OP_SHIP_BOMB_TARGETABLE				(0x00c5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//WMC
-#define OP_SHIP_BOMB_NONTARGETABLE			(0x00c6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//WMC
+#define OP_SHIP_BOMB_UNTARGETABLE			(0x00c6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//WMC
+
+#define OP_SHIP_SUBSYS_TARGETABLE			(0x00c7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SHIP_SUBSYS_UNTARGETABLE			(0x00c8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
 
 /* made obsolete by Goober5000
 // debugging sexpressions
