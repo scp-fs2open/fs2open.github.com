@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.241 $
- * $Date: 2006-03-18 07:12:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.242 $
+ * $Date: 2006-03-18 10:26:42 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.241  2006/03/18 07:12:07  Goober5000
+ * add ship-subsys-targetable and ship-subsys-untargetable
+ * --Goober5000
+ *
  * Revision 2.240  2006/03/04 11:05:47  karajorma
  * Bah. Error in secondary and primary ammo SEXPs fixed
  *
@@ -4042,7 +4046,7 @@ int rand_internal(int low, int high, int seed = 0)
 	int diff;
 
 	// maybe seed it
-	if (seed != 0)
+	if (seed > 0)
 		srand(seed);
 
 	// get diff - don't allow negative or zero
@@ -4114,41 +4118,43 @@ int avg_sexp(int n)
 // seeding added by Karajorma and Goober5000
 int rand_sexp(int n, bool multiple)
 {
-	int low, high, rand_num, seed;
+	int low, high, rand_num = 0, seed;
 
-	// when getting a saved value
-	if (Sexp_nodes[n].value == SEXP_NUM_EVAL)
-	{
-		// don't regenerate new random number
-		return atoi(CTEXT(n));
-	}
+	if (n != -1) {
+		// when getting a saved value
+		if (Sexp_nodes[n].value == SEXP_NUM_EVAL)
+		{
+			// don't regenerate new random number
+			return atoi(CTEXT(n));
+		}
 
-	// get low
-//	if (Sexp_nodes[n].first != -1) {
-//		low = eval_sexp(Sexp_nodes[n].first);
-//	} else {
-//		low = atoi(CTEXT(n));
-//	}
-	low = eval_num(n);
+		// get low
+	//	if (Sexp_nodes[n].first != -1) {
+	//		low = eval_sexp(Sexp_nodes[n].first);
+	//	} else {
+	//		low = atoi(CTEXT(n));
+	//	}
+		low = eval_num(n);
 
-	// get high
-	high = eval_num(CDR(n));
+		// get high
+		high = eval_num(CDR(n));
 			
-	// is there a seed provided?
-	if (CDR(CDR(n)) != -1)
-		seed = eval_num(CDR(CDR(n)));
-	else
-		seed = 0;
+		// is there a seed provided?
+		if (CDDR(n) != -1)
+			seed = eval_num(CDDR(n));
+		else
+			seed = 0;
 
-	// get the random number
-	rand_num = rand_internal(low, high, seed);
+		// get the random number
+		rand_num = rand_internal(low, high, seed);
 
-	// when saving the value
-	if (!multiple)
-	{
-		// set .value and .text so random number is generated only once.
-		Sexp_nodes[n].value = SEXP_NUM_EVAL;
-		sprintf(Sexp_nodes[n].text, "%d", rand_num);
+		// when saving the value
+		if (!multiple)
+		{
+			// set .value and .text so random number is generated only once.
+			Sexp_nodes[n].value = SEXP_NUM_EVAL;
+			sprintf(Sexp_nodes[n].text, "%d", rand_num);
+		}
 	}
 
 	return rand_num;
