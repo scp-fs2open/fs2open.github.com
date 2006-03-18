@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.22 $
- * $Date: 2006-02-19 03:17:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2006-03-18 10:28:25 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/02/19 03:17:01  Goober5000
+ * fix stealth
+ * --Goober5000
+ *
  * Revision 2.21  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -355,6 +359,10 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	// if the viewer is me, and I'm a multiplayer observer, its always viewable
 	if((viewer == Player_ship) && (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM]))
 		return ALWAYS_TARGETABLE;
+
+	// if no valid target then bail as never viewable
+	if (target->instance < 0)
+		return UNTARGETABLE;
 
 	// Goober5000
 	shipp = &Ships[target->instance];
