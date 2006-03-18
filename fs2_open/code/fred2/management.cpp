@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.7 $
- * $Date: 2006-03-18 22:00:43 $
+ * $Revision: 1.8 $
+ * $Date: 2006-03-18 22:18:24 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2006/03/18 22:00:43  Goober5000
+ * fix comm order initialization bug
+ * --Goober5000
+ *
  * Revision 1.6  2006/02/26 05:32:55  Goober5000
  * fix stupid bug
  *
@@ -723,7 +727,7 @@ bool fred_init()
 		return false;
 	}
 
-   srand( (unsigned) time(NULL) );
+	srand( (unsigned) time(NULL) );
 	init_pending_messages();
 
 	// initialize registry stuff
@@ -737,17 +741,21 @@ bool fred_init()
 	// this should enable mods - Kazan
 	fred2_parse_cmdline(__argc, __argv);
 
-	// doh
+	// d'oh
 	DBUGFILE_OUTPUT_0("About to cfile_init");
 	if(cfile_init(Fred_exe_dir)){
 		exit(1);
 	}
 
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
-	// NOTE : Fred should ALWAYS run in Enlish. Otherwise it might swap in another language
+	// NOTE : Fred should ALWAYS run in English. Otherwise it might swap in another language
 	// when saving - which would cause inconsistencies when externalizing to tstrings.tbl via Exstr
 	// trust me on this :)
-	lcl_init(LCL_ENGLISH);	
+	lcl_init(LCL_ENGLISH);
+
+	// Goober5000 - force init XSTRs (so they work, but only work in English, based on above comment)
+	extern int Xstr_inited;
+	Xstr_inited = 1;
 
 	#ifndef NDEBUG
 	load_filter_info();
