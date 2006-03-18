@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.48 $
- * $Date: 2006-01-30 19:37:33 $
+ * $Revision: 2.49 $
+ * $Date: 2006-03-18 10:25:45 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2006/01/30 19:37:33  taylor
+ * and after all of my recent work fixing div-by-0 zero bugs, ya had to know this was coming :)
+ *
  * Revision 2.47  2006/01/30 06:36:01  taylor
  * minor warning fixage
  *
@@ -1793,11 +1796,11 @@ int neb2_get_bitmap()
 
 DCF(neb2, "list nebula console commands")
 {		
-	dc_printf("neb2_fog <X> <float> <float>  : set near and far fog planes for ship type X\n");
-	dc_printf("where X is an integer from 1 - 11\n");
-	dc_printf("1 = cargo containers, 2 = fighters/bombers, 3 = cruisers\n");
-	dc_printf("4 = freighters, 5 = capital ships, 6 = transports, 7 = support ships\n");
-	dc_printf("8 = navbuoys, 9 = sentryguns, 10 = escape pods, 11 = background nebula polygons\n\n");
+//	dc_printf("neb2_fog <X> <float> <float>  : set near and far fog planes for ship type X\n");
+//	dc_printf("where X is an integer from 1 - 11\n");
+//	dc_printf("1 = cargo containers, 2 = fighters/bombers, 3 = cruisers\n");
+//	dc_printf("4 = freighters, 5 = capital ships, 6 = transports, 7 = support ships\n");
+//	dc_printf("8 = navbuoys, 9 = sentryguns, 10 = escape pods, 11 = background nebula polygons\n\n");
 	
 	dc_printf("neb2_max_alpha   : max alpha value (0.0 to 1.0) for cloud poofs. 0.0 is completely transparent\n");
 	dc_printf("neb2_break_alpha : alpha value (0.0 to 1.0) at which faded polygons are not drawn. higher values generally equals higher framerate, with more visual cloud popping\n");
@@ -1810,11 +1813,12 @@ DCF(neb2, "list nebula console commands")
 	dc_printf("neb2_cinner      : poof cube inner dimension\n");
 	dc_printf("neb2_couter      : poof cube outer dimension\n");
 	dc_printf("neb2_jitter      : poof jitter\n");
-	dc_printf("neb2_mode        : switch between no nebula, polygon background, amd pof background (0, 1 and 2 respectively)\n\n");	
+	dc_printf("neb2_mode        : switch between no nebula, polygon background, pof background, lame or HTL rendering (0, 1, 2, 3 and 4 respectively)\n\n");	
 	dc_printf("neb2_ff          : flash fade/sec\n");
-	dc_printf("neb2_background	 : rgb background color\n");
+	dc_printf("neb2_background	: rgb background color\n");
+	dc_printf("neb2_fog_color   : rgb fog color\n");
 
-	dc_printf("neb2_fog_vals    : display all the current settings for all above values\n");	
+//	dc_printf("neb2_fog_vals    : display all the current settings for all above values\n");	
 }
 
 DCF(neb2_prad, "")
@@ -1930,23 +1934,30 @@ DCF(neb2_mode, "")
 {
 	dc_get_arg(ARG_INT);
 
-	switch(Dc_arg_int){
-	case NEB2_RENDER_NONE:
-		Neb2_render_mode = NEB2_RENDER_NONE;
-		break;
+	switch (Dc_arg_int)
+	{
+		case NEB2_RENDER_NONE:
+			Neb2_render_mode = NEB2_RENDER_NONE;
+			break;
 
-	case NEB2_RENDER_POLY:
-		Neb2_render_mode = NEB2_RENDER_POLY;
-		break;
+		case NEB2_RENDER_POLY:
+			Neb2_render_mode = NEB2_RENDER_POLY;
+			break;
 
-	case NEB2_RENDER_POF:
-		Neb2_render_mode = NEB2_RENDER_POF;
-		stars_set_background_model(BACKGROUND_MODEL_FILENAME, "Eraseme3");
-		break;
+		case NEB2_RENDER_POF:
+			Neb2_render_mode = NEB2_RENDER_POF;
+			stars_set_background_model(BACKGROUND_MODEL_FILENAME, "Eraseme3");
+			break;
 
-	case NEB2_RENDER_LAME:
-		Neb2_render_mode = NEB2_RENDER_LAME;
-		break;
+		case NEB2_RENDER_LAME:
+			Neb2_render_mode = NEB2_RENDER_LAME;
+			break;
+
+		case NEB2_RENDER_HTL:
+			if (!Cmdline_nohtl) {
+				Neb2_render_mode = NEB2_RENDER_HTL;
+			}
+			break;
 	}
 }
 
