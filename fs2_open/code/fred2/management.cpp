@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.6 $
- * $Date: 2006-02-26 05:32:55 $
+ * $Revision: 1.7 $
+ * $Date: 2006-03-18 22:00:43 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/02/26 05:32:55  Goober5000
+ * fix stupid bug
+ *
  * Revision 1.5  2006/02/20 02:13:07  Goober5000
  * added ai-ignore-new which hopefully should fix the ignore bug
  * --Goober5000
@@ -710,9 +713,6 @@ void fred_preload_all_briefing_icons()
 	}
 }
 
-extern void iff_init();
-extern void ai_profiles_init();
-
 bool fred_init()
 {
 	int i;
@@ -807,6 +807,8 @@ bool fred_init()
 	// Goober5000
 	for (i = 0; i < MAX_IFFS; i++)
 		Show_iff[i] = true;
+
+	hud_init_comm_orders();		// Goober5000
 	
 	gamesnd_parse_soundstbl();		// needs to be loaded after species stuff but before interface/weapon/ship stuff - taylor
 	mission_brief_common_init();	
