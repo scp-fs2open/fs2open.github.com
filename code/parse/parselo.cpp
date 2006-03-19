@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.69 $
- * $Author: Goober5000 $
- * $Date: 2006-02-20 05:54:44 $
+ * $Revision: 2.70 $
+ * $Author: taylor $
+ * $Date: 2006-03-19 05:05:59 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2006/02/20 05:54:44  Goober5000
+ * hmm, remove one form of commenting
+ *
  * Revision 2.68  2006/02/11 21:23:42  Goober5000
  * reworked how comments are parsed and added version-specific commenting
  * --Goober5000
@@ -2831,6 +2834,13 @@ char *split_str_once(char *src, int max_pixel_w)
 		} else {
 			last_was_white = 0;
 		}
+	}
+
+	// if we are over max pixel width and weren't able to come up with a good non-word
+	// split then just return the original src text and the calling function should
+	// have to handle the result
+	if ( (w > max_pixel_w) && ((i == 0) || !brk) ) {
+		return src;
 	}
 
 	if (!brk) {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2006-03-19 05:05:58 $
+ * $Author: taylor $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.18  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -1062,6 +1065,12 @@ void hud_sourced_print(int source, char *msg)
 	int pretend_width = (gr_screen.res == GR_640) ? 620 : 1004;
 
 	while ((ptr = split_str_once(str, pretend_width - x - 7)) != NULL) {		// the 7 is a fudge hack
+		// make sure that split went ok, if not then bail
+		if (ptr == str) {
+			Int3();
+			break;
+		}
+
 		HUD_printf_line(str, source, t, x);
 		str = ptr;
 		x = offset;

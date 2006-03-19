@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.24 $
- * $Date: 2006-01-30 06:58:10 $
+ * $Revision: 2.25 $
+ * $Date: 2006-03-19 05:05:59 $
  * $Author: taylor $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2006/01/30 06:58:10  taylor
+ * try and handle things like $$ and ## a bit better (this worked for what I threw at it but please double-check me here Goober)
+ *
  * Revision 2.23  2006/01/27 06:21:10  Goober5000
  * replace quick sort with insertion sort in many places
  * --Goober5000
@@ -591,6 +594,7 @@ void training_obj_display()
 
 		// maybe split the directives line
 		second_line = split_str_once(buf, 167);
+		Assert( second_line != buf );
 
 		// blit the background frames
 		// hud_set_default_color();

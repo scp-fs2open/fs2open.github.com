@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-01-13 03:31:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2006-03-19 05:05:59 $
+ * $Author: taylor $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.12  2005/10/30 20:03:39  taylor
  * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
  * fix Mantis bug #381
@@ -939,14 +942,16 @@ void message_log_init_scrollback(int pw)
 			case LOG_CARGO_REVEALED:
 				Assert( entry->index != -1 );
 				message_log_add_segs(XSTR( "Cargo revealed: ", 418), LOG_COLOR_NORMAL);
-				message_log_add_segs( Cargo_names[entry->index], LOG_COLOR_BRIGHT );
+				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
+				message_log_add_segs( text, LOG_COLOR_BRIGHT );
 				break;
 
 			case LOG_CAP_SUBSYS_CARGO_REVEALED:
 				Assert( entry->index != -1 );
 				message_log_add_segs(entry->sname, LOG_COLOR_NORMAL);
 				message_log_add_segs(XSTR( " subsystem cargo revealed: ", 1488), LOG_COLOR_NORMAL);
-				message_log_add_segs( Cargo_names[entry->index], LOG_COLOR_BRIGHT );
+				strncpy(text, Cargo_names[entry->index], sizeof(text) - 1);
+				message_log_add_segs( text, LOG_COLOR_BRIGHT );
 				break;
 
 
