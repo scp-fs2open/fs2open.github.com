@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-07-02 19:43:54 $
+ * $Revision: 2.26 $
+ * $Date: 2006-03-19 05:05:59 $
  * $Author: taylor $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/07/02 19:43:54  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.24  2005/05/12 17:49:13  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -590,6 +593,7 @@ void credits_init()
 
 			do {
 				linep2 = split_str_once(linep1, Credits_text_coords[gr_screen.res][2]);
+				Assert( linep2 != linep1 );
 				strcat(Credit_text, linep1);
 				strcat(Credit_text, "\n");			
 				linep1 = linep2;
