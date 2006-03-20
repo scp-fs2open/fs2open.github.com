@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.11 $
- * $Date: 2006-03-20 06:19:03 $
+ * $Revision: 1.12 $
+ * $Date: 2006-03-20 06:25:19 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2006/03/20 06:19:03  taylor
+ * add ai_profiles flag to get rid of limit on minimum speed a docked ship can move
+ * (not going to Int3() here from < 0.1 speed by default, a support ship actually hit it)
+ *
  * Revision 1.10  2006/02/13 04:56:58  Goober5000
  * enabled modular tables for ai_profiles and added the default table to def_files
  * --Goober5000
@@ -285,7 +289,7 @@ void parse_ai_profiles_tbl(char *longname)
 
 			set_flag(profile, "$navigation subsystem governs warpout capability:", AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP);
 
-			set_flag(profile, "$don't limit min speed of docked ship:", AIPF_NO_MIN_DOCK_SPEED_CAP);
+			set_flag(profile, "$ignore lower bound for minimum speed of docked ship:", AIPF_NO_MIN_DOCK_SPEED_CAP);
 
 			// find next valid option
 			skip_to_start_of_string_either("$", "#");

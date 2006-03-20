@@ -760,7 +760,7 @@ $shockwaves damage small ship subsystems: NO							\n\
 																		\n\
 ;; if set, will not use a minimum speed limit for docked ships			\n\
 ;; (like in FS1)														\n\
-$don't limit min speed of docked ship: NO								\n\
+$ignore lower bound for minimum speed of docked ship: NO				\n\
 																		\n\
 																		\n\
 #End																	\n\
