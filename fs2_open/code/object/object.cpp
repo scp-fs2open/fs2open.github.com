@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.60 $
- * $Date: 2006-02-25 21:47:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.61 $
+ * $Date: 2006-03-20 06:16:45 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2006/02/25 21:47:07  Goober5000
+ * spelling
+ *
  * Revision 2.59  2006/02/21 07:12:59  taylor
  * make changed object type debug message a bit more useful
  *
@@ -1529,7 +1532,7 @@ void obj_move_call_physics(object *objp, float frametime)
 				goto obj_maybe_fire;
 			}
 
-			if ( (objp->type == OBJ_ASTEROID) && (Model_caching && (!D3D_enabled || !OGL_enabled) ) )	{
+			if ( (objp->type == OBJ_ASTEROID) && (Model_caching && (!D3D_enabled && !OGL_enabled) ) )	{
 				// If we're doing model caching, don't rotate asteroids
 				vec3d tmp = objp->phys_info.rotvel;
 
