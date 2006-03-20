@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.10 $
- * $Date: 2006-02-13 04:56:58 $
- * $Author: Goober5000 $
+ * $Revision: 1.11 $
+ * $Date: 2006-03-20 06:19:03 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2006/02/13 04:56:58  Goober5000
+ * enabled modular tables for ai_profiles and added the default table to def_files
+ * --Goober5000
+ *
  * Revision 1.9  2006/02/13 00:20:44  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -280,6 +284,8 @@ void parse_ai_profiles_tbl(char *longname)
 			set_flag(profile, "$shockwaves damage small ship subsystems:", AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS);
 
 			set_flag(profile, "$navigation subsystem governs warpout capability:", AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP);
+
+			set_flag(profile, "$don't limit min speed of docked ship:", AIPF_NO_MIN_DOCK_SPEED_CAP);
 
 			// find next valid option
 			skip_to_start_of_string_either("$", "#");

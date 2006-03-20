@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.64 $
- * $Date: 2006-02-25 21:46:59 $
- * $Author: Goober5000 $
+ * $Revision: 1.65 $
+ * $Date: 2006-03-20 06:19:03 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.64  2006/02/25 21:46:59  Goober5000
+ * spelling
+ *
  * Revision 1.63  2006/02/25 19:03:39  Goober5000
  * some tweaks to the ignore code
  *
@@ -1077,6 +1080,7 @@
 #include "network/multiutil.h"
 //#include "network/multi_team.h"
 #include "network/multi.h"
+#include "ai/ai_profiles.h"
 
 #include "autopilot/autopilot.h"
 
@@ -2258,8 +2262,14 @@ void adjust_accel_for_docking(ai_info *aip)
 		float ratio = objp->phys_info.mass / dock_calc_total_docked_mass(objp);
 
 		// put cap on how much ship can slow down
-		if (ratio < 0.8) {
+		if ( (ratio < 0.8f) && !(The_mission.ai_profile->flags & AIPF_NO_MIN_DOCK_SPEED_CAP) ) {
 			ratio = 0.8f;
+		}
+
+		// make sure we at least some velocity
+		if (ratio < 0.1f) {
+		//	Int3();
+			ratio = 0.1f;
 		}
 
 		if (AI_ci.forward > ratio) {
