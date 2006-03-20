@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.67 $
- * $Date: 2006-02-25 21:47:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.68 $
+ * $Date: 2006-03-20 06:13:35 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/02/25 21:47:19  Goober5000
+ * spelling
+ *
  * Revision 2.66  2006/02/20 07:30:15  taylor
  * updated to newest dynamic starfield code
  *  - this mainly is to just better support SEXP based starfield bitmap changes (preloading, better in-mission stuff loading)
@@ -2315,7 +2318,7 @@ void stars_draw_stars()
 			color = i & 7;
 		}
 
-		if ( (Star_flags & STAR_FLAG_ANTIALIAS) || (D3D_enabled) )	{
+		if ( (Star_flags & STAR_FLAG_ANTIALIAS) || (D3D_enabled) || (OGL_enabled) ) {
 			gr_set_color_fast( &sp->col );
 
 //			if the two points are the same, fudge it, since some D3D cards (G200 and G400) are lame.				
