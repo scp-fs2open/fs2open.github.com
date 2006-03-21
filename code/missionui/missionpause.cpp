@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-10-10 17:21:06 $
+ * $Revision: 2.17 $
+ * $Date: 2006-03-21 14:19:18 $
  * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/10/10 17:21:06  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.15  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -227,12 +230,18 @@ void pause_init(int multi)
 	Paused = 1;
 }
 
+extern int button_function_demo_valid(int n);
+extern int button_function(int n);
+
 // pause do frame - will handle running multiplayer operations if necessary
 void pause_do(int multi)
 {
 	int k;
 	char *pause_str = XSTR("Paused", 767);
 	int str_w, str_h;
+	// next two are for view resetting
+	static int previous_Viewer_mode = -1;
+	static int previous_hud_state = -1;
 
 	if(Game_mode & GM_STANDALONE_SERVER){
 		multi_pause_do();
@@ -268,39 +277,70 @@ void pause_do(int multi)
 				}
 			}
 		}
-	
+
+		if (Pause_type == PAUSE_TYPE_VIEWER) {
+			if (previous_Viewer_mode < 0)
+				previous_Viewer_mode = Viewer_mode;
+
+			if (previous_hud_state < 0)
+				previous_hud_state = hud_disabled();
+		}
+
 		// the multi paused screen will do its own window processing
 		if (multi) {
 			multi_pause_do();
 		} else {
 			// otherwise process the ui window here
 			k = Pause_win.process() & ~KEY_DEBUGGED;
-			switch (k) {  
-
-			case KEY_TAB:
-				hud_toggle_draw();
-				break;
-
-		   //	case VIEW_EXTERNAL:
-		   	case KEY_ENTER:
-				if(Pause_type != PAUSE_TYPE_VIEWER)	{
+			switch (k)
+			{ 
+				case KEY_TAB:
+					hud_toggle_draw();
 					break;
-				}
 
-				extern int button_function_demo_valid(int n);
-				button_function_demo_valid(VIEW_EXTERNAL);
+				// view from outside of the ship
+			   	case KEY_ENTER:
+					if (Pause_type == PAUSE_TYPE_VIEWER) {
+						button_function_demo_valid(VIEW_EXTERNAL);
+					}
+					break;
 
-				break;
-			case KEY_ESC:
-			case KEY_ALTED + KEY_PAUSE:
-			case KEY_PAUSE:
-				gameseq_post_event(GS_EVENT_PREVIOUS_STATE);		
-				break;
+				// view from target
+				case KEY_PADDIVIDE:
+					if (Pause_type == PAUSE_TYPE_VIEWER) {
+						button_function_demo_valid(VIEW_OTHER_SHIP);
+					}
+					break;
+
+				// change target
+				case KEY_PADMULTIPLY:
+					if (Pause_type == PAUSE_TYPE_VIEWER) {
+						button_function(TARGET_NEXT);
+					}
+					break;
+
+				case KEY_ESC:
+				case KEY_ALTED + KEY_PAUSE:
+				case KEY_PAUSE:
+					// reset previous view if we happened to be playing around with it during pause
+					if (Pause_type == PAUSE_TYPE_VIEWER) {
+						if (previous_Viewer_mode >= 0) {
+							Viewer_mode = previous_Viewer_mode;
+						}
+
+						// NOTE remember that hud state is reversed here (0 == on, 1 == off)
+						if ( (previous_hud_state >= 0) && (hud_disabled() != previous_hud_state) ) {
+							hud_set_draw( !previous_hud_state );
+						}
+					}
+
+					gameseq_post_event(GS_EVENT_PREVIOUS_STATE);		
+					break;
 			}	// end switch
 		}
-	
+
 		// draw the background window
-		Pause_win.draw();		
+		Pause_win.draw();
 
 		// a very unique case where we shouldn't be doing the page flip because we're inside of popup code
 		if(!popup_active()){
