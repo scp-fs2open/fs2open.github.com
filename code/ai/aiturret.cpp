@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.33 $
- * $Date: 2006-03-21 00:08:18 $
- * $Author: taylor $
+ * $Revision: 1.34 $
+ * $Date: 2006-03-21 02:50:59 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2006/03/21 00:08:18  taylor
+ * fix target eval check for weapons so that friendly ships will stop shooting at friendly bombs
+ *
  * Revision 1.32  2006/02/19 07:20:43  Goober5000
  * rearrange some turret code to be more like retail
  * --Goober5000
@@ -422,15 +425,19 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		weapon *wp = &Weapons[objp->instance];
 		weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
-		if ( wip->wi_flags & WIF_BOMB ) {
-			if ( obj_team(turret_parent) != wp->team ) {
-				return 1;
-			}
-
-			if ( (wip->wi_flags2 & WIF2_LOCAL_SSM) && (wp->lssm_stage != 3) ) {
-				return 1;
-			}
+		if ( !(wip->wi_flags & WIF_BOMB) ) {
+			return 0;
 		}
+
+		if ( (wip->wi_flags2 & WIF2_LOCAL_SSM) && (wp->lssm_stage == 3) ) {
+			return 0;
+		}
+
+		if ( !iff_x_attacks_y(obj_team(turret_parent), wp->team) ) {
+			return 0;
+		}
+
+		return 1;
 	}
 
 	return 0;
