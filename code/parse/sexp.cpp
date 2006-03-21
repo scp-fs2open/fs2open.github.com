@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.243 $
- * $Date: 2006-03-18 22:43:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.244 $
+ * $Date: 2006-03-21 17:19:01 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243  2006/03/18 22:43:16  Goober5000
+ * added set-death-message sexp
+ * --Goober5000
+ *
  * Revision 2.242  2006/03/18 10:26:42  taylor
  * make sure errors in rand_sexp() and rand_internal() are properly handled
  *
@@ -1479,6 +1483,7 @@ sexp_oper Operators[] = {
 	{ "random-of",				OP_RANDOM_OF,			1, INT_MAX, },	// Goober5000
 	{ "random-multiple-of",		OP_RANDOM_MULTIPLE_OF,	1, INT_MAX, },	// Karajorma
 	{ "number-of",				OP_NUMBER_OF,			2, INT_MAX, },	// Goober5000
+	{ "in-sequence",			OP_IN_SEQUENCE,			1, INT_MAX, },	// Karajorma
 	{ "invalidate-argument",	OP_INVALIDATE_ARGUMENT,	1, INT_MAX, },	// Goober5000
 
 	{ "send-message-list",			OP_SEND_MESSAGE_LIST,		4,	INT_MAX	},
@@ -7411,6 +7416,51 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	return val;
 }
 
+// Karajorma - this conditional returns the first valid option on its list. 
+int eval_in_sequence(int arg_handler_node, int condition_node)
+{
+	int val = SEXP_FALSE;
+	int n = -1, num_valid_args;
+
+	
+	Assert(arg_handler_node != -1 && condition_node != -1);
+
+	// get the number of valid arguments
+	num_valid_args = query_sexp_args_count(arg_handler_node, true);
+	if (num_valid_args == 0)
+	{
+		Sexp_current_replacement_argument = NULL;
+		return SEXP_FALSE;
+	}
+
+	// find the first valid argument. we know that there must be one thanks to the check above
+	n = CDR(arg_handler_node);
+	while (!Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
+	{
+		n = CDR(n);
+	}
+
+	// flush stuff
+	Sexp_applicable_argument_list.expunge();
+	flush_sexp_tree(condition_node);
+
+	// evaluate conditional for current argument
+	Sexp_current_replacement_argument = Sexp_nodes[n].text;
+	val = eval_sexp(condition_node);
+
+	// true?
+	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+	{
+		Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+	}
+
+	// clear argument, but not list, as we'll need it later
+	Sexp_current_replacement_argument = NULL;
+
+	// return the value of the conditional
+	return val;
+}
+
 // Goober5000
 void sexp_invalidate_argument(int n)
 {
@@ -7432,7 +7482,7 @@ void sexp_invalidate_argument(int n)
 	// get the first op of the grandparent, which should be a *_of operator
 	arg_handler = CADR(grandparent);
 	op = get_operator_const(CTEXT(arg_handler));
-	if (op != OP_ANY_OF && op != OP_EVERY_OF && op != OP_NUMBER_OF && op != OP_RANDOM_OF && op != OP_RANDOM_MULTIPLE_OF)
+	if (op != OP_ANY_OF && op != OP_EVERY_OF && op != OP_NUMBER_OF && op != OP_RANDOM_OF && op != OP_RANDOM_MULTIPLE_OF && op != OP_IN_SEQUENCE)
 		return;
 
 	// loop through arguments
@@ -14320,6 +14370,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = eval_number_of( cur_node, referenced_node );
 				break;
 
+			// Karajorma
+			case OP_IN_SEQUENCE:
+				sexp_val = eval_in_sequence( cur_node, referenced_node );
+				break;
+
 			// Goober5000
 			case OP_INVALIDATE_ARGUMENT:
 				sexp_invalidate_argument(node);
@@ -15856,6 +15911,7 @@ int query_operator_return_type(int op)
 		case OP_RANDOM_OF:
 		case OP_RANDOM_MULTIPLE_OF:
 		case OP_NUMBER_OF:
+		case OP_IN_SEQUENCE:
 			return OPR_FLEXIBLE_ARGUMENT;
 
 		default:
@@ -16261,6 +16317,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_EVERY_OF:
 		case OP_RANDOM_OF:
 		case OP_RANDOM_MULTIPLE_OF:
+		case OP_IN_SEQUENCE:
 			return OPF_ANYTHING;
 
 		case OP_NUMBER_OF:
@@ -18785,6 +18842,13 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tNumber of arguments, as above\r\n"
 		"\tRest:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
+
+	// Goober5000
+	{ OP_IN_SEQUENCE, "In-Sequence (Conditional operator)\r\n"
+		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  The first argument in the list will be selected to satisfy the expression(s) "
+		"in which " SEXP_ARGUMENT_STRING " is used. The same argument will be returned by all subsequent calls\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\tAll:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
 	// Goober5000
 	{ OP_INVALIDATE_ARGUMENT, "Invalidate-argument (Conditional operator)\r\n"
