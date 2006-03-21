@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.117 $
- * $Author: Goober5000 $
- * $Date: 2006-03-18 22:43:16 $
+ * $Revision: 2.118 $
+ * $Author: karajorma $
+ * $Date: 2006-03-21 17:19:01 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.117  2006/03/18 22:43:16  Goober5000
+ * added set-death-message sexp
+ * --Goober5000
+ *
  * Revision 2.116  2006/03/18 07:12:07  Goober5000
  * add ship-subsys-targetable and ship-subsys-untargetable
  * --Goober5000
@@ -1070,6 +1074,7 @@ struct ship_subsys;
 #define OP_NUMBER_OF						(0x0007 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_INVALIDATE_ARGUMENT				(0x0008 | OP_CATEGORY_CONDITIONAL)	// Goober5000
 #define OP_RANDOM_MULTIPLE_OF				(0x0009 | OP_CATEGORY_CONDITIONAL)	// Karajorma
+#define OP_IN_SEQUENCE						(0x000a | OP_CATEGORY_CONDITIONAL)	// Karajorma
 
 // sexpressions with side-effects
 #define OP_CHANGE_IFF						(0x0000 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)
