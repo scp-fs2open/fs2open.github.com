@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-11-13 06:39:38 $
+ * $Revision: 2.19 $
+ * $Date: 2006-03-21 00:27:27 $
  * $Author: taylor $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/11/13 06:39:38  taylor
+ * remove Cmdline_cache_ani support, it only worked if not in a VP and only on streaming ani so it was pretty much useless
+ *
  * Revision 2.17  2005/05/28 19:40:59  taylor
  * fix ani corruption detection so that certain streaming anis don't hit it (check was wrong anyway)
  *
@@ -898,7 +901,7 @@ void anim_release_all_instances(int screen_id)
 //	2			|	width
 //	2			|	height
 //	2			|	number of frames
-//	2			|	packer code
+//	1			|	packer code
 //	763		|	palette
 //	2			|	number of key frames
 //	2			|	key frame number	}		repeats
@@ -960,8 +963,7 @@ void anim_read_header(anim *ptr, CFILE *fp)
 #endif
 
 	ptr->total_frames = cfread_short(fp);
-	cfread(&ptr->packer_code, 1, 1, fp);
-	ptr->packer_code = INTEL_SHORT(ptr->packer_code);
+	ptr->packer_code = cfread_ubyte(fp);
 	cfread(&ptr->palette, 256, 3, fp);
 	ptr->num_keys = cfread_short(fp);
 

@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-01-22 19:57:35 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2006-03-21 00:27:27 $
+ * $Author: taylor $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
  * Anim files.  Also handles Anim loading, creating Anim instances (for
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/01/22 19:57:35  wmcoolmon
+ * 0...1...2...4?
+ *
  * Revision 2.11  2005/11/13 06:40:19  taylor
  * add support for 8/16/24/32 bit output from ani frame decoder
  *
@@ -221,8 +224,8 @@
 
 
 
-int packer_code = PACKER_CODE;
-int transparent_code = 254;
+const int packer_code = PACKER_CODE;
+const int transparent_code = 254;
 
 void anim_check_for_palette_change(anim_instance *instance) {
 	if ( instance->parent->screen_sig != gr_screen.signature ) {

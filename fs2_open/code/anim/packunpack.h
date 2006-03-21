@@ -9,15 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.h $
- * $Revision: 2.5 $
- * $Date: 2005-07-13 02:50:48 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2006-03-21 00:27:27 $
+ * $Author: taylor $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
  * Anim files.  Also handles Anim loading, creating Anim instances (for
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/07/13 02:50:48  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.4  2005/04/05 05:53:14  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -247,8 +251,6 @@ typedef struct anim_instance {
 	int		file_offset;	// current offset into frame (like data, put offset into file)
 	int		loop_count;		// starts at 0, and is incremented each time it loops
 } anim_instance;
-
-extern int packer_code;
 
 int	pack_key_frame(ubyte *frame, ubyte *save, long size, long max, int compress_type);
 int	pack_frame(ubyte *frame, ubyte *frame2, ubyte *save, long size, long max, int compress_type);
