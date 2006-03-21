@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.32 $
- * $Date: 2006-02-19 07:20:43 $
- * $Author: Goober5000 $
+ * $Revision: 1.33 $
+ * $Date: 2006-03-21 00:08:18 $
+ * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2006/02/19 07:20:43  Goober5000
+ * rearrange some turret code to be more like retail
+ * --Goober5000
+ *
  * Revision 1.31  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -384,6 +388,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 	}
 
 	if ( (objp->type == OBJ_SHIP) ) {
+		Assert( objp->instance >= 0 );
 		ship *shipp;
 		ship_info *sip;
 		shipp = &Ships[objp->instance];
@@ -413,12 +418,16 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 	}
 
 	if ( objp->type == OBJ_WEAPON ) {
-		if ( Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB ) {
-			if ( Weapons[objp->instance].lssm_stage != 3) {
+		Assert( objp->instance >= 0 );
+		weapon *wp = &Weapons[objp->instance];
+		weapon_info *wip = &Weapon_info[wp->weapon_info_index];
+
+		if ( wip->wi_flags & WIF_BOMB ) {
+			if ( obj_team(turret_parent) != wp->team ) {
 				return 1;
 			}
 
-			if ( obj_team(turret_parent) != Weapons[objp->instance].team ) {
+			if ( (wip->wi_flags2 & WIF2_LOCAL_SSM) && (wp->lssm_stage != 3) ) {
 				return 1;
 			}
 		}
