@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.245 $
- * $Date: 2006-03-22 01:36:21 $
+ * $Revision: 2.246 $
+ * $Date: 2006-03-22 16:24:20 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.245  2006/03/22 01:36:21  karajorma
+ * Bah. More errors fixed. This time in in-sequence
+ *
  * Revision 2.244  2006/03/21 17:19:01  karajorma
  * Added the In-Sequence conditional.
  *
@@ -2345,7 +2348,7 @@ int query_sexp_args_count(int node, bool only_valid_args = false)
 
 	for ( ; CDR(node) != -1; node = CDR(node))
 	{
-		if (only_valid_args && !(Sexp_nodes[node].flags & SNF_ARGUMENT_VALID))
+		if (only_valid_args && !(Sexp_nodes[CDR(node)].flags & SNF_ARGUMENT_VALID))
 			continue;
 
 		count++;
@@ -4167,6 +4170,14 @@ int rand_sexp(int n, bool multiple)
 			// set .value and .text so random number is generated only once.
 			Sexp_nodes[n].value = SEXP_NUM_EVAL;
 			sprintf(Sexp_nodes[n].text, "%d", rand_num);
+		}
+		// if this is a seeded rand_multiple 
+		else if (CDDR(n) != -1)
+		{
+		n = CDDR(n);
+		// Set the seed to a new seeded random value. This will ensure that the next time the method is called
+		// it will return a predictable but different number from the previous time. 
+		sprintf(Sexp_nodes[n].text, "%d", rand_internal(1, INT_MAX, seed));
 		}
 	}
 
@@ -7348,7 +7359,7 @@ int eval_number_of(int arg_handler_node, int condition_node)
 // addendum: hook karajorma's random-multiple-of into the same sexp
 int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 {
-	int n = -1, i, val, num_valid_args, random_argument;
+	int n = -1, val, num_valid_args, random_argument;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	// find which argument we picked, if we picked one
@@ -7367,8 +7378,6 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	// if argument not found (or never specified in the first place), we have to pick one
 	if (n == -1)
 	{
-		n = CDR(arg_handler_node);
-
 		// get the number of valid arguments
 		num_valid_args = query_sexp_args_count(arg_handler_node, true);
 		if (num_valid_args == 0)
@@ -7376,21 +7385,38 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 			Sexp_current_replacement_argument = NULL;
 			return SEXP_FALSE;
 		}
+		
+		random_argument = rand_internal(1, num_valid_args);
+		
+		n = arg_handler_node;
+		do 
+		{			
+			n = CDR(n);
+			if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
+			{
+				random_argument-- ;
+			}
+		} while (random_argument);
 
+
+		/*
 		// pick an argument and iterate to it
 		random_argument = rand_internal(0, num_valid_args - 1);
-		for (i = 0; i < random_argument; i++)
+		for (int i = 0; i < random_argument; i++)
 		{
-			do {
+			while (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)) 
+			{
 				n = CDR(n);
-			} while (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID));
-		}
+			} 
+		}*/
 
+		
 		// save it, if we're saving
 		if (!multiple)
 		{
 			Sexp_nodes[n].flags |= SNF_ARGUMENT_SELECT;
 		}
+		
 	}
 
 	// only eval this argument if it's valid
@@ -7424,20 +7450,16 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 {
 	int val = SEXP_FALSE;
 	int n = -1 ;
-	// int num_valid_args;
-
 	
 	Assert(arg_handler_node != -1 && condition_node != -1);
 	
-	/* Karajorma - Will figure out what is wrong with this later, query_sexp_args_count is giving 
-	unexpected values for the number of valid nodes and I want to know why. For now I'll simply solve the
-	problem without it. 
-	In tests the code below did NOT produce 0 as the value of num_valid_args even when all the arguments
-	were invalid. 
+	/*
+	// Disabled due to problems with query_sexp_args_count (n, true). Those problems should be fixed now
+	// but the newer code is more heavily tested and should be safer so I'm sticking with that for now.
 
 	// get the number of valid arguments	
 	n = CDR(arg_handler_node);
-	num_valid_args = query_sexp_args_count(arg_handler_node, true);
+	int num_valid_args = query_sexp_args_count(arg_handler_node, true);
 	
 	if (num_valid_args == 0)
 	{
@@ -7449,10 +7471,13 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	while (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID))
 	{
 		n = CDR(n);
-	}
-	*/
+	}*/
 	
+	// get the first argument
 	n = CDR(arg_handler_node);
+	assert (n != -1);
+
+	// loop through the nodes until we fine one that is holds a valid argument or run out of nodes
 	for (int i=1 ; i<query_sexp_args_count(arg_handler_node) ; i++)
 	{
 		if (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID))
@@ -7461,7 +7486,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 		}
 	}
 
-	// Only execute if the argument is valid
+	// Only execute if the argument is valid (if all nodes were invalid we would still reach this point)
 	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
 	{
 		// flush stuff
@@ -18299,7 +18324,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a number.  Takes 2 or 3 numeric arguments...\r\n"
 		"\t1:\tLow range of random number.\r\n"
 		"\t2:\tHigh range of random number.\r\n" 
-		"\t3:\t(optional) A seed to use when generating numbers" },
+		"\t3:\t(optional) A seed to use when generating numbers. (Setting this to 0 is the same as having no seed at all)" },
 
 	// Goober5000
 	{ OP_RAND_MULTIPLE, "Rand-multiple (Arithmetic operator)\r\n"
@@ -18307,7 +18332,7 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a number.  Takes 2 or 3 numeric arguments...\r\n"
 		"\t1:\tLow range of random number.\r\n"
 		"\t2:\tHigh range of random number.\r\n" 
-		"\t3:\t(optional) A seed to use when generating numbers" },
+		"\t3:\t(optional) A seed to use when generating numbers. (Setting this to 0 is the same as having no seed at all)" },
 
 	// -------------------------- Nav Points --- Kazan -------------------------- 
 	{ OP_NAV_ISVISITED, "Takes 1 argument: The Nav Point Name\r\n"
