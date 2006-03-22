@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.h $
- * $Revision: 1.24 $
- * $Date: 2006-01-20 07:10:34 $
- * $Author: Goober5000 $
+ * $Revision: 1.25 $
+ * $Date: 2006-03-22 18:11:28 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2006/01/20 07:10:34  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 1.23  2005/12/04 19:07:48  wmcoolmon
  * Final commit of codebase
  *
@@ -528,7 +532,7 @@ public:
 	int			GetData(){return Data;}
 	bool		HasChildren(){return NOT_EMPTY(&Children);}
 	
-	void TreeItem::ClearAllItems();
+	void 		ClearAllItems();
 	
 	TreeItem();
 	~TreeItem();
@@ -623,7 +627,7 @@ public:
 	void SetText(int the_int);
 	void SetText(float the_float);
 	void SetSaveLoc(int *ptr, int save_method, int max_value=INT_MAX, int min_value=INT_MIN);
-	void Text::SetSaveLoc(short int *sint_ptr, int save_method, short int max_value=SHRT_MAX, short int min_value=SHRT_MIN);
+	void SetSaveLoc(short int *sint_ptr, int save_method, short int max_value=SHRT_MAX, short int min_value=SHRT_MIN);
 	void SetSaveLoc(float *ptr, int save_method, float max_value=INT_MAX, float min_value=INT_MIN);
 	void SetSaveLoc(char *ptr, int save_method, uint max_len=UINT_MAX, uint min_len = 0);
 	void SetSaveLoc(ubyte *ptr, int save_method, int max_value=UCHAR_MAX, int min_value=0);
