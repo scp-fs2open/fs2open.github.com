@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.10 $
- * $Date: 2006-02-24 07:35:48 $
+ * $Revision: 1.11 $
+ * $Date: 2006-03-22 18:14:52 $
  * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2006/02/24 07:35:48  taylor
+ * add v-sync support for OGL (I skimmped on this a bit but will go back to do something better, "special" extension wise, at a later date)
+ *
  * Revision 1.9  2005/12/28 22:28:44  taylor
  * add support for glCompressedTexSubImage2D(), we don't use it yet but there is nothing wrong with adding it already
  * better support for mipmaps and mipmap filtering
@@ -142,6 +145,7 @@ extern ogl_extension GL_EXT_Special[];
 
 #define GL_ARB_GETCOMPRESSEDTEXIMAGE	26
 #define GL_APPLE_CLIENT_STORAGE			27
+#define GL_SGIS_MIPMAP					28
 //#define GL_EXT_GEN_FRAMEBUFFERS			26
 //#define GL_EXT_GEN_RENDERBUFFERS		27
 //#define GL_EXT_BIND_FRAMEBUFFER			28
@@ -150,7 +154,7 @@ extern ogl_extension GL_EXT_Special[];
 //#define GL_EXT_FRAMEBUFFER_RENDERBUF	31
 
 //#define GL_NUM_EXTENSIONS				32
-#define GL_NUM_EXTENSIONS				28
+#define GL_NUM_EXTENSIONS				29
 
 
 // special extensions (OS specific, non-GL stuff)

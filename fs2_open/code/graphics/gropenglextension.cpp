@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.13 $
- * $Date: 2006-02-24 07:35:48 $
+ * $Revision: 1.14 $
+ * $Date: 2006-03-22 18:14:52 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2006/02/24 07:35:48  taylor
+ * add v-sync support for OGL (I skimmped on this a bit but will go back to do something better, "special" extension wise, at a later date)
+ *
  * Revision 1.12  2005/12/28 22:28:44  taylor
  * add support for glCompressedTexSubImage2D(), we don't use it yet but there is nothing wrong with adding it already
  * better support for mipmaps and mipmap filtering
@@ -126,7 +129,8 @@ ogl_extension GL_Extensions[GL_NUM_EXTENSIONS] =
 	{0, 0, "glGenBuffersARB", "GL_ARB_vertex_buffer_object", 0},
 	{0, 0, "glBufferDataARB", "GL_ARB_vertex_buffer_object", 0},
 	{0, 0, "glGetCompressedTexImageARB", "GL_ARB_texture_compression", 0},
-	{0, 0, NULL, "GL_APPLE_client_storage", 0}
+	{0, 0, NULL, "GL_APPLE_client_storage", 0},
+	{0, 0, NULL, "GL_SGIS_generate_mipmap", 0}
 //	{0, 0, "glGenFramebuffersEXT", "GL_EXT_framebuffer_object", 0},
 //	{0, 0, "glGenRenderbuffersEXT", "GL_EXT_framebuffer_object", 0},
 //	{0, 0, "glBindFramebufferEXT", "GL_EXT_framebuffer_object", 0},
