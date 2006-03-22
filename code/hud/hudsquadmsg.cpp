@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.28 $
- * $Date: 2006-03-18 22:00:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.29 $
+ * $Date: 2006-03-22 18:12:16 $
+ * $Author: taylor $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2006/03/18 22:00:43  Goober5000
+ * fix comm order initialization bug
+ * --Goober5000
+ *
  * Revision 2.27  2006/03/01 04:01:37  Goober5000
  * fix comm message localization
  *
@@ -783,7 +787,10 @@ int hud_squadmsg_wing_valid(wing *wingp)
 
 	// sanity check on ship_index field -- if check is successful, then check the team.
 	special_ship_index = wingp->ship_index[wingp->special_ship];
-	Assert (special_ship_index >= 0);
+
+	// if there is no wing leader then don't bother continuing
+	if (special_ship_index < 0)
+		return 0;
 
 	// be sure ship is on same team
 #ifdef NDEBUG
