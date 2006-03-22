@@ -478,7 +478,7 @@ void subtitle::clone(const subtitle &sub)
 {
 	uint i = 0;
 
-	for (i = 0; i < text_lines.size(); i++) {
+	for (i = 0; i < sub.text_lines.size(); i++) {
 		text_lines.push_back(sub.text_lines[i]);
 	}
 
