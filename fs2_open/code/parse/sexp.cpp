@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.244 $
- * $Date: 2006-03-21 17:19:01 $
+ * $Revision: 2.245 $
+ * $Date: 2006-03-22 01:36:21 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.244  2006/03/21 17:19:01  karajorma
+ * Added the In-Sequence conditional.
+ *
  * Revision 2.243  2006/03/18 22:43:16  Goober5000
  * added set-death-message sexp
  * --Goober5000
@@ -7420,13 +7423,22 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 int eval_in_sequence(int arg_handler_node, int condition_node)
 {
 	int val = SEXP_FALSE;
-	int n = -1, num_valid_args;
+	int n = -1 ;
+	// int num_valid_args;
 
 	
 	Assert(arg_handler_node != -1 && condition_node != -1);
+	
+	/* Karajorma - Will figure out what is wrong with this later, query_sexp_args_count is giving 
+	unexpected values for the number of valid nodes and I want to know why. For now I'll simply solve the
+	problem without it. 
+	In tests the code below did NOT produce 0 as the value of num_valid_args even when all the arguments
+	were invalid. 
 
-	// get the number of valid arguments
+	// get the number of valid arguments	
+	n = CDR(arg_handler_node);
 	num_valid_args = query_sexp_args_count(arg_handler_node, true);
+	
 	if (num_valid_args == 0)
 	{
 		Sexp_current_replacement_argument = NULL;
@@ -7434,28 +7446,41 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	}
 
 	// find the first valid argument. we know that there must be one thanks to the check above
-	n = CDR(arg_handler_node);
-	while (!Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
+	while (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID))
 	{
 		n = CDR(n);
 	}
-
-	// flush stuff
-	Sexp_applicable_argument_list.expunge();
-	flush_sexp_tree(condition_node);
-
-	// evaluate conditional for current argument
-	Sexp_current_replacement_argument = Sexp_nodes[n].text;
-	val = eval_sexp(condition_node);
-
-	// true?
-	if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+	*/
+	
+	n = CDR(arg_handler_node);
+	for (int i=1 ; i<query_sexp_args_count(arg_handler_node) ; i++)
 	{
-		Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+		if (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID))
+		{
+			n = CDR(n) ;
+		}
 	}
 
-	// clear argument, but not list, as we'll need it later
-	Sexp_current_replacement_argument = NULL;
+	// Only execute if the argument is valid
+	if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
+	{
+		// flush stuff
+		Sexp_applicable_argument_list.expunge();
+		flush_sexp_tree(condition_node);
+
+		// evaluate conditional for current argument
+		Sexp_current_replacement_argument = Sexp_nodes[n].text;
+		val = eval_sexp(condition_node);
+
+		// true?
+		if (val == SEXP_TRUE || val == SEXP_KNOWN_TRUE)
+		{
+			Sexp_applicable_argument_list.add_data(Sexp_nodes[n].text);
+		}
+
+		// clear argument, but not list, as we'll need it later
+		Sexp_current_replacement_argument = NULL;
+	}
 
 	// return the value of the conditional
 	return val;
@@ -7479,7 +7504,7 @@ void sexp_invalidate_argument(int n)
 	if (op != OP_WHEN_ARGUMENT && op != OP_EVERY_TIME_ARGUMENT)
 		return;
 
-	// get the first op of the grandparent, which should be a *_of operator
+	// get the first op of the grandparent, which should be a *_of operator (or in_sequence)
 	arg_handler = CADR(grandparent);
 	op = get_operator_const(CTEXT(arg_handler));
 	if (op != OP_ANY_OF && op != OP_EVERY_OF && op != OP_NUMBER_OF && op != OP_RANDOM_OF && op != OP_RANDOM_MULTIPLE_OF && op != OP_IN_SEQUENCE)
@@ -18843,7 +18868,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tNumber of arguments, as above\r\n"
 		"\tRest:\tAnything that could be used in place of " SEXP_ARGUMENT_STRING "." },
 
-	// Goober5000
+	// Karajorma
 	{ OP_IN_SEQUENCE, "In-Sequence (Conditional operator)\r\n"
 		"\tSupplies arguments for the " SEXP_ARGUMENT_STRING " special data item.  The first argument in the list will be selected to satisfy the expression(s) "
 		"in which " SEXP_ARGUMENT_STRING " is used. The same argument will be returned by all subsequent calls\r\n\r\n"
