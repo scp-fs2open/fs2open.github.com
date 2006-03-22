@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.27 $
- * $Date: 2006-01-21 02:22:05 $
- * $Author: wmcoolmon $
+ * $Revision: 1.28 $
+ * $Date: 2006-03-22 18:20:06 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2006/01/21 02:22:05  wmcoolmon
+ * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
+ *
  * Revision 1.26  2005/12/06 03:17:48  taylor
  * cleanup some debug log messages:
  *   note that a nprintf() with "Warning" or "General" is basically the same thing as mprintf()
@@ -2871,4 +2874,4 @@ HUDGauge::~HUDGauge()
 	
 }
 
-#endif USE_PYTHON
+#endif // USE_PYTHON
