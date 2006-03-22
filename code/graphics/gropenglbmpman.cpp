@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.14 $
- * $Date: 2006-03-12 07:34:39 $
+ * $Revision: 1.15 $
+ * $Date: 2006-03-22 18:14:52 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2006/03/12 07:34:39  taylor
+ * when I forget that I'm an idiot little things like this slip through (me == moron)
+ *
  * Revision 1.13  2006/02/16 05:00:01  taylor
  * various bmpman related fixes
  *  - some new error checking (and fixes related to that) and cleanup
@@ -83,24 +86,39 @@
 #include "jpgutils/jpgutils.h"
 #include "pcxutils/pcxutils.h"
 #include "graphics/gropengltexture.h"
+#include "graphics/gropenglextension.h"
 #include "globalincs/systemvars.h"
 #include "anim/animplay.h"
 #include "anim/packunpack.h"
+#include "cmdline/cmdline.h"
 
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
 
-extern int Cmdline_jpgtga;
-extern int Cmdline_img2dds;
-
-// little fix for TGA where we need to swap 32-bit data but not when using -img2dds
-int no_byte_swap = 0;
 
 
 static inline int is_power_of_two(int w, int h)
 {
 	return ( ((w == 32) || (w == 64) || (w == 128) || (w == 256) || (w == 512) || (w == 1024) || (w == 2048) || (w == 4096)) &&
 			((h == 32) || (h == 64) || (h == 128) || (h == 256) || (h == 512) || (h == 1024) || (h == 2048) || (h == 4096)) );
+}
+
+static int get_num_mipmap_levels(int w, int h)
+{
+	int size, levels = 0;
+
+	// make sure we can and should generate mipmaps before trying to use them
+	if ( !opengl_extension_is_enabled(GL_SGIS_MIPMAP) || !Cmdline_mipmap )
+		return 1;
+
+	size = MAX(w, h);
+
+	while (size > 0) {
+		size >>= 1;
+		levels++;
+	}
+
+	return (levels > 1) ? levels : 1;
 }
 
 // anything API specific to freeing bm data
@@ -211,7 +229,7 @@ void gr_opengl_bm_page_in_start()
 }
 
 extern void bm_clean_slot(int n);
-extern int opengl_compress_image( ubyte **out_data, ubyte *in_data, int width, int height, int alpha = 1 );
+extern int opengl_compress_image( ubyte **out_data, ubyte *in_data, int width, int height, int alpha = 1, int num_mipmaps = 1 );
 
 static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyte bpp, ubyte flags )
 {	
@@ -224,6 +242,7 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 	ubyte *compressed_data = NULL;
 	int out_size = 0;
 	int alpha = 0;
+	int num_mipmaps = 1;
 
 	first_frame = be->info.ani.first_frame;
 	nframes = bm_bitmaps[first_frame].info.ani.num_frames;
@@ -251,6 +270,11 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 	bm = &bm_bitmaps[first_frame].bm;
 	size = bm->w * bm->h * (bpp / 8);
 
+	num_mipmaps = get_num_mipmap_levels( bm->w, bm->h );
+	Assert( num_mipmaps > 0 );
+
+	nprintf(("BMPMAN", "Attempting to compress '%s' with %d frames, original size %.3fM ... ", bm_bitmaps[first_frame].filename, ((float)(size*nframes)/1024.0f)/1024.0f));
+
 	for ( i=0; i<nframes; i++ )	{
 		be = &bm_bitmaps[first_frame+i];
 		bmp = &bm_bitmaps[first_frame+i].bm;
@@ -266,9 +290,7 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 
 		Assert( frame_data != NULL );
 
-		nprintf(("BMPMAN", "Attempting to compress '%s', original size %.3fM ... ", be->filename, ((float)size/1024.0f)/1024.0f));
-
-		out_size = opengl_compress_image(&compressed_data, frame_data, bmp->w, bmp->h, alpha);
+		out_size = opengl_compress_image(&compressed_data, frame_data, bmp->w, bmp->h, alpha, num_mipmaps);
 
 		if (out_size == 0) {
 			if (compressed_data != NULL) {
@@ -283,13 +305,12 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 
 		Assert( compressed_data != NULL );
 
-		nprintf(("BMPMAN", "new size is %.3fM.\n", ((float)out_size/1024.0f)/1024.0f));
-
 		bmp->data = (ptr_u)compressed_data;
 		bmp->bpp = (alpha) ? 32 : 24;
 		bmp->palette = NULL;
 		be->comp_type = (alpha) ? BM_TYPE_DXT5 : BM_TYPE_DXT1;
 		be->mem_taken = out_size;
+		be->num_mipmaps = num_mipmaps;
 
 		bm_update_memory_used( first_frame + i, out_size );
 
@@ -299,6 +320,12 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 		}
 
 		//mprintf(( "Checksum = %d\n", be->palette_checksum ));
+	}
+
+	if (num_mipmaps > 1) {
+		nprintf(("BMPMAN", "new size is %.3fM with %d mipmap levels.\n", ((float)(out_size*nframes)/1024.0f)/1024.0f, num_mipmaps));
+	} else {
+		nprintf(("BMPMAN", "new size is %.3fM.\n", ((float)(out_size*nframes)/1024.0f)/1024.0f));
 	}
 
 	free_anim_instance(the_anim_instance);
@@ -315,6 +342,7 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 	int out_size = 0;
 	int byte_size = 0;
 	int alpha = 1;
+	int num_mipmaps = 1;
 
 
 	// don't use for EFFs, if they were wanting to be DDS then they should already be that way
@@ -371,8 +399,11 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 		return 1;
 	}
 
+	num_mipmaps = get_num_mipmap_levels( bmp->w, bmp->h );
+	Assert( num_mipmaps > 0 );
+
 	// now for the attempt to compress the data
-	out_size = opengl_compress_image(&compressed_data, data, bmp->w, bmp->h, alpha);
+	out_size = opengl_compress_image(&compressed_data, data, bmp->w, bmp->h, alpha, num_mipmaps);
 
 	if (out_size == 0) {
 		if (data != NULL) {
@@ -392,13 +423,18 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 
 	Assert( compressed_data != NULL );
 
-	nprintf(("BMPMAN", "new size is %.3fM.\n", ((float)out_size/1024.0f)/1024.0f));
+	if (num_mipmaps > 1) {
+		nprintf(("BMPMAN", "new size is %.3fM with %d mipmap levels.\n", ((float)out_size/1024.0f)/1024.0f, num_mipmaps));
+	} else {
+		nprintf(("BMPMAN", "new size is %.3fM.\n", ((float)out_size/1024.0f)/1024.0f));
+	}
 
 	bmp->data = (ptr_u)compressed_data;
 	bmp->bpp = (alpha) ? (ubyte)32 : (ubyte)24;
 	bmp->palette = NULL;
 	be->comp_type = (alpha) ? BM_TYPE_DXT5 : BM_TYPE_DXT1;
 	be->mem_taken = out_size;
+	be->num_mipmaps = num_mipmaps;
 
 	bm_update_memory_used( bitmapnum, out_size );
 

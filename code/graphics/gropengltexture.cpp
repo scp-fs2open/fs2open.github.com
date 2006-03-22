@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.44 $
- * $Date: 2006-03-15 17:33:05 $
+ * $Revision: 1.45 $
+ * $Date: 2006-03-22 18:14:52 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44  2006/03/15 17:33:05  taylor
+ * couple of nitpicks
+ *
  * Revision 1.43  2006/03/12 07:34:39  taylor
  * when I forget that I'm an idiot little things like this slip through (me == moron)
  *
@@ -1327,7 +1330,7 @@ void gr_opengl_set_texture_addressing(int mode)
 	}
 }
 
-int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, int height, int alpha )
+int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, int height, int alpha, int num_mipmaps )
 {
 	Assert( in_data != NULL );
 
@@ -1337,6 +1340,7 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 	ubyte *out_data = NULL;
 	GLint testing = 0;
 	GLenum texFormat = (alpha) ? GL_UNSIGNED_INT_8_8_8_8_REV : GL_UNSIGNED_BYTE;
+	int i;
 
 	if ( !Texture_compression_available )
 		return 0;
@@ -1344,15 +1348,34 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 	glGenTextures(1, &tex);
 	glBindTexture(GL_TEXTURE_2D, tex);
 
+	// turn on mipmaps for proxy test
+	if (num_mipmaps > 1) {
+		glTexParameteri(GL_PROXY_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
+	}
+
 	// a quick proxy test.  this will tell us if it's possible without wasting a lot of time and resources in the attempt
 	glTexImage2D(GL_PROXY_TEXTURE_2D, 0, (alpha) ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, 0, (alpha) ? GL_BGRA_EXT : GL_BGR_EXT, texFormat, in_data);
 	glGetTexLevelParameteriv(GL_PROXY_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_ARB, &compressed);
 	glGetTexLevelParameteriv(GL_PROXY_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &testing);
 
+	// turn off mipmaps for proxy test
+	if (num_mipmaps > 1) {
+		glTexParameteri(GL_PROXY_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
+	}
+
 	if ( (compressed == GL_FALSE) || (testing == 0) ) {
 		glDeleteTextures(1, &tex);
 		return 0;
 	}
+
+	// if mipmaps are requested then make them with the nicest possible settings
+	if (num_mipmaps > 1) {
+		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
+		glHint(GL_GENERATE_MIPMAP_HINT_SGIS, GL_NICEST);
+	}
+
+	// use best compression quality
+	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
 
 	// alright, it should work if we are still here, now do it for real
 	glTexImage2D(GL_TEXTURE_2D, 0, (alpha) ? GL_COMPRESSED_RGBA_S3TC_DXT5_EXT : GL_COMPRESSED_RGB_S3TC_DXT1_EXT, width, height, 0, (alpha) ? GL_BGRA_EXT : GL_BGR_EXT, texFormat, in_data);
@@ -1362,7 +1385,11 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 	// if we got this far then it should have worked, but check anyway
 	Assert( compressed != GL_FALSE );
 
-	glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &compressed_size);
+	// for each mipmap level we generate go ahead and figure up the total memory required
+	for (i = 0; i < num_mipmaps; i++) {
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, i, GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &testing);
+		compressed_size += testing;
+	}
 
 	out_data = (ubyte*)vm_malloc(compressed_size * sizeof(ubyte));
 
@@ -1370,7 +1397,23 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 
 	memset(out_data, 0, compressed_size * sizeof(ubyte));
 
-	glGetCompressedTexImageARB(GL_TEXTURE_2D, 0, out_data);
+	// reset compressed_size and go back through each mipmap level to get both size and the image data itself
+	compressed_size = 0;
+
+	for (i = 0; i < num_mipmaps; i++) {
+		glGetTexLevelParameteriv(GL_TEXTURE_2D, i, GL_TEXTURE_COMPRESSED_IMAGE_SIZE_ARB, &testing);
+		glGetCompressedTexImageARB(GL_TEXTURE_2D, i, out_data + compressed_size);
+		compressed_size += testing;
+	}
+
+	// done with everything so reset hints to default values
+	if (num_mipmaps > 1) {
+		glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_FALSE);
+		glHint(GL_GENERATE_MIPMAP_HINT, GL_DONT_CARE);
+	}
+
+	glHint(GL_TEXTURE_COMPRESSION_HINT, GL_DONT_CARE);
+
 
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glDeleteTextures(1, &tex);
