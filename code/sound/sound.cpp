@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-02-16 05:47:32 $
+ * $Revision: 2.33 $
+ * $Date: 2006-03-22 21:42:55 $
  * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/02/16 05:47:32  taylor
+ * I never did really like the old audiostr OpenAL change here, this just seems safer
+ * initialize si->data and si->size before loading sound buffer (fixes OGG issue for plats that don't zero-initialize <vector>, this will be handled differently in the new code)
+ *
  * Revision 2.31  2006/01/20 07:10:33  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -790,7 +794,7 @@ int snd_unload( int n )
 	if (!ds_initialized)
 		return 0;
 
-	if (n < 0)
+	if ( (n < 0) || (n >= Num_sounds) )
 		return 0;
 
 	if ( !(Sounds[n].flags & SND_F_USED) )
@@ -812,13 +816,12 @@ int snd_unload( int n )
 	}
 
 	//If this sound is at the end of the array, we might as well get rid of it
-	if(n==Num_sounds-1)
-	{
+	if ( n == (Num_sounds-1) ) {
 		Num_sounds--;
 		Sounds.pop_back();
+	} else {
+		Sounds[n].flags &= ~SND_F_USED;
 	}
-
-	Sounds[n].flags &= ~SND_F_USED;
 
 	return 1;
 }
