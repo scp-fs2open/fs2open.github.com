@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.164 $
- * $Date: 2006-02-24 07:35:48 $
+ * $Revision: 2.165 $
+ * $Date: 2006-03-22 18:12:50 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.164  2006/02/24 07:35:48  taylor
+ * add v-sync support for OGL (I skimmped on this a bit but will go back to do something better, "special" extension wise, at a later date)
+ *
  * Revision 2.163  2006/02/20 07:23:29  taylor
  * start of some of the newer GL stuff
  *  - initial support for dropping from fullscreen to windowed mode (will get more changes in another day or so, mainly because of FRED2)
@@ -4331,6 +4334,7 @@ void opengl_setup_function_pointers()
 	// *****************************************************************************
 }
 
+#ifdef BUMPMAPPING
 extern GLuint normalisationCubeMap;
 //Taken from http://www.paulsprojects.net/tutorials/simplebump/simplebump.html
 //modified by WMC
@@ -4384,6 +4388,7 @@ bool GenerateNormalisationCubeMap()
 	delete [] data;
 	return true;
 }
+#endif
 
 void gr_opengl_init(int reinit)
 {

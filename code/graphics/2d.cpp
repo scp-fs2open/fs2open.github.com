@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.67 $
- * $Date: 2006-02-15 07:19:49 $
- * $Author: wmcoolmon $
+ * $Revision: 2.68 $
+ * $Date: 2006-03-22 18:12:50 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/02/15 07:19:49  wmcoolmon
+ * Various weapon and team related scripting functions; $Collide Ship and $Collide Weapon hooks
+ *
  * Revision 2.66  2006/01/31 06:43:21  wmcoolmon
  * Debug warning; compiler warning fix.
  *
@@ -810,9 +813,9 @@ int Gr_gamma_lookup[256];
 
 //Default clipping distances
 const float Default_min_draw_distance = 1.0f;
-const float Default_Max_draw_distance = 1e10;
+const float Default_max_draw_distance = 1e10;
 float Min_draw_distance = Default_min_draw_distance;
-float Max_draw_distance = Default_Max_draw_distance;
+float Max_draw_distance = Default_max_draw_distance;
 
 /**
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
