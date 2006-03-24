@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.247 $
- * $Date: 2006-03-24 05:08:19 $
+ * $Revision: 2.248 $
+ * $Date: 2006-03-24 18:40:13 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.247  2006/03/24 05:08:19  Goober5000
+ * tweak karajorma's fixes... these should work exactly the same but are closer to my original intent
+ *
  * Revision 2.246  2006/03/22 16:24:20  karajorma
  * Fixed Random-Of so that it finally works properly. and doesn't ignore the last items on the list.
  * Fixed Rand-Multiple so that when seeded it works the way I originally designed it to. Previously it was
@@ -2350,10 +2353,11 @@ int get_operator_const(char *token)
 int query_sexp_args_count(int node, bool only_valid_args = false)
 {
 	int count = 0;
+	int n = CDR(node);
 
-	for ( ; node != -1; node = CDR(node))
+	for ( ; n != -1; n = CDR(n))
 	{
-		if (only_valid_args && !(Sexp_nodes[node].flags & SNF_ARGUMENT_VALID))
+		if (only_valid_args && !(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID))
 			continue;
 
 		count++;
@@ -7397,7 +7401,7 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 		}
 
 		// pick an argument and iterate to it
-		random_argument = rand_internal(0, num_valid_args - 1);
+		random_argument = rand_internal(1, num_valid_args);
 		for (i = 0; i < random_argument; i++)
 		{
 			while (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID));
