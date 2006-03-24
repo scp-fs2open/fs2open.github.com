@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.246 $
- * $Date: 2006-03-22 16:24:20 $
- * $Author: karajorma $
+ * $Revision: 2.247 $
+ * $Date: 2006-03-24 05:08:19 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.246  2006/03/22 16:24:20  karajorma
+ * Fixed Random-Of so that it finally works properly. and doesn't ignore the last items on the list.
+ * Fixed Rand-Multiple so that when seeded it works the way I originally designed it to. Previously it was
+ * working exactly the same as rand when seeded.
+ *
  * Revision 2.245  2006/03/22 01:36:21  karajorma
  * Bah. More errors fixed. This time in in-sequence
  *
@@ -2346,9 +2351,9 @@ int query_sexp_args_count(int node, bool only_valid_args = false)
 {
 	int count = 0;
 
-	for ( ; CDR(node) != -1; node = CDR(node))
+	for ( ; node != -1; node = CDR(node))
 	{
-		if (only_valid_args && !(Sexp_nodes[CDR(node)].flags & SNF_ARGUMENT_VALID))
+		if (only_valid_args && !(Sexp_nodes[node].flags & SNF_ARGUMENT_VALID))
 			continue;
 
 		count++;
@@ -4134,51 +4139,54 @@ int avg_sexp(int n)
 // seeding added by Karajorma and Goober5000
 int rand_sexp(int n, bool multiple)
 {
-	int low, high, rand_num = 0, seed;
+	int low, high, rand_num, seed;
 
-	if (n != -1) {
-		// when getting a saved value
-		if (Sexp_nodes[n].value == SEXP_NUM_EVAL)
-		{
-			// don't regenerate new random number
-			return atoi(CTEXT(n));
-		}
+	if (n < 0)
+	{
+		Int3();
+		return 0;
+	}
 
-		// get low
-	//	if (Sexp_nodes[n].first != -1) {
-	//		low = eval_sexp(Sexp_nodes[n].first);
-	//	} else {
-	//		low = atoi(CTEXT(n));
-	//	}
-		low = eval_num(n);
+	// when getting a saved value
+	if (Sexp_nodes[n].value == SEXP_NUM_EVAL)
+	{
+		// don't regenerate new random number
+		return atoi(CTEXT(n));
+	}
 
-		// get high
-		high = eval_num(CDR(n));
+	// get low
+//	if (Sexp_nodes[n].first != -1) {
+//		low = eval_sexp(Sexp_nodes[n].first);
+//	} else {
+//		low = atoi(CTEXT(n));
+//	}
+	low = eval_num(n);
+
+	// get high
+	high = eval_num(CDR(n));
 			
-		// is there a seed provided?
-		if (CDDR(n) != -1)
-			seed = eval_num(CDDR(n));
-		else
-			seed = 0;
+	// is there a seed provided?
+	if (CDDR(n) != -1)
+		seed = eval_num(CDDR(n));
+	else
+		seed = 0;
 
-		// get the random number
-		rand_num = rand_internal(low, high, seed);
+	// get the random number
+	rand_num = rand_internal(low, high, seed);
 
-		// when saving the value
-		if (!multiple)
-		{
-			// set .value and .text so random number is generated only once.
-			Sexp_nodes[n].value = SEXP_NUM_EVAL;
-			sprintf(Sexp_nodes[n].text, "%d", rand_num);
-		}
-		// if this is a seeded rand_multiple 
-		else if (CDDR(n) != -1)
-		{
-		n = CDDR(n);
-		// Set the seed to a new seeded random value. This will ensure that the next time the method is called
-		// it will return a predictable but different number from the previous time. 
-		sprintf(Sexp_nodes[n].text, "%d", rand_internal(1, INT_MAX, seed));
-		}
+	// when saving the value
+	if (!multiple)
+	{
+		// set .value and .text so random number is generated only once.
+		Sexp_nodes[n].value = SEXP_NUM_EVAL;
+		sprintf(Sexp_nodes[n].text, "%d", rand_num);
+	}
+	// if this is multiple with a nonzero seed provided
+	else if (seed > 0)
+	{
+		// Set the seed to a new seeded random value. This will ensure that the next time the method
+		// is called it will return a predictable but different number from the previous time. 
+		sprintf(Sexp_nodes[CDDR(n)].text, "%d", rand_internal(1, INT_MAX, seed));
 	}
 
 	return rand_num;
@@ -7359,7 +7367,7 @@ int eval_number_of(int arg_handler_node, int condition_node)
 // addendum: hook karajorma's random-multiple-of into the same sexp
 int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 {
-	int n = -1, val, num_valid_args, random_argument;
+	int n = -1, i, val, num_valid_args, random_argument;
 	Assert(arg_handler_node != -1 && condition_node != -1);
 
 	// find which argument we picked, if we picked one
@@ -7378,6 +7386,8 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 	// if argument not found (or never specified in the first place), we have to pick one
 	if (n == -1)
 	{
+		n = CDR(arg_handler_node);
+
 		// get the number of valid arguments
 		num_valid_args = query_sexp_args_count(arg_handler_node, true);
 		if (num_valid_args == 0)
@@ -7385,38 +7395,20 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 			Sexp_current_replacement_argument = NULL;
 			return SEXP_FALSE;
 		}
-		
-		random_argument = rand_internal(1, num_valid_args);
-		
-		n = arg_handler_node;
-		do 
-		{			
-			n = CDR(n);
-			if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
-			{
-				random_argument-- ;
-			}
-		} while (random_argument);
 
-
-		/*
 		// pick an argument and iterate to it
 		random_argument = rand_internal(0, num_valid_args - 1);
-		for (int i = 0; i < random_argument; i++)
+		for (i = 0; i < random_argument; i++)
 		{
-			while (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)) 
-			{
+			while (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID));
 				n = CDR(n);
-			} 
-		}*/
+		}
 
-		
 		// save it, if we're saving
 		if (!multiple)
 		{
 			Sexp_nodes[n].flags |= SNF_ARGUMENT_SELECT;
 		}
-		
 	}
 
 	// only eval this argument if it's valid
@@ -7475,9 +7467,9 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 	
 	// get the first argument
 	n = CDR(arg_handler_node);
-	assert (n != -1);
+	Assert (n != -1);
 
-	// loop through the nodes until we fine one that is holds a valid argument or run out of nodes
+	// loop through the nodes until we find one that is holds a valid argument or run out of nodes
 	for (int i=1 ; i<query_sexp_args_count(arg_handler_node) ; i++)
 	{
 		if (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID))
