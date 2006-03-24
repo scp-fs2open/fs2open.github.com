@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.34 $
- * $Date: 2006-03-21 02:50:59 $
- * $Author: Goober5000 $
+ * $Revision: 1.35 $
+ * $Date: 2006-03-24 07:38:35 $
+ * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2006/03/21 02:50:59  Goober5000
+ * fix taylor's fix :p
+ * --Goober5000
+ *
  * Revision 1.33  2006/03/21 00:08:18  taylor
  * fix target eval check for weapons so that friendly ships will stop shooting at friendly bombs
  *
@@ -1237,6 +1241,14 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	int turret_weapon_class = WEAPON_INFO_INDEX(wip);
 
 	if (check_ok_to_fire(parent_objnum, turret->turret_enemy_objnum, wip)) {
+		//WMC - do animation
+		if(!turret->turret_animation_position)
+		{
+			ship_start_animation_type(parent_ship, TRIGGER_TYPE_TURRET_FIRING, turret->system_info->subobj_num, 1);
+			turret->turret_animation_position = true;
+			turret->turret_animation_done_time = ship_get_animation_time_type(parent_ship, TRIGGER_TYPE_TURRET_FIRING, turret->system_info->subobj_num);
+		}
+
 		vm_vector_2_matrix(&turret_orient, turret_fvec, NULL, NULL);
 		turret->turret_last_fire_direction = *turret_fvec;
 
@@ -1420,6 +1432,19 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	vec3d	predicted_enemy_pos;
 	object	*objp;
 	//ai_info	*aip;
+
+	if(ss->turret_animation_position) {
+		if(ss->turret_animation_done_time <= timestamp())
+		{
+			ship_start_animation_type(shipp, TRIGGER_TYPE_TURRET_FIRING, ss->system_info->subobj_num, -1);
+			ss->turret_animation_position = false;
+			ss->turret_animation_done_time = ship_get_animation_time_type(shipp, TRIGGER_TYPE_TURRET_FIRING, ss->system_info->subobj_num);
+		}
+	}
+
+	if(ss->turret_animation_done_time > timestamp()) {
+		return;
+	}
 
 	if (!Ai_firing_enabled) {
 		return;

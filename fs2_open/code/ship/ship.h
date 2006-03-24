@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.139 $
- * $Date: 2006-03-18 07:12:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.140 $
+ * $Date: 2006-03-24 07:38:36 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.139  2006/03/18 07:12:08  Goober5000
+ * add ship-subsys-targetable and ship-subsys-untargetable
+ * --Goober5000
+ *
  * Revision 2.138  2006/02/26 23:23:31  wmcoolmon
  * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
  *
@@ -1000,6 +1004,9 @@ typedef	struct ship_subsys {
 
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
 	vec3d	turret_big_attack_point;			//	local coordinate of point for this turret to attack on enemy
+
+	bool	turret_animation_position;
+	int		turret_animation_done_time;
 
 	// swarm (rapid fire) info
 	int		turret_swarm_info_index;	
@@ -2225,6 +2232,8 @@ extern void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_s
 extern int ship_has_energy_weapons(ship *shipp);
 extern int ship_has_engine_power(ship *shipp);
 
+//Gets animation type index from string name
+int match_animation_type(char *p);
 //starts an animation of a certan type that may be assosiated with a submodel of a ship
 void ship_start_animation_type(ship *shipp, int animation_type, int subtype, int direction);
 //how long untill the animation is done
