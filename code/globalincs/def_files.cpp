@@ -758,6 +758,10 @@ $hack improve non-homing swarm turret fire accuracy: NO					\n\
 ;; (like in FS1)														\n\
 $shockwaves damage small ship subsystems: NO							\n\
 																		\n\
+;; if set, ships will not be able to engage their jump drive if their	\n\
+;; navigation subsystem is damaged or destroyed							\n\
+$navigation subsystem governs warpout capability: NO					\n\
+																		\n\
 ;; if set, will not use a minimum speed limit for docked ships			\n\
 ;; (like in FS1)														\n\
 $ignore lower bound for minimum speed of docked ship: NO				\n\
