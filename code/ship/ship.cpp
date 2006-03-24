@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.320 $
- * $Date: 2006-03-18 07:12:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.321 $
+ * $Date: 2006-03-24 07:38:36 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.320  2006/03/18 07:12:08  Goober5000
+ * add ship-subsys-targetable and ship-subsys-untargetable
+ * --Goober5000
+ *
  * Revision 2.319  2006/02/28 05:16:55  Goober5000
  * fix the animation type triggers
  *
@@ -2331,7 +2335,7 @@ void parse_engine_wash(bool replace)
 	}
 }
 
-int match_type(char *p)
+int match_animation_type(char *p)
 {	
 	int i;
 
@@ -3890,7 +3894,7 @@ strcpy(parse_error_text, temp_error);
 					required_string("$type:");
 					char atype[128];
 					stuff_string(atype, F_NAME, NULL);
-					current_trigger->type = match_type(atype);
+					current_trigger->type = match_animation_type(atype);
 
 					if(optional_string("+sub_type:")){
 						stuff_int(&current_trigger->subtype);

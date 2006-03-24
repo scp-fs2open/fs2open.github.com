@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.149 $
- * $Date: 2006-03-18 10:23:46 $
- * $Author: taylor $
+ * $Revision: 2.150 $
+ * $Date: 2006-03-24 07:38:35 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.149  2006/03/18 10:23:46  taylor
+ * make the main vital TMAP_MAX_VERTS stuff dynamic, should handle the major non-HTL related crashes
+ *
  * Revision 2.148  2006/03/16 14:23:35  taylor
  * beyond some possible out-of-bounds issues, I think this stuff was messing up non-HTL lighting too
  *
@@ -6483,6 +6486,8 @@ char* animation_type_names[MAX_TRIGGER_ANIMATION_TYPES] =
 	"secondary_bank",
 	"door",
 	"afterburner",
+	"turret firing",
+	"scripted",
 };
 
 

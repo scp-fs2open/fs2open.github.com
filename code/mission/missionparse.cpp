@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.167 $
- * $Date: 2006-03-01 00:46:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.168 $
+ * $Date: 2006-03-24 07:38:35 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.167  2006/03/01 00:46:11  Goober5000
+ * more FS1 import tweaks
+ *
  * Revision 2.166  2006/02/26 23:23:30  wmcoolmon
  * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
  *
@@ -2945,6 +2948,8 @@ int parse_create_object_sub(p_object *objp)
 					ptr->weapons.ai_class = sssp->ai_class;
 
 				ptr->turret_best_weapon = -1;
+				ptr->turret_animation_position = false;
+				ptr->turret_animation_done_time = 0;
 			}
 
 			ptr = GET_NEXT(ptr);

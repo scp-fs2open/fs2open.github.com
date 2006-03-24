@@ -2923,6 +2923,52 @@ LUA_FUNC(getNumSubsystems, l_Ship, NULL, "Number of subsystems", "Gets number of
 	return lua_set_args(L, "i", Ships[objh->objp->instance].n_subsystems);
 }
 
+LUA_FUNC(getAnimationDoneTime, l_Ship, "Type, Subtype", "Time (milliseconds)", "Gets time that animation will be done")
+{
+	object_h *objh;
+	char *s = NULL;
+	int subtype=-1;
+	if(!lua_get_args(L, "o|si", l_Ship.GetPtr(&objh), &s, &subtype))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	int type = match_animation_type(s);
+	if(type < 0)
+		return LUA_RETURN_FALSE;
+
+	return lua_set_args(L, "i", ship_get_animation_time_type(&Ships[objh->objp->instance], type, subtype));
+}
+
+LUA_FUNC(triggerAnimation, l_Ship, "Type, [Subtype, Forwards]", "True",
+		 "Triggers an animation. Type is the string name of the animation type, "
+		 "Subtype is the subtype number, such as weapon bank #, and Forwards is boolean."
+		 "<br><strong>IMPORTANT: Function is in testing and should not be used with official mod releases")
+{
+	object_h *objh;
+	char *s = NULL;
+	bool b = true;
+	int subtype=-1;
+	if(!lua_get_args(L, "o|sib", l_Ship.GetPtr(&objh), &s, &subtype, &b))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	int type = match_animation_type(s);
+	if(type < 0)
+		return LUA_RETURN_FALSE;
+
+	int dir = 1;
+	if(!b)
+		dir = -1;
+
+	ship_start_animation_type(&Ships[objh->objp->instance], type, subtype, dir);
+
+	return LUA_RETURN_TRUE;
+}
+
 LUA_FUNC(warpIn, l_Ship, NULL, "True", "Warps ship in")
 {
 	object_h *objh;

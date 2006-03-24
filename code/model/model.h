@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.75 $
- * $Date: 2006-03-18 07:12:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.76 $
+ * $Date: 2006-03-24 07:38:35 $
+ * $Author: wmcoolmon $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2006/03/18 07:12:07  Goober5000
+ * add ship-subsys-targetable and ship-subsys-untargetable
+ * --Goober5000
+ *
  * Revision 2.74  2006/02/27 00:51:03  wmcoolmon
  * Bump MAX_TFP to 10
  *
@@ -693,6 +697,13 @@ typedef struct stepped_rotation {
 
 #define MAX_TRIGGERED_ANIMATIONS 15
 
+//WMC: Steps to adding a triggered animation
+//1 - add TRIGGER_TYPE define
+//2 - increment MAX_TRIGGER_ANIMATION_TYPES
+//3 - add name to animation_type_names array
+//4 - add start trigger (ship_start_animation_type)
+//5 - add stop trigger (ship_start_animation_type)
+
 #define TRIGGER_TYPE_NONE					-1		//no animation
 #define TRIGGER_TYPE_INITIAL				0		//this is just the position the subobject should be placed in
 #define TRIGGER_TYPE_DOCKING				1		//before you dock
@@ -701,8 +712,10 @@ typedef struct stepped_rotation {
 #define TRIGGER_TYPE_SECONDARY_BANK			4		//secondary banks
 #define TRIGGER_TYPE_DOCK_BAY_DOOR			5		//fighter bays
 #define TRIGGER_TYPE_AFTERBURNER			6		//Afterburner -C
+#define TRIGGER_TYPE_TURRET_FIRING			7		//Turret shooting -C
+#define TRIGGER_TYPE_SCRIPTEDturret_animation_position				8		//Triggered exclusively by scripting...maybe SEXPs? -C
 
-#define MAX_TRIGGER_ANIMATION_TYPES			7
+#define MAX_TRIGGER_ANIMATION_TYPES			9
 
 
 extern char* animation_type_names[MAX_TRIGGER_ANIMATION_TYPES];
