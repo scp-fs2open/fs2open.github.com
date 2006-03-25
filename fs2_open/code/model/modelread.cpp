@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.97 $
- * $Date: 2006-03-18 10:25:05 $
+ * $Revision: 2.98 $
+ * $Date: 2006-03-25 22:44:52 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2006/03/18 10:25:05  taylor
+ * never try and load glow or shine maps if we don't have a base map for it
+ * but WMC's bumpmap block in a BUMPMAPPING define since it useless most of the time
+ *
  * Revision 2.96  2006/03/08 05:15:20  taylor
  * add model_allocate_interp_data() extern for PPC machines
  *
@@ -4654,7 +4658,7 @@ void model_duplicate_reskin(int modelnum, char *ship_name)
 }
 
 #if BYTE_ORDER == BIG_ENDIAN
-extern void model_allocate_interp_data(int, int);
+extern void model_allocate_interp_data(int, int, int);
 
 // tigital -
 void swap_bsp_defpoints(ubyte * p)
@@ -4671,7 +4675,7 @@ void swap_bsp_defpoints(ubyte * p)
 	ubyte * normcount = p+20;
 	vec3d *src = vp(p+offset);
 
-	model_allocate_interp_data(nverts, n_norms);
+	model_allocate_interp_data(nverts, n_norms, 0);
 
 	for (n=0; n<nverts; n++ )	{
 		src->xyz.x = INTEL_FLOAT( &src->xyz.x );		//tigital
