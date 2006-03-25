@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.27 2006-01-31 15:44:55 taylor Exp $
+dnl $Id: configure.ac,v 1.28 2006-03-25 22:44:04 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.7)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -354,6 +354,7 @@ elif test "$fs2_os_unix" = "yes" ; then
 	AC_DEFINE([SCP_UNIX])
 	AC_DEFINE([NO_DIRECT3D])
 elif test "$fs2_os_osx" = "yes" ; then
+	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/System/Library/Frameworks/OpenGL.framework/Headers"
 	FS2_LDFLAGS="$FS2_LDFLAGS -framework OpenGL"
 	AC_DEFINE([SCP_UNIX])
 	AC_DEFINE([NO_DIRECT3D])
