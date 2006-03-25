@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.35 $
- * $Date: 2006-03-24 07:38:35 $
- * $Author: wmcoolmon $
+ * $Revision: 1.36 $
+ * $Date: 2006-03-25 10:38:44 $
+ * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2006/03/24 07:38:35  wmcoolmon
+ * New subobject animation stuff and Lua functions.
+ *
  * Revision 1.34  2006/03/21 02:50:59  Goober5000
  * fix taylor's fix :p
  * --Goober5000
@@ -816,12 +819,16 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 	if ((sip->flags & SIF_SMALL_SHIP) && (aip->target_objnum != -1)) {
 		int target_objnum = aip->target_objnum;
 
+		// don't try to attack protected ships
+		if (Objects[target_objnum].flags & OF_PROTECTED) {
+			set_target_objnum(aip, -1);
+			return -1;
+		}
+
 		if (Objects[target_objnum].signature == aip->target_signature) {
 			if (iff_matches_mask(Ships[Objects[target_objnum].instance].team, enemy_team_mask)) {
-				if ( !(Objects[target_objnum].flags & OF_PROTECTED) ) {		// check this flag as well.
-					// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum, target_objnum));
-					return target_objnum;
-				}
+				// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum, target_objnum));
+				return target_objnum;
 			}
 		} else {
 			aip->target_objnum = -1;

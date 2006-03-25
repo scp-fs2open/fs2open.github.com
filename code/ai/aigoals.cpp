@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.21 $
- * $Date: 2006-02-20 07:59:26 $
- * $Author: Goober5000 $
+ * $Revision: 1.22 $
+ * $Date: 2006-03-25 10:38:44 $
+ * $Author: taylor $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2006/02/20 07:59:26  Goober5000
+ * fixed several more things in the new ignore code
+ * --Goober5000
+ *
  * Revision 1.20  2006/02/20 02:13:07  Goober5000
  * added ai-ignore-new which hopefully should fix the ignore bug
  * --Goober5000
@@ -1743,6 +1747,13 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	int return_val;
 	object *objp;
 	ai_info *aip;
+	int index = -1, sindex = -1;
+	int modelnum = -1;
+
+	objp = &Objects[objnum];
+	Assert( objp->instance != -1 );
+	ai_shipname = Ships[objp->instance].ship_name;
+	aip = &Ai_info[Ships[objp->instance].ai_index];
 
 	//  these orders are always achievable.
 	if ( (aigp->ai_mode == AI_GOAL_KEEP_SAFE_DISTANCE)
@@ -1753,7 +1764,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// warp (depart) only achievable if there's somewhere to depart to
 	if (aigp->ai_mode == AI_GOAL_WARP)
 	{
-		ship *shipp = &Ships[Objects[objnum].instance];
+		ship *shipp = &Ships[objp->instance];
 
 		// always valid if has subspace drive
 		if (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE))
@@ -1800,116 +1811,122 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		return AI_GOAL_ACHIEVABLE;
 	}
 
-	objp = &Objects[objnum];
-	Assert( objp->instance != -1 );
-	ai_shipname = Ships[objp->instance].ship_name;
-	aip = &Ai_info[Ships[objp->instance].ai_index];
 
 	return_val = AI_GOAL_SATISFIED;
 
 	// next, determine if the goal has been completed successfully
-	switch ( aigp->ai_mode ) {
-
-	case AI_GOAL_DOCK:
-	case AI_GOAL_CHASE_WING:
-	case AI_GOAL_UNDOCK:
-		//status = mission_log_get_time( LOG_SHIP_DOCK, ai_shipname, aigp->ship_name, NULL);
-		//status = mission_log_get_time( LOG_SHIP_UNDOCK, ai_shipname, aigp->ship_name, NULL );
-		//MWA 3/20/97 -- cannot short circuit a dock or undock goal already succeeded -- we must
-		// rely on the goal removal code to just remove this goal.  This is because docking/undock
-		// can happen > 1 time per mission per pair of ships.  The above checks will find only
-		// if the ships docked or undocked at all, which is not what we want.
-		status = 0;
-		break;
-	case AI_GOAL_DESTROY_SUBSYSTEM: {
-		int shipnum;
-		ship_subsys *ssp;
-
-		// shipnum could be -1 depending on if the ship hasn't arrived or died.  only look for subsystem
-		// destroyed when shipnum is valid
-		shipnum = ship_name_lookup( aigp->ship_name );
-
-		// can't determine the status of this goal if ship not valid
-		// or we haven't found a valid subsystem index yet
-		if ( (shipnum == -1) || (aigp->flags & AIGF_SUBSYS_NEEDS_FIXUP) ) {
+	switch ( aigp->ai_mode )
+	{
+		case AI_GOAL_DOCK:
+		case AI_GOAL_CHASE_WING:
+		case AI_GOAL_UNDOCK:
+			//status = mission_log_get_time( LOG_SHIP_DOCK, ai_shipname, aigp->ship_name, NULL);
+			//status = mission_log_get_time( LOG_SHIP_UNDOCK, ai_shipname, aigp->ship_name, NULL );
+			//MWA 3/20/97 -- cannot short circuit a dock or undock goal already succeeded -- we must
+			// rely on the goal removal code to just remove this goal.  This is because docking/undock
+			// can happen > 1 time per mission per pair of ships.  The above checks will find only
+			// if the ships docked or undocked at all, which is not what we want.
 			status = 0;
+			break;
+
+		case AI_GOAL_DESTROY_SUBSYSTEM:
+		{
+			ship_subsys *ssp;
+
+			// shipnum could be -1 depending on if the ship hasn't arrived or died.  only look for subsystem
+			// destroyed when shipnum is valid
+			sindex = ship_name_lookup( aigp->ship_name );
+
+			// can't determine the status of this goal if ship not valid
+			// or we haven't found a valid subsystem index yet
+			if ( (sindex == -1) || (aigp->flags & AIGF_SUBSYS_NEEDS_FIXUP) ) {
+				status = 0;
+				break;
+			}
+
+			// if the ship is not in the mission or the subsystem name is still being stored, mark the status
+			// as 0 so we can continue.  (The subsystem name must be turned into an index into the ship's subsystems
+			// for this goal to be valid).
+			Assert ( aigp->ai_submode >= 0 );
+			ssp = ship_get_indexed_subsys( &Ships[sindex], aigp->ai_submode );
+			status = mission_log_get_time( LOG_SHIP_SUBSYS_DESTROYED, aigp->ship_name, ssp->system_info->name, NULL );
+
 			break;
 		}
 
-		// if the ship is not in the mission or the subsystem name is still being stored, mark the status
-		// as 0 so we can continue.  (The subsystem name must be turned into an index into the ship's subsystems
-		// for this goal to be valid).
-		Assert ( aigp->ai_submode >= 0 );
-		ssp = ship_get_indexed_subsys( &Ships[shipnum], aigp->ai_submode );
-		status = mission_log_get_time( LOG_SHIP_SUBSYS_DESTROYED, aigp->ship_name, ssp->system_info->name, NULL );
+		case AI_GOAL_DISABLE_SHIP:
+			status = mission_log_get_time( LOG_SHIP_DISABLED, aigp->ship_name, NULL, NULL );
+			break;
 
-		break;
-	}
-	case AI_GOAL_DISABLE_SHIP:
-		status = mission_log_get_time( LOG_SHIP_DISABLED, aigp->ship_name, NULL, NULL );
-		break;
-	case AI_GOAL_DISARM_SHIP:
-		status = mission_log_get_time( LOG_SHIP_DISARMED, aigp->ship_name, NULL, NULL );
-		break;
+		case AI_GOAL_DISARM_SHIP:
+			status = mission_log_get_time( LOG_SHIP_DISARMED, aigp->ship_name, NULL, NULL );
+			break;
 
 		// to guard or ignore a ship, the goal cannot continue if the ship being guarded is either destroyed
 		// or has departed.
-	case AI_GOAL_GUARD:
-	case AI_GOAL_IGNORE:
-	case AI_GOAL_IGNORE_NEW:
-	case AI_GOAL_EVADE_SHIP:
-	case AI_GOAL_CHASE:
-	case AI_GOAL_STAY_NEAR_SHIP:
-	case AI_GOAL_REARM_REPAIR:
-	case AI_GOAL_FLY_TO_SHIP: {
-		int shipnum;
+		case AI_GOAL_GUARD:
+		case AI_GOAL_IGNORE:
+		case AI_GOAL_IGNORE_NEW:
+		case AI_GOAL_EVADE_SHIP:
+		case AI_GOAL_CHASE:
+		case AI_GOAL_STAY_NEAR_SHIP:
+		case AI_GOAL_REARM_REPAIR:
+		case AI_GOAL_FLY_TO_SHIP:
+		{
+			// MWA -- 4/22/98.  Check for the ship actually being in the mission before
+			// checking departure and destroyed.  In multiplayer, since ships can respawn,
+			// they get log entries for being destroyed even though they have respawned.
+			sindex = ship_name_lookup( aigp->ship_name );
+			if ( sindex == -1 ) {
+				status = mission_log_get_time( LOG_SHIP_DEPART, aigp->ship_name, NULL, NULL);
+				if ( !status ) {
+					status = mission_log_get_time( LOG_SHIP_DESTROYED, aigp->ship_name, NULL, NULL);
+					if ( status )
+						return_val = AI_GOAL_NOT_ACHIEVABLE;
+				}
+			} else {
+				status = 0;
+			}
 
-		// MWA -- 4/22/98.  Check for the ship actually being in the mission before
-		// checking departure and destroyed.  In multiplayer, since ships can respawn,
-		// they get log entries for being destroyed even though they have respawned.
-		shipnum = ship_name_lookup( aigp->ship_name );
-		if ( shipnum == -1 ) {
-			status = mission_log_get_time( LOG_SHIP_DEPART, aigp->ship_name, NULL, NULL);
+			break;
+		}
+
+		case AI_GOAL_GUARD_WING:
+		{
+			status = mission_log_get_time( LOG_WING_DEPART, aigp->ship_name, NULL, NULL );
 			if ( !status ) {
-				status = mission_log_get_time( LOG_SHIP_DESTROYED, aigp->ship_name, NULL, NULL);
+				status = mission_log_get_time( LOG_WING_DESTROYED, aigp->ship_name, NULL, NULL);
 				if ( status )
 					return_val = AI_GOAL_NOT_ACHIEVABLE;
 			}
-		} else {
-			status = 0;
-		}
-		break;
-	}
 
-	case AI_GOAL_GUARD_WING:
-		status = mission_log_get_time( LOG_WING_DEPART, aigp->ship_name, NULL, NULL );
-		if ( !status ) {
-			status = mission_log_get_time( LOG_WING_DESTROYED, aigp->ship_name, NULL, NULL);
-			if ( status )
-				return_val = AI_GOAL_NOT_ACHIEVABLE;
+			break;
 		}
-		break;
 
 		// the following case statement returns control to caller on all paths!!!!
-	case AI_GOAL_CHASE_WEAPON:
-		// for chase weapon, we simply need to look at the weapon instance that we are trying to
-		// attack and see if the object still exists, and has the same signature that we expect.
-		if ( Weapons[aigp->wp_index].objnum == -1 )
-			return AI_GOAL_NOT_ACHIEVABLE;
+		case AI_GOAL_CHASE_WEAPON:
+		{
+			// for chase weapon, we simply need to look at the weapon instance that we are trying to
+			// attack and see if the object still exists, and has the same signature that we expect.
+			Assert( aigp->wp_index >= 0 );
 
-		// if the signatures don't match, then goal isn't achievable.
-		if ( Objects[Weapons[aigp->wp_index].objnum].signature != aigp->weapon_signature )
-			return AI_GOAL_NOT_ACHIEVABLE;
+			if ( Weapons[aigp->wp_index].objnum == -1 )
+				return AI_GOAL_NOT_ACHIEVABLE;
 
-		// otherwise, we should be good to go
-		return AI_GOAL_ACHIEVABLE;
+			// if the signatures don't match, then goal isn't achievable.
+			if ( Objects[Weapons[aigp->wp_index].objnum].signature != aigp->weapon_signature )
+				return AI_GOAL_NOT_ACHIEVABLE;
 
-		break;
+			// otherwise, we should be good to go
+			return AI_GOAL_ACHIEVABLE;
 
-	default:
-		Int3();
-		status = 0;
-		break;
+			break;
+		}
+
+		default:
+			Int3();
+			status = 0;
+			break;
 	}
 
 	// if status is true, then the mission log event was found and the goal was satisfied.  return
@@ -1922,8 +1939,12 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// the if statement.
 	if ( (aigp->ai_mode == AI_GOAL_CHASE_WING) || (aigp->ai_mode == AI_GOAL_GUARD_WING) )
 	{
-		int num = wing_name_lookup( aigp->ship_name );
-		wing *wingp = &Wings[num];
+		sindex = wing_name_lookup( aigp->ship_name );
+
+		if (sindex < 0)
+			return AI_GOAL_NOT_ACHIEVABLE;
+
+		wing *wingp = &Wings[sindex];
 
 		if ( wingp->flags & WF_WING_GONE )
 			return AI_GOAL_NOT_ACHIEVABLE;
@@ -1982,24 +2003,25 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// only enter this calculation if the ship we are docking with has arrived.  If the ship is gone, then
 	// this goal will get removed.
 	if ( (aigp->ai_mode == AI_GOAL_DOCK) && (status == SHIP_STATUS_ARRIVED) ) {
-		int index, modelnum, shipnum;
-
 		if (!(aigp->flags & AIGF_DOCKER_INDEX_VALID)) {
 			modelnum = Ships[objp->instance].modelnum;
+			Assert( modelnum >= 0 );
 			index = model_find_dock_name_index(modelnum, aigp->docker.name);
 			aigp->docker.index = index;
 			aigp->flags |= AIGF_DOCKER_INDEX_VALID;
 		}
+
 		if (!(aigp->flags & AIGF_DOCKEE_INDEX_VALID)) {
-			shipnum = ship_name_lookup(aigp->ship_name);
-			if ( shipnum != -1 ) {
-				modelnum = Ships[shipnum].modelnum;
+			sindex = ship_name_lookup(aigp->ship_name);
+			if ( sindex != -1 ) {
+				modelnum = Ships[sindex].modelnum;
 				index = model_find_dock_name_index(modelnum, aigp->dockee.name);
 				aigp->dockee.index = index;
 				aigp->flags |= AIGF_DOCKEE_INDEX_VALID;
 			} else
 				aigp->dockee.index = -1;		// this will force code into if statement below making goal not achievable.
 		}
+
 		if ( (aigp->dockee.index == -1) || (aigp->docker.index == -1) ) {
 			Int3();			// for now, allender wants to know about these things!!!!
 			return AI_GOAL_NOT_ACHIEVABLE;
@@ -2010,9 +2032,9 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			return AI_GOAL_NOT_KNOWN;
 
 		// we must also determine if we're prevented from docking for any reason
-		shipnum = ship_name_lookup(aigp->ship_name);
-		Assert( shipnum != -1 );
-		object *goal_objp = &Objects[Ships[shipnum].objnum];
+		sindex = ship_name_lookup(aigp->ship_name);
+		Assert( sindex >= 0 );
+		object *goal_objp = &Objects[Ships[sindex].objnum];
 
 		// if the ship that I am supposed to dock with is docked with something else, then I need to put my goal on hold
 		//	[MK, 4/23/98: With Mark, we believe this fixes the problem of Comet refusing to warp out after docking with Omega.
@@ -2071,11 +2093,10 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		// have fixed up the subsystem name (of the subsystem to destroy) into an index into
 		// the ship's subsystem list
 		if ( aigp->flags & AIGF_SUBSYS_NEEDS_FIXUP ) {
-			int shipnum;			
+			sindex = ship_name_lookup( aigp->ship_name );
 
-			shipnum = ship_name_lookup( aigp->ship_name );
-			if ( shipnum != -1 ) {
-				aigp->ai_submode = ship_get_subsys_index( &Ships[shipnum], aigp->docker.name );
+			if ( sindex != -1 ) {
+				aigp->ai_submode = ship_get_subsys_index( &Ships[sindex], aigp->docker.name );
 				aigp->flags &= ~AIGF_SUBSYS_NEEDS_FIXUP;
 			} else {
 				Int3();
@@ -2083,97 +2104,103 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			}
 		}
 	} else if ( ((aigp->ai_mode == AI_GOAL_IGNORE) || (aigp->ai_mode == AI_GOAL_IGNORE_NEW)) && (status == SHIP_STATUS_ARRIVED) ) {
-		int shipnum;
 		object *ignored;
 
 		// for ignoring a ship, call the ai_ignore object function, then declare the goal satisfied
-		shipnum = ship_name_lookup( aigp->ship_name );
-		Assert( shipnum != -1 );		// should be true because of above status
-		ignored = &Objects[Ships[shipnum].objnum];
+		sindex = ship_name_lookup( aigp->ship_name );
+		Assert( sindex != -1 );		// should be true because of above status
+		ignored = &Objects[Ships[sindex].objnum];
 
 		ai_ignore_object(objp, ignored, 100, (aigp->ai_mode == AI_GOAL_IGNORE_NEW));
+
 		return AI_GOAL_SATISFIED;
 	}
 
-	switch ( aigp->ai_mode ) {
+	switch ( aigp->ai_mode )
+	{
+		case AI_GOAL_CHASE:
+		case AI_GOAL_DOCK:
+		case AI_GOAL_DESTROY_SUBSYSTEM:
+		case AI_GOAL_UNDOCK:
+		case AI_GOAL_GUARD:
+		case AI_GOAL_GUARD_WING:
+		case AI_GOAL_DISABLE_SHIP:
+		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_IGNORE:
+		case AI_GOAL_IGNORE_NEW:
+		case AI_GOAL_EVADE_SHIP:
+		case AI_GOAL_STAY_NEAR_SHIP:
+		case AI_GOAL_FLY_TO_SHIP:
+		{
+			if ( status == SHIP_STATUS_ARRIVED )
+				return AI_GOAL_ACHIEVABLE;
+			else if ( status == SHIP_STATUS_NOT_ARRIVED )
+				return AI_GOAL_NOT_KNOWN;
+			else if ( status == SHIP_STATUS_GONE )
+				return AI_GOAL_NOT_ACHIEVABLE;
+			else if ( status == SHIP_STATUS_UNKNOWN )
+				return AI_GOAL_NOT_KNOWN;
 
-	case AI_GOAL_CHASE:
-	case AI_GOAL_DOCK:
-	case AI_GOAL_DESTROY_SUBSYSTEM:
-	case AI_GOAL_UNDOCK:
-	case AI_GOAL_GUARD:
-	case AI_GOAL_GUARD_WING:
-	case AI_GOAL_DISABLE_SHIP:
-	case AI_GOAL_DISARM_SHIP:
-	case AI_GOAL_IGNORE:
-	case AI_GOAL_IGNORE_NEW:
-	case AI_GOAL_EVADE_SHIP:
-	case AI_GOAL_STAY_NEAR_SHIP:
-	case AI_GOAL_FLY_TO_SHIP:
-		if ( status == SHIP_STATUS_ARRIVED )
-			return AI_GOAL_ACHIEVABLE;
-		else if ( status == SHIP_STATUS_NOT_ARRIVED )
-			return AI_GOAL_NOT_KNOWN;
-		else if ( status == SHIP_STATUS_GONE )
-			return AI_GOAL_NOT_ACHIEVABLE;
-		else if ( status == SHIP_STATUS_UNKNOWN )
-			return AI_GOAL_NOT_KNOWN;
 			Int3();		// get allender -- bad logic
-		break;
-
-	// for rearm repair ships, a goal is only achievable if the support ship isn't repairing anything
-	// else at the time, or is set to repair the ship for this goal.  All other goals should be placed
-	// on hold by returning GOAL_NOT_KNOWN.
-	case AI_GOAL_REARM_REPAIR: {
-		int shipnum;
-
-		// short circuit a couple of cases.  Ship not arrived shouldn't happen.  Ship gone means
-		// we mark the goal as not achievable.
-		if ( status == SHIP_STATUS_NOT_ARRIVED ) {
-			Int3();										// get Allender.  this shouldn't happen!!!
-			return AI_GOAL_NOT_ACHIEVABLE;
+			break;
 		}
 
-		if ( status == SHIP_STATUS_GONE )
-			return AI_GOAL_NOT_ACHIEVABLE;
+		// for rearm repair ships, a goal is only achievable if the support ship isn't repairing anything
+		// else at the time, or is set to repair the ship for this goal.  All other goals should be placed
+		// on hold by returning GOAL_NOT_KNOWN.
+		case AI_GOAL_REARM_REPAIR:
+		{
+			// short circuit a couple of cases.  Ship not arrived shouldn't happen.  Ship gone means
+			// we mark the goal as not achievable.
+			if ( status == SHIP_STATUS_NOT_ARRIVED ) {
+				Int3();										// get Allender.  this shouldn't happen!!!
+				return AI_GOAL_NOT_ACHIEVABLE;
+			}
 
-		Assert( aigp->ship_name );
-		shipnum = ship_name_lookup( aigp->ship_name );
+			if ( status == SHIP_STATUS_GONE )
+				return AI_GOAL_NOT_ACHIEVABLE;
 
-		// if desitnation currently being repaired, then goal is stil active
-		if ( Ai_info[Ships[shipnum].ai_index].ai_flags & AIF_BEING_REPAIRED )
-			return AI_GOAL_ACHIEVABLE;
+			sindex = ship_name_lookup( aigp->ship_name );
 
-		// if the destination ship is dying or departing (but not completed yet), the mark goal as
-		// not achievable.
-		if ( Ships[shipnum].flags & (SF_DYING | SF_DEPARTING) )
-			return AI_GOAL_NOT_ACHIEVABLE;
+			if ( sindex < 0 ) {
+				Int3();
+				return AI_GOAL_NOT_ACHIEVABLE;
+			}
 
-		// if the destination object is no longer awaiting repair, then remove the item
-		if ( !(Ai_info[Ships[shipnum].ai_index].ai_flags & AIF_AWAITING_REPAIR) )
-			return AI_GOAL_NOT_ACHIEVABLE;
+			// if desitnation currently being repaired, then goal is stil active
+			if ( Ai_info[Ships[sindex].ai_index].ai_flags & AIF_BEING_REPAIRED )
+				return AI_GOAL_ACHIEVABLE;
 
-		// not repairing anything means that he can do this goal!!!
-		if ( !(aip->ai_flags  & AIF_REPAIRING) )
-			return AI_GOAL_ACHIEVABLE;
+			// if the destination ship is dying or departing (but not completed yet), the mark goal as
+			// not achievable.
+			if ( Ships[sindex].flags & (SF_DYING | SF_DEPARTING) )
+				return AI_GOAL_NOT_ACHIEVABLE;
 
-		// test code!!!
-		if ( aip->goal_objnum == -1 ) {
-			// -- MK, 11/9/97 -- I was always hitting this: Int3();
+			// if the destination object is no longer awaiting repair, then remove the item
+			if ( !(Ai_info[Ships[sindex].ai_index].ai_flags & AIF_AWAITING_REPAIR) )
+				return AI_GOAL_NOT_ACHIEVABLE;
+
+			// not repairing anything means that he can do this goal!!!
+			if ( !(aip->ai_flags  & AIF_REPAIRING) )
+				return AI_GOAL_ACHIEVABLE;
+
+			// test code!!!
+			if ( aip->goal_objnum == -1 ) {
+				// -- MK, 11/9/97 -- I was always hitting this: Int3();
+				return AI_GOAL_ACHIEVABLE;
+			}
+
+			// if he is repairing something, he can satisfy his repair goal (his goal_objnum)
+			// return GOAL_NOT_KNOWN which is kind of a hack which puts the goal on hold until it can be
+			// satisfied.  
+			if ( aip->goal_objnum != Ships[sindex].objnum )
+				return AI_GOAL_NOT_KNOWN;
+
 			return AI_GOAL_ACHIEVABLE;
 		}
 
-		// if he is repairing something, he can satisfy his repair goal (his goal_objnum)
-		// return GOAL_NOT_KNOWN which is kind of a hack which puts the goal on hold until it can be
-		// satisfied.  
-		if ( aip->goal_objnum != Ships[shipnum].objnum )
-			return AI_GOAL_NOT_KNOWN;
-
-		return AI_GOAL_ACHIEVABLE;
-	}
-
-	default:
-		Int3();			// invalid case in switch:
+		default:
+			Int3();			// invalid case in switch:
 	}
 
 	return AI_GOAL_NOT_KNOWN;

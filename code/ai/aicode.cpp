@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.65 $
- * $Date: 2006-03-20 06:19:03 $
+ * $Revision: 1.66 $
+ * $Date: 2006-03-25 10:38:44 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.65  2006/03/20 06:19:03  taylor
+ * add ai_profiles flag to get rid of limit on minimum speed a docked ship can move
+ * (not going to Int3() here from < 0.1 speed by default, a support ship actually hit it)
+ *
  * Revision 1.64  2006/02/25 21:46:59  Goober5000
  * spelling
  *
@@ -2192,7 +2196,7 @@ int set_target_objnum(ai_info *aip, int objnum)
 
 		aip->target_objnum = objnum;
 		aip->target_time = 0.0f;
-		aip->target_signature = Objects[objnum].signature;
+		aip->target_signature = (objnum > 0) ? Objects[objnum].signature : -1;
 		// clear targeted subsystem
 		set_targeted_subsys(aip, NULL, -1);
 	}
@@ -2215,6 +2219,7 @@ ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int pare
 		// Make new_subsys target
 		if (new_subsys->system_info->type == SUBSYSTEM_ENGINE) {
 			if ( aip != Player_ai ) {
+				Assert( aip->shipnum >= 0 );
 				ai_select_primary_weapon(&Objects[Ships[aip->shipnum].objnum], &Objects[parent_objnum], WIF_PUNCTURE);
 				ship_primary_changed(&Ships[aip->shipnum]);	// AL: maybe send multiplayer information when AI ship changes primaries
 			}
