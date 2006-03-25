@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.231 $
- * $Date: 2006-03-18 22:00:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.232 $
+ * $Date: 2006-03-25 10:40:38 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.231  2006/03/18 22:00:43  Goober5000
+ * fix comm order initialization bug
+ * --Goober5000
+ *
  * Revision 2.230  2006/03/18 10:17:59  taylor
  * we already have a variable to show the framerate so lets just use the one
  *
@@ -5852,9 +5856,14 @@ void game_reset_shade_frame()
 	Fade_delta_time = 1.0f;
 	gr_create_shader(&Viewer_shader, 0, 0, 0, 0);
 }
+
 void game_shade_frame(float frametime)
 {
-	if(Viewer_shader.c == 0.0f && Fade_type != FI_FADEOUT)
+	// only do frame shade if we are actually in a game play state
+	if ( !game_actually_playing() )
+		return;
+
+	if ( (Viewer_shader.c == 0.0f) && (Fade_type != FI_FADEOUT) )
 		return;
 
 	//Fade in or out if necessary
