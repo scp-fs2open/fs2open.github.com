@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.22 $
- * $Date: 2006-03-25 10:38:44 $
+ * $Revision: 1.23 $
+ * $Date: 2006-03-25 22:38:15 $
  * $Author: taylor $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2006/03/25 10:38:44  taylor
+ * minor cleanup
+ * address numerous out-of-bounds issues
+ * add some better error checking and Assert()'s around
+ *
  * Revision 1.21  2006/02/20 07:59:26  Goober5000
  * fixed several more things in the new ignore code
  * --Goober5000
@@ -2559,6 +2564,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	case AI_GOAL_DISABLE_SHIP:
 	case AI_GOAL_DISARM_SHIP: {
 		shipnum = ship_name_lookup( current_goal->ship_name );
+		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
 		ai_attack_object( objp, other_obj, current_goal->priority, NULL);
 		ai_set_attack_subsystem( objp, current_goal->ai_submode );		// submode stored the subsystem type
@@ -2577,6 +2583,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	case AI_GOAL_CHASE_WING:
 		wingnum = wing_name_lookup( current_goal->ship_name );
+		Assert( wingnum >= 0 );
 		ai_attack_wing(objp, wingnum, current_goal->priority);
 		break;
 
@@ -2594,6 +2601,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	case AI_GOAL_EVADE_SHIP:
 		shipnum = ship_name_lookup( current_goal->ship_name );
+		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
 		ai_evade_object( objp, other_obj, current_goal->priority );
 		break;
@@ -2622,6 +2630,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		// clearing out goals is okay here since we are now what mode to set this AI object to.
 		ai_clear_ship_goals( aip );
 		shipnum = ship_name_lookup( current_goal->ship_name );
+		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
 		ai_form_on_wing( objp, other_obj );
 		break;
@@ -2630,6 +2639,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	case AI_GOAL_STAY_NEAR_SHIP: {
 		shipnum = ship_name_lookup( current_goal->ship_name );
+		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
 		// todo MK:  hook to keep support ship near other_obj -- other_obj could be the player object!!!
 		float	dist = 300.0f;		//	How far away to stay from ship.  Should be set in SEXP?
@@ -2646,6 +2656,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	case AI_GOAL_REARM_REPAIR:
 		shipnum = ship_name_lookup( current_goal->ship_name );
+		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
 		ai_rearm_repair( objp, current_goal->docker.index, other_obj, current_goal->dockee.index, current_goal->priority );
 		break;
