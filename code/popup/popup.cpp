@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Popup/Popup.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-05-12 17:49:16 $
+ * $Revision: 2.8 $
+ * $Date: 2006-03-25 10:41:44 $
  * $Author: taylor $
  *
  * Code for displaying pop-up dialog boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/05/12 17:49:16  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.6  2005/01/31 10:34:39  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -370,17 +374,17 @@ static int Button_coords[GR_NUM_RESOLUTIONS][3][2] =
 	}
 };
 
-static popup_background Popup_background[GR_NUM_RESOLUTIONS][4] = 
+static popup_background Popup_background[GR_NUM_RESOLUTIONS][3] = 
 {
 	{ // GR_640
-		{"Pop2",			129, 99},
-		{"Pop2",			129, 99},
-		{"Pop3",			129, 99},		
+		{ "Pop2",	{ 129, 99 } },
+		{ "Pop2",	{ 129, 99 } },
+		{ "Pop3",	{ 129, 99 } }
 	},
 	{ // GR_1024
-		{"2_Pop2",		206, 158},
-		{"2_Pop2",		206, 158},
-		{"2_Pop3",		206, 158},		
+		{ "2_Pop2",	{ 206, 158 } },
+		{ "2_Pop2",	{ 206, 158 } },
+		{ "2_Pop3",	{ 206, 158 } }
 	}
 };
 

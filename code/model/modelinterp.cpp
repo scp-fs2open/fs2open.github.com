@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.150 $
- * $Date: 2006-03-24 07:38:35 $
- * $Author: wmcoolmon $
+ * $Revision: 2.151 $
+ * $Date: 2006-03-25 10:41:44 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150  2006/03/24 07:38:35  wmcoolmon
+ * New subobject animation stuff and Lua functions.
+ *
  * Revision 2.149  2006/03/18 10:23:46  taylor
  * make the main vital TMAP_MAX_VERTS stuff dynamic, should handle the major non-HTL related crashes
  *
@@ -5897,7 +5900,6 @@ void find_defpoint(int off, ubyte *bsp_data){
 	int norm_num = 0;
 
 	for (n = 0; n < nverts; n++) {	
-		src++;		// move to normal
 		norm_num += normcount[n];
 	}
 
