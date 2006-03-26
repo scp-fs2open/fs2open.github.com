@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.165 $
- * $Date: 2006-03-22 18:12:50 $
+ * $Revision: 2.166 $
+ * $Date: 2006-03-26 08:26:45 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.165  2006/03/22 18:12:50  taylor
+ * minor cleanup
+ *
  * Revision 2.164  2006/02/24 07:35:48  taylor
  * add v-sync support for OGL (I skimmped on this a bit but will go back to do something better, "special" extension wise, at a later date)
  *
@@ -1041,6 +1044,7 @@ volatile int GL_deactivate = 0;
 
 static ubyte *GL_saved_screen = NULL;
 static ubyte *GL_saved_mouse_data = NULL;
+static int GL_saved_screen_id = -1;
 static int GL_mouse_saved_size = 32; // width and height, so they're equal
 
 static int GL_mouse_saved = 0;
@@ -3400,7 +3404,7 @@ void opengl_free_mouse_area()
 int gr_opengl_save_screen()
 {
 	GLenum fmt = 0;
-	int i, rc = -1;
+	int i;
 	ubyte *sptr, *dptr, bgr_tmp;
 	ubyte *opengl_screen_tmp = NULL;
 	int width_times_pixel, mouse_times_pixel;
@@ -3409,8 +3413,12 @@ int gr_opengl_save_screen()
 
 	fmt = GL_UNSIGNED_BYTE;
 
-	if (!GL_saved_screen)
-		GL_saved_screen = (ubyte*)vm_malloc_q( gr_screen.max_w * gr_screen.max_h * 3 );
+	if (GL_saved_screen) {
+		// already have a screen saved so just bail...
+		return -1;
+	}
+
+	GL_saved_screen = (ubyte*)vm_malloc_q( gr_screen.max_w * gr_screen.max_h * 3 );
 
 	if (!GL_saved_screen) {
 		mprintf(( "Couldn't get memory for saved screen!\n" ));
@@ -3467,9 +3475,9 @@ mprintf(("OGL-READBUFFER: 0x%x\n", blahblah));
 		GL_saved_screen[i+2] = bgr_tmp;
 	}
 
-	rc = bm_create(24, gr_screen.max_w, gr_screen.max_h, GL_saved_screen, 0);
+	GL_saved_screen_id = bm_create(24, gr_screen.max_w, gr_screen.max_h, GL_saved_screen, 0);
 
-	return rc;
+	return GL_saved_screen_id;
 }
 
 void gr_opengl_restore_screen(int bmp_id)
@@ -3481,8 +3489,13 @@ void gr_opengl_restore_screen(int bmp_id)
 		return;
 	}
 
-	gr_set_bitmap(bmp_id);
-	gr_bitmap(0,0,false);	// don't scale here since we already have real screen size
+	Assert( (bmp_id < 0) || (bmp_id == GL_saved_screen_id) );
+
+	if (GL_saved_screen_id < 0)
+		return;
+
+	gr_set_bitmap(GL_saved_screen_id);
+	gr_bitmap(0, 0, false);	// don't scale here since we already have real screen size
 }
 
 void gr_opengl_free_screen(int bmp_id)
@@ -3493,7 +3506,13 @@ void gr_opengl_free_screen(int bmp_id)
 	vm_free(GL_saved_screen);
 	GL_saved_screen = NULL;
 
-	bm_release(bmp_id);
+	Assert( (bmp_id < 0) || (bmp_id == GL_saved_screen_id) );
+
+	if (GL_saved_screen_id < 0)
+		return;
+
+	bm_release(GL_saved_screen_id);
+	GL_saved_screen_id = -1;
 }
 
 static void opengl_flush_frame_dump()
