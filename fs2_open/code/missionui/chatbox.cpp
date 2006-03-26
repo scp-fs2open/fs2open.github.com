@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/Chatbox.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-10-10 17:21:06 $
+ * $Revision: 2.13 $
+ * $Date: 2006-03-26 08:25:05 $
  * $Author: taylor $
  *
  * C module to handle all code for multiplayer chat windows
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/10/10 17:21:06  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.11  2005/07/13 03:25:58  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -406,10 +409,12 @@ char* Chatbox_big_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 // chatbox coords
 int Chatbox_big_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
-		192, 0
+	//	192, 0
+		0, 0
 	},
 	{ // GR_1024
-		307, 0
+	//	307, 0
+		0, 0
 	}
 };
 
@@ -456,10 +461,12 @@ char* Chatbox_p_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 // chatbox coords
 int Chatbox_p_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
-		192, 0
+	//	192, 0
+		0, 0
 	},
 	{ // GR_1024
-		307, 0
+	//	307, 0
+		0, 0
 	}
 };
 
@@ -880,14 +887,19 @@ void chatbox_close()
 	Chat_window.destroy();
 
 	// unload any bitmaps
-	if(Chatbox_small_bitmap != -1){
-		bm_unload(Chatbox_small_bitmap);
+	if (Chatbox_small_bitmap != -1) {
+		bm_release(Chatbox_small_bitmap);
+		Chatbox_small_bitmap = -1;
 	}
-	if(Chatbox_big_bitmap != -1){
-		bm_unload(Chatbox_big_bitmap);
+
+	if (Chatbox_big_bitmap != -1) {
+		bm_release(Chatbox_big_bitmap);
+		Chatbox_big_bitmap = -1;
 	}
-	if(Chatbox_mp_bitmap != -1){
-		bm_unload(Chatbox_mp_bitmap);
+
+	if (Chatbox_mp_bitmap != -1) {
+		bm_release(Chatbox_mp_bitmap);
+		Chatbox_mp_bitmap = -1;
 	}	
 
 	// clear all the text lines in the
