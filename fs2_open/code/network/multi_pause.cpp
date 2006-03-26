@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pause.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-10-10 17:21:07 $
+ * $Revision: 2.10 $
+ * $Date: 2006-03-26 08:23:06 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.8  2005/07/13 03:35:32  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -182,6 +185,16 @@ float Multi_pause_eat = -1.0f;
 #define MP_SCROLL_DOWN				1
 #define MP_EXIT_MISSION				2
 
+char *Multi_paused_bg_fname[GR_NUM_RESOLUTIONS] = {
+	"MPPause",
+	"2_MPPause"
+};
+
+char *Multi_paused_bg_mask[GR_NUM_RESOLUTIONS] = {
+	"MPPause-m",
+	"2_MPPause-m"
+};
+
 // where to place the pauser's callsign
 int Mp_callsign_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
@@ -221,8 +234,9 @@ UI_XSTR Multi_paused_text[GR_NUM_RESOLUTIONS][MULTI_PAUSED_NUM_BUTTONS] = {
 };
 
 
-UI_WINDOW *Multi_paused_window;
-int Multi_paused_screen_id;													// backed up screen data
+UI_WINDOW Multi_paused_window;
+int Multi_paused_screen_id = -1;		// backed up screen data
+int Multi_paused_background = -1;		// pause background
 
 void multi_pause_check_buttons();
 void multi_pause_button_pressed(int n);
@@ -236,6 +250,19 @@ int multi_pause_can_unpause(net_player *p);
 // render the callsign of the guy who paused
 void multi_pause_render_callsign();
 
+int Multi_paused = 0;
+
+// ----------------------------------------------------------------------------------
+// EXTERNAL FUNCTIONS/VARIABLES
+//
+
+extern void game_flush();
+
+extern void beam_pause_sounds();
+extern void beam_unpause_sounds();
+
+extern void audiostream_pause_all();
+extern void audiostream_unpause_all();
 
 // ----------------------------------------------------------------------------------
 // PAUSE FUNCTIONS
@@ -418,9 +445,22 @@ int multi_pause_eat_keys()
 // PAUSE UI FUNCTIONS
 //
 
-void multi_pause_init(UI_WINDOW *Ui_window)
+void multi_pause_init()
 {
-	int i;	
+	int i;
+
+	// if we're already paused. do nothing
+	if ( Multi_paused ) {
+		return;
+	}
+
+	Assert( Game_mode & GM_MULTIPLAYER );
+
+	if ( !(Game_mode & GM_MULTIPLAYER) )
+		return;
+
+	// pause all beam weapon sounds
+	beam_pause_sounds();
 
 #ifndef NO_STANDALONE
 	// standalone shouldn't be doing any freespace interface stuff
@@ -431,15 +471,23 @@ void multi_pause_init(UI_WINDOW *Ui_window)
 	else 
 #endif
 	{
-		// switch off the text messaging system if it is active
-		multi_msg_text_flush();				
+		// pause all game music
+		audiostream_pause_all();
 
-		// assign the local reference to the ui window
-		Multi_paused_window = Ui_window;
-		
+		// switch off the text messaging system if it is active
+		multi_msg_text_flush();
+
+		if ( Multi_paused_screen_id == -1 )
+			Multi_paused_screen_id = gr_save_screen();
+
+		// create ui window
+		Multi_paused_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+		Multi_paused_window.set_mask_bmap(Multi_paused_bg_mask[gr_screen.res]);
+		Multi_paused_background = bm_load(Multi_paused_bg_fname[gr_screen.res]);
+
 		for (i=0; i<MULTI_PAUSED_NUM_BUTTONS; i++) {
 			// create the button
-			Multi_paused_buttons[gr_screen.res][i].button.create(Multi_paused_window, "", Multi_paused_buttons[gr_screen.res][i].x, Multi_paused_buttons[gr_screen.res][i].y, 1, 1, 0, 1);
+			Multi_paused_buttons[gr_screen.res][i].button.create(&Multi_paused_window, "", Multi_paused_buttons[gr_screen.res][i].x, Multi_paused_buttons[gr_screen.res][i].y, 1, 1, 0, 1);
 
 			// set the highlight action
 			Multi_paused_buttons[gr_screen.res][i].button.set_highlight_action(common_play_highlight_sound);
@@ -453,15 +501,17 @@ void multi_pause_init(UI_WINDOW *Ui_window)
 
 		// add text
 		for(i=0; i<MULTI_PAUSED_NUM_TEXT; i++){
-			Multi_paused_window->add_XSTR(&Multi_paused_text[gr_screen.res][i]);
+			Multi_paused_window.add_XSTR(&Multi_paused_text[gr_screen.res][i]);
 		}
 		
 		// close any instances of a chatbox
 		chatbox_close();
 
-		// intiialize our custom chatbox
+		// intialize our custom chatbox
 		chatbox_create(CHATBOX_FLAG_MULTI_PAUSED);		
 	}
+
+	Multi_paused = 1;
 
 	// reset timestamps
 	multi_reset_timestamps();
@@ -479,11 +529,22 @@ void multi_pause_do()
 	}
 
 	if (!(Game_mode & GM_STANDALONE_SERVER)) {
+		// restore saved screen data if any
+		if (Multi_paused_screen_id >= 0) {
+			gr_restore_screen(Multi_paused_screen_id);
+		}
+
+		// set the background image
+		if (Multi_paused_background >= 0) {
+			gr_set_bitmap(Multi_paused_background);
+			gr_bitmap(0, 0);
+		}
+
 		// if we're inside of popup code right now, don't process the window
 		if(!popup_active()){
 			// process chatbox and window stuff
 			k = chatbox_process();
-			k = Multi_paused_window->process(k);	
+			k = Multi_paused_window.process(k);	
 		
 			switch (k) {
 			case KEY_ESC:			
@@ -503,11 +564,16 @@ void multi_pause_do()
 		chatbox_render();
 		
 		// draw tooltips
-		// Multi_paused_window->draw_tooltip();
-		Multi_paused_window->draw();
+		// Multi_paused_window.draw_tooltip();
+		Multi_paused_window.draw();
 
 		// display the voice status indicator
 		multi_common_voice_display_status();
+
+		// don't flip screen if we are in the popup code right now
+		if (!popup_active()) {
+			gr_flip();
+		}
 	}
 	// standalone pretty much does nothing here
 	else {
@@ -515,8 +581,11 @@ void multi_pause_do()
 	}
 }
 
-void multi_pause_close()
+void multi_pause_close(int end_mission)
 {
+	if ( !Multi_paused )
+		return;
+
 	// set the standalonest
 	if (Game_mode & GM_STANDALONE_SERVER) {
 #ifndef NO_STANDALONE
@@ -524,8 +593,25 @@ void multi_pause_close()
 #endif
 	} else {
 		// free the screen up
-		gr_free_screen(Multi_paused_screen_id);
+		if ( end_mission && (Multi_paused_screen_id >= 0) ) {
+			gr_free_screen(Multi_paused_screen_id);
+			Multi_paused_screen_id = -1;
+		}
+
+		if (Multi_paused_background >= 0) {
+			bm_release(Multi_paused_background);
+			Multi_paused_background = -1;
+		}
+
+		Multi_paused_window.destroy();		
+		game_flush();
+
+		// unpause all the music
+		audiostream_unpause_all();	
 	}
+
+	// unpause all beam weapon sounds
+	beam_unpause_sounds();
 
 	// eat keys timestamp
 	Multi_pause_eat = f2fl(timer_get_fixed_seconds());
@@ -536,6 +622,8 @@ void multi_pause_close()
 	// clear out control config and keypress info
 	control_config_clear_used_status();
 	key_flush();
+
+	Multi_paused = 0;
 }
 
 void multi_pause_check_buttons()

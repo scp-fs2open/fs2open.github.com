@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:25:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2006-03-26 08:23:06 $
+ * $Author: taylor $
  * 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2004/08/11 05:06:28  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -57,13 +61,13 @@ extern int Please_wait_coords[GR_NUM_RESOLUTIONS][4];
 //
 
 // initialize the pause screen
-void pause_init(int multi);
+void pause_init();
 
 // pause do frame - will handle running multiplayer operations if necessary
-void pause_do(int multi);
+void pause_do();
 
 // close the pause screen
-void pause_close(int multi);
+void pause_close();
 
 // debug pause init
 void pause_debug_init();

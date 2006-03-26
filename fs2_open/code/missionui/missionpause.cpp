@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.cpp $
- * $Revision: 2.17 $
- * $Date: 2006-03-21 14:19:18 $
+ * $Revision: 2.18 $
+ * $Date: 2006-03-26 08:23:06 $
  * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/03/21 14:19:18  taylor
+ * add commands to view from and change target in viewer mode pause
+ * also add reset ability to both view mode and hud state to return to pre-pause settings
+ *
  * Revision 2.16  2005/10/10 17:21:06  taylor
  * remove NO_NETWORK
  *
@@ -136,15 +140,6 @@ int Please_wait_coords[GR_NUM_RESOLUTIONS][4] = {
 	}	
 };
 
-char *Pause_multi_fname[GR_NUM_RESOLUTIONS] = {
-	"MPPause",
-	"2_MPPause"
-};
-char *Pause_multi_mask[GR_NUM_RESOLUTIONS] = {
-	"MPPause-m",
-	"2_MPPause-m"
-};
-
 // pause window objects
 UI_WINDOW Pause_win;
 UI_CHECKBOX Pause_single_step;
@@ -191,41 +186,30 @@ void pause_set_type(int type)
 }
 
 // initialize the pause screen
-void pause_init(int multi)
+void pause_init()
 {
-	Assert(multi == 0);
-
 	// if we're already paused. do nothing
 	if ( Paused ) {
 		return;
-	}	
+	}
+
+	Assert( !(Game_mode & GM_MULTIPLAYER) );
 
 	// pause all beam weapon sounds
 	beam_pause_sounds();
 
-	if(!(Game_mode & GM_STANDALONE_SERVER)){
-		if(Pause_type == PAUSE_TYPE_NORMAL)	{
-			Pause_saved_screen = gr_save_screen();
-		}
-
-		// pause all game music
-		audiostream_pause_all();
-
-		//JAS: REMOVED CALL TO SET INTERFACE PALETTE TO GET RID OF SCREEN CLEAR WHEN PAUSING
-		//common_set_interface_palette();  // set the interface palette
-		Pause_win.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);	
-
-		if (multi) {
-			Pause_win.set_mask_bmap(Pause_multi_mask[gr_screen.res]);
-			Pause_background_bitmap = bm_load(Pause_multi_fname[gr_screen.res]);
-
-			multi_pause_init(&Pause_win);		
-		} else {
-			Pause_background_bitmap = bm_load(Pause_bmp_name[gr_screen.res]);
-		}
-	} else {
-		multi_pause_init(NULL);
+	if (Pause_type == PAUSE_TYPE_NORMAL)	{
+		Pause_saved_screen = gr_save_screen();
 	}
+
+	// pause all game music
+	audiostream_pause_all();
+
+	//JAS: REMOVED CALL TO SET INTERFACE PALETTE TO GET RID OF SCREEN CLEAR WHEN PAUSING
+	//common_set_interface_palette();  // set the interface palette
+	Pause_win.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);	
+
+	Pause_background_bitmap = bm_load(Pause_bmp_name[gr_screen.res]);
 
 	Paused = 1;
 }
@@ -234,7 +218,7 @@ extern int button_function_demo_valid(int n);
 extern int button_function(int n);
 
 // pause do frame - will handle running multiplayer operations if necessary
-void pause_do(int multi)
+void pause_do()
 {
 	int k;
 	char *pause_str = XSTR("Paused", 767);
@@ -243,152 +227,135 @@ void pause_do(int multi)
 	static int previous_Viewer_mode = -1;
 	static int previous_hud_state = -1;
 
-	if(Game_mode & GM_STANDALONE_SERVER){
-		multi_pause_do();
-	} else {		
-		//	RENDER A GAME FRAME HERE AS THE BACKGROUND (if normal pause)
+	Assert( !(Game_mode & GM_MULTIPLAYER) );
+	
+	//	RENDER A GAME FRAME HERE AS THE BACKGROUND (if normal pause)
 
-		if(Pause_type == PAUSE_TYPE_NORMAL)	{
-			
-			// Fall back to viewer just incase saved screen is invalid
-			if(Pause_saved_screen == -1){
-				Pause_type = PAUSE_TYPE_VIEWER;
-			}
-			else if(Pause_type == PAUSE_TYPE_NORMAL)	{
-				gr_restore_screen(Pause_saved_screen);
-			}
+	if(Pause_type == PAUSE_TYPE_NORMAL)	{			
+		// Fall back to viewer just incase saved screen is invalid
+		if(Pause_saved_screen == -1){
+			Pause_type = PAUSE_TYPE_VIEWER;
 		}
+		else if(Pause_type == PAUSE_TYPE_NORMAL)	{
+			gr_restore_screen(Pause_saved_screen);
+		}
+	}
 
-		if(Pause_type == PAUSE_TYPE_NORMAL){
-			if (Pause_background_bitmap >= 0) {
-				gr_set_bitmap(Pause_background_bitmap);
-				if(multi){
-					gr_bitmap(0,0);
-				} else {
-					// draw the bitmap
-					gr_bitmap(Please_wait_coords[gr_screen.res][0], Please_wait_coords[gr_screen.res][1]);
+	if(Pause_type == PAUSE_TYPE_NORMAL){
+		if (Pause_background_bitmap >= 0) {
+			gr_set_bitmap(Pause_background_bitmap);
+
+			// draw the bitmap
+			gr_bitmap(Please_wait_coords[gr_screen.res][0], Please_wait_coords[gr_screen.res][1]);
 			
-					// draw "Paused" on it
-					gr_set_color_fast(&Color_normal);
-					gr_set_font(FONT2);
-					gr_get_string_size(&str_w, &str_h, pause_str);
-					gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, pause_str, false);
-					gr_set_font(FONT1);
+			// draw "Paused" on it
+			gr_set_color_fast(&Color_normal);
+			gr_set_font(FONT2);
+			gr_get_string_size(&str_w, &str_h, pause_str);
+			gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, pause_str, false);
+			gr_set_font(FONT1);
+		}
+	}
+
+	if (Pause_type == PAUSE_TYPE_VIEWER) {
+		if (previous_Viewer_mode < 0)
+			previous_Viewer_mode = Viewer_mode;
+
+		if (previous_hud_state < 0)
+			previous_hud_state = hud_disabled();
+	}
+
+	// process the ui window here
+	k = Pause_win.process() & ~KEY_DEBUGGED;
+	switch (k)
+	{ 
+		case KEY_TAB:
+			hud_toggle_draw();
+			break;
+
+		// view from outside of the ship
+	   	case KEY_ENTER:
+			if (Pause_type == PAUSE_TYPE_VIEWER) {
+				button_function_demo_valid(VIEW_EXTERNAL);
+			}
+			break;
+
+		// view from target
+		case KEY_PADDIVIDE:
+			if (Pause_type == PAUSE_TYPE_VIEWER) {
+				button_function_demo_valid(VIEW_OTHER_SHIP);
+			}
+			break;
+
+		// change target
+		case KEY_PADMULTIPLY:
+			if (Pause_type == PAUSE_TYPE_VIEWER) {
+				button_function(TARGET_NEXT);
+			}
+			break;
+
+		case KEY_ESC:
+		case KEY_ALTED + KEY_PAUSE:
+		case KEY_PAUSE:
+			// reset previous view if we happened to be playing around with it during pause
+			if (Pause_type == PAUSE_TYPE_VIEWER) {
+				if (previous_Viewer_mode >= 0) {
+					Viewer_mode = previous_Viewer_mode;
+				}
+
+				// NOTE remember that hud state is reversed here (0 == on, 1 == off)
+				if ( (previous_hud_state >= 0) && (hud_disabled() != previous_hud_state) ) {
+					hud_set_draw( !previous_hud_state );
 				}
 			}
+
+			gameseq_post_event(GS_EVENT_PREVIOUS_STATE);		
+			break;
+	}	// end switch
+
+	// draw the background window
+	Pause_win.draw();
+
+	// a very unique case where we shouldn't be doing the page flip because we're inside of popup code
+	if(!popup_active()){
+		if(Pause_type == PAUSE_TYPE_NORMAL) {
+			gr_flip();
 		}
-
-		if (Pause_type == PAUSE_TYPE_VIEWER) {
-			if (previous_Viewer_mode < 0)
-				previous_Viewer_mode = Viewer_mode;
-
-			if (previous_hud_state < 0)
-				previous_hud_state = hud_disabled();
-		}
-
-		// the multi paused screen will do its own window processing
-		if (multi) {
-			multi_pause_do();
-		} else {
-			// otherwise process the ui window here
-			k = Pause_win.process() & ~KEY_DEBUGGED;
-			switch (k)
-			{ 
-				case KEY_TAB:
-					hud_toggle_draw();
-					break;
-
-				// view from outside of the ship
-			   	case KEY_ENTER:
-					if (Pause_type == PAUSE_TYPE_VIEWER) {
-						button_function_demo_valid(VIEW_EXTERNAL);
-					}
-					break;
-
-				// view from target
-				case KEY_PADDIVIDE:
-					if (Pause_type == PAUSE_TYPE_VIEWER) {
-						button_function_demo_valid(VIEW_OTHER_SHIP);
-					}
-					break;
-
-				// change target
-				case KEY_PADMULTIPLY:
-					if (Pause_type == PAUSE_TYPE_VIEWER) {
-						button_function(TARGET_NEXT);
-					}
-					break;
-
-				case KEY_ESC:
-				case KEY_ALTED + KEY_PAUSE:
-				case KEY_PAUSE:
-					// reset previous view if we happened to be playing around with it during pause
-					if (Pause_type == PAUSE_TYPE_VIEWER) {
-						if (previous_Viewer_mode >= 0) {
-							Viewer_mode = previous_Viewer_mode;
-						}
-
-						// NOTE remember that hud state is reversed here (0 == on, 1 == off)
-						if ( (previous_hud_state >= 0) && (hud_disabled() != previous_hud_state) ) {
-							hud_set_draw( !previous_hud_state );
-						}
-					}
-
-					gameseq_post_event(GS_EVENT_PREVIOUS_STATE);		
-					break;
-			}	// end switch
-		}
-
-		// draw the background window
-		Pause_win.draw();
-
-		// a very unique case where we shouldn't be doing the page flip because we're inside of popup code
-		if(!popup_active()){
-			if(Pause_type == PAUSE_TYPE_NORMAL) {
-				gr_flip();
-			}
-		} else {
-			// this should only be happening in a very unique multiplayer case
-			Assert(Game_mode & GM_MULTIPLAYER);
-		}
+	} else {
+		// this should only be happening in a very unique multiplayer case
+		Int3();
 	}
 }
 
 // close the pause screen
-void pause_close(int multi)
+void pause_close()
 {
 	// if we're not paused - do nothing
 	if ( !Paused ) {
 		return;
 	}
 
+	Assert( !(Game_mode & GM_MULTIPLAYER) );
+
 	// unpause all beam weapon sounds
 	beam_unpause_sounds();
 
 	// deinit stuff
-	if(Game_mode & GM_STANDALONE_SERVER){
-		multi_pause_close();
-	} else {
-		if(Pause_saved_screen != -1) {
-			gr_free_screen(Pause_saved_screen);
-			Pause_saved_screen = -1;
-		}
-
-		if (Pause_background_bitmap != -1){
-			bm_release(Pause_background_bitmap);
-			Pause_background_bitmap = -1;
-		}
-
-		Pause_win.destroy();		
-		game_flush();
-
-		if (multi) {
-			multi_pause_close();
-		}
-
-		// unpause all the music
-		audiostream_unpause_all();		
+	if(Pause_saved_screen != -1) {
+		gr_free_screen(Pause_saved_screen);
+		Pause_saved_screen = -1;
 	}
+
+	if (Pause_background_bitmap != -1){
+		bm_release(Pause_background_bitmap);
+		Pause_background_bitmap = -1;
+	}
+
+	Pause_win.destroy();		
+	game_flush();
+
+	// unpause all the music
+	audiostream_unpause_all();		
 
 	Paused = 0;
 }
