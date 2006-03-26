@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.248 $
- * $Date: 2006-03-24 18:40:13 $
+ * $Revision: 2.249 $
+ * $Date: 2006-03-26 06:42:01 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.248  2006/03/24 18:40:13  Goober5000
+ * hopefully fix this :(
+ *
  * Revision 2.247  2006/03/24 05:08:19  Goober5000
  * tweak karajorma's fixes... these should work exactly the same but are closer to my original intent
  *
@@ -7402,10 +7405,21 @@ int eval_random_of(int arg_handler_node, int condition_node, bool multiple)
 
 		// pick an argument and iterate to it
 		random_argument = rand_internal(1, num_valid_args);
-		for (i = 0; i < random_argument; i++)
+		i = 0;
+		while (true)
 		{
-			while (!(Sexp_nodes[n].flags & SNF_ARGUMENT_VALID));
-				n = CDR(n);
+			Assert(n >= 0);
+
+			// count only valid arguments
+			if (Sexp_nodes[n].flags & SNF_ARGUMENT_VALID)
+				i++;
+
+			// if we're at the right one, we're done
+			if (i >= random_argument)
+				break;
+
+			// iterate
+			n = CDR(n);
 		}
 
 		// save it, if we're saving
