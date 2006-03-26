@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.232 $
- * $Date: 2006-03-25 10:40:38 $
+ * $Revision: 2.233 $
+ * $Date: 2006-03-26 08:23:06 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.232  2006/03/25 10:40:38  taylor
+ * don't run through game_shade_frame() every frame unless we are in a game-play state
+ *
  * Revision 2.231  2006/03/18 22:00:43  Goober5000
  * fix comm order initialization bug
  * --Goober5000
@@ -7521,7 +7524,7 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_GAME_PAUSED:
 			game_start_time();
 			if ( end_mission ) {
-				pause_close(0);
+				pause_close();
 			}
 			break;
 
@@ -7664,9 +7667,7 @@ void game_leave_state( int old_state, int new_state )
 #endif
 
 		case GS_STATE_MULTI_PAUSED:
-			// if ( end_mission ){
-				pause_close(1);
-			// }
+			multi_pause_close(end_mission);
 			break;			
 
 		case GS_STATE_INGAME_PRE_JOIN:
@@ -7847,7 +7848,7 @@ void game_enter_state( int old_state, int new_state )
 
 		case GS_STATE_GAME_PAUSED:
 			game_stop_time();
-			pause_init(0);
+			pause_init();
 			break;
 
 		case GS_STATE_DEBUG_PAUSED:
@@ -8147,7 +8148,7 @@ void mouse_force_pos(int x, int y);
 #endif  // ifndef NO_STANDALONE
 
 		case GS_STATE_MULTI_PAUSED:
-			pause_init(1);
+			multi_pause_init();
 			break;
 		
 		case GS_STATE_INGAME_PRE_JOIN:
@@ -8287,7 +8288,7 @@ void game_do_state(int state)
 				game_frame(true);
 			}
 				
-			pause_do(0);
+			pause_do();
 			break;
 
 		case GS_STATE_DEBUG_PAUSED:
@@ -8439,7 +8440,7 @@ void game_do_state(int state)
 
 		case GS_STATE_MULTI_PAUSED:
 			game_set_frametime(GS_STATE_MULTI_PAUSED);
-			pause_do(1);
+			multi_pause_do();
 			break;
 
 		case GS_STATE_TEAM_SELECT:
@@ -11115,7 +11116,7 @@ void game_pause()
 			// pause_init is a special case and we don't unpause it ourselves
 			case GS_STATE_GAME_PLAY:
 				if ( (!popup_active()) && (!popupdead_is_active()) )
-					pause_init(0);
+					pause_init();
 				break;
 
 			default:

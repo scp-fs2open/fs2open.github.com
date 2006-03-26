@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pause.h $
- * $Revision: 2.2 $
- * $Date: 2005-07-13 03:35:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.3 $
+ * $Date: 2006-03-26 08:23:06 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.1  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -90,13 +94,13 @@ int multi_pause_eat_keys();
 //
 
 // initialize multi pause screen
-void multi_pause_init(UI_WINDOW *Ui_window);
+void multi_pause_init();
 
 // do frame for the multi pause screen
 void multi_pause_do();
 
 // close the multi pause screen
-void multi_pause_close();
+void multi_pause_close(int end_mission);
 
 
 #endif
