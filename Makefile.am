@@ -29,7 +29,7 @@ EXTRA_DIST =	\
 	projects/Xcode/English.lproj/InfoPlist.strings	\
 	projects/Xcode/FS2_Open.icns	\
 	projects/Xcode/FS2_Open.xcodeproj/project.pbxproj	\
-	projects/Xcode/Frameworks.zip	\
+	projects/Xcode/Frameworks.tgz	\
 	projects/Xcode/Info-debug.plist	\
 	projects/Xcode/Info.plist	\
 	projects/Xcode/README.Xcode	\
