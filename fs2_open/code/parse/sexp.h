@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.118 $
+ * $Revision: 2.119 $
  * $Author: karajorma $
- * $Date: 2006-03-21 17:19:01 $
+ * $Date: 2006-03-28 11:41:57 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.118  2006/03/21 17:19:01  karajorma
+ * Added the In-Sequence conditional.
+ *
  * Revision 2.117  2006/03/18 22:43:16  Goober5000
  * added set-death-message sexp
  * --Goober5000
@@ -1257,6 +1260,9 @@ struct ship_subsys;
 #define OP_SHIP_SUBSYS_TARGETABLE			(0x00a7 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SHIP_SUBSYS_UNTARGETABLE			(0x00a8 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_DEATH_MESSAGE				(0x00a9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SET_PRIMARY_WEAPON				(0x00aa | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_SET_SECONDARY_WEAPON				(0x00ab | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+
 
 
 /* made obsolete by Goober5000
@@ -1646,6 +1652,12 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 int sexp_variable_allocate_block(const char* block_name, int block_type);
 void sexp_variable_condense_block();
 void sexp_variable_block_free(const char *ship_name, int start_index, int block_type);
+
+
+// Karajorma
+void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit);
+void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit);
+
 
 // menu and category stuff
 extern int get_subcategory(int sexp_id);

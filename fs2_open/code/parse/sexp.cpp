@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.249 $
- * $Date: 2006-03-26 06:42:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.250 $
+ * $Date: 2006-03-28 11:41:57 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.249  2006/03/26 06:42:01  Goober5000
+ * this should fix random-of
+ * --Goober5000
+ *
  * Revision 2.248  2006/03/24 18:40:13  Goober5000
  * hopefully fix this :(
  *
@@ -1547,8 +1551,11 @@ sexp_oper Operators[] = {
 	{ "free-rotating-subsystem",	OP_FREE_ROTATING_SUBSYSTEM,		2, INT_MAX },	// Goober5000
 	{ "reverse-rotating-subsystem",	OP_REVERSE_ROTATING_SUBSYSTEM,	2, INT_MAX },	// Goober5000
 	{ "rotating-subsys-set-turn-time", OP_ROTATING_SUBSYS_SET_TURN_TIME,	3, INT_MAX	},	// Goober5000
-	{ "set-primary-ammo",			OP_SET_PRIMARY_AMMO,			3, 3 },		// Karajorma
-	{ "set-secondary-ammo",			OP_SET_SECONDARY_AMMO,			3, 3 },		// Karajorma
+	{ "set-primary-ammo",			OP_SET_PRIMARY_AMMO,			3, 4 },		// Karajorma
+	{ "set-secondary-ammo",			OP_SET_SECONDARY_AMMO,			3, 4 },		// Karajorma
+	{ "set-primary-weapon",			OP_SET_PRIMARY_WEAPON,			3, 5 },		// Karajorma
+	{ "set-secondary-weapon",		OP_SET_SECONDARY_WEAPON,		3, 5 },		// Karajorma
+
 	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
 	{ "num-ships-in-wing",			OP_NUM_SHIPS_IN_WING,			1,	INT_MAX},	// Karajorma
 	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
@@ -11452,14 +11459,14 @@ int sexp_get_primary_ammo(int node)
 	return ammo_left;
 }
 
+
 // Karajorma - sets the amount of ammo in a certain ballistic weapon bank to the specified value
 void sexp_set_primary_ammo (int node) 
 {
-	ship *shipp;
 	int sindex;
 	int requested_bank ;
 	int requested_weapons ;
-	int maximum_allowed ;
+	int rearm_limit;
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
@@ -11468,24 +11475,9 @@ void sexp_set_primary_ammo (int node)
 		return ;
 	}
 
-	// Check that it's valid
-	if((Ships[sindex].objnum < 0) || (Ships[sindex].objnum >= MAX_OBJECTS)){
-		return ;
-	}
-	shipp = &Ships[sindex];
-	
 	// Get the bank to set the number on
 	requested_bank = eval_num(CDR(node));
-
-	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
-	// the banks or a non-existant bank
-	if (requested_bank > shipp->weapons.num_primary_banks) 
-	{
-		return ;
-	}
-
-	// Check that this isn't a non-ballistic bank as it's pointless to set the amount of ammo for those
-	if (!Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].wi_flags2 & WIF2_BALLISTIC)
+	if (requested_bank < 0)
 	{
 		return ;
 	}
@@ -11497,20 +11489,70 @@ void sexp_set_primary_ammo (int node)
 	{
 		return ;
 	}
+	
+	node = CDR(node);	
+	// Attempt to read in the optional rearm limit value. Negative value indicate that this should not be altered.
+	rearm_limit = eval_num(CDR(node)); 
+
+	set_primary_ammo (sindex, requested_bank, requested_weapons, rearm_limit);
+}
+
+//Karajorma - Helper function for the set-primary-ammo and weapon functions
+void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit = -1)
+{
+	ship *shipp;
+	int maximum_allowed ;
+
+	// Check that it's valid
+	if((Ships[ship_index].objnum < 0) || (Ships[ship_index].objnum >= MAX_OBJECTS)){
+		return ;
+	}
+	shipp = &Ships[ship_index];
+	
+	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
+	// the banks or a non-existant bank
+	if ((requested_bank > shipp->weapons.num_primary_banks) || requested_bank < 0)
+	{
+		return ;
+	}
+
+	// Check that this isn't a non-ballistic bank as it's pointless to set the amount of ammo for those
+	if (!Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].wi_flags2 & WIF2_BALLISTIC)
+	{
+		return ;
+	}
+
+	//Check that a valid number of weapons have been specified. 
+	if (requested_ammo < 0) 
+	{
+		return ;
+	}
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = shipp->weapons.primary_bank_capacity[requested_bank] 
-		/ fl2i(Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size);
-	if (maximum_allowed < requested_weapons) 
+	maximum_allowed = fl2i(shipp->weapons.primary_bank_capacity[requested_bank] 
+		/ Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size);
+	if (maximum_allowed < requested_ammo) 
 	{
-		requested_weapons = maximum_allowed ;
+		requested_ammo = maximum_allowed ;
 	}
 
 	// Set the number of weapons
-	shipp->weapons.primary_bank_ammo[requested_bank] = requested_weapons ;
+	shipp->weapons.primary_bank_ammo[requested_bank] = requested_ammo ;
+
+	// If a rearm limit has been specified set it.
+	if (rearm_limit >= 0)
+	{
+		// Don't allow more weapons than the bank can actually hold.
+		if (rearm_limit > maximum_allowed) 
+		{
+			rearm_limit = maximum_allowed;
+		}
+
+		shipp->weapons.primary_bank_start_ammo[requested_bank] = rearm_limit;
+	}
 }
 
-// karajorma - returns the number of missiles left in an ammo bank. Unlike secondary_ammo_pct
+// Karajorma - returns the number of missiles left in an ammo bank. Unlike secondary_ammo_pct
 // it does this as a numerical value rather than as a percentage of the maximum
 int sexp_get_secondary_ammo (int node)
 {
@@ -11559,11 +11601,96 @@ int sexp_get_secondary_ammo (int node)
 // Karajorma - sets the amount of ammo in a certain weapon bank to the specified value
 void sexp_set_secondary_ammo (int node) 
 {
-	ship *shipp;
 	int sindex;
-	int requested_bank ;
-	int requested_weapons ;
-	int maximum_allowed ;
+	int requested_bank;
+	int requested_weapons;
+	int rearm_limit;
+
+	// Check that a ship has been supplied
+	sindex = ship_name_lookup(CTEXT(node));
+	if (sindex < 0) 
+	{
+		return ;
+	}
+	
+	// Get the bank to set the number on
+	requested_bank = eval_num(CDR(node));
+	if (requested_bank < 0)
+	{
+		return ;
+	}
+
+	//  Get the number of weapons requested	
+	node = CDR(node);
+	requested_weapons = eval_num(CDR(node)); 
+	if (requested_weapons < 0)
+	{
+		return ;
+	}
+
+	// If a rearm limit has been specified set it. 
+	node = CDR(node);	
+	// No need to check if this is a valid entry. Invalid entries will be ignored anyway
+	rearm_limit = eval_num(CDR(node));
+
+	set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
+}
+
+//Karajorma - Helper function for the set-secondary-ammo and weapon functions
+void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit = -1)
+{
+	ship *shipp;
+	int maximum_allowed;
+	// Check that it's valid
+	if((Ships[ship_index].objnum < 0) || (Ships[ship_index].objnum >= MAX_OBJECTS)){
+		return ;
+	}
+	shipp = &Ships[ship_index];
+
+	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
+	// the banks or a non-existant bank
+	if ((requested_bank > shipp->weapons.num_secondary_banks) || requested_bank < 0)
+	{
+		return ;
+	}
+	
+	if (requested_ammo < 0)
+	{
+		return ;
+	}
+
+	// Is the number requested larger than the maximum allowed for that particular bank? 
+	maximum_allowed = fl2i(shipp->weapons.secondary_bank_capacity[requested_bank] 
+		/ Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]].cargo_size);
+	if (maximum_allowed < requested_ammo) 
+	{
+		requested_ammo = maximum_allowed ;
+	}
+
+	// Set the number of weapons
+	shipp->weapons.secondary_bank_ammo[requested_bank] = requested_ammo ;
+
+	// If a rearm limit has been specified set it.
+	if (rearm_limit >= 0)
+	{
+		// Don't allow more weapons than the bank can actually hold.
+		if (rearm_limit > maximum_allowed) 
+		{
+			rearm_limit = maximum_allowed;
+		}
+
+		shipp->weapons.secondary_bank_start_ammo[requested_bank] = rearm_limit;
+	}
+}
+
+// Karajorma - Changes the weapon in the requested bank to the one supplied. Optionally sets the ammo and 
+// rearm limit too. 
+void sexp_set_weapon (int node, bool primary)
+{
+	ship *shipp;	
+	int sindex, requested_bank, windex, requested_ammo, rearm_limit;
+
+	Assert (node != -1);
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
@@ -11577,37 +11704,53 @@ void sexp_set_secondary_ammo (int node)
 		return ;
 	}
 	shipp = &Ships[sindex];
-	
-	// Get the bank to set the number on
+
+	// Get the bank to change the weapon of
 	requested_bank = eval_num(CDR(node));
 
-	// Can only set one bank at a time. Check that someone hasn't asked for the contents of all 
-	// the banks or a non-existant bank
-	if (requested_bank > shipp->weapons.num_secondary_banks) 
+	// Skip to the node holding the weapon name
+	node = CDDR(node);
+
+	windex = weapon_info_lookup(CTEXT(node));
+	if (windex < 0)
+	{
+		return;
+	}
+
+	if (primary)
+	{
+		// Change the weapon
+		shipp->weapons.primary_bank_weapons[requested_bank] = windex ; 
+	}
+	else 
+	{
+		// Change the weapon
+		shipp->weapons.secondary_bank_weapons[requested_bank] = windex ;
+	}
+
+	// Check to see if the optional ammo and rearm_limit settings were supplied
+	requested_ammo = eval_num(CDR(node)); 
+	
+	// If nothing was supplied we're done. Bail. 
+	if (requested_ammo < 0)
 	{
 		return ;
 	}
 
-	//  Get the number of weapons requested	
 	node = CDR(node);
-	requested_weapons = eval_num(CDR(node)); 
-	if (requested_weapons < 0)
-	{
-		return ;
-	}
+	// No need to check if this is a valid entry. Invalid entries will be ignored anyway
+	rearm_limit = eval_num(CDR(node)); 
 
-	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = shipp->weapons.secondary_bank_capacity[requested_bank]  
-		/ fl2i(Weapon_info[shipp->weapons.secondary_bank_weapons[requested_bank]].cargo_size);
-	if (maximum_allowed < requested_weapons) 
-	{
-		requested_weapons = maximum_allowed ;
-	}
 
-	// Set the number of weapons
-	shipp->weapons.secondary_bank_ammo[requested_bank] = requested_weapons ;
+	if (primary)
+	{
+		set_primary_ammo (sindex, requested_bank, requested_ammo, rearm_limit);
+	}
+	else
+	{
+		set_secondary_ammo (sindex, requested_bank, requested_ammo, rearm_limit);
+	}
 }
-
 
 // Goober5000
 void sexp_change_ship_model(int n)
@@ -15287,6 +15430,14 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_secondary_ammo(node);
 				sexp_val = SEXP_TRUE;
 				break;
+				
+			// Karajorma
+			case OP_SET_PRIMARY_WEAPON:
+			case OP_SET_SECONDARY_WEAPON:
+				sexp_set_weapon(node, op_num == OP_SET_PRIMARY_WEAPON);
+				sexp_val = SEXP_TRUE;
+				break;
+
 
 			case OP_NUM_SHIPS_IN_BATTLE:	// phreak
 				sexp_val=sexp_num_ships_in_battle(node);
@@ -15941,6 +16092,9 @@ int query_operator_return_type(int op)
 		case OP_NEBULA_TOGGLE_POOF:
 		case OP_SET_PRIMARY_AMMO:
 		case OP_SET_SECONDARY_AMMO:
+		case OP_SET_PRIMARY_WEAPON:
+		case OP_SET_SECONDARY_WEAPON:
+
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -16966,6 +17120,22 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			}
 			
+		case OP_SET_PRIMARY_WEAPON:
+		case OP_SET_SECONDARY_WEAPON:
+			if(argnum == 0)
+			{
+				return OPF_SHIP;
+			}
+				
+			else if (argnum == 2)
+			{
+				return OPF_WEAPON_NAME;
+			}
+			else 
+			{
+				return OPF_NUMBER;
+			}
+
 		case OP_IS_SECONDARY_SELECTED:
 		case OP_IS_PRIMARY_SELECTED:
 			if(argnum == 0){
@@ -18153,6 +18323,9 @@ int get_subcategory(int sexp_id)
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 		case OP_SET_PRIMARY_AMMO:		// Karajorma
 		case OP_SET_SECONDARY_AMMO:		// Karajorma
+		case OP_SET_PRIMARY_WEAPON:	// Karajorma
+		case OP_SET_SECONDARY_WEAPON:	// Karajorma
+
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
 		case OP_SHIP_INVULNERABLE:
@@ -20256,14 +20429,39 @@ sexp_help_struct Sexp_help[] = {
 		"\tSets the amount of ammo for the specified ballistic bank\r\n"
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (0, 1, and 2 are legal banks)\r\n" 
-		"\t3: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)."},
+		"\t3: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum).\r\n"
+		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+	},
 
 	// Karajorma
 	{ OP_SET_SECONDARY_AMMO, "set-secondary-ammo\r\n"
 		"\tSets the amount of ammo for the specified bank\r\n"
 		"\t1: Ship name\r\n"
 		"\t2: Bank to check (0, 1, 2 and 3 are legal banks)\r\n" 
-		"\t3: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)."},
+		"\t3: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum).\r\n"
+		"\t4: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+	},
+	
+	// Karajorma
+	{ OP_SET_PRIMARY_WEAPON, "set-primary-weapon\r\n"
+		"\tSets the weapon for the specified bank\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Bank to check (0, 1 and 2 are legal banks)\r\n" 
+		"\t3: Name of the primary weapon \r\n"
+		"\t4: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)\r\n"
+		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+	},
+	
+	// Karajorma
+	{ OP_SET_SECONDARY_WEAPON, "set-secondary-weapon\r\n"
+		"\tSets the weapon for the specified bank\r\n"
+		"\t1: Ship name\r\n"
+		"\t2: Bank to check (0, 1, 2 and 3 are legal banks)\r\n" 
+		"\t3: Name of the secondary weapon \r\n"
+		"\t4: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)\r\n"
+		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+	},
+
 
 	//phreak
 	{ OP_NUM_SHIPS_IN_BATTLE, "num-ships-in-battle\r\n"
