@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pmsg.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2006-03-30 04:15:20 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.9  2005/07/13 03:35:32  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -449,9 +452,9 @@ void multi_msg_display_mission_text(char *msg,int player_index)
 	snd_play(&Snds[MULTI_MSG_TEXT_SOUND]);
 
 	if(MULTI_STANDALONE(Net_players[player_index])){
-		HUD_sourced_printf(HUD_SOURCE_NETPLAYER,"%s %s",XSTR("<SERVER>",698),msg);			
+		HUD_sourced_printf(HUD_SOURCE_NETPLAYER,"%s %s",XSTR("<SERVER>", 698), msg);			
 	} else {
-		HUD_sourced_printf(HUD_SOURCE_NETPLAYER,"%s : %s",Net_players[player_index].m_player->callsign,msg);			
+		HUD_sourced_printf(HUD_SOURCE_NETPLAYER,"%s: %s", Net_players[player_index].m_player->callsign, msg);			
 	}
 }
 
