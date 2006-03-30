@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-03-30 04:15:20 $
+ * $Revision: 2.33 $
+ * $Date: 2006-03-30 04:18:40 $
  * $Author: Goober5000 $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/03/30 04:15:20  Goober5000
+ * hehe, grammar
+ * --Goober5000
+ *
  * Revision 2.31  2006/02/16 05:39:13  taylor
  * some FS2NetD fixes
  *  - timer/timeout issues
@@ -2222,9 +2226,11 @@ void multi_display_netinfo()
 		for(idx=0; idx<MAX_PLAYERS; idx++){
 			if(MULTI_CONNECTED(Net_players[idx]) && (Net_player != &Net_players[idx]) && (Net_players[idx].m_player != NULL)){
 				if(Net_players[idx].sv_last_pl < 0){
-					gr_printf(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, 0); sy += 10;
+					gr_printf(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, 0);
+					sy += 10;
 				} else {
-					gr_printf(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, Net_players[idx].sv_last_pl); sy += 10;
+					gr_printf(sx, sy, "%s: %d, %d pl", Net_players[idx].m_player->callsign, Net_players[idx].sv_bytes_sent, Net_players[idx].sv_last_pl);
+					sy += 10;
 				}
 			}
 		}
@@ -2234,9 +2240,11 @@ void multi_display_netinfo()
 		// display PL
 		if(Net_player != NULL){
 			if(Net_player->cl_last_pl < 0){
-				gr_printf(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, 0); sy += 10;
+				gr_printf(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, 0);
+				sy += 10;
 			} else {
-				gr_printf(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, Net_player->cl_last_pl); sy += 10;
+				gr_printf(sx, sy, "PL: %d %d pl\n", Net_player->cl_bytes_recvd, Net_player->cl_last_pl);
+				sy += 10;
 			}
 		}
 	}
