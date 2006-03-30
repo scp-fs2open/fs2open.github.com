@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.13 $
- * $Date: 2005-10-12 05:45:35 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2006-03-30 04:15:20 $
+ * $Author: Goober5000 $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/10/12 05:45:35  taylor
+ * new timer code that shouldn't suffer from multi-cpu (or dual core) systems
+ * clean out all old Windows timer code since that was just a mess at this point
+ *
  * Revision 2.12  2005/05/26 09:21:28  taylor
  * forgot to take into account F1_0 on timer_get_fixed_seconds(), remove those stupid CRs too
  *
@@ -542,7 +546,7 @@ void timing_display(int x, int y)
 
 	// each event percentage
 	for(idx=0; idx<Timing_event_count; idx++){
-		gr_printf(x, y, "%s : %f\n", Timing_events[idx].name, timing_event_pct(Timing_events[idx].name));
+		gr_printf(x, y, "%s: %f\n", Timing_events[idx].name, timing_event_pct(Timing_events[idx].name));
 		y += 10;
 	}
 #endif
