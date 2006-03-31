@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.140 $
- * $Date: 2006-03-24 07:38:36 $
+ * $Revision: 2.141 $
+ * $Date: 2006-03-31 10:20:01 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140  2006/03/24 07:38:36  wmcoolmon
+ * New subobject animation stuff and Lua functions.
+ *
  * Revision 2.139  2006/03/18 07:12:08  Goober5000
  * add ship-subsys-targetable and ship-subsys-untargetable
  * --Goober5000
@@ -1168,7 +1171,11 @@ typedef struct ship {
 	int	really_final_death_time;	// Time until ship breaks up and disappears
 	vec3d	deathroll_rotvel;			// Desired death rotational velocity
 
+	int start_warp_time;
 	int	final_warp_time;	// pops when ship is completely warped out or warped in.  Used for both warp in and out.
+	int warp_anim;
+	int warp_anim_nframes;
+	int warp_anim_fps;
 	vec3d	warp_effect_pos;		// where the warp in effect comes in at
 	vec3d	warp_effect_fvec;		// The warp in effect's forward vector
 	int	next_fireball;
@@ -1595,6 +1602,10 @@ typedef struct man_thruster {
 	man_thruster(){memset(this, 0, sizeof(man_thruster));bmap_id=-1;}
 }man_thruster;
 
+//Warp type defines
+#define WT_DEFAULT			0
+#define WT_IN_PLACE_ANIM	1
+
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
 	char		name[NAME_LENGTH];				// name for the ship
@@ -1635,9 +1646,11 @@ typedef struct ship_info {
 	float		slide_accel;
 	float		slide_decel;
 	float		warpin_speed;
-	script_hook warpin_hook;
 	float		warpout_speed;
-	script_hook warpout_hook;
+	int			warpin_type;
+	int			warpout_type;
+	char		warpin_anim[NAME_LENGTH];
+	char		warpout_anim[NAME_LENGTH];
 	float		warpout_player_speed;
 
 	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
@@ -2231,6 +2244,9 @@ extern void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_s
 // Goober5000 - shortcut hud stuff
 extern int ship_has_energy_weapons(ship *shipp);
 extern int ship_has_engine_power(ship *shipp);
+
+//WMC - Warptype stuff
+int warptype_match(char *p);
 
 //Gets animation type index from string name
 int match_animation_type(char *p);
