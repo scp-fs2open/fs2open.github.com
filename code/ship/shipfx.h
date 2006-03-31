@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.9 $
- * $Date: 2005-10-09 09:13:29 $
+ * $Revision: 2.10 $
+ * $Date: 2006-03-31 10:20:01 $
  * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/10/09 09:13:29  wmcoolmon
+ * Added warpin/warpout speed override values to ships.tbl
+ *
  * Revision 2.8  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -288,9 +291,9 @@ void shipfx_start_cloak(ship *shipp, int warmup = 5000, int recalc_transform = 0
 void shipfx_stop_cloak(ship *shipp, int warpdown = 5000);
 float shipfx_calc_visibility(object *obj, vec3d *view_pt);
 
-#define WT_WARP_IN	0
-#define WT_WARP_OUT	1
-float shipfx_calculate_warp_time(object *objp, int warp_type);
+#define WD_WARP_IN	0
+#define WD_WARP_OUT	1
+float shipfx_calculate_warp_time(object *objp, int warp_dir);
 float shipfx_calculate_warp_dist(object *objp);
 
 

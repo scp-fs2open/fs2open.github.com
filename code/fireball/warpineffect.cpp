@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.31 $
- * $Date: 2005-09-21 03:55:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.32 $
+ * $Date: 2006-03-31 10:20:01 $
+ * $Author: wmcoolmon $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2005/09/21 03:55:32  Goober5000
+ * add option for warp flash; mess with the cmdlines a bit
+ * --Goober5000
+ *
  * Revision 2.30  2005/08/25 22:40:02  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -249,6 +253,7 @@
 #include "nebula/neb.h"
 #include "globalincs/pstypes.h"
 #include "model/model.h"
+#include "ship/ship.h"
 
 
 extern int Warp_model;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.62 $
- * $Date: 2006-01-16 20:57:03 $
- * $Author: taylor $
+ * $Revision: 2.63 $
+ * $Date: 2006-03-31 10:20:01 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2006/01/16 20:57:03  taylor
+ * some minor changes to model_should_render_engine_glow(), better safety checks, support for disrupted engines
+ * check to see if a particular engine is disabled/destroyed/disrupted before making engine wash for it
+ *
  * Revision 2.61  2006/01/09 04:54:14  phreak
  * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
  *
@@ -893,23 +897,23 @@ static float shipfx_calculate_effect_radius( object *objp )
 #define SMALLEST_RAD 15.0f
 #define SMALLEST_RAD_TIME 1.5f
 
-float shipfx_calculate_warp_time(object *objp, int warp_type)
+float shipfx_calculate_warp_time(object *objp, int warp_dir)
 {
 	if(objp->type == OBJ_SHIP)
 	{
 		ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
 
 		//Warpin defined
-		if ( (warp_type == WT_WARP_IN) && (sip->warpin_speed != 0.0f) ) {
+		if ( (warp_dir == WD_WARP_IN) && (sip->warpin_speed != 0.0f) ) {
 			return ship_get_length(&Ships[objp->instance]) / sip->warpin_speed;
 		//Warpout defined
-		} else if ( (warp_type == WT_WARP_OUT) && (sip->warpout_speed != 0.0f) ) {
+		} else if ( (warp_dir == WD_WARP_OUT) && (sip->warpout_speed != 0.0f) ) {
 			return ship_get_length(&Ships[objp->instance]) / sip->warpout_speed;
 		//Player warpout defined
-		} else if ( (warp_type == WT_WARP_OUT) && (objp == Player_obj) && (sip->warpout_player_speed != 0.0f) ) {
+		} else if ( (warp_dir == WD_WARP_OUT) && (objp == Player_obj) && (sip->warpout_player_speed != 0.0f) ) {
 			return ship_get_length(&Ships[objp->instance]) / sip->warpout_player_speed;
 		//Player warpout not defined
-		} else if ( (warp_type == WT_WARP_OUT) && (objp == Player_obj) ) {
+		} else if ( (warp_dir == WD_WARP_OUT) && (objp == Player_obj) ) {
 			return ship_get_length(&Ships[objp->instance]) / PLAYER_WARPOUT_SPEED;
 		}
 
@@ -983,9 +987,9 @@ int shipfx_special_warp_objnum_valid(int objnum)
 // time.
 void shipfx_warpin_start( object *objp )
 {
-	int warp_objnum;
 	float effect_time, effect_radius;
 	ship *shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	if (shipp->flags & SF_ARRIVING)
 	{
@@ -1042,29 +1046,54 @@ void shipfx_warpin_start( object *objp )
 	
 	// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
 	// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
-	effect_time = shipfx_calculate_warp_time(objp, WT_WARP_IN) + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
+	effect_time = shipfx_calculate_warp_time(objp, WD_WARP_IN) + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
 	effect_radius = shipfx_calculate_effect_radius(objp);
 
 	// maybe special warpin
-	if (shipp->special_warp_objnum >= 0)
+	if(sip->warpin_type == WT_DEFAULT)
 	{
-		// cap radius to size of knossos
-		effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
-		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
+		int warp_objnum = -1;
+		if (shipp->special_warp_objnum >= 0)
+		{
+			// cap radius to size of knossos
+			effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
+			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
+		}
+		else
+		{
+			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
+		}
+
+		//WMC - bail
+		// JAS: This must always be created, if not, just warp the ship in
+		if (warp_objnum < 0)
+		{
+			shipfx_actually_warpin(shipp,objp);
+			return;
+		}
+
+		shipp->warp_effect_fvec = Objects[warp_objnum].orient.vec.fvec;
+	}
+	else if (sip->warpin_type == WT_IN_PLACE_ANIM)
+	{
+		if(shipp->warp_anim < 0)
+			shipp->warp_anim = bm_load_animation("ftl", &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
+
+		//WMC - bail
+		if (shipp->warp_anim < 0)
+		{
+			shipfx_actually_warpin(shipp,objp);
+			return;
+		}
+
+		shipp->warp_effect_fvec = objp->orient.vec.fvec;
 	}
 	else
 	{
-		warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
-	}
-
-	// JAS: This must always be created, if not, just warp the ship in
-	if (warp_objnum < 0 )
-	{
+		//WMC - bail
 		shipfx_actually_warpin(shipp,objp);
 		return;
 	}
-
-	shipp->warp_effect_fvec = Objects[warp_objnum].orient.vec.fvec;
 
 	// maybe negate if special warp effect
 	if (shipp->special_warp_objnum >= 0)
@@ -1076,8 +1105,15 @@ void shipfx_warpin_start( object *objp )
 	}
 
 	// flag as warping
-	shipp->final_warp_time = timestamp(fl2i(SHIPFX_WARP_DELAY*1000.0f));
-	shipp->flags |= SF_ARRIVING_STAGE_1;
+	if(sip->warpin_type == WT_IN_PLACE_ANIM) {
+		shipp->start_warp_time = timestamp();
+		int total_time = fl2i(((float)shipp->warp_anim_nframes / (float)shipp->warp_anim_fps) * 1000.0f);
+		shipp->final_warp_time = timestamp(total_time);
+		shipp->flags |= SF_ARRIVING_STAGE_1;
+	} else {
+		shipp->final_warp_time = timestamp(fl2i(SHIPFX_WARP_DELAY*1000.0f));
+		shipp->flags |= SF_ARRIVING_STAGE_1;
+	}
 }
 
 void shipfx_warpin_frame( object *objp, float frametime )
@@ -1085,48 +1121,60 @@ void shipfx_warpin_frame( object *objp, float frametime )
 	ship *shipp;
 
 	shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	if ( shipp->flags & SF_DYING ) return;
 
-	if ( shipp->flags & SF_ARRIVING_STAGE_1 )	{
-		if ( timestamp_elapsed(shipp->final_warp_time) ) {
+	if(sip->warpin_type == WT_DEFAULT)
+	{
+		if ( shipp->flags & SF_ARRIVING_STAGE_1 )	{
+			if ( timestamp_elapsed(shipp->final_warp_time) ) {
 
-			// let physics know the ship is going to warp in.
-			objp->phys_info.flags |= PF_WARP_IN;
+				// let physics know the ship is going to warp in.
+				objp->phys_info.flags |= PF_WARP_IN;
 
-			// done doing stage 1 of warp, so go on to stage 2
-			shipp->flags &= (~SF_ARRIVING_STAGE_1);
-			shipp->flags |= SF_ARRIVING_STAGE_2;
+				// done doing stage 1 of warp, so go on to stage 2
+				shipp->flags &= (~SF_ARRIVING_STAGE_1);
+				shipp->flags |= SF_ARRIVING_STAGE_2;
 
-			float warp_time = shipfx_calculate_warp_time(objp, WT_WARP_IN);
-			float speed = shipfx_calculate_warp_dist(objp) / warp_time;		// How long it takes to move through warp effect
+				float warp_time = shipfx_calculate_warp_time(objp, WD_WARP_IN);
+				float speed = shipfx_calculate_warp_dist(objp) / warp_time;		// How long it takes to move through warp effect
 
-			// Make ship move at velocity so that it moves two radii in warp_time seconds.
-			vec3d vel;
-			vel = objp->orient.vec.fvec;
-			vm_vec_scale( &vel, speed );
-			objp->phys_info.vel = vel;
-			objp->phys_info.desired_vel = vel;
-			objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
-			objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
-			objp->phys_info.prev_ramp_vel.xyz.z = speed;
-			objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
+				// Make ship move at velocity so that it moves two radii in warp_time seconds.
+				vec3d vel;
+				vel = objp->orient.vec.fvec;
+				vm_vec_scale( &vel, speed );
+				objp->phys_info.vel = vel;
+				objp->phys_info.desired_vel = vel;
+				objp->phys_info.prev_ramp_vel.xyz.x = 0.0f;
+				objp->phys_info.prev_ramp_vel.xyz.y = 0.0f;
+				objp->phys_info.prev_ramp_vel.xyz.z = speed;
+				objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
 
-			shipp->final_warp_time = timestamp(fl2i(warp_time*1000.0f));
-		} 
-	} else if ( shipp->flags & SF_ARRIVING_STAGE_2 )	{
-		if ( timestamp_elapsed(shipp->final_warp_time) ) {
-			// done doing stage 2 of warp, so turn off arriving flag
-			shipfx_actually_warpin(shipp,objp);
+				shipp->final_warp_time = timestamp(fl2i(warp_time*1000.0f));
+			} 
+		} else if ( shipp->flags & SF_ARRIVING_STAGE_2 )	{
+			if ( timestamp_elapsed(shipp->final_warp_time) ) {
+				// done doing stage 2 of warp, so turn off arriving flag
+				shipfx_actually_warpin(shipp,objp);
 
-			// notify physics to slow down
-			if (Ship_info[shipp->ship_info_index].flags & SIF_SUPERCAP) {
-				// let physics know this is a special warp in
-				objp->phys_info.flags |= PF_SPECIAL_WARP_IN;
+				// notify physics to slow down
+				if (Ship_info[shipp->ship_info_index].flags & SIF_SUPERCAP) {
+					// let physics know this is a special warp in
+					objp->phys_info.flags |= PF_SPECIAL_WARP_IN;
+				}
 			}
 		}
 	}
+	else if(sip->warpin_type == WT_IN_PLACE_ANIM)
+	{
+		//WMC - This is handled by code in ship_render
 
+		//WMC - ship appears after warpin_speed milliseconds
+		if ( timestamp_elapsed(shipp->start_warp_time + sip->warpin_speed )) {
+			shipfx_actually_warpin(shipp,objp);
+		}
+	}
 }
 
 void shipfx_warpout_helper(object *objp, dock_function_info *infop)
@@ -1233,7 +1281,7 @@ int compute_special_warpout_stuff(object *objp, float *speed, float *warp_time, 
 	}
 	
 	// Calculate how long to fly through the effect.  Not to get to the effect, just through it.
-	*warp_time = shipfx_calculate_warp_time(objp, WT_WARP_OUT);
+	*warp_time = shipfx_calculate_warp_time(objp, WD_WARP_OUT);
 
 	// Calculate speed to fly through
 	*speed = shipfx_calculate_warp_dist(objp) / *warp_time;
@@ -1263,7 +1311,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 
 
 	// Calculate how long to fly through the effect.  Not to get to the effect, just through it.
-	*warp_time = shipfx_calculate_warp_time(objp, WT_WARP_OUT);
+	*warp_time = shipfx_calculate_warp_time(objp, WD_WARP_OUT);
 
 	// Pick some speed at which we want to go through the warp effect.  
 	*speed = shipfx_calculate_warp_dist(objp) / *warp_time;
@@ -1332,6 +1380,7 @@ void shipfx_warpout_start( object *objp )
 	float warp_time;
 	ship *shipp;
 	shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	if ( 	shipp->flags & SF_DEPART_WARP )	{
 		mprintf(( "Ship is already departing!\n" ));
@@ -1373,6 +1422,16 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
+	if(sip->warpout_type == WT_IN_PLACE_ANIM) {
+		shipp->warp_anim = bm_load_animation(sip->warpin_anim, &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
+		shipp->start_warp_time = timestamp();
+		int total_time = fl2i(((float)shipp->warp_anim_nframes / (float)shipp->warp_anim_fps) * 1000.0f);
+		shipp->final_warp_time = timestamp(total_time);
+		shipp->flags |= SF_DEPART_WARP;
+
+		return;
+	}
+
 	if ( objp == Player_obj )	{
 // changed by Goober5000 to be more accurate
 //		HUD_printf(XSTR( "Subspace node activated", 498) );
@@ -1386,7 +1445,7 @@ void shipfx_warpout_start( object *objp )
 	shipp->warp_effect_pos = warp_pos;
 
 	// The ending one means this is a warp-out effect
-	int warp_objnum;
+	int warp_objnum = -1;
 	// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
 	// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
 	// effect_time = shipfx_calculate_warp_time(objp) + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
@@ -1463,6 +1522,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 {
 	ship *shipp;
 	shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	if ( shipp->flags & SF_DYING ) return;
 
@@ -1470,6 +1530,18 @@ void shipfx_warpout_frame( object *objp, float frametime )
 	//phreak 5/22/03
 	if (shipp->flags & SF_DISABLED){
 		shipp->flags &= ~(SF_DEPARTING);
+		return;
+	}
+
+	if(sip->warpin_type == WT_IN_PLACE_ANIM)
+	{
+		//WMC - This is handled by code in ship_render
+
+		//WMC - ship appears after warpout_speed milliseconds
+		if ( timestamp_elapsed(shipp->start_warp_time + sip->warpout_speed )) {
+			shipfx_actually_warpout(shipp,objp);
+		}
+
 		return;
 	}
 
