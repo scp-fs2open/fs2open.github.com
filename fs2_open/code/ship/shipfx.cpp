@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.63 $
- * $Date: 2006-03-31 10:20:01 $
+ * $Revision: 2.64 $
+ * $Date: 2006-04-01 01:21:58 $
  * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2006/03/31 10:20:01  wmcoolmon
+ * Prelim. BSG warpin effect stuff
+ *
  * Revision 2.62  2006/01/16 20:57:03  taylor
  * some minor changes to model_should_render_engine_glow(), better safety checks, support for disrupted engines
  * check to see if a particular engine is disabled/destroyed/disrupted before making engine wash for it
@@ -852,7 +855,7 @@ void shipfx_blow_up_model(object *obj,int model, int submodel, int ndebris, vec3
 
 
 // Given an ship, find the radius of it as viewed from the front.
-static float shipfx_calculate_effect_radius( object *objp )
+static float shipfx_calculate_effect_radius( object *objp, int warp_dir )
 {
 	float rad;
 
@@ -864,6 +867,17 @@ static float shipfx_calculate_effect_radius( object *objp )
 	// if it's not docked, we can save a lot of work by just using width and height
 	else
 	{
+		//WMC - see if a radius was specified
+		ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+		if(warp_dir == WD_WARP_IN && sip->warpin_radius > 0.0f)
+		{
+			return sip->warpin_radius;
+		}
+		else if(warp_dir == WD_WARP_OUT && sip->warpout_radius > 0.0f)
+		{
+			return sip->warpout_radius;
+		}
+
 		float w, h;
 		polymodel *pm = model_get(Ships[objp->instance].modelnum);
 
@@ -903,8 +917,14 @@ float shipfx_calculate_warp_time(object *objp, int warp_dir)
 	{
 		ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
 
+		//Warpin time defined
+		if( (warp_dir == WD_WARP_IN) && (sip->warpin_time > 0.0f)) {
+			return (float)sip->warpin_time/1000.0f;
+		//Warpout time defined
+		} else if( (warp_dir == WD_WARP_OUT) && (sip->warpin_time > 0.0f)) {
+			return (float)sip->warpout_time/1000.0f;
 		//Warpin defined
-		if ( (warp_dir == WD_WARP_IN) && (sip->warpin_speed != 0.0f) ) {
+		} else if ( (warp_dir == WD_WARP_IN) && (sip->warpin_speed != 0.0f) ) {
 			return ship_get_length(&Ships[objp->instance]) / sip->warpin_speed;
 		//Warpout defined
 		} else if ( (warp_dir == WD_WARP_OUT) && (sip->warpout_speed != 0.0f) ) {
@@ -1047,7 +1067,7 @@ void shipfx_warpin_start( object *objp )
 	// Effect time is 'SHIPFX_WARP_DELAY' (1.5 secs) seconds to start, 'shipfx_calculate_warp_time' 
 	// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
 	effect_time = shipfx_calculate_warp_time(objp, WD_WARP_IN) + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
-	effect_radius = shipfx_calculate_effect_radius(objp);
+	effect_radius = shipfx_calculate_effect_radius(objp, WD_WARP_IN);
 
 	// maybe special warpin
 	if(sip->warpin_type == WT_DEFAULT)
@@ -1171,7 +1191,7 @@ void shipfx_warpin_frame( object *objp, float frametime )
 		//WMC - This is handled by code in ship_render
 
 		//WMC - ship appears after warpin_speed milliseconds
-		if ( timestamp_elapsed(shipp->start_warp_time + sip->warpin_speed )) {
+		if ( timestamp_elapsed(shipp->start_warp_time + sip->warpin_time )) {
 			shipfx_actually_warpin(shipp,objp);
 		}
 	}
@@ -1450,7 +1470,7 @@ void shipfx_warpout_start( object *objp )
 	// for ship to go thru, and 'SHIPFX_WARP_DELAY' (1.5 secs) to go away.
 	// effect_time = shipfx_calculate_warp_time(objp) + SHIPFX_WARP_DELAY + SHIPFX_WARP_DELAY;
 	effect_time = warp_time + SHIPFX_WARP_DELAY;
-	effect_radius = shipfx_calculate_effect_radius(objp);
+	effect_radius = shipfx_calculate_effect_radius(objp, WD_WARP_IN);
 
 	// maybe special warpout
 	if (shipp->special_warp_objnum >= 0) {

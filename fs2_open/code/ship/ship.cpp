@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.322 $
- * $Date: 2006-03-31 10:20:01 $
+ * $Revision: 2.323 $
+ * $Date: 2006-04-01 01:21:58 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.322  2006/03/31 10:20:01  wmcoolmon
+ * Prelim. BSG warpin effect stuff
+ *
  * Revision 2.321  2006/03/24 07:38:36  wmcoolmon
  * New subobject animation stuff and Lua functions.
  *
@@ -2448,6 +2451,10 @@ void init_ship_entry(int ship_info_index)
 
 	sip->warpin_speed = 0.0f;
 	sip->warpout_speed = 0.0f;
+	sip->warpin_radius = 0.0f;
+	sip->warpout_radius = 0.0f;
+	sip->warpin_time = 0;
+	sip->warpout_time = 0;
 	sip->warpin_type = WT_DEFAULT;
 	sip->warpout_type = WT_DEFAULT;
 	sip->warpout_player_speed = 0.0f;
@@ -2872,7 +2879,25 @@ int parse_ship(bool replace)
 	{
 		stuff_float(&sip->warpin_speed);
 		if(sip->warpin_speed == 0.0f) {
-			Warning(LOCATION, "Warp-in speed cannot be 0; value ignored.");
+			Warning(LOCATION, "Warp-in speed specified as 0 on ship '%s'; value ignored", sip->name);
+		}
+	}
+
+	if(optional_string("$Warpin time:"))
+	{
+		float t_time;
+		stuff_float(&t_time);
+		sip->warpin_time = fl2i(t_time*1000.0f);
+		if(sip->warpin_time <= 0) {
+			Warning(LOCATION, "Warp-in time specified as 0 or less on ship '%s'; value ignored", sip->name);
+		}
+	}
+
+	if(optional_string("$Warpin radius:"))
+	{
+		stuff_float(&sip->warpin_radius);
+		if(sip->warpin_speed <= 0.0f) {
+			Warning(LOCATION, "Warp-in radius specified as 0 or less on ship '%s'; value ignored", sip->name);
 		}
 	}
 
@@ -2897,7 +2922,25 @@ int parse_ship(bool replace)
 	{
 		stuff_float(&sip->warpout_speed);
 		if(sip->warpin_speed == 0.0f) {
-			Warning(LOCATION, "Warp-out speed cannot be 0; value ignored.");
+			Warning(LOCATION, "Warp-out speed specified as 0 on ship '%s'; value ignored", sip->name);
+		}
+	}
+
+	if(optional_string("$Warpout time:"))
+	{
+		float t_time;
+		stuff_float(&t_time);
+		sip->warpout_time = fl2i(t_time*1000.0f);
+		if(sip->warpout_time <= 0) {
+			Warning(LOCATION, "Warp-out time specified as 0 or less on ship '%s'; value ignored", sip->name);
+		}
+	}
+
+	if(optional_string("$Warpout radius:"))
+	{
+		stuff_float(&sip->warpout_radius);
+		if(sip->warpout_radius <= 0.0f) {
+			Warning(LOCATION, "Warp-out radius specified as 0 or less on ship '%s'; value ignored", sip->name);
 		}
 	}
 
@@ -6034,21 +6077,36 @@ void ship_render(object * obj)
 		geometry_batcher warp_batcher;
 		warp_batcher.allocate(1);
 
-		polymodel *pm = model_get(shipp->modelnum);
+		float rad = 0.0f;
+		ship_info *sip = &Ship_info[shipp->ship_info_index];
 
+		if(shipp->flags & SF_DEPART_WARP)
+			rad = sip->warpout_radius;
+		else
+			rad = sip->warpin_radius;
+		if(rad <= 0.0f)
+		{
+			polymodel *pm = model_get(shipp->modelnum);
+			rad = pm->rad;
+		}
+
+		//Do warpout geometry
 		vec3d start, end;
-		vm_vec_scale_add(&start, &obj->pos, &obj->orient.vec.fvec, pm->rad);
-		vm_vec_scale_add(&end, &obj->pos, &obj->orient.vec.fvec, -pm->rad);
-		warp_batcher.draw_beam(&start, &end, pm->rad*2.0f, 1.0f);
+		vm_vec_scale_add(&start, &obj->pos, &obj->orient.vec.fvec, rad);
+		vm_vec_scale_add(&end, &obj->pos, &obj->orient.vec.fvec, -rad);
+		warp_batcher.draw_beam(&start, &end, rad*2.0f, 1.0f);
 
+		//Figure out which frame we're on
 		int frame = fl2i((float)((float)(timestamp() - (float)shipp->start_warp_time) / (float)(shipp->final_warp_time - (float)shipp->start_warp_time)) * (float)shipp->warp_anim_nframes);
 
+		//Set the correct frame
 		gr_set_bitmap(shipp->warp_anim + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
+		
 		// turn off zbuffering	
 		int saved_zbuffer_mode = gr_zbuffer_get();
 		gr_zbuffer_set(GR_ZBUFF_NONE);	
 
-		// turn off culling
+		//Render the warpout effect
 		warp_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
 
 		// restore zbuffer mode

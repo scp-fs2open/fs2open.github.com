@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.141 $
- * $Date: 2006-03-31 10:20:01 $
+ * $Revision: 2.142 $
+ * $Date: 2006-04-01 01:21:58 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.141  2006/03/31 10:20:01  wmcoolmon
+ * Prelim. BSG warpin effect stuff
+ *
  * Revision 2.140  2006/03/24 07:38:36  wmcoolmon
  * New subobject animation stuff and Lua functions.
  *
@@ -1645,8 +1648,13 @@ typedef struct ship_info {
 	float		forward_decel;
 	float		slide_accel;
 	float		slide_decel;
+
 	float		warpin_speed;
 	float		warpout_speed;
+	int			warpin_time;	//in ms
+	int			warpout_time;	//in ms
+	float		warpin_radius;
+	float		warpout_radius;
 	int			warpin_type;
 	int			warpout_type;
 	char		warpin_anim[NAME_LENGTH];
