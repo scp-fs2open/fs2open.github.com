@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.251 $
- * $Date: 2006-04-03 07:48:03 $
+ * $Revision: 2.252 $
+ * $Date: 2006-04-03 09:05:37 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.251  2006/04/03 07:48:03  wmcoolmon
+ * Miscellaneous minor changes, mostly related to addition of Current_camera variable
+ *
  * Revision 2.250  2006/03/28 11:41:57  karajorma
  * Added the set-primary-weapon and the set-secondary-weapon SEXPs. Updated the corresponding
  * set-x-ammo SEXPs to also accept a rearm limit.
@@ -13998,14 +14001,16 @@ void sexp_show_subtitle(int node)
 		fade_time = eval_num(n)/1000.0f; //also in ms
 
 	n = CDR(n);
-	if(n != -1 && n==SEXP_KNOWN_TRUE)
+	if(n != -1)
 	{
-		center_x = true;
+		if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
+			center_x = true;
 
 	n = CDR(n);
-	if(n != -1 && n==SEXP_KNOWN_TRUE)
+	if(n != -1)
 	{
-		center_y = true;
+		if(Sexp_nodes[Sexp_nodes[n].first].value==SEXP_KNOWN_TRUE)
+			center_y = true;
 		
 	n = CDR(n);
 	if(n != -1)
