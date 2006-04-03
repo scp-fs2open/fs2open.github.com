@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.324 $
- * $Date: 2006-04-03 07:48:03 $
+ * $Revision: 2.325 $
+ * $Date: 2006-04-03 08:09:32 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.324  2006/04/03 07:48:03  wmcoolmon
+ * Miscellaneous minor changes, mostly related to addition of Current_camera variable
+ *
  * Revision 2.323  2006/04/01 01:21:58  wmcoolmon
  * $Warp time and $Warp speed vars
  *
@@ -3808,6 +3811,8 @@ strcpy(parse_error_text, temp_error);
 			stuff_string(name_tmp, F_NAME);
 			int tex_fps=0, tex_nframes=0, tex_id=-1;;
 			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, 1);
+			if(tex_id < 0)
+				tex_id = bm_load(name_tmp);
 			if(tex_id > -1)
 			{
 				if(mtp->tex_id > -1) {
@@ -4647,7 +4652,7 @@ void ship_init()
 	ship_level_init();	// needed for FRED
 }
 
-
+int Man_thruster_reset_timestamp = 0;
 // This will get called at the start of each level.
 void ship_level_init()
 {
@@ -4722,6 +4727,8 @@ void ship_level_init()
 	Ship_cargo_check_timer = 1;
 
 	shipfx_large_blowup_level_init();
+
+	Man_thruster_reset_timestamp = timestamp(0);
 }
 
 // function to add a ship onto the exited ships list.  The reason parameter
@@ -5589,8 +5596,9 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 }
 
 std::vector<man_thruster_renderer> Man_thrusters;
-int Man_thruster_reset_timestamp = 0;
 
+//This batch renders all maneuvering thrusters in the array.
+//It also clears the array every 10 seconds to keep mem usage down.
 void batch_render_man_thrusters()
 {
 	man_thruster_renderer *mtr;
@@ -5607,9 +5615,20 @@ void batch_render_man_thrusters()
 	if(timestamp() - Man_thruster_reset_timestamp > 10000)
 	{
 		Man_thrusters.clear();
+		Man_thruster_reset_timestamp = timestamp();
 	}
 }
 
+//This function looks for a free slot in the man_thruster batch
+//rendering array. Or, it returns a slot with the same bitmap
+//ID as the maneuvering thruster.
+//
+//You could actually batch render anything that uses a simple bitmap
+//on a single poly with this system...just plug the bitmap into bmap_frame
+//and use as a normal batcher.
+//
+//Once calling this function, use man_batcher.allocate_add() to allocate or it will crash later.
+//Then call man_batcher.draw*()
 man_thruster_renderer *man_thruster_get_slot(int bmap_frame)
 {
 	man_thruster_renderer *mtr;
@@ -5785,29 +5804,33 @@ void ship_render(object * obj)
 
 				render_it = false;
 
-				if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags & MT_PITCH_UP)) {
+				//WMC - get us a steady value
+				vec3d des_vel;
+				vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
+
+				if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags & MT_PITCH_UP)) {
 					render_it = true;
-				} else if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags & MT_PITCH_DOWN)) {
+				} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags & MT_PITCH_DOWN)) {
 					render_it = true;
-				} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags & MT_ROLL_RIGHT)) {
+				} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags & MT_ROLL_RIGHT)) {
 					render_it = true;
-				} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags & MT_ROLL_LEFT)) {
+				} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags & MT_ROLL_LEFT)) {
 					render_it = true;
-				} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags & MT_BANK_RIGHT)) {
+				} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags & MT_BANK_RIGHT)) {
 					render_it = true;
-				} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags & MT_BANK_LEFT)) {
+				} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags & MT_BANK_LEFT)) {
 					render_it = true;
-				} else if(pi->desired_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
+				} else if(des_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
 					render_it = true;
-				} else if(pi->desired_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
+				} else if(des_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
 					render_it = true;
-				} else if(pi->desired_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
+				} else if(des_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
 					render_it = true;
-				} else if(pi->desired_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
+				} else if(des_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
 					render_it = true;
-				} else if(pi->desired_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
+				} else if(des_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
 					render_it = true;
-				} else if(pi->desired_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
+				} else if(des_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
 					render_it = true;
 				}
 
@@ -5858,7 +5881,9 @@ void ship_render(object * obj)
 						//Draw
 						fx_batcher.draw_beam(&start, &end, rad, 1.0f);
 
-						int bmap_frame = mtp->tex_id + ((int)(((float)(timestamp() - shipp->thrusters_start[i]) / 1000.0f) * (float)mtp->tex_fps) % mtp->tex_nframes);
+						int bmap_frame = mtp->tex_id;
+						if(mtp->tex_nframes > 0)
+							bmap_frame += (int)(((float)(timestamp() - shipp->thrusters_start[i]) / 1000.0f) * (float)mtp->tex_fps) % mtp->tex_nframes;
 
 						man_thruster_renderer *mtr = man_thruster_get_slot(bmap_frame);
 						mtr->man_batcher.add_allocate(1);
