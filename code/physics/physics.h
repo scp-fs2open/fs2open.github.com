@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.12 $
- * $Date: 2006-02-25 21:47:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2006-04-03 07:48:03 $
+ * $Author: wmcoolmon $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/02/25 21:47:07  Goober5000
+ * spelling
+ *
  * Revision 2.11  2005/10/11 05:24:34  wmcoolmon
  * Gliding
  *
@@ -312,6 +315,9 @@ extern float Physics_viewer_bank;
 #define PHYSICS_VIEWER_REAR				3
 #define PHYSICS_VIEWER_UP					4
 void physics_set_viewer( physics_info * p, int dir );
+
+//WMC - apply_physics
+void apply_physics( float damping, float desired_vel, float initial_vel, float t, float * new_vel, float * delta_pos );
 
 /*
 #ifdef __cplusplus

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSnd.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-10-23 19:08:01 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2006-04-03 07:48:03 $
+ * $Author: wmcoolmon $
  *
  * C module for managing object-linked persistant sounds
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/10/23 19:08:01  taylor
+ * fix crashes and minor slowdowns when sound is disabled (-nosound)
+ *
  * Revision 2.11  2005/09/25 05:13:07  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -942,7 +945,7 @@ void obj_snd_do_frame()
 //										sound can be assigned per object).  
 //               >= 0			=> sound was successfully assigned
 //
-int obj_snd_assign(int objnum, int i, vec3d *pos, int main, ship_subsys *associated_sub)
+int obj_snd_assign(int objnum, int sndnum, vec3d *pos, int main, ship_subsys *associated_sub)
 {
 	obj_snd	*snd;
 	object	*objp;
@@ -979,10 +982,10 @@ int obj_snd_assign(int objnum, int i, vec3d *pos, int main, ship_subsys *associa
 		snd->flags |= OS_MAIN;
 	}
 
-	if ( i == -1 ) {
+	if ( sndnum == -1 ) {
 		return -1;
 	}
-	snd->id = i;
+	snd->id = sndnum;
 
 	snd->instance = -1;
 	snd->vol = 0.0f;
