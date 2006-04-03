@@ -387,7 +387,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 			gr_get_string_size(&w, &h, text_line_ptrs[i], text_line_lens[i]);
 
 			if(w > tw)
-			tw = w;
+				tw = w;
 
 			th += h;
 		}
@@ -405,16 +405,16 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 		if(center_x)
 			image_pos[0] = (gr_screen.max_w - tw)/2;
 		if(center_y)
-			image_pos[0] = (gr_screen.max_h - th)/2;
+			image_pos[1] = (gr_screen.max_h - th)/2;
 	}
 	if(in_x_pos < 0 && !center_x)
 		image_pos[0] += gr_screen.max_w + in_x_pos;
-	else
+	else if(!center_x)
 		image_pos[0] += in_x_pos;
 
 	if(in_y_pos < 0 && !center_y)
 		image_pos[1] += gr_screen.max_h + in_y_pos;
-	else
+	else if(!center_y)
 		image_pos[1] += in_y_pos;
 
 	if(image_id != -1)

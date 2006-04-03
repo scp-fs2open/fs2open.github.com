@@ -2450,6 +2450,31 @@ LUA_VAR(Position, l_Subsystem, "local vector", "Subsystem position with regards 
 	return lua_set_args(L, "o", l_Vector.Set(sm->offset));
 }
 
+LUA_VAR(GunPosition, l_Subsystem, "local vector", "Subsystem gun position with regards to main ship")
+{
+	ship_subsys_h *sso;
+	vec3d *v = NULL;
+	if(!lua_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&v)))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	polymodel *pm = model_get(Ships[sso->objp->instance].modelnum);
+	Assert(pm != NULL);
+
+	if(sso->ss->system_info->turret_gun_sobj < 0)
+		return LUA_RETURN_NIL;
+
+	bsp_info *sm = &pm->submodel[sso->ss->system_info->turret_gun_sobj];
+
+	if(LUA_SETTING_VAR && v != NULL)
+		sm->offset = *v;
+
+	return lua_set_args(L, "o", l_Vector.Set(sm->offset));
+}
+
+
 LUA_VAR(Target, l_Subsystem, "Object", "Object targetted by this subsystem")
 {
 	ship_subsys_h *sso;
