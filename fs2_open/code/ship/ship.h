@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.142 $
- * $Date: 2006-04-01 01:21:58 $
+ * $Revision: 2.143 $
+ * $Date: 2006-04-03 07:48:03 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.142  2006/04/01 01:21:58  wmcoolmon
+ * $Warp time and $Warp speed vars
+ *
  * Revision 2.141  2006/03/31 10:20:01  wmcoolmon
  * Prelim. BSG warpin effect stuff
  *
@@ -1121,6 +1124,7 @@ extern int TARGET_SHIP_IGNORE_FLAGS;
 #define NUM_SUB_EXPL_HANDLES	2	// How many different big ship sub explosion sounds can be played.
 
 #define MAX_SHIP_CONTRAILS		12
+#define MAX_MAN_THRUSTERS	32
 
 typedef struct ship_spark {
 	vec3d pos;			// position of spark in the submodel's RF
@@ -1383,6 +1387,9 @@ typedef struct ship {
 	float reload_time[MAX_SHIP_SECONDARY_BANKS]; //how many seconds it will take for any point in a bank to reload
 	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
 	float primary_rotate_ang[MAX_SHIP_PRIMARY_BANKS];
+
+	int thrusters_start[MAX_MAN_THRUSTERS];		//Timestamp of when thrusters started
+	int thrusters_sounds[MAX_MAN_THRUSTERS];	//Sound index for thrusters
 /*
 	flash_ball	*debris_flare;
 	int n_debris_flare;
@@ -1583,6 +1590,15 @@ typedef struct ship_type_info {
 
 extern std::vector<ship_type_info> Ship_types;
 
+struct man_thruster_renderer {
+	int bmap_id;
+	geometry_batcher man_batcher;
+
+	man_thruster_renderer(int id){bmap_id = id;}
+};
+
+extern std::vector<man_thruster_renderer> Man_thrusters;
+
 #define MT_BANK_RIGHT		(1<<0)
 #define MT_BANK_LEFT		(1<<1)
 #define MT_PITCH_UP			(1<<2)
@@ -1596,13 +1612,21 @@ extern std::vector<ship_type_info> Ship_types;
 #define MT_FORWARD			(1<<10)
 #define MT_REVERSE			(1<<11)
 
-#define MAX_MAN_THRUSTERS	32
 typedef struct man_thruster {
-	int bmap_id;
-	float radius;
 	int use_flags;
+
+	int start_snd;
+	int loop_snd;
+	int stop_snd;
+
+	int tex_id;
+	int tex_nframes;
+	int tex_fps;
+	float length;
+	float radius;
+
 	vec3d pos, norm;
-	man_thruster(){memset(this, 0, sizeof(man_thruster));bmap_id=-1;}
+	man_thruster(){memset(this, 0, sizeof(man_thruster));tex_id=-1;start_snd=-1;loop_snd=-1;stop_snd=-1;}
 }man_thruster;
 
 //Warp type defines

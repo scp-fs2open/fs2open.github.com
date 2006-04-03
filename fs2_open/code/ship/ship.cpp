@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.323 $
- * $Date: 2006-04-01 01:21:58 $
+ * $Revision: 2.324 $
+ * $Date: 2006-04-03 07:48:03 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.323  2006/04/01 01:21:58  wmcoolmon
+ * $Warp time and $Warp speed vars
+ *
  * Revision 2.322  2006/03/31 10:20:01  wmcoolmon
  * Prelim. BSG warpin effect stuff
  *
@@ -2071,7 +2074,7 @@ flag_def_list Man_types[] =
 	{"Bank right",			MT_BANK_RIGHT},
 	{"Bank left",			MT_BANK_LEFT},
 	{"Pitch up",			MT_PITCH_UP},
-	{"Pich down",			MT_PITCH_DOWN},
+	{"Pitch down",			MT_PITCH_DOWN},
 	{"Roll right",			MT_ROLL_RIGHT},
 	{"Roll left",			MT_ROLL_LEFT},
 	{"Slide right",			MT_SLIDE_RIGHT},
@@ -3768,7 +3771,7 @@ strcpy(parse_error_text, temp_error);
 
 	man_thruster *mtp = NULL;
 	man_thruster manwich;
-	while(optional_string("$Maneuvering:"))
+	while(optional_string("$Thruster:"))
 	{
 		int idx = -1;
 		if(optional_string("+index:")) {
@@ -3788,17 +3791,32 @@ strcpy(parse_error_text, temp_error);
 			Warning(LOCATION, "Invalid index (%d) specified for maneuvering thruster on ship %s", idx, sip->name);
 		}
 
+		if(optional_string("+Used for:")) {
+			parse_string_flag_list(&mtp->use_flags, Man_types, Num_man_types);
+		}
+
+		if(optional_string("+Position:")) {
+			stuff_float_list(mtp->pos.a1d, 3);
+		}
+
+		if(optional_string("+Normal:")) {
+			stuff_float_list(mtp->norm.a1d, 3);
+		}
+
 		if(optional_string("+Texture:"))
 		{
 			stuff_string(name_tmp, F_NAME);
-			int bmap_id = bm_load(name_tmp);
-			if(bmap_id > -1)
+			int tex_fps=0, tex_nframes=0, tex_id=-1;;
+			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, 1);
+			if(tex_id > -1)
 			{
-				if(mtp->bmap_id > -1) {
-					bm_unload(mtp->bmap_id);
+				if(mtp->tex_id > -1) {
+					bm_unload(mtp->tex_id);
 				}
 
-				mtp->bmap_id = bmap_id;
+				mtp->tex_id = tex_id;
+				mtp->tex_fps = tex_fps;
+				mtp->tex_nframes = tex_nframes;
 			}
 		}
 
@@ -3806,17 +3824,13 @@ strcpy(parse_error_text, temp_error);
 			stuff_float(&mtp->radius);
 		}
 
-		if(optional_string("+Used for:")) {
-			parse_string_flag_list(&mtp->use_flags, Man_types, Num_man_types);
+		if(optional_string("+Length:")) {
+			stuff_float(&mtp->length);
 		}
 
-		if(optional_string("+Normal:")) {
-			stuff_float_list(mtp->norm.a1d, 3);
-		}
-
-		if(optional_string("+Position:")) {
-			stuff_float_list(mtp->pos.a1d, 3);
-		}
+		parse_sound("+StartSnd:", &mtp->start_snd, sip->name);
+		parse_sound("+LoopSnd:", &mtp->loop_snd, sip->name);
+		parse_sound("+StopSnd:", &mtp->stop_snd, sip->name);
 	}
 	
 	int n_subsystems = 0;
@@ -5215,6 +5229,12 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->flare_life = 0;
 	shipp->flare_bm = bm_load("boom");
 */
+	//Thrusters
+	for(i = 0; i < MAX_MAN_THRUSTERS; i++)
+	{
+		shipp->thrusters_start[i] = 0;
+		shipp->thrusters_sounds[i] = -1;
+	}
 }
 
 // function which recalculates the overall strength of subsystems.  Needed because
@@ -5568,7 +5588,54 @@ void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 	}
 }
 
+std::vector<man_thruster_renderer> Man_thrusters;
+int Man_thruster_reset_timestamp = 0;
+
+void batch_render_man_thrusters()
+{
+	man_thruster_renderer *mtr;
+	for(uint i = 0; i < Man_thrusters.size(); i++)
+	{
+		mtr = &Man_thrusters[i];
+		gr_set_bitmap(mtr->bmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
+
+		mtr->man_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
+		mtr->bmap_id = -1;	//Mark as free
+	}
+
+	//WMC - clear maneuvering thruster render queue every 10 seconds
+	if(timestamp() - Man_thruster_reset_timestamp > 10000)
+	{
+		Man_thrusters.clear();
+	}
+}
+
+man_thruster_renderer *man_thruster_get_slot(int bmap_frame)
+{
+	man_thruster_renderer *mtr;
+	for(uint mi = 0; mi < Man_thrusters.size(); mi++)
+	{
+		mtr = &Man_thrusters[mi];
+		if(mtr->bmap_id == bmap_frame)
+			return mtr;
+	}
+	for(uint mi = 0; mi < Man_thrusters.size(); mi++)
+	{
+		mtr = &Man_thrusters[mi];
+		if(mtr->bmap_id == -1)
+		{
+			mtr->bmap_id = bmap_frame;
+			return mtr;
+		}
+	}
+
+	Man_thrusters.push_back(man_thruster_renderer(bmap_frame));
+	return &Man_thrusters[Man_thrusters.size()-1];
+}
+
 extern float View_zoom;
+//WMC - used for FTL and maneuvering thrusters
+geometry_batcher fx_batcher;
 void ship_render(object * obj)
 {
 	int num = obj->instance;
@@ -5707,16 +5774,14 @@ void ship_render(object * obj)
 			//	ship_get_subsystem_strength( shipp, SUBSYSTEM_ENGINE)>ENGINE_MIN_STR
 			//WMC - I suppose this is a bit hackish.
 			physics_info *pi = &Objects[shipp->objnum].phys_info;
-			man_thruster *mtp;
 			bool render_it;
+			fx_batcher.allocate(si->num_maneuvering);	//Act as if all thrusters are going.
 
+			
+			int last_bmap_id = -1;
 			for(int i = 0; i < si->num_maneuvering; i++)
 			{
-				mtp = &si->maneuvering[i];
-
-				//Skip invalid ones
-				if(mtp->bmap_id < 0)
-					continue;
+				man_thruster *mtp = &si->maneuvering[i];
 
 				render_it = false;
 
@@ -5746,20 +5811,80 @@ void ship_render(object * obj)
 					render_it = true;
 				}
 
-				if(render_it) {
-					vec3d pos;
-					//NOT WORKING
-					//Rotate so that we have world position
-					vm_vec_rotate(&pos, &mtp->pos, &Objects[shipp->objnum].orient);
-					vertex pnt;
-					pnt.x = Objects[shipp->objnum].pos.xyz.x + pos.xyz.x;
-					pnt.y = Objects[shipp->objnum].pos.xyz.y + pos.xyz.y;
-					pnt.z = Objects[shipp->objnum].pos.xyz.z + pos.xyz.z;
+				if(render_it)
+				{
+					//Handle sounds and stuff
+					if(shipp->thrusters_start[i] <= 0)
+					{
+						shipp->thrusters_start[i] = timestamp();
+						if(mtp->start_snd > -1)
+							snd_play_3d( &Snds[mtp->start_snd], &mtp->pos, &Eye_position, 0.0f, &obj->phys_info.vel );
+					}
 
-					gr_set_bitmap(mtp->bmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
+					//Only assign looping sound if
+					//it is specified
+					//it isn't assigned already
+					//start sound doesn't exist or has finished
+					if(mtp->loop_snd > -1
+						&& shipp->thrusters_sounds[i] < 0
+						&& (mtp->start_snd < 0 || (snd_get_duration(mtp->start_snd) < timestamp() - shipp->thrusters_start[i])) 
+						)
+					{
+						shipp->thrusters_sounds[i] = obj_snd_assign(OBJ_INDEX(obj), mtp->loop_snd, &mtp->pos, 1);
+					}
 
-					if(Cmdline_nohtl)g3_draw_rotated_bitmap(&pnt, 0, mtp->radius, TMAP_FLAG_TEXTURED);	
-					else g3_draw_rotated_bitmap(&pnt, 0, mtp->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+					//Draw graphics
+					//Skip invalid ones
+					if(mtp->tex_id > -1)
+					{
+						float rad = mtp->radius;
+						if(rad <= 0.0f)
+							rad = 1.0f;
+
+						float len = mtp->length;
+						if(len == 0.0f)
+							len = rad;
+
+						vec3d start, tmpend, end;
+						//Start
+						vm_vec_unrotate(&start, &mtp->pos, &obj->orient);
+						vm_vec_scale_add2(&start, &obj->pos, 1.0f);
+
+						//End
+						vm_vec_scale_add(&tmpend, &mtp->pos, &mtp->norm, len);
+						vm_vec_unrotate(&end, &tmpend, &obj->orient);
+						vm_vec_scale_add2(&end, &obj->pos, 1.0f);
+
+						//Draw
+						fx_batcher.draw_beam(&start, &end, rad, 1.0f);
+
+						int bmap_frame = mtp->tex_id + ((int)(((float)(timestamp() - shipp->thrusters_start[i]) / 1000.0f) * (float)mtp->tex_fps) % mtp->tex_nframes);
+
+						man_thruster_renderer *mtr = man_thruster_get_slot(bmap_frame);
+						mtr->man_batcher.add_allocate(1);
+						mtr->man_batcher.draw_beam(&start, &end, rad, 1.0f);
+					}
+
+				}
+				//We've stopped firing a thruster
+				else if(shipp->thrusters_start[i] > 0)
+				{
+					shipp->thrusters_start[i] = 0;
+					if(shipp->thrusters_sounds[i] > -1)
+					{
+						obj_snd_delete(OBJ_INDEX(obj), shipp->thrusters_sounds[i]);
+						shipp->thrusters_sounds[i] = -1;
+					}
+
+					if(mtp->stop_snd > -1)
+					{
+						//Get world pos
+						vec3d start;
+						vm_vec_unrotate(&start, &mtp->pos, &obj->orient);
+						vm_vec_scale_add2(&start, &obj->pos, 1.0f);
+
+						snd_play_3d( &Snds[mtp->stop_snd], &mtp->pos, &Eye_position, 0.0f, &obj->phys_info.vel );
+					}
 				}
 			}
 
@@ -6074,8 +6199,7 @@ void ship_render(object * obj)
 	//I'm gonna need some serious acid to neutralize this base.
 	if(shipp->warp_anim > -1 && shipp->final_warp_time > timestamp())
 	{
-		geometry_batcher warp_batcher;
-		warp_batcher.allocate(1);
+		fx_batcher.allocate(1);
 
 		float rad = 0.0f;
 		ship_info *sip = &Ship_info[shipp->ship_info_index];
@@ -6094,7 +6218,7 @@ void ship_render(object * obj)
 		vec3d start, end;
 		vm_vec_scale_add(&start, &obj->pos, &obj->orient.vec.fvec, rad);
 		vm_vec_scale_add(&end, &obj->pos, &obj->orient.vec.fvec, -rad);
-		warp_batcher.draw_beam(&start, &end, rad*2.0f, 1.0f);
+		fx_batcher.draw_beam(&start, &end, rad*2.0f, 1.0f);
 
 		//Figure out which frame we're on
 		int frame = fl2i((float)((float)(timestamp() - (float)shipp->start_warp_time) / (float)(shipp->final_warp_time - (float)shipp->start_warp_time)) * (float)shipp->warp_anim_nframes);
@@ -6107,7 +6231,7 @@ void ship_render(object * obj)
 		gr_zbuffer_set(GR_ZBUFF_NONE);	
 
 		//Render the warpout effect
-		warp_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
+		fx_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
 
 		// restore zbuffer mode
 		gr_zbuffer_set(saved_zbuffer_mode);

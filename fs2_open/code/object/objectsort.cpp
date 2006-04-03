@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-12-29 08:08:39 $
+ * $Revision: 2.11 $
+ * $Date: 2006-04-03 07:48:03 $
  * $Author: wmcoolmon $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/12/29 08:08:39  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.9  2005/05/24 20:55:21  taylor
  * make sure batch rendering of lasers happens after fog is disabled in nebula missions
  *
@@ -411,6 +414,10 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 		(*render_function)(os->obj);
 	}
+
+	//WMC - draw maneuvering thrusters
+	extern void batch_render_man_thrusters();
+	batch_render_man_thrusters();
 
 	// if we're fullneb, switch off the fog effet
 	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){

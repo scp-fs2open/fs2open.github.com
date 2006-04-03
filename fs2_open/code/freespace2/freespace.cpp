@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.233 $
- * $Date: 2006-03-26 08:23:06 $
- * $Author: taylor $
+ * $Revision: 2.234 $
+ * $Date: 2006-04-03 07:48:03 $
+ * $Author: wmcoolmon $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.233  2006/03/26 08:23:06  taylor
+ * split pause_*() and multi_pause_*() functions into individual single and multi versions (why it was hacked up like that I'll never know)
+ * fix screen save in multi pause mode
+ * address some bmpman issues from interface graphics getting released and then still used by something else
+ *
  * Revision 2.232  2006/03/25 10:40:38  taylor
  * don't run through game_shade_frame() every frame unless we are in a game-play state
  *
@@ -5105,8 +5110,8 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 
 			if(Viewer_mode & VM_FREECAMERA) {
 				Viewer_obj = NULL;
-				*eye_pos = *Free_camera->get_position();
-				*eye_orient = *Free_camera->get_orientation();
+				*eye_pos = *Current_camera->get_position();
+				*eye_orient = *Current_camera->get_orientation();
 			} else if (Viewer_mode & VM_EXTERNAL) {
 				matrix	tm, tm2;
 
@@ -6795,8 +6800,6 @@ void os_close()
 {
 	gameseq_post_event(GS_EVENT_QUIT_GAME);
 }
-
-void apply_physics( float damping, float desired_vel, float initial_vel, float t, float * new_vel, float * delta_pos );
 
 
 void camera_set_position( vec3d *pos )

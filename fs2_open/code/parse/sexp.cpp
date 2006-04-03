@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.250 $
- * $Date: 2006-03-28 11:41:57 $
- * $Author: karajorma $
+ * $Revision: 2.251 $
+ * $Date: 2006-04-03 07:48:03 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.250  2006/03/28 11:41:57  karajorma
+ * Added the set-primary-weapon and the set-secondary-weapon SEXPs. Updated the corresponding
+ * set-x-ammo SEXPs to also accept a rearm limit.
+ *
  * Revision 2.249  2006/03/26 06:42:01  Goober5000
  * this should fix random-of
  * --Goober5000
@@ -13822,6 +13826,8 @@ void sexp_fade_out(int n)
 void sexp_set_camera_position(int n)
 {
 	Viewer_mode |= VM_FREECAMERA;
+	Current_camera = Free_camera;
+
 	vec3d camera_vec;
 	//float camera_time = 0.0f;
 
@@ -13837,6 +13843,8 @@ void sexp_set_camera_position(int n)
 void sexp_set_camera_rotation(int n)
 {
 	Viewer_mode |= VM_FREECAMERA;
+	Current_camera = Free_camera;
+
 	angles rot_angles;
 	float rot_time = 0.0f;
 	float rot_acc_time = 0.0f;
@@ -13862,6 +13870,8 @@ void sexp_set_camera_rotation(int n)
 void sexp_set_camera_facing(int n)
 {
 	Viewer_mode |= VM_FREECAMERA;
+	Current_camera = Free_camera;
+
 	vec3d location;
 	matrix cam_orient;
 	float rot_time = 0.0f;
@@ -13928,6 +13938,7 @@ void sexp_set_camera_facing_object(int n)
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			Viewer_mode |= VM_FREECAMERA;
+			Current_camera = Free_camera;
 			Free_camera->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time);
 			return;
 		}

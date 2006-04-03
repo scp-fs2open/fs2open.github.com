@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.41 $
- * $Date: 2006-03-18 22:43:16 $
- * $Author: Goober5000 $
+ * $Revision: 2.42 $
+ * $Date: 2006-04-03 07:48:03 $
+ * $Author: wmcoolmon $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2006/03/18 22:43:16  Goober5000
+ * added set-death-message sexp
+ * --Goober5000
+ *
  * Revision 2.40  2006/03/18 07:12:07  Goober5000
  * add ship-subsys-targetable and ship-subsys-untargetable
  * --Goober5000
@@ -2488,8 +2492,8 @@ void player_get_eye(vec3d *eye_pos, matrix *eye_orient)
 		}
 		if(Viewer_mode & VM_FREECAMERA) {
 				Viewer_obj = NULL;
-				*eye_pos = *Free_camera->get_position();
-				*eye_orient = *Free_camera->get_orientation();
+				*eye_pos = *Current_camera->get_position();
+				*eye_orient = *Current_camera->get_orientation();
 		} else if (Viewer_mode & VM_EXTERNAL) {
 			Assert(viewer_obj != NULL);
 			matrix	tm, tm2;
