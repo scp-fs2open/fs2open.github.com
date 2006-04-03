@@ -4,6 +4,7 @@
 
 #include "graphics/2d.h"
 #include "globalincs/pstypes.h"
+#include "globalincs/globals.h"
 
 #include <string>
 #include <vector>
@@ -11,6 +12,8 @@
 class camera
 {
 private:
+	char name[NAME_LENGTH];
+
 	vec3d	position;
 	vec3d	*desired_position;		//NULL unless we're trying to move somewhere
 	vec3d	translation_velocity;
@@ -23,20 +26,22 @@ private:
 	vec3d	rotation_vel_limit;
 	vec3d	rotation_acc_limit;
 public:
-	camera();
+	camera(char *in_name=NULL);
 	~camera();
 	void reset();
 
-	//Set
-	void set_position(vec3d *in_position, float in_translation_time = 0.0f, float in_translation_acceleration_time = 0.0f);
+	//Set'
+	void set_name(char *in_name);
+	void set_position(vec3d *in_position = NULL, float in_translation_time = 0.0f, float in_translation_acceleration_time = 0.0f);
 	void set_translation_velocity(vec3d *in_velocity);
-	void set_rotation(matrix *in_orientation, float in_rotation_time = 0.0f, float in_rotation_acceleration_time = 0.0f);
+	void set_rotation(matrix *in_orientation = NULL, float in_rotation_time = 0.0f, float in_rotation_acceleration_time = 0.0f);
 	void set_rotation(angles *in_angles, float in_rotation_time = 0.0f, float in_rotation_acceleration_time = 0.0f);
 	void set_rotation_facing(vec3d *in_target, float in_rotation_time = 0.0f, float in_rotation_acceleration_time = 0.0f);
 	void set_rotation_velocity(vec3d *in_rotation_rate);
 
 	//Get
 	//These return values should never ever be changed, I do this in the interest of speed.
+	char *get_name() {return name;}
 	vec3d *get_position() {return &position;}
 	matrix *get_orientation() {return &orientation;}
 
@@ -82,11 +87,14 @@ extern std::vector<subtitle> Subtitles;
 extern std::vector<camera> Cameras;
 //Preset cameras
 extern camera* Free_camera;
+extern camera* Current_camera;
 
 //Helpful functions
 void cameras_init();
 void cameras_close();
 void cameras_do_frame(float frametime);
+int cameras_lookup(char *name);
+
 void subtitles_init();
 void subtitles_close();
 void subtitles_do_frame(float frametime);
