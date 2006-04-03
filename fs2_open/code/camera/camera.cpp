@@ -330,7 +330,7 @@ void camera::do_frame(float in_frametime)
 	}
 }
 
-#define MAX_SUBTITLE_LINES		10
+#define MAX_SUBTITLE_LINES		64
 subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, char* in_imageanim, float in_fade_time, color *in_text_color, bool center_x, bool center_y, int in_width)
 {
 	// basic init, this always has to be done
