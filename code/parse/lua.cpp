@@ -21,6 +21,7 @@
 #include "render/3d.h"
 #include "particle/particle.h"
 #include "iff_defs/iff_defs.h"
+#include "camera/camera.h"
 
 //*************************Lua funcs*************************
 int script_remove_lib(lua_State *L, char *name);
@@ -290,6 +291,7 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 	//Start throught
 	va_list vl;
 	int nargs;
+	int counted_args = 0;
 
 	//Are we parsing optional args yet?
 	bool optional_args = false;
@@ -302,6 +304,9 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 		//Skip functions; I assume these are being used to return args
 		while(lua_type(L, nargs) == LUA_TFUNCTION && nargs <= total_args)
 			nargs++;
+
+		if(nargs > total_args)
+			break;
 
 		switch(*fmt++)
 		{
@@ -389,9 +394,10 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 				break;
 		}
 		nargs++;
+		counted_args++;
 	}
 	va_end(vl);
-	return nargs--;
+	return counted_args;
 }
 
 //lua_set_args(state, arguments, variables)
@@ -2021,6 +2027,59 @@ LUA_VAR(Team, l_Weapon, "weaponclass", "Weapon's team")
 	return lua_set_args(L, "o", l_Team.Set(wp->team));
 }
 
+//**********HANDLE: Camera
+lua_obj<int> l_Camera("camera", "Camera");
+
+LUA_FUNC(setPosition, l_Camera, "[world vector Position, number Translation Time, number Acceleration Time]", "True",
+		"Sets camera position and velocity data."
+		"Position is the final position for the camera. If not specified, the camera will simply stop at its current position."
+		"Translation time is how long total, including acceleration, the camera should take to move. If it is not specified, the camera will jump to the specified position."
+		"Acceleration time is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving.")
+{
+	int idx=-1;
+	vec3d *pos=NULL;
+	float time=0.0f;
+	float acc_time=0.0f;
+	if(!lua_get_args(L, "o|off", l_Camera.Get(&idx), l_Vector.GetPtr(&pos), &time, &acc_time))
+		return LUA_RETURN_NIL;
+	
+	if(idx < 0 || (uint)idx > Cameras.size())
+		return LUA_RETURN_NIL;
+
+	Cameras[idx].set_position(pos, time, acc_time);
+
+	return LUA_RETURN_TRUE;
+}
+
+LUA_FUNC(setOrientation, l_Camera, "[world orientation Orientation, number Rotation Time, number Acceleration Time]", "True",
+		"Sets camera orientation and velocity data."
+		"<br>Orientation is the final orientation for the camera, after it has finished moving. If not specified, the camera will simply stop at its current orientation."
+		"<br>Rotation time is how long total, including acceleration, the camera should take to rotate. If it is not specified, the camera will jump to the specified orientation."
+		"<br>Acceleration time is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving.")
+{
+	int idx=-1;
+	matrix_h *mh=NULL;
+	float time=0.0f;
+	float acc_time=0.0f;
+	if(!lua_get_args(L, "o|off", l_Camera.Get(&idx), l_Matrix.GetPtr(&mh), &time, &acc_time))
+		return LUA_RETURN_NIL;
+	
+	if(idx < 0 || (uint)idx > Cameras.size())
+		return LUA_RETURN_NIL;
+
+	if(mh != NULL)
+	{
+		mh->ValidateMatrix();
+		Cameras[idx].set_rotation(&mh->mtx, time, acc_time);
+	}
+	else
+	{
+		Cameras[idx].set_rotation();
+	}
+
+	return LUA_RETURN_TRUE;
+}
+
 //**********HANDLE: Weaponbank
 #define SWH_NONE		0
 #define SWH_PRIMARY		1
@@ -2368,6 +2427,27 @@ LUA_VAR(HitpointsMax, l_Subsystem, "Number", "Subsystem hitpoints max")
 		sso->ss->max_hits = f;
 
 	return lua_set_args(L, "f", sso->ss->max_hits);
+}
+
+LUA_VAR(Position, l_Subsystem, "local vector", "Subsystem position with regards to main ship")
+{
+	ship_subsys_h *sso;
+	vec3d *v = NULL;
+	if(!lua_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Vector.GetPtr(&v)))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	polymodel *pm = model_get(Ships[sso->objp->instance].modelnum);
+	Assert(pm != NULL);
+
+	bsp_info *sm = &pm->submodel[sso->ss->system_info->subobj_num];
+
+	if(LUA_SETTING_VAR && v != NULL)
+		sm->offset = *v;
+
+	return lua_set_args(L, "o", l_Vector.Set(sm->offset));
 }
 
 LUA_VAR(Target, l_Subsystem, "Object", "Object targetted by this subsystem")
@@ -2944,7 +3024,7 @@ LUA_FUNC(getAnimationDoneTime, l_Ship, "Type, Subtype", "Time (milliseconds)", "
 LUA_FUNC(triggerAnimation, l_Ship, "Type, [Subtype, Forwards]", "True",
 		 "Triggers an animation. Type is the string name of the animation type, "
 		 "Subtype is the subtype number, such as weapon bank #, and Forwards is boolean."
-		 "<br><strong>IMPORTANT: Function is in testing and should not be used with official mod releases")
+		 "<br><strong>IMPORTANT: Function is in testing and should not be used with official mod releases</strong>")
 {
 	object_h *objh;
 	char *s = NULL;
@@ -3406,7 +3486,7 @@ LUA_FUNC(getShipByName, l_Mission, "Ship name", "Ship object", "Gets ship object
 {
 	char *name;
 	if(!lua_get_args(L, "s", &name))
-		return 0;
+		return LUA_RETURN_NIL;
 
 	int idx = ship_name_lookup(name);
 	
@@ -4327,6 +4407,88 @@ LUA_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 	particle_create(&pi);
 
 	return LUA_RETURN_NIL;
+}
+
+LUA_FUNC(createCamera, l_Testing, "string Name, world vector Position, world orientation Orientation", "camera Handle", "Creates a new camera")
+{
+	char *s = NULL;
+	vec3d *v = NULL;
+	matrix_h *mh = NULL;
+	if(!lua_get_args(L, "soo", &s, l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
+		return LUA_RETURN_NIL;
+
+	int idx;
+
+	//Add camera
+	Cameras.push_back(camera(s));
+
+	//Get idx
+	idx = Cameras.size() - 1;
+
+	//Set pos/orient
+	if(v != NULL)
+		Cameras[idx].set_position(v);
+	if(mh != NULL)
+	{
+		mh->ValidateMatrix();
+		Cameras[idx].set_rotation(&mh->mtx);
+	}
+
+	//Set position
+	return lua_set_args(L, "o", l_Camera.Set(idx));
+}
+
+LUA_FUNC(getCameraByName, l_Testing, "Camera name", "Camera handle", "Gets camera handle")
+{
+	char *name;
+	if(!lua_get_args(L, "s", &name))
+		return LUA_RETURN_NIL;
+
+	int idx = cameras_lookup(name);
+	
+	if(idx < 0) {
+		return LUA_RETURN_NIL;
+	}
+
+	return lua_set_args(L, "o", l_Camera.Set(idx));
+}
+
+LUA_FUNC(getNumCameras, l_Testing, NULL, "Number of cameras", "Gets number of cameras.")
+{
+	return lua_set_args(L, "i", (int)Cameras.size());
+}
+
+LUA_FUNC(getCameraByIndex, l_Testing, "Camera index", "Camera handle", "Gets camera handle")
+{
+	int i;
+	if(!lua_get_args(L, "i", &i))
+		return LUA_RETURN_NIL;
+
+	if(i < 1 || (uint)i > Cameras.size())
+		return LUA_RETURN_NIL;
+
+	//Lua-->FS2
+	i--;
+
+	return lua_set_args(L, "o", l_Camera.Set(i));
+}
+
+LUA_FUNC(setCamera, l_Testing, "[camera handle Camera]", "True", "Sets current camera, or resets camera if none specified")
+{
+	int idx;
+	if(!lua_get_args(L, "o", l_Camera.Get(&idx)))
+	{
+		Viewer_mode &= ~VM_FREECAMERA;
+		return LUA_RETURN_NIL;
+	}
+
+	if(idx < 1 || (uint)idx > Cameras.size())
+		return LUA_RETURN_NIL;
+
+	Viewer_mode |= VM_FREECAMERA;
+	Current_camera = &Cameras[idx];
+
+	return LUA_RETURN_TRUE;
 }
 
 // *************************Housekeeping*************************
