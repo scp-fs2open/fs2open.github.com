@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-12-08 15:11:29 $
- * $Author: taylor $
+ * $Revision: 2.29 $
+ * $Date: 2006-04-03 07:45:43 $
+ * $Author: wmcoolmon $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/12/08 15:11:29  taylor
+ * a few game_busy() changes
+ *
  * Revision 2.27  2005/11/17 05:12:42  wmcoolmon
  * Small fix for XMTs
  *
@@ -299,11 +302,20 @@ void gamesnd_play_iface(int n)
 	Snds_iface_handle[n] = snd_play(&Snds_iface[n]);
 }
 
+//WMC - now ignores file extension.
 int gamesnd_get_by_name(char* name)
 {
 	for(int i = 0; i < Num_game_sounds; i++)
 	{
-		if(!stricmp(Snds[i].filename, name))
+		char *p = strchr( Snds[i].filename, '.' );
+		if(p == NULL)
+		{
+			if(!stricmp(Snds[i].filename, name))
+			{
+				return i;
+			}
+		}
+		else if(!strnicmp(Snds[i].filename, name, p-Snds[i].filename))
 		{
 			return i;
 		}
