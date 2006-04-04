@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.119 $
- * $Author: karajorma $
- * $Date: 2006-03-28 11:41:57 $
+ * $Revision: 2.120 $
+ * $Author: wmcoolmon $
+ * $Date: 2006-04-04 11:38:07 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.119  2006/03/28 11:41:57  karajorma
+ * Added the set-primary-weapon and the set-secondary-weapon SEXPs. Updated the corresponding
+ * set-x-ammo SEXPs to also accept a rearm limit.
+ *
  * Revision 2.118  2006/03/21 17:19:01  karajorma
  * Added the In-Sequence conditional.
  *
@@ -1262,6 +1266,7 @@ struct ship_subsys;
 #define OP_SET_DEATH_MESSAGE				(0x00a9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_PRIMARY_WEAPON				(0x00aa | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SET_SECONDARY_WEAPON				(0x00ab | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_SCRIPT_EVAL						(0x00ac | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 
 
 

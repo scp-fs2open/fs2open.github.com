@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.143 $
- * $Date: 2006-04-03 07:48:03 $
+ * $Revision: 2.144 $
+ * $Date: 2006-04-04 11:38:07 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.143  2006/04/03 07:48:03  wmcoolmon
+ * Miscellaneous minor changes, mostly related to addition of Current_camera variable
+ *
  * Revision 2.142  2006/04/01 01:21:58  wmcoolmon
  * $Warp time and $Warp speed vars
  *
@@ -1477,6 +1480,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_SURFACE_SHIELDS                (1 << 4)    // _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
 #define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
 #define SIF2_DISABLE_WEAP_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
+#define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE			(SIF_DO_COLLISION_CHECK)

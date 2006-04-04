@@ -4434,12 +4434,12 @@ LUA_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(createCamera, l_Testing, "string Name, world vector Position, world orientation Orientation", "camera Handle", "Creates a new camera")
+LUA_FUNC(createCamera, l_Testing, "string Name, [world vector Position, world orientation Orientation]", "camera Handle", "Creates a new camera")
 {
 	char *s = NULL;
 	vec3d *v = NULL;
 	matrix_h *mh = NULL;
-	if(!lua_get_args(L, "soo", &s, l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
+	if(!lua_get_args(L, "s|oo", &s, l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
 		return LUA_RETURN_NIL;
 
 	int idx;
