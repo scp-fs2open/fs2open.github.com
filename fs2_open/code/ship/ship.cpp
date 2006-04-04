@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.325 $
- * $Date: 2006-04-03 08:09:32 $
+ * $Revision: 2.326 $
+ * $Date: 2006-04-04 11:38:07 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.325  2006/04/03 08:09:32  wmcoolmon
+ * Maneuvering thruster fixes
+ *
  * Revision 2.324  2006/04/03 07:48:03  wmcoolmon
  * Miscellaneous minor changes, mostly related to addition of Current_camera variable
  *
@@ -3423,6 +3426,8 @@ strcpy(parse_error_text, temp_error);
 				sip->flags2 |= SIF2_GENERATE_HUD_ICON;
 			else if( !stricmp( NOX("no weapon damage scaling"), ship_strings[i]))
 				sip->flags2 |= SIF2_DISABLE_WEAP_DAMAGE_SCALING;
+			else if( !stricmp( NOX("gun convergence"), ship_strings[i]))
+				sip->flags2 |= SIF2_GUN_CONVERGENCE;
 			else if (ship_type_index < 0)
 				Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 		}
@@ -5793,7 +5798,7 @@ void ship_render(object * obj)
 			//	ship_get_subsystem_strength( shipp, SUBSYSTEM_ENGINE)>ENGINE_MIN_STR
 			//WMC - I suppose this is a bit hackish.
 			physics_info *pi = &Objects[shipp->objnum].phys_info;
-			bool render_it;
+			float render_amount;
 			fx_batcher.allocate(si->num_maneuvering);	//Act as if all thrusters are going.
 
 			
@@ -5802,39 +5807,39 @@ void ship_render(object * obj)
 			{
 				man_thruster *mtp = &si->maneuvering[i];
 
-				render_it = false;
+				render_amount = 0.0f;
 
 				//WMC - get us a steady value
 				vec3d des_vel;
 				vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
 
 				if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags & MT_PITCH_UP)) {
-					render_it = true;
+					render_amount = abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
 				} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags & MT_PITCH_DOWN)) {
-					render_it = true;
+					render_amount = abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
 				} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags & MT_ROLL_RIGHT)) {
-					render_it = true;
+					render_amount = abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
 				} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags & MT_ROLL_LEFT)) {
-					render_it = true;
+					render_amount = abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
 				} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags & MT_BANK_RIGHT)) {
-					render_it = true;
+					render_amount = abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
 				} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags & MT_BANK_LEFT)) {
-					render_it = true;
+					render_amount = abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
 				} else if(des_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
-					render_it = true;
+					render_amount = abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
 				} else if(des_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
-					render_it = true;
+					render_amount = abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
 				} else if(des_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
-					render_it = true;
+					render_amount = abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
 				} else if(des_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
-					render_it = true;
+					render_amount = abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
 				} else if(des_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
-					render_it = true;
+					render_amount = abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
 				} else if(des_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
-					render_it = true;
+					render_amount = abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
 				}
 
-				if(render_it)
+				if(render_amount > 0.0f)
 				{
 					//Handle sounds and stuff
 					if(shipp->thrusters_start[i] <= 0)
@@ -5874,7 +5879,7 @@ void ship_render(object * obj)
 						vm_vec_scale_add2(&start, &obj->pos, 1.0f);
 
 						//End
-						vm_vec_scale_add(&tmpend, &mtp->pos, &mtp->norm, len);
+						vm_vec_scale_add(&tmpend, &mtp->pos, &mtp->norm, len * render_amount);
 						vm_vec_unrotate(&end, &tmpend, &obj->orient);
 						vm_vec_scale_add2(&end, &obj->pos, 1.0f);
 
@@ -9715,13 +9720,24 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					for(int s = 0; s<sub_shots; s++){
 						pnt = po->gun_banks[bank_to_fire].pnt[pt];
 						if(weapon_model && weapon_model->n_guns)vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
-	
+
 						vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
 						vm_vec_add(&firing_pos, &gun_point, &obj->pos);
-				
+
+						matrix firing_orient;
+						if(!(sip->flags2 & SIF2_GUN_CONVERGENCE))
+						{
+							firing_orient = obj->orient;
+						}
+						else
+						{
+							vec3d firing_vec;
+							vm_vec_unrotate(&firing_vec, &po->gun_banks[bank_to_fire].norm[pt], &obj->orient);
+							vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+						}
 						// create the weapon -- the network signature for multiplayer is created inside
 						// of weapon_create
-						weapon_objnum = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj), new_group_id );
+						weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id );
 	
 						weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
 	
@@ -10377,9 +10393,21 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				Assert( Weapon_info[weapon].subtype == WP_MISSILE );
 			}
 
+			matrix firing_orient;
+			if(!(sip->flags2 & SIF2_GUN_CONVERGENCE))
+			{
+				firing_orient = obj->orient;
+			}
+			else
+			{
+				vec3d firing_vec;
+				vm_vec_unrotate(&firing_vec, &po->missile_banks[bank].norm[pnt_index-1], &obj->orient);
+				vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+			}
+
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
+			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
 			weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
 
 

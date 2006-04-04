@@ -400,33 +400,44 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 	}
 
 	char *s = string;
-	if(string[0] != '[')
+	if(string[0] != '[' && rtn != NULL)
 	{
 		s = new char[strlen(string) + 8];
 		strcpy(s, "return ");
 		strcpy(s, string);
 	}
-	else if(lastchar != ']')
+	else if(string[0] == ']' && lastchar != ']')
 	{
 		return false;
 	}
-	else
+	else if(string[0] == ']')
 	{
+		s++;
 		*lcp = '\0';
 	}
+
+	//WMC - So we can pop extra return values
+	int args_start = lua_gettop(LuaState);
 
 	//WMC - Push error handling function
 	lua_pushcfunction(LuaState, lua_friendly_error);
 	//Parse string
-	luaL_loadbuffer(LuaState, s, strlen(s), "SEXP");
+	luaL_loadbuffer(LuaState, s, strlen(s), debug_str);
 	//Call function
-	if(!lua_pcall(LuaState, 0, 1, -2))
+	if(lua_pcall(LuaState, 0, LUA_MULTRET, -2))
 	{
 		return false;
 	}
 
-	//Default return if no return - 0
-	lua_get_args(LuaState, format, *(script_lua_odata*)rtn);
+	//Only get args if we can put them someplace
+	if(rtn != NULL)
+	{
+		lua_get_args(LuaState, format, *(script_lua_odata*)rtn);
+	}
+
+	//WMC - Pop anything leftover from the function from the stack
+	args_start = lua_gettop(LuaState) - args_start;
+	for(; args_start > 0; args_start--) lua_pop(LuaState, 1);
 
 	if(lastchar == ']')
 		*lcp = lastchar;

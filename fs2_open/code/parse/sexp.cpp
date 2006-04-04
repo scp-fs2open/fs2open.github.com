@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.252 $
- * $Date: 2006-04-03 09:05:37 $
+ * $Revision: 2.253 $
+ * $Date: 2006-04-04 11:38:07 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.252  2006/04/03 09:05:37  wmcoolmon
+ * show-subtitle's got its groove back
+ *
  * Revision 2.251  2006/04/03 07:48:03  wmcoolmon
  * Miscellaneous minor changes, mostly related to addition of Current_camera variable
  *
@@ -1770,6 +1773,7 @@ sexp_oper Operators[] = {
 
 	{ "script-eval-num",			OP_SCRIPT_EVAL_NUM,						1, 1, },
 	{ "script-eval-string",			OP_SCRIPT_EVAL_STRING,					1, 1, },
+	{ "script-eval",				OP_SCRIPT_EVAL,							1, INT_MAX},
 
 
 	{ "do-nothing",	OP_NOP,	0, 0,			},
@@ -14144,12 +14148,31 @@ void sexp_hide_jumpnode(int n)
 
 //WMC - This is a bit of a hack, however, it's easier than
 //coding in a whole new SCript_system function.
-int sexp_script_eval(int n, bool return_text)
+int sexp_script_eval(int n, int return_type)
 {
 	char *s = CTEXT(n);
+	bool success = false;
 
 	int r = -1;
-	Script_system.EvalString(s, "|i", &r, "SEXP");
+
+	switch(return_type)
+	{
+		case OPR_NUMBER:
+			success = Script_system.EvalString(s, "|i", &r, "SEXP-OPR_NUMBER");
+			break;
+		case OPR_STRING:
+			Error(LOCATION, "SEXP system does not support string return type; Goober must fix this before script-eval-string will work");
+			break;
+		case OPR_NULL:
+			success = Script_system.EvalString(s, NULL, NULL, "SEXP-OPR_NULL");
+			break;
+		default:
+			Error(LOCATION, "Bad type passed to sexp_script_eval - get a coder");
+			break;
+	}
+
+	if(!success)
+		Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
 
 	return r;
 }
@@ -15616,11 +15639,15 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SCRIPT_EVAL_NUM:
-				sexp_val = sexp_script_eval(node, false);
+				sexp_val = sexp_script_eval(node, OPR_NUMBER);
 				break;
 
 			case OP_SCRIPT_EVAL_STRING:
-				sexp_val = sexp_script_eval(node, true);
+				sexp_val = sexp_script_eval(node, OPR_STRING);
+				break;
+
+			case OP_SCRIPT_EVAL:
+				sexp_val = sexp_script_eval(node, OPR_NULL);
 				break;
 
 			default:
@@ -16110,7 +16137,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SECONDARY_AMMO:
 		case OP_SET_PRIMARY_WEAPON:
 		case OP_SET_SECONDARY_WEAPON:
-
+		case OP_SCRIPT_EVAL:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -17360,6 +17387,7 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SCRIPT_EVAL_NUM:
 		case OP_SCRIPT_EVAL_STRING:
+		case OP_SCRIPT_EVAL:
 			return OPF_STRING;
 
 		default:
@@ -20782,6 +20810,11 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tScript\r\n"
 	},
 
+	{OP_SCRIPT_EVAL, "script-eval\r\n"
+		"\tEvaluates script"
+		"Takes at least 1 argument...\r\n"
+		"\t1:\tScript to evaluate\r\n"
+	},
 };
 
 
