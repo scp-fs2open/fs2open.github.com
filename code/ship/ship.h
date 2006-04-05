@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.145 $
- * $Date: 2006-04-05 16:29:53 $
+ * $Revision: 2.146 $
+ * $Date: 2006-04-05 16:46:40 $
  * $Author: karajorma $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.144  2006/04/04 11:38:07  wmcoolmon
+ * Maneuvering hruster scaling, gun convergence
+ *
  * Revision 2.143  2006/04/03 07:48:03  wmcoolmon
  * Miscellaneous minor changes, mostly related to addition of Current_camera variable
  *
@@ -1481,6 +1484,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_SURFACE_SHIELDS                (1 << 4)    // _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
 #define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
 #define SIF2_DISABLE_WEAP_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
+#define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE			(SIF_DO_COLLISION_CHECK)
@@ -2110,6 +2114,7 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 #define SHIP_GET_NO_PLAYERS			1
 #define SHIP_GET_ONLY_PLAYERS			2
 #define SHIP_GET_UNSILENCED				3	// Karajorma - Returns no_players that can send builtin messages.
+
 
 extern int ship_get_random_team_ship( int team, int flags = SHIP_GET_ANY_SHIP, float max_dist=0.0f );
 extern int ship_get_random_player_wing_ship( int flags = SHIP_GET_ANY_SHIP, float max_dist=0.0f, int persona_index = -1, int get_first=0, int multi_team = -1 );
