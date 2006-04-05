@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.135 $
- * $Date: 2006-03-18 10:17:58 $
+ * $Revision: 2.136 $
+ * $Date: 2006-04-05 13:47:01 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.135  2006/03/18 10:17:58  taylor
+ * we already have a variable to show the framerate so lets just use the one
+ *
  * Revision 2.134  2006/02/24 07:36:49  taylor
  * try and make some sense out of that cmdline option mess, maybe it will stay sane for a few days at least :)
  *
@@ -924,7 +927,6 @@ Flag exe_params[] =
 	{ "-alpha_env",			"uses alpha for env maping",				true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-alpha_env", },
 	{ "-decals",			"impact decals",							true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-decals", },
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
-	{ "-tga16",				"Convert 32-bit TGAs to 16-bit",			true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-tga16", },
 	{ "-voicer",			"Voice recognition",						true,	0,					EASY_DEFAULT,		"Experimental",	"", },
 
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
@@ -1019,7 +1021,7 @@ cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL); // Cmdline_nomotiondeb
 cmdline_parm noscalevid_arg("-noscalevid", NULL);	// Cmdline_noscalevid  -- disable video scaling that fits to window
 cmdline_parm spec_arg("-spec", NULL);				// Cmdline_nospec  -- use specular highlighting -Sticks
 cmdline_parm pcx32_arg("-pcx32", NULL);				// Cmdline_pcx32
-cmdline_parm tga16_arg("-tga16", NULL);				// Cmdline_tga16  -- 32-bit TGA to 16-bit conversion
+cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive  -- don't use emissive light in OGL
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -1040,7 +1042,7 @@ int Cmdline_nomotiondebris = 0;
 int Cmdline_noscalevid = 0;
 int Cmdline_nospec = 1;
 int Cmdline_pcx32 = 0;
-int Cmdline_tga16 = 0;
+int Cmdline_no_emissive = 0;
 
 // Game Speed related
 cmdline_parm batch_3dunlit_arg("-batch_3dunlit", NULL);	// Cmdline_batch_3dunlit
@@ -2154,8 +2156,8 @@ bool SetCmdlineParams()
 		Cmdline_noibx = 1;
 	}
 
-	if ( tga16_arg.found() ) {
-		Cmdline_tga16 = 1;
+	if ( noemissive_arg.found() ) {
+		Cmdline_no_emissive = 1;
 	}
 
 	// Temporary... REMOVEME LATER!!

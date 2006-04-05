@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.27 $
- * $Date: 2006-03-15 17:33:05 $
+ * $Revision: 1.28 $
+ * $Date: 2006-04-05 13:47:01 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2006/03/15 17:33:05  taylor
+ * couple of nitpicks
+ *
  * Revision 1.26  2006/02/16 04:55:53  taylor
  * couple more lighting value tweaks
  *
@@ -504,6 +507,7 @@ void opengl_init_light()
 	memset( currently_enabled_lights, -1, GL_max_lights * sizeof(int) );
 }
 
+extern int Cmdline_no_emissive;
 void opengl_default_light_settings(int ambient = 1, int emission = 1, int specular = 1)
 {
 	if (!lighting_is_enabled)
@@ -520,7 +524,7 @@ void opengl_default_light_settings(int ambient = 1, int emission = 1, int specul
 		}
 	}
 
-	if (emission) {
+	if (emission && !Cmdline_no_emissive) {
 		// emissive light is just a general glow but without it things are *terribly* dark if there is no light on them
 		glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, GL_light_emission );
 	} else {

@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-12-28 22:32:37 $
+ * $Revision: 2.19 $
+ * $Date: 2006-04-05 13:47:01 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/12/28 22:32:37  taylor
+ * properly deal with post-89 TGA images which have extra extension and developer info in the file
+ *
  * Revision 2.17  2005/11/13 06:49:32  taylor
  * small big-endian fix
  *
@@ -138,8 +141,6 @@
 #include "cmdline/cmdline.h"
 
 extern int Cmdline_jpgtga;
-extern int Cmdline_tga16;
-
 
 // -----------------
 //
@@ -410,36 +411,18 @@ static void targa_read_pixel( int num_pixels, ubyte **dst, ubyte **src, int byte
 	for(idx=0; idx<num_pixels; idx++){
 		// 24 or 32 bit
 		if ( (bytes_per_pixel == 3) || (bytes_per_pixel == 4) ) {
-			// if we are going to a 16-bit destination
-			if (dest_size == 2) {
-				memcpy( &pixel32, *src, bytes_per_pixel );
-
-				pixel32 = INTEL_INT(pixel32);
-
-				ubyte *tmp = (ubyte*)&pixel32;
-				ubyte alpha = 1;
-				pixel = 0;
-
-				// BGR order for 24-bit, BGRA order for 32-bit
-				bm_set_components((ubyte*)&pixel, (ubyte*)&tmp[2], (ubyte*)&tmp[1], (ubyte*)&tmp[0], &alpha);
-
-				memcpy( *dst, &pixel, dest_size );
-			}
-			// otherwise we stay at what size we already are
-			else {
-				memset( &pixel32, 0xff, sizeof(int) );
-				memcpy( &pixel32, *src, bytes_per_pixel );
+			memset( &pixel32, 0xff, sizeof(int) );
+			memcpy( &pixel32, *src, bytes_per_pixel );
 
 #if BYTE_ORDER == BIG_ENDIAN
-				// on big-endian it will be used as ARGB so switch it back to BGRA
-				if ( dest_size == 4 ) {
-					pixel32 = INTEL_INT(pixel32);
-				}
+			// on big-endian it will be used as ARGB so switch it back to BGRA
+			if ( dest_size == 4 ) {
+				pixel32 = INTEL_INT(pixel32);
+			}
 #endif
 
-				// should have it's own alpha settings so just copy it out as is
-				memcpy( *dst, &pixel32, dest_size );
-			}
+			// should have it's own alpha settings so just copy it out as is
+			memcpy( *dst, &pixel32, dest_size );
 		}
 		// 8 or 16 bit
 		else {
@@ -569,10 +552,10 @@ int targa_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *
 
 	// If we aren't using the -jpgtga option then don't even try to use anything other
 	// than 16-bit TARGAs.  Otherwise DevIL should be available to deal with heigher bits.
-	if ( !Cmdline_jpgtga && !Cmdline_tga16 && (header.pixel_depth != 16) )
+	if ( !Cmdline_jpgtga && (header.pixel_depth != 16) )
 		return TARGA_ERROR_READING;
 
-	if ( (Cmdline_jpgtga || Cmdline_tga16) && (header.pixel_depth != 16) && (header.pixel_depth != 24) && (header.pixel_depth != 32) )
+	if ( Cmdline_jpgtga && (header.pixel_depth != 16) && (header.pixel_depth != 24) && (header.pixel_depth != 32) )
 		return TARGA_ERROR_READING;
 
 	if (w) *w = header.width;
@@ -728,7 +711,7 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 
 	// we're only allowing 2 bytes per pixel (16 bit compressed), unless Cmdline_jpgtga is used
 	Assert( (bytes_per_pixel == 2) || (bytes_per_pixel == 3) || (bytes_per_pixel == 4) );
-	if(!Cmdline_jpgtga && !Cmdline_tga16 && (bytes_per_pixel != 2)){
+	if(!Cmdline_jpgtga && (bytes_per_pixel != 2)){
 		cfclose(targa_file);
 		return TARGA_ERROR_READING;
 	}
@@ -745,12 +728,6 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 	} else {
 		yo = 0;
 	}		
-
-	// only accept 16 bit, compressed, only if Cmdline_jpgtga is not used
-	if(!Cmdline_jpgtga && !Cmdline_tga16 && (header.pixel_depth != 16)) {
-		cfclose(targa_file);
-		return TARGA_ERROR_READING;
-	}
 
 	/*
 	char test=char(header.image_descriptor&0xF);
