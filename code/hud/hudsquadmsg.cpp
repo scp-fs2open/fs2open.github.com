@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.30 $
- * $Date: 2006-04-05 17:54:25 $
+ * $Revision: 2.31 $
+ * $Date: 2006-04-05 19:59:11 $
  * $Author: karajorma $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/04/05 17:54:25  karajorma
+ * Support added for the Enable/Disable-BuiltinMessages SEXP
+ *
  * Revision 2.29  2006/03/22 18:12:16  taylor
  * don't really see the point of the Assert() here, just bail if it's an issue
  *
@@ -1762,7 +1765,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	}
 	
 	// this is the _response_
-	if ( send_message && (Ships[shipnum].flags2 & SF2_NO_BUILTIN_MESSAGES))
+	if ( send_message && (!(Ships[shipnum].flags2 & SF2_NO_BUILTIN_MESSAGES)))
 	{
 		message_send_builtin_to_player( message, &Ships[shipnum], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_ANYTIME, 0, 0, player_num, -1 );	
 	}
