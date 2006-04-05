@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-04-05 16:11:44 $
+ * $Author: karajorma $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.17  2005/10/30 07:28:22  Goober5000
  * added Daisy Chain mission flag stuff in FRED
  * --Goober5000
@@ -193,6 +197,7 @@ public:
 	int			m_disallow_support;
 	BOOL		m_no_promotion;
 	BOOL		m_no_builtin_msgs;
+	BOOL		m_no_builtin_command_msgs;
 	BOOL		m_no_traitor;
 	BOOL		m_toggle_trails;
 	BOOL		m_support_repairs_hull;

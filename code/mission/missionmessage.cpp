@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.49 $
- * $Date: 2006-01-27 06:21:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2006-04-05 16:12:41 $
+ * $Author: karajorma $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2006/01/27 06:21:10  Goober5000
+ * replace quick sort with insertion sort in many places
+ * --Goober5000
+ *
  * Revision 2.48  2006/01/26 04:01:58  Goober5000
  * spelling
  *
@@ -2202,6 +2206,15 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 	if (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS) {
 		return;
 	}
+	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail
+	if (!shipp && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND)) 
+	{
+		return;
+	} 
+
+	/* Keeping this under wraps for now but once all the silencing stuff is in the game should assert
+	// if a silenced ships gets this far - Karajorma
+	Assert (!(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES))*/
 
 	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
 	if ( shipp ) {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.168 $
- * $Date: 2006-03-24 07:38:35 $
- * $Author: wmcoolmon $
+ * $Revision: 2.169 $
+ * $Date: 2006-04-05 16:12:41 $
+ * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.168  2006/03/24 07:38:35  wmcoolmon
+ * New subobject animation stuff and Lua functions.
+ *
  * Revision 2.167  2006/03/01 00:46:11  Goober5000
  * more FS1 import tweaks
  *
@@ -1259,6 +1262,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"affected-by-gravity",
 	"toggle-subsystem-scanning",
 	"targetable-as-bomb",
+	"no-builtin-messages",
 };
 
 
@@ -2788,6 +2792,12 @@ int parse_create_object_sub(p_object *objp)
 
 	if(objp->flags & P2_SF2_TARGETABLE_AS_BOMB) {
 		Objects[objnum].flags |= OF_TARGETABLE_AS_BOMB;
+	}
+
+	// Karajorma
+	if(objp->flags2 & P2_SF2_NO_BUILTIN_MESSAGES) 
+	{
+		Ships[shipnum].flags2 |= SF2_NO_BUILTIN_MESSAGES;
 	}
 
 	if ( objp->flags & P_SF_GUARDIAN ) {
@@ -6330,7 +6340,7 @@ void mission_eval_arrivals()
 		// use terran command 25% of time
 		use_terran_cmd = ((frand() - 0.75) > 0.0f)?1:0;
 
-		rship = ship_get_random_player_wing_ship( SHIP_GET_NO_PLAYERS );
+		rship = ship_get_random_player_wing_ship( SHIP_GET_UNSILENCED );
 		if ((rship < 0) || use_terran_cmd)
 			message_send_builtin_to_player(MESSAGE_ARRIVE_ENEMY, NULL, MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 		else if (rship >= 0)
@@ -6456,7 +6466,7 @@ void mission_eval_arrivals()
 			// everything else
 			else
 			{
-				rship = ship_get_random_ship_in_wing(i, SHIP_GET_NO_PLAYERS);
+				rship = ship_get_random_ship_in_wing(i, SHIP_GET_UNSILENCED);
 
 				// see if this is a starting player wing
 				// Goober5000 - we have to test the actual names here, because the voice files are scripted for certain wings

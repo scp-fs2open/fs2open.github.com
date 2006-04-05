@@ -900,6 +900,7 @@
 #define IDC_BUTTON3                     1498
 #define IDC_PASTE_VIEW                  1498
 #define IDC_DISABLE_BUILTIN_MSGS        1498
+#define IDC_DISABLE_BUILTIN_COMMAND     1498
 #define IDC_LOOP_BRIEF_SOUND_BROWSE     1498
 #define IDC_SET_AS_PLAYER_SHIP          1498
 #define IDC_IMPORT_BACKGROUND           1498
