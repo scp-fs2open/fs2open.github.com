@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.86 $
- * $Date: 2006-03-18 10:17:58 $
+ * $Revision: 2.87 $
+ * $Date: 2006-04-05 13:47:01 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2006/03/18 10:17:58  taylor
+ * we already have a variable to show the framerate so lets just use the one
+ *
  * Revision 2.85  2006/02/24 07:36:49  taylor
  * try and make some sense out of that cmdline option mess, maybe it will stay sane for a few days at least :)
  *
@@ -600,7 +603,6 @@ extern int Cmdline_nomotiondebris;
 extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
 extern int Cmdline_nospec;
 extern int Cmdline_pcx32;
-extern int Cmdline_tga16;
 
 // Game Speed related
 extern int Cmdline_batch_3dunlit;
