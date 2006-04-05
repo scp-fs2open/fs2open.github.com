@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.144 $
- * $Date: 2006-04-04 11:38:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.145 $
+ * $Date: 2006-04-05 16:29:53 $
+ * $Author: karajorma $
  *
  * all sorts of cool stuff about ships
  *
@@ -1118,6 +1118,7 @@ typedef struct ship_subsys_info {
 #define SF2_AFFECTED_BY_GRAVITY				(1<<8)		// Goober5000 - ship affected by gravity points
 #define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<9)		// Goober5000 - switch whether subsystems are scanned
 #define SF2_VANISHED				(1<<10)		//WMC - ship has vanished, used mostly for ship_wing_cleanup
+#define SF2_NO_BUILTIN_MESSAGES				(1<<11)		//Karajorma - ship should not send built-in messages
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -1480,7 +1481,6 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_SURFACE_SHIELDS                (1 << 4)    // _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
 #define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
 #define SIF2_DISABLE_WEAP_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
-#define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE			(SIF_DO_COLLISION_CHECK)
@@ -2109,6 +2109,7 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 #define SHIP_GET_ANY_SHIP				0
 #define SHIP_GET_NO_PLAYERS			1
 #define SHIP_GET_ONLY_PLAYERS			2
+#define SHIP_GET_UNSILENCED				3	// Karajorma - Returns no_players that can send builtin messages.
 
 extern int ship_get_random_team_ship( int team, int flags = SHIP_GET_ANY_SHIP, float max_dist=0.0f );
 extern int ship_get_random_player_wing_ship( int flags = SHIP_GET_ANY_SHIP, float max_dist=0.0f, int persona_index = -1, int get_first=0, int multi_team = -1 );
