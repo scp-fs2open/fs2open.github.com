@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.42 $
- * $Date: 2006-04-03 07:48:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.43 $
+ * $Date: 2006-04-05 16:14:04 $
+ * $Author: karajorma $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2006/04/03 07:48:03  wmcoolmon
+ * Miscellaneous minor changes, mostly related to addition of Current_camera variable
+ *
  * Revision 2.41  2006/03/18 22:43:16  Goober5000
  * added set-death-message sexp
  * --Goober5000
@@ -1782,7 +1785,7 @@ int player_process_pending_praise()
 		int ship_index;
 
 		Player->praise_delay_timestamp = 0;
-		ship_index = ship_get_random_player_wing_ship( SHIP_GET_NO_PLAYERS, 1000.0f );
+		ship_index = ship_get_random_player_wing_ship( SHIP_GET_UNSILENCED, 1000.0f );
 		if ( ship_index >= 0 ) {
 			// Only praise if above 50% integrity
 			if ( get_hull_pct(&Objects[Ships[ship_index].objnum]) > 0.5f ) {

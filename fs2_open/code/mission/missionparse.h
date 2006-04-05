@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.81 $
- * $Author: wmcoolmon $
- * $Date: 2006-02-26 23:23:30 $
+ * $Revision: 2.82 $
+ * $Author: karajorma $
+ * $Date: 2006-04-05 16:12:41 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2006/02/26 23:23:30  wmcoolmon
+ * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
+ *
  * Revision 2.80  2006/02/24 07:34:07  taylor
  * fix custom loading screens that I manage to break yet again
  * add a "MaxFPS" registry/ini option to specify a FPS cap, useful if you can't make use of v-sync for some reason
@@ -571,6 +574,7 @@ struct p_dock_instance;
 #define MISSION_FLAG_CURRENTLY_UNUSED_4			(1<<15)
 #define MISSION_FLAG_RED_ALERT					(1<<16)	// a red-alert mission - Goober5000
 #define MISSION_FLAG_SCRAMBLE					(1<<17)	// a scramble mission - Goober5000
+#define MISSION_FLAG_NO_BUILTIN_COMMAND			(1<<18)	// turns off Command without turning off pilots - Karajorma
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
@@ -836,7 +840,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	7
+#define MAX_PARSE_OBJECT_FLAGS_2	8
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -845,6 +849,7 @@ typedef struct p_object {
 #define P2_SF2_AFFECTED_BY_GRAVITY			(1<<4)
 #define P2_SF2_TOGGLE_SUBSYSTEM_SCANNING	(1<<5)
 #define P2_SF2_TARGETABLE_AS_BOMB			(1<<6)
+#define P2_SF2_NO_BUILTIN_MESSAGES			(1<<7)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

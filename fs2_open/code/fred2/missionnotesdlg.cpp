@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-02-27 00:40:34 $
- * $Author: wmcoolmon $
+ * $Revision: 1.4 $
+ * $Date: 2006-04-05 16:11:44 $
+ * $Author: karajorma $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/02/27 00:40:34  wmcoolmon
+ * Consistency in Lua 2D funcs; fix FRED2 loading screen images dialog boxes.
+ *
  * Revision 1.2  2006/01/26 04:01:58  Goober5000
  * spelling
  *
@@ -272,6 +275,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_disallow_support = 0;
 	m_no_promotion = FALSE;
 	m_no_builtin_msgs = FALSE;
+	m_no_builtin_command_msgs = FALSE;
 	m_no_traitor = FALSE;
 	m_toggle_trails = FALSE;
 	m_support_repairs_hull = FALSE;
@@ -310,6 +314,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SUPPORT_ALLOWED, m_disallow_support);
 	DDX_Check(pDX, IDC_NO_PROMOTION, m_no_promotion);
 	DDX_Check(pDX, IDC_DISABLE_BUILTIN_MSGS, m_no_builtin_msgs);
+	DDX_Check(pDX, IDC_DISABLE_BUILTIN_COMMAND, m_no_builtin_command_msgs);
 	DDX_Check(pDX, IDC_NO_TRAITOR, m_no_traitor);
 	DDX_Check(pDX, IDC_SPECS_TOGGLE_TRAILS, m_toggle_trails);
 	DDX_Check(pDX, IDC_SUPPORT_REPAIRS_HULL, m_support_repairs_hull);
@@ -448,6 +453,15 @@ void CMissionNotesDlg::OnOK()
 		The_mission.flags &= ~MISSION_FLAG_NO_BUILTIN_MSGS;
 	}
 
+	// set flags for no builtin command messages
+	if ( m_no_builtin_command_msgs ) 
+	{
+		The_mission.flags |= MISSION_FLAG_NO_BUILTIN_COMMAND;
+	} else 
+	{
+		The_mission.flags &= ~MISSION_FLAG_NO_BUILTIN_COMMAND;
+	}
+
 	// set no traitor flags
 	if ( m_no_traitor ) {
 		The_mission.flags |= MISSION_FLAG_NO_TRAITOR;
@@ -563,6 +577,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_disallow_support = (The_mission.support_ships.max_support_ships == 0) ? 1 : 0;
 	m_no_promotion = (The_mission.flags & MISSION_FLAG_NO_PROMOTION) ? 1 : 0;
 	m_no_builtin_msgs = (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS) ? 1 : 0;
+	m_no_builtin_command_msgs = (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ? 1 : 0;
 	m_no_traitor = (The_mission.flags & MISSION_FLAG_NO_TRAITOR) ? 1 : 0;
 	m_toggle_trails = (The_mission.flags & MISSION_FLAG_TOGGLE_SHIP_TRAILS) ? 1 : 0;
 	m_support_repairs_hull = (The_mission.flags &MISSION_FLAG_SUPPORT_REPAIRS_HULL) ? 1 : 0;

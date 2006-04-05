@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.66 $
- * $Date: 2006-03-25 10:38:44 $
- * $Author: taylor $
+ * $Revision: 1.67 $
+ * $Date: 2006-04-05 16:10:54 $
+ * $Author: karajorma $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.66  2006/03/25 10:38:44  taylor
+ * minor cleanup
+ * address numerous out-of-bounds issues
+ * add some better error checking and Assert()'s around
+ *
  * Revision 1.65  2006/03/20 06:19:03  taylor
  * add ai_profiles flag to get rid of limit on minimum speed a docked ship can move
  * (not going to Int3() here from < 0.1 speed by default, a support ship actually hit it)
@@ -15118,7 +15123,8 @@ void process_friendly_hit_message( int message, object *objp )
 		index = -1;
 	}
 
-	if ( index >= 0){
+	if (( index >= 0 ) && !(Ships[index].flags2 & SF2_NO_BUILTIN_MESSAGES))
+	{
 		message_send_builtin_to_player( message, &Ships[index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_ANYTIME, 0, 0, -1, -1 );
 	} else {
 		message_send_builtin_to_player( message, NULL, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_ANYTIME, 0, 0, -1, -1 );
