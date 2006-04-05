@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.29 $
- * $Date: 2006-03-22 18:12:16 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2006-04-05 17:54:25 $
+ * $Author: karajorma $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2006/03/22 18:12:16  taylor
+ * don't really see the point of the Assert() here, just bail if it's an issue
+ *
  * Revision 2.28  2006/03/18 22:00:43  Goober5000
  * fix comm order initialization bug
  * --Goober5000
@@ -1759,7 +1762,8 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	}
 	
 	// this is the _response_
-	if ( send_message ){
+	if ( send_message && (Ships[shipnum].flags2 & SF2_NO_BUILTIN_MESSAGES))
+	{
 		message_send_builtin_to_player( message, &Ships[shipnum], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_ANYTIME, 0, 0, player_num, -1 );	
 	}
 	
@@ -1966,16 +1970,17 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		int ship_num;
 
 		// get a random ship in the wing to send the message to the player		
-		ship_num = ship_get_random_ship_in_wing( wingnum, SHIP_GET_NO_PLAYERS );
+		ship_num = ship_get_random_ship_in_wing( wingnum, SHIP_GET_UNSILENCED );
 		
 		// in multiplayer, its possible that all ships in a wing are players. so we'll just send from a random ship		
-		if(ship_num == -1){
+		if(ship_num == -1 && (Game_mode & GM_MULTIPLAYER)){
 			ship_num = ship_get_random_ship_in_wing(wingnum);
 		}
 		
 		// only send message if ship is found.  There appear to be cases where all ships
 		// in a wing die in the same frame causing the wing to appear valid in the message
 		// menu, but the get_random_ship* functions won't return dying ships.
+		// Karajorma - No valid ships will be found if all the remaining ships have been silence either. 
 		if ( ship_num != -1 ) {
 			message_send_builtin_to_player( message, &Ships[ship_num], MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_ANYTIME, 0, 0, player_num, -1 );
 			message_sent = 1;
