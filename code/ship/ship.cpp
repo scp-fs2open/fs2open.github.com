@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.326 $
- * $Date: 2006-04-04 11:38:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.327 $
+ * $Date: 2006-04-05 13:45:08 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.326  2006/04/04 11:38:07  wmcoolmon
+ * Maneuvering hruster scaling, gun convergence
+ *
  * Revision 2.325  2006/04/03 08:09:32  wmcoolmon
  * Maneuvering thruster fixes
  *
@@ -2351,8 +2354,8 @@ void parse_engine_wash(bool replace)
 }
 
 char *Warp_types[] = {
-	{"Default"},
-	{"Animation"},
+	"Default",
+	"Animation"
 };
 
 int Num_warp_types = sizeof(Warp_types)/sizeof(char*);
@@ -5814,29 +5817,29 @@ void ship_render(object * obj)
 				vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
 
 				if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags & MT_PITCH_UP)) {
-					render_amount = abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
+					render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
 				} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags & MT_PITCH_DOWN)) {
-					render_amount = abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
+					render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
 				} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags & MT_ROLL_RIGHT)) {
-					render_amount = abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
+					render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
 				} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags & MT_ROLL_LEFT)) {
-					render_amount = abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
+					render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
 				} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags & MT_BANK_RIGHT)) {
-					render_amount = abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
+					render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
 				} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags & MT_BANK_LEFT)) {
-					render_amount = abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
+					render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
 				} else if(des_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
-					render_amount = abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
+					render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
 				} else if(des_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
-					render_amount = abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
+					render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
 				} else if(des_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
-					render_amount = abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
+					render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
 				} else if(des_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
-					render_amount = abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
+					render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
 				} else if(des_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
-					render_amount = abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
+					render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
 				} else if(des_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
-					render_amount = abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
+					render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
 				}
 
 				if(render_amount > 0.0f)
