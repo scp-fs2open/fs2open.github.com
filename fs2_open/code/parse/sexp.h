@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.120 $
- * $Author: wmcoolmon $
- * $Date: 2006-04-04 11:38:07 $
+ * $Revision: 2.121 $
+ * $Author: karajorma $
+ * $Date: 2006-04-05 16:56:57 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.120  2006/04/04 11:38:07  wmcoolmon
+ * Maneuvering hruster scaling, gun convergence
+ *
  * Revision 2.119  2006/03/28 11:41:57  karajorma
  * Added the set-primary-weapon and the set-secondary-weapon SEXPs. Updated the corresponding
  * set-x-ammo SEXPs to also accept a rearm limit.
@@ -1267,7 +1270,8 @@ struct ship_subsys;
 #define OP_SET_PRIMARY_WEAPON				(0x00aa | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SET_SECONDARY_WEAPON				(0x00ab | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SCRIPT_EVAL						(0x00ac | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-
+#define OP_DISABLE_BUILTIN_MESSAGES			(0x00ad | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_ENABLE_BUILTIN_MESSAGES			(0x00ae | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 /* made obsolete by Goober5000

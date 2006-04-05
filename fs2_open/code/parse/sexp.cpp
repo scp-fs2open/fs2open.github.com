@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.253 $
- * $Date: 2006-04-04 11:38:07 $
- * $Author: wmcoolmon $
+ * $Revision: 2.254 $
+ * $Date: 2006-04-05 16:56:57 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.253  2006/04/04 11:38:07  wmcoolmon
+ * Maneuvering hruster scaling, gun convergence
+ *
  * Revision 2.252  2006/04/03 09:05:37  wmcoolmon
  * show-subtitle's got its groove back
  *
@@ -1524,6 +1527,9 @@ sexp_oper Operators[] = {
 	{ "validate-goal",				OP_VALIDATE_GOAL,			1,	INT_MAX,},
 	{ "scramble-messages",			OP_SCRAMBLE_MESSAGES,		0,	0,},
 	{ "unscramble-messages",		OP_UNSCRAMBLE_MESSAGES,		0,	0,},
+	{ "disable-builtin-messages",	OP_DISABLE_BUILTIN_MESSAGES,	0,	INT_MAX,},	// Karajorma
+	{ "enble-builtin-messages",		OP_ENABLE_BUILTIN_MESSAGES,		0,	INT_MAX,},	// Karajorma
+
 
 	{ "add-goal",					OP_ADD_GOAL,					2, 2, },
 	{ "remove-goal",				OP_REMOVE_GOAL,					2, 2, },			// Goober5000
@@ -9934,6 +9940,67 @@ void sexp_good_secondary_time(int n)
 	ai_good_secondary_time( team, weapon_index, num_weapons, ship_name );
 }
 
+// Karajorma - Turns the built in messages for pilots and command on or off
+void sexp_toggle_builtin_messages (int node, bool enable_messages)
+{
+	char *ship_name;
+
+	// If no arguments were supplied then turn off all messages then bail
+	if (node < 0)
+	{
+		if (enable_messages) 
+		{
+			The_mission.flags &= ~MISSION_FLAG_NO_BUILTIN_MSGS;	
+			return;
+		}
+		else 
+		{
+			The_mission.flags |= MISSION_FLAG_NO_BUILTIN_MSGS;
+			return;
+		}
+	}
+
+	// iterate through all the nodes supplied
+	while (node != -1)
+	{
+		
+		// check that this isn't a request to silence command. 
+		ship_name = CTEXT(node);
+
+		// if (ship_name[0] == '#' )
+		if (!stricmp(ship_name, "#Command")) 
+		{
+			// Either disable or enable messages from command
+			if (enable_messages) 
+			{
+				The_mission.flags &= ~MISSION_FLAG_NO_BUILTIN_COMMAND;	
+			}
+			else 
+			{
+				The_mission.flags |= MISSION_FLAG_NO_BUILTIN_COMMAND;
+			}
+		}
+		else if (!stricmp(ship_name, "<Any Wingman>"))
+		{
+			/*It should be possible to handle Any Wingman but for now we'll ignore it*/
+			continue;
+		}
+		// If it isn't command then assume that we're dealing with a ship 
+		else 
+		{
+			if (enable_messages)
+			{
+				sexp_deal_with_ship_flag(node, 0, 0, 0, SF2_NO_BUILTIN_MESSAGES, 0, P2_SF2_NO_BUILTIN_MESSAGES, 0);
+			}
+			else
+			{
+				sexp_deal_with_ship_flag(node, 0, 0, 0, SF2_NO_BUILTIN_MESSAGES, 0, P2_SF2_NO_BUILTIN_MESSAGES, 1);
+			}
+		}
+
+		node = CDR(node);
+	}
+}
 
 // function to deal with getting status of goals for previous missions (in the current campaign).
 // the status parameter is used to tell this function if we are looking for a goal_satisfied, goal_failed,
@@ -14883,6 +14950,13 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			// Karajorma
+			case OP_ENABLE_BUILTIN_MESSAGES:
+			case OP_DISABLE_BUILTIN_MESSAGES:
+				sexp_toggle_builtin_messages (node, op_num == OP_ENABLE_BUILTIN_MESSAGES);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SEND_MESSAGE_LIST:
 				sexp_send_message_list(node);
 				sexp_val = SEXP_TRUE;
@@ -16138,6 +16212,9 @@ int query_operator_return_type(int op)
 		case OP_SET_PRIMARY_WEAPON:
 		case OP_SET_SECONDARY_WEAPON:
 		case OP_SCRIPT_EVAL:
+		case OP_ENABLE_BUILTIN_MESSAGES:
+		case OP_DISABLE_BUILTIN_MESSAGES:
+
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -16748,6 +16825,11 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_MESSAGE;
 			else
 				return OPF_POSITIVE;
+
+		// Karajorma
+		case OP_ENABLE_BUILTIN_MESSAGES:
+		case OP_DISABLE_BUILTIN_MESSAGES:
+				return OPF_WHO_FROM;
 
 		case OP_SELF_DESTRUCT:
 			return OPF_SHIP;
@@ -18330,6 +18412,8 @@ int get_subcategory(int sexp_id)
 		case OP_VALIDATE_GOAL:
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
+		case OP_ENABLE_BUILTIN_MESSAGES:
+		case OP_DISABLE_BUILTIN_MESSAGES:
 			return CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS;
 			
 		case OP_ADD_GOAL:
@@ -19188,6 +19272,21 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of who the message is from.\r\n"
 		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
 		"\t3:\tName of message (from message editor)." },
+
+	// Karajorma	
+	{ OP_ENABLE_BUILTIN_MESSAGES, "Enable builtin messages (Action operator)\r\n"
+		"\tTurns the built in messages sent by command or pilots on\r\n"
+		"Takes 0 or more arguments...\r\n"
+		"If no arguments are supplied any ships not given individual silence orders will be able\r\n"
+		"to send buiilt in messages. Command will also be unsilenced\r\n"
+		"\tAll:\tName of ship to allow to talk." },
+		
+	// Karajorma
+	{ OP_DISABLE_BUILTIN_MESSAGES, "Enable builtin messages (Action operator)\r\n"
+		"\tTurns the built in messages sent by command or pilots off\r\n"
+		"Takes 0 or more arguments....\r\n"
+		"If no arguments are supplied all built in messages are disabled\r\n"
+		"\tAll:\tName of ship to allow to talk." },
 
 	{ OP_SELF_DESTRUCT, "Self destruct (Action operator)\r\n"
 		"\tCauses the specified ship(s) to self destruct.\r\n\r\n"
