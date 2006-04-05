@@ -10,16 +10,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.327 $
- * $Date: 2006-04-05 13:45:08 $
- * $Author: taylor $
+ * $Revision: 2.328 $
+ * $Date: 2006-04-05 16:29:53 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.326  2006/04/04 11:38:07  wmcoolmon
- * Maneuvering hruster scaling, gun convergence
- *
  * Revision 2.325  2006/04/03 08:09:32  wmcoolmon
  * Maneuvering thruster fixes
  *
@@ -2354,8 +2351,8 @@ void parse_engine_wash(bool replace)
 }
 
 char *Warp_types[] = {
-	"Default",
-	"Animation"
+	{"Default"},
+	{"Animation"},
 };
 
 int Num_warp_types = sizeof(Warp_types)/sizeof(char*);
@@ -3429,8 +3426,6 @@ strcpy(parse_error_text, temp_error);
 				sip->flags2 |= SIF2_GENERATE_HUD_ICON;
 			else if( !stricmp( NOX("no weapon damage scaling"), ship_strings[i]))
 				sip->flags2 |= SIF2_DISABLE_WEAP_DAMAGE_SCALING;
-			else if( !stricmp( NOX("gun convergence"), ship_strings[i]))
-				sip->flags2 |= SIF2_GUN_CONVERGENCE;
 			else if (ship_type_index < 0)
 				Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 		}
@@ -5646,9 +5641,9 @@ man_thruster_renderer *man_thruster_get_slot(int bmap_frame)
 		if(mtr->bmap_id == bmap_frame)
 			return mtr;
 	}
-	for(uint mi = 0; mi < Man_thrusters.size(); mi++)
+	for(uint mj = 0; mj < Man_thrusters.size(); mj++)
 	{
-		mtr = &Man_thrusters[mi];
+		mtr = &Man_thrusters[mj];
 		if(mtr->bmap_id == -1)
 		{
 			mtr->bmap_id = bmap_frame;
@@ -5801,7 +5796,7 @@ void ship_render(object * obj)
 			//	ship_get_subsystem_strength( shipp, SUBSYSTEM_ENGINE)>ENGINE_MIN_STR
 			//WMC - I suppose this is a bit hackish.
 			physics_info *pi = &Objects[shipp->objnum].phys_info;
-			float render_amount;
+			bool render_it;
 			fx_batcher.allocate(si->num_maneuvering);	//Act as if all thrusters are going.
 
 			
@@ -5810,39 +5805,39 @@ void ship_render(object * obj)
 			{
 				man_thruster *mtp = &si->maneuvering[i];
 
-				render_amount = 0.0f;
+				render_it = false;
 
 				//WMC - get us a steady value
 				vec3d des_vel;
 				vm_vec_rotate(&des_vel, &pi->desired_vel, &obj->orient);
 
 				if(pi->desired_rotvel.xyz.x < 0 && (mtp->use_flags & MT_PITCH_UP)) {
-					render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
+					render_it = true;
 				} else if(pi->desired_rotvel.xyz.x > 0 && (mtp->use_flags & MT_PITCH_DOWN)) {
-					render_amount = fl_abs(pi->desired_rotvel.xyz.x) / pi->max_rotvel.xyz.x;
+					render_it = true;
 				} else if(pi->desired_rotvel.xyz.y < 0 && (mtp->use_flags & MT_ROLL_RIGHT)) {
-					render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
+					render_it = true;
 				} else if(pi->desired_rotvel.xyz.y > 0 && (mtp->use_flags & MT_ROLL_LEFT)) {
-					render_amount = fl_abs(pi->desired_rotvel.xyz.y) / pi->max_rotvel.xyz.y;
+					render_it = true;
 				} else if(pi->desired_rotvel.xyz.z < 0 && (mtp->use_flags & MT_BANK_RIGHT)) {
-					render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
+					render_it = true;
 				} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags & MT_BANK_LEFT)) {
-					render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
+					render_it = true;
 				} else if(des_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
-					render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
+					render_it = true;
 				} else if(des_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
-					render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
+					render_it = true;
 				} else if(des_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
-					render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
+					render_it = true;
 				} else if(des_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
-					render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
+					render_it = true;
 				} else if(des_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
-					render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
+					render_it = true;
 				} else if(des_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
-					render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
+					render_it = true;
 				}
 
-				if(render_amount > 0.0f)
+				if(render_it)
 				{
 					//Handle sounds and stuff
 					if(shipp->thrusters_start[i] <= 0)
@@ -5882,7 +5877,7 @@ void ship_render(object * obj)
 						vm_vec_scale_add2(&start, &obj->pos, 1.0f);
 
 						//End
-						vm_vec_scale_add(&tmpend, &mtp->pos, &mtp->norm, len * render_amount);
+						vm_vec_scale_add(&tmpend, &mtp->pos, &mtp->norm, len);
 						vm_vec_unrotate(&end, &tmpend, &obj->orient);
 						vm_vec_scale_add2(&end, &obj->pos, 1.0f);
 
@@ -9723,24 +9718,13 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					for(int s = 0; s<sub_shots; s++){
 						pnt = po->gun_banks[bank_to_fire].pnt[pt];
 						if(weapon_model && weapon_model->n_guns)vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
-
+	
 						vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
 						vm_vec_add(&firing_pos, &gun_point, &obj->pos);
-
-						matrix firing_orient;
-						if(!(sip->flags2 & SIF2_GUN_CONVERGENCE))
-						{
-							firing_orient = obj->orient;
-						}
-						else
-						{
-							vec3d firing_vec;
-							vm_vec_unrotate(&firing_vec, &po->gun_banks[bank_to_fire].norm[pt], &obj->orient);
-							vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-						}
+				
 						// create the weapon -- the network signature for multiplayer is created inside
 						// of weapon_create
-						weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id );
+						weapon_objnum = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj), new_group_id );
 	
 						weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
 	
@@ -10396,21 +10380,9 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				Assert( Weapon_info[weapon].subtype == WP_MISSILE );
 			}
 
-			matrix firing_orient;
-			if(!(sip->flags2 & SIF2_GUN_CONVERGENCE))
-			{
-				firing_orient = obj->orient;
-			}
-			else
-			{
-				vec3d firing_vec;
-				vm_vec_unrotate(&firing_vec, &po->missile_banks[bank].norm[pnt_index-1], &obj->orient);
-				vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-			}
-
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
+			weapon_num = weapon_create( &firing_pos, &obj->orient, weapon, OBJ_INDEX(obj), -1, aip->current_target_is_locked);
 			weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);
 
 
@@ -12607,7 +12579,13 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 			}
 
 			// see if ship meets our criterea
-			if ( (flags == SHIP_GET_NO_PLAYERS) && (Objects[Ships[ship_index].objnum].flags & OF_PLAYER_SHIP) ){
+			if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags & OF_PLAYER_SHIP) ){
+				continue;
+			}
+			
+			if ( (flags == SHIP_GET_UNSILENCED) && (Ships[ship_index].flags2 & SF2_NO_BUILTIN_MESSAGES) )
+			{
+
 				continue;
 			}
 
@@ -12673,8 +12651,13 @@ int ship_get_random_ship_in_wing(int wingnum, int flags, float max_dist, int get
 		}
 
 		// see if ship meets our criterea
-		if ( (flags == SHIP_GET_NO_PLAYERS) && (Objects[Ships[ship_index].objnum].flags & OF_PLAYER_SHIP) )
+		if ( (flags == SHIP_GET_NO_PLAYERS || flags == SHIP_GET_UNSILENCED) && (Objects[Ships[ship_index].objnum].flags & OF_PLAYER_SHIP) )
 			continue;
+
+		if ( (flags == SHIP_GET_UNSILENCED) && (Ships[ship_index].flags2 & SF2_NO_BUILTIN_MESSAGES) )
+		{
+			continue;
+		}
 
 		// see if ship is within max_dist units
 		if ( max_dist > 0 ) {
@@ -13505,9 +13488,9 @@ warn_player_done:
 
 		// multiplayer tvt - this is client side.
 		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
-			ship_index = ship_get_random_player_wing_ship( SHIP_GET_NO_PLAYERS, 0.0f, -1, 0, Net_player->p_info.team );
+			ship_index = ship_get_random_player_wing_ship( SHIP_GET_UNSILENCED, 0.0f, -1, 0, Net_player->p_info.team );
 		} else {
-			ship_index = ship_get_random_player_wing_ship( SHIP_GET_NO_PLAYERS );
+			ship_index = ship_get_random_player_wing_ship( SHIP_GET_UNSILENCED );
 		}
 
 		if ( ship_index >= 0 ) {
@@ -13660,14 +13643,17 @@ void ship_maybe_ask_for_help(ship *sp)
 play_ask_help:
 
 	Assert(Ship_info[sp->ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER) );	// get Alan
-	message_send_builtin_to_player(MESSAGE_HELP, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
-	Player->allow_ask_help_timestamp = timestamp(PLAYER_ASK_HELP_INTERVAL);
+	if (!(sp->flags2 & SF2_NO_BUILTIN_MESSAGES)) // Karajorma - Only unsilenced ships should ask for help
+	{
+		message_send_builtin_to_player(MESSAGE_HELP, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
+		Player->allow_ask_help_timestamp = timestamp(PLAYER_ASK_HELP_INTERVAL);
 
-	// prevent overlap with death message
-	if (timestamp_until(Player->allow_scream_timestamp) < 15000)
-		Player->allow_scream_timestamp = timestamp(15000);
+		// prevent overlap with death message
+		if (timestamp_until(Player->allow_scream_timestamp) < 15000)
+			Player->allow_scream_timestamp = timestamp(15000);
 
-	Player->ask_help_count++;
+		Player->ask_help_count++;
+	}
 }
 
 // The player has just entered death roll, maybe have wingman mourn the loss of the player
@@ -13681,7 +13667,7 @@ void ship_maybe_lament()
 
 	if (rand() % 4 == 0)
 	{
-		ship_index = ship_get_random_player_wing_ship(SHIP_GET_NO_PLAYERS);
+		ship_index = ship_get_random_player_wing_ship(SHIP_GET_UNSILENCED);
 		if (ship_index >= 0)
 			message_send_builtin_to_player(MESSAGE_PLAYED_DIED, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
 	}
@@ -13703,6 +13689,12 @@ void ship_scream(ship *sp)
 	// multiplayer tvt
 	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
 		multi_team_filter = sp->team;
+
+	// Bail if the ship is silenced
+	if (sp->flags2 & SF2_NO_BUILTIN_MESSAGES)
+	{
+		return;
+	}
 
 	message_send_builtin_to_player(MESSAGE_WINGMAN_SCREAM, sp, MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, multi_team_filter);
 	Player->allow_scream_timestamp = timestamp(PLAYER_SCREAM_INTERVAL);
@@ -13765,6 +13757,12 @@ void ship_maybe_tell_about_rearm(ship *sp)
 
 	if (Player_ship->team == Iff_traitor)
 		return;
+
+	// Silent ships should remain just that
+	if (sp->flags2 & SF2_NO_BUILTIN_MESSAGES)
+	{
+		return;
+	}
 
 	// AL 1-4-98:	If ship integrity is low, tell player you want to get repaired.  Otherwise, tell
 	// the player you want to get re-armed.
