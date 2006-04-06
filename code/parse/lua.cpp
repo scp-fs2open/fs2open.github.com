@@ -2008,7 +2008,7 @@ LUA_VAR(LifeLeft, l_Weapon, "number", "Weapon life left (in seconds)")
 	return lua_set_args(L, "f", wp->lifeleft);
 }
 
-LUA_VAR(Team, l_Weapon, "weaponclass", "Weapon's team")
+LUA_VAR(Team, l_Weapon, "team", "Weapon's team")
 {
 	object_h *oh=NULL;
 	int nt=-1;
@@ -2991,6 +2991,25 @@ LUA_VAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriviati
 		default:
 			return lua_set_args(L, "o", l_Object.Set(object_h(&Objects[aip->target_objnum])));
 	}
+}
+
+LUA_VAR(Team, l_Ship, "team", "Ship's team")
+{
+	object_h *oh=NULL;
+	int nt=-1;
+	if(!lua_get_args(L, "o|o", l_Ship.GetPtr(&oh), l_Team.Get(&nt)))
+		return LUA_RETURN_NIL;
+
+	if(!oh->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship *shipp = &Ships[oh->objp->instance];
+
+	if(LUA_SETTING_VAR && nt > -1) {
+		shipp->team = nt;
+	}
+
+	return lua_set_args(L, "o", l_Team.Set(shipp->team));
 }
 
 LUA_VAR(Textures, l_Ship, "shiptextures", "Gets ship textures")
