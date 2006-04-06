@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.234 $
- * $Date: 2006-04-03 07:48:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.235 $
+ * $Date: 2006-04-06 23:25:17 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.234  2006/04/03 07:48:03  wmcoolmon
+ * Miscellaneous minor changes, mostly related to addition of Current_camera variable
+ *
  * Revision 2.233  2006/03/26 08:23:06  taylor
  * split pause_*() and multi_pause_*() functions into individual single and multi versions (why it was hacked up like that I'll never know)
  * fix screen save in multi pause mode
@@ -1546,6 +1549,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionhotkey.h"
+#include "mission/missionlist.h"
 #include "mission/missionload.h"
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
@@ -1818,7 +1822,7 @@ int Player_died_popup_wait = -1;
 int Player_multi_died_check = -1;
 
 int Multi_ping_timestamp = -1;
-
+/*
 // builtin mission list stuff
 #ifdef FS2_DEMO
 	int Game_builtin_mission_count = 6;
@@ -2000,7 +2004,7 @@ int Multi_ping_timestamp = -1;
 		{ "templar-04.fs2",				(FSB_FROM_VOLITION | FSB_MULTI | FSB_CAMPAIGN),			""						},				
 	};
 #endif
-
+*/
 
 // Internal function prototypes
 void game_maybe_draw_mouse(float frametime);
@@ -2017,7 +2021,8 @@ void game_start_subspace_ambient_sound();
 void game_stop_subspace_ambient_sound();
 void verify_ships_tbl();
 void verify_weapons_tbl();
-void display_title_screen();
+void game_title_screen_display();
+void game_title_screen_close();
 
 // loading background filenames
 static char *Game_loading_bground_fname[GR_NUM_RESOLUTIONS] = {
@@ -2046,6 +2051,10 @@ static char *Game_logo_screen_fname[GR_NUM_RESOLUTIONS] = {
 	"PreLoadLogo",
 	"2_PreLoadLogo"
 };
+
+// for title screens
+static int Game_title_bitmap = -1;
+static int Game_title_logo = -1;
 
 // cdrom stuff
 char Game_CDROM_dir[MAX_PATH_LEN];
@@ -2078,7 +2087,7 @@ int Game_sound_env_update_timestamp;
 
 
 // WARPIN CRAP END --------------------------------------------------------------------------------------------
-
+/*
 fs_builtin_mission *game_find_builtin_mission(char *filename)
 {
 	int idx;
@@ -2093,7 +2102,7 @@ fs_builtin_mission *game_find_builtin_mission(char *filename)
 	// didn't find it
 	return NULL;
 }
-
+*/
 int game_get_default_skill_level()
 {
 	return DEFAULT_SKILL_LEVEL;
@@ -3075,6 +3084,7 @@ int game_start_mission()
 			moveup = GET_NEXT(moveup);
 		}
 */
+
 	bm_print_bitmaps();
 
 	return 1;
@@ -3657,7 +3667,7 @@ void game_init()
 		// #Kazan# - moved this down - WATCH THESE calls - anything that shares code between standalone and normal
 		// cannot make gr_* calls in standalone mode because all gr_ calls are NULL pointers
 		gr_set_gamma(Freespace_gamma);
-		display_title_screen();
+		game_title_screen_display();
 	}
 //#endif
 	
@@ -3717,6 +3727,8 @@ void game_init()
 	species_init();					// Load up the species defs - this needs to be done FIRST -- Kazan
 
 	brief_parse_icon_tbl();
+
+	mission_list_init();			// init the list of builtin missions
 
 	// hud shield icon stuff
 	//hud_shield_game_init(); No longer needed; see ships.tbl -C
@@ -3801,6 +3813,8 @@ void game_init()
 	Viewer_mode = 0;
 //	Game_music_paused = 0;
 	Game_paused = 0;
+
+	game_title_screen_close();
 
 #ifdef _WIN32
 	timeBeginPeriod(1);	
@@ -10941,10 +10955,8 @@ int game_hacked_data()
 //char Splash_screens[MAX_SPLASHSCREENS][MAX_FILENAME_LEN];
 
 
-void display_title_screen()
+void game_title_screen_display()
 {
-	int title_bitmap = -1;
-	int title_logo =-1;
 /*	_finddata_t find;
 	long		find_handle;
 	char current_dir[256];
@@ -11004,27 +11016,27 @@ void display_title_screen()
 
 	if(!Script_splashhook.IsOverride())
 	{
-		title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
-		title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
+		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
+		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
 
-		if(title_bitmap != -1)
+		if (Game_title_bitmap != -1)
 		{
 			// set
-			gr_set_bitmap(title_bitmap);
+			gr_set_bitmap(Game_title_bitmap);
 
-			//Get bitmap's width and height
+			// get bitmap's width and height
 			int width, height;
-			bm_get_info(title_bitmap, &width, &height);
+			bm_get_info(Game_title_bitmap, &width, &height);
 
-			//Draw it in the center of the screen
+			// draw it in the center of the screen
 			gr_bitmap((gr_screen.max_w_unscaled - width)/2, (gr_screen.max_h_unscaled - height)/2);
 		}
 
-		if(title_logo != -1)
+		if (Game_title_logo != -1)
 		{
-			gr_set_bitmap(title_logo);
+			gr_set_bitmap(Game_title_logo);
 
-			gr_bitmap(0,0);
+			gr_bitmap(0, 0);
 
 		}
 	}
@@ -11041,16 +11053,18 @@ void display_title_screen()
 
 	// flip
 	gr_flip();
+}
 
-//	bm_set_render_target(-1);//big_ole_honkin_hack_test
-	if(title_bitmap != -1)
-	{
-		bm_release(title_bitmap);
+void game_title_screen_close()
+{
+	if (Game_title_bitmap != -1) {
+		bm_release(Game_title_bitmap);
+		Game_title_bitmap = -1;
 	}
 
-	if(title_logo != -1)
-	{
-		bm_release(title_logo);
+	if (Game_title_logo != -1) {
+		bm_release(Game_title_logo);
+		Game_title_bitmap = -1;
 	}
 }
 
