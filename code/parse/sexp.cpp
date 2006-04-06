@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.254 $
- * $Date: 2006-04-05 16:56:57 $
- * $Author: karajorma $
+ * $Revision: 2.255 $
+ * $Date: 2006-04-06 18:53:28 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.254  2006/04/05 16:56:57  karajorma
+ * Changes to support the new Enable/Disable-Builtin-Messages SEXP
+ *
  * Revision 2.253  2006/04/04 11:38:07  wmcoolmon
  * Maneuvering hruster scaling, gun convergence
  *
@@ -15208,6 +15211,7 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_KEY_RESET_MULTIPLE:
 				sexp_key_reset(node);
+				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_MISSILE_LOCKED:
