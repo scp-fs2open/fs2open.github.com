@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.15 $
- * $Date: 2006-03-22 18:14:52 $
+ * $Revision: 1.16 $
+ * $Date: 2006-04-06 23:23:56 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2006/03/22 18:14:52  taylor
+ * if -mipmap is used with -img2dds to then have compressed image also contain mipmaps
+ * use nicest hints for texture compression, should improve quality a little
+ * when reporting compressed sizes to debug log make ani size be total, not per frame
+ *
  * Revision 1.14  2006/03/12 07:34:39  taylor
  * when I forget that I'm an idiot little things like this slip through (me == moron)
  *
@@ -99,8 +104,7 @@
 
 static inline int is_power_of_two(int w, int h)
 {
-	return ( ((w == 32) || (w == 64) || (w == 128) || (w == 256) || (w == 512) || (w == 1024) || (w == 2048) || (w == 4096)) &&
-			((h == 32) || (h == 64) || (h == 128) || (h == 256) || (h == 512) || (h == 1024) || (h == 2048) || (h == 4096)) );
+	return ( (w && !(w & (w-1))) && (h && !(h & (h-1))) );
 }
 
 static int get_num_mipmap_levels(int w, int h)
@@ -273,7 +277,7 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 	num_mipmaps = get_num_mipmap_levels( bm->w, bm->h );
 	Assert( num_mipmaps > 0 );
 
-	nprintf(("BMPMAN", "Attempting to compress '%s' with %d frames, original size %.3fM ... ", bm_bitmaps[first_frame].filename, ((float)(size*nframes)/1024.0f)/1024.0f));
+	nprintf(("BMPMAN", "Attempting to compress '%s' with %d frames, original size %.3fM ... ", bm_bitmaps[first_frame].filename, nframes, ((float)(size*nframes)/1024.0f)/1024.0f));
 
 	for ( i=0; i<nframes; i++ )	{
 		be = &bm_bitmaps[first_frame+i];
