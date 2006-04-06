@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.255 $
- * $Date: 2006-04-06 18:53:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.256 $
+ * $Date: 2006-04-06 20:44:14 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.255  2006/04/06 18:53:28  Goober5000
+ * small fix
+ *
  * Revision 2.254  2006/04/05 16:56:57  karajorma
  * Changes to support the new Enable/Disable-Builtin-Messages SEXP
  *
@@ -1531,7 +1534,7 @@ sexp_oper Operators[] = {
 	{ "scramble-messages",			OP_SCRAMBLE_MESSAGES,		0,	0,},
 	{ "unscramble-messages",		OP_UNSCRAMBLE_MESSAGES,		0,	0,},
 	{ "disable-builtin-messages",	OP_DISABLE_BUILTIN_MESSAGES,	0,	INT_MAX,},	// Karajorma
-	{ "enble-builtin-messages",		OP_ENABLE_BUILTIN_MESSAGES,		0,	INT_MAX,},	// Karajorma
+	{ "enable-builtin-messages",	OP_ENABLE_BUILTIN_MESSAGES,		0,	INT_MAX,},	// Karajorma
 
 
 	{ "add-goal",					OP_ADD_GOAL,					2, 2, },
