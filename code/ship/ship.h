@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.146 $
- * $Date: 2006-04-05 16:46:40 $
+ * $Revision: 2.147 $
+ * $Date: 2006-04-07 20:17:33 $
  * $Author: karajorma $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.146  2006/04/05 16:46:40  karajorma
+ * Changes to support the new Enable/Disable-Builtin-Messages SEXP
+ *
  * Revision 2.144  2006/04/04 11:38:07  wmcoolmon
  * Maneuvering hruster scaling, gun convergence
  *
@@ -1120,8 +1123,10 @@ typedef struct ship_subsys_info {
 #define SF2_NO_BANK							(1<<7)		// Goober5000 - ship doesn't bank when turning
 #define SF2_AFFECTED_BY_GRAVITY				(1<<8)		// Goober5000 - ship affected by gravity points
 #define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<9)		// Goober5000 - switch whether subsystems are scanned
-#define SF2_VANISHED				(1<<10)		//WMC - ship has vanished, used mostly for ship_wing_cleanup
-#define SF2_NO_BUILTIN_MESSAGES				(1<<11)		//Karajorma - ship should not send built-in messages
+#define SF2_VANISHED						(1<<10)		//WMC - ship has vanished, used mostly for ship_wing_cleanup
+#define SF2_NO_BUILTIN_MESSAGES				(1<<11)		// Karajorma - ship should not send built-in messages
+#define SF2_PRIMARIES_LOCKED				(1<<12)		// Karajorma - This ship can't fire primary weapons
+#define SF2_SECONDARIES_LOCKED				(1<<13)		// Karajorma - This ship can't fire secondary weapons
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;

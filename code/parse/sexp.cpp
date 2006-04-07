@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.256 $
- * $Date: 2006-04-06 20:44:14 $
+ * $Revision: 2.257 $
+ * $Date: 2006-04-07 20:16:30 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.256  2006/04/06 20:44:14  karajorma
+ * Damn spelling mistakes. And in the only place where it would be visible too!
+ *
  * Revision 2.255  2006/04/06 18:53:28  Goober5000
  * small fix
  *
@@ -1577,6 +1580,10 @@ sexp_oper Operators[] = {
 	{ "set-secondary-ammo",			OP_SET_SECONDARY_AMMO,			3, 4 },		// Karajorma
 	{ "set-primary-weapon",			OP_SET_PRIMARY_WEAPON,			3, 5 },		// Karajorma
 	{ "set-secondary-weapon",		OP_SET_SECONDARY_WEAPON,		3, 5 },		// Karajorma
+	{ "lock-primary-weapon",		OP_LOCK_PRIMARY_WEAPON,			1, INT_MAX },		// Karajorma
+	{ "unlock-primary-weapon",		OP_UNLOCK_PRIMARY_WEAPON,		1, INT_MAX },		// Karajorma
+	{ "lock-secondary-weapon",		OP_LOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
+	{ "unlock-secondary-weapon",	OP_UNLOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
 
 	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
 	{ "num-ships-in-wing",			OP_NUM_SHIPS_IN_WING,			1,	INT_MAX},	// Karajorma
@@ -11836,6 +11843,66 @@ void sexp_set_weapon (int node, bool primary)
 	}
 }
 
+void sexp_deal_with_weapons_lock (int node, bool primary, bool lock)
+{
+	ship *shipp;
+	int ship_index;
+
+	Assert (node != -1);
+
+	do 
+	{
+		ship_index = ship_name_lookup(CTEXT(node));
+
+		// Check that a ship has been supplied
+		ship_index = ship_name_lookup(CTEXT(node));
+		if (ship_index < 0) 
+		{
+			node = CDR (node);
+			continue ;
+		}
+
+		// Check that it's valid
+		if((Ships[ship_index].objnum < 0) || (Ships[ship_index].objnum >= MAX_OBJECTS))
+		{
+			node = CDR (node);
+			continue ;
+		}
+		shipp = &Ships[ship_index];
+
+		// primary weapon? 
+		if (primary)
+		{
+			// Set the flag
+			if (lock)
+			{
+				 shipp->flags2 |= SF2_PRIMARIES_LOCKED;
+			}
+			else 
+			{
+				 shipp->flags2 &= ~SF2_PRIMARIES_LOCKED;
+			}
+		}
+
+		//Secondary weapon
+		else 
+		{
+			// Set the flag
+			if (lock)
+			{
+				 shipp->flags2 |= SF2_SECONDARIES_LOCKED;
+			}
+			else 
+			{
+				 shipp->flags2 &= ~SF2_SECONDARIES_LOCKED;
+			}
+		}
+
+		// Go to the next ship.
+		node = CDR (node);
+	} while (node != -1);
+}
+
 // Goober5000
 void sexp_change_ship_model(int n)
 {
@@ -15557,7 +15624,20 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_set_weapon(node, op_num == OP_SET_PRIMARY_WEAPON);
 				sexp_val = SEXP_TRUE;
 				break;
+				
+			// Karajorma
+			case OP_LOCK_PRIMARY_WEAPON:
+			case OP_UNLOCK_PRIMARY_WEAPON:
+				sexp_deal_with_weapons_lock(node, true, op_num == OP_LOCK_PRIMARY_WEAPON);
+				sexp_val = SEXP_TRUE;
+				break;
 
+
+			case OP_LOCK_SECONDARY_WEAPON:
+			case OP_UNLOCK_SECONDARY_WEAPON:
+				sexp_deal_with_weapons_lock(node, false, op_num == OP_LOCK_SECONDARY_WEAPON);
+				sexp_val = SEXP_TRUE;
+				break;
 
 			case OP_NUM_SHIPS_IN_BATTLE:	// phreak
 				sexp_val=sexp_num_ships_in_battle(node);
@@ -16221,7 +16301,10 @@ int query_operator_return_type(int op)
 		case OP_SCRIPT_EVAL:
 		case OP_ENABLE_BUILTIN_MESSAGES:
 		case OP_DISABLE_BUILTIN_MESSAGES:
-
+		case OP_LOCK_PRIMARY_WEAPON:
+		case OP_UNLOCK_PRIMARY_WEAPON:
+		case OP_LOCK_SECONDARY_WEAPON:
+		case OP_UNLOCK_SECONDARY_WEAPON:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -17251,7 +17334,8 @@ int query_operator_argument_type(int op, int argnum)
 			} else {
 				return OPF_NUMBER;
 			}
-			
+		
+		// Karajorma
 		case OP_SET_PRIMARY_WEAPON:
 		case OP_SET_SECONDARY_WEAPON:
 			if(argnum == 0)
@@ -17267,6 +17351,12 @@ int query_operator_argument_type(int op, int argnum)
 			{
 				return OPF_NUMBER;
 			}
+
+		// Karajorma	
+		case OP_LOCK_PRIMARY_WEAPON:
+		case OP_UNLOCK_PRIMARY_WEAPON:
+		case OP_LOCK_SECONDARY_WEAPON:
+		case OP_UNLOCK_SECONDARY_WEAPON:
 
 		case OP_IS_SECONDARY_SELECTED:
 		case OP_IS_PRIMARY_SELECTED:
@@ -18460,6 +18550,10 @@ int get_subcategory(int sexp_id)
 		case OP_SET_SECONDARY_AMMO:		// Karajorma
 		case OP_SET_PRIMARY_WEAPON:	// Karajorma
 		case OP_SET_SECONDARY_WEAPON:	// Karajorma
+		case OP_LOCK_PRIMARY_WEAPON:
+		case OP_UNLOCK_PRIMARY_WEAPON:
+		case OP_LOCK_SECONDARY_WEAPON:
+		case OP_UNLOCK_SECONDARY_WEAPON:
 
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
@@ -20610,6 +20704,34 @@ sexp_help_struct Sexp_help[] = {
 		"\t3: Name of the secondary weapon \r\n"
 		"\t4: Number to set this bank to (If this is larger than the maximimum, bank will be set to maximum)\r\n"
 		"\t5: Rearm Limit. Support ships will only supply this number of weapons (If this is larger than the maximimum, bank will be set to maximum)"
+	},
+	
+	// Karajorma
+	{ OP_LOCK_PRIMARY_WEAPON, "lock-primary-weapon\r\n"
+		"\tLocks the primary banks for the specified ship(s)\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\t(all): Name(s) of ship(s) to lock"
+	},
+
+	// Karajorma
+	{ OP_UNLOCK_PRIMARY_WEAPON, "unlock-primary-weapon\r\n"
+		"\tUnlocks the primary banks for the specified ship(s)\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\t(all): Name(s) of ship(s) to lock"
+	},
+	
+	// Karajorma
+	{ OP_LOCK_SECONDARY_WEAPON, "lock-secondary-weapon\r\n"
+		"\tLocks the secondary banks for the specified ship(s)\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\t(all): Name(s) of ship(s) to lock"
+	},
+
+	// Karajorma
+	{ OP_UNLOCK_SECONDARY_WEAPON, "unlock-secondary-weapon\r\n"
+		"\tUnlocks the secondary banks for the specified ship(s)\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\t(all): Name(s) of ship(s) to lock"
 	},
 
 

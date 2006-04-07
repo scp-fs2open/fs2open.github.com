@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.329 $
- * $Date: 2006-04-05 16:46:40 $
+ * $Revision: 2.330 $
+ * $Date: 2006-04-07 20:17:33 $
  * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.329  2006/04/05 16:46:40  karajorma
+ * Changes to support the new Enable/Disable-Builtin-Messages SEXP
+ *
  * Revision 2.327  2006/04/05 13:45:08  taylor
  * correct some coding mistakes
  *
@@ -9361,6 +9364,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		return 0;
 	}	
 
+	// If the primaries have been locked, bail
+	if (shipp->flags2 & SF2_PRIMARIES_LOCKED)
+	{
+		return 0;
+	}
+
 	sound_played = -1;
 
 	// Fire the correct primary bank.  If primaries are linked (SF_PRIMARY_LINKED set), then fire 
@@ -10169,6 +10178,12 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 	// if no secondary weapons are present on ship, return
 	if ( swp->num_secondary_banks <= 0 ){
+		return 0;
+	}
+
+	// If the secondaries have been locked, bail
+	if (shipp->flags2 & SF2_SECONDARIES_LOCKED)
+	{
 		return 0;
 	}
 

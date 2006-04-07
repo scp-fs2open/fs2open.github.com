@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.121 $
+ * $Revision: 2.122 $
  * $Author: karajorma $
- * $Date: 2006-04-05 16:56:57 $
+ * $Date: 2006-04-07 20:16:30 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.121  2006/04/05 16:56:57  karajorma
+ * Changes to support the new Enable/Disable-Builtin-Messages SEXP
+ *
  * Revision 2.120  2006/04/04 11:38:07  wmcoolmon
  * Maneuvering hruster scaling, gun convergence
  *
@@ -1272,6 +1275,10 @@ struct ship_subsys;
 #define OP_SCRIPT_EVAL						(0x00ac | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_DISABLE_BUILTIN_MESSAGES			(0x00ad | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_ENABLE_BUILTIN_MESSAGES			(0x00ae | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_LOCK_PRIMARY_WEAPON				(0x00af | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_UNLOCK_PRIMARY_WEAPON			(0x00b0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_LOCK_SECONDARY_WEAPON			(0x00b1 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_UNLOCK_SECONDARY_WEAPON			(0x00b2 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 /* made obsolete by Goober5000
