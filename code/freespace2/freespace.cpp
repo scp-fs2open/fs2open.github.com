@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.235 $
- * $Date: 2006-04-06 23:25:17 $
- * $Author: taylor $
+ * $Revision: 2.236 $
+ * $Date: 2006-04-09 19:50:19 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.235  2006/04/06 23:25:17  taylor
+ * perhaps this will fix the white splash screen issue on Windows (been sitting on this, might as well commit it)
+ *
  * Revision 2.234  2006/04/03 07:48:03  wmcoolmon
  * Miscellaneous minor changes, mostly related to addition of Current_camera variable
  *
@@ -1549,7 +1552,7 @@ static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionhotkey.h"
-#include "mission/missionlist.h"
+//#include "mission/missionlist.h"
 #include "mission/missionload.h"
 #include "mission/missionlog.h"
 #include "mission/missionmessage.h"
@@ -1822,7 +1825,7 @@ int Player_died_popup_wait = -1;
 int Player_multi_died_check = -1;
 
 int Multi_ping_timestamp = -1;
-/*
+
 // builtin mission list stuff
 #ifdef FS2_DEMO
 	int Game_builtin_mission_count = 6;
@@ -2004,7 +2007,7 @@ int Multi_ping_timestamp = -1;
 		{ "templar-04.fs2",				(FSB_FROM_VOLITION | FSB_MULTI | FSB_CAMPAIGN),			""						},				
 	};
 #endif
-*/
+
 
 // Internal function prototypes
 void game_maybe_draw_mouse(float frametime);
@@ -2087,7 +2090,7 @@ int Game_sound_env_update_timestamp;
 
 
 // WARPIN CRAP END --------------------------------------------------------------------------------------------
-/*
+
 fs_builtin_mission *game_find_builtin_mission(char *filename)
 {
 	int idx;
@@ -2102,7 +2105,7 @@ fs_builtin_mission *game_find_builtin_mission(char *filename)
 	// didn't find it
 	return NULL;
 }
-*/
+
 int game_get_default_skill_level()
 {
 	return DEFAULT_SKILL_LEVEL;
@@ -3728,7 +3731,7 @@ void game_init()
 
 	brief_parse_icon_tbl();
 
-	mission_list_init();			// init the list of builtin missions
+//	mission_list_init();			// init the list of builtin missions
 
 	// hud shield icon stuff
 	//hud_shield_game_init(); No longer needed; see ships.tbl -C
