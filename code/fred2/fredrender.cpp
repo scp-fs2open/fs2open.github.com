@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-01-26 23:04:45 $
+ * $Revision: 1.3 $
+ * $Date: 2006-04-12 05:30:50 $
  * $Author: phreak $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/26 23:04:45  phreak
+ * Grid zbuffering issue fix moved to the new fred project folder
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -1838,7 +1841,10 @@ void render_frame()
 	}
 
 	gr_set_color(0, 160, 0);
+
+	fred_enable_htl();
 	jumpnode_render_all();
+	fred_disable_htl();
 
 	sprintf(buf, "(%.1f,%.1f,%.1f)", eye_pos.xyz.x, eye_pos.xyz.y, eye_pos.xyz.z);
 	gr_get_string_size(&w, &h, buf);
