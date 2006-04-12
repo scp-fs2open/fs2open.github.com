@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.8 $
- * $Date: 2006-03-18 22:18:24 $
- * $Author: Goober5000 $
+ * $Revision: 1.9 $
+ * $Date: 2006-04-12 05:07:00 $
+ * $Author: phreak $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2006/03/18 22:18:24  Goober5000
+ * blast
+ *
  * Revision 1.7  2006/03/18 22:00:43  Goober5000
  * fix comm order initialization bug
  * --Goober5000
@@ -1819,8 +1822,13 @@ int common_object_delete(int obj)
 	}
 
 	unmark_object(obj);
-	if(type != OBJ_JUMP_NODE)
-		obj_delete(obj);
+
+	//we need to call obj_delete() even if obj is a jump node
+	//the statement "delete Objects[obj].jnp" deletes the jnp object
+	//obj_delete() frees up the object slot where the node used to reside.
+	//if we don't call this then the node will still show up in fred and you can try to delete it twice
+	//this causes an ugly crash.
+	obj_delete(obj);
 	set_modified();
 	Update_window = 1;
 	return 0;
