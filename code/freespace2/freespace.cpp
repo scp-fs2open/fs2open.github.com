@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.236 $
- * $Date: 2006-04-09 19:50:19 $
- * $Author: phreak $
+ * $Revision: 2.237 $
+ * $Date: 2006-04-12 00:55:16 $
+ * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.236  2006/04/09 19:50:19  phreak
+ * undo mission list changes for now while taylor is out of town and unable to commit the rest of the codebase.
+ *
  * Revision 2.235  2006/04/06 23:25:17  taylor
  * perhaps this will fix the white splash screen issue on Windows (been sitting on this, might as well commit it)
  *
@@ -3006,7 +3009,12 @@ void game_post_level_init()
 
 	training_mission_init();
 	asteroid_create_all();
-	
+
+	// set ambient light for level
+	gr_set_ambient_light(The_mission.ambient_light_level & 0xff, 
+							(The_mission.ambient_light_level >> 8) & 0xff,
+							(The_mission.ambient_light_level >> 16) & 0xff);
+
 	game_framerate_check_init();
 
 	// If this is a red alert mission in campaign mode, bash wingman status
@@ -5299,11 +5307,6 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	}
 	// Do the sunspot
 	game_sunspot_process(flFrametime);
-	
-
-	gr_set_ambient_light(The_mission.ambient_light_level & 0xff, 
-							(The_mission.ambient_light_level >> 8) & 0xff,
-							(The_mission.ambient_light_level >> 16) & 0xff);
 
 	if((!cube_map_drawen || Game_subspace_effect) && Cmdline_env){
 		setup_environment_mapping(eye_pos, eye_orient);
@@ -5334,7 +5337,6 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 #endif
-	gr_set_ambient_light(120,120,120);
 
 	beam_render_all();						// render all beam weapons
 	trail_render_all();						// render missilie trails after everything else.	
