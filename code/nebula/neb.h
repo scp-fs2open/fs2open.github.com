@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.h $
- * $Revision: 2.8 $
- * $Date: 2005-10-09 08:03:20 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2006-04-12 01:03:00 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/10/09 08:03:20  wmcoolmon
+ * New SEXP stuff
+ *
  * Revision 2.7  2005/07/13 03:26:00  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -209,7 +212,7 @@ void neb2_set_backg_color(int r, int g, int b);
 // get the color to fog the background color to
 void neb2_get_backg_color(int *r, int *g, int *b);
 
-void neb2_get_fog_colour(unsigned char *r, unsigned char *g, unsigned char *b);
+void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b);
 
 
 #endif

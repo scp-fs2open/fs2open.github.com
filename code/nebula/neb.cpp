@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.49 $
- * $Date: 2006-03-18 10:25:45 $
+ * $Revision: 2.50 $
+ * $Date: 2006-04-12 01:03:00 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2006/03/18 10:25:45  taylor
+ * some cleanup to the nebula debug console help messages
+ *
  * Revision 2.48  2006/01/30 19:37:33  taylor
  * and after all of my recent work fixing div-by-0 zero bugs, ya had to know this was coming :)
  *
@@ -637,11 +640,11 @@ void neb2_set_detail_level(int level)
 	Neb2_regen = 1;
 }
 
-void neb2_get_fog_colour(unsigned char *r, unsigned char *g, unsigned char *b)
+void neb2_get_fog_color(ubyte *r, ubyte *g, ubyte *b)
 {
-	if(r) *r = Neb2_fog_color_r;
-	if(g) *g = Neb2_fog_color_g;
-	if(b) *b = Neb2_fog_color_b;
+	if (r) *r = Neb2_fog_color_r;
+	if (g) *g = Neb2_fog_color_g;
+	if (b) *b = Neb2_fog_color_b;
 }
 
 void neb2_level_init()
@@ -787,7 +790,7 @@ void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient)
 		ubyte tg = gr_screen.current_clear_color.green;
 		ubyte tb = gr_screen.current_clear_color.blue; 
 
-		neb2_get_fog_colour(
+		neb2_get_fog_color(
 			&gr_screen.current_clear_color.red,
 			&gr_screen.current_clear_color.green,
 			&gr_screen.current_clear_color.blue);
@@ -1565,13 +1568,15 @@ int tbmap = -1;
 // to enlighten me.
 //
 void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient)
-{	
-	if(Neb2_render_mode == NEB2_RENDER_HTL) return;
+{
+	// if the mission is not a fullneb mission, skip
+	if (!(The_mission.flags & MISSION_FLAG_FULLNEB))
+		return;
 
 	// bail early in lame and poly modes
-	if(Neb2_render_mode != NEB2_RENDER_POF){
+	if (Neb2_render_mode != NEB2_RENDER_POF)
 		return;
-	}
+
 
 	// set the view clip
 	gr_screen.clip_width = this_esize;
@@ -1624,8 +1629,9 @@ int wacky_scheme = 3;
 // get the color of the pixel in the small pre-rendered background nebula
 #define PIXEL_INDEX_SMALL(xv, yv)	( (this_esize * (yv) * gr_screen.bytes_per_pixel) + ((xv) * gr_screen.bytes_per_pixel) )
 void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
-{	
-	if(Neb2_render_mode == NEB2_RENDER_HTL) return;
+{
+	// we shouldn't ever be here if in htl rendering mode
+	Assert( Neb2_render_mode != NEB2_RENDER_HTL );
 
 	int ra, ga, ba;
 	ubyte rv, gv, bv;	
@@ -1633,7 +1639,7 @@ void neb2_get_pixel(int x, int y, int *r, int *g, int *b)
 	int xs, ys;
 
 	// if we're in lame rendering mode, return a constant value
-	if(Neb2_render_mode == NEB2_RENDER_LAME){
+	if (Neb2_render_mode == NEB2_RENDER_LAME) {
 		*r = Neb2_background_color[0];
 		*g = Neb2_background_color[1];
 		*b = Neb2_background_color[2];
