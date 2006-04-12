@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.151 $
- * $Date: 2006-03-25 10:41:44 $
+ * $Revision: 2.152 $
+ * $Date: 2006-04-12 01:02:59 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.151  2006/03/25 10:41:44  taylor
+ * modelinterp.cpp:  that little bit really isn't needed
+ * popup.cpp:  GCC 4.1 warning fixes
+ *
  * Revision 2.150  2006/03/24 07:38:35  wmcoolmon
  * New subobject animation stuff and Lua functions.
  *
@@ -4093,7 +4097,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		float fog_near = 10.0f, fog_far = 1000.0f;
 		neb2_get_fog_values(&fog_near, &fog_far, objp);
 		unsigned char r, g, b;
-		neb2_get_fog_colour(&r, &g, &b);
+		neb2_get_fog_color(&r, &g, &b);
 		gr_fog_set(GR_FOGMODE_FOG, r, g, b, fog_near, fog_far);
 	}
 
@@ -4845,7 +4849,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 
 			neb2_get_fog_values(&fog_near, &fog_far, obj);
 			unsigned char r, g, b;
-			neb2_get_fog_colour(&r, &g, &b);
+			neb2_get_fog_color(&r, &g, &b);
 			gr_fog_set(GR_FOGMODE_FOG, r, g, b, fog_near, fog_far);
 		}
 
