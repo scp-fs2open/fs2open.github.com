@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.28 $
- * $Date: 2006-04-05 13:47:01 $
+ * $Revision: 1.29 $
+ * $Date: 2006-04-12 01:10:35 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2006/04/05 13:47:01  taylor
+ * remove -tga16, it's obsolete now
+ * add a temporary -no_emissive_light option to not use emission type light in OGL
+ *
  * Revision 1.27  2006/03/15 17:33:05  taylor
  * couple of nitpicks
  *
@@ -168,12 +172,10 @@
 
 
 // Variables
-opengl_light opengl_lights[MAX_LIGHTS];
-bool active_light_list[MAX_LIGHTS];
+opengl_light *opengl_lights = NULL;
 int *currently_enabled_lights = NULL;
 bool lighting_is_enabled = true;
-int active_gl_lights = 0;
-int n_active_gl_lights = 0;
+int Num_active_gl_lights = 0;
 int GL_center_alpha = 0;
 
 extern float static_point_factor;
@@ -318,21 +320,19 @@ void opengl_change_active_lights(int pos)
 
 	glScalef(1.0f, 1.0f, -1.0f);
 
-	for (i = 0; (i < GL_max_lights) && (((pos * GL_max_lights) + i) < active_gl_lights); i++) {
+	for (i = 0; (i < GL_max_lights) && (((pos * GL_max_lights) + i) < Num_active_gl_lights); i++) {
 		glDisable(GL_LIGHT0+i);
 		move = false;
 
 		for (k = 0; (k < MAX_LIGHTS) && !move; k++) {
 			int slot = (pos * GL_max_lights) + l;
 
-			if (active_light_list[slot]) {
-				if (opengl_lights[slot].occupied) {
-					opengl_set_light(i,&opengl_lights[slot]);
-					glEnable(GL_LIGHT0+i);
-					currently_enabled_lights[i] = slot;
-					move = true;
-					l++;
-				}
+			if (opengl_lights[slot].occupied) {
+				opengl_set_light(i,&opengl_lights[slot]);
+				glEnable(GL_LIGHT0+i);
+				currently_enabled_lights[i] = slot;
+				move = true;
+				l++;
 			}
 		}
 	}
@@ -358,13 +358,12 @@ void gr_opengl_set_light(light *fs_light)
 	if (Cmdline_nohtl)
 		return;
 
-	//Init the light
-	//WMC - This can cause a memleak in currently_enabled_lights.
-	Assert(active_gl_lights < MAX_LIGHTS);
+	if (Num_active_gl_lights >= MAX_LIGHTS)
+		return;
 
-	FSLight2GLLight(&opengl_lights[active_gl_lights], fs_light);
-	opengl_lights[active_gl_lights].occupied = true;
-	active_light_list[active_gl_lights++] = true;
+	// init the light
+	FSLight2GLLight(&opengl_lights[Num_active_gl_lights], fs_light);
+	opengl_lights[Num_active_gl_lights++].occupied = 1;
 }
 
 // this sets up a light to be pointinf from the eye to the object, 
@@ -385,7 +384,7 @@ void gr_opengl_set_center_alpha(int type)
 	if (!type || Cmdline_nohtl)
 		return;
 
-	opengl_light glight; // = &opengl_lights[active_gl_lights];
+	opengl_light glight;
 
 	vec3d dir;
 	vm_vec_sub(&dir, &Eye_position, &Object_position);
@@ -426,20 +425,16 @@ void gr_opengl_set_center_alpha(int type)
 	glight.QuadraticAtten = 0.0f;
 
 	// first light
-	memcpy( &opengl_lights[active_gl_lights], &glight, sizeof(opengl_light) );
-
-	opengl_lights[active_gl_lights].occupied = true;
-	active_light_list[active_gl_lights++] = true;
+	memcpy( &opengl_lights[Num_active_gl_lights], &glight, sizeof(opengl_light) );
+	opengl_lights[Num_active_gl_lights++].occupied = 1;
 
 	// second light
 	glight.Position.x = dir.xyz.x;
 	glight.Position.y = dir.xyz.y;
 	glight.Position.z = dir.xyz.z;
 
-	memcpy( &opengl_lights[active_gl_lights], &glight, sizeof(opengl_light) );
-
-	opengl_lights[active_gl_lights].occupied = true;
-	active_light_list[active_gl_lights++] = true;
+	memcpy( &opengl_lights[Num_active_gl_lights], &glight, sizeof(opengl_light) );
+	opengl_lights[Num_active_gl_lights].occupied = 1;
 
 	// reset center alpha
 	GL_center_alpha = 0;
@@ -452,16 +447,13 @@ void gr_opengl_reset_lighting()
 	if (Cmdline_nohtl)
 		return;
 
-	for (i = 0; i<MAX_LIGHTS; i++) {
-		opengl_lights[i].occupied = false;
-	}
+	memset( opengl_lights, 0, sizeof(opengl_light) * MAX_LIGHTS );
 
 	for (i = 0; i < GL_max_lights; i++) {
 		glDisable(GL_LIGHT0+i);
-		active_light_list[i] = false;
 	}
 
-	active_gl_lights =0;
+	Num_active_gl_lights = 0;
 	GL_center_alpha = 0;
 }
 
@@ -475,7 +467,7 @@ void opengl_calculate_ambient_factor()
 	GL_light_ambient[0] += amb_user;
 	GL_light_ambient[1] += amb_user;
 	GL_light_ambient[2] += amb_user;
-	
+
 	CLAMP( GL_light_ambient[0], 0.02f, 1.0f );
 	CLAMP( GL_light_ambient[1], 0.02f, 1.0f );
 	CLAMP( GL_light_ambient[2], 0.02f, 1.0f );
@@ -501,10 +493,14 @@ void opengl_init_light()
 	if ( currently_enabled_lights == NULL )
 		currently_enabled_lights = (int *) vm_malloc_q(GL_max_lights * sizeof(int));
 
-	if (currently_enabled_lights == NULL)
+	if ( opengl_lights == NULL )
+		opengl_lights = (opengl_light *) vm_malloc_q(MAX_LIGHTS * sizeof(opengl_light));
+
+	if ( (currently_enabled_lights == NULL) || (opengl_lights == NULL) )
 		Error( LOCATION, "Unable to allocate memory for lights!\n");
 
 	memset( currently_enabled_lights, -1, GL_max_lights * sizeof(int) );
+	memset( opengl_lights, 0, MAX_LIGHTS * sizeof(opengl_light) );
 }
 
 extern int Cmdline_no_emissive;

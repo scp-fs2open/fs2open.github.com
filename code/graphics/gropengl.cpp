@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.166 $
- * $Date: 2006-03-26 08:26:45 $
+ * $Revision: 2.167 $
+ * $Date: 2006-04-12 01:10:35 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.166  2006/03/26 08:26:45  taylor
+ * make sure to only allow on screen save at the time (I don't like having it restricted but since it's not used for anything else there is little point)
+ *
  * Revision 2.165  2006/03/22 18:12:50  taylor
  * minor cleanup
  *
@@ -1053,9 +1056,6 @@ static int GL_mouse_saved_y1 = 0;
 static int GL_mouse_saved_x2 = 0;
 static int GL_mouse_saved_y2 = 0;
 
-static float GL_uv_resize_offset_u = 0.0f;
-static float GL_uv_resize_offset_v = 0.0f;
-
 static int ogl_maybe_pop_arb1 = 0;
 
 void (*opengl_set_tex_src)(gr_texture_source ts);
@@ -1806,8 +1806,6 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, boo
 	if ( do_resize ) {
 		gr_resize_screen_posf( &x1, &y1 );
 		gr_resize_screen_posf( &x2, &y2 );
-		u1 -= GL_uv_resize_offset_u;
-		v1 -= GL_uv_resize_offset_v;
 	}
 
 	if ( gr_screen.current_color.is_alphacolor )	{
@@ -2401,17 +2399,18 @@ void gr_opengl_stuff_secondary_color(vertex *v, ubyte fr, ubyte fg, ubyte fb)
 	return;
 }
 
-void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, float v_scale, int r, int g, int b, int alpha, int override_primary=0)
+void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, float v_scale, int r, int g, int b, int alpha, int override_primary = 0)
 {
 
-	if (flags & TMAP_FLAG_TRISTRIP) 
+	if (flags & TMAP_FLAG_TRISTRIP) {
 		glBegin(GL_TRIANGLE_STRIP);
-	else if (flags & TMAP_FLAG_TRILIST)
+	} else if (flags & TMAP_FLAG_TRILIST) {
 		glBegin(GL_TRIANGLES);
-	else 
+	} else {
 		glBegin(GL_TRIANGLE_FAN);
+	}
 
-	for (int i = nv-1; i >= 0; i--) {		
+	for (int i = nv-1; i >= 0; i--) {
 		vertex * va = verts[i];
 		float sx, sy, sz;
 		float tu, tv;
@@ -2420,7 +2419,7 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 		
 		if ( gr_zbuffering || (flags & TMAP_FLAG_NEBULA) )      {
 			sz = float(1.0 - 1.0 / (1.0 + va->z / 32768.0 ));
-			
+
 			//if ( sz > 0.98f ) {
 		//		sz = 0.98f;
 		//	}
@@ -2428,7 +2427,7 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 			sz = 0.99f;
 		}
 
-		if ( flags & TMAP_FLAG_CORRECT )        {
+		if ( flags & TMAP_FLAG_CORRECT ) {
 			rhw = va->sw;
 		} else {
 			rhw = 1.0f;
@@ -2445,11 +2444,11 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 			r = gr_palette[pal*3+0];
 			g = gr_palette[pal*3+1];
 			b = gr_palette[pal*3+2];
-		} else if ( (flags & TMAP_FLAG_RAMP) && (flags & TMAP_FLAG_GOURAUD) )   {
+		} else if ( (flags & TMAP_FLAG_RAMP) && (flags & TMAP_FLAG_GOURAUD) ) {
 			r = Gr_gamma_lookup[verts[i]->b];
 			g = Gr_gamma_lookup[verts[i]->b];
 			b = Gr_gamma_lookup[verts[i]->b];
-		} else if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) )   {
+		} else if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) ) {
 			// Make 0.75 be 256.0f
 			r = Gr_gamma_lookup[verts[i]->r];
 			g = Gr_gamma_lookup[verts[i]->g];
@@ -2458,54 +2457,49 @@ void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, f
 			// use constant RGB values...
 		}
 
-		if (gr_screen.current_bitmap==CLOAKMAP)
-		{
-			r=g=b=Interp_cloakmap_alpha;
-			a=255;
+		if (gr_screen.current_bitmap == CLOAKMAP) {
+			r = g = b = Interp_cloakmap_alpha;
+			a = 255;
 		}
 
 		ubyte sc[3] = { va->spec_r, va->spec_g, va->spec_b };
 
-		if (!override_primary)
-		{
+		if (!override_primary) {
 			glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 			glSecondaryColor3ubvEXT( sc );
-		}
-		else
-		{
+		} else {
 			glColor3ubv(sc);		
 			glSecondaryColor3ubvEXT(sc);
 		}
 
-		if((gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 2)){
+		if ( (gr_screen.current_fog_mode != GR_FOGMODE_NONE) && (OGL_fogmode == 2) ) {
 			// this is for GL_EXT_FOG_COORD 
 			gr_opengl_stuff_fog_coord(va);
 		}
 
-		int x, y;
-		x = fl2i(va->sx*16.0f);
-		y = fl2i(va->sy*16.0f);
+		if (gr_screen.offset_x || gr_screen.offset_y) {
+			sx = ((va->sx * 16.0f) + ((float)gr_screen.offset_x * 16.0f)) / 16.0f;
+			sy = ((va->sy * 16.0f) + ((float)gr_screen.offset_y * 16.0f)) / 16.0f;
+		} else {
+			sx = va->sx;
+			sy = va->sy;
+		}
 
-		x += gr_screen.offset_x*16;
-		y += gr_screen.offset_y*16;
-		
-		sx = i2fl(x) / 16.0f;
-		sy = i2fl(y) / 16.0f;
-
-		if ( flags & TMAP_FLAG_TEXTURED )       {
+		if ( flags & TMAP_FLAG_TEXTURED ) {
 			tu = va->u*u_scale;
 			tv = va->v*v_scale;
 
-			//use opengl hardware multitexturing
+			// use opengl hardware multitexturing
 			glMultiTexCoord2fARB(GL_TEXTURE0_ARB,tu,tv);
 			glMultiTexCoord2fARB(GL_TEXTURE1_ARB,tu,tv);
 			
-			if (GL_supported_texture_units>2)			glMultiTexCoord2fARB(GL_TEXTURE2_ARB,tu,tv);
-			
+			if (GL_supported_texture_units > 2)
+				glMultiTexCoord2fARB(GL_TEXTURE2_ARB,tu,tv);	
 		}
 
 		glVertex4f(sx/rhw, sy/rhw, -sz/rhw, 1.0f/rhw);
 	}
+
 	glEnd();
 }
 
@@ -2623,14 +2617,12 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 	int i, stage = 0;
 	float u_scale = 1.0f, v_scale = 1.0f;
 	bool use_spec = false;
+	int alpha,tmap_type, r, g, b;
 
 	// Make nebula use the texture mapper... this blends the colors better.
 	if ( flags & TMAP_FLAG_NEBULA ){
 		Int3 ();
 	}
-
-	
-	int alpha,tmap_type, r, g, b;
 
 	gr_opengl_set_2d_matrix();
 
@@ -2676,28 +2668,25 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 	}
 	
 	
-	if (flags & TMAP_FLAG_PIXEL_FOG) {
+	if ( (flags & TMAP_FLAG_PIXEL_FOG) && (Neb2_render_mode != NEB2_RENDER_NONE) && (Neb2_render_mode != NEB2_RENDER_HTL) ) {
 		int r, g, b;
 		int ra, ga, ba;
 		ra = ga = ba = 0;
 	
-		for (i=nv-1;i>=0 ;i--)	
-		{
+		for (i = nv-1; i >= 0; i--) {
 			vertex *va = verts[i];
 			float sx, sy;
                 
-			int x, y;
-			x = fl2i(va->sx*16.0f);
-			y = fl2i(va->sy*16.0f);
-
-			x += gr_screen.offset_x*16;
-			y += gr_screen.offset_y*16;
-
-			sx = i2fl(x) / 16.0f;
-			sy = i2fl(y) / 16.0f;
+			if (gr_screen.offset_x || gr_screen.offset_y) {
+				sx = ((va->sx * 16.0f) + ((float)gr_screen.offset_x * 16.0f)) / 16.0f;
+				sy = ((va->sy * 16.0f) + ((float)gr_screen.offset_y * 16.0f)) / 16.0f;
+			} else {
+				sx = va->sx;
+				sy = va->sy;
+			}
 
 			neb2_get_pixel((int)sx, (int)sy, &r, &g, &b);
-			
+
 			ra += r;
 			ga += g;
 			ba += b;
@@ -2710,15 +2699,14 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 		gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
 	}
 
-	if (CLOAKMAP==gr_screen.current_bitmap)
+	if (gr_screen.current_bitmap == CLOAKMAP)
 		glBlendFunc(GL_ONE, GL_ONE);
 
 	opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, alpha);
 
-	if (ogl_maybe_pop_arb1)
-	{
+	if (ogl_maybe_pop_arb1) {
 		gr_pop_texture_matrix(1);
-		ogl_maybe_pop_arb1=0;
+		ogl_maybe_pop_arb1 = 0;
 	}
 
 	if ( use_spec ) {
@@ -3687,8 +3675,6 @@ void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool 
 	if ( do_resize ) {
 		gr_resize_screen_posf( &x1, &y1 );
 		gr_resize_screen_posf( &x2, &y2 );
-		u1 -= GL_uv_resize_offset_u;
-		v1 -= GL_uv_resize_offset_v;
 	}
 
 	glColor4ub( 255, 255, 255, GLubyte(gr_screen.current_alpha * 255.0f) );
@@ -3923,19 +3909,32 @@ void gr_opengl_draw_line_list(colored_vector *lines, int num)
 		return;
 }
 
-int opengl_check_for_errors()
+// Returns the human readable error string if there is an error or NULL if not
+const char *opengl_error_string()
 {
 	GLenum error = GL_NO_ERROR;
+
+	error = glGetError();
+
+	if ( error != GL_NO_ERROR )
+		return (const char *)gluErrorString(error);
+
+	return NULL;
+}
+
+int opengl_check_for_errors()
+{
+	const char *error_str = NULL;
 	int num_errors = 0;
 
 	do {
-		error = glGetError();
+		error_str = opengl_error_string();
 
-		if (error != GL_NO_ERROR) {
-			nprintf(("OpenGL", "OpenGL ERROR: %s (%i)\n", gluErrorString(error), error));
+		if (error_str) {
+			nprintf(("OpenGL", "OpenGL Error: %s\n", error_str));
 			num_errors++;
 		}
-	} while ((error != GL_NO_ERROR) && !Fred_running);
+	} while ((error_str != NULL) && !Fred_running);
 
 	return num_errors;
 }
@@ -3973,6 +3972,11 @@ void opengl_close()
 	if (currently_enabled_lights != NULL) {
 		vm_free(currently_enabled_lights);
 		currently_enabled_lights = NULL;
+	}
+
+	if (opengl_lights != NULL) {
+		vm_free(opengl_lights);
+		opengl_lights = NULL;
 	}
 
 	opengl_free_mouse_area();
@@ -4568,12 +4572,6 @@ void gr_opengl_init(int reinit)
 
 	// This stops fred crashing if no textures are set
 	gr_screen.current_bitmap = -1;
-
-	if (gr_screen.custom_size != -1) {
-		// taken from D3D version
-		GL_uv_resize_offset_u = GL_uv_resize_offset_v = 0.0044f;
-		gr_unsize_screen_posf( &GL_uv_resize_offset_u, &GL_uv_resize_offset_v );
-	}
 
 	TIMERBAR_SET_DRAW_FUNC(opengl_render_timer_bar);
 

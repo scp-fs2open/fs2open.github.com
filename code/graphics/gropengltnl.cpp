@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.40 $
- * $Date: 2006-02-25 21:47:00 $
- * $Author: Goober5000 $
+ * $Revision: 1.41 $
+ * $Date: 2006-04-12 01:10:35 $
+ * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.40  2006/02/25 21:47:00  Goober5000
+ * spelling
+ *
  * Revision 1.39  2006/01/31 06:43:21  wmcoolmon
  * Debug warning; compiler warning fix.
  *
@@ -777,7 +780,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 // -------- End 1st PASS --------------------------------------------------------- //
 
 // -------- Begin lighting pass (conditional but should happen before spec pass) - //
-	if ( (lighting_is_enabled) && ((n_active_gl_lights-1)/GL_max_lights > 0) ) {
+	if ( (lighting_is_enabled) && ((Num_active_gl_lights-1)/GL_max_lights > 0) ) {
 		opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 		for (i = 1; i < pass_one; i++) {
 			opengl_switch_arb(i, 0);
@@ -785,8 +788,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 		glLockArraysEXT( 0, vbp->n_verts);
 
-		for(i=0; i< (n_active_gl_lights-1)/GL_max_lights; i++)
-		{
+		for (i = 0; i < (Num_active_gl_lights-1)/GL_max_lights; i++) {
 			opengl_change_active_lights(i+1);
 
 			if (index_buffer != NULL) {

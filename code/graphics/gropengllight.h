@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 1.8 $
- * $Date: 2006-01-30 06:40:49 $
+ * $Revision: 1.9 $
+ * $Date: 2006-04-12 01:10:35 $
  * $Author: taylor $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2006/01/30 06:40:49  taylor
+ * better lighting for OpenGL
+ * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
+ * some basic lighting code cleanup
+ *
  * Revision 1.7  2005/09/05 09:36:41  taylor
  * merge of OSX tree
  * fix OGL fullscreen switch for SDL since the old way only worked under Linux and not OSX or Windows
@@ -60,16 +65,6 @@
 #include "graphics/gropengl.h"
 
 
-//Variables
-extern struct opengl_light opengl_lights[MAX_LIGHTS];
-extern bool active_light_list[MAX_LIGHTS];
-extern int *currently_enabled_lights;
-extern bool lighting_is_enabled;
-extern GLint GL_max_lights;
-extern int active_gl_lights;
-extern int n_active_gl_lights;
-extern int GL_center_alpha;
-
 struct ogl_light_color {
 	float r,g,b,a;
 };
@@ -92,15 +87,22 @@ struct opengl_light
 	float SpotExp, SpotCutOff;
 	float ConstantAtten, LinearAtten, QuadraticAtten;
 
-	bool occupied;
+	ubyte occupied;
 	int priority;
 	int type;
 
-	opengl_light() : occupied(false), priority(1), type(0) {};
+//	opengl_light() : occupied(false), priority(1), type(0) {};
 };
 
 struct light_data;
 
+//Variables
+extern opengl_light *opengl_lights;
+extern int *currently_enabled_lights;
+extern bool lighting_is_enabled;
+extern GLint GL_max_lights;
+extern int Num_active_gl_lights;
+extern int GL_center_alpha;
 
 //Functions
 void FSLight2GLLight(opengl_light *GLLight, light *FSLight);
