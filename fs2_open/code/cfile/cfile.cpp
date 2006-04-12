@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-02-16 05:07:50 $
+ * $Revision: 2.38 $
+ * $Date: 2006-04-12 00:53:26 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/02/16 05:07:50  taylor
+ * minor 64-bit related fixage
+ *
  * Revision 2.36  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -376,7 +379,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_VOICE_TRAINING,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "training",						".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_MUSIC,					"data" DIR_SEPARATOR_STR "music",															".wav .ogg",						CF_TYPE_DATA	},
 	{ CF_TYPE_MOVIES,					"data" DIR_SEPARATOR_STR "movies",															".mve .msb .avi .mpg",				CF_TYPE_DATA	},
-	{ CF_TYPE_INTERFACE,				"data" DIR_SEPARATOR_STR "interface",														".pcx .ani .tga",			CF_TYPE_DATA	},
+	{ CF_TYPE_INTERFACE,				"data" DIR_SEPARATOR_STR "interface",														".pcx .ani .dds .tga",			CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",															".vf",						CF_TYPE_DATA	},
 	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",															".ani .eff .pcx .neb .tga .jpg .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_HUD,						"data" DIR_SEPARATOR_STR "hud",																".ani .pcx .tga",			CF_TYPE_DATA	},
