@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.68 $
- * $Date: 2006-03-22 18:12:50 $
+ * $Revision: 2.69 $
+ * $Date: 2006-04-12 01:00:58 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2006/03/22 18:12:50  taylor
+ * minor cleanup
+ *
  * Revision 2.67  2006/02/15 07:19:49  wmcoolmon
  * Various weapon and team related scripting functions; $Collide Ship and $Collide Weapon hooks
  *
@@ -836,7 +839,7 @@ bool gr_resize_screen_pos(int *x, int *y)
 	int div_by_x = (gr_screen.custom_size == GR_1024) ? 1024 : 640;
 	int div_by_y = (gr_screen.custom_size == GR_1024) ?  768 : 480;
 			
-	if(x) {
+	if (x && (*x != 0)) {
 		xy_tmp = (*x);
 		xy_tmp *= gr_screen.max_w;
 		xy_tmp /= div_by_x;
@@ -846,7 +849,7 @@ bool gr_resize_screen_pos(int *x, int *y)
 		(*x) = (int)xy_tmp;
 	}
 
-	if(y) {
+	if (y && (*y != 0)) {
 		xy_tmp = (*y);
 		xy_tmp *= gr_screen.max_h;
 		xy_tmp /= div_by_y;
@@ -876,7 +879,7 @@ bool gr_unsize_screen_pos(int *x, int *y)
 	int mult_by_x = (gr_screen.custom_size == GR_1024) ? 1024 : 640;
 	int mult_by_y = (gr_screen.custom_size == GR_1024) ?  768 : 480;
 			
-	if(x) {
+	if (x && (*x != 0)) {
 		xy_tmp = (*x);
 		xy_tmp *= mult_by_x;
 		xy_tmp /= gr_screen.max_w;
@@ -886,7 +889,7 @@ bool gr_unsize_screen_pos(int *x, int *y)
 		(*x) = (int)xy_tmp;
 	}
 
-	if(y) {
+if (y && (*y != 0)) {
 		xy_tmp = (*y);
 		xy_tmp *= mult_by_y;
 		xy_tmp /= gr_screen.max_h;
@@ -915,12 +918,12 @@ bool gr_resize_screen_posf(float *x, float *y)
 	float div_by_x = (gr_screen.custom_size == GR_1024) ? 1024.0f : 640.0f;
 	float div_by_y = (gr_screen.custom_size == GR_1024) ?  768.0f : 480.0f;
 			
-	if(x) {
+	if (x && (*x != 0.0f)) {
 		(*x) *= (float)gr_screen.max_w;
 		(*x) /= div_by_x;
 	}
 
-	if(y) {
+	if (y && (*y != 0.0f)) {
 		(*y) *= (float)gr_screen.max_h;
 		(*y) /= div_by_y;
 	}
@@ -942,12 +945,12 @@ bool gr_unsize_screen_posf(float *x, float *y)
 	float mult_by_x = (gr_screen.custom_size == GR_1024) ? 1024.0f : 640.0f;
 	float mult_by_y = (gr_screen.custom_size == GR_1024) ?  768.0f : 480.0f;
 			
-	if(x) {
+	if (x && (*x != 0.0f)) {
 		(*x) *= mult_by_x;
 		(*x) /= (float) gr_screen.max_w;
 	}
 
-	if(y) {
+	if (y && (*y != 0.0f)) {
 		(*y) *= mult_by_y;
 		(*y) /= (float) gr_screen.max_h;
 	}
@@ -1626,24 +1629,25 @@ int gr_get_cursor_bitmap()
 }
 
 // new bitmap functions
-void gr_bitmap(int x, int y, bool allow_scaling)
+void gr_bitmap(int _x, int _y, bool allow_scaling)
 {
-	int w, h;
+	int _w, _h;
+	float x, y, w, h;
 
 	if (gr_screen.mode == GR_STUB)
 		return;
 
+	bm_get_info(gr_screen.current_bitmap, &_w, &_h, NULL, NULL, NULL);
 
-	bm_get_info(gr_screen.current_bitmap, &w, &h, NULL, NULL, NULL);
-
-	// get the section as a texture in vram					
-	gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
-
+	x = i2fl(_x);
+	y = i2fl(_y);
+	w = i2fl(_w);
+	h = i2fl(_h);
+	
 	// I will tidy this up later - RT
-	if(allow_scaling || gr_screen.rendering_to_texture != -1)
-	{
-		gr_resize_screen_pos(&x, &y);
-		gr_resize_screen_pos(&w, &h);
+	if (allow_scaling || gr_screen.rendering_to_texture != -1) {
+		gr_resize_screen_posf(&x, &y);
+		gr_resize_screen_posf(&w, &h);
 	}
 
 	// RT draws all hall interface stuff
@@ -1653,9 +1657,6 @@ void gr_bitmap(int x, int y, bool allow_scaling)
 // NEW new bitmap functions -Bobboau
 void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
 {
-		// get the section as a texture in vram					
-	gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
-
 	for(int i = 0; i<n_bm; i++){
 
 		bitmap_2d_list* l = &list[i];
@@ -1678,9 +1679,6 @@ void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling)
 //takes a list of rectangles that have assosiated rectangles in a texture
 void gr_bitmap_list(bitmap_rect_list* list, int n_bm, bool allow_scaling)
 {
-		// get the section as a texture in vram					
-	gr_set_bitmap(gr_screen.current_bitmap, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, gr_screen.current_alpha);
-
 	for(int i = 0; i<n_bm; i++){
 
 		bitmap_2d_list* l = &list[i].screen_rect;
