@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-04-03 07:48:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2006-04-12 22:23:41 $
+ * $Author: taylor $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/04/03 07:48:03  wmcoolmon
+ * Miscellaneous minor changes, mostly related to addition of Current_camera variable
+ *
  * Revision 2.10  2005/12/29 08:08:39  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -212,14 +215,14 @@ int Object_sort_order[MAX_OBJECTS];
 // Used to (fairly) quicky find the 8 extreme
 // points around an object.
 vec3d check_offsets[8] = { 
-  { -1.0f, -1.0f, -1.0f },
-  { -1.0f, -1.0f,  1.0f },
-  { -1.0f,  1.0f, -1.0f },
-  { -1.0f,  1.0f,  1.0f },
-  {  1.0f, -1.0f, -1.0f },
-  {  1.0f, -1.0f,  1.0f },
-  {  1.0f,  1.0f, -1.0f },
-  {  1.0f,  1.0f,  1.0f }
+  { { { -1.0f, -1.0f, -1.0f } } },
+  { { { -1.0f, -1.0f,  1.0f } } },
+  { { { -1.0f,  1.0f, -1.0f } } },
+  { { { -1.0f,  1.0f,  1.0f } } },
+  { { {  1.0f, -1.0f, -1.0f } } },
+  { { {  1.0f, -1.0f,  1.0f } } },
+  { { {  1.0f,  1.0f, -1.0f } } },
+  { { {  1.0f,  1.0f,  1.0f } } }
 };
 
 // See if an object is in the view cone.

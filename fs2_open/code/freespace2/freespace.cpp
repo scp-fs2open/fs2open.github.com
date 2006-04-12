@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.237 $
- * $Date: 2006-04-12 00:55:16 $
+ * $Revision: 2.238 $
+ * $Date: 2006-04-12 22:23:40 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.237  2006/04/12 00:55:16  taylor
+ * that's a rather expensive function to call twice per frame, we should only need to call it once per mission and not ever have to reset it to some middle value
+ *
  * Revision 2.236  2006/04/09 19:50:19  phreak
  * undo mission list changes for now while taylor is out of town and unable to commit the rest of the codebase.
  *
@@ -1708,9 +1711,9 @@ float Viewer_zoom = VIEWER_ZOOM_DEFAULT;
 
 // JAS: Code for warphole camera.
 // Needs to be cleaned up.
-vec3d Camera_pos = { 0.0f, 0.0f, 0.0f };
-vec3d Camera_velocity = { 0.0f, 0.0f, 0.0f };
-vec3d Camera_desired_velocity = { 0.0f, 0.0f, 0.0f };
+vec3d Camera_pos = ZERO_VECTOR;
+vec3d Camera_velocity = ZERO_VECTOR;
+vec3d Camera_desired_velocity = ZERO_VECTOR;
 matrix Camera_orient = IDENTITY_MATRIX;
 float Camera_damping = 1.0f;
 float Camera_time = 0.0f;
@@ -4882,11 +4885,12 @@ void apply_hud_shake(matrix *eye_orient)
 extern void compute_slew_matrix(matrix *orient, angles *a);	// TODO: move code to proper place and extern in header file
 
 //	Player's velocity just before he blew up.  Used to keep camera target moving.
-vec3d	Dead_player_last_vel = {1.0f, 1.0f, 1.0f};
+vec3d	Dead_player_last_vel = { { { 1.0f, 1.0f, 1.0f } } };
 
 
-inline void render_environment(int&i, matrix*new_orient, float new_zoom){
-vec3d nv = ZERO_VECTOR;
+inline void render_environment(int&i, matrix*new_orient, float new_zoom)
+{
+	vec3d nv = ZERO_VECTOR;
 
 	if ( (Game_subspace_effect && (gr_screen.dynamic_environment_map < 0)) || (gr_screen.static_environment_map < 0) ) {
 		return;
@@ -6886,7 +6890,7 @@ void camera_move()
 	}
 
 	if ( (ot < 3.0f ) && ( Camera_time >= 3.0f ) )	{
-		vec3d tmp = { 0.0f, 0.0f, 0.0f };
+		vec3d tmp = ZERO_VECTOR;
 		camera_set_velocity( &tmp, 0 );
 	}
 	
@@ -7243,7 +7247,7 @@ void game_process_event( int current_state, int event )
 				Camera_time = 0.0f;
 				camera_set_position( &tmp );
 				camera_set_orient( &Player_obj->orient );
-				vec3d tmp_vel = { 0.0f, 5.1919f, 14.7f };
+				vec3d tmp_vel = { { { 0.0f, 5.1919f, 14.7f } } };
 
 				//mprintf(( "Rad = %.1f\n", Player_obj->radius ));
 				camera_set_velocity( &tmp_vel, 1);

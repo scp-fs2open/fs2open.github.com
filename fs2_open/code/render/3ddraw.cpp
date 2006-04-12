@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.49 $
- * $Date: 2006-04-12 01:00:58 $
+ * $Revision: 2.50 $
+ * $Date: 2006-04-12 22:23:41 $
  * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2006/04/12 01:00:58  taylor
+ * some small optimizations and cleanup
+ * use floats for gr_bitmap() size and positions, mainly for non-standard resolutions since this allows proper resizing and positioning
+ *   (the cast to float was happening later anyway so there should be not additional slowdown from that with standard resolutions)
+ * change g3_draw_2d_poly_bitmap() to use floats instead of ints, gets rid of the extra cast and allows better resize values
+ *
  * Revision 2.48  2006/03/18 10:23:46  taylor
  * make the main vital TMAP_MAX_VERTS stuff dynamic, should handle the major non-HTL related crashes
  *
@@ -2336,10 +2342,10 @@ int g3_draw_rod(vec3d *p0,float width1,vec3d *p1,float width2, vertex * verts, u
 
 // draw a perspective bitmap based on angles and radius
 vec3d g3_square[4] = {
-	{-1.0f, -1.0f, 20.0f},
-	{-1.0f, 1.0f, 20.0f},
-	{1.0f, 1.0f, 20.0f},
-	{1.0f, -1.0f, 20.0f}
+	{ { { -1.0f, -1.0f, 20.0f } } },
+	{ { { -1.0f, 1.0f, 20.0f } } },
+	{ { { 1.0f, 1.0f, 20.0f } } },
+	{ { { 1.0f, -1.0f, 20.0f } } }
 };
 
 #define MAX_PERSPECTIVE_DIVISIONS			5				// should never even come close to this limit

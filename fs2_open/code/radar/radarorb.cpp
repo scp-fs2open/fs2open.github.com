@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.22 $
- * $Date: 2006-01-16 11:02:23 $
- * $Author: wmcoolmon $
+ * $Revision: 1.23 $
+ * $Date: 2006-04-12 22:23:41 $
+ * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 1.21  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -161,17 +164,17 @@ vec3d orb_ring_xy[25];
 vec3d orb_ring_xz[25];
 vec3d vec_extents[]=
 {
-	{1,0,0},
-	{0,1,0},
-	{0,0,1},
-	{-1,0,0},
-	{0,-1,0},
-	{0,0,-1}
+	{ { { 1.0f, 0.0f, 0.0f } } },
+	{ { { 0.0f, 1.0f, 0.0f } } },
+	{ { { 0.0f, 0.0f, 1.0f } } },
+	{ { { -1.0f, 0.0f, 0.0f } } },
+	{ { { 0.0f, -1.0f, 0.0f } } },
+	{ { { 0.0f, 0.0f, -1.0f } } }
 };
 
 //special view matrix to get the orb rotating the correct war
-static matrix view_perturb = { { { {1.0f, 0.0f, 0.0f }, {0.0f,1.0f,0.0f}, {0.0f,0.0f,-1.0f} } } };
-static vec3d Orb_eye_position = {0,0,-2.5};
+static matrix view_perturb = { { { { { { 1.0f, 0.0f, 0.0f } } }, { { { 0.0f,1.0f,0.0f } } }, { { { 0.0f,0.0f,-1.0f } } } } } };
+static vec3d Orb_eye_position = { { { 0.0f, 0.0f, -2.5f } } };
 
 // forward declarations
 void draw_radar_blips_orb(int blip_type, int bright, int distort = 0);

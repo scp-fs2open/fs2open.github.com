@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.63 $
- * $Date: 2006-01-18 16:14:04 $
+ * $Revision: 2.64 $
+ * $Date: 2006-04-12 22:23:41 $
  * $Author: taylor $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2006/01/18 16:14:04  taylor
+ * allow gr_render_buffer() to take TMAP flags
+ * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
+ * add MR_SHOW_OUTLINE_HTL flag so we easily render using HTL mode for wireframe views
+ * make Interp_verts/Interp_norms/etc. dynamic and get rid of the extra htl_* versions
+ *
  * Revision 2.62  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -981,8 +987,8 @@ void hud_render_target_jump_node(object *target_objp)
 	}
 
 	char			outstr[256];
-	vec3d		obj_pos = {0.0f,0.0f,0.0f};
-	vec3d		camera_eye = {0.0f,0.0f,0.0f};
+	vec3d		obj_pos = ZERO_VECTOR;
+	vec3d		camera_eye = ZERO_VECTOR;
 	matrix		camera_orient = IDENTITY_MATRIX;
 	vec3d		orient_vec, up_vector;
 	float			factor, dist;
@@ -1036,8 +1042,8 @@ void hud_render_target_jump_node(object *target_objp)
 //
 void hud_render_target_asteroid(object *target_objp)
 {
-	vec3d		obj_pos = {0.0f,0.0f,0.0f};
-	vec3d		camera_eye = {0.0f,0.0f,0.0f};
+	vec3d		obj_pos = ZERO_VECTOR;
+	vec3d		camera_eye = ZERO_VECTOR;
 	matrix		camera_orient = IDENTITY_MATRIX;
 	asteroid		*asteroidp;
 	vec3d		orient_vec, up_vector;
@@ -1498,7 +1504,7 @@ void hud_targetbox_get_eye(vec3d *eye_pos, matrix *orient, int ship_num)
 	ship		*shipp;
 	polymodel	*pm;
 	eye			*ep;
-	vec3d		origin = {0.0f, 0.0f, 0.0f};
+	vec3d		origin = ZERO_VECTOR;
 
 	shipp = &Ships[ship_num];
 	pm = model_get( shipp->modelnum );
@@ -1520,8 +1526,8 @@ void hud_targetbox_get_eye(vec3d *eye_pos, matrix *orient, int ship_num)
 //
 void hud_render_target_ship(object *target_objp)
 {
-	vec3d		obj_pos = {0.0f,0.0f,0.0f};
-	vec3d		camera_eye = {0.0f,0.0f,0.0f};
+	vec3d		obj_pos = ZERO_VECTOR;
+	vec3d		camera_eye = ZERO_VECTOR;
 	matrix		camera_orient = IDENTITY_MATRIX;
 	ship		*target_shipp;
 	ship_info	*target_sip;
@@ -1632,8 +1638,8 @@ void hud_render_target_ship(object *target_objp)
 //
 void hud_render_target_debris(object *target_objp)
 {
-	vec3d	obj_pos = {0.0f,0.0f,0.0f};
-	vec3d	camera_eye = {0.0f,0.0f,0.0f};
+	vec3d	obj_pos = ZERO_VECTOR;
+	vec3d	camera_eye = ZERO_VECTOR;
 	matrix	camera_orient = IDENTITY_MATRIX;
 	debris	*debrisp;
 	vec3d	orient_vec, up_vector;
@@ -1703,8 +1709,8 @@ void hud_render_target_debris(object *target_objp)
 //
 void hud_render_target_weapon(object *target_objp)
 {
-	vec3d		obj_pos = {0.0f,0.0f,0.0f};
-	vec3d		camera_eye = {0.0f,0.0f,0.0f};
+	vec3d		obj_pos = ZERO_VECTOR;
+	vec3d		camera_eye = ZERO_VECTOR;
 	matrix		camera_orient = IDENTITY_MATRIX;
 	vec3d		orient_vec, up_vector;
 	weapon_info	*target_wip = NULL;

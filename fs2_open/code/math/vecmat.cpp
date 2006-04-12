@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.28 $
- * $Date: 2006-02-25 21:47:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.29 $
+ * $Date: 2006-04-12 22:23:41 $
+ * $Author: taylor $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2006/02/25 21:47:00  Goober5000
+ * spelling
+ *
  * Revision 2.27  2006/02/16 05:09:26  taylor
  * NULL vec warning fix (I don't really like this one that much so it may get replaced later)
  *
@@ -369,9 +372,9 @@ int index_largest (float a, float b, float c);	// returns index of largest, NO_L
 
 
 vec3d vmd_zero_vector = ZERO_VECTOR;
-vec3d vmd_x_vector = { 1.0f, 0.0f, 0.0f };
-vec3d vmd_y_vector = { 0.0f, 1.0f, 0.0f };
-vec3d vmd_z_vector = { 0.0f, 0.0f, 1.0f };
+vec3d vmd_x_vector = { { { 1.0f, 0.0f, 0.0f } } };
+vec3d vmd_y_vector = { { { 0.0f, 1.0f, 0.0f } } };
+vec3d vmd_z_vector = { { { 0.0f, 0.0f, 1.0f } } };
 matrix vmd_identity_matrix = IDENTITY_MATRIX;
 
 #define	UNINITIALIZED_VALUE	-12345678.9f

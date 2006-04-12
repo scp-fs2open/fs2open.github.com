@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-10-30 20:03:39 $
+ * $Revision: 2.13 $
+ * $Date: 2006-04-12 22:23:41 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/10/30 20:03:39  taylor
+ * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
+ * fix Mantis bug #381
+ * fix a small issue with the starfield bitmap removal sexp since it would read one past the array size
+ *
  * Revision 2.11  2005/10/10 17:21:06  taylor
  * remove NO_NETWORK
  *
@@ -205,16 +210,16 @@ typedef struct l_section {
 
 // points on the basic cross section
 vec3d Nebl_ring[3] = {	
-	{ -1.0f, 0.0f, 0.0f },
-	{ 1.0f, 0.70f, 0.0f },
-	{ 1.0f, -0.70f, 0.0f }	
+	{ { { -1.0f, 0.0f, 0.0f } } },
+	{ { { 1.0f, 0.70f, 0.0f } } },
+	{ { { 1.0f, -0.70f, 0.0f } } }	
 };
 
 // pinched off cross-section
 vec3d Nebl_ring_pinched[3] = {	
-	{ -0.05f, 0.0f, 0.0f },
-	{ 0.05f, 0.035f, 0.0f },
-	{ 0.05f, -0.035f, 0.0f }	
+	{ { { -0.05f, 0.0f, 0.0f } } },
+	{ { { 0.05f, 0.035f, 0.0f } } },
+	{ { { 0.05f, -0.035f, 0.0f } } }	
 };
 
 // globals used for rendering and generating bolts
