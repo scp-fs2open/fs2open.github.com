@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.48 $
- * $Date: 2006-03-18 10:23:46 $
+ * $Revision: 2.49 $
+ * $Date: 2006-04-12 01:00:58 $
  * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2006/03/18 10:23:46  taylor
+ * make the main vital TMAP_MAX_VERTS stuff dynamic, should handle the major non-HTL related crashes
+ *
  * Revision 2.47  2006/02/25 21:47:08  Goober5000
  * spelling
  *
@@ -2553,7 +2556,7 @@ void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a)
 }
 
 // draw a 2d bitmap on a poly
-int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flags)
+int g3_draw_2d_poly_bitmap(float x, float y, float w, float h, uint additional_tmap_flags)
 {
 	int ret;
 	int saved_zbuffer_mode;
@@ -2568,52 +2571,38 @@ int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flag
 	gr_zbuffer_set(GR_ZBUFF_NONE);	
 
 	// stuff coords	
-	v[0].sx = (float)x;
-	v[0].sy = (float)y;	
+	v[0].sx = x;
+	v[0].sy = y;	
 	v[0].sw = 0.0f;
 	v[0].u = 0.0f;
 	v[0].v = 0.0f;
 	v[0].flags = PF_PROJECTED;
 	v[0].codes = 0;
 
-	v[1].sx = (float)(x + w);
-	v[1].sy = (float)y;	
+	v[1].sx = (x + w);
+	v[1].sy = y;	
 	v[1].sw = 0.0f;
 	v[1].u = 1.0f;
 	v[1].v = 0.0f;
 	v[1].flags = PF_PROJECTED;
 	v[1].codes = 0;
 
-	v[2].sx = (float)(x + w);
-	v[2].sy = (float)(y + h);	
+	v[2].sx = (x + w);
+	v[2].sy = (y + h);	
 	v[2].sw = 0.0f;
 	v[2].u = 1.0f;
 	v[2].v = 1.0f;
 	v[2].flags = PF_PROJECTED;
 	v[2].codes = 0;
 
-	v[3].sx = (float)x;
-	v[3].sy = (float)(y + h);	
+	v[3].sx = x;
+	v[3].sy = (y + h);	
 	v[3].sw = 0.0f;
 	v[3].u = 0.0f;
 	v[3].v = 1.0f;
 	v[3].flags = PF_PROJECTED;
-	v[3].codes = 0;	
+	v[3].codes = 0;
 
-	/*
-	v[0].u = 0.5f / i2fl(bw);
-	v[0].v = 0.5f / i2fl(bh);
-
-	v[1].u = 1.0f + (0.5f / i2fl(bw));
-	v[1].v = 0.0f + (0.5f / i2fl(bh));
-
-	v[2].u = 1.0f + (0.5f / i2fl(bw));
-	v[2].v = 1.0f + (0.5f / i2fl(bh));
-
-	v[3].u = 0.0f + (0.5f / i2fl(bw));
-	v[3].v = 1.0f + (0.5f / i2fl(bh));
-	*/ 
-	
 	// no filtering
 	gr_filter_set(0);
 

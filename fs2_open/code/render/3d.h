@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.18 $
- * $Date: 2006-02-25 21:47:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.19 $
+ * $Date: 2006-04-12 01:00:58 $
+ * $Author: taylor $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/02/25 21:47:08  Goober5000
+ * spelling
+ *
  * Revision 2.17  2005/07/13 03:35:29  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -380,7 +383,7 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a);
 
 // draw a 2d bitmap on a poly
-int g3_draw_2d_poly_bitmap(int x, int y, int w, int h, uint additional_tmap_flags = 0);
+int g3_draw_2d_poly_bitmap(float x, float y, float w, float h, uint additional_tmap_flags = 0);
 
 // Enables clipping with an arbritary plane.   This will be on
 // until g3_stop_clip_plane is called or until next frame.
