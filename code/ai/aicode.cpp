@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.67 $
- * $Date: 2006-04-05 16:10:54 $
- * $Author: karajorma $
+ * $Revision: 1.68 $
+ * $Date: 2006-04-13 12:12:27 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.67  2006/04/05 16:10:54  karajorma
+ * Changes to support the new Enable/Disable-Builtin-Messages SEXP
+ *
  * Revision 1.66  2006/03/25 10:38:44  taylor
  * minor cleanup
  * address numerous out-of-bounds issues
@@ -2201,7 +2204,7 @@ int set_target_objnum(ai_info *aip, int objnum)
 
 		aip->target_objnum = objnum;
 		aip->target_time = 0.0f;
-		aip->target_signature = (objnum > 0) ? Objects[objnum].signature : -1;
+		aip->target_signature = (objnum >= 0) ? Objects[objnum].signature : -1;
 		// clear targeted subsystem
 		set_targeted_subsys(aip, NULL, -1);
 	}
