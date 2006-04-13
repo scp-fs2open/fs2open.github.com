@@ -2,13 +2,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.167 $
- * $Date: 2006-04-12 01:10:35 $
+ * $Revision: 2.168 $
+ * $Date: 2006-04-13 12:15:58 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.167  2006/04/12 01:10:35  taylor
+ * some cleanup and slight reorg
+ *  - remove special uv offsets for non-standard res, they were stupid anyway and don't actually fix the problem (which should actually be fixed now)
+ *  - avoid some costly math where possible in the drawing functions
+ *  - add opengl_error_string(), this is part of a later update but there wasn't a reason to not go ahead and commit this peice now
+ *  - minor cleanup to Win32 extension defines
+ *  - make opengl_lights[] allocate only when using OGL
+ *  - cleanup some costly per-frame lighting stuff
+ *  - clamp textures for interface and aabitmap (font) graphics since they shouldn't normally repeat anyway (the default)
+ *    (doing this for D3D, if it doesn't already, may fix the blue-lines problem since a similar issue was seen with OGL)
+ *
  * Revision 2.166  2006/03/26 08:26:45  taylor
  * make sure to only allow on screen save at the time (I don't like having it restricted but since it's not used for anything else there is little point)
  *
@@ -1798,15 +1809,39 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, boo
 	u1 = u_scale*i2fl(sx+w)/i2fl(bw);
 	v1 = v_scale*i2fl(sy+h)/i2fl(bh);
 
-	x1 = i2fl(x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
-	y1 = i2fl(y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
-	x2 = i2fl(x + w + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
-	y2 = i2fl(y + h + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
+	if (1) {
+		// this uses int's to help get rid of the size/position issue with extra precision that
+		// isn't handled properly by the scissor test, leading the rendering glitches. this isn't
+		// a 100% fix though and only gets it closer than the float method
+		int _x1, _y1, _x2, _y2;
+		_x1 = x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
+		_y1 = y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
+		_x2 = _x1 + w;
+		_y2 = _y1 + h;
 
-	if ( do_resize ) {
-		gr_resize_screen_posf( &x1, &y1 );
-		gr_resize_screen_posf( &x2, &y2 );
+		if ( do_resize ) {
+			gr_resize_screen_pos( &_x1, &_y1 );
+			gr_resize_screen_pos( &_x2, &_y2 );
+		}
+
+		x1 = i2fl(_x1);
+		y1 = i2fl(_y1);
+		x2 = i2fl(_x2);
+		y2 = i2fl(_y2);
+	} else {
+		// this uses floats, but since the scissor test is restricted to int's there is a precision issue
+		// where parts of other letters will show when they shouldn't
+		x1 = i2fl(x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
+		y1 = i2fl(y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
+		x2 = x1 + i2fl(w);
+		y2 = y1 + i2fl(h);
+
+		if ( do_resize ) {
+			gr_resize_screen_posf( &x1, &y1 );
+			gr_resize_screen_posf( &x2, &y2 );
+		}
 	}
+
 
 	if ( gr_screen.current_color.is_alphacolor )	{
 		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
@@ -1817,8 +1852,7 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, boo
 	ubyte s_color[3] = { gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue };
 	glSecondaryColor3ubvEXT(s_color);
 
-	if (mirror)
-	{
+	if (mirror) {
 		float temp = u0;
 		u0 = u1;
 		u1 = temp;
@@ -3669,8 +3703,8 @@ void opengl_bitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool 
 
 	x1 = i2fl(x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
 	y1 = i2fl(y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
-	x2 = i2fl(x + w + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
-	y2 = i2fl(y + h + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
+	x2 = x1 + i2fl(w);
+	y2 = y1 + i2fl(h);
 
 	if ( do_resize ) {
 		gr_resize_screen_posf( &x1, &y1 );
