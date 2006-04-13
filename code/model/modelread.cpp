@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.98 $
- * $Date: 2006-03-25 22:44:52 $
+ * $Revision: 2.99 $
+ * $Date: 2006-04-13 12:19:33 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2006/03/25 22:44:52  taylor
+ * fix model_allocate_interp_data() extern for OSX
+ *
  * Revision 2.97  2006/03/18 10:25:05  taylor
  * never try and load glow or shine maps if we don't have a base map for it
  * but WMC's bumpmap block in a BUMPMAPPING define since it useless most of the time
@@ -2638,6 +2641,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				pm->n_paths = cfread_int( fp );
 				pm->paths = (model_path *)vm_malloc(sizeof(model_path)*pm->n_paths);
 				Assert( pm->paths != NULL );
+
+				memset( pm->paths, 0, sizeof(model_path) * pm->n_paths );
 					
 				for (i=0; i<pm->n_paths; i++ )	{
 					cfread_string_len(pm->paths[i].name , MAX_NAME_LEN-1, fp);
@@ -2661,12 +2666,15 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						pm->paths[i].parent_name[0] = 0;
 						pm->paths[i].parent_submodel = -1;
 					}
+
 					pm->paths[i].nverts = cfread_int( fp );
 					pm->paths[i].verts = (mp_vert *)vm_malloc( sizeof(mp_vert) * pm->paths[i].nverts );
 					pm->paths[i].goal = pm->paths[i].nverts - 1;
 					pm->paths[i].type = MP_TYPE_UNUSED;
 					pm->paths[i].value = 0;
 					Assert(pm->paths[i].verts!=NULL);
+					memset( pm->paths[i].verts, 0, sizeof(mp_vert) * pm->paths[i].nverts );
+
 					for (j=0; j<pm->paths[i].nverts; j++ )	{
 						cfread_vector(&pm->paths[i].verts[j].pos,fp );
 						pm->paths[i].verts[j].radius = cfread_float( fp );
@@ -2676,9 +2684,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 							nturrets = cfread_int( fp );
 							pm->paths[i].verts[j].nturrets = nturrets;
-							pm->paths[i].verts[j].turret_ids = (int *)vm_malloc( sizeof(int) * nturrets );
-							for ( k = 0; k < nturrets; k++ )
-								pm->paths[i].verts[j].turret_ids[k] = cfread_int( fp );
+
+							if (nturrets > 0) {
+								pm->paths[i].verts[j].turret_ids = (int *)vm_malloc( sizeof(int) * nturrets );
+								for ( k = 0; k < nturrets; k++ )
+									pm->paths[i].verts[j].turret_ids[k] = cfread_int( fp );
+							}
 						} 
 						
 					}
