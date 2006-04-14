@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.38 $
- * $Date: 2006-03-15 17:30:47 $
+ * $Revision: 2.39 $
+ * $Date: 2006-04-14 18:39:38 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2006/03/15 17:30:47  taylor
+ * remove alut headers, since we don't use any alut functions anyway (didn't I already do this a couple of months ago??)
+ *
  * Revision 2.37  2006/01/30 07:14:32  taylor
  * make sure to init dest and dest_size for any calling functions that don't
  *
@@ -1693,15 +1696,16 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 
 	// print out OpenAL extensions
 	OAL_extensions=(const char*)alGetString( AL_EXTENSIONS );
+	int ext_length = strlen(OAL_extensions) + 1;
 
 	// we use the "+1" here to have an extra NULL char on the end (with the memset())
 	// this is to fix memory errors when the last char in extlist is the same as the token
 	// we are looking for and ultra evil strtok() may still return non-NULL at EOS
-	extlist = (char*)vm_malloc( strlen(OAL_extensions) + 1 );
-	memset( extlist, 0, strlen(OAL_extensions) + 1);
+	extlist = (char*)vm_malloc( ext_length );
+	memset( extlist, 0, ext_length);
 
 	if (extlist != NULL) {
-		memcpy(extlist, OAL_extensions, strlen(OAL_extensions));
+		memcpy(extlist, OAL_extensions, ext_length - 1);
 
 		curext = strtok(extlist, " ");
 
