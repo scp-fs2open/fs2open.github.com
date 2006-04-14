@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.330 $
- * $Date: 2006-04-07 20:17:33 $
- * $Author: karajorma $
+ * $Revision: 2.331 $
+ * $Date: 2006-04-14 18:39:06 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.330  2006/04/07 20:17:33  karajorma
+ * Added SEXPs to lock and unlock the primary and secondary weapons
+ *
  * Revision 2.329  2006/04/05 16:46:40  karajorma
  * Changes to support the new Enable/Disable-Builtin-Messages SEXP
  *
@@ -8521,7 +8524,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 						}
 
 						if ( ss == END_OF_LIST(&Ships[n].subsys_list) )
-							Warning(LOCATION, "Couldn't fix up turret indices in spline path\n\nModel: %s\nPath: %s\nVertex: %d\nTurret model id:%d\n\nThis probably means the turret was not specified in %s", sip->pof_file, pm->paths[i].name, j, ptindex, current_ship_table );
+							Warning(LOCATION, "Couldn't fix up turret indices in spline path\n\nModel: %s\nPath: %s\nVertex: %d\nTurret model id:%d\n\nThis probably means that the turret was not specified in the ship table(s).", sip->pof_file, pm->paths[i].name, j, ptindex );
 					}
 				}
 			}
