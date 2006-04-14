@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.41 $
- * $Author: Goober5000 $
- * $Date: 2006-01-20 07:10:33 $
+ * $Revision: 2.42 $
+ * $Author: taylor $
+ * $Date: 2006-04-14 18:44:16 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 2.40  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -395,10 +399,11 @@
 #include <string>
 #include <vector>
 
+// NOTE: although the main game doesn't need this anymore, FRED2 still does
 #define	MISSION_TEXT_SIZE	1000000
 
-extern char	Mission_text[MISSION_TEXT_SIZE];
-extern char	Mission_text_raw[MISSION_TEXT_SIZE];
+extern char	*Mission_text;
+extern char	*Mission_text_raw;
 extern char	*Mp;
 extern char	*token_found;
 extern int fred_parse_flag;
@@ -529,16 +534,20 @@ extern void parse_int_list(int *ilist, int size);
 
 
 // general
-extern void reset_parse();
+extern void reset_parse(char *text = NULL);
 extern void display_parse_diagnostics();
+extern void pause_parse();
+extern void unpause_parse();
+// stop parsing, basically just free's up the memory from Mission_text and Mission_text_raw
+extern void stop_parse();
 
 // utility
 extern void mark_int_list(int *ilp, int max_ints, int lookup_type);
 extern void compact_multitext_string(char *str);
-extern void read_file_text(char *filename, int mode = CF_TYPE_ANY, char *processed_text = Mission_text, char *raw_text = Mission_text_raw);
-extern void read_file_text_from_array(char *array, char *processed_text = Mission_text, char *raw_text = Mission_text_raw);
-extern void read_raw_file_text(char *filename, int mode = CF_TYPE_ANY, char *raw_text = Mission_text_raw);
-extern void process_raw_file_text(char *processed_text = Mission_text, char *raw_text = Mission_text_raw);
+extern void read_file_text(char *filename, int mode = CF_TYPE_ANY, char *processed_text = NULL, char *raw_text = NULL);
+extern void read_file_text_from_array(char *array, char *processed_text = NULL, char *raw_text = NULL);
+extern void read_raw_file_text(char *filename, int mode = CF_TYPE_ANY, char *raw_text = NULL);
+extern void process_raw_file_text(char *processed_text = NULL, char *raw_text = NULL);
 extern void debug_show_mission_text();
 extern void convert_sexp_to_string(int cur_node, char *outstr, int mode);
 char *split_str_once(char *src, int max_pixel_w);

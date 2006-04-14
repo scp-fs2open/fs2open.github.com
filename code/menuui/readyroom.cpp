@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.22 $
- * $Date: 2006-01-13 08:27:43 $
+ * $Revision: 2.23 $
+ * $Date: 2006-04-14 18:44:16 $
  * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/01/13 08:27:43  taylor
+ * swap order of pilot read and reset-to-defaults so that the various entries in the pilot file don't get clobbered needlessly
+ *
  * Revision 2.21  2005/10/30 19:22:31  wmcoolmon
  * Display a special dialog if the player tries to continue a campaign with no missions
  *
@@ -805,6 +808,9 @@ void sim_room_build_listing()
 			}
 		}
 	}
+
+	// free up memory from parsing all of those missions
+	stop_parse();
 
 	// set appropriate slider size
 	max_num_entries_viewable = list_h / (font_height + 2);

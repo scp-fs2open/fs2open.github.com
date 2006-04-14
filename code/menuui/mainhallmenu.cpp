@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.41 $
- * $Date: 2006-03-01 04:01:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.42 $
+ * $Date: 2006-04-14 18:44:16 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2006/03/01 04:01:15  Goober5000
+ * not needed... and just an annoyance with > 2 main halls
+ *
  * Revision 2.40  2006/02/28 06:59:28  Goober5000
  * cool stuff with main hall music tracks
  *
@@ -2413,6 +2416,9 @@ void main_hall_read_table()
 		strcpy(Main_hall_defines[GR_640][1].bitmap, "vhallhead");
 		strcpy(Main_hall_defines[GR_1024][1].bitmap, "2_vhallhead");		
 	}
+
+	// free up memory from parsing the mainhall tbl
+	stop_parse();
 }
 
 // make the vasudan main hall funny
