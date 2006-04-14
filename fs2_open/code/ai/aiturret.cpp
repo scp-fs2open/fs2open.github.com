@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.37 $
- * $Date: 2006-04-14 18:36:11 $
+ * $Revision: 1.38 $
+ * $Date: 2006-04-14 21:13:31 $
  * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.37  2006/04/14 18:36:11  taylor
+ * I might have blamed this on sleep, if it wasn't a bold faced lie. ;)
+ *   - another part of the turret untargetting target bug
+ *
  * Revision 1.36  2006/03/25 10:38:44  taylor
  * minor cleanup
  * address numerous out-of-bounds issues
@@ -824,16 +828,12 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 	if ((sip->flags & SIF_SMALL_SHIP) && (aip->target_objnum != -1)) {
 		int target_objnum = aip->target_objnum;
 
-		// don't let AI try to attack protected ships
-		if ( (aip != Player_ai) && (Objects[target_objnum].flags & OF_PROTECTED) ) {
-			set_target_objnum(aip, -1);
-			return -1;
-		}
-
 		if (Objects[target_objnum].signature == aip->target_signature) {
 			if (iff_matches_mask(Ships[Objects[target_objnum].instance].team, enemy_team_mask)) {
-				// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum, target_objnum));
-				return target_objnum;
+				if ( !(Objects[target_objnum].flags & OF_PROTECTED) ) {		// check this flag as well
+					// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum, target_objnum));
+					return target_objnum;
+				}
 			}
 		} else {
 			aip->target_objnum = -1;
