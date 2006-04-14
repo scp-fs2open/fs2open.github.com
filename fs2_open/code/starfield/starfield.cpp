@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.68 $
- * $Date: 2006-03-20 06:13:35 $
+ * $Revision: 2.69 $
+ * $Date: 2006-04-14 18:40:44 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2006/03/20 06:13:35  taylor
+ * might as well do star antialiasing for OGL too
+ *
  * Revision 2.67  2006/02/25 21:47:19  Goober5000
  * spelling
  *
@@ -950,7 +953,8 @@ void parse_startbl(char *longname)
 
 			if ( (idx = check_for_starfield_duplicate(sbm.filename)) >= 0 ) {
 				if (sbm.xparent == Starfield_bitmaps[idx].xparent) {
-					Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
+					if ( !Parsing_modular_table )
+						Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
 				} else {
 					Warning(LOCATION, "Starfield bitmap '%s' already listed as a xparent bitmap!!  Only using the xparent version!", sbm.filename);
 				}
@@ -966,12 +970,20 @@ void parse_startbl(char *longname)
 
 			if ( (idx = check_for_starfield_duplicate(sbm.filename)) >= 0 ) {
 				if (sbm.xparent == Starfield_bitmaps[idx].xparent) {
-					Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
+					if ( !Parsing_modular_table )
+						Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
 				} else {
 					Warning(LOCATION, "Starfield xparent bitmap '%s' already listed as a non-xparent bitmap!!  Only using the non-xparent version!", sbm.filename);
 				}
 			} else {
 				Starfield_bitmaps.push_back(sbm);
+			}
+		} else {
+			if (Parsing_modular_table) {
+				break;
+			} else {
+				Warning(LOCATION, "Unknown section in \"%s\"!  Going to skip it...\n", longname);
+				break;
 			}
 		}
 	}
@@ -1069,9 +1081,17 @@ void parse_startbl(char *longname)
 			sbm.xparent = 1;
 
 			if ( (idx = check_for_sun_duplicate(sbm.filename)) >= 0 ) {
-				Warning(LOCATION, "Sun bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
+				if ( !Parsing_modular_table )
+					Warning(LOCATION, "Sun bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
 			} else {
 				Sun_bitmaps.push_back(sbm);
+			}
+		} else {
+			if (Parsing_modular_table) {
+				break;
+			} else {
+				Warning(LOCATION, "Unknown section in \"%s\"!  Going to skip it...\n", longname);
+				break;
 			}
 		}
 	}
@@ -1085,7 +1105,12 @@ void parse_startbl(char *longname)
 	// normal debris pieces
 	while(!optional_string("#end"))
 	{
-		required_string("$Debris:");
+		if (Parsing_modular_table && !optional_string("$Debris:")) {
+				break;
+		} else {
+			required_string("$Debris:");
+		}
+
 		stuff_string(filename, F_NAME, NULL);
 
 		if(Num_debris_normal < MAX_DEBRIS_VCLIPS){
@@ -1098,7 +1123,12 @@ void parse_startbl(char *longname)
 	// nebula debris pieces
 	while(!optional_string("#end"))
 	{
-		required_string("$DebrisNeb:");
+		if (Parsing_modular_table && !optional_string("$DebrisNeb:")) {
+			break;
+		} else {
+			required_string("$DebrisNeb:");
+		}
+
 		stuff_string(filename, F_NAME, NULL);
 
 		if(Num_debris_nebula < MAX_DEBRIS_VCLIPS){
