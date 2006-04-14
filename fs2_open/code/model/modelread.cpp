@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.99 $
- * $Date: 2006-04-13 12:19:33 $
+ * $Revision: 2.100 $
+ * $Date: 2006-04-14 18:37:06 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2006/04/13 12:19:33  taylor
+ * make sure we don't allocate any memory for turrets unless there are some, was causing a few various memory issues, mainly for debug builds
+ *   (there is more of this same checking on the way for the other malloc() calls during model loading, and vm_malloc() will be set to
+ *    Assert() on a 0 or less size as well)
+ *
  * Revision 2.98  2006/03/25 22:44:52  taylor
  * fix model_allocate_interp_data() extern for OSX
  *
@@ -2044,12 +2049,14 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->num_lights = cfread_int(fp);
 					//mprintf(( "Found %d lights!\n", pm->num_lights ));
 
-					pm->lights = (bsp_light *)vm_malloc( sizeof(bsp_light)*pm->num_lights );
-					for (i=0; i<pm->num_lights; i++ )	{			
-						cfread_vector(&pm->lights[i].pos,fp);
-						pm->lights[i].type = cfread_int(fp);
-						pm->lights[i].value = 0.0f;
-					}								
+					if (pm->num_lights > 0) {
+						pm->lights = (bsp_light *)vm_malloc( sizeof(bsp_light)*pm->num_lights );
+						for (i=0; i<pm->num_lights; i++ )	{			
+							cfread_vector(&pm->lights[i].pos,fp);
+							pm->lights[i].type = cfread_int(fp);
+							pm->lights[i].value = 0.0f;
+						}
+					}
 				} else {
 					pm->num_lights = 0;
 					pm->lights = NULL;
@@ -2233,73 +2240,77 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 			case ID_SHLD:
 				{
-					int nverts, ntris;					
+					pm->shield.nverts = cfread_int( fp );		// get the number of vertices in the list
 
-					nverts = cfread_int( fp );		// get the number of vertices in the list
-					pm->shield.nverts = nverts;
-					pm->shield.verts = (shield_vertex *)vm_malloc(nverts * sizeof(shield_vertex) );
-					Assert( pm->shield.verts );
-					for ( i = 0; i < nverts; i++ )							// read in the vertex list
-						cfread_vector( &(pm->shield.verts[i].pos), fp );
+					if (pm->shield.nverts > 0) {
+						pm->shield.verts = (shield_vertex *)vm_malloc(pm->shield.nverts * sizeof(shield_vertex) );
+						Assert( pm->shield.verts );
+						for ( i = 0; i < pm->shield.nverts; i++ )							// read in the vertex list
+							cfread_vector( &(pm->shield.verts[i].pos), fp );
+					}
 
-					ntris = cfread_int( fp );		// get the number of triangles that compose the shield
-					pm->shield.ntris = ntris;
-					pm->shield.tris = (shield_tri *)vm_malloc(ntris * sizeof(shield_tri) );
-					Assert( pm->shield.tris );
-					for ( i = 0; i < ntris; i++ ) {
-						cfread_vector( &(pm->shield.tris[i].norm), fp );
-						for ( j = 0; j < 3; j++ ) {
-							pm->shield.tris[i].verts[j] = cfread_int( fp );		// read in the indices into the shield_vertex list
-							/*
+					pm->shield.ntris = cfread_int( fp );		// get the number of triangles that compose the shield
+
+					if (pm->shield.ntris > 0) {
+						pm->shield.tris = (shield_tri *)vm_malloc(pm->shield.ntris * sizeof(shield_tri) );
+						Assert( pm->shield.tris );
+						for ( i = 0; i < pm->shield.ntris; i++ ) {
+							cfread_vector( &(pm->shield.tris[i].norm), fp );
+							for ( j = 0; j < 3; j++ ) {
+								pm->shield.tris[i].verts[j] = cfread_int( fp );		// read in the indices into the shield_vertex list
+								/*
 #ifndef NDEBUG
-							if (pm->shield.tris[i].verts[j] >= nverts)
-								if (!warning_displayed) {
-									warning_displayed = 1;
-									Warning(LOCATION, "Ship %s has a bogus shield mesh.\nOnly %i vertices, index %i found.\n", filename, nverts, pm->shield.tris[i].verts[j]);
-								}
+								if (pm->shield.tris[i].verts[j] >= nverts)
+									if (!warning_displayed) {
+										warning_displayed = 1;
+										Warning(LOCATION, "Ship %s has a bogus shield mesh.\nOnly %i vertices, index %i found.\n", filename, nverts, pm->shield.tris[i].verts[j]);
+									}
 #endif
 								*/
+							}
+							for ( j = 0; j < 3; j++ )
+								pm->shield.tris[i].neighbors[j] = cfread_int( fp );	// read in the neighbor indices -- indexes into tri list
 						}
-						for ( j = 0; j < 3; j++ )
-							pm->shield.tris[i].neighbors[j] = cfread_int( fp );	// read in the neighbor indices -- indexes into tri list
 					}
-					break;
-
-
-					
 				}
 				break;
 
 			case ID_GPNT:
 				pm->n_guns = cfread_int(fp);
-				pm->gun_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_guns);
-				Assert( pm->gun_banks != NULL );
 
-				for (i = 0; i < pm->n_guns; i++ ) {
-					w_bank *bank = &pm->gun_banks[i];
+				if (pm->n_guns > 0) {
+					pm->gun_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_guns);
+					Assert( pm->gun_banks != NULL );
 
-					bank->num_slots = cfread_int(fp);
-					Assert ( bank->num_slots < MAX_SLOTS );
-					for (j = 0; j < bank->num_slots; j++) {
-						cfread_vector( &(bank->pnt[j]), fp );
-						cfread_vector( &(bank->norm[j]), fp );
+					for (i = 0; i < pm->n_guns; i++ ) {
+						w_bank *bank = &pm->gun_banks[i];
+
+						bank->num_slots = cfread_int(fp);
+						Assert ( bank->num_slots < MAX_SLOTS );
+						for (j = 0; j < bank->num_slots; j++) {
+							cfread_vector( &(bank->pnt[j]), fp );
+							cfread_vector( &(bank->norm[j]), fp );
+						}
 					}
 				}
 				break;
 			
 			case ID_MPNT:
 				pm->n_missiles = cfread_int(fp);
-				pm->missile_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_missiles);
-				Assert( pm->missile_banks != NULL );
 
-				for (i = 0; i < pm->n_missiles; i++ ) {
-					w_bank *bank = &pm->missile_banks[i];
+				if (pm->n_missiles > 0) {
+					pm->missile_banks = (w_bank *)vm_malloc(sizeof(w_bank) * pm->n_missiles);
+					Assert( pm->missile_banks != NULL );
 
-					bank->num_slots = cfread_int(fp);
-					Assert ( bank->num_slots < MAX_SLOTS );
-					for (j = 0; j < bank->num_slots; j++) {
-						cfread_vector( &(bank->pnt[j]), fp );
-						cfread_vector( &(bank->norm[j]), fp );
+					for (i = 0; i < pm->n_missiles; i++ ) {
+						w_bank *bank = &pm->missile_banks[i];
+
+						bank->num_slots = cfread_int(fp);
+						Assert ( bank->num_slots < MAX_SLOTS );
+						for (j = 0; j < bank->num_slots; j++) {
+							cfread_vector( &(bank->pnt[j]), fp );
+							cfread_vector( &(bank->norm[j]), fp );
+						}
 					}
 				}
 				break;
@@ -2308,42 +2319,45 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				char props[MAX_PROP_LEN];
 
 				pm->n_docks = cfread_int(fp);
-				pm->docking_bays = (dock_bay *)vm_malloc(sizeof(dock_bay) * pm->n_docks);
-				Assert( pm->docking_bays != NULL );
 
-				for (i = 0; i < pm->n_docks; i++ ) {
-					char *p;
-					dock_bay *bay = &pm->docking_bays[i];
+				if (pm->n_docks > 0) {
+					pm->docking_bays = (dock_bay *)vm_malloc(sizeof(dock_bay) * pm->n_docks);
+					Assert( pm->docking_bays != NULL );
 
-					cfread_string_len( props, MAX_PROP_LEN, fp );
-					if ( (p = strstr(props, "$name"))!= NULL )
-						get_user_prop_value(p+5, bay->name);
-					else
-						sprintf(bay->name, "<unnamed bay %c>", 'A' + i);
-					bay->num_spline_paths = cfread_int( fp );
-					if ( bay->num_spline_paths > 0 ) {
-						bay->splines = (int *)vm_malloc(sizeof(int) * bay->num_spline_paths);
-						for ( j = 0; j < bay->num_spline_paths; j++ )
-							bay->splines[j] = cfread_int(fp);
-					} else {
-						bay->splines = NULL;
-					}
+					for (i = 0; i < pm->n_docks; i++ ) {
+						char *p;
+						dock_bay *bay = &pm->docking_bays[i];
 
-					// determine what this docking bay can be used for
-					if ( !strnicmp(bay->name, "cargo", 5) )
-						bay->type_flags = DOCK_TYPE_CARGO;
-					else
-						bay->type_flags = (DOCK_TYPE_REARM | DOCK_TYPE_GENERIC);
+						cfread_string_len( props, MAX_PROP_LEN, fp );
+						if ( (p = strstr(props, "$name"))!= NULL )
+							get_user_prop_value(p+5, bay->name);
+						else
+							sprintf(bay->name, "<unnamed bay %c>", 'A' + i);
+						bay->num_spline_paths = cfread_int( fp );
+						if ( bay->num_spline_paths > 0 ) {
+							bay->splines = (int *)vm_malloc(sizeof(int) * bay->num_spline_paths);
+							for ( j = 0; j < bay->num_spline_paths; j++ )
+								bay->splines[j] = cfread_int(fp);
+						} else {
+							bay->splines = NULL;
+						}
 
-					bay->num_slots = cfread_int(fp);
+						// determine what this docking bay can be used for
+						if ( !strnicmp(bay->name, "cargo", 5) )
+							bay->type_flags = DOCK_TYPE_CARGO;
+						else
+							bay->type_flags = (DOCK_TYPE_REARM | DOCK_TYPE_GENERIC);
 
-					if(bay->num_slots != 2) {
-						Warning(LOCATION, "Model '%s' has %d dockpoints in model file; models must have %d dock slots per dock point.", filename, bay->num_slots, 2);
-					}
+						bay->num_slots = cfread_int(fp);
 
-					for (j = 0; j < bay->num_slots; j++) {
-						cfread_vector( &(bay->pnt[j]), fp );
-						cfread_vector( &(bay->norm[j]), fp );
+						if(bay->num_slots != 2) {
+							Warning(LOCATION, "Model '%s' has %d dockpoints in model file; models must have %d dock slots per dock point.", filename, bay->num_slots, 2);
+						}
+
+						for (j = 0; j < bay->num_slots; j++) {
+							cfread_vector( &(bay->pnt[j]), fp );
+							cfread_vector( &(bay->norm[j]), fp );
+						}
 					}
 				}
 				break;
@@ -2353,61 +2367,70 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				//
 				char props[MAX_PROP_LEN];
 				pm->n_glows = cfread_int(fp);
-				pm->glows = (glow_bank *)vm_malloc(sizeof(glow_bank) * pm->n_glows);
-				Assert( pm->glows != NULL );
 
-				for (int q = 0; q < pm->n_glows; q++ ) {
-					glow_bank *bank = &pm->glows[q];
-					bank->is_on=1;
-					bank->glow_timestamp=0;
-					bank->disp_time = cfread_int(fp);
-					bank->on_time = cfread_int(fp);
-					bank->off_time = cfread_int(fp);
-					bank->submodel_parent = cfread_int(fp);
-					bank->LOD = cfread_int(fp);
-					bank->type = cfread_int(fp);
-					bank->num_slots = cfread_int(fp);
-					if((bank->off_time > 0) && (bank->disp_time > 0)){
-						bank->is_on=0;
-					} 
+				if (pm->n_glows > 0) {
+					pm->glows = (glow_bank *)vm_malloc(sizeof(glow_bank) * pm->n_glows);
+					Assert( pm->glows != NULL );
+
+					for (int q = 0; q < pm->n_glows; q++ ) {
+						glow_bank *bank = &pm->glows[q];
+						bank->is_on=1;
+						bank->glow_timestamp=0;
+						bank->disp_time = cfread_int(fp);
+						bank->on_time = cfread_int(fp);
+						bank->off_time = cfread_int(fp);
+						bank->submodel_parent = cfread_int(fp);
+						bank->LOD = cfread_int(fp);
+						bank->type = cfread_int(fp);
+						bank->num_slots = cfread_int(fp);
+
+						if((bank->off_time > 0) && (bank->disp_time > 0)){
+							bank->is_on=0;
+						} 
 	
 						cfread_string_len( props, MAX_PROP_LEN, fp );
 						// look for $glow_texture=xxx
 						int length = strlen(props);
+
 						if (length > 0) {
 							int base_length = strlen("$glow_texture=");
 							Assert( strstr( (const char *)&props, "$glow_texture=") != NULL );
 							Assert( length > base_length );
-								char *glow_texture_name = props + base_length;
+							char *glow_texture_name = props + base_length;
+
 							if (glow_texture_name[0] == '$') {
 								glow_texture_name++;
 							}
-						bank->glow_bitmap = bm_load( glow_texture_name );
-						if (bank->glow_bitmap < 0)	{
-							Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
-						}else{
-							nprintf(( "Model", "Glowbank %i texture num is %d for '%s'\n", q, bank->glow_bitmap, pm->filename ));
-						}
-						strcat(glow_texture_name, "-neb");
-						bank->glow_neb_bitmap = bm_load( glow_texture_name );
-						if (bank->glow_neb_bitmap < 0)	{
-							bank->glow_neb_bitmap = bank->glow_bitmap;
-							nprintf(( "Model", "Glowbank texture not found for '%s', setting as the normal one num\n", pm->filename));
-						//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
-						}else{
-							nprintf(( "Model", "Glowbank %i nebula texture num is %d for '%s'\n", q, bank->glow_neb_bitmap, pm->filename ));
+
+							bank->glow_bitmap = bm_load( glow_texture_name );
+
+							if (bank->glow_bitmap < 0)	{
+								Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
+							}else{
+								nprintf(( "Model", "Glowbank %i texture num is %d for '%s'\n", q, bank->glow_bitmap, pm->filename ));
+							}
+
+							strcat(glow_texture_name, "-neb");
+							bank->glow_neb_bitmap = bm_load( glow_texture_name );
+
+							if (bank->glow_neb_bitmap < 0)	{
+								bank->glow_neb_bitmap = bank->glow_bitmap;
+								nprintf(( "Model", "Glowbank texture not found for '%s', setting as the normal one num\n", pm->filename));
+							//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
+							}else{
+								nprintf(( "Model", "Glowbank %i nebula texture num is %d for '%s'\n", q, bank->glow_neb_bitmap, pm->filename ));
+							}
 						}
 
-					}
-					for (j = 0; j < bank->num_slots; j++) {
-						glow_point *p = &bank->point[j];
-						cfread_vector( &(p->pnt), fp );
-						cfread_vector( &(p->norm), fp );
+						for (j = 0; j < bank->num_slots; j++) {
+							glow_point *p = &bank->point[j];
+							cfread_vector( &(p->pnt), fp );
+							cfread_vector( &(p->norm), fp );
 							p->radius = cfread_float( fp );
 							//mprintf(( "Rad = %.2f\n", rad ));
+						}
+						//mprintf(( "Num slots = %d\n", bank->num_slots ));
 					}
-					//mprintf(( "Num slots = %d\n", bank->num_slots ));
-
 				}
 				break;					
 			 }				//end glowpoint reading -Bobboau
@@ -2415,76 +2438,78 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			case ID_FUEL:
 				char props[MAX_PROP_LEN];
 				pm->n_thrusters = cfread_int(fp);
-				pm->thrusters = (thruster_bank *)vm_malloc(sizeof(thruster_bank) * pm->n_thrusters);
-				Assert( pm->thrusters != NULL );
 
-				for (i = 0; i < pm->n_thrusters; i++ ) {
-					thruster_bank *bank = &pm->thrusters[i];
+				if (pm->n_thrusters > 0) {
+					pm->thrusters = (thruster_bank *)vm_malloc(sizeof(thruster_bank) * pm->n_thrusters);
+					Assert( pm->thrusters != NULL );
 
-					bank->num_slots = cfread_int(fp);
+					for (i = 0; i < pm->n_thrusters; i++ ) {
+						thruster_bank *bank = &pm->thrusters[i];
 
-					bank ->obj_num = -1;
+						bank->num_slots = cfread_int(fp);
 
-					if (pm->version < 2117) {
-						bank->wash_info_pointer = NULL;
-					} else {
-						cfread_string_len( props, MAX_PROP_LEN, fp );
-						// look for $engine_subsystem=xxx
-						int length = strlen(props);
-						if (length > 0) {
-							int base_length = strlen("$engine_subsystem=");
-							Assert( strstr( (const char *)&props, "$engine_subsystem=") != NULL );
-							Assert( length > base_length );
-							char *engine_subsys_name = props + base_length;
-							if (engine_subsys_name[0] == '$') {
-								engine_subsys_name++;
-							}
+						bank ->obj_num = -1;
 
-							nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
-
-							// set wash_info_index to invalid
-							int table_error = 1;
+						if (pm->version < 2117) {
 							bank->wash_info_pointer = NULL;
-							for (int k=0; k<n_subsystems; k++) {
-								if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
-									bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
-									if (bank->wash_info_pointer != NULL) {
-										table_error = 0;
-									}
-									// also set what subsystem this is attached to but not if we only have one thruster bank
-									// do this so that original :V: models still work like they used to
-									if (pm->n_thrusters > 1) {
-										bank->obj_num = k;
-									}
-									break;
-								}
-							}
-
-							if ( (bank->wash_info_pointer == NULL) && (n_subsystems > 0) ) {
-								if (table_error) {
-								//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
-								} else {
-									Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
-								}
-							}
 						} else {
-							bank->wash_info_pointer = NULL;
-						}
-					}
+							cfread_string_len( props, MAX_PROP_LEN, fp );
+							// look for $engine_subsystem=xxx
+							int length = strlen(props);
+							if (length > 0) {
+								int base_length = strlen("$engine_subsystem=");
+								Assert( strstr( (const char *)&props, "$engine_subsystem=") != NULL );
+								Assert( length > base_length );
+								char *engine_subsys_name = props + base_length;
+								if (engine_subsys_name[0] == '$') {
+									engine_subsys_name++;
+								}
 
-					for (j = 0; j < bank->num_slots; j++) {
-						glow_point *p = &bank->point[j];
-						cfread_vector( &(p->pnt), fp );
-						cfread_vector( &(p->norm), fp );
-						if ( pm->version > 2004 )	{
-							p->radius = cfread_float( fp );
-							//mprintf(( "Rad = %.2f\n", rad ));
-						} else {
-							p->radius = 1.0f;
-						}
-					}
-					//mprintf(( "Num slots = %d\n", bank->num_slots ));
+								nprintf(("wash", "Ship %s with engine wash associated with subsys %s\n", filename, engine_subsys_name));
 
+								// set wash_info_index to invalid
+								int table_error = 1;
+								bank->wash_info_pointer = NULL;
+								for (int k=0; k<n_subsystems; k++) {
+									if ( !subsystem_stricmp(subsystems[k].subobj_name, engine_subsys_name) ) {
+										bank->wash_info_pointer = subsystems[k].engine_wash_pointer;
+										if (bank->wash_info_pointer != NULL) {
+											table_error = 0;
+										}
+										// also set what subsystem this is attached to but not if we only have one thruster bank
+										// do this so that original :V: models still work like they used to
+										if (pm->n_thrusters > 1) {
+											bank->obj_num = k;
+										}
+										break;
+									}
+								}
+
+								if ( (bank->wash_info_pointer == NULL) && (n_subsystems > 0) ) {
+									if (table_error) {
+									//	Warning(LOCATION, "No engine wash table entry in ships.tbl for ship model %s", filename);
+									} else {
+										Warning(LOCATION, "Inconsistent model: Engine wash engine subsystem does not match any ship subsytem names for ship model %s", filename);
+									}
+								}
+							} else {
+								bank->wash_info_pointer = NULL;
+							}
+						}
+
+						for (j = 0; j < bank->num_slots; j++) {
+							glow_point *p = &bank->point[j];
+							cfread_vector( &(p->pnt), fp );
+							cfread_vector( &(p->norm), fp );
+							if ( pm->version > 2004 )	{
+								p->radius = cfread_float( fp );
+								//mprintf(( "Rad = %.2f\n", rad ));
+							} else {
+								p->radius = 1.0f;
+							}
+						}
+						//mprintf(( "Num slots = %d\n", bank->num_slots ));
+					}
 				}
 				break;
 
