@@ -1,12 +1,17 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.36 $
- * $Date: 2006-03-25 10:38:44 $
+ * $Revision: 1.37 $
+ * $Date: 2006-04-14 18:36:11 $
  * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2006/03/25 10:38:44  taylor
+ * minor cleanup
+ * address numerous out-of-bounds issues
+ * add some better error checking and Assert()'s around
+ *
  * Revision 1.35  2006/03/24 07:38:35  wmcoolmon
  * New subobject animation stuff and Lua functions.
  *
@@ -819,8 +824,8 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 	if ((sip->flags & SIF_SMALL_SHIP) && (aip->target_objnum != -1)) {
 		int target_objnum = aip->target_objnum;
 
-		// don't try to attack protected ships
-		if (Objects[target_objnum].flags & OF_PROTECTED) {
+		// don't let AI try to attack protected ships
+		if ( (aip != Player_ai) && (Objects[target_objnum].flags & OF_PROTECTED) ) {
 			set_target_objnum(aip, -1);
 			return -1;
 		}
