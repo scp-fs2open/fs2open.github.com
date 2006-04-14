@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.238 $
- * $Date: 2006-04-12 22:23:40 $
+ * $Revision: 2.239 $
+ * $Date: 2006-04-14 18:44:16 $
  * $Author: taylor $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.238  2006/04/12 22:23:40  taylor
+ * compiler warning fixes to make GCC 4.1 shut the hell up
+ *
  * Revision 2.237  2006/04/12 00:55:16  taylor
  * that's a rather expensive function to call twice per frame, we should only need to call it once per mission and not ever have to reset it to some middle value
  *
@@ -3061,6 +3064,10 @@ int game_start_mission()
 		return 0;
 	}
 	load_mission_load = time(NULL) - load_mission_load;
+
+	// free up memory from parsing the mission
+	extern void stop_parse();
+	stop_parse();
 
 	//WMC - *sigh* more mprintf clutter. It was commented out when I got here
 	/*

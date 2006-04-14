@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.9 $
- * $Date: 2006-04-12 05:07:00 $
- * $Author: phreak $
+ * $Revision: 1.10 $
+ * $Date: 2006-04-14 18:44:16 $
+ * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,11 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/04/12 05:07:00  phreak
+ * obj_delete() needs to be called for jump nodes since the slot the jump node
+ * that used to reside in hasn't been marked as empty.  This leads to the node still appearing in fred
+ * if the user tries to delete the "ghosted" jump node, fred crashes.
+ *
  * Revision 1.8  2006/03/18 22:18:24  Goober5000
  * blast
  *
@@ -1278,6 +1283,9 @@ void clear_mission()
 	if (Briefing_dialog){
 		Briefing_dialog->reset_editor();
 	}
+
+	extern void allocate_mission_text(int size);
+	allocate_mission_text( MISSION_TEXT_SIZE );
 
 	cmd_brief_reset();
 	mission_event_shutdown();

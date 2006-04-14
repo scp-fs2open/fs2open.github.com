@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.82 $
- * $Date: 2006-03-06 16:30:06 $
+ * $Revision: 2.83 $
+ * $Date: 2006-04-14 18:44:16 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2006/03/06 16:30:06  taylor
+ * make filename length checks non-fatal
+ *
  * Revision 2.81  2006/02/23 06:21:56  taylor
  * attempt to fix bad out-of-bounds (and related) issues when weaponchoice icon is missing
  * be sure to always initialize frame count and FPS with bm_load_animation() calls in case caller got lazy
@@ -1556,12 +1559,6 @@ static int find_block_of(int n)
 	return -1;
 }
 
-extern int required_string_ex(char *pstr);
-extern int optional_string_ex(char *pstr);
-extern void stuff_string_ex(char *pstr, int type, char *terminators, int len = 0);
-extern void stuff_int_ex(int *i);
-void reset_parse_ex(char *text);
-
 int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps, ubyte *type)
 {
 	int frames = 0, fps = 30;
@@ -1570,23 +1567,29 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 	char file_text[50];
 	char file_text_raw[50];
 
-	memset( ext, 0, 3 );
-	memset( file_text, 0, 50 );
-	memset( file_text_raw, 0, 50 );
+	memset( ext, 0, sizeof(ext) );
+	memset( file_text, 0, sizeof(file_text) );
+	memset( file_text_raw, 0, sizeof(file_text_raw) );
 
+	// pause anything that may happen to be parsing right now
+	pause_parse();
+
+	// now start parsing the EFF
 	read_file_text(filename, dir_type, file_text, file_text_raw);
 
-	reset_parse_ex(file_text);
+	reset_parse(file_text);
 
-	required_string_ex("$Type:");
-	stuff_string_ex(ext, F_NAME, NULL);
+	required_string("$Type:");
+	stuff_string(ext, F_NAME, NULL);
 
-	required_string_ex( "$Frames:" );
-	stuff_int_ex(&frames);
+	required_string( "$Frames:" );
+	stuff_int(&frames);
 
-	if (optional_string_ex( "$FPS:" ))
-		stuff_int_ex(&fps);
+	if (optional_string( "$FPS:" ))
+		stuff_int(&fps);
 
+	// done with EFF so unpause parsing so whatever can continue
+	unpause_parse();
 
 	if (!stricmp(NOX("dds"), ext)) {
 		c_type = BM_TYPE_DDS;

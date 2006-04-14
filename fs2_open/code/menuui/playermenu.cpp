@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.28 $
- * $Date: 2005-12-06 03:14:45 $
+ * $Revision: 2.29 $
+ * $Date: 2006-04-14 18:44:16 $
  * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2005/12/06 03:14:45  taylor
+ * fix for string overwrites with get_version_string()
+ *
  * Revision 2.27  2005/10/10 17:21:05  taylor
  * remove NO_NETWORK
  *
@@ -847,6 +850,10 @@ void player_select_close()
 	if (Player_select_force_main_hall) {
 		Player->main_hall = 1;
 	}
+
+	// free memory from all parsing so far, all tbls found during game_init()
+	// and the current campaign which we loaded here
+	stop_parse();
 
 	Player_select_screen_active = 0;
 }
