@@ -9,13 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.71 $
+ * $Revision: 2.72 $
  * $Author: taylor $
- * $Date: 2006-04-14 18:44:16 $
+ * $Date: 2006-04-14 18:50:52 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2006/04/14 18:44:16  taylor
+ * remove all of the *_ex() parsing functions added for use by EFFs
+ * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
+ * make Mission_text and Mission_text_raw only use the memory needed, and free it when it doesn't need to parse anymore
+ *   (should work ok with FRED2, but I wasn't able to test it)
+ *
  * Revision 2.70  2006/03/19 05:05:59  taylor
  * make sure the mission log doesn't modify stuff in Cargo_names[], since it shouldn't
  * have split_str_once() be sure to not split a word in half, it should end up on the second line instead
@@ -1761,6 +1767,9 @@ void read_file_text_from_array(char *array, char *processed_text, char *raw_text
 	if ( Parsing_paused && ((processed_text == NULL) || (raw_text == NULL)) ) {
 		Error(LOCATION, "ERROR: Neither \"processed_text\" nor \"raw_text\" may be NULL when parsing is paused!!\n");
 	}
+
+	// make sure to do this before anything else
+	allocate_mission_text( strlen(array) + 1 );
 
 	// if we have no raw buffer, set it as the default raw text area
 	if (raw_text == NULL)
