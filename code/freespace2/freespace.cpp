@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.239 $
- * $Date: 2006-04-14 18:44:16 $
- * $Author: taylor $
+ * $Revision: 2.240 $
+ * $Date: 2006-04-15 04:17:58 $
+ * $Author: phreak $
  *
  * Freespace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.239  2006/04/14 18:44:16  taylor
+ * remove all of the *_ex() parsing functions added for use by EFFs
+ * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
+ * make Mission_text and Mission_text_raw only use the memory needed, and free it when it doesn't need to parse anymore
+ *   (should work ok with FRED2, but I wasn't able to test it)
+ *
  * Revision 2.238  2006/04/12 22:23:40  taylor
  * compiler warning fixes to make GCC 4.1 shut the hell up
  *
@@ -5931,9 +5937,7 @@ void game_shade_frame(float frametime)
 	}
 
 
-	//Set the shader
-	gr_set_shader(&Viewer_shader);
-	gr_shade(gr_screen.clip_left, gr_screen.clip_top, gr_screen.clip_width, gr_screen.clip_height, false);
+	gr_flash_alpha(Viewer_shader.r, Viewer_shader.g, Viewer_shader.b, Viewer_shader.c);
 }
 
 //WMC - This does stuff like fading in and out and subtitles. Special FX?
