@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.52 $
- * $Date: 2006-01-30 06:40:49 $
- * $Author: taylor $
+ * $Revision: 2.53 $
+ * $Date: 2006-04-15 00:13:22 $
+ * $Author: phreak $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2006/01/30 06:40:49  taylor
+ * better lighting for OpenGL
+ * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
+ * some basic lighting code cleanup
+ *
  * Revision 2.51  2006/01/20 17:15:16  taylor
  * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
  * several other very minor changes as well
@@ -621,6 +626,7 @@ int d3d_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_ratio, floa
 
 // Functions in GrD3DRender.cpp stuffed into gr_screen structure
 void gr_d3d_flash(int r, int g, int b);
+void gr_d3d_flash_alpha(int r, int g, int b, int a);
 void gr_d3d_zbuffer_clear(int mode);
 int gr_d3d_zbuffer_get();
 int gr_d3d_zbuffer_set(int mode);

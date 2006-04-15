@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.75 $
- * $Date: 2006-01-30 06:40:49 $
- * $Author: taylor $
+ * $Revision: 2.76 $
+ * $Date: 2006-04-15 00:13:22 $
+ * $Author: phreak $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2006/01/30 06:40:49  taylor
+ * better lighting for OpenGL
+ * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
+ * some basic lighting code cleanup
+ *
  * Revision 2.74  2006/01/20 17:15:16  taylor
  * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
  * several other very minor changes as well
@@ -894,6 +899,7 @@ typedef struct screen {
 
 	// Flash the screen
 	void (*gf_flash)( int r, int g, int b );
+	void (*gf_flash_alpha)(int r, int g, int b, int a);
 
 	// sets the clipping region
 	void (*gf_set_clip)(int x, int y, int w, int h, bool resize);
@@ -1300,7 +1306,8 @@ __inline void gr_gradient(int x1, int y1, int x2, int y2, bool resize = true)
 
 #define gr_fade_in			GR_CALL(gr_screen.gf_fade_in)
 #define gr_fade_out			GR_CALL(gr_screen.gf_fade_out)
-#define gr_flash				GR_CALL(gr_screen.gf_flash)
+#define gr_flash			GR_CALL(gr_screen.gf_flash)
+#define gr_flash_alpha		GR_CALL(gr_screen.gf_flash_alpha)
 
 #define gr_zbuffer_get		GR_CALL(gr_screen.gf_zbuffer_get)
 #define gr_zbuffer_set		GR_CALL(gr_screen.gf_zbuffer_set)

@@ -9,6 +9,9 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2006/02/25 21:47:00  Goober5000
+ * spelling
+ *
  * Revision 2.54  2006/01/20 17:15:16  taylor
  * gr_*_bitmap_ex() stuff, D3D side is 100% untested to even compile
  * several other very minor changes as well
@@ -810,6 +813,7 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_fade_in = gr_d3d_fade_in;
 	gr_screen.gf_fade_out = gr_d3d_fade_out;
 	gr_screen.gf_flash = gr_d3d_flash;
+	gr_screen.gf_flash_alpha = gr_d3d_flash_alpha;
 
 	gr_screen.gf_zbuffer_get = gr_d3d_zbuffer_get;
 	gr_screen.gf_zbuffer_set = gr_d3d_zbuffer_set;

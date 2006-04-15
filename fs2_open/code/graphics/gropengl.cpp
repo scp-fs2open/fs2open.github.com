@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.168 $
- * $Date: 2006-04-13 12:15:58 $
- * $Author: taylor $
+ * $Revision: 2.169 $
+ * $Date: 2006-04-15 00:13:22 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.168  2006/04/13 12:15:58  taylor
+ * deal with font rendering issue from float precision on non-standard resolutions. this is only about a 97% fix/hack
+ *   but I don't want people complaining about the bad issue until I can figure out a more appropriate solution with
+ *   gr_set_clip(), which is the real source of the problem
+ *
  * Revision 2.167  2006/04/12 01:10:35  taylor
  * some cleanup and slight reorg
  *  - remove special uv offsets for non-standard res, they were stupid anyway and don't actually fix the problem (which should actually be fixed now)
@@ -3239,6 +3244,35 @@ void gr_opengl_flash(int r, int g, int b)
 	}
 }
 
+void gr_opengl_flash_alpha(int r, int g, int b, int a)
+{
+	CAP(r,0,255);
+	CAP(g,0,255);
+	CAP(b,0,255);
+	CAP(a,0,255);
+	
+	if ( r || g || b || a ) {
+		opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+		
+		float x1, x2, y1, y2;
+		x1 = i2fl(gr_screen.clip_left+gr_screen.offset_x);
+		y1 = i2fl(gr_screen.clip_top+gr_screen.offset_y);
+		x2 = i2fl(gr_screen.clip_right+gr_screen.offset_x);
+		y2 = i2fl(gr_screen.clip_bottom+gr_screen.offset_y);
+		
+		glColor4ub((ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a);
+		glBegin (GL_QUADS);
+		  glVertex3f (x1, y2, -0.99f);
+
+		  glVertex3f (x2, y2, -0.99f);
+
+		  glVertex3f (x2, y1, -0.99f);
+
+		  glVertex3f (x1, y1, -0.99f);
+		glEnd ();	  
+	}
+}
+
 int gr_opengl_zbuffer_get()
 {
 	if ( !gr_global_zbuffering )    {
@@ -4288,6 +4322,7 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_fade_in = gr_opengl_fade_in;
 	gr_screen.gf_fade_out = gr_opengl_fade_out;
 	gr_screen.gf_flash = gr_opengl_flash;
+	gr_screen.gf_flash_alpha = gr_opengl_flash_alpha;
 	
 	gr_screen.gf_zbuffer_get = gr_opengl_zbuffer_get;
 	gr_screen.gf_zbuffer_set = gr_opengl_zbuffer_set;
