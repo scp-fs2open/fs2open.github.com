@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.24 $
- * $Date: 2006-01-30 06:40:49 $
- * $Author: taylor $
+ * $Revision: 2.25 $
+ * $Date: 2006-04-15 00:13:22 $
+ * $Author: phreak $
  *
  * $NoKeywords: $
  */
@@ -79,6 +79,7 @@ int gr_stub_tcache_set_internal(int bitmap_id, int bitmap_type, float *u_scale, 
 int gr_stub_tcache_set(int bitmap_id, int bitmap_type, float *u_scale, float *v_scale, int fail_on_full = 0, int force = 0, int tex_unit = 0) {return 0;}
 void gr_stub_set_clear_color(int r, int g, int b) {}
 void gr_stub_flash(int r, int g, int b) {}
+void gr_stub_flash_alpha(int r, int g, int b, int a) {}
 int gr_stub_zbuffer_get() {return 0;}
 int gr_stub_zbuffer_set(int mode) {return 0;}
 void gr_stub_zbuffer_clear(int mode) {}
@@ -180,6 +181,7 @@ void gr_stub_init()
 	gr_screen.gf_fade_in = gr_stub_fade_in;
 	gr_screen.gf_fade_out = gr_stub_fade_out;
 	gr_screen.gf_flash = gr_stub_flash;
+	gr_screen.gf_flash_alpha = gr_stub_flash_alpha;
 	
 	gr_screen.gf_zbuffer_get = gr_stub_zbuffer_get;
 	gr_screen.gf_zbuffer_set = gr_stub_zbuffer_set;

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.85 $
- * $Date: 2006-01-30 06:40:49 $
- * $Author: taylor $
+ * $Revision: 2.86 $
+ * $Date: 2006-04-15 00:13:22 $
+ * $Author: phreak $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2006/01/30 06:40:49  taylor
+ * better lighting for OpenGL
+ * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
+ * some basic lighting code cleanup
+ *
  * Revision 2.84  2006/01/23 09:39:30  taylor
  * fix d3d_bitmap_ex coloring (thanks Alpha0!)
  *
@@ -3360,6 +3365,76 @@ void gr_d3d_flash(int r, int g, int b)
 	
 			int a = (r+g+b)/3;
 			color = D3DCOLOR_ARGB(a,r,g,b);
+		}
+	
+		float x1, x2, y1, y2;
+		x1 = i2fl(gr_screen.clip_left+gr_screen.offset_x);
+		y1 = i2fl(gr_screen.clip_top+gr_screen.offset_y);
+		x2 = i2fl(gr_screen.clip_right+gr_screen.offset_x);
+		y2 = i2fl(gr_screen.clip_bottom+gr_screen.offset_y);
+	
+		D3DVERTEX2D *src_v;
+		D3DVERTEX2D d3d_verts[4];
+
+		src_v = d3d_verts;
+
+		src_v->sz = 0.99f;
+		src_v->rhw = 1.0f;
+		src_v->color = color;	 
+		src_v->sx = x1;
+		src_v->sy = y1;
+		src_v++;
+
+		src_v->sz = 0.99f;
+		src_v->rhw = 1.0f;
+		src_v->color = color;	 
+		src_v->sx = x2;
+		src_v->sy = y1;
+		src_v++;
+
+		src_v->sz = 0.99f;
+		src_v->rhw = 1.0f;
+		src_v->color = color;	 
+		src_v->sx = x2;
+		src_v->sy = y2;
+		src_v++;
+
+		src_v->sz = 0.99f;
+		src_v->rhw = 1.0f;
+		src_v->color = color;	 
+		src_v->sx = x1;
+		src_v->sy = y2;
+
+		d3d_set_initial_render_state();
+
+		TIMERBAR_PUSH(5);
+		d3d_DrawPrimitive(D3DVT_VERTEX2D, D3DPT_TRIANGLEFAN,(LPVOID)d3d_verts,4);
+		TIMERBAR_POP();
+	}
+}
+
+/**
+ * @param int r
+ * @param int g
+ * @param int b
+ * @param int a
+ *
+ * @return void
+ */
+void gr_d3d_flash_alpha(int r, int g, int b, int a)
+{
+	CAP(r,0,255);
+	CAP(g,0,255);
+	CAP(b,0,255);
+	CAP(a,0,255);
+
+	if ( r || g || b || a )	{
+		uint color;
+		color = D3DCOLOR_ARGB(a, r, g, b);
+		if (GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE  )	{
+			gr_d3d_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_NONE );
+		} else {
+			gr_d3d_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
 		}
 	
 		float x1, x2, y1, y2;
