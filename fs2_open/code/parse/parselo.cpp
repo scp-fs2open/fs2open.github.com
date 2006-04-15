@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.72 $
+ * $Revision: 2.73 $
  * $Author: taylor $
- * $Date: 2006-04-14 18:50:52 $
+ * $Date: 2006-04-15 19:00:52 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2006/04/14 18:50:52  taylor
+ * that was rather stupid of me, fogetting this would not have been a good thing :)
+ *
  * Revision 2.71  2006/04/14 18:44:16  taylor
  * remove all of the *_ex() parsing functions added for use by EFFs
  * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
@@ -420,8 +423,12 @@ char	*Mission_text_raw = NULL;
 char	*Mp = NULL, *Mp_save = NULL;
 char	*token_found;
 
-static int Mission_text_size = 0;
 static int Parsing_paused = 0;
+
+// text allocation stuff
+void allocate_mission_text(int size);
+static int Mission_text_size = 0;
+
 
 //	Return true if this character is white space, else false.
 int is_white_space(char ch)
