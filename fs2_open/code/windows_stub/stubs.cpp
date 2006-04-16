@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.30 $
- * $Date: 2006-03-15 17:32:13 $
+ * $Revision: 2.31 $
+ * $Date: 2006-04-16 05:24:16 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/03/15 17:32:13  taylor
+ * bump error msg buffer size a little (I'll probably just go dynamic with this since you hopefully won't get this too much anyway)
+ *
  * Revision 2.29  2006/03/08 05:22:14  taylor
  * remove asm from MulDiv() since Intel Mac doesn't like it very much, and it doesn't do exactly what it should anyway
  *
@@ -440,7 +443,7 @@ int _mkdir(const char *path)
 		if (c) {
 			*c = '\0';
 
-			status = mkdir(tmp_path, 0777);
+			status = mkdir(tmp_path, 0755);
 
 #ifndef NDEBUG
 			int m_error = errno;
@@ -575,6 +578,8 @@ void *_vm_malloc( int size, char *filename, int line, int quiet )
 void *_vm_malloc( int size, int quiet )
 #endif
 {
+	Assert( size > 0 );
+
 	void *ptr = malloc( size );
 
 	if (!ptr)	{
