@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.82 $
+ * $Revision: 2.83 $
  * $Author: karajorma $
- * $Date: 2006-04-05 16:12:41 $
+ * $Date: 2006-04-16 11:58:11 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2006/04/05 16:12:41  karajorma
+ * Changes to support the new Enable/Disable-Builtin-Messages SEXP
+ *
  * Revision 2.81  2006/02/26 23:23:30  wmcoolmon
  * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
  *
@@ -840,7 +843,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	8
+#define MAX_PARSE_OBJECT_FLAGS_2	10
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -850,6 +853,8 @@ typedef struct p_object {
 #define P2_SF2_TOGGLE_SUBSYSTEM_SCANNING	(1<<5)
 #define P2_SF2_TARGETABLE_AS_BOMB			(1<<6)
 #define P2_SF2_NO_BUILTIN_MESSAGES			(1<<7)
+#define P2_SF2_PRIMARIES_LOCKED				(1<<8)
+#define P2_SF2_SECONDARIES_LOCKED			(1<<9)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
