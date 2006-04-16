@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.22 $
- * $Date: 2006-01-26 03:23:29 $
- * $Author: Goober5000 $
+ * $Revision: 1.23 $
+ * $Date: 2006-04-16 05:28:10 $
+ * $Author: taylor $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2006/01/26 03:23:29  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 1.21  2006/01/20 07:10:33  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -99,6 +103,11 @@
 #ifdef _WIN32
 #include <direct.h>
 #endif
+
+#include "cfile/cfile.h"
+#include "cfile/cfilesystem.h"
+
+static ubyte ServerChanCreated = 0;
 
 
 //************************************************************************************
@@ -237,10 +246,21 @@ irc_channel* irc_client::GetChan(std::string chan)
 
 void irc_client::AddChan(std::string chan)
 {
+	char root_path[255];
+	char filename[32];
 	irc_chan_link *nchan = new irc_chan_link;
 
+	memset( root_path, 0, sizeof(root_path) );
+	memset( filename, 0, sizeof(filename) );
+
+	// create the full path to where we want to write these channel logs
+	strncpy(filename, chan.c_str(), sizeof(filename)-1);
+	strncat(filename, ".txt", sizeof(filename) - strlen(filename) - 1);
+	cf_create_default_path_string( root_path, sizeof(root_path)-1, CF_TYPE_MULTI_CACHE, filename );
+
 	nchan->next = nchan->prev = NULL;
-	std::string logfile = chan + ".txt";
+	std::string logfile;
+	logfile.append(root_path);
 
 	nchan->chan = new irc_channel(logfile);
 	nchan->chan->SetName(chan);
@@ -343,6 +363,12 @@ void irc_client::Interpret_Command(std::string command)
 	// [:sourcemask] <command> [params]
 	std::vector<std::string> parts = ExtractParams(command, 2), params;
 	irc_command cmd;
+
+	// we should always make sure that "server" exists
+	if ( !ServerChanCreated ) {
+		AddChan("server");
+		ServerChanCreated = 1;
+	}
 
 	if (parts[0][0] == ':')
 	{
