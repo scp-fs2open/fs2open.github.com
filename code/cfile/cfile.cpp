@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.38 $
- * $Date: 2006-04-12 00:53:26 $
+ * $Revision: 2.39 $
+ * $Date: 2006-04-16 05:28:10 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2006/04/12 00:53:26  taylor
+ * DDS now works well on the interface, but I forgot to every commit the CFILE change so that they are actually usable :)
+ *
  * Revision 2.37  2006/02/16 05:07:50  taylor
  * minor 64-bit related fixage
  *
@@ -389,7 +392,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",															".hcf",						CF_TYPE_DATA	},	
 	{ CF_TYPE_SINGLE_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "single",						".pl2 .cs2 .plr .csg .css",			CF_TYPE_PLAYERS	},
  	{ CF_TYPE_MULTI_PLAYERS,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "multi",						".plr",						CF_TYPE_DATA	},
-	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",														".pcx .fs2",				CF_TYPE_DATA	},
+	{ CF_TYPE_MULTI_CACHE,			"data" DIR_SEPARATOR_STR "multidata",														".pcx .fs2 .txt",				CF_TYPE_DATA	},
 	{ CF_TYPE_CONFIG,					"data" DIR_SEPARATOR_STR "config",															".cfg",						CF_TYPE_DATA	},
 	{ CF_TYPE_SQUAD_IMAGES_MAIN,	"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "squads",						".pcx",						CF_TYPE_DATA	},
 	{ CF_TYPE_DEMOS,					"data" DIR_SEPARATOR_STR "demos",															".fsd",						CF_TYPE_DATA	},

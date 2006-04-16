@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.33 $
- * $Date: 2005-12-28 22:06:47 $
+ * $Revision: 2.34 $
+ * $Date: 2006-04-16 05:28:10 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2005/12/28 22:06:47  taylor
+ * fix up cf_find_file_location() and related elements so that it's safer (based on WMC's work, but actually safe this time ;))
+ *
  * Revision 2.32  2005/12/06 03:13:49  taylor
  * fix quite a few CFILE issues:
  *   use #define's for path lengths when possible so it's easier to move between functions
@@ -1659,6 +1662,7 @@ int cf_create_default_path_string( char *path, uint path_max, int pathtype, char
 		cf_root *root = cf_get_root(0);
 
 		if (!root) {
+			Assert( filename != NULL );
 			strncpy(path, filename, path_max);
 			return 1;
 		}

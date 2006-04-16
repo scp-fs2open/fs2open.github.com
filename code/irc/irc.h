@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.14 $
- * $Date: 2006-01-26 03:23:29 $
- * $Author: Goober5000 $
+ * $Revision: 1.15 $
+ * $Date: 2006-04-16 05:28:10 $
+ * $Author: taylor $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2006/01/26 03:23:29  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 1.13  2006/01/20 07:10:33  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -159,7 +163,7 @@ struct irc_chan_link
 class irc_client
 {
 	public:
-		irc_client() : bisConnected(false), channels(NULL), current_channel(NULL) { AddChan("server"); } // VALGRIND NOTE => not a memory leak!!
+		irc_client() : bisConnected(false), channels(NULL), current_channel(NULL) { }
 		irc_client(std::string user, std::string pass, std::string server, int port) : bisConnected(false), channels(NULL), current_channel(NULL)
 				{ connect(user, pass, server, port); }
 		~irc_client() { Disconnect(); UnloadChanList(); }
