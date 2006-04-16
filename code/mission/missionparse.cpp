@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.169 $
- * $Date: 2006-04-05 16:12:41 $
+ * $Revision: 2.170 $
+ * $Date: 2006-04-16 11:58:11 $
  * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.169  2006/04/05 16:12:41  karajorma
+ * Changes to support the new Enable/Disable-Builtin-Messages SEXP
+ *
  * Revision 2.168  2006/03/24 07:38:35  wmcoolmon
  * New subobject animation stuff and Lua functions.
  *
@@ -1263,6 +1266,8 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"toggle-subsystem-scanning",
 	"targetable-as-bomb",
 	"no-builtin-messages",
+	"primaries-locked", 
+	"secondaries-locked",
 };
 
 
@@ -2798,6 +2803,18 @@ int parse_create_object_sub(p_object *objp)
 	if(objp->flags2 & P2_SF2_NO_BUILTIN_MESSAGES) 
 	{
 		Ships[shipnum].flags2 |= SF2_NO_BUILTIN_MESSAGES;
+	}
+
+	// Karajorma
+	if(objp->flags2 & P2_SF2_PRIMARIES_LOCKED) 
+	{
+		Ships[shipnum].flags2 |= SF2_PRIMARIES_LOCKED;
+	}
+
+	// Karajorma
+	if(objp->flags2 & P2_SF2_SECONDARIES_LOCKED) 
+	{
+		Ships[shipnum].flags2 |= SF2_SECONDARIES_LOCKED;
 	}
 
 	if ( objp->flags & P_SF_GUARDIAN ) {
