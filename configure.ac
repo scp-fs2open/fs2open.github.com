@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.29 2006-03-26 10:31:02 taylor Exp $
+dnl $Id: configure.ac,v 1.30 2006-04-16 05:22:21 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.8)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -145,7 +145,7 @@ case "$target" in
         # linux
         echo "Using 64-bit Unix defines (for $host_os)"
         fs2_os_unix="yes"
-		D_CFLAGS="$D_CFLAGS -m64"
+		D_CFLAGS="$D_CFLAGS -m64 -march=athlon64"
         ;;
 	*-*-linux*)
 		# linux
@@ -210,7 +210,7 @@ fi
 
 if test "$fs2_debug" = "yes" ; then
 	AC_DEFINE([_DEBUG])
-	D_CFLAGS="$D_CFLAGS -O0 -g -Wall"
+	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -funroll-loops"
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
@@ -220,7 +220,7 @@ if test "$fs2_debug" = "yes" ; then
 	fi
 else
 	AC_DEFINE([NDEBUG])
-	D_CFLAGS="$D_CFLAGS -g -O2 -Wall"
+	D_CFLAGS="$D_CFLAGS -g -Os -Wall -funroll-loops"
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
