@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.152 $
- * $Date: 2006-04-12 01:02:59 $
+ * $Revision: 2.153 $
+ * $Date: 2006-04-16 05:24:58 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.152  2006/04/12 01:02:59  taylor
+ * more s/colour/color/ changes
+ * throw in a couple of safety checks for some neb2 functions
+ *
  * Revision 2.151  2006/03/25 10:41:44  taylor
  * modelinterp.cpp:  that little bit really isn't needed
  * popup.cpp:  GCC 4.1 warning fixes
@@ -4449,7 +4453,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 						
 // the following replaces Bobboau's code, commented out below - Goober5000
 					float magnitude;
-					vec3d scale_vec = { 1.0f, 0.0f, 0.0f };
+					vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
 
 					// normalize banks, in case of incredibly big normals
 					// VECMAT-ERROR: NULL VEC3D (norm == nul)
