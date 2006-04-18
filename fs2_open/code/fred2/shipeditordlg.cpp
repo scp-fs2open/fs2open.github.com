@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-02-04 07:05:03 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2006-04-18 00:08:23 $
+ * $Author: phreak $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/02/04 07:05:03  Goober5000
+ * fixed several IFF bugs in FRED (plus one or two other bugs)
+ * --Goober5000
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -1203,7 +1207,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 	{
 		int marked_ship = (player_ship >= 0) ? player_ship : single_ship;
 
-		if (mission_type && total_count && !multi_edit && wing_is_player_wing(Ships[Objects[marked_ship].instance].wingnum))
+		if (mission_type && total_count && !multi_edit && wing_is_player_wing(Ships[marked_ship].wingnum))
 			GetDlgItem(IDC_SET_AS_PLAYER_SHIP)->EnableWindow(TRUE);
 		else
 			GetDlgItem(IDC_SET_AS_PLAYER_SHIP)->EnableWindow(FALSE);
