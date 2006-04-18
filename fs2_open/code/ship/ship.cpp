@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.331 $
- * $Date: 2006-04-14 18:39:06 $
- * $Author: taylor $
+ * $Revision: 2.332 $
+ * $Date: 2006-04-18 00:56:28 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.331  2006/04/14 18:39:06  taylor
+ * giving a tbl name in this warning message is basically useless since there we can't tell which tbl this particular ship is in
+ *
  * Revision 2.330  2006/04/07 20:17:33  karajorma
  * Added SEXPs to lock and unlock the primary and secondary weapons
  *
@@ -2376,43 +2379,6 @@ int warptype_match(char *p)
 	{
 		if(!stricmp(Warp_types[i], p))
 			return i;
-	}
-
-	return -1;
-}
-
-int match_animation_type(char *p)
-{	
-	int i;
-
-	// standard match
-	for(i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++)
-	{
-		if (!strnicmp(p, animation_type_names[i], strlen(animation_type_names[i])))
-			return i;
-	}
-
-	// Goober5000 - misspelling
-	if (!strnicmp(p, "inital", 6) || !strnicmp(p, "\"inital\"", 8))
-	{
-		Warning(LOCATION, "Spelling error in table file.  Please change \"inital\" to \"initial\".");
-		return TRIGGER_TYPE_INITIAL;
-	}
-
-	// Goober5000 - with quotes
-	for(i = 0; i < MAX_TRIGGER_ANIMATION_TYPES; i++)
-	{
-		char name[NAME_LENGTH];
-
-		strcpy(name, "\"");
-		strcat(name, animation_type_names[i]);
-		strcat(name, "\"");
-
-		if (!strnicmp(p, name, strlen(name)))
-		{
-			Warning(LOCATION, "Old usage warning: Please remove quotes from animation type %s.", name);
-			return i;
-		}
 	}
 
 	return -1;
@@ -15366,240 +15332,8 @@ int ship_subsys_takes_damage(ship_subsys *ss)
 	return (ss->max_hits > SUBSYS_MAX_HITS_THRESHOLD);
 }
 
-void ship_start_animation_type(ship *shipp, int animation_type, int subtype, int direction){
 
-	ship_subsys	*pss;
-	model_subsystem	*psub;
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-		psub = pss->system_info;
-
-		// Don't process destroyed objects
-		if ( pss->current_hits <= 0.0f ) 
-			continue;
-		if(psub->flags & MSS_FLAG_TRIGGERED){
-			for(int i = 0; i<psub->n_triggers; i++){
-				if(psub->triggers[i].type == animation_type && (psub->triggers[i].subtype == ANIMATION_SUBTYPE_ALL || psub->triggers[i].subtype == subtype)){
-/*					queued_animation var =psub->triggers[i];
-					var.angle.xyz.x *= direction;
-					var.angle.xyz.y *= direction;
-					var.angle.xyz.z *= direction;
-					*/
-					psub->triggers[i].instance = i;
-					psub->trigger.add_queue(&psub->triggers[i], direction);
-				}
-			}
-		}
-		//
-	}
-
-}
-
-//this finds the actual amount of time that motion of an animation type will take to stop, 
-//not for gameplay purposes but for stuff that is involved in coordinating the animation itself
-
-//the time it takes to speed up or slow down is v/a
-//in this time the animation covers an angle = to (v^2)/(2a) (for both directions so v^2/a)
-//so wee need the time it takes for the angle moveing at a constant velosity to cover theda - v^2/a
-//v*t = theda - (v^2)/(2*a) => t = -(v^2 - 2*a*theda)/(2*a*v)
-//so finaly v/a * 2 - (v^2 - 2*a*theda)/(2*a*v) => (3*v^2 + 2*a*theda)/(2*a*v)
-
-//time = (3*v^2 + 2*a*theda)/(2*a*v)
-
-int animation_instance_actual_time(queued_animation *properties){
-	int ret = 0;
-	int temp = 0;
-	for(int a = 0; a<3; a++){
-		temp = int(
-			(3.0f*properties->vel.a1d[a]*properties->vel.a1d[a] + 2.0f*properties->accel.a1d[a]*fabs(properties->angle.a1d[a]))
-			/
-			(2*properties->accel.a1d[a]*properties->vel.a1d[a]) 
-			*1000.0f) + properties->start;
-		if(temp > ret)ret = temp;
-	}
-	return ret;
-}
-
-int ship_get_actual_animation_time_type(ship *shipp, int animation_type, int subtype){
-
-	ship_subsys	*pss;
-	model_subsystem	*psub;
-	int ret = 0;
-	int temp_ret = 0;;
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-		psub = pss->system_info;
-
-		// Don't process destroyed objects
-		if ( pss->current_hits <= 0.0f ) 
-			continue;
-		if(psub->flags & MSS_FLAG_TRIGGERED){
-			for(int i = 0; i<psub->n_triggers; i++){
-				if(psub->triggers[i].type == animation_type && (psub->triggers[i].subtype == ANIMATION_SUBTYPE_ALL || psub->triggers[i].subtype == subtype)){
-					temp_ret = animation_instance_actual_time(&psub->triggers[i]);
-					if(temp_ret > ret)ret = temp_ret;
-				}
-			}
-		}
-		//
-	}
-	return ret;
-
-}
-
-
-int ship_get_actual_animation_time_type(ship_info *sip, int animation_type, int subtype){
-
-	int ret = 0;
-	int temp_ret = 0;;
-	for ( int s = 0; s<sip->n_subsystems; s++) {
-
-		for(int i = 0; i<sip->subsystems[s].n_triggers; i++){
-			if(sip->subsystems[s].triggers[i].type == animation_type && (sip->subsystems[s].triggers[i].subtype == ANIMATION_SUBTYPE_ALL || sip->subsystems[s].triggers[i].subtype == subtype)){
-				for(int a = 0; a<3; a++){
-					temp_ret = animation_instance_actual_time(&sip->subsystems[s].triggers[i]);
-					
-					if(temp_ret > ret)ret = temp_ret;
-				}
-			}
-		}
-		//
-	}
-	return ret;
-
-}
-
-void ship_fix_reverse_times(ship_info *sip){
-
-	int ani_time = 0;
-	for(int animation_type = 0; animation_type<MAX_TRIGGER_ANIMATION_TYPES; animation_type++){
-		//for each animation type
-		ani_time = ship_get_actual_animation_time_type(sip, animation_type, -1);
-		//figure out how long it's going to take for the animation to get done with
-
-		for ( int s = 0; s<sip->n_subsystems; s++) {
-			//for each subsystem
-
-			for(int i = 0; i<sip->subsystems[s].n_triggers; i++){
-				//for each trigger
-				if(sip->subsystems[s].triggers[i].type == animation_type){
-					//if the trigger is of the current type
-					if(sip->subsystems[s].triggers[i].reverse_start == -1)
-						//if there isn't a user defined overide already present
-						sip->subsystems[s].triggers[i].reverse_start = ani_time - animation_instance_actual_time(&sip->subsystems[s].triggers[i]);
-					sip->subsystems[s].triggers[i].real_end_time = animation_instance_actual_time(&sip->subsystems[s].triggers[i]);
-				}
-			}
-			//
-		}
-	}
-}
-
-//this tells you how long an animation is going to take to get done with
-//this is for things that can't happen untill animations are done
-//this is for gameplay purposes, this isn't the actual time
-int ship_get_animation_time_type(ship *shipp, int animation_type, int subtype){
-
-	ship_subsys	*pss;
-	model_subsystem	*psub;
-	int ret = 0;
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-		psub = pss->system_info;
-
-		// Don't process destroyed objects
-		if ( pss->current_hits <= 0.0f ) 
-			continue;
-		if(psub->flags & MSS_FLAG_TRIGGERED){
-			for(int i = 0; i<psub->n_triggers; i++){
-				if(psub->triggers[i].type == animation_type && (psub->triggers[i].subtype == ANIMATION_SUBTYPE_ALL || psub->triggers[i].subtype == subtype)){
-
-					int ani_time = 0;
-
-					if(psub->trigger.current_vel.a1d[0] != 0.0f || psub->trigger.current_vel.a1d[1] != 0.0f || psub->trigger.current_vel.a1d[2] != 0.0f){
-						//if the subobject is moveing then things get realy complecated
-
-						int a_time = 0;
-						int real_time = animation_instance_actual_time(&psub->triggers[i]);
-						int pad = real_time - psub->triggers[i].end;
-						for(int a = 0; a<3; a++){
-							float direction = psub->trigger.direction.a1d[a];
-
-							if(psub->trigger.current_ang.a1d[a] * direction > psub->trigger.slow_angle.a1d[a] * direction){
-								//if it's in the final slowdown phase then it realy isn't _that_ bad
-								a_time = int( ( (sqrt(2.0f*psub->trigger.rot_accel.a1d[a]*(psub->trigger.end_angle.a1d[a] - psub->trigger.current_ang.a1d[a])+psub->trigger.current_vel.a1d[a]*psub->trigger.current_vel.a1d[a])-psub->trigger.current_vel.a1d[a])/psub->trigger.rot_accel.a1d[a] ) * 1000.0f);
-								if(ani_time < a_time)ani_time = a_time;
-							}else{
-								if(psub->trigger.current_vel.a1d[a] * direction > psub->trigger.rot_vel.a1d[a] * direction){
-									//if vi is greater than v
-									a_time = int((psub->trigger.current_vel.a1d[a]*(psub->trigger.current_vel.a1d[a]+2))/(2.0f*psub->trigger.rot_accel.a1d[a]) * 1000.0f);
-									if(ani_time < a_time)ani_time = a_time;
-								}else{
-									//if vi  is lessthan or equil to v
-									a_time = int( ((3.0f*psub->trigger.rot_vel.a1d[a])/(2.0f*psub->trigger.rot_accel.a1d[a]) + 
-										(psub->trigger.current_vel.a1d[a]*psub->trigger.current_vel.a1d[a])/(4.0f*psub->trigger.rot_accel.a1d[a]*psub->trigger.rot_vel.a1d[a]) +
-										(psub->trigger.end_angle.a1d[a] - psub->trigger.current_ang.a1d[a])/(psub->trigger.current_vel.a1d[a]*direction) -
-										(psub->trigger.current_vel.a1d[a]/(psub->trigger.rot_accel.a1d[a]*direction))) * 1000.0f);
-									if(ani_time < a_time)ani_time = a_time;
-								}
-							}
-						}
-						if(ani_time) ani_time += pad;
-					}else{
-						//if it isn't moveing then it's trivial
-						//no currently playing animation
-						ani_time = psub->triggers[i].end + psub->triggers[i].start;
-					}
-					if(ret < ani_time)ret = ani_time;
-				}
-			}
-		}
-		//
-	}
-	return ret + timestamp();
-
-}
-
-void ship_animation_set_initial_states(ship *shipp){
-
-	ship_weapon	*swp = &shipp->weapons;
-	int i;
-
-	for(i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
-		swp->primary_animation_done_time[i] = 0;
-	}
-	for( i = 0; i<MAX_SHIP_SECONDARY_BANKS;i++){
-		swp->secondary_animation_done_time[i] = 0;
-	}
-
-	ship_primary_changed(shipp);
-	ship_secondary_changed(shipp);
-
-	ship_subsys	*pss;
-	model_subsystem	*psub;
-	for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
-		psub = pss->system_info;
-
-			for(int i = 0; i<psub->n_triggers; i++){
-				if(psub->type == SUBSYSTEM_TURRET){
-					//specal case for turrets
-					pss->submodel_info_1.angs.h = psub->triggers[i].angle.xyz.y;
-					pss->submodel_info_2.angs.p = psub->triggers[i].angle.xyz.x;
-				}else{
-					if(
-						psub->triggers[i].type == TRIGGER_TYPE_INITIAL
-						){
-						psub->trigger.set_to_end(&psub->triggers[i]);
-					}
-				}
-			}
-		//
-
-	}
-
-}
-
-//int test_hack_time = 4000;
-//int test_hack_direction = 1;
-
-void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii);
+void submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss);
 
 // Goober5000
 void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss)
@@ -15621,8 +15355,8 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 			if(test_hack_direction == 1)test_hack_time += 3000;
 		}
 */
-		psub->trigger.proces_queue();
-		submodel_trigger_rotate(psub, &pss->submodel_info_1 );
+		pss->trigger.proces_queue();
+		submodel_trigger_rotate(psub, pss );
 		return;
 	
 	}

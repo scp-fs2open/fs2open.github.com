@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.76 $
- * $Date: 2006-03-24 07:38:35 $
- * $Author: wmcoolmon $
+ * $Revision: 2.77 $
+ * $Date: 2006-04-18 00:56:28 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2006/03/24 07:38:35  wmcoolmon
+ * New subobject animation stuff and Lua functions.
+ *
  * Revision 2.75  2006/03/18 07:12:07  Goober5000
  * add ship-subsys-targetable and ship-subsys-untargetable
  * --Goober5000
@@ -849,7 +852,6 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 
 	decal_system model_decal_system;
 
-	triggered_rotation trigger;		//the actual currently running animation and assosiated states
 	int n_triggers;
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
 

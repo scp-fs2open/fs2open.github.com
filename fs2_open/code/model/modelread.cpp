@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.100 $
- * $Date: 2006-04-14 18:37:06 $
- * $Author: taylor $
+ * $Revision: 2.101 $
+ * $Date: 2006-04-18 00:56:28 $
+ * $Author: bobboau $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2006/04/14 18:37:06  taylor
+ * more checking to make sure that the malloc calls are actually needed
+ *
  * Revision 2.99  2006/04/13 12:19:33  taylor
  * make sure we don't allocate any memory for turrets unless there are some, was causing a few various memory issues, mainly for debug builds
  *   (there is more of this same checking on the way for the other malloc() calls during model loading, and vm_malloc() will be set to
@@ -3858,152 +3861,6 @@ void submodel_ai_rotate(model_subsystem *psub, submodel_instance_info *sii)
 }
 */
 
-/*
-ok a triggered animation works like this, at some point a subobject will be triggered to rotate 
-when this happens the following phases of rotation will happen
-1) it will accelerate at a constant rate untill it reaches a 
-quasi-arbitrary (there are limitations on what it can be) velocity
-2) it will maintain a constant rotational velocity untill it reaches the angle at wich it 
-needs to start slowing down in order to stop a the right end angle
-3)it will slow down at the same rate it has sped up earlier, when the rotational velocity
-starts going in the wrong direction it'll be locked at 0 and the angle of the submodel will 
-be locked at the angle it's suposed to end at
-*/
-//-Bobboau
-void submodel_trigger_rotate(model_subsystem *psub, submodel_instance_info *sii){
-	triggered_rotation *trigger = &psub->trigger;
-
-
-	bsp_info * sm;
-
-	if ( psub->subobj_num < 0 ) return;
-
-	polymodel *pm = model_get(psub->model_num);
-	sm = &pm->submodel[psub->subobj_num];
-
-//	if ( sm->movement_type != MOVEMENT_TYPE_TRIGGERED ) return;
-	//one less thing that can go wrong
-
-	// save last angles
-	sii->prev_angs = sii->angs;
-
-	float *current_ang;
-	float *current_vel;
-	float *rot_accel;
-	float *rot_vel;
-	float *slow_angle;
-//	float *end_time;
-	float *end_angle;
-	float *direction;
-
-	int looping = 0;	
-	//process velocity and position
-	//first you accelerate, then you maintain a speed, then you slowdown, then you stay put
-	int not_moveing_count = 0;
-	for(int i = 0; i<3; i++){
-		current_ang = &trigger->current_ang.a1d[i];
-		current_vel = &trigger->current_vel.a1d[i];
-		rot_accel = &trigger->rot_accel.a1d[i];
-		rot_vel = &trigger->rot_vel.a1d[i];
-		slow_angle = &trigger->slow_angle.a1d[i];
-	//	end_time = &trigger->end_time;
-		end_angle = &trigger->end_angle.a1d[i];
-		direction = &trigger->direction.a1d[i];
-
-			if(*current_vel != 0.0f || *current_ang*(*direction) <= *slow_angle*(*direction)){
-				//our velocity is something other than 0 or we are in the acceleration phase (were velocity starts out at 0)
-
-				//we are moveing
-				if(*current_ang*(*direction) <= *slow_angle*(*direction)){
-					//while  you are not slowing down
-
-					if(*current_vel*(*direction) < *rot_vel*(*direction) && *rot_accel!=0.0f){
-						//while you are speeding up
-
-						*current_vel += *rot_accel*flFrametime;
-
-					}else {
-						//when you have reached the target speed
-						looping = 1;
-
-						*current_vel = *rot_vel;
-					}
-				}else{
-					//we are slowing down
-
-					if(*current_vel*(*direction) > 0 && *rot_accel!=0.0f){
-						//while our velocity is still in the direction we are suposed to be moveing
-
-						*current_vel -= *rot_accel*flFrametime;
-					}else {
-						//our velocity is in the wrong direction
-						//this can happen if we have decelerated too long
-						//or if an animation was reversed quickly
-						//the way to tell the diference between these two cases is the acceleration
-
-						//if the curent velocityis in the opposite direction as the accelleration then it was interupted
-						if(*current_vel / fabs(*current_vel) != *rot_accel / fabs(*rot_accel) ){
-							//this is gona be some messy stuff in here to figure out when it should start to slow down again
-							//it'll have to make a new slow angle I guess
-							//with an initial v in the oposite direction the time it will take for it to stop
-							//will be v/a, to get back up to the same speed again we will need twice that 
-							//it should be back to were it was in terms of both speed and position then
-							//so...
-							*slow_angle = *current_ang;
-							*rot_vel = -*current_vel;
-
-							//I guess that wasn't so messy after all :D
-
-							//it might hit exactly 0 every now and then, but it will be before the slow angle so it will be fine
-							//this assumes that the reversed animation is the same exact animation only played in reverse, 
-							//if the speeds or accelerations are diferent then might not work
-
-						}else{
-						//our velocity has gone in the opposite direction becase we decelerated too long
-
-							*current_vel=0.0f;
-						}
-					}
-				}
-
-				//we are moveing
-
-				if(*current_ang*(*direction) > *end_angle*(*direction)){
-					//if we've over shot the angle, this shouldn't happen but it might if odd values are given
-					*current_ang = *end_angle;
-					*current_vel=0.0f;
-					not_moveing_count++;
-				}else{
-					*current_ang += (*current_vel)*flFrametime;
-				}
-			}else{
-					//not moveing
-					*current_ang=*end_angle;
-					not_moveing_count++;
-			}
-
-	}
-	if(not_moveing_count == 3){
-		trigger->instance = -1;
-	}
-
-	//objects can be animated along sevral axes at the same time
-	//I'm prety sure useing the magnatude of the vectors is at least prety close for any code that might be useing it
-	sii->cur_turn_rate = vm_vec_mag(&trigger->current_vel);
-	sii->desired_turn_rate = vm_vec_mag(&trigger->rot_vel);
-	sii->turn_accel = vm_vec_mag(&trigger->rot_accel);
-
-//	case MOVEMENT_AXIS_X:	
-			sii->angs.p = trigger->current_ang.xyz.x - (2*PI2*(float)int(trigger->current_ang.xyz.x/(2*PI2)));
-
-//	case MOVEMENT_AXIS_Y:	
-			sii->angs.h = trigger->current_ang.xyz.y - (2*PI2*(float)int(trigger->current_ang.xyz.y/(2*PI2)));
-
-//	case MOVEMENT_AXIS_Z:	
-			sii->angs.b = trigger->current_ang.xyz.z - (2*PI2*(float)int(trigger->current_ang.xyz.z/(2*PI2)));
-
-
-}
 
 //=========================================================================
 // Make a turret's correct orientation matrix.   This should be done when 
