@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.147 $
- * $Date: 2006-04-07 20:17:33 $
- * $Author: karajorma $
+ * $Revision: 2.148 $
+ * $Date: 2006-04-18 00:56:28 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.147  2006/04/07 20:17:33  karajorma
+ * Added SEXPs to lock and unlock the primary and secondary weapons
+ *
  * Revision 2.146  2006/04/05 16:46:40  karajorma
  * Changes to support the new Enable/Disable-Builtin-Messages SEXP
  *
@@ -1046,6 +1049,9 @@ typedef	struct ship_subsys {
 
 	int subsys_cargo_name;			// cap ship cargo on subsys
 	fix time_subsys_cargo_revealed;	// added by Goober5000
+
+	triggered_rotation trigger;		//the actual currently running animation and assosiated states
+
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
