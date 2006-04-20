@@ -1,9 +1,28 @@
+/*
+ * Created by Mike "Bobboau" Abegg for the FreeSpace2 Source Code Project.
+ * You may not sell or otherwise commercially exploit the source or things you
+ * create based on the source.
+ */
+
+/*
+ * $Logfile:  $
+ * $Revision: 1.1 $
+ * $Date: 2006-04-20 05:42:05 $
+ * $Author: Goober5000 $
+ *
+ * $Log: not supported by cvs2svn $
+ *
+ */
+
+
 #define MODEL_LIB
+
 #include "ship/ship.h"
 #include "model/model.h"
 #include "model/modelsinc.h"
 #include "io/timer.h"
 #include "globalincs/linklist.h"
+
 extern float flFrametime;
 
 //************************************//
