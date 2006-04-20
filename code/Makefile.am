@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.29 2006-04-20 16:24:48 taylor Exp $
+## $Id: Makefile.am,v 1.30 2006-04-20 17:38:25 Goober5000 Exp $
 
 
 EXTRA_DIST =	\
@@ -457,8 +457,8 @@ FS2_SOURCES =	\
 	missionui/missionweaponchoice.h	\
 	missionui/redalert.cpp	\
 	missionui/redalert.h	\
-	model/animation.cpp	\
 	model/model.h	\
+	model/modelanim.cpp	\
 	model/modelcollide.cpp	\
 	model/modelinterp.cpp	\
 	model/modelsinc.h	\
