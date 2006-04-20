@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-03-22 21:42:55 $
- * $Author: taylor $
+ * $Revision: 2.34 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/03/22 21:42:55  taylor
+ * address out-of-bounds issues for Sounds[] when unloading
+ *
  * Revision 2.32  2006/02/16 05:47:32  taylor
  * I never did really like the old audiostr OpenAL change here, this just seems safer
  * initialize si->data and si->size before loading sound buffer (fixes OGG issue for plats that don't zero-initialize <vector>, this will be handled differently in the new code)
@@ -94,7 +97,7 @@
  * merge with Linux/OSX tree - p0202
  *
  * Revision 2.11  2005/01/08 09:59:10  wmcoolmon
- * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ * Sound quality in FreeSpace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
  *
  * Revision 2.10  2004/12/25 00:23:46  wmcoolmon
  * Ogg support for WIN32

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.257 $
- * $Date: 2006-04-07 20:16:30 $
- * $Author: karajorma $
+ * $Revision: 2.258 $
+ * $Date: 2006-04-20 06:32:23 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.257  2006/04/07 20:16:30  karajorma
+ * Added SEXPs to lock and unlock the primary and secondary weapons
+ *
  * Revision 2.256  2006/04/06 20:44:14  karajorma
  * Damn spelling mistakes. And in the only place where it would be visible too!
  *
@@ -3855,7 +3858,7 @@ void build_sexp_text_string(char *buffer, int node, int mode)
 		if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER) {
 			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_NUMBER);
 		
-			// Error check - can be Fred or Freespace
+			// Error check - can be Fred or FreeSpace
 			if (mode == SEXP_ERROR_CHECK_MODE) {
 				if ( Fred_running ) {
 					sprintf(buffer, "%s[%s] ", Sexp_nodes[node].text, Sexp_variables[sexp_variables_index].text);
@@ -3872,7 +3875,7 @@ void build_sexp_text_string(char *buffer, int node, int mode)
 			Assert(Sexp_nodes[node].subtype == SEXP_ATOM_STRING);
 			Assert(Sexp_variables[sexp_variables_index].type & SEXP_VARIABLE_STRING);
 
-			// Error check - can be Fred or Freespace
+			// Error check - can be Fred or FreeSpace
 			if (mode == SEXP_ERROR_CHECK_MODE) {
 				if ( Fred_running ) {
 					sprintf(buffer, "%s[%s] ", Sexp_variables[sexp_variables_index].variable_name, Sexp_variables[sexp_variables_index].text);
@@ -20761,12 +20764,12 @@ sexp_help_struct Sexp_help[] = {
 
 	// Goober5000
 	{ OP_PLAYER_USE_AI, "player-use-ai\r\n"
-		"\tCauses the player's ship to be controlled by the Freespace AI.  Takes 0 arguments.\r\n"
+		"\tCauses the player's ship to be controlled by the FreeSpace AI.  Takes 0 arguments.\r\n"
 	},
 
 	// Goober5000
 	{ OP_PLAYER_NOT_USE_AI, "player-not-use-ai\r\n"
-		"\tCauses the player's ship to not be controlled by the Freespace AI.  Takes 0 arguments.\r\n"
+		"\tCauses the player's ship to not be controlled by the FreeSpace AI.  Takes 0 arguments.\r\n"
 	},
 
 	//WMC

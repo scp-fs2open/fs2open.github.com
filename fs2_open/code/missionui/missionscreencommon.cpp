@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.30 $
- * $Date: 2006-02-18 00:42:51 $
- * $Author: wmcoolmon $
+ * $Revision: 2.31 $
+ * $Date: 2006-04-20 06:32:14 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/02/18 00:42:51  wmcoolmon
+ * Introducing draw_model_rotating; many improvements to weapon selection missile rendering
+ *
  * Revision 2.29  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -867,7 +870,7 @@ void common_select_init()
 	Common_select_inited = 1;
 
 	// this handles the case where the player played a multiplayer game but now is in single player (in one instance
-	// of Freespace)
+	// of FreeSpace)
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		chatbox_close();
 	}

@@ -1,5 +1,5 @@
 /*
- * Code created by Thomas Whittaker (RT) for a Freespace 2 source code project
+ * Code created by Thomas Whittaker (RT) for a FreeSpace 2 source code project
  *
  * You may not sell or otherwise commercially exploit the source or things you 
  * created based on the source.
@@ -8,13 +8,16 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/speech.cpp $
- * $Revision: 1.24 $
- * $Date: 2006-01-21 02:22:05 $
- * $Author: wmcoolmon $
+ * $Revision: 1.25 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  * Platform specific text-to-speech functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2006/01/21 02:22:05  wmcoolmon
+ * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
+ *
  * Revision 1.23  2006/01/20 07:10:33  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000

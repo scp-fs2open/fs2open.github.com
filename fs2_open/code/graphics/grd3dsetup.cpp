@@ -9,6 +9,9 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2006/04/15 00:13:22  phreak
+ * gr_flash_alpha(), much like gr_flash(), but allows an alpha value to be passed
+ *
  * Revision 2.55  2006/02/25 21:47:00  Goober5000
  * spelling
  *
@@ -1554,7 +1557,7 @@ bool gr_d3d_init()
 
 	d3d_setup_color();
 
-	// Tell Freespace code that we're using Direct3D.
+	// Tell FreeSpace code that we're using Direct3D.
 	D3D_enabled    = 1;
 	GlobalD3DVars::D3D_inited = true;
 	

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.36 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 2.37 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.35  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -229,7 +232,7 @@
  * Flash shield/ship icons when ships are hit
  * 
  * 25    3/02/98 5:42p John
- * Removed WinAVI stuff from Freespace.  Made all HUD gauges wriggle from
+ * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
  * afterburner.  Made gr_set_clip work good with negative x &y.  Made
  * model_caching be on by default.  Made each cached model have it's own
  * bitmap id.  Made asteroids not rotate when model_caching is on.  

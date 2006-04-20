@@ -1,5 +1,5 @@
 /*
- * Code created by Thomas Whittaker (Random Tiger) for a Freespace 2 source code project
+ * Code created by Thomas Whittaker (Random Tiger) for a FreeSpace 2 source code project
  *
  * You may not sell or otherwise commercially exploit the source or things you 
  * created based on the source.
@@ -27,7 +27,7 @@
 #include "voicerec.h"
 #include "grammar.h"
 
-// Freespace includes
+// FreeSpace includes
 #include "hud/hudsquadmsg.h"
 #include "io/keycontrol.h"
 #include "playerman/player.h"

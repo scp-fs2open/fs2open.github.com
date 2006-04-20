@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/ShipEditorDlg.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-04-20 06:32:01 $
  * $Author: Goober5000 $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.7  2005/07/13 02:40:50  Goober5000
  * remove PreProcDefine #includes in FRED
  * --Goober5000
@@ -91,7 +95,7 @@
  * ships/wing arriving after mission start
  * 
  * 56    11/10/97 10:13p Allender
- * added departure anchor to Fred and Freespace in preparation for using
+ * added departure anchor to Fred and FreeSpace in preparation for using
  * docking bays.  Functional in Fred, not in FreeSpace.
  * 
  * 55    10/21/97 4:49p Allender

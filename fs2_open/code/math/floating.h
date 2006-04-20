@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.h $
- * $Revision: 2.4 $
- * $Date: 2005-12-28 22:30:24 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * Low-level floating point math macros and routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/12/28 22:30:24  taylor
+ * add fl_tan() for getting the tangent of a float since it's terribly inaccurate to just use tan() on a float
+ *
  * Revision 2.3  2005/07/13 03:15:50  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -38,7 +41,7 @@
  *
  * 
  * 4     4/07/99 6:22p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 

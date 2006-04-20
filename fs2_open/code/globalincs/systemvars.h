@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.11 $
- * $Date: 2006-01-27 06:03:41 $
+ * $Revision: 2.12 $
+ * $Date: 2006-04-20 06:32:01 $
  * $Author: Goober5000 $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/01/27 06:03:41  Goober5000
+ * add an insertion sort function for small or almost-sorted arrays; it has the same prototype as stdlib's quick sort
+ * --Goober5000
+ *
  * Revision 2.10  2005/07/13 02:50:48  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -371,7 +375,7 @@ extern int OGL_enabled;
 //====================================================================================
 // DETAIL LEVEL STUFF
 // If you change any of this, be sure to increment the player file version 
-// in Freespace\ManagePilot.cpp and change Detail_defaults in SystemVars.cpp 
+// in FreeSpace\ManagePilot.cpp and change Detail_defaults in SystemVars.cpp 
 // or bad things will happen, I promise.
 //====================================================================================
 

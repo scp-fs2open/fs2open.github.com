@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.10 $
- * $Date: 2006-02-12 10:42:25 $
+ * $Revision: 2.11 $
+ * $Date: 2006-04-20 06:32:07 $
  * $Author: Goober5000 $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/02/12 10:42:25  Goober5000
+ * allow specification of debriefing personas
+ * --Goober5000
+ *
  * Revision 2.9  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -119,7 +123,7 @@
  * 
  * 47    9/10/98 1:17p Dave
  * Put in code to flag missions and campaigns as being MD or not in Fred
- * and Freespace. Put in multiplayer support for filtering out MD
+ * and FreeSpace. Put in multiplayer support for filtering out MD
  * missions. Put in multiplayer popups for warning of non-valid missions.
  * 
  * 46    6/05/98 9:54a Lawrance
@@ -317,7 +321,7 @@ struct sexp_variable;
 	#define BUILTIN_CAMPAIGN_NAME	"E3 Campaign"
 #else
 	#define BUILTIN_CAMPAIGN		"FreeSpace2"
-	#define BUILTIN_CAMPAIGN_NAME	"The Main Freespace2 Campaign"
+	#define BUILTIN_CAMPAIGN_NAME	"The Main FreeSpace2 Campaign"
 #endif
 
 #define MAX_CAMPAIGN_MISSIONS	100			// maximum number of missions in a campaign

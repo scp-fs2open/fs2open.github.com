@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.11 $
- * $Date: 2006-02-28 07:37:12 $
+ * $Revision: 1.12 $
+ * $Date: 2006-04-20 06:32:01 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2006/02/28 07:37:12  Goober5000
+ * fix another import bug
+ *
  * Revision 1.10  2006/02/26 23:23:30  wmcoolmon
  * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
  *
@@ -294,7 +297,7 @@
  * Frist pass on Debris field
  * 
  * 19    4/07/99 6:21p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 
@@ -373,7 +376,7 @@
  * 
  * 204   9/10/98 1:17p Dave
  * Put in code to flag missions and campaigns as being MD or not in Fred
- * and Freespace. Put in multiplayer support for filtering out MD
+ * and FreeSpace. Put in multiplayer support for filtering out MD
  * missions. Put in multiplayer popups for warning of non-valid missions.
  * 
  * 203   5/21/98 12:58a Hoffoss

@@ -150,7 +150,7 @@ BEGIN
         END
         POPUP "&Import"
         BEGIN
-            MENUITEM "&Freespace 1 mission...",     ID_FILE_IMPORT_FSM
+            MENUITEM "&FreeSpace 1 mission...",     ID_FILE_IMPORT_FSM
             MENUITEM "&Weapon loadouts...",         ID_FILE_IMPORT_WEAPONS
         END
         MENUITEM SEPARATOR

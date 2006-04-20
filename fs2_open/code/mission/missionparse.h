@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.83 $
- * $Author: karajorma $
- * $Date: 2006-04-16 11:58:11 $
+ * $Revision: 2.84 $
+ * $Author: Goober5000 $
+ * $Date: 2006-04-20 06:32:07 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2006/04/16 11:58:11  karajorma
+ * Some how managed to fail to commit the primary-locked and secondary-locked ship flags.
+ * No idea how. Oh well here they are.
+ *
  * Revision 2.82  2006/04/05 16:12:41  karajorma
  * Changes to support the new Enable/Disable-Builtin-Messages SEXP
  *
@@ -831,7 +835,7 @@ typedef struct p_object {
 #define P_SF2_FRIENDLY_STEALTH_INVIS	(1<<24)
 #define P_SF2_DONT_COLLIDE_INVIS		(1<<25)
 
-// the following parse object flags are used internally by Freespace
+// the following parse object flags are used internally by FreeSpace
 #define P_SF_USE_UNIQUE_ORDERS		(1<<26)	// tells a newly created ship to use the default orders for that ship
 #define P_SF_DOCK_LEADER			(1<<27)	// Goober5000 - a docked parse object that is the leader of its group
 #define P_SF_CANNOT_ARRIVE			(1<<28)	// used to indicate that this ship's arrival cue will never be true
@@ -938,7 +942,7 @@ int mission_parse_get_multi_mission_info(char *filename);
 // called externally from multiplayer code
 int mission_do_departure(object *objp);
 
-// called externally from Freespace.cpp
+// called externally from freespace.cpp
 void mission_parse_fixup_players(void);
 
 // get a index to a perminently kept around name of a ship or wing

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.23 $
- * $Date: 2006-03-25 22:38:15 $
- * $Author: taylor $
+ * $Revision: 1.24 $
+ * $Date: 2006-04-20 06:32:00 $
+ * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2006/03/25 22:38:15  taylor
+ * the previous changes should prevent these things from happening, but drop in some more Assert()'s anyway
+ *
  * Revision 1.22  2006/03/25 10:38:44  taylor
  * minor cleanup
  * address numerous out-of-bounds issues
@@ -635,7 +638,7 @@
  * Better default behavior.
  * 
  * 79    7/24/97 4:55p Allender
- * added ai-evade-ship to fred and to Freespace
+ * added ai-evade-ship to Fred and to FreeSpace
  * 
  * 78    7/24/97 4:20p Mike
  * Add goal and Fred hook for evade behavior.

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.h $
- * $Revision: 2.4 $
- * $Date: 2005-10-16 23:15:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.5 $
+ * $Date: 2006-04-20 06:32:00 $
+ * $Author: Goober5000 $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/10/16 23:15:46  wmcoolmon
+ * Hardened cfile against array overflows
+ *
  * Revision 2.3  2005/07/13 02:50:49  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -69,7 +72,7 @@ void cf_free_secondary_filelist();
 // Internal stuff
 typedef struct cf_pathtype {
 	int		index;					// To verify that the CF_TYPE define is correctly indexed into this array
-	char		*path;					// Path relative to Freespace root, has ending backslash.
+	char		*path;					// Path relative to FreeSpace root, has ending backslash.
 	char		*extensions;			// Extensions used in this pathtype, separated by spaces
 	int		parent_index;			// Index of this directory's parent.  Used for creating directories when writing.
 } cf_pathtype;

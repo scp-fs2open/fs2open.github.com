@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.h $
- * $Revision: 2.7 $
- * $Date: 2005-10-16 23:15:46 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/10/16 23:15:46  wmcoolmon
+ * Hardened cfile against array overflows
+ *
  * Revision 2.6  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -134,7 +137,7 @@ void lcl_set_language(int lang);
 
 
 // NOTE : generally you should only care about the above functions. Below are very low level functions
-//        which should already be well entrenched in Freespace. If you think you need to use one of the below
+//        which should already be well entrenched in FreeSpace. If you think you need to use one of the below
 //        functions - ask first :)
 // externalization of table/mission files (only parse routines ever need to deal with these functions) ----------------------- 
 

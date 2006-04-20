@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.240 $
- * $Date: 2006-04-15 04:17:58 $
- * $Author: phreak $
+ * $Revision: 2.241 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
- * Freespace main body
+ * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.240  2006/04/15 04:17:58  phreak
+ * use gr_flash_alpha() for fade-in/fade-out effect.
+ * just using gr_shade() will not work with the hud off or using an external camera.
+ *
  * Revision 2.239  2006/04/14 18:44:16  taylor
  * remove all of the *_ex() parsing functions added for use by EFFs
  * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
@@ -480,7 +484,7 @@
  * Added VM_TOPDOWN view; Added 2D mission mode, add 16384 to mission +Flags to use.
  *
  * Revision 2.118  2005/01/08 10:00:59  wmcoolmon
- * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ * Sound quality in FreeSpace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
  *
  * Revision 2.117  2005/01/01 07:18:47  wmcoolmon
  * NEW_HUD stuff, turned off this time. :) It's in a state of disrepair at the moment, doesn't show anything.
@@ -919,7 +923,7 @@
  * -C
  *
  * Revision 2.21  2003/01/26 02:58:33  wmcoolmon
- * Added title screen support to retail version. When FS2 loads, it will build a list of PCX files in the current directory, then attempt to display one. If no PCX files exist, it will try to display one of the title screens defined in the code. Freespace 2 will then attempt to superimpose a logo in the upper-left hand corner of the screen. If neither can be displayed, FS2 will function normally.
+ * Added title screen support to retail version. When FS2 loads, it will build a list of PCX files in the current directory, then attempt to display one. If no PCX files exist, it will try to display one of the title screens defined in the code. FreeSpace 2 will then attempt to superimpose a logo in the upper-left hand corner of the screen. If neither can be displayed, FS2 will function normally.
  *
  * Revision 2.20  2003/01/20 05:40:49  bobboau
  * added several sExps for turning glow points and glow maps on and off
@@ -1643,7 +1647,7 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 
 #ifdef NDEBUG
 #ifdef FRED
-#error macro FRED is defined when trying to build release Freespace.  Please undefine FRED macro in build settings
+#error macro FRED is defined when trying to build release FreeSpace.  Please undefine FRED macro in build settings
 #endif
 #endif
 
@@ -2079,7 +2083,7 @@ char Game_CDROM_dir[MAX_PATH_LEN];
 int init_cdrom();
 
 // How much RAM is on this machine. Set in WinMain
-uint Freespace_total_ram = 0;
+uint FreeSpace_total_ram = 0;
 
 // game flash stuff
 float Game_flash_red = 0.0f;
@@ -3285,27 +3289,27 @@ DCF(force_fullscreen, "Forces game to startup in fullscreen mode")
 
 int	Framerate_delay = 0;
 
-float Freespace_gamma = 1.0f;
+float FreeSpace_gamma = 1.0f;
 
 DCF(gamma,"Sets Gamma factor")
 {
 	if ( Dc_command )	{
 		dc_get_arg(ARG_FLOAT|ARG_NONE);
 		if ( Dc_arg_type & ARG_FLOAT )	{
-			Freespace_gamma = Dc_arg_float;
+			FreeSpace_gamma = Dc_arg_float;
 		} else {
 			dc_printf( "Gamma reset to 1.0f\n" );
-			Freespace_gamma = 1.0f;
+			FreeSpace_gamma = 1.0f;
 		}
-		if ( Freespace_gamma < 0.1f )	{
-			Freespace_gamma = 0.1f;
-		} else if ( Freespace_gamma > 5.0f )	{
-			Freespace_gamma = 5.0f;
+		if ( FreeSpace_gamma < 0.1f )	{
+			FreeSpace_gamma = 0.1f;
+		} else if ( FreeSpace_gamma > 5.0f )	{
+			FreeSpace_gamma = 5.0f;
 		}
-		gr_set_gamma(Freespace_gamma);
+		gr_set_gamma(FreeSpace_gamma);
 
 		char tmp_gamma_string[32];
-		sprintf( tmp_gamma_string, NOX("%.2f"), Freespace_gamma );
+		sprintf( tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma );
 		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
 	}
 
@@ -3316,7 +3320,7 @@ DCF(gamma,"Sets Gamma factor")
 	}
 
 	if ( Dc_status )	{
-		dc_printf( "Gamma = %.2f\n", Freespace_gamma );
+		dc_printf( "Gamma = %.2f\n", FreeSpace_gamma );
 	}
 }
 
@@ -3667,21 +3671,21 @@ void game_init()
 	{
 		// D3D's gamma system now works differently. 1.0 is the default value
 		ptr = os_config_read_string(NULL, NOX("GammaD3D"), NOX("1.0"));
-		Freespace_gamma = (float)atof(ptr);
+		FreeSpace_gamma = (float)atof(ptr);
 	}
 	else
 	{
 		ptr = os_config_read_string(NULL, NOX("Gamma"), NOX("1.80"));
-		Freespace_gamma = (float)atof(ptr);
+		FreeSpace_gamma = (float)atof(ptr);
 		
 		// Keep the old system for the benifit of OGL
-		if ( Freespace_gamma < 0.1f )	{
-			Freespace_gamma = 0.1f;
-		} else if ( Freespace_gamma > 5.0f )	{
-			Freespace_gamma = 5.0f;
+		if ( FreeSpace_gamma < 0.1f )	{
+			FreeSpace_gamma = 0.1f;
+		} else if ( FreeSpace_gamma > 5.0f )	{
+			FreeSpace_gamma = 5.0f;
 		}
 		char tmp_gamma_string[32];
-		sprintf( tmp_gamma_string, NOX("%.2f"), Freespace_gamma );
+		sprintf( tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma );
 		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
 	}
 
@@ -3693,7 +3697,7 @@ void game_init()
 	if(!Is_standalone){
 		// #Kazan# - moved this down - WATCH THESE calls - anything that shares code between standalone and normal
 		// cannot make gr_* calls in standalone mode because all gr_ calls are NULL pointers
-		gr_set_gamma(Freespace_gamma);
+		gr_set_gamma(FreeSpace_gamma);
 		game_title_screen_display();
 	}
 //#endif
@@ -3731,7 +3735,7 @@ void game_init()
 	// If less than 48MB of RAM, use low memory model.
 	if (
 #ifdef _WIN32
-		(Freespace_total_ram < 48*1024*1024) ||
+		(FreeSpace_total_ram < 48*1024*1024) ||
 #endif
 		Use_low_mem )	{
 		mprintf(( "Using normal memory settings...\n" ));
@@ -8560,12 +8564,12 @@ int game_do_ram_check(int ram_in_bytes)
 		}
 
 		char tmp[1024];
-		int Freespace_total_ram_MB;
-		Freespace_total_ram_MB = fl2i(ram_in_bytes/(1024*1024));
+		int FreeSpace_total_ram_MB;
+		FreeSpace_total_ram_MB = fl2i(ram_in_bytes/(1024*1024));
 
 		if ( allowed_to_run ) {
 
-			sprintf( tmp, XSTR( "FreeSpace has detected that you only have %dMB of free memory.\n\nFreeSpace requires at least 32MB of memory to run.  If you think you have more than %dMB of physical memory, ensure that you aren't running SmartDrive (SMARTDRV.EXE).  Any memory allocated to SmartDrive is not usable by applications\n\nPress 'OK' to continue running with less than the minimum required memory\n", 193), Freespace_total_ram_MB, Freespace_total_ram_MB);
+			sprintf( tmp, XSTR( "FreeSpace has detected that you only have %dMB of free memory.\n\nFreeSpace requires at least 32MB of memory to run.  If you think you have more than %dMB of physical memory, ensure that you aren't running SmartDrive (SMARTDRV.EXE).  Any memory allocated to SmartDrive is not usable by applications\n\nPress 'OK' to continue running with less than the minimum required memory\n", 193), FreeSpace_total_ram_MB, FreeSpace_total_ram_MB);
 
 			int msgbox_rval;
 			msgbox_rval = MessageBox( NULL, tmp, XSTR( "Not Enough RAM", 194), MB_OKCANCEL );
@@ -8574,7 +8578,7 @@ int game_do_ram_check(int ram_in_bytes)
 			}
 
 		} else {
-			sprintf( tmp, XSTR( "FreeSpace has detected that you only have %dMB of free memory.\n\nFreeSpace requires at least 32MB of memory to run.  If you think you have more than %dMB of physical memory, ensure that you aren't running SmartDrive (SMARTDRV.EXE).  Any memory allocated to SmartDrive is not usable by applications\n", 195), Freespace_total_ram_MB, Freespace_total_ram_MB);
+			sprintf( tmp, XSTR( "FreeSpace has detected that you only have %dMB of free memory.\n\nFreeSpace requires at least 32MB of memory to run.  If you think you have more than %dMB of physical memory, ensure that you aren't running SmartDrive (SMARTDRV.EXE).  Any memory allocated to SmartDrive is not usable by applications\n", 195), FreeSpace_total_ram_MB, FreeSpace_total_ram_MB);
 			MessageBox( NULL, tmp, XSTR( "Not Enough RAM", 194), MB_OK );
 			return -1;
 		}
@@ -8771,13 +8775,13 @@ int game_main(char *cmdline)
 	MEMORYSTATUS ms;
 	ms.dwLength = sizeof(MEMORYSTATUS);
 	GlobalMemoryStatus(&ms);
-	Freespace_total_ram = ms.dwTotalPhys;
+	FreeSpace_total_ram = ms.dwTotalPhys;
 
 	Mem_starttime_phys      = ms.dwAvailPhys;
 	Mem_starttime_pagefile  = ms.dwAvailPageFile;
 	Mem_starttime_virtual   = ms.dwAvailVirtual;
 
-	if ( game_do_ram_check(Freespace_total_ram) == -1 ) {
+	if ( game_do_ram_check(FreeSpace_total_ram) == -1 ) {
 		return 1;
 	}
 
@@ -8787,13 +8791,13 @@ int game_main(char *cmdline)
 	}
 
 	if (!vm_init(24*1024*1024)) {
-		MessageBox( NULL, XSTR( "Not enough memory to run Freespace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK );
+		MessageBox( NULL, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK );
 		return 1;
 	}
 		
 	char *tmp_mem = (char *) vm_malloc(16 * 1024 * 1024);
 	if (!tmp_mem) {
-		MessageBox(NULL, XSTR( "Not enough memory to run Freespace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK);
+		MessageBox(NULL, XSTR( "Not enough memory to run FreeSpace.\r\nTry closing down some other applications.\r\n", 198), XSTR( "Not Enough Memory", 199), MB_OK);
 		return 1;
 	}
 
@@ -8906,7 +8910,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 
 	DBUGFILE_INIT();
 
-	// Don't let more than one instance of Freespace run.
+	// Don't let more than one instance of FreeSpace run.
 	HWND hwnd = FindWindow( NOX( "FreeSpaceClass" ), NULL );
 	if ( hwnd )	{
 		SetForegroundWindow(hwnd);
@@ -8938,7 +8942,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 #endif
 		result = !game_main(szCmdLine);
 #ifdef _MSC_VER
-	} __except( RecordExceptionInfo(GetExceptionInformation(), "Freespace 2 Main Thread") ) {
+	} __except( RecordExceptionInfo(GetExceptionInformation(), "FreeSpace 2 Main Thread") ) {
 		// Do nothing here - RecordExceptionInfo() has already done
 		// everything that is needed. Actually this code won't even
 		// get called unless you return EXCEPTION_EXECUTE_HANDLER from

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.20 $
- * $Date: 2006-02-26 23:23:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21 $
+ * $Date: 2006-04-20 06:32:22 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/02/26 23:23:30  wmcoolmon
+ * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
+ *
  * Revision 2.19  2006/01/17 04:11:26  wmcoolmon
  * Removed #ifdef around Object_type_names extern
  *
@@ -489,7 +492,7 @@ extern char	*Object_type_names[MAX_OBJECT_TYPES];
 #define OF_TARGETABLE_AS_BOMB		(1<<15)
 
 // Flags used by Fred
-#define OF_MARKED			(1<<17)	// Object is marked (Fred).  Can be reused in Freespace for anything that won't be used by Fred.
+#define OF_MARKED			(1<<17)	// Object is marked (Fred).  Can be reused in FreeSpace for anything that won't be used by Fred.
 #define OF_TEMP_MARKED		(1<<18)	// Temporarily marked (Fred).
 #define OF_REFERENCED		(1<<19)	// (Fred) Object is referenced by something somewhere
 #define OF_HIDDEN			(1<<20)	// Object is hidden (not shown) and can't be manipulated

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.12 $
- * $Date: 2005-10-08 18:25:41 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/10/08 18:25:41  wmcoolmon
+ * These are no longer needed...
+ *
  * Revision 2.11  2005/07/13 03:35:29  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -36,7 +39,7 @@
  * Made sounds dynamically allocated
  *
  * Revision 2.6  2005/01/08 09:59:10  wmcoolmon
- * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ * Sound quality in FreeSpace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
  *
  * Revision 2.5  2004/08/11 05:06:34  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this

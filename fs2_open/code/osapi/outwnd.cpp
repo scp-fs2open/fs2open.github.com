@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.15 $
- * $Date: 2006-01-26 03:23:30 $
+ * $Revision: 2.16 $
+ * $Date: 2006-04-20 06:32:23 $
  * $Author: Goober5000 $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/01/26 03:23:30  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.14  2005/04/20 04:34:42  phreak
  * NMONO should not interfere with the debug window
  *
@@ -264,7 +268,7 @@ int Outwnd_no_filter_file = 0;		// 0 = .cfg file found, 1 = not found and warnin
 #ifndef NDEBUG
 	int Log_debug_output_to_file = 1;
 	FILE *Log_fp;
-	char *Freespace_logfilename = "fs.log";
+	char *FreeSpace_logfilename = "fs.log";
 #endif
 
 
@@ -1333,7 +1337,7 @@ void outwnd_init(int display_under_freespace_window)
 
 #ifndef NDEBUG
 	if ( Log_fp == NULL ) {
-		Log_fp = fopen(Freespace_logfilename, "wb");
+		Log_fp = fopen(FreeSpace_logfilename, "wb");
 	}
 #endif 
 }

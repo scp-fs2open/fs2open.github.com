@@ -1,18 +1,20 @@
 /*
- * ai_profiles.h
- *
- * Created by Ian "Goober5000" Warfield for the Freespace2 Source Code Project.
+ * Created by Ian "Goober5000" Warfield for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
  */
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.h $
- * $Revision: 1.3 $
- * $Date: 2006-03-20 06:19:03 $
- * $Author: taylor $
+ * $Revision: 1.4 $
+ * $Date: 2006-04-20 06:32:00 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/03/20 06:19:03  taylor
+ * add ai_profiles flag to get rid of limit on minimum speed a docked ship can move
+ * (not going to Int3() here from < 0.1 speed by default, a support ship actually hit it)
+ *
  * Revision 1.2  2005/11/24 08:46:11  Goober5000
  * * cleaned up mission_do_departure
  *   * fixed a hidden crash (array index being -1; would only

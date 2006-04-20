@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.77 $
- * $Date: 2006-04-18 00:56:28 $
- * $Author: bobboau $
+ * $Revision: 2.78 $
+ * $Date: 2006-04-20 06:32:15 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2006/04/18 00:56:28  bobboau
+ * bugfix for the animation system
+ *
  * Revision 2.76  2006/03/24 07:38:35  wmcoolmon
  * New subobject animation stuff and Lua functions.
  *
@@ -539,7 +542,7 @@
  * missilies not use lighting.
  * 
  * 142   3/02/98 5:42p John
- * Removed WinAVI stuff from Freespace.  Made all HUD gauges wriggle from
+ * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
  * afterburner.  Made gr_set_clip work good with negative x &y.  Made
  * model_caching be on by default.  Made each cached model have it's own
  * bitmap id.  Made asteroids not rotate when model_caching is on.  

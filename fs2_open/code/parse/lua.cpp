@@ -3207,7 +3207,7 @@ LUA_FUNC(getSquadronImage, l_Player, NULL, "Squad image (string)", "Gets current
 	return lua_set_args(L, "s", Players[idx].squad_filename);
 }*/
 //**********LIBRARY: Base
-lua_lib l_Base("Base", "ba", "Base Freespace 2 functions");
+lua_lib l_Base("Base", "ba", "Base FreeSpace 2 functions");
 
 LUA_FUNC(print, l_Base, "String", NULL, "Prints a string")
 {
@@ -3216,14 +3216,14 @@ LUA_FUNC(print, l_Base, "String", NULL, "Prints a string")
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(warning, l_Base, "String", NULL, "Displays a Freespace warning (debug build-only) message with the string provided")
+LUA_FUNC(warning, l_Base, "String", NULL, "Displays a FreeSpace warning (debug build-only) message with the string provided")
 {
 	Warning(LOCATION, "LUA ERROR: %s", lua_tostring(L, -1));
 
 	return LUA_RETURN_NIL;
 }
 
-LUA_FUNC(error, l_Base, "String", NULL, "Displays a Freespace error message with the string provided")
+LUA_FUNC(error, l_Base, "String", NULL, "Displays a FreeSpace error message with the string provided")
 {
 	Error(LOCATION, "LUA ERROR: %s", lua_tostring(L, -1));
 
@@ -3238,7 +3238,7 @@ LUA_FUNC(getFrametime, l_Base, "[Do not adjust for time compression (Boolean)]",
 	return lua_set_args(L, "f", b ? flRealframetime : flFrametime);
 }
 
-LUA_FUNC(getState, l_Base, "[Depth (number)]", "State (string)", "Gets current Freespace state; if a depth is specified, the state at that depth is returned. (IE at the in-game options game, a depth of 1 would give you the game state, while the function defaults to 0, which would be the options screen.")
+LUA_FUNC(getState, l_Base, "[Depth (number)]", "State (string)", "Gets current FreeSpace state; if a depth is specified, the state at that depth is returned. (IE at the in-game options game, a depth of 1 would give you the game state, while the function defaults to 0, which would be the options screen.")
 {
 	int depth = 0;
 	lua_get_args(L, "|i", &depth);
@@ -3266,7 +3266,7 @@ LUA_FUNC(getNumStates, l_Base, NULL, "Number of states", "Gets the number of dif
 	return lua_set_args(L, "i", Num_gs_state_text);
 }
 
-LUA_FUNC(setEvent, l_Base, "Event", "Whether a valid event name was given (boolean)", "Sets current game event. Note that you can crash Freespace 2 by setting a state at an improper time, so test extensively if you use it.")
+LUA_FUNC(setEvent, l_Base, "Event", "Whether a valid event name was given (boolean)", "Sets current game event. Note that you can crash FreeSpace 2 by setting a state at an improper time, so test extensively if you use it.")
 {
 	char *s;
 	if(!lua_get_args(L, "s", &s))

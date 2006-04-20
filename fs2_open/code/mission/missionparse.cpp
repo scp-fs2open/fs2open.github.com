@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.170 $
- * $Date: 2006-04-16 11:58:11 $
- * $Author: karajorma $
+ * $Revision: 2.171 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.170  2006/04/16 11:58:11  karajorma
+ * Some how managed to fail to commit the primary-locked and secondary-locked ship flags.
+ * No idea how. Oh well here they are.
+ *
  * Revision 2.169  2006/04/05 16:12:41  karajorma
  * Changes to support the new Enable/Disable-Builtin-Messages SEXP
  *
@@ -818,7 +822,7 @@
  * Frist pass on Debris field
  * 
  * 31    4/07/99 6:22p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 
@@ -3630,7 +3634,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 		{
 			object *objp = &Objects[real_objnum];
 
-			// Freespace
+			// FreeSpace
 			if (!Fred_running)
 			{
 				int i;
@@ -6662,7 +6666,7 @@ void mission_eval_departures()
 
 //				&& (!timestamp_valid(shipp->departure_delay) || timestamp_elapsed(shipp->departure_delay)) )
 			// when the departure cue becomes true, set off the departure delay timer.  We store the
-			// timer as -seconds in Freespace which indicates that the timer has not been set.  If the timer
+			// timer as -seconds in FreeSpace which indicates that the timer has not been set.  If the timer
 			// is not set, then turn it into a valid timer and keep evaluating the timer until it is elapsed
 			if ( eval_sexp(shipp->departure_cue) ) {
 				if ( shipp->departure_delay <= 0 )

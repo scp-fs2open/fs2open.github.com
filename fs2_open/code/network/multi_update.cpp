@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_update.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2006-04-20 06:32:15 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.8  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -84,7 +87,7 @@
  * 
  * 15    9/10/98 1:17p Dave
  * Put in code to flag missions and campaigns as being MD or not in Fred
- * and Freespace. Put in multiplayer support for filtering out MD
+ * and FreeSpace. Put in multiplayer support for filtering out MD
  * missions. Put in multiplayer popups for warning of non-valid missions.
  * 
  * 14    9/09/98 5:53p Dave
@@ -243,7 +246,7 @@ int multi_update_error_verifying()
 	strcpy(out_str, "(");
 	strcat(out_str, Multi_update_error_string);
 	strcat(out_str, ")\n\n");
-	strcat(out_str, XSTR("There was an error verifying your version of Freespace, if you continue, you will not necessarily be up to date", 978));	
+	strcat(out_str, XSTR("There was an error verifying your version of FreeSpace, if you continue, you will not necessarily be up to date", 978));	
 
 	switch(popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, XSTR("&Go back", 1524), XSTR("&Continue", 1525), out_str)){
 	// continue on in freespace like nothing happened
@@ -286,9 +289,9 @@ int multi_update_gobaby()
 	extern char Multi_options_proxy[512];
 	extern ushort Multi_options_proxy_port;
 	if(strlen(Multi_options_proxy) > 0){
-		sprintf(msg, "%s (%s : %d)", XSTR("Verifying Freespace Version",981), Multi_options_proxy, Multi_options_proxy_port);
+		sprintf(msg, "%s (%s : %d)", XSTR("Verifying FreeSpace Version",981), Multi_options_proxy, Multi_options_proxy_port);
 	} else {
-		strcpy(msg, XSTR("Verifying Freespace Version",981));
+		strcpy(msg, XSTR("Verifying FreeSpace Version",981));
 	}
 	ret_code = popup_till_condition(multi_update_http_do, XSTR("Cancel",948), msg);		
 
@@ -305,7 +308,7 @@ int multi_update_gobaby()
 
 		// earlier version - need to update
 		case 0:			
-			switch(popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, "&Update Later", "&Yes", XSTR("A new version of Freespace is available. You must update to the new version to play on PXO\n\nAuto update now?", 980))){
+			switch(popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, "&Update Later", "&Yes", XSTR("A new version of FreeSpace is available. You must update to the new version to play on PXO\n\nAuto update now?", 980))){
 			// update later (go back to main hall for now
 			case 0 :
 			case -1:
@@ -313,7 +316,7 @@ int multi_update_gobaby()
 				break;
 
 			default:
-				// set things up so that the launcher is launched when Freespace is done closing
+				// set things up so that the launcher is launched when FreeSpace is done closing
 				Multi_update_fireup_launcher_on_exit = 1;
 				gameseq_post_event(GS_EVENT_QUIT_GAME);
 

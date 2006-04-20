@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.h $
- * $Revision: 2.5 $
- * $Date: 2005-07-13 03:35:33 $
+ * $Revision: 2.6 $
+ * $Date: 2006-04-20 06:32:15 $
  * $Author: Goober5000 $
  *
  * Header file for the UI of the various multiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/07/13 03:35:33  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.4  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -68,7 +72,7 @@
  * 
  * 67    9/10/98 1:17p Dave
  * Put in code to flag missions and campaigns as being MD or not in Fred
- * and Freespace. Put in multiplayer support for filtering out MD
+ * and FreeSpace. Put in multiplayer support for filtering out MD
  * missions. Put in multiplayer popups for warning of non-valid missions.
  * 
  * 66    9/04/98 3:51p Dave

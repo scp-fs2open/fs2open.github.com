@@ -1,19 +1,21 @@
 /*
- * Created by Ian "Goober5000" Warfield for the Freespace2 Source Code Project.
+ * Created by Ian "Goober5000" Warfield for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
- *
  */ 
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.22 $
- * $Date: 2006-01-30 06:41:34 $
- * $Author: taylor $
+ * $Revision: 1.23 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2006/01/30 06:41:34  taylor
+ * make MAX_LIGHTS global
+ *
  * Revision 1.21  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.26 $
- * $Date: 2006-03-19 05:05:59 $
- * $Author: taylor $
+ * $Revision: 2.27 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2006/03/19 05:05:59  taylor
+ * make sure the mission log doesn't modify stuff in Cargo_names[], since it shouldn't
+ * have split_str_once() be sure to not split a word in half, it should end up on the second line instead
+ *
  * Revision 2.25  2005/07/02 19:43:54  taylor
  * ton of non-standard resolution fixes
  *
@@ -331,7 +335,7 @@ char *fs2_open_credit_text =
 	"for helping out whenever and whereever he can\n"
 	"\n"
 	"Linux and OSX version with the support of\n"
-	"the icculus.org Freespace2 project:\n"
+	"the icculus.org FreeSpace2 project:\n"
 	"Dan Olson\n"
 	"Steven Fuller\n"
 	"Charles Mason\n"

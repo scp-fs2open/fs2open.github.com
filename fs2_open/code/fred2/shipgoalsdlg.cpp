@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipGoalsDlg.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-02-20 02:13:07 $
+ * $Revision: 1.3 $
+ * $Date: 2006-04-20 06:32:01 $
  * $Author: Goober5000 $
  *
  * Initial orders editor dialog box handling code.  This dialog is used for both
  * ship and wing initial orders, and can support more if need be without modification.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/02/20 02:13:07  Goober5000
+ * added ai-ignore-new which hopefully should fix the ignore bug
+ * --Goober5000
+ *
  * Revision 1.1  2006/01/19 02:27:32  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -126,7 +130,7 @@
  * Changes to ship lookup to include player ships.
  * 
  * 36    7/24/97 4:55p Allender
- * added ai-evade-ship to fred and to Freespace
+ * added ai-evade-ship to fred and to FreeSpace
  * 
  * 35    7/22/97 3:40p Allender
  * Changed the way that attacking subsystem works (for initial orders).
@@ -134,7 +138,7 @@
  * specific as per which subsystem to attack.
  * 
  * 34    7/17/97 4:23p Allender
- * ai-guard-wing now in both Fred and Freespace
+ * ai-guard-wing now in both Fred and FreeSpace
  * 
  * 33    7/09/97 1:56p Jasen
  * Added new case to data mode checkunder save item. 

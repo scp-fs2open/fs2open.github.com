@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.29 $
- * $Date: 2006-04-14 18:44:16 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2006/04/14 18:44:16  taylor
+ * remove all of the *_ex() parsing functions added for use by EFFs
+ * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
+ * make Mission_text and Mission_text_raw only use the memory needed, and free it when it doesn't need to parse anymore
+ *   (should work ok with FRED2, but I wasn't able to test it)
+ *
  * Revision 2.28  2005/12/06 03:14:45  taylor
  * fix for string overwrites with get_version_string()
  *
@@ -121,7 +127,7 @@
  * For full details check previous dev e-mails
  *
  * Revision 2.2  2002/08/04 05:12:42  penguin
- * Display fs2_open version instead of "Freespace 2"
+ * Display fs2_open version instead of "FreeSpace 2"
  *
  * Revision 2.1  2002/08/01 01:41:06  penguin
  * The big include file move
@@ -507,7 +513,7 @@ void player_select_set_controls(int gray)
 	}
 }
 
-// functions for selecting single/multiplayer pilots at the very beginning of Freespace
+// functions for selecting single/multiplayer pilots at the very beginning of FreeSpace
 void player_select_init()
 {			
 	int i;
@@ -1719,7 +1725,7 @@ void player_tips_popup()
 	if((Player != NULL) && !Player->tips){
 		return;
 	}
-	// only show tips once per instance of Freespace
+	// only show tips once per instance of FreeSpace
 	if(Player_tips_shown == 1){
 		return;
 	}

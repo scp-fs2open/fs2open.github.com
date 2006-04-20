@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.19 $
- * $Date: 2006-04-12 01:00:58 $
- * $Author: taylor $
+ * $Revision: 2.20 $
+ * $Date: 2006-04-20 06:32:23 $
+ * $Author: Goober5000 $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/04/12 01:00:58  taylor
+ * some small optimizations and cleanup
+ * use floats for gr_bitmap() size and positions, mainly for non-standard resolutions since this allows proper resizing and positioning
+ *   (the cast to float was happening later anyway so there should be not additional slowdown from that with standard resolutions)
+ * change g3_draw_2d_poly_bitmap() to use floats instead of ints, gets rid of the extra cast and allows better resize values
+ *
  * Revision 2.18  2006/02/25 21:47:08  Goober5000
  * spelling
  *
@@ -107,7 +113,7 @@
  * Added in laser glows.
  * 
  * 3     4/07/99 6:22p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 

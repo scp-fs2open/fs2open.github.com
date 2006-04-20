@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/UI.H $
- * $Revision: 2.7 $
- * $Date: 2005-07-22 03:53:32 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  * Include file for our user interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/22 03:53:32  taylor
+ * fix crash on commit in the multi ship selection screen
+ * mask_data in the UI code is always cast to ubyte so why it was a ushort type I'll never know
+ * fix unsized text in input boxes (fixed the real problem earlier but forgot to remove this old fix)
+ *
  * Revision 2.6  2005/07/13 03:35:36  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -120,7 +125,7 @@
  * highlighing
  * 
  * 67    4/17/98 12:22a Dave
- * Bumped up MAX_TOOLTIPS from 350 to 500 so Freespace will start.
+ * Bumped up MAX_TOOLTIPS from 350 to 500 so FreeSpace will start.
  * 
  * 66    4/14/98 5:07p Dave
  * Don't load or send invalid pilot pics. Fixed chatbox graphic errors.

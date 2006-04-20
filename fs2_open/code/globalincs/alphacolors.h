@@ -17,7 +17,7 @@
 //
 
 // Colors for UI
-// See Freespace.cpp for usage
+// See FreeSpace.cpp for usage
 
 // The following colors are for text drawing:
 // normal text

@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.11 $
- * $Date: 2005-07-13 03:25:58 $
+ * $Revision: 2.12 $
+ * $Date: 2006-04-20 06:32:15 $
  * $Author: Goober5000 $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/07/13 03:25:58  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.10  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -191,7 +195,7 @@
  * Need to test now.
  * 
  * 10    12/03/98 5:22p Dave
- * Ported over Freespace 1 multiplayer ships.tbl and weapons.tbl
+ * Ported over FreeSpace 1 multiplayer ships.tbl and weapons.tbl
  * checksumming.
  * 
  * 9     11/19/98 4:19p Dave
@@ -532,7 +536,7 @@ extern int Om_tracker_flag;
 
 #define HUD_MSG						0xC1		// a hud message
 #define LEAVE_GAME					0xC2		// indication that a player is leaving the game
-#define GAME_CHAT						0xC3		// this chat packet used for Freespace
+#define GAME_CHAT						0xC3		// this chat packet used for FreeSpace
 #define MISSION_MESSAGE				0xC4		// a message (squadmate, etc)
 #define SHIP_DEPART					0xC5		// a ship has left the building
 #define SHIPS_INGAME_PACKET		0xC6     // ingame join ship data packet

@@ -1,16 +1,20 @@
 /*
- * Created by Ian "Goober5000" Warfield for the Freespace2 Source Code Project.
+ * Created by Ian "Goober5000" Warfield for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
  */
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.8 $
- * $Date: 2006-02-13 00:20:45 $
+ * $Revision: 1.9 $
+ * $Date: 2006-04-20 06:32:07 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 1.7  2006/01/28 04:33:06  Goober5000
  * fix all teams at war IFF behavior
  * --Goober5000

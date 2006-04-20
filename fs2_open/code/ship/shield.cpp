@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.39 $
- * $Date: 2006-03-05 21:45:12 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2006/03/05 21:45:12  taylor
+ * various small cleanups, fixes, error checks
+ *
  * Revision 2.38  2006/02/25 21:47:08  Goober5000
  * spelling
  *
@@ -270,7 +273,7 @@
  * Remove shield hit triangle if offscreen.
  * 
  * 49    3/02/98 5:42p John
- * Removed WinAVI stuff from Freespace.  Made all HUD gauges wriggle from
+ * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
  * afterburner.  Made gr_set_clip work good with negative x &y.  Made
  * model_caching be on by default.  Made each cached model have it's own
  * bitmap id.  Made asteroids not rotate when model_caching is on.  

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-02-25 21:46:59 $
+ * $Revision: 1.5 $
+ * $Date: 2006-04-20 06:32:01 $
  * $Author: Goober5000 $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/02/25 21:46:59  Goober5000
+ * spelling
+ *
  * Revision 1.3  2006/02/20 07:30:14  taylor
  * updated to newest dynamic starfield code
  *  - this mainly is to just better support SEXP based starfield bitmap changes (preloading, better in-mission stuff loading)
@@ -92,7 +95,7 @@
  * Made all pof related nebula stuff customizable through Fred.
  * 
  * 5     4/07/99 6:21p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 
@@ -1269,7 +1272,7 @@ extern void parse_bitmaps(mission *pm);
 
 void bg_bitmap_dlg::OnImportBackground() 
 {
-	CFileDialog cfd(TRUE, ".fs2", NULL, 0, "Freespace2 Missions (*.fs2)|*.fs2||\0");
+	CFileDialog cfd(TRUE, ".fs2", NULL, 0, "FreeSpace2 Missions (*.fs2)|*.fs2||\0");
 	char filename[256], error_str[1024];
 	int rval;
 	

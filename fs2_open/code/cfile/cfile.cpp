@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.39 $
- * $Date: 2006-04-16 05:28:10 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2006-04-20 06:32:00 $
+ * $Author: Goober5000 $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2006/04/16 05:28:10  taylor
+ * extra safety check when creating a default path string, filename is optional be we need to available if root0 is missing (CFILE not initted yet)
+ * fix that crazy compiler<->constructor<->linker<->server.txt deal caused by some bad code and a freaky link thing in freespace.cpp
+ *
  * Revision 2.38  2006/04/12 00:53:26  taylor
  * DDS now works well on the interface, but I forgot to every commit the CFILE change so that they are actually usable :)
  *
@@ -492,7 +496,7 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 
 		// are we in a root directory?		
 		if(cfile_in_root_dir(buf)){
-			MessageBox((HWND)NULL, "Freespace2/Fred2 cannot be run from a drive root directory!", "Error", MB_OK);
+			MessageBox((HWND)NULL, "FreeSpace2/Fred2 cannot be run from a drive root directory!", "Error", MB_OK);
 			return 1;
 		}		
 

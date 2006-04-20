@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.61 $
- * $Date: 2006-03-20 06:16:45 $
- * $Author: taylor $
+ * $Revision: 2.62 $
+ * $Date: 2006-04-20 06:32:22 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2006/03/20 06:16:45  taylor
+ * fix D3D/OGL test for asteroid rotations (I was far too excited about the result of this :()
+ *
  * Revision 2.60  2006/02/25 21:47:07  Goober5000
  * spelling
  *
@@ -498,7 +501,7 @@
  * Fixed bug where asteroids weren't rotating for Glide.
  * 
  * 205   3/02/98 5:42p John
- * Removed WinAVI stuff from Freespace.  Made all HUD gauges wriggle from
+ * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
  * afterburner.  Made gr_set_clip work good with negative x &y.  Made
  * model_caching be on by default.  Made each cached model have it's own
  * bitmap id.  Made asteroids not rotate when model_caching is on.  

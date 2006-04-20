@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.25 $
- * $Date: 2006-02-13 00:20:45 $
+ * $Revision: 2.26 $
+ * $Date: 2006-04-20 06:32:23 $
  * $Author: Goober5000 $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.24  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -575,11 +579,11 @@ int pilot_file_upgrade_check(char *callsign, int single)
 		// give a popup warning about the conversion process before proceeding - taylor
 		char confirm_string[300];
 #ifndef _WIN32
-		snprintf(confirm_string, 300, "This will cause the pilot '%s' to be converted to FSO format. The conversion process is not reversible and you will no longer be able to use this pilot in earlier versions of Freespace (including FS2 retail). Do you want to continue?", callsign);
+		snprintf(confirm_string, 300, "This will cause the pilot '%s' to be converted to FSO format. The conversion process is not reversible and you will no longer be able to use this pilot in earlier versions of FreeSpace (including FS2 retail). Do you want to continue?", callsign);
 #else
 		// FIXME: really need to fix this crap system-wide (snprintf)
 		// The Windows implementation if snprintf is not safe
-		sprintf(confirm_string, "This will cause the pilot '%s' to be converted to FSO format. The conversion process is not reversible and you will no longer be able to use this pilot in earlier versions of Freespace (including FS2 retail). Do you want to continue?", callsign);
+		sprintf(confirm_string, "This will cause the pilot '%s' to be converted to FSO format. The conversion process is not reversible and you will no longer be able to use this pilot in earlier versions of FreeSpace (including FS2 retail). Do you want to continue?", callsign);
 #endif
 
 		rc = popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, POPUP_NO, POPUP_YES, confirm_string, -1);

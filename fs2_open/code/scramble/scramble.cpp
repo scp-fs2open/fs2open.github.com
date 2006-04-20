@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/scramble/scramble.cpp $
- * $Revision: 2.4 $
- * $Date: 2005-09-08 00:09:32 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  * Module for file scrambler
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/09/08 00:09:32  taylor
+ * fix building/linking of command line tools under Linux/OSX
+ * add tools as targets to OSX project file
+ *
  * Revision 2.3  2005/05/12 17:49:16  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -343,8 +347,8 @@ void print_instructions()
 	printf("Encrypt Options (you can only use one option at the time):\n");
 	printf("   -st		Preprocess ships.tbl (for FS1 Demo version only!!)\n");
 	printf("   -wt		Preprocess weapons.tbl (for FS1 Demo version only!!)\n");
-	printf("   -fs1		Use 7bit, Freespace 1 style encryption (default=no)\n");
-	printf("   -8bit	Use 8bit, Freespace 1 style encryption (default=no)\n\n");
+	printf("   -fs1		Use 7bit, FreeSpace 1 style encryption (default=no)\n");
+	printf("   -8bit	Use 8bit, FreeSpace 1 style encryption (default=no)\n\n");
 }
 
 

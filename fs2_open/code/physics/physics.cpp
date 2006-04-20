@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.15 $
- * $Date: 2006-02-25 21:47:07 $
+ * $Revision: 2.16 $
+ * $Date: 2006-04-20 06:32:23 $
  * $Author: Goober5000 $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/02/25 21:47:07  Goober5000
+ * spelling
+ *
  * Revision 2.14  2006/02/08 02:10:39  wmcoolmon
  * Maybe fix gliding insta-turn problem
  *
@@ -103,7 +106,7 @@
  * comment out printf
  * 
  * 120   3/22/98 4:11p Andsager
- * Remove global Freespace_running
+ * Remove global FreeSpace_running
  * 
  * 119   3/20/98 5:15p Andsager
  * Revised calculation of rotation, shake, and velocity in response to

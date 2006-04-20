@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/Encrypt.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-04-15 11:35:18 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2006-04-20 06:32:23 $
+ * $Author: Goober5000 $
  *
  * Module for encryption code common to FreeSpace and related tools
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/04/15 11:35:18  taylor
+ * add scramble port
+ * support both FS1 (8bit and 7bit) and FS2 style encryption
+ *
  * Revision 2.6  2005/01/31 10:34:38  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -506,11 +510,11 @@ const char *encrypt_type(char *scrambled_text)
 	memcpy(&encrypt_id, scrambled_text, 4);
 
 	if (encrypt_id == Encrypt_signature) {
-		return "Freespace 1 type encryption, 7-bit";
+		return "FreeSpace 1 type encryption, 7-bit";
 	} else if (encrypt_id == Encrypt_signature_8bit) {
-		return "Freespace 1 type encryption, 8-bit";
+		return "FreeSpace 1 type encryption, 8-bit";
 	} else if (encrypt_id == Encrypt_new_signature) {
-		return "Freespace 2 type encryption";
+		return "FreeSpace 2 type encryption";
 	} else {
 		return "Not encrypted or unknown encryption type";
 	}
