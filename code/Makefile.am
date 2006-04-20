@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.28 2006-03-08 05:24:11 taylor Exp $
+## $Id: Makefile.am,v 1.29 2006-04-20 16:24:48 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -457,6 +457,7 @@ FS2_SOURCES =	\
 	missionui/missionweaponchoice.h	\
 	missionui/redalert.cpp	\
 	missionui/redalert.h	\
+	model/animation.cpp	\
 	model/model.h	\
 	model/modelcollide.cpp	\
 	model/modelinterp.cpp	\
@@ -666,6 +667,7 @@ endif
 if FS2_OS_UNIX
 JOY_SOURCES =	\
 	io/joy.h	\
+	io/joy_ff.h	\
 	io/joy-unix.cpp
 endif
 
