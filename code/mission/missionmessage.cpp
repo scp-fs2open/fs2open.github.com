@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.50 $
- * $Date: 2006-04-05 16:12:41 $
- * $Author: karajorma $
+ * $Revision: 2.51 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2006/04/05 16:12:41  karajorma
+ * Changes to support the new Enable/Disable-Builtin-Messages SEXP
+ *
  * Revision 2.49  2006/01/27 06:21:10  Goober5000
  * replace quick sort with insertion sort in many places
  * --Goober5000
@@ -474,7 +477,7 @@
  * Play voice cue sound when there is no voice file present
  * 
  * 88    3/02/98 5:42p John
- * Removed WinAVI stuff from Freespace.  Made all HUD gauges wriggle from
+ * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
  * afterburner.  Made gr_set_clip work good with negative x &y.  Made
  * model_caching be on by default.  Made each cached model have it's own
  * bitmap id.  Made asteroids not rotate when model_caching is on.  

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-10-10 17:21:05 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/10/10 17:21:05  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.17  2005/07/22 10:18:37  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -542,7 +545,7 @@ char Options_notify_string[200];
 void options_accept();
 void options_force_button_frame(int n, int frame_num);
 
-extern float Freespace_gamma;
+extern float FreeSpace_gamma;
 
 void options_add_notify(char *str);
 void options_notify_do_frame();
@@ -999,21 +1002,21 @@ void options_change_gamma(float delta)
 {
 	char tmp_gamma_string[32];
 
-	Freespace_gamma += delta;
-	if (Freespace_gamma < 0.1f) {
-		Freespace_gamma = 0.1f;
+	FreeSpace_gamma += delta;
+	if (FreeSpace_gamma < 0.1f) {
+		FreeSpace_gamma = 0.1f;
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 
-	} else if (Freespace_gamma > 5.0f) {
-		Freespace_gamma = 5.0f;
+	} else if (FreeSpace_gamma > 5.0f) {
+		FreeSpace_gamma = 5.0f;
 		gamesnd_play_iface(SND_GENERAL_FAIL);
 
 	} else {
 		gamesnd_play_iface(SND_USER_SELECT);
 	}
 
-	gr_set_gamma(Freespace_gamma);
-	sprintf(tmp_gamma_string, NOX("%.2f"), Freespace_gamma);
+	gr_set_gamma(FreeSpace_gamma);
+	sprintf(tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma);
 
 	if ( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) ) {
 		os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
@@ -1412,7 +1415,7 @@ void draw_gamma_box()
 //	ushort Gamma_data[Options_gamma_coords[gr_screen.res][OPTIONS_W_COORD]*Options_gamma_coords[gr_screen.res][OPTIONS_H_COORD]*2];
 	ushort Gamma_data[MAX_GAMMA_BITMAP_SIZE];
 
-	v = fl2i( pow(0.5f, 1.0f / Freespace_gamma) * 255.0f );
+	v = fl2i( pow(0.5f, 1.0f / FreeSpace_gamma) * 255.0f );
 	if (v > 255){
 		v = 255;
 	} else if (v < 0){
@@ -1629,7 +1632,7 @@ void options_menu_do_frame(float frametime)
 		x = Options_gamma_num_coords[gr_screen.res][OPTIONS_X_COORD]; //  + Options_gamma_num_coords[gr_screen.res][OPTIONS_W_COORD] / 2 - 12;
 		y = Options_gamma_num_coords[gr_screen.res][OPTIONS_Y_COORD]; // + Options_gamma_num_coords[gr_screen.res][OPTIONS_H_COORD] / 2 - gr_get_font_height() / 2;
 
-		gr_printf(x, y, NOX("%.2f"), Freespace_gamma);
+		gr_printf(x, y, NOX("%.2f"), FreeSpace_gamma);
 	}
 	//==============================================================================
 

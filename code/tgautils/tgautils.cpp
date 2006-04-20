@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-04-05 13:47:01 $
- * $Author: taylor $
+ * $Revision: 2.20 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/04/05 13:47:01  taylor
+ * remove -tga16, it's obsolete now
+ * add a temporary -no_emissive_light option to not use emission type light in OGL
+ *
  * Revision 2.18  2005/12/28 22:32:37  taylor
  * properly deal with post-89 TGA images which have extra extension and developer info in the file
  *
@@ -389,7 +393,7 @@ int targa_compress(char *out, char *in, int outsize, int pixsize, int bytecount)
 
 // Reads a pixel of the specified bytes_per_pixel into memory and
 // returns the number of bytes read into memory.
-// NOTE : for Freespace2, this also swizzles data into the proper screen (NOT texture) format - just like
+// NOTE : for FreeSpace2, this also swizzles data into the proper screen (NOT texture) format - just like
 //        the pcxutils do.
 // 
 // dst - A pointer to the destination.  Must be at least 4 bytes long.

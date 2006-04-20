@@ -25,14 +25,14 @@ static char			szAppName[128];
 static char			szAppVersion[128];
 
 char *Osreg_company_name = "Volition";
-char *Osreg_class_name = "Freespace2Class";
+char *Osreg_class_name = "FreeSpace2Class";
 /*
 #if defined(FS2_DEMO)
 char *Osreg_app_name = "FreeSpace2Demo";
-char *Osreg_title = "Freespace 2 Demo";
+char *Osreg_title = "FreeSpace 2 Demo";
 #elif defined(OEM_BUILD)
 char *Osreg_app_name = "FreeSpace2OEM";
-char *Osreg_title = "Freespace 2 OEM";
+char *Osreg_title = "FreeSpace 2 OEM";
 #else
 */
 
@@ -41,7 +41,7 @@ char *Osreg_title = "Freespace 2 OEM";
 // FS2 exe is or it wont work. Its far similar to just use one default location.
 // The Launcher will set up everything needed
 char *Osreg_app_name = "FreeSpace2";
-char *Osreg_title = "Freespace 2";
+char *Osreg_title = "FreeSpace 2";
 //#endif
 
 int Os_reg_inited = 0;

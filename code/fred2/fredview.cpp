@@ -9,8 +9,8 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-02-20 02:13:07 $
+ * $Revision: 1.6 $
+ * $Date: 2006-04-20 06:32:01 $
  * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
@@ -19,6 +19,10 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/02/20 02:13:07  Goober5000
+ * added ai-ignore-new which hopefully should fix the ignore bug
+ * --Goober5000
+ *
  * Revision 1.4  2006/01/30 06:27:59  taylor
  * dynamic starfield bitmaps
  *
@@ -145,7 +149,7 @@
  * --Goober5000
  *
  * Revision 1.5  2003/01/13 01:30:45  wmcoolmon
- * Fixed the "Run Freespace" bug, which was still trying to access Fs.exe. FRED will now attempt to execute "start_fs2.bat", then try to run fs2_open.exe.
+ * Fixed the "Run FreeSpace" bug, which was still trying to access Fs.exe. FRED will now attempt to execute "start_fs2.bat", then try to run fs2_open.exe.
  *
  * Revision 1.4  2003/01/07 01:12:41  Goober5000
  * added error message for wing and player squad logo conflict
@@ -172,7 +176,7 @@
  * Add dump stats basic functionality
  * 
  * 14    4/07/99 6:21p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 
@@ -815,7 +819,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
 	ON_COMMAND(ID_ASTEROID_EDITOR, OnAsteroidEditor)
-	ON_COMMAND(ID_RUN_FREESPACE, OnRunFreespace)
+	ON_COMMAND(ID_RUN_FREESPACE, OnRunFreeSpace)
 	ON_COMMAND(ID_EDITOR_CAMPAIGN, OnEditorCampaign)
 	ON_COMMAND(ID_SHOW_SHIPS, OnShowShips)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_SHIPS, OnUpdateShowShips)
@@ -4262,7 +4266,7 @@ void CFREDView::OnAsteroidEditor()
 	dlg.DoModal();
 }
 
-void CFREDView::OnRunFreespace() 
+void CFREDView::OnRunFreeSpace() 
 {
 	BOOL r;
 	STARTUPINFO si;

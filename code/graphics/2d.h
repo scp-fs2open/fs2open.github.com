@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.76 $
- * $Date: 2006-04-15 00:13:22 $
- * $Author: phreak $
+ * $Revision: 2.77 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2006/04/15 00:13:22  phreak
+ * gr_flash_alpha(), much like gr_flash(), but allows an alpha value to be passed
+ *
  * Revision 2.75  2006/01/30 06:40:49  taylor
  * better lighting for OpenGL
  * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
@@ -453,7 +456,7 @@
  * 
  * 69    3/17/98 5:55p John
  * Added code to dump Glide frames.   Moved Allender's  "hack" code out of
- * Freespace.cpp into the proper place, graphics lib.
+ * FreeSpace.cpp into the proper place, graphics lib.
  * 
  * 68    3/12/98 5:36p John
  * Took out any unused shaders.  Made shader code take rgbc instead of

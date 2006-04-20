@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.154 $
- * $Date: 2006-04-18 00:56:28 $
- * $Author: bobboau $
+ * $Revision: 2.155 $
+ * $Date: 2006-04-20 06:32:15 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.154  2006/04/18 00:56:28  bobboau
+ * bugfix for the animation system
+ *
  * Revision 2.153  2006/04/16 05:24:58  taylor
  * compiler warning fix, missed this one previously
  *
@@ -2640,7 +2643,7 @@ void interp_render_lightning( polymodel *pm, bsp_info * sm )
 	for (i=0; i<sm->num_arcs; i++ )	{
 		// pick a color based upon arc type
 		switch(sm->arc_type[i]){
-		// "normal", Freespace 1 style arcs
+		// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_NORMAL:
 			if ( (rand()>>4) & 1 )	{
 				gr_init_alphacolor(&outside_arc_color, 64, 64, 255, 255 );

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.11 $
- * $Date: 2006-01-16 11:02:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 2.10  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -130,7 +133,7 @@
  * pof-style nebulae, and some new weapons code.
  * 
  * 6     12/03/98 5:22p Dave
- * Ported over Freespace 1 multiplayer ships.tbl and weapons.tbl
+ * Ported over FreeSpace 1 multiplayer ships.tbl and weapons.tbl
  * checksumming.
  * 
  * 5     10/13/98 9:26a Dave

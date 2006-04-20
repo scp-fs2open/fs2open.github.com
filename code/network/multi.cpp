@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-03-30 04:18:40 $
+ * $Revision: 2.34 $
+ * $Date: 2006-04-20 06:32:15 $
  * $Author: Goober5000 $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/03/30 04:18:40  Goober5000
+ * those were some bugs just waiting to happen
+ *
  * Revision 2.32  2006/03/30 04:15:20  Goober5000
  * hehe, grammar
  * --Goober5000
@@ -292,7 +295,7 @@
  * Need to test now.
  * 
  * 9     12/03/98 5:22p Dave
- * Ported over Freespace 1 multiplayer ships.tbl and weapons.tbl
+ * Ported over FreeSpace 1 multiplayer ships.tbl and weapons.tbl
  * checksumming.
  * 
  * 8     11/19/98 4:19p Dave
@@ -1853,11 +1856,11 @@ void standalone_main_init()
 #ifdef _WIN32
 	// if we failed to startup on our desired protocol, fail
 	if((Multi_options_g.protocol == NET_IPX) && !Ipx_active){
-		MessageBox((HWND)os_get_window(), XSTR( "You have selected IPX for multiplayer Freespace, but the IPX protocol was not detected on your machine.", 1402), "Error", MB_OK);
+		MessageBox((HWND)os_get_window(), XSTR( "You have selected IPX for multiplayer FreeSpace, but the IPX protocol was not detected on your machine.", 1402), "Error", MB_OK);
 		exit(1);
 	}
 	if((Multi_options_g.protocol == NET_TCP) && !Tcp_active){
-		MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer Freespace, but the TCP/IP protocol was not detected on your machine.", 362), "Error", MB_OK);
+		MessageBox((HWND)os_get_window(), XSTR("You have selected TCP/IP for multiplayer FreeSpace, but the TCP/IP protocol was not detected on your machine.", 362), "Error", MB_OK);
 		exit(1);
 	}
 #endif // ifdef _WIN32

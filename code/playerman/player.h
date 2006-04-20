@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/Player.h $
- * $Revision: 2.9 $
- * $Date: 2006-03-18 22:43:16 $
+ * $Revision: 2.10 $
+ * $Date: 2006-04-20 06:32:23 $
  * $Author: Goober5000 $
  *
  *  Header file for player information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/03/18 22:43:16  Goober5000
+ * added set-death-message sexp
+ * --Goober5000
+ *
  * Revision 2.8  2005/10/20 06:38:18  wmcoolmon
  * More player warpout speed stuff
  *
@@ -435,7 +439,7 @@ void player_get_eye(vec3d *eye_pos, matrix *eye_orient);
 #define TARGET_WARPOUT_MATCH_PERCENT 0.05f	// how close to TARGET_WARPOUT_SPEED you need to be
 #define MINIMUM_PLAYER_WARPOUT_TIME	3.0f		// How long before you can press 'ESC' to abort warpout
 
-extern float Warpout_time;							// Declared in Freespace.cpp
+extern float Warpout_time;							// Declared in freespace.cpp
 extern int Warpout_forced;							// If non-zero, bash the player to speed and go through effect
 //=============================================================
 

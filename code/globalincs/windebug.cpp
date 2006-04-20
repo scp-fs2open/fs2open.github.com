@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-02-24 07:36:49 $
- * $Author: taylor $
+ * $Revision: 2.38 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/02/24 07:36:49  taylor
+ * try and make some sense out of that cmdline option mess, maybe it will stay sane for a few days at least :)
+ *
  * Revision 2.36  2006/01/31 06:42:28  wmcoolmon
  * Removed USE_LUA
  *
@@ -227,7 +230,7 @@
  * Added in a simple function name unmangler
  * 
  * 12    3/04/98 7:08p John
- * Made Freespace generate COFF files.   Made Assert,Error, and Warning
+ * Made FreeSpace generate COFF files.   Made Assert,Error, and Warning
  * display the call stack.
  * 
  * 11    2/22/98 2:48p John

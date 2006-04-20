@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.50 $
- * $Date: 2006-04-12 22:23:41 $
- * $Author: taylor $
+ * $Revision: 2.51 $
+ * $Date: 2006-04-20 06:32:23 $
+ * $Author: Goober5000 $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2006/04/12 22:23:41  taylor
+ * compiler warning fixes to make GCC 4.1 shut the hell up
+ *
  * Revision 2.49  2006/04/12 01:00:58  taylor
  * some small optimizations and cleanup
  * use floats for gr_bitmap() size and positions, mainly for non-standard resolutions since this allows proper resizing and positioning
@@ -283,7 +286,7 @@
  * lightning into its own section.
  * 
  * 5     4/07/99 6:22p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 

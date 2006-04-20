@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-10-23 20:34:30 $
- * $Author: taylor $
+ * $Revision: 2.7 $
+ * $Date: 2006-04-20 06:32:23 $
+ * $Author: Goober5000 $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/10/23 20:34:30  taylor
+ * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
+ *
  * Revision 2.5  2005/01/31 10:34:38  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -188,7 +191,7 @@ int outwnd_filter_loaded = 0;
 #ifndef NDEBUG
 	int Log_debug_output_to_file = 1;
 	FILE *Log_fp;
-	char *Freespace_logfilename = "fs2_open.log";
+	char *FreeSpace_logfilename = "fs2_open.log";
 #endif
 
 void load_filter_info(void)
@@ -413,7 +416,7 @@ void outwnd_init(int display_under_freespace_window)
 	char pathname[MAX_PATH_LEN];
 
 	snprintf(pathname, MAX_PATH_LEN, "%s/%s/%s/", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path);
-	strcat(pathname, Freespace_logfilename);
+	strcat(pathname, FreeSpace_logfilename);
 
 	if ( Log_fp == NULL ) {
 		Log_fp = fopen(pathname, "wb");

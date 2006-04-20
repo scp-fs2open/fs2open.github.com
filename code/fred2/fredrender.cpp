@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-04-12 05:30:50 $
- * $Author: phreak $
+ * $Revision: 1.4 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/04/12 05:30:50  phreak
+ * get jump nodes rendering again..... again.
+ *
  * Revision 1.2  2006/01/26 23:04:45  phreak
  * Grid zbuffering issue fix moved to the new fred project folder
  *
@@ -112,7 +115,7 @@
  *
  * 
  * 6     4/07/99 6:21p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 

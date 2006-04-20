@@ -9,10 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.h $
- * $Revision: 2.5 $Date: 2005/03/10 08:00:08 $
+ * $Revision: 2.6 $Date: 2005/07/13 03:26:00 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/07/13 03:26:00  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.4  2005/03/10 08:00:08  taylor
  * change min/max to MIN/MAX to fix GCC problems
  * add lab stuff to Makefile
@@ -82,7 +86,7 @@
 // if the main hall should display the help overlay screen
 extern int Player_select_very_first_pilot;			
 
-// functions for selecting single/multiplayer pilots at the very beginning of Freespace
+// functions for selecting single/multiplayer pilots at the very beginning of FreeSpace
 void player_select_init();
 void player_select_do();
 void player_select_close();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-01-14 19:54:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.11 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * C source module for mission loading
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/01/14 19:54:55  wmcoolmon
+ * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
+ *
  * Revision 2.9  2005/05/12 17:49:13  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -175,7 +178,7 @@
  * fucntion.
  * 
  * 75    5/12/97 3:21p Allender
- * re-ordered mission load code into single function in Freespace.
+ * re-ordered mission load code into single function in FreeSpace.
  * Simulation part now runs as seperate thread
  * 
  * 74    5/12/97 12:27p John

@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178  2006/02/25 21:47:19  Goober5000
+ * spelling
+ *
  * Revision 2.177  2006/02/16 05:48:48  taylor
  * keep weapon model refcount correct (this is admittedly strange, but safer than before)
  *
@@ -805,7 +808,7 @@
  * target-painting lasers.
  * 
  * 29    4/07/99 6:22p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 

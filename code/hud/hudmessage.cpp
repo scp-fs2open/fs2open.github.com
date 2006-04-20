@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-03-19 05:05:58 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/03/19 05:05:58  taylor
+ * make sure the mission log doesn't modify stuff in Cargo_names[], since it shouldn't
+ * have split_str_once() be sure to not split a word in half, it should end up on the second line instead
+ *
  * Revision 2.19  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -239,7 +243,7 @@
  * overrunning the right edge of screen.
  * 
  * 71    3/02/98 5:42p John
- * Removed WinAVI stuff from Freespace.  Made all HUD gauges wriggle from
+ * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
  * afterburner.  Made gr_set_clip work good with negative x &y.  Made
  * model_caching be on by default.  Made each cached model have it's own
  * bitmap id.  Made asteroids not rotate when model_caching is on.  

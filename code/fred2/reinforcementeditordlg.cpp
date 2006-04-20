@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ReinforcementEditorDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-04-20 06:32:01 $
  * $Author: Goober5000 $
  *
  * Reinforcements editor dialog handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.4  2005/10/29 23:02:33  Goober5000
  * partial FRED commit of changes
  * --Goober5000
@@ -51,7 +55,7 @@
  * remove bogus assert
  * 
  * 15    7/17/97 10:17a Allender
- * more reinforcement messaging stuff -- now working within Freespace.
+ * more reinforcement messaging stuff -- now working within FreeSpace.
  * Fixed a couple of Fred bugs relating to not setting reinforcement flag
  * properly
  * 

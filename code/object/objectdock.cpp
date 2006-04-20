@@ -1,19 +1,21 @@
 /*
- * Created by Ian "Goober5000" Warfield for the Freespace2 Source Code Project.
+ * Created by Ian "Goober5000" Warfield for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
- *
  */ 
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-10-30 20:20:44 $
+ * $Revision: 2.11 $
+ * $Date: 2006-04-20 06:32:23 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/10/30 20:20:44  Goober5000
+ * comment fixage
+ *
  * Revision 2.9  2005/10/28 06:10:07  Goober5000
  * nitpicked a rather dumb non-bug
  * --Goober5000

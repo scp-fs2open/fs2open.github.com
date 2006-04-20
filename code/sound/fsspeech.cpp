@@ -1,5 +1,5 @@
 /*
- * Code created by Thomas Whittaker (RT) for a Freespace 2 source code project
+ * Code created by Thomas Whittaker (RT) for a FreeSpace 2 source code project
  *
  * You may not sell or otherwise commercially exploit the source or things you 
  * created based on the source.
@@ -8,13 +8,17 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/fsspeech.cpp $
- * $Revision: 1.19 $
- * $Date: 2006-01-20 07:10:33 $
+ * $Revision: 1.20 $
+ * $Date: 2006-04-20 06:32:30 $
  * $Author: Goober5000 $
  *
  * This module contains freespace specific stuff leaving the speech module to handle generic stuff.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2006/01/20 07:10:33  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 1.18  2005/07/13 03:35:29  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000

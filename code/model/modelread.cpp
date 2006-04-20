@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.101 $
- * $Date: 2006-04-18 00:56:28 $
- * $Author: bobboau $
+ * $Revision: 2.102 $
+ * $Date: 2006-04-20 06:32:15 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2006/04/18 00:56:28  bobboau
+ * bugfix for the animation system
+ *
  * Revision 2.100  2006/04/14 18:37:06  taylor
  * more checking to make sure that the malloc calls are actually needed
  *
@@ -533,7 +536,7 @@
  * shake.  
  * 
  * 18    4/09/99 11:38a Andsager
- * Change POF format for Freespace2
+ * Change POF format for FreeSpace2
  * 
  * 17    3/23/99 5:17p Dave
  * Changed model file format somewhat to account for LOD's on insignias
@@ -626,7 +629,7 @@
  * Copy subsystem name when copying model subsystems
  * 
  * 167   3/02/98 5:42p John
- * Removed WinAVI stuff from Freespace.  Made all HUD gauges wriggle from
+ * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
  * afterburner.  Made gr_set_clip work good with negative x &y.  Made
  * model_caching be on by default.  Made each cached model have it's own
  * bitmap id.  Made asteroids not rotate when model_caching is on.  
@@ -1653,7 +1656,7 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 			Warning(LOCATION, "Subsystem \"%s\" in model \"%s\" is represented as \"%s\" in ships.tbl.  "
 				"Although FS2_OPEN 3.6 and later will catch and correct this error, earlier "
 				"versions (as well as retail FS2) will not.  You are advised to fix this if "
-				"you plan to support earlier versions of Freespace.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name);
+				"you plan to support earlier versions of FreeSpace.\n", subobj_name, model_get(model_num)->filename, subsystemp->subobj_name);
 
 		}
 #endif

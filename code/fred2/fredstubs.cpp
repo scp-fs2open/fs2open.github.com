@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FredStubs.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-03-18 21:23:38 $
- * $Author: taylor $
+ * $Revision: 1.4 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
  * Bogus C file for functions and variable stubs that Fred needs because it
  * includes some libraries that makes functions calls to other libraries that FRED
@@ -20,6 +20,9 @@
  * to each other.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/03/18 21:23:38  taylor
+ * add framerate var since it's contained in freespace.cpp and that's not used in a FRED2 compile
+ *
  * Revision 1.2  2006/01/20 05:35:59  wmcoolmon
  * Updated FREDStubs.cpp to most current version
  *
@@ -656,7 +659,7 @@ void game_start_time(){}
 void game_stop_time(){}
 int game_get_default_skill_level(){return 0;}
 void game_load_palette(){}
-float Freespace_gamma;
+float FreeSpace_gamma;
 int set_cdrom_path(int){return 0;}
 int find_freespace_cd(char*){return 0;}
 void get_version_string(){}

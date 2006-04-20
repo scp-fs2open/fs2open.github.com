@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.16 $
- * $Date: 2006-03-18 22:00:43 $
+ * $Revision: 2.17 $
+ * $Date: 2006-04-20 06:32:07 $
  * $Author: Goober5000 $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/03/18 22:00:43  Goober5000
+ * fix comm order initialization bug
+ * --Goober5000
+ *
  * Revision 2.15  2006/03/01 04:01:37  Goober5000
  * fix comm message localization
  *
@@ -153,7 +157,7 @@
  * 9     7/25/97 9:52a Allender
  * added order dialog to Fred for designer to choose which orders for ship
  * to accept/ignore.  Code in ship_create to set up variables for Fred use
- * instead of Freespace use (for destroying ships before mission starts)
+ * instead of FreeSpace use (for destroying ships before mission starts)
  * 
  * 8     6/16/97 2:58p Allender
  * added ignore my target order to player's comm menu.  Fixed a couple of

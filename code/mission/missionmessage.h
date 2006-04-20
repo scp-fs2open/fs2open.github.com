@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.11 $
- * $Date: 2005-08-25 22:40:03 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/08/25 22:40:03  taylor
+ * basic cleaning, removing old/useless code, sanity stuff, etc:
+ *  - very minor performance boost from not doing stupid things :)
+ *  - minor change to 3d shockwave sizing to better approximate 2d effect movements
+ *  - for shields, Gobal_tris was only holding half as many as the game can/will use, buffer is now set to full size to avoid possible rendering issues
+ *  - removed extra tcache_set on OGL spec map code, not sure how that slipped in
+ *
  * Revision 2.10  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -218,7 +225,7 @@
  * 
  * 6     3/11/97 10:14a Allender
  * added unions for wave/avi files in messages to make things easier for
- * Fred.  Freespace will use the avi/wave indexing system.   Fred will use
+ * Fred.  FreeSpace will use the avi/wave indexing system.   Fred will use
  * only names
  * 
  * 5     3/10/97 4:16p Allender
@@ -289,7 +296,7 @@ extern message_extra		Message_waves[MAX_MESSAGE_WAVES];
 // define used for sender of a message when you want it to be Terran Command
 #define TERRAN_COMMAND			"Command"
 
-// defines for message id's used in Freespace code.  Callers to message_send_to_player() should
+// defines for message id's used in FreeSpace code.  Callers to message_send_to_player() should
 // probably use these defines.
 
 // this number in this define should match the number of elements in the next array

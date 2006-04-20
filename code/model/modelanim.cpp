@@ -6,11 +6,14 @@
 
 /*
  * $Logfile:  $
- * $Revision: 1.1 $
- * $Date: 2006-04-20 05:42:05 $
+ * $Revision: 1.2 $
+ * $Date: 2006-04-20 06:32:15 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/04/20 05:42:05  Goober5000
+ * change animation.cpp to modelanim.cpp, add CVS info, and add the file to the VC6 project
+ * --Goober5000
  *
  */
 

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.69 $
- * $Date: 2006-04-12 01:00:58 $
- * $Author: taylor $
+ * $Revision: 2.70 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2006/04/12 01:00:58  taylor
+ * some small optimizations and cleanup
+ * use floats for gr_bitmap() size and positions, mainly for non-standard resolutions since this allows proper resizing and positioning
+ *   (the cast to float was happening later anyway so there should be not additional slowdown from that with standard resolutions)
+ * change g3_draw_2d_poly_bitmap() to use floats instead of ints, gets rid of the extra cast and allows better resize values
+ *
  * Revision 2.68  2006/03/22 18:12:50  taylor
  * minor cleanup
  *
@@ -1448,10 +1454,10 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 )
 		{
 			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
-				"\t1) You're running Freespace Open from somewhere other than your Freespace 2 folder;\n"
-				"\t2) You've somehow corrupted your Freespace 2 installation;\n"
-				"\t3) You haven't installed Freespace 2 at all.\n"
-				"Number 1 can be fixed by simply moving the Freespace Open executable file to the Freespace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling Freespace 2.  If neither of these solutions fixes your problem, you've found a bug and should report it.");
+				"\t1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
+				"\t2) You've somehow corrupted your FreeSpace 2 installation;\n"
+				"\t3) You haven't installed FreeSpace 2 at all.\n"
+				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.  If neither of these solutions fixes your problem, you've found a bug and should report it.");
 		}	
 	}
 

@@ -1,19 +1,22 @@
 /*
- * Created by WMCoolmon for the Freespace2 Source Code Project.
+ * Created by WMCoolmon for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
- *
  */
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.42 $
- * $Date: 2006-02-13 00:20:45 $
+ * $Revision: 2.43 $
+ * $Date: 2006-04-20 06:32:07 $
  * $Author: Goober5000 $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.41  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -153,7 +156,7 @@
  * Final draft of the HUD parsing system structure. May change how individual coord positions are specified in the TBL. -C
  *
  * Revision 2.2  2004/05/29 04:09:04  wmcoolmon
- * First bugfix in this!: Don't want Freespace exiting if it can't load a hud_gauge file.
+ * First bugfix in this!  Don't want FreeSpace exiting if it can't load a hud_gauge file.
  *
  * Revision 2.1  2004/05/29 03:02:53  wmcoolmon
  * Added HUD gauges placement table, "hud_gauges.tbl" or "*-hdg.tbm" table module

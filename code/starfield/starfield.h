@@ -9,14 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.15 $
- * $Date: 2006-02-20 07:30:15 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/02/20 07:30:15  taylor
+ * updated to newest dynamic starfield code
+ *  - this mainly is to just better support SEXP based starfield bitmap changes (preloading, better in-mission stuff loading)
+ *  - also fixes index_buffer related double-free()
+ *  - done waste memory for env index buffer if env is not enabled
+ *  - address a couple of bm load/release issues and comment a little to tell why
+ *
  * Revision 2.14  2006/01/30 06:31:30  taylor
  * dynamic starfield bitmaps (if the thought it was freaky before, just take a look at the new and "improved" version ;))
  *
@@ -98,7 +105,7 @@
  * Started putting in new pof nebula support into Fred.
  * 
  * 6     4/07/99 6:22p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 

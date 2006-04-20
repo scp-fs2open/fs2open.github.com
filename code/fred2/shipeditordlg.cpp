@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-04-18 00:08:23 $
- * $Author: phreak $
+ * $Revision: 1.4 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/04/18 00:08:23  phreak
+ * fix FRED crashing if the user adds multiple waypoint paths then inserts more ships.
+ *
  * Revision 1.2  2006/02/04 07:05:03  Goober5000
  * fixed several IFF bugs in FRED (plus one or two other bugs)
  * --Goober5000
@@ -236,11 +239,11 @@
  * internal class variable for arrival/depature targets
  * 
  * 126   11/11/97 2:13p Allender
- * docking bay support for Fred and Freespace.  Added hook to ai code for
+ * docking bay support for Fred and FreeSpace.  Added hook to ai code for
  * arrival/departure from dock bays.  Fred support now sufficient.
  * 
  * 125   11/10/97 10:13p Allender
- * added departure anchor to Fred and Freespace in preparation for using
+ * added departure anchor to Fred and FreeSpace in preparation for using
  * docking bays.  Functional in Fred, not in FreeSpace.
  * 
  * 124   10/21/97 4:49p Allender

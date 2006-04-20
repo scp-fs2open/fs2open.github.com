@@ -1,6 +1,6 @@
 //Microsoft Developer Studio generated resource script.
 //
-#include "FreespaceResource.h"
+#include "FreeSpaceResource.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -28,7 +28,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 1 TEXTINCLUDE DISCARDABLE 
 BEGIN
-    "FreespaceResource.h\0"
+    "FreeSpaceResource.h\0"
 END
 
 2 TEXTINCLUDE DISCARDABLE 

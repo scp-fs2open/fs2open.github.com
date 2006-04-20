@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-01-26 03:23:30 $
+ * $Revision: 2.19 $
+ * $Date: 2006-04-20 06:32:15 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/01/26 03:23:30  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.17  2005/10/27 16:21:19  taylor
  * fix some automake errors with OSX 10.4's crappy AutoMake and a couple of other OS X related terminal compile fixage
  *
@@ -2265,7 +2269,7 @@ void std_build_title_string(char *str)
 	memset(cat, 0, 256);
 	memset(temp, 0, 256);
 
-	sprintf(part1, "%s %d.", XSTR("Freespace Standalone",935), FS_VERSION_MAJOR);
+	sprintf(part1, "%s %d.", XSTR("FreeSpace Standalone",935), FS_VERSION_MAJOR);
 	sprintf(cat, "%d", FS_VERSION_MINOR);
 	strcat(part1, cat);
 	strcat(part1, ".");
@@ -2365,7 +2369,7 @@ BOOL std_create_standalone_window()
 	return TRUE;
 }
 
-// just like the osapi version for the nonstandalone mode of Freespace
+// just like the osapi version for the nonstandalone mode of FreeSpace
 DWORD standalone_process(WORD lparam)
 {
 	MSG msg;

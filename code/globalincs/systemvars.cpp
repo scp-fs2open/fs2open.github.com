@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-01-27 20:29:30 $
+ * $Revision: 2.11 $
+ * $Date: 2006-04-20 06:32:01 $
  * $Author: Goober5000 $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/01/27 20:29:30  Goober5000
+ * some tweaks for insertion sort
+ * --Goober5000
+ *
  * Revision 2.9  2006/01/27 06:03:41  Goober5000
  * add an insertion sort function for small or almost-sorted arrays; it has the same prototype as stdlib's quick sort
  * --Goober5000
@@ -137,7 +141,7 @@
  * Upped number of default detail levels to 4
  * 
  * 26    3/22/98 4:11p Andsager
- * Remove global Freespace_running
+ * Remove global FreeSpace_running
  * 
  * 25    3/22/98 3:28p John
  * Added in stippled alpha for lower details.  Made medium detail use

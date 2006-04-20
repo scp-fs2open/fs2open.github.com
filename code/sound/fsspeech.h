@@ -1,5 +1,5 @@
 /*
- * Code created by Thomas Whittaker (RT) for a Freespace 2 source code project
+ * Code created by Thomas Whittaker (RT) for a FreeSpace 2 source code project
  *
  * You may not sell or otherwise commercially exploit the source or things you 
  * created based on the source.

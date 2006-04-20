@@ -1,19 +1,22 @@
 /*
- * Created by Ian "Goober5000" Warfield for the Freespace2 Source Code Project.
+ * Created by Ian "Goober5000" Warfield for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
- *
  */ 
 
 /*
  * $Logfile: /Freespace2/code/wxFRED2/FREDFrame.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-01-28 00:23:36 $
+ * $Revision: 1.6 $
+ * $Date: 2006-04-20 06:32:30 $
  * $Author: Goober5000 $
  *
  * FRED app frame
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/01/28 00:23:36  Goober5000
+ * fixed a small incompatibility
+ * --Goober5000
+ *
  * Revision 1.4  2005/05/12 14:00:14  Goober5000
  * added a bunch of dialogs to wxFRED... thanks, taylor, for the GUI development :)
  * --Goober5000

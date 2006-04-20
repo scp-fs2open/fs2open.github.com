@@ -10,13 +10,19 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.83 $
- * $Date: 2006-04-14 18:44:16 $
- * $Author: taylor $
+ * $Revision: 2.84 $
+ * $Date: 2006-04-20 06:32:00 $
+ * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2006/04/14 18:44:16  taylor
+ * remove all of the *_ex() parsing functions added for use by EFFs
+ * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
+ * make Mission_text and Mission_text_raw only use the memory needed, and free it when it doesn't need to parse anymore
+ *   (should work ok with FRED2, but I wasn't able to test it)
+ *
  * Revision 2.82  2006/03/06 16:30:06  taylor
  * make filename length checks non-fatal
  *
@@ -690,7 +696,7 @@
  * 
  * 60    12/08/97 2:17p John
  * fixed bug with bmpman and cf_callback.
- * made cf_callback in Freespace set small font back when done.
+ * made cf_callback in FreeSpace set small font back when done.
  * 
  * 59    12/03/97 5:01p Lawrance
  * bump up MAX_BITMAPS to 1500.  People have reached 1000 bitmaps while

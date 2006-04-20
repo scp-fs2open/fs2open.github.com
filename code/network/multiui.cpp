@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.46 $
- * $Date: 2006-02-24 07:31:18 $
- * $Author: taylor $
+ * $Revision: 2.47 $
+ * $Date: 2006-04-20 06:32:15 $
+ * $Author: Goober5000 $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2006/02/24 07:31:18  taylor
+ * clean up some of that FS2OpenPXO crap (can't wait to rip all this out for official PXO :))
+ *
  * Revision 2.45  2006/02/16 05:39:13  taylor
  * some FS2NetD fixes
  *  - timer/timeout issues
@@ -463,7 +466,7 @@
  * Initial checkin of mission loop
  * 
  * 13    12/03/98 5:22p Dave
- * Ported over Freespace 1 multiplayer ships.tbl and weapons.tbl
+ * Ported over FreeSpace 1 multiplayer ships.tbl and weapons.tbl
  * checksumming.
  * 
  * 12    11/30/98 1:07p Dave
@@ -549,7 +552,7 @@
  * 
  * 323   9/10/98 1:17p Dave
  * Put in code to flag missions and campaigns as being MD or not in Fred
- * and Freespace. Put in multiplayer support for filtering out MD
+ * and FreeSpace. Put in multiplayer support for filtering out MD
  * missions. Put in multiplayer popups for warning of non-valid missions.
  * 
  * 322   9/04/98 3:51p Dave

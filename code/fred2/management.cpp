@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.10 $
- * $Date: 2006-04-14 18:44:16 $
- * $Author: taylor $
+ * $Revision: 1.11 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,12 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2006/04/14 18:44:16  taylor
+ * remove all of the *_ex() parsing functions added for use by EFFs
+ * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
+ * make Mission_text and Mission_text_raw only use the memory needed, and free it when it doesn't need to parse anymore
+ *   (should work ok with FRED2, but I wasn't able to test it)
+ *
  * Revision 1.9  2006/04/12 05:07:00  phreak
  * obj_delete() needs to be called for jump nodes since the slot the jump node
  * that used to reside in hasn't been marked as empty.  This leads to the node still appearing in fred
@@ -269,7 +275,7 @@
  * Frist pass on Debris field
  * 
  * 20    4/07/99 6:21p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 

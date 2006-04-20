@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FRED.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-04-20 06:32:01 $
  * $Author: Goober5000 $
  *
  * FRED.cpp : Defines the class behaviors for the application.
@@ -18,6 +18,10 @@
  * application (MFC level at least), processes the INI file.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.8  2004/02/13 04:25:37  randomtiger
  * Added messagebox to offer startup choice between htl, non htl and quitting.
  * Tidied up the background dialog box a bit and added some disabled controls for future ambient light feature.
@@ -690,7 +694,7 @@ BOOL CFREDApp::OnIdle(LONG lCount)
 	}
 
 	CWinApp::OnIdle(lCount);
-	internal_integrity_check();
+//	internal_integrity_check();
 	if (Update_ship) {
 		Ship_editor_dialog.initialize_data(1);
 		Update_ship = 0;

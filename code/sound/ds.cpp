@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.39 $
- * $Date: 2006-04-14 18:39:38 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2006/04/14 18:39:38  taylor
+ * something that Valgrind complained about
+ *
  * Revision 2.38  2006/03/15 17:30:47  taylor
  * remove alut headers, since we don't use any alut functions anyway (didn't I already do this a couple of months ago??)
  *
@@ -113,7 +116,7 @@
  * OGG fixes, ship selection fixes
  *
  * Revision 2.13  2005/01/08 09:59:10  wmcoolmon
- * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ * Sound quality in FreeSpace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
  *
  * Revision 2.12  2004/12/25 17:45:38  wmcoolmon
  * Quick update to tempfix possible bug.

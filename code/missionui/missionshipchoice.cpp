@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.61 $
- * $Date: 2006-02-24 04:45:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.62 $
+ * $Date: 2006-04-20 06:32:14 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2006/02/24 04:45:00  wmcoolmon
+ * I love it when bugs are this easy to fix. ;)
+ *
  * Revision 2.60  2006/02/18 00:42:51  wmcoolmon
  * Introducing draw_model_rotating; many improvements to weapon selection missile rendering
  *
@@ -454,7 +457,7 @@
  * Fix bug with flashing buttons showing over help overlay
  * 
  * 72    3/02/98 5:42p John
- * Removed WinAVI stuff from Freespace.  Made all HUD gauges wriggle from
+ * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
  * afterburner.  Made gr_set_clip work good with negative x &y.  Made
  * model_caching be on by default.  Made each cached model have it's own
  * bitmap id.  Made asteroids not rotate when model_caching is on.  

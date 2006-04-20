@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.cpp $
- * $Revision: 2.25 $
- * $Date: 2005-12-28 22:17:02 $
- * $Author: taylor $
+ * $Revision: 2.26 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2005/12/28 22:17:02  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.24  2005/10/16 23:15:47  wmcoolmon
  * Hardened cfile against array overflows
  *
@@ -83,7 +89,7 @@
  * OGG fixes, ship selection fixes
  *
  * Revision 2.6  2005/01/08 09:59:10  wmcoolmon
- * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ * Sound quality in FreeSpace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
  *
  * Revision 2.5  2004/12/25 00:23:46  wmcoolmon
  * Ogg support for WIN32
@@ -1346,9 +1352,13 @@ BOOL WaveFile::Open (LPSTR pszFilename)
 	// not an OGG so assume that it's WAVE
 	else
 	{
+
 		// extra check, if it's not ogg then but if the error was a bad ogg then bail
+
 		if ( rc && (rc != OV_ENOTVORBIS) )
+
 			goto OPEN_ERROR;
+
 
 		// Skip the "RIFF" tag and file size (8 bytes)
 		// Skip the "WAVE" tag (4 bytes)
@@ -1530,8 +1540,11 @@ int WaveFile::Read(BYTE *pbDest, UINT cbSize, int service)
 //	nprintf(("Alan","Reqeusted: %d\n", cbSize));
 
 #if BYTE_ORDER == BIG_ENDIAN
+
 	byte_order = 1;
+
 #endif
+
 
 	if ( service ) {
 		uncompressed_wave_data = Wavedata_service_buffer;

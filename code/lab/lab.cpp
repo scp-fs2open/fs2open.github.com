@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.26 $
- * $Date: 2006-01-18 16:17:33 $
- * $Author: taylor $
+ * $Revision: 1.27 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2006/01/18 16:17:33  taylor
+ * use HTL wireframe view if in HTL mode
+ *
  * Revision 1.25  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -1010,7 +1013,7 @@ void lab_init()
 	}
 
 	//If you want things to stay as you left them, uncomment this and "delete Lab_screen"
-	//of course, you still need to delete it somewhere else (ie when Freespace closes)
+	//of course, you still need to delete it somewhere else (ie when FreeSpace closes)
 	/*
 	if(Lab_screen != NULL)
 	{

@@ -1,5 +1,5 @@
 /*
- * Code created by Thomas Whittaker (RT) for a Freespace 2 source code project
+ * Code created by Thomas Whittaker (RT) for a FreeSpace 2 source code project
  *
  * You may not sell or otherwise commercially exploit the source or things you 
  * created based on the source.
@@ -8,11 +8,15 @@
 
 /*
  * $Logfile: /Freespace2/code/debugconsole/timerbar.h $
- * $Revision: 1.10 $
- * $Date: 2005-07-13 02:50:50 $
+ * $Revision: 1.11 $
+ * $Date: 2006-04-20 06:32:00 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2005/07/13 02:50:50  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 1.9  2004/08/11 05:06:20  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *

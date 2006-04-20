@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_log.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-12-06 02:59:10 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2006-04-20 06:32:15 $
+ * $Author: Goober5000 $
  *
  * Header file to support multiplayer logging functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/12/06 02:59:10  taylor
+ * sorry but the extra messages are somewhat annoying and already exist in another log anyway, disable by default
+ *
  * Revision 2.8  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -133,7 +136,7 @@ void multi_log_write_header()
 
 	// header message
 	timer = time(NULL);	
-	strftime(str, 1024, "Freespace Multi Log - Opened %a, %b %d, %Y  at %I:%M%p\n----\n----\n----\n\n", localtime(&timer));
+	strftime(str, 1024, "FreeSpace Multi Log - Opened %a, %b %d, %Y  at %I:%M%p\n----\n----\n----\n\n", localtime(&timer));
 	ml_string(str, 0);	
 }
 
@@ -145,7 +148,7 @@ void multi_log_write_trailer()
 
 	// header message
 	timer = time(NULL);
-	strftime(str, 1024, "\n\n----\n----\n----\nFreespace Multi Log - Closing on %a, %b %d, %Y  at %I:%M%p", localtime(&timer));
+	strftime(str, 1024, "\n\n----\n----\n----\nFreeSpace Multi Log - Closing on %a, %b %d, %Y  at %I:%M%p", localtime(&timer));
 	ml_string(str, 0);	
 }
 

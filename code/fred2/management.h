@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-04-20 06:32:01 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.15  2006/01/14 23:49:01  Goober5000
  * second pass; all the errors are fixed now; one more thing to take care of
  * --Goober5000
@@ -78,7 +82,7 @@
  * entries.
  * 
  * 5     4/07/99 6:21p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 
@@ -109,7 +113,7 @@
  * moved bitmask_2_bitnum to ship lib
  * 
  * 53    11/11/97 2:13p Allender
- * docking bay support for Fred and Freespace.  Added hook to ai code for
+ * docking bay support for Fred and FreeSpace.  Added hook to ai code for
  * arrival/departure from dock bays.  Fred support now sufficient.
  * 
  * 52    10/08/97 11:47a Hoffoss

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FREDView.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-04-20 06:32:01 $
  * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
@@ -19,6 +19,10 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.9  2006/01/15 00:48:25  Goober5000
  * this should complete the new IFF stuff for FRED
  * --Goober5000
@@ -469,7 +473,7 @@ protected:
 	afx_msg void OnShowStarfield();
 	afx_msg void OnUpdateShowStarfield(CCmdUI* pCmdUI);
 	afx_msg void OnAsteroidEditor();
-	afx_msg void OnRunFreespace();
+	afx_msg void OnRunFreeSpace();
 	afx_msg void OnEditorCampaign();
 	afx_msg void OnShowShips();
 	afx_msg void OnUpdateShowShips(CCmdUI* pCmdUI);

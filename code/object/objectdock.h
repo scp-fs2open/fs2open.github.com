@@ -1,19 +1,22 @@
 /*
- * Created by Ian "Goober5000" Warfield for the Freespace2 Source Code Project.
+ * Created by Ian "Goober5000" Warfield for the FreeSpace2 Source Code Project.
  * You may not sell or otherwise commercially exploit the source or things you
  * create based on the source.
- *
  */ 
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.h $
- * $Revision: 2.7 $
- * $Date: 2005-07-13 03:35:31 $
+ * $Revision: 2.8 $
+ * $Date: 2006-04-20 06:32:23 $
  * $Author: Goober5000 $
  *
  * New docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/13 03:35:31  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.6  2005/05/27 03:37:53  Goober5000
  * moved some prototypes that WMC put in the header file back to the implementation file
  * --Goober5000

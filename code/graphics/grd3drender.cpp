@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.86 $
- * $Date: 2006-04-15 00:13:22 $
- * $Author: phreak $
+ * $Revision: 2.87 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2006/04/15 00:13:22  phreak
+ * gr_flash_alpha(), much like gr_flash(), but allows an alpha value to be passed
+ *
  * Revision 2.85  2006/01/30 06:40:49  taylor
  * better lighting for OpenGL
  * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
@@ -796,7 +799,7 @@
  * not-necessary 24 bpp software stuff.
  * 
  * 13    4/09/98 11:05a John
- * Removed all traces of Direct3D out of the demo version of Freespace and
+ * Removed all traces of Direct3D out of the demo version of FreeSpace and
  * the launcher.
  * 
  * 12    3/12/98 5:36p John
@@ -829,7 +832,7 @@
  * Started adding in aabitmaps
  * 
  * 5     3/02/98 5:42p John
- * Removed WinAVI stuff from Freespace.  Made all HUD gauges wriggle from
+ * Removed WinAVI stuff from FreeSpace.  Made all HUD gauges wriggle from
  * afterburner.  Made gr_set_clip work good with negative x &y.  Made
  * model_caching be on by default.  Made each cached model have it's own
  * bitmap id.  Made asteroids not rotate when model_caching is on.  

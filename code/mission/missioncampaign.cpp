@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.39 $
- * $Date: 2006-02-16 05:15:48 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2006-04-20 06:32:07 $
+ * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2006/02/16 05:15:48  taylor
+ * fix strangeness with persona index thingy (ubyte can't be -1, this needs to be left like this or make an int)
+ * address some pilot file corruption using non-linear campaigns, rather simple fix for something that took quite a while to track down
+ *
  * Revision 2.38  2006/02/12 10:42:25  Goober5000
  * allow specification of debriefing personas
  * --Goober5000
@@ -281,7 +285,7 @@
  * 
  * 95    9/10/98 1:17p Dave
  * Put in code to flag missions and campaigns as being MD or not in Fred
- * and Freespace. Put in multiplayer support for filtering out MD
+ * and FreeSpace. Put in multiplayer support for filtering out MD
  * missions. Put in multiplayer popups for warning of non-valid missions.
  * 
  * 94    9/01/98 4:25p Dave
@@ -965,7 +969,7 @@ int mission_campaign_load_by_name_csfe( char *filename, char *callsign )
 }
 
 
-// mission_campaign_init initializes some variables then loads the default Freespace single player campaign.
+// mission_campaign_init initializes some variables then loads the default FreeSpace single player campaign.
 void mission_campaign_init()
 {
 	memset(&Campaign, 0, sizeof(Campaign) );

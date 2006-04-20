@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.69 $
- * $Date: 2006-04-14 18:40:44 $
- * $Author: taylor $
+ * $Revision: 2.70 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2006/04/14 18:40:44  taylor
+ * make sure that modular star tables actually work without going into an endless loop, or constantly complaining on you
+ *
  * Revision 2.68  2006/03/20 06:13:35  taylor
  * might as well do star antialiasing for OGL too
  *
@@ -353,7 +356,7 @@
  * Started putting in new pof nebula support into Fred.
  * 
  * 16    4/07/99 6:22p Dave
- * Fred and Freespace support for multiple background bitmaps and suns.
+ * Fred and FreeSpace support for multiple background bitmaps and suns.
  * Fixed link errors on all subprojects. Moved encrypt_init() to
  * cfile_init() and lcl_init(), since its safe to call twice.
  * 

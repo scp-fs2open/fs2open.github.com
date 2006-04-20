@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/version.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:31 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2006-04-20 06:32:01 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:31  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:32:47  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -126,7 +129,7 @@ int version_compare(char *filename, int *u_major, int *u_minor, int *u_build, in
 	
 	// Make sure the user's Version was found!
 	if ( VER(usr_major, usr_minor, usr_build) == 0 ) {
-		// MessageBox(XSTR("The Freespace 2 Auto-Update program could not find your current game Version in the system registry.\n\nThis should be corrected by starting up the game, exiting the game, and then running the Auto-Update program.", 1206), XSTR("Unable to Determine User's Version", 1207), MB_OK|MB_ICONERROR);
+		// MessageBox(XSTR("The FreeSpace 2 Auto-Update program could not find your current game Version in the system registry.\n\nThis should be corrected by starting up the game, exiting the game, and then running the Auto-Update program.", 1206), XSTR("Unable to Determine User's Version", 1207), MB_OK|MB_ICONERROR);
 		return NO_VERSION_IN_REGISTRY;
 	}	
 

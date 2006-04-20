@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-03-01 04:01:37 $
+ * $Revision: 2.20 $
+ * $Date: 2006-04-20 06:32:07 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/03/01 04:01:37  Goober5000
+ * fix comm message localization
+ *
  * Revision 2.18  2005/12/28 22:06:48  taylor
  * fix up cf_find_file_location() and related elements so that it's safer (based on WMC's work, but actually safe this time ;))
  *
@@ -348,7 +351,7 @@
  * Need to test now.
  * 
  * 15    12/03/98 5:22p Dave
- * Ported over Freespace 1 multiplayer ships.tbl and weapons.tbl
+ * Ported over FreeSpace 1 multiplayer ships.tbl and weapons.tbl
  * checksumming.
  * 
  * 14    12/02/98 5:47p Dave
@@ -455,7 +458,7 @@ int Ts_text_size;
 int Ts_id_text_size;
 
 // file pointers for optimized string lookups
-// some example times for Freespace2 startup with granularities (mostly .tbl files, ~500 strings in the table file, many looked up more than once)
+// some example times for FreeSpace2 startup with granularities (mostly .tbl files, ~500 strings in the table file, many looked up more than once)
 // granularity 20			:		13 secs
 // granularity 10			:		11 secs
 // granularity 5			:		9 secs

@@ -9,15 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/dscap.cpp $
- * $Revision: 2.5 $
- * $Date: 2005-04-05 11:48:23 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2006-04-20 06:32:30 $
+ * $Author: Goober5000 $
  *
  * C module for DirectSoundCapture code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/04/05 11:48:23  taylor
+ * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
+ * better error handling for OpenAL functions
+ * Windows can now build properly with OpenAL
+ * extra check to make sure we don't try and use too many hardware bases sources
+ * fix memory error from OpenAL extension list in certain instances
+ *
  * Revision 2.4  2005/01/08 09:59:10  wmcoolmon
- * Sound quality in Freespace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
+ * Sound quality in FreeSpace 2 is now controlled by SoundSampleBits, and SoundSampleRate. Also, some sounds will use hardware rather than software buffers if available.
  *
  * Revision 2.3  2004/07/26 20:47:52  Kazan
  * remove MCD complete

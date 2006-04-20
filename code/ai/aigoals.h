@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.h $
- * $Revision: 1.5 $
- * $Date: 2006-02-20 02:13:07 $
+ * $Revision: 1.6 $
+ * $Date: 2006-04-20 06:32:00 $
  * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/02/20 02:13:07  Goober5000
+ * added ai-ignore-new which hopefully should fix the ignore bug
+ * --Goober5000
+ *
  * Revision 1.4  2006/02/19 22:00:09  Goober5000
  * restore original ignore behavior and remove soon-to-be-obsolete ai-chase-any-except
  * --Goober5000
@@ -160,10 +164,10 @@
  * add more stuff to save/restore
  * 
  * 24    7/24/97 4:55p Allender
- * added ai-evade-ship to fred and to Freespace
+ * added ai-evade-ship to Fred and to FreeSpace
  * 
  * 23    7/17/97 4:23p Allender
- * ai-guard-wing now in both Fred and Freespace
+ * ai-guard-wing now in both Fred and FreeSpace
  * 
  * 22    7/15/97 11:57a Hoffoss
  * Added a general ai goal reference update mode.
