@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-04-30 16:39:43 $
+ * $Author: phreak $
  *
  * Event editor dialog box class and event tree class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.3  2005/10/22 05:54:48  wmcoolmon
  * Fixed cf_find_file_location
  *
@@ -1501,9 +1505,22 @@ void event_editor::OnPlay()
 	GetDlgItem(IDC_WAVE_FILENAME)->GetWindowText(m_wave_filename);
 
 	int size, offset;
-	cf_find_file_location((char *)(LPCSTR)m_wave_filename, m_wave_filename.GetLength(), CF_TYPE_ANY, path, &size, &offset );
+	cf_find_file_location((char *)(LPCSTR)m_wave_filename, CF_TYPE_ANY, m_wave_filename.GetLength(), path, &size, &offset );
 
-	PlaySound(path, NULL, SND_ASYNC | SND_FILENAME);
+	if (!offset)
+	{
+			PlaySound(path, NULL, SND_ASYNC | SND_FILENAME);
+	}
+	else
+	{
+		CString msg =	"You can not preview sounds inside a .VP packfile.\r\n" +
+						m_wave_filename + " is in the packfile " + path + ".\r\n" +
+						"If you've since extracted this file, restart FRED2 Open to preview this sound.";
+						
+						
+				
+		MessageBox(msg, "Unable to preview sound", MB_OK | MB_ICONINFORMATION);
+	}
 }
 
 void event_editor::OnUpdate() 
