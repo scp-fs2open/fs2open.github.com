@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.136 $
- * $Date: 2006-04-05 13:47:01 $
- * $Author: taylor $
+ * $Revision: 2.137 $
+ * $Date: 2006-05-04 21:25:12 $
+ * $Author: phreak $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.136  2006/04/05 13:47:01  taylor
+ * remove -tga16, it's obsolete now
+ * add a temporary -no_emissive_light option to not use emission type light in OGL
+ *
  * Revision 2.135  2006/03/18 10:17:58  taylor
  * we already have a variable to show the framerate so lets just use the one
  *
@@ -925,7 +929,6 @@ Flag exe_params[] =
 
 	{ "-env",				"environment mapping",						true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
 	{ "-alpha_env",			"uses alpha for env maping",				true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-alpha_env", },
-	{ "-decals",			"impact decals",							true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-decals", },
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Voice recognition",						true,	0,					EASY_DEFAULT,		"Experimental",	"", },
 
@@ -2130,7 +2133,10 @@ bool SetCmdlineParams()
 	}
 
 	if ( decals.found() ) {
-		Cmdline_decals = 1;
+		
+		#ifdef WIN32
+		MessageBox(NULL, "Decals have been disabled in builds after May 4, 2006.  Please remove the \"-decals\" command line from the launcher to prevent this message from appearing the the future.", "", MB_OK | MB_ICONINFORMATION);
+		#endif
 	}
 
 	if ( ballistic_gauge.found() ) {
