@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.30 2006-04-16 05:22:21 taylor Exp $
+dnl $Id: configure.ac,v 1.31 2006-05-09 09:19:38 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.8)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -85,12 +85,6 @@ AC_ARG_WITH(ogl-incs,
 		[Use OpenGL Includes from this directory]),
 		[fs2_ogl_incs="$withval"],
 		[fs2_ogl_incs=""],
-)
-AC_ARG_ENABLE(scplite,
-	AC_HELP_STRING([--enable-scplite],
-		[Make a SCP Lite build]),
-		[fs2_lite=$enableval],
-		[fs2_lite=no],
 )
 
 AC_ARG_ENABLE(inferno,
@@ -338,8 +332,6 @@ if test "$fs2_os_win32" = "yes" ; then
 	else
 		FS2_LDFLAGS="$FS2_LDFLAGS -lopengl32 -lglu32"
 	fi
-	AC_CHECK_LIB(opengl32, glBindBufferARB, ,
-		AC_MSG_ERROR([*** OpenGL version does not have the required features!! (ie. glBindBufferARB()) ***]))
 elif test "$fs2_os_unix" = "yes" ; then
 	if test "x$fs2_ogl_libs" != "x" ; then
 		FS2_LDFLAGS="$FS2_LDFLAGS -L$fs2_ogl_libs -lGL -lGLU"
@@ -349,8 +341,6 @@ elif test "$fs2_os_unix" = "yes" ; then
 	if test "x$fs2_ogl_incs" != "x" ; then
 		FS2_CXXFLAGS="$FS2_CXXFLAGS -I$fs2_ogl_incs"
 	fi
-	AC_CHECK_LIB(GL, glBindBufferARB, ,
-		AC_MSG_ERROR([*** OpenGL version does not have the required features!! (ie. glBindBufferARB()) ***]))
 	AC_DEFINE([SCP_UNIX])
 	AC_DEFINE([NO_DIRECT3D])
 elif test "$fs2_os_osx" = "yes" ; then
@@ -451,7 +441,6 @@ echo Text-to-speech enabled . : $fs2_speech
 echo
 echo Debug build ............ : $fs2_debug
 echo DEMO build ............. : $fs2_demo
-echo SCP Lite ............... : $fs2_lite
 echo Inferno build .......... : $fs2_inferno
 echo GProf support .......... : $fs2_gprof
 echo
