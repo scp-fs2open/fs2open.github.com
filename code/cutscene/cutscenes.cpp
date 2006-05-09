@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-07-02 19:42:14 $
+ * $Revision: 2.18 $
+ * $Date: 2006-05-09 09:21:15 $
  * $Author: taylor $
- * $Revision: 2.17 $
- * $Date: 2005-07-02 19:42:14 $
+ * $Revision: 2.18 $
+ * $Date: 2006-05-09 09:21:15 $
  * $Author: taylor $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/07/02 19:42:14  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.16  2005/05/12 17:49:11  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -379,8 +382,8 @@ static UI_WINDOW Ui_window;
 
 static ui_button_info Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 	{ // GR_640
-		ui_button_info("TDB_00",	7,		5,		37,	7,		0),			// tech database 1
-		ui_button_info("TDB_01",	7,		19,	37,	23,	1),			// tech database 2
+		ui_button_info("TDB_00",	7,		3,		37,	7,		0),			// tech database 1
+		ui_button_info("TDB_01",	7,		18,	37,	23,	1),			// tech database 2
 		ui_button_info("TDB_02",	7,		34,	37,	38,	2),			// tech database 3
 		ui_button_info("TDB_03",	7,		49,	37,	54,	3),			// tech database 4
 
@@ -390,7 +393,7 @@ static ui_button_info Buttons[GR_NUM_RESOLUTIONS][NUM_BUTTONS] = {
 		ui_button_info("VFB_07",	574,	431,	587,	413,	7),			// exit
 	},
 	{ // GR_1024
-		ui_button_info("2_TDB_00",	12,	7,		59,	12,	0),			// tech database 1
+		ui_button_info("2_TDB_00",	12,	5,		59,	12,	0),			// tech database 1
 		ui_button_info("2_TDB_01",	12,	31,	59,	37,	1),			// tech database 2
 		ui_button_info("2_TDB_02",	12,	56,	59,	62,	2),			// tech database 3
 		ui_button_info("2_TDB_03",	12,	81,	59,	88,	3),			// tech database 4
