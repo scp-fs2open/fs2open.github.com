@@ -6,6 +6,8 @@
 #include "globalincs/version.h"
 #include "gamesequence/gamesequence.h"
 #include "bmpman/bmpman.h"
+#include "globalincs/systemvars.h"
+#include "hud/hud.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -198,6 +200,15 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 {
 	if(hd.index >= 0)
 	{
+		// if this is the hook for the hud, and the hud is disabled or we are in freelook mode, then don't run the script
+		// (admittedly this is wrong, but I'm not sure where else to put this check and have it work properly. hopefully
+		//  WMCoolmon can get some time to come back over this and fix the issues, or just make it better period. - taylor)
+		if (hd.index == Script_hudhook.index) {
+			if ( (Viewer_mode & VM_FREECAMERA) || hud_disabled() ) {
+				return 1;
+			}
+		}
+
 		if(hd.language == SC_LUA)
 		{
 			int args_start=0;
