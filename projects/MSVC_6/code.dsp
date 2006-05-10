@@ -2021,8 +2021,8 @@ InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
 BuildCmds= \
-	$(InputDir)\gc $(InputDir)\$(InputName) \
-	$(InputDir)\gc /h $(InputDir)\grammar.h $(InputDir)\$(InputName) \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
 	
 
 "$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -2040,8 +2040,8 @@ InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
 BuildCmds= \
-	$(InputDir)\gc $(InputDir)\$(InputName) \
-	$(InputDir)\gc /h $(InputDir)\grammar.h $(InputDir)\$(InputName) \
+	"$(InputDir)\gc" "$(InputDir)\$(InputName)" \
+	"$(InputDir)\gc" /h "$(InputDir)\grammar.h" "$(InputDir)\$(InputName)" \
 	
 
 "$(InputDir)\phrases.cfg" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
