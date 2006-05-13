@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.65 $
- * $Date: 2006-04-12 22:23:41 $
+ * $Revision: 2.66 $
+ * $Date: 2006-05-13 07:15:51 $
  * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2006/04/12 22:23:41  taylor
+ * compiler warning fixes to make GCC 4.1 shut the hell up
+ *
  * Revision 2.64  2006/04/01 01:21:58  wmcoolmon
  * $Warp time and $Warp speed vars
  *
@@ -1080,7 +1083,10 @@ void shipfx_warpin_start( object *objp )
 		{
 			// cap radius to size of knossos
 			effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
-			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
+			// the knossos effect always seems to appear backwards, so flip it. may need to keep and eye on this in case it breaks some mods though - taylor
+			matrix knossos_orient = Objects[shipp->special_warp_objnum].orient;
+			knossos_orient.vec.fvec.xyz.z = -knossos_orient.vec.fvec.xyz.z;
+			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index, &knossos_orient);
 		}
 		else
 		{
