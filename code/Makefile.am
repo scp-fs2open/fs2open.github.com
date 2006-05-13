@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.30 2006-04-20 17:38:25 Goober5000 Exp $
+## $Id: Makefile.am,v 1.31 2006-05-13 06:59:48 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -240,8 +240,13 @@ FS2_SOURCES =	\
 	controlconfig/controlsconfigcommon.cpp	\
 	cutscene/cutscenes.cpp	\
 	cutscene/cutscenes.h	\
+	cutscene/decoder16.cpp	\
 	cutscene/movie.cpp	\
 	cutscene/movie.h	\
+	cutscene/mve_audio.cpp	\
+	cutscene/mvelib.cpp	\
+	cutscene/mvelib.h	\
+	cutscene/mveplayer.cpp	\
 	ddsutils/ddsutils.cpp	\
 	ddsutils/ddsutils.h	\
 	debris/debris.cpp	\

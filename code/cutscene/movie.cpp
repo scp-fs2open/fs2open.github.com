@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-12-28 22:17:01 $
+ * $Revision: 2.30 $
+ * $Date: 2006-05-13 06:59:48 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/12/28 22:17:01  taylor
+ * deal with cf_find_file_location() changes
+ * add a central parse_modular_table() function which anything can use
+ * fix up weapon_expl so that it can properly handle modular tables and LOD count changes
+ * add support for for a fireball TBM (handled a little different than a normal TBM is since it only changes rather than adds)
+ *
  * Revision 2.28  2005/11/13 06:46:10  taylor
  * some minor movie cleanup, not what I would like but enough for now
  *
@@ -61,6 +67,8 @@
 #include "cfile/cfile.h"
 #include "cutscene/cutscenes.h" // cutscene_mark_viewable()
 #include "freespace2/freespace.h" // for Game_mode, etc.
+#include "cutscene/mvelib.h"
+#include "menuui/mainhallmenu.h"
 
 
 
@@ -133,6 +141,7 @@ bool movie_play(char *name)
 		cutscene_mark_viewable(name);
 	}
 
+	extern int Mouse_hidden;
 	extern int Is_standalone;
 	if(Is_standalone) return false;
  	if(Cmdline_nomovies) return false;
@@ -142,6 +151,39 @@ bool movie_play(char *name)
 	char full_name[MAX_PATH];
 	int rc = 0;
 
+	// first off, check for a MVE
+	MVESTREAM *movie = NULL;
+
+	movie = mve_open(name);
+
+	if (movie) {
+		// kill all background sounds
+		main_hall_pause();
+
+		// clear the screen and hide the mouse cursor
+		Mouse_hidden++;
+		gr_reset_clip();
+		gr_zbuffer_clear(0);
+		gr_clear();
+		gr_flip();
+
+		// ready to play...
+		mve_init(movie);
+		mve_play(movie);
+
+		// ... done playing, close the mve and show the cursor again
+		mve_shutdown();
+		mve_close(movie);
+		Mouse_hidden--;
+
+		main_hall_unpause();
+
+		return true;
+	}
+
+	// no MVE version so move on to AVI/MPG searching
+
+#ifdef _WIN32
 	rc = movie_find(name, full_name);
 
 	if (!rc) {
@@ -151,7 +193,6 @@ bool movie_play(char *name)
 		DBUGFILE_OUTPUT_1("About to play: %s", full_name);
 	}
 
-#ifdef _WIN32
 	process_messages();
 
 	// This is a bit of a hack but it works nicely
@@ -255,7 +296,9 @@ bool movie_play(char *name)
 	 	GlobalD3DVars::D3D_activate = 1;
 	}
 #else
+
 	STUB_FUNCTION;
+
 #endif
 
 	return true;
