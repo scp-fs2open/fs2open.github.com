@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.332 $
- * $Date: 2006-04-18 00:56:28 $
- * $Author: bobboau $
+ * $Revision: 2.333 $
+ * $Date: 2006-05-13 07:15:51 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.332  2006/04/18 00:56:28  bobboau
+ * bugfix for the animation system
+ *
  * Revision 2.331  2006/04/14 18:39:06  taylor
  * giving a tbl name in this warning message is basically useless since there we can't tell which tbl this particular ship is in
  *
@@ -5635,7 +5638,6 @@ man_thruster_renderer *man_thruster_get_slot(int bmap_frame)
 	return &Man_thrusters[Man_thrusters.size()-1];
 }
 
-extern float View_zoom;
 //WMC - used for FTL and maneuvering thrusters
 geometry_batcher fx_batcher;
 void ship_render(object * obj)
@@ -5709,7 +5711,7 @@ void ship_render(object * obj)
 			gr_end_view_matrix();
 			gr_end_proj_matrix();
 
-			gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.05f, Max_draw_distance);
+			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
 			gr_set_view_matrix(&Eye_position, &Eye_matrix);
 		}
 	}
@@ -6196,7 +6198,7 @@ void ship_render(object * obj)
 			gr_end_view_matrix();
 			gr_end_proj_matrix();
 
-			gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+			gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 			gr_set_view_matrix(&Eye_position, &Eye_matrix);
 		}
 	}
@@ -13549,7 +13551,7 @@ void ship_maybe_praise_player(ship *deader_sp)
 	}
 
 	// don't praise the destruction of navbuoys, cargo or other non-flyable ship types
-	if ( Ship_info[deader_sp->ship_info_index].class_type > 0 && (Ship_types[Ship_info[deader_sp->ship_info_index].class_type].message_bools & STI_MSG_PRAISE_DESTRUCTION) ) {
+	if ( (Ship_info[deader_sp->ship_info_index].class_type > 0) && !(Ship_types[Ship_info[deader_sp->ship_info_index].class_type].message_bools & STI_MSG_PRAISE_DESTRUCTION) ) {
 		return;
 	}
 
