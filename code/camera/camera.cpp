@@ -34,7 +34,7 @@ camera::~camera()
 		delete desired_orientation;
 
 	//Check if this is in use
-	if(Current_camera = this)
+	if(Current_camera == this)
 	{
 		if(Cameras.size() > 0)
 			Current_camera = &Cameras[0];
