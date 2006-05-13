@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-03-18 10:23:46 $
+ * $Revision: 2.22 $
+ * $Date: 2006-05-13 07:09:25 $
  * $Author: taylor $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/03/18 10:23:46  taylor
+ * make the main vital TMAP_MAX_VERTS stuff dynamic, should handle the major non-HTL related crashes
+ *
  * Revision 2.20  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -203,6 +206,7 @@ matrix		Eye_matrix;			// Where the viewer's eye is pointing in World coordinates
 vec3d		Eye_position;		// Where the viewer's eye is at in World coordinates
 
 float			View_zoom;			// The zoom factor
+float			Proj_fov;			// The fov (for HTL projection matrix)
 
 vec3d		Window_scale;		// Scaling for window aspect
 vec3d		Matrix_scale;		// How the matrix is scaled, window_scale * zoom
@@ -233,6 +237,12 @@ int instance_depth = 0;
 int G3_count = 0;
 int G3_frame_count = 0;
 extern int Cmdline_nohtl;
+
+// check if in frame
+int g3_in_frame()
+{
+	return G3_count;
+}
 
 //start the frame
 // Pass true for zbuffer_flag to turn on zbuffering
@@ -316,6 +326,8 @@ void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 	View_position = *view_pos;
 
 	View_matrix = *view_matrix;
+
+	Proj_fov = (4.0f/9.0f) * PI * View_zoom;
 
 	Eye_matrix = View_matrix;
 	Eye_position = *view_pos;

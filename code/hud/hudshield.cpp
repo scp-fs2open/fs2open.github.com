@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.38 $
+ * $Date: 2006-05-13 07:09:24 $
+ * $Author: taylor $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.36  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -328,7 +331,6 @@
 #include "parse/parselo.h"
 #include "ship/ship.h"
 #include "render/3d.h"	//For g3_start_frame
-#include "render/3dinternal.h" //For View_zoom
 #include "network/multi.h"
 
 
@@ -581,7 +583,7 @@ void hud_shield_show(object *objp)
 	}
 	else
 	{
-		bool G3_already = G3_count > 0 ? true : false;
+		bool G3_already = g3_in_frame();
 		angles rot_angles = {-1.570796327f,0.0f,0.0f};
 		matrix	object_orient;
 
@@ -605,8 +607,10 @@ void hud_shield_show(object *objp)
 			g3_set_view_matrix( &finger_vec, &vmd_identity_matrix, 1.0f);
 		}*/
 
-		if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
-		if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		if (!Cmdline_nohtl) {
+			gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+			gr_set_view_matrix(&Eye_position, &Eye_matrix);
+		}
 
 		//We're ready to show stuff
 		ship_model_start(objp);

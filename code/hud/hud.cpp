@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.66 $
- * $Date: 2006-02-25 21:47:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.67 $
+ * $Date: 2006-05-13 07:09:24 $
+ * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2006/02/25 21:47:00  Goober5000
+ * spelling
+ *
  * Revision 2.65  2006/01/25 07:46:13  wmcoolmon
  * Maybe fix G3_count error
  *
@@ -586,7 +589,6 @@
 #include "hud/hudwingmanstatus.h"
 #include "hud/hudparse.h"
 #include "object/objectdock.h"
-#include "render/3dinternal.h"
 #include "hud/hudnavigation.h"	//kazan
 #include "io/timer.h"
 #include "localization/localize.h"
@@ -622,6 +624,9 @@
 #define HUD_NEW_ALPHA_DIM_HI			130
 #define HUD_NEW_ALPHA_NORMAL_HI		190
 #define HUD_NEW_ALPHA_BRIGHT_HI		255
+
+// Externals not related to the HUD code itself
+extern float View_zoom;
 
 // This is used to prevent drawing of hud (and pause popup)
 
@@ -1482,7 +1487,7 @@ void hud_show_radar()
 	}
 
 	//WMC - This strikes me as a bit hackish
-	bool g3_yourself = G3_count == 0;
+	bool g3_yourself = !g3_in_frame();
 	if(g3_yourself)
 		g3_start_frame(1);
 

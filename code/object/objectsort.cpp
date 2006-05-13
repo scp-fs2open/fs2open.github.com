@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-04-12 22:23:41 $
+ * $Revision: 2.13 $
+ * $Date: 2006-05-13 07:09:25 $
  * $Author: taylor $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/04/12 22:23:41  taylor
+ * compiler warning fixes to make GCC 4.1 shut the hell up
+ *
  * Revision 2.11  2006/04/03 07:48:03  wmcoolmon
  * Miscellaneous minor changes, mostly related to addition of Current_camera variable
  *
@@ -289,7 +292,6 @@ int obj_in_view_cone( object * objp )
 
 // Sorts all the objects by Z and renders them
 extern int Fred_active;
-extern float View_zoom;
 extern int Cmdline_nohtl;
 void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_last )
 {
@@ -352,7 +354,8 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 			closest_obj = Min_draw_distance;
 		if(farthest_obj > Max_draw_distance)
 			farthest_obj = Max_draw_distance;
-		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, closest_obj, farthest_obj);
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, closest_obj, farthest_obj);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 #endif

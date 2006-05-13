@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.27 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 1.28 $
+ * $Date: 2006-05-13 07:09:25 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.26  2006/01/18 16:17:33  taylor
  * use HTL wireframe view if in HTL mode
  *
@@ -855,7 +858,6 @@ void change_weapon(Tree* caller)
 }
 
 //************************Ship renderer****************************
-extern float View_zoom;
 static int Trackball_mode = 1;
 static int Trackball_active = 0;
 void show_ship(float frametime)
@@ -943,6 +945,7 @@ void show_ship(float frametime)
 		polymodel *pm = model_get(LabViewerModelNum);
 		bsp_info *bs = NULL;	//tehe
 		float largest_radius = 0.0f;
+		Assert( pm != NULL );
 		for(int i = 0; i < pm->n_models; i++)
 		{
 			if(!pm->submodel[i].is_thruster)
@@ -962,8 +965,11 @@ void show_ship(float frametime)
 
 		g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, PI/2.0f);
 	}
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.1f, Max_draw_distance);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 1.0f, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 	// lighting for techroom
 	light_reset();
