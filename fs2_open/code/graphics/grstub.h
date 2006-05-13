@@ -2,9 +2,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.25 $
- * $Date: 2006-04-15 00:13:22 $
- * $Author: phreak $
+ * $Revision: 2.26 $
+ * $Date: 2006-05-13 07:29:52 $
+ * $Author: taylor $
  *
  * $NoKeywords: $
  */
@@ -138,6 +138,9 @@ void gr_stub_bm_init(int n) { return; }
 int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size) { return 0; }
 void gr_stub_bm_page_in_start() { return; }
 int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags) { return -1; }
+int gr_stub_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags) { return 0; }
+int gr_stub_bm_set_render_target(int n, int face) { return 0; }
+
 
 void gr_stub_init() 
 {
@@ -212,6 +215,8 @@ void gr_stub_init()
 	gr_screen.gf_bm_load					= gr_stub_bm_load;
 	gr_screen.gf_bm_page_in_start			= gr_stub_bm_page_in_start;
 	gr_screen.gf_bm_lock					= gr_stub_bm_lock;
+	gr_screen.gf_bm_make_render_target		= gr_stub_bm_make_render_target;
+	gr_screen.gf_bm_set_render_target		= gr_stub_bm_set_render_target;
 
 	gr_screen.gf_get_pixel = gr_stub_get_pixel;
 

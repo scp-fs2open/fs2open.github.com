@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.11 $
- * $Date: 2005-12-16 06:48:28 $
+ * $Revision: 2.12 $
+ * $Date: 2006-05-13 07:29:52 $
  * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/12/16 06:48:28  taylor
+ * "House Keeping!!"
+ *   - minor cleanup of things that have bothered me at one time or another
+ *   - slight speedup from state switching
+ *   - slightly better specmap handling, fixes a couple of (not frequent) strange and sorta random issues
+ *   - make sure to only disable HTL arb stuff when in HTL mode
+ *   - handle any extra lighting pass before spec pass so the light can be applied properly
+ *
  * Revision 2.10  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -273,6 +281,7 @@ extern int Gr_gamma_lookup[256];
 #define TCACHE_TYPE_NONDARKENING			3		// Bitmap with 255,255,255 = non-darkening.  Alpha=1 if non-darkening, 0 if not.
 #define TCACHE_TYPE_INTERFACE				4		// for graphics that are using in the interface (for special filtering or sizing)
 #define TCACHE_TYPE_COMPRESSED				5		// Compressed bitmap type (DXT1, DXT3, DXT5)
+#define TCACHE_TYPE_CUBEMAP					6
 
 extern int Ambient_r_default;
 extern int Ambient_g_default;

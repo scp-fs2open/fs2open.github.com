@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.241 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.242 $
+ * $Date: 2006-05-13 07:29:51 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.241  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.240  2006/04/15 04:17:58  phreak
  * use gr_flash_alpha() for fade-in/fade-out effect.
  * just using gr_shade() will not work with the hud off or using an external camera.
@@ -1845,6 +1848,8 @@ int Player_multi_died_check = -1;
 
 int Multi_ping_timestamp = -1;
 
+int Default_env_map = -1;
+
 // builtin mission list stuff
 #ifdef FS2_DEMO
 	int Game_builtin_mission_count = 6;
@@ -3664,8 +3669,6 @@ void game_init()
 	// this has to be set after gr_init() is done on *nix
 	os_set_title(Osreg_title);
 
-//	ENVMAP = bm_load("environment");
-
 	// Set the gamma
 	if( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) )
 	{
@@ -3840,7 +3843,14 @@ void game_init()
 	// initialize alpha colors
 	alpha_colors_init();	
 
-	if(Cmdline_cell)cell_shaded_lightmap = bm_load("cellmap");
+	if (Cmdline_cell) {
+		cell_shaded_lightmap = bm_load("cellmap");
+	}
+
+	if (Cmdline_env) {
+		ENVMAP = Default_env_map = bm_load("cubemap");
+	}
+
 	Viewer_mode = 0;
 //	Game_music_paused = 0;
 	Game_paused = 0;
@@ -4904,92 +4914,101 @@ extern void compute_slew_matrix(matrix *orient, angles *a);	// TODO: move code t
 //	Player's velocity just before he blew up.  Used to keep camera target moving.
 vec3d	Dead_player_last_vel = { { { 1.0f, 1.0f, 1.0f } } };
 
-
-inline void render_environment(int&i, matrix*new_orient, float new_zoom)
+extern float View_zoom;
+inline void render_environment(int i, matrix *new_orient, float new_zoom)
 {
 	vec3d nv = ZERO_VECTOR;
 
-	if ( (Game_subspace_effect && (gr_screen.dynamic_environment_map < 0)) || (gr_screen.static_environment_map < 0) ) {
+	bm_set_render_target( (Game_subspace_effect) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map, i);
+
+	gr_clear();
+
+	g3_set_view_matrix( &nv, new_orient, new_zoom );
+	gr_set_proj_matrix( (PI/2.0f), 1.0f, Min_draw_distance, Max_draw_distance );
+	gr_set_view_matrix( &Eye_position, &Eye_matrix );
+
+	if ( Game_subspace_effect ) {
+		stars_draw(0,0,0,1,1);
+	} else {
+		stars_draw(0,1,1,0,1);
+	}
+
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+}
+
+void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
+{
+	matrix new_orient;
+	float old_zoom = View_zoom, new_zoom = 0.925f;
+	int i = 0;
+
+
+	if (Cmdline_nohtl)
+		return;
+
+	if ( (Game_subspace_effect && (gr_screen.dynamic_environment_map < 0)) || (!Game_subspace_effect && (gr_screen.static_environment_map < 0)) ) {
+		if (ENVMAP > -1)
+			return;
+
+		if (strlen(The_mission.envmap_name)) {
+			ENVMAP = bm_load(The_mission.envmap_name);
+
+			if (ENVMAP < 0)
+				ENVMAP = Default_env_map;
+		} else {
+			ENVMAP = Default_env_map;
+		}
+
 		return;
 	}
 
-	bm_set_render_target(
-		(Game_subspace_effect)?
-			gr_screen.dynamic_environment_map 
-		: 
-			gr_screen.static_environment_map
-		, i); 
-	gr_clear();
+	ENVMAP = (Game_subspace_effect) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map;
 
-	g3_set_view_matrix( &nv, new_orient, new_zoom ); 
-	gr_set_proj_matrix( (PI/2.0f), 1.0f, Min_draw_distance, 30000.0f); 
-	gr_set_view_matrix(&Eye_position, &Eye_matrix); 
-	if ( Game_subspace_effect ) { 
-		stars_draw(0,0,0,1,1); 
-	} else { 
-		stars_draw(1,1,1,0,1); 
-	} 
-	gr_end_view_matrix(); 
-	gr_end_proj_matrix(); 
-	i++; 
-}
+	// face 1
+	new_orient.vec.fvec.xyz.x = 1.0f;	new_orient.vec.fvec.xyz.y = 0.0f;	new_orient.vec.fvec.xyz.z = 0.0f;
+	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 1.0f;	new_orient.vec.uvec.xyz.z = 0.0f;
+	vm_fix_matrix(&new_orient);
+	render_environment(i, &new_orient, new_zoom);
+	i++; // bump!
 
-extern float View_zoom, Canv_w2, Canv_h2;
-void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient){
-	if(gr_screen.mode != GR_DIRECT3D)return;
-	if(!Cmdline_nohtl){
-//		matrix old_orient = Eye_matrix;
-//		vec3d old_position = Eye_position;
-		matrix new_orient;
-		float old_zoom = View_zoom, new_zoom = 0.925f;
-//		vec3d nv = ZERO_VECTOR;
-		int i = 0;
+	// face 2
+	new_orient.vec.fvec.xyz.x = -1.0f;	new_orient.vec.fvec.xyz.y = 0.0f;	new_orient.vec.fvec.xyz.z = 0.0f;
+	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 1.0f;	new_orient.vec.uvec.xyz.z = 0.0f;
+	vm_fix_matrix(&new_orient);
+	render_environment(i, &new_orient, new_zoom);
+	i++; // bump!
 
-		{
-			new_orient.vec.fvec.xyz.x = 1.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = 0.0f;
-			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
-			vm_fix_matrix(&new_orient);
-			render_environment(i,&new_orient, new_zoom);	
+	// face 3
+	new_orient.vec.fvec.xyz.x = 0.0f;	new_orient.vec.fvec.xyz.y = 1.0f;	new_orient.vec.fvec.xyz.z = 0.0f;
+	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 0.0f;	new_orient.vec.uvec.xyz.z = -1.0f;
+	vm_fix_matrix(&new_orient);
+	render_environment(i, &new_orient, new_zoom);
+	i++; // bump!
 
-			new_orient.vec.fvec.xyz.x = -1.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = 0.0f;
-			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
-			vm_fix_matrix(&new_orient);
-			render_environment(i,&new_orient, new_zoom);	
+	// face 4
+	new_orient.vec.fvec.xyz.x = 0.0f;	new_orient.vec.fvec.xyz.y = -1.0f;	new_orient.vec.fvec.xyz.z = 0.0f;
+	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 0.0f;	new_orient.vec.uvec.xyz.z = 1.0f;
+	vm_fix_matrix(&new_orient);
+	render_environment(i, &new_orient, new_zoom);
+	i++; // bump!
 
-			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = 1.0f;new_orient.vec.fvec.xyz.z = 0.0f;
-			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 0.0f;new_orient.vec.uvec.xyz.z = -1.0f;
-			vm_fix_matrix(&new_orient);
-			render_environment(i,&new_orient, new_zoom);	
+	// face 5
+	new_orient.vec.fvec.xyz.x = 0.0f;	new_orient.vec.fvec.xyz.y = 0.0f;	new_orient.vec.fvec.xyz.z = 1.0f;
+	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 1.0f;	new_orient.vec.uvec.xyz.z = 0.0f;
+	vm_fix_matrix(&new_orient);
+	render_environment(i, &new_orient, new_zoom);
+	i++; // bump!
 
-			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = -1.0f;new_orient.vec.fvec.xyz.z = 0.0f;
-			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 0.0f;new_orient.vec.uvec.xyz.z = 1.0f;
-			vm_fix_matrix(&new_orient);
-			render_environment(i,&new_orient, new_zoom);	
+	// face 6
+	new_orient.vec.fvec.xyz.x = 0.0f;	new_orient.vec.fvec.xyz.y = 0.0f;	new_orient.vec.fvec.xyz.z = -1.0f;
+	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 1.0f;	new_orient.vec.uvec.xyz.z = 0.0f;
+	vm_fix_matrix(&new_orient);
+	render_environment(i, &new_orient, new_zoom);
 
-			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = 1.0f;
-			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
-			vm_fix_matrix(&new_orient);
-			render_environment(i,&new_orient, new_zoom);	
-
-			new_orient.vec.fvec.xyz.x = 0.0f;new_orient.vec.fvec.xyz.y = 0.0f;new_orient.vec.fvec.xyz.z = -1.0f;
-			new_orient.vec.uvec.xyz.x = 0.0f;new_orient.vec.uvec.xyz.y = 1.0f;new_orient.vec.uvec.xyz.z = 0.0f;
-			vm_fix_matrix(&new_orient);
-			render_environment(i,&new_orient, new_zoom);	
-				
-		}
-
-//		View_zoom = old_zoom;
-		g3_set_view_matrix( eye_pos, eye_orient, old_zoom );
-		gr_set_proj_matrix( ((4.0f/9.0f)*(PI)*View_zoom), Canv_w2/Canv_h2, 1.0f, 30000.0f);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
-
-		bm_set_render_target(-1);
-
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-//		first_frame = false;
-	}
-//	}
+	// we're done, so now reset
+	bm_set_render_target(-1);
+	g3_set_view_matrix( eye_pos, eye_orient, old_zoom );
 }
 
 int Scripting_didnt_draw_hud = 1;
@@ -5289,10 +5308,6 @@ extern void ai_debug_render_stuff();
 int Game_subspace_effect = 0;
 DCF_BOOL( subspace, Game_subspace_effect );
 
-//stuff for ht&l. vars and such
-extern float View_zoom, Canv_h2, Canv_w2;
-extern int Cmdline_nohtl;
-
 // Does everything needed to render a frame
 void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 {
@@ -5300,7 +5315,7 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 
 	g3_start_frame(game_zbuffer);
 	g3_set_view_matrix( eye_pos, eye_orient, Viewer_zoom );
-	
+
 	// maybe offset the HUD (jitter stuff)
 	dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
 	HUD_set_offsets(Viewer_obj, !dont_offset);
@@ -5312,34 +5327,28 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 		shield_point_multi_setup();
 	}
 
-	// don't set proj/view matrix before this call, breaks OGL
-/*	gr_setup_background_fog(true);
-	if ( Game_subspace_effect )	{
-		stars_draw(0,0,0,1,0);
-	} else {
-		stars_draw(1,1,1,0,0);
-	}
-	gr_setup_background_fog(false);
-*/
-	if ( Game_subspace_effect )	{
-		stars_draw(0,0,0,1,0);
-	} else {
-		stars_draw(1,1,1,0,0);
-	}
-	// Do the sunspot
-	game_sunspot_process(flFrametime);
-
-	if((!cube_map_drawen || Game_subspace_effect) && Cmdline_env){
+	// this needs to happen after g3_start_frame() and before the primary projection and view matrix is setup
+	if ( Cmdline_env && (!cube_map_drawen || Game_subspace_effect) ) {
 		setup_environment_mapping(eye_pos, eye_orient);
 		cube_map_drawen = true;
 	}
+
 #ifndef DYN_CLIP_DIST
 	if (!Cmdline_nohtl) {
-		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 #endif
-	
+
+	if ( Game_subspace_effect )	{
+		stars_draw(0,0,0,1,0);
+	} else {
+		stars_draw(1,1,1,0,0);
+	}
+
+	// Do the sunspot
+	game_sunspot_process(flFrametime);
+
 	bool draw_viewer_last;
 	obj_render_all(obj_render, &draw_viewer_last);
 
@@ -5354,7 +5363,7 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	{
 		gr_end_proj_matrix();
 		gr_end_view_matrix();
-		gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 #endif
@@ -5941,7 +5950,7 @@ void game_shade_frame(float frametime)
 	}
 
 
-	gr_flash_alpha(Viewer_shader.r, Viewer_shader.g, Viewer_shader.b, Viewer_shader.c);
+	gr_flash_alpha(fl2i(Viewer_shader.r), fl2i(Viewer_shader.g), fl2i(Viewer_shader.b), fl2i(Viewer_shader.c));
 }
 
 //WMC - This does stuff like fading in and out and subtitles. Special FX?

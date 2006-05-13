@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.84 $
- * $Author: Goober5000 $
- * $Date: 2006-04-20 06:32:07 $
+ * $Revision: 2.85 $
+ * $Author: taylor $
+ * $Date: 2006-05-13 07:29:52 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.83  2006/04/16 11:58:11  karajorma
  * Some how managed to fail to commit the primary-locked and secondary-locked ship flags.
  * No idea how. Oh well here they are.
@@ -620,6 +623,7 @@ typedef struct mission {
 	char	squad_name[NAME_LENGTH+1];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
 	char	loading_screen[GR_NUM_RESOLUTIONS][NAME_LENGTH];
 	char	skybox_model[NAME_LENGTH];
+	char	envmap_name[NAME_LENGTH];
 	int		contrail_threshold;
 	int		ambient_light_level;
 

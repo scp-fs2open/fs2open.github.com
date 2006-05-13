@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.17 $
- * $Date: 2006-02-24 07:35:48 $
+ * $Revision: 2.18 $
+ * $Date: 2006-05-13 07:29:52 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/02/24 07:35:48  taylor
+ * add v-sync support for OGL (I skimmped on this a bit but will go back to do something better, "special" extension wise, at a later date)
+ *
  * Revision 2.16  2006/01/30 06:40:49  taylor
  * better lighting for OpenGL
  * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
@@ -162,6 +165,149 @@
 
 #include "globalincs/pstypes.h"
 #include "graphics/grinternal.h"
+
+
+// in case it's missing from the GL headers
+#ifndef GL_ARB_pixel_buffer_object
+#define GL_ARB_pixel_buffer_object	1
+#define GL_PIXEL_PACK_BUFFER_ARB			0x88EB
+#define GL_PIXEL_UNPACK_BUFFER_ARB			0x88EC
+#define GL_PIXEL_PACK_BUFFER_BINDING_ARB	0x88ED
+#define GL_PIXEL_UNPACK_BUFFER_BINDING_ARB	0x88EF
+#endif
+
+#ifndef GL_ARB_texture_rectangle
+#define GL_ARB_texture_rectangle	1
+#define GL_TEXTURE_RECTANGLE_ARB			0x84F5
+#define GL_TEXTURE_BINDING_RECTANGLE_ARB	0x84F6
+#define GL_PROXY_TEXTURE_RECTANGLE_ARB		0x84F7
+#define GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB	0x84F8
+#endif
+
+#ifndef GL_VERSION_1_5
+#define GL_READ_ONLY						0x88B8
+#define GL_WRITE_ONLY						0x88B9
+#define GL_READ_WRITE						0x88BA
+#define GL_BUFFER_ACCESS					0x88BB
+#define GL_BUFFER_MAPPED					0x88BC
+#define GL_BUFFER_MAP_POINTER				0x88BD
+#define GL_STREAM_DRAW						0x88E0
+#define GL_STREAM_READ						0x88E1
+#define GL_STREAM_COPY						0x88E2
+#define GL_STATIC_DRAW						0x88E4
+#define GL_STATIC_READ						0x88E5
+#define GL_STATIC_COPY						0x88E6
+#define GL_DYNAMIC_DRAW						0x88E8
+#define GL_DYNAMIC_READ						0x88E9
+#define GL_DYNAMIC_COPY						0x88EA
+#define GL_SAMPLES_PASSED					0x8914
+#endif
+
+#if !defined(GL_ARB_texture_env_combine) || !defined(GL_ARB_texture_env_add)
+#define GL_ARB_texture_env_combine	1
+#define GL_ARB_texture_env_add	1
+#define GL_COMBINE_ARB						0x8570
+#define GL_COMBINE_RGB_ARB					0x8571
+#define GL_COMBINE_ALPHA_ARB				0x8572
+#define GL_SOURCE0_RGB_ARB					0x8580
+#define GL_SOURCE1_RGB_ARB					0x8581
+#define GL_SOURCE2_RGB_ARB					0x8582
+#define GL_SOURCE0_ALPHA_ARB				0x8588
+#define GL_SOURCE1_ALPHA_ARB				0x8589
+#define GL_SOURCE2_ALPHA_ARB				0x858A
+#define GL_OPERAND0_RGB_ARB					0x8590
+#define GL_OPERAND1_RGB_ARB					0x8591
+#define GL_OPERAND2_RGB_ARB					0x8592
+#define GL_OPERAND0_ALPHA_ARB				0x8598
+#define GL_OPERAND1_ALPHA_ARB				0x8599
+#define GL_OPERAND2_ALPHA_ARB				0x859A
+#define GL_RGB_SCALE_ARB					0x8573
+#define GL_ADD_SIGNED_ARB					0x8574
+#define GL_INTERPOLATE_ARB					0x8575
+#define GL_SUBTRACT_ARB						0x84E7
+#define GL_CONSTANT_ARB						0x8576
+#define GL_PRIMARY_COLOR_ARB				0x8577
+#define GL_PREVIOUS_ARB						0x8578
+#endif
+
+#ifndef GL_EXT_framebuffer_object
+#define GL_EXT_framebuffer_object	1
+#define GL_INVALID_FRAMEBUFFER_OPERATION_EXT				0x0506
+#define GL_MAX_RENDERBUFFER_SIZE_EXT						0x84E8
+#define GL_FRAMEBUFFER_BINDING_EXT							0x8CA6
+#define GL_RENDERBUFFER_BINDING_EXT							0x8CA7
+#define GL_FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_EXT			0x8CD0
+#define GL_FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_EXT			0x8CD1
+#define GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_EXT			0x8CD2
+#define GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_EXT	0x8CD3
+#define GL_FRAMEBUFFER_ATTACHMENT_TEXTURE_3D_ZOFFSET_EXT	0x8CD4
+#define GL_FRAMEBUFFER_COMPLETE_EXT							0x8CD5
+#define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT			0x8CD6
+#define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT	0x8CD7
+#define GL_FRAMEBUFFER_INCOMPLETE_DUPLICATE_ATTACHMENT_EXT	0x8CD8
+#define GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT			0x8CD9
+#define GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT				0x8CDA
+#define GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT			0x8CDB
+#define GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT			0x8CDC
+#define GL_FRAMEBUFFER_UNSUPPORTED_EXT						0x8CDD
+#define GL_MAX_COLOR_ATTACHMENTS_EXT						0x8CDF
+#define GL_COLOR_ATTACHMENT0_EXT							0x8CE0
+#define GL_COLOR_ATTACHMENT1_EXT							0x8CE1
+#define GL_COLOR_ATTACHMENT2_EXT							0x8CE2
+#define GL_COLOR_ATTACHMENT3_EXT							0x8CE3
+#define GL_COLOR_ATTACHMENT4_EXT							0x8CE4
+#define GL_COLOR_ATTACHMENT5_EXT							0x8CE5
+#define GL_COLOR_ATTACHMENT6_EXT							0x8CE6
+#define GL_COLOR_ATTACHMENT7_EXT							0x8CE7
+#define GL_COLOR_ATTACHMENT8_EXT							0x8CE8
+#define GL_COLOR_ATTACHMENT9_EXT							0x8CE9
+#define GL_COLOR_ATTACHMENT10_EXT							0x8CEA
+#define GL_COLOR_ATTACHMENT11_EXT							0x8CEB
+#define GL_COLOR_ATTACHMENT12_EXT							0x8CEC
+#define GL_COLOR_ATTACHMENT13_EXT							0x8CED
+#define GL_COLOR_ATTACHMENT14_EXT							0x8CEE
+#define GL_COLOR_ATTACHMENT15_EXT							0x8CEF
+#define GL_DEPTH_ATTACHMENT_EXT								0x8D00
+#define GL_STENCIL_ATTACHMENT_EXT							0x8D20
+#define GL_FRAMEBUFFER_EXT									0x8D40
+#define GL_RENDERBUFFER_EXT									0x8D41
+#define GL_RENDERBUFFER_WIDTH_EXT							0x8D42
+#define GL_RENDERBUFFER_HEIGHT_EXT							0x8D43
+#define GL_RENDERBUFFER_INTERNAL_FORMAT_EXT					0x8D44
+#define GL_STENCIL_INDEX_EXT								0x8D45
+#define GL_STENCIL_INDEX1_EXT								0x8D46
+#define GL_STENCIL_INDEX4_EXT								0x8D47
+#define GL_STENCIL_INDEX8_EXT								0x8D48
+#define GL_STENCIL_INDEX16_EXT								0x8D49
+#define GL_RENDERBUFFER_RED_SIZE_EXT						0x8D50
+#define GL_RENDERBUFFER_GREEN_SIZE_EXT						0x8D51
+#define GL_RENDERBUFFER_BLUE_SIZE_EXT						0x8D52
+#define GL_RENDERBUFFER_ALPHA_SIZE_EXT						0x8D53
+#define GL_RENDERBUFFER_DEPTH_SIZE_EXT						0x8D54
+#define GL_RENDERBUFFER_STENCIL_SIZE_EXT					0x8D55
+
+#ifndef APIENTRYP
+#define APIENTRYP	APIENTRY *
+#endif
+
+typedef GLboolean (APIENTRYP PFNGLISRENDERBUFFEREXTPROC) (GLuint renderbuffer);
+typedef void (APIENTRYP PFNGLBINDRENDERBUFFEREXTPROC) (GLenum target, GLuint renderbuffer);
+typedef void (APIENTRYP PFNGLDELETERENDERBUFFERSEXTPROC) (GLsizei n, const GLuint *renderbuffers);
+typedef void (APIENTRYP PFNGLGENRENDERBUFFERSEXTPROC) (GLsizei n, GLuint *renderbuffers);
+typedef void (APIENTRYP PFNGLRENDERBUFFERSTORAGEEXTPROC) (GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+typedef void (APIENTRYP PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC) (GLenum target, GLenum pname, GLint *params);
+typedef GLboolean (APIENTRYP PFNGLISFRAMEBUFFEREXTPROC) (GLuint framebuffer);
+typedef void (APIENTRYP PFNGLBINDFRAMEBUFFEREXTPROC) (GLenum target, GLuint framebuffer);
+typedef void (APIENTRYP PFNGLDELETEFRAMEBUFFERSEXTPROC) (GLsizei n, const GLuint *framebuffers);
+typedef void (APIENTRYP PFNGLGENFRAMEBUFFERSEXTPROC) (GLsizei n, GLuint *framebuffers);
+typedef GLenum (APIENTRYP PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC) (GLenum target);
+typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE1DEXTPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE2DEXTPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+typedef void (APIENTRYP PFNGLFRAMEBUFFERTEXTURE3DEXTPROC) (GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset);
+typedef void (APIENTRYP PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC) (GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+typedef void (APIENTRYP PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC) (GLenum target, GLenum attachment, GLenum pname, GLint *params);
+typedef void (APIENTRYP PFNGLGENERATEMIPMAPEXTPROC) (GLenum target);
+#endif	// GL_EXT_framebuffer_object
 
 const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
 

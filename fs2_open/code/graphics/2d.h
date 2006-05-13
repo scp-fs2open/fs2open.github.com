@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.77 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.78 $
+ * $Date: 2006-05-13 07:29:52 $
+ * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.76  2006/04/15 00:13:22  phreak
  * gr_flash_alpha(), much like gr_flash(), but allows an alpha value to be passed
  *
@@ -845,7 +848,7 @@ typedef struct screen {
 	int	save_max_w, save_max_h;		// Width and height
 	int	res;					// GR_640 or GR_1024
 	int	mode;					// What mode gr_init was called with.
-	float	aspect;				// Aspect ratio
+	float	aspect, clip_aspect;				// Aspect ratio, aspect of clip_width/clip_height
 	int	rowsize;				// What you need to add to go to next row (includes bytes_per_pixel)
 	int	bits_per_pixel;	// How many bits per pixel it is. (7,8,15,16,24,32)
 	int	bytes_per_pixel;	// How many bytes per pixel (1,2,3,4)
@@ -1062,8 +1065,8 @@ typedef struct screen {
 	void (*gf_bm_page_in_start)();
 	int (*gf_bm_lock)(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
-	bool (*gf_bm_make_render_target)(int n, int &x_res, int &y_res, int flags );
-	bool (*gf_bm_set_render_target)(int n, int face);
+	int (*gf_bm_make_render_target)(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags );
+	int (*gf_bm_set_render_target)(int n, int face);
 
 	void (*gf_translate_texture_matrix)(int unit, vec3d *shift);
 	void (*gf_push_texture_matrix)(int unit);
@@ -1371,7 +1374,7 @@ __inline int gr_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL
 
 #define gr_bm_make_render_target					GR_CALL(*gr_screen.gf_bm_make_render_target)          
 //#define gr_bm_set_render_target					GR_CALL(*gr_screen.gf_bm_set_render_target)          
-__inline bool gr_bm_set_render_target(int n, int face = -1)
+__inline int gr_bm_set_render_target(int n, int face = -1)
 {
 	return (*gr_screen.gf_bm_set_render_target)(n, face);
 }

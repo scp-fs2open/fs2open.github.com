@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.18 $
- * $Date: 2006-01-30 06:52:15 $
+ * $Revision: 1.19 $
+ * $Date: 2006-05-13 07:29:52 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2006/01/30 06:52:15  taylor
+ * better lighting for OpenGL
+ * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
+ *
  * Revision 1.17  2006/01/03 02:59:14  taylor
  * fix a couple of minor mipmap problems
  * add resizing with mipmaps rather than a physical change in memory when detail levels dictate scaling (maybe this won't blow up)
@@ -133,12 +137,10 @@ void opengl_switch_arb(int unit, int state);
 
 typedef struct tcache_slot_opengl {
 	GLuint	texture_id;
-//	GLuint	frameb_handle;
-//	GLuint	depthb_handle;
+	GLenum	texture_target;
 	float	u_scale, v_scale;
 	int	bitmap_handle;
 	int	size;
-	//char	used_this_frame;
 	int	time_created;
 	ushort	w,h;
 	ubyte bpp;
@@ -164,6 +166,8 @@ extern GLint GL_supported_texture_units;
 extern int GL_should_preload;
 extern ubyte GL_xlat[256];
 extern int GL_mipmap_filter;
+extern GLenum GL_texture_target;
+extern GLenum GL_texture_face;
 
 void opengl_tcache_init();
 void opengl_free_texture_slot(int n);
@@ -180,5 +184,11 @@ GLfloat opengl_get_max_anisotropy();
 void opengl_set_anisotropy(GLfloat aniso_value = 0.0f);
 void gr_opengl_set_texture_panning(float u, float v, bool enable);
 void gr_opengl_set_texture_addressing(int mode);
+int opengl_make_render_target(int handle, int slot, int *w, int *h, ubyte *bpp, int *mm_lvl, int flags);
+int opengl_set_render_target(int slot, int face = -1, int is_static = 0);
+int opengl_export_image(int slot, int width, int height, int alpha, int num_mipmaps, ubyte *image_data = NULL);
+
+void opengl_set_texture_target(GLenum target = GL_TEXTURE_2D);
+void opengl_set_texture_face(GLenum face = GL_TEXTURE_2D);
 
 #endif	//_GROPENGLTEXTURE_H

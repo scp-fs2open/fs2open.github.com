@@ -10,13 +10,21 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.35 $
- * $Date: 2006-02-16 05:00:01 $
+ * $Revision: 2.36 $
+ * $Date: 2006-05-13 07:29:51 $
  * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/02/16 05:00:01  taylor
+ * various bmpman related fixes
+ *  - some new error checking (and fixes related to that) and cleanup
+ *  - fix EFFs not getting released/unloaded properly (was in a local tree but apparently missed CVS)
+ *  - minor fixes for bm_release() to produce a more properly cleaned slot
+ *  - use fast unloading for page_in stuff since we don't actually want really want the load count changing for texture maps
+ *    and to make sure that we free the memory usage regardless of load count
+ *
  * Revision 2.34  2006/01/21 02:22:04  wmcoolmon
  * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
  *
@@ -425,9 +433,8 @@
 #define BMP_TEX_DXT1						(1<<4)				// dxt1 compressed 8r8g8b1a (24bit)
 #define BMP_TEX_DXT3						(1<<5)				// dxt3 compressed 8r8g8b4a (32bit)
 #define BMP_TEX_DXT5						(1<<6)				// dxt5 compressed 8r8g8b8a (32bit)
-#define BMP_TEX_STATIC_RENDER_TARGET		(1<<7)				// a texture made for being rendered to infreqently
-#define BMP_TEX_DYNAMIC_RENDER_TARGET		(1<<8)				// a texture made for being rendered to freqently
-#define BMP_TEX_CUBEMAP						(1<<9)				// a texture made for cubic environment map
+#define BMP_TEX_CUBEMAP						(1<<7)				// a texture made for cubic environment map
+// ***** NOTE:  bitmap.flags is an 8-bit value, no more than 1 BMP_TEX_* flags can be added unless the type is changed!! ******
 
 //compressed texture types
 #define BMP_TEX_COMP			( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )
@@ -438,12 +445,16 @@
 // any texture type
 #define	BMP_TEX_ANY				( BMP_TEX_COMP | BMP_TEX_NONCOMP )
 
+#define BMP_FLAG_RENDER_TARGET_STATIC		(1<<0)
+#define BMP_FLAG_RENDER_TARGET_DYNAMIC		(1<<1)
+#define BMP_FLAG_CUBEMAP					(1<<2)
+
 typedef struct bitmap {
 	short	w, h;		// Width and height
 	short	rowsize;	// What you need to add to go to next row
 	ubyte	bpp;		// How many bits per pixel it is. (7,8,15,16,24,32) (what is requested)
 	ubyte	true_bpp;	// How many bits per pixel the image actually is.
-	ubyte	flags;		// See the BMP_???? defines for values
+	ubyte	flags;		// See the BMP_???? defines for values (this isn't for the BMP_FLAG_* stuff)
 	ptr_u	data;		// Pointer to data, or maybe offset into VRAM.
 	ubyte *palette;		// If bpp==8, this is pointer to palette.   If the BMP_NO_PALETTE_MAP flag
 						// is not set, this palette just points to the screen palette. (gr_palette)
@@ -498,16 +509,16 @@ int bm_create( int bpp, int w, int h, void * data, int flags = 0);
 // Frees up a bitmap's data, but bitmap number 'n' can
 // still be used, it will just have to be paged in next
 // time it is locked.
-int bm_unload( int n, bool = false );
+int bm_unload( int n, int clear_render_targets = 0 );
 
 // like bm_unload() except that it's safe to use to free data without worrying about
 // load_count so it's safe to use in relation to bm_release() and in gr_*_texture functions
-int bm_unload_fast( int n, bool = false );
+int bm_unload_fast( int n, int clear_render_targets = 0 );
 
 // Frees up a bitmap's data, and it's slot, so bitmap 
 // number 'n' cannot be used anymore, and bm_load or
 // bm_create might reuse the slot.
-int bm_release(int n);
+int bm_release( int n, int clear_render_targets = 0 );
 
 // This loads a bitmap sequence so we can draw with it later.
 // It returns a negative number if it couldn't load
@@ -663,8 +674,8 @@ int bm_get_num_mipmaps(int num);
 
 void bm_print_bitmaps();
 
-int bm_make_render_target( int &x_res, int &y_res, int flags );
-bool bm_is_render_target(int bitmap_id);
-bool bm_set_render_target(int handle, int face = -1);
+int bm_make_render_target( int width, int height, int flags );
+int bm_is_render_target(int bitmap_id);
+int bm_set_render_target(int handle, int face = -1);
 
 #endif

@@ -9,14 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.12 $
- * $Date: 2006-04-12 01:10:35 $
+ * $Revision: 1.13 $
+ * $Date: 2006-05-13 07:29:52 $
  * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2006/04/12 01:10:35  taylor
+ * some cleanup and slight reorg
+ *  - remove special uv offsets for non-standard res, they were stupid anyway and don't actually fix the problem (which should actually be fixed now)
+ *  - avoid some costly math where possible in the drawing functions
+ *  - add opengl_error_string(), this is part of a later update but there wasn't a reason to not go ahead and commit this peice now
+ *  - minor cleanup to Win32 extension defines
+ *  - make opengl_lights[] allocate only when using OGL
+ *  - cleanup some costly per-frame lighting stuff
+ *  - clamp textures for interface and aabitmap (font) graphics since they shouldn't normally repeat anyway (the default)
+ *    (doing this for D3D, if it doesn't already, may fix the blue-lines problem since a similar issue was seen with OGL)
+ *
  * Revision 1.11  2006/03/22 18:14:52  taylor
  * if -mipmap is used with -img2dds to then have compressed image also contain mipmaps
  * use nicest hints for texture compression, should improve quality a little
@@ -84,132 +95,163 @@
 //EXTENSIONS!!!!
 //be sure to check for this at startup and handle not finding it gracefully
 
-//to add extensions:
-//define an index after the last one
-//increment GL_NUM_EXTENSIONS
-//add function macro
-//add function info to GL_Extensions struct
-//the structure of extensions are located in gropenglextension.cpp
-typedef struct ogl_extension
-{
-	int enabled;					//is this extension enabled
-	ptr_u func_pointer;				//address of function
-	const char* function_name;		//name passed to wglGetProcAddress()
-	const char* extension_name;		//name found in extension string
-	int required_to_run;			//is this extension required for use	
+//to add extensions/functions:
+//define an index after the last one, either an extension or a function
+//increment NUM_OGL_EXTENSIONS if an extension or NUM_OGL_FUNCTIONS if function
+//add function macro for Win32
+//add function info to GL_Functions struct
+//the structure of extensions/functions are located in gropenglextension.cpp
+
+typedef struct ogl_extension {
+	/*const*/ int required_to_run;
+	int enabled;
+	/*const*/ int num_extensions;
+	const char *extension_name[3];
+	/*const*/ int num_functions;
+	const char *function_names[15];
 } ogl_extension;
 
+typedef struct ogl_function {
+	const char *function_name;
+	ptr_u function_ptr;
+} ogl_function;
+
+extern ogl_function GL_Functions[];
 extern ogl_extension GL_Extensions[];
-extern ogl_extension GL_EXT_Special[];
-
-/*#define GL_FOG_COORD_EXT				0
-#define GL_MULTITEXTURE_ARB				1
-#define GL_TEXTURE_ENV_ADD_ARB			2		// additive texture environment
-#define GL_COMP_TEX_ARB					3		// texture compression
-#define GL_TEX_COMP_S3TC_EXT			4		// S3TC/DXTC compression format
-#define GL_TEX_FILTER_ANSIO				5		// anisotrophic filtering
-#define GL_NV_RADIAL_FOG				6		// for better looking fog
-#define GL_SECONDARY_COLOR				7
-#define GL_ARB_ENV_COMBINE				8			// spec mapping
-#define GL_EXT_ENV_COMBINE				9			// spec mapping
-#define GL_COMPILED_VERTEX_ARR			10
-#define GL_TRANSPOSE_MATRIX				11
-#define GL_VERTEX_BUFFER_OBJECT			12
-#define GL_NUM_EXTENSIONS				13*/
-
-#define GL_FOG_COORDF					0			// for better looking fog
-#define GL_FOG_COORD_POINTER			1			// used with vertex arrays
-#define GL_MULTITEXTURE_COORD2F			2			// multitex coordinates
-#define GL_ACTIVE_TEX					3			// currenly active multitexture
-#define GL_TEXTURE_ENV_ADD				4			// additive texture environment
-#define GL_COMP_TEX						5			// 2d compressed texture
-#define GL_COMP_TEX_SUB					6			// 2d compressed sub texture
-#define GL_TEX_COMP_S3TC				7			// S3TC/DXTC compression format
-#define GL_TEX_FILTER_ANISO				8			// anisotrophic filtering
-#define GL_NV_RADIAL_FOG				9			// for better looking fog
-#define GL_SECONDARY_COLOR_3FV			10			// for better looking fog
-#define GL_SECONDARY_COLOR_3UBV			11			// specular
-#define GL_ARB_ENV_COMBINE				12			// spec mapping
-#define GL_EXT_ENV_COMBINE				13			// spec mapping
-#define GL_LOCK_ARRAYS					14			// HTL
-#define GL_UNLOCK_ARRAYS				15			// HTL
-#define GL_LOAD_TRANSPOSE				16			
-#define GL_MULT_TRANSPOSE				17
-#define GL_CLIENT_ACTIVE_TEX			18
-#define GL_DRAW_RANGE_ELEMENTS			19
-#define GL_ARB_TEXTURE_MIRRORED_REPEAT	20
-#define GL_ARB_TEXTURE_NON_POWER_OF_TWO	21
-
-//GL_ARB_vertex_buffer_object FUNCTIONS
-#define GL_ARB_VBO_BIND_BUFFER			22
-#define GL_ARB_VBO_DEL_BUFFER			23
-#define GL_ARB_VBO_GEN_BUFFER			24
-#define GL_ARB_VBO_BUFFER_DATA			25
-//#define GL_ARB_VBO_MAP_BUFFER			23
-//#define GL_ARB_VBO_UNMAP_BUFFER			24
-
-#define GL_ARB_GETCOMPRESSEDTEXIMAGE	26
-#define GL_APPLE_CLIENT_STORAGE			27
-#define GL_SGIS_MIPMAP					28
-//#define GL_EXT_GEN_FRAMEBUFFERS			26
-//#define GL_EXT_GEN_RENDERBUFFERS		27
-//#define GL_EXT_BIND_FRAMEBUFFER			28
-//#define GL_EXT_FRAMEBUFFER_TEX2D		29
-//#define GL_EXT_RENDERBUFFER_STORAGE		30
-//#define GL_EXT_FRAMEBUFFER_RENDERBUF	31
-
-//#define GL_NUM_EXTENSIONS				32
-#define GL_NUM_EXTENSIONS				29
+extern ogl_function GL_EXT_Special[];
 
 
-// special extensions (OS specific, non-GL stuff)
-#define GL_SPC_WGL_SWAP_INTERVAL		0
-#define GL_SPC_GLX_SWAP_INTERVAL		1
+// Extensions
+#define OGL_EXT_FOG_COORD					0
+#define OGL_ARB_MULTITEXTURE				1
+#define OGL_ARB_TEXTURE_ENV_ADD				2
+#define OGL_ARB_TEXTURE_COMPRESSION			3
+#define OGL_EXT_TEXTURE_COMPRESSION_S3TC	4
+#define OGL_EXT_TEXTURE_FILTER_ANISOTROPIC	5
+#define OGL_NV_FOG_DISTANCE					6
+#define OGL_EXT_SECONDARY_COLOR				7
+#define OGL_ARB_TEXTURE_ENV_COMBINE			8
+#define OGL_EXT_COMPILED_VERTEX_ARRAY		9
+#define OGL_ARB_TRANSPOSE_MATRIX			10
+#define OGL_EXT_DRAW_RANGE_ELEMENTS			11
+#define OGL_ARB_TEXTURE_MIRRORED_REPEAT		12
+#define OGL_ARB_TEXTURE_NON_POWER_OF_TWO	13
+#define OGL_ARB_VERTEX_BUFFER_OBJECT		14
+#define OGL_ARB_PIXEL_BUFFER_OBJECT			15
+#define OGL_APPLE_CLIENT_STORAGE			16
+#define OGL_SGIS_GENERATE_MIPMAP			17
+#define OGL_EXT_FRAMEBUFFER_OBJECT			18
+#define OGL_ARB_TEXTURE_RECTANGLE			19
+#define OGL_EXT_BGRA						20
+#define OGL_ARB_TEXTURE_CUBE_MAP			21
 
-#define GL_NUM_EXT_SPECIAL				2
+#define NUM_OGL_EXTENSIONS					22
 
+
+// Functions
+#define OGL_FOG_COORDF						0			// for better looking fog
+#define OGL_FOG_COORD_POINTER				1			// used with vertex arrays
+#define OGL_MULTI_TEX_COORD_2F				2			// multitex coordinates
+#define OGL_ACTIVE_TEXTURE					3			// currenly active multitexture
+#define OGL_CLIENT_ACTIVE_TEXTURE			4
+#define OGL_COMPRESSED_TEX_IMAGE_2D			5			// 2d compressed texture
+#define OGL_COMPRESSED_TEX_SUB_IMAGE_2D		6			// 2d compressed sub texture
+#define OGL_GET_COMPRESSED_TEX_IMAGE		7
+#define OGL_SECONDARY_COLOR_3FV				8			// for better looking fog
+#define OGL_SECONDARY_COLOR_3UBV			9			// specular
+#define OGL_LOCK_ARRAYS						10			// HTL
+#define OGL_UNLOCK_ARRAYS					11			// HTL
+#define OGL_LOAD_TRANSPOSE_MATRIX_F			12			
+#define OGL_MULT_TRANSPOSE_MATRIX_F			13
+#define OGL_DRAW_RANGE_ELEMENTS				14
+#define OGL_BIND_BUFFER						15
+#define OGL_DELETE_BUFFERS					16
+#define OGL_GEN_BUFFERS						17
+#define OGL_BUFFER_DATA						18
+#define OGL_MAP_BUFFER						19
+#define OGL_UNMAP_BUFFER					20
+#define OGL_IS_RENDERBUFFER					21
+#define OGL_BIND_RENDERBUFFER				22
+#define OGL_DELETE_RENDERBUFFERS			23
+#define OGL_GEN_RENDERBUFFERS				24
+#define OGL_RENDERBUFFER_STORAGE			25
+#define OGL_GET_RENDERBUFFER_PARAMETER_IV	26
+#define OGL_IS_FRAMEBUFFER					27
+#define OGL_BIND_FRAMEBUFFER				28
+#define OGL_DELETE_FRAMEBUFFERS				29
+#define OGL_GEN_FRAMEBUFFERS				30
+#define OGL_CHECK_FRAMEBUFFER_STATUS		31
+#define OGL_FRAMEBUFFER_TEXTURE_2D			32
+#define OGL_FRAMEBUFFER_RENDERBUFFER		33
+#define OGL_GET_FRAMEBUFFER_ATTACHMENT_PARAMETER_IV		34
+#define OGL_GENERATE_MIPMAP					35
+
+#define NUM_OGL_FUNCTIONS					36
+
+
+// special extensions/functions (OS specific, non-GL stuff)
+#define OGL_SPC_WGL_SWAP_INTERVAL		0
+#define OGL_SPC_GLX_SWAP_INTERVAL		1
+
+#define NUM_OGL_EXT_SPECIAL				2
+
+
+#define Is_Extension_Enabled(x)		GL_Extensions[x].enabled
 
 int opengl_get_extensions();
 void opengl_print_extensions();
-int opengl_extension_is_enabled(int idx, int special = 0);
-
-#ifdef _WIN32
-#define GLEXT_CALL(x,i) if (GL_Extensions[i].enabled)\
-							((x)GL_Extensions[i].func_pointer)
-
-#define GLEXT_SPC_CALL(x,i) if (GL_EXT_Special[i].enabled)	\
-							((x)GL_EXT_Special[i].func_pointer)
 
 
-#define glFogCoordfEXT				GLEXT_CALL(PFNGLFOGCOORDFEXTPROC, GL_FOG_COORDF)
-#define glFogCoordPointerEXT		GLEXT_CALL(PFNGLFOGCOORDPOINTEREXTPROC, GL_FOG_COORD_POINTER)
-#define glMultiTexCoord2fARB		GLEXT_CALL(PFNGLMULTITEXCOORD2FARBPROC, GL_MULTITEXTURE_COORD2F)
-#define glActiveTextureARB			GLEXT_CALL(PFNGLACTIVETEXTUREARBPROC, GL_ACTIVE_TEX)
-#define glCompressedTexImage2D		GLEXT_CALL(PFNGLCOMPRESSEDTEXIMAGE2DPROC, GL_COMP_TEX)
-#define glCompressedTexSubImage2D	GLEXT_CALL(PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC, GL_COMP_TEX_SUB)
-#define glSecondaryColor3fvEXT		GLEXT_CALL(PFNGLSECONDARYCOLOR3FVEXTPROC, GL_SECONDARY_COLOR_3FV)
-#define glSecondaryColor3ubvEXT		GLEXT_CALL(PFNGLSECONDARYCOLOR3UBVEXTPROC, GL_SECONDARY_COLOR_3UBV)
-#define glLockArraysEXT				GLEXT_CALL(PFNGLLOCKARRAYSEXTPROC, GL_LOCK_ARRAYS)
-#define glUnlockArraysEXT			GLEXT_CALL(PFNGLUNLOCKARRAYSEXTPROC, GL_UNLOCK_ARRAYS)
-#define glLoadTransposeMatrixfARB	GLEXT_CALL(PFNGLLOADTRANSPOSEMATRIXFARBPROC, GL_LOAD_TRANSPOSE)
-#define glMultTransposeMatrixfARB	GLEXT_CALL(PFNGLMULTTRANSPOSEMATRIXFARBPROC, GL_MULT_TRANSPOSE)
-#define glClientActiveTextureARB	GLEXT_CALL(PFNGLCLIENTACTIVETEXTUREARBPROC, GL_CLIENT_ACTIVE_TEX)
-#define glBindBufferARB				GLEXT_CALL(PFNGLBINDBUFFERARBPROC, GL_ARB_VBO_BIND_BUFFER)
-#define glDeleteBuffersARB			GLEXT_CALL(PFNGLDELETEBUFFERSARBPROC, GL_ARB_VBO_DEL_BUFFER)
-#define glGenBuffersARB				GLEXT_CALL(PFNGLGENBUFFERSARBPROC, GL_ARB_VBO_GEN_BUFFER)
-#define glBufferDataARB				GLEXT_CALL(PFNGLBUFFERDATAARBPROC, GL_ARB_VBO_BUFFER_DATA)
-#define glDrawRangeElements			GLEXT_CALL(PFNGLDRAWRANGEELEMENTSPROC, GL_DRAW_RANGE_ELEMENTS)
-#define glGetCompressedTexImageARB	GLEXT_CALL(PFNGLGETCOMPRESSEDTEXIMAGEARBPROC, GL_ARB_GETCOMPRESSEDTEXIMAGE)
-//#define glGenFramebuffersEXT		GLEXT_CALL(PFNGLGENFRAMEBUFFERSEXTPROC, GL_EXT_GEN_FRAMEBUFFERS)
-//#define glGenRenderbuffersEXT		GLEXT_CALL(PFNGLGENRENDERBUFFERSEXTPROC, GL_EXT_GEN_RENDERBUFFERS)
-//#define glBindFramebufferEXT		GLEXT_CALL(PFNGLBINDFRAMEBUFFEREXTPROC, GL_EXT_BIND_FRAMEBUFFER)
-//#define glFramebufferTexture2DEXT	GLEXT_CALL(PFNGLFRAMEBUFFERTEXTURE2DEXTPROC, GL_EXT_FRAMEBUFFER_TEX2D)
-//#define glRenderbufferStorageEXT	GLEXT_CALL(PFNGLRENDERBUFFERSTORAGEEXTPROC, GL_EXT_RENDERBUFFER_STORAGE)
-//#define glFramebufferRenderbufferEXT	GLEXT_CALL(PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC, GL_EXT_FRAMEBUFFER_RENDERBUF)
+#define GLEXT_CALL(i,x) if (GL_Functions[i].function_ptr)\
+							((x)GL_Functions[i].function_ptr)
+
+// the same as GLEXT_CALL() except that it can be used with a cast or in an if statement
+// this doesn't do NULL ptr checking so you have to be careful with it!
+#define GLEXT_CALL2(i,x) ((x)GL_Functions[i].function_ptr)
+
+#define GLEXT_SPC_CALL(i,x) if (GL_EXT_Special[i].function_ptr)	\
+							((x)GL_EXT_Special[i].function_ptr)
+
+
+#define vglFogCoordfEXT					GLEXT_CALL( OGL_FOG_COORDF, PFNGLFOGCOORDFEXTPROC )
+#define vglFogCoordPointerEXT			GLEXT_CALL( OGL_FOG_COORD_POINTER, PFNGLFOGCOORDPOINTEREXTPROC )
+#define vglMultiTexCoord2fARB			GLEXT_CALL( OGL_MULTI_TEX_COORD_2F, PFNGLMULTITEXCOORD2FARBPROC )
+#define vglActiveTextureARB				GLEXT_CALL( OGL_ACTIVE_TEXTURE, PFNGLACTIVETEXTUREARBPROC )
+#define vglClientActiveTextureARB		GLEXT_CALL( OGL_CLIENT_ACTIVE_TEXTURE, PFNGLCLIENTACTIVETEXTUREARBPROC )
+#define vglCompressedTexImage2D			GLEXT_CALL( OGL_COMPRESSED_TEX_IMAGE_2D, PFNGLCOMPRESSEDTEXIMAGE2DPROC )
+#define vglCompressedTexSubImage2D		GLEXT_CALL( OGL_COMPRESSED_TEX_SUB_IMAGE_2D, PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC )
+#define vglGetCompressedTexImageARB		GLEXT_CALL( OGL_GET_COMPRESSED_TEX_IMAGE, PFNGLGETCOMPRESSEDTEXIMAGEARBPROC )
+#define vglSecondaryColor3fvEXT			GLEXT_CALL( OGL_SECONDARY_COLOR_3FV, PFNGLSECONDARYCOLOR3FVEXTPROC )
+#define vglSecondaryColor3ubvEXT		GLEXT_CALL( OGL_SECONDARY_COLOR_3UBV, PFNGLSECONDARYCOLOR3UBVEXTPROC )
+#define vglLockArraysEXT				GLEXT_CALL( OGL_LOCK_ARRAYS, PFNGLLOCKARRAYSEXTPROC )
+#define vglUnlockArraysEXT				GLEXT_CALL( OGL_UNLOCK_ARRAYS, PFNGLUNLOCKARRAYSEXTPROC )
+#define vglLoadTransposeMatrixfARB		GLEXT_CALL( OGL_LOAD_TRANSPOSE_MATRIX_F, PFNGLLOADTRANSPOSEMATRIXFARBPROC )
+#define vglMultTransposeMatrixfARB		GLEXT_CALL( OGL_MULT_TRANSPOSE_MATRIX_F, PFNGLMULTTRANSPOSEMATRIXFARBPROC )
+#define vglDrawRangeElements			GLEXT_CALL( OGL_DRAW_RANGE_ELEMENTS, PFNGLDRAWRANGEELEMENTSPROC )
+#define vglBindBufferARB				GLEXT_CALL( OGL_BIND_BUFFER, PFNGLBINDBUFFERARBPROC )
+#define vglDeleteBuffersARB				GLEXT_CALL( OGL_DELETE_BUFFERS, PFNGLDELETEBUFFERSARBPROC )
+#define vglGenBuffersARB				GLEXT_CALL( OGL_GEN_BUFFERS, PFNGLGENBUFFERSARBPROC )
+#define vglBufferDataARB				GLEXT_CALL( OGL_BUFFER_DATA, PFNGLBUFFERDATAARBPROC )
+#define vglMapBufferARB					GLEXT_CALL2( OGL_MAP_BUFFER, PFNGLMAPBUFFERARBPROC )
+#define vglUnmapBufferARB				GLEXT_CALL( OGL_UNMAP_BUFFER, PFNGLUNMAPBUFFERARBPROC )
+#define vglIsRenderbufferEXT			GLEXT_CALL2( OGL_IS_RENDERBUFFER, PFNGLISRENDERBUFFEREXTPROC )
+#define vglBindRenderbufferEXT			GLEXT_CALL( OGL_BIND_RENDERBUFFER, PFNGLBINDRENDERBUFFEREXTPROC )
+#define vglDeleteRenderbuffersEXT		GLEXT_CALL( OGL_DELETE_RENDERBUFFERS, PFNGLDELETERENDERBUFFERSEXTPROC )
+#define vglGenRenderbuffersEXT			GLEXT_CALL( OGL_GEN_RENDERBUFFERS, PFNGLGENRENDERBUFFERSEXTPROC )
+#define vglRenderbufferStorageEXT		GLEXT_CALL( OGL_RENDERBUFFER_STORAGE, PFNGLRENDERBUFFERSTORAGEEXTPROC )
+#define vglGetRenderbufferParameterivEXT	GLEXT_CALL( OGL_GET_RENDERBUFFER_PARAMETER_IV, PFNGLGETRENDERBUFFERPARAMETERIVEXTPROC )
+#define vglIsFramebufferEXT				GLEXT_CALL2( OGL_IS_FRAMEBUFFER, PFNGLISFRAMEBUFFEREXTPROC )
+#define vglBindFramebufferEXT			GLEXT_CALL( OGL_BIND_FRAMEBUFFER, PFNGLBINDFRAMEBUFFEREXTPROC )
+#define vglDeleteFramebuffersEXT		GLEXT_CALL( OGL_DELETE_FRAMEBUFFERS, PFNGLDELETEFRAMEBUFFERSEXTPROC )
+#define vglGenFramebuffersEXT			GLEXT_CALL( OGL_GEN_FRAMEBUFFERS, PFNGLGENFRAMEBUFFERSEXTPROC )
+#define vglCheckFramebufferStatusEXT	GLEXT_CALL2( OGL_CHECK_FRAMEBUFFER_STATUS, PFNGLCHECKFRAMEBUFFERSTATUSEXTPROC )
+#define vglFramebufferTexture2DEXT		GLEXT_CALL( OGL_FRAMEBUFFER_TEXTURE_2D, PFNGLFRAMEBUFFERTEXTURE2DEXTPROC )
+#define vglFramebufferRenderbufferEXT	GLEXT_CALL( OGL_FRAMEBUFFER_RENDERBUFFER, PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC )
+#define vglGetFramebufferAttachmentParameterivEXT	GLEXT_CALL( OGL_GET_FRAMEBUFFER_ATTACHMENT_PARAMETER_IV, PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC )
+#define vglGenerateMipmapEXT			GLEXT_CALL( OGL_GENERATE_MIPMAP, PFNGLGENERATEMIPMAPEXTPROC )
 
 // special extensions
-#define wglSwapIntervalEXT			GLEXT_SPC_CALL(PFNWGLSWAPINTERVALEXTPROC, GL_SPC_WGL_SWAP_INTERVAL)
-
-#endif // _WIN32
+#define vwglSwapIntervalEXT			GLEXT_SPC_CALL( OGL_SPC_WGL_SWAP_INTERVAL, PFNWGLSWAPINTERVALEXTPROC )
+#define vglXSwapIntervalSGI			GLEXT_SPC_CALL( OGL_SPC_GLX_SWAP_INTERVAL, PFNGLXSWAPINTERVALSGIPROC )
 
 #endif // _GROPENGLEXT_H
