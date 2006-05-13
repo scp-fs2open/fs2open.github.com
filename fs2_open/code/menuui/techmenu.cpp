@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-02-25 21:47:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.38 $
+ * $Date: 2006-05-13 07:09:25 $
+ * $Author: taylor $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/02/25 21:47:00  Goober5000
+ * spelling
+ *
  * Revision 2.36  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -663,7 +666,6 @@ void tech_scroll_list_down();
 
 
 //stuff for ht&l, vars and such
-extern float View_zoom, Canv_h2, Canv_w2;
 extern int Cmdline_nohtl;
 
 ////////////////////////////////////////////////////
@@ -912,8 +914,10 @@ void techroom_ships_render(float frametime)
 	g3_start_frame(1);
 	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 1.3f);
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 	// lighting for techroom
 	light_reset();

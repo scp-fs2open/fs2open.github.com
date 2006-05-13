@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.41 $
- * $Date: 2006-02-19 00:32:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.42 $
+ * $Date: 2006-05-13 07:09:25 $
+ * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2006/02/19 00:32:47  Goober5000
+ * additional error checking
+ * --Goober5000
+ *
  * Revision 2.40  2006/01/26 03:58:14  Goober5000
  * added variable replacement to command briefings, briefings, and debriefings
  * --Goober5000
@@ -730,7 +734,6 @@ int Brief_max_line_width[GR_NUM_RESOLUTIONS] = {
 };
 
 //stuff for ht&l. vars and such
-extern float View_zoom, Canv_h2, Canv_w2;
 extern int Cmdline_nohtl;
 
 
@@ -1506,8 +1509,10 @@ void brief_render_closeup(int ship_class, float frametime)
 	g3_set_view_matrix(&Closeup_cam_pos, &view_orient, Closeup_zoom);
 
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 	
 	model_clear_instance( Closeup_icon->modelnum );
 	model_set_detail_level(0);

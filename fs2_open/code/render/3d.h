@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.20 $
- * $Date: 2006-04-20 06:32:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2006-05-13 07:09:25 $
+ * $Author: taylor $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/04/20 06:32:23  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.19  2006/04/12 01:00:58  taylor
  * some small optimizations and cleanup
  * use floats for gr_bitmap() size and positions, mainly for non-standard resolutions since this allows proper resizing and positioning
@@ -213,6 +216,9 @@ extern void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno);
 #define g3_end_frame() g3_end_frame_func( __FILE__, __LINE__ )
 extern void g3_end_frame_func(char *filename, int lineno);
 
+// currently in frame?
+extern int g3_in_frame();
+
 //set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
 void g3_set_view_angles(vec3d *view_pos,angles *view_orient,float zoom);
 
@@ -231,6 +237,8 @@ extern vec3d		Eye_position;		// Where the viewer's eye is at in World coordinate
 
 extern vec3d Object_position;
 extern matrix	Object_matrix;			// Where the opject is pointing in World coordinates
+
+extern float Proj_fov;					// Projection matrix fov (for HT&L)
 
 //draw a horizon
 void g3_draw_horizon(int sky_color,int ground_color);

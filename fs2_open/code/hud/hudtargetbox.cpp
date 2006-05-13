@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.64 $
- * $Date: 2006-04-12 22:23:41 $
+ * $Revision: 2.65 $
+ * $Date: 2006-05-13 07:09:24 $
  * $Author: taylor $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2006/04/12 22:23:41  taylor
+ * compiler warning fixes to make GCC 4.1 shut the hell up
+ *
  * Revision 2.63  2006/01/18 16:14:04  taylor
  * allow gr_render_buffer() to take TMAP flags
  * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
@@ -467,7 +470,6 @@
 
 
 #include "hud/hudtargetbox.h"
-#include "render/3dinternal.h"
 #include "object/object.h"
 #include "hud/hud.h"
 #include "hud/hudbrackets.h"
@@ -498,6 +500,7 @@
 #endif
 
 
+extern float View_zoom;
 
 int Target_window_coords[GR_NUM_RESOLUTIONS][4] =
 {
@@ -863,8 +866,10 @@ void hud_render_target_setup(vec3d *camera_eye, matrix *camera_orient, float zoo
 
 	HUD_set_clip(Target_window_coords[gr_screen.res][0],Target_window_coords[gr_screen.res][1],Target_window_coords[gr_screen.res][2],Target_window_coords[gr_screen.res][3]);
 
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 }
 
@@ -875,11 +880,11 @@ void hud_render_target_setup(vec3d *camera_eye, matrix *camera_orient, float zoo
 //
 void hud_render_target_close()
 {
-	if(!Cmdline_nohtl)
-	{
+	if (!Cmdline_nohtl) {
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 	}
+
 	g3_end_frame();
 	hud_save_restore_camera_data(0);
 }

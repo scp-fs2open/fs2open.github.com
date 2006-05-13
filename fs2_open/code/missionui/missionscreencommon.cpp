@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.31 $
- * $Date: 2006-04-20 06:32:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.32 $
+ * $Date: 2006-05-13 07:09:25 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/04/20 06:32:14  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.30  2006/02/18 00:42:51  wmcoolmon
  * Introducing draw_model_rotating; many improvements to weapon selection missile rendering
  *
@@ -1796,7 +1799,6 @@ int restore_wss_data(ubyte *block)
 	return offset;
 }
 
-extern float View_zoom;
 void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, bool resize)
 {
 	matrix	object_orient	= IDENTITY_MATRIX;
@@ -1829,7 +1831,10 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	if(sip != NULL)
 	{
 		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, zoom);
-			if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+
+		if (!Cmdline_nohtl) {
+			gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		}
 	}
 	else
 	{
@@ -1869,11 +1874,17 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		}
 //		weap_closeup.xyz.x = bs->min.xyz.x + (bs->max.xyz.x - bs->min.xyz.x)/2.0f;
 		g3_set_view_matrix( &weap_closeup, &vmd_identity_matrix, zoom);
-			if (!Cmdline_nohtl) gr_set_proj_matrix( 0.5f*(4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, 0.05f, 1000.0f);
+
+		if (!Cmdline_nohtl) {
+			gr_set_proj_matrix(0.5f*Proj_fov, gr_screen.clip_aspect, 0.05f, 1000.0f);
+		}
 	}
 
 	model_set_detail_level(0);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	if (!Cmdline_nohtl)	{
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 	if(!(flags & MR_NO_LIGHTING))
 	{
@@ -1933,11 +1944,14 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 	else
 	{
 		polymodel *pm = model_get(model_id);
-		vec3d pos = {0.0f, 0.0f, -pm->rad*1.5f};
+		vec3d pos = { { { 0.0f, 0.0f, -pm->rad*1.5f } } };
 		g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
 	}
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 	// lighting for techroom
 	light_reset();

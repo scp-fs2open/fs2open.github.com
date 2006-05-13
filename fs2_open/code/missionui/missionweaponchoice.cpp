@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.71 $
- * $Date: 2006-02-23 06:21:56 $
+ * $Revision: 2.72 $
+ * $Date: 2006-05-13 07:09:25 $
  * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2006/02/23 06:21:56  taylor
+ * attempt to fix bad out-of-bounds (and related) issues when weaponchoice icon is missing
+ * be sure to always initialize frame count and FPS with bm_load_animation() calls in case caller got lazy
+ *
  * Revision 2.70  2006/02/18 00:42:51  wmcoolmon
  * Introducing draw_model_rotating; many improvements to weapon selection missile rendering
  *
@@ -1448,7 +1452,6 @@ void weapon_buttons_init()
 // ---------------------------------------------------------------------------------
 // wl_render_overhead_view()
 //
-extern float View_zoom;	//Needed for HT&L
 void wl_render_overhead_view(float frametime)
 {
 	//For 3d ships
@@ -1615,8 +1618,11 @@ void wl_render_overhead_view(float frametime)
 			g3_start_frame(1);
 			g3_set_view_matrix( &sip->closeup_pos, &Eye_matrix, zoom);
 			model_set_detail_level(0);
-			if (!Cmdline_nohtl) gr_set_proj_matrix((4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
-			if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+			if (!Cmdline_nohtl) {
+				gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+				gr_set_view_matrix(&Eye_position, &Eye_matrix);
+			}
 
 			light_reset();
 			vec3d light_dir = vmd_zero_vector;

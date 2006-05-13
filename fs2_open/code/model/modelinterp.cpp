@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.155 $
- * $Date: 2006-04-20 06:32:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.156 $
+ * $Date: 2006-05-13 07:09:25 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.155  2006/04/20 06:32:15  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.154  2006/04/18 00:56:28  bobboau
  * bugfix for the animation system
  *
@@ -4322,7 +4325,8 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 					
 								// disable fogging
 								//if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_FOG, 0, 0, 0);
-								if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+								if (Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
+									gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 		
 								vertex pt;
 								g3_rotate_vertex( &p, &pnt );
@@ -4503,7 +4507,8 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 					
 				// disable fogging
 				//if(The_mission.flags & MISSION_FLAG_FULLNEB)gr_fog_set(GR_FOGMODE_FOG, 0, 0, 0);
-				if(The_mission.flags & MISSION_FLAG_FULLNEB)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+				if (The_mission.flags & MISSION_FLAG_FULLNEB)
+					gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
 // this is the original scaling code - Goober5000
 //					scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
@@ -5898,10 +5903,10 @@ void find_defpoint(int off, ubyte *bsp_data){
 	int n;
 //	off+=4;
 	int nverts = w(off+bsp_data+8);	
-	int offset = w(off+bsp_data+16);
+//	int offset = w(off+bsp_data+16);
 
 	ubyte * normcount = off+bsp_data+20;
-	vec3d *src = vp(off+bsp_data+offset);
+//	vec3d *src = vp(off+bsp_data+offset);
 
 	// Get pointer to lights
 	Interp_lights = off+bsp_data+20+nverts;
@@ -6150,6 +6155,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 			gr_set_bitmap( texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 1.0 );
 	//		gr_zbuffer_set(GR_ZBUFF_FULL);
 		}
+
 		if((Interp_flags & MR_EDGE_ALPHA))gr_center_alpha(-1);
 		else if((Interp_flags & MR_CENTER_ALPHA))gr_center_alpha(1);
 		else gr_center_alpha(0);
@@ -6158,6 +6164,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 		
 		gr_render_buffer(0, model->buffer[i].n_prim, model->buffer[i].index_buffer.index_buffer, Interp_tmap_flags);		
 	}
+
 	GLOWMAP = -1;
 	SPECMAP = -1;
 	BUMPMAP = -1;
