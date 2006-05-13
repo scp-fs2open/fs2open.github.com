@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/bmpman/bm_internal.h $
- * $Revision: 2.4 $
- * $Date: 2005-11-13 06:44:17 $
+ * $Revision: 2.5 $
+ * $Date: 2006-05-13 07:29:51 $
  * $Author: taylor $
  *
  * bmpman info that's internal to bmpman related files only
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/11/13 06:44:17  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 2.3  2005/04/21 15:49:20  taylor
  * update of bmpman and model bitmap management, well tested but things may get a bit bumpy
  *  - use VM_* macros for bmpman since it didn't seem to register the memory correctly (temporary)
@@ -65,8 +73,13 @@
 #define BM_TYPE_DXT1			8		// 24 bit with switchable alpha		(compressed)
 #define BM_TYPE_DXT3			9		// 32 bit with 4 bit alpha			(compressed)
 #define BM_TYPE_DXT5			10		// 32 bit with 8 bit alpha			(compressed)
-#define BM_TYPE_JPG				11		// 32 bit jpeg
-#define BM_TYPE_RENDER_TARGET	12		// 32 bit setup internaly as a render target
+#define BM_TYPE_CUBEMAP_DDS		11		// generic DDS cubemap	(uncompressed cubemap surface)
+#define BM_TYPE_CUBEMAP_DXT1	12		// 24-bit cubemap		(compressed cubemap surface)
+#define BM_TYPE_CUBEMAP_DXT3	13		// 32-bit cubemap		(compressed cubemap surface)
+#define BM_TYPE_CUBEMAP_DXT5	14		// 32-bit cubemap		(compressed cubemap surface)
+#define BM_TYPE_JPG				15		// 32 bit jpeg
+#define BM_TYPE_RENDER_TARGET_STATIC	16		// 24/32 bit setup internally as a static render target
+#define BM_TYPE_RENDER_TARGET_DYNAMIC	17		// 24/32 bit setup internally as a dynamic render target
 
 
 /// Moved from cpp file ///////////////////

@@ -691,7 +691,7 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, int bit
 
 	ubyte c_type = BM_TYPE_NONE;
 
-	if(bm_bitmaps[bitmapnum].type == BMP_TEX_DYNAMIC_RENDER_TARGET || bm_bitmaps[bitmapnum].type == BMP_TEX_STATIC_RENDER_TARGET)return true;
+	if(bm_bitmaps[bitmapnum].type == BMP_FLAG_RENDER_TARGET_DYNAMIC || bm_bitmaps[bitmapnum].type == BMP_FLAG_RENDER_TARGET_STATIC)return true;
 
 	if (Is_standalone) {
 		true_bpp = 8;
@@ -869,11 +869,18 @@ void bm_post_lost(){
 }
 
 
-bool gr_d3d_bm_make_render_target(int n, int &x, int &y, int flags){
+int gr_d3d_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags)
+{
+	int x = *width;
+	int y = *height;
+
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
 	Assert(d3d_bitmap_entry[n].tinterface == NULL);
 
+#if 1
+	return false;
+#else
 	//mark this surface as haveing a resource we are going to have to clean up dureing a lost device
 		d3d_bitmap_entry[n].flags |= DXT_DEFAULT_MEM_POOL;
 
@@ -885,7 +892,7 @@ bool gr_d3d_bm_make_render_target(int n, int &x, int &y, int flags){
 			GlobalD3DVars::lpD3DDevice->CreateTexture(x,y,1,D3DUSAGE_RENDERTARGET,D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT, (IDirect3DTexture8**)&d3d_bitmap_entry[n].tinterface);
 		}
 
-		if(flags & BMP_TEX_STATIC_RENDER_TARGET){
+		if(flags & BMP_FLAG_RENDER_TARGET_STATIC){
 			//if we are going to want to keep this
 			//if this is a static render target 
 			//then we are going to want to keep a copy of it in system memory
@@ -914,25 +921,29 @@ bool gr_d3d_bm_make_render_target(int n, int &x, int &y, int flags){
 		//we need to know how big it was so we can rebuild it if the deviece gets lost
 	d3d_bitmap_entry[n].x = x;
 	d3d_bitmap_entry[n].y = y;
+
+	*width = x;
+	*height = y;
+
 	return true;
+#endif
 }
 
 
-bool gr_d3d_bm_set_render_target(int handle, int face){
+int gr_d3d_bm_set_render_target(int n, int face)
+{
 	int i = 0;
 	static bool once = false;
 	if(!once){atexit(bm_pre_lost);once = true;}
 	//some cleanup code, these have to be frees before the program terminates
 
-	int n = handle % MAX_BITMAPS;
-	if(handle != -1){
+#if 1
+	return false;
+#else
+	if(n != -1){
 		//data validation
 		if(d3d_bitmap_entry[n].flags & DXT_CUBEMAP)Assert(face!=-1);
 		//if this is a cube map then the face parameter gets used and is important
-	
-		Assert( bm_bitmaps[n].handle == handle );		// INVALID BITMAP HANDLE
-
-		Assert( (n > -1) && (n < MAX_BITMAPS) );
 
 		Assert(d3d_bitmap_entry[n].tinterface != NULL);	//make sure this texture has a surface
 
@@ -1000,7 +1011,7 @@ bool gr_d3d_bm_set_render_target(int handle, int face){
 	if(D3D_OK != GlobalD3DVars::lpD3DDevice->SetRenderTarget(surface, depth))return false;
 
 	return true;
-
+#endif
 }
 
 IDirect3DBaseTexture8* get_render_target_texture(int handle){

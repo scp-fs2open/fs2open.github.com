@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.16 $
- * $Date: 2006-04-06 23:23:56 $
+ * $Revision: 1.17 $
+ * $Date: 2006-05-13 07:29:52 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2006/04/06 23:23:56  taylor
+ * bits of cleanup
+ * minor fixes for -img2dds
+ *
  * Revision 1.15  2006/03/22 18:14:52  taylor
  * if -mipmap is used with -img2dds to then have compressed image also contain mipmaps
  * use nicest hints for texture compression, should improve quality a little
@@ -107,12 +111,12 @@ static inline int is_power_of_two(int w, int h)
 	return ( (w && !(w & (w-1))) && (h && !(h & (h-1))) );
 }
 
-static int get_num_mipmap_levels(int w, int h)
+int get_num_mipmap_levels(int w, int h)
 {
 	int size, levels = 0;
 
 	// make sure we can and should generate mipmaps before trying to use them
-	if ( !opengl_extension_is_enabled(GL_SGIS_MIPMAP) || !Cmdline_mipmap )
+	if ( !Cmdline_mipmap || !Is_Extension_Enabled(OGL_SGIS_GENERATE_MIPMAP) )
 		return 1;
 
 	size = MAX(w, h);
@@ -162,7 +166,7 @@ int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w,
 	if (type == BM_TYPE_DDS) {
 		int dds_error = dds_read_header( filename, img_cfp, w, h, bpp, &dds_ct, mm_lvl, size );
 		if (dds_error != DDS_ERROR_NONE) {
-			mprintf(("dds: Couldn't open '%s' -- error description %s\n", filename, dds_error_string(dds_error)));
+			mprintf(("DDS ERROR: Couldn't open '%s' -- %s\n", filename, dds_error_string(dds_error)));
 			return -1;
 		}
 
@@ -181,6 +185,22 @@ int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w,
 
 			case DDS_UNCOMPRESSED:
 				*c_type = BM_TYPE_DDS;
+				break;
+
+			case DDS_CUBEMAP_DXT1:
+				*c_type = BM_TYPE_CUBEMAP_DXT1;
+				break;
+
+			case DDS_CUBEMAP_DXT3:
+				*c_type = BM_TYPE_CUBEMAP_DXT3;
+				break;
+
+			case DDS_CUBEMAP_DXT5:
+				*c_type = BM_TYPE_CUBEMAP_DXT5;
+				break;
+
+			case DDS_CUBEMAP_UNCOMPRESSED:
+				*c_type = BM_TYPE_CUBEMAP_DDS;
 				break;
 
 			default:
@@ -272,7 +292,7 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 	}
 
 	bm = &bm_bitmaps[first_frame].bm;
-	size = bm->w * bm->h * (bpp / 8);
+	size = bm->w * bm->h * (bpp >> 3);
 
 	num_mipmaps = get_num_mipmap_levels( bm->w, bm->h );
 	Assert( num_mipmaps > 0 );
@@ -366,7 +386,7 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 
 	bm_clean_slot( bitmapnum );
 
-	byte_size = (bpp / 8);
+	byte_size = (bpp >> 3);
 	Assert( (byte_size == 3) || (byte_size == 4) );
 	alpha = (byte_size != 3);
 
@@ -546,6 +566,10 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 			case BM_TYPE_DXT1:
 			case BM_TYPE_DXT3:
 			case BM_TYPE_DXT5:
+			case BM_TYPE_CUBEMAP_DDS:
+			case BM_TYPE_CUBEMAP_DXT1:
+			case BM_TYPE_CUBEMAP_DXT3:
+			case BM_TYPE_CUBEMAP_DXT5:
 				bm_lock_dds( handle, bitmapnum, be, bmp, true_bpp, flags );
 				break;
 
@@ -571,55 +595,65 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 	return 0;
 }
 
-//gr_ogl_make_render_target: function makes a texture sutable for rendering to as close 
-//to the desiered resolution as posable in the specified texture slot, if the desiered 
-//resolution and the final resolution are diferent the function should change the input 
-//values (hence passing by reference). if for some reason a texture cannot be made in 
-//the specified slot it returns false, if everything goes ok, it returns true
-//
-//the three flags I have done so far that you will have to take care of
-//#define BMP_TEX_STATIC_RENDER_TARGET		(1<<7)				// a texture made for being rendered to infreqently
-//#define BMP_TEX_DYNAMIC_RENDER_TARGET		(1<<8)				// a texture made for being rendered to freqently
-//#define BMP_TEX_CUBEMAP						(1<<8)				// a texture made for cubic environment map
-//*****static render targets must be able to survive anything, includeing application minimiseation*****//
-bool gr_opengl_bm_make_render_target(int n, int &x, int &y, int flags)
+void gr_opengl_bm_save_render_target(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
-//	if ( opengl_make_render_taget(int slot, int w, int h, int flags) )
-//		return true;
+	bitmap_entry *be = &bm_bitmaps[n];
+	bitmap *bmp = &be->bm;
 
+	int rc = opengl_export_image(n, bmp->w, bmp->h, (bmp->true_bpp == 32), be->num_mipmaps, (ubyte*)bmp->data);
 
-	return false;
+	if (rc != be->mem_taken) {
+		Int3();
+		return;
+	}
+
+	if (Cmdline_save_render_targets) {
+		dds_save_image(bmp->w, bmp->h, bmp->true_bpp, be->num_mipmaps, (ubyte*)bmp->data, (bmp->flags & BMP_FLAG_CUBEMAP));
+	}
 }
 
-//sets rendering to the specified texture handle (note this is diferent that texture index)
-//returns true if it's able to do so, false if it is unable to do so
-//only textures created by gr_ogl_make_render_target may be used.
-bool gr_opengl_bm_set_render_target(int handle, int face)
+int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags)
 {
-	if (handle == -1) {
-	//	opengl_set_render_target(-1);
-		return true;
+	Assert( (n >= 0) && (n < MAX_BITMAPS) );
+
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) )
+		return 0;
+
+	if ( (flags & BMP_FLAG_CUBEMAP) && !Is_Extension_Enabled(OGL_ARB_TEXTURE_CUBE_MAP) )
+		return 0;
+
+	if (flags & BMP_FLAG_CUBEMAP) {
+		if (*width != *height)
+			MIN(*width, *height) = MAX(*width, *height);
+
+		Assert( is_power_of_two(*width, *height) );
 	}
 
-	int n = handle % MAX_BITMAPS;
+	if ( opengl_make_render_target(bm_bitmaps[n].handle, n, width, height, bpp, mm_lvl, flags) )
+		return 1;
 
-	Assert( bm_bitmaps[n].handle == handle );		// INVALID BITMAP HANDLE
-	Assert( (n > -1) && (n < MAX_BITMAPS) );
+	return 0;
+}
 
-	if (bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET) {
-		// odds are someone passed a normal texture created with bm_load
-		mprintf(("Tried to set inavlid bitmap for render target!!\n"));
+int gr_opengl_bm_set_render_target(int n, int face)
+{
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) )
+		return 0;
 
-		return false;
+	if (n == -1) {
+		opengl_set_render_target(-1);
+		return 1;
 	}
 
-	if (gr_screen.rendering_to_texture >= 0) {
-		// stuff
-	//	if ( opengl_set_render_target(n, face) )
-	//		return true;
-	}
+	Assert( (n >= 0) && (n < MAX_BITMAPS) );
+	Assert( face >= 0 );
 
-	return false;
+	int is_static = (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC);
+
+	if ( opengl_set_render_target(n, face, is_static) )
+		return 1;
+
+	return 0;
 }

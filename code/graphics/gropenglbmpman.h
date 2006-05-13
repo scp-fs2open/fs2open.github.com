@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.h $
- * $Revision: 1.5 $
- * $Date: 2005-08-20 20:34:51 $
+ * $Revision: 1.6 $
+ * $Date: 2006-05-13 07:29:52 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2005/08/20 20:34:51  taylor
+ * some bmpman and render_target function name changes so that they make sense
+ * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
+ * save the original gamma ramp on OGL init so that it can be restored on exit
+ *
  * Revision 1.4  2005/03/24 23:42:21  taylor
  * s/gr_ogl_/gr_opengl_/g
  * add empty gr_opengl_draw_line_list() so that it's not a NULL pointer
@@ -72,7 +77,8 @@ void gr_opengl_bm_page_in_start();
 // Lock an image files data into memory
 int gr_opengl_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags);
 
-bool gr_opengl_bm_make_render_target(int n, int &x, int &y, int flags);
-bool gr_opengl_bm_set_render_target(int handle, int face);
+void gr_opengl_bm_save_render_target(int slot);
+int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags);
+int gr_opengl_bm_set_render_target(int n, int face);
 
 #endif // _OGL_BMPMAN_H

@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.87 $
- * $Date: 2006-04-05 13:47:01 $
+ * $Revision: 2.88 $
+ * $Date: 2006-05-13 07:29:51 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2006/04/05 13:47:01  taylor
+ * remove -tga16, it's obsolete now
+ * add a temporary -no_emissive_light option to not use emission type light in OGL
+ *
  * Revision 2.86  2006/03/18 10:17:58  taylor
  * we already have a variable to show the framerate so lets just use the one
  *
@@ -665,6 +669,7 @@ extern int Cmdline_show_mem_usage;
 extern int Cmdline_show_pos;
 extern int Cmdline_show_stats;
 extern int Cmdline_timerbar;
+extern int Cmdline_save_render_targets;
 #ifdef SCP_UNIX
 extern int Cmdline_no_grab;
 #endif

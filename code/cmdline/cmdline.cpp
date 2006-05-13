@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.137 $
- * $Date: 2006-05-04 21:25:12 $
- * $Author: phreak $
+ * $Revision: 2.138 $
+ * $Date: 2006-05-13 07:29:51 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.137  2006/05/04 21:25:12  phreak
+ * the -decal command line doesn't enable decals anymore, just pops up a messagebox in windows saying that decals are disabled from now on.
+ *
  * Revision 2.136  2006/04/05 13:47:01  taylor
  * remove -tga16, it's obsolete now
  * add a temporary -no_emissive_light option to not use emission type light in OGL
@@ -946,6 +949,7 @@ Flag exe_params[] =
 	{ "-dis_weapons",		"Disable weapon rendering",					true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-dis_weapons", },
 	{ "-output_sexps",		"Outputs SEXPs to sexps.html",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_sexps", },
 	{ "-output_scripting",	"Outputs scripting to scripting.html",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_scripting", },
+	{ "-save_render_target",	"Save render targets to file",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
 #ifdef SCP_UNIX
 	{ "-nograb",			"Don't grab mouse/keyboard in a window",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
 #endif
@@ -1152,6 +1156,7 @@ cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL);	// Cmdline_show_mem_us
 cmdline_parm pos_arg("-pos", NULL);					// Cmdline_show_pos
 cmdline_parm stats_arg("-stats", NULL);				// Cmdline_show_stats
 cmdline_parm timerbar_arg("-timerbar", NULL);		// Cmdline_timerbar
+cmdline_parm save_render_targets_arg("-save_render_target", NULL);	// Cmdline_save_render_targets
 #ifdef SCP_UNIX
 cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 #endif
@@ -1167,6 +1172,7 @@ int Cmdline_show_mem_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
+int Cmdline_save_render_targets = 0;
 #ifdef SCP_UNIX
 int Cmdline_no_grab = 0;
 #endif
@@ -2189,6 +2195,10 @@ bool SetCmdlineParams()
 	if (missile_lighting_arg.found())
 	{
 		Cmdline_missile_lighting = 1;
+	}
+
+	if (save_render_targets_arg.found()) {
+		Cmdline_save_render_targets = 1;
 	}
 
 #ifdef WIN32

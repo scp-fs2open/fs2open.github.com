@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.171 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.172 $
+ * $Date: 2006-05-13 07:29:52 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.171  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.170  2006/04/16 11:58:11  karajorma
  * Some how managed to fail to commit the primary-locked and secondary-locked ship flags.
  * No idea how. Oh well here they are.
@@ -4997,6 +5000,10 @@ void parse_bitmaps(mission *pm)
 		// now store it
 		if ( !stars_add_bitmap_instance(str, &b) )
 			Warning(LOCATION, "Failed to add starfield bitmap '%s' to the mission!", str);
+	}
+
+	if (optional_string("$Environment Map:")) {
+		stuff_string(pm->envmap_name, F_NAME, NULL);
 	}
 
 	// bypass spurious stuff from e.g. FS1 missions

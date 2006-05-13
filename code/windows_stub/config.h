@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.15 $
- * $Date: 2006-01-26 03:23:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2006-05-13 07:29:52 $
+ * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/01/26 03:23:30  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.14  2006/01/20 06:24:01  Goober5000
  * hopefully fix the Microsoft warnings
  * --Goober5000
@@ -177,35 +181,6 @@ typedef void *LPMMIOPROC;
 typedef struct _LARGE_INTEGER {
 	long long QuadPart;
 } LARGE_INTEGER;
-
-// DDS format stuff ...
-#define DDSD_LINEARSIZE			0x00080000
-#define DDSD_PITCH				0x00000008
-#define DDPF_ALPHAPIXELS		0x00000001
-#define DDPF_FOURCC				0x00000004
-#define DDPF_PALETTEINDEXED4	0x00000008
-#define DDPF_PALETTEINDEXEDTO8	0x00000010
-#define DDPF_PALETTEINDEXED8	0x00000020
-#define DDPF_RGB				0x00000040
-
-#define DDSCAPS_COMPLEX			0x00000008
-#define DDSCAPS_PRIMARYSURFACE	0x00000200
-
-typedef struct _DDCOLORKEY {
-	DWORD dwColorSpaceLowValue;
-	DWORD dwColorSpaceHighValue;
-} DDCOLORKEY;
-
-typedef struct _DDPIXELFORMAT {
-	DWORD dwSize;
-	DWORD dwFlags;
-	DWORD dwFourCC;
-	DWORD dwRGBBitCount;
-	DWORD dwRBitMask;
-	DWORD dwGBitMask;
-	DWORD dwBBitMask;
-	DWORD dwRGBAlphaBitMask;
-} DDPIXELFORMAT;
 
 // networking/socket stuff
 #define SOCKET			int

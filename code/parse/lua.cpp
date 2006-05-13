@@ -3897,9 +3897,9 @@ LUA_FUNC(setTarget, l_Graphics, "[texture Texture]", "True if successful, false 
 	int idx = -1;
 	lua_get_args(L, "|o", l_Texture.Get(&idx));
 
-	bool b = bm_set_render_target(idx);
+	int i = bm_set_render_target(idx);
 
-	return lua_set_args(L, "b", b);
+	return lua_set_args(L, "i", i);
 }
 
 LUA_FUNC(setColor, l_Graphics, "Red, Green, Blue, [alpha]", NULL, "Sets 2D drawing color")
@@ -4152,9 +4152,9 @@ LUA_FUNC(createTexture, l_Graphics, "Width, Height, Type", "Handle to new textur
 
 	int t = 0;
 	if(!stricmp(s, "Static"))
-		t = BMP_TEX_STATIC_RENDER_TARGET;
+		t = BMP_FLAG_RENDER_TARGET_STATIC;
 	else if(!stricmp(s, "Dynamic"))
-		t = BMP_TEX_DYNAMIC_RENDER_TARGET;
+		t = BMP_FLAG_RENDER_TARGET_DYNAMIC;
 
 	int idx = bm_make_render_target(w, h, t);
 

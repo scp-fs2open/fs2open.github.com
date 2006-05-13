@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.84 $
- * $Date: 2006-04-20 06:32:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.85 $
+ * $Date: 2006-05-13 07:29:51 $
+ * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2006/04/20 06:32:00  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.83  2006/04/14 18:44:16  taylor
  * remove all of the *_ex() parsing functions added for use by EFFs
  * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
@@ -957,7 +960,6 @@ static void bm_free_data(int n)
 	be = &bm_bitmaps[n];
 	bmp = &be->bm;
 
-//	Assert( be->type != BM_TYPE_RENDER_TARGET);
 	gr_bm_free_data(n);
 
 	// If there isn't a bitmap in this structure, don't
@@ -1261,11 +1263,11 @@ int bm_create( int bpp, int w, int h, void * data, int flags )
 
 	bm_bitmaps[n].handle = bm_get_next_handle() * MAX_BITMAPS + n;
 	bm_bitmaps[n].last_used = -1;
-	bm_bitmaps[n].mem_taken = (w * h * (bpp/8));
+	bm_bitmaps[n].mem_taken = (w * h * (bpp >> 3));
 
 	bm_bitmaps[n].load_count++;
 
-	bm_update_memory_used( n, (w * h * (bpp / 8)) );
+	bm_update_memory_used( n, bm_bitmaps[n].mem_taken );
 
 	gr_bm_create(n);
 
@@ -1445,7 +1447,7 @@ int bm_load( char * real_filename )
 
 
 	if ( (bm_size <= 0) && (w) && (h) && (bpp) ) {
-		bm_size = (w * h * (bpp / 8));
+		bm_size = (w * h * (bpp >> 3));
 	}
 
 	// ensure fields are cleared out from previous bitmap
@@ -1815,7 +1817,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 			}
 
 			if ( (img_size <= 0) && (anim_width) && (anim_height) && (bpp) ) {
-				img_size = (anim_width * anim_height * (bpp / 8));
+				img_size = (anim_width * anim_height * (bpp >> 3));
 			}
 		}
 
@@ -2002,12 +2004,12 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 		bpp = 32;
 	}
 
-	data = (ubyte *)bm_malloc(bitmapnum, bmp->w * bmp->h * (bpp / 8));
+	be->mem_taken = (bmp->w * bmp->h * (bpp >> 3));
+	data = (ubyte *)bm_malloc(bitmapnum, be->mem_taken);
 	bmp->bpp = bpp;
 	bmp->data = (ptr_u)data;
 	bmp->palette = (bpp == 8) ? gr_palette : NULL;
-	memset( data, 0, bmp->w * bmp->h * (bpp / 8) );
-	be->mem_taken = (bmp->w * bmp->h * (bpp / 8));
+	memset( data, 0, be->mem_taken );
 
 	Assert( &be->bm == bmp );
 #ifdef BMPMAN_NDEBUG
@@ -2022,7 +2024,7 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	pcx_error = pcx_read_bitmap( filename, data, NULL, (bpp / 8), (flags & BMP_AABITMAP), (flags & BMP_TEX_NONDARK) );
+	pcx_error = pcx_read_bitmap( filename, data, NULL, (bpp >> 3), (flags & BMP_AABITMAP), (flags & BMP_TEX_NONDARK) );
 
 	if ( pcx_error != PCX_ERROR_NONE ) {
 		mprintf(("Couldn't load PCX!!! (%s)\n", filename));
@@ -2066,7 +2068,7 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	}
 
 	bm = &bm_bitmaps[first_frame].bm;
-	size = bm->w * bm->h * (bpp / 8);
+	size = bm->w * bm->h * (bpp >> 3);
 	be->mem_taken = size;
 
 	Assert( size > 0 );
@@ -2357,7 +2359,7 @@ void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// should never try to make an aabitmap out of a jpeg
 	Assert(!(flags & BMP_AABITMAP));
 
-	d_size = (bpp / 8);
+	d_size = (bpp >> 3);
 
 	// allocate bitmap data
 	Assert( be->mem_taken > 0 );
@@ -2433,11 +2435,15 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 			} else if ((flags & BMP_TEX_NONCOMP) && (!(flags & BMP_TEX_COMP))) {
 				Assert( bpp >= 16 );  // cheating but bpp passed isn't what we normally end up with
 			}
-			else if (flags & BMP_TEX_DXT1){
+			else if ((flags & BMP_TEX_DXT1) || (flags & BMP_TEX_DXT3) || (flags & BMP_TEX_DXT5)){
 				Assert( bpp >= 16 ); // cheating but bpp passed isn't what we normally end up with
 			}
-			else if (flags & (BMP_TEX_DXT3 | BMP_TEX_DXT5)){
-				Assert( bpp >= 16 ); // cheating but bpp passed isn't what we normally end up with
+			else if (flags & BMP_TEX_CUBEMAP) {
+				Assert( (bm_bitmaps[bitmapnum].type == BM_TYPE_CUBEMAP_DDS) ||
+						(bm_bitmaps[bitmapnum].type == BM_TYPE_CUBEMAP_DXT1) ||
+						(bm_bitmaps[bitmapnum].type == BM_TYPE_CUBEMAP_DXT3) ||
+						(bm_bitmaps[bitmapnum].type == BM_TYPE_CUBEMAP_DXT5) );
+				Assert( bpp >= 16 );
 			}
 			else
 			{
@@ -2572,7 +2578,7 @@ void bm_get_palette(int handle, ubyte *pal, char *name)
 //
 // returns:			1 on successful release, 0 otherwise
 
-int bm_release(int handle)
+int bm_release(int handle, int clear_render_targets)
 {
 	bitmap_entry	*be;
 
@@ -2586,6 +2592,11 @@ int bm_release(int handle)
 	}
 
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE
+
+	if ( !clear_render_targets && (be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC) ) {
+		nprintf(("BmpMan", "Tried to release a render target!\n"));
+		return 0;
+	}
 
 	// If it is locked, cannot free it.
 	if (be->ref_count != 0) {
@@ -2670,7 +2681,7 @@ int bm_release(int handle)
 // returns:			0		=>		unload failed
 //						1		=>		unload successful
 //
-int bm_unload( int handle, bool clear_render_targets )
+int bm_unload( int handle, int clear_render_targets )
 {
 	bitmap_entry	*be;
 	bitmap			*bmp;
@@ -2682,7 +2693,9 @@ int bm_unload( int handle, bool clear_render_targets )
 	be = &bm_bitmaps[n];
 	bmp = &be->bm;
 
-//	if(clear_render_targets && be->type == BM_TYPE_RENDER_TARGET)return -1;//these don't want to be unloaded here
+	if ( !clear_render_targets && ((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC)) ) {
+		return -1;
+	}
 
 	if ( be->type == BM_TYPE_NONE ) {
 		return -1;		// Already been released
@@ -2733,7 +2746,7 @@ int bm_unload( int handle, bool clear_render_targets )
 // just like bm_unload() except that it doesn't care about what load_count is
 // and will just plow through and release the data anyway
 // (NOTE that bm_free_data_fast() is used here and NOT bm_free_data()!)
-int bm_unload_fast( int handle, bool clear_render_targets )
+int bm_unload_fast( int handle, int clear_render_targets )
 {
 	bitmap_entry	*be;
 	bitmap			*bmp;
@@ -2745,7 +2758,9 @@ int bm_unload_fast( int handle, bool clear_render_targets )
 	be = &bm_bitmaps[n];
 	bmp = &be->bm;
 
-//	if(clear_render_targets && be->type == BM_TYPE_RENDER_TARGET)return -1;//these don't want to be unloaded here
+	if ( !clear_render_targets && ((be->type == BM_TYPE_RENDER_TARGET_STATIC) || (be->type == BM_TYPE_RENDER_TARGET_DYNAMIC)) ) {
+		return -1;
+	}
 
 	if ( be->type == BM_TYPE_NONE ) {
 		return -1;		// Already been released
@@ -2795,7 +2810,7 @@ void bm_unload_all()
 
 	for (i = 0; i < MAX_BITMAPS; i++)	{
 		if ( bm_bitmaps[i].type != BM_TYPE_NONE )	{
-			bm_unload(bm_bitmaps[i].handle, true);
+			bm_unload(bm_bitmaps[i].handle, 1);
 		}
 	}
 
@@ -2881,6 +2896,12 @@ void bm_page_in_texture( int bitmapnum, int nframes )
 			case BM_TYPE_DXT5:
 				bm_bitmaps[n+i].used_flags = BMP_TEX_DXT5;
 				continue;
+
+			case BM_TYPE_CUBEMAP_DXT1:
+			case BM_TYPE_CUBEMAP_DXT3:
+			case BM_TYPE_CUBEMAP_DXT5:
+				bm_bitmaps[n+i].used_flags = BMP_TEX_CUBEMAP;
+				continue;
 		}
 	}
 }
@@ -2938,6 +2959,12 @@ void bm_page_in_xparent_texture( int bitmapnum, int nframes)
 
 			case BM_TYPE_DXT5:
 				bm_bitmaps[n+i].used_flags = BMP_TEX_DXT5;
+				continue;
+
+			case BM_TYPE_CUBEMAP_DXT1:
+			case BM_TYPE_CUBEMAP_DXT3:
+			case BM_TYPE_CUBEMAP_DXT5:
+				bm_bitmaps[n+i].used_flags = BMP_TEX_CUBEMAP;
 				continue;
 		}
 	}
@@ -3014,7 +3041,7 @@ void bm_page_in_stop()
 	int bm_preloading = 1;
 
 	for (i = 0; i < MAX_BITMAPS; i++)	{
-		if ( (bm_bitmaps[i].type != BM_TYPE_NONE) && (bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET) ) {
+		if ( (bm_bitmaps[i].type != BM_TYPE_NONE) && (bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET_DYNAMIC) && (bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET_STATIC) ) {
 			if ( bm_bitmaps[i].preloaded )	{
 #ifdef BMPMAN_SPECIAL_NONDARK
 				// if this is a texture, check to see if a ship uses it
@@ -3453,9 +3480,28 @@ int bm_is_compressed(int num)
 
 		case BM_TYPE_DXT5:
 			return DDS_DXT5;
+
+		case BM_TYPE_CUBEMAP_DXT1:
+			return DDS_CUBEMAP_DXT1;
+
+		case BM_TYPE_CUBEMAP_DXT3:
+			return DDS_CUBEMAP_DXT3;
+
+		case BM_TYPE_CUBEMAP_DXT5:
+			return DDS_CUBEMAP_DXT5;
 	}
 
 	return 0;
+}
+
+int bm_has_alpha_channel(int handle)
+{
+	int n = handle % MAX_BITMAPS;
+
+	Assert( (n >= 0) && (n < MAX_BITMAPS) );
+	Assert( handle == bm_bitmaps[n].handle );
+
+	return ( (bm_bitmaps[n].bm.true_bpp & 32) > 0 );
 }
 
 // the only real purpose for this is to return the correct TCACHE_TYPE for compressed graphics,
@@ -3598,90 +3644,122 @@ void bm_print_bitmaps()
 }
 
 
-//BMP_TEX_STATIC_RENDER_TARGET
-//BMP_TEX_DYNAMIC_RENDER_TARGET
-//this will create a render target as close to the desiered resolution as posable
-//static render targets are ones that you intend to draw to once or not very oftine in game
-//dynamic render targets are ones that you will be drawing to all the time (like once per frame)
+// this will create a render target as close to the desiered resolution as posable of the following base types:
+//  - BMP_FLAG_RENDER_TARGET_STATIC
+//      static render targets are ones that you intend to draw to once or not very often in game
+//  - BMP_FLAG_RENDER_TARGET_DYNAMIC
+//     dynamic render targets are ones that you will be drawing to all the time (like once per frame)
 
-int bm_make_render_target( int &x_res, int &y_res, int flags )
+int bm_make_render_target( int width, int height, int flags )
 {
-
-	int i, n, first_slot = MAX_BITMAPS;
+	int i, n;
 	int mm_lvl = 0;
+	// final w and h may be different from passed width and height
+	int w = width, h = height;
+	ubyte bpp = 32;
+	int size = 0;
 
-	if ( !bm_inited ) bm_init();
+	if ( !bm_inited )
+		bm_init();
 
-
-
-	// Find an open slot
-	for (i = 0; i < MAX_BITMAPS; i++) {
-		if ( (bm_bitmaps[i].type == BM_TYPE_NONE) && (first_slot == MAX_BITMAPS) ){
-			first_slot = i;
+	// Find an open slot (starting from the end)
+	for (n = -1, i = MAX_BITMAPS-1; i >= 0; i-- ) {
+		if ( bm_bitmaps[i].type == BM_TYPE_NONE )	{
+			n = i;
+			break;
 		}
 	}
 
-	n = first_slot;
-	Assert( n < MAX_BITMAPS );	
-
-	if ( n == MAX_BITMAPS ) return -1;
-
-
-//	gr_bm_load( type, n, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size );
-	if ( gr_bm_make_render_target(n, x_res, y_res, flags) == false )
+	// Out of bitmap slots
+	if ( n == -1 )
 		return -1;
-	//API render target function gets called here
 
+
+	if ( !gr_bm_make_render_target(n, &w, &h, &bpp, &mm_lvl, flags) )
+		return -1;
+
+
+	Assert( mm_lvl > 0 );
+
+	if (flags & BMP_FLAG_RENDER_TARGET_STATIC) {
+		// data size
+		size = (w * h * (bpp >> 3));
+
+		if (mm_lvl > 1) {
+			// include size of all mipmap levels (there should be a full chain)
+			size += (size/3) - 1;
+		}
+
+		// make sure to count all faces if a cubemap
+		if (flags & BMP_FLAG_CUBEMAP) {
+			size *= 6;
+		}
+	}
 
 	// ensure fields are cleared out from previous bitmap
 	memset( &bm_bitmaps[n], 0, sizeof(bitmap_entry) );
-	
-	// Mark the slot as filled, because cf_read might load a new bitmap
-	// into this slot.
-	bm_bitmaps[n].type = BM_TYPE_RENDER_TARGET;
+
+	bm_bitmaps[n].type = (flags & BMP_FLAG_RENDER_TARGET_STATIC) ? BM_TYPE_RENDER_TARGET_STATIC : BM_TYPE_RENDER_TARGET_DYNAMIC;
 	bm_bitmaps[n].signature = Bm_next_signature++;
-	strncpy(bm_bitmaps[n].filename, "**RENDER_TARGET**", MAX_FILENAME_LEN-1 );
-	bm_bitmaps[n].bm.w = short(x_res);
-	bm_bitmaps[n].bm.h = short(y_res);
-	bm_bitmaps[n].bm.rowsize = short(x_res);
-	bm_bitmaps[n].bm.bpp = 0;
-	bm_bitmaps[n].bm.true_bpp = 32;
-	bm_bitmaps[n].bm.flags = 0;
+	sprintf( bm_bitmaps[n].filename, "RT_%dx%d+%d", w, h, bpp );
+	bm_bitmaps[n].bm.w = (short)w;
+	bm_bitmaps[n].bm.h = (short)h;
+	bm_bitmaps[n].bm.rowsize = (short)w;
+	bm_bitmaps[n].bm.bpp = bpp;
+	bm_bitmaps[n].bm.true_bpp = bpp;
+	bm_bitmaps[n].bm.flags = flags;
 	bm_bitmaps[n].bm.data = 0;
 	bm_bitmaps[n].bm.palette = NULL;
 	bm_bitmaps[n].num_mipmaps = mm_lvl;
-	bm_bitmaps[n].mem_taken = 4*x_res*y_res;
+	bm_bitmaps[n].mem_taken = size;
 	bm_bitmaps[n].dir_type = CF_TYPE_ANY;
 
 	bm_bitmaps[n].palette_checksum = 0;
-	bm_bitmaps[n].handle = bm_get_next_handle()*MAX_BITMAPS + n;
+	bm_bitmaps[n].handle = bm_get_next_handle() * MAX_BITMAPS + n;
 	bm_bitmaps[n].last_used = -1;
+
+	if (bm_bitmaps[n].mem_taken) {
+		bm_bitmaps[n].bm.data = (ptr_u) bm_malloc(n, bm_bitmaps[n].mem_taken);
+	}
+	//	bm_update_memory_used( n, bm_bitmaps[n].mem_taken );
 
 	return bm_bitmaps[n].handle;
 }
 
-bool bm_is_render_target(int bitmap_id)
+int bm_is_render_target(int bitmap_id)
 {
 	int n = bitmap_id % MAX_BITMAPS;
 
 	Assert(bitmap_id == bm_bitmaps[n].handle);
 
-	return (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET);
+	return ( (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC) || (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_DYNAMIC) );
 }
 
-bool bm_set_render_target(int handle, int face){
-	if(gr_bm_set_render_target(handle, face)){
+int bm_set_render_target(int handle, int face)
+{
+	int n = handle % MAX_BITMAPS;
 
-		int n = handle % MAX_BITMAPS;
-		if(gr_screen.rendering_to_texture == -1){
+	if ( n >= 0 ) {
+		Assert( handle == bm_bitmaps[n].handle );
+
+		if ( (bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET_STATIC) && (bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET_DYNAMIC) ) {
+			// odds are that someone passed a normal texture created with bm_load()
+			mprintf(("Trying to set invalid bitmap (slot: %i, handle: %i) as render target!", n, handle));
+			return 0;
+		}
+	}
+
+	if ( gr_bm_set_render_target(n, face) ) {
+		if (gr_screen.rendering_to_texture == -1) {
 			//if we are moveing from the back buffer to a texture save whatever the current settings are
 			gr_screen.save_max_w = gr_screen.max_w;
 			gr_screen.save_max_h = gr_screen.max_h;
 		}
-		if(handle == -1){
+
+		if (n < 0) {
 			gr_screen.max_w = gr_screen.save_max_w;
 			gr_screen.max_h = gr_screen.save_max_h;
-		}else{
+		} else {
 			gr_screen.max_w = bm_bitmaps[n].bm.w;
 			gr_screen.max_h = bm_bitmaps[n].bm.h;
 		}
@@ -3690,7 +3768,21 @@ bool bm_set_render_target(int handle, int face){
 		gr_screen.rendering_to_texture = n;
 
 		gr_reset_clip();
-		return true;
-	}else 
-		return false;
+
+		return 1;
+	}
+
+	return 0;
 }
+
+/*void bm_save_render_target(int handle, int flags)
+{
+	int n = handle % MAX_BITMAPS;
+
+	Assert( n >= 0 );
+
+	Assert( flags & BMP_FLAG_RENDER_TARGET_STATIC );
+
+	gr_bm_save_render_target(slot, flags, data);
+
+}*/
