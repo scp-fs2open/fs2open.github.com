@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.68 $
- * $Date: 2006-04-13 12:12:27 $
+ * $Revision: 1.69 $
+ * $Date: 2006-05-13 07:01:17 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.68  2006/04/13 12:12:27  taylor
+ * bah! forgot to add a blasted = on that check
+ *
  * Revision 1.67  2006/04/05 16:10:54  karajorma
  * Changes to support the new Enable/Disable-Builtin-Messages SEXP
  *
@@ -8881,11 +8884,15 @@ void ai_chase()
 		Int3();
 	}
 
-	bool go_after_it = false;
-	if(sip->class_type > -1 && En_objp->type == OBJ_SHIP)
+	// by default we try to chase anything
+	bool go_after_it = true;
+
+	if ( (sip->class_type > -1) && (En_objp->type == OBJ_SHIP) )
 	{
+		// default to not chasing for ships
+		go_after_it = false;
 		ship_info *esip = &Ship_info[Ships[En_objp->instance].ship_info_index];
-		if(esip->class_type > -1)
+		if (esip->class_type > -1)
 		{
 			ship_type_info *stp = &Ship_types[sip->class_type];
 			for(uint i = 0; i < stp->ai_actively_pursues.size(); i++)
