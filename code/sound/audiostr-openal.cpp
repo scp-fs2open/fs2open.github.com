@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.24 $
- * $Date: 2006-03-15 17:30:46 $
+ * $Revision: 1.25 $
+ * $Date: 2006-05-13 07:11:46 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2006/03/15 17:30:46  taylor
+ * remove alut headers, since we don't use any alut functions anyway (didn't I already do this a couple of months ago??)
+ *
  * Revision 1.23  2006/02/20 07:25:14  taylor
  * handle badly encoded (has short reads due to strange block/data size ratio) ADPCM files a little better in debug builds
  *
@@ -1154,8 +1157,14 @@ BOOL AudioStream::Destroy (void)
 	// Stop playback
 	Stop ();
 
-	// Release sound buffer
-	alDeleteBuffers(MAX_STREAM_BUFFERS, m_buffer_ids);
+	// Release sound buffers
+	for (int i = 0; i < MAX_STREAM_BUFFERS; i++) {
+		// make sure that the buffer is real before trying to delete, it could crash for some otherwise
+		if ( (m_buffer_ids[i] != 0) && alIsBuffer(m_buffer_ids[i]) ) {
+			alDeleteBuffers(1, &m_buffer_ids[i]);
+		}
+	}
+
 	alDeleteSources(1, &m_source_id);
 	Snd_sram -= m_cbBufSize;
 
