@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.34 $
- * $Date: 2006-01-26 03:23:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.35 $
+ * $Date: 2006-05-13 07:02:27 $
+ * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2006/01/26 03:23:29  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.33  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -1866,7 +1870,7 @@ int asteroid_get_random_in_cone(vec3d *pos, vec3d *dir, float ang, int danger)
 	return -1;
 }
 
-void asteroid_test_collide(object *asteroid_obj, object *ship_obj, mc_info *mc)
+void asteroid_test_collide(object *asteroid_obj, object *ship_obj, mc_info *mc, bool lazy = false)
 {
 	float		asteroid_ray_dist;
 	vec3d	asteroid_fvec, terminus;
@@ -1891,8 +1895,11 @@ void asteroid_test_collide(object *asteroid_obj, object *ship_obj, mc_info *mc)
 	mc->pos = &ship_obj->pos;												// The object's position
 	mc->p0 = &asteroid_obj->pos;											// Point 1 of ray to check
 	mc->p1 = &terminus;														// Point 2 of ray to check
-//	mc->flags = MC_CHECK_MODEL | MC_ONLY_BOUND_BOX;	
-	mc->flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;	
+	if (lazy) {
+		mc->flags = MC_CHECK_MODEL | MC_ONLY_BOUND_BOX;
+	} else {
+		mc->flags = MC_CHECK_MODEL | MC_CHECK_SPHERELINE;
+	}
 	mc->radius = asteroid_obj->radius;
 
 	model_collide(mc);
@@ -2030,7 +2037,7 @@ float asteroid_time_to_impact(object *asteroid_objp)
 		return time;
 	}
 	
-	asteroid_test_collide(asteroid_objp, &Objects[asp->collide_objnum], &mc);
+	asteroid_test_collide(asteroid_objp, &Objects[asp->collide_objnum], &mc, true);
 
 	if ( mc.num_hits ) {
 		total_dist = vm_vec_dist(&mc.hit_point_world, &asteroid_objp->pos) - asteroid_objp->radius;
