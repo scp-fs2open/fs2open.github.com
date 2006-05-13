@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.16 $
- * $Date: 2006-01-02 07:26:43 $
+ * $Revision: 2.17 $
+ * $Date: 2006-05-13 07:10:37 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/01/02 07:26:43  taylor
+ * remove ALUT headers, we don't it anyway and it's not included with OpenAL anymore
+ *
  * Revision 2.15  2005/07/13 03:35:29  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -164,7 +167,11 @@
 #define __DS_H__
 
 #ifdef _WIN32
+#define VC_EXTRALEAN
+#define STRICT
+
 #include <windows.h>
+#include <mmsystem.h>
 #endif
 
 #ifndef USE_OPENAL
