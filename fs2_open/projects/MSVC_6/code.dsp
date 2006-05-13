@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /Ot /Ow /Og /Oi /Oy /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_OPENAL" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "USE_OPENAL" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -301,11 +301,31 @@ SOURCE=..\..\code\Cutscene\Cutscenes.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\cutscene\decoder16.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\cutscene\movie.cpp
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\code\cutscene\movie.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\cutscene\mve_audio.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\cutscene\mvelib.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\cutscene\mvelib.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\cutscene\mveplayer.cpp
 # End Source File
 # End Group
 # Begin Group "Debris"
@@ -2016,7 +2036,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open\code\sound
+InputDir=\temp\fs2_open.for_cvs\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2035,7 +2055,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open\code\sound
+InputDir=\temp\fs2_open.for_cvs\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
