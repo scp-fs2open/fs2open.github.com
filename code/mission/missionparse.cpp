@@ -9,13 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.172 $
- * $Date: 2006-05-13 07:29:52 $
- * $Author: taylor $
+ * $Revision: 2.173 $
+ * $Date: 2006-05-14 15:54:16 $
+ * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.172  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.171  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -2802,7 +2818,7 @@ int parse_create_object_sub(p_object *objp)
 		Objects[objnum].flags |= OF_INVULNERABLE;
 	}
 
-	if(objp->flags & P2_SF2_TARGETABLE_AS_BOMB) {
+	if(objp->flags2 & P2_SF2_TARGETABLE_AS_BOMB) {
 		Objects[objnum].flags |= OF_TARGETABLE_AS_BOMB;
 	}
 
