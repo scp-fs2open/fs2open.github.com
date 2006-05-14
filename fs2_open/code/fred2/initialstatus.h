@@ -52,6 +52,9 @@ public:
 	BOOL	m_has_shields;
 	int		m_locked;
 	CString	m_cargo_name;
+	int		m_primaries_locked;
+	int		m_secondaries_locked;
+
 	//}}AFX_DATA
 
 
@@ -74,6 +77,8 @@ protected:
 	afx_msg void OnSelchangeDockeePoint();
 	afx_msg void OnHasShields();
 	afx_msg void OnLocked();
+	afx_msg void OnPrimariesLocked();
+	afx_msg void OnSecondariesLocked();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

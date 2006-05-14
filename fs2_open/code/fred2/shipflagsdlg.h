@@ -50,6 +50,7 @@ public:
 	CButton	m_destroy;
 	CButton	m_cargo_known;
 	CButton	m_special_warp;
+	CButton	m_disable_messages;
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
 	numeric_edit_control	m_destroy_value;
@@ -91,6 +92,7 @@ protected:
 	afx_msg void OnScannable();
 	afx_msg void OnRedalertcarry();
 	afx_msg void OnToggleSubsystemScanning();
+	afx_msg void OnDisableBuiltinShip();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

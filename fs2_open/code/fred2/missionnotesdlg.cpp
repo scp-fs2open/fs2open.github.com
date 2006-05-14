@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-04-05 16:11:44 $
+ * $Revision: 1.5 $
+ * $Date: 2006-05-14 15:57:43 $
  * $Author: karajorma $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/04/05 16:11:44  karajorma
+ * Changes to support the new Enable/Disable-Builtin-Messages SEXP
+ *
  * Revision 1.3  2006/02/27 00:40:34  wmcoolmon
  * Consistency in Lua 2D funcs; fix FRED2 loading screen images dialog boxes.
  *
@@ -314,7 +317,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SUPPORT_ALLOWED, m_disallow_support);
 	DDX_Check(pDX, IDC_NO_PROMOTION, m_no_promotion);
 	DDX_Check(pDX, IDC_DISABLE_BUILTIN_MSGS, m_no_builtin_msgs);
-	DDX_Check(pDX, IDC_DISABLE_BUILTIN_COMMAND, m_no_builtin_command_msgs);
+	DDX_Check(pDX, IDC_DISABLE_BUILTIN_COMMAND_MSGS, m_no_builtin_command_msgs);
 	DDX_Check(pDX, IDC_NO_TRAITOR, m_no_traitor);
 	DDX_Check(pDX, IDC_SPECS_TOGGLE_TRAILS, m_toggle_trails);
 	DDX_Check(pDX, IDC_SUPPORT_REPAIRS_HULL, m_support_repairs_hull);
