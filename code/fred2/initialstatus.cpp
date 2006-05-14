@@ -44,6 +44,8 @@ initial_status::initial_status(CWnd* pParent /*=NULL*/)
 	m_hull = 0;
 	m_has_shields = FALSE;
 	m_locked = FALSE;
+	m_primaries_locked = FALSE;
+	m_secondaries_locked = FALSE;
 	m_cargo_name = _T("");
 	//}}AFX_DATA_INIT
 	inited = 0;
@@ -79,6 +81,8 @@ void initial_status::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, m_damage, 0, 100);
 	DDX_Check(pDX, IDC_HAS_SHIELDS, m_has_shields);
 	DDX_Check(pDX, IDC_LOCKED, m_locked);
+	DDX_Check(pDX, IDC_PRIMARIES_LOCKED, m_primaries_locked);
+	DDX_Check(pDX, IDC_SECONDARIES_LOCKED, m_secondaries_locked);
 	DDX_Text(pDX, IDC_CARGO_NAME, m_cargo_name);
 	DDV_MaxChars(pDX, m_cargo_name, 20);
 	//}}AFX_DATA_MAP
@@ -115,6 +119,8 @@ BEGIN_MESSAGE_MAP(initial_status, CDialog)
 	ON_CBN_SELCHANGE(IDC_DOCKEE_POINT, OnSelchangeDockeePoint)
 	ON_BN_CLICKED(IDC_HAS_SHIELDS, OnHasShields)
 	ON_BN_CLICKED(IDC_LOCKED, OnLocked)
+	ON_BN_CLICKED(IDC_PRIMARIES_LOCKED, OnPrimariesLocked)
+	ON_BN_CLICKED(IDC_SECONDARIES_LOCKED, OnSecondariesLocked)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -170,6 +176,26 @@ BOOL initial_status::OnInitDialog()
 		m_locked = 1;
 	else
 		m_locked = 0;
+
+	// Lock primaries
+	if (Ships[m_ship].flags2 & SF2_PRIMARIES_LOCKED)
+	{
+		m_primaries_locked = 1;
+	}
+	else
+	{
+		m_primaries_locked = 0;
+	}
+
+	//Lock secondaries
+	if (Ships[m_ship].flags2 & SF2_SECONDARIES_LOCKED)
+	{
+		m_secondaries_locked = 1;
+	}
+	else
+	{
+		m_secondaries_locked = 0;
+	}
 
 	if (m_multi_edit) {
 		objp = GET_FIRST(&obj_used_list);
@@ -301,8 +327,27 @@ void initial_status::OnOK()
 
 				if (m_locked == 1)
 					Ships[get_ship_from_obj(objp)].flags |= SF_LOCKED;
-				else if (!m_has_shields)
+				else if (!m_locked)
 					Ships[get_ship_from_obj(objp)].flags &= ~SF_LOCKED;
+
+				if (m_primaries_locked == 1)
+				{
+					Ships[get_ship_from_obj(objp)].flags2 |= SF2_PRIMARIES_LOCKED;
+				}
+				else if (!m_primaries_locked)
+				{
+					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_PRIMARIES_LOCKED;
+				}
+
+				if (m_secondaries_locked == 1)
+				{
+					Ships[get_ship_from_obj(objp)].flags2 |= SF2_SECONDARIES_LOCKED;
+				}
+				else if (!m_secondaries_locked)
+				{
+					Ships[get_ship_from_obj(objp)].flags2 &= ~SF2_SECONDARIES_LOCKED;
+				}
+
 			}
 
 			objp = GET_NEXT(objp);
@@ -320,8 +365,19 @@ void initial_status::OnOK()
 		if (m_locked == 1)
 			Ships[m_ship].flags |= SF_LOCKED;
 		else if (!m_locked)
-			Ships[m_ship].flags &= ~SF_LOCKED;
+			Ships[m_ship].flags &= ~SF_LOCKED;		
+
+		if (m_primaries_locked == 1)
+			Ships[m_ship].flags2 |= SF2_PRIMARIES_LOCKED;
+		else if (!m_primaries_locked)
+			Ships[m_ship].flags2 &= ~SF2_PRIMARIES_LOCKED;		
+
+		if (m_secondaries_locked == 1)
+			Ships[m_ship].flags2 |= SF2_SECONDARIES_LOCKED;
+		else if (!m_secondaries_locked)
+			Ships[m_ship].flags2 &= ~SF2_SECONDARIES_LOCKED;
 	}
+
 
 	update_docking_info();
 
@@ -838,4 +894,24 @@ void reset_arrival_to_false( int shipnum )
 		sprintf(buf, "Setting arrival cue of ship %s\nto false for initial docking purposes.", Ships[shipnum].ship_name);
 		MessageBox(NULL, buf, "", MB_OK | MB_ICONEXCLAMATION);
 	}
+}
+
+void initial_status::OnPrimariesLocked() 
+{
+	if (m_primaries_locked == 1)
+		m_primaries_locked = 0;
+	else
+		m_primaries_locked = 1;
+
+	((CButton *) GetDlgItem(IDC_PRIMARIES_LOCKED))->SetCheck(m_primaries_locked);	
+}
+
+void initial_status::OnSecondariesLocked() 
+{
+	if (m_secondaries_locked == 1)
+		m_secondaries_locked = 0;
+	else
+		m_secondaries_locked = 1;
+
+	((CButton *) GetDlgItem(IDC_SECONDARIES_LOCKED))->SetCheck(m_secondaries_locked);	
 }

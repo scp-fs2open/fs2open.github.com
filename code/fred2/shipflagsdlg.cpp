@@ -60,6 +60,8 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_CARGO_KNOWN, m_cargo_known);
 	DDX_Control(pDX, IDC_SPECIAL_WARP, m_special_warp);	
 	DDX_Control(pDX, IDC_DESTROY_SPIN, m_destroy_spin);	
+	DDX_Control(pDX, IDC_DISABLE_BUILTIN_SHIP, m_disable_messages);
+
 	//}}AFX_DATA_MAP
 
 	if (pDX->m_bSaveAndValidate) {  // get dialog control values
@@ -107,6 +109,7 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_SCANNABLE, OnScannable)
 	ON_BN_CLICKED(IDC_REDALERTCARRY, OnRedalertcarry)
 	ON_BN_CLICKED(IDC_TOGGLE_SUBSYSTEM_SCANNING, OnToggleSubsystemScanning)
+	ON_BN_CLICKED(IDC_DISABLE_BUILTIN_SHIP, OnDisableBuiltinShip)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -121,10 +124,11 @@ void ship_flags_dlg::setup(int n)
 BOOL ship_flags_dlg::OnInitDialog() 
 {
 	int i, j, first;
-	int protect_ship = 0, beam_protect_ship = 0, ignore_count = 0, reinforcement = 0, cargo_known = 0, destroy_before_mission = 0;
-	int no_arrival_music = 0, escort = 0, invulnerable = 0, targetable_as_bomb = 0, hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0;
-	int no_bank = 0, affected_by_gravity = 0, toggle_subsystem_scanning = 0;
-	int scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0, special_warp = 0;
+	int protect_ship = 0, beam_protect_ship = 0, ignore_count = 0, reinforcement = 0, cargo_known = 0;
+	int destroy_before_mission = 0, no_arrival_music = 0, escort = 0, invulnerable = 0, targetable_as_bomb = 0;
+	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, no_bank = 0, affected_by_gravity = 0;
+	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
+	int special_warp = 0, disable_messages = 0;
 	object *objp;
 	bool ship_in_wing = false;
 
@@ -153,6 +157,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					no_arrival_music = (Ships[i].flags & SF_NO_ARRIVAL_MUSIC) ? 1 : 0;
 					cargo_known = (Ships[i].flags & SF_CARGO_REVEALED) ? 1 : 0;
 					no_dynamic = (Ai_info[Ships[i].ai_index].ai_flags & AIF_NO_DYNAMIC) ? 1 : 0;
+					disable_messages = (Ships[i].flags2 & SF2_NO_BUILTIN_MESSAGES) ? 1 : 0;
 
 					destroy_before_mission = (Ships[i].flags & SF_KILL_BEFORE_MISSION) ? 1 : 0;
 					m_destroy_value.init(Ships[i].final_death_time);
@@ -196,6 +201,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					no_arrival_music = tristate_set(Ships[i].flags & SF_NO_ARRIVAL_MUSIC, no_arrival_music);
 					cargo_known = tristate_set(Ships[i].flags & SF_CARGO_REVEALED, cargo_known);
 					no_dynamic = tristate_set( Ai_info[Ships[i].ai_index].ai_flags & AIF_NO_DYNAMIC, no_dynamic );
+					disable_messages = tristate_set(Ships[i].flags2 & SF2_NO_BUILTIN_MESSAGES, disable_messages);
 
 					// check the final death time and set the internal variable according to whether or not
 					// the final_death_time is set.  Also, the value in the edit box must be set if all the
@@ -253,6 +259,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_no_dynamic.SetCheck(no_dynamic);
 	m_red_alert_carry.SetCheck(red_alert_carry);
 	m_special_warp.SetCheck(special_warp);
+	m_disable_messages.SetCheck(disable_messages);
 		
 	m_kdamage.setup(IDC_KDAMAGE, this);
 	m_destroy_value.setup(IDC_DESTROY_VALUE, this);
@@ -662,6 +669,22 @@ void ship_flags_dlg::update_ship(int ship)
 			break;
 	}
 
+	switch (m_disable_messages.GetCheck()) {
+		case 1:
+			if ( !(Ships[ship].flags2 & SF2_NO_BUILTIN_MESSAGES) )
+				set_modified();
+
+			Ships[ship].flags2 |= SF2_NO_BUILTIN_MESSAGES;
+			break;
+
+		case 0:
+			if ( Ships[ship].flags2 & SF2_NO_BUILTIN_MESSAGES )
+				set_modified();
+
+			Ships[ship].flags2 &= ~SF2_NO_BUILTIN_MESSAGES;
+			break;
+	}
+
 	Ships[ship].respawn_priority = 0;
 	if(The_mission.game_type & MISSION_TYPE_MULTI){
 		m_respawn_priority.save(&Ships[ship].respawn_priority);
@@ -876,5 +899,13 @@ void ship_flags_dlg::OnRedalertcarry()
 		m_red_alert_carry.SetCheck(0);
 	} else {
 		m_red_alert_carry.SetCheck(1);
+	}
+}
+void ship_flags_dlg::OnDisableBuiltinShip() 
+{
+	if (m_disable_messages.GetCheck() == 1){
+		m_disable_messages.SetCheck(0);
+	} else {
+		m_disable_messages.SetCheck(1);
 	}
 }
