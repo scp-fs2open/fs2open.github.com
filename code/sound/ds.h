@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.17 $
- * $Date: 2006-05-13 07:10:37 $
+ * $Revision: 2.18 $
+ * $Date: 2006-05-14 05:22:43 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/05/13 07:10:37  taylor
+ * some Windows specific OpenAL changes
+ * add MVE files to MSVC6 project
+ *
  * Revision 2.16  2006/01/02 07:26:43  taylor
  * remove ALUT headers, we don't it anyway and it's not included with OpenAL anymore
  *
@@ -168,7 +172,6 @@
 
 #ifdef _WIN32
 #define VC_EXTRALEAN
-#define STRICT
 
 #include <windows.h>
 #include <mmsystem.h>
