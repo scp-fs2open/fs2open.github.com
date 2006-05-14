@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.12 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 1.13 $
+ * $Date: 2006-05-14 15:52:42 $
+ * $Author: karajorma $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.11  2006/02/28 07:37:12  Goober5000
  * fix another import bug
  *
@@ -1602,7 +1605,7 @@ int CFred_mission_save::save_objects()
 			fout(" \"no-departure-warp\"");
 		if (Ships[i].flags & SF_LOCKED)
 			fout(" \"locked\"");
-		if (Objects[i].flags & OF_INVULNERABLE)
+		if (Objects[Ships[i].objnum].flags & OF_INVULNERABLE)
 			fout(" \"invulnerable\"");
 		if (Ships[i].flags & SF_HIDDEN_FROM_SENSORS)
 			fout(" \"hidden-from-sensors\"");
@@ -1639,6 +1642,12 @@ int CFred_mission_save::save_objects()
 				fout(" \"toggle-subsystem-scanning\"");
 			if (Objects[i].flags & OF_TARGETABLE_AS_BOMB)
 				fout(" \"targetable-as-bomb\"");
+			if (Ships[i].flags2 & SF2_NO_BUILTIN_MESSAGES)
+				fout(" \"no-builtin-messages\"");
+			if (Ships[i].flags2 & SF2_PRIMARIES_LOCKED)
+				fout(" \"primaries-locked\"");
+			if (Ships[i].flags2 & SF2_SECONDARIES_LOCKED)
+				fout(" \"secondaries-locked\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
