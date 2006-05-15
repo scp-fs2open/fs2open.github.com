@@ -2036,7 +2036,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=\temp\fs2_open.for_cvs\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2055,7 +2055,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=\temp\fs2_open.for_cvs\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
