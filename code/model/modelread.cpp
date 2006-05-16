@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.102 $
- * $Date: 2006-04-20 06:32:15 $
+ * $Revision: 2.103 $
+ * $Date: 2006-05-16 15:54:39 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2006/04/20 06:32:15  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.101  2006/04/18 00:56:28  bobboau
  * bugfix for the animation system
  *
@@ -1661,8 +1664,11 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		}
 #endif
 
-		if ( !subsystem_stricmp(subobj_name, subsystemp->subobj_name) ) {
-			subsystemp->flags = 0;
+		if (!subsystem_stricmp(subobj_name, subsystemp->subobj_name))
+		{
+			//commented by Goober5000 because this is also set when the table is parsed
+			//subsystemp->flags = 0;
+
 			subsystemp->subobj_num = subobj_num;
 			subsystemp->turret_gun_sobj = -1;
 			subsystemp->model_num = model_num;
