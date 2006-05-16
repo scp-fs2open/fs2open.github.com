@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 1.5 $
+ * $Date: 2006-05-16 12:45:20 $
+ * $Author: karajorma $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.3  2006/04/12 05:30:50  phreak
  * get jump nodes rendering again..... again.
  *
@@ -1771,11 +1774,13 @@ void render_frame()
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
 	Viewer_pos = eye_pos;  // for starfield code
 	
-	if ( Bg_bitmap_dialog )	{
+	fred_enable_htl();
+	if ( Bg_bitmap_dialog ) {
 		stars_draw( Show_stars, 1, Show_stars, 0, 0 );
 	} else {
 		stars_draw( Show_stars, Show_stars, Show_stars, 0, 0 );
 	}
+	fred_disable_htl();
 
 	if (Show_horizon) {
 		gr_set_color(128, 128, 64);
