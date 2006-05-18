@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.38 $
- * $Date: 2006-05-13 07:09:24 $
+ * $Revision: 2.39 $
+ * $Date: 2006-05-18 14:56:02 $
  * $Author: taylor $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2006/05/13 07:09:24  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 2.37  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -583,7 +587,7 @@ void hud_shield_show(object *objp)
 	}
 	else
 	{
-		bool G3_already = g3_in_frame();
+		bool g3_yourself = !g3_in_frame();
 		angles rot_angles = {-1.570796327f,0.0f,0.0f};
 		matrix	object_orient;
 
@@ -593,7 +597,7 @@ void hud_shield_show(object *objp)
 		gr_screen.clip_height = 93;
 
 		//Fire it up
-		if(!G3_already)
+		if(g3_yourself)
 			g3_start_frame(1);
 		hud_save_restore_camera_data(1);
 		HUD_set_clip(sx, sy, 112, 93);
@@ -639,7 +643,7 @@ void hud_shield_show(object *objp)
 			gr_end_view_matrix();
 			gr_end_proj_matrix();
 		}
-		if(!G3_already)
+		if(g3_yourself)
 			g3_end_frame();
 		hud_save_restore_camera_data(0);
 
