@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.173 $
- * $Date: 2006-05-14 15:54:16 $
- * $Author: karajorma $
+ * $Revision: 2.174 $
+ * $Date: 2006-05-19 04:47:40 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.173  2006/05/14 15:54:16  karajorma
+ * Fixes for the Targetable-as-bomb error from Mantis 0000910 (amongst others)
+ *
  * Revision 2.172  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -2382,7 +2385,7 @@ void position_ship_for_knossos_warpin(p_object *objp, int shipnum, int objnum)
 	for (so=GET_FIRST(&Ship_obj_list); so!=END_OF_LIST(&Ship_obj_list); so=GET_NEXT(so)) {
 		knossos_num = Objects[so->objnum].instance;
 		if (Ship_info[Ships[knossos_num].ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
-			// be close to the right device [allow multiple knossos's
+			// be close to the right device (allow multiple knossoses)
 			if (vm_vec_dist_quick(&Objects[knossos_num].pos, &objp->pos) < 2.0f*(Objects[knossos_num].radius + Objects[objnum].radius) ) {
 				found = TRUE;
 				break;
@@ -2483,6 +2486,8 @@ void parse_create_docked_object_helper(p_object *pobjp, p_dock_function_info *in
 // Docking groups require special treatment.
 int parse_create_object(p_object *pobjp)
 {
+	object *objp;
+
 	// if this guy is part of a dock group, create the entire group, starting with the leader
 	if (object_is_docked(pobjp))
 	{
@@ -2511,20 +2516,32 @@ int parse_create_object(p_object *pobjp)
 
 		// now clear the handled flags
 		parse_object_clear_all_handled_flags();
-
-		// return the objnum of the leader
-		return OBJ_INDEX(pobjp->created_object);
 	}
 	// create normally
 	else
 	{
-		return parse_create_object_sub(pobjp);
+		parse_create_object_sub(pobjp);
 	}
+
+	// get the main object
+	objp = pobjp->created_object;
+
+	// warp it in (moved from parse_create_object_sub)
+	if ((Game_mode & GM_IN_MISSION) && (!Fred_running) && (!Game_restoring))
+	{
+		if ((Ships[objp->instance].wingnum < 0) && (pobjp->arrival_location != ARRIVE_FROM_DOCK_BAY))
+		{
+			shipfx_warpin_start(pobjp->created_object);
+		}
+	}
+
+	// return the main object's objnum
+	return OBJ_INDEX(objp);
 }
 
 //	Given a stuffed p_object struct, create an object and fill in the necessary fields.
 //	Return object number.
-int parse_create_object_sub(p_object *objp)
+int parse_create_object_sub(p_object *p_objp)
 {
 	int	i, j, k, objnum, shipnum;
 	ai_info *aip;
@@ -2542,33 +2559,34 @@ int parse_create_object_sub(p_object *objp)
 	MONITOR_INC(NumShipArrivals, 1);
 
 	// base level creation - need ship name in case of duplicate textures
-	objnum = ship_create(&objp->orient, &objp->pos, objp->ship_class, objp->name);
+	objnum = ship_create(&p_objp->orient, &p_objp->pos, p_objp->ship_class, p_objp->name);
 	Assert(objnum != -1);
 	shipnum = Objects[objnum].instance;
 
 	shipp = &Ships[shipnum];
-	//shipp = (ship*)((char*)(Ships + shipnum)-(32*shipnum)); // ASSERT PROPER ALIGNMENT! -- Kazan
-	//Assert(shipp == &Ships[shipnum]);
 	sip = &Ship_info[shipp->ship_info_index];
 
+	// Goober5000 - make the parse object aware of what it was created as
+	p_objp->created_object = &Objects[objnum];
+	
 	// if arriving through knossos, adjust objpj->pos to plane of knossos and set flag
 	// special warp is single player only
-	if ((objp->flags & P_KNOSSOS_WARP_IN) && !(Game_mode & GM_MULTIPLAYER)) {
-		if (!Fred_running) {
-			position_ship_for_knossos_warpin(objp, shipnum, objnum);
-		}
+	if ((p_objp->flags & P_KNOSSOS_WARP_IN) && !(Game_mode & GM_MULTIPLAYER))
+	{
+		if (!Fred_running)
+			position_ship_for_knossos_warpin(p_objp, shipnum, objnum);
 	}
 
-	Ships[shipnum].group = objp->group;
-	Ships[shipnum].team = objp->team;
-	strcpy(Ships[shipnum].ship_name, objp->name);
-	Ships[shipnum].escort_priority = objp->escort_priority;
-	Ships[shipnum].special_exp_index = objp->special_exp_index;
+	Ships[shipnum].group = p_objp->group;
+	Ships[shipnum].team = p_objp->team;
+	strcpy(Ships[shipnum].ship_name, p_objp->name);
+	Ships[shipnum].escort_priority = p_objp->escort_priority;
+	Ships[shipnum].special_exp_index = p_objp->special_exp_index;
 
 	// Goober5000
-	Ships[shipnum].special_hitpoint_index = objp->special_hitpoint_index;
-	Ships[shipnum].ship_max_shield_strength = objp->ship_max_shield_strength;
-	Ships[shipnum].ship_max_hull_strength = objp->ship_max_hull_strength;
+	Ships[shipnum].special_hitpoint_index = p_objp->special_hitpoint_index;
+	Ships[shipnum].ship_max_shield_strength = p_objp->ship_max_shield_strength;
+	Ships[shipnum].ship_max_hull_strength = p_objp->ship_max_hull_strength;
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
@@ -2577,7 +2595,7 @@ int parse_create_object_sub(p_object *objp)
 		float hull_factor = shipp->ship_max_hull_strength / sip->max_hull_strength;
 		ship_subsys *ss;
 
-		for ( ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list) && ss != NULL; ss = GET_NEXT(ss) )
+		for (ss = GET_FIRST(&shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list) && ss != NULL; ss = GET_NEXT(ss))
 		{
 			ss->max_hits *= hull_factor;
 
@@ -2587,93 +2605,96 @@ int parse_create_object_sub(p_object *objp)
 				ss->current_hits = ss->max_hits;
 		}
 
-		ship_recalc_subsys_strength( shipp );
+		ship_recalc_subsys_strength(shipp);
 	}
 
 	// Goober5000 - this is also stupid; this is in ship_set but it needs to be done here because of the special hitpoints mod
 	Objects[objnum].hull_strength = shipp->ship_max_hull_strength;
 
 
-	Ships[shipnum].respawn_priority = objp->respawn_priority;
+	Ships[shipnum].respawn_priority = p_objp->respawn_priority;
 
 	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (objp->wingnum >= 0)){
-		for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
-			if ( !stricmp(Starting_wing_names[i], Wings[objp->wingnum].name) ) {
+	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (p_objp->wingnum >= 0))
+	{
+		for (i = 0; i < MAX_STARTING_WINGS; i++)
+		{
+			if (!stricmp(Starting_wing_names[i], Wings[p_objp->wingnum].name))
 				Ships[shipnum].team = Iff_traitor;
-			} 
 		}
 	}
 
-	if ( !Fred_running ) {
+	if (!Fred_running)
+	{
 		ship_assign_sound(&Ships[shipnum]);
 	}
 
 	aip = &(Ai_info[Ships[shipnum].ai_index]);
-	aip->behavior = objp->behavior;
+	aip->behavior = p_objp->behavior;
 	aip->mode = aip->behavior;
 
 	// alternate type name
-	Ships[shipnum].alt_type_index = objp->alt_type_index;
+	Ships[shipnum].alt_type_index = p_objp->alt_type_index;
 
-	aip->ai_class = objp->ai_class;
-	Ships[shipnum].weapons.ai_class = objp->ai_class;  // Fred uses this instead of above.
+	aip->ai_class = p_objp->ai_class;
+	Ships[shipnum].weapons.ai_class = p_objp->ai_class;  // Fred uses this instead of above.
 
 	// must reset the number of ai goals when the object is created
-	for (i = 0; i < MAX_AI_GOALS; i++ ){
+	for (i = 0; i < MAX_AI_GOALS; i++)
+	{
 		aip->goals[i].ai_mode = AI_GOAL_NONE;
 		aip->goals[i].signature = -1;
 		aip->goals[i].priority = -1;
 		aip->goals[i].flags = 0;
 	}
 
-	Ships[shipnum].cargo1 = objp->cargo1;
+	Ships[shipnum].cargo1 = p_objp->cargo1;
 
-	Ships[shipnum].arrival_location = objp->arrival_location;
-	Ships[shipnum].arrival_distance = objp->arrival_distance;
-	Ships[shipnum].arrival_anchor = objp->arrival_anchor;
-	Ships[shipnum].arrival_cue = objp->arrival_cue;
-	Ships[shipnum].arrival_delay = objp->arrival_delay;
-	Ships[shipnum].departure_location = objp->departure_location;
-	Ships[shipnum].departure_anchor = objp->departure_anchor;
-	Ships[shipnum].departure_cue = objp->departure_cue;
-	Ships[shipnum].departure_delay = objp->departure_delay;
-	Ships[shipnum].determination = objp->determination;
-	Ships[shipnum].wingnum = objp->wingnum;
-	Ships[shipnum].hotkey = objp->hotkey;
-	Ships[shipnum].score = objp->score;
-	Ships[shipnum].persona_index = objp->persona_index;
+	Ships[shipnum].arrival_location = p_objp->arrival_location;
+	Ships[shipnum].arrival_distance = p_objp->arrival_distance;
+	Ships[shipnum].arrival_anchor = p_objp->arrival_anchor;
+	Ships[shipnum].arrival_cue = p_objp->arrival_cue;
+	Ships[shipnum].arrival_delay = p_objp->arrival_delay;
+	Ships[shipnum].departure_location = p_objp->departure_location;
+	Ships[shipnum].departure_anchor = p_objp->departure_anchor;
+	Ships[shipnum].departure_cue = p_objp->departure_cue;
+	Ships[shipnum].departure_delay = p_objp->departure_delay;
+	Ships[shipnum].determination = p_objp->determination;
+	Ships[shipnum].wingnum = p_objp->wingnum;
+	Ships[shipnum].hotkey = p_objp->hotkey;
+	Ships[shipnum].score = p_objp->score;
+	Ships[shipnum].persona_index = p_objp->persona_index;
 
 	// handle the replacement textures - Goober5000
-	if (objp->num_texture_replacements > 0)
+	if (p_objp->num_texture_replacements > 0)
 	{
 		Ships[shipnum].replacement_textures = Ships[shipnum].replacement_textures_buf;
 	}
 
 	// now fill them in
-	for (i=0; i<objp->num_texture_replacements; i++)
+	for (i = 0; i < p_objp->num_texture_replacements; i++)
 	{
 		pm = model_get(sip->modelnum);
 
 		// look for textures
-		for (j=0; j<pm->n_textures; j++)
+		for (j = 0; j < pm->n_textures; j++)
 		{
 			// get texture file name
 			bm_get_filename(pm->textures[j], texture_file);
 
 			// get rid of file extension
-			p = strchr( texture_file, '.' );
-			if ( p )
+			p = strchr(texture_file, '.');
+			if (p)
 			{
-				mprintf(( "ignoring extension on file '%s'\n", texture_file ));
+				mprintf(("ignoring extension on file '%s'\n", texture_file));
 				*p = 0;
 			}
 
 			// now compare the extension-less texture file names
-			if (!stricmp(texture_file, objp->replacement_textures[i].old_texture))
+			if (!stricmp(texture_file, p_objp->replacement_textures[i].old_texture))
 			{
 				// replace it
-				Ships[shipnum].replacement_textures[j] = objp->replacement_textures[i].new_texture_id;
+				Ships[shipnum].replacement_textures[j] = p_objp->replacement_textures[i].new_texture_id;
 				break;
 			}
 		}
@@ -2681,19 +2702,22 @@ int parse_create_object_sub(p_object *objp)
 
 	// set the orders that this ship will accept.  It will have already been set to default from the
 	// ship create code, so only set them if the parse object flags say they are unique
-	if ( objp->flags & P_SF_USE_UNIQUE_ORDERS ) {
-		Ships[shipnum].orders_accepted = objp->orders_accepted;
+	if (p_objp->flags & P_SF_USE_UNIQUE_ORDERS)
+	{
+		Ships[shipnum].orders_accepted = p_objp->orders_accepted;
 
-	// MWA  5/15/98 -- Added the following debug code because some orders that ships
-	// will accept were apparently written out incorrectly with Fred.  This Int3() should
-	// trap these instances.
+		// MWA  5/15/98 -- Added the following debug code because some orders that ships
+		// will accept were apparently written out incorrectly with Fred.  This Int3() should
+		// trap these instances.
 #ifndef NDEBUG
-		if ( Fred_running ) {
+		if (Fred_running)
+		{
 			int default_orders, remaining_orders;
 			
-			default_orders = ship_get_default_orders_accepted( &Ship_info[Ships[shipnum].ship_info_index] );
-			remaining_orders = objp->orders_accepted & ~default_orders;
-			if ( remaining_orders ) {
+			default_orders = ship_get_default_orders_accepted(&Ship_info[Ships[shipnum].ship_info_index]);
+			remaining_orders = p_objp->orders_accepted & ~default_orders;
+			if (remaining_orders)
+			{
 				Warning(LOCATION, "Ship %s has orders which it will accept that are\nnot part of default orders accepted.\n\nPlease reedit this ship and change the orders again\n", Ships[shipnum].ship_name);
 			}
 		}
@@ -2701,31 +2725,29 @@ int parse_create_object_sub(p_object *objp)
 	}
 
 	// check the parse object's flags for possible flags to set on this newly created ship
-	if ( objp->flags & P_OF_PROTECTED ) {
+	if (p_objp->flags & P_OF_PROTECTED)
 		Objects[objnum].flags |= OF_PROTECTED;
-	}
 
-	if ( objp->flags & P_OF_BEAM_PROTECTED ) {
+	if (p_objp->flags & P_OF_BEAM_PROTECTED)
 		Objects[objnum].flags |= OF_BEAM_PROTECTED;
-	}
 
-	if (objp->flags & P_OF_CARGO_KNOWN) {
+	if (p_objp->flags & P_OF_CARGO_KNOWN)
 		Ships[shipnum].flags |= SF_CARGO_REVEALED;
-	}
 
-	if ( objp->flags & P_SF_IGNORE_COUNT )
+	if (p_objp->flags & P_SF_IGNORE_COUNT)
 		Ships[shipnum].flags |= SF_IGNORE_COUNT;
 
-	if ( objp->flags & P_SF_REINFORCEMENT )
+	if (p_objp->flags & P_SF_REINFORCEMENT)
 		Ships[shipnum].flags |= SF_REINFORCEMENT;
 
-	if (objp->flags & P_OF_NO_SHIELDS || objp->ship_max_shield_strength == 0.0f )
+	if (p_objp->flags & P_OF_NO_SHIELDS || p_objp->ship_max_shield_strength == 0.0f)
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 
-	if (objp->flags & P_SF_ESCORT)
+	if (p_objp->flags & P_SF_ESCORT)
 		Ships[shipnum].flags |= SF_ESCORT;
 
-	if (objp->flags & P_KNOSSOS_WARP_IN) {
+	if (p_objp->flags & P_KNOSSOS_WARP_IN)
+	{
 		Objects[objnum].flags |= OF_SPECIAL_WARP;
 		Knossos_warp_ani_used = 1;
 	}
@@ -2734,79 +2756,79 @@ int parse_create_object_sub(p_object *objp)
 	// game only before the game or during respawning.
 	// MWA -- changed the next line to remove the !(Game_mode & GM_MULTIPLAYER).  We shouldn't be setting
 	// this flag in single player mode -- it gets set in post process mission.
-	//if ((objp->flags & P_OF_PLAYER_START) && (((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) || !(Game_mode & GM_MULTIPLAYER)))
-	if ( (objp->flags & P_OF_PLAYER_START) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION))) ) 
+	//if ((p_objp->flags & P_OF_PLAYER_START) && (((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) || !(Game_mode & GM_MULTIPLAYER)))
+	if ((p_objp->flags & P_OF_PLAYER_START) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)))) 
 		Objects[objnum].flags |= OF_PLAYER_SHIP;
 
-	if (objp->flags & P_SF_NO_ARRIVAL_MUSIC)
+	if (p_objp->flags & P_SF_NO_ARRIVAL_MUSIC)
 		Ships[shipnum].flags |= SF_NO_ARRIVAL_MUSIC;
 
-	if ( objp->flags & P_SF_NO_ARRIVAL_WARP )
+	if (p_objp->flags & P_SF_NO_ARRIVAL_WARP)
 		Ships[shipnum].flags |= SF_NO_ARRIVAL_WARP;
 
-	if ( objp->flags & P_SF_NO_DEPARTURE_WARP )
+	if (p_objp->flags & P_SF_NO_DEPARTURE_WARP)
 		Ships[shipnum].flags |= SF_NO_DEPARTURE_WARP;
 
-	if ( objp->flags & P_SF_DOCK_LEADER )
+	if (p_objp->flags & P_SF_DOCK_LEADER)
 		Ships[shipnum].flags |= SF_DOCK_LEADER;
 
-	if ( objp->flags & P_SF_LOCKED )
+	if (p_objp->flags & P_SF_LOCKED)
 		Ships[shipnum].flags |= SF_LOCKED;
 
-	if ( objp->flags & P_SF_WARP_BROKEN )
+	if (p_objp->flags & P_SF_WARP_BROKEN)
 		Ships[shipnum].flags |= SF_WARP_BROKEN;
 
-	if ( objp->flags & P_SF_WARP_NEVER )
+	if (p_objp->flags & P_SF_WARP_NEVER)
 		Ships[shipnum].flags |= SF_WARP_NEVER;
 
-	if ( objp->flags & P_SF_HIDDEN_FROM_SENSORS )
+	if (p_objp->flags & P_SF_HIDDEN_FROM_SENSORS)
 		Ships[shipnum].flags |= SF_HIDDEN_FROM_SENSORS;
 
-	if ( objp->flags & P_SF_VAPORIZE )
+	if (p_objp->flags & P_SF_VAPORIZE)
 		Ships[shipnum].flags |= SF_VAPORIZE;
 
-	if ( objp->flags & P_SF2_STEALTH )
+	if (p_objp->flags & P_SF2_STEALTH)
 		Ships[shipnum].flags2 |= SF2_STEALTH;
 
-	if ( objp->flags & P_SF2_FRIENDLY_STEALTH_INVIS )
+	if (p_objp->flags & P_SF2_FRIENDLY_STEALTH_INVIS)
 		Ships[shipnum].flags2 |= SF2_FRIENDLY_STEALTH_INVIS;
 
-	if ( objp->flags & P_SF2_DONT_COLLIDE_INVIS )
+	if (p_objp->flags & P_SF2_DONT_COLLIDE_INVIS)
 		Ships[shipnum].flags2 |= SF2_DONT_COLLIDE_INVIS;
 
-	if ( objp->flags2 & P2_SF2_PRIMITIVE_SENSORS )
+	if (p_objp->flags2 & P2_SF2_PRIMITIVE_SENSORS)
 		Ships[shipnum].flags2 |= SF2_PRIMITIVE_SENSORS;
 
-	if ( objp->flags2 & P2_SF2_NO_SUBSPACE_DRIVE )
+	if (p_objp->flags2 & P2_SF2_NO_SUBSPACE_DRIVE)
 		Ships[shipnum].flags2 |= SF2_NO_SUBSPACE_DRIVE;
 
-	if ( objp->flags2 & P2_SF2_NO_BANK )
+	if (p_objp->flags2 & P2_SF2_NO_BANK)
 		Ships[shipnum].flags2 |= SF2_NO_BANK;
 
-	if ( objp->flags2 & P2_SF2_AFFECTED_BY_GRAVITY )
+	if (p_objp->flags2 & P2_SF2_AFFECTED_BY_GRAVITY)
 		Ships[shipnum].flags2 |= SF2_AFFECTED_BY_GRAVITY;
 
-	if ( objp->flags2 & P2_SF2_TOGGLE_SUBSYSTEM_SCANNING )
+	if (p_objp->flags2 & P2_SF2_TOGGLE_SUBSYSTEM_SCANNING)
 		Ships[shipnum].flags2 |= SF2_TOGGLE_SUBSYSTEM_SCANNING;
 
-	if ( objp->flags2 & P2_SF2_NAV_CARRY_STATUS )
+	if (p_objp->flags2 & P2_SF2_NAV_CARRY_STATUS)
 		Ships[shipnum].flags2 |= SF2_NAVPOINT_CARRY;
 
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
-	if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NO_ARRIVAL_WARP) )
+	if ((Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NO_ARRIVAL_WARP))
 		Ships[shipnum].flags |= SF_NO_ARRIVAL_WARP;
 
-	if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NO_DEPARTURE_WARP) )
+	if ((Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NO_DEPARTURE_WARP))
 		Ships[shipnum].flags |= SF_NO_DEPARTURE_WARP;
 
 	// Kazan
-	if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NAV_CARRY) )
+	if ((Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NAV_CARRY))
 		Ships[shipnum].flags2 |= SF2_NAVPOINT_CARRY;
 
 	// Goober5000 - moved this here from mission_eval_departures
 	// if ship is in a wing, copy the wing's depature information to the ship
-	if ( Ships[shipnum].wingnum != -1 )
+	if (Ships[shipnum].wingnum != -1)
 	{
 		Ships[shipnum].departure_location = Wings[Ships[shipnum].wingnum].departure_location;
 		Ships[shipnum].departure_anchor = Wings[Ships[shipnum].wingnum].departure_anchor;
@@ -2814,70 +2836,64 @@ int parse_create_object_sub(p_object *objp)
 
 	// mwa -- 1/30/98.  Do both flags.  Fred uses the ship flag, and FreeSpace will use the object
 	// flag. I'm to lazy at this point to deal with consolidating them.
-	if ( objp->flags & P_SF_INVULNERABLE ) {
+	if (p_objp->flags & P_SF_INVULNERABLE)
 		Objects[objnum].flags |= OF_INVULNERABLE;
-	}
 
-	if(objp->flags2 & P2_SF2_TARGETABLE_AS_BOMB) {
+	if (p_objp->flags2 & P2_SF2_TARGETABLE_AS_BOMB)
 		Objects[objnum].flags |= OF_TARGETABLE_AS_BOMB;
-	}
 
 	// Karajorma
-	if(objp->flags2 & P2_SF2_NO_BUILTIN_MESSAGES) 
-	{
+	if (p_objp->flags2 & P2_SF2_NO_BUILTIN_MESSAGES) 
 		Ships[shipnum].flags2 |= SF2_NO_BUILTIN_MESSAGES;
-	}
 
 	// Karajorma
-	if(objp->flags2 & P2_SF2_PRIMARIES_LOCKED) 
-	{
+	if (p_objp->flags2 & P2_SF2_PRIMARIES_LOCKED) 
 		Ships[shipnum].flags2 |= SF2_PRIMARIES_LOCKED;
-	}
 
 	// Karajorma
-	if(objp->flags2 & P2_SF2_SECONDARIES_LOCKED) 
-	{
+	if (p_objp->flags2 & P2_SF2_SECONDARIES_LOCKED) 
 		Ships[shipnum].flags2 |= SF2_SECONDARIES_LOCKED;
-	}
 
-	if ( objp->flags & P_SF_GUARDIAN ) {
+	if (p_objp->flags & P_SF_GUARDIAN)
 		Ships[shipnum].ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
-	}
 
-	if ( objp->flags & P_SF_SCANNABLE )
+	if (p_objp->flags & P_SF_SCANNABLE)
 		Ships[shipnum].flags |= SF_SCANNABLE;
 
-	if ( objp->flags & P_SF_RED_ALERT_STORE_STATUS ){
+	if (p_objp->flags & P_SF_RED_ALERT_STORE_STATUS)
+	{
 		Assert(!(Game_mode & GM_MULTIPLAYER));
 		Ships[shipnum].flags |= SF_RED_ALERT_STORE_STATUS;
 	}
 
 	// a couple of ai_info flags.  Also, do a reasonable default for the kamikaze damage regardless of
 	// whether this flag is set or not
-	if ( objp->flags & P_AIF_KAMIKAZE ) {
+	if (p_objp->flags & P_AIF_KAMIKAZE)
+	{
 		Ai_info[Ships[shipnum].ai_index].ai_flags |= AIF_KAMIKAZE;
-		Ai_info[Ships[shipnum].ai_index].kamikaze_damage = objp->kamikaze_damage;
+		Ai_info[Ships[shipnum].ai_index].kamikaze_damage = p_objp->kamikaze_damage;
 	}
 
-	if ( objp->flags & P_AIF_NO_DYNAMIC )
+	if (p_objp->flags & P_AIF_NO_DYNAMIC)
 		Ai_info[Ships[shipnum].ai_index].ai_flags |= AIF_NO_DYNAMIC;
 
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
 	// is useful in multiplayer when ships respawn
-	Ships[shipnum].wing_status_wing_index = objp->wing_status_wing_index;
-	Ships[shipnum].wing_status_wing_pos = objp->wing_status_wing_pos;
+	Ships[shipnum].wing_status_wing_index = p_objp->wing_status_wing_index;
+	Ships[shipnum].wing_status_wing_pos = p_objp->wing_status_wing_pos;
 
 	// set up the ai_goals for this object -- all ships created here are AI controlled.
-	if ( objp->ai_goals != -1 ) {
+	if (p_objp->ai_goals != -1)
+	{
 		int sexp;
 
-		for ( sexp = CDR(objp->ai_goals); sexp != -1; sexp = CDR(sexp) )
-			// set up the ai goals for this object.
-			ai_add_ship_goal_sexp( sexp, AIG_TYPE_EVENT_SHIP, aip );
+		// set up the ai goals for this object.
+		for (sexp = CDR(p_objp->ai_goals); sexp != -1; sexp = CDR(sexp))
+			ai_add_ship_goal_sexp(sexp, AIG_TYPE_EVENT_SHIP, aip);
 
 		// free up sexp nodes for reuse, since they aren't needed anymore.
-		free_sexp2(objp->ai_goals);
-		objp->ai_goals = -1;
+		free_sexp2(p_objp->ai_goals);
+		p_objp->ai_goals = -1;
 	}
 
 	Assert(Ships[shipnum].modelnum != -1);
@@ -2885,14 +2901,19 @@ int parse_create_object_sub(p_object *objp)
 	// initialize subsystem statii here.  The subsystems are given a percentage damaged.  So a percent value
 	// of 20% means that the subsystem is 20% damaged (*not* 20% of max hits).  This is opposite the way
 	// that the initial velocity/hull strength/shields work
-	i = objp->subsys_count;
-	while (i--) {
-		sssp = &Subsys_status[objp->subsys_index + i];
-		if (!stricmp(sssp->name, NOX("Pilot"))) {
+	i = p_objp->subsys_count;
+	while (i--)
+	{
+		sssp = &Subsys_status[p_objp->subsys_index + i];
+		if (!stricmp(sssp->name, NOX("Pilot")))
+		{
 			wp = &Ships[shipnum].weapons;
-			if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE) {
-				for (j=k=0; j<MAX_SHIP_PRIMARY_BANKS; j++) {
-					if ( (sssp->primary_banks[j] >= 0) || Fred_running ){
+			if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
+			{
+				for (j=k=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
+				{
+					if ((sssp->primary_banks[j] >= 0) || Fred_running)
+					{
 						wp->primary_bank_weapons[k] = sssp->primary_banks[j];						
 
 						// next
@@ -2900,43 +2921,53 @@ int parse_create_object_sub(p_object *objp)
 					}
 				}
 
-				if (Fred_running){
+				if (Fred_running)
 					wp->num_primary_banks = sip->num_primary_banks;
-				} else {
+				else
 					wp->num_primary_banks = k;
-				}
 			}
 
-			if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE) {
-				for (j=k=0; j<MAX_SHIP_SECONDARY_BANKS; j++) {
-					if ( (sssp->secondary_banks[j] >= 0) || Fred_running ){
+			if (sssp->secondary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
+			{
+				for (j = k = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
+				{
+					if ((sssp->secondary_banks[j] >= 0) || Fred_running)
 						wp->secondary_bank_weapons[k++] = sssp->secondary_banks[j];
-					}
 				}
 
-				if (Fred_running){
+				if (Fred_running)
 					wp->num_secondary_banks = sip->num_secondary_banks;
-				} else {
+				else
 					wp->num_secondary_banks = k;
-				}
 			}
 
 			// primary weapons too - Goober5000
-			for (j=0; j < wp->num_primary_banks; j++)
-				if (Fred_running){
+			for (j = 0; j < wp->num_primary_banks; j++)
+			{
+				if (Fred_running)
+				{
 					wp->primary_bank_ammo[j] = sssp->primary_ammo[j];
-				} else {
-					int capacity = fl2i(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j] + 0.5f );
+				}
+				else
+				{
+					int capacity = fl2i(sssp->primary_ammo[j]/100.0f * sip->primary_bank_ammo_capacity[j] + 0.5f);
 					wp->primary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->primary_bank_weapons[j]].cargo_size + 0.5f);
 				}
+			}
 
-			for (j=0; j < wp->num_secondary_banks; j++)
-				if (Fred_running){
+			for (j = 0; j < wp->num_secondary_banks; j++)
+			{
+				if (Fred_running)
+				{
 					wp->secondary_bank_ammo[j] = sssp->secondary_ammo[j];
-				} else {
-					int capacity = fl2i(sssp->secondary_ammo[j]/100.0f * sip->secondary_bank_ammo_capacity[j] + 0.5f );
+				}
+				else
+				{
+					int capacity = fl2i(sssp->secondary_ammo[j]/100.0f * sip->secondary_bank_ammo_capacity[j] + 0.5f);
 					wp->secondary_bank_ammo[j] = fl2i(capacity / Weapon_info[wp->secondary_bank_weapons[j]].cargo_size + 0.5f);
 				}
+			}
+
 			continue;
 		}
 
@@ -2954,20 +2985,27 @@ int parse_create_object_sub(p_object *objp)
 				}
 			}
 
-			if (!subsystem_stricmp(ptr->system_info->subobj_name, sssp->name)) {
-				if (Fred_running) {
+			if (!subsystem_stricmp(ptr->system_info->subobj_name, sssp->name))
+			{
+				if (Fred_running)
+				{
 					ptr->current_hits = sssp->percent;
 					ptr->max_hits = 100.0f;
-				} else {
+				}
+				else
+				{
 					ptr->max_hits = ptr->system_info->max_subsys_strength * (Ships[shipnum].ship_max_hull_strength / sip->max_hull_strength);
 
 					float new_hits;
 					new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
 					Ships[shipnum].subsys_info[ptr->system_info->type].current_hits -= (ptr->max_hits - new_hits);
-					if ( (100.0f - sssp->percent) < 0.5) {
+					if ((100.0f - sssp->percent) < 0.5)
+					{
 						ptr->current_hits = 0.0f;
 						ptr->submodel_info_1.blown_off = 1;
-					} else {
+					}
+					else
+					{
 						ptr->current_hits = new_hits;
 					}
 				}
@@ -2981,16 +3019,13 @@ int parse_create_object_sub(p_object *objp)
 						ptr->weapons.secondary_bank_weapons[j] = sssp->secondary_banks[j];
 
 				// Goober5000
-				for (j=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
-				{
+				for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
 					ptr->weapons.primary_bank_ammo[j] = sssp->primary_ammo[j];
-				}
 
-				for (j=0; j<MAX_SHIP_SECONDARY_BANKS; j++) {
-					// AL 3-5-98:  This is correct for FRED, but not for FreeSpace... but is this even used?
-					//					As far as I know, turrets cannot run out of ammo
+				// AL 3-5-98:  This is correct for FRED, but not for FreeSpace... but is this even used?
+				//					As far as I know, turrets cannot run out of ammo
+				for (j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++)
 					ptr->weapons.secondary_bank_ammo[j] = sssp->secondary_ammo[j];
-				}
 
 				ptr->subsys_cargo_name = sssp->subsys_cargo_name;
 
@@ -3009,43 +3044,47 @@ int parse_create_object_sub(p_object *objp)
 	// initial hull strength, shields, and velocity are all expressed as a percentage of the max value/
 	// so a initial_hull value of 90% means 90% of max.  This way is opposite of how subsystems are dealt
 	// with
-	if (Fred_running) {
-		Objects[objnum].phys_info.speed = (float) objp->initial_velocity;
-		// Ships[shipnum].hull_hit_points_taken = (float) objp->initial_hull;
-		Objects[objnum].hull_strength = (float) objp->initial_hull;
-		Objects[objnum].shield_quadrant[0] = (float) objp->initial_shields;
+	if (Fred_running)
+	{
+		Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity;
+		// Ships[shipnum].hull_hit_points_taken = (float) p_objp->initial_hull;
+		Objects[objnum].hull_strength = (float) p_objp->initial_hull;
+		Objects[objnum].shield_quadrant[0] = (float) p_objp->initial_shields;
 
-	} else {
+	}
+	else
+	{
 		int max_allowed_sparks, num_sparks, i;
 		polymodel *pm;
 
-		// Ships[shipnum].hull_hit_points_taken = (float)objp->initial_hull * sip->max_hull_hit_points / 100.0f;
-		Objects[objnum].hull_strength = objp->initial_hull * Ships[shipnum].ship_max_hull_strength / 100.0f;
+		// Ships[shipnum].hull_hit_points_taken = (float) p_objp->initial_hull * sip->max_hull_hit_points / 100.0f;
+		Objects[objnum].hull_strength = p_objp->initial_hull * Ships[shipnum].ship_max_hull_strength / 100.0f;
 		for (i = 0; i<MAX_SHIELD_SECTIONS; i++)
-			Objects[objnum].shield_quadrant[i] = (float)(objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
+			Objects[objnum].shield_quadrant[i] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 
 		// initial velocities now do not apply to ships which warp in after mission starts
-		if ( !(Game_mode & GM_IN_MISSION) ) {
-			Objects[objnum].phys_info.speed = (float)objp->initial_velocity * sip->max_speed / 100.0f;
+		if (!(Game_mode & GM_IN_MISSION))
+		{
+			Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity * sip->max_speed / 100.0f;
 			Objects[objnum].phys_info.vel.xyz.z = Objects[objnum].phys_info.speed;
 			Objects[objnum].phys_info.prev_ramp_vel = Objects[objnum].phys_info.vel;
 			Objects[objnum].phys_info.desired_vel = Objects[objnum].phys_info.vel;
 		}
 
 		// recalculate damage of subsystems
-		ship_recalc_subsys_strength( &Ships[shipnum] );
+		ship_recalc_subsys_strength(&Ships[shipnum]);
 
 		// create sparks on a ship whose hull is damaged.  We will create two sparks for every 20%
 		// of hull damage done.  100 means no sparks.  between 80 and 100 do two sparks.  60 and 80 is
 		// four, etc.
-		pm = model_get( Ships[shipnum].modelnum );	// changed from sip to Ships[] by Goober5000
+		pm = model_get(Ships[shipnum].modelnum);	// changed from sip to Ships[] by Goober5000
 		max_allowed_sparks = get_max_sparks(&Objects[objnum]);
-		num_sparks = (int)((100.0f - objp->initial_hull) / 5.0f);
-		if (num_sparks > max_allowed_sparks) {
+		num_sparks = (int)((100.0f - p_objp->initial_hull) / 5.0f);
+		if (num_sparks > max_allowed_sparks)
 			num_sparks = max_allowed_sparks;
-		}
 
-		for (i = 0; i < num_sparks; i++ ) {
+		for (i = 0; i < num_sparks; i++)
+		{
 			vec3d v1, v2;
 
 			// DA 10/20/98 - sparks must be chosen on the hull and not any submodel
@@ -3057,58 +3096,57 @@ int parse_create_object_sub(p_object *objp)
 
 	// in mission, we add a log entry -- set ship positions for ships not in wings, and then do
 	// warpin effect
-	if ( (Game_mode & GM_IN_MISSION) && (!Fred_running) ) {
-		mission_log_add_entry( LOG_SHIP_ARRIVE, Ships[shipnum].ship_name, NULL );
+	if ((Game_mode & GM_IN_MISSION) && (!Fred_running))
+	{
+		mission_log_add_entry(LOG_SHIP_ARRIVE, Ships[shipnum].ship_name, NULL);
 
-		// if this ship isn't in a wing, determine it's arrival location
-		if ( !Game_restoring )	{
-			if ( Ships[shipnum].wingnum == -1 ) {
+		if (!Game_restoring)
+		{
+			// if this ship isn't in a wing, determine its arrival location
+			if (Ships[shipnum].wingnum == -1)
+			{
 				int location;
+
 				// multiplayer clients set the arrival location of ships to be at location since their
 				// position has already been determined.  Don't actually set the variable since we
 				// don't want the warp effect to show if coming from a dock bay.
-				location = objp->arrival_location;
+				location = p_objp->arrival_location;
 
-				if ( MULTIPLAYER_CLIENT )
+				if (MULTIPLAYER_CLIENT)
 					location = ARRIVE_AT_LOCATION;
 
-				mission_set_arrival_location(objp->arrival_anchor, location, objp->arrival_distance, objnum, NULL, NULL);
-				if ( objp->arrival_location != ARRIVE_FROM_DOCK_BAY )
-					shipfx_warpin_start( &Objects[objnum] );
+				mission_set_arrival_location(p_objp->arrival_anchor, location, p_objp->arrival_distance, objnum, NULL, NULL);
+
+				// Goober5000 - warpin start moved to parse_create_object
 			}
 		}
 		
 		// possibly add this ship to a hotkey set
-		if ( (Ships[shipnum].wingnum == -1) && (Ships[shipnum].hotkey != -1 ) )
-			mission_hotkey_mf_add( Ships[shipnum].hotkey, Ships[shipnum].objnum, HOTKEY_MISSION_FILE_ADDED );
-		else if ( (Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].hotkey != -1 ) )
-			mission_hotkey_mf_add( Wings[Ships[shipnum].wingnum].hotkey, Ships[shipnum].objnum, HOTKEY_MISSION_FILE_ADDED );
+		if ((Ships[shipnum].wingnum == -1) && (Ships[shipnum].hotkey != -1))
+			mission_hotkey_mf_add(Ships[shipnum].hotkey, Ships[shipnum].objnum, HOTKEY_MISSION_FILE_ADDED);
+		else if ((Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].hotkey != -1))
+			mission_hotkey_mf_add(Wings[Ships[shipnum].wingnum].hotkey, Ships[shipnum].objnum, HOTKEY_MISSION_FILE_ADDED);
 
 		// possibly add this ship to the hud escort list
-		if ( Ships[shipnum].flags & SF_ESCORT ){
-			hud_add_remove_ship_escort( objnum, 1 );
-		}
+		if (Ships[shipnum].flags & SF_ESCORT)
+			hud_add_remove_ship_escort(objnum, 1);
 	}
 
 	// for multiplayer games, make a call to the network code to assign the object signature
 	// of the newly created object.  The network host of the netgame will always assign a signature
 	// to a newly created object.  The network signature will get to the clients of the game in
 	// different manners depending on whether or not an individual ship or a wing was created.
-	if ( Game_mode & GM_MULTIPLAYER ) {
-		Objects[objnum].net_signature = objp->net_signature;
+	if (Game_mode & GM_MULTIPLAYER)
+	{
+		Objects[objnum].net_signature = p_objp->net_signature;
 
-		if ( (Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (objp->wingnum == -1) ){
-			send_ship_create_packet( &Objects[objnum], (objp==Arriving_support_ship)?1:0 );
-		}
+		if ((Game_mode & GM_IN_MISSION) && MULTIPLAYER_MASTER && (p_objp->wingnum == -1))
+			send_ship_create_packet(&Objects[objnum], (p_objp == Arriving_support_ship) ? 1 : 0);
 	}
 
 	// if recording a demo, post the event
-	if(Game_mode & GM_DEMO_RECORD){
-		demo_POST_obj_create(objp->name, Objects[objnum].signature);
-	}
-
-	// Goober5000 - make the parse object aware of what it was created as
-	objp->created_object = &Objects[objnum];
+	if(Game_mode & GM_DEMO_RECORD)
+		demo_POST_obj_create(p_objp->name, Objects[objnum].signature);
 
 	return objnum;
 }
@@ -3118,7 +3156,7 @@ int parse_create_object_sub(p_object *objp)
 //
 // flag is parameter that is used to tell what kind information we are retrieving from the mission.
 // if we are just getting player starts, then don't create the objects
-int parse_object(mission *pm, int flag, p_object *objp)
+int parse_object(mission *pm, int flag, p_object *p_objp)
 {
 	int	i, j, count, delay;
 	char name[NAME_LENGTH], flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
@@ -3127,47 +3165,46 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	Assert(pm != NULL);
 
 	// Goober5000
-	objp->created_object = NULL;
-	objp->next = NULL;
-	objp->prev = NULL;
+	p_objp->created_object = NULL;
+	p_objp->next = NULL;
+	p_objp->prev = NULL;
 
 	required_string("$Name:");
-	stuff_string(objp->name, F_NAME, NULL);
-	if (mission_parse_get_parse_object(objp->name))
-		error_display(0, NOX("Redundant ship name: %s\n"), objp->name);
+	stuff_string(p_objp->name, F_NAME, NULL);
+	if (mission_parse_get_parse_object(p_objp->name))
+		error_display(0, NOX("Redundant ship name: %s\n"), p_objp->name);
 
 
-	find_and_stuff("$Class:", &objp->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
-	if (objp->ship_class < 0) {
-		Warning(LOCATION, "Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0", objp->name);
+	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
+	if (p_objp->ship_class < 0)
+	{
+		Warning(LOCATION, "Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0", p_objp->name);
 
 		// if fred is running, maybe notify the user that the mission contains MD content
-		if(Fred_running){
+		if (Fred_running)
 			Fred_found_unknown_ship_during_parsing = 1;
-		}
 
-		objp->ship_class = 0;
+		p_objp->ship_class = 0;
 	}
 
 	// if this is a multiplayer dogfight mission, skip support ships
-	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[objp->ship_class].flags & SIF_SUPPORT)){
+	if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (Ship_info[p_objp->ship_class].flags & SIF_SUPPORT))
 		return 0;
-	}		
 
 	// optional alternate name type
-	objp->alt_type_index = -1;
-	if(optional_string("$Alt:")){
+	p_objp->alt_type_index = -1;
+	if(optional_string("$Alt:"))
+	{
 		// alternate name
 		stuff_string(name, F_NAME, NULL, NAME_LENGTH);
 
 		// try and find the alternate name
-		objp->alt_type_index = (char)mission_parse_lookup_alt(name);
-		Assert(objp->alt_type_index >= 0);
-		if(objp->alt_type_index < 0){
+		p_objp->alt_type_index = (char)mission_parse_lookup_alt(name);
+		Assert(p_objp->alt_type_index >= 0);
+		if(p_objp->alt_type_index < 0)
 			mprintf(("Error looking up alternate ship type name!\n"));
-		} else {
+		else
 			mprintf(("Using alternate ship type name : %s\n", name));
-		}
 	}
 
 	// static alias stuff - stupid, but it seems to be necessary
@@ -3175,13 +3212,13 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	for (i = 0; i < Num_iffs; i++)
 		temp_team_names[i] = Iff_info[i].iff_name;
 
-	find_and_stuff("$Team:", &objp->team, F_NAME, temp_team_names, Num_iffs, "team name");
+	find_and_stuff("$Team:", &p_objp->team, F_NAME, temp_team_names, Num_iffs, "team name");
 
 	required_string("$Location:");
-	stuff_vector(&objp->pos);
+	stuff_vector(&p_objp->pos);
 
 	required_string("$Orientation:");
-	stuff_matrix(&objp->orient);
+	stuff_matrix(&p_objp->orient);
 
 	// legacy code, not even used in FS1
 	if (optional_string("$IFF:"))
@@ -3190,123 +3227,133 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		stuff_string(blah, F_NAME, NULL);
 	}
 
-	find_and_stuff("$AI Behavior:",	&objp->behavior, F_NAME, Ai_behavior_names, Num_ai_behaviors, "AI behavior");
-	objp->ai_goals = -1;
+	find_and_stuff("$AI Behavior:",	&p_objp->behavior, F_NAME, Ai_behavior_names, Num_ai_behaviors, "AI behavior");
+	p_objp->ai_goals = -1;
 
-	if ( optional_string("+AI Class:")) {
-		objp->ai_class = match_and_stuff(F_NAME, Ai_class_names, Num_ai_classes, "AI class");
-		Assert(objp->ai_class > -1 );
-	} else {
-		objp->ai_class = Ship_info[objp->ship_class].ai_class;
+	if (optional_string("+AI Class:")) 
+	{
+		p_objp->ai_class = match_and_stuff(F_NAME, Ai_class_names, Num_ai_classes, "AI class");
+		Assert(p_objp->ai_class > -1);
+	}
+	else
+	{
+		p_objp->ai_class = Ship_info[p_objp->ship_class].ai_class;
 	}
 
-	if ( optional_string("$AI Goals:") ){
-		objp->ai_goals = get_sexp_main();
-	}
+	if (optional_string("$AI Goals:"))
+		p_objp->ai_goals = get_sexp_main();
 
-	if ( !required_string_either("$AI Goals:", "$Cargo 1:") ) {
+	if (!required_string_either("$AI Goals:", "$Cargo 1:"))
+	{
 		required_string("$AI Goals:");
-		objp->ai_goals = get_sexp_main();
+		p_objp->ai_goals = get_sexp_main();
 	}
 
-	objp->cargo1 = -1;
+	p_objp->cargo1 = -1;
 	int temp;
 	find_and_stuff_or_add("$Cargo 1:", &temp, F_NAME, Cargo_names, &Num_cargo, MAX_CARGO, "cargo");
-	objp->cargo1 = char(temp);
-	if ( optional_string("$Cargo 2:") ) {
+	p_objp->cargo1 = char(temp);
+	if (optional_string("$Cargo 2:"))
+	{
 		char buf[NAME_LENGTH];
 		stuff_string(buf, F_NAME, NULL);
 	}
 
-	parse_common_object_data(objp);  // get initial conditions and subsys status
+	parse_common_object_data(p_objp);  // get initial conditions and subsys status
 	count = 0;
 	while (required_string_either("$Arrival Location:", "$Status Description:"))	{
 		Assert(count < MAX_OBJECT_STATUS);
 
-		find_and_stuff("$Status Description:", &objp->status_type[count], F_NAME, Status_desc_names, Num_status_names, "Status Description");
-		find_and_stuff("$Status:", &objp->status[count], F_NAME, Status_type_names, Num_status_names, "Status Type");
-		find_and_stuff("$Target:", &objp->target[count], F_NAME, Status_target_names, Num_status_names, "Target");
+		find_and_stuff("$Status Description:", &p_objp->status_type[count], F_NAME, Status_desc_names, Num_status_names, "Status Description");
+		find_and_stuff("$Status:", &p_objp->status[count], F_NAME, Status_type_names, Num_status_names, "Status Type");
+		find_and_stuff("$Target:", &p_objp->target[count], F_NAME, Status_target_names, Num_status_names, "Target");
 		count++;
 	}
-	objp->status_count = count;
+	p_objp->status_count = count;
 
-	objp->arrival_anchor = -1;
-	objp->arrival_distance = 0;
-	find_and_stuff("$Arrival Location:", &objp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
-	if ( optional_string("+Arrival Distance:") ) {
-		stuff_int( &objp->arrival_distance );
-		if ( objp->arrival_location != ARRIVE_AT_LOCATION ) {
+	p_objp->arrival_anchor = -1;
+	p_objp->arrival_distance = 0;
+	find_and_stuff("$Arrival Location:", &p_objp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
+	if (optional_string("+Arrival Distance:"))
+	{
+		stuff_int(&p_objp->arrival_distance);
+		if (p_objp->arrival_location != ARRIVE_AT_LOCATION)
+		{
 			required_string("$Arrival Anchor:");
 			stuff_string(name, F_NAME, NULL);
-			objp->arrival_anchor = get_anchor(name);
+			p_objp->arrival_anchor = get_anchor(name);
 		}
 	}
 
-	if (optional_string("+Arrival Delay:")) {
+	delay = 0;
+	if (optional_string("+Arrival Delay:"))
+	{
 		stuff_int(&delay);
-		if ( delay < 0 )
-			Error(LOCATION, "Cannot have arrival delay < 0 (ship %s)", objp->name);
-	} else
-		delay = 0;
-
-	if ( !Fred_running ){
-		objp->arrival_delay = -delay;			// use negative numbers to mean we haven't set up a timer yet
-	} else {
-		objp->arrival_delay = delay;
+		if (delay < 0)
+			Error(LOCATION, "Cannot have arrival delay < 0 (ship %s)", p_objp->name);
 	}
+
+	if (!Fred_running)
+		p_objp->arrival_delay = -delay;			// use negative numbers to mean we haven't set up a timer yet
+	else
+		p_objp->arrival_delay = delay;
 
 	required_string("$Arrival Cue:");
-	objp->arrival_cue = get_sexp_main();
-	if ( !Fred_running && (objp->arrival_cue >= 0) ) {
+	p_objp->arrival_cue = get_sexp_main();
+	if (!Fred_running && (p_objp->arrival_cue >= 0))
+	{
 		// eval the arrival cue.  if the cue is true, set up the timestamp for the arrival delay
-		Assert ( objp->arrival_delay <= 0 );
+		Assert (p_objp->arrival_delay <= 0);
 
 		// don't eval arrival_cues when just looking for player information.
-		if ( eval_sexp(objp->arrival_cue) ){			// evaluate to determine if sexp is always false.
-			objp->arrival_delay = timestamp( -objp->arrival_delay * 1000 );
-		}
+		// evaluate to determine if sexp is always false.
+		if (eval_sexp(p_objp->arrival_cue))
+			p_objp->arrival_delay = timestamp(-p_objp->arrival_delay * 1000);
 	}
 
-	find_and_stuff("$Departure Location:", &objp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
-	objp->departure_anchor = -1;
-	if ( objp->departure_location == DEPART_AT_DOCK_BAY ) {
+	find_and_stuff("$Departure Location:", &p_objp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
+	p_objp->departure_anchor = -1;
+	if (p_objp->departure_location == DEPART_AT_DOCK_BAY)
+	{
 		required_string("$Departure Anchor:");
 		stuff_string(name, F_NAME, NULL);
-		objp->departure_anchor = get_anchor(name);
+		p_objp->departure_anchor = get_anchor(name);
 	}
 
-	if (optional_string("+Departure Delay:")) {
+	delay = 0;
+	if (optional_string("+Departure Delay:"))
+	{
 		stuff_int(&delay);
-		if ( delay < 0 ){
-			Error(LOCATION, "Cannot have departure delay < 0 (ship %s)", objp->name);
-		}
-	} else {
-		delay = 0;
+		if (delay < 0)
+			Error(LOCATION, "Cannot have departure delay < 0 (ship %s)", p_objp->name);
 	}
 
-	if ( !Fred_running ){
-		objp->departure_delay = -delay;
-	} else {
-		objp->departure_delay = delay;
-	}
+	if (!Fred_running)
+		p_objp->departure_delay = -delay;
+	else
+		p_objp->departure_delay = delay;
 
 	required_string("$Departure Cue:");
-	objp->departure_cue = get_sexp_main();
+	p_objp->departure_cue = get_sexp_main();
 
 	if (optional_string("$Misc Properties:"))
-		stuff_string(objp->misc, F_NAME, NULL);
+		stuff_string(p_objp->misc, F_NAME, NULL);
 
 	required_string("$Determination:");
-	stuff_int(&objp->determination);
+	stuff_int(&p_objp->determination);
 
 	// set flags
-	objp->flags = 0;
-	if (optional_string("+Flags:")) {
+	p_objp->flags = 0;
+	if (optional_string("+Flags:"))
+	{
 		count = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS);
-		for (i=0; i<count; i++) {
-			for (j=0; j<MAX_PARSE_OBJECT_FLAGS; j++) {
-				if (!stricmp(flag_strings[i], Parse_object_flags[j])) {
-					objp->flags |= (1 << j);
+		for (i=0; i<count; i++)
+		{
+			for (j=0; j<MAX_PARSE_OBJECT_FLAGS; j++)
+			{
+				if (!stricmp(flag_strings[i], Parse_object_flags[j]))
+				{
+					p_objp->flags |= (1 << j);
 					break;
 				}
 			}
@@ -3317,13 +3364,17 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	}
 
 	// second set - Goober5000
-	objp->flags2 = 0;
-	if (optional_string("+Flags2:")) {
+	p_objp->flags2 = 0;
+	if (optional_string("+Flags2:"))
+	{
 		count = stuff_string_list(flag_strings_2, MAX_PARSE_OBJECT_FLAGS_2);
-		for (i=0; i<count; i++) {
-			for (j=0; j<MAX_PARSE_OBJECT_FLAGS_2; j++) {
-				if (!stricmp(flag_strings_2[i], Parse_object_flags_2[j])) {
-					objp->flags2 |= (1 << j);
+		for (i=0; i<count; i++)
+		{
+			for (j=0; j<MAX_PARSE_OBJECT_FLAGS_2; j++)
+			{
+				if (!stricmp(flag_strings_2[i], Parse_object_flags_2[j]))
+				{
+					p_objp->flags2 |= (1 << j);
 					break;
 				}
 			}
@@ -3334,68 +3385,69 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	}
 
 	// set certain flags that used to be in ship_info - Goober5000
-	if (Ship_info[objp->ship_class].flags & SIF_STEALTH)
-		objp->flags |= P_SF2_STEALTH;
-	if (Ship_info[objp->ship_class].flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
-		objp->flags |= P_SF2_DONT_COLLIDE_INVIS;
+	if (Ship_info[p_objp->ship_class].flags & SIF_STEALTH)
+		p_objp->flags |= P_SF2_STEALTH;
+	if (Ship_info[p_objp->ship_class].flags & SIF_SHIP_CLASS_DONT_COLLIDE_INVIS)
+		p_objp->flags |= P_SF2_DONT_COLLIDE_INVIS;
 
 
 	// always store respawn priority, just for ease of implementation
-	objp->respawn_priority = 0;
-	if(optional_string("+Respawn Priority:" )){
-		stuff_int(&objp->respawn_priority);	
-	}
+	p_objp->respawn_priority = 0;
+	if(optional_string("+Respawn Priority:"))
+		stuff_int(&p_objp->respawn_priority);	
 
-	objp->escort_priority = 0;
-	if ( optional_string("+Escort Priority:" ) ) {
-		Assert(objp->flags & P_SF_ESCORT);
-		stuff_int(&objp->escort_priority);
+	p_objp->escort_priority = 0;
+	if (optional_string("+Escort Priority:"))
+	{
+		Assert(p_objp->flags & P_SF_ESCORT);
+		stuff_int(&p_objp->escort_priority);
 	}	
 
-	if ( objp->flags & P_OF_PLAYER_START ) {
-		objp->flags |= P_OF_CARGO_KNOWN;				// make cargo known for players
+	if (p_objp->flags & P_OF_PLAYER_START)
+	{
+		p_objp->flags |= P_OF_CARGO_KNOWN;				// make cargo known for players
 		Player_starts++;
 	}
 
-	objp->special_exp_index = -1;
-	if ( optional_string("+Special Exp index:" ) ) {
-		stuff_int(&objp->special_exp_index);
-	}
+	p_objp->special_exp_index = -1;
+	if (optional_string("+Special Exp index:"))
+		stuff_int(&p_objp->special_exp_index);
 
-	objp->special_hitpoint_index = -1;
-	if ( optional_string("+Special Hitpoint index:" ) ) {
-		stuff_int(&objp->special_hitpoint_index);
-	}
+	p_objp->special_hitpoint_index = -1;
+	if (optional_string("+Special Hitpoint index:"))
+		stuff_int(&p_objp->special_hitpoint_index);
 
 	// get hitpoint values
-	if (objp->special_hitpoint_index != -1)
+	if (p_objp->special_hitpoint_index != -1)
 	{
-		objp->ship_max_shield_strength = (float) atoi(Sexp_variables[objp->special_hitpoint_index+SHIELD_STRENGTH].text);
-		objp->ship_max_hull_strength = (float) atoi(Sexp_variables[objp->special_hitpoint_index+HULL_STRENGTH].text);
+		p_objp->ship_max_shield_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].text);
+		p_objp->ship_max_hull_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].text);
 	}
 	else
 	{
-		objp->ship_max_shield_strength = Ship_info[objp->ship_class].max_shield_strength;
-		objp->ship_max_hull_strength = Ship_info[objp->ship_class].max_hull_strength;
+		p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
+		p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
 	}
-	Assert(objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
 
 	// if the kamikaze flag is set, we should have the next flag
-	if ( optional_string("+Kamikaze Damage:") ) {
+	if (optional_string("+Kamikaze Damage:"))
+	{
 		int damage;
 
 		stuff_int(&damage);
-		objp->kamikaze_damage = i2fl(damage);
+		p_objp->kamikaze_damage = i2fl(damage);
 	}
 
-	objp->hotkey = -1;
-	if (optional_string("+Hotkey:")) {
-		stuff_int(&objp->hotkey);
-		Assert((objp->hotkey >= 0) && (objp->hotkey < 10));
+	p_objp->hotkey = -1;
+	if (optional_string("+Hotkey:"))
+	{
+		stuff_int(&p_objp->hotkey);
+		Assert((p_objp->hotkey >= 0) && (p_objp->hotkey < 10));
 	}
 
 	// Goober5000
-	objp->dock_list = NULL;
+	p_objp->dock_list = NULL;
 	while (optional_string("+Docked With:"))
 	{
 		char docked_with[NAME_LENGTH];
@@ -3419,7 +3471,7 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		}
 
 		// put this information into the Initially_docked array
-		strcpy(Initially_docked[Total_initially_docked].docker, objp->name);
+		strcpy(Initially_docked[Total_initially_docked].docker, p_objp->name);
 		strcpy(Initially_docked[Total_initially_docked].dockee, docked_with);
 		strcpy(Initially_docked[Total_initially_docked].docker_point, docker_point);
 		strcpy(Initially_docked[Total_initially_docked].dockee_point, dockee_point);
@@ -3430,96 +3482,90 @@ int parse_object(mission *pm, int flag, p_object *objp)
 	// here, then we need to destroy the ship N seconds before the mission starts (for debris purposes).
 	// store the time value here.  We want to create this object for sure.  Set the arrival cue and arrival
 	// delay to bogus values
-	objp->destroy_before_mission_time = -1;
-	if ( optional_string("+Destroy At:") ) {
-
-		stuff_int(&objp->destroy_before_mission_time);
-		Assert ( objp->destroy_before_mission_time >= 0 );
-		objp->arrival_cue = Locked_sexp_true;
-		objp->arrival_delay = timestamp(0);
+	p_objp->destroy_before_mission_time = -1;
+	if (optional_string("+Destroy At:"))
+	{
+		stuff_int(&p_objp->destroy_before_mission_time);
+		Assert (p_objp->destroy_before_mission_time >= 0);
+		p_objp->arrival_cue = Locked_sexp_true;
+		p_objp->arrival_delay = timestamp(0);
 	}
 
 	// check for the optional "orders accepted" string which contains the orders from the default
 	// set that this ship will actually listen to
-	if ( optional_string("+Orders Accepted:") ) {
-		stuff_int( &objp->orders_accepted );
-		if ( objp->orders_accepted != -1 ){
-			objp->flags |= P_SF_USE_UNIQUE_ORDERS;
-		}
+	if (optional_string("+Orders Accepted:"))
+	{
+		stuff_int(&p_objp->orders_accepted);
+		if (p_objp->orders_accepted != -1)
+			p_objp->flags |= P_SF_USE_UNIQUE_ORDERS;
 	}
 
-	if (optional_string("+Group:")){
-		stuff_int(&objp->group);
-	} else {
-		objp->group = 0;
-	}
+	p_objp->group = 0;
+	if (optional_string("+Group:"))
+		stuff_int(&p_objp->group);
 
-	if (optional_string("+Score:")){
-		stuff_int(&objp->score);
-	} else {
-		objp->score = 0;
-	}
+	p_objp->score = 0;
+	if (optional_string("+Score:"))
+		stuff_int(&p_objp->score);
 
 	// parse the persona index if present
-	if ( optional_string("+Persona Index:")){
-		stuff_int(&objp->persona_index);
-	} else {
-		objp->persona_index = -1;
-	}
+	p_objp->persona_index = -1;
+	if (optional_string("+Persona Index:"))
+		stuff_int(&p_objp->persona_index);
 
 	// texture replacement - Goober5000
-	objp->num_texture_replacements = 0;
-	if ( optional_string("$Texture Replace:") )
+	p_objp->num_texture_replacements = 0;
+	if (optional_string("$Texture Replace:"))
 	{
 		char *p;
 
-		while ((objp->num_texture_replacements < MAX_MODEL_TEXTURES) && (optional_string("+old:")))
+		while ((p_objp->num_texture_replacements < MAX_MODEL_TEXTURES) && (optional_string("+old:")))
 		{
-			stuff_string(objp->replacement_textures[objp->num_texture_replacements].old_texture, F_NAME, NULL);
+			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, F_NAME, NULL);
 			required_string("+new:");
-			stuff_string(objp->replacement_textures[objp->num_texture_replacements].new_texture, F_NAME, NULL);
+			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, F_NAME, NULL);
 
 			// get rid of extensions
-			p = strchr( objp->replacement_textures[objp->num_texture_replacements].old_texture, '.' );
-			if ( p )
+			p = strchr(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, '.');
+			if (p)
 			{
-				mprintf(( "Extraneous extension found on replacement texture %s!\n", objp->replacement_textures[objp->num_texture_replacements].old_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture));
 				*p = 0;
 			}
-			p = strchr( objp->replacement_textures[objp->num_texture_replacements].new_texture, '.' );
-			if ( p )
+			p = strchr(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, '.');
+			if (p)
 			{
-				mprintf(( "Extraneous extension found on replacement texture %s!\n", objp->replacement_textures[objp->num_texture_replacements].new_texture));
+				mprintf(("Extraneous extension found on replacement texture %s!\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture));
 				*p = 0;
 			}
 
 			// load the texture
-			objp->replacement_textures[objp->num_texture_replacements].new_texture_id = bm_load(objp->replacement_textures[objp->num_texture_replacements].new_texture);
+			p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id = bm_load(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
 
-			if (objp->replacement_textures[objp->num_texture_replacements].new_texture_id < 0)
+			if (p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture_id < 0)
 			{
-				Warning(LOCATION, "Could not load replacement texture %s for ship %s\n", objp->replacement_textures[objp->num_texture_replacements].new_texture, objp->name);
+				Warning(LOCATION, "Could not load replacement texture %s for ship %s\n", p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, p_objp->name);
 			}
 
 			// *** account for FRED
 			if (Fred_running)
 			{
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, objp->name);
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, objp->replacement_textures[objp->num_texture_replacements].old_texture);
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, objp->replacement_textures[objp->num_texture_replacements].new_texture);
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, p_objp->name);
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
 				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = FRED_TEXTURE_REPLACE;
 				Fred_num_texture_replacements++;
 			}
 
 			// increment
-			objp->num_texture_replacements++;
+			p_objp->num_texture_replacements++;
 		}
 	}
 
 	// duplicate model texture replacement - Goober5000
-	else if ( optional_string("$Duplicate Model Texture Replace:") )
+	else if (optional_string("$Duplicate Model Texture Replace:"))
 	{
-		if (objp->num_texture_replacements > 0)	// because of the else, not allowed to happen any more
+		if (p_objp->num_texture_replacements > 0)	// because of the else, not allowed to happen any more
 		{
 			Warning(LOCATION, "Warning: Both $Texture Replace and $Duplicate Model Texture Replace used on the same ship.\n");
 		}
@@ -3528,29 +3574,29 @@ int parse_object(mission *pm, int flag, p_object *objp)
 
 		while ((Num_texture_replacements < MAX_TEXTURE_REPLACEMENTS) && (optional_string("+old:")))
 		{
-			strcpy(Texture_replace[Num_texture_replacements].ship_name, objp->name);
+			strcpy(Texture_replace[Num_texture_replacements].ship_name, p_objp->name);
 			stuff_string(Texture_replace[Num_texture_replacements].old_texture, F_NAME, NULL);
 			required_string("+new:");
 			stuff_string(Texture_replace[Num_texture_replacements].new_texture, F_NAME, NULL);
 
 			// get rid of extensions
-			p = strchr( Texture_replace[Num_texture_replacements].old_texture, '.' );
-			if ( p )
+			p = strchr(Texture_replace[Num_texture_replacements].old_texture, '.');
+			if (p)
 			{
-				mprintf(( "Extraneous extension found on duplicate model replacement texture %s!\n", Texture_replace[Num_texture_replacements].old_texture));
+				mprintf(("Extraneous extension found on duplicate model replacement texture %s!\n", Texture_replace[Num_texture_replacements].old_texture));
 				*p = 0;
 			}
-			p = strchr( Texture_replace[Num_texture_replacements].new_texture, '.' );
-			if ( p )
+			p = strchr(Texture_replace[Num_texture_replacements].new_texture, '.');
+			if (p)
 			{
-				mprintf(( "Extraneous extension found on duplicate model replacement texture %s!\n", Texture_replace[Num_texture_replacements].new_texture));
+				mprintf(("Extraneous extension found on duplicate model replacement texture %s!\n", Texture_replace[Num_texture_replacements].new_texture));
 				*p = 0;
 			}
 
 			// *** account for FRED
 			if (Fred_running)
 			{
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, objp->name);
+				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, p_objp->name);
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, Texture_replace[Num_texture_replacements].old_texture);
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, Texture_replace[Num_texture_replacements].new_texture);
 				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = FRED_DUPLICATE_MODEL_TEXTURE_REPLACE;
@@ -3568,32 +3614,32 @@ int parse_object(mission *pm, int flag, p_object *objp)
 		}
 	}
 
-	objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
-	objp->pos_in_wing = -1;				// Goober5000
+	p_objp->wingnum = -1;					// set the wing number to -1 -- possibly to be set later
+	p_objp->pos_in_wing = -1;				// Goober5000
 
 	// for multiplayer, assign a network signature to this parse object.  Doing this here will
 	// allow servers to use the signature with clients when creating new ships, instead of having
 	// to pass ship names all the time
-	if ( Game_mode & GM_MULTIPLAYER ){
-		objp->net_signature = multi_assign_network_signature( MULTI_SIG_SHIP );
-	}
+	if (Game_mode & GM_MULTIPLAYER)
+		p_objp->net_signature = multi_assign_network_signature(MULTI_SIG_SHIP);
 
 	// set the wing_status position to be -1 for all objects.  This will get set to an appropriate
 	// value when the wing positions are finally determined.
-	objp->wing_status_wing_index = -1;
-	objp->wing_status_wing_pos = -1;
-	objp->respawn_count = 0;
+	p_objp->wing_status_wing_index = -1;
+	p_objp->wing_status_wing_pos = -1;
+	p_objp->respawn_count = 0;
 
 	// if this if the starting player ship, then copy if to Starting_player_pobject (used for ingame join)
-	if ( !stricmp( objp->name, Player_start_shipname) ) {
-		Player_start_pobject = *objp;
+	if (!stricmp(p_objp->name, Player_start_shipname))
+	{
+		Player_start_pobject = *p_objp;
 		Player_start_pobject.flags |= P_SF_PLAYER_START_VALID;
 	}
 	
 
 	// Goober5000 - preload stuff for certain object flags
 	// (done after parsing object, but before creating it)
-	if (objp->flags & P_KNOSSOS_WARP_IN)
+	if (p_objp->flags & P_KNOSSOS_WARP_IN)
 		Knossos_warp_ani_used = 1;
 
 	// this is a valid/legal ship to create
@@ -3979,7 +4025,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 	objnum = -1;
 
-	// we have to do this via the array because we have no guarantee we'll be able to iterate along the list
+	// Goober5000 - we have to do this via the array because we have no guarantee we'll be able to iterate along the list
 	// (since created objects plus anything they're docked to will be removed from it)
 	for (i = 0; i < Num_parse_objects; i++)
 	{
@@ -4018,12 +4064,13 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			break;
 		}
 
-		// bash the ship name to be the name of the wing + sone number if there is > 1 wave in this wing
-		// also, if multplayer, set the parse object's net signature to be wing's net signature
+		// bash the ship name to be the name of the wing + some number if there is > 1 wave in this wing
+
+		// also, if multiplayer, set the parse object's net signature to be wing's net signature
 		// base + total_arrived_count (before adding 1)
 		if (Game_mode & GM_MULTIPLAYER)
 		{
-			p_objp->net_signature = (ushort)(wingp->net_signature + wingp->total_arrived_count);
+			p_objp->net_signature = (ushort) (wingp->net_signature + wingp->total_arrived_count);
 		}
 
 		wingp->total_arrived_count++;
@@ -5637,7 +5684,7 @@ void mission_parse_close()
 	}
 }
 
-// sets the arrival lcoation of the ships in wingp.  pass num_to_set since the threshold value
+// sets the arrival location of the ships in wingp.  pass num_to_set since the threshold value
 // for wings may have us create more ships in the wing when there are still some remaining
 void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 {
