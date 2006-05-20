@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.333 $
- * $Date: 2006-05-13 07:15:51 $
- * $Author: taylor $
+ * $Revision: 2.334 $
+ * $Date: 2006-05-20 02:03:01 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.333  2006/05/13 07:15:51  taylor
+ * get rid of some wasteful math for gr_set_proj_matrix() calls
+ * fix check that broke praise of kills for player
+ * fix knossos warpin effect that always seems to get rendered backwards (I couldn't find anything that broke with this but I suppose it's a mod could have an issue)
+ *
  * Revision 2.332  2006/04/18 00:56:28  bobboau
  * bugfix for the animation system
  *
@@ -6346,80 +6351,87 @@ void ship_delete( object * obj )
 // entry in the list), and packs the array accordingly.
 void ship_wing_cleanup( int shipnum, wing *wingp )
 {
-	int i, index = -1, team;
+	int i, index = -1, team = Ships[shipnum].team;
 
-	team = Ships[shipnum].team;
-	// compress the ship_index array and mark the last entry with a -1
-	for (i = 0; i < wingp->current_count; i++ ) {
-		if ( wingp->ship_index[i] == shipnum ) {
+	// find this ship's position within its wing
+	for (i = 0; i < wingp->current_count; i++)
+	{
+		if (wingp->ship_index[i] == shipnum)
+		{
 			index = i;
 			break;
 		}
 	}
 
 	// Assert(index != -1);
-	
 	// this can happen in multiplayer (dogfight, ingame join specifically)
-	if(index == -1){
+	if (index == -1)
 		return;
-	}
 
-	for ( i = index; i < wingp->current_count - 1; i++ ){
+
+	// compress the ship_index array and mark the last entry with a -1
+	for (i = index; i < wingp->current_count - 1; i++)
 		wingp->ship_index[i] = wingp->ship_index[i+1];
-	}
 
 	wingp->current_count--;
 	Assert ( wingp->current_count >= 0 );
 	wingp->ship_index[wingp->current_count] = -1;
 
-	// if the current count is 0, check to see if the wing departed or was destroyed.
-	if ( wingp->current_count == 0 ) {
 
+	// if the current count is 0, check to see if the wing departed or was destroyed.
+	if (wingp->current_count == 0)
+	{
 		// if this wing was ordered to depart by the player, set the current_wave equal to the total
 		// waves so we can mark the wing as gone and no other ships arrive
-		if ( wingp->flags & WF_DEPARTURE_ORDERED ) 
+		if (wingp->flags & WF_DEPARTURE_ORDERED)
 			wingp->current_wave = wingp->num_waves;
 
-		// first, be sure to mark a wing destroyed event if all members of wing were destroyed and on
-		// the last wave.  This circumvents a problem where the wing could be marked as departed and
-		// destroyed if the last ships were destroyed after the wing's departure cue became true.
-
-		// if the wing wasn't destroyed, and it is departing, then mark it as departed -- in this
-		// case, there had better be ships in this wing with departure entries in the log file.  The
-		// logfile code checks for this case.  
-		if ( (wingp->current_wave == wingp->num_waves) && (wingp->total_destroyed == wingp->total_arrived_count) ) {
-			mission_log_add_entry(LOG_WING_DESTROYED, wingp->name, NULL, team);
+		// Goober5000 - some changes for clarity and closing holes
+		// make sure to flag the wing as gone if all of its member ships are gone and no more can arrive
+		if ((wingp->current_wave == wingp->num_waves) && (wingp->total_destroyed + wingp->total_departed == wingp->total_arrived_count))
+		{
+			// mark the wing as gone
 			wingp->flags |= WF_WING_GONE;
 			wingp->time_gone = Missiontime;
-		} else if ( (wingp->flags & WF_WING_DEPARTING) || (wingp->current_wave == wingp->num_waves) ) {
-#ifndef NDEBUG
-			ship_obj *so;
 
-
-			// apparently, there have been reports of ships still present in the mission when this log
-			// entry if written.  Do a sanity check here to find out for sure.
-			for ( so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so) ) {
-
-				// skip the player -- stupid special case.
-				if ( &Objects[so->objnum] == Player_obj )
-					continue;
-
-				if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN) )
-					continue;
-
-				if ( (Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(Ships[Objects[so->objnum].instance].flags & (SF_DEPARTING|SF_DYING)) && !(Ships[Objects[so->objnum].instance].flags2 & (SF2_VANISHED)) )
-					// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
-					// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
-					// Not sure how to fix this. -- Goober5000
-					Int3();
+			// if all ships were destroyed, log it as destroyed
+			if (wingp->total_destroyed == wingp->total_arrived_count)
+			{
+				// first, be sure to mark a wing destroyed event if all members of wing were destroyed and on
+				// the last wave.  This circumvents a problem where the wing could be marked as departed and
+				// destroyed if the last ships were destroyed after the wing's departure cue became true.
+				mission_log_add_entry(LOG_WING_DESTROYED, wingp->name, NULL, team);
 			}
+			// if some ships escaped, log it as departed
+			else
+			{
+				// if the wing wasn't destroyed, and it is departing, then mark it as departed -- in this
+				// case, there had better be ships in this wing with departure entries in the log file.  The
+				// logfile code checks for this case.  
+				mission_log_add_entry(LOG_WING_DEPARTED, wingp->name, NULL, team);
+
+#ifndef NDEBUG
+				// apparently, there have been reports of ships still present in the mission when this log
+				// entry if written.  Do a sanity check here to find out for sure.
+				for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+				{
+					// skip the player -- stupid special case.
+					if (&Objects[so->objnum] == Player_obj)
+						continue;
+	
+					if ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN))
+						continue;
+	
+					if ((Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(Ships[Objects[so->objnum].instance].flags & (SF_DEPARTING|SF_DYING)) && !(Ships[Objects[so->objnum].instance].flags2 & (SF2_VANISHED)))
+					{
+						// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
+						// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
+						// Not sure how to fix this. -- Goober5000
+						Int3();
+					}
+				}
 #endif
-
-			if ( wingp->flags & (WF_WING_DEPARTING|WF_DEPARTURE_ORDERED) )
-				mission_log_add_entry(LOG_WING_DEPART, wingp->name, NULL, team);
-
-			wingp->flags |= WF_WING_GONE;
-			wingp->time_gone = Missiontime;
+			}
 		}
 	}
 }
@@ -6536,9 +6548,9 @@ void ship_departed( int num )
 	// the secondary mission log field
 	jump_node *jnp = jumpnode_get_which_in(&Objects[sp->objnum]);
 	if(jnp)
-		mission_log_add_entry(LOG_SHIP_DEPART, sp->ship_name, jnp->get_name_ptr(), sp->wingnum);
+		mission_log_add_entry(LOG_SHIP_DEPARTED, sp->ship_name, jnp->get_name_ptr(), sp->wingnum);
 	else
-		mission_log_add_entry(LOG_SHIP_DEPART, sp->ship_name, NULL, sp->wingnum);
+		mission_log_add_entry(LOG_SHIP_DEPARTED, sp->ship_name, NULL, sp->wingnum);
 		
 	ai_ship_destroy(num, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
 
@@ -14754,7 +14766,7 @@ void object_jettison_cargo(object *objp, object *cargo_objp)
 	ai_do_objects_undocked_stuff(objp, cargo_objp);
 
 	// Goober5000 - add log
-	mission_log_add_entry(LOG_SHIP_UNDOCK, Ships[objp->instance].ship_name, Ships[cargo_objp->instance].ship_name);
+	mission_log_add_entry(LOG_SHIP_UNDOCKED, Ships[objp->instance].ship_name, Ships[cargo_objp->instance].ship_name);
 
 	// physics stuff
 	vm_vec_sub(&pos, &cargo_objp->pos, &objp->pos);

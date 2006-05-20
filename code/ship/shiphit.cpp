@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.62 $
- * $Date: 2006-03-18 07:12:08 $
+ * $Revision: 2.63 $
+ * $Date: 2006-05-20 02:03:01 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2006/03/18 07:12:08  Goober5000
+ * add ship-subsys-targetable and ship-subsys-untargetable
+ * --Goober5000
+ *
  * Revision 2.61  2006/02/25 21:47:08  Goober5000
  * spelling
  *
@@ -2180,12 +2184,12 @@ void ship_self_destruct( object *objp )
 	if((Game_mode & GM_MULTIPLAYER) && (multi_find_player_by_object(objp) >= 0)){
 		int np_index = multi_find_player_by_object(objp);
 		if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
-			mission_log_add_entry(LOG_SELF_DESTRUCT, Net_players[np_index].m_player->callsign, NULL );
+			mission_log_add_entry(LOG_SELF_DESTRUCTED, Net_players[np_index].m_player->callsign, NULL );
 		} else {
-			mission_log_add_entry(LOG_SELF_DESTRUCT, Ships[objp->instance].ship_name, NULL );
+			mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[objp->instance].ship_name, NULL );
 		}
 	} else {
-		mission_log_add_entry(LOG_SELF_DESTRUCT, Ships[objp->instance].ship_name, NULL );
+		mission_log_add_entry(LOG_SELF_DESTRUCTED, Ships[objp->instance].ship_name, NULL );
 	}
 	
 	// check to see if this ship needs to be respawned

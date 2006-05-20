@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.14 $
- * $Date: 2006-03-19 05:05:59 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2006-05-20 02:03:01 $
+ * $Author: Goober5000 $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/03/19 05:05:59  taylor
+ * make sure the mission log doesn't modify stuff in Cargo_names[], since it shouldn't
+ * have split_str_once() be sure to not split a word in half, it should end up on the second line instead
+ *
  * Revision 2.13  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -411,14 +415,19 @@ void mission_log_obsolete_entries(int type, char *pname)
 // assigns flag values to an entry based on the team value passed in
 void mission_log_flag_team( log_entry *entry, int which_entry, int team )
 {
-	if ( which_entry == ML_FLAG_PRIMARY ) {
+	if (which_entry == ML_FLAG_PRIMARY)
+	{
 		entry->primary_team = team;
-
-	} else if ( which_entry == ML_FLAG_SECONDARY ) {
+	}
+	else if (which_entry == ML_FLAG_SECONDARY)
+	{
 		entry->secondary_team = team;
-
-	} else
-		Int3();		// get allender -- impossible type
+	}
+	else
+	{
+		// get allender -- impossible type
+		Int3();
+	}
 }
 
 // following function adds an entry into the mission log.
@@ -469,14 +478,14 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 	int index, si;
 
 	case LOG_SHIP_DESTROYED:
-	case LOG_SHIP_ARRIVE:
-	case LOG_SHIP_DEPART:
-	case LOG_SHIP_DOCK:
+	case LOG_SHIP_ARRIVED:
+	case LOG_SHIP_DEPARTED:
+	case LOG_SHIP_DOCKED:
 	case LOG_SHIP_SUBSYS_DESTROYED:
-	case LOG_SHIP_UNDOCK:
+	case LOG_SHIP_UNDOCKED:
 	case LOG_SHIP_DISABLED:
 	case LOG_SHIP_DISARMED:
-	case LOG_SELF_DESTRUCT:
+	case LOG_SELF_DESTRUCTED:
 		// multiplayer. callsign is passed in for ship destroyed and self destruct
 		if((Game_mode & GM_MULTIPLAYER) && (multi_find_player_by_callsign(pname) >= 0)){
 			int np_index = multi_find_player_by_callsign(pname);
@@ -493,7 +502,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 		}
 
 		// some of the entries have a secondary component.  Figure out what is up with them.
-		if ( (type == LOG_SHIP_DOCK) || (type == LOG_SHIP_UNDOCK)) {
+		if ( (type == LOG_SHIP_DOCKED) || (type == LOG_SHIP_UNDOCKED)) {
 			if ( sname ) {
 				index = ship_name_lookup( sname );
 				Assert( index != -1 );
@@ -543,15 +552,15 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 		} else if ( (type == LOG_SHIP_SUBSYS_DESTROYED) && (Ship_info[Ships[index].ship_info_index].flags & SIF_SMALL_SHIP) ) {
 			// make subsystem destroyed entries for small ships hidden
 			entry->flags |= MLF_HIDDEN;
-		} else if ( (type == LOG_SHIP_ARRIVE) && (Ships[index].wingnum != -1 ) ) {
+		} else if ( (type == LOG_SHIP_ARRIVED) && (Ships[index].wingnum != -1 ) ) {
 			// arrival of ships in wings don't display
 			entry->flags |= MLF_HIDDEN;
 		}
 		break;
 
 	case LOG_WING_DESTROYED:
-	case LOG_WING_DEPART:
-	case LOG_WING_ARRIVE:
+	case LOG_WING_DEPARTED:
+	case LOG_WING_ARRIVED:
 		index = wing_name_lookup( pname, 1 );
 		Assert( index != -1 );
 		Assert( info_index != -1 );			// this is the team value
@@ -559,7 +568,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 		// get the team value for this wing.  Departed or destroyed wings will pass the team
 		// value in info_index parameter.  For arriving wings, get the team value from the
 		// first ship in the list
-		if ( type == LOG_WING_ARRIVE ) {
+		if ( type == LOG_WING_ARRIVED ) {
 			si = Wings[index].ship_index[0];
 			Assert( si != -1 );
 			mission_log_flag_team( entry, ML_FLAG_PRIMARY, Ships[si].team );
@@ -571,7 +580,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 		// MWA 2/25/98.  debug code to try to find any ships in this wing that have departed.
 		// scan through all log entries and find at least one ship_depart entry for a ship
 		// that was in this wing.
-		if ( type == LOG_WING_DEPART ) {
+		if ( type == LOG_WING_DEPARTED ) {
 			int i;
 
 			// if all were destroyed, then don't do this debug code.
@@ -580,7 +589,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 			}
 
 			for ( i = 0; i < last_entry; i++ ) {
-				if ( log_entries[i].type != LOG_SHIP_DEPART ){
+				if ( log_entries[i].type != LOG_SHIP_DEPARTED ){
 					continue;
 				}
 				if( log_entries[i].index == index ){
@@ -675,7 +684,7 @@ int mission_log_get_time_indexed( int type, char *pname, char *sname, int count,
 			// if we are looking for a dock/undock entry, then we don't care about the order in which the names
 			// were passed into this function.  Count the entry as found if either name matches both in the other
 			// set.
-			if ( (type == LOG_SHIP_DOCK) || (type == LOG_SHIP_UNDOCK) ) {
+			if ( (type == LOG_SHIP_DOCKED) || (type == LOG_SHIP_UNDOCKED) ) {
 				Assert ( sname );
 				if ( (!stricmp(entry->pname, pname) && !stricmp(entry->sname, sname)) || (!stricmp(entry->pname, sname) && !stricmp(entry->sname, pname)) )
 					found = 1;
@@ -837,7 +846,7 @@ void message_log_init_scrollback(int pw)
 
 		if ( (Lcl_gr) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
 			// in german goal events, just say "objective" instead of objective name
-			// this is cuz we cant translate objective names
+			// this is cuz we can't translate objective names
 			message_log_add_seg(Num_log_lines, OBJECT_X, c, "Einsatzziel");
 		} else {
 			message_log_add_seg(Num_log_lines, OBJECT_X, c, entry->pname);
@@ -863,7 +872,7 @@ void message_log_init_scrollback(int pw)
 				}
 				break;
 
-			case LOG_SELF_DESTRUCT:
+			case LOG_SELF_DESTRUCTED:
 				message_log_add_segs(XSTR( "Self Destructed", 1476), LOG_COLOR_NORMAL);
 				break;
 
@@ -871,11 +880,11 @@ void message_log_init_scrollback(int pw)
 				message_log_add_segs(XSTR( "Destroyed", 404), LOG_COLOR_NORMAL);
 				break;
 
-			case LOG_SHIP_ARRIVE:
+			case LOG_SHIP_ARRIVED:
 				message_log_add_segs(XSTR( "Arrived", 406), LOG_COLOR_NORMAL);
 				break;
 
-			case LOG_WING_ARRIVE:
+			case LOG_WING_ARRIVED:
 				if (entry->index > 1){
 					sprintf(text, XSTR( "Arrived (wave %d)", 407), entry->index);
 				} else {
@@ -884,15 +893,15 @@ void message_log_init_scrollback(int pw)
 				message_log_add_segs(text, LOG_COLOR_NORMAL);
 				break;
 
-			case LOG_SHIP_DEPART:
+			case LOG_SHIP_DEPARTED:
 				message_log_add_segs(XSTR( "Departed", 408), LOG_COLOR_NORMAL);
 				break;
 
-			case LOG_WING_DEPART:
+			case LOG_WING_DEPARTED:
 				message_log_add_segs(XSTR( "Departed", 408), LOG_COLOR_NORMAL);
 				break;
 
-			case LOG_SHIP_DOCK:
+			case LOG_SHIP_DOCKED:
 				message_log_add_segs(XSTR( "Docked with ", 409), LOG_COLOR_NORMAL);
 				message_log_add_segs(entry->sname, c);
 				break;
@@ -914,7 +923,7 @@ void message_log_init_scrollback(int pw)
 				break;
 			}
 
-			case LOG_SHIP_UNDOCK:
+			case LOG_SHIP_UNDOCKED:
 				message_log_add_segs(XSTR( "Undocked with ", 412), LOG_COLOR_NORMAL);
 				message_log_add_segs(entry->sname, c);
 				break;
@@ -927,15 +936,15 @@ void message_log_init_scrollback(int pw)
 				message_log_add_segs(XSTR( "Disarmed", 414), LOG_COLOR_NORMAL);
 				break;
 
-			case LOG_PLAYER_REARM:
+			case LOG_PLAYER_CALLED_FOR_REARM:
 				message_log_add_segs(XSTR( " called for rearm", 415), LOG_COLOR_NORMAL);
 				break;
 
-			case LOG_PLAYER_REARM_ABORT:
+			case LOG_PLAYER_ABORTED_REARM:
 				message_log_add_segs(XSTR( " aborted rearm", 416), LOG_COLOR_NORMAL);
 				break;
 
-			case LOG_PLAYER_REINFORCEMENT:
+			case LOG_PLAYER_CALLED_FOR_REINFORCEMENT:
 				message_log_add_segs(XSTR( "Called in as reinforcement", 417), LOG_COLOR_NORMAL);
 				break;
 

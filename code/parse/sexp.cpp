@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.258 $
- * $Date: 2006-04-20 06:32:23 $
+ * $Revision: 2.259 $
+ * $Date: 2006-05-20 02:03:01 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.258  2006/04/20 06:32:23  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.257  2006/04/07 20:16:30  karajorma
  * Added SEXPs to lock and unlock the primary and secondary weapons
  *
@@ -4559,14 +4562,14 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if (mission_log_get_time(LOG_SHIP_DEPART, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL))
+	if (mission_log_get_time(LOG_SHIP_DEPARTED, object_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, object_name, NULL, NULL))
 	{
 		oswpt->type = OSWPT_TYPE_EXITED;
 		return;
 	}
 
 	// the object might be the name of a wing.  Check to see if the wing is destroyed or departed.
-	if (mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, object_name, NULL, NULL)) 
+	if (mission_log_get_time(LOG_WING_DESTROYED, object_name, NULL, NULL) || mission_log_get_time(LOG_WING_DEPARTED, object_name, NULL, NULL)) 
 	{
 		oswpt->type = OSWPT_TYPE_EXITED;
 		return;
@@ -4774,11 +4777,11 @@ int sexp_is_destroyed(int n, fix *latest_time)
 			return SEXP_CANT_EVAL;
 
 		// check to see if this ship/wing has departed.  If so, then function is known false
-		if ( mission_log_get_time (LOG_SHIP_DEPART, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPART, name, NULL, NULL) )
+		if ( mission_log_get_time (LOG_SHIP_DEPARTED, name, NULL, NULL) || mission_log_get_time (LOG_WING_DEPARTED, name, NULL, NULL) )
 			return SEXP_KNOWN_FALSE;
 
 		// check the mission log.  If ship/wing not destroyed, immediately return SEXP_FALSE.
-		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, &time) || mission_log_get_time(LOG_SELF_DESTRUCT, name, NULL, &time)) {
+		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, &time) || mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, &time)) {
 			num_destroyed++;
 			if ( latest_time && (time > *latest_time) )
 				*latest_time = time;
@@ -4822,7 +4825,7 @@ int sexp_is_subsystem_destroyed(int n)
 		return SEXP_CANT_EVAL;
 
 	// if the ship has departed, no way to destroy it's subsystem.
-	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL ))
+	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL ))
 		return SEXP_KNOWN_FALSE;
 	
 	if ( mission_log_get_time(LOG_SHIP_SUBSYS_DESTROYED, ship_name, subsys_name, NULL) )
@@ -4849,7 +4852,7 @@ int sexp_has_docked(int n)
 	if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
 		return SEXP_KNOWN_FALSE;
 
-	if ( !mission_log_get_time_indexed(LOG_SHIP_DOCK, docker, dockee, count, NULL) )
+	if ( !mission_log_get_time_indexed(LOG_SHIP_DOCKED, docker, dockee, count, NULL) )
 		return SEXP_FALSE;
 
 	return SEXP_KNOWN_TRUE;
@@ -4869,7 +4872,7 @@ int sexp_has_undocked(int n)
 		return SEXP_CANT_EVAL;
 
 	Assert ( count > 0 );
-	if ( !mission_log_get_time_indexed(LOG_SHIP_UNDOCK, docker, dockee, count, NULL) ) {
+	if ( !mission_log_get_time_indexed(LOG_SHIP_UNDOCKED, docker, dockee, count, NULL) ) {
 		// if either ship destroyed before they dock, then sexp is known false
 		if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
 			return SEXP_KNOWN_FALSE;
@@ -4893,7 +4896,7 @@ int sexp_has_arrived(int n, fix *latest_time)
 		count++;
 		name = CTEXT(n);
 		// if there is no log entry for this ship/wing for arrival, sexpression is false
-		if ( mission_log_get_time(LOG_SHIP_ARRIVE, name, NULL, &time) || mission_log_get_time(LOG_WING_ARRIVE, name, NULL, &time) ) {
+		if ( mission_log_get_time(LOG_SHIP_ARRIVED, name, NULL, &time) || mission_log_get_time(LOG_WING_ARRIVED, name, NULL, &time) ) {
 			num_arrived++;
 			if ( latest_time && (time > *latest_time) )
 				*latest_time = time;
@@ -4927,7 +4930,7 @@ int sexp_has_departed(int n, fix *latest_time)
 		// the sexpression is not true.
 		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) || mission_log_get_time(LOG_WING_DESTROYED, name, NULL, NULL))
 			return SEXP_KNOWN_FALSE;
-		else if ( mission_log_get_time(LOG_SHIP_DEPART, name, NULL, &time) || mission_log_get_time(LOG_WING_DEPART, name, NULL, &time) ) {
+		else if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, &time) || mission_log_get_time(LOG_WING_DEPARTED, name, NULL, &time) ) {
 			num_departed++;
 			if ( latest_time && (time > *latest_time) )
 				*latest_time = time;
@@ -4959,7 +4962,7 @@ int sexp_is_disabled( int n, fix *latest_time )
 
 		// if ship/wing destroyed, sexpression is known false.  Also, if there is no disable log entry, then
 		// the sexpression is not true.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, name, NULL, &time) || mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time) )
+		if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, &time) || mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time) )
 			return SEXP_KNOWN_FALSE;
 		else if ( mission_log_get_time(LOG_SHIP_DISABLED, name, NULL, &time) ) {
 			num_disabled++;
@@ -4989,7 +4992,7 @@ int sexp_are_waypoints_done(int n)
 	// a destroyed or departed ship will never reach their goal -- return known false
 	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
 		return SEXP_KNOWN_FALSE;
-	else if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) )
+	else if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) )
 		return SEXP_KNOWN_FALSE;
 
 	// now check the log for the waypoints done entry
@@ -5018,7 +5021,7 @@ int sexp_is_disarmed( int n, fix *latest_time )
 
 		// if ship/wing destroyed, sexpression is known false.  Also, if there is no disarm log entry, then
 		// the sexpression is not true.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, name, NULL, &time) || mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time) )
+		if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, &time) || mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time) )
 			return SEXP_KNOWN_FALSE;
 		else if ( mission_log_get_time(LOG_SHIP_DISARMED, name, NULL, &time) ) {
 			num_disarmed++;
@@ -5079,7 +5082,7 @@ int sexp_is_subsystem_destroyed_delay(int n)
 		return SEXP_CANT_EVAL;
 
 	// if the ship has departed, no way to destroy it's subsystem.
-	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL ))
+	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL ))
 		return SEXP_KNOWN_FALSE;
 
 	if ( mission_log_get_time(LOG_SHIP_SUBSYS_DESTROYED, ship_name, subsys_name, &time) ) {
@@ -5160,7 +5163,7 @@ int sexp_has_docked_delay(int n)
 	if (sexp_query_has_yet_to_arrive(dockee))
 		return SEXP_CANT_EVAL;
 
-	if ( !mission_log_get_time_indexed(LOG_SHIP_DOCK, docker, dockee, count, &time) )
+	if ( !mission_log_get_time_indexed(LOG_SHIP_DOCKED, docker, dockee, count, &time) )
 		return SEXP_FALSE;
 
 	if ( (Missiontime - time) >= delay )
@@ -5184,7 +5187,7 @@ int sexp_has_undocked_delay(int n)
 		return SEXP_CANT_EVAL;
 
 	Assert ( count > 0 );
-	if ( !mission_log_get_time_indexed(LOG_SHIP_UNDOCK, docker, dockee, count, &time) ) {
+	if ( !mission_log_get_time_indexed(LOG_SHIP_UNDOCKED, docker, dockee, count, &time) ) {
 		// if either ship destroyed before they dock, then sexp is known false
 		if ( mission_log_get_time(LOG_SHIP_DESTROYED, docker, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, dockee, NULL, NULL) )
 			return SEXP_KNOWN_FALSE;
@@ -5277,7 +5280,7 @@ int sexp_are_waypoints_done_delay(int n)
 	} else {
 		if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
 			return SEXP_KNOWN_FALSE;
-		else if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) )
+		else if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) )
 			return SEXP_KNOWN_FALSE;
 	}
 
@@ -5342,7 +5345,7 @@ int sexp_special_warp_dist( int n)
 
 	// check to see if either ship was destroyed or departed.  If so, then make this node known
 	// false
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) ) {
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, ship_name, NULL, NULL) ) {
 		return SEXP_NAN_FOREVER;
 	}
 
@@ -5423,7 +5426,7 @@ int sexp_time_docked(int n)
 	int count = eval_num(CDR(CDR(n)));
 
 	Assert ( count > 0 );
-	if ( !mission_log_get_time_indexed(LOG_SHIP_DOCK, docker, dockee, count, &time) ){
+	if ( !mission_log_get_time_indexed(LOG_SHIP_DOCKED, docker, dockee, count, &time) ){
 		return SEXP_NAN;
 	}
 
@@ -5438,7 +5441,7 @@ int sexp_time_undocked(int n)
 	int count = eval_num(CDR(CDR(n)));
 
 	Assert ( count > 0 );
-	if ( !mission_log_get_time_indexed(LOG_SHIP_UNDOCK, docker, dockee, count, &time) ){
+	if ( !mission_log_get_time_indexed(LOG_SHIP_UNDOCKED, docker, dockee, count, &time) ){
 		return SEXP_NAN;
 	}
 
@@ -5450,7 +5453,7 @@ int sexp_time_ship_arrived(int n)
 	fix time;
 
 	Assert( n != -1 );
-	if ( !mission_log_get_time( LOG_SHIP_ARRIVE, CTEXT(n), NULL, &time ) ){
+	if ( !mission_log_get_time( LOG_SHIP_ARRIVED, CTEXT(n), NULL, &time ) ){
 		return SEXP_NAN;
 	}
 
@@ -5462,7 +5465,7 @@ int sexp_time_wing_arrived(int n)
 	fix time;
 
 	Assert( n != -1 );
-	if ( !mission_log_get_time( LOG_WING_ARRIVE, CTEXT(n), NULL, &time ) ){
+	if ( !mission_log_get_time( LOG_WING_ARRIVED, CTEXT(n), NULL, &time ) ){
 		return SEXP_NAN;
 	}
 
@@ -5474,7 +5477,7 @@ int sexp_time_ship_departed(int n)
 	fix time;
 
 	Assert( n != -1 );
-	if ( !mission_log_get_time( LOG_SHIP_DEPART, CTEXT(n), NULL, &time ) ){
+	if ( !mission_log_get_time( LOG_SHIP_DEPARTED, CTEXT(n), NULL, &time ) ){
 		return SEXP_NAN;
 	}
 
@@ -5486,7 +5489,7 @@ int sexp_time_wing_departed(int n)
 	fix time;
 
 	Assert( n != -1 );
-	if ( !mission_log_get_time(LOG_WING_DEPART, CTEXT(n), NULL, &time ) ){
+	if ( !mission_log_get_time(LOG_WING_DEPARTED, CTEXT(n), NULL, &time ) ){
 		return SEXP_NAN;
 	}
 
@@ -5502,7 +5505,7 @@ int sexp_shields_left(int n)
 	shipname = CTEXT(n);
 	
 	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, shipname, NULL, NULL) ){
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) ){
 		return SEXP_NAN_FOREVER;
 	}
 
@@ -5532,7 +5535,7 @@ int sexp_hits_left(int n)
 	shipname = CTEXT(n);
 	
 	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, shipname, NULL, NULL) ){
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) ){
 		return SEXP_NAN_FOREVER;
 	}
 
@@ -5567,7 +5570,7 @@ int sexp_is_ship_visible(int n)
 	shipname = CTEXT(n);
 	
 	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, shipname, NULL, NULL) ){
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) ){
 		return SEXP_NAN_FOREVER;
 	}
 
@@ -5607,7 +5610,7 @@ int sexp_is_ship_stealthy(int n)
 	shipname = CTEXT(n);
 	
 	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, shipname, NULL, NULL) ){
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) ){
 		return SEXP_NAN_FOREVER;
 	}
 
@@ -5631,7 +5634,7 @@ int sexp_is_friendly_stealth_visible(int n)
 	shipname = CTEXT(n);
 	
 	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, shipname, NULL, NULL) ){
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) ){
 		return SEXP_NAN_FOREVER;
 	}
 
@@ -5682,7 +5685,7 @@ int sexp_hits_left_subsystem(int n)
 	shipname = CTEXT(n);
 	
 	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, shipname, NULL, NULL) ){
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) ){
 		return SEXP_NAN_FOREVER;
 	}
 
@@ -5948,7 +5951,7 @@ int sexp_distance_subsystem(int n)
 	subsys_name = CTEXT(CDR(CDR(n)));
 
 	// for the ship with the subsystem - see if it was destroyed or departed
-	if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_with_subsys_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPART, ship_with_subsys_name, NULL, NULL))
+	if (mission_log_get_time(LOG_SHIP_DESTROYED, ship_with_subsys_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, ship_with_subsys_name, NULL, NULL))
 		return SEXP_NAN_FOREVER;
 
 	// check the other ship too
@@ -6579,7 +6582,7 @@ int sexp_percent_ships_depart_destroy_disarm_disable(int n, int what)
 			// must be a ship, so increment the total by 1, then determine if this ship has departed
 			total++;
 			if ( what == OP_PERCENT_SHIPS_DEPARTED ) {
-				if ( mission_log_get_time(LOG_SHIP_DEPART, name, NULL, NULL) )
+				if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, NULL) )
 					count++;
 			} else if ( what == OP_PERCENT_SHIPS_DESTROYED ) {
 				if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) )
@@ -6633,7 +6636,7 @@ int sexp_depart_node_delay(int n)
 		// the sexpression is not true.
 		if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) )
 			return SEXP_KNOWN_FALSE;
-		else if ( mission_log_get_time(LOG_SHIP_DEPART, name, jump_node_name, &this_time) ) {
+		else if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, jump_node_name, &this_time) ) {
 			num_departed++;
 			if ( this_time > latest_time )
 				latest_time = this_time;
@@ -6681,7 +6684,7 @@ int sexp_destroyed_departed_delay(int n)
 				}
 				count++;
 			}
-		} else if ( mission_log_get_time(LOG_SHIP_DEPART, name, NULL, &time_gone) ) {
+		} else if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, &time_gone) ) {
 			count++;
 		} else if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time_gone) ) {
 			count++;
@@ -6711,8 +6714,8 @@ int sexp_special_warpout_name( int node )
 
 	// check to see if either ship was destroyed or departed.  If so, then make this node known
 	// false
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) ||
-		  mission_log_get_time(LOG_SHIP_DESTROYED, knossos, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, knossos, NULL, NULL) ) 
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, ship_name, NULL, NULL) ||
+		  mission_log_get_time(LOG_SHIP_DESTROYED, knossos, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, knossos, NULL, NULL) ) 
 		return SEXP_NAN_FOREVER;
 
 	// get ship name
@@ -6982,7 +6985,7 @@ void sexp_set_scanned_unscanned(int n, int flag)
 	ship_name = CTEXT(n);
 
 	// check to see the ship was destroyed or departed - if so, do nothing
-	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPART, ship_name, NULL, NULL) )
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, ship_name, NULL, NULL) )
 	{
 		return;
 	}
@@ -8577,8 +8580,8 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 				return;
 		}
 
-	} else if ( mission_log_get_time(LOG_SHIP_DESTROYED, who_from, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPART, who_from, NULL, NULL) 
-		|| mission_log_get_time(LOG_WING_DESTROYED, who_from, NULL, NULL) || mission_log_get_time(LOG_WING_DEPART, who_from, NULL, NULL) ) {
+	} else if ( mission_log_get_time(LOG_SHIP_DESTROYED, who_from, NULL, NULL) || mission_log_get_time(LOG_SHIP_DEPARTED, who_from, NULL, NULL) 
+		|| mission_log_get_time(LOG_WING_DESTROYED, who_from, NULL, NULL) || mission_log_get_time(LOG_WING_DEPARTED, who_from, NULL, NULL) ) {
 		// getting into this if statement means that the ship or wing (sender) is no longer in the mission
 		// if message is high priority, make it come from Terran Command
 		if ( ipriority != MESSAGE_PRIORITY_HIGH )
@@ -9104,7 +9107,7 @@ void sexp_set_cargo(int n)
 		subsystem = NULL;
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPART, ship, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship, NULL, NULL) )
+	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship, NULL, NULL) )
 		return;
 
 	cargo_index = -1;
@@ -9820,7 +9823,7 @@ void sexp_deal_with_ship_flag(int node, int object_flag, int object_flag2, int s
 		ship_name = CTEXT(node);
 
 		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if (mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL))
+		if (mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL))
 			continue;
 
 		// see if ship exists in-mission
@@ -9950,7 +9953,7 @@ void sexp_good_secondary_time(int n)
 
 	// see if the ship has departed or has been destroyed.  If so, then we don't need to set up the
 	// AI stuff
-	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
 		return;
 
 	ai_good_secondary_time( team, weapon_index, num_weapons, ship_name );
@@ -10440,7 +10443,7 @@ void sexp_ship_tag( int n, int tag )
 	int ship_num, tag_level, tag_time, ssm_index(0);
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPART, CTEXT(n), NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, CTEXT(n), NULL, NULL) )
+	if ( mission_log_get_time(LOG_SHIP_DEPARTED, CTEXT(n), NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, CTEXT(n), NULL, NULL) )
 		return;
 
 	// get the ship num
@@ -10517,7 +10520,7 @@ void sexp_ship_guardian_threshold(int n)
 	{
 		// check to see if ship destroyed or departed.  In either case, do nothing.
 		ship_name = CTEXT(n);
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
 			continue;
 
 		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.
@@ -10541,7 +10544,7 @@ void sexp_ship_subsys_guardian_threshold(int n)
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
 	ship_name = CTEXT(n);
-	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
 		return;
 
 	// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.
@@ -10578,7 +10581,7 @@ void sexp_ships_guardian( int n, int guardian )
 		ship_name = CTEXT(n);
 
 		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
 			continue;
 
 		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.  Store this ship
@@ -10786,7 +10789,7 @@ void sexp_ship_vanish(int n)
 		ship_name = CTEXT(n);
 
 		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
 			continue;
 
 		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive
@@ -12838,7 +12841,7 @@ void sexp_damage_escort_list(int node)
 	for ( ; n != -1; n = CDR(n) )
 	{
 		// check to see if ship destroyed or departed.  In either case, do nothing.
-		if ( mission_log_get_time(LOG_SHIP_DEPART, CTEXT(n), NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, CTEXT(n), NULL, NULL) )
+		if ( mission_log_get_time(LOG_SHIP_DEPARTED, CTEXT(n), NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, CTEXT(n), NULL, NULL) )
 			continue;
 
 		shipnum=ship_name_lookup(CTEXT(n));
@@ -13101,7 +13104,7 @@ void sexp_primitive_sensors_set_range(int n)
 	int ship_num, range = eval_num(CDR(n));
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
-	if ( mission_log_get_time(LOG_SHIP_DEPART, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
 		return;
 
 	// get the ship

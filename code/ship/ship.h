@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.148 $
- * $Date: 2006-04-18 00:56:28 $
- * $Author: bobboau $
+ * $Revision: 2.149 $
+ * $Date: 2006-05-20 02:03:01 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.148  2006/04/18 00:56:28  bobboau
+ * bugfix for the animation system
+ *
  * Revision 2.147  2006/04/07 20:17:33  karajorma
  * Added SEXPs to lock and unlock the primary and secondary weapons
  *
@@ -1514,7 +1517,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define DOGFIGHT_WEAPON (1<<1)
 
 #define	MAX_THRUSTER_PARTICLES 3
-typedef struct thruster_particles{
+typedef struct thruster_particles {
 	char		thruster_particle_bitmap01_name[NAME_LENGTH];
 	int			thruster_particle_bitmap01;
 	int			thruster_particle_bitmap01_nframes;
@@ -1523,7 +1526,7 @@ typedef struct thruster_particles{
 	int			n_high;
 	int			n_low;
 	float		variance;
-	}thruster_particles;
+} thruster_particles;
 
 // defines for ship types.  These defines are distinct from the flag values in the ship_info struct.  These
 // values are used for array lookups, etc.
@@ -1646,7 +1649,7 @@ typedef struct man_thruster {
 
 	vec3d pos, norm;
 	man_thruster(){memset(this, 0, sizeof(man_thruster));tex_id=-1;start_snd=-1;loop_snd=-1;stop_snd=-1;}
-}man_thruster;
+} man_thruster;
 
 //Warp type defines
 #define WT_DEFAULT			0
@@ -1884,7 +1887,7 @@ typedef struct wing {
 	int	num_waves, current_wave;			// members for dealing with waves
 	int	threshold;								// when number of ships in the wing reaches this number -- new wave
 
-	fix	time_gone;								// time into the mission when this wing is officiall gone.
+	fix	time_gone;								// time into the mission when this wing is officially gone.
 
 	int	wave_count;								// max ships per wave (as defined by the number of ships in the ships list)
 	int	total_arrived_count;					// count of number of ships that we have created, regardless of wave

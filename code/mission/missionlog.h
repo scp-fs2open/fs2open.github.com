@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.h $
- * $Revision: 2.5 $
- * $Date: 2006-01-13 03:31:09 $
+ * $Revision: 2.6 $
+ * $Date: 2006-05-20 02:03:01 $
  * $Author: Goober5000 $
  *
  * Header file to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.4  2005/10/10 17:21:05  taylor
  * remove NO_NETWORK
  *
@@ -135,40 +138,40 @@
 
 // defined for different mission log entries
 
-#define LOG_SHIP_DESTROYED				1
-#define LOG_WING_DESTROYED				2
-#define LOG_SHIP_ARRIVE					3
-#define LOG_WING_ARRIVE					4
-#define LOG_SHIP_DEPART					5
-#define LOG_WING_DEPART					6
-#define LOG_SHIP_DOCK					7
-#define LOG_SHIP_SUBSYS_DESTROYED	8
-#define LOG_SHIP_UNDOCK					9
-#define LOG_SHIP_DISABLED				10
-#define LOG_SHIP_DISARMED				11
-#define LOG_PLAYER_REARM				12
-#define LOG_PLAYER_REINFORCEMENT		13
-#define LOG_GOAL_SATISFIED				14
-#define LOG_GOAL_FAILED					15
-#define LOG_PLAYER_REARM_ABORT		16
-#define LOG_WAYPOINTS_DONE				17
-#define LOG_CARGO_REVEALED				18
-#define LOG_CAP_SUBSYS_CARGO_REVEALED 19
-#define LOG_SELF_DESTRUCT				20
+#define LOG_SHIP_DESTROYED					1
+#define LOG_WING_DESTROYED					2
+#define LOG_SHIP_ARRIVED					3
+#define LOG_WING_ARRIVED					4
+#define LOG_SHIP_DEPARTED					5
+#define LOG_WING_DEPARTED					6
+#define LOG_SHIP_DOCKED						7
+#define LOG_SHIP_SUBSYS_DESTROYED			8
+#define LOG_SHIP_UNDOCKED					9
+#define LOG_SHIP_DISABLED					10
+#define LOG_SHIP_DISARMED					11
+#define LOG_PLAYER_CALLED_FOR_REARM			12
+#define LOG_PLAYER_CALLED_FOR_REINFORCEMENT	13
+#define LOG_GOAL_SATISFIED					14
+#define LOG_GOAL_FAILED						15
+#define LOG_PLAYER_ABORTED_REARM			16
+#define LOG_WAYPOINTS_DONE					17
+#define LOG_CARGO_REVEALED					18
+#define LOG_CAP_SUBSYS_CARGO_REVEALED		19
+#define LOG_SELF_DESTRUCTED					20
 
 // structure definition for log entries
 
-#define MLF_ESSENTIAL				(1<<0)		// this entry is essential for goal checking code
-#define MLF_OBSOLETE				(1<<1)		// this entry is obsolete and will be removed
-#define MLF_HIDDEN					(1<<2)		// entry doesn't show up in displayed log.
+#define MLF_ESSENTIAL						(1 << 0)	// this entry is essential for goal checking code
+#define MLF_OBSOLETE						(1 << 1)	// this entry is obsolete and will be removed
+#define MLF_HIDDEN							(1 << 2)	// entry doesn't show up in displayed log.
 
 typedef struct {
-	int		type;									// one of the log #defines in MissionLog.h
-	int		flags;								// flags used for status of this log entry
-	fix		timestamp;							// time in fixed seconds when entry was made from beginning of mission
-	char		pname[NAME_LENGTH];				// name of primary object of this action
-	char		sname[NAME_LENGTH];				// name of secondary object of this action
-	int		index;								// a generic entry which can contain things like wave # (for wing arrivals), goal #, etc
+	int		type;										// one of the log #defines in MissionLog.h
+	int		flags;										// flags used for status of this log entry
+	fix		timestamp;									// time in fixed seconds when entry was made from beginning of mission
+	char		pname[NAME_LENGTH];						// name of primary object of this action
+	char		sname[NAME_LENGTH];						// name of secondary object of this action
+	int		index;										// a generic entry which can contain things like wave # (for wing arrivals), goal #, etc
 
 	// Goober5000
 	int primary_team;

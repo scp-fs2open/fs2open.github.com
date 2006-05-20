@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.69 $
- * $Date: 2006-05-13 07:01:17 $
- * $Author: taylor $
+ * $Revision: 1.70 $
+ * $Date: 2006-05-20 02:03:00 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.69  2006/05/13 07:01:17  taylor
+ * fix bug where anything that wasn't a ship was considered a non-goal
+ *
  * Revision 1.68  2006/04/13 12:12:27  taylor
  * bah! forgot to add a blasted = on that check
  *
@@ -10879,7 +10882,7 @@ void ai_do_objects_repairing_stuff( object *repaired_objp, object *repair_objp, 
 
 		// add log entry if this is a player
 		if ( repaired_objp->flags & OF_PLAYER_SHIP ){
-			mission_log_add_entry(LOG_PLAYER_REARM_ABORT, Ships[repaired_objp->instance].ship_name, NULL);
+			mission_log_add_entry(LOG_PLAYER_ABORTED_REARM, Ships[repaired_objp->instance].ship_name, NULL);
 		}
 
 		stamp = timestamp((int) ((30 + 10*frand()) * 1000));
@@ -11369,7 +11372,7 @@ void ai_dock()
 		if (aigp == NULL) {	//	Can happen for initially docked ships.
 			ai_do_default_behavior( &Objects[Ships[aip->shipnum].objnum] );		// do the default behavior
 		} else {
-			mission_log_add_entry(LOG_SHIP_DOCK, Ships[Pl_objp->instance].ship_name, Ships[goal_objp->instance].ship_name);
+			mission_log_add_entry(LOG_SHIP_DOCKED, Ships[Pl_objp->instance].ship_name, Ships[goal_objp->instance].ship_name);
 
 			if (aigp->ai_mode == AI_GOAL_DOCK) {
 				ai_mission_goal_complete( aip );					// Note, this calls ai_set_default_behavior().
@@ -11515,7 +11518,7 @@ void ai_dock()
 
 			// don't add undock log entries for support ships.
 			if ( !(sip->flags & SIF_SUPPORT) ) {
-				mission_log_add_entry(LOG_SHIP_UNDOCK, Ships[Pl_objp->instance].ship_name, Ships[goal_objp->instance].ship_name);
+				mission_log_add_entry(LOG_SHIP_UNDOCKED, Ships[Pl_objp->instance].ship_name, Ships[goal_objp->instance].ship_name);
 			}
 		}
 		break;
