@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.174 $
- * $Date: 2006-05-19 04:47:40 $
+ * $Revision: 2.175 $
+ * $Date: 2006-05-20 02:03:01 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174  2006/05/19 04:47:40  Goober5000
+ * formatting and clarification, plus fix for Mantis #911
+ * --Goober5000
+ *
  * Revision 2.173  2006/05/14 15:54:16  karajorma
  * Fixes for the Targetable-as-bomb error from Mantis 0000910 (amongst others)
  *
@@ -3098,7 +3102,7 @@ int parse_create_object_sub(p_object *p_objp)
 	// warpin effect
 	if ((Game_mode & GM_IN_MISSION) && (!Fred_running))
 	{
-		mission_log_add_entry(LOG_SHIP_ARRIVE, Ships[shipnum].ship_name, NULL);
+		mission_log_add_entry(LOG_SHIP_ARRIVED, Ships[shipnum].ship_name, NULL);
 
 		if (!Game_restoring)
 		{
@@ -4174,7 +4178,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		}
 */
 
-		mission_log_add_entry( LOG_WING_ARRIVE, wingp->name, NULL, wingp->current_wave );
+		mission_log_add_entry( LOG_WING_ARRIVED, wingp->name, NULL, wingp->current_wave );
 		ship_num = wingp->ship_index[0];
 
 		if ( !(Ships[ship_num].flags & SF_NO_ARRIVAL_MUSIC) && !(wingp->flags & WF_NO_ARRIVAL_MUSIC) ) {
@@ -4236,6 +4240,7 @@ void parse_wing(mission *pm)
 
 	wingp->total_arrived_count = 0;
 	wingp->total_destroyed = 0;
+	wingp->total_departed = 0;	// Goober5000
 	wingp->flags = 0;
 
 	// needed because stuff_string uses the NAME_LENGTH limit to load something into an array of

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.31 $
- * $Date: 2006-04-05 19:59:11 $
- * $Author: karajorma $
+ * $Revision: 2.32 $
+ * $Date: 2006-05-20 02:03:01 $
+ * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/04/05 19:59:11  karajorma
+ * Bah! Silly error.
+ *
  * Revision 2.30  2006/04/05 17:54:25  karajorma
  * Support added for the Enable/Disable-BuiltinMessages SEXP
  *
@@ -1200,7 +1203,7 @@ void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 					message_send_builtin_to_player( MESSAGE_REARM_WARP, NULL, MESSAGE_PRIORITY_NORMAL, MESSAGE_TIME_SOON, 0, 0, multi_player_num, -1 );
 				}
 
-				mission_log_add_entry(LOG_PLAYER_REARM, Ships[tobj->instance].ship_name, NULL);
+				mission_log_add_entry(LOG_PLAYER_CALLED_FOR_REARM, Ships[tobj->instance].ship_name, NULL);
 			}
 		}
 	}
@@ -2290,7 +2293,7 @@ void hud_squadmsg_call_reinforcement(int reinforcement_num, int player_num)
 	//	message_send_to_player( rp->yes_messages[myrand() % i], rp->name, MESSAGE_PRIORITY_NORMAL, HUD_SOURCE_FRIENDLY );
 	*/
 
-	mission_log_add_entry(LOG_PLAYER_REINFORCEMENT, rp->name, NULL);
+	mission_log_add_entry(LOG_PLAYER_CALLED_FOR_REINFORCEMENT, rp->name, NULL);
 }
 
 // function to display a list of reinforcements available to the player

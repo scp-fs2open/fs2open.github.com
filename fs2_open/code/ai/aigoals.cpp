@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.24 $
- * $Date: 2006-04-20 06:32:00 $
+ * $Revision: 1.25 $
+ * $Date: 2006-05-20 02:03:00 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2006/04/20 06:32:00  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.23  2006/03/25 22:38:15  taylor
  * the previous changes should prevent these things from happening, but drop in some more Assert()'s anyway
  *
@@ -1886,7 +1889,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			// they get log entries for being destroyed even though they have respawned.
 			sindex = ship_name_lookup( aigp->ship_name );
 			if ( sindex == -1 ) {
-				status = mission_log_get_time( LOG_SHIP_DEPART, aigp->ship_name, NULL, NULL);
+				status = mission_log_get_time( LOG_SHIP_DEPARTED, aigp->ship_name, NULL, NULL);
 				if ( !status ) {
 					status = mission_log_get_time( LOG_SHIP_DESTROYED, aigp->ship_name, NULL, NULL);
 					if ( status )
@@ -1901,7 +1904,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 		case AI_GOAL_GUARD_WING:
 		{
-			status = mission_log_get_time( LOG_WING_DEPART, aigp->ship_name, NULL, NULL );
+			status = mission_log_get_time( LOG_WING_DEPARTED, aigp->ship_name, NULL, NULL );
 			if ( !status ) {
 				status = mission_log_get_time( LOG_WING_DESTROYED, aigp->ship_name, NULL, NULL);
 				if ( status )
