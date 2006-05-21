@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.15 $
- * $Date: 2006-05-20 02:03:01 $
+ * $Revision: 2.16 $
+ * $Date: 2006-05-21 02:12:21 $
  * $Author: Goober5000 $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/05/20 02:03:01  Goober5000
+ * fix for Mantis #755, plus make the missionlog #defines uniform
+ * --Goober5000
+ *
  * Revision 2.14  2006/03/19 05:05:59  taylor
  * make sure the mission log doesn't modify stuff in Cargo_names[], since it shouldn't
  * have split_str_once() be sure to not split a word in half, it should end up on the second line instead
@@ -266,9 +270,6 @@
 #define LOG_LAST_DITCH_CULL_NUM	((int)(MAX_LOG_ENTRIES * 0.20f))
 #define LOG_HALFWAY_REPORT_NUM	((int)(MAX_LOG_ENTRIES * 0.50f))
 
-#define ML_FLAG_PRIMARY		1
-#define ML_FLAG_SECONDARY	2
-
 #define EMPTY_LOG_NAME		""
 
 // defines for X position offsets of different items for mission log
@@ -412,24 +413,6 @@ void mission_log_obsolete_entries(int type, char *pname)
 	}
 }
 
-// assigns flag values to an entry based on the team value passed in
-void mission_log_flag_team( log_entry *entry, int which_entry, int team )
-{
-	if (which_entry == ML_FLAG_PRIMARY)
-	{
-		entry->primary_team = team;
-	}
-	else if (which_entry == ML_FLAG_SECONDARY)
-	{
-		entry->secondary_team = team;
-	}
-	else
-	{
-		// get allender -- impossible type
-		Int3();
-	}
-}
-
 // following function adds an entry into the mission log.
 // pass a type and a string which indicates the object
 // that this event is for.  Don't add entries with this function for multiplayer
@@ -471,6 +454,8 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 
 	entry->index = info_index;
 	entry->flags = 0;
+	entry->primary_team = -1;
+	entry->secondary_team = -1;
 
 	// determine the contents of the flags member based on the type of entry we added.  We need to store things
 	// like team for the primary and (possibly) secondary object for this entry.
@@ -494,19 +479,15 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 			index = ship_name_lookup( pname );
 		}
 
-		Assert ( index != -1 );
-		if(index < 0){
-			mission_log_flag_team( entry, ML_FLAG_PRIMARY, Player_ship->team );		
-		} else {
-			mission_log_flag_team( entry, ML_FLAG_PRIMARY, Ships[index].team );		
-		}
+		Assert (index >= 0);
+		entry->primary_team = Ships[index].team;
 
 		// some of the entries have a secondary component.  Figure out what is up with them.
 		if ( (type == LOG_SHIP_DOCKED) || (type == LOG_SHIP_UNDOCKED)) {
 			if ( sname ) {
 				index = ship_name_lookup( sname );
-				Assert( index != -1 );
-				mission_log_flag_team( entry, ML_FLAG_SECONDARY, Ships[index].team );
+				Assert (index >= 0);
+				entry->secondary_team = Ships[index].team;
 			}
 		} else if ( type == LOG_SHIP_DESTROYED ) {
 			if ( sname ) {
@@ -545,7 +526,7 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 					}
 				}
 
-				mission_log_flag_team( entry, ML_FLAG_SECONDARY, team );
+				entry->secondary_team = team;
  			} else {
 				nprintf(("missionlog", "No secondary name for ship destroyed log entry!\n"));
 			}
@@ -561,9 +542,9 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 	case LOG_WING_DESTROYED:
 	case LOG_WING_DEPARTED:
 	case LOG_WING_ARRIVED:
-		index = wing_name_lookup( pname, 1 );
-		Assert( index != -1 );
-		Assert( info_index != -1 );			// this is the team value
+		index = wing_name_lookup(pname, 1);
+		Assert(index != -1);
+		Assert(info_index != -1);			// this is the team value
 
 		// get the team value for this wing.  Departed or destroyed wings will pass the team
 		// value in info_index parameter.  For arriving wings, get the team value from the
@@ -571,9 +552,9 @@ void mission_log_add_entry(int type, char *pname, char *sname, int info_index)
 		if ( type == LOG_WING_ARRIVED ) {
 			si = Wings[index].ship_index[0];
 			Assert( si != -1 );
-			mission_log_flag_team( entry, ML_FLAG_PRIMARY, Ships[si].team );
+			entry->primary_team = Ships[si].team;
 		} else {
-			mission_log_flag_team( entry, ML_FLAG_PRIMARY, info_index );
+			entry->primary_team = info_index;
 		}
 
 #ifndef NDEBUG
@@ -837,12 +818,13 @@ void message_log_init_scrollback(int pw)
 		// track time of event (normal timestamp milliseconds format)
 		Log_line_timestamps[Num_log_lines] = (int) ( f2fl(entry->timestamp) * 1000.0f );
 
-		// Generate subject ship text for entry
-		if ( (entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED) ){
+		// Goober5000
+		if ((entry->type == LOG_GOAL_SATISFIED) || (entry->type == LOG_GOAL_FAILED))
 			c = LOG_COLOR_BRIGHT;
-		} else {
+		else if (entry->primary_team >= 0)
 			c = message_log_team_get_color(entry->primary_team);
-		}
+		else
+			c = LOG_COLOR_OTHER;
 
 		if ( (Lcl_gr) && ((entry->type == LOG_GOAL_FAILED) || (entry->type == LOG_GOAL_SATISFIED)) ) {
 			// in german goal events, just say "objective" instead of objective name
@@ -857,7 +839,10 @@ void message_log_init_scrollback(int pw)
 		kill = 0;
 
 		// Goober5000
-		c = message_log_team_get_color(entry->secondary_team);
+		if (entry->secondary_team >= 0)
+			c = message_log_team_get_color(entry->secondary_team);
+		else
+			c = LOG_COLOR_NORMAL;
 
 		switch (entry->type) {
 			case LOG_SHIP_DESTROYED:

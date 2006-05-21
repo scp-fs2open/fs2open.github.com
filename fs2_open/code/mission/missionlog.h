@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.h $
- * $Revision: 2.6 $
- * $Date: 2006-05-20 02:03:01 $
+ * $Revision: 2.7 $
+ * $Date: 2006-05-21 02:12:21 $
  * $Author: Goober5000 $
  *
  * Header file to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2006/05/20 02:03:01  Goober5000
+ * fix for Mantis #755, plus make the missionlog #defines uniform
+ * --Goober5000
+ *
  * Revision 2.5  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -169,8 +173,8 @@ typedef struct {
 	int		type;										// one of the log #defines in MissionLog.h
 	int		flags;										// flags used for status of this log entry
 	fix		timestamp;									// time in fixed seconds when entry was made from beginning of mission
-	char		pname[NAME_LENGTH];						// name of primary object of this action
-	char		sname[NAME_LENGTH];						// name of secondary object of this action
+	char	pname[NAME_LENGTH];							// name of primary object of this action
+	char	sname[NAME_LENGTH];							// name of secondary object of this action
 	int		index;										// a generic entry which can contain things like wave # (for wing arrivals), goal #, etc
 
 	// Goober5000
@@ -189,8 +193,8 @@ extern void mission_log_init();
 
 // adds an entry to the mission log.  The name is a string identifier that is the object
 // of the event.  The multiplayer version of this takes the actual entry number to modify.
-extern void mission_log_add_entry(int type, char *pname, char *sname, int index = -1 );
-extern void mission_log_add_entry_multi( int type, char *pname, char *sname, int index, fix timestamp, int flags );
+extern void mission_log_add_entry(int type, char *pname, char *sname, int index = -1);
+extern void mission_log_add_entry_multi( int type, char *pname, char *sname, int index, fix timestamp, int flags);
 
 // function to determine if event happened and what time it happened
 extern int mission_log_get_time( int type, char *name, char *sname, fix *time);
