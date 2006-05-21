@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.175 $
- * $Date: 2006-05-20 02:03:01 $
+ * $Revision: 2.176 $
+ * $Date: 2006-05-21 03:58:58 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.175  2006/05/20 02:03:01  Goober5000
+ * fix for Mantis #755, plus make the missionlog #defines uniform
+ * --Goober5000
+ *
  * Revision 2.174  2006/05/19 04:47:40  Goober5000
  * formatting and clarification, plus fix for Mantis #911
  * --Goober5000
@@ -6083,7 +6087,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 		iff_index &= ~SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG;
 
 		// get ship
-		shipnum = ship_get_random_team_ship(iff_index, get_players ? SHIP_GET_ONLY_PLAYERS : SHIP_GET_ANY_SHIP);
+		shipnum = ship_get_random_team_ship(iff_get_mask(iff_index), get_players ? SHIP_GET_ONLY_PLAYERS : SHIP_GET_ANY_SHIP);
 	}
 	// if we didn't find the arrival anchor in the list of special nodes, then do a
 	// ship name lookup on the anchor
