@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.149 $
- * $Date: 2006-05-20 02:03:01 $
+ * $Revision: 2.150 $
+ * $Date: 2006-05-21 03:58:58 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.149  2006/05/20 02:03:01  Goober5000
+ * fix for Mantis #755, plus make the missionlog #defines uniform
+ * --Goober5000
+ *
  * Revision 2.148  2006/04/18 00:56:28  bobboau
  * bugfix for the animation system
  *
@@ -2125,14 +2129,14 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 // defines and definition for function to get a random ship of a particular team (any ship,
 // any ship but player ships, or only players)
 #define SHIP_GET_ANY_SHIP				0
-#define SHIP_GET_NO_PLAYERS			1
+#define SHIP_GET_NO_PLAYERS				1
 #define SHIP_GET_ONLY_PLAYERS			2
 #define SHIP_GET_UNSILENCED				3	// Karajorma - Returns no_players that can send builtin messages.
 
 
-extern int ship_get_random_team_ship( int team, int flags = SHIP_GET_ANY_SHIP, float max_dist=0.0f );
-extern int ship_get_random_player_wing_ship( int flags = SHIP_GET_ANY_SHIP, float max_dist=0.0f, int persona_index = -1, int get_first=0, int multi_team = -1 );
-extern int ship_get_random_ship_in_wing(int wingnum, int flags = SHIP_GET_ANY_SHIP, float max_dist=0.0f, int get_first=0 );
+extern int ship_get_random_team_ship(int team_mask, int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f);
+extern int ship_get_random_player_wing_ship(int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f, int persona_index = -1, int get_first = 0, int multi_team = -1);
+extern int ship_get_random_ship_in_wing(int wingnum, int flags = SHIP_GET_ANY_SHIP, float max_dist = 0.0f, int get_first = 0);
 
 // return ship index
 int ship_get_random_targetable_ship();
