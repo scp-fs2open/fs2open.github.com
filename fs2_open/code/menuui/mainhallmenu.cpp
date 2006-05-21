@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.43 $
- * $Date: 2006-04-20 06:32:07 $
+ * $Revision: 2.44 $
+ * $Date: 2006-05-21 22:57:30 $
  * $Author: Goober5000 $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.42  2006/04/14 18:44:16  taylor
  * remove all of the *_ex() parsing functions added for use by EFFs
  * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
@@ -1661,12 +1664,12 @@ void main_hall_start_music()
 
 	// Goober5000 - try substitute first
 	index = event_music_get_spooled_music_index(Main_hall->substitute_music_name);
-	if ((index >= 0) && (Spooled_music[index].flags & EMF_VALID))
+	if ((index >= 0) && (Spooled_music[index].flags & SMF_VALID))
 		goto main_hall_got_music_index;
 
 	// now try regular
 	index = event_music_get_spooled_music_index(Main_hall->music_name);
-	if ((index >= 0) && (Spooled_music[index].flags & EMF_VALID))
+	if ((index >= 0) && (Spooled_music[index].flags & SMF_VALID))
 		goto main_hall_got_music_index;
 
 	// meh

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.38 $
- * $Date: 2006-02-15 07:30:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.39 $
+ * $Date: 2006-05-21 22:57:30 $
+ * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2006/02/15 07:30:54  wmcoolmon
+ * Dodge an Assert
+ *
  * Revision 2.37  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -284,12 +287,6 @@
 int Event_Music_battle_started = 0;
 float Master_event_music_volume = DEFAULT_MASTER_EVENT_MUSIC_VOLUME;			// range is 0->1
 
-// array that holds which soundtrack is used for which mission (data comes from music.tbl)
-//int Mission_soundtracks[MAX_CAMPAIGN_MISSIONS];
-
-// array that holds which briefing track to play for which mission.  Index into Spooled_music[][].
-//int Mission_briefingmusic[MAX_CAMPAIGN_MISSIONS];
-
 typedef struct tagSNDPATTERN {
 	int default_next_pattern;	// Needed so the next_pattern member can be reset
 	int next_pattern;				// Next pattern to play at loop time (can be same pattern)
@@ -339,27 +336,29 @@ typedef struct pattern_info
 	char *pattern_desc;
 	int pattern_can_force;
 	int pattern_loop_for;
-	int pattern_default_next;
+	int pattern_default_next_fs1;
+	int pattern_default_next_fs2;
 } pattern_info;
 
-pattern_info Pattern_info[] = {
-	{"NRML_1",	"Normal 1",			TRUE,	1,	SONG_NRML_1	},
-	{"NRML_2",	"Normal 2",			TRUE,	1,	SONG_NRML_1	},
-	{"NRML_3",	"Normal 3",			TRUE,	1,	SONG_NRML_1	},
-	{"AARV_1",	"Ally arrival 1",	FALSE,	1,	SONG_NRML_1	},
-	{"AARV_2",	"Ally arrival 2",	FALSE,	1,	SONG_BTTL_2	},
-	{"EARV_1",	"Enemy arrival 1",	FALSE,	1,	SONG_BTTL_1	},
-	{"EARV_2",	"Enemy arrival 2",	FALSE,	1,	SONG_BTTL_3	},
-	{"BTTL_1",	"Battle 1",			TRUE,	1,	SONG_BTTL_2	},
-	{"BTTL_2",	"Battle 2",			TRUE,	1,	SONG_BTTL_3	},
-	{"BTTL_3",	"Battle 3",			TRUE,	1,	SONG_BTTL_1	},
-	{"FAIL_1",	"Failure 1",		FALSE,	1,	SONG_NRML_1	},
-	{"VICT_1",	"Victory 1",		FALSE,	1,	SONG_NRML_1	},
-	{"VICT_2",	"Victory 2",		TRUE,	1,	SONG_NRML_1	},
-	{"DEAD_1",	"Dead 1",			TRUE,	1,	-1			},
+pattern_info Pattern_info[] =
+{
+	{"NRML_1",	"Normal 1",			TRUE,	1,	SONG_NRML_2,	SONG_NRML_1 },
+	{"NRML_2",	"Normal 2",			TRUE,	1,	SONG_NRML_1,	SONG_NRML_1	},
+	{"NRML_3",	"Normal 3",			TRUE,	1,	SONG_NRML_1,	SONG_NRML_1	},
+	{"AARV_1",	"Ally arrival 1",	FALSE,	1,	SONG_NRML_2,	SONG_NRML_1	},
+	{"AARV_2",	"Ally arrival 2",	FALSE,	1,	SONG_BTTL_2,	SONG_BTTL_2	},
+	{"EARV_1",	"Enemy arrival 1",	FALSE,	1,	SONG_BTTL_1,	SONG_BTTL_1	},
+	{"EARV_2",	"Enemy arrival 2",	FALSE,	1,	SONG_BTTL_2,	SONG_BTTL_3	},
+	{"BTTL_1",	"Battle 1",			TRUE,	1,	SONG_BTTL_2,	SONG_BTTL_2	},
+	{"BTTL_2",	"Battle 2",			TRUE,	1,	SONG_BTTL_3,	SONG_BTTL_3	},
+	{"BTTL_3",	"Battle 3",			TRUE,	1,	SONG_BTTL_1,	SONG_BTTL_1	},
+	{"FAIL_1",	"Failure 1",		FALSE,	1,	SONG_NRML_3,	SONG_NRML_1	},
+	{"VICT_1",	"Victory 1",		FALSE,	1,	SONG_NRML_3,	SONG_NRML_1	},
+	{"VICT_2",	"Victory 2",		TRUE,	1,	SONG_NRML_3,	SONG_NRML_1	},
+	{"DEAD_1",	"Dead 1",			TRUE,	1,	-1,				-1			},
 };
 
-int Num_pattern_types = sizeof(Pattern_info)/sizeof(pattern_info);
+int Num_pattern_types = sizeof(Pattern_info) / sizeof(pattern_info);
 
 //Because of how inflexible music.tbl is, to make it flexible, we must keep the stuff
 //in the old order. So to make it reasonable, we use this.
@@ -383,7 +382,6 @@ int New_pattern_order[] =
 	11,	//death
 };
 
-int Num_new_pattern_order = sizeof(New_pattern_order)/sizeof(int);
 
 /*
 char* Pattern_names[MAX_PATTERNS] =
@@ -502,41 +500,6 @@ int Num_music_files;				// Number of spooled music files
 // Array that holds indicies into Spooled_music[], these specify which music is played in briefing/debriefing
 int Mission_music[NUM_SCORES];	
 
-// Goober5000
-int maybe_cycle_nrml(int pattern)
-{
-	if ((pattern == SONG_NRML_1) || (pattern == SONG_NRML_2) || (pattern == SONG_NRML_3))
-	{
-		Current_nrml = maybe_get_next_nrml_no_cycle(Current_nrml);
-		pattern = Current_nrml;
-	}
-
-	return pattern;
-}
-// Goober5000
-int maybe_get_next_nrml_no_cycle(int pattern)
-{
-	switch (pattern)
-	{
-		case SONG_NRML_1:
-			if (Patterns[SONG_NRML_2].handle == -1)
-				return SONG_NRML_1;
-			else
-				return SONG_NRML_2;
-
-		case SONG_NRML_2:
-			if (Patterns[SONG_NRML_3].handle == -1)
-				return SONG_NRML_1;
-			else
-				return SONG_NRML_3;
-
-		case SONG_NRML_3:
-			return SONG_NRML_1;
-
-		default:
-			return pattern;
-	}
-}
 
 // -------------------------------------------------------------------------------------------------
 // event_music_init() 
@@ -608,6 +571,55 @@ void event_music_close()
 	Event_music_inited = FALSE;
 }
 
+// Goober5000
+int event_music_cycle_pattern()
+{
+	// default
+	int new_pattern = Patterns[Current_pattern].next_pattern;
+
+	// Goober5000 - not for FS1
+	if (!(Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1))
+	{
+		if (Current_pattern == SONG_BTTL_3 && new_pattern == SONG_BTTL_1)
+		{
+			// AL 06-24-99: maybe switch to battle 2 if hull is less than 70%
+			if (Player_obj != NULL && Player_ship != NULL)
+			{
+				Assert(Player_ship->ship_max_hull_strength != 0.0f);
+
+				float integrity = Player_obj->hull_strength / Player_ship->ship_max_hull_strength;
+				if (integrity < HULL_VALUE_TO_PLAY_INTENSE_BATTLE_MUSIC)
+					new_pattern = SONG_BTTL_2;
+			}
+		}
+	}
+
+	// make sure we have a valid BTTL track to switch to
+	if ((new_pattern == SONG_BTTL_2) && (Patterns[SONG_BTTL_2].handle < 0))
+	{
+		new_pattern = SONG_BTTL_1;
+	}
+	else if ((new_pattern == SONG_BTTL_3) && (Patterns[SONG_BTTL_3].handle < 0))
+	{
+		if ((Current_pattern == SONG_BTTL_2) || (Patterns[SONG_BTTL_2].handle < 0))
+			new_pattern = SONG_BTTL_1;
+		else
+			new_pattern = SONG_BTTL_2;
+	}
+
+	// make sure we have a valid NRML track to switch to
+	if ((new_pattern == SONG_NRML_2) && (Patterns[SONG_NRML_2].handle < 0))
+	{
+		new_pattern = SONG_NRML_1;
+	}
+	else if ((new_pattern == SONG_NRML_3) && (Patterns[SONG_NRML_3].handle < 0))
+	{
+		new_pattern = SONG_NRML_1;
+	}
+
+	return new_pattern;
+}
+
 // -------------------------------------------------------------------------------------------------
 // event_music_force_switch() 
 //
@@ -622,36 +634,9 @@ void event_music_force_switch()
 	if ( Event_music_level_inited == FALSE )
 		return;
 
-	int new_pattern;
 	Patterns[Current_pattern].loop_for = Patterns[Current_pattern].default_loop_for;
 
-	new_pattern = Patterns[Current_pattern].next_pattern;
-
-	// make sure we have a valid track to switch to
-	if ( (new_pattern == SONG_BTTL_2) && (Patterns[SONG_BTTL_2].handle == -1) ) {
-		new_pattern = SONG_BTTL_1;
-	} else if ( (new_pattern == SONG_BTTL_3) && (Patterns[SONG_BTTL_3].handle == -1) ) {
-		if ( (Current_pattern == SONG_BTTL_2) || (Patterns[SONG_BTTL_2].handle == -1) ) {
-			new_pattern = SONG_BTTL_1;
-		} else {
-			new_pattern = SONG_BTTL_2;
-		}
-	} else {
-		if (Current_pattern == SONG_BTTL_3 && new_pattern == SONG_BTTL_1) {
-			// AL 06-24-99: maybe switch to battle 2 if hull is less than 70%
-			if (Player_obj != NULL && Player_ship != NULL) {
-				Assert(Player_ship->ship_info_index >= 0);
-				Assert(Player_ship->ship_max_hull_strength != 0);
-				float integrity = Player_obj->hull_strength / Player_ship->ship_max_hull_strength;
-				if (integrity < HULL_VALUE_TO_PLAY_INTENSE_BATTLE_MUSIC) {
-					new_pattern = SONG_BTTL_2;
-				}
-			}
-		}
-	}
-
-	// set up switching
-	new_pattern = maybe_cycle_nrml(new_pattern);
+	int new_pattern = event_music_cycle_pattern();
 
 	if ( new_pattern == -1 ) {
 		return;
@@ -736,12 +721,20 @@ void event_music_do_frame()
 
 		// We want to go back to NRML track music if all the hostiles have been 
 		// destroyed, and we are still playing the battle music
-		if ( Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3 ) {
-			if ( timestamp_elapsed(Battle_over_timestamp) && Event_Music_battle_started == 1) {
-				//Battle_over_timestamp = timestamp(BATTLE_CHECK_INTERVAL);
-				if ( hostile_ships_present() == FALSE ) {
-					if ( Patterns[Current_pattern].next_pattern != SONG_VICT_2 ) {
-						Patterns[Current_pattern].next_pattern = SONG_NRML_1;
+		if (Current_pattern == SONG_BTTL_1 || Current_pattern == SONG_BTTL_2 || Current_pattern == SONG_BTTL_3)
+		{
+			if (timestamp_elapsed(Battle_over_timestamp) && Event_Music_battle_started == 1)
+			{
+				if (hostile_ships_present() == FALSE)
+				{
+					if (Patterns[Current_pattern].next_pattern != SONG_VICT_2)
+					{
+						// Goober5000
+						if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1)
+							Patterns[Current_pattern].next_pattern = SONG_NRML_3;
+						else
+							Patterns[Current_pattern].next_pattern = SONG_NRML_1;
+
 						Patterns[Current_pattern].force_pattern = TRUE;
 						Event_Music_battle_started = 0;
 					}
@@ -788,28 +781,27 @@ void event_music_level_init(int force_soundtrack)
 	int					i;
 	SOUNDTRACK_INFO	*strack;
 
-	if ( Cmdline_freespace_no_music ) {
-		return;
-	}
-
-	if ( !audiostream_is_inited() )
+	if (Cmdline_freespace_no_music)
 		return;
 
-	if ( Event_music_level_inited == TRUE )
+	if (!audiostream_is_inited())
+		return;
+
+	if (Event_music_level_inited == TRUE)
 		return;
 
 	Current_pattern = -1;
 	Current_nrml = SONG_NRML_1;
 
-	if ( Event_music_inited == FALSE )
+	if (Event_music_inited == FALSE)
 		return;
 
 
-	if ( force_soundtrack != -1 ) {
+	if (force_soundtrack != -1)
 		Current_soundtrack_num = force_soundtrack;
-	}
 
-	if ( Current_soundtrack_num < 0 ) {
+	if (Current_soundtrack_num < 0)
+	{
 		return;
 /*
 		// okay, assign a random soundtrack if one exists
@@ -835,24 +827,33 @@ void event_music_level_init(int force_soundtrack)
 	// set to none.wav in event_music_parse_musictbl, but this change was needed because
 	// the NRML_2 and NRML_3 at the end of the pattern array kept getting spurious music
 	// tracks because their patterns weren't -1
-	for ( i = 0; i < MAX_PATTERNS; i++ ) {
-		if ( !strnicmp(strack->pattern_fnames[i], NOX("none.wav"), 4) ) {
+	for (i = 0; i < MAX_PATTERNS; i++)
+	{
+		if (!strnicmp(strack->pattern_fnames[i], NOX("none.wav"), 4))
+		{
 			Patterns[i].handle = -1;	
 			continue;
 		}
 
 		Patterns[i].handle = audiostream_open( strack->pattern_fnames[i], ASF_EVENTMUSIC );
 
-		if ( Patterns[i].handle >= 0 ) {
+		if (Patterns[i].handle >= 0)
+		{
 			Event_music_level_inited = TRUE;
 			Event_music_enabled = TRUE;
 		}
 
 		pattern_info *pip = &Pattern_info[i];
-		Patterns[i].next_pattern = pip->pattern_default_next;
-		Patterns[i].default_next_pattern = pip->pattern_default_next;
-		Patterns[i].loop_for = pip->pattern_loop_for;
+
+		// Goober5000
+		if (strack->flags & EMF_CYCLE_FS1)
+			Patterns[i].default_next_pattern = pip->pattern_default_next_fs1;
+		else
+			Patterns[i].default_next_pattern = pip->pattern_default_next_fs2;
+
+		Patterns[i].next_pattern = Patterns[i].default_next_pattern;
 		Patterns[i].default_loop_for = pip->pattern_loop_for;
+		Patterns[i].loop_for = Patterns[i].default_loop_for;
 		Patterns[i].force_pattern = FALSE;
 		Patterns[i].can_force = pip->pattern_can_force;
 		Patterns[i].samples_per_measure = Pattern_samples_per_measure[Current_soundtrack_num][i];
@@ -867,10 +868,10 @@ void event_music_level_init(int force_soundtrack)
 	Victory2_music_played = 0;
 	Check_for_battle_music = 0;
 
-	if ( Event_music_level_inited ) {
-		if ( force_soundtrack != -1 )  {
+	if (Event_music_level_inited)
+	{
+		if (force_soundtrack >= 0)
 			event_music_first_pattern();
-		}
 	}
 }
 
@@ -1025,7 +1026,7 @@ int event_music_enemy_arrival()
 		next_pattern = SONG_EARV_1;
 	}
 
-	if ( Current_pattern == maybe_get_next_nrml_no_cycle(next_pattern) )
+	if ( Current_pattern == next_pattern )
 		return 0;	// already playing
 
 	if ( Current_pattern == SONG_DEAD_1 )
@@ -1039,46 +1040,50 @@ int event_music_enemy_arrival()
 
 	Num_enemy_arrivals++;
 
-	// AL 7-25-99: If hull is less than 70% then switch to battle 2 or 3, otherwise switch to 1 or 2
-	bool play_intense_battle_music = false;
-	if (Player_obj != NULL && Player_ship != NULL) {
-		Assert(Player_ship->ship_info_index >= 0);
-		Assert(Player_ship->ship_max_hull_strength != 0);
-		float integrity = Player_obj->hull_strength / Player_ship->ship_max_hull_strength;
-		if (integrity < HULL_VALUE_TO_PLAY_INTENSE_BATTLE_MUSIC) {
-			play_intense_battle_music = true;
-		}
-	}
 
-	if (play_intense_battle_music == true) {
-		if (Current_pattern == SONG_BTTL_2) {
-			Patterns[next_pattern].next_pattern = SONG_BTTL_3;
-		} else {
+	// Goober5000 - cycle according to flag
+	if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1)
+	{
+		// AL 11-03-97:
+		// Alternate between BTTL_2 and BTTL_3 following enemy arrivals
+		if ( Num_enemy_arrivals & 1 ) {
 			Patterns[next_pattern].next_pattern = SONG_BTTL_2;
-		}
-	} else {
-		if (Current_pattern == SONG_BTTL_1) {
-			Patterns[next_pattern].next_pattern = SONG_BTTL_2;
-		} else if (Current_pattern == SONG_BTTL_2) {
-			Patterns[next_pattern].next_pattern = SONG_BTTL_3;
 		} else {
-			Patterns[next_pattern].next_pattern = SONG_BTTL_1;
+			if ( Patterns[SONG_BTTL_3].handle != -1 ) {
+				Patterns[next_pattern].next_pattern = SONG_BTTL_3;
+			} else {
+				Patterns[next_pattern].next_pattern = SONG_BTTL_2;
+			}
 		}
 	}
+	else
+	{
+		// AL 7-25-99: If hull is less than 70% then switch to battle 2 or 3, otherwise switch to 1 or 2
+		bool play_intense_battle_music = false;
+		if (Player_obj != NULL && Player_ship != NULL) {
+			Assert(Player_ship->ship_max_hull_strength != 0);
 
-	/*
-	// AL 11-03-97:
-	// Alternate between BTTL_2 and BTTL_3 following enemy arrivals
-	if ( Num_enemy_arrivals & 1 ) {
-		Patterns[next_pattern].next_pattern = SONG_BTTL_2;
-	} else {
-		if ( Patterns[SONG_BTTL_3].handle != -1 ) {
-			Patterns[next_pattern].next_pattern = SONG_BTTL_3;
+			float integrity = Player_obj->hull_strength / Player_ship->ship_max_hull_strength;
+			if (integrity < HULL_VALUE_TO_PLAY_INTENSE_BATTLE_MUSIC)
+				play_intense_battle_music = true;
+		}
+
+		if (play_intense_battle_music == true) {
+			if (Current_pattern == SONG_BTTL_2) {
+				Patterns[next_pattern].next_pattern = SONG_BTTL_3;
+			} else {
+				Patterns[next_pattern].next_pattern = SONG_BTTL_2;
+			}
 		} else {
-			Patterns[next_pattern].next_pattern = SONG_BTTL_2;
+			if (Current_pattern == SONG_BTTL_1) {
+				Patterns[next_pattern].next_pattern = SONG_BTTL_2;
+			} else if (Current_pattern == SONG_BTTL_2) {
+				Patterns[next_pattern].next_pattern = SONG_BTTL_3;
+			} else {
+				Patterns[next_pattern].next_pattern = SONG_BTTL_1;
+			}
 		}
 	}
-	*/
 
 	if ( Current_pattern != -1 ) {
 		Patterns[Current_pattern].next_pattern = next_pattern;
@@ -1115,7 +1120,7 @@ int event_music_friendly_arrival()
 		next_pattern = SONG_AARV_1;
 	}
 
-	if ( Current_pattern == maybe_get_next_nrml_no_cycle(next_pattern) )
+	if ( Current_pattern == next_pattern )
 		return 0;	// already playing
 
 	if ( Current_pattern == SONG_DEAD_1 )
@@ -1132,6 +1137,7 @@ int event_music_friendly_arrival()
 
 	// After the second friendly arrival, default to SONG_BTTL_3
 	Num_friendly_arrivals++;
+
 
 	if ( Current_pattern != -1 )
 	{
@@ -1152,6 +1158,19 @@ int event_music_friendly_arrival()
 		{
 			Patterns[Current_pattern].next_pattern = next_pattern;
 			Patterns[Current_pattern].force_pattern = TRUE;
+
+			// Goober5000 - default to SONG_BTTL_3 as specified above
+			// (this is my attempted recreation of the FS1 behavior)
+			if (Soundtracks[Current_soundtrack_num].flags & EMF_CYCLE_FS1)
+			{
+				if ((Event_Music_battle_started == TRUE) && (Num_friendly_arrivals > 2))
+				{
+					if (Patterns[SONG_BTTL_3].handle != -1)
+					{
+						Patterns[next_pattern].next_pattern = SONG_BTTL_3;
+					}
+				}
+			}
 		}
 	}
 
@@ -1423,13 +1442,22 @@ void parse_soundtrack()
 	}
 
 	// Goober5000
+	if (optional_string("+Cycle:"))
+	{
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NULL);
+		if (!stricmp(temp, "FS1"))
+			Soundtracks[strack_idx].flags |= EMF_CYCLE_FS1;
+	}
+
+	// Goober5000
 	if (optional_string("+Allied Arrival Overlay:"))
 	{
 		stuff_boolean_flag(&Soundtracks[strack_idx].flags, EMF_ALLIED_ARRIVAL_OVERLAY);
 	}
 	else
 	{
-		// FS2 music does this by default
+		// default to on
 		Soundtracks[strack_idx].flags |= EMF_ALLIED_ARRIVAL_OVERLAY;
 	}
 
@@ -1443,7 +1471,7 @@ void parse_soundtrack()
 			required_string("$Name:");
 
 			//Find which new pattern index this corresponds to
-			for(i = 0; i < Num_new_pattern_order; i++)
+			for(i = 0; i < Num_pattern_types; i++)
 			{
 				if(New_pattern_order[i] == old_pattern_num)
 				{
@@ -1460,7 +1488,7 @@ void parse_soundtrack()
 				}
 			}
 
-			if(i == Num_new_pattern_order)
+			if(i == Num_pattern_types)
 			{
 				Warning(LOCATION, "Could not find new index for pattern %d of soundtrack '%s'", old_pattern_num, Soundtracks[strack_idx].name);
 			}
@@ -1563,7 +1591,7 @@ void parse_menumusic()
 
 	// Goober5000 - check for existence of file
 	if (strlen(Spooled_music[idx].filename) && cf_exists_full(Spooled_music[idx].filename, CF_TYPE_MUSIC))
-		Spooled_music[idx].flags |= EMF_VALID;
+		Spooled_music[idx].flags |= SMF_VALID;
 
 	Num_music_files++;	
 }
@@ -1626,7 +1654,7 @@ void event_music_change_pattern(int new_pattern)
 		return;
 	}
 
-	if ( Current_pattern == maybe_get_next_nrml_no_cycle(new_pattern) );
+	if ( Current_pattern == new_pattern );
 		return;	// already playing
 
 	if ( Current_pattern != -1 ) {
@@ -1650,7 +1678,7 @@ int event_music_return_current_pattern()
 //
 // Stop any patterns that are playing, and prevent any further patterns from playing (ie
 // set Event_music_enabled = FALSE).  We don't uninit event music, since it might be toggled
-// back on this level.
+// back on in this level.
 //
 void event_music_disable()
 {
@@ -1726,7 +1754,7 @@ void event_music_start_default()
 
 	// switch now
 	if ( Current_pattern == -1 ) {
-		Current_pattern = maybe_cycle_nrml(next_pattern);
+		Current_pattern = next_pattern;
 	}
 	// switch later
 	else {
@@ -1840,6 +1868,7 @@ int hostile_ships_present()
 
 		return 1;
 	}
+
 	return 0;
 }
 
@@ -1866,6 +1895,7 @@ int hostile_ships_to_arrive()
 
 		return 1;
 	}
+
 	return 0;
 }
 

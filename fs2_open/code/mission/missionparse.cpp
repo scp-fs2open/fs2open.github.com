@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.176 $
- * $Date: 2006-05-21 03:58:58 $
+ * $Revision: 2.177 $
+ * $Date: 2006-05-21 22:57:30 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.176  2006/05/21 03:58:58  Goober5000
+ * fix Mantis #834
+ * --Goober5000
+ *
  * Revision 2.175  2006/05/20 02:03:01  Goober5000
  * fix for Mantis #755, plus make the missionlog #defines uniform
  * --Goober5000
@@ -2023,7 +2027,7 @@ done_briefing_music:
 
 	// set the briefing, preferring the substitute in FS2 (not FRED!)
 	index = event_music_get_spooled_music_index(pm->substitute_briefing_music_name);
-	if ((index >= 0) && (Spooled_music[index].flags & EMF_VALID) && !Fred_running)
+	if ((index >= 0) && (Spooled_music[index].flags & SMF_VALID) && !Fred_running)
 	{
 		event_music_set_score(SCORE_BRIEFING, pm->substitute_briefing_music_name);
 	}

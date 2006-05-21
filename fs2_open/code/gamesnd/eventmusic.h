@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.15 $
- * $Date: 2006-02-12 05:23:16 $
+ * $Revision: 2.16 $
+ * $Date: 2006-05-21 22:57:30 $
  * $Author: Goober5000 $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/02/12 05:23:16  Goober5000
+ * additional fixes and enhancements for substitute music
+ * --Goober5000
+ *
  * Revision 2.14  2006/02/12 01:27:47  Goober5000
  * more cool work on importing, music handling, etc.
  * --Goober5000
@@ -226,12 +230,6 @@ extern int Mission_music[NUM_SCORES];		// indicies into Spooled_music[]
 extern int Current_soundtrack_num;		// index into Soundtracks[]
 
 
-// Goober5000 - event music flags
-// used for both spooled music and soundtracks since there aren't many
-#define EMF_VALID						(1 << 0)
-#define EMF_ALLIED_ARRIVAL_OVERLAY		(1 << 1)
-
-
 // menu music storage
 typedef struct menu_music {
 	int flags;
@@ -240,6 +238,9 @@ typedef struct menu_music {
 } menu_music;
 
 #define MAX_SPOOLED_MUSIC	30			// max number of briefing/mainhall/credits tracks
+
+// Goober5000 - spooled music flags
+#define SMF_VALID						(1 << 0)
 
 extern menu_music Spooled_music[MAX_SPOOLED_MUSIC];
 extern int Num_music_files;
@@ -255,15 +256,16 @@ typedef struct tagSOUNDTRACK_INFO {
 
 #define MAX_SOUNDTRACKS		30			// max number of battle tracks
 
+// Goober5000 - event music flags
+#define EMF_VALID						(1 << 0)
+#define EMF_ALLIED_ARRIVAL_OVERLAY		(1 << 1)
+#define EMF_CYCLE_FS1					(1 << 2)
+
 extern SOUNDTRACK_INFO Soundtracks[MAX_SOUNDTRACKS];
 extern int Num_soundtracks;
 
 
 #ifndef NO_SOUND
-
-// Goober5000 - for handling NRML tracks from FS1
-int maybe_get_next_nrml_no_cycle(int pattern);
-int maybe_cycle_nrml(int pattern);
 
 void	event_music_init();
 void	event_music_close();
@@ -301,10 +303,6 @@ int	event_music_player_respawn_as_observer();
 void event_music_hostile_ship_destroyed();
 
 #else
-
-// Goober5000 - for NO_SOUND
-#define maybe_get_next_nrml_no_cycle(pattern)	(0)
-#define maybe_cycle_nrml(pattern)				(0)
 
 #define	event_music_init()
 #define	event_music_close()
