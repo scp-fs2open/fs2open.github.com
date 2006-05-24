@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-02-15 07:19:49 $
+ * $Revision: 2.10 $
+ * $Date: 2006-05-24 05:08:28 $
  * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/02/15 07:19:49  wmcoolmon
+ * Various weapon and team related scripting functions; $Collide Ship and $Collide Weapon hooks
+ *
  * Revision 2.8  2006/01/15 01:02:01  Goober5000
  * fix some tweaky thing that isn't even used :p
  * --Goober5000
@@ -171,7 +174,7 @@ int collide_weapon_weapon( obj_pair * pair )
 			Script_system.RunBytecode(wipA->sc_collide_weapon);
 
 			Script_system.RemGlobal("Self");
-			Script_system.RemGlobal("Global");
+			Script_system.RemGlobal("Weapon");
 		}
 
 		if(wipA->sc_collide_weapon.IsOverride())
@@ -185,7 +188,7 @@ int collide_weapon_weapon( obj_pair * pair )
 			Script_system.RunBytecode(wipB->sc_collide_weapon);
 
 			Script_system.RemGlobal("Self");
-			Script_system.RemGlobal("Global");
+			Script_system.RemGlobal("Weapon");
 		}
 
 		if(wipB->sc_collide_weapon.IsOverride())

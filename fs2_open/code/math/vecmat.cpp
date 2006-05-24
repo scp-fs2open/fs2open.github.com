@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.29 $
- * $Date: 2006-04-12 22:23:41 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2006-05-24 05:09:25 $
+ * $Author: wmcoolmon $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2006/04/12 22:23:41  taylor
+ * compiler warning fixes to make GCC 4.1 shut the hell up
+ *
  * Revision 2.28  2006/02/25 21:47:00  Goober5000
  * spelling
  *
@@ -2644,7 +2647,7 @@ void vm_forward_interpolate(vec3d *goal_f, matrix *orient, vec3d *w_in, float de
 	// DO NOT COMMENT THIS OUT!!
 	if(!(fl_abs(theta_goal.xyz.z) < 0.001f))	   
 		// check for proper rotation
-		mprintf(("vm_forward_interpolate: Bad rotation"));
+		mprintf(("vm_forward_interpolate: Bad rotation\n"));
 
 	theta_end = vmd_zero_vector;
 	float delta_theta;
