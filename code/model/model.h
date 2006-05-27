@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.78 $
- * $Date: 2006-04-20 06:32:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.79 $
+ * $Date: 2006-05-27 16:57:12 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2006/04/20 06:32:15  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.77  2006/04/18 00:56:28  bobboau
  * bugfix for the animation system
  *
@@ -1643,13 +1646,13 @@ void model_set_thrust(int model_num = -1, vec3d *length = &vmd_zero_vector, int 
 // model caching
 
 // Call once to init the model caching stuff
-void model_cache_init();
+//void model_cache_init();
 
 // Call before every level to clean up the model caching stuff
-void model_cache_reset();
+//void model_cache_reset();
 
 // If TRUE, then model caching is enabled
-extern int Model_caching;
+//extern int Model_caching;
 
 
 //=======================================================================================
