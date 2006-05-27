@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.25 $
- * $Date: 2006-02-25 21:47:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2006-05-27 16:49:05 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2006/02/25 21:47:08  Goober5000
+ * spelling
+ *
  * Revision 2.24  2005/07/25 05:24:17  Goober5000
  * cleaned up some command line and mission flag stuff
  * --Goober5000

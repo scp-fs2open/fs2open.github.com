@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.40 $
- * $Date: 2006-04-20 06:32:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2006-05-27 16:49:05 $
+ * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/04/20 06:32:30  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.39  2006/03/05 21:45:12  taylor
  * various small cleanups, fixes, error checks
  *
@@ -720,7 +723,7 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 	}
 
 	//	At detail levels 1, 3, animations play at double speed to reduce load.
-	if ((!D3D_enabled && !OGL_enabled) ||  (Detail.shield_effects == 1) || (Detail.shield_effects == 3)) {
+	if (/*(!D3D_enabled && !OGL_enabled) ||*/ (Detail.shield_effects == 1) || (Detail.shield_effects == 3)) {
 		Shield_hits[shield_num].start_time -= Frametime;
 	}
 
@@ -784,7 +787,7 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 		// evaluated via OR. So we fix this problem by evaluating by AND, which means that if we're not using
 		// either THEN do the low detail shield thing.
 
-		if ( (!D3D_enabled && !OGL_enabled) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2) ) {
+		if ( /*(!D3D_enabled && !OGL_enabled) ||*/ (Detail.shield_effects == 1) || (Detail.shield_effects == 2) ) {
 			if ( bitmap_id != - 1 ) {
 				render_low_detail_shield_bitmap(&Global_tris[Shield_hits[shield_num].tri_list[0]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
 			}
@@ -1086,7 +1089,7 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 	// (!D3D_enabled || !OGL_enabled) is true if either of them is false. (!D3D_enabled && !OGL_enabled) will
 	// be false if either of them is true. See the difference people!
 
-	if ( (!D3D_enabled && !OGL_enabled) || (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
+	if ( /*(!D3D_enabled && !OGL_enabled) ||*/ (Detail.shield_effects == 1) || (Detail.shield_effects == 2)) {
 		create_shield_low_detail(objnum, model_num, orient, centerp, tcp, tr0, shieldp);
 		return;
 	}
