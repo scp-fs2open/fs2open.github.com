@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.17 $
- * $Date: 2006-01-21 09:36:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.18 $
+ * $Date: 2006-05-27 16:52:50 $
+ * $Author: taylor $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/01/21 09:36:58  wmcoolmon
+ * Texture replacement stuff
+ *
  * Revision 2.16  2005/09/24 02:43:33  Goober5000
  * whoops
  * --Goober5000
@@ -226,6 +229,8 @@
  * $NoKeywords: $
  */
 
+#include <vector>
+
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
 #include "render/3d.h" 
@@ -233,37 +238,34 @@
 #include "particle/particle.h"
 #include "object/object.h"
 #include "cmdline/cmdline.h"
+#include "graphics/grbatch.h"
 
 #ifndef NDEBUG
 #include "io/timer.h"
 #endif
 
-#include "cmdline/cmdline.h"
-#include "graphics/grbatch.h"
-
-
-
 
 typedef struct particle {
 	// old style data
-	vec3d	pos;					// position
+	vec3d	pos;				// position
 	vec3d	velocity;			// velocity
-	float		age;					// How long it's been alive
-	float		max_life;			// How much life we had
-	float		radius;				// radius
-	int		type;					// type										// -1 = None
-	uint		optional_data;		// depends on type
-	int		nframes;				// If an ani, how many frames?	
+	float	age;				// How long it's been alive
+	float	max_life;			// How much life we had
+	float	radius;				// radius
+	int		type;				// type										// -1 = None
+	uint	optional_data;		// depends on type
+	int		nframes;			// If an ani, how many frames?	
 
 	// new style data
-	float		tracer_length;		// if this is set, draw as a rod to simulate a "tracer" effect
-	short		attached_objnum;	// if this is set, pos is relative to the attached object. velocity is ignored
+	float	tracer_length;		// if this is set, draw as a rod to simulate a "tracer" effect
+	short	attached_objnum;	// if this is set, pos is relative to the attached object. velocity is ignored
 	int		attached_sig;		// to check for dead/nonexistent objects
-	ubyte		reverse;				// play any animations in reverse
+	ubyte	reverse;			// play any animations in reverse
+	int		particle_index;		// used to keep particle offset in dynamic array for orient usage
 } particle;
 
 int Num_particles = 0;
-particle Particles[MAX_PARTICLES];
+static std::vector<particle> Particles;
 int Next_particle = 0;
 
 int Anim_bitmap_id_fire = -1;
@@ -285,16 +287,14 @@ geometry_batcher *PARTICLE_SMOKE2_batcher = NULL;
 // Reset everything between levels
 void particle_init()
 {
-	int i, fps;
+	int fps;
 
 //	Particles_enabled = os_config_read_uint( NULL, "UseParticles", 0 );
 
 	Num_particles = 0;
 	Next_particle = 0;
 
-	for (i=0; i<MAX_PARTICLES; i++ )	{
-		Particles[i].type = -1;
-	}
+	Particles.clear();
 
 	// FIRE!!!
 	if ( Anim_bitmap_id_fire == -1 )	{
@@ -351,12 +351,6 @@ void particle_close()
 
 void particle_page_in()
 {
-	int i;
-
-	for (i=0; i<MAX_PARTICLES; i++ )	{
-		Particles[i].type = -1;
-	}
-
 	if (Anim_bitmap_id_fire > -1) {
 		bm_page_in_texture( Anim_bitmap_id_fire, Anim_num_frames_fire );
 	}
@@ -387,114 +381,58 @@ DCF(particles,"Turns particles on/off")
 
 int Num_particles_hwm = 0;
 
-#ifndef NDEBUG
-int Total_requested = 0;
-int Total_killed = 0;
-int next_message = -1;
-#endif
-
 // Creates a single particle. See the PARTICLE_?? defines for types.
 void particle_create( particle_info *pinfo )
 {
-	int particle_num;
-	particle *p;
+	particle new_particle;
 
-#ifndef NDEBUG
-	if ( next_message == -1 )	{
-		next_message = timestamp(10000);
+	if ( !Particles_enabled )
+		return;
+
+
+	if (Particles.size() > (uint)Num_particles_hwm) {
+		Num_particles_hwm = (int)Particles.size();
+
+		nprintf(("Particles", "Num_particles high water mark = %i\n", Num_particles_hwm));
 	}
-
-	if ( timestamp_elapsed(next_message)) {
-		next_message = timestamp(10000);
-		if ( Total_requested > 1 )	{
-			nprintf(( "Particles", "Particles: Killed off %d%% of the particles\n", (Total_killed*100/Total_requested) ));
-		}
-		Total_requested = 0;
-		Total_killed = 0;
-	}
-#endif
-
-	if ( !Particles_enabled ) return;
-
-	#ifndef NDEBUG
-	Total_requested++;
-	#endif
-
-	int RetryCount = 0;
-	int FirstParticleFound = Next_particle;
-KillAnother:
-	p = &Particles[Next_particle++];
-	if ( Next_particle >= MAX_PARTICLES )	{
-		Next_particle = 0;
-	}
-
-	if ( p->type > -1 )	{
-		// Only remove non-persistent ones
-		if ( p->type != PARTICLE_BITMAP_PERSISTENT )	{
-			p->type = -1;
-			Num_particles--;
-			#ifndef NDEBUG
-			Total_killed++;
-			#endif
-		} else {
-			RetryCount++;
-			// Keep trying to find a non-persistent one until we searched through 1/3 the slots.
-			if ( RetryCount < MAX_PARTICLES/3 )	{
-				goto KillAnother;			
-			} 
-			// Couldn't find any non-persistent ones to remove, so just remove the
-			// first one we would have removed.
-			mprintf(( "DELETING A PERSISTENT PARTICLE!!! This is ok if this only happens rarely. Get John if not.\n" ));
-			Next_particle = FirstParticleFound;
-			p = &Particles[Next_particle++];
-			if ( Next_particle >= MAX_PARTICLES )	{
-				Next_particle = 0;
-			}
-		}
-	}
-
-	// increment counter
-	Num_particles++;
-	if (Num_particles > Num_particles_hwm) {
-		Num_particles_hwm = Num_particles;
-
-		if ( Num_particles_hwm == MAX_PARTICLES )	{
-			mprintf(( "All particle slots filled!\n" ));
-		}
-		//mprintf(( "Num_particles high water mark = %i\n", Num_particles_hwm));
-	}
-
-	// get objnum
-	particle_num = p-Particles;
 
 	// Init the particle data
-	p->pos = pinfo->pos;
-	p->velocity = pinfo->vel;
-	p->age = 0.0f;
-	p->max_life = pinfo->lifetime;
-	p->radius = pinfo->rad;
-	p->type = pinfo->type;
-	p->optional_data = pinfo->optional_data;
-	p->tracer_length = pinfo->tracer_length;
-	p->attached_objnum = pinfo->attached_objnum;
-	p->attached_sig = pinfo->attached_sig;
-	p->reverse = pinfo->reverse;
+	memset( &new_particle, 0, sizeof(particle) );
+	new_particle.pos = pinfo->pos;
+	new_particle.velocity = pinfo->vel;
+	new_particle.age = 0.0f;
+	new_particle.max_life = pinfo->lifetime;
+	new_particle.radius = pinfo->rad;
+	new_particle.type = pinfo->type;
+	new_particle.optional_data = pinfo->optional_data;
+	new_particle.tracer_length = pinfo->tracer_length;
+	new_particle.attached_objnum = pinfo->attached_objnum;
+	new_particle.attached_sig = pinfo->attached_sig;
+	new_particle.reverse = pinfo->reverse;
+	new_particle.particle_index = (int)Particles.size();
 
-	if ( (p->type == PARTICLE_BITMAP) || (p->type == PARTICLE_BITMAP_PERSISTENT) )	{
+	if ( (new_particle.type == PARTICLE_BITMAP) || (new_particle.type == PARTICLE_BITMAP_PERSISTENT) )	{
 		int fps;
-		bm_get_info( p->optional_data,NULL, NULL, NULL, &p->nframes, &fps );
-		if ( p->nframes > 1 )	{
+		bm_get_info( new_particle.optional_data, NULL, NULL, NULL, &new_particle.nframes, &fps );
+		if ( new_particle.nframes > 1 )	{
 			// Recalculate max life for ani's
-			p->max_life = i2fl(p->nframes) / i2fl(fps);
+			new_particle.max_life = i2fl(new_particle.nframes) / i2fl(fps);
 		}
 	} else {
-		p->nframes = 1;
+		new_particle.nframes = 1;
 	}
+
+	Particles.push_back( new_particle );
 }
 
 void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int type, uint optional_data, float tracer_length, object *objp, bool reverse )
 {
 	particle_info pinfo;
+
+	if ( (type < 0) || (type >= NUM_PARTICLE_TYPES) ) {
+		Int3();
+		return;
+	}
 
 	// setup old data
 	pinfo.pos = *pos;
@@ -530,38 +468,26 @@ void particle_move_all(float frametime)
 
 	MONITOR_INC( NumParticles, Num_particles );	
 
-	if ( !Particles_enabled ) return;
+	if ( !Particles_enabled )
+		return;
 
-	p = Particles;
 
 	int i;
-	for ( i=0; i<MAX_PARTICLES; i++, p++ )	{
-		
-		if ( p->type == -1 )	{
-			continue;
-		}
+
+	for (i = 0; i < (int)Particles.size(); i++) {
+		p = &Particles[i];
 
 		// bogus attached objnum
-		if(p->attached_objnum >= MAX_OBJECTS){
-			p->type = -1;
-
-			// decrement counter
-			Num_particles--;
-	
-			Assert(Num_particles >= 0);
+		if (p->attached_objnum >= MAX_OBJECTS) {
+			Particles.erase( Particles.begin() + i );
 			continue;
 		}
 
 		// if the vector is attached to an object which has become invalid, kill if
-		if(p->attached_objnum >= 0){
+		if (p->attached_objnum >= 0) {
 			// if the signature has changed, kill it
-			if(p->attached_sig != Objects[p->attached_objnum].signature){
-				p->type = -1;
-
-				// decrement counter
-				Num_particles--;
-
-				Assert(Num_particles >= 0);
+			if (p->attached_sig != Objects[p->attached_objnum].signature) {
+				Particles.erase( Particles.begin() + i );
 				continue;
 			}
 		}
@@ -574,15 +500,8 @@ void particle_move_all(float frametime)
 		p->age += frametime;
 	
 		if ( p->age > p->max_life )	{
-
-			// If it's time expired, remove it from the used list and 
-			// into the free list
-			p->type = -1;
-
-			// decrement counter
-			Num_particles--;
-
-			Assert(Num_particles >= 0);
+			// If it's time expired remove it
+			Particles.erase( Particles.begin() + i );
 		}
 	}
 }
@@ -590,19 +509,17 @@ void particle_move_all(float frametime)
 // kill all active particles
 void particle_kill_all()
 {
-	int idx;
+//	int idx;
 
 	// kill all active particles
 	Num_particles = 0;
 	Next_particle = 0;
 	Num_particles_hwm = 0;
-	for(idx=0; idx<MAX_PARTICLES; idx++){
-		Particles[idx].type = -1;
-	}
+
+	Particles.clear();
 }
 
 MONITOR( NumParticlesRend );	
-extern int Cmdline_nohtl;
 
 void particle_render_all()
 {
@@ -610,38 +527,37 @@ void particle_render_all()
 	ubyte flags;
 	float pct_complete;
 	float alpha = 1.0f;
-	vertex pos;
+	vertex pos, pos_htl;
 	vec3d ts, te, temp;
 	int rotate = 1;
 	int i;
+	int framenum, cur_frame;
 
-	if ( !Particles_enabled ) return;
+	if ( !Particles_enabled )
+		return;
 
 	MONITOR_INC( NumParticlesRend, Num_particles );	
 
-	int n = 0;
+//	int n = 0;
 	int nclipped = 0;
 
-	p = Particles;
 
-	batch_start();
+	for (i = 0; i < (int)Particles.size(); i++) {
+		p = &Particles[i];
 
-	for (i=0; i<MAX_PARTICLES; i++, p++ )	{
-		
-		if ( p->type == -1 )	{
-			continue;
-		}
+	//	n++;
 
-		n++;
+		// make sure "rotate" is enabled for this particle
+		rotate = 1;
 
 		// pct complete for the particle
 		pct_complete = p->age / p->max_life;
 
 		// calculate the alpha to draw at
 		alpha = 1.0f;	
-		vertex POS;
+
 		// if this is a tracer style particle, calculate tracer vectors
-		if(p->tracer_length > 0.0f){			
+		if (p->tracer_length > 0.0f) {			
 			ts = p->pos;
 			temp = p->velocity;
 			vm_vec_normalize_quick(&temp);
@@ -651,36 +567,42 @@ void particle_render_all()
 			rotate = 0;
 		}
 		// if this is an "attached" particle. move it
-		else if(p->attached_objnum >= 0){
+		else if (p->attached_objnum >= 0) {
 			// offset the vector, and transform to view coords
 			// vm_vec_add(&te, &Objects[p->attached_objnum].pos, &p->pos);
 
 			vm_vec_unrotate(&temp, &p->pos, &Objects[p->attached_objnum].orient);
 			vm_vec_add2(&temp, &Objects[p->attached_objnum].pos);
 
-			if(!Cmdline_nohtl)g3_transfer_vertex(&POS, &temp);
 			flags = g3_rotate_vertex(&pos, &temp);
-			if(flags){				
+
+			if (flags) {				
 				nclipped++;
 				continue;
 			}
-			
+
+			if (!Cmdline_nohtl)
+				g3_transfer_vertex(&pos_htl, &temp);
+
 			// don't bother rotating again
 			rotate = 0;
 		}
 
 		// rotate the vertex
-		if(rotate){
-			if(!Cmdline_nohtl)g3_transfer_vertex(&POS, &p->pos);
+		if (rotate) {
 			flags = g3_rotate_vertex( &pos, &p->pos );
-			if ( flags )	{
+
+			if ( flags ) {
 				nclipped++;
 				continue;
 			}
+
+			if (!Cmdline_nohtl)
+				g3_transfer_vertex(&pos_htl, &p->pos);
 		}
 
-		switch( p->type )	{
-
+		switch (p->type) 
+		{
 			case PARTICLE_DEBUG:				// A red sphere, no optional data required
 				gr_set_color( 255, 0, 0 );
 				g3_draw_sphere_ez( &p->pos, p->radius );
@@ -688,172 +610,122 @@ void particle_render_all()
 
 			case PARTICLE_BITMAP:		
 			case PARTICLE_BITMAP_PERSISTENT:
-				{	// A bitmap, optional data is the bitmap number					
-					int framenum = p->optional_data;
+			{	// A bitmap, optional data is the bitmap number					
+				framenum = p->optional_data;
 
-					if ( p->nframes > 1 )	{
-						int n = fl2i(pct_complete * p->nframes + 0.5);
+				if ( p->nframes > 1 )	{
+					int n = fl2i(pct_complete * p->nframes + 0.5);
 
-						if ( n < 0 ) n = 0;
-						else if ( n > p->nframes-1 ) n = p->nframes-1;
+					if ( n < 0 )
+						n = 0;
+					else if ( n > p->nframes-1 )
+						n = p->nframes-1;
 
-						framenum += n;
-					}
-
-					// set the bitmap
-					gr_set_bitmap( framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
-
-					// if this is a tracer style particle
-					if(p->tracer_length > 0.0f){					
-						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT|TMAP_HTL_3DU_BATCH, 25.0f);
-					}
-					// draw as a regular bitmap
-					else {
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE | TMAP_HTL_3DU_BATCH);
-						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
-					}
-					break;
+					framenum += n;
 				}
 
-			case PARTICLE_FIRE:	{
-					if ( Anim_bitmap_id_fire == -1 )
-						break;
-
-					int framenum = fl2i(pct_complete * Anim_num_frames_fire + 0.5);
-
-					if ( framenum < 0 ) framenum = 0;
-					else if ( framenum > Anim_num_frames_fire-1 ) framenum = Anim_num_frames_fire-1;
-
-					/*
-					vertex pos;
-					flags = g3_rotate_vertex( &pos, &p->pos );
-					if ( flags )	{
-						nclipped++;
-						break;
-					}
-					*/
-/*
-					// set the bitmap
-					gr_set_bitmap(p->reverse ? Anim_bitmap_id_fire+(Anim_num_frames_fire - framenum - 1) : Anim_bitmap_id_fire+framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
-
-					// if this is a tracer style particle
-					if(p->tracer_length > 0.0f){					
-						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT|TMAP_HTL_3DU_BATCH, 25.0f);
-					}
-					// draw as a regular bitmap
-					else {
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE|TMAP_HTL_3DU_BATCH);
-						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
-					}
-*/					
-					int cur_frame = p->reverse ? (Anim_num_frames_fire - framenum - 1) : framenum;
-					Assert(cur_frame < Anim_num_frames_fire);
-
-					PARTICLE_FIRE_batcher[cur_frame].add_allocate(1);
-					// if this is a tracer style particle
-					if(p->tracer_length > 0.0f){					
-						PARTICLE_FIRE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
-					}
-					// draw as a regular bitmap
-					else {
-						PARTICLE_FIRE_batcher[cur_frame].draw_bitmap(&POS, p->radius);
-					}
-					break;
+				// if this is a tracer style particle
+				if (p->tracer_length > 0.0f) {					
+					batch_add_laser( framenum, &ts, p->radius, &te, p->radius );
+				}
+				// draw as a regular bitmap
+				else {
+					int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
+					batch_add_bitmap( framenum, tmap_flags, (Cmdline_nohtl) ? &pos : &pos_htl, p->particle_index % 8, p->radius, alpha );
 				}
 
-			case PARTICLE_SMOKE:	{
-					if ( Anim_bitmap_id_smoke == -1 )
-						break;
+				break;
+			}
 
-					int framenum = fl2i(pct_complete * Anim_num_frames_smoke + 0.5);
-
-					if ( framenum < 0 ) framenum = 0;
-					else if ( framenum > Anim_num_frames_smoke-1 ) framenum = Anim_num_frames_smoke-1;
-
-					/*
-					vertex pos;
-					flags = g3_rotate_vertex( &pos, &p->pos );
-					if ( flags )	{
-						nclipped++;
-						break;
-					}
-					*/
-
-					// set the bitmap
-					/*gr_set_bitmap(p->reverse ? Anim_bitmap_id_smoke+(Anim_num_frames_smoke - framenum - 1) : Anim_bitmap_id_smoke+framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
-
-					// if this is a tracer style particle
-					if(p->tracer_length > 0.0f){			
-						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT|TMAP_HTL_3DU_BATCH, 25.0f);
-					}
-					// draw as a regular bitmap
-					else {
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE|TMAP_HTL_3DU_BATCH);
-						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
-					}
-					*/
-					int cur_frame = p->reverse ? (Anim_num_frames_smoke - framenum - 1) : framenum;
-					Assert(cur_frame < Anim_num_frames_smoke);
-
-					PARTICLE_SMOKE_batcher[cur_frame].add_allocate(1);
-					// if this is a tracer style particle
-					if(p->tracer_length > 0.0f){					
-						PARTICLE_SMOKE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
-					}
-					// draw as a regular bitmap
-					else {
-						PARTICLE_SMOKE_batcher[cur_frame].draw_bitmap(&POS, p->radius);
-					}
-
+			case PARTICLE_FIRE:
+			{
+				if ( Anim_bitmap_id_fire == -1 )
 					break;
+
+				framenum = fl2i(pct_complete * Anim_num_frames_fire + 0.5);
+
+				if ( framenum < 0 )
+					framenum = 0;
+				else if ( framenum > Anim_num_frames_fire-1 )
+					framenum = Anim_num_frames_fire-1;
+
+				cur_frame = p->reverse ? (Anim_num_frames_fire - framenum - 1) : framenum;
+				Assert(cur_frame < Anim_num_frames_fire);
+
+				PARTICLE_FIRE_batcher[cur_frame].add_allocate(1);
+
+				// if this is a tracer style particle
+				if (p->tracer_length > 0.0f) {					
+					PARTICLE_FIRE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
+				}
+				// draw as a regular bitmap
+				else {
+					PARTICLE_FIRE_batcher[cur_frame].draw_bitmap( (Cmdline_nohtl) ? &pos : &pos_htl, p->particle_index % 8, p->radius );
 				}
 
-			case PARTICLE_SMOKE2:	{
-					if ( Anim_bitmap_id_smoke2 == -1 )
-						break;
+				break;
+			}
 
-					int framenum = fl2i(pct_complete * Anim_num_frames_smoke2 + 0.5);
-
-					if ( framenum < 0 ) framenum = 0;
-					else if ( framenum > Anim_num_frames_smoke2-1 ) framenum = Anim_num_frames_smoke2-1;
-
-					/*
-					vertex pos;
-					flags = g3_rotate_vertex( &pos, &p->pos );
-					if ( flags )	{
-						nclipped++;
-						break;
-					}
-					*/
-
-					// set the bitmap
-/*					gr_set_bitmap(p->reverse ? Anim_bitmap_id_smoke2+(Anim_num_frames_smoke2 - framenum - 1) : Anim_bitmap_id_smoke2+framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
-					
-					// if this is a tracer style particle
-					if(p->tracer_length > 0.0f){					
-						g3_draw_laser(&ts, p->radius, &te, p->radius, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT|TMAP_HTL_3DU_BATCH, 25.0f);
-					}
-					// draw as a regular bitmap
-					else {						
-						if(!Cmdline_nohtl)g3_draw_bitmap(&POS, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT | TMAP_HTL_PARTICLE|TMAP_HTL_3DU_BATCH);
-						else g3_draw_bitmap(&pos, (p-Particles)%8, p->radius, TMAP_FLAG_TEXTURED );
-					}
-					*/
-					int cur_frame = p->reverse ? (Anim_num_frames_smoke2 - framenum - 1) : framenum;
-					Assert(cur_frame < Anim_num_frames_smoke2);
-
-					PARTICLE_SMOKE2_batcher[cur_frame].add_allocate(1);
-					// if this is a tracer style particle
-					if(p->tracer_length > 0.0f){					
-						PARTICLE_SMOKE2_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
-					}
-					// draw as a regular bitmap
-					else {
-						PARTICLE_SMOKE2_batcher[cur_frame].draw_bitmap(&POS, p->radius);
-					}
-
+			case PARTICLE_SMOKE:
+			{
+				if ( Anim_bitmap_id_smoke == -1 )
 					break;
+
+				framenum = fl2i(pct_complete * Anim_num_frames_smoke + 0.5);
+
+				if ( framenum < 0 )
+					framenum = 0;
+				else if ( framenum > Anim_num_frames_smoke-1 )
+					framenum = Anim_num_frames_smoke-1;
+
+				cur_frame = p->reverse ? (Anim_num_frames_smoke - framenum - 1) : framenum;
+				Assert(cur_frame < Anim_num_frames_smoke);
+
+				PARTICLE_SMOKE_batcher[cur_frame].add_allocate(1);
+
+				// if this is a tracer style particle
+				if (p->tracer_length > 0.0f) {					
+					PARTICLE_SMOKE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
 				}
+				// draw as a regular bitmap
+				else {
+					// as part of a coding mistake I thought the freaky UV changing from the orient var was really cool
+					// and added some realism to the smoke effect.  so, it's not using the original particle_index
+					// for UV orient like all of the other effects but the current particle offset instead. - taylor
+					PARTICLE_SMOKE_batcher[cur_frame].draw_bitmap( (Cmdline_nohtl) ? &pos : &pos_htl, (i + cur_frame) % 8, p->radius );
+				}
+
+				break;
+			}
+
+			case PARTICLE_SMOKE2:
+			{
+				if ( Anim_bitmap_id_smoke2 == -1 )
+					break;
+
+				framenum = fl2i(pct_complete * Anim_num_frames_smoke2 + 0.5);
+
+				if ( framenum < 0 )
+					framenum = 0;
+				else if ( framenum > Anim_num_frames_smoke2-1 )
+					framenum = Anim_num_frames_smoke2-1;
+
+				cur_frame = p->reverse ? (Anim_num_frames_smoke2 - framenum - 1) : framenum;
+				Assert(cur_frame < Anim_num_frames_smoke2);
+
+				PARTICLE_SMOKE2_batcher[cur_frame].add_allocate(1);
+
+				// if this is a tracer style particle
+				if (p->tracer_length > 0.0f) {					
+					PARTICLE_SMOKE2_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
+				}
+				// draw as a regular bitmap
+				else {
+					PARTICLE_SMOKE2_batcher[cur_frame].draw_bitmap( (Cmdline_nohtl) ? &pos : &pos_htl, p->particle_index % 8, p->radius );
+				}
+
+				break;
+			}
 		}
 	}
 
@@ -878,8 +750,7 @@ void particle_render_all()
 		}
 	}
 
-	batch_end();
-	batch_render();
+	batch_render_all();
 
 //	mprintf(( "NP=%d, NCP=%d\n", n, nclipped ));
 }
@@ -894,24 +765,30 @@ void particle_render_all()
 // Use a structure rather than pass a ton of parameters to particle_emit
 /*
 typedef struct particle_emitter {
-	int		num_low;				// Lowest number of particles to create
+	int		num_low;			// Lowest number of particles to create
 	int		num_high;			// Highest number of particles to create
-	vec3d	pos;					// Where the particles emit from
-	vec3d	vel;					// Initial velocity of all the particles
-	float		lifetime;			// How long the particles live
+	vec3d	pos;				// Where the particles emit from
+	vec3d	vel;				// Initial velocity of all the particles
+	float	lifetime;			// How long the particles live
 	vec3d	normal;				// What normal the particle emit arond
-	float		normal_variance;	//	How close they stick to that normal 0=good, 1=360 degree
-	float		min_vel;				// How fast the slowest particle can move
-	float		max_vel;				// How fast the fastest particle can move
-	float		min_rad;				// Min radius
-	float		max_rad;				// Max radius
+	float	normal_variance;	// How close they stick to that normal 0=good, 1=360 degree
+	float	min_vel;			// How fast the slowest particle can move
+	float	max_vel;			// How fast the fastest particle can move
+	float	min_rad;			// Min radius
+	float	max_rad;			// Max radius
 } particle_emitter;
 */
 
-#if MAX_DETAIL_LEVEL != 4
-#error Max details assumed to be 4 here
-#endif
-int detail_max_num[5] = { 0, 50, 75, 100, 125 };
+static inline int get_percent(int count)
+{
+	if (count == 0)
+		return 0;
+
+	// this should basically return a scale like:
+	//  50, 75, 100, 125, 150, ...
+	// based on value of 'count' (detail level)
+	return ( 50 + (25 * (count-1)) );
+}
 
 // Creates a bunch of particles. You pass a structure
 // rather than a bunch of parameters.
@@ -919,16 +796,13 @@ void particle_emit( particle_emitter *pe, int type, uint optional_data, float ra
 {
 	int i, n;
 
-	if ( !Particles_enabled ) return;
+	if ( !Particles_enabled )
+		return;
 
 	int n1, n2;
 
 	// Account for detail
-	#if MAX_DETAIL_LEVEL != 4 
-	#error Code in Particle.cpp assumes MAX_DETAIL_LEVEL == 4
-	#endif
-
-	int percent = detail_max_num[Detail.num_particles];
+	int percent = get_percent(Detail.num_particles);
 
 	//Particle rendering drops out too soon.  Seems to be around 150 m.  Is it detail level controllable?  I'd like it to be 500-1000 
 	float min_dist = 125.0f;

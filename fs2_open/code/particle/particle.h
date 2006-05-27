@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.h $
- * $Revision: 2.7 $
- * $Date: 2006-01-21 09:36:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2006-05-27 16:52:50 $
+ * $Author: taylor $
  *
  * Includes for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2006/01/21 09:36:58  wmcoolmon
+ * Texture replacement stuff
+ *
  * Revision 2.6  2005/07/13 03:35:34  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -102,10 +105,11 @@
 
 #include "globalincs/pstypes.h"
 
-#define MAX_PARTICLES	2000	//	Reduced from 2000 to 800 by MK on 4/1/98.  Most I ever saw was 400 and the system recovers
+//#define MAX_PARTICLES	2000	//	Reduced from 2000 to 800 by MK on 4/1/98.  Most I ever saw was 400 and the system recovers
 											//	gracefully from running out of slots.
 											// AP: Put it to 1500 on 4/15/98.  Primary hit sparks weren't finding open slots.  
 											// Made todo item for John to force oldest smoke particles to give up their slots.
+											// 06/05/24 - taylor - made it dynamic
 
 //============================================================================
 //==================== PARTICLE SYSTEM GAME SEQUENCING CODE ==================
@@ -141,6 +145,8 @@ void particle_kill_all();
 #define PARTICLE_BITMAP_PERSISTENT		5		// A bitmap, optional data is the bitmap number.  If bitmap is an animation,
 															// lifetime is calculated by the number of frames and fps.
 
+#define NUM_PARTICLE_TYPES	6
+
 // particle creation stuff
 typedef struct particle_info {
 	// old-style particle info
@@ -169,18 +175,18 @@ void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int typ
 
 // Use a structure rather than pass a ton of parameters to particle_emit
 typedef struct particle_emitter {
-	int		num_low;				// Lowest number of particles to create
+	int		num_low;			// Lowest number of particles to create
 	int		num_high;			// Highest number of particles to create
-	vec3d	pos;					// Where the particles emit from
-	vec3d	vel;					// Initial velocity of all the particles
-	float		min_life;			// How long the particles live
-	float		max_life;			// How long the particles live
+	vec3d	pos;				// Where the particles emit from
+	vec3d	vel;				// Initial velocity of all the particles
+	float	min_life;			// How long the particles live
+	float	max_life;			// How long the particles live
 	vec3d	normal;				// What normal the particle emit arond
-	float		normal_variance;	//	How close they stick to that normal 0=good, 1=360 degree
-	float		min_vel;				// How fast the slowest particle can move
-	float		max_vel;				// How fast the fastest particle can move
-	float		min_rad;				// Min radius
-	float		max_rad;				// Max radius
+	float	normal_variance;	// How close they stick to that normal 0=good, 1=360 degree
+	float	min_vel;			// How fast the slowest particle can move
+	float	max_vel;			// How fast the fastest particle can move
+	float	min_rad;			// Min radius
+	float	max_rad;			// Max radius
 } particle_emitter;
 
 // Creates a bunch of particles. You pass a structure
