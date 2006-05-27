@@ -1705,8 +1705,11 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	//Handle 3D init stuff
 	g3_start_frame(1);
 	g3_set_view_matrix(&sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * zoom);
-	if (!Cmdline_nohtl) gr_set_proj_matrix( (4.0f/9.0f) * 3.14159f * View_zoom, gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
-	if (!Cmdline_nohtl)	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+
+	if (!Cmdline_nohtl) {
+		gr_set_proj_matrix( Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
 
 	//Handle light
 	light_reset();
