@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.51 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.52 $
+ * $Date: 2006-05-27 17:00:02 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.50  2006/04/05 16:12:41  karajorma
  * Changes to support the new Enable/Disable-Builtin-Messages SEXP
  *
@@ -1885,7 +1888,7 @@ void message_queue_process()
 
 #ifndef NDEBUG
 	// debug only -- if the message is a builtin message, put in parens whether or not the voice played
-	if ( Playing_messages[Num_messages_playing].wave == -1 ) {
+	if ( Sound_enabled && (Playing_messages[Num_messages_playing].wave == -1) ) {
 		strcat( buf, NOX("..(no wavefile for voice)"));
 		snd_play(&Snds[SND_CUE_VOICE]);
 	}
