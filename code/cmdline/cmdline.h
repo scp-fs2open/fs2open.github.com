@@ -11,11 +11,27 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.88 $
- * $Date: 2006-05-13 07:29:51 $
+ * $Revision: 2.89 $
+ * $Date: 2006-05-27 17:17:57 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2006/05/13 07:29:51  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.87  2006/04/05 13:47:01  taylor
  * remove -tga16, it's obsolete now
  * add a temporary -no_emissive_light option to not use emission type light in OGL
@@ -587,7 +603,6 @@ extern int Cmdline_window;
 extern double specular_exponent_value;
 extern float Cmdline_clip_dist;
 extern float Cmdline_fov;
-extern float Cmdline_max_subdivide;
 extern float Cmdline_ogl_spec;
 extern float static_light_factor;
 extern float static_point_factor;
@@ -595,7 +610,6 @@ extern float static_tube_factor;
 extern int Cmdline_2d_poof;
 extern int Cmdline_alpha_env;
 extern int Cmdline_ambient_factor;
-extern int Cmdline_cache_bitmaps;
 extern int Cmdline_cell;
 extern int Cmdline_decals;
 extern int Cmdline_env;
@@ -609,8 +623,7 @@ extern int Cmdline_nospec;
 extern int Cmdline_pcx32;
 
 // Game Speed related
-extern int Cmdline_batch_3dunlit;
-extern int Cmdline_d3d_particle;
+extern int Cmdline_cache_bitmaps;
 extern int Cmdline_img2dds;
 extern int Cmdline_NoFPSCap;
 extern int Cmdline_no_vsync;
@@ -624,7 +637,6 @@ extern int Cmdline_targetinfo;
 
 // Gameplay related
 extern int Cmdline_3dwarp;
-extern int Cmdline_beams_no_pierce_shields;	// Goober5000
 extern int Cmdline_ship_choice_3d;
 extern int Cmdline_warp_flash;
 
@@ -664,7 +676,6 @@ extern int Cmdline_dis_collisions;
 extern int Cmdline_dis_weapons;
 extern int Cmdline_noparseerrors;
 extern int Cmdline_nowarn;
-extern int Cmdline_rt;
 extern int Cmdline_show_mem_usage;
 extern int Cmdline_show_pos;
 extern int Cmdline_show_stats;
