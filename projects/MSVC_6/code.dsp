@@ -615,10 +615,6 @@ SOURCE=..\..\code\Graphics\GrD3D.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\graphics\grd3dbatch.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\graphics\GrD3DBmpman.h
 # End Source File
 # Begin Source File
@@ -628,10 +624,6 @@ SOURCE=..\..\code\Graphics\GrD3DInternal.h
 # Begin Source File
 
 SOURCE=..\..\code\graphics\grd3dlight.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\graphics\GrD3DParticle.h
 # End Source File
 # Begin Source File
 
@@ -648,10 +640,6 @@ SOURCE=..\..\code\Graphics\GrD3D.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\graphics\grd3dbatch.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\graphics\GrD3DBmpman.cpp
 # End Source File
 # Begin Source File
@@ -661,10 +649,6 @@ SOURCE=..\..\code\graphics\GrD3DCalls.cpp
 # Begin Source File
 
 SOURCE=..\..\code\graphics\grd3dlight.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\graphics\GrD3DParticle.cpp
 # End Source File
 # Begin Source File
 
