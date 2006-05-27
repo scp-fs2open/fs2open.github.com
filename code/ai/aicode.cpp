@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.70 $
- * $Date: 2006-05-20 02:03:00 $
- * $Author: Goober5000 $
+ * $Revision: 1.71 $
+ * $Date: 2006-05-27 17:22:04 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.70  2006/05/20 02:03:00  Goober5000
+ * fix for Mantis #755, plus make the missionlog #defines uniform
+ * --Goober5000
+ *
  * Revision 1.69  2006/05/13 07:01:17  taylor
  * fix bug where anything that wasn't a ship was considered a non-goal
  *
@@ -3113,6 +3117,9 @@ int get_enemy_timestamp()
 int find_enemy(int objnum, float range, int max_attackers)
 {
 	int	enemy_team_mask;
+
+	if (objnum < 0)
+		return -1;
 
 	enemy_team_mask = iff_get_attackee_mask(obj_team(&Objects[objnum]));
 
