@@ -9,11 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.138 $
- * $Date: 2006-05-13 07:29:51 $
+ * $Revision: 2.139 $
+ * $Date: 2006-05-27 17:17:57 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.138  2006/05/13 07:29:51  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.137  2006/05/04 21:25:12  phreak
  * the -decal command line doesn't enable decals anymore, just pops up a messagebox in windows saying that decals are disabled from now on.
  *
@@ -879,16 +895,17 @@ Flag exe_params[] =
 {
 	{ "-spec",				"Enable specular",							true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-spec", },
 	{ "-glow",				"Enable glowmaps",							true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-glow", },
+	{ "-env",				"Enable evironment maps",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
 	{ "-jpgtga",			"Enable jpg,tga textures",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-jpgtga", },
 	{ "-mipmap",			"Enable mipmapping",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
 	{ "-2d_poof",			"Stops fog intersect hull",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-2d_poof", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,					EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
-	{ "-cache_bitmaps",		"Cache bitmaps between missions",			true,	0,					EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-cache_bitmaps", },
 	{ "-missile_lighting",	"Apply Lighting to Missiles"	,			true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-missile_lighting", },
 
 	{ "-img2dds",			"Compress non-compressed images",			true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-img2dds", },
 	{ "-no_vsync",			"Disable vertical sync",					true,	0,					EASY_DEFAULT,		"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_vsync", },
+	{ "-cache_bitmaps",		"Cache bitmaps between missions",			true,	0,					EASY_DEFAULT_MEM,	"Game Speed",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-cache_bitmaps", },
 
 	{ "-dualscanlines",		"Another pair of scanning lines",			true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-dualscanlines", },
 	{ "-targetinfo",		"Enable info next to target",				true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-targetinfo", },
@@ -896,7 +913,6 @@ Flag exe_params[] =
 	{ "-rearm_timer",		"Enable Rearm/Repair Completion Timer",		true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-rearm_timer", },
 	{ "-ballistic_gauge",	"Enable the analog ballistic ammo gauge",	true,	0,					EASY_DEFAULT,		"HUD",			"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ballistic_gauge", },
 
-	{ "-nobeampierce",		"Disable beams piercing shields",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nobeampierce", },
 	{ "-ship_choice_3d",	"Use models for ship selection",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ship_choice_3d", },
 	{ "-3dwarp",			"Enable 3d warp",							true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
@@ -914,10 +930,10 @@ Flag exe_params[] =
 	{ "-multilog",			"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-multilog", },
 	{ "-clientdamage",		"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
 	{ "-mpnoreturn",		"Disables flight deck option",				true,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
-#ifdef WIN32
+//#ifdef WIN32
 //	{ "-fixbugs",			"Fix bugs",									true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
 //	{ "-nocrash",			"Disable crashing",							true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
-#endif
+//#endif
 	{ "-oldfire",			"",											true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-oldfire", },
 	{ "-nohtl",				"Software mode (very slow)",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nohtl", },
 	{ "-no_set_gamma",		"Disable setting of gamma",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_set_gamma", },
@@ -930,8 +946,7 @@ Flag exe_params[] =
 	{ "-noibx",				"Don't use cached index buffers (IBX)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noibx",	},
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
 
-	{ "-env",				"environment mapping",						true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
-	{ "-alpha_env",			"uses alpha for env maping",				true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-alpha_env", },
+	{ "-alpha_env",			"Use specular alpha for env mapping",		true,	0,					EASY_DEFAULT_MEM,	"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-alpha_env", },
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
 	{ "-voicer",			"Voice recognition",						true,	0,					EASY_DEFAULT,		"Experimental",	"", },
 
@@ -1008,7 +1023,6 @@ int Cmdline_window = 0;
 cmdline_parm spec_exp_arg("-spec_exp", NULL);		// comand line FOV -Bobboau
 cmdline_parm clip_dist_arg("-clipdist", NULL);		// Cmdline_clip_dist
 cmdline_parm fov_arg("-fov", NULL);					// Cmdline_fov  -- comand line FOV -Bobboau
-cmdline_parm max_subdivide_arg("-max_subdivide", NULL);	// Cmdline_max_subdivide  -- comand line maximum level of tesleation for n-patches -Bobboau
 cmdline_parm ogl_spec_arg("-ogl_spec", NULL);		// Cmdline_ogl_spec
 cmdline_parm spec_static_arg("-spec_static", NULL);
 cmdline_parm spec_point_arg("-spec_point", NULL);
@@ -1016,7 +1030,6 @@ cmdline_parm spec_tube_arg("-spec_tube", NULL);
 cmdline_parm poof_2d_arg("-2d_poof", NULL);			// Cmdline_2d_poof
 cmdline_parm alpha_env("-alpha_env", NULL);			// Cmdline_alpha_env
 cmdline_parm ambient_factor_arg("-ambient_factor", NULL);	// Cmdline_ambient_factor
-cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
 cmdline_parm cell_arg("-cell", NULL);				// Cmdline_cell
 cmdline_parm decals("-decals", NULL);				// Cmdline_decals
 cmdline_parm env("-env", NULL);						// Cmdline_env
@@ -1029,15 +1042,18 @@ cmdline_parm noscalevid_arg("-noscalevid", NULL);	// Cmdline_noscalevid  -- disa
 cmdline_parm spec_arg("-spec", NULL);				// Cmdline_nospec  -- use specular highlighting -Sticks
 cmdline_parm pcx32_arg("-pcx32", NULL);				// Cmdline_pcx32
 cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive  -- don't use emissive light in OGL
+cmdline_parm spec_scale_arg("-spec_scale", NULL);	// Cmdline_spec_scale -- TEMPORARY - REMOVEME!!!
+cmdline_parm env_scale_arg("-env_scale", NULL);		// Cmdline_env_scale -- TEMPORARY - REMOVEME!!!
+cmdline_parm alpha_alpha_blend_arg("-alpha_alpha_blend", NULL);	// Cmdline_alpha_alpha_blend -- TEMPORARY - REMOVEME!!!
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
-float Cmdline_max_subdivide = 0.0f;
 float Cmdline_ogl_spec = 80.0f;
+float Cmdline_spec_scale = 1.0f; // TEMPORARY - REMOVEME!!!
+float Cmdline_env_scale = 2.0f; // TEMPORARY - REMOVEME!!!
 int Cmdline_2d_poof = 0;
 int Cmdline_alpha_env = 0;
 int Cmdline_ambient_factor = 128;
-int Cmdline_cache_bitmaps = 0;	// caching of bitmaps between missions (faster loads, can hit swap on reload with <512 Meg RAM though) - taylor
 int Cmdline_cell = 0;
 int Cmdline_decals = 0;
 int Cmdline_env = 0;
@@ -1050,16 +1066,15 @@ int Cmdline_noscalevid = 0;
 int Cmdline_nospec = 1;
 int Cmdline_pcx32 = 0;
 int Cmdline_no_emissive = 0;
+int Cmdline_alpha_alpha_blend = 1; // TEMPORARY - REMOVEME!!!
 
 // Game Speed related
-cmdline_parm batch_3dunlit_arg("-batch_3dunlit", NULL);	// Cmdline_batch_3dunlit
-cmdline_parm d3d_particle_arg("-d3d_particle", NULL);	// Cmdline_d3d_particle
+cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
 cmdline_parm img2dds_arg("-img2dds", NULL);			// Cmdline_img2dds
 cmdline_parm no_fpscap("-no_fps_capping", NULL);	// Cmdline_NoFPSCap
 cmdline_parm no_vsync_arg("-no_vsync", NULL);		// Cmdline_no_vsync
 
-int Cmdline_batch_3dunlit = 0;
-int Cmdline_d3d_particle = 0;
+int Cmdline_cache_bitmaps = 0;	// caching of bitmaps between missions (faster loads, can hit swap on reload with <512 Meg RAM though) - taylor
 int Cmdline_img2dds = 0;
 int Cmdline_NoFPSCap = 0; // Disable FPS capping - kazan
 int Cmdline_no_vsync = 0;
@@ -1080,12 +1095,10 @@ int Cmdline_targetinfo = 0;
 
 // Gameplay related
 cmdline_parm use_3dwarp("-3dwarp", NULL);			// Cmdline_3dwarp
-cmdline_parm beams_no_pierce_shields_arg("-nobeampierce", NULL);	// Cmdline_beams_no_pierce_shields  -- beams do not pierce shields - Goober5000
 cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);	// Cmdline_ship_choice_3d
 cmdline_parm use_warp_flash("-warp_flash", NULL);	// Cmdline_warp_flash
 
 int Cmdline_3dwarp = 0;
-int Cmdline_beams_no_pierce_shields = 0;	// Goober5000
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_warp_flash = 0;
 
@@ -1150,7 +1163,6 @@ cmdline_parm dis_collisions("-dis_collisions", NULL);	// Cmdline_dis_collisions
 cmdline_parm dis_weapons("-dis_weapons", NULL);		// Cmdline_dis_weapons
 cmdline_parm noparseerrors_arg("-noparseerrors", NULL);	// Cmdline_noparseerrors  -- turns off parsing errors -C
 cmdline_parm nowarn_arg("-no_warn", NULL);			// Cmdline_nowarn
-cmdline_parm rt_arg("-rt", NULL);					// Cmdline_rt
 cmdline_parm fps_arg("-fps", NULL);					// Cmdline_show_fps
 cmdline_parm show_mem_usage_arg("-show_mem_usage", NULL);	// Cmdline_show_mem_usage
 cmdline_parm pos_arg("-pos", NULL);					// Cmdline_show_pos
@@ -1167,7 +1179,6 @@ int Cmdline_dis_collisions = 0;
 int Cmdline_dis_weapons = 0;
 int Cmdline_noparseerrors = 0;
 int Cmdline_nowarn = 0; // turn warnings off in FRED
-int Cmdline_rt = 0;
 int Cmdline_show_mem_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
@@ -1183,10 +1194,10 @@ cmdline_parm output_sexp_arg("-output_sexps", NULL); //WMC - outputs all SEXPs t
 cmdline_parm output_scripting_arg("-output_scripting", NULL);	//WMC
 
 // Totally useless crap...
-#ifdef WIN32
+/*#ifdef WIN32
 cmdline_parm fix_bugs("-fixbugs", NULL);
 cmdline_parm disable_crashing("-nocrash", NULL);
-#endif
+#endif*/
 
 
 
@@ -1834,10 +1845,6 @@ bool SetCmdlineParams()
 		Cmdline_show_stats = 1;
 	}
 
-	if ( beams_no_pierce_shields_arg.found() ) {
-		Cmdline_beams_no_pierce_shields = 1;
-	}
-
 	if ( fov_arg.found() ) {
 		Viewer_zoom = VIEWER_ZOOM_DEFAULT = Cmdline_fov = fov_arg.get_float();
 	}
@@ -1865,7 +1872,44 @@ bool SetCmdlineParams()
 		Cmdline_warp_flash = 1;
 	}
 
-//specular comand lines
+	// TEMPORARY - REMOVEME!!!
+	if ( spec_scale_arg.found() ) {
+		Cmdline_spec_scale = spec_scale_arg.get_float();
+
+		if (Cmdline_spec_scale != 1.0f && Cmdline_spec_scale != 2.0f && Cmdline_spec_scale != 4.0f) {
+			if (Cmdline_spec_scale < 1.0f)
+				Cmdline_spec_scale = 1.0f;
+			else if (Cmdline_spec_scale >= 3.0f)
+				Cmdline_spec_scale = 4.0f;
+			else if (Cmdline_spec_scale < 2.0f)
+				Cmdline_spec_scale = 2.0f;
+			else if (Cmdline_spec_scale > 2.0f)
+				Cmdline_spec_scale = 2.0f;
+		}
+	}
+
+	// TEMPORARY - REMOVEME!!!
+	if ( env_scale_arg.found() ) {
+		Cmdline_env_scale = env_scale_arg.get_float();
+
+		if (Cmdline_env_scale != 1.0f && Cmdline_env_scale != 2.0f && Cmdline_env_scale != 4.0f) {
+			if (Cmdline_env_scale < 1.0f)
+				Cmdline_env_scale = 1.0f;
+			else if (Cmdline_env_scale >= 3.0f)
+				Cmdline_env_scale = 4.0f;
+			else if (Cmdline_env_scale < 2.0f)
+				Cmdline_env_scale = 2.0f;
+			else if (Cmdline_env_scale > 2.0f)
+				Cmdline_env_scale = 2.0f;
+		}
+	}
+
+	// TEMPORARY - REMOVEME!!!
+	if ( alpha_alpha_blend_arg.found() ) {
+		Cmdline_alpha_alpha_blend = 1;
+	}
+
+	// specular comand lines
 	if ( spec_exp_arg.found() ) {
 		specular_exponent_value = spec_exp_arg.get_float();
 	}
@@ -1944,17 +1988,8 @@ bool SetCmdlineParams()
 		Cmdline_ship_choice_3d = 1;
 	}
 
-	if(d3d_particle_arg.found()) {
-		Cmdline_d3d_particle = 1;
-	}
-
 	if(show_mem_usage_arg.found()) {
 		Cmdline_show_mem_usage = 1;
-	}
-
-	if(rt_arg.found())
-	{
-		Cmdline_rt = 1;
 	}
 
 	if(ingamejoin_arg.found())
@@ -2111,11 +2146,6 @@ bool SetCmdlineParams()
 
 	Cmdline_d3d_lesstmem = !d3d_lesstmem_arg.found();
 
-	if(batch_3dunlit_arg.found())
-	{
-		Cmdline_batch_3dunlit = 1;
-	}
-
 	if ( no_vbo_arg.found() )
 	{
 		Cmdline_novbo = 1;
@@ -2124,10 +2154,6 @@ bool SetCmdlineParams()
 	if ( snd_preload_arg.found() )
 	{
 		Cmdline_snd_preload = 1;
-	}
-
-	if ( max_subdivide_arg.found() ) {
-		Cmdline_max_subdivide = max_subdivide_arg.get_float();
 	}
 
 	if ( alpha_env.found() ) {
@@ -2201,7 +2227,8 @@ bool SetCmdlineParams()
 		Cmdline_save_render_targets = 1;
 	}
 
-#ifdef WIN32
+#if 0
+//#ifdef WIN32
 	extern uint os_get_window();
 	if( fix_bugs.found() )
 	{
@@ -2244,6 +2271,7 @@ bool SetCmdlineParams()
 		return false;
 	}
 #endif
+
 	return true; 
 }
 
@@ -2291,5 +2319,3 @@ int parse_cmdline(char *cmdline)
 	// I did this because of fred2_parse_cmdline()
 	return SetCmdlineParams();
 }
-
-//float global_scaleing_factor = 3.0f;
