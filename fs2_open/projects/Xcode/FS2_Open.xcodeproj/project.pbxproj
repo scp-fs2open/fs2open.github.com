@@ -89,6 +89,12 @@
 		346C330409BD4C150022D46E /* SDL.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 34C7188B08C40DEB00459F5B /* SDL.framework */; };
 		346C330509BD4C150022D46E /* Vorbis.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 346C32FC09BD4BBC0022D46E /* Vorbis.framework */; };
 		3486EE80099AA02A0092AF2C /* Info-debug.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3486EE7C09990CE20092AF2C /* Info-debug.plist */; };
+		349807CE0A25B46F0013844A /* decoder16.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 349807C90A25B46F0013844A /* decoder16.cpp */; };
+		349807CF0A25B46F0013844A /* mve_audio.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 349807CA0A25B46F0013844A /* mve_audio.cpp */; };
+		349807D00A25B46F0013844A /* mvelib.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 349807CB0A25B46F0013844A /* mvelib.cpp */; };
+		349807D10A25B46F0013844A /* mvelib.h in Headers */ = {isa = PBXBuildFile; fileRef = 349807CC0A25B46F0013844A /* mvelib.h */; };
+		349807D20A25B46F0013844A /* mveplayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 349807CD0A25B46F0013844A /* mveplayer.cpp */; };
+		349807E10A25B98A0013844A /* modelanim.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 349807E00A25B98A0013844A /* modelanim.cpp */; };
 		34A3E7CD08C4BB3800BBC609 /* codec1.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459553908C3D6A0003B1351 /* codec1.h */; };
 		34A3E7CE08C4BB3900BBC609 /* codec1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459553808C3D6A0003B1351 /* codec1.cpp */; };
 		34A3E7F908C4E15400BBC609 /* libjpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C71A9108C4184200459F5B /* libjpeg.a */; };
@@ -987,16 +993,12 @@
 		3459536E08C3D6A0003B1351 /* grbatch.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grbatch.h; sourceTree = "<group>"; };
 		3459536F08C3D6A0003B1351 /* grd3d.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3d.cpp; sourceTree = "<group>"; };
 		3459537008C3D6A0003B1351 /* grd3d.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grd3d.h; sourceTree = "<group>"; };
-		3459537108C3D6A0003B1351 /* grd3dbatch.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3dbatch.cpp; sourceTree = "<group>"; };
-		3459537208C3D6A0003B1351 /* grd3dbatch.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grd3dbatch.h; sourceTree = "<group>"; };
 		3459537308C3D6A0003B1351 /* grd3dbmpman.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3dbmpman.cpp; sourceTree = "<group>"; };
 		3459537408C3D6A0003B1351 /* grd3dbmpman.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grd3dbmpman.h; sourceTree = "<group>"; };
 		3459537508C3D6A0003B1351 /* grd3dcalls.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3dcalls.cpp; sourceTree = "<group>"; };
 		3459537608C3D6A0003B1351 /* grd3dinternal.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grd3dinternal.h; sourceTree = "<group>"; };
 		3459537708C3D6A0003B1351 /* grd3dlight.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3dlight.cpp; sourceTree = "<group>"; };
 		3459537808C3D6A0003B1351 /* grd3dlight.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grd3dlight.h; sourceTree = "<group>"; };
-		3459537908C3D6A0003B1351 /* GrD3DParticle.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = GrD3DParticle.cpp; sourceTree = "<group>"; };
-		3459537A08C3D6A0003B1351 /* GrD3DParticle.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = GrD3DParticle.h; sourceTree = "<group>"; };
 		3459537B08C3D6A0003B1351 /* grd3drender.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3drender.cpp; sourceTree = "<group>"; };
 		3459537C08C3D6A0003B1351 /* grd3dsetup.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grd3dsetup.cpp; sourceTree = "<group>"; };
 		3459537D08C3D6A0003B1351 /* grd3dsetup.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grd3dsetup.h; sourceTree = "<group>"; };
@@ -1524,6 +1526,12 @@
 		346C32FB09BD4BBC0022D46E /* Ogg.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Ogg.framework; path = Frameworks/Ogg.framework; sourceTree = "<group>"; };
 		346C32FC09BD4BBC0022D46E /* Vorbis.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Vorbis.framework; path = Frameworks/Vorbis.framework; sourceTree = "<group>"; };
 		3486EE7C09990CE20092AF2C /* Info-debug.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = "Info-debug.plist"; sourceTree = "<group>"; };
+		349807C90A25B46F0013844A /* decoder16.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = decoder16.cpp; sourceTree = "<group>"; };
+		349807CA0A25B46F0013844A /* mve_audio.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = mve_audio.cpp; sourceTree = "<group>"; };
+		349807CB0A25B46F0013844A /* mvelib.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = mvelib.cpp; sourceTree = "<group>"; };
+		349807CC0A25B46F0013844A /* mvelib.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = mvelib.h; sourceTree = "<group>"; };
+		349807CD0A25B46F0013844A /* mveplayer.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = mveplayer.cpp; sourceTree = "<group>"; };
+		349807E00A25B98A0013844A /* modelanim.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = modelanim.cpp; sourceTree = "<group>"; };
 		34AE377808DE33320071A09C /* FS2_Open.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = FS2_Open.icns; sourceTree = "<group>"; };
 		34C7186F08C4085A00459F5B /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = /System/Library/Frameworks/OpenAL.framework; sourceTree = "<absolute>"; };
 		34C7188B08C40DEB00459F5B /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = Frameworks/SDL.framework; sourceTree = "<group>"; };
@@ -1963,6 +1971,11 @@
 		3459530408C3D69F003B1351 /* cutscene */ = {
 			isa = PBXGroup;
 			children = (
+				349807C90A25B46F0013844A /* decoder16.cpp */,
+				349807CA0A25B46F0013844A /* mve_audio.cpp */,
+				349807CB0A25B46F0013844A /* mvelib.cpp */,
+				349807CC0A25B46F0013844A /* mvelib.h */,
+				349807CD0A25B46F0013844A /* mveplayer.cpp */,
 				3459530508C3D69F003B1351 /* cutscenes.cpp */,
 				3459530608C3D69F003B1351 /* cutscenes.h */,
 				3459530708C3D69F003B1351 /* movie.cpp */,
@@ -2443,6 +2456,7 @@
 		3459544408C3D6A0003B1351 /* model */ = {
 			isa = PBXGroup;
 			children = (
+				349807E00A25B98A0013844A /* modelanim.cpp */,
 				3459544508C3D6A0003B1351 /* model.h */,
 				3459544608C3D6A0003B1351 /* modelcollide.cpp */,
 				3459544708C3D6A0003B1351 /* modelinterp.cpp */,
@@ -2989,16 +3003,12 @@
 			children = (
 				3459536F08C3D6A0003B1351 /* grd3d.cpp */,
 				3459537008C3D6A0003B1351 /* grd3d.h */,
-				3459537108C3D6A0003B1351 /* grd3dbatch.cpp */,
-				3459537208C3D6A0003B1351 /* grd3dbatch.h */,
 				3459537308C3D6A0003B1351 /* grd3dbmpman.cpp */,
 				3459537408C3D6A0003B1351 /* grd3dbmpman.h */,
 				3459537508C3D6A0003B1351 /* grd3dcalls.cpp */,
 				3459537608C3D6A0003B1351 /* grd3dinternal.h */,
 				3459537708C3D6A0003B1351 /* grd3dlight.cpp */,
 				3459537808C3D6A0003B1351 /* grd3dlight.h */,
-				3459537908C3D6A0003B1351 /* GrD3DParticle.cpp */,
-				3459537A08C3D6A0003B1351 /* GrD3DParticle.h */,
 				3459537B08C3D6A0003B1351 /* grd3drender.cpp */,
 				3459537C08C3D6A0003B1351 /* grd3dsetup.cpp */,
 				3459537D08C3D6A0003B1351 /* grd3dsetup.h */,
@@ -3356,6 +3366,7 @@
 				3468A8D90991BD9900123C87 /* parseobjectdock.h in Headers */,
 				3468A8DF0991BDE200123C87 /* lua.h in Headers */,
 				3468A8E10991BDE200123C87 /* scripting.h in Headers */,
+				349807D10A25B46F0013844A /* mvelib.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4034,6 +4045,11 @@
 				3468A8D80991BD9900123C87 /* parseobjectdock.cpp in Sources */,
 				3468A8DE0991BDE200123C87 /* lua.cpp in Sources */,
 				3468A8E00991BDE200123C87 /* scripting.cpp in Sources */,
+				349807CE0A25B46F0013844A /* decoder16.cpp in Sources */,
+				349807CF0A25B46F0013844A /* mve_audio.cpp in Sources */,
+				349807D00A25B46F0013844A /* mvelib.cpp in Sources */,
+				349807D20A25B46F0013844A /* mveplayer.cpp in Sources */,
+				349807E10A25B98A0013844A /* modelanim.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
