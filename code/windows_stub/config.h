@@ -2,13 +2,29 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.16 $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 2.17 $
+ * $Date: 2006-05-27 16:39:40 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.15  2006/01/26 03:23:30  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -145,7 +161,7 @@ typedef long *LPLONG;
 // force 32-bit version of DWORD
 typedef unsigned int DWORD;
 typedef unsigned int FOURCC;
-typedef unsigned long *PDWORD, *LPDWORD;
+typedef unsigned int *PDWORD, *LPDWORD;
 #else
 typedef unsigned long FOURCC;
 typedef unsigned long DWORD, *PDWORD, *LPDWORD;
@@ -175,7 +191,7 @@ typedef void *HANDLE;
 typedef char *LPSTR;
 typedef char *HPSTR;
 typedef void *LPMMIOPROC;
-#define __int64 long long
+#define __int64 long long // assumes that long long is 64-bit and not 128-bit, TODO: really need a compile-time assert on all of this
 #define __int32 int
 
 typedef struct _LARGE_INTEGER {
@@ -276,15 +292,6 @@ typedef SDL_mutex* CRITICAL_SECTION;
 // timer stuff
 typedef timeval TIMEVAL;
 bool QueryPerformanceCounter(LARGE_INTEGER *pcount);
-
-// ummph, I need to do a better job with this
-#ifdef IAM_64BIT
-SDL_TimerID timeSetEvent(DWORD uDelay, uint uResolution, unsigned __int64 lpTimeProc,  DWORD *dwUser, uint fuEvent);
-#else
-SDL_TimerID timeSetEvent(DWORD uDelay, uint uResolution, unsigned int lpTimeProc,  DWORD *dwUser, uint fuEvent);
-#endif
-SDL_bool timeKillEvent(SDL_TimerID uTimerID);
-#define TIME_PERIODIC	0
 
 // file related items
 #define _MAX_FNAME					255

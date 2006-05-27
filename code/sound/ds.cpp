@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.40 $
- * $Date: 2006-04-20 06:32:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2006-05-27 16:39:40 $
+ * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/04/20 06:32:30  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.39  2006/04/14 18:39:38  taylor
  * something that Valgrind complained about
  *
@@ -1638,6 +1641,38 @@ int ds_init_property_set(DWORD sample_rate, WORD sample_bits)
 	return 0;
 }
 
+#ifdef USE_OPENAL
+const char *openal_get_best_device(int report = 1)
+{
+	int ext_length = 0;
+	const char *my_default_device = (const char*) alcGetString( NULL, ALC_DEFAULT_DEVICE_SPECIFIER );
+	const char *my_devices = (const char*) alcGetString( NULL, ALC_DEVICE_SPECIFIER );
+
+	if (report)
+		mprintf(("  Default OpenAL device: %s\n", (my_default_device != NULL) ? my_default_device : NOX("<none>")));
+
+
+	char *str_list = (char*)my_devices;
+
+	if (report)
+		mprintf(("  Available OpenAL devices:\n"));
+
+	if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
+		while (ext_length) {
+			mprintf(("    %s\n", str_list));
+			str_list += (ext_length + 1);
+			ext_length = strlen(str_list);
+		}
+	} else {
+		mprintf(("    <none>\n"));
+	}
+
+	mprintf(("\n"));
+
+	return my_default_device;
+}
+#endif
+
 // ---------------------------------------------------------------------------------------
 // ds_init()
 //
@@ -1658,12 +1693,14 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 
 	mprintf(("Initializing OpenAL...\n"));
 
+	openal_get_best_device();
+
 	// load OpenAL
 #ifdef _WIN32
 	// restrict to DirectSound rather than DirectSound3D (the default) here since we may have 'too many hardware sources'
 	// type problems (FIXME for a later date since I don't like this with future code) - taylor
 #ifdef AL_VERSION_1_1
-	ds_sound_device = alcOpenDevice( (const ALCchar *) NOX("DirectSound") );
+	ds_sound_device = alcOpenDevice( NULL );
 #else
 	ds_sound_device = alcOpenDevice( (const ALubyte *) NOX("DirectSound") );
 #endif // AL_VERSION_1_1
@@ -1685,12 +1722,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 		return -1;
 	}
 
-	alcMakeContextCurrent( ds_sound_context );
-
-	if (alcGetError( ds_sound_device ) != ALC_NO_ERROR) {
-		mprintf(("ERROR: Couldn't initialize OpenAL!\n"));
-		return -1;
-	}
+	OpenAL_ErrorCheck( alcMakeContextCurrent( ds_sound_context ), return -1 );
 
 	mprintf(( "  OpenAL Vendor     : %s\n", alGetString( AL_VENDOR ) ));
 	mprintf(( "  OpenAL Renderer   : %s\n", alGetString( AL_RENDERER ) ));
@@ -2794,10 +2826,10 @@ int ds_play(int sid, int hid, int snd_id, int priority, int volume, int pan, int
 
 		// setup default listener position/orientation
 		// this is needed for 2D pan
-		OpenAL_ErrorPrint( alListener3f(AL_POSITION, 0.0, 0.0, 0.0) );
+	//	OpenAL_ErrorPrint( alListener3f(AL_POSITION, 0.0, 0.0, 0.0) );
 
-		ALfloat list_orien[] = { 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f };
-		OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
+	//	ALfloat list_orien[] = { 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f };
+	//	OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
 
 		OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_SOURCE_RELATIVE, AL_FALSE) );
 
@@ -3506,7 +3538,13 @@ int ds3d_play(int sid, int hid, int snd_id, vec3d *pos, vec3d *vel, int min, int
 void ds_set_position(int channel, DWORD offset)
 {
 #ifdef USE_OPENAL
+
+#ifdef AL_VERSION_1_1
+	OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_BYTE_OFFSET, offset) );
+#endif
+
 //	STUB_FUNCTION;
+
 #else
 	// set the position of the sound buffer
 	Channels[channel].pdsb->SetCurrentPosition(offset);
@@ -3516,32 +3554,39 @@ void ds_set_position(int channel, DWORD offset)
 DWORD ds_get_play_position(int channel)
 {
 #ifdef USE_OPENAL
-	ALint pos = -1;
+	ALint pos = 0;
 	int buf_id;
-
-	if (!AL_play_position)
-		return 0;
 
 	buf_id = Channels[channel].buf_id;
 
 	if (buf_id == -1)
 		return 0;
 
-	OpenAL_ErrorCheck( alGetSourcei( Channels[channel].source_id, AL_BYTE_LOKI, &pos), return 0 );
+	if (AL_play_position) {
+		OpenAL_ErrorCheck( alGetSourcei( Channels[channel].source_id, AL_BYTE_LOKI, &pos), return 0 );
 
+		if ( pos < 0 ) {
+			pos = 0;
+		} else if ( pos > 0 ) {
+			// AL_BYTE_LOKI returns position in canon format which may differ
+			// from our sample, so we may have to scale it
+			ALuint buf = sound_buffers[buf_id].buf_id;
+			ALint size;
 
-	if ( pos < 0 ) {
-		pos = 0;
-	} else if ( pos > 0 ) {
-		// AL_BYTE_LOKI returns position in canon format which may differ
-		// from our sample, so we may have to scale it
-		ALuint buf = sound_buffers[buf_id].buf_id;
-		ALint size;
+			OpenAL_ErrorCheck( alGetBufferi(buf, AL_SIZE, &size), return 0 );
 
-		OpenAL_ErrorCheck( alGetBufferi(buf, AL_SIZE, &size), return 0 );
-
-		pos = (ALint)(pos * ((float)sound_buffers[buf_id].nbytes / size));
+			pos = (ALint)(pos * ((float)sound_buffers[buf_id].nbytes / size));
+		}
 	}
+#ifdef AL_VERSION_1_1
+	// AL_play_position should only be available under Linux, but OpenAL 1.1 provides a standard way now (except under Linux :()
+	else {
+		OpenAL_ErrorCheck( alGetSourcei( Channels[channel].source_id, AL_BYTE_OFFSET, &pos), return 0 );
+
+		if ( pos < 0 )
+			pos = 0;
+	}
+#endif
 
 	return pos;
 #else
