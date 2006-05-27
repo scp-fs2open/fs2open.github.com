@@ -9,14 +9,30 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.71 $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 2.72 $
+ * $Date: 2006-05-27 16:42:16 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.70  2006/04/20 06:32:30  Goober5000
  * proper capitalization according to Volition
  *
@@ -561,7 +577,7 @@ debris_vclip Debris_vclips_nebula[MAX_DEBRIS_VCLIPS] = { { -1, -1, "Neb01-64" },
 debris_vclip *Debris_vclips = Debris_vclips_normal;
 //XSTR:ON
 
-int stars_debris_loaded = 0;
+int stars_debris_loaded = 0;	// 0 = not loaded, 1 = normal vclips, 2 = nebula vclips
 
 // background data
 int Stars_background_inited = 0;			// if we're inited
@@ -572,44 +588,63 @@ int Num_debris_normal = 0;
 int Num_debris_nebula = 0;
 
 
-void stars_load_debris_vclips(debris_vclip *Debris_vclips)
+void stars_release_debris_vclips(debris_vclip *vclips)
 {
-	for (int i=0; i<MAX_DEBRIS_VCLIPS; i++ )	{
-		Debris_vclips[i].bm = bm_load_animation( Debris_vclips[i].name, &Debris_vclips[i].nframes, NULL, 1 );
-		if ( Debris_vclips[i].bm < 0 ) {
-			// try loading it as a single bitmap
-			Debris_vclips[i].bm = bm_load(Debris_vclips[i].name);
-			Debris_vclips[i].nframes = 1;
+	int i;
 
-			if(Debris_vclips[i].bm <= 0){
-				Error( LOCATION, "Couldn't load animation/bitmap '%s'\n", Debris_vclips[i].name );
+	if (vclips == NULL)
+		return;
+
+	for (i = 0; i < MAX_DEBRIS_VCLIPS; i++) {
+		if ( (vclips[i].bm >= 0) && bm_release(vclips[i].bm) ) {
+			vclips[i].bm = -1;
+			vclips[i].nframes = -1;
+		}
+	}
+}
+
+void stars_load_debris_vclips(debris_vclip *vclips)
+{
+	int i;
+
+	if (vclips == NULL) {
+		Int3();
+		return;
+	}
+
+	for (i = 0; i < MAX_DEBRIS_VCLIPS; i++) {
+		vclips[i].bm = bm_load_animation( vclips[i].name, &vclips[i].nframes, NULL, 1 );
+
+		if ( vclips[i].bm < 0 ) {
+			// try loading it as a single bitmap
+			vclips[i].bm = bm_load(Debris_vclips[i].name);
+			vclips[i].nframes = 1;
+
+			if (vclips[i].bm <= 0) {
+				Error( LOCATION, "Couldn't load animation/bitmap '%s'\n", vclips[i].name );
 			}
 		}
 	}
 }
 
-void stars_load_debris()
+void stars_load_debris(int fullneb = 0)
 {
-	if(Cmdline_nomotiondebris)
-	{
+	if (Cmdline_nomotiondebris) {
 		return;
 	}
 
 	// if we're in nebula mode
-	if(The_mission.flags & MISSION_FLAG_FULLNEB || Nebula_sexp_used){
+	if ( fullneb && (stars_debris_loaded != 2) ) {
+		stars_release_debris_vclips(Debris_vclips);
 		stars_load_debris_vclips(Debris_vclips_nebula);
-	}
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used){
-		stars_load_debris_vclips(Debris_vclips_normal);
-	}
-	
-	if(The_mission.flags & MISSION_FLAG_FULLNEB) {
 		Debris_vclips = Debris_vclips_nebula;
-	} else {
+		stars_debris_loaded = 2;
+	} else if (stars_debris_loaded != 1) {
+		stars_release_debris_vclips(Debris_vclips);
+		stars_load_debris_vclips(Debris_vclips_normal);
 		Debris_vclips = Debris_vclips_normal;
+		stars_debris_loaded = 1;
 	}
-	
-	stars_debris_loaded = 1;
 }
 
 
@@ -1327,9 +1362,7 @@ void stars_post_level_init()
 
 	stars_set_background_model(The_mission.skybox_model, "");
 
-	// if (!stars_debris_loaded){
-		stars_load_debris();
-	// }
+	stars_load_debris( ((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) );
 
 // following code randomly distributes star points within a sphere volume, which
 // avoids there being denser areas along the edges and in corners that we had in the
@@ -1357,9 +1390,7 @@ void stars_post_level_init()
 
 	}
 
-	for (i=0; i<MAX_DEBRIS; i++) {
-		odebris[i].active = 0;
-	}
+	memset( &odebris, 0, sizeof(old_debris) * MAX_DEBRIS );
 
 	
 	for (i=0; i<8; i++ )	{
@@ -2000,7 +2031,7 @@ void subspace_render(int env)
 
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
-	if ( !D3D_enabled && !OGL_enabled )	{
+/*	if ( !D3D_enabled && !OGL_enabled )	{
 
 		int render_flags = MR_NO_LIGHTING | MR_ALWAYS_REDRAW;
 
@@ -2021,7 +2052,7 @@ void subspace_render(int env)
 		if (!Cmdline_nohtl)	gr_set_texture_panning(0, 0, false);
 
 	} else {
-
+*/
 		int render_flags = MR_NO_LIGHTING | MR_ALWAYS_REDRAW | MR_ALL_XPARENT;
 
 		Interp_subspace = 1;
@@ -2064,7 +2095,7 @@ void subspace_render(int env)
 		if (!Cmdline_nohtl)	gr_set_texture_panning(Interp_subspace_offset_v, Interp_subspace_offset_u, true);
 		model_render( Subspace_model_inner, &tmp, &Eye_position, render_flags  );	//MR_NO_CORRECT|MR_SHOW_OUTLINE 
 		if (!Cmdline_nohtl)	gr_set_texture_panning(0, 0, false);
-	}
+//	}
 
 	Interp_subspace = 0;
 	gr_zbuffer_set(saved_gr_zbuffering);
@@ -2409,11 +2440,12 @@ void stars_draw_debris()
 	gr_set_color( 0, 0, 0 );
 
 	// turn off fogging
-	if(The_mission.flags & MISSION_FLAG_FULLNEB){
+	if (The_mission.flags & MISSION_FLAG_FULLNEB) {
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
 
 	old_debris * d = odebris; 
+
 	for (i=0; i<MAX_DEBRIS; i++, d++ ) {
 		if (!d->active)	{
 			d->pos.xyz.x = f2fl(myrand() - RAND_MAX/2);
@@ -2437,7 +2469,7 @@ void stars_draw_debris()
 			vm_vec_sub( &d->last_pos, &d->pos, &Eye_position );
 		}
 
-		if ( reload_old_debris )	{
+		if ( reload_old_debris ) {
 			vm_vec_sub( &d->last_pos, &d->pos, &Eye_position );
 		}
 			
@@ -2447,12 +2479,12 @@ void stars_draw_debris()
 			int frame = Missiontime / (DEBRIS_ROT_MIN + (i % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
 			frame %= Debris_vclips[d->vclip].nframes;
 
-			if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE)){
+			if ( (The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode != NEB2_RENDER_NONE) ) {
 				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.3f);	
 			} else {
 				gr_set_bitmap( Debris_vclips[d->vclip].bm + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);	
 			}
-					
+
 			vm_vec_add( &tmp, &d->last_pos, &Eye_position );
 			g3_draw_laser( &d->pos,d->size,&tmp,d->size, TMAP_FLAG_TEXTURED|TMAP_FLAG_XPARENT, 25.0f );					
 		}
@@ -2461,11 +2493,8 @@ void stars_draw_debris()
 
 		vdist = vm_vec_mag_quick(&d->last_pos);
 
-		if (vdist > MAX_DIST_RANGE)
+		if ( (vdist < MIN_DIST_RANGE) || (vdist > MAX_DIST_RANGE) )
 			d->active = 0;
-		else if (vdist < MIN_DIST_RANGE)
-			d->active = 0;
-
 	}
 
 	reload_old_debris = 0;
