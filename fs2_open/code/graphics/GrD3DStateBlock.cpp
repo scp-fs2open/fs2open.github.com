@@ -1,3 +1,6 @@
+
+#ifndef NO_DIRECT3D
+
 #include "grd3dsetup.h"
 #include <d3d8.h>
 #include "graphics/grd3d.h"
@@ -49,3 +52,5 @@ void gr_d3d_set_state_block(int handle){
 	if(handle == -1)return;
 	GlobalD3DVars::lpD3DDevice->ApplyStateBlock(handle);
 }
+
+#endif // !NO_DIRECT3D

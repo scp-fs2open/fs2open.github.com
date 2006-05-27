@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.53 $
- * $Date: 2006-04-15 00:13:22 $
- * $Author: phreak $
+ * $Revision: 2.54 $
+ * $Date: 2006-05-27 17:07:48 $
+ * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2006/04/15 00:13:22  phreak
+ * gr_flash_alpha(), much like gr_flash(), but allows an alpha value to be passed
+ *
  * Revision 2.52  2006/01/30 06:40:49  taylor
  * better lighting for OpenGL
  * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
@@ -445,6 +448,8 @@
 #ifndef _GRD3DINTERNAL_H
 #define _GRD3DINTERNAL_H
 
+#ifndef NO_DIRECT3D
+
 #include <windows.h>
 
 #include <d3d8.h>
@@ -729,5 +734,7 @@ struct dynamic_buffer{
 };
 
 extern dynamic_buffer render_buffer;
+
+#endif // !NO_DIRECT3D
 
 #endif //_GRD3DINTERNAL_H

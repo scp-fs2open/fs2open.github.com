@@ -7,6 +7,8 @@
  *
 */ 
 
+#ifndef NO_DIRECT3D
+
 // D3D8 includes
 #include <d3d8.h>
 #include <d3dx8.h>
@@ -498,7 +500,16 @@ int gr_d3d_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, in
 			case DDS_UNCOMPRESSED:
 				*c_type = BM_TYPE_DDS;
 				break;
-				
+
+			// not sure how to properly handle existing cubemaps from a file
+			// in D3D, so just don't use them for now - taylor
+			case DDS_CUBEMAP_DXT1:
+			case DDS_CUBEMAP_DXT3:
+			case DDS_CUBEMAP_DXT5:
+			case DDS_CUBEMAP_UNCOMPRESSED:
+				mprintf(("D3D-STUB:  Don't currently support cubemaps from file!\n"));
+				return -1;
+
 			default:
 				Error(LOCATION, "bad DDS file compression.  Not using DXT1,3,5 %s", filename);
 				return -1;
@@ -1018,3 +1029,5 @@ IDirect3DBaseTexture8* get_render_target_texture(int handle){
 	int n = handle % MAX_BITMAPS;
 	return d3d_bitmap_entry[n].tinterface;
 }
+
+#endif // !NO_DIRECT3D

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.22 $
- * $Date: 2006-02-25 21:47:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2006-05-27 17:07:48 $
+ * $Author: taylor $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/02/25 21:47:00  Goober5000
+ * spelling
+ *
  * Revision 2.21  2006/01/18 16:14:04  taylor
  * allow gr_render_buffer() to take TMAP flags
  * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
@@ -174,6 +177,8 @@
 #ifndef _GRD3D_H
 #define _GRD3D_H
 
+#ifndef NO_DIRECT3D
+
 struct poly_list;
 struct line_list;
 struct colored_vector;
@@ -268,5 +273,7 @@ void gr_d3d_setup_background_fog(bool);
 
 void gr_d3d_draw_line_list(colored_vector*lines, int num);
 //void d3d_render_to_env(int FACE);
-#endif
 
+#endif // !NO_DIRECT3D
+
+#endif

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.55 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.56 $
+ * $Date: 2006-05-27 17:07:48 $
+ * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.54  2006/01/30 06:40:49  taylor
  * better lighting for OpenGL
  * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
@@ -646,6 +649,8 @@
  *
  * $NoKeywords: $
  */
+
+#ifndef NO_DIRECT3D
 
 #include <D3dx8tex.h>
 
@@ -1409,3 +1414,5 @@ void d3d_set_texture_panning(float u, float v, bool enable){
 		d3d_SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
 	}
 }
+
+#endif // !NO_DIRECT3D

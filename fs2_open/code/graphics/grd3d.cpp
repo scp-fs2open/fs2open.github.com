@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.94 $
- * $Date: 2006-02-25 21:46:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.95 $
+ * $Date: 2006-05-27 17:07:48 $
+ * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2006/02/25 21:46:59  Goober5000
+ * spelling
+ *
  * Revision 2.93  2006/01/30 06:40:49  taylor
  * better lighting for OpenGL
  * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
@@ -779,6 +782,8 @@
  * $NoKeywords: $
  */
 
+#ifndef NO_DIRECT3D
+
 #include <math.h>
 #include <d3d8.h>
 #include <D3dx8tex.h>
@@ -790,11 +795,9 @@
 #include "globalincs/alphacolors.h"
 
 #include "graphics/grinternal.h"
-#include "graphics/grbatch.h"
 
 #include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
-#include "graphics/grd3dbatch.h"
 #include "graphics/grd3dlight.h"
 #include "graphics/grd3dbmpman.h"
 
@@ -813,8 +816,7 @@
 #include "debugconsole/timerbar.h"
 #include "debugconsole/dbugfile.h"
 #include "freespace2/freespaceresource.h"   
-#include "cmdline/cmdline.h"   
-#include "graphics/grbatch.h"
+#include "cmdline/cmdline.h"
 
 
 
@@ -1031,8 +1033,6 @@ void d3d_stop_frame()
 	if (!GlobalD3DVars::D3D_inited) return;
 	if(!GlobalD3DVars::D3D_activate) return;
 
-	if(GlobalD3DVars::D3D_activate)batch_render();
-
 	if ( In_frame < 0 || In_frame > 1 )	{
 		mprintf(( "Stop frame error! (%d)\n", In_frame ));
 		return;
@@ -1048,8 +1048,6 @@ void d3d_stop_frame()
 		return;
 	}
 	TIMERBAR_START_FRAME();
-
-	d3d_batch_end_frame();
 						 
 	TIMERBAR_PUSH(1);
 	// Must cope with device being lost
@@ -2922,3 +2920,4 @@ void d3d_render_to_env(int FACE){
 }
 */
 
+#endif // !NO_DIRECT3D

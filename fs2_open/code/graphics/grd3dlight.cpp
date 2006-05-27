@@ -1,3 +1,6 @@
+
+#ifndef NO_DIRECT3D
+
 #include "grd3dlight.h"
 
 #include <d3d8.h>
@@ -367,3 +370,5 @@ void gr_d3d_set_ambient_light(int r, int g, int b)
 
 	d3d_init_light();
 }
+
+#endif // !NO_DIRECT3D

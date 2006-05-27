@@ -11,6 +11,8 @@
 ** $Logfile: /Freespace2/code/Graphics/GrD3DCalls.cpp $ 
 */ 
 
+#ifndef NO_DIRECT3D
+
 #include <d3d8.h>
 #include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
@@ -591,3 +593,5 @@ void bm_post_lost();
 
 	return FALSE;
 }
+
+#endif // !NO_DIRECT3D

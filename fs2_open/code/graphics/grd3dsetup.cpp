@@ -9,6 +9,9 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.56  2006/04/15 00:13:22  phreak
  * gr_flash_alpha(), much like gr_flash(), but allows an alpha value to be passed
  *
@@ -41,7 +44,8 @@
  *
  *
 */
- 
+
+#ifndef NO_DIRECT3D
 
 #include "grd3dsetup.h"
 #include <d3d8.h>
@@ -57,9 +61,6 @@
 #include "graphics/grd3dinternal.h"
 #include "graphics/grd3dbmpman.h"
 #include "graphics/grd3dlight.h"
-#include "graphics/grbatch.h"
-#include "graphics/grd3dbatch.h"
-#include "graphics/grd3dparticle.h"
 #include "graphics/grd3dstateblock.h"
 
 #include "debugconsole/timerbar.h"
@@ -83,8 +84,6 @@ bool GlobalD3DVars::D3D_window		 = 0;
 
 int GlobalD3DVars::D3D_rendition_uvs = 0;
 int GlobalD3DVars::D3D_zbias         = 1;
-
-int GlobalD3DVars::unlit_3D_batch	 = -1;
 
 float GlobalD3DVars::texture_adjust_u = 0;
 float GlobalD3DVars::texture_adjust_v = 0;
@@ -806,7 +805,6 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_scaler = gr_d3d_scaler;
 	gr_screen.gf_aascaler = gr_d3d_aascaler;
 	gr_screen.gf_tmapper = gr_d3d_tmapper;
-	gr_screen.gf_tmapper_batch_3d_unlit = gr_d3d_tmapper_internal_batch_3d_unlit;
 
 	gr_screen.gf_gradient = gr_d3d_gradient;
 
@@ -1369,18 +1367,6 @@ bool d3d_inspect_caps()
 		strcpy(Device_init_error, missing_features);
 	//	return false; I dont think it should fail on this - RT
 	}  
-	
-	if(Cmdline_d3d_particle)
-	{
-		if(GlobalD3DVars::d3d_caps.MaxPointSize < rt_pointsize)
-		{
-			char buff[100];
-			sprintf(buff,"Your card does not support pointsprites large enough (%f), only up to %f",
-				rt_pointsize, GlobalD3DVars::d3d_caps.MaxPointSize);
-			MessageBox(NULL, buff, "Warning", MB_OK);
-			Cmdline_d3d_particle = 0;
-		}
-	}
 
 	return true;
 }
@@ -1573,18 +1559,6 @@ bool gr_d3d_init()
 
 	d3d_set_initial_render_state();
 
-	if(d3d_batch_init() == false) {
-		sprintf(Device_init_error, "Failed to setup batch system");
-		return false;
-	}
-
-	if(Cmdline_batch_3dunlit)
-	{
-		GlobalD3DVars::unlit_3D_batch = d3d_create_batch(1000, D3DVT_LVERTEX, D3DPT_TRIANGLELIST);
-		Assert(GlobalD3DVars::unlit_3D_batch != -1);
-
-	}
-
 	gr_d3d_activate(1);
 
 	D3DXCreateMatrixStack(0, &world_matrix_stack);
@@ -1619,13 +1593,6 @@ void gr_d3d_cleanup()
 {
 	if (!GlobalD3DVars::D3D_inited) return;
 
-	if(Cmdline_batch_3dunlit)
-	{
-		d3d_destory_batch(GlobalD3DVars::unlit_3D_batch);
-	}
-
-	d3d_batch_deinit();
-
 	d3d_tcache_cleanup();  
 
 	// Ensures gamma options dont return to the desktop
@@ -1642,6 +1609,6 @@ void gr_d3d_cleanup()
 	// restore windows clipping rectangle
  	ClipCursor(NULL);
 	GlobalD3DVars::D3D_inited = 0;
-
-	DBUGFILE_OUTPUT_4("%f %f %f %f",rt_pointsize,rt_pointsize_A,rt_pointsize_B,rt_pointsize_C);
 }
+
+#endif // !NO_DIRECT3D

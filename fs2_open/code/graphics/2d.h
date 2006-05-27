@@ -9,13 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.78 $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 2.79 $
+ * $Date: 2006-05-27 17:07:48 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.77  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -756,56 +772,6 @@ private:
 	int currently_allocated;
 };
 
-class geometry_batcher{
-	int n_to_render;//the number of primitives to render
-	int n_allocated;//the number of verts allocated
-	vertex* vert;
-	vertex** vert_list;//V's stupid rendering functions need this
-	void allocate_internal(int n_verts);
-	//makes sure we have enough space in the memory buffer for the geometry we are about to put into it
-	//you need to figure out how many verts are going to be requiered
-public:
-	geometry_batcher():n_to_render(0),n_allocated(0),vert(NULL),vert_list(NULL){};
-	~geometry_batcher() { if (vert != NULL) vm_free(vert); if (vert_list != NULL) vm_free(vert_list);};
-
-	void add_allocate(int quad, int n_tri=0);//add this many without loseing what we have
-	void allocate(int quad, int n_tri=0);
-	//everything exept the draw tri comand requiers the same amount of space
-	//so just tell it how many draw_* comands you are going to need seperateing out
-	//draw_tri if you for some reason need it
-	//this must be called every time the geometry batcher is to be used
-	//before the first draw_* comand and after any render comand
-
-	void draw_bitmap(vertex *position, float rad, float depth=0);
-	//draws a bitmap into the geometry batcher
-	void draw_bitmap(vertex *position, float rad, float angle, float depth);
-	//draws a rotated bitmap
-	void draw_tri(vertex* verts);
-	//draws a simple 3 vert polygon
-	void draw_quad(vertex* verts);
-	//draws a simple 4 vert polygon
-	void draw_beam(vec3d*start,vec3d*end, float width, float intinsity = 1.0f);
-	//draws a beam
-	float draw_laser(vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b);
-	//draws a laser
-
-	void render(int flags);
-	//draws all of the batched geometry to the back buffer and flushes the cache
-	//accepts tmap flags so you can use anything you want realy
-
-	// determine if we even need to try and render this (helpful for particle system)
-	int need_to_render() { return n_to_render; };
-
-	void operator =(int){};
-};
-
-struct batch_item{
-	batch_item():texture(-1){};
-
-	geometry_batcher batch;
-	int texture;
-};
-
 
 struct colored_vector{
 	colored_vector():pad(1.0f){};
@@ -875,8 +841,8 @@ typedef struct screen {
 	color		current_clear_color;				// current clear color
 	shader	current_shader;
 	float		current_alpha;
-	void		*offscreen_buffer;				// NEVER ACCESS!  This+rowsize*y = screen offset
-	void		*offscreen_buffer_base;			// Pointer to lowest address of offscreen buffer
+//	void		*offscreen_buffer;				// NEVER ACCESS!  This+rowsize*y = screen offset
+//	void		*offscreen_buffer_base;			// Pointer to lowest address of offscreen buffer
 
 	int custom_size;
 	int		rendering_to_texture;		//wich texture we are rendering to, -1 if the back buffer
@@ -982,8 +948,6 @@ typedef struct screen {
 
 	// Texture maps the current bitmap.  See TMAP_FLAG_?? defines for flag values
 	void (*gf_tmapper)(int nv, vertex *verts[], uint flags );
-
-	void (*gf_tmapper_batch_3d_unlit)( int nverts, vertex *verts, uint flags);	
 
 	// dumps the current screen to a file
 	void (*gf_print_screen)(char * filename);
@@ -1301,7 +1265,6 @@ __inline void gr_pixel(int x, int y, bool resize = true)
 #define gr_scaler				GR_CALL(gr_screen.gf_scaler)
 #define gr_aascaler			GR_CALL(gr_screen.gf_aascaler)
 #define gr_tmapper			GR_CALL(gr_screen.gf_tmapper)
-#define gr_tmapper_batch_3d_unlit	GR_CALL(gr_screen.gf_tmapper_batch_3d_unlit)
 
 //#define gr_gradient			GR_CALL(gr_screen.gf_gradient)
 __inline void gr_gradient(int x1, int y1, int x2, int y2, bool resize = true)

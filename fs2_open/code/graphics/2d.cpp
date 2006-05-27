@@ -9,13 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.71 $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 2.72 $
+ * $Date: 2006-05-27 17:07:48 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.70  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -898,7 +914,7 @@ bool gr_unsize_screen_pos(int *x, int *y)
 		(*x) = (int)xy_tmp;
 	}
 
-if (y && (*y != 0)) {
+	if (y && (*y != 0)) {
 		xy_tmp = (*y);
 		xy_tmp *= mult_by_y;
 		xy_tmp /= gr_screen.max_h;
@@ -974,7 +990,7 @@ void gr_close()
 	palette_flush();
 
 	switch( gr_screen.mode )	{
-#ifdef _WIN32
+#ifndef NO_DIRECT3D
 	case GR_DIRECT3D:		
 		gr_d3d_cleanup();
 		break;
@@ -990,7 +1006,6 @@ void gr_close()
 	}
 
 	gr_font_close();
-	batch_deinit();
 
 	Gr_inited = 0;
 }
@@ -1417,7 +1432,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	gr_screen.recording_state_block = false;
 
 	switch( mode )	{
-#ifdef _WIN32
+#ifndef NO_DIRECT3D
 		case GR_DIRECT3D:
 			Gr_inited = 0;
 			Gr_inited = gr_d3d_init();
@@ -1473,18 +1488,15 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	// Call some initialization functions
 	gr_set_shader(NULL);
 
-	if(batch_init()	== false)
-	{
-		return false;
-	}
-
 	// NOTE: Don't clear the render target faces at the start, only when they are actually updated in freespace.cpp.
 
-	// get a render target for static environment maps
-	gr_screen.static_environment_map = bm_make_render_target(512, 512, BMP_FLAG_RENDER_TARGET_STATIC|BMP_FLAG_CUBEMAP);
+	if (Cmdline_env) {
+		// get a render target for static environment maps
+		gr_screen.static_environment_map = bm_make_render_target(512, 512, BMP_FLAG_RENDER_TARGET_STATIC|BMP_FLAG_CUBEMAP);
 
-	// get the dynamic environment map
-	gr_screen.dynamic_environment_map = bm_make_render_target(512, 512, BMP_FLAG_RENDER_TARGET_DYNAMIC|BMP_FLAG_CUBEMAP);
+		// get the dynamic environment map
+		gr_screen.dynamic_environment_map = bm_make_render_target(512, 512, BMP_FLAG_RENDER_TARGET_DYNAMIC|BMP_FLAG_CUBEMAP);
+	}
 
 
 	return true;
@@ -1495,7 +1507,7 @@ void gr_force_windowed()
 	if ( !Gr_inited )	return;
 
 	switch( gr_screen.mode )	{
-#ifdef _WIN32
+#ifndef NO_DIRECT3D
 		case GR_DIRECT3D:
 			break;
 #endif  // ifdef WIN32
@@ -1526,7 +1538,7 @@ void gr_activate(int active)
 	if ( !Gr_inited ) return;
 
 	switch( gr_screen.mode )	{
-#ifdef _WIN32
+#ifndef NO_DIRECT3D
 		case GR_DIRECT3D:
 			{	
 				extern void gr_d3d_activate(int active);

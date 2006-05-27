@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/TMAPPER.H $
- * $Revision: 2.15 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2006-05-27 17:07:48 $
+ * $Author: taylor $
  *
  * Header file for Tmapper.h
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.14  2005/04/24 12:56:43  taylor
  * really are too many changes here:
  *  - remove all bitmap section support and fix problems with previous attempt
@@ -189,46 +193,38 @@ extern void grx_tmapper( int nv, vertex * verts[], uint flags );
 #define TMAP_FLAG_RAMP				(1<<2)	// Use RAMP lighting (interpolate L)
 #define TMAP_FLAG_RGB				(1<<3)	// Use RGB lighting (interpolate RGB)
 #define TMAP_FLAG_GOURAUD			(1<<4)	// Lighting values differ on each vertex. 
-														// If this is not set, then the texture mapper will use
-														// the lighting parameters in each vertex, otherwise it
-														// will use the ones specified in tmapper_set_??
+											//   If this is not set, then the texture mapper will use
+											//   the lighting parameters in each vertex, otherwise it
+											//   will use the ones specified in tmapper_set_??
 #define TMAP_FLAG_XPARENT			(1<<5)	// texture could have transparency
 #define TMAP_FLAG_TILED				(1<<6)	// This means uv's can be > 1.0
 #define TMAP_FLAG_NEBULA			(1<<7)	// Must be used with RAMP and GOURAUD.  Means l 0-1 is 0-31 palette entries
 
-
-#define TMAP_HIGHEST_FLAG_BIT		7			// The highest bit used in the TMAP_FLAGS
-#define TMAP_MAX_SCANLINES			(1<<(TMAP_HIGHEST_FLAG_BIT+1))
+//#define TMAP_HIGHEST_FLAG_BIT		7		// The highest bit used in the TMAP_FLAGS
+//#define TMAP_MAX_SCANLINES		(1<<(TMAP_HIGHEST_FLAG_BIT+1))
 
 // Add any entries that don't work for software under here:
 // Make sure to disable them at top of grx_tmapper
 #define TMAP_FLAG_ALPHA				(1<<8)	// Has an alpha component
-#define TMAP_FLAG_NONDARKENING	(1<<9)	// RGB=255,255,255 doesn't darken
+#define TMAP_FLAG_NONDARKENING		(1<<9)	// RGB=255,255,255 doesn't darken
 
 // Interface specific stuff (for separate filtering, sizing, etc.), replaces old TMAP_FLAG_BITMAP_SECTION 
-#define TMAP_FLAG_INTERFACE		(1<<10)
+#define TMAP_FLAG_INTERFACE			(1<<10)
 
 // flags for full nebula effect
-#define TMAP_FLAG_PIXEL_FOG		(1<<11)	// fog the polygon based upon the average pixel colors of the backbuffer behind it
+#define TMAP_FLAG_PIXEL_FOG			(1<<11)	// fog the polygon based upon the average pixel colors of the backbuffer behind it
 
 // RT Flags added to determine whats being drawn for HT&L
-#define TMAP_HTL_3D_LIT	    (1<<12)	  
-#define TMAP_HTL_3D_UNLIT	(1<<13)	  
-#define TMAP_HTL_2D			(1<<14)	  
-#define TMAP_HTL_PARTICLE  	(1<<15)	  
-#define TMAP_HTL_VIDEO  	(1<<16)
-
-#define TMAP_HTL_SUN  		(1<<17)
-#define TMAP_HTL_THRUSTPNT  (1<<18)
+#define TMAP_HTL_3D_UNLIT			(1<<12)
+#define TMAP_HTL_2D					(1<<13)
 
 //tristrips, for trails mostly, might find other uses eventualy
-#define TMAP_FLAG_TRISTRIP	(1<<20)
-#define TMAP_HTL_3DU_BATCH	(1<<21)	  
-#define TMAP_FLAG_TRILIST	(1<<22)
+#define TMAP_FLAG_TRISTRIP			(1<<14)
+#define TMAP_FLAG_TRILIST			(1<<15)
 
-#define TMAP_ADDRESS_WRAP		1
-#define TMAP_ADDRESS_MIRROR		2
-#define TMAP_ADDRESS_CLAMP		3
+#define TMAP_ADDRESS_WRAP			1
+#define TMAP_ADDRESS_MIRROR			2
+#define TMAP_ADDRESS_CLAMP			3
 
 //WMC - moved this here so it'd be in 2d.h and 3d.h
 //bitmap_2d_list, 
