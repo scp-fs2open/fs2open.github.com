@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2006-05-27 16:59:05 $
+ * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.18  2005/10/10 17:21:05  taylor
  * remove NO_NETWORK
  *
@@ -1018,11 +1021,11 @@ void options_change_gamma(float delta)
 	gr_set_gamma(FreeSpace_gamma);
 	sprintf(tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma);
 
-	if ( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) ) {
+//	if ( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) ) {
 		os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
-	} else {
-		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
-	}
+//	} else {
+//		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
+//	}
 }
 
 void options_button_pressed(int n)
