@@ -9,13 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/bmpman/bm_internal.h $
- * $Revision: 2.5 $
- * $Date: 2006-05-13 07:29:51 $
+ * $Revision: 2.6 $
+ * $Date: 2006-05-27 17:20:48 $
  * $Author: taylor $
  *
  * bmpman info that's internal to bmpman related files only
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2006/05/13 07:29:51  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.4  2005/11/13 06:44:17  taylor
  * small bit of EFF cleanup
  * add -img2dds support
@@ -61,15 +77,18 @@
 #define BMPMAN_SPECIAL_NONDARK
 
 
-#define	BM_TYPE_NONE			0
-#define	BM_TYPE_PCX				1
-#define	BM_TYPE_USER			2
-#define	BM_TYPE_ANI				3		// in-house ANI format
-#define BM_TYPE_EFF				4		// specifies any type of animated image, the EFF itself is just text
-
-#define BM_TYPE_32_BIT_FORMATS	5		// everything after this could/should be 24/32-bit
-#define	BM_TYPE_TGA				6		// 16 or 32 bit targa
-#define BM_TYPE_DDS				7		// generic identifier for DDS
+// no-type			( used in: bm_bitmaps[i].type )
+#define BM_TYPE_NONE			0
+// in-memory type	( used in: bm_bitmaps[i].type )
+#define BM_TYPE_USER			1
+// file-type types	( used in: bm_bitmaps[i].type )
+#define BM_TYPE_PCX				2
+#define BM_TYPE_TGA				3		// 16 or 32 bit targa
+#define BM_TYPE_DDS				4		// generic identifier for DDS
+#define BM_TYPE_JPG				5		// 32 bit jpeg
+#define BM_TYPE_ANI				6		// in-house ANI format
+#define BM_TYPE_EFF				7		// specifies any type of animated image, the EFF itself is just text
+// c-type types		( used in: bm_bitmaps[i].c_type )
 #define BM_TYPE_DXT1			8		// 24 bit with switchable alpha		(compressed)
 #define BM_TYPE_DXT3			9		// 32 bit with 4 bit alpha			(compressed)
 #define BM_TYPE_DXT5			10		// 32 bit with 8 bit alpha			(compressed)
@@ -77,7 +96,7 @@
 #define BM_TYPE_CUBEMAP_DXT1	12		// 24-bit cubemap		(compressed cubemap surface)
 #define BM_TYPE_CUBEMAP_DXT3	13		// 32-bit cubemap		(compressed cubemap surface)
 #define BM_TYPE_CUBEMAP_DXT5	14		// 32-bit cubemap		(compressed cubemap surface)
-#define BM_TYPE_JPG				15		// 32 bit jpeg
+// special types	( used in: bm_bitmaps[i].type )
 #define BM_TYPE_RENDER_TARGET_STATIC	16		// 24/32 bit setup internally as a static render target
 #define BM_TYPE_RENDER_TARGET_DYNAMIC	17		// 24/32 bit setup internally as a dynamic render target
 
