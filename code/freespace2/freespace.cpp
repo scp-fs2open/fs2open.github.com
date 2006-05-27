@@ -9,13 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.242 $
- * $Date: 2006-05-13 07:29:51 $
+ * $Revision: 2.243 $
+ * $Date: 2006-05-27 17:12:44 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.242  2006/05/13 07:29:51  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.241  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -2495,7 +2511,7 @@ void game_level_close()
 	mission_event_shutdown();
 	asteroid_level_close();
 	jumpnode_level_close();
-	model_cache_reset();						// Reset/free all the model caching stuff
+//	model_cache_reset();						// Reset/free all the model caching stuff
 	flak_level_close();						// unload flak stuff
 	neb2_level_close();						// shutdown gaseous nebula stuff
 	ct_level_close();
@@ -2557,6 +2573,9 @@ void game_level_init(int seed)
 	Cheats_enabled = 0;
 
 	Game_shudder_time = -1;
+
+	// reset the geometry batcher, this should to be done pretty soon in this mission load process (though it's not required)
+	batch_reset();
 
 	// Initialize the game subsystems
 //	timestamp_reset();			// Must be inited before everything else
@@ -3565,81 +3584,58 @@ void game_init()
 	int has_sparky_hi = cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY);
 
 
-	if(!Is_standalone)
-	{
+	if (!Is_standalone) {
 		int width, height, cdepth;
 		char Device_init_error[512];		
 
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
 
-		if(ptr == NULL)
-		{
-			strcpy(Device_init_error, "Cant get 'VideocardFs2open' reg entry.");
+		// if we don't have a config string then construct one, using OpenGL 640x480 16-bit as the default
+		if (ptr == NULL) {
+			char Default_video_settings[] = "OGL -(640x480)x16 bit";
+			ptr = &Default_video_settings[0];
 		}
-		else 
-		{
-			bool is_640x480 = true; // default to 640x480 res
 
-			// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
-			//       If the format of that string changes you'll have to change this too!!!
-			if ( sscanf(ptr+5, "(%dx%d)", &width, &height) == 2 ) {
-				// if we are less than 1024x768 res then stay at low-res, otherwise bump it
-				is_640x480 = ( (width < 1024) && (height < 768) );
+		Assert( ptr != NULL );
+
+		bool is_640x480 = true; // default to 640x480 res
+
+		// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
+		//       If the format of that string changes you'll have to change this too!!!
+		if ( sscanf(ptr+5, "(%dx%d)", &width, &height) == 2 ) {
+			// if we are less than 1024x768 res then stay at low-res, otherwise bump it
+			is_640x480 = ( (width < 1024) && (height < 768) );
+		} else {
+			mprintf(("Couldn't determine if we are really using 640x480 res or not!  Going with default..."));
+		}
+
+		int res = (!is_640x480 && has_sparky_hi) ? GR_1024 : GR_640;
+
+		// see if we should be using D3D first thing
+		if ( strstr(ptr, NOX("D3D8-")) ) {
+			if ( sscanf(ptr, "D3D8-(%dx%d)x%d bit", &width, &height, &cdepth) != 3 ) {
+				strcpy(Device_init_error, "Cant understand 'VideocardFs2open' Direct3D reg entry.");
 			} else {
-				mprintf(("Couldn't determine if we are really using 640x480 res or not!  Going with default..."));
+#ifdef NO_DIRECT3D
+				// if we are a non-D3D build then always use OpenGL
+				gr_init(res, GR_OPENGL, cdepth, width, height);
+#else
+				gr_init(res, GR_DIRECT3D, cdepth, width, height);
+#endif
 			}
-
-			int res = (!is_640x480 && has_sparky_hi) ? GR_1024 : GR_640;
-			
-			// D3D9 should run on a seperate path to D3D8
-			// This will allow users to play D3D8 while we develope D3D9
-			if (strstr(ptr, NOX("D3D9-") ))	
-			{
-				int adapter, aatype;
-
-				if(sscanf(ptr, "D3D9-(%dx%d)x%d bit ad%d aa%d", &width, &height, &cdepth, &adapter, &aatype)  != 5) 
-					strcpy(Device_init_error, "Cant understand 'VideocardFs2open' D3D9 reg entry.");
-				else
-				{
-					sprintf(Device_init_error, 
-						"This build does not support D3D9.\n\n"
-						"Adapter num: %d\n"
-						"Mode:        %dx%dx%d\n"
-						"AA type:     %d\n", adapter, width, height, cdepth, aatype);
-				}
-			}
-			else if (strstr(ptr, NOX("D3D8-") ))	
-			{
-				if(sscanf(ptr, "D3D8-(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) 
-					strcpy(Device_init_error, "Cant understand 'VideocardFs2open' D3D8 reg entry.");
-				else
-					gr_init(res, GR_DIRECT3D, cdepth, width, height);
-			} 
-			else if (strstr(ptr, NOX("OGL -") ))
-			{
-				if(sscanf(ptr, "OGL -(%dx%d)x%d bit", &width, &height, &cdepth)  != 3) 
-					strcpy(Device_init_error, "Cant understand 'VideocardFs2open' OGL reg entry.");
-				else
-					gr_init(res, GR_OPENGL, cdepth, width, height);
-			} 
-			else if (strstr(ptr, NOX("3DFX Glide"))) 
-			{
-				strcpy(Device_init_error, "Glide is not supported any more.");
-			} 
-			else if(strstr(ptr, NOX("Direct 3D -")))
-			{
-				strcpy(Device_init_error, "Direct3D5 not supported any more.");
-			}
-			else 
-			{
-				strcpy(Device_init_error, "Software mode is unsupported. GET A PROGRAMMER!!");
+		}
+		// if we aren't D3D then use OpenGL as the default
+		else {
+			if ( sscanf(ptr, "OGL -(%dx%d)x%d bit", &width, &height, &cdepth) != 3 ) {
+				strcpy(Device_init_error, "Cant understand 'VideocardFs2open' OpenGL reg entry.");
+			} else {
+				gr_init(res, GR_OPENGL, cdepth, width, height);
 			}
 		}
 			
 		extern int Gr_inited;
-		if(!Gr_inited)
-		{
+		if (!Gr_inited) {
 #ifdef _WIN32
 			ClipCursor(NULL);
 			ShowCursor(TRUE);
@@ -3661,8 +3657,8 @@ void game_init()
 			return;
 		}
 	}
-	else
-	{
+	// we are standalone (ie, server mode)
+	else {
 		gr_init(GR_640, GR_STUB, 16, 640, 480);
 	}
 
@@ -3670,13 +3666,13 @@ void game_init()
 	os_set_title(Osreg_title);
 
 	// Set the gamma
-	if( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) )
+//	if( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) )
 	{
 		// D3D's gamma system now works differently. 1.0 is the default value
 		ptr = os_config_read_string(NULL, NOX("GammaD3D"), NOX("1.0"));
 		FreeSpace_gamma = (float)atof(ptr);
 	}
-	else
+/*	else
 	{
 		ptr = os_config_read_string(NULL, NOX("Gamma"), NOX("1.80"));
 		FreeSpace_gamma = (float)atof(ptr);
@@ -3690,7 +3686,7 @@ void game_init()
 		char tmp_gamma_string[32];
 		sprintf( tmp_gamma_string, NOX("%.2f"), FreeSpace_gamma );
 		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
-	}
+	}*/
 
 	script_init();			//WMC
 
@@ -3958,11 +3954,13 @@ void game_get_framerate()
 #ifdef _WIN32
 		char mem_buffer[50];
 
+#ifndef NO_DIRECT3D
 		if(gr_screen.mode == GR_DIRECT3D)
 		{
 			extern void d3d_string_mem_use(int x, int y);
 			d3d_string_mem_use(20, 110);
 		}
+#endif
 
 		MEMORYSTATUS mem_stats;
 		GlobalMemoryStatus(&mem_stats);
