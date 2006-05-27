@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.156 $
- * $Date: 2006-05-13 07:09:25 $
+ * $Revision: 2.157 $
+ * $Date: 2006-05-27 16:57:13 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.156  2006/05/13 07:09:25  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 2.155  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -1433,9 +1437,11 @@ void model_set_thrust( int model_num, vec3d *length /*<-I did that-Bobboau*/, in
 	}
 }
 
-extern int spec;
 extern int Cmdline_cell;
+#ifndef NO_DIRECT3D
 extern bool cell_enabled;
+extern bool env_enabled;
+#endif
 
 
 bool splodeing = false;
@@ -1698,9 +1704,6 @@ void interp_compute_environment_mapping( vec3d *nrm, vertex * pnt)
 	pnt->v2 = 1.0f - (float)atan2( a, R.xyz.y) / 3.14159f;
 }
 
-extern int spec;
-extern bool cell_enabled;
-
 
 // Flat Poly
 // +0      int         id
@@ -1796,8 +1799,6 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 		}
 	}
 }
-
-extern bool env_enabled;
 
 void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pnt, vec3d *norm, float alpha, bool invert = false){
 	vec3d r;
@@ -2022,12 +2023,14 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			gr_set_bitmap( Warp_Map, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			g3_draw_poly( nv, Interp_list, TMAP_FLAG_TEXTURED );
 		}else{
+#ifndef NO_DIRECT3D
 			env_enabled = true;
 			cell_enabled = true;
+#endif
 			// all textured polys go through here
 			if ( Interp_tmap_flags & TMAP_FLAG_TEXTURED )	{
 				// subspace special case
-				if ( Interp_subspace && (D3D_enabled || OGL_enabled) )	{										
+				if ( Interp_subspace /*&& (D3D_enabled || OGL_enabled)*/ ) {										
 					gr_set_bitmap( pm->textures[tmap_num], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );					
 				}
 				// all other textures
@@ -2100,8 +2103,11 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 //			SPECMAP = -1;
 		}
 	}
+
+#ifndef NO_DIRECT3D
 	env_enabled = false;
 	cell_enabled = false;
+#endif
 	GLOWMAP = -1;
 	SPECMAP = -1;
 	BUMPMAP = -1;
@@ -3007,7 +3013,7 @@ MONITOR( NumHiModelsRend );
 MONITOR( NumMedModelsRend );	
 MONITOR( NumLowModelsRend );	
 
-
+/*
 typedef struct model_cache {
 	int		model_num;
 	//matrix	orient;
@@ -3037,7 +3043,6 @@ typedef struct model_cache {
 #define MAX_MODEL_CACHE MAX_OBJECTS
 model_cache Model_cache[MAX_MODEL_CACHE];		// Indexed by objnum
 int Model_cache_inited = 0;
-
 
 
 // Returns 0 if not valid points
@@ -3078,7 +3083,7 @@ int model_cache_calc_coords(vec3d *pnt,float rad, float *cx, float *cy, float *c
 	}
 	return 0;
 }
-
+*/
 
 //draws a bitmap with the specified 3d width & height 
 //returns 1 if off screen, 0 if not
@@ -3149,7 +3154,7 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 	return 0;
 }
 
-
+/*
 int Model_caching = 1;
 DCF_BOOL( model_caching, Model_caching );
 
@@ -3192,6 +3197,7 @@ void mc_put_bmp( ubyte *data, int x, int y, int w, int h )
 
 	gr_unlock();
 }
+*/
 
 float Interp_depth_scale = 1500.0f;
 
@@ -3217,7 +3223,7 @@ DCF(model_darkening,"Makes models darker with distance")
 		//               0.0000f at R = 4.0f
 		
 		//float cmp_val = 999.75f;		// old
-
+/*
 // Return a number from 'min' to 'max' where it is
 // 'v' is between v1 and v2.
 float scale_it( float min, float max, float v, float v1, float v2 )
@@ -3230,6 +3236,7 @@ float scale_it( float min, float max, float v, float v1, float v2 )
 
 	return v;
 }
+*/
 
 void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int lighting_skip, int *replacement_textures)
 {
@@ -3342,7 +3349,7 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 	}
 }
 
-
+/*
 void model_cache_init()
 {
 	if ( !Model_cache_inited )	{
@@ -3377,6 +3384,7 @@ void model_cache_reset()
 		}
 	}
 }
+*/
 
 // tmp_detail_level
 // 0 - Max
@@ -4243,37 +4251,38 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	if ( Interp_flags & MR_SHOW_SHIELDS )	{
 		model_render_shields(pm);
 	}	
-			
-//start rendering glow points -Bobboau
 
-	if ( (pm->n_glows) && !is_outlines_only && !is_outlines_only_htl /*&& (Interp_flags & MR_SHOW_THRUSTERS) && (Detail.engine_glows)*/ )	{
+		
+	// start rendering glow points -Bobboau
+	if ( (pm->n_glows) && !is_outlines_only && !is_outlines_only_htl ) {
 		for (i = 0; i < pm->n_glows; i++ ) {
 			glow_bank *bank = &pm->glows[i];
 			int j;
 
-			if(bank->is_on)
-			{
-				if(is_ship && i<32)
-					if(!(shipp->glows_active & (1 << i)))
-						continue;
+			if (bank->is_on) {
+				if ( is_ship && (i < 32) && !(shipp->glows_active & (1 << i)) ) {
+					continue;
+				}
 
-				for ( j=0; j<bank->num_slots; j++ )	{
-					
+				for (j = 0; j < bank->num_slots; j++) {
 					int flick;
-						if(pm->submodel[pm->detail[0]].num_arcs){
-						flick = static_rand(timestamp()%20)%(pm->submodel[pm->detail[0]].num_arcs + j); //the more damage, the more arcs, the more likely the lights will fail
-						}else{
+
+					if (pm->submodel[pm->detail[0]].num_arcs) {
+						flick = static_rand( timestamp() % 20 ) % (pm->submodel[pm->detail[0]].num_arcs + j); //the more damage, the more arcs, the more likely the lights will fail
+					} else {
 						flick = 1;
-						}
+					}
  
-					if(flick == 1){
+					if (flick == 1) {
 						glow_point *gpt = &bank->point[j];
 						vec3d pnt = gpt->pnt;
 						vec3d norm = gpt->norm;
 					
-						if(bank->submodel_parent > 0){//this is were it rotates for the submodel parent-Bobboau
+						if (bank->submodel_parent > 0) { //this is were it rotates for the submodel parent-Bobboau
 							matrix m;
-							if(pm->submodel[bank->submodel_parent].blown_off)continue;
+
+							if (pm->submodel[bank->submodel_parent].blown_off)
+								continue;
 
 							angles angs = pm->submodel[bank->submodel_parent].angs;
 							angs.b = PI2 - angs.b;
@@ -4293,62 +4302,67 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 							vm_vec_rotate(&norm, &n, &m);
 							vm_vec_add2(&pnt, &offset);
 						}
-							vec3d tempv;
-						switch(bank->type){
-						case 0:
-							float d;
-							if((bank->point[j].norm.xyz.x == 0.0f) && (bank->point[j].norm.xyz.z == 0.0f) && (bank->point[j].norm.xyz.z == 0.0f)){
-								d=1.0f;	//if given a nul vector then always show it
-							}else{
-								vm_vec_sub(&tempv,&View_position,&pnt);
-								vm_vec_normalize(&tempv);
 
-								d = vm_vec_dot(&tempv,&norm);
-								d -= 0.25;	
-							}
-						
-							if ( d > 0.0f)	{
-								vertex p;					
-		
-								d *= 3.0f;
-								if ( d > 1.0f ) d = 1.0f;
-	
-								float w = bank->point[j].radius;
-		
-								// fade them in the nebula as well
-								if(The_mission.flags & MISSION_FLAG_FULLNEB){
-									vec3d npnt;
-									vm_vec_add(&npnt, &pnt, pos);
-									d *= (1.0f - neb2_get_fog_intensity(&npnt));
-									w *= 1.5;	//make it bigger in a nebula
+						vec3d tempv;
+
+						switch (bank->type)
+						{
+							case 0:
+							{
+								float d;
+
+								if ( (bank->point[j].norm.xyz.x == 0.0f) && (bank->point[j].norm.xyz.z == 0.0f) && (bank->point[j].norm.xyz.z == 0.0f) ) {
+									d = 1.0f;	//if given a nul vector then always show it
+								} else {
+									vm_vec_sub(&tempv,&View_position,&pnt);
+									vm_vec_normalize(&tempv);
+
+									d = vm_vec_dot(&tempv,&norm);
+									d -= 0.25;	
 								}
+						
+								if (d > 0.0f) {
+									vertex p;
+
+									d *= 3.0f;
+
+									if (d > 1.0f)
+										d = 1.0f;
+
+									float w = bank->point[j].radius;
+
+									// fade them in the nebula as well
+									if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+										vec3d npnt;
+										vm_vec_add(&npnt, &pnt, pos);
+
+										d *= (1.0f - neb2_get_fog_intensity(&npnt));
+										w *= 1.5;	//make it bigger in a nebula
+									}
 					
-								// disable fogging
-								//if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_FOG, 0, 0, 0);
-								if (Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
-									gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+									// disable fogging
+									if (Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
+										gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 		
-								vertex pt;
-								g3_rotate_vertex( &p, &pnt );
-								if(!Cmdline_nohtl) g3_transfer_vertex(&pt, &pnt);
-								else pt = p;
-								
-	
-							//	if(bank->submodel_parent)
-//								{
-//								}
+									if (!Cmdline_nohtl) {
+										g3_transfer_vertex(&p, &pnt);
+									} else {
+										g3_rotate_vertex(&p, &pnt);
+									}
 
-								gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
-							//	mprintf(( "rendering glow with texture %d\n", bank->glow_bitmap ));
-								if(Cmdline_nohtl)g3_draw_bitmap(&pt,0,w*0.5f, TMAP_FLAG_TEXTURED );
-								else g3_draw_bitmap(&pt,0,w*0.5f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, w );
-								//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
+									gr_set_bitmap( bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
+								//	mprintf(( "rendering glow with texture %d\n", bank->glow_bitmap ));
+									g3_draw_bitmap(&p, 0, (w * 0.5f), TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, w);
+									//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
+								}//d>0
 
-							}//d>0
-							break;
-						case 1:
+								break;
+							}
+
+							case 1:
+							{
 								vertex h1[4];				// halves of a beam section	
-								vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
+								vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };
 								vec3d fvec, top1, bottom1, top2, bottom2, start, end;
 
 								vm_vec_add2(&norm, &pnt);
@@ -4359,54 +4373,61 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 								vm_vec_normalize(&fvec);
 
-								moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, bank->point[j].radius, 1.0f, &View_position);	
-								moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, bank->point[j].radius, 1.0f, &View_position);	
+								moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, bank->point[j].radius, 1.0f, &View_position);
+								moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, bank->point[j].radius, 1.0f, &View_position);
 
 								int idx = 0;
  
-/*R_VERTICES()*/		if(Cmdline_nohtl){ 
-							g3_rotate_vertex(verts[0], &bottom1); 
-							g3_rotate_vertex(verts[1], &bottom2);	
-							g3_rotate_vertex(verts[2], &top2); 
-							g3_rotate_vertex(verts[3], &top1); 
-						}else{
-							g3_transfer_vertex(verts[0], &bottom1); 
-							g3_transfer_vertex(verts[1], &bottom2);	
-							g3_transfer_vertex(verts[2], &top2); 
-							g3_transfer_vertex(verts[3], &top1);
-						}
-/*P_VERTICES()*/		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
-						verts[0]->u = 0.0f; verts[0]->v = 0.0f;	
-						verts[1]->u = 1.0f; verts[1]->v = 0.0f; 
-						verts[2]->u = 1.0f;	verts[2]->v = 1.0f; 
-						verts[3]->u = 0.0f; verts[3]->v = 1.0f; 
+/*R_VERTICES()*/				if (Cmdline_nohtl) {
+									g3_rotate_vertex(verts[0], &bottom1);
+									g3_rotate_vertex(verts[1], &bottom2);
+									g3_rotate_vertex(verts[2], &top2);
+									g3_rotate_vertex(verts[3], &top1);
+								} else {
+									g3_transfer_vertex(verts[0], &bottom1);
+									g3_transfer_vertex(verts[1], &bottom2);
+									g3_transfer_vertex(verts[2], &top2);
+									g3_transfer_vertex(verts[3], &top1);
+								}
+
+/*P_VERTICES()*/				for (idx = 0; idx < 4; idx++) {
+									g3_project_vertex(verts[idx]);
+								}
+
+								verts[0]->u = 0.0f; verts[0]->v = 0.0f;
+								verts[1]->u = 1.0f; verts[1]->v = 0.0f;
+								verts[2]->u = 1.0f;	verts[2]->v = 1.0f;
+								verts[3]->u = 0.0f; verts[3]->v = 1.0f;
+
 //								mR_VERTICES();																// rotate and project the vertices
 //								mP_VERTICES();						
 //								mSTUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
 
 								vm_vec_sub(&tempv,&View_position,&pnt);
 								vm_vec_normalize(&tempv);
-								
 
-							gr_set_cull(0);
-							if(The_mission.flags & MISSION_FLAG_FULLNEB){
-								gr_set_bitmap(bank->glow_neb_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
-							}else{
-								gr_set_bitmap(bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
-							}
+								gr_set_cull(0);
+
+								if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+									gr_set_bitmap(bank->glow_neb_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
+								} else {
+									gr_set_bitmap(bank->glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
+								}
+
 								g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
-							gr_set_cull(1);
-						}
-					}//flick
-				}//for slot
-			}//bank is on
-		}//for bank
 
-	}//any glow banks
+								gr_set_cull(1);
+
+								break;
+							}
+						} // switch(bank->type)
+					} // flick
+				} // for slot
+			} // bank is on
+		} // for bank
+	} // end-glow-points
 				
 //	gr_printf((200), (20), "x %0.2f, y %0.2f, z %0.2f", Eye_position.xyz.x, Eye_position.xyz.y, Eye_position.xyz.z);
-
-//end rendering glow points
 
 	// Draw the thruster glow
 	if ( (Interp_thrust_glow_bitmap != -1) && !is_outlines_only && !is_outlines_only_htl && (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
@@ -4428,15 +4449,15 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 			//this is used for the secondary thruster glows 
 			//it only needs to be calculated once so I'm doing it here -Bobboau
-				/* norm = bank->norm[j] */;
-				norm.xyz.z = -1.0f;
-				norm.xyz.x = 1.0f;
-				norm.xyz.y = -1.0f;
+			/* norm = bank->norm[j] */;
+			norm.xyz.z = -1.0f;
+			norm.xyz.x = 1.0f;
+			norm.xyz.y = -1.0f;
 
-				norm.xyz.x *= controle_rotval.xyz.y/2;
-				norm.xyz.y *= controle_rotval.xyz.x/2;
+			norm.xyz.x *= controle_rotval.xyz.y/2;
+			norm.xyz.y *= controle_rotval.xyz.x/2;
 
-				vm_vec_normalize(&norm);
+			vm_vec_normalize(&norm);
 		}
 
 		for (i = 0; i < pm->n_thrusters; i++ ) {
@@ -4455,106 +4476,98 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 				D = d = vm_vec_dot(&tempv,&bank->point[j].norm);
 
-					//ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
-					#define NOISE_SCALE 0.5f
-					#define MIN_SCALE 3.4f
-					#define MAX_SCALE 4.7f
-					float scale = MIN_SCALE;
+				//ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
+				#define NOISE_SCALE 0.5f
+				#define MIN_SCALE 3.4f
+				#define MAX_SCALE 4.7f
+				float scale = MIN_SCALE;
 						
-// the following replaces Bobboau's code, commented out below - Goober5000
-					float magnitude;
-					vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
+				// the following replaces Bobboau's code, commented out below - Goober5000
+				float magnitude;
+				vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
 
-					// normalize banks, in case of incredibly big normals
-					// VECMAT-ERROR: NULL VEC3D (norm == nul)
-					if ( !IS_VEC_NULL(&bank->point[j].norm) )
-						vm_vec_copy_normalize(&scale_vec, &bank->point[j].norm);
+				// normalize banks, in case of incredibly big normals
+				// VECMAT-ERROR: NULL VEC3D (norm == nul)
+				if ( !IS_VEC_NULL(&bank->point[j].norm) )
+					vm_vec_copy_normalize(&scale_vec, &bank->point[j].norm);
 
-					// adjust for thrust
-					(scale_vec.xyz.x *= Interp_thrust_scale_x) -= 0.1f;
-					(scale_vec.xyz.y *= Interp_thrust_scale_y) -= 0.1f;
-					(scale_vec.xyz.z *= Interp_thrust_scale) -= 0.1f;
+				// adjust for thrust
+				(scale_vec.xyz.x *= Interp_thrust_scale_x) -= 0.1f;
+				(scale_vec.xyz.y *= Interp_thrust_scale_y) -= 0.1f;
+				(scale_vec.xyz.z *= Interp_thrust_scale) -= 0.1f;
 
-					// get magnitude, which we will use as the scaling reference
-					magnitude = vm_vec_normalize(&scale_vec);
+				// get magnitude, which we will use as the scaling reference
+				magnitude = vm_vec_normalize(&scale_vec);
 
-					// get absolute value
-					if (magnitude < 0.0f)
-						magnitude *= -1.0f;
+				// get absolute value
+				if (magnitude < 0.0f)
+					magnitude *= -1.0f;
 
-					scale = magnitude*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
+				scale = magnitude*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
 
-				vertex p;					
-				if ( d > 0.0f)	{
-
+				vertex p;	
+				
+				if (d > 0.0f){
 					// Make glow bitmap fade in/out quicker from sides.
 					d *= 3.0f;
-					if ( d > 1.0f ) d = 1.0f;
+
+					if (d > 1.0f)
+						d = 1.0f;
 				}
+
 				vec3d npnt;
-				float fog_int = 1.0;
+				float fog_int = 1.0f;
+
 				// fade them in the nebula as well
-				if(The_mission.flags & MISSION_FLAG_FULLNEB){
+				if (The_mission.flags & MISSION_FLAG_FULLNEB) {
 				//	vec3d npnt;
 					vm_vec_rotate(&npnt, &bank->point[j].pnt, orient);
 					vm_vec_add2(&npnt, pos);
 					fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
-				//	fog_int /=10;.0f;
 					d *= fog_int;
+
+					if (d > 1.0f)
+						d = 1.0f;
+
+					if (fog_int > 1.0f)
+						fog_int = 1.0f;
+
+					// also need to disable fogging
+					gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 				}
 
-					
-				// disable fogging
-				//if(The_mission.flags & MISSION_FLAG_FULLNEB)gr_fog_set(GR_FOGMODE_FOG, 0, 0, 0);
-				if (The_mission.flags & MISSION_FLAG_FULLNEB)
-					gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+				// this is the original scaling code - Goober5000
+			//	scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
-// this is the original scaling code - Goober5000
-//					scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
+				float w = bank->point[j].radius*(scale+Interp_thrust_glow_noise*NOISE_SCALE );
 
-					float w = bank->point[j].radius*(scale+Interp_thrust_glow_noise*NOISE_SCALE );
-
-					vertex pt;
+				// these lines are used by the tertiary glows, thus we will need to project this all of the time
+				if (Cmdline_nohtl) {
 					g3_rotate_vertex( &p, &bank->point[j].pnt );
-					if(!Cmdline_nohtl) g3_transfer_vertex(&pt, &bank->point[j].pnt);
-					else pt = p;
-					//these two lines are used by the tertiary glows, thus we will need to project this all of the time
-				if ( d > 0.0f){
-				//	gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d );
-					{
-						//primary thruster glows, sort of a lens flare/engine wash thing 
+				} else {
+					g3_transfer_vertex(&p, &bank->point[j].pnt);
+				}
 
-//						g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
-				//		if(Cmdline_nohtl)g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED );
-				//		else g3_draw_bitmap(&pt,0,w*0.5f*Interp_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, w*0.325f );
 
-						pt.r = (ubyte)(255.0f * d);
-						pt.g = (ubyte)(255.0f * d);
-						pt.b = (ubyte)(255.0f * d);
-						pt.a = (ubyte)(255.0f * d);
-						primary_thruster_batcher.draw_bitmap(&pt,w*0.5f*Interp_thrust_glow_rad_factor, w*0.325f);
+				ubyte _color = 255;
 
-						//g3_draw_rotated_bitmap(&p,0.0f,w,w, TMAP_FLAG_TEXTURED );
-					}
-				}//d>0
+				if ( d > 0.0f) {
+					_color = (ubyte)(255.0f * d);
+					p.r = p.g = p.b = p.a = _color;
 
-				if(Interp_tertiary_thrust_glow_bitmap > -1){
-					//tertiary thruster glows, suposet to be a complement to the secondary thruster glows, it simulates the effect of an ion wake or something, 
-					//thus is mostly for haveing a glow that is visable from the front
-				//	gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, fog_int );
-					
+					primary_thruster_batcher.draw_bitmap( &p, 0, (w * 0.5f * Interp_thrust_glow_rad_factor), (w * 0.325f) );
+				}
+
+				if (Interp_tertiary_thrust_glow_bitmap > -1) {
+					// tertiary thruster glows, suposet to be a complement to the secondary thruster glows, it simulates the effect of an ion wake or something, 
+					// thus is mostly for haveing a glow that is visable from the front
 					p.sw -= w;
-					//g3_draw_bitmap(&p,0,w, TMAP_FLAG_TEXTURED );
-				//	if(Cmdline_nohtl)g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED); 
-				//	else g3_draw_rotated_bitmap(&pt,magnitude*4*Interp_tertiary_thrust_glow_rad_factor,w*0.6f, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT, -(D>0)?D:-D);
 
-					pt.r = (ubyte)(255.0f * fog_int);
-					pt.g = (ubyte)(255.0f * fog_int);
-					pt.b = (ubyte)(255.0f * fog_int);
-					pt.a = (ubyte)(255.0f * fog_int);
+					_color = (ubyte)(255.0f * fog_int);
+					p.r = p.g = p.b = p.a = _color;
 
-					tertiary_thruster_batcher.draw_bitmap(&pt, w*0.6f, magnitude*4*Interp_tertiary_thrust_glow_rad_factor, -(D>0)?D:-D);
+					tertiary_thruster_batcher.draw_bitmap( &p, 0, (magnitude * 4 * Interp_tertiary_thrust_glow_rad_factor), (w * 0.6f), -(D>0)?D:-D);
 				}
 				
 

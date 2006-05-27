@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.103 $
- * $Date: 2006-05-16 15:54:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.104 $
+ * $Date: 2006-05-27 16:57:13 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2006/05/16 15:54:39  Goober5000
+ * fix for Mantis #875
+ * --Goober5000
+ *
  * Revision 2.102  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -1405,7 +1409,7 @@ void model_init()
 	}
 
 	// Init the model caching system
-	model_cache_init();
+//	model_cache_init();
 
 	atexit( model_free_all );
 	model_initted = 1;
