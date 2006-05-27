@@ -1,13 +1,17 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.31 $
- * $Date: 2006-04-16 05:24:16 $
+ * $Revision: 2.32 $
+ * $Date: 2006-05-27 16:39:40 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/04/16 05:24:16  taylor
+ * probably doesn't need to be world readable, but certainly doesn't need to be world writeable
+ * add Assert() to can when we are stupidly trying to allocate 0 or less size bytes in vm_malloc()
+ *
  * Revision 2.30  2006/03/15 17:32:13  taylor
  * bump error msg buffer size a little (I'll probably just go dynamic with this since you hopefully won't get this too much anyway)
  *
@@ -345,17 +349,6 @@ MMRESULT mmioClose(HMMIO hmmio, uint wFlags)
 		return MMIOERR_CANNOTWRITE;
 
 	return 0;
-}
-
-// slightly different options and return than the Windows version
-SDL_TimerID timeSetEvent(DWORD uDelay, uint uResolution, ptr_u lpTimeProc,  DWORD *dwUser, uint fuEvent)
-{
-	return SDL_AddTimer( uDelay, (SDL_NewTimerCallback)lpTimeProc, (void *) dwUser );
-}
-
-SDL_bool timeKillEvent(SDL_TimerID uTimerID)
-{
-	return SDL_RemoveTimer( uTimerID );
 }
 
 // get a filename minus any leading path

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/acm.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-05-12 17:49:17 $
+ * $Revision: 2.7 $
+ * $Date: 2006-05-27 16:39:40 $
  * $Author: taylor $
  *
  * C file for interface to Audio Compression Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.5  2005/03/27 06:14:30  taylor
  * update for streaming support and platform independance
  *
@@ -258,7 +262,7 @@ int ACM_query_dest_size(void *stream, int src_len)
 //
 //
 // NOTES:
-// 1. Storage for the decompressed audio will be allocated in this function if *dest in NULL.
+// 1. Storage for the decompressed audio will be allocated in this function if *dest is NULL.
 //    The caller is responsible for freeing this memory later.
 //
 int ACM_convert_ADPCM_to_PCM(WAVEFORMATEX *pwfxSrc, ubyte *src, int src_len, ubyte **dest, int max_dest_bytes, int *dest_len, unsigned int *src_bytes_used, unsigned short dest_bps)

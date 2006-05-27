@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.25 $
- * $Date: 2006-05-13 07:11:46 $
+ * $Revision: 1.26 $
+ * $Date: 2006-05-27 16:39:40 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2006/05/13 07:11:46  taylor
+ * make sure sound buffers are valid before trying to delete them (was causing crash issues on Windows and OS X)
+ *
  * Revision 1.24  2006/03/15 17:30:46  taylor
  * remove alut headers, since we don't use any alut functions anyway (didn't I already do this a couple of months ago??)
  *
@@ -292,18 +295,18 @@ class Timer
 public:
     void constructor(void);
     void destructor(void);
-    BOOL Create (UINT nPeriod, UINT nRes, DWORD dwUser,  TIMERCALLBACK pfnCallback);
+    BOOL Create (UINT nPeriod, UINT nRes, ptr_u dwUser, TIMERCALLBACK pfnCallback);
 protected:
-#ifndef SCP_UNIX 
-    static void CALLBACK TimeProc(UINT uID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2);
+#ifndef SCP_UNIX
+    static void CALLBACK TimeProc(UINT uID, UINT uMsg, ptr_u dwUser, DWORD dw1, DWORD dw2);
 #else
-    static DWORD CALLBACK TimeProc(DWORD interval, void *param);
+    static uint TimeProc(uint interval, void *param);
 #endif
     TIMERCALLBACK m_pfnCallback;
-    DWORD m_dwUser;
+    ptr_u m_dwUser;
     UINT m_nPeriod;
     UINT m_nRes;
-#ifndef SCP_UNIX 
+#ifndef SCP_UNIX
     UINT m_nIDTimer;
 #else
     SDL_TimerID m_nIDTimer;
@@ -431,13 +434,17 @@ void Timer::constructor(void)
 void Timer::destructor(void)
 {
 	if (m_nIDTimer) {
+#ifndef SCP_UNIX
 		timeKillEvent (m_nIDTimer);
+#else
+		SDL_RemoveTimer(m_nIDTimer);
+#endif
 		m_nIDTimer = NULL;
 	}
 }
 
 // Create
-BOOL Timer::Create (UINT nPeriod, UINT nRes, DWORD dwUser, TIMERCALLBACK pfnCallback)
+BOOL Timer::Create (UINT nPeriod, UINT nRes, ptr_u dwUser, TIMERCALLBACK pfnCallback)
 {
 	BOOL bRtn = SUCCESS;    // assume success
 
@@ -453,7 +460,7 @@ BOOL Timer::Create (UINT nPeriod, UINT nRes, DWORD dwUser, TIMERCALLBACK pfnCall
 #ifndef SCP_UNIX
 	if ((m_nIDTimer = timeSetEvent (m_nPeriod, m_nRes, TimeProc, (DWORD)this, TIME_PERIODIC)) == NULL) {
 #else
-	if ((m_nIDTimer = timeSetEvent (m_nPeriod, m_nRes, (ptr_u)TimeProc, (DWORD *)this, TIME_PERIODIC)) == NULL) {
+	if ((m_nIDTimer = SDL_AddTimer(m_nPeriod, TimeProc, (void*)this)) == NULL) {
 #endif
 	  bRtn = FAILURE;
 	}
@@ -470,7 +477,7 @@ BOOL Timer::Create (UINT nPeriod, UINT nRes, DWORD dwUser, TIMERCALLBACK pfnCall
 #ifndef SCP_UNIX
 void CALLBACK Timer::TimeProc(UINT uID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2)
 #else
-DWORD CALLBACK Timer::TimeProc(DWORD interval, void *dwUser)
+uint Timer::TimeProc(uint interval, void *dwUser)
 #endif
 {
     // dwUser contains ptr to Timer object
