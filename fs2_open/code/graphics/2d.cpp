@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.72 $
- * $Date: 2006-05-27 17:07:48 $
+ * $Revision: 2.73 $
+ * $Date: 2006-05-27 17:08:50 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2006/05/27 17:07:48  taylor
+ * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
+ * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
+ * clean up TMAP flags
+ * fix a couple of minor OpenGL state change issues with spec and env map rendering
+ * make sure we build again for OS X (OGL extension functions work a little different there)
+ * render targets always need to be power-of-2 to avoid incomplete buffer issues in the code
+ * when we disable culling in opengl_3dunlit be sure that we re-enable it on exit of function
+ * re-fix screenshots
+ * add true alpha blending support (with cmdline for now since the artwork has the catch up)
+ * draw lines with float positioning, to be more accurate with resizing on non-standard resolutions
+ * don't load cubemaps from file for D3D, not sure how to do it anyway
+ * update geometry batcher code, memory fixes, dynamic stuff, basic fixage, etc.
+ *
  * Revision 2.71  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -1496,6 +1510,8 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 
 		// get the dynamic environment map
 		gr_screen.dynamic_environment_map = bm_make_render_target(512, 512, BMP_FLAG_RENDER_TARGET_DYNAMIC|BMP_FLAG_CUBEMAP);
+	} else {
+		gr_screen.static_environment_map = gr_screen.dynamic_environment_map = -1;
 	}
 
 
