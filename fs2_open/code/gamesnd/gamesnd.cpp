@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.29 $
- * $Date: 2006-04-03 07:45:43 $
- * $Author: wmcoolmon $
+ * $Revision: 2.30 $
+ * $Date: 2006-05-27 17:09:43 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2006/04/03 07:45:43  wmcoolmon
+ * gamesnd_get_by_name now ignores extensions, mostly for parse_sound reasons.
+ *
  * Revision 2.28  2005/12/08 15:11:29  taylor
  * a few game_busy() changes
  *
@@ -360,6 +363,9 @@ void gamesnd_preload_common_sounds()
 	int		i;
 	game_snd	*gs;
 
+	if ( !Sound_enabled )
+		return;
+
 	for ( i = 0; i < Num_game_sounds; i++ ) {
 		gs = &Snds[i];
 		if ( gs->filename[0] != 0 && strnicmp(gs->filename, NOX("none.wav"), 4) ) {
@@ -380,6 +386,9 @@ void gamesnd_load_gameplay_sounds()
 {
 	int		i;
 	game_snd	*gs;
+
+	if ( !Sound_enabled )
+		return;
 
 	for ( i = 0; i < Num_game_sounds; i++ ) {
 		gs = &Snds[i];
@@ -420,6 +429,9 @@ void gamesnd_load_interface_sounds()
 {
 	int		i;
 	game_snd	*gs;
+
+	if ( !Sound_enabled )
+		return;
 
 	for ( i = 0; i < Num_iface_sounds; i++ ) {
 		gs = &Snds_iface[i];
