@@ -10,13 +10,29 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.36 $
- * $Date: 2006-05-13 07:29:51 $
+ * $Revision: 2.37 $
+ * $Date: 2006-05-27 17:20:48 $
  * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2006/05/13 07:29:51  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.35  2006/02/16 05:00:01  taylor
  * various bmpman related fixes
  *  - some new error checking (and fixes related to that) and cleanup
@@ -434,7 +450,7 @@
 #define BMP_TEX_DXT3						(1<<5)				// dxt3 compressed 8r8g8b4a (32bit)
 #define BMP_TEX_DXT5						(1<<6)				// dxt5 compressed 8r8g8b8a (32bit)
 #define BMP_TEX_CUBEMAP						(1<<7)				// a texture made for cubic environment map
-// ***** NOTE:  bitmap.flags is an 8-bit value, no more than 1 BMP_TEX_* flags can be added unless the type is changed!! ******
+// ***** NOTE:  bitmap.flags is an 8-bit value, no more BMP_TEX_* flags can be added unless the type is changed!! ******
 
 //compressed texture types
 #define BMP_TEX_COMP			( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )
@@ -671,6 +687,7 @@ int bm_is_compressed(int num);
 int bm_get_tcache_type(int num);
 int bm_get_size(int num);
 int bm_get_num_mipmaps(int num);
+int bm_has_alpha_channel(int handle);
 
 void bm_print_bitmaps();
 

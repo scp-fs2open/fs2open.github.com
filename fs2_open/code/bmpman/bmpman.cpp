@@ -10,13 +10,29 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.85 $
- * $Date: 2006-05-13 07:29:51 $
+ * $Revision: 2.86 $
+ * $Date: 2006-05-27 17:20:48 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2006/05/13 07:29:51  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.84  2006/04/20 06:32:00  Goober5000
  * proper capitalization according to Volition
  *
@@ -1315,14 +1331,11 @@ int bm_load_sub_fast(char *real_filename, const char *ext, int *handle, int dir_
 	char filename[MAX_FILENAME_LEN] = "";
 
 	strcpy( filename, real_filename );
-	strcat( filename, ext );	
-	for (i=0; i<(int)strlen(filename); i++ ){
-		filename[i] = char(tolower(filename[i]));
-	}
+	strcat( filename, ext );
 
 	for (i = 0; i < MAX_BITMAPS; i++) {
-		if ( (bm_bitmaps[i].type != BM_TYPE_NONE) && !stricmp(filename, bm_bitmaps[i].filename) && (bm_bitmaps[i].dir_type == dir_type) ) {
-			nprintf(("BmpFastLoad", "Found bitmap %s -- number %d\n", filename, i));
+		if ( (bm_bitmaps[i].type != BM_TYPE_NONE) && (bm_bitmaps[i].dir_type == dir_type) && !stricmp(filename, bm_bitmaps[i].filename) ) {
+			nprintf(("BmpFastLoad", "Found bitmap %s -- number %d\n", real_filename, i));
 			bm_bitmaps[i].load_count++;
 			*handle = bm_bitmaps[i].handle;
 			return 1;
@@ -2320,13 +2333,24 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	error = dds_read_bitmap( filename, data, &dds_bpp );
 
 #if BYTE_ORDER == BIG_ENDIAN
-	// same as with TGA, we need to byte swap 32-bit, uncompressed, DDS images
-	if ( (be->comp_type == BM_TYPE_NONE) && (dds_bpp == 32) ) {
-		uint *swap_tmp;
+	// same as with TGA, we need to byte swap 16 & 32-bit, uncompressed, DDS images
+	if ( be->comp_type == BM_TYPE_NONE ) {
+		uint i = 0;
 
-		for (uint i = 0; i < (uint)be->mem_taken; i += 4) {
-			swap_tmp = (uint *)(data + i);
-			*swap_tmp = INTEL_INT(*swap_tmp);
+		if (dds_bpp == 32) {
+			uint *swap_tmp;
+
+			for (i = 0; i < (uint)be->mem_taken; i += 4) {
+				swap_tmp = (uint *)(data + i);
+				*swap_tmp = INTEL_INT(*swap_tmp);
+			}
+		} else if (dds_bpp == 16) {
+			ushort *swap_tmp;
+
+			for (i = 0; i < (uint)be->mem_taken; i += 2) {
+				swap_tmp = (ushort *)(data + i);
+				*swap_tmp = INTEL_SHORT(*swap_tmp);
+			}
 		}
 	}
 #endif
@@ -3501,7 +3525,11 @@ int bm_has_alpha_channel(int handle)
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 	Assert( handle == bm_bitmaps[n].handle );
 
-	return ( (bm_bitmaps[n].bm.true_bpp & 32) > 0 );
+	// assume that PCX never has a real alpha channel (it may be 32-bit, but without any alpha)
+	if (bm_bitmaps[n].type == BM_TYPE_PCX)
+		return 0;
+
+	return (bm_bitmaps[n].bm.true_bpp == 32);
 }
 
 // the only real purpose for this is to return the correct TCACHE_TYPE for compressed graphics,
