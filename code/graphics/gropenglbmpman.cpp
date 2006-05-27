@@ -9,13 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.17 $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 1.18 $
+ * $Date: 2006-05-27 17:07:48 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 1.16  2006/04/06 23:23:56  taylor
  * bits of cleanup
  * minor fixes for -img2dds
@@ -624,12 +640,11 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, 
 	if ( (flags & BMP_FLAG_CUBEMAP) && !Is_Extension_Enabled(OGL_ARB_TEXTURE_CUBE_MAP) )
 		return 0;
 
-	if (flags & BMP_FLAG_CUBEMAP) {
-		if (*width != *height)
-			MIN(*width, *height) = MAX(*width, *height);
-
-		Assert( is_power_of_two(*width, *height) );
+	if ( (flags & BMP_FLAG_CUBEMAP) && (*width != *height) ) {
+		MIN(*width, *height) = MAX(*width, *height);
 	}
+
+	Assert( is_power_of_two(*width, *height) );
 
 	if ( opengl_make_render_target(bm_bitmaps[n].handle, n, width, height, bpp, mm_lvl, flags) )
 		return 1;

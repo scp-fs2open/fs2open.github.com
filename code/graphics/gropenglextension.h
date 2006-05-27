@@ -9,14 +9,30 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.13 $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 1.14 $
+ * $Date: 2006-05-27 17:07:48 $
  * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 1.12  2006/04/12 01:10:35  taylor
  * some cleanup and slight reorg
  *  - remove special uv offsets for non-standard res, they were stupid anyway and don't actually fix the problem (which should actually be fixed now)
@@ -213,6 +229,48 @@ void opengl_print_extensions();
 							((x)GL_EXT_Special[i].function_ptr)
 
 
+#ifdef __APPLE__
+// OS X doesn't have the PFN* names so we have to use the real OSX functions, so until
+// we move to true runtime loading this will have to suffice...
+#define vglFogCoordfEXT					glFogCoordfEXT
+#define vglFogCoordPointerEXT			glFogCoordPointerEXT
+#define vglMultiTexCoord2fARB			glMultiTexCoord2fARB
+#define vglActiveTextureARB				glActiveTextureARB	
+#define vglClientActiveTextureARB		glClientActiveTextureARB
+#define vglCompressedTexImage2D			glCompressedTexImage2D
+#define vglCompressedTexSubImage2D		glCompressedTexSubImage2D
+#define vglGetCompressedTexImageARB		glGetCompressedTexImageARB
+#define vglSecondaryColor3fvEXT			glSecondaryColor3fvEXT
+#define vglSecondaryColor3ubvEXT		glSecondaryColor3ubvEXT
+#define vglLockArraysEXT				glLockArraysEXT
+#define vglUnlockArraysEXT				glUnlockArraysEXT
+#define vglLoadTransposeMatrixfARB		glLoadTransposeMatrixfARB
+#define vglMultTransposeMatrixfARB		glMultTransposeMatrixfARB
+#define vglDrawRangeElements			glDrawRangeElements
+#define vglBindBufferARB				glBindBufferARB
+#define vglDeleteBuffersARB				glDeleteBuffersARB
+#define vglGenBuffersARB				glGenBuffersARB
+#define vglBufferDataARB				glBufferDataARB
+#define vglMapBufferARB					glMapBufferARB
+#define vglUnmapBufferARB				glUnmapBufferARB
+#define vglIsRenderbufferEXT			glIsRenderbufferEXT
+#define vglBindRenderbufferEXT			glBindRenderbufferEXT
+#define vglDeleteRenderbuffersEXT		glDeleteRenderbuffersEXT
+#define vglGenRenderbuffersEXT			glGenRenderbuffersEXT
+#define vglRenderbufferStorageEXT		glRenderbufferStorageEXT
+#define vglGetRenderbufferParameterivEXT	glGetRenderbufferParameterivEXT
+#define vglIsFramebufferEXT				glIsFramebufferEXT
+#define vglBindFramebufferEXT			glBindFramebufferEXT
+#define vglDeleteFramebuffersEXT		glDeleteFramebuffersEXT
+#define vglGenFramebuffersEXT			glGenFramebuffersEXT
+#define vglCheckFramebufferStatusEXT	glCheckFramebufferStatusEXT
+#define vglFramebufferTexture2DEXT		glFramebufferTexture2DEXT
+#define vglFramebufferRenderbufferEXT	glFramebufferRenderbufferEXT
+#define vglGetFramebufferAttachmentParameterivEXT	glGetFramebufferAttachmentParameterivEXT
+#define vglGenerateMipmapEXT			glGenerateMipmapEXT
+
+#else
+
 #define vglFogCoordfEXT					GLEXT_CALL( OGL_FOG_COORDF, PFNGLFOGCOORDFEXTPROC )
 #define vglFogCoordPointerEXT			GLEXT_CALL( OGL_FOG_COORD_POINTER, PFNGLFOGCOORDPOINTEREXTPROC )
 #define vglMultiTexCoord2fARB			GLEXT_CALL( OGL_MULTI_TEX_COORD_2F, PFNGLMULTITEXCOORD2FARBPROC )
@@ -249,6 +307,8 @@ void opengl_print_extensions();
 #define vglFramebufferRenderbufferEXT	GLEXT_CALL( OGL_FRAMEBUFFER_RENDERBUFFER, PFNGLFRAMEBUFFERRENDERBUFFEREXTPROC )
 #define vglGetFramebufferAttachmentParameterivEXT	GLEXT_CALL( OGL_GET_FRAMEBUFFER_ATTACHMENT_PARAMETER_IV, PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVEXTPROC )
 #define vglGenerateMipmapEXT			GLEXT_CALL( OGL_GENERATE_MIPMAP, PFNGLGENERATEMIPMAPEXTPROC )
+
+#endif	// __APPLE__
 
 // special extensions
 #define vwglSwapIntervalEXT			GLEXT_SPC_CALL( OGL_SPC_WGL_SWAP_INTERVAL, PFNWGLSWAPINTERVALEXTPROC )

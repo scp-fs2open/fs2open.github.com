@@ -10,6 +10,8 @@
 #ifndef _GRD3DBMPMAN_H
 #define _GRD3DBMPMAN_H
 
+#ifndef NO_DIRECT3D
+
 #ifndef NDEBUG
 #define BMPMAN_NDEBUG
 #endif
@@ -43,5 +45,7 @@ int gr_d3d_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int
 int gr_d3d_bm_set_render_target(int n, int face);
 
 IDirect3DBaseTexture8* get_render_target_texture(int);
+
+#endif // !NO_DIRECT3D
 
 #endif

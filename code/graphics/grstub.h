@@ -2,8 +2,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.h $
- * $Revision: 2.26 $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 2.27 $
+ * $Date: 2006-05-27 17:07:48 $
  * $Author: taylor $
  *
  * $NoKeywords: $
@@ -52,7 +52,6 @@ void stub_set_spec_mapping(int tmap_type, float *u_scale, float *v_scale ) {}
 void stub_reset_spec_mapping() {}
 void stub_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type, int flags, int is_scaler) {}
 void gr_stub_tmapper( int nverts, vertex **verts, uint flags ) {}
-void gr_stub_tmapper_batch_3d_unlit( int nverts, vertex *verts, uint flags) {}
 void gr_stub_scaler(vertex *va, vertex *vb ) {}
 void gr_stub_set_palette(ubyte *new_palette, int is_alphacolor) {}
 void gr_stub_get_color( int * r, int * g, int * b ) {}
@@ -170,7 +169,6 @@ void gr_stub_init()
 	gr_screen.gf_pixel = gr_stub_pixel;
 	gr_screen.gf_scaler = gr_stub_scaler;
 	gr_screen.gf_tmapper = gr_stub_tmapper;
-	gr_screen.gf_tmapper_batch_3d_unlit = gr_stub_tmapper_batch_3d_unlit;
 
 	gr_screen.gf_gradient = gr_stub_gradient;
 

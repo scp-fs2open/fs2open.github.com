@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.87 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.88 $
+ * $Date: 2006-05-27 17:07:48 $
+ * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.86  2006/04/15 00:13:22  phreak
  * gr_flash_alpha(), much like gr_flash(), but allows an alpha value to be passed
  *
@@ -852,12 +855,12 @@
  * $NoKeywords: $
  */
 
+#ifndef NO_DIRECT3D
+
 #include <direct.h>
 
 #include "graphics/grd3d.h"
 #include "graphics/grd3dinternal.h"
-#include "graphics/grbatch.h"
-#include "graphics/grd3dbatch.h"
 #include "graphics/2d.h"
 #include "globalincs/pstypes.h"
 #include "bmpman/bmpman.h"
@@ -1293,207 +1296,6 @@ int w_factor = 256;
 dynamic_buffer render_buffer;
 
 //#define MAX_INTERNAL_POLY_VERTS 2048
-
-/**
- * This will be used to render the 3D parts the of FS2 engine
- *
- * @param int nverts
- * @param  vertex **verts
- * @param  uint flags
- * @param  int is_scaler
- *
- * @return void
- */
-void gr_d3d_tmapper_internal_batch_3d_unlit( int nverts, vertex *verts, uint flags)	
-{
-	// Some checks to make sure this function isnt used when it shouldnt be
-	Assert(flags & TMAP_HTL_3D_UNLIT);
-
-	float u_scale = 1.0f, v_scale = 1.0f;
-	int bw = 1, bh = 1;		
-
-	gr_texture_source texture_source = (gr_texture_source)-1;
-	gr_alpha_blend alpha_blend = (gr_alpha_blend)-1;
-	gr_zbuffer_type zbuffer_type = (gr_zbuffer_type)-1;
-
-	if ( gr_zbuffering )	{
-		zbuffer_type = ZBUFFER_TYPE_FULL;
-	} else {
-		zbuffer_type = ZBUFFER_TYPE_NONE;
-	}
-
-	int alpha;
-
-	int tmap_type = TCACHE_TYPE_NORMAL;
-
-	int r, g, b;
-
-	if ( flags & TMAP_FLAG_TEXTURED )	{
-		r = 255;
-		g = 255;
-		b = 255;
-	} else {
-		r = gr_screen.current_color.red;
-		g = gr_screen.current_color.green;
-		b = gr_screen.current_color.blue;
-	}
-
-	// want to be in here!
-	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER )	{
-
-		if (GlobalD3DVars::d3d_caps.DestBlendCaps & D3DPBLENDCAPS_ONE )	{
-			tmap_type   = TCACHE_TYPE_NORMAL;
-			alpha_blend = ALPHA_BLEND_ALPHA_ADDITIVE;
-
-			// Blend with screen pixel using src*alpha+dst
-			float factor = gr_screen.current_alpha;
-
-			alpha = 255;
-
-			if ( factor <= 1.0f )	{
-				int tmp_alpha = fl2i(gr_screen.current_alpha*255.0f);
-				r = (r*tmp_alpha)/255;
-				g = (g*tmp_alpha)/255;
-				b = (b*tmp_alpha)/255;
-			}
-		} else {
-
-			tmap_type = TCACHE_TYPE_XPARENT;
-
-			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-
-			// Blend with screen pixel using src*alpha+dst
-			float factor = gr_screen.current_alpha;
-
-			if ( factor > 1.0f )	{
-				alpha = 255;
-			} else {
-				alpha = fl2i(gr_screen.current_alpha*255.0f);
-			}
-		}
-	} else {
-		alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-		alpha = 255;
-	}
-
-	Assert(!(flags & TMAP_FLAG_INTERFACE));
-
-	texture_source = TEXTURE_SOURCE_NONE;
- 
-	if ( flags & TMAP_FLAG_TEXTURED )	{
-		if ( !gr_tcache_set(gr_screen.current_bitmap, tmap_type, &u_scale, &v_scale))	{
-//			mprintf(( "Not rendering a texture because it didn't fit in VRAM!\n" ));
-			return;
-		}
-
-		// use nonfiltered textures for bitmap sections
-		texture_source = TEXTURE_SOURCE_DECAL;
-	}
-	
- //	gr_d3d_set_state( texture_source, alpha_blend, zbuffer_type );
-	
-	BatchInfo batch_info;
-	batch_info.alpha_blend_type = alpha_blend;
-	batch_info.bitmap_type      = tmap_type;
-	batch_info.filter_type      = texture_source;
-	batch_info.is_set           = true;
-	batch_info.state_set_func   = NULL;
-	batch_info.texture_id       = gr_screen.current_bitmap;
-	batch_info.zbuffer_type     = zbuffer_type;
-
-	D3DLVERTEX *d3d_verts	= (D3DLVERTEX *) d3d_batch_lock_vbuffer(GlobalD3DVars::unlit_3D_batch, nverts, batch_info);
-	D3DLVERTEX *src_v		= d3d_verts;
-
-	float uoffset = 0.0f;
-	float voffset = 0.0f;
-
-	float minu=0.0f, minv=0.0f, maxu=1.0f, maxv=1.0f;
-
-	if ( flags & TMAP_FLAG_TEXTURED )	{								
-		if ( GlobalD3DVars::D3D_rendition_uvs )	{				
-			bm_get_info(gr_screen.current_bitmap, &bw, &bh);			
-				
-			uoffset = 2.0f/i2fl(bw);
-			voffset = 2.0f/i2fl(bh);
-
-			minu = uoffset;
-			minv = voffset;
-
-			maxu = 1.0f - uoffset;
-			maxv = 1.0f - voffset;
-		}				
-	}	
-
-	for (int i=0; i<nverts; i++ )	{
-		vertex * va = &verts[i];		
-			  
-		int a      = ( flags & TMAP_FLAG_ALPHA )   ? verts[i].a : alpha;
-	
-		if ( (flags & TMAP_FLAG_RGB)  && (flags & TMAP_FLAG_GOURAUD) )	{
-			// Make 0.75 be 256.0f
-			r = verts[i].r;
-			g = verts[i].g;
-			b = verts[i].b;
-		} else {
-			// use constant RGB values...
-		}
-		
-		src_v->color = D3DCOLOR_ARGB(a, r, g, b);
-		src_v->specular = D3DCOLOR_ARGB(a, r, g, b);
-
-		src_v->sx = va->x; 
-		src_v->sy = va->y; 
-		src_v->sz = va->z;
-
-		if ( flags & TMAP_FLAG_TEXTURED )	{
-			// argh. rendition
-			if ( GlobalD3DVars::D3D_rendition_uvs ){				
-				// tiled texture (ships, etc), bitmap sections
-				if(flags & TMAP_FLAG_TILED){					
-					src_v->tu = va->u*u_scale;
-					src_v->tv = va->v*v_scale;
-				}
-				// interface graphics
-				else if(flags & TMAP_FLAG_INTERFACE){
-					int sw, sh;
-					bm_get_info(gr_screen.current_bitmap, &sw, &sh, NULL, NULL, NULL);
-
-
-				 //	DBUGFILE_OUTPUT_4("%f %f %d %d",va->u,va->v,sw,sh);
-					src_v->tu = (va->u + (0.5f / i2fl(sw))) * u_scale;
-					src_v->tv = (va->v + (0.5f / i2fl(sh))) * v_scale;
-				}	
-				// all else.
-				else {				
-					src_v->tu = flCAP(va->u, minu, maxu);
-					src_v->tv = flCAP(va->v, minv, maxv);
-				}				
-			}
-			// yay. non-rendition
-			else {
-				src_v->tu = va->u*u_scale;
-				src_v->tv = va->v*v_scale;
-			}							
-		} else {
-			src_v->tu = 0.0f;
-			src_v->tv = 0.0f;
-		}
-		src_v++;
-	}
-
-	// None of these objects are set to be fogged, but perhaps they should be
-	if(flags & TMAP_FLAG_PIXEL_FOG) {
-		Assert(0); // Shouldnt be here
-	//  	gr_fog_set(GR_FOGMODE_FOG, 255, 0, 0, 1.0f, 750.0f);
-	} else {
-		gr_fog_set(GR_FOGMODE_NONE,0,0,0);
-	}
-
-	d3d_batch_unlock_vbuffer(GlobalD3DVars::unlit_3D_batch);
-	d3d_batch_draw_vbuffer(GlobalD3DVars::unlit_3D_batch);
-
-// 	d3d_DrawPrimitive(D3DVT_LVERTEX, D3DPT_TRIANGLELIST, (LPVOID)d3d_verts, nverts);
-}
 
 inline _D3DPRIMITIVETYPE d3d_prim_type(int flags){
 	if(flags & TMAP_FLAG_TRILIST){
@@ -2609,6 +2411,8 @@ void gr_d3d_set_clip(int x,int y,int w,int h, bool resize)
 	gr_screen.clip_width = w;
 	gr_screen.clip_height = h;
 
+	gr_screen.clip_aspect = i2fl(w) / i2fl(h);
+
 	// Setup the viewport for a reasonable viewing area
 	viewport.X = x;
 	viewport.Y = y;
@@ -2622,7 +2426,7 @@ void gr_d3d_set_clip(int x,int y,int w,int h, bool resize)
 	{
   		mprintf(( "GR_D3D_SET_CLIP: SetViewport failed.\n" ));
 	}
-	gr_d3d_set_proj_matrix((4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+	gr_d3d_set_proj_matrix(Proj_fov,  gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 }
 
 /**
@@ -2648,6 +2452,8 @@ void gr_d3d_reset_clip()
 		gr_unsize_screen_pos( &gr_screen.clip_width_unscaled, &gr_screen.clip_height_unscaled );
 	}
 
+	gr_screen.clip_aspect = i2fl(gr_screen.clip_width) / i2fl(gr_screen.clip_height);
+
 	// Setup the viewport for a reasonable viewing area
 	viewport.X = gr_screen.offset_x;
 	viewport.Y = gr_screen.offset_y;
@@ -2660,7 +2466,7 @@ void gr_d3d_reset_clip()
 	{
   		mprintf(( "GR_D3D_SET_CLIP: SetViewport failed.\n" ));
 	}
-	gr_d3d_set_proj_matrix((4.0f/9.0f) * 3.14159f * View_zoom,  gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height, Min_draw_distance, Max_draw_distance);
+	gr_d3d_set_proj_matrix(Proj_fov,  gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 }
 
 /**
@@ -3280,51 +3086,88 @@ void gr_d3d_aabitmap(int x, int y, bool resize, bool mirror)
  */
 void gr_d3d_string( int sx, int sy, char *s, bool resize)
 {
+	int width, spacing, letter, do_resize;
+	int x, y;
 
-//	mprintf(("<%s>\n", s));
-
-	if ( !Current_font || !(*s) )	{
+	if ( !Current_font || (*s == 0) )	{
 		return;
 	}
 
-	if ( !gr_screen.current_color.is_alphacolor ) return;
+	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
+		do_resize = 1;
+	} else {
+		do_resize = 0;
+	}
+
+	int clip_left = ((do_resize) ? gr_screen.clip_left_unscaled : gr_screen.clip_left);
+	int clip_right = ((do_resize) ? gr_screen.clip_right_unscaled : gr_screen.clip_right);
+	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
+	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
 
 	gr_set_bitmap(Current_font->bitmap_id);
 
-	// Get this now rather than inside the loop
-	int bw, bh;
-	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
-	gr_d3d_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+	x = sx;
+	y = sy;
 
-	float u_scale, v_scale;
-	if ( !gr_tcache_set( gr_screen.current_bitmap, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale ) )	{
-		// Couldn't set texture
-		return;
-	}
-
-	uint color;
-
-	if ( gr_screen.current_color.is_alphacolor )	{
-		if( GlobalD3DVars::d3d_caps.TextureOpCaps & D3DTEXOPCAPS_MODULATEALPHA_ADDCOLOR) {
-			color = D3DCOLOR_ARGB(
-				gr_screen.current_color.alpha,
-				gr_screen.current_color.red, 
-				gr_screen.current_color.green, 
-				gr_screen.current_color.blue);
-		} else {
-			int r = (gr_screen.current_color.red*gr_screen.current_color.alpha)/255;
-			int g = (gr_screen.current_color.green*gr_screen.current_color.alpha)/255;
-			int b = (gr_screen.current_color.blue*gr_screen.current_color.alpha)/255;
-		
-			color = D3DCOLOR_ARGB(255, r,g,b);
-		}
+	if (sx==0x8000) {			//centered
+		x = get_centered_x(s);
 	} else {
-		color = D3DCOLOR_XRGB(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+		x = sx;
 	}
+	
+	spacing = 0;
 
+	while (*s)	{
+		x += spacing;
 
-	d3d_set_initial_render_state();
-  	d3d_batch_string(sx, sy, s, bw, bh, u_scale, v_scale, color, resize);
+		while (*s== '\n' )	{
+			s++;
+			y += Current_font->h;
+			if (sx==0x8000) {			//centered
+				x = get_centered_x(s);
+			} else {
+				x = sx;
+			}
+		}
+		if (*s == 0 ) break;
+
+		letter = get_char_width(s[0],s[1],&width,&spacing);
+		s++;
+
+		//not in font, draw as space
+		if (letter<0)	{
+			continue;
+		}
+
+		int xd, yd, xc, yc;
+		int wc, hc;
+
+		// Check if this character is totally clipped
+		if ( x + width < clip_left ) continue;
+		if ( y + Current_font->h < clip_top ) continue;
+		if ( x > clip_right ) continue;
+		if ( y > clip_bottom ) continue;
+
+		xd = yd = 0;
+		if ( x < clip_left ) xd = clip_left - x;
+		if ( y < clip_top ) yd = clip_top - y;
+		xc = x+xd;
+		yc = y+yd;
+
+		wc = width - xd; hc = Current_font->h - yd;
+		if ( xc + wc > clip_right ) wc = clip_right - xc;
+		if ( yc + hc > clip_bottom ) hc = clip_bottom - yc;
+
+		if ( wc < 1 ) continue;
+		if ( hc < 1 ) continue;
+
+		int u = Current_font->bm_u[letter];
+		int v = Current_font->bm_v[letter];
+
+		d3d_set_initial_render_state();
+
+		gr_d3d_aabitmap_ex_internal( xc, yc, wc, hc, u+xd, v+yd, resize, false );
+	}
 }
 
 /**
@@ -4287,3 +4130,5 @@ void gr_d3d_draw_htl_line(vec3d *start, vec3d* end)
 
 void gr_d3d_draw_htl_sphere(float rad)
 {}
+
+#endif // !NO_DIRECT3D

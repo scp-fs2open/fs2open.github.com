@@ -10,13 +10,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.42 $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 1.43 $
+ * $Date: 2006-05-27 17:07:48 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.42  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 1.41  2006/04/12 01:10:35  taylor
  * some cleanup and slight reorg
  *  - remove special uv offsets for non-standard res, they were stupid anyway and don't actually fix the problem (which should actually be fixed now)
@@ -552,8 +568,6 @@ void gr_opengl_destroy_buffer(int idx)
 extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
-GLuint normalisationCubeMap;
-
 //start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
 void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int flags)
 {
@@ -782,15 +796,18 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 		opengl_switch_arb(render_pass, 1);
 
-		// as a crazy and sometimes useless hack, avoid using alpha when specmap has none
-		extern int bm_has_alpha_channel(int handle);
-		if ( Cmdline_alpha_env && bm_has_alpha_channel(SPECMAP) ) {
-			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_EXT );
-			glTexEnvf( GL_TEXTURE_ENV, GL_SOURCE0_RGB_EXT, GL_TEXTURE );
-			glTexEnvf( GL_TEXTURE_ENV, GL_OPERAND0_RGB_EXT, GL_SRC_ALPHA );
-		}
+		extern float Cmdline_spec_scale;
+		extern float Cmdline_env_scale;
 
-		gr_opengl_set_tex_env_scale(1.0f);
+		// as a crazy and sometimes useless hack, avoid using alpha when specmap has none
+		if ( Cmdline_alpha_env && bm_has_alpha_channel(SPECMAP) ) {
+			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
+			glTexEnvf( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
+			glTexEnvf( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_ALPHA );
+			glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, Cmdline_spec_scale);
+		} else {
+			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, Cmdline_spec_scale);
+		}
 
 		render_pass++; // bump!
 
@@ -812,7 +829,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 		opengl_set_modulate_tex_env();
 
-		gr_opengl_set_tex_env_scale(2.0f);
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, Cmdline_env_scale);
 
 		opengl_set_state( GL_current_tex_src, ALPHA_BLEND_ADDITIVE, GL_current_ztype);
 
@@ -866,12 +883,17 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 		glDisable(GL_TEXTURE_GEN_R);
 		glDisable(GL_TEXTURE_CUBE_MAP);
 
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
+
 		opengl_set_texture_target();
 
 		if (Cmdline_alpha_env) {
 			opengl_switch_arb(0, 1);  // assumes that the spec map was TEX0
-
-			glTexEnvf( GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR );
+			glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, 1.0f);
+			glTexEnvf(GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_COLOR);
+		} else {
+			opengl_switch_arb(0, 1);
+			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
 		}
 	}
 // -------- End 2nd PASS --------------------------------------------------------- //
@@ -921,6 +943,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 		vglUnlockArraysEXT();
 
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
+
 		opengl_reset_spec_mapping();
 	}
 // -------- End 3rd PASS --------------------------------------------------------- //
@@ -930,7 +954,6 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 	// make sure everthing gets turned back off, fixes hud issue with spec lighting and VBO crash in starfield
 	opengl_switch_arb(-1, 0);
-	opengl_reset_spec_mapping();
 	glDisable(GL_NORMALIZE);
 
 
