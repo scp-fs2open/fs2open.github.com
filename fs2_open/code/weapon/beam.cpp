@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.66 $
- * $Date: 2006-02-25 21:47:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.67 $
+ * $Date: 2006-05-27 16:45:11 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2006/02/25 21:47:19  Goober5000
+ * spelling
+ *
  * Revision 2.65  2006/01/15 18:56:45  taylor
  * another NULL VEC3D warning fix
  *
@@ -1755,10 +1758,10 @@ void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *shot, float shrink)
 		if (bwi->sections[s_idx].nframes > 1) {
 			cur_frame = ((timestamp() / bwi->sections[s_idx].fps) % bwi->sections[s_idx].nframes);
 		}
+
 		gr_set_bitmap(bwi->sections[s_idx].texture + cur_frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);
 
-		if(Cmdline_nohtl)g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT); 
-		else g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT); 
+		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT); 
 		// added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau			
 		// added TMAP_FLAG_RGB and TMAP_FLAG_GOURAUD so the beam would apear to fade along it's length-Bobboau
 		

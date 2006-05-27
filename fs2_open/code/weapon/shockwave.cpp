@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.25 $
- * $Date: 2006-03-18 09:25:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.26 $
+ * $Date: 2006-05-27 16:45:11 $
+ * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2006/03/18 09:25:55  wmcoolmon
+ * Allow "none" in $Shockwave Model to disable shockwave
+ *
  * Revision 2.24  2006/02/13 00:20:46  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -725,12 +728,14 @@ void shockwave_render(object *objp)
 
 		set_warp_globals( 1.0f, 1.0f, 1.0f, -1, -1.0f);
 	}else{
-		if(!Cmdline_nohtl)g3_transfer_vertex(&p, &sw->pos );
-		else g3_rotate_vertex(&p, &sw->pos );
+		if (!Cmdline_nohtl) {
+			g3_transfer_vertex(&p, &sw->pos);
+		} else {
+			g3_rotate_vertex(&p, &sw->pos);
+		}
 	
 		gr_set_bitmap(sw->current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
-		if(Cmdline_nohtl)g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angles.p), sw->radius, TMAP_FLAG_TEXTURED);	
-		else g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angles.p), sw->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);	
+		g3_draw_rotated_bitmap(&p, fl_radian(sw->rot_angles.p), sw->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);	
 	}
 }
 
