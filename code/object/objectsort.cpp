@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-05-13 07:09:25 $
+ * $Revision: 2.14 $
+ * $Date: 2006-05-27 16:59:05 $
  * $Author: taylor $
  *
  * Sorting code for objects.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/05/13 07:09:25  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 2.12  2006/04/12 22:23:41  taylor
  * compiler warning fixes to make GCC 4.1 shut the hell up
  *
@@ -432,7 +436,6 @@ void obj_render_all(void (*render_function)(object *objp), bool *draw_viewer_las
 
 //	if(!Cmdline_nohtl)gr_set_lighting(false,false);
 	// lasers have to be drawn without fog! - taylor
-	extern void batch_render_lasers();
 	batch_render_lasers();
 
 /*	Show spheres where wingmen should be flying

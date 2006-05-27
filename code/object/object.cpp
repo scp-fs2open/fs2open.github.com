@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.62 $
- * $Date: 2006-04-20 06:32:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.63 $
+ * $Date: 2006-05-27 16:59:05 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2006/04/20 06:32:22  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.61  2006/03/20 06:16:45  taylor
  * fix D3D/OGL test for asteroid rotations (I was far too excited about the result of this :()
  *
@@ -1535,16 +1538,16 @@ void obj_move_call_physics(object *objp, float frametime)
 				goto obj_maybe_fire;
 			}
 
-			if ( (objp->type == OBJ_ASTEROID) && (Model_caching && (!D3D_enabled && !OGL_enabled) ) )	{
-				// If we're doing model caching, don't rotate asteroids
-				vec3d tmp = objp->phys_info.rotvel;
-
-				objp->phys_info.rotvel = vmd_zero_vector;
+	//		if ( (objp->type == OBJ_ASTEROID) && (Model_caching && (!D3D_enabled && !OGL_enabled) ) )	{
+	//			// If we're doing model caching, don't rotate asteroids
+	//			vec3d tmp = objp->phys_info.rotvel;
+	//
+	//			objp->phys_info.rotvel = vmd_zero_vector;
+	//			physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
+	//			objp->phys_info.rotvel = tmp;
+	//		} else {
 				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
-				objp->phys_info.rotvel = tmp;
-			} else {
-				physics_sim(&objp->pos, &objp->orient, &objp->phys_info, frametime );		// simulate the physics
-			}
+	//		}
 
 			// This code seems to have no effect - DB 1/12/99
 			//if ( MULTIPLAYER_CLIENT && (objp != Player_obj) ){
