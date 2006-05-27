@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.30 $
- * $Date: 2006-05-13 06:59:48 $
+ * $Revision: 2.31 $
+ * $Date: 2006-05-27 17:13:22 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/05/13 06:59:48  taylor
+ * MVE player (audio only works with OpenAL builds!)
+ *
  * Revision 2.29  2005/12/28 22:17:01  taylor
  * deal with cf_find_file_location() changes
  * add a central parse_modular_table() function which anything can use
@@ -195,6 +198,7 @@ bool movie_play(char *name)
 
 	process_messages();
 
+#ifndef NO_DIRECT3D
 	// This is a bit of a hack but it works nicely
  	if(gr_screen.mode == GR_DIRECT3D)
 	{
@@ -203,6 +207,7 @@ bool movie_play(char *name)
 	  	GlobalD3DVars::lpD3DDevice->Present(NULL,NULL,NULL,NULL);
 		d3d_lost_device();
 	}
+#endif
 
 	// reset the gr_* stuff before trying to play a movie
 	gr_clear();
@@ -278,7 +283,11 @@ bool movie_play(char *name)
 				{
 					// Terminate movie playback early
 					CloseClip((HWND) os_get_window());
-			   		GlobalD3DVars::D3D_activate = 1;
+#ifndef NO_DIRECT3D
+					if (gr_screen.mode == GR_DIRECT3D) {
+					 	GlobalD3DVars::D3D_activate = 1;
+					}
+#endif
 					return true;
 				}
 			}
@@ -292,9 +301,12 @@ bool movie_play(char *name)
 	// We finished playing the movie
 	CloseClip((HWND) os_get_window());
 
+#ifndef NO_DIRECT3D
 	if (gr_screen.mode == GR_DIRECT3D) {
 	 	GlobalD3DVars::D3D_activate = 1;
 	}
+#endif
+
 #else
 
 	STUB_FUNCTION;
