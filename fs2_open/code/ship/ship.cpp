@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.334 $
- * $Date: 2006-05-20 02:03:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.335 $
+ * $Date: 2006-05-27 16:49:05 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.334  2006/05/20 02:03:01  Goober5000
+ * fix for Mantis #755, plus make the missionlog #defines uniform
+ * --Goober5000
+ *
  * Revision 2.333  2006/05/13 07:15:51  taylor
  * get rid of some wasteful math for gr_set_proj_matrix() calls
  * fix check that broke praise of kills for player
@@ -5786,8 +5790,7 @@ void ship_render(object * obj)
 			float render_amount;
 			fx_batcher.allocate(si->num_maneuvering);	//Act as if all thrusters are going.
 
-			
-			int last_bmap_id = -1;
+
 			for(int i = 0; i < si->num_maneuvering; i++)
 			{
 				man_thruster *mtp = &si->maneuvering[i];
@@ -12201,6 +12204,9 @@ void ship_assign_sound_all()
 {
 	object *objp;
 	int idx, has_sounds;
+
+	if ( !Sound_enabled )
+		return;
 
 	for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {		
 		if ( objp->type == OBJ_SHIP && Player_obj != objp) {
