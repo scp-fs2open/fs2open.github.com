@@ -9,11 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.139 $
- * $Date: 2006-05-27 17:17:57 $
+ * $Revision: 2.140 $
+ * $Date: 2006-05-27 17:18:56 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.139  2006/05/27 17:17:57  taylor
+ * few things:
+ *   - comment out that -fixbugs and -nocrash crap, that's just stupid
+ *   - move -env off of the experimental list (since it's working pretty well in OGL)
+ *   - remove -nobeampierce
+ *   - remove -max_subdivide (didn't do anything)
+ *   - remove -rt (didn't do anything, and per-coder cmdline options should never be in CVS)
+ *   - move -cache_bitmaps to game speed rather than graphics
+ *   - add options for env and spec map scaling for envmaps (temporary, to be removed before official 3.6.8)
+ *   - add option for new alpha blend mode so that artists can still test with it but not mess up normal users with the bad MediaVPs
+ *   - remove -d3d_particle (it's obsolete now)
+ *
  * Revision 2.138  2006/05/13 07:29:51  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -1066,7 +1078,7 @@ int Cmdline_noscalevid = 0;
 int Cmdline_nospec = 1;
 int Cmdline_pcx32 = 0;
 int Cmdline_no_emissive = 0;
-int Cmdline_alpha_alpha_blend = 1; // TEMPORARY - REMOVEME!!!
+int Cmdline_alpha_alpha_blend = 0; // TEMPORARY - REMOVEME!!!
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
