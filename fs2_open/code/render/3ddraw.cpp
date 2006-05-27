@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.51 $
- * $Date: 2006-04-20 06:32:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.52 $
+ * $Date: 2006-05-27 16:47:12 $
+ * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2006/04/20 06:32:23  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.50  2006/04/12 22:23:41  taylor
  * compiler warning fixes to make GCC 4.1 shut the hell up
  *
@@ -875,65 +878,9 @@ int g3_draw_sphere_ez(vec3d *pnt,float rad)
 1.41421356
 */
 
-int g3_draw_bitmap_3d_batched(vertex *pnt,int orient, float rad,uint tmap_flags, float depth)
-{
-
-//return 0;
-	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
-	vec3d PNT;
-	vm_vert2vec(pnt, &PNT);
-	vec3d p[4];
-	//unused variables that were there for some reason
-//	matrix m;
-//	vm_set_identity(&m);
-
-	float aspect = gr_screen.aspect*(float)gr_screen.clip_width/(float)gr_screen.clip_height;//seems that we have to corect for the aspect ratio
-
-	p[0].xyz.x = rad * aspect;	p[0].xyz.y = rad;	p[0].xyz.z = -depth;
-	p[1].xyz.x = -rad * aspect;	p[1].xyz.y = rad;	p[1].xyz.z = -depth;
-	p[2].xyz.x = -rad * aspect;	p[2].xyz.y = -rad;	p[2].xyz.z = -depth;
-	p[3].xyz.x = rad * aspect;	p[3].xyz.y = -rad;	p[3].xyz.z = -depth;
-
-	for(int i = 0; i<4; i++){
-		vec3d t = p[i];
-	  	vm_vec_unrotate(&p[i],&t,&View_matrix);//point it at the eye
-	  	vm_vec_add2(&p[i],&PNT);//move it
-	}		
-
-	vertex *P = batch_get_block(6, tmap_flags);
-
-	//move all the data from the vecs into the verts
-	g3_transfer_vertex(&P[0], &p[3]);
-	g3_transfer_vertex(&P[1], &p[2]);
-	g3_transfer_vertex(&P[2], &p[1]);
-	g3_transfer_vertex(&P[3], &p[0]);
- 
-	//set up the UV coords
-	P[0].u = 0.0f;	P[0].v = 0.0f;
-	P[1].u = 1.0f;	P[1].v = 0.0f;
-	P[2].u = 1.0f;	P[2].v = 1.0f;
-	P[3].u = 0.0f;	P[3].v = 1.0f;
-
-	memcpy(&P[4], &P[2], sizeof(vertex)); 
-	memcpy(&P[5], &P[0], sizeof(vertex)); 
-
-	/*
-	gr_set_cull(0);
-	g3_draw_poly(4,ptlist,tmap_flags);
-	gr_set_cull(1);
-	*/
-
-	return 0;
-}
-
 /*
 int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float depth)
 {
-	// Redirect for batching!
-	if(Cmdline_batch_3dunlit && tmap_flags & TMAP_HTL_3DU_BATCH)
-	{
-		return g3_draw_bitmap_3d_batched(pnt,orient, rad,tmap_flags, depth);
-	}
 
 //return 0;
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
@@ -980,7 +927,8 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 */
 
 //alternate method
-int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float depth){
+int g3_draw_bitmap_3d(vertex *pnt, int orient, float rad, uint tmap_flags, float depth)
+{
 //return 0;
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
 
@@ -1029,11 +977,35 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 	g3_transfer_vertex(&P[2], &p[1]);
 	g3_transfer_vertex(&P[3], &p[0]);
 
-	//set up the UV coords
-	P[0].u = 0.0f;	P[0].v = 0.0f;
-	P[1].u = 1.0f;	P[1].v = 0.0f;
-	P[2].u = 1.0f;	P[2].v = 1.0f;
-	P[3].u = 0.0f;	P[3].v = 1.0f;
+	// set up the UV coords
+	if ( orient & 1 ) {
+		P[0].u = 1.0f;
+		P[1].u = 0.0f;
+		P[2].u = 0.0f;
+		P[3].u = 1.0f;
+	} else {
+		P[0].u = 0.0f;
+		P[1].u = 1.0f;
+		P[2].u = 1.0f;
+		P[3].u = 0.0f;
+	}
+
+	if ( orient & 2 ) {
+		P[0].v = 1.0f;
+		P[1].v = 1.0f;
+		P[2].v = 0.0f;
+		P[3].v = 0.0f;
+	} else {
+		P[0].v = 0.0f;
+		P[1].v = 0.0f;
+		P[2].v = 1.0f;
+		P[3].v = 1.0f;
+	}
+
+//	P[0].u = 0.0f;	P[0].v = 0.0f;
+//	P[1].u = 1.0f;	P[1].v = 0.0f;
+//	P[2].u = 1.0f;	P[2].v = 1.0f;
+//	P[3].u = 0.0f;	P[3].v = 1.0f;
 
 	gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags);
@@ -1042,7 +1014,8 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 	return 0;
 }
 
-int g3_draw_bitmap_3d_v(vertex *pnt,int orient, float rad,uint tmap_flags, float depth, float c){
+int g3_draw_bitmap_3d_v(vertex *pnt, int orient, float rad, uint tmap_flags, float depth, float c)
+{
 //return 0;
 //	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and hieght rad
 	vec3d PNT;
@@ -1093,7 +1066,8 @@ int g3_draw_bitmap_3d_v(vertex *pnt,int orient, float rad,uint tmap_flags, float
 	return 0;
 }
 
-int g3_draw_bitmap_3d_volume(vertex *pnt,int orient, float rad,uint tmap_flags, float depth, int resolution){
+int g3_draw_bitmap_3d_volume(vertex *pnt, int orient, float rad, uint tmap_flags, float depth, int resolution)
+{
 	float s = 1.0f;
 	float res = float(resolution);
 //	float total = 0.0f;
@@ -1110,21 +1084,11 @@ int g3_draw_bitmap_3d_volume(vertex *pnt,int orient, float rad,uint tmap_flags, 
 //draws a bitmap with the specified 3d width & height 
 //returns 1 if off screen, 0 if drew
 // Orient
-int g3_draw_bitmap(vertex *pnt,int orient, float rad,uint tmap_flags, float depth)
+int g3_draw_bitmap(vertex *pnt, int orient, float rad, uint tmap_flags, float depth)
 {
-	if(!Cmdline_nohtl) 
-	{
-		bool gr_d3d_particle_set(vertex *pos, int bitmap_id, float size);
-
-#ifdef _WIN32
-		if((tmap_flags & TMAP_HTL_PARTICLE) && gr_screen.mode == GR_DIRECT3D && Cmdline_d3d_particle)
-			if(gr_d3d_particle_set(pnt, gr_screen.current_bitmap, rad) == true)
-				return 0;
-#endif
-
-		if(tmap_flags & TMAP_HTL_3D_UNLIT)
-		//	return g3_draw_bitmap_3d_volume(pnt, orient, rad, tmap_flags, depth, 10);// just playing with an idea for makeing glows on thrusters less... not... good
-			return g3_draw_bitmap_3d(pnt, orient, rad, tmap_flags, depth);
+	if ( !Cmdline_nohtl && (tmap_flags & TMAP_HTL_3D_UNLIT) ) {
+	//	return g3_draw_bitmap_3d_volume(pnt, orient, rad, tmap_flags, depth, 10);// just playing with an idea for makeing glows on thrusters less... not... good
+		return g3_draw_bitmap_3d(pnt, orient, rad, tmap_flags, depth);
 	}
 
 	vertex va, vb;

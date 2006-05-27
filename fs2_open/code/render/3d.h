@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.21 $
- * $Date: 2006-05-13 07:09:25 $
+ * $Revision: 2.22 $
+ * $Date: 2006-05-27 16:47:12 $
  * $Author: taylor $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/05/13 07:09:25  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 2.20  2006/04/20 06:32:23  Goober5000
  * proper capitalization according to Volition
  *
@@ -185,6 +189,7 @@
 #include "math/vecmat.h"
 #include "graphics/tmapper.h"
 #include "graphics/2d.h"
+#include "graphics/grbatch.h"
 
 //flags for point structure
 #define PF_PROJECTED 	 1	//has been projected, so sx,sy valid
