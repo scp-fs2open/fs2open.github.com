@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.179  2006/04/20 06:32:30  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.178  2006/02/25 21:47:19  Goober5000
  * spelling
  *
@@ -1594,12 +1597,6 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_MR_NO_LIGHTING;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
-
-		// there might be a command line option to disable beam shield piercing
-		if (Cmdline_beams_no_pierce_shields)
-		{
-			weaponp->wi_flags2 &= ~WIF2_PIERCE_SHIELDS;
-		}
 	}	
 
 	// set default tech room status - Goober5000
@@ -3793,7 +3790,6 @@ void weapon_level_init()
 }
 
 MONITOR( NumWeaponsRend );	
-float add_laser(int texture, vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b);
 
 float weapon_glow_scale_f = 2.3f;
 float weapon_glow_scale_r = 2.3f;
@@ -3850,7 +3846,6 @@ void weapon_render(object *obj)
 				} else {
 					frame = 0;
 				}
-			//	gr_set_bitmap(wip->laser_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
 
 				if (wip->wi_flags2 & WIF2_TRANSPARENT) {
 					alpha = fl2i(wp->alpha_current * 255.0f);
@@ -3859,8 +3854,8 @@ void weapon_render(object *obj)
 				vec3d headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
-			//	if ( g3_draw_laser(&headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT) ) {
-				if(	add_laser(wip->laser_bitmap + frame, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha)){
+
+				if ( batch_add_laser(wip->laser_bitmap + frame, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha) ) {
 					wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
 				}
 			}			
@@ -3875,20 +3870,16 @@ void weapon_render(object *obj)
 
                 // *Tail point "getting bigger" as well as headpoint isn't being taken into consideration, so
                 //  it caused uneven glow between the head and tail, which really shows in big lasers. So...fixed!    -Et1
-
 				vec3d headp2, tailp;
 
 				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
-
                 vm_vec_scale_add( &tailp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * ( 1 -  weapon_glow_scale_l ) );
-
 
 				if(wip->laser_glow_bitmap_nframes > 1){//set the proper bitmap
 					frame = (timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
 				} else {
 					frame = 0;
 				}
-			//	gr_set_bitmap(wip->laser_glow_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, weapon_glow_alpha);
 
 				if (wip->wi_flags2 & WIF2_TRANSPARENT) {
 					alpha = fl2i(wp->alpha_current * 255.0f);
@@ -3900,9 +3891,7 @@ void weapon_render(object *obj)
 					alpha = fl2i(weapon_glow_alpha * 255.0f);
 				}
 
-			//	g3_draw_laser_rgb(&headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, c.red, c.green, c.blue,  TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT  | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT);
-			//	add_laser(wip->laser_glow_bitmap + frame, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, fl2i(c.red*weapon_glow_alpha), fl2i(c.green*weapon_glow_alpha), fl2i(c.blue*weapon_glow_alpha));
-				add_laser(wip->laser_glow_bitmap + frame, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
+				batch_add_laser(wip->laser_glow_bitmap + frame, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
 			}					
 			break;
 		}
