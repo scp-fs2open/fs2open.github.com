@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.7 $
- * $Date: 2006-01-30 06:31:30 $
+ * $Revision: 2.8 $
+ * $Date: 2006-05-27 16:42:16 $
  * $Author: taylor $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2006/01/30 06:31:30  taylor
+ * dynamic starfield bitmaps (if the thought it was freaky before, just take a look at the new and "improved" version ;))
+ *
  * Revision 2.6  2005/07/02 19:36:04  taylor
  * some supernova fixing
  *
@@ -201,12 +204,12 @@ void supernova_do_particles()
 			vm_vec_scale(&whee.vel, 30.0f);						
 			vm_vec_add2(&whee.vel, &Player_obj->phys_info.vel);			
 			whee.normal = norm;			
-			particle_emit(&whee, PARTICLE_FIRE, (uint)-1);
+			particle_emit(&whee, PARTICLE_FIRE, 0);
 
 			vm_vec_unrotate(&b, &tb, &Player_obj->orient);
 			vm_vec_add2(&b, &Player_obj->pos);
 			whee.pos = b;			
-			particle_emit(&whee, PARTICLE_FIRE, (uint)-1);
+			particle_emit(&whee, PARTICLE_FIRE, 0);
 		}
 	}
 }
