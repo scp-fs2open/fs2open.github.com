@@ -702,7 +702,8 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, int bit
 
 	ubyte c_type = BM_TYPE_NONE;
 
-	if(bm_bitmaps[bitmapnum].type == BMP_FLAG_RENDER_TARGET_DYNAMIC || bm_bitmaps[bitmapnum].type == BMP_FLAG_RENDER_TARGET_STATIC)return true;
+	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_RENDER_TARGET_DYNAMIC) || (bm_bitmaps[bitmapnum].type == BM_TYPE_RENDER_TARGET_STATIC) )
+		return true;
 
 	if (Is_standalone) {
 		true_bpp = 8;
