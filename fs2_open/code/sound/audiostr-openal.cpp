@@ -1,12 +1,21 @@
 /*
  * $Logfile: $
- * $Revision: 1.26 $
- * $Date: 2006-05-27 16:39:40 $
- * $Author: taylor $
+ * $Revision: 1.27 $
+ * $Date: 2006-05-29 02:02:17 $
+ * $Author: Goober5000 $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2006/05/27 16:39:40  taylor
+ * remove non-Windows timeSetEvent() functions
+ * make PDWORD and LPDWORD int instead of long (64-bit issue) (thanks Spike)
+ * fix 64-bit ptr issue with OpenAL audio streaming code (thanks Spike)
+ * add start of device enumberation for OpenAL 1.1 (it just lists available devices now)
+ * make sure we open the default OpenAL 1.1 device under Windows
+ * comment out blank listener stuff, this may have been crashing under OS X
+ * add support for AL_BYTE_OFFSET in OpenAL 1.1 for buffer positioning under Windows
+ *
  * Revision 1.25  2006/05/13 07:11:46  taylor
  * make sure sound buffers are valid before trying to delete them (was causing crash issues on Windows and OS X)
  *
@@ -298,7 +307,7 @@ public:
     BOOL Create (UINT nPeriod, UINT nRes, ptr_u dwUser, TIMERCALLBACK pfnCallback);
 protected:
 #ifndef SCP_UNIX
-    static void CALLBACK TimeProc(UINT uID, UINT uMsg, ptr_u dwUser, DWORD dw1, DWORD dw2);
+    static void CALLBACK TimeProc(UINT uID, UINT uMsg, DWORD dwUser, DWORD dw1, DWORD dw2);
 #else
     static uint TimeProc(uint interval, void *param);
 #endif
