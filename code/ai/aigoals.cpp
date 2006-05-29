@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.25 $
- * $Date: 2006-05-20 02:03:00 $
+ * $Revision: 1.26 $
+ * $Date: 2006-05-29 19:14:30 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2006/05/20 02:03:00  Goober5000
+ * fix for Mantis #755, plus make the missionlog #defines uniform
+ * --Goober5000
+ *
  * Revision 1.24  2006/04/20 06:32:00  Goober5000
  * proper capitalization according to Volition
  *
@@ -781,8 +785,7 @@ char *Ai_goal_text(int goal)
 	return NULL;
 };
 
-// function to maybe add the form on my wing goal for a player's starting wing.  Called from below and when a
-// player wing arrives.
+// function to maybe add the form on my wing goal for a player's starting wing.  Called when a player wing arrives.
 // Goober5000 - made more generic
 void ai_maybe_add_form_goal( wing *wingp )
 {
@@ -823,6 +826,10 @@ void ai_post_process_mission()
 	object *objp;
 	int i;
 
+/*
+	// Goober5000 - considering that this is also done in parse_wing_create_ships,
+	// it's redundant (and possibly premature for some wings) here
+
 	// Check ships in player starting wings.  Those ships should follow these rules:
 	// (1) if they have no orders, they should get a form on my wing order
 	// (2) if they have an order, they are free to act on it.
@@ -836,19 +843,18 @@ void ai_post_process_mission()
 			ai_maybe_add_form_goal( &Wings[i] );
 		}
 
-/*
-		for ( i = 0; i < 1; i++ ) {	//	MK, 5/9/98: Used to iterate through MAX_STARTING_WINGS, but this was too many ships forming on player.
-			if ( Starting_wings[i] != -1 ) {
-				wing *wingp;
-
-				wingp = &Wings[Starting_wings[i]];
-
-				ai_maybe_add_form_goal( wingp );
-
-			}
-		}
-*/
+//		for ( i = 0; i < 1; i++ ) {	//	MK, 5/9/98: Used to iterate through MAX_STARTING_WINGS, but this was too many ships forming on player.
+//			if ( Starting_wings[i] != -1 ) {
+//				wing *wingp;
+//
+//				wingp = &Wings[Starting_wings[i]];
+//
+//				ai_maybe_add_form_goal( wingp );
+//
+//			}
+//		}
 	}
+*/
 
 	// for every valid ship object, call process_mission_orders to be sure that ships start the
 	// mission following the orders in the mission file right away instead of waiting N seconds
