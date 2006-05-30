@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.39 $
- * $Date: 2006-05-21 22:57:30 $
+ * $Revision: 2.40 $
+ * $Date: 2006-05-30 02:13:22 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2006/05/21 22:57:30  Goober5000
+ * fix for Mantis #750
+ * --Goober5000
+ *
  * Revision 2.38  2006/02/15 07:30:54  wmcoolmon
  * Dodge an Assert
  *
@@ -2032,6 +2036,10 @@ void event_music_reset_choices()
 	event_music_set_score(SCORE_DEBRIEF_FAIL, "Failure");
 	//Mission_music[SCORE_DEBRIEF_SUCCESS] = MUSIC_DEBRIEF_SUCCESS_1;
 	//Mission_music[SCORE_DEBRIEF_FAIL] = MUSIC_DEBRIEF_FAIL_1;
+
+	// Goober5000
+	strcpy(The_mission.substitute_briefing_music_name, "None");
+	strcpy(The_mission.substitute_event_music_name, "None");
 }
 
 void event_music_hostile_ship_destroyed()

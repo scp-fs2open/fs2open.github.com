@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.6 $
- * $Date: 2006-05-30 01:36:24 $
+ * $Revision: 1.7 $
+ * $Date: 2006-05-30 02:13:22 $
  * $Author: Goober5000 $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/05/30 01:36:24  Goober5000
+ * add AI Profile box to FRED
+ * --Goober5000
+ *
  * Revision 1.5  2006/05/14 15:57:43  karajorma
  * Checkboxes for locking primary and secondary weapons and for disabling builtin messages from command and individual pilots
  *
@@ -274,6 +278,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_loading_1024 = _T("");
 	m_ai_profile = -1;
 	m_event_music = -1;
+	m_substitute_event_music = _T("");
 	m_full_war = FALSE;
 	m_red_alert = FALSE;
 	m_scramble = FALSE;
@@ -313,6 +318,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_LOADING_SCREEN1024, m_loading_1024);
 	DDX_CBIndex(pDX, IDC_AI_PROFILE, m_ai_profile);
 	DDX_CBIndex(pDX, IDC_EVENT_MUSIC, m_event_music);
+	DDX_Text(pDX, IDC_SUBSTITUTE_EVENT_MUSIC, m_substitute_event_music);
 	DDX_Check(pDX, IDC_FULL_WAR, m_full_war);
 	DDX_Check(pDX, IDC_RED_ALERT, m_red_alert);
 	DDX_Check(pDX, IDC_SCRAMBLE, m_scramble);
@@ -358,6 +364,10 @@ END_MESSAGE_MAP()
 
 int CMissionNotesDlg::query_modified()
 {
+	// the below is massively out of date
+	return 1;
+
+	/*
 	if (m_mission_title != m_mission_title_orig){
 		return 1;
 	}
@@ -378,6 +388,7 @@ int CMissionNotesDlg::query_modified()
 	}
 
 	return 0;
+	*/
 }
 
 void CMissionNotesDlg::OnOK()
@@ -542,6 +553,8 @@ void CMissionNotesDlg::OnOK()
 	The_mission.ai_profile = &Ai_profiles[m_ai_profile];
 
 	MODIFY(Current_soundtrack_num, m_event_music - 1);
+	strcpy(The_mission.substitute_event_music_name, m_substitute_event_music);
+
 	MODIFY(Mission_all_attack, m_full_war);
 	if (query_modified()){
 		set_modified();
@@ -611,6 +624,12 @@ BOOL CMissionNotesDlg::OnInitDialog()
 		box->AddString(Soundtracks[i].name);		
 	}
 
+	box = (CComboBox *) GetDlgItem(IDC_SUBSTITUTE_EVENT_MUSIC);
+	box->AddString("None");
+	for (i=0; i<Num_soundtracks; i++){
+		box->AddString(Soundtracks[i].name);		
+	}
+
 	// squad info
 	if(strlen(The_mission.squad_name) > 0){
 		m_squad_name = _T(The_mission.squad_name);
@@ -623,6 +642,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_type = The_mission.game_type;
 	m_ai_profile = (The_mission.ai_profile - Ai_profiles);
 	m_event_music = Current_soundtrack_num + 1;
+	m_substitute_event_music = The_mission.substitute_event_music_name;
 	m_full_war = Mission_all_attack;
 
 	// set up the game type checkboxes accoring to m_type
