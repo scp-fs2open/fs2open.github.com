@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.h $
- * $Revision: 1.2 $
- * $Date: 2006-04-05 16:11:44 $
- * $Author: karajorma $
+ * $Revision: 1.3 $
+ * $Date: 2006-05-30 01:36:24 $
+ * $Author: Goober5000 $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/04/05 16:11:44  karajorma
+ * Changes to support the new Enable/Disable-Builtin-Messages SEXP
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -188,7 +191,8 @@ public:
 	CString	m_squad_name;
 	CString m_loading_640;
 	CString m_loading_1024;
-	int		m_music;
+	int		m_ai_profile;
+	int		m_event_music;
 	BOOL		m_full_war;
 	BOOL		m_red_alert;
 	BOOL		m_scramble;

@@ -541,12 +541,12 @@
 #define IDC_GUN2                        1203
 #define IDC_DOCKEE_POINT                1203
 #define IDC_TEAM                        1203
-#define IDC_MUSIC                       1203
+#define IDC_EVENT_MUSIC                 1203
 #define IDC_NEBPATTERN                  1203
 #define IDC_SHIP_PERSONA                1203
 #define IDC_NEBCOLOR                    1204
-#define IDC_SUBSTITUTE_MUSIC            1205
-#define IDC_MUSIC3                      1207
+#define IDC_SUBSTITUTE_EVENT_MUSIC      1205
+#define IDC_AI_PROFILE                  1207
 #define IDC_LIST3                       1208
 #define IDC_FILELIST                    1208
 #define IDC_YES_MESSAGE_LIST            1208
@@ -1020,6 +1020,7 @@
 #define IDC_DISABLE_BUILTIN_COMMAND_MSGS 1580
 #define IDC_PRIMARIES_LOCKED            1581
 #define IDC_SECONDARIES_LOCKED          1582
+#define IDC_SUBSTITUTE_BRIEFING_MUSIC   1582
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1308,7 +1309,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        269
 #define _APS_NEXT_COMMAND_VALUE         33090
-#define _APS_NEXT_CONTROL_VALUE         1582
+#define _APS_NEXT_CONTROL_VALUE         1583
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
