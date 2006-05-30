@@ -100,6 +100,7 @@
 #define IDD_SPECIAL_HITPOINTS           264
 #define IDD_SET_GLOBAL_SHIP_FLAGS       266
 #define IDD_CUSTOM_WING_NAMES           267
+#define IDD_RESTRICT_PATHS              270
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -1021,6 +1022,8 @@
 #define IDC_PRIMARIES_LOCKED            1581
 #define IDC_SECONDARIES_LOCKED          1582
 #define IDC_SUBSTITUTE_BRIEFING_MUSIC   1582
+#define IDC_RESTRICT_PATHS_LABEL        1584
+#define IDC_PATH_LIST                   1585
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1307,9 +1310,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        269
+#define _APS_NEXT_RESOURCE_VALUE        271
 #define _APS_NEXT_COMMAND_VALUE         33090
-#define _APS_NEXT_CONTROL_VALUE         1583
+#define _APS_NEXT_CONTROL_VALUE         1586
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
