@@ -2,13 +2,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.171 $
- * $Date: 2006-05-27 17:07:48 $
+ * $Revision: 2.172 $
+ * $Date: 2006-05-30 03:53:52 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.171  2006/05/27 17:07:48  taylor
+ * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
+ * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
+ * clean up TMAP flags
+ * fix a couple of minor OpenGL state change issues with spec and env map rendering
+ * make sure we build again for OS X (OGL extension functions work a little different there)
+ * render targets always need to be power-of-2 to avoid incomplete buffer issues in the code
+ * when we disable culling in opengl_3dunlit be sure that we re-enable it on exit of function
+ * re-fix screenshots
+ * add true alpha blending support (with cmdline for now since the artwork has the catch up)
+ * draw lines with float positioning, to be more accurate with resizing on non-standard resolutions
+ * don't load cubemaps from file for D3D, not sure how to do it anyway
+ * update geometry batcher code, memory fixes, dynamic stuff, basic fixage, etc.
+ *
  * Revision 2.170  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -1410,6 +1424,12 @@ void opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type z
 		}
 
 		GL_current_alpha_blend = ab;
+
+		if (GL_current_alpha_blend == ALPHA_BLEND_NONE) {
+			glDisable(GL_BLEND);
+		} else {
+			glEnable(GL_BLEND);
+		}
 	}
 
 	if (zt != GL_current_ztype) {
@@ -1537,8 +1557,6 @@ void gr_opengl_flip()
 		// gr_opengl_clip_cursor(0);  // mouse grab, see opengl_activate
 	}
 
-	glClear(GL_DEPTH_BUFFER_BIT);
-
 #ifndef NDEBUG
 	int ic = opengl_check_for_errors();
 
@@ -1663,107 +1681,6 @@ void gr_opengl_set_shader( shader * shade )
 		gr_create_shader( &gr_screen.current_shader, 0.0f, 0.0f, 0.0f, 0.0f );
 	}
 }
-//WMC - removed for gr_rect in 2d.cpp
-/*
-void gr_opengl_rect_internal(int x, int y, int w, int h, int r, int g, int b, int a)
-{
-	int saved_zbuf;
-	vertex v[4];
-	vertex *verts[4] = {&v[0], &v[1], &v[2], &v[3]};
-
-	memset(v,0,sizeof(vertex)*4);
-	saved_zbuf = gr_zbuffer_get();
-	
-	// start the frame, no zbuffering, no culling
-	if (!Fred_running)
-		g3_start_frame(1);
-
-	gr_zbuffer_set(GR_ZBUFF_NONE);		
-	gr_set_cull(0);		
-
-	// stuff coords		
-	v[0].sx = i2fl(x);
-	v[0].sy = i2fl(y);
-	v[0].sw = 0.0f;
-	v[0].u = 0.0f;
-	v[0].v = 0.0f;
-	v[0].flags = PF_PROJECTED;
-	v[0].codes = 0;
-	v[0].r = (ubyte)r;
-	v[0].g = (ubyte)g;
-	v[0].b = (ubyte)b;
-	v[0].a = (ubyte)a;
-
-	v[1].sx = i2fl(x + w);
-	v[1].sy = i2fl(y);	
-	v[1].sw = 0.0f;
-	v[1].u = 0.0f;
-	v[1].v = 0.0f;
-	v[1].flags = PF_PROJECTED;
-	v[1].codes = 0;
-	v[1].r = (ubyte)r;
-	v[1].g = (ubyte)g;
-	v[1].b = (ubyte)b;
-	v[1].a = (ubyte)a;
-
-	v[2].sx = i2fl(x + w);
-	v[2].sy = i2fl(y + h);
-	v[2].sw = 0.0f;
-	v[2].u = 0.0f;
-	v[2].v = 0.0f;
-	v[2].flags = PF_PROJECTED;
-	v[2].codes = 0;
-	v[2].r = (ubyte)r;
-	v[2].g = (ubyte)g;
-	v[2].b = (ubyte)b;
-	v[2].a = (ubyte)a;
-
-	v[3].sx = i2fl(x);
-	v[3].sy = i2fl(y + h);
-	v[3].sw = 0.0f;
-	v[3].u = 0.0f;
-	v[3].v = 0.0f;
-	v[3].flags = PF_PROJECTED;
-	v[3].codes = 0;				
-	v[3].r = (ubyte)r;
-	v[3].g = (ubyte)g;
-	v[3].b = (ubyte)b;
-	v[3].a = (ubyte)a;
-
-	// draw the polys
-	g3_draw_poly_constant_sw(4, verts, TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_ALPHA, 0.1f);		
-
-	if (!Fred_running)
-		g3_end_frame();
-
-
-	// restore zbuffer and culling
-	gr_zbuffer_set(saved_zbuf);
-	gr_set_cull(1);	
-}
-
-void gr_opengl_rect(int x,int y,int w,int h,bool resize)
-{
-	gr_opengl_rect_internal(x, y, w, h, gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-}
-*/
-/*
-void gr_opengl_shade(int x,int y,int w,int h)
-{
-	int r,g,b,a;
-
-	r = fl2i(gr_screen.current_shader.r);
-	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
-	g = fl2i(gr_screen.current_shader.g);
-	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
-	b = fl2i(gr_screen.current_shader.b);
-	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
-	a = fl2i(gr_screen.current_shader.c);
-	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;
-
-	g3_draw_2d_rect(x,y,w,h,r,g,b,a);
-}
-*/
 
 void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror)
 {
@@ -3379,11 +3296,14 @@ int gr_opengl_zbuffer_set(int mode)
 
 	gr_zbuffering_mode = mode;
 
-	if (gr_zbuffering_mode == GR_ZBUFF_NONE )      {
+	if (gr_zbuffering_mode == GR_ZBUFF_NONE ) {
 		gr_zbuffering = 0;
+		glDisable(GL_DEPTH_TEST);
 	} else {
 		gr_zbuffering = 1;
+		glEnable(GL_DEPTH_TEST);
 	}
+
 	return tmp;
 }
 
@@ -3393,13 +3313,15 @@ void gr_opengl_zbuffer_clear(int mode)
 		gr_zbuffering = 1;
 		gr_zbuffering_mode = GR_ZBUFF_FULL;
 		gr_global_zbuffering = 1;
-		
+
 		opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
-		glClear ( GL_DEPTH_BUFFER_BIT );
+		glEnable(GL_DEPTH_TEST);
+		glClear(GL_DEPTH_BUFFER_BIT);
 	} else {
 		gr_zbuffering = 0;
 		gr_zbuffering_mode = GR_ZBUFF_NONE;
 		gr_global_zbuffering = 0;
+		glDisable(GL_DEPTH_TEST);
 	}
 }
 
@@ -4657,22 +4579,21 @@ void gr_opengl_init(int reinit)
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-	glOrtho(0, gr_screen.max_w, gr_screen.max_h,0, 0.0, 1.0);
+	glOrtho(0, gr_screen.max_w, gr_screen.max_h,0, -1.0, 1.0);
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
-	
+
 	glShadeModel(GL_SMOOTH);
-	glEnable(GL_DITHER);
+
 	glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 	glHint(GL_FOG_HINT, GL_NICEST);
-		
-	glEnable(GL_DEPTH_TEST);
+
+	glDisable(GL_DEPTH_TEST);
+
 	glEnable(GL_BLEND);
 
 	glEnable(GL_TEXTURE_2D);
-
-//	glDisable(GL_MULTISAMPLE_ARB);
 
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
