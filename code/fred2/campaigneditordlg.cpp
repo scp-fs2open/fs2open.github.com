@@ -134,6 +134,7 @@ BEGIN_MESSAGE_MAP(campaign_editor, CFormView)
 	ON_BN_CLICKED(IDC_LOOP_BRIEF_BROWSE, OnBrowseLoopAni)
 	ON_BN_CLICKED(IDC_LOOP_BRIEF_SOUND_BROWSE, OnBrowseLoopSound)
 	ON_EN_CHANGE(IDC_MAIN_HALL, OnChangeMainHall)
+	ON_EN_CHANGE(IDC_DEBRIEFING_PERSONA, OnChangeDebriefingPersona)
 	ON_BN_CLICKED(IDC_CUSTOM_TECH_DB, OnCustomTechDB)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -279,11 +280,13 @@ void campaign_editor::initialize( int init_files )
 
 void campaign_editor::mission_selected(int num)
 {
-	CEdit *bc_dialog, *bc_hall;
+	CEdit *bc_dialog, *bc_hall, *bc_persona;
 	char mainhalltext[10];
+	char personatext[10];
 
 	bc_dialog = (CEdit *) GetDlgItem(IDC_BRIEFING_CUTSCENE);
 	bc_hall = (CEdit *) GetDlgItem(IDC_MAIN_HALL);
+	bc_persona = (CEdit *) GetDlgItem(IDC_DEBRIEFING_PERSONA);
 
 	// clear out the text for the briefing cutscene, and put in new text if specified
 	bc_dialog->SetWindowText("");
@@ -293,6 +296,10 @@ void campaign_editor::mission_selected(int num)
 	// new main hall stuff
 	sprintf(mainhalltext, "%d", Campaign.missions[num].main_hall);
 	bc_hall->SetWindowText(CString(mainhalltext));
+
+	// new debriefing persona stuff
+	sprintf(personatext, "%d", Campaign.missions[num].debrief_persona_index);
+	bc_persona->SetWindowText(CString(personatext));
 }
 
 void campaign_editor::update()
@@ -894,6 +901,24 @@ void campaign_editor::OnChangeMainHall()
 		if (hall < 0) hall = 0;
 
 		Campaign.missions[Cur_campaign_mission].main_hall = (ubyte) hall;
+	}
+}
+
+void campaign_editor::OnChangeDebriefingPersona()
+{
+	CString str;
+	int persona;
+
+	UpdateData(TRUE);
+
+	if (Cur_campaign_mission >= 0)
+	{
+		GetDlgItem(IDC_DEBRIEFING_PERSONA)->GetWindowText(str);
+		persona = atoi(str);
+
+		if (persona < 0) persona = 0;
+
+		Campaign.missions[Cur_campaign_mission].debrief_persona_index = persona;
 	}
 }
 

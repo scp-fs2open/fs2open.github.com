@@ -108,6 +108,7 @@ protected:
 	afx_msg void OnBrowseLoopAni();
 	afx_msg void OnBrowseLoopSound();
 	afx_msg void OnChangeMainHall();
+	afx_msg void OnChangeDebriefingPersona();
 	afx_msg void OnCustomTechDB();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()

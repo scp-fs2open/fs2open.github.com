@@ -545,6 +545,8 @@
 #define IDC_NEBPATTERN                  1203
 #define IDC_SHIP_PERSONA                1203
 #define IDC_NEBCOLOR                    1204
+#define IDC_SUBSTITUTE_MUSIC            1205
+#define IDC_MUSIC3                      1207
 #define IDC_LIST3                       1208
 #define IDC_FILELIST                    1208
 #define IDC_YES_MESSAGE_LIST            1208
@@ -681,6 +683,7 @@
 #define IDC_NAME                        1322
 #define IDC_REINFORCEMENT               1323
 #define IDC_MAIN_HALL                   1323
+#define IDC_DEBRIEFING_PERSONA          1324
 #define IDC_DOCK1                       1327
 #define IDC_INNER_MIN_X                 1327
 #define IDC_DOCK2                       1328
@@ -971,7 +974,9 @@
 #define IDC_NEW_TEXTURE                 1551
 #define IDC_TEXTURES                    1552
 #define IDC_OLD_TEXTURE_LIST            1553
+#define IDC_RESTRICT_ARRIVAL            1553
 #define IDC_ENABLE_SPECIAL_HITPOINTS    1554
+#define IDC_RESTRICT_DEPARTURE          1554
 #define IDC_SPECIAL_SHIELDS             1555
 #define IDC_SPECIAL_HULL                1556
 #define IDC_LOADING_SCREEN_BUTTON1024   1557
