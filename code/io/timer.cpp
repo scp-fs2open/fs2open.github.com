@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Timer.cpp $
- * $Revision: 2.14 $
- * $Date: 2006-03-30 04:15:20 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2006-05-30 03:55:09 $
+ * $Author: taylor $
  *
  * Include file for timer stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/03/30 04:15:20  Goober5000
+ * hehe, grammar
+ * --Goober5000
+ *
  * Revision 2.13  2005/10/12 05:45:35  taylor
  * new timer code that shouldn't suffer from multi-cpu (or dual core) systems
  * clean out all old Windows timer code since that was just a mess at this point
@@ -184,6 +188,8 @@ void timer_init()
 static uint timer_get()
 {
 #ifdef _WIN32
+	ENTER_CRITICAL_SECTION( Timer_lock );
+
 	longlong time_now;
 
 	time_now = timeGetTime();
@@ -195,6 +201,8 @@ static uint timer_get()
 	}
 
 	Timer_last_value = time_now;
+
+	LEAVE_CRITICAL_SECTION( Timer_lock );
 
 	return (uint)(time_now - Timer_base);
 #else
