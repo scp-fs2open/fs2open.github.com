@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.13 $
- * $Date: 2006-05-14 15:52:42 $
- * $Author: karajorma $
+ * $Revision: 1.14 $
+ * $Date: 2006-05-30 01:36:24 $
+ * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2006/05/14 15:52:42  karajorma
+ * Fixes for the Invulnerability problems from Mantis - 0000910
+ *
  * Revision 1.12  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -923,10 +926,7 @@ int CFred_mission_save::save_mission_info()
 		int profile_index = (The_mission.ai_profile - Ai_profiles);
 		Assert(profile_index >= 0 && profile_index < MAX_AI_PROFILES);
 
-		if (profile_index != 0)
-		{
-			fout("\n\n$AI Profile:\t%s", The_mission.ai_profile->profile_name);
-		}
+		fout("\n\n$AI Profile: %s", The_mission.ai_profile->profile_name);
 	}
 
 	return err;
