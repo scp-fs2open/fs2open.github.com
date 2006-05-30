@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/wing_editor.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-04-20 06:32:01 $
+ * $Revision: 1.4 $
+ * $Date: 2006-05-30 05:37:29 $
  * $Author: Goober5000 $
  *
  * Wing editor dialog box handler code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.2  2006/02/04 07:05:03  Goober5000
  * fixed several IFF bugs in FRED (plus one or two other bugs)
  * --Goober5000
@@ -336,6 +339,7 @@
 #include "starfield/starfield.h"
 #include "jumpnode/jumpnode.h"
 #include "cfile/cfile.h"
+#include "restrictpaths.h"
 
 #define ID_WING_MENU 9000
 
@@ -475,6 +479,8 @@ BEGIN_MESSAGE_MAP(wing_editor, CDialog)
 	ON_CBN_SELCHANGE(IDC_DEPARTURE_LOCATION, OnSelchangeDepartureLocation)
 	ON_CBN_SELCHANGE(IDC_HOTKEY, OnSelchangeHotkey)
 	ON_BN_CLICKED(IDC_WING_SQUAD_LOGO_BUTTON, OnSquadLogo)
+	ON_BN_CLICKED(IDC_RESTRICT_ARRIVAL, OnRestrictArrival)
+	ON_BN_CLICKED(IDC_RESTRICT_DEPARTURE, OnRestrictDeparture)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -752,12 +758,22 @@ void wing_editor::initialize_data_safe(int full_update)
 		GetDlgItem(IDC_ARRIVAL_DISTANCE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_ARRIVAL_TARGET)->EnableWindow(FALSE);
 	}
+	if (m_arrival_location == ARRIVE_FROM_DOCK_BAY) {
+		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(enable);
+	} else {
+		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(FALSE);
+	}
 	GetDlgItem(IDC_NO_DYNAMIC)->EnableWindow(enable);
 
-	if ( m_departure_location ) {
+	if (m_departure_location) {
 		GetDlgItem(IDC_DEPARTURE_TARGET)->EnableWindow(enable);
 	} else {
 		GetDlgItem(IDC_DEPARTURE_TARGET)->EnableWindow(FALSE);
+	}
+	if (m_departure_location == DEPART_AT_DOCK_BAY) {
+		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(enable);
+	} else {
+		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(FALSE);
 	}
 
 	if (player_wing)
@@ -1414,6 +1430,13 @@ void wing_editor::OnSelchangeArrivalLocation()
 		GetDlgItem(IDC_ARRIVAL_DISTANCE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_ARRIVAL_TARGET)->EnableWindow(FALSE);
 	}
+
+	if (m_arrival_location == ARRIVE_FROM_DOCK_BAY)	{
+		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(TRUE);
+	} else {
+		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(FALSE);
+	}
+
 	UpdateData(FALSE);
 }
 
@@ -1440,6 +1463,13 @@ void wing_editor::OnSelchangeDepartureLocation()
 		m_departure_target = -1;
 		GetDlgItem(IDC_DEPARTURE_TARGET)->EnableWindow(FALSE);
 	}
+
+	if (m_departure_location == DEPART_AT_DOCK_BAY)	{
+		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(TRUE);
+	} else {
+		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(FALSE);
+	}
+
 	UpdateData(FALSE);
 }
 
@@ -1493,4 +1523,66 @@ void wing_editor::OnSquadLogo()
 	if (!z){
 		cfile_pop_dir();
 	}	
+}
+
+// Goober5000
+void wing_editor::OnRestrictArrival()
+{
+	int arrive_from_ship;
+	CComboBox *box;
+	restrict_paths dlg;
+
+	if (m_arrival_location != ARRIVE_FROM_DOCK_BAY)
+	{
+		Int3();
+		return;
+	}
+
+	box = (CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET);
+	if (box->GetCount() == 0)
+		return;
+
+	arrive_from_ship = box->GetItemData(m_arrival_target);
+
+	if (!ship_has_dock_bay(arrive_from_ship))
+	{
+		Int3();
+		return;
+	}
+
+	dlg.m_arrival = true;
+	dlg.m_ship_class = Ships[arrive_from_ship].ship_info_index;
+
+	dlg.DoModal();
+}
+
+// Goober5000
+void wing_editor::OnRestrictDeparture()
+{
+	int depart_to_ship;
+	CComboBox *box;
+	restrict_paths dlg;
+
+	if (m_departure_location != DEPART_AT_DOCK_BAY)
+	{
+		Int3();
+		return;
+	}
+
+	box = (CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET);
+	if (box->GetCount() == 0)
+		return;
+
+	depart_to_ship = box->GetItemData(m_departure_target);
+
+	if (!ship_has_dock_bay(depart_to_ship))
+	{
+		Int3();
+		return;
+	}
+
+	dlg.m_arrival = false;
+	dlg.m_ship_class = Ships[depart_to_ship].ship_info_index;
+
+	dlg.DoModal();
 }

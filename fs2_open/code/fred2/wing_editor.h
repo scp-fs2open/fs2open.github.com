@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/wing_editor.h $
- * $Revision: 1.2 $
- * $Date: 2006-04-20 06:32:01 $
+ * $Revision: 1.3 $
+ * $Date: 2006-05-30 05:37:29 $
  * $Author: Goober5000 $
  *
  * Wing editor dialog box handler code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.1  2006/01/19 02:27:32  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -224,6 +227,8 @@ protected:
 	afx_msg void OnSelchangeDepartureLocation();
 	afx_msg void OnSelchangeHotkey();
 	afx_msg void OnSquadLogo();
+	afx_msg void OnRestrictArrival();
+	afx_msg void OnRestrictDeparture();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

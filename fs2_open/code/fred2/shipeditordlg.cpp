@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-04-20 06:32:01 $
+ * $Revision: 1.5 $
+ * $Date: 2006-05-30 05:37:29 $
  * $Author: Goober5000 $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.3  2006/04/18 00:08:23  phreak
  * fix FRED crashing if the user adds multiple waypoint paths then inserts more ships.
  *
@@ -350,6 +353,7 @@
 #include "ShipSpecialHitpoints.h"
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
+#include "restrictpaths.h"
 
 #define ID_SHIP_MENU 9000
 
@@ -538,6 +542,8 @@ BEGIN_MESSAGE_MAP(CShipEditorDlg, CDialog)
 	ON_BN_CLICKED(IDC_SPECIAL_EXP, OnSpecialExp)
 	ON_BN_CLICKED(IDC_TEXTURES, OnTextures)
 	ON_BN_CLICKED(IDC_SPECIAL_HITPOINTS, OnSpecialHitpoints)
+	ON_BN_CLICKED(IDC_RESTRICT_ARRIVAL, OnRestrictArrival)
+	ON_BN_CLICKED(IDC_RESTRICT_DEPARTURE, OnRestrictDeparture)
 	ON_WM_INITMENU()
 	ON_BN_CLICKED(IDC_SET_AS_PLAYER_SHIP, OnSetAsPlayerShip)
 	//}}AFX_MSG_MAP
@@ -1131,6 +1137,9 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_NO_ARRIVAL_WARP)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NO_DEPARTURE_WARP)->EnableWindow(FALSE);
 
+		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(FALSE);
+		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(FALSE);
+
 	} else {
 		GetDlgItem(IDC_ARRIVAL_LOCATION)->EnableWindow(enable);
 		if (m_arrival_location) {
@@ -1140,12 +1149,22 @@ void CShipEditorDlg::initialize_data(int full_update)
 			GetDlgItem(IDC_ARRIVAL_DISTANCE)->EnableWindow(FALSE);
 			GetDlgItem(IDC_ARRIVAL_TARGET)->EnableWindow(FALSE);
 		}
+		if (m_arrival_location == ARRIVE_FROM_DOCK_BAY) {
+			GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(enable);
+		} else {
+			GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(FALSE);
+		}
 
 		GetDlgItem(IDC_DEPARTURE_LOCATION)->EnableWindow(enable);
 		if ( m_departure_location ) {
 			GetDlgItem(IDC_DEPARTURE_TARGET)->EnableWindow(enable);
 		} else {
 			GetDlgItem(IDC_DEPARTURE_TARGET)->EnableWindow(FALSE);
+		}
+		if (m_departure_location == DEPART_AT_DOCK_BAY) {
+			GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(enable);
+		} else {
+			GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(FALSE);
 		}
 
 		GetDlgItem(IDC_ARRIVAL_DELAY)->EnableWindow(enable);
@@ -2101,6 +2120,13 @@ void CShipEditorDlg::OnSelchangeArrivalLocation()
 		GetDlgItem(IDC_ARRIVAL_DISTANCE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_ARRIVAL_TARGET)->EnableWindow(FALSE);
 	}
+
+	if (m_arrival_location == ARRIVE_FROM_DOCK_BAY)	{
+		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(TRUE);
+	} else {
+		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(FALSE);
+	}
+
 	UpdateData(FALSE);
 }
 
@@ -2129,6 +2155,13 @@ void CShipEditorDlg::OnSelchangeDepartureLocation()
 		m_departure_target = -1;
 		box->EnableWindow(FALSE);
 	}
+
+	if (m_departure_location == DEPART_AT_DOCK_BAY)	{
+		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(TRUE);
+	} else {
+		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(FALSE);
+	}
+
 	UpdateData(FALSE);
 }
 
@@ -2319,7 +2352,6 @@ void CShipEditorDlg::OnTextures()
 
 void CShipEditorDlg::OnSpecialHitpoints() 
 {
-	// TODO: Add your control notification handler code here
 	ShipSpecialHitpoints dlg;
 	dlg.DoModal();
 }
@@ -2360,4 +2392,66 @@ void CShipEditorDlg::OnSetAsPlayerShip()
 	// finally set editor dialog
 	m_player_ship.SetCheck(1);
 	update_map_window();
+}
+
+// Goober5000
+void CShipEditorDlg::OnRestrictArrival()
+{
+	int arrive_from_ship;
+	CComboBox *box;
+	restrict_paths dlg;
+
+	if (m_arrival_location != ARRIVE_FROM_DOCK_BAY)
+	{
+		Int3();
+		return;
+	}
+
+	box = (CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET);
+	if (box->GetCount() == 0)
+		return;
+
+	arrive_from_ship = box->GetItemData(m_arrival_target);
+
+	if (!ship_has_dock_bay(arrive_from_ship))
+	{
+		Int3();
+		return;
+	}
+
+	dlg.m_arrival = true;
+	dlg.m_ship_class = Ships[arrive_from_ship].ship_info_index;
+
+	dlg.DoModal();
+}
+
+// Goober5000
+void CShipEditorDlg::OnRestrictDeparture()
+{
+	int depart_to_ship;
+	CComboBox *box;
+	restrict_paths dlg;
+
+	if (m_departure_location != DEPART_AT_DOCK_BAY)
+	{
+		Int3();
+		return;
+	}
+
+	box = (CComboBox *) GetDlgItem(IDC_DEPARTURE_TARGET);
+	if (box->GetCount() == 0)
+		return;
+
+	depart_to_ship = box->GetItemData(m_departure_target);
+
+	if (!ship_has_dock_bay(depart_to_ship))
+	{
+		Int3();
+		return;
+	}
+
+	dlg.m_arrival = false;
+	dlg.m_ship_class = Ships[depart_to_ship].ship_info_index;
+
+	dlg.DoModal();
 }

@@ -266,6 +266,10 @@ SOURCE=..\..\code\fred2\ReinforcementEditorDlg.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\fred2\restrictpaths.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\fred2\SetGlobalShipFlags.cpp
 # End Source File
 # Begin Source File
@@ -507,6 +511,10 @@ SOURCE=..\..\code\fred2\ReinforcementEditorDlg.h
 # Begin Source File
 
 SOURCE=..\..\code\fred2\resource.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fred2\restrictpaths.h
 # End Source File
 # Begin Source File
 
