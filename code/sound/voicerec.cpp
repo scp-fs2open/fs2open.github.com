@@ -334,7 +334,11 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 			case VID_TopMenu:
 			{
 				int action = pElements->pProperties->vValue.ulVal;
-				bool msgWindow = Player->flags & PLAYER_FLAGS_MSG_MODE;
+				bool msgWindow = false;
+				if (Player->flags & PLAYER_FLAGS_MSG_MODE)
+				{
+					msgWindow = true;
+				}
 
 				// If the command window is not up, or it is and its a cancel request toggle
 				if((msgWindow && action == VID_Cancel) || (!msgWindow && action != VID_Cancel))
