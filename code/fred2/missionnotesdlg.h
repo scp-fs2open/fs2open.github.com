@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.h $
- * $Revision: 1.3 $
- * $Date: 2006-05-30 01:36:24 $
+ * $Revision: 1.4 $
+ * $Date: 2006-05-30 02:13:22 $
  * $Author: Goober5000 $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/05/30 01:36:24  Goober5000
+ * add AI Profile box to FRED
+ * --Goober5000
+ *
  * Revision 1.2  2006/04/05 16:11:44  karajorma
  * Changes to support the new Enable/Disable-Builtin-Messages SEXP
  *
@@ -193,6 +197,7 @@ public:
 	CString m_loading_1024;
 	int		m_ai_profile;
 	int		m_event_music;
+	CString	m_substitute_event_music;
 	BOOL		m_full_war;
 	BOOL		m_red_alert;
 	BOOL		m_scramble;

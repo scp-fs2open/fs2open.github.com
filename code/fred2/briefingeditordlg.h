@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/BriefingEditorDlg.h $
- * $Revision: 1.2 $
- * $Date: 2006-01-26 04:01:58 $
+ * $Revision: 1.3 $
+ * $Date: 2006-05-30 02:13:22 $
  * $Author: Goober5000 $
  *
  * Briefing editor dialog box class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/26 04:01:58  Goober5000
+ * spelling
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -181,6 +184,7 @@ public:
 	BOOL	m_change_local;
 	int		m_id;
 	int		m_briefing_music;
+	CString	m_substitute_briefing_music;
 	BOOL	m_cut_next;
 	BOOL	m_cut_prev;
 	int		m_current_briefing;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BriefingEditorDlg.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-02-04 07:05:03 $
+ * $Revision: 1.4 $
+ * $Date: 2006-05-30 02:13:22 $
  * $Author: Goober5000 $
  *
  * Briefing editor dialog box class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/02/04 07:05:03  Goober5000
+ * fixed several IFF bugs in FRED (plus one or two other bugs)
+ * --Goober5000
+ *
  * Revision 1.2  2006/01/26 04:01:58  Goober5000
  * spelling
  *
@@ -259,6 +263,7 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_change_local = FALSE;
 	m_id = 0;
 	m_briefing_music = -1;
+	m_substitute_briefing_music = _T("");
 	m_cut_next = FALSE;
 	m_cut_prev = FALSE;
 	m_current_briefing = -1;
@@ -291,6 +296,7 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_LOCAL, m_change_local);
 	DDX_Text(pDX, IDC_ID, m_id);
 	DDX_CBIndex(pDX, IDC_BRIEFING_MUSIC, m_briefing_music);
+	DDX_Text(pDX, IDC_SUBSTITUTE_BRIEFING_MUSIC, m_substitute_briefing_music);
 	DDX_Check(pDX, IDC_CUT_NEXT, m_cut_next);
 	DDX_Check(pDX, IDC_CUT_PREV, m_cut_prev);
 	DDX_Check(pDX, IDC_FLIP_ICON, m_flipicon);
@@ -378,12 +384,19 @@ void briefing_editor_dlg::create()
 	for (i=0; i<Num_music_files; i++)
 		box->AddString(Spooled_music[i].name);
 
+	box = (CComboBox *) GetDlgItem(IDC_SUBSTITUTE_BRIEFING_MUSIC);
+	box->AddString("None");
+	for (i=0; i<Num_music_files; i++)
+		box->AddString(Spooled_music[i].name);
+
 	m_play_bm.LoadBitmap(IDB_PLAY);
 	((CButton *) GetDlgItem(IDC_PLAY)) -> SetBitmap(m_play_bm);
 
 	m_current_briefing = 0;
 	Briefing = &Briefings[m_current_briefing];
 	m_briefing_music = Mission_music[SCORE_BRIEFING] + 1;
+	m_substitute_briefing_music = The_mission.substitute_briefing_music_name;
+
 	UpdateData(FALSE);
 	update_data();
 	OnGotoView();
@@ -482,6 +495,7 @@ void briefing_editor_dlg::update_data(int update)
 	Briefing = save_briefing;
 
 	Mission_music[SCORE_BRIEFING] = m_briefing_music - 1;
+	strcpy(The_mission.substitute_briefing_music_name, m_substitute_briefing_music);
 	if (m_last_stage >= 0) {
 		ptr = &Briefing->stages[m_last_stage];
 		deconvert_multiline_string(buf3, m_text, MAX_BRIEF_LEN);

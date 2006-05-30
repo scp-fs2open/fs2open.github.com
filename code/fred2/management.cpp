@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.11 $
- * $Date: 2006-04-20 06:32:01 $
+ * $Revision: 1.12 $
+ * $Date: 2006-05-30 02:13:22 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.10  2006/04/14 18:44:16  taylor
  * remove all of the *_ex() parsing functions added for use by EFFs
  * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
@@ -1415,6 +1418,7 @@ void clear_mission()
 	brief_reset();
 	debrief_reset();
 	ship_init();
+	event_music_reset_choices();
 
 	// alternate ship type names
 	mission_parse_reset_alt();
