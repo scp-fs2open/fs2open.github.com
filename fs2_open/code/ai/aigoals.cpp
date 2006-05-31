@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.26 $
- * $Date: 2006-05-29 19:14:30 $
+ * $Revision: 1.27 $
+ * $Date: 2006-05-31 02:08:22 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2006/05/29 19:14:30  Goober5000
+ * removed small redundancy
+ * --Goober5000
+ *
  * Revision 1.25  2006/05/20 02:03:00  Goober5000
  * fix for Mantis #755, plus make the missionlog #defines uniform
  * --Goober5000
@@ -824,7 +828,6 @@ void ai_maybe_add_form_goal( wing *wingp )
 void ai_post_process_mission()
 {
 	object *objp;
-	int i;
 
 /*
 	// Goober5000 - considering that this is also done in parse_wing_create_ships,
@@ -837,6 +840,8 @@ void ai_post_process_mission()
 	// So basically, we are checking for (1)
 	if ( !Fred_running )
 	{
+		int i;
+
 		// Goober5000 - make all wings form on their respective leaders
 		for ( i = 0; i < Num_wings; i++ )
 		{
