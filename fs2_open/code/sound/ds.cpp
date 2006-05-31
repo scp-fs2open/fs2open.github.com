@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.43 $
- * $Date: 2006-05-31 03:27:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.44 $
+ * $Date: 2006-05-31 04:01:13 $
+ * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/05/31 03:27:19  Goober5000
+ * whoops, didn't mean to commit that
+ *
  * Revision 2.41  2006/05/27 16:39:40  taylor
  * remove non-Windows timeSetEvent() functions
  * make PDWORD and LPDWORD int instead of long (64-bit issue) (thanks Spike)
@@ -1654,29 +1657,29 @@ int ds_init_property_set(DWORD sample_rate, WORD sample_bits)
 const char *openal_get_best_device(int report = 1)
 {
 	int ext_length = 0;
+	// FIXME: this is crashing for some reason, a NULL device should be legal here, but who knows
 	const char *my_default_device = (const char*) alcGetString( NULL, ALC_DEFAULT_DEVICE_SPECIFIER );
 	const char *my_devices = (const char*) alcGetString( NULL, ALC_DEVICE_SPECIFIER );
 
-	if (report)
+	if (report) {
 		mprintf(("  Default OpenAL device: %s\n", (my_default_device != NULL) ? my_default_device : NOX("<none>")));
 
+		char *str_list = (char*)my_devices;
 
-	char *str_list = (char*)my_devices;
-
-	if (report)
 		mprintf(("  Available OpenAL devices:\n"));
 
-	if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
-		while (ext_length) {
-			mprintf(("    %s\n", str_list));
-			str_list += (ext_length + 1);
-			ext_length = strlen(str_list);
+		if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
+			while (ext_length) {
+				mprintf(("    %s\n", str_list));
+				str_list += (ext_length + 1);
+				ext_length = strlen(str_list);
+			}
+		} else {
+			mprintf(("    <none>\n"));
 		}
-	} else {
-		mprintf(("    <none>\n"));
-	}
 
-	mprintf(("\n"));
+		mprintf(("\n"));
+	}
 
 	return my_default_device;
 }
@@ -1702,7 +1705,8 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 
 	mprintf(("Initializing OpenAL...\n"));
 
-	openal_get_best_device();
+	// FIXME: see function for problem!
+//	openal_get_best_device();
 
 	// load OpenAL
 #ifdef _WIN32
