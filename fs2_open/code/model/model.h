@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.79 $
- * $Date: 2006-05-27 16:57:12 $
- * $Author: taylor $
+ * $Revision: 2.80 $
+ * $Date: 2006-05-31 03:05:42 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2006/05/27 16:57:12  taylor
+ * comment out the model cache stuff, it's old and not actually used anyway
+ * minor cleanup of some modelinterp.cpp code, to make it more readable
+ * fix tertiary thruster batcher which had the radius value swapped
+ * comment out a couple places where we were doing a D3D or OGL check (it's always true so why bother)
+ * add more support for NO_DIRECT3D so that it can be used on Windows to build without D3D
+ *
  * Revision 2.78  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -957,7 +964,7 @@ typedef struct bsp_info {
 
 } bsp_info;
 
-void parse_triggersint( int &n_trig, queued_animation **triggers, char *props);
+void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
 
 #define MP_TYPE_UNUSED 0
 #define MP_TYPE_SUBSYS 1
@@ -1061,7 +1068,7 @@ typedef struct dock_bay {
 #define MAX_SHIP_BAY_PATHS		10
 typedef struct ship_bay {
 	int	num_paths;							// how many paths are associated with the model's fighter bay
-	int	paths[MAX_SHIP_BAY_PATHS];		// index into polymodel->paths[] array
+	int	path_indexes[MAX_SHIP_BAY_PATHS];	// index into polymodel->paths[] array
 	int	arrive_flags;	// bitfield, set to 1 when that path number is reserved for an arrival
 	int	depart_flags;	// bitfield, set to 1 when that path number is reserved for a departure
 } ship_bay_t;
@@ -1283,14 +1290,14 @@ void model_duplicate_reskin(int modelnum, char *ship_name);
 void model_notify_dead_ship(int objnum);
 
 // Returns a pointer to the polymodel structure for model 'n'
-polymodel * model_get(int model_num);
+polymodel *model_get(int model_num);
 
 // routine to copy susbsystems.  Must be called when subsystems sets are the same -- see ship.cpp
-void model_copy_subsystems( int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp );
+void model_copy_subsystems(int n_subsystems, model_subsystem *d_sp, model_subsystem *s_sp);
 
 // If MR_FLAG_OUTLINE bit set this color will be used for outlines.
 // This defaults to black.
-void model_set_outline_color(int r, int g, int b );
+void model_set_outline_color(int r, int g, int b);
 
 void model_set_outline_color_fast(void *outline_color);
 
@@ -1346,17 +1353,17 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 // Returns the radius of a model
 float model_get_radius(int modelnum);
-float submodel_get_radius( int modelnum, int submodelnum );
+float submodel_get_radius(int modelnum, int submodelnum);
 
 // Returns the core radius (smallest dimension of hull's bounding box, used for collision detection with big ships only)
-float model_get_core_radius( int modelnum );
+float model_get_core_radius(int modelnum);
 
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 1 for invalid model, 2 for point offscreen.
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
 // This function just looks at the radius, and not the orientation, so the
 // bounding box won't change depending on the obj's orient.
-extern int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 );
+extern int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
 
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 1 for invalid model, 2 for point offscreen.
@@ -1364,7 +1371,7 @@ extern int model_find_2d_bound(int model_num,matrix *orient, vec3d * pos,int *x1
 // This function looks at the object's bounding box and it's orientation,
 // so the bounds will change as the object rotates, to give the minimum bouding
 // rect.
-extern int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 );
+extern int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
 
 // Returns zero is x1,y1,x2,y2 are valid
 // returns 1 for invalid model, 2 for point offscreen.
@@ -1372,7 +1379,7 @@ extern int model_find_2d_bound_min(int model_num,matrix *orient, vec3d * pos,int
 // This function looks at the object's bounding box and it's orientation,
 // so the bounds will change as the object rotates, to give the minimum bouding
 // rect.
-int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 );
+int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
 
 
 // Returns zero is x1,y1,x2,y2 are valid
@@ -1380,7 +1387,7 @@ int submodel_find_2d_bound_min(int model_num,int submodel, matrix *orient, vec3d
 // note that x1,y1,x2,y2 aren't clipped to 2d screen coordinates!
 // This function just looks at the radius, and not the orientation, so the
 // bounding box won't change depending on the obj's orient.
-int subobj_find_2d_bound(float radius, matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2 );
+int subobj_find_2d_bound(float radius, matrix *orient, vec3d * pos,int *x1, int *y1, int *x2, int *y2);
 
 // stats variables
 #ifndef NDEBUG
@@ -1396,7 +1403,7 @@ extern int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orie
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.
-extern void submodel_rotate(model_subsystem *psub, submodel_instance_info * sii );
+extern void submodel_rotate(model_subsystem *psub, submodel_instance_info * sii);
 
 // Rotates the angle of a submodel.  Use this so the right unlocked axis
 // gets stuffed.  Does this for stepped rotations
@@ -1409,7 +1416,7 @@ extern void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_mod
 // Given a point (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-extern void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos );
+extern void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos);
 
 // Given a point in the world RF, find the corresponding point in the model RF.
 // This is special purpose code, specific for model collision.
@@ -1425,7 +1432,7 @@ void model_init_submodel_axis_pt(submodel_instance_info *sii, int model_num, int
 // Given a direction (pnt) that is in sub_model_num's frame of
 // reference, and given the object's orient and position, 
 // return the point in 3-space in outpnt.
-extern void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos );
+extern void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_model_num, matrix * objorient, vec3d * objpos);
 
 // Clears all the submodel instances stored in a model to their defaults.
 extern void model_clear_instance(int model_num);
@@ -1437,14 +1444,14 @@ void model_set_instance_info(submodel_instance_info *sii, float turn_rate, float
 extern void model_clear_instance_info(submodel_instance_info * sii);
 
 // Sets the submodel instance data in a submodel
-extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii );
+extern void model_set_instance(int model_num, int sub_model_num, submodel_instance_info * sii);
 
 // Adds an electrical arcing effect to a submodel
-void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type );
+void model_add_arc(int model_num, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type);
 
 // Fills in an array with points from a model.  Only gets up to max_num verts.
 // Returns number of verts found
-extern int submodel_get_points(int model_num, int submodel_num, int max_num, vec3d **nts );
+extern int submodel_get_points(int model_num, int submodel_num, int max_num, vec3d **nts);
 
 // Gets two random points on the surface of a submodel
 extern void submodel_get_two_random_points(int model_num, int submodel_num, vec3d *v1, vec3d *v2, vec3d *n1 = NULL, vec3d *n2 = NULL);
@@ -1453,16 +1460,10 @@ extern void submodel_get_two_random_points(int model_num, int submodel_num, vec3
 // Returns the index.  second functions returns the index of the docking bay with
 // the specified name
 extern int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at = 0);
-extern int model_find_dock_name_index( int modelnum, char *name );
+extern int model_find_dock_name_index(int modelnum, char *name);
 
 // returns the actual name of a docking point on a model, needed by Fred.
 char *model_get_dock_name(int modelnum, int index);
-
-// Returns number of verts in a submodel;
-int submodel_get_num_verts(int model_num, int submodel_num );
-
-// Returns number of polygons in a submodel;
-int submodel_get_num_polys(int model_num, int submodel_num );
 
 // returns number of docking points for a model
 int model_get_num_dock_points(int modelnum);
@@ -1470,6 +1471,16 @@ int model_get_dock_index_type(int modelnum, int index);
 
 // get all the different docking point types on a model
 int model_get_dock_types(int modelnum);
+
+// Goober5000
+// returns index in [0, MAX_SHIP_BAY_PATHS)
+int model_find_bay_path(int modelnum, char *bay_path_name);
+
+// Returns number of verts in a submodel;
+int submodel_get_num_verts(int model_num, int submodel_num);
+
+// Returns number of polygons in a submodel;
+int submodel_get_num_polys(int model_num, int submodel_num);
 
 // Given a vector that is in sub_model_num's frame of
 // reference, and given the object's orient and position,
@@ -1579,7 +1590,7 @@ int model_collide(mc_info * mc_info);
 // Sets the submodel instance data in a submodel
 // If show_damaged is true it shows only damaged submodels.
 // If it is false it shows only undamaged submodels.
-void model_show_damaged(int model_num, int show_damaged );
+void model_show_damaged(int model_num, int show_damaged);
 
 
 //=========================== MODEL OCTANT STUFF ================================
@@ -1617,7 +1628,7 @@ void model_show_damaged(int model_num, int show_damaged );
 // be rotated into the model's local coordinates.  
 // If oct is not null, it will be filled in with a pointer to the octant
 // data.
-int model_which_octant_distant( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct );
+int model_which_octant_distant(vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct);
 
 // Returns which octant point 'pnt' is in. This might return
 // -1 if the point isn't in any octant.
@@ -1625,7 +1636,7 @@ int model_which_octant_distant( vec3d *pnt, int model_num,matrix *model_orient, 
 // be rotated into the model's local coordinates.
 // If oct is not null, it will be filled in with a pointer to the octant
 // data.  Or NULL if the pnt isn't in the octant.
-int model_which_octant( vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct );
+int model_which_octant(vec3d *pnt, int model_num,matrix *model_orient, vec3d * model_pos, model_octant **oct);
 
 typedef struct bobboau_extra_mst_info {
 	int secondary_glow_bitmap;
@@ -1668,7 +1679,7 @@ void model_set_thrust(int model_num = -1, vec3d *length = &vmd_zero_vector, int 
 //   distance from eye_pos to closest_point.  0 means eye_pos is 
 //   on or inside the bounding box.
 //   Also fills in outpnt with the actual closest point.
-float model_find_closest_point( vec3d *outpnt, int model_num, int submodel_num, matrix *orient, vec3d * pos, vec3d *eye_pos );
+float model_find_closest_point(vec3d *outpnt, int model_num, int submodel_num, matrix *orient, vec3d * pos, vec3d *eye_pos);
 
 // set the insignia bitmap to be used when rendering a ship with an insignia (-1 switches it off altogether)
 void model_set_insignia_bitmap(int bmap);
@@ -1693,7 +1704,7 @@ float get_world_closest_box_point_with_delta(vec3d *closest_box_point, object *b
 void model_page_in_textures(int modelnum, int ship_info_index = -1);
 
 // given a model, unload all of its textures
-void model_page_out_textures( int model_num, bool release = false );
+void model_page_out_textures(int model_num, bool release = false);
 
 // is the given model a pirate ship?
 int model_is_pirate_ship(int modelnum);

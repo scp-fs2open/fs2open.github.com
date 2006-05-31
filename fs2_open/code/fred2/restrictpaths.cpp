@@ -6,13 +6,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/RestrictPaths.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-05-30 06:01:05 $
+ * $Revision: 1.3 $
+ * $Date: 2006-05-31 03:05:42 $
  * $Author: Goober5000 $
  *
  * Code for restricting arrival/departure to specific bays
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/05/30 06:01:05  Goober5000
+ * fix up CVS headers
+ * --Goober5000
+ *
  * Revision 1.1  2006/05/30 05:58:59  Goober5000
  * I should probably add these files too
  * --Goober5000
@@ -71,7 +75,7 @@ BOOL restrict_paths::OnInitDialog()
 	{
 		// initialize to either the name or a blank
 		if (i < m_num_paths)
-			strcpy(m_ship_bay_data[i].name, m_model->paths[m_model->ship_bay->paths[i]].name);
+			strcpy(m_ship_bay_data[i].name, m_model->paths[m_model->ship_bay->path_indexes[i]].name);
 		else
 			strcpy(m_ship_bay_data[i].name, "");
 

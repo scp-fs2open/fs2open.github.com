@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.335 $
- * $Date: 2006-05-27 16:49:05 $
- * $Author: taylor $
+ * $Revision: 2.336 $
+ * $Date: 2006-05-31 03:05:42 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.335  2006/05/27 16:49:05  taylor
+ * comment out some pointless checks which look for not using either D3D or OGL
+ * don't run through ships on level load setting up the sound environment if sound is disabled
+ * minor cleanup
+ *
  * Revision 2.334  2006/05/20 02:03:01  Goober5000
  * fix for Mantis #755, plus make the missionlog #defines uniform
  * --Goober5000
@@ -8174,23 +8179,22 @@ void ship_set_subsys_path_nums(ship_info *sip, polymodel *pm)
 // a fighter bay on a capital ship.
 void ship_set_bay_path_nums(ship_info *sip, polymodel *pm)
 {
-	int	bay_num, i;
-	char	bay_num_str[3];
+	int bay_num, i;
+	char bay_num_str[3];
 
-	if ( pm->ship_bay != NULL ) {
+	if (pm->ship_bay != NULL)
+	{
 		vm_free(pm->ship_bay);
 		pm->ship_bay = NULL;
 	}
 
 	// currently only capital ships have fighter bays
-/*	if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+	if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
 		return;
 	}
-*/
-	//tbp have been haveing crashes useing bombers with fighter bays, this might explaine why
 
 	// malloc out storage for the path information
-	pm->ship_bay = (ship_bay*)vm_malloc(sizeof(ship_bay));
+	pm->ship_bay = (ship_bay *) vm_malloc(sizeof(ship_bay));
 	Assert(pm->ship_bay != NULL);
 
 	pm->ship_bay->num_paths = 0;
@@ -8200,13 +8204,16 @@ void ship_set_bay_path_nums(ship_info *sip, polymodel *pm)
 
 
 	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
-	for ( i = 0; i < pm->n_paths; i++ ) {
-		if ( !strnicmp(pm->paths[i].name, NOX("$bay"), 4) ) {
-			strncpy(bay_num_str, pm->paths[i].name+4, 2);
+	for (i = 0; i < pm->n_paths; i++)
+	{
+		if (!strnicmp(pm->paths[i].name, NOX("$bay"), 4))
+		{
+			strncpy(bay_num_str, pm->paths[i].name + 4, 2);
 			bay_num_str[2] = 0;
 			bay_num = atoi(bay_num_str);
 			Assert(bay_num >= 1 && bay_num <= MAX_SHIP_BAY_PATHS);
-			pm->ship_bay->paths[bay_num-1] = i;
+
+			pm->ship_bay->path_indexes[bay_num - 1] = i;
 			pm->ship_bay->num_paths++;
 		}
 	}
