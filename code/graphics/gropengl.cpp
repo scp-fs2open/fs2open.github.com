@@ -2,13 +2,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.172 $
- * $Date: 2006-05-30 03:53:52 $
+ * $Revision: 2.173 $
+ * $Date: 2006-05-31 04:02:05 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.172  2006/05/30 03:53:52  taylor
+ * z-range for 2D ortho is -1.0 to 1.0, may help avoid some strangeness if we actually get that right. :)
+ * minor cleanup of old code and default settings
+ * try not to bother with depth test unless we are actually going to need it (small performance boost in some cases)
+ * don't clear depth bit in flip(), while technically correct it's also a bit redundant (and comes with a slight performance hit)
+ *
  * Revision 2.171  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -1684,13 +1690,11 @@ void gr_opengl_set_shader( shader * shade )
 
 void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror)
 {
-//	mprintf(("gr_opengl_aabitmap_ex_internal: at (%3d,%3d) size (%3d,%3d) name %s\n", 
-  //				x, y, w, h, 
- 	//			bm_get_filename(gr_screen.current_bitmap)));
 	if ( w < 1 ) return;
 	if ( h < 1 ) return;
 
-	if ( !gr_screen.current_color.is_alphacolor )	return;
+	if ( !gr_screen.current_color.is_alphacolor )
+		return;
 
 	float u_scale, v_scale;
 
@@ -1753,12 +1757,8 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, boo
 		}
 	}
 
-
-	if ( gr_screen.current_color.is_alphacolor )	{
-		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
-	} else {
-		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-	}
+	Assert( gr_screen.current_color.is_alphacolor );
+	glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
 
 	ubyte s_color[3] = { gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue };
 	vglSecondaryColor3ubvEXT(s_color);
@@ -1922,11 +1922,34 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 	TIMERBAR_PUSH(4);
 
 	int width, spacing, letter;
-	int x, y, do_resize;
+	int x, y, do_resize, bw, bh;
+	float u0, u1, v0, v1;
+	float x1, x2, y1, y2;
+	float u_scale, v_scale;
 
 	if ( !Current_font || (*s == 0) )	{
 		return;
 	}
+
+	gr_set_bitmap(Current_font->bitmap_id);
+
+	if ( !gr_opengl_tcache_set( gr_screen.current_bitmap, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale ) )	{
+		return;
+	}
+
+	opengl_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+
+	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
+
+	// set color!
+	if ( gr_screen.current_color.is_alphacolor )	{
+		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
+	} else {
+		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
+	}
+
+	ubyte s_color[3] = { gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue };
+	vglSecondaryColor3ubvEXT(s_color);
 
 	if ( (gr_screen.custom_size != -1) && (resize || gr_screen.rendering_to_texture != -1) ) {
 		do_resize = 1;
@@ -1939,8 +1962,6 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
 	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
 
-	gr_set_bitmap(Current_font->bitmap_id);
-
 	x = sx;
 	y = sy;
 
@@ -1952,25 +1973,30 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 	
 	spacing = 0;
 
+	// start rendering...
+	glBegin(GL_QUADS);
+
+	// pick out letter coords, draw it, goto next letter and do the same
 	while (*s)	{
 		x += spacing;
 
-		while (*s== '\n' )	{
+		while (*s == '\n' )	{
 			s++;
 			y += Current_font->h;
-			if (sx==0x8000) {			//centered
+			if (sx == 0x8000) {	// centered
 				x = get_centered_x(s);
 			} else {
 				x = sx;
 			}
 		}
+
 		if (*s == 0 ) break;
 
 		letter = get_char_width(s[0],s[1],&width,&spacing);
 		s++;
 
 		//not in font, draw as space
-		if (letter<0)	{
+		if (letter < 0) {
 			continue;
 		}
 
@@ -1999,8 +2025,46 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 		int u = Current_font->bm_u[letter];
 		int v = Current_font->bm_v[letter];
 
-		opengl_aabitmap_ex_internal( xc, yc, wc, hc, u+xd, v+yd, resize, false );
+		int _x1, _y1, _x2, _y2;
+		_x1 = xc + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
+		_y1 = yc + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
+		_x2 = _x1 + wc;
+		_y2 = _y1 + hc;
+
+		if ( do_resize ) {
+			gr_resize_screen_pos( &_x1, &_y1 );
+			gr_resize_screen_pos( &_x2, &_y2 );
+		}
+
+		x1 = i2fl(_x1);
+		y1 = i2fl(_y1);
+		x2 = i2fl(_x2);
+		y2 = i2fl(_y2);
+
+		u0 = u_scale*i2fl(u+xd)/i2fl(bw);
+		v0 = v_scale*i2fl(v+yd)/i2fl(bh);
+
+		u1 = u_scale*i2fl((u+xd)+wc)/i2fl(bw);
+		v1 = v_scale*i2fl((v+yd)+hc)/i2fl(bh);
+
+		glTexCoord2f (u0, v1);
+		glVertex3f (x1, y2, -0.99f);
+
+		glTexCoord2f (u1, v1);
+		glVertex3f (x2, y2, -0.99f);
+
+		glTexCoord2f (u1, v0);
+		glVertex3f (x2, y1, -0.99f);
+
+		glTexCoord2f (u0, v0);
+		glVertex3f (x1, y1, -0.99f);
 	}
+
+	// done!
+	glEnd();
+
+	// reset the secondary color to 0
+	vglSecondaryColor3ubvEXT(GL_zero_3ub);
 
 	TIMERBAR_POP();
 }
