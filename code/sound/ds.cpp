@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.41 $
- * $Date: 2006-05-27 16:39:40 $
- * $Author: taylor $
+ * $Revision: 2.42 $
+ * $Date: 2006-05-31 03:05:43 $
+ * $Author: Goober5000 $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2006/05/27 16:39:40  taylor
+ * remove non-Windows timeSetEvent() functions
+ * make PDWORD and LPDWORD int instead of long (64-bit issue) (thanks Spike)
+ * fix 64-bit ptr issue with OpenAL audio streaming code (thanks Spike)
+ * add start of device enumberation for OpenAL 1.1 (it just lists available devices now)
+ * make sure we open the default OpenAL 1.1 device under Windows
+ * comment out blank listener stuff, this may have been crashing under OS X
+ * add support for AL_BYTE_OFFSET in OpenAL 1.1 for buffer positioning under Windows
+ *
  * Revision 2.40  2006/04/20 06:32:30  Goober5000
  * proper capitalization according to Volition
  *
@@ -1693,7 +1702,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 
 	mprintf(("Initializing OpenAL...\n"));
 
-	openal_get_best_device();
+//	openal_get_best_device();
 
 	// load OpenAL
 #ifdef _WIN32

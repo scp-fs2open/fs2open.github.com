@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.177 $
- * $Date: 2006-05-21 22:57:30 $
+ * $Revision: 2.178 $
+ * $Date: 2006-05-31 03:05:42 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.177  2006/05/21 22:57:30  Goober5000
+ * fix for Mantis #750
+ * --Goober5000
+ *
  * Revision 2.176  2006/05/21 03:58:58  Goober5000
  * fix Mantis #834
  * --Goober5000
@@ -2839,7 +2843,7 @@ int parse_create_object_sub(p_object *p_objp)
 		Ships[shipnum].flags2 |= SF2_NAVPOINT_CARRY;
 
 	// Goober5000 - moved this here from mission_eval_departures
-	// if ship is in a wing, copy the wing's depature information to the ship
+	// if ship is in a wing, copy the wing's departure information to the ship
 	if (Ships[shipnum].wingnum != -1)
 	{
 		Ships[shipnum].departure_location = Wings[Ships[shipnum].wingnum].departure_location;
@@ -3285,16 +3289,19 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	p_objp->arrival_anchor = -1;
 	p_objp->arrival_distance = 0;
+
 	find_and_stuff("$Arrival Location:", &p_objp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
+
 	if (optional_string("+Arrival Distance:"))
 	{
 		stuff_int(&p_objp->arrival_distance);
-		if (p_objp->arrival_location != ARRIVE_AT_LOCATION)
-		{
-			required_string("$Arrival Anchor:");
-			stuff_string(name, F_NAME, NULL);
-			p_objp->arrival_anchor = get_anchor(name);
-		}
+	}
+
+	if (p_objp->arrival_location != ARRIVE_AT_LOCATION)
+	{
+		required_string("$Arrival Anchor:");
+		stuff_string(name, F_NAME, NULL);
+		p_objp->arrival_anchor = get_anchor(name);
 	}
 
 	delay = 0;
@@ -3323,9 +3330,11 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			p_objp->arrival_delay = timestamp(-p_objp->arrival_delay * 1000);
 	}
 
-	find_and_stuff("$Departure Location:", &p_objp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
 	p_objp->departure_anchor = -1;
-	if (p_objp->departure_location == DEPART_AT_DOCK_BAY)
+
+	find_and_stuff("$Departure Location:", &p_objp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
+
+	if (p_objp->departure_location != DEPART_AT_LOCATION)
 	{
 		required_string("$Departure Anchor:");
 		stuff_string(name, F_NAME, NULL);
@@ -4308,14 +4317,20 @@ void parse_wing(mission *pm)
 	stuff_int(&wingp->special_ship);
 
 	wingp->arrival_anchor = -1;
+	wingp->arrival_distance = 0;
+
 	find_and_stuff("$Arrival Location:", &wingp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
-	if ( optional_string("+Arrival Distance:") ) {
+
+	if ( optional_string("+Arrival Distance:") )
+	{
 		stuff_int( &wingp->arrival_distance );
-		if ( wingp->arrival_location != ARRIVE_AT_LOCATION ) {
-			required_string("$Arrival Anchor:");
-			stuff_string(name, F_NAME, NULL);
-			wingp->arrival_anchor = get_anchor(name);
-		}
+	}
+
+	if ( wingp->arrival_location != ARRIVE_AT_LOCATION )
+	{
+		required_string("$Arrival Anchor:");
+		stuff_string(name, F_NAME, NULL);
+		wingp->arrival_anchor = get_anchor(name);
 	}
 
 	if (optional_string("+Arrival delay:")) {
@@ -4339,9 +4354,11 @@ void parse_wing(mission *pm)
 	}
 
 	
-	find_and_stuff("$Departure Location:", &wingp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
 	wingp->departure_anchor = -1;
-	if ( wingp->departure_location == DEPART_AT_DOCK_BAY ) {
+
+	find_and_stuff("$Departure Location:", &wingp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
+
+	if ( wingp->departure_location != DEPART_AT_LOCATION ) {
 		required_string("$Departure Anchor:");
 		stuff_string( name, F_NAME, NULL );
 		wingp->departure_anchor = get_anchor(name);
@@ -6132,8 +6149,10 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 		// AL: ensure dist > 0 (otherwise get errors in vecmat)
 		// TODO: maybe set distance to 2x ship radius of ship appearing in front of?
 		if ( dist <= 0 ) {
-			Error(LOCATION, "Distance of %d is invalid in mission_set_arrival_location\n", dist);
-			return 0;
+			// Goober5000 - default to 100
+			Error(LOCATION, "Distance of %d is invalid in mission_set_arrival_location.  Defaulting to 100.\n", dist);
+			dist = 100;
+			//return 0;
 		}
 		
 		// get a vector which is the ships arrival position based on the type of arrival

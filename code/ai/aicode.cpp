@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.71 $
- * $Date: 2006-05-27 17:22:04 $
- * $Author: taylor $
+ * $Revision: 1.72 $
+ * $Date: 2006-05-31 03:05:42 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.71  2006/05/27 17:22:04  taylor
+ * minor safety check
+ *
  * Revision 1.70  2006/05/20 02:03:00  Goober5000
  * fix for Mantis #755, plus make the missionlog #defines uniform
  * --Goober5000
@@ -6980,7 +6983,7 @@ void render_all_ship_bay_paths(object *objp)
 		return;
 
 	for ( i = 0; i < pm->ship_bay->num_paths; i++ ) {
-		mp = &pm->paths[pm->ship_bay->paths[i]];
+		mp = &pm->paths[pm->ship_bay->path_indexes[i]];
 
 		for ( j = 0; j < mp->nverts; j++ ) {
 			vm_vec_unrotate(&global_path_point, &mp->verts[j].pos, &objp->orient);
@@ -13145,15 +13148,16 @@ bool bay_process_doors(object *pl_objp, int dir){
 //				 0		=> success
 int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vec3d *pos, vec3d *fvec)
 {
-	int			path_index, sb_path_index;
-	ship			*parent_sp = NULL;
+	int			path_index, bay_path;
+	ship		*shipp = NULL, *parent_sp = NULL;
 	polymodel	*pm;
 	ai_info		*aip;
-	ship_bay		*sb;
-	pnode			*pnp;
+	ship_bay	*bay;
+	pnode		*pnp;
 	vec3d		*next_point;
 
-	aip = &Ai_info[Ships[pl_objp->instance].ai_index];
+	shipp = &Ships[pl_objp->instance];
+	aip = &Ai_info[shipp->ai_index];
 
 	if ( parent_objnum == -1 ) {
 		Int3();
@@ -13164,30 +13168,30 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vec3d *pos, vec3d
 
 	Assert(parent_sp != NULL);
 	pm = model_get( parent_sp->modelnum );
-	sb = pm->ship_bay;
+	bay = pm->ship_bay;
 
-	if ( sb == NULL ) 
+	if ( bay == NULL ) 
 		return -1;
 
-	if ( sb->num_paths <= 0 ) 
+	if ( bay->num_paths <= 0 ) 
 		return -1;
 
 	// try to find a bay path that is not taken
 	path_index = -1;
-	sb_path_index = Ai_last_arrive_path++;
+	bay_path = Ai_last_arrive_path++;
 
-	if ( sb_path_index >= sb->num_paths ) {
-		sb_path_index=0;
+	if ( bay_path >= bay->num_paths ) {
+		bay_path=0;
 		Ai_last_arrive_path=0;
 	}
 
-	path_index = sb->paths[sb_path_index];
-	Ships[pl_objp->instance].launched_from = sb_path_index;
+	path_index = bay->path_indexes[bay_path];
+	shipp->launched_from = bay_path;
 	if ( path_index == -1 ) 
 		return -1;
 
-	parent_sp->bay_number_wanting_open++;//one more ship wants the bay open
-	Ships[pl_objp->instance].bay_doors_want_open = true;//my parent knows that I want the bay open
+	parent_sp->bay_number_wanting_open++;	//one more ship wants the bay open
+	shipp->bay_doors_want_open = true;		//my parent knows that I want the bay open
 
 	// create the path for pl_objp to follow
 	create_model_exit_path(pl_objp, &Objects[parent_objnum], path_index, pm->paths[path_index].nverts);
@@ -13217,7 +13221,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vec3d *pos, vec3d
 	//moved to the emerge handeling code
 	vec3d vel;
 	float speed;
-	speed = Ship_info[Ships[pl_objp->instance].ship_info_index].max_speed;
+	speed = Ship_info[shipp->ship_info_index].max_speed;
 	vel = *fvec;
 	vm_vec_scale( &vel, speed );
 	pl_objp->phys_info.vel = vel;
@@ -13336,33 +13340,36 @@ void ai_bay_emerge()
 int ai_find_closest_depart_path(ai_info *aip, polymodel *pm)
 {
 	int			i, j, best_path, best_free_path;
-	float			dist, min_dist, min_free_dist;
+	float		dist, min_dist, min_free_dist;
 	vec3d		*source;
 	model_path	*mp;
-	ship_bay		*sb;
+	ship_bay	*bay;
 
-	sb = pm->ship_bay;
+	bay = pm->ship_bay;
 
 	best_free_path = best_path = -1;
 	min_free_dist = min_dist = 1e20f;
 	Assert(aip->shipnum >= 0);
 	source = &Objects[Ships[aip->shipnum].objnum].pos;
 
-	for ( i = 0; i < sb->num_paths; i++ ) {
-
-
-		mp = &pm->paths[sb->paths[i]];
-		for ( j = 0; j < mp->nverts; j++ ) {
+	for (i = 0; i < bay->num_paths; i++)
+	{
+		mp = &pm->paths[bay->path_indexes[i]];
+		for (j = 0; j < mp->nverts; j++)
+		{
 			dist = vm_vec_dist_squared(source, &mp->verts[j].pos);
 
-			if ( dist < min_dist ) {
+			if (dist < min_dist)
+			{
 				min_dist = dist;
 				best_path = i;
 			}
 
 			// If this is a free path
-			if ( !(sb->depart_flags & (1<<i)) ) {
-				if ( dist < min_free_dist ) {
+			if (!(bay->depart_flags & (1 << i)))
+			{
+				if (dist < min_free_dist)
+				{
 					min_free_dist = dist;
 					best_free_path = i;
 				}
@@ -13370,7 +13377,8 @@ int ai_find_closest_depart_path(ai_info *aip, polymodel *pm)
 		}
 	}
 
-	if ( best_free_path >= 0 ) {
+	if (best_free_path >= 0)
+	{
 		return best_free_path;		
 	}
 
@@ -13389,15 +13397,17 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum)
 	int			objnum, path_index;
 	polymodel	*pm;
 	ai_info		*aip;
-	ship_bay		*sb;
+	ship		*shipp;
+	ship_bay	*bay;
 
-	aip = &Ai_info[Ships[pl_objp->instance].ai_index];
+	shipp = &Ships[pl_objp->instance];
+	aip = &Ai_info[shipp->ai_index];
 
 	objnum = parent_objnum;
 	if ( objnum < 0 )
 	{
 		// try to locate a capital ship on the same team:
-		int shipnum = ship_get_ship_with_dock_bay(Ships[pl_objp->instance].team);
+		int shipnum = ship_get_ship_with_dock_bay(shipp->team);
 
 		if (shipnum >= 0)
 			objnum = Ships[shipnum].objnum;
@@ -13409,11 +13419,11 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum)
 		return -1;
 
 	pm = model_get( Ships[Objects[objnum].instance].modelnum );
-	sb = pm->ship_bay;
+	bay = pm->ship_bay;
 
-	if ( sb == NULL ) 
+	if ( bay == NULL ) 
 		return -1;
-	if ( sb->num_paths <= 0 ) 
+	if ( bay->num_paths <= 0 ) 
 		return -1;
 
 /*
@@ -13432,9 +13442,9 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum)
 	// take the closest path we can find
 	int ship_bay_path;
 	ship_bay_path = ai_find_closest_depart_path(aip, pm);
-	path_index = sb->paths[ship_bay_path];
+	path_index = bay->path_indexes[ship_bay_path];
 	aip->submode_parm0 = ship_bay_path;
-	sb->depart_flags |= (1<<ship_bay_path);
+	bay->depart_flags |= (1<<ship_bay_path);
 
 	if ( path_index == -1 ) {
 		return -1;
@@ -13451,7 +13461,7 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum)
 	aip->goal_signature = Objects[objnum].signature;
 	aip->mode = AIM_BAY_DEPART;
 
-	Ships[pl_objp->instance].flags |= SF_DEPART_DOCKBAY;
+	shipp->flags |= SF_DEPART_DOCKBAY;
 	return 0;
 }
 
@@ -13527,12 +13537,12 @@ void ai_bay_depart()
 
 		// Volition bay code
 		polymodel	*pm;
-		ship_bay		*sb;
+		ship_bay	*bay;
 
 		pm = model_get( Ships[Objects[aip->goal_objnum].instance].modelnum );
-		sb = pm->ship_bay;
-		if ( sb != NULL ) {
-			sb->depart_flags &= ~(1<<aip->submode_parm0);
+		bay = pm->ship_bay;
+		if ( bay != NULL ) {
+			bay->depart_flags &= ~(1<<aip->submode_parm0);
 		}
 
 		// make ship disappear

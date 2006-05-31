@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.104 $
- * $Date: 2006-05-27 16:57:13 $
- * $Author: taylor $
+ * $Revision: 2.105 $
+ * $Date: 2006-05-31 03:05:42 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2006/05/27 16:57:13  taylor
+ * comment out the model cache stuff, it's old and not actually used anyway
+ * minor cleanup of some modelinterp.cpp code, to make it more readable
+ * fix tertiary thruster batcher which had the radius value swapped
+ * comment out a couple places where we were doing a D3D or OGL check (it's always true so why bother)
+ * add more support for NO_DIRECT3D so that it can be used on Windows to build without D3D
+ *
  * Revision 2.103  2006/05/16 15:54:39  Goober5000
  * fix for Mantis #875
  * --Goober5000
@@ -4484,6 +4491,24 @@ int model_find_dock_name_index( int modelnum, char *name )
 	return -1;
 }
 
+// returns the actual name of a docking point on a model, needed by Fred.
+char *model_get_dock_name(int modelnum, int index)
+{
+	polymodel *pm;
+
+	pm = model_get(modelnum);
+	Assert((index >= 0) && (index < pm->n_docks));
+	return pm->docking_bays[index].name;
+}
+
+int model_get_num_dock_points(int modelnum)
+{
+	polymodel *pm;
+
+	pm = model_get(modelnum);
+	return pm->n_docks;
+}
+
 int model_get_dock_index_type(int modelnum, int index)
 {
 	polymodel *pm = model_get(modelnum);				
@@ -4504,22 +4529,26 @@ int model_get_dock_types(int modelnum)
 	return type;
 }
 
-// returns the actual name of a docking point on a model, needed by Fred.
-char *model_get_dock_name(int modelnum, int index)
+// Goober5000
+// returns index in [0, MAX_SHIP_BAY_PATHS)
+int model_find_bay_path(int modelnum, char *bay_path_name)
 {
-	polymodel *pm;
+	int i;
+	polymodel *pm = model_get(modelnum);
 
-	pm = model_get(modelnum);
-	Assert((index >= 0) && (index < pm->n_docks));
-	return pm->docking_bays[index].name;
-}
+	if (pm->ship_bay == NULL)
+		return -1;
 
-int model_get_num_dock_points(int modelnum)
-{
-	polymodel *pm;
+	if (pm->ship_bay->num_paths <= 0)
+		return -1;
 
-	pm = model_get(modelnum);
-	return pm->n_docks;
+	for (i = 0; i < pm->ship_bay->num_paths; i++)
+	{
+		if (!stricmp(pm->paths[pm->ship_bay->path_indexes[i]].name, bay_path_name))
+			return i;
+	}
+
+	return -1;
 }
 
 // Goober5000
