@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.42 $
- * $Date: 2006-05-31 03:05:43 $
+ * $Revision: 2.43 $
+ * $Date: 2006-05-31 03:27:19 $
  * $Author: Goober5000 $
  *
  * C file for interface to DirectSound
@@ -1702,7 +1702,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 
 	mprintf(("Initializing OpenAL...\n"));
 
-//	openal_get_best_device();
+	openal_get_best_device();
 
 	// load OpenAL
 #ifdef _WIN32
