@@ -1,12 +1,16 @@
 /*
  * $Logfile: $
- * $Revision: 1.27 $
- * $Date: 2006-05-29 02:02:17 $
- * $Author: Goober5000 $
+ * $Revision: 1.28 $
+ * $Date: 2006-06-01 04:45:19 $
+ * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2006/05/29 02:02:17  Goober5000
+ * add Taylor's compile fix
+ * --Goober5000
+ *
  * Revision 1.26  2006/05/27 16:39:40  taylor
  * remove non-Windows timeSetEvent() functions
  * make PDWORD and LPDWORD int instead of long (64-bit issue) (thanks Spike)
@@ -1123,9 +1127,9 @@ BOOL AudioStream::Create (char *pszFilename)
 //				nprintf(("SOUND", "SOUND => Stream buffer created using %d bytes\n", m_cbBufSize));
 
 				// Create sound buffer
-				OpenAL_ErrorCheck( alGenBuffers(MAX_STREAM_BUFFERS, m_buffer_ids), return FAILURE );
-				
 				OpenAL_ErrorCheck( alGenSources(1, &m_source_id), return FAILURE );
+
+				OpenAL_ErrorCheck( alGenBuffers(MAX_STREAM_BUFFERS, m_buffer_ids), { alDeleteSources(1, &m_source_id); return FAILURE; } );
 				
 				OpenAL_ErrorPrint( alSourcef(m_source_id, AL_ROLLOFF_FACTOR, 0) );
 
