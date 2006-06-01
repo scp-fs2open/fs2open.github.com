@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.27 $
- * $Date: 2006-05-31 02:08:22 $
- * $Author: Goober5000 $
+ * $Revision: 1.28 $
+ * $Date: 2006-06-01 04:47:23 $
+ * $Author: taylor $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2006/05/31 02:08:22  Goober5000
+ * fix compiler warning
+ * --Goober5000
+ *
  * Revision 1.26  2006/05/29 19:14:30  Goober5000
  * removed small redundancy
  * --Goober5000
@@ -1806,9 +1810,15 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	}
 
 
-	// form on my wing is always achievable, but need to set the override bit so that it
-	// always gets executed next
+	// form on wing is always achievable if we are forming on Player, but it's up for grabs otherwise
+	// if the wing target is valid then be sure to set the override bit so that it always
+	// gets executed next
 	if ( aigp->ai_mode == AI_GOAL_FORM_ON_WING ) {
+		sindex = ship_name_lookup( aigp->ship_name );
+
+		if (sindex < 0)
+			return AI_GOAL_NOT_ACHIEVABLE;
+
 		aigp->flags |= AIGF_GOAL_OVERRIDE;
 		return AI_GOAL_ACHIEVABLE;
 	}
