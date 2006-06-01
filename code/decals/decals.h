@@ -4,8 +4,11 @@
 #ifndef _DECAL_H
 #define _DECAL_H
 
-
 #include "object/object.h"
+#include "globalincs/pstypes.h"
+//#include "ship/ship.h"
+
+#ifdef ENABLE_DECALS
 
 #define MAX_DECAL_POLY 40
 #define MAX_DECAL_POLY_POINT 10
@@ -17,15 +20,14 @@
 #define QUICKFIND_SEGMENT_LENGTH (MAX_GLOBAL_DECAL_POLYS/QUICKFIND_SUBDIVISION)
 #define MAX_GLOBAL_DECALS 5000
 
-#include "globalincs/pstypes.h"
-//#include "ship/ship.h"
-
 #define DP_EOF 			0
 #define DP_DEFPOINTS 	1
 #define DP_FLATPOLY		2
 #define DP_TMAPPOLY		3
 #define DP_SORTNORM		4
 #define DP_BOUNDBOX		5
+
+#endif	// ENABLE_DECALS
 
 struct decal;
 struct decal_list;
@@ -95,6 +97,8 @@ struct decal_point{
 	float radius;
 };
 
+#ifdef ENABLE_DECALS
+
 int decal_create(object * obj, decal_point *point, int subobject, int texture, int backfaced_texture = -1, int glow_texture = -1, int burn_texture = -1, int burn_time = 1000);//makes the decal
 
 int decal_create_simple(object * obj, decal_point *point, int texture);//makes a simple non-clipped decal
@@ -105,4 +109,21 @@ int decal_create_sub(void *model_ptr);
 
 void clear_decals(decal_system	*system);
 
-#endif
+void init_decals();
+
+#else // ENABLE_DECALS
+
+inline int decal_create(object * obj, decal_point *point, int subobject, int texture, int backfaced_texture = -1, int glow_texture = -1, int burn_texture = -1, int burn_time = 1000)
+{
+	return 0;
+}
+
+#define decal_create_simple(a, b, c) (0)
+#define decal_render_all(a)
+#define decal_create_sub(a) (0);
+#define clear_decals(a)
+#define init_decals()
+
+#endif // ENABLE_DECALS
+
+#endif // _DECAL_H
