@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.173 $
- * $Date: 2006-05-31 04:02:05 $
+ * $Revision: 2.174 $
+ * $Date: 2006-06-01 07:33:59 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.173  2006/05/31 04:02:05  taylor
+ * render strings a string at a time rather than a letter at the time (should be at least 3 times faster from state changes alone)
+ *
  * Revision 2.172  2006/05/30 03:53:52  taylor
  * z-range for 2D ortho is -1.0 to 1.0, may help avoid some strangeness if we actually get that right. :)
  * minor cleanup of old code and default settings
@@ -4320,12 +4323,12 @@ int opengl_init_display_device()
 	pfd.nVersion = 1;
 	pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
 	pfd.iPixelType = PFD_TYPE_RGBA;
-	pfd.cColorBits = (bpp == 32) ? 24 : 16;
+	pfd.cColorBits = (ubyte)bpp;
 	pfd.cRedBits = (ubyte)Gr_red.bits;
 	pfd.cGreenBits = (ubyte)Gr_green.bits;
 	pfd.cBlueBits = (ubyte)Gr_blue.bits;
 	pfd.cAlphaBits = (bpp == 32) ? (ubyte)Gr_alpha.bits : 0;
-	pfd.cDepthBits = (ubyte)bpp;
+	pfd.cDepthBits = (bpp == 32) ? 24 : 16;
 
 
 	wnd = (HWND)os_get_window();
