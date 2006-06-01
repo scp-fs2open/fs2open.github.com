@@ -166,14 +166,14 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float dep
 
 	// get the direction from the point to the eye
 	vm_vec_sub(&fvec, &View_position, &PNT);
-	vm_vec_normalize(&fvec);
+	vm_vec_normalize_safe(&fvec);
 
 	// get an up vector in the general direction of what we want
 	uvec = View_matrix.vec.uvec;
 
 	// make a right vector from the f and up vector, this r vec is exactly what we want, so...
 	vm_vec_crossprod(&rvec, &fvec, &uvec);
-	vm_vec_normalize(&rvec);
+	vm_vec_normalize_safe(&rvec);
 
 	// fix the u vec with it
 	vm_vec_crossprod(&uvec, &fvec, &rvec);
@@ -276,13 +276,13 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float ang
 	vm_vert2vec(pnt, &PNT);
 
 	vm_vec_sub(&fvec, &View_position, &PNT);
-	vm_vec_normalize(&fvec);
+	vm_vec_normalize_safe(&fvec);
 
 	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &fvec);
 //	uvec = View_matrix.vec.uvec;
 
 	vm_vec_crossprod(&rvec, &fvec, &uvec);
-	vm_vec_normalize(&rvec);
+	vm_vec_normalize_safe(&rvec);
 	vm_vec_crossprod(&uvec, &fvec, &rvec);
 
 	vm_vec_scale_add(&PNT, &PNT, &fvec, depth);
@@ -469,10 +469,10 @@ float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float wid
 
 	// compute the up vector
 	vm_vec_crossprod(&uvec, &fvec, &reye);
-	vm_vec_normalize(&uvec);
+	vm_vec_normalize_safe(&uvec);
 	// ... the forward vector
 	vm_vec_crossprod(&fvec, &uvec, &reye);
-	vm_vec_normalize(&fvec);
+	vm_vec_normalize_safe(&fvec);
 	// now recompute right vector, in case it wasn't entirely perpendiclar
 	vm_vec_crossprod(&rvec, &uvec, &fvec);
 
