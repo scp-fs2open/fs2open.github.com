@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.44 $
- * $Date: 2006-05-31 04:01:13 $
+ * $Revision: 2.45 $
+ * $Date: 2006-06-01 04:46:18 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2006/05/31 04:01:13  taylor
+ * bah!  this thing is crashing.  disable for now until I can figure out what's going on
+ *
  * Revision 2.43  2006/05/31 03:27:19  Goober5000
  * whoops, didn't mean to commit that
  *
@@ -2839,10 +2842,10 @@ int ds_play(int sid, int hid, int snd_id, int priority, int volume, int pan, int
 
 		// setup default listener position/orientation
 		// this is needed for 2D pan
-	//	OpenAL_ErrorPrint( alListener3f(AL_POSITION, 0.0, 0.0, 0.0) );
+		OpenAL_ErrorPrint( alListener3f(AL_POSITION, 0.0, 0.0, 0.0) );
 
-	//	ALfloat list_orien[] = { 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f };
-	//	OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
+		ALfloat list_orien[] = { 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f };
+		OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
 
 		OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_SOURCE_RELATIVE, AL_FALSE) );
 
