@@ -128,6 +128,7 @@ texture for the list is set, then a call is made to render the vertex buffer.
 
 */
 
+#ifdef ENABLE_DECALS
 
 #include "object/object.h"
 #include "globalincs/linklist.h"
@@ -2228,3 +2229,4 @@ check_poly_decals();
 */
 }
 
+#endif // ENABLE_DECALS
