@@ -9,6 +9,20 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2006/05/27 17:07:48  taylor
+ * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
+ * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
+ * clean up TMAP flags
+ * fix a couple of minor OpenGL state change issues with spec and env map rendering
+ * make sure we build again for OS X (OGL extension functions work a little different there)
+ * render targets always need to be power-of-2 to avoid incomplete buffer issues in the code
+ * when we disable culling in opengl_3dunlit be sure that we re-enable it on exit of function
+ * re-fix screenshots
+ * add true alpha blending support (with cmdline for now since the artwork has the catch up)
+ * draw lines with float positioning, to be more accurate with resizing on non-standard resolutions
+ * don't load cubemaps from file for D3D, not sure how to do it anyway
+ * update geometry batcher code, memory fixes, dynamic stuff, basic fixage, etc.
+ *
  * Revision 2.57  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -685,6 +699,7 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 {
 	const int num_non_alpha = 3;
 	const int num_alpha     = 4;
+	int i;
 
 	default_non_alpha_tformat	 = D3DFMT_UNKNOWN;
 	default_alpha_tformat		 = D3DFMT_UNKNOWN;
@@ -707,7 +722,7 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 
 	// Go through the alpha list and find a texture format of a valid depth
 	// and is supported in this adapter mode
-	for(int i = 0; i < num_alpha; i++) {
+	for(i = 0; i < num_alpha; i++) {
 		if(d3d_get_mode_bit(alpha_list[i]) != 16) {
 			continue;
 		}
@@ -953,9 +968,10 @@ int d3d_match_mode(int adapter)
 int d3d_check_multisample_types(int adapter, int chosen_ms, D3DFORMAT back_buffer_format, D3DFORMAT depth_buffer_format)
 {
 	HRESULT hr;
+	int i;
 
 	// If fails try a lesser mode
-	for(int i = chosen_ms; i >= 0; i--)
+	for(i = chosen_ms; i >= 0; i--)
 	{
 		hr = GlobalD3DVars::lpD3D->CheckDeviceMultiSampleType( 
 			adapter, D3DDEVTYPE_HAL, back_buffer_format, GlobalD3DVars::D3D_window, multisample_types[i]);
