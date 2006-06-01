@@ -217,7 +217,9 @@ void gr_d3d_set_light(light *light)
 
 void gr_d3d_reset_lighting()
 {
-	for(int i = 0; i<MAX_LIGHTS; i++){
+	int i;
+
+	for(i = 0; i<MAX_LIGHTS; i++){
 		d3d_lights[i].occupied = false;
 	}
 	for(i=0; i<8; i++){
