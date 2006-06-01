@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.45 $
- * $Date: 2006-06-01 04:46:18 $
+ * $Revision: 2.46 $
+ * $Date: 2006-06-01 07:33:00 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2006/06/01 04:46:18  taylor
+ * put back listener setup for each sound, doesn't make a difference under Linux but it may be hurting Windows for some reason
+ *
  * Revision 2.44  2006/05/31 04:01:13  taylor
  * bah!  this thing is crashing.  disable for now until I can figure out what's going on
  *
@@ -1716,7 +1719,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	// restrict to DirectSound rather than DirectSound3D (the default) here since we may have 'too many hardware sources'
 	// type problems (FIXME for a later date since I don't like this with future code) - taylor
 #ifdef AL_VERSION_1_1
-	ds_sound_device = alcOpenDevice( NULL );
+	ds_sound_device = alcOpenDevice( (const ALCchar *) NOX("Generic Software") );
 #else
 	ds_sound_device = alcOpenDevice( (const ALubyte *) NOX("DirectSound") );
 #endif // AL_VERSION_1_1
