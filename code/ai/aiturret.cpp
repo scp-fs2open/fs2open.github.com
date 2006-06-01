@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.38 $
- * $Date: 2006-04-14 21:13:31 $
+ * $Revision: 1.39 $
+ * $Date: 2006-06-01 04:40:41 $
  * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.38  2006/04/14 21:13:31  taylor
+ * Grrr!  That was still stupid.  Just going to revert it to retail and work out that bug it was supposed to fix at a later time.
+ *
  * Revision 1.37  2006/04/14 18:36:11  taylor
  * I might have blamed this on sleep, if it wasn't a bold faced lie. ;)
  *   - another part of the turret untargetting target bug
@@ -1739,6 +1742,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		{
 			wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
 			tv2e = v2e;
+
+			// make sure to reset this for current weapon
+			ok_to_fire = false;
 
 			// if the weapon is a flak gun, add some jitter to its aim so it fires in a "cone" 
 			// to make a cool visual effect and make them less lethal
