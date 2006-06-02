@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150 $
- * $Date: 2006-05-21 03:58:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.151 $
+ * $Date: 2006-06-02 08:46:47 $
+ * $Author: karajorma $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150  2006/05/21 03:58:58  Goober5000
+ * fix Mantis #834
+ * --Goober5000
+ *
  * Revision 2.149  2006/05/20 02:03:01  Goober5000
  * fix for Mantis #755, plus make the missionlog #defines uniform
  * --Goober5000
@@ -1140,6 +1144,8 @@ typedef struct ship_subsys_info {
 #define SF2_NO_BUILTIN_MESSAGES				(1<<11)		// Karajorma - ship should not send built-in messages
 #define SF2_PRIMARIES_LOCKED				(1<<12)		// Karajorma - This ship can't fire primary weapons
 #define SF2_SECONDARIES_LOCKED				(1<<13)		// Karajorma - This ship can't fire secondary weapons
+#define SF2_SET_CLASS_DYNAMICALLY			(1<<14)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
+#define SF2_TEAM_LOADOUT_STORE_STATUS		(1<<15)		// Karajorma - This ship has been flaged for cleanup at the end of the mission
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -1415,6 +1421,16 @@ typedef struct ship {
 
 	int thrusters_start[MAX_MAN_THRUSTERS];		//Timestamp of when thrusters started
 	int thrusters_sounds[MAX_MAN_THRUSTERS];	//Sound index for thrusters
+
+	// Karajorma - These correspond to the ones for a parse object	
+	int num_alt_class_one;						
+	int alt_class_one[MAX_ALT_CLASS_1];				// The alt class number (basically the index in Ship_info)
+	int alt_class_one_variable[MAX_ALT_CLASS_1];		// The variable backing this entry if any. 
+
+	int num_alt_class_two;  
+	int alt_class_two[MAX_ALT_CLASS_2];   
+	int alt_class_two_variable[MAX_ALT_CLASS_2];  								
+												
 /*
 	flash_ball	*debris_flare;
 	int n_debris_flare;
@@ -1425,17 +1441,22 @@ typedef struct ship {
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
 // information.
-#define SEF_DESTROYED			(1<<0)
+#define SEF_DESTROYED				(1<<0)
 #define SEF_DEPARTED				(1<<1)
-#define SEF_CARGO_KNOWN			(1<<2)
-#define SEF_PLAYER_DELETED		(1<<3)			// ship deleted by a player in ship select
-#define SEF_BEEN_TAGGED			(1<<4)
-#define SEF_RED_ALERT_CARRY	(1<<5)
+#define SEF_CARGO_KNOWN				(1<<2)
+#define SEF_PLAYER_DELETED			(1<<3)		// ship deleted by a player in ship select
+#define SEF_BEEN_TAGGED				(1<<4)
+#define SEF_RED_ALERT_CARRY			(1<<5)
+#define SEF_SHIP_EXITED_STORE		(1<<6)		// Karajorma - Don't bump from Ships_exited even if full. 
+
 
 #define MAX_EXITED_SHIPS	(2*MAX_SHIPS) //DTP changed for MAX_SHIPS sake. double of max_ships.
 
+extern int Num_exited_ships;	// Karajorma - Added here so that Team Loadout SEXPs can get at it
+
 typedef struct exited_ship {
 	char		ship_name[NAME_LENGTH];
+	int		ship_class;						// The ships index in Ship_info
 	int		obj_signature;
 	int		team;
 	int		flags;
