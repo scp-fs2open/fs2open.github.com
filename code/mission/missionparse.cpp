@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178 $
- * $Date: 2006-05-31 03:05:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.179 $
+ * $Date: 2006-06-02 09:05:30 $
+ * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178  2006/05/31 03:05:42  Goober5000
+ * some cosmetic changes in preparation for bay arrival/departure code
+ * --Goober5000
+ *
  * Revision 2.177  2006/05/21 22:57:30  Goober5000
  * fix for Mantis #750
  * --Goober5000
@@ -1310,6 +1314,8 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"no-builtin-messages",
 	"primaries-locked", 
 	"secondaries-locked",
+	"set-class-dynamically",
+	"team-loadout-store", 
 };
 
 
@@ -1368,6 +1374,11 @@ void parse_init();
 void parse_object_set_handled_flag_helper(p_object *pobjp, p_dock_function_info *infop);
 void parse_object_clear_all_handled_flags();
 int parse_object_on_arrival_list(p_object *pobjp);
+
+// Karajorma 
+void process_loadout_objects();
+bool attempt_assignation_from_alt_classes(p_object *pobj);
+void assign_ship_from_loadout(p_object *pobj, team_data *current_team, int new_ship_loadout_index);
 
 // Goober5000
 void mission_parse_mark_non_arrival(p_object *p_objp);
@@ -1741,9 +1752,9 @@ void parse_player_info(mission *pm)
 void parse_player_info2(mission *pm)
 {
 	char str[NAME_LENGTH];
-	int nt, i, total, list[MAX_SHIP_CLASSES * 2], list2[MAX_WEAPON_TYPES * 2], num_starting_wings;
+	int nt, i, total, list[MAX_SHIP_CLASSES * 4], list2[MAX_WEAPON_TYPES * 2]; //, num_starting_wings;
 	team_data *ptr;
-	char starting_wings[MAX_STARTING_WINGS][NAME_LENGTH];
+	// char starting_wings[MAX_STARTING_WINGS][NAME_LENGTH];
 
 	// read in a ship/weapon pool for each team.
 	for ( nt = 0; nt < Num_teams; nt++ ) {
@@ -1756,29 +1767,43 @@ void parse_player_info2(mission *pm)
 			stuff_string( Player_start_shipname, F_NAME, NULL );
 
 		required_string("$Ship Choices:");
-		total = stuff_int_list(list, MAX_SHIP_CLASSES * 2, SHIP_INFO_TYPE);
+		total = stuff_ship_list(list, MAX_SHIP_CLASSES * 4, MISSION_LOADOUT_SHIP_LIST);
 
-		Assert(!(total & 0x01));  // make sure we have an even count
+		// make sure we have a count which is divisible by four since four values are added for each ship
+		Assert((total%4) == 0); 
+
 
 		num_ship_choices = 0;
-		total /= 2;							// there are only 1/2 the ships really on the list.
+		total /= 4;							// there are only 1/4 the ships really on the list.
 		for (i=0; i<total; i++) {
 			// in a campaign, see if the player is allowed the ships or not.  Remove them from the
 			// pool if they are not allowed
 			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
-				if ( !Campaign.ships_allowed[list[i*2]] )
+				if ( !Campaign.ships_allowed[list[i*4]] )
 					continue;
 			}
 
-			ptr->ship_list[num_ship_choices] = list[i * 2];
-			ptr->ship_count[num_ship_choices] = list[i * 2 + 1];
+			ptr->ship_list[num_ship_choices] = list[i * 4];
+			strcpy(ptr->ship_list_variables[num_ship_choices], Sexp_variables[list[(i * 4) + 1]].variable_name);
+			ptr->ship_count[num_ship_choices] = list[(i * 4) + 2];
+			ptr->loadout_total += list[(i * 4) + 2];
+			strcpy(ptr->ship_count_variables[num_ship_choices], Sexp_variables[list[(i * 4)+3]].variable_name);
 			num_ship_choices++;
 		}
 		ptr->number_choices = num_ship_choices;
 
+		/* Karajorma - Well this is pretty funny. The code sets the num_starting_wings variable and then never uses it 
+		// again! Furthermore there isn't actually any way to set "+Starting Wings:" in the first place. Like the 
+		// "+Default_ship:" code below this appears to be either a feature that was never added or a leftover from 
+		// FS1 as it was never used in the [V] missions. 
+
 		num_starting_wings = 0;
 		if (optional_string("+Starting Wings:"))
 			num_starting_wings = stuff_string_list(starting_wings, MAX_STARTING_WINGS);
+		*/
+
+		// Karajorma - Unlike the Starting Wings: code this actually does do something if you add the entry to a mission
+		// Might be worth adding a box to FRED so people can set this. The Team Loadout code could definitely use it.
 
 		ptr->default_ship = -1;
 		if (optional_string("+Default_ship:")) {
@@ -1799,7 +1824,7 @@ void parse_player_info2(mission *pm)
 			}
 		}
 
-		if (ptr->default_ship == -1)  // invalid or not specified, make first in list
+		if (ptr->default_ship == -1)  // invalid or not specified, make first in list*/
 			ptr->default_ship = ptr->ship_list[0];
 
 		for (i=0; i<MAX_WEAPON_TYPES; i++)
@@ -2716,6 +2741,41 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 	}
 
+	// Karajorma - Copy across the alt ship classes for FRED. 
+	if (Fred_running)
+	{
+		Ships[shipnum].num_alt_class_one = p_objp->num_alt_class_one;
+		Ships[shipnum].num_alt_class_two = p_objp->num_alt_class_two;
+
+		for (int m=0;  m< p_objp->num_alt_class_one ; m++)
+		{
+			if (p_objp->alt_class_one_variable[m] == -1)
+			{
+				Ships[shipnum].alt_class_one[m] = p_objp->alt_class_one[m]; 
+				Ships[shipnum].alt_class_one_variable[m] = -1; 
+			}
+			else 
+			{
+				Ships[shipnum].alt_class_one[m] = -1;
+				Ships[shipnum].alt_class_one_variable[m] = p_objp->alt_class_one_variable[m];
+			}
+		}
+
+		for (int n=0; n < p_objp->num_alt_class_two ; n++)
+		{
+			if (p_objp->alt_class_two_variable[n] == -1)
+			{
+				Ships[shipnum].alt_class_two[n] = p_objp->alt_class_two[n]; 
+				Ships[shipnum].alt_class_two_variable[n] = -1; 
+			}
+			else 
+			{
+				Ships[shipnum].alt_class_two[n] = -1;
+				Ships[shipnum].alt_class_two_variable[n] = p_objp->alt_class_two_variable[n];
+			}
+		}
+	}
+
 	// set the orders that this ship will accept.  It will have already been set to default from the
 	// ship create code, so only set them if the parse object flags say they are unique
 	if (p_objp->flags & P_SF_USE_UNIQUE_ORDERS)
@@ -2869,6 +2929,14 @@ int parse_create_object_sub(p_object *p_objp)
 	// Karajorma
 	if (p_objp->flags2 & P2_SF2_SECONDARIES_LOCKED) 
 		Ships[shipnum].flags2 |= SF2_SECONDARIES_LOCKED;
+
+	// Karajorma
+	if(p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY) 
+		Ships[shipnum].flags2 |= SF2_SET_CLASS_DYNAMICALLY;
+
+	// Karajorma
+	if(p_objp->flags2 & P2_SF2_TEAM_LOADOUT_STORE_STATUS) 
+		Ships[shipnum].flags2 |= SF2_TEAM_LOADOUT_STORE_STATUS;
 
 	if (p_objp->flags & P_SF_GUARDIAN)
 		Ships[shipnum].ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
@@ -3167,6 +3235,50 @@ int parse_create_object_sub(p_object *p_objp)
 	return objnum;
 }
 
+// Karajorma
+int parse_alt_class(p_object *p_objp, int num_alts, bool alt_type_1) 
+{
+	char alt_ship_class[128]; 
+	int recorded_as = get_string_or_variable(alt_ship_class);
+
+	int alt_class_index = -1; 
+	int variable_index = -1;
+
+	// ship name
+	if (recorded_as == FOUND_STRING)
+	{
+		alt_class_index = ship_info_lookup(alt_ship_class);
+	}
+	// string variable
+	else 
+	{
+		variable_index = get_index_sexp_variable_name(alt_ship_class);
+		alt_class_index = ship_info_lookup(Sexp_variables[variable_index].text);
+	}
+	
+	if (alt_class_index < 0 )
+	{
+		Warning(LOCATION, "Ship \"%s\" has an invalid Alternate Ship Class type (ships.tbl probably changed). Skipping this entry", p_objp->name); 
+	}
+	else
+	{
+		if (alt_type_1)
+		{
+			p_objp->alt_class_one[num_alts] = alt_class_index; 
+			p_objp->alt_class_one_variable[num_alts++] = variable_index; 
+			p_objp->num_alt_class_one = num_alts; 
+		}
+		else 
+		{
+			p_objp->alt_class_two[num_alts] = alt_class_index; 
+			p_objp->alt_class_two_variable[num_alts++] = variable_index; 
+			p_objp->num_alt_class_two = num_alts; 
+		}
+	}	
+
+	return num_alts; 
+}
+
 //	Mp points at the text of an object, which begins with the "$Name:" field.
 //	Snags all object information.  Creating the ship now only happens after everything has been parsed.
 //
@@ -3201,6 +3313,24 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			Fred_found_unknown_ship_during_parsing = 1;
 
 		p_objp->ship_class = 0;
+	}
+
+	// Karajorma - See if there are any alternate classes specified for this ship. 
+
+	// Type 1 Alts
+	p_objp->num_alt_class_one = 0;
+	int num_alts = 0;
+	while (optional_string("+Alt_Ship_Class_Type_1:") && (num_alts < MAX_ALT_CLASS_1))
+	{		
+		num_alts = num_alts = parse_alt_class(p_objp, num_alts, true); 
+	}
+
+	// Type 2 Alts
+	p_objp->num_alt_class_two = 0;
+	num_alts = 0;
+	while (optional_string("+Alt_Ship_Class_Type_2:") && (num_alts < MAX_ALT_CLASS_2))
+	{
+		parse_alt_class(p_objp, num_alts, false); 
 	}
 
 	// if this is a multiplayer dogfight mission, skip support ships
@@ -3863,7 +3993,303 @@ void parse_objects(mission *pm, int flag)
 	// Goober5000 - I moved the docking stuff to post_process_ships_wings because of interdependencies
 	// between ships and wings.  Neither docking stuff nor ship stuff (for ships present at mission start)
 	// will be valid until after post_process_ships_wings is run.
+
+	// Karajorma - Now that we've parsed all the objects we can set the class of those which were flagged 
+	// to be set based on the number of ships available in the loadout. 
+	if (!Fred_running)
+	{
+		process_loadout_objects();
+	}	
 }
+
+// Karajorma - Checks the list of Parse_objects to see if any of them should be reassigned based on the 
+// number of ships of that class that were present in the loadout. 
+void process_loadout_objects()
+{
+	int reassignments[MAX_PARSE_OBJECTS];
+	int count = 0;
+	
+	// Loop through all the Parse_objects looking for ships that should be affected by the loadout code.
+	for (int i=0; i < Num_parse_objects; i++)
+	{
+		p_object *pobj = &Parse_objects[i];
+		if (pobj->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY)
+		{
+			bool successful = attempt_assignation_from_alt_classes(pobj);
+
+			if (!successful)
+			{
+				// We've cycled through all the alt classes and we still haven't found one that matches
+				// So we store the ship so we can come back to it later.
+				Assert (count < Num_parse_objects);
+				reassignments[count++] = i;
+			}
+		}
+	}
+	
+	// Now we go though the ships we were unable to assign earlier and reassign them on a first come first 
+	// served basis.
+	for (int m=0; m < count; m++)
+	{
+		// What is the ship class of the object and what team is it on? 
+		p_object *p_obj = &Parse_objects[reassignments[m]];
+		team_data *current_team = &Team_data[p_obj->team];
+		bool loadout_assigned = false;
+		Assert (p_obj->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY);
+
+		// First thing to check is whether we actually have any ships left to assign
+		if (current_team->loadout_total == 0)
+		{
+			/* We'll do this code once the default ship code can be used to set a global default. Till then it's much better
+			// to simply use the ship that the mission designer specified. 
+			// Check that the team default ship and this ship aren't the same (this may be a different ship
+			// from any of the alt ship classes). We don't need to do anything if it is the same. 
+			if (p_obj->ship_class != current_team->default_ship)
+			{
+				swap_parse_object(p_obj, current_team->default_ship);
+			}*/
+
+			// If there is nothing left to assign we should use the ship in the mission file
+			loadout_assigned = true;
+		}
+		// We do have ships left in the team loadout that we can assign
+		else
+		{
+			// Go through the loadout until we find an unassigned ship
+			for (int j=0; j < current_team->number_choices; j++)
+			{
+				if (current_team->ship_count[j] > 0)
+				{
+					assign_ship_from_loadout(p_obj, current_team, j);
+					// We will need to assign a new class too (if a p_object the same class was available
+					// it should have been assigned by attempt_loadout_assignation_from_defaults()
+					Assert (p_obj->ship_class != current_team->ship_list[j]);
+					swap_parse_object(p_obj, current_team->ship_list[j]);
+
+					loadout_assigned = true;
+					break ;
+				}
+			}
+		}
+			
+		// We should never reach here with an unassigned loadout
+		Assert (loadout_assigned);
+	}
+}
+
+// Karajorma - There are three places the game looks when attemptsing to determine the ship class for team loadout. 
+// The class specified in the mission file and the two alt ship classes. This function checks all three
+// and reports false if it can't set the ship class from the values held in any of them. 
+bool attempt_assignation_from_alt_classes(p_object *pobj)
+{
+	team_data *data_for_team = &Team_data[pobj->team];
+
+	int loadout_index = SHIP_CURRENTLY_UNASSIGNED;
+
+	// First lets check if the ship specified in the mission file is of an assignable class
+	loadout_index = is_ship_available_from_loadout(data_for_team, pobj->ship_class);
+	if ((loadout_index != SHIP_CLASS_NOT_IN_LOADOUT) && (loadout_index != SHIP_CLASS_ALL_ASSIGNED))
+	{
+		Assert (data_for_team->loadout_total > 0);
+		assign_ship_from_loadout(pobj, data_for_team, loadout_index);
+			
+		// Since the ship in the mission file matched one available in the loadout we need go no further
+		return true;
+	}
+
+	// Now check if we have any matches from the first set of alt classes. 
+	if (pobj->num_alt_class_one > 0)
+	{
+		int default_ship_index = 0;
+		while ((default_ship_index < pobj->num_alt_class_one) && 
+			  ((loadout_index == SHIP_CLASS_NOT_IN_LOADOUT) ||(loadout_index == SHIP_CLASS_ALL_ASSIGNED))) 
+		{
+			loadout_index = is_ship_available_from_loadout(data_for_team, pobj->alt_class_one[default_ship_index]);
+			default_ship_index++;
+		}
+	}
+			
+	if ((loadout_index != SHIP_CLASS_NOT_IN_LOADOUT) && (loadout_index != SHIP_CLASS_ALL_ASSIGNED))
+	{
+		// We've found a hit in the suggested_loadouts. Asssign it and swap the ships
+		assign_ship_from_loadout(pobj, data_for_team, loadout_index);
+		swap_parse_object(pobj, data_for_team->ship_list[loadout_index]);
+
+		// Ship assigned.  
+		return true; 
+	}
+
+	// If we still haven't successfully assigned the ship we'll attempt to assign it from the second set of alt 
+	// classes. If the first entry in the array does contain a ship class we will set the p_object to that value so it
+	// makes no sense to check anything other than the first entry
+	if (pobj->num_alt_class_two > 0)
+	{
+		loadout_index = is_ship_available_from_loadout(data_for_team, pobj->alt_class_two[0]);
+			
+		if ((loadout_index != SHIP_CLASS_NOT_IN_LOADOUT) && (loadout_index != SHIP_CLASS_ALL_ASSIGNED))
+		{
+			// we don't touch the team loadout data at all but we do need to check if we need to 
+			// swap ship class
+			if (pobj->ship_class != pobj->alt_class_two[0])
+			{
+				swap_parse_object(pobj, pobj->alt_class_two[0]);
+			}
+					
+			return true;
+		}
+		else 
+		{
+			assign_ship_from_loadout(pobj, data_for_team, loadout_index);
+			
+			// Do we actually need to change class?
+			if (pobj->ship_class != pobj->alt_class_two[0])
+			{
+				swap_parse_object(pobj, pobj->alt_class_two[0]);
+			}
+			return true;
+		}
+	}
+	// Ship couldn't be assigned to one of the defaults
+	return false;
+}
+
+// Karajorma - Checks if any ships of a certain ship class are still available in the team loadout
+// Returns the index of the ship in team_data->ship_list if found or SHIP_CLASS_ALL_ASSIGNED/SHIP_CLASS_NOT_IN_LOADOUT
+int is_ship_available_from_loadout(team_data *current_team, int ship_class)
+{
+	// first find out if the ship is even in the loadout
+	int index = is_ship_in_loadout(current_team, ship_class);
+
+	if (index != SHIP_CLASS_NOT_IN_LOADOUT)
+	{
+		// Found the matching ship but are there any left? 
+		if (current_team->ship_count[index] > 0)
+		{
+			return index;
+		}
+		else 
+		{
+			return SHIP_CLASS_ALL_ASSIGNED;
+		}
+	}
+
+	return SHIP_CLASS_NOT_IN_LOADOUT;	
+}
+
+// Karajorma - Checks if a certain ship class is in the team loadout. Returns the team_data->ship_index if it is or 
+// SHIP_CLASS_NOT_IN_LOADOUT if it isn't.
+int is_ship_in_loadout(team_data *current_team, int ship_class)
+{
+	// Search through the available ships to see if there is a matching ship class in the loadout
+	for (int i=0; i < current_team->number_choices; i++)
+	{
+		if (ship_class == current_team->ship_list[i])
+		{
+			return i;
+		}
+	}
+	// If we get this far we haven't found a match
+	return SHIP_CLASS_NOT_IN_LOADOUT;
+}
+
+// Karajorma - Updates the loadout quanities for a ship class.
+void assign_ship_from_loadout(p_object *pobj, team_data *current_team, int new_ship_loadout_index)
+{
+	// Fix the loadout variables to show that the class has less available if there are still ships available
+	if (current_team->ship_count[new_ship_loadout_index] > 0)
+	{
+		current_team->ship_count[new_ship_loadout_index]--;
+		current_team->loadout_total--;
+	}
+}
+
+// Karajorma - Replaces a p_object with a new one based on a Ship_info index.
+void swap_parse_object(p_object *p_obj, int new_ship_class)
+{
+	ship_info *new_ship_info = &Ship_info[new_ship_class];
+	ship_info *old_ship_info = &Ship_info[p_obj->ship_class];
+	int subsys_ind = p_obj->subsys_index;
+	subsys_status *ship_subsystems = &Subsys_status[subsys_ind];
+
+	// Class
+	// First things first. Change the class of the p_object
+	p_obj->ship_class = new_ship_class;
+
+	// Hitpoints
+	// We need to take into account that the ship might have been assigned special hitpoints so we can't 
+	// simply swap old for new. 
+	Assert (p_obj->ship_max_hull_strength > 0);
+	Assert (old_ship_info->max_hull_strength > 0);
+	
+	float hp_multiplier = p_obj->ship_max_hull_strength / i2fl(old_ship_info->max_hull_strength);
+	p_obj->ship_max_hull_strength = fl2i(new_ship_info->max_hull_strength * hp_multiplier);
+
+
+	// Shields
+	// Again we have to watch out for special hitpoints but this time we can't assume that there will be a 
+	// shield. So first lets see if there is one. 
+	if ((p_obj->ship_max_shield_strength != old_ship_info->max_shield_strength) && 
+		(p_obj->ship_max_shield_strength > 0) &&
+		(new_ship_info->max_shield_strength > 0))
+	{
+		// This ship is using special hitpoints to alter the shield strength
+		float shield_multiplier = p_obj->ship_max_shield_strength / i2fl(old_ship_info->max_shield_strength);
+		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength * shield_multiplier;
+	}
+	// Not using special hitpoints or a class which has a shield strength of zero
+	else
+	{
+		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength;
+	}
+	
+	// Primary weapons
+	// First find out what is the correct number for a ship of this class
+	int num_pbanks = new_ship_info->num_primary_banks;
+	// Now cycle through the primary banks looking for banks that were added or removed
+	for (int i=0; i < MAX_SHIP_PRIMARY_BANKS; i++)
+	{
+		// If we're dealing with a primary bank that actually should exist on this ship
+		if ( i < num_pbanks )
+		{
+			// We only care if a weapon hasn't been parsed in for this bank
+			if (ship_subsystems->primary_banks[i] == -1)
+			{
+				// Give the ship the default weapon for this bank. 
+				ship_subsystems->primary_banks[i] = new_ship_info->primary_bank_weapons[i];
+			}
+
+		}		
+		// Any primary banks the ship doesn't have should be set to -1
+		else
+		{
+			ship_subsystems->primary_banks[i] = -1;
+		}
+	}
+
+	// Secondary weapons 
+	// Again we first have to find out how many we should have
+	int num_sbanks = new_ship_info->num_secondary_banks;
+	// Now cycle through the secondary banks looking for banks that were added or removed
+	for (int j=0; j < MAX_SHIP_SECONDARY_BANKS; j++)
+	{
+		// If we're dealing with a primary bank that actually should exist on this ship
+		if ( j < num_sbanks )
+		{
+			// We only care if a weapon hasn't been parsed in for this bank
+			if (ship_subsystems->secondary_banks[j] == -1){
+				// Give the ship the default weapon for this bank. 
+				ship_subsystems->secondary_banks[j] = new_ship_info->secondary_bank_weapons[j];
+			}
+
+		}		
+		// Any secondary banks the ship doesn't have should be set to -1
+		else
+		{
+			ship_subsystems->secondary_banks[j] = -1;
+		}
+	}
+}
+
 
 p_object *mission_parse_get_parse_object(ushort net_signature)
 {

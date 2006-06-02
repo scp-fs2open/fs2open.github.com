@@ -9,13 +9,29 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.85 $
- * $Author: taylor $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 2.86 $
+ * $Author: karajorma $
+ * $Date: 2006-06-02 09:06:12 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.84  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -730,6 +746,8 @@ typedef struct subsys_status {
 } subsys_status;
 
 #define MAX_OBJECT_STATUS	10
+#define MAX_ALT_CLASS_1		3
+#define MAX_ALT_CLASS_2		1	// Karajorma - Team Loadout only needs one of these but I'm generalising the sytstem in case anyone ever needs more
 
 //	a parse object
 //	information from a $OBJECT: definition is read into this struct to
@@ -803,6 +821,18 @@ typedef struct p_object {
 	// Goober5000
 	int num_texture_replacements;
 	texture_replace replacement_textures[MAX_MODEL_TEXTURES];	// replacement textures - Goober5000
+	
+	// Karajorma - Alternate classes allow the mission designer to specify which classes to try if the one in the 
+	// mission file is unacceptable. The method by which this will be done is dependant on the parse_objects flags.
+	int num_alt_class_one;						
+	int alt_class_one[MAX_ALT_CLASS_1];				// The alt class number (basically the index in Ship_info)
+	int alt_class_one_variable[MAX_ALT_CLASS_1];		// The variable backing this entry if any. 
+
+	int num_alt_class_two;  
+	int alt_class_two[MAX_ALT_CLASS_2];   
+	int alt_class_two_variable[MAX_ALT_CLASS_2];  
+
+
 } p_object;
 
 // defines for flags used for p_objects when they are created.  Used to help create special
@@ -851,7 +881,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	10
+#define MAX_PARSE_OBJECT_FLAGS_2	12
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -863,6 +893,8 @@ typedef struct p_object {
 #define P2_SF2_NO_BUILTIN_MESSAGES			(1<<7)
 #define P2_SF2_PRIMARIES_LOCKED				(1<<8)
 #define P2_SF2_SECONDARIES_LOCKED			(1<<9)
+#define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<10)
+#define P2_SF2_TEAM_LOADOUT_STORE_STATUS	(1<<11)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
@@ -880,19 +912,28 @@ extern int Num_parse_objects;
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
+// Karajorma - Team Loadout stuff
+#define SHIP_CURRENTLY_UNASSIGNED		-1
+
+#define SHIP_CLASS_NOT_IN_LOADOUT		-1
+#define SHIP_CLASS_ALL_ASSIGNED			-2
+
+#define TOKEN_LENGTH	32
 
 typedef struct {
 	int		default_ship;  // default ship type for player start point (recommended choice)
 	int		number_choices; // number of ship choices inside ship_list
+	int		loadout_total;	// Total number of ships available of all classes 
 	int		ship_list[MAX_SHIP_CLASSES];
+	char	ship_list_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
 	int		ship_count[MAX_SHIP_CLASSES];
+	char	ship_count_variables[MAX_SHIP_CLASSES][TOKEN_LENGTH];
 	int		weaponry_pool[MAX_WEAPON_TYPES];
+	int		weapon_variable[MAX_WEAPON_TYPES];
 } team_data;
 
 #define MAX_P_WINGS		16
 #define MAX_SHIP_LIST	16
-
-#define TOKEN_LENGTH	32
 
 extern team_data Team_data[MAX_TVT_TEAMS];
 //extern subsys_status Subsys_status[MAX_SUBSYS_STATUS]; // it's dynamic now - taylor
@@ -980,6 +1021,11 @@ void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp);
 
 // Goober5000
 extern int Knossos_warp_ani_used;
+
+// Karajorma
+void swap_parse_object(p_object *p_obj, int ship_class);
+int is_ship_available_from_loadout(team_data *current_team, int ship_class);
+int is_ship_in_loadout(team_data *current_team, int ship_class);
 
 #endif
 
