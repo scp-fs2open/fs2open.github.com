@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259 $
- * $Date: 2006-05-20 02:03:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.260 $
+ * $Date: 2006-06-02 09:29:13 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259  2006/05/20 02:03:01  Goober5000
+ * fix for Mantis #755, plus make the missionlog #defines uniform
+ * --Goober5000
+ *
  * Revision 2.258  2006/04/20 06:32:23  Goober5000
  * proper capitalization according to Volition
  *
@@ -1504,22 +1508,23 @@ sexp_oper Operators[] = {
 
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
-	{ "num-players",					OP_NUM_PLAYERS,				0, 0, },
-	{ "num_kills",								OP_NUM_KILLS,							1, 1			},
-	{ "num_type_kills",						OP_NUM_TYPE_KILLS,					2,	2			},
-	{ "num_class_kills",						OP_NUM_CLASS_KILLS,					2,	2			},
-	{ "team-score",					OP_TEAM_SCORE,					1,	1,	}, 
-	{ "was-promotion-granted",				OP_WAS_PROMOTION_GRANTED,			0, 1,			},
-	{ "was-medal-granted",					OP_WAS_MEDAL_GRANTED,				0, 1,			},
+	{ "num-players",				OP_NUM_PLAYERS,				0, 0, },
+	{ "num_kills",					OP_NUM_KILLS,				1, 1			},
+	{ "num_assists",				OP_NUM_ASSISTS,				1, 1			},
+	{ "num_type_kills",				OP_NUM_TYPE_KILLS,			2,	2			},
+	{ "num_class_kills",			OP_NUM_CLASS_KILLS,			2,	2			},
+	{ "team-score",					OP_TEAM_SCORE,				1,	1,	}, 
+	{ "was-promotion-granted",		OP_WAS_PROMOTION_GRANTED,	0, 1,			},
+	{ "was-medal-granted",			OP_WAS_MEDAL_GRANTED,		0, 1,			},
 	
-	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,	1,	1,	},
-	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,	1,	1,	},
-	{ "time-ship-departed",		OP_TIME_SHIP_DEPARTED,	1,	1,	},
-	{ "time-wing-destroyed",	OP_TIME_WING_DESTROYED,	1,	1,	},
-	{ "time-wing-arrived",		OP_TIME_WING_ARRIVED,	1,	1,	},
-	{ "time-wing-departed",		OP_TIME_WING_DEPARTED,	1,	1,	},
-	{ "mission-time",				OP_MISSION_TIME,			0, 0,	},
-	{ "time-docked",				OP_TIME_DOCKED,			3, 3, },
+	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,		1,	1,	},
+	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,		1,	1,	},
+	{ "time-ship-departed",		OP_TIME_SHIP_DEPARTED,		1,	1,	},
+	{ "time-wing-destroyed",	OP_TIME_WING_DESTROYED,		1,	1,	},
+	{ "time-wing-arrived",		OP_TIME_WING_ARRIVED,		1,	1,	},
+	{ "time-wing-departed",		OP_TIME_WING_DEPARTED,		1,	1,	},
+	{ "mission-time",			OP_MISSION_TIME,			0, 0,	},
+	{ "time-docked",			OP_TIME_DOCKED,				3, 3, },
 	{ "time-undocked",			OP_TIME_UNDOCKED,			3, 3, },
 
 	{ "cond",					OP_COND,				1, INT_MAX, },
@@ -1703,6 +1708,7 @@ sexp_oper Operators[] = {
 	{ "warp-effect",			OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
 	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
+	{ "deal-with-ship-loadout",		OP_DEAL_WITH_SHIP_LOADOUT,	0, 0 },			// Karajorma
 	
 	//background and nebula sexps
 	{ "mission-set-nebula",			OP_MISSION_SET_NEBULA,				1, 1 }, //-Sesquipedalian
@@ -7749,6 +7755,73 @@ int sexp_is_ship_class(int n)
 
 	// get class
 	ship_class_num = ship_info_lookup(CTEXT(n));
+
+	Assert (CDR(n) != -1);
+
+	// eval ships
+	while (CDR(n) != -1)
+	{
+		n = CDR(n);
+		// attempt to get ship from the list of ships present
+		ship_num = ship_name_lookup(CTEXT(n));
+
+		// if the ship is actually present check if it matches the class we read in earlier
+		if (ship_num > -1) 
+		{
+			if (Ships[ship_num].ship_info_index == ship_class_num)
+			{
+				continue;
+			}
+			else 
+			{
+				return SEXP_FALSE;
+			}
+		}
+
+		// Ship isn't present. See if it has departed or been destroyed
+		ship_num = ship_find_exited_ship_by_name(CTEXT(n));
+
+		// If the ship was in the mission at one point we can check it
+		if (ship_num > -1) 
+		{
+			if (Ships_exited[ship_num].ship_class == ship_class_num)
+			{
+				continue;
+			}
+			else 
+			{
+				return SEXP_FALSE;
+			}
+		}
+
+		// Finally check if the ship is still waiting to arrive
+		p_object *ship_pobj = mission_parse_get_parse_object(CTEXT(n));
+
+		if (ship_pobj == NULL) 
+		{
+			// Since all attempts to find this ship have failed the ship can't exist
+			return SEXP_CANT_EVAL;
+		}
+		else 
+		{
+			if (ship_pobj->ship_class != ship_class_num) 
+			{
+				return SEXP_FALSE;
+			}
+			else 
+			{
+				continue;
+			}
+		}
+	}
+
+	/* Karajorma - Original version replaced with one which can deal with dead, departed and yet to arrive ships
+	int ship_num, ship_class_num;
+
+	Assert( n >= 0 );
+
+	// get class
+	ship_class_num = ship_info_lookup(CTEXT(n));
 	n = CDR(n);
 
 	// eval ships
@@ -7767,7 +7840,7 @@ int sexp_is_ship_class(int n)
 
 		// increment
 		n = CDR(n);
-	}
+	}*/
 
 	// we're this far; it must be true
 	return SEXP_TRUE;
@@ -9006,6 +9079,58 @@ void sexp_change_goal_validity( int n, int flag )
 			mission_goal_mark_invalid( name );
 
 		n = CDR(n);
+	}
+}
+
+// Karajorma - Quick and dirty attempt to fix the team loadout at the end of a mission. Used for testing
+// Will need a lot of clean up for real use. 
+void sexp_deal_with_ship_loadout()
+{
+	// cycle through Ships_exited and find ships which require attention
+	for (int i=0; i < Num_exited_ships ; i++) 
+	{
+		// Need go no further for this ship unless we marked it to say we were interested in it earlier
+		if (!(Ships_exited[i].flags & SEF_SHIP_EXITED_STORE))
+		{
+			continue ;
+		}
+
+		// Check whether ship was destroyed. We're only bothering with ships that were. 
+		if (!(Ships_exited[i].flags & SEF_DESTROYED))
+		{
+			continue;
+		}
+
+		int ship_class_index = Ships_exited[i].ship_class;
+		Assert (ship_class_index > -1);
+		
+		// Do we have that class in the team_loadout? 
+		int loadout_index = -1; 
+
+		loadout_index = is_ship_in_loadout(&Team_data[Ships_exited[i].team], ship_class_index);
+
+		// We've been told to watch a ship but it's not even in the loadout. Next ship!  
+		if (loadout_index < 0) 
+		{
+			continue;
+		}
+
+		// We've now got a loadout index. What SEXP variable is associated with this class? 
+		int sexp_variable_index = get_index_sexp_variable_name(Team_data[Ships_exited[i].team].ship_count_variables[loadout_index]);
+
+		// We've been told to watch a ship but it's not set in the loadout by a variable. Next ship!  
+		if (sexp_variable_index < 0)
+		{
+			continue;
+		}
+
+		// We have the sexp variable. Time to alter the amount of ships. 
+		char number_as_str[TOKEN_LENGTH];
+		int sexp_value = atoi(Sexp_variables[sexp_variable_index].text);
+		sprintf(number_as_str, "%d", --sexp_value);
+
+		// assign to variable
+		sexp_modify_variable(number_as_str, sexp_variable_index);
 	}
 }
 
@@ -11945,8 +12070,44 @@ void sexp_change_ship_class(int n)
 	{
 		ship_num = ship_name_lookup(CTEXT(n), 1);
 
+		/* Karajorma - Changed so that the SEXP will now deal with ships that haven't arrived yet
+
 		// don't change unless it's currently in the mission
 		if (ship_num != -1)
+		{
+			// don't mess with a ship that's occupied
+			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
+			{
+				change_ship_type(ship_num, class_num, 1);
+			}
+		}*/
+
+		// If the ship hasn't arrived we still want the ability to change its class.
+		if (ship_num == -1)
+		{
+			// Get the name of the ship that we are interested in
+			char* ship_name = CTEXT(n); 
+			p_object *pobj ;
+			bool match_found = false;
+			
+
+			// Search the Ship_arrival_list to see if the ship is waiting to arrive
+			for (pobj = GET_FIRST(&Ship_arrival_list); pobj != END_OF_LIST(&Ship_arrival_list); pobj = GET_NEXT(pobj))
+			{
+				if (!(strcmp(pobj->name, ship_name)))
+				{
+					match_found = true;
+					break;
+				}
+			}
+
+			if (match_found)
+			{
+				swap_parse_object(pobj, class_num);
+			}
+		}
+		// If the ship is already in the mission
+		else 
 		{
 			// don't mess with a ship that's occupied
 			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
@@ -13370,7 +13531,7 @@ int sexp_missile_locked(int node)
 	return SEXP_FALSE;
 }
 
-int sexp_num_kills(int node)
+int sexp_num_kills_or_assists(int node, int kills)
 {
 	int sindex;
 	player *p = NULL;
@@ -13403,8 +13564,16 @@ int sexp_num_kills(int node)
 	}
 
 	// now, if we have a valid player, return his kills
-	if(p != NULL){
-		return p->stats.m_kill_count_ok;
+	if(p != NULL)
+	{
+		if (kills)
+		{
+			return p->stats.m_kill_count_ok;
+		}
+		else
+		{
+			return p->stats.m_assists;
+		}
 	}
 
 	// bad
@@ -15172,6 +15341,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			// Karajorma
+			case OP_DEAL_WITH_SHIP_LOADOUT:
+				sexp_deal_with_ship_loadout();
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_GRANT_PROMOTION:
 				sexp_grant_promotion();
 				sexp_val = SEXP_TRUE;
@@ -15383,7 +15558,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_NUM_KILLS:
-				sexp_val = sexp_num_kills(node);
+			case OP_NUM_ASSISTS:
+				sexp_val = sexp_num_kills_or_assists(node, (op_num == OP_NUM_KILLS));
 				break;
 
 			case OP_NUM_TYPE_KILLS:
@@ -16086,6 +16262,7 @@ int query_operator_return_type(int op)
 		case OP_NUM_WITHIN_BOX:
 		case OP_NUM_PLAYERS:
 		case OP_NUM_KILLS:
+		case OP_NUM_ASSISTS:
 		case OP_NUM_TYPE_KILLS:
 		case OP_NUM_CLASS_KILLS:
 		case OP_SHIELD_RECHARGE_PCT:
@@ -16152,6 +16329,7 @@ int query_operator_return_type(int op)
 		case OP_FORCE_JUMP:
 		case OP_SET_SUBSYSTEM_STRNGTH:
 		case OP_GOOD_REARM_TIME:
+		case OP_DEAL_WITH_SHIP_LOADOUT:
 		case OP_GRANT_PROMOTION:
 		case OP_GRANT_MEDAL:
 		case OP_ALLOW_SHIP:
@@ -16388,6 +16566,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_RED_ALERT:
 		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
+		case OP_DEAL_WITH_SHIP_LOADOUT:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -17188,6 +17367,7 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_SHIP;
 
 		case OP_NUM_KILLS:
+		case OP_NUM_ASSISTS:
 			return OPF_SHIP;
 
 		case OP_NUM_TYPE_KILLS:
@@ -18196,7 +18376,12 @@ void sexp_modify_variable(char *text, int index)
 	strcpy(Sexp_variables[index].text, text);
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
 
-	// do multi_callback_here
+	// do multi_callback_here	
+	// send a network packet if we need to
+	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER))
+	{
+		send_variable_update_packet(index, Sexp_variables[index].text);
+	}
 }
 
 void sexp_modify_variable(int n)
@@ -18710,6 +18895,9 @@ int get_subcategory(int sexp_id)
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
 		case OP_JUMP_NODE_HIDE_JUMPNODE:
 			return CHANGE_SUBCATEGORY_JUMP_NODES;
+		
+		case OP_DEAL_WITH_SHIP_LOADOUT:
+			return CHANGE_SUBCATEGORY_TEAM_LOADOUT;
 		
 		default:
 			return -1;		// sexp doesn't have a subcategory
@@ -19817,6 +20005,11 @@ sexp_help_struct Sexp_help[] = {
 		"or zero is returned \r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tString to convert." },
+		
+	// Karajorma
+	{ OP_DEAL_WITH_SHIP_LOADOUT, "Deal with ship Loadout (Action operator)\r\n"
+		"\tWARNING - Added for testing the Team Loadout Code. Subject to change or removal\r\n"
+		"\tTakes no arguments." },
 
 	{ OP_GRANT_PROMOTION, "Grant promotion (Action operator)\r\n"
 		"\tIn a single player game, this function grants a player an automatic promotion to the "
@@ -20272,6 +20465,11 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_NUM_KILLS, "num-kills\r\n"
 		"\tReturns the # of kills a player has. The ship specified in the first field should be the ship the player is in.\r\n"
+		"\tSo, for single player, this would be Alpha 1. For multiplayer, it can be any ship with a player in it. If, at any\r\n"
+		"\ttime there is no player in a given ship, this sexpression will return 0"},
+
+	{ OP_NUM_ASSISTS, "num-assists\r\n"
+		"\tReturns the # of assists a player has. The ship specified in the first field should be the ship the player is in.\r\n"
 		"\tSo, for single player, this would be Alpha 1. For multiplayer, it can be any ship with a player in it. If, at any\r\n"
 		"\ttime there is no player in a given ship, this sexpression will return 0"},
 
@@ -21078,6 +21276,7 @@ op_menu_struct op_submenu[] =
 	{	"Ship Status",					CHANGE_SUBCATEGORY_SHIP_STATUS						},
 	{	"Beams and Turrets",			CHANGE_SUBCATEGORY_BEAMS_AND_TURRETS				},
 	{	"Mission and Campaign",			CHANGE_SUBCATEGORY_MISSION_AND_CAMPAIGN				},
+	{	"Team Loadout",					CHANGE_SUBCATEGORY_TEAM_LOADOUT						},
 	{	"Models and Textures",			CHANGE_SUBCATEGORY_MODELS_AND_TEXTURES				},
 	{	"Coordinate Manipulation",		CHANGE_SUBCATEGORY_COORDINATE_MANIPULATION			},
 	{	"Music and Sound",				CHANGE_SUBCATEGORY_MUSIC_AND_SOUND					},
