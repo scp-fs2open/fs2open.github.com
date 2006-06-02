@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/PlayerStartEditor.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-06-02 09:52:42 $
+ * $Author: karajorma $
  *
  * Player starting point editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.5  2005/12/29 08:21:00  wmcoolmon
  * No my widdle FRED, I didn't forget about you ^_^ (codebase commit)
  *
@@ -98,6 +102,8 @@
 
 #include "ShipCheckListBox.h"
 
+#define VARIABLES_COMBO_OFFSET		1
+
 /////////////////////////////////////////////////////////////////////////////
 // player_start_editor dialog
 
@@ -115,9 +121,13 @@ public:
 	CSpinButtonCtrl	m_spin1;
 	CCheckListBox		m_ship_list;
 	CCheckListBox		m_weapon_list;	
+	CCheckListBox		m_ship_variable_list;
+	CCheckListBox		m_weapon_variable_list;	
 	int					m_delay;	
 	int					m_weapon_pool;
 	int					m_ship_pool;
+	CComboBox			m_ship_quantity_variable;
+	CComboBox			m_weapon_quantity_variable;
 	//}}AFX_DATA
 
 
@@ -140,8 +150,12 @@ protected:
 	afx_msg void OnSelchangeWeaponList();	
 	afx_msg void OnUpdateShipPool();
 	afx_msg void OnUpdateWeaponPool();
-	void OnCancel();	
-	void OnOK();
+	virtual void OnCancel();	
+	virtual void OnOK();
+	afx_msg void OnSelchangeShipVariablesList();
+	afx_msg void OnSelchangeWeaponVariablesList();
+	afx_msg void OnSelchangeShipVariablesCombo();
+	afx_msg void OnSelchangeWeaponVariablesCombo();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
@@ -153,11 +167,19 @@ private:
 	int selected_team;
 
 	// ship pool info
-	int ship_pool[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
+	int static_ship_pool[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];	// Holds the number of ships of a class that was set by the team loadout
+	int dynamic_ship_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];	 
+	int static_ship_variable_pool[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
+	int dynamic_ship_variable_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];
 
 	// weapon pool info
 	int weapon_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
 
 	// regenerate all controls
 	void reset_controls();
+	int GetTypedVariableIndex(int sexp_variables_index, bool string_variable);
+	int GetSelectedShipListIndex();
+	int GetSelectedShipVariableListIndex();
+	void UpdateQuantityVariable(CComboBox *variable_list, int pool_value);
+	void SetupShipAndWeaponPools();
 };
