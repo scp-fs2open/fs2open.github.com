@@ -173,6 +173,9 @@ public:
 	int find_argument_number(int parent_node, int child_node);
 	int find_ancestral_argument_number(int parent_op, int child_node);
 
+	// Karajorma
+	void FixupLoadoutNameChange(const char *old_name, const char *new_name);
+	int get_loadout_variable_count(const char *var_name); 
 
 	sexp_list_item *get_listing_opf(int opf, int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_null();
