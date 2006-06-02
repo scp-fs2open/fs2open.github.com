@@ -51,6 +51,8 @@ public:
 	CButton	m_cargo_known;
 	CButton	m_special_warp;
 	CButton	m_disable_messages;
+	CButton	m_set_class_dynamically;
+	CButton	m_team_loadout_store_status;
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
 	numeric_edit_control	m_destroy_value;
@@ -93,6 +95,8 @@ protected:
 	afx_msg void OnRedalertcarry();
 	afx_msg void OnToggleSubsystemScanning();
 	afx_msg void OnDisableBuiltinShip();
+	afx_msg void OnSetClassDynamically();
+	afx_msg void OnTeamLoadoutStoreStatus();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

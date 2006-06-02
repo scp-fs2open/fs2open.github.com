@@ -61,6 +61,8 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SPECIAL_WARP, m_special_warp);	
 	DDX_Control(pDX, IDC_DESTROY_SPIN, m_destroy_spin);	
 	DDX_Control(pDX, IDC_DISABLE_BUILTIN_SHIP, m_disable_messages);
+	DDX_Control(pDX, IDC_SET_CLASS_DYNAMICALLY, m_set_class_dynamically);
+	DDX_Control(pDX, IDC_TEAM_LOADOUT_STORE_STATUS, m_team_loadout_store_status);
 
 	//}}AFX_DATA_MAP
 
@@ -110,6 +112,8 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_REDALERTCARRY, OnRedalertcarry)
 	ON_BN_CLICKED(IDC_TOGGLE_SUBSYSTEM_SCANNING, OnToggleSubsystemScanning)
 	ON_BN_CLICKED(IDC_DISABLE_BUILTIN_SHIP, OnDisableBuiltinShip)
+	ON_BN_CLICKED(IDC_SET_CLASS_DYNAMICALLY, OnSetClassDynamically)
+	ON_BN_CLICKED(IDC_TEAM_LOADOUT_STORE_STATUS, OnTeamLoadoutStoreStatus)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -128,7 +132,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	int destroy_before_mission = 0, no_arrival_music = 0, escort = 0, invulnerable = 0, targetable_as_bomb = 0;
 	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, no_bank = 0, affected_by_gravity = 0;
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
-	int special_warp = 0, disable_messages = 0;
+	int special_warp = 0, disable_messages = 0, set_class_dynamically = 0, team_loadout_store_status = 0;
 	object *objp;
 	bool ship_in_wing = false;
 
@@ -158,6 +162,8 @@ BOOL ship_flags_dlg::OnInitDialog()
 					cargo_known = (Ships[i].flags & SF_CARGO_REVEALED) ? 1 : 0;
 					no_dynamic = (Ai_info[Ships[i].ai_index].ai_flags & AIF_NO_DYNAMIC) ? 1 : 0;
 					disable_messages = (Ships[i].flags2 & SF2_NO_BUILTIN_MESSAGES) ? 1 : 0;
+					set_class_dynamically = (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY) ? 1 : 0;
+					team_loadout_store_status = (Ships[i].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS) ? 1 : 0;
 
 					destroy_before_mission = (Ships[i].flags & SF_KILL_BEFORE_MISSION) ? 1 : 0;
 					m_destroy_value.init(Ships[i].final_death_time);
@@ -202,6 +208,8 @@ BOOL ship_flags_dlg::OnInitDialog()
 					cargo_known = tristate_set(Ships[i].flags & SF_CARGO_REVEALED, cargo_known);
 					no_dynamic = tristate_set( Ai_info[Ships[i].ai_index].ai_flags & AIF_NO_DYNAMIC, no_dynamic );
 					disable_messages = tristate_set(Ships[i].flags2 & SF2_NO_BUILTIN_MESSAGES, disable_messages);
+					set_class_dynamically = tristate_set(Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY, set_class_dynamically);
+					team_loadout_store_status = tristate_set(Ships[i].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS, team_loadout_store_status);
 
 					// check the final death time and set the internal variable according to whether or not
 					// the final_death_time is set.  Also, the value in the edit box must be set if all the
@@ -260,6 +268,8 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_red_alert_carry.SetCheck(red_alert_carry);
 	m_special_warp.SetCheck(special_warp);
 	m_disable_messages.SetCheck(disable_messages);
+	m_set_class_dynamically.SetCheck(set_class_dynamically);
+	m_team_loadout_store_status.SetCheck(team_loadout_store_status);
 		
 	m_kdamage.setup(IDC_KDAMAGE, this);
 	m_destroy_value.setup(IDC_DESTROY_VALUE, this);
@@ -685,6 +695,38 @@ void ship_flags_dlg::update_ship(int ship)
 			break;
 	}
 
+	switch (m_set_class_dynamically.GetCheck()) {
+		case 1:
+			if ( !(Ships[ship].flags2 & SF2_SET_CLASS_DYNAMICALLY) )
+				set_modified();
+
+			Ships[ship].flags2 |= SF2_SET_CLASS_DYNAMICALLY;
+			break;
+
+		case 0:
+			if ( Ships[ship].flags2 & SF2_SET_CLASS_DYNAMICALLY )
+				set_modified();
+
+			Ships[ship].flags2 &= ~SF2_SET_CLASS_DYNAMICALLY;
+			break;
+	}
+
+	switch (m_team_loadout_store_status.GetCheck()) {
+		case 1:
+			if ( !(Ships[ship].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS) )
+				set_modified();
+
+			Ships[ship].flags2 |= SF2_TEAM_LOADOUT_STORE_STATUS;
+			break;
+
+		case 0:
+			if ( Ships[ship].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS )
+				set_modified();
+
+			Ships[ship].flags2 &= ~SF2_TEAM_LOADOUT_STORE_STATUS;
+			break;
+	}
+
 	Ships[ship].respawn_priority = 0;
 	if(The_mission.game_type & MISSION_TYPE_MULTI){
 		m_respawn_priority.save(&Ships[ship].respawn_priority);
@@ -907,5 +949,23 @@ void ship_flags_dlg::OnDisableBuiltinShip()
 		m_disable_messages.SetCheck(0);
 	} else {
 		m_disable_messages.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnSetClassDynamically() 
+{
+	if (m_set_class_dynamically.GetCheck() == 1){
+		m_set_class_dynamically.SetCheck(0);
+	} else {
+		m_set_class_dynamically.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnTeamLoadoutStoreStatus() 
+{
+	if (m_team_loadout_store_status.GetCheck() == 1){
+		m_team_loadout_store_status.SetCheck(0);
+	} else {
+		m_team_loadout_store_status.SetCheck(1);
 	}
 }
