@@ -9,15 +9,21 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.42 $
- * $Author: taylor $
- * $Date: 2006-04-14 18:44:16 $
+ * $Revision: 2.43 $
+ * $Author: karajorma $
+ * $Date: 2006-06-02 08:55:47 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2006/04/14 18:44:16  taylor
+ * remove all of the *_ex() parsing functions added for use by EFFs
+ * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
+ * make Mission_text and Mission_text_raw only use the memory needed, and free it when it doesn't need to parse anymore
+ *   (should work ok with FRED2, but I wasn't able to test it)
+ *
  * Revision 2.41  2006/01/20 07:10:33  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -445,6 +451,14 @@ extern bool Modular_tables_loaded;
 #define	RAW_INTEGER_TYPE	3	//	to parse a list of integers
 #define	WEAPON_POOL_TYPE	4
 
+// Karajorma - Used by the stuff_ship_list and stuff_weapon_list SEXPs
+#define NOT_SET_BY_SEXP_VARIABLE	-1
+
+#define MISSION_LOADOUT_SHIP_LIST		0
+#define MISSION_LOADOUT_WEAPON_LIST		1
+#define CAMPAIGN_LOADOUT_SHIP_LIST		2
+#define CAMPAIGN_LOADOUT_WEAPON_LIST	3
+
 #define SEXP_SAVE_MODE				1
 #define SEXP_ERROR_CHECK_MODE		2
 
@@ -509,6 +523,7 @@ extern int stuff_string_list(std::vector<std::string> *slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
+extern int stuff_ship_list(int *ilp, int max_ints, int lookup_type); // Karajorma
 extern int stuff_float_list(float* flp, int max_floats);
 extern int stuff_vector_list(vec3d *vlp, int max_vecs);
 extern int stuff_bool_list(bool *blp, int max_bools);
@@ -579,5 +594,10 @@ extern int parse_modular_table(char *name_check, void (*parse_callback)(char *fi
 // to know that we are parsing a modular table
 extern bool Parsing_modular_table;
 
+// Karajorma
+int get_string_or_variable (char *str);
+#define FOUND_STRING		0
+#define FOUND_VARIABLE		1
+#define FOUND_BAD_DATA		2
 
 #endif

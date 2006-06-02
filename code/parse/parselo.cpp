@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.73 $
- * $Author: taylor $
- * $Date: 2006-04-15 19:00:52 $
+ * $Revision: 2.74 $
+ * $Author: karajorma $
+ * $Date: 2006-06-02 08:55:47 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2006/04/15 19:00:52  taylor
+ * forgot to add forward declaration for allocate_mission_text()  (thanks karajorma ;))
+ *
  * Revision 2.72  2006/04/14 18:50:52  taylor
  * that was rather stupid of me, fogetting this would not have been a good thing :)
  *
@@ -424,6 +427,9 @@ char	*Mp = NULL, *Mp_save = NULL;
 char	*token_found;
 
 static int Parsing_paused = 0;
+
+//Karajorma 
+int stuff_loadout_quantity(int *ilp, int count, int lookup_type);
 
 // text allocation stuff
 void allocate_mission_text(int size);
@@ -2369,9 +2375,12 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 
 			get_string(str);
 			switch (lookup_type) {
+
+				/* Karajorma - The stuff_ship_list function should make use of this lookup type obsolete
 				case SHIP_TYPE:
 					num = ship_name_lookup(str);	// returns index of Ship[] entry with name
 					break;
+				*/
 
 				case SHIP_INFO_TYPE:
 					ok_flag = 1;
@@ -2435,6 +2444,191 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 
 	return count;
 }
+
+//	Karajorma - This particular piece of code is used so often it should be a routine. Finds the opening 
+//  bracket and advances MP beyond it. 
+void advance_past_opening_parenthesis(char *message, int val)
+{
+	ignore_white_space();
+
+	if (*Mp != '(') 
+	{
+		error_display(1, message, *Mp);
+		longjmp(parse_abort, val);
+	}
+
+	Mp++;	
+	ignore_white_space();
+}
+
+// Karajorma - Stuffs the provided char array with either the contents of a quoted string or the name of a string 
+// variable. Returns FOUND_STRING if a string was found or FOUND_VARIABLE if a variable was present. 
+int get_string_or_variable (char *str)
+{
+	ignore_white_space();
+	
+	// Variable
+	if (*Mp == '@') 
+	{
+		Mp++;
+		stuff_string_white(str); 
+		int sexp_variable_index = get_index_sexp_variable_name(str); 
+		
+		// We only want String variables
+		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
+
+		return FOUND_VARIABLE; 
+	}
+	// Quoted string
+	else if (*Mp == '"')
+	{
+		get_string(str);
+		return FOUND_STRING;
+	}
+	/*
+	// Unquoted string
+	else
+	{
+		stuff_string(str, F_NAME, NULL);
+		return FOUND_STRING;
+	}*/
+	return FOUND_BAD_DATA;
+}
+
+// Karajorma - Stuffs an int list by parsing a list of ship choices. 
+// Unlike stuff_int_list it can deal with variables and it also has better error reporting. 
+int stuff_ship_list (int *ilp, int max_ints, int lookup_type)
+{
+	char error_message []  = {"Reading ship list.  Found [%c].  Expecting '('.\n"};
+	advance_past_opening_parenthesis(error_message, 6);
+
+	int count=0;
+	while (*Mp != ')') 
+	{
+		Assert (count < max_ints);  
+
+		//The first entry MUST be a ship 
+		
+		if (*Mp != '"') 
+		{
+			if ((lookup_type == MISSION_LOADOUT_SHIP_LIST )  && (*Mp != '@'))
+			{
+				Error(LOCATION, "Invalid ship type \"%s\" found in $Ship Choices: of mission file");
+			}
+			else if (lookup_type == CAMPAIGN_LOADOUT_SHIP_LIST )
+			{
+				Error(LOCATION, "Invalid ship type \"%s\" found in $Ship Choices: of campaign file");
+			}
+		}
+
+		int ship_index = -1; 
+		int sexp_variable_index = -1;
+		char str[128];
+
+		int item_found = get_string_or_variable (str); 
+
+		if (item_found == FOUND_STRING)
+		{
+			ship_index = ship_info_lookup(str);
+		}
+		else if (item_found == FOUND_VARIABLE)
+		{
+			Assert (lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST );
+			sexp_variable_index = get_index_sexp_variable_name(str);
+			ship_index = ship_info_lookup(Sexp_variables[sexp_variable_index].text);
+		}
+
+		// Complain if this isn't a valid ship and we are loading a mission. Campaign files can be loading containing 
+		// no ships from the current tables (when swapping mods) so don't report that as an error. 
+		if (ship_index < 0) 
+		{
+			if (lookup_type == MISSION_LOADOUT_SHIP_LIST )
+			{
+				Error(LOCATION, "Invalid ship type \"%s\" found in $Ship Choices: of mission file", str);
+			}
+		}
+		else 
+		{
+			// we've found a real ship. Add its index to the list.
+			ilp[count++] = ship_index;
+		}
+		
+		ignore_white_space();
+
+		// Now that we've gotten the first entry out of the way we want to read the number of ship
+		// of this ship class. We won't want to do this for a campaign loadout though.
+		if (lookup_type == CAMPAIGN_LOADOUT_SHIP_LIST )
+		{
+			continue;
+		}
+
+		// record the index of the variable that gave us this ship if any
+		ilp[count++] = sexp_variable_index;
+
+		// Now read in the number of ships of this type available
+		count = stuff_loadout_quantity(ilp, count, lookup_type); 
+
+		ignore_white_space();
+	}
+
+	Mp++;
+	return count;
+}
+
+
+// Karajorma - Helper routine for stuff_ship_list and stuff_weapon_list.
+int stuff_loadout_quantity(int *ilp, int count, int lookup_type)
+{	
+	// We don't have quantities for the campaign file
+	Assert (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST );
+
+	// If the "number" of weapons is actually a string then we are probably dealing with a SEXP variable
+	if (*Mp == '@') 
+	{
+		Mp++;
+		int quantity = -1; 
+		char str[128];
+		stuff_string(str, F_NAME, NULL);
+
+		int index = get_index_sexp_variable_name(str); 
+			
+		if (index > -1 && index < MAX_SEXP_VARIABLES) 
+		{
+			Assert (Sexp_variables[index].type & SEXP_VARIABLE_NUMBER);
+			quantity = atoi(Sexp_variables[index].text);
+		}
+		else if ( lookup_type == MISSION_LOADOUT_SHIP_LIST )
+		{
+			Error(LOCATION, "Invalid number of ships or Invalid variable name \"%s\" found in $Ship_Choices:", str);
+		}
+		else
+		{
+			Error(LOCATION, "Invalid number of weapons or Invalid variable name \"%s\" found in +Weaponary Pool:", str);
+		}
+
+		// Values below 0 are legal for the sexp_variable but the loadout itself should never use them.
+		if (quantity < 0) 
+		{
+			quantity = 0;
+		}
+		
+		// Record the value of the index for FreeSpace 
+		ilp[count++] = quantity;
+		// Record the index itself because we may need it later.
+		ilp[count++] = index;
+	}
+	// Otherwise we are dealing with a numerical value
+	else 
+	{	
+		// Stuff the number of weapons in
+		stuff_int(&ilp[count++]);
+		// Since we have a numerical value we don't have a SEXP variable index to add for next slot. 
+		ilp[count++] = NOT_SET_BY_SEXP_VARIABLE;
+	}
+	return count; 
+}
+
+
 
 //Stuffs an integer list like stuff_int_list.
 int stuff_float_list(float* flp, int max_floats)
