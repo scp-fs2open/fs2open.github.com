@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14 $
- * $Date: 2006-05-30 01:36:24 $
- * $Author: Goober5000 $
+ * $Revision: 1.15 $
+ * $Date: 2006-06-02 09:40:33 $
+ * $Author: karajorma $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2006/05/30 01:36:24  Goober5000
+ * add AI Profile box to FRED
+ * --Goober5000
+ *
  * Revision 1.13  2006/05/14 15:52:42  karajorma
  * Fixes for the Invulnerability problems from Mantis - 0000910
  *
@@ -1342,9 +1346,27 @@ int CFred_mission_save::save_players()
 		fout(" (\n");
 
 		for (j=0; j<Team_data[i].number_choices; j++)
-			fout("\t\"%s\"\t%d\n", Ship_info[Team_data[i].ship_list[j]].name,
-				Team_data[i].ship_count[j]);
+		{
+			//Karajorma - Check to see if a variable name should be written for the class rather than a number
+			if (!strcmp(Team_data[i].ship_list_variables[j], ""))
+			{
+				fout("\t\"%s\"\t", Ship_info[Team_data[i].ship_list[j]].name); 
+			}
+			else 
+			{
+				fout("\t@%s\t", Team_data[i].ship_list_variables[j]);
+			}
 
+			// Now check if we should write a variable or a number for the amount of ships available
+			if (!strcmp(Team_data[i].ship_count_variables[j], ""))
+			{
+				fout("%d\n", Team_data[i].ship_count[j]);
+			}
+			else 
+			{
+				fout("@%s\n", Team_data[i].ship_count_variables[j]);
+			}
+		}
 		fout(")");
 
 		if (optional_string_fred("+Weaponry Pool:", "$Starting Shipname:")){
@@ -1435,6 +1457,60 @@ int CFred_mission_save::save_objects()
 		// optional alternate type name
 		if(strlen(Fred_alt_names[i])){
 			fout("\n$Alt: %s\n", Fred_alt_names[i]);
+		}
+		
+		// optional alternate ship classes
+		if (Format_fs2_open)
+		{
+			// Alternate class type 1
+			for (int m=0; m < MAX_ALT_CLASS_1; m++)
+			{
+				if ((Ships[i].alt_class_one[m] > -1) || (Ships[i].alt_class_one_variable[m] > -1))
+				{
+					if (optional_string_fred("+Alt_Ship_Class_Type_1: ", "$Name:"))
+					{
+						parse_comments();
+					}
+					else 
+					{
+						fout("\n+Alt_Ship_Class_Type_1: ");
+					}
+
+					if (Ships[i].alt_class_one[m] > -1)
+					{
+						fout ("\"%s\"", Ship_info[Ships[i].alt_class_one[m]].name);
+					}
+					else 
+					{
+						fout ("@%s", Sexp_variables[Ships[i].alt_class_one_variable[m]].variable_name);
+					}
+				}
+			}
+
+			// Alternate class type 2
+			for (int n=0; n < MAX_ALT_CLASS_2; n++)
+			{
+				if ((Ships[i].alt_class_two[n] > -1) || (Ships[i].alt_class_two_variable[n] > -1))
+				{
+					if (optional_string_fred("+Alt_Ship_Class_Type_2: ", "$Name:"))
+					{
+						parse_comments();
+					}
+					else 
+					{
+						fout("\n+Alt_Ship_Class_Type_2: ");
+					}
+
+					if (Ships[i].alt_class_two[n] > -1)
+					{
+						fout ("\"%s\"", Ship_info[Ships[i].alt_class_two[n]].name);
+					}
+					else 
+					{
+						fout ("@%s", Sexp_variables[Ships[i].alt_class_two_variable[n]].variable_name);
+					}
+				}
+			}
 		}
 
 		required_string_fred("$Team:");
@@ -1647,6 +1723,10 @@ int CFred_mission_save::save_objects()
 			if (Ships[i].flags2 & SF2_PRIMARIES_LOCKED)
 				fout(" \"primaries-locked\"");
 			if (Ships[i].flags2 & SF2_SECONDARIES_LOCKED)
+				fout(" \"secondaries-locked\"");
+			if (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY)
+				fout(" \"set-class-dynamically\"");
+			if (Ships[i].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS)
 				fout(" \"secondaries-locked\"");
 			fout(" )");
 		}
