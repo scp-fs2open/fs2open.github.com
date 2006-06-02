@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.8 $
- * $Date: 2006-03-01 04:01:37 $
- * $Author: Goober5000 $
+ * $Revision: 1.9 $
+ * $Date: 2006-06-02 09:46:03 $
+ * $Author: karajorma $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2006/03/01 04:01:37  Goober5000
+ * fix comm message localization
+ *
  * Revision 1.7  2006/02/26 01:32:23  Goober5000
  * bah
  *
@@ -2249,6 +2252,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			// modify sexp_tree
 			modify_sexp_tree_variable(old_name, sexp_var_index);
+
+			FixupLoadoutNameChange(old_name, dlg.m_cur_variable_name);
 
 			// Don't sort until after modify, since modify uses index
 			if (dlg.m_modified_name) {
@@ -5819,4 +5824,47 @@ int sexp_tree::get_variable_count(const char *var_name)
 	}
 
 	return count;
+}
+
+int sexp_tree::get_loadout_variable_count(const char *var_name)
+{
+	int count = 0; 
+
+	for (int i=0; i < MAX_TVT_TEAMS; i++)
+	{
+		for(int idx=0; idx<Team_data[i].number_choices; idx++)
+		{
+			if (!strcmp(var_name, Team_data[i].ship_list_variables[idx])) 
+			{
+				count++; 
+			}
+
+			if (!strcmp(var_name, Team_data[i].ship_count_variables[idx]))
+			{
+				count++; 
+			}
+		}
+	}
+	
+	return count; 
+}
+
+// Checks Team_Data for any references to variables that have had their name changed
+void sexp_tree::FixupLoadoutNameChange(const char *old_name, const char *new_name)
+{
+	for (int i=0; i < MAX_TVT_TEAMS; i++)
+	{
+		for(int idx=0; idx<Team_data[i].number_choices; idx++)
+		{
+			if (!strcmp(Team_data[i].ship_list_variables[idx], old_name)) 
+			{
+				strcpy(Team_data[i].ship_list_variables[idx], new_name);
+			}
+
+			if (!strcmp(Team_data[i].ship_count_variables[idx], old_name)) 
+			{
+				strcpy(Team_data[i].ship_count_variables[idx], new_name);
+			}
+		}
+	}
 }
