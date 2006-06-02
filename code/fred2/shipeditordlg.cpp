@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-05-30 05:37:29 $
- * $Author: Goober5000 $
+ * $Revision: 1.6 $
+ * $Date: 2006-06-02 09:48:38 $
+ * $Author: karajorma $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/05/30 05:37:29  Goober5000
+ * add capability to restrict arrival/departure paths
+ * (FRED only; FS2 implementation to follow)
+ * --Goober5000
+ *
  * Revision 1.4  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -351,6 +356,7 @@
 #include "ShipSpecialDamage.h"
 #include "ShipTexturesDlg.h"
 #include "ShipSpecialHitpoints.h"
+#include "AltShipClassDlg.h"
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
 #include "restrictpaths.h"
@@ -542,6 +548,7 @@ BEGIN_MESSAGE_MAP(CShipEditorDlg, CDialog)
 	ON_BN_CLICKED(IDC_SPECIAL_EXP, OnSpecialExp)
 	ON_BN_CLICKED(IDC_TEXTURES, OnTextures)
 	ON_BN_CLICKED(IDC_SPECIAL_HITPOINTS, OnSpecialHitpoints)
+	ON_BN_CLICKED(IDC_ALT_SHIP_CLASS, OnAltShipClass)
 	ON_BN_CLICKED(IDC_RESTRICT_ARRIVAL, OnRestrictArrival)
 	ON_BN_CLICKED(IDC_RESTRICT_DEPARTURE, OnRestrictDeparture)
 	ON_WM_INITMENU()
@@ -1186,6 +1193,9 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_WEAPONS)->EnableWindow(m_ship_class >= 0);
 		GetDlgItem(IDC_FLAGS)->EnableWindow(TRUE);
 		GetDlgItem(IDC_TEXTURES)->EnableWindow(TRUE);
+		GetDlgItem(IDC_ALT_SHIP_CLASS)->EnableWindow(TRUE);	
+		GetDlgItem(IDC_SPECIAL_EXP)->EnableWindow(TRUE);	
+		GetDlgItem(IDC_SPECIAL_HITPOINTS)->EnableWindow(TRUE);	
 	} else {
 		GetDlgItem(IDC_SHIP_NAME)->EnableWindow(FALSE);
 		GetDlgItem(IDC_SHIP_CLASS)->EnableWindow(FALSE);
@@ -1194,6 +1204,9 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_WEAPONS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_FLAGS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_TEXTURES)->EnableWindow(FALSE);
+		GetDlgItem(IDC_ALT_SHIP_CLASS)->EnableWindow(FALSE);
+		GetDlgItem(IDC_SPECIAL_EXP)->EnableWindow(FALSE);
+		GetDlgItem(IDC_SPECIAL_HITPOINTS)->EnableWindow(FALSE);
 	}
 
 	// disable textures for multiple ships
@@ -2353,6 +2366,12 @@ void CShipEditorDlg::OnTextures()
 void CShipEditorDlg::OnSpecialHitpoints() 
 {
 	ShipSpecialHitpoints dlg;
+	dlg.DoModal();
+}
+
+void CShipEditorDlg::OnAltShipClass() 
+{
+	AltShipClassDlg dlg;
 	dlg.DoModal();
 }
 

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/ShipEditorDlg.h $
- * $Revision: 1.3 $
- * $Date: 2006-05-30 05:37:29 $
- * $Author: Goober5000 $
+ * $Revision: 1.4 $
+ * $Date: 2006-06-02 09:48:38 $
+ * $Author: karajorma $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/05/30 05:37:29  Goober5000
+ * add capability to restrict arrival/departure paths
+ * (FRED only; FS2 implementation to follow)
+ * --Goober5000
+ *
  * Revision 1.2  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -290,6 +295,7 @@ protected:
 	afx_msg void OnSpecialExp();
 	afx_msg void OnTextures();
 	afx_msg void OnSpecialHitpoints();
+	afx_msg void OnAltShipClass();
 	afx_msg void OnSetAsPlayerShip();
 	afx_msg void OnRestrictArrival();
 	afx_msg void OnRestrictDeparture();
