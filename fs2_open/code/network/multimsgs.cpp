@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.56 $
- * $Date: 2006-02-03 22:25:18 $
- * $Author: taylor $
+ * $Revision: 2.57 $
+ * $Date: 2006-06-02 09:10:01 $
+ * $Author: karajorma $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2006/02/03 22:25:18  taylor
+ * I don't like this being considered a fix without retail compatibility testing, but it should at the very least compile...
+ *
  * Revision 2.55  2006/02/01 23:43:34  phreak
  * Allow weapons to home in on countermeasures as well.  The multiplayer code was only allowing bombs to be homed in on.
  *
@@ -212,7 +215,7 @@
  * --Goober5000
  *
  * Revision 2.4  2002/12/17 02:18:40  Goober5000
- * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned sexp commit
+ * added functionality and fixed a few things with cargo being revealed and hidden in preparation for the set-scanned and set-unscanned commit
  * --Goober5000
  *
  * Revision 2.3  2002/12/09 08:26:24  Goober5000
@@ -609,6 +612,7 @@
 #include "object/objectdock.h"
 #include "cmeasure/cmeasure.h"
 #include "fs2open_pxo/Client.h"
+#include "parse/sexp.h"
 
 
 extern int PXO_SID; // FS2 Open PXO Session ID
@@ -8397,6 +8401,45 @@ void process_event_update_packet(ubyte *data, header *hinfo)
 	// if we went directive special to non directive special
 	else if((store_flags & MEF_DIRECTIVE_SPECIAL) & !(Mission_events[u_event].flags & MEF_DIRECTIVE_SPECIAL)){
 		mission_event_unset_directive_special(u_event);
+	}	
+}
+
+void send_variable_update_packet(int variable_index, char *value)
+{
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size = 0;
+
+	if(Net_player == NULL){
+		return;
+	}
+	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+		return;
+	}
+
+	// build the packet and add the data
+	BUILD_HEADER(VARIABLE_UPDATE);
+	ADD_INT(variable_index);
+	ADD_STRING(value);
+
+	// send to all players	
+	multi_io_send_to_all_reliable(data, packet_size);
+}
+
+void process_variable_update_packet( ubyte *data, header *hinfo)
+{
+	int offset = HEADER_LENGTH;
+	char value[TOKEN_LENGTH];
+	int variable_index;
+
+	// get the data
+	GET_INT(variable_index);
+	GET_STRING(value);
+	PACKET_SET_SIZE();
+
+	// set the sexp_variable
+	if (variable_index > 0 && variable_index < sexp_variable_count()) 
+	{
+		strcpy(Sexp_variables[variable_index].text, value); 
 	}	
 }
 
