@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122 $
+ * $Revision: 2.123 $
  * $Author: karajorma $
- * $Date: 2006-04-07 20:16:30 $
+ * $Date: 2006-06-02 09:20:06 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122  2006/04/07 20:16:30  karajorma
+ * Added SEXPs to lock and unlock the primary and secondary weapons
+ *
  * Revision 2.121  2006/04/05 16:56:57  karajorma
  * Changes to support the new Enable/Disable-Builtin-Messages SEXP
  *
@@ -945,7 +948,7 @@ struct ship_subsys;
 // to add a #define here (a number from 0x0000 to 0x00ff ORred with the category that it
 // goes under), some appropriate case statements in get_subcategory() (in sexp.cpp) that
 // will return the subcategory for each sexp that uses it, and the submenu name in the
-// op_submenu[] array in sexp_tree.cpp.
+// op_submenu[] array in sexp.cpp.
 #define SUBCATEGORY_MASK									0x00ff
 #define CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS		(0x0000 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_AI_AND_IFF						(0x0001 | OP_CATEGORY_CHANGE)
@@ -961,6 +964,7 @@ struct ship_subsys;
 #define CHANGE_SUBCATEGORY_CUTSCENES						(0x000b | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_JUMP_NODES						(0x000c | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_BACKGROUND_AND_NEBULA			(0x000d | OP_CATEGORY_CHANGE)
+#define CHANGE_SUBCATEGORY_TEAM_LOADOUT						(0x000e | OP_CATEGORY_CHANGE)
 
 
 #define	OP_PLUS								(0x0000 | OP_CATEGORY_ARITHMETIC)
@@ -1075,6 +1079,7 @@ struct ship_subsys;
 #define OP_NUM_SHIPS_IN_WING				(0x002d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_GET_PRIMARY_AMMO					(0x002e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_GET_SECONDARY_AMMO				(0x002f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define	OP_NUM_ASSISTS						(0x0030 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -1277,8 +1282,10 @@ struct ship_subsys;
 #define OP_ENABLE_BUILTIN_MESSAGES			(0x00ae | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_LOCK_PRIMARY_WEAPON				(0x00af | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_UNLOCK_PRIMARY_WEAPON			(0x00b0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_LOCK_SECONDARY_WEAPON			(0x00b1 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_UNLOCK_SECONDARY_WEAPON			(0x00b2 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_LOCK_SECONDARY_WEAPON			(0x00b1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_UNLOCK_SECONDARY_WEAPON			(0x00b2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_DEAL_WITH_SHIP_LOADOUT			(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+
 
 
 /* made obsolete by Goober5000
