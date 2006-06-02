@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.40 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2006-06-02 08:59:58 $
+ * $Author: karajorma $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.39  2006/02/16 05:15:48  taylor
  * fix strangeness with persona index thingy (ubyte can't be -1, this needs to be left like this or make an int)
  * address some pilot file corruption using non-linear campaigns, rather simple fix for something that took quite a while to track down
@@ -648,7 +651,11 @@ void mission_campaign_get_sw_info()
 		for (i = 0; i < Num_ship_classes; i++ )
 			Campaign.ships_allowed[i] = 0;
 
-		count = stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
+		// Karajorma - Swapping this function call for one to stuff_ship_list as it offers better protection 
+		// against bad data and better error reporting
+		//count = stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
+		count = stuff_ship_list(ship_list, MAX_SHIP_CLASSES, CAMPAIGN_LOADOUT_SHIP_LIST);
+
 
 		// now set the array elements stating which ships we are allowed
 		for (i = 0; i < count; i++ ) {
