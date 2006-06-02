@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/Chatbox.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-03-26 08:25:05 $
+ * $Revision: 2.14 $
+ * $Date: 2006-06-02 09:17:09 $
  * $Author: taylor $
  *
  * C module to handle all code for multiplayer chat windows
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/03/26 08:25:05  taylor
+ * the bmpman release issues for the chatbox should be fixed now so we can go back to using bm_release() on the bitmaps
+ * Chatbox_p_coords (the multi-pause background) should be at 0,0 (even though this isn't used I thought it was a good idea to go ahead and fix it)
+ *
  * Revision 2.12  2005/10/10 17:21:06  taylor
  * remove NO_NETWORK
  *
@@ -409,12 +413,10 @@ char* Chatbox_big_bitmap_mask_fname[GR_NUM_RESOLUTIONS] = {
 // chatbox coords
 int Chatbox_big_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
-	//	192, 0
-		0, 0
+		192, 0
 	},
 	{ // GR_1024
-	//	307, 0
-		0, 0
+		307, 0
 	}
 };
 

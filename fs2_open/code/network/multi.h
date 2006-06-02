@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.12 $
- * $Date: 2006-04-20 06:32:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2006-06-02 09:10:01 $
+ * $Author: karajorma $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/04/20 06:32:15  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.11  2005/07/13 03:25:58  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -579,6 +582,7 @@ extern int Om_tracker_flag;
 #define CHANGE_AI_CLASS				0xEF		// change ai class
 #define NO_SUBSYS_STRING			"NO-SUBSYS"	// see change_ai_class - because same routine is used
 												// for both ships and subsystems
+#define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 

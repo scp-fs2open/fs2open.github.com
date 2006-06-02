@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.8 $
- * $Date: 2005-07-24 18:35:44 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2006-06-02 09:10:02 $
+ * $Author: karajorma $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/24 18:35:44  taylor
+ * proper multi support for fighter beams, already has code to break protocol commented out if we need it,
+ *   decided to skip and beam type checks and let beam_fire() reassign it (should work ok)
+ *
  * Revision 2.7  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -725,6 +729,10 @@ void process_sw_query_packet(ubyte *data, header *hinfo);
 // event update packet
 void send_event_update_packet(int event);
 void process_event_update_packet(ubyte *data, header *hinfo);
+
+// variable update packet
+void send_variable_update_packet(int variable_index, char *value);
+void process_variable_update_packet( ubyte *data, header *hinfo);
 
 // weapon detonate packet
 void send_weapon_detonate_packet(object *objp);
