@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12 $
- * $Date: 2006-05-30 02:13:22 $
- * $Author: Goober5000 $
+ * $Revision: 1.13 $
+ * $Date: 2006-06-02 09:39:11 $
+ * $Author: karajorma $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2006/05/30 02:13:22  Goober5000
+ * add substitute music boxes to FRED, and reset music properly when mission is cleared
+ * --Goober5000
+ *
  * Revision 1.11  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -1382,10 +1386,13 @@ void clear_mission()
 	// of ships for all teams
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
 		count = 0;
+		char empty[TOKEN_LENGTH] = ""; 
 		for ( j = 0; j < MAX_SHIP_CLASSES; j++ ) {
 			if (Ship_info[j].flags & SIF_DEFAULT_PLAYER_SHIP) {
 				Team_data[i].ship_list[count] = j;
-				Team_data[i].ship_count[count++] = 5;
+				strcpy(Team_data[i].ship_list_variables[count], empty);
+				Team_data[i].ship_count[count] = 5;
+				strcpy(Team_data[i].ship_count_variables[count++], empty);
 			}
 		}
 		Team_data[i].number_choices = count;
