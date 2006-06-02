@@ -993,7 +993,7 @@ STYLE DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_CAPTION |
 EXSTYLE WS_EX_NOPARENTNOTIFY | WS_EX_CLIENTEDGE | WS_EX_CONTEXTHELP
 CAPTION "Edit Ship"
 MENU IDR_SHIP_EDIT_MENU
-FONT 8, "MS Sans Serif"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     PUSHBUTTON      "Prev",IDC_PREV,264,7,24,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Next",IDC_NEXT,290,7,24,14,0,WS_EX_STATICEDGE
@@ -1098,6 +1098,8 @@ BEGIN
     LTEXT           "Target",IDC_STATIC,172,166,22,8
     LTEXT           "Persona",IDC_STATIC,149,39,27,8
     LTEXT           "Alt Name",IDC_STATIC,14,80,30,8
+    PUSHBUTTON      "Alt Ship Class",IDC_ALT_SHIP_CLASS,180,101,69,14,0,
+                    WS_EX_STATICEDGE
     PUSHBUTTON      "Restrict Arrival Paths",IDC_RESTRICT_ARRIVAL,15,213,134,
                     14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Restrict Departure Paths",IDC_RESTRICT_DEPARTURE,171,
@@ -1368,41 +1370,57 @@ BEGIN
                     IDC_STATIC,7,7,221,18
 END
 
-IDD_LOADOUT_EDITOR DIALOG DISCARDABLE  0, 0, 204, 199
+IDD_LOADOUT_EDITOR DIALOG DISCARDABLE  0, 0, 204, 322
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Team Loadout Editor"
 MENU IDR_PLAYER_EDIT_MENU
 FONT 8, "MS Sans Serif"
 BEGIN
-    LISTBOX         IDC_SHIP_LIST,7,19,91,103,LBS_OWNERDRAWFIXED | 
+    LISTBOX         IDC_SHIP_LIST,7,108,91,103,LBS_OWNERDRAWFIXED | 
                     LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
                     WS_TABSTOP
-    EDITTEXT        IDC_SHIP_POOL,67,124,32,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SHIP_POOL,67,215,32,14,ES_AUTOHSCROLL
     CONTROL         "Spin1",IDC_SPIN1,"msctls_updown32",UDS_SETBUDDYINT | 
-                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,57,124,11,
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,57,215,9,
                     14
-    LISTBOX         IDC_WEAPON_LIST,104,19,93,103,LBS_OWNERDRAWFIXED | 
+    LISTBOX         IDC_WEAPON_LIST,104,108,93,103,LBS_OWNERDRAWFIXED | 
                     LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
                     WS_TABSTOP
-    EDITTEXT        IDC_WEAPON_POOL,165,124,32,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_WEAPON_POOL,165,215,32,14,ES_AUTOHSCROLL
     CONTROL         "Spin2",IDC_POOL_SPIN,"msctls_updown32",UDS_SETBUDDYINT | 
-                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,155,124,
-                    11,14
-    EDITTEXT        IDC_DELAY,119,158,32,14,ES_AUTOHSCROLL
-    CONTROL         "Spin1",IDC_DELAY_SPIN,"msctls_updown32",UDS_SETBUDDYINT | 
-                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,47,156,9,
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,155,215,9,
                     14
-    DEFPUSHBUTTON   "OK",IDOK,48,178,41,14
-    PUSHBUTTON      "Cancel",IDCANCEL,99,178,41,14
+    EDITTEXT        IDC_DELAY,119,279,32,14,ES_AUTOHSCROLL
+    CONTROL         "Spin1",IDC_DELAY_SPIN,"msctls_updown32",UDS_SETBUDDYINT | 
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,47,278,9,
+                    14
+    DEFPUSHBUTTON   "OK",IDOK,48,301,41,14
+    PUSHBUTTON      "Cancel",IDCANCEL,99,301,41,14
     LTEXT           "Available starting ships",IDC_STATIC,7,7,74,8
-    LTEXT           "Extra available",IDC_STATIC,7,127,52,8
-    LTEXT           "Amount used in wings:",IDC_STATIC,7,141,72,8
-    LTEXT           "",IDC_WINGS_SHP_COUNT,81,141,18,8
-    LTEXT           "Player entry delay",IDC_STATIC,59,160,58,8
+    LTEXT           "Extra available",IDC_STATIC,7,217,52,8
+    LTEXT           "Amount used in wings:",IDC_STATIC,7,262,72,8
+    LTEXT           "",IDC_WINGS_SHP_COUNT,81,262,18,8
+    LTEXT           "Player entry delay",IDC_STATIC,59,281,58,8
     LTEXT           "Available weapons pool",IDC_STATIC,104,7,76,8
-    LTEXT           "Amount used in wings:",IDC_STATIC,104,141,72,8
-    LTEXT           "",IDC_WINGS_WPN_COUNT,179,141,18,8
-    LTEXT           "Extra available",IDC_STATIC,104,127,52,8
+    LTEXT           "Amount used in wings:",IDC_STATIC,104,262,72,8
+    LTEXT           "",IDC_WINGS_WPN_COUNT,179,262,18,8
+    LTEXT           "Extra available",IDC_STATIC,104,217,52,8
+    LISTBOX         IDC_SHIP_VARIABLES_LIST,7,31,91,62,LBS_OWNERDRAWFIXED | 
+                    LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
+                    WS_TABSTOP
+    LISTBOX         IDC_WEAPON_VARIABLES_LIST,104,31,93,62,
+                    LBS_OWNERDRAWFIXED | LBS_HASSTRINGS | 
+                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "From Variable",IDC_STATIC,7,19,45,10
+    LTEXT           "From Table Entry",IDC_STATIC,7,97,56,10
+    COMBOBOX        IDC_SHIP_VARIABLES_COMBO,7,244,91,71,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_WEAPON_VARIABLES_COMBO,104,244,93,71,
+                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "From Variable",IDC_STATIC,104,19,45,10
+    LTEXT           "From Table Entry",IDC_STATIC,104,97,56,10
+    LTEXT           "Set Amount From Variable",IDC_STATIC,7,234,84,10
+    LTEXT           "Set Amount From Variable",IDC_STATIC,104,234,93,10
 END
 
 IDD_ORIENT_EDITOR DIALOG DISCARDABLE  0, 0, 229, 119
@@ -1882,7 +1900,7 @@ IDD_BRIEFING_EDITOR DIALOGEX 0, 0, 258, 407
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Briefing Editor"
 MENU IDR_PLAYER_EDIT_MENU
-FONT 8, "MS Sans Serif"
+FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     PUSHBUTTON      "Prev",IDC_PREV,147,7,23,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Next",IDC_NEXT,173,7,23,14,0,WS_EX_STATICEDGE
@@ -2109,7 +2127,7 @@ BEGIN
     LTEXT           "Wave Filename",IDC_STATIC,7,139,50,8
 END
 
-IDD_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 149, 308
+IDD_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 149, 334
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Additional Ship Properties"
 FONT 8, "MS Sans Serif"
@@ -2154,13 +2172,13 @@ BEGIN
                     BS_3STATE | WS_TABSTOP,7,208,85,10
     CONTROL         "Special Warp",IDC_SPECIAL_WARP,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,7,238,59,10
-    EDITTEXT        IDC_RESPAWN_PRIORITY,93,269,49,14,ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "OK",IDOK,7,287,65,14
-    PUSHBUTTON      "Cancel",IDCANCEL,77,287,65,14
+    EDITTEXT        IDC_RESPAWN_PRIORITY,93,290,49,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,7,313,65,14
+    PUSHBUTTON      "Cancel",IDCANCEL,77,313,65,14
     LTEXT           "Seconds",IDC_STATIC,63,20,29,8
     LTEXT           "Damage",IDC_STATIC,19,186,28,8
     LTEXT           "Priority",IDC_STATIC,19,114,22,8
-    LTEXT           "Respawn Priority",IDC_STATIC,29,272,54,8
+    LTEXT           "Respawn Priority",IDC_STATIC,29,293,54,8
     CONTROL         "Doesn't Bank When Turning",IDC_NO_BANK,"Button",
                     BS_3STATE | WS_TABSTOP,7,228,135,10
     CONTROL         "Affected By Gravity",IDC_AFFECTED_BY_GRAVITY,"Button",
@@ -2172,6 +2190,11 @@ BEGIN
                     BS_3STATE | WS_TABSTOP,7,248,79,10
     CONTROL         "Disable Built-in Messages",IDC_DISABLE_BUILTIN_SHIP,
                     "Button",BS_3STATE | WS_TABSTOP,7,258,96,10
+    CONTROL         "Set Class Dynamically",IDC_SET_CLASS_DYNAMICALLY,"Button",
+                    BS_3STATE | WS_TABSTOP,7,267,85,10
+    CONTROL         "Team Loadout Store Status",
+                    IDC_TEAM_LOADOUT_STORE_STATUS,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,277,103,10
 END
 
 IDD_ADD_VARIABLE DIALOG DISCARDABLE  0, 0, 422, 102
@@ -2552,7 +2575,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 197
         TOPMARGIN, 7
-        BOTTOMMARGIN, 192
+        BOTTOMMARGIN, 315
     END
 
     IDD_ORIENT_EDITOR, DIALOG
@@ -2710,7 +2733,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 142
         TOPMARGIN, 7
-        BOTTOMMARGIN, 301
+        BOTTOMMARGIN, 327
     END
 
     IDD_ADD_VARIABLE, DIALOG
@@ -3270,6 +3293,90 @@ BEGIN
 END
 
 #endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.K.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
+#pragma code_page(1252)
+#endif //_WIN32
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ALT_SHIP_CLASS DIALOG DISCARDABLE  0, 0, 278, 319
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Alternate Ship Class Editor"
+FONT 8, "MS Sans Serif"
+BEGIN
+    DEFPUSHBUTTON   "OK",IDOK,197,298,32,14
+    PUSHBUTTON      "Cancel",IDCANCEL,239,298,32,14
+    GROUPBOX        "Class 1",IDC_ASCT1_GROUP_ONE,21,24,238,53,WS_GROUP
+    CONTROL         "Set By Class",IDC_ASCT1_CLASS_RADIO1,"Button",
+                    BS_AUTORADIOBUTTON | WS_TABSTOP,29,43,55,10
+    CONTROL         "Set By Variable",IDC_ASCT1_VARIABLES_RADIO1,"Button",
+                    BS_AUTORADIOBUTTON | WS_TABSTOP,155,43,64,10
+    COMBOBOX        IDC_ASCT1_CLASS_COMBO1,29,56,92,178,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_ASCT1_VARIABLES_COMBO1,155,56,92,178,
+                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Class 2",IDC_ASCT1_GROUP_TWO,21,85,238,53,WS_GROUP
+    CONTROL         "Set By Class",IDC_ASCT1_CLASS_RADIO2,"Button",
+                    BS_AUTORADIOBUTTON,29,104,55,10
+    CONTROL         "Set By Variable",IDC_ASCT1_VARIABLES_RADIO2,"Button",
+                    BS_AUTORADIOBUTTON | WS_TABSTOP,155,104,64,10
+    COMBOBOX        IDC_ASCT1_CLASS_COMBO2,29,118,92,178,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_ASCT1_VARIABLES_COMBO2,155,118,92,178,
+                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Class 3",IDC_ASCT1_GROUP_THREE,23,144,238,53,WS_GROUP
+    CONTROL         "Set By Class",IDC_ASCT1_CLASS_RADIO3,"Button",
+                    BS_AUTORADIOBUTTON,31,163,55,10
+    CONTROL         "Set By Variable",IDC_ASCT1_VARIABLES_RADIO3,"Button",
+                    BS_AUTORADIOBUTTON | WS_TABSTOP,157,163,64,10
+    COMBOBOX        IDC_ASCT1_CLASS_COMBO3,31,176,92,178,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_ASCT1_VARIABLES_COMBO3,157,176,92,178,
+                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    GROUPBOX        "Type 1",IDC_STATIC,7,13,264,192
+    GROUPBOX        "Type 2",IDC_STATIC,7,212,264,79
+    GROUPBOX        "Class 1",IDC_ASCT2_GROUP_ONE,21,228,238,53,WS_GROUP
+    CONTROL         "Set By Class",IDC_ASCT2_CLASS_RADIO1,"Button",
+                    BS_AUTORADIOBUTTON | WS_TABSTOP,29,247,55,10
+    CONTROL         "Set By Variable",IDC_ASCT2_VARIABLES_RADIO1,"Button",
+                    BS_AUTORADIOBUTTON | WS_TABSTOP,155,247,64,10
+    COMBOBOX        IDC_ASCT2_CLASS_COMBO1,29,260,92,178,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_ASCT2_VARIABLES_COMBO1,155,260,92,178,
+                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_ALT_SHIP_CLASS, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 271
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 312
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.K.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
