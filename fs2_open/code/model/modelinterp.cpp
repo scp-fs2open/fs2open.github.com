@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.157 $
- * $Date: 2006-05-27 16:57:13 $
+ * $Revision: 2.158 $
+ * $Date: 2006-06-02 09:40:32 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157  2006/05/27 16:57:13  taylor
+ * comment out the model cache stuff, it's old and not actually used anyway
+ * minor cleanup of some modelinterp.cpp code, to make it more readable
+ * fix tertiary thruster batcher which had the radius value swapped
+ * comment out a couple places where we were doing a D3D or OGL check (it's always true so why bother)
+ * add more support for NO_DIRECT3D so that it can be used on Windows to build without D3D
+ *
  * Revision 2.156  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -4850,21 +4857,25 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 		}
 	}
 
-	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
-		light_filter_push( -1, pos, pm->submodel[submodel_num].rad );
-	}
-
 	//set to true since D3d and OGL need the api matrices set
 	g3_start_instance_matrix(pos,orient, true);
 
-	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
+	if ( !(Interp_flags & MR_NO_LIGHTING ) ) {
+		Interp_light = 1.0f;
+
+		light_filter_push( -1, pos, pm->submodel[submodel_num].rad );
+
 		light_rotate_all();
+
+		if (!Cmdline_nohtl) {
+			light_set_all_relevent();
+		}
 	}
 
 	// fixes disappearing HUD in OGL - taylor
 	gr_set_cull(1);
 
-	if(!Cmdline_nohtl) {
+	if (!Cmdline_nohtl) {
 
 		// RT - Put this here to fog debris
 		if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)
@@ -4899,6 +4910,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_filter_pop();	
 	}
+
 	g3_done_instance(true);
 
 
