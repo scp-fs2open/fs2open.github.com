@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.34 $
- * $Date: 2006-04-20 06:32:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.35 $
+ * $Date: 2006-06-02 09:10:01 $
+ * $Author: karajorma $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2006/04/20 06:32:15  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.33  2006/03/30 04:18:40  Goober5000
  * those were some bugs just waiting to happen
  *
@@ -1184,6 +1187,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 
 		case EVENT_UPDATE:
 			process_event_update_packet(data, header_info);
+			break;
+
+		case VARIABLE_UPDATE:
+			process_variable_update_packet(data, header_info);
 			break;
 
 		case OBJECT_UPDATE_NEW:			
