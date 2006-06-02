@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336 $
- * $Date: 2006-05-31 03:05:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.337 $
+ * $Date: 2006-06-02 08:49:35 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336  2006/05/31 03:05:42  Goober5000
+ * some cosmetic changes in preparation for bay arrival/departure code
+ * --Goober5000
+ *
  * Revision 2.335  2006/05/27 16:49:05  taylor
  * comment out some pointless checks which look for not using either D3D or OGL
  * don't run through ships on level load setting up the sound environment if sound is disabled
@@ -4743,9 +4747,15 @@ void ship_add_exited_ship( ship *sp, int reason )
 
 		// find the oldest entry
 		oldest_entry = 0;
-		for ( i = 1; i < MAX_SHIPS; i++ ) {
-			if ( Ships_exited[i].time < Ships_exited[oldest_entry].time ) {
-				oldest_entry = i;
+		for ( i = 1; i < MAX_SHIPS; i++ ) 
+		{
+			// Karajorma - Don't remove ships which are being tracked for loadout purposes
+			if (!(Ships_exited[i].flags & SEF_SHIP_EXITED_STORE))
+			{
+				if ( Ships_exited[i].time < Ships_exited[oldest_entry].time ) 
+				{
+					oldest_entry = i;
+				}
 			}
 		}
 		entry = oldest_entry;
@@ -4757,11 +4767,18 @@ void ship_add_exited_ship( ship *sp, int reason )
 	strcpy( Ships_exited[entry].ship_name, sp->ship_name );
 	Ships_exited[entry].obj_signature = Objects[sp->objnum].signature;
 	Ships_exited[entry].team = sp->team;
+	Ships_exited[entry].ship_class = sp->ship_info_index;
 	Ships_exited[entry].flags = reason;
 	// if ship is red alert, flag as such
 	if (sp->flags & SF_RED_ALERT_STORE_STATUS) {
 		Ships_exited[entry].flags |= SEF_RED_ALERT_CARRY;
 	}
+	// if the ship is team loadout, flag it so it can't be bumped
+	if (sp->flags2 & SF2_TEAM_LOADOUT_STORE_STATUS) 
+	{
+		Ships_exited[entry].flags |= SEF_SHIP_EXITED_STORE;
+	}
+
 	Ships_exited[entry].time = Missiontime;
 	Ships_exited[entry].hull_strength = int(Objects[sp->objnum].hull_strength);
 
@@ -5241,6 +5258,22 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	{
 		shipp->thrusters_start[i] = 0;
 		shipp->thrusters_sounds[i] = -1;
+	}
+
+	// Alternate ship class stuff
+	shipp->num_alt_class_one = 0;
+	shipp->num_alt_class_two = 0;
+
+	for (i = 0; i < MAX_ALT_CLASS_1; i++)
+	{
+		shipp->alt_class_one[i] = -1;
+		shipp->alt_class_one_variable[i] = -1;
+	}
+
+	for (i = 0; i < MAX_ALT_CLASS_2; i++)
+	{
+		shipp->alt_class_two[i] = -1;
+		shipp->alt_class_two_variable[i] = -1;
 	}
 }
 
@@ -8756,7 +8789,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	{
 		// hull
 		if (sp->special_hitpoint_index != -1) {
-			hull_pct = objp->hull_strength / (float) atoi(Sexp_variables[sp->special_hitpoint_index+HULL_STRENGTH].text);
+			hull_pct = objp->hull_strength / sp->ship_max_hull_strength; 
 		} else {
 			Assert( Ship_info[sp->ship_info_index].max_hull_strength > 0.0f );
 			hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
@@ -8764,7 +8797,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 		// shield
 		if (sp->special_hitpoint_index != -1) {
-			shield_pct = get_shield_strength(objp) / (float) atoi(Sexp_variables[sp->special_hitpoint_index+SHIELD_STRENGTH].text);
+			shield_pct = get_shield_strength(objp) / sp->ship_max_shield_strength;
 		} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
 			shield_pct = get_shield_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
 		} else {
