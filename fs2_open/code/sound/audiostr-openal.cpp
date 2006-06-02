@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.28 $
- * $Date: 2006-06-01 04:45:19 $
+ * $Revision: 1.29 $
+ * $Date: 2006-06-02 08:05:33 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2006/06/01 04:45:19  taylor
+ * a little change to the order here, this should be safer in the long run and avoid some memory issues too
+ *
  * Revision 1.27  2006/05/29 02:02:17  Goober5000
  * add Taylor's compile fix
  * --Goober5000
@@ -1118,8 +1121,8 @@ BOOL AudioStream::Create (char *pszFilename)
 				m_cbBufSize /= MAX_STREAM_BUFFERS;
 
 				// ??? there tends to be static in the audio if m_cbBufSize equals the samples per second, so make it unqual
-				if (m_cbBufSize == m_pwavefile->m_wfmt.nSamplesPerSec)
-					m_cbBufSize = (uint)((float)m_cbBufSize * 1.7f);
+				if ( (m_cbBufSize == m_pwavefile->m_wfmt.nSamplesPerSec) || (m_cbBufSize == 11025) || (m_cbBufSize == 22050) )
+					m_cbBufSize = (uint)((float)m_cbBufSize * 1.3f);
 
 				// if the requested buffer size is too big then cap it
 				m_cbBufSize = (m_cbBufSize > BIGBUF_SIZE) ? BIGBUF_SIZE : m_cbBufSize;
