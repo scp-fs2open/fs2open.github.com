@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259 $
- * $Date: 2006-05-20 02:03:01 $
+ * $Revision: 2.259.2.1 $
+ * $Date: 2006-06-03 04:46:39 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259  2006/05/20 02:03:01  Goober5000
+ * fix for Mantis #755, plus make the missionlog #defines uniform
+ * --Goober5000
+ *
  * Revision 2.258  2006/04/20 06:32:23  Goober5000
  * proper capitalization according to Volition
  *
@@ -18197,6 +18201,11 @@ void sexp_modify_variable(char *text, int index)
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
 
 	// do multi_callback_here
+	// send a network packet if we need to
+	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER))
+	{
+		send_variable_update_packet(index, Sexp_variables[index].text);
+	}
 }
 
 void sexp_modify_variable(int n)
