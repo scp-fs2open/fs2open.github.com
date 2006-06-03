@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243 $
- * $Date: 2006-05-27 17:12:44 $
+ * $Revision: 2.244 $
+ * $Date: 2006-06-03 11:54:33 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243  2006/05/27 17:12:44  taylor
+ * NO_DIRECT3D support
+ * clean up video init stuff to use D3D if specified but always OGL otherwise (using NO_DIRECT3D will force always force OGL)
+ * if video card reg entry can't be found just use OGL rather than getting all freaky on people
+ * change for geometry batcher update
+ *
  * Revision 2.242  2006/05/13 07:29:51  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -2531,7 +2537,6 @@ uint load_mission_load;
 uint load_post_level_init;
 //uint load_mission_stuff;
 
-void init_decals();
 // intializes game stuff and loads the mission.  Returns 0 on failure, 1 on success
 // input: seed =>	DEFAULT PARAMETER (value -1).  Only set by demo playback code.
 //WMC - I see no mission loading.
