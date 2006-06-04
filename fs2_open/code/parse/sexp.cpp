@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.260 $
- * $Date: 2006-06-02 09:29:13 $
- * $Author: karajorma $
+ * $Revision: 2.261 $
+ * $Date: 2006-06-04 00:01:48 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.260  2006/06/02 09:29:13  karajorma
+ * Added the Team Loadout Change subcategory
+ * Added the deal-with-ship-loadout SEXP. It's only temporary but it give people an option other than having to roll their own events to fix up loadout at the end of a mission.
+ * Added the num_assists SEXP to complement the num_kills one.
+ * Updated the is-ship-class SEXP so that it can also act as was-ship-class for departed and destroyed ships.
+ * Updated change-ship-class to work with ships that aren't in the mission yet.
+ * Updated sexp_modify_variable to actually do the multiplayer callback that V had noticed was needed but never actually added.
+ *
  * Revision 2.259  2006/05/20 02:03:01  Goober5000
  * fix for Mantis #755, plus make the missionlog #defines uniform
  * --Goober5000
@@ -1925,6 +1933,8 @@ void trigger_operator_premission(int op);
 // Goober5000
 char *Sexp_current_replacement_argument;
 arg_item Sexp_applicable_argument_list;
+bool is_blank_argument_op(int op_const);
+bool is_blank_of_op(int op_const);
 
 
 // Goober5000 - arg_item class stuff, borrowed from sexp_list_item class stuff -------------
@@ -3574,6 +3584,60 @@ void get_sexp_text_for_variable(char *text, char *token)
 	}
 }
 
+// Goober5000
+void do_preload_for_arguments(void (*preloader)(char *), int arg_node, int arg_handler_node)
+{
+	// we have a special argument
+	if (!strcmp(Sexp_nodes[arg_node].text, SEXP_ARGUMENT_STRING))
+	{
+		int n;
+
+		// we might not be handling it, either because this is not a *_of operator
+		// or because we've disabled preloading for special arguments
+		if (arg_handler_node < 0)
+			return;
+
+		// preload for each argument
+		for (n = CDR(arg_handler_node); n != -1; n = CDR(n))
+		{
+			preloader(CTEXT(n));
+		}
+	}
+	// we don't
+	else
+	{
+		// preload for just the one argument
+		preloader(CTEXT(arg_node));
+	}
+}
+
+// Goober5000
+void preload_change_ship_model(char *text)
+{
+	int idx;
+	ship_info *sip;
+
+	idx = ship_info_lookup(text);
+	if (idx < 0)
+		return;
+
+	// preload the model, just in case there is no other ship of this class in the mission
+	// (this eliminates the slight pause during a mission when changing to a previously unloaded model)
+	sip = &Ship_info[idx];
+	sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+}
+
+// Goober5000
+void preload_turret_change_weapon(char *text)
+{
+	int idx;
+
+	idx = weapon_info_lookup(text);
+	if (idx < 0)
+		return;
+
+	weapon_mark_as_used(idx);
+}
 
 // returns the first sexp index of data this function allocates. (start of this sexp)
 // recursive function - always sets first and then rest
@@ -3584,7 +3648,7 @@ int get_sexp(char *token)
 
 	// start - the node allocated in first instance of fuction
 	// node - the node allocated in current instance of function
-	// count - number of nodes allocated this instance of function [do we set last.rest or first]
+	// count - number of nodes allocated this instance of function [do we set last.rest or .first]
 	// variable - whether string or number is a variable referencing Sexp_variables
 
 	// initialization
@@ -3686,9 +3750,27 @@ int get_sexp(char *token)
 	// Goober5000 - preload stuff for certain sexps
 	if (!Fred_running)
 	{
-		int n;
-		ship_info *sip;
+		int n, parent, arg_handler = -1;
 
+		// see if we're using special arguments
+		parent = find_parent_operator(start);
+		if (parent >= 0 && is_blank_argument_op(get_operator_const(CTEXT(parent))))
+		{
+			// get the first op of the parent, which should be a *_of operator
+			arg_handler = CADR(parent);
+			if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler))))
+				arg_handler = -1;
+		}
+
+		// DISABLE PRELOADING FOR NOW
+		// see Mantis #925 for discussion
+		// Also, the preloader will have to be moved to a different function (after the parsing is finished)
+		// in order to work properly with special arguments.  The current node is an orphan until get_sexp
+		// completes, at which time it will be linked into the sexp node list; this means that it is
+		// impossible to get the parent node.
+		arg_handler = -1;
+
+		// preload according to sexp
 		op = get_operator_const(CTEXT(start));
 		switch (op)
 		{
@@ -3696,16 +3778,14 @@ int get_sexp(char *token)
 			case OP_CHANGE_SHIP_CLASS:
 				// model is argument #1
 				n = CDR(start);
+				do_preload_for_arguments(preload_change_ship_model, n, arg_handler);
 
-				// preload the model, just in case there is no other ship of this class in the mission
-				// (this eliminates the slight pause during a mission when changing to a previously unloaded model)
-				sip = &Ship_info[ship_info_lookup(CTEXT(n))];										// we already know this class exists
-				sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);	// use the highest detail level
 				break;
 
 			case OP_SET_SPECIAL_WARPOUT_NAME:
 				// set flag for taylor
 				Knossos_warp_ani_used = 1;
+
 				break;
 
 			case OP_WARP_EFFECT:
@@ -3715,36 +3795,37 @@ int get_sexp(char *token)
 				n = CDR(n);
 
 				// set flag for taylor
-				if (CAR(n) != -1)				// if it's evaluating a sexp
-					Knossos_warp_ani_used = 1;		// set flag just in case
-				else if (atoi(CTEXT(n)) == 1)	// if it's the Knossos type
-					Knossos_warp_ani_used = 1;		// set flag for sure
+				if (CAR(n) != -1 || !strcmp(Sexp_nodes[n].text, SEXP_ARGUMENT_STRING))	// if it's evaluating a sexp or a special argument
+					Knossos_warp_ani_used = 1;												// set flag just in case
+				else if (atoi(CTEXT(n)) == 1)											// if it's the Knossos type
+					Knossos_warp_ani_used = 1;												// set flag for sure
 
 				break;
 
 			case OP_SET_SKYBOX_MODEL:
+				// model is argument #1
 				n = CDR(start);
+				do_preload_for_arguments(sexp_set_skybox_model_preload, n, arg_handler);
 
-				sexp_set_skybox_model_preload( CTEXT(n) );
 				break;
 
 			case OP_TURRET_CHANGE_WEAPON:
 				// weapon to change to is arg #3
 				n = CDDDR(start);
+				do_preload_for_arguments(preload_turret_change_weapon, n, arg_handler);
 
-				weapon_mark_as_used( weapon_info_lookup(CTEXT(n) ));
 				break;
 
 			case OP_ADD_SUN_BITMAP:
 				n = CDR(start);
+				do_preload_for_arguments(stars_preload_sun_bitmap, n, arg_handler);
 
-				stars_preload_sun_bitmap( CTEXT(n) );
 				break;
 
 			case OP_ADD_BACKGROUND_BITMAP:
 				n = CDR(start);
+				do_preload_for_arguments(stars_preload_background_bitmap, n, arg_handler);
 
-				stars_preload_background_bitmap( CTEXT(n) );
 				break;
 		}
 	}
@@ -7573,7 +7654,7 @@ int eval_in_sequence(int arg_handler_node, int condition_node)
 // Goober5000
 void sexp_invalidate_argument(int n)
 {
-	int parent, grandparent, arg_handler, op, arg_n;
+	int parent, grandparent, arg_handler, arg_n;
 
 	// find the conditional sexp
 	parent = find_parent_operator(n);
@@ -7584,14 +7665,12 @@ void sexp_invalidate_argument(int n)
 		return;
 
 	// make sure it's a supported operator
-	op = get_operator_const(CTEXT(grandparent));
-	if (op != OP_WHEN_ARGUMENT && op != OP_EVERY_TIME_ARGUMENT)
+	if (!is_blank_argument_op(get_operator_const(CTEXT(grandparent))))
 		return;
 
-	// get the first op of the grandparent, which should be a *_of operator (or in_sequence)
+	// get the first op of the grandparent, which should be a *_of operator
 	arg_handler = CADR(grandparent);
-	op = get_operator_const(CTEXT(arg_handler));
-	if (op != OP_ANY_OF && op != OP_EVERY_OF && op != OP_NUMBER_OF && op != OP_RANDOM_OF && op != OP_RANDOM_MULTIPLE_OF && op != OP_IN_SEQUENCE)
+	if (!is_blank_of_op(get_operator_const(CTEXT(arg_handler))))
 		return;
 
 	// loop through arguments
@@ -7617,6 +7696,38 @@ void sexp_invalidate_argument(int n)
 
 		// iterate
 		n = CDR(n);
+	}
+}
+
+// Goober5000
+bool is_blank_argument_op(int op_const)
+{
+	switch (op_const)
+	{
+		case OP_WHEN_ARGUMENT:
+		case OP_EVERY_TIME_ARGUMENT:
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+// Goober5000
+bool is_blank_of_op(int op_const)
+{
+	switch (op_const)
+	{
+		case OP_ANY_OF:
+		case OP_EVERY_OF:
+		case OP_NUMBER_OF:
+		case OP_RANDOM_OF:
+		case OP_RANDOM_MULTIPLE_OF:
+		case OP_IN_SEQUENCE:
+			return true;
+
+		default:
+			return false;
 	}
 }
 
@@ -10550,7 +10661,6 @@ void sexp_ship_subsys_untargetable(int n, int untargetable)
 	// get the subsystems
 	for (; n >= 0; n = CDR(n))
 	{
-		char *subsystem_name = CTEXT(n);
 		ship_subsys *ss = ship_get_subsys(&Ships[ship_num], CTEXT(n));
 		if (ss == NULL)
 			continue;
