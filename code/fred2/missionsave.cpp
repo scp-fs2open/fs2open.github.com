@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.15 $
- * $Date: 2006-06-02 09:40:33 $
- * $Author: karajorma $
+ * $Revision: 1.16 $
+ * $Date: 2006-06-04 01:01:52 $
+ * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2006/06/02 09:40:33  karajorma
+ * Team Loadout from variable changes. Added alt ship classes
+ *
  * Revision 1.14  2006/05/30 01:36:24  Goober5000
  * add AI Profile box to FRED
  * --Goober5000
@@ -1601,12 +1604,38 @@ int CFred_mission_save::save_objects()
 			}
 		}
 
-		if (Ships[i].arrival_delay) {
-			if (optional_string_fred("+Arrival Delay:", "$Name:")){
-				parse_comments();
-			} else {
-				fout("\n+Arrival Delay:");
+		// Goober5000
+		if (Format_fs2_open)
+		{
+			if ((Ships[i].arrival_location == ARRIVE_FROM_DOCK_BAY) && (Ships[i].arrival_path_mask > 0))
+			{
+				int j, anchor_shipnum;
+				polymodel *pm;
+
+				anchor_shipnum = Ships[i].arrival_anchor;
+				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+
+				fout("\n+Arrival Paths: ( ");
+
+				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].modelnum);
+				for (j = 0; j < pm->ship_bay->num_paths; j++)
+				{
+					if (Ships[i].arrival_path_mask & (1 << j))
+					{
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+					}
+				}
+
+				fout(")");
 			}
+		}
+
+		if (Ships[i].arrival_delay)
+		{
+			if (optional_string_fred("+Arrival Delay:", "$Name:"))
+				parse_comments();
+			else
+				fout("\n+Arrival Delay:");
 
 			fout(" %d", Ships[i].arrival_delay);
 		}
@@ -1620,24 +1649,49 @@ int CFred_mission_save::save_objects()
 		parse_comments();
 		fout(" %s", Departure_location_names[Ships[i].departure_location]);
 
-
-		if ( Ships[i].departure_location == DEPART_AT_DOCK_BAY ) {
+		if ( Ships[i].departure_location != DEPART_AT_LOCATION )
+		{
 			required_string_fred("$Departure Anchor:");
 			parse_comments();
 			
-			if ( Ships[i].departure_anchor >= 0 ){
+			if ( Ships[i].departure_anchor >= 0 )
 				fout(" %s", Ships[Ships[i].departure_anchor].ship_name );
-			} else {
+			else
 				fout(" <error>");
+		}
+
+		// Goober5000
+		if (Format_fs2_open)
+		{
+			if ((Ships[i].departure_location == DEPART_AT_DOCK_BAY) && (Ships[i].departure_path_mask > 0))
+			{
+				int j, anchor_shipnum;
+				polymodel *pm;
+
+				anchor_shipnum = Ships[i].departure_anchor;
+				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+
+				fout("\n+Departure Paths: ( ");
+
+				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].modelnum);
+				for (j = 0; j < pm->ship_bay->num_paths; j++)
+				{
+					if (Ships[i].departure_path_mask & (1 << j))
+					{
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+					}
+				}
+
+				fout(")");
 			}
 		}
 
-		if (Ships[i].departure_delay) {
-			if (optional_string_fred("+Departure delay:", "$Name:")){
+		if (Ships[i].departure_delay)
+		{
+			if (optional_string_fred("+Departure delay:", "$Name:"))
 				parse_comments();
-			} else {
+			else
 				fout("\n+Departure delay:");
-			}
 
 			fout(" %d", Ships[i].departure_delay);
 		}
@@ -2149,7 +2203,8 @@ int CFred_mission_save::save_wings()
 		parse_comments();
 		fout(" %s", Arrival_location_names[Wings[i].arrival_location]);
 
-		if (Wings[i].arrival_location != ARRIVE_AT_LOCATION) {
+		if (Wings[i].arrival_location != ARRIVE_AT_LOCATION)
+		{
 			if (optional_string_fred("+Arrival Distance:", "$Name:"))
 				parse_comments();
 			else
@@ -2181,7 +2236,34 @@ int CFred_mission_save::save_wings()
 			}
 		}
 
-		if (Wings[i].arrival_delay) {
+		// Goober5000
+		if (Format_fs2_open)
+		{
+			if ((Wings[i].arrival_location == ARRIVE_FROM_DOCK_BAY) && (Wings[i].arrival_path_mask > 0))
+			{
+				int j, anchor_shipnum;
+				polymodel *pm;
+
+				anchor_shipnum = Wings[i].arrival_anchor;
+				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+
+				fout("\n+Arrival Paths: ( ");
+
+				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].modelnum);
+				for (j = 0; j < pm->ship_bay->num_paths; j++)
+				{
+					if (Wings[i].arrival_path_mask & (1 << j))
+					{
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+					}
+				}
+
+				fout(")");
+			}
+		}
+
+		if (Wings[i].arrival_delay)
+		{
 			if (optional_string_fred("+Arrival delay:", "$Name:"))
 				parse_comments();
 			else
@@ -2199,7 +2281,8 @@ int CFred_mission_save::save_wings()
 		parse_comments();
 		fout(" %s", Departure_location_names[Wings[i].departure_location]);
 
-		if ( Wings[i].departure_location == DEPART_AT_DOCK_BAY ) {
+		if ( Wings[i].departure_location != DEPART_AT_LOCATION )
+		{
 			required_string_fred("$Departure Anchor:");
 			parse_comments();
 
@@ -2209,7 +2292,34 @@ int CFred_mission_save::save_wings()
 				fout(" <error>");
 		}
 
-		if (Wings[i].departure_delay) {
+		// Goober5000
+		if (Format_fs2_open)
+		{
+			if ((Wings[i].departure_location == DEPART_AT_DOCK_BAY) && (Wings[i].departure_path_mask > 0))
+			{
+				int j, anchor_shipnum;
+				polymodel *pm;
+
+				anchor_shipnum = Wings[i].departure_anchor;
+				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+
+				fout("\n+Departure Paths: ( ");
+
+				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].modelnum);
+				for (j = 0; j < pm->ship_bay->num_paths; j++)
+				{
+					if (Wings[i].departure_path_mask & (1 << j))
+					{
+						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[j]].name);
+					}
+				}
+
+				fout(")");
+			}
+		}
+
+		if (Wings[i].departure_delay)
+		{
 			if (optional_string_fred("+Departure delay:", "$Name:"))
 				parse_comments();
 			else
@@ -3171,7 +3281,7 @@ int CFred_mission_save::save_music()
 
 	// Goober5000
 	// This doesn't need Format_fs2_open because it uses the special comment prefix. :)
-	if (strlen(The_mission.substitute_event_music_name) || strlen(The_mission.substitute_briefing_music_name))
+	if (stricmp(The_mission.substitute_event_music_name, "None") || stricmp(The_mission.substitute_briefing_music_name, "None"))
 	{
 		char *ch;
 
