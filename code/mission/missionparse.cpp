@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178 $
- * $Date: 2006-05-31 03:05:42 $
+ * $Revision: 2.178.2.1 $
+ * $Date: 2006-06-04 01:03:13 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178  2006/05/31 03:05:42  Goober5000
+ * some cosmetic changes in preparation for bay arrival/departure code
+ * --Goober5000
+ *
  * Revision 2.177  2006/05/21 22:57:30  Goober5000
  * fix for Mantis #750
  * --Goober5000
@@ -1173,6 +1177,9 @@ int Num_parse_names;
 
 texture_replace Fred_texture_replacements[MAX_SHIPS * MAX_MODEL_TEXTURES];
 
+int Num_path_restrictions;
+path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
+
 //XSTR:OFF
 
 char *Nebula_filenames[NUM_NEBULAS] = {
@@ -1357,7 +1364,7 @@ void post_process_mission();
 int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
-int mission_set_arrival_location(int anchor, int location, int distance, int objnum, vec3d *new_pos, matrix *new_orient);
+int mission_set_arrival_location(int anchor, int location, int distance, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient);
 int get_parse_name_index(char *name);
 int get_anchor(char *name);
 void mission_parse_set_up_initial_docks();
@@ -1368,6 +1375,7 @@ void parse_init();
 void parse_object_set_handled_flag_helper(p_object *pobjp, p_dock_function_info *infop);
 void parse_object_clear_all_handled_flags();
 int parse_object_on_arrival_list(p_object *pobjp);
+int add_path_restriction();
 
 // Goober5000
 void mission_parse_mark_non_arrival(p_object *p_objp);
@@ -2669,10 +2677,12 @@ int parse_create_object_sub(p_object *p_objp)
 	Ships[shipnum].arrival_location = p_objp->arrival_location;
 	Ships[shipnum].arrival_distance = p_objp->arrival_distance;
 	Ships[shipnum].arrival_anchor = p_objp->arrival_anchor;
+	Ships[shipnum].arrival_path_mask = p_objp->arrival_path_mask;
 	Ships[shipnum].arrival_cue = p_objp->arrival_cue;
 	Ships[shipnum].arrival_delay = p_objp->arrival_delay;
 	Ships[shipnum].departure_location = p_objp->departure_location;
 	Ships[shipnum].departure_anchor = p_objp->departure_anchor;
+	Ships[shipnum].departure_path_mask = p_objp->departure_path_mask;
 	Ships[shipnum].departure_cue = p_objp->departure_cue;
 	Ships[shipnum].departure_delay = p_objp->departure_delay;
 	Ships[shipnum].determination = p_objp->determination;
@@ -2848,6 +2858,7 @@ int parse_create_object_sub(p_object *p_objp)
 	{
 		Ships[shipnum].departure_location = Wings[Ships[shipnum].wingnum].departure_location;
 		Ships[shipnum].departure_anchor = Wings[Ships[shipnum].wingnum].departure_anchor;
+		Ships[shipnum].departure_path_mask = Wings[Ships[shipnum].wingnum].departure_path_mask;
 	}
 
 	// mwa -- 1/30/98.  Do both flags.  Fred uses the ship flag, and FreeSpace will use the object
@@ -3131,7 +3142,7 @@ int parse_create_object_sub(p_object *p_objp)
 				if (MULTIPLAYER_CLIENT)
 					location = ARRIVE_AT_LOCATION;
 
-				mission_set_arrival_location(p_objp->arrival_anchor, location, p_objp->arrival_distance, objnum, NULL, NULL);
+				mission_set_arrival_location(p_objp->arrival_anchor, location, p_objp->arrival_distance, objnum, p_objp->arrival_path_mask, NULL, NULL);
 
 				// Goober5000 - warpin start moved to parse_create_object
 			}
@@ -3289,6 +3300,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	p_objp->arrival_anchor = -1;
 	p_objp->arrival_distance = 0;
+	p_objp->arrival_path_mask = -1;	// -1 only until resolved
 
 	find_and_stuff("$Arrival Location:", &p_objp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
 
@@ -3302,6 +3314,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		required_string("$Arrival Anchor:");
 		stuff_string(name, F_NAME, NULL);
 		p_objp->arrival_anchor = get_anchor(name);
+	}
+
+	if (optional_string("+Arrival Paths:"))
+	{
+		// temporarily use mask to point to the restriction index
+		p_objp->arrival_path_mask = add_path_restriction();
 	}
 
 	delay = 0;
@@ -3331,6 +3349,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	p_objp->departure_anchor = -1;
+	p_objp->departure_path_mask = -1;	// -1 only until resolved
 
 	find_and_stuff("$Departure Location:", &p_objp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
 
@@ -3339,6 +3358,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		required_string("$Departure Anchor:");
 		stuff_string(name, F_NAME, NULL);
 		p_objp->departure_anchor = get_anchor(name);
+	}
+
+	if (optional_string("+Departure Paths:"))
+	{
+		// temporarily use mask to point to the restriction index
+		p_objp->departure_path_mask = add_path_restriction();
 	}
 
 	delay = 0;
@@ -4318,6 +4343,7 @@ void parse_wing(mission *pm)
 
 	wingp->arrival_anchor = -1;
 	wingp->arrival_distance = 0;
+	wingp->arrival_path_mask = -1;	// -1 only until resolved
 
 	find_and_stuff("$Arrival Location:", &wingp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
 
@@ -4331,6 +4357,12 @@ void parse_wing(mission *pm)
 		required_string("$Arrival Anchor:");
 		stuff_string(name, F_NAME, NULL);
 		wingp->arrival_anchor = get_anchor(name);
+	}
+
+	if (optional_string("+Arrival Paths:"))
+	{
+		// temporarily use mask to point to the restriction index
+		wingp->arrival_path_mask = add_path_restriction();
 	}
 
 	if (optional_string("+Arrival delay:")) {
@@ -4355,13 +4387,21 @@ void parse_wing(mission *pm)
 
 	
 	wingp->departure_anchor = -1;
+	wingp->departure_path_mask = -1;	// -1 only until resolved
 
 	find_and_stuff("$Departure Location:", &wingp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
 
-	if ( wingp->departure_location != DEPART_AT_LOCATION ) {
+	if ( wingp->departure_location != DEPART_AT_LOCATION )
+	{
 		required_string("$Departure Anchor:");
 		stuff_string( name, F_NAME, NULL );
 		wingp->departure_anchor = get_anchor(name);
+	}
+
+	if (optional_string("+Departure Paths:"))
+	{
+		// temporarily use mask to point to the restriction index
+		wingp->departure_path_mask = add_path_restriction();
 	}
 
 	if (optional_string("+Departure delay:")) {
@@ -4551,9 +4591,94 @@ void parse_wings(mission *pm)
 }
 
 // Goober5000
+void resolve_path_masks(int anchor, int *path_mask)
+{
+	path_restriction_t *prp;
+
+	// if we have no restrictions, do a quick out
+	if (*path_mask < 0)
+	{
+		*path_mask = 0;
+		return;
+	}
+
+	// get path restriction info
+	prp = &Path_restrictions[*path_mask];
+
+	// uninitialized; compute the mask from scratch
+	if (prp->cached_mask & (1 << MAX_SHIP_BAY_PATHS))
+	{
+		int j, bay_path, modelnum;
+		p_object *parent_pobjp;
+
+		// get anchor ship
+		Assert(!(anchor & SPECIAL_ARRIVAL_ANCHOR_FLAG));
+		parent_pobjp = mission_parse_get_parse_object(Parse_names[anchor]);
+
+		// load model for checking paths
+		modelnum = model_load(Ship_info[parent_pobjp->ship_class].pof_file, 0, NULL);
+
+		// resolve names to indexes
+		*path_mask = 0;
+		for	(j = 0; j < prp->num_paths; j++)
+		{
+			bay_path = model_find_bay_path(modelnum, prp->path_names[j]);
+			if (bay_path < 0)
+				continue;
+
+			*path_mask |= (1 << bay_path);
+		}
+
+		// unload model
+		model_unload(modelnum);
+
+		// cache the result
+		prp->cached_mask = *path_mask;
+	}
+	// already computed; so reuse it
+	else
+	{
+		*path_mask = prp->cached_mask;
+	}
+}
+
+// Goober5000
+// resolve arrival/departure path masks
+// NB: between parsing and the time this function is run, the path_mask variables store the index of the path info;
+// at all other times, they store the masks of the bay paths as expected
+void post_process_path_stuff()
+{
+	int i;
+	p_object *pobjp;
+	wing *wingp;
+
+	// take care of parse objects (ships)
+	for (i = 0; i < Num_parse_objects; i++)
+	{
+		pobjp = &Parse_objects[i];
+
+		resolve_path_masks(pobjp->arrival_anchor, &pobjp->arrival_path_mask);
+		resolve_path_masks(pobjp->departure_anchor, &pobjp->departure_path_mask);
+	}
+
+	// take care of wings
+	for (i = 0; i < Num_wings; i++)
+	{
+		wingp = &Wings[i];
+
+		resolve_path_masks(wingp->arrival_anchor, &wingp->arrival_path_mask);
+		resolve_path_masks(wingp->departure_anchor, &wingp->departure_path_mask);
+	}
+}
+
+// Goober5000
 void post_process_ships_wings()
 {
 	int i;
+
+	// Goober5000 - first, resolve the path masks.  Needs to be done first because
+	// mission_parse_maybe_create_parse_object relies on it.
+	post_process_path_stuff();
 
 	// Goober5000 - now that we've parsed all the objects, resolve the initially docked references.
 	// This must be done before anything that relies on the dock references but can't be done until
@@ -5637,6 +5762,7 @@ int parse_main(char *mission_name, int flags)
 	// fill in Ship_class_names array with the names from the ship_info struct;
 	Num_parse_names = 0;
 	Mission_all_attack = 0;	//	Might get set in mission load.
+	Num_path_restrictions = 0;
 	Assert(Num_ship_classes <= MAX_SHIP_CLASSES);	// Goober5000 - should be <=
 
 	for (i = 0; i < Num_ship_classes; i++)
@@ -5728,7 +5854,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 			object *objp;
 
 			objp = &Objects[Ships[wingp->ship_index[index]].objnum];
-			mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(objp), NULL, NULL);
+			mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(objp), wingp->arrival_path_mask, NULL, NULL);
 
 			index++;
 		}
@@ -5742,7 +5868,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 		// or in front of some other ship.
 		index = wingp->current_count - num_to_set;
 		leader_objp = &Objects[Ships[wingp->ship_index[index]].objnum];
-		if (mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(leader_objp), &pos, &orient)) {
+		if (mission_set_arrival_location(wingp->arrival_anchor, wingp->arrival_location, wingp->arrival_distance, OBJ_INDEX(leader_objp), wingp->arrival_path_mask, &pos, &orient)) {
 			// modify the remaining ships created
 			index++;
 			wing_index = 1;
@@ -5793,7 +5919,7 @@ void mission_parse_set_arrival_locations()
 			continue;
 
 		// call function to set arrival location for this ship.
-		mission_set_arrival_location( shipp->arrival_anchor, shipp->arrival_location, shipp->arrival_distance, OBJ_INDEX(objp), NULL, NULL);
+		mission_set_arrival_location( shipp->arrival_anchor, shipp->arrival_location, shipp->arrival_distance, OBJ_INDEX(objp), shipp->arrival_path_mask, NULL, NULL);
 	}
 
 	// do the wings
@@ -6085,7 +6211,7 @@ p_object *mission_parse_get_arrival_ship(ushort net_signature)
 
 // mission_set_arrival_location() sets the arrival location of a parse object according to the arrival location
 // of the object.  Returns true if object set to new position, false if not.
-int mission_set_arrival_location(int anchor, int location, int dist, int objnum, vec3d *new_pos, matrix *new_orient)
+int mission_set_arrival_location(int anchor, int location, int dist, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient)
 {
 	int shipnum, anchor_objnum;
 	vec3d anchor_pos, rand_vec, new_fvec;
@@ -6138,7 +6264,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 		vec3d pos, fvec;
 
 		// if we get an error, just let the ship arrive(?)
-		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, &pos, &fvec) == -1 ) {
+		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask, &pos, &fvec) == -1 ) {
 			Int3();			// get MWA or AL -- not sure what to do here when we cannot acquire a path
 			return 0;
 		}
@@ -6148,7 +6274,8 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 
 		// AL: ensure dist > 0 (otherwise get errors in vecmat)
 		// TODO: maybe set distance to 2x ship radius of ship appearing in front of?
-		if ( dist <= 0 ) {
+		if ( dist <= 0 )
+		{
 			// Goober5000 - default to 100
 			Error(LOCATION, "Distance of %d is invalid in mission_set_arrival_location.  Defaulting to 100.\n", dist);
 			dist = 100;
@@ -6705,7 +6832,7 @@ int mission_do_departure(object *objp)
 		}
 
 		// find a path
-		if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum) != -1)
+		if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum, shipp->departure_path_mask) != -1)
 		{
 			MONITOR_INC(NumShipDepartures,1);
 
@@ -6907,6 +7034,58 @@ int get_parse_name_index(char *name)
 	Assert(strlen(name) < NAME_LENGTH);
 	strcpy(Parse_names[i], name);
 	return Num_parse_names++;
+}
+
+// Goober5000
+int add_path_restriction()
+{
+	int i, j;
+
+	// parse it
+	path_restriction_t temp;
+	temp.cached_mask = (1 << MAX_SHIP_BAY_PATHS);	// uninitialized value (too high)
+	temp.num_paths = stuff_string_list(temp.path_names, MAX_SHIP_BAY_PATHS);
+
+	// no restriction?
+	if (temp.num_paths == 0)
+		return -1;
+
+	// first, see if it's duplicated anywhere
+	for (i = 0; i < Num_path_restrictions; i++)
+	{
+		// must have same number of allowed paths
+		if (temp.num_paths != Path_restrictions[i].num_paths)
+			continue;
+
+		// see if path names match
+		for (j = 0; j < temp.num_paths; j++)
+		{
+			// no match, so skip this
+			if (stricmp(temp.path_names[j], Path_restrictions[i].path_names[j]))
+				goto continue_outer_loop;
+		}
+
+		// match!
+		return i;
+
+continue_outer_loop:
+		;
+	}
+
+	// no match, so add a new restriction
+
+	// check limit
+	if (Num_path_restrictions >= MAX_PATH_RESTRICTIONS)
+	{
+		Warning(LOCATION, "Maximum number of path restrictions reached");
+		return -1;
+	}
+
+	// add this restriction at the new index
+	int index = Num_path_restrictions++;
+	Path_restrictions[index] = temp;
+
+	return index;
 }
 
 // Goober5000 - look for <any friendly>, <any hostile player>, etc.
@@ -7159,6 +7338,9 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->arrival_anchor = The_mission.support_ships.arrival_anchor;
 	pobj->departure_location = The_mission.support_ships.departure_location;
 	pobj->departure_anchor = The_mission.support_ships.departure_anchor;
+
+	pobj->arrival_path_mask = 0;
+	pobj->departure_path_mask = 0;
 
 //	pobj->arrival_location = 0;			// ASSUMPTION: this is index to arrival_lcation string array for hyperspace!!!!
 	pobj->arrival_distance = 0;

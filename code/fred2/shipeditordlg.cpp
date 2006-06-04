@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-05-30 05:37:29 $
+ * $Revision: 1.5.2.1 $
+ * $Date: 2006-06-04 01:03:13 $
  * $Author: Goober5000 $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/05/30 05:37:29  Goober5000
+ * add capability to restrict arrival/departure paths
+ * (FRED only; FS2 implementation to follow)
+ * --Goober5000
+ *
  * Revision 1.4  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -2401,6 +2406,9 @@ void CShipEditorDlg::OnRestrictArrival()
 	CComboBox *box;
 	restrict_paths dlg;
 
+	// grab stuff from GUI
+	UpdateData(TRUE);
+
 	if (m_arrival_location != ARRIVE_FROM_DOCK_BAY)
 	{
 		Int3();
@@ -2419,8 +2427,12 @@ void CShipEditorDlg::OnRestrictArrival()
 		return;
 	}
 
+	// get the ship that's marked
+	int marked_ship = (player_ship >= 0) ? player_ship : single_ship;
+
 	dlg.m_arrival = true;
 	dlg.m_ship_class = Ships[arrive_from_ship].ship_info_index;
+	dlg.m_path_mask = &Ships[marked_ship].arrival_path_mask;
 
 	dlg.DoModal();
 }
@@ -2431,6 +2443,9 @@ void CShipEditorDlg::OnRestrictDeparture()
 	int depart_to_ship;
 	CComboBox *box;
 	restrict_paths dlg;
+
+	// grab stuff from GUI
+	UpdateData(TRUE);
 
 	if (m_departure_location != DEPART_AT_DOCK_BAY)
 	{
@@ -2450,8 +2465,12 @@ void CShipEditorDlg::OnRestrictDeparture()
 		return;
 	}
 
+	// get the ship that's marked
+	int marked_ship = (player_ship >= 0) ? player_ship : single_ship;
+
 	dlg.m_arrival = false;
 	dlg.m_ship_class = Ships[depart_to_ship].ship_info_index;
+	dlg.m_path_mask = &Ships[marked_ship].departure_path_mask;
 
 	dlg.DoModal();
 }
