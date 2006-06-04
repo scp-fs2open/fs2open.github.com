@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72 $
- * $Date: 2006-05-31 03:05:42 $
+ * $Revision: 1.73 $
+ * $Date: 2006-06-04 01:01:52 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72  2006/05/31 03:05:42  Goober5000
+ * some cosmetic changes in preparation for bay arrival/departure code
+ * --Goober5000
+ *
  * Revision 1.71  2006/05/27 17:22:04  taylor
  * minor safety check
  *
@@ -13146,10 +13150,10 @@ bool bay_process_doors(object *pl_objp, int dir){
 //
 // exit:		-1		=>	path could not be located
 //				 0		=> success
-int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vec3d *pos, vec3d *fvec)
+int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_mask, vec3d *pos, vec3d *fvec)
 {
 	int			path_index, bay_path;
-	ship		*shipp = NULL, *parent_sp = NULL;
+	ship		*shipp = NULL, *parent_shipp = NULL;
 	polymodel	*pm;
 	ai_info		*aip;
 	ship_bay	*bay;
@@ -13164,10 +13168,10 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vec3d *pos, vec3d
 		return -1;
 	}
 
-	parent_sp = &Ships[Objects[parent_objnum].instance];
+	parent_shipp = &Ships[Objects[parent_objnum].instance];
 
-	Assert(parent_sp != NULL);
-	pm = model_get( parent_sp->modelnum );
+	Assert(parent_shipp != NULL);
+	pm = model_get( parent_shipp->modelnum );
 	bay = pm->ship_bay;
 
 	if ( bay == NULL ) 
@@ -13178,19 +13182,38 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vec3d *pos, vec3d
 
 	// try to find a bay path that is not taken
 	path_index = -1;
-	bay_path = Ai_last_arrive_path++;
 
-	if ( bay_path >= bay->num_paths ) {
-		bay_path=0;
-		Ai_last_arrive_path=0;
+	// Goober5000 - choose from among allowed paths
+	if (allowed_path_mask != 0)
+	{
+		int i, num_allowed_paths = 0, allowed_bay_paths[MAX_SHIP_BAY_PATHS];
+
+		for (i = 0; i < bay->num_paths; i++)
+		{
+			if (allowed_path_mask & (1 << i))
+			{
+				allowed_bay_paths[num_allowed_paths] = i;
+				num_allowed_paths++;
+			}
+		}
+
+		// cycle through the allowed paths
+		bay_path = allowed_bay_paths[Ai_last_arrive_path % num_allowed_paths];
 	}
+	// choose from among all paths
+	else
+	{
+		bay_path = Ai_last_arrive_path % bay->num_paths;
+	}
+
+	Ai_last_arrive_path++;
 
 	path_index = bay->path_indexes[bay_path];
 	shipp->launched_from = bay_path;
 	if ( path_index == -1 ) 
 		return -1;
 
-	parent_sp->bay_number_wanting_open++;	//one more ship wants the bay open
+	parent_shipp->bay_number_wanting_open++;	//one more ship wants the bay open
 	shipp->bay_doors_want_open = true;		//my parent knows that I want the bay open
 
 	// create the path for pl_objp to follow
@@ -13337,7 +13360,7 @@ void ai_bay_emerge()
 //
 // NOTE: this function should only be used for calculating closest depart paths for ai mode
 //			AI_BAY_DEPART.  It tries to find the closest path that isn't already in use
-int ai_find_closest_depart_path(ai_info *aip, polymodel *pm)
+int ai_find_closest_depart_path(ai_info *aip, polymodel *pm, int allowed_path_mask)
 {
 	int			i, j, best_path, best_free_path;
 	float		dist, min_dist, min_free_dist;
@@ -13352,10 +13375,14 @@ int ai_find_closest_depart_path(ai_info *aip, polymodel *pm)
 	Assert(aip->shipnum >= 0);
 	source = &Objects[Ships[aip->shipnum].objnum].pos;
 
-	for (i = 0; i < bay->num_paths; i++)
+	for ( i = 0; i < bay->num_paths; i++ )
 	{
+		// Goober5000 - maybe skip this path
+		if ((allowed_path_mask != 0) && !(allowed_path_mask & (1 << i)))
+			continue;
+
 		mp = &pm->paths[bay->path_indexes[i]];
-		for (j = 0; j < mp->nverts; j++)
+		for ( j = 0; j < mp->nverts; j++ )
 		{
 			dist = vm_vec_dist_squared(source, &mp->verts[j].pos);
 
@@ -13392,7 +13419,7 @@ int ai_find_closest_depart_path(ai_info *aip, polymodel *pm)
 //
 // exit:		-1	=>	could not find depart path
 //				0	=> found depart path
-int ai_acquire_depart_path(object *pl_objp, int parent_objnum)
+int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_mask)
 {
 	int			objnum, path_index;
 	polymodel	*pm;
@@ -13438,10 +13465,10 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum)
 		}
 	}
 */
-	
+
 	// take the closest path we can find
 	int ship_bay_path;
-	ship_bay_path = ai_find_closest_depart_path(aip, pm);
+	ship_bay_path = ai_find_closest_depart_path(aip, pm, allowed_path_mask);
 	path_index = bay->path_indexes[ship_bay_path];
 	aip->submode_parm0 = ship_bay_path;
 	bay->depart_flags |= (1<<ship_bay_path);

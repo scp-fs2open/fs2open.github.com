@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.12 $
- * $Date: 2006-02-25 21:46:59 $
+ * $Revision: 1.13 $
+ * $Date: 2006-06-04 01:01:52 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2006/02/25 21:46:59  Goober5000
+ * spelling
+ *
  * Revision 1.11  2006/02/20 02:13:07  Goober5000
  * added ai-ignore-new which hopefully should fix the ignore bug
  * --Goober5000
@@ -834,8 +837,8 @@ extern void create_model_path(object *pl_objp, object *mobjp, int path_num, int 
 extern void ai_do_safety(object *objp);
 
 // used to get path info for fighter bay emerging and departing
-int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, vec3d *pos, vec3d *fvec);
-int ai_acquire_depart_path(object *pl_objp, int parent_objnum);
+int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int path_mask, vec3d *pos, vec3d *fvec);
+int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int path_mask);
 
 // used by AiBig.cpp
 extern void ai_set_positions(object *pl_objp, object *en_objp, ai_info *aip, vec3d *player_pos, vec3d *enemy_pos);

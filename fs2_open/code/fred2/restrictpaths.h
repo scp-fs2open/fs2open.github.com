@@ -6,13 +6,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/RestrictPaths.h $
- * $Revision: 1.2 $
- * $Date: 2006-05-30 06:01:05 $
+ * $Revision: 1.3 $
+ * $Date: 2006-06-04 01:01:52 $
  * $Author: Goober5000 $
  *
  * Code for restricting arrival/departure to specific bays
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/05/30 06:01:05  Goober5000
+ * fix up CVS headers
+ * --Goober5000
+ *
  * Revision 1.1  2006/05/30 05:58:59  Goober5000
  * I should probably add these files too
  * --Goober5000
@@ -33,8 +37,9 @@ public:
 	restrict_paths(CWnd* pParent = NULL);   // standard constructor
 
 	// parameters for the dialog
-	int	m_ship_class;
 	bool m_arrival;
+	int	m_ship_class;
+	int *m_path_mask;
 
 
 // Dialog Data
@@ -66,12 +71,6 @@ private:
 	// model info
 	polymodel *m_model;
 	int m_num_paths;
-
-	// data for check box list
-	struct {
-		char name[MAX_NAME_LEN];
-		bool allowed;
-	} m_ship_bay_data[MAX_SHIP_BAY_PATHS];
 
 	// regenerate all controls
 	void reset_controls();
