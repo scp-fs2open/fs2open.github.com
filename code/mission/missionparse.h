@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.86 $
- * $Author: karajorma $
- * $Date: 2006-06-02 09:06:12 $
+ * $Revision: 2.87 $
+ * $Author: Goober5000 $
+ * $Date: 2006-06-04 01:01:53 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2006/06/02 09:06:12  karajorma
+ * Team Loadout changes to accept variables names as legitimate values for ship class and quantity in loadout.
+ * Added the new alt class system
+ *
  * Revision 2.85  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -693,6 +697,14 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 extern char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 extern int Mission_alt_type_count;
 
+// path restrictions
+#define MAX_PATH_RESTRICTIONS		10
+typedef struct path_restriction_t {
+	int num_paths;
+	int cached_mask;
+	char path_names[MAX_SHIP_BAY_PATHS][MAX_NAME_LEN];
+} path_restriction_t;
+
 extern char *Ship_class_names[MAX_SHIP_CLASSES];
 extern char *Ai_behavior_names[MAX_AI_BEHAVIORS];
 extern char *Formation_names[MAX_FORMATION_NAMES];
@@ -768,19 +780,24 @@ typedef struct p_object {
 	int	status_type[MAX_OBJECT_STATUS];
 	int	status[MAX_OBJECT_STATUS];
 	int	target[MAX_OBJECT_STATUS];
-	int	arrival_location;
-	int	arrival_distance;					// used when arrival location is near or in front of some ship
-	int	arrival_anchor;					// ship used for anchoring an arrival point
-	int	arrival_cue;						//	Index in Sexp_nodes of this sexp.
-	int	arrival_delay;
+
 	int	subsys_index;						// index into subsys_status array
 	int	subsys_count;						// number of elements used in subsys_status array
 	int	initial_velocity;
 	int	initial_hull;
 	int	initial_shields;
 
+	int	arrival_location;
+	int	arrival_distance;					// used when arrival location is near or in front of some ship
+	int	arrival_anchor;						// ship used for anchoring an arrival point
+	int arrival_path_mask;					// Goober5000
+	int	arrival_cue;						//	Index in Sexp_nodes of this sexp.
+	int	arrival_delay;
+
+
 	int	departure_location;
 	int	departure_anchor;
+	int departure_path_mask;				// Goober5000
 	int	departure_cue;						//	Index in Sexp_nodes of this sexp.
 	int	departure_delay;
 

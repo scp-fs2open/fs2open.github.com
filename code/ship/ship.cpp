@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.337 $
- * $Date: 2006-06-02 08:49:35 $
- * $Author: karajorma $
+ * $Revision: 2.338 $
+ * $Date: 2006-06-04 01:01:53 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.337  2006/06/02 08:49:35  karajorma
+ * Support for alt ship classes, team loadout flag and changes to Ships_exited. Fixed assertion upon multiple uses of the change-ship-class SEXP.
+ *
  * Revision 2.336  2006/05/31 03:05:42  Goober5000
  * some cosmetic changes in preparation for bay arrival/departure code
  * --Goober5000
@@ -4984,9 +4987,11 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->arrival_location = 0;
 	shipp->arrival_distance = 0;
 	shipp->arrival_anchor = -1;
+	shipp->arrival_path_mask = 0;
 	shipp->arrival_delay = 0;
 	shipp->arrival_cue = -1;
 	shipp->departure_location = 0;
+	shipp->departure_path_mask = 0;
 	shipp->departure_delay = 0;
 	shipp->departure_cue = -1;
 	shipp->shield_hits = 0;							//	No shield hits yet on this baby.
@@ -8141,117 +8146,6 @@ int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos)
 	return mc.num_hits;
 }
 
-// ensure that the subsys path is at least SUBSYS_PATH_DIST from the 
-// second last to last point.
-void ship_maybe_fixup_subsys_path(polymodel *pm, int path_num)
-{
-	vec3d	*v1, *v2, dir;
-	float		dist;
-	int		index_1, index_2;
-
-	model_path *mp;
-	mp = &pm->paths[path_num];
-
-	Assert(mp != NULL);
-	Assert(mp->nverts > 1);
-	
-	index_1 = 1;
-	index_2 = 0;
-
-	v1 = &mp->verts[index_1].pos;
-	v2 = &mp->verts[index_2].pos;
-	
-	dist = vm_vec_dist(v1, v2);
-	if ( dist < SUBSYS_PATH_DIST-10 ) {
-		vm_vec_normalized_dir(&dir, v2, v1);
-		vm_vec_scale_add(v2, v1, &dir, SUBSYS_PATH_DIST);
-	}
-}
-
-// fill in the path_num field inside the model_subsystem struct.  This is an index into
-// the pm->paths[] array, which is a path that provides a frontal approach to a subsystem
-// (used for attacking purposes)
-//
-// NOTE: path_num in model_subsystem has the follows the following convention:
-//			> 0	=> index into pm->paths[] for model that subsystem sits on
-//			-1		=> path is not yet determined (may or may not exist)
-//			-2		=> path doesn't yet exist for this subsystem
-void ship_set_subsys_path_nums(ship_info *sip, polymodel *pm)
-{
-	int i,j,found_path;
-
-	for ( i = 0; i < sip->n_subsystems; i++ ) {
-		sip->subsystems[i].path_num = -1;
-	}
-
-	for ( i = 0; i < sip->n_subsystems; i++ ) {
-		found_path = 0;
-		for ( j = 0; j < pm->n_paths; j++ ) {
-			if ( (sip->subsystems[i].subobj_num != -1) && (sip->subsystems[i].subobj_num == pm->paths[j].parent_submodel) ) {
-				found_path = 1;
-			} else if ( !subsystem_stricmp(sip->subsystems[i].subobj_name, pm->paths[j].parent_name) ) {
-				found_path = 1;
-			}
-	
-			if ( found_path ) {
-				if ( pm->n_paths > j ) {
-					sip->subsystems[i].path_num = j;
-					ship_maybe_fixup_subsys_path(pm, j);
-					break;
-				}
-			}
-		}
-
-		// If a path num wasn't located, then set value to -2
-		if ( sip->subsystems[i].path_num == -1 )
-			sip->subsystems[i].path_num = -2;
-	}
-}
-
-// Determine the path indices (indicies into pm->paths[]) for the paths used for approaching/departing
-// a fighter bay on a capital ship.
-void ship_set_bay_path_nums(ship_info *sip, polymodel *pm)
-{
-	int bay_num, i;
-	char bay_num_str[3];
-
-	if (pm->ship_bay != NULL)
-	{
-		vm_free(pm->ship_bay);
-		pm->ship_bay = NULL;
-	}
-
-	// currently only capital ships have fighter bays
-	if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
-		return;
-	}
-
-	// malloc out storage for the path information
-	pm->ship_bay = (ship_bay *) vm_malloc(sizeof(ship_bay));
-	Assert(pm->ship_bay != NULL);
-
-	pm->ship_bay->num_paths = 0;
-	// TODO: determine if zeroing out here is affecting any earlier initializations
-	pm->ship_bay->arrive_flags = 0;	// bitfield, set to 1 when that path number is reserved for an arrival
-	pm->ship_bay->depart_flags = 0;	// bitfield, set to 1 when that path number is reserved for a departure
-
-
-	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
-	for (i = 0; i < pm->n_paths; i++)
-	{
-		if (!strnicmp(pm->paths[i].name, NOX("$bay"), 4))
-		{
-			strncpy(bay_num_str, pm->paths[i].name + 4, 2);
-			bay_num_str[2] = 0;
-			bay_num = atoi(bay_num_str);
-			Assert(bay_num >= 1 && bay_num <= MAX_SHIP_BAY_PATHS);
-
-			pm->ship_bay->path_indexes[bay_num - 1] = i;
-			pm->ship_bay->num_paths++;
-		}
-	}
-}
-
 // Ensure create time for ship is unqiue
 void ship_make_create_time_unique(ship *shipp)
 {
@@ -8472,27 +8366,6 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	ship_set_default_weapons(shipp, sip);	//	Moved up here because ship_set requires that weapon info be valid.  MK, 4/28/98
 	ship_set(n, objnum, ship_type);
-
-	// fill in the path_num field inside the model_subsystem struct.  This is an index into
-	// the pm->paths[] array, which is a path that provides a frontal approach to a subsystem
-	// (used for attacking purposes)
-	//
-	// NOTE: path_num in model_subsystem has the follows the following convention:
-	//			> 0	=> index into pm->paths[] for model that subsystem sits on
-	//			-1		=> path is not yet determined (may or may not exist)
-	//			-2		=> path doesn't yet exist for this subsystem
-	ship_set_subsys_path_nums(sip, pm_orig);
-	if (pm_alt)
-	{
-		ship_set_subsys_path_nums(sip, pm_alt);
-	}
-
-	// set the path indicies for fighter bays on the ship (currently, only capital ships have fighter bays)
-	ship_set_bay_path_nums(sip, pm_orig);
-	if (pm_alt)
-	{
-		ship_set_bay_path_nums(sip, pm_alt);
-	}
 
 	init_ai_object(objnum);
 	ai_clear_ship_goals( &Ai_info[Ships[n].ai_index] );		// only do this one here.  Can't do it in init_ai because it might wipe out goals in mission file

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/wing_editor.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-05-30 05:37:29 $
+ * $Revision: 1.5 $
+ * $Date: 2006-06-04 01:01:52 $
  * $Author: Goober5000 $
  *
  * Wing editor dialog box handler code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/05/30 05:37:29  Goober5000
+ * add capability to restrict arrival/departure paths
+ * (FRED only; FS2 implementation to follow)
+ * --Goober5000
+ *
  * Revision 1.3  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -1532,6 +1537,9 @@ void wing_editor::OnRestrictArrival()
 	CComboBox *box;
 	restrict_paths dlg;
 
+	// grab stuff from GUI
+	UpdateData(TRUE);
+
 	if (m_arrival_location != ARRIVE_FROM_DOCK_BAY)
 	{
 		Int3();
@@ -1552,6 +1560,7 @@ void wing_editor::OnRestrictArrival()
 
 	dlg.m_arrival = true;
 	dlg.m_ship_class = Ships[arrive_from_ship].ship_info_index;
+	dlg.m_path_mask = &Wings[cur_wing].arrival_path_mask;
 
 	dlg.DoModal();
 }
@@ -1562,6 +1571,9 @@ void wing_editor::OnRestrictDeparture()
 	int depart_to_ship;
 	CComboBox *box;
 	restrict_paths dlg;
+
+	// grab stuff from GUI
+	UpdateData(TRUE);
 
 	if (m_departure_location != DEPART_AT_DOCK_BAY)
 	{
@@ -1583,6 +1595,7 @@ void wing_editor::OnRestrictDeparture()
 
 	dlg.m_arrival = false;
 	dlg.m_ship_class = Ships[depart_to_ship].ship_info_index;
+	dlg.m_path_mask = &Wings[cur_wing].departure_path_mask;
 
 	dlg.DoModal();
 }

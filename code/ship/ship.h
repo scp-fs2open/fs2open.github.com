@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.151 $
- * $Date: 2006-06-02 08:46:47 $
- * $Author: karajorma $
+ * $Revision: 2.152 $
+ * $Date: 2006-06-04 01:01:53 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.151  2006/06/02 08:46:47  karajorma
+ * Support for alt ship classes, team loadout flag and changes to Ships_exited
+ *
  * Revision 2.150  2006/05/21 03:58:58  Goober5000
  * fix Mantis #834
  * --Goober5000
@@ -1238,14 +1241,18 @@ typedef struct ship {
 	fix	time_cargo_revealed;					// time at which the cargo was revealed
 
 	int	arrival_location;
-	int	arrival_distance;						// how far away this ship should arrive
-	int	arrival_anchor;		// name of object this ship arrives near (or in front of)
+	int	arrival_distance;		// how far away this ship should arrive
+	int	arrival_anchor;			// name of object this ship arrives near (or in front of)
+	int	arrival_path_mask;		// Goober5000 - possible restrictions on which bay paths to use
 	int	arrival_cue;
 	int	arrival_delay;
-	int	departure_location;	// depart to hyperspace or someplace else (like docking bay)
-	int	departure_anchor;		// when docking day -- index of ship to use
+
+	int	departure_location;		// depart to hyperspace or someplace else (like docking bay)
+	int	departure_anchor;		// when docking bay -- index of ship to use
+	int departure_path_mask;	// Goober5000 - possible restrictions on which bay paths to use
 	int	departure_cue;			// sexpression to eval when departing
 	int	departure_delay;		// time in seconds after sexp is true that we delay.
+
 	int	determination;
 	int	wingnum;								// wing number this ship is in.  -1 if in no wing, Wing array index otherwise
 	int	orders_accepted;					// set of orders this ship will accept from the player.
@@ -1927,11 +1934,13 @@ typedef struct wing {
 	int	arrival_location;						// arrival and departure information for wings -- similar to info for ships
 	int	arrival_distance;						// distance from some ship where this ship arrives
 	int	arrival_anchor;						// name of object this ship arrives near (or in front of)
+	int	arrival_path_mask;					// Goober5000 - possible restrictions on which bay paths to use
 	int	arrival_cue;
 	int	arrival_delay;
 
 	int	departure_location;
 	int	departure_anchor;						// name of object that we depart to (in case of dock bays)
+	int departure_path_mask;				// Goober5000 - possible restrictions on which bay paths to use
 	int	departure_cue;
 	int	departure_delay;
 

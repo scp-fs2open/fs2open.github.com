@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.105 $
- * $Date: 2006-05-31 03:05:42 $
+ * $Revision: 2.106 $
+ * $Date: 2006-06-04 01:01:53 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2006/05/31 03:05:42  Goober5000
+ * some cosmetic changes in preparation for bay arrival/departure code
+ * --Goober5000
+ *
  * Revision 2.104  2006/05/27 16:57:13  taylor
  * comment out the model cache stuff, it's old and not actually used anyway
  * minor cleanup of some modelinterp.cpp code, to make it more readable
@@ -1193,17 +1197,21 @@ texture_replace Texture_replace[MAX_TEXTURE_REPLACEMENTS];
 static int Model_signature = 0;
 
 void generate_vertex_buffers(bsp_info*, polymodel*);
+void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem *subsystems);
+void model_set_bay_path_nums(polymodel *pm);
+
 
 //WMC - For general compatibility stuff.
 //Note that the order of the items in this list
 //determine the order that they are tried in ai_goal_fixup_dockpoints
-flag_def_list Dock_type_names[] = {
-	{"cargo",			DOCK_TYPE_CARGO},
-	{"rearm",			DOCK_TYPE_REARM},
-	{"generic",			DOCK_TYPE_GENERIC},
+flag_def_list Dock_type_names[] =
+{
+	{ "cargo",		DOCK_TYPE_CARGO },
+	{ "rearm",		DOCK_TYPE_REARM },
+	{ "generic",	DOCK_TYPE_GENERIC },
 };
 
-int Num_dock_type_names = sizeof(Dock_type_names)/sizeof(flag_def_list);
+int Num_dock_type_names = sizeof(Dock_type_names) / sizeof(flag_def_list);
 
 // Free up a model, getting rid of all its memory
 // With the basic page in system this can be called from outside of modelread.cpp
@@ -2994,7 +3002,6 @@ void model_load_texture(polymodel *pm, int i, char *file)
 #endif
 }
 
-
 //returns the number of this model
 int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, int ferror, int duplicate)
 {
@@ -3237,8 +3244,128 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	//mprintf(( "Model RAM = %d KB\n", Model_ram ));
 #endif
 
+	// Goober5000 - originally done in ship_create for no apparent reason
+	model_set_subsys_path_nums(pm, n_subsystems, subsystems);
+	model_set_bay_path_nums(pm);
 
 	return pm->id;
+}
+
+// ensure that the subsys path is at least SUBSYS_PATH_DIST from the 
+// second last to last point.
+void model_maybe_fixup_subsys_path(polymodel *pm, int path_num)
+{
+	vec3d	*v1, *v2, dir;
+	float	dist;
+	int		index_1, index_2;
+
+	model_path *mp;
+	mp = &pm->paths[path_num];
+
+	Assert(mp != NULL);
+	Assert(mp->nverts > 1);
+	
+	index_1 = 1;
+	index_2 = 0;
+
+	v1 = &mp->verts[index_1].pos;
+	v2 = &mp->verts[index_2].pos;
+	
+	dist = vm_vec_dist(v1, v2);
+	if (dist < (SUBSYS_PATH_DIST - 10))
+	{
+		vm_vec_normalized_dir(&dir, v2, v1);
+		vm_vec_scale_add(v2, v1, &dir, SUBSYS_PATH_DIST);
+	}
+}
+
+// fill in the path_num field inside the model_subsystem struct.  This is an index into
+// the pm->paths[] array, which is a path that provides a frontal approach to a subsystem
+// (used for attacking purposes)
+//
+// NOTE: path_num in model_subsystem has the follows the following convention:
+//			> 0	=> index into pm->paths[] for model that subsystem sits on
+//			-1		=> path is not yet determined (may or may not exist)
+//			-2		=> path doesn't yet exist for this subsystem
+void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem *subsystems)
+{
+	int i, j;
+
+	for (i = 0; i < n_subsystems; i++)
+		subsystems[i].path_num = -1;
+
+	for (i = 0; i < n_subsystems; i++)
+	{
+		for (j = 0; j < pm->n_paths; j++)
+		{
+			if ( ((subsystems[i].subobj_num != -1) && (subsystems[i].subobj_num == pm->paths[j].parent_submodel)) ||
+				(!subsystem_stricmp(subsystems[i].subobj_name, pm->paths[j].parent_name)) )
+			{
+				if (pm->n_paths > j)
+				{
+					subsystems[i].path_num = j;
+					model_maybe_fixup_subsys_path(pm, j);
+
+					break;
+				}
+			}
+		}
+
+		// If a path num wasn't located, then set value to -2
+		if (subsystems[i].path_num == -1)
+			subsystems[i].path_num = -2;
+	}
+}
+
+// Determine the path indices (indicies into pm->paths[]) for the paths used for approaching/departing
+// a fighter bay on a capital ship.
+void model_set_bay_path_nums(polymodel *pm)
+{
+	int i;
+
+	if (pm->ship_bay != NULL)
+	{
+		vm_free(pm->ship_bay);
+		pm->ship_bay = NULL;
+	}
+
+	/*
+	// currently only capital ships have fighter bays
+	if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+		return;
+	}
+	*/
+
+	// malloc out storage for the path information
+	pm->ship_bay = (ship_bay *) vm_malloc(sizeof(ship_bay));
+	Assert(pm->ship_bay != NULL);
+
+	pm->ship_bay->num_paths = 0;
+	// TODO: determine if zeroing out here is affecting any earlier initializations
+	pm->ship_bay->arrive_flags = 0;	// bitfield, set to 1 when that path number is reserved for an arrival
+	pm->ship_bay->depart_flags = 0;	// bitfield, set to 1 when that path number is reserved for a departure
+
+
+	// iterate through the paths that exist in the polymodel, searching for $bayN pathnames
+	for (i = 0; i < pm->n_paths; i++)
+	{
+		if (!strnicmp(pm->paths[i].name, NOX("$bay"), 4))
+		{
+			int bay_num;
+			char temp[3];
+
+			strncpy(temp, pm->paths[i].name + 4, 2);
+			temp[2] = 0;
+			bay_num = atoi(temp);
+
+			Assert(bay_num >= 1 && bay_num <= MAX_SHIP_BAY_PATHS);
+			if (bay_num < 1 || bay_num > MAX_SHIP_BAY_PATHS)
+				continue;
+
+			pm->ship_bay->path_indexes[bay_num - 1] = i;
+			pm->ship_bay->num_paths++;
+		}
+	}
 }
 
 // Get "parent" submodel for live debris submodel

@@ -6,13 +6,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/RestrictPaths.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-05-31 03:05:42 $
+ * $Revision: 1.4 $
+ * $Date: 2006-06-04 01:01:52 $
  * $Author: Goober5000 $
  *
  * Code for restricting arrival/departure to specific bays
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/05/31 03:05:42  Goober5000
+ * some cosmetic changes in preparation for bay arrival/departure code
+ * --Goober5000
+ *
  * Revision 1.2  2006/05/30 06:01:05  Goober5000
  * fix up CVS headers
  * --Goober5000
@@ -63,24 +67,41 @@ END_MESSAGE_MAP()
 
 BOOL restrict_paths::OnInitDialog() 
 {
-	int i;
-				
+	// get stuff from params
 	m_model = model_get(Ship_info[m_ship_class].modelnum);
 	Assert(m_model->ship_bay);
 	m_num_paths = m_model->ship_bay->num_paths;
 	Assert(m_num_paths > 0);
+				
+	// misc window crap
+	CDialog::OnInitDialog();
+	theApp.init_window(&Player_wnd_data, this);
 
-	// initialize path data
-	for (i = 0; i < MAX_SHIP_BAY_PATHS; i++)
+	// set up gui
+	reset_controls();
+
+	return TRUE;
+}
+
+void restrict_paths::reset_controls()
+{
+	int i;
+	BOOL allowed;
+
+	// initialize checkbox
+	m_path_list.ResetContent();
+	for (i = 0; i < m_num_paths; i++)
 	{
-		// initialize to either the name or a blank
-		if (i < m_num_paths)
-			strcpy(m_ship_bay_data[i].name, m_model->paths[m_model->ship_bay->path_indexes[i]].name);
-		else
-			strcpy(m_ship_bay_data[i].name, "");
+		// add name
+		m_path_list.AddString(m_model->paths[m_model->ship_bay->path_indexes[i]].name);
 
-		// initialize to true
-		m_ship_bay_data[i].allowed = true;
+		// toggle according to mask
+		if (m_path_mask == 0)
+			allowed = TRUE;
+		else
+			allowed = (*m_path_mask & (1 << i)) ? TRUE : FALSE;
+
+		m_path_list.SetCheck(i, allowed);
 	}
 
 	// set up the label
@@ -90,33 +111,11 @@ BOOL restrict_paths::OnInitDialog()
 	else
 		label->SetWindowText("Restrict departure paths to the following:");
 
-	// misc window crap
-	CDialog::OnInitDialog();
-	theApp.init_window(&Player_wnd_data, this);
-
-	// regenerate all the controls
-	reset_controls();
-
-	return TRUE;
-}
-
-// regenerate all controls
-void restrict_paths::reset_controls()
-{	
-	int i;
-
-	// create a checklistbox for each bay path
-	m_path_list.ResetContent();
-	for (i = 0; i < m_num_paths; i++)
-	{
-		m_path_list.AddString(m_ship_bay_data[i].name);
-		m_path_list.SetCheck(i, m_ship_bay_data[i].allowed ? TRUE : FALSE);
-	}
-
 	// be sure that nothing is selected	
 	m_path_list.SetCurSel(-1);
 
-	UpdateData(FALSE);	
+	// store stuff to gui
+	UpdateData(FALSE);
 }
 
 // cancel
@@ -129,7 +128,25 @@ void restrict_paths::OnCancel()
 // ok
 void restrict_paths::OnOK()
 {
-	// store whatever
+	int i, num_allowed = 0;
+
+	// grab stuff from GUI
+	UpdateData(TRUE);
+
+	// store mask data
+	*m_path_mask = 0;
+	for (i = 0; i < m_num_paths; i++)
+	{
+		if (m_path_list.GetCheck(i))
+		{
+			*m_path_mask |= (1 << i);
+			num_allowed++;
+		}
+	}
+
+	// if all allowed, mask is 0
+	if (num_allowed == m_num_paths)
+		*m_path_mask = 0;
 
 	theApp.record_window_data(&Player_wnd_data, this);
 	CDialog::OnOK();
