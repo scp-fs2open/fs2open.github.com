@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174 $
- * $Date: 2006-06-01 07:33:59 $
+ * $Revision: 2.175 $
+ * $Date: 2006-06-05 23:55:51 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174  2006/06/01 07:33:59  taylor
+ * flip color/depth values, appears some are initting software GL again and this was the problem previously
+ *
  * Revision 2.173  2006/05/31 04:02:05  taylor
  * render strings a string at a time rather than a letter at the time (should be at least 3 times faster from state changes alone)
  *
@@ -1221,6 +1224,10 @@ void opengl_go_fullscreen()
 			mprintf(("USING REFRESH_RATE OF: %i\n", dm.dmDisplayFrequency));
 	}
 
+	RECT cursor_clip;
+	GetWindowRect((HWND)os_get_window(), &cursor_clip);
+	ClipCursor(&cursor_clip);
+
 	os_resume();  
 #else
 	if ( (os_config_read_uint(NULL, NOX("Fullscreen"), 1) == 1) && !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) ) {
@@ -1288,6 +1295,8 @@ void opengl_go_windowed()
 		Warning( LOCATION, "Unable to enter windowed mode!" );
 	}
 
+	ClipCursor(NULL);
+
 	os_resume();  
 
 #else
@@ -1320,6 +1329,7 @@ void opengl_minimize()
 //	os_suspend();
 	ShowWindow(wnd, SW_MINIMIZE);
 	ChangeDisplaySettings(NULL, 0);
+	ClipCursor(NULL);
 //	os_resume();
 #else
 	// lets not minimize if we are in windowed mode
