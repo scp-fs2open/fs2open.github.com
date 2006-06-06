@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.338 $
- * $Date: 2006-06-04 01:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.339 $
+ * $Date: 2006-06-05 23:57:50 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.338  2006/06/04 01:01:53  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 2.337  2006/06/02 08:49:35  karajorma
  * Support for alt ship classes, team loadout flag and changes to Ships_exited. Fixed assertion upon multiple uses of the change-ship-class SEXP.
  *
@@ -3895,20 +3899,24 @@ strcpy(parse_error_text, temp_error);
 				//Init blank values
 				sp->max_subsys_strength = 0.0f;
 				sp->turret_turning_rate = 0.0f;
+				sp->weapon_rotation_pbank = -1;
+
 				for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++) {
 					sp->primary_banks[i] = -1;
 					sp->primary_bank_capacity[i] = 0;
 				}
+
 				for (i=0; i<MAX_SHIP_SECONDARY_BANKS; i++) {
 					sp->secondary_banks[i] = -1;
 					sp->secondary_bank_capacity[i] = 0;
 				}
-				
+
 				sp->engine_wash_pointer = NULL;
 				
 				sp->alive_snd = -1;
 				sp->dead_snd = -1;
 				sp->rotation_snd = -1;
+				sp->turret_rotation_snd = -1;
 				
 				sp->flags = 0;
 				
@@ -3917,6 +3925,7 @@ strcpy(parse_error_text, temp_error);
 				
 				sp->model_num = -1;		// init value for later sanity checking!!
 				sp->armor_type_idx = -1;
+				sp->path_num = -1;
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
