@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.73 $
- * $Date: 2006-05-27 17:08:50 $
- * $Author: taylor $
+ * $Revision: 2.73.2.1 $
+ * $Date: 2006-06-07 03:23:15 $
+ * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2006/06/07 03:21:53  wmcoolmon
+ * Scripting system prep for 3.6.9
+ *
+ * Revision 2.73  2006/05/27 17:08:50  taylor
+ * oops!
+ *
  * Revision 2.72  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -2088,7 +2094,7 @@ void gr_flip()
 	if(gameseq_get_depth() > -1)	//WMC - Make sure we're _in_ a state
 	{
 		int state = gameseq_get_state();
-		if(!GS_state_hooks[state].IsOverride()) {
+		if(!Script_system.IsOverride(GS_state_hooks[state])) {
 			Script_system.RunBytecode(GS_state_hooks[state]);
 		}
 	}
