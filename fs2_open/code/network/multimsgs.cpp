@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.57 $
- * $Date: 2006-06-02 09:10:01 $
- * $Author: karajorma $
+ * $Revision: 2.58 $
+ * $Date: 2006-06-07 04:49:20 $
+ * $Author: wmcoolmon $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2006/06/02 09:10:01  karajorma
+ * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
+ *
  * Revision 2.56  2006/02/03 22:25:18  taylor
  * I don't like this being considered a fix without retail compatibility testing, but it should at the very least compile...
  *
@@ -3309,7 +3312,7 @@ void process_wing_create_packet( ubyte *data, header *hinfo )
 }
 
 // packet indicating a ship is departing
-void send_ship_depart_packet( object *objp )
+void send_ship_depart_packet( object *objp, bool for_reals )
 {
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size;
@@ -3319,6 +3322,10 @@ void send_ship_depart_packet( object *objp )
 
 	BUILD_HEADER(SHIP_DEPART);
 	ADD_USHORT( signature );
+	if(for_reals)
+		ADD_USHORT(1);
+	else
+		ADD_USHORT(0);
 	
 	multi_io_send_to_all_reliable(data, packet_size);
 }
@@ -3329,9 +3336,11 @@ void process_ship_depart_packet( ubyte *data, header *hinfo )
 	int offset;
 	object *objp;
 	ushort signature;
+	ushort for_reals;
 
 	offset = HEADER_LENGTH;
 	GET_USHORT( signature );
+	GET_USHORT( for_reals );
 	PACKET_SET_SIZE();
 
 	// find the object which is departing
@@ -3342,7 +3351,7 @@ void process_ship_depart_packet( ubyte *data, header *hinfo )
 	}
 
 	// start warping him out
-	shipfx_warpout_start( objp );
+	shipfx_warpout_start( objp, for_reals );
 }
 
 // packet to tell clients cargo of a ship was revealed to all
