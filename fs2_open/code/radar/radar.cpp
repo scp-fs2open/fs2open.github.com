@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.22 $
- * $Date: 2006-01-16 11:02:23 $
+ * $Revision: 2.23 $
+ * $Date: 2006-06-07 04:44:57 $
  * $Author: wmcoolmon $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 2.21  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -405,7 +408,11 @@ void radar_plot_object_std( object *objp )
 	// Apply object type filters	
 	switch ( objp->type ) {
 	case OBJ_SHIP:
-		// Place to cull ships, such as NavBuoys		
+		// Place to cull ships, such as NavBuoys
+		//WMC - No limbo ships on radar.
+		//As far as the radar is concerned, they don't even exist.
+		if(Ships[objp->instance].flags & SF_LIMBO)
+			return;
 		break;
 		
 	case OBJ_JUMP_NODE:
