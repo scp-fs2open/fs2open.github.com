@@ -1635,7 +1635,7 @@ LUA_VAR(Type, l_Shipclass, "shiptype", "Ship class type")
 	return lua_set_args(L, "o", l_Shiptype.Set(Ship_info[idx].class_type));
 }
 
-LUA_FUNC(isInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the techroom", "Gets whether or not the ship class is available in the techroom")
+LUA_FUNC(IsInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the techroom", "Gets whether or not the ship class is available in the techroom")
 {
 	int idx;
 	if(!lua_get_args(L, "o", l_Shipclass.Get(&idx)))
@@ -2867,6 +2867,29 @@ LUA_VAR(HitpointsMax, l_Ship, "Number", "Total hitpoints")
 		shipp->ship_max_hull_strength = newhits;
 
 	return lua_set_args(L, "f", shipp->ship_max_hull_strength);
+}
+
+LUA_VAR(IsInLimbo, l_Ship, "Boolean", "Ship's limbo status")
+{
+	object_h *objh;
+	bool newlimbo = false;
+	if(!lua_get_args(L, "o|b", l_Ship.GetPtr(&objh), &newlimbo))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(LUA_SETTING_VAR)
+	{
+		if(newlimbo)
+			shipp->flags |= SF_LIMBO;
+		else
+			shipp->flags &= ~SF_LIMBO;
+	}
+
+	return lua_set_args(L, "b", (shipp->flags & SF_LIMBO) != 0);
 }
 
 LUA_VAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon banks")
