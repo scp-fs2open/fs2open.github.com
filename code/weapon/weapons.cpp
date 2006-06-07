@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180  2006/05/27 16:45:11  taylor
+ * some minor cleanup
+ * remove -nobeampierce
+ * update for geometry batcher changes
+ *
  * Revision 2.179  2006/04/20 06:32:30  Goober5000
  * proper capitalization according to Volition
  *
@@ -2696,10 +2701,6 @@ int parse_weapon(int subtype, bool replace)
 
 		// look it up
 		wip->muzzle_flash = mflash_lookup(mflash_string);
-
-		if(wip->muzzle_flash > -1){			
-			wip->wi_flags |= WIF_MFLASH;
-		}
 	}
 
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
