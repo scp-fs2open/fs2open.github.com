@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.58 $
- * $Date: 2006-06-07 04:49:20 $
- * $Author: wmcoolmon $
+ * $Revision: 2.59 $
+ * $Date: 2006-06-07 18:47:51 $
+ * $Author: karajorma $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2006/06/07 04:49:20  wmcoolmon
+ * Pass to get any files that I missed
+ *
  * Revision 2.57  2006/06/02 09:10:01  karajorma
  * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
  *
@@ -6863,7 +6866,7 @@ void process_shield_explosion_packet( ubyte *data, header *hinfo)
 	}
 }
 
-void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *target)
+void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *target, short offset)
 {
 	scoring_struct *sc;
 	ubyte data[MAX_PACKET_SIZE], val;
@@ -6889,10 +6892,20 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 	switch(stats_code){
 	case STATS_ALLTIME:	
 		// alltime kills
+#ifdef INF_BUILD
+		idx = 0; 
+		while(idx<MAX_SHIP_CLASSES)
+		{
+			send_player_stats_block_packet(pl, STATS_ALLTIME_KILLS, target, (short)idx);
+			idx += MAX_SHIPS_PER_PACKET; 
+		}
+#else
 		for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
 			u_tmp = (ushort)sc->kills[idx];
 			ADD_USHORT(u_tmp);
 		}
+#endif
+
 		// medal information
 		for(idx=0;idx<MAX_MEDALS;idx++){
 			i_tmp = sc->medals[idx];
@@ -6919,11 +6932,20 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		break;
 
 	case STATS_MISSION:	
-		// mission OKkills		
+		// mission OKkills	
+#ifdef INF_BUILD
+		idx = 0; 
+		while(idx<MAX_SHIP_CLASSES)
+		{
+			send_player_stats_block_packet(pl, STATS_MISSION_CLASS_KILLS, target, (short)idx);
+			idx += MAX_SHIPS_PER_PACKET; 
+		}
+#else		
 		for(idx=0;idx<MAX_SHIP_CLASSES;idx++){
 			u_tmp = (ushort)sc->m_okKills[idx];
 			ADD_USHORT(u_tmp);			
 		}
+#endif
 	
 		ADD_INT(sc->m_score);
 		ADD_INT(sc->m_assists);
@@ -6954,7 +6976,25 @@ void send_player_stats_block_packet(net_player *pl, int stats_code, net_player *
 		ADD_INT(sc->m_kill_count);
 		ADD_INT(sc->m_kill_count_ok);
 		ADD_INT(sc->m_assists);
-		break;		
+		break;	
+#ifdef INF_BUILD
+		
+	case STATS_MISSION_CLASS_KILLS:
+		ADD_SHORT(offset);
+		for (idx=offset; idx<MAX_SHIP_CLASSES && idx<offset+MAX_SHIPS_PER_PACKET; idx++)
+		{
+			ADD_USHORT((ushort)sc->m_okKills[idx]);			
+		}
+		break;
+		
+	case STATS_ALLTIME_KILLS:
+		ADD_SHORT(offset);
+		for (idx=offset; idx<MAX_SHIP_CLASSES && idx<offset+MAX_SHIPS_PER_PACKET; idx++)
+		{
+			ADD_USHORT((ushort)sc->kills[idx]);			
+		}
+		break;
+#endif
 	}
 
 	Assert(packet_size < MAX_PACKET_SIZE);
@@ -6985,6 +7025,7 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	int offset = HEADER_LENGTH;
 	ushort u_tmp;
 	int i_tmp;
+	short si_offset;
 
 	// nprintf(("Network","----------++++++++++********RECEIVED STATS***********+++++++++----------\n"));
 
@@ -7004,14 +7045,37 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	// get the stats code
 	GET_DATA(val);	
 	switch(val){
+
+#ifdef INF_BUILD
+	case STATS_ALLTIME_KILLS:
+		GET_SHORT(si_offset);
+		for (idx = si_offset; idx<MAX_SHIP_CLASSES && idx<si_offset+MAX_SHIPS_PER_PACKET; idx++) 
+		{
+			GET_USHORT(u_tmp);
+			sc->kills[idx] = u_tmp;
+		}
+		break;
+
+	case STATS_MISSION_CLASS_KILLS:
+		GET_SHORT(si_offset);
+		for (idx = si_offset; idx<MAX_SHIP_CLASSES && idx<si_offset+MAX_SHIPS_PER_PACKET; idx++) 
+		{
+			GET_USHORT(u_tmp);
+			sc->m_okKills[idx] = u_tmp;
+		}
+		break;
+#endif
+
 	case STATS_ALLTIME:
 		ml_string("Received STATS_ALLTIME\n");
 
+#ifndef INF_BUILD
 		// kills - alltime
 		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
 			GET_USHORT(u_tmp);
 			sc->kills[idx] = u_tmp;
 		}
+#endif
 
 		// read in the stats
 		for (idx=0; idx<MAX_MEDALS; idx++) {
@@ -7041,11 +7105,13 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	case STATS_MISSION:
 		ml_string("Received STATS_MISSION\n");
 
+#ifndef INF_BUILD
 		// kills - mission OK			
 		for (idx=0; idx<MAX_SHIP_CLASSES; idx++) {
 			GET_USHORT(u_tmp);
 			sc->m_okKills[idx] = u_tmp;			
 		}
+#endif
 		
 		GET_INT(sc->m_score);
 		GET_INT(sc->m_assists);
@@ -7092,9 +7158,9 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	// if I'm the server of the game, I should always rebroadcast these stats
 	if ((Net_player->flags & NETINFO_FLAG_AM_MASTER) && (sc != &bogus)) {
 		// make sure these are alltime stats
-		Assert(val == STATS_ALLTIME);
+		Assert(val == STATS_ALLTIME || val == STATS_ALLTIME_KILLS);
 
-		multi_broadcast_stats(STATS_ALLTIME);
+		multi_broadcast_stats(val);
 	}
 }
 

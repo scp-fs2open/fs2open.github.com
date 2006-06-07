@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.13 $
- * $Date: 2006-06-02 09:10:01 $
+ * $Revision: 2.14 $
+ * $Date: 2006-06-07 18:47:51 $
  * $Author: karajorma $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/06/02 09:10:01  karajorma
+ * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
+ *
  * Revision 2.12  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -674,11 +677,14 @@ extern int Om_tracker_flag;
 #define SW_STD_BAD					0x3		// from standalone to host - "everything is bad"
 
 // stats block packet
-#define STATS_MISSION				0			// all stats for the mission, for one player
+#define STATS_MISSION				0			// all stats for the mission (except kills), for one player
 #define STATS_ALLTIME				1			// alltime stats, for one player
-#define STATS_MISSION_KILLS		2			// mission kills and assists
+#define STATS_MISSION_KILLS			2			// mission kills and assists
 #define STATS_DOGFIGHT_KILLS		3			// same as mission kills, but also sends per-player kills
+#define STATS_MISSION_CLASS_KILLS		4			// kills for the mission, for one player
+#define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
 
+#define MAX_SHIPS_PER_PACKET		130			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
 
 // ----------------------------------------------------------------------------------------
 
