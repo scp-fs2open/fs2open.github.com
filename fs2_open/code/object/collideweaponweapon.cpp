@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-05-24 05:08:28 $
+ * $Revision: 2.11 $
+ * $Date: 2006-06-07 04:42:22 $
  * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/05/24 05:08:28  wmcoolmon
+ * Fix for Mantis bug #0000922
+ *
  * Revision 2.9  2006/02/15 07:19:49  wmcoolmon
  * Various weapon and team related scripting functions; $Collide Ship and $Collide Weapon hooks
  *
@@ -166,7 +169,7 @@ int collide_weapon_weapon( obj_pair * pair )
 	{
 		//WMC - If one is an override, favor it.
 		//WMC - If both are overrides, favor A.
-		if(wipA->sc_collide_weapon.IsValid() && (!wipB->sc_collide_weapon.IsOverride() || wipA->sc_collide_weapon.IsOverride()))
+		if(wipA->sc_collide_weapon.IsValid() && (!Script_system.IsOverride(wipB->sc_collide_weapon) || Script_system.IsOverride(wipA->sc_collide_weapon)))
 		{
 			Script_system.SetGlobal("Self", 'o', &l_Weapon.Set(object_h(A)));
 			Script_system.SetGlobal("Weapon", 'o', &l_Weapon.Set(object_h(B)));
@@ -177,10 +180,10 @@ int collide_weapon_weapon( obj_pair * pair )
 			Script_system.RemGlobal("Weapon");
 		}
 
-		if(wipA->sc_collide_weapon.IsOverride())
+		if(Script_system.IsOverride(wipA->sc_collide_weapon))
 			return 1;
 
-		if(!wipA->sc_collide_weapon.IsOverride() && wipB->sc_collide_weapon.IsValid())
+		if(wipB->sc_collide_weapon.IsValid())
 		{
 			Script_system.SetGlobal("Self", 'o', &l_Weapon.Set(object_h(B)));
 			Script_system.SetGlobal("Weapon", 'o', &l_Weapon.Set(object_h(A)));
@@ -191,7 +194,7 @@ int collide_weapon_weapon( obj_pair * pair )
 			Script_system.RemGlobal("Weapon");
 		}
 
-		if(wipB->sc_collide_weapon.IsOverride())
+		if(Script_system.IsOverride(wipB->sc_collide_weapon))
 			return 1;
 
 		//Do the normal stuff if no override -C
