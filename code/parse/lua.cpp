@@ -97,7 +97,7 @@ int lua_Num_operators = sizeof(lua_Operators)/sizeof(string_conv);
 #define LUA_RETURN_NIL		0
 #define LUA_RETURN_OBJECT		1
 #define LUA_RETURN_TRUE		lua_set_args(L, "b", true)
-#define LUA_RETURN_FALSE	lua_set_args(L, "b", true)
+#define LUA_RETURN_FALSE	lua_set_args(L, "b", false)
 
 //*************************General Functions*************************
 //WMC - This doesn't work.
@@ -2504,7 +2504,7 @@ LUA_FUNC(getName, l_Subsystem, NULL, "Subsystem name", "Subsystem name")
 {
 	ship_subsys_h *sso;
 	char *s = NULL;
-	if(!lua_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &s))
+	if(!lua_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
 		return LUA_RETURN_NIL;
 
 	if(!sso->IsValid())
@@ -3110,10 +3110,11 @@ LUA_FUNC(warpIn, l_Ship, NULL, "True", "Warps ship in")
 	return LUA_RETURN_TRUE;
 }
 
-LUA_FUNC(warpOut, l_Ship, NULL, "True", "Warps ship out")
+LUA_FUNC(warpOut, l_Ship, "[boolean Departing]", "True", "Warps ship out; argument specifies whether ship cannot warp back in or not.")
 {
 	object_h *objh;
-	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
+	bool b;
+	if(!lua_get_args(L, "o|b", l_Ship.GetPtr(&objh), &b))
 		return LUA_RETURN_NIL;
 
 	if(!objh->IsValid())
@@ -3460,6 +3461,14 @@ LUA_FUNC(getMissionByIndex, l_Campaign, "Mission number (Zero-based index)", "Cm
 //**********LIBRARY: Mission
 lua_lib l_Mission("Mission", "mn", "Mission library");
 
+LUA_FUNC(getMissionFilename, l_Mission, NULL, "string", "Gets mission filename")
+{
+	if(!(Game_mode & GM_IN_MISSION))
+		return LUA_RETURN_NIL;
+
+	return lua_set_args(L, "s", Game_current_mission_filename);
+}
+
 LUA_FUNC(getMissionTime, l_Mission, NULL, "number", "Mission time in seconds")
 {
 	if(!(Game_mode & GM_IN_MISSION))
@@ -3544,14 +3553,16 @@ LUA_FUNC(getShipByName, l_Mission, "Ship name", "Ship object", "Gets ship object
 	return lua_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[idx].objnum])));
 }
 
-LUA_FUNC(getNumShips, l_Mission, NULL, "Number of ships in mission", "Gets number of ships in mission. Note that this is only accurate for a short while.")
+LUA_FUNC(getNumShips, l_Mission, NULL, "Number of ships in mission",
+		 "Gets number of ships in mission. Note that this is only accurate for one frame.")
 {
 	return lua_set_args(L, "i", ship_get_num_ships());
 }
 
 LUA_FUNC(getShipByIndex, l_Mission, "Index", "Ship handle, or false if invalid index",
-		"Gets ship by its order in the mission."
-		"Note that as ships are added, they may take the index of destroyed ships")
+		"Gets ship by its order in the mission. "
+		"Note that as ships are added, they may take the index of destroyed ships. "
+		"An index is only good for one frame.")
 {
 	int idx;
 	if(!lua_get_args(L, "i", &idx))
@@ -3575,7 +3586,40 @@ LUA_FUNC(getShipByIndex, l_Mission, "Index", "Ship handle, or false if invalid i
 	return LUA_RETURN_FALSE;
 }
 
-LUA_FUNC(getWing, l_Mission, "Wing name", "Wing handle", "Gets wing handle")
+LUA_FUNC(getNumWeapons, l_Mission, NULL, "Number of weapon objects in mission",
+		 "Gets number of weapon objects in mission. Note that this is only accurate for one frame.")
+{
+	return lua_set_args(L, "i", Num_weapons);
+}
+
+LUA_FUNC(getWeaponByIndex, l_Mission, "Index", "Weapon handle, or false if invalid index",
+		"Gets weapon by its order in the mission. "
+		"Note that as weapons are added, they may take the index of destroyed ships. "
+		"An index is only good for one frame.")
+{
+	int idx;
+	if(!lua_get_args(L, "i", &idx))
+		return LUA_RETURN_NIL;
+
+	//Remember, Lua indices start at 0.
+	int count=1;
+
+	for(int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (Weapons[i].weapon_info_index < 0 || Weapons[i].objnum < 0 || Objects[Weapons[i].objnum].type != OBJ_WEAPON)
+			continue;
+
+		if(count == idx) {
+			return lua_set_args(L, "o", l_Weapon.Set(object_h(&Objects[Weapons[i].objnum])));
+		}
+
+		count++;
+	}
+
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(getWingByName, l_Mission, "Wing name", "Wing handle", "Gets wing handle")
 {
 	char *name;
 	if(!lua_get_args(L, "s", &name))
@@ -3614,7 +3658,7 @@ LUA_FUNC(getNumEscortShips, l_Mission, NULL, "Number", "Gets escort ship")
 	return lua_set_args(L, "i", hud_escort_num_ships_on_list());
 }
 
-LUA_FUNC(getEscortShip, l_Mission, "Escort index", "Ship object", "Gets escort ship")
+LUA_FUNC(getEscortShipByIndex, l_Mission, "Escort index", "Ship object", "Gets escort ship")
 {
 	int idx;
 	if(!lua_get_args(L, "i", &idx))
@@ -4074,18 +4118,31 @@ LUA_FUNC(drawRectangle, l_Graphics, "x1, y1, x2, y2, [Filled]", NULL, "Draws a r
 }
 
 #define MAX_TEXT_LINES		256
-
+static char *BooleanValues[] = {"False", "True"};
 LUA_FUNC(drawString, l_Graphics, "String, x1, y1, [x2, y2]", NULL, "Draws a string")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
 
-	int x,y;
+	int x=0,y=0;
 	char *s;
 	int x2=-1,y2=-1;
 
-	if(!lua_get_args(L, "sii|ii", &s, &x, &y, &x2, &y2))
+	if(lua_isboolean(L, 1))
+	{
+		bool b = false;
+		if(!lua_get_args(L, "bii|ii", &b, &x, &y, &x2, &y2))
+			return LUA_RETURN_NIL;
+
+		if(b)
+			s = BooleanValues[1];
+		else
+			s = BooleanValues[0];
+	}
+	else if(!lua_get_args(L, "sii|ii", &s, &x, &y, &x2, &y2))
+	{
 		return LUA_RETURN_NIL;
+	}
 
 	if(x2 < 0) {
 		gr_string(x,y,s,false);
