@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.73 $
- * $Date: 2006-06-04 01:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 1.74 $
+ * $Date: 2006-06-07 04:37:36 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.73  2006/06/04 01:01:52  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 1.72  2006/05/31 03:05:42  Goober5000
  * some cosmetic changes in preparation for bay arrival/departure code
  * --Goober5000
@@ -2884,16 +2888,13 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 				return;
 
 			//	Don't keep firing at a ship that is in its death throes.
-			if (shipp->flags & SF_DYING)
+			if (shipp->flags & (SF_DYING | SF_ARRIVING | SF_LIMBO))
 				return;
 
 			if (is_ignore_object(aip, OBJ_INDEX(eno->trial_objp)))
 				return;
 
 			if (eno->trial_objp->flags & OF_PROTECTED)
-				return;
-
-			if (shipp->flags & SF_ARRIVING)
 				return;
 
 			ship_info *sip = &Ship_info[shipp->ship_info_index];
@@ -14465,11 +14466,15 @@ int ai_need_new_target(object *pl_objp, int target_objnum)
 		return 1;
 	}
 
+	ship *shipp = &Ships[objp->instance];
 	if ( objp->type == OBJ_SHIP ) {
-		if ( Ships[objp->instance].flags & SF_DYING ) {
+		if ( shipp->flags & SF_DYING ) {
 			return 1;
-		} else if (Ships[objp->instance].team == Ships[pl_objp->instance].team)
+		} else if (shipp->team == Ships[pl_objp->instance].team) {
 			return 1;
+		} else if(shipp->flags & SF_LIMBO) {
+			return 1;
+		}
 	}
 
 	return 0;
