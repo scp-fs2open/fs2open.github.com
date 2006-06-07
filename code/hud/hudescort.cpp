@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.29 $
- * $Date: 2006-02-16 05:00:01 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2006-06-07 04:39:30 $
+ * $Author: wmcoolmon $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2006/02/16 05:00:01  taylor
+ * various bmpman related fixes
+ *  - some new error checking (and fixes related to that) and cleanup
+ *  - fix EFFs not getting released/unloaded properly (was in a local tree but apparently missed CVS)
+ *  - minor fixes for bm_release() to produce a more properly cleaned slot
+ *  - use fast unloading for page_in stuff since we don't actually want really want the load count changing for texture maps
+ *    and to make sure that we free the memory usage regardless of load count
+ *
  * Revision 2.28  2006/01/27 06:21:10  Goober5000
  * replace quick sort with insertion sort in many places
  * --Goober5000
@@ -680,7 +688,7 @@ void hud_escort_cull_list()
 		for ( i = 0; i < Num_escort_ships; i++ ) {
 			objnum = Escort_ships[i].objnum;
 			Assert( objnum >=0 && objnum < MAX_OBJECTS );
-			if ( Objects[objnum].flags & OF_SHOULD_BE_DEAD || Ships[Objects[objnum].instance].flags & SF_HIDDEN_FROM_SENSORS ) {
+			if ( Objects[objnum].flags & OF_SHOULD_BE_DEAD || Ships[Objects[objnum].instance].flags & (SF_HIDDEN_FROM_SENSORS | SF_LIMBO) ) {
 				hud_remove_ship_from_escort_index(i, objnum);
 				i--;
 			}
