@@ -38,6 +38,9 @@ private:
 	PyObject *GetPyLocals(){return PyLoc;}
 	PyObject *GetPyGlobals(){return PyGlb;}
 
+	void ParseChunkSub(int *out_lang, int *out_index, char* debug_str=NULL);
+	int RunBytecodeSub(int in_lang, int in_idx, char format='\0', void *data=NULL);
+
 	void SetLuaSession(struct lua_State *L);
 	void SetPySession(struct PyObject *loc, struct PyObject *glb);
 
@@ -76,6 +79,7 @@ public:
 	bool EvalString(char* string, char *format=NULL, void *rtn=NULL, char *debug_str=NULL);
 	script_hook ParseChunk(char* debug_str=NULL);
 	int RunBytecode(script_hook &hd, char format='\0', void *data=NULL);
+	bool IsOverride(script_hook &hd);
 };
 
 
