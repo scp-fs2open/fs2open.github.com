@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.85.2.1 $
- * $Author: Goober5000 $
- * $Date: 2006-06-04 01:03:13 $
+ * $Revision: 2.85.2.2 $
+ * $Author: karajorma $
+ * $Date: 2006-06-07 20:47:53 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85.2.1  2006/06/04 01:03:13  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 2.85  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -1009,6 +1013,9 @@ void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp);
 
 // Goober5000
 extern int Knossos_warp_ani_used;
+
+// Karajorma
+void swap_parse_object(p_object *p_obj, int ship_class);
 
 #endif
 
