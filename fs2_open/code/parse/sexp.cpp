@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.2 $
- * $Date: 2006-06-04 00:01:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.259.2.3 $
+ * $Date: 2006-06-07 20:50:56 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.2  2006/06/04 00:01:44  Goober5000
+ * add capability for preloading special arguments
+ * NB: it's disabled for now, and it needs to be moved after sexps are parsed to work
+ * --Goober5000
+ *
  * Revision 2.259.2.1  2006/06/03 04:46:39  Goober5000
  * add karajorma's multi callback
  * --Goober5000
@@ -12055,8 +12060,44 @@ void sexp_change_ship_class(int n)
 	{
 		ship_num = ship_name_lookup(CTEXT(n), 1);
 
+		/* Karajorma - Changed so that the SEXP will now deal with ships that haven't arrived yet
+
 		// don't change unless it's currently in the mission
 		if (ship_num != -1)
+		{
+			// don't mess with a ship that's occupied
+			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
+			{
+				change_ship_type(ship_num, class_num, 1);
+			}
+		}*/
+
+		// If the ship hasn't arrived we still want the ability to change its class.
+		if (ship_num == -1)
+		{
+			// Get the name of the ship that we are interested in
+			char* ship_name = CTEXT(n); 
+			p_object *pobj ;
+			bool match_found = false;
+			
+
+			// Search the Ship_arrival_list to see if the ship is waiting to arrive
+			for (pobj = GET_FIRST(&Ship_arrival_list); pobj != END_OF_LIST(&Ship_arrival_list); pobj = GET_NEXT(pobj))
+			{
+				if (!(strcmp(pobj->name, ship_name)))
+				{
+					match_found = true;
+					break;
+				}
+			}
+
+			if (match_found)
+			{
+				swap_parse_object(pobj, class_num);
+			}
+		}
+		// If the ship is already in the mission
+		else 
 		{
 			// don't mess with a ship that's occupied
 			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
