@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.28 $
- * $Date: 2006-06-07 03:51:38 $
+ * $Revision: 2.29 $
+ * $Date: 2006-06-07 04:42:22 $
  * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2006/06/07 03:51:38  wmcoolmon
+ * Scripting system prep for 3.6.9
+ *
  * Revision 2.27  2006/03/05 21:45:12  taylor
  * various small cleanups, fixes, error checks
  *
@@ -396,7 +399,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 	Assert( shipp->objnum == OBJ_INDEX(ship_obj));
 
 	// Make ships that are warping in not get collision detection done
-	if ( shipp->flags & SF_ARRIVING ) return 0;
+	if ( shipp->flags & (SF_ARRIVING|SF_LIMBO) ) return 0;
 
 	// if one object is a capital, only check player and player weapons with
 	// the capital -- too slow for now otherwise.
