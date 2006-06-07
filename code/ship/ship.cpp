@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.340 $
- * $Date: 2006-06-07 04:47:43 $
+ * $Revision: 2.341 $
+ * $Date: 2006-06-07 05:19:49 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.340  2006/06/07 04:47:43  wmcoolmon
+ * Limbo flag support; removed unneeded muzzle flash flag
+ *
  * Revision 2.339  2006/06/05 23:57:50  taylor
  * properly initialize a few entries that were left zero'd by mistake
  *
@@ -4336,6 +4339,10 @@ void parse_ship_type()
 
 		if(optional_string("+Compl dist:")) {
 			stuff_float(&stp->fog_complete_dist);
+		}
+
+		if(optional_string("+Disappear factor:")) {
+			stuff_float(&stp->fog_disappear_factor);
 		}
 	}
 

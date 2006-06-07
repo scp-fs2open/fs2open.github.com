@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.50 $
- * $Date: 2006-04-12 01:03:00 $
- * $Author: taylor $
+ * $Revision: 2.51 $
+ * $Date: 2006-06-07 05:19:49 $
+ * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2006/04/12 01:03:00  taylor
+ * more s/colour/color/ changes
+ * throw in a couple of safety checks for some neb2 functions
+ *
  * Revision 2.49  2006/03/18 10:25:45  taylor
  * some cleanup to the nebula debug console help messages
  *
@@ -880,18 +884,11 @@ int neb2_skip_render(object *objp, float z_depth)
 		}
 
 		// small ships over the fog limit by a small factor
-		if((sip->flags & SIF_SMALL_SHIP) && (z_depth >= (fog_far * 1.5f))){
-			return 1;
-		}
-
-		// big ships
-		if((sip->flags & SIF_BIG_SHIP) && (z_depth >= (fog_far * 2.0f))){
-			return 1;
-		}
-
-		// huge ships
-		if((sip->flags & SIF_HUGE_SHIP) && (z_depth >= (fog_far * 3.0f))){
-			return 1;
+		if(sip->class_type > -1)
+		{
+			if(z_depth >= (fog_far * Ship_types[sip->class_type].fog_disappear_factor)) {
+				return 1;
+			}
 		}
 		break;
 

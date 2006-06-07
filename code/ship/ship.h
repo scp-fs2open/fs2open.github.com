@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.153 $
- * $Date: 2006-06-07 04:47:43 $
+ * $Revision: 2.154 $
+ * $Date: 2006-06-07 05:19:49 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.153  2006/06/07 04:47:43  wmcoolmon
+ * Limbo flag support; removed unneeded muzzle flash flag
+ *
  * Revision 2.152  2006/06/04 01:01:53  Goober5000
  * add fighterbay restriction code
  * --Goober5000
@@ -1634,6 +1637,7 @@ typedef struct ship_type_info {
 	//Fog
 	float fog_start_dist;
 	float fog_complete_dist;
+	float fog_disappear_factor;
 
 	//AI
 	int	ai_valid_goals;
