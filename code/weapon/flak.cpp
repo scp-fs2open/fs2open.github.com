@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.cpp $
- * $Revision: 2.8 $
- * $Date: 2006-01-04 21:48:36 $
+ * $Revision: 2.9 $
+ * $Date: 2006-06-07 04:48:38 $
  * $Author: wmcoolmon $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2006/01/04 21:48:36  wmcoolmon
+ * Flak weapons only use detonation range if targets are further away than $Det range
+ *
  * Revision 2.7  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -256,8 +259,8 @@ void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_wea
 	if(!(Weapon_info[turret_weapon_class].wi_flags & WIF_FLAK)){
 		return;
 	}
-	Assert(Weapon_info[turret_weapon_class].wi_flags & WIF_MFLASH);
-	if(!(Weapon_info[turret_weapon_class].wi_flags & WIF_MFLASH)){
+	Assert(Weapon_info[turret_weapon_class].muzzle_flash > -1);
+	if(!(Weapon_info[turret_weapon_class].muzzle_flash > -1)){
 		return;
 	}
 	Assert(Weapon_info[turret_weapon_class].muzzle_flash >= 0);

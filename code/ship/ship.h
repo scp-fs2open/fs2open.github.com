@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.152 $
- * $Date: 2006-06-04 01:01:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.153 $
+ * $Date: 2006-06-07 04:47:43 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.152  2006/06/04 01:01:53  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 2.151  2006/06/02 08:46:47  karajorma
  * Support for alt ship classes, team loadout flag and changes to Ships_exited
  *
@@ -1093,7 +1097,6 @@ typedef struct ship_subsys_info {
 #define	SF_NO_ARRIVAL_WARP		(1 << 4)		// no arrival warp in effect
 #define	SF_NO_DEPARTURE_WARP		(1 << 5)		// no departure warp in effect
 #define	SF_LOCKED					(1 << 6)		// can't manipulate ship in loadout screens
-//#define	SF_INVULNERABLE			(1 << 7)
 
 // high bits are for internal flags not saved to mission files
 // Go from bit 31 down to bit 3
@@ -1122,6 +1125,7 @@ typedef struct ship_subsys_info {
 #define	SF_SHIP_HAS_SCREAMED		(1 << 10)	// ship has let out a death scream
 #define	SF_RED_ALERT_STORE_STATUS (1 << 9)	// ship status should be stored/restored if red alert mission
 #define	SF_VAPORIZE					(1<<8)		// ship is vaporized by beam - alternative death sequence
+#define SF_LIMBO					(1<<7)		//WMC - Ship isn't in mission, but still in Ships array
 
 // MWA -- don't go below whatever bitfield is used for Fred above (currently 7)!!!!
 
@@ -1219,6 +1223,7 @@ typedef struct ship {
 	int warp_anim_fps;
 	vec3d	warp_effect_pos;		// where the warp in effect comes in at
 	vec3d	warp_effect_fvec;		// The warp in effect's forward vector
+	bool warpout_for_reals;
 	int	next_fireball;
 
 	int	next_hit_spark;
@@ -2148,7 +2153,7 @@ extern int ship_query_state(char *name);
 int ship_primary_bank_has_ammo(int shipnum);	// check if current primary bank has ammo
 int ship_secondary_bank_has_ammo(int shipnum);	// check if current secondary bank has ammo
 
-void ship_departed( int num );
+void ship_departed( int num, bool for_reals = true );
 int ship_engine_ok_to_warp(ship *sp);		// check if ship has engine power to warp
 int ship_navigation_ok_to_warp(ship *sp);	// check if ship has navigation power to warp
 

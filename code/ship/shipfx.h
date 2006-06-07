@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.10 $
- * $Date: 2006-03-31 10:20:01 $
+ * $Revision: 2.11 $
+ * $Date: 2006-06-07 04:47:43 $
  * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/03/31 10:20:01  wmcoolmon
+ * Prelim. BSG warpin effect stuff
+ *
  * Revision 2.9  2005/10/09 09:13:29  wmcoolmon
  * Added warpin/warpout speed override values to ships.tbl
  *
@@ -198,7 +201,7 @@ extern void shipfx_warpin_start( object *objp );
 extern void shipfx_warpin_frame( object *objp, float frametime );
 
 // When a ship warps out, this gets called to start the effect
-extern void shipfx_warpout_start( object *objp );
+extern void shipfx_warpout_start( object *objp, bool for_reals = true );
 
 // During a ship warp out, this gets called each frame to move the ship
 extern void shipfx_warpout_frame( object *objp, float frametime );

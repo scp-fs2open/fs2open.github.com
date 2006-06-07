@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-03-18 10:28:25 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2006-06-07 04:47:43 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/03/18 10:28:25  taylor
+ * fix out-of-bounds problem in awacs checking (full neb missions may have been a bit freaky from this)
+ *
  * Revision 2.22  2006/02/19 03:17:01  Goober5000
  * fix stealth
  * --Goober5000
@@ -283,7 +286,7 @@ void awacs_update_all_levels()
 		shipp = &Ships[Objects[moveup->objnum].instance];
 
 		// ignore dying, departing, or arriving ships
-		if((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING))
+		if((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING) || (shipp->flags & SF_LIMBO))
 			continue;
 
 		// only look at ships that have awacs subsystems
@@ -528,7 +531,7 @@ void team_visibility_update()
 		shipp = &Ships[ship_num];
 
 		// ignore dying, departing, or arriving ships
-		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING))
+		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING) || (shipp->flags & SF_LIMBO))
 			continue;
 
 		// check if ship if flagged as invisible
