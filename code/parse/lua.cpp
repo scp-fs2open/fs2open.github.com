@@ -97,7 +97,7 @@ int lua_Num_operators = sizeof(lua_Operators)/sizeof(string_conv);
 #define LUA_RETURN_NIL		0
 #define LUA_RETURN_OBJECT		1
 #define LUA_RETURN_TRUE		lua_set_args(L, "b", true)
-#define LUA_RETURN_FALSE	lua_set_args(L, "b", true)
+#define LUA_RETURN_FALSE	lua_set_args(L, "b", false)
 
 //*************************General Functions*************************
 //WMC - This doesn't work.
