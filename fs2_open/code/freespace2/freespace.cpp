@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.245 $
- * $Date: 2006-06-07 03:36:19 $
+ * $Revision: 2.246 $
+ * $Date: 2006-06-07 03:49:36 $
  * $Author: wmcoolmon $
  *
  * FreeSpace main body
@@ -3198,18 +3198,19 @@ DCF(warp, "Tests warpin effect")
 					if(warpin)
 						shipfx_warpin_start(&Objects[Ships[idx].objnum]);
 					else
-						shipfx_warpout_start(&Objects[Ships[idx].objnum], false);
+						shipfx_warpout_start(&Objects[Ships[idx].objnum]);
 				}
 			}
-			else if(idx < 0)
+		}
+		
+		if(idx < 0)
+		{
+			if(Player_ai->target_objnum > -1)
 			{
-				if(Player_ai->target_objnum > -1)
-				{
-					if(warpin)
-						shipfx_warpin_start(&Objects[Player_ai->target_objnum]);
-					else
-						shipfx_warpout_start(&Objects[Player_ai->target_objnum], false);
-				}
+				if(warpin)
+					shipfx_warpin_start(&Objects[Player_ai->target_objnum]);
+				else
+					shipfx_warpout_start(&Objects[Player_ai->target_objnum]);
 			}
 		}
 	}	
