@@ -261,18 +261,20 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 	char funcname[128];
 #ifndef NDEBUG
 	lua_Debug ar;
-	lua_getstack(L, 0, &ar);
-	lua_getinfo(L, "nl", &ar);
-	strcpy(funcname, "");
-	if(ar.name != NULL) {
-		strcat(funcname, ar.name);
-	}
-	if(ar.currentline > -1) {
-		char buf[8];
-		itoa(ar.currentline, buf, 10);
-		strcat(funcname, " (Line ");
-		strcat(funcname, buf);
-		strcat(funcname, ")");
+	if(lua_getstack(L, 0, &ar))
+	{
+		lua_getinfo(L, "nl", &ar);
+		strcpy(funcname, "");
+		if(ar.name != NULL) {
+			strcat(funcname, ar.name);
+		}
+		if(ar.currentline > -1) {
+			char buf[8];
+			itoa(ar.currentline, buf, 10);
+			strcat(funcname, " (Line ");
+			strcat(funcname, buf);
+			strcat(funcname, ")");
+		}
 	}
 	if(!strlen(funcname)) {
 		//WMC - Try and get at function name from upvalues
@@ -3120,7 +3122,7 @@ LUA_FUNC(warpOut, l_Ship, "[boolean Departing]", "True", "Warps ship out; argume
 	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	shipfx_warpout_start(objh->objp);
+	shipfx_warpout_start(objh->objp, b);
 
 	return LUA_RETURN_TRUE;
 }
