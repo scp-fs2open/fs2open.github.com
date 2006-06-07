@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.1 $
- * $Date: 2006-06-03 11:57:13 $
- * $Author: taylor $
+ * $Revision: 2.243.2.2 $
+ * $Date: 2006-06-07 03:54:29 $
+ * $Author: wmcoolmon $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.246  2006/06/07 03:49:36  wmcoolmon
+ * Revert changes
+ *
+ * Revision 2.244  2006/06/03 11:54:33  taylor
+ * remove init_decals declaration, it's in the header now since we build without decal support
+ *
  * Revision 2.243  2006/05/27 17:12:44  taylor
  * NO_DIRECT3D support
  * clean up video init stuff to use D3D if specified but always OGL otherwise (using NO_DIRECT3D will force always force OGL)
@@ -6129,7 +6135,7 @@ void game_frame(int paused)
 			}
 
 			Scripting_didnt_draw_hud = 1;
-			if(Script_system.RunBytecode(Script_hudhook) && Script_hudhook.IsOverride())
+			if(Script_system.RunBytecode(Script_hudhook) && Script_system.IsOverride(Script_hudhook))
 				Scripting_didnt_draw_hud = 0;
 
 			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
@@ -7397,7 +7403,7 @@ void game_leave_state( int old_state, int new_state )
 	}
 
 	//WMC - Scripting override
-	if(GS_state_hooks[old_state].IsValid() && GS_state_hooks[old_state].IsOverride()) {
+	if(GS_state_hooks[old_state].IsValid() && Script_system.IsOverride(GS_state_hooks[old_state])) {
 		return;
 	}
 
@@ -7763,7 +7769,7 @@ void game_leave_state( int old_state, int new_state )
 void game_enter_state( int old_state, int new_state )
 {
 	//WMC - Scripting override
-	if(GS_state_hooks[new_state].IsValid() && GS_state_hooks[new_state].IsOverride()) {
+	if(GS_state_hooks[new_state].IsValid() && Script_system.IsOverride(GS_state_hooks[new_state])) {
 		return;
 	}
 
@@ -8284,7 +8290,7 @@ void game_do_state(int state)
 		return;
 	}
 
-	if(GS_state_hooks[state].IsOverride())
+	if(Script_system.IsOverride(GS_state_hooks[state]))
 	{
 		game_set_frametime(state);
 		gr_clear();
@@ -11050,7 +11056,7 @@ void game_title_screen_display()
 	}
 #endif
 
-	if(!Script_splashhook.IsOverride())
+	if(!Script_system.IsOverride(Script_splashhook))
 	{
 		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
 		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
