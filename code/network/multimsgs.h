@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.10 $
- * $Date: 2006-06-07 04:49:20 $
- * $Author: wmcoolmon $
+ * $Revision: 2.11 $
+ * $Date: 2006-06-07 18:47:51 $
+ * $Author: karajorma $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/06/07 04:49:20  wmcoolmon
+ * Pass to get any files that I missed
+ *
  * Revision 2.9  2006/06/02 09:10:02  karajorma
  * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
  *
@@ -663,7 +666,7 @@ void send_wss_slots_data_packet(int team_num, int final, net_player *p = NULL, i
 
 void send_shield_explosion_packet(int objnum, int tri_num, vec3d hit_pos);
 
-void send_player_stats_block_packet(net_player *pl, int stats_type, net_player *target = NULL);
+void send_player_stats_block_packet(net_player *pl, int stats_type, net_player *target = NULL, short offset = 0);
 
 void send_host_restr_packet(char *callsign, int code, int mode);
 
