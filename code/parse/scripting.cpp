@@ -195,28 +195,28 @@ void script_state::UnloadImages()
 	ScriptImages.clear();
 }
 
-//returns 0 on failure (Parse error), 1 on success
-int script_state::RunBytecode(script_hook &hd, char format, void *data)
+int script_state::RunBytecodeSub(int in_lang, int in_idx, char format, void *data)
 {
-	if(hd.index >= 0)
+	if(in_idx >= 0)
 	{
 		// if this is the hook for the hud, and the hud is disabled or we are in freelook mode, then don't run the script
 		// (admittedly this is wrong, but I'm not sure where else to put this check and have it work properly. hopefully
 		//  WMCoolmon can get some time to come back over this and fix the issues, or just make it better period. - taylor)
-		if (hd.index == Script_hudhook.index) {
+		//WMC - Barf barf icky hack. Maybe later.
+		if (in_idx == Script_hudhook.h_index) {
 			if ( (Viewer_mode & VM_FREECAMERA) || hud_disabled() ) {
 				return 1;
 			}
 		}
 
-		if(hd.language == SC_LUA)
+		if(in_lang == SC_LUA)
 		{
 			int args_start=0;
 			if(data != NULL) {
 				args_start = lua_gettop(LuaState);
 			}
 			lua_pushcfunction(GetLuaSession(), lua_friendly_error);
-			lua_getref(GetLuaSession(), hd.index);
+			lua_getref(GetLuaSession(), in_idx);
 			if(lua_pcall(GetLuaSession(), 0, format!='\0' ? 1 : 0, -2) != 0)
 			{
 				return 0;
@@ -235,19 +235,26 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 			args_start = lua_gettop(LuaState) - args_start;
 			for(; args_start > 0; args_start--) lua_pop(LuaState, 1);
 		}
-		else if(hd.language == SC_PYTHON)
+		else if(in_lang == SC_PYTHON)
 		{
 #ifdef USE_PYTHON
-			PyObject *chk = PyBytecodeLib.Get(hd.index);
+			PyObject *chk = PyBytecodeLib.Get(in_idx);
 			if(chk != NULL)
 			{
-				PyEval_EvalCode(PyBytecodeLib.Get(hd.index), GetPyGlobals(), GetPyLocals());
+				PyEval_EvalCode(PyBytecodeLib.Get(in_idx), GetPyGlobals(), GetPyLocals());
 				return 1;
 			}
 #endif
 		}
 	}
 
+	return 1;
+}
+
+//returns 0 on failure (Parse error), 1 on success
+int script_state::RunBytecode(script_hook &hd, char format, void *data)
+{
+	RunBytecodeSub(hd.h_language, hd.h_index, format, data);
 	return 1;
 }
 
@@ -456,28 +463,20 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 	return true;
 }
 
-script_hook script_state::ParseChunk(char* debug_str)
+void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 {
-	static int total_parse_calls = 0;
+	Assert(out_lang != NULL);
+	Assert(out_index != NULL);
+	Assert(debug_str != NULL);
+
 	char buf[PARSE_BUF_SIZE] = {0};
-	char debug_buf[128];
-	script_hook rval;
-
-	total_parse_calls++;
-
-	//DANGER! This code means the debug_str must be used only before parsing
-	if(!debug_str)
-	{
-		debug_str = debug_buf;
-		sprintf(debug_str, "script_parse() count %d", total_parse_calls);
-	}
 
 	if(check_for_string("[["))
 	{
 		//Lua from file
 
 		//Lua
-		rval.language = SC_LUA;
+		*out_lang = SC_LUA;
 
 		char *filename = alloc_block("[[", "]]");
 
@@ -500,7 +499,7 @@ script_hook script_state::ParseChunk(char* debug_str)
 			luaL_loadbuffer(GetLuaSession(), raw_lua, len, debug_str);
 			//luaL_loadfile(GetLuaSession(), filename);
 
-			rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+			*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
 			vm_free(raw_lua);
 		}
 		//dealloc
@@ -512,7 +511,7 @@ script_hook script_state::ParseChunk(char* debug_str)
 		//Lua string
 
 		//Assume Lua
-		rval.language = SC_LUA;
+		*out_lang = SC_LUA;
 
 		//Allocate raw script
 		char* raw_lua = alloc_block("[", "]");
@@ -521,7 +520,7 @@ script_hook script_state::ParseChunk(char* debug_str)
 		luaL_loadbuffer(GetLuaSession(), raw_lua, strlen(raw_lua), debug_str);
 
 		//Stick it in the registry
-		rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+		*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
 
 		//free the mem
 		//vm_free(raw_lua);
@@ -531,20 +530,20 @@ script_hook script_state::ParseChunk(char* debug_str)
 		//Python string
 
 		//Assume python
-		rval.language = SC_PYTHON;
+		*out_lang = SC_PYTHON;
 
 		//Get the block
 		char* raw_python = alloc_block("{","}");
 #ifdef USE_PYTHON
 		//Add it to the lib
-		rval.index = PyBytecodeLib.Add(PyBytecode(Py_CompileString(raw_python, debug_str, Py_file_input)));
+		*out_index = PyBytecodeLib.Add(PyBytecode(Py_CompileString(raw_python, debug_str, Py_file_input)));
 #endif
 		vm_free(raw_python);
 	}
 	else
 	{
 		//Assume lua
-		rval.language = SC_LUA;
+		*out_lang = SC_LUA;
 
 		strcpy(buf, "return ");
 
@@ -555,11 +554,46 @@ script_hook script_state::ParseChunk(char* debug_str)
 		luaL_loadbuffer(GetLuaSession(), buf, strlen(buf), debug_str);
 
 		//Stick it in the registry
-		rval.index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+		*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+	}
+}
+
+script_hook script_state::ParseChunk(char* debug_str)
+{
+	static int total_parse_calls = 0;
+	char debug_buf[128];
+	script_hook rval;
+
+	total_parse_calls++;
+
+	//DANGER! This code means the debug_str must be used only before parsing
+	if(debug_str == NULL)
+	{
+		debug_str = debug_buf;
+		sprintf(debug_str, "script_parse() count %d", total_parse_calls);
 	}
 
+	ParseChunkSub(&rval.h_language, &rval.h_index, debug_str);
+
 	if(optional_string("+Override:"))
-		stuff_boolean(&rval.total_override);
+	{
+		char *debug_str_over = new char[strlen(debug_str) + 10];
+		strcpy(debug_str_over, debug_str);
+		strcat(debug_str_over, " override");
+		ParseChunkSub(&rval.o_language, &rval.o_index, debug_str_over);
+	}
 
 	return rval;
+}
+
+//*************************CLASS: script_hook*************************
+bool script_state::IsOverride(script_hook &hd)
+{
+	if(hd.h_index < 0)
+		return false;
+
+	bool b=false;
+	RunBytecodeSub(hd.o_language, hd.o_index, 'b', &b);
+
+	return b;
 }

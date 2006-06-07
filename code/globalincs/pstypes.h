@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.42 $
- * $Date: 2006-01-19 20:18:11 $
+ * $Revision: 2.43 $
+ * $Date: 2006-06-07 03:17:55 $
  * $Author: wmcoolmon $
- * $Revision: 2.42 $
- * $Date: 2006-01-19 20:18:11 $
+ * $Revision: 2.43 $
+ * $Date: 2006-06-07 03:17:55 $
  * $Author: wmcoolmon $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2006/01/19 20:18:11  wmcoolmon
+ * More Lua checks; added Lua vector object; better operator support.
+ *
  * Revision 2.41  2006/01/19 16:00:04  wmcoolmon
  * Lua debugging stuff; gr_bitmap_ex stuff for taylor
  *
@@ -1027,13 +1030,15 @@ void vm_free_all();
 //-WMC
 typedef struct script_hook
 {
-	bool total_override;
-	int language;
-	int index;
+	//Override
+	int o_language;
+	int o_index;
+	//Actual hook
+	int h_language;
+	int h_index;
 
-	script_hook(){language=0;index=-1;total_override=false;}
-	bool IsValid(){return (index > -1);}
-	bool IsOverride(){return total_override;}
+	script_hook(){o_language=h_language=0;o_index=h_index=-1;}
+	bool IsValid(){return (h_index > -1);}
 }script_hook;
 
 
