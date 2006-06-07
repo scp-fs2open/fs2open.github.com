@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.1 $
- * $Date: 2006-06-04 01:03:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.178.2.2 $
+ * $Date: 2006-06-07 20:47:53 $
+ * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.1  2006/06/04 01:03:13  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 2.178  2006/05/31 03:05:42  Goober5000
  * some cosmetic changes in preparation for bay arrival/departure code
  * --Goober5000
@@ -3888,6 +3892,92 @@ void parse_objects(mission *pm, int flag)
 	// Goober5000 - I moved the docking stuff to post_process_ships_wings because of interdependencies
 	// between ships and wings.  Neither docking stuff nor ship stuff (for ships present at mission start)
 	// will be valid until after post_process_ships_wings is run.
+}
+// Karajorma - Replaces a p_object with a new one based on a Ship_info index.
+void swap_parse_object(p_object *p_obj, int new_ship_class)
+{
+	ship_info *new_ship_info = &Ship_info[new_ship_class];
+	ship_info *old_ship_info = &Ship_info[p_obj->ship_class];
+	int subsys_ind = p_obj->subsys_index;
+	subsys_status *ship_subsystems = &Subsys_status[subsys_ind];
+
+	// Class
+	// First things first. Change the class of the p_object
+	p_obj->ship_class = new_ship_class;
+
+	// Hitpoints
+	// We need to take into account that the ship might have been assigned special hitpoints so we can't 
+	// simply swap old for new. 
+	Assert (p_obj->ship_max_hull_strength > 0);
+	Assert (old_ship_info->max_hull_strength > 0);
+	
+	float hp_multiplier = p_obj->ship_max_hull_strength / i2fl(old_ship_info->max_hull_strength);
+	p_obj->ship_max_hull_strength = fl2i(new_ship_info->max_hull_strength * hp_multiplier);
+
+
+	// Shields
+	// Again we have to watch out for special hitpoints but this time we can't assume that there will be a 
+	// shield. So first lets see if there is one. 
+	if ((p_obj->ship_max_shield_strength != old_ship_info->max_shield_strength) && 
+		(p_obj->ship_max_shield_strength > 0) &&
+		(new_ship_info->max_shield_strength > 0))
+	{
+		// This ship is using special hitpoints to alter the shield strength
+		float shield_multiplier = p_obj->ship_max_shield_strength / i2fl(old_ship_info->max_shield_strength);
+		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength * shield_multiplier;
+	}
+	// Not using special hitpoints or a class which has a shield strength of zero
+	else
+	{
+		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength;
+	}
+	
+	// Primary weapons
+	// First find out what is the correct number for a ship of this class
+	int num_pbanks = new_ship_info->num_primary_banks;
+	// Now cycle through the primary banks looking for banks that were added or removed
+	for (int i=0; i < MAX_SHIP_PRIMARY_BANKS; i++)
+	{
+		// If we're dealing with a primary bank that actually should exist on this ship
+		if ( i < num_pbanks )
+		{
+			// We only care if a weapon hasn't been parsed in for this bank
+			if (ship_subsystems->primary_banks[i] == -1)
+			{
+				// Give the ship the default weapon for this bank. 
+				ship_subsystems->primary_banks[i] = new_ship_info->primary_bank_weapons[i];
+			}
+
+		}		
+		// Any primary banks the ship doesn't have should be set to -1
+		else
+		{
+			ship_subsystems->primary_banks[i] = -1;
+		}
+	}
+
+	// Secondary weapons 
+	// Again we first have to find out how many we should have
+	int num_sbanks = new_ship_info->num_secondary_banks;
+	// Now cycle through the secondary banks looking for banks that were added or removed
+	for (int j=0; j < MAX_SHIP_SECONDARY_BANKS; j++)
+	{
+		// If we're dealing with a primary bank that actually should exist on this ship
+		if ( j < num_sbanks )
+		{
+			// We only care if a weapon hasn't been parsed in for this bank
+			if (ship_subsystems->secondary_banks[j] == -1){
+				// Give the ship the default weapon for this bank. 
+				ship_subsystems->secondary_banks[j] = new_ship_info->secondary_bank_weapons[j];
+			}
+
+		}		
+		// Any secondary banks the ship doesn't have should be set to -1
+		else
+		{
+			ship_subsystems->secondary_banks[j] = -1;
+		}
+	}
 }
 
 p_object *mission_parse_get_parse_object(ushort net_signature)
