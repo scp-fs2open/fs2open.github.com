@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.9 $
- * $Date: 2006-06-02 09:10:02 $
- * $Author: karajorma $
+ * $Revision: 2.10 $
+ * $Date: 2006-06-07 04:49:20 $
+ * $Author: wmcoolmon $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/06/02 09:10:02  karajorma
+ * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
+ *
  * Revision 2.8  2005/07/24 18:35:44  taylor
  * proper multi support for fighter beams, already has code to break protocol commented out if we need it,
  *   decided to skip and beam type checks and let beam_fire() reassign it (should work ok)
@@ -523,7 +526,7 @@ void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_cou
 void send_ship_create_packet( object *objp, int is_support = 0 );
 
 // packet indicating a ship is departing
-void send_ship_depart_packet( object *objp );
+void send_ship_depart_packet( object *objp, bool for_reals );
 
 // send a mission log item packet
 void send_mission_log_packet( int entry );
