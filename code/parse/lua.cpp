@@ -997,7 +997,7 @@ LUA_FUNC(getScreenCoords, l_Vector, NULL, "X (number), Y (number), or false if o
 	if(vtx.flags & PF_OVERFLOW)
 		return LUA_RETURN_FALSE;
 
-	return lua_set_args(L, "ii", vtx.sx, vtx.sy);
+	return lua_set_args(L, "ff", vtx.sx, vtx.sy);
 }
 
 //**********HANDLE: directive
