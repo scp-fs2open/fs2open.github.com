@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.261 $
- * $Date: 2006-06-04 00:01:48 $
- * $Author: Goober5000 $
+ * $Revision: 2.262 $
+ * $Date: 2006-06-07 04:43:38 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.261  2006/06/04 00:01:48  Goober5000
+ * add capability for preloading special arguments
+ * NB: it's disabled for now, and it needs to be moved after sexps are parsed to work
+ * --Goober5000
+ *
  * Revision 2.260  2006/06/02 09:29:13  karajorma
  * Added the Team Loadout Change subcategory
  * Added the deal-with-ship-loadout SEXP. It's only temporary but it give people an option other than having to roll their own events to fix up loadout at the end of a mission.
@@ -3668,7 +3673,7 @@ int get_sexp(char *token)
 			int len = strcspn(Mp + 1, "\"");
 			
 			Assert(Mp[len + 1] == '\"');    // hit EOF first (unterminated string)
-			Assert(len < TOKEN_LENGTH);  // token is too long.
+  			Assert(len < TOKEN_LENGTH);  // token is too long.
 
 			// check if string variable
 			if ( *(Mp + 1) == SEXP_VARIABLE_CHAR ) {
