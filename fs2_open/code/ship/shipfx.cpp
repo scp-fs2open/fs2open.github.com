@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66 $
- * $Date: 2006-05-13 07:15:51 $
- * $Author: taylor $
+ * $Revision: 2.67 $
+ * $Date: 2006-06-07 04:47:43 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2006/05/13 07:15:51  taylor
+ * get rid of some wasteful math for gr_set_proj_matrix() calls
+ * fix check that broke praise of kills for player
+ * fix knossos warpin effect that always seems to get rendered backwards (I couldn't find anything that broke with this but I suppose it's a mod could have an issue)
+ *
  * Revision 2.65  2006/04/12 22:23:41  taylor
  * compiler warning fixes to make GCC 4.1 shut the hell up
  *
@@ -1037,6 +1042,9 @@ void shipfx_warpin_start( object *objp )
 		return;
 	}
 
+	if(shipp->flags & SF_LIMBO)
+		shipp->flags &= (~SF_LIMBO);
+
 	// if there is no arrival warp, then skip the whole thing
 	if (shipp->flags & SF_NO_ARRIVAL_WARP)
 	{
@@ -1208,10 +1216,11 @@ void shipfx_warpin_frame( object *objp, float frametime )
 
 void shipfx_warpout_helper(object *objp, dock_function_info *infop)
 {
-	objp->flags |= OF_SHOULD_BE_DEAD;
+	//WMC - The other warpout functions don't seem to use this.
+	//objp->flags |= OF_SHOULD_BE_DEAD;
 
 	if (objp->type == OBJ_SHIP)
-		ship_departed(objp->instance);
+		ship_departed(objp->instance, Ships[objp->instance].warpout_for_reals);
 }
  
 // This is called to actually warp this object out
@@ -1404,7 +1413,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 // where it flies forward for a set time period at a set
 // velocity, then disappears when that time is reached.  This
 // also starts the animating 3d effect playing.
-void shipfx_warpout_start( object *objp )
+void shipfx_warpout_start( object *objp, bool for_reals )
 {
 	float warp_time;
 	ship *shipp;
@@ -1426,6 +1435,9 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
+	// if we aren't warping out for reals, set that.
+	shipp->warpout_for_reals = for_reals;
+
 	// if we're HUGE, keep alive - set guardian
 	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP) {
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
@@ -1438,7 +1450,7 @@ void shipfx_warpout_start( object *objp )
 
 	// don't send ship depart packets for player ships
 	if ( (MULTIPLAYER_MASTER) && !(objp->flags & OF_PLAYER_SHIP) ){
-		send_ship_depart_packet( objp );
+		send_ship_depart_packet( objp, for_reals );
 	}
 
 	// don't do departure wormhole if ship flag is set which indicates no effect
@@ -1562,13 +1574,18 @@ void shipfx_warpout_frame( object *objp, float frametime )
 		return;
 	}
 
-	if(sip->warpin_type == WT_IN_PLACE_ANIM)
+	if(sip->warpout_type == WT_IN_PLACE_ANIM)
 	{
 		//WMC - This is handled by code in ship_render
 
 		//WMC - ship appears after warpout_speed milliseconds
-		if ( timestamp_elapsed(shipp->start_warp_time + sip->warpout_speed )) {
+		if ( timestamp_elapsed(shipp->start_warp_time + sip->warpout_time )) {
 			shipfx_actually_warpout(shipp,objp);
+/*
+			polymodel *pm = model_get(shipp->modelnum);
+			shockwave_create_info sci;
+			sci.inner_rad = pm->rad;
+			sci.outer_rad = pm->rad;*/
 		}
 
 		return;
@@ -1605,7 +1622,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 			}
 
 			gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_DONE );
-			ship_departed( objp->instance );								// mark log entry for the player
+			ship_departed( objp->instance, Ships[objp->instance].warpout_for_reals );	// mark log entry for the player
 		}
 
 	} else {
@@ -1867,7 +1884,7 @@ void shipfx_flash_create(object *objp, ship * shipp, vec3d *gun_pos, vec3d *gun_
 	// ALWAYS do this - since this is called once per firing
 	// if this is a cannon type weapon, create a muzzle flash
 	// HACK - let the flak guns do this on their own since they fire so quickly
-	if((Weapon_info[weapon_info_index].wi_flags & WIF_MFLASH) && !(Weapon_info[weapon_info_index].wi_flags & WIF_FLAK)){
+	if(Weapon_info[weapon_info_index].muzzle_flash > -1 && !(Weapon_info[weapon_info_index].wi_flags & WIF_FLAK)){
 		// spiffy new flash stuff
 
 		vec3d real_pos;
