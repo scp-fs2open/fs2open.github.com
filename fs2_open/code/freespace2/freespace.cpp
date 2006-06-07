@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.246 $
- * $Date: 2006-06-07 03:49:36 $
+ * $Revision: 2.247 $
+ * $Date: 2006-06-07 04:39:10 $
  * $Author: wmcoolmon $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.245  2006/06/07 03:36:19  wmcoolmon
+ * Scripting system prep for 3.6.9
+ *
  * Revision 2.244  2006/06/03 11:54:33  taylor
  * remove init_decals declaration, it's in the header now since we build without decal support
  *
@@ -3198,19 +3201,18 @@ DCF(warp, "Tests warpin effect")
 					if(warpin)
 						shipfx_warpin_start(&Objects[Ships[idx].objnum]);
 					else
-						shipfx_warpout_start(&Objects[Ships[idx].objnum]);
+						shipfx_warpout_start(&Objects[Ships[idx].objnum], false);
 				}
 			}
-		}
-		
-		if(idx < 0)
-		{
-			if(Player_ai->target_objnum > -1)
+			else if(idx < 0)
 			{
-				if(warpin)
-					shipfx_warpin_start(&Objects[Player_ai->target_objnum]);
-				else
-					shipfx_warpout_start(&Objects[Player_ai->target_objnum]);
+				if(Player_ai->target_objnum > -1)
+				{
+					if(warpin)
+						shipfx_warpin_start(&Objects[Player_ai->target_objnum]);
+					else
+						shipfx_warpout_start(&Objects[Player_ai->target_objnum], false);
+				}
 			}
 		}
 	}	
