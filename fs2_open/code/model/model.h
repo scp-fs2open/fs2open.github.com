@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.80 $
- * $Date: 2006-05-31 03:05:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.81 $
+ * $Date: 2006-06-07 04:45:55 $
+ * $Author: wmcoolmon $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2006/05/31 03:05:42  Goober5000
+ * some cosmetic changes in preparation for bay arrival/departure code
+ * --Goober5000
+ *
  * Revision 2.79  2006/05/27 16:57:12  taylor
  * comment out the model cache stuff, it's old and not actually used anyway
  * minor cleanup of some modelinterp.cpp code, to make it more readable
@@ -692,6 +696,7 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_TRIGGERED			(1 << 7)		// rotates when triggered by something
 #define MSS_FLAG_UNTARGETABLE		(1 << 8)		// Goober5000
 #define MSS_FLAG_CARRY_NO_DAMAGE	(1 << 9)		// WMC
+#define MSS_FLAG_USE_MULTIPLE_GUNS	(1 << 10)		// WMC
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
