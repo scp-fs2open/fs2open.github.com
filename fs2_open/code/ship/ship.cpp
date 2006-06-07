@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.2 $
- * $Date: 2006-06-06 00:00:00 $
- * $Author: taylor $
+ * $Revision: 2.336.2.3 $
+ * $Date: 2006-06-07 20:45:11 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.2  2006/06/06 00:00:00  taylor
+ * properly initialize a few entries that were left zero'd by mistake
+ *
  * Revision 2.336.2.1  2006/06/04 01:03:13  Goober5000
  * add fighterbay restriction code
  * --Goober5000
@@ -8639,7 +8642,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	{
 		// hull
 		if (sp->special_hitpoint_index != -1) {
-			hull_pct = objp->hull_strength / (float) atoi(Sexp_variables[sp->special_hitpoint_index+HULL_STRENGTH].text);
+			hull_pct = objp->hull_strength / sp->ship_max_hull_strength; 
 		} else {
 			Assert( Ship_info[sp->ship_info_index].max_hull_strength > 0.0f );
 			hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
@@ -8647,7 +8650,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 		// shield
 		if (sp->special_hitpoint_index != -1) {
-			shield_pct = get_shield_strength(objp) / (float) atoi(Sexp_variables[sp->special_hitpoint_index+SHIELD_STRENGTH].text);
+			shield_pct = get_shield_strength(objp) / sp->ship_max_shield_strength;
 		} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
 			shield_pct = get_shield_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
 		} else {
