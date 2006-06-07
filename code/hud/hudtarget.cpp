@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87 $
- * $Date: 2006-03-18 07:12:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.88 $
+ * $Date: 2006-06-07 04:39:56 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2006/03/18 07:12:07  Goober5000
+ * add ship-subsys-targetable and ship-subsys-untargetable
+ * --Goober5000
+ *
  * Revision 2.86  2006/02/26 23:23:30  wmcoolmon
  * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
  *
@@ -561,7 +565,7 @@
 
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
-int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);
+int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_LIMBO|SF_HIDDEN_FROM_SENSORS);
 
 // Global values for the target bracket width and height, used for debugging
 int Hud_target_w, Hud_target_h;
