@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2006/02/25 21:47:19  Goober5000
+ * spelling
+ *
  * Revision 2.68  2006/02/15 07:19:50  wmcoolmon
  * Various weapon and team related scripting functions; $Collide Ship and $Collide Weapon hooks
  *
@@ -603,7 +606,7 @@ extern int Num_weapon_subtypes;
 #define	WIF_BEAM				(1 << 26)			// if this is a beam weapon : NOTE - VERY SPECIAL CASE
 #define	WIF_TAG				(1 << 27)			// this weapon has a tag effect when it hits
 #define	WIF_SHUDDER			(1 << 28)			// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
-#define	WIF_MFLASH			(1 << 29)			// has muzzle flash
+//#define	WIF_MFLASH			(1 << 29)			// has muzzle flash
 #define	WIF_LOCKARM			(1 << 30)			// if the missile was fired without a lock, it does significanlty less damage on impact
 #define  WIF_STREAM			(1 << 31)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
 

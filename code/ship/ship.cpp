@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.339 $
- * $Date: 2006-06-05 23:57:50 $
- * $Author: taylor $
+ * $Revision: 2.340 $
+ * $Date: 2006-06-07 04:47:43 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.339  2006/06/05 23:57:50  taylor
+ * properly initialize a few entries that were left zero'd by mistake
+ *
  * Revision 2.338  2006/06/04 01:01:53  Goober5000
  * add fighterbay restriction code
  * --Goober5000
@@ -4016,6 +4019,9 @@ strcpy(parse_error_text, temp_error);
 			if(optional_string("+carry-no-damage"))
 				sp->flags |= MSS_FLAG_CARRY_NO_DAMAGE;
 
+			if(optional_string("+use-multiple-guns"))
+				sp->flags |= MSS_FLAG_USE_MULTIPLE_GUNS;
+
 			while(optional_string("$animation:"))
 			{
 				stuff_string(name_tmp, F_NAME);
@@ -5780,7 +5786,8 @@ void ship_render(object * obj)
 	MONITOR_INC( NumShipsRend, 1 );	
 
 	// Make ships that are warping in not render during stage 1
-	if (!(shipp->flags & SF_ARRIVING_STAGE_1))
+	//WMC - Or limbo.
+	if (!(shipp->flags & (SF_ARRIVING_STAGE_1|SF_LIMBO)))
 	{				
 
 		if ( Ship_shadows && shipfx_in_shadow( obj ) )	{
@@ -6555,7 +6562,7 @@ void ship_vanished(object *objp)
 
 		// demo recording
 		if(Game_mode & GM_DEMO_RECORD){
-			demo_POST_departed(objp->signature, sp->flags);
+			demo_POST_departed(objp->signature, sp->flags, true);
 		}
 
 		// add the information to the exited ship list
@@ -6580,7 +6587,7 @@ void ship_vanished(object *objp)
 	}
 }
 
-void ship_departed( int num )
+void ship_departed( int num, bool for_reals )
 {
 	ship *sp;
 
@@ -6588,7 +6595,7 @@ void ship_departed( int num )
 
 	// demo recording
 	if(Game_mode & GM_DEMO_RECORD){
-		demo_POST_departed(Objects[Ships[num].objnum].signature, Ships[num].flags);
+		demo_POST_departed(Objects[Ships[num].objnum].signature, Ships[num].flags, for_reals ? 1 : 0);
 	}
 
 	// add the information to the exited ship list
@@ -6606,6 +6613,13 @@ void ship_departed( int num )
 		mission_log_add_entry(LOG_SHIP_DEPARTED, sp->ship_name, jnp->get_name_ptr(), sp->wingnum);
 	else
 		mission_log_add_entry(LOG_SHIP_DEPARTED, sp->ship_name, NULL, sp->wingnum);
+
+	if(!for_reals)
+	{
+		sp->flags &= ~(SF_DEPARTING);
+		sp->flags |= SF_LIMBO;
+		return;
+	}
 		
 	ai_ship_destroy(num, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
 
@@ -7816,6 +7830,15 @@ void ship_process_post(object * obj, float frametime)
 	sip = &Ship_info[shipp->ship_info_index];
 
 	shipp->shield_hits = 0;
+
+	//WMC - Ships in limbo do nothing.
+	//Nothing at all.
+	//
+	//>_>
+	if(shipp->flags & SF_LIMBO)
+	{
+		return;
+	}
 
 	update_ets(obj, frametime);
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-10-30 06:44:59 $
+ * $Revision: 2.8 $
+ * $Date: 2006-06-07 04:48:38 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/10/30 06:44:59  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.6  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -212,7 +215,9 @@ void mflash_level_init()
 		for(idx=0; idx<Mflash_info[i].num_blobs; idx++){
 			Mflash_info[i].blob_anims[idx] = -1;
 			Mflash_info[i].blob_anims[idx] = bm_load_animation(Mflash_info[i].blob_names[idx], &num_frames, &fps, 1);
-			Assert(Mflash_info[i].blob_anims[idx] >= 0);
+			if(Mflash_info[i].blob_anims[idx] < 0) {
+				Warning(LOCATION, "Missing muzzle flash blob '%s' in mflash.tbl", Mflash_info[i].blob_names[idx]);
+			}
 		}
 	}
 }
