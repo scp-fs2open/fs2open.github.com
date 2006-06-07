@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Demo/Demo.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-05-12 17:49:11 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2006-06-07 04:38:29 $
+ * $Author: wmcoolmon $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/05/12 17:49:11  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.7  2005/04/05 05:53:15  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -680,13 +684,14 @@ void demo_POST_warpout(int signature, int ship_flags)
 }
 
 // post a departed event
-void demo_POST_departed(int signature, int ship_flags)
+void demo_POST_departed(int signature, int ship_flags, int for_reals)
 {
 	// write it
 	ubyte event = DE_OBJ_DEPARTED;	
 	DEMO_UBYTE(event);
 	DEMO_INT(signature);
 	DEMO_INT(ship_flags);
+	DEMO_INT(for_reals);
 	
 	// up the event count
 	Demo_frame_events++;
@@ -994,14 +999,16 @@ int demo_playback_seek_sub(int frame_size)
 			int obj_sig = 0;
 			int ship_flags = 0;
 			int ship_index = 0;
+			int for_reals;
 
 			// get the data and ship
 			DEMO_INT(obj_sig);
 			DEMO_INT(ship_flags);
+			DEMO_INT(for_reals);
 			ship_index = ship_get_by_signature(obj_sig);
 			if(ship_index >= 0){
 				Ships[ship_index].flags = ship_flags;
-				ship_departed(ship_index);
+				ship_departed(ship_index, for_reals==1 ? true : false);
 			}
 			}
 			break;
