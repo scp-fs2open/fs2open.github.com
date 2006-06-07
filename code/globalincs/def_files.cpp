@@ -208,6 +208,7 @@ $EMP Multiplier:		10.0											\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
+	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Accept Player Orders:	NO											\n\
 	+Auto attacks:			YES											\n\
@@ -225,6 +226,7 @@ $EMP Multiplier:		10.0											\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
+	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentrygun\" \"escapepod\" \"cargo\" \"repair_rearm\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )	\n\
@@ -239,6 +241,7 @@ $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
+	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Passive docks:			( \"cargo\" )									\n\
 ""\
@@ -255,6 +258,7 @@ $EMP Multiplier:		3.5												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
+	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"dock\" \"undock\" \"waypoints\" \"waypoints once\" \"stay near ship\" \"keep safe dist\" \"stay still\" \"play dead\" )							\n\
 	+Accept Player Orders:	YES											\n\
@@ -278,6 +282,7 @@ $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
+	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"waypoints\" \"waypoints once\" \"depart\" \"attack subsys\" \"attack wing\" \"guard ship\" \"disable ship\" \"disarm ship\" \"attack any\" \"ignore ship\" \"ignore ship (new)\" \"guard wing\" \"evade ship\" \"stay still\" \"play dead\" \"stay near ship\" \"keep safe dist\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -301,6 +306,7 @@ $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
+	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"waypoints\" \"waypoints once\" \"depart\" \"attack subsys\" \"attack wing\" \"guard ship\" \"disable ship\" \"disarm ship\" \"attack any\" \"ignore ship\" \"ignore ship (new)\" \"guard wing\" \"evade ship\" \"stay still\" \"play dead\" \"stay near ship\" \"keep safe dist\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -325,6 +331,7 @@ $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
+	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"waypoints\" \"waypoints once\" \"depart\" \"attack subsys\" \"attack wing\" \"guard ship\" \"disable ship\" \"disarm ship\" \"attack any\" \"ignore ship\" \"ignore ship (new)\" \"guard wing\" \"evade ship\" \"stay still\" \"play dead\" \"stay near ship\" \"keep safe dist\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -350,6 +357,7 @@ $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
+	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"waypoints\" \"waypoints once\" \"depart\" \"attack subsys\" \"attack wing\" \"guard ship\" \"disable ship\" \"disarm ship\" \"attack any\" \"ignore ship\" \"ignore ship (new)\" \"guard wing\" \"evade ship\" \"stay still\" \"play dead\" \"stay near ship\" \"keep safe dist\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -374,6 +382,7 @@ $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
+	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -400,6 +409,7 @@ $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
+	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -426,6 +436,7 @@ $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
+	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -451,6 +462,7 @@ $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
+	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -476,6 +488,7 @@ $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
+	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -501,6 +514,7 @@ $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
+	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -527,6 +541,7 @@ $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			750.0										\n\
+	+Disappear factor:		3.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"waypoints\" \"waypoints once\" \"depart\" \"stay still\" \"play dead\" \"stay near ship\" )						\n\
 	+Accept Player Orders:	YES											\n\
@@ -553,6 +568,7 @@ $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			1000.0										\n\
+	+Disappear factor:		3.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"waypoints\" \"waypoints once\" \"depart\" \"stay still\" \"play dead\" \"stay near ship\" )						\n\
 	+Auto attacks:			YES											\n\
@@ -576,6 +592,7 @@ $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			750.0										\n\
+	+Disappear factor:		3.0											\n\
 $AI:																	\n\
 	+Accept Player Orders:	YES											\n\
 	+Auto attacks:			YES											\n\
@@ -597,6 +614,7 @@ $EMP Multiplier:		0.10											\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			1000.0										\n\
+	+Disappear factor:		3.0											\n\
 $AI:																	\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
