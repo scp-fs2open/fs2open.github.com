@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.39 $
- * $Date: 2006-06-01 04:40:41 $
- * $Author: taylor $
+ * $Revision: 1.40 $
+ * $Date: 2006-06-07 04:36:52 $
+ * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39  2006/06/01 04:40:41  taylor
+ * be sure to to reset ok_to_fire between weapon checks to make sure we don't count something by mistake
+ *
  * Revision 1.38  2006/04/14 21:13:31  taylor
  * Grrr!  That was still stupid.  Just going to revert it to retail and work out that bug it was supposed to fix at a later time.
  *
@@ -145,6 +148,7 @@
 #include "object/objectdock.h"
 #include "ai/aiinternal.h"	//Included last, so less includes are needed
 #include "iff_defs/iff_defs.h"
+#include "weapon/muzzleflash.h"
 
 // How close a turret has to be point at its target before it
 // can fire.  If the dot of the gun normal and the vector from gun
@@ -427,7 +431,8 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		}
 
 		// don't shoot at arriving ships
-		if (shipp->flags & SF_ARRIVING) {
+		//WMC - Or limbo ships
+		if (shipp->flags & (SF_ARRIVING | SF_LIMBO)) {
 			return 0;
 		}
 
@@ -914,6 +919,9 @@ void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos,
 //		*gvec: vector fro *gpos to *targetp
 void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp)
 {
+	Assert(ssp != NULL);
+	Assert(ssp->system_info != NULL);
+
 	vec3d * gun_pos;
 	model_subsystem *tp = ssp->system_info;
 
@@ -1303,6 +1311,9 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 			// don't fire swarm, but set up swarm info
 			if (wip->wi_flags & WIF_SWARM) {
+				/*if(wip->muzzle_flash > -1)
+					mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, Weapon_info[turret_weapon_class].muzzle_flash);*/
+
 				turret_swarm_set_up_info(parent_objnum, turret, wip);
 				return;
 			}
@@ -1332,6 +1343,8 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 						// determine what that range was
 						flak_range = flak_get_range(objp);
+					} else if(wip->muzzle_flash > -1) {	
+						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, Weapon_info[turret_weapon_class].muzzle_flash);		
 					}
 
 					// in multiplayer (and the master), then send a turret fired packet.
@@ -1416,7 +1429,8 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 				snd_play_3d( &Snds[Weapon_info[tsi->weapon_class].launch_snd], &turret_pos, &View_position );
 			}
 		}
-		
+		if(Weapon_info[tsi->weapon_class].muzzle_flash > -1)
+			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
 		// in multiplayer (and the master), then send a turret fired packet.
 		if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
 			int subsys_index;
