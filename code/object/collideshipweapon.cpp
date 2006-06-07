@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.27 $
- * $Date: 2006-03-05 21:45:12 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2006-06-07 03:51:38 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/03/05 21:45:12  taylor
+ * various small cleanups, fixes, error checks
+ *
  * Revision 2.26  2006/02/25 21:47:07  Goober5000
  * spelling
  *
@@ -512,7 +515,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 
 	if ( valid_hit_occured )
 	{
-		if(!wip->sc_collide_ship.IsOverride()) {
+		if(!Script_system.IsOverride(wip->sc_collide_ship)) {
 			ship_weapon_do_hit_stuff(ship_obj, weapon_obj, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 		}
 
