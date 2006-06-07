@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.23 $
- * $Date: 2006-04-12 22:23:41 $
- * $Author: taylor $
+ * $Revision: 1.24 $
+ * $Date: 2006-06-07 04:44:57 $
+ * $Author: wmcoolmon $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2006/04/12 22:23:41  taylor
+ * compiler warning fixes to make GCC 4.1 shut the hell up
+ *
  * Revision 1.22  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -318,6 +321,10 @@ void radar_plot_object_orb( object *objp )
 	switch ( objp->type ) {
 	case OBJ_SHIP:
 		// Place to cull ships, such as NavBuoys		
+		//WMC - No limbo ships on radar.
+		//As far as the radar is concerned, they don't even exist.
+		if(Ships[objp->instance].flags & SF_LIMBO)
+			return;
 		break;
 		
 	case OBJ_JUMP_NODE:
