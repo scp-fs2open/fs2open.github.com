@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.27 $
- * $Date: 2006-04-20 06:32:07 $
+ * $Revision: 2.28 $
+ * $Date: 2006-06-08 06:48:01 $
  * $Author: Goober5000 $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.26  2006/03/19 05:05:59  taylor
  * make sure the mission log doesn't modify stuff in Cargo_names[], since it shouldn't
  * have split_str_once() be sure to not split a word in half, it should end up on the second line instead
@@ -288,58 +291,62 @@
 // This is the fs2_open credit list, please only add yourself if you have actually contributed code
 // Rules!
 char *fs2_open_credit_text = 
-	"FS2_OPEN STAFF:\n"
+	"SOURCE CODE PROJECT STAFF:\n"
 	"\n"
 	"Project Leaders:\n"
 	"\n"
-	"Edward \"Inquisitor\" Gardner\n"
 	"Ian \"Goober5000\" Warfield\n"
+	"Taylor Richards\n"
+	"\n"
+	"Senior Advisor\n"
+	"\n"
+	"Edward \"Inquisitor\" Gardner\n"
 	"\n"
 	"Programmers:\n"
 	"\n"
 	"Mike \"Bobboau\" Abegg\n"
 	"Dennis \"DTP\" Pedersen\n"
+	"\"EdrickV\"\n"
 	"Derek \"Kazan\" Meek\n"
 	"Ian \"Goober5000\" Warfield\n"
+	"\"Mysterial\"\n"
 	"Joe \"Righteous1\" Dowd\n"
 	"Jon \"Sesquipedalian\" Stovell\n"
 	"Matt \"Sticks\" Nischan\n"
 	"Mike \"penguin\" Harris\n"
-	"\"Mysterial\"\n"
 	"Nick \"PhReAk\" Iannetta\n"
 	"Thomas \"RandomTiger\" Whittaker\n"
+	"Taylor Richards\n"
 	"Will \"##Unknown Player##\" Rousnel\n"
 	"\"WMCoolmon\"\n"
-	"\n"
-	"Lead QA\n"
-	"\n"
-	"Chris \"Rga\" Pfingsten\n"
 	"\n"
 	"Readme Staff:\n"
 	"\n"
 	"\"Bottomfan\"\n"
-	"\"Flipside\"\n"
-	"\"Redmenace\"\n"
+	"Peter \"Flipside\" Dibble\n"
+	"Jonathan \"Redmenace\" Willsher\n"
 	"\n"
 	"Web Support:\n"
 	"\n"
-	"Colin \"IceFire\" Czerneda and the staff at Volition Watch\n"
-	"Alex \"Thunder\" Avery and the staff at Hard Light Productions\n"
+	"http://www.hard-light.net/\n"
+	"http://scp.indiegames.us/\n"
+	"http://fs2source.warpcore.org/\n"
 	"\n"
 	"Special thanks to:\n"
 	"\n"
-	"Martin \"Maeglamor\"\n"
+	"\"Maeglamor\"\n"
 	"for donating a graphics card!\n"
 	"\n"
 	"\"Lightspeed\"\n"
-	"for helping out whenever and whereever he can\n"
+	"\"DaBrain\"\n"
+	"for helping out with the graphics enhancements\n"
 	"\n"
 	"Linux and OSX version with the support of\n"
 	"the icculus.org FreeSpace2 project:\n"
-	"Dan Olson\n"
-	"Steven Fuller\n"
-	"Charles Mason\n"
+	"Steven \"relnev\" Fuller\n"
 	"Ryan Gordon\n"
+	"Charles Mason\n"
+	"Dan Olson\n"
 	"Taylor Richards\n"
 	"\"tigital\"\n"
 	"\n"
@@ -348,7 +355,7 @@ char *fs2_open_credit_text =
 	"Volition for making FS2 such a great game\n"
 	"Dave Baranec for giving us the code and keeping us sanity checked\n"
 	"\n\n"
-	"FS2_Open makes use of the following technologies...\n"
+	"FS2_Open makes use of the following technologies:\n"
 	"\n"
 	"Ogg Vorbis - (C) 2005, Xiph.Org Foundation\n"
 	"JPEG - Independent JPEG Group, (C) 1991-1998, Thomas G. Lane\n"
