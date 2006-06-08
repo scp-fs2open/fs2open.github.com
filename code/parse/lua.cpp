@@ -461,7 +461,7 @@ int lua_set_args(lua_State *L, char *fmt, ...)
 				}
 			//WMC -  Don't forget to update lua_set_arg
 			default:
-				Error(LOCATION, "Bad character passed to lua_set_args; (%c)", *fmt);
+				Error(LOCATION, "Bad character passed to lua_set_args; (%c)", *(fmt-1));
 		}
 		nargs++;
 	}
@@ -1001,9 +1001,147 @@ LUA_FUNC(getScreenCoords, l_Vector, NULL, "X (number), Y (number), or false if o
 }
 
 //**********HANDLE: directive
-lua_obj<int> l_Directive("directive", "Mission directive handle");
+lua_obj<int> l_Event("event", "Mission event handle");
+
+LUA_VAR(Name, l_Event, "string", "Mission event name")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	idx--;
+
+	if(LUA_SETTING_VAR) {
+		strncpy(mep->name, s, sizeof(mep->name) - sizeof(char));
+	}
+
+	return lua_set_args(L, "s", mep->name);
+}
+
+LUA_VAR(DirectiveText, l_Event, "string", "Directive text")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	idx--;
+
+	if(LUA_SETTING_VAR && s != NULL) {
+		if(mep->objective_text != NULL)
+			vm_free(mep->objective_text);
+
+		mep->objective_text = vm_strdup(s);
+	}
+
+	return lua_set_args(L, "s", mep->objective_text);
+}
+
+LUA_VAR(DirectiveKeypress, l_Event, "string", "Raw directive keypress text, as sseen in FRED.")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	idx--;
+
+	if(LUA_SETTING_VAR && s != NULL) {
+		if(mep->objective_text != NULL)
+			vm_free(mep->objective_key_text);
+
+		mep->objective_key_text = vm_strdup(s);
+	}
+
+	return lua_set_args(L, "s", mep->objective_key_text);
+}
+
+LUA_VAR(RepeatCount, l_Event, "number", "Event repeat count")
+{
+	int idx;
+	int newrepeat = 0;
+	if(!lua_get_args(L, "o|i", l_Event.Get(&idx), &newrepeat))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	idx--;
+
+	if(LUA_SETTING_VAR) {
+		mep->repeat_count = newrepeat;
+	}
+
+	return lua_set_args(L, "i", mep->repeat_count);
+}
+
+LUA_VAR(Score, l_Event, "number", "Event score")
+{
+	int idx;
+	int newscore = 0;
+	if(!lua_get_args(L, "o|i", l_Event.Get(&idx), &newscore))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	idx--;
+
+	if(LUA_SETTING_VAR) {
+		mep->score = newscore;
+	}
+
+	return lua_set_args(L, "i", mep->score);
+}
+
+LUA_FUNC(getStatus, l_Event, NULL, "Event status", "Gets event's current status - Current, Successful, or Failed")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	int rval = mission_get_event_status(idx);
+	switch(rval)
+	{
+		case EVENT_CURRENT:
+			return lua_set_args(L, "s", "Current");
+		case EVENT_FAILED:
+			return lua_set_args(L, "s", "Failed");
+		case EVENT_SATISFIED:
+			return lua_set_args(L, "s", "Successful");
+		default:
+			return LUA_RETURN_FALSE;
+	}
+
+	return LUA_RETURN_FALSE;
+}
 
 //**********HANDLE: directives
+/*
 lua_obj<bool> l_Directives("directives", "Mission directives handle");
 
 LUA_INDEXER(l_Directives, "Directive number", "directive handle", NULL)
@@ -1018,8 +1156,9 @@ LUA_INDEXER(l_Directives, "Directive number", "directive handle", NULL)
 
 	idx--;	//Lua->FS2
 
-	return lua_set_args(L, "o", l_Directive.Set(idx));
+	return lua_set_args(L, "o", l_Event.Set(idx));
 }
+*/
 
 //**********HANDLE: cmission
 lua_obj<int> l_Cmission("cmission", "Campaign mission handle");
@@ -3561,6 +3700,116 @@ LUA_FUNC(renderFrame, l_Mission, NULL, NULL, "Renders mission frame, but does no
 	game_render_post_frame();
 
 	return LUA_RETURN_TRUE;
+}
+
+LUA_FUNC(getDirectiveByName, l_Mission, "Name, [Whether to include unborn directives]", "event handle",
+		 "Gets directive by its name."
+		 "Unborn directives are events that have not become available yet.")
+{
+	bool b = false;
+	char *s;
+	if(!lua_get_args(L, "s|b", &s, &b))
+		return LUA_RETURN_NIL;
+
+	mission_event *mep;
+	for(int i = 0; i < Num_mission_events; i++)
+	{
+		mep = &Mission_events[i];
+		if(mep->objective_text != NULL && !stricmp(Mission_events[i].name, s) && (b || mission_get_event_status(i) != EVENT_UNBORN))
+			return lua_set_args(L, "o", l_Event.Set(i));
+	}
+
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(getNumDirectives, l_Mission, "[Whether to include unborn directives]", "Number of directives in mission",
+		 "Gets number of directives in mission. "
+		 "Can be slightly slow, so only call it when you need to account for new/changed events. "
+		 "Unborn directives are events that have not become available yet.")
+{
+	bool b = false;
+	lua_get_args(L, "|b", &b);
+
+	int count = 0;
+	int i;
+	mission_event *mep;
+	for(i = 0; i < Num_mission_events; i++)
+	{
+		mep = &Mission_events[i];
+		if(mep->objective_text != NULL && (b || mission_get_event_status(i) != EVENT_UNBORN)) {
+			count++;
+		}
+	}
+
+	return lua_set_args(L, "i", count);
+}
+
+LUA_FUNC(getDirectiveByIndex, l_Mission, "Index, [Whether to include unborn directives]", "Event handle",
+		 "Gets directive. "
+		 "Can be slightly slow, so use as little as possible."
+		 "Unborn directives are events that have not become available yet.")
+{
+	int idx;
+	bool b = false;
+	if(!lua_get_args(L, "i|b", &idx, &b))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_mission_events)
+		return LUA_RETURN_FALSE;
+
+	//Remember, Lua indices start at 0.
+	int count=1;
+
+	int i;
+	mission_event *mep;
+	for(i = 0; i < Num_mission_events; i++)
+	{
+		mep = &Mission_events[i];
+		if(mep->objective_text != NULL && (b || mission_get_event_status(i) != EVENT_UNBORN))
+		{
+			if(count == idx)
+				return lua_set_args(L, "o", l_Event.Set(i));
+
+			count++;
+		}
+	}
+
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(getEventByName, l_Mission, "Name", "event handle", "Gets mission event by its name.")
+{
+	char *s;
+	if(!lua_get_args(L, "s", &s))
+		return LUA_RETURN_NIL;
+
+	for(int i = 0; i < Num_mission_events; i++)
+	{
+		if(!stricmp(Mission_events[i].name, s))
+			return lua_set_args(L, "o", l_Event.Set(i));
+	}
+
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(getNumEvents, l_Mission, NULL, "Number of events in mission", "Gets number of events in mission.")
+{
+	return lua_set_args(L, "i", Num_mission_events);
+}
+
+LUA_FUNC(getEventByIndex, l_Mission, "Index", "Event handle", "Gets mission event, or false if invalid index")
+{
+	int idx;
+	if(!lua_get_args(L, "i", &idx))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_mission_events)
+		return LUA_RETURN_FALSE;
+
+	//Lua-->FS2
+	idx--;
+
+	return lua_set_args(L, "o", l_Event.Set(idx));
 }
 
 LUA_FUNC(getShipByName, l_Mission, "Ship name", "Ship object", "Gets ship object")
