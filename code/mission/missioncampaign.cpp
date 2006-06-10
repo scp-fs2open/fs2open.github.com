@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.40 $
- * $Date: 2006-04-20 06:32:07 $
+ * $Revision: 2.40.2.1 $
+ * $Date: 2006-06-10 18:35:05 $
  * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.39  2006/02/16 05:15:48  taylor
  * fix strangeness with persona index thingy (ubyte can't be -1, this needs to be left like this or make an int)
  * address some pilot file corruption using non-linear campaigns, rather simple fix for something that took quite a while to track down
@@ -801,14 +804,9 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 				cm->main_hall = 1;
 
 			// Goober5000 - new debriefing persona stuff!
-			cm->debrief_persona_index = 0xff;
-			if (optional_string("+Debriefing Persona Index:")) {
+			cm->debrief_persona_index = 0;
+			if (optional_string("+Debriefing Persona Index:"))
 				stuff_ubyte(&cm->debrief_persona_index);
-
-				if (cm->debrief_persona_index == 0xff) {
-					Warning(LOCATION, "Debriefing persona index must be in the range of 0 and 254 for mission '%s'!\n", cm->name);
-				}
-			}
 
 			cm->formula = -1;
 			if ( optional_string("+Formula:") ) {
