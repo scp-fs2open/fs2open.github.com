@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.67 $
- * $Date: 2006-05-27 16:45:11 $
- * $Author: taylor $
+ * $Revision: 2.68 $
+ * $Date: 2006-06-10 21:22:57 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/05/27 16:45:11  taylor
+ * some minor cleanup
+ * remove -nobeampierce
+ * update for geometry batcher changes
+ *
  * Revision 2.66  2006/02/25 21:47:19  Goober5000
  * spelling
  *
@@ -1438,6 +1443,14 @@ void beam_move_all_pre()
 		b->f_collision_count = 0;
 		
 		if(!physics_paused){
+			//WMC - cull beams if the firing ship is dead,
+			//and the beam needs the firing ship
+			if(b->type != BEAM_TYPE_C && b->objp->type == OBJ_NONE)
+			{
+					moveup = GET_NEXT(moveup);
+					beam_delete(b);
+					continue;
+			}
 			// move the beam
 			switch(b->type){
 			// type A beam weapons don't move
