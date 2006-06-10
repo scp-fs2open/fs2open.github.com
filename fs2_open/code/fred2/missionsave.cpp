@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.1 $
- * $Date: 2006-06-04 01:03:12 $
+ * $Revision: 1.14.2.2 $
+ * $Date: 2006-06-10 18:35:05 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.1  2006/06/04 01:03:12  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 1.14  2006/05/30 01:36:24  Goober5000
  * add AI Profile box to FRED
  * --Goober5000
@@ -3424,7 +3428,7 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 		// Goober5000
 		// unfortunately, retail FRED doesn't preserve comments placed here... however since campaigns are
 		// very seldom edited, this shouldn't be too big of a problem
-		if (Campaign.missions[m].debrief_persona_index >= 0)
+		if (Campaign.missions[m].debrief_persona_index >= 0 && Campaign.missions[m].debrief_persona_index <= 0xff)
 		{
 			fout("\n;;FSO 3.6.8;; +Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
 		}
