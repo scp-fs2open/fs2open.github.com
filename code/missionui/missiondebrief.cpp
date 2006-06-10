@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.53 $
- * $Date: 2006-02-19 00:32:47 $
+ * $Revision: 2.54 $
+ * $Date: 2006-06-10 18:34:08 $
  * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2006/02/19 00:32:47  Goober5000
+ * additional error checking
+ * --Goober5000
+ *
  * Revision 2.52  2006/02/16 05:15:48  taylor
  * fix strangeness with persona index thingy (ubyte can't be -1, this needs to be left like this or make an int)
  * address some pilot file corruption using non-linear campaigns, rather simple fix for something that took quite a while to track down
@@ -1421,7 +1425,8 @@ int debrief_find_persona_index()
 	if ((Campaign.current_mission >= 0) && (Campaign.missions[Campaign.current_mission].name) && (Campaign.filename))
 	{
 		// Goober5000 - first see if the campaign supplied a persona index
-		if (Campaign.missions[Campaign.current_mission].debrief_persona_index != 0xff)
+		// (0 means use the Volition default)
+		if (Campaign.missions[Campaign.current_mission].debrief_persona_index != 0)
 			return Campaign.missions[Campaign.current_mission].debrief_persona_index;
 
 		// search through all official campaigns for our current campaign

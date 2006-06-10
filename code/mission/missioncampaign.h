@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.11 $
- * $Date: 2006-04-20 06:32:07 $
+ * $Revision: 2.12 $
+ * $Date: 2006-06-10 18:34:08 $
  * $Author: Goober5000 $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.10  2006/02/12 10:42:25  Goober5000
  * allow specification of debriefing personas
  * --Goober5000
@@ -399,7 +402,7 @@ typedef struct cmission {
 	int				pos;						// what x position on level it's on (Fred)
 	int				flags;
 	ubyte			main_hall;				// which main hall the player is in - Goober5000
-	ubyte			debrief_persona_index;	// Goober5000
+	ubyte			debrief_persona_index;	// which persona is used for ranks/badges - Goober5000
 	scoring_struct	stats;
 } cmission;
 
