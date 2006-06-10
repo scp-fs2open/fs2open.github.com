@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.68 $
- * $Date: 2006-06-10 21:22:57 $
+ * $Revision: 2.69 $
+ * $Date: 2006-06-10 21:31:14 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2006/06/10 21:22:57  wmcoolmon
+ * Fix attempt #2 for mantis bug 0000900
+ *
  * Revision 2.67  2006/05/27 16:45:11  taylor
  * some minor cleanup
  * remove -nobeampierce
@@ -1445,7 +1448,7 @@ void beam_move_all_pre()
 		if(!physics_paused){
 			//WMC - cull beams if the firing ship is dead,
 			//and the beam needs the firing ship
-			if(b->type != BEAM_TYPE_C && b->objp->type == OBJ_NONE)
+			if(b->type != BEAM_TYPE_C && b->sig != b->objp->signature)
 			{
 					moveup = GET_NEXT(moveup);
 					beam_delete(b);
