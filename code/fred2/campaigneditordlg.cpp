@@ -916,7 +916,8 @@ void campaign_editor::OnChangeDebriefingPersona()
 		GetDlgItem(IDC_DEBRIEFING_PERSONA)->GetWindowText(str);
 		persona = atoi(str);
 
-		if (persona < 0) persona = 0;
+		if (persona < 0 || persona > 0xff)
+			persona = 0;
 
 		Campaign.missions[Cur_campaign_mission].debrief_persona_index = persona;
 	}
