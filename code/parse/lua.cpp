@@ -3,6 +3,7 @@
 #include "graphics/2d.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
+#include "ship/shiphit.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "gamesequence/gamesequence.h"
@@ -1000,6 +1001,27 @@ LUA_FUNC(getScreenCoords, l_Vector, NULL, "X (number), Y (number), or false if o
 	return lua_set_args(L, "ff", vtx.sx, vtx.sy);
 }
 
+lua_obj<int> l_Model("model", "3D Model (POF)");
+
+LUA_VAR(Filename, l_Model, "string", "Model filename")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Model.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	polymodel *pm = model_get(idx);
+
+	if(pm == NULL)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		strncpy(pm->filename, s, sizeof(pm->filename) - sizeof(char));
+	}
+
+	return lua_set_args(L, "s", pm->filename);
+}
+
 //**********HANDLE: directive
 lua_obj<int> l_Event("event", "Mission event handle");
 
@@ -1010,12 +1032,10 @@ LUA_VAR(Name, l_Event, "string", "Mission event name")
 	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
-	if(idx < 1 || idx > Num_mission_events)
+	if(idx < 0 || idx >= Num_mission_events)
 		return LUA_RETURN_NIL;
 
 	mission_event *mep = &Mission_events[idx];
-
-	idx--;
 
 	if(LUA_SETTING_VAR) {
 		strncpy(mep->name, s, sizeof(mep->name) - sizeof(char));
@@ -1031,12 +1051,10 @@ LUA_VAR(DirectiveText, l_Event, "string", "Directive text")
 	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
-	if(idx < 1 || idx > Num_mission_events)
+	if(idx < 0 || idx >= Num_mission_events)
 		return LUA_RETURN_NIL;
 
 	mission_event *mep = &Mission_events[idx];
-
-	idx--;
 
 	if(LUA_SETTING_VAR && s != NULL) {
 		if(mep->objective_text != NULL)
@@ -1048,19 +1066,17 @@ LUA_VAR(DirectiveText, l_Event, "string", "Directive text")
 	return lua_set_args(L, "s", mep->objective_text);
 }
 
-LUA_VAR(DirectiveKeypress, l_Event, "string", "Raw directive keypress text, as sseen in FRED.")
+LUA_VAR(DirectiveKeypressText, l_Event, "string", "Raw directive keypress text, as seen in FRED.")
 {
 	int idx;
 	char *s = NULL;
 	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
-	if(idx < 1 || idx > Num_mission_events)
+	if(idx < 0 || idx >= Num_mission_events)
 		return LUA_RETURN_NIL;
 
 	mission_event *mep = &Mission_events[idx];
-
-	idx--;
 
 	if(LUA_SETTING_VAR && s != NULL) {
 		if(mep->objective_text != NULL)
@@ -1072,6 +1088,44 @@ LUA_VAR(DirectiveKeypress, l_Event, "string", "Raw directive keypress text, as s
 	return lua_set_args(L, "s", mep->objective_key_text);
 }
 
+LUA_VAR(Interval, l_Event, "number", "Time for event to repeat (in seconds)")
+{
+	int idx;
+	int newinterval = 0;
+	if(!lua_get_args(L, "o|i", l_Event.Get(&idx), &newinterval))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	if(LUA_SETTING_VAR) {
+		mep->interval = newinterval;
+	}
+
+	return lua_set_args(L, "i", mep->interval);
+}
+
+LUA_VAR(ObjectCount, l_Event, "number", "Number of objects left for event")
+{
+	int idx;
+	int newobject = 0;
+	if(!lua_get_args(L, "o|i", l_Event.Get(&idx), &newobject))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	if(LUA_SETTING_VAR) {
+		mep->count = newobject;
+	}
+
+	return lua_set_args(L, "i", mep->count);
+}
+
 LUA_VAR(RepeatCount, l_Event, "number", "Event repeat count")
 {
 	int idx;
@@ -1079,12 +1133,10 @@ LUA_VAR(RepeatCount, l_Event, "number", "Event repeat count")
 	if(!lua_get_args(L, "o|i", l_Event.Get(&idx), &newrepeat))
 		return LUA_RETURN_NIL;
 
-	if(idx < 1 || idx > Num_mission_events)
+	if(idx < 0 || idx >= Num_mission_events)
 		return LUA_RETURN_NIL;
 
 	mission_event *mep = &Mission_events[idx];
-
-	idx--;
 
 	if(LUA_SETTING_VAR) {
 		mep->repeat_count = newrepeat;
@@ -1100,12 +1152,10 @@ LUA_VAR(Score, l_Event, "number", "Event score")
 	if(!lua_get_args(L, "o|i", l_Event.Get(&idx), &newscore))
 		return LUA_RETURN_NIL;
 
-	if(idx < 1 || idx > Num_mission_events)
+	if(idx < 0 || idx >= Num_mission_events)
 		return LUA_RETURN_NIL;
 
 	mission_event *mep = &Mission_events[idx];
-
-	idx--;
 
 	if(LUA_SETTING_VAR) {
 		mep->score = newscore;
@@ -1114,14 +1164,14 @@ LUA_VAR(Score, l_Event, "number", "Event score")
 	return lua_set_args(L, "i", mep->score);
 }
 
-LUA_FUNC(getStatus, l_Event, NULL, "Event status", "Gets event's current status - Current, Successful, or Failed")
+LUA_FUNC(getStatus, l_Event, NULL, "Event status", "Gets event's current status - Current, Completed, or Failed")
 {
 	int idx;
 	char *s = NULL;
 	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
-	if(idx < 1 || idx > Num_mission_events)
+	if(idx < 0 || idx >= Num_mission_events)
 		return LUA_RETURN_NIL;
 
 	int rval = mission_get_event_status(idx);
@@ -1132,7 +1182,7 @@ LUA_FUNC(getStatus, l_Event, NULL, "Event status", "Gets event's current status 
 		case EVENT_FAILED:
 			return lua_set_args(L, "s", "Failed");
 		case EVENT_SATISFIED:
-			return lua_set_args(L, "s", "Successful");
+			return lua_set_args(L, "s", "Completed");
 		default:
 			return LUA_RETURN_FALSE;
 	}
@@ -2638,7 +2688,7 @@ LUA_VAR(Target, l_Subsystem, "Object", "Object targetted by this subsystem")
 		ss->targeted_subsys = NULL;
 	}
 
-	return lua_set_args(L, "f", ss->current_hits);
+	return lua_set_args(L, "o", l_Object.Set(&Objects[ss->turret_enemy_objnum]));
 }
 
 LUA_FUNC(getName, l_Subsystem, NULL, "Subsystem name", "Subsystem name")
@@ -3202,6 +3252,29 @@ LUA_VAR(Textures, l_Ship, "shiptextures", "Gets ship textures")
 	return lua_set_args(L, "o", l_ShipTextures.Set(ship_textures_h(objh->objp)));
 }
 
+LUA_FUNC(kill, l_Ship, "[object Killer]", "True if successful", "Kills the ship. Set \"Killer\" to the ship you are killing to self-destruct")
+{
+	object_h *victim,*killer=NULL;
+	if(!lua_get_args(L, "o|o", l_Ship.GetPtr(&victim), l_Ship.GetPtr(&killer)))
+		return LUA_RETURN_NIL;
+
+	if(!victim->IsValid())
+		return LUA_RETURN_NIL;
+
+	if(!killer->IsValid())
+		killer = NULL;
+
+	//Ripped straight from shiphit.cpp
+	float percent_killed = -get_hull_pct(victim->objp);
+	if (percent_killed > 1.0f){
+		percent_killed = 1.0f;
+	}
+
+	ship_hit_kill(victim->objp, killer->objp, percent_killed, (victim->objp == killer->objp) ? 1 : 0);
+
+	return LUA_RETURN_TRUE;
+}
+
 LUA_FUNC(getNumSubsystems, l_Ship, NULL, "Number of subsystems", "Gets number of subsystems on ship")
 {
 	object_h *objh;
@@ -3211,7 +3284,38 @@ LUA_FUNC(getNumSubsystems, l_Ship, NULL, "Number of subsystems", "Gets number of
 	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "i", Ships[objh->objp->instance].n_subsystems);
+	ship *shipp = &Ships[objh->objp->instance];
+	int n_subsys = 0;
+
+	//First case, no model replace
+	//Second case, model replace has occured
+	if(shipp->n_subsystems < 1)
+	{
+		n_subsys = Ship_info[shipp->ship_info_index].n_subsystems;
+	}
+	else
+	{
+		n_subsys = shipp->n_subsystems;
+	}
+
+	return lua_set_args(L, "i", n_subsys);
+}
+
+LUA_FUNC(getNumTextures, l_Ship, NULL, "Number of textures", "Gets number of textures on ship")
+{
+	object_h *objh;
+	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	polymodel *pm = model_get(Ships[objh->objp->instance].modelnum);
+
+	if(pm == NULL)
+		return LUA_RETURN_FALSE;
+
+	return lua_set_args(L, "i", pm->n_textures);
 }
 
 LUA_FUNC(getAnimationDoneTime, l_Ship, "Type, Subtype", "Time (milliseconds)", "Gets time that animation will be done")
@@ -4218,7 +4322,7 @@ LUA_FUNC(setTarget, l_Graphics, "[texture Texture]", "True if successful, false 
 	int idx = -1;
 	lua_get_args(L, "|o", l_Texture.Get(&idx));
 
-	int i = bm_set_render_target(idx);
+	int i = bm_set_render_target(idx, 0);
 
 	return lua_set_args(L, "i", i);
 }
