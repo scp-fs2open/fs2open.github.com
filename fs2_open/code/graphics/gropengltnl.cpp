@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.44 $
- * $Date: 2006-05-30 03:53:52 $
+ * $Revision: 1.44.2.1 $
+ * $Date: 2006-06-12 03:37:24 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44  2006/05/30 03:53:52  taylor
+ * z-range for 2D ortho is -1.0 to 1.0, may help avoid some strangeness if we actually get that right. :)
+ * minor cleanup of old code and default settings
+ * try not to bother with depth test unless we are actually going to need it (small performance boost in some cases)
+ * don't clear depth bit in flip(), while technically correct it's also a bit redundant (and comes with a slight performance hit)
+ *
  * Revision 1.43  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -810,17 +816,14 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 		opengl_switch_arb(render_pass, 1);
 
-		extern float Cmdline_spec_scale;
-		extern float Cmdline_env_scale;
-
 		// as a crazy and sometimes useless hack, avoid using alpha when specmap has none
 		if ( Cmdline_alpha_env && bm_has_alpha_channel(SPECMAP) ) {
 			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
 			glTexEnvf( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
 			glTexEnvf( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_ALPHA );
-			glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, Cmdline_spec_scale);
+			glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, 1.0f);
 		} else {
-			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, Cmdline_spec_scale);
+			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
 		}
 
 		render_pass++; // bump!
@@ -843,7 +846,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 		opengl_set_modulate_tex_env();
 
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, Cmdline_env_scale);
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 2.0f);
 
 		opengl_set_state( GL_current_tex_src, ALPHA_BLEND_ADDITIVE, GL_current_ztype);
 

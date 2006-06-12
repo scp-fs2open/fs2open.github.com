@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.1 $
- * $Date: 2006-06-05 23:59:11 $
+ * $Revision: 2.174.2.2 $
+ * $Date: 2006-06-12 03:37:24 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.1  2006/06/05 23:59:11  taylor
+ * this should hopefully fix cursor drift on multi-display configs
+ *
  * Revision 2.174  2006/06/01 07:33:59  taylor
  * flip color/depth values, appears some are initting software GL again and this was the problem previously
  *
@@ -1320,7 +1323,7 @@ void opengl_go_windowed()
 void opengl_minimize()
 {
 	// don't attempt to minimize if we are already in a window or already minimized
-	if (GL_minimized || GL_windowed || Cmdline_window)
+	if (GL_minimized || GL_windowed || Cmdline_window || Fred_running)
 		return;
 
 #ifdef _WIN32
@@ -1495,8 +1498,8 @@ void gr_opengl_activate(int active)
 #endif
 	} else {
 		GL_deactivate++;
-	//	opengl_minimize();
-		opengl_go_windowed();
+		opengl_minimize();
+	//	opengl_go_windowed();
 
 #ifdef SCP_UNIX
 		// let go of mouse/keyboard
@@ -2652,9 +2655,7 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 	}
 
 	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ) {
-		extern int Cmdline_alpha_alpha_blend;
-
-		if ( Cmdline_alpha_alpha_blend && bm_has_alpha_channel(gr_screen.current_bitmap) ) {
+		if ( bm_has_alpha_channel(gr_screen.current_bitmap) ) {
 			tmap_type = TCACHE_TYPE_XPARENT;
 
 			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
