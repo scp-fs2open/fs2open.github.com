@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.2 $
- * $Date: 2006-06-07 03:54:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.243.2.3 $
+ * $Date: 2006-06-12 03:40:26 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.2  2006/06/07 03:54:29  wmcoolmon
+ * Scripting system prep for 3.6.9
+ *
  * Revision 2.246  2006/06/07 03:49:36  wmcoolmon
  * Revert changes
  *
@@ -3530,11 +3533,13 @@ void game_init()
 	int use_a3d = 0;
 	int use_eax = 0;
 
+#ifndef USE_OPENAL
 	ptr = os_config_read_string(NULL, NOX("Soundcard"), NULL);
 	mprintf(("soundcard = %s\n", ptr ? ptr : "<nothing>"));
 	if (ptr) {
 		if (!stricmp(ptr, NOX("no sound"))) {
 			Cmdline_freespace_no_sound = 1;
+			Cmdline_freespace_no_music = 1;
 
 		} else if (!stricmp(ptr, NOX("Aureal A3D"))) {
 			use_a3d = 1;
@@ -3549,6 +3554,17 @@ void game_init()
 		exit(0);
 	}
 #endif
+#else // USE_OPENAL
+	ptr = os_config_read_string(NULL, NOX("SoundDeviceOAL"), NULL);
+	if (ptr) {
+		if ( !stricmp(ptr, NOX("no sound")) ) {
+			mprintf(("Sound is disabled!\n"));
+
+			Cmdline_freespace_no_sound = 1;
+			Cmdline_freespace_no_music = 1;
+		}
+	}
+#endif // !USE_OPENAL
 
 	if (!Is_standalone)
 	{
