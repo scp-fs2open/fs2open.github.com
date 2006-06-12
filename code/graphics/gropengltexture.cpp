@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.48.2.1 $
- * $Date: 2006-06-05 23:59:33 $
+ * $Revision: 1.48.2.2 $
+ * $Date: 2006-06-12 03:37:24 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48.2.1  2006/06/05 23:59:33  taylor
+ * don't Int3() here, it's actually going to happen in some cases when using -img2dds
+ *
  * Revision 1.48  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -1836,6 +1839,8 @@ int opengl_set_render_target( int slot, int face, int is_static )
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, ts->texture_target, ts->texture_id, 0);
 	}
 
+	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, RenderTarget.renderbuffer_id);
+
 	if ( opengl_check_framebuffer() ) {
 		Int3();
 		return 0;
@@ -1990,13 +1995,14 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 	// frame buffer
 	vglGenFramebuffersEXT(1, &RenderTarget.framebuffer_id);
 	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, RenderTarget.framebuffer_id);
-	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, RenderTarget.renderbuffer_id);
 
 	if (flags & BMP_FLAG_CUBEMAP) {
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_CUBE_MAP_POSITIVE_X, ts->texture_id, 0);
 	} else {
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_texture_target, ts->texture_id, 0);
 	}
+
+	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, RenderTarget.renderbuffer_id);
 
 	if ( opengl_check_framebuffer() ) {
 		// Oops!!  reset everything and then bail
