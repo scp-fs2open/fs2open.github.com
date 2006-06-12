@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140 $
- * $Date: 2006-05-27 17:18:56 $
+ * $Revision: 2.140.2.1 $
+ * $Date: 2006-06-12 03:34:18 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140  2006/05/27 17:18:56  taylor
+ * d'oh!  that was supposed to be off by default!
+ *
  * Revision 2.139  2006/05/27 17:17:57  taylor
  * few things:
  *   - comment out that -fixbugs and -nocrash crap, that's just stupid
@@ -1054,15 +1057,10 @@ cmdline_parm noscalevid_arg("-noscalevid", NULL);	// Cmdline_noscalevid  -- disa
 cmdline_parm spec_arg("-spec", NULL);				// Cmdline_nospec  -- use specular highlighting -Sticks
 cmdline_parm pcx32_arg("-pcx32", NULL);				// Cmdline_pcx32
 cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive  -- don't use emissive light in OGL
-cmdline_parm spec_scale_arg("-spec_scale", NULL);	// Cmdline_spec_scale -- TEMPORARY - REMOVEME!!!
-cmdline_parm env_scale_arg("-env_scale", NULL);		// Cmdline_env_scale -- TEMPORARY - REMOVEME!!!
-cmdline_parm alpha_alpha_blend_arg("-alpha_alpha_blend", NULL);	// Cmdline_alpha_alpha_blend -- TEMPORARY - REMOVEME!!!
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
 float Cmdline_ogl_spec = 80.0f;
-float Cmdline_spec_scale = 1.0f; // TEMPORARY - REMOVEME!!!
-float Cmdline_env_scale = 2.0f; // TEMPORARY - REMOVEME!!!
 int Cmdline_2d_poof = 0;
 int Cmdline_alpha_env = 0;
 int Cmdline_ambient_factor = 128;
@@ -1078,7 +1076,6 @@ int Cmdline_noscalevid = 0;
 int Cmdline_nospec = 1;
 int Cmdline_pcx32 = 0;
 int Cmdline_no_emissive = 0;
-int Cmdline_alpha_alpha_blend = 0; // TEMPORARY - REMOVEME!!!
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
@@ -1884,43 +1881,6 @@ bool SetCmdlineParams()
 		Cmdline_warp_flash = 1;
 	}
 
-	// TEMPORARY - REMOVEME!!!
-	if ( spec_scale_arg.found() ) {
-		Cmdline_spec_scale = spec_scale_arg.get_float();
-
-		if (Cmdline_spec_scale != 1.0f && Cmdline_spec_scale != 2.0f && Cmdline_spec_scale != 4.0f) {
-			if (Cmdline_spec_scale < 1.0f)
-				Cmdline_spec_scale = 1.0f;
-			else if (Cmdline_spec_scale >= 3.0f)
-				Cmdline_spec_scale = 4.0f;
-			else if (Cmdline_spec_scale < 2.0f)
-				Cmdline_spec_scale = 2.0f;
-			else if (Cmdline_spec_scale > 2.0f)
-				Cmdline_spec_scale = 2.0f;
-		}
-	}
-
-	// TEMPORARY - REMOVEME!!!
-	if ( env_scale_arg.found() ) {
-		Cmdline_env_scale = env_scale_arg.get_float();
-
-		if (Cmdline_env_scale != 1.0f && Cmdline_env_scale != 2.0f && Cmdline_env_scale != 4.0f) {
-			if (Cmdline_env_scale < 1.0f)
-				Cmdline_env_scale = 1.0f;
-			else if (Cmdline_env_scale >= 3.0f)
-				Cmdline_env_scale = 4.0f;
-			else if (Cmdline_env_scale < 2.0f)
-				Cmdline_env_scale = 2.0f;
-			else if (Cmdline_env_scale > 2.0f)
-				Cmdline_env_scale = 2.0f;
-		}
-	}
-
-	// TEMPORARY - REMOVEME!!!
-	if ( alpha_alpha_blend_arg.found() ) {
-		Cmdline_alpha_alpha_blend = 1;
-	}
-
 	// specular comand lines
 	if ( spec_exp_arg.found() ) {
 		specular_exponent_value = spec_exp_arg.get_float();
@@ -2058,6 +2018,12 @@ bool SetCmdlineParams()
 
 		fwrite(&num_flags, sizeof(int), 1, fp);
 		fwrite(&exe_params, sizeof(exe_params), 1, fp);
+
+#ifdef USE_OPENAL
+		// for cheap and bastardly OpenAL check hack
+		char openal = 0;
+		fwrite(&openal, 1, 1, fp);
+#endif
 
 		fclose(fp);
 		return false; 
