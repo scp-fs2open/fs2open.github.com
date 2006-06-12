@@ -3,6 +3,7 @@
 #include "graphics/2d.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
+#include "ship/shiphit.h"
 #include "io/key.h"
 #include "io/mouse.h"
 #include "gamesequence/gamesequence.h"
@@ -261,18 +262,20 @@ int lua_get_args(lua_State *L, char *fmt, ...)
 	char funcname[128];
 #ifndef NDEBUG
 	lua_Debug ar;
-	lua_getstack(L, 0, &ar);
-	lua_getinfo(L, "nl", &ar);
-	strcpy(funcname, "");
-	if(ar.name != NULL) {
-		strcat(funcname, ar.name);
-	}
-	if(ar.currentline > -1) {
-		char buf[8];
-		itoa(ar.currentline, buf, 10);
-		strcat(funcname, " (Line ");
-		strcat(funcname, buf);
-		strcat(funcname, ")");
+	if(lua_getstack(L, 0, &ar))
+	{
+		lua_getinfo(L, "nl", &ar);
+		strcpy(funcname, "");
+		if(ar.name != NULL) {
+			strcat(funcname, ar.name);
+		}
+		if(ar.currentline > -1) {
+			char buf[8];
+			itoa(ar.currentline, buf, 10);
+			strcat(funcname, " (Line ");
+			strcat(funcname, buf);
+			strcat(funcname, ")");
+		}
 	}
 	if(!strlen(funcname)) {
 		//WMC - Try and get at function name from upvalues
@@ -459,7 +462,7 @@ int lua_set_args(lua_State *L, char *fmt, ...)
 				}
 			//WMC -  Don't forget to update lua_set_arg
 			default:
-				Error(LOCATION, "Bad character passed to lua_set_args; (%c)", *fmt);
+				Error(LOCATION, "Bad character passed to lua_set_args; (%c)", *(fmt-1));
 		}
 		nargs++;
 	}
@@ -998,10 +1001,197 @@ LUA_FUNC(getScreenCoords, l_Vector, NULL, "X (number), Y (number), or false if o
 	return lua_set_args(L, "ff", vtx.sx, vtx.sy);
 }
 
+lua_obj<int> l_Model("model", "3D Model (POF)");
+
+LUA_VAR(Filename, l_Model, "string", "Model filename")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Model.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	polymodel *pm = model_get(idx);
+
+	if(pm == NULL)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		strncpy(pm->filename, s, sizeof(pm->filename) - sizeof(char));
+	}
+
+	return lua_set_args(L, "s", pm->filename);
+}
+
 //**********HANDLE: directive
-lua_obj<int> l_Directive("directive", "Mission directive handle");
+lua_obj<int> l_Event("event", "Mission event handle");
+
+LUA_VAR(Name, l_Event, "string", "Mission event name")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	if(LUA_SETTING_VAR) {
+		strncpy(mep->name, s, sizeof(mep->name) - sizeof(char));
+	}
+
+	return lua_set_args(L, "s", mep->name);
+}
+
+LUA_VAR(DirectiveText, l_Event, "string", "Directive text")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	if(LUA_SETTING_VAR && s != NULL) {
+		if(mep->objective_text != NULL)
+			vm_free(mep->objective_text);
+
+		mep->objective_text = vm_strdup(s);
+	}
+
+	return lua_set_args(L, "s", mep->objective_text);
+}
+
+LUA_VAR(DirectiveKeypressText, l_Event, "string", "Raw directive keypress text, as seen in FRED.")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	if(LUA_SETTING_VAR && s != NULL) {
+		if(mep->objective_text != NULL)
+			vm_free(mep->objective_key_text);
+
+		mep->objective_key_text = vm_strdup(s);
+	}
+
+	return lua_set_args(L, "s", mep->objective_key_text);
+}
+
+LUA_VAR(Interval, l_Event, "number", "Time for event to repeat (in seconds)")
+{
+	int idx;
+	int newinterval = 0;
+	if(!lua_get_args(L, "o|i", l_Event.Get(&idx), &newinterval))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	if(LUA_SETTING_VAR) {
+		mep->interval = newinterval;
+	}
+
+	return lua_set_args(L, "i", mep->interval);
+}
+
+LUA_VAR(ObjectCount, l_Event, "number", "Number of objects left for event")
+{
+	int idx;
+	int newobject = 0;
+	if(!lua_get_args(L, "o|i", l_Event.Get(&idx), &newobject))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	if(LUA_SETTING_VAR) {
+		mep->count = newobject;
+	}
+
+	return lua_set_args(L, "i", mep->count);
+}
+
+LUA_VAR(RepeatCount, l_Event, "number", "Event repeat count")
+{
+	int idx;
+	int newrepeat = 0;
+	if(!lua_get_args(L, "o|i", l_Event.Get(&idx), &newrepeat))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	if(LUA_SETTING_VAR) {
+		mep->repeat_count = newrepeat;
+	}
+
+	return lua_set_args(L, "i", mep->repeat_count);
+}
+
+LUA_VAR(Score, l_Event, "number", "Event score")
+{
+	int idx;
+	int newscore = 0;
+	if(!lua_get_args(L, "o|i", l_Event.Get(&idx), &newscore))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	mission_event *mep = &Mission_events[idx];
+
+	if(LUA_SETTING_VAR) {
+		mep->score = newscore;
+	}
+
+	return lua_set_args(L, "i", mep->score);
+}
+
+LUA_FUNC(getStatus, l_Event, NULL, "Event status", "Gets event's current status - Current, Completed, or Failed")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Event.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_mission_events)
+		return LUA_RETURN_NIL;
+
+	int rval = mission_get_event_status(idx);
+	switch(rval)
+	{
+		case EVENT_CURRENT:
+			return lua_set_args(L, "s", "Current");
+		case EVENT_FAILED:
+			return lua_set_args(L, "s", "Failed");
+		case EVENT_SATISFIED:
+			return lua_set_args(L, "s", "Completed");
+		default:
+			return LUA_RETURN_FALSE;
+	}
+
+	return LUA_RETURN_FALSE;
+}
 
 //**********HANDLE: directives
+/*
 lua_obj<bool> l_Directives("directives", "Mission directives handle");
 
 LUA_INDEXER(l_Directives, "Directive number", "directive handle", NULL)
@@ -1016,8 +1206,9 @@ LUA_INDEXER(l_Directives, "Directive number", "directive handle", NULL)
 
 	idx--;	//Lua->FS2
 
-	return lua_set_args(L, "o", l_Directive.Set(idx));
+	return lua_set_args(L, "o", l_Event.Set(idx));
 }
+*/
 
 //**********HANDLE: cmission
 lua_obj<int> l_Cmission("cmission", "Campaign mission handle");
@@ -1633,7 +1824,7 @@ LUA_VAR(Type, l_Shipclass, "shiptype", "Ship class type")
 	return lua_set_args(L, "o", l_Shiptype.Set(Ship_info[idx].class_type));
 }
 
-LUA_FUNC(isInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the techroom", "Gets whether or not the ship class is available in the techroom")
+LUA_FUNC(IsInTechroom, l_Shipclass, NULL, "Whether ship has been revealed in the techroom", "Gets whether or not the ship class is available in the techroom")
 {
 	int idx;
 	if(!lua_get_args(L, "o", l_Shipclass.Get(&idx)))
@@ -2497,14 +2688,14 @@ LUA_VAR(Target, l_Subsystem, "Object", "Object targetted by this subsystem")
 		ss->targeted_subsys = NULL;
 	}
 
-	return lua_set_args(L, "f", ss->current_hits);
+	return lua_set_args(L, "o", l_Object.Set(&Objects[ss->turret_enemy_objnum]));
 }
 
 LUA_FUNC(getName, l_Subsystem, NULL, "Subsystem name", "Subsystem name")
 {
 	ship_subsys_h *sso;
 	char *s = NULL;
-	if(!lua_get_args(L, "o|f", l_Subsystem.GetPtr(&sso), &s))
+	if(!lua_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
 		return LUA_RETURN_NIL;
 
 	if(!sso->IsValid())
@@ -2867,6 +3058,29 @@ LUA_VAR(HitpointsMax, l_Ship, "Number", "Total hitpoints")
 	return lua_set_args(L, "f", shipp->ship_max_hull_strength);
 }
 
+LUA_VAR(IsInLimbo, l_Ship, "Boolean", "Ship's limbo status")
+{
+	object_h *objh;
+	bool newlimbo = false;
+	if(!lua_get_args(L, "o|b", l_Ship.GetPtr(&objh), &newlimbo))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(LUA_SETTING_VAR)
+	{
+		if(newlimbo)
+			shipp->flags |= SF_LIMBO;
+		else
+			shipp->flags &= ~SF_LIMBO;
+	}
+
+	return lua_set_args(L, "b", (shipp->flags & SF_LIMBO) != 0);
+}
+
 LUA_VAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon banks")
 {
 	object_h *objh;
@@ -3038,6 +3252,29 @@ LUA_VAR(Textures, l_Ship, "shiptextures", "Gets ship textures")
 	return lua_set_args(L, "o", l_ShipTextures.Set(ship_textures_h(objh->objp)));
 }
 
+LUA_FUNC(kill, l_Ship, "[object Killer]", "True if successful", "Kills the ship. Set \"Killer\" to the ship you are killing to self-destruct")
+{
+	object_h *victim,*killer=NULL;
+	if(!lua_get_args(L, "o|o", l_Ship.GetPtr(&victim), l_Ship.GetPtr(&killer)))
+		return LUA_RETURN_NIL;
+
+	if(!victim->IsValid())
+		return LUA_RETURN_NIL;
+
+	if(!killer->IsValid())
+		killer = NULL;
+
+	//Ripped straight from shiphit.cpp
+	float percent_killed = -get_hull_pct(victim->objp);
+	if (percent_killed > 1.0f){
+		percent_killed = 1.0f;
+	}
+
+	ship_hit_kill(victim->objp, killer->objp, percent_killed, (victim->objp == killer->objp) ? 1 : 0);
+
+	return LUA_RETURN_TRUE;
+}
+
 LUA_FUNC(getNumSubsystems, l_Ship, NULL, "Number of subsystems", "Gets number of subsystems on ship")
 {
 	object_h *objh;
@@ -3047,7 +3284,38 @@ LUA_FUNC(getNumSubsystems, l_Ship, NULL, "Number of subsystems", "Gets number of
 	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	return lua_set_args(L, "i", Ships[objh->objp->instance].n_subsystems);
+	ship *shipp = &Ships[objh->objp->instance];
+	int n_subsys = 0;
+
+	//First case, no model replace
+	//Second case, model replace has occured
+	if(shipp->n_subsystems < 1)
+	{
+		n_subsys = Ship_info[shipp->ship_info_index].n_subsystems;
+	}
+	else
+	{
+		n_subsys = shipp->n_subsystems;
+	}
+
+	return lua_set_args(L, "i", n_subsys);
+}
+
+LUA_FUNC(getNumTextures, l_Ship, NULL, "Number of textures", "Gets number of textures on ship")
+{
+	object_h *objh;
+	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	polymodel *pm = model_get(Ships[objh->objp->instance].modelnum);
+
+	if(pm == NULL)
+		return LUA_RETURN_FALSE;
+
+	return lua_set_args(L, "i", pm->n_textures);
 }
 
 LUA_FUNC(getAnimationDoneTime, l_Ship, "Type, Subtype", "Time (milliseconds)", "Gets time that animation will be done")
@@ -3110,16 +3378,17 @@ LUA_FUNC(warpIn, l_Ship, NULL, "True", "Warps ship in")
 	return LUA_RETURN_TRUE;
 }
 
-LUA_FUNC(warpOut, l_Ship, NULL, "True", "Warps ship out")
+LUA_FUNC(warpOut, l_Ship, "[boolean Departing]", "True", "Warps ship out; argument specifies whether ship cannot warp back in or not.")
 {
 	object_h *objh;
-	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
+	bool b;
+	if(!lua_get_args(L, "o|b", l_Ship.GetPtr(&objh), &b))
 		return LUA_RETURN_NIL;
 
 	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	shipfx_warpout_start(objh->objp);
+	shipfx_warpout_start(objh->objp, b);
 
 	return LUA_RETURN_TRUE;
 }
@@ -3460,6 +3729,14 @@ LUA_FUNC(getMissionByIndex, l_Campaign, "Mission number (Zero-based index)", "Cm
 //**********LIBRARY: Mission
 lua_lib l_Mission("Mission", "mn", "Mission library");
 
+LUA_FUNC(getMissionFilename, l_Mission, NULL, "string", "Gets mission filename")
+{
+	if(!(Game_mode & GM_IN_MISSION))
+		return LUA_RETURN_NIL;
+
+	return lua_set_args(L, "s", Game_current_mission_filename);
+}
+
 LUA_FUNC(getMissionTime, l_Mission, NULL, "number", "Mission time in seconds")
 {
 	if(!(Game_mode & GM_IN_MISSION))
@@ -3529,6 +3806,116 @@ LUA_FUNC(renderFrame, l_Mission, NULL, NULL, "Renders mission frame, but does no
 	return LUA_RETURN_TRUE;
 }
 
+LUA_FUNC(getDirectiveByName, l_Mission, "Name, [Whether to include unborn directives]", "event handle",
+		 "Gets directive by its name."
+		 "Unborn directives are events that have not become available yet.")
+{
+	bool b = false;
+	char *s;
+	if(!lua_get_args(L, "s|b", &s, &b))
+		return LUA_RETURN_NIL;
+
+	mission_event *mep;
+	for(int i = 0; i < Num_mission_events; i++)
+	{
+		mep = &Mission_events[i];
+		if(mep->objective_text != NULL && !stricmp(Mission_events[i].name, s) && (b || mission_get_event_status(i) != EVENT_UNBORN))
+			return lua_set_args(L, "o", l_Event.Set(i));
+	}
+
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(getNumDirectives, l_Mission, "[Whether to include unborn directives]", "Number of directives in mission",
+		 "Gets number of directives in mission. "
+		 "Can be slightly slow, so only call it when you need to account for new/changed events. "
+		 "Unborn directives are events that have not become available yet.")
+{
+	bool b = false;
+	lua_get_args(L, "|b", &b);
+
+	int count = 0;
+	int i;
+	mission_event *mep;
+	for(i = 0; i < Num_mission_events; i++)
+	{
+		mep = &Mission_events[i];
+		if(mep->objective_text != NULL && (b || mission_get_event_status(i) != EVENT_UNBORN)) {
+			count++;
+		}
+	}
+
+	return lua_set_args(L, "i", count);
+}
+
+LUA_FUNC(getDirectiveByIndex, l_Mission, "Index, [Whether to include unborn directives]", "Event handle",
+		 "Gets directive. "
+		 "Can be slightly slow, so use as little as possible."
+		 "Unborn directives are events that have not become available yet.")
+{
+	int idx;
+	bool b = false;
+	if(!lua_get_args(L, "i|b", &idx, &b))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_mission_events)
+		return LUA_RETURN_FALSE;
+
+	//Remember, Lua indices start at 0.
+	int count=1;
+
+	int i;
+	mission_event *mep;
+	for(i = 0; i < Num_mission_events; i++)
+	{
+		mep = &Mission_events[i];
+		if(mep->objective_text != NULL && (b || mission_get_event_status(i) != EVENT_UNBORN))
+		{
+			if(count == idx)
+				return lua_set_args(L, "o", l_Event.Set(i));
+
+			count++;
+		}
+	}
+
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(getEventByName, l_Mission, "Name", "event handle", "Gets mission event by its name.")
+{
+	char *s;
+	if(!lua_get_args(L, "s", &s))
+		return LUA_RETURN_NIL;
+
+	for(int i = 0; i < Num_mission_events; i++)
+	{
+		if(!stricmp(Mission_events[i].name, s))
+			return lua_set_args(L, "o", l_Event.Set(i));
+	}
+
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(getNumEvents, l_Mission, NULL, "Number of events in mission", "Gets number of events in mission.")
+{
+	return lua_set_args(L, "i", Num_mission_events);
+}
+
+LUA_FUNC(getEventByIndex, l_Mission, "Index", "Event handle", "Gets mission event, or false if invalid index")
+{
+	int idx;
+	if(!lua_get_args(L, "i", &idx))
+		return LUA_RETURN_NIL;
+
+	if(idx < 1 || idx > Num_mission_events)
+		return LUA_RETURN_FALSE;
+
+	//Lua-->FS2
+	idx--;
+
+	return lua_set_args(L, "o", l_Event.Set(idx));
+}
+
 LUA_FUNC(getShipByName, l_Mission, "Ship name", "Ship object", "Gets ship object")
 {
 	char *name;
@@ -3544,14 +3931,16 @@ LUA_FUNC(getShipByName, l_Mission, "Ship name", "Ship object", "Gets ship object
 	return lua_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[idx].objnum])));
 }
 
-LUA_FUNC(getNumShips, l_Mission, NULL, "Number of ships in mission", "Gets number of ships in mission. Note that this is only accurate for a short while.")
+LUA_FUNC(getNumShips, l_Mission, NULL, "Number of ships in mission",
+		 "Gets number of ships in mission. Note that this is only accurate for one frame.")
 {
 	return lua_set_args(L, "i", ship_get_num_ships());
 }
 
 LUA_FUNC(getShipByIndex, l_Mission, "Index", "Ship handle, or false if invalid index",
-		"Gets ship by its order in the mission."
-		"Note that as ships are added, they may take the index of destroyed ships")
+		"Gets ship by its order in the mission. "
+		"Note that as ships are added, they may take the index of destroyed ships. "
+		"An index is only good for one frame.")
 {
 	int idx;
 	if(!lua_get_args(L, "i", &idx))
@@ -3575,7 +3964,40 @@ LUA_FUNC(getShipByIndex, l_Mission, "Index", "Ship handle, or false if invalid i
 	return LUA_RETURN_FALSE;
 }
 
-LUA_FUNC(getWing, l_Mission, "Wing name", "Wing handle", "Gets wing handle")
+LUA_FUNC(getNumWeapons, l_Mission, NULL, "Number of weapon objects in mission",
+		 "Gets number of weapon objects in mission. Note that this is only accurate for one frame.")
+{
+	return lua_set_args(L, "i", Num_weapons);
+}
+
+LUA_FUNC(getWeaponByIndex, l_Mission, "Index", "Weapon handle, or false if invalid index",
+		"Gets weapon by its order in the mission. "
+		"Note that as weapons are added, they may take the index of destroyed ships. "
+		"An index is only good for one frame.")
+{
+	int idx;
+	if(!lua_get_args(L, "i", &idx))
+		return LUA_RETURN_NIL;
+
+	//Remember, Lua indices start at 0.
+	int count=1;
+
+	for(int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (Weapons[i].weapon_info_index < 0 || Weapons[i].objnum < 0 || Objects[Weapons[i].objnum].type != OBJ_WEAPON)
+			continue;
+
+		if(count == idx) {
+			return lua_set_args(L, "o", l_Weapon.Set(object_h(&Objects[Weapons[i].objnum])));
+		}
+
+		count++;
+	}
+
+	return LUA_RETURN_FALSE;
+}
+
+LUA_FUNC(getWingByName, l_Mission, "Wing name", "Wing handle", "Gets wing handle")
 {
 	char *name;
 	if(!lua_get_args(L, "s", &name))
@@ -3614,7 +4036,7 @@ LUA_FUNC(getNumEscortShips, l_Mission, NULL, "Number", "Gets escort ship")
 	return lua_set_args(L, "i", hud_escort_num_ships_on_list());
 }
 
-LUA_FUNC(getEscortShip, l_Mission, "Escort index", "Ship object", "Gets escort ship")
+LUA_FUNC(getEscortShipByIndex, l_Mission, "Escort index", "Ship object", "Gets escort ship")
 {
 	int idx;
 	if(!lua_get_args(L, "i", &idx))
@@ -3900,7 +4322,7 @@ LUA_FUNC(setTarget, l_Graphics, "[texture Texture]", "True if successful, false 
 	int idx = -1;
 	lua_get_args(L, "|o", l_Texture.Get(&idx));
 
-	int i = bm_set_render_target(idx);
+	int i = bm_set_render_target(idx, 0);
 
 	return lua_set_args(L, "i", i);
 }
@@ -4074,18 +4496,31 @@ LUA_FUNC(drawRectangle, l_Graphics, "x1, y1, x2, y2, [Filled]", NULL, "Draws a r
 }
 
 #define MAX_TEXT_LINES		256
-
+static char *BooleanValues[] = {"False", "True"};
 LUA_FUNC(drawString, l_Graphics, "String, x1, y1, [x2, y2]", NULL, "Draws a string")
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
 
-	int x,y;
+	int x=0,y=0;
 	char *s;
 	int x2=-1,y2=-1;
 
-	if(!lua_get_args(L, "sii|ii", &s, &x, &y, &x2, &y2))
+	if(lua_isboolean(L, 1))
+	{
+		bool b = false;
+		if(!lua_get_args(L, "bii|ii", &b, &x, &y, &x2, &y2))
+			return LUA_RETURN_NIL;
+
+		if(b)
+			s = BooleanValues[1];
+		else
+			s = BooleanValues[0];
+	}
+	else if(!lua_get_args(L, "sii|ii", &s, &x, &y, &x2, &y2))
+	{
 		return LUA_RETURN_NIL;
+	}
 
 	if(x2 < 0) {
 		gr_string(x,y,s,false);
