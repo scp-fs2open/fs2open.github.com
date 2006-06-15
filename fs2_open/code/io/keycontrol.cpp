@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68 $
- * $Date: 2006-01-13 03:31:09 $
+ * $Revision: 2.69 $
+ * $Date: 2006-06-15 00:47:15 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.67  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -2950,8 +2953,14 @@ int button_function(int n)
 		// target the closest ship attacking current target
 		case TARGET_CLOSEST_SHIP_ATTACKING_TARGET:
 			control_used(TARGET_CLOSEST_SHIP_ATTACKING_TARGET);
-			if (hud_sensors_ok(Player_ship)){
-				Assert(Player_ai->target_objnum >= 0);
+			if (hud_sensors_ok(Player_ship))
+			{
+				if (Player_ai->target_objnum < 0)
+				{
+					Int3();
+					break;
+				}
+
 				hud_target_closest(iff_get_attacker_mask(obj_team(&Objects[Player_ai->target_objnum])), Player_ai->target_objnum);
 			}
 			break;
@@ -2965,7 +2974,7 @@ int button_function(int n)
 		// target closest ship that is attacking player
 		case TARGET_CLOSEST_SHIP_ATTACKING_SELF:
 			control_used(TARGET_CLOSEST_SHIP_ATTACKING_SELF);
-			if (hud_sensors_ok(Player_ship)){
+			if (hud_sensors_ok(Player_ship)) {
 				hud_target_closest(iff_get_attacker_mask(Player_ship->team), OBJ_INDEX(Player_obj), TRUE, 0, 1);
 			}
 			break;
