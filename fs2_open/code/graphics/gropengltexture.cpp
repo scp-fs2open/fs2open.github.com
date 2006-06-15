@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.48.2.2 $
- * $Date: 2006-06-12 03:37:24 $
+ * $Revision: 1.48.2.3 $
+ * $Date: 2006-06-15 00:15:17 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48.2.2  2006/06/12 03:37:24  taylor
+ * sync current OGL changes:
+ *  - go back to using minimize mode which non-active, but doin't minimize when Fred_running
+ *  - remove temporary cmdline options (-spec_scale, -env_scale, -alpha_alpha_blend)
+ *  - change FBO renderbuffer link around a little to maybe avoid freaky drivers (or freaky code)
+ *
  * Revision 1.48.2.1  2006/06/05 23:59:33  taylor
  * don't Int3() here, it's actually going to happen in some cases when using -img2dds
  *
@@ -1833,6 +1839,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, RenderTarget.framebuffer_id);
 
 	if (ts->texture_target == GL_TEXTURE_CUBE_MAP) {
+		Assert( (face >= 0) && (face < 6) );
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, ts->texture_id, 0);
 	} else {
 		Assert( face <= 0 );
