@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.262 $
- * $Date: 2006-06-07 04:43:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.263 $
+ * $Date: 2006-06-15 01:35:56 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.262  2006/06/07 04:43:38  wmcoolmon
+ * Limbo flag support; fix scripting debug bug
+ *
  * Revision 2.261  2006/06/04 00:01:48  Goober5000
  * add capability for preloading special arguments
  * NB: it's disabled for now, and it needs to be moved after sexps are parsed to work
@@ -19745,7 +19748,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of ship subsystem is on.\r\n"
 		"\t2:\tName of subsystem to repair.\r\n"
 		"\t3:\tPercentage to increase subsystem integrity by.\r\n"
-		"\t4:\tRepair turret submodel.  Optional argument that defaults to true.  Only will be recognized for fs2_open 3.6.8 and later."},
+		"\t4:\tRepair turret submodel.  Optional argument that defaults to true."},
 
 	{ OP_SET_SUBSYSTEM_STRNGTH, "Set Subsystem Strength (Action operator)\r\n"
 		"\tSets the specified subsystem to the the specified percentage."
@@ -19755,7 +19758,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of ship subsystem is on.\r\n"
 		"\t2:\tName of subsystem to set strength.\r\n"
 		"\t3:\tPercentage to set subsystem integrity to.\r\n" 
-		"\t4:\tRepair turret submodel.  Optional argument that defaults to true.  Only will be recognized for fs2_open 3.6.8 and later."},
+		"\t4:\tRepair turret submodel.  Optional argument that defaults to true."},
 
 	{ OP_INVALIDATE_GOAL, "Invalidate goal (Action operator)\r\n"
 		"\tMakes a mission goal invalid, which causes it to not show up on mission goals "
