@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.67 $
- * $Date: 2006-06-07 04:47:43 $
+ * $Revision: 2.68 $
+ * $Date: 2006-06-15 04:20:13 $
  * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/06/07 04:47:43  wmcoolmon
+ * Limbo flag support; removed unneeded muzzle flash flag
+ *
  * Revision 2.66  2006/05/13 07:15:51  taylor
  * get rid of some wasteful math for gr_set_proj_matrix() calls
  * fix check that broke praise of kills for player
@@ -1216,8 +1219,10 @@ void shipfx_warpin_frame( object *objp, float frametime )
 
 void shipfx_warpout_helper(object *objp, dock_function_info *infop)
 {
-	//WMC - The other warpout functions don't seem to use this.
-	//objp->flags |= OF_SHOULD_BE_DEAD;
+	if(Ships[objp->instance].warpout_for_reals)
+	{
+		objp->flags |= OF_SHOULD_BE_DEAD;
+	}
 
 	if (objp->type == OBJ_SHIP)
 		ship_departed(objp->instance, Ships[objp->instance].warpout_for_reals);
