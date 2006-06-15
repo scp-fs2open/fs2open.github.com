@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.88 $
- * $Date: 2006-06-07 04:39:56 $
- * $Author: wmcoolmon $
+ * $Revision: 2.89 $
+ * $Date: 2006-06-15 00:37:11 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2006/06/07 04:39:56  wmcoolmon
+ * Limbo flag support
+ *
  * Revision 2.87  2006/03/18 07:12:07  Goober5000
  * add ship-subsys-targetable and ship-subsys-untargetable
  * --Goober5000
@@ -1264,11 +1267,7 @@ object *hud_reticle_pick_target()
 		}
 	}
 
-//  Commented out to correct 'Y' bug.  Current theory is that
-//  debris gets targeted during the previous pass.  When the
-//  command is executed again, the target is culled.
-
-	if ( !Cmdline_ybugfix && ship_in_list && debris_in_list ) {
+	if ( ship_in_list && debris_in_list ) {
 		// cull debris
 		reticle_list	*rl, *next;
 		
@@ -1284,16 +1283,6 @@ object *hud_reticle_pick_target()
 	}
 	
 	for ( cur_rl = GET_FIRST(&Reticle_cur_list); cur_rl != END_OF_LIST(&Reticle_cur_list); cur_rl = GET_NEXT(cur_rl) ) {
-
-//      The following was added to replace the culling method used above.  Rather than
-//      cull the debris, just skip to the next object if there's ships in the FOV.
-
-		if ( Cmdline_ybugfix && ship_in_list && debris_in_list ) {
-			if ( (cur_rl->objp->type == OBJ_DEBRIS) || (cur_rl->objp->type == OBJ_ASTEROID) ){
-				continue;
-			}
-		}
-
 		in_save_list = 0;
 		for ( save_rl = GET_FIRST(&Reticle_save_list); save_rl != END_OF_LIST(&Reticle_save_list); save_rl = GET_NEXT(save_rl) ) {
 			if ( cur_rl->objp == save_rl->objp ) {
@@ -1327,26 +1316,7 @@ object *hud_reticle_pick_target()
 			if ( i == -1 ) 
 				return NULL;
 			new_rl = &Reticle_list[i];
-
-			// if there are ships and debris present,  loop through to find the ship(s)
-			// otherwise, pick the first object
-
-			if ( Cmdline_ybugfix && ship_in_list && debris_in_list ) {
-
-				for ( cur_rl = GET_FIRST(&Reticle_cur_list); cur_rl != END_OF_LIST(&Reticle_cur_list); cur_rl = GET_NEXT(cur_rl) ) {
-
-					if ( (cur_rl->objp->type == OBJ_DEBRIS) || (cur_rl->objp->type == OBJ_ASTEROID) ){
-						continue;
-					} else {
-						break;
-					}
-				}
-
-			} else {
-
-				cur_rl = GET_FIRST(&Reticle_cur_list);
-			}
-
+			cur_rl = GET_FIRST(&Reticle_cur_list);
 			*new_rl = *cur_rl;
 			return_objp = cur_rl->objp;
 			hud_reticle_clear_list(&Reticle_save_list);
