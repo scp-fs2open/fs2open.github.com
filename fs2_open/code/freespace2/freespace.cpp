@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.247 $
- * $Date: 2006-06-07 04:39:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.248 $
+ * $Date: 2006-06-15 01:29:18 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.247  2006/06/07 04:39:10  wmcoolmon
+ * Limbo flag support
+ *
  * Revision 2.245  2006/06/07 03:36:19  wmcoolmon
  * Scripting system prep for 3.6.9
  *
@@ -9794,10 +9797,27 @@ void get_version_string(char *str, int max_size)
 	Assert( max_size > 6 );
 
 	if ( FS_VERSION_BUILD == 0 ) {
-		sprintf(str,"V%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+		sprintf(str,"FreeSpace 2 Open v%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
 	} else {
-		sprintf(str,"V%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
+		sprintf(str,"FreeSpace 2 Open v%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD );
 	}
+
+	/*
+	// Goober5000 - although this is cool, it's a bit redundant
+
+	// append the CVS "release" version in the $Name variable, but
+	// only do this if it's been tagged
+	int rcs_name_len = strlen(RCS_Name);
+	if (rcs_name_len > 11)
+	{
+		char buffer[100];
+		strcpy(buffer, RCS_Name + 7);
+		buffer[rcs_name_len-9] = 0;
+
+		SAFE_STRCAT( str, " ", max_size );
+		SAFE_STRCAT( str, buffer, max_size );
+	}
+	*/
 
 #ifdef INF_BUILD
 	SAFE_STRCAT( str, " Inferno", max_size );
@@ -9808,20 +9828,8 @@ void get_version_string(char *str, int max_size)
 #endif
 
 #ifndef NDEBUG
-	SAFE_STRCAT( str, " Dbg", max_size );
+	SAFE_STRCAT( str, " Debug", max_size );
 #endif
-
-	// append the CVS "release" version in the $Name variable, but
-	// only do this if it's been tagged
-	int rcs_name_len = strlen(RCS_Name);
-	if (rcs_name_len > 11) {
-		char buffer[100];
-		strcpy(buffer, RCS_Name + 7);
-		buffer[rcs_name_len-9] = 0;
-
-		SAFE_STRCAT( str, " Build:", max_size );
-		SAFE_STRCAT( str, buffer, max_size );
-	}
 
 	// Lets get some more info in here
 	switch(gr_screen.mode)
