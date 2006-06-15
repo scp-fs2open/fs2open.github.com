@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66 $
- * $Date: 2006-05-13 07:15:51 $
- * $Author: taylor $
+ * $Revision: 2.66.2.1 $
+ * $Date: 2006-06-15 06:18:43 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2006/05/13 07:15:51  taylor
+ * get rid of some wasteful math for gr_set_proj_matrix() calls
+ * fix check that broke praise of kills for player
+ * fix knossos warpin effect that always seems to get rendered backwards (I couldn't find anything that broke with this but I suppose it's a mod could have an issue)
+ *
  * Revision 2.65  2006/04/12 22:23:41  taylor
  * compiler warning fixes to make GCC 4.1 shut the hell up
  *
@@ -1208,31 +1213,33 @@ void shipfx_warpin_frame( object *objp, float frametime )
 
 void shipfx_warpout_helper(object *objp, dock_function_info *infop)
 {
-	objp->flags |= OF_SHOULD_BE_DEAD;
+	if (objp == Player_obj)
+	{
+		// Normally, this will never get called for the player.  If it
+		// does, it is because of some error (like the warpout effect
+		// couldn't start) or because the player was docked to something,
+		// so go ahead and warp the player out.  All this does is set
+		// the event to go to debriefing, the same thing that happens
+		// after the player warp out effect ends.
+		gameseq_post_event(GS_EVENT_DEBRIEF);
+	}
+	else
+	{
+		objp->flags |= OF_SHOULD_BE_DEAD;
 
-	if (objp->type == OBJ_SHIP)
-		ship_departed(objp->instance);
+		if (objp->type == OBJ_SHIP)
+			ship_departed(objp->instance);
+	}
 }
  
 // This is called to actually warp this object out
-// after all the flashy fx are done, or if the flashy 
-// fx don't work for some reason.  OR to skip the flashy
-// fx.
-void shipfx_actually_warpout( ship *shipp, object *objp )
+// after all the flashy fx are done, or if the flashy fx
+// don't work for some reason.  OR to skip the flashy fx.
+void shipfx_actually_warpout(ship *shipp, object *objp)
 {
 	// Once we get through effect, make the ship go away
-	if ( objp == Player_obj )	{
-		// Normally, this will never get called for the player. If it
-		// does, it is because some error (like the warpout effect
-		// couldn't start) so go ahead and warp the player out.
-		// All this does is set the event to go to debriefing, the
-		// same thing that happens after the player warp out effect
-		// ends.
-		gameseq_post_event( GS_EVENT_DEBRIEF );	// proceed to debriefing
-	} else {
-		dock_function_info dfi;
-		dock_evaluate_all_docked_objects(objp, &dfi, shipfx_warpout_helper);
-	}
+	dock_function_info dfi;
+	dock_evaluate_all_docked_objects(objp, &dfi, shipfx_warpout_helper);
 }
 
 // compute_special_warpout_stuff();
