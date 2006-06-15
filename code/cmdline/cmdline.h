@@ -11,11 +11,23 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.89 $
- * $Date: 2006-05-27 17:17:57 $
+ * $Revision: 2.90 $
+ * $Date: 2006-06-15 00:37:11 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2006/05/27 17:17:57  taylor
+ * few things:
+ *   - comment out that -fixbugs and -nocrash crap, that's just stupid
+ *   - move -env off of the experimental list (since it's working pretty well in OGL)
+ *   - remove -nobeampierce
+ *   - remove -max_subdivide (didn't do anything)
+ *   - remove -rt (didn't do anything, and per-coder cmdline options should never be in CVS)
+ *   - move -cache_bitmaps to game speed rather than graphics
+ *   - add options for env and spec map scaling for envmaps (temporary, to be removed before official 3.6.8)
+ *   - add option for new alpha blend mode so that artists can still test with it but not mess up normal users with the bad MediaVPs
+ *   - remove -d3d_particle (it's obsolete now)
+ *
  * Revision 2.88  2006/05/13 07:29:51  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -667,7 +679,6 @@ extern int Cmdline_nomovies;	// WMC Toggles movie playing support
 extern int Cmdline_no_set_gamma;
 extern int Cmdline_novbo;
 extern int Cmdline_safeloading;
-extern int Cmdline_ybugfix;		// Temporary... REMOVEME LATER!!
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;

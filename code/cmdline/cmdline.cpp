@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140 $
- * $Date: 2006-05-27 17:18:56 $
+ * $Revision: 2.141 $
+ * $Date: 2006-06-15 00:37:11 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140  2006/05/27 17:18:56  taylor
+ * d'oh!  that was supposed to be off by default!
+ *
  * Revision 2.139  2006/05/27 17:17:57  taylor
  * few things:
  *   - comment out that -fixbugs and -nocrash crap, that's just stupid
@@ -1155,7 +1158,6 @@ cmdline_parm nomovies_arg("-nomovies", NULL);		// Cmdline_nomovies  -- Allows vi
 cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL);	// Cmdline_no_set_gamma
 cmdline_parm no_vbo_arg("-novbo", NULL);			// Cmdline_novbo
 cmdline_parm safeloading_arg("-safeloading", NULL);	// Cmdline_safeloading  -- Uses old loading method -C
-cmdline_parm ybugfix_arg("-y_bug_fix", NULL); 		// Cmdline_ybugfix  -- Temporary... REMOVEME LATER!!
 
 int Cmdline_d3d_lesstmem = 0;
 int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
@@ -1166,7 +1168,6 @@ int Cmdline_nomovies = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_safeloading = 0;
-int Cmdline_ybugfix = 0; // Temporary... REMOVEME LATER!!
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
@@ -2208,11 +2209,6 @@ bool SetCmdlineParams()
 
 	if ( noemissive_arg.found() ) {
 		Cmdline_no_emissive = 1;
-	}
-
-	// Temporary... REMOVEME LATER!!
-	if ( ybugfix_arg.found() ) {
-		Cmdline_ybugfix = 1;
 	}
 
 	if ( ogl_spec_arg.found() ) {
