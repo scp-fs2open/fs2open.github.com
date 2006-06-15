@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.49 $
- * $Date: 2006-06-05 23:56:51 $
+ * $Revision: 1.50 $
+ * $Date: 2006-06-15 00:36:33 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.49  2006/06/05 23:56:51  taylor
+ * don't Int3() here, it's actually going to happen in some cases when using -img2dds
+ *
  * Revision 1.48  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -1830,6 +1833,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, RenderTarget.framebuffer_id);
 
 	if (ts->texture_target == GL_TEXTURE_CUBE_MAP) {
+		Assert( (face >= 0) && (face < 6) );
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_CUBE_MAP_POSITIVE_X + face, ts->texture_id, 0);
 	} else {
 		Assert( face <= 0 );
