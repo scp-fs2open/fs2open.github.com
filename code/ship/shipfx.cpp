@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.68 $
- * $Date: 2006-06-15 04:20:13 $
- * $Author: wmcoolmon $
+ * $Revision: 2.69 $
+ * $Date: 2006-06-15 06:18:35 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2006/06/15 04:20:13  wmcoolmon
+ * Mantis Bug 0000947: Ahh, so that's what this was for :P
+ *
  * Revision 2.67  2006/06/07 04:47:43  wmcoolmon
  * Limbo flag support; removed unneeded muzzle flash flag
  *
@@ -1219,34 +1222,34 @@ void shipfx_warpin_frame( object *objp, float frametime )
 
 void shipfx_warpout_helper(object *objp, dock_function_info *infop)
 {
-	if(Ships[objp->instance].warpout_for_reals)
+	if (objp == Player_obj)
 	{
-		objp->flags |= OF_SHOULD_BE_DEAD;
+		// Normally, this will never get called for the player.  If it
+		// does, it is because of some error (like the warpout effect
+		// couldn't start) or because the player was docked to something,
+		// so go ahead and warp the player out.  All this does is set
+		// the event to go to debriefing, the same thing that happens
+		// after the player warp out effect ends.
+		gameseq_post_event(GS_EVENT_DEBRIEF);
 	}
+	else
+	{
+		if(Ships[objp->instance].warpout_for_reals)
+			objp->flags |= OF_SHOULD_BE_DEAD;
 
-	if (objp->type == OBJ_SHIP)
-		ship_departed(objp->instance, Ships[objp->instance].warpout_for_reals);
+		if (objp->type == OBJ_SHIP)
+			ship_departed(objp->instance, Ships[objp->instance].warpout_for_reals);
+	}
 }
  
 // This is called to actually warp this object out
-// after all the flashy fx are done, or if the flashy 
-// fx don't work for some reason.  OR to skip the flashy
-// fx.
-void shipfx_actually_warpout( ship *shipp, object *objp )
+// after all the flashy fx are done, or if the flashy fx
+// don't work for some reason.  OR to skip the flashy fx.
+void shipfx_actually_warpout(ship *shipp, object *objp)
 {
 	// Once we get through effect, make the ship go away
-	if ( objp == Player_obj )	{
-		// Normally, this will never get called for the player. If it
-		// does, it is because some error (like the warpout effect
-		// couldn't start) so go ahead and warp the player out.
-		// All this does is set the event to go to debriefing, the
-		// same thing that happens after the player warp out effect
-		// ends.
-		gameseq_post_event( GS_EVENT_DEBRIEF );	// proceed to debriefing
-	} else {
-		dock_function_info dfi;
-		dock_evaluate_all_docked_objects(objp, &dfi, shipfx_warpout_helper);
-	}
+	dock_function_info dfi;
+	dock_evaluate_all_docked_objects(objp, &dfi, shipfx_warpout_helper);
 }
 
 // compute_special_warpout_stuff();
@@ -1645,7 +1648,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 		// MWA 10/21/97 -- added shipp->flags & SF_NO_DEPARTURE_WARP part of next if statement.  For ships
 		// that don't get a wormhole effect, I wanted to drop into this code immediately.
 		if ( (warp_pos > objp->radius)  || (shipp->flags & SF_NO_DEPARTURE_WARP) || timed_out )	{
-			shipfx_actually_warpout( shipp, objp );
+			shipfx_actually_warpout(shipp, objp);
 		} 
 	}
 }
