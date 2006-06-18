@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.18.2.4 $
- * $Date: 2006-06-18 23:34:55 $
+ * $Revision: 1.18.2.5 $
+ * $Date: 2006-06-18 23:38:06 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18.2.4  2006/06/18 23:34:55  taylor
+ * address a strange resize error that triggers an Assert() in the texture code with mipmaps
+ *
  * Revision 1.18.2.3  2006/06/18 17:21:49  taylor
  * add a -disable_fbo troubleshooting option for those ATI users having trouble with FBOs, but can still use envmapping otherwise
  *
@@ -147,9 +150,9 @@
 
 static inline int is_power_of_two(int w, int h)
 {
-	// NOTE: OpenGL texture code has a min tex size of 16, so we need to be at least
-	//       16 here to qualify as power-of-2 and not get resized later on
-	return ( ((w >= 16) && !(w & (w-1))) && ((h >= 16) && !(h & (h-1))) );
+	// NOTE: OpenGL texture code has a min tex size of 16 (currently), so we need to be at least
+	//       the min size here to qualify as power-of-2 and not get resized later on
+	return ( ((w >= GL_min_texture_width) && !(w & (w-1))) && ((h >= GL_min_texture_height) && !(h & (h-1))) );
 }
 
 int get_num_mipmap_levels(int w, int h)
