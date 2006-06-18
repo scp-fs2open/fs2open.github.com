@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.46.2.1 $
- * $Date: 2006-06-12 03:40:26 $
+ * $Revision: 2.46.2.2 $
+ * $Date: 2006-06-18 16:52:04 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46.2.1  2006/06/12 03:40:26  taylor
+ * sync up current OpenAL changes
+ *  - "SoundDeviceOAL" reg option for user specified sound device (used instead of "Soundcard" for OpenAL)
+ *  - reset current context when we are leaving, may be leaving drivers in a bad state, and it hasn't hung up in quite a while
+ *  - if sound card (which DS or OAL) is set to "no sound" then be sure to disable both sound and music
+ *
  * Revision 2.46  2006/06/01 07:33:00  taylor
  * make sure to use software device rather than hardware since we don't currently handle source rotation/reuse properly between ds and audiostr code
  *
@@ -676,14 +682,22 @@ ALCcontext *ds_sound_context = NULL;
 //
 // Returns the human readable error string if there is an error or NULL if not
 //
-const char* openal_error_string()
+const char* openal_error_string(int get_alc)
 {
 	int i;
 
-	i = alGetError();
+	if (get_alc) {
+		i = alcGetError(NULL);
 
-	if ( i != AL_NO_ERROR )
-		return (const char*)alGetString(i);
+		if ( i != ALC_NO_ERROR )
+			return (const char*) alcGetString(NULL, i);
+	}
+	else {
+		i = alGetError();
+
+		if ( i != AL_NO_ERROR )
+			return (const char*)alGetString(i);
+	}
 
 	return NULL;
 }
@@ -1747,7 +1761,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 		return -1;
 	}
 
-	OpenAL_ErrorCheck( alcMakeContextCurrent( ds_sound_context ), return -1 );
+	OpenAL_C_ErrorCheck( alcMakeContextCurrent( ds_sound_context ), return -1 );
 
 	mprintf(( "  OpenAL Vendor     : %s\n", alGetString( AL_VENDOR ) ));
 	mprintf(( "  OpenAL Renderer   : %s\n", alGetString( AL_RENDERER ) ));
@@ -2334,17 +2348,20 @@ int ds_get_free_channel(int new_volume, int snd_id, int priority)
 	// Look for a channel to use to play this sample
 	for ( i = 0; i < MAX_CHANNELS; i++ )	{
 		chp = &Channels[i];
+
 		if ( chp->source_id == 0 ) {
 			if ( first_free_channel == -1 )
 				first_free_channel = i;
+
 			continue;
 		}
 
-		OpenAL_ErrorCheck( alGetSourcei(chp->source_id, AL_SOURCE_STATE, &status), return -1 );
+		OpenAL_ErrorCheck( alGetSourcei(chp->source_id, AL_SOURCE_STATE, &status), continue );
 
 		if ( status != AL_PLAYING ) {
 			if ( first_free_channel == -1 )
 				first_free_channel = i;
+
 			continue;
 		}
 		else {
