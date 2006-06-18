@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.1  2006/06/04 17:57:00  wmcoolmon
+ * Remove $Collide Ship and $Collide Weapon options from 3.6.9, as these are not finalized
+ *
  * Revision 2.180  2006/05/27 16:45:11  taylor
  * some minor cleanup
  * remove -nobeampierce
@@ -4410,8 +4413,12 @@ void weapon_home(object *obj, int num, float frame_time)
 		}
 		break;
 	case OBJ_WEAPON:
-		// only allowed to home on bombs or countermeasures
-		Assert(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB || Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE);
+		// don't home on countermeasures, that's handled elsewhere
+		if (Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE)
+			break;
+
+		// only allowed to home on bombs
+		Assert(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB);
 		if (wip->wi_flags & WIF_HOMING_ASPECT)
 			find_homing_object_by_sig(obj, wp->target_sig);
 		else
@@ -4461,7 +4468,7 @@ void weapon_home(object *obj, int num, float frame_time)
 			float	dist;
 
 			dist = vm_vec_dist_quick(&obj->pos, &hobjp->pos);
-			if (hobjp->type == OBJ_WEAPON && (hobjp->flags & WIF_CMEASURE))
+			if (hobjp->type == OBJ_WEAPON && (Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_CMEASURE))
 			{
 				if (dist < CMEASURE_DETONATE_DISTANCE)
 				{
