@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.18.2.1 $
- * $Date: 2006-06-15 00:15:17 $
+ * $Revision: 1.18.2.2 $
+ * $Date: 2006-06-18 16:49:40 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18.2.1  2006/06/15 00:15:17  taylor
+ * fix Assert() on value of face variable, it should be able to be -1 for non-cubemap images
+ *
  * Revision 1.18  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -169,6 +172,9 @@ void gr_opengl_bm_free_data(int n)
 	// ANI slots for faster and less resource intensive rendering - taylor
 	if (bm_bitmaps[n].type != BM_TYPE_USER)
 		opengl_free_texture_slot( n );
+
+	if ( (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC) || (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_DYNAMIC) )
+		opengl_kill_render_target( n );
 }
 
 // API specifics for creating a user bitmap
