@@ -2,13 +2,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.2 $
- * $Date: 2006-06-12 03:37:24 $
+ * $Revision: 2.174.2.3 $
+ * $Date: 2006-06-18 20:09:03 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.2  2006/06/12 03:37:24  taylor
+ * sync current OGL changes:
+ *  - go back to using minimize mode which non-active, but doin't minimize when Fred_running
+ *  - remove temporary cmdline options (-spec_scale, -env_scale, -alpha_alpha_blend)
+ *  - change FBO renderbuffer link around a little to maybe avoid freaky drivers (or freaky code)
+ *
  * Revision 2.174.2.1  2006/06/05 23:59:11  taylor
  * this should hopefully fix cursor drift on multi-display configs
  *
@@ -3136,7 +3142,16 @@ void gr_opengl_print_screen(char *filename)
 
 	// now for the data, we convert it from 32-bit to 24-bit
 	for (i = 0; i < (gr_screen.max_w * gr_screen.max_h * 4); i += 4) {
+#if BYTE_ORDER == BIG_ENDIAN
+		int pix, *pix_tmp;
+
+		pix_tmp = (int*)(pixels + i);
+		pix = INTEL_INT(*pix_tmp);
+
+		fwrite( &pix, 1, 3, fout );
+#else
 		fwrite( pixels + i, 1, 3, fout );
+#endif
 	}
 
 	if ( pbo ) {
