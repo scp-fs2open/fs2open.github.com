@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.4 $
- * $Date: 2006-06-15 01:29:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.243.2.5 $
+ * $Date: 2006-06-18 17:20:32 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.4  2006/06/15 01:29:25  Goober5000
+ * tweaked the version string
+ * --Goober5000
+ *
  * Revision 2.243.2.3  2006/06/12 03:40:26  taylor
  * sync up current OpenAL changes
  *  - "SoundDeviceOAL" reg option for user specified sound device (used instead of "Soundcard" for OpenAL)
@@ -4977,6 +4981,15 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 
 	if (Cmdline_nohtl)
 		return;
+
+	// prefer the mission specified envmap over the static-generated envmap, but
+	// the dynamic envmap should always get preference if in a subspace mission
+	if ( !Game_subspace_effect && strlen(The_mission.envmap_name) ) {
+		ENVMAP = bm_load(The_mission.envmap_name);
+
+		if (ENVMAP >= 0)
+			return;
+	}
 
 	if ( (Game_subspace_effect && (gr_screen.dynamic_environment_map < 0)) || (!Game_subspace_effect && (gr_screen.static_environment_map < 0)) ) {
 		if (ENVMAP > -1)
