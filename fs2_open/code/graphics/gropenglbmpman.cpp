@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.18.2.2 $
- * $Date: 2006-06-18 16:49:40 $
+ * $Revision: 1.18.2.3 $
+ * $Date: 2006-06-18 17:21:49 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18.2.2  2006/06/18 16:49:40  taylor
+ * fix so that multiple FBOs can be used with different sizes (plus a few other minor adjustments)
+ *
  * Revision 1.18.2.1  2006/06/15 00:15:17  taylor
  * fix Assert() on value of face variable, it should be able to be -1 for non-cubemap images
  *
@@ -635,6 +638,9 @@ void gr_opengl_bm_save_render_target(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
+	if (Cmdline_no_fbo)
+		return;
+
 	bitmap_entry *be = &bm_bitmaps[n];
 	bitmap *bmp = &be->bm;
 
@@ -654,7 +660,7 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, 
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
-	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) )
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo )
 		return 0;
 
 	if ( (flags & BMP_FLAG_CUBEMAP) && !Is_Extension_Enabled(OGL_ARB_TEXTURE_CUBE_MAP) )
@@ -674,7 +680,7 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, 
 
 int gr_opengl_bm_set_render_target(int n, int face)
 {
-	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) )
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo )
 		return 0;
 
 	if (n == -1) {
