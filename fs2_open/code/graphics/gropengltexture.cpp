@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.48.2.4 $
- * $Date: 2006-06-18 16:49:40 $
+ * $Revision: 1.48.2.5 $
+ * $Date: 2006-06-19 22:50:58 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48.2.4  2006/06/18 16:49:40  taylor
+ * fix so that multiple FBOs can be used with different sizes (plus a few other minor adjustments)
+ *
  * Revision 1.48.2.3  2006/06/15 00:15:17  taylor
  * fix Assert() on value of face variable, it should be able to be -1 for non-cubemap images
  *
@@ -1859,13 +1862,13 @@ int opengl_set_render_target( int slot, int face, int is_static )
 
 	if (slot < 0) {
 		if ( (render_target != NULL) && (render_target->working_slot >= 0) ) {
-			if (Cmdline_mipmap) {
+		/*	if (Cmdline_mipmap) {
 				ts = &Textures[render_target->working_slot];
 
 				glBindTexture(ts->texture_target, ts->texture_id);
 				vglGenerateMipmapEXT(ts->texture_target);
 				glBindTexture(ts->texture_target, 0);
-			}
+			}*/
 
 			if (render_target->is_static) {
 				extern void gr_opengl_bm_save_render_target(int slot);
@@ -1904,12 +1907,12 @@ int opengl_set_render_target( int slot, int face, int is_static )
 		return 0;
 	}
 
-	if ( !vglIsFramebufferEXT(fbo->framebuffer_id) || !vglIsRenderbufferEXT(fbo->renderbuffer_id) ) {
+	if ( !vglIsFramebufferEXT(fbo->framebuffer_id) /*|| !vglIsRenderbufferEXT(fbo->renderbuffer_id)*/ ) {
 		Int3();
 		return 0;
 	}
 
-	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, fbo->renderbuffer_id);
+//	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, fbo->renderbuffer_id);
 	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo->framebuffer_id);
 
 	if (ts->texture_target == GL_TEXTURE_CUBE_MAP) {
@@ -1920,7 +1923,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, ts->texture_target, ts->texture_id, 0);
 	}
 
-	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, fbo->renderbuffer_id);
+//	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, fbo->renderbuffer_id);
 
 	if ( opengl_check_framebuffer() ) {
 		Int3();
@@ -1965,7 +1968,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 	// since we only deal with one frame/render buffer, see if we need to modify what we have or use it as is
 	if ( (fbo != NULL) && (fbo->width == *w) && (fbo->height == *h) ) {
 		// both should be valid, but we check to catch the off-chance that something is fubar
-		Assert( vglIsFramebufferEXT(fbo->framebuffer_id) && vglIsRenderbufferEXT(fbo->renderbuffer_id) );
+		Assert( vglIsFramebufferEXT(fbo->framebuffer_id) /*&& vglIsRenderbufferEXT(fbo->renderbuffer_id)*/ );
 
 		// we can use the existing FBO without modification so just setup the texture slot and move on
 		if (flags & BMP_FLAG_CUBEMAP) {
@@ -1996,12 +1999,13 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 			ts->texture_target = GL_texture_target;
 		}
 
-		if (Cmdline_mipmap) {
+	/*	if (Cmdline_mipmap) {
 			vglGenerateMipmapEXT(GL_texture_target);
 
 			extern int get_num_mipmap_levels(int w, int h);
 			ts->mipmap_levels = get_num_mipmap_levels(*w, *h);
-		} else {
+		} else */
+		{
 			ts->mipmap_levels = 1;
 		}
 
@@ -2010,7 +2014,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 		ts->w = (ushort)*w;
 		ts->h = (ushort)*h;
 		ts->bpp = 24;
-	//	ts->bitmap_handle = handle;
+		ts->bitmap_handle = -1;
 
 		if (bpp)
 			*bpp = ts->bpp;
@@ -2059,21 +2063,22 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 		glTexImage2D(GL_texture_target, 0, GL_RGB8, *w, *h, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
 	}
 
-	if (Cmdline_mipmap) {
+/*	if (Cmdline_mipmap) {
 		vglGenerateMipmapEXT(GL_texture_target);
 
 		extern int get_num_mipmap_levels(int w, int h);
 		ts->mipmap_levels = get_num_mipmap_levels(*w, *h);
-	} else {
+	} else */
+	{
 		ts->mipmap_levels = 1;
 	}
 
 	glBindTexture(GL_texture_target, 0);
 
 	// render buffer
-	vglGenRenderbuffersEXT(1, &new_fbo.renderbuffer_id);
-	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, new_fbo.renderbuffer_id);
-	vglRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT24, *w, *h);
+//	vglGenRenderbuffersEXT(1, &new_fbo.renderbuffer_id);
+//	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, new_fbo.renderbuffer_id);
+//	vglRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT24, *w, *h);
 	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
 
 	// frame buffer
@@ -2086,7 +2091,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_texture_target, ts->texture_id, 0);
 	}
 
-	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, new_fbo.renderbuffer_id);
+//	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, new_fbo.renderbuffer_id);
 
 	if ( opengl_check_framebuffer() ) {
 		// Oops!!  reset everything and then bail
@@ -2100,7 +2105,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 
 		vglDeleteFramebuffersEXT(1, &new_fbo.framebuffer_id);
 
-		vglDeleteRenderbuffersEXT(1, &new_fbo.renderbuffer_id);
+	//	vglDeleteRenderbuffersEXT(1, &new_fbo.renderbuffer_id);
 
 		opengl_switch_arb(0, 0);
 		opengl_set_texture_target();
@@ -2113,7 +2118,7 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 	ts->h = (ushort)*h;
 	ts->bpp = 24;
 	ts->texture_target = GL_texture_target;
-//	ts->bitmap_handle = handle;
+	ts->bitmap_handle = -1;
 
 	new_fbo.width = ts->w;
 	new_fbo.height = ts->h;
