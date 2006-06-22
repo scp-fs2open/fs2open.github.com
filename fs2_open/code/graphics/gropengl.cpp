@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.3 $
- * $Date: 2006-06-18 20:09:03 $
+ * $Revision: 2.174.2.4 $
+ * $Date: 2006-06-22 14:59:44 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.3  2006/06/18 20:09:03  taylor
+ * fix screenshots on big endian
+ *
  * Revision 2.174.2.2  2006/06/12 03:37:24  taylor
  * sync current OGL changes:
  *  - go back to using minimize mode which non-active, but doin't minimize when Fred_running
@@ -3445,15 +3448,14 @@ void gr_opengl_set_gamma(float gamma)
 	}
 
 	// set the alpha gamma settings (for fonts)
+	memset( GL_xlat, 0, sizeof(GL_xlat) );
+
 	for (i=0; i<16; i++) {
 		GL_xlat[i] = (ubyte)Gr_gamma_lookup[(i*255)/15];
 	}
 
 	GL_xlat[15] = GL_xlat[1];
 
-	for ( ; i<256; i++ )    {
-		GL_xlat[i] = GL_xlat[0];
-	}
 
 	// new way - but not while running FRED
 	if (!Fred_running && !Cmdline_no_set_gamma) {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.5 $
- * $Date: 2006-06-18 17:20:32 $
+ * $Revision: 2.243.2.6 $
+ * $Date: 2006-06-22 14:59:44 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.5  2006/06/18 17:20:32  taylor
+ * always try to use a mission specified envmap over the static-generated envmap (missed this commit a while ago)
+ *
  * Revision 2.243.2.4  2006/06/15 01:29:25  Goober5000
  * tweaked the version string
  * --Goober5000
@@ -4974,7 +4977,7 @@ inline void render_environment(int i, matrix *new_orient, float new_zoom)
 
 void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 {
-	matrix new_orient;
+	matrix new_orient = IDENTITY_MATRIX;
 	float old_zoom = View_zoom, new_zoom = 0.925f;
 	int i = 0;
 
@@ -5393,7 +5396,7 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	// Do the sunspot
 	game_sunspot_process(flFrametime);
 
-	bool draw_viewer_last;
+	bool draw_viewer_last = false;
 	obj_render_all(obj_render, &draw_viewer_last);
 
 	mflash_render_all();						// render all muzzle flashes	

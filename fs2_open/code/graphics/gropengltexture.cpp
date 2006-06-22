@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.48.2.5 $
- * $Date: 2006-06-19 22:50:58 $
+ * $Revision: 1.48.2.6 $
+ * $Date: 2006-06-22 14:59:44 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48.2.5  2006/06/19 22:50:58  taylor
+ * as a temporary measure, until I can figure out what is going on here:
+ *   - disable depth buffer for RTT, may be causing the ATI issues, should work ok without it for most things
+ *   - disable mipmap generation for RTT, something strange is going on there, it's sometimes making black mipmap levels (even for the same texture)
+ *
  * Revision 1.48.2.4  2006/06/18 16:49:40  taylor
  * fix so that multiple FBOs can be used with different sizes (plus a few other minor adjustments)
  *
@@ -313,7 +318,7 @@ int GL_last_detail = -1;
 int GL_last_bitmap_type = -1;
 GLint GL_supported_texture_units = 2;
 int GL_should_preload = 0;
-ubyte GL_xlat[256] = { 0 };
+ubyte GL_xlat[256];
 GLfloat GL_anisotropy = 0.0f;
 GLfloat GL_max_anisotropy = 0.0f;
 static int vram_full = 0;			// UnknownPlayer
@@ -339,7 +344,7 @@ static int GL_texture_units_enabled[32]={0};
 int opengl_free_texture(tcache_slot_opengl *t);
 void opengl_free_texture_with_handle(int handle);
 void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out);
-int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data = NULL, tcache_slot_opengl *t = NULL, int base_level = 0, int resize = 0, int reload = 0, int fail_on_full = 0);
+int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ubyte *data = NULL, tcache_slot_opengl *t = NULL, int base_level = 0, int resize = 0, int reload = 0, int fail_on_full = 0);
 int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot = NULL, int fail_on_full = 0);
 
 void opengl_set_additive_tex_env()
@@ -732,7 +737,7 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 // bmap_h == height of source bitmap
 // tex_w == width of final texture
 // tex_h == height of final texture
-int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data, tcache_slot_opengl *t, int base_level, int resize, int reload, int fail_on_full)
+int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ubyte *data, tcache_slot_opengl *t, int base_level, int resize, int reload, int fail_on_full)
 {
 	int ret_val = 1;
 	int byte_mult = 0;
@@ -743,8 +748,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 	int mipmap_w = 0, mipmap_h = 0;
 	int dsize = 0, doffset = 0, block_size = 0;
 	int i,j,k;
-	ubyte *bmp_data = ((ubyte*)data);
-	ubyte *texmem = NULL, *texmemp;
+	ubyte *bmp_data = data;
+	ubyte *texmem = NULL, *texmemp = NULL;
 	int skip_size = 0, mipmap_levels = 0;
 
 
@@ -1343,7 +1348,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	tslot->mipmap_levels = (ubyte)(max_levels - base_level);
 
 	// call the helper
-	int ret_val = opengl_create_texture_sub(bitmap_handle, bitmap_type, bmp->w, bmp->h, final_w, final_h, (ushort*)bmp->data, tslot, base_level, resize, reload, fail_on_full);
+	int ret_val = opengl_create_texture_sub(bitmap_handle, bitmap_type, bmp->w, bmp->h, final_w, final_h, (ubyte*)bmp->data, tslot, base_level, resize, reload, fail_on_full);
 
 	// unlock the bitmap
 	bm_unlock(bitmap_handle);
