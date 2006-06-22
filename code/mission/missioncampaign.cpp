@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.40.2.1 $
- * $Date: 2006-06-10 18:35:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.40.2.2 $
+ * $Date: 2006-06-22 14:59:45 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40.2.1  2006/06/10 18:35:05  Goober5000
+ * fix parsing/handling of debriefing persona indexes
+ * --Goober5000
+ *
  * Revision 2.40  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -1456,6 +1460,9 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 
 	Assert(ship_count <= MAX_SHIP_CLASSES);
 	Assert(weapon_count <= MAX_WEAPON_TYPES);
+
+	memset( s_name, 0, sizeof(char) * MAX_SHIP_CLASSES * NAME_LENGTH );
+	memset( w_name, 0, sizeof(char) * MAX_WEAPON_TYPES * NAME_LENGTH );
 
 	for ( i = 0; i < ship_count; i++ ){
 		if (version >= 14) {
