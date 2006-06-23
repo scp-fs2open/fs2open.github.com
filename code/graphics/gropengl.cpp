@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.4 $
- * $Date: 2006-06-22 14:59:44 $
+ * $Revision: 2.174.2.5 $
+ * $Date: 2006-06-23 09:01:07 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.4  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
+ *
  * Revision 2.174.2.3  2006/06/18 20:09:03  taylor
  * fix screenshots on big endian
  *
@@ -1229,11 +1232,6 @@ void opengl_go_fullscreen()
 		} else {
 			Warning( LOCATION, "Unable to go fullscreen!" );
 		}
-	} else {
-		// REMOVEME: doesn't really need to be here but for debugging purposes it
-		//           could be helpful during the immediate future.
-		if (dm.dmDisplayFrequency > 0)
-			mprintf(("USING REFRESH_RATE OF: %i\n", dm.dmDisplayFrequency));
 	}
 
 	RECT cursor_clip;
@@ -1257,6 +1255,7 @@ void opengl_go_fullscreen()
 #endif
 
 	GL_fullscreen = 1;
+	GL_minimized = 0;
 }
 
 void opengl_go_windowed()
@@ -1354,6 +1353,7 @@ void opengl_minimize()
 #endif
 
 	GL_minimized = 1;
+	GL_fullscreen = 0;
 }
 
 void opengl_set_tex_state_combine(gr_texture_source ts)
