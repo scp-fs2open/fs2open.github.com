@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.17 $
- * $Date: 2006-06-10 18:34:07 $
- * $Author: Goober5000 $
+ * $Revision: 1.18 $
+ * $Date: 2006-06-23 09:17:02 $
+ * $Author: karajorma $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2006/06/10 18:34:07  Goober5000
+ * fix parsing/handling of debriefing persona indexes
+ * --Goober5000
+ *
  * Revision 1.16  2006/06/04 01:01:52  Goober5000
  * add fighterbay restriction code
  * --Goober5000
@@ -3077,10 +3081,9 @@ int CFred_mission_save::save_bitmaps()
 	parse_comments();
 	fout(" %d", Num_stars);
 
-	float Ambient_light_level = 1.0f;	// JAS: Should this be set to something?
 	required_string_fred("$Ambient light level:");
 	parse_comments();
-	fout(" %d", Ambient_light_level);
+	fout(" %d", The_mission.ambient_light_level);
 
 	// neb2 stuff
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
