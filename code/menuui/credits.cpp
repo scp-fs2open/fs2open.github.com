@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.27.2.1 $
- * $Date: 2006-06-08 06:48:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.27.2.2 $
+ * $Date: 2006-06-23 16:08:55 $
+ * $Author: karajorma $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27.2.1  2006/06/08 06:48:13  Goober5000
+ * update credits
+ *
  * Revision 2.27  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -319,6 +322,7 @@ char *fs2_open_credit_text =
 	"Taylor Richards\n"
 	"Will \"##Unknown Player##\" Rousnel\n"
 	"\"WMCoolmon\"\n"
+	"Hassan \"Karajorma\" Kazmi\n"
 	"\n"
 	"Readme Staff:\n"
 	"\n"
