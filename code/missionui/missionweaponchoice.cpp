@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.72 $
- * $Date: 2006-05-13 07:09:25 $
- * $Author: taylor $
+ * $Revision: 2.73 $
+ * $Date: 2006-06-23 04:56:31 $
+ * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2006/05/13 07:09:25  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 2.71  2006/02/23 06:21:56  taylor
  * attempt to fix bad out-of-bounds (and related) issues when weaponchoice icon is missing
  * be sure to always initialize frame count and FPS with bm_load_animation() calls in case caller got lazy
@@ -2559,8 +2563,17 @@ void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_cou
 			int ship_index = -1;
 			p_object *pobjp;
 			ss_return_ship(slot_num/MAX_WING_SLOTS, slot_num%MAX_WING_SLOTS, &ship_index, &pobjp);
-			Assert(ship_index != -1);
-			wl_get_ship_weapons(ship_index, wep, wep_count);
+			if(ship_index != -1)
+			{
+				wl_get_ship_weapons(ship_index, wep, wep_count);
+			}
+			else
+			{
+				char buf[NAME_LENGTH];
+				ss_return_name(slot_num/MAX_WING_SLOTS, slot_num%MAX_WING_SLOTS, buf);
+				Warning(LOCATION, "Could not find default weapon info for ship '%s', using class info instead.", buf);
+				wl_get_ship_class_weapons(ship_class, wep, wep_count);
+			}
 		}
 	}
 
@@ -4091,7 +4104,8 @@ void pick_from_ship_slot(int num)
 		return;
 	}
 
-	Assert(Wl_icons[wep[num]].can_use);
+	if(!Wl_icons[wep[num]].can_use)
+		popup(0, 1, POPUP_OK, "Weapon in slot is invalid for this ship");
 
 	wl_set_carried_icon(num, Selected_wl_slot, wep[num]);
 	common_flash_button_init();
