@@ -59,8 +59,8 @@ LINK32=link.exe
 InputPath=.\Release\fred2_open_r.exe
 SOURCE="$(InputPath)"
 
-"$(FS2PATH)/fred2_open_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy $(InputPath) "$(FS2PATH)/fred2_open_r.exe"
+"$(FS2PATH)/fred2_open_3_6_9.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	copy $(InputPath) "$(FS2PATH)/fred2_open_3_6_9.exe"
 
 # End Custom Build
 
@@ -94,8 +94,8 @@ LINK32=link.exe
 InputPath=.\Debug\fred2_open_d.exe
 SOURCE="$(InputPath)"
 
-"$(FS2PATH)/fred2_open_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
-	copy $(InputPath) "$(FS2PATH)/fred2_open_d.exe"
+"$(FS2PATH)/fred2_open_3_6_9_debug.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+	copy $(InputPath) "$(FS2PATH)/fred2_open_3_6_9_debug.exe"
 
 # End Custom Build
 
