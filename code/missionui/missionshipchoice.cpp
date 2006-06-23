@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.62 $
- * $Date: 2006-04-20 06:32:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.63 $
+ * $Date: 2006-06-23 04:57:09 $
+ * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2006/04/20 06:32:14  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.61  2006/02/24 04:45:00  wmcoolmon
  * I love it when bugs are this easy to fix. ;)
  *
@@ -3240,7 +3243,7 @@ int ss_return_ship(int wing_block, int wing_slot, int *ship_index, p_object **pp
 		*ppobjp = &Parse_objects[ws->sa_index];
 	} else {
 		*ship_index = Wings[Ss_wings[wing_block].wingnum].ship_index[wing_slot];
-		Assert(*ship_index != -1);		
+		//Assert(*ship_index != -1);		
 	}
 
 	return ws->original_ship_class;
