@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.341 $
- * $Date: 2006-06-07 05:19:49 $
+ * $Revision: 2.342 $
+ * $Date: 2006-06-24 20:32:00 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.341  2006/06/07 05:19:49  wmcoolmon
+ * Move fog disappearance factor to objecttypes.tbl
+ *
  * Revision 2.340  2006/06/07 04:47:43  wmcoolmon
  * Limbo flag support; removed unneeded muzzle flash flag
  *
@@ -14825,6 +14828,26 @@ ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name)
 
 	// didn't find it
 	return NULL;
+}
+
+int ship_get_num_subsys(ship *shipp)
+{
+	Assert(shipp != NULL);
+
+	int n_subsys = 0;
+
+	//First case, no model replace
+	//Second case, model replace has occured
+	if(shipp->n_subsystems < 1)
+	{
+		n_subsys = Ship_info[shipp->ship_info_index].n_subsystems;
+	}
+	else
+	{
+		n_subsys = shipp->n_subsystems;
+	}
+
+	return n_subsys;
 }
 
 // returns 0 if no conflict, 1 if conflict, -1 on some kind of error with wing struct
