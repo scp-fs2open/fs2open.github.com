@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.1 $
- * $Date: 2006-06-15 00:16:23 $
- * $Author: taylor $
+ * $Revision: 2.87.2.2 $
+ * $Date: 2006-06-24 18:02:02 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.1  2006/06/15 00:16:23  taylor
+ * remove previous attempts at the Y bug fix, it's now back to the retail code for that
+ *
  * Revision 2.87  2006/03/18 07:12:07  Goober5000
  * add ship-subsys-targetable and ship-subsys-untargetable
  * --Goober5000
@@ -1795,7 +1798,7 @@ object *advance_fb(object *objp, int next_flag)
 	if (next_flag)
 		return GET_NEXT(objp);
 	else
-		return GET_PREV(objp);
+		return GET_LAST(objp);
 }
 
 //	Target the previous subobject on the currently selected ship.
