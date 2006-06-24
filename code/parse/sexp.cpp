@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.263 $
- * $Date: 2006-06-15 01:35:56 $
+ * $Revision: 2.264 $
+ * $Date: 2006-06-24 01:54:08 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.263  2006/06/15 01:35:56  Goober5000
+ * this is kinda superfluous
+ *
  * Revision 2.262  2006/06/07 04:43:38  wmcoolmon
  * Limbo flag support; fix scripting debug bug
  *
@@ -3723,6 +3726,8 @@ int get_sexp(char *token)
 				strcpy(token, "set-object-facing");
 			else if (!stricmp(token, "set-ship-facing-object"))
 				strcpy(token, "set-object-facing-object");
+			else if (!stricmp(token, "ai-chase-any-except"))
+				strcpy(token, "ai-chase-any");
 
 			op = get_operator_index(token);
 			if (op != -1) {
@@ -3754,6 +3759,18 @@ int get_sexp(char *token)
 
 	Mp++;  // skip past the ')'
 
+
+	// Goober5000 - backwards compatibility for removed ai-chase-any-except
+	if (get_operator_const(CTEXT(start)) == OP_AI_CHASE_ANY)
+	{
+		// if there is more than one argument, free the extras
+		int n = CDR(CDR(start));
+		if (n >= 0)
+		{
+			free_sexp(n);
+			Sexp_nodes[CDR(start)].rest = -1;
+		}
+	}
 
 	// Goober5000 - preload stuff for certain sexps
 	if (!Fred_running)
