@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.89 $
- * $Date: 2006-06-15 00:37:11 $
- * $Author: taylor $
+ * $Revision: 2.90 $
+ * $Date: 2006-06-24 18:01:55 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2006/06/15 00:37:11  taylor
+ * remove previous attempts at the Y bug fix, it's now back to the retail code for that
+ *
  * Revision 2.88  2006/06/07 04:39:56  wmcoolmon
  * Limbo flag support
  *
@@ -1798,7 +1801,7 @@ object *advance_fb(object *objp, int next_flag)
 	if (next_flag)
 		return GET_NEXT(objp);
 	else
-		return GET_PREV(objp);
+		return GET_LAST(objp);
 }
 
 //	Target the previous subobject on the currently selected ship.
