@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.154 $
- * $Date: 2006-06-07 05:19:49 $
+ * $Revision: 2.155 $
+ * $Date: 2006-06-24 20:32:00 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.154  2006/06/07 05:19:49  wmcoolmon
+ * Move fog disappearance factor to objecttypes.tbl
+ *
  * Revision 2.153  2006/06/07 04:47:43  wmcoolmon
  * Limbo flag support; removed unneeded muzzle flash flag
  *
@@ -2122,6 +2125,7 @@ extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_by
 extern int ship_get_subsys_index(ship *sp, char *ss_name, int error_bypass = 0);		// returns numerical index in linked list of subsystems
 extern float ship_get_subsystem_strength( ship *shipp, int type );
 extern ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name);
+extern int ship_get_num_subsys(ship *shipp);
 
 // subsys disruption
 extern int ship_subsys_disrupted(ship_subsys *ss);
