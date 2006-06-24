@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.3 $
- * $Date: 2006-06-07 20:45:11 $
- * $Author: karajorma $
+ * $Revision: 2.336.2.4 $
+ * $Date: 2006-06-24 20:39:57 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.3  2006/06/07 20:45:11  karajorma
+ * Fix bug with multiple uses of change-ship-class SEXP
+ *
  * Revision 2.336.2.2  2006/06/06 00:00:00  taylor
  * properly initialize a few entries that were left zero'd by mistake
  *
@@ -14766,6 +14769,26 @@ ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name)
 
 	// didn't find it
 	return NULL;
+}
+
+int ship_get_num_subsys(ship *shipp)
+{
+	Assert(shipp != NULL);
+
+	int n_subsys = 0;
+
+	//First case, no model replace
+	//Second case, model replace has occured
+	if(shipp->n_subsystems < 1)
+	{
+		n_subsys = Ship_info[shipp->ship_info_index].n_subsystems;
+	}
+	else
+	{
+		n_subsys = shipp->n_subsystems;
+	}
+
+	return n_subsys;
 }
 
 // returns 0 if no conflict, 1 if conflict, -1 on some kind of error with wing struct

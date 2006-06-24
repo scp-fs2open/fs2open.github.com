@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.1 $
- * $Date: 2006-06-04 01:03:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.150.2.2 $
+ * $Date: 2006-06-24 20:39:57 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.1  2006/06/04 01:03:13  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 2.150  2006/05/21 03:58:58  Goober5000
  * fix Mantis #834
  * --Goober5000
@@ -2093,6 +2097,7 @@ extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_by
 extern int ship_get_subsys_index(ship *sp, char *ss_name, int error_bypass = 0);		// returns numerical index in linked list of subsystems
 extern float ship_get_subsystem_strength( ship *shipp, int type );
 extern ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name);
+extern int ship_get_num_subsys(ship *shipp);
 
 // subsys disruption
 extern int ship_subsys_disrupted(ship_subsys *ss);
