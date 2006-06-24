@@ -618,6 +618,21 @@ int lua_index_handler(lua_State *L)
 		lua_rawget(L, -2);
 	}
 
+	if(lua_isnil(L, -1))
+	{
+		char *invalid = (char *)lua_tostring(L, 2);
+		//Get object metatable
+		lua_getmetatable(L, 1);
+		lua_rawget(L, LUA_REGISTRYINDEX);
+		//Get name
+		char *object_name = (char *)lua_tostring(L, -1);
+		//Pop metatable off stack
+		lua_pop(L, 1);
+
+		LuaError(L, "'%s' is not a valid element of '%s'", invalid, object_name);
+		return 0;
+	}
+
 	//Set upvalue for function to same upvalue as this
 	//This tells it whether it is getting or setting the variable
 	lua_pushvalue(L, lua_upvalueindex(1));
@@ -2013,6 +2028,19 @@ lua_obj<object_h> l_Object("object", "Object handle");
 //Returns 1 if object sig stored in idx exists, and stores Objects[] index in idx
 //Returns 0 if object sig does not exist, and does not change idx
 
+LUA_FUNC(__eq, l_Object, "object, object", "true if equal", "Checks whether two object handles are for the same object")
+{
+	object_h *o1, *o2;
+	if(!lua_get_args(L, "oo", l_Object.GetPtr(&o1), l_Object.GetPtr(&o2)))
+		return LUA_RETURN_FALSE;
+
+	if(!o1->IsValid() || !o2->IsValid())
+		return LUA_RETURN_FALSE;
+
+	return lua_set_args(L, "b", o1->sig == o2->sig);
+}
+
+
 LUA_VAR(Position, l_Object, "World vector", "Object world position")
 {
 	object_h *objh;
@@ -2302,11 +2330,11 @@ struct ship_bank_h : public ship_banktype_h
 //**********HANDLE: Ship bank
 lua_obj<ship_bank_h> l_WeaponBank("weaponbank", "Ship/subystem weapons bank handle");
 
-LUA_VAR(Weapon, l_WeaponBank, "weaponclass", "Weapon")
+LUA_VAR(WeaponClass, l_WeaponBank, "weaponclass", "Weapon")
 {
 	ship_bank_h *bh;
 	int weaponclass=-1;
-	if(!lua_get_args(L, "o|i", l_WeaponBank.GetPtr(&bh), l_Weaponclass.Get(&weaponclass)))
+	if(!lua_get_args(L, "o|o", l_WeaponBank.GetPtr(&bh), l_Weaponclass.Get(&weaponclass)))
 		return LUA_RETURN_NIL;
 
 	if(!bh->IsValid())
@@ -2411,6 +2439,56 @@ LUA_VAR(AmmoMax, l_WeaponBank, "number", "AmmoMax")
 //**********HANDLE: Weaponbanktype
 lua_obj<ship_banktype_h> l_WeaponBankType("weaponbanktype", "Ship/subsystem weapons bank type handle");
 
+LUA_INDEXER(l_WeaponBankType, "Bank index", "weaponbank handle", "Returns handle to a specific weapon bank")
+{
+	ship_banktype_h *sb=NULL;
+	int idx = -1;
+	ship_bank_h *newbank;
+	if(!lua_get_args(L, "oi|o", l_WeaponBankType.GetPtr(&sb), &idx, l_WeaponBank.GetPtr(&newbank)))
+		return LUA_RETURN_NIL;
+
+	if(!sb->IsValid())
+		return LUA_RETURN_NIL;
+
+	switch(sb->type)
+	{
+		case SWH_PRIMARY:
+				if(idx < 1 || idx > sb->sw->num_primary_banks)
+					return LUA_RETURN_FALSE;
+
+				idx--; //Lua->FS2
+
+				if(LUA_SETTING_VAR && newbank->IsValid()) {
+					//WMC: TODO
+				}
+				break;
+		case SWH_SECONDARY:
+				if(idx < 1 || idx > sb->sw->num_secondary_banks)
+					return LUA_RETURN_FALSE;
+
+				idx--; //Lua->FS2
+
+				if(LUA_SETTING_VAR && newbank->IsValid()) {
+					//WMC: TODO
+				}
+				break;
+		case SWH_TERTIARY:
+				if(idx < 1 || idx > sb->sw->num_tertiary_banks)
+					return LUA_RETURN_FALSE;
+
+				idx--; //Lua->FS2
+
+				if(LUA_SETTING_VAR && newbank->IsValid()) {
+					//WMC: TODO
+				}
+				break;
+		default:
+			return LUA_RETURN_NIL;	//Invalid type
+	}
+
+	return lua_set_args(L, "o", l_WeaponBank.Set(ship_bank_h(sb->objp, sb->sw, sb->type, idx)));
+}
+
 LUA_VAR(Linked, l_WeaponBankType, "boolean", "Whether bank is in linked or unlinked fire mode (Primary-only)")
 {
 	ship_banktype_h *bh;
@@ -2475,57 +2553,7 @@ LUA_VAR(DualFire, l_WeaponBankType, "boolean", "Whether bank is in dual fire mod
 	return LUA_RETURN_NIL;
 }
 
-LUA_INDEXER(l_WeaponBankType, "Bank index", "weaponbank handle", "Returns handle to a specific weapon bank")
-{
-	ship_banktype_h *sb=NULL;
-	int idx = -1;
-	ship_bank_h *newbank;
-	if(!lua_get_args(L, "oi|o", l_WeaponBankType.GetPtr(&sb), &idx, l_WeaponBank.GetPtr(&newbank)))
-		return LUA_RETURN_NIL;
-
-	if(!sb->IsValid())
-		return LUA_RETURN_NIL;
-
-	switch(sb->type)
-	{
-		case SWH_PRIMARY:
-				if(idx < 1 || idx > sb->sw->num_primary_banks)
-					return LUA_RETURN_FALSE;
-
-				idx--; //Lua->FS2
-
-				if(LUA_SETTING_VAR && newbank->IsValid()) {
-					//WMC: TODO
-				}
-				break;
-		case SWH_SECONDARY:
-				if(idx < 1 || idx > sb->sw->num_secondary_banks)
-					return LUA_RETURN_FALSE;
-
-				idx--; //Lua->FS2
-
-				if(LUA_SETTING_VAR && newbank->IsValid()) {
-					//WMC: TODO
-				}
-				break;
-		case SWH_TERTIARY:
-				if(idx < 1 || idx > sb->sw->num_tertiary_banks)
-					return LUA_RETURN_FALSE;
-
-				idx--; //Lua->FS2
-
-				if(LUA_SETTING_VAR && newbank->IsValid()) {
-					//WMC: TODO
-				}
-				break;
-		default:
-			return LUA_RETURN_NIL;	//Invalid type
-	}
-
-	return lua_set_args(L, "o", l_WeaponBank.Set(ship_bank_h(sb->objp, sb->sw, sb->type, idx)));
-}
-
-LUA_FUNC(getNum, l_WeaponBank, NULL, "Number of weapons mounted in bank", "Gets the number of weapons in the mounted bank")
+LUA_FUNC(getNum, l_WeaponBankType, NULL, "Number of weapons mounted in bank", "Gets the number of weapons in the mounted bank")
 {
 	ship_banktype_h *sb=NULL;
 	if(!lua_get_args(L, "o", l_WeaponBankType.GetPtr(&sb)))
@@ -2666,6 +2694,68 @@ LUA_VAR(GunPosition, l_Subsystem, "local vector", "Subsystem gun position with r
 		sm->offset = *v;
 
 	return lua_set_args(L, "o", l_Vector.Set(sm->offset));
+}
+
+LUA_VAR(PrimaryBanks, l_Subsystem, "weaponbanktype", "Array of primary weapon banks")
+{
+	ship_subsys_h *sso, *sso2;
+	if(!lua_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Subsystem.GetPtr(&sso2)))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship_weapon *dst = &sso->ss->weapons;
+
+	if(LUA_SETTING_VAR && sso2->IsValid()) {
+		ship_weapon *src = &sso2->ss->weapons;
+
+		dst->current_primary_bank = src->current_primary_bank;
+		dst->num_primary_banks = src->num_primary_banks;
+
+		memcpy(dst->next_primary_fire_stamp, src->next_primary_fire_stamp, sizeof(dst->next_primary_fire_stamp));
+		memcpy(dst->primary_animation_done_time, src->primary_animation_done_time, sizeof(dst->primary_animation_done_time));
+		memcpy(dst->primary_animation_position, src->primary_animation_position, sizeof(dst->primary_animation_position));
+		memcpy(dst->primary_bank_ammo, src->primary_bank_ammo, sizeof(dst->primary_bank_ammo));
+		memcpy(dst->primary_bank_capacity, src->primary_bank_capacity, sizeof(dst->primary_bank_capacity));
+		memcpy(dst->primary_bank_rearm_time, src->primary_bank_rearm_time, sizeof(dst->primary_bank_rearm_time));
+		memcpy(dst->primary_bank_start_ammo, src->primary_bank_start_ammo, sizeof(dst->primary_bank_start_ammo));
+		memcpy(dst->primary_bank_weapons, src->primary_bank_weapons, sizeof(dst->primary_bank_weapons));
+		memcpy(dst->primary_next_slot, src->primary_next_slot, sizeof(dst->primary_next_slot));
+	}
+
+	return lua_set_args(L, "o", l_WeaponBankType.Set(ship_banktype_h(sso->objp, dst, SWH_PRIMARY)));
+}
+
+LUA_VAR(SecondaryBanks, l_Subsystem, "weaponbanktype", "Array of secondary weapon banks")
+{
+	ship_subsys_h *sso, *sso2;
+	if(!lua_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Subsystem.GetPtr(&sso2)))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship_weapon *dst = &sso->ss->weapons;
+
+	if(LUA_SETTING_VAR && sso2->IsValid()) {
+		ship_weapon *src = &sso2->ss->weapons;
+
+		dst->current_secondary_bank = src->current_secondary_bank;
+		dst->num_secondary_banks = src->num_secondary_banks;
+
+		memcpy(dst->next_secondary_fire_stamp, src->next_secondary_fire_stamp, sizeof(dst->next_secondary_fire_stamp));
+		memcpy(dst->secondary_animation_done_time, src->secondary_animation_done_time, sizeof(dst->secondary_animation_done_time));
+		memcpy(dst->secondary_animation_position, src->secondary_animation_position, sizeof(dst->secondary_animation_position));
+		memcpy(dst->secondary_bank_ammo, src->secondary_bank_ammo, sizeof(dst->secondary_bank_ammo));
+		memcpy(dst->secondary_bank_capacity, src->secondary_bank_capacity, sizeof(dst->secondary_bank_capacity));
+		memcpy(dst->secondary_bank_rearm_time, src->secondary_bank_rearm_time, sizeof(dst->secondary_bank_rearm_time));
+		memcpy(dst->secondary_bank_start_ammo, src->secondary_bank_start_ammo, sizeof(dst->secondary_bank_start_ammo));
+		memcpy(dst->secondary_bank_weapons, src->secondary_bank_weapons, sizeof(dst->secondary_bank_weapons));
+		memcpy(dst->secondary_next_slot, src->secondary_next_slot, sizeof(dst->secondary_next_slot));
+	}
+
+	return lua_set_args(L, "o", l_WeaponBankType.Set(ship_banktype_h(sso->objp, dst, SWH_SECONDARY)));
 }
 
 
@@ -2912,8 +3002,9 @@ LUA_INDEXER(l_Ship, "Subsystem name or index", "Subsystem", "Returns subsystem b
 	if(ss == NULL)
 	{
 		int idx = atoi(s);
-		if(idx > 0 && idx <= shipp->n_subsystems)
+		if(idx > 0 && idx <= ship_get_num_subsys(shipp))
 		{
+			idx--; //Lua->FS2
 			ss = ship_get_indexed_subsys(shipp, idx);
 		}
 	}
@@ -3270,7 +3361,7 @@ LUA_FUNC(kill, l_Ship, "[object Killer]", "True if successful", "Kills the ship.
 		percent_killed = 1.0f;
 	}
 
-	ship_hit_kill(victim->objp, killer->objp, percent_killed, (victim->objp == killer->objp) ? 1 : 0);
+	ship_hit_kill(victim->objp, killer->objp, percent_killed, (victim->sig == killer->sig) ? 1 : 0);
 
 	return LUA_RETURN_TRUE;
 }
@@ -3284,21 +3375,7 @@ LUA_FUNC(getNumSubsystems, l_Ship, NULL, "Number of subsystems", "Gets number of
 	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	ship *shipp = &Ships[objh->objp->instance];
-	int n_subsys = 0;
-
-	//First case, no model replace
-	//Second case, model replace has occured
-	if(shipp->n_subsystems < 1)
-	{
-		n_subsys = Ship_info[shipp->ship_info_index].n_subsystems;
-	}
-	else
-	{
-		n_subsys = shipp->n_subsystems;
-	}
-
-	return lua_set_args(L, "i", n_subsys);
+	return lua_set_args(L, "i", ship_get_num_subsys(&Ships[objh->objp->instance]));
 }
 
 LUA_FUNC(getNumTextures, l_Ship, NULL, "Number of textures", "Gets number of textures on ship")
@@ -4613,7 +4690,7 @@ LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation, No drop
 	bool b=false;
 	bool d=false;
 
-	if(!lua_get_args(L, "s", &s, &b, &d))
+	if(!lua_get_args(L, "s|bb", &s, &b, &d))
 		return LUA_RETURN_NIL;
 
 	idx = bm_load(s);
