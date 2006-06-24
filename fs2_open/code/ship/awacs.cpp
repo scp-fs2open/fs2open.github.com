@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.24 $
- * $Date: 2006-06-07 04:47:43 $
- * $Author: wmcoolmon $
+ * $Revision: 2.25 $
+ * $Date: 2006-06-24 04:48:02 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2006/06/07 04:47:43  wmcoolmon
+ * Limbo flag support; removed unneeded muzzle flash flag
+ *
  * Revision 2.23  2006/03/18 10:28:25  taylor
  * fix out-of-bounds problem in awacs checking (full neb missions may have been a bit freaky from this)
  *
@@ -242,7 +245,7 @@ void awacs_level_init()
 void awacs_process()
 {
 	// if we need to update total AWACS levels, do so now
-	if((Awacs_stamp == -1) || timestamp_elapsed(Awacs_stamp))
+	if ((Awacs_stamp == -1) || timestamp_elapsed(Awacs_stamp))
 	{
 		// reset the timestamp
 		Awacs_stamp = timestamp(AWACS_STAMP_TIME);
@@ -270,7 +273,7 @@ void awacs_update_all_levels()
 
 	// zero all levels
 	Awacs_level = 0.0f;
-	for(idx=0; idx<MAX_IFFS; idx++)
+	for (idx=0; idx<MAX_IFFS; idx++)
 		Awacs_team[idx] = 0.0f;
 
 	Awacs_count = 0;
@@ -279,14 +282,14 @@ void awacs_update_all_levels()
 	for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup))
 	{
 		// make sure its a valid ship
-		if((Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0))
+		if ((Objects[moveup->objnum].type != OBJ_SHIP) || (Objects[moveup->objnum].instance < 0))
 			continue;
 		
 		// get a handle to the ship
 		shipp = &Ships[Objects[moveup->objnum].instance];
 
 		// ignore dying, departing, or arriving ships
-		if((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING) || (shipp->flags & SF_LIMBO))
+		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING) || (shipp->flags & SF_LIMBO))
 			continue;
 
 		// only look at ships that have awacs subsystems
@@ -294,16 +297,16 @@ void awacs_update_all_levels()
 			continue;
 
 		// traverse all subsystems
-		for(ship_system = GET_FIRST(&shipp->subsys_list); ship_system != END_OF_LIST(&shipp->subsys_list); ship_system = GET_NEXT(ship_system))
+		for (ship_system = GET_FIRST(&shipp->subsys_list); ship_system != END_OF_LIST(&shipp->subsys_list); ship_system = GET_NEXT(ship_system))
 		{
 			// if this is an AWACS subsystem
-			if((ship_system->system_info != NULL) && (ship_system->system_info->flags & MSS_FLAG_AWACS))
+			if ((ship_system->system_info != NULL) && (ship_system->system_info->flags & MSS_FLAG_AWACS))
 			{
 				// add the intensity to the team total
 				Awacs_team[shipp->team] += ship_system->awacs_intensity * (ship_system->current_hits / ship_system->max_hits);
 
 				// add an Awacs source
-				if(Awacs_count < MAX_AWACS)
+				if (Awacs_count < MAX_AWACS)
 				{
 					Awacs[Awacs_count].subsys = ship_system;
 					Awacs[Awacs_count].team = shipp->team;
@@ -321,7 +324,7 @@ void awacs_update_all_levels()
 	// spew all the info
 #ifndef NDEBUG 
 	/*
-	for(idx=0; idx<MAX_TVT_TEAMS; idx++){
+	for (idx=0; idx<MAX_TVT_TEAMS; idx++){
 		nprintf(("General", "Team %d AWACS == %f\n", idx, Awacs_team[idx]));
 	}
 	nprintf(("General", "AWACS level == %f\n", Awacs_level));
@@ -356,11 +359,11 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 #define ALWAYS_TARGETABLE		(1.5f)
 #define MARGINALLY_TARGETABLE	(0.5f)
 #define UNTARGETABLE			(-1.0f)
-#define FULLY_TARGETABLE		((viewer_has_primitive_sensors ? ((distance < viewer->primitive_sensor_range) ? MARGINALLY_TARGETABLE : UNTARGETABLE) : ALWAYS_TARGETABLE))
+#define FULLY_TARGETABLE		(viewer_has_primitive_sensors ? ((distance < viewer->primitive_sensor_range) ? MARGINALLY_TARGETABLE : UNTARGETABLE) : ALWAYS_TARGETABLE)
 
 
 	// if the viewer is me, and I'm a multiplayer observer, its always viewable
-	if((viewer == Player_ship) && (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM]))
+	if ((viewer == Player_ship) && (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM]))
 		return ALWAYS_TARGETABLE;
 
 	// if no valid target then bail as never viewable
@@ -378,7 +381,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 
 	// ships on the same team are always viewable
 	// not necessarily now! :) -- Goober5000
-	if((target->type == OBJ_SHIP) && (shipp->team == viewer->team) && (!friendly_invisible))
+	if ((target->type == OBJ_SHIP) && (shipp->team == viewer->team) && (!friendly_invisible))
 		return FULLY_TARGETABLE;
 
 	// only check for Awacs if stealth ship or Nebula mission
@@ -388,15 +391,15 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		for (idx=0; idx<Awacs_count; idx++)
 		{
 			// if not on the same team as the viewer
-			if(Awacs[idx].team != viewer->team)
+			if (Awacs[idx].team != viewer->team)
 				continue;
 
 			// if this awacs source has somehow become invalid
-			if(Awacs[idx].objp->type != OBJ_SHIP)
+			if (Awacs[idx].objp->type != OBJ_SHIP)
 				continue;
 
 			// get the subsystem position
-			if(!get_subsystem_pos(&subsys_pos, Awacs[idx].objp, Awacs[idx].subsys))
+			if (!get_subsystem_pos(&subsys_pos, Awacs[idx].objp, Awacs[idx].subsys))
 				continue;
 
 			// determine if its the closest
@@ -431,17 +434,17 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	}
 
 	// check for a tagged ship. TAG'd ships are _always_ visible
-	if(target->type == OBJ_SHIP)
+	if (target->type == OBJ_SHIP)
 	{
-		if(shipp->tag_left > 0.0f || shipp->level2_tag_left > 0.0f)
+		if (shipp->tag_left > 0.0f || shipp->level2_tag_left > 0.0f)
 			return FULLY_TARGETABLE;
 	}
 	
 	// if this is a stealth ship
-	if(stealth_ship)
+	if (stealth_ship)
 	{
 		// if the ship is within range of an awacs
-		if(closest_index >= 0)
+		if (closest_index >= 0)
 		{
 			// if the nebula effect is active, stealth ships are only partially targetable
 			if (nebula_enabled)
@@ -460,19 +463,18 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	else
 	{
 		// if this is not a nebula mission, its always targetable
-		if(!nebula_enabled)
+		if (!nebula_enabled)
 			return FULLY_TARGETABLE;
 
 		// if the ship is within range of an awacs, its fully targetable
-		if(closest_index >= 0)
+		if (closest_index >= 0)
 			return FULLY_TARGETABLE;
 
 
 		// fully targetable at half the nebula value
 
 		// modify distance by species
-		float scan_nebula_range = (nebula_enabled) ? Neb2_awacs : UNTARGETABLE;
-		scan_nebula_range *= Species_info[Ship_info[viewer->ship_info_index].species].awacs_multiplier;
+		float scan_nebula_range = Neb2_awacs * Species_info[Ship_info[viewer->ship_info_index].species].awacs_multiplier;
 
 		// special case for huge ship - check inside expanded bounding boxes
 		if (check_huge_ship)
@@ -491,9 +493,9 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 			vm_vec_sub(&dist_vec, &target->pos, &Objects[viewer->objnum].pos);
 			test = vm_vec_mag_quick(&dist_vec);
 
-			if(test < (MARGINALLY_TARGETABLE * scan_nebula_range))
+			if (test < (MARGINALLY_TARGETABLE * scan_nebula_range))
 				return FULLY_TARGETABLE;
-			else if(test < scan_nebula_range)
+			else if (test < scan_nebula_range)
 				return MARGINALLY_TARGETABLE;
 		}
 
@@ -575,7 +577,7 @@ void team_visibility_update()
 				for (idx = 0; idx < cur_count; idx++)
 				{
 					// ignore nav buoys and cargo containers
-					if(Ship_info[Ships[cur_team_ships[idx]].ship_info_index].flags & (SIF_CARGO | SIF_NAVBUOY))
+					if (Ship_info[Ships[cur_team_ships[idx]].ship_info_index].flags & (SIF_CARGO | SIF_NAVBUOY))
 					{
 						continue;
 					}
