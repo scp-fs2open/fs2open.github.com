@@ -10,13 +10,19 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.86 $
- * $Date: 2006-05-27 17:20:48 $
+ * $Revision: 2.87 $
+ * $Date: 2006-06-27 04:52:50 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2006/05/27 17:20:48  taylor
+ * clean up BM_TYPE_* stuff so it's a little easier to tell what is what
+ * bm_load_sub_fast() doesn't need to lowercase filenames, so don't
+ * byte-swap 16-bit DDS on big endian (they still don't look right though)
+ * update bm_has_alpha_channel() to be less dumb
+ *
  * Revision 2.85  2006/05/13 07:29:51  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -1230,7 +1236,7 @@ void bm_get_frame_usage(int *ntotal, int *nnew)
 // bpp you can pass in is 32 or 8.  On success, it returns the
 // bitmap number.  You cannot free that RAM until bm_release
 // is called on that bitmap.
-int bm_create( int bpp, int w, int h, void * data, int flags )
+int bm_create( int bpp, int w, int h, void *data, int flags )
 {
 	// Assert((bpp==32)||(bpp==8));
 	if(bpp == 8){
@@ -1255,6 +1261,12 @@ int bm_create( int bpp, int w, int h, void * data, int flags )
 	// Out of bitmap slots
 	if ( n == -1 )
 		return -1;
+
+	// make sure that we have valid data
+	if (data == NULL) {
+		Int3();
+		return -1;
+	}
 
 	memset( &bm_bitmaps[n], 0, sizeof(bitmap_entry) );
 
@@ -2334,7 +2346,7 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 #if BYTE_ORDER == BIG_ENDIAN
 	// same as with TGA, we need to byte swap 16 & 32-bit, uncompressed, DDS images
-	if ( be->comp_type == BM_TYPE_NONE ) {
+	if ( (be->comp_type == BM_TYPE_DDS) || (be->comp_type == BM_TYPE_CUBEMAP_DDS) ) {
 		uint i = 0;
 
 		if (dds_bpp == 32) {

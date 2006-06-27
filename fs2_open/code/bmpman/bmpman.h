@@ -10,13 +10,19 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.37 $
- * $Date: 2006-05-27 17:20:48 $
+ * $Revision: 2.38 $
+ * $Date: 2006-06-27 04:52:50 $
  * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/05/27 17:20:48  taylor
+ * clean up BM_TYPE_* stuff so it's a little easier to tell what is what
+ * bm_load_sub_fast() doesn't need to lowercase filenames, so don't
+ * byte-swap 16-bit DDS on big endian (they still don't look right though)
+ * update bm_has_alpha_channel() to be less dumb
+ *
  * Revision 2.36  2006/05/13 07:29:51  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -520,7 +526,7 @@ int bm_load_duplicate(char *filename);
 // On success, it returns the bitmap number.  You cannot 
 // free that RAM until bm_release is called on that bitmap.  
 // See example at bottom of this file
-int bm_create( int bpp, int w, int h, void * data, int flags = 0);
+int bm_create( int bpp, int w, int h, void *data = NULL, int flags = 0);
 
 // Frees up a bitmap's data, but bitmap number 'n' can
 // still be used, it will just have to be paged in next
