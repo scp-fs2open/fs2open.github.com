@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:35:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2006-06-27 05:07:49 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/07/13 02:00:44  Goober5000
  * rolled this back because it causes a syntax error in MSVC
  * --Goober5000
@@ -80,7 +84,7 @@ void multi_rate_display(int np_index, int x, int y);
 
 // stubs using #defines (c.f. NO_SOUND)
 #define multi_rate_reset(np_index)
-#define multi_rate_add(np_index, type, size) (0)
+#define multi_rate_add(np_index, type, size) 	do { } while (0)
 #define multi_rate_process()
 #define multi_rate_display(np_index, x, y)
 

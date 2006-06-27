@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-05-27 16:59:05 $
+ * $Revision: 2.21 $
+ * $Date: 2006-06-27 05:07:49 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/05/27 16:59:05  taylor
+ * comment out some code which used only if neither D3D nor OGL
+ *
  * Revision 2.19  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -1447,6 +1450,8 @@ void draw_gamma_box()
 		// set half white
 		r = g = b = (ubyte)v;
 		bm_set_components((ubyte*)&clr_half_white, &r, &g, &b, &a);
+
+		memset( Gamma_data, 0, sizeof(ushort) * MAX_GAMMA_BITMAP_SIZE );
 
 		ushort *dptr = Gamma_data;
 		for (y=0; y<Options_gamma_coords[gr_screen.res][OPTIONS_H_COORD]; y++) {

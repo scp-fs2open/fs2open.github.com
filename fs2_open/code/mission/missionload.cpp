@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2006-06-27 05:07:49 $
+ * $Author: taylor $
  *
  * C source module for mission loading
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.10  2006/01/14 19:54:55  wmcoolmon
  * Special shockwave and moving capship bugfix, (even more) scripting stuff, slight rearrangement of level management functions to facilitate scripting access.
  *
@@ -290,7 +293,7 @@ int mission_load(char *filename_ext)
 {
 	char filename[128], *ext;
 
-	if(filename_ext != NULL)
+	if ( (filename_ext != NULL) && (Game_current_mission_filename != filename_ext) )
 		strncpy(Game_current_mission_filename, filename_ext, MAX_FILENAME_LEN-1);
 
 	mprintf(("MISSION LOAD: '%s'\n", filename_ext));
