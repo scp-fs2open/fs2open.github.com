@@ -3149,29 +3149,6 @@ LUA_VAR(HitpointsMax, l_Ship, "Number", "Total hitpoints")
 	return lua_set_args(L, "f", shipp->ship_max_hull_strength);
 }
 
-LUA_VAR(IsInLimbo, l_Ship, "Boolean", "Ship's limbo status")
-{
-	object_h *objh;
-	bool newlimbo = false;
-	if(!lua_get_args(L, "o|b", l_Ship.GetPtr(&objh), &newlimbo))
-		return LUA_RETURN_NIL;
-
-	if(!objh->IsValid())
-		return LUA_RETURN_NIL;
-
-	ship *shipp = &Ships[objh->objp->instance];
-
-	if(LUA_SETTING_VAR)
-	{
-		if(newlimbo)
-			shipp->flags |= SF_LIMBO;
-		else
-			shipp->flags &= ~SF_LIMBO;
-	}
-
-	return lua_set_args(L, "b", (shipp->flags & SF_LIMBO) != 0);
-}
-
 LUA_VAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon banks")
 {
 	object_h *objh;
@@ -3465,7 +3442,7 @@ LUA_FUNC(warpOut, l_Ship, "[boolean Departing]", "True", "Warps ship out; argume
 	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	shipfx_warpout_start(objh->objp, b);
+	shipfx_warpout_start(objh->objp);
 
 	return LUA_RETURN_TRUE;
 }
