@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.cpp $
- * $Revision: 2.4 $
- * $Date: 2005-04-12 05:26:36 $
+ * $Revision: 2.5 $
+ * $Date: 2006-06-27 05:07:49 $
  * $Author: taylor $
  *
  * Low-level floating point math routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/04/12 05:26:36  taylor
+ * many, many compiler warning and header fixes (Jens Granseuer)
+ * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
+ *
  * Revision 2.3  2004/07/26 20:47:36  Kazan
  * remove MCD complete
  *
@@ -94,9 +98,10 @@ typedef float FLOAT;
 #define GET_EMANT(a)	(((a) >> LOOKUP_POS) & LOOKUP_MASK )
 #define SET_MANTSEED(a)	(((unsigned long)(a)) << SEED_POS )
 
-
+/*
 int fl_magic = 0x59C00000;		//representation of 2^51 + 2^52
 const float *p_fl_magic = (const float *)&fl_magic;
+*/
 
 union _flint {
 	unsigned long	i;

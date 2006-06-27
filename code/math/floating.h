@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.h $
- * $Revision: 2.5 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2006-06-27 05:07:49 $
+ * $Author: taylor $
  *
  * Low-level floating point math macros and routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.4  2005/12/28 22:30:24  taylor
  * add fl_tan() for getting the tangent of a float since it's terribly inaccurate to just use tan() on a float
  *
@@ -123,6 +126,7 @@ float frand_range(float min, float max);
 //       (int)floor(x)      use fl_round_2048(x-0.5f)
 // for values in the range -2048 to 2048
 
+/*
 extern const float *p_fl_magic;
 
 inline int fl_round_2048( float x )
@@ -132,7 +136,6 @@ inline int fl_round_2048( float x )
 	return *((int *)&tmp_quad);
 }
 
-/*
 inline float fl_sqrt( float x)
 {
 	float retval;

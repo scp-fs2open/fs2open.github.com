@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.31 $
- * $Date: 2006-05-27 17:13:22 $
+ * $Revision: 2.32 $
+ * $Date: 2006-06-27 05:07:48 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/05/27 17:13:22  taylor
+ * add NO_DIRECT3D support
+ *
  * Revision 2.30  2006/05/13 06:59:48  taylor
  * MVE player (audio only works with OpenAL builds!)
  *
@@ -151,9 +154,6 @@ bool movie_play(char *name)
 	//Commented this out since we have dnoshowvid -WMC
  	//if(Cmdline_window) return false;
 
-	char full_name[MAX_PATH];
-	int rc = 0;
-
 	// first off, check for a MVE
 	MVESTREAM *movie = NULL;
 
@@ -187,6 +187,9 @@ bool movie_play(char *name)
 	// no MVE version so move on to AVI/MPG searching
 
 #ifdef _WIN32
+	char full_name[MAX_PATH];
+	int rc = 0;
+
 	rc = movie_find(name, full_name);
 
 	if (!rc) {
