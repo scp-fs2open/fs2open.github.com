@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.5 $
- * $Date: 2006-06-24 01:53:53 $
+ * $Revision: 2.259.2.6 $
+ * $Date: 2006-06-27 03:55:22 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.5  2006/06/24 01:53:53  Goober5000
+ * make ai-chase-any-except revert to ai-chase-any
+ * (since it never really worked properly in the first place)
+ * --Goober5000
+ *
  * Revision 2.259.2.4  2006/06/15 01:36:01  Goober5000
  * this is kinda superfluous
  *
@@ -9442,7 +9447,7 @@ void sexp_jettison_cargo(int n)
 	// no arguments - jettison all docked objects
 	if (n == -1)
 	{
-		// Goober5000 - as with do_dying_undock_physics, we can't simply iterate through the dock list while we're
+		// Goober5000 - as with ai_deathroll_start, we can't simply iterate through the dock list while we're
 		// undocking things.  So just repeatedly jettison the first object.
 		while (object_is_docked(parent_objp))
 		{
