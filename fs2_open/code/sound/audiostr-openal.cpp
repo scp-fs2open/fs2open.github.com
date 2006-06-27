@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.29 $
- * $Date: 2006-06-02 08:05:33 $
+ * $Revision: 1.30 $
+ * $Date: 2006-06-27 05:06:05 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2006/06/02 08:05:33  taylor
+ * some more buffer size strangeness (which I still don't understand) that makes certain sound formats not work properly
+ *
  * Revision 1.28  2006/06/01 04:45:19  taylor
  * a little change to the order here, this should be safer in the long run and avoid some memory issues too
  *
@@ -136,10 +139,8 @@
 
 #if !(defined(__APPLE__) || defined(_WIN32))
 	#include <AL/al.h>
-	#include <AL/alc.h>
 #else
 	#include "al.h"
-	#include "alc.h"
 #endif // !__APPLE__ && !_WIN32
 
 #define NEED_STRHDL		// for STRHTL struct in audiostr.h
