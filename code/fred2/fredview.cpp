@@ -9,8 +9,8 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.6 $
- * $Date: 2006-04-20 06:32:01 $
+ * $Revision: 1.7 $
+ * $Date: 2006-06-27 02:48:41 $
  * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.5  2006/02/20 02:13:07  Goober5000
  * added ai-ignore-new which hopefully should fix the ignore bug
  * --Goober5000
@@ -3198,7 +3201,7 @@ int CFREDView::global_error_check()
 					}
 
 				z = get_docking_list(Ships[i].modelnum);
-				point = dock_find_dockpoint_used_by_object(&Objects[Ships[i].objnum], dock_ptr->docked_objp);
+				point = dock_ptr->dockpoint_used;
 				if (point < 0 || point >= z){
 					internal_error("Invalid docker point (\"%s\" initially docked with \"%s\")", Ships[i].ship_name, Ships[ship].ship_name);
 				}
