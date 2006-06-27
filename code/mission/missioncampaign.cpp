@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.42 $
- * $Date: 2006-06-10 18:34:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.43 $
+ * $Date: 2006-06-27 05:07:49 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2006/06/10 18:34:08  Goober5000
+ * fix parsing/handling of debriefing persona indexes
+ * --Goober5000
+ *
  * Revision 2.41  2006/06/02 08:59:58  karajorma
  * Swaped from stuff_int_list to stuff_ship_list when parsing in a list of ships allowed in the campaign.
  *
@@ -1463,6 +1467,9 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 
 	Assert(ship_count <= MAX_SHIP_CLASSES);
 	Assert(weapon_count <= MAX_WEAPON_TYPES);
+
+	memset( s_name, 0, sizeof(char) * MAX_SHIP_CLASSES * NAME_LENGTH );
+	memset( w_name, 0, sizeof(char) * MAX_WEAPON_TYPES * NAME_LENGTH );
 
 	for ( i = 0; i < ship_count; i++ ){
 		if (version >= 14) {

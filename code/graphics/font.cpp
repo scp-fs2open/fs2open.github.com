@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.15 $
- * $Date: 2005-10-30 06:44:57 $
- * $Author: wmcoolmon $
+ * $Revision: 2.16 $
+ * $Date: 2006-06-27 05:07:48 $
+ * $Author: taylor $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/10/30 06:44:57  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.14  2005/07/02 19:42:15  taylor
  * ton of non-standard resolution fixes
  *
@@ -918,6 +921,8 @@ int gr_create_font(char * typeface)
 	fnt->bm_data = (ubyte *)vm_malloc(fnt->bm_w*fnt->bm_h);
 	fnt->bm_u = (int *)vm_malloc(sizeof(int)*fnt->num_chars);
 	fnt->bm_v = (int *)vm_malloc(sizeof(int)*fnt->num_chars);
+
+	memset( fnt->bm_data, 0, fnt->bm_w * fnt->bm_h );
 
 	int i,x,y;
 	x = y = 0;

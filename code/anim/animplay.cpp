@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-03-21 00:27:27 $
+ * $Revision: 2.20 $
+ * $Date: 2006-06-27 05:07:48 $
  * $Author: taylor $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/03/21 00:27:27  taylor
+ * some minor cleanup
+ *
  * Revision 2.18  2005/11/13 06:39:38  taylor
  * remove Cmdline_cache_ani support, it only worked if not in a VP and only on streaming ani so it was pretty much useless
  *
@@ -462,6 +465,7 @@ anim_instance *anim_play(anim_play_struct *aps)
 	}
 	instance->frame = (ubyte *) vm_malloc(instance->parent->width * instance->parent->height * 2);
 	Assert( instance->frame != NULL );
+	memset( instance->frame, 0, instance->parent->width * instance->parent->height * 2 );
 	instance->time_elapsed = 0.0f;
 	instance->stop_at = aps->stop_at;
 	instance->x = aps->x;

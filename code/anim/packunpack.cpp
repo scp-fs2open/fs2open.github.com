@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-03-21 00:27:27 $
+ * $Revision: 2.14 $
+ * $Date: 2006-06-27 05:07:48 $
  * $Author: taylor $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
@@ -18,6 +18,9 @@
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/03/21 00:27:27  taylor
+ * some minor cleanup
+ *
  * Revision 2.12  2006/01/22 19:57:35  wmcoolmon
  * 0...1...2...4?
  *
@@ -266,7 +269,9 @@ anim_instance *init_anim_instance(anim *ptr, int bpp)
 	inst->stop_now = FALSE;
 	inst->aa_color = NULL;
 
-	inst->frame = (ubyte *) vm_malloc(inst->parent->width * inst->parent->height * (bpp/8));
+	inst->frame = (ubyte *) vm_malloc(inst->parent->width * inst->parent->height * (bpp >> 3));
+	Assert( inst->frame != NULL );
+	memset( inst->frame, 0, inst->parent->width * inst->parent->height * (bpp >> 3) );
 
 	return inst;
 }
