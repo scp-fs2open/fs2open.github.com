@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.32 2006-06-27 04:50:59 taylor Exp $
+## $Id: Makefile.am,v 1.33 2006-06-27 16:53:36 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -542,6 +542,8 @@ FS2_SOURCES =	\
 	object/collideshipship.cpp	\
 	object/collideshipweapon.cpp	\
 	object/collideweaponweapon.cpp	\
+	object/deadobjectdock.cpp	\
+	object/deadobjectdock.h	\
 	object/objcollide.cpp	\
 	object/objcollide.h	\
 	object/objectdock.cpp	\
