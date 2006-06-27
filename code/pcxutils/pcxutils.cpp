@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/PcxUtils/pcxutils.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-11-13 06:44:18 $
+ * $Revision: 2.11 $
+ * $Date: 2006-06-27 05:04:43 $
  * $Author: taylor $
  *
  * code to deal with pcx files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/11/13 06:44:18  taylor
+ * small bit of EFF cleanup
+ * add -img2dds support
+ * cleanup some D3D stuff (missing a lot since the old code is so unstable I couldn't get it working like I wanted)
+ * some minor OGL cleanup and small performance changes
+ * converge the various pcx_read_bitmap* functions into one
+ * cleanup/rename/remove some cmdline options
+ *
  * Revision 2.9  2005/09/06 02:40:24  taylor
  * fix for -pcx32 on big-endian
  *
@@ -477,9 +485,10 @@ int pcx_read_bitmap( char * real_filename, ubyte *org_data, ubyte *pal, int byte
 						} else {
 							// if the color matches the transparent color, make it so
 							al = 255;
-							if((0 == (int)palette[data*3]) && (255 == (int)palette[data*3+1]) && (0 == (int)palette[data*3+2])){
+
+							if ( (0 == (int)palette[data*3]) && (255 == (int)palette[data*3+1]) && (0 == (int)palette[data*3+2]) ) {
 								r = b = 0;
-								g = 255;
+								g = (byte_size == 4) ? 0 : 255;
 								al = 0;					
 							}
 						}
