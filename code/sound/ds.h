@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.18 $
- * $Date: 2006-05-14 05:22:43 $
+ * $Revision: 2.19 $
+ * $Date: 2006-06-27 04:58:58 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/05/14 05:22:43  taylor
+ * forgot to remove STRICT define before commit, gets rid of a Windows compiler warning
+ *
  * Revision 2.17  2006/05/13 07:10:37  taylor
  * some Windows specific OpenAL changes
  * add MVE files to MSVC6 project
@@ -241,16 +244,16 @@ typedef struct channel
 
 extern channel *Channels;
 
-extern const char* openal_error_string();
+extern const char* openal_error_string(int get_alc = 0);
 
 // if an error occurs after executing 'x' then do 'y'
 #define OpenAL_ErrorCheck( x, y )	do {	\
 	x;	\
-	const char *error_text = openal_error_string();	\
+	const char *error_text = openal_error_string(0);	\
 	if ( error_text != NULL ) {	\
 		while ( error_text != NULL ) {	\
 			nprintf(("Warning", "SOUND: %s:%d - OpenAL error = '%s'\n", __FILE__, __LINE__, error_text));	\
-			error_text = openal_error_string();	\
+			error_text = openal_error_string(0);	\
 		}	\
 		y;	\
 	}	\
@@ -259,15 +262,39 @@ extern const char* openal_error_string();
 // like OpenAL_ErrorCheck() except that it gives the error message from x but does nothing about it
 #define OpenAL_ErrorPrint( x )	do {	\
 	x;	\
-	const char *error_text = openal_error_string();	\
+	const char *error_text = openal_error_string(0);	\
 	if ( error_text != NULL ) {	\
 		while ( error_text != NULL ) {	\
 			nprintf(("Sound", "OpenAL ERROR: \"%s\" in %s, line %i\n", error_text, __FILE__, __LINE__));	\
-			error_text = openal_error_string();	\
+			error_text = openal_error_string(0);	\
 		}	\
 	}	\
 } while (0);
 
+// same as the above two, but looks for ALC errors instead of standard AL errors
+#define OpenAL_C_ErrorCheck( x, y )	do {	\
+	x;	\
+	const char *error_text = openal_error_string(1);	\
+	if ( error_text != NULL ) {	\
+		while ( error_text != NULL ) {	\
+			nprintf(("Warning", "SOUND: %s:%d - OpenAL error = '%s'\n", __FILE__, __LINE__, error_text));	\
+			error_text = openal_error_string(1);	\
+		}	\
+		y;	\
+	}	\
+} while (0);
+
+// like OpenAL_ErrorCheck() except that it gives the error message from x but does nothing about it
+#define OpenAL_C_ErrorPrint( x )	do {	\
+	x;	\
+	const char *error_text = openal_error_string(1);	\
+	if ( error_text != NULL ) {	\
+		while ( error_text != NULL ) {	\
+			nprintf(("Sound", "OpenAL ERROR: \"%s\" in %s, line %i\n", error_text, __FILE__, __LINE__));	\
+			error_text = openal_error_string(1);	\
+		}	\
+	}	\
+} while (0);
 #else
 
 extern LPDIRECTSOUNDBUFFER		pPrimaryBuffer;

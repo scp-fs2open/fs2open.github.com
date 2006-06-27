@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.46 $
- * $Date: 2006-06-01 07:33:00 $
+ * $Revision: 2.47 $
+ * $Date: 2006-06-27 04:58:58 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2006/06/01 07:33:00  taylor
+ * make sure to use software device rather than hardware since we don't currently handle source rotation/reuse properly between ds and audiostr code
+ *
  * Revision 2.45  2006/06/01 04:46:18  taylor
  * put back listener setup for each sound, doesn't make a difference under Linux but it may be hurting Windows for some reason
  *
@@ -673,14 +676,22 @@ ALCcontext *ds_sound_context = NULL;
 //
 // Returns the human readable error string if there is an error or NULL if not
 //
-const char* openal_error_string()
+const char* openal_error_string(int get_alc)
 {
 	int i;
 
-	i = alGetError();
+	if (get_alc) {
+		i = alcGetError(NULL);
 
-	if ( i != AL_NO_ERROR )
-		return (const char*)alGetString(i);
+		if ( i != ALC_NO_ERROR )
+			return (const char*) alcGetString(NULL, i);
+	}
+	else {
+		i = alGetError();
+
+		if ( i != AL_NO_ERROR )
+			return (const char*)alGetString(i);
+	}
 
 	return NULL;
 }
@@ -1420,12 +1431,14 @@ void ds_init_channels()
 		Error(LOCATION, "Unable to allocate %d bytes for %d audio channels.", sizeof(channel) * MAX_CHANNELS, MAX_CHANNELS);
 	}
 
+	memset( Channels, 0, sizeof(channel) * MAX_CHANNELS );
+
 	// init the channels
 	for ( i = 0; i < MAX_CHANNELS; i++ ) {
 		OpenAL_ErrorPrint( alGenSources(1, &Channels[i].source_id) );
 		Channels[i].buf_id = -1;
-		Channels[i].vol = 0;
-		Channels[i].is_voice_msg = false;
+		Channels[i].sig = -1;
+		Channels[i].snd_id = -1;
 	}
 #else
 	int i;
@@ -1701,8 +1714,6 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 #ifdef USE_OPENAL
 //	NOTE: A3D and EAX are unused in OpenAL
 	int attr[] = { ALC_FREQUENCY, sample_rate, ALC_SYNC, AL_FALSE, 0 };
-	char *extlist, *curext;
-	static const char *OAL_extensions;
 
 	Ds_use_a3d = 0;
 	Ds_use_eax = 0;
@@ -1719,7 +1730,10 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	// restrict to DirectSound rather than DirectSound3D (the default) here since we may have 'too many hardware sources'
 	// type problems (FIXME for a later date since I don't like this with future code) - taylor
 #ifdef AL_VERSION_1_1
-	ds_sound_device = alcOpenDevice( (const ALCchar *) NOX("Generic Software") );
+	char *device_spec = os_config_read_string( NULL, "SoundDeviceOAL", "Generic Software" );
+	mprintf(("  Using '%s' as OpenAL sound device...\n", device_spec));
+
+	ds_sound_device = alcOpenDevice( (const ALCchar *) device_spec );
 #else
 	ds_sound_device = alcOpenDevice( (const ALubyte *) NOX("DirectSound") );
 #endif // AL_VERSION_1_1
@@ -1741,45 +1755,22 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 		return -1;
 	}
 
-	OpenAL_ErrorCheck( alcMakeContextCurrent( ds_sound_context ), return -1 );
+	OpenAL_C_ErrorCheck( alcMakeContextCurrent( ds_sound_context ), return -1 );
 
 	mprintf(( "  OpenAL Vendor     : %s\n", alGetString( AL_VENDOR ) ));
 	mprintf(( "  OpenAL Renderer   : %s\n", alGetString( AL_RENDERER ) ));
 	mprintf(( "  OpenAL Version    : %s\n", alGetString( AL_VERSION ) ));
-	mprintf(( "  OpenAL Extensions : \n" ));
-
-	// print out OpenAL extensions
-	OAL_extensions=(const char*)alGetString( AL_EXTENSIONS );
-	int ext_length = strlen(OAL_extensions) + 1;
-
-	// we use the "+1" here to have an extra NULL char on the end (with the memset())
-	// this is to fix memory errors when the last char in extlist is the same as the token
-	// we are looking for and ultra evil strtok() may still return non-NULL at EOS
-	extlist = (char*)vm_malloc( ext_length );
-	memset( extlist, 0, ext_length);
-
-	if (extlist != NULL) {
-		memcpy(extlist, OAL_extensions, ext_length - 1);
-
-		curext = strtok(extlist, " ");
-
-		while (curext) {
-			mprintf(( "      %s\n", curext ));
-			curext = strtok(NULL, " ");
-		}
-
-		vm_free(extlist);
-		extlist = NULL;
-	}
+	mprintf(( "\n" ));
 
 	// make sure we can actually use AL_BYTE_LOKI (Mac OpenAL doesn't have it)
-#ifndef _WIN32
 #ifdef AL_VERSION_1_1
 	AL_play_position = alIsExtensionPresent( (const ALchar*)"AL_LOKI_play_position" );
 #else
 	AL_play_position = alIsExtensionPresent( (ALubyte*)"AL_LOKI_play_position" );
 #endif // AL_VERSION_1_1
-#endif // !_WIN32
+
+	if (AL_play_position)
+		mprintf(( "  Using extension \"AL_LOKI_play_position\".\n" ));
 
 	// not a big deal here, but for consitancy sake
 	if (Ds_use_ds3d && ds3d_init(0) != 0)
@@ -2253,7 +2244,7 @@ void ds_close()
 	Channels = NULL;
 
 #ifdef USE_OPENAL
-//	alcMakeContextCurrent(NULL);	// hangs on me for some reason
+	alcMakeContextCurrent(NULL);	// hangs on me for some reason
 
 	if (ds_sound_context != NULL)
 		alcDestroyContext(ds_sound_context);
@@ -2328,17 +2319,20 @@ int ds_get_free_channel(int new_volume, int snd_id, int priority)
 	// Look for a channel to use to play this sample
 	for ( i = 0; i < MAX_CHANNELS; i++ )	{
 		chp = &Channels[i];
+
 		if ( chp->source_id == 0 ) {
 			if ( first_free_channel == -1 )
 				first_free_channel = i;
+
 			continue;
 		}
 
-		OpenAL_ErrorCheck( alGetSourcei(chp->source_id, AL_SOURCE_STATE, &status), return -1 );
+		OpenAL_ErrorCheck( alGetSourcei(chp->source_id, AL_SOURCE_STATE, &status), continue );
 
 		if ( status != AL_PLAYING ) {
 			if ( first_free_channel == -1 )
 				first_free_channel = i;
+
 			continue;
 		}
 		else {
@@ -3025,7 +3019,7 @@ int ds_get_channel(int sig)
 	int i;
 
 	for ( i = 0; i < MAX_CHANNELS; i++ ) {
-		if ( Channels[i].source_id && Channels[i].sig == sig ) {
+		if ( Channels[i].source_id && (Channels[i].sig == sig) ) {
 			if ( ds_is_channel_playing(i) == TRUE ) {
 				return i;
 			}
