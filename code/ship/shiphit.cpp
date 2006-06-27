@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.63 $
- * $Date: 2006-05-20 02:03:01 $
+ * $Revision: 2.64 $
+ * $Date: 2006-06-27 04:06:18 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2006/05/20 02:03:01  Goober5000
+ * fix for Mantis #755, plus make the missionlog #defines uniform
+ * --Goober5000
+ *
  * Revision 2.62  2006/03/18 07:12:08  Goober5000
  * add ship-subsys-targetable and ship-subsys-untargetable
  * --Goober5000
@@ -1990,7 +1994,7 @@ void ship_generic_kill_stuff( object *objp, float percent_killed )
 		rotvel_mag = 150.0f / objp->radius;
 	}
 
-	if (object_is_docked(objp)) {
+	if (object_is_dead_docked(objp)) {
 		// don't change current rotvel
 		sp->deathroll_rotvel = objp->phys_info.rotvel;
 	} else {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.74 $
- * $Date: 2006-06-07 04:37:36 $
- * $Author: wmcoolmon $
+ * $Revision: 1.75 $
+ * $Date: 2006-06-27 04:06:18 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.74  2006/06/07 04:37:36  wmcoolmon
+ * "Limbo" flag support
+ *
  * Revision 1.73  2006/06/04 01:01:52  Goober5000
  * add fighterbay restriction code
  * --Goober5000
@@ -1107,6 +1110,7 @@
 #include "math/fvi.h"
 #include "parse/parselo.h"
 #include "object/objectdock.h"
+#include "object/deadobjectdock.h"
 #include "ai/aiinternal.h"
 #include "iff_defs/iff_defs.h"
 #include "network/multimsgs.h"
@@ -15897,19 +15901,40 @@ void ai_warp_out(object *objp, vec3d *vp)
 
 
 //	Do stuff at start of deathroll.
-void ai_deathroll_start(object *ship_objp)
+void ai_deathroll_start(object *dying_objp)
 {
 	// make sure this is a ship
-	Assert(ship_objp->type == OBJ_SHIP);
+	Assert(dying_objp->type == OBJ_SHIP);
+
+	// mark objects we are docked with so we can do damage and separate during death roll
+	for (dock_instance *ptr = dying_objp->dock_list; ptr != NULL; ptr = ptr->next)
+	{
+		object *docked_objp = ptr->docked_objp;
+		int docker_index = ptr->dockpoint_used;
+		int dockee_index = dock_find_dockpoint_used_by_object(docked_objp, dying_objp);
+
+		dock_dead_dock_objects(dying_objp, docker_index, docked_objp, dockee_index);
+	}
 
 	// clean up any rearm-related stuff
-	ai_cleanup_rearm_mode(ship_objp);
+	ai_cleanup_rearm_mode(dying_objp);
 
 	// clean up anybody docking or undocking to me
-	ai_cleanup_dock_mode_objective(ship_objp);
+	ai_cleanup_dock_mode_objective(dying_objp);
 
-	// clear my ai mode (originally in the previous function)
-	Ai_info[Ships[ship_objp->instance].ai_index].mode = AIM_NONE;
+	// Undock from every object directly docked to dying_objp.  We can't just iterate through the list because
+	// we're undocking the objects while we iterate over them and the pointers get seriously messed up.
+	// So we just repeatedly remove the first object until the dying object is no longer docked to anything.
+	while (object_is_docked(dying_objp))
+	{
+		object *docked_objp = dock_get_first_docked_object(dying_objp);
+
+		// undock these objects
+		ai_do_objects_undocked_stuff(dying_objp, docked_objp);
+	}
+
+	// clear my ai mode
+	Ai_info[Ships[dying_objp->instance].ai_index].mode = AIM_NONE;
 }
 
 //	Object *requester_objp tells rearm ship to abort rearm.
