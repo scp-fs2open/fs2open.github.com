@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.31 2006-05-13 06:59:48 taylor Exp $
+## $Id: Makefile.am,v 1.32 2006-06-27 04:50:59 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -179,7 +179,10 @@ EXTRA_DIST =	\
 	fred2/res/toolbar.bmp	\
 	fred2/res/toolbar1.bmp	\
 	fred2/res/variable.bmp	\
-	wxfred2/res/FRED.ico	\
+	sound/phrases.cfg	\
+	sound/phrases.xml	\
+	sound/gc.exe	\
+	wxfred2/res/fred.ico	\
 	wxfred2/wxfred.xrc
 
 
@@ -716,7 +719,9 @@ SOUND_SOURCES =	\
 	sound/fsspeech.cpp	\
 	sound/fsspeech.h	\
 	sound/speech.cpp	\
-	sound/speech.h
+	sound/speech.h	\
+	sound/voicerec.cpp	\
+	sound/voicerec.h
 endif
 
 ## Win32-specific sources
@@ -739,13 +744,10 @@ WIN32_SOURCES =	\
 	graphics/gl/Gl.h	\
 	graphics/gl/Glext.h	\
 	graphics/gl/wglext.h	\
-	graphics/GrD3DParticle.cpp	\
-	graphics/GrD3DParticle.h	\
 	graphics/GrD3DStateBlock.cpp	\
+	graphics/GrD3DStateBlock.h	\
 	graphics/grd3d.cpp	\
 	graphics/grd3d.h	\
-	graphics/grd3dbatch.cpp	\
-	graphics/grd3dbatch.h	\
 	graphics/grd3dcalls.cpp	\
 	graphics/grd3dbmpman.cpp	\
 	graphics/grd3dbmpman.h	\
