@@ -1512,6 +1512,14 @@ SOURCE=..\..\code\Object\CollideWeaponWeapon.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\object\deadobjectdock.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\deadobjectdock.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Object\ObjCollide.cpp
 # End Source File
 # Begin Source File
@@ -2020,7 +2028,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2039,7 +2047,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
