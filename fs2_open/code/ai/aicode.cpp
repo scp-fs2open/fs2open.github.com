@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72.2.2 $
- * $Date: 2006-06-27 04:06:17 $
- * $Author: Goober5000 $
+ * $Revision: 1.72.2.3 $
+ * $Date: 2006-06-27 04:22:03 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72.2.2  2006/06/27 04:06:17  Goober5000
+ * handle docked objects during death roll
+ * --Goober5000
+ *
  * Revision 1.72.2.1  2006/06/04 01:03:12  Goober5000
  * add fighterbay restriction code
  * --Goober5000
@@ -11522,8 +11526,9 @@ void ai_dock()
 
 		//nprintf(("AI", "Undock 2: dist = %7.3f\n", dist));
 		
-		//	If at goal point, or quite far away from dock object
-		if ((dist < 2.0f) || (vm_vec_dist_quick(&Pl_objp->pos, &goal_objp->pos) > (Pl_objp->radius + goal_objp->radius)*2) || (goal_objp->phys_info.speed > MAX_UNDOCK_ABORT_SPEED) ) {
+		// If at goal point, or quite far away from dock object
+		// NOTE: the speed check has an etra 5 thousandths added on to account for some floating point error
+		if ((dist < 2.0f) || (vm_vec_dist_quick(&Pl_objp->pos, &goal_objp->pos) > (Pl_objp->radius + goal_objp->radius)*2) || ((goal_objp->phys_info.speed + 0.005f) > MAX_UNDOCK_ABORT_SPEED) ) {
 			// reset the dock flags.  If rearm/repair, reset rearm repair flags for those ships as well.
 			if ( sip->flags & SIF_SUPPORT ) {
 				ai_do_objects_repairing_stuff( &Objects[aip->support_ship_objnum], Pl_objp, REPAIR_INFO_END );
