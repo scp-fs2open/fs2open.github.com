@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.50 $
- * $Date: 2006-06-15 00:36:33 $
+ * $Revision: 1.51 $
+ * $Date: 2006-06-27 05:03:42 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.50  2006/06/15 00:36:33  taylor
+ * fix Assert() on value of face variable, it should be able to be -1 for non-cubemap images
+ *
  * Revision 1.49  2006/06/05 23:56:51  taylor
  * don't Int3() here, it's actually going to happen in some cases when using -img2dds
  *
@@ -269,6 +272,8 @@
 #include <windows.h>
 #endif
 
+#include <vector>
+
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "osapi/osregistry.h"
@@ -299,7 +304,7 @@ int GL_last_detail = -1;
 int GL_last_bitmap_type = -1;
 GLint GL_supported_texture_units = 2;
 int GL_should_preload = 0;
-ubyte GL_xlat[256] = { 0 };
+ubyte GL_xlat[256];
 GLfloat GL_anisotropy = 0.0f;
 GLfloat GL_max_anisotropy = 0.0f;
 static int vram_full = 0;			// UnknownPlayer
@@ -325,7 +330,7 @@ static int GL_texture_units_enabled[32]={0};
 int opengl_free_texture(tcache_slot_opengl *t);
 void opengl_free_texture_with_handle(int handle);
 void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out);
-int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data = NULL, tcache_slot_opengl *t = NULL, int base_level = 0, int resize = 0, int reload = 0, int fail_on_full = 0);
+int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ubyte *data = NULL, tcache_slot_opengl *t = NULL, int base_level = 0, int resize = 0, int reload = 0, int fail_on_full = 0);
 int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_opengl *tslot = NULL, int fail_on_full = 0);
 
 void opengl_set_additive_tex_env()
@@ -718,7 +723,7 @@ void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int
 // bmap_h == height of source bitmap
 // tex_w == width of final texture
 // tex_h == height of final texture
-int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ushort *data, tcache_slot_opengl *t, int base_level, int resize, int reload, int fail_on_full)
+int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, int bmap_h, int tex_w, int tex_h, ubyte *data, tcache_slot_opengl *t, int base_level, int resize, int reload, int fail_on_full)
 {
 	int ret_val = 1;
 	int byte_mult = 0;
@@ -729,8 +734,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 	int mipmap_w = 0, mipmap_h = 0;
 	int dsize = 0, doffset = 0, block_size = 0;
 	int i,j,k;
-	ubyte *bmp_data = ((ubyte*)data);
-	ubyte *texmem = NULL, *texmemp;
+	ubyte *bmp_data = data;
+	ubyte *texmem = NULL, *texmemp = NULL;
 	int skip_size = 0, mipmap_levels = 0;
 
 
@@ -1329,7 +1334,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	tslot->mipmap_levels = (ubyte)(max_levels - base_level);
 
 	// call the helper
-	int ret_val = opengl_create_texture_sub(bitmap_handle, bitmap_type, bmp->w, bmp->h, final_w, final_h, (ushort*)bmp->data, tslot, base_level, resize, reload, fail_on_full);
+	int ret_val = opengl_create_texture_sub(bitmap_handle, bitmap_type, bmp->w, bmp->h, final_w, final_h, (ubyte*)bmp->data, tslot, base_level, resize, reload, fail_on_full);
 
 	// unlock the bitmap
 	bm_unlock(bitmap_handle);
@@ -1703,19 +1708,22 @@ int opengl_export_image( int slot, int width, int height, int alpha, int num_mip
 //
 
 struct fbo_t {
-	// these first 4 vars should only be modified in opengl_make_render_target()
+	// these first vars should only be modified in opengl_make_render_target()
 	GLuint renderbuffer_id;
 	GLuint framebuffer_id;
 	int width;
 	int height;
+	int ref_count;
 	// these next 2 should only be modifed in opengl_set_render_target()
 	int working_slot;
 	int is_static;
 
-	fbo_t(): renderbuffer_id(0), framebuffer_id(0), width(0), height(0), working_slot(-1), is_static(0) { }
+	fbo_t(): renderbuffer_id(0), framebuffer_id(0), width(0), height(0), ref_count(0), working_slot(-1), is_static(0) { }
 };
 
-fbo_t RenderTarget;
+static std::vector<fbo_t> RenderTarget;
+static fbo_t *render_target = NULL;
+
 
 int opengl_check_framebuffer()
 {
@@ -1773,44 +1781,103 @@ int opengl_check_framebuffer()
 	return 0;
 }
 
-void opengl_kill_render_target()
+static fbo_t *opengl_get_fbo(int width, int height)
 {
-	if (RenderTarget.framebuffer_id) {
-		vglDeleteFramebuffersEXT(1, &RenderTarget.framebuffer_id);
+	for (uint i = 0; i < RenderTarget.size(); i++) {
+		if ( (RenderTarget[i].width == width) && (RenderTarget[i].height == height) )
+			return &RenderTarget[i];
 	}
 
-	if (RenderTarget.renderbuffer_id) {
-		vglDeleteRenderbuffersEXT(1, &RenderTarget.renderbuffer_id);
+	return NULL;
+}
+
+void opengl_kill_render_target(int slot)
+{
+	if ( (slot < 0) || (slot >= MAX_BITMAPS) ) {
+		Int3();
+		return;
 	}
 
-	memset( &RenderTarget, 0, sizeof(fbo_t) );
+	// this will happen when opengl_kill_all_render_targets() gets called first on exit
+	if (RenderTarget.size() == 0)
+		return;
+
+	tcache_slot_opengl *ts = &Textures[slot];
+	uint idx = 0;
+
+	for (idx = 0; idx < RenderTarget.size(); idx++) {
+		if ( (RenderTarget[idx].width == ts->w) && (RenderTarget[idx].height == ts->h) )
+			break;
+	}
+
+	// this may happen when textures are flushed, the w and h will get reset to 0
+	if ( idx >= RenderTarget.size() )
+		return;
+
+	RenderTarget[idx].ref_count--;
+
+	if (RenderTarget[idx].ref_count <= 0) {
+		mprintf(("OpenGL: Killing off unused %ix%i render target...\n", ts->w, ts->h));
+
+		if (RenderTarget[idx].framebuffer_id)
+			vglDeleteFramebuffersEXT(1, &RenderTarget[idx].framebuffer_id);
+
+		if (RenderTarget[idx].renderbuffer_id)
+			vglDeleteRenderbuffersEXT(1, &RenderTarget[idx].renderbuffer_id);
+
+		RenderTarget.erase( RenderTarget.begin() + idx );
+	} else {
+		mprintf(("OpenGL: Keeping %ix%i render target with ref_count of %i.\n", ts->w, ts->h, RenderTarget[idx].ref_count));
+	}
+}
+
+void opengl_kill_all_render_targets()
+{
+	for (uint i = 0; i < RenderTarget.size(); i++) {
+		fbo_t *fbo = &RenderTarget[i];
+
+		if (fbo->framebuffer_id)
+			vglDeleteFramebuffersEXT(1, &fbo->framebuffer_id);
+
+		if (fbo->renderbuffer_id)
+			vglDeleteRenderbuffersEXT(1, &fbo->renderbuffer_id);
+	}
+
+	RenderTarget.clear();
 }
 
 int opengl_set_render_target( int slot, int face, int is_static )
 {
 	tcache_slot_opengl *ts = NULL;
+	fbo_t *fbo = NULL;
 
 	if (slot < 0) {
-		if (RenderTarget.working_slot >= 0) {
-			if (Cmdline_mipmap) {
-				ts = &Textures[RenderTarget.working_slot];
+		if ( (render_target != NULL) && (render_target->working_slot >= 0) ) {
+		/*	if (Cmdline_mipmap) {
+				ts = &Textures[render_target->working_slot];
 
 				glBindTexture(ts->texture_target, ts->texture_id);
 				vglGenerateMipmapEXT(ts->texture_target);
 				glBindTexture(ts->texture_target, 0);
-			}
+			}*/
 
-			if (RenderTarget.is_static) {
+			if (render_target->is_static) {
 				extern void gr_opengl_bm_save_render_target(int slot);
-				gr_opengl_bm_save_render_target(RenderTarget.working_slot);
+				gr_opengl_bm_save_render_target(render_target->working_slot);
 			}
 		}
 
 		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 		vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
 
-		RenderTarget.working_slot = -1;
-		RenderTarget.is_static = 0;
+		if (render_target != NULL) {
+			render_target->working_slot = -1;
+			render_target->is_static = 0;
+		}
+
+		// done with this render target so lets move on
+		render_target = NULL;
+
 		GL_rendering_to_framebuffer = 0;
 
 		return 1;
@@ -1819,18 +1886,25 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	ts = &Textures[slot];
 	Assert( ts != NULL );
 
-	if ( !vglIsFramebufferEXT(RenderTarget.framebuffer_id) || !vglIsRenderbufferEXT(RenderTarget.renderbuffer_id) ) {
-		Int3();
-		return 0;
-	}
-
 	if (!ts->texture_id) {
 		Int3();
 		return 0;
 	}
 
-	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, RenderTarget.renderbuffer_id);
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, RenderTarget.framebuffer_id);
+	fbo = opengl_get_fbo(ts->w, ts->h);
+
+	if (fbo == NULL) {
+		mprintf(("Tried to get an OpenGL FBO that didn't exist!\n"));
+		return 0;
+	}
+
+	if ( !vglIsFramebufferEXT(fbo->framebuffer_id) /*|| !vglIsRenderbufferEXT(fbo->renderbuffer_id)*/ ) {
+		Int3();
+		return 0;
+	}
+
+//	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, fbo->renderbuffer_id);
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo->framebuffer_id);
 
 	if (ts->texture_target == GL_TEXTURE_CUBE_MAP) {
 		Assert( (face >= 0) && (face < 6) );
@@ -1840,13 +1914,18 @@ int opengl_set_render_target( int slot, int face, int is_static )
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, ts->texture_target, ts->texture_id, 0);
 	}
 
+//	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, fbo->renderbuffer_id);
+
 	if ( opengl_check_framebuffer() ) {
 		Int3();
 		return 0;
 	}
 
-	RenderTarget.working_slot = slot;
-	RenderTarget.is_static = is_static;
+	fbo->working_slot = slot;
+	fbo->is_static = is_static;
+
+	// save current fbo for later use
+	render_target = fbo;
 
 	GL_rendering_to_framebuffer = 1;
 
@@ -1875,77 +1954,78 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 		*h = GL_max_renderbuffer_size;
 
 	tcache_slot_opengl *ts = &Textures[slot];
+	fbo_t *fbo = opengl_get_fbo(*w, *h);
 
 	// since we only deal with one frame/render buffer, see if we need to modify what we have or use it as is
-	if ( RenderTarget.framebuffer_id || RenderTarget.renderbuffer_id ) {
+	if ( (fbo != NULL) && (fbo->width == *w) && (fbo->height == *h) ) {
 		// both should be valid, but we check to catch the off-chance that something is fubar
-		Assert( vglIsFramebufferEXT(RenderTarget.framebuffer_id) && vglIsRenderbufferEXT(RenderTarget.renderbuffer_id) );
+		Assert( vglIsFramebufferEXT(fbo->framebuffer_id) /*&& vglIsRenderbufferEXT(fbo->renderbuffer_id)*/ );
 
-		if ( (RenderTarget.width >= *w) && (RenderTarget.height >= *h) ) {
-			// we can use the existing FBO without modification so just setup the texture slot and move on
-			if (flags & BMP_FLAG_CUBEMAP) {
-				opengl_set_texture_target( GL_TEXTURE_CUBE_MAP );
-			} else {
-				opengl_set_texture_target();
-			}
-
-			opengl_switch_arb(0, 1);
-
-			glGenTextures(1, &ts->texture_id);
-			glBindTexture(GL_texture_target, ts->texture_id);
-
-			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP);
-			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-			if (flags & BMP_FLAG_CUBEMAP) {
-				// if a cubemap then we have to initalize each face
-				for (int i = 0; i < 6; i++) {
-					glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, *w, *h, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
-				}
-				ts->texture_target = GL_TEXTURE_CUBE_MAP;
-			} else {
-				// non-cubemap so just do the normal thing
-				glTexImage2D(GL_texture_target, 0, GL_RGB8, *w, *h, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
-				ts->texture_target = GL_texture_target;
-			}
-
-			if (Cmdline_mipmap) {
-				vglGenerateMipmapEXT(GL_texture_target);
-
-				extern int get_num_mipmap_levels(int w, int h);
-				ts->mipmap_levels = get_num_mipmap_levels(*w, *h);
-			} else {
-				ts->mipmap_levels = 1;
-			}
-
-			glBindTexture(GL_texture_target, 0);
-
-			ts->w = (ushort)*w;
-			ts->h = (ushort)*h;
-			ts->bpp = 24;
-	//		ts->bitmap_handle = handle;
-
-			if (bpp)
-				*bpp = ts->bpp;
-
-			if (mm_lvl)
-				*mm_lvl = ts->mipmap_levels;
-
-			opengl_switch_arb(0, 0);
-			opengl_set_texture_target();
-
-			mprintf(("OpenGL: Reusing FBO!\n"));
-
-			return 1;
+		// we can use the existing FBO without modification so just setup the texture slot and move on
+		if (flags & BMP_FLAG_CUBEMAP) {
+			opengl_set_texture_target( GL_TEXTURE_CUBE_MAP );
 		} else {
-			// crap, have to destroy and then recreate the FBO for a bigger size
-			opengl_kill_render_target();
+			opengl_set_texture_target();
 		}
+
+		opengl_switch_arb(0, 1);
+
+		glGenTextures(1, &ts->texture_id);
+		glBindTexture(GL_texture_target, ts->texture_id);
+
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+		if (flags & BMP_FLAG_CUBEMAP) {
+			// if a cubemap then we have to initalize each face
+			for (int i = 0; i < 6; i++) {
+				glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, *w, *h, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
+			}
+			ts->texture_target = GL_TEXTURE_CUBE_MAP;
+		} else {
+			// non-cubemap so just do the normal thing
+			glTexImage2D(GL_texture_target, 0, GL_RGB8, *w, *h, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
+			ts->texture_target = GL_texture_target;
+		}
+
+	/*	if (Cmdline_mipmap) {
+			vglGenerateMipmapEXT(GL_texture_target);
+
+			extern int get_num_mipmap_levels(int w, int h);
+			ts->mipmap_levels = get_num_mipmap_levels(*w, *h);
+		} else */
+		{
+			ts->mipmap_levels = 1;
+		}
+
+		glBindTexture(GL_texture_target, 0);
+
+		ts->w = (ushort)*w;
+		ts->h = (ushort)*h;
+		ts->bpp = 24;
+		ts->bitmap_handle = -1;
+
+		if (bpp)
+			*bpp = ts->bpp;
+
+		if (mm_lvl)
+			*mm_lvl = ts->mipmap_levels;
+
+		opengl_switch_arb(0, 0);
+		opengl_set_texture_target();
+
+		fbo->ref_count++;
+
+		mprintf(("OpenGL: Reusing %ix%i FBO!\n", *w, *h));
+
+		return 1;
 	}
 
 	// now on to the good parts...
+
+	fbo_t new_fbo;
 
 	if (flags & BMP_FLAG_CUBEMAP) {
 		opengl_set_texture_target( GL_TEXTURE_CUBE_MAP );
@@ -1974,33 +2054,35 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 		glTexImage2D(GL_texture_target, 0, GL_RGB8, *w, *h, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
 	}
 
-	if (Cmdline_mipmap) {
+/*	if (Cmdline_mipmap) {
 		vglGenerateMipmapEXT(GL_texture_target);
 
 		extern int get_num_mipmap_levels(int w, int h);
 		ts->mipmap_levels = get_num_mipmap_levels(*w, *h);
-	} else {
+	} else */
+	{
 		ts->mipmap_levels = 1;
 	}
 
 	glBindTexture(GL_texture_target, 0);
 
 	// render buffer
-	vglGenRenderbuffersEXT(1, &RenderTarget.renderbuffer_id);
-	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, RenderTarget.renderbuffer_id);
-	vglRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT24, *w, *h);
+//	vglGenRenderbuffersEXT(1, &new_fbo.renderbuffer_id);
+//	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, new_fbo.renderbuffer_id);
+//	vglRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT24, *w, *h);
 	vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
 
 	// frame buffer
-	vglGenFramebuffersEXT(1, &RenderTarget.framebuffer_id);
-	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, RenderTarget.framebuffer_id);
-	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, RenderTarget.renderbuffer_id);
+	vglGenFramebuffersEXT(1, &new_fbo.framebuffer_id);
+	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, new_fbo.framebuffer_id);
 
 	if (flags & BMP_FLAG_CUBEMAP) {
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_CUBE_MAP_POSITIVE_X, ts->texture_id, 0);
 	} else {
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_texture_target, ts->texture_id, 0);
 	}
+
+//	vglFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, new_fbo.renderbuffer_id);
 
 	if ( opengl_check_framebuffer() ) {
 		// Oops!!  reset everything and then bail
@@ -2012,11 +2094,9 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 		glDeleteTextures (1, &ts->texture_id);
 		ts->texture_id = 0;
 
-		vglDeleteFramebuffersEXT(1, &RenderTarget.framebuffer_id);
-		RenderTarget.framebuffer_id = 0;
+		vglDeleteFramebuffersEXT(1, &new_fbo.framebuffer_id);
 
-		vglDeleteRenderbuffersEXT(1, &RenderTarget.renderbuffer_id);
-		RenderTarget.renderbuffer_id = 0;
+	//	vglDeleteRenderbuffersEXT(1, &new_fbo.renderbuffer_id);
 
 		opengl_switch_arb(0, 0);
 		opengl_set_texture_target();
@@ -2029,10 +2109,10 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 	ts->h = (ushort)*h;
 	ts->bpp = 24;
 	ts->texture_target = GL_texture_target;
-//	ts->bitmap_handle = handle;
+	ts->bitmap_handle = -1;
 
-	RenderTarget.width = ts->w;
-	RenderTarget.height = ts->h;
+	new_fbo.width = ts->w;
+	new_fbo.height = ts->h;
 
 	if (bpp)
 		*bpp = ts->bpp;
@@ -2042,16 +2122,20 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 
 	vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
+	new_fbo.ref_count++;
+
+	RenderTarget.push_back(new_fbo);
+
 	opengl_switch_arb(0, 0);
 	opengl_set_texture_target();
 
 	static int RT_KillatExit = 0;
 	if (!RT_KillatExit) {
-		atexit(opengl_kill_render_target);
+		atexit(opengl_kill_all_render_targets);
 		RT_KillatExit = 1;
 	}
 
-	mprintf(("OpenGL: Created FBO!\n"));
+	mprintf(("OpenGL: Created %ix%i FBO!\n", ts->w, ts->h));
 
 	return 1;
 }
