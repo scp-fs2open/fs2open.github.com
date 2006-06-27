@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.248 $
- * $Date: 2006-06-15 01:29:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.249 $
+ * $Date: 2006-06-27 04:58:58 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.248  2006/06/15 01:29:18  Goober5000
+ * tweaked the version string
+ * --Goober5000
+ *
  * Revision 2.247  2006/06/07 04:39:10  wmcoolmon
  * Limbo flag support
  *
@@ -3532,11 +3536,13 @@ void game_init()
 	int use_a3d = 0;
 	int use_eax = 0;
 
+#ifndef USE_OPENAL
 	ptr = os_config_read_string(NULL, NOX("Soundcard"), NULL);
 	mprintf(("soundcard = %s\n", ptr ? ptr : "<nothing>"));
 	if (ptr) {
 		if (!stricmp(ptr, NOX("no sound"))) {
 			Cmdline_freespace_no_sound = 1;
+			Cmdline_freespace_no_music = 1;
 
 		} else if (!stricmp(ptr, NOX("Aureal A3D"))) {
 			use_a3d = 1;
@@ -3551,6 +3557,17 @@ void game_init()
 		exit(0);
 	}
 #endif
+#else // USE_OPENAL
+	ptr = os_config_read_string(NULL, NOX("SoundDeviceOAL"), NULL);
+	if (ptr) {
+		if ( !stricmp(ptr, NOX("no sound")) ) {
+			mprintf(("Sound is disabled!\n"));
+
+			Cmdline_freespace_no_sound = 1;
+			Cmdline_freespace_no_music = 1;
+		}
+	}
+#endif // !USE_OPENAL
 
 	if (!Is_standalone)
 	{
@@ -4950,13 +4967,22 @@ inline void render_environment(int i, matrix *new_orient, float new_zoom)
 
 void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 {
-	matrix new_orient;
+	matrix new_orient = IDENTITY_MATRIX;
 	float old_zoom = View_zoom, new_zoom = 0.925f;
 	int i = 0;
 
 
 	if (Cmdline_nohtl)
 		return;
+
+	// prefer the mission specified envmap over the static-generated envmap, but
+	// the dynamic envmap should always get preference if in a subspace mission
+	if ( !Game_subspace_effect && strlen(The_mission.envmap_name) ) {
+		ENVMAP = bm_load(The_mission.envmap_name);
+
+		if (ENVMAP >= 0)
+			return;
+	}
 
 	if ( (Game_subspace_effect && (gr_screen.dynamic_environment_map < 0)) || (!Game_subspace_effect && (gr_screen.static_environment_map < 0)) ) {
 		if (ENVMAP > -1)
@@ -5360,7 +5386,7 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	// Do the sunspot
 	game_sunspot_process(flFrametime);
 
-	bool draw_viewer_last;
+	bool draw_viewer_last = false;
 	obj_render_all(obj_render, &draw_viewer_last);
 
 	mflash_render_all();						// render all muzzle flashes	
