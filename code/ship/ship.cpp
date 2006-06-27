@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.4 $
- * $Date: 2006-06-24 20:39:57 $
- * $Author: wmcoolmon $
+ * $Revision: 2.336.2.5 $
+ * $Date: 2006-06-27 04:06:17 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.4  2006/06/24 20:39:57  wmcoolmon
+ * New function for scripting
+ *
  * Revision 2.336.2.3  2006/06/07 20:45:11  karajorma
  * Fix bug with multiple uses of change-ship-class SEXP
  *
@@ -2039,6 +2042,7 @@
 #include "mission/missioncampaign.h"
 #include "radar/radarsetup.h"
 #include "object/objectdock.h"
+#include "object/deadobjectdock.h"
 #include "iff_defs/iff_defs.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
@@ -6761,32 +6765,33 @@ void ship_blow_up_area_apply_blast( object *exp_objp)
 }
 
 // Goober5000 - fyi, this function is only ever called once for any ship that dies
+// This function relies on the "dead dock" list, which replaces the dock_objnum_when_dead
+// used in retail.
 void do_dying_undock_physics(object *dying_objp, ship *dying_shipp) 
 {
-	// this function should only be called for an object that's docked... no harm in calling it
-	// if it's not docked, but we want to enforce this
-	Assert(object_is_docked(dying_objp));
+	// this function should only be called for an object that was docked...
+	// no harm in calling it if it wasn't, but we want to enforce this
+	Assert(object_is_dead_docked(dying_objp));
 
 	object *docked_objp;
 
 	float damage;
 	float impulse_mag;
-	float total_docked_mass;
 
 	vec3d impulse_norm, impulse_vec, pos;
 
 	// damage applied to each docked object
 	damage = 0.2f * dying_shipp->ship_max_hull_strength;
 
-	// mass of the whole assembly
-	total_docked_mass = dock_calc_total_docked_mass(dying_objp);
-
-	// Goober5000 - do stuff for every object directly docked to dying_objp.  We can't just iterate through the list
-	// because we're undocking the objects while we iterate over them and the pointers get seriously messed up.
-	// So we just repeatedly remove the first object until the dying object is no longer docked to anything.
-	while (object_is_docked(dying_objp))
+	// Goober5000 - as with ai_deathroll_start, we can't simply iterate through the dock list while we're
+	// unlinking things.  So just repeatedly unlink the first object.
+	while (object_is_dead_docked(dying_objp))
 	{
-		docked_objp = dock_get_first_docked_object(dying_objp);
+		docked_objp = dock_get_first_dead_docked_object(dying_objp);
+
+		// only consider the mass of these two objects, not the whole assembly
+		// (this is inaccurate, but the alternative is a huge mess of extra code for a very small gain in realism)
+		float docked_mass = dying_objp->phys_info.mass + docked_objp->phys_info.mass;
 
 		// damage this docked object
 		ship_apply_global_damage(docked_objp, dying_objp, &dying_objp->pos, damage);
@@ -6795,7 +6800,7 @@ void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		vm_vec_sub(&impulse_norm, &docked_objp->pos, &dying_objp->pos);
 		vm_vec_normalize(&impulse_norm);
 		// set for relative separation velocity of ~30
-		impulse_mag = 50.f * docked_objp->phys_info.mass * dying_objp->phys_info.mass / total_docked_mass;
+		impulse_mag = 50.f * docked_objp->phys_info.mass * dying_objp->phys_info.mass / docked_mass;
 		vm_vec_copy_scale(&impulse_vec, &impulse_norm, impulse_mag);
 		vm_vec_rand_vec_quick(&pos);
 		vm_vec_scale(&pos, docked_objp->radius);
@@ -6810,8 +6815,8 @@ void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 		vm_vec_scale(&pos, dying_objp->radius);
 		physics_apply_whack(&impulse_vec, &pos, &dying_objp->phys_info, &dying_objp->orient, dying_objp->phys_info.mass);
 
-		// undock these objects
-		ai_do_objects_undocked_stuff(dying_objp, docked_objp);
+		// unlink the two objects, since dying_objp has blown up
+		dock_dead_undock_objects(dying_objp, docked_objp);
 	}
 }
 
@@ -6847,7 +6852,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				}
 
 				// if dying ship is docked, do damage to docked and physics
-				if (object_is_docked(objp))  {
+				if (object_is_dead_docked(objp))  {
 					do_dying_undock_physics(objp, sp);
 				}			
 
@@ -7008,7 +7013,7 @@ void ship_dying_frame(object *objp, int ship_num)
 			}
 
 			// if dying ship is docked, do damage to docked and physics
-			if (object_is_docked(objp))  {
+			if (object_is_dead_docked(objp))  {
 				do_dying_undock_physics(objp, sp);
 			}			
 
