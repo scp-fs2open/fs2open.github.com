@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-10-10 17:21:08 $
+ * $Revision: 2.15 $
+ * $Date: 2006-06-27 05:04:16 $
  * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/10/10 17:21:08  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.13  2005/09/05 09:38:19  taylor
  * merge of OSX tree
  * a lot of byte swaps were still missing, will hopefully be fully network compatible now
@@ -2482,7 +2485,7 @@ DWORD (__stdcall *pRasGetProjectionInfo)(HRASCONN hrasconn, RASPROJECTION raspro
 unsigned int psnet_ras_status()
 {
 	int rval;
-	unsigned long size, num_connections, i;
+	unsigned long size, num_connections, i, valid_connections = 0;
 	RASCONN rasbuffer[25];
 	HINSTANCE ras_handle;
 	unsigned long rasip=0;
@@ -2536,6 +2539,13 @@ unsigned int psnet_ras_status()
 		RASCONNSTATUS status;
 		unsigned long size;
 
+		// don't count VPNs with the non-LAN connections
+		if ( !stricmp(rasbuffer[i].szDeviceType, "RASDT_Vpn") ) {
+			continue;
+		} else {
+			valid_connections++;
+		}
+
 		ml_printf("Connection %d:", i);
 		ml_printf("Entry Name: %s", rasbuffer[i].szEntryName);
 		ml_printf("Device Type: %s", rasbuffer[i].szDeviceType);
@@ -2559,6 +2569,11 @@ unsigned int psnet_ras_status()
 		}
 
 		ml_printf("IP Address: %s", projection.szIpAddress);
+	}
+
+	if (!valid_connections) {
+		FreeLibrary( ras_handle );
+		return INADDR_ANY;
 	}
 
 	Ras_connected = 1;
