@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.19 $
- * $Date: 2006-06-15 00:36:33 $
+ * $Revision: 1.20 $
+ * $Date: 2006-06-27 05:02:22 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2006/06/15 00:36:33  taylor
+ * fix Assert() on value of face variable, it should be able to be -1 for non-cubemap images
+ *
  * Revision 1.18  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -138,7 +141,9 @@
 
 static inline int is_power_of_two(int w, int h)
 {
-	return ( (w && !(w & (w-1))) && (h && !(h & (h-1))) );
+	// NOTE: OpenGL texture code has a min tex size of 16 (currently), so we need to be at least
+	//       the min size here to qualify as power-of-2 and not get resized later on
+	return ( ((w >= GL_min_texture_width) && !(w & (w-1))) && ((h >= GL_min_texture_height) && !(h & (h-1))) );
 }
 
 int get_num_mipmap_levels(int w, int h)
@@ -169,6 +174,9 @@ void gr_opengl_bm_free_data(int n)
 	// ANI slots for faster and less resource intensive rendering - taylor
 	if (bm_bitmaps[n].type != BM_TYPE_USER)
 		opengl_free_texture_slot( n );
+
+	if ( (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC) || (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_DYNAMIC) )
+		opengl_kill_render_target( n );
 }
 
 // API specifics for creating a user bitmap
@@ -629,6 +637,9 @@ void gr_opengl_bm_save_render_target(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
+	if (Cmdline_no_fbo)
+		return;
+
 	bitmap_entry *be = &bm_bitmaps[n];
 	bitmap *bmp = &be->bm;
 
@@ -648,7 +659,7 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, 
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
-	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) )
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo )
 		return 0;
 
 	if ( (flags & BMP_FLAG_CUBEMAP) && !Is_Extension_Enabled(OGL_ARB_TEXTURE_CUBE_MAP) )
@@ -668,7 +679,7 @@ int gr_opengl_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, 
 
 int gr_opengl_bm_set_render_target(int n, int face)
 {
-	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) )
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo )
 		return 0;
 
 	if (n == -1) {
