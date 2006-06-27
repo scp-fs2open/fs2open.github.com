@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.26 $
- * $Date: 2006-06-27 02:52:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.27 $
+ * $Date: 2006-06-27 05:05:18 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2006/06/27 02:52:36  Goober5000
+ * change back to ubyte
+ * --Goober5000
+ *
  * Revision 2.25  2006/06/24 04:48:02  Goober5000
  * cosmetics, plus revert an unnecessary if
  *
@@ -348,7 +352,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	float closest = 0.0f;
 	float test;
 	int closest_index = -1;
-	int idx, friendly_invisible;
+	int idx, friendly_invisible = 0;
 	ship *shipp;
 	ship_info *sip;
 
@@ -369,14 +373,16 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	if ((viewer == Player_ship) && (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM]))
 		return ALWAYS_TARGETABLE;
 
-	// if no valid target then bail as never viewable
-	if (target->instance < 0)
-		return UNTARGETABLE;
+	if (target->type == OBJ_SHIP) {
+		// if no valid target then bail as never viewable
+		if (target->instance < 0)
+			return UNTARGETABLE;
 
-	// Goober5000
-	shipp = &Ships[target->instance];
-	sip = &Ship_info[shipp->ship_info_index];
-	friendly_invisible = (shipp->flags2 & SF2_STEALTH) && (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS);
+		// Goober5000
+		shipp = &Ships[target->instance];
+		sip = &Ship_info[shipp->ship_info_index];
+		friendly_invisible = (shipp->flags2 & SF2_STEALTH) && (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS);
+	}
 	
 	int stealth_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (shipp->flags2 & SF2_STEALTH);
 	int nebula_enabled = (The_mission.flags & MISSION_FLAG_FULLNEB);
