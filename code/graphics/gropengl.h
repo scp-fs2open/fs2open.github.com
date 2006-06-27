@@ -9,13 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.18 $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 2.19 $
+ * $Date: 2006-06-27 05:00:57 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 2.17  2006/02/24 07:35:48  taylor
  * add v-sync support for OGL (I skimmped on this a bit but will go back to do something better, "special" extension wise, at a later date)
  *
@@ -149,18 +165,15 @@
 
 	#define STUB_FUNCTION 0
 #elif defined(SCP_UNIX)
-	#define GL_GLEXT_PROTOTYPES
-
-	#include "SDL.h"
-
-#if ( SDL_VERSION_ATLEAST(1, 2, 7) )
-	// this will include all needed GL headers for Win32, Unix & OSX
-	#include "SDL_opengl.h"
+#ifdef __APPLE__
+	#include <OpenGL/gl.h>
+	#include <OpenGL/glu.h>
+	#include <OpenGL/glext.h>
 #else
 	#include <GL/gl.h>
 	#include <GL/glu.h>
 	#include <GL/glext.h>
-#endif // SDL_VERSION check
+#endif // __APPLE__
 #endif
 
 #include "globalincs/pstypes.h"

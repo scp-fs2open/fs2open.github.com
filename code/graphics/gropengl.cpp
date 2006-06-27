@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.175 $
- * $Date: 2006-06-05 23:55:51 $
+ * $Revision: 2.176 $
+ * $Date: 2006-06-27 05:00:57 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.175  2006/06/05 23:55:51  taylor
+ * this should hopefully fix cursor drift on multi-display configs
+ *
  * Revision 2.174  2006/06/01 07:33:59  taylor
  * flip color/depth values, appears some are initting software GL again and this was the problem previously
  *
@@ -1217,11 +1220,6 @@ void opengl_go_fullscreen()
 		} else {
 			Warning( LOCATION, "Unable to go fullscreen!" );
 		}
-	} else {
-		// REMOVEME: doesn't really need to be here but for debugging purposes it
-		//           could be helpful during the immediate future.
-		if (dm.dmDisplayFrequency > 0)
-			mprintf(("USING REFRESH_RATE OF: %i\n", dm.dmDisplayFrequency));
 	}
 
 	RECT cursor_clip;
@@ -1245,6 +1243,7 @@ void opengl_go_fullscreen()
 #endif
 
 	GL_fullscreen = 1;
+	GL_minimized = 0;
 }
 
 void opengl_go_windowed()
@@ -1320,7 +1319,7 @@ void opengl_go_windowed()
 void opengl_minimize()
 {
 	// don't attempt to minimize if we are already in a window or already minimized
-	if (GL_minimized || GL_windowed || Cmdline_window)
+	if (GL_minimized || GL_windowed || Cmdline_window || Fred_running)
 		return;
 
 #ifdef _WIN32
@@ -1342,6 +1341,7 @@ void opengl_minimize()
 #endif
 
 	GL_minimized = 1;
+	GL_fullscreen = 0;
 }
 
 void opengl_set_tex_state_combine(gr_texture_source ts)
@@ -1495,8 +1495,8 @@ void gr_opengl_activate(int active)
 #endif
 	} else {
 		GL_deactivate++;
-	//	opengl_minimize();
-		opengl_go_windowed();
+		opengl_minimize();
+	//	opengl_go_windowed();
 
 #ifdef SCP_UNIX
 		// let go of mouse/keyboard
@@ -2652,9 +2652,7 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 	}
 
 	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ) {
-		extern int Cmdline_alpha_alpha_blend;
-
-		if ( Cmdline_alpha_alpha_blend && bm_has_alpha_channel(gr_screen.current_bitmap) ) {
+		if ( bm_has_alpha_channel(gr_screen.current_bitmap) ) {
 			tmap_type = TCACHE_TYPE_XPARENT;
 
 			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
@@ -3135,7 +3133,16 @@ void gr_opengl_print_screen(char *filename)
 
 	// now for the data, we convert it from 32-bit to 24-bit
 	for (i = 0; i < (gr_screen.max_w * gr_screen.max_h * 4); i += 4) {
+#if BYTE_ORDER == BIG_ENDIAN
+		int pix, *pix_tmp;
+
+		pix_tmp = (int*)(pixels + i);
+		pix = INTEL_INT(*pix_tmp);
+
+		fwrite( &pix, 1, 3, fout );
+#else
 		fwrite( pixels + i, 1, 3, fout );
+#endif
 	}
 
 	if ( pbo ) {
@@ -3429,15 +3436,14 @@ void gr_opengl_set_gamma(float gamma)
 	}
 
 	// set the alpha gamma settings (for fonts)
+	memset( GL_xlat, 0, sizeof(GL_xlat) );
+
 	for (i=0; i<16; i++) {
 		GL_xlat[i] = (ubyte)Gr_gamma_lookup[(i*255)/15];
 	}
 
 	GL_xlat[15] = GL_xlat[1];
 
-	for ( ; i<256; i++ )    {
-		GL_xlat[i] = GL_xlat[0];
-	}
 
 	// new way - but not while running FRED
 	if (!Fred_running && !Cmdline_no_set_gamma) {
