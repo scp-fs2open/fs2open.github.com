@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.21 $
- * $Date: 2006-04-20 06:32:22 $
+ * $Revision: 2.22 $
+ * $Date: 2006-06-27 04:06:18 $
  * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/04/20 06:32:22  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.20  2006/02/26 23:23:30  wmcoolmon
  * Targetable as bomb SEXPs and dialog stuff; made invulnerable an object flag in both FRED and FS2.
  *
@@ -528,7 +531,9 @@ typedef struct object {
 	union {
 		class jump_node *jnp;		// WMC - Direct pointer to the object. Used only for jump nodes as of now
 	};
-	dock_instance	*dock_list;		// Goober5000 - objects this object is docked to
+
+	dock_instance	*dock_list;			// Goober5000 - objects this object is docked to
+	dock_instance	*dead_dock_list;	// Goober5000 - objects this object was docked to when destroyed; replaces dock_objnum_when_dead
 } object;
 
 // object backup struct used by Fred.
@@ -670,6 +675,7 @@ void obj_observer_move(float frame_time);
 
 // Goober5000
 int object_is_docked(object *objp);
+int object_is_dead_docked(object *objp);
 void obj_move_one_docked_object(object *objp, object *parent_objp);
 
 //WMC
