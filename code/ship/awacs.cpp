@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.25 $
- * $Date: 2006-06-24 04:48:02 $
+ * $Revision: 2.26 $
+ * $Date: 2006-06-27 02:52:36 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2006/06/24 04:48:02  Goober5000
+ * cosmetics, plus revert an unnecessary if
+ *
  * Revision 2.24  2006/06/07 04:47:43  wmcoolmon
  * Limbo flag support; removed unneeded muzzle flash flag
  *
@@ -217,7 +220,7 @@ int Awacs_count = 0;
 // TEAM SHIP VISIBILITY
 // team-wide shared visibility info
 // at start of each frame (maybe timestamp), compute visibility 
-int Ship_visibility_by_team[MAX_IFFS][MAX_SHIPS];
+ubyte Ship_visibility_by_team[MAX_IFFS][MAX_SHIPS];
 
 // ----------------------------------------------------------------------------------------------------
 // AWACS FORWARD DECLARATIONS
@@ -356,9 +359,9 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	int distance = (int) vm_vec_mag_quick(&dist_vec);
 
 // redone by Goober5000
-#define ALWAYS_TARGETABLE		(1.5f)
-#define MARGINALLY_TARGETABLE	(0.5f)
-#define UNTARGETABLE			(-1.0f)
+#define ALWAYS_TARGETABLE		1.5f
+#define MARGINALLY_TARGETABLE	0.5f
+#define UNTARGETABLE			-1.0f
 #define FULLY_TARGETABLE		(viewer_has_primitive_sensors ? ((distance < viewer->primitive_sensor_range) ? MARGINALLY_TARGETABLE : UNTARGETABLE) : ALWAYS_TARGETABLE)
 
 
@@ -519,7 +522,7 @@ void team_visibility_update()
 
 	// zero out stuff for each team
 	memset(team_count, 0, MAX_IFFS * sizeof(int));
-	memset(Ship_visibility_by_team, 0, MAX_IFFS * MAX_SHIPS * sizeof(int));
+	memset(Ship_visibility_by_team, 0, MAX_IFFS * MAX_SHIPS * sizeof(ubyte));
 
 	// Go through list of ships and mark those visible for given team
 	for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup))
