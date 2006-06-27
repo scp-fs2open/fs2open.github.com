@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.90 $
- * $Date: 2006-06-15 00:37:11 $
+ * $Revision: 2.91 $
+ * $Date: 2006-06-27 04:55:53 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2006/06/15 00:37:11  taylor
+ * remove previous attempts at the Y bug fix, it's now back to the retail code for that
+ *
  * Revision 2.89  2006/05/27 17:17:57  taylor
  * few things:
  *   - comment out that -fixbugs and -nocrash crap, that's just stupid
@@ -679,6 +682,7 @@ extern int Cmdline_nomovies;	// WMC Toggles movie playing support
 extern int Cmdline_no_set_gamma;
 extern int Cmdline_novbo;
 extern int Cmdline_safeloading;
+extern int Cmdline_no_fbo;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;

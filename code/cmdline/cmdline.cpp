@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.141 $
- * $Date: 2006-06-15 00:37:11 $
+ * $Revision: 2.142 $
+ * $Date: 2006-06-27 04:55:53 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.141  2006/06/15 00:37:11  taylor
+ * remove previous attempts at the Y bug fix, it's now back to the retail code for that
+ *
  * Revision 2.140  2006/05/27 17:18:56  taylor
  * d'oh!  that was supposed to be off by default!
  *
@@ -960,6 +963,7 @@ Flag exe_params[] =
 	{ "-novbo",				"Disable OpenGL VBO",						true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-novbo",	},
 	{ "-noibx",				"Don't use cached index buffers (IBX)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noibx",	},
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
+	{ "-disable_fbo",		"Disable OpenGL RenderTargets",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
 
 	{ "-alpha_env",			"Use specular alpha for env mapping",		true,	0,					EASY_DEFAULT_MEM,	"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-alpha_env", },
 	{ "-ingame_join",		"Allows ingame joining",					true,	0,					EASY_DEFAULT,		"Experimental",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ingame_join", },
@@ -1059,7 +1063,6 @@ cmdline_parm pcx32_arg("-pcx32", NULL);				// Cmdline_pcx32
 cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive  -- don't use emissive light in OGL
 cmdline_parm spec_scale_arg("-spec_scale", NULL);	// Cmdline_spec_scale -- TEMPORARY - REMOVEME!!!
 cmdline_parm env_scale_arg("-env_scale", NULL);		// Cmdline_env_scale -- TEMPORARY - REMOVEME!!!
-cmdline_parm alpha_alpha_blend_arg("-alpha_alpha_blend", NULL);	// Cmdline_alpha_alpha_blend -- TEMPORARY - REMOVEME!!!
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
@@ -1081,7 +1084,6 @@ int Cmdline_noscalevid = 0;
 int Cmdline_nospec = 1;
 int Cmdline_pcx32 = 0;
 int Cmdline_no_emissive = 0;
-int Cmdline_alpha_alpha_blend = 0; // TEMPORARY - REMOVEME!!!
 
 // Game Speed related
 cmdline_parm cache_bitmaps_arg("-cache_bitmaps", NULL);	// Cmdline_cache_bitmaps
@@ -1158,6 +1160,7 @@ cmdline_parm nomovies_arg("-nomovies", NULL);		// Cmdline_nomovies  -- Allows vi
 cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL);	// Cmdline_no_set_gamma
 cmdline_parm no_vbo_arg("-novbo", NULL);			// Cmdline_novbo
 cmdline_parm safeloading_arg("-safeloading", NULL);	// Cmdline_safeloading  -- Uses old loading method -C
+cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
 
 int Cmdline_d3d_lesstmem = 0;
 int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
@@ -1168,6 +1171,7 @@ int Cmdline_nomovies = 0;
 int Cmdline_no_set_gamma = 0;
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_safeloading = 0;
+int Cmdline_no_fbo = 0;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
@@ -1917,11 +1921,6 @@ bool SetCmdlineParams()
 		}
 	}
 
-	// TEMPORARY - REMOVEME!!!
-	if ( alpha_alpha_blend_arg.found() ) {
-		Cmdline_alpha_alpha_blend = 1;
-	}
-
 	// specular comand lines
 	if ( spec_exp_arg.found() ) {
 		specular_exponent_value = spec_exp_arg.get_float();
@@ -2059,6 +2058,12 @@ bool SetCmdlineParams()
 
 		fwrite(&num_flags, sizeof(int), 1, fp);
 		fwrite(&exe_params, sizeof(exe_params), 1, fp);
+
+#ifdef USE_OPENAL
+		// for cheap and bastardly OpenAL check hack
+		char openal = 0;
+		fwrite(&openal, 1, 1, fp);
+#endif
 
 		fclose(fp);
 		return false; 
@@ -2205,6 +2210,10 @@ bool SetCmdlineParams()
 
 	if ( noibx_arg.found() ) {
 		Cmdline_noibx = 1;
+	}
+
+	if ( no_fbo_arg.found() ) {
+		Cmdline_no_fbo = 1;
 	}
 
 	if ( noemissive_arg.found() ) {
