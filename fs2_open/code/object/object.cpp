@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.63 $
- * $Date: 2006-05-27 16:59:05 $
- * $Author: taylor $
+ * $Revision: 2.64 $
+ * $Date: 2006-06-27 04:06:18 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2006/05/27 16:59:05  taylor
+ * comment out some code which used only if neither D3D nor OGL
+ *
  * Revision 2.62  2006/04/20 06:32:22  Goober5000
  * proper capitalization according to Volition
  *
@@ -1185,6 +1188,7 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 
 	// Goober5000
 	obj->dock_list = NULL;
+	obj->dead_dock_list = NULL;
 
 	return objnum;
 }
@@ -2574,6 +2578,12 @@ void obj_reset_all_collisions()
 int object_is_docked(object *objp)
 {
 	return (objp->dock_list != NULL);
+}
+
+// Goober5000
+int object_is_dead_docked(object *objp)
+{
+	return (objp->dead_dock_list != NULL);
 }
 
 //Makes an object start 'gliding'
