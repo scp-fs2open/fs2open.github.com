@@ -194,10 +194,10 @@ $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
 $AI:																	\n\
-	+Actively Pursues:		( \"navbuoy\" \"sentrygun\" \"escapepod\" \"cargo\" \"repair_rearm\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )	\n\
+	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Turrets attack this:	YES											\n\
 ""\
-$Name:					sentrygun										\n\
+$Name:					Sentry Gun										\n\
 $Counts for Alone:		YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
@@ -212,11 +212,11 @@ $Fog:																	\n\
 $AI:																	\n\
 	+Accept Player Orders:	NO											\n\
 	+Auto attacks:			YES											\n\
-	+Actively Pursues:		( \"navbuoy\" \"sentrygun\" \"escapepod\" \"cargo\" \"repair_rearm\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )	\n\
+	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 ""\
-$Name:					escapepod										\n\
+$Name:					Escape Pod										\n\
 $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Warp Pushable:			YES												\n\
@@ -229,7 +229,7 @@ $Fog:																	\n\
 	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
-	+Actively Pursues:		( \"navbuoy\" \"sentrygun\" \"escapepod\" \"cargo\" \"repair_rearm\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )	\n\
+	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Turrets attack this:	YES											\n\
 ""\
 $Name:					Cargo											\n\
@@ -243,9 +243,9 @@ $Fog:																	\n\
 	+Compl dist:			500.0										\n\
 	+Disappear factor:		1.5											\n\
 $AI:																	\n\
-	+Passive docks:			( \"cargo\" )									\n\
+	+Passive docks:			( \"cargo\" )								\n\
 ""\
-$Name:					repair_rearm									\n\
+$Name:					Support											\n\
 $Counts for Alone:		YES												\n\
 $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
@@ -264,7 +264,7 @@ $AI:																	\n\
 	+Accept Player Orders:	YES											\n\
 	+Player orders:			( \"rearm me\" \"abort rearm\" \"stay near me\" \"stay near ship\" \"keep safe dist\" \"depart\" )																	\n\
 	+Auto attacks:			YES											\n\
-	+Actively Pursues:		( \"navbuoy\" \"sentrygun\" \"escapepod\" \"cargo\" \"repair_rearm\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )	\n\
+	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Active docks:			( \"support\" )								\n\
@@ -288,7 +288,7 @@ $AI:																	\n\
 	+Accept Player Orders:	YES											\n\
 	+Player Orders:			( \"attack ship\" \"disable ship\" \"disarm ship\" \"guard ship\" \"ignore ship\" \"ignore ship (new)\" \"form on wing\" \"cover me\" \"attack any\" \"depart\" \"disable subsys\" )		\n\
 	+Auto attacks:			YES											\n\
-	+Actively Pursues:		( \"navbuoy\" \"sentrygun\" \"escapepod\" \"cargo\" \"repair_rearm\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )																\n\
+	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )																\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
@@ -312,7 +312,7 @@ $AI:																	\n\
 	+Accept Player Orders:	YES											\n\
 	+Player Orders:			( \"attack ship\" \"disable ship\" \"disarm ship\" \"guard ship\" \"ignore ship\" \"ignore ship (new)\" \"form on wing\" \"cover me\" \"attack any\" \"depart\" \"disable subsys\" )		\n\
 	+Auto attacks:			YES											\n\
-	+Actively Pursues:		( \"navbuoy\" \"sentrygun\" \"escapepod\" \"cargo\" \"repair_rearm\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )																\n\
+	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )																\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -337,7 +337,7 @@ $AI:																	\n\
 	+Accept Player Orders:	YES											\n\
 	+Player Orders:			( \"attack ship\" \"disable ship\" \"disarm ship\" \"guard ship\" \"ignore ship\" \"ignore ship (new)\" \"form on wing\" \"cover me\" \"attack any\" \"depart\" \"disable subsys\" )		\n\
 	+Auto attacks:			YES											\n\
-	+Actively Pursues:		( \"navbuoy\" \"sentrygun\" \"escapepod\" \"cargo\" \"repair_rearm\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )																\n\
+	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )																\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -363,7 +363,7 @@ $AI:																	\n\
 	+Accept Player Orders:	YES											\n\
 	+Player Orders:			( \"attack ship\" \"disable ship\" \"disarm ship\" \"guard ship\" \"ignore ship\" \"ignore ship (new)\" \"form on wing\" \"cover me\" \"attack any\" \"depart\" \"disable subsys\" )		\n\
 	+Auto attacks:			YES											\n\
-	+Actively Pursues:		( \"navbuoy\" \"sentrygun\" \"escapepod\" \"cargo\" \"repair_rearm\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )																\n\
+	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device device\" )																\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -389,7 +389,7 @@ $AI:																	\n\
 	+Player Orders:			( \"attack ship\" \"dock\" \"depart\" )		\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -416,11 +416,11 @@ $AI:																	\n\
 	+Player Orders:			( \"attack ship\" \"dock\" \"depart\" )		\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
-	+Active docks:			( \"cargo\" )									\n\
+	+Active docks:			( \"cargo\" )								\n\
 	+Passive docks:			( \"support\" )								\n\
 ""\
 $Name:					AWACS											\n\
@@ -443,7 +443,7 @@ $AI:																	\n\
 	+Player Orders:			( \"attack ship\" \"depart\" )				\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -469,7 +469,7 @@ $AI:																	\n\
 	+Player Orders:			( \"attack ship\" \"depart\" )				\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -495,7 +495,7 @@ $AI:																	\n\
 	+Player Orders:			( \"attack ship\" \"depart\" )				\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -521,7 +521,7 @@ $AI:																	\n\
 	+Player Orders:			( \"attack ship\" \"depart\" )				\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -548,13 +548,13 @@ $AI:																	\n\
 	+Player Orders:			( \"depart\" )								\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
 	+Passive docks:			( \"support\" )								\n\
 ""\
-$Name:					Supercap										\n\
+$Name:					Super Cap										\n\
 $Counts for Alone:		YES												\n\
 $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
@@ -573,7 +573,7 @@ $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"waypoints\" \"waypoints once\" \"depart\" \"stay still\" \"play dead\" \"stay near ship\" )						\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Can Form Wing:			YES											\n\
@@ -597,12 +597,12 @@ $AI:																	\n\
 	+Accept Player Orders:	YES											\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
 ""\
-$Name:					Knossos											\n\
+$Name:					Knossos Device									\n\
 $Counts for Alone:		YES												\n\
 $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
@@ -618,7 +618,7 @@ $Fog:																	\n\
 $AI:																	\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\
-	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"supercap\" \"drydock\" \"knossos\" )										\n\
+	+Actively Pursues:		( \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )										\n\
 	+Guards attack this:	YES											\n\
 	+Turrets attack this:	YES											\n\
 	+Passive docks:			( \"support\" )								\n\
