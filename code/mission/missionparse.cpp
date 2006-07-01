@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.180 $
- * $Date: 2006-06-04 01:01:53 $
+ * $Revision: 2.181 $
+ * $Date: 2006-07-01 00:30:48 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180  2006/06/04 01:01:53  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 2.179  2006/06/02 09:05:30  karajorma
  * Team Loadout changes to accept variables names as legitimate values for ship class and quantity in loadout.
  * Added the new alt class system
@@ -2986,9 +2990,13 @@ int parse_create_object_sub(p_object *p_objp)
 		for (sexp = CDR(p_objp->ai_goals); sexp != -1; sexp = CDR(sexp))
 			ai_add_ship_goal_sexp(sexp, AIG_TYPE_EVENT_SHIP, aip);
 
-		// free up sexp nodes for reuse, since they aren't needed anymore.
-		free_sexp2(p_objp->ai_goals);
-		p_objp->ai_goals = -1;
+		// free the sexpression nodes only for non-wing ships.  wing code will handle its own case
+		if (p_objp->wingnum < 0)
+		{
+			// free up sexp nodes for reuse, since they aren't needed anymore.
+			free_sexp2(p_objp->ai_goals);
+			p_objp->ai_goals = -1;
+		}
 	}
 
 	Assert(Ships[shipnum].modelnum != -1);
