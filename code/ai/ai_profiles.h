@@ -6,11 +6,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.h $
- * $Revision: 1.4.2.1 $
- * $Date: 2006-07-02 03:39:34 $
+ * $Revision: 1.4.2.2 $
+ * $Date: 2006-07-02 04:13:43 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4.2.1  2006/07/02 03:39:34  Goober5000
+ * remove associated AI flags
+ * --Goober5000
+ *
  * Revision 1.4  2006/04/20 06:32:00  Goober5000
  * proper capitalization according to Volition
  *
@@ -46,7 +50,7 @@
 #define AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS	(1 << 1)
 #define AIPF_SMART_PRIMARY_WEAPON_SELECTION							(1 << 2)
 #define AIPF_SMART_SECONDARY_WEAPON_SELECTION						(1 << 3)
-#define AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE							(1 << 4
+#define AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE							(1 << 4)
 #define AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS						(1 << 5)
 #define AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY					(1 << 6)
 #define AIPF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY		(1 << 7)
