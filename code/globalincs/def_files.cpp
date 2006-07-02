@@ -736,14 +736,6 @@ $Player Weapon Recharge Scale: 10, 4, 2.5, 2, 1.5						\n\
 ;; from a ship that they don't currently have targeted.					\n\
 $big ships can attack beam turrets on untargeted ships: NO				\n\
 																		\n\
-;; if set, fixes a bug where ships given an ai-chase or ai-chase-any	\n\
-;; order would never call for rearm.									\n\
-$ai-chase allows rearm: NO												\n\
-																		\n\
-;; if set, fixes a bug where the ai-chase behavior differed from		\n\
-;; ai-chase-wing.														\n\
-$ai-chase disables dynamic targeting temporarily: NO					\n\
-																		\n\
 ;; if set, enables the new primary weapon selection method				\n\
 $smart primary weapon selection: NO										\n\
 																		\n\

@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.13 $
- * $Date: 2006-04-20 06:32:00 $
+ * $Revision: 1.14 $
+ * $Date: 2006-07-02 03:39:55 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2006/04/20 06:32:00  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.12  2006/03/20 06:25:19  taylor
  * change wording to ease Goober's ulcer. ;)
  *
@@ -267,10 +270,6 @@ void parse_ai_profiles_tbl(char *longname)
 				parse_float_list(profile->weapon_energy_scale, NUM_SKILL_LEVELS);
 
 			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
-
-			set_flag(profile, "$ai-chase allows rearm:", AIPF_AI_CHASE_ALLOWS_REARM);
-
-			set_flag(profile, "$ai-chase disables dynamic targeting temporarily:", AIPF_AI_CHASE_DISABLES_DYNAMIC_TARGETING_TEMPORARILY);
 
 			set_flag(profile, "$smart primary weapon selection:", AIPF_SMART_PRIMARY_WEAPON_SELECTION);
 
