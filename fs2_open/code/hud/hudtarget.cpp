@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.2 $
- * $Date: 2006-06-24 18:02:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.87.2.3 $
+ * $Date: 2006-07-02 22:50:03 $
+ * $Author: karajorma $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.2  2006/06/24 18:02:02  Goober5000
+ * doh!  sorry for blaming this on you, WMC
+ * --Goober5000
+ *
  * Revision 2.87.2.1  2006/06/15 00:16:23  taylor
  * remove previous attempts at the Y bug fix, it's now back to the retail code for that
  *
@@ -4199,7 +4203,7 @@ void hud_show_hostile_triangle()
 		sp = &Ships[A->instance];
 
 		// only look at ships who attack us
-		if ( (A == Player_obj) || iff_x_attacks_y(Ships[A->instance].team, Player_ship->team) ) {
+		if ( (A == Player_obj) || !(iff_x_attacks_y(Ships[A->instance].team, Player_ship->team)) ) {
 			continue;
 		}
 
