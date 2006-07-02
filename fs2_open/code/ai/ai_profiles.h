@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.h $
- * $Revision: 1.4 $
- * $Date: 2006-04-20 06:32:00 $
+ * $Revision: 1.5 $
+ * $Date: 2006-07-02 03:39:55 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/04/20 06:32:00  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.3  2006/03/20 06:19:03  taylor
  * add ai_profiles flag to get rid of limit on minimum speed a docked ship can move
  * (not going to Int3() here from < 0.1 speed by default, a support ship actually hit it)
@@ -41,17 +44,15 @@
 // flags
 #define AIPF_SMART_SHIELD_MANAGEMENT								(1 << 0)
 #define AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS	(1 << 1)
-#define AIPF_AI_CHASE_DISABLES_DYNAMIC_TARGETING_TEMPORARILY		(1 << 2)
-#define AIPF_AI_CHASE_ALLOWS_REARM									(1 << 3)
-#define AIPF_SMART_PRIMARY_WEAPON_SELECTION							(1 << 4)
-#define AIPF_SMART_SECONDARY_WEAPON_SELECTION						(1 << 5)
-#define AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE							(1 << 6)
-#define AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS						(1 << 7)
-#define AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY					(1 << 8)
-#define AIPF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY		(1 << 9)
-#define AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS				(1 << 10)
-#define AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP							(1 << 11)
-#define AIPF_NO_MIN_DOCK_SPEED_CAP									(1 << 12)
+#define AIPF_SMART_PRIMARY_WEAPON_SELECTION							(1 << 2)
+#define AIPF_SMART_SECONDARY_WEAPON_SELECTION						(1 << 3)
+#define AIPF_ALLOW_RAPID_SECONDARY_DUMBFIRE							(1 << 4)
+#define AIPF_HUGE_TURRET_WEAPONS_IGNORE_BOMBS						(1 << 5)
+#define AIPF_DONT_INSERT_RANDOM_TURRET_FIRE_DELAY					(1 << 6)
+#define AIPF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY		(1 << 7)
+#define AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS				(1 << 8)
+#define AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP							(1 << 9)
+#define AIPF_NO_MIN_DOCK_SPEED_CAP									(1 << 10)
 
 
 #define MAX_AI_PROFILES	5
