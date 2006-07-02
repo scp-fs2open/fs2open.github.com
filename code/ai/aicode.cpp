@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.76 $
- * $Date: 2006-06-27 05:10:02 $
- * $Author: taylor $
+ * $Revision: 1.77 $
+ * $Date: 2006-07-02 03:33:50 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.76  2006/06/27 05:10:02  taylor
+ * account for some minor floating point error in the undock speed check
+ *
  * Revision 1.75  2006/06/27 04:06:18  Goober5000
  * handle docked objects during death roll
  * --Goober5000
@@ -3242,19 +3245,8 @@ void ai_attack_object(object *attacker, object *attacked, int priority, ship_sub
 		set_target_objnum(aip, attacked - Objects);
 	}
 
-	// Goober5000
-	// The two lines in the inner IF blocks appear in practically every other targeting function,
-	// including ai_attack_wing, but for some reason aren't included here... so trigger them with new AI
-	if (aip->target_objnum >= 0)
-	{
-		// allow the rearm timestamp to eventually expire
-		if (The_mission.ai_profile->flags & AIPF_AI_CHASE_ALLOWS_REARM)
-			ai_set_goal_maybe_abort_dock(attacker, aip);
-
-		// keep target for a short time
-		if (The_mission.ai_profile->flags & AIPF_AI_CHASE_DISABLES_DYNAMIC_TARGETING_TEMPORARILY)
-			aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
-	}
+	ai_set_goal_maybe_abort_dock(attacker, aip);
+	aip->ok_to_target_timestamp = timestamp(DELAY_TARGET_TIME);	//	No dynamic targeting for 7 seconds.
 
 	// Goober5000
 	if ((temp = find_ignore_new_object_index(aip, aip->target_objnum)) >= 0)
