@@ -2929,9 +2929,9 @@ LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 	char *p;
 	for(i = 0; i < pm->n_textures; i++)
 	{
-		if(pm->textures[i] > -1)
+		if(pm->map[i].texture > -1)
 		{
-			bm_get_filename(pm->textures[i], fname);
+			bm_get_filename(pm->map[i].texture, fname);
 
 			//Get rid of extension
 			p = strchr( fname, '.' );
@@ -2944,7 +2944,7 @@ LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 			}
 		}
 
-		if(shipp->replacement_textures != NULL && pm->textures[i] > -1)
+		if(shipp->replacement_textures != NULL && pm->map[i].texture > -1)
 		{
 			bm_get_filename(shipp->replacement_textures[i], fname);
 			//Get rid of extension
@@ -2976,8 +2976,8 @@ LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 
 	if(shipp->replacement_textures != NULL && shipp->replacement_textures[idx] > -1)
 		return lua_set_args(L, "o", l_Texture.Set(shipp->replacement_textures[idx]));
-	else if(pm->textures[idx] > -1)
-		return lua_set_args(L, "o", l_Texture.Set(pm->textures[idx]));
+	else if(pm->map[idx].texture > -1)
+		return lua_set_args(L, "o", l_Texture.Set(pm->map[idx].texture));
 	else
 		return LUA_RETURN_FALSE;
 }

@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.2  2006/06/18 16:53:59  taylor
+ * make sure we don't process cmeasure homing more than once (this should also fix the incompatible network packet)
+ * fix flag check to be sure that we properly detonate missiles tracking cmeasures
+ *
  * Revision 2.180.2.1  2006/06/04 17:57:00  wmcoolmon
  * Remove $Collide Ship and $Collide Weapon options from 3.6.9, as these are not finalized
  *
@@ -6164,7 +6168,7 @@ void weapons_page_in()
 					}
 		
 					for (j=0; j<pm->n_textures; j++ )	{
-						int bitmap_num = pm->original_textures[j];
+						int bitmap_num = pm->map[j].original_texture;
 
 						if ( bitmap_num > -1 )	{
 							bm_page_in_texture( bitmap_num );
