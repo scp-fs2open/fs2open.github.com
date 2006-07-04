@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.14 $
- * $Date: 2006-03-05 18:00:55 $
- * $Author: taylor $
+ * $Revision: 2.15 $
+ * $Date: 2006-07-04 07:42:48 $
+ * $Author: Goober5000 $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/03/05 18:00:55  taylor
+ * remove WMC's "speed increase" ;)  (the math isn't right yet so the collision checks won't be correct, and fixing it to work right wouldn't be any faster)
+ *
  * Revision 2.13  2006/02/25 21:47:07  Goober5000
  * spelling
  *
@@ -471,7 +474,7 @@ static void mc_check_face(int nv, vec3d **verts, vec3d *plane_pnt, float face_ra
 		if ( uvl_list )	{
 			Mc->hit_u = u;
 			Mc->hit_v = v;
-			Mc->hit_bitmap = Mc_pm->textures[ntmap];			
+			Mc->hit_bitmap = Mc_pm->map[ntmap].texture;			
 		}
 		
 		if(ntmap >= 0){
@@ -555,7 +558,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 			if ( uvl_list )	{
 				Mc->hit_u = u;
 				Mc->hit_v = v;
-				Mc->hit_bitmap = Mc_pm->textures[ntmap];
+				Mc->hit_bitmap = Mc_pm->map[ntmap].texture;
 			}
 
 			if(ntmap >= 0){
@@ -616,7 +619,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 				Mc->hit_point = hit_point;
 				Mc->hit_submodel = Mc_submodel;
 				Mc->edge_hit = 1;
-				Mc->hit_bitmap = Mc_pm->textures[ntmap];				
+				Mc->hit_bitmap = Mc_pm->map[ntmap].texture;				
 
 				if(ntmap >= 0){
 					Mc->t_poly = poly;
@@ -736,7 +739,7 @@ void model_collide_tmappoly(ubyte * p)
 	int tmap_num = w(p+40);
 	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);	// Goober5000
 
-	if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->textures[tmap_num] < 0) )	{
+	if ( (!(Mc->flags & MC_CHECK_INVISIBLE_FACES)) && (Mc_pm->map[tmap_num].texture < 0) )	{
 		// Don't check invisible polygons.
 		return;
 	}

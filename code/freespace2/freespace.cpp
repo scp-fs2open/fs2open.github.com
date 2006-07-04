@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.249 $
- * $Date: 2006-06-27 04:58:58 $
- * $Author: taylor $
+ * $Revision: 2.250 $
+ * $Date: 2006-07-04 07:42:48 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.249  2006/06/27 04:58:58  taylor
+ * sync up current OpenAL changes
+ *  - "SoundDeviceOAL" reg option for user specified sound device (used instead of "Soundcard" for OpenAL)
+ *  - reset current context when we are leaving, may be leaving drivers in a bad state, and it hasn't hung up in quite a while
+ *  - if sound card (which DS or OAL) is set to "no sound" then be sure to disable both sound and music
+ * fix various things that Valgrind complained about
+ * make sure we can report both AL and ALC errors
+ * fix for ds_get_free_channel(), it shouldn't return -1 on an AL error
+ *
  * Revision 2.248  2006/06/15 01:29:18  Goober5000
  * tweaked the version string
  * --Goober5000
@@ -9620,11 +9629,11 @@ void Time_model( int modelnum )
 		char filename[1024];
 		ubyte pal[768];
 
-		int bmp_num = pm->original_textures[i];
+		int bmp_num = pm->map[i].original_texture;
 		if ( bmp_num > -1 )	{
-			bm_get_palette(pm->original_textures[i], pal, filename );		
+			bm_get_palette(pm->map[i].original_texture, pal, filename );		
 			int w,h;
-			bm_get_info( pm->original_textures[i],&w, &h );
+			bm_get_info( pm->map[i].original_texture,&w, &h );
 
 
 			if ( (w > 512) || (h > 512) )	{

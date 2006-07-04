@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.265 $
- * $Date: 2006-06-27 03:55:07 $
+ * $Revision: 2.266 $
+ * $Date: 2006-07-04 07:42:48 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.265  2006/06/27 03:55:07  Goober5000
+ * fix comment in preparation for code commit
+ * --Goober5000
+ *
  * Revision 2.264  2006/06/24 01:54:08  Goober5000
  * make ai-chase-any-except default to ai-chase-any
  * (since it never really worked properly in the first place)
@@ -1703,8 +1707,8 @@ sexp_oper Operators[] = {
 	{ "activate-glow-points",		OP_ACTIVATE_GLOW_POINTS,		1, INT_MAX },	//-Bobboau
 	{ "deactivate-glow-maps",		OP_DEACTIVATE_GLOW_MAPS,		1, INT_MAX },	//-Bobboau
 	{ "activate-glow-maps",			OP_ACTIVATE_GLOW_MAPS,			1, INT_MAX },	//-Bobboau
-	{ "deactivate-glow-point-bank",	OP_DEACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINTS },	//-Bobboau
-	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINTS },	//-Bobboau
+	{ "deactivate-glow-point-bank",	OP_DEACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINT_BANKS },	//-Bobboau
+	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINT_BANKS },	//-Bobboau
 
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
@@ -12260,34 +12264,39 @@ void sexp_change_ship_class(int n)
 
 
 //-Bobboau
-void sexp_activate_deactivate_glow_points(int n, int activate)
+void sexp_activate_deactivate_glow_points(int n, bool activate)
 {
-	int sindex;
-	ship *shipp;
+	int sindex, i;
+	polymodel *pm;
 
-	// every ship specified
 	for ( ; n != -1; n = CDR(n))
 	{
 		sindex = ship_name_lookup(CTEXT(n), 1);
-
-		// ensure ship exists
 		if (sindex >= 0)
 		{
-			shipp = &Ships[sindex];
+			pm = model_get(Ships[sindex].modelnum);
 
-#ifndef NDEBUG
-/*
-			if (activate)
-				HUD_printf("activating glows on %s", shipp->ship_name);
-			else
-				HUD_printf("deactivating glows on %s", shipp->ship_name);
-*/
-#endif
+			for (i = 0; i < pm->n_glow_point_banks; i++)
+				pm->glow_point_bank_active[i] = activate;
+		}
+	}
+}
 
-			if (activate)
-				shipp->glows_active = GLOW_POINTS_ALL_ON;
-			else
-				shipp->glows_active = GLOW_POINTS_ALL_OFF;
+//-Bobboau
+void sexp_activate_deactivate_glow_point_bank(int n, bool activate)
+{
+	int sindex, num;
+	polymodel *pm;
+
+	sindex = ship_name_lookup(CTEXT(n), 1);
+	if (sindex >= 0)
+	{
+		pm = model_get(Ships[sindex].modelnum);
+
+		num = eval_num(n);
+		if (num >= 0 && num < MAX_GLOW_POINT_BANKS)
+		{
+			pm->glow_point_bank_active[num] = activate;
 		}
 	}
 }
@@ -12296,61 +12305,21 @@ void sexp_activate_deactivate_glow_points(int n, int activate)
 void sexp_activate_deactivate_glow_maps(int n, int activate)
 {
 	int sindex;
-	ship *shipp;
+	polymodel *pm;
 
 	for ( ; n != -1; n = CDR(n))
 	{
 		sindex = ship_name_lookup(CTEXT(n), 1);
 		if (sindex >= 0)
 		{
-			shipp = &Ships[sindex];
+			pm = model_get(Ships[sindex].modelnum);
 
-#ifndef NDEBUG
-/*
 			if (activate)
-				HUD_printf("activating glow maps on %s", shipp->ship_name);
+				pm->flags &= ~PM_FLAG_GLOW_DISABLED;
 			else
-				HUD_printf("deactivating glow maps on %s", shipp->ship_name);
-*/
-#endif
-
-			shipp->glowmaps_active = activate;	
+				pm->flags |= PM_FLAG_GLOW_DISABLED;
 		}
 	}
-}
-
-//-Bobboau
-void sexp_activate_deactivate_glow_point_bank(int n, int activate)
-{
-	int sindex, i;
-	ship *shipp;
-
-	sindex = ship_name_lookup(CTEXT(n), 1);
-	if (sindex < 0)
-		return;
-	shipp = &Ships[sindex];
-
-	n = CDR(n);
-	for ( ; n != -1; n = CDR(n))
-	{
-		i = (int)eval_num(n);
-		if (i < MAX_GLOW_POINTS)
-		{
-
-#ifndef NDEBUG
-			if (activate)
-				HUD_printf("activating glow %d on %s", i, shipp->ship_name);
-			else
-				HUD_printf("deactivating glow %d on %s", i, shipp->ship_name);
-#endif
-
-			if (activate)
-				shipp->glows_active	|= (1 << i);
-			else
-				shipp->glows_active	&= ~(1 << i);
-		}
-	}
-
 }
 
 // taylor - load and set a skybox model

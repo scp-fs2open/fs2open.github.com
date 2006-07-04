@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.72 $
- * $Date: 2006-05-27 16:42:16 $
- * $Author: taylor $
+ * $Revision: 2.73 $
+ * $Date: 2006-07-04 07:42:50 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2006/05/27 16:42:16  taylor
+ * fix slight freakiness with debris vclips (un)loading
+ * comment out some code which was only used if neither D3D or OGL
+ * fix dumb particle_emit() calls
+ *
  * Revision 2.71  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -2615,7 +2620,7 @@ void stars_page_in()
 		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
-			bm_page_in_texture( pm->original_textures[idx] );
+			bm_page_in_texture( pm->map[idx].original_texture );
 		}
 
 		pm = model_get(Subspace_model_outer);
@@ -2623,7 +2628,7 @@ void stars_page_in()
 		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
-			bm_page_in_texture(pm->original_textures[idx]);
+			bm_page_in_texture(pm->map[idx].original_texture);
 		}
 
 		if (Subspace_glow_bitmap < 0) {

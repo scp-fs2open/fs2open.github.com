@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.158 $
- * $Date: 2006-06-02 09:40:32 $
- * $Author: taylor $
+ * $Revision: 2.159 $
+ * $Date: 2006-07-04 07:42:48 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.158  2006/06/02 09:40:32  taylor
+ * be sure that we properly apply light to submodels (mainly for debris), looks *really* bad otherwise
+ *
  * Revision 2.157  2006/05/27 16:57:13  taylor
  * comment out the model cache stuff, it's old and not actually used anyway
  * minor cleanup of some modelinterp.cpp code, to make it more readable
@@ -956,9 +959,6 @@ int modelstats_num_boxes = 0;
 
 extern int Cmdline_nohtl;
 
-int glow_maps_active = 1;
-int GLOWMAP_FRAME_OVERRIDE = -1;
-
 
 typedef struct model_light {
 	ubyte r, g, b;
@@ -1091,6 +1091,15 @@ void model_render_children_buffers(bsp_info* model, polymodel * pm, int mn, int 
 
 
 void (*model_interp_sortnorm)(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check) = model_interp_sortnorm_b2f;
+
+
+
+// forward references
+int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_check);
+void set_warp_globals(float, float, float, int, float);
+void model_try_cache_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int num_lights);
+void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum = -1);
+
 
 
 void model_deallocate_interp_data()
@@ -1850,13 +1859,17 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	//Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
 
 	int is_invisible = 0;
-
-	if((Warp_Map < 0)){
-		if ((!Interp_thrust_scale_subobj) && (pm->textures[tmap_num]<0))	{
+	if ((Warp_Map < 0))
+	{
+		if ((!Interp_thrust_scale_subobj) && (pm->map[tmap_num].texture < 0))
+		{
 			// Don't draw invisible polygons.
-			if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES))	{
+			if (!(Interp_flags & MR_SHOW_INVISIBLE_FACES))
+			{
 				return;
-			} else {
+			}
+			else
+			{
 				is_invisible = 1;
 			}
 		}
@@ -1949,7 +1962,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	//		}
 
 	//		Assert( verts[i].normnum == verts[i].vertnum );
-			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->ambient[tmap_num]))	{	//gets the ambient glow to work
+			if ( (Interp_flags & MR_NO_LIGHTING) || (pm->is_ambient[tmap_num]))	{	//gets the ambient glow to work
 				Interp_list[i]->r = 191;
 				Interp_list[i]->g = 191;
 				Interp_list[i]->b = 191;
@@ -2038,7 +2051,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			if ( Interp_tmap_flags & TMAP_FLAG_TEXTURED )	{
 				// subspace special case
 				if ( Interp_subspace /*&& (D3D_enabled || OGL_enabled)*/ ) {										
-					gr_set_bitmap( pm->textures[tmap_num], GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );					
+					gr_set_bitmap( pm->map[tmap_num].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );					
 				}
 				// all other textures
 				else {					
@@ -2050,31 +2063,21 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					}else if((Interp_replacement_textures != NULL) && (Interp_replacement_textures[tmap_num] >= 0)){
 						texture = Interp_replacement_textures[tmap_num];
 					} else {
-						if (pm->is_ani[tmap_num]){
-							texture = pm->textures[tmap_num] + ((timestamp() / (int)(pm->fps[tmap_num])) % pm->num_frames[tmap_num]);//here is were it picks the texture to render for ani-Bobboau
+						if (pm->is_anim[tmap_num]){
+							texture = pm->map[tmap_num].texture + ((timestamp() / (int)(pm->anim[tmap_num].fps)) % pm->anim[tmap_num].num_frames);//here is were it picks the texture to render for ani-Bobboau
 						}else{
-							texture = pm->textures[tmap_num];//here is were it picks the texture to render for normal-Bobboau
+							texture = pm->map[tmap_num].texture;	//here is were it picks the texture to render for normal-Bobboau
 						}
 
 						if((Detail.lighting > 2)  && (model_current_LOD < 1))
 						{
-							BUMPMAP = pm->bump_textures[tmap_num];
-							SPECMAP = pm->specular_textures[tmap_num];
+							BUMPMAP = pm->bump_map[tmap_num].texture;
+							SPECMAP = pm->specular_map[tmap_num].texture;
 						}
 
-						if(glow_maps_active)
+						if (!(pm->flags & PM_FLAG_GLOW_DISABLED))
 						{
-							if (pm->glow_is_ani[tmap_num])
-							{
-								if(GLOWMAP_FRAME_OVERRIDE < 0)
-									GLOWMAP = pm->glow_textures[tmap_num] + ((timestamp() / (int)(pm->glow_fps[tmap_num])) % pm->glow_numframes[tmap_num]);
-								else
-									GLOWMAP = pm->glow_textures[tmap_num] + GLOWMAP_FRAME_OVERRIDE;
-							}
-							else
-							{
-								GLOWMAP = pm->glow_textures[tmap_num];
-							}
+							GLOWMAP = pm->glow_map[tmap_num].texture;
 						}
 					}
 
@@ -2082,7 +2085,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					if(Interp_flags & MR_ALL_XPARENT){
 						gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_xparent_alpha );
 					} else {
-						if(pm->transparent[tmap_num]){	//trying to get transperent textures-Bobboau
+						if(pm->is_transparent[tmap_num]){	//trying to get transperent textures-Bobboau
 							gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
 						}else{
 							gr_set_bitmap( texture );
@@ -3253,8 +3256,8 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 	polymodel *pm = model_get(model_num);
 
 	int time = timestamp();
-	for (int i = 0; i < pm->n_glows; i++ ) { //glow point blink code -Bobboau
-		glow_bank *bank = &pm->glows[i];
+	for (int i = 0; i < pm->n_glow_point_banks; i++ ) { //glow point blink code -Bobboau
+		glow_point_bank *bank = &pm->glow_point_banks[i];
 		if (bank->glow_timestamp == 0)
 			bank->glow_timestamp=time;
 		if(bank->off_time){
@@ -3925,25 +3928,17 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 {
 	int i, detail_level;
 	polymodel * pm;
-	glow_maps_active = 1;
 
 	uint save_gr_zbuffering_mode;
 	int zbuf_mode;
 	ship *shipp = NULL;
-	int is_ship = 0;
 	object *objp = NULL;
 
 	if (objnum >= 0) {
 		objp = &Objects[objnum];
-		GLOWMAP_FRAME_OVERRIDE = -1;
 
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
-			is_ship = 1;
-			glow_maps_active = shipp->glowmaps_active;
-		}
-		else if(objp->type == OBJ_SHOCKWAVE) {
-			GLOWMAP_FRAME_OVERRIDE = objp->instance;
 		}
 	}
 	
@@ -4261,13 +4256,13 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 		
 	// start rendering glow points -Bobboau
-	if ( (pm->n_glows) && !is_outlines_only && !is_outlines_only_htl ) {
-		for (i = 0; i < pm->n_glows; i++ ) {
-			glow_bank *bank = &pm->glows[i];
+	if ( (pm->n_glow_point_banks) && !is_outlines_only && !is_outlines_only_htl ) {
+		for (i = 0; i < pm->n_glow_point_banks; i++ ) {
+			glow_point_bank *bank = &pm->glow_point_banks[i];
 			int j;
 
 			if (bank->is_on) {
-				if ( is_ship && (i < 32) && !(shipp->glows_active & (1 << i)) ) {
+				if (!pm->glow_point_bank_active[i]) {
 					continue;
 				}
 
@@ -4664,7 +4659,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 //end secondary glows
 //begin particles
-				if(is_ship){
+				if(shipp) {
 					ship_info* sip = &Ship_info[shipp->ship_info_index];
 /*					particle_emitter pe;
 					float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
@@ -4810,7 +4805,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
-	glow_maps_active = 1;
 	memset(&Interp_offset,0,sizeof(vec3d));
 
 }
@@ -5193,7 +5187,7 @@ int model_find_texture(int model_num, int bitmap)
 
 	// find the texture
 	for(idx=0; idx<pm->n_textures; idx++){
-		if(pm->textures[idx] == bitmap){
+		if(pm->map[idx].texture == bitmap){
 			return 1;
 		}
 	}
@@ -5288,6 +5282,18 @@ void model_set_fog_level(float l)
 	Interp_fog_level = l;
 }
 
+// Goober5000
+void model_page_in_texture(int texture)
+{
+	if (texture >= 0)
+	{
+		// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
+		bm_page_in_texture(texture);
+		bm_lock(texture, 16, BMP_TEX_OTHER);
+		bm_unlock(texture);
+	}
+}
+
 // given a newly loaded model, page in all textures
 void model_page_in_textures(int modelnum, int ship_info_index)
 {
@@ -5297,63 +5303,58 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 	polymodel *pm = model_get(modelnum);
 
 	// bogus
-	if(pm == NULL){
+	if(pm == NULL)
 		return;
-	}
 
-	if ((ship_info_index >= 0) && (ship_info_index < Num_ship_classes)) {
+	if ((ship_info_index >= 0) && (ship_info_index < Num_ship_classes))
+	{
 		sip = &Ship_info[ship_info_index];
 
 		// set nondarkening pixels	
-		if(sip->num_nondark_colors){		
+		if(sip->num_nondark_colors)
+		{		
 			palman_set_nondarkening(sip->nondark_colors, sip->num_nondark_colors);
 		}
 		// use the colors from the default table
-		else {		
+		else
+		{		
 			palman_set_nondarkening(Palman_non_darkening_default, Palman_num_nondarkening_default);
 		}
 	}
 
-	for (idx=0; idx<pm->n_textures; idx++ ){
-		if ( pm->original_textures[idx] > -1 )	{
-			// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
-			bm_page_in_texture(pm->original_textures[idx]);
-			bm_lock(pm->original_textures[idx], 16, BMP_TEX_OTHER);
-			bm_unlock(pm->original_textures[idx]);
-		}
-
-		if ( pm->glow_original_textures[idx] > -1 ) {
-			// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
-			bm_page_in_texture(pm->glow_original_textures[idx]);
-			bm_lock(pm->glow_original_textures[idx], 16, BMP_TEX_OTHER);
-			bm_unlock(pm->glow_original_textures[idx]);
-		}
-
-		if ( pm->specular_original_textures[idx] > -1 ) {
-			// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
-			bm_page_in_texture(pm->specular_original_textures[idx]);
-			bm_lock(pm->specular_original_textures[idx], 16, BMP_TEX_OTHER);
-			bm_unlock(pm->specular_original_textures[idx]);
-		}
+	for (idx = 0; idx < pm->n_textures; idx++)
+	{
+		model_page_in_texture(pm->map[idx].original_texture);
+		model_page_in_texture(pm->glow_map[idx].original_texture);
+		model_page_in_texture(pm->specular_map[idx].original_texture);
 	}
 
-	if (pm->n_glows) {
-		for (i=0; i<pm->n_glows; i++) {
-			glow_bank *bank = &pm->glows[i];
+	for (i=0; i < pm->n_glow_point_banks; i++)
+	{
+		glow_point_bank *bank = &pm->glow_point_banks[i];
 
-			if (bank->glow_bitmap > -1) {
-				// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
-				bm_page_in_texture(bank->glow_bitmap);
-				bm_lock(bank->glow_bitmap, 16, BMP_TEX_OTHER);
-				bm_unlock(bank->glow_bitmap);
-			}
+		model_page_in_texture(bank->glow_bitmap);
+		model_page_in_texture(bank->glow_neb_bitmap);
+	}
+}
 
-			if (bank->glow_neb_bitmap > -1) {
-				// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
-				bm_page_in_texture(bank->glow_neb_bitmap);
-				bm_lock(bank->glow_neb_bitmap, 16, BMP_TEX_OTHER);
-				bm_unlock(bank->glow_neb_bitmap);
+void model_page_out_texture_info(texture_info *tinfo, bool release)
+{
+	if (tinfo->original_texture >= 0)
+	{
+		if (release)
+		{
+			if (bm_release(tinfo->original_texture))
+			{
+				if (tinfo->texture == tinfo->original_texture)
+					tinfo->texture = -1;
+
+				tinfo->original_texture = -1;
 			}
+		}
+		else
+		{
+			bm_unload_fast(tinfo->original_texture);
 		}
 	}
 }
@@ -5367,7 +5368,7 @@ void model_page_out_textures(int model_num, bool release)
 	if (model_num < 0)
 		return;
 
-	polymodel *pm = model_get( model_num );
+	polymodel *pm = model_get(model_num);
 
 	if (pm == NULL)
 		return;
@@ -5375,77 +5376,35 @@ void model_page_out_textures(int model_num, bool release)
 	if (release && (pm->used_this_mission > 0))
 		return;
 
-	for (i=0; i<pm->n_textures; i++) {
-		if ( pm->original_textures[i] > -1 ) {
-			if (release) {
-				if ( bm_release(pm->original_textures[i]) ) {
-					if (pm->textures[i] == pm->original_textures[i])
-						pm->textures[i] = -1;
-
-					pm->original_textures[i] = -1;
-				}
-			} else {
-				bm_unload_fast( pm->original_textures[i] );
-			}
-		}
-
-		if ( pm->glow_original_textures[i] > -1 ) {
-			if (release) {
-				if ( bm_release(pm->glow_original_textures[i]) ) {
-					if (pm->glow_textures[i] == pm->glow_original_textures[i])
-						pm->glow_textures[i] = -1;
-
-					pm->glow_original_textures[i] = -1;
-				}
-			} else {
-				bm_unload_fast( pm->glow_original_textures[i] );
-			}
-		}
-
-		if ( pm->specular_original_textures[i] > -1 ) {
-			if (release) {
-				if ( bm_release(pm->specular_original_textures[i]) ) {
-					if (pm->specular_textures[i] == pm->specular_original_textures[i])
-						pm->specular_textures[i] = -1;
-
-					pm->specular_original_textures[i] = -1;
-				}
-			} else {
-				bm_unload_fast( pm->specular_original_textures[i] );
-			}
-		}
+	for (i = 0; i < pm->n_textures; i++)
+	{
+		model_page_out_texture_info(&pm->map[i], release);
+		model_page_out_texture_info(&pm->glow_map[i], release);
+		model_page_out_texture_info(&pm->specular_map[i], release);
 	}
 
-	if (pm->n_glows) {
-		// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
-		for (j=0; j<pm->n_glows; j++) {
-			glow_bank *bank = &pm->glows[j];
+	// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
+	for (j = 0; j < pm->n_glow_point_banks; j++)
+	{
+		glow_point_bank *bank = &pm->glow_point_banks[j];
 
-			if (bank->glow_bitmap > -1) {
-			//	if (release) {
-			//		bm_release( bank->glow_bitmap );
-			//	} else {
-					bm_unload( bank->glow_bitmap );
-			//	}
-			}
+		if (bank->glow_bitmap >= 0)
+		{
+		//	if (release)
+		//		bm_release(bank->glow_bitmap);
+		//	else
+				bm_unload(bank->glow_bitmap);
+		}
 
-			if (bank->glow_neb_bitmap > -1) {
-			//	if (release) {
-			//		bm_release( bank->glow_neb_bitmap );
-			//	} else {
-					bm_unload( bank->glow_neb_bitmap );
-			//	}
-			}
+		if (bank->glow_neb_bitmap >= 0)
+		{
+		//	if (release)
+		//		bm_release(bank->glow_neb_bitmap);
+		//	else
+				bm_unload(bank->glow_neb_bitmap);
 		}
 	}
 }
-
-// is the given model a pirate ship?
-int model_is_pirate_ship(int modelnum)
-{
-	return 0;
-}
-
 
 
 //**********verrtex buffer stuff**********//
@@ -6122,31 +6081,21 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 		}else if(Interp_thrust_scale_subobj && !no_texturing){
 			texture = Interp_thrust_bitmap;
 		} else if (!no_texturing) {
-			if (pm->is_ani[model->buffer[i].texture]){
-				texture = pm->textures[model->buffer[i].texture] + ((timestamp() / (int)(pm->fps[model->buffer[i].texture])) % pm->num_frames[model->buffer[i].texture]);//here is were it picks the texture to render for ani-Bobboau
+			if (pm->is_anim[model->buffer[i].texture]){
+				texture = pm->map[model->buffer[i].texture].texture + ((timestamp() / (int)(pm->anim[model->buffer[i].texture].fps)) % pm->anim[model->buffer[i].texture].num_frames);//here is were it picks the texture to render for ani-Bobboau
 			}else{
-				texture = pm->textures[model->buffer[i].texture];//here is were it picks the texture to render for normal-Bobboau
+				texture = pm->map[model->buffer[i].texture].texture;	//here is were it picks the texture to render for normal-Bobboau
 			}
 
 			if((Detail.lighting > 2)  && (model_current_LOD < 2))
 			{
-				SPECMAP = pm->specular_textures[model->buffer[i].texture];
-				BUMPMAP = pm->bump_textures[model->buffer[i].texture];
+				SPECMAP = pm->specular_map[model->buffer[i].texture].texture;
+				BUMPMAP = pm->bump_map[model->buffer[i].texture].texture;
 			}
 
-			if(glow_maps_active)
+			if (!(pm->flags & PM_FLAG_GLOW_DISABLED))
 			{
-				if (pm->glow_is_ani[model->buffer[i].texture])
-				{
-					if(GLOWMAP_FRAME_OVERRIDE < 0)
-						GLOWMAP = pm->glow_textures[model->buffer[i].texture] + ((timestamp() / (int)(pm->glow_fps[model->buffer[i].texture])) % pm->glow_numframes[model->buffer[i].texture]);
-					else
-						GLOWMAP = pm->glow_textures[model->buffer[i].texture] + shockwave_get_framenum(GLOWMAP_FRAME_OVERRIDE, pm->glow_numframes[model->buffer[i].texture]);
-				}
-				else
-				{
-					GLOWMAP = pm->glow_textures[model->buffer[i].texture];
-				}
+				GLOWMAP = pm->glow_map[model->buffer[i].texture].texture;
 			}
 		}
 
@@ -6171,7 +6120,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 			gr_set_cull(0);
 			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			gr_zbuffer_set(GR_ZBUFF_READ);
-		} else if(pm->transparent[model->buffer[i].texture] ){	//trying to get transperent textures-Bobboau
+		} else if(pm->is_transparent[model->buffer[i].texture] ){	//trying to get transperent textures-Bobboau
 			if(Warp_Alpha!=-1.0)gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			else gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
 			gr_zbuffer_set(GR_ZBUFF_READ);

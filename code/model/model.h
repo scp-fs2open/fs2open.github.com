@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.81 $
- * $Date: 2006-06-07 04:45:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.82 $
+ * $Date: 2006-07-04 07:42:48 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2006/06/07 04:45:55  wmcoolmon
+ * Begin multi-turret-guns toggle work
+ *
  * Revision 2.80  2006/05/31 03:05:42  Goober5000
  * some cosmetic changes in preparation for bay arrival/departure code
  * --Goober5000
@@ -1028,22 +1031,24 @@ typedef struct thruster_bank {
 
 	int		obj_num;		// what subsystem number this thruster is on
 } thruster_bank;
-	
-typedef struct glow_bank {  // glow bank struckture -Bobboau
-	int		type;
-	int		glow_timestamp; 
-	int		on_time; 
-	int		off_time; 
-	int		disp_time; 
-	int		is_on; 
-	int		is_active; 
-	int		submodel_parent; 
-	int		LOD; 
-	int		num_slots; 
-	glow_point point[MAX_THRUSTER_SLOTS];
-	int		glow_bitmap; 
-	int		glow_neb_bitmap; 
-} glow_bank;
+
+#define MAX_GLOW_POINT_BANKS	32
+
+typedef struct glow_point_bank {  // glow bank structure -Bobboau
+	int			type;
+	int			glow_timestamp; 
+	int			on_time; 
+	int			off_time; 
+	int			disp_time; 
+	int			is_on; 
+	int			is_active; 
+	int			submodel_parent; 
+	int			LOD; 
+	int			num_slots; 
+	glow_point	point[MAX_THRUSTER_SLOTS];
+	int			glow_bitmap; 
+	int			glow_neb_bitmap; 
+} glow_point_bank;
 
 // defines for docking bay things.  The types are essentially flags since docking bays can probably
 // be used for multiple things in some cases (i.e. rearming and general docking)
@@ -1154,6 +1159,20 @@ typedef struct insignia {
 
 #define PM_FLAG_ALLOW_TILING	(1<<0)					// Allow texture tiling
 #define PM_FLAG_AUTOCEN			(1<<1)					// contains autocentering info	
+#define PM_FLAG_GLOW_DISABLED	(1<<2)					// Goober5000
+
+// Goober5000
+typedef struct texture_info {
+	int original_texture;	// what gets read in from file
+	int texture;			// what texture you draw with; reset to original_textures by model_set_instance
+} texture_info;
+
+// Goober5000
+typedef struct texture_anim_info {
+	int num_frames;
+	int cur_frame;
+	int fps;
+} texture_anim_info;
 
 //used to describe a polygon model
 typedef struct polymodel {
@@ -1184,25 +1203,20 @@ typedef struct polymodel {
 	float			core_radius;						// The radius to be used for collision detection in small ship vs big ships.
 															// This is equal to 1/2 of the smallest dimension of the hull's bounding box.
 	int			n_textures;
-	int			original_textures[MAX_MODEL_TEXTURES];		// what gets read in from file
-	int			textures[MAX_MODEL_TEXTURES];					// what textures you draw with.  reset to original_textures by model_set_instance
-	int			num_frames[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
-	int			fps[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
-	int			is_ani[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
 
-	int			glow_original_textures[MAX_MODEL_TEXTURES];		// what gets read in from file
-	int			glow_textures[MAX_MODEL_TEXTURES];					// what textures you draw with.  reset to original_textures by model_set_instance
-	int			glow_numframes[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
-	int			glow_fps[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
-	int			glow_is_ani[MAX_MODEL_TEXTURES];					// flag for weather this texture is an ani-Bobboau
+	// Goober5000
+	texture_info	map[MAX_MODEL_TEXTURES];
+	texture_info	glow_map[MAX_MODEL_TEXTURES];
+	texture_info	specular_map[MAX_MODEL_TEXTURES];
+	texture_info	bump_map[MAX_MODEL_TEXTURES];
 
-	int			specular_original_textures[MAX_MODEL_TEXTURES];	//map modulated with the specular -Bobboau
-	int			specular_textures[MAX_MODEL_TEXTURES];
+	// Goober5000
+	texture_anim_info anim[MAX_MODEL_TEXTURES];
 
-	int			bump_textures[MAX_MODEL_TEXTURES];
-
-	int			ambient[MAX_MODEL_TEXTURES];				// ambient light-Bobboau
-	int			transparent[MAX_MODEL_TEXTURES];				// flag this texture as being a transparent blend-Bobboau
+	// Goober5000
+	bool	is_anim[MAX_MODEL_TEXTURES];
+	bool	is_ambient[MAX_MODEL_TEXTURES];
+	bool	is_transparent[MAX_MODEL_TEXTURES];
 
 	vec3d		autocenter;							// valid only if PM_FLAG_AUTOCEN is set
 	
@@ -1249,8 +1263,9 @@ typedef struct polymodel {
 
 	int used_this_mission;		// used for page-in system, how many times this model has been loaded per mission - taylor
 
-	int n_glows;							// number of glows on this ship. -Bobboau
-	glow_bank *glows;						// array of glow objects -Bobboau
+	int n_glow_point_banks;						// number of glow points on this ship. -Bobboau
+	glow_point_bank *glow_point_banks;			// array of glow objects -Bobboau
+	bool glow_point_bank_active[MAX_GLOW_POINT_BANKS];	// Goober5000
 
 	float gun_submodel_rotation;
 
@@ -1349,12 +1364,6 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags = MR_NO
 // Renders just one particular submodel on a model.
 // See MR_? defines for values for flags
 void submodel_render(int model_num,int submodel_num, matrix *orient, vec3d * pos, uint flags = MR_NORMAL, int objnum = -1, int *replacement_textures = NULL);
-
-// forward references - moved out here by Goober5000
-int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_check);
-void set_warp_globals(float, float, float, int, float);
-void model_try_cache_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int num_lights);
-void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum = -1);
 
 // Returns the radius of a model
 float model_get_radius(int modelnum);
@@ -1710,9 +1719,6 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
-
-// is the given model a pirate ship?
-int model_is_pirate_ship(int modelnum);
 
 void set_warp_globals(float, float, float, int, float);
 

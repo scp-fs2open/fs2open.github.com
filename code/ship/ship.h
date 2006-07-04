@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.155 $
- * $Date: 2006-06-24 20:32:00 $
- * $Author: wmcoolmon $
+ * $Revision: 2.156 $
+ * $Date: 2006-07-04 07:42:48 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.155  2006/06/24 20:32:00  wmcoolmon
+ * New function for scripting
+ *
  * Revision 2.154  2006/06/07 05:19:49  wmcoolmon
  * Move fog disappearance factor to objecttypes.tbl
  *
@@ -1180,10 +1183,6 @@ typedef struct ship_spark {
 #define AWACS_WARN_25		(1 << 1)
 #define AWACS_WARN_75		(1 << 2)
 
-#define MAX_GLOW_POINTS 32
-#define GLOW_POINTS_ALL_ON	0xFFFFFFFF		// (2 raised to MAX_GLOW_POINTS) - 1
-#define GLOW_POINTS_ALL_OFF	0x00000000
-
 typedef struct ship {
 	int	objnum;
 	int	ai_index;			// Index in Ai_info of ai_info associated with this ship.
@@ -1401,9 +1400,6 @@ typedef struct ship {
 	int ab_count;
 
 //	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
-	int glows_active;
-	int glowmaps_active;
-	int n_decal;
 
 	//cloaking stuff
 	vec3d texture_translation_key;		//translate the texture matrix for a cool effect

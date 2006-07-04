@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.106 $
- * $Date: 2006-06-04 01:01:53 $
+ * $Revision: 2.107 $
+ * $Date: 2006-07-04 07:42:48 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.106  2006/06/04 01:01:53  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 2.105  2006/05/31 03:05:42  Goober5000
  * some cosmetic changes in preparation for bay arrival/departure code
  * --Goober5000
@@ -1294,8 +1298,8 @@ void model_unload(int modelnum, int force)
 		vm_free(pm->thrusters);
 	}
 
-	if ( pm->glows )	{ // free the glows!!! -Bobboau
-		vm_free(pm->glows);
+	if ( pm->glow_point_banks )	{ // free the glows!!! -Bobboau
+		vm_free(pm->glow_point_banks);
 	}
 
 #ifndef NDEBUG
@@ -1958,7 +1962,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	pm->num_ins = 0;
 
 	// reset glow points!! - Goober5000
-	pm->n_glows = 0;
+	pm->n_glow_point_banks = 0;
 
 	id = cfread_int(fp);
 	len = cfread_int(fp);
@@ -2394,77 +2398,101 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				break;
 			}
 
-			case ID_GLOW:{					//start glowpoint reading -Bobboau
-				//
+			case ID_GLOW:					//start glow point reading -Bobboau
+			{
 				char props[MAX_PROP_LEN];
-				pm->n_glows = cfread_int(fp);
 
-				if (pm->n_glows > 0) {
-					pm->glows = (glow_bank *)vm_malloc(sizeof(glow_bank) * pm->n_glows);
-					Assert( pm->glows != NULL );
+				int gpb_num = cfread_int(fp);
+				glow_point_bank gpb_temp;
 
-					for (int q = 0; q < pm->n_glows; q++ ) {
-						glow_bank *bank = &pm->glows[q];
-						bank->is_on=1;
-						bank->glow_timestamp=0;
-						bank->disp_time = cfread_int(fp);
-						bank->on_time = cfread_int(fp);
-						bank->off_time = cfread_int(fp);
-						bank->submodel_parent = cfread_int(fp);
-						bank->LOD = cfread_int(fp);
-						bank->type = cfread_int(fp);
-						bank->num_slots = cfread_int(fp);
+				if (gpb_num > MAX_GLOW_POINT_BANKS)
+				{
+					Warning(LOCATION, "Number of glow point banks exceeds maximum.  Limit is %d.", MAX_GLOW_POINT_BANKS);
+					pm->n_glow_point_banks = MAX_GLOW_POINT_BANKS;
+				}
+				else
+				{
+					pm->n_glow_point_banks = gpb_num;
+				}
 
-						if((bank->off_time > 0) && (bank->disp_time > 0)){
-							bank->is_on=0;
-						} 
+				pm->glow_point_banks = NULL;
+				if (gpb_num > 0)
+				{
+					pm->glow_point_banks = (glow_point_bank *) vm_malloc(sizeof(glow_point_bank) * gpb_num);
+					Assert(pm->glow_point_banks != NULL);
+				}
+
+				for (int gpb = 0; gpb < gpb_num; gpb++)
+				{
+					glow_point_bank *bank;
+					if (gpb < MAX_GLOW_POINT_BANKS)
+						bank = &pm->glow_point_banks[gpb];
+					else
+						bank = &gpb_temp;
+
+					bank->is_on = 1;
+					bank->glow_timestamp = 0;
+					bank->disp_time = cfread_int(fp);
+					bank->on_time = cfread_int(fp);
+					bank->off_time = cfread_int(fp);
+					bank->submodel_parent = cfread_int(fp);
+					bank->LOD = cfread_int(fp);
+					bank->type = cfread_int(fp);
+					bank->num_slots = cfread_int(fp);
+
+					if((bank->off_time > 0) && (bank->disp_time > 0))
+						bank->is_on = 0;
 	
-						cfread_string_len( props, MAX_PROP_LEN, fp );
-						// look for $glow_texture=xxx
-						int length = strlen(props);
+					cfread_string_len(props, MAX_PROP_LEN, fp);
+					// look for $glow_texture=xxx
+					int length = strlen(props);
 
-						if (length > 0) {
-							int base_length = strlen("$glow_texture=");
-							Assert( strstr( (const char *)&props, "$glow_texture=") != NULL );
-							Assert( length > base_length );
-							char *glow_texture_name = props + base_length;
+					if (length > 0)
+					{
+						int base_length = strlen("$glow_texture=");
+						Assert(strstr( (const char *)&props, "$glow_texture=") != NULL);
+						Assert(length > base_length);
+						char *glow_texture_name = props + base_length;
+						
+						if (glow_texture_name[0] == '$')
+							glow_texture_name++;
 
-							if (glow_texture_name[0] == '$') {
-								glow_texture_name++;
-							}
+						bank->glow_bitmap = bm_load(glow_texture_name);
 
-							bank->glow_bitmap = bm_load( glow_texture_name );
-
-							if (bank->glow_bitmap < 0)	{
-								Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
-							}else{
-								nprintf(( "Model", "Glowbank %i texture num is %d for '%s'\n", q, bank->glow_bitmap, pm->filename ));
-							}
-
-							strcat(glow_texture_name, "-neb");
-							bank->glow_neb_bitmap = bm_load( glow_texture_name );
-
-							if (bank->glow_neb_bitmap < 0)	{
-								bank->glow_neb_bitmap = bank->glow_bitmap;
-								nprintf(( "Model", "Glowbank texture not found for '%s', setting as the normal one num\n", pm->filename));
-							//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
-							}else{
-								nprintf(( "Model", "Glowbank %i nebula texture num is %d for '%s'\n", q, bank->glow_neb_bitmap, pm->filename ));
-							}
+						if (bank->glow_bitmap < 0)
+						{
+							Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename);
+						}
+						else
+						{
+							nprintf(( "Model", "Glow point bank %i texture num is %d for '%s'\n", gpb, bank->glow_bitmap, pm->filename));
 						}
 
-						for (j = 0; j < bank->num_slots; j++) {
-							glow_point *p = &bank->point[j];
-							cfread_vector( &(p->pnt), fp );
-							cfread_vector( &(p->norm), fp );
-							p->radius = cfread_float( fp );
-							//mprintf(( "Rad = %.2f\n", rad ));
+						strcat(glow_texture_name, "-neb");
+						bank->glow_neb_bitmap = bm_load(glow_texture_name);
+
+						if (bank->glow_neb_bitmap < 0)
+						{
+							bank->glow_neb_bitmap = bank->glow_bitmap;
+							nprintf(( "Model", "Glow point bank texture not found for '%s', setting as the normal one num\n", pm->filename));
+						//	Error( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", glow_texture_name, pm->filename );
 						}
-						//mprintf(( "Num slots = %d\n", bank->num_slots ));
+						else
+						{
+							nprintf(( "Model", "Glow point bank %i nebula texture num is %d for '%s'\n", gpb, bank->glow_neb_bitmap, pm->filename));
+						}
+					}
+
+					for (j = 0; j < bank->num_slots; j++)
+					{
+						glow_point *p = &bank->point[j];
+						cfread_vector(&(p->pnt), fp);
+						cfread_vector(&(p->norm), fp);
+						p->radius = cfread_float( fp);
 					}
 				}
 				break;					
-			 }				//end glowpoint reading -Bobboau
+			 }
 
 			case ID_FUEL:
 				char props[MAX_PROP_LEN];
@@ -2890,115 +2918,110 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 	strlwr(tmp_name);
 
-	pm->transparent[i]=0;	//it's transparent
-	pm->ambient[i]=0;		//ambient glow
-	pm->is_ani[i]=0;		//animated textures
-	pm->num_frames[i]=1;	// number of frames - default 1 (no animation)
+	pm->is_transparent[i] = false;	//it's transparent
+	pm->is_ambient[i] = false;		//ambient glow
+	pm->is_anim[i] = false;			//animated textures
+	pm->anim[i].num_frames = 1;		// number of frames - default 1 (no animation)
 
-	if ( strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap")) {
+	if (strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap"))
+	{
 		// Don't load textures for thruster animations or invisible textures
 		// or warp models!-Bobboau
-		pm->textures[i] = -1;
-	} else {
+		pm->map[i].texture = -1;
+	}
+	else
+	{
 		// check if we should be transparent, include "-trans" but make sure to skip anything that might be "-transport"
 		if ( (strstr(tmp_name, "-trans") && !strstr(tmp_name, "-transpo")) || strstr(tmp_name, "shockwave") ) {
-			pm->transparent[i] = 1;
+			pm->is_transparent[i] = true;
 		}
 
 		if (strstr(tmp_name, "-amb")) {
-			pm->ambient[i] = 1;
+			pm->is_ambient[i] = true;
 		}
 
-		pm->textures[i] = bm_load_animation(tmp_name, &pm->num_frames[i], &pm->fps[i], 1, CF_TYPE_MAPS);
-		if ( pm->textures[i] < 0 ) {	//if I couldn't find the PCX see if there is an ani-Bobboau
+		// try to load an ANI
+		pm->map[i].texture = bm_load_animation(tmp_name, &pm->anim[i].num_frames, &pm->anim[i].fps, 1, CF_TYPE_MAPS);
+		if (pm->map[i].texture >= 0)
+		{
+			pm->is_anim[i] = true;
+		}
+		else
+		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
 
-			pm->textures[i] = bm_load( tmp_name );
-
-			if ( pm->textures[i] < 0 ) {
-				Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
-				pm->textures[i] = -1;
-				pm->is_ani[i] = 0;	//this isn't an animated texture after all
+			// try to load a non-ANI
+			pm->map[i].texture = bm_load(tmp_name);
+			if (pm->map[i].texture < 0)
+			{
+				Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename);
 				nprintf(("Maps", " or %s.pcx.\n",tmp_name));
-			} else {
-				pm->is_ani[i] = 0;
-				nprintf(("Maps", " but I did find %s.\n", bm_get_filename(pm->textures[i])));
 			}
-		} else {
-			pm->is_ani[i] = 1;
 		}
 	}
+	pm->map[i].original_texture = pm->map[i].texture;
 
-	pm->original_textures[i] = pm->textures[i];
 	//a quick hack for glow mapping-Bobboau
 	//redid the way glowmaps are handeled
 
-	if (Cmdline_noglow || (pm->textures[i] < 0)) {
-		pm->glow_textures[i] = -1;
-		pm->glow_original_textures[i] = -1;
-		pm->glow_is_ani[i] = 0;
-		pm->glow_numframes[i] = 0;
-	} else {
+	if (Cmdline_noglow || (pm->map[i].texture < 0))
+	{
+		pm->glow_map[i].texture = -1;
+	}
+	else
+	{
 		memset(tmp_name, 0, MAX_FILENAME_LEN);
 		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 		strncat(tmp_name, "-glow", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
 		strlwr(tmp_name);
 
-		pm->glow_textures[i] = bm_load_animation( tmp_name, &pm->glow_numframes[i], &pm->glow_fps[i], 1, CF_TYPE_MAPS );
-		if ( pm->glow_textures[i] < 0 ) {	//if I couldn't find the PCX see if there is an ani-Bobboau
-				
-			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-
-			pm->glow_is_ani[i] = 0;
-			pm->glow_textures[i] = bm_load( tmp_name );
-			pm->glow_numframes[i] = 1;
-
-			if ( pm->glow_textures[i] < 0 ) {
-			//	Warning( LOCATION, "Couldn't open glow_texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename );
-				pm->glow_textures[i] = -1;
-				pm->glow_is_ani[i] = 0;	//this isn't an animated texture after all
-				nprintf(("Maps", " or %s.pcx.\n", tmp_name));
-			} else {
-				nprintf(("Maps", " but I did find %s.\n", bm_get_filename(pm->glow_textures[i])));
-			}
-		} else {
-			pm->glow_is_ani[i] = 1;
+		pm->glow_map[i].texture = bm_load(tmp_name);
+		if (pm->glow_map[i].texture < 0)
+		{
+			nprintf(("Maps", " or %s.pcx.\n", tmp_name));
 		}
-		pm->glow_original_textures[i] = pm->glow_textures[i];
 	}
+	pm->glow_map[i].original_texture = pm->glow_map[i].texture;
 
-	if (Cmdline_nospec || (pm->textures[i] < 0)) {
-		pm->specular_textures[i] = -1;
-		pm->specular_original_textures[i] = -1;
-	} else {
+	if (Cmdline_nospec || (pm->map[i].texture < 0))
+	{
+		pm->specular_map[i].texture = -1;
+	}
+	else
+	{
 		memset(tmp_name, 0, MAX_FILENAME_LEN);
 		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 		strncat(tmp_name, "-shine", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
 		strlwr(tmp_name);
 
-		pm->specular_textures[i] = bm_load( tmp_name );
-		if (pm->specular_textures[i]<0)	{	//if I couldn't find the PCX see if there is an ani-Bobboau
+		pm->specular_map[i].texture = bm_load(tmp_name);
+		if (pm->specular_map[i].texture < 0)
+		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
-		//	pm->specular_textures[i] = pm->textures[i];
-
 		}
-		pm->specular_original_textures[i] = pm->specular_textures[i];
 	}
+	pm->specular_map[i].original_texture = pm->specular_map[i].texture;
 
 #ifdef BUMPMAPPING
 	//WMC: BUMP mapping
-	if(1)
+	if (0 || (pm->map[i].texture < 0))
+	{
+		pm->bump_map[i].texture = -1;
+	}
+	else
 	{
 		memset(tmp_name, 0, MAX_FILENAME_LEN);
 		strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 		strncat(tmp_name, "-bump", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
 		strlwr(tmp_name);
 
-		pm->bump_textures[i] = bm_load(tmp_name);
-		if (pm->bump_textures[i]<0)	{
+		pm->bump_map[i].texture = bm_load(tmp_name);
+		if (pm->bump_map[i].texture < 0)
+		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
 		}
 	}
+	pm->bump_map[i].original_texture = pm->bump_map[i].texture
 #endif
 }
 
@@ -4346,7 +4369,7 @@ void model_clear_instance(int model_num)
 	pm->gun_submodel_rotation = 0.0f;
 	// reset textures to original ones
 	for (i=0; i<pm->n_textures; i++ )	{
-		pm->textures[i] = pm->original_textures[i];
+		pm->map[i].texture = pm->map[i].original_texture;
 	}
 	
 	for (i=0; i<pm->n_models; i++ )	{
@@ -4697,7 +4720,7 @@ void model_duplicate_reskin(int modelnum, char *ship_name)
 			for (j=0; j<pm->n_textures; j++)
 			{
 				// get texture file name
-				bm_get_filename(pm->textures[j], texture_file);
+				bm_get_filename(pm->map[j].texture, texture_file);
 
 				// get rid of file extension
 				p = strchr( texture_file, '.' );
