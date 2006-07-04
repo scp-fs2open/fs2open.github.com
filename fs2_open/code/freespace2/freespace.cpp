@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.6 $
- * $Date: 2006-06-22 14:59:44 $
- * $Author: taylor $
+ * $Revision: 2.243.2.7 $
+ * $Date: 2006-07-04 07:42:09 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.6  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
+ *
  * Revision 2.243.2.5  2006/06/18 17:20:32  taylor
  * always try to use a mission specified envmap over the static-generated envmap (missed this commit a while ago)
  *
@@ -9630,11 +9633,11 @@ void Time_model( int modelnum )
 		char filename[1024];
 		ubyte pal[768];
 
-		int bmp_num = pm->original_textures[i];
+		int bmp_num = pm->map[i].original_texture;
 		if ( bmp_num > -1 )	{
-			bm_get_palette(pm->original_textures[i], pal, filename );		
+			bm_get_palette(pm->map[i].original_texture, pal, filename );		
 			int w,h;
-			bm_get_info( pm->original_textures[i],&w, &h );
+			bm_get_info( pm->map[i].original_texture,&w, &h );
 
 
 			if ( (w > 512) || (h > 512) )	{

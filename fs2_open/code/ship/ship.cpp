@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.5 $
- * $Date: 2006-06-27 04:06:17 $
+ * $Revision: 2.336.2.6 $
+ * $Date: 2006-07-04 07:42:10 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.5  2006/06/27 04:06:17  Goober5000
+ * handle docked objects during death roll
+ * --Goober5000
+ *
  * Revision 2.336.2.4  2006/06/24 20:39:57  wmcoolmon
  * New function for scripting
  *
@@ -5212,10 +5216,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 //		shipp->decals[i].timestamp = timestamp();
 //		shipp->decals[i].is_valid = 0;
 //	}
-	for(i = 0; i<32; i++){
-		(shipp->glows_active |= (1 << i));
-	}
-	shipp->glowmaps_active = 1;
 
 	shipp->cloak_stage = 0;
 	shipp->texture_translation_key=vmd_zero_vector;
@@ -14341,48 +14341,45 @@ void ship_page_in_model_textures(int modelnum, int ship_index)
 	if (pm == NULL)
 		return;
 
-	for (i=0; i<pm->n_textures; i++ )
+	for (i = 0; i < pm->n_textures; i++ )
 	{
-		int bitmap_num = pm->original_textures[i];
-
-		if ( bitmap_num > -1 )
+		int bitmap_num = pm->map[i].original_texture;
+		if (bitmap_num >= 0)
 		{
 			// see about different kinds of textures... load frames, too, in case we have an ani
 
 			// transparent?
-			if (pm->transparent[i])
+			if (pm->is_transparent[i])
 			{
-				bm_page_in_xparent_texture( bitmap_num, pm->num_frames[i] );
+				bm_page_in_xparent_texture(bitmap_num, pm->anim[i].num_frames);
 			}
 			else
 			{
-				bm_page_in_texture( bitmap_num, pm->num_frames[i] );
+				bm_page_in_texture(bitmap_num, pm->anim[i].num_frames);
 			}
 		}
 
-		bitmap_num = pm->glow_original_textures[i];
-
-		if ( bitmap_num > -1 )
+		bitmap_num = pm->glow_map[i].original_texture;
+		if (bitmap_num >= 0)
 		{
-				bm_page_in_texture( bitmap_num, pm->glow_numframes[i] );
+			bm_page_in_texture(bitmap_num, 1);
 		}
 
-		bitmap_num = pm->specular_original_textures[i];
-
-		if ( bitmap_num > -1 )
+		bitmap_num = pm->specular_map[i].original_texture;
+		if (bitmap_num >= 0)
 		{
-				bm_page_in_texture( bitmap_num, 1 );
+			bm_page_in_texture(bitmap_num, 1);
 		}
 
-		if(pm->n_glows)
+		for(j = 0; j < pm->n_glow_point_banks; j++)
 		{
-			for(j = 0; j<pm->n_glows; j++){
-				glow_bank *bank = &pm->glows[j];
-				if(bank->glow_bitmap >= 0)
-					bm_page_in_texture( bank->glow_bitmap);
-				if(bank->glow_neb_bitmap >= 0)
-					bm_page_in_texture( bank->glow_neb_bitmap);
-			}
+			glow_point_bank *bank = &pm->glow_point_banks[j];
+
+			if(bank->glow_bitmap >= 0)
+				bm_page_in_texture(bank->glow_bitmap);
+
+			if(bank->glow_neb_bitmap >= 0)
+				bm_page_in_texture(bank->glow_neb_bitmap);
 		}
 	}
 	
@@ -14452,40 +14449,34 @@ void ship_page_out_model_textures(int modelnum, int ship_index)
 		return;
 
 	for (i=0; i<pm->n_textures; i++) {
-		bitmap_num = pm->textures[i];
-
-		if ( bitmap_num > -1 ) {
+		bitmap_num = pm->map[i].texture;
+		if ( bitmap_num >= 0 ) {
 			bm_page_out( bitmap_num );
 		}
 
-		bitmap_num = pm->glow_textures[i];
-
-		if ( bitmap_num > -1 ) {
+		bitmap_num = pm->glow_map[i].texture;
+		if ( bitmap_num >= 0 ) {
 			bm_page_out( bitmap_num );
 		}
 
-		bitmap_num = pm->specular_textures[i];
-
-		if ( bitmap_num > -1 ) {
+		bitmap_num = pm->specular_map[i].texture;
+		if ( bitmap_num >= 0 ) {
 			bm_page_out( bitmap_num );
 		}
 
-		if (pm->n_glows) {
-			for (j=0; j<pm->n_glows; j++) {
-				glow_bank *bank = &pm->glows[j];
+		for (j = 0; j < pm->n_glow_point_banks; j++)
+		{
+			glow_point_bank *bank = &pm->glow_point_banks[j];
 
-				if (bank->glow_bitmap > -1) {
-					bm_page_out( bank->glow_bitmap );
-				}
+			if (bank->glow_bitmap >= 0)
+				bm_page_out(bank->glow_bitmap);
 
-				if (bank->glow_neb_bitmap > -1) {
-					bm_page_out( bank->glow_neb_bitmap );
-				}
-			}
+			if (bank->glow_neb_bitmap >= 0)
+				bm_page_out(bank->glow_neb_bitmap);
 		}
 	}
 
-	if (ship_index == -1)
+	if (ship_index < 0)
 		return;
 
 	sip = &Ship_info[ship_index];
