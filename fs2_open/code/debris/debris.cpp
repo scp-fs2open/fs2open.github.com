@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-01-26 03:23:29 $
+ * $Revision: 2.24 $
+ * $Date: 2006-07-04 07:42:48 $
  * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/01/26 03:23:29  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.22  2005/12/29 08:08:33  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -464,8 +468,8 @@ void debris_render(object * obj)
 		pm = model_get( db->model_num );
 
 		if ( pm && (pm->n_textures == 1) ) {
-			swapped = pm->textures[0];
-			pm->textures[0] = Species_info[db->species].debris_texture.bitmap;
+			swapped = pm->map[0].texture;
+			pm->map[0].texture = Species_info[db->species].debris_texture.bitmap;
 		}
 	}
 
@@ -489,7 +493,7 @@ void debris_render(object * obj)
 	}
 
 	if ((swapped!=-1) && pm)	{
-		pm->textures[0] = swapped;
+		pm->map[0].texture = swapped;
 	}
 }
 
