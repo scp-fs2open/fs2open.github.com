@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.250 $
- * $Date: 2006-07-04 07:42:48 $
+ * $Revision: 2.251 $
+ * $Date: 2006-07-05 23:35:42 $
  * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.250  2006/07/04 07:42:48  Goober5000
+ * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
+ * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
+ * --Goober5000
+ *
  * Revision 2.249  2006/06/27 04:58:58  taylor
  * sync up current OpenAL changes
  *  - "SoundDeviceOAL" reg option for user specified sound device (used instead of "Soundcard" for OpenAL)
@@ -976,7 +981,8 @@
  * added several sExps for turning glow points and glow maps on and off
  *
  * Revision 2.19  2003/01/19 01:07:41  bobboau
- * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ * redid the way glow maps are handled; you now must set a global variable before you render a poly that uses a glow map, then set it to -1 when you're done with it
+ * fixed a few other misc bugs too
  *
  * Revision 2.18  2003/01/15 21:26:35  anonymous
  * fixed the demo compilation. Define FS2_DEMO globally to compile as a demo. Make sure warp.pof is in your data/models directory.

@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.87 $
- * $Date: 2006-06-27 04:52:50 $
- * $Author: taylor $
+ * $Revision: 2.88 $
+ * $Date: 2006-07-05 23:35:42 $
+ * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2006/06/27 04:52:50  taylor
+ * fix various things that Valgrind complained about
+ * comp_type for DDS images will always be set to something, an 'uncompressed' type at the least
+ *
  * Revision 2.86  2006/05/27 17:20:48  taylor
  * clean up BM_TYPE_* stuff so it's a little easier to tell what is what
  * bm_load_sub_fast() doesn't need to lowercase filenames, so don't
@@ -361,7 +365,8 @@
  *
  *
  * Revision 2.11  2003/01/19 01:07:41  bobboau
- * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ * redid the way glow maps are handled; you now must set a global variable before you render a poly that uses a glow map, then set it to -1 when you're done with it
+ * fixed a few other misc bugs too
  *
  * Revision 2.10  2003/01/18 19:55:16  phreak
  * fixed around the bmpman system to now accept compressed textures

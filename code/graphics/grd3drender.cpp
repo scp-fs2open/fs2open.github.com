@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.88 $
- * $Date: 2006-05-27 17:07:48 $
- * $Author: taylor $
+ * $Revision: 2.89 $
+ * $Date: 2006-07-05 23:35:42 $
+ * $Author: Goober5000 $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2006/05/27 17:07:48  taylor
+ * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
+ * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
+ * clean up TMAP flags
+ * fix a couple of minor OpenGL state change issues with spec and env map rendering
+ * make sure we build again for OS X (OGL extension functions work a little different there)
+ * render targets always need to be power-of-2 to avoid incomplete buffer issues in the code
+ * when we disable culling in opengl_3dunlit be sure that we re-enable it on exit of function
+ * re-fix screenshots
+ * add true alpha blending support (with cmdline for now since the artwork has the catch up)
+ * draw lines with float positioning, to be more accurate with resizing on non-standard resolutions
+ * don't load cubemaps from file for D3D, not sure how to do it anyway
+ * update geometry batcher code, memory fixes, dynamic stuff, basic fixage, etc.
+ *
  * Revision 2.87  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -412,7 +426,8 @@
  * added several sExps for turning glow points and glow maps on and off
  *
  * Revision 2.7  2003/01/19 01:07:41  bobboau
- * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ * redid the way glow maps are handled; you now must set a global variable before you render a poly that uses a glow map, then set it to -1 when you're done with it
+ * fixed a few other misc bugs too
  *
  * Revision 2.6  2003/01/09 21:20:21  phreak
  * fixed a small error in bob's code

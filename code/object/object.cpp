@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.64 $
- * $Date: 2006-06-27 04:06:18 $
+ * $Revision: 2.65 $
+ * $Date: 2006-07-05 23:35:43 $
  * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2006/06/27 04:06:18  Goober5000
+ * handle docked objects during death roll
+ * --Goober5000
+ *
  * Revision 2.63  2006/05/27 16:59:05  taylor
  * comment out some code which used only if neither D3D nor OGL
  *
@@ -238,7 +242,8 @@
  * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
  *
  * Revision 2.4  2003/01/19 01:07:41  bobboau
- * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ * redid the way glow maps are handled; you now must set a global variable before you render a poly that uses a glow map, then set it to -1 when you're done with it
+ * fixed a few other misc bugs too
  *
  * Revision 2.3  2002/11/14 04:18:17  bobboau
  * added warp model and type 1 glow points
