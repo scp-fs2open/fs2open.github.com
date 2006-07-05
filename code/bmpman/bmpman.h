@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.39 $
- * $Date: 2006-07-05 23:35:42 $
+ * $Revision: 2.40 $
+ * $Date: 2006-07-05 23:41:43 $
  * $Author: Goober5000 $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2006/07/05 23:35:42  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.38  2006/06/27 04:52:50  taylor
  * fix various things that Valgrind complained about
  * comp_type for DDS images will always be set to something, an 'uncompressed' type at the least
@@ -689,7 +692,7 @@ void bm_set_components_argb_d3d_32_tex(ubyte *pixel, ubyte *r, ubyte *g, ubyte *
 // get the rgba components of a pixel, any of the parameters can be NULL
 void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 
-extern int GLOWMAP;	//this holds a reference to a map that is a fully lit version of it's index -Bobboau
+extern int GLOWMAP;	//this holds a reference to a map that is a fully lit version of its index -Bobboau
 extern int SPECMAP;	//this holds a reference to a map that is for specular mapping -Bobboau
 extern int ENVMAP;	//this holds a reference to a map that is for environment mapping -Bobboau
 extern int BUMPMAP;	//blah blah bumpmapping
