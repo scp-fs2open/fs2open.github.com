@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.74 $
- * $Author: karajorma $
- * $Date: 2006-06-02 08:55:47 $
+ * $Revision: 2.75 $
+ * $Author: Goober5000 $
+ * $Date: 2006-07-05 23:35:43 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2006/06/02 08:55:47  karajorma
+ * Added stuff_ship_list to act as a typesafe replacement for stuff_int_list and handle variables as legitimate values for both ship type and availability when parsing Team Loadout lists
+ *
  * Revision 2.73  2006/04/15 19:00:52  taylor
  * forgot to add forward declaration for allocate_mission_text()  (thanks karajorma ;))
  *
@@ -277,7 +280,8 @@
  * cleaned up debug output
  *
  * Revision 2.4  2003/01/19 01:07:42  bobboau
- * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ * redid the way glow maps are handled; you now must set a global variable before you render a poly that uses a glow map, then set it to -1 when you're done with it
+ * fixed a few other misc bugs too
  *
  * Revision 2.3  2003/01/17 07:59:08  Goober5000
  * fixed some really strange behavior with strings not being truncated at the

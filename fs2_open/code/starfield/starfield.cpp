@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.73 $
- * $Date: 2006-07-04 07:42:50 $
+ * $Revision: 2.74 $
+ * $Date: 2006-07-05 23:36:07 $
  * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2006/07/04 07:42:50  Goober5000
+ * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
+ * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
+ * --Goober5000
+ *
  * Revision 2.72  2006/05/27 16:42:16  taylor
  * fix slight freakiness with debris vclips (un)loading
  * comment out some code which was only used if neither D3D or OGL
@@ -290,7 +295,8 @@
  * background stars are now somewhat colored, just here as a sort of useless feature test
  *
  * Revision 2.5  2003/01/19 01:07:42  bobboau
- * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ * redid the way glow maps are handled; you now must set a global variable before you render a poly that uses a glow map, then set it to -1 when you're done with it
+ * fixed a few other misc bugs too
  *
  * Revision 2.4  2003/01/06 19:33:21  Goober5000
  * cleaned up some stuff with model_set_thrust and a commented Assert that
