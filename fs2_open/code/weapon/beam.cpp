@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.67 $
- * $Date: 2006-05-27 16:45:11 $
- * $Author: taylor $
+ * $Revision: 2.67.2.1 $
+ * $Date: 2006-07-05 23:37:13 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/05/27 16:45:11  taylor
+ * some minor cleanup
+ * remove -nobeampierce
+ * update for geometry batcher changes
+ *
  * Revision 2.66  2006/02/25 21:47:19  Goober5000
  * spelling
  *
@@ -230,7 +235,8 @@
  * more importantly I (think I) have fixed all major bugs with fighter beams, and added a bit of new functionality
  *
  * Revision 2.10  2003/01/19 01:07:43  bobboau
- * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ * redid the way glow maps are handled; you now must set a global variable before you render a poly that uses a glow map, then set it to -1 when you're done with it
+ * fixed a few other misc bugs too
  *
  * Revision 2.9  2003/01/13 23:20:01  Goober5000
  * bug hunting; fixed the beam whack effect bug

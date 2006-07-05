@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.73 $
- * $Author: taylor $
- * $Date: 2006-04-15 19:00:52 $
+ * $Revision: 2.73.2.1 $
+ * $Author: Goober5000 $
+ * $Date: 2006-07-05 23:36:56 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2006/04/15 19:00:52  taylor
+ * forgot to add forward declaration for allocate_mission_text()  (thanks karajorma ;))
+ *
  * Revision 2.72  2006/04/14 18:50:52  taylor
  * that was rather stupid of me, fogetting this would not have been a good thing :)
  *
@@ -274,7 +277,8 @@
  * cleaned up debug output
  *
  * Revision 2.4  2003/01/19 01:07:42  bobboau
- * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ * redid the way glow maps are handled; you now must set a global variable before you render a poly that uses a glow map, then set it to -1 when you're done with it
+ * fixed a few other misc bugs too
  *
  * Revision 2.3  2003/01/17 07:59:08  Goober5000
  * fixed some really strange behavior with strings not being truncated at the

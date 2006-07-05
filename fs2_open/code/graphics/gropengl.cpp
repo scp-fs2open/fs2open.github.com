@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.5 $
- * $Date: 2006-06-23 09:01:07 $
- * $Author: taylor $
+ * $Revision: 2.174.2.6 $
+ * $Date: 2006-07-05 23:36:55 $
+ * $Author: Goober5000 $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.5  2006/06/23 09:01:07  taylor
+ * be sure to properly reset fullscreen/minimized state vars as we switch between them
+ *
  * Revision 2.174.2.4  2006/06/22 14:59:44  taylor
  * fix various things that Valgrind has been complaining about
  *
@@ -723,7 +726,8 @@
  * --Goober5000
  *
  * Revision 2.11  2003/01/19 01:07:41  bobboau
- * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ * redid the way glow maps are handled; you now must set a global variable before you render a poly that uses a glow map, then set it to -1 when you're done with it
+ * fixed a few other misc bugs too
  *
  * Revision 2.10  2003/01/18 19:49:45  phreak
  * texture mapper now supports DXTC compressed textures
