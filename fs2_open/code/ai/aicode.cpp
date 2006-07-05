@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72.2.5 $
- * $Date: 2006-07-05 23:36:55 $
+ * $Revision: 1.72.2.6 $
+ * $Date: 2006-07-05 23:47:59 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72.2.5  2006/07/05 23:36:55  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 1.72.2.4  2006/07/02 03:34:16  Goober5000
  * okay, I have no idea what I was doing there
  * --Goober5000
@@ -12455,7 +12458,9 @@ int ai_formation()
 					turn_towards_point(Pl_objp, &future_goal_point_1000x, NULL, 0.0f);
 				else
 					turn_towards_point(Pl_objp, &future_goal_point_x, NULL, 0.0f);
-				set_accel_for_target_speed(Pl_objp, 0.0f);
+
+				// Goober5000 7/5/2006 changed to leader_speed from 0.0f
+				set_accel_for_target_speed(Pl_objp, leader_speed);
 			}
 		}
 
