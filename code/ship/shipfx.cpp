@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.1 $
- * $Date: 2006-06-15 06:18:43 $
+ * $Revision: 2.66.2.2 $
+ * $Date: 2006-07-05 23:36:56 $
  * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.1  2006/06/15 06:18:43  Goober5000
+ * make warpout work properly even if the player is docked to something
+ * --Goober5000
+ *
  * Revision 2.66  2006/05/13 07:15:51  taylor
  * get rid of some wasteful math for gr_set_proj_matrix() calls
  * fix check that broke praise of kills for player
@@ -277,7 +281,8 @@
  * --Goober5000
  *
  * Revision 2.4  2003/01/19 01:07:42  bobboau
- * redid the way glowmaps are handeled, you now must set the global int GLOWMAP (no longer an array) before you render a poly that uses a glow map then set  GLOWMAP to -1 when you're done with, fixed a few other misc bugs it
+ * redid the way glow maps are handled; you now must set a global variable before you render a poly that uses a glow map, then set it to -1 when you're done with it
+ * fixed a few other misc bugs too
  *
  * Revision 2.3  2003/01/17 01:48:49  Goober5000
  * added capability to the $Texture replace code to substitute the textures
