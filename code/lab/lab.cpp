@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.28 $
- * $Date: 2006-05-13 07:09:25 $
+ * $Revision: 1.29 $
+ * $Date: 2006-07-06 21:59:34 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2006/05/13 07:09:25  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 1.27  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -69,6 +73,10 @@
 
 //All sorts of globals
 
+// lab flags
+#define LAB_NORMAL			(0)		// default
+#define LAB_NO_ROTATION		(1<<0)	// don't rotate models
+
 static GUIScreen *Lab_screen = NULL;
 
 static int Selected_weapon_index = -1;
@@ -77,6 +85,7 @@ static int LabViewerShipIndex = -1;
 static int LabViewerModelNum = -1;
 static int LabViewerModelLOD = 0;
 static int ModelFlags = MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING;
+static int LabViewerFlags = LAB_NORMAL;
 void change_ship_lod(Tree* caller);
 
 //*****************************Ship Options Window*******************************
@@ -387,6 +396,11 @@ void make_options_window(Button *caller)
 	GUIObject* ccp;
 	RenderOptWin = (Window*)Lab_screen->Add(new Window("Options", gr_screen.max_w - 300, 200));
 	int y = 0;
+
+	ccp = RenderOptWin->AddChild(new Checkbox("No rotation", 0, y));
+	((Checkbox*)ccp)->SetFlag(&LabViewerFlags, LAB_NO_ROTATION);
+
+	y += ccp->GetHeight() + 10;
 	ccp = RenderOptWin->AddChild(new Checkbox("No lighting", 0,  y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_LIGHTING);
 
@@ -912,7 +926,7 @@ void show_ship(float frametime)
 				LabViewerOrient = mat2;
 			}
 	}
-	else
+	else if ( !(LabViewerFlags & LAB_NO_ROTATION) )
 	{
 		LabViewerShipRot += PI2 * frametime / rev_rate;
 		while (LabViewerShipRot > PI2){
