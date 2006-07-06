@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.158 $
- * $Date: 2006-07-06 21:00:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.159 $
+ * $Date: 2006-07-06 22:00:39 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.158  2006/07/06 21:00:13  Goober5000
+ * remove obsolete (and hackish) flag
+ * --Goober5000
+ *
  * Revision 2.157  2006/07/06 20:46:39  Goober5000
  * WCS screaming stuff
  * --Goober5000
@@ -1171,6 +1175,7 @@ typedef struct ship_subsys_info {
 #define SF2_SET_CLASS_DYNAMICALLY			(1<<13)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
 #define SF2_TEAM_LOADOUT_STORE_STATUS		(1<<14)		// Karajorma - This ship has been flaged for cleanup at the end of the mission
 #define SF2_NO_DEATH_SCREAM					(1<<15)		// Goober5000 - for WCS
+#define SF2_GLOWMAPS_DISABLED				(1<<14)		// taylor - to disable glow maps
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -1409,6 +1414,9 @@ typedef struct ship {
 	int ab_count;
 
 //	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
+
+	// glow points
+	bool glow_point_bank_active[MAX_GLOW_POINT_BANKS];
 
 	//cloaking stuff
 	vec3d texture_translation_key;		//translate the texture matrix for a cool effect

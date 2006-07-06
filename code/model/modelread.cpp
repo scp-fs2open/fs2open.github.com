@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.110 $
- * $Date: 2006-07-06 04:26:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.111 $
+ * $Date: 2006-07-06 22:00:39 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.110  2006/07/06 04:26:00  Goober5000
+ * fix a couple of typos
+ * --Goober5000
+ *
  * Revision 2.109  2006/07/06 04:06:04  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
@@ -3051,10 +3055,26 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strncat(tmp_name, "-shine", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
 		strlwr(tmp_name);
 
-		tmap->spec_map.texture = bm_load(tmp_name);
-		if (tmap->spec_map.texture < 0)
+		// try to load an ANI
+		tmap->spec_map.texture = bm_load_animation(tmp_name, &tmap->spec_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
+		if (tmap->spec_map.texture >= 0)
 		{
-			nprintf(("Maps", "For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
+			tmap->spec_map.is_anim = true;
+			tmap->spec_map.anim.total_time = (int) i2fl(tmap->spec_map.anim.num_frames) / fps;
+		}
+		else
+		{
+			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
+			tmap->spec_map.anim.num_frames = 1;
+
+			// try to load a non-ANI
+			tmap->spec_map.texture = bm_load(tmp_name);
+			if (tmap->spec_map.texture < 0)
+			{
+				nprintf(("Maps", " or %s.pcx.", tmp_name));
+			}
+
+			nprintf(("Maps", "\n"));
 		}
 	}
 	tmap->spec_map.original_texture = tmap->spec_map.texture;

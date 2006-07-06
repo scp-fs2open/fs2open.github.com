@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.27 $
- * $Date: 2006-06-27 05:05:18 $
+ * $Revision: 2.28 $
+ * $Date: 2006-07-06 22:00:39 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/06/27 05:05:18  taylor
+ * make sure we only do ship related setup on actual ships
+ *
  * Revision 2.26  2006/06/27 02:52:36  Goober5000
  * change back to ubyte
  * --Goober5000
@@ -632,5 +635,5 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 	int ship_num = target->instance;
 	int team = viewer->team;
 
-	return Ship_visibility_by_team[team][ship_num];
+	return (int)Ship_visibility_by_team[team][ship_num];
 }

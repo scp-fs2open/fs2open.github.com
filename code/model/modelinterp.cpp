@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.161 $
- * $Date: 2006-07-06 04:06:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.162 $
+ * $Date: 2006-07-06 22:00:39 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.161  2006/07/06 04:06:04  Goober5000
+ * 1) complete (almost) changeover to reorganized texture mapping system
+ * 2) finally fix texture animation; textures now animate at the correct speed
+ * --Goober5000
+ *
  * Revision 2.160  2006/07/05 23:35:42  Goober5000
  * cvs comment tweaks
  *
@@ -1979,8 +1984,14 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				Interp_list[i]->spec_g = 0;
 				Interp_list[i]->spec_b = 0;
 				
-				if((Interp_flags & MR_EDGE_ALPHA))model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, false);
-				if((Interp_flags & MR_CENTER_ALPHA))model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, true);
+				if (Interp_flags & MR_EDGE_ALPHA) {
+					model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, false);
+				}
+
+				if (Interp_flags & MR_CENTER_ALPHA) {
+					model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, true);
+				}
+
 				SPECMAP = -1;
 				BUMPMAP = -1;
 			} else {
@@ -2075,13 +2086,16 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						texture = model_interp_get_texture(&pm->maps[tmap_num].base_map);
 						
 						// doing glow maps?
-						if (!(pm->flags & PM_FLAG_GLOW_DISABLED))
-						{
-							// same thing here
-							GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map);
+						if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.texture >= 0) ) {
+							// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
+							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.is_anim) ) {
+								GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.anim.num_frames);
+							} else {
+								GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map);
+							}
 						}
 
-						if((Detail.lighting > 2)  && (model_current_LOD < 1))
+						if((Detail.lighting > 2)  && (model_current_LOD < 2))
 						{
 							// likewise, etc.
 							SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map);
@@ -2117,10 +2131,6 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					g3_draw_poly( nv, Interp_list, Interp_tmap_flags|TMAP_FLAG_NONDARKENING );		
 				}
 			}
-
-//			env_enabled = false;
-//			GLOWMAP = -1;
-//			SPECMAP = -1;
 		}
 	}
 
@@ -2952,6 +2962,11 @@ void model_render_shields( polymodel * pm )
 
 void model_render_insignias(polymodel *pm, int detail_level)
 {
+	// if the model has no insignias, or we don't have a texture, then bail
+	if ( (pm->num_ins <= 0) || (Interp_insignia_bitmap < 0) )
+		return;
+
+
 	int idx, s_idx;
 	vertex vecs[3];
 	vertex *vlist[3] = { &vecs[0], &vecs[1], &vecs[2] };
@@ -2962,19 +2977,10 @@ void model_render_insignias(polymodel *pm, int detail_level)
 	x.xyz.x=0;
 	x.xyz.y=0;
 	x.xyz.z=0;
-	// if the model has no insignias we're done
-	if(pm->num_ins <= 0){
-		return;
-	}
 
-	// set the proper texture
-	if(Interp_insignia_bitmap >= 0){		
-		gr_set_bitmap(Interp_insignia_bitmap);
-	}
-	// otherwise don't even bother rendering
-	else {
-		return;
-	}
+	// set the proper texture	
+	gr_set_bitmap(Interp_insignia_bitmap);
+
 
 	// otherwise render them	
 	for(idx=0; idx<pm->num_ins; idx++){	
@@ -3942,14 +3948,20 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	ship *shipp = NULL;
 	object *objp = NULL;
 
+	// just to be on the safe side
+	Assert( Interp_objnum == objnum );
+
 	if (objnum >= 0) {
 		objp = &Objects[objnum];
 
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
+
+			if (shipp->flags2 & SF2_GLOWMAPS_DISABLED)
+				flags |= MR_NO_GLOWMAPS;
 		}
 	}
-	
+
 	if (FULLCLOAK != 1)
 		model_interp_sortnorm = model_interp_sortnorm_b2f;
 
@@ -4262,7 +4274,6 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		model_render_shields(pm);
 	}	
 
-		
 	// start rendering glow points -Bobboau
 	if ( (pm->n_glow_point_banks) && !is_outlines_only && !is_outlines_only_htl ) {
 		for (i = 0; i < pm->n_glow_point_banks; i++ ) {
@@ -4270,9 +4281,9 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			int j;
 
 			if (bank->is_on) {
-				if (!pm->glow_point_bank_active[i]) {
+				if ( (shipp != NULL) && !(shipp->glow_point_bank_active[i]) )
 					continue;
-				}
+
 
 				for (j = 0; j < bank->num_slots; j++) {
 					int flick;
@@ -6050,9 +6061,6 @@ void model_render_children_buffers(bsp_info* model, polymodel * pm, int mn, int 
 	g3_done_instance(true);
 }
 
-extern vec3d Object_position;
-extern matrix Object_matrix;
-
 void model_render_buffers(bsp_info* model, polymodel * pm)
 {
 	if(model->use_render_box && -model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &View_position))
@@ -6066,19 +6074,19 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 
 	vec3d scale;
 
-	if(Interp_thrust_scale_subobj){
+	if (Interp_thrust_scale_subobj) {
 		scale.xyz.x = 1.0f;
 		scale.xyz.y = 1.0f;
 		scale.xyz.z = Interp_thrust_scale;
-	}else{
+	} else {
 		scale.xyz.x = Model_Interp_scale_x;
 		scale.xyz.y = Model_Interp_scale_y;
 		scale.xyz.z = Model_Interp_scale_z;
 	}
 
-	if(Interp_flags & MR_NO_CULL){
+	if (Interp_flags & MR_NO_CULL) {
 		gr_set_cull(0);
-	}else{
+	} else {
 		gr_set_cull(1);
 	}
 
@@ -6102,15 +6110,18 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 		} else if (!no_texturing) {
 			// pick the texture, animating it if necessary
 			texture = model_interp_get_texture(&pm->maps[tmap_num].base_map);
-						
+
 			// doing glow maps?
-			if (!(pm->flags & PM_FLAG_GLOW_DISABLED))
-			{
-				// same thing here
-				GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map);
+			if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.texture >= 0) ) {
+				// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
+				if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.is_anim) ) {
+					GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.anim.num_frames);
+				} else {
+					GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map);
+				}
 			}
 
-			if((Detail.lighting > 2)  && (model_current_LOD < 1))
+			if((Detail.lighting > 2)  && (model_current_LOD < 2))
 			{
 				// likewise, etc.
 				SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map);
@@ -6127,34 +6138,40 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 //		texture = big_ole_honkin_hack_test;
 
 
-		if(Interp_thrust_scale_subobj) {
-
-			if((Interp_thrust_bitmap >= 0) && (Interp_thrust_scale > 0.0f)) {
+		if (Interp_thrust_scale_subobj) {
+			if ( (Interp_thrust_bitmap >= 0) && (Interp_thrust_scale > 0.0f) )
 				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f);
-			}
+
 			gr_zbuffer_set(GR_ZBUFF_READ);
-			
-		}else if(Interp_flags & MR_ALL_XPARENT){
+		} else if (Interp_flags & MR_ALL_XPARENT) {
 			gr_set_cull(0);
 			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_xparent_alpha );
 			gr_zbuffer_set(GR_ZBUFF_NONE);
-		}else if(Warp_Map > -1){	//trying to get transperent textures-Bobboau
+		} else if (Warp_Map >= 0) {	// trying to get transperent textures-Bobboau
 			gr_set_cull(0);
 			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			gr_zbuffer_set(GR_ZBUFF_READ);
-		} else if(pm->maps[tmap_num].is_transparent) {	//trying to get transperent textures-Bobboau
-			if(Warp_Alpha!=-1.0)gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
-			else gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
+		} else if (pm->maps[tmap_num].is_transparent) {	// trying to get transperent textures-Bobboau
+			if (Warp_Alpha != -1.0f) {
+				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
+			} else {
+				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
+			}
+
 			gr_zbuffer_set(GR_ZBUFF_READ);
 		} else if (!no_texturing) {
 		//	gr_set_state(TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
-			gr_set_bitmap( texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 1.0 );
+			gr_set_bitmap( texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 1.0f );
 	//		gr_zbuffer_set(GR_ZBUFF_FULL);
 		}
 
-		if((Interp_flags & MR_EDGE_ALPHA))gr_center_alpha(-1);
-		else if((Interp_flags & MR_CENTER_ALPHA))gr_center_alpha(1);
-		else gr_center_alpha(0);
+		if (Interp_flags & MR_EDGE_ALPHA) {
+			gr_center_alpha(-1);
+		} else if (Interp_flags & MR_CENTER_ALPHA) {
+			gr_center_alpha(1);
+		} else {
+			gr_center_alpha(0);
+		}
 
 	//	model_resort_index_buffer(model->bsp_data, 1, tmap_num, model->buffer[i].index_buffer.index_buffer);
 		
