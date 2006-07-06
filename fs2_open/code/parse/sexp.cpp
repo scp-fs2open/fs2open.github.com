@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.267 $
- * $Date: 2006-07-06 05:35:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.268 $
+ * $Date: 2006-07-06 22:00:39 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.267  2006/07/06 05:35:13  Goober5000
+ * fix for Mantis #856
+ * --Goober5000
+ *
  * Revision 2.266  2006/07/04 07:42:48  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
@@ -12272,17 +12276,14 @@ void sexp_change_ship_class(int n)
 void sexp_activate_deactivate_glow_points(int n, bool activate)
 {
 	int sindex, i;
-	polymodel *pm;
 
 	for ( ; n != -1; n = CDR(n))
 	{
 		sindex = ship_name_lookup(CTEXT(n), 1);
 		if (sindex >= 0)
 		{
-			pm = model_get(Ships[sindex].modelnum);
-
-			for (i = 0; i < pm->n_glow_point_banks; i++)
-				pm->glow_point_bank_active[i] = activate;
+			for (i = 0; i < MAX_GLOW_POINT_BANKS; i++)
+				Ships[sindex].glow_point_bank_active[i] = activate;
 		}
 	}
 }
@@ -12291,17 +12292,14 @@ void sexp_activate_deactivate_glow_points(int n, bool activate)
 void sexp_activate_deactivate_glow_point_bank(int n, bool activate)
 {
 	int sindex, num;
-	polymodel *pm;
 
 	sindex = ship_name_lookup(CTEXT(n), 1);
 	if (sindex >= 0)
 	{
-		pm = model_get(Ships[sindex].modelnum);
-
 		num = eval_num(n);
 		if (num >= 0 && num < MAX_GLOW_POINT_BANKS)
 		{
-			pm->glow_point_bank_active[num] = activate;
+			Ships[sindex].glow_point_bank_active[num] = activate;
 		}
 	}
 }
@@ -12310,19 +12308,19 @@ void sexp_activate_deactivate_glow_point_bank(int n, bool activate)
 void sexp_activate_deactivate_glow_maps(int n, int activate)
 {
 	int sindex;
-	polymodel *pm;
+	ship *shipp;
 
 	for ( ; n != -1; n = CDR(n))
 	{
 		sindex = ship_name_lookup(CTEXT(n), 1);
 		if (sindex >= 0)
 		{
-			pm = model_get(Ships[sindex].modelnum);
+			shipp = &Ships[sindex];
 
 			if (activate)
-				pm->flags &= ~PM_FLAG_GLOW_DISABLED;
+				shipp->flags2 &= ~SF2_GLOWMAPS_DISABLED;
 			else
-				pm->flags |= PM_FLAG_GLOW_DISABLED;
+				shipp->flags2 |= SF2_GLOWMAPS_DISABLED;
 		}
 	}
 }

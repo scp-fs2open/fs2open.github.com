@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.84 $
- * $Date: 2006-07-06 04:06:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.85 $
+ * $Date: 2006-07-06 22:00:39 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2006/07/06 04:06:04  Goober5000
+ * 1) complete (almost) changeover to reorganized texture mapping system
+ * 2) finally fix texture animation; textures now animate at the correct speed
+ * --Goober5000
+ *
  * Revision 2.83  2006/07/05 23:35:42  Goober5000
  * cvs comment tweaks
  *
@@ -1168,7 +1173,6 @@ typedef struct insignia {
 
 #define PM_FLAG_ALLOW_TILING		(1<<0)					// Allow texture tiling
 #define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
-#define PM_FLAG_GLOW_DISABLED		(1<<2)					// Goober5000
 
 // Goober5000
 typedef struct texture_anim_info {
@@ -1278,7 +1282,6 @@ typedef struct polymodel {
 
 	int n_glow_point_banks;						// number of glow points on this ship. -Bobboau
 	glow_point_bank *glow_point_banks;			// array of glow objects -Bobboau
-	bool glow_point_bank_active[MAX_GLOW_POINT_BANKS];	// Goober5000
 
 	float gun_submodel_rotation;
 
@@ -1369,6 +1372,7 @@ void model_set_detail_level(int n);
 #define MR_CENTER_ALPHA		(1<<26)		// oposite of above -Bobboau
 #define MR_NO_FOGGING				(1<<27)		// Don't fog - taylor
 #define MR_SHOW_OUTLINE_HTL			(1<<28)		// Show outlines (wireframe view) using HTL method
+#define MR_NO_GLOWMAPS				(1<<29)		// disable rendering of glowmaps - taylor
 
 // Renders a model and all it's submodels.
 // See MR_? defines for values for flags
