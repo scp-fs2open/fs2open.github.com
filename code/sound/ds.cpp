@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.46.2.3 $
- * $Date: 2006-06-22 14:59:45 $
+ * $Revision: 2.46.2.4 $
+ * $Date: 2006-07-06 21:56:18 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46.2.3  2006/06/22 14:59:45  taylor
+ * fix various things that Valgrind has been complaining about
+ *
  * Revision 2.46.2.2  2006/06/18 16:52:04  taylor
  * make sure we can report both AL and ALC errors
  * fix for ds_get_free_channel(), it shouldn't return -1 on an AL error
@@ -1724,6 +1727,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 #ifdef USE_OPENAL
 //	NOTE: A3D and EAX are unused in OpenAL
 	int attr[] = { ALC_FREQUENCY, sample_rate, ALC_SYNC, AL_FALSE, 0 };
+	ALfloat list_orien[] = { 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f };
 
 	Ds_use_a3d = 0;
 	Ds_use_eax = 0;
@@ -1743,29 +1747,19 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	char *device_spec = os_config_read_string( NULL, "SoundDeviceOAL", "Generic Software" );
 	mprintf(("  Using '%s' as OpenAL sound device...\n", device_spec));
 
-	ds_sound_device = alcOpenDevice( (const ALCchar *) device_spec );
+	OpenAL_C_ErrorCheck( { ds_sound_device = alcOpenDevice( (const ALCchar *) device_spec ); }, goto AL_InitError );
 #else
-	ds_sound_device = alcOpenDevice( (const ALubyte *) NOX("DirectSound") );
+	OpenAL_C_ErrorCheck( { ds_sound_device = alcOpenDevice( (const ALubyte *) NOX("DirectSound") ); }, goto AL_InitError );
 #endif // AL_VERSION_1_1
 #else
-	ds_sound_device = alcOpenDevice( NULL );
+	OpenAL_C_ErrorCheck( { ds_sound_device = alcOpenDevice( NULL ); }, goto AL_InitError );
 #endif
 
-	if (ds_sound_device == NULL) {
-		mprintf(("ERROR: Couldn't open OpenAL device!\n"));
-		return -1;
-	}
-
 	// Create Sound Device
-	ds_sound_context = alcCreateContext( ds_sound_device, attr );
+	OpenAL_C_ErrorCheck( { ds_sound_context = alcCreateContext( ds_sound_device, attr ); }, goto AL_InitError );
 
-	if (ds_sound_context == NULL) {
-		mprintf(("ERROR: Couldn't create OpenAL context!\n"));
-		alcCloseDevice( ds_sound_device );
-		return -1;
-	}
-
-	OpenAL_C_ErrorCheck( alcMakeContextCurrent( ds_sound_context ), return -1 );
+	// set the new context as current
+	OpenAL_C_ErrorCheck( alcMakeContextCurrent( ds_sound_context ), goto AL_InitError );
 
 	mprintf(( "  OpenAL Vendor     : %s\n", alGetString( AL_VENDOR ) ));
 	mprintf(( "  OpenAL Renderer   : %s\n", alGetString( AL_RENDERER ) ));
@@ -1789,8 +1783,6 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	// setup default listener position/orientation
 	// this is needed for 2D pan
 	OpenAL_ErrorPrint( alListener3f(AL_POSITION, 0.0, 0.0, 0.0) );
-
-	ALfloat list_orien[] = { 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f };
 	OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
 
 	ds_build_vol_lookup();
@@ -1798,6 +1790,24 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	ds_init_buffers();
 
 	mprintf(("... OpenAL successfully initialized!\n"));
+
+	return 0;
+
+
+AL_InitError:
+	alcMakeContextCurrent(NULL);
+
+	if (ds_sound_context != NULL) {
+		alcDestroyContext(ds_sound_context);
+		ds_sound_context = NULL;
+	}
+
+	if (ds_sound_device != NULL) {
+		alcCloseDevice(ds_sound_device);
+		ds_sound_device = NULL;
+	}
+
+	return -1;
 #else
 	HRESULT			hr;
 	HWND				hwnd;
@@ -1924,9 +1934,9 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	ds_init_buffers();
 
 	ds_show_caps(&Soundcard_caps);
-#endif
 
 	return 0;
+#endif
 }
 
 // ---------------------------------------------------------------------------------------
