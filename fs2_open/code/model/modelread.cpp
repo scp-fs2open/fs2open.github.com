@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.105.2.4 $
- * $Date: 2006-07-06 04:06:01 $
+ * $Revision: 2.105.2.5 $
+ * $Date: 2006-07-06 04:20:34 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105.2.4  2006/07/06 04:06:01  Goober5000
+ * 1) complete (almost) changeover to reorganized texture mapping system
+ * 2) finally fix texture animation; textures now animate at the correct speed
+ * --Goober5000
+ *
  * Revision 2.105.2.3  2006/07/05 23:36:56  Goober5000
  * cvs comment tweaks
  *
@@ -2934,8 +2939,8 @@ void model_init_texture_map(texture_map *tmap)
 	tmap->spec_map.texture = -1;
 
 #ifdef BUMPMAPPING
-	tmap->base_map.original_texture = -1;
-	tmap->base_map.texture = -1;
+	tmap->bump_map.original_texture = -1;
+	tmap->bump_map.texture = -1;
 #endif
 }
 

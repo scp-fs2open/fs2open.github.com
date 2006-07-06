@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.8 $
- * $Date: 2006-07-06 04:06:01 $
+ * $Revision: 2.336.2.9 $
+ * $Date: 2006-07-06 04:20:34 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.8  2006/07/06 04:06:01  Goober5000
+ * 1) complete (almost) changeover to reorganized texture mapping system
+ * 2) finally fix texture animation; textures now animate at the correct speed
+ * --Goober5000
+ *
  * Revision 2.336.2.7  2006/07/05 23:36:56  Goober5000
  * cvs comment tweaks
  *
@@ -14463,7 +14468,8 @@ void ship_page_out_model_textures(int modelnum, int ship_index)
 	if (pm == NULL)
 		return;
 
-	for (i=0; i<pm->n_textures; i++) {
+	for (i=0; i<pm->n_textures; i++)
+	{
 		bitmap_num = pm->maps[i].base_map.texture;
 		if (bitmap_num >= 0)
 		{
@@ -14483,7 +14489,7 @@ void ship_page_out_model_textures(int modelnum, int ship_index)
 		}
 
 #ifdef BUMPMAPPING
-		bitmap_num = pm->maps[i].base_map.texture;
+		bitmap_num = pm->maps[i].bump_map.texture;
 		if (bitmap_num >= 0)
 		{
 			bm_page_out(bitmap_num);
