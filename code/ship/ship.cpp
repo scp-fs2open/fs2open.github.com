@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.348 $
- * $Date: 2006-07-06 20:46:39 $
+ * $Revision: 2.349 $
+ * $Date: 2006-07-06 21:24:36 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.348  2006/07/06 20:46:39  Goober5000
+ * WCS screaming stuff
+ * --Goober5000
+ *
  * Revision 2.347  2006/07/06 04:26:00  Goober5000
  * fix a couple of typos
  * --Goober5000
@@ -3386,19 +3390,39 @@ strcpy(parse_error_text, temp_error);
 			Warning(LOCATION,"Invalid armor name %s specified in ship class %s", buf, sip->name);
 	}
 
-	if(optional_string("$Flags:"))
+	if (optional_string("$Flags:"))
 	{
-		char	ship_strings[MAX_SHIP_FLAGS][NAME_LENGTH];
+		char ship_strings[MAX_SHIP_FLAGS][NAME_LENGTH];
 		int num_strings = stuff_string_list(ship_strings, MAX_SHIP_FLAGS);
 		int ship_type_index = -1;
-		for ( i=0; i<num_strings; i++ )
+
+		for (i = 0; i < num_strings; i++)
 		{
-			ship_type_index = ship_type_name_lookup(ship_strings[i]);
+			// get ship type from ship flags
+			char *ship_type = ship_strings[i];
 
-			if ( (ship_type_index >= 0) && (sip->class_type < 0) ) {
+			// Goober5000 - in retail FreeSpace, some ship classes were specified differently
+			// in ships.tbl and the ship type array; this patches those differences so that
+			// the ship type lookup will work properly
+			if (!stricmp(ship_type, "sentrygun"))
+				ship_type = "sentry gun";
+			else if (!stricmp(ship_type, "escapepod"))
+				ship_type = "escape pod";
+			else if (!stricmp(ship_type, "repair_rearm"))
+				ship_type = "support";
+			else if (!stricmp(ship_type, "supercap"))
+				ship_type = "super cap";
+			else if (!stricmp(ship_type, "knossos"))
+				ship_type = "knossos device";
+
+			// look it up in the object types table
+			ship_type_index = ship_type_name_lookup(ship_type);
+
+			// set ship class type
+			if ((ship_type_index >= 0) && (sip->class_type < 0))
 				sip->class_type = ship_type_index;
-			}
 
+			// check various ship flags
 			if (!stricmp(NOX("no_collide"), ship_strings[i]))
 				sip->flags &= ~SIF_DO_COLLISION_CHECK;
 			else if (!stricmp(NOX("player_ship"), ship_strings[i]))
