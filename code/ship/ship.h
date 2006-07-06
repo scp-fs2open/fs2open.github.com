@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.3 $
- * $Date: 2006-07-04 07:42:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.150.2.4 $
+ * $Date: 2006-07-06 21:53:59 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.3  2006/07/04 07:42:10  Goober5000
+ * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
+ * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
+ * --Goober5000
+ *
  * Revision 2.150.2.2  2006/06/24 20:39:57  wmcoolmon
  * New function for scripting
  *
@@ -1151,6 +1156,7 @@ typedef struct ship_subsys_info {
 #define SF2_NO_BUILTIN_MESSAGES				(1<<11)		// Karajorma - ship should not send built-in messages
 #define SF2_PRIMARIES_LOCKED				(1<<12)		// Karajorma - This ship can't fire primary weapons
 #define SF2_SECONDARIES_LOCKED				(1<<13)		// Karajorma - This ship can't fire secondary weapons
+#define SF2_GLOWMAPS_DISABLED				(1<<14)		// taylor - to disable glow maps
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -1388,6 +1394,9 @@ typedef struct ship {
 	int ab_count;
 
 //	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
+
+	// glow points
+	bool glow_point_bank_active[MAX_GLOW_POINT_BANKS];
 
 	//cloaking stuff
 	vec3d texture_translation_key;		//translate the texture matrix for a cool effect

@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.10 $
- * $Date: 2006-07-06 21:24:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.336.2.11 $
+ * $Date: 2006-07-06 21:53:59 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.10  2006/07/06 21:24:34  Goober5000
+ * fix ship type bug that Taylor mentioned
+ * --Goober5000
+ *
  * Revision 2.336.2.9  2006/07/06 04:20:34  Goober5000
  * GAH - repair a borked commit (plus a couple of typos)
  * --Goober5000
@@ -5244,6 +5248,11 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	for (i=0; i<MAX_MODEL_TEXTURES; i++)
 	{
 		shipp->replacement_textures_buf[i] = -1;
+	}
+
+	// all glow points enabled by default
+	for (i = 0; i < MAX_GLOW_POINT_BANKS; i++) {
+		shipp->glow_point_bank_active[i] = true;
 	}
 
 //	for(i=0; i<MAX_SHIP_DECALS; i++)
