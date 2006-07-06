@@ -1,3 +1,20 @@
+/*
+ * Def_Files.h
+ *
+ * You may not sell or otherwise commercially exploit the source or things you
+ * create based on the source.
+ */
+
+/*
+ * $Logfile: /Freespace2/code/globalincs/def_files.h $
+ * $Revision: 2.4 $
+ * $Date: 2006-07-06 21:23:20 $
+ * $Author: Goober5000 $
+ *
+ * $Log: not supported by cvs2svn $
+ */
+
+
 #ifndef __DEF_FILES_H_
 #define __DEF_FILES_H_
 
