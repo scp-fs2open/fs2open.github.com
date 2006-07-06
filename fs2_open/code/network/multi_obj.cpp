@@ -303,8 +303,7 @@ int multi_oo_pack_client_data(ubyte *data)
 	}
 
 	// copy the final flags in
-	memcpy(data, &out_flags, sizeof(ubyte));
-	packet_size++;	
+	ADD_DATA( out_flags );
 
 	// client targeting information	
 	t_subsys = -1;
@@ -331,18 +330,19 @@ int multi_oo_pack_client_data(ubyte *data)
 	}
 
 	// add them all
-	memcpy(data + packet_size, &tnet_signature, sizeof(ushort));
-	packet_size += sizeof(ushort);
-	memcpy(data + packet_size, &t_subsys, sizeof(char));
-	packet_size += sizeof(char);
-	memcpy(data + packet_size, &l_subsys, sizeof(char));
-	packet_size += sizeof(char);	
+	ADD_USHORT( tnet_signature );
+	ADD_DATA( t_subsys );
+	ADD_DATA( l_subsys );
 
 	return packet_size;
 }
 
 // pack the appropriate info into the data
-#define PACK_PERCENT(v)					{ubyte upercent; if(v < 0.0f){v = 0.0f;} upercent = (v * 255.0f) <= 255.0f ? (ubyte)(v * 255.0f) : (ubyte)255; memcpy(data + packet_size + header_bytes, &upercent, sizeof(ubyte)); packet_size++; }
+#define PACK_PERCENT(v) { ubyte upercent; if(v < 0.0f){v = 0.0f;} upercent = (v * 255.0f) <= 255.0f ? (ubyte)(v * 255.0f) : (ubyte)255; memcpy(data + packet_size + header_bytes, &upercent, sizeof(ubyte)); packet_size++; }
+#define PACK_BYTE(v) { memcpy( data + packet_size + header_bytes, &v, 1 ); packet_size += 1; }
+#define PACK_USHORT(v) { short swap = INTEL_SHORT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(short) ); packet_size += sizeof(short); }
+#define PACK_SHORT(v) { ushort swap = INTEL_SHORT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(ushort) ); packet_size += sizeof(ushort); }
+#define PACK_INT(v) { int swap = INTEL_INT(v); memcpy( data + packet_size + header_bytes, &swap, sizeof(int) ); packet_size += sizeof(int); }
 int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data_out)
 {	
 	ubyte data[255];
@@ -430,8 +430,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	percent = (char)(objp->phys_info.forward_thrust * 100.0f);
 	Assert( percent <= 100 );
 
-	memcpy(data + packet_size + header_bytes, &percent, sizeof(char));
-	packet_size += 1;
+	PACK_BYTE( percent );
 
 	// global records	
 	multi_rate_add(NET_PLAYER_NUM(pl), "fth", 1);	
@@ -474,16 +473,15 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 		// just in case we have some kind of invalid data (should've been taken care of earlier in this function)
 		if(shipp->ship_info_index < 0){
 			ns = 0;
-			memcpy(data + packet_size + header_bytes, &ns, sizeof(ubyte));
-			packet_size++;
-			
+			PACK_BYTE( ns );
+
 			multi_rate_add(NET_PLAYER_NUM(pl), "sub", 1);	
 		}
 		// add the # of subsystems, and their data
 		else {
 			ns = (ubyte)Ship_info[shipp->ship_info_index].n_subsystems;
-			memcpy(data + packet_size + header_bytes, &ns, sizeof(ubyte));
-			packet_size++;			
+			PACK_BYTE( ns );
+
 			multi_rate_add(NET_PLAYER_NUM(pl), "sub", 1);	
 
 			// now the subsystems.
@@ -505,13 +503,10 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 			target_signature = Objects[Ai_info[shipp->ai_index].target_objnum].net_signature;
 		}
 
-		memcpy(data + packet_size + header_bytes, &umode, sizeof(ubyte));
-		packet_size++;
-		memcpy(data + packet_size + header_bytes, &submode, sizeof(short));
-		packet_size += 2;
-		memcpy(data + packet_size + header_bytes, &target_signature, sizeof(ushort));		
-		packet_size += 2;		
-		
+		PACK_BYTE( umode );
+		PACK_SHORT( submode );
+		PACK_USHORT( target_signature );	
+
 		multi_rate_add(NET_PLAYER_NUM(pl), "aim", 5);
 
 		// primary weapon energy
@@ -532,14 +527,10 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 		// flag
 		support_extra = 1;		
-		memcpy(data + packet_size + header_bytes, &support_extra, sizeof(ubyte));
-		packet_size += 1;
-		memcpy(data + packet_size + header_bytes, &Ai_info[shipp->ai_index].ai_flags, sizeof(int));
-		packet_size += 4;
-		memcpy(data + packet_size + header_bytes, &Ai_info[shipp->ai_index].mode, sizeof(int));
-		packet_size += 4;
-		memcpy(data + packet_size + header_bytes, &Ai_info[shipp->ai_index].submode, sizeof(int));
-		packet_size += 4;
+		PACK_BYTE( support_extra );
+		PACK_INT( Ai_info[shipp->ai_index].ai_flags );
+		PACK_INT( Ai_info[shipp->ai_index].mode );
+		PACK_INT( Ai_info[shipp->ai_index].submode );
 
 		if((Ai_info[shipp->ai_index].support_ship_objnum < 0) || (Ai_info[shipp->ai_index].support_ship_objnum >= MAX_OBJECTS)){
 			dock_sig = 0;
@@ -547,12 +538,10 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 			dock_sig = Objects[Ai_info[shipp->ai_index].support_ship_objnum].net_signature;
 		}		
 
-		memcpy(data + packet_size + header_bytes, &dock_sig, sizeof(ushort));
-		packet_size += 2;
+		PACK_USHORT( dock_sig );
 	} else {
-		support_extra = 0;		
-		memcpy(data + packet_size + header_bytes, &support_extra, sizeof(ubyte));
-		packet_size += 1;
+		support_extra = 0;
+		PACK_BYTE( support_extra );
 	}			
 
 	// make sure we have a valid chunk of data
