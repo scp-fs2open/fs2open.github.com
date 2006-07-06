@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.26 $
- * $Date: 2006-05-27 16:45:11 $
+ * $Revision: 2.27 $
+ * $Date: 2006-07-06 22:01:50 $
  * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2006/05/27 16:45:11  taylor
+ * some minor cleanup
+ * remove -nobeampierce
+ * update for geometry batcher changes
+ *
  * Revision 2.25  2006/03/18 09:25:55  wmcoolmon
  * Allow "none" in $Shockwave Model to disable shockwave
  *
@@ -534,6 +539,8 @@ void shockwave_set_framenum(int index)
 	shockwave		*sw;
 	shockwave_info	*si;
 
+	Assert( (index >= 0) && (index < MAX_SHOCKWAVES) );
+
 	sw = &Shockwaves[index];
 	si = &Shockwave_info[sw->shockwave_info_index];
 
@@ -562,6 +569,11 @@ int shockwave_get_framenum(int index, int num_frames)
 {
 	int				framenum;
 	shockwave		*sw;
+
+	if ( (index < 0) || (index >= MAX_SHOCKWAVES) ) {
+		Int3();
+		return 0;
+	}
 
 	sw = &Shockwaves[index];
 
