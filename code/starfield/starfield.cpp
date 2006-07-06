@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.75 $
- * $Date: 2006-07-06 04:06:04 $
+ * $Revision: 2.76 $
+ * $Date: 2006-07-06 05:29:39 $
  * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2006/07/06 04:06:04  Goober5000
+ * 1) complete (almost) changeover to reorganized texture mapping system
+ * 2) finally fix texture animation; textures now animate at the correct speed
+ * --Goober5000
+ *
  * Revision 2.74  2006/07/05 23:36:07  Goober5000
  * cvs comment tweaks
  *
@@ -3042,7 +3047,7 @@ int stars_add_bitmap_instance(char *name, starfield_bitmap_instance *new_instanc
 	idx = check_for_starfield_duplicate(name);
 
 	if (idx == -1) {
-		Warning(LOCATION, "Trying to add a bitmap that does not exist in stars.tbl!");
+//		Warning(LOCATION, "Trying to add a bitmap that does not exist in stars.tbl!");
 		return 0;
 	}
 
@@ -3057,7 +3062,7 @@ int stars_add_bitmap_instance(char *name, starfield_bitmap_instance *new_instanc
 			Starfield_bitmaps[idx].bitmap = bm_load_animation(Starfield_bitmaps[idx].filename, &Starfield_bitmaps[idx].n_frames, &Starfield_bitmaps[idx].fps, 1);
 
 			if (Starfield_bitmaps[idx].bitmap < 0) {
-				Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", Starfield_bitmaps[idx].filename);
+//				Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", Starfield_bitmaps[idx].filename);
 				return 0;
 			}
 		}
