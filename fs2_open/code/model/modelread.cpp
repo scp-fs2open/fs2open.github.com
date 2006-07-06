@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.108 $
- * $Date: 2006-07-05 23:35:43 $
+ * $Revision: 2.109 $
+ * $Date: 2006-07-06 04:06:04 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.108  2006/07/05 23:35:43  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.107  2006/07/04 07:42:48  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
@@ -2914,65 +2917,90 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	return 1;
 }
 
+void model_init_texture_map(texture_map *tmap)
+{
+	if (tmap == NULL)
+		return;
+
+	memset(tmap, 0, sizeof(texture_map));
+
+	tmap->base_map.original_texture = -1;
+	tmap->base_map.texture = -1;
+
+	tmap->glow_map.original_texture = -1;
+	tmap->glow_map.texture = -1;
+
+	tmap->spec_map.original_texture = -1;
+	tmap->spec_map.texture = -1;
+
+#ifdef BUMPMAPPING
+	tmap->base_map.original_texture = -1;
+	tmap->base_map.texture = -1;
+#endif
+}
+
 //Goober
 void model_load_texture(polymodel *pm, int i, char *file)
 {
 	// NOTE: it doesn't help to use more than MAX_FILENAME_LEN here as bmpman will use that restriction
 	//       we also have to make sure there is always a trailing NUL since overflow doesn't add it
 	char tmp_name[MAX_FILENAME_LEN];
+	int fps;
 	memset(tmp_name, 0, MAX_FILENAME_LEN);
 	strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 	strlwr(tmp_name);
 
-	pm->is_transparent[i] = false;	//it's transparent
-	pm->is_ambient[i] = false;		//ambient glow
-	pm->is_anim[i] = false;			//animated textures
-	pm->anim[i].num_frames = 1;		// number of frames - default 1 (no animation)
+	texture_map *tmap = &pm->maps[i];
+	model_init_texture_map(tmap);
 
+	// base maps ---------------------------------------------------------------
 	if (strstr(tmp_name, "thruster") || strstr(tmp_name, "invisible") || strstr(tmp_name, "warpmap"))
 	{
 		// Don't load textures for thruster animations or invisible textures
 		// or warp models!-Bobboau
-		pm->map[i].texture = -1;
+		tmap->base_map.texture = -1;
 	}
 	else
 	{
 		// check if we should be transparent, include "-trans" but make sure to skip anything that might be "-transport"
 		if ( (strstr(tmp_name, "-trans") && !strstr(tmp_name, "-transpo")) || strstr(tmp_name, "shockwave") ) {
-			pm->is_transparent[i] = true;
+			tmap->is_transparent = true;
 		}
 
 		if (strstr(tmp_name, "-amb")) {
-			pm->is_ambient[i] = true;
+			tmap->is_ambient = true;
 		}
 
 		// try to load an ANI
-		pm->map[i].texture = bm_load_animation(tmp_name, &pm->anim[i].num_frames, &pm->anim[i].fps, 1, CF_TYPE_MAPS);
-		if (pm->map[i].texture >= 0)
+		tmap->base_map.texture = bm_load_animation(tmp_name, &tmap->base_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
+		if (tmap->base_map.texture >= 0)
 		{
-			pm->is_anim[i] = true;
+			tmap->base_map.is_anim = true;
+			tmap->base_map.anim.total_time = (int) i2fl(tmap->base_map.anim.num_frames) / fps;
 		}
 		else
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
+			tmap->base_map.anim.num_frames = 1;
 
 			// try to load a non-ANI
-			pm->map[i].texture = bm_load(tmp_name);
-			if (pm->map[i].texture < 0)
+			tmap->base_map.texture = bm_load(tmp_name);
+			if (tmap->base_map.texture < 0)
 			{
 				Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename);
-				nprintf(("Maps", " or %s.pcx.\n",tmp_name));
+				nprintf(("Maps", " or %s.pcx.", tmp_name));
 			}
+
+			nprintf(("Maps", "\n"));
 		}
 	}
-	pm->map[i].original_texture = pm->map[i].texture;
+	tmap->base_map.original_texture = tmap->base_map.texture;
+	// -------------------------------------------------------------------------
 
-	//a quick hack for glow mapping-Bobboau
-	//redid the way glowmaps are handled
-
-	if (Cmdline_noglow || (pm->map[i].texture < 0))
+	// glow maps ---------------------------------------------------------------
+	if (Cmdline_noglow || (tmap->base_map.texture < 0))
 	{
-		pm->glow_map[i].texture = -1;
+		tmap->glow_map.texture = -1;
 	}
 	else
 	{
@@ -2981,17 +3009,35 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strncat(tmp_name, "-glow", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
 		strlwr(tmp_name);
 
-		pm->glow_map[i].texture = bm_load(tmp_name);
-		if (pm->glow_map[i].texture < 0)
+		// try to load an ANI
+		tmap->glow_map.texture = bm_load_animation(tmp_name, &tmap->glow_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
+		if (tmap->glow_map.texture >= 0)
 		{
-			nprintf(("Maps", " or %s.pcx.\n", tmp_name));
+			tmap->glow_map.is_anim = true;
+			tmap->glow_map.anim.total_time = (int) i2fl(tmap->glow_map.anim.num_frames) / fps;
+		}
+		else
+		{
+			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
+			tmap->glow_map.anim.num_frames = 1;
+
+			// try to load a non-ANI
+			tmap->glow_map.texture = bm_load(tmp_name);
+			if (tmap->glow_map.texture < 0)
+			{
+				nprintf(("Maps", " or %s.pcx.", tmp_name));
+			}
+
+			nprintf(("Maps", "\n"));
 		}
 	}
-	pm->glow_map[i].original_texture = pm->glow_map[i].texture;
+	tmap->glow_map.original_texture = tmap->glow_map.texture;
+	// -------------------------------------------------------------------------
 
-	if (Cmdline_nospec || (pm->map[i].texture < 0))
+	// specular maps -----------------------------------------------------------
+	if (Cmdline_nospec || (tmap->base_map.texture < 0))
 	{
-		pm->specular_map[i].texture = -1;
+		tmap->spec_map.texture = -1;
 	}
 	else
 	{
@@ -3000,19 +3046,20 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strncat(tmp_name, "-shine", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
 		strlwr(tmp_name);
 
-		pm->specular_map[i].texture = bm_load(tmp_name);
-		if (pm->specular_map[i].texture < 0)
+		tmap->spec_map.texture = bm_load(tmp_name);
+		if (tmap->spec_map.texture < 0)
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
 		}
 	}
-	pm->specular_map[i].original_texture = pm->specular_map[i].texture;
+	tmap->spec_map.original_texture = tmap->spec_map.texture;
+	// -------------------------------------------------------------------------
 
 #ifdef BUMPMAPPING
-	//WMC: BUMP mapping
-	if (0 || (pm->map[i].texture < 0))
+	// bump maps -----------------------------------------------------------
+	if (true || (tmap->base_map.texture < 0))
 	{
-		pm->bump_map[i].texture = -1;
+		tmap->bump_map.texture = -1;
 	}
 	else
 	{
@@ -3021,13 +3068,13 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strncat(tmp_name, "-bump", MAX_FILENAME_LEN - strlen(tmp_name) - 1);
 		strlwr(tmp_name);
 
-		pm->bump_map[i].texture = bm_load(tmp_name);
-		if (pm->bump_map[i].texture < 0)
+		tmap->bump_map.texture = bm_load(tmp_name);
+		if (tmap->bump_map.texture < 0)
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
 		}
 	}
-	pm->bump_map[i].original_texture = pm->bump_map[i].texture
+	tmap->bump_map.original_texture = tmap->bump_map.texture
 #endif
 }
 
@@ -4375,7 +4422,12 @@ void model_clear_instance(int model_num)
 	pm->gun_submodel_rotation = 0.0f;
 	// reset textures to original ones
 	for (i=0; i<pm->n_textures; i++ )	{
-		pm->map[i].texture = pm->map[i].original_texture;
+		pm->maps[i].base_map.texture = pm->maps[i].base_map.original_texture;
+		pm->maps[i].glow_map.texture = pm->maps[i].glow_map.original_texture;
+		pm->maps[i].spec_map.texture = pm->maps[i].spec_map.original_texture;
+#ifdef BUMPMAPPING
+		pm->maps[i].bump_map.texture = pm->maps[i].bump_map.original_texture;
+#endif
 	}
 	
 	for (i=0; i<pm->n_models; i++ )	{
@@ -4726,7 +4778,7 @@ void model_duplicate_reskin(int modelnum, char *ship_name)
 			for (j=0; j<pm->n_textures; j++)
 			{
 				// get texture file name
-				bm_get_filename(pm->map[j].texture, texture_file);
+				bm_get_filename(pm->maps[j].base_map.texture, texture_file);
 
 				// get rid of file extension
 				p = strchr( texture_file, '.' );
