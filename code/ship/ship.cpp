@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.349 $
- * $Date: 2006-07-06 21:24:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.350 $
+ * $Date: 2006-07-06 22:00:39 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.349  2006/07/06 21:24:36  Goober5000
+ * fix ship type bug that Taylor mentioned
+ * --Goober5000
+ *
  * Revision 2.348  2006/07/06 20:46:39  Goober5000
  * WCS screaming stuff
  * --Goober5000
@@ -5274,6 +5278,11 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	for (i=0; i<MAX_MODEL_TEXTURES; i++)
 	{
 		shipp->replacement_textures_buf[i] = -1;
+	}
+
+	// all glow points enabled by default
+	for (i = 0; i < MAX_GLOW_POINT_BANKS; i++) {
+		shipp->glow_point_bank_active[i] = true;
 	}
 
 //	for(i=0; i<MAX_SHIP_DECALS; i++)
