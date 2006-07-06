@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.345 $
- * $Date: 2006-07-05 23:35:43 $
+ * $Revision: 2.346 $
+ * $Date: 2006-07-06 04:06:04 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.345  2006/07/05 23:35:43  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.344  2006/07/04 07:42:48  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
@@ -14408,42 +14411,48 @@ void ship_page_in_model_textures(int modelnum, int ship_index)
 
 	for (i = 0; i < pm->n_textures; i++ )
 	{
-		int bitmap_num = pm->map[i].original_texture;
+		int bitmap_num = pm->maps[i].base_map.original_texture;
 		if (bitmap_num >= 0)
 		{
-			// see about different kinds of textures... load frames, too, in case we have an ani
-
 			// transparent?
-			if (pm->is_transparent[i])
+			if (pm->maps[i].is_transparent)
 			{
-				bm_page_in_xparent_texture(bitmap_num, pm->anim[i].num_frames);
+				bm_page_in_xparent_texture(bitmap_num);
 			}
 			else
 			{
-				bm_page_in_texture(bitmap_num, pm->anim[i].num_frames);
+				bm_page_in_texture(bitmap_num);
 			}
 		}
 
-		bitmap_num = pm->glow_map[i].original_texture;
+		bitmap_num = pm->maps[i].glow_map.original_texture;
 		if (bitmap_num >= 0)
 		{
-			bm_page_in_texture(bitmap_num, 1);
+			bm_page_in_texture(bitmap_num);
 		}
 
-		bitmap_num = pm->specular_map[i].original_texture;
+		bitmap_num = pm->maps[i].spec_map.original_texture;
 		if (bitmap_num >= 0)
 		{
-			bm_page_in_texture(bitmap_num, 1);
+			bm_page_in_texture(bitmap_num);
 		}
+
+#ifdef BUMPMAPPING
+		bitmap_num = pm->maps[i].bump_map.original_texture;
+		if (bitmap_num >= 0)
+		{
+			bm_page_in_texture(bitmap_num);
+		}
+#endif
 
 		for(j = 0; j < pm->n_glow_point_banks; j++)
 		{
 			glow_point_bank *bank = &pm->glow_point_banks[j];
 
-			if(bank->glow_bitmap >= 0)
+			if (bank->glow_bitmap >= 0)
 				bm_page_in_texture(bank->glow_bitmap);
 
-			if(bank->glow_neb_bitmap >= 0)
+			if (bank->glow_neb_bitmap >= 0)
 				bm_page_in_texture(bank->glow_neb_bitmap);
 		}
 	}
@@ -14514,20 +14523,31 @@ void ship_page_out_model_textures(int modelnum, int ship_index)
 		return;
 
 	for (i=0; i<pm->n_textures; i++) {
-		bitmap_num = pm->map[i].texture;
-		if ( bitmap_num >= 0 ) {
-			bm_page_out( bitmap_num );
+		bitmap_num = pm->maps[i].base_map.texture;
+		if (bitmap_num >= 0)
+		{
+			bm_page_out(bitmap_num);
 		}
 
-		bitmap_num = pm->glow_map[i].texture;
-		if ( bitmap_num >= 0 ) {
-			bm_page_out( bitmap_num );
+		bitmap_num = pm->maps[i].glow_map.texture;
+		if (bitmap_num >= 0)
+		{
+			bm_page_out(bitmap_num);
 		}
 
-		bitmap_num = pm->specular_map[i].texture;
-		if ( bitmap_num >= 0 ) {
-			bm_page_out( bitmap_num );
+		bitmap_num = pm->maps[i].spec_map.texture;
+		if (bitmap_num >= 0)
+		{
+			bm_page_out(bitmap_num);
 		}
+
+#ifdef BUMPMAPPING
+		bitmap_num = pm->maps[i].base_map.texture;
+		if (bitmap_num >= 0)
+		{
+			bm_page_out(bitmap_num);
+		}
+#endif
 
 		for (j = 0; j < pm->n_glow_point_banks; j++)
 		{

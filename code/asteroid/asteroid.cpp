@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.36 $
- * $Date: 2006-07-04 07:42:48 $
+ * $Revision: 2.37 $
+ * $Date: 2006-07-06 04:06:03 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2006/07/04 07:42:48  Goober5000
+ * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
+ * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
+ * --Goober5000
+ *
  * Revision 2.35  2006/05/13 07:02:27  taylor
  * add lazy (ie, faster) checking of asteroid collisions for time-to-impact
  *
@@ -2399,7 +2404,7 @@ void asteroid_page_in()
 
 				// Page in textures
 				for (j=0; j<asip->modelp[k]->n_textures; j++ )	{
-					int bitmap_num = asip->modelp[k]->map[j].original_texture;
+					int bitmap_num = asip->modelp[k]->maps[j].base_map.original_texture;
 
 					if ( bitmap_num > -1 )	{
 						bm_page_in_texture( bitmap_num );

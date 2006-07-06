@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.182 $
- * $Date: 2006-07-04 07:42:48 $
+ * $Revision: 2.183 $
+ * $Date: 2006-07-06 04:06:03 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.182  2006/07/04 07:42:48  Goober5000
+ * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
+ * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
+ * --Goober5000
+ *
  * Revision 2.181  2006/07/01 00:30:48  Goober5000
  * fix the "Game of TAG" bug; hopefully this won't unfix something else
  * --Goober5000
@@ -2739,7 +2744,7 @@ int parse_create_object_sub(p_object *p_objp)
 		for (j = 0; j < pm->n_textures; j++)
 		{
 			// get texture file name
-			bm_get_filename(pm->map[j].texture, texture_file);
+			bm_get_filename(pm->maps[j].base_map.texture, texture_file);
 
 			// get rid of file extension
 			p = strchr(texture_file, '.');

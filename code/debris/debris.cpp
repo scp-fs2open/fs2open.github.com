@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.24 $
- * $Date: 2006-07-04 07:42:48 $
+ * $Revision: 2.25 $
+ * $Date: 2006-07-06 04:06:03 $
  * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2006/07/04 07:42:48  Goober5000
+ * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
+ * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
+ * --Goober5000
+ *
  * Revision 2.23  2006/01/26 03:23:29  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -468,8 +473,8 @@ void debris_render(object * obj)
 		pm = model_get( db->model_num );
 
 		if ( pm && (pm->n_textures == 1) ) {
-			swapped = pm->map[0].texture;
-			pm->map[0].texture = Species_info[db->species].debris_texture.bitmap;
+			swapped = pm->maps[0].base_map.texture;
+			pm->maps[0].base_map.texture = Species_info[db->species].debris_texture.bitmap;
 		}
 	}
 
@@ -493,7 +498,7 @@ void debris_render(object * obj)
 	}
 
 	if ((swapped!=-1) && pm)	{
-		pm->map[0].texture = swapped;
+		pm->maps[0].base_map.texture = swapped;
 	}
 }
 

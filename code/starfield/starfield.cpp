@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.74 $
- * $Date: 2006-07-05 23:36:07 $
+ * $Revision: 2.75 $
+ * $Date: 2006-07-06 04:06:04 $
  * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2006/07/05 23:36:07  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.73  2006/07/04 07:42:50  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
@@ -2626,7 +2629,7 @@ void stars_page_in()
 		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
-			bm_page_in_texture( pm->map[idx].original_texture );
+			bm_page_in_texture( pm->maps[idx].base_map.original_texture );
 		}
 
 		pm = model_get(Subspace_model_outer);
@@ -2634,7 +2637,7 @@ void stars_page_in()
 		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
-			bm_page_in_texture(pm->map[idx].original_texture);
+			bm_page_in_texture(pm->maps[idx].base_map.original_texture);
 		}
 
 		if (Subspace_glow_bitmap < 0) {

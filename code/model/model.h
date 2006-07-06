@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.83 $
- * $Date: 2006-07-05 23:35:42 $
+ * $Revision: 2.84 $
+ * $Date: 2006-07-06 04:06:04 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2006/07/05 23:35:42  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.82  2006/07/04 07:42:48  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
@@ -1163,22 +1166,38 @@ typedef struct insignia {
 	vec3d norm[MAX_INS_VECS]	;					//normal of the insignia-Bobboau
 } insignia;
 
-#define PM_FLAG_ALLOW_TILING	(1<<0)					// Allow texture tiling
-#define PM_FLAG_AUTOCEN			(1<<1)					// contains autocentering info	
-#define PM_FLAG_GLOW_DISABLED	(1<<2)					// Goober5000
+#define PM_FLAG_ALLOW_TILING		(1<<0)					// Allow texture tiling
+#define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
+#define PM_FLAG_GLOW_DISABLED		(1<<2)					// Goober5000
+
+// Goober5000
+typedef struct texture_anim_info {
+	int num_frames;
+	int total_time;		// in seconds
+
+	float cur_time;
+} texture_anim_info;
 
 // Goober5000
 typedef struct texture_info {
 	int original_texture;	// what gets read in from file
 	int texture;			// what texture you draw with; reset to original_textures by model_set_instance
+
+	bool is_anim;			// whether this is an animated texture
+	texture_anim_info anim;	// animation info (if animated)
 } texture_info;
 
-// Goober5000
-typedef struct texture_anim_info {
-	int num_frames;
-	int cur_frame;
-	int fps;
-} texture_anim_info;
+typedef struct texture_map {
+	texture_info base_map;		// the standard base map
+	texture_info glow_map;		// optional glow map
+	texture_info spec_map;		// optional specular map
+#ifdef BUMPMAPPING
+	texture_info bump_map;		// optional bump map
+#endif
+
+	bool is_ambient;
+	bool is_transparent;
+} texture_map;
 
 //used to describe a polygon model
 typedef struct polymodel {
@@ -1205,26 +1224,14 @@ typedef struct polymodel {
 	int			n_view_positions;					// number of viewing positions available on this ship
 	eye			view_positions[MAX_EYES];		//viewing positions.  Default to {0,0,0}. in location 0
 
+	vec3d		autocenter;							// valid only if PM_FLAG_AUTOCEN is set
+
 	float			rad;									// The radius of everything in the model; shields, thrusters.
 	float			core_radius;						// The radius to be used for collision detection in small ship vs big ships.
 															// This is equal to 1/2 of the smallest dimension of the hull's bounding box.
-	int			n_textures;
-
-	// Goober5000
-	texture_info	map[MAX_MODEL_TEXTURES];
-	texture_info	glow_map[MAX_MODEL_TEXTURES];
-	texture_info	specular_map[MAX_MODEL_TEXTURES];
-	texture_info	bump_map[MAX_MODEL_TEXTURES];
-
-	// Goober5000
-	texture_anim_info anim[MAX_MODEL_TEXTURES];
-
-	// Goober5000
-	bool	is_anim[MAX_MODEL_TEXTURES];
-	bool	is_ambient[MAX_MODEL_TEXTURES];
-	bool	is_transparent[MAX_MODEL_TEXTURES];
-
-	vec3d		autocenter;							// valid only if PM_FLAG_AUTOCEN is set
+	// texture maps for model
+	int n_textures;
+	texture_map	maps[MAX_MODEL_TEXTURES];
 	
 	bsp_info		*submodel;							// an array of size n_models of submodel info.
 
