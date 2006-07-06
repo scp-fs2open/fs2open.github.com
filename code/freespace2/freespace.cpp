@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.251 $
- * $Date: 2006-07-05 23:35:42 $
+ * $Revision: 2.252 $
+ * $Date: 2006-07-06 04:06:03 $
  * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.251  2006/07/05 23:35:42  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.250  2006/07/04 07:42:48  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
@@ -9635,11 +9638,11 @@ void Time_model( int modelnum )
 		char filename[1024];
 		ubyte pal[768];
 
-		int bmp_num = pm->map[i].original_texture;
+		int bmp_num = pm->maps[i].base_map.original_texture;
 		if ( bmp_num > -1 )	{
-			bm_get_palette(pm->map[i].original_texture, pal, filename );		
+			bm_get_palette(pm->maps[i].base_map.original_texture, pal, filename );		
 			int w,h;
-			bm_get_info( pm->map[i].original_texture,&w, &h );
+			bm_get_info( pm->maps[i].base_map.original_texture,&w, &h );
 
 
 			if ( (w > 512) || (h > 512) )	{
