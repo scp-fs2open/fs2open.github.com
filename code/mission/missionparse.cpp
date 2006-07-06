@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.183 $
- * $Date: 2006-07-06 04:06:03 $
+ * $Revision: 2.184 $
+ * $Date: 2006-07-06 06:04:51 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.183  2006/07/06 04:06:03  Goober5000
+ * 1) complete (almost) changeover to reorganized texture mapping system
+ * 2) finally fix texture animation; textures now animate at the correct speed
+ * --Goober5000
+ *
  * Revision 2.182  2006/07/04 07:42:48  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
@@ -3001,11 +3006,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 		// free the sexpression nodes only for non-wing ships.  wing code will handle its own case
 		if (p_objp->wingnum < 0)
-		{
-			// free up sexp nodes for reuse, since they aren't needed anymore.
-			free_sexp2(p_objp->ai_goals);
-			p_objp->ai_goals = -1;
-		}
+			free_sexp2(p_objp->ai_goals);	// free up sexp nodes for reuse, since they aren't needed anymore.
 	}
 
 	Assert(Ships[shipnum].modelnum != -1);
@@ -4983,7 +4984,7 @@ void parse_wing(mission *pm)
 			ai_add_wing_goal_sexp(sexp, AIG_TYPE_EVENT_WING, wingnum);  // used by Fred
 
 		//if (Fred_running)
-			free_sexp2(wing_goals);  // free up sexp nodes for reused, since they aren't needed anymore.
+			free_sexp2(wing_goals);  // free up sexp nodes for reuse, since they aren't needed anymore.
 	}
 
 	// set the wing number for all ships in the wing
