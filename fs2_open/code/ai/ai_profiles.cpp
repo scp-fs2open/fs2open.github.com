@@ -6,11 +6,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.13.2.1 $
- * $Date: 2006-07-02 03:39:34 $
+ * $Revision: 1.13.2.2 $
+ * $Date: 2006-07-06 18:19:55 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13.2.1  2006/07/02 03:39:34  Goober5000
+ * remove associated AI flags
+ * --Goober5000
+ *
  * Revision 1.13  2006/04/20 06:32:00  Goober5000
  * proper capitalization according to Volition
  *
@@ -292,6 +296,7 @@ void parse_ai_profiles_tbl(char *longname)
 			set_flag(profile, "$ignore lower bound for minimum speed of docked ship:", AIPF_NO_MIN_DOCK_SPEED_CAP);
 
 			// find next valid option
+			Mp++;
 			skip_to_start_of_string_either("$", "#");
 		}
 	}
