@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.156 $
- * $Date: 2006-07-04 07:42:48 $
+ * $Revision: 2.157 $
+ * $Date: 2006-07-06 20:46:39 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.156  2006/07/04 07:42:48  Goober5000
+ * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
+ * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
+ * --Goober5000
+ *
  * Revision 2.155  2006/06/24 20:32:00  wmcoolmon
  * New function for scripting
  *
@@ -1162,6 +1167,7 @@ typedef struct ship_subsys_info {
 #define SF2_SECONDARIES_LOCKED				(1<<13)		// Karajorma - This ship can't fire secondary weapons
 #define SF2_SET_CLASS_DYNAMICALLY			(1<<14)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
 #define SF2_TEAM_LOADOUT_STORE_STATUS		(1<<15)		// Karajorma - This ship has been flaged for cleanup at the end of the mission
+#define SF2_NO_DEATH_SCREAM					(1<<16)		// Goober5000 - for WCS
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;

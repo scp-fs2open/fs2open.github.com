@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.52 $
- * $Date: 2006-05-27 17:00:02 $
- * $Author: taylor $
+ * $Revision: 2.53 $
+ * $Date: 2006-07-06 20:46:39 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2006/05/27 17:00:02  taylor
+ * only display that "no wavefile for voice" message if sound is enabled
+ *
  * Revision 2.51  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -1671,7 +1674,7 @@ void message_queue_process()
 					// MWA 3/24/98 -- save shipnum before killing message
 					// 
 					Assert( shipnum >= 0 );
-					if ( !(Ships[shipnum].flags & SF_SHIP_HAS_SCREAMED) ) {
+					if ( !(Ships[shipnum].flags & SF_SHIP_HAS_SCREAMED) && !(Ships[shipnum].flags2 & SF2_NO_DEATH_SCREAM) ) {
 						ship_scream( &Ships[shipnum] );
 					}
 					continue;							// this should keep us in the while() loop with same value of i.														

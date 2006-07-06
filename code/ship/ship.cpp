@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.347 $
- * $Date: 2006-07-06 04:26:00 $
+ * $Revision: 2.348 $
+ * $Date: 2006-07-06 20:46:39 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.347  2006/07/06 04:26:00  Goober5000
+ * fix a couple of typos
+ * --Goober5000
+ *
  * Revision 2.346  2006/07/06 04:06:04  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
@@ -13669,7 +13673,7 @@ void ship_maybe_lament()
 	int ship_index;
 
 	// no. because in multiplayer, its funny
-	if(Game_mode & GM_MULTIPLAYER)
+	if (Game_mode & GM_MULTIPLAYER)
 		return;
 
 	if (rand() % 4 == 0)
@@ -13722,21 +13726,27 @@ void ship_scream(ship *sp)
 // NOTE: this is only called for ships that are in a player wing (and not player ship)
 void ship_maybe_scream(ship *sp)
 {
-	if (rand() & 1)
+	// bail if screaming is disabled
+	if (sp->flags2 & SF2_NO_DEATH_SCREAM)
 		return;
 
 	// Goober5000 - WCSaga wants some screwy tweaks
 	if (Cmdline_wcsaga)
 	{
 		// everyone screams, but only check the limit for friendlies
+		// (double the limit because we do this 100% of the time, not 50% as below)
 		if (Player_ship->team == sp->team)
 		{
-			if (Player->scream_count >= PLAYER_MAX_SCREAMS)
+			if (Player->scream_count >= (2 * PLAYER_MAX_SCREAMS))
 				return;
 		}
 	}
 	else
 	{
+		// only scream 50% of the time
+		if (rand() & 1)
+			return;
+
 		// if on different teams (i.e. team v. team games in multiplayer), no scream
 		if (Player_ship->team != sp->team)
 			return;
