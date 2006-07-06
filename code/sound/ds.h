@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.19 $
- * $Date: 2006-06-27 04:58:58 $
+ * $Revision: 2.20 $
+ * $Date: 2006-07-06 22:02:11 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/06/27 04:58:58  taylor
+ * sync up current OpenAL changes
+ *  - "SoundDeviceOAL" reg option for user specified sound device (used instead of "Soundcard" for OpenAL)
+ *  - reset current context when we are leaving, may be leaving drivers in a bad state, and it hasn't hung up in quite a while
+ *  - if sound card (which DS or OAL) is set to "no sound" then be sure to disable both sound and music
+ * fix various things that Valgrind complained about
+ * make sure we can report both AL and ALC errors
+ * fix for ds_get_free_channel(), it shouldn't return -1 on an AL error
+ *
  * Revision 2.18  2006/05/14 05:22:43  taylor
  * forgot to remove STRICT define before commit, gets rid of a Windows compiler warning
  *
@@ -251,10 +260,7 @@ extern const char* openal_error_string(int get_alc = 0);
 	x;	\
 	const char *error_text = openal_error_string(0);	\
 	if ( error_text != NULL ) {	\
-		while ( error_text != NULL ) {	\
-			nprintf(("Warning", "SOUND: %s:%d - OpenAL error = '%s'\n", __FILE__, __LINE__, error_text));	\
-			error_text = openal_error_string(0);	\
-		}	\
+		nprintf(("Warning", "SOUND: %s:%d - OpenAL error = '%s'\n", __FILE__, __LINE__, error_text));	\
 		y;	\
 	}	\
 } while (0);
@@ -264,10 +270,7 @@ extern const char* openal_error_string(int get_alc = 0);
 	x;	\
 	const char *error_text = openal_error_string(0);	\
 	if ( error_text != NULL ) {	\
-		while ( error_text != NULL ) {	\
-			nprintf(("Sound", "OpenAL ERROR: \"%s\" in %s, line %i\n", error_text, __FILE__, __LINE__));	\
-			error_text = openal_error_string(0);	\
-		}	\
+		nprintf(("Sound", "OpenAL ERROR: \"%s\" in %s, line %i\n", error_text, __FILE__, __LINE__));	\
 	}	\
 } while (0);
 
@@ -276,10 +279,7 @@ extern const char* openal_error_string(int get_alc = 0);
 	x;	\
 	const char *error_text = openal_error_string(1);	\
 	if ( error_text != NULL ) {	\
-		while ( error_text != NULL ) {	\
-			nprintf(("Warning", "SOUND: %s:%d - OpenAL error = '%s'\n", __FILE__, __LINE__, error_text));	\
-			error_text = openal_error_string(1);	\
-		}	\
+		nprintf(("Warning", "SOUND: %s:%d - OpenAL error = '%s'\n", __FILE__, __LINE__, error_text));	\
 		y;	\
 	}	\
 } while (0);
@@ -289,10 +289,7 @@ extern const char* openal_error_string(int get_alc = 0);
 	x;	\
 	const char *error_text = openal_error_string(1);	\
 	if ( error_text != NULL ) {	\
-		while ( error_text != NULL ) {	\
-			nprintf(("Sound", "OpenAL ERROR: \"%s\" in %s, line %i\n", error_text, __FILE__, __LINE__));	\
-			error_text = openal_error_string(1);	\
-		}	\
+		nprintf(("Sound", "OpenAL ERROR: \"%s\" in %s, line %i\n", error_text, __FILE__, __LINE__));	\
 	}	\
 } while (0);
 #else
