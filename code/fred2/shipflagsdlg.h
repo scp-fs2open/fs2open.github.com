@@ -43,7 +43,6 @@ public:
 	CButton	m_hidden;
 	CButton	m_primitive_sensors;
 	CButton	m_no_subspace_drive;
-	CButton	m_no_bank;
 	CButton	m_affected_by_gravity;
 	CButton	m_toggle_subsystem_scanning;
 	CButton	m_escort;
@@ -81,7 +80,6 @@ protected:
 	afx_msg void OnHiddenFromSensors();
 	afx_msg void OnPrimitiveSensors();
 	afx_msg void OnNoSubspaceDrive();
-	afx_msg void OnNoBank();
 	afx_msg void OnAffectedByGravity();
 	afx_msg void OnIgnoreCount();
 	afx_msg void OnInvulnerable();

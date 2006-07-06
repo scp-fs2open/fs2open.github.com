@@ -907,7 +907,6 @@
 #define IDC_NUM_PLAYERS                 1481
 #define IDC_REDALERTCARRY               1481
 #define IDC_PLAYERS_LABEL               1482
-#define IDC_NO_BANK                     1482
 #define IDC_BROWSE_ANI                  1483
 #define IDC_AFFECTED_BY_GRAVITY         1483
 #define IDC_RESPAWNS                    1484

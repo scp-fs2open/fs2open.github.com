@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.19 $
- * $Date: 2006-07-06 20:46:39 $
+ * $Revision: 1.20 $
+ * $Date: 2006-07-06 21:00:12 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2006/07/06 20:46:39  Goober5000
+ * WCS screaming stuff
+ * --Goober5000
+ *
  * Revision 1.18  2006/06/23 09:17:02  karajorma
  * Make the ambient light sliders actually save their settings.
  *
@@ -1775,8 +1779,6 @@ int CFred_mission_save::save_objects()
 				fout(" \"primitive-sensors\"");
 			if (Ships[i].flags2 & SF2_NO_SUBSPACE_DRIVE)
 				fout(" \"no-subspace-drive\"");
-			if (Ships[i].flags2 & SF2_NO_BANK)
-				fout(" \"no-bank\"");
 			if (Ships[i].flags2 & SF2_AFFECTED_BY_GRAVITY)
 				fout(" \"affected-by-gravity\"");
 			if (Ships[i].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING)
