@@ -53,7 +53,6 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_HIDDEN_FROM_SENSORS, m_hidden);
 	DDX_Control(pDX, IDC_PRIMITIVE_SENSORS, m_primitive_sensors);
 	DDX_Control(pDX, IDC_NO_SUBSPACE_DRIVE, m_no_subspace_drive);
-	DDX_Control(pDX, IDC_NO_BANK, m_no_bank);
 	DDX_Control(pDX, IDC_AFFECTED_BY_GRAVITY, m_affected_by_gravity);
 	DDX_Control(pDX, IDC_ESCORT, m_escort);
 	DDX_Control(pDX, IDC_DESTROY_CHECK, m_destroy);
@@ -97,7 +96,6 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_HIDDEN_FROM_SENSORS, OnHiddenFromSensors)
 	ON_BN_CLICKED(IDC_PRIMITIVE_SENSORS, OnPrimitiveSensors)
 	ON_BN_CLICKED(IDC_NO_SUBSPACE_DRIVE, OnNoSubspaceDrive)
-	ON_BN_CLICKED(IDC_NO_BANK, OnNoBank)
 	ON_BN_CLICKED(IDC_AFFECTED_BY_GRAVITY, OnAffectedByGravity)
 	ON_BN_CLICKED(IDC_IGNORE_COUNT, OnIgnoreCount)
 	ON_BN_CLICKED(IDC_INVULNERABLE, OnInvulnerable)
@@ -131,7 +129,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	int i, j, first;
 	int protect_ship = 0, beam_protect_ship = 0, ignore_count = 0, reinforcement = 0, cargo_known = 0;
 	int destroy_before_mission = 0, no_arrival_music = 0, escort = 0, invulnerable = 0, targetable_as_bomb = 0;
-	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, no_bank = 0, affected_by_gravity = 0;
+	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, affected_by_gravity = 0;
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
 	int special_warp = 0, disable_messages = 0, set_class_dynamically = 0, team_loadout_store_status = 0;
 	int no_death_scream = 0;
@@ -156,7 +154,6 @@ BOOL ship_flags_dlg::OnInitDialog()
 					hidden_from_sensors = (Ships[i].flags & SF_HIDDEN_FROM_SENSORS) ? 1 : 0;
 					primitive_sensors = (Ships[i].flags2 & SF2_PRIMITIVE_SENSORS) ? 1 : 0;
 					no_subspace_drive = (Ships[i].flags2 & SF2_NO_SUBSPACE_DRIVE) ? 1 : 0;
-					no_bank = (Ships[i].flags2 & SF2_NO_BANK) ? 1 : 0;
 					affected_by_gravity = (Ships[i].flags2 & SF2_AFFECTED_BY_GRAVITY) ? 1 : 0;
 					toggle_subsystem_scanning = (Ships[i].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) ? 1 : 0;
 					ignore_count = (Ships[i].flags & SF_IGNORE_COUNT) ? 1 : 0;
@@ -203,7 +200,6 @@ BOOL ship_flags_dlg::OnInitDialog()
 					hidden_from_sensors = tristate_set(Ships[i].flags & SF_HIDDEN_FROM_SENSORS, hidden_from_sensors);
 					primitive_sensors = tristate_set(Ships[i].flags2 & SF2_PRIMITIVE_SENSORS, primitive_sensors);
 					no_subspace_drive = tristate_set(Ships[i].flags2 & SF2_NO_SUBSPACE_DRIVE, no_subspace_drive);
-					no_bank = tristate_set(Ships[i].flags2 & SF2_NO_BANK, no_bank);
 					affected_by_gravity = tristate_set(Ships[i].flags2 & SF2_AFFECTED_BY_GRAVITY, affected_by_gravity);
 					toggle_subsystem_scanning = tristate_set(Ships[i].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING, toggle_subsystem_scanning);
 					ignore_count = tristate_set(Ships[i].flags & SF_IGNORE_COUNT, ignore_count);
@@ -263,7 +259,6 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_hidden.SetCheck(hidden_from_sensors);
 	m_primitive_sensors.SetCheck(primitive_sensors);
 	m_no_subspace_drive.SetCheck(no_subspace_drive);
-	m_no_bank.SetCheck(no_bank);
 	m_affected_by_gravity.SetCheck(affected_by_gravity);
 	m_toggle_subsystem_scanning.SetCheck(toggle_subsystem_scanning);
 	m_scannable.SetCheck(scannable);
@@ -480,22 +475,6 @@ void ship_flags_dlg::update_ship(int ship)
 				set_modified();
 
 			Ships[ship].flags2 &= ~SF2_NO_SUBSPACE_DRIVE;
-			break;
-	}
-
-	switch (m_no_bank.GetCheck()) {
-		case 1:
-			if ( !(Ships[ship].flags2 & SF2_NO_BANK) )
-				set_modified();
-
-			Ships[ship].flags2 |= SF2_NO_BANK;
-			break;
-
-		case 0:
-			if ( Ships[ship].flags2 & SF2_NO_BANK )
-				set_modified();
-
-			Ships[ship].flags2 &= ~SF2_NO_BANK;
 			break;
 	}
 
@@ -833,15 +812,6 @@ void ship_flags_dlg::OnNoSubspaceDrive()
 		m_no_subspace_drive.SetCheck(0);
 	} else {
 		m_no_subspace_drive.SetCheck(1);
-	}
-}
-
-void ship_flags_dlg::OnNoBank() 
-{
-	if (m_no_bank.GetCheck() == 1) {
-		m_no_bank.SetCheck(0);
-	} else {
-		m_no_bank.SetCheck(1);
 	}
 }
 

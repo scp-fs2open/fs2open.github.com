@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.88 $
+ * $Revision: 2.89 $
  * $Author: Goober5000 $
- * $Date: 2006-07-06 20:46:39 $
+ * $Date: 2006-07-06 21:00:13 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2006/07/06 20:46:39  Goober5000
+ * WCS screaming stuff
+ * --Goober5000
+ *
  * Revision 2.87  2006/06/04 01:01:53  Goober5000
  * add fighterbay restriction code
  * --Goober5000
@@ -902,21 +906,20 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	13
+#define MAX_PARSE_OBJECT_FLAGS_2	12
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
 #define P2_SF2_NAV_CARRY_STATUS				(1<<2)
-#define P2_SF2_NO_BANK						(1<<3)
-#define P2_SF2_AFFECTED_BY_GRAVITY			(1<<4)
-#define P2_SF2_TOGGLE_SUBSYSTEM_SCANNING	(1<<5)
-#define P2_SF2_TARGETABLE_AS_BOMB			(1<<6)
-#define P2_SF2_NO_BUILTIN_MESSAGES			(1<<7)
-#define P2_SF2_PRIMARIES_LOCKED				(1<<8)
-#define P2_SF2_SECONDARIES_LOCKED			(1<<9)
-#define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<10)
-#define P2_SF2_TEAM_LOADOUT_STORE_STATUS	(1<<11)
-#define P2_SF2_NO_DEATH_SCREAM				(1<<12)
+#define P2_SF2_AFFECTED_BY_GRAVITY			(1<<3)
+#define P2_SF2_TOGGLE_SUBSYSTEM_SCANNING	(1<<4)
+#define P2_SF2_TARGETABLE_AS_BOMB			(1<<5)
+#define P2_SF2_NO_BUILTIN_MESSAGES			(1<<6)
+#define P2_SF2_PRIMARIES_LOCKED				(1<<7)
+#define P2_SF2_SECONDARIES_LOCKED			(1<<8)
+#define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<9)
+#define P2_SF2_TEAM_LOADOUT_STORE_STATUS	(1<<10)
+#define P2_SF2_NO_DEATH_SCREAM				(1<<11)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
