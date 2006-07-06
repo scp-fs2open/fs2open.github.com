@@ -59,7 +59,7 @@ void campaign_filelist_box::initialize()
 
 	i=0;
 
-	do 
+	while (i < num_files)
 	{
 		// make a call to get the mission info for this mission.  Passing a misison as the second
 		// parameter will prevent The_mission from getting overwritten.
@@ -75,8 +75,7 @@ void campaign_filelist_box::initialize()
 			AddString(mission_filenames[i]);
 
 		i++;
-	} while (i < num_files);
-
+	} 
 	
 
 	for (i=0; i<Campaign.num_missions; i++) {
