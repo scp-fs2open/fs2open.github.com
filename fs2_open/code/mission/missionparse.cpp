@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.184 $
- * $Date: 2006-07-06 06:04:51 $
+ * $Revision: 2.185 $
+ * $Date: 2006-07-06 20:46:39 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.184  2006/07/06 06:04:51  Goober5000
+ * fix subtle change from retail... dunno if it's a bug, but best to stay on the safe side
+ * --Goober5000
+ *
  * Revision 2.183  2006/07/06 04:06:03  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
@@ -1340,7 +1344,8 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"primaries-locked", 
 	"secondaries-locked",
 	"set-class-dynamically",
-	"team-loadout-store", 
+	"team-loadout-store",
+	"no-death-scream",
 };
 
 
@@ -2960,12 +2965,16 @@ int parse_create_object_sub(p_object *p_objp)
 		Ships[shipnum].flags2 |= SF2_SECONDARIES_LOCKED;
 
 	// Karajorma
-	if(p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY) 
+	if (p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY) 
 		Ships[shipnum].flags2 |= SF2_SET_CLASS_DYNAMICALLY;
 
 	// Karajorma
-	if(p_objp->flags2 & P2_SF2_TEAM_LOADOUT_STORE_STATUS) 
+	if (p_objp->flags2 & P2_SF2_TEAM_LOADOUT_STORE_STATUS) 
 		Ships[shipnum].flags2 |= SF2_TEAM_LOADOUT_STORE_STATUS;
+
+	// Goober5000
+	if (p_objp->flags2 & P2_SF2_NO_DEATH_SCREAM)
+		Ships[shipnum].flags2 |= SF2_NO_DEATH_SCREAM;
 
 	if (p_objp->flags & P_SF_GUARDIAN)
 		Ships[shipnum].ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;

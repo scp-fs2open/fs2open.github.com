@@ -911,6 +911,7 @@
 #define IDC_BROWSE_ANI                  1483
 #define IDC_AFFECTED_BY_GRAVITY         1483
 #define IDC_RESPAWNS                    1484
+#define IDC_NO_DEATH_SCREAM             1484
 #define IDC_RESPAWN_SPIN                1485
 #define IDC_OBJ_TEAM                    1489
 #define IDC_CAMPAIGN_TYPE               1491

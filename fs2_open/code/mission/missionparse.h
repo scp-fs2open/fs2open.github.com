@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.87 $
+ * $Revision: 2.88 $
  * $Author: Goober5000 $
- * $Date: 2006-06-04 01:01:53 $
+ * $Date: 2006-07-06 20:46:39 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2006/06/04 01:01:53  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 2.86  2006/06/02 09:06:12  karajorma
  * Team Loadout changes to accept variables names as legitimate values for ship class and quantity in loadout.
  * Added the new alt class system
@@ -898,7 +902,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	12
+#define MAX_PARSE_OBJECT_FLAGS_2	13
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -912,6 +916,7 @@ typedef struct p_object {
 #define P2_SF2_SECONDARIES_LOCKED			(1<<9)
 #define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<10)
 #define P2_SF2_TEAM_LOADOUT_STORE_STATUS	(1<<11)
+#define P2_SF2_NO_DEATH_SCREAM				(1<<12)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

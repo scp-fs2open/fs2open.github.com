@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.18 $
- * $Date: 2006-06-23 09:17:02 $
- * $Author: karajorma $
+ * $Revision: 1.19 $
+ * $Date: 2006-07-06 20:46:39 $
+ * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2006/06/23 09:17:02  karajorma
+ * Make the ambient light sliders actually save their settings.
+ *
  * Revision 1.17  2006/06/10 18:34:07  Goober5000
  * fix parsing/handling of debriefing persona indexes
  * --Goober5000
@@ -1790,6 +1793,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"set-class-dynamically\"");
 			if (Ships[i].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS)
 				fout(" \"secondaries-locked\"");
+			if (Ships[i].flags2 & SF2_NO_DEATH_SCREAM)
+				fout(" \"no-death-scream\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
