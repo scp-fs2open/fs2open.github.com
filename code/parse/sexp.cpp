@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.7 $
- * $Date: 2006-07-04 07:42:10 $
+ * $Revision: 2.259.2.8 $
+ * $Date: 2006-07-06 05:35:04 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.7  2006/07/04 07:42:10  Goober5000
+ * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
+ * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
+ * --Goober5000
+ *
  * Revision 2.259.2.6  2006/06/27 03:55:22  Goober5000
  * fix comment in preparation for code commit
  * --Goober5000
@@ -3770,8 +3775,8 @@ int get_sexp(char *token)
 		int n = CDR(CDR(start));
 		if (n >= 0)
 		{
-			free_sexp(n);
-			Sexp_nodes[CDR(start)].rest = -1;
+			// free the entire rest of the argument list
+			free_sexp2(n);	
 		}
 	}
 
