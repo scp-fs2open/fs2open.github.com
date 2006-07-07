@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.162 $
- * $Date: 2006-07-06 22:00:39 $
+ * $Revision: 2.163 $
+ * $Date: 2006-07-07 16:26:44 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.162  2006/07/06 22:00:39  taylor
+ * rest of the map/glow changes
+ *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
+ *  - same for glowpoints, back on a per-ship basis
+ *  - put specmaps and bumpmap back on a LOD0 and LOD1 affect (got changed to LOD0 only recently)
+ *  - fix glowmaps for shockwaves again
+ *  - add support for animated specmaps (mainly for TBP and Starfox mods)
+ * some minor code cleanup and compiler warning fixes
+ *
  * Revision 2.161  2006/07/06 04:06:04  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
@@ -6175,12 +6184,12 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 
 	//	model_resort_index_buffer(model->bsp_data, 1, tmap_num, model->buffer[i].index_buffer.index_buffer);
 		
-		gr_render_buffer(0, model->buffer[i].n_prim, model->buffer[i].index_buffer.index_buffer, Interp_tmap_flags);		
-	}
+		gr_render_buffer(0, model->buffer[i].n_prim, model->buffer[i].index_buffer.index_buffer, Interp_tmap_flags);
 
-	GLOWMAP = -1;
-	SPECMAP = -1;
-	BUMPMAP = -1;
+		GLOWMAP = -1;
+		SPECMAP = -1;
+		BUMPMAP = -1;
+	}
 
 //	if(model->flat_buffer != -1)gr_render_buffer(model->flat_buffer);
 	//we don't need this
