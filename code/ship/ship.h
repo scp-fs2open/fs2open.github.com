@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.159 $
- * $Date: 2006-07-06 22:00:39 $
- * $Author: taylor $
+ * $Revision: 2.160 $
+ * $Date: 2006-07-07 01:45:57 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.159  2006/07/06 22:00:39  taylor
+ * rest of the map/glow changes
+ *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
+ *  - same for glowpoints, back on a per-ship basis
+ *  - put specmaps and bumpmap back on a LOD0 and LOD1 affect (got changed to LOD0 only recently)
+ *  - fix glowmaps for shockwaves again
+ *  - add support for animated specmaps (mainly for TBP and Starfox mods)
+ * some minor code cleanup and compiler warning fixes
+ *
  * Revision 2.158  2006/07/06 21:00:13  Goober5000
  * remove obsolete (and hackish) flag
  * --Goober5000
@@ -1168,14 +1177,14 @@ typedef struct ship_subsys_info {
 #define SF2_NAVPOINT_CARRY					(1<<6)		// Kazan      - This ship autopilots with the player
 #define SF2_AFFECTED_BY_GRAVITY				(1<<7)		// Goober5000 - ship affected by gravity points
 #define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<8)		// Goober5000 - switch whether subsystems are scanned
-#define SF2_VANISHED						(1<<9)		//WMC - ship has vanished, used mostly for ship_wing_cleanup
+#define SF2_VANISHED						(1<<9)		// WMC - ship has vanished, used mostly for ship_wing_cleanup
 #define SF2_NO_BUILTIN_MESSAGES				(1<<10)		// Karajorma - ship should not send built-in messages
 #define SF2_PRIMARIES_LOCKED				(1<<11)		// Karajorma - This ship can't fire primary weapons
 #define SF2_SECONDARIES_LOCKED				(1<<12)		// Karajorma - This ship can't fire secondary weapons
 #define SF2_SET_CLASS_DYNAMICALLY			(1<<13)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
-#define SF2_TEAM_LOADOUT_STORE_STATUS		(1<<14)		// Karajorma - This ship has been flaged for cleanup at the end of the mission
+#define SF2_TEAM_LOADOUT_STORE_STATUS		(1<<14)		// Karajorma - This ship has been flagged for cleanup at the end of the mission
 #define SF2_NO_DEATH_SCREAM					(1<<15)		// Goober5000 - for WCS
-#define SF2_GLOWMAPS_DISABLED				(1<<14)		// taylor - to disable glow maps
+#define SF2_GLOWMAPS_DISABLED				(1<<16)		// taylor - to disable glow maps
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
