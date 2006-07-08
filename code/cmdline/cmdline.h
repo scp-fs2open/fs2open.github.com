@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.89.2.2 $
- * $Date: 2006-06-18 17:21:49 $
+ * $Revision: 2.89.2.3 $
+ * $Date: 2006-07-08 18:09:41 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89.2.2  2006/06/18 17:21:49  taylor
+ * add a -disable_fbo troubleshooting option for those ATI users having trouble with FBOs, but can still use envmapping otherwise
+ *
  * Revision 2.89.2.1  2006/06/15 00:16:23  taylor
  * remove previous attempts at the Y bug fix, it's now back to the retail code for that
  *
@@ -686,7 +689,6 @@ extern int Cmdline_no_fbo;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;
-extern int Cmdline_allslev;
 extern int Cmdline_dis_collisions;
 extern int Cmdline_dis_weapons;
 extern int Cmdline_noparseerrors;
