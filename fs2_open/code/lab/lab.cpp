@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.29 $
- * $Date: 2006-07-06 21:59:34 $
+ * $Revision: 1.30 $
+ * $Date: 2006-07-08 11:30:13 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2006/07/06 21:59:34  taylor
+ * add a render option to make the model not spin around, easier to work with in some cases, and better screenshots
+ *
  * Revision 1.28  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -967,7 +970,6 @@ void show_ship(float frametime)
 				bs = &pm->submodel[i];
 				if(bs->rad > largest_radius)
 					largest_radius = bs->rad;
-				break;
 			}
 		}
 
@@ -975,9 +977,9 @@ void show_ship(float frametime)
 		vec3d closeup_pos;
 		closeup_pos.xyz.x = 0.0f;
 		closeup_pos.xyz.y = 0.0f;
-		closeup_pos.xyz.z = -(largest_radius);
+		closeup_pos.xyz.z = -(largest_radius * 2.0f);
 
-		g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, PI/2.0f);
+		g3_set_view_matrix(&closeup_pos, &vmd_identity_matrix, 1.2f);
 	}
 
 	if (!Cmdline_nohtl) {
