@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-04-14 18:44:16 $
+ * $Revision: 2.24 $
+ * $Date: 2006-07-08 18:11:33 $
  * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/04/14 18:44:16  taylor
+ * remove all of the *_ex() parsing functions added for use by EFFs
+ * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
+ * make Mission_text and Mission_text_raw only use the memory needed, and free it when it doesn't need to parse anymore
+ *   (should work ok with FRED2, but I wasn't able to test it)
+ *
  * Revision 2.22  2006/01/13 08:27:43  taylor
  * swap order of pilot read and reset-to-defaults so that the various entries in the pilot file don't get clobbered needlessly
  *
@@ -197,7 +203,6 @@
 #include "popup/popup.h"
 #include "gamehelp/contexthelp.h"
 #include "globalincs/alphacolors.h"
-#include "cmdline/cmdline.h"
 #include "menuui/techmenu.h"	// for tech menu reset stuff
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
@@ -373,6 +378,7 @@ static int Campaign_mission_flags[MAX_MISSIONS];
 static char *Campaign_descs[MAX_CAMPAIGNS];
 static char *Campaign_descs_temp[MAX_CAMPAIGNS];
 static char *Campaign_file_names_temp[MAX_CAMPAIGNS];
+static int Simroom_show_all = 0;
 static int Standalone_mission_names_inited = 0;
 static int Campaign_names_inited = 0;
 static int Campaign_mission_names_inited = 0;
@@ -698,6 +704,7 @@ int build_campaign_mission_list_do_frame()
 {
 	int font_height = gr_get_font_height();
 	char str[256];
+	static int valid_missions_with_info = 0; // we use this to avoid blank entries in the mission list
 
 	// When no campaign files in data directory
 	if (Campaign.num_missions == 0) {
@@ -713,16 +720,16 @@ int build_campaign_mission_list_do_frame()
 	// Set global variable so we we'll have list available next time
 	Campaign_mission_names[Num_campaign_missions_with_info] = NULL;
 	Campaign_mission_flags[Num_campaign_missions_with_info] = 0;
-	
+
 	// Only allow missions already completed
-	if (Campaign.missions[Num_campaign_missions_with_info].completed || Cmdline_allslev) 
+	if (Campaign.missions[Num_campaign_missions_with_info].completed || Simroom_show_all) 
 	{
 		if (!get_mission_info(Campaign.missions[Num_campaign_missions_with_info].name)) 
 		{
 			// add to list
 			Campaign_mission_names[Num_campaign_missions_with_info] = vm_strdup(The_mission.name);
 			Campaign_mission_flags[Num_campaign_missions_with_info] = The_mission.game_type;
-			int y = Num_campaign_missions_with_info * (font_height + 2);
+			int y = valid_missions_with_info * (font_height + 2);
 
 			// determine some extra information
 			int flags = 0;
@@ -733,12 +740,14 @@ int build_campaign_mission_list_do_frame()
 			}				
 	
 			sim_room_line_add(READYROOM_LINE_CMISSION, Campaign_mission_names[Num_campaign_missions_with_info], Campaign.missions[Num_campaign_missions_with_info].name, list_x1 + C_SUBTEXT_X, y, flags);
+			valid_missions_with_info++;
 		}
 	}
 
 	Num_campaign_missions_with_info++;
 
 	if (Num_campaign_missions_with_info == Campaign.num_missions) {
+		valid_missions_with_info = 0;
 		Campaign_mission_names_inited = 1;
 		return 1;
 	} else {
@@ -815,6 +824,26 @@ void sim_room_build_listing()
 	// set appropriate slider size
 	max_num_entries_viewable = list_h / (font_height + 2);
 	Sim_room_slider.set_numberItems((Num_lines > max_num_entries_viewable) ? (Num_lines - max_num_entries_viewable) : 0);
+}
+
+void sim_room_reset_campaign_listing()
+{
+	// only reset if we got fully inited in the first place
+	if (!Campaign_mission_names_inited)
+		return;
+
+
+	for (int i=0; i<Campaign.num_missions; i++) {
+		if (Campaign_mission_names[i]) {
+			vm_free(Campaign_mission_names[i]);
+			Campaign_mission_names[i] = NULL;
+		}
+	}
+
+	Campaign_mission_names_inited = 0;
+	Num_campaign_missions_with_info = 0;
+
+	sim_room_build_listing();
 }
 
 int sim_room_line_query_visible(int n)
@@ -1085,6 +1114,7 @@ int sim_room_button_pressed(int n)
 			break;
 
 		case MISSION_TAB:
+			Simroom_show_all = 0;
 #ifdef OEM_BUILD
 			game_feature_not_in_demo_popup();
 //			gamesnd_play_iface(SND_GENERAL_FAIL);
@@ -1098,6 +1128,9 @@ int sim_room_button_pressed(int n)
 #endif
 
 		case CAMPAIGN_TAB:
+			if (Player->readyroom_listing_mode != MODE_CAMPAIGNS)
+				Simroom_show_all = 0;
+
 			Player->readyroom_listing_mode = MODE_CAMPAIGNS;
 			Scroll_offset = 0;
 			gamesnd_play_iface(SND_USER_SELECT);
@@ -1256,6 +1289,7 @@ void sim_room_init()
 	Sim_room_slider.create(&Ui_window, Sim_room_slider_coords[gr_screen.res][X_COORD], Sim_room_slider_coords[gr_screen.res][Y_COORD], Sim_room_slider_coords[gr_screen.res][W_COORD], Sim_room_slider_coords[gr_screen.res][H_COORD], 0, Sim_room_slider_filename[gr_screen.res], &sim_room_scroll_screen_up, &sim_room_scroll_screen_down, &sim_room_scroll_capture);
 
 	Num_campaign_missions_with_info = Num_standalone_missions_with_info = Standalone_mission_names_inited = Campaign_names_inited = Campaign_mission_names_inited = 0;
+	Simroom_show_all = 0;
 	sim_room_build_listing();
 
 	// load special mission icons
@@ -1399,7 +1433,7 @@ void sim_room_do_frame(float frametime)
 			else
 				Player->readyroom_listing_mode = MODE_CAMPAIGNS;
 
-			Selected_line = Scroll_offset = 0;
+			Selected_line = Scroll_offset = Simroom_show_all = 0;
 			gamesnd_play_iface(SND_USER_SELECT);
 			sim_room_build_listing();
 			break;
@@ -1407,6 +1441,13 @@ void sim_room_do_frame(float frametime)
 		case KEY_F2:
 			gamesnd_play_iface(SND_SWITCH_SCREENS);
 			gameseq_post_event(GS_EVENT_OPTIONS_MENU);
+			break;
+
+		case KEY_CTRLED | KEY_SHIFTED | KEY_S:
+			if (Player->readyroom_listing_mode == MODE_CAMPAIGNS) {
+				Simroom_show_all = !Simroom_show_all;
+				sim_room_reset_campaign_listing();
+			}
 			break;
 	}	// end switch
 

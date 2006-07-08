@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.91 $
- * $Date: 2006-06-27 04:55:53 $
+ * $Revision: 2.92 $
+ * $Date: 2006-07-08 18:11:33 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2006/06/27 04:55:53  taylor
+ * add -disable_fbo to troubleshoot crappy ATI drivers
+ * remove the temporary -alpha_alpha_blend option
+ * tack on an extra byte to the flags.lch file so that the launcher can easily detect if it's an OpenAL build or not
+ *
  * Revision 2.90  2006/06/15 00:37:11  taylor
  * remove previous attempts at the Y bug fix, it's now back to the retail code for that
  *
@@ -686,7 +691,6 @@ extern int Cmdline_no_fbo;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;
-extern int Cmdline_allslev;
 extern int Cmdline_dis_collisions;
 extern int Cmdline_dis_weapons;
 extern int Cmdline_noparseerrors;
