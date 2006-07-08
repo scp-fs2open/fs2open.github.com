@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.184  2006/07/06 04:06:04  Goober5000
+ * 1) complete (almost) changeover to reorganized texture mapping system
+ * 2) finally fix texture animation; textures now animate at the correct speed
+ * --Goober5000
+ *
  * Revision 2.183  2006/07/04 07:42:50  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
@@ -5379,6 +5384,15 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		for (i=0; i<pm->n_detail_levels; i++){
 			pm->detail_depth[i] = (objp->radius*20.0f + 20.0f) * i;
 		}
+
+#ifndef NDEBUG
+		// since debug builds always have cheats enabled, we don't necessarily get the chance
+		// to enable thrusters for previously non-loaded weapons (ie, weapons_page_in_cheats())
+		// when using cheat-keys, so we need to make sure and enable thrusters here if needed
+		if (pm->n_thrusters > 0) {
+			wip->wi_flags |= WIF_THRUSTER;
+		}
+#endif
 	}
 
 		// if the weapon was fired locked
