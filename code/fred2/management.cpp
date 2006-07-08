@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12 $
- * $Date: 2006-05-30 02:13:22 $
+ * $Revision: 1.12.2.1 $
+ * $Date: 2006-07-08 19:36:03 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2006/05/30 02:13:22  Goober5000
+ * add substitute music boxes to FRED, and reset music properly when mission is cleared
+ * --Goober5000
+ *
  * Revision 1.11  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -965,6 +969,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	// default stuff according to species and IFF
 	Ships[ship].team = Species_info[Ship_info[Ships[ship].ship_info_index].species].default_iff;
 	Ships[ship].flags = Iff_info[Ships[ship].team].default_ship_flags;
+	Ships[ship].flags2 = Iff_info[Ships[ship].team].default_ship_flags2;
 
 	// default shield setting
 	z1 = Shield_sys_teams[Ships[ship].team];
