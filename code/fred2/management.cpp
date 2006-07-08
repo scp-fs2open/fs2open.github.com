@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.13 $
- * $Date: 2006-06-02 09:39:11 $
- * $Author: karajorma $
+ * $Revision: 1.14 $
+ * $Date: 2006-07-08 19:35:52 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2006/06/02 09:39:11  karajorma
+ * Added Team Loadout from variables and alt ship classes changes
+ *
  * Revision 1.12  2006/05/30 02:13:22  Goober5000
  * add substitute music boxes to FRED, and reset music properly when mission is cleared
  * --Goober5000
@@ -969,6 +972,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	// default stuff according to species and IFF
 	Ships[ship].team = Species_info[Ship_info[Ships[ship].ship_info_index].species].default_iff;
 	Ships[ship].flags = Iff_info[Ships[ship].team].default_ship_flags;
+	Ships[ship].flags2 = Iff_info[Ships[ship].team].default_ship_flags2;
 
 	// default shield setting
 	z1 = Shield_sys_teams[Ships[ship].team];

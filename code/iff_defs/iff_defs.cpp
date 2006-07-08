@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.9 $
- * $Date: 2006-04-20 06:32:07 $
+ * $Revision: 1.10 $
+ * $Date: 2006-07-08 19:35:52 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.8  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -252,7 +255,7 @@ void iff_init()
 		iff->default_ship_flags = 0;
 		if (optional_string("$Default Ship Flags:"))
 		{
-			int i, j=0;
+			int i, j = 0;
 			char flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
 			int num_strings = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS);
 			for (i = 0; i < num_strings; i++)
@@ -269,6 +272,29 @@ void iff_init()
 
 			if (j == MAX_PARSE_OBJECT_FLAGS)
 				Warning(LOCATION, "Bogus string in iff default ship flags: %s\n", flag_strings[i]);
+		}
+
+		// again
+		iff->default_ship_flags2 = 0;
+		if (optional_string("$Default Ship Flags2:"))
+		{
+			int i, j = 0;
+			char flag_strings[MAX_PARSE_OBJECT_FLAGS_2][NAME_LENGTH];
+			int num_strings = stuff_string_list(flag_strings, MAX_PARSE_OBJECT_FLAGS_2);
+			for (i = 0; i < num_strings; i++)
+			{
+				for (j = 0; j < MAX_PARSE_OBJECT_FLAGS_2; j++)
+				{
+					if (!stricmp(flag_strings[i], Parse_object_flags_2[j]))
+					{
+						iff->default_ship_flags2 |= (1 << j);
+						break;
+					}
+				}
+			}
+
+			if (j == MAX_PARSE_OBJECT_FLAGS_2)
+				Warning(LOCATION, "Bogus string in iff default ship flags2: %s\n", flag_strings[i]);
 		}
 	}
 	

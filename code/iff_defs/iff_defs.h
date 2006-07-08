@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.h $
- * $Revision: 1.5 $
- * $Date: 2006-04-20 06:32:07 $
+ * $Revision: 1.6 $
+ * $Date: 2006-07-08 19:35:52 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.4  2006/01/28 04:33:06  Goober5000
  * fix all teams at war IFF behavior
  * --Goober5000
@@ -65,6 +68,7 @@ typedef struct iff_info {
 	// flags
 	int flags;
 	int default_ship_flags;
+	int default_ship_flags2;
 
 	// used internally, not parsed
 	int ai_rearm_timestamp;
