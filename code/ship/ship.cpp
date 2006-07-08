@@ -10,13 +10,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.350 $
- * $Date: 2006-07-06 22:00:39 $
- * $Author: taylor $
+ * $Revision: 2.351 $
+ * $Date: 2006-07-08 04:53:29 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.350  2006/07/06 22:00:39  taylor
+ * rest of the map/glow changes
+ *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
+ *  - same for glowpoints, back on a per-ship basis
+ *  - put specmaps and bumpmap back on a LOD0 and LOD1 affect (got changed to LOD0 only recently)
+ *  - fix glowmaps for shockwaves again
+ *  - add support for animated specmaps (mainly for TBP and Starfox mods)
+ * some minor code cleanup and compiler warning fixes
+ *
  * Revision 2.349  2006/07/06 21:24:36  Goober5000
  * fix ship type bug that Taylor mentioned
  * --Goober5000
@@ -6510,7 +6519,9 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 	{
 		// if this wing was ordered to depart by the player, set the current_wave equal to the total
 		// waves so we can mark the wing as gone and no other ships arrive
-		if (wingp->flags & WF_DEPARTURE_ORDERED)
+		// Goober5000 - also if it's departing... this is sort of, but not exactly, what :V: did;
+		// but it seems to be consistent with how it should behave
+		if (wingp->flags & (WF_WING_DEPARTING | WF_DEPARTURE_ORDERED))
 			wingp->current_wave = wingp->num_waves;
 
 		// Goober5000 - some changes for clarity and closing holes
