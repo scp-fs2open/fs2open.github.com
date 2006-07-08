@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.142 $
- * $Date: 2006-06-27 04:55:53 $
+ * $Revision: 2.143 $
+ * $Date: 2006-07-08 18:11:33 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.142  2006/06/27 04:55:53  taylor
+ * add -disable_fbo to troubleshoot crappy ATI drivers
+ * remove the temporary -alpha_alpha_blend option
+ * tack on an extra byte to the flags.lch file so that the launcher can easily detect if it's an OpenAL build or not
+ *
  * Revision 2.141  2006/06/15 00:37:11  taylor
  * remove previous attempts at the Y bug fix, it's now back to the retail code for that
  *
@@ -1175,7 +1180,6 @@ int Cmdline_no_fbo = 0;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
-cmdline_parm allslev_arg("-allslev", NULL);			// Cmdline_allslev  -- Give access to all single player missions
 cmdline_parm dis_collisions("-dis_collisions", NULL);	// Cmdline_dis_collisions
 cmdline_parm dis_weapons("-dis_weapons", NULL);		// Cmdline_dis_weapons
 cmdline_parm noparseerrors_arg("-noparseerrors", NULL);	// Cmdline_noparseerrors  -- turns off parsing errors -C
@@ -1191,7 +1195,6 @@ cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 #endif
 
 char *Cmdline_start_mission = NULL;
-int Cmdline_allslev = 0;
 int Cmdline_dis_collisions = 0;
 int Cmdline_dis_weapons = 0;
 int Cmdline_noparseerrors = 0;
@@ -1774,10 +1777,6 @@ bool SetCmdlineParams()
 		Cmdline_almission = almission_arg.str();
 		Cmdline_use_last_pilot = 1;
 		Cmdline_start_netgame = 1;
-	}
-
-	if (allslev_arg.found() ) {
-		Cmdline_allslev = 1;
 	}
 
 	if(dualscanlines_arg.found() ) {
