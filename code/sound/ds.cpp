@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.48 $
- * $Date: 2006-07-06 22:02:11 $
+ * $Revision: 2.49 $
+ * $Date: 2006-07-08 18:10:59 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2006/07/06 22:02:11  taylor
+ * some better handling of OpenAL errors during init
+ *
  * Revision 2.47  2006/06/27 04:58:58  taylor
  * sync up current OpenAL changes
  *  - "SoundDeviceOAL" reg option for user specified sound device (used instead of "Soundcard" for OpenAL)
@@ -679,6 +682,7 @@ static int AL_play_position = 0;
 ALCdevice *ds_sound_device = NULL;
 ALCcontext *ds_sound_context = NULL;
 
+ALCint AL_minor_version = 0;
 
 //--------------------------------------------------------------------------
 // openal_error_string()
@@ -1735,18 +1739,27 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	// FIXME: see function for problem!
 //	openal_get_best_device();
 
+	// version check (for 1.0 or 1.1)
+	alcGetIntegerv(NULL, ALC_MINOR_VERSION, sizeof(ALCint), &AL_minor_version);
+
+	// we need to clar out all errors before moving on
+	alcGetError(NULL);
+	alGetError();
+
 	// load OpenAL
 #ifdef _WIN32
-	// restrict to DirectSound rather than DirectSound3D (the default) here since we may have 'too many hardware sources'
-	// type problems (FIXME for a later date since I don't like this with future code) - taylor
-#ifdef AL_VERSION_1_1
+	// we require OpenAL 1.1 on Windows, so version check it
+	if (!AL_minor_version) {
+		MessageBox(NULL, "OpenAL 1.1 or newer is required for proper operation.  Please upgrade your OpenAL drivers, which\nare available at http://www.openal.org/downloads.html, and try running the game again.", NULL, MB_OK);
+		return -2;
+	}
+
+	// restrict to software rather than hardware (the default) devices here by default since
+	// we may have 'too many hardware sources' type problems otherwise - taylor
 	char *device_spec = os_config_read_string( NULL, "SoundDeviceOAL", "Generic Software" );
 	mprintf(("  Using '%s' as OpenAL sound device...\n", device_spec));
 
 	OpenAL_C_ErrorCheck( { ds_sound_device = alcOpenDevice( (const ALCchar *) device_spec ); }, goto AL_InitError );
-#else
-	OpenAL_C_ErrorCheck( { ds_sound_device = alcOpenDevice( (const ALubyte *) NOX("DirectSound") ); }, goto AL_InitError );
-#endif // AL_VERSION_1_1
 #else
 	OpenAL_C_ErrorCheck( { ds_sound_device = alcOpenDevice( NULL ); }, goto AL_InitError );
 #endif
@@ -1762,12 +1775,8 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	mprintf(( "  OpenAL Version    : %s\n", alGetString( AL_VERSION ) ));
 	mprintf(( "\n" ));
 
-	// make sure we can actually use AL_BYTE_LOKI (Mac OpenAL doesn't have it)
-#ifdef AL_VERSION_1_1
-	AL_play_position = alIsExtensionPresent( (const ALchar*)"AL_LOKI_play_position" );
-#else
-	AL_play_position = alIsExtensionPresent( (ALubyte*)"AL_LOKI_play_position" );
-#endif // AL_VERSION_1_1
+	// make sure we can actually use AL_BYTE_LOKI (Mac/Win OpenAL doesn't have it)
+	AL_play_position = alIsExtensionPresent( "AL_LOKI_play_position" );
 
 	if (AL_play_position)
 		mprintf(( "  Using extension \"AL_LOKI_play_position\".\n" ));

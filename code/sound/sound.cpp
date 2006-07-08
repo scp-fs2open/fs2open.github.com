@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.34 $
- * $Date: 2006-04-20 06:32:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.35 $
+ * $Date: 2006-07-08 18:10:59 $
+ * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2006/04/20 06:32:30  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.33  2006/03/22 21:42:55  taylor
  * address out-of-bounds issues for Sounds[] when unloading
  *
@@ -526,7 +529,7 @@ int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short 
 		return 0;
 
 	if (ds_initialized)	{
-		nprintf(( "Sound", "SOUND => Direct Sound is already initialized!\n" ));
+		nprintf(( "Sound", "SOUND => Audio is already initialized!\n" ));
 		return 1;
 	}
 
@@ -540,8 +543,13 @@ int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short 
 	while(1) {
 		rval = ds_init(use_a3d, use_eax, sample_rate, sample_bits);
 
-		if( rval != 0 ) {
-			nprintf(( "Sound", "SOUND ==> Error initializing DirectSound, trying again in 1 second.\n"));
+		// check for a fatal error first, in these cases don't retry to init
+		if ( rval == -2 ) {
+			nprintf(( "Sound", "SOUND ==> Fatal error initializing audio device, turn sound off.\n" ));
+			Cmdline_freespace_no_sound = Cmdline_freespace_no_music = 1;
+			goto Failure;
+		} else if ( rval != 0 ) {
+			nprintf(( "Sound", "SOUND ==> Error initializing audio device, trying again in 1 second.\n" ));
 			Sleep(1000);
 		} else {
 			break;
@@ -549,7 +557,7 @@ int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short 
 
 		if ( num_tries++ > 5 ) {
 			if ( !gave_warning ) {
-				MessageBox(NULL, XSTR("DirectSound could not be initialized.  If you are running any applications playing sound in the background, you should stop them before continuing.",971), NULL, MB_OK);
+				MessageBox(NULL, XSTR("Audio could not be initialized.  If you are running any applications playing sound in the background, you should stop them before continuing.",971), NULL, MB_OK);
 				gave_warning = 1;
 			} else {
 				goto Failure;
@@ -578,7 +586,7 @@ int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short 
 
 Failure:
 //	Warning(LOCATION, "Sound system was unable to be initialized.  If you continue, sound will be disabled.\n");
-	nprintf(( "Sound", "SOUND => Direct Sound init unsuccessful, continuing without sound.\n" ));
+	nprintf(( "Sound", "SOUND => Audio init unsuccessful, continuing without sound.\n" ));
 	return 0;
 }
 
