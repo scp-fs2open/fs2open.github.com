@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.60 $
- * $Date: 2006-07-09 01:55:41 $
+ * $Revision: 2.61 $
+ * $Date: 2006-07-09 04:05:43 $
  * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2006/07/09 01:55:41  Goober5000
+ * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
+ * this should fix Mantis #977
+ * --Goober5000
+ *
  * Revision 2.59  2006/06/07 18:47:51  karajorma
  * Fix 130 ships limit for Inferno builds
  *
@@ -7040,6 +7045,8 @@ void process_player_stats_block_packet(ubyte *data, header *hinfo)
 	switch(val){
 
 #ifdef INF_BUILD
+	short si_offset;
+
 	case STATS_ALLTIME_KILLS:
 		GET_SHORT(si_offset);
 		for (idx = si_offset; idx<MAX_SHIP_CLASSES && idx<si_offset+MAX_SHIPS_PER_PACKET; idx++) 
