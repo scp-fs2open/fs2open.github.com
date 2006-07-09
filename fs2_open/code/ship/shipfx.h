@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.11 $
- * $Date: 2006-06-07 04:47:43 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2006-07-09 01:55:42 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
@@ -201,7 +201,7 @@ extern void shipfx_warpin_start( object *objp );
 extern void shipfx_warpin_frame( object *objp, float frametime );
 
 // When a ship warps out, this gets called to start the effect
-extern void shipfx_warpout_start( object *objp, bool for_reals = true );
+extern void shipfx_warpout_start( object *objp );
 
 // During a ship warp out, this gets called each frame to move the ship
 extern void shipfx_warpout_frame( object *objp, float frametime );

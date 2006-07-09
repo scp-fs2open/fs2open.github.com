@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.80 $
- * $Date: 2006-07-06 21:00:12 $
+ * $Revision: 1.81 $
+ * $Date: 2006-07-09 01:55:41 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.80  2006/07/06 21:00:12  Goober5000
+ * remove obsolete (and hackish) flag
+ * --Goober5000
+ *
  * Revision 1.79  2006/07/05 23:48:20  Goober5000
  * fix for Mantis #571
  * --Goober5000/Backslash
@@ -2910,7 +2914,11 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 				return;
 
 			//	Don't keep firing at a ship that is in its death throes.
-			if (shipp->flags & (SF_DYING | SF_ARRIVING | SF_LIMBO))
+			if (shipp->flags & SF_DYING)
+				return;
+
+			// don't fire at a ship arriving or in limbo
+			if ((shipp->flags & SF_ARRIVING) || (shipp->flags2 & SF2_IN_LIMBO))
 				return;
 
 			if (is_ignore_object(aip, OBJ_INDEX(eno->trial_objp)))
@@ -14486,7 +14494,7 @@ int ai_need_new_target(object *pl_objp, int target_objnum)
 			return 1;
 		} else if (shipp->team == Ships[pl_objp->instance].team) {
 			return 1;
-		} else if(shipp->flags & SF_LIMBO) {
+		} else if (shipp->flags2 & SF2_IN_LIMBO) {
 			return 1;
 		}
 	}

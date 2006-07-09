@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.40 $
- * $Date: 2006-06-07 04:36:52 $
- * $Author: wmcoolmon $
+ * $Revision: 1.41 $
+ * $Date: 2006-07-09 01:55:41 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.40  2006/06/07 04:36:52  wmcoolmon
+ * Fix muzzleflashes for non-flak weapons. Begin commit of limbo code.
+ *
  * Revision 1.39  2006/06/01 04:40:41  taylor
  * be sure to to reset ok_to_fire between weapon checks to make sure we don't count something by mistake
  *
@@ -431,8 +434,12 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		}
 
 		// don't shoot at arriving ships
+		if (shipp->flags & SF_ARRIVING) {
+			return 0;
+		}
+
 		//WMC - Or limbo ships
-		if (shipp->flags & (SF_ARRIVING | SF_LIMBO)) {
+		if (shipp->flags2 & SF2_IN_LIMBO) {
 			return 0;
 		}
 
