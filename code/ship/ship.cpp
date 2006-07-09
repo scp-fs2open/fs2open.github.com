@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.352 $
- * $Date: 2006-07-09 01:55:41 $
+ * $Revision: 2.353 $
+ * $Date: 2006-07-09 06:07:13 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.352  2006/07/09 01:55:41  Goober5000
+ * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
+ * this should fix Mantis #977
+ * --Goober5000
+ *
  * Revision 2.351  2006/07/08 04:53:29  Goober5000
  * fix for Mantis #967
  * --Goober5000
@@ -15164,20 +15169,21 @@ int ship_is_tagged(object *objp)
 float ship_get_max_speed(ship *shipp)
 {
 	float max_speed;
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-	int ship_info_index = shipp->ship_info_index;
+	// Goober5000 - maybe we're using cap-waypoint-speed
+	int cap = Ai_info[shipp->ai_index].waypoint_speed_cap;
+	if (cap > 0)
+		return cap;
 
 	// max overclock
-	max_speed = Ship_info[ship_info_index].max_overclocked_speed;
+	max_speed = sip->max_overclocked_speed;
 
 	// normal max speed
-	max_speed = MAX(max_speed, Ship_info[ship_info_index].max_vel.xyz.z);
+	max_speed = MAX(max_speed, sip->max_vel.xyz.z);
 
 	// afterburn
-	max_speed = MAX(max_speed, Ship_info[ship_info_index].afterburner_max_vel.xyz.z);
-
-	// maybe cap-waypoint-speed has set it higher - Goober5000
-	max_speed = MAX(max_speed, Ai_info[shipp->ai_index].waypoint_speed_cap);
+	max_speed = MAX(max_speed, sip->afterburner_max_vel.xyz.z);
 
 	return max_speed;
 }
