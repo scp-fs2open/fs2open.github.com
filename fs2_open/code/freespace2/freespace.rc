@@ -389,19 +389,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
 #pragma code_page(1252)
 #endif //_WIN32
 
-/////////////////////////////////////////////////////////////////////////////
-//
-// SRGRAMMAR
-//
-
-#ifdef FS2_VOICER
-IDR_CMD_CFG             SRGRAMMAR DISCARDABLE   "..\..\code\sound\phrases.cfg"
-#endif
-
-
 #endif    // English (U.K.) resources
 /////////////////////////////////////////////////////////////////////////////
-
 
 
 #ifndef APSTUDIO_INVOKED
@@ -414,3 +403,10 @@ IDR_CMD_CFG             SRGRAMMAR DISCARDABLE   "..\..\code\sound\phrases.cfg"
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// SRGRAMMAR
+//
+
+IDR_CMD_CFG             SRGRAMMAR DISCARDABLE   "..\..\code\sound\phrases.cfg"
