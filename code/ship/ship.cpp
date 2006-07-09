@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.351 $
- * $Date: 2006-07-08 04:53:29 $
+ * $Revision: 2.352 $
+ * $Date: 2006-07-09 01:55:41 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.351  2006/07/08 04:53:29  Goober5000
+ * fix for Mantis #967
+ * --Goober5000
+ *
  * Revision 2.350  2006/07/06 22:00:39  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
@@ -5861,9 +5865,8 @@ void ship_render(object * obj)
 
 	// Make ships that are warping in not render during stage 1
 	//WMC - Or limbo.
-	if (!(shipp->flags & (SF_ARRIVING_STAGE_1|SF_LIMBO)))
+	if (!(shipp->flags & SF_ARRIVING_STAGE_1) && !(shipp->flags2 & SF2_IN_LIMBO))
 	{				
-
 		if ( Ship_shadows && shipfx_in_shadow( obj ) )	{
 			light_set_shadow(1);
 		} else {
@@ -6638,7 +6641,7 @@ void ship_vanished(object *objp)
 
 		// demo recording
 		if(Game_mode & GM_DEMO_RECORD){
-			demo_POST_departed(objp->signature, sp->flags, true);
+			demo_POST_departed(objp->signature, sp->flags);
 		}
 
 		// add the information to the exited ship list
@@ -6663,15 +6666,15 @@ void ship_vanished(object *objp)
 	}
 }
 
-void ship_departed( int num, bool for_reals )
+void ship_departed( int num )
 {
 	ship *sp;
 
 	sp = &Ships[num];
 
 	// demo recording
-	if(Game_mode & GM_DEMO_RECORD){
-		demo_POST_departed(Objects[Ships[num].objnum].signature, Ships[num].flags, for_reals ? 1 : 0);
+	if(Game_mode & GM_DEMO_RECORD) {
+		demo_POST_departed(Objects[Ships[num].objnum].signature, Ships[num].flags);
 	}
 
 	// add the information to the exited ship list
@@ -6685,15 +6688,16 @@ void ship_departed( int num, bool for_reals )
 	// see if this ship departed within the radius of a jump node -- if so, put the node name into
 	// the secondary mission log field
 	jump_node *jnp = jumpnode_get_which_in(&Objects[sp->objnum]);
-	if(jnp)
+	if (jnp)
 		mission_log_add_entry(LOG_SHIP_DEPARTED, sp->ship_name, jnp->get_name_ptr(), sp->wingnum);
 	else
 		mission_log_add_entry(LOG_SHIP_DEPARTED, sp->ship_name, NULL, sp->wingnum);
 
-	if(!for_reals)
+	if (sp->flags2 & SF2_DEPART_TO_LIMBO)
 	{
-		sp->flags &= ~(SF_DEPARTING);
-		sp->flags |= SF_LIMBO;
+		sp->flags &= ~SF_DEPARTING;
+		sp->flags2 &= ~SF2_DEPART_TO_LIMBO;
+		sp->flags2 |= SF2_IN_LIMBO;
 		return;
 	}
 		
@@ -7912,10 +7916,8 @@ void ship_process_post(object * obj, float frametime)
 	//Nothing at all.
 	//
 	//>_>
-	if(shipp->flags & SF_LIMBO)
-	{
+	if (shipp->flags2 & SF2_IN_LIMBO)
 		return;
-	}
 
 	update_ets(obj, frametime);
 
@@ -14775,7 +14777,7 @@ int ship_get_random_targetable_ship()
 			continue;
 
 		// skip if we aren't supposed to target it
-		if ( Ships[Objects[so->objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS )
+		if ( (Ships[Objects[so->objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[Objects[so->objnum].instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
 			continue;
 
 		if (idx >= MAX_SHIPS) {

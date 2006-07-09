@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.160 $
- * $Date: 2006-07-07 01:45:57 $
+ * $Revision: 2.161 $
+ * $Date: 2006-07-09 01:55:41 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.160  2006/07/07 01:45:57  Goober5000
+ * fixed something that slipped by taylor ;)
+ * (caused by having extra flags in the main branch)
+ * --Goober5000
+ *
  * Revision 2.159  2006/07/06 22:00:39  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
@@ -43,9 +48,6 @@
  *
  * Revision 2.154  2006/06/07 05:19:49  wmcoolmon
  * Move fog disappearance factor to objecttypes.tbl
- *
- * Revision 2.153  2006/06/07 04:47:43  wmcoolmon
- * Limbo flag support; removed unneeded muzzle flash flag
  *
  * Revision 2.152  2006/06/04 01:01:53  Goober5000
  * add fighterbay restriction code
@@ -1156,7 +1158,7 @@ typedef struct ship_subsys_info {
 #define	SF_SHIP_HAS_SCREAMED		(1 << 10)	// ship has let out a death scream
 #define	SF_RED_ALERT_STORE_STATUS (1 << 9)	// ship status should be stored/restored if red alert mission
 #define	SF_VAPORIZE					(1<<8)		// ship is vaporized by beam - alternative death sequence
-#define SF_LIMBO					(1<<7)		//WMC - Ship isn't in mission, but still in Ships array
+//#define	SF_INVULNERABLE			(1 << 7)
 
 // MWA -- don't go below whatever bitfield is used for Fred above (currently 7)!!!!
 
@@ -1185,9 +1187,12 @@ typedef struct ship_subsys_info {
 #define SF2_TEAM_LOADOUT_STORE_STATUS		(1<<14)		// Karajorma - This ship has been flagged for cleanup at the end of the mission
 #define SF2_NO_DEATH_SCREAM					(1<<15)		// Goober5000 - for WCS
 #define SF2_GLOWMAPS_DISABLED				(1<<16)		// taylor - to disable glow maps
+#define SF2_IN_LIMBO						(1<<17)		// WMC - Ship isn't in mission, but still in Ships array
+#define SF2_DEPART_TO_LIMBO					(1<<18)		// WMC/Goober5000
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
+extern int TARGET_SHIP_IGNORE_FLAGS_2;
 
 #define MAX_DAMAGE_SLOTS	32
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
@@ -1251,7 +1256,6 @@ typedef struct ship {
 	int warp_anim_fps;
 	vec3d	warp_effect_pos;		// where the warp in effect comes in at
 	vec3d	warp_effect_fvec;		// The warp in effect's forward vector
-	bool warpout_for_reals;
 	int	next_fireball;
 
 	int	next_hit_spark;
@@ -2183,7 +2187,7 @@ extern int ship_query_state(char *name);
 int ship_primary_bank_has_ammo(int shipnum);	// check if current primary bank has ammo
 int ship_secondary_bank_has_ammo(int shipnum);	// check if current secondary bank has ammo
 
-void ship_departed( int num, bool for_reals = true );
+void ship_departed( int num );
 int ship_engine_ok_to_warp(ship *sp);		// check if ship has engine power to warp
 int ship_navigation_ok_to_warp(ship *sp);	// check if ship has navigation power to warp
 

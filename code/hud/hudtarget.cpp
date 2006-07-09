@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.91 $
- * $Date: 2006-07-02 22:53:53 $
- * $Author: karajorma $
+ * $Revision: 2.92 $
+ * $Date: 2006-07-09 01:55:41 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2006/07/02 22:53:53  karajorma
+ * Restore the Hostile Warning triangles and the "On your Six" warning messages.
+ *
  * Revision 2.90  2006/06/24 18:01:55  Goober5000
  * doh!  sorry for blaming this on you, WMC
  * --Goober5000
@@ -575,7 +578,9 @@
 
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
-int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_LIMBO|SF_HIDDEN_FROM_SENSORS);
+int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED | SF_DEPART_WARP | SF_DYING | SF_ARRIVING_STAGE_1 | SF_HIDDEN_FROM_SENSORS);
+int TARGET_SHIP_IGNORE_FLAGS_2 = (SF2_IN_LIMBO);
+
 
 // Global values for the target bracket width and height, used for debugging
 int Hud_target_w, Hud_target_h;
@@ -1866,7 +1871,7 @@ void hud_target_common(int team_mask, int next_flag)
 		}
 
 		if ( A->type == OBJ_SHIP ) {
-			if ( Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS ){
+			if ( (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[A->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
 				continue;
 			}
 			is_ship=1;
@@ -1886,7 +1891,7 @@ void hud_target_common(int team_mask, int next_flag)
 				}
 			}
 
-			if ( A == Player_obj || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) ){
+			if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
 				continue;
 			}
 
@@ -2051,7 +2056,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 			}
 
 			// check if ignore
-			if ( Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS ){
+			if ( (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[A->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
 				continue;
 			}
 
@@ -2115,7 +2120,7 @@ void hud_target_uninspected_cargo(int next_flag)
 
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-		if ( shipp->flags & TARGET_SHIP_IGNORE_FLAGS ) {
+		if ( (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
 			continue;
 		}
 
@@ -2169,7 +2174,7 @@ void hud_target_newest_ship()
 		A = &Objects[so->objnum];
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) )
+		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
 			continue;
 
 		// ignore navbuoys
@@ -2634,7 +2639,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 	}
 
 	// check if player or ignore ship
-	if ( (esct->shipp->objnum == OBJ_INDEX(Player_obj)) || (esct->shipp->flags & TARGET_SHIP_IGNORE_FLAGS) ) {
+	if ( (esct->shipp->objnum == OBJ_INDEX(Player_obj)) || (esct->shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (esct->shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
 		return;
 	}
 
@@ -2739,7 +2744,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 
 	if ( (attacked_objnum >= 0) && (attacked_objnum != player_obj_index) ) {
 		// bail if player does not have target
-		if ( Player_ai->target_objnum == -1) {
+		if ( Player_ai->target_objnum == -1 ) {
 			goto Target_closest_done;
 		}
 
@@ -2748,7 +2753,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 		}
 
 		// bail if ship is to be ignored
-		if (Ships[Objects[attacked_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS) {
+		if ( (Ships[Objects[attacked_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[Objects[attacked_objnum].instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
 			goto Target_closest_done;
 		}
 	}
@@ -2908,7 +2913,7 @@ void hud_target_targets_target()
 		goto ttt_fail;
 	}
 
-	if ( Ships[objp->instance].flags & TARGET_SHIP_IGNORE_FLAGS ) {
+	if ( (Ships[objp->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[objp->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
 		goto ttt_fail;
 	}
 
@@ -2995,7 +3000,7 @@ void hud_target_in_reticle_new()
 
 
 		if ( A->type == OBJ_SHIP ) {
-			if ( Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS ){
+			if ( (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[A->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
 				continue;
 			}
 		}
@@ -3083,7 +3088,7 @@ void hud_target_in_reticle_old()
 		}
 
 		if ( A->type == OBJ_SHIP ) {
-			if ( Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS ){
+			if ( (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[A->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
 				continue;
 			}
 		}
@@ -3158,7 +3163,7 @@ void hud_target_subsystem_in_reticle()
 	int shipnum = targetp->instance;
 
 	if ( targetp->type == OBJ_SHIP ) {
-		if ( Ships[shipnum].flags & TARGET_SHIP_IGNORE_FLAGS ) {
+		if ( (Ships[shipnum].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[shipnum].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
 			return;
 		}
 	}
@@ -4213,7 +4218,7 @@ void hud_show_hostile_triangle()
 		aip = &Ai_info[Ships[A->instance].ai_index];
 
 		// dont look at ignore ships
-		if ( sp->flags & TARGET_SHIP_IGNORE_FLAGS ) {
+		if ( (sp->flags & TARGET_SHIP_IGNORE_FLAGS) || (sp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
 			continue;
 		}
 
@@ -5880,7 +5885,7 @@ void hud_target_next_list(int hostile, int next_flag)
 		A = &Objects[so->objnum];
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) )
+		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
 			continue;
 
 		// choose from the correct team
@@ -6078,7 +6083,7 @@ int hud_target_closest_repair_ship(int goal_objnum)
 			continue;
 		}
 
-		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) )
+		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
 			continue;
 
 		// only consider friendly ships
@@ -6125,10 +6130,13 @@ int hud_target_closest_repair_ship(int goal_objnum)
 
 void hud_target_toggle_hidden_from_sensors()
 {
-	if ( TARGET_SHIP_IGNORE_FLAGS & SF_HIDDEN_FROM_SENSORS ) {
+	if (TARGET_SHIP_IGNORE_FLAGS & SF_HIDDEN_FROM_SENSORS)
+	{
 		TARGET_SHIP_IGNORE_FLAGS &= ~SF_HIDDEN_FROM_SENSORS;
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Target hiding from sensors disabled"));
-	} else {
+	}
+	else
+	{
 		TARGET_SHIP_IGNORE_FLAGS |= SF_HIDDEN_FROM_SENSORS;
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Target hiding from sensors enabled"));
 	}
@@ -6148,7 +6156,7 @@ void hud_target_closest_uninspected_object()
 		A = &Objects[so->objnum];
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) ){
+		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
 			continue;
 		}
 
@@ -6210,7 +6218,7 @@ void hud_target_uninspected_object(int next_flag)
 		A = &Objects[so->objnum];
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) )
+		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
 			continue;
 
 		// ignore all non-cargo carrying craft
@@ -6327,7 +6335,7 @@ int hud_target_last_transmit_newest()
 	return latest_slot;
 }
 
-// called externally to set the player target to the last ship which sent a tranmission to the player
+// called externally to set the player target to the last ship which sent a transmission to the player
 void hud_target_last_transmit()
 {
 	int i;
@@ -6346,6 +6354,7 @@ void hud_target_last_transmit()
 	int play_fail_sound = 1;
 	int transmit_index = Transmit_target_current_slot;
 	Assert(transmit_index >= 0);
+
 	for ( i = 0; i < MAX_TRANSMIT_TARGETS; i++ ) {
 		if ( Transmit_target_list[transmit_index].objnum >= 0 ) {
 			int transmit_objnum = Transmit_target_list[transmit_index].objnum;
@@ -6354,7 +6363,9 @@ void hud_target_last_transmit()
 				play_fail_sound = 0;
 			} else {
 				if ( Transmit_target_list[transmit_index].objsig == Objects[Transmit_target_list[transmit_index].objnum].signature ) {
-					if ( !(Ships[Objects[transmit_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS) ) {
+					if ( !(Ships[Objects[transmit_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS)
+						&& !(Ships[Objects[transmit_objnum].instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
+					{
 						Transmit_target_current_slot = transmit_index-1;
 						if ( Transmit_target_current_slot < 0 ) {
 							Transmit_target_current_slot = MAX_TRANSMIT_TARGETS - 1;

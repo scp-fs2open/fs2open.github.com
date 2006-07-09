@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.252 $
- * $Date: 2006-07-06 04:06:03 $
+ * $Revision: 2.253 $
+ * $Date: 2006-07-09 01:55:41 $
  * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.252  2006/07/06 04:06:03  Goober5000
+ * 1) complete (almost) changeover to reorganized texture mapping system
+ * 2) finally fix texture animation; textures now animate at the correct speed
+ * --Goober5000
+ *
  * Revision 2.251  2006/07/05 23:35:42  Goober5000
  * cvs comment tweaks
  *
@@ -3226,7 +3231,10 @@ DCF(warp, "Tests warpin effect")
 					if(warpin)
 						shipfx_warpin_start(&Objects[Ships[idx].objnum]);
 					else
-						shipfx_warpout_start(&Objects[Ships[idx].objnum], false);
+					{
+						Ships[idx].flags2 |= SF2_DEPART_TO_LIMBO;
+						shipfx_warpout_start(&Objects[Ships[idx].objnum]);
+					}
 				}
 			}
 			else if(idx < 0)
@@ -3236,7 +3244,10 @@ DCF(warp, "Tests warpin effect")
 					if(warpin)
 						shipfx_warpin_start(&Objects[Player_ai->target_objnum]);
 					else
-						shipfx_warpout_start(&Objects[Player_ai->target_objnum], false);
+					{
+						Ships[idx].flags2 |= SF2_DEPART_TO_LIMBO;
+						shipfx_warpout_start(&Objects[Player_ai->target_objnum]);
+					}
 				}
 			}
 		}

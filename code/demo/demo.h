@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Demo/Demo.h $
- * $Revision: 2.3 $
- * $Date: 2006-06-07 04:38:29 $
- * $Author: wmcoolmon $
+ * $Revision: 2.4 $
+ * $Date: 2006-07-09 01:55:41 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
@@ -115,7 +115,7 @@ void demo_POST_warpin(int signature, int ship_flags);
 void demo_POST_warpout(int signature, int ship_flags);
 
 // post a departed event
-void demo_POST_departed(int signature, int ship_flags, int for_reals);
+void demo_POST_departed(int signature, int ship_flags);
 
 // post a ship kill event
 void demo_POST_ship_kill(object *objp);

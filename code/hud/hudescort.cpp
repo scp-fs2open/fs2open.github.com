@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.30 $
- * $Date: 2006-06-07 04:39:30 $
- * $Author: wmcoolmon $
+ * $Revision: 2.31 $
+ * $Date: 2006-07-09 01:55:41 $
+ * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/06/07 04:39:30  wmcoolmon
+ * Limbo flag support
+ *
  * Revision 2.29  2006/02/16 05:00:01  taylor
  * various bmpman related fixes
  *  - some new error checking (and fixes related to that) and cleanup
@@ -688,7 +691,9 @@ void hud_escort_cull_list()
 		for ( i = 0; i < Num_escort_ships; i++ ) {
 			objnum = Escort_ships[i].objnum;
 			Assert( objnum >=0 && objnum < MAX_OBJECTS );
-			if ( Objects[objnum].flags & OF_SHOULD_BE_DEAD || Ships[Objects[objnum].instance].flags & (SF_HIDDEN_FROM_SENSORS | SF_LIMBO) ) {
+			object *objp = &Objects[objnum];
+
+			if ((objp->flags & OF_SHOULD_BE_DEAD) || (Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS) || (Ships[objp->instance].flags2 & SF2_IN_LIMBO)) {
 				hud_remove_ship_from_escort_index(i, objnum);
 				i--;
 			}

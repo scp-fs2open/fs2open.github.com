@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-06-07 04:44:57 $
- * $Author: wmcoolmon $
+ * $Revision: 2.24 $
+ * $Date: 2006-07-09 01:55:41 $
+ * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/06/07 04:44:57  wmcoolmon
+ * Limbo flag support
+ *
  * Revision 2.22  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -411,8 +414,10 @@ void radar_plot_object_std( object *objp )
 		// Place to cull ships, such as NavBuoys
 		//WMC - No limbo ships on radar.
 		//As far as the radar is concerned, they don't even exist.
-		if(Ships[objp->instance].flags & SF_LIMBO)
+		if (Ships[objp->instance].flags2 & SF2_IN_LIMBO) {
 			return;
+		}
+
 		break;
 		
 	case OBJ_JUMP_NODE:
@@ -431,8 +436,10 @@ void radar_plot_object_std( object *objp )
 		}
 
 		//if a local ssm is in subspace, return
-		if (Weapons[objp->instance].lssm_stage==3)
+		if (Weapons[objp->instance].lssm_stage == 3) {
 			return;
+		}
+
 		break;
 	}
 

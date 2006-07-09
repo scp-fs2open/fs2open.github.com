@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-06-07 04:42:22 $
- * $Author: wmcoolmon $
+ * $Revision: 2.19 $
+ * $Date: 2006-07-09 01:55:41 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/06/07 04:42:22  wmcoolmon
+ * Limbo flag support; further scripting 3.6.9 update
+ *
  * Revision 2.17  2005/12/29 08:08:39  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -698,11 +701,12 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	}
 
 	// Make ships that are warping in not get collision detection done
-	// WMC - We don't need collision to LIMBO!
-//	if ( Ships[num].flags & SF_ARRIVING ) return 0;
-	if ( Ships[num].flags & (SF_ARRIVING_STAGE_1|SF_LIMBO) ) { 
+	if ( Ships[num].flags & SF_ARRIVING )
 		return 0;
-	}
+
+	// WMC - We don't need collision to LIMBO!
+	if ( Ships[num].flags2 & SF2_IN_LIMBO ) 
+		return 0;
 
 	// Don't do collision detection for docking ships, since they will always collide while trying to dock
 	if ( ships_are_docking(heavy_obj, light_obj) ) {
@@ -1855,9 +1859,9 @@ int collide_ship_ship( obj_pair * pair )
 		sif_a_flags = Ship_info[Ships[A->instance].ship_info_index].flags;
 		sif_b_flags = Ship_info[Ships[B->instance].ship_info_index].flags;
 
-		// if ship is huge and warping in or out
-		if ( (Ships[A->instance].flags & (SF_ARRIVING_STAGE_1 | SF_LIMBO)) && (sif_a_flags & (SIF_HUGE_SHIP))
-			||(Ships[B->instance].flags & (SF_ARRIVING_STAGE_1 | SF_LIMBO)) && (sif_b_flags & (SIF_HUGE_SHIP)) ) {
+		// if ship is huge and warping in
+		if ( ((Ships[A->instance].flags & SF_ARRIVING_STAGE_1 || Ships[A->instance].flags2 & SF2_IN_LIMBO) && (sif_a_flags & SIF_HUGE_SHIP))
+			|| ((Ships[B->instance].flags & SF_ARRIVING_STAGE_1 || Ships[B->instance].flags2 & SF2_IN_LIMBO) && (sif_b_flags & SIF_HUGE_SHIP)) ) {
 			pair->next_check_time = timestamp(0);	// check next time
 			return 0;
 		}

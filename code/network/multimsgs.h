@@ -9,15 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.11 $
- * $Date: 2006-06-07 18:47:51 $
- * $Author: karajorma $
+ * $Revision: 2.12 $
+ * $Date: 2006-07-09 01:55:41 $
+ * $Author: Goober5000 $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.10  2006/06/07 04:49:20  wmcoolmon
- * Pass to get any files that I missed
+ * Revision 2.11  2006/06/07 18:47:51  karajorma
+ * Fix 130 ships limit for Inferno builds
  *
  * Revision 2.9  2006/06/02 09:10:02  karajorma
  * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
@@ -529,7 +529,7 @@ void send_wing_create_packet( wing *wingp, int num_to_create, int pre_create_cou
 void send_ship_create_packet( object *objp, int is_support = 0 );
 
 // packet indicating a ship is departing
-void send_ship_depart_packet( object *objp, bool for_reals );
+void send_ship_depart_packet( object *objp );
 
 // send a mission log item packet
 void send_mission_log_packet( int entry );

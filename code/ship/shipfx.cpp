@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.70 $
- * $Date: 2006-07-05 23:35:43 $
+ * $Revision: 2.71 $
+ * $Date: 2006-07-09 01:55:41 $
  * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2006/07/05 23:35:43  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.69  2006/06/15 06:18:35  Goober5000
  * make warpout work properly even if the player is docked to something
  * --Goober5000
@@ -1053,8 +1056,8 @@ void shipfx_warpin_start( object *objp )
 		return;
 	}
 
-	if(shipp->flags & SF_LIMBO)
-		shipp->flags &= (~SF_LIMBO);
+	if (shipp->flags2 & SF2_IN_LIMBO)
+		shipp->flags2 &= ~SF2_IN_LIMBO;
 
 	// if there is no arrival warp, then skip the whole thing
 	if (shipp->flags & SF_NO_ARRIVAL_WARP)
@@ -1239,11 +1242,11 @@ void shipfx_warpout_helper(object *objp, dock_function_info *infop)
 	}
 	else
 	{
-		if(Ships[objp->instance].warpout_for_reals)
+		if (!(Ships[objp->instance].flags2 & SF2_DEPART_TO_LIMBO))
 			objp->flags |= OF_SHOULD_BE_DEAD;
 
 		if (objp->type == OBJ_SHIP)
-			ship_departed(objp->instance, Ships[objp->instance].warpout_for_reals);
+			ship_departed(objp->instance);
 	}
 }
  
@@ -1426,7 +1429,7 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 // where it flies forward for a set time period at a set
 // velocity, then disappears when that time is reached.  This
 // also starts the animating 3d effect playing.
-void shipfx_warpout_start( object *objp, bool for_reals )
+void shipfx_warpout_start( object *objp )
 {
 	float warp_time;
 	ship *shipp;
@@ -1448,9 +1451,6 @@ void shipfx_warpout_start( object *objp, bool for_reals )
 		return;
 	}
 
-	// if we aren't warping out for reals, set that.
-	shipp->warpout_for_reals = for_reals;
-
 	// if we're HUGE, keep alive - set guardian
 	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP) {
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
@@ -1463,7 +1463,7 @@ void shipfx_warpout_start( object *objp, bool for_reals )
 
 	// don't send ship depart packets for player ships
 	if ( (MULTIPLAYER_MASTER) && !(objp->flags & OF_PLAYER_SHIP) ){
-		send_ship_depart_packet( objp, for_reals );
+		send_ship_depart_packet( objp );
 	}
 
 	// don't do departure wormhole if ship flag is set which indicates no effect
@@ -1578,12 +1578,13 @@ void shipfx_warpout_frame( object *objp, float frametime )
 	shipp = &Ships[objp->instance];
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-	if ( shipp->flags & SF_DYING ) return;
+	if (shipp->flags & SF_DYING)
+		return;
 
 	//disabled ships should stay on the battlefield if they were disabled during warpout
 	//phreak 5/22/03
-	if (shipp->flags & SF_DISABLED){
-		shipp->flags &= ~(SF_DEPARTING);
+	if (shipp->flags & SF_DISABLED) {
+		shipp->flags &= ~SF_DEPARTING;
 		return;
 	}
 
@@ -1635,7 +1636,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 			}
 
 			gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_DONE );
-			ship_departed( objp->instance, Ships[objp->instance].warpout_for_reals );	// mark log entry for the player
+			ship_departed( objp->instance );	// mark log entry for the player
 		}
 
 	} else {

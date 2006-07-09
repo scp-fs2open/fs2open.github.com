@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.28 $
- * $Date: 2006-07-06 22:00:39 $
- * $Author: taylor $
+ * $Revision: 2.29 $
+ * $Date: 2006-07-09 01:55:41 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2006/07/06 22:00:39  taylor
+ * rest of the map/glow changes
+ *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
+ *  - same for glowpoints, back on a per-ship basis
+ *  - put specmaps and bumpmap back on a LOD0 and LOD1 affect (got changed to LOD0 only recently)
+ *  - fix glowmaps for shockwaves again
+ *  - add support for animated specmaps (mainly for TBP and Starfox mods)
+ * some minor code cleanup and compiler warning fixes
+ *
  * Revision 2.27  2006/06/27 05:05:18  taylor
  * make sure we only do ship related setup on actual ships
  *
@@ -299,7 +308,11 @@ void awacs_update_all_levels()
 		shipp = &Ships[Objects[moveup->objnum].instance];
 
 		// ignore dying, departing, or arriving ships
-		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING) || (shipp->flags & SF_LIMBO))
+		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING))
+			continue;
+
+		// ignore limbo ships
+		if (shipp->flags2 & SF2_IN_LIMBO)
 			continue;
 
 		// only look at ships that have awacs subsystems
@@ -545,7 +558,11 @@ void team_visibility_update()
 		shipp = &Ships[ship_num];
 
 		// ignore dying, departing, or arriving ships
-		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING) || (shipp->flags & SF_LIMBO))
+		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING))
+			continue;
+
+		// ignore limbo ships
+		if (shipp->flags2 & SF2_IN_LIMBO)
 			continue;
 
 		// check if ship if flagged as invisible
