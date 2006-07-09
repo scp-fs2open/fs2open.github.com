@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.13 $
- * $Date: 2006-07-09 06:07:20 $
+ * $Revision: 2.336.2.14 $
+ * $Date: 2006-07-09 06:12:37 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.13  2006/07/09 06:07:20  Goober5000
+ * tweak max speed function
+ * --Goober5000
+ *
  * Revision 2.336.2.12  2006/07/08 04:53:26  Goober5000
  * fix for Mantis #967
  * --Goober5000
@@ -15101,9 +15105,9 @@ float ship_get_max_speed(ship *shipp)
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	// Goober5000 - maybe we're using cap-waypoint-speed
-	int cap = Ai_info[shipp->ai_index].waypoint_speed_cap;
-	if (cap > 0)
-		return cap;
+	ai_info *aip = &Ai_info[shipp->ai_index];
+	if ((aip->mode == AIM_WAYPOINTS || aip->mode == AIM_FLY_TO_SHIP) && aip->waypoint_speed_cap > 0)
+		return aip->waypoint_speed_cap;
 
 	// max overclock
 	max_speed = sip->max_overclocked_speed;
