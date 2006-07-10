@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.14 $
- * $Date: 2006-07-08 19:35:52 $
- * $Author: Goober5000 $
+ * $Revision: 1.15 $
+ * $Date: 2006-07-10 21:48:33 $
+ * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2006/07/08 19:35:52  Goober5000
+ * iff defs should allow specification of both flag fields
+ * --Goober5000
+ *
  * Revision 1.13  2006/06/02 09:39:11  karajorma
  * Added Team Loadout from variables and alt ship classes changes
  *
@@ -1280,7 +1284,7 @@ void create_new_mission()
 {
 	reset_mission();
 	*Mission_filename = 0;
-	//FREDDoc_ptr->autosave("nothing");
+	FREDDoc_ptr->autosave("nothing");
 	Undo_count = 0;
 }
 
