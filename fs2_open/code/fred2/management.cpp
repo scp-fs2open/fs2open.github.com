@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.1 $
- * $Date: 2006-07-08 19:36:03 $
- * $Author: Goober5000 $
+ * $Revision: 1.12.2.2 $
+ * $Date: 2006-07-10 21:47:17 $
+ * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.1  2006/07/08 19:36:03  Goober5000
+ * iff defs should allow specification of both flag fields
+ * --Goober5000
+ *
  * Revision 1.12  2006/05/30 02:13:22  Goober5000
  * add substitute music boxes to FRED, and reset music properly when mission is cleared
  * --Goober5000
@@ -1277,7 +1281,7 @@ void create_new_mission()
 {
 	reset_mission();
 	*Mission_filename = 0;
-	//FREDDoc_ptr->autosave("nothing");
+	FREDDoc_ptr->autosave("nothing");
 	Undo_count = 0;
 }
 
