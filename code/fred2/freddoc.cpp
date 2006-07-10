@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.6 $
- * $Date: 2006-02-11 02:58:23 $
- * $Author: Goober5000 $
+ * $Revision: 1.7 $
+ * $Date: 2006-07-10 21:48:33 $
+ * $Author: taylor $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
  * Document class for document/view architechure, which we don't really use in
@@ -19,6 +19,10 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/02/11 02:58:23  Goober5000
+ * yet more various and sundry fixes
+ * --Goober5000
+ *
  * Revision 1.5  2006/02/11 00:13:55  Goober5000
  * more FS1 import goodness
  * --Goober5000
@@ -347,6 +351,7 @@
 #include "ai/ai.h"
 #include "ai/ailocal.h"
 #include "cfile/cfile.h"
+#include "cfile/cfilesystem.h"
 #include "ship/ship.h"
 #include "mission/missionparse.h"
 #include "mission/missiongoals.h"
@@ -492,7 +497,7 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 	}
 
 	Fred_view_wnd->global_error_check();
-	//autosave("nothing");
+	autosave("nothing");
 	Undo_count = 0;
 	return TRUE;
 }
@@ -566,8 +571,9 @@ int CFREDDoc::check_undo()
 	if (!Undo_count)
 		return 0;
 
-	strcpy(name, MISSION_BACKUP_NAME);
-	strcat(name, ".002");
+	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
+	SAFE_STRCAT(name, MISSION_BACKUP_NAME, (sizeof(name) - 1));
+	SAFE_STRCAT(name, ".002", (sizeof(name) - 1));
 	fp = fopen(name, "r");
 	if (!fp)
 		return 0;
@@ -579,9 +585,6 @@ int CFREDDoc::check_undo()
 
 int CFREDDoc::autosave(char *desc)
 {
-	// DISABLE AUTOSAVE!!!
-	//return 0;
-
 	int i;
 	CFred_mission_save save;
 	CWaitCursor wait;
@@ -616,8 +619,9 @@ int CFREDDoc::autoload()
 	int i, r, len;
 	FILE *fp;
 
-	strcpy(name, MISSION_BACKUP_NAME);
-	strcat(name, ".002");
+	cf_create_default_path_string(name, sizeof(name) - 1, CF_TYPE_MISSIONS);
+	SAFE_STRCAT(name, MISSION_BACKUP_NAME, (sizeof(name) - 1));
+	SAFE_STRCAT(name, ".002", (sizeof(name) - 1));
 	fp = fopen(name, "r");
 	if (!fp)
 		return 0;
