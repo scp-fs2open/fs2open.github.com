@@ -389,7 +389,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	if(MULTIPLAYER_MASTER){
 		header_bytes = 5;
 	} else {
-		header_bytes = 2;
+		header_bytes = 3;
 	}	
 
 	// if we're a client (and therefore sending control info), pack client-specific info
@@ -558,9 +558,15 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 		multi_rate_add(NET_PLAYER_NUM(pl), "sig", 2);
 		ADD_USHORT( objp->net_signature );		
 		
+		/*
 		multi_rate_add(NET_PLAYER_NUM(pl), "flg", 1);
-		ADD_DATA( oo_flags );
+		ADD_DATA( oo_flags );*/
 	}	
+
+	// Clients now send this info too
+	multi_rate_add(NET_PLAYER_NUM(pl), "flg", 1);
+	ADD_DATA( oo_flags );
+
 	multi_rate_add(NET_PLAYER_NUM(pl), "siz", 1);
 	ADD_DATA( data_size );	
 	
@@ -692,7 +698,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	int offset = 0;		
 	object *pobjp;
 	ushort net_sig = 0;
-	ubyte data_size, oo_flags;
+	ubyte data_size, oo_flags, oo_flags_sent;
 	ubyte seq_num;
 	char percent;	
 	float fpct;
@@ -703,10 +709,13 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
 		GET_USHORT( net_sig );		
 		GET_DATA( oo_flags );	
-	}
-	// clients always pos and orient stuff only
-	else {		
+	}	
+	// On host we only care about pos, orient and afterburner stuff
+	else 
+	{			
+		GET_DATA( oo_flags_sent );	
 		oo_flags = (OO_POS_NEW | OO_ORIENT_NEW);
+		oo_flags |= (oo_flags_sent & OO_AFTERBURNER_NEW);
 	}
 	GET_DATA( data_size );	
 	GET_DATA( seq_num );
