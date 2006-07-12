@@ -6,11 +6,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.15 $
- * $Date: 2006-07-06 18:19:59 $
- * $Author: Goober5000 $
+ * $Revision: 1.16 $
+ * $Date: 2006-07-12 04:59:03 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2006/07/06 18:19:59  Goober5000
+ * fix dumb endless loop bug
+ * --Goober5000
+ *
  * Revision 1.14  2006/07/02 03:39:55  Goober5000
  * remove associated AI flags
  * --Goober5000
@@ -109,6 +113,7 @@ void parse_ai_profiles_tbl(char *longname)
 	bool no_create = false;
 	char profile_name[NAME_LENGTH];
 	ai_profile_t dummy_profile;
+	char *saved_Mp = NULL;
 
 	// open localization
 	lcl_ext_open();
@@ -295,9 +300,13 @@ void parse_ai_profiles_tbl(char *longname)
 
 			set_flag(profile, "$ignore lower bound for minimum speed of docked ship:", AIPF_NO_MIN_DOCK_SPEED_CAP);
 
+			// if we've been through once already and are at the same place, force a move
+			if ( saved_Mp && (saved_Mp == Mp) )
+				Mp++;
+
 			// find next valid option
-			Mp++;
 			skip_to_start_of_string_either("$", "#");
+			saved_Mp = Mp;
 		}
 	}
 	
