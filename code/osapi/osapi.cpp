@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-01-26 03:23:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.34 $
+ * $Date: 2006-07-13 22:15:02 $
+ * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/01/26 03:23:30  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.32  2006/01/10 18:37:46  randomtiger
  * Improvements to voice recognition system.
  * Also function put on -voicer launcher option.
@@ -246,6 +250,7 @@
 #include "osapi/osregistry.h"
 #include "cmdline/cmdline.h"
 #include "sound/voicerec.h"
+#include "graphics/2d.h"
 
 #define THREADED	// to use the proper set of macros
 #include "osapi/osapi.h"
@@ -353,12 +358,17 @@ void os_set_title( char * title )
 	SetWindowText( hwndApp, szWinTitle );
 }
 
+extern void gr_opengl_shutdown();
+
 // call at program end
 void os_cleanup()
 {
-	// Tell the app to quit
-	PostMessage( hwndApp, WM_DESTROY, 0, 0 );
-	
+	if (gr_screen.mode == GR_OPENGL)
+		gr_opengl_shutdown();
+
+	// destroy the window (takes care of a lot of window related cleanup and sys messages)
+	DestroyWindow( hwndApp );
+
 	#ifndef NDEBUG
 		outwnd_close();
 	#endif

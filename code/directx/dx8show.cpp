@@ -156,6 +156,10 @@ HRESULT PlayMovieInWindow(HWND ghApp, LPTSTR szFile)
 			JIF(pVW->SetWindowForeground(OATRUE));
  		}
 
+		// we appear to lose key focus, and not get it back during the movie, when
+		// in OGL fullscreen mode, this should get it back for us
+		SetFocus(ghApp);
+
         // Run the graph to play the media file
         JIF(pMC->Run());
         g_psCurrent=Running;

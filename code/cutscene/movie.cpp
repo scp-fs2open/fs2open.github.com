@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-06-27 05:07:48 $
+ * $Revision: 2.33 $
+ * $Date: 2006-07-13 22:15:02 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/06/27 05:07:48  taylor
+ * fix various compiler warnings and things that Valgrind complained about
+ *
  * Revision 2.31  2006/05/27 17:13:22  taylor
  * add NO_DIRECT3D support
  *
@@ -76,6 +79,8 @@
 #include "cutscene/mvelib.h"
 #include "menuui/mainhallmenu.h"
 
+// to know if we are in a movie, needed for non-MVE only
+bool Playing_movie = false;
 
 
 // This module links freespace movie calls to the actual API calls the play the movie.
@@ -212,6 +217,8 @@ bool movie_play(char *name)
 	}
 #endif
 
+	Playing_movie = true;
+
 	// reset the gr_* stuff before trying to play a movie
 	gr_clear();
 	gr_zbuffer_clear(1);
@@ -245,60 +252,47 @@ bool movie_play(char *name)
 
   	process_messages();
 
-	if(OpenClip((HWND) os_get_window(), full_name))
-	{
+	if (OpenClip((HWND) os_get_window(), full_name)) {
+		do {
+			// Give system threads time to run (and don't sample user input madly)
+			Sleep(100);
 
-	do
-	{
-		// Give system threads time to run (and don't sample user input madly)
-		Sleep(100);
+			MSG msg;
 
-		MSG msg;
-		while(PeekMessage(&msg, (HWND) os_get_window(), 0, 0, PM_REMOVE))
-		{
- 			TranslateMessage(&msg);
+			while (PeekMessage(&msg, (HWND) os_get_window(), 0, 0, PM_REMOVE)) {
+ 				TranslateMessage(&msg);
 
+				if (msg.message == WM_ERASEBKGND)
+					continue;
 
-			if(msg.message == WM_ERASEBKGND)
-			{
-				continue;
-			}
+				PassMsgToVideoWindow((HWND) os_get_window(), msg.message, msg.wParam, msg.lParam);
 
-			PassMsgToVideoWindow((HWND) os_get_window(), msg.message, msg.wParam, msg.lParam);
-
-			if(msg.message == WM_PAINT)
-			{
-			}
-
-			if(msg.message != WM_KEYDOWN)
-			{
-			  //	DefWindowProc((HWND) os_get_window(), msg.message, msg.wParam, msg.lParam);
-		   	  	DispatchMessage(&msg);
-				continue;
-			}
-		
-			switch(msg.wParam )
-			{
-				// Quits movie if escape, space or return is pressed
-				case VK_ESCAPE:
-				case VK_SPACE:
-				case VK_RETURN:
-				{
-					// Terminate movie playback early
-					CloseClip((HWND) os_get_window());
+				if (msg.message == WM_KEYDOWN) {
+					switch (msg.wParam)
+					{
+						// Quits movie if escape, space or return is pressed
+						case VK_ESCAPE:
+						case VK_SPACE:
+						case VK_RETURN:
+						{
+							// Terminate movie playback early
+							CloseClip((HWND) os_get_window());
 #ifndef NO_DIRECT3D
-					if (gr_screen.mode == GR_DIRECT3D) {
-					 	GlobalD3DVars::D3D_activate = 1;
-					}
+							if (gr_screen.mode == GR_DIRECT3D) {
+						 		GlobalD3DVars::D3D_activate = 1;
+							}
 #endif
-					return true;
+							Playing_movie = false;
+							return true;
+						}
+					}
+				} else {
+			   	  	DispatchMessage(&msg);
 				}
 			}
- 		}
-	}
-	// Stream bit of the movie then handle windows messages
-	while(dx8show_stream_movie() == false);
-
+		}
+		// Stream bit of the movie then handle windows messages
+		while (dx8show_stream_movie() == false);
 	}
 
 	// We finished playing the movie
@@ -309,6 +303,8 @@ bool movie_play(char *name)
 	 	GlobalD3DVars::D3D_activate = 1;
 	}
 #endif
+
+	Playing_movie = false;
 
 #else
 
