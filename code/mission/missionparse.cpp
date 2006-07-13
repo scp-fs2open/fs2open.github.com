@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.6 $
- * $Date: 2006-07-06 06:04:45 $
+ * $Revision: 2.178.2.7 $
+ * $Date: 2006-07-13 06:11:48 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.6  2006/07/06 06:04:45  Goober5000
+ * fix subtle change from retail... dunno if it's a bug, but best to stay on the safe side
+ * --Goober5000
+ *
  * Revision 2.178.2.5  2006/07/06 04:06:00  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
@@ -1944,8 +1948,16 @@ void parse_music(mission *pm, int flags)
 	required_string("$Event Music:");
 	stuff_string(pm->event_music_name, F_NAME, NULL);
 
+	// Goober5000
+	if (optional_string("$Substitute Event Music:"))
+		stuff_string(pm->substitute_event_music_name, F_NAME, NULL);
+
 	required_string("$Briefing Music:");
 	stuff_string(pm->briefing_music_name, F_NAME, NULL);
+
+	// Goober5000
+	if (optional_string("$Substitute Briefing Music:"))
+		stuff_string(pm->substitute_briefing_music_name, F_NAME, NULL);
 
 	// old stuff, apparently
 	if (optional_string("$Debriefing Success Music:"))
@@ -1954,6 +1966,7 @@ void parse_music(mission *pm, int flags)
 		event_music_set_score(SCORE_DEBRIEF_SUCCESS, temp);
 	}
 
+	// ditto
 	if (optional_string("$Debriefing Fail Music:"))
 	{
 		stuff_string(temp, F_NAME, NULL);
@@ -1966,16 +1979,17 @@ void parse_music(mission *pm, int flags)
 		strcpy(pm->briefing_music_name, "BRIEF1");
 
 
-	// Goober5000 - grab substitute tracks to play instead (provided they exist)
+	// Goober5000 - old way of grabbing substitute music, but here for reverse compatibility
 	if (optional_string("$Substitute Music:"))
 	{
 		stuff_string(pm->substitute_event_music_name, F_NAME, ",");
 		Mp++;
 		stuff_string(pm->substitute_briefing_music_name, F_NAME, NULL);
 	}
+
 	// Goober5000 - if the mission is being imported, the substitutes are the specified tracks
 	// (with FS1 prefixes) and we generate new specified tracks
-	else if (flags & MPF_IMPORT_FSM)
+	if (flags & MPF_IMPORT_FSM)
 	{
 		// no specified music?
 		if (!stricmp(pm->event_music_name, "none"))
