@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.12 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2006-07-13 22:16:38 $
+ * $Author: taylor $
  *
  * FreeSpace, the game, not the project, header information.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.11  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -323,6 +326,9 @@ void change_time_compression(float multiplier);
 
 // call this to set frametime properly (once per frame)
 void game_set_frametime(int state);
+
+// overall frametime of game, indepedent of mission timer
+fix game_get_overall_frametime();
 
 // Used to halt all looping game sounds
 void game_stop_looped_sounds();
