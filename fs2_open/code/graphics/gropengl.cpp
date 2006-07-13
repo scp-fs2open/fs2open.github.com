@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.6 $
- * $Date: 2006-07-05 23:36:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.174.2.7 $
+ * $Date: 2006-07-13 22:06:38 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.6  2006/07/05 23:36:55  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.174.2.5  2006/06/23 09:01:07  taylor
  * be sure to properly reset fullscreen/minimized state vars as we switch between them
  *
@@ -1189,28 +1192,22 @@ static int GL_fullscreen = 0;
 static int GL_windowed = 0;
 static int GL_minimized = 0;
 
+extern bool Playing_movie;
 
 void opengl_go_fullscreen()
 {
-	if (Cmdline_window)
-		return;
-
-	if (GL_fullscreen)
+	if (Cmdline_window || GL_fullscreen || Playing_movie)
 		return;
 
 #ifdef _WIN32
 	DEVMODE dm;
+	RECT cursor_clip;
+	DWORD ws_style;
 	HWND wnd = (HWND)os_get_window();
 
 	Assert( wnd );
 
 	os_suspend();
-	SetWindowLong( wnd, GWL_EXSTYLE, 0 );
-	SetWindowLong( wnd, GWL_STYLE, WS_POPUP );
-	ShowWindow(wnd, SW_SHOWNORMAL );
-	SetWindowPos( wnd, HWND_TOPMOST, 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );	
-	SetActiveWindow(wnd);
-	SetForegroundWindow(wnd);
 
 	memset((void*)&dm, 0, sizeof(DEVMODE));
 
@@ -1236,9 +1233,16 @@ void opengl_go_fullscreen()
 		} else {
 			Warning( LOCATION, "Unable to go fullscreen!" );
 		}
+	} else {
+		ws_style = GetWindowLong( wnd, GWL_STYLE );
+		ws_style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX | WS_MAXIMIZE);
+		ws_style |= WS_POPUP;
+
+		SetWindowLong( wnd, GWL_STYLE, ws_style );
+		SetWindowPos( wnd, HWND_TOPMOST, 0, 0, gr_screen.max_w, gr_screen.max_h, SWP_SHOWWINDOW );
+		SetForegroundWindow( wnd );
 	}
 
-	RECT cursor_clip;
 	GetWindowRect((HWND)os_get_window(), &cursor_clip);
 	ClipCursor(&cursor_clip);
 
@@ -1335,17 +1339,18 @@ void opengl_go_windowed()
 void opengl_minimize()
 {
 	// don't attempt to minimize if we are already in a window or already minimized
-	if (GL_minimized || GL_windowed || Cmdline_window || Fred_running)
+	// or when playing a movie
+	if (GL_minimized || GL_windowed || Cmdline_window || Fred_running || Playing_movie)
 		return;
 
 #ifdef _WIN32
 	HWND wnd = (HWND)os_get_window();
 
-//	os_suspend();
+	os_suspend();
 	ShowWindow(wnd, SW_MINIMIZE);
 	ChangeDisplaySettings(NULL, 0);
 	ClipCursor(NULL);
-//	os_resume();
+	os_resume();
 #else
 	// lets not minimize if we are in windowed mode
 	if (!(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN))
@@ -4203,6 +4208,20 @@ void opengl_set_vsync(int status)
 	opengl_check_for_errors();
 }
 
+// NOTE: This should only ever be called through os_cleanup(), or when switching video APIs
+void gr_opengl_shutdown()
+{
+#ifdef _WIN32
+	// restore original gamma settings
+	SetDeviceGammaRamp( dev_context, original_gamma_ramp );
+
+	// swap out our window mode and un-jail the cursor
+	ShowWindow((HWND)os_get_window(), SW_HIDE);
+	ClipCursor(NULL);
+	ChangeDisplaySettings( NULL, 0 );
+#endif
+}
+
 // NOTE: This should only ever be called through atexit()!!!
 void opengl_close()
 {
@@ -4234,9 +4253,6 @@ void opengl_close()
 		wglDeleteContext(rend_context);
 		rend_context=NULL;
 	}
-
-	// restore original gamma settings
-	SetDeviceGammaRamp( dev_context, original_gamma_ramp );
 #endif
 
 	GL_initted = 0;
