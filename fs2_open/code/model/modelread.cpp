@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.111 $
- * $Date: 2006-07-06 22:00:39 $
+ * $Revision: 2.112 $
+ * $Date: 2006-07-13 22:16:38 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.111  2006/07/06 22:00:39  taylor
+ * rest of the map/glow changes
+ *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
+ *  - same for glowpoints, back on a per-ship basis
+ *  - put specmaps and bumpmap back on a LOD0 and LOD1 affect (got changed to LOD0 only recently)
+ *  - fix glowmaps for shockwaves again
+ *  - add support for animated specmaps (mainly for TBP and Starfox mods)
+ * some minor code cleanup and compiler warning fixes
+ *
  * Revision 2.110  2006/07/06 04:26:00  Goober5000
  * fix a couple of typos
  * --Goober5000
@@ -2985,7 +2994,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		if (tmap->base_map.texture >= 0)
 		{
 			tmap->base_map.is_anim = true;
-			tmap->base_map.anim.total_time = (int) i2fl(tmap->base_map.anim.num_frames) / fps;
+			tmap->base_map.anim.total_time = (float) i2fl(tmap->base_map.anim.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{
@@ -3023,7 +3032,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		if (tmap->glow_map.texture >= 0)
 		{
 			tmap->glow_map.is_anim = true;
-			tmap->glow_map.anim.total_time = (int) i2fl(tmap->glow_map.anim.num_frames) / fps;
+			tmap->glow_map.anim.total_time = (float) i2fl(tmap->glow_map.anim.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{
@@ -3060,7 +3069,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		if (tmap->spec_map.texture >= 0)
 		{
 			tmap->spec_map.is_anim = true;
-			tmap->spec_map.anim.total_time = (int) i2fl(tmap->spec_map.anim.num_frames) / fps;
+			tmap->spec_map.anim.total_time = (float) i2fl(tmap->spec_map.anim.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{

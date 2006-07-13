@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.163 $
- * $Date: 2006-07-07 16:26:44 $
+ * $Revision: 2.164 $
+ * $Date: 2006-07-13 22:16:38 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.163  2006/07/07 16:26:44  taylor
+ * make sure to reset the optional maps after each buffer render (little scary that this wasn't noticed a long time ago)
+ *
  * Revision 2.162  2006/07/06 22:00:39  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
@@ -981,7 +984,7 @@ int modelstats_num_boxes = 0;
 #endif
 
 extern int Cmdline_nohtl;
-extern float flFrametime;	// for texture animation
+extern fix game_get_overall_frametime();	// for texture animation
 
 typedef struct model_light {
 	ubyte r, g, b;
@@ -6572,6 +6575,7 @@ int model_interp_get_texture(texture_info *tinfo)
 {
 	int texture, frame;
 	texture_anim_info *anim;
+	float cur_time;
 
 	// get texture
 	texture = tinfo->texture;
@@ -6581,19 +6585,13 @@ int model_interp_get_texture(texture_info *tinfo)
 	{
 		anim = &tinfo->anim;
 
-		// advance animation
-		anim->cur_time += flFrametime;
+		// sanity check total_time first thing
+		Assert( anim->total_time > 0.0f );
 
-		// sanity checks
-		if ((anim->cur_time < 0.0f) || (anim->cur_time > 100.0f))
-			anim->cur_time = 0.0f;
-
-		// ensure time is within bounds
-		while (anim->cur_time > anim->total_time)
-			anim->cur_time -= anim->total_time;
+		cur_time = f2fl( game_get_overall_frametime() % fl2f(anim->total_time) );
 
 		// get animation frame
-		frame = fl2i((anim->cur_time * anim->num_frames) / anim->total_time);
+		frame = fl2i((cur_time * anim->num_frames) / anim->total_time);
 		if (frame < 0) frame = 0;
 		if (frame >= anim->num_frames) frame = anim->num_frames - 1;
 

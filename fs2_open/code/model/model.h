@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.85 $
- * $Date: 2006-07-06 22:00:39 $
+ * $Revision: 2.86 $
+ * $Date: 2006-07-13 22:16:38 $
  * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2006/07/06 22:00:39  taylor
+ * rest of the map/glow changes
+ *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
+ *  - same for glowpoints, back on a per-ship basis
+ *  - put specmaps and bumpmap back on a LOD0 and LOD1 affect (got changed to LOD0 only recently)
+ *  - fix glowmaps for shockwaves again
+ *  - add support for animated specmaps (mainly for TBP and Starfox mods)
+ * some minor code cleanup and compiler warning fixes
+ *
  * Revision 2.84  2006/07/06 04:06:04  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
@@ -1177,9 +1186,8 @@ typedef struct insignia {
 // Goober5000
 typedef struct texture_anim_info {
 	int num_frames;
-	int total_time;		// in seconds
 
-	float cur_time;
+	float total_time;		// in seconds
 } texture_anim_info;
 
 // Goober5000
