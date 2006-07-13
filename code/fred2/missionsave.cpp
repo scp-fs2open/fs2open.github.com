@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.20 $
- * $Date: 2006-07-06 21:00:12 $
+ * $Revision: 1.21 $
+ * $Date: 2006-07-13 06:11:52 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2006/07/06 21:00:12  Goober5000
+ * remove obsolete (and hackish) flag
+ * --Goober5000
+ *
  * Revision 1.19  2006/07/06 20:46:39  Goober5000
  * WCS screaming stuff
  * --Goober5000
@@ -917,7 +921,7 @@ int CFred_mission_save::save_mission_info()
 		}
 	}
 
-	// Phreak's loading screen and skybox stuff
+	// Phreak's loading screen stuff
 	if (Format_fs2_open)
 	{
 		if (strlen(The_mission.loading_screen[GR_640]) > 0)
@@ -929,17 +933,21 @@ int CFred_mission_save::save_mission_info()
 		{
 			fout("\n$Load Screen 1024:\t%s",The_mission.loading_screen[GR_1024]);
 		}
+	}
 
-		if (strlen(The_mission.skybox_model) > 0)
-		{
-			char out_str[NAME_LENGTH];
-			char *period;
+	// Phreak's skybox stuff
+	if (strlen(The_mission.skybox_model) > 0)
+	{
+		char out_str[NAME_LENGTH];
+		char *period;
 
-			//kill off any extension, we will add one here
-			strcpy(out_str,The_mission.skybox_model);
-			if (period=strchr(out_str,'.'))	*period=0;
-			fout("\n\n$Skybox Model:\t%s.pof",out_str);
-		}
+		// kill off any extension, we will add one here
+		strcpy(out_str, The_mission.skybox_model);
+		period = strchr(out_str, '.');
+		if (period != NULL)
+			*period = 0;
+
+		fout_and_bypass("\n\n;;FSO 3.6.0;; $Skybox Model: %s.pof", out_str);
 	}
 
 	// Goober5000's AI profile stuff
@@ -2622,6 +2630,29 @@ int CFred_mission_save::save_matrix(matrix &m)
 	return 0;
 }
 
+// Goober5000 - move past the comment without copying it to the output file
+// (used for special FSO comment tags)
+void CFred_mission_save::bypass_comment(char *comment)
+{
+	char *ch = strstr(raw_ptr, comment);
+	if (ch != NULL)
+	{
+		char *writep = ch;
+		char *readp = strchr(writep, '\n');
+
+		// copy all characters past it
+		while (*readp != '\0')
+		{
+			*writep = *readp;
+
+			writep++;
+			readp++;
+		}
+
+		*writep = '\0';
+	}
+}
+
 // saves comments from previous campaign/mission file
 void CFred_mission_save::parse_comments(int newlines)
 {
@@ -2712,6 +2743,58 @@ void CFred_mission_save::parse_comments(int newlines)
 	}
 
 	return;
+}
+
+// Goober5000
+int CFred_mission_save::fout_and_bypass(char *format, ...)
+{
+	char str[16384];
+	va_list args;
+	int len;
+	char *ch;
+
+	if (err)
+		return err;
+
+	// only mess with stuff if we have a special tag
+	ch = strstr(format, ";;FSO");
+	if (ch != NULL)
+	{
+		// we might have put something in front of the special tag
+		if (ch != format)
+		{
+			// grab those characters
+			len = ch - format;
+			strncpy(str, format, len);
+			str[len] = '\0';
+			format += len;
+
+			// output them
+			cfputs(str, fp);
+		}
+
+		// assume the tag ends with a colon
+		ch = strstr(format, ":");
+		if (ch != NULL)
+		{
+			// grab the tag
+			len = ch - format + 1;
+			strncpy(str, format, len);
+			str[len] = '\0';
+
+			// bypass it
+			bypass_comment(str);
+		}
+	}
+	
+	// now do a fout as usual
+	va_start(args, format);
+	vsprintf(str, format, args);
+	va_end(args);
+	Assert(strlen(str) < 16384);
+
+	cfputs(str, fp);
+	return 0;
 }
 
 int CFred_mission_save::fout(char *format, ...)
@@ -3286,6 +3369,10 @@ int CFred_mission_save::save_music()
 	else
 		fout(" %s", Soundtracks[Current_soundtrack_num].name);
 
+	// Goober5000 - save using the special comment prefix
+	if (stricmp(The_mission.substitute_event_music_name, "None"))
+		fout_and_bypass("\n;;FSO 3.6.9;; $Substitute Event Music: %s", The_mission.substitute_event_music_name);
+
 	required_string_fred("$Briefing Music:");
 	parse_comments();
 	if (Mission_music[SCORE_BRIEFING] < 0)
@@ -3293,46 +3380,12 @@ int CFred_mission_save::save_music()
 	else
 		fout(" %s", Spooled_music[Mission_music[SCORE_BRIEFING]].name);
 
-	// Goober5000
-	// This doesn't need Format_fs2_open because it uses the special comment prefix. :)
-	if (stricmp(The_mission.substitute_event_music_name, "None") || stricmp(The_mission.substitute_briefing_music_name, "None"))
-	{
-		char *ch;
+	// Goober5000 - save using the special comment prefix
+	if (stricmp(The_mission.substitute_briefing_music_name, "None"))
+		fout_and_bypass("\n;;FSO 3.6.9;; $Substitute Briefing Music: %s", The_mission.substitute_briefing_music_name);
 
-		fout("\n");
-		fout(";;FSO 3.6.8;; $Substitute Music: ");
-
-		if (strlen(The_mission.substitute_event_music_name))
-			fout(The_mission.substitute_event_music_name);
-		else
-			fout("None");
-
-		fout(", ");
-
-		if (strlen(The_mission.substitute_briefing_music_name))
-			fout(The_mission.substitute_briefing_music_name);
-		else
-			fout("None");
-
-		// bypass the comment that's already there so it doesn't show up twice
-		ch = strstr(raw_ptr, ";;FSO 3.6.8;; $Substitute Music:");
-		if (ch != NULL)
-		{
-			char *writep = ch;
-			char *readp = strchr(writep, '\n');
-
-			// copy all characters past it
-			while (*readp != '\0')
-			{
-				*writep = *readp;
-
-				writep++;
-				readp++;
-			}
-
-			*writep = '\0';
-		}
-	}
+	// avoid keeping the old one around
+	bypass_comment(";;FSO 3.6.8;; $Substitute Music:");
 
 	return err;
 }
@@ -3519,7 +3572,7 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 		// very seldom edited, this shouldn't be too big of a problem
 		if (Campaign.missions[m].debrief_persona_index >= 0 && Campaign.missions[m].debrief_persona_index <= 0xff)
 		{
-			fout("\n;;FSO 3.6.8;; +Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
+			fout_and_bypass("\n;;FSO 3.6.8;; +Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
 		}
 
 		// save campaign link sexp
