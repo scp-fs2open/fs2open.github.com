@@ -42,6 +42,9 @@ vec3d oo_interp_points[MAX_SHIPS][2];
 bez_spline oo_interp_splines[MAX_SHIPS][2];
 void multi_oo_calc_interp_splines(int ship_index, vec3d *cur_pos, matrix *cur_orient, physics_info *cur_phys_info, vec3d *new_pos, matrix *new_orient, physics_info *new_phys_info);
 
+// HACK!!!
+bool Multi_oo_afterburn_hack = false;
+
 // how much data we're willing to put into a given oo packet
 #define OO_MAX_SIZE					480
 
@@ -290,6 +293,10 @@ int multi_oo_pack_client_data(ubyte *data)
 		out_flags |= OOC_TRIGGER_DOWN;
 	}
 
+	if ( (Player_obj != NULL) && Player_obj->phys_info.flags & PF_AFTERBURNER_ON){
+		out_flags |= OOC_AFTERBURNER_ON;
+	}
+
 	// send my bank info
 	if(Player_ship != NULL){
 		if(Player_ship->weapons.current_primary_bank > 0){
@@ -389,7 +396,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	if(MULTIPLAYER_MASTER){
 		header_bytes = 5;
 	} else {
-		header_bytes = 3;
+		header_bytes = 2;
 	}	
 
 	// if we're a client (and therefore sending control info), pack client-specific info
@@ -557,15 +564,10 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){		
 		multi_rate_add(NET_PLAYER_NUM(pl), "sig", 2);
 		ADD_USHORT( objp->net_signature );		
-		
-		/*
-		multi_rate_add(NET_PLAYER_NUM(pl), "flg", 1);
-		ADD_DATA( oo_flags );*/
-	}	
 
-	// Clients now send this info too
-	multi_rate_add(NET_PLAYER_NUM(pl), "flg", 1);
-	ADD_DATA( oo_flags );
+		multi_rate_add(NET_PLAYER_NUM(pl), "flg", 1);
+		ADD_DATA( oo_flags );
+	}	
 
 	multi_rate_add(NET_PLAYER_NUM(pl), "siz", 1);
 	ADD_DATA( data_size );	
@@ -585,16 +587,17 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 {
 	ubyte in_flags;
-	ship *shipp;	
+	ship *shipp = NULL;
+	object *objp = NULL;
 	int offset = 0;
 	
 	memcpy(&in_flags, data, sizeof(ubyte));	
 	offset++;
 
-	// get the player ship
-	shipp = NULL;
+	// get the player ship and object
 	if((pl->m_player->objnum >= 0) && (Objects[pl->m_player->objnum].type == OBJ_SHIP) && (Objects[pl->m_player->objnum].instance >= 0)){
-		shipp = &Ships[Objects[pl->m_player->objnum].instance];
+		objp = &Objects[pl->m_player->objnum];
+		shipp = &Ships[objp->instance];
 	}
 		
 	// if we have a valid netplayer pointer
@@ -647,6 +650,11 @@ int multi_oo_unpack_client_data(net_player *pl, ubyte *data)
 				Ai_info[shipp->ai_index].ai_flags &= ~AIF_SEEK_LOCK;
 			}
 		}
+
+		// afterburner status
+		if ( (objp != NULL) && (in_flags & OOC_AFTERBURNER_ON) ) {
+			Multi_oo_afterburn_hack = true;
+		}
 	}
 	
 	// client targeting information	
@@ -698,7 +706,7 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	int offset = 0;		
 	object *pobjp;
 	ushort net_sig = 0;
-	ubyte data_size, oo_flags, oo_flags_sent;
+	ubyte data_size, oo_flags;
 	ubyte seq_num;
 	char percent;	
 	float fpct;
@@ -710,12 +718,9 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 		GET_USHORT( net_sig );		
 		GET_DATA( oo_flags );	
 	}	
-	// On host we only care about pos, orient and afterburner stuff
-	else 
-	{			
-		GET_DATA( oo_flags_sent );	
+	// clients always pos and orient stuff only
+	else {			
 		oo_flags = (OO_POS_NEW | OO_ORIENT_NEW);
-		oo_flags |= (oo_flags_sent & OO_AFTERBURNER_NEW);
 	}
 	GET_DATA( data_size );	
 	GET_DATA( seq_num );
@@ -754,6 +759,9 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 			return offset;
 		}
 	}	
+
+	// make sure the ab hack is reset before we read in new info
+	Multi_oo_afterburn_hack = false;
 
 	// if this is from a player, read his button info
 	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
@@ -967,11 +975,14 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	} 
 
 	// afterburner info
-	if(oo_flags & OO_AFTERBURNER_NEW){
+	if ( (oo_flags & OO_AFTERBURNER_NEW) || Multi_oo_afterburn_hack ) {
 		// maybe turn them on
 		if(!(pobjp->phys_info.flags & PF_AFTERBURNER_ON)){
 			afterburners_start(pobjp);
 		}
+
+		// make sure the ab hack is reset before we read in new info
+		Multi_oo_afterburn_hack = false;
 	} else {
 		// maybe turn them off
 		if(pobjp->phys_info.flags & PF_AFTERBURNER_ON){

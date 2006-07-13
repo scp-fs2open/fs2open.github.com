@@ -29,6 +29,8 @@ struct net_player;
 #define OOC_TRIGGER_DOWN			(1<<4)
 #define OOC_PRIMARY_BANK			(1<<5)
 #define OOC_PRIMARY_LINKED			(1<<6)
+#define OOC_AFTERBURNER_ON			(1<<7)
+// NOTE: no additional flags here unless it's sent in an extra data byte
 
 // update info
 typedef struct np_update {	
