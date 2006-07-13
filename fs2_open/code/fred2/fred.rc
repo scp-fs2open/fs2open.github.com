@@ -921,7 +921,7 @@ BEGIN
                     IDC_SPECS_TOGGLE_TRAILS,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,163,201,141,10
     CONTROL         "Minimium speed to display",IDC_CONTRAIL_THRESHOLD_CHECK,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,212,97,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,212,93,10
     EDITTEXT        IDC_CONTRAIL_THRESHOLD,262,211,48,14,ES_READONLY
     COMBOBOX        IDC_AI_PROFILE,63,236,93,140,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
@@ -950,11 +950,11 @@ BEGIN
     GROUPBOX        "Loading Screen",IDC_STATIC,5,183,151,46
     GROUPBOX        "Support Ships",IDC_STATIC,161,119,154,67
     LTEXT           "Hull Repair Ceiling",IDC_STATIC,163,154,60,8
-    LTEXT           "Subsytem Repair Ceiling",IDC_STATIC,163,170,80,8
+    LTEXT           "Subsytem Repair Ceiling",IDC_STATIC,163,170,75,8
     LTEXT           "%",IDC_STATIC,304,156,8,8
     LTEXT           "%",IDC_STATIC,304,171,8,8
     GROUPBOX        "Ship Trails",IDC_STATIC,161,191,154,39
-    LTEXT           "Substitute Music",IDC_STATIC,164,255,54,8
+    LTEXT           "Substitute Music",IDC_STATIC,164,255,52,8
     LTEXT           "AI Profile",IDC_STATIC,6,238,32,8
 END
 
