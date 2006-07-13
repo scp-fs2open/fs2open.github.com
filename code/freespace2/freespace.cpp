@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.9 $
- * $Date: 2006-07-06 04:06:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.243.2.10 $
+ * $Date: 2006-07-13 22:11:36 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.9  2006/07/06 04:06:00  Goober5000
+ * 1) complete (almost) changeover to reorganized texture mapping system
+ * 2) finally fix texture animation; textures now animate at the correct speed
+ * --Goober5000
+ *
  * Revision 2.243.2.8  2006/07/05 23:36:55  Goober5000
  * cvs comment tweaks
  *
@@ -1556,7 +1561,7 @@
  * 
  */
 
-static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
+// static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 
 #ifdef _WIN32
  #include <direct.h>
@@ -1808,6 +1813,7 @@ float frametimes[FRAME_FILTER];
 float frametotal = 0.0f;
 float flRealframetime;
 float flFrametime;
+fix FrametimeOverall = 0;
 
 #ifndef NDEBUG
 	int	Show_framerate = 1;
@@ -6536,10 +6542,21 @@ void game_set_frametime(int state)
 	//if(!(Game_mode & GM_PLAYING_DEMO)){
 	timestamp_inc(flFrametime);
 
+	// wrap overall frametime if needed
+	if ( FrametimeOverall > (INT_MAX - F1_0) )
+		FrametimeOverall = 0;
+
+	FrametimeOverall += Frametime;
+
 /*	if ((Framecount > 0) && (Framecount < 10)) {
 		mprintf(("Frame %2i: frametime = %.3f (%.3f)\n", Framecount, f2fl(Frametime), f2fl(debug_frametime)));
 	}
 */
+}
+
+fix game_get_overall_frametime()
+{
+	return FrametimeOverall;
 }
 
 // This is called from game_do_frame(), and from navmap_do_frame() 
