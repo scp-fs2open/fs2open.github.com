@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MissionSave.h $
- * $Revision: 1.3 $
- * $Date: 2006-04-20 06:32:01 $
+ * $Revision: 1.4 $
+ * $Date: 2006-07-13 06:11:52 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.2  2006/02/19 00:49:41  Goober5000
  * fixed saving of special tags
  * --Goober5000
@@ -179,6 +182,10 @@ public:
 	int save_mission_file(char *pathname);
 	int autosave_mission_file(char *pathname);
 	int save_campaign_file(char *pathname);		
+
+	// Goober5000
+	int fout_and_bypass(char *format, ...);
+	void bypass_comment(char *comment);
 };
 
 #endif
