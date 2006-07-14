@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FredStubs.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 1.5 $
+ * $Date: 2006-07-14 03:50:31 $
+ * $Author: taylor $
  *
  * Bogus C file for functions and variable stubs that Fred needs because it
  * includes some libraries that makes functions calls to other libraries that FRED
@@ -20,6 +20,9 @@
  * to each other.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.3  2006/03/18 21:23:38  taylor
  * add framerate var since it's contained in freespace.cpp and that's not used in a FRED2 compile
  *
@@ -628,7 +631,7 @@ void send_ship_kill_packet(struct object *,struct object *,float,unsigned char) 
 void send_debris_create_packet( object *objp, ushort net_sig, int model_num, vec3d pos) {}
 
 int Game_subspace_effect;
-void big_explosion_flash(float x) {};
+void big_explosion_flash(float x) {}
 
 int game_do_cd_check(char *) {return 0;}
 
@@ -698,15 +701,16 @@ void game_unpause() {}
 //Time stuff
 bool Time_compression_locked;
 float flRealframetime;
-void lock_time_compression(bool is_locked){};
-void change_time_compression(float multiplier){};
-void set_time_compression(float multiplier, float change_time){};
+void lock_time_compression(bool is_locked){}
+void change_time_compression(float multiplier){}
+void set_time_compression(float multiplier, float change_time){}
+fix game_get_overall_frametime() { return 0; }
 
 //WMC
-void game_level_init(int seed){};
-void game_post_level_init(){};
-void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient){};
-void game_render_frame(vec3d *eye_pos, matrix *eye_orient){};
-void game_simulation_frame(){};
-void game_update_missiontime(){};
-void game_render_post_frame(){};
+void game_level_init(int seed){}
+void game_post_level_init(){}
+void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient){}
+void game_render_frame(vec3d *eye_pos, matrix *eye_orient){}
+void game_simulation_frame(){}
+void game_update_missiontime(){}
+void game_render_post_frame(){}
