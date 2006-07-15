@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.51 $
- * $Date: 2006-06-27 05:03:42 $
+ * $Revision: 1.52 $
+ * $Date: 2006-07-15 06:11:27 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.51  2006/06/27 05:03:42  taylor
+ * fix so that multiple FBOs can be used with different sizes (plus a few other minor adjustments)
+ * fix various things that Valgrind complained about
+ *
  * Revision 1.50  2006/06/15 00:36:33  taylor
  * fix Assert() on value of face variable, it should be able to be -1 for non-cubemap images
  *
@@ -854,8 +858,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 #endif
 
 	if ( (bitmap_type == TCACHE_TYPE_AABITMAP) || (bitmap_type == TCACHE_TYPE_INTERFACE) ) {
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	} else {
 		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
