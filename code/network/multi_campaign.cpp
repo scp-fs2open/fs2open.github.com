@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-12-29 08:08:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15 $
+ * $Date: 2006-07-15 15:51:19 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/12/29 08:08:39  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.13  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -483,7 +486,7 @@ void multi_campaign_process_update(ubyte *data, header *hinfo)
 			}
 
 			// all weapons
-			for(idx=0;idx<Num_ship_classes;idx++){
+			for(idx=0;idx<Num_weapon_types;idx++){
 				Campaign.weapons_allowed[idx] = 1;
 			}
 		} else {
@@ -667,7 +670,7 @@ void multi_campaign_send_pool_status()
 		
 		// determine how many weapon types we're going to add
 		wpool_size = 0;
-		for(idx=0;idx<Num_ship_classes;idx++){
+		for(idx=0;idx<Num_weapon_types;idx++){
 			if(Campaign.weapons_allowed[idx]){
 				wpool_size++;
 			}
@@ -689,7 +692,7 @@ void multi_campaign_send_pool_status()
 		// add all weapon types
 		val = (ubyte)wpool_size;
 		ADD_DATA(val);
-		for(idx=0;idx<Num_ship_classes;idx++){
+		for(idx=0;idx<Num_weapon_types;idx++){
 			if(Campaign.weapons_allowed[idx]){
 				val = (ubyte)idx;
 				ADD_DATA(val);
