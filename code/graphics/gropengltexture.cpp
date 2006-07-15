@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.48.2.6 $
- * $Date: 2006-06-22 14:59:44 $
+ * $Revision: 1.48.2.7 $
+ * $Date: 2006-07-15 06:10:51 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48.2.6  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
+ *
  * Revision 1.48.2.5  2006/06/19 22:50:58  taylor
  * as a temporary measure, until I can figure out what is going on here:
  *   - disable depth buffer for RTT, may be causing the ATI issues, should work ok without it for most things
@@ -868,8 +871,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 #endif
 
 	if ( (bitmap_type == TCACHE_TYPE_AABITMAP) || (bitmap_type == TCACHE_TYPE_INTERFACE) ) {
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	} else {
 		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
