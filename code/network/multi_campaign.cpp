@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.cpp $
- * $Revision: 2.15 $
- * $Date: 2006-07-15 15:51:19 $
+ * $Revision: 2.16 $
+ * $Date: 2006-07-15 18:16:00 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/07/15 15:51:19  taylor
+ * we probably need to be processing the number of weapons here rather than the number of ships ;)  (Mantis bug #988)
+ *
  * Revision 2.14  2005/12/29 08:08:39  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -455,6 +458,7 @@ void multi_campaign_client_store_goals(int mission_num)
 // MULTIPLAYER CAMPAIGN PACKET HANDLERS
 //
 extern int Num_ship_classes;
+extern int Num_weapon_types;
 // process a campaign update packet
 void multi_campaign_process_update(ubyte *data, header *hinfo)
 {
