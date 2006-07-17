@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.4 $
- * $Date: 2006-07-06 21:53:59 $
- * $Author: taylor $
+ * $Revision: 2.150.2.5 $
+ * $Date: 2006-07-17 00:10:05 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.4  2006/07/06 21:53:59  taylor
+ * rest of the map/glow changes
+ *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
+ *  - same for glowpoints, back on a per-ship basis
+ *  - put specmaps and bumpmap back on a LOD0 and LOD1 affect (got changed to LOD0 only recently)
+ *  - fix glowmaps for shockwaves again
+ *  - add support for animated specmaps (mainly for TBP and Starfox mods)
+ * some minor code cleanup and compiler warning fixes
+ *
  * Revision 2.150.2.3  2006/07/04 07:42:10  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
@@ -1328,6 +1337,8 @@ typedef struct ship {
 	int	thruster_tertiary_glow_bitmap;		// Bobboau
 
 	int	next_engine_stutter;				// timestamp to time the engine stuttering when a ship dies
+
+	fix base_texture_anim_frametime;		// Goober5000 - zero mark for texture animations
 
 	float total_damage_received;        // total damage received (for scoring purposes)
 	float damage_ship[MAX_DAMAGE_SLOTS];    // damage applied from each player
