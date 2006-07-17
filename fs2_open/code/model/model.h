@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.86 $
- * $Date: 2006-07-13 22:16:38 $
- * $Author: taylor $
+ * $Revision: 2.87 $
+ * $Date: 2006-07-17 00:10:00 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2006/07/13 22:16:38  taylor
+ * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
+ *
  * Revision 2.85  2006/07/06 22:00:39  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
@@ -1186,7 +1189,6 @@ typedef struct insignia {
 // Goober5000
 typedef struct texture_anim_info {
 	int num_frames;
-
 	float total_time;		// in seconds
 } texture_anim_info;
 
@@ -1199,6 +1201,7 @@ typedef struct texture_info {
 	texture_anim_info anim;	// animation info (if animated)
 } texture_info;
 
+// taylor
 typedef struct texture_map {
 	texture_info base_map;		// the standard base map
 	texture_info glow_map;		// optional glow map
