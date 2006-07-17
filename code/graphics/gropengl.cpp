@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.178 $
- * $Date: 2006-07-13 22:15:02 $
+ * $Revision: 2.179 $
+ * $Date: 2006-07-17 01:10:45 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178  2006/07/13 22:15:02  taylor
+ * handle non-MVE movies a bit better in OpenGL (don't get freaky with the window, don't lose input, etc.)
+ * some cleanup to OpenGL window handling, to fix min/max/full issues, and try to make shutdown a little nicer
+ *
  * Revision 2.177  2006/07/05 23:35:42  Goober5000
  * cvs comment tweaks
  *
@@ -1947,7 +1951,8 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 	TIMERBAR_PUSH(4);
 
 	int width, spacing, letter;
-	int x, y, do_resize, bw, bh;
+	int x, y, do_resize;
+	float bw, bh;
 	float u0, u1, v0, v1;
 	float x1, x2, y1, y2;
 	float u_scale, v_scale;
@@ -1964,8 +1969,12 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 
 	opengl_set_state( TEXTURE_SOURCE_NO_FILTERING, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
 
-	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
+	int ibw, ibh;
+	bm_get_info( gr_screen.current_bitmap, &ibw, &ibh );
 
+	bw = i2fl(ibw);
+	bh = i2fl(ibh);
+	
 	// set color!
 	if ( gr_screen.current_color.is_alphacolor )	{
 		glColor4ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue, gr_screen.current_color.alpha);
@@ -2066,11 +2075,11 @@ void gr_opengl_string( int sx, int sy, char *s, bool resize = true )
 		x2 = i2fl(_x2);
 		y2 = i2fl(_y2);
 
-		u0 = u_scale*i2fl(u+xd)/i2fl(bw);
-		v0 = v_scale*i2fl(v+yd)/i2fl(bh);
+		u0 = u_scale * (i2fl(u+xd) / bw);
+		v0 = v_scale * (i2fl(v+yd) / bh);
 
-		u1 = u_scale*i2fl((u+xd)+wc)/i2fl(bw);
-		v1 = v_scale*i2fl((v+yd)+hc)/i2fl(bh);
+		u1 = u_scale * (i2fl((u+xd)+wc) / bw);
+		v1 = v_scale * (i2fl((v+yd)+hc) / bh);
 
 		glTexCoord2f (u0, v1);
 		glVertex3f (x1, y2, -0.99f);
@@ -2664,7 +2673,7 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 	}
 
 	if ( gr_screen.current_alphablend_mode == GR_ALPHABLEND_FILTER ) {
-		if ( bm_has_alpha_channel(gr_screen.current_bitmap) ) {
+		if ( (gr_screen.current_bitmap >= 0) && bm_has_alpha_channel(gr_screen.current_bitmap) ) {
 			tmap_type = TCACHE_TYPE_XPARENT;
 
 			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
