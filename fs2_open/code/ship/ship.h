@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.5 $
- * $Date: 2006-07-17 00:10:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.150.2.6 $
+ * $Date: 2006-07-17 01:09:45 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.5  2006/07/17 00:10:05  Goober5000
+ * stage 2 of animation fix (add base frame time to each ship)
+ * --Goober5000
+ *
  * Revision 2.150.2.4  2006/07/06 21:53:59  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
@@ -1407,7 +1411,7 @@ typedef struct ship {
 //	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
 
 	// glow points
-	bool glow_point_bank_active[MAX_GLOW_POINT_BANKS];
+	std::vector<bool> glow_point_bank_active;
 
 	//cloaking stuff
 	vec3d texture_translation_key;		//translate the texture matrix for a cool effect
