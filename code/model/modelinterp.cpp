@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.164 $
- * $Date: 2006-07-13 22:16:38 $
- * $Author: taylor $
+ * $Revision: 2.165 $
+ * $Date: 2006-07-17 00:10:00 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.164  2006/07/13 22:16:38  taylor
+ * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
+ *
  * Revision 2.163  2006/07/07 16:26:44  taylor
  * make sure to reset the optional maps after each buffer render (little scary that this wasn't noticed a long time ago)
  *
@@ -1118,7 +1121,7 @@ int model_should_render_engine_glow(int objnum, int bank_obj);
 void model_render_buffers(bsp_info* model, polymodel * pm);
 void model_render_children_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level);
 
-int model_interp_get_texture(texture_info *tinfo);
+int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
 
 // forward references
 int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_check);
@@ -1883,6 +1886,15 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	//mprintf(("model_interp_tmappoly tmap_num: %d\n", tmap_num));
 	//Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
 
+	// Goober5000
+	fix base_frametime = 0;
+	if (Interp_objnum >= 0)
+	{
+		object *objp = &Objects[Interp_objnum];
+		if (objp->type == OBJ_SHIP)
+			base_frametime = Ships[objp->instance].base_texture_anim_frametime;
+	}
+
 	int is_invisible = 0;
 	if ((Warp_Map < 0))
 	{
@@ -2095,7 +2107,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						texture = Interp_replacement_textures[tmap_num];
 					} else {
 						// pick the texture, animating it if necessary
-						texture = model_interp_get_texture(&pm->maps[tmap_num].base_map);
+						texture = model_interp_get_texture(&pm->maps[tmap_num].base_map, base_frametime);
 						
 						// doing glow maps?
 						if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.texture >= 0) ) {
@@ -2103,16 +2115,16 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.is_anim) ) {
 								GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.anim.num_frames);
 							} else {
-								GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map);
+								GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map, base_frametime);
 							}
 						}
 
 						if((Detail.lighting > 2)  && (model_current_LOD < 2))
 						{
 							// likewise, etc.
-							SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map);
+							SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map, base_frametime);
 #ifdef BUMPMAPPING
-							BUMPMAP = model_interp_get_texture(&pm->maps[tmap_num].bump_map);
+							BUMPMAP = model_interp_get_texture(&pm->maps[tmap_num].bump_map, base_frametime);
 #endif
 						}
 					}
@@ -6081,6 +6093,15 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 	if(model->indexed_vertex_buffer == -1)
 		return;
 
+	// Goober5000
+	fix base_frametime = 0;
+	if (Interp_objnum >= 0)
+	{
+		object *objp = &Objects[Interp_objnum];
+		if (objp->type == OBJ_SHIP)
+			base_frametime = Ships[objp->instance].base_texture_anim_frametime;
+	}
+
 	// RT Added second conditional parameter, seems to not distrupt anything in either API
 	gr_set_lighting( !(Interp_flags & MR_NO_LIGHTING), !(Interp_flags & MR_NO_LIGHTING) );
 
@@ -6121,7 +6142,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 			texture = Interp_thrust_bitmap;
 		} else if (!no_texturing) {
 			// pick the texture, animating it if necessary
-			texture = model_interp_get_texture(&pm->maps[tmap_num].base_map);
+			texture = model_interp_get_texture(&pm->maps[tmap_num].base_map, base_frametime);
 
 			// doing glow maps?
 			if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.texture >= 0) ) {
@@ -6129,16 +6150,16 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 				if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.is_anim) ) {
 					GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.anim.num_frames);
 				} else {
-					GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map);
+					GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map, base_frametime);
 				}
 			}
 
 			if((Detail.lighting > 2)  && (model_current_LOD < 2))
 			{
 				// likewise, etc.
-				SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map);
+				SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map, base_frametime);
 #ifdef BUMPMAPPING
-				BUMPMAP = model_interp_get_texture(&pm->maps[tmap_num].bump_map);
+				BUMPMAP = model_interp_get_texture(&pm->maps[tmap_num].bump_map, base_frametime);
 #endif
 			}
 		}
@@ -6571,7 +6592,7 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 
 // Goober5000
 // uses same algorithms as in ship_do_thruster_frame
-int model_interp_get_texture(texture_info *tinfo)
+int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 {
 	int texture, frame;
 	texture_anim_info *anim;
@@ -6586,9 +6607,9 @@ int model_interp_get_texture(texture_info *tinfo)
 		anim = &tinfo->anim;
 
 		// sanity check total_time first thing
-		Assert( anim->total_time > 0.0f );
+		Assert(anim->total_time > 0.0f);
 
-		cur_time = f2fl( game_get_overall_frametime() % fl2f(anim->total_time) );
+		cur_time = f2fl((game_get_overall_frametime() - base_frametime) % fl2f(anim->total_time));
 
 		// get animation frame
 		frame = fl2i((cur_time * anim->num_frames) / anim->total_time);
