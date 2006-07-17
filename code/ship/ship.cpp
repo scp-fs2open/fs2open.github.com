@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.355 $
- * $Date: 2006-07-17 00:10:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.356 $
+ * $Date: 2006-07-17 01:12:52 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.355  2006/07/17 00:10:00  Goober5000
+ * stage 2 of animation fix (add base frame time to each ship)
+ * --Goober5000
+ *
  * Revision 2.354  2006/07/09 06:12:29  Goober5000
  * bah, make sure we're in the correct mode
  *
@@ -5307,10 +5311,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		shipp->replacement_textures_buf[i] = -1;
 	}
 
-	// all glow points enabled by default
-	for (i = 0; i < MAX_GLOW_POINT_BANKS; i++) {
-		shipp->glow_point_bank_active[i] = true;
-	}
+	shipp->glow_point_bank_active.clear();
 
 //	for(i=0; i<MAX_SHIP_DECALS; i++)
 //		shipp->decals[i].is_valid = 0;
@@ -6481,6 +6482,9 @@ void ship_delete( object * obj )
 		vm_free(shipp->shield_integrity);
 		shipp->shield_integrity = NULL;
 	}
+
+	// glow point banks
+	shipp->glow_point_bank_active.clear();
 
 	if ( shipp->ship_list_index != -1 ) {
 		ship_obj_list_remove(shipp->ship_list_index);
@@ -8505,7 +8509,22 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	} else
 		shipp->shield_integrity = NULL;
-	
+
+	// allocate memory for keeping glow point bank status (enabled/disabled)
+	// if alt model too then be sure to use largest number of glow banks for size
+	{
+		int n_glow_banks = 0;
+		bool val = true; // default value, enabled
+
+		if (!pm_alt)
+			n_glow_banks = pm_orig->n_glow_point_banks;
+		else
+			n_glow_banks = MAX(pm_orig->n_glow_point_banks, pm_alt->n_glow_point_banks);
+
+		if (n_glow_banks)
+			shipp->glow_point_bank_active.resize( n_glow_banks, val );
+	}
+
 	// fix up references into paths for this ship's model to point to a ship_subsys entry instead
 	// of a submodel index.  The ship_subsys entry should be the same for *all* instances of the
 	// same ship.
