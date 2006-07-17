@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.165 $
- * $Date: 2006-07-17 00:10:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.166 $
+ * $Date: 2006-07-17 01:12:19 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.165  2006/07/17 00:10:00  Goober5000
+ * stage 2 of animation fix (add base frame time to each ship)
+ * --Goober5000
+ *
  * Revision 2.164  2006/07/13 22:16:38  taylor
  * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
  *
@@ -3971,6 +3975,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	int zbuf_mode;
 	ship *shipp = NULL;
 	object *objp = NULL;
+	bool set_autocen = false;
 
 	// just to be on the safe side
 	Assert( Interp_objnum == objnum );
@@ -4056,7 +4061,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	bool use_api = (!is_outlines_only_htl || (gr_screen.mode == GR_DIRECT3D)) || (gr_screen.mode == GR_OPENGL);
 
 
-	g3_start_instance_matrix(pos,orient, use_api);
+	g3_start_instance_matrix(pos, orient, use_api);
 
 	if ( Interp_flags & MR_SHOW_RADIUS )	{
 		if ( !(Interp_flags & MR_SHOW_OUTLINE_PRESET) )	{
@@ -4139,19 +4144,32 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 #ifndef NDEBUG
 	if ( detail_level==0 )	{
-		MONITOR_INC( NumHiModelsRend, 1 );	
+		MONITOR_INC( NumHiModelsRend, 1 );
 	} else if ( detail_level ==pm->n_detail_levels-1 )	{
-		MONITOR_INC( NumLowModelsRend, 1 );	
+		MONITOR_INC( NumLowModelsRend, 1 );
 	}  else {
-		MONITOR_INC( NumMedModelsRend, 1 );	
+		MONITOR_INC( NumMedModelsRend, 1 );
 	}
-#endif	
+#endif
 
-	if((Interp_flags & MR_AUTOCENTER) && (pm->flags & PM_FLAG_AUTOCEN)){
-		vec3d auto_back = pm->autocenter;				
-		vm_vec_scale(&auto_back, -1.0f);		
-		g3_start_instance_matrix(&auto_back, NULL, true);		
-	}	
+	if (Interp_flags & MR_AUTOCENTER) {
+		vec3d auto_back = ZERO_VECTOR;
+
+		// standard autocenter using data in model
+		if (pm->flags & PM_FLAG_AUTOCEN) {
+			auto_back = pm->autocenter;
+			vm_vec_scale(&auto_back, -1.0f);
+			set_autocen = true;
+		}
+		// fake autocenter if we are a missile and don't already have autocen info
+		else if (Interp_flags & MR_IS_MISSILE) {
+			auto_back.xyz.z = -( (pm->submodel[pm->detail[detail_level]].max.xyz.z - pm->submodel[pm->detail[detail_level]].min.xyz.z) / 2.0f );
+			set_autocen = true;
+		}
+
+		if (set_autocen)
+			g3_start_instance_matrix(&auto_back, NULL, true);
+	}
 
 	gr_zbias(1);
 
@@ -4838,7 +4856,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		else model_draw_bay_paths_htl(model_num);
 	}
 
-	if((Interp_flags & MR_AUTOCENTER) && (pm->flags & PM_FLAG_AUTOCEN)){
+	if ( (Interp_flags & MR_AUTOCENTER) && (set_autocen) ) {
 		g3_done_instance(use_api);
 	}
 
