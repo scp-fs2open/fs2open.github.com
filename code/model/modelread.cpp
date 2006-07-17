@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.112 $
- * $Date: 2006-07-13 22:16:38 $
+ * $Revision: 2.113 $
+ * $Date: 2006-07-17 01:12:51 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.112  2006/07/13 22:16:38  taylor
+ * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
+ *
  * Revision 2.111  2006/07/06 22:00:39  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
@@ -2430,17 +2433,9 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				char props[MAX_PROP_LEN];
 
 				int gpb_num = cfread_int(fp);
-				glow_point_bank gpb_temp;
+				glow_point gp_temp;
 
-				if (gpb_num > MAX_GLOW_POINT_BANKS)
-				{
-					Warning(LOCATION, "Number of glow point banks exceeds maximum.  Limit is %d.", MAX_GLOW_POINT_BANKS);
-					pm->n_glow_point_banks = MAX_GLOW_POINT_BANKS;
-				}
-				else
-				{
-					pm->n_glow_point_banks = gpb_num;
-				}
+				pm->n_glow_point_banks = gpb_num;
 
 				pm->glow_point_banks = NULL;
 				if (gpb_num > 0)
@@ -2451,11 +2446,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				for (int gpb = 0; gpb < gpb_num; gpb++)
 				{
-					glow_point_bank *bank;
-					if (gpb < MAX_GLOW_POINT_BANKS)
-						bank = &pm->glow_point_banks[gpb];
-					else
-						bank = &gpb_temp;
+					glow_point_bank *bank = &pm->glow_point_banks[gpb];
 
 					bank->is_on = 1;
 					bank->glow_timestamp = 0;
@@ -2512,10 +2503,21 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 					for (j = 0; j < bank->num_slots; j++)
 					{
-						glow_point *p = &bank->point[j];
+						glow_point *p;
+
+						if (j < MAX_THRUSTER_SLOTS)
+							p = &bank->point[j];
+						else
+							p = &gp_temp;
+
 						cfread_vector(&(p->pnt), fp);
 						cfread_vector(&(p->norm), fp);
 						p->radius = cfread_float( fp);
+					}
+
+					if ( bank->num_slots >= MAX_THRUSTER_SLOTS ) {
+						Warning(LOCATION, "Number of glow points per bank exceeds maximum.  Limit is %d per bank.", MAX_THRUSTER_SLOTS);
+						bank->num_slots = MAX_THRUSTER_SLOTS;
 					}
 				}
 				break;					
@@ -3090,7 +3092,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// -------------------------------------------------------------------------
 
 #ifdef BUMPMAPPING
-	// bump maps -----------------------------------------------------------
+	// bump maps ---------------------------------------------------------------
 	if (true || (tmap->base_map.texture < 0))
 	{
 		tmap->bump_map.texture = -1;
@@ -3108,7 +3110,8 @@ void model_load_texture(polymodel *pm, int i, char *file)
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.pcx\n", pm->filename, tmp_name));
 		}
 	}
-	tmap->bump_map.original_texture = tmap->bump_map.texture
+	tmap->bump_map.original_texture = tmap->bump_map.texture;
+	// -------------------------------------------------------------------------
 #endif
 }
 
