@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.87 $
- * $Date: 2006-07-17 00:10:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.88 $
+ * $Date: 2006-07-17 01:12:51 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2006/07/17 00:10:00  Goober5000
+ * stage 2 of animation fix (add base frame time to each ship)
+ * --Goober5000
+ *
  * Revision 2.86  2006/07/13 22:16:38  taylor
  * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
  *
@@ -1057,8 +1061,6 @@ typedef struct thruster_bank {
 
 	int		obj_num;		// what subsystem number this thruster is on
 } thruster_bank;
-
-#define MAX_GLOW_POINT_BANKS	32
 
 typedef struct glow_point_bank {  // glow bank structure -Bobboau
 	int			type;

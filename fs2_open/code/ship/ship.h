@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.162 $
- * $Date: 2006-07-17 00:10:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.163 $
+ * $Date: 2006-07-17 01:12:52 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.162  2006/07/17 00:10:00  Goober5000
+ * stage 2 of animation fix (add base frame time to each ship)
+ * --Goober5000
+ *
  * Revision 2.161  2006/07/09 01:55:41  Goober5000
  * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
  * this should fix Mantis #977
@@ -1436,7 +1440,7 @@ typedef struct ship {
 //	decal decals[MAX_SHIP_DECALS];	//the decals of the ship
 
 	// glow points
-	bool glow_point_bank_active[MAX_GLOW_POINT_BANKS];
+	std::vector<bool> glow_point_bank_active;
 
 	//cloaking stuff
 	vec3d texture_translation_key;		//translate the texture matrix for a cool effect
