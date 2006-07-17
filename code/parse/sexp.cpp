@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.10 $
- * $Date: 2006-07-17 00:49:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.259.2.11 $
+ * $Date: 2006-07-17 01:09:45 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.10  2006/07/17 00:49:54  Goober5000
+ * move WMC's preload stuff into main preloader routine
+ *
  * Revision 2.259.2.9  2006/07/06 21:53:59  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
@@ -1720,8 +1723,8 @@ sexp_oper Operators[] = {
 	{ "activate-glow-points",		OP_ACTIVATE_GLOW_POINTS,		1, INT_MAX },	//-Bobboau
 	{ "deactivate-glow-maps",		OP_DEACTIVATE_GLOW_MAPS,		1, INT_MAX },	//-Bobboau
 	{ "activate-glow-maps",			OP_ACTIVATE_GLOW_MAPS,			1, INT_MAX },	//-Bobboau
-	{ "deactivate-glow-point-bank",	OP_DEACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINT_BANKS },	//-Bobboau
-	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, 1+MAX_GLOW_POINT_BANKS },	//-Bobboau
+	{ "deactivate-glow-point-bank",	OP_DEACTIVATE_GLOW_POINT_BANK,	2, INT_MAX },	//-Bobboau
+	{ "activate-glow-point-bank",	OP_ACTIVATE_GLOW_POINT_BANK,	2, INT_MAX },	//-Bobboau
 
 	{ "change-soundtrack",				OP_CHANGE_SOUNDTRACK,				1, 1 },		// Goober5000	
 	{ "play-sound-from-table",		OP_PLAY_SOUND_FROM_TABLE,		4, 4 },		// Goober5000
@@ -12146,14 +12149,15 @@ void sexp_change_ship_class(int n)
 //-Bobboau
 void sexp_activate_deactivate_glow_points(int n, bool activate)
 {
-	int sindex, i;
+	int sindex;
+	uint i;
 
 	for ( ; n != -1; n = CDR(n))
 	{
 		sindex = ship_name_lookup(CTEXT(n), 1);
 		if (sindex >= 0)
 		{
-			for (i = 0; i < MAX_GLOW_POINT_BANKS; i++)
+			for (i = 0; i < Ships[sindex].glow_point_bank_active.size(); i++)
 				Ships[sindex].glow_point_bank_active[i] = activate;
 		}
 	}
@@ -12168,7 +12172,7 @@ void sexp_activate_deactivate_glow_point_bank(int n, bool activate)
 	if (sindex >= 0)
 	{
 		num = eval_num(n);
-		if (num >= 0 && num < MAX_GLOW_POINT_BANKS)
+		if (num >= 0 && num < (int)Ships[sindex].glow_point_bank_active.size())
 		{
 			Ships[sindex].glow_point_bank_active[num] = activate;
 		}
