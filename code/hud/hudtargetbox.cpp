@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.65 $
- * $Date: 2006-05-13 07:09:24 $
+ * $Revision: 2.66 $
+ * $Date: 2006-07-17 01:12:19 $
  * $Author: taylor $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2006/05/13 07:09:24  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 2.64  2006/04/12 22:23:41  taylor
  * compiler warning fixes to make GCC 4.1 shut the hell up
  *
@@ -1794,7 +1798,7 @@ void hud_render_target_weapon(object *target_objp)
 			model_set_detail_level(hud_target_lod);
 		}
 
-		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, replacement_textures);
+		model_render( viewed_model_num, &viewed_obj->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_IS_MISSILE | MR_NO_FOGGING, -1, -1, replacement_textures);
 		hud_render_target_close();
 	}
 

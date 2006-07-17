@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-05-13 07:09:25 $
+ * $Revision: 2.33 $
+ * $Date: 2006-07-17 01:12:19 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/05/13 07:09:25  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 2.31  2006/04/20 06:32:14  Goober5000
  * proper capitalization according to Volition
  *
@@ -1825,7 +1829,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		rot_angles.h = PI/2.0f;
 	}
 	vm_angles_2_matrix(&object_orient, &rot_angles);
-	
+
 	gr_set_clip(x, y, w, h, resize);
 	g3_start_frame(1);
 	if(sip != NULL)
@@ -1920,7 +1924,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 	// rotate the ship as much as required for this frame
 	*rotation_buffer += PI2 * flFrametime / rev_rate;
 	while (*rotation_buffer > PI2){
-		*rotation_buffer -= PI2;	
+		*rotation_buffer -= PI2;
 	}
 
 	view_angles.p = -0.6f;
@@ -1933,7 +1937,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 	rot_angles.h = *rotation_buffer;
 	vm_rotate_matrix_by_angles(&model_orient, &rot_angles);
 	
-	gr_set_clip(x1, y1, x2, y2, resize);		
+	gr_set_clip(x1, y1, x2, y2, resize);
 
 	// render the ship
 	g3_start_frame(1);
@@ -1944,8 +1948,9 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 	else
 	{
 		polymodel *pm = model_get(model_id);
-		vec3d pos = { { { 0.0f, 0.0f, -pm->rad*1.5f } } };
+		vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
 		g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
+		flags |= MR_IS_MISSILE;
 	}
 
 	if (!Cmdline_nohtl) {
@@ -1963,7 +1968,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 
 	model_clear_instance(model_id);
 	model_set_detail_level(0);
-	model_render(model_id, &model_orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+	model_render(model_id, &model_orient, &vmd_zero_vector, flags);
 
 	if (!Cmdline_nohtl) 
 	{

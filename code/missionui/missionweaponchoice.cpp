@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.73 $
- * $Date: 2006-06-23 04:56:31 $
- * $Author: wmcoolmon $
+ * $Revision: 2.74 $
+ * $Date: 2006-07-17 01:12:19 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2006/06/23 04:56:31  wmcoolmon
+ * Change an Assert to a more verbose Warning, in the case of issues restoring a red alert ship. Also, try and get some backup allocation of weapons in.
+ *
  * Revision 2.72  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -3651,7 +3654,7 @@ void weapon_select_do(float frametime)
 				if(icon->model_index != -1)
 				{
 					//Draw the model
-					draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, 0.4f, sx, sy, w, h, NULL);
+					draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, 0.4f, sx, sy, w, h, NULL);
 				}
 				else if(icon->laser_bmap != -1)
 				{
@@ -3903,7 +3906,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 		if(icon->model_index != -1)
 		{
 			//Draw the model
-			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_LIGHTING, .5f / 1.25f, x, y, 56, 24, NULL);
+			draw_model_icon(icon->model_index, MR_LOCK_DETAIL | MR_NO_FOGGING | MR_NO_LIGHTING, .5f / 1.25f, x, y, 56, 24, NULL);
 		}
 		else if(icon->laser_bmap != -1)
 		{
