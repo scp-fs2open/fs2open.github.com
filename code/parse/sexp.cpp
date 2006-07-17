@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.268 $
- * $Date: 2006-07-06 22:00:39 $
- * $Author: taylor $
+ * $Revision: 2.269 $
+ * $Date: 2006-07-17 00:50:00 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.268  2006/07/06 22:00:39  taylor
+ * rest of the map/glow changes
+ *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
+ *  - same for glowpoints, back on a per-ship basis
+ *  - put specmaps and bumpmap back on a LOD0 and LOD1 affect (got changed to LOD0 only recently)
+ *  - fix glowmaps for shockwaves again
+ *  - add support for animated specmaps (mainly for TBP and Starfox mods)
+ * some minor code cleanup and compiler warning fixes
+ *
  * Revision 2.267  2006/07/06 05:35:13  Goober5000
  * fix for Mantis #856
  * --Goober5000
@@ -1956,9 +1965,6 @@ int extract_sexp_variable_index(int node);
 void init_sexp_vars();
 int eval_num(int node);
 
-//WMC - triggers functions when SEXPs are parsed rather than executed
-void trigger_operator_premission(int op);
-
 // Goober5000
 char *Sexp_current_replacement_argument;
 arg_item Sexp_applicable_argument_list;
@@ -2058,8 +2064,6 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 	Sexp_nodes[i].rest = rest;
 	Sexp_nodes[i].value = SEXP_UNKNOWN;
 	Sexp_nodes[i].flags = SNF_DEFAULT_VALUE;	// Goober5000
-
-	trigger_operator_premission(sexp_const);
 
 	return i;
 }
@@ -3805,7 +3809,7 @@ int get_sexp(char *token)
 				arg_handler = -1;
 		}
 
-		// DISABLE PRELOADING FOR NOW
+		// DISABLE ARGUMENT PRELOADING FOR NOW
 		// see Mantis #925 for discussion
 		// Also, the preloader will have to be moved to a different function (after the parsing is finished)
 		// in order to work properly with special arguments.  The current node is an orphan until get_sexp
@@ -3822,13 +3826,16 @@ int get_sexp(char *token)
 				// model is argument #1
 				n = CDR(start);
 				do_preload_for_arguments(preload_change_ship_model, n, arg_handler);
-
 				break;
 
 			case OP_SET_SPECIAL_WARPOUT_NAME:
 				// set flag for taylor
 				Knossos_warp_ani_used = 1;
+				break;
 
+			case OP_MISSION_SET_NEBULA:
+				// set flag for WMC
+				Nebula_sexp_used = true;
 				break;
 
 			case OP_WARP_EFFECT:
@@ -3842,33 +3849,28 @@ int get_sexp(char *token)
 					Knossos_warp_ani_used = 1;												// set flag just in case
 				else if (atoi(CTEXT(n)) == 1)											// if it's the Knossos type
 					Knossos_warp_ani_used = 1;												// set flag for sure
-
 				break;
 
 			case OP_SET_SKYBOX_MODEL:
 				// model is argument #1
 				n = CDR(start);
 				do_preload_for_arguments(sexp_set_skybox_model_preload, n, arg_handler);
-
 				break;
 
 			case OP_TURRET_CHANGE_WEAPON:
 				// weapon to change to is arg #3
 				n = CDDDR(start);
 				do_preload_for_arguments(preload_turret_change_weapon, n, arg_handler);
-
 				break;
 
 			case OP_ADD_SUN_BITMAP:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_sun_bitmap, n, arg_handler);
-
 				break;
 
 			case OP_ADD_BACKGROUND_BITMAP:
 				n = CDR(start);
 				do_preload_for_arguments(stars_preload_background_bitmap, n, arg_handler);
-
 				break;
 		}
 	}
@@ -9651,12 +9653,6 @@ void sexp_force_jump()
 {
 	// forced warp, taken from training failure code
 	gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
-}
-
-void sexp_pre_mission_set_nebula()
-{
-	//Set this so the nebula stuff gets initted
-	Nebula_sexp_used = true;
 }
 
 void sexp_mission_set_nebula(int n)
@@ -16223,21 +16219,6 @@ void test_sexps()
 		ignore_white_space();
 	}
 	exit(0);
-}
-
-void trigger_operator_premission(int op)
-{
-	switch(op)
-	{
-		case OP_MISSION_SET_NEBULA:
-			sexp_pre_mission_set_nebula();
-			break;
-		default:
-			break;
-		//No premission action
-	}
-
-	return;
 }
 
 // returns the data type returned by an operator
