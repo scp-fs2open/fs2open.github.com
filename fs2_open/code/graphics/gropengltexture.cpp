@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.52 $
- * $Date: 2006-07-15 06:11:27 $
+ * $Revision: 1.53 $
+ * $Date: 2006-07-17 01:11:32 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.52  2006/07/15 06:11:27  taylor
+ * change clamp mode for font/interface graphics, don't want the border factored in for scaling/filtering
+ *
  * Revision 1.51  2006/06/27 05:03:42  taylor
  * fix so that multiple FBOs can be used with different sizes (plus a few other minor adjustments)
  * fix various things that Valgrind complained about
@@ -1442,6 +1445,8 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 
 	//make sure texturing is on
 	opengl_switch_arb(stage, 1);
+
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_LOD_BIAS_EXT, -2.0f);
 
 	rc = gr_opengl_tcache_set_internal(bitmap_handle, bitmap_type, u_scale, v_scale, fail_on_full, force, stage);
 
