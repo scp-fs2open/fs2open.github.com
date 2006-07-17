@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.161 $
- * $Date: 2006-07-09 01:55:41 $
+ * $Revision: 2.162 $
+ * $Date: 2006-07-17 00:10:00 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.161  2006/07/09 01:55:41  Goober5000
+ * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
+ * this should fix Mantis #977
+ * --Goober5000
+ *
  * Revision 2.160  2006/07/07 01:45:57  Goober5000
  * fixed something that slipped by taylor ;)
  * (caused by having extra flags in the main branch)
@@ -1361,6 +1366,8 @@ typedef struct ship {
 	int	thruster_tertiary_glow_bitmap;		// Bobboau
 
 	int	next_engine_stutter;				// timestamp to time the engine stuttering when a ship dies
+
+	fix base_texture_anim_frametime;		// Goober5000 - zero mark for texture animations
 
 	float total_damage_received;        // total damage received (for scoring purposes)
 	float damage_ship[MAX_DAMAGE_SLOTS];    // damage applied from each player

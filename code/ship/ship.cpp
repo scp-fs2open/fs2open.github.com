@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.354 $
- * $Date: 2006-07-09 06:12:29 $
+ * $Revision: 2.355 $
+ * $Date: 2006-07-17 00:10:00 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.354  2006/07/09 06:12:29  Goober5000
+ * bah, make sure we're in the correct mode
+ *
  * Revision 2.353  2006/07/09 06:07:13  Goober5000
  * tweak max speed function
  * --Goober5000
@@ -5259,6 +5262,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->subsys_disrupted_flags=0;
 	shipp->subsys_disrupted_check_timestamp=timestamp(0);
 
+	shipp->base_texture_anim_frametime = 0;
+
 	// Bobboau's stuff
 	shipp->thruster_secondary_glow_bitmap = -1;
 	shipp->thruster_tertiary_glow_bitmap = -1;
@@ -8754,6 +8759,9 @@ void ship_model_change(int n, int ship_type, int changing_ship_class)
 	for (i=0; i<sip->num_detail_levels; i++ )	{
 		pm->detail_depth[i] = i2fl(sip->detail_distance[i]);
 	}
+
+	// reset texture animations
+	sp->base_texture_anim_frametime = game_get_overall_frametime();
 }
 
 // ----------------------------------------------------------------

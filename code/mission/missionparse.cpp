@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.187 $
- * $Date: 2006-07-13 06:11:52 $
+ * $Revision: 2.188 $
+ * $Date: 2006-07-17 00:10:00 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.187  2006/07/13 06:11:52  Goober5000
+ * * better formatting for substitute music options
+ * * better handling of all special FSO comment tags
+ * --Goober5000
+ *
  * Revision 2.186  2006/07/06 21:00:13  Goober5000
  * remove obsolete (and hackish) flag
  * --Goober5000
@@ -1394,6 +1399,8 @@ static int Allow_arrival_music_timestamp_m[2];
 static int Allow_arrival_message_timestamp_m[2];
 static int Arrival_message_delay_timestamp_m[2];
 
+extern fix game_get_overall_frametime();	// for texture animation
+
 // local prototypes
 void parse_player_info2(mission *pm);
 void post_process_mission();
@@ -2620,7 +2627,7 @@ int parse_create_object(p_object *pobjp)
 	{
 		if ((Ships[objp->instance].wingnum < 0) && (pobjp->arrival_location != ARRIVE_FROM_DOCK_BAY))
 		{
-			shipfx_warpin_start(pobjp->created_object);
+			shipfx_warpin_start(objp);
 		}
 	}
 
@@ -2666,16 +2673,16 @@ int parse_create_object_sub(p_object *p_objp)
 			position_ship_for_knossos_warpin(p_objp, shipnum, objnum);
 	}
 
-	Ships[shipnum].group = p_objp->group;
-	Ships[shipnum].team = p_objp->team;
-	strcpy(Ships[shipnum].ship_name, p_objp->name);
-	Ships[shipnum].escort_priority = p_objp->escort_priority;
-	Ships[shipnum].special_exp_index = p_objp->special_exp_index;
+	shipp->group = p_objp->group;
+	shipp->team = p_objp->team;
+	strcpy(shipp->ship_name, p_objp->name);
+	shipp->escort_priority = p_objp->escort_priority;
+	shipp->special_exp_index = p_objp->special_exp_index;
 
 	// Goober5000
-	Ships[shipnum].special_hitpoint_index = p_objp->special_hitpoint_index;
-	Ships[shipnum].ship_max_shield_strength = p_objp->ship_max_shield_strength;
-	Ships[shipnum].ship_max_hull_strength = p_objp->ship_max_hull_strength;
+	shipp->special_hitpoint_index = p_objp->special_hitpoint_index;
+	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
+	shipp->ship_max_hull_strength = p_objp->ship_max_hull_strength;
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
@@ -2700,8 +2707,7 @@ int parse_create_object_sub(p_object *p_objp)
 	// Goober5000 - this is also stupid; this is in ship_set but it needs to be done here because of the special hitpoints mod
 	Objects[objnum].hull_strength = shipp->ship_max_hull_strength;
 
-
-	Ships[shipnum].respawn_priority = p_objp->respawn_priority;
+	shipp->respawn_priority = p_objp->respawn_priority;
 
 	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
 	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && (p_objp->wingnum >= 0))
@@ -2709,7 +2715,7 @@ int parse_create_object_sub(p_object *p_objp)
 		for (i = 0; i < MAX_STARTING_WINGS; i++)
 		{
 			if (!stricmp(Starting_wing_names[i], Wings[p_objp->wingnum].name))
-				Ships[shipnum].team = Iff_traitor;
+				shipp->team = Iff_traitor;
 		}
 	}
 
@@ -2718,15 +2724,15 @@ int parse_create_object_sub(p_object *p_objp)
 		ship_assign_sound(&Ships[shipnum]);
 	}
 
-	aip = &(Ai_info[Ships[shipnum].ai_index]);
+	aip = &(Ai_info[shipp->ai_index]);
 	aip->behavior = p_objp->behavior;
 	aip->mode = aip->behavior;
 
 	// alternate type name
-	Ships[shipnum].alt_type_index = p_objp->alt_type_index;
+	shipp->alt_type_index = p_objp->alt_type_index;
 
 	aip->ai_class = p_objp->ai_class;
-	Ships[shipnum].weapons.ai_class = p_objp->ai_class;  // Fred uses this instead of above.
+	shipp->weapons.ai_class = p_objp->ai_class;  // Fred uses this instead of above.
 
 	// must reset the number of ai goals when the object is created
 	for (i = 0; i < MAX_AI_GOALS; i++)
@@ -2737,29 +2743,32 @@ int parse_create_object_sub(p_object *p_objp)
 		aip->goals[i].flags = 0;
 	}
 
-	Ships[shipnum].cargo1 = p_objp->cargo1;
+	shipp->cargo1 = p_objp->cargo1;
 
-	Ships[shipnum].arrival_location = p_objp->arrival_location;
-	Ships[shipnum].arrival_distance = p_objp->arrival_distance;
-	Ships[shipnum].arrival_anchor = p_objp->arrival_anchor;
-	Ships[shipnum].arrival_path_mask = p_objp->arrival_path_mask;
-	Ships[shipnum].arrival_cue = p_objp->arrival_cue;
-	Ships[shipnum].arrival_delay = p_objp->arrival_delay;
-	Ships[shipnum].departure_location = p_objp->departure_location;
-	Ships[shipnum].departure_anchor = p_objp->departure_anchor;
-	Ships[shipnum].departure_path_mask = p_objp->departure_path_mask;
-	Ships[shipnum].departure_cue = p_objp->departure_cue;
-	Ships[shipnum].departure_delay = p_objp->departure_delay;
-	Ships[shipnum].determination = p_objp->determination;
-	Ships[shipnum].wingnum = p_objp->wingnum;
-	Ships[shipnum].hotkey = p_objp->hotkey;
-	Ships[shipnum].score = p_objp->score;
-	Ships[shipnum].persona_index = p_objp->persona_index;
+	shipp->arrival_location = p_objp->arrival_location;
+	shipp->arrival_distance = p_objp->arrival_distance;
+	shipp->arrival_anchor = p_objp->arrival_anchor;
+	shipp->arrival_path_mask = p_objp->arrival_path_mask;
+	shipp->arrival_cue = p_objp->arrival_cue;
+	shipp->arrival_delay = p_objp->arrival_delay;
+	shipp->departure_location = p_objp->departure_location;
+	shipp->departure_anchor = p_objp->departure_anchor;
+	shipp->departure_path_mask = p_objp->departure_path_mask;
+	shipp->departure_cue = p_objp->departure_cue;
+	shipp->departure_delay = p_objp->departure_delay;
+	shipp->determination = p_objp->determination;
+	shipp->wingnum = p_objp->wingnum;
+	shipp->hotkey = p_objp->hotkey;
+	shipp->score = p_objp->score;
+	shipp->persona_index = p_objp->persona_index;
 
-	// handle the replacement textures - Goober5000
+	// reset texture animations
+	shipp->base_texture_anim_frametime = game_get_overall_frametime();
+
+	// handle the replacement textures
 	if (p_objp->num_texture_replacements > 0)
 	{
-		Ships[shipnum].replacement_textures = Ships[shipnum].replacement_textures_buf;
+		shipp->replacement_textures = shipp->replacement_textures_buf;
 	}
 
 	// now fill them in
@@ -2785,7 +2794,7 @@ int parse_create_object_sub(p_object *p_objp)
 			if (!stricmp(texture_file, p_objp->replacement_textures[i].old_texture))
 			{
 				// replace it
-				Ships[shipnum].replacement_textures[j] = p_objp->replacement_textures[i].new_texture_id;
+				shipp->replacement_textures[j] = p_objp->replacement_textures[i].new_texture_id;
 				break;
 			}
 		}
@@ -2794,20 +2803,20 @@ int parse_create_object_sub(p_object *p_objp)
 	// Karajorma - Copy across the alt ship classes for FRED. 
 	if (Fred_running)
 	{
-		Ships[shipnum].num_alt_class_one = p_objp->num_alt_class_one;
-		Ships[shipnum].num_alt_class_two = p_objp->num_alt_class_two;
+		shipp->num_alt_class_one = p_objp->num_alt_class_one;
+		shipp->num_alt_class_two = p_objp->num_alt_class_two;
 
 		for (int m=0;  m< p_objp->num_alt_class_one ; m++)
 		{
 			if (p_objp->alt_class_one_variable[m] == -1)
 			{
-				Ships[shipnum].alt_class_one[m] = p_objp->alt_class_one[m]; 
-				Ships[shipnum].alt_class_one_variable[m] = -1; 
+				shipp->alt_class_one[m] = p_objp->alt_class_one[m]; 
+				shipp->alt_class_one_variable[m] = -1; 
 			}
 			else 
 			{
-				Ships[shipnum].alt_class_one[m] = -1;
-				Ships[shipnum].alt_class_one_variable[m] = p_objp->alt_class_one_variable[m];
+				shipp->alt_class_one[m] = -1;
+				shipp->alt_class_one_variable[m] = p_objp->alt_class_one_variable[m];
 			}
 		}
 
@@ -2815,13 +2824,13 @@ int parse_create_object_sub(p_object *p_objp)
 		{
 			if (p_objp->alt_class_two_variable[n] == -1)
 			{
-				Ships[shipnum].alt_class_two[n] = p_objp->alt_class_two[n]; 
-				Ships[shipnum].alt_class_two_variable[n] = -1; 
+				shipp->alt_class_two[n] = p_objp->alt_class_two[n]; 
+				shipp->alt_class_two_variable[n] = -1; 
 			}
 			else 
 			{
-				Ships[shipnum].alt_class_two[n] = -1;
-				Ships[shipnum].alt_class_two_variable[n] = p_objp->alt_class_two_variable[n];
+				shipp->alt_class_two[n] = -1;
+				shipp->alt_class_two_variable[n] = p_objp->alt_class_two_variable[n];
 			}
 		}
 	}
@@ -2830,7 +2839,7 @@ int parse_create_object_sub(p_object *p_objp)
 	// ship create code, so only set them if the parse object flags say they are unique
 	if (p_objp->flags & P_SF_USE_UNIQUE_ORDERS)
 	{
-		Ships[shipnum].orders_accepted = p_objp->orders_accepted;
+		shipp->orders_accepted = p_objp->orders_accepted;
 
 		// MWA  5/15/98 -- Added the following debug code because some orders that ships
 		// will accept were apparently written out incorrectly with Fred.  This Int3() should
@@ -2840,11 +2849,11 @@ int parse_create_object_sub(p_object *p_objp)
 		{
 			int default_orders, remaining_orders;
 			
-			default_orders = ship_get_default_orders_accepted(&Ship_info[Ships[shipnum].ship_info_index]);
+			default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
 			remaining_orders = p_objp->orders_accepted & ~default_orders;
 			if (remaining_orders)
 			{
-				Warning(LOCATION, "Ship %s has orders which it will accept that are\nnot part of default orders accepted.\n\nPlease reedit this ship and change the orders again\n", Ships[shipnum].ship_name);
+				Warning(LOCATION, "Ship %s has orders which it will accept that are\nnot part of default orders accepted.\n\nPlease reedit this ship and change the orders again\n", shipp->ship_name);
 			}
 		}
 #endif
@@ -2858,19 +2867,19 @@ int parse_create_object_sub(p_object *p_objp)
 		Objects[objnum].flags |= OF_BEAM_PROTECTED;
 
 	if (p_objp->flags & P_OF_CARGO_KNOWN)
-		Ships[shipnum].flags |= SF_CARGO_REVEALED;
+		shipp->flags |= SF_CARGO_REVEALED;
 
 	if (p_objp->flags & P_SF_IGNORE_COUNT)
-		Ships[shipnum].flags |= SF_IGNORE_COUNT;
+		shipp->flags |= SF_IGNORE_COUNT;
 
 	if (p_objp->flags & P_SF_REINFORCEMENT)
-		Ships[shipnum].flags |= SF_REINFORCEMENT;
+		shipp->flags |= SF_REINFORCEMENT;
 
 	if (p_objp->flags & P_OF_NO_SHIELDS || p_objp->ship_max_shield_strength == 0.0f)
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 
 	if (p_objp->flags & P_SF_ESCORT)
-		Ships[shipnum].flags |= SF_ESCORT;
+		shipp->flags |= SF_ESCORT;
 
 	if (p_objp->flags & P_KNOSSOS_WARP_IN)
 	{
@@ -2887,75 +2896,75 @@ int parse_create_object_sub(p_object *p_objp)
 		Objects[objnum].flags |= OF_PLAYER_SHIP;
 
 	if (p_objp->flags & P_SF_NO_ARRIVAL_MUSIC)
-		Ships[shipnum].flags |= SF_NO_ARRIVAL_MUSIC;
+		shipp->flags |= SF_NO_ARRIVAL_MUSIC;
 
 	if (p_objp->flags & P_SF_NO_ARRIVAL_WARP)
-		Ships[shipnum].flags |= SF_NO_ARRIVAL_WARP;
+		shipp->flags |= SF_NO_ARRIVAL_WARP;
 
 	if (p_objp->flags & P_SF_NO_DEPARTURE_WARP)
-		Ships[shipnum].flags |= SF_NO_DEPARTURE_WARP;
+		shipp->flags |= SF_NO_DEPARTURE_WARP;
 
 	if (p_objp->flags & P_SF_DOCK_LEADER)
-		Ships[shipnum].flags |= SF_DOCK_LEADER;
+		shipp->flags |= SF_DOCK_LEADER;
 
 	if (p_objp->flags & P_SF_LOCKED)
-		Ships[shipnum].flags |= SF_LOCKED;
+		shipp->flags |= SF_LOCKED;
 
 	if (p_objp->flags & P_SF_WARP_BROKEN)
-		Ships[shipnum].flags |= SF_WARP_BROKEN;
+		shipp->flags |= SF_WARP_BROKEN;
 
 	if (p_objp->flags & P_SF_WARP_NEVER)
-		Ships[shipnum].flags |= SF_WARP_NEVER;
+		shipp->flags |= SF_WARP_NEVER;
 
 	if (p_objp->flags & P_SF_HIDDEN_FROM_SENSORS)
-		Ships[shipnum].flags |= SF_HIDDEN_FROM_SENSORS;
+		shipp->flags |= SF_HIDDEN_FROM_SENSORS;
 
 	if (p_objp->flags & P_SF_VAPORIZE)
-		Ships[shipnum].flags |= SF_VAPORIZE;
+		shipp->flags |= SF_VAPORIZE;
 
 	if (p_objp->flags & P_SF2_STEALTH)
-		Ships[shipnum].flags2 |= SF2_STEALTH;
+		shipp->flags2 |= SF2_STEALTH;
 
 	if (p_objp->flags & P_SF2_FRIENDLY_STEALTH_INVIS)
-		Ships[shipnum].flags2 |= SF2_FRIENDLY_STEALTH_INVIS;
+		shipp->flags2 |= SF2_FRIENDLY_STEALTH_INVIS;
 
 	if (p_objp->flags & P_SF2_DONT_COLLIDE_INVIS)
-		Ships[shipnum].flags2 |= SF2_DONT_COLLIDE_INVIS;
+		shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
 
 	if (p_objp->flags2 & P2_SF2_PRIMITIVE_SENSORS)
-		Ships[shipnum].flags2 |= SF2_PRIMITIVE_SENSORS;
+		shipp->flags2 |= SF2_PRIMITIVE_SENSORS;
 
 	if (p_objp->flags2 & P2_SF2_NO_SUBSPACE_DRIVE)
-		Ships[shipnum].flags2 |= SF2_NO_SUBSPACE_DRIVE;
+		shipp->flags2 |= SF2_NO_SUBSPACE_DRIVE;
 
 	if (p_objp->flags2 & P2_SF2_AFFECTED_BY_GRAVITY)
-		Ships[shipnum].flags2 |= SF2_AFFECTED_BY_GRAVITY;
+		shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
 
 	if (p_objp->flags2 & P2_SF2_TOGGLE_SUBSYSTEM_SCANNING)
-		Ships[shipnum].flags2 |= SF2_TOGGLE_SUBSYSTEM_SCANNING;
+		shipp->flags2 |= SF2_TOGGLE_SUBSYSTEM_SCANNING;
 
 	if (p_objp->flags2 & P2_SF2_NAV_CARRY_STATUS)
-		Ships[shipnum].flags2 |= SF2_NAVPOINT_CARRY;
+		shipp->flags2 |= SF2_NAVPOINT_CARRY;
 
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
-	if ((Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NO_ARRIVAL_WARP))
-		Ships[shipnum].flags |= SF_NO_ARRIVAL_WARP;
+	if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NO_ARRIVAL_WARP))
+		shipp->flags |= SF_NO_ARRIVAL_WARP;
 
-	if ((Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NO_DEPARTURE_WARP))
-		Ships[shipnum].flags |= SF_NO_DEPARTURE_WARP;
+	if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NO_DEPARTURE_WARP))
+		shipp->flags |= SF_NO_DEPARTURE_WARP;
 
 	// Kazan
-	if ((Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].flags & WF_NAV_CARRY))
-		Ships[shipnum].flags2 |= SF2_NAVPOINT_CARRY;
+	if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY))
+		shipp->flags2 |= SF2_NAVPOINT_CARRY;
 
 	// Goober5000 - moved this here from mission_eval_departures
 	// if ship is in a wing, copy the wing's departure information to the ship
-	if (Ships[shipnum].wingnum != -1)
+	if (shipp->wingnum != -1)
 	{
-		Ships[shipnum].departure_location = Wings[Ships[shipnum].wingnum].departure_location;
-		Ships[shipnum].departure_anchor = Wings[Ships[shipnum].wingnum].departure_anchor;
-		Ships[shipnum].departure_path_mask = Wings[Ships[shipnum].wingnum].departure_path_mask;
+		shipp->departure_location = Wings[shipp->wingnum].departure_location;
+		shipp->departure_anchor = Wings[shipp->wingnum].departure_anchor;
+		shipp->departure_path_mask = Wings[shipp->wingnum].departure_path_mask;
 	}
 
 	// mwa -- 1/30/98.  Do both flags.  Fred uses the ship flag, and FreeSpace will use the object
@@ -2968,55 +2977,55 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// Karajorma
 	if (p_objp->flags2 & P2_SF2_NO_BUILTIN_MESSAGES) 
-		Ships[shipnum].flags2 |= SF2_NO_BUILTIN_MESSAGES;
+		shipp->flags2 |= SF2_NO_BUILTIN_MESSAGES;
 
 	// Karajorma
 	if (p_objp->flags2 & P2_SF2_PRIMARIES_LOCKED) 
-		Ships[shipnum].flags2 |= SF2_PRIMARIES_LOCKED;
+		shipp->flags2 |= SF2_PRIMARIES_LOCKED;
 
 	// Karajorma
 	if (p_objp->flags2 & P2_SF2_SECONDARIES_LOCKED) 
-		Ships[shipnum].flags2 |= SF2_SECONDARIES_LOCKED;
+		shipp->flags2 |= SF2_SECONDARIES_LOCKED;
 
 	// Karajorma
 	if (p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY) 
-		Ships[shipnum].flags2 |= SF2_SET_CLASS_DYNAMICALLY;
+		shipp->flags2 |= SF2_SET_CLASS_DYNAMICALLY;
 
 	// Karajorma
 	if (p_objp->flags2 & P2_SF2_TEAM_LOADOUT_STORE_STATUS) 
-		Ships[shipnum].flags2 |= SF2_TEAM_LOADOUT_STORE_STATUS;
+		shipp->flags2 |= SF2_TEAM_LOADOUT_STORE_STATUS;
 
 	// Goober5000
 	if (p_objp->flags2 & P2_SF2_NO_DEATH_SCREAM)
-		Ships[shipnum].flags2 |= SF2_NO_DEATH_SCREAM;
+		shipp->flags2 |= SF2_NO_DEATH_SCREAM;
 
 	if (p_objp->flags & P_SF_GUARDIAN)
-		Ships[shipnum].ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
+		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
 
 	if (p_objp->flags & P_SF_SCANNABLE)
-		Ships[shipnum].flags |= SF_SCANNABLE;
+		shipp->flags |= SF_SCANNABLE;
 
 	if (p_objp->flags & P_SF_RED_ALERT_STORE_STATUS)
 	{
 		Assert(!(Game_mode & GM_MULTIPLAYER));
-		Ships[shipnum].flags |= SF_RED_ALERT_STORE_STATUS;
+		shipp->flags |= SF_RED_ALERT_STORE_STATUS;
 	}
 
 	// a couple of ai_info flags.  Also, do a reasonable default for the kamikaze damage regardless of
 	// whether this flag is set or not
 	if (p_objp->flags & P_AIF_KAMIKAZE)
 	{
-		Ai_info[Ships[shipnum].ai_index].ai_flags |= AIF_KAMIKAZE;
-		Ai_info[Ships[shipnum].ai_index].kamikaze_damage = p_objp->kamikaze_damage;
+		Ai_info[shipp->ai_index].ai_flags |= AIF_KAMIKAZE;
+		Ai_info[shipp->ai_index].kamikaze_damage = p_objp->kamikaze_damage;
 	}
 
 	if (p_objp->flags & P_AIF_NO_DYNAMIC)
-		Ai_info[Ships[shipnum].ai_index].ai_flags |= AIF_NO_DYNAMIC;
+		Ai_info[shipp->ai_index].ai_flags |= AIF_NO_DYNAMIC;
 
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
 	// is useful in multiplayer when ships respawn
-	Ships[shipnum].wing_status_wing_index = p_objp->wing_status_wing_index;
-	Ships[shipnum].wing_status_wing_pos = p_objp->wing_status_wing_pos;
+	shipp->wing_status_wing_index = p_objp->wing_status_wing_index;
+	shipp->wing_status_wing_pos = p_objp->wing_status_wing_pos;
 
 	// set up the ai_goals for this object -- all ships created here are AI controlled.
 	if (p_objp->ai_goals != -1)
@@ -3032,7 +3041,7 @@ int parse_create_object_sub(p_object *p_objp)
 			free_sexp2(p_objp->ai_goals);	// free up sexp nodes for reuse, since they aren't needed anymore.
 	}
 
-	Assert(Ships[shipnum].modelnum != -1);
+	Assert(shipp->modelnum != -1);
 
 	// initialize subsystem statii here.  The subsystems are given a percentage damaged.  So a percent value
 	// of 20% means that the subsystem is 20% damaged (*not* 20% of max hits).  This is opposite the way
@@ -3043,7 +3052,7 @@ int parse_create_object_sub(p_object *p_objp)
 		sssp = &Subsys_status[p_objp->subsys_index + i];
 		if (!stricmp(sssp->name, NOX("Pilot")))
 		{
-			wp = &Ships[shipnum].weapons;
+			wp = &shipp->weapons;
 			if (sssp->primary_banks[0] != SUBSYS_STATUS_NO_CHANGE)
 			{
 				for (j=k=0; j<MAX_SHIP_PRIMARY_BANKS; j++)
@@ -3107,8 +3116,8 @@ int parse_create_object_sub(p_object *p_objp)
 			continue;
 		}
 
-		ptr = GET_FIRST(&Ships[shipnum].subsys_list);
-		while (ptr != END_OF_LIST(&Ships[shipnum].subsys_list))
+		ptr = GET_FIRST(&shipp->subsys_list);
+		while (ptr != END_OF_LIST(&shipp->subsys_list))
 		{
 			// check the mission flag to possibly free all beam weapons - Goober5000, taken from SEXP.CPP
 			if (The_mission.flags & MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT)
@@ -3130,11 +3139,11 @@ int parse_create_object_sub(p_object *p_objp)
 				}
 				else
 				{
-					ptr->max_hits = ptr->system_info->max_subsys_strength * (Ships[shipnum].ship_max_hull_strength / sip->max_hull_strength);
+					ptr->max_hits = ptr->system_info->max_subsys_strength * (shipp->ship_max_hull_strength / sip->max_hull_strength);
 
 					float new_hits;
 					new_hits = ptr->max_hits * (100.0f - sssp->percent) / 100.f;
-					Ships[shipnum].subsys_info[ptr->system_info->type].current_hits -= (ptr->max_hits - new_hits);
+					shipp->subsys_info[ptr->system_info->type].current_hits -= (ptr->max_hits - new_hits);
 					if ((100.0f - sssp->percent) < 0.5)
 					{
 						ptr->current_hits = 0.0f;
@@ -3183,7 +3192,7 @@ int parse_create_object_sub(p_object *p_objp)
 	if (Fred_running)
 	{
 		Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity;
-		// Ships[shipnum].hull_hit_points_taken = (float) p_objp->initial_hull;
+		// shipp->hull_hit_points_taken = (float) p_objp->initial_hull;
 		Objects[objnum].hull_strength = (float) p_objp->initial_hull;
 		Objects[objnum].shield_quadrant[0] = (float) p_objp->initial_shields;
 
@@ -3193,8 +3202,8 @@ int parse_create_object_sub(p_object *p_objp)
 		int max_allowed_sparks, num_sparks, i;
 		polymodel *pm;
 
-		// Ships[shipnum].hull_hit_points_taken = (float) p_objp->initial_hull * sip->max_hull_hit_points / 100.0f;
-		Objects[objnum].hull_strength = p_objp->initial_hull * Ships[shipnum].ship_max_hull_strength / 100.0f;
+		// shipp->hull_hit_points_taken = (float) p_objp->initial_hull * sip->max_hull_hit_points / 100.0f;
+		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
 		for (i = 0; i<MAX_SHIELD_SECTIONS; i++)
 			Objects[objnum].shield_quadrant[i] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 
@@ -3213,7 +3222,7 @@ int parse_create_object_sub(p_object *p_objp)
 		// create sparks on a ship whose hull is damaged.  We will create two sparks for every 20%
 		// of hull damage done.  100 means no sparks.  between 80 and 100 do two sparks.  60 and 80 is
 		// four, etc.
-		pm = model_get(Ships[shipnum].modelnum);	// changed from sip to Ships[] by Goober5000
+		pm = model_get(shipp->modelnum);	// changed from sip to Ships[] by Goober5000
 		max_allowed_sparks = get_max_sparks(&Objects[objnum]);
 		num_sparks = (int)((100.0f - p_objp->initial_hull) / 5.0f);
 		if (num_sparks > max_allowed_sparks)
@@ -3234,12 +3243,12 @@ int parse_create_object_sub(p_object *p_objp)
 	// warpin effect
 	if ((Game_mode & GM_IN_MISSION) && (!Fred_running))
 	{
-		mission_log_add_entry(LOG_SHIP_ARRIVED, Ships[shipnum].ship_name, NULL);
+		mission_log_add_entry(LOG_SHIP_ARRIVED, shipp->ship_name, NULL);
 
 		if (!Game_restoring)
 		{
 			// if this ship isn't in a wing, determine its arrival location
-			if (Ships[shipnum].wingnum == -1)
+			if (shipp->wingnum == -1)
 			{
 				int location;
 
@@ -3258,13 +3267,13 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 		
 		// possibly add this ship to a hotkey set
-		if ((Ships[shipnum].wingnum == -1) && (Ships[shipnum].hotkey != -1))
-			mission_hotkey_mf_add(Ships[shipnum].hotkey, Ships[shipnum].objnum, HOTKEY_MISSION_FILE_ADDED);
-		else if ((Ships[shipnum].wingnum != -1) && (Wings[Ships[shipnum].wingnum].hotkey != -1))
-			mission_hotkey_mf_add(Wings[Ships[shipnum].wingnum].hotkey, Ships[shipnum].objnum, HOTKEY_MISSION_FILE_ADDED);
+		if ((shipp->wingnum == -1) && (shipp->hotkey != -1))
+			mission_hotkey_mf_add(shipp->hotkey, shipp->objnum, HOTKEY_MISSION_FILE_ADDED);
+		else if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].hotkey != -1))
+			mission_hotkey_mf_add(Wings[shipp->wingnum].hotkey, shipp->objnum, HOTKEY_MISSION_FILE_ADDED);
 
 		// possibly add this ship to the hud escort list
-		if (Ships[shipnum].flags & SF_ESCORT)
+		if (shipp->flags & SF_ESCORT)
 			hud_add_remove_ship_escort(objnum, 1);
 	}
 
