@@ -61,7 +61,7 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SPECIAL_WARP, m_special_warp);	
 	DDX_Control(pDX, IDC_DESTROY_SPIN, m_destroy_spin);	
 	DDX_Control(pDX, IDC_DISABLE_BUILTIN_SHIP, m_disable_messages);
-
+	DDX_Control(pDX, IDC_NO_DEATH_SCREAM, m_no_death_scream);
 	//}}AFX_DATA_MAP
 
 	if (pDX->m_bSaveAndValidate) {  // get dialog control values
@@ -80,7 +80,7 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 		m_escort_value.init(atoi(str));
 
 		// get respawn priority
-		if(The_mission.game_type & MISSION_TYPE_MULTI){
+		if(The_mission.game_type & MISSION_TYPE_MULTI) {
 			GetDlgItem(IDC_RESPAWN_PRIORITY)->GetWindowText(str);
 			m_respawn_priority.init(atoi(str));
 		}
@@ -110,6 +110,7 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_REDALERTCARRY, OnRedalertcarry)
 	ON_BN_CLICKED(IDC_TOGGLE_SUBSYSTEM_SCANNING, OnToggleSubsystemScanning)
 	ON_BN_CLICKED(IDC_DISABLE_BUILTIN_SHIP, OnDisableBuiltinShip)
+	ON_BN_CLICKED(IDC_NO_DEATH_SCREAM, OnNoDeathScream)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -129,6 +130,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, no_bank = 0, affected_by_gravity = 0;
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
 	int special_warp = 0, disable_messages = 0;
+	int no_death_scream = 0;
 	object *objp;
 	bool ship_in_wing = false;
 
@@ -158,6 +160,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					cargo_known = (Ships[i].flags & SF_CARGO_REVEALED) ? 1 : 0;
 					no_dynamic = (Ai_info[Ships[i].ai_index].ai_flags & AIF_NO_DYNAMIC) ? 1 : 0;
 					disable_messages = (Ships[i].flags2 & SF2_NO_BUILTIN_MESSAGES) ? 1 : 0;
+					no_death_scream = (Ships[i].flags2 & SF2_NO_DEATH_SCREAM) ? 1 : 0;
 
 					destroy_before_mission = (Ships[i].flags & SF_KILL_BEFORE_MISSION) ? 1 : 0;
 					m_destroy_value.init(Ships[i].final_death_time);
@@ -168,12 +171,12 @@ BOOL ship_flags_dlg::OnInitDialog()
 					escort = (Ships[i].flags & SF_ESCORT) ? 1 : 0;
 					m_escort_value.init(Ships[i].escort_priority);
 					
-					if(The_mission.game_type & MISSION_TYPE_MULTI){
+					if(The_mission.game_type & MISSION_TYPE_MULTI) {
 						m_respawn_priority.init(Ships[i].respawn_priority);
 					}
 
-					for (j=0; j<Num_reinforcements; j++){
-						if (!stricmp(Reinforcements[j].name, Ships[i].ship_name)){
+					for (j=0; j<Num_reinforcements; j++) {
+						if (!stricmp(Reinforcements[j].name, Ships[i].ship_name)) {
 							break;
 						}
 					}
@@ -202,6 +205,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					cargo_known = tristate_set(Ships[i].flags & SF_CARGO_REVEALED, cargo_known);
 					no_dynamic = tristate_set( Ai_info[Ships[i].ai_index].ai_flags & AIF_NO_DYNAMIC, no_dynamic );
 					disable_messages = tristate_set(Ships[i].flags2 & SF2_NO_BUILTIN_MESSAGES, disable_messages);
+					no_death_scream = tristate_set(Ships[i].flags2 & SF2_NO_DEATH_SCREAM, no_death_scream);
 
 					// check the final death time and set the internal variable according to whether or not
 					// the final_death_time is set.  Also, the value in the edit box must be set if all the
@@ -215,12 +219,12 @@ BOOL ship_flags_dlg::OnInitDialog()
 					escort = tristate_set(Ships[i].flags & SF_ESCORT, escort);
 					m_escort_value.init(Ships[i].escort_priority);
 
-					if(The_mission.game_type & MISSION_TYPE_MULTI){
+					if(The_mission.game_type & MISSION_TYPE_MULTI) {
 						m_respawn_priority.init(Ships[i].escort_priority);
 					}
 
-					for (j=0; j<Num_reinforcements; j++){
-						if (!stricmp(Reinforcements[j].name, Ships[i].ship_name)){
+					for (j=0; j<Num_reinforcements; j++) {
+						if (!stricmp(Reinforcements[j].name, Ships[i].ship_name)) {
 							break;
 						}
 					}
@@ -260,12 +264,13 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_red_alert_carry.SetCheck(red_alert_carry);
 	m_special_warp.SetCheck(special_warp);
 	m_disable_messages.SetCheck(disable_messages);
+	m_no_death_scream.SetCheck(no_death_scream);
 		
 	m_kdamage.setup(IDC_KDAMAGE, this);
 	m_destroy_value.setup(IDC_DESTROY_VALUE, this);
 	m_escort_value.setup(IDC_ESCORT_PRIORITY, this);
 
-	if(The_mission.game_type & MISSION_TYPE_MULTI){
+	if(The_mission.game_type & MISSION_TYPE_MULTI) {
 		m_respawn_priority.setup(IDC_RESPAWN_PRIORITY, this);
 	}
 	m_destroy_spin.SetRange(0, UD_MAXVAL);
@@ -274,7 +279,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_kdamage.display();
 	m_escort_value.display();
 
-	if(The_mission.game_type & MISSION_TYPE_MULTI){
+	if(The_mission.game_type & MISSION_TYPE_MULTI) {
 		m_respawn_priority.display();
 	} else {
 		GetDlgItem(IDC_RESPAWN_PRIORITY)->EnableWindow(FALSE);
@@ -685,8 +690,24 @@ void ship_flags_dlg::update_ship(int ship)
 			break;
 	}
 
+	switch (m_no_death_scream.GetCheck()) {
+		case 1:
+			if ( !(Ships[ship].flags2 & SF2_NO_DEATH_SCREAM) )
+				set_modified();
+
+			Ships[ship].flags2 |= SF2_NO_DEATH_SCREAM;
+			break;
+
+		case 0:
+			if ( Ships[ship].flags2 & SF2_NO_DEATH_SCREAM )
+				set_modified();
+
+			Ships[ship].flags2 &= ~SF2_NO_DEATH_SCREAM;
+			break;
+	}
+
 	Ships[ship].respawn_priority = 0;
-	if(The_mission.game_type & MISSION_TYPE_MULTI){
+	if(The_mission.game_type & MISSION_TYPE_MULTI) {
 		m_respawn_priority.save(&Ships[ship].respawn_priority);
 	}
 }
@@ -694,11 +715,11 @@ void ship_flags_dlg::update_ship(int ship)
 int ship_flags_dlg::tristate_set(int val, int cur_state)
 {
 	if (val) {
-		if (!cur_state){
+		if (!cur_state) {
 			return 2;
 		}
 	} else {
-		if (cur_state){
+		if (cur_state) {
 			return 2;
 		}
 	}
@@ -714,7 +735,7 @@ void ship_flags_dlg::set_modified()
 
 void ship_flags_dlg::OnCargoKnown() 
 {
-	if (m_cargo_known.GetCheck() == 1){
+	if (m_cargo_known.GetCheck() == 1) {
 		m_cargo_known.SetCheck(0);
 	} else {
 		m_cargo_known.SetCheck(1);
@@ -748,7 +769,7 @@ void ship_flags_dlg::OnEscort()
 
 void ship_flags_dlg::OnHiddenFromSensors() 
 {
-	if (m_hidden.GetCheck() == 1){
+	if (m_hidden.GetCheck() == 1) {
 		m_hidden.SetCheck(0);
 	} else {
 		m_hidden.SetCheck(1);
@@ -757,7 +778,7 @@ void ship_flags_dlg::OnHiddenFromSensors()
 
 void ship_flags_dlg::OnPrimitiveSensors() 
 {
-	if (m_primitive_sensors.GetCheck() == 1){
+	if (m_primitive_sensors.GetCheck() == 1) {
 		m_primitive_sensors.SetCheck(0);
 	} else {
 		m_primitive_sensors.SetCheck(1);
@@ -766,7 +787,7 @@ void ship_flags_dlg::OnPrimitiveSensors()
 
 void ship_flags_dlg::OnNoSubspaceDrive() 
 {
-	if (m_no_subspace_drive.GetCheck() == 1){
+	if (m_no_subspace_drive.GetCheck() == 1) {
 		m_no_subspace_drive.SetCheck(0);
 	} else {
 		m_no_subspace_drive.SetCheck(1);
@@ -775,7 +796,7 @@ void ship_flags_dlg::OnNoSubspaceDrive()
 
 void ship_flags_dlg::OnNoBank() 
 {
-	if (m_no_bank.GetCheck() == 1){
+	if (m_no_bank.GetCheck() == 1) {
 		m_no_bank.SetCheck(0);
 	} else {
 		m_no_bank.SetCheck(1);
@@ -784,7 +805,7 @@ void ship_flags_dlg::OnNoBank()
 
 void ship_flags_dlg::OnAffectedByGravity() 
 {
-	if (m_affected_by_gravity.GetCheck() == 1){
+	if (m_affected_by_gravity.GetCheck() == 1) {
 		m_affected_by_gravity.SetCheck(0);
 	} else {
 		m_affected_by_gravity.SetCheck(1);
@@ -793,7 +814,7 @@ void ship_flags_dlg::OnAffectedByGravity()
 
 void ship_flags_dlg::OnToggleSubsystemScanning() 
 {
-	if (m_toggle_subsystem_scanning.GetCheck() == 1){
+	if (m_toggle_subsystem_scanning.GetCheck() == 1) {
 		m_toggle_subsystem_scanning.SetCheck(0);
 	} else {
 		m_toggle_subsystem_scanning.SetCheck(1);
@@ -802,7 +823,7 @@ void ship_flags_dlg::OnToggleSubsystemScanning()
 
 void ship_flags_dlg::OnIgnoreCount() 
 {
-	if (m_ignore_count.GetCheck() == 1){
+	if (m_ignore_count.GetCheck() == 1) {
 		m_ignore_count.SetCheck(0);
 	} else {
 		m_ignore_count.SetCheck(1);
@@ -811,7 +832,7 @@ void ship_flags_dlg::OnIgnoreCount()
 
 void ship_flags_dlg::OnInvulnerable() 
 {
-	if (m_invulnerable.GetCheck() == 1){
+	if (m_invulnerable.GetCheck() == 1) {
 		m_invulnerable.SetCheck(0);
 	} else {
 		m_invulnerable.SetCheck(1);
@@ -820,7 +841,7 @@ void ship_flags_dlg::OnInvulnerable()
 
 void ship_flags_dlg::OnTargetableAsBomb() 
 {
-	if (m_targetable_as_bomb.GetCheck() == 1){
+	if (m_targetable_as_bomb.GetCheck() == 1) {
 		m_targetable_as_bomb.SetCheck(0);
 	} else {
 		m_targetable_as_bomb.SetCheck(1);
@@ -841,7 +862,7 @@ void ship_flags_dlg::OnKamikaze()
 
 void ship_flags_dlg::OnNoArrivalMusic() 
 {
-	if (m_no_arrival_music.GetCheck() == 1){
+	if (m_no_arrival_music.GetCheck() == 1) {
 		m_no_arrival_music.SetCheck(0);
 	} else {
 		m_no_arrival_music.SetCheck(1);
@@ -850,7 +871,7 @@ void ship_flags_dlg::OnNoArrivalMusic()
 
 void ship_flags_dlg::OnNoDynamic() 
 {
-	if (m_no_dynamic.GetCheck() == 1){
+	if (m_no_dynamic.GetCheck() == 1) {
 		m_no_dynamic.SetCheck(0);
 	} else {
 		m_no_dynamic.SetCheck(1);
@@ -859,7 +880,7 @@ void ship_flags_dlg::OnNoDynamic()
 
 void ship_flags_dlg::OnProtectShip() 
 {
-	if (m_protect_ship.GetCheck() == 1){
+	if (m_protect_ship.GetCheck() == 1) {
 		m_protect_ship.SetCheck(0);
 	} else {
 		m_protect_ship.SetCheck(1);
@@ -868,7 +889,7 @@ void ship_flags_dlg::OnProtectShip()
 
 void ship_flags_dlg::OnBeamProtectShip() 
 {
-	if (m_beam_protect_ship.GetCheck() == 1){
+	if (m_beam_protect_ship.GetCheck() == 1) {
 		m_beam_protect_ship.SetCheck(0);
 	} else {
 		m_beam_protect_ship.SetCheck(1);
@@ -877,7 +898,7 @@ void ship_flags_dlg::OnBeamProtectShip()
 
 void ship_flags_dlg::OnReinforcement() 
 {
-	if (m_reinforcement.GetCheck() == 1){
+	if (m_reinforcement.GetCheck() == 1) {
 		m_reinforcement.SetCheck(0);
 	} else {
 		m_reinforcement.SetCheck(1);
@@ -886,7 +907,7 @@ void ship_flags_dlg::OnReinforcement()
 
 void ship_flags_dlg::OnScannable() 
 {
-	if (m_scannable.GetCheck() == 1){
+	if (m_scannable.GetCheck() == 1) {
 		m_scannable.SetCheck(0);
 	} else {
 		m_scannable.SetCheck(1);
@@ -895,17 +916,27 @@ void ship_flags_dlg::OnScannable()
 
 void ship_flags_dlg::OnRedalertcarry() 
 {
-	if (m_red_alert_carry.GetCheck() == 1){
+	if (m_red_alert_carry.GetCheck() == 1) {
 		m_red_alert_carry.SetCheck(0);
 	} else {
 		m_red_alert_carry.SetCheck(1);
 	}
 }
+
 void ship_flags_dlg::OnDisableBuiltinShip() 
 {
-	if (m_disable_messages.GetCheck() == 1){
+	if (m_disable_messages.GetCheck() == 1) {
 		m_disable_messages.SetCheck(0);
 	} else {
 		m_disable_messages.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnNoDeathScream()
+{
+	if (m_no_death_scream.GetCheck() == 1) {
+ 		m_no_death_scream.SetCheck(0);
+	} else {
+		m_no_death_scream.SetCheck(1);
 	}
 }

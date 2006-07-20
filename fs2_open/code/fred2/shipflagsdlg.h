@@ -51,9 +51,10 @@ public:
 	CButton	m_cargo_known;
 	CButton	m_special_warp;
 	CButton	m_disable_messages;
+	CButton m_no_death_scream;
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
-	numeric_edit_control	m_destroy_value;
+	numeric_edit_control m_destroy_value;
 	numeric_edit_control m_escort_value;
 	numeric_edit_control m_respawn_priority;
 	//}}AFX_DATA
@@ -93,6 +94,7 @@ protected:
 	afx_msg void OnRedalertcarry();
 	afx_msg void OnToggleSubsystemScanning();
 	afx_msg void OnDisableBuiltinShip();
+	afx_msg void OnNoDeathScream();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

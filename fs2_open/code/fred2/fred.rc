@@ -2109,21 +2109,25 @@ BEGIN
     LTEXT           "Wave Filename",IDC_STATIC,7,139,50,8
 END
 
-IDD_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 149, 308
+IDD_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 149, 319
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Additional Ship Properties"
 FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "Destroy before Mission",IDC_DESTROY_CHECK,"Button",
                     BS_3STATE | WS_TABSTOP,7,7,87,10
-    EDITTEXT        IDC_DESTROY_VALUE,19,17,40,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Spin2",IDC_DESTROY_SPIN,"msctls_updown32",
                     UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
                     UDS_ARROWKEYS,7,17,11,14
+    EDITTEXT        IDC_DESTROY_VALUE,19,17,40,14,ES_AUTOHSCROLL | ES_NUMBER
+    LTEXT           "Seconds",IDC_STATIC,63,20,29,8
     CONTROL         "Scannable",IDC_SCANNABLE,"Button",BS_3STATE | 
                     WS_TABSTOP,7,34,50,10
     CONTROL         "Cargo Known",IDC_CARGO_KNOWN,"Button",BS_3STATE | 
                     WS_TABSTOP,7,43,59,10
+    CONTROL         "Toggle Subsystem Scanning",
+                    IDC_TOGGLE_SUBSYSTEM_SCANNING,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,52,135,10
     CONTROL         "Reinforcement Unit",IDC_REINFORCEMENT,"Button",
                     BS_3STATE | WS_TABSTOP,7,62,75,10
     CONTROL         "Protect Ship",IDC_PROTECT_SHIP,"Button",BS_3STATE | 
@@ -2134,6 +2138,7 @@ BEGIN
                     BS_3STATE | WS_TABSTOP,7,91,93,10
     CONTROL         "Escort Ship",IDC_ESCORT,"Button",BS_3STATE | WS_TABSTOP,
                     7,101,52,10
+    LTEXT           "Priority",IDC_STATIC,19,114,22,8
     EDITTEXT        IDC_ESCORT_PRIORITY,43,112,26,12,ES_AUTOHSCROLL
     CONTROL         "No Arrival Music",IDC_NO_ARRIVAL_MUSIC,"Button",
                     BS_3STATE | WS_TABSTOP,7,126,67,10
@@ -2147,31 +2152,28 @@ BEGIN
                     BS_3STATE | WS_TABSTOP,7,165,78,10
     CONTROL         "Kamikaze",IDC_KAMIKAZE,"Button",BS_3STATE | WS_TABSTOP,
                     7,175,47,10
+    LTEXT           "Damage",IDC_STATIC,19,186,28,8
     EDITTEXT        IDC_KDAMAGE,51,184,57,12,ES_AUTOHSCROLL
     CONTROL         "No Dynamic Goals",IDC_NO_DYNAMIC,"Button",BS_3STATE | 
                     WS_TABSTOP,7,198,75,10
     CONTROL         "Red Alert Carry Status",IDC_REDALERTCARRY,"Button",
                     BS_3STATE | WS_TABSTOP,7,208,85,10
-    CONTROL         "Special Warp",IDC_SPECIAL_WARP,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,238,59,10
-    EDITTEXT        IDC_RESPAWN_PRIORITY,93,269,49,14,ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "OK",IDOK,7,287,65,14
-    PUSHBUTTON      "Cancel",IDCANCEL,77,287,65,14
-    LTEXT           "Seconds",IDC_STATIC,63,20,29,8
-    LTEXT           "Damage",IDC_STATIC,19,186,28,8
-    LTEXT           "Priority",IDC_STATIC,19,114,22,8
-    LTEXT           "Respawn Priority",IDC_STATIC,29,272,54,8
-    CONTROL         "Doesn't Bank When Turning",IDC_NO_BANK,"Button",
-                    BS_3STATE | WS_TABSTOP,7,228,135,10
     CONTROL         "Affected By Gravity",IDC_AFFECTED_BY_GRAVITY,"Button",
                     BS_3STATE | WS_TABSTOP,7,218,77,10
-    CONTROL         "Toggle Subsystem Scanning",
-                    IDC_TOGGLE_SUBSYSTEM_SCANNING,"Button",BS_3STATE | 
-                    WS_TABSTOP,7,52,135,10
+    CONTROL         "Doesn't Bank When Turning",IDC_NO_BANK,"Button",
+                    BS_3STATE | WS_TABSTOP,7,228,135,10
+    CONTROL         "Special Warp",IDC_SPECIAL_WARP,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,238,59,10
     CONTROL         "Targetable as bomb",IDC_TARGETABLE_AS_BOMB,"Button",
                     BS_3STATE | WS_TABSTOP,7,248,79,10
     CONTROL         "Disable Built-in Messages",IDC_DISABLE_BUILTIN_SHIP,
                     "Button",BS_3STATE | WS_TABSTOP,7,258,96,10
+    CONTROL         "No Death Scream",IDC_NO_DEATH_SCREAM,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,268,96,10
+    LTEXT           "Respawn Priority",IDC_STATIC,29,284,54,8
+    EDITTEXT        IDC_RESPAWN_PRIORITY,93,281,49,14,ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK",IDOK,7,298,65,14
+    PUSHBUTTON      "Cancel",IDCANCEL,77,298,65,14
 END
 
 IDD_ADD_VARIABLE DIALOG DISCARDABLE  0, 0, 422, 102
@@ -2710,7 +2712,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 142
         TOPMARGIN, 7
-        BOTTOMMARGIN, 301
+        BOTTOMMARGIN, 312
     END
 
     IDD_ADD_VARIABLE, DIALOG
