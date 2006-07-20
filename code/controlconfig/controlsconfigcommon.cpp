@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.14 $
- * $Date: 2006-02-25 21:46:59 $
+ * $Revision: 2.15 $
+ * $Date: 2006-07-20 01:51:17 $
  * $Author: Goober5000 $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/02/25 21:46:59  Goober5000
+ * spelling
+ *
  * Revision 2.13  2005/10/11 05:24:33  wmcoolmon
  * Gliding
  *
@@ -458,13 +461,13 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           KEY_Y,				4,  TARGET_TAB,	true, "Target Ship in Reticle" },
 	{                           KEY_G,				-1, TARGET_TAB,	true, "Target Target's Nearest Attacker" },
 	{ KEY_ALTED	|					 KEY_Y,			-1, TARGET_TAB,	true, "Target Last Ship to Send Transmission" },
-	{ KEY_ALTED |               KEY_T,				-1, TARGET_TAB,	true, "Turn Off Auto-Targeting" },
+	{ KEY_ALTED |               KEY_T,				-1, TARGET_TAB,	true, "Turn Off Targeting" },
 
 	// targeting a ship's subsystem
 	{                           KEY_V,				-1, TARGET_TAB,	true, "Target Subsystem in Reticle" },
 	{                           KEY_S,				-1, TARGET_TAB,	true, "Target Next Subsystem" },
 	{             KEY_SHIFTED | KEY_S,				-1, TARGET_TAB,	true, "Target Previous Subsystem" },
-	{ KEY_ALTED |               KEY_S,				-1, TARGET_TAB,	true, "Turn Off Auto-Targeting of Subsystems" },
+	{ KEY_ALTED |               KEY_S,				-1, TARGET_TAB,	true, "Turn Off Targeting of Subsystems" },
 
 	// matching speed
 	{                           KEY_M,				-1, COMPUTER_TAB,	true, "Match Target Speed" },
@@ -501,15 +504,15 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{             KEY_SHIFTED | KEY_A,				-1, COMPUTER_TAB,	true, "Attack My Target" },
 	{             KEY_SHIFTED | KEY_Z,				-1, COMPUTER_TAB,	true, "Disarm My Target" },
 	{             KEY_SHIFTED | KEY_D,				-1, COMPUTER_TAB,	true, "Disable My Target" },
-	{             KEY_SHIFTED | KEY_V,				-1, COMPUTER_TAB,	true, "Attack my Subsystem" },
+	{             KEY_SHIFTED | KEY_V,				-1, COMPUTER_TAB,	true, "Attack My Subsystem" },
 	{             KEY_SHIFTED | KEY_X,				-1, COMPUTER_TAB,	true, "Capture My Target" },
 	{             KEY_SHIFTED | KEY_E,				-1, COMPUTER_TAB,	true, "Engage Enemy" },
-	{             KEY_SHIFTED | KEY_W,				-1, COMPUTER_TAB,	true, "Form on my Wing" },
-	{             KEY_SHIFTED | KEY_I,				-1, COMPUTER_TAB,	true, "Ignore my Target" },
-	{             KEY_SHIFTED | KEY_P,				-1, COMPUTER_TAB,	true, "Protect my Target" },
-	{             KEY_SHIFTED | KEY_C,				-1, COMPUTER_TAB,	true, "Cover me" },
-	{             KEY_SHIFTED | KEY_J,				-1, COMPUTER_TAB,	true, "Return to base" },
-	{				  KEY_SHIFTED | KEY_R,			-1, COMPUTER_TAB, true, "Rearm me" },
+	{             KEY_SHIFTED | KEY_W,				-1, COMPUTER_TAB,	true, "Form on My Wing" },
+	{             KEY_SHIFTED | KEY_I,				-1, COMPUTER_TAB,	true, "Ignore My Target" },
+	{             KEY_SHIFTED | KEY_P,				-1, COMPUTER_TAB,	true, "Protect My Target" },
+	{             KEY_SHIFTED | KEY_C,				-1, COMPUTER_TAB,	true, "Cover Me" },
+	{             KEY_SHIFTED | KEY_J,				-1, COMPUTER_TAB,	true, "Return to Base" },
+	{				  KEY_SHIFTED | KEY_R,			-1, COMPUTER_TAB, true, "Rearm Me" },
 
 	{									 KEY_R,		6,  TARGET_TAB,	true, "Target Closest Attacking Ship" },
 
@@ -542,7 +545,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           KEY_PAGEDOWN,		-1, COMPUTER_TAB,	true, "Decrease Engine Energy" },
 	{ KEY_ALTED |               KEY_D,				-1, COMPUTER_TAB, true, "Equalize Energy Settings" },
 
-	{                           KEY_Q,				7,  COMPUTER_TAB,	true, "Equalize Shield" },
+	{                           KEY_Q,				7,  COMPUTER_TAB,	true, "Equalize Shields" },
 	{                           KEY_UP,				-1, COMPUTER_TAB,	true, "Augment Forward Shield" },
 	{                           KEY_DOWN,			-1, COMPUTER_TAB,	true, "Augment Rear Shield" },
 	{                           KEY_LEFT,			-1, COMPUTER_TAB,	true, "Augment Left Shield" },
@@ -552,7 +555,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           -1,					-1, -1,				true, "Show Damage Popup Window" },	
 
 	{                           -1,					-1, SHIP_TAB,		true, "Bank When Pressed", CC_TYPE_CONTINUOUS },
-	{									 -1,					-1, -1,				true, "Show NavMap" },
+	{									 -1,					-1, -1,				true, "Show Nav Map" },
 	{ KEY_ALTED |	             KEY_E,				-1, COMPUTER_TAB,	true, "Add or Remove Escort" },
 	{ KEY_ALTED | KEY_SHIFTED | KEY_E,				-1, COMPUTER_TAB,	true, "Clear Escort List" },
 	{					             KEY_E,				-1, TARGET_TAB,	true, "Target Next Escort Ship" },
@@ -560,7 +563,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 
 	{                           KEY_U,				-1, TARGET_TAB,	true, "Target Next Uninspected Cargo" },
 	{             KEY_SHIFTED | KEY_U,				-1, TARGET_TAB,	true, "Target Previous Uninspected Cargo" },
-	{									 KEY_N,		-1, TARGET_TAB,	true, "Target Newest Ship In Area" },
+	{									 KEY_N,		-1, TARGET_TAB,	true, "Target Newest Ship in Area" },
 	{                           KEY_K,				-1, TARGET_TAB,	true, "Target Next Live Turret" },
 	{             KEY_SHIFTED | KEY_K,				-1, TARGET_TAB,	true, "Target Previous Live Turret" },
 
@@ -572,15 +575,15 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{									 KEY_2,				-1, COMPUTER_TAB, true, "(Multiplayer) Message Friendly", CC_TYPE_CONTINUOUS },
 	{									 KEY_3,				-1, COMPUTER_TAB, true, "(Multiplayer) Message Hostile", CC_TYPE_CONTINUOUS },
 	{									 KEY_4,				-1, COMPUTER_TAB, true, "(Multiplayer) Message Target", CC_TYPE_CONTINUOUS },
-	{ KEY_ALTED	|					 KEY_X,				-1, COMPUTER_TAB, true, "(Multiplayer) Observer zoom to target"},	
+	{ KEY_ALTED	|					 KEY_X,				-1, COMPUTER_TAB, true, "(Multiplayer) Observer Zoom to Target"},	
 
-	{             KEY_SHIFTED | KEY_PERIOD,		-1, COMPUTER_TAB,	true, "Increase time compression" },
-	{             KEY_SHIFTED | KEY_COMMA,			-1, COMPUTER_TAB,	true, "Decrease time compression" },
+	{             KEY_SHIFTED | KEY_PERIOD,		-1, COMPUTER_TAB,	true, "Increase Time Compression" },
+	{             KEY_SHIFTED | KEY_COMMA,			-1, COMPUTER_TAB,	true, "Decrease Time Compression" },
 
-	{									 KEY_L,				-1, COMPUTER_TAB, true, "Toggle high HUD contrast" },	
+	{									 KEY_L,				-1, COMPUTER_TAB, true, "Toggle High HUD Contrast" },	
 
-	{				  KEY_SHIFTED | KEY_N,				-1, COMPUTER_TAB, true, "(Multiplayer) Toggle network info"},
-	{				  KEY_SHIFTED | KEY_END,			-1, COMPUTER_TAB, true, "(Multiplayer) Self destruct"},
+	{				  KEY_SHIFTED | KEY_N,				-1, COMPUTER_TAB, true, "(Multiplayer) Toggle Network Info"},
+	{				  KEY_SHIFTED | KEY_END,			-1, COMPUTER_TAB, true, "(Multiplayer) Self Destruct"},
 
 	// Misc
 	{				  KEY_SHIFTED | KEY_O,			-1, COMPUTER_TAB, true, "Toggle HUD"},
@@ -588,15 +591,15 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{				  KEY_SHIFTED | KEY_1,			-1, SHIP_TAB, true, "Left Thrust", CC_TYPE_CONTINUOUS},
 	{				  KEY_SHIFTED | KEY_PADPLUS,	-1, SHIP_TAB, true, "Up Thrust", CC_TYPE_CONTINUOUS},
 	{				  KEY_SHIFTED | KEY_PADENTER,	-1, SHIP_TAB, true, "Down Thrust", CC_TYPE_CONTINUOUS},
-	{ KEY_ALTED |     KEY_SHIFTED | KEY_Q,			-1, COMPUTER_TAB, true, "Toggle HUD Wireframe Targetbox"},
-	{							-1,					-1,	COMPUTER_TAB, false, "Top-down View"},
-	{							-1,					-1, COMPUTER_TAB, false, "Track targeted object", CC_TYPE_CONTINUOUS},
+	{ KEY_ALTED |     KEY_SHIFTED | KEY_Q,			-1, COMPUTER_TAB, true, "Toggle HUD Wireframe Target View"},
+	{							-1,					-1,	COMPUTER_TAB, false, "Top-Down View"},
+	{							-1,					-1, COMPUTER_TAB, false, "Track Targeted Object", CC_TYPE_CONTINUOUS},
 
 	// Auto Navigation Systen
 	{ KEY_ALTED |					KEY_A,			-1, COMPUTER_TAB, false, "Toggle Auto Pilot"},
 	{ KEY_ALTED |					KEY_N,			-1, COMPUTER_TAB, false, "Cycle Nav Points"},
 	
-	{ KEY_ALTED |					KEY_G,			-1, SHIP_TAB, false, "Toggle gliding"},
+	{ KEY_ALTED |					KEY_G,			-1, SHIP_TAB, false, "Toggle Gliding"},
 
 	{                           -1,					-1, -1,			 false,	"" }
 };
