@@ -130,9 +130,16 @@ void ShipSpecialHitpoints::OnOk()
 	// TODO: Add extra validation here
 	if (m_special_hitpoints_enabled) {
 
+		// Don't update anything if the hull strength is invalid
+		if (m_hull < 10) 
+		{
+			return;
+		}
+
 		int start;
 
 		if (Ships[m_ship_num].special_hitpoint_index == -1) {
+
 			// get free sexp_variables
 			start = sexp_variable_allocate_block(Ships[m_ship_num].ship_name, SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_HIT);
 			if (start == -1) {
