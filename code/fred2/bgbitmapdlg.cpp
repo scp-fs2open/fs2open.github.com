@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 1.6 $
+ * $Date: 2006-07-20 21:43:05 $
+ * $Author: karajorma $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5.2.1  2006/07/20 21:15:11  karajorma
+ * Fix for Mantis 996
+ *
+ * Revision 1.5  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.4  2006/02/25 21:46:59  Goober5000
  * spelling
  *
@@ -1007,6 +1013,9 @@ void bg_bitmap_dlg::OnDelBitmap()
 	if(b_index < 0){
 		return;
 	}
+
+	// remove the string from the listbox
+	((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->DeleteString(b_index);
 	
 	// remove it from the instance list
 	stars_delete_instance_FRED(b_index, false);
