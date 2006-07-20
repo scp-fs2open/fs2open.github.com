@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.8 $
- * $Date: 2006-07-17 00:10:05 $
+ * $Revision: 2.178.2.9 $
+ * $Date: 2006-07-20 00:41:26 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.8  2006/07/17 00:10:05  Goober5000
+ * stage 2 of animation fix (add base frame time to each ship)
+ * --Goober5000
+ *
  * Revision 2.178.2.7  2006/07/13 06:11:48  Goober5000
  * * better formatting for substitute music options
  * * better handling of all special FSO comment tags
@@ -1347,6 +1351,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"no-builtin-messages",
 	"primaries-locked", 
 	"secondaries-locked",
+	"no-death-scream",
 };
 
 
@@ -2924,6 +2929,10 @@ int parse_create_object_sub(p_object *p_objp)
 	// Karajorma
 	if (p_objp->flags2 & P2_SF2_SECONDARIES_LOCKED) 
 		shipp->flags2 |= SF2_SECONDARIES_LOCKED;
+
+	// Goober5000
+	if (p_objp->flags2 & P2_SF2_NO_DEATH_SCREAM)
+		Ships[shipnum].flags2 |= SF2_NO_DEATH_SCREAM;
 
 	if (p_objp->flags & P_SF_GUARDIAN)
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;

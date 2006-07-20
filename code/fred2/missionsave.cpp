@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.4 $
- * $Date: 2006-07-13 06:11:48 $
+ * $Revision: 1.14.2.5 $
+ * $Date: 2006-07-20 00:41:25 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.4  2006/07/13 06:11:48  Goober5000
+ * * better formatting for substitute music options
+ * * better handling of all special FSO comment tags
+ * --Goober5000
+ *
  * Revision 1.14.2.3  2006/06/23 09:15:53  karajorma
  * Make the ambient light sliders actually save their settings.
  *
@@ -1718,6 +1723,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"primaries-locked\"");
 			if (Ships[i].flags2 & SF2_SECONDARIES_LOCKED)
 				fout(" \"secondaries-locked\"");
+			if (Ships[i].flags2 & SF2_NO_DEATH_SCREAM)
+				fout(" \"no-death-scream\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.6 $
- * $Date: 2006-07-17 01:09:45 $
- * $Author: taylor $
+ * $Revision: 2.150.2.7 $
+ * $Date: 2006-07-20 00:41:26 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.6  2006/07/17 01:09:45  taylor
+ * make glow point banks dynamic
+ *
  * Revision 2.150.2.5  2006/07/17 00:10:05  Goober5000
  * stage 2 of animation fix (add base frame time to each ship)
  * --Goober5000
@@ -1170,6 +1173,7 @@ typedef struct ship_subsys_info {
 #define SF2_PRIMARIES_LOCKED				(1<<12)		// Karajorma - This ship can't fire primary weapons
 #define SF2_SECONDARIES_LOCKED				(1<<13)		// Karajorma - This ship can't fire secondary weapons
 #define SF2_GLOWMAPS_DISABLED				(1<<14)		// taylor - to disable glow maps
+#define SF2_NO_DEATH_SCREAM					(1<<15)		// Goober5000 - for WCS
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
