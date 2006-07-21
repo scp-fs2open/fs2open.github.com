@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.h $
- * $Revision: 2.8 $
- * $Date: 2006-04-20 06:32:23 $
+ * $Revision: 2.9 $
+ * $Date: 2006-07-21 05:41:10 $
  * $Author: Goober5000 $
  *
  * New docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2006/04/20 06:32:23  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.7  2005/07/13 03:35:31  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -85,6 +88,13 @@ typedef struct dock_function_info {
 
 } dock_function_info;
 
+enum axis_type
+{
+	X_AXIS,
+	Y_AXIS,
+	Z_AXIS,
+};
+
 
 // get the first object in objp's dock list
 object *dock_get_first_docked_object(object *objp);
@@ -122,13 +132,13 @@ void dock_calc_docked_center_of_mass(vec3d *dest, object *objp);
 float dock_calc_total_docked_mass(object *objp);
 
 // calculate cross-sectional radius of a set of docked models
-enum axis_type
-{
-	X_AXIS,
-	Y_AXIS,
-	Z_AXIS
-};
-float dock_calc_cross_sectional_radius_perpendicular_to_axis(object *objp, axis_type axis);
+float dock_calc_max_cross_sectional_radius_perpendicular_to_axis(object *objp, axis_type axis);
+
+// *insert sophomoric jokes here*
+// The semilatus rectum is analagous to the radius, but restricted to one dimension (whereas the radius
+// covers two dimensions).  It is half of the latus rectum.  More information can be found in Wikipedia
+// or in any math textbook. :p
+float dock_calc_max_semilatus_rectum_parallel_to_axis(object *objp, axis_type axis);
 
 // calculate the overall forward speed of the entire docked mass
 float dock_calc_docked_fspeed(object *objp);
