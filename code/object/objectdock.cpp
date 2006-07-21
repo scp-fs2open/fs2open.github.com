@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-04-20 06:32:23 $
+ * $Revision: 2.12 $
+ * $Date: 2006-07-21 05:41:10 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/04/20 06:32:23  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.10  2005/10/30 20:20:44  Goober5000
  * comment fixage
  *
@@ -75,7 +78,8 @@ void dock_check_find_docked_object_helper(object *objp, dock_function_info *info
 void dock_calc_docked_center_helper(object *objp, dock_function_info *infop);
 void dock_calc_docked_center_of_mass_helper(object *objp, dock_function_info *infop);
 void dock_calc_total_docked_mass_helper(object *objp, dock_function_info *infop);
-void dock_calc_cross_sectional_radius_squared_perpendicular_to_line_helper(object *objp, dock_function_info *infop);
+void dock_calc_max_cross_sectional_radius_squared_perpendicular_to_line_helper(object *objp, dock_function_info *infop);
+void dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper(object *objp, dock_function_info *infop);
 void dock_find_max_speed_helper(object *objp, dock_function_info *infop);
 void dock_find_max_fspeed_helper(object *objp, dock_function_info *infop);
 
@@ -207,31 +211,31 @@ float dock_calc_total_docked_mass(object *objp)
 	return dfi.maintained_variables.float_value;
 }
 
-float dock_calc_cross_sectional_radius_perpendicular_to_axis(object *objp, axis_type axis)
+float dock_calc_max_cross_sectional_radius_perpendicular_to_axis(object *objp, axis_type axis)
 {
-	vec3d local_line_start, local_line_end;
-	vec3d world_line_start, world_line_end;
+	vec3d local_line_end;
+	vec3d *world_line_start, world_line_end;
 	dock_function_info dfi;
 
-	// to calculate cross-sectional radius, we need a line that will be perpendicular to the cross-section
+	// to calculate the cross-sectional radius, we need a line that will be perpendicular to the cross-section
 
-	vm_vec_zero(&local_line_start);
+	// the first endpoint is simply the position of the object
+	world_line_start = &objp->pos;
+
+	// the second endpoint extends in the axis direction
 	vm_vec_zero(&local_line_end);
 	switch(axis)
 	{
 		case X_AXIS:
-			local_line_start.xyz.x = -2.0f * objp->radius;
-			local_line_end.xyz.x = 2.0f * objp->radius;
+			local_line_end.xyz.x = 1.0f;
 			break;
 
 		case Y_AXIS:
-			local_line_start.xyz.y = -2.0f * objp->radius;
-			local_line_end.xyz.y = 2.0f * objp->radius;
+			local_line_end.xyz.y = 1.0f;
 			break;
 
 		case Z_AXIS:
-			local_line_start.xyz.z = -2.0f * objp->radius;
-			local_line_end.xyz.z = 2.0f * objp->radius;
+			local_line_end.xyz.z = 1.0f;
 			break;
 
 		default:
@@ -239,24 +243,71 @@ float dock_calc_cross_sectional_radius_perpendicular_to_axis(object *objp, axis_
 			return 0.0f;
 	}
 
-	// rotate and move the endpoints to go through the axis of the actual object
-	vm_vec_rotate(&world_line_start, &local_line_start, &objp->orient);
+	// rotate and move the endpoint to go through the axis of the actual object
 	vm_vec_rotate(&world_line_end, &local_line_end, &objp->orient);
-	vm_vec_add2(&world_line_start, &objp->pos);
 	vm_vec_add2(&world_line_end, &objp->pos);
 
-	// now we have a line twice the length of an object going straight through it, 
-	// centered at its position (although the length and center of the line don't
-	// matter, as it's calculated as an endless line)
+	// now we have a unit vector starting at the object's position and pointing along the chosen axis
+	// (although the length doesn't matter, as it's calculated as an endless line)
 
 	// now determine the cross-sectional radius
 
 	// set parameters and call function for the radius squared
-	dfi.parameter_variables.vecp_value = &world_line_start;
+	dfi.parameter_variables.vecp_value = world_line_start;
 	dfi.parameter_variables.vecp_value2 = &world_line_end;
-	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_cross_sectional_radius_squared_perpendicular_to_line_helper);
+	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_max_cross_sectional_radius_squared_perpendicular_to_line_helper);
 
 	// the radius is the square root of our result
+	return fl_sqrt(dfi.maintained_variables.float_value);
+}
+
+float dock_calc_max_semilatus_rectum_parallel_to_axis(object *objp, axis_type axis)
+{
+	vec3d local_line_end;
+	vec3d *world_line_start, world_line_end;
+	dock_function_info dfi;
+
+	// to calculate the semilatus rectum, we need a directrix that will be parallel to the axis
+
+	// the first endpoint is simply the position of the object
+	world_line_start = &objp->pos;
+
+	// the second endpoint extends in the axis direction
+	vm_vec_zero(&local_line_end);
+	switch(axis)
+	{
+		case X_AXIS:
+			local_line_end.xyz.x = 1.0f;
+			break;
+
+		case Y_AXIS:
+			local_line_end.xyz.y = 1.0f;
+			break;
+
+		case Z_AXIS:
+			local_line_end.xyz.z = 1.0f;
+			break;
+
+		default:
+			Int3();
+			return 0.0f;
+	}
+
+	// rotate and move the endpoint to go through the axis of the actual object
+	vm_vec_rotate(&world_line_end, &local_line_end, &objp->orient);
+	vm_vec_add2(&world_line_end, &objp->pos);
+
+	// now we have a unit vector starting at the object's position and pointing along the chosen axis
+	// (although the length doesn't matter, as it's calculated as an endless line)
+
+	// now determine the semilatus rectum
+
+	// set parameters and call function for the semilatus rectum squared
+	dfi.parameter_variables.vecp_value = world_line_start;
+	dfi.parameter_variables.vecp_value2 = &world_line_end;
+	dock_evaluate_all_docked_objects(objp, &dfi, dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper);
+
+	// the semilatus rectum is the square root of our result
 	return fl_sqrt(dfi.maintained_variables.float_value);
 }
 
@@ -473,15 +524,16 @@ void dock_calc_total_docked_mass_helper(object *objp, dock_function_info *infop)
 	infop->maintained_variables.float_value += objp->phys_info.mass;
 }
 
-// What we're doing here is finding the distances between each side of the object and the line, and then taking the
+// What we're doing here is finding the distances between each extent of the object and the line, and then taking the
 // maximum distance as the cross-sectional radius.  We're actually maintaining the square of the distance rather than
 // the actual distance, as it's faster to calculate and it gives the same result in a greater-than or less-than
 // comparison.  When we're done calculating everything for all objects (i.e. when we return to the parent function)
 // we take the square root of the final value.
-void dock_calc_cross_sectional_radius_squared_perpendicular_to_line_helper(object *objp, dock_function_info *infop)
+void dock_calc_max_cross_sectional_radius_squared_perpendicular_to_line_helper(object *objp, dock_function_info *infop)
 {
-	vec3d world_point, local_point, nearest;
+	vec3d world_point, local_point[6], nearest;
 	polymodel *pm;
+	int i;
 	float dist_squared;
 
 	// line parameters
@@ -489,96 +541,88 @@ void dock_calc_cross_sectional_radius_squared_perpendicular_to_line_helper(objec
 	vec3d *line_end = infop->parameter_variables.vecp_value2;
 
 	// We must find world coordinates for each of the six endpoints on the three axes of the object.  I looked up
-	// which axis is front/back, left/right, and up/down, but I'm not sure which endpoint is which.  It doesn't
+	// which axis is front/back, left/right, and up/down, as well as which endpoint is which.  It doesn't really
 	// matter, though, as all we need are the distances.
 
 	// grab our model
 	Assert(objp->type == OBJ_SHIP);
 	pm = model_get(Ships[objp->instance].modelnum);
 
+	// set up the points we want to check
+	memset(local_point, 0, sizeof(vec3d) * 6);
+	local_point[0].xyz.x = pm->maxs.xyz.x;	// right point (max x)
+	local_point[1].xyz.x = pm->mins.xyz.x;	// left point (min x)
+	local_point[2].xyz.y = pm->maxs.xyz.y;	// top point (max y)
+	local_point[3].xyz.y = pm->mins.xyz.y;	// bottom point (min y)
+	local_point[4].xyz.z = pm->maxs.xyz.z;	// front point (max z)
+	local_point[5].xyz.z = pm->mins.xyz.z;	// rear point (min z)
 
-	// calculate position of right point (max x)
-	vm_vec_zero(&local_point);
-	local_point.xyz.x = pm->maxs.xyz.x;
-	vm_vec_rotate(&world_point, &local_point, &objp->orient);
-	vm_vec_add2(&world_point, &objp->pos);
+	// check points
+	for (i = 0; i < 6; i++)
+	{
+		// calculate position of point
+		vm_vec_rotate(&world_point, &local_point[i], &objp->orient);
+		vm_vec_add2(&world_point, &objp->pos);
 
-	// calculate square of distance to line
-	vm_vec_dist_squared_to_line(&world_point, line_start, line_end, &nearest, &dist_squared);
+		// calculate square of distance to line
+		vm_vec_dist_squared_to_line(&world_point, line_start, line_end, &nearest, &dist_squared);
 	
-	// update with farthest distance squared
-	if (dist_squared > infop->maintained_variables.float_value)
-		infop->maintained_variables.float_value = dist_squared;
-	
+		// update with farthest distance squared
+		if (dist_squared > infop->maintained_variables.float_value)
+			infop->maintained_variables.float_value = dist_squared;
+	}
+}
 
-	// calculate position of left point (min x)
-	vm_vec_zero(&local_point);
-	local_point.xyz.x = pm->mins.xyz.x;
-	vm_vec_rotate(&world_point, &local_point, &objp->orient);
-	vm_vec_add2(&world_point, &objp->pos);
+// What we're doing here is projecting each object extent onto the directrix, calculating the distance between the
+// projected point and the origin, and then taking the maximum distance as the semilatus rectum.  We're actually
+// maintaining the square of the distance rather than the actual distance, as it's faster to calculate and it gives
+// the same result in a greater-than or less-than comparison.  When we're done calculating everything for all
+// objects (i.e. when we return to the parent function) we take the square root of the final value.
+void dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper(object *objp, dock_function_info *infop)
+{
+	vec3d world_point, local_point[6], nearest;
+	polymodel *pm;
+	int i;
+	float temp, dist_squared;
 
-	// calculate square of distance to line
-	vm_vec_dist_squared_to_line(&world_point, line_start, line_end, &nearest, &dist_squared);
-	
-	// update with farthest distance squared
-	if (dist_squared > infop->maintained_variables.float_value)
-		infop->maintained_variables.float_value = dist_squared;
+	// line parameters
+	vec3d *line_start = infop->parameter_variables.vecp_value;
+	vec3d *line_end = infop->parameter_variables.vecp_value2;
 
+	// We must find world coordinates for each of the six endpoints on the three axes of the object.  I looked up
+	// which axis is front/back, left/right, and up/down, as well as which endpoint is which.  It doesn't really
+	// matter, though, as all we need are the distances.
 
-	// calculate position of top point (max y)
-	vm_vec_zero(&local_point);
-	local_point.xyz.y = pm->maxs.xyz.y;
-	vm_vec_rotate(&world_point, &local_point, &objp->orient);
-	vm_vec_add2(&world_point, &objp->pos);
+	// grab our model
+	Assert(objp->type == OBJ_SHIP);
+	pm = model_get(Ships[objp->instance].modelnum);
 
-	// calculate square of distance to line
-	vm_vec_dist_squared_to_line(&world_point, line_start, line_end, &nearest, &dist_squared);
-	
-	// update with farthest distance squared
-	if (dist_squared > infop->maintained_variables.float_value)
-		infop->maintained_variables.float_value = dist_squared;
-	
+	// set up the points we want to check
+	memset(local_point, 0, sizeof(vec3d) * 6);
+	local_point[0].xyz.x = pm->maxs.xyz.x;	// right point (max x)
+	local_point[1].xyz.x = pm->mins.xyz.x;	// left point (min x)
+	local_point[2].xyz.y = pm->maxs.xyz.y;	// top point (max y)
+	local_point[3].xyz.y = pm->mins.xyz.y;	// bottom point (min y)
+	local_point[4].xyz.z = pm->maxs.xyz.z;	// front point (max z)
+	local_point[5].xyz.z = pm->mins.xyz.z;	// rear point (min z)
 
-	// calculate position of bottom point (min y)
-	vm_vec_zero(&local_point);
-	local_point.xyz.y = pm->mins.xyz.y;
-	vm_vec_rotate(&world_point, &local_point, &objp->orient);
-	vm_vec_add2(&world_point, &objp->pos);
+	// check points
+	for (i = 0; i < 6; i++)
+	{
+		// calculate position of point
+		vm_vec_rotate(&world_point, &local_point[i], &objp->orient);
+		vm_vec_add2(&world_point, &objp->pos);
 
-	// calculate square of distance to line
-	vm_vec_dist_squared_to_line(&world_point, line_start, line_end, &nearest, &dist_squared);
-	
-	// update with farthest distance squared
-	if (dist_squared > infop->maintained_variables.float_value)
-		infop->maintained_variables.float_value = dist_squared;
-	
-	
-	// calculate position of front point (max z)
-	vm_vec_zero(&local_point);
-	local_point.xyz.z = pm->maxs.xyz.z;
-	vm_vec_rotate(&world_point, &local_point, &objp->orient);
-	vm_vec_add2(&world_point, &objp->pos);
+		// find the nearest point along the line
+		vm_vec_dist_squared_to_line(&world_point, line_start, line_end, &nearest, &temp);
 
-	// calculate square of distance to line
-	vm_vec_dist_squared_to_line(&world_point, line_start, line_end, &nearest, &dist_squared);
+		// find the distance squared between the origin of the line and the point on the line
+		dist_squared = vm_vec_dist_squared(line_start, &nearest);
 	
-	// update with farthest distance squared
-	if (dist_squared > infop->maintained_variables.float_value)
-		infop->maintained_variables.float_value = dist_squared;
-	
-
-	// calculate position of back point (min z)
-	vm_vec_zero(&local_point);
-	local_point.xyz.z = pm->mins.xyz.z;
-	vm_vec_rotate(&world_point, &local_point, &objp->orient);
-	vm_vec_add2(&world_point, &objp->pos);
-
-	// calculate square of distance to line
-	vm_vec_dist_squared_to_line(&world_point, line_start, line_end, &nearest, &dist_squared);
-	
-	// update with farthest distance squared
-	if (dist_squared > infop->maintained_variables.float_value)
-		infop->maintained_variables.float_value = dist_squared;
+		// update with farthest distance squared
+		if (dist_squared > infop->maintained_variables.float_value)
+			infop->maintained_variables.float_value = dist_squared;
+	}
 }
 
 void dock_find_max_fspeed_helper(object *objp, dock_function_info *infop)
