@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.270 $
- * $Date: 2006-07-17 01:12:52 $
- * $Author: taylor $
+ * $Revision: 2.271 $
+ * $Date: 2006-07-21 05:38:39 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.270  2006/07/17 01:12:52  taylor
+ * make glow point banks dynamic
+ *
  * Revision 2.269  2006/07/17 00:50:00  Goober5000
  * move WMC's preload stuff into main preloader routine
  *
@@ -20439,7 +20442,7 @@ sexp_help_struct Sexp_help[] = {
 		"a mission that uses this expression\r\n\r\n"
 		"Takes no arguments."},
 
-	{ OP_END_MISSION, "mission-set-nebula\r\n" 
+	{ OP_MISSION_SET_NEBULA, "mission-set-nebula\r\n" 
 		"\tTurns nebula on/off\r\n"
 		"\tTakes1 argument...\r\n"
 		"\t1:\t0 for nebula off, 1 for nebula on" },
