@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.113 $
- * $Date: 2006-07-17 01:12:51 $
+ * $Revision: 2.114 $
+ * $Date: 2006-07-21 16:06:56 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.113  2006/07/17 01:12:51  taylor
+ * make glow point banks dynamic
+ *
  * Revision 2.112  2006/07/13 22:16:38  taylor
  * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
  *
@@ -3178,6 +3181,16 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 	Parse_normal_problem_count = 0;
 
 	pm->used_this_mission = 0;
+
+#ifndef NDEBUG
+	char busy_text[60] = { '\0' };
+
+	SAFE_STRCAT( busy_text, "** ModelLoad: ", sizeof(busy_text) );
+	SAFE_STRCAT( busy_text, filename, sizeof(busy_text) );
+	SAFE_STRCAT( busy_text, " **", sizeof(busy_text) );
+
+	game_busy(busy_text);
+#endif
 
 	if (read_model_file(pm, filename, n_subsystems, subsystems, ferror) < 0)	{
 		if (pm != NULL) {
