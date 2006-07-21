@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-03-31 10:20:01 $
- * $Author: wmcoolmon $
+ * $Revision: 2.33 $
+ * $Date: 2006-07-21 16:04:46 $
+ * $Author: taylor $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/03/31 10:20:01  wmcoolmon
+ * Prelim. BSG warpin effect stuff
+ *
  * Revision 2.31  2005/09/21 03:55:32  Goober5000
  * add option for warp flash; mess with the cmdlines a bit
  * --Goober5000
@@ -290,9 +293,9 @@ void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 
 }
 
-#define wSTUFF_VERTICES()	do { verts[0]->u = 0.5f; verts[0]->v = 0.0f;	verts[1]->u = 1.0f; verts[1]->v = 0.0f; verts[2]->u = 1.0f;	verts[2]->v = 1.0f; verts[3]->u = 0.5f; verts[3]->v = 1.0f; } while(0);
-#define wR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
-#define wP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
+//#define wSTUFF_VERTICES()	do { verts[0]->u = 0.5f; verts[0]->v = 0.0f;	verts[1]->u = 1.0f; verts[1]->v = 0.0f; verts[2]->u = 1.0f;	verts[2]->v = 1.0f; verts[3]->u = 0.5f; verts[3]->v = 1.0f; } while(0);
+//#define wR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
+//#define wP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 
 void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
 {
