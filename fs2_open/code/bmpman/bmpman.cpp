@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.88 $
- * $Date: 2006-07-05 23:35:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.89 $
+ * $Date: 2006-07-21 16:06:56 $
+ * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2006/07/05 23:35:42  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.87  2006/06/27 04:52:50  taylor
  * fix various things that Valgrind complained about
  * comp_type for DDS images will always be set to something, an 'uncompressed' type at the least
@@ -3063,11 +3066,9 @@ void bm_page_in_stop()
 {	
 	int i;	
 	int ship_info_index;
-	char *busy_text = NULL;
 
 #ifndef NDEBUG
-	busy_text = new char[MAX_PATH_LEN];
-	Assert( busy_text != NULL );
+	char busy_text[60];
 #endif
 
 	nprintf(( "BmpInfo","BMPMAN: Loading all used bitmaps.\n" ));
@@ -3140,21 +3141,22 @@ void bm_page_in_stop()
 						Multi_ping_timestamp = timer_get_milliseconds() + 10000; // timeout is 10 seconds between pings
 					}
 				}
+
+#ifndef NDEBUG
+				memset(busy_text, 0, sizeof(busy_text));
+
+				SAFE_STRCAT( busy_text, "** BmpMan: ", sizeof(busy_text) );
+				SAFE_STRCAT( busy_text, bm_bitmaps[i].filename, sizeof(busy_text) );
+				SAFE_STRCAT( busy_text, " **", sizeof(busy_text) );
+
+				game_busy(busy_text);
+#else
+				game_busy();
+#endif
 			} else {
 				bm_unload_fast(bm_bitmaps[i].handle);
 			}
 		}
-
-#ifndef NDEBUG
-		memset(busy_text, 0, MAX_PATH_LEN);
-#ifdef _WIN32
-		_snprintf(busy_text, MAX_PATH_LEN-1, "** %s: %s **", NOX("BmpMan"), bm_bitmaps[i].filename);
-#else
-		snprintf(busy_text, MAX_PATH_LEN-1, "** %s: %s **", NOX("BmpMan"), bm_bitmaps[i].filename);
-#endif // _WIN32
-#endif // NDEBUG
-
-		game_busy(busy_text);
 	}
 
 	nprintf(( "BmpInfo","BMPMAN: Loaded %d bitmaps that are marked as used for this level.\n", n ));
@@ -3171,11 +3173,6 @@ void bm_page_in_stop()
 
 	mprintf(( "Bmpman: %d/%d bitmap slots in use.\n", total_bitmaps, MAX_BITMAPS ));
 	//mprintf(( "Bmpman: Usage went from %d KB to %d KB.\n", usage_before/1024, usage_after/1024 ));
-
-#ifndef NDEBUG
-	if ( busy_text != NULL )
-		delete[] busy_text;
-#endif
 
 	Bm_paging = 0;
 }
