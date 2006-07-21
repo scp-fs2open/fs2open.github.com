@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.2 $
- * $Date: 2006-07-05 23:36:56 $
+ * $Revision: 2.66.2.3 $
+ * $Date: 2006-07-21 05:41:07 $
  * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.2  2006/07/05 23:36:56  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.66.2.1  2006/06/15 06:18:43  Goober5000
  * make warpout work properly even if the player is docked to something
  * --Goober5000
@@ -878,7 +881,7 @@ static float shipfx_calculate_effect_radius( object *objp, int warp_dir )
 	// if docked, we need to calculate the overall cross-sectional radius around the z-axis (longitudinal axis)
 	if (object_is_docked(objp))
 	{
-		rad = dock_calc_cross_sectional_radius_perpendicular_to_axis(objp, Z_AXIS);
+		rad = dock_calc_max_cross_sectional_radius_perpendicular_to_axis(objp, Z_AXIS);
 	}
 	// if it's not docked, we can save a lot of work by just using width and height
 	else
@@ -1383,8 +1386,8 @@ void compute_warpout_stuff(object *objp, float *speed, float *warp_time, vec3d *
 
 		if (object_is_docked(objp))
 		{
-			// we need to get the radius of our ship lengthwise, so find the radius around the x-axis (horizontal axis)
-			radius = dock_calc_cross_sectional_radius_perpendicular_to_axis(objp, X_AXIS);
+			// we need to get the longitudinal radius of our ship, so find the semilatus rectum along the Z-axis
+			radius = dock_calc_max_semilatus_rectum_parallel_to_axis(objp, Z_AXIS);
 		}
 		else
 			radius = objp->radius;
