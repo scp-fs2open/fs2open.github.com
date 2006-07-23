@@ -454,7 +454,7 @@ void asteroid_editor::update_init()
 		for (j = 0; j < NUM_DEBRIS_SIZES; j++)
 		{
 			name = CString(Species_info[i].species_name) + " " + debris_size[j];
-			index = ((i * NUM_DEBRIS_SIZES) + j);
+			index = NUM_DEBRIS_SIZES + ((i * NUM_DEBRIS_SIZES) + j);
 
 			// each box
 			for (k = 0; k < MAX_ACTIVE_DEBRIS_TYPES; k++)
