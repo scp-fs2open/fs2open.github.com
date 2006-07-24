@@ -9,13 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.29 $
- * $Date: 2006-04-12 01:10:35 $
+ * $Revision: 1.30 $
+ * $Date: 2006-07-24 07:36:49 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2006/04/12 01:10:35  taylor
+ * some cleanup and slight reorg
+ *  - remove special uv offsets for non-standard res, they were stupid anyway and don't actually fix the problem (which should actually be fixed now)
+ *  - avoid some costly math where possible in the drawing functions
+ *  - add opengl_error_string(), this is part of a later update but there wasn't a reason to not go ahead and commit this peice now
+ *  - minor cleanup to Win32 extension defines
+ *  - make opengl_lights[] allocate only when using OGL
+ *  - cleanup some costly per-frame lighting stuff
+ *  - clamp textures for interface and aabitmap (font) graphics since they shouldn't normally repeat anyway (the default)
+ *    (doing this for D3D, if it doesn't already, may fix the blue-lines problem since a similar issue was seen with OGL)
+ *
  * Revision 1.28  2006/04/05 13:47:01  taylor
  * remove -tga16, it's obsolete now
  * add a temporary -no_emissive_light option to not use emission type light in OGL
@@ -241,17 +252,20 @@ void FSLight2GLLight(opengl_light *GLLight, light *FSLight)
 	}
 
 	//If the light is a point or tube type
-	if ((FSLight->type == LT_POINT) || (FSLight->type == LT_TUBE)) {
+	if ( (FSLight->type == LT_POINT) || (FSLight->type == LT_TUBE) ) {
 		// this crap still needs work...
 		GLLight->ConstantAtten = 0.0f;
 		GLLight->LinearAtten = (1.0f / MAX(FSLight->rada, FSLight->radb));
 
-		if(FSLight->type == LT_POINT){
+		if (FSLight->type == LT_POINT) {
 			GLLight->Specular.r *= static_point_factor;
 			GLLight->Specular.g *= static_point_factor;
 			GLLight->Specular.b *= static_point_factor;
+			GLLight->Ambient.r = (GLLight->Diffuse.r / 2.0f);
+			GLLight->Ambient.g = (GLLight->Diffuse.r / 2.0f);
+			GLLight->Ambient.b = (GLLight->Diffuse.r / 2.0f);
 			GLLight->LinearAtten *= 1.25f;
-		}else{
+		} else {
 			GLLight->Specular.r *= static_tube_factor;
 			GLLight->Specular.g *= static_tube_factor;
 			GLLight->Specular.b *= static_tube_factor;
@@ -287,6 +301,47 @@ void opengl_set_light(int light_num, opengl_light *light)
 	glLightf(GL_LIGHT0+light_num, GL_SPOT_CUTOFF, light->SpotCutOff);
 }
 
+#include <globalincs/systemvars.h>
+int opengl_sort_active_lights(const void *a, const void *b)
+{
+	opengl_light *la, *lb;
+
+	la = (opengl_light *) a;
+	lb = (opengl_light *) b;
+
+	// directional lights always go first
+	if ( (la->type != LT_DIRECTIONAL) && (lb->type == LT_DIRECTIONAL) )
+		return 1;
+	else if ( (la->type == LT_DIRECTIONAL) && (lb->type != LT_DIRECTIONAL) )
+		return -1;
+
+	// tube lights go next, they are generally large and intense
+	if ( (la->type != LT_TUBE) && (lb->type == LT_TUBE) )
+		return 1;
+	else if ( (la->type == LT_TUBE) && (lb->type != LT_TUBE) )
+		return -1;
+
+	// everything else is sorted by linear atten (light size)
+	// NOTE: smaller atten is larger light radius!
+	if ( la->LinearAtten > lb->LinearAtten )
+		return 1;
+	else if ( la->LinearAtten < lb->LinearAtten )
+		return -1;
+
+	// as one extra check, if we're still here, go with overall brightness of light
+
+	float la_value = la->Diffuse.r + la->Diffuse.g + la->Diffuse.b;
+	float lb_value = lb->Diffuse.r + lb->Diffuse.g + lb->Diffuse.b;
+
+	if ( la_value < lb_value )
+		return 1;
+	else if ( la_value > lb_value )
+		return -1;
+
+	// the two are equal
+	return 0;
+}
+
 //finds the first unocupyed light
 void opengl_pre_render_init_lights()
 {
@@ -296,6 +351,9 @@ void opengl_pre_render_init_lights()
 
 		currently_enabled_lights[i] = -1;
 	}
+
+	// sort the lights to try and get the most visible lights on the first pass
+	insertion_sort(opengl_lights, Num_active_gl_lights, sizeof(opengl_light), opengl_sort_active_lights);
 }
 
 
