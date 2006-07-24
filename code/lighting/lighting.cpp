@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-02-19 23:14:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2006-07-24 07:36:50 $
+ * $Author: taylor $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/02/19 23:14:22  Goober5000
+ * reduce confusion in naming
+ * --Goober5000
+ *
  * Revision 2.19  2006/01/30 06:38:34  taylor
  * clean up lighting stuff a little
  *
@@ -271,6 +275,8 @@
  * $NoKeywords: $
  */
 
+#include <vector>
+
 #include "math/vecmat.h"
 #include "render/3d.h"
 #include "lighting/lighting.h"
@@ -308,9 +314,7 @@ light *Relevent_lights[MAX_LIGHTS][MAX_LIGHT_LEVELS];
 int Num_relevent_lights[MAX_LIGHT_LEVELS];
 int Num_light_levels = 0;
 
-#define MAX_STATIC_LIGHTS			10
-light * Static_light[MAX_STATIC_LIGHTS];
-int Static_light_count = 0;
+std::vector<light*> Static_light;
 
 static int Light_in_shadow = 0;	// If true, this means we're in a shadow
 
@@ -413,20 +417,14 @@ DCF(light,"Changes lighting parameters")
 
 void light_reset()
 {
-	int idx;
-
-	// reset static (sun) lights
-	for(idx=0; idx<MAX_STATIC_LIGHTS; idx++){
-		Static_light[idx] = NULL;
-	}
-	Static_light_count = 0;
+	Static_light.clear();
 
 	Num_lights = 0;
 	light_filter_reset();
 
-	if(!Cmdline_nohtl) {
+/*	if(!Cmdline_nohtl) {
 		for(int i = 0; i<MAX_LIGHTS; i++)gr_destroy_light(i);
-	}
+	}*/
 }
 extern vec3d Object_position;
 // Rotates the light into the current frame of reference
@@ -436,10 +434,10 @@ void light_rotate(light * l)
 	case LT_DIRECTIONAL:
 		// Rotate the light direction into local coodinates
 
-		if(!Cmdline_nohtl) {
+	/*	if(!Cmdline_nohtl) {
 		//	light_data *L = *(light_data*)(void*)l;
 			gr_modify_light(l, l->instance, 2);
-		}
+		}*/
 		
 		vm_vec_rotate(&l->local_vec, &l->vec, &Light_matrix );
 		break;
@@ -451,10 +449,10 @@ void light_rotate(light * l)
 			vm_vec_sub(&tempv, &l->vec, &Light_base );
 			vm_vec_rotate(&l->local_vec, &tempv, &Light_matrix );
 
-			if(!Cmdline_nohtl) {
+		/*	if(!Cmdline_nohtl) {
 			//	light_data L = *(light_data*)(void*)l;
 				gr_modify_light(l, l->instance, 2);
-			}
+			}*/
 		}
 		break;
 	
@@ -469,15 +467,15 @@ void light_rotate(light * l)
 			vm_vec_sub(&tempv, &l->vec2, &Light_base );
 			vm_vec_rotate(&l->local_vec2, &tempv, &Light_matrix );
 
-			if(!Cmdline_nohtl) {
+		/*	if(!Cmdline_nohtl) {
 
 				//move the point to the neares to the object on the line
 					vec3d pos;
 
-	/*				vm_vec_unrotate(&temp2, &temp, &obj->orient);
-					vm_vec_add2(&temp, &temp2);
-					vm_vec_scale_add(&temp, &temp2, &obj->orient.vec.fvec, Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].b_info.range);
-	*/
+				//	vm_vec_unrotate(&temp2, &temp, &obj->orient);
+				//	vm_vec_add2(&temp, &temp2);
+				//	vm_vec_scale_add(&temp, &temp2, &obj->orient.vec.fvec, Weapon_info[swp->primary_bank_weapons[swp->current_primary_bank]].b_info.range);
+	
 					switch(vm_vec_dist_to_line(&Object_position, &l->local_vec, &l->local_vec2, &pos, NULL)){
 						// behind the beam, so use the start pos
 					case -1:
@@ -498,7 +496,7 @@ void light_rotate(light * l)
 			//	L.vec = pos;
 			//	L.local_vec = pos;
 				gr_modify_light(l, l->instance, 2);
-			}
+			}*/
 		}
 		break;
 
@@ -554,9 +552,8 @@ void light_add_directional( vec3d *dir, float intensity, float r, float g, float
 	Assert( Num_light_levels <= 1 );
 //	Relevent_lights[Num_relevent_lights[Num_light_levels-1]++][Num_light_levels-1] = l;
 
-	if(Static_light_count < MAX_STATIC_LIGHTS){		
-		Static_light[Static_light_count++] = l;
-	}
+	Static_light.push_back(l);
+
 /*	if(!Cmdline_nohtl) {
 	//	light_data *L = (light_data*)(void*)l;
 		gr_make_light(l, l->instance, 1);
@@ -657,10 +654,10 @@ void light_add_point_unique( vec3d * pos, float r1, float r2, float intensity, f
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-	if(!Cmdline_nohtl) {
+/*	if(!Cmdline_nohtl) {
 	//	light_data *L = (light_data*)(void*)l;
 		gr_make_light(l, l->instance, 2);
-	}
+	}*/
 }
 
 // for now, tube lights only affect one ship (to keep the filter stuff simple)
@@ -707,10 +704,10 @@ void light_add_tube(vec3d *p0, vec3d *p1, float r1, float r2, float intensity, f
 	l->instance = Num_lights-1;
 
 	Assert( Num_light_levels <= 1 );
-	if(!Cmdline_nohtl) {
+/*	if(!Cmdline_nohtl) {
 	//	light_data *L = (light_data*)(void*)l;
 		gr_make_light(l, l->instance, 3);
-	}
+	}*/
 //	light_data *L = (light_data*)(void*)l;
 //	l->API_index = gr_make_light(L);
 }
@@ -910,7 +907,7 @@ void light_rotate_all()
 		light_rotate(l);
 	}
 
-	for(i=0; i<Static_light_count; i++){	
+	for (i = 0; i < (int)Static_light.size(); i++) {
 		light_rotate(Static_light[i]);
 	}
 
@@ -923,16 +920,12 @@ void light_rotate_all()
 // return the # of global light sources
 int light_get_global_count()
 {
-	return Static_light_count;
+	return (int)Static_light.size();
 }
 
 int light_get_global_dir(vec3d *pos, int n)
 {
-	if((n > MAX_STATIC_LIGHTS) || (n > Static_light_count-1)){
-		return 0;
-	}
-
-	if ( Static_light[n] == NULL ) {
+	if ( (n < 0) || (n >= (int)Static_light.size()) ) {
 		return 0;
 	}
 
@@ -959,7 +952,7 @@ void light_set_all_relevent()
 
 	gr_reset_lighting();
 
-	for (idx = 0; idx < Static_light_count; idx++)
+	for (idx = 0; idx < (int)Static_light.size(); idx++)
 		gr_set_light( Static_light[idx] );
 
 	// for simplicity sake were going to forget about dynamic lights for the moment
@@ -991,13 +984,8 @@ ubyte light_apply( vec3d *pos, vec3d * norm, float static_light_level )
 	// Factor in light from suns if there are any
 	if ( !Light_in_shadow ){
 		// apply all sun lights
-		for(idx=0; idx<Static_light_count; idx++){		
+		for (idx = 0; idx < (int)Static_light.size(); idx++) {
 			float ltmp;
-
-			// sanity 
-			if(Static_light[idx] == NULL){
-				continue;
-			}
 
 			// calculate light from surface normal
 			ltmp = -vm_vec_dot(&Static_light[idx]->local_vec, norm )*Static_light[idx]->intensity*Reflective_light;		// reflective light
@@ -1069,6 +1057,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 
 	light *l;
 	float rval = 0, gval = 0, bval = 0;
+	int idx;
 
 	if ( Cmdline_nospec ) {
 		*param_r = 0;
@@ -1100,13 +1089,8 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 
 	// Factor in light from sun if there is one
 		// apply all sun lights
-		for(int idx=0; idx<Static_light_count; idx++){			
+		for (idx = 0; idx < (int)Static_light.size(); idx++) {
 			float ltmp;
-
-			// sanity
-			if(Static_light[idx] == NULL){
-				continue;
-			}
 
 			vec3d R;
 			vm_vec_sub(&R,&V, &Static_light[idx]->local_vec);
@@ -1160,8 +1144,8 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 	float dot, dist;
 	vec3d temp;
 	float factor = 1.0f;
-	for ( int i=0; i<Num_relevent_lights[n]; i++ )	{
-		l = Relevent_lights[i][n];
+	for (idx = 0; idx < Num_relevent_lights[n]; idx++) {
+		l = Relevent_lights[idx][n];
 
 		dist = -1.0f;
 		switch(l->type){
@@ -1242,7 +1226,7 @@ void light_apply_specular(ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d 
 
 void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos, vec3d * norm, float static_light_level )
 {
-	int i, idx;
+	int idx;
 	float rval, gval, bval;
 	light *l;
 
@@ -1270,13 +1254,8 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 	// Factor in light from sun if there is one
 	if ( !Light_in_shadow ){
 		// apply all sun lights
-		for(idx=0; idx<Static_light_count; idx++){			
+		for (idx = 0; idx < (int)Static_light.size(); idx++) {
 			float ltmp;
-
-			// sanity
-			if(Static_light[idx] == NULL){
-				continue;
-			}
 
 			// calculate light from surface normal
 			ltmp = -vm_vec_dot(&Static_light[idx]->local_vec, norm )*Static_light[idx]->intensity*Reflective_light;		// reflective light
@@ -1329,8 +1308,8 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pos
 	vec3d to_light;
 	float dot, dist;
 	vec3d temp;
-	for (i=0; i<Num_relevent_lights[n]; i++ )	{
-		l = Relevent_lights[i][n];
+	for (idx = 0; idx < Num_relevent_lights[n]; idx++) {
+		l = Relevent_lights[idx][n];
 
 		dist = -1.0f;
 		switch(l->type){
