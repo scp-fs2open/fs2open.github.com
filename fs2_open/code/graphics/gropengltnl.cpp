@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.44 $
- * $Date: 2006-05-30 03:53:52 $
+ * $Revision: 1.45 $
+ * $Date: 2006-07-24 07:36:50 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44  2006/05/30 03:53:52  taylor
+ * z-range for 2D ortho is -1.0 to 1.0, may help avoid some strangeness if we actually get that right. :)
+ * minor cleanup of old code and default settings
+ * try not to bother with depth test unless we are actually going to need it (small performance boost in some cases)
+ * don't clear depth bit in flip(), while technically correct it's also a bit redundant (and comes with a slight performance hit)
+ *
  * Revision 1.43  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -735,53 +741,57 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 // -------- Begin lighting pass (conditional but should happen before spec pass) - //
 	if ( (textured) && (lighting_is_enabled) && ((Num_active_gl_lights-1)/GL_max_lights > 0) ) {
-		opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
-		for (i = 1; i < render_pass; i++) {
-			opengl_switch_arb(i, 0);
-		}
-
-		// the lighting code needs to do this better, may need to adjustment later since I'm only trying
+		// the lighting code needs to do this better, may need some adjustment later since I'm only trying
 		// to avoid rendering 7+ extra passes for lights which probably won't affect current object, but as
 		// a performance hack I guess this will have to do for now...
 		// restrict the number of extra lighting passes based on LOD:
 		//  - LOD0:  only 2 extra passes (3 main passes total, rendering 24 light sources)
 		//  - LOD1:  only 1 extra pass   (2 main passes total, rendering 16 light sources)
-		//  - LOD2+: no extra passes     (1 main passes total, rendering  8 light sources)
+		//  - LOD2+: no extra passes     (1 main pass   total, rendering  8 light sources)
 		extern int model_current_LOD;
 		int max_passes = (2 - model_current_LOD);
 
-		vglLockArraysEXT( 0, vbp->n_verts);
+		if (max_passes > 0) {
+			opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 
-		for (i = 1; i < ((Num_active_gl_lights-1)/GL_max_lights); i++) {
-			if (i > max_passes)
-				continue;
+			for (i = 1; i < render_pass; i++) {
+				opengl_switch_arb(i, 0);
+			}
 
-			opengl_change_active_lights(i);
+			vglLockArraysEXT( 0, vbp->n_verts);
 
-			if (index_buffer != NULL) {
-				if ( multiple_elements ) {
-					start_tmp = 0;
-					end_tmp = (GL_max_elements_indices - 1);
-					count_tmp = (end_tmp - start_tmp + 1);
+			for (i = 1; (i < ((Num_active_gl_lights-1)/GL_max_lights)) && (i < max_passes); i++) {
+				opengl_change_active_lights(i);
 
-					vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
-
-					while (end_tmp < end) {
-						start_tmp += (GL_max_elements_indices - 1);
-						end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );
+				if (index_buffer != NULL) {
+					if ( multiple_elements ) {
+						start_tmp = 0;
+						end_tmp = (GL_max_elements_indices - 1);
 						count_tmp = (end_tmp - start_tmp + 1);
 
 						vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
+
+						while (end_tmp < end) {
+							start_tmp += (GL_max_elements_indices - 1);
+							end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );
+							count_tmp = (end_tmp - start_tmp + 1);
+
+							vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
+						}
+					} else {
+						vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);
 					}
 				} else {
-					vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);
+					glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
 				}
-			} else {
-				glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
 			}
-		}
 
-		vglUnlockArraysEXT();
+			vglUnlockArraysEXT();
+
+			// reset the active lights to the first set to render the spec related passes with
+			// for performance and quality reasons they don't get special lighting passes
+			opengl_change_active_lights(0);
+		}
 	}
 // -------- End lighting PASS ---------------------------------------------------- //
 
