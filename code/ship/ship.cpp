@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.356 $
- * $Date: 2006-07-17 01:12:52 $
- * $Author: taylor $
+ * $Revision: 2.357 $
+ * $Date: 2006-07-24 02:09:26 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.356  2006/07/17 01:12:52  taylor
+ * make glow point banks dynamic
+ *
  * Revision 2.355  2006/07/17 00:10:00  Goober5000
  * stage 2 of animation fix (add base frame time to each ship)
  * --Goober5000
@@ -12623,16 +12626,19 @@ int ship_docking_valid(int docker, int dockee)
 // input:   persona  => OPTIONAL PARAMETER (default to -1) which persona to get
 int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_index, int get_first, int multi_team )
 {
+	const int MAX_SIZE = MAX_SHIPS_PER_WING * MAX_SQUADRON_WINGS;
+
 	int i, j, ship_index, count;
-	int slist[MAX_SHIPS_PER_WING * MAX_STARTING_WINGS], which_one;
+	int slist[MAX_SIZE], which_one;
 
 	// iterate through starting wings of player.  Add ship indices of ships which meet
 	// given criteria
 	count = 0;
 	for (i = 0; i < Num_wings; i++ ) {
-		int wingnum;
+		if (count >= MAX_SIZE)
+			break;
 
-		wingnum = -1;
+		int wingnum = -1;
 
 		// multi-team?
 		if(multi_team >= 0){
@@ -12666,6 +12672,9 @@ int ship_get_random_player_wing_ship( int flags, float max_dist, int persona_ind
 		}
 
 		for ( j = 0; j < Wings[wingnum].current_count; j++ ) {
+			if (count >= MAX_SIZE)
+				break;
+
 			ship_index = Wings[wingnum].ship_index[j];
 			Assert( ship_index != -1 );
 
