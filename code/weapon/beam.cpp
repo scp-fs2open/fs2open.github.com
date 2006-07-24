@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.67.2.1 $
- * $Date: 2006-07-05 23:37:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.67.2.2 $
+ * $Date: 2006-07-24 07:38:00 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67.2.1  2006/07/05 23:37:13  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.67  2006/05/27 16:45:11  taylor
  * some minor cleanup
  * remove -nobeampierce
@@ -1866,24 +1869,24 @@ void beam_generate_muzzle_particles(beam *b)
 // render the muzzle glow for a beam weapon
 void beam_render_muzzle_glow(beam *b)
 {
-	vertex v;
+	vertex pt;
 	weapon_info *wip = &Weapon_info[b->weapon_info_index];
 	beam_weapon_info *bwi = &Weapon_info[b->weapon_info_index].b_info;
-	float pct, rand_val;
+	float rad, pct, rand_val;
+	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
 
 	// if we don't have a glow bitmap
-	if(bwi->beam_glow_bitmap < 0){
+	if (bwi->beam_glow_bitmap < 0)
 		return;
-	}
 
 	// if the beam is warming up, scale the glow
-	if(b->warmup_stamp != -1){		
+	if (b->warmup_stamp != -1) {		
 		// get warmup pct
 		pct = BEAM_WARMUP_PCT(b);
 		rand_val = 1.0f;
 	} else
 	// if the beam is warming down
-	if(b->warmdown_stamp != -1){
+	if (b->warmdown_stamp != -1) {
 		// get warmup pct
 		pct = 1.0f - BEAM_WARMDOWN_PCT(b);
 		rand_val = 1.0f;
@@ -1894,33 +1897,38 @@ void beam_render_muzzle_glow(beam *b)
 		rand_val = frand_range(0.90f, 1.0f);
 	}
 
+	rad = wip->b_info.beam_muzzle_radius * pct * rand_val;
+
+	// don't bother trying to draw if there is no radius
+	if (rad <= 0.0f)
+		return;
+
 	// draw the bitmap
-	vertex pt;
-	g3_rotate_vertex(&v, &b->last_start);
-	if(!Cmdline_nohtl)g3_transfer_vertex(&pt, &b->last_start);
-	else pt = v;
+	if (Cmdline_nohtl)
+		g3_rotate_vertex(&pt, &b->last_start);
+	else
+		g3_transfer_vertex(&pt, &b->last_start);
 
-	float rad = wip->b_info.beam_muzzle_radius * pct * rand_val;
 
-	if (bwi->beam_glow_nframes > 1) {
-		int frame = (timestamp() / (int)(bwi->beam_glow_fps)) % bwi->beam_glow_nframes;
-		gr_set_bitmap(bwi->beam_glow_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);
-	} else {
-		gr_set_bitmap( bwi->beam_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);	
-	}
+	int frame = 0;
+
+	if (bwi->beam_glow_nframes > 1)
+		frame = (timestamp() / bwi->beam_glow_fps) % bwi->beam_glow_nframes;
+
+	gr_set_bitmap(bwi->beam_glow_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);
+
 	// draw 1 bitmap
-	g3_draw_bitmap(&pt, 0, rad, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT);
+	g3_draw_bitmap(&pt, 0, rad, tmap_flags);
 	
 	// maybe draw more
-	if(pct > 0.3f){
-		g3_draw_bitmap(&pt, 0, rad * 0.75f, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT, rad * 0.25f);
-	}
-	if(pct > 0.5f){
-		g3_draw_bitmap(&pt, 0, rad * 0.45f, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT, rad * 0.55f);
-	}
-	if(pct > 0.7f){
-		g3_draw_bitmap(&pt, 0, rad * 0.25f, (Cmdline_nohtl)?TMAP_FLAG_TEXTURED:TMAP_FLAG_TEXTURED|TMAP_HTL_3D_UNLIT, rad * 0.75f);
-	}
+	if (pct > 0.3f)
+		g3_draw_bitmap(&pt, 0, rad * 0.75f, tmap_flags, rad * 0.25f);
+
+	if (pct > 0.5f)
+		g3_draw_bitmap(&pt, 0, rad * 0.45f, tmap_flags, rad * 0.55f);
+
+	if (pct > 0.7f)
+		g3_draw_bitmap(&pt, 0, rad * 0.25f, tmap_flags, rad * 0.75f);
 }
 
 // render all beam weapons
@@ -2147,6 +2155,7 @@ void beam_apply_lighting()
 			// a few meters in from the of muzzle			
 			vm_vec_sub(&dir, &l->bm->last_start, &l->bm->last_shot);
 			vm_vec_normalize_quick(&dir);
+			vm_vec_scale(&dir, -0.8f);  // TODO: This probably needs to *not* be stupid. -taylor
 			vm_vec_scale_add(&pt, &l->bm->last_start, &dir, bwi->beam_muzzle_radius * 5.0f);
 
 			beam_add_light_small(l->bm, &Objects[l->objnum], &pt);
@@ -2667,7 +2676,6 @@ int beam_collide_ship(obj_pair *pair)
 	float widest;
 	weapon_info *bwi;
 	vec3d beam_dir, neg_beam_dir,tmp_vec;
-	static int broke = 0;
 
 	// bogus
 	if(pair == NULL){
