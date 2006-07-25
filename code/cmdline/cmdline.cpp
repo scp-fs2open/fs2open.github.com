@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.143 $
- * $Date: 2006-07-08 18:11:33 $
+ * $Revision: 2.144 $
+ * $Date: 2006-07-25 16:26:24 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.143  2006/07/08 18:11:33  taylor
+ * remove -allslev
+ * make CTRL-SHIFT-S hotkey work in mission simulator (it's a toggle, so you can turn it on or off while on the screen)
+ * fix a bug where blank lines would show up in the campaign list for branch/alternate type missions that are otherwise marked as not completed
+ *
  * Revision 2.142  2006/06/27 04:55:53  taylor
  * add -disable_fbo to troubleshoot crappy ATI drivers
  * remove the temporary -alpha_alpha_blend option
@@ -848,10 +853,11 @@ public:
 	cmdline_parm *next, *prev;
 	char *name;						// name of parameter, must start with '-' char
 	char *help;						// help text for this parameter
+	bool stacks;					// whether this arg stacks with each use or is replaced by newest use (should only be used for strings!!)
 	char *args;						// string value for parameter arguements (NULL if no arguements)
 	int name_found;				// true if parameter on command line, otherwise false
 
-	cmdline_parm(char *name, char *help);
+	cmdline_parm(char *name, char *help, bool stacks = false);
 	~cmdline_parm();
 	int found();
 	int get_int();
@@ -1134,7 +1140,7 @@ int Cmdline_snd_preload = 0; // preload game sounds during mission load
 int Cmdline_voice_recognition = 0;
 
 // MOD related
-cmdline_parm mod_arg("-mod", NULL);		// Cmdline_mod  -- DTP modsupport
+cmdline_parm mod_arg("-mod", NULL, true);	// Cmdline_mod  -- DTP modsupport
 cmdline_parm tbp("-tbp", NULL);			// Cmdline_tbp  -- TBP warp effects -Et1
 cmdline_parm wcsaga("-wcsaga", NULL);	// Cmdline_wcsaga
 
@@ -1265,7 +1271,10 @@ char *drop_extra_chars(char *str)
 	while (str[s] && is_extra_space(str[s]))
 		s++;
 
-	e = strlen(str);
+	e = strlen(str) - 1;	// we already account for NULL later on, so the -1 is here to make
+							// sure we do our math without taking it into consideration
+	Assert( e >= 0 );
+
 	while (e > s) {
 		if (!is_extra_space(str[e])){
 			break;
@@ -1289,6 +1298,7 @@ void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 	char buffer[1024];
 	memset(buffer, 0, 1024);
 	char *dest = buffer;
+	char *saved_args = NULL;
 
 	cmdline += strlen(parm->name);
 
@@ -1298,20 +1308,42 @@ void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 
 	drop_extra_chars(buffer);
 
-	// mwa 9/14/98 -- made it so that newer command line arguments found will overwrite
-	// the old arguments
-//	Assert(parm->args == NULL);
+	// mwa 9/14/98 -- made it so that newer command line arguments found will overwrite the old arguments
+	// taylor 7/25/06 -- made it so that you can stack newer arguments if that option should support stacking
+
 	if ( parm->args != NULL ) {
-		delete( parm->args );
+		if (parm->stacks) {
+			saved_args = parm->args;
+		} else {
+			delete[] parm->args;
+		}
+
 		parm->args = NULL;
 	}
 
 	int size = strlen(buffer) + 1;
+
+	if (saved_args != NULL)
+		size += (strlen(saved_args) + 1);	// an ',' is used as a separator when combining, so be sure to account for it
+
 	if (size > 0) {
 		parm->args = new char[size];
 		memset(parm->args, 0, size);
-		strcpy(parm->args, buffer);
+
+		if (saved_args != NULL) {
+			// saved args go first, then new arg
+			strcpy(parm->args, saved_args);
+			// add a separator too, so that we can tell the args apart
+			strcat(parm->args, ",");
+			// now the new arg
+			strcat(parm->args, buffer);
+		} else {
+			strcpy(parm->args, buffer);
+		}
 	}
+
+	if (saved_args != NULL)
+		delete[] saved_args;
 }
 
 
@@ -1321,27 +1353,40 @@ void os_parse_parms(char *cmdline)
 {
 	// locate command line parameters
 	cmdline_parm *parmp;
-	char *cmdline_offset;
+	char *cmdline_offset = NULL;
 	size_t get_new_offset = 0;
 
-	for (parmp = GET_FIRST(&Parm_list); parmp !=END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp) ) {
-		// while going through the cmdline make sure to grab only the option that we are looking
-		// for but if one similar then keep searching for the exact match
+	for (parmp = GET_FIRST(&Parm_list); parmp != END_OF_LIST(&Parm_list); parmp = GET_NEXT(parmp)) {
+		// continue processing every option on the line to make sure that we account for every listing of each option
 		do {
-			cmdline_offset = strstr(cmdline + get_new_offset, parmp->name);
+			// while going through the cmdline make sure to grab only the option that we are
+			// looking for, but if one similar then keep searching for the exact match
+			while (true) {
+				cmdline_offset = strstr(cmdline + get_new_offset, parmp->name);
 
-			if (cmdline_offset && (*(cmdline_offset + strlen(parmp->name))) && !is_extra_space(*(cmdline_offset + strlen(parmp->name))) ) {
+				if ( !cmdline_offset )
+					break;
+
 				// the new offset should be our currently location + the length of the current option
 				get_new_offset = (strlen(cmdline) - strlen(cmdline_offset) + strlen(parmp->name));
-			} else {
-				get_new_offset = 0;
-			}
-		} while ( get_new_offset );
 
-		if (cmdline_offset) {
-			parmp->name_found = 1;
-			parm_stuff_args(parmp, cmdline_offset);
-		}
+				if ( (*(cmdline_offset + strlen(parmp->name))) && !is_extra_space(*(cmdline_offset + strlen(parmp->name))) ) {
+					// we found a similar, but not exact, match for this option, continue checking for the correct one
+				} else {
+					// we found what we were looking for so break out and process it
+					break;
+				}
+			}
+
+			if (cmdline_offset) {
+				parmp->name_found = 1;
+				parm_stuff_args(parmp, cmdline_offset);
+			}
+		} while (cmdline_offset);
+
+		// reset the offset for the next param that we will look for
+		get_new_offset = 0;
+		cmdline_offset = NULL;
 	}
 }
 
@@ -1508,10 +1553,11 @@ void os_init_cmdline(char *cmdline)
 // arg constructor
 // name_ - name of the parameter, must start with '-' character
 // help_ - help text for this parameter
-cmdline_parm::cmdline_parm(char *name_, char *help_)
+cmdline_parm::cmdline_parm(char *name_, char *help_, bool stacks_)
 {
 	name = name_;
 	help = help_;
+	stacks = stacks_;
 	args = NULL;
 	name_found = 0;
 
@@ -1590,7 +1636,22 @@ void output_sexp_html(int sexp_idx, FILE *fp)
 int cmdline_parm::get_int()
 {
 	Assert(args);
-	return atoi(args);
+	int offset = 0;
+
+	if (stacks) {
+		// first off, DON'T STACK NON-STRINGS!!
+		Int3();
+
+		// secondly, we still need to get it right for the users sake...
+		char *moron = strstr(args, ",");
+
+		if ( moron && ((strlen(moron) + 1) < strlen(args)) ) {
+			// we get the last arg, since it's the newest one
+			offset = strlen(args) - strlen(moron) + 1;
+		}
+	}
+
+	return atoi(args+offset);
 }
 
 
@@ -1598,7 +1659,22 @@ int cmdline_parm::get_int()
 float cmdline_parm::get_float()
 {
 	Assert(args);
-	return (float)atof(args);
+	int offset = 0;
+
+	if (stacks) {
+		// first off, DON'T STACK NON-STRINGS!!
+		Int3();
+
+		// secondly, we still need to get it right for the users sake
+		char *moron = strstr(args, ",");
+
+		if ( moron && ((strlen(moron) + 1) < strlen(args)) ) {
+			// we get the last arg, since it's the newest one
+			offset = strlen(args) - strlen(moron) + 1;
+		}
+	}
+
+	return (float)atof(args+offset);
 }
 
 
