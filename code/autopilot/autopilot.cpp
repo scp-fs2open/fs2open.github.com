@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23 $
- * $Date: 2006-02-25 21:42:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.24 $
+ * $Date: 2006-07-26 03:46:04 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2006/02/25 21:42:31  Goober5000
+ * fixes from last commit
+ *
  * Revision 1.22  2005/08/23 09:18:08  Goober5000
  * ensure init/reset of goals works cleanly
  * --Goober5000
@@ -215,7 +218,7 @@ bool CanAutopilot()
 	if (CurrentNav == -1)
 		return false;
 
-	// dunno what this is for, but Kazan used it
+	// You cannot autopilot if you're within 1000 meters of your destination nav point
 	if (vm_vec_dist_quick(&Player_obj->pos, Navs[CurrentNav].GetPosition()) < 1000)
 		return false;
 
@@ -227,7 +230,8 @@ bool CanAutopilot()
 		// attacks player?
 		if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)))
 		{
-			if (vm_vec_dist_quick(&Player_obj->pos, &other_objp->pos) < 1000)
+			// Cannot autopilot if enemy within 5,000 meters
+			if (vm_vec_dist_quick(&Player_obj->pos, &other_objp->pos) < 5000)
 				return false;
 		}
 	}
