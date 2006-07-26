@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.271 $
- * $Date: 2006-07-21 05:38:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.272 $
+ * $Date: 2006-07-26 03:45:02 $
+ * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.271  2006/07/21 05:38:39  Goober5000
+ * fix help text
+ * --Goober5000
+ *
  * Revision 2.270  2006/07/17 01:12:52  taylor
  * make glow point banks dynamic
  *
@@ -13405,29 +13409,34 @@ void set_nav_carry_status(int node)
 {
 	int n=node, i;
 	char *name;
+	bool skip;
 
 	while (n != -1)
 	{
 		name = CTEXT(n);
+		skip = false;
 
 		for (i = 0; i < MAX_WINGS; i++)
 		{
 			if (!stricmp(Wings[i].name, name))
 			{
 				Wings[i].flags |= WF_NAV_CARRY;
+				skip = true;
 				break;
 			}
 		}
 
-		for (i = 0; i < MAX_SHIPS; i++)
+		if (!skip)
 		{
-			if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
+			for (i = 0; i < MAX_SHIPS; i++)
 			{
-				Ships[i].flags2 |= SF2_NAVPOINT_CARRY;
-				break;
+				if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
+				{
+					Ships[i].flags2 |= SF2_NAVPOINT_CARRY;
+					break;
+				}
 			}
 		}
-
 		
 		// move to next ship/wing in list
 		n = CDR(n);
@@ -13440,31 +13449,34 @@ void unset_nav_carry_status(int node)
 {
 	int n=node, i;
 	char *name;
+	bool skip;
+
 
 	while (n != -1)
 	{
 		name = CTEXT(n);
+		skip = false;
 
 		for (i = 0; i < MAX_WINGS; i++)
 		{
 			if (!stricmp(Wings[i].name, name))
 			{
 				Wings[i].flags &= ~WF_NAV_CARRY;
-				
-				// move to next ship/wing in list
-				n = CDR(n);
-				// short circuit to the start of the loop
-				continue;
+				skip = true;
+				break;
 
 			}
 		}
 
-		for (i = 0; i < MAX_SHIPS; i++)
+		if (!skip)
 		{
-			if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
+			for (i = 0; i < MAX_SHIPS; i++)
 			{
-				Ships[i].flags2 &= ~SF2_NAVPOINT_CARRY;
-				break;
+				if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
+				{
+					Ships[i].flags2 &= ~SF2_NAVPOINT_CARRY;
+					break;
+				}
 			}
 		}
 		
