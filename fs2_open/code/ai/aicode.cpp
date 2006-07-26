@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.81 $
- * $Date: 2006-07-09 01:55:41 $
- * $Author: Goober5000 $
+ * $Revision: 1.82 $
+ * $Date: 2006-07-26 03:44:17 $
+ * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.81  2006/07/09 01:55:41  Goober5000
+ * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
+ * this should fix Mantis #977
+ * --Goober5000
+ *
  * Revision 1.80  2006/07/06 21:00:12  Goober5000
  * remove obsolete (and hackish) flag
  * --Goober5000
@@ -5111,7 +5116,10 @@ void ai_fly_to_ship()
 	// and "keep reasonable distance" if a capship
 	// ----------------------------------------------
 
-	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) // capital ship and AutoPilotEngaged
+	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) 
+		&& (shipp->flags2 & SF2_NAVPOINT_CARRY ||
+			(shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
+		)) // capital ship and AutoPilotEngaged
 	{
 		/*
 		int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, target_pos, // current point, destination point
@@ -5349,7 +5357,10 @@ void ai_waypoints()
 	// and "keep reasonable distance" if a capship
 	// ----------------------------------------------
 
-	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) // capital ship and AutoPilotEngaged
+	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) 
+		&& (shipp->flags2 & SF2_NAVPOINT_CARRY ||
+			(shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
+		)) // capital ship and AutoPilotEngaged
 	{
 		
 		//int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, wp_cur, // current point, destination point
