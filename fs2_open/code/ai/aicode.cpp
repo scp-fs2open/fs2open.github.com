@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72.2.6 $
- * $Date: 2006-07-05 23:47:59 $
- * $Author: Goober5000 $
+ * $Revision: 1.72.2.7 $
+ * $Date: 2006-07-26 15:04:04 $
+ * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72.2.6  2006/07/05 23:47:59  Goober5000
+ * fix for Mantis #571
+ * --Goober5000/Backslash
+ *
  * Revision 1.72.2.5  2006/07/05 23:36:55  Goober5000
  * cvs comment tweaks
  *
@@ -5100,7 +5104,10 @@ void ai_fly_to_ship()
 	// and "keep reasonable distance" if a capship
 	// ----------------------------------------------
 
-	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) // capital ship and AutoPilotEngaged
+	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) 
+		&& (shipp->flags2 & SF2_NAVPOINT_CARRY ||
+			(shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
+		)) // capital ship and AutoPilotEngaged
 	{
 		/*
 		int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, target_pos, // current point, destination point
@@ -5338,7 +5345,10 @@ void ai_waypoints()
 	// and "keep reasonable distance" if a capship
 	// ----------------------------------------------
 
-	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) // capital ship and AutoPilotEngaged
+	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) 
+		&& (shipp->flags2 & SF2_NAVPOINT_CARRY ||
+			(shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
+		)) // capital ship and AutoPilotEngaged
 	{
 		
 		//int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, wp_cur, // current point, destination point
