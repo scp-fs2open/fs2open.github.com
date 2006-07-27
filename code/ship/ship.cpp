@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.357 $
- * $Date: 2006-07-24 02:09:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.358 $
+ * $Date: 2006-07-27 10:43:16 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.357  2006/07/24 02:09:26  Goober5000
+ * fix a subtle and nasty bug
+ * --Goober5000
+ *
  * Revision 2.356  2006/07/17 01:12:52  taylor
  * make glow point banks dynamic
  *
@@ -8220,7 +8224,10 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 			}
 			else
 			{
-				swp->primary_bank_ammo[i] = sip->primary_bank_ammo_capacity[i];
+				float capacity, size;
+				capacity = (float) sip->primary_bank_ammo_capacity[i];
+				size = (float) wip->cargo_size;
+				swp->primary_bank_ammo[i] = fl2i((capacity / size)+0.5f);
 			}
 
 			swp->primary_bank_capacity[i] = sip->primary_bank_ammo_capacity[i];
@@ -14185,7 +14192,7 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 
 	capacity = (float) Ship_info[ship_class].primary_bank_ammo_capacity[bank];
 	size = (float) Weapon_info[ammo_type].cargo_size;
-	return (int) (capacity / size);
+	return  fl2i((capacity / size)+0.5f);
 }
 
 // Determine the number of secondary ammo units (missile/bomb) allowed max for a ship
