@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.24 $
- * $Date: 2006-07-26 03:46:04 $
+ * $Revision: 1.25 $
+ * $Date: 2006-07-27 19:17:59 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2006/07/26 03:46:04  Kazan
+ * Resolve Mantis #1011
+ *
  * Revision 1.23  2006/02/25 21:42:31  Goober5000
  * fixes from last commit
  *
@@ -294,6 +297,9 @@ void StartAutopilot()
 			)
 		{
 
+			// lock primary and secondary weapons
+			Ships[i].flags2 |= (SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
+
 			// clear the ship goals and cap the waypoint speed
 			ai_clear_ship_goals(&Ai_info[Ships[i].ai_index]);
 			Ai_info[Ships[i].ai_index].waypoint_speed_cap = (int)speed_cap;
@@ -420,6 +426,8 @@ void EndAutoPilot()
 			 )
 		   )
 		{
+			//unlock their weaponry
+			Ships[i].flags2 &= ~(SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
 			Ai_info[Ships[i].ai_index].waypoint_speed_cap = -1; // uncap their speed
 
 			// old "dumb" routine
