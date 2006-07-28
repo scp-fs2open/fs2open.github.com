@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.144 $
- * $Date: 2006-07-25 16:26:24 $
+ * $Revision: 2.145 $
+ * $Date: 2006-07-28 02:37:08 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.144  2006/07/25 16:26:24  taylor
+ * support for cmdline option stacking (a per option setting) so that things like "-mod derelict -mod mediavp" will end up as "-mod derelict,mediavp" to the game
+ * fix bug where white space chars didn't get dropped from the end of a option string like they were supposed to
+ * allow for something like "-ambient_factor 100 -ambient_factor 70" to use the proper value, the last one specified, rather than just accept the first instance
+ *
  * Revision 2.143  2006/07/08 18:11:33  taylor
  * remove -allslev
  * make CTRL-SHIFT-S hotkey work in mission simulator (it's a toggle, so you can turn it on or off while on the screen)
@@ -1273,7 +1278,9 @@ char *drop_extra_chars(char *str)
 
 	e = strlen(str) - 1;	// we already account for NULL later on, so the -1 is here to make
 							// sure we do our math without taking it into consideration
-	Assert( e >= 0 );
+
+	if (e < 0)
+		e = 0;
 
 	while (e > s) {
 		if (!is_extra_space(str[e])){
