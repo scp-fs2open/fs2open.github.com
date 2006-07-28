@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.43 $
- * $Date: 2006-04-05 16:14:04 $
- * $Author: karajorma $
+ * $Revision: 2.44 $
+ * $Date: 2006-07-28 02:40:07 $
+ * $Author: taylor $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/04/05 16:14:04  karajorma
+ * Changes to support the new Enable/Disable-Builtin-Messages SEXP
+ *
  * Revision 2.42  2006/04/03 07:48:03  wmcoolmon
  * Miscellaneous minor changes, mostly related to addition of Current_camera variable
  *
@@ -758,7 +761,7 @@ void view_modify(angles *ma, angles *da, float minv, float maxv, int slew, float
 	else if (da->p < -1.0f)
 		da->p = -1.0f;
 
-	if(Game_time_compression >= F1_0)
+	if ( (Game_time_compression >= F1_0) && !(Viewer_mode & VM_EXTERNAL) )
 	{
 		ma->p += da->p * flFrametime;
 		ma->b += da->b * flFrametime;
