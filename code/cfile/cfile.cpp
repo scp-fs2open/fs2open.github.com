@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.40 $
- * $Date: 2006-04-20 06:32:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2006-07-28 02:34:52 $
+ * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/04/20 06:32:00  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.39  2006/04/16 05:28:10  taylor
  * extra safety check when creating a default path string, filename is optional be we need to available if root0 is missing (CFILE not initted yet)
  * fix that crazy compiler<->constructor<->linker<->server.txt deal caused by some bad code and a freaky link thing in freespace.cpp
@@ -545,14 +548,15 @@ void cfile_refresh()
 }
 
 
-#ifdef _WIN32
+
 // Changes to a drive if valid.. 1=A, 2=B, etc
 // If flag, then changes to it.
 // Returns 0 if not-valid, 1 if valid.
 int cfile_chdrive( int DriveNum, int flag )
 {
-	int n, org;
 	int Valid = 0;
+#ifdef _WIN32
+	int n, org;
 
 	org = -1;
 	if (!flag)
@@ -567,10 +571,11 @@ int cfile_chdrive( int DriveNum, int flag )
 
 	if ( (!flag) && (n != org) )
 		_chdrive( org );
+#endif // _WIN32
 
 	return Valid;
+
 }
-#endif  // ifdef WIN32
 
 // push current directory on a 'stack' (so we can restore it) and change the directory
 int cfile_push_chdir(int type)
@@ -591,9 +596,10 @@ int cfile_push_chdir(int type)
 	strncpy(Cfile_stack[Cfile_stack_pos++], OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
 
 	cf_create_default_path_string( dir, sizeof(dir)-1, type, NULL );
-	_strlwr(dir);
 
 #ifdef _WIN32
+	_strlwr(dir);
+
 	char *Drive = strchr(dir, ':');
 
 	if (Drive) {
@@ -614,9 +620,7 @@ int cfile_push_chdir(int type)
 	// This chdir might get a critical error!
 	e = _chdir( Path );
 	if (e) {
-#ifdef _WIN32
 		cfile_chdrive( OriginalDirectory[0] - 'a' + 1, 1 );
-#endif
 		return 2;
 	}
 
@@ -632,9 +636,10 @@ int cfile_chdir(char *dir)
 	char NoDir[] = "\\.";
 
 	_getcwd(OriginalDirectory, CFILE_ROOT_DIRECTORY_LEN-1);
-	_strlwr(dir);
 
 #ifdef _WIN32
+	_strlwr(dir);
+
 	char *Drive = strchr(dir, ':');
 	if (Drive)	{
 		if (!cfile_chdrive( *(Drive - 1) - 'a' + 1, 1))
@@ -654,9 +659,7 @@ int cfile_chdir(char *dir)
 	// This chdir might get a critical error!
 	e = _chdir( Path );
 	if (e) {
-#ifdef _WIN32
 		cfile_chdrive( OriginalDirectory[0] - 'a' + 1, 1 );
-#endif
 		return 2;
 	}
 
