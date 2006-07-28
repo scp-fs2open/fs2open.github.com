@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.34 $
- * $Date: 2006-04-16 05:28:10 $
+ * $Revision: 2.35 $
+ * $Date: 2006-07-28 02:36:07 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,10 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2006/04/16 05:28:10  taylor
+ * extra safety check when creating a default path string, filename is optional be we need to available if root0 is missing (CFILE not initted yet)
+ * fix that crazy compiler<->constructor<->linker<->server.txt deal caused by some bad code and a freaky link thing in freespace.cpp
+ *
  * Revision 2.33  2005/12/28 22:06:47  taylor
  * fix up cf_find_file_location() and related elements so that it's safer (based on WMC's work, but actually safe this time ;))
  *
@@ -1670,7 +1674,7 @@ int cf_create_default_path_string( char *path, uint path_max, int pathtype, char
 		Assert(CF_TYPE_SPECIFIED(pathtype));
 
 		// force a specific directory to search for player files
-		if ( (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
+		if ( (pathtype == CF_TYPE_PLAYERS) || (pathtype == CF_TYPE_SINGLE_PLAYERS) || (pathtype == CF_TYPE_MULTI_PLAYERS) ) {
 			strncpy(path, Pilot_file_path, path_max);
 		} else {
 			strncpy(path, root->path, path_max);
