@@ -10,13 +10,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.45 $
- * $Date: 2006-07-24 07:36:50 $
+ * $Revision: 1.46 $
+ * $Date: 2006-07-28 02:38:35 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.45  2006/07/24 07:36:50  taylor
+ * minor cleanup/optimization to beam warmup glow rendering function
+ * various lighting code cleanups
+ *  - try to always make sure beam origin lights occur outside of model
+ *  - make Static_lights[] dynamic
+ *  - be sure to reset to first 8 lights when moving on to render spec related texture passes
+ *  - add ambient color to point lights (helps warp effects)
+ *  - sort lights to try and get more important and/or visible lights to always happen in initial render pass
+ *
  * Revision 1.44  2006/05/30 03:53:52  taylor
  * z-range for 2D ortho is -1.0 to 1.0, may help avoid some strangeness if we actually get that right. :)
  * minor cleanup of old code and default settings
@@ -740,7 +749,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 // -------- End 1st PASS --------------------------------------------------------- //
 
 // -------- Begin lighting pass (conditional but should happen before spec pass) - //
-	if ( (textured) && (lighting_is_enabled) && ((Num_active_gl_lights-1)/GL_max_lights > 0) ) {
+	if ( (textured) && (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && ((Num_active_gl_lights-1)/GL_max_lights > 0) ) {
 		// the lighting code needs to do this better, may need some adjustment later since I'm only trying
 		// to avoid rendering 7+ extra passes for lights which probably won't affect current object, but as
 		// a performance hack I guess this will have to do for now...
@@ -1098,14 +1107,19 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix* orient)
 	glLoadIdentity();
 	glPushMatrix();
 
-	vec3d fwd;
-	vec3d *uvec=&orient->vec.uvec;
+	GLdouble eyex = (GLdouble)pos->xyz.x;
+	GLdouble eyey = (GLdouble)pos->xyz.y;
+	GLdouble eyez = (GLdouble)pos->xyz.z;
 
-	vm_vec_add(&fwd, pos, &orient->vec.fvec);
+	GLdouble centerx = eyex + (GLdouble)orient->vec.fvec.xyz.x;
+	GLdouble centery = eyey + (GLdouble)orient->vec.fvec.xyz.y;
+	GLdouble centerz = eyez + (GLdouble)orient->vec.fvec.xyz.z;
 
-	gluLookAt(pos->xyz.x, pos->xyz.y, -pos->xyz.z,
-			fwd.xyz.x, fwd.xyz.y, -fwd.xyz.z,
-			uvec->xyz.x, uvec->xyz.y, -uvec->xyz.z);
+	GLdouble upx = (GLdouble)orient->vec.uvec.xyz.x;
+	GLdouble upy = (GLdouble)orient->vec.uvec.xyz.y;
+	GLdouble upz = (GLdouble)orient->vec.uvec.xyz.z;
+
+	gluLookAt(eyex, eyey, -eyez, centerx, centery, -centerz, upx, upy, -upz);
 
 	glScalef(1.0f, 1.0f, -1.0f);
 
