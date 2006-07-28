@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.358 $
- * $Date: 2006-07-27 10:43:16 $
- * $Author: karajorma $
+ * $Revision: 2.359 $
+ * $Date: 2006-07-28 02:41:35 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.358  2006/07/27 10:43:16  karajorma
+ * Fixed an error in ballistic weapons where only the server got the correct number of bullets in multiplayer.
+ * Fixed a rounding up error in get_max_ammo_count_for_primary_bank()
+ *
  * Revision 2.357  2006/07/24 02:09:26  Goober5000
  * fix a subtle and nasty bug
  * --Goober5000
@@ -5812,9 +5816,12 @@ void ship_render(object * obj)
 	int num = obj->instance;
 	Assert( num >= 0);
 	ship *shipp = &Ships[num];
+	ship *warp_shipp = NULL;
 	ship_info *si = &Ship_info[Ships[num].ship_info_index];
 	bool reset_proj_when_done = false;
-	
+	bool is_first_stage_arrival = false;
+	dock_function_info dfi;
+
 
 #if 0
 	// show target when attacking big ship
@@ -5883,11 +5890,24 @@ void ship_render(object * obj)
 		}
 	}
 
-	MONITOR_INC( NumShipsRend, 1 );	
+	MONITOR_INC( NumShipsRend, 1 );
+
+
+	memset( &dfi, 0, sizeof(dock_function_info) );
+ 
+	// look for a warping ship, whether for me or for anybody I'm docked with
+	dock_evaluate_all_docked_objects(obj, &dfi, ship_find_warping_ship_helper);
+
+	// if any docked objects are set to stage 1 arrival then set bool
+	if (dfi.maintained_variables.bool_value) {
+		warp_shipp = &Ships[dfi.maintained_variables.objp_value->instance];
+
+		is_first_stage_arrival = ((warp_shipp->flags & SF_ARRIVING_STAGE_1) > 0);
+	}
 
 	// Make ships that are warping in not render during stage 1
 	//WMC - Or limbo.
-	if (!(shipp->flags & SF_ARRIVING_STAGE_1) && !(shipp->flags2 & SF2_IN_LIMBO))
+	if (!(is_first_stage_arrival) && !(shipp->flags2 & SF2_IN_LIMBO))
 	{				
 		if ( Ship_shadows && shipfx_in_shadow( obj ) )	{
 			light_set_shadow(1);
@@ -6129,18 +6149,12 @@ void ship_render(object * obj)
 			// set up the model renderer to only draw the polygons in front
 			// of the warp in effect
 			int clip_started = 0;
-			dock_function_info dfi;
-
-			// look for a warping ship, whether for me or for anybody I'm docked with
-			dock_evaluate_all_docked_objects(obj, &dfi, ship_find_warping_ship_helper);
 
 			// Warp_shipp points to the ship that is going through a
 			// warp... either this ship or the ship it is docked with.
-			if ( dfi.maintained_variables.bool_value )
+			if ( warp_shipp != NULL )
 			{
-				ship *warp_shipp = &Ships[dfi.maintained_variables.objp_value->instance];
-
-				if(Ship_info[warp_shipp->ship_info_index].warpout_type == WT_DEFAULT)
+				if (Ship_info[warp_shipp->ship_info_index].warpout_type == WT_DEFAULT)
 				{
 					clip_started = 1;
 					g3_start_user_clip_plane( &warp_shipp->warp_effect_pos, &warp_shipp->warp_effect_fvec );
