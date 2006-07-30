@@ -970,6 +970,7 @@
 #define IDC_3D_WARP_EFFECT              1545
 #define IDC_ALLOW_DOCK_TREES            1545
 #define IDC_MISSION_OPTIONS             1546
+#define IDC_PLAYER_START_AI             1546
 #define IDC_CUSTOM_TECH_DB              1547
 #define IDC_LABEL1                      1549
 #define IDC_LABEL2                      1550
@@ -1311,7 +1312,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        271
+#define _APS_NEXT_RESOURCE_VALUE        272
 #define _APS_NEXT_COMMAND_VALUE         33090
 #define _APS_NEXT_CONTROL_VALUE         1586
 #define _APS_NEXT_SYMED_VALUE           105
