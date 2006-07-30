@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.85.2.3 $
- * $Author: Goober5000 $
- * $Date: 2006-07-20 00:41:26 $
+ * $Revision: 2.85.2.4 $
+ * $Author: Kazan $
+ * $Date: 2006-07-30 20:00:47 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85.2.3  2006/07/20 00:41:26  Goober5000
+ * add WCS screaming stuff to RC branch
+ * --Goober5000
+ *
  * Revision 2.85.2.2  2006/06/07 20:47:53  karajorma
  * Allow Change-Ship-Class to work with ships which haven't arrived yet (For BHX)
  *
@@ -608,6 +612,7 @@ struct p_dock_instance;
 #define MISSION_FLAG_RED_ALERT					(1<<16)	// a red-alert mission - Goober5000
 #define MISSION_FLAG_SCRAMBLE					(1<<17)	// a scramble mission - Goober5000
 #define MISSION_FLAG_NO_BUILTIN_COMMAND			(1<<18)	// turns off Command without turning off pilots - Karajorma
+#define MISSION_FLAG_PLAYER_START_AI			(1<<19) // Player Starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)

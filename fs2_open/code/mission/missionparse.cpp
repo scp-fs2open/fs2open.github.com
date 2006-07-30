@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.9 $
- * $Date: 2006-07-20 00:41:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.178.2.10 $
+ * $Date: 2006-07-30 20:00:47 $
+ * $Author: Kazan $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.9  2006/07/20 00:41:26  Goober5000
+ * add WCS screaming stuff to RC branch
+ * --Goober5000
+ *
  * Revision 2.178.2.8  2006/07/17 00:10:05  Goober5000
  * stage 2 of animation fix (add base frame time to each ship)
  * --Goober5000
@@ -1139,8 +1143,6 @@
 #include "network/multi_endgame.h"
 #include "object/parseobjectdock.h"
 
-
-
 LOCAL struct {
 	char docker[NAME_LENGTH];
 	char dockee[NAME_LENGTH];
@@ -1755,6 +1757,10 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	Assert( The_mission.ai_profile != NULL );
+
+	// Kazan - player use AI at start?
+	if (pm->flags & MISSION_FLAG_PLAYER_START_AI)
+		Player_use_ai = 1;
 }
 
 void parse_player_info(mission *pm)
