@@ -990,6 +990,7 @@
 #define IDC_3D_WARP_EFFECT              1545
 #define IDC_ALLOW_DOCK_TREES            1545
 #define IDC_MISSION_OPTIONS             1546
+#define IDC_PLAYER_START_AI             1546
 #define IDC_CUSTOM_TECH_DB              1547
 #define IDC_LABEL1                      1549
 #define IDC_LABEL2                      1550

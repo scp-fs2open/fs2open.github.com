@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.7 $
- * $Date: 2006-06-04 01:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 1.8 $
+ * $Date: 2006-07-30 20:01:56 $
+ * $Author: Kazan $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2006/06/04 01:01:52  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 1.6  2006/06/02 09:48:38  karajorma
  * Added the alt ship class button
  *
@@ -2055,12 +2059,13 @@ void CShipEditorDlg::OnSelchangedDepartureTree(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CShipEditorDlg::calc_cue_height()
 {
-	CRect cue;
+	CRect cue, help;
 
 	GetDlgItem(IDC_CUE_FRAME)->GetWindowRect(cue);
-	cue_height = cue.bottom - cue.top + 10;
+	cue_height = (cue.bottom - cue.top)+20;
 	if (Show_sexp_help){
-		cue_height += SEXP_HELP_BOX_SIZE;
+		GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
+		cue_height += (help.bottom - help.top);
 	}
 
 	if (Hide_ship_cues) {
@@ -2071,12 +2076,14 @@ void CShipEditorDlg::calc_cue_height()
 
 void CShipEditorDlg::show_hide_sexp_help()
 {
-	CRect rect;
+	CRect rect, help;
+	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
+	float box_size = (help.bottom - help.top);
 
 	if (Show_sexp_help){
-		cue_height += SEXP_HELP_BOX_SIZE;
+		cue_height += box_size;
 	} else {
-		cue_height -= SEXP_HELP_BOX_SIZE;
+		cue_height -= box_size;
 	}
 
 	if (((CButton *) GetDlgItem(IDC_HIDE_CUES)) -> GetCheck()){
@@ -2086,9 +2093,9 @@ void CShipEditorDlg::show_hide_sexp_help()
 	GetWindowRect(rect);
 
 	if (Show_sexp_help){
-		rect.bottom += SEXP_HELP_BOX_SIZE;
+		rect.bottom += box_size;
 	} else {
-		rect.bottom -= SEXP_HELP_BOX_SIZE;
+		rect.bottom -= box_size;
 	}
 
 	MoveWindow(rect);
