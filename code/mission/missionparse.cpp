@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.188 $
- * $Date: 2006-07-17 00:10:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.189 $
+ * $Date: 2006-07-30 20:01:56 $
+ * $Author: Kazan $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.188  2006/07/17 00:10:00  Goober5000
+ * stage 2 of animation fix (add base frame time to each ship)
+ * --Goober5000
+ *
  * Revision 2.187  2006/07/13 06:11:52  Goober5000
  * * better formatting for substitute music options
  * * better handling of all special FSO comment tags
@@ -1144,8 +1148,6 @@
 #include "network/multi_endgame.h"
 #include "object/parseobjectdock.h"
 
-
-
 LOCAL struct {
 	char docker[NAME_LENGTH];
 	char dockee[NAME_LENGTH];
@@ -1766,6 +1768,10 @@ void parse_mission_info(mission *pm, bool basic = false)
 	}
 
 	Assert( The_mission.ai_profile != NULL );
+
+	// Kazan - player use AI at start?
+	if (pm->flags & MISSION_FLAG_PLAYER_START_AI)
+		Player_use_ai = 1;
 }
 
 void parse_player_info(mission *pm)

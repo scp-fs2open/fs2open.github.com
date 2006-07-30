@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.h $
- * $Revision: 1.4 $
- * $Date: 2006-05-30 02:13:22 $
- * $Author: Goober5000 $
+ * $Revision: 1.5 $
+ * $Date: 2006-07-30 20:01:56 $
+ * $Author: Kazan $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/05/30 02:13:22  Goober5000
+ * add substitute music boxes to FRED, and reset music properly when mission is cleared
+ * --Goober5000
+ *
  * Revision 1.3  2006/05/30 01:36:24  Goober5000
  * add AI Profile box to FRED
  * --Goober5000
@@ -211,6 +215,7 @@ public:
 	BOOL		m_toggle_trails;
 	BOOL		m_support_repairs_hull;
 	BOOL		m_beam_free_all_by_default;
+	BOOL		m_player_start_using_ai;
 	BOOL		m_no_briefing;
 	BOOL		m_no_debriefing;
 	float		m_max_hull_repair_val;
