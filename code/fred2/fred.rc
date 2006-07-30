@@ -956,6 +956,9 @@ BEGIN
     GROUPBOX        "Ship Trails",IDC_STATIC,161,191,154,39
     LTEXT           "Substitute Music",IDC_STATIC,164,255,52,8
     LTEXT           "AI Profile",IDC_STATIC,6,238,32,8
+    CONTROL         "Player Starts under AI Control (NO MULTI)",
+                    IDC_PLAYER_START_AI,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,7,255,149,10
 END
 
 IDD_PREFERENCES DIALOG DISCARDABLE  0, 0, 333, 81
@@ -993,7 +996,7 @@ STYLE DS_MODALFRAME | DS_3DLOOK | DS_CENTER | WS_POPUP | WS_CAPTION |
 EXSTYLE WS_EX_NOPARENTNOTIFY | WS_EX_CLIENTEDGE | WS_EX_CONTEXTHELP
 CAPTION "Edit Ship"
 MENU IDR_SHIP_EDIT_MENU
-FONT 8, "MS Sans Serif", 0, 0, 0x1
+FONT 8, "MS Sans Serif"
 BEGIN
     PUSHBUTTON      "Prev",IDC_PREV,264,7,24,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Next",IDC_NEXT,290,7,24,14,0,WS_EX_STATICEDGE
@@ -1048,7 +1051,7 @@ BEGIN
     CONTROL         "Spin1",IDC_ARRIVAL_DELAY_SPIN,"msctls_updown32",
                     UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
                     UDS_ARROWKEYS,86,194,11,14
-    LTEXT           "Seconds",IDC_STATIC,94,198,45,8
+    LTEXT           "Seconds",IDC_STATIC,103,196,45,8
     CONTROL         "Update Cue",IDC_UPDATE_ARRIVAL,"Button",BS_AUTOCHECKBOX | 
                     WS_TABSTOP,94,233,54,10
     CONTROL         "Tree1",IDC_ARRIVAL_TREE,"SysTreeView32",TVS_HASBUTTONS | 
@@ -1065,7 +1068,7 @@ BEGIN
     CONTROL         "Spin3",IDC_DEPARTURE_DELAY_SPIN,"msctls_updown32",
                     UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
                     UDS_ARROWKEYS,240,194,11,14
-    LTEXT           "Seconds",IDC_STATIC,247,198,45,8
+    LTEXT           "Seconds",IDC_STATIC,255,197,45,8
     CONTROL         "Update Cue",IDC_UPDATE_DEPARTURE,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,251,234,54,10
     CONTROL         "Tree1",IDC_DEPARTURE_TREE,"SysTreeView32",

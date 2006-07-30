@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.89 $
- * $Author: Goober5000 $
- * $Date: 2006-07-06 21:00:13 $
+ * $Revision: 2.90 $
+ * $Author: Kazan $
+ * $Date: 2006-07-30 20:01:56 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2006/07/06 21:00:13  Goober5000
+ * remove obsolete (and hackish) flag
+ * --Goober5000
+ *
  * Revision 2.88  2006/07/06 20:46:39  Goober5000
  * WCS screaming stuff
  * --Goober5000
@@ -613,6 +617,7 @@ struct p_dock_instance;
 #define MISSION_FLAG_RED_ALERT					(1<<16)	// a red-alert mission - Goober5000
 #define MISSION_FLAG_SCRAMBLE					(1<<17)	// a scramble mission - Goober5000
 #define MISSION_FLAG_NO_BUILTIN_COMMAND			(1<<18)	// turns off Command without turning off pilots - Karajorma
+#define MISSION_FLAG_PLAYER_START_AI			(1<<19) // Player Starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)

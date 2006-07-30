@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.7 $
- * $Date: 2006-05-30 02:13:22 $
- * $Author: Goober5000 $
+ * $Revision: 1.8 $
+ * $Date: 2006-07-30 20:01:56 $
+ * $Author: Kazan $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2006/05/30 02:13:22  Goober5000
+ * add substitute music boxes to FRED, and reset music properly when mission is cleared
+ * --Goober5000
+ *
  * Revision 1.6  2006/05/30 01:36:24  Goober5000
  * add AI Profile box to FRED
  * --Goober5000
@@ -292,6 +296,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_toggle_trails = FALSE;
 	m_support_repairs_hull = FALSE;
 	m_beam_free_all_by_default = FALSE;
+	m_player_start_using_ai = FALSE;
 	m_no_briefing = FALSE;
 	m_no_debriefing = FALSE;
 	m_max_hull_repair_val = 0.0f;
@@ -333,6 +338,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_SPECS_TOGGLE_TRAILS, m_toggle_trails);
 	DDX_Check(pDX, IDC_SUPPORT_REPAIRS_HULL, m_support_repairs_hull);
 	DDX_Check(pDX, IDC_BEAM_FREE_ALL_BY_DEFAULT, m_beam_free_all_by_default);
+	DDX_Check(pDX, IDC_PLAYER_START_AI, m_player_start_using_ai);
 	DDX_Check(pDX, IDC_NO_BRIEFING, m_no_briefing);
 	DDX_Check(pDX, IDC_NO_DEBRIEFING, m_no_debriefing);
 	DDX_Text(pDX, IDC_MAX_HULL_REPAIR_VAL, m_max_hull_repair_val);
@@ -516,6 +522,13 @@ void CMissionNotesDlg::OnOK()
 		The_mission.flags &= ~MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT;
 	}
 
+	// set player AI by default
+	if ( m_player_start_using_ai ) {
+		The_mission.flags |= MISSION_FLAG_PLAYER_START_AI;
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_PLAYER_START_AI;
+	}
+
 	// set briefing
 	if ( m_no_briefing ) {
 		The_mission.flags |= MISSION_FLAG_NO_BRIEFING;
@@ -605,6 +618,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_toggle_trails = (The_mission.flags & MISSION_FLAG_TOGGLE_SHIP_TRAILS) ? 1 : 0;
 	m_support_repairs_hull = (The_mission.flags &MISSION_FLAG_SUPPORT_REPAIRS_HULL) ? 1 : 0;
 	m_beam_free_all_by_default = (The_mission.flags & MISSION_FLAG_BEAM_FREE_ALL_BY_DEFAULT) ? 1 : 0;
+	m_player_start_using_ai = (The_mission.flags & MISSION_FLAG_PLAYER_START_AI) ? 1 : 0;
 	m_no_briefing = (The_mission.flags & MISSION_FLAG_NO_BRIEFING) ? 1 : 0;
 	m_no_debriefing = (The_mission.flags & MISSION_FLAG_NO_DEBRIEFING) ? 1 : 0;
 
