@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.8 $
- * $Date: 2006-03-01 04:01:37 $
- * $Author: Goober5000 $
+ * $Revision: 1.8.2.1 $
+ * $Date: 2006-07-31 21:09:10 $
+ * $Author: karajorma $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2006/03/01 04:01:37  Goober5000
+ * fix comm message localization
+ *
  * Revision 1.7  2006/02/26 01:32:23  Goober5000
  * bah
  *
@@ -4918,6 +4921,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_CHANGE_AI_CLASS:
 		case OP_IS_AI_CLASS:
 		case OP_MISSILE_LOCKED:
+		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 			// iterate to the next field
 			child = nodes[child].next;
 			break;
