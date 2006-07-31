@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.69 $
- * $Date: 2006-06-15 00:47:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.70 $
+ * $Date: 2006-07-31 23:57:48 $
+ * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2006/06/15 00:47:15  Goober5000
+ * better handling for 'G' key press
+ * --Goober5000
+ *
  * Revision 2.68  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -767,7 +771,8 @@ int Normal_key_set[] = {
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
 	
-	TOGGLE_GLIDING
+	TOGGLE_GLIDING,
+	GLIDE_WHILE_PRESSED
 };
 
 int Dead_key_set[] = {
@@ -900,7 +905,8 @@ int Non_critical_key_set[] = {
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
-	TOGGLE_GLIDING
+	TOGGLE_GLIDING,
+	GLIDE_WHILE_PRESSED
 };
 
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.44 $
- * $Date: 2006-07-28 02:40:07 $
- * $Author: taylor $
+ * $Revision: 2.45 $
+ * $Date: 2006-07-31 23:57:48 $
+ * $Author: Kazan $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2006/07/28 02:40:07  taylor
+ * when in external (non-control) view be sure to not include time compression speed in camera movement
+ *
  * Revision 2.43  2006/04/05 16:14:04  karajorma
  * Changes to support the new Enable/Disable-Builtin-Messages SEXP
  *
@@ -1291,6 +1294,25 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			afterburner_last = 0;
 		}
 	}
+
+
+
+	// Kazan - gliding while keypressed
+	if (check_control(GLIDE_WHILE_PRESSED))
+	{
+		if (Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide && !object_get_gliding(Player_obj))
+		{
+			object_set_gliding(Player_obj, true);
+		}
+	}
+	else
+	{
+		if (Player_obj != NULL && object_get_gliding(Player_obj))
+		{
+			object_set_gliding(Player_obj, false);
+		}
+	}
+	//--------------------------------
 
 	if ( (Viewer_mode & VM_EXTERNAL) || slew_active ) {
 		if ( !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) || slew_active ) {

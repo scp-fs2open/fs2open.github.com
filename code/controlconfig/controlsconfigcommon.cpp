@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.15 $
- * $Date: 2006-07-20 01:51:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2006-07-31 23:57:48 $
+ * $Author: Kazan $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/07/20 01:51:17  Goober5000
+ * tweak control text
+ * --Goober5000
+ *
  * Revision 2.14  2006/02/25 21:46:59  Goober5000
  * spelling
  *
@@ -600,6 +604,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{ KEY_ALTED |					KEY_N,			-1, COMPUTER_TAB, false, "Cycle Nav Points"},
 	
 	{ KEY_ALTED |					KEY_G,			-1, SHIP_TAB, false, "Toggle Gliding"},
+	{									-1,			-1, SHIP_TAB, false, "Glide while pressed", CC_TYPE_CONTINUOUS},
 
 	{                           -1,					-1, -1,			 false,	"" }
 };
