@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.9 $
- * $Date: 2006-06-02 09:46:03 $
- * $Author: karajorma $
+ * $Revision: 1.10 $
+ * $Date: 2006-07-31 21:13:03 $
+ * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/06/02 09:46:03  karajorma
+ * Prevented the modify variable dialog deleting or changing the type of variables which are used in Team Loadout
+ *
  * Revision 1.8  2006/03/01 04:01:37  Goober5000
  * fix comm message localization
  *
@@ -4923,6 +4926,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_CHANGE_AI_CLASS:
 		case OP_IS_AI_CLASS:
 		case OP_MISSILE_LOCKED:
+		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 			// iterate to the next field
 			child = nodes[child].next;
 			break;
