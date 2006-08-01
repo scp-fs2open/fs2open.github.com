@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.70 $
- * $Date: 2006-07-31 23:57:48 $
+ * $Revision: 2.71 $
+ * $Date: 2006-08-01 04:26:02 $
  * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2006/07/31 23:57:48  Kazan
+ * glide while pressed
+ *
  * Revision 2.69  2006/06/15 00:47:15  Goober5000
  * better handling for 'G' key press
  * --Goober5000
@@ -772,7 +775,8 @@ int Normal_key_set[] = {
 	NAV_CYCLE,
 	
 	TOGGLE_GLIDING,
-	GLIDE_WHILE_PRESSED
+	// commented until taylor deems this safe
+	//GLIDE_WHILE_PRESSED
 };
 
 int Dead_key_set[] = {
@@ -906,7 +910,9 @@ int Non_critical_key_set[] = {
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
 	TOGGLE_GLIDING,
-	GLIDE_WHILE_PRESSED
+	
+	// commented until taylor deems this safe
+	//GLIDE_WHILE_PRESSED
 };
 
 
