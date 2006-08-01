@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.16 $
- * $Date: 2006-07-31 23:57:48 $
+ * $Revision: 2.17 $
+ * $Date: 2006-08-01 04:26:02 $
  * $Author: Kazan $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/07/31 23:57:48  Kazan
+ * glide while pressed
+ *
  * Revision 2.15  2006/02/25 21:46:59  Goober5000
  * spelling
  *
@@ -516,10 +519,11 @@ typedef struct config_item {
 
 //Gliding
 #define TOGGLE_GLIDING									117
-#define GLIDE_WHILE_PRESSED								118
+//Commented until taylor deems this safe
+//#define GLIDE_WHILE_PRESSED								118
 
 // this should be the total number of control action defines above (or last define + 1)
-#define CCFG_MAX 119
+#define CCFG_MAX 118
 
 extern int Failed_key_index;
 extern int Invert_heading;
