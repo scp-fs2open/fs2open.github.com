@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.20 $
- * $Date: 2005-12-29 08:08:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21 $
+ * $Date: 2006-08-02 22:47:40 $
+ * $Author: Goober5000 $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2005/12/29 08:08:39  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.19  2005/11/16 05:46:27  taylor
  * bunch of error checking and code cleanup for the team stuff in ship/weapon select
  *
@@ -271,7 +274,7 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "object/object.h"
-
+#include "parse/parselo.h"
 
 
 // ------------------------------------------------------------------------------------------------------
@@ -1481,7 +1484,7 @@ void multi_ts_blit_wings()
 			// if this is a team vs team game, and the slot is occupised by a team captain, put a c there
 			if((Netgame.type_flags & NG_TYPE_TEAM) && (Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx] != NULL) && (Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx]->flags & NETINFO_FLAG_TEAM_CAPTAIN)){
 				gr_set_color_fast(&Color_bright);
-				gr_string(Multi_ts_slot_icon_coords[idx][gr_screen.res][MULTI_TS_X_COORD] - 5,Multi_ts_slot_icon_coords[idx][gr_screen.res][MULTI_TS_Y_COORD] - 5,XSTR("C",737));  // [[ Team captain ]]
+				gr_string(Multi_ts_slot_icon_coords[idx][gr_screen.res][MULTI_TS_X_COORD] - 5,Multi_ts_slot_icon_coords[idx][gr_screen.res][MULTI_TS_Y_COORD] - 5, XSTR("C",737));  // [[ Team captain ]]
 			}
 		}
 	}	
@@ -1510,10 +1513,10 @@ void multi_ts_blit_wing_callsigns()
 			pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx]].instance].ship_name);			
 			if((pobj == NULL) || !(pobj->flags & OF_PLAYER_SHIP)){
 				strcpy(callsign, NOX("<"));
-				strcat(callsign,XSTR("AI",738));  // [[ Artificial Intellegence ]]						
+				strcat(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
 				strcat(callsign, NOX(">"));
 			} else {
-				strcpy(callsign,XSTR("AI",738));  // [[ Artificial Intellegence ]]						
+				strcpy(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
 			}
 		}
 			
@@ -1743,81 +1746,87 @@ void multi_ts_blit_ship_info()
 
 	// blit the ship class (name)
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start,XSTR("Class",739));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Class",739));
 	if(strlen(sip->name)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,sip->name);
+
+		// Goober5000
+		char temp[NAME_LENGTH];
+		strcpy(temp, sip->name);
+		end_string_at_first_hash_symbol(temp);
+
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, temp);
 	}
 	y_start += 10;
 
 	// blit the ship type
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start,XSTR("Type",740));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Type",740));
 	if((sip->type_str != NULL) && strlen(sip->type_str)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,sip->type_str);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->type_str);
 	}
 	y_start += 10;
 
 	// blit the ship length
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start,XSTR("Length",741));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Length",741));
 	if((sip->ship_length != NULL) && strlen(sip->ship_length)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,sip->ship_length);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->ship_length);
 	}
 	y_start += 10;
 
 	// blit the max velocity
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start,XSTR("Max Velocity",742));	
-	sprintf(str,XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Max Velocity",742));	
+	sprintf(str, XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
 	gr_set_color_fast(&Color_bright);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,str);	
 	y_start += 10;
 
 	// blit the maneuverability
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start,XSTR("Maneuverability",744));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Maneuverability",744));
 	if((sip->maneuverability_str != NULL) && strlen(sip->maneuverability_str)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,sip->maneuverability_str);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->maneuverability_str);
 	}
 	y_start += 10;
 
 	// blit the armor
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start,XSTR("Armor",745));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Armor",745));
 	if((sip->armor_str != NULL) && strlen(sip->armor_str)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,sip->armor_str);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->armor_str);
 	}
 	y_start += 10;
 
 	// blit the gun mounts 
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start,XSTR("Gun Mounts",746));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Gun Mounts",746));
 	if((sip->gun_mounts != NULL) && strlen(sip->gun_mounts)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,sip->gun_mounts);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->gun_mounts);
 	}
 	y_start += 10;
 
 	// blit the missile banke
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start,XSTR("Missile Banks",747));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Missile Banks",747));
 	if((sip->missile_banks != NULL) && strlen(sip->missile_banks)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,sip->missile_banks);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->missile_banks);
 	}
 	y_start += 10;
 
 	// blit the manufacturer
 	gr_set_color_fast(&Color_normal);
-	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start,XSTR("Manufacturer",748));
+	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Manufacturer",748));
 	if((sip->manufacturer_str != NULL) && strlen(sip->manufacturer_str)){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start,sip->manufacturer_str);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->manufacturer_str);
 	}
 	y_start += 10;
 
@@ -1843,11 +1852,11 @@ void multi_ts_blit_status_bar()
 	// mode specific text
 	switch(Multi_ts_status_bar_mode){
 	case 0 :
-		strcpy(text,XSTR("Ships/Weapons Locked",749));
+		strcpy(text, XSTR("Ships/Weapons Locked",749));
 		blit = 1;
 		break;
 	case 1 :
-		strcpy(text,XSTR("Ships/Weapons Are Now Free",750));
+		strcpy(text, XSTR("Ships/Weapons Are Now Free",750));
 		blit = 1;
 		break;
 	}
@@ -2881,7 +2890,7 @@ void multi_ts_commit_pressed()
 	// if my team's slots are still not "locked", we cannot commit unless we're the only player in the game
 	if(!Multi_ts_team[Net_player->p_info.team].multi_players_locked){
 		if(multi_num_players() != 1){
-			popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK,XSTR("Players have not yet been assigned to their ships",751));
+			popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("Players have not yet been assigned to their ships",751));
 			return;
 		} else {
 			Multi_ts_team[Net_player->p_info.team].multi_players_locked = 1;
@@ -2899,19 +2908,19 @@ void multi_ts_commit_pressed()
 	// player has not assigned all necessary ships
 	case 1: 	
 		gamesnd_play_iface(SND_GENERAL_FAIL);
-		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK,XSTR("You have not yet assigned all necessary ships",752));
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("You have not yet assigned all necessary ships",752));
 		break;
 	
 	// there are ships without primary weapons
 	case 2: 
 		gamesnd_play_iface(SND_GENERAL_FAIL);
-		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK,XSTR("There are ships without primary weapons!",753));
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("There are ships without primary weapons!",753));
 		break;
 
 	// there are ships without secondary weapons
 	case 3: 
 		gamesnd_play_iface(SND_GENERAL_FAIL);
-		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK,XSTR("There are ships without secondary weapons!",754));
+		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("There are ships without secondary weapons!",754));
 		break;
 	}
 }
