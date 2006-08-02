@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.63 $
- * $Date: 2006-06-23 04:57:09 $
- * $Author: wmcoolmon $
+ * $Revision: 2.64 $
+ * $Date: 2006-08-02 22:31:15 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2006/06/23 04:57:09  wmcoolmon
+ * Remove Assert, should be caught by aforementioned warning
+ *
  * Revision 2.62  2006/04/20 06:32:14  Goober5000
  * proper capitalization according to Volition
  *
@@ -607,6 +610,7 @@
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
 #include "mission/missionparse.h"
+#include "parse/parselo.h"
 #include "missionui/missionbrief.h"
 #include "freespace2/freespace.h"
 #include "gamesequence/gamesequence.h"
@@ -1583,21 +1587,27 @@ void ship_select_blit_ship_info()
 
 	// blit the ship class (name)
 	gr_set_color_fast(header);
-	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Class",739));
+	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Class",739));
 	y_start += 10;
 	if(strlen(sip->name)){
 		gr_set_color_fast(text);
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->name);
+
+		// Goober5000
+		char temp[NAME_LENGTH];
+		strcpy(temp, sip->name);
+		end_string_at_first_hash_symbol(temp);
+
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, temp);
 	}
 	y_start += 10;
 
 	// blit the ship type
 	gr_set_color_fast(header);
-	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Type",740));
+	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Type",740));
 	y_start += 10;
 	gr_set_color_fast(text);
 	if((sip->type_str != NULL) && strlen(sip->type_str)){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->type_str);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->type_str);
 	}
 	else
 	{
@@ -1608,7 +1618,7 @@ void ship_select_blit_ship_info()
 
 	// blit the ship length
 	gr_set_color_fast(header);
-	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Length",741));
+	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Length",741));
 	y_start += 10;
 	gr_set_color_fast(text);
 	if((sip->ship_length != NULL) && strlen(sip->ship_length)){
@@ -1636,20 +1646,20 @@ void ship_select_blit_ship_info()
 
 	// blit the max velocity
 	gr_set_color_fast(header);
-	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Max Velocity",742));	
+	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Max Velocity",742));	
 	y_start += 10;
-	sprintf(str,XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
+	sprintf(str, XSTR("%d m/s",743),(int)sip->max_vel.xyz.z);
 	gr_set_color_fast(text);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,str);	
 	y_start += 10;
 
 	// blit the maneuverability
 	gr_set_color_fast(header);
-	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Maneuverability",744));
+	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Maneuverability",744));
 	y_start += 10;
 	gr_set_color_fast(text);
 	if((sip->maneuverability_str != NULL) && strlen(sip->maneuverability_str)){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->maneuverability_str);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->maneuverability_str);
 	}
 	else if(ShipSelectModelNum >= 0)
 	{
@@ -1679,11 +1689,11 @@ void ship_select_blit_ship_info()
 
 	// blit the armor
 	gr_set_color_fast(header);
-	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Armor",745));
+	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Armor",745));
 	y_start += 10;
 	gr_set_color_fast(text);
 	if((sip->armor_str != NULL) && strlen(sip->armor_str)){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->armor_str);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->armor_str);
 	}
 	else
 	{
@@ -1720,15 +1730,15 @@ void ship_select_blit_ship_info()
 	gr_set_color_fast(header);
 	if((sip->gun_mounts != NULL) && strlen(sip->gun_mounts))
 	{
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Gun Mounts",746));
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Mounts",746));
 		y_start += 10;
 		gr_set_color_fast(text);
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->gun_mounts);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->gun_mounts);
 	}
 	else if(ShipSelectModelNum >= 0)
 	{
 		//Calculate the number of gun mounts
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Gun Mounts",746));
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Mounts",746));
 		y_start += 10;
 		gr_set_color_fast(text);
 		int i;
@@ -1746,7 +1756,7 @@ void ship_select_blit_ship_info()
 	}
 	else
 	{
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Gun Banks",-1));
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Banks",-1));
 		y_start += 10;
 		gr_set_color_fast(text);
 		if(sip->num_primary_banks)
@@ -1763,11 +1773,11 @@ void ship_select_blit_ship_info()
 
 	// blit the missile banks
 	gr_set_color_fast(header);
-	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Missile Banks",747));
+	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Missile Banks",747));
 	y_start += 10;
 	gr_set_color_fast(text);
 	if((sip->missile_banks != NULL) && strlen(sip->missile_banks)){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start,sip->missile_banks);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->missile_banks);
 	}
 	else
 	{
@@ -1817,7 +1827,7 @@ void ship_select_blit_ship_info()
 		if(num_turrets)
 		{
 			gr_set_color_fast(header);
-			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Turrets",-1));
+			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Turrets",-1));
 			y_start += 10;
 			gr_set_color_fast(text);
 			itoa(num_turrets, str, 10);
@@ -1828,7 +1838,7 @@ void ship_select_blit_ship_info()
 
 	// blit the manufacturer
 	gr_set_color_fast(header);
-	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start,XSTR("Manufacturer",748));
+	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Manufacturer",748));
 	y_start += 10;
 	gr_set_color_fast(text);
 	if((sip->manufacturer_str != NULL) && strlen(sip->manufacturer_str)){
