@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.13 $
- * $Date: 2006-06-02 09:10:01 $
+ * $Revision: 2.13.2.1 $
+ * $Date: 2006-08-03 16:03:54 $
  * $Author: karajorma $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/06/02 09:10:01  karajorma
+ * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
+ *
  * Revision 2.12  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -549,6 +552,7 @@ extern int Om_tracker_flag;
 #define OBSERVER_UPDATE				0xCA     // sent from observers to server to give position and orientation
 #define SQUADMSG_PLAYER				0xCB		// a squadmate message command has been sent to a netplayer
 #define OBJ_UPDATE_SYNC				0xCC		// object update timebase syncing code
+#define FORCE_MISSION_END			0xCD	// Force all the players to skip straight to the debrief screen
 
 #define WEAPON_DET					0xD1		// a weapon has detonated, possibly with child weapons
 #define SHIP_KILL						0xD2		// a ship was killed

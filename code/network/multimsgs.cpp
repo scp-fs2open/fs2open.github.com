@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.57 $
- * $Date: 2006-06-02 09:10:01 $
+ * $Revision: 2.57.2.1 $
+ * $Date: 2006-08-03 16:03:54 $
  * $Author: karajorma $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2006/06/02 09:10:01  karajorma
+ * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
+ *
  * Revision 2.56  2006/02/03 22:25:18  taylor
  * I don't like this being considered a fix without retail compatibility testing, but it should at the very least compile...
  *
@@ -4333,6 +4336,46 @@ void process_ingame_nak(ubyte *data, header *hinfo)
 		multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_FILE_REJECTED);		
 		break;
 	}	
+}
+
+// If the end_mission SEXP has been used tell clients to skip straight to the debrief screen
+void send_force_end_mission_packet()
+{
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size;
+	
+	packet_size = 0;
+	BUILD_HEADER(FORCE_MISSION_END);	
+
+	if (Net_player->flags & NETINFO_FLAG_AM_MASTER)
+	{	
+		// tell everyone to leave the game		
+		multi_io_send_to_all_reliable(data, packet_size);
+	}
+}
+
+// process a packet indicating that we should jump straight to the debrief screen
+void process_force_end_mission_packet(ubyte *data, header *hinfo)
+{
+	int offset;	
+			
+	offset = HEADER_LENGTH;
+ 	
+	PACKET_SET_SIZE();
+
+	ml_string("Receiving force end mission packet");
+
+	// Since only the server sends out these packets it should never receive one
+	Assert (!(Net_player->flags & NETINFO_FLAG_AM_MASTER)); 
+	
+	// we have a special debriefing screen for multiplayer furballs
+	if((Game_mode & GM_MULTIPLAYER) && (The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)){
+		gameseq_post_event( GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
+	}
+	// do the normal debriefing for all other situations
+	else {
+		gameseq_post_event(GS_EVENT_DEBRIEF);
+	}
 }
 
 // send a packet telling players to end the mission
