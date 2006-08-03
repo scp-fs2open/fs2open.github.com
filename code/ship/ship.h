@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.163 $
- * $Date: 2006-07-17 01:12:52 $
- * $Author: taylor $
+ * $Revision: 2.164 $
+ * $Date: 2006-08-03 01:33:56 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.163  2006/07/17 01:12:52  taylor
+ * make glow point banks dynamic
+ *
  * Revision 2.162  2006/07/17 00:10:00  Goober5000
  * stage 2 of animation fix (add base frame time to each ship)
  * --Goober5000
@@ -2095,7 +2098,6 @@ extern void physics_ship_init(object *objp);
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 
 extern int ship_info_lookup(char *name = NULL);
-extern int ship_info_base_lookup(int si_index);
 extern int ship_name_lookup(char *name, int inc_players = 0);	// returns the index into Ship array of name
 extern int ship_type_name_lookup(char *name);
 
