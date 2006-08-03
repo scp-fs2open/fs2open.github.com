@@ -9,15 +9,21 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.42 $
- * $Author: taylor $
- * $Date: 2006-04-14 18:44:16 $
+ * $Revision: 2.42.2.1 $
+ * $Author: Goober5000 $
+ * $Date: 2006-08-03 01:33:25 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2006/04/14 18:44:16  taylor
+ * remove all of the *_ex() parsing functions added for use by EFFs
+ * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
+ * make Mission_text and Mission_text_raw only use the memory needed, and free it when it doesn't need to parse anymore
+ *   (should work ok with FRED2, but I wasn't able to test it)
+ *
  * Revision 2.41  2006/01/20 07:10:33  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -449,7 +455,7 @@ extern bool Modular_tables_loaded;
 #define SEXP_ERROR_CHECK_MODE		2
 
 // Goober5000 - this seems to be a pretty universal function
-void end_string_at_first_hash_symbol(char *src);
+bool end_string_at_first_hash_symbol(char *src);
 char *get_pointer_to_first_hash_symbol(char *src);
 
 // Goober5000
