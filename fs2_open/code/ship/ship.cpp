@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.359 $
- * $Date: 2006-07-28 02:41:35 $
- * $Author: taylor $
+ * $Revision: 2.360 $
+ * $Date: 2006-08-03 01:33:56 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.359  2006/07/28 02:41:35  taylor
+ * check first stage warp arrival against all docked objects so we can not render them all if even one is 1st stage
+ *
  * Revision 2.358  2006/07/27 10:43:16  karajorma
  * Fixed an error in ballistic weapons where only the server got the correct number of bullets in multiplayer.
  * Fixed a rounding up error in get_max_ammo_count_for_primary_bank()
@@ -2702,7 +2705,7 @@ int parse_ship(bool replace)
 	int pbank_capacity_count, sbank_capacity_count;
 	bool create_if_not_found  = true;
 	int rtn = 0;
-	char name_tmp[NAME_LENGTH] = "";
+	char name_tmp[NAME_LENGTH];
 
 	//	Defaults!
 	//	These should be specified in ships.tbl eventually!
@@ -4296,15 +4299,24 @@ strcpy(parse_error_text, temp_error);
 	ship_fix_reverse_times(sip);
 
 	// if we have a ship copy, then check to be sure that our base ship exists
-	//This should really be moved and made nonfatal sometime -C
-	if ( sip->flags & SIF_SHIP_COPY ) {
-		int index;
+	// This should really be moved -C
+	// Goober5000 - made nonfatal and a bit clearer
+	if (sip->flags & SIF_SHIP_COPY)
+	{
+		strcpy(name_tmp, sip->name);
 
-		index = ship_info_base_lookup( Num_ship_classes - 1 );		// Num_ship_classes - 1 is our current entry into the array
-		if ( index == -1 ) {
-			strcpy( name_tmp, sip->name );
-			end_string_at_first_hash_symbol(name_tmp);
-			Error(LOCATION, "Ship %s is a copy, but base ship %s couldn't be found.", sip->name, name_tmp);
+		if (end_string_at_first_hash_symbol(name_tmp))
+		{
+			if (ship_info_lookup(name_tmp) < 0)
+			{
+				Warning(LOCATION, "Ship %s is a copy, but base ship %s couldn't be found.", sip->name, name_tmp);
+				sip->flags &= ~SIF_SHIP_COPY;
+			}
+		}
+		else
+		{
+			Warning(LOCATION, "Ships %s is a copy, but does not use the ship copy name extension.");
+			sip->flags &= ~SIF_SHIP_COPY;
 		}
 	}
 
@@ -11007,25 +11019,6 @@ int ship_info_lookup(char *name)
 			return i;
 
 	return -1;
-}
-
-//	Return the index of Ship_info[].name which is the *base* ship of a ship copy
-int ship_info_base_lookup(int si_index)
-{
-	int	i;
-	char name[NAME_LENGTH];
-
-	strcpy( name, Ship_info[si_index].name );
-	Assert( get_pointer_to_first_hash_symbol(name) );						// get allender -- something bogus with ship copy
-	end_string_at_first_hash_symbol(name);
-
-	i = ship_info_lookup( name );
-	if(i < 0)
-	{
-		Error(LOCATION, "Invalid base ship class specified (%s)", name);
-	}
-
-	return i;
 }
 
 //	Return the ship index of the ship with name *name.

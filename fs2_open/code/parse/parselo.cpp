@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.75 $
+ * $Revision: 2.76 $
  * $Author: Goober5000 $
- * $Date: 2006-07-05 23:35:43 $
+ * $Date: 2006-08-03 01:33:56 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2006/07/05 23:35:43  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.74  2006/06/02 08:55:47  karajorma
  * Added stuff_ship_list to act as a typesafe replacement for stuff_int_list and handle variables as legitimate values for both ship type and availability when parsing Team Loadout lists
  *
@@ -2819,10 +2822,99 @@ int string_lookup(char *str1, char *strlist[], int max, char *description, int s
 void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, char *description)
 {
 	char	token[128];
+	int checking_ship_classes = (stricmp(id, "$class:") == 0);
 
+	// don't say errors when we're checking classes because 1) we have more checking to do; and 2) we will say a redundant error later
 	required_string(id);
 	stuff_string(token, f_type, NULL);
-	*addr = string_lookup(token, strlist, max, description, 1);
+	*addr = string_lookup(token, strlist, max, description, !checking_ship_classes);
+
+	// Goober5000 - handle certain FSPort idiosyncracies with ship classes
+	if (*addr < 0 && checking_ship_classes)
+	{
+		char *p;
+		char name[NAME_LENGTH], temp1[NAME_LENGTH], temp2[NAME_LENGTH];
+
+		// ship copy types might be mismatched
+		p = get_pointer_to_first_hash_symbol(token);
+
+		// nothing to do
+		if (p == NULL)
+		{
+			return;
+		}
+
+		// conversion from FS1 missions
+		if (!stricmp(token, "GTD Orion#1 (Galatea)"))
+		{
+			*addr = string_lookup("GTD Orion#Galatea", strlist, max, description, 0);
+
+			if (*addr < 0)
+				*addr = string_lookup("GTD Orion (Galatea)", strlist, max, description, 0);
+
+			return;
+		}
+		else if (!stricmp(token, "GTD Orion#2 (Bastion)"))
+		{
+			*addr = string_lookup("GTD Orion#Bastion", strlist, max, description, 0);
+
+			if (*addr < 0)
+				*addr = string_lookup("GTD Orion (Bastion)", strlist, max, description, 0);
+
+			return;
+		}
+		else if (!stricmp(token, "SF Dragon#2 (weakened)"))
+		{
+			*addr = string_lookup("SF Dragon#weakened", strlist, max, description, 0);
+
+			if (*addr < 0)
+				*addr = string_lookup("SF Dragon (weakened)", strlist, max, description, 0);
+
+			return;
+		}
+		else if (!stricmp(token, "SF Dragon#3 (Player)"))
+		{
+			*addr = string_lookup("SF Dragon#Terrans", strlist, max, description, 0);
+
+			if (*addr < 0)
+				*addr = string_lookup("SF Dragon (Terrans)", strlist, max, description, 0);
+
+			return;
+		}
+
+		// get first part of new string
+		strcpy(temp1, token);
+		end_string_at_first_hash_symbol(temp1);
+
+		// get second part
+		strcpy(temp2, p + 1);
+
+		// found a hash
+		if (*p == '#')
+		{
+			// assemble using parentheses
+			sprintf(name, "%s (%s)", temp1, temp2);
+		}
+		// found a parenthesis
+		else if (*p == '(')
+		{
+			// chop off right parenthesis (it exists because otherwise the left wouldn't have been flagged)
+			char *p2 = strchr(temp2, ')');
+			*p2 = '\0';
+
+			// assemble using hash
+			sprintf(name, "%s#%s", temp1, temp2);
+		}
+		// oops
+		else
+		{
+			Warning(LOCATION, "Unrecognized hash symbol.  Contact a programmer!");
+			return;
+		}
+
+		// finally check the properly matched name
+		*addr = string_lookup(name, strlist, max, description, 0);
+	}
 }
 
 void find_and_stuff_optional(char *id, int *addr, int f_type, char *strlist[], int max, char *description)
@@ -3127,16 +3219,22 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 }
 
 // Goober5000
-void end_string_at_first_hash_symbol(char *src)
+bool end_string_at_first_hash_symbol(char *src)
 {
+	char *p;
 	Assert(src);
 
-	char *p = get_pointer_to_first_hash_symbol(src);
-
+	p = get_pointer_to_first_hash_symbol(src);
 	if (p)
 	{
+		while (*(p-1) == ' ')
+			p--;
+
 		*p = '\0';
+		return true;
 	}
+
+	return false;
 }
 
 // Goober5000
@@ -3224,7 +3322,16 @@ stristr_continue_outer_loop:
 // Goober5000
 char *get_pointer_to_first_hash_symbol(char *src)
 {
+	char *p, *p2;
 	Assert(src);
+
+	p = strchr(src, '(');
+	if (p != NULL)
+	{
+		p2 = strchr(p, ')');
+		if (p2 != NULL)
+			return p;
+	}
 
 	return strchr(src, '#');
 }

@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.43 $
- * $Author: karajorma $
- * $Date: 2006-06-02 08:55:47 $
+ * $Revision: 2.44 $
+ * $Author: Goober5000 $
+ * $Date: 2006-08-03 01:33:56 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/06/02 08:55:47  karajorma
+ * Added stuff_ship_list to act as a typesafe replacement for stuff_int_list and handle variables as legitimate values for both ship type and availability when parsing Team Loadout lists
+ *
  * Revision 2.42  2006/04/14 18:44:16  taylor
  * remove all of the *_ex() parsing functions added for use by EFFs
  * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
@@ -463,7 +466,7 @@ extern bool Modular_tables_loaded;
 #define SEXP_ERROR_CHECK_MODE		2
 
 // Goober5000 - this seems to be a pretty universal function
-void end_string_at_first_hash_symbol(char *src);
+bool end_string_at_first_hash_symbol(char *src);
 char *get_pointer_to_first_hash_symbol(char *src);
 
 // Goober5000
