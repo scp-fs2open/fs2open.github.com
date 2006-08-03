@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.7 $
- * $Date: 2006-07-20 00:41:26 $
+ * $Revision: 2.150.2.8 $
+ * $Date: 2006-08-03 01:33:26 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.7  2006/07/20 00:41:26  Goober5000
+ * add WCS screaming stuff to RC branch
+ * --Goober5000
+ *
  * Revision 2.150.2.6  2006/07/17 01:09:45  taylor
  * make glow point banks dynamic
  *
@@ -2054,7 +2058,6 @@ extern void physics_ship_init(object *objp);
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 
 extern int ship_info_lookup(char *name = NULL);
-extern int ship_info_base_lookup(int si_index);
 extern int ship_name_lookup(char *name, int inc_players = 0);	// returns the index into Ship array of name
 extern int ship_type_name_lookup(char *name);
 
