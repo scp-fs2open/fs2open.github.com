@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.9 $
- * $Date: 2006-06-02 09:10:02 $
+ * $Revision: 2.9.2.1 $
+ * $Date: 2006-08-03 16:03:54 $
  * $Author: karajorma $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/06/02 09:10:02  karajorma
+ * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
+ *
  * Revision 2.8  2005/07/24 18:35:44  taylor
  * proper multi support for fighter beams, already has code to break protocol commented out if we need it,
  *   decided to skip and beam type checks and let beam_fire() reassign it (should work ok)
@@ -405,6 +408,9 @@ void process_ingame_wings_packet(ubyte *data, header *hinfo);
 // process a packet indicating we should end the current mission
 void process_endgame_packet(ubyte *data, header *hinfo);
 
+// process a packet indicating we should jump straight to the debrief screen
+void process_force_end_mission_packet(ubyte *data, header *hinfo);
+
 // process a position/orientation update from an observer
 void process_observer_update_packet(ubyte *data, header *hinfo);
 
@@ -571,6 +577,9 @@ void send_new_player_packet(int new_player_num,net_player *target);
 
 // send a packet telling players to end the mission
 void send_endgame_packet(net_player *pl = NULL);
+
+// send a skip to debrief item packet
+void send_force_end_mission_packet();
 
 // send a position/orientation update for myself (if I'm an observer)
 void send_observer_update_packet();
