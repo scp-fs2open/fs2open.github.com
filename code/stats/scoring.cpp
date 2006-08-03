@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.16 $
- * $Date: 2006-01-13 03:31:20 $
+ * $Revision: 2.17 $
+ * $Date: 2006-08-03 01:33:56 $
  * $Author: Goober5000 $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/01/13 03:31:20  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.15  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -903,13 +906,15 @@ void scoring_eval_kill(object *ship_obj)
 			// get the ship info index of the ship type of this kill.  we need to take ship
 			// copies into account here.
 			si_index = dead_ship->ship_info_index;
-			if ( Ship_info[si_index].flags & SIF_SHIP_COPY ){
-				si_index = ship_info_base_lookup( si_index );
-			}
+			if (Ship_info[si_index].flags & SIF_SHIP_COPY)
+			{
+				char temp[NAME_LENGTH];
+				strcpy(temp, Ship_info[si_index].name);
+				end_string_at_first_hash_symbol(temp);
 
-			// if you hit this next Assert, find allender.  If not here, don't worry about it, you may safely
-			// continue
-			Assert( !(Ship_info[si_index].flags & SIF_SHIP_COPY) );
+				// Goober5000 - previous error checking guarantees that this will be >= 0
+				si_index = ship_info_lookup(temp);	
+			}
 
 			// if he killed a guy on his own team increment his bonehead kills
 			if((Ships[Objects[plr->objnum].instance].team == dead_ship->team) && !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))){

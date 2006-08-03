@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.66 $
- * $Date: 2006-07-17 01:12:19 $
- * $Author: taylor $
+ * $Revision: 2.67 $
+ * $Date: 2006-08-03 01:33:56 $
+ * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2006/07/17 01:12:19  taylor
+ * fix some missile autocentering issues
+ *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
+ *  - don't try to autocenter loadout icons when rendered 3d
+ *
  * Revision 2.65  2006/05/13 07:09:24  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -1191,7 +1196,7 @@ void hud_render_target_ship_info(object *target_objp)
 {
 	ship			*target_shipp;
 	ship_info	*target_sip;
-	int			w,h,screen_integrity=1, base_index;
+	int			w, h, screen_integrity = 1;
 	char			outstr[256];
 	float			ship_integrity, shield_strength;
 
@@ -1222,11 +1227,6 @@ void hud_render_target_ship_info(object *target_objp)
 		}
 	}
 
-	// take ship "copies" into account before printing ship class name.
-	base_index = target_shipp->ship_info_index;
-	if ( target_sip->flags & SIF_SHIP_COPY )
-		base_index = ship_info_base_lookup( target_shipp->ship_info_index );
-
 	// maybe do some translation
 	if (Lcl_gr) {
 		lcl_translate_targetbox_name(outstr);
@@ -1240,7 +1240,7 @@ void hud_render_target_ship_info(object *target_objp)
 	if(target_shipp->alt_type_index >= 0){
 		mission_parse_lookup_alt_index(target_shipp->alt_type_index, temp_name);
 	} else {
-		strcpy(temp_name, Ship_info[base_index].name);	
+		strcpy(temp_name, Ship_info[target_shipp->ship_info_index].name);	
 		end_string_at_first_hash_symbol(temp_name);			
 	}
 
@@ -1652,7 +1652,7 @@ void hud_render_target_debris(object *target_objp)
 	matrix	camera_orient = IDENTITY_MATRIX;
 	debris	*debrisp;
 	vec3d	orient_vec, up_vector;
-	int		target_team, base_index;
+	int		target_team;
 	float		factor;	
 	int flags=0;
 
@@ -1696,15 +1696,9 @@ void hud_render_target_debris(object *target_objp)
 	hud_blit_target_foreground();
 	hud_blit_target_integrity(1);
 
-	// take ship "copies" into account before printing out ship class information
-	base_index = debrisp->ship_info_index;
-	if ( Ship_info[base_index].flags & SIF_SHIP_COPY )
-		base_index = ship_info_base_lookup( debrisp->ship_info_index );
-	Assert(base_index >= 0);	// Goober5000
-
 	// print out ship class that debris came from
 	char printable_ship_class[NAME_LENGTH];
-	strcpy(printable_ship_class, Ship_info[base_index].name);
+	strcpy(printable_ship_class, Ship_info[debrisp->ship_info_index].name);
 	end_string_at_first_hash_symbol(printable_ship_class);
 
 	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_CLASS][0], Targetbox_coords[gr_screen.res][TBOX_CLASS][1], EG_TBOX_CLASS, printable_ship_class);	
