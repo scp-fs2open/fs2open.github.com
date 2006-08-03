@@ -9,13 +9,12 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.57.2.1 $
- * $Date: 2006-08-03 16:03:54 $
+ * $Revision: 2.57.2.2 $
+ * $Date: 2006-08-03 16:22:24 $
  * $Author: karajorma $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
- * $Log: not supported by cvs2svn $
  * Revision 2.57  2006/06/02 09:10:01  karajorma
  * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
  *
