@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.272 $
- * $Date: 2006-07-26 03:45:02 $
- * $Author: Kazan $
+ * $Revision: 2.273 $
+ * $Date: 2006-08-04 11:43:26 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.272  2006/07/26 03:45:02  Kazan
+ * Optimize
+ *
  * Revision 2.271  2006/07/21 05:38:39  Goober5000
  * fix help text
  * --Goober5000
@@ -9913,6 +9916,13 @@ void sexp_end_mission(int n)
 	else {
 		gameseq_post_event(GS_EVENT_DEBRIEF);
 	}
+
+	// callback all the clients here. 
+	if ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER))
+	{
+		send_force_end_mission_packet();
+	}
+
 }
 
 // funciton to toggle the status bit for the AI code which tells the AI if it is a good time
