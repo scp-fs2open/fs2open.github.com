@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.47 $
- * $Date: 2006-04-20 06:32:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.48 $
+ * $Date: 2006-08-04 11:24:27 $
+ * $Author: karajorma $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2006/04/20 06:32:15  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.46  2006/02/24 07:31:18  taylor
  * clean up some of that FS2OpenPXO crap (can't wait to rip all this out for official PXO :))
  *
@@ -5715,7 +5718,14 @@ void multi_create_list_select_item(int n)
 
 				// set the information area text
 				// multi_common_set_text(ng->title);
-				multi_common_set_text(campaign_desc);
+				if (campaign_desc != NULL)
+				{
+					multi_common_set_text(campaign_desc);
+				}
+				else 
+				{
+					multi_common_set_text("");
+				}
 			}
 			// if on the standalone server, send a request for the description
 			else {
