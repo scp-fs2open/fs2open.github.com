@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.62.2.1 $
- * $Date: 2006-08-02 22:31:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.62.2.2 $
+ * $Date: 2006-08-04 19:13:38 $
+ * $Author: karajorma $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62.2.1  2006/08/02 22:31:10  Goober5000
+ * fix display of ship copy class names in ship loadout screen
+ * --Goober5000
+ *
  * Revision 2.62  2006/04/20 06:32:14  Goober5000
  * proper capitalization according to Volition
  *
@@ -2588,7 +2592,11 @@ void commit_pressed()
 	}
 
 	// close out mission briefing before mission
-	common_select_close();
+	// Karajorma - unless this is a multiplayer TvT mission in which case it can cause crashes
+	if (!(Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
+	{
+		common_select_close();
+	}
 }
 
 // ------------------------------------------------------------------------
