@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.35 $
- * $Date: 2006-06-02 09:10:01 $
+ * $Revision: 2.36 $
+ * $Date: 2006-08-04 11:45:21 $
  * $Author: karajorma $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/06/02 09:10:01  karajorma
+ * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
+ *
  * Revision 2.34  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -955,6 +958,10 @@ void process_packet_normal(ubyte* data, header *header_info)
 
 		case MISSION_END:
 			process_endgame_packet(data, header_info);
+			break;
+
+		case FORCE_MISSION_END:
+			process_force_end_mission_packet(data, header_info);
 			break;
 		
 		case OBSERVER_UPDATE:

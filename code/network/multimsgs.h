@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.12 $
- * $Date: 2006-07-09 01:55:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2006-08-04 11:45:21 $
+ * $Author: karajorma $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/07/09 01:55:41  Goober5000
+ * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
+ * this should fix Mantis #977
+ * --Goober5000
+ *
  * Revision 2.11  2006/06/07 18:47:51  karajorma
  * Fix 130 ships limit for Inferno builds
  *
@@ -411,6 +416,9 @@ void process_ingame_wings_packet(ubyte *data, header *hinfo);
 // process a packet indicating we should end the current mission
 void process_endgame_packet(ubyte *data, header *hinfo);
 
+// process a packet indicating we should jump straight to the debrief screen
+void process_force_end_mission_packet(ubyte *data, header *hinfo);
+
 // process a position/orientation update from an observer
 void process_observer_update_packet(ubyte *data, header *hinfo);
 
@@ -577,6 +585,9 @@ void send_new_player_packet(int new_player_num,net_player *target);
 
 // send a packet telling players to end the mission
 void send_endgame_packet(net_player *pl = NULL);
+
+// send a skip to debrief item packet
+void send_force_end_mission_packet();
 
 // send a position/orientation update for myself (if I'm an observer)
 void send_observer_update_packet();
