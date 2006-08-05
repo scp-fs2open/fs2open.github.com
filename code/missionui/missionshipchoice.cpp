@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.62.2.2 $
- * $Date: 2006-08-04 19:13:38 $
+ * $Revision: 2.62.2.3 $
+ * $Date: 2006-08-05 10:37:51 $
  * $Author: karajorma $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62.2.2  2006/08/04 19:13:38  karajorma
+ * Fix a multiplayer crash if the server committed before the 2nd team captain unlocked.
+ *
  * Revision 2.62.2.1  2006/08/02 22:31:10  Goober5000
  * fix display of ship copy class names in ship loadout screen
  * --Goober5000
@@ -2589,13 +2592,6 @@ void commit_pressed()
 	// in single player we jump directly into the mission
 	else {
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
-	}
-
-	// close out mission briefing before mission
-	// Karajorma - unless this is a multiplayer TvT mission in which case it can cause crashes
-	if (!(Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
-	{
-		common_select_close();
 	}
 }
 
