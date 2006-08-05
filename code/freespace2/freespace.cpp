@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.11 $
- * $Date: 2006-08-04 19:13:00 $
+ * $Revision: 2.243.2.12 $
+ * $Date: 2006-08-05 10:40:22 $
  * $Author: karajorma $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.11  2006/08/04 19:13:00  karajorma
+ * Fix a multiplayer crash if the server committed before the 2nd team captain unlocked.
+ *
  * Revision 2.243.2.10  2006/07/13 22:11:36  taylor
  * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
  *
@@ -7530,12 +7533,13 @@ void game_leave_state( int old_state, int new_state )
 				cmd_brief_close();
 				if (new_state == GS_STATE_MAIN_MENU)
 					freespace_stop_mission();	
+					common_select_close();
 			}
-
 			break;
 
 		case GS_STATE_RED_ALERT:
 			red_alert_close();
+			common_select_close();
 			if (new_state == GS_STATE_MAIN_MENU) {
 				freespace_stop_mission();
 			}
