@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.275 $
- * $Date: 2006-08-06 19:06:39 $
+ * $Revision: 2.276 $
+ * $Date: 2006-08-06 19:24:56 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.275  2006/08/06 19:06:39  Goober5000
+ * make these consistent (pitch-bank-heading is the established order)
+ * --Goober5000
+ *
  * Revision 2.274  2006/08/06 18:47:29  Goober5000
  * add the multiple background feature
  * --Goober5000
@@ -914,7 +918,7 @@
  *
  * Revision 2.38  2003/01/25 04:17:39  Goober5000
  * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
- * --Ian Warfield
+ * --Goober5000
  *
  * Revision 2.37  2003/01/21 17:24:16  Goober5000
  * fixed a few bugs in Bobboau's implementation of the glow sexps; also added
@@ -1739,7 +1743,6 @@ sexp_oper Operators[] = {
 
 	{ "don't-collide-invisible",	OP_DONT_COLLIDE_INVISIBLE,		1, INT_MAX },	// Goober5000
 	{ "collide-invisible",			OP_COLLIDE_INVISIBLE,			1, INT_MAX },	// Goober5000
-	{ "change-ship-model",			OP_CHANGE_SHIP_MODEL,			2, INT_MAX },	// Goober5000
 	{ "change-ship-class",			OP_CHANGE_SHIP_CLASS,			2, INT_MAX },	// Goober5000
 	{ "deactivate-glow-points",		OP_DEACTIVATE_GLOW_POINTS,		1, INT_MAX },	//-Bobboau
 	{ "activate-glow-points",		OP_ACTIVATE_GLOW_POINTS,		1, INT_MAX },	//-Bobboau
@@ -3665,7 +3668,7 @@ void do_preload_for_arguments(void (*preloader)(char *), int arg_node, int arg_h
 }
 
 // Goober5000
-void preload_change_ship_model(char *text)
+void preload_change_ship_class(char *text)
 {
 	int idx;
 	ship_info *sip;
@@ -3770,6 +3773,8 @@ int get_sexp(char *token)
 				strcpy(token, "set-object-facing-object");
 			else if (!stricmp(token, "ai-chase-any-except"))
 				strcpy(token, "ai-chase-any");
+			else if (!stricmp(token, "change-ship-model"))
+				strcpy(token, "change-ship-class");
 
 			op = get_operator_index(token);
 			if (op != -1) {
@@ -3841,11 +3846,10 @@ int get_sexp(char *token)
 		op = get_operator_const(CTEXT(start));
 		switch (op)
 		{
-			case OP_CHANGE_SHIP_MODEL:
 			case OP_CHANGE_SHIP_CLASS:
 				// model is argument #1
 				n = CDR(start);
-				do_preload_for_arguments(preload_change_ship_model, n, arg_handler);
+				do_preload_for_arguments(preload_change_ship_class, n, arg_handler);
 				break;
 
 			case OP_SET_SPECIAL_WARPOUT_NAME:
@@ -12175,30 +12179,6 @@ void sexp_deal_with_weapons_lock (int node, bool primary, bool lock)
 }
 
 // Goober5000
-void sexp_change_ship_model(int n)
-{
-	int ship_num, class_num = ship_info_lookup(CTEXT(n));
-	Assert(class_num != -1);
-
-	n = CDR(n);
-	// all ships in the sexp
-	for ( ; n != -1; n = CDR(n))
-	{
-		ship_num = ship_name_lookup(CTEXT(n), 1);
-
-		// don't change unless it's currently in the mission
-		if (ship_num != -1)
-		{
-			// don't mess with a ship that's occupied
-			if (!(Ships[ship_num].flags & (SF_DYING | SF_ARRIVING | SF_DEPARTING)))
-			{
-				ship_model_change(ship_num, class_num);
-			}
-		}
-	}
-}
-
-// Goober5000
 void sexp_change_ship_class(int n)
 {
 	int ship_num, class_num = ship_info_lookup(CTEXT(n));
@@ -15832,12 +15812,6 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			// Goober5000
-			case OP_CHANGE_SHIP_MODEL:
-				sexp_change_ship_model(node);
-				sexp_val = SEXP_TRUE;
-				break;
-
-			// Goober5000
 			case OP_CHANGE_SHIP_CLASS:
 				sexp_change_ship_class(node);
 				sexp_val = SEXP_TRUE;
@@ -16488,7 +16462,6 @@ int query_operator_return_type(int op)
 		case OP_SHIP_NO_VAPORIZE:
 		case OP_DONT_COLLIDE_INVISIBLE:
 		case OP_COLLIDE_INVISIBLE:
-		case OP_CHANGE_SHIP_MODEL:
 		case OP_CHANGE_SHIP_CLASS:
 		case OP_DEACTIVATE_GLOW_POINTS:
 		case OP_ACTIVATE_GLOW_POINTS:
@@ -17658,7 +17631,6 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_DAMAGED_ESCORT_LIST_ALL:
 			return OPF_POSITIVE;
 
-		case OP_CHANGE_SHIP_MODEL:
 		case OP_CHANGE_SHIP_CLASS:
 			if (!argnum)
 				return OPF_SHIP_CLASS_NAME;
@@ -18897,7 +18869,6 @@ int get_subcategory(int sexp_id)
 
 		case OP_DONT_COLLIDE_INVISIBLE:
 		case OP_COLLIDE_INVISIBLE:
-		case OP_CHANGE_SHIP_MODEL:
 		case OP_CHANGE_SHIP_CLASS:
 		case OP_DEACTIVATE_GLOW_POINTS:
 		case OP_ACTIVATE_GLOW_POINTS:
@@ -20832,13 +20803,6 @@ sexp_help_struct Sexp_help[] = {
 		"\tTakes between 1 and MAX_COMPLETE_ESCORT_LIST (currently 20) arguments...\r\n"
 		"\t1: Priority 1\r\n"
 		"\tRest: Priorities 2 through 20 (optional)\r\n\r\n"
-	},
-
-	// Goober5000
-	{ OP_CHANGE_SHIP_MODEL, "change-ship-model\r\n"
-		"\tCauses the listed ships' models to be changed to the specified ship class's model.  Takes 2 or more arguments...\r\n"
-		"\t1: The name of the new model's ship class\r\n"
-		"\tRest: The list of ships to change the models of"
 	},
 
 	// Goober5000

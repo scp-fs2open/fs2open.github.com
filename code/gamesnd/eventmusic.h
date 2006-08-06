@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.16 $
- * $Date: 2006-05-21 22:57:30 $
+ * $Revision: 2.17 $
+ * $Date: 2006-08-06 19:24:56 $
  * $Author: Goober5000 $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/05/21 22:57:30  Goober5000
+ * fix for Mantis #750
+ * --Goober5000
+ *
  * Revision 2.15  2006/02/12 05:23:16  Goober5000
  * additional fixes and enhancements for substitute music
  * --Goober5000
@@ -69,7 +73,7 @@
  *
  * Revision 2.2  2003/01/25 04:17:39  Goober5000
  * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
- * --Ian Warfield
+ * --Goober5000
  *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
