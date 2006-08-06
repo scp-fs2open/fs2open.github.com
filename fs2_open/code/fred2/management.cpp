@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.2 $
- * $Date: 2006-07-10 21:47:17 $
- * $Author: taylor $
+ * $Revision: 1.12.2.3 $
+ * $Date: 2006-08-06 18:47:12 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.2  2006/07/10 21:47:17  taylor
+ * fix undo system
+ * restore the two autosave points that got removed for some reason (yes, these are needed for things to work properly)
+ *
  * Revision 1.12.2.1  2006/07/08 19:36:03  Goober5000
  * iff defs should allow specification of both flag fields
  * --Goober5000
@@ -1379,9 +1383,6 @@ void clear_mission()
 	Player_starts = 0;
 	Num_teams = 1;
 
-	// reset background bitmaps and suns
-	stars_pre_level_init();
-
 	// reset alternate name stuff
 	for(i=0; i<MAX_SHIPS; i++){
 		strcpy(Fred_alt_names[i], "");
@@ -1435,6 +1436,8 @@ void clear_mission()
 	strcpy(Cargo_names[0], "Nothing");
 	Num_cargo = 1;
 	set_physics_controls();
+
+	// reset background bitmaps and suns
 	stars_pre_level_init();
 	Nebula_index = 0;
 	Mission_palette = 1;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.12 $
- * $Date: 2006-08-05 10:40:22 $
- * $Author: karajorma $
+ * $Revision: 2.243.2.13 $
+ * $Date: 2006-08-06 18:47:12 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.12  2006/08/05 10:40:22  karajorma
+ * Hopefully plug the possible memory leaks from not calling common_select_close() in red alerts and when exiting mission briefings
+ *
  * Revision 2.243.2.11  2006/08/04 19:13:00  karajorma
  * Fix a multiplayer crash if the server committed before the 2nd team captain unlocked.
  *
@@ -2329,7 +2332,7 @@ DCF(sn_glare, "")
 }
 
 float Supernova_last_glare = 0.0f;
-extern starfield_bitmap *stars_lookup_sun(starfield_bitmap_instance *s);
+bool stars_sun_has_glare(int index);
 void game_sunspot_process(float frametime)
 {
 	int n_lights, idx;
@@ -2398,7 +2401,6 @@ void game_sunspot_process(float frametime)
 		Sun_drew = 0;				
 	} else {
 		if ( Sun_drew )	{
-			starfield_bitmap *sbm;
 			// check sunspots for all suns
 			n_lights = light_get_global_count();
 
@@ -2410,18 +2412,14 @@ void game_sunspot_process(float frametime)
 					vec3d light_dir;				
 					light_get_global_dir(&light_dir, idx);
 
-					sbm = stars_get_bitmap_entry(idx, true);
-
-					if (!sbm)
-						continue;
-					
 					//only do sunglare stuff if this sun has one
-					if (sbm->glare)
+					if (stars_sun_has_glare(idx))
 					{
 						float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
 
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
+
 					// draw the glow for this sun
 					stars_draw_sun_glow(idx);				
 				} else {
