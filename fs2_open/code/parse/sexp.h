@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.123 $
- * $Author: karajorma $
- * $Date: 2006-06-02 09:20:06 $
+ * $Revision: 2.124 $
+ * $Author: Goober5000 $
+ * $Date: 2006-08-06 19:24:56 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.123  2006/06/02 09:20:06  karajorma
+ * Added the Team Loadout subcategory (Only one SEXP in there at the moment but more will come).
+ * Added the num_assists SEXP to complement the num_kills one
+ *
  * Revision 2.122  2006/04/07 20:16:30  karajorma
  * Added SEXPs to lock and unlock the primary and secondary weapons
  *
@@ -389,7 +393,7 @@
  *
  * Revision 2.27  2003/01/25 04:17:39  Goober5000
  * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
- * --Ian Warfield
+ * --Goober5000
  *
  * Revision 2.26  2003/01/21 17:24:16  Goober5000
  * fixed a few bugs in Bobboau's implementation of the glow sexps; also added
@@ -1182,7 +1186,7 @@ struct ship_subsys;
 
 #define OP_PRIMITIVE_SENSORS_SET_RANGE		(0x0050	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CHANGE_SHIP_CLASS				(0x0051	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_CHANGE_SHIP_MODEL				(0x0052	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_SCRIPT_EVAL						(0x0052 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_SET_SUPPORT_SHIP					(0x0053 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_DEACTIVATE_GLOW_POINTS			(0x0054	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
 #define OP_ACTIVATE_GLOW_POINTS				(0x0055	| OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	//-Bobboau
@@ -1277,14 +1281,14 @@ struct ship_subsys;
 #define OP_SET_DEATH_MESSAGE				(0x00a9 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_SET_PRIMARY_WEAPON				(0x00aa | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SET_SECONDARY_WEAPON				(0x00ab | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_SCRIPT_EVAL						(0x00ac | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_DISABLE_BUILTIN_MESSAGES			(0x00ad | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_ENABLE_BUILTIN_MESSAGES			(0x00ae | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_LOCK_PRIMARY_WEAPON				(0x00af | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_UNLOCK_PRIMARY_WEAPON			(0x00b0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_LOCK_SECONDARY_WEAPON			(0x00b1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_UNLOCK_SECONDARY_WEAPON			(0x00b2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_DEAL_WITH_SHIP_LOADOUT			(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_DISABLE_BUILTIN_MESSAGES			(0x00ac | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_ENABLE_BUILTIN_MESSAGES			(0x00ad | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_LOCK_PRIMARY_WEAPON				(0x00ae | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_UNLOCK_PRIMARY_WEAPON			(0x00af | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+
+#define OP_LOCK_SECONDARY_WEAPON			(0x00b0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_UNLOCK_SECONDARY_WEAPON			(0x00b1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_DEAL_WITH_SHIP_LOADOUT			(0x00b2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 
