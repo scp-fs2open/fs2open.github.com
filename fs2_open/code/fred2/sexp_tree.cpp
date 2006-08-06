@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.8.2.1 $
- * $Date: 2006-07-31 21:09:10 $
- * $Author: karajorma $
+ * $Revision: 1.8.2.2 $
+ * $Date: 2006-08-06 19:27:12 $
+ * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8.2.1  2006/07/31 21:09:10  karajorma
+ * Fix for Mantis 1020.
+ *
+ * ship-subsys-guardian-threshold will now include subsystems without you having to type them in.
+ *
  * Revision 1.8  2006/03/01 04:01:37  Goober5000
  * fix comm message localization
  *
@@ -369,7 +374,7 @@
  *
  * Revision 1.32  2003/01/25 04:17:39  Goober5000
  * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
- * --Ian Warfield
+ * --Goober5000
  *
  * Revision 1.31  2003/01/21 17:24:16  Goober5000
  * fixed a few bugs in Bobboau's implementation of the glow sexps; also added
