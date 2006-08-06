@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.6 $
- * $Date: 2006-07-20 21:43:05 $
- * $Author: karajorma $
+ * $Revision: 1.7 $
+ * $Date: 2006-08-06 18:47:29 $
+ * $Author: Goober5000 $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/07/20 21:43:05  karajorma
+ * Fix for Mantis 996
+ *
  * Revision 1.5.2.1  2006/07/20 21:15:11  karajorma
  * Fix for Mantis 996
  *
@@ -185,6 +188,7 @@
 #include "stdafx.h"
 #include "FRED.h"
 #include "BgBitmapDlg.h"
+#include "backgroundchooser.h"
 #include "starfield/starfield.h"
 #include "bmpman/bmpman.h"
 #include "FREDView.h"
@@ -277,8 +281,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_SBITMAP_B, b_bank);
 	DDV_MinMaxInt(pDX, b_bank, 0, 359);
 	DDX_Text(pDX, IDC_SBITMAP_H, b_heading);
-	DDV_MinMaxInt(pDX, b_heading, 0, 359);
-	DDX_Text(pDX, IDC_SBITMAP_SCALE_X, b_scale_x);
+	DDV_MinMaxInt(pDX, b_heading, 0, 359);	DDX_Text(pDX, IDC_SBITMAP_SCALE_X, b_scale_x);
 	DDV_MinMaxFloat(pDX, b_scale_x, .001f, 18.0f);
 	DDX_Text(pDX, IDC_SBITMAP_SCALE_Y, b_scale_y);
 	DDV_MinMaxFloat(pDX, b_scale_y, .001f, 18.0f);
@@ -323,6 +326,8 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_EN_KILLFOCUS(IDC_SUN1_B, OnKillfocusSun1B)
 	ON_EN_KILLFOCUS(IDC_SUN1_SCALE, OnKillfocusSun1Scale)
 	ON_BN_CLICKED(IDC_IMPORT_BACKGROUND, OnImportBackground)
+	ON_BN_CLICKED(IDC_SWAP_BACKGROUND, OnSwapBackground)
+	ON_CBN_SELCHANGE(IDC_BACKGROUND_NUM, OnBackgroundDropdownChange)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -415,6 +420,18 @@ void bg_bitmap_dlg::create()
 	m_toggle_trails = (The_mission.flags & MISSION_FLAG_TOGGLE_SHIP_TRAILS) ? 1 : 0;
 	((CButton*)GetDlgItem(IDC_NEB_TOGGLE_TRAILS))->SetCheck(m_toggle_trails);
 
+	// setup background numbering
+	for (i = 0; i < MAX_BACKGROUNDS; i++) 
+	{
+		char temp[NAME_LENGTH];
+		sprintf(temp, "Background %d", i + 1);
+
+		((CComboBox*) GetDlgItem(IDC_BACKGROUND_NUM))->AddString(temp);
+		((CComboBox*) GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->AddString(temp);
+	}
+	((CComboBox*) GetDlgItem(IDC_BACKGROUND_NUM))->SetCurSel(0);
+	((CComboBox*) GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->SetCurSel(0);
+
 	// setup sun and sunglow controls
 	sun_data_init();	
 
@@ -506,8 +523,7 @@ void bg_bitmap_dlg::OnClose()
 		// init the nebula
 		neb2_level_init();
 	} else {
-		The_mission.flags &= ~MISSION_FLAG_FULLNEB;
-		Nebula_index = m_nebula_index - 1;
+		The_mission.flags &= ~MISSION_FLAG_FULLNEB;		Nebula_index = m_nebula_index - 1;
 		Neb2_awacs = -1.0f;
 		strcpy(Neb2_texture_name, "");
 	}
@@ -537,7 +553,7 @@ void bg_bitmap_dlg::OnClose()
 		The_mission.flags &= ~MISSION_FLAG_SUBSPACE;		
 	}
 
-	string_copy(The_mission.skybox_model,m_skybox_model,NAME_LENGTH,1);
+	string_copy(The_mission.skybox_model, m_skybox_model,NAME_LENGTH, 1);
 
 	// close sun data
 	sun_data_close();
@@ -545,6 +561,14 @@ void bg_bitmap_dlg::OnClose()
 	// close bitmap data
 	bitmap_data_close();
 
+	// pack background array
+	stars_pack_backgrounds();
+	
+	//Reset the starfield structures
+	stars_pre_level_init(false);
+	stars_load_first_valid_background();
+	
+	// close window stuff
 	theApp.record_window_data(&Bg_wnd_data, this);
 	delete Bg_bitmap_dialog;
 	Bg_bitmap_dialog = NULL;
@@ -728,24 +752,29 @@ void bg_bitmap_dlg::build_nebfile_list()
 void bg_bitmap_dlg::sun_data_init()
 {
 	int idx;
-	CListBox *clb;
+	CComboBox *ccb = (CComboBox*) GetDlgItem(IDC_SUN1);
+	CListBox *clb = (CListBox*) GetDlgItem(IDC_SUN1_LIST);
+	background_t *background = &Backgrounds[get_active_background()];
 	
-	// add all suns to the drop down
-	for (idx = 0; idx < stars_get_num_entries(true, true); idx++) {
-		((CComboBox*)GetDlgItem(IDC_SUN1))->AddString(stars_get_name_FRED(idx, true));
- 	}
-
-	//clear instances if necessary
-	clb = (CListBox*)GetDlgItem(IDC_SUN1_LIST);
+	// clear if necessary
+	ccb->ResetContent();
 	clb->ResetContent();
 
+	// add all suns to the drop down
+	for (idx = 0; idx < stars_get_num_entries(true, true); idx++)
+	{
+		ccb->AddString(stars_get_name_FRED(idx, true));
+ 	}
+
 	// add all suns by bitmap filename to the list
-	for (idx = 0; idx < stars_get_num_suns(); idx++) {	
-		clb->AddString( stars_get_sun_name(idx) );
+	for (idx = 0; idx < background->suns.size(); idx++)
+	{	
+		clb->AddString(background->suns[idx].filename);
 	}		
 
 	// if we have at least one item, select it
-	if (stars_get_num_suns() > 0) {
+	if (background->suns.size() > 0)
+	{
 		clb->SetCurSel(0);
 		OnSunChange();
 	}
@@ -759,104 +788,98 @@ void bg_bitmap_dlg::sun_data_close()
 
 void bg_bitmap_dlg::sun_data_save_current()
 {
-	starfield_bitmap_instance sbi;
-
 	// if we have an active item
-	if(s_index >= 0){
+	if (s_index >= 0)
+	{
+		background_t *background = &Backgrounds[get_active_background()];
+		starfield_list_entry *sle = &background->suns[s_index];
+
 		// read out of the controls
 		UpdateData(TRUE);
 
 		// store the data
-		memset( &sbi, 0, sizeof(starfield_bitmap_instance) );
-		sbi.scale_x = (float)s_scale;
-		sbi.scale_y = 1.0f;
-		sbi.div_x = 1;
-		sbi.div_y = 1;
-		sbi.ang.p = (float)fl_radian(s_pitch);
-		sbi.ang.b = (float)fl_radian(s_bank);
-		sbi.ang.h = (float)fl_radian(s_heading);
-
-		stars_modify_instance_FRED( s_index, (LPCTSTR)s_name, &sbi, true );
+		strcpy(sle->filename, s_name);
+		sle->ang.p = (float) fl_radian(s_pitch);
+		sle->ang.b = (float) fl_radian(s_bank);
+		sle->ang.h = (float) fl_radian(s_heading);
+		sle->scale_x = (float) s_scale;
+		sle->scale_y = 1.0f;
+		sle->div_x = 1;
+		sle->div_y = 1;
 	}
 }
 
 void bg_bitmap_dlg::OnSunChange()
 {	
-	int drop_index;
-	starfield_bitmap_instance *sbi = NULL;
-
 	// save the current sun
 	sun_data_save_current();
 
 	// select the new one
-	s_index = ((CListBox*)GetDlgItem(IDC_SUN1_LIST))->GetCurSel();
+	s_index = ((CListBox*) GetDlgItem(IDC_SUN1_LIST))->GetCurSel();
 
 	// setup data	
-	if (s_index >= 0) {
-		sbi = stars_get_instance(s_index, true);
-		Assert( sbi != NULL );
-		Assert( sbi->star_bitmap_index >= 0 );
+	if (s_index >= 0)
+	{
+		int drop_index;
+		background_t *background = &Backgrounds[get_active_background()];
+		starfield_list_entry *sle = &background->suns[s_index];
 
-		s_pitch = (int)(fl_degrees(sbi->ang.p) + delta);
-		s_bank = (int)(fl_degrees(sbi->ang.b) + delta);
-		s_heading = (int)(fl_degrees(sbi->ang.h) + delta);
-		s_scale = sbi->scale_x;
-		s_name = CString( stars_get_name_FRED(sbi->star_bitmap_index, true) );
+		s_name = CString(sle->filename);
+		s_pitch = (int) (fl_degrees(sle->ang.p) + delta);
+		s_bank = (int) (fl_degrees(sle->ang.b) + delta);
+		s_heading = (int) (fl_degrees(sle->ang.h) + delta);
+		s_scale = sle->scale_x;
 
 		// stuff back into the controls
 		UpdateData(FALSE);
 
 		// select the proper item from the dropdown
-		drop_index = ((CComboBox*)GetDlgItem(IDC_SUN1))->FindString( -1, stars_get_name_FRED(sbi->star_bitmap_index, true) );
-		Assert(drop_index != CB_ERR);
-		if(drop_index != CB_ERR){
-			((CComboBox*)GetDlgItem(IDC_SUN1))->SetCurSel(drop_index);
-		}
+		drop_index = ((CComboBox*) GetDlgItem(IDC_SUN1))->FindString(-1, sle->filename);
+		if(drop_index != CB_ERR)
+			((CComboBox*) GetDlgItem(IDC_SUN1))->SetCurSel(drop_index);
 	}
 }
 
 void bg_bitmap_dlg::OnAddSun()
 {
-	starfield_bitmap_instance sbi;
+	starfield_list_entry sle;
 
 	// save any current
 	sun_data_save_current();
 
-	memset( &sbi, 0, sizeof(starfield_bitmap_instance) );
-
 	// select the first sun by default
-	sbi.star_bitmap_index = 0;
+	strcpy(sle.filename, stars_get_name_FRED(0, true));
 
-	sbi.scale_x = 1.0f;
-	sbi.scale_y = 1.0f;
-	sbi.div_x = 1;
-	sbi.div_y = 1;
-	sbi.ang.p = 0;
-	sbi.ang.b = 0;
-	sbi.ang.h = 0;
+	sle.ang.p = 0;
+	sle.ang.b = 0;
+	sle.ang.h = 0;
+	sle.scale_x = 1.0f;
+	sle.scale_y = 1.0f;
+	sle.div_x = 1;
+	sle.div_y = 1;
 
-	stars_add_sun_instance( (char*)stars_get_name_FRED(0, true), &sbi );
+	Backgrounds[get_active_background()].suns.push_back(sle);
 
 	// add to the listbox and select it
-	int add_index = ((CListBox*)GetDlgItem(IDC_SUN1_LIST))->AddString( stars_get_name_FRED(0, true) );
-	((CListBox*)GetDlgItem(IDC_SUN1_LIST))->SetCurSel(add_index);
+	int add_index = ((CListBox*) GetDlgItem(IDC_SUN1_LIST))->AddString(sle.filename);
+	((CListBox*) GetDlgItem(IDC_SUN1_LIST))->SetCurSel(add_index);
 
-	// call the OnSunChange function to setup all relvant data in the class
+	// call the OnSunChange function to setup all relevant data in the class
 	OnSunChange();
 }
 
 void bg_bitmap_dlg::OnDelSun()
 {
 	// if we don't have an active item
-	if(s_index < 0){
+	if(s_index < 0)
 		return;
-	}
 	
 	// remove the item from the list
-	((CListBox*)GetDlgItem(IDC_SUN1_LIST))->DeleteString(s_index);
+	((CListBox*) GetDlgItem(IDC_SUN1_LIST))->DeleteString(s_index);
 
-	// remove it from the instance list
-	stars_delete_instance_FRED(s_index, true);
+	// remove it from the list
+	background_t *background = &Backgrounds[get_active_background()];
+	background->suns.erase(background->suns.begin() + s_index);
 
 	// no item selected, let the message handler assign a new one
 	s_index = -1;
@@ -865,20 +888,20 @@ void bg_bitmap_dlg::OnDelSun()
 void bg_bitmap_dlg::OnSunDropdownChange()
 {	
 	// if we have no active sun, do nothing
-	if(s_index < 0){
+	if (s_index < 0)
 		return;
-	}
 
-	int new_index = ((CComboBox*)GetDlgItem(IDC_SUN1))->GetCurSel();
+	int new_index = ((CComboBox*) GetDlgItem(IDC_SUN1))->GetCurSel();
 	Assert(new_index != CB_ERR);
 
 	// get the new string
-	if(new_index != CB_ERR){
-		((CComboBox*)GetDlgItem(IDC_SUN1))->GetLBText(new_index, s_name);
+	if(new_index != CB_ERR)
+	{
+		((CComboBox*) GetDlgItem(IDC_SUN1))->GetLBText(new_index, s_name);
 
 		// change the name of the string in the listbox
-		((CListBox*)GetDlgItem(IDC_SUN1_LIST))->DeleteString(s_index);
-		((CListBox*)GetDlgItem(IDC_SUN1_LIST))->InsertString(s_index, (const char*)s_name);
+		((CListBox*) GetDlgItem(IDC_SUN1_LIST))->DeleteString(s_index);
+		((CListBox*) GetDlgItem(IDC_SUN1_LIST))->InsertString(s_index, (const char*) s_name);
 
 		OnSunChange();
 	}	
@@ -887,24 +910,29 @@ void bg_bitmap_dlg::OnSunDropdownChange()
 void bg_bitmap_dlg::bitmap_data_init()
 {
 	int idx;
-	CListBox* clb;
-
-	// add all bitmaps to the drop down
-	for (idx = 0; idx < stars_get_num_entries(false, true); idx++) {
-		((CComboBox*)GetDlgItem(IDC_SBITMAP))->AddString(stars_get_name_FRED(idx, false));
-	}
-
-	clb = (CListBox*)GetDlgItem(IDC_SBITMAP_LIST);
+	CComboBox *ccb = (CComboBox*) GetDlgItem(IDC_SBITMAP);
+	CListBox *clb = (CListBox*) GetDlgItem(IDC_SBITMAP_LIST);
+	background_t *background = &Backgrounds[get_active_background()];
+	
+	// clear if necessary
+	ccb->ResetContent();
 	clb->ResetContent();
 
+	// add all bitmaps to the drop down
+	for (idx = 0; idx < stars_get_num_entries(false, true); idx++)
+	{
+		ccb->AddString(stars_get_name_FRED(idx, false));
+ 	}
 
 	// add all bitmaps by bitmap filename to the list
-	for (idx = 0; idx < stars_get_num_bitmaps(); idx++) {	
-		clb->AddString( stars_get_bitmap_name(idx) );
+	for (idx = 0; idx < background->bitmaps.size(); idx++)
+	{	
+		clb->AddString(background->bitmaps[idx].filename);
 	}		
 
 	// if we have at least one item, select it
-	if (stars_get_num_bitmaps() > 0) {
+	if (background->bitmaps.size() > 0)
+	{
 		clb->SetCurSel(0);
 		OnBitmapChange();
 	}
@@ -912,113 +940,107 @@ void bg_bitmap_dlg::bitmap_data_init()
 
 void bg_bitmap_dlg::bitmap_data_close()
 {
-	// if there is an active sun, save it
+	// if there is an active bitmap, save it
 	bitmap_data_save_current();	
 }
 
 void bg_bitmap_dlg::bitmap_data_save_current()
 {
-	starfield_bitmap_instance sbi;
-
 	// if we have an active item
-	if (b_index >= 0) {
+	if (b_index >= 0)
+	{
+		background_t *background = &Backgrounds[get_active_background()];
+		starfield_list_entry *sle = &background->bitmaps[b_index];
+
 		// read out of the controls
 		UpdateData(TRUE);
 
 		// store the data
-		memset( &sbi, 0, sizeof(starfield_bitmap_instance) );
-		sbi.scale_x = (float)b_scale_x;
-		sbi.scale_y = (float)b_scale_y;
-		sbi.div_x = b_div_x;
-		sbi.div_y = b_div_y;
-		sbi.ang.p = (float)fl_radian(b_pitch);
-		sbi.ang.b = (float)fl_radian(b_bank);
-		sbi.ang.h = (float)fl_radian(b_heading);
-
-		stars_modify_instance_FRED( b_index, (LPCTSTR)b_name, &sbi, false );
+		strcpy(sle->filename, b_name);
+		sle->ang.p = (float) fl_radian(b_pitch);
+		sle->ang.b = (float) fl_radian(b_bank);
+		sle->ang.h = (float) fl_radian(b_heading);
+		sle->scale_x = (float) b_scale_x;
+		sle->scale_y = (float) b_scale_y;
+		sle->div_x = b_div_x;
+		sle->div_y = b_div_y;
 	}
 }
 
 void bg_bitmap_dlg::OnBitmapChange()
 {
-	int drop_index;
-	starfield_bitmap_instance *sbi = NULL;
-
 	// save the current bitmap
 	bitmap_data_save_current();
 
 	// select the new one
-	b_index = ((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->GetCurSel();
+	b_index = ((CListBox*) GetDlgItem(IDC_SBITMAP_LIST))->GetCurSel();
 
 	// setup data	
-	if (b_index >= 0) {
-		sbi = stars_get_instance(b_index, false);
-		Assert( sbi != NULL );
-		Assert( sbi->star_bitmap_index >= 0 );
+	if (b_index >= 0)
+	{
+		int drop_index;
+		background_t *background = &Backgrounds[get_active_background()];
+		starfield_list_entry *sle = &background->bitmaps[b_index];
 
-		b_pitch = (int)(fl_degrees(sbi->ang.p) + delta);
-		b_bank = (int)(fl_degrees(sbi->ang.b) + delta);
-		b_heading = (int)(fl_degrees(sbi->ang.h) + delta);
-		b_scale_x = sbi->scale_x;
-		b_scale_y = sbi->scale_y;
-		b_div_x = sbi->div_x;
-		b_div_y = sbi->div_y;
-		b_name = CString( stars_get_name_FRED(sbi->star_bitmap_index, false) );
+		b_name = CString(sle->filename);
+		b_pitch = (int) (fl_degrees(sle->ang.p) + delta);
+		b_bank = (int) (fl_degrees(sle->ang.b) + delta);
+		b_heading = (int) (fl_degrees(sle->ang.h) + delta);
+		b_scale_x = sle->scale_x;
+		b_scale_y = sle->scale_y;
+		b_div_x = sle->div_x;
+		b_div_y = sle->div_y;
 
 		// stuff back into the controls
 		UpdateData(FALSE);
 
 		// select the proper item from the dropdown
-		drop_index = ((CComboBox*)GetDlgItem(IDC_SBITMAP))->FindString( -1, stars_get_name_FRED(sbi->star_bitmap_index, false) );
-		Assert(drop_index != CB_ERR);
-		if(drop_index != CB_ERR){
-			((CComboBox*)GetDlgItem(IDC_SBITMAP))->SetCurSel(drop_index);
-		}
+		drop_index = ((CComboBox*) GetDlgItem(IDC_SBITMAP))->FindString(-1, sle->filename);
+		if(drop_index != CB_ERR)
+			((CComboBox*) GetDlgItem(IDC_SBITMAP))->SetCurSel(drop_index);
 	}
 }
 
 void bg_bitmap_dlg::OnAddBitmap()
 {
-	starfield_bitmap_instance sbi;
+	starfield_list_entry sle;
 
 	// save any current
 	bitmap_data_save_current();
 
-	memset( &sbi, 0, sizeof(starfield_bitmap_instance) );
-
 	// select the first bitmap by default
-	sbi.star_bitmap_index = 0;
+	strcpy(sle.filename, stars_get_name_FRED(0, false));
 
-	sbi.scale_x = 1.0f;
-	sbi.scale_y = 1.0f;
-	sbi.div_x = 1;
-	sbi.div_y = 1;
-	sbi.ang.p = 0;
-	sbi.ang.b = 0;
-	sbi.ang.h = 0;
+	sle.ang.p = 0;
+	sle.ang.b = 0;
+	sle.ang.h = 0;
+	sle.scale_x = 1.0f;
+	sle.scale_y = 1.0f;
+	sle.div_x = 1;
+	sle.div_y = 1;
 
-	stars_add_bitmap_instance( (char*)stars_get_name_FRED(0, false), &sbi );
+	Backgrounds[get_active_background()].bitmaps.push_back(sle);
 
 	// add to the listbox and select it
-	int add_index = ((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->AddString( stars_get_name_FRED(0, false) );
-	((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->SetCurSel(add_index);
-	
-	// call the OnBitmapChange function to setup all relvant data in the class
+	int add_index = ((CListBox*) GetDlgItem(IDC_SBITMAP_LIST))->AddString(sle.filename);
+	((CListBox*) GetDlgItem(IDC_SBITMAP_LIST))->SetCurSel(add_index);
+
+	// call the OnBitmapChange function to setup all relevant data in the class
 	OnBitmapChange();
 }
 
 void bg_bitmap_dlg::OnDelBitmap()
 {
 	// if we don't have an active item
-	if(b_index < 0){
+	if(b_index < 0)
 		return;
-	}
-
-	// remove the string from the listbox
-	((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->DeleteString(b_index);
 	
-	// remove it from the instance list
-	stars_delete_instance_FRED(b_index, false);
+	// remove the item from the list
+	((CListBox*) GetDlgItem(IDC_SBITMAP_LIST))->DeleteString(b_index);
+
+	// remove it from the list
+	background_t *background = &Backgrounds[get_active_background()];
+	background->bitmaps.erase(background->bitmaps.begin() + b_index);
 
 	// no item selected, let the message handler assign a new one
 	b_index = -1;
@@ -1027,23 +1049,23 @@ void bg_bitmap_dlg::OnDelBitmap()
 void bg_bitmap_dlg::OnBitmapDropdownChange()
 {
 	// if we have no active bitmap, do nothing
-	if(b_index < 0){
+	if (b_index < 0)
 		return;
-	}
 
-	int new_index = ((CComboBox*)GetDlgItem(IDC_SBITMAP))->GetCurSel();
+	int new_index = ((CComboBox*) GetDlgItem(IDC_SBITMAP))->GetCurSel();
 	Assert(new_index != CB_ERR);
 
 	// get the new string
-	if(new_index != CB_ERR){
-		((CComboBox*)GetDlgItem(IDC_SBITMAP))->GetLBText(new_index, b_name);
+	if(new_index != CB_ERR)
+	{
+		((CComboBox*) GetDlgItem(IDC_SBITMAP))->GetLBText(new_index, b_name);
 
 		// change the name of the string in the listbox
-		((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->DeleteString(b_index);
-		((CListBox*)GetDlgItem(IDC_SBITMAP_LIST))->InsertString(b_index, (const char*)b_name);
+		((CListBox*) GetDlgItem(IDC_SBITMAP_LIST))->DeleteString(b_index);
+		((CListBox*) GetDlgItem(IDC_SBITMAP_LIST))->InsertString(b_index, (const char*) b_name);
 
 		OnBitmapChange();
-	}
+	}	
 }
 
 void bg_bitmap_dlg::get_data_spinner(NM_UPDOWN* pUD, int id, int *var, int min, int max)
@@ -1220,7 +1242,7 @@ void bg_bitmap_dlg::OnDeltaposSun1PSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (s_index < 0) return;
-	pNMUpDown->iDelta *= -1;
+	//G5K - why?	pNMUpDown->iDelta *= -1;
 	get_data_spinner(pNMUpDown, IDC_SUN1_P, &s_pitch, 0, 359);
 	OnSunChange();
 	*pResult = 0;
@@ -1231,7 +1253,7 @@ void bg_bitmap_dlg::OnDeltaposSun1BSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (s_index < 0) return;
-	pNMUpDown->iDelta *= -1;
+	//G5K - why?	pNMUpDown->iDelta *= -1;
 	get_data_spinner(pNMUpDown, IDC_SUN1_B, &s_bank, 0, 359);
 	OnSunChange();
 	*pResult = 0;
@@ -1242,7 +1264,7 @@ void bg_bitmap_dlg::OnDeltaposSun1HSpin(NMHDR* pNMHDR, LRESULT* pResult)
 	NM_UPDOWN* pNMUpDown = (NM_UPDOWN*)pNMHDR;
 
 	if (s_index < 0) return;
-	pNMUpDown->iDelta *= -1;
+	//G5K - why?	pNMUpDown->iDelta *= -1;
 	get_data_spinner(pNMUpDown, IDC_SUN1_H, &s_heading, 0, 359);
 	OnSunChange();
 	*pResult = 0;
@@ -1277,7 +1299,7 @@ void bg_bitmap_dlg::OnKillfocusSun1Scale()
 }
 
 
-extern void parse_bitmaps(mission *pm);
+extern void parse_one_background(background_t *background);
 
 void bg_bitmap_dlg::OnImportBackground() 
 {
@@ -1309,25 +1331,107 @@ void bg_bitmap_dlg::OnImportBackground()
 	} 
 	else
 	{
-		//Reset the starfield structures
-		stars_pre_level_init();
-
-		//parse in the new file
+		// parse in the new file
 		read_file_text(filename);
 		reset_parse();
 
 		if (skip_to_start_of_string("#Background bitmaps"))
 		{
-			parse_bitmaps(&The_mission);
+			int temp;
+			int count;
+			char *saved_mp;
+
+			// skip beginning stuff
+			required_string("#Background bitmaps");
+			required_string("$Num stars:");
+			stuff_int(&temp);
+			required_string("$Ambient light level:");
+			stuff_int(&temp);
+
+			saved_mp = Mp;
+
+			// see if we have more than one background in this mission
+			count = 0;
+			while(skip_to_string("$Bitmap List:"))
+				count++;
+
+			Mp = saved_mp;
+
+			// pick one (if count is 0, it's retail with just one background)
+			if (count > 1)
+			{
+				int i, which;
+
+				BackgroundChooser dlg(count);
+				if (dlg.DoModal() == IDCANCEL)
+					return;
+
+				which = dlg.GetChosenBackground();
+
+				for (i = 0; i < which + 1; i++)
+					skip_to_string("$Bitmap List:");
+			}
+
+			// now parse the background we've selected
+			parse_one_background(&Backgrounds[get_active_background()]);
 		}
-		else return;
+		else
+			return;
 
-		//reinitialize the dialog
-		sun_data_init();
-		bitmap_data_init();
-		OnFullNeb();
-
-		OnBitmapChange();
-		OnSunChange();
+		reinitialize_lists();
 	}
+}
+
+void bg_bitmap_dlg::reinitialize_lists()
+{
+	b_index = -1;
+	s_index = -1;
+
+	// repopulate
+	sun_data_init();
+	bitmap_data_init();
+}
+
+int bg_bitmap_dlg::get_active_background()
+{
+	// find out which background we're editing
+	int idx = ((CComboBox *) GetDlgItem(IDC_BACKGROUND_NUM))->GetCurSel();
+	if (idx < 0 || idx >= MAX_BACKGROUNDS)
+		idx = 0;
+
+	return idx;
+}
+
+int bg_bitmap_dlg::get_swap_background()
+{
+	// find out which background we're swapping
+	int idx = ((CComboBox *) GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->GetCurSel();
+	if (idx < 0 || idx >= MAX_BACKGROUNDS)
+		idx = 0;
+
+	return idx;
+}
+
+void bg_bitmap_dlg::OnBackgroundDropdownChange()
+{
+	reinitialize_lists();
+}
+
+void bg_bitmap_dlg::OnSwapBackground() 
+{
+	int idx1 = get_active_background();
+	int idx2 = get_swap_background();
+
+	// don't swap if they're the same
+	if (idx1 == idx2)
+	{
+		MessageBox("Cannot swap a background with itself.", "FRED2", MB_OK);
+		return;
+	}
+
+	// swap
+	stars_swap_backgrounds(idx1, idx2);
+
+	// refresh dialog
+	reinitialize_lists();
 }

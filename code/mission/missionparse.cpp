@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.189 $
- * $Date: 2006-07-30 20:01:56 $
- * $Author: Kazan $
+ * $Revision: 2.190 $
+ * $Date: 2006-08-06 18:47:29 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.189  2006/07/30 20:01:56  Kazan
+ * resolve 1018 and an interface problem in fred2's ship editor
+ *
  * Revision 2.188  2006/07/17 00:10:00  Goober5000
  * stage 2 of animation fix (add base frame time to each ship)
  * --Goober5000
@@ -5538,10 +5541,82 @@ void parse_bitmap(mission *pm)
 	Int3();
 }
 
+void parse_one_background(background_t *background)
+{
+	// clear here too because this function can be called from more than one place
+	background->suns.clear();
+	background->bitmaps.clear();
+
+	// parse suns
+	while (optional_string("$Sun:"))
+	{
+		starfield_list_entry sle;
+
+		// filename
+		stuff_string(sle.filename, F_NAME, NULL);
+
+		// angles
+		required_string("+Angles:");
+		stuff_float(&sle.ang.p);
+		stuff_float(&sle.ang.b);
+		stuff_float(&sle.ang.h);
+
+		// scale
+		required_string("+Scale:");
+		stuff_float(&sle.scale_x);
+		sle.scale_y = sle.scale_x;
+		sle.div_x = 1;
+		sle.div_y = 1;
+
+		// add it
+		background->suns.push_back(sle);
+	}
+
+	// parse starfields
+	while (optional_string("$Starbitmap:"))
+	{
+		starfield_list_entry sle;
+
+		// filename
+		stuff_string(sle.filename, F_NAME, NULL);
+
+		// angles
+		required_string("+Angles:");
+		stuff_float(&sle.ang.p);
+		stuff_float(&sle.ang.b);
+		stuff_float(&sle.ang.h);
+
+		// scale
+		if (optional_string("+Scale:"))
+		{
+			stuff_float(&sle.scale_x);
+			sle.scale_y = sle.scale_x;
+			sle.div_x = 1;
+			sle.div_y = 1;
+		}
+		else
+		{
+			required_string("+ScaleX:");
+			stuff_float(&sle.scale_x);
+
+			required_string("+ScaleY:");
+			stuff_float(&sle.scale_y);
+
+			required_string("+DivX:");
+			stuff_int(&sle.div_x);
+
+			required_string("+DivY:");
+			stuff_int(&sle.div_y);
+		}
+
+		// add it
+		background->bitmaps.push_back(sle);
+	}
+}
+
 void parse_bitmaps(mission *pm)
 {
-	char str[MAX_FILENAME_LEN] = "";
-	starfield_bitmap_instance b;
+	char str[MAX_FILENAME_LEN];
 	int z;
 
 	required_string("#Background bitmaps");
@@ -5637,70 +5712,24 @@ void parse_bitmaps(mission *pm)
 			nebula_close();		
 		}
 	}	
-	
-	// parse suns
-	while (optional_string("$Sun:")) {
-		memset( &b, 0, sizeof(starfield_bitmap_instance) );
 
-		// filename
-		stuff_string(str, F_NAME, NULL);
-			
-		// angles
-		required_string("+Angles:");
-		stuff_float(&b.ang.p);
-		stuff_float(&b.ang.b);
-		stuff_float(&b.ang.h);		
+	// Goober5000
+	Num_backgrounds = 0;
+	while (optional_string("$Bitmap List:") || check_for_string("$Sun:") || check_for_string("$Starbitmap:"))
+	{
+		// don't allow overflow; just make sure the last background is the last read
+		if (Num_backgrounds >= MAX_BACKGROUNDS)
+		{
+			Warning(LOCATION, "Too many backgrounds in mission!  Max is %d.", MAX_BACKGROUNDS);
+			Num_backgrounds = MAX_BACKGROUNDS - 1;
+		}
 
-		// scale
-		required_string("+Scale:");
-		stuff_float(&b.scale_x);		
-		b.scale_y = b.scale_x;
-		b.div_x = 1;
-		b.div_y = 1;
-
-		// now store it
-		if ( !stars_add_sun_instance(str, &b) )
-			Warning(LOCATION, "Failed to add sun '%s' to the mission!", str);
+		parse_one_background(&Backgrounds[Num_backgrounds]);
+		Num_backgrounds++;
 	}
 
-	// parse background bitmaps
-	while (optional_string("$Starbitmap:")) {
-		memset( &b, 0, sizeof(starfield_bitmap_instance) );
-
-		// filename
-		stuff_string(str, F_NAME, NULL);
-			
-		// angles
-		required_string("+Angles:");
-		stuff_float(&b.ang.p);
-		stuff_float(&b.ang.b);
-		stuff_float(&b.ang.h);		
-
-		// scale
-		// scale
-		if(optional_string("+Scale:")){
-			stuff_float(&b.scale_x);
-			b.scale_y = b.scale_x;
-			b.div_x = 1;
-			b.div_y = 1;
-		} else {
-			required_string("+ScaleX:");
-			stuff_float(&b.scale_x);
-
-			required_string("+ScaleY:");
-			stuff_float(&b.scale_y);
-
-			required_string("+DivX:");
-			stuff_int(&b.div_x);
-
-			required_string("+DivY:");
-			stuff_int(&b.div_y);
-		}		
-
-		// now store it
-		if ( !stars_add_bitmap_instance(str, &b) )
-			Warning(LOCATION, "Failed to add starfield bitmap '%s' to the mission!", str);
-	}
+	// Goober5000
+	stars_load_first_valid_background();
 
 	if (optional_string("$Environment Map:")) {
 		stuff_string(pm->envmap_name, F_NAME, NULL);

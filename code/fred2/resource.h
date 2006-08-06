@@ -102,6 +102,7 @@
 #define IDD_CUSTOM_WING_NAMES           267
 #define IDD_ALT_SHIP_CLASS              268
 #define IDD_RESTRICT_PATHS              269
+#define IDD_BACKGROUND_CHOOSER          272
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -519,8 +520,10 @@
 #define IDC_ASCT1_VARIABLES_COMBO1      1189
 #define IDC_WEAPON_VARIABLES_COMBO      1189
 #define IDC_ASCT1_CLASS_COMBO2          1190
+#define IDC_BACKGROUND_NUM              1190
 #define IDC_WING_DISPLAY_FILTER         1191
 #define IDC_ASCT1_VARIABLES_COMBO2      1191
+#define IDC_BACKGROUND_SWAP_NUM         1191
 #define IDC_SHIP_DEBRIS2                1192
 #define IDC_ASCT1_CLASS_COMBO3          1192
 #define IDC_SHIP_LIST                   1193
@@ -931,6 +934,7 @@
 #define IDC_FULLNEB                     1499
 #define IDC_NO_TRAITOR                  1499
 #define IDC_ADD_VARIABLE_NAME           1500
+#define IDC_SWAP_BACKGROUND             1500
 #define IDC_MODIFY_DEFAULT_VALUE        1502
 #define IDC_NEB_INTENSITY               1503
 #define IDC_NEB2_INTENSITY              1503
@@ -1049,6 +1053,7 @@
 #define IDC_ASCT1_GROUP_THREE           1584
 #define IDC_ASCT2_GROUP_ONE             1585
 #define IDC_SET_CLASS_DYNAMICALLY       1586
+#define IDC_BACKGROUND                  1586
 #define IDC_TEAM_LOADOUT_STORE_STATUS   1587
 #define IDC_SUBSTITUTE_BRIEFING_MUSIC   1588
 #define IDC_RESTRICT_PATHS_LABEL        1589
@@ -1339,7 +1344,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        270
+#define _APS_NEXT_RESOURCE_VALUE        273
 #define _APS_NEXT_COMMAND_VALUE         33090
 #define _APS_NEXT_CONTROL_VALUE         1590
 #define _APS_NEXT_SYMED_VALUE           105
