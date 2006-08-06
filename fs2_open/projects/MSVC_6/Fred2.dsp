@@ -126,6 +126,10 @@ SOURCE=..\..\code\fred2\AsteroidEditorDlg.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\fred2\BackgroundChooser.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\fred2\BgBitmapDlg.cpp
 # End Source File
 # Begin Source File
@@ -375,6 +379,10 @@ SOURCE=..\..\code\fred2\altshipclassdlg.h
 # Begin Source File
 
 SOURCE=..\..\code\fred2\AsteroidEditorDlg.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fred2\BackgroundChooser.h
 # End Source File
 # Begin Source File
 

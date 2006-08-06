@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.h $
- * $Revision: 1.2 $
- * $Date: 2006-04-20 06:32:01 $
+ * $Revision: 1.3 $
+ * $Date: 2006-08-06 18:47:29 $
  * $Author: Goober5000 $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -215,6 +218,10 @@ protected:
 	// clear and build the nebula filename list appropriately
 	void build_nebfile_list();
 
+	int get_active_background();
+	int get_swap_background();
+	void reinitialize_lists();
+
 	// Generated message map functions
 	//{{AFX_MSG(bg_bitmap_dlg)
 	afx_msg void OnClose();
@@ -250,6 +257,8 @@ protected:
 	afx_msg void OnKillfocusSun1B();
 	afx_msg void OnKillfocusSun1Scale();
 	afx_msg void OnImportBackground();
+	afx_msg void OnSwapBackground();
+	afx_msg void OnBackgroundDropdownChange();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 

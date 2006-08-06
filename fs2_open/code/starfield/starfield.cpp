@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.78 $
- * $Date: 2006-07-30 02:20:17 $
+ * $Revision: 2.79 $
+ * $Date: 2006-08-06 18:47:29 $
  * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2006/07/30 02:20:17  Goober5000
+ * bah, revert
+ *
  * Revision 2.76  2006/07/06 05:29:39  Goober5000
  * commented annoying redundant warnings
  * --Goober5000
@@ -521,7 +524,6 @@
  */
 
 #include <limits.h>
-#include <vector>
 
 #include "math/vecmat.h"
 #include "render/3d.h"
@@ -535,6 +537,8 @@
 #include "starfield/supernova.h"
 #include "cmdline/cmdline.h"
 #include "parse/parselo.h"
+#include "hud/hud.h"
+#include "hud/hudtarget.h"
 
 
 #define MAX_DEBRIS_VCLIPS	4
@@ -566,6 +570,56 @@ static int Subspace_model_outer = -1;
 int Num_stars = 500;
 fix starfield_timestamp = 0;
 
+#define MAX_FLARE_COUNT 10
+#define MAX_FLARE_BMP 6
+
+typedef struct flare_info {
+	float pos;
+	float scale;
+	int tex_num;
+} flare_info;
+
+typedef struct flare_bitmap {
+	char filename[MAX_FILENAME_LEN];
+	int bitmap_id;
+} flare_bitmap;
+
+
+// global info (not individual instances)
+typedef struct starfield_bitmap {
+	char filename[MAX_FILENAME_LEN];					// bitmap filename
+	char glow_filename[MAX_FILENAME_LEN];				// only for suns
+	int bitmap;											// bitmap handle
+	int n_frames;
+	int fps;
+	int glow_bitmap;									// only for suns
+	int glow_n_frames;
+	int glow_fps;
+	int xparent;	
+	float r, g, b, i, spec_r, spec_g, spec_b;			// only for suns
+	int glare;											// only for suns
+	int flare;											// Is there a lens-flare for this sun?
+	flare_info flare_infos[MAX_FLARE_COUNT];			// each flare can use a texture in flare_bmp, with different scale
+	flare_bitmap flare_bitmaps[MAX_FLARE_BMP];			// bitmaps for different lens flares (can be re-used)
+	int n_flares;										// number of flares actually used
+	int n_flare_bitmaps;								// number of flare bitmaps available
+	int used_this_level;
+	int preload;
+} starfield_bitmap;
+
+// starfield bitmap instance
+typedef struct starfield_bitmap_instance {
+	float scale_x, scale_y;							// x and y scale
+	int div_x, div_y;								// # of x and y divisions
+	angles ang;										// angles from FRED
+	int n_prim;										// number of primitives in buffer
+	int star_bitmap_index;							// index into starfield_bitmap array
+	ushort *buffer;
+	ushort *env_buffer;
+
+	starfield_bitmap_instance() { memset(this, 0, sizeof(starfield_bitmap_instance)); star_bitmap_index = -1; };
+} starfield_bitmap_instance;
+
 // for drawing cool stuff on the background - comes from a table
 static std::vector<starfield_bitmap> Starfield_bitmaps;
 static std::vector<starfield_bitmap_instance> Starfield_bitmap_instances;
@@ -574,6 +628,10 @@ static std::vector<starfield_bitmap_instance> Starfield_bitmap_instances;
 static std::vector<starfield_bitmap> Sun_bitmaps;
 static std::vector<starfield_bitmap_instance> Suns;
 
+// Goober5000
+int Num_backgrounds = 0;
+int Cur_background = -1;
+background_t Backgrounds[MAX_BACKGROUNDS];
 
 int last_stars_filled = 0;
 color star_colors[8];
@@ -593,6 +651,16 @@ typedef struct vDist {
 star Stars[MAX_STARS];
 
 old_debris odebris[MAX_DEBRIS];
+
+
+typedef struct debris_vclip {
+	int	bm;
+	int	nframes;
+	char  name[MAX_FILENAME_LEN];
+} debris_vclip;
+extern debris_vclip Debris_vclips_normal[];
+extern debris_vclip Debris_vclips_nebula[];
+extern debris_vclip *Debris_vclips;
 
 //XSTR:OFF
 debris_vclip Debris_vclips_normal[MAX_DEBRIS_VCLIPS] = { { -1, -1, "debris01" }, { -1, -1, "debris02" }, { -1, -1, "debris03" }, { -1, -1, "debris04" } };
@@ -1253,6 +1321,18 @@ void stars_load_all_bitmaps()
 	Star_bitmaps_loaded = 1;
 }
 
+void stars_clear_instances()
+{
+	starfield_kill_bitmap_buffer();
+
+	for (uint i = 0; i < Starfield_bitmap_instances.size(); i++) {
+		starfield_update_index_buffers(i, 0);
+	}
+
+	Starfield_bitmap_instances.clear();
+	Suns.clear();
+}
+
 // call on game startup
 void stars_init()
 {
@@ -1269,30 +1349,28 @@ void stars_init()
 // call only from game_shutdown()!!
 void stars_close()
 {
-	starfield_kill_bitmap_buffer();
+	stars_clear_instances();
 
-	for (uint i = 0; i < Starfield_bitmap_instances.size(); i++) {
-		starfield_update_index_buffers(i, 0);
-	}
-
-	Starfield_bitmap_instances.clear();
-	Suns.clear();
+	// any other code goes here
 }
 
 // called before mission parse so we can clear out all of the old stuff
-void stars_pre_level_init()
+void stars_pre_level_init(bool clear_backgrounds)
 {
 	uint idx, i;
 	starfield_bitmap *sb = NULL;
 
-	starfield_kill_bitmap_buffer();
-
-	for (idx = 0; idx < Starfield_bitmap_instances.size(); idx++) {
-		starfield_update_index_buffers(idx, 0);
+	if (clear_backgrounds)
+	{
+		// Goober5000 - clear entire array, including backgrounds that will be unused
+		for (i = 0; i < MAX_BACKGROUNDS; i++)
+		{
+			Backgrounds[i].suns.clear();
+			Backgrounds[i].bitmaps.clear();
+		}
 	}
 
-	Starfield_bitmap_instances.clear();
-	Suns.clear();
+	stars_clear_instances();
 
 	// mark all starfield and sun bitmaps as unused for this mission and release any current bitmaps
 	// NOTE: that because of how we have to load the bitmaps it's important to release all of
@@ -2915,20 +2993,24 @@ int stars_find_sun(char *name)
 
 // add an instance for a sun (something actually used in a mission)
 // NOTE that we assume a duplicate is ok here
-int stars_add_sun_instance(char *name, starfield_bitmap_instance *new_instance)
+int stars_add_sun_entry(starfield_list_entry *sun)
 {
 	int idx, i;
 	starfield_bitmap_instance sbi;
 
-	Assert( new_instance != NULL );
-	Assert( name != NULL );
+	Assert(sun != NULL);
 
-	if (name == NULL)
-		return 0;
+	// copy information
+	memset(&sbi, 0, sizeof(starfield_bitmap_instance));
+	sbi.ang.p = sun->ang.p;
+	sbi.ang.b = sun->ang.b;
+	sbi.ang.h = sun->ang.h;
+	sbi.scale_x = sun->scale_x;
+	sbi.scale_y = sun->scale_y;
+	sbi.div_x = sun->div_x;
+	sbi.div_y = sun->div_y;
 
-	memcpy( &sbi, new_instance, sizeof(starfield_bitmap_instance) );
-
-	idx = stars_find_sun(name);
+	idx = stars_find_sun(sun->filename);
 
 	if (idx == -1) {
 		Warning(LOCATION, "Trying to add a sun that does not exist in stars.tbl!");
@@ -3005,23 +3087,27 @@ Done:
 
 // add an instance for a starfield bitmap (something actually used in a mission)
 // NOTE that we assume a duplicate is ok here
-int stars_add_bitmap_instance(char *name, starfield_bitmap_instance *new_instance)
+int stars_add_bitmap_entry(starfield_list_entry *bitmap)
 {
 	int idx;
 	starfield_bitmap_instance sbi;
 
-	Assert( new_instance != NULL );
-	Assert( name != NULL );
+	Assert(bitmap != NULL);
 
-	if (name == NULL)
-		return 0;
+	// copy information
+	memset(&sbi, 0, sizeof(starfield_bitmap_instance));
+	sbi.ang.p = bitmap->ang.p;
+	sbi.ang.b = bitmap->ang.b;
+	sbi.ang.h = bitmap->ang.h;
+	sbi.scale_x = bitmap->scale_x;
+	sbi.scale_y = bitmap->scale_y;
+	sbi.div_x = bitmap->div_x;
+	sbi.div_y = bitmap->div_y;
 
-	memcpy( &sbi, new_instance, sizeof(starfield_bitmap_instance) );
-
-	idx = stars_find_bitmap(name);
+	idx = stars_find_bitmap(bitmap->filename);
 
 	if (idx == -1) {
-//		Warning(LOCATION, "Trying to add a bitmap that does not exist in stars.tbl!");
+		Warning(LOCATION, "Trying to add a bitmap that does not exist in stars.tbl!");
 		return 0;
 	}
 
@@ -3036,7 +3122,7 @@ int stars_add_bitmap_instance(char *name, starfield_bitmap_instance *new_instanc
 			Starfield_bitmaps[idx].bitmap = bm_load_animation(Starfield_bitmaps[idx].filename, &Starfield_bitmaps[idx].n_frames, &Starfield_bitmaps[idx].fps, 1);
 
 			if (Starfield_bitmaps[idx].bitmap < 0) {
-//				Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", Starfield_bitmaps[idx].filename);
+				Warning(LOCATION, "Unable to load starfield bitmap: '%s'!\n", Starfield_bitmaps[idx].filename);
 				return 0;
 			}
 		}
@@ -3103,6 +3189,12 @@ starfield_bitmap *stars_get_bitmap_entry(int index, bool sun)
 	return NULL;
 }
 
+bool stars_sun_has_glare(int index)
+{
+	starfield_bitmap *sb = stars_get_bitmap_entry(index, true);
+	return (sb && sb->glare);
+}
+
 // get a starfield_bitmap_instance, obviously
 starfield_bitmap_instance *stars_get_instance(int index, bool sun)
 {
@@ -3159,6 +3251,33 @@ const char *stars_get_name_from_instance(int index, bool sun)
 	return NOX("<none>");
 }
 
+// WMC/Goober5000
+void stars_set_nebula(bool activate)
+{
+	if (activate)
+	{
+		The_mission.flags |= MISSION_FLAG_FULLNEB;
+		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA;
+		HUD_contrast = 1;
+		if(Cmdline_nohtl || Fred_running) {
+			Neb2_render_mode = NEB2_RENDER_POF;
+			stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
+		} else {
+			Neb2_render_mode = NEB2_RENDER_HTL;
+		}
+		Debris_vclips = Debris_vclips_nebula;
+		neb2_eye_changed();
+	}
+	else
+	{
+		The_mission.flags &= ~MISSION_FLAG_FULLNEB;
+		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
+		Neb2_render_mode = NEB2_RENDER_NONE;
+		Debris_vclips = Debris_vclips_normal;
+		HUD_contrast = 0;
+	}
+}
+
 // retrieves the name from starfield_bitmap, really only used by FRED2
 // NOTE: it is unsafe to return NULL here, but because that's bad anyway it really shouldn't happen, so we do return NULL.
 const char *stars_get_name_FRED(int index, bool sun)
@@ -3181,7 +3300,7 @@ const char *stars_get_name_FRED(int index, bool sun)
 }
 
 // modify an existing starfield bitmap instance, or add a new one if needed
-void stars_modify_instance_FRED(int index, const char *name, starfield_bitmap_instance *sbi_new, bool sun)
+void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *sbi_new, bool sun)
 {
 	if (!Fred_running)
 		return;
@@ -3247,3 +3366,139 @@ void stars_delete_instance_FRED(int index, bool sun)
 	starfield_generate_bitmap_instance_buffers();
 }
 
+// Goober5000
+void stars_load_first_valid_background()
+{
+	int i, j;
+
+	Cur_background = -1;
+	if (Num_backgrounds == 0)
+		return;
+
+	// get the first background with > 50% of its suns and > 50% of its bitmaps present
+	for (i = 0; i < Num_backgrounds; i++)
+	{
+		int total_suns = 0;
+		int total_bitmaps = 0;
+		background_t *background = &Backgrounds[i];
+
+		for (j = 0; j < background->suns.size(); j++)
+		{
+			if (stars_find_sun(background->suns[j].filename) >= 0)
+				total_suns++;
+		}
+
+		for (j = 0; j < background->bitmaps.size(); j++)
+		{
+			if (stars_find_bitmap(background->bitmaps[j].filename) >= 0)
+				total_bitmaps++;
+		}
+
+		// add 1 so rounding will work properly
+		if ((total_suns >= (background->suns.size() + 1) / 2) && (total_bitmaps >= (background->bitmaps.size() + 1) / 2))
+		{
+			Cur_background = i;
+			break;
+		}
+	}
+
+	// didn't find a valid entry
+	if (Cur_background < 0)
+	{
+		// this is handy because it avoids zillions of warning messages
+		if (Num_backgrounds > 1)
+		{
+			Warning(LOCATION, "Unable to find a sufficient number of bitmaps for any background listed in this mission.  No background will be displayed.");
+		}
+		else
+		{
+			Warning(LOCATION, "Unable to find a sufficient number of bitmaps for this mission's background.  The background will not be displayed.");
+		}
+	}
+	// found something, so load it
+	else
+	{
+		background_t *background = &Backgrounds[Cur_background];
+
+		for (j = 0; j < background->suns.size(); j++)
+		{
+			if (!stars_add_sun_entry(&background->suns[j]))
+			{
+				Warning(LOCATION, "Failed to add sun '%s' to the mission!", background->suns[j].filename);
+			}
+		}
+
+		for (j = 0; j < background->bitmaps.size(); j++)
+		{
+			if (!stars_add_bitmap_entry(&background->bitmaps[j]))
+			{
+				Warning(LOCATION, "Failed to add starfield bitmap '%s' to the mission!", background->bitmaps[j].filename);
+			}
+		}
+	}
+}
+
+// Goober5000
+void stars_copy_background(background_t *dest, background_t *src)
+{
+	int i;
+
+	dest->suns.clear();
+	dest->bitmaps.clear();
+
+	for (i = 0; i < src->suns.size(); i++)
+	{
+		starfield_list_entry sle;
+		memcpy(&sle, &src->suns[i], sizeof(starfield_list_entry));
+		dest->suns.push_back(sle);
+	}
+
+	for (i = 0; i < src->bitmaps.size(); i++)
+	{
+		starfield_list_entry sle;
+		memcpy(&sle, &src->bitmaps[i], sizeof(starfield_list_entry));
+		dest->bitmaps.push_back(sle);
+	}
+}
+
+// Goober5000
+void stars_swap_backgrounds(int idx1, int idx2)
+{
+	background_t temp;
+	stars_copy_background(&temp, &Backgrounds[idx1]);
+	stars_copy_background(&Backgrounds[idx1], &Backgrounds[idx2]);
+	stars_copy_background(&Backgrounds[idx2], &temp);
+}
+
+// Goober5000
+bool stars_background_empty(int idx)
+{
+	return !(Backgrounds[idx].suns.size() > 0 || Backgrounds[idx].bitmaps.size() > 0);
+}
+
+// Goober5000
+void stars_pack_backgrounds()
+{
+	int i, j;
+
+	// move all empty entries to the end, and recount
+	Num_backgrounds = 0;
+	for (i = 0; i < MAX_BACKGROUNDS; i++)
+	{
+		if (!stars_background_empty(i))
+		{
+			Num_backgrounds++;
+			continue;
+		}
+
+		for (j = i + 1; j < MAX_BACKGROUNDS; j++)
+		{
+			if (!stars_background_empty(j))
+			{
+				stars_swap_backgrounds(i, j);
+				Num_backgrounds++;
+				break;
+			}
+		}
+	}
+}
