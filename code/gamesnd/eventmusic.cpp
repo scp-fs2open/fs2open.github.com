@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.40 $
- * $Date: 2006-05-30 02:13:22 $
+ * $Revision: 2.41 $
+ * $Date: 2006-08-06 19:24:56 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/05/30 02:13:22  Goober5000
+ * add substitute music boxes to FRED, and reset music properly when mission is cleared
+ * --Goober5000
+ *
  * Revision 2.39  2006/05/21 22:57:30  Goober5000
  * fix for Mantis #750
  * --Goober5000
@@ -160,7 +164,7 @@
  *
  * Revision 2.2  2003/01/25 04:17:39  Goober5000
  * added change-music sexp and bumped MAX_SOUNDTRACKS from 10 to 25
- * --Ian Warfield
+ * --Goober5000
  *
  * Revision 2.1  2002/08/01 01:41:04  penguin
  * The big include file move
