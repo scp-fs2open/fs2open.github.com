@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.273 $
- * $Date: 2006-08-04 11:43:26 $
- * $Author: karajorma $
+ * $Revision: 2.274 $
+ * $Date: 2006-08-06 18:47:29 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.273  2006/08/04 11:43:26  karajorma
+ * Fix bug where end-mission SEXP only resulting in the mission ending for the server
+ *
  * Revision 2.272  2006/07/26 03:45:02  Kazan
  * Optimize
  *
@@ -9670,80 +9673,58 @@ void sexp_force_jump()
 
 void sexp_mission_set_nebula(int n)
 {
-	if(eval_num(n) > 0)
-	{
-		The_mission.flags |= MISSION_FLAG_FULLNEB;
-		Toggle_text_alpha = TOGGLE_TEXT_NEBULA_ALPHA;
-		HUD_contrast = 1;
-		if(Cmdline_nohtl || Fred_running) {
-			Neb2_render_mode = NEB2_RENDER_POF;
-			stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
-		} else {
-			Neb2_render_mode = NEB2_RENDER_HTL;
-		}
-		Debris_vclips = Debris_vclips_nebula;
-		neb2_eye_changed();
-	}
-	else
-	{
-		The_mission.flags &= ~MISSION_FLAG_FULLNEB;
-		Toggle_text_alpha = TOGGLE_TEXT_NORMAL_ALPHA;
-		Neb2_render_mode = NEB2_RENDER_NONE;
-		Debris_vclips = Debris_vclips_normal;
-		HUD_contrast = 0;
-	}
+	stars_set_nebula(eval_num(n) > 0);
 }
 
 void sexp_add_background_bitmap(int n)
 {
-	angles ang;
-	int bitmap_idx;
-	float sx, sy;
-	int dx,dy;
 	int sexp_var;
 	int new_number;
-	char *bg_bitmap_fname;
 	char number_as_str[TOKEN_LENGTH];
-	starfield_bitmap_instance sbip;
+	starfield_list_entry sle;
 
-	
-	//get all the info out of the sexp
-	bitmap_idx = stars_find_bitmap(bg_bitmap_fname = CTEXT(n)); n = CDR(n);
+	// filename
+	strcpy(sle.filename, CTEXT(n));
+	n = CDR(n);
 
-	//sanity checking
-	if (bitmap_idx < 0)
+	// sanity checking
+	if (stars_find_bitmap(sle.filename) < 0)
 	{
-		if (bg_bitmap_fname == NULL)
-		{
-			Error(LOCATION, "sexp-add-background-bitmap: Background bitmap name is NULL!");
-		}
-		else
-		{
-			Error(LOCATION, "sexp-add-background-bitmap: Background bitmap %s not found!", bg_bitmap_fname);
-		}
-
+		Error(LOCATION, "sexp-add-background-bitmap: Background bitmap %s not found!", sle.filename);
 		return;
 	}
 
-	ang.h = fl_radian(eval_num(n) % 360); n = CDR(n);
-	ang.p = fl_radian(eval_num(n) % 360); n = CDR(n);
-	ang.b = fl_radian(eval_num(n) % 360); n = CDR(n);
-	sx = eval_num(n) / 100.0f; n = CDR(n);
-	sy = eval_num(n) / 100.0f; n = CDR(n);
-	dx = eval_num(n); n = CDR(n);
-	dy = eval_num(n); n = CDR(n);
+	// angles
+	sle.ang.h = fl_radian(eval_num(n) % 360);
+	n = CDR(n);
+	sle.ang.p = fl_radian(eval_num(n) % 360);
+	n = CDR(n);
+	sle.ang.b = fl_radian(eval_num(n) % 360);
+	n = CDR(n);
 
-	//restrict parameters
-	if (sx > 18) sx = 18;
-	if (sx < 0.1f) sx = 0.1f;
-	if (sy > 18) sy = 18;
-	if (sy < 0.1f) sy = 0.1f;
-	if (dx > 5) dx = 5;
-	if (dx < 1) dx = 1;
-	if (dy > 5) dy = 5;
-	if (dy < 1) dy = 1;
+	// scale
+	sle.scale_x = eval_num(n) / 100.0f;
+	n = CDR(n);
+	sle.scale_y = eval_num(n) / 100.0f;
+	n = CDR(n);
 
-	Assert( (n >= 0) && (n < MAX_SEXP_NODES) );
+	// div
+	sle.div_x = eval_num(n);
+	n = CDR(n);
+	sle.div_y = eval_num(n);
+	n = CDR(n);
+
+	// restrict parameters
+	if (sle.scale_x > 18) sle.scale_x = 18;
+	if (sle.scale_x < 0.1f) sle.scale_x = 0.1f;
+	if (sle.scale_y > 18) sle.scale_y = 18;
+	if (sle.scale_y < 0.1f) sle.scale_y = 0.1f;
+	if (sle.div_x > 5) sle.div_x = 5;
+	if (sle.div_x < 1) sle.div_x = 1;
+	if (sle.div_y > 5) sle.div_y = 5;
+	if (sle.div_y < 1) sle.div_y = 1;
+
+	Assert((n >= 0) && (n < MAX_SEXP_NODES));
 
 	// ripped from sexp_modify_variable()
 	// get sexp_variable index
@@ -9768,16 +9749,8 @@ void sexp_add_background_bitmap(int n)
 		return;
 	}
 
-	// add this new instance
-	sbip.ang = ang;
-	sbip.div_x = dx;
-	sbip.div_y = dy;
-	sbip.scale_x = sx;
-	sbip.scale_y = sy;
-
-	if ( !stars_add_bitmap_instance(bg_bitmap_fname, &sbip) ) {
-		Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", bg_bitmap_fname);
-	}
+	if (!stars_add_bitmap_entry(&sle))
+		Warning(LOCATION, "Unable to add starfield bitmap: '%s'!", sle.filename);
 }
 
 void sexp_remove_background_bitmap(int n)
@@ -9791,44 +9764,46 @@ void sexp_remove_background_bitmap(int n)
 
 void sexp_add_sun_bitmap(int n)
 {
-	angles ang;
-	int bitmap_idx;
-	float sx;
 	int sexp_var;
 	int new_number;
-	char *sun_bitmap_fname;
 	char number_as_str[TOKEN_LENGTH];
-	starfield_bitmap_instance sbip;
+	starfield_list_entry sle;
 
-	
-	//get all the info out of the sexp
-	bitmap_idx = stars_find_sun(sun_bitmap_fname = CTEXT(n)); n = CDR(n);
+	// filename
+	strcpy(sle.filename, CTEXT(n));
+	n = CDR(n);
 
-	//sanity checking
-	if (bitmap_idx < 0)
+	// sanity checking
+	if (stars_find_sun(sle.filename) < 0)
 	{
-		if (sun_bitmap_fname == NULL)
-		{
-			Error(LOCATION, "sexp-add-sun-bitmap: Background bitmap name is NULL!");
-		}
-		else
-		{
-			Error(LOCATION, "sexp-add-sun-bitmap: Sun %s not found!", sun_bitmap_fname);
-		}
-
+		Error(LOCATION, "sexp-add-sun-bitmap: Sun %s not found!", sle.filename);
 		return;
 	}
 
-	ang.h = fl_radian(eval_num(n) % 360); n = CDR(n);
-	ang.p = fl_radian(eval_num(n) % 360); n = CDR(n);
-	ang.b = fl_radian(eval_num(n) % 360); n = CDR(n);
-	sx = eval_num(n) / 100.0f; n = CDR(n);
+	// angles
+	sle.ang.h = fl_radian(eval_num(n) % 360);
+	n = CDR(n);
+	sle.ang.p = fl_radian(eval_num(n) % 360);
+	n = CDR(n);
+	sle.ang.b = fl_radian(eval_num(n) % 360);
+	n = CDR(n);
 
-	//restrict parameters
-	if (sx > 50) sx = 50;
-	if (sx < 0.1f) sx = 0.1f;
+	// scale
+	sle.scale_x = eval_num(n) / 100.0f;
+	n = CDR(n);
+	sle.scale_y = sle.scale_x;
+
+	// div
+	sle.div_x = 1;
+	sle.div_y = 1;
+
+	// restrict parameters
+	if (sle.scale_x > 50) sle.scale_x = 50;
+	if (sle.scale_x < 0.1f) sle.scale_x = 0.1f;
+	if (sle.scale_y > 50) sle.scale_y = 50;
+	if (sle.scale_y < 0.1f) sle.scale_y = 0.1f;
 	
-	Assert( (n >= 0) && (n < MAX_SEXP_NODES) );
+	Assert((n >= 0) && (n < MAX_SEXP_NODES));
 
 	// ripped from sexp_modify_variable()
 	// get sexp_variable index
@@ -9853,16 +9828,8 @@ void sexp_add_sun_bitmap(int n)
 		return;
 	}
 
-	// add this new instance
-	sbip.ang = ang;
-	sbip.div_x = 1;
-	sbip.div_y = 1;
-	sbip.scale_x = sx;
-	sbip.scale_y = sx;
-
-	if ( !stars_add_sun_instance(sun_bitmap_fname, &sbip) ) {
-		Warning(LOCATION, "Unable to add sun: '%s'!", sun_bitmap_fname);
-	}
+	if (!stars_add_sun_entry(&sle))
+		Warning(LOCATION, "Unable to add sun: '%s'!", sle.filename);
 }
 
 void sexp_remove_sun_bitmap(int n)

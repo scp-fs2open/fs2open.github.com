@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.21 $
- * $Date: 2006-07-13 06:11:52 $
+ * $Revision: 1.22 $
+ * $Date: 2006-08-06 18:47:29 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2006/07/13 06:11:52  Goober5000
+ * * better formatting for substitute music options
+ * * better handling of all special FSO comment tags
+ * --Goober5000
+ *
  * Revision 1.20  2006/07/06 21:00:12  Goober5000
  * remove obsolete (and hackish) flag
  * --Goober5000
@@ -3159,8 +3164,7 @@ int CFred_mission_save::save_reinforcements()
 
 int CFred_mission_save::save_bitmaps()
 {	
-	int idx;
-	starfield_bitmap_instance *sbi = NULL;
+	int i, j;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Background bitmaps");
@@ -3213,55 +3217,104 @@ int CFred_mission_save::save_bitmaps()
 		}
 	}
 
-	// save suns by sun bitmap filename
-	for (idx=0; idx<stars_get_num_suns(); idx++) {
-		sbi = stars_get_sun_instance(idx);
-		Assert( sbi != NULL );
+	// Goober5000 - save all but the lowest priority using the special comment tag
+	for (i = 0; i < Num_backgrounds; i++)
+	{
+		bool tag = (i < Num_backgrounds - 1);
+		background_t *background = &Backgrounds[i];
 
- 		// sun name, angles and scale
- 		required_string_fred("$Sun:");
- 		parse_comments();
-		fout(" %s", stars_get_sun_name(idx));
+		fout_and_bypass("\n\n;;FSO 3.6.9;; $Bitmap List:");
 
- 		required_string_fred("+Angles:");
- 		parse_comments();
-		fout(" %f %f %f", sbi->ang.p, sbi->ang.b, sbi->ang.h);
+		// save suns by filename
+		for (j = 0; j < background->suns.size(); j++)
+		{
+			starfield_list_entry *sle = &background->suns[j];
 
- 		required_string_fred("+Scale:");
- 		parse_comments();
-		fout(" %f", sbi->scale_x);
+			if (tag)
+			{
+				// filename
+				fout_and_bypass("\n;;FSO 3.6.9;; $Sun: %s", sle->filename);
+
+				// angles
+				fout_and_bypass("\n;;FSO 3.6.9;; +Angles: %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+
+				// scale
+				fout_and_bypass("\n;;FSO 3.6.9;; +Scale: %f", sle->scale_x);
+			}
+			else
+			{
+				// filename
+				required_string_fred("$Sun:");
+				parse_comments();
+				fout(" %s", sle->filename);
+
+				// angles
+		 		required_string_fred("+Angles:");
+ 				parse_comments();
+				fout(" %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+
+				// scale
+		 		required_string_fred("+Scale:");
+ 				parse_comments();
+				fout(" %f", sle->scale_x);
+			}
+		}
+
+		// save background bitmaps by filename
+		for (j = 0; j < background->bitmaps.size(); j++)
+		{
+			starfield_list_entry *sle = &background->bitmaps[j];
+
+			if (tag)
+			{
+				// filename
+				fout_and_bypass("\n;;FSO 3.6.9;; $Starbitmap: %s", sle->filename);
+
+				// angles
+				fout_and_bypass("\n;;FSO 3.6.9;; +Angles: %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+
+				// scale
+				fout_and_bypass("\n;;FSO 3.6.9;; +ScaleX: %f", sle->scale_x);
+				fout_and_bypass("\n;;FSO 3.6.9;; +ScaleY: %f", sle->scale_y);
+
+				// div
+				fout_and_bypass("\n;;FSO 3.6.9;; +DivX: %d", sle->div_x);
+				fout_and_bypass("\n;;FSO 3.6.9;; +DivY: %d", sle->div_y);
+			}
+			else
+			{
+				// filename
+				required_string_fred("$Starbitmap:");
+		 		parse_comments();
+				fout(" %s", sle->filename);
+
+				// angles
+		 		required_string_fred("+Angles:");
+ 				parse_comments();
+				fout(" %f %f %f", sle->ang.p, sle->ang.b, sle->ang.h);
+
+				// scale
+		 		required_string_fred("+ScaleX:");
+ 				parse_comments();
+				fout(" %f", sle->scale_x);
+ 				required_string_fred("+ScaleY:");
+ 				parse_comments();
+				fout(" %f", sle->scale_y);
+
+				// div
+		 		required_string_fred("+DivX:");
+		 		parse_comments();
+				fout(" %d", sle->div_x);
+		 		required_string_fred("+DivY:");
+ 				parse_comments();
+				fout(" %d", sle->div_y);
+			}
+		}
  	}
 
-	// save background bitmaps by filename
-	for(idx=0; idx<stars_get_num_bitmaps(); idx++){
-		sbi = stars_get_bitmap_instance(idx);
-		Assert( sbi != NULL );
-
- 		// sun name, angles and scale
- 		required_string_fred("$Starbitmap:");
- 		parse_comments();
-		fout(" %s", stars_get_bitmap_name(idx));
-
- 		required_string_fred("+Angles:");
- 		parse_comments();
-		fout(" %f %f %f", sbi->ang.p, sbi->ang.b, sbi->ang.h);
-
- 		required_string_fred("+ScaleX:");
- 		parse_comments();
-		fout(" %f", sbi->scale_x);
-
- 		required_string_fred("+ScaleY:");
- 		parse_comments();
-		fout(" %f", sbi->scale_y);
-
- 		required_string_fred("+DivX:");
- 		parse_comments();
-		fout(" %d", sbi->div_x);
-
- 		required_string_fred("+DivY:");
- 		parse_comments();
-		fout(" %d", sbi->div_y);
- 	}
+	// taylor's environment map thingy
+	if (strlen(The_mission.envmap_name) > 0)
+		fout_and_bypass("\n\n;;FSO 3.6.9;; $Environment Map: %s", The_mission.envmap_name);
 
 	return err;
 }
