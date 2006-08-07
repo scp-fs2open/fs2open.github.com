@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.71 $
- * $Date: 2006-08-01 04:26:02 $
- * $Author: Kazan $
+ * $Revision: 2.72 $
+ * $Date: 2006-08-07 15:24:32 $
+ * $Author: karajorma $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2006/08/01 04:26:02  Kazan
+ * commented out glide_while_pressed changes until taylor deems them safe
+ *
  * Revision 2.70  2006/07/31 23:57:48  Kazan
  * glide while pressed
  *
@@ -1039,7 +1042,10 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 			wip = &Weapon_info[swp->primary_bank_weapons[index]];
 			if (wip->wi_flags2 & WIF2_BALLISTIC)
 			{
-				swp->primary_bank_ammo[index] = sip->primary_bank_ammo_capacity[index];
+				float capacity, size;
+				capacity = (float) sip->primary_bank_ammo_capacity[index];
+				size = (float) wip->cargo_size;
+				swp->primary_bank_ammo[index] = fl2i((capacity / size)+0.5f);
 			}
 		}
 	}
