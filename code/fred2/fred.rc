@@ -2124,10 +2124,10 @@ FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "Destroy before Mission",IDC_DESTROY_CHECK,"Button",
                     BS_3STATE | WS_TABSTOP,7,7,87,10
+    EDITTEXT        IDC_DESTROY_VALUE,19,17,40,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Spin2",IDC_DESTROY_SPIN,"msctls_updown32",
                     UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
                     UDS_ARROWKEYS,7,17,11,14
-    EDITTEXT        IDC_DESTROY_VALUE,19,17,40,14,ES_AUTOHSCROLL | ES_NUMBER
     LTEXT           "Seconds",IDC_STATIC,63,20,29,8
     CONTROL         "Scannable",IDC_SCANNABLE,"Button",BS_3STATE | 
                     WS_TABSTOP,7,34,50,10
@@ -2144,10 +2144,10 @@ BEGIN
                     BS_3STATE | WS_TABSTOP,7,82,80,8
     CONTROL         "Ignore for Counting Goals",IDC_IGNORE_COUNT,"Button",
                     BS_3STATE | WS_TABSTOP,7,91,93,10
-    CONTROL         "Escort Ship",IDC_ESCORT,"Button",BS_3STATE | WS_TABSTOP,
-                    7,101,52,10
     LTEXT           "Priority",IDC_STATIC,19,114,22,8
     EDITTEXT        IDC_ESCORT_PRIORITY,43,112,26,12,ES_AUTOHSCROLL
+    CONTROL         "Escort Ship",IDC_ESCORT,"Button",BS_3STATE | WS_TABSTOP,
+                    7,101,52,10
     CONTROL         "No Arrival Music",IDC_NO_ARRIVAL_MUSIC,"Button",
                     BS_3STATE | WS_TABSTOP,7,126,67,10
     CONTROL         "Invulnerable",IDC_INVULNERABLE,"Button",BS_3STATE | 
