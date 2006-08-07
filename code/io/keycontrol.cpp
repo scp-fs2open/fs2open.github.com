@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68.2.1 $
- * $Date: 2006-06-15 00:47:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.68.2.2 $
+ * $Date: 2006-08-07 15:11:33 $
+ * $Author: karajorma $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68.2.1  2006/06/15 00:47:21  Goober5000
+ * better handling for 'G' key press
+ * --Goober5000
+ *
  * Revision 2.68  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -1027,7 +1031,10 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 			wip = &Weapon_info[swp->primary_bank_weapons[index]];
 			if (wip->wi_flags2 & WIF2_BALLISTIC)
 			{
-				swp->primary_bank_ammo[index] = sip->primary_bank_ammo_capacity[index];
+				float capacity, size;
+				capacity = (float) sip->primary_bank_ammo_capacity[index];
+				size = (float) wip->cargo_size;
+				swp->primary_bank_ammo[index] = fl2i((capacity / size)+0.5f);
 			}
 		}
 	}
