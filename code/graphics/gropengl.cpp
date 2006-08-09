@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.179 $
- * $Date: 2006-07-17 01:10:45 $
+ * $Revision: 2.180 $
+ * $Date: 2006-08-09 14:41:44 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.179  2006/07/17 01:10:45  taylor
+ * only do i2fl() on the font bitmap once per string rather than doing it per-letter (basically unnoticable performance boost)
+ * before doing alpha channel check, make sure the bitmap is valid, since it doesn't actually catch that until later in the texture code
+ *
  * Revision 2.178  2006/07/13 22:15:02  taylor
  * handle non-MVE movies a bit better in OpenGL (don't get freaky with the window, don't lose input, etc.)
  * some cleanup to OpenGL window handling, to fix min/max/full issues, and try to make shutdown a little nicer
@@ -2695,7 +2699,7 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 
 			alpha = 255;
 
-			if ( factor <= 1.0f ) {
+			if ( factor < 1.0f ) {
 				int tmp_alpha = fl2i(gr_screen.current_alpha*255.0f);
 				r = (r*tmp_alpha)/255;
 				g = (g*tmp_alpha)/255;
