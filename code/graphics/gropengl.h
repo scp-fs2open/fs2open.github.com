@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.18.2.1 $
- * $Date: 2006-06-15 23:33:53 $
+ * $Revision: 2.18.2.2 $
+ * $Date: 2006-08-09 14:40:43 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18.2.1  2006/06/15 23:33:53  taylor
+ * apparently missed this commit a month or so ago with the other OS X fixes
+ *
  * Revision 2.18  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -195,6 +198,12 @@
 #define GL_TEXTURE_BINDING_RECTANGLE_ARB	0x84F6
 #define GL_PROXY_TEXTURE_RECTANGLE_ARB		0x84F7
 #define GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB	0x84F8
+#endif
+
+#ifndef GL_VERSION_1_4
+#define GL_MAX_TEXTURE_LOD_BIAS				0x84FD
+#define GL_TEXTURE_FILTER_CONTROL			0x8500
+#define GL_TEXTURE_LOD_BIAS					0x8501
 #endif
 
 #ifndef GL_VERSION_1_5

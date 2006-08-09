@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.48.2.8 $
- * $Date: 2006-07-17 01:06:41 $
+ * $Revision: 1.48.2.9 $
+ * $Date: 2006-08-09 14:40:43 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48.2.8  2006/07/17 01:06:41  taylor
+ * maybe this will finally shut-up some of the people who have complained about certain mipmap issues
+ *
  * Revision 1.48.2.7  2006/07/15 06:10:51  taylor
  * change clamp mode for font/interface graphics, don't want the border factored in for scaling/filtering
  *
@@ -1459,7 +1462,8 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 	//make sure texturing is on
 	opengl_switch_arb(stage, 1);
 
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_LOD_BIAS_EXT, -2.0f);
+	if ( Is_Extension_Enabled(OGL_EXT_TEXTURE_LOD_BIAS) )
+		glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, -1.5f);
 
 	rc = gr_opengl_tcache_set_internal(bitmap_handle, bitmap_type, u_scale, v_scale, fail_on_full, force, stage);
 
