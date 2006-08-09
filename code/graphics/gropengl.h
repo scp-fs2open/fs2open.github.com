@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.19 $
- * $Date: 2006-06-27 05:00:57 $
+ * $Revision: 2.20 $
+ * $Date: 2006-08-09 14:42:24 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/06/27 05:00:57  taylor
+ * be sure to properly reset fullscreen/minimized state vars as we switch between them
+ * remove the temporary -alpha_alpha_blend option
+ * fix screenshots on big endian
+ * fix various things that Valgrind complained about
+ *
  * Revision 2.18  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -195,6 +201,12 @@
 #define GL_TEXTURE_BINDING_RECTANGLE_ARB	0x84F6
 #define GL_PROXY_TEXTURE_RECTANGLE_ARB		0x84F7
 #define GL_MAX_RECTANGLE_TEXTURE_SIZE_ARB	0x84F8
+#endif
+
+#ifndef GL_VERSION_1_4
+#define GL_MAX_TEXTURE_LOD_BIAS				0x84FD
+#define GL_TEXTURE_FILTER_CONTROL			0x8500
+#define GL_TEXTURE_LOD_BIAS					0x8501
 #endif
 
 #ifndef GL_VERSION_1_5
