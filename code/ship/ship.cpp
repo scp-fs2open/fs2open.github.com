@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.360 $
- * $Date: 2006-08-03 01:33:56 $
- * $Author: Goober5000 $
+ * $Revision: 2.361 $
+ * $Date: 2006-08-09 17:50:15 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.360  2006/08/03 01:33:56  Goober5000
+ * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
+ * --Goober5000
+ *
  * Revision 2.359  2006/07/28 02:41:35  taylor
  * check first stage warp arrival against all docked objects so we can not render them all if even one is 1st stage
  *
@@ -8265,7 +8269,11 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		if (Fred_running){
 			swp->secondary_bank_ammo[i] = 100;
 		} else {
-			swp->secondary_bank_ammo[i] = sip->secondary_bank_ammo_capacity[i];
+			wip = &Weapon_info[swp->secondary_bank_weapons[i]];
+			float size = (float) wip->cargo_size;
+			swp->secondary_bank_ammo[i] = fl2i(sip->secondary_bank_ammo_capacity[i]/size);
+			// Karajorma - Support ships will use the wrong values if we don't set this. 
+			swp->secondary_bank_start_ammo[i] = swp->secondary_bank_ammo[i];
 		}
 
 		swp->secondary_bank_capacity[i] = sip->secondary_bank_ammo_capacity[i];
@@ -14642,7 +14650,8 @@ void ship_page_out_model_textures(int modelnum, int ship_index)
 	if (pm == NULL)
 		return;
 
-	for (i=0; i<pm->n_textures; i++) {
+	for (i=0; i<pm->n_textures; i++)
+	{
 		bitmap_num = pm->maps[i].base_map.texture;
 		if (bitmap_num >= 0)
 		{
