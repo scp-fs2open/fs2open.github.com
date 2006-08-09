@@ -10,13 +10,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.15 $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 1.16 $
+ * $Date: 2006-08-09 14:42:24 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 1.14  2006/03/22 18:14:52  taylor
  * if -mipmap is used with -img2dds to then have compressed image also contain mipmaps
  * use nicest hints for texture compression, should improve quality a little
@@ -197,7 +213,10 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ 1, 0, 1, { "GL_EXT_bgra" }, 0, { NULL } },
 
 	// cube map support (for environment maps, normal maps, bump maps, etc.)
-	{ 0, 0, 2, { "GL_ARB_texture_cube_map", "GL_EXT_texture_cube_map" }, 0, { NULL } }
+	{ 0, 0, 2, { "GL_ARB_texture_cube_map", "GL_EXT_texture_cube_map" }, 0, { NULL } },
+
+	// apply bias to level-of-detail lamda
+	{ 0, 0, 1, { "GL_EXT_texture_lod_bias" }, 0, { NULL } }
 };
 
 // ogl_funcion is:
