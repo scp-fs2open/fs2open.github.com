@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.48.2.9 $
- * $Date: 2006-08-09 14:40:43 $
+ * $Revision: 1.48.2.10 $
+ * $Date: 2006-08-12 13:14:45 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48.2.9  2006/08/09 14:40:43  taylor
+ * fix for setting of texture lod bias
+ *
  * Revision 1.48.2.8  2006/07/17 01:06:41  taylor
  * maybe this will finally shut-up some of the people who have complained about certain mipmap issues
  *
@@ -328,8 +331,8 @@ int GL_last_bitmap_type = -1;
 GLint GL_supported_texture_units = 2;
 int GL_should_preload = 0;
 ubyte GL_xlat[256];
-GLfloat GL_anisotropy = 0.0f;
-GLfloat GL_max_anisotropy = 0.0f;
+GLfloat GL_anisotropy = 1.0f;
+GLfloat GL_max_anisotropy = 2.0f;
 static int vram_full = 0;			// UnknownPlayer
 int GL_mipmap_filter = 0;
 GLenum GL_texture_target = GL_TEXTURE_2D;
@@ -394,9 +397,11 @@ GLfloat opengl_get_max_anisotropy()
 	if ( !Is_Extension_Enabled(OGL_EXT_TEXTURE_FILTER_ANISOTROPIC) )
 		return 0.0f;
 
-	if ( !GL_max_anisotropy ) {
+	if ( !GL_max_anisotropy )
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &GL_max_anisotropy);
-	}
+
+	// the spec says that it should be a minimum of 2.0
+	Assert( GL_max_anisotropy >= 2.0f );
 
 	return GL_max_anisotropy;
 }
@@ -404,31 +409,32 @@ GLfloat opengl_get_max_anisotropy()
 // setup anisotropic filtering if we can
 void opengl_set_anisotropy(GLfloat aniso_value)
 {
-	if ( !Is_Extension_Enabled(OGL_EXT_TEXTURE_FILTER_ANISOTROPIC) )
+	if ( !Is_Extension_Enabled(OGL_EXT_TEXTURE_FILTER_ANISOTROPIC) ) {
+		if ( Is_Extension_Enabled(OGL_EXT_TEXTURE_LOD_BIAS) )
+			glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, -0.75f);
+
 		return;
-
-	if ( !GL_max_anisotropy ) {
-		opengl_get_max_anisotropy();
 	}
 
-	if ( !GL_anisotropy ) {
-		char *plevel;
+	if (aniso_value != GL_anisotropy) {
+		if (aniso_value < 1.0f)
+			aniso_value = 1.0f;
 
-		plevel = os_config_read_string( NULL, NOX("OGL_AnisotropicFilter"), NOX("1.0") );
-		GL_anisotropy = (GLfloat)atof(plevel);
+		if (aniso_value > GL_max_anisotropy)
+			aniso_value = GL_max_anisotropy;
 
-		if ( GL_anisotropy < 1.0f ) {
-			GL_anisotropy = 1.0f;
-		} else if ( GL_anisotropy > GL_max_anisotropy ) {
-			GL_anisotropy = GL_max_anisotropy;
-		}
-	}
-
-	if ( (aniso_value >= 1.0f) && (aniso_value <= GL_max_anisotropy) ) {
-		glTexParameterf(GL_texture_target, GL_TEXTURE_MAX_ANISOTROPY_EXT, aniso_value);
 		GL_anisotropy = aniso_value;
-	} else {
-		glTexParameterf(GL_texture_target, GL_TEXTURE_MAX_ANISOTROPY_EXT, GL_anisotropy);
+	}
+
+	glTexParameterf(GL_texture_target, GL_TEXTURE_MAX_ANISOTROPY_EXT, GL_anisotropy);
+
+	if ( Is_Extension_Enabled(OGL_EXT_TEXTURE_LOD_BIAS) ) {
+		// if we don't appear to be using the aniso filter then use lod bias instead
+		if (GL_anisotropy < 2.0f)
+			glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, -0.75f);
+		// if we are using the aniso filter then set the lod bias to 0 to avoid shimmering so much
+		else
+			glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, 0.0f);
 	}
 }
 
@@ -520,18 +526,18 @@ void opengl_tcache_init()
 	int i;
 
 	// DDOI - FIXME skipped a lot of stuff here
-	GL_should_preload = 0;
+	GL_should_preload = 1;
 
-	//uint tmp_pl = os_config_read_uint( NULL, NOX("D3DPreloadTextures"), 255 );
+	/*uint tmp_pl = os_config_read_uint( NULL, NOX("D3DPreloadTextures"), 255 );
 	uint tmp_pl = 1;
 
-	if ( tmp_pl == 0 )      {
+	if ( tmp_pl == 0 )
 		GL_should_preload = 0;
-	} else if ( tmp_pl == 1 )       {
+	else if ( tmp_pl == 1 )
 		GL_should_preload = 1;
-	} else {
+	else
 		GL_should_preload = 1;
-	}
+	*/
 
 	GL_min_texture_width = 16;
 	GL_min_texture_height = 16;
@@ -547,22 +553,20 @@ void opengl_tcache_init()
 
 	GL_square_textures = 0;
 
-	if ( Textures == NULL ) {
+	if ( Textures == NULL )
 		Textures = (tcache_slot_opengl *)vm_malloc(MAX_BITMAPS*sizeof(tcache_slot_opengl));
-	}
 
-	if ( !Textures ) {
+	if ( !Textures )
 		Error(LOCATION, "Unable to allocate memory for OpenGL texture slots!");
-	}
+
 
 	memset( Textures, 0, MAX_BITMAPS * sizeof(tcache_slot_opengl) );
 
 	memset( Tex_used_this_frame, 0, MAX_BITMAPS * sizeof(ubyte) );
 
 	// Init the texture structures
-	for( i=0; i<MAX_BITMAPS; i++ )  {
+	for (i = 0; i < MAX_BITMAPS; i++)
 		Textures[i].bitmap_handle = -1;
-	}
 
 	// check what mipmap filter we should be using
 	//   0  ==  Bilinear
@@ -581,6 +585,21 @@ void opengl_tcache_init()
 			mprintf(("WARNING: Max dimensions of FBO, %ix%i, is less the required minimum!!  Extension will be disabled!\n", GL_max_renderbuffer_size, GL_max_renderbuffer_size));
 			GL_Extensions[OGL_EXT_FRAMEBUFFER_OBJECT].enabled = 0;
 		}
+	}
+
+	// anisotropy
+	if ( Is_Extension_Enabled(OGL_EXT_TEXTURE_FILTER_ANISOTROPIC) ) {
+		// set max value first thing
+		opengl_get_max_anisotropy();
+
+		// now for the user setting
+		char *plevel = os_config_read_string( NULL, NOX("OGL_AnisotropicFilter"), NOX("1.0") );
+		GL_anisotropy = (GLfloat) strtod(plevel, (char**)NULL);
+
+		if ( GL_anisotropy < 1.0f )
+			GL_anisotropy = 1.0f;
+		else if ( GL_anisotropy > GL_max_anisotropy )
+			GL_anisotropy = GL_max_anisotropy;
 	}
 
 	//GL_last_detail = Detail.hardware_textures;
@@ -1462,9 +1481,6 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 	//make sure texturing is on
 	opengl_switch_arb(stage, 1);
 
-	if ( Is_Extension_Enabled(OGL_EXT_TEXTURE_LOD_BIAS) )
-		glTexEnvf(GL_TEXTURE_FILTER_CONTROL, GL_TEXTURE_LOD_BIAS, -1.5f);
-
 	rc = gr_opengl_tcache_set_internal(bitmap_handle, bitmap_type, u_scale, v_scale, fail_on_full, force, stage);
 
 	// reset texture target to default
@@ -1484,26 +1500,23 @@ void gr_opengl_preload_init()
 
 int gr_opengl_preload(int bitmap_num, int is_aabitmap)
 {
-	if ( gr_screen.mode != GR_OPENGL) {
+	if (gr_screen.mode != GR_OPENGL)
 		return 0;
-	}
 
-	if ( !GL_should_preload )      {
+	if ( !GL_should_preload )
 		return 0;
-	}
 
 	float u_scale, v_scale;
-
 	int retval;
-	if ( is_aabitmap )      {
-		retval = gr_tcache_set(bitmap_num, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale, 1 );
-	} else {
-		retval = gr_tcache_set(bitmap_num, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 1 );
-	}
 
-	if ( !retval )  {
-		mprintf(("Texture upload failed!\n" ));
-	}
+	if ( is_aabitmap )
+		retval = gr_tcache_set( bitmap_num, TCACHE_TYPE_AABITMAP, &u_scale, &v_scale, 1 );
+	else
+		retval = gr_tcache_set( bitmap_num, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 1 );
+
+
+	if ( !retval )
+		mprintf(("Texture upload failed!\n"));
 
 	return retval;
 }

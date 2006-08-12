@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.h $
- * $Revision: 1.19.2.1 $
- * $Date: 2006-06-18 16:49:40 $
+ * $Revision: 1.19.2.2 $
+ * $Date: 2006-08-12 13:14:45 $
  * $Author: taylor $
  *
  * This file contains function and structure definitions
  * that are needed for managing texture mapping
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19.2.1  2006/06/18 16:49:40  taylor
+ * fix so that multiple FBOs can be used with different sizes (plus a few other minor adjustments)
+ *
  * Revision 1.19  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -184,6 +187,7 @@ extern ubyte GL_xlat[256];
 extern int GL_mipmap_filter;
 extern GLenum GL_texture_target;
 extern GLenum GL_texture_face;
+extern GLfloat GL_anisotropy;
 
 void opengl_tcache_init();
 void opengl_free_texture_slot(int n);
@@ -197,7 +201,7 @@ void gr_opengl_set_tex_env_scale(float scale);
 int gr_opengl_preload(int bitmap_num, int is_aabitmap);
 void gr_opengl_preload_init();
 GLfloat opengl_get_max_anisotropy();
-void opengl_set_anisotropy(GLfloat aniso_value = 0.0f);
+void opengl_set_anisotropy(GLfloat aniso_value = GL_anisotropy);
 void gr_opengl_set_texture_panning(float u, float v, bool enable);
 void gr_opengl_set_texture_addressing(int mode);
 void opengl_kill_render_target(int slot);
