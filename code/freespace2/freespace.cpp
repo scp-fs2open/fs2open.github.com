@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.13 $
- * $Date: 2006-08-06 18:47:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.243.2.14 $
+ * $Date: 2006-08-12 01:17:08 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.13  2006/08/06 18:47:12  Goober5000
+ * add the multiple background feature
+ * --Goober5000
+ *
  * Revision 2.243.2.12  2006/08/05 10:40:22  karajorma
  * Hopefully plug the possible memory leaks from not calling common_select_close() in red alerts and when exiting mission briefings
  *
@@ -3603,7 +3607,7 @@ void game_init()
 
 	if (!Is_standalone)
 	{
-		UserSampleRate = (ushort) os_config_read_uint(NULL, "SoundSampleRate", 22050);
+		UserSampleRate = (ushort) os_config_read_uint(NULL, "SoundSampleRate", 44100);
 		UserSampleBits = (ushort) os_config_read_uint(NULL, "SoundSampleBits", 16);
 		snd_init(use_a3d, use_eax, UserSampleRate, UserSampleBits);
 	}
