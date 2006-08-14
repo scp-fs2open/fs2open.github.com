@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-08-02 22:47:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2006-08-14 19:58:42 $
+ * $Author: karajorma $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/08/02 22:47:40  Goober5000
+ * fix display of ship copy class names in ship loadout screen
+ * --Goober5000
+ *
  * Revision 2.20  2005/12/29 08:08:39  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -1922,7 +1926,7 @@ void multi_ts_init_objnums()
 // get the proper team and slot index for the given ship name
 void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 {
-	int idx;//,s_idx;
+	int idx, wing_number;//,s_idx;
 
 	// set the return values to default values
 	*team_index = -1;
@@ -1936,10 +1940,15 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 			// get team (wing)
 			if (!strnicmp(ship_name, TVT_wing_names[idx], strlen(TVT_wing_names[idx])))
 			{
-				*team_index = idx;
+				wing_number = (ship_name[strlen(ship_name)-1] - '1');
 
-				// get slot (ship in wing)
-				*slot_index = (ship_name[strlen(ship_name)-1] - '1');
+				// Karajorma - Is this really a ship from the wing? Cause other things may start with the same name
+				if (wing_number > -1 && wing_number < 4) 
+				{
+					// get slot (ship in wing)
+					*slot_index = wing_number;
+					*team_index = idx;
+				}
 			}
 		}
 	} 
@@ -1951,12 +1960,18 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 			// get wing
 			if (!strnicmp(ship_name, Starting_wing_names[idx], strlen(Starting_wing_names[idx])))
 			{
-				wing = idx;
-				ship = (ship_name[strlen(ship_name)-1] - '1');
+				wing_number = (ship_name[strlen(ship_name)-1] - '1');
 
-				// team is 0, slot is the starting slot for all ships
-				*team_index = 0;
-				*slot_index = wing * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship;
+				// Karajorma - Again we need to check if this is a real member of this wing. 
+				if (wing_number > -1 && wing_number < 4) 
+				{
+					wing = idx;
+					ship = wing_number;
+
+					// team is 0, slot is the starting slot for all ships
+					*team_index = 0;
+					*slot_index = wing * MULTI_TS_NUM_SHIP_SLOTS_TEAM + ship;
+				}
 			}
 		}
 	}
