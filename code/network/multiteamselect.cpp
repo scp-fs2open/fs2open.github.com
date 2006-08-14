@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.22 $
- * $Date: 2006-08-14 19:58:42 $
- * $Author: karajorma $
+ * $Revision: 2.23 $
+ * $Date: 2006-08-14 22:02:41 $
+ * $Author: Goober5000 $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/08/14 19:58:42  karajorma
+ * Fix a Multiplayer bug where anything that included the name of a player wing was automatically considered to be a part of that wing.
+ *
  * Revision 2.21  2006/08/02 22:47:40  Goober5000
  * fix display of ship copy class names in ship loadout screen
  * --Goober5000
@@ -1943,7 +1946,7 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 				wing_number = (ship_name[strlen(ship_name)-1] - '1');
 
 				// Karajorma - Is this really a ship from the wing? Cause other things may start with the same name
-				if (wing_number > -1 && wing_number < 4) 
+				if (wing_number >= 0 && wing_number < MAX_SHIPS_PER_WING) 
 				{
 					// get slot (ship in wing)
 					*slot_index = wing_number;
@@ -1963,7 +1966,7 @@ void multi_ts_get_team_and_slot(char *ship_name,int *team_index,int *slot_index)
 				wing_number = (ship_name[strlen(ship_name)-1] - '1');
 
 				// Karajorma - Again we need to check if this is a real member of this wing. 
-				if (wing_number > -1 && wing_number < 4) 
+				if (wing_number >= 0 && wing_number < MAX_SHIPS_PER_WING) 
 				{
 					wing = idx;
 					ship = wing_number;
