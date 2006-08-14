@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.82 $
- * $Date: 2006-07-26 03:44:17 $
- * $Author: Kazan $
+ * $Revision: 1.83 $
+ * $Date: 2006-08-14 21:59:14 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.82  2006/07/26 03:44:17  Kazan
+ * Resolve Mantis #1010
+ *
  * Revision 1.81  2006/07/09 01:55:41  Goober5000
  * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
  * this should fix Mantis #977
@@ -16208,34 +16211,40 @@ void cheat_fire_synaptic(object *objp, ship *shipp, ai_info *aip)
 //						fire a synaptic if they have one.
 void maybe_cheat_fire_synaptic(object *objp, ai_info *aip)
 {
+	//	Only do in subspace missions.
+	if (!(The_mission.flags & MISSION_FLAG_SUBSPACE))
+		return;
+
 	//	Only do in sm3-09a
-	if ( !strcmp(The_mission.name, "Good Luck") )	{
+	if (!stricmp(Game_current_mission_filename, "sm3-09a"))
+	{
 		ship	*shipp;
-		int	num, time;
+		int	wing_index, time;
 
 		shipp = &Ships[objp->instance];
 
-		if (!(strnicmp(shipp->ship_name, NOX("delta"), 5))) {
-			num = shipp->ship_name[6] - '1';
+		if (!(strnicmp(shipp->ship_name, NOX("delta"), 5)))
+		{
+			wing_index = shipp->ship_name[6] - '1';
 
-			if ((num >= 0) && (num <= 3)) {
+			if ((wing_index >= 0) && (wing_index < MAX_SHIPS_PER_WING))
+			{
 				time = Missiontime >> 16;	//	Convert to seconds.
+				time -= 2*60;				//	Subtract off two minutes.
 
-				time -= 2*60;	//	Subtract off two minutes.
+				if (time > 0)
+				{
+					int modulus = 17 + wing_index*3;
 
-				if (time > 0) {
-					int modulus = 17 + num*3;
-
-					if ((time % modulus) < 2) {
+					if ((time % modulus) < 2)
+					{
 						int count = num_nearby_fighters(iff_get_attackee_mask(obj_team(objp)), &objp->pos, 1500.0f);
 
-						if (count > 0) {
+						if (count > 0)
 							cheat_fire_synaptic(objp, shipp, aip);
-						}
 					}
 				}
 			}
 		}
 	}
-
 }
