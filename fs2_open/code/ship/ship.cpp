@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.361 $
- * $Date: 2006-08-09 17:50:15 $
+ * $Revision: 2.362 $
+ * $Date: 2006-08-15 20:00:51 $
  * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.361  2006/08/09 17:50:15  karajorma
+ * Fix Mantis 1009 - A problem with using the Change-ship-model SEXP
+ *
  * Revision 2.360  2006/08/03 01:33:56  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
@@ -3026,7 +3029,7 @@ int parse_ship(bool replace)
 	if(optional_string("$Warpout speed:"))
 	{
 		stuff_float(&sip->warpout_speed);
-		if(sip->warpin_speed == 0.0f) {
+		if(sip->warpout_speed == 0.0f) {
 			Warning(LOCATION, "Warp-out speed specified as 0 on ship '%s'; value ignored", sip->name);
 		}
 	}
