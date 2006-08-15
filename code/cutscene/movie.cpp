@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-07-13 22:15:02 $
- * $Author: taylor $
+ * $Revision: 2.34 $
+ * $Date: 2006-08-15 00:26:07 $
+ * $Author: Backslash $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/07/13 22:15:02  taylor
+ * handle non-MVE movies a bit better in OpenGL (don't get freaky with the window, don't lose input, etc.)
+ * some cleanup to OpenGL window handling, to fix min/max/full issues, and try to make shutdown a little nicer
+ *
  * Revision 2.32  2006/06/27 05:07:48  taylor
  * fix various compiler warnings and things that Valgrind complained about
  *
@@ -108,8 +112,8 @@ int movie_find(char *filename, char *out_name)
 	char tmp_name[MAX_PATH];
 	char search_name[MAX_PATH];
 	int i, size, offset = 0;
-	const int NUM_EXT = 2;
-	const char *movie_ext[NUM_EXT] = { ".avi", ".mpg" };
+	const int NUM_EXT = 3;
+	const char *movie_ext[NUM_EXT] = { ".avi", ".mpg", ".ogg" };
 
 	if (out_name == NULL) {
 		return 0;
