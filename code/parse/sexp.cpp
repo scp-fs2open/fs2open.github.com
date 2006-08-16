@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.277 $
- * $Date: 2006-08-15 19:25:57 $
+ * $Revision: 2.278 $
+ * $Date: 2006-08-16 16:47:55 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.277  2006/08/15 19:25:57  karajorma
+ * Fixed a typo which breaks team-score
+ *
  * Revision 2.276  2006/08/06 19:24:56  Goober5000
  * deprecate change-ship-model
  *
@@ -5819,7 +5822,8 @@ int sexp_team_score(int node)
 
 			int team = eval_num(node);
 
-			if (team < 0 || team > Num_teams)
+			// Teams can only be 1 or 2 at the moment but we should use Num_teams in case more become possible in the future
+			if (team <= 0 || team > Num_teams)
 			{
 				// invalid team index
 				Warning(LOCATION, "sexp-team-score: team %d is not a valid team #", team);
