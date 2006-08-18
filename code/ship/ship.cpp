@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.362 $
- * $Date: 2006-08-15 20:00:51 $
- * $Author: karajorma $
+ * $Revision: 2.363 $
+ * $Date: 2006-08-18 04:34:54 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.362  2006/08/15 20:00:51  karajorma
+ * Another typo
+ *
  * Revision 2.361  2006/08/09 17:50:15  karajorma
  * Fix Mantis 1009 - A problem with using the Change-ship-model SEXP
  *
@@ -11910,7 +11913,14 @@ int ship_do_rearm_frame( object *objp, float frametime )
 					// loading equipment moving into place
 					if ( aip->rearm_first_ballistic_primary == TRUE )
 					{
-						swp->primary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[SND_BALLISTIC_START_LOAD].id));			
+						// Goober5000
+						int sound_index;
+						if (Snds[SND_BALLISTIC_START_LOAD].id >= 0)
+							sound_index = SND_BALLISTIC_START_LOAD;
+						else
+							sound_index = SND_MISSILE_START_LOAD;
+
+						swp->primary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[sound_index].id));			
 
 						if (i == swp->num_primary_banks - 1) 
 							aip->rearm_first_ballistic_primary = FALSE;
@@ -11930,7 +11940,14 @@ int ship_do_rearm_frame( object *objp, float frametime )
 							rearm_time = Weapon_info[swp->primary_bank_weapons[i]].rearm_rate;
 							swp->primary_bank_rearm_time[i] = timestamp( (int)(rearm_time * 1000.f) );
 	
-							snd_play_3d( &Snds[SND_BALLISTIC_LOAD], &objp->pos, &View_position );
+							// Goober5000
+							int sound_index;
+							if (Snds[SND_BALLISTIC_LOAD].id >= 0)
+								sound_index = SND_BALLISTIC_LOAD;
+							else
+								sound_index = SND_MISSILE_LOAD;
+
+							snd_play_3d( &Snds[sound_index], &objp->pos, &View_position );
 
 								/* don't provide force feedback for primary ballistics loading
 								if (objp == Player_obj)
@@ -11956,7 +11973,16 @@ int ship_do_rearm_frame( object *objp, float frametime )
 				}
 
 				if ((aip->rearm_first_ballistic_primary == TRUE) && (i == swp->num_primary_banks - 1) && (primary_banks_full != swp->num_primary_banks))
-					snd_play_3d( &Snds[SND_BALLISTIC_START_LOAD], &objp->pos, &View_position );
+				{
+					// Goober5000
+					int sound_index;
+					if (Snds[SND_BALLISTIC_START_LOAD].id >= 0)
+						sound_index = SND_BALLISTIC_START_LOAD;
+					else
+						sound_index = SND_MISSILE_START_LOAD;
+
+					snd_play_3d( &Snds[sound_index], &objp->pos, &View_position );
+				}
 			}	// end for
 		}	// end if - rearm ballistic primaries
 	} // end if (subsys_all_ok)
