@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.363 $
- * $Date: 2006-08-18 04:34:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.364 $
+ * $Date: 2006-08-18 18:07:03 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.363  2006/08/18 04:34:54  Goober5000
+ * better handling of ballistic rearm sounds
+ * --Goober5000
+ *
  * Revision 2.362  2006/08/15 20:00:51  karajorma
  * Another typo
  *
@@ -3007,7 +3011,7 @@ int parse_ship(bool replace)
 	if(optional_string("$Warpin radius:"))
 	{
 		stuff_float(&sip->warpin_radius);
-		if(sip->warpin_speed <= 0.0f) {
+		if(sip->warpin_radius <= 0.0f) {
 			Warning(LOCATION, "Warp-in radius specified as 0 or less on ship '%s'; value ignored", sip->name);
 		}
 	}
@@ -5916,7 +5920,7 @@ void ship_render(object * obj)
 
 
 	memset( &dfi, 0, sizeof(dock_function_info) );
- 
+
 	// look for a warping ship, whether for me or for anybody I'm docked with
 	dock_evaluate_all_docked_objects(obj, &dfi, ship_find_warping_ship_helper);
 
@@ -5926,6 +5930,7 @@ void ship_render(object * obj)
 
 		is_first_stage_arrival = ((warp_shipp->flags & SF_ARRIVING_STAGE_1) > 0);
 	}
+
 
 	// Make ships that are warping in not render during stage 1
 	//WMC - Or limbo.
