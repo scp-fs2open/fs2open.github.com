@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.4 $
- * $Date: 2006-08-18 17:21:10 $
+ * $Revision: 2.66.2.5 $
+ * $Date: 2006-08-18 17:48:39 $
  * $Author: karajorma $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.4  2006/08/18 17:21:10  karajorma
+ * More cut & paste errors fixed and removal of the hardcoded warp out animation. Will now actually use the one specified in the table.
+ *
  * Revision 2.66.2.3  2006/07/21 05:41:07  Goober5000
  * add another method for calculating dimensions of docked objects, plus improve an existing one
  * --Goober5000
@@ -1581,12 +1584,12 @@ void shipfx_warpout_frame( object *objp, float frametime )
 		return;
 	}
 
-	if(sip->warpin_type == WT_IN_PLACE_ANIM)
+	if(sip->warpout_type == WT_IN_PLACE_ANIM)
 	{
 		//WMC - This is handled by code in ship_render
 
-		//WMC - ship appears after warpout_speed milliseconds
-		if ( timestamp_elapsed(shipp->start_warp_time + sip->warpout_speed )) {
+		//WMC - ship appears after warpout_time milliseconds
+		if ( timestamp_elapsed(shipp->start_warp_time + sip->warpout_time )) {
 			shipfx_actually_warpout(shipp,objp);
 		}
 
