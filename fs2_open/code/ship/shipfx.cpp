@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.72 $
- * $Date: 2006-07-21 05:41:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.73 $
+ * $Date: 2006-08-18 18:07:03 $
+ * $Author: karajorma $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2006/07/21 05:41:10  Goober5000
+ * add another method for calculating dimensions of docked objects, plus improve an existing one
+ * --Goober5000
+ *
  * Revision 2.71  2006/07/09 01:55:41  Goober5000
  * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
  * this should fix Mantis #977
@@ -1133,7 +1137,7 @@ void shipfx_warpin_start( object *objp )
 	else if (sip->warpin_type == WT_IN_PLACE_ANIM)
 	{
 		if(shipp->warp_anim < 0)
-			shipp->warp_anim = bm_load_animation("ftl", &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
+			shipp->warp_anim = bm_load_animation(sip->warpin_anim, &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
 
 		//WMC - bail
 		if (shipp->warp_anim < 0)
@@ -1482,7 +1486,7 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	if(sip->warpout_type == WT_IN_PLACE_ANIM) {
-		shipp->warp_anim = bm_load_animation(sip->warpin_anim, &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
+		shipp->warp_anim = bm_load_animation(sip->warpout_anim, &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
 		shipp->start_warp_time = timestamp();
 		int total_time = fl2i(((float)shipp->warp_anim_nframes / (float)shipp->warp_anim_fps) * 1000.0f);
 		shipp->final_warp_time = timestamp(total_time);
@@ -1597,7 +1601,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 	{
 		//WMC - This is handled by code in ship_render
 
-		//WMC - ship appears after warpout_speed milliseconds
+		//WMC - ship appears after warpout_time milliseconds
 		if ( timestamp_elapsed(shipp->start_warp_time + sip->warpout_time )) {
 			shipfx_actually_warpout(shipp,objp);
 /*
