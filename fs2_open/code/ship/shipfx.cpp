@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.3 $
- * $Date: 2006-07-21 05:41:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.66.2.4 $
+ * $Date: 2006-08-18 17:21:10 $
+ * $Author: karajorma $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.3  2006/07/21 05:41:07  Goober5000
+ * add another method for calculating dimensions of docked objects, plus improve an existing one
+ * --Goober5000
+ *
  * Revision 2.66.2.2  2006/07/05 23:36:56  Goober5000
  * cvs comment tweaks
  *
@@ -1119,7 +1123,7 @@ void shipfx_warpin_start( object *objp )
 	else if (sip->warpin_type == WT_IN_PLACE_ANIM)
 	{
 		if(shipp->warp_anim < 0)
-			shipp->warp_anim = bm_load_animation("ftl", &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
+			shipp->warp_anim = bm_load_animation(sip->warpin_anim, &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
 
 		//WMC - bail
 		if (shipp->warp_anim < 0)
@@ -1467,7 +1471,7 @@ void shipfx_warpout_start( object *objp )
 	}
 
 	if(sip->warpout_type == WT_IN_PLACE_ANIM) {
-		shipp->warp_anim = bm_load_animation(sip->warpin_anim, &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
+		shipp->warp_anim = bm_load_animation(sip->warpout_anim, &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
 		shipp->start_warp_time = timestamp();
 		int total_time = fl2i(((float)shipp->warp_anim_nframes / (float)shipp->warp_anim_fps) * 1000.0f);
 		shipp->final_warp_time = timestamp(total_time);
