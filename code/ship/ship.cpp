@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.24 $
- * $Date: 2006-08-18 04:34:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.336.2.25 $
+ * $Date: 2006-08-18 17:21:10 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.24  2006/08/18 04:34:59  Goober5000
+ * better handling of ballistic rearm sounds
+ * --Goober5000
+ *
  * Revision 2.336.2.23  2006/08/15 19:58:34  karajorma
  * Another typo
  *
@@ -2996,7 +3000,7 @@ int parse_ship(bool replace)
 	if(optional_string("$Warpin radius:"))
 	{
 		stuff_float(&sip->warpin_radius);
-		if(sip->warpin_speed <= 0.0f) {
+		if(sip->warpin_radius <= 0.0f) {
 			Warning(LOCATION, "Warp-in radius specified as 0 or less on ship '%s'; value ignored", sip->name);
 		}
 	}
