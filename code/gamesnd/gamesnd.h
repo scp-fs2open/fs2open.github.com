@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.15 $
- * $Date: 2005-09-25 08:25:15 $
+ * $Revision: 2.16 $
+ * $Date: 2006-08-18 04:34:54 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2005/09/25 08:25:15  Goober5000
+ * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
+ * --Goober5000
+ *
  * Revision 2.14  2005/09/25 05:13:06  Goober5000
  * hopefully complete species upgrade
  * --Goober5000
@@ -417,7 +421,7 @@ void common_play_highlight_sound();
 
 
 // match original values by default, grow from this
-#define MIN_GAME_SOUNDS					200
+#define MIN_GAME_SOUNDS					202
 #define MIN_INTERFACE_SOUNDS			70
 
 extern int Num_game_sounds;
@@ -586,10 +590,6 @@ extern game_snd *Snds_iface;
 // copilot
 #define	SND_COPILOT							162
 
-// added for ballistic primaries - Goober5000
-#define	SND_BALLISTIC_START_LOAD		171
-#define	SND_BALLISTIC_LOAD				172
-
 // supernova 1 and supernova 2
 #define	SND_SUPERNOVA_1					173
 #define	SND_SUPERNOVA_2					174
@@ -597,6 +597,10 @@ extern game_snd *Snds_iface;
 // lightning sounds
 #define	SND_LIGHTNING_1					180
 #define	SND_LIGHTNING_2					181
+
+// added for ballistic primaries - Goober5000
+#define	SND_BALLISTIC_START_LOAD		200
+#define	SND_BALLISTIC_LOAD				201
 
 //---------------------------------------------------
 // Interface sounds
