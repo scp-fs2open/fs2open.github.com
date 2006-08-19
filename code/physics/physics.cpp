@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.16 $
- * $Date: 2006-04-20 06:32:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.16.2.1 $
+ * $Date: 2006-08-19 04:38:47 $
+ * $Author: taylor $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/04/20 06:32:23  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.15  2006/02/25 21:47:07  Goober5000
  * spelling
  *
@@ -635,8 +638,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 		float	max_speed;
 
 		max_speed = vm_vec_mag_quick(&pi->max_vel);
-		tangles.p += (float) (rand()-RAND_MAX/2)/RAND_MAX * pi->speed/max_speed/64.0f;
-		tangles.h += (float) (rand()-RAND_MAX/2)/RAND_MAX * pi->speed/max_speed/64.0f;
+		tangles.p += (float) (rand()-RAND_MAX_2)/RAND_MAX * pi->speed/max_speed/64.0f;
+		tangles.h += (float) (rand()-RAND_MAX_2)/RAND_MAX * pi->speed/max_speed/64.0f;
 		if ( pi->flags & PF_AFTERBURNER_ON ) {
 			pi->afterburner_decay = timestamp(ABURN_DECAY_TIME);
 		}
@@ -645,8 +648,8 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 
 	// Make ship shake due to shockwave, decreasing in amplitude at the end of the shockwave
 	if ( pi->flags & PF_IN_SHOCKWAVE ) {
-		tangles.p += (float) (myrand()-RAND_MAX/2)/RAND_MAX * shock_amplitude;
-		tangles.h += (float) (myrand()-RAND_MAX/2)/RAND_MAX * shock_amplitude;
+		tangles.p += (float) (myrand()-RAND_MAX_2)/RAND_MAX * shock_amplitude;
+		tangles.h += (float) (myrand()-RAND_MAX_2)/RAND_MAX * shock_amplitude;
 	}
 
 

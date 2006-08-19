@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.105.2.9 $
- * $Date: 2006-07-21 16:08:32 $
+ * $Revision: 2.105.2.10 $
+ * $Date: 2006-08-19 04:38:47 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105.2.9  2006/07/21 16:08:32  taylor
+ * minor changes to game_busy() debug text
+ *  - don't alloc it for bmpman, and make sure to only call on textures that we are loading
+ *  - add text for model loading, gets rid of the long-wait issue when it appears to not be doing anything early on
+ *
  * Revision 2.105.2.8  2006/07/17 01:09:45  taylor
  * make glow point banks dynamic
  *
@@ -4153,8 +4158,8 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	float offset_base_h = 0.0f;
 	float offset_barrel_h = 0.0f;
 #ifdef WMC_SIDE_TURRETS
-	offset_base_h = -PI/2.0f;
-	offset_barrel_h = -PI/2.0f;
+	offset_base_h = -PI_2;
+	offset_barrel_h = -PI_2;
 #endif
 
 	model_clear_instance(model_num);
@@ -4162,13 +4167,13 @@ void model_make_turret_matrix(int model_num, model_subsystem * turret )
 	gun->angs.h = offset_barrel_h;
 	model_find_world_dir(&fvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
 
-	base->angs.h = -PI/2.0f + offset_base_h;
-	gun->angs.p = -PI/2.0f;
+	base->angs.h = -PI_2 + offset_base_h;
+	gun->angs.p = -PI_2;
 	gun->angs.h = offset_barrel_h;
 	model_find_world_dir(&rvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
 
 	base->angs.h = 0.0f + offset_base_h;
-	gun->angs.p = -PI/2.0f;
+	gun->angs.p = -PI_2;
 	gun->angs.h = offset_barrel_h;
 	model_find_world_dir(&uvec, &turret->turret_norm, model_num, turret->turret_gun_sobj, &vmd_identity_matrix, NULL );
 									

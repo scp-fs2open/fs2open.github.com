@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.42.2.1 $
- * $Date: 2006-06-07 03:19:20 $
- * $Author: wmcoolmon $
- * $Revision: 2.42.2.1 $
- * $Date: 2006-06-07 03:19:20 $
- * $Author: wmcoolmon $
+ * $Revision: 2.42.2.2 $
+ * $Date: 2006-08-19 04:38:46 $
+ * $Author: taylor $
+ * $Revision: 2.42.2.2 $
+ * $Date: 2006-08-19 04:38:46 $
+ * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42.2.1  2006/06/07 03:19:20  wmcoolmon
+ * Scripting system prep for 3.6.9
+ *
  * Revision 2.43  2006/06/07 03:17:55  wmcoolmon
  * Scripting system prep for 3.6.9
  *
@@ -643,8 +646,13 @@ void gr_activate(int);
 #endif
 
 
-#define PI					3.141592654f
-#define PI2					(3.141592654f*2.0f)	// PI*2
+#define PI				3.141592654f
+// twice values
+const float PI2			= (PI*2.0f);
+// half values
+const float PI_2		= (PI/2.0f);
+const int RAND_MAX_2	= (RAND_MAX/2);
+
 #define ANG_TO_RAD(x)	((x)*PI/180)
 
 

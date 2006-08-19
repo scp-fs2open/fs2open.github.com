@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.3 $
- * $Date: 2006-07-02 22:50:03 $
- * $Author: karajorma $
+ * $Revision: 2.87.2.4 $
+ * $Date: 2006-08-19 04:38:46 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.3  2006/07/02 22:50:03  karajorma
+ * Restore the Hostile Warning triangles and the "On your Six" warning messages.
+ *
  * Revision 2.87.2.2  2006/06/24 18:02:02  Goober5000
  * doh!  sorry for blaming this on you, WMC
  * --Goober5000
@@ -3215,13 +3218,13 @@ void hud_render_orientation_tee(object *from_objp, object *to_objp, matrix *from
 
 	if (vm_vec_dotprod(&from_orientp->vec.rvec, &target_to_obj) >= 0) {
 		if (dot_product >= 0){
-			dot_product = -PI/2*dot_product + PI;
+			dot_product = -PI_2*dot_product + PI;
 		} else {
-			dot_product = -PI/2*dot_product - PI;
+			dot_product = -PI_2*dot_product - PI;
 		}
 	}
 	else {
-		dot_product *= PI/2; //(range is now -PI/2 => PI/2)
+		dot_product *= PI_2; //(range is now -PI/2 => PI/2)
 	}
 
 	y1 = (float)sin(dot_product) * (Outer_circle_radius[gr_screen.res] - T_OFFSET_FROM_CIRCLE);
