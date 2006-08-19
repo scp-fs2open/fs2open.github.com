@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.190 $
- * $Date: 2006-08-06 18:47:29 $
+ * $Revision: 2.191 $
+ * $Date: 2006-08-19 21:46:05 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.190  2006/08/06 18:47:29  Goober5000
+ * add the multiple background feature
+ * --Goober5000
+ *
  * Revision 2.189  2006/07/30 20:01:56  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
@@ -3750,7 +3754,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	// texture replacement - Goober5000
 	p_objp->num_texture_replacements = 0;
-	if (optional_string("$Texture Replace:"))
+	if (optional_string("$Texture Replace:") || (optional_string("$Duplicate Model Texture Replace:"))
 	{
 		char *p;
 
@@ -3798,7 +3802,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// duplicate model texture replacement - Goober5000
-	else if (optional_string("$Duplicate Model Texture Replace:"))
+	else if (false) //(optional_string("$Duplicate Model Texture Replace:"))
 	{
 		if (p_objp->num_texture_replacements > 0)	// because of the else, not allowed to happen any more
 		{
