@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.22 $
- * $Date: 2006-08-06 18:47:29 $
+ * $Revision: 1.23 $
+ * $Date: 2006-08-19 21:46:05 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2006/08/06 18:47:29  Goober5000
+ * add the multiple background feature
+ * --Goober5000
+ *
  * Revision 1.21  2006/07/13 06:11:52  Goober5000
  * * better formatting for substitute music options
  * * better handling of all special FSO comment tags
@@ -1984,10 +1988,10 @@ int CFred_mission_save::save_objects()
 						// more determining
 						else if (Fred_texture_replacements[k].new_texture_id == FRED_DUPLICATE_MODEL_TEXTURE_REPLACE)
 						{
-							if (optional_string_fred("$Duplicate Model Texture Replace:", "$Name:"))
+							if (optional_string_fred("$Texture Replace:", "$Name:"))
 								parse_comments();
 							else
-								fout("\n$Duplicate Model Texture Replace:");
+								fout("\n$Texture Replace:");
 						}
 						// no match? bug...
 						else
