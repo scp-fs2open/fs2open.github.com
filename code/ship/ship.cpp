@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.364 $
- * $Date: 2006-08-18 18:07:03 $
- * $Author: karajorma $
+ * $Revision: 2.365 $
+ * $Date: 2006-08-19 21:45:18 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.364  2006/08/18 18:07:03  karajorma
+ * More cut & paste errors fixed and removal of the hardcoded warp out animation. Will now actually use the one specified in the table.
+ *
  * Revision 2.363  2006/08/18 04:34:54  Goober5000
  * better handling of ballistic rearm sounds
  * --Goober5000
@@ -2721,10 +2724,6 @@ int parse_ship(bool replace)
 	int rtn = 0;
 	char name_tmp[NAME_LENGTH];
 
-	//	Defaults!
-	//	These should be specified in ships.tbl eventually!
-	//	End of defaults.
-
 	required_string("$Name:");
 	stuff_string(buf, F_NAME, NULL);
 
@@ -2868,11 +2867,24 @@ int parse_ship(bool replace)
 		stuff_malloc_string(&sip->missile_banks, F_MESSAGE);
 	}
 
-
 	// End code by SS
 
-	if(optional_string( "$POF file:" )) {
-		stuff_string( sip->pof_file, F_NAME, NULL );
+	if(optional_string( "$POF file:" ))
+	{
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NULL);
+
+		// assume we're using this file name
+		bool valid = true;
+
+		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
+		if (replace)
+			if (strlen(sip->pof_file) > 0)
+				if (!cf_exists_full(temp, CF_TYPE_MODELS))
+					valid = false;
+
+		if (valid)
+			strcpy(sip->pof_file, temp);
 	}
 
 	// optional hud targeting model
