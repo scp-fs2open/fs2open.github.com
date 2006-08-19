@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.12 $
- * $Date: 2006-08-19 04:38:46 $
- * $Author: taylor $
+ * $Revision: 2.178.2.13 $
+ * $Date: 2006-08-19 21:46:02 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.12  2006/08/19 04:38:46  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.178.2.11  2006/08/06 18:47:12  Goober5000
  * add the multiple background feature
  * --Goober5000
@@ -3627,7 +3630,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	// texture replacement - Goober5000
 	p_objp->num_texture_replacements = 0;
-	if (optional_string("$Texture Replace:"))
+	if (optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:"))
 	{
 		char *p;
 
@@ -3675,7 +3678,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	}
 
 	// duplicate model texture replacement - Goober5000
-	else if (optional_string("$Duplicate Model Texture Replace:"))
+	else if (false) //(optional_string("$Duplicate Model Texture Replace:"))
 	{
 		if (p_objp->num_texture_replacements > 0)	// because of the else, not allowed to happen any more
 		{

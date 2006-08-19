@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.6 $
- * $Date: 2006-08-06 18:47:12 $
+ * $Revision: 1.14.2.7 $
+ * $Date: 2006-08-19 21:46:02 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.6  2006/08/06 18:47:12  Goober5000
+ * add the multiple background feature
+ * --Goober5000
+ *
  * Revision 1.14.2.5  2006/07/20 00:41:25  Goober5000
  * add WCS screaming stuff to RC branch
  * --Goober5000
@@ -1903,10 +1907,10 @@ int CFred_mission_save::save_objects()
 						// more determining
 						else if (Fred_texture_replacements[k].new_texture_id == FRED_DUPLICATE_MODEL_TEXTURE_REPLACE)
 						{
-							if (optional_string_fred("$Duplicate Model Texture Replace:", "$Name:"))
+							if (optional_string_fred("$Texture Replace:", "$Name:"))
 								parse_comments();
 							else
-								fout("\n$Duplicate Model Texture Replace:");
+								fout("\n$Texture Replace:");
 						}
 						// no match? bug...
 						else
