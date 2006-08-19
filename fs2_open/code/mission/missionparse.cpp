@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.11 $
- * $Date: 2006-08-06 18:47:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.178.2.12 $
+ * $Date: 2006-08-19 04:38:46 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.11  2006/08/06 18:47:12  Goober5000
+ * add the multiple background feature
+ * --Goober5000
+ *
  * Revision 2.178.2.10  2006/07/30 20:00:47  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
@@ -6477,13 +6481,13 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			//x = cos(angle)
 			x = (float)cos(ANG_TO_RAD(45));
 			if ( Game_mode & GM_NORMAL ) {
-				r1 = rand() < RAND_MAX/2 ? -1 : 1;
-				r2 = rand() < RAND_MAX/2 ? -1 : 1;
+				r1 = rand() < RAND_MAX_2 ? -1 : 1;
+				r2 = rand() < RAND_MAX_2 ? -1 : 1;
 			} else {
 				// in multiplayer, use the static rand functions so that all clients can get the
 				// same information.
-				r1 = static_rand(Objects[objnum].net_signature) < RAND_MAX/2 ? -1 : 1;
-				r2 = static_rand(Objects[objnum].net_signature+1) < RAND_MAX/2 ? -1 : 1;
+				r1 = static_rand(Objects[objnum].net_signature) < RAND_MAX_2 ? -1 : 1;
+				r2 = static_rand(Objects[objnum].net_signature+1) < RAND_MAX_2 ? -1 : 1;
 			}
 
 			vm_vec_copy_scale(&t1, &(Objects[anchor_objnum].orient.vec.fvec), x);
