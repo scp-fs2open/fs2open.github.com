@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/src/cutscene/decoder16.cpp $
- * $Revision: 2.1 $
- * $Date: 2006-05-13 06:59:48 $
+ * $Revision: 2.2 $
+ * $Date: 2006-08-20 00:44:36 $
  * $Author: taylor $
  *
  * decoder for 16-bit MVE image data
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2006/05/13 06:59:48  taylor
+ * MVE player (audio only works with OpenAL builds!)
+ *
  *
  * $NoKeywords: $
  *
@@ -60,22 +63,8 @@ void decodeFrame16(unsigned char *pFrame, unsigned char *pMap, int mapRemain, un
 			op = (*pMap) & 0xf;
 			dispatchDecoder16((ushort **)&pFrame, op, &pData, &pOffData, &dataRemain, &i, &j);
 
-/*
-			if ((ushort *)pFrame < backBuf1)
-				fprintf(stderr, "danger!  pointing out of bounds below after dispatch decoder: %d, %d (1) [%x]\n", i, j, (*pMap) & 0xf);
-			else if ((ushort *)pFrame >= backBuf1 + g_width*g_height)
-				fprintf(stderr, "danger!  pointing out of bounds above after dispatch decoder: %d, %d (1) [%x]\n", i, j, (*pMap) & 0xf);
-*/
-
 			op = ((*pMap) >> 4) & 0xf;
 			dispatchDecoder16((ushort **)&pFrame, op, &pData, &pOffData, &dataRemain, &i, &j);
-
-/*
-			if ((ushort *)pFrame < backBuf1)
-				fprintf(stderr, "danger!  pointing out of bounds below after dispatch decoder: %d, %d (2) [%x]\n", i, j, (*pMap) >> 4);
-			else if ((ushort *)pFrame >= backBuf1 + g_width*g_height)
-				fprintf(stderr, "danger!  pointing out of bounds above after dispatch decoder: %d, %d (2) [%x]\n", i, j, (*pMap) >> 4);
-*/
 
 			pMap++;
 			mapRemain--;

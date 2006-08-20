@@ -305,6 +305,10 @@ SOURCE=..\..\code\cutscene\decoder16.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\cutscene\decoder8.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\cutscene\movie.cpp
 # End Source File
 # Begin Source File

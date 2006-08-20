@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/mveplayer.cpp $
- * $Revision: 2.1 $
- * $Date: 2006-05-13 06:59:48 $
+ * $Revision: 2.2 $
+ * $Date: 2006-08-20 00:44:36 $
  * $Author: taylor $
  *
  * MVE movie playing routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2006/05/13 06:59:48  taylor
+ * MVE player (audio only works with OpenAL builds!)
+ *
  *
  * $NoKeywords: $
  */
@@ -38,8 +41,6 @@ extern int Cmdline_noscalevid;
 static int mve_playing;
 
 // timer variables
-static int g_spdFactorNum = 0;
-static int g_spdFactorDenom = 10;
 static int micro_frame_delay = 0;
 static int timer_started = 0;
 #ifdef SCP_UNIX
@@ -85,9 +86,10 @@ ushort *pixelbuf = NULL;
 static GLuint GLtex = 0;
 static int g_screenWidth, g_screenHeight;
 static int g_screenX, g_screenY;
+static int g_truecolor = 0;
 static ubyte g_palette[768];
-static ubyte *g_pCurMap=NULL;
-static int g_nMapLength=0;
+static ubyte *g_pCurMap = NULL;
+static int g_nMapLength = 0;
 static int videobuf_created, video_inited;
 static int hp2, wp2;
 static uint mve_video_skiptimer = 0;
@@ -96,8 +98,9 @@ static int mve_scale_video = 0;
 // video externs from API graphics functions
 extern void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out);
 
-// the decoder
+// the decoders
 extern void decodeFrame16(ubyte *pFrame, ubyte *pMap, int mapRemain, ubyte *pData, int dataRemain);
+extern void decodeFrame8(ubyte *pFrame, ubyte *pMap, int mapRemain, ubyte *pData, int dataRemain);
 
 
 /*************************
@@ -114,16 +117,10 @@ void mve_end_movie()
 
 int mve_timer_create(ubyte *data)
 {
-	longlong temp;
+	int rate = mve_get_int(data);
+	int subd = mve_get_short(data+4);
 
-	micro_frame_delay = mve_get_int(data) * (int)mve_get_short(data+4);
-
-	if (g_spdFactorNum != 0) {
-		temp = micro_frame_delay;
-		temp *= g_spdFactorNum;
-		temp /= g_spdFactorDenom;
-		micro_frame_delay = (int)temp;
-	}
+	micro_frame_delay = rate * subd;
 
 	return 1;
 }
@@ -447,13 +444,13 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 	short count, truecolor;
 	w = mve_get_short(data);
 	h = mve_get_short(data+2);
-	
+
 	if (minor > 0) {
 		count = mve_get_short(data+4);
 	} else {
 		count = 1;
 	}
-	
+
 	if (minor > 1) {
 		truecolor = mve_get_short(data+6);
 	} else {
@@ -471,10 +468,14 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		return 0;
 	}
 
-	g_vBackBuf2 = (ushort *)g_vBackBuf1 + (g_width * g_height);
+	if (truecolor)
+		g_vBackBuf2 = (ushort *)g_vBackBuf1 + (g_width * g_height);
+	else
+		g_vBackBuf2 = (ubyte *)g_vBackBuf1 + (g_width * g_height);
 		
 	memset(g_vBackBuf1, 0, g_width * g_height * 4);
 
+	g_truecolor = truecolor;
 	videobuf_created = 1;
 
 	return 1;
@@ -483,29 +484,59 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 static void mve_convert_and_draw()
 {
 	ushort *pDests;
-	ushort *pSrcs;
+	ushort *pSrcs = NULL;
 	ushort *pixels = (ushort *)g_vBackBuf1;
 	int x, y;
 
-	pSrcs = pixels;
+	ubyte *pSrcs8 = NULL;
+	ubyte *pixels8 = (ubyte *)g_vBackBuf1;
+	ubyte r, g, b;
+	ushort bit_16;
+
+	if (g_truecolor)
+		pSrcs = pixels;
+	else
+		pSrcs8 = pixels8;
 
 	pDests = pixelbuf;
 
-	if (g_screenWidth > g_width) {
+	if (g_screenWidth > g_width)
 		pDests += ((g_screenWidth - g_width) / 2) / 2;
-	}
-	if (g_screenHeight > g_height) {
+
+	if (g_screenHeight > g_height)
 		pDests += ((g_screenHeight - g_height) / 2) * g_screenWidth;
-	}
 
 	for (y=0; y<g_height; y++) {
 		for (x = 0; x < g_width; x++) {
-			pDests[x] = (1<<15)|*pSrcs;
+			if (g_truecolor) {
+				Assert( pSrcs != NULL );
 
-			pSrcs++;
+				pDests[x] = (1<<15)|*pSrcs;
+				pSrcs++;
+			} else {
+				Assert( pSrcs8 != NULL );
+
+				// grab rgb color
+				r = (g_palette[(*pSrcs8)*3] / 2);
+				g = (g_palette[(*pSrcs8)*3 + 1] / 2);
+				b = (g_palette[(*pSrcs8)*3 + 2] / 2);
+
+				// stuff the color
+				bit_16 = (ushort)(r << Gr_t_red.shift);
+				bit_16 |= (ushort)(g << Gr_t_green.shift);
+				bit_16 |= (ushort)(b << Gr_t_blue.shift);
+				bit_16 |= (ushort)(Gr_t_alpha.mask);
+
+				// stuff the pixel
+				pDests[x] = (1<<15)|bit_16;
+
+				pSrcs8++;
+			}
 		}
+
 		pDests += g_screenWidth;
 	}
+
 }
 
 void mve_video_display()
@@ -575,7 +606,6 @@ void mve_video_display()
 	}
 
 	//mprintf(("mve frame took this long: %.6f\n", f2fl(t2-t1) / 1000.0f));
-
 }
 
 int mve_video_init(ubyte *data)
@@ -702,7 +732,10 @@ void mve_video_data(ubyte *data, int len)
 		g_vBackBuf2 = temp;
 	}
 
-	decodeFrame16((ubyte *)g_vBackBuf1, g_pCurMap, g_nMapLength, data+14, len-14);
+	if (g_truecolor)
+		decodeFrame16((ubyte *)g_vBackBuf1, g_pCurMap, g_nMapLength, data+14, len-14);
+	else
+		decodeFrame8((ubyte *)g_vBackBuf1, g_pCurMap, g_nMapLength, data+14, len-14);
 }
 
 void mve_end_chunk()
