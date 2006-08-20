@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-07-06 04:06:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.38 $
+ * $Date: 2006-08-20 00:51:05 $
+ * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/07/06 04:06:03  Goober5000
+ * 1) complete (almost) changeover to reorganized texture mapping system
+ * 2) finally fix texture animation; textures now animate at the correct speed
+ * --Goober5000
+ *
  * Revision 2.36  2006/07/04 07:42:48  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
@@ -672,9 +677,9 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 
 		inner_bound_pos_fixup(asfieldp, &pos);
 		// vm_set_identity(&orient);
-		angs.p = frand() * 2*PI;
-		angs.b = frand() * 2*PI;
-		angs.h = frand() * 2*PI;
+		angs.p = frand() * PI2;
+		angs.b = frand() * PI2;
+		angs.h = frand() * PI2;
 	} else {
 		signature = multi_assign_network_signature( MULTI_SIG_ASTEROID );
 		rand_base = signature;
@@ -685,9 +690,9 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 
 		inner_bound_pos_fixup(asfieldp, &pos);
 		// vm_set_identity(&orient);
-		angs.p = static_randf( rand_base++ ) * 2*PI;
-		angs.b = static_randf( rand_base++ ) * 2*PI;
-		angs.h = static_randf( rand_base++ ) * 2*PI;
+		angs.p = static_randf( rand_base++ ) * PI2;
+		angs.b = static_randf( rand_base++ ) * PI2;
+		angs.h = static_randf( rand_base++ ) * PI2;
 	}
 
 	vm_angles_2_matrix(&orient, &angs);
