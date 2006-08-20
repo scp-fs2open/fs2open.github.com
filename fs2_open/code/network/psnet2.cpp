@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.15 $
- * $Date: 2006-06-27 05:04:16 $
+ * $Revision: 2.16 $
+ * $Date: 2006-08-20 00:47:35 $
  * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/06/27 05:04:16  taylor
+ * try to allow RAS VPN connects since they probably aren't dial-up and shouldn't be seen as such
+ *
  * Revision 2.14  2005/10/10 17:21:08  taylor
  * remove NO_NETWORK
  *
@@ -818,6 +821,7 @@ int psnet_use_protocol( int protocol )
 	SOCKADDR_IPX	ipx_addr;
 #endif
 	SOCKADDR_IN		ip_addr;
+	char *custom_ip = NULL;
 
 	// zero out my address
 	Psnet_my_addr_valid = 0;
@@ -876,7 +880,24 @@ int psnet_use_protocol( int protocol )
 			ml_printf("Unable to get sock name for TCP unreliable socket (%d)\n", WSAGetLastError() );			
 			return 0;
 		}
-		
+
+		// check user-specified IP for getting around NAT
+		custom_ip = os_config_read_string( NOX("Network"), NOX("CustomIP"), NULL );
+
+		if (custom_ip != NULL) {
+			SOCKADDR_IN custom_address;
+
+#ifndef WIN32
+			if ( inet_aton(custom_ip, &custom_address.sin_addr) ) {
+#else
+			if ( (custom_address.sin_addr.s_addr = inet_addr(custom_ip)) != INADDR_NONE ) {
+#endif
+				memcpy(&ip_addr.sin_addr, &custom_address.sin_addr, 6);
+			} else {
+				ml_printf("WARNING  =>  psnet_get_ip() custom IP is invalid: %s\n", custom_ip);
+			}
+		}
+
 		memset(Psnet_my_addr.net_id, 0, 4);
 		memcpy(Psnet_my_addr.addr, &ip_addr.sin_addr, 6);
 		Psnet_my_addr.port = Psnet_default_port;
