@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.65 $
- * $Date: 2006-07-05 23:35:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.66 $
+ * $Date: 2006-08-20 00:47:57 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2006/07/05 23:35:43  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.64  2006/06/27 04:06:18  Goober5000
  * handle docked objects during death roll
  * --Goober5000
@@ -950,6 +953,10 @@ void add_shield_strength(object *objp, float delta)
 
 	if (!(The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT))
 	{
+		// if we aren't going to change anything anyway then just bail
+		if (delta == 0.0f)
+			return;
+
 		for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
 			objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
 			if (objp->shield_quadrant[i] > section_max)
@@ -1872,6 +1879,7 @@ void obj_move_all_post(object *objp, float frametime)
 					r = i2fl(c.red)/255.0f;
 					g = i2fl(c.green)/255.0f;
 					b = i2fl(c.blue)/255.0f;
+
 					light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
 					//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 0.0f, 0.0f, 1.0f, objp->parent );
 				} else {
