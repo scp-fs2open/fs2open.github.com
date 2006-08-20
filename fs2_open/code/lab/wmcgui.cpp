@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.28 $
- * $Date: 2006-03-22 18:20:06 $
+ * $Revision: 1.29 $
+ * $Date: 2006-08-20 00:47:10 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2006/03/22 18:20:06  taylor
+ * minor warning fixage
+ *
  * Revision 1.27  2006/01/21 02:22:05  wmcoolmon
  * Scripting updates; Special scripting image list; Better operator meta; Orientation type; Wing type; Texture type. Fix for MSVC7 compiling.
  *
@@ -687,6 +690,10 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 		DeletionCache.pop_back();
 	}
 
+	// save zbuffer so that we can reset it after drawing (FIXME: this could probably be done better)
+	int saved_zbuf = gr_zbuffer_get();
+	gr_zbuffer_set(GR_ZBUFF_NONE);
+
 	//Draw now. This prevents problems from an object deleting itself or moving around in the list
 	for(cgp = (GUIObject*)GET_LAST(&Guiobjects); cgp != END_OF_LIST(&Guiobjects); cgp = (GUIObject*)GET_PREV(cgp))
 	{
@@ -694,6 +701,9 @@ int GUIScreen::OnFrame(float frametime, bool doevents)
 			cgp->Status = 0;
 		cgp->OnDraw(frametime);
 	}
+
+	// reset zbuffer to saved value
+	gr_zbuffer_set(saved_zbuf);
 
 	if(SomethingPressed)
 		return GSOF_SOMETHINGPRESSED;
