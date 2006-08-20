@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.180 $
- * $Date: 2006-08-09 14:41:44 $
+ * $Revision: 2.181 $
+ * $Date: 2006-08-20 00:46:42 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180  2006/08/09 14:41:44  taylor
+ * very small math optimization
+ *
  * Revision 2.179  2006/07/17 01:10:45  taylor
  * only do i2fl() on the font bitmap once per string rather than doing it per-letter (basically unnoticable performance boost)
  * before doing alpha channel check, make sure the bitmap is valid, since it doesn't actually catch that until later in the texture code
@@ -3663,13 +3666,6 @@ int gr_opengl_save_screen()
 
 		GL_saved_screen_id = bm_create(32, gr_screen.max_w, gr_screen.max_h, GL_saved_screen, 0);
 	} else {
-		GL_saved_screen = (ubyte*)vm_malloc_q( gr_screen.max_w * gr_screen.max_h * 4 );
-
-		if (!GL_saved_screen) {
-			mprintf(( "Couldn't get memory for saved screen!\n" ));
- 			return -1;
-	 	}
-
 		opengl_screen_tmp = (ubyte*)vm_malloc_q( gr_screen.max_w * gr_screen.max_h * 4 );
 
 		if (!opengl_screen_tmp) {
