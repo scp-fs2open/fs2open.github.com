@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileList.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-01-31 23:27:51 $
+ * $Revision: 2.7 $
+ * $Date: 2006-08-20 00:45:10 $
  * $Author: taylor $
  *
  * Code for doing directory lists and sorts
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/01/31 23:27:51  taylor
+ * merge with Linux/OSX tree - p0131-2
+ *
  * Revision 2.5  2004/07/26 20:47:25  Kazan
  * remove MCD complete
  *
@@ -364,7 +367,7 @@ int cfread_compressed(void *buf, int elsize, int nelem, CFILE *cfile)
 	
 	while(1)	{
 
-		byte count;
+		ubyte count;
 
 		if ( cfread( &count, 1, 1, cfile ) != 1 )	{
 			break;
@@ -377,7 +380,7 @@ int cfread_compressed(void *buf, int elsize, int nelem, CFILE *cfile)
 		if ( count > 0 )	{
 			if ( run_span )	{
 				// RLE'd data
-				byte c;
+				ubyte c;
 				if ( cfread( &c, 1, 1, cfile ) != 1 )	{
 					break;
 				}
