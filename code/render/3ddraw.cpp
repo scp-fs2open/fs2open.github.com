@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.52 $
- * $Date: 2006-05-27 16:47:12 $
+ * $Revision: 2.53 $
+ * $Date: 2006-08-20 00:51:06 $
  * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2006/05/27 16:47:12  taylor
+ * remove some of the old batcher functions, nothing is using them now anyway
+ * minor cleanup
+ * add orient UV flipping to HTL drawing functions, like retail/non-HTL has support for
+ *
  * Revision 2.51  2006/04/20 06:32:23  Goober5000
  * proper capitalization according to Volition
  *
@@ -1348,11 +1353,11 @@ int g3_draw_rotated_bitmap(vertex *pnt,float angle, float rad,uint tmap_flags, f
 	/*
 	if ( !Detail.alpha_effects )	{
 		int ang;
-		if ( angle < PI/2 )	{
+		if ( angle < PI_2 )	{
 			ang = 0;
 		} else if ( angle < PI )	{
 			ang = 1;
-		} else if ( angle < PI+PI/2 )	{
+		} else if ( angle < PI+PI_2 )	{
 			ang = 2;
 		} else {
 			ang = 3;

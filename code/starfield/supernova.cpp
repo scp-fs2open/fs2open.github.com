@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.8 $
- * $Date: 2006-05-27 16:42:16 $
+ * $Revision: 2.9 $
+ * $Date: 2006-08-20 00:51:06 $
  * $Author: taylor $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2006/05/27 16:42:16  taylor
+ * fix slight freakiness with debris vclips (un)loading
+ * comment out some code which was only used if neither D3D or OGL
+ * fix dumb particle_emit() calls
+ *
  * Revision 2.7  2006/01/30 06:31:30  taylor
  * dynamic starfield bitmaps (if the thought it was freaky before, just take a look at the new and "improved" version ;))
  *
@@ -362,8 +367,8 @@ void supernova_apply_shake(matrix *eye_orient, float intensity)
 	// Make eye shake due to engine wash		
 	int r1 = myrand();
 	int r2 = myrand();
-	tangles.p += 0.07f * intensity * (float) (r1-RAND_MAX/2)/RAND_MAX;
-	tangles.h += 0.07f * intensity * (float) (r2-RAND_MAX/2)/RAND_MAX;			
+	tangles.p += 0.07f * intensity * (float) (r1-RAND_MAX_2)/RAND_MAX;
+	tangles.h += 0.07f * intensity * (float) (r2-RAND_MAX_2)/RAND_MAX;			
 
 	matrix	tm, tm2;
 	vm_angles_2_matrix(&tm, &tangles);

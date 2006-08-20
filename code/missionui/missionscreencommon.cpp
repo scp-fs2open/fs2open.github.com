@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-07-17 01:12:19 $
+ * $Revision: 2.34 $
+ * $Date: 2006-08-20 00:51:06 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/07/17 01:12:19  taylor
+ * fix some missile autocentering issues
+ *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
+ *  - don't try to autocenter loadout icons when rendered 3d
+ *
  * Revision 2.32  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -1812,11 +1817,11 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	if(sip == NULL)
 	{
 		//Assume it's a weapon
-		rot_angles.h = -(PI/2.0f);
+		rot_angles.h = -(PI_2);
 	}
 	else if(sip->flags & SIF_SMALL_SHIP)
 	{
-		rot_angles.p = -(PI/2.0f);
+		rot_angles.p = -(PI_2);
 	}
 	else if((sip->max_speed <= 0.0f) && !(sip->flags & SIF_CARGO))
 	{
@@ -1826,7 +1831,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	else
 	{
 		//Probably a capship
-		rot_angles.h = PI/2.0f;
+		rot_angles.h = PI_2;
 	}
 	vm_angles_2_matrix(&object_orient, &rot_angles);
 

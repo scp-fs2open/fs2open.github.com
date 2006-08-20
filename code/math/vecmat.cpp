@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.30 $
- * $Date: 2006-05-24 05:09:25 $
- * $Author: wmcoolmon $
+ * $Revision: 2.31 $
+ * $Date: 2006-08-20 00:51:06 $
+ * $Author: taylor $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/05/24 05:09:25  wmcoolmon
+ * Fix for Mantis bug #0000922
+ *
  * Revision 2.29  2006/04/12 22:23:41  taylor
  * compiler warning fixes to make GCC 4.1 shut the hell up
  *
@@ -397,9 +400,9 @@ float atan2_safe(float y, float x)
 		if ( y == 0 ) 
 			ang = 0.0f;
 		else if ( y > 0 )
-			ang = PI/2;
+			ang = PI_2;
 		else
-			ang = -PI/2;
+			ang = -PI_2;
 
 		return ang;
 	}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2006-08-20 00:51:05 $
+ * $Author: taylor $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.19  2006/01/09 04:51:33  phreak
  * fix compile warnings.
  *
@@ -866,7 +869,7 @@ void hud_draw_lock_triangles_old(int center_x, int center_y, int radius)
 {
 	static float ang = 0.0f;
 
-	float end_ang = ang + 2*PI;
+	float end_ang = ang + PI2;
 	float x3,y3,x4,y4,xpos,ypos;
 
 	if ( timestamp_elapsed(Rotate_time_id) ) {
@@ -874,7 +877,7 @@ void hud_draw_lock_triangles_old(int center_x, int center_y, int radius)
 		ang += PI/12;
 	}
 
-	for (; ang <= end_ang; ang += PI/2.0f) {
+	for (; ang <= end_ang; ang += PI_2) {
 
 		// draw the orbiting triangles
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.191 $
- * $Date: 2006-08-19 21:46:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.192 $
+ * $Date: 2006-08-20 00:51:06 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.191  2006/08/19 21:46:05  Goober5000
+ * disable duplicate model texture replace
+ *
  * Revision 2.190  2006/08/06 18:47:29  Goober5000
  * add the multiple background feature
  * --Goober5000
@@ -6818,13 +6821,13 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			//x = cos(angle)
 			x = (float)cos(ANG_TO_RAD(45));
 			if ( Game_mode & GM_NORMAL ) {
-				r1 = rand() < RAND_MAX/2 ? -1 : 1;
-				r2 = rand() < RAND_MAX/2 ? -1 : 1;
+				r1 = rand() < RAND_MAX_2 ? -1 : 1;
+				r2 = rand() < RAND_MAX_2 ? -1 : 1;
 			} else {
 				// in multiplayer, use the static rand functions so that all clients can get the
 				// same information.
-				r1 = static_rand(Objects[objnum].net_signature) < RAND_MAX/2 ? -1 : 1;
-				r2 = static_rand(Objects[objnum].net_signature+1) < RAND_MAX/2 ? -1 : 1;
+				r1 = static_rand(Objects[objnum].net_signature) < RAND_MAX_2 ? -1 : 1;
+				r2 = static_rand(Objects[objnum].net_signature+1) < RAND_MAX_2 ? -1 : 1;
 			}
 
 			vm_vec_copy_scale(&t1, &(Objects[anchor_objnum].orient.vec.fvec), x);

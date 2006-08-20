@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.43 $
- * $Date: 2006-06-07 03:17:55 $
- * $Author: wmcoolmon $
- * $Revision: 2.43 $
- * $Date: 2006-06-07 03:17:55 $
- * $Author: wmcoolmon $
+ * $Revision: 2.44 $
+ * $Date: 2006-08-20 00:51:05 $
+ * $Author: taylor $
+ * $Revision: 2.44 $
+ * $Date: 2006-08-20 00:51:05 $
+ * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/06/07 03:17:55  wmcoolmon
+ * Scripting system prep for 3.6.9
+ *
  * Revision 2.42  2006/01/19 20:18:11  wmcoolmon
  * More Lua checks; added Lua vector object; better operator support.
  *
@@ -640,8 +643,13 @@ void gr_activate(int);
 #endif
 
 
-#define PI					3.141592654f
-#define PI2					(3.141592654f*2.0f)	// PI*2
+#define PI				3.141592654f
+// twice values
+const float PI2			= (PI*2.0f);
+// half values
+const float PI_2		= (PI/2.0f);
+const int RAND_MAX_2	= (RAND_MAX/2);
+
 #define ANG_TO_RAD(x)	((x)*PI/180)
 
 
