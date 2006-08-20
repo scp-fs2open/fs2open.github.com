@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.278 $
- * $Date: 2006-08-16 16:47:55 $
- * $Author: karajorma $
+ * $Revision: 2.279 $
+ * $Date: 2006-08-20 00:51:06 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.278  2006/08/16 16:47:55  karajorma
+ * Doh! Minor fix
+ *
  * Revision 2.277  2006/08/15 19:25:57  karajorma
  * Fixed a typo which breaks team-score
  *
@@ -14372,8 +14375,8 @@ void sexp_reset_fov()
 {
 	Viewer_zoom = VIEWER_ZOOM_DEFAULT;
 
-	if(Viewer_zoom > (2.0f*PI))
-		Viewer_zoom = 2.0f * PI;
+	if(Viewer_zoom > PI2)
+		Viewer_zoom = PI2;
 	if(Viewer_zoom < 0)
 		Viewer_zoom = 0;
 }

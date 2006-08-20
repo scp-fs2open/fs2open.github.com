@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.46 $
- * $Date: 2006-08-01 04:26:02 $
- * $Author: Kazan $
+ * $Revision: 2.47 $
+ * $Date: 2006-08-20 00:51:06 $
+ * $Author: taylor $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2006/08/01 04:26:02  Kazan
+ * commented out glide_while_pressed changes until taylor deems them safe
+ *
  * Revision 2.45  2006/07/31 23:57:48  Kazan
  * glide while pressed
  *
@@ -838,7 +841,7 @@ void do_view_external(float frame_time)
 {
 	float	t;
 
-	view_modify(&Viewer_external_info.angles, &Viewer_external_angles_delta, -2*PI, 2*PI, 0, frame_time);
+	view_modify(&Viewer_external_info.angles, &Viewer_external_angles_delta, -PI2, PI2, 0, frame_time);
 
 	//	Process centering key.
 	if (check_control_timef(VIEW_CENTER)) {
@@ -856,14 +859,14 @@ void do_view_external(float frame_time)
 	//	Do over-the-top correction.
 
 	if (Viewer_external_info.angles.p > PI)
-		Viewer_external_info.angles.p = -2*PI + Viewer_external_info.angles.p;
+		Viewer_external_info.angles.p = -PI2 + Viewer_external_info.angles.p;
 	else if (Viewer_external_info.angles.p < -PI)
-		Viewer_external_info.angles.p = 2*PI + Viewer_external_info.angles.p;
+		Viewer_external_info.angles.p = PI2 + Viewer_external_info.angles.p;
 
 	if (Viewer_external_info.angles.h > PI)
-		Viewer_external_info.angles.h = -2*PI + Viewer_external_info.angles.h;
+		Viewer_external_info.angles.h = -PI2 + Viewer_external_info.angles.h;
 	else if (Viewer_external_info.angles.h < -PI)
-		Viewer_external_info.angles.h = 2*PI + Viewer_external_info.angles.h;
+		Viewer_external_info.angles.h = PI2 + Viewer_external_info.angles.h;
 }
 
 // separate out the reading of thrust keys, so we can call this from external

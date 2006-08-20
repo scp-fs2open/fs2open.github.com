@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.45 $
- * $Date: 2006-02-06 02:06:02 $
- * $Author: wmcoolmon $
+ * $Revision: 2.46 $
+ * $Date: 2006-08-20 00:51:06 $
+ * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2006/02/06 02:06:02  wmcoolmon
+ * Various fixes; very beginnings of Directives scripting support
+ *
  * Revision 2.44  2006/02/03 22:28:10  taylor
  * a couple of mvalid.cfg and tvalid.cfg file format changes to give them at least some readability
  * some cleanup, extra logging, and very slight speedup with mission and table validation checking
@@ -4389,7 +4392,7 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 			theta = i2fl(d)/N_SCALE;
 				
 			// Convert theta back to range 0-PI
-			theta = (theta+1.0f)*PI/2.0f;
+			theta = (theta+1.0f)*PI_2;
 				
 			vm_quaternion_rotate(orient, theta, &rot_axis);		
 
@@ -4466,7 +4469,7 @@ int multi_pack_unpack_orient( int write, ubyte *data, matrix *orient)
 		theta = i2fl(d)/SCALE;
 			
 		// Convert theta back to range 0-PI
-		theta = (theta+1.0f)*PI/2.0f;
+		theta = (theta+1.0f)*PI_2;
 			
 		vm_quaternion_rotate(orient, theta, &rot_axis);		
 

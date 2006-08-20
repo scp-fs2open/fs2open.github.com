@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.27 $
- * $Date: 2006-07-06 22:01:50 $
+ * $Revision: 2.28 $
+ * $Date: 2006-08-20 00:51:07 $
  * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/07/06 22:01:50  taylor
+ * add some minor error catches for invalid values
+ *
  * Revision 2.26  2006/05/27 16:45:11  taylor
  * some minor cleanup
  * remove -nobeampierce
@@ -482,8 +485,8 @@ int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, 
 	vm_angles_2_matrix(&orient, &sw->rot_angles);
 //	angles a;
 //	a.p = sw->rot_angle*(PI/180);
-//	a.b = frand_range(0.0f, 2.0f*PI);
-//	a.h = frand_range(0.0f, 2.0f*PI);
+//	a.b = frand_range(0.0f, PI2);
+//	a.h = frand_range(0.0f, PI2);
 //	vm_angles_2_matrix(&orient, &a);
 	objnum = obj_create( OBJ_SHOCKWAVE, real_parent, i, &orient, &sw->pos, sw->outer_radius, OF_RENDERS );
 
