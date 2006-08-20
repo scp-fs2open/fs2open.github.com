@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.255 $
- * $Date: 2006-08-06 18:47:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.256 $
+ * $Date: 2006-08-20 00:50:08 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.255  2006/08/06 18:47:29  Goober5000
+ * add the multiple background feature
+ * --Goober5000
+ *
  * Revision 2.254  2006/07/13 22:16:38  taylor
  * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
  *
@@ -2781,7 +2785,8 @@ void game_load_palette()
 // debug output window with the '=== ENDING LOAD ==' stuff.   
 //#define COUNT_ESTIMATE 3706
 //#define COUNT_ESTIMATE 1111
-#define COUNT_ESTIMATE 2311
+//#define COUNT_ESTIMATE 2311
+#define COUNT_ESTIMATE 1250
 
 int Game_loading_callback_inited = 0;
 
@@ -4917,8 +4922,8 @@ void apply_hud_shake(matrix *eye_orient)
 			
 			int r1 = myrand();
 			int r2 = myrand();
-			tangles.p += 0.07f * (float) (r1-RAND_MAX/2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/ABURN_DECAY_TIME));
-			tangles.h += 0.07f * (float) (r2-RAND_MAX/2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/ABURN_DECAY_TIME));
+			tangles.p += 0.07f * (float) (r1-RAND_MAX_2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/ABURN_DECAY_TIME));
+			tangles.h += 0.07f * (float) (r2-RAND_MAX_2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/ABURN_DECAY_TIME));
 		}
 
 		// Make eye shake due to engine wash
@@ -4926,8 +4931,8 @@ void apply_hud_shake(matrix *eye_orient)
 		if (Player_obj->type == OBJ_SHIP && (Ships[Player_obj->instance].wash_intensity > 0) && Wash_on ) {
 			int r1 = myrand();
 			int r2 = myrand();
-			tangles.p += 0.07f * Ships[Player_obj->instance].wash_intensity * (float) (r1-RAND_MAX/2)/RAND_MAX;
-			tangles.h += 0.07f * Ships[Player_obj->instance].wash_intensity * (float) (r2-RAND_MAX/2)/RAND_MAX;
+			tangles.p += 0.07f * Ships[Player_obj->instance].wash_intensity * (float) (r1-RAND_MAX_2)/RAND_MAX;
+			tangles.h += 0.07f * Ships[Player_obj->instance].wash_intensity * (float) (r2-RAND_MAX_2)/RAND_MAX;
 
 			// get the   intensity
 			float intensity = FF_SCALE * Ships[Player_obj->instance].wash_intensity;
@@ -4955,8 +4960,8 @@ void apply_hud_shake(matrix *eye_orient)
 			
 				int r1 = myrand();
 				int r2 = myrand();
-				tangles.p += (Game_shudder_intensity / 200.0f) * (float) (r1-RAND_MAX/2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/(float)Game_shudder_total));
-				tangles.h += (Game_shudder_intensity / 200.0f) * (float) (r2-RAND_MAX/2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/(float)Game_shudder_total));
+				tangles.p += (Game_shudder_intensity / 200.0f) * (float) (r1-RAND_MAX_2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/(float)Game_shudder_total));
+				tangles.h += (Game_shudder_intensity / 200.0f) * (float) (r2-RAND_MAX_2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/(float)Game_shudder_total));
 			}
 		}
 
@@ -4985,7 +4990,7 @@ inline void render_environment(int i, matrix *new_orient, float new_zoom)
 	gr_clear();
 
 	g3_set_view_matrix( &nv, new_orient, new_zoom );
-	gr_set_proj_matrix( (PI/2.0f), 1.0f, Min_draw_distance, Max_draw_distance );
+	gr_set_proj_matrix( PI_2, 1.0f, Min_draw_distance, Max_draw_distance );
 	gr_set_view_matrix( &Eye_position, &Eye_matrix );
 
 	if ( Game_subspace_effect ) {
@@ -5320,7 +5325,7 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 					vm_vector_2_matrix(eye_orient, &eye_dir, &Player_obj->orient.vec.uvec, NULL);
 					Viewer_obj = NULL;
 			} else if (Viewer_mode & VM_TOPDOWN) {
-					angles rot_angles = {PI/2.0f,0.0f,0.0f};
+					angles rot_angles = { PI_2, 0.0f, 0.0f };
 					bool position_override = false;
 					if(Viewer_obj->type == OBJ_SHIP) {
 						ship_info *sip = &Ship_info[Ships[Viewer_obj->instance].ship_info_index];
