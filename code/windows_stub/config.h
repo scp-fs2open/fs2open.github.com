@@ -2,13 +2,22 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.17 $
- * $Date: 2006-05-27 16:39:40 $
+ * $Revision: 2.18 $
+ * $Date: 2006-08-20 00:48:47 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/05/27 16:39:40  taylor
+ * remove non-Windows timeSetEvent() functions
+ * make PDWORD and LPDWORD int instead of long (64-bit issue) (thanks Spike)
+ * fix 64-bit ptr issue with OpenAL audio streaming code (thanks Spike)
+ * add start of device enumberation for OpenAL 1.1 (it just lists available devices now)
+ * make sure we open the default OpenAL 1.1 device under Windows
+ * comment out blank listener stuff, this may have been crashing under OS X
+ * add support for AL_BYTE_OFFSET in OpenAL 1.1 for buffer positioning under Windows
+ *
  * Revision 2.16  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -147,16 +156,9 @@
 #define FAR
 
 // Standard data types
-typedef void *LPVOID;
-typedef const void *LPCVOID;
-typedef int BOOL, *PBOOL, *LPBOOL;
-typedef unsigned char BYTE, *PBYTE, *LPBYTE;
-typedef unsigned char UCHAR, *PUCHAR;
-typedef unsigned short WORD, *PWORD, *LPWORD;
-typedef unsigned short USHORT, *PUSHORT;
-typedef int INT, *PINT, *LPINT;
-typedef unsigned int UINT, *PUINT;
-typedef long *LPLONG;
+typedef int BOOL;
+typedef unsigned short WORD;
+typedef unsigned int UINT;
 #ifdef IAM_64BIT
 // force 32-bit version of DWORD
 typedef unsigned int DWORD;
@@ -166,13 +168,6 @@ typedef unsigned int *PDWORD, *LPDWORD;
 typedef unsigned long FOURCC;
 typedef unsigned long DWORD, *PDWORD, *LPDWORD;
 #endif
-typedef unsigned long ULONG, *PULONG;
-typedef float FLOAT, *PFLOAT;
-typedef double DOUBLE;
-typedef double DATE;
-typedef unsigned char byte, *pbyte, *lpbyte;
-typedef unsigned short UINT16, *PUINT16;
-typedef unsigned int UINT32, *PUINT32;
 //typedef void *HMMIO;
 typedef SDL_RWops *HMMIO;
 typedef void *HACMSTREAM;
