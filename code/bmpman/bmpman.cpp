@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.89 $
- * $Date: 2006-07-21 16:06:56 $
+ * $Revision: 2.90 $
+ * $Date: 2006-08-20 00:45:37 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2006/07/21 16:06:56  taylor
+ * minor changes to game_busy() debug text
+ *  - don't alloc it for bmpman, and make sure to only call on textures that we are loading
+ *  - add text for model loading, gets rid of the long-wait issue when it appears to not be doing anything early on
+ *
  * Revision 2.88  2006/07/05 23:35:42  Goober5000
  * cvs comment tweaks
  *
@@ -3249,48 +3254,52 @@ void bm_set_components_d3d(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte 
 */
 void bm_set_components_argb_16_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
-	*((ushort*)pixel) |= (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	if(*av == 0){				
+	if ( *av == 0 ) {
 		*((ushort*)pixel) = (ushort)Gr_current_green->mask;
-	}			
+		return;
+	}
+
+	*((ushort*)pixel) = (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
+	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
+	*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);	
 }
 
 void bm_set_components_argb_32_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
-	*((uint*)pixel) |= (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
+	if ( *av == 0 ) {
+		*((uint*)pixel) = (uint)Gr_current_green->mask;
+		return;
+	}
+
+	*((uint*)pixel) = (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
 	*((uint*)pixel) |= (uint)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
 	*((uint*)pixel) |= (uint)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	if(*av == 0){				
-		*((uint*)pixel) = (uint)Gr_current_green->mask;		
-	}
 }
 
 void bm_set_components_argb_16_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
-	*((ushort*)pixel) |= (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
+	if ( *av == 0 ) {
+		*((ushort*)pixel) = 0;
+		return;
+	}
+
+	*((ushort*)pixel) = (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
 	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
 	*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	*((ushort*)pixel) &= ~(Gr_current_alpha->mask);
-	if(*av){
-		*((ushort*)pixel) |= (ushort)(Gr_current_alpha->mask);
-	} else {
-		*((ushort*)pixel) = 0;
-	}
+	*((ushort*)pixel) |= (ushort)(Gr_current_alpha->mask);
 }
 
 void bm_set_components_argb_32_tex(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
-	*((uint*)pixel) |= (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
+	if ( *av == 0 ) {
+		*((uint*)pixel) = 0;
+		return;
+	}
+
+	*((uint*)pixel) = (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
 	*((uint*)pixel) |= (uint)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
 	*((uint*)pixel) |= (uint)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	*((uint*)pixel) &= ~(Gr_current_alpha->mask);
-	if(*av){
-		*((uint*)pixel) |= (uint)(Gr_current_alpha->mask);
-	} else {
-		*((uint*)pixel) = 0;
-	}
+	*((uint*)pixel) |= (uint)(Gr_current_alpha->mask);
 }
 
 // for selecting pixel formats
