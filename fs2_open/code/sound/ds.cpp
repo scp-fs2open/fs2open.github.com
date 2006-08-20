@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.49 $
- * $Date: 2006-07-08 18:10:59 $
+ * $Revision: 2.50 $
+ * $Date: 2006-08-20 00:48:28 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2006/07/08 18:10:59  taylor
+ * require OpenAL 1.1 under Windows, I think it's causing problems for us to mix users with 1.0 and builds for 1.1
+ *   (having 1.0 is fatal to sound, but the game should still work, a corresponding Launcher change goes with this too)
+ * clean up some of the error messages to not say "DirectSound" is doing this or that, just say "Audio" instead
+ *
  * Revision 2.48  2006/07/06 22:02:11  taylor
  * some better handling of OpenAL errors during init
  *
@@ -1742,7 +1747,7 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	// version check (for 1.0 or 1.1)
 	alcGetIntegerv(NULL, ALC_MINOR_VERSION, sizeof(ALCint), &AL_minor_version);
 
-	// we need to clar out all errors before moving on
+	// we need to clear out all errors before moving on
 	alcGetError(NULL);
 	alGetError();
 
@@ -1793,6 +1798,10 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	ds_build_vol_lookup();
 	ds_init_channels();
 	ds_init_buffers();
+
+	// we need to clear out all errors before moving on
+	alcGetError(NULL);
+	alGetError();
 
 	mprintf(("... OpenAL successfully initialized!\n"));
 
@@ -2226,8 +2235,13 @@ void ds_close_buffers()
 //
 void ds_close()
 {
+#ifndef USE_OPENAL
 	ds_close_all_channels();
 	ds_close_buffers();
+#else
+	ds_close_buffers();
+	ds_close_all_channels();
+#endif
 
 #ifndef USE_OPENAL
 	if (pPropertySet != NULL) {
