@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.79 $
- * $Date: 2006-08-06 18:47:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.80 $
+ * $Date: 2006-08-20 00:49:09 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2006/08/06 18:47:29  Goober5000
+ * add the multiple background feature
+ * --Goober5000
+ *
  * Revision 2.78  2006/07/30 02:20:17  Goober5000
  * bah, revert
  *
@@ -2519,9 +2523,9 @@ void stars_draw_debris()
 
 	for (i=0; i<MAX_DEBRIS; i++, d++ ) {
 		if (!d->active)	{
-			d->pos.xyz.x = f2fl(myrand() - RAND_MAX/2);
-			d->pos.xyz.y = f2fl(myrand() - RAND_MAX/2);
-			d->pos.xyz.z = f2fl(myrand() - RAND_MAX/2);
+			d->pos.xyz.x = f2fl(myrand() - RAND_MAX_2);
+			d->pos.xyz.y = f2fl(myrand() - RAND_MAX_2);
+			d->pos.xyz.z = f2fl(myrand() - RAND_MAX_2);
 
 			vm_vec_normalize(&d->pos);
 
@@ -3369,17 +3373,17 @@ void stars_delete_instance_FRED(int index, bool sun)
 // Goober5000
 void stars_load_first_valid_background()
 {
-	int i, j;
+	uint i, j;
 
 	Cur_background = -1;
 	if (Num_backgrounds == 0)
 		return;
 
 	// get the first background with > 50% of its suns and > 50% of its bitmaps present
-	for (i = 0; i < Num_backgrounds; i++)
+	for (i = 0; i < (uint)Num_backgrounds; i++)
 	{
-		int total_suns = 0;
-		int total_bitmaps = 0;
+		uint total_suns = 0;
+		uint total_bitmaps = 0;
 		background_t *background = &Backgrounds[i];
 
 		for (j = 0; j < background->suns.size(); j++)
@@ -3441,7 +3445,7 @@ void stars_load_first_valid_background()
 // Goober5000
 void stars_copy_background(background_t *dest, background_t *src)
 {
-	int i;
+	uint i;
 
 	dest->suns.clear();
 	dest->bitmaps.clear();
