@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.30 $
- * $Date: 2006-07-08 11:30:13 $
+ * $Revision: 1.31 $
+ * $Date: 2006-08-20 00:47:10 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2006/07/08 11:30:13  taylor
+ * hopefully this should get missile viewing working decently again
+ *
  * Revision 1.29  2006/07/06 21:59:34  taylor
  * add a render option to make the model not spin around, easier to work with in some cases, and better screenshots
  *
@@ -400,6 +403,10 @@ void make_options_window(Button *caller)
 	RenderOptWin = (Window*)Lab_screen->Add(new Window("Options", gr_screen.max_w - 300, 200));
 	int y = 0;
 
+	ccp = RenderOptWin->AddChild(new Checkbox("No Glowmap", 0, y));
+	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_GLOWMAPS);
+
+	y += ccp->GetHeight() + 10;
 	ccp = RenderOptWin->AddChild(new Checkbox("No rotation", 0, y));
 	((Checkbox*)ccp)->SetFlag(&LabViewerFlags, LAB_NO_ROTATION);
 
@@ -423,9 +430,9 @@ void make_options_window(Button *caller)
 	ccp = RenderOptWin->AddChild(new Checkbox("No culling", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_CULL);
 
-	y += ccp->GetHeight() + 10;
+	/*y += ccp->GetHeight() + 10;
 	ccp = RenderOptWin->AddChild(new Checkbox("No Fogging", 0, y));
-	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_FOGGING);
+	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_NO_FOGGING);*/
 
 	y += ccp->GetHeight() + 10;
 	ccp = RenderOptWin->AddChild(new Checkbox("Wireframe", 0, y));
@@ -693,6 +700,14 @@ void zero_weap_class_win(GUIObject *caller)
 {
 	WeapClassWin = NULL;
 }
+
+void weap_show_tech_model(Tree* caller)
+{
+	int weap_index = (int)(caller->GetSelectedItem()->GetParentItem()->GetData());
+
+	labviewer_change_model(Weapon_info[weap_index].tech_model, caller->GetSelectedItem()->GetData());
+}
+
 void weaps_make_window(Button* caller)
 {
 
@@ -731,6 +746,10 @@ void weaps_make_window(Button* caller)
 			stip = type_nodes[Weapon_info[i].subtype];
 
 		cwip = cmp->AddItem(stip, Weapon_info[i].name, i, false, change_weapon);
+
+		if ( strlen(Weapon_info[i].tech_model) > 0 ) {
+			cmp->AddItem(cwip, "Tech Model", 0, false, weap_show_tech_model);
+		}
 	}
 
 	//Get rid of any empty nodes
