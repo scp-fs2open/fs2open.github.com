@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.33 2006-06-27 16:53:36 taylor Exp $
+## $Id: Makefile.am,v 1.34 2006-08-20 00:44:36 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -244,6 +244,7 @@ FS2_SOURCES =	\
 	cutscene/cutscenes.cpp	\
 	cutscene/cutscenes.h	\
 	cutscene/decoder16.cpp	\
+	cutscene/decoder8.cpp	\
 	cutscene/movie.cpp	\
 	cutscene/movie.h	\
 	cutscene/mve_audio.cpp	\

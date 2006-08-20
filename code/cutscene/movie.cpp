@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.34 $
- * $Date: 2006-08-15 00:26:07 $
- * $Author: Backslash $
+ * $Revision: 2.35 $
+ * $Date: 2006-08-20 00:44:36 $
+ * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2006/08/15 00:26:07  Backslash
+ * add .ogg to the list of recognized movie file extensions
+ *
  * Revision 2.33  2006/07/13 22:15:02  taylor
  * handle non-MVE movies a bit better in OpenGL (don't get freaky with the window, don't lose input, etc.)
  * some cleanup to OpenGL window handling, to fix min/max/full issues, and try to make shutdown a little nicer
@@ -86,6 +89,11 @@
 // to know if we are in a movie, needed for non-MVE only
 bool Playing_movie = false;
 
+#define MOVIE_NONE	0
+#define MOVIE_AVI	1
+#define MOVIE_MPG	2
+#define MOVIE_OGG	3
+#define MOVIE_MVE	4
 
 // This module links freespace movie calls to the actual API calls the play the movie.
 // This module handles all the different requires of OS and gfx API and finding the file to play
@@ -112,19 +120,18 @@ int movie_find(char *filename, char *out_name)
 	char tmp_name[MAX_PATH];
 	char search_name[MAX_PATH];
 	int i, size, offset = 0;
-	const int NUM_EXT = 3;
-	const char *movie_ext[NUM_EXT] = { ".avi", ".mpg", ".ogg" };
+	const int NUM_EXT = 4;
+ 	// NOTE: search order assumes that retail movies will be in MVE format, or that all movies will be in AVI format.
+ 	//       this isn't pretty, but short of CFILE changes to do filter searching, it's about the only option for mods
+	const char *movie_ext[NUM_EXT] = { ".avi", ".mpg", ".ogg", ".mve" };
 
-	if (out_name == NULL) {
-		return 0;
-	}
+ 	if (out_name == NULL)
+ 		return MOVIE_NONE;
 
 	// remove extension
 	strcpy( tmp_name, filename );
 	char *p = strchr( tmp_name, '.' );
-	if ( p ) {
-		*p = 0;
-	}
+	if ( p ) *p = 0;
 	
 	for (i=0; i<NUM_EXT; i++) {
 		strcpy( search_name, tmp_name );
@@ -133,17 +140,18 @@ int movie_find(char *filename, char *out_name)
 		// try and find the file
     	if ( cf_find_file_location(search_name, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0) ) {
 			// if it's not in a packfile then we're done
-			if (offset == 0) {
+			// NOTE: MVEs use CFILE internally for the player, so they can work out of VPs
+			if ( ((i+1) == MOVIE_MVE) || (offset == 0) ) {
 				strcpy( out_name, full_path );
-				return 1;
+				return (i+1); // return value should match one of MOVIE_* defines
 			}
     	}
 		
 		// clear old string
-		strcpy( search_name, "" );
+		memset( search_name, 0, sizeof(search_name) );
 	}
 
-	return 0;
+	return MOVIE_NONE;
 }
 
 // Play one movie
@@ -163,51 +171,57 @@ bool movie_play(char *name)
 	//Commented this out since we have dnoshowvid -WMC
  	//if(Cmdline_window) return false;
 
-	// first off, check for a MVE
-	MVESTREAM *movie = NULL;
 
-	movie = mve_open(name);
-
-	if (movie) {
-		// kill all background sounds
-		main_hall_pause();
-
-		// clear the screen and hide the mouse cursor
-		Mouse_hidden++;
-		gr_reset_clip();
-		gr_zbuffer_clear(0);
-		gr_clear();
-		gr_flip();
-
-		// ready to play...
-		mve_init(movie);
-		mve_play(movie);
-
-		// ... done playing, close the mve and show the cursor again
-		mve_shutdown();
-		mve_close(movie);
-		Mouse_hidden--;
-
-		main_hall_unpause();
-
-		return true;
-	}
-
-	// no MVE version so move on to AVI/MPG searching
-
-#ifdef _WIN32
 	char full_name[MAX_PATH];
 	int rc = 0;
 
 	rc = movie_find(name, full_name);
 
 	if (!rc) {
-		DBUGFILE_OUTPUT_1("MOVIE ERROR: Cant open movie file %s", name);
+		mprintf(("MOVIE ERROR: Unable to open movie file '%s' in any supported format.", name));
 		return false;
 	} else {
 		DBUGFILE_OUTPUT_1("About to play: %s", full_name);
 	}
 
+	// MVE checks first since they use a different player
+	if (rc == MOVIE_MVE) {
+		MVESTREAM *movie = NULL;
+
+		// NOTE the MVE code uses CFILE, so only pass the base name and it will load up the movie properly
+		movie = mve_open(name);
+
+		if (movie) {
+			// kill all background sounds
+			main_hall_pause();
+
+			// clear the screen and hide the mouse cursor
+			Mouse_hidden++;
+			gr_reset_clip();
+			gr_zbuffer_clear(0);
+			gr_clear();
+			gr_flip();
+
+			// ready to play...
+			mve_init(movie);
+			mve_play(movie);
+
+			// ... done playing, close the mve and show the cursor again
+			mve_shutdown();
+			mve_close(movie);
+			Mouse_hidden--;
+
+			main_hall_unpause();
+
+			return true;
+		} else {
+			// uh-oh, MVE is invalid... Abory, Retry, Fail?
+			mprintf(("MOVIE ERROR: Found invalid MVE! (%s)\n", full_name));
+		}
+	}
+
+	// no MVE version so move on to AVI/MPG specific player code
+#ifdef _WIN32
 	process_messages();
 
 #ifndef NO_DIRECT3D
