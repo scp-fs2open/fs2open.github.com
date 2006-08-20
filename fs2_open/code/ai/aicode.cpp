@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.83 $
- * $Date: 2006-08-14 21:59:14 $
- * $Author: Goober5000 $
+ * $Revision: 1.84 $
+ * $Date: 2006-08-20 00:49:39 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.83  2006/08/14 21:59:14  Goober5000
+ * extremely minor optimizations
+ *
  * Revision 1.82  2006/07/26 03:44:17  Kazan
  * Resolve Mantis #1010
  *
@@ -2098,9 +2101,9 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float tu
 		}
 
 		//	Set max turn rate.
-		vel_limit.xyz.x = 2*PI/turn_time;
-		vel_limit.xyz.y = 2*PI/turn_time;
-		vel_limit.xyz.z = 2*PI/turn_time;
+		vel_limit.xyz.x = PI2/turn_time;
+		vel_limit.xyz.y = PI2/turn_time;
+		vel_limit.xyz.z = PI2/turn_time;
 	}
 	else
 	{
@@ -12848,21 +12851,37 @@ void ai_balance_shield(object *objp)
 	float	shield_strength_avg;
 	float	delta;
 
+	// if we are already at the max shield strength for all quads then just bail now
+	if ( Ships[objp->instance].ship_max_shield_strength == get_shield_strength(objp) )
+		return;
+
 
 	shield_strength_avg = get_shield_strength(objp)/MAX_SHIELD_SECTIONS;
 
 	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
 
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++)
+	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
 		if (objp->shield_quadrant[i] < shield_strength_avg) {
-			add_shield_strength(objp, delta);
+			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
+			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
+				add_shield_strength(objp, delta);
+			else
+				objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
+
 			if (objp->shield_quadrant[i] > shield_strength_avg)
 				objp->shield_quadrant[i] = shield_strength_avg;
+
 		} else {
-			add_shield_strength(objp, -delta);
+			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
+			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
+				add_shield_strength(objp, -delta);
+			else
+				objp->shield_quadrant[i] -= delta/MAX_SHIELD_SECTIONS;
+
 			if (objp->shield_quadrant[i] < shield_strength_avg)
 				objp->shield_quadrant[i] = shield_strength_avg;
 		}
+	}
 }
 
 //	Manage the shield for this ship.
