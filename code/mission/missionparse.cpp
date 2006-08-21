@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.192 $
- * $Date: 2006-08-20 00:51:06 $
- * $Author: taylor $
+ * $Revision: 2.193 $
+ * $Date: 2006-08-21 04:02:41 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.192  2006/08/20 00:51:06  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.191  2006/08/19 21:46:05  Goober5000
  * disable duplicate model texture replace
  *
@@ -3363,7 +3366,7 @@ int parse_alt_class(p_object *p_objp, int num_alts, bool alt_type_1)
 // if we are just getting player starts, then don't create the objects
 int parse_object(mission *pm, int flag, p_object *p_objp)
 {
-	int	i, j, count, delay;
+	int	i, j, count, delay, num_alts;
 	char name[NAME_LENGTH], flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
 	char flag_strings_2[MAX_PARSE_OBJECT_FLAGS_2][NAME_LENGTH];
 
@@ -3396,10 +3399,10 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	// Type 1 Alts
 	p_objp->num_alt_class_one = 0;
-	int num_alts = 0;
+	num_alts = 0;
 	while (optional_string("+Alt_Ship_Class_Type_1:") && (num_alts < MAX_ALT_CLASS_1))
 	{		
-		num_alts = num_alts = parse_alt_class(p_objp, num_alts, true); 
+		num_alts = parse_alt_class(p_objp, num_alts, true); 
 	}
 
 	// Type 2 Alts
@@ -3757,7 +3760,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	// texture replacement - Goober5000
 	p_objp->num_texture_replacements = 0;
-	if (optional_string("$Texture Replace:") || (optional_string("$Duplicate Model Texture Replace:"))
+	if (optional_string("$Texture Replace:") || optional_string("$Duplicate Model Texture Replace:"))
 	{
 		char *p;
 
