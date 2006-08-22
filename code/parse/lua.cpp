@@ -23,6 +23,7 @@
 #include "particle/particle.h"
 #include "iff_defs/iff_defs.h"
 #include "camera/camera.h"
+#include "graphics/font.h"
 
 //*************************Lua funcs*************************
 int script_remove_lib(lua_State *L, char *name);
