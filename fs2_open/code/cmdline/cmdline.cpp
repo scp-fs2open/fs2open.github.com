@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.6 $
- * $Date: 2006-07-28 02:44:40 $
+ * $Revision: 2.140.2.7 $
+ * $Date: 2006-08-22 05:42:56 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.6  2006/07/28 02:44:40  taylor
+ * switch from Assert() to basic error fixage for end-of-string white space check
+ *
  * Revision 2.140.2.5  2006/07/25 16:25:11  taylor
  * support for cmdline option stacking (a per option setting) so that things like "-mod derelict -mod mediavp" will end up as "-mod derelict,mediavp" to the game
  * fix bug where white space chars didn't get dropped from the end of a option string like they were supposed to
@@ -931,8 +934,8 @@ Flag exe_params[] =
 {
 	{ "-spec",				"Enable specular",							true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-spec", },
 	{ "-glow",				"Enable glowmaps",							true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-glow", },
-	{ "-env",				"Enable evironment maps",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
-	{ "-jpgtga",			"Enable jpg,tga textures",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-jpgtga", },
+	{ "-env",				"Enable environment maps",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
+	{ "-jpgtga",			"Enable jpg/tga textures",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-jpgtga", },
 	{ "-mipmap",			"Enable mipmapping",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
 	{ "-2d_poof",			"Stops fog intersect hull",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-2d_poof", },
