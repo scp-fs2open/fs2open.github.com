@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.27.2.1 $
- * $Date: 2006-06-07 03:52:21 $
- * $Author: wmcoolmon $
+ * $Revision: 2.27.2.2 $
+ * $Date: 2006-08-22 05:45:39 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27.2.1  2006/06/07 03:52:21  wmcoolmon
+ * Scripting system prep for 3.6.9
+ *
  * Revision 2.27  2006/03/05 21:45:12  taylor
  * various small cleanups, fixes, error checks
  *
@@ -520,8 +523,11 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 		}
 
 		if(wip->sc_collide_ship.IsValid()) {
-			Script_system.SetGlobal("Self", 'o', &l_Weapon.Set(object_h(weapon_obj)));
-			Script_system.SetGlobal("Ship", 'o', &l_Ship.Set(object_h(ship_obj)));
+			script_lua_odata lua_self_obj = l_Weapon.Set(object_h(weapon_obj));
+			script_lua_odata lua_ship_obj = l_Ship.Set(object_h(ship_obj));
+			
+			Script_system.SetGlobal("Self", 'o', &lua_self_obj);
+			Script_system.SetGlobal("Ship", 'o', &lua_ship_obj);
 
 			Script_system.RunBytecode(wip->sc_collide_ship);
 
