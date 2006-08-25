@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_team.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-01-31 06:44:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2006-08-25 21:21:17 $
+ * $Author: karajorma $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/01/31 06:44:48  wmcoolmon
+ * Compiler warning fix
+ *
  * Revision 2.11  2006/01/13 04:12:23  Goober5000
  * oops
  * --Goober5000
@@ -753,7 +756,17 @@ void multi_team_report()
 	// display scores
 	for (i = 0; i < Num_teams; i++)
 	{
-		sprintf(report, XSTR("<Team %d had %d points>", 1275), i, Multi_team_score[i]);
+		// Retail FS2 teams (i.e red or green)
+		if (i <= 1)
+		{
+			sprintf(report, XSTR("<Team %d had %d points>", (1275+i)), Multi_team_score[i]);
+		}
+		// Karajorma - If the SCP has added more teams we won't have a XSTR to handle it. So just output in english for now
+		else 
+		{
+			sprintf(report, "Team %d had %d points>", (i+1), Multi_team_score[i]);
+		}
+
 		SEND_AND_DISPLAY(report);
 	}
 
