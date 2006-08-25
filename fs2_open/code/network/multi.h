@@ -9,13 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.13.2.2 $
- * $Date: 2006-08-03 16:22:24 $
+ * $Revision: 2.13.2.3 $
+ * $Date: 2006-08-25 21:15:31 $
  * $Author: karajorma $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
+ * $Log: not supported by cvs2svn $
  * Revision 2.13  2006/06/02 09:10:01  karajorma
  * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
  *
