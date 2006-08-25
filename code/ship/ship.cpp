@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.365 $
- * $Date: 2006-08-19 21:45:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.366 $
+ * $Date: 2006-08-25 21:19:02 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.365  2006/08/19 21:45:18  Goober5000
+ * if a modular table ship pof cannot be found, use the original one
+ *
  * Revision 2.364  2006/08/18 18:07:03  karajorma
  * More cut & paste errors fixed and removal of the hardcoded warp out animation. Will now actually use the one specified in the table.
  *
@@ -15621,10 +15624,22 @@ int ship_starting_wing_lookup(char *wing_name)
 // Goober5000
 int ship_squadron_wing_lookup(char *wing_name)
 {
-	for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
+	// TvT uses a different set of wing names from everything else
+	if ((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM))
 	{
-		if (!stricmp(Squadron_wing_names[i], wing_name))
-			return i;
+		for (int i = 0; i < MAX_TVT_WINGS; i++)
+		{
+			if (!stricmp(TVT_wing_names[i], wing_name))
+				return i;
+		}
+	}
+	else 
+	{
+		for (int i = 0; i < MAX_SQUADRON_WINGS; i++)
+		{
+			if (!stricmp(Squadron_wing_names[i], wing_name))
+				return i;
+		}
 	}
 
 	return -1;
