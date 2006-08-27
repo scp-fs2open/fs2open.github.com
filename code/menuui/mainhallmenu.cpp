@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.44 $
- * $Date: 2006-05-21 22:57:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.44.2.1 $
+ * $Date: 2006-08-27 18:11:37 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2006/05/21 22:57:30  Goober5000
+ * fix for Mantis #750
+ * --Goober5000
+ *
  * Revision 2.43  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -1318,7 +1322,12 @@ void main_hall_do(float frametime)
 				// error popup for a missing campaign file, don't try to enter ready room in this case
 				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
 				break;
+			} else if ( !strlen(Campaign.filename) ) {
+				// no campaign loaded...
+				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "No active campaign is available.  Please choose one in the Campaign Room.", -1));
+				break;
 			}
+
 #ifdef MULTIPLAYER_BETA_BUILD
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			Player->flags |= PLAYER_FLAGS_IS_MULTI;
@@ -1347,11 +1356,11 @@ void main_hall_do(float frametime)
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			game_feature_not_in_demo_popup();
 #else
-			if (Campaign_file_missing) {
-				// error popup for a missing campaign file, don't try to enter tech room in this case
-				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
-				break;
-			}
+		//	if (Campaign_file_missing) {
+		//		// error popup for a missing campaign file, don't try to enter tech room in this case
+		//		popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
+		//		break;
+		//	}
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			gameseq_post_event( GS_EVENT_TECH_MENU );
 #endif
@@ -1439,7 +1448,7 @@ void main_hall_do(float frametime)
 				if (Num_recent_missions > 0)	{
 					strncpy( Game_current_mission_filename, Recent_missions[0], MAX_FILENAME_LEN );
 				} else {
-					if ( mission_load_up_campaign() == CAMPAIGN_ERROR_MISSING )
+					if ( mission_load_up_campaign() )
 						main_hall_set_notify_string(XSTR( "Campaign file is currently unavailable", -1));
 
 					strncpy( Game_current_mission_filename, Campaign.missions[0].name, MAX_FILENAME_LEN );
@@ -1453,11 +1462,11 @@ void main_hall_do(float frametime)
 
 		// clicked on the barracks region
 		case BARRACKS_REGION:			
-			if (Campaign_file_missing) {
-				// error popup for a missing campaign file, don't try to enter barracks in this case
-				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
-				break;
-			}
+		//	if (Campaign_file_missing) {
+		//		// error popup for a missing campaign file, don't try to enter barracks in this case
+		//		popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
+		//		break;
+		//	}
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			gameseq_post_event( GS_EVENT_BARRACKS_MENU );
 			break;
@@ -1538,6 +1547,13 @@ void main_hall_do(float frametime)
 	main_hall_blit_table_status();
 
 	gr_flip();
+
+	// see if we have a missing campaign and force the player to select a new campaign if so
+	extern bool Campaign_room_no_campaigns;
+	if ( !(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns ) {
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", -1));
+		gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
+	}
 
 	// maybe run the player tips popup
 // #if defined(FS2_DEMO) && defined(NDEBUG)
