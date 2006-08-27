@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.52.2.1 $
- * $Date: 2006-07-20 00:41:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.52.2.2 $
+ * $Date: 2006-08-27 18:12:41 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52.2.1  2006/07/20 00:41:26  Goober5000
+ * add WCS screaming stuff to RC branch
+ * --Goober5000
+ *
  * Revision 2.53  2006/07/06 20:46:39  Goober5000
  * WCS screaming stuff
  * --Goober5000
@@ -829,7 +833,7 @@ void persona_parse()
 	{
 		stuff_string(cstrtemp, F_NAME, NULL, NAME_LENGTH);
 
-		for (int j = 0; j < Num_species; j++)
+		for (int j = 0; j < (int)Species_info.size(); j++)
 		{
 			if (!strcmp(cstrtemp, Species_info[j].species_name))
 			{

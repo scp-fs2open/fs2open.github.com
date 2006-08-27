@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.13 $
- * $Date: 2006-08-19 21:46:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.178.2.14 $
+ * $Date: 2006-08-27 18:12:41 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.13  2006/08/19 21:46:02  Goober5000
+ * disable duplicate model texture replace
+ *
  * Revision 2.178.2.12  2006/08/19 04:38:46  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -1442,7 +1445,6 @@ MONITOR(NumShipArrivals);
 MONITOR(NumShipDepartures);
 
 
-extern int Num_species;
 void parse_mission_info(mission *pm, bool basic = false)
 {
 	int i;
@@ -1595,7 +1597,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	pm->support_ships.support_available_for_species = 0;
 
 	// for each species, store whether support is available
-	for (int species = 0; species < Num_species; species++)
+	for (int species = 0; species < (int)Species_info.size(); species++)
 	{
 		for (int ship_class = 0; ship_class < Num_ship_classes; ship_class++)
 		{

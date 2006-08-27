@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68.2.2 $
- * $Date: 2006-08-07 15:11:33 $
- * $Author: karajorma $
+ * $Revision: 2.68.2.3 $
+ * $Date: 2006-08-27 18:12:41 $
+ * $Author: taylor $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68.2.2  2006/08/07 15:11:33  karajorma
+ * Fix a small problem with ballistic primary ammo. Forgot to upload this one earlier
+ *
  * Revision 2.68.2.1  2006/06/15 00:47:21  Goober5000
  * better handling for 'G' key press
  * --Goober5000
@@ -1102,8 +1105,6 @@ int get_next_weapon_looped(int current_weapon, int subtype)
 	return current_weapon;
 }
 
-extern int Num_species;
-
 void process_debug_keys(int k)
 {
 #ifdef INTERPLAYQA
@@ -1617,7 +1618,7 @@ void process_debug_keys(int k)
 			sip = &Ship_info[Ships[objp->instance].ship_info_index];
 			sip->species++;
 
-			if (sip->species >= Num_species)
+			if (sip->species >= (int)Species_info.size())
 				sip->species = 0;
 
 			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Species of target changed to: %s", 24), Species_info[sip->species].species_name);
@@ -3482,6 +3483,4 @@ void button_strip_noncritical_keys(button_info *bi)
 	for(idx=0;idx<Non_critical_key_set_size;idx++){
 		button_info_unset(bi,Non_critical_key_set[idx]);
 	}
-} 
-
-
+}
