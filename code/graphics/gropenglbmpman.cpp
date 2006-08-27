@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.18.2.5 $
- * $Date: 2006-06-18 23:38:06 $
+ * $Revision: 1.18.2.6 $
+ * $Date: 2006-08-27 18:03:29 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18.2.5  2006/06/18 23:38:06  taylor
+ * yeah, I'm not at the top of my game today  ;)
+ *
  * Revision 1.18.2.4  2006/06/18 23:34:55  taylor
  * address a strange resize error that triggers an Assert() in the texture code with mipmaps
  *
@@ -646,7 +649,7 @@ void gr_opengl_bm_save_render_target(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
-	if (Cmdline_no_fbo)
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo )
 		return;
 
 	bitmap_entry *be = &bm_bitmaps[n];
