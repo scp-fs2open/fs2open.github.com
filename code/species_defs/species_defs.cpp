@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.32 $
- * $Date: 2006-02-13 03:11:19 $
- * $Author: Goober5000 $
+ * $Revision: 1.32.2.1 $
+ * $Date: 2006-08-27 18:12:42 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2006/02/13 03:11:19  Goober5000
+ * nitpick
+ *
  * Revision 1.31  2006/02/13 00:20:46  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -138,6 +141,8 @@
  */
 
 
+#include <vector>
+
 #include "globalincs/pstypes.h"
 #include "globalincs/def_files.h"
 #include "species_defs/species_defs.h"
@@ -148,8 +153,7 @@
 #include "localization/localize.h"
 
 
-int Num_species;
-species_info Species_info[MAX_SPECIES];
+std::vector<species_info> Species_info;
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
@@ -274,9 +278,7 @@ void parse_thrust_glows(species_info *species, bool no_create)
 
 void parse_species_tbl(char *longname)
 {
-	bool no_create = false;
 	int i, rval;
-	species_info dummy_info;
 	char species_name[NAME_LENGTH];
 
 	// open localization
@@ -312,15 +314,10 @@ void parse_species_tbl(char *longname)
 	// begin reading data
 	while (required_string_either("#END","$Species_Name:"))
 	{
-		species_info *species = &dummy_info;
-		
-		// make sure we're under the limit
-		if (Num_species >= MAX_SPECIES)
-		{
-			Warning(LOCATION, "Too many species in species_defs.tbl!  Max is %d.\n", MAX_SPECIES);
-			skip_to_string("#END", NULL);
-			break;
-		}
+		bool no_create = false;
+		species_info *species, new_species;
+
+		species = &new_species;
 
 		// Start Species - Get its name
 		required_string("$Species_Name:");
@@ -330,7 +327,7 @@ void parse_species_tbl(char *longname)
 		{
 			no_create = true;
 
-			for (i = 0; i < Num_species; i++)
+			for (i = 0; i < (int)Species_info.size(); i++)
 			{
 				if (!stricmp(Species_info[i].species_name, species_name))
 				{
@@ -341,9 +338,7 @@ void parse_species_tbl(char *longname)
 		}
 		else
 		{
-			species = &Species_info[Num_species];
 			strcpy(species->species_name, species_name);
-			Num_species++;
 		}
 
 		// Goober5000 - IFF
@@ -465,6 +460,10 @@ void parse_species_tbl(char *longname)
 			// let them know
 			Warning(LOCATION, "$AwacsMultiplier not specified for species %s in species_defs.tbl!  Defaulting to %.2d.\n", species->species_name, species->awacs_multiplier);
 		}
+
+		// don't add new entry if this is just a modified one
+		if ( !no_create )
+			Species_info.push_back( new_species );
 	}
 	
 	required_string("#END");
@@ -479,8 +478,6 @@ void species_init()
 {
 	if (Species_initted)
 		return;
-
-	Num_species = 0;
 
 
 	if (cf_exists_full("species_defs.tbl", CF_TYPE_TABLES))

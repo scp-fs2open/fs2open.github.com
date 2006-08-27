@@ -244,7 +244,7 @@ void DumpStats::get_background_stats(CString &buffer)
 
 				// species
 				temp.Format("\t\tSpecies: ");
-				for (i=0; i<Num_species; i++) {
+				for (i=0; i<Species_info.size(); i++) {
 					if (Asteroid_field.field_debris_type[i] >= 0) {
 						temp += CString(Species_info[(Asteroid_field.field_debris_type[i] / NUM_DEBRIS_SIZES) - 1].species_name) + " ";
 					}
@@ -575,7 +575,7 @@ void DumpStats::get_species_ship_breakdown(CString &buffer)
 
 
 
-	for (species=0; species < Num_species; species++) {
+	for (species=0; species < Species_info.size(); species++) {
 		buffer += Species_info[species].species_name;
 		buffer += "\r\n";
 
@@ -755,7 +755,7 @@ void DumpStats::get_default_ship_loadouts(CString &buffer)
 	buffer += "\r\nSHIP SPECIES BREAKDOWN\r\n";
 
 
-	for (species=0; species < Num_species; species++) {
+	for (species=0; species < Species_info.size(); species++) {
 		buffer += Species_info[species].species_name;
 		buffer += "\r\n";
 
