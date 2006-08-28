@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.23.2.2 $
- * $Date: 2006-08-27 18:11:37 $
+ * $Revision: 2.23.2.3 $
+ * $Date: 2006-08-28 17:14:52 $
  * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23.2.2  2006/08/27 18:11:37  taylor
+ * quite a few fixes to handle missing campaigns better
+ * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
+ * clean up the getting of a list of available campaigns
+ * fix simroom issue where single missions, with the [V] icon, would display wrong (this was a retail bug, but it doesn't show normally)
+ * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
+ * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
+ *
  * Revision 2.23.2.1  2006/07/08 18:09:41  taylor
  * remove -allslev
  * make CTRL-SHIFT-S hotkey work in mission simulator (it's a toggle, so you can turn it on or off while on the screen)
@@ -622,6 +630,7 @@ int sim_room_campaign_mission_filter(char *filename)
 	if (num < 0)
 		return 0;
 
+	Num_campaigns++;
 	Num_campaign_missions += num;
 	return 1;
 }

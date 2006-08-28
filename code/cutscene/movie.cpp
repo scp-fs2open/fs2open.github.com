@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.31.2.4 $
- * $Date: 2006-08-27 18:02:26 $
+ * $Revision: 2.31.2.5 $
+ * $Date: 2006-08-28 17:14:52 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.31.2.4  2006/08/27 18:02:26  taylor
+ * switch to using cf_find_file_location_ext() when looking for movies
+ *
  * Revision 2.31.2.3  2006/08/19 04:14:57  taylor
  * add decoder for 8-bit MVEs
  * a basic fix for finding AVIs over MVEs, for mod dir stuff (this needs some CFILE support added to be a true fix, it's on the TODO list)
@@ -143,7 +146,9 @@ int movie_find(char *filename, char *out_name)
 	// if it's not in a packfile then we're done
 	// NOTE: MVEs use CFILE internally for the player, so they can work out of VPs
 	if ( (rc != MOVIE_MVE) && (offset != 0) )
-		return MOVIE_NONE;
+		rc = MOVIE_NONE;
+	else
+		strcpy( out_name, full_path );
 
 
 	return rc;
