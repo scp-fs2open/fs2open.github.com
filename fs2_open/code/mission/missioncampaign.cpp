@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.40.2.3 $
- * $Date: 2006-08-27 18:11:37 $
+ * $Revision: 2.40.2.4 $
+ * $Date: 2006-08-28 17:14:52 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40.2.3  2006/08/27 18:11:37  taylor
+ * quite a few fixes to handle missing campaigns better
+ * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
+ * clean up the getting of a list of available campaigns
+ * fix simroom issue where single missions, with the [V] icon, would display wrong (this was a retail bug, but it doesn't show normally)
+ * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
+ * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
+ *
  * Revision 2.40.2.2  2006/06/22 14:59:45  taylor
  * fix various things that Valgrind has been complaining about
  *
@@ -628,13 +636,15 @@ int mission_campaign_maybe_add(char *filename)
 			if (MC_desc)
 				Campaign_descs[Num_campaigns] = desc;
 
+			Num_campaigns++;
+
 			return 1;
 		}
 	}
 
 	if (desc != NULL)
 		vm_free(desc);
-
+ 
 	return 0;
 }
 
@@ -669,7 +679,8 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 
 	// now get the list of all mission names
 	// NOTE: we don't do sorting here, but we assume CF_SORT_NAME, and do it manually below
-	Num_campaigns = cf_get_file_list(MAX_CAMPAIGNS, Campaign_file_names, CF_TYPE_MISSIONS, wild_card, CF_SORT_NONE);
+	int rc = cf_get_file_list(MAX_CAMPAIGNS, Campaign_file_names, CF_TYPE_MISSIONS, wild_card, CF_SORT_NONE);
+	Assert( rc == Num_campaigns );
 
 
 	// now sort everything, if we are supposed to
