@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.366 $
- * $Date: 2006-08-25 21:19:02 $
- * $Author: karajorma $
+ * $Revision: 2.367 $
+ * $Date: 2006-09-02 23:41:53 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.366  2006/08/25 21:19:02  karajorma
+ * Fix lack of Wingman Status indicator for Zeta wing in TvT games.
+ *
  * Revision 2.365  2006/08/19 21:45:18  Goober5000
  * if a modular table ship pof cannot be found, use the original one
  *
@@ -13410,16 +13413,22 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 	int		time, seconds, minutes;
 	float		dist = 0.0f;
 	object	*objp;	
-	float		min_speed;
+	float		min_speed, max_speed;
 
 	objp = &Objects[sp->objnum];
 	aip = &Ai_info[sp->ai_index];
 
 	min_speed = objp->phys_info.speed;
 
+	// Goober5000 - handle cap
+	if (aip->waypoint_speed_cap >= 0)
+		max_speed = min(sp->current_max_speed, aip->waypoint_speed_cap);
+	else
+		max_speed = sp->current_max_speed;
+
 	if ( aip->mode == AIM_WAYPOINTS ) {
 		waypoint_list	*wpl;
-		min_speed = 0.9f * sp->current_max_speed;
+		min_speed = 0.9f * max_speed;
 		if (aip->wp_list >= 0) {
 			wpl = &Waypoint_lists[aip->wp_list];
 			dist += vm_vec_dist_quick(&objp->pos, &wpl->waypoints[aip->wp_index]);
@@ -13432,7 +13441,7 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 			return NULL;
 		}	
 
-		if ( (Objects[sp->objnum].phys_info.speed <= 0) || (sp->current_max_speed <= 0.0f) ) {
+		if ( (Objects[sp->objnum].phys_info.speed <= 0) || (max_speed <= 0.0f) ) {
 			time = -1;
 		} else {
 			float	speed;
