@@ -9,9 +9,9 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.6.2.2 $
- * $Date: 2006-08-27 18:12:41 $
- * $Author: taylor $
+ * $Revision: 1.6.2.3 $
+ * $Date: 2006-09-02 20:07:39 $
+ * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6.2.2  2006/08/27 18:12:41  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 1.6.2.1  2006/06/27 02:38:49  Goober5000
  * slight optimization
  * --Goober5000
@@ -3499,6 +3502,7 @@ int CFREDView::global_error_check()
 			}
 		}
 
+/* Goober5000 - this is not necessary
 		// make sure that these ignored orders are the same for all starting wings of the player
 		if ( starting_wing ) {
 			if ( starting_orders == -1 ) {
@@ -3511,6 +3515,7 @@ int CFREDView::global_error_check()
 				}
 			}
 		}
+*/
 	}
 
 	//This should never ever be a problem -WMC
