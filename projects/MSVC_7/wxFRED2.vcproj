@@ -3,6 +3,7 @@
 	ProjectType="Visual C++"
 	Version="7.10"
 	Name="wxFRED2"
+	ProjectGUID="{2DFCB279-2446-4AFD-825B-BF11E1AAE535}"
 	SccProjectName=""
 	SccLocalPath="">
 	<Platforms>
