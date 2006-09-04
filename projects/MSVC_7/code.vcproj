@@ -84,16 +84,18 @@
 				OptimizeForWindowsApplication="TRUE"
 				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua"
 				PreprocessorDefinitions="_DEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA"
+				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="TRUE"
+				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile=".\Debug\Profile/code.pch"
 				AssemblerListingLocation=".\Debug\Profile/"
 				ObjectFile=".\Debug\Profile/"
 				ProgramDataBaseFileName=".\Debug\Profile/"
 				BrowseInformation="1"
-				WarningLevel="3"
+				WarningLevel="4"
 				SuppressStartupBanner="TRUE"
 				DebugInformationFormat="4"
 				CompileAs="0"
@@ -260,6 +262,8 @@
 				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua"
 				PreprocessorDefinitions="NDEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="FALSE"
+				EnableEnhancedInstructionSet="2"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile=".\P4Release\Profile/code.pch"
 				AssemblerListingLocation=".\P4Release\Profile/"
@@ -311,7 +315,7 @@
 				OptimizeForProcessor="3"
 				OptimizeForWindowsApplication="TRUE"
 				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua"
-				PreprocessorDefinitions="_DEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA"
+				PreprocessorDefinitions="_DEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA;FS2_VOICER"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="TRUE"
@@ -586,166 +590,6 @@
 	</References>
 	<Files>
 		<Filter
-			Name="AI"
-			Filter="">
-			<File
-				RelativePath="..\..\code\ai\ai.cpp">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\ai\ai.h">
-			</File>
-			<File
-				RelativePath="..\..\code\ai\ai_profiles.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\ai\ai_profiles.h">
-			</File>
-			<File
-				RelativePath="..\..\code\ai\AiBig.cpp">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\ai\AiBig.h">
-			</File>
-			<File
-				RelativePath="..\..\code\ai\AiCode.cpp">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\ai\AiGoals.cpp">
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\ai\AiGoals.h">
-			</File>
-			<File
-				RelativePath="..\..\code\ai\AiInternal.h">
-			</File>
-			<File
-				RelativePath="..\..\code\ai\AiLocal.h">
-			</File>
-			<File
-				RelativePath="..\..\code\ai\AiTurret.cpp">
-			</File>
-		</Filter>
-		<Filter
 			Name="Anim"
 			Filter="">
 			<File
@@ -760,6 +604,166 @@
 			<File
 				RelativePath="..\..\code\Anim\PackUnpack.h">
 			</File>
+			<Filter
+				Name="AI"
+				Filter="">
+				<File
+					RelativePath="..\..\code\ai\ai.cpp">
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="INFRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="P4Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="INFDSRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="P4InfRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\code\ai\ai.h">
+				</File>
+				<File
+					RelativePath="..\..\code\ai\ai_profiles.cpp">
+				</File>
+				<File
+					RelativePath="..\..\code\ai\ai_profiles.h">
+				</File>
+				<File
+					RelativePath="..\..\code\ai\AiBig.cpp">
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="INFRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="P4Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="INFDSRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="P4InfRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\code\ai\AiBig.h">
+				</File>
+				<File
+					RelativePath="..\..\code\ai\AiCode.cpp">
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="INFRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="P4Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="INFDSRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="P4InfRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\code\ai\AiGoals.cpp">
+					<FileConfiguration
+						Name="Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="INFRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="P4Release|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="INFDSRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="P4InfRelease|Win32">
+						<Tool
+							Name="VCCLCompilerTool"
+							Optimization="0"/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\code\ai\AiGoals.h">
+				</File>
+				<File
+					RelativePath="..\..\code\ai\AiInternal.h">
+				</File>
+				<File
+					RelativePath="..\..\code\ai\AiLocal.h">
+				</File>
+				<File
+					RelativePath="..\..\code\ai\AiTurret.cpp">
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Asteroid"
@@ -852,10 +856,28 @@
 				RelativePath="..\..\code\Cutscene\Cutscenes.h">
 			</File>
 			<File
+				RelativePath="..\..\code\cutscene\decoder16.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\decoder8.cpp">
+			</File>
+			<File
 				RelativePath="..\..\code\cutscene\movie.cpp">
 			</File>
 			<File
 				RelativePath="..\..\code\cutscene\movie.h">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mve_audio.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mvelib.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mvelib.h">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mveplayer.cpp">
 			</File>
 		</Filter>
 		<Filter
@@ -1099,9 +1121,6 @@
 					RelativePath="..\..\code\Graphics\GrD3D.cpp">
 				</File>
 				<File
-					RelativePath="..\..\code\graphics\grd3dbatch.cpp">
-				</File>
-				<File
 					RelativePath="..\..\code\graphics\GrD3DBmpman.cpp">
 				</File>
 				<File
@@ -1109,9 +1128,6 @@
 				</File>
 				<File
 					RelativePath="..\..\code\graphics\grd3dlight.cpp">
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\GrD3DParticle.cpp">
 				</File>
 				<File
 					RelativePath="..\..\code\Graphics\GrD3DRender.cpp">
@@ -1999,6 +2015,9 @@
 				RelativePath="..\..\code\Model\MODEL.H">
 			</File>
 			<File
+				RelativePath="..\..\code\model\modelanim.cpp">
+			</File>
+			<File
 				RelativePath="..\..\code\Model\ModelCollide.cpp">
 			</File>
 			<File
@@ -2031,6 +2050,12 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Object\CollideWeaponWeapon.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\object\deadobjectdock.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\object\deadobjectdock.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Object\ObjCollide.cpp">
@@ -2572,6 +2597,17 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Sound\midiseq.h">
+			</File>
+			<File
+				RelativePath="..\..\code\sound\phrases.xml">
+				<FileConfiguration
+					Name="P4Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
+&quot;$(InputDir)\gc&quot; /h &quot;$(InputDir)\grammar.h&quot; &quot;$(InputDir)\$(InputName)&quot;"
+						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\Sound\RBAudio.cpp">
