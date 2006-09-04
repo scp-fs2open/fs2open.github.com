@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.368 $
- * $Date: 2006-09-04 06:17:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.369 $
+ * $Date: 2006-09-04 18:06:37 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.368  2006/09/04 06:17:26  wmcoolmon
+ * Commit of 'new' BTRL FTL effect work
+ *
  * Revision 2.367  2006/09/02 23:41:53  Goober5000
  * fix waypoint time to goal
  *
@@ -6385,8 +6388,8 @@ void ship_render(object * obj)
 	/*
 			if(shipp->flare_life>0){
 				g3_start_instance_matrix(&obj->pos, &obj->orient, true);
-				float flalpha = min(shipp->flare_life, 1.0f);
-				float splode_factor = min(pow(shipp->flare_life,6), 1.0f) * 1.25;
+				float flalpha = MIN(shipp->flare_life, 1.0f);
+				float splode_factor = MIN(pow(shipp->flare_life,6), 1.0f) * 1.25;
 				for( int i = 0; i<shipp->n_debris_flare; i++){
 					gr_set_bitmap( shipp->flare_bm, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 
@@ -13460,7 +13463,7 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 
 	// Goober5000 - handle cap
 	if (aip->waypoint_speed_cap >= 0)
-		max_speed = min(sp->current_max_speed, aip->waypoint_speed_cap);
+		max_speed = MIN(sp->current_max_speed, aip->waypoint_speed_cap);
 	else
 		max_speed = sp->current_max_speed;
 
