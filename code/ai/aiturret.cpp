@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.42 $
- * $Date: 2006-09-04 06:13:31 $
- * $Author: wmcoolmon $
+ * $Revision: 1.43 $
+ * $Date: 2006-09-04 18:06:36 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.42  2006/09/04 06:13:31  wmcoolmon
+ * Update to allow flak range to be manually overridden, and safeguard against NULL predicted_pos
+ *
  * Revision 1.41  2006/07/09 01:55:41  Goober5000
  * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
  * this should fix Mantis #977
@@ -1566,7 +1569,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	// Don't try to fire beyond weapon_limit_range
 	//WMC - OTC
-	//weapon_firing_range = min(Weapon_info[tp->turret_weapon_type].lifetime * Weapon_info[tp->turret_weapon_type].max_speed, Weapon_info[tp->turret_weapon_type].weapon_range);
+	//weapon_firing_range = MIN(Weapon_info[tp->turret_weapon_type].lifetime * Weapon_info[tp->turret_weapon_type].max_speed, Weapon_info[tp->turret_weapon_type].weapon_range);
 
 	//WMC - build a list of valid weapons. Fire spawns if there are any.
 	float dist_to_enemy = 0.0f;
