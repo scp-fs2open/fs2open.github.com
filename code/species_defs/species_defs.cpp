@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.32 $
- * $Date: 2006-02-13 03:11:19 $
- * $Author: Goober5000 $
+ * $Revision: 1.33 $
+ * $Date: 2006-09-04 06:00:11 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2006/02/13 03:11:19  Goober5000
+ * nitpick
+ *
  * Revision 1.31  2006/02/13 00:20:46  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -343,6 +346,11 @@ void parse_species_tbl(char *longname)
 		{
 			species = &Species_info[Num_species];
 			strcpy(species->species_name, species_name);
+
+			//WMC - No init function, so here we go.
+			strcpy(species->shield_anim.filename, "");
+			species->shield_anim.first_frame = -1;
+
 			Num_species++;
 		}
 
@@ -433,7 +441,7 @@ void parse_species_tbl(char *longname)
 
 
 		// Shield Hit Animation
-		if ((!no_create && required_string("+Shield_Hit_ani:")) || optional_string("+Shield_Hit_ani:"))
+		if (optional_string("+Shield_Hit_ani:"))
 		{
 			generic_anim_init(&species->shield_anim, NULL);
 			stuff_string(species->shield_anim.filename, F_NAME, NULL, MAX_FILENAME_LEN);
