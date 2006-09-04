@@ -76,6 +76,7 @@ struct string_conv {
 //variable you want to deal with.
 //The order varies with order of variables
 string_conv lua_Operators[] = {
+	{"__newindex",	"="},			//var =  obj
 	{"__add",		"+"},			//var +  obj
 	{"__sub",		"-"},			//var -  obj
 	{"__mult",		"*"},			//var *  obj
@@ -680,6 +681,94 @@ int lua_index_handler(lua_State *L)
 //*************************Begin non-lowlevel stuff*************************
 //If you are a coder who wants to add functionality to Lua, you want to be
 //below this point.
+
+//**********OBJECT: constant class
+struct enum_h {
+	int index;
+	bool is_constant;
+	enum_h(){index=-1; is_constant=false;}
+};
+lua_obj<enum_h> l_Enum("enumeration", "Enumeration object");
+
+LUA_FUNC(__newindex, l_Enum, "Enumeration", "Sets enumeration to specified value (if it is not a global", "enumeration")
+{
+	enum_h *e1=NULL, *e2=NULL;
+	if(!lua_get_args(L, "oo", l_Enum.GetPtr(&e1), l_Enum.GetPtr(&e2)))
+		return LUA_RETURN_NIL;
+
+	if(!e1->is_constant)
+		e1->index = e2->index;
+
+	return lua_set_args(L, "o", l_Enum.Set(*e1));
+}
+
+//WMC NOTE -
+//While you can have enumeration indexes in any order, make sure
+//that any new enumerations have indexes of NEXT INDEX (see below)
+//or after. Don't forget to increment NEXT INDEX after you're done.
+//NEXT INDEX: 20
+static flag_def_list Enumerations[] = {
+	#define LE_ALPHA_FILTER					14
+	{		"ALPHA_FILTER",					LE_ALPHA_FILTER			},
+
+	#define LE_MOUSE_LEFT_BUTTON			1
+	{		"MOUSE_LEFT_BUTTON",			LE_MOUSE_LEFT_BUTTON	},
+
+	#define LE_MOUSE_RIGHT_BUTTON			2
+	{		"MOUSE_RIGHT_BUTTON",			LE_MOUSE_RIGHT_BUTTON	},
+
+	#define LE_MOUSE_MIDDLE_BUTTON			3
+	{		"MOUSE_MIDDLE_BUTTON",			LE_MOUSE_MIDDLE_BUTTON	},
+
+	#define LE_PARTICLE_DEBUG				4
+	{		"PARTICLE_DEBUG",				LE_PARTICLE_DEBUG		},
+
+	#define LE_PARTICLE_BITMAP				5
+	{		"PARTICLE_BITMAP",				LE_PARTICLE_BITMAP		},
+
+	#define LE_PARTICLE_FIRE				6
+	{		"PARTICLE_FIRE",				LE_PARTICLE_FIRE		},
+
+	#define LE_PARTICLE_SMOKE				7
+	{		"PARTICLE_SMOKE",				LE_PARTICLE_SMOKE		},
+
+	#define LE_PARTICLE_SMOKE2				8
+	{		"PARTICLE_SMOKE2",				LE_PARTICLE_SMOKE2		},
+
+	#define LE_PARTICLE_PERSISTENT_BITMAP	9
+	{		"PARTICLE_PERSISTENT_BITMAP",	LE_PARTICLE_PERSISTENT_BITMAP		},
+
+	#define LE_TEXTURE_STATIC				10
+	{		"TEXTURE_STATIC",				LE_TEXTURE_STATIC		},
+
+	#define LE_TEXTURE_DYNAMIC				11
+	{		"TEXTURE_DYNAMIC",				LE_TEXTURE_DYNAMIC		},
+
+	#define LE_LOCK							12
+	{		"LOCK",							LE_LOCK					},
+
+	#define LE_UNLOCK						13
+	{		"UNLOCK",						LE_UNLOCK				},
+
+	#define	LE_NONE							15
+	{		"NONE",							LE_NONE					},
+
+	#define	LE_SHIELD_FRONT					16
+	{		"SHIELD_FRONT",					LE_SHIELD_FRONT			},
+
+	#define	LE_SHIELD_LEFT					17
+	{		"SHIELD_LEFT",					LE_SHIELD_LEFT			},
+
+	#define	LE_SHIELD_RIGHT					18
+	{		"SHIELD_RIGHT",					LE_SHIELD_RIGHT			},
+
+	#define	LE_SHIELD_BACK					19
+	{		"SHIELD_BACK",					LE_SHIELD_BACK			},
+};
+
+//DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
+
+static int Num_enumerations = sizeof(Enumerations) / sizeof(flag_def_list);
 
 //**********OBJECT: orientation matrix
 //WMC - So matrix can use vector, I define it up here.
@@ -1548,6 +1637,232 @@ LUA_VAR(Name, l_Weaponclass, "string", "Weapon class name")
 	return lua_set_args(L, "s", Weapon_info[idx].name);
 }
 
+LUA_VAR(Title, l_Weaponclass, "string", "Weapon class title")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && s != NULL) {
+		strncpy(Weapon_info[idx].title, s, sizeof(Weapon_info[idx].title)-1);
+	}
+
+	return lua_set_args(L, "s", Weapon_info[idx].title);
+}
+
+LUA_VAR(Description, l_Weaponclass, "string", "Weapon class description string")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	weapon_info *wip = &Weapon_info[idx];
+
+	if(LUA_SETTING_VAR) {
+		vm_free(wip->desc);
+		if(s != NULL) {
+			wip->desc = (char*)vm_malloc(strlen(s)+1);
+			strcpy(wip->desc, s);
+		} else {
+			wip->desc = NULL;
+		}
+	}
+
+	if(wip->desc != NULL)
+		return lua_set_args(L, "s", wip->desc);
+	else
+		return lua_set_args(L, "s", "");
+}
+
+LUA_VAR(TechTitle, l_Weaponclass, "string", "Weapon class tech title")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && s != NULL) {
+		strncpy(Weapon_info[idx].tech_title, s, sizeof(Weapon_info[idx].tech_title)-1);
+	}
+
+	return lua_set_args(L, "s", Weapon_info[idx].tech_title);
+}
+
+LUA_VAR(TechAnimationFilename, l_Weaponclass, "string", "Weapon class animation filename")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && s != NULL) {
+		strncpy(Weapon_info[idx].tech_anim_filename, s, sizeof(Weapon_info[idx].tech_anim_filename)-1);
+	}
+
+	return lua_set_args(L, "s", Weapon_info[idx].tech_anim_filename);
+}
+
+LUA_VAR(TechDescription, l_Weaponclass, "string", "Weapon class tech description string")
+{
+	int idx;
+	char *s = NULL;
+	if(!lua_get_args(L, "o|s", l_Weaponclass.Get(&idx), &s))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx >= Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	weapon_info *wip = &Weapon_info[idx];
+
+	if(LUA_SETTING_VAR) {
+		vm_free(wip->tech_desc);
+		if(s != NULL) {
+			wip->tech_desc = (char*)vm_malloc(strlen(s)+1);
+			strcpy(wip->tech_desc, s);
+		} else {
+			wip->tech_desc = NULL;
+		}
+	}
+
+	if(wip->tech_desc != NULL)
+		return lua_set_args(L, "s", wip->tech_desc);
+	else
+		return lua_set_args(L, "s", "");
+}
+
+LUA_VAR(ArmorFactor, l_Weaponclass, "number", "Amount of weapon damage applied to ship hull (0-1.0)")
+{
+	int idx;
+	float f = 0.0f;
+	if(!lua_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		Weapon_info[idx].armor_factor = f;
+	}
+
+	return lua_set_args(L, "f", Weapon_info[idx].armor_factor);
+}
+
+LUA_VAR(FireWait, l_Weaponclass, "number", "Weapon fire wait (cooldown time) in seconds")
+{
+	int idx;
+	float f = 0.0f;
+	if(!lua_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		Weapon_info[idx].fire_wait = f;
+	}
+
+	return lua_set_args(L, "f", Weapon_info[idx].fire_wait);
+}
+
+LUA_VAR(Mass, l_Weaponclass, "number", "Weapon mass")
+{
+	int idx;
+	float f = 0.0f;
+	if(!lua_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		Weapon_info[idx].mass = f;
+	}
+
+	return lua_set_args(L, "f", Weapon_info[idx].mass);
+}
+
+LUA_VAR(ShieldFactor, l_Weaponclass, "number", "Amount of weapon damage applied to ship shields (0-1.0)")
+{
+	int idx;
+	float f = 0.0f;
+	if(!lua_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		Weapon_info[idx].shield_factor = f;
+	}
+
+	return lua_set_args(L, "f", Weapon_info[idx].shield_factor);
+}
+
+LUA_VAR(SubsystemFactor, l_Weaponclass, "number", "Amount of weapon damage applied to ship subsystems (0-1.0)")
+{
+	int idx;
+	float f = 0.0f;
+	if(!lua_get_args(L, "o|f", l_Weaponclass.Get(&idx), &f))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		Weapon_info[idx].subsystem_factor = f;
+	}
+
+	return lua_set_args(L, "f", Weapon_info[idx].subsystem_factor);
+}
+
+LUA_VAR(TargetLOD, l_Weaponclass, "number", "LOD used for weapon model in the targeting computer")
+{
+	int idx;
+	int lod = 0;
+	if(!lua_get_args(L, "o|i", l_Weaponclass.Get(&idx), &lod))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		Weapon_info[idx].hud_target_lod = lod;
+	}
+
+	return lua_set_args(L, "i", Weapon_info[idx].hud_target_lod);
+}
+
+LUA_VAR(Speed, l_Weaponclass, "number", "Weapon max speed, aka $Velocity in weapons.tbl")
+{
+	int idx;
+	float spd = 0.0f;
+	if(!lua_get_args(L, "o|f", l_Weaponclass.Get(&idx), &spd))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Num_weapon_types)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		Weapon_info[idx].max_speed = spd;
+	}
+
+	return lua_set_args(L, "f", Weapon_info[idx].max_speed);
+}
+
 //**********HANDLE: Shipclass
 lua_obj<int> l_Shipclass("shipclass", "Ship class handle");
 extern int ships_inited;
@@ -1946,36 +2261,64 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 //**********HANDLE: Shields
 lua_obj<object_h> l_Shields("shields", "Shields handle");
 
-LUA_INDEXER(l_Shields, "Front, left, right, back, or 1-4", "Number", "Gets or sets shield quadrant strength")
+LUA_INDEXER(l_Shields, "SHIELD_* enumeration, NONE, or 1-4", "Number", "Gets or sets shield quadrant strength")
 {
 	object_h *objh;
-	char *qd = NULL;
 	float nval = -1.0f;
-	if(!lua_get_args(L, "os|f", l_Shields.GetPtr(&objh), &qd, &nval))
-		return 0;
 
-	if(!objh->IsValid())
-		return LUA_RETURN_NIL;
+	object *objp = NULL;
+	int qdx = -1;
 
-	object *objp = objh->objp;
+	if(lua_isstring(L, 2))
+	{
+		char *qd = NULL;
+		if(!lua_get_args(L, "os|f", l_Shields.GetPtr(&objh), &qd, &nval))
+			return 0;
 
-	//Which quadrant?
-	int qdx;
-	int qdi;
-	if(qd == NULL || !stricmp(qd, "None"))
-		qdx = -1;
-	else if((qdi = atoi(qd)) > 0 && qdi < 5)
-		qdx = qdi-1;	//LUA->FS2
-	else if(!stricmp(qd, "Front"))
-		qdx = 0;
-	else if(!stricmp(qd, "Left"))
-		qdx = 1;
-	else if(!stricmp(qd, "Right"))
-		qdx = 2;
-	else if(!stricmp(qd, "Back"))
-		qdx = 3;
-	else
-		return LUA_RETURN_NIL;
+		if(!objh->IsValid())
+			return LUA_RETURN_NIL;
+
+		objp = objh->objp;
+
+		//Which quadrant?
+		int qdi;
+		if(qd == NULL)
+			qdx = -1;
+		else if((qdi = atoi(qd)) > 0 && qdi < 5)
+			qdx = qdi-1;	//LUA->FS2
+		else
+			return LUA_RETURN_NIL;
+	} else {
+		enum_h *qd = NULL;
+		if(!lua_get_args(L, "oo|f", l_Shields.GetPtr(&objh), l_Enum.GetPtr(&qd), &nval))
+			return 0;
+
+		if(!objh->IsValid())
+			return LUA_RETURN_NIL;
+
+		objp = objh->objp;
+
+		switch(qd->index)
+		{
+			case LE_NONE:
+				qdx = -1;
+				break;
+			case LE_SHIELD_FRONT:
+				qdx = 0;
+				break;
+			case LE_SHIELD_LEFT:
+				qdx = 1;
+				break;
+			case LE_SHIELD_RIGHT:
+				qdx = 2;
+				break;
+			case LE_SHIELD_BACK:
+				qdx = 3;
+				break;
+			default:
+				return LUA_RETURN_NIL;
+		}
+	}
 
 	//Set/get all quadrants
 	if(qdx == -1) {
@@ -2619,6 +2962,44 @@ LUA_VAR(AWACSRadius, l_Subsystem, "Number", "Subsystem AWACS radius")
 	return lua_set_args(L, "f", sso->ss->awacs_radius);
 }
 
+LUA_VAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject or turret base")
+{
+	ship_subsys_h *sso;
+	matrix_h *mh;
+	if(!lua_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Matrix.GetPtr(&mh)))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && mh != NULL)
+	{
+		mh->ValidateAngles();
+		sso->ss->submodel_info_1.angs = mh->ang;
+	}
+
+	return lua_set_args(L, "o", l_Matrix.Set(matrix_h(&sso->ss->submodel_info_1.angs)));
+}
+
+LUA_VAR(GunOrientation, l_Subsystem, "orientation", "Orientation of turret gun")
+{
+	ship_subsys_h *sso;
+	matrix_h *mh;
+	if(!lua_get_args(L, "o|o", l_Subsystem.GetPtr(&sso), l_Matrix.GetPtr(&mh)))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR && mh != NULL)
+	{
+		mh->ValidateAngles();
+		sso->ss->submodel_info_2.angs = mh->ang;
+	}
+
+	return lua_set_args(L, "o", l_Matrix.Set(matrix_h(&sso->ss->submodel_info_2.angs)));
+}
+
 LUA_VAR(HitpointsLeft, l_Subsystem, "Number", "Subsystem hitpoints left")
 {
 	ship_subsys_h *sso;
@@ -2781,7 +3162,38 @@ LUA_VAR(Target, l_Subsystem, "Object", "Object targetted by this subsystem")
 	return lua_set_args(L, "o", l_Object.Set(&Objects[ss->turret_enemy_objnum]));
 }
 
-LUA_FUNC(getName, l_Subsystem, NULL, "Subsystem name", "Subsystem name")
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f);
+LUA_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]", NULL, "Fires weapon on turret")
+{
+	ship_subsys_h *sso;
+	int wnum = 1;
+	float flak_range = 100.0f;
+	if(!lua_get_args(L, "o|if", l_Subsystem.GetPtr(&sso), &wnum, &flak_range))
+		return LUA_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return LUA_RETURN_NIL;
+
+	wnum--;	//Lua->FS2
+
+	//Get default turret info
+	vec3d gpos, gvec, fvec;
+	ship_get_global_turret_info(sso->objp, sso->ss->system_info, &gpos, &gvec);
+
+	//Now rotate a matrix by angles
+	matrix m = IDENTITY_MATRIX;
+	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_1.angs);
+	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_2.angs);
+
+	//Rotate the vector
+	vm_vec_unrotate(&fvec, &gvec, &m);
+
+	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objp), &gpos, &fvec, NULL, flak_range);
+
+	return lua_set_args(L, "b", rtn);
+}
+
+LUA_FUNC(getName, l_Subsystem, NULL, "Subsystem name", "Subsystem name")\
 {
 	ship_subsys_h *sso;
 	char *s = NULL;
@@ -4274,27 +4686,27 @@ LUA_FUNC(getY, l_Mouse, NULL, "Y pos (Number)", "Gets Mouse Y pos")
 	return lua_set_args(L, "i", y);
 }
 
-LUA_FUNC(isButtonDown, l_Mouse, "{Left, Right, or Middle}, [..., ...]", "Whether specified buttons are pressed (Boolean)", "Returns whether the specified mouse buttons are up or down")
+LUA_FUNC(isButtonDown, l_Mouse, "{MOUSE_*_BUTTON enumeration}, [..., ...]", "Whether specified buttons are pressed (Boolean)", "Returns whether the specified mouse buttons are up or down")
 {
 	if(!mouse_inited)
 		return LUA_RETURN_NIL;
 
-	char *sa[3] = {NULL, NULL, NULL};
-	lua_get_args(L, "s|ss", &sa[0], &sa[1], &sa[2]);	//Like a snake!
+	enum_h *e[3] = {NULL, NULL, NULL};
+	lua_get_args(L, "o|oo", l_Enum.GetPtr(&e[0]), l_Enum.GetPtr(&e[1]), l_Enum.GetPtr(&e[2]));	//Like a snake!
 
 	bool rtn = false;
 	int check_flags = 0;
 
 	for(int i = 0; i < 3; i++)
 	{
-		if(sa[i] == NULL)
+		if(e[i] == NULL)
 			break;
 
-		if(!stricmp(sa[i], "Left"))
+		if(e[i]->index == LE_MOUSE_LEFT_BUTTON)
 			check_flags |= MOUSE_LEFT_BUTTON;
-		else if(!stricmp(sa[i], "Middle"))
+		if(e[i]->index == LE_MOUSE_MIDDLE_BUTTON)
 			check_flags |= MOUSE_MIDDLE_BUTTON;
-		else if(!stricmp(sa[i], "Right"))
+		if(e[i]->index == LE_MOUSE_RIGHT_BUTTON)
 			check_flags |= MOUSE_RIGHT_BUTTON;
 	}
 
@@ -4304,22 +4716,22 @@ LUA_FUNC(isButtonDown, l_Mouse, "{Left, Right, or Middle}, [..., ...]", "Whether
 	return lua_set_args(L, "b", rtn);
 }
 
-LUA_FUNC(setCursorImage, l_Mouse, "Image filename w/o extension, [Lock,Unlock]", "Y pos (Number)", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)")
+LUA_FUNC(setCursorImage, l_Mouse, "Image filename w/o extension, [LOCK or UNLOCK]", "Y pos (Number)", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)")
 {
 	if(!mouse_inited || !Gr_inited)
 		return LUA_RETURN_NIL;
 
 	char *s = NULL;
-	char *u = NULL;
-	if(!lua_get_args(L, "s|s", &s, &u))
+	enum_h *u = NULL;
+	if(!lua_get_args(L, "s|o", &s, l_Enum.GetPtr(&u)))
 		return LUA_RETURN_NIL;
 
 	int ul = 0;
 	if(u != NULL)
 	{
-		if(!stricmp("Lock", u))
+		if(u->index == LE_LOCK)
 			ul = GR_CURSOR_LOCK;
-		else if(!stricmp("Unlock", u))
+		else if(u->index == LE_UNLOCK)
 			ul = GR_CURSOR_UNLOCK;
 	}
 
@@ -4425,14 +4837,14 @@ LUA_FUNC(setColor, l_Graphics, "Red, Green, Blue, [alpha]", NULL, "Sets 2D drawi
 
 LUA_FUNC(setOpacity, l_Graphics, "Opacity %, [Opacity Type]", NULL,
 		 "Sets opacity for 2D image drawing functions to specified amount and type. Valid types are:"
-		 "<br>None"
-		 "<br>Filter")
+		 "<br>NONE"
+		 "<br>ALPHA_FILTER")
 {
 	float f;
-	char *s=NULL;
+	enum_h *alphatype = NULL;
 	int idx=-1;
 
-	if(!lua_get_args(L, "f|s", &f, &s))
+	if(!lua_get_args(L, "f|s", &f, l_Enum.GetPtr(&alphatype)))
 		return LUA_RETURN_NIL;
 
 	if(f > 100.0f)
@@ -4440,9 +4852,9 @@ LUA_FUNC(setOpacity, l_Graphics, "Opacity %, [Opacity Type]", NULL,
 	if(f < 0.0f)
 		f = 0.0f;
 
-	if(s != NULL)
+	if(alphatype != NULL)
 	{
-		if(!stricmp(s, "Filter"))
+		if(alphatype->index == LE_ALPHA_FILTER)
 			idx = GR_ALPHABLEND_FILTER;
 		else
 			idx = GR_ALPHABLEND_NONE;
@@ -4663,14 +5075,14 @@ LUA_FUNC(getStringWidth, l_Graphics, "String to get width of", "String width", "
 LUA_FUNC(createTexture, l_Graphics, "Width, Height, Type", "Handle to new texture", "Creates a texture for rendering to. Types are static - for infrequent rendering - and dynamic - for frequent rendering.")
 {
 	int w,h;
-	char *s;
-	if(!lua_get_args(L, "iis", &w, &h, &s))
+	enum_h *e;
+	if(!lua_get_args(L, "iio", &w, &h, l_Enum.GetPtr(&e)))
 		return LUA_RETURN_NIL;
 
 	int t = 0;
-	if(!stricmp(s, "Static"))
+	if(e->index == LE_TEXTURE_STATIC)
 		t = BMP_FLAG_RENDER_TARGET_STATIC;
-	else if(!stricmp(s, "Dynamic"))
+	else if(e->index == LE_TEXTURE_DYNAMIC)
 		t = BMP_FLAG_RENDER_TARGET_DYNAMIC;
 
 	int idx = bm_make_render_target(w, h, t);
@@ -4706,25 +5118,28 @@ LUA_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation, No drop
 	return lua_set_args(L, "o", l_Texture.Set(idx));
 }
 
-LUA_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, X start, Y start]", "Whether image or texture was drawn",
+LUA_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, uv x1, uv y1, uv x2, uv y2]", "Whether image or texture was drawn",
 		 "Draws an image or texture. Any image extension passed will be ignored."
-		 "Width and height to show specify the number of pixels from the left and top boundaries that will be drawn."
-		 "X start and Y start specify the left and top bounaries, respectively.")
+		 "The UV variables specify the UV value for each corner of the image. "
+		 "In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right."
+		 )
 {
 	if(!Gr_inited)
 		return LUA_RETURN_NIL;
 
 	int idx;
-	int x,y;
+	int x1,y1;
 	int x2=INT_MAX;
 	int y2=INT_MAX;
-	int sx=0;
-	int sy=0;
+	float uv_x1=0.0f;
+	float uv_y1=0.0f;
+	float uv_x2=1.0f;
+	float uv_y2=1.0f;
 
 	if(lua_isstring(L, 1))
 	{
 		char *s = NULL;
-		if(!lua_get_args(L, "sii|iiii", &s,&x,&y,&x2,&y2,&sx,&sy))
+		if(!lua_get_args(L, "sii|iiffff", &s,&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2))
 			return LUA_RETURN_NIL;
 
 		idx = Script_system.LoadBm(s);
@@ -4734,7 +5149,7 @@ LUA_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, X s
 	}
 	else
 	{
-		if(!lua_get_args(L, "oii|biiii", l_Texture.Get(&idx),&x,&y,&x2,&y2,&sx,&sy))
+		if(!lua_get_args(L, "oii|biiffff", l_Texture.Get(&idx),&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2))
 			return LUA_RETURN_NIL;
 	}
 
@@ -4742,20 +5157,15 @@ LUA_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, X s
 	if(bm_get_info(idx, &w, &h) < 0)
 		return LUA_RETURN_FALSE;
 
-	if(sx < 0)
-		sx = w + sx;
-
-	if(sy < 0)
-		sy = h + sy;
-	
 	if(x2!=INT_MAX)
-		w = x2-x;
+		w = x2-x1;
 
 	if(y2!=INT_MAX)
-		h = y2-y;
+		h = y2-y1;
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL,lua_Opacity);
-	gr_bitmap_ex(x, y, w, h, sx, sy, false);
+	gr_bitmap_list(&bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2), 1, false);
+	//gr_bitmap_ex(x, y, w, h, sx, sy, false);
 
 	return LUA_RETURN_TRUE;
 }
@@ -4921,8 +5331,8 @@ LUA_FUNC(playInterfaceSound, l_SoundLib, "Sound filename", "True if sound was pl
 //This section is for stuff that's considered experimental.
 lua_lib l_Testing("Testing", "ts", "Experimental or testing stuff");
 
-LUA_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Lifetime, number Radius, string Type, [number Tracer length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]", NULL,
-		 "Creates a particle. Types are 'Debug', 'Bitmap', 'Fire', 'Smoke', 'Smoke2', and 'Persistent Bitmap'."
+LUA_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]", NULL,
+		 "Creates a particle. Use PARTICLE_* enumerations for type."
 		 "Reverse reverse animation, if one is specified"
 		 "Attached object specifies object that Position will be (and always be) relative to.")
 {
@@ -4934,26 +5344,32 @@ LUA_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 	pi.attached_sig = -1;
 	pi.reverse = 0;
 
-	char *s=NULL;
+	enum_h *type = NULL;
 	bool rev=false;
 	object_h *objh=NULL;
-	if(!lua_get_args(L, "ooffs|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad, &s, &pi.tracer_length, &rev, l_Texture.Get((int*)&pi.optional_data), l_Object.GetPtr(&objh)))
+	if(!lua_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad, l_Enum.GetPtr(&type), &pi.tracer_length, &rev, l_Texture.Get((int*)&pi.optional_data), l_Object.GetPtr(&objh)))
 		return LUA_RETURN_NIL;
 
-	if(s != NULL)
+	if(type != NULL)
 	{
-		if(!stricmp(s, "Debug"))
-			pi.type = PARTICLE_DEBUG;
-		else if(!stricmp(s, "Bitmap"))
-			pi.type = PARTICLE_BITMAP;
-		else if(!stricmp(s, "Fire"))
-			pi.type = PARTICLE_FIRE;
-		else if(!stricmp(s, "Smoke"))
-			pi.type = PARTICLE_SMOKE;
-		else if(!stricmp(s, "Smoke2"))
-			pi.type = PARTICLE_SMOKE2;
-		else if(!stricmp(s, "Persistent bitmap"))
-			pi.type = PARTICLE_BITMAP_PERSISTENT;
+		switch(type->index)
+		{
+			case LE_PARTICLE_DEBUG:
+				pi.type = PARTICLE_DEBUG;
+				break;
+			case LE_PARTICLE_FIRE:
+				pi.type = PARTICLE_FIRE;
+				break;
+			case LE_PARTICLE_SMOKE:
+				pi.type = PARTICLE_SMOKE;
+				break;
+			case LE_PARTICLE_SMOKE2:
+				pi.type = PARTICLE_SMOKE2;
+				break;
+			case LE_PARTICLE_PERSISTENT_BITMAP:
+				pi.type = PARTICLE_BITMAP_PERSISTENT;
+				break;
+		}
 	}
 
 	if(rev)
@@ -5498,6 +5914,21 @@ int script_state::CreateLuaState()
 			lua_settable(L, table_loc);
 		}
 	}
+
+	//*****INITIALIZE ENUMERATION CONSTANTS
+	mprintf(("LUA: Initializing enumeration constants...\n"));
+	enum_h eh;
+	for(i = 0; i < Num_enumerations; i++)
+	{
+		eh.index = Enumerations[i].def;
+		eh.is_constant = true;
+
+		lua_set_args(L, "o", l_Enum.Set(eh));
+		lua_setglobal(L, Enumerations[i].name);
+	}
+
+	//*****ASSIGN LUA SESSION
+	mprintf(("LUA: Assigning Lua session...\n"));
 	SetLuaSession(L);
 
 	return 1;
@@ -5711,17 +6142,19 @@ void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
 
 void script_state::OutputLuaMeta(FILE *fp)
 {
-	//***Output Libraries
+	//***Output Libraries pre-list
 	fputs("<dl>", fp);
 	fputs("<dt><b>Libraries</b></dt>", fp);
 	lua_lib_h *lib = &lua_Libraries[0];
 	lua_lib_h *lib_end = &lua_Libraries[lua_Libraries.size()];
+	int i;
+
 	for(; lib < lib_end; lib++)
 	{
 		fprintf(fp, "<dd><a href=\"#%s\">%s (%s)</a> - %s</dd>", lib->Name, lib->Name, lib->ShortName, lib->Description);
 	}
 
-	//***Output objects
+	//***Output objects pre-list
 	lib = &lua_Objects[0];
 	lib_end = &lua_Objects[lua_Objects.size()];
 	fputs("<dt><b>Objects</b></dt>", fp);
@@ -5729,6 +6162,12 @@ void script_state::OutputLuaMeta(FILE *fp)
 	{
 		fprintf(fp, "<dd><a href=\"#%s\">%s</a> - %s</dd>", lib->Name, lib->Name, lib->Description);
 	}
+
+	//***Output enumerations link
+	lib = &lua_Objects[0];
+	lib_end = &lua_Objects[lua_Objects.size()];
+	fputs("<dt><b><a href=\"#Enumerations\">Enumerations</a></b></dt>", fp);
+
 	fputs("</dl><br/><br/>", fp);
 
 	//***Output libs
@@ -5751,6 +6190,16 @@ void script_state::OutputLuaMeta(FILE *fp)
 
 		//Last param is something of a hack to handle lib derivs
 		output_lib_meta(fp, lib, lib->Derivator > -1 ? &lua_Objects[lib->Derivator] : NULL);
+	}
+	//***Output enumerations
+	fprintf(fp, "<dt id=\"Enumerations\"><h2>Enumerations</h2></dt>");
+	for(i = 0; i < Num_enumerations; i++)
+	{
+		//WMC - This is in case we ever want to add descriptions to enums.
+		//fprintf(fp, "<dd><dl><dt><b>%s</b></dt><dd>%s</dd></dl></dd>", Enumerations[i].name, Enumerations[i].desc);
+
+		//WMC - Otherwise, just use this.
+		fprintf(fp, "<dd><b>%s</b></dd>", Enumerations[i].name);
 	}
 	fputs("</dl>", fp);
 }
