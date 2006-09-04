@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.25 $
- * $Date: 2006-07-27 19:17:59 $
- * $Author: Kazan $
+ * $Revision: 1.26 $
+ * $Date: 2006-09-04 06:06:38 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2006/07/27 19:17:59  Kazan
+ * Lock player primaries during autopilot
+ *
  * Revision 1.24  2006/07/26 03:46:04  Kazan
  * Resolve Mantis #1011
  *
@@ -823,7 +826,9 @@ unsigned int DistanceTo(int nav)
 	if (nav > MAX_NAVPOINTS && nav < 0)
 		return 0xFFFFFFFF;
 
-	return vm_vec_dist_quick(&Player_obj->pos, Navs[nav].GetPosition());
+	//WMC - Get rid of this bloody warning. Yes, we're casting to a uint.
+	//Deal with it.
+	return (uint)vm_vec_dist_quick(&Player_obj->pos, Navs[nav].GetPosition());
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
