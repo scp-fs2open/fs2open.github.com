@@ -1,12 +1,17 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.41 $
- * $Date: 2006-07-09 01:55:41 $
- * $Author: Goober5000 $
+ * $Revision: 1.42 $
+ * $Date: 2006-09-04 06:13:31 $
+ * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.41  2006/07/09 01:55:41  Goober5000
+ * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
+ * this should fix Mantis #977
+ * --Goober5000
+ *
  * Revision 1.40  2006/06/07 04:36:52  wmcoolmon
  * Fix muzzleflashes for non-flak weapons. Begin commit of limbo code.
  *
@@ -364,6 +369,17 @@ weapon_info *get_turret_weapon_wip(ship_weapon *swp, int weapon_num)
 		return &Weapon_info[swp->secondary_bank_weapons[weapon_num - MAX_SHIP_PRIMARY_BANKS]];
 	else
 		return &Weapon_info[swp->primary_bank_weapons[weapon_num]];
+}
+
+int get_turret_weapon_next_fire_stamp(ship_weapon *swp, int weapon_num)
+{
+	Assert(weapon_num < MAX_SHIP_WEAPONS);
+	Assert(weapon_num >= 0);
+
+	if(weapon_num >= MAX_SHIP_PRIMARY_BANKS)
+		return swp->next_secondary_fire_stamp[weapon_num - MAX_SHIP_PRIMARY_BANKS];
+	else
+		return swp->next_primary_fire_stamp[weapon_num];
 }
 
 
@@ -1254,7 +1270,7 @@ void turret_update_enemy_in_range(ship_subsys *turret, float seconds)
 }
 
 // Fire a weapon from a turret
-void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL)
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f)
 {
 	matrix	turret_orient;
 	int weapon_objnum;
@@ -1264,6 +1280,10 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	weapon_info *wip;
 	weapon *wp;
 	object *objp;
+
+	//WMC - Limit firing to firestamp
+	if(!timestamp_elapsed(get_turret_weapon_next_fire_stamp(&turret->weapons, weapon_num)))
+		return false;
 
 	parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
 	parent_ship = &Ships[Objects[parent_objnum].instance];
@@ -1289,8 +1309,9 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		if(wip->wi_flags & WIF_BEAM){
 			// if this beam isn't free to fire
 			if (!(turret->weapons.flags & SW_FLAG_BEAM_FREE)) {
-				Int3();	// should never get this far
-				return;
+				//WMC - remove this
+				//Int3();	// should never get this far
+				return false;
 			}
 			beam_fire_info fire_info;
 
@@ -1322,7 +1343,7 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, Weapon_info[turret_weapon_class].muzzle_flash);*/
 
 				turret_swarm_set_up_info(parent_objnum, turret, wip);
-				return;
+				return true;
 			}
 			
 			for (int i=0; i < wip->shots; i++)
@@ -1345,11 +1366,18 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						// show a muzzle flash
 						flak_muzzle_flash(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, turret_weapon_class);
 
-						// pick a firing range so that it detonates properly			
-						flak_pick_range(objp, turret_pos, predicted_pos, ship_get_subsystem_strength(parent_ship, SUBSYSTEM_WEAPONS));
+						if(predicted_pos != NULL)
+						{
+							// pick a firing range so that it detonates properly			
+							flak_pick_range(objp, turret_pos, predicted_pos, ship_get_subsystem_strength(parent_ship, SUBSYSTEM_WEAPONS));
 
-						// determine what that range was
-						flak_range = flak_get_range(objp);
+							// determine what that range was
+							flak_range = flak_get_range(objp);
+						}
+						else
+						{
+							flak_set_range(objp, turret_pos, flak_range_override);
+						}
 					} else if(wip->muzzle_flash > -1) {	
 						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, Weapon_info[turret_weapon_class].muzzle_flash);		
 					}
@@ -1388,6 +1416,8 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		float wait = 1000.0f * frand_range(0.9f, 1.1f);
 		turret->turret_next_fire_stamp = timestamp((int) wait);
 	}
+
+	return true;
 }
 
 //void turret_swarm_fire_from_turret(ship_subsys *turret, int parent_objnum, int target_objnum, ship_subsys *target_subsys)
@@ -1552,6 +1582,10 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	int secnum = 0;
 	for(i = 0; i < (MAX_SHIP_WEAPONS); i++)
 	{
+		//WMC - Only fire more than once if we have multiple guns flag set.
+		if(num_valid > 0 && !(ss->flags & MSS_FLAG_USE_MULTIPLE_GUNS))
+			break;
+
 		if(i < MAX_SHIP_PRIMARY_BANKS)
 		{
 			if(i >= swp->num_primary_banks)
