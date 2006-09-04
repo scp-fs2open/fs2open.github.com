@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.44 $
- * $Date: 2006-05-21 22:57:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.45 $
+ * $Date: 2006-09-04 06:03:10 $
+ * $Author: wmcoolmon $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2006/05/21 22:57:30  Goober5000
+ * fix for Mantis #750
+ * --Goober5000
+ *
  * Revision 2.43  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -1347,11 +1351,11 @@ void main_hall_do(float frametime)
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			game_feature_not_in_demo_popup();
 #else
-			if (Campaign_file_missing) {
+			/*if (Campaign_file_missing) {
 				// error popup for a missing campaign file, don't try to enter tech room in this case
 				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
 				break;
-			}
+			}*/
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			gameseq_post_event( GS_EVENT_TECH_MENU );
 #endif
