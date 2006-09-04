@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.76 $
- * $Author: Goober5000 $
- * $Date: 2006-08-03 01:33:56 $
+ * $Revision: 2.77 $
+ * $Author: wmcoolmon $
+ * $Date: 2006-09-04 05:50:58 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2006/08/03 01:33:56  Goober5000
+ * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
+ * --Goober5000
+ *
  * Revision 2.75  2006/07/05 23:35:43  Goober5000
  * cvs comment tweaks
  *
@@ -3217,6 +3221,31 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 
 	return line_num;
 }
+
+//WMC - Created so that we have a way to give a list of flags in an error message.
+//Uses the ordinary TBL syntax
+//Concatenates onto desc.
+int flags_to_string(char *dest, int flags, flag_def_list defs[], int defs_size)
+{
+	strcat(dest, "(");
+	int i;
+	int num = 0;
+	for(i = 0; i < defs_size; i++)
+	{
+		if(flags & defs[i].def)
+		{
+			strcat(dest, " \"");
+			strcat(dest, defs[i].name);
+			strcat(dest, "\"");
+			num++;
+		}
+	}
+
+	strcat(dest, " )");
+
+	return num;
+}
+
 
 // Goober5000
 bool end_string_at_first_hash_symbol(char *src)
