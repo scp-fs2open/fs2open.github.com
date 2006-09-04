@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.74 $
- * $Date: 2006-06-07 03:21:53 $
+ * $Revision: 2.75 $
+ * $Date: 2006-09-04 06:12:35 $
  * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2006/06/07 03:21:53  wmcoolmon
+ * Scripting system prep for 3.6.9
+ *
  * Revision 2.73  2006/05/27 17:08:50  taylor
  * oops!
  *
@@ -2096,6 +2099,8 @@ void gr_flip()
 		}
 	}
 
+	//WMC - Do conditional hooks. Yippee!
+	Script_system.RunCondition(CHA_HOOK);
 	//WMC - Evaluate global hook if not override.
 	Script_system.RunBytecode(Script_globalhook);
 	gr_screen.gf_flip();

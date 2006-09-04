@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.65 $
- * $Date: 2006-07-05 23:35:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.66 $
+ * $Date: 2006-09-04 06:12:16 $
+ * $Author: wmcoolmon $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2006/07/05 23:35:43  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.64  2006/06/27 04:06:18  Goober5000
  * handle docked objects during death roll
  * --Goober5000
@@ -708,6 +711,7 @@
 #include "network/multimsgs.h"
 #include "network/multi_respawn.h"
 #include "network/multi_pmsg.h"
+#include "parse/scripting.h"
 
 
 
@@ -2182,6 +2186,9 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	if ( (Game_mode & GM_NORMAL) && (ship_obj == Player_obj) ) {
 		ship_maybe_lament();
 	}
+
+	//WMC - Do scripting stuff
+	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_obj);
 }
 
 // function to simply explode a ship where it is currently at
