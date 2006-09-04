@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.256 $
- * $Date: 2006-08-20 00:50:08 $
- * $Author: taylor $
+ * $Revision: 2.257 $
+ * $Date: 2006-09-04 06:11:22 $
+ * $Author: wmcoolmon $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.256  2006/08/20 00:50:08  taylor
+ * slight math optimizations
+ * reduce COUNT_ESTIMATE since I added more game_busy() calls for models and it threw off the loading bar
+ *
  * Revision 2.255  2006/08/06 18:47:29  Goober5000
  * add the multiple background feature
  * --Goober5000
@@ -6201,7 +6205,7 @@ void game_frame(int paused)
 			}
 
 			Scripting_didnt_draw_hud = 1;
-			if(Script_system.RunBytecode(Script_hudhook) && Script_system.IsOverride(Script_hudhook))
+			if(Script_system.IsOverride(Script_hudhook))
 				Scripting_didnt_draw_hud = 0;
 
 			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
@@ -6280,6 +6284,8 @@ void game_frame(int paused)
 				// Draw 3D HUD gauges			
 				game_render_hud_3d(&eye_pos, &eye_orient);
 			}
+
+			Script_system.RunBytecode(Script_hudhook);
 
 			gr_reset_clip();
 			game_render_post_frame();
