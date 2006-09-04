@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.258 $
- * $Date: 2006-09-04 09:26:36 $
- * $Author: Backslash $
+ * $Revision: 2.259 $
+ * $Date: 2006-09-04 20:56:12 $
+ * $Author: wmcoolmon $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.258  2006/09/04 09:26:36  Backslash
+ * Make hud toggle apply to hud framerate, statistics, and camera position
+ *
  * Revision 2.257  2006/09/04 06:11:22  wmcoolmon
  * Fix scripting HUD hook execution method
  *
@@ -9343,10 +9346,20 @@ void load_animating_pointer(char *filename, int dx, int dy)
 
 	am = &Animating_mouse;
 	am->first_frame = bm_load_animation(filename, &am->num_frames, &fps);
-	if ( am->first_frame == -1 ) 
-		Error(LOCATION, "Could not load animation %s for the mouse pointer\n", filename);
-	am->current_frame = 0;
-	am->time = am->num_frames / i2fl(fps);
+	if(am->first_frame < 0)
+	{
+		am->first_frame = bm_load(filename);
+		if ( am->first_frame == -1 ) 
+			Error(LOCATION, "Could not load image or animation '%s' for the mouse pointer\n", filename);
+		am->current_frame = 0;
+		am->num_frames = 1;
+		am->time = 1.0f;
+	}
+	else
+	{
+		am->current_frame = 0;
+		am->time = am->num_frames / i2fl(fps);
+	}
 }
 
 // ----------------------------------------------------------------------------
@@ -9384,7 +9397,7 @@ void game_render_mouse(float frametime)
 
 	// if animating cursor exists, play the next frame
 	am = &Animating_mouse;
-	if ( am->first_frame != -1 ) {
+	if ( am->first_frame != -1 && am->num_frames > 1) {
 		mouse_get_pos(&mx, &my);
 		am->elapsed_time += frametime;
 		am->current_frame = fl2i( ( am->elapsed_time / am->time ) * (am->num_frames-1) );
@@ -9393,6 +9406,10 @@ void game_render_mouse(float frametime)
 			am->elapsed_time = 0.0f;
 		}
 		gr_set_cursor_bitmap(am->first_frame + am->current_frame);
+	}
+	else
+	{
+		gr_set_cursor_bitmap(am->first_frame);
 	}
 }
 
