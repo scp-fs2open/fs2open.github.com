@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.257 $
- * $Date: 2006-09-04 06:11:22 $
- * $Author: wmcoolmon $
+ * $Revision: 2.258 $
+ * $Date: 2006-09-04 09:26:36 $
+ * $Author: Backslash $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.257  2006/09/04 06:11:22  wmcoolmon
+ * Fix scripting HUD hook execution method
+ *
  * Revision 2.256  2006/08/20 00:50:08  taylor
  * slight math optimizations
  * reduce COUNT_ESTIMATE since I added more game_busy() calls for models and it threw off the loading bar
@@ -4017,11 +4020,11 @@ void game_get_framerate()
 	}
 	Framecount++;
 
-	if (Show_framerate)	{
+	if (Show_framerate && HUD_draw)	{
 		gr_string( 20, 100, text );
 	}
 
-	if(Cmdline_show_stats)
+	if(Cmdline_show_stats && HUD_draw)
 	{
 #ifdef _WIN32
 		char mem_buffer[50];
@@ -4251,7 +4254,7 @@ void game_show_framerate()
 
 void game_show_eye_pos(vec3d *eye_pos, matrix* eye_orient)
 {
-	if(!Cmdline_show_pos)
+	if(!Cmdline_show_pos && HUD_draw)
 		return;
 
 	//Do stuff
