@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.39 $
- * $Date: 2006-06-01 04:40:41 $
- * $Author: taylor $
+ * $Revision: 1.39.2.1 $
+ * $Date: 2006-09-04 18:05:09 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39  2006/06/01 04:40:41  taylor
+ * be sure to to reset ok_to_fire between weapon checks to make sure we don't count something by mistake
+ *
  * Revision 1.38  2006/04/14 21:13:31  taylor
  * Grrr!  That was still stupid.  Just going to revert it to retail and work out that bug it was supposed to fix at a later time.
  *
@@ -1515,7 +1518,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	// Don't try to fire beyond weapon_limit_range
 	//WMC - OTC
-	//weapon_firing_range = min(Weapon_info[tp->turret_weapon_type].lifetime * Weapon_info[tp->turret_weapon_type].max_speed, Weapon_info[tp->turret_weapon_type].weapon_range);
+	//weapon_firing_range = MIN(Weapon_info[tp->turret_weapon_type].lifetime * Weapon_info[tp->turret_weapon_type].max_speed, Weapon_info[tp->turret_weapon_type].weapon_range);
 
 	//WMC - build a list of valid weapons. Fire spawns if there are any.
 	float dist_to_enemy = 0.0f;
