@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.29 $
- * $Date: 2006-09-02 20:24:15 $
+ * $Revision: 2.336.2.30 $
+ * $Date: 2006-09-04 18:05:09 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.29  2006/09/02 20:24:15  Goober5000
+ * fix waypoint time to goal
+ *
  * Revision 2.336.2.28  2006/08/27 18:12:42  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -6310,8 +6313,8 @@ void ship_render(object * obj)
 	/*
 			if(shipp->flare_life>0){
 				g3_start_instance_matrix(&obj->pos, &obj->orient, true);
-				float flalpha = min(shipp->flare_life, 1.0f);
-				float splode_factor = min(pow(shipp->flare_life,6), 1.0f) * 1.25;
+				float flalpha = MIN(shipp->flare_life, 1.0f);
+				float splode_factor = MIN(pow(shipp->flare_life,6), 1.0f) * 1.25;
 				for( int i = 0; i<shipp->n_debris_flare; i++){
 					gr_set_bitmap( shipp->flare_bm, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 
@@ -13370,7 +13373,7 @@ char *ship_return_time_to_goal(char *outbuf, ship *sp)
 
 	// Goober5000 - handle cap
 	if (aip->waypoint_speed_cap >= 0)
-		max_speed = min(sp->current_max_speed, aip->waypoint_speed_cap);
+		max_speed = MIN(sp->current_max_speed, aip->waypoint_speed_cap);
 	else
 		max_speed = sp->current_max_speed;
 
