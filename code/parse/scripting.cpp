@@ -8,6 +8,7 @@
 #include "bmpman/bmpman.h"
 #include "globalincs/systemvars.h"
 #include "hud/hud.h"
+#include "ship/ship.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -22,17 +23,18 @@ script_hook Script_gameinithook;
 
 //*************************Scripting init and handling*************************
 
-int script_test(script_state *st)
+void script_parse_table(char *filename)
 {
+	script_state *st = &Script_system;
 	int rval;
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("Unable to parse scripting.tbl!  Code = %i.\n", rval));
-		return 0;
+		mprintf(("Unable to parse %s!  Code = %i.\n", filename, rval));
+		return;
 	}
 	else
 	{	
-		read_file_text("scripting.tbl");
+		read_file_text(filename);
 		reset_parse();
 	}
 
@@ -82,7 +84,11 @@ int script_test(script_state *st)
 		required_string("#End");
 	}
 
-	return 1;
+	if(optional_string("#Conditional Hooks"))
+	{
+		while(st->ParseCondition());
+		required_string("#End");
+	}
 }
 
 //Initializes the (global) scripting system, as well as any subsystems.
@@ -100,8 +106,95 @@ void script_init (void)
 		Script_system.OutputMeta("scripting.html");
 	}
 	mprintf(("SCRIPTING: Beginning main hook parse sequence....\n"));
-	script_test(&Script_system);
+	script_parse_table("scripting.tbl");
+	parse_modular_table(NOX("*-sct.tbm"), script_parse_table);
 	mprintf(("SCRIPTING: Inititialization complete.\n"));
+}
+
+//*************************CLASS: ConditionedScript*************************
+extern char Game_current_mission_filename[];
+bool ConditionedHook::AddCondition(script_condition sc)
+{
+	for(int i = 0; i < MAX_HOOK_CONDITIONS; i++)
+	{
+		if(Conditions[i].condition_type == CHC_NONE)
+		{
+			Conditions[i] = sc;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool ConditionedHook::AddAction(script_action sa)
+{
+	if(!sa.hook.IsValid())
+		return false;
+
+	Actions.push_back(sa);
+
+	return true;
+}
+
+bool ConditionedHook::MaybeRun(script_state *sys, int action, char format, void *data, object *objp)
+{
+	Assert(sys != NULL);
+	uint i;
+
+	//Return false if any conditions are not met
+	script_condition *scp;
+	ship_info *sip;
+	for(i = 0; i < MAX_HOOK_CONDITIONS; i++)
+	{
+		scp = &Conditions[i];
+		switch(scp->condition_type)
+		{
+			case CHC_STATE:
+				if(gameseq_get_depth() < 0)
+					return false;
+				if(stricmp(GS_state_text[gameseq_get_state(0)], scp->data.name))
+					return false;
+				break;
+			case CHC_SHIPTYPE:
+				if(objp == NULL || objp->type != OBJ_SHIP)
+					return false;
+				sip = &Ship_info[Ships[objp->instance].ship_info_index];
+				if(sip->class_type < 0)
+					return false;
+				if(stricmp(Ship_types[sip->class_type].name, scp->data.name))
+					return false;
+			case CHC_SHIPCLASS:
+				if(objp == NULL || objp->type != OBJ_SHIP)
+					return false;
+				if(stricmp(Ship_info[Ships[objp->instance].ship_info_index].name, scp->data.name))
+					return false;
+				break;
+			case CHC_SHIP:
+				if(objp == NULL || objp->type != OBJ_SHIP)
+					return false;
+				if(stricmp(Ships[objp->instance].ship_name, scp->data.name))
+					return false;
+				break;
+			case CHC_MISSION:
+				if(stricmp(scp->data.name, Game_current_mission_filename))
+					return false;
+				break;
+			default:
+				break;
+		}
+	}
+
+	//Do the actions
+	script_action *sap;
+	for(i = 0; i < Actions.size(); i++)
+	{
+		sap = &Actions[i];
+		if(sap->action_type == action)
+			sys->RunBytecode(sap->hook, format, data);
+	}
+
+	return true;
 }
 
 //*************************CLASS: script_state*************************
@@ -256,6 +349,19 @@ int script_state::RunBytecode(script_hook &hd, char format, void *data)
 {
 	RunBytecodeSub(hd.h_language, hd.h_index, format, data);
 	return 1;
+}
+
+int script_state::RunCondition(int action, char format, void *data, object *objp)
+{
+	ConditionedHook *chp = NULL;
+	int num = 0;
+	for(uint i= 0; i < ConditionalHooks.size(); i++)
+	{
+		chp = &ConditionalHooks[i];
+		if(chp->MaybeRun(this, action, format, data, objp))
+			num++;
+	}
+	return num;
 }
 
 void script_state::Clear()
@@ -497,7 +603,6 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 			cfclose(cfp);
 
 			luaL_loadbuffer(GetLuaSession(), raw_lua, len, debug_str);
-			//luaL_loadfile(GetLuaSession(), filename);
 
 			*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
 			vm_free(raw_lua);
@@ -515,8 +620,9 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 
 		//Allocate raw script
 		char* raw_lua = alloc_block("[", "]");
-
+		
 		//Load it into a buffer & parse it
+		//WMC - This is causing an access violation error. Sigh.
 		luaL_loadbuffer(GetLuaSession(), raw_lua, strlen(raw_lua), debug_str);
 
 		//Stick it in the registry
@@ -584,6 +690,114 @@ script_hook script_state::ParseChunk(char* debug_str)
 	}
 
 	return rval;
+}
+
+flag_def_list Script_conditions[] = 
+{
+	{"Mission",		CHC_MISSION},
+	{"Ship",		CHC_SHIP},
+	{"Ship class",	CHC_SHIPCLASS},
+	{"Ship type",	CHC_SHIPTYPE},
+	{"State",		CHC_STATE},
+};
+
+int Num_script_conditions = sizeof(Script_conditions)/sizeof(flag_def_list);
+
+flag_def_list Script_actions[] = 
+{
+	{"On Warpout",		CHA_WARPOUT},
+	{"On Warpin",		CHA_WARPIN},
+	{"On Death",		CHA_DEATH},
+	{"Hook",			CHA_HOOK},
+};
+
+int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
+
+int script_parse_condition()
+{
+	char buf[NAME_LENGTH];
+	for(int i = 0; i < Num_script_conditions; i++)
+	{
+		sprintf(buf, "$%s:", Script_conditions[i].name);
+		if(optional_string(buf))
+			return i;
+	}
+
+	return CHC_NONE;
+}
+int script_parse_action()
+{
+	char buf[NAME_LENGTH];
+	for(int i = 0; i < Num_script_actions; i++)
+	{
+		sprintf(buf, "$%s:", Script_actions[i].name);
+		if(optional_string(buf))
+			return i;
+	}
+
+	return CHA_NONE;
+}
+bool script_state::ParseCondition(char *debug_str)
+{
+	ConditionedHook *chp = NULL;
+
+	script_condition sct;
+	int condition;
+	for(condition = script_parse_condition(); condition != CHC_NONE; condition = script_parse_condition())
+	{
+		//Clear it
+		sct = script_condition();
+		sct.condition_type = condition;
+		switch(condition)
+		{
+			case CHC_STATE:
+			case CHC_SHIPCLASS:
+			case CHC_SHIPTYPE:
+			case CHC_SHIP:
+			case CHC_MISSION:
+			default:
+				stuff_string(sct.data.name, F_NAME);
+				break;
+		}
+
+		if(chp == NULL)
+		{
+			ConditionalHooks.push_back(ConditionedHook());
+			chp = &ConditionalHooks[ConditionalHooks.size()-1];
+		}
+
+		if(!chp->AddCondition(sct))
+		{
+			Warning(LOCATION, "Could not add condition to conditional hook; you may have more than %d", MAX_HOOK_CONDITIONS);
+		}
+	}
+
+	if(chp == NULL)
+	{
+		return false;
+	}
+
+	script_action sat;
+	int action;
+	bool actions_added = false;
+	for(action = script_parse_action(); action != CHA_NONE; action = script_parse_action())
+	{
+		sat = script_action();
+		sat.action_type = action;
+		sat.hook = ParseChunk(debug_str);
+
+		if(chp->AddAction(sat))
+			actions_added = true;
+	}
+
+	if(!actions_added)
+	{
+		Warning(LOCATION, "No actions specified for conditional hook");
+		ConditionalHooks.pop_back();
+		return false;
+	}
+
+	return true;
 }
 
 //*************************CLASS: script_hook*************************
