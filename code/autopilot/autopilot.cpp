@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.26 $
- * $Date: 2006-09-04 06:06:38 $
- * $Author: wmcoolmon $
+ * $Revision: 1.27 $
+ * $Date: 2006-09-04 09:21:55 $
+ * $Author: Backslash $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2006/09/04 06:06:38  wmcoolmon
+ * Cover-up a bloody annoying warning
+ *
  * Revision 1.25  2006/07/27 19:17:59  Kazan
  * Lock player primaries during autopilot
  *
@@ -251,6 +254,8 @@ bool CanAutopilot()
 //        * Control switched from player to AI
 //        * Time compression to 32x
 //        * Lock time compression -WMC
+//        * Turn off gliding -Backslash
+//        * Lock primary/secondary weapons
 //        * Tell AI to fly to targetted Nav Point (for all nav-status wings/ships)
 //		  * Sets max waypoint speed to the best-speed of the slowest ship tagged
 void StartAutopilot()
@@ -299,6 +304,9 @@ void StartAutopilot()
 				)
 			)
 		{
+			// turn off glide
+			if (object_get_gliding(&Objects[Ships[i].objnum]))
+				object_set_gliding(&Objects[Ships[i].objnum], false);
 
 			// lock primary and secondary weapons
 			Ships[i].flags2 |= (SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
