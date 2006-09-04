@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.367 $
- * $Date: 2006-09-02 23:41:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.368 $
+ * $Date: 2006-09-04 06:17:26 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.367  2006/09/02 23:41:53  Goober5000
+ * fix waypoint time to goal
+ *
  * Revision 2.366  2006/08/25 21:19:02  karajorma
  * Fix lack of Wingman Status indicator for Zeta wing in TvT games.
  *
@@ -2245,6 +2248,13 @@ flag_def_list Man_types[] =
 
 int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list);
 
+flag_def_list Man_thruster_flags[] = 
+{
+	{ "no scale",	MTF_NO_SCALE},
+};
+
+int Num_man_thruster_flags = sizeof(Man_thruster_flags) / sizeof(flag_def_list);
+
 // Goober5000 - I figured we should keep this separate
 // from Comm_orders, considering how I redid it :p
 // (and also because we may want to change either
@@ -2277,6 +2287,15 @@ flag_def_list Player_orders[] =
 };
 
 int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
+
+flag_def_list Subsystem_flags[] = 
+{
+	{ "untargetable",		MSS_FLAG_UNTARGETABLE},
+	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE},
+	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS},
+};
+
+int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
 
 /*
 int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
@@ -2504,7 +2523,7 @@ void parse_engine_wash(bool replace)
 
 char *Warp_types[] = {
 	"Default",
-	"Animation"
+	"BTRL"
 };
 
 int Num_warp_types = sizeof(Warp_types)/sizeof(char*);
@@ -3947,6 +3966,10 @@ strcpy(parse_error_text, temp_error);
 			parse_string_flag_list(&mtp->use_flags, Man_types, Num_man_types);
 		}
 
+		if(optional_string("+Flags:")) {
+			parse_string_flag_list(&mtp->flags, Man_thruster_flags, Num_man_thruster_flags);
+		}
+
 		if(optional_string("+Position:")) {
 			stuff_float_list(mtp->pos.a1d, 3);
 		}
@@ -4142,20 +4165,35 @@ strcpy(parse_error_text, temp_error);
 				sip->flags |= SIF_HAS_AWACS;
 			}
 
-			if (optional_string("+untargetable"))
+			if(optional_string("$Flags:")) {
+				parse_string_flag_list((int*)&sp->flags, Subsystem_flags, Num_subsystem_flags);
+			}
+
+			bool old_flags = false;
+			if (optional_string("+untargetable")) {
 				sp->flags |= MSS_FLAG_UNTARGETABLE;
+				old_flags = true;
+			}
 
 			if (optional_string("+non-targetable"))
 			{
 				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");
 				sp->flags |= MSS_FLAG_UNTARGETABLE;
+				old_flags = true;
 			}
 
-			if(optional_string("+carry-no-damage"))
+			if(optional_string("+carry-no-damage")) {
 				sp->flags |= MSS_FLAG_CARRY_NO_DAMAGE;
+				old_flags = true;
+			}
 
-			if(optional_string("+use-multiple-guns"))
+			if(optional_string("+use-multiple-guns")) {
 				sp->flags |= MSS_FLAG_USE_MULTIPLE_GUNS;
+				old_flags = true;
+			}
+
+			if(old_flags)
+				Warning(LOCATION, "Use of deprecated subsystem syntax. Please use $Flags: field for subsystem flags.");
 
 			while(optional_string("$animation:"))
 			{
@@ -6011,7 +6049,6 @@ void ship_render(object * obj)
 			//WMC - I suppose this is a bit hackish.
 			physics_info *pi = &Objects[shipp->objnum].phys_info;
 			float render_amount;
-			fx_batcher.allocate(si->num_maneuvering);	//Act as if all thrusters are going.
 
 
 			for(int i = 0; i < si->num_maneuvering; i++)
@@ -6090,13 +6127,14 @@ void ship_render(object * obj)
 						vm_vec_scale_add2(&start, &obj->pos, 1.0f);
 
 						//End
-						vm_vec_scale_add(&tmpend, &mtp->pos, &mtp->norm, len * render_amount);
+						if(mtp->flags & MTF_NO_SCALE)
+							vm_vec_scale_add(&tmpend, &mtp->pos, &mtp->norm, len);
+						else
+							vm_vec_scale_add(&tmpend, &mtp->pos, &mtp->norm, len * render_amount);
 						vm_vec_unrotate(&end, &tmpend, &obj->orient);
 						vm_vec_scale_add2(&end, &obj->pos, 1.0f);
 
 						//Draw
-						fx_batcher.draw_beam(&start, &end, rad, 1.0f);
-
 						int bmap_frame = mtp->tex_id;
 						if(mtp->tex_nframes > 0)
 							bmap_frame += (int)(((float)(timestamp() - shipp->thrusters_start[i]) / 1000.0f) * (float)mtp->tex_fps) % mtp->tex_nframes;
@@ -15295,7 +15333,7 @@ float ship_get_max_speed(ship *shipp)
 	// Goober5000 - maybe we're using cap-waypoint-speed
 	ai_info *aip = &Ai_info[shipp->ai_index];
 	if ((aip->mode == AIM_WAYPOINTS || aip->mode == AIM_FLY_TO_SHIP) && aip->waypoint_speed_cap > 0)
-		return aip->waypoint_speed_cap;
+		return i2fl(aip->waypoint_speed_cap);
 
 	// max overclock
 	max_speed = sip->max_overclocked_speed;

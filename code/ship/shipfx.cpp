@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.73 $
- * $Date: 2006-08-18 18:07:03 $
- * $Author: karajorma $
+ * $Revision: 2.74 $
+ * $Date: 2006-09-04 06:17:26 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2006/08/18 18:07:03  karajorma
+ * More cut & paste errors fixed and removal of the hardcoded warp out animation. Will now actually use the one specified in the table.
+ *
  * Revision 2.72  2006/07/21 05:41:10  Goober5000
  * add another method for calculating dimensions of docked objects, plus improve an existing one
  * --Goober5000
@@ -541,6 +544,7 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
+#include "parse/scripting.h"
 
 
 
@@ -1065,6 +1069,8 @@ void shipfx_warpin_start( object *objp )
 		return;
 	}
 
+	Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
+
 	if (shipp->flags2 & SF2_IN_LIMBO)
 		shipp->flags2 &= ~SF2_IN_LIMBO;
 
@@ -1134,7 +1140,7 @@ void shipfx_warpin_start( object *objp )
 
 		shipp->warp_effect_fvec = Objects[warp_objnum].orient.vec.fvec;
 	}
-	else if (sip->warpin_type == WT_IN_PLACE_ANIM)
+	else if (sip->warpin_type == WT_BTRL)
 	{
 		if(shipp->warp_anim < 0)
 			shipp->warp_anim = bm_load_animation(sip->warpin_anim, &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
@@ -1165,7 +1171,7 @@ void shipfx_warpin_start( object *objp )
 	}
 
 	// flag as warping
-	if(sip->warpin_type == WT_IN_PLACE_ANIM) {
+	if(sip->warpin_type == WT_BTRL) {
 		shipp->start_warp_time = timestamp();
 		int total_time = fl2i(((float)shipp->warp_anim_nframes / (float)shipp->warp_anim_fps) * 1000.0f);
 		shipp->final_warp_time = timestamp(total_time);
@@ -1226,13 +1232,18 @@ void shipfx_warpin_frame( object *objp, float frametime )
 			}
 		}
 	}
-	else if(sip->warpin_type == WT_IN_PLACE_ANIM)
+	else if(sip->warpin_type == WT_BTRL)
 	{
 		//WMC - This is handled by code in ship_render
 
 		//WMC - ship appears after warpin_speed milliseconds
-		if ( timestamp_elapsed(shipp->start_warp_time + sip->warpin_time )) {
+		if ( timestamp_elapsed(shipp->final_warp_time)) {
 			shipfx_actually_warpin(shipp,objp);
+		}
+
+		//WMC - Terrible hack. But this is OK to be in CVS, for now.
+		if ( timestamp_elapsed(shipp->start_warp_time + (14.0f/30.0f) * 1000.0f)) {
+			particle_create(&vmd_zero_vector, &vmd_zero_vector, 0.5f, objp->radius/1.5f , PARTICLE_BITMAP_PERSISTENT, bm_load_animation("ftl_SW", NULL, NULL), 0.0f, objp, false);
 		}
 	}
 }
@@ -1460,6 +1471,8 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
+	Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
+
 	// if we're HUGE, keep alive - set guardian
 	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP) {
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
@@ -1485,7 +1498,7 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
-	if(sip->warpout_type == WT_IN_PLACE_ANIM) {
+	if(sip->warpout_type == WT_BTRL) {
 		shipp->warp_anim = bm_load_animation(sip->warpout_anim, &shipp->warp_anim_nframes, &shipp->warp_anim_fps, 1);
 		shipp->start_warp_time = timestamp();
 		int total_time = fl2i(((float)shipp->warp_anim_nframes / (float)shipp->warp_anim_fps) * 1000.0f);
@@ -1597,7 +1610,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 		return;
 	}
 
-	if(sip->warpout_type == WT_IN_PLACE_ANIM)
+	if(sip->warpout_type == WT_BTRL)
 	{
 		//WMC - This is handled by code in ship_render
 
