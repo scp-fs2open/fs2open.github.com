@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.164 $
- * $Date: 2006-08-03 01:33:56 $
- * $Author: Goober5000 $
+ * $Revision: 2.165 $
+ * $Date: 2006-09-04 06:17:26 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.164  2006/08/03 01:33:56  Goober5000
+ * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
+ * --Goober5000
+ *
  * Revision 2.163  2006/07/17 01:12:52  taylor
  * make glow point banks dynamic
  *
@@ -1049,6 +1053,9 @@ extern std::vector<ArmorType> Armor_types;
 #define NUM_TURRET_ORDER_TYPES		3
 extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 
+extern flag_def_list Player_orders[];
+extern int Num_player_orders;
+
 // Goober5000
 #define SSF_CARGO_REVEALED		(1 << 0)
 #define SSF_UNTARGETABLE		(1 << 1)
@@ -1718,7 +1725,10 @@ extern std::vector<man_thruster_renderer> Man_thrusters;
 #define MT_FORWARD			(1<<10)
 #define MT_REVERSE			(1<<11)
 
+#define MTF_NO_SCALE		(1<<0)
+
 typedef struct man_thruster {
+	int flags;
 	int use_flags;
 
 	int start_snd;
@@ -1737,7 +1747,7 @@ typedef struct man_thruster {
 
 //Warp type defines
 #define WT_DEFAULT			0
-#define WT_IN_PLACE_ANIM	1
+#define WT_BTRL				1
 
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
