@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.193 $
- * $Date: 2006-08-21 04:02:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.194 $
+ * $Date: 2006-09-04 05:54:14 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.193  2006/08/21 04:02:41  Goober5000
+ * a tweak and a fix
+ *
  * Revision 2.192  2006/08/20 00:51:06  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -2863,7 +2866,6 @@ int parse_create_object_sub(p_object *p_objp)
 		// MWA  5/15/98 -- Added the following debug code because some orders that ships
 		// will accept were apparently written out incorrectly with Fred.  This Int3() should
 		// trap these instances.
-#ifndef NDEBUG
 		if (Fred_running)
 		{
 			int default_orders, remaining_orders;
@@ -2872,10 +2874,21 @@ int parse_create_object_sub(p_object *p_objp)
 			remaining_orders = p_objp->orders_accepted & ~default_orders;
 			if (remaining_orders)
 			{
+#ifdef WIN32
+				char buf[4096];
+				sprintf(buf, "Ship %s can be given orders by the player, that \nare not part of the valid orders for its type. \nThis is most commonly caused by changing ship classes in FRED.\nInvalid orders are: \n", shipp->ship_name);
+				flags_to_string(buf, remaining_orders, Player_orders, Num_player_orders);
+				strcat(buf, "\nDo you wish to clear these orders? (Changes will take effect on next save)");
+				int z = MessageBox(NULL, buf, "Parse Warning", MB_ICONQUESTION | MB_YESNO);
+
+				if (z == IDYES) {
+					shipp->orders_accepted &= ~(remaining_orders);
+				}
+#else
 				Warning(LOCATION, "Ship %s has orders which it will accept that are\nnot part of default orders accepted.\n\nPlease reedit this ship and change the orders again\n", shipp->ship_name);
+#endif
 			}
 		}
-#endif
 	}
 
 	// check the parse object's flags for possible flags to set on this newly created ship
