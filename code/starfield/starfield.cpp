@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.80 $
- * $Date: 2006-08-20 00:49:09 $
- * $Author: taylor $
+ * $Revision: 2.81 $
+ * $Date: 2006-09-04 06:08:20 $
+ * $Author: wmcoolmon $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2006/08/20 00:49:09  taylor
+ * slight optimizations
+ * compiler warning fixes
+ *
  * Revision 2.79  2006/08/06 18:47:29  Goober5000
  * add the multiple background feature
  * --Goober5000
@@ -716,7 +720,7 @@ void stars_load_debris_vclips(debris_vclip *vclips)
 			vclips[i].nframes = 1;
 
 			if (vclips[i].bm <= 0) {
-				Error( LOCATION, "Couldn't load animation/bitmap '%s'\n", vclips[i].name );
+				mprintf(("Couldn't load motion debris animation/bitmap '%s'\n", vclips[i].name ));
 			}
 		}
 	}
@@ -2550,7 +2554,7 @@ void stars_draw_debris()
 			
 		g3_rotate_vertex(&p, &d->pos);
 
-		if (p.codes == 0) {
+		if (p.codes == 0 && Debris_vclips[d->vclip].bm > -1) {
 			int frame = Missiontime / (DEBRIS_ROT_MIN + (i % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
 			frame %= Debris_vclips[d->vclip].nframes;
 
@@ -2912,7 +2916,9 @@ void stars_page_in()
 		return;
 
 	for (idx = 0; idx < MAX_DEBRIS_VCLIPS; idx++) {
-		bm_page_in_xparent_texture(Debris_vclips[idx].bm, Debris_vclips[idx].nframes);
+		if(Debris_vclips[idx].bm > -1) {
+			bm_page_in_xparent_texture(Debris_vclips[idx].bm, Debris_vclips[idx].nframes);
+		}
 	}	
 }
 
