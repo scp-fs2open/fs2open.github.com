@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.44 $
- * $Author: Goober5000 $
- * $Date: 2006-08-03 01:33:56 $
+ * $Revision: 2.45 $
+ * $Author: wmcoolmon $
+ * $Date: 2006-09-04 05:50:58 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2006/08/03 01:33:56  Goober5000
+ * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
+ * --Goober5000
+ *
  * Revision 2.43  2006/06/02 08:55:47  karajorma
  * Added stuff_ship_list to act as a typesafe replacement for stuff_int_list and handle variables as legitimate values for both ship type and availability when parsing Team Loadout lists
  *
@@ -570,6 +574,7 @@ extern void debug_show_mission_text();
 extern void convert_sexp_to_string(int cur_node, char *outstr, int mode);
 char *split_str_once(char *src, int max_pixel_w);
 int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_lines, char ignore_char = -1);
+extern int flags_to_string(char *dest, int flags, flag_def_list defs[], int defs_size);
 
 // fred
 extern int required_string_fred(char *pstr, char *end = NULL);
