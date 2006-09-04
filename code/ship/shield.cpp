@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.41 $
- * $Date: 2006-05-27 16:49:05 $
- * $Author: taylor $
+ * $Revision: 2.42 $
+ * $Date: 2006-09-04 05:59:47 $
+ * $Author: wmcoolmon $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2006/05/27 16:49:05  taylor
+ * comment out some pointless checks which look for not using either D3D or OGL
+ * don't run through ships on level load setting up the sound environment if sound is disabled
+ * minor cleanup
+ *
  * Revision 2.40  2006/04/20 06:32:30  Goober5000
  * proper capitalization according to Volition
  *
@@ -399,16 +404,21 @@ void load_shield_hit_bitmap()
 
 	for (i=0; i<Num_species; i++ )	
     {
-		Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, 1);
+		if(strlen(Species_info[i].shield_anim.filename))
+		{
+			Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, 1);
 
-        // *This is disabled for TBP    -Et1
-		// Changed to an assert by kazan
+			// *This is disabled for TBP    -Et1
+			// Changed to an assert by kazan
+			// Changed to check if we even want a shield anim and give a warning, by WMC.
 
-        /*
-		if ( Shield_ani[i].first_frame < 0 )
-			Int3();
-        */
-		Assert(Species_info[i].shield_anim.first_frame >= 0);
+			/*
+			if ( Shield_ani[i].first_frame < 0 )
+				Int3();
+			*/
+			if(Species_info[i].shield_anim.first_frame < 0)
+				Warning(LOCATION, "Could not load shield anim for species %s", Species_info[i].species_name);
+		}
 	}
 
 	#endif
