@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.13.2.3 $
- * $Date: 2006-08-25 21:15:31 $
- * $Author: karajorma $
+ * $Revision: 2.13.2.4 $
+ * $Date: 2006-09-08 06:09:05 $
+ * $Author: taylor $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13.2.3  2006/08/25 21:15:31  karajorma
+ * Fix TvT problem with scores appearing incorrectly.
+ * Fix a CVS issue
+ *
  * Revision 2.13  2006/06/02 09:10:01  karajorma
  * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
  *
@@ -375,8 +379,9 @@ struct player;
 // version 44 - 8/24/99
 // version 46 - 8/30/99
 // version 47 - 11/11/2003 (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
+// revert  46 - 9/7/2006 (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
 // STANDALONE_ONLY
-#define MULTI_FS_SERVER_VERSION							47
+#define MULTI_FS_SERVER_VERSION							46
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
 // version defines (i.e. demo, full version, special OEM version
