@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.15 $
- * $Date: 2006-08-04 11:45:21 $
- * $Author: karajorma $
+ * $Revision: 2.16 $
+ * $Date: 2006-09-08 06:17:32 $
+ * $Author: taylor $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/08/04 11:45:21  karajorma
+ * Fix bug where end-mission SEXP only resulting in the mission ending for the server
+ *
  * Revision 2.14  2006/06/07 18:47:51  karajorma
  * Fix 130 ships limit for Inferno builds
  *
@@ -378,8 +381,9 @@ struct player;
 // version 44 - 8/24/99
 // version 46 - 8/30/99
 // version 47 - 11/11/2003 (FS2OpenPXO, FS2 Open Changes - FS2Open 3.6)
+// revert  46 - 9/7/2006 (the 47 bump wasn't needed, reverting to retail version for compatibility reasons)
 // STANDALONE_ONLY
-#define MULTI_FS_SERVER_VERSION							47
+#define MULTI_FS_SERVER_VERSION							46
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 
 // version defines (i.e. demo, full version, special OEM version
