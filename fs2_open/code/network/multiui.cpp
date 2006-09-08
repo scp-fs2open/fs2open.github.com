@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.48 $
- * $Date: 2006-08-04 11:24:27 $
- * $Author: karajorma $
+ * $Revision: 2.49 $
+ * $Date: 2006-09-08 06:17:07 $
+ * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2006/08/04 11:24:27  karajorma
+ * Stop multiplayer campaigns crashing if the campaign lacks a description
+ *
  * Revision 2.47  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -669,7 +672,7 @@ extern int Om_tracker_flag; // needed to know whether or not to use FS2OpenPXO
 
 int PXO_SID = -1; // FS2 Open PXO Session ID
 
-char PXO_Server[32];
+char PXO_Server[64];
 int PXO_port = -1;
 void multi_update_valid_tables(); // from multiutil
 void Kaz_NoBackGround_DrawString(char *str); //ditto
