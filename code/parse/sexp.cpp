@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.279 $
- * $Date: 2006-08-20 00:51:06 $
+ * $Revision: 2.280 $
+ * $Date: 2006-09-08 06:18:05 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.279  2006/08/20 00:51:06  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.278  2006/08/16 16:47:55  karajorma
  * Doh! Minor fix
  *
@@ -1507,9 +1510,9 @@ sexp_oper Operators[] = {
 	{ "is-goal-false-delay",				OP_GOAL_FALSE_DELAY,				2, 2,	},
 	{ "is-goal-incomplete",					OP_GOAL_INCOMPLETE,				1, 1,	},
 	{ "is-event-true",						OP_EVENT_TRUE,							1, 1,			},
-	{ "is-event-true-delay",				OP_EVENT_TRUE_DELAY,				2, 2,	},
+	{ "is-event-true-delay",				OP_EVENT_TRUE_DELAY,				2, 3,	},
 	{ "is-event-false",						OP_EVENT_FALSE,						1, 1,			},
-	{ "is-event-false-delay",				OP_EVENT_FALSE_DELAY,			2, 2,	},
+	{ "is-event-false-delay",				OP_EVENT_FALSE_DELAY,			2, 3,	},
 	{ "is-event-incomplete",				OP_EVENT_INCOMPLETE,				1, 1,	},
 	{ "is-previous-goal-true",				OP_PREVIOUS_GOAL_TRUE,			2, 3,	},
 	{ "is-previous-goal-false",			OP_PREVIOUS_GOAL_FALSE,			2, 3,	},
@@ -10501,6 +10504,8 @@ int sexp_event_delay_status( int n, int want_true )
 	char *name;
 	int i, result;
 	fix delay;
+	int rval = SEXP_FALSE;
+	int use_as_directive = 0;
 
 	name = CTEXT(n);
 
@@ -10513,26 +10518,42 @@ int sexp_event_delay_status( int n, int want_true )
 	for (i = 0; i < Num_mission_events; i++ ) {
 		// look for the event name, check it's status.  If formula is gone, we know the state won't ever change.
 		if ( !stricmp(Mission_events[i].name, name) ) {
-			if ( (fix) Mission_events[i].timestamp + delay >= Missiontime )
-				return SEXP_FALSE;
+			if ( (fix) Mission_events[i].timestamp + delay >= Missiontime ) {
+				rval = SEXP_FALSE;
+				break;
+			}
 
 			result = Mission_events[i].result;
 			if (Mission_events[i].formula < 0) {
-				if ( (want_true && result) || (!want_true && !result) )
-					return SEXP_KNOWN_TRUE;
-				else
-					return SEXP_KNOWN_FALSE;
-
+				if ( (want_true && result) || (!want_true && !result) ) {
+					rval = SEXP_KNOWN_TRUE;
+					break;
+				} else {
+					rval = SEXP_KNOWN_FALSE;
+					break;
+				}
 			} else {
-				if ( want_true && result )  //) || (!want_true && !result) )
-					return SEXP_TRUE;
-				else
-					return SEXP_FALSE;
+				if ( want_true && result ) {  //) || (!want_true && !result) )
+					rval = SEXP_TRUE;
+					break;
+				} else {
+					rval = SEXP_FALSE;
+					break;
+				}
 			}
 		}
 	}
 
-	return SEXP_FALSE;
+	// check for possible optional parameter
+	n = CDDR(n);
+	if (n != -1)
+		use_as_directive = is_sexp_true(n);
+
+	// zero out Sexp_useful_number if it's not true and we don't want this for specific directive use
+	if ( !use_as_directive && (rval != SEXP_TRUE) && (rval != SEXP_KNOWN_TRUE) )
+		Sexp_useful_number = 0;  // indicate sexp isn't current yet
+
+	return rval;
 }
 
 // function which returns true if the given event is still incomplete
@@ -14741,16 +14762,15 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_EVENT_TRUE:
 			case OP_EVENT_FALSE:
 				sexp_val = sexp_event_status( node, (op_num == OP_EVENT_TRUE?1:0) );
-				if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
-					Sexp_useful_number = 0;  // indicate sexp isn't current yet
-
+			//	if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
+			//		Sexp_useful_number = 0;  // indicate sexp isn't current yet
 				break;
 
 			case OP_EVENT_TRUE_DELAY:
 			case OP_EVENT_FALSE_DELAY:
 				sexp_val = sexp_event_delay_status( node, (op_num == OP_EVENT_TRUE_DELAY?1:0) );
-				if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
-					Sexp_useful_number = 0;  // indicate sexp isn't current yet
+			//	if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
+			//		Sexp_useful_number = 0;  // indicate sexp isn't current yet
 				break;
 
 			case OP_GOAL_TRUE_DELAY:
@@ -19305,16 +19325,18 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_EVENT_TRUE_DELAY, "Mission Event True (Boolean operator)\r\n"
 		"\tReturns true N seconds after the specified event in the this mission is true "
 		"(or succeeded).  It returns false otherwise.\r\n\r\n"
-		"Returns a boolean value.  Takes 2 arguments...\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
-		"\t2:\tNumber of seconds to delay before returning true."},
+		"\t2:\tNumber of seconds to delay before returning true.\r\n"
+		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
 
 	{ OP_EVENT_FALSE_DELAY, "Mission Event False (Boolean operator)\r\n"
 		"\tReturns true N seconds after the specified event in the this mission is false "
 		"(or failed).  It returns false otherwise.\r\n\r\n"
-		"Returns a boolean value.  Takes 2 arguments...\r\n"
+		"Returns a boolean value.  Takes 2 required arguments and 1 optional argument...\r\n"
 		"\t1:\tName of the event in the mission.\r\n"
-		"\t2:\tNumber of seconds to delay before returning true."},
+		"\t2:\tNumber of seconds to delay before returning true.\r\n"
+		"\t3:\t(Optional) True/False which signifies this is a current event, whether true, false, or unknown, for use as a directive."},
 
 	{ OP_EVENT_INCOMPLETE, "Mission Event Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified event in the this mission is incomplete.  This "
