@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.369 $
- * $Date: 2006-09-04 18:06:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.370 $
+ * $Date: 2006-09-08 06:19:02 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.369  2006/09/04 18:06:37  Goober5000
+ * fix macros
+ *
  * Revision 2.368  2006/09/04 06:17:26  wmcoolmon
  * Commit of 'new' BTRL FTL effect work
  *
@@ -5792,21 +5795,21 @@ void render_dock_bays(object *objp)
 
 int Ship_shadows = 0;
 
-DCF_BOOL( ship_shadows, Ship_shadows );
+DCF_BOOL( ship_shadows, Ship_shadows )
 
 MONITOR( NumShipsRend );	
 
 int Show_shield_hits = 0;
-DCF_BOOL( show_shield_hits, Show_shield_hits );
+DCF_BOOL( show_shield_hits, Show_shield_hits )
 
 int Show_tnorms = 0;
-DCF_BOOL( show_tnorms, Show_tnorms );
+DCF_BOOL( show_tnorms, Show_tnorms )
 
 int Show_paths = 0;
-DCF_BOOL( show_paths, Show_paths );
+DCF_BOOL( show_paths, Show_paths )
 
 int Show_fpaths = 0;
-DCF_BOOL( show_fpaths, Show_fpaths );
+DCF_BOOL( show_fpaths, Show_fpaths )
 
 void ship_find_warping_ship_helper(object *objp, dock_function_info *infop)
 {
@@ -8820,6 +8823,17 @@ void ship_model_change(int n, int ship_type, int changing_ship_class)
 		model_page_in_textures(sp->modelnum, ship_type);
 		// also get anything extra (like thrusters graphics)
 		ship_page_in_model_textures(sp->modelnum, ship_type);
+	}
+
+	// allocate memory for keeping glow point bank status (enabled/disabled)
+	{
+		bool val = true; // default value, enabled
+
+		// clear out any old gpb's first, then add new ones if needed
+		sp->glow_point_bank_active.clear();
+
+		if (pm->n_glow_point_banks)
+			sp->glow_point_bank_active.resize( pm->n_glow_point_banks, val );
 	}
 
 	// this is only done when changing ship classes
@@ -12556,7 +12570,7 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 
 // console function to toggle whether auto-repair for subsystems is active
 #ifndef NDEBUG
-DCF_BOOL( auto_repair, Ship_auto_repair );
+DCF_BOOL( auto_repair, Ship_auto_repair )
 #endif
 
 // two functions to keep track of counting ships of particular types.  Maybe we should be rolling this
