@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.145 $
- * $Date: 2006-07-28 02:37:08 $
+ * $Revision: 2.146 $
+ * $Date: 2006-09-08 06:20:14 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.145  2006/07/28 02:37:08  taylor
+ * switch from Assert() to basic error fixage for end-of-string white space check
+ *
  * Revision 2.144  2006/07/25 16:26:24  taylor
  * support for cmdline option stacking (a per option setting) so that things like "-mod derelict -mod mediavp" will end up as "-mod derelict,mediavp" to the game
  * fix bug where white space chars didn't get dropped from the end of a option string like they were supposed to
@@ -892,7 +895,7 @@ enum
 
 	// Combos
 	EASY_MEM_ALL_ON  = EASY_ALL_ON  | EASY_MEM_ON,
-	EASY_DEFAULT_MEM = EASY_DEFAULT | EASY_MEM_OFF,
+	EASY_DEFAULT_MEM = EASY_DEFAULT | EASY_MEM_OFF
 };
 
 typedef struct

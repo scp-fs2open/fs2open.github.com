@@ -9,12 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.h $
- * $Revision: 2.5 $
- * $Date: 2006-03-26 08:23:06 $
+ * $Revision: 2.6 $
+ * $Date: 2006-09-08 06:20:14 $
  * $Author: taylor $
  * 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2006/03/26 08:23:06  taylor
+ * split pause_*() and multi_pause_*() functions into individual single and multi versions (why it was hacked up like that I'll never know)
+ * fix screen save in multi pause mode
+ * address some bmpman issues from interface graphics getting released and then still used by something else
+ *
  * Revision 2.4  2005/07/13 03:25:58  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -81,7 +86,7 @@ void pause_debug_close();
 enum
 {
 	PAUSE_TYPE_NORMAL,
-	PAUSE_TYPE_VIEWER,
+	PAUSE_TYPE_VIEWER
 };
 
 void pause_set_type(int type);

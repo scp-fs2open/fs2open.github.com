@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.74 $
- * $Date: 2006-09-04 06:17:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.75 $
+ * $Date: 2006-09-08 06:20:15 $
+ * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2006/09/04 06:17:26  wmcoolmon
+ * Commit of 'new' BTRL FTL effect work
+ *
  * Revision 2.73  2006/08/18 18:07:03  karajorma
  * More cut & paste errors fixed and removal of the hardcoded warp out animation. Will now actually use the one specified in the table.
  *
@@ -3278,7 +3281,7 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 
 extern int model_should_render_engine_glow(int objnum, int bank_obj);
 int Wash_on = 1;
-DCF_BOOL(engine_wash, Wash_on);
+DCF_BOOL(engine_wash, Wash_on)
 #define ENGINE_WASH_CHECK_INTERVAL		250	// (4x sec)
 // Do engine wash effect for ship
 // Assumes length of engine wash is greater than radius of engine wash hemisphere

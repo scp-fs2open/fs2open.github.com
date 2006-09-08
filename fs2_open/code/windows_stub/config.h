@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.18 $
- * $Date: 2006-08-20 00:48:47 $
+ * $Revision: 2.19 $
+ * $Date: 2006-09-08 06:20:15 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/08/20 00:48:47  taylor
+ * clean out some crap that we don't really need
+ *
  * Revision 2.17  2006/05/27 16:39:40  taylor
  * remove non-Windows timeSetEvent() functions
  * make PDWORD and LPDWORD int instead of long (64-bit issue) (thanks Spike)
@@ -186,11 +189,15 @@ typedef void *HANDLE;
 typedef char *LPSTR;
 typedef char *HPSTR;
 typedef void *LPMMIOPROC;
-#define __int64 long long // assumes that long long is 64-bit and not 128-bit, TODO: really need a compile-time assert on all of this
+#if __WORDSIZE == 64
+#define __int64 long int
+#else
+#define __int64 __extension__ long long int	// TODO: really need a compile-time assert on all of this
+#endif
 #define __int32 int
 
 typedef struct _LARGE_INTEGER {
-	long long QuadPart;
+	__int64 QuadPart;
 } LARGE_INTEGER;
 
 // networking/socket stuff

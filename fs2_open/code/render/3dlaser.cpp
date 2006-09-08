@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dLaser.cpp $
- * $Revision: 2.16 $
- * $Date: 2006-05-27 16:47:12 $
+ * $Revision: 2.17 $
+ * $Date: 2006-09-08 06:20:15 $
  * $Author: taylor $
  *
  * Code to draw 3d looking lasers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/05/27 16:47:12  taylor
+ * remove some of the old batcher functions, nothing is using them now anyway
+ * minor cleanup
+ * add orient UV flipping to HTL drawing functions, like retail/non-HTL has support for
+ *
  * Revision 2.15  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -212,7 +217,7 @@
 
 
 int Lasers = 1;
-DCF_BOOL( lasers, Lasers );
+DCF_BOOL( lasers, Lasers )
 /*
 // This works but leaves the effect looking very flat
 float g3_draw_laser_htl(vec3d *p0,float width1,vec3d *p1,float width2, int r, int g, int b, uint tmap_flags)
@@ -697,4 +702,3 @@ float g3_draw_laser_rgb(vec3d *headp, float head_width, vec3d *tailp, float tail
 
 	return depth;
 }
-
