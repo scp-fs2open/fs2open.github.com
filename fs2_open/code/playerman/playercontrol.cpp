@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.43.2.2 $
- * $Date: 2006-08-19 04:38:47 $
+ * $Revision: 2.43.2.3 $
+ * $Date: 2006-09-08 06:14:44 $
  * $Author: taylor $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43.2.2  2006/08/19 04:38:47  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.43.2.1  2006/07/28 02:45:34  taylor
  * when in external (non-control) view be sure to not include time compression speed in camera movement
  *
@@ -651,7 +654,7 @@ static int Player_all_alone_msg_inited=0;	// flag used for initializing a player
 
 #ifndef NDEBUG
 	int Show_killer_weapon = 0;
-	DCF_BOOL( show_killer_weapon, Show_killer_weapon );
+	DCF_BOOL( show_killer_weapon, Show_killer_weapon )
 #endif
 
 void playercontrol_read_stick(int *axis, float frame_time);

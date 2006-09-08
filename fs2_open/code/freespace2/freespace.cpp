@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.16 $
- * $Date: 2006-08-22 05:45:15 $
+ * $Revision: 2.243.2.17 $
+ * $Date: 2006-09-08 06:14:43 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.16  2006/08/22 05:45:15  taylor
+ * some fixes for the standalone server
+ *  - get init order correct for lcl and std init
+ *  - turn off some cmdlines that are just graphics related when Is_standalone
+ *  - skip radar_mission_init() (may need to rethink that though, it's bound to cause problems)
+ *
  * Revision 2.243.2.15  2006/08/19 04:37:00  taylor
  * slight math optimizations
  * reduce COUNT_ESTIMATE since I added more game_busy() calls for models and it threw off the loading bar
@@ -5393,7 +5399,7 @@ extern void ai_debug_render_stuff();
 #endif
 
 int Game_subspace_effect = 0;
-DCF_BOOL( subspace, Game_subspace_effect );
+DCF_BOOL( subspace, Game_subspace_effect )
 
 // Does everything needed to render a frame
 void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
@@ -9772,7 +9778,7 @@ void Time_model( int modelnum )
 }
 
 int Time_models = 0;
-DCF_BOOL( time_models, Time_models );
+DCF_BOOL( time_models, Time_models )
 
 void Do_model_timings_test()
 {

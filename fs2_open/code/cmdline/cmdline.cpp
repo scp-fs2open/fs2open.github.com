@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.7 $
- * $Date: 2006-08-22 05:42:56 $
+ * $Revision: 2.140.2.8 $
+ * $Date: 2006-09-08 06:14:43 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.7  2006/08/22 05:42:56  taylor
+ * minor spelling/grammer fixes
+ *
  * Revision 2.140.2.6  2006/07/28 02:44:40  taylor
  * switch from Assert() to basic error fixage for end-of-string white space check
  *
@@ -897,7 +900,7 @@ enum
 
 	// Combos
 	EASY_MEM_ALL_ON  = EASY_ALL_ON  | EASY_MEM_ON,
-	EASY_DEFAULT_MEM = EASY_DEFAULT | EASY_MEM_OFF,
+	EASY_DEFAULT_MEM = EASY_DEFAULT | EASY_MEM_OFF
 };
 
 typedef struct

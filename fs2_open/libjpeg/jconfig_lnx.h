@@ -8,8 +8,10 @@
 #undef void
 #undef const
 #undef CHAR_IS_UNSIGNED
-//#define HAVE_STDDEF_H 	// our autoconf should set this if available
-//#define HAVE_STDLIB_H		// our autoconf should set this if available
+/*
+#define HAVE_STDDEF_H 	// our autoconf should set this if available
+#define HAVE_STDLIB_H		// our autoconf should set this if available
+*/
 #undef NEED_BSD_STRINGS
 #undef NEED_SYS_TYPES_H
 #undef NEED_FAR_POINTERS
