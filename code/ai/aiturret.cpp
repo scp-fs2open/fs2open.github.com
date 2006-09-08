@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.39.2.1 $
- * $Date: 2006-09-04 18:05:09 $
- * $Author: Goober5000 $
+ * $Revision: 1.39.2.2 $
+ * $Date: 2006-09-08 06:06:34 $
+ * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39.2.1  2006/09/04 18:05:09  Goober5000
+ * fix macros
+ *
  * Revision 1.39  2006/06/01 04:40:41  taylor
  * be sure to to reset ok_to_fire between weapon checks to make sure we don't count something by mistake
  *
@@ -1395,10 +1398,11 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
     // *If it's a non-homer, then use the last fire direction instead of turret orientation to fix inaccuracy
     //  problems with non-homing swarm weapons -Et1
-	if( (The_mission.ai_profile->flags & AIPF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY) && !( Weapon_info[tsi->weapon_class].wi_flags & WIF_HOMING ) )
-    {
-        turret_fvec = tsi->turret->turret_last_fire_direction;
-    }
+	if ( (Weapon_info[tsi->weapon_class].subtype == WP_LASER) || ((The_mission.ai_profile->flags & AIPF_HACK_IMPROVE_NON_HOMING_SWARM_TURRET_FIRE_ACCURACY) 
+																	&& !(Weapon_info[tsi->weapon_class].wi_flags & WIF_HOMING)) )
+	{
+		turret_fvec = tsi->turret->turret_last_fire_direction;
+	}
 
 	// make turret_orient from turret_fvec -- turret->turret_last_fire_direction
 	vm_vector_2_matrix(&turret_orient, &turret_fvec, NULL, NULL);
@@ -1485,6 +1489,25 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	if ( all_turret_weapons_have_flags(swp, WIF_BEAM) && !(swp->flags & SW_FLAG_BEAM_FREE) ) {
 		return;
 	}
+
+	// check if there is any available weapon to fire
+	int weap_check;
+	bool valid_weap = false;
+	for (weap_check = 0; (weap_check < swp->num_primary_banks) && !valid_weap; weap_check++) {
+		if (swp->primary_bank_weapons[weap_check] >= 0)
+			valid_weap = true;
+	}
+
+	if (!valid_weap) {
+		for (weap_check = 0; (weap_check < ss->weapons.num_secondary_banks) && !valid_weap; weap_check++) {
+			if (ss->weapons.secondary_bank_weapons[weap_check] >= 0)
+				valid_weap = true;
+		}
+
+		if (!valid_weap)
+			return;
+	}
+
 
 	Assert((parent_objnum >= 0) && (parent_objnum < MAX_OBJECTS));
 	objp = &Objects[parent_objnum];
