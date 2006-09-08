@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.54 $
- * $Date: 2006-06-10 18:34:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.55 $
+ * $Date: 2006-09-08 06:17:07 $
+ * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2006/06/10 18:34:08  Goober5000
+ * fix parsing/handling of debriefing persona indexes
+ * --Goober5000
+ *
  * Revision 2.53  2006/02/19 00:32:47  Goober5000
  * additional error checking
  * --Goober5000
@@ -564,7 +568,7 @@
 #include "fs2open_pxo/Client.h"
 
 extern int PXO_SID; // FS2 Open PXO Session ID
-extern char PXO_Server[32];
+extern char PXO_Server[];
 extern int PXO_port;
 
 
