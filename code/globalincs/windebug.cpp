@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.38 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.39 $
+ * $Date: 2006-09-08 06:20:14 $
+ * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.37  2006/02/24 07:36:49  taylor
  * try and make some sense out of that cmdline option mess, maybe it will stay sane for a few days at least :)
  *
@@ -1387,8 +1390,10 @@ void windebug_memwatch_init()
 //#define NEW_MALLOC
 //**************************************
 
+
 int Watch_malloc = 0;
-DCF_BOOL(watch_malloc, Watch_malloc );
+DCF_BOOL(watch_malloc, Watch_malloc )
+
 
 HANDLE Heap = 0;
 
@@ -1894,5 +1899,3 @@ void *_vm_realloc( void *ptr, int size, int quiet )
 	return ret_ptr;
 #endif
 }
-
-

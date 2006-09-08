@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.13 $
- * $Date: 2006-05-27 17:07:48 $
+ * $Revision: 2.14 $
+ * $Date: 2006-09-08 06:20:14 $
  * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/05/27 17:07:48  taylor
+ * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
+ * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
+ * clean up TMAP flags
+ * fix a couple of minor OpenGL state change issues with spec and env map rendering
+ * make sure we build again for OS X (OGL extension functions work a little different there)
+ * render targets always need to be power-of-2 to avoid incomplete buffer issues in the code
+ * when we disable culling in opengl_3dunlit be sure that we re-enable it on exit of function
+ * re-fix screenshots
+ * add true alpha blending support (with cmdline for now since the artwork has the catch up)
+ * draw lines with float positioning, to be more accurate with resizing on non-standard resolutions
+ * don't load cubemaps from file for D3D, not sure how to do it anyway
+ * update geometry batcher code, memory fixes, dynamic stuff, basic fixage, etc.
+ *
  * Revision 2.12  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -313,7 +327,7 @@ typedef enum gr_texture_source {
 	TEXTURE_SOURCE_NONE,
 	TEXTURE_SOURCE_DECAL,
 	TEXTURE_SOURCE_NO_FILTERING,
-	TEXTURE_SOURCE_MODULATE4X,
+	TEXTURE_SOURCE_MODULATE4X
 } gr_texture_source;
 
 typedef enum gr_alpha_blend {
@@ -321,7 +335,7 @@ typedef enum gr_alpha_blend {
 	ALPHA_BLEND_ADDITIVE,				// 1*SrcPixel + 1*DestPixel
 	ALPHA_BLEND_ALPHA_ADDITIVE,			// Alpha*SrcPixel + 1*DestPixel
 	ALPHA_BLEND_ALPHA_BLEND_ALPHA,		// Alpha*SrcPixel + (1-Alpha)*DestPixel
-	ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR,	// Alpha*SrcPixel + (1-SrcPixel)*DestPixel
+	ALPHA_BLEND_ALPHA_BLEND_SRC_COLOR	// Alpha*SrcPixel + (1-SrcPixel)*DestPixel
 } gr_alpha_blend;
 
 typedef enum gr_zbuffer_type {
@@ -329,9 +343,8 @@ typedef enum gr_zbuffer_type {
 	ZBUFFER_TYPE_READ,
 	ZBUFFER_TYPE_WRITE,
 	ZBUFFER_TYPE_FULL,
-	ZBUFFER_TYPE_DEFAULT,
+	ZBUFFER_TYPE_DEFAULT
 } gr_zbuffer_type;
 
 
 #endif
-

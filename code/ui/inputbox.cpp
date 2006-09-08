@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/INPUTBOX.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-07-22 03:53:31 $
+ * $Revision: 2.10 $
+ * $Date: 2006-09-08 06:20:15 $
  * $Author: taylor $
  *
  * Code to implement input boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/22 03:53:31  taylor
+ * fix crash on commit in the multi ship selection screen
+ * mask_data in the UI code is always cast to ubyte so why it was a ushort type I'll never know
+ * fix unsized text in input boxes (fixed the real problem earlier but forgot to remove this old fix)
+ *
  * Revision 2.8  2005/07/18 03:45:10  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -366,7 +371,7 @@ void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, 
 	locked = 0;
 	valid_chars = NULL;
 	invalid_chars = NULL;
-};
+}
 
 void UI_INPUTBOX::set_valid_chars(char *vchars)
 {
@@ -757,5 +762,3 @@ void UI_INPUTBOX::set_text(char *in)
 
 	position = in_length;  // fixes the zero-length-I-don't-think-so bug
 }
-
-

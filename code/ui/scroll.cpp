@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/SCROLL.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:55 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2006-09-08 06:20:15 $
+ * $Author: taylor $
  *
  * Code for vertical scrollbars.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:55  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -199,7 +202,7 @@ void UI_SCROLLBAR::create(UI_WINDOW *wnd, int _x, int _y, int _h, int _start, in
 	dragging = 0;
 	last_scrolled = 0;
 	moved = 1;
-};
+}
 
 void UI_SCROLLBAR::draw()
 {
@@ -401,4 +404,3 @@ int UI_SCROLLBAR::changed()
 {
 	return moved;
 }
-

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-01-26 03:23:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.24 $
+ * $Date: 2006-09-08 06:20:14 $
+ * $Author: taylor $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/01/26 03:23:29  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.22  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -397,7 +401,7 @@ char *Radar_range_text(int n)
 		return XSTR( "infinity", 248);
 	}
 	return NULL;
-};
+}
 
 // default flags for observer HUD
 int HUD_observer_default_flags = 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.22 $
- * $Date: 2006-06-27 04:06:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2006-09-08 06:20:14 $
+ * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/06/27 04:06:18  Goober5000
+ * handle docked objects during death roll
+ * --Goober5000
+ *
  * Revision 2.21  2006/04/20 06:32:22  Goober5000
  * proper capitalization according to Volition
  *
@@ -550,7 +554,7 @@ extern int Object_inited;
 extern int Show_waypoints;
 
 // The next signature for the next newly created object. Zero is bogus
-#define OBJECT_SIG_SHIP_START					300000;				// ships start at this signature
+#define OBJECT_SIG_SHIP_START					300000				// ships start at this signature
 extern int Object_next_ship_signature;
 extern int Object_next_signature;		
 extern int num_objects;
