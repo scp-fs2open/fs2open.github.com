@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.5 $
- * $Date: 2006-08-18 17:48:39 $
- * $Author: karajorma $
+ * $Revision: 2.66.2.6 $
+ * $Date: 2006-09-08 06:14:44 $
+ * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.5  2006/08/18 17:48:39  karajorma
+ * More typos revealed while trying to merge changes to the HEAD branch!
+ *
  * Revision 2.66.2.4  2006/08/18 17:21:10  karajorma
  * More cut & paste errors fixed and removal of the hardcoded warp out animation. Will now actually use the one specified in the table.
  *
@@ -3247,7 +3250,7 @@ void shipfx_do_shockwave_stuff(ship *shipp, shockwave_create_info *sci)
 
 extern int model_should_render_engine_glow(int objnum, int bank_obj);
 int Wash_on = 1;
-DCF_BOOL(engine_wash, Wash_on);
+DCF_BOOL(engine_wash, Wash_on)
 #define ENGINE_WASH_CHECK_INTERVAL		250	// (4x sec)
 // Do engine wash effect for ship
 // Assumes length of engine wash is greater than radius of engine wash hemisphere
