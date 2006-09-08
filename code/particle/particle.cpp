@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-05-27 16:52:50 $
+ * $Revision: 2.18.2.1 $
+ * $Date: 2006-09-08 06:11:06 $
  * $Author: taylor $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/05/27 16:52:50  taylor
+ * lots of little cleanup and minor fixage
+ * make Particles[] dynamic (appears to improve processing speed of two particle functions by about 30%)
+ * move to completely using Bobboau's geometry batcher instead of the stale one that RandomTiger did
+ * little change to PARTICLE_SMOKE to flip UV orient differently, may add some realism, or just look kinda neat
+ * get rid of particle_emit() stuff what was hardcoded for MAX_DETAIL_LEVEL value
+ *
  * Revision 2.17  2006/01/21 09:36:58  wmcoolmon
  * Texture replacement stuff
  *
@@ -472,13 +479,19 @@ void particle_move_all(float frametime)
 		return;
 
 
-	int i;
-
-	for (i = 0; i < (int)Particles.size(); i++) {
+	for (uint i = 0; i < Particles.size(); i++) {
 		p = &Particles[i];
 
 		// bogus attached objnum
 		if (p->attached_objnum >= MAX_OBJECTS) {
+			Particles.erase( Particles.begin() + i );
+			continue;
+		}
+
+		p->age += frametime;
+	
+		if ( p->age > p->max_life )	{
+			// If it's time expired remove it
 			Particles.erase( Particles.begin() + i );
 			continue;
 		}
@@ -495,13 +508,6 @@ void particle_move_all(float frametime)
 		else {
 			// Move the particle
 			vm_vec_scale_add2( &p->pos, &p->velocity, frametime );		
-		}
-
-		p->age += frametime;
-	
-		if ( p->age > p->max_life )	{
-			// If it's time expired remove it
-			Particles.erase( Particles.begin() + i );
 		}
 	}
 }
