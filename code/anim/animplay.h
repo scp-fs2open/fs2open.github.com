@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 02:50:48 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2006-09-08 06:20:14 $
+ * $Author: taylor $
  *
  * Header file for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 02:50:48  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/04/05 05:53:14  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -149,7 +153,7 @@ enum
 {
 	PAGE_FROM_MEM		  = 0,
 	PAGE_FROM_DISK		  = 1,
-	PAGE_FROM_DISK_FORCED = 2,
+	PAGE_FROM_DISK_FORCED = 2
 };
 
 extern int Anim_paused;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-10-10 17:21:05 $
+ * $Revision: 2.19 $
+ * $Date: 2006-09-08 06:20:14 $
  * $Author: taylor $
  *
  * Module for working with Mission goals
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/10/10 17:21:05  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.17  2005/07/22 10:18:39  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -589,7 +592,7 @@ char *Goal_type_text(int n)
 	}
 
 	return NULL;
-};
+}
 
 static int Goal_screen_text_x;
 static int Goal_screen_text_y;
@@ -1782,5 +1785,4 @@ void mission_goal_exit()
 {
 	snd_play( &Snds_iface[SND_USER_SELECT] );
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
-} 
-
+}

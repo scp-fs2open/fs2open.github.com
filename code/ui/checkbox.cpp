@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/CHECKBOX.cpp $
- * $Revision: 2.2 $
- * $Date: 2005-05-12 17:49:17 $
+ * $Revision: 2.3 $
+ * $Date: 2006-09-08 06:20:15 $
  * $Author: taylor $
  *
  * Code to handle checkboxes.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.1  2002/08/01 01:41:10  penguin
  * The big include file move
  *
@@ -95,7 +99,7 @@ void UI_CHECKBOX::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _state
 	position = 0;
 	pressed_down = 0;
 	flag = _state;
-};
+}
 
 void UI_CHECKBOX::destroy()
 {
@@ -256,4 +260,3 @@ void UI_CHECKBOX::set_state(int _state)
 {
 	flag = _state;
 }
-

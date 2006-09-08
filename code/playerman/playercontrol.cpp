@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.47 $
- * $Date: 2006-08-20 00:51:06 $
+ * $Revision: 2.48 $
+ * $Date: 2006-09-08 06:20:15 $
  * $Author: taylor $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2006/08/20 00:51:06  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.46  2006/08/01 04:26:02  Kazan
  * commented out glide_while_pressed changes until taylor deems them safe
  *
@@ -657,7 +660,7 @@ static int Player_all_alone_msg_inited=0;	// flag used for initializing a player
 
 #ifndef NDEBUG
 	int Show_killer_weapon = 0;
-	DCF_BOOL( show_killer_weapon, Show_killer_weapon );
+	DCF_BOOL( show_killer_weapon, Show_killer_weapon )
 #endif
 
 void playercontrol_read_stick(int *axis, float frame_time);

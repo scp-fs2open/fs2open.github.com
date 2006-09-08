@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/LISTBOX.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-07-18 03:45:10 $
+ * $Revision: 2.8 $
+ * $Date: 2006-09-08 06:20:15 $
  * $Author: taylor $
  *
  * Code to implement a listbox gadget.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/18 03:45:10  taylor
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.6  2005/07/02 19:45:02  taylor
  * ton of non-standard resolution fixes
  *
@@ -203,7 +210,7 @@ void UI_LISTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _h, int _num
 
 	// kazan
 	draw_frame = 1;
-};
+}
 
 
 void UI_LISTBOX::set_drawframe(int mode)

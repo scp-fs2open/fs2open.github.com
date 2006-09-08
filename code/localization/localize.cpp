@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2006-09-08 06:20:14 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.19  2006/03/01 04:01:37  Goober5000
  * fix comm message localization
  *
@@ -565,7 +568,7 @@ void lcl_close()
 	if(Lcl_ext_filename != NULL){
 		vm_free(Lcl_ext_filename);
 	}
-};
+}
 
 // determine what language we're running in, see LCL_* defines above
 int lcl_get_language()

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.13 $
- * $Date: 2006-04-20 06:32:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2006-09-08 06:20:15 $
+ * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/04/20 06:32:30  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.12  2005/10/08 18:25:41  wmcoolmon
  * These are no longer needed...
  *
@@ -465,7 +468,7 @@ enum
     SND_ENV_UNDERWATER,
     SND_ENV_DRUGGED,
     SND_ENV_DIZZY,
-    SND_ENV_PSYCHOTIC,
+    SND_ENV_PSYCHOTIC
 };
 
 int sound_env_set(sound_env *se);

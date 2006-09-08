@@ -6,13 +6,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.h $
- * $Revision: 2.9 $
- * $Date: 2006-07-21 05:41:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2006-09-08 06:20:14 $
+ * $Author: taylor $
  *
  * New docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/07/21 05:41:10  Goober5000
+ * add another method for calculating dimensions of docked objects, plus improve an existing one
+ * --Goober5000
+ *
  * Revision 2.8  2006/04/20 06:32:23  Goober5000
  * proper capitalization according to Volition
  *
@@ -92,7 +96,7 @@ enum axis_type
 {
 	X_AXIS,
 	Y_AXIS,
-	Z_AXIS,
+	Z_AXIS
 };
 
 

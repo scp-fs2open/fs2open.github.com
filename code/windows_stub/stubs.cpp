@@ -1,13 +1,22 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.32 $
- * $Date: 2006-05-27 16:39:40 $
+ * $Revision: 2.33 $
+ * $Date: 2006-09-08 06:20:15 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/05/27 16:39:40  taylor
+ * remove non-Windows timeSetEvent() functions
+ * make PDWORD and LPDWORD int instead of long (64-bit issue) (thanks Spike)
+ * fix 64-bit ptr issue with OpenAL audio streaming code (thanks Spike)
+ * add start of device enumberation for OpenAL 1.1 (it just lists available devices now)
+ * make sure we open the default OpenAL 1.1 device under Windows
+ * comment out blank listener stuff, this may have been crashing under OS X
+ * add support for AL_BYTE_OFFSET in OpenAL 1.1 for buffer positioning under Windows
+ *
  * Revision 2.31  2006/04/16 05:24:16  taylor
  * probably doesn't need to be world readable, but certainly doesn't need to be world writeable
  * add Assert() to can when we are stupidly trying to allocate 0 or less size bytes in vm_malloc()
@@ -382,7 +391,7 @@ int TotalRam = 0;
 #endif
 
 int Watch_malloc = 0;
-DCF_BOOL(watch_malloc, Watch_malloc );
+DCF_BOOL(watch_malloc, Watch_malloc )
 
 
 #ifndef NDEBUG

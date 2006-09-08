@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.259 $
- * $Date: 2006-09-04 20:56:12 $
- * $Author: wmcoolmon $
+ * $Revision: 2.260 $
+ * $Date: 2006-09-08 06:20:14 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259  2006/09/04 20:56:12  wmcoolmon
+ * Better static mouse cursor support
+ *
  * Revision 2.258  2006/09/04 09:26:36  Backslash
  * Make hud toggle apply to hud framerate, statistics, and camera position
  *
@@ -5391,7 +5394,7 @@ extern void ai_debug_render_stuff();
 #endif
 
 int Game_subspace_effect = 0;
-DCF_BOOL( subspace, Game_subspace_effect );
+DCF_BOOL( subspace, Game_subspace_effect )
 
 // Does everything needed to render a frame
 void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
@@ -9783,7 +9786,7 @@ void Time_model( int modelnum )
 }
 
 int Time_models = 0;
-DCF_BOOL( time_models, Time_models );
+DCF_BOOL( time_models, Time_models )
 
 void Do_model_timings_test()
 {

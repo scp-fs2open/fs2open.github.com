@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.166 $
- * $Date: 2006-07-17 01:12:19 $
+ * $Revision: 2.167 $
+ * $Date: 2006-09-08 06:20:14 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.166  2006/07/17 01:12:19  taylor
+ * fix some missile autocentering issues
+ *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
+ *  - don't try to autocenter loadout icons when rendered 3d
+ *
  * Revision 2.165  2006/07/17 00:10:00  Goober5000
  * stage 2 of animation fix (add base frame time to each ship)
  * --Goober5000
@@ -3210,7 +3215,7 @@ int model_get_rotated_bitmap_points(vertex *pnt,float angle, float rad, vertex *
 
 /*
 int Model_caching = 1;
-DCF_BOOL( model_caching, Model_caching );
+DCF_BOOL( model_caching, Model_caching )
 
 extern int Tmap_scan_read;		// 0 = normal mapper, 1=read, 2=write
 

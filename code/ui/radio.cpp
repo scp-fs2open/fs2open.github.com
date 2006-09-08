@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/RADIO.cpp $
- * $Revision: 2.4 $
- * $Date: 2005-05-12 17:49:17 $
+ * $Revision: 2.5 $
+ * $Date: 2006-09-08 06:20:15 $
  * $Author: taylor $
  *
  * Code to handle radio buttons.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/05/12 17:49:17  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.3  2004/07/26 20:47:55  Kazan
  * remove MCD complete
  *
@@ -103,7 +107,7 @@ void UI_RADIO::create(UI_WINDOW *wnd, char *_text, int _x, int _y, int _state, i
 	pressed_down = 0;
 	flag = _state;
 	group = _group;
-};
+}
 
 void UI_RADIO::destroy()
 {
@@ -286,5 +290,3 @@ int UI_RADIO::checked()
 {
 	return flag;
 }
-
-

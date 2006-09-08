@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.28 $
- * $Date: 2006-06-01 04:47:23 $
+ * $Revision: 1.29 $
+ * $Date: 2006-09-08 06:20:14 $
  * $Author: taylor $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2006/06/01 04:47:23  taylor
+ * make sure FORM_ON_WING goal is valid since it works for ships other than player now
+ *
  * Revision 1.27  2006/05/31 02:08:22  Goober5000
  * fix compiler warning
  * --Goober5000
@@ -791,7 +794,7 @@ char *Ai_goal_text(int goal)
 
 	// Avoid compiler warning
 	return NULL;
-};
+}
 
 // function to maybe add the form on my wing goal for a player's starting wing.  Called when a player wing arrives.
 // Goober5000 - made more generic

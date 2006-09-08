@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/DebugConsole/Console.cpp $
- * $Revision: 2.6 $
- * $Date: 2005-04-25 00:07:22 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2006-09-08 06:20:14 $
+ * $Author: taylor $
  *
  * Routines for managing the debug console window.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/04/25 00:07:22  wmcoolmon
+ * Bumped console printing buffer size so people can play with the neb2 command
+ *
  * Revision 2.5  2004/07/26 20:47:27  Kazan
  * remove MCD complete
  *
@@ -213,11 +216,11 @@ int command_scroll = 0;
 
 ///=========================== SCANNER =======================
 typedef enum {
-	LETTER, QUOTE, SPECIAL, EOF_CODE, DIGIT,
+	LETTER, QUOTE, SPECIAL, EOF_CODE, DIGIT
 } CHAR_CODE;
 
 typedef enum {
-	NO_TOKEN, IDENTIFIER, NUMBER, STRING, 
+	NO_TOKEN, IDENTIFIER, NUMBER, STRING
 } TOKEN_CODE;
 
 

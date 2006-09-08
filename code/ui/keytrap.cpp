@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/KEYTRAP.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:55 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2006-09-08 06:20:15 $
+ * $Author: taylor $
  *
  * Routines for gadgets that trap keypresses.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:55  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:33:08  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -58,7 +61,7 @@ void UI_KEYTRAP::create(UI_WINDOW *wnd, int key, void (*_user_function)(void) )
 	set_callback(_user_function);
 
 	parent = this;		// Ugly.  This keeps KEYTRAPS from getting keyboard control.
-};
+}
 
 void UI_KEYTRAP::draw()
 {
