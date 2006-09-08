@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-09-04 06:17:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2006-09-08 06:18:29 $
+ * $Author: taylor $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/09/04 06:17:26  wmcoolmon
+ * Commit of 'new' BTRL FTL effect work
+ *
  * Revision 2.18  2006/05/27 16:52:50  taylor
  * lots of little cleanup and minor fixage
  * make Particles[] dynamic (appears to improve processing speed of two particle functions by about 30%)
@@ -479,13 +482,19 @@ void particle_move_all(float frametime)
 		return;
 
 
-	int i;
-
-	for (i = 0; i < (int)Particles.size(); i++) {
+	for (uint i = 0; i < Particles.size(); i++) {
 		p = &Particles[i];
 
 		// bogus attached objnum
 		if (p->attached_objnum >= MAX_OBJECTS) {
+			Particles.erase( Particles.begin() + i );
+			continue;
+		}
+
+		p->age += frametime;
+	
+		if ( p->age > p->max_life )	{
+			// If it's time expired remove it
 			Particles.erase( Particles.begin() + i );
 			continue;
 		}
@@ -502,13 +511,6 @@ void particle_move_all(float frametime)
 		else {
 			// Move the particle
 			vm_vec_scale_add2( &p->pos, &p->velocity, frametime );		
-		}
-
-		p->age += frametime;
-	
-		if ( p->age > p->max_life )	{
-			// If it's time expired remove it
-			Particles.erase( Particles.begin() + i );
 		}
 	}
 }
