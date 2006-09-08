@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.280 $
- * $Date: 2006-09-08 06:18:05 $
+ * $Revision: 2.281 $
+ * $Date: 2006-09-08 07:25:05 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.280  2006/09/08 06:18:05  taylor
+ * fix for Mantis bug #617 (with a very big assist from Shade who did most of the initial work on this)
+ *
  * Revision 2.279  2006/08/20 00:51:06  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -14762,8 +14765,8 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_EVENT_TRUE:
 			case OP_EVENT_FALSE:
 				sexp_val = sexp_event_status( node, (op_num == OP_EVENT_TRUE?1:0) );
-			//	if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
-			//		Sexp_useful_number = 0;  // indicate sexp isn't current yet
+				if ((sexp_val != SEXP_TRUE) && (sexp_val != SEXP_KNOWN_TRUE))
+					Sexp_useful_number = 0;  // indicate sexp isn't current yet
 				break;
 
 			case OP_EVENT_TRUE_DELAY:
