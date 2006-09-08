@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.19 $
- * $Date: 2006-01-26 03:23:29 $
- * $Author: Goober5000 $
+ * $Revision: 1.20 $
+ * $Date: 2006-09-08 06:17:07 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.19  2006/01/26 03:23:29  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 1.18  2006/01/20 07:10:33  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -100,6 +104,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netdb.h>
 #endif
 
 
@@ -166,9 +171,46 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 	else // adr_inet is the remote address
 	{
 		adr_inet.sin_port = htons((unsigned short)rem_port);
-		adr_inet.sin_addr.s_addr = inet_addr(rem_host.c_str());
+
+		// blasted MS, probably need to use getaddrinfo() here for Win32, but I
+		// want to keep this as clean and simple as possible and that means
+		// using an actual standard :)
+
+		struct hostent *my_host = NULL;
+		char host_str[5];
+
+		strncpy( host_str, rem_host.c_str(), sizeof(host_str) );
+
+		// check that we aren't in a dotted format, some gethostbyname() implementations don't like that
+		// (NOTE: Yes, I'm aware that this is problematic if a host name uses an initial digit)
+		if ( !isdigit(host_str[0]) ) {
+			my_host = gethostbyname( rem_host.c_str() );
+
+			if (my_host == NULL) {
+				// NOTE: that we don't do specific error reporting here since it's totally different
+				//       on Win32, compared to everything else that is actually standard
+				ml_printf("Failure from gethostbyname() for host '%s'!\n", rem_host.c_str());
+				return false;
+			} else if (my_host->h_addrtype != AF_INET) {
+				ml_printf("Invalid address type returned by gethostbyname()!\n");
+				return false;
+			} else if (my_host->h_addr_list[0] == NULL) {
+				ml_printf("Unable to determine IP from host name '%s'\n", rem_host.c_str());
+				return false;
+			}
+
+			adr_inet.sin_addr.s_addr = ((in_addr *)(my_host->h_addr_list[0]))->s_addr;
+		}
+		// we might be in dotted format so try using it as such
+		else {
+			adr_inet.sin_addr.s_addr = inet_addr( rem_host.c_str() );
+		}
 	}
 
+	if (adr_inet.sin_addr.s_addr == INADDR_ANY) {
+		ml_printf("No valid server address to connect with!\n");
+		return false;
+	}
 
 #if defined(WIN32)
 	// Windows Version
