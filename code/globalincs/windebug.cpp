@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.39 $
- * $Date: 2006-09-08 06:20:14 $
+ * $Revision: 2.40 $
+ * $Date: 2006-09-09 04:07:57 $
  * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2006/09/08 06:20:14  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.38  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -1001,24 +1004,26 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 
 	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", text, filename, linenum );
 
-	#ifdef SHOW_CALL_STACK
-		dumpBuffer.Clear();
-		dumpBuffer.Printf( AssertText1 );
-		dumpBuffer.Printf( "\r\n" );
-		DumpCallsStack( dumpBuffer ) ;  
-		dump_text_to_clipboard(dumpBuffer.buffer);
+#ifdef SHOW_CALL_STACK
+	dumpBuffer.Clear();
+	dumpBuffer.Printf( AssertText1 );
+	dumpBuffer.Printf( "\r\n" );
+	DumpCallsStack( dumpBuffer ) ;  
+	dump_text_to_clipboard(dumpBuffer.buffer);
 
-		dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
-		dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
+	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
+	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
 
 	stay_minimized = true;
-		val = MessageBox(NULL, dumpBuffer.buffer, "Assertion Failed!", MB_OKCANCEL|flags );
-	#else
-		val = MessageBox(NULL, AssertText1, "Assertion Failed!", MB_OKCANCEL|flags );
-	#endif
+	val = MessageBox(NULL, dumpBuffer.buffer, "Assertion Failed!", MB_OKCANCEL|flags );
+#else
+	stay_minimized = true;
+	val = MessageBox(NULL, AssertText1, "Assertion Failed!", MB_OKCANCEL|flags );
+#endif
 	stay_minimized = false;
 
-	ShowCursor(false);
+	if (!Fred_running)
+		ShowCursor(false);
 
 	if (val == IDCANCEL)
 		exit(1);
@@ -1109,7 +1114,8 @@ void LuaError(struct lua_State *L, char *format, ...)
 	val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags|MB_YESNOCANCEL );
 	stay_minimized = false;
 
-	ShowCursor(false);
+	if (!Fred_running)
+		ShowCursor(false);
 
 	if (val == IDCANCEL ) {
 		exit(1);
@@ -1131,25 +1137,27 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 	va_end(args);
 	sprintf(AssertText2,"Error: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line );
 
-	#ifdef SHOW_CALL_STACK
-		dumpBuffer.Clear();
-		dumpBuffer.Printf( AssertText2 );
-		dumpBuffer.Printf( "\r\n" );
-		DumpCallsStack( dumpBuffer ) ;  
-		dump_text_to_clipboard(dumpBuffer.buffer);
+#ifdef SHOW_CALL_STACK
+	dumpBuffer.Clear();
+	dumpBuffer.Printf( AssertText2 );
+	dumpBuffer.Printf( "\r\n" );
+	DumpCallsStack( dumpBuffer ) ;  
+	dump_text_to_clipboard(dumpBuffer.buffer);
 
-		dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
-		dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
+	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
+	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
 
 	stay_minimized = true;
-		val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags|MB_OKCANCEL );
-	#else
-		strcat(AssertText2,"\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
-		val = MessageBox(NULL, AssertText2, "Error!", flags|MB_OKCANCEL );
-	#endif
+	val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags|MB_OKCANCEL );
+#else
+	strcat(AssertText2,"\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
+	stay_minimized = true;
+	val = MessageBox(NULL, AssertText2, "Error!", flags|MB_OKCANCEL );
+#endif
 	stay_minimized = false;
 
-	ShowCursor(false);
+	if (!Fred_running)
+		ShowCursor(false);
 
 	if (val == IDCANCEL ) {
 		exit(1);
@@ -1185,11 +1193,13 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 		sprintf(AssertText2,"%s\n\nWarning: %s\r\nFile:%s\r\nLine: %d\n\n%s", 
 			explanation, AssertText1, filename, line, end);
 
-	stay_minimized = true;
+		stay_minimized = true;
 		int result = MessageBox((HWND) os_get_window(), AssertText2, "Fred Warning", MB_ICONWARNING | MB_YESNO);//CANCEL);
-	stay_minimized = false;
+		stay_minimized = false;
 
-	ShowCursor(false);
+		if (!Fred_running)
+			ShowCursor(false);
+
 		switch(result)
 		{
 			case IDNO: show_warnings = false; break;
@@ -1216,24 +1226,28 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 	va_end(args);
 	sprintf(AssertText2,"Warning: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line );
 
-	#ifdef SHOW_CALL_STACK
-		dumpBuffer.Clear();
-		dumpBuffer.Printf( AssertText2 );
-		dumpBuffer.Printf( "\r\n" );
-		DumpCallsStack( dumpBuffer ) ;  
-		dump_text_to_clipboard(dumpBuffer.buffer);
+#ifdef SHOW_CALL_STACK
+	dumpBuffer.Clear();
+	dumpBuffer.Printf( AssertText2 );
+	dumpBuffer.Printf( "\r\n" );
+	DumpCallsStack( dumpBuffer ) ;  
+	dump_text_to_clipboard(dumpBuffer.buffer);
 
-		dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
-		dumpBuffer.Printf("\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
+	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
+	dumpBuffer.Printf("\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
 
 	stay_minimized = true;
-		id = MessageBox(NULL, dumpBuffer.buffer, "Warning!", MB_YESNOCANCEL|flags );
-	#else
-		strcat(AssertText2,"\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
-		id = MessageBox(NULL, AssertText2, "Warning!", MB_YESNOCANCEL|flags );
-	#endif
+	id = MessageBox(NULL, dumpBuffer.buffer, "Warning!", MB_YESNOCANCEL|flags );
+#else
+	stay_minimized = true;
+	strcat(AssertText2,"\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
+	id = MessageBox(NULL, AssertText2, "Warning!", MB_YESNOCANCEL|flags );
+#endif
 	stay_minimized = false;
-	ShowCursor(false);
+
+	if (!Fred_running)
+		ShowCursor(false);
+
 	if ( id == IDCANCEL )
 		exit(1);
 	else if ( id == IDYES ) {
