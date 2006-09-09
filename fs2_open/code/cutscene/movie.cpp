@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.31.2.5 $
- * $Date: 2006-08-28 17:14:52 $
+ * $Revision: 2.31.2.6 $
+ * $Date: 2006-09-09 21:27:50 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.31.2.5  2006/08/28 17:14:52  taylor
+ * stupid, stupid, stupid...
+ *  - fix AVI/MPG movie playback
+ *  - fix missing campaign craziness
+ *
  * Revision 2.31.2.4  2006/08/27 18:02:26  taylor
  * switch to using cf_find_file_location_ext() when looking for movies
  *
@@ -198,6 +203,8 @@ bool movie_play(char *name)
 			// clear the screen and hide the mouse cursor
 			Mouse_hidden++;
 			gr_reset_clip();
+			gr_set_color(255, 255, 255);
+			gr_set_clear_color(0, 0, 0);
 			gr_zbuffer_clear(0);
 			gr_clear();
 			gr_flip();
