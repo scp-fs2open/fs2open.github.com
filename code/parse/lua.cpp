@@ -1126,6 +1126,44 @@ LUA_VAR(Filename, l_Model, "string", "Model filename")
 	return lua_set_args(L, "s", pm->filename);
 }
 
+LUA_VAR(Mass, l_Model, "number", "Model radius (Used for collision & culling detection)")
+{
+	int idx;
+	float nm = 0.0f;
+	if(!lua_get_args(L, "o|s", l_Model.Get(&idx), &nm))
+		return LUA_RETURN_NIL;
+
+	polymodel *pm = model_get(idx);
+
+	if(pm == NULL)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		pm->mass = nm;
+	}
+
+	return lua_set_args(L, "f", pm->mass);
+}
+
+LUA_VAR(Radius, l_Model, "number", "Model radius (Used for collision & culling detection)")
+{
+	int idx;
+	float nr = 0.0f;
+	if(!lua_get_args(L, "o|s", l_Model.Get(&idx), &nr))
+		return LUA_RETURN_NIL;
+
+	polymodel *pm = model_get(idx);
+
+	if(pm == NULL)
+		return LUA_RETURN_NIL;
+
+	if(LUA_SETTING_VAR) {
+		pm->rad = nr;
+	}
+
+	return lua_set_args(L, "f", pm->rad);
+}
+
 //**********HANDLE: directive
 lua_obj<int> l_Event("event", "Mission event handle");
 
@@ -3584,6 +3622,26 @@ LUA_VAR(IsInLimbo, l_Ship, "Boolean", "Ship's limbo status")
 	return lua_set_args(L, "b", (shipp->flags2 & SF2_IN_LIMBO) != 0);
 }
 
+LUA_VAR(Model, l_Ship, "model", "Ship's model")
+{
+	object_h *objh;
+	int newmodel = -1;
+	if(!lua_get_args(L, "o|b", l_Ship.GetPtr(&objh), l_Model.Get(&newmodel)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	ship *shipp = &Ships[objh->objp->instance];
+
+	if(LUA_SETTING_VAR)
+	{
+		shipp->modelnum = newmodel;
+	}
+
+	return lua_set_args(L, "o", l_Model.Set(shipp->modelnum));
+}
+
 LUA_VAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon banks")
 {
 	object_h *objh;
@@ -3776,6 +3834,42 @@ LUA_FUNC(kill, l_Ship, "[object Killer]", "True if successful", "Kills the ship.
 	ship_hit_kill(victim->objp, killer->objp, percent_killed, (victim->sig == killer->sig) ? 1 : 0);
 
 	return LUA_RETURN_TRUE;
+}
+
+LUA_FUNC(fireCountermeasure, l_Ship, NULL, "Whether countermeasure was launched or not", "Launches a countermeasure from the ship")
+{
+	object_h *objh;
+	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	return lua_set_args(L, "b", ship_launch_countermeasure(objh->objp));
+}
+
+LUA_FUNC(firePrimary, l_Ship, NULL, "Number fired", "Fires ship primary bank(s)")
+{
+	object_h *objh;
+	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	return lua_set_args(L, "i", ship_fire_primary(objh->objp, 0));
+}
+
+LUA_FUNC(fireSecondary, l_Ship, NULL, "Number fired", "Fires ship secondary bank(s)")
+{
+	object_h *objh;
+	if(!lua_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return LUA_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return LUA_RETURN_NIL;
+
+	return lua_set_args(L, "i", ship_fire_secondary(objh->objp, 0));
 }
 
 LUA_FUNC(getNumSubsystems, l_Ship, NULL, "Number of subsystems", "Gets number of subsystems on ship")
