@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.35 $
- * $Date: 2006-08-20 00:44:36 $
+ * $Revision: 2.36 $
+ * $Date: 2006-09-09 21:28:19 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/08/20 00:44:36  taylor
+ * add decoder for 8-bit MVEs
+ * a basic fix for finding AVIs over MVEs, for mod dir stuff (this needs some CFILE support added to be a true fix, it's on the TODO list)
+ * little bits of cleanup for old/unused code
+ * make sure MVE filenames are correct in mvelib
+ *
  * Revision 2.34  2006/08/15 00:26:07  Backslash
  * add .ogg to the list of recognized movie file extensions
  *
@@ -198,6 +204,8 @@ bool movie_play(char *name)
 			// clear the screen and hide the mouse cursor
 			Mouse_hidden++;
 			gr_reset_clip();
+			gr_set_color(255, 255, 255);
+			gr_set_clear_color(0, 0, 0);
 			gr_zbuffer_clear(0);
 			gr_clear();
 			gr_flip();
