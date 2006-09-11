@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.21 $
- * $Date: 2006-09-08 06:10:34 $
+ * $Revision: 2.259.2.22 $
+ * $Date: 2006-09-11 01:09:33 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.21  2006/09/08 06:10:34  taylor
+ * fix for Mantis bug #617 (with a very big assist from Shade who did most of the initial work on this)
+ *
  * Revision 2.259.2.20  2006/08/19 04:38:47  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -6279,7 +6282,7 @@ void sexp_set_object_speed(int n, int axis)
 {
 	Assert(n >= 0);
 
-	int speed, subjective;
+	int speed, subjective = 0;
 	object_ship_wing_point_team oswpt;
 
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
