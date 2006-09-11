@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.165 $
- * $Date: 2006-09-04 06:17:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.166 $
+ * $Date: 2006-09-11 06:51:17 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.165  2006/09/04 06:17:26  wmcoolmon
+ * Commit of 'new' BTRL FTL effect work
+ *
  * Revision 2.164  2006/08/03 01:33:56  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
@@ -1767,8 +1770,8 @@ typedef struct ship_info {
 	char     *gun_mounts;			         // string used by multiplayer ship desc
 	char     *missile_banks;					// string used by multiplayer ship desc
 
-	char		pof_file[NAME_LENGTH];			// POF file to load/associate with ship
-	char		pof_file_hud[NAME_LENGTH];		// POF file to load for the HUD target box
+	char		pof_file[MAX_FILENAME_LEN];			// POF file to load/associate with ship
+	char		pof_file_hud[MAX_FILENAME_LEN];		// POF file to load for the HUD target box
 	int		num_detail_levels;				// number of detail levels for this ship
 	int		detail_distance[MAX_SHIP_DETAIL_LEVELS];					// distance to change detail levels at
 	int		modelnum;							// ship model
@@ -1797,8 +1800,8 @@ typedef struct ship_info {
 	float		warpout_radius;
 	int			warpin_type;
 	int			warpout_type;
-	char		warpin_anim[NAME_LENGTH];
-	char		warpout_anim[NAME_LENGTH];
+	char		warpin_anim[MAX_FILENAME_LEN];
+	char		warpout_anim[MAX_FILENAME_LEN];
 	float		warpout_player_speed;
 
 	uint		flags;							//	See SIF_xxxx - changed to uint by Goober5000
@@ -1870,9 +1873,9 @@ typedef struct ship_info {
 	int allowed_bank_restricted_weapons[MAX_SHIP_WEAPONS][MAX_WEAPON_TYPES];
 
 	ubyte	shield_icon_index;				// index to locate ship-specific animation frames for the shield on HUD
-	char	icon_filename[NAME_LENGTH];	// filename for icon that is displayed in ship selection
-	char	anim_filename[NAME_LENGTH];	// filename for animation that plays in ship selection
-	char	overhead_filename[NAME_LENGTH];	// filename for animation that plays weapons loadout
+	char	icon_filename[MAX_FILENAME_LEN];	// filename for icon that is displayed in ship selection
+	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in ship selection
+	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
 
 	int	score;								// default score for this ship
 
@@ -1911,7 +1914,7 @@ typedef struct ship_info {
 	float		thruster_glow_len_factor;
 
 	int splodeing_texture;
-	char splodeing_texture_name[NAME_LENGTH];
+	char splodeing_texture_name[MAX_FILENAME_LEN];
 	int max_decals;
 
 	bool draw_primary_models[MAX_SHIP_PRIMARY_BANKS];
@@ -1974,7 +1977,7 @@ extern std::vector<engine_wash_info> Engine_wash_info;
 //	Defines a wing of ships.
 typedef struct wing {
 	char	name[NAME_LENGTH];
-	char	wing_squad_filename[MAX_FILENAME_LEN+1];	// Goober5000
+	char	wing_squad_filename[MAX_FILENAME_LEN];	// Goober5000
 	int	reinforcement_index;					// index in reinforcement struct or -1
 	int	hotkey;
 

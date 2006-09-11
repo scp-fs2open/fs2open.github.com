@@ -68,7 +68,7 @@ void script_parse_table(char *filename)
 		while(optional_string("$State:")) {
 			char buf[NAME_LENGTH];
 			int idx;
-			stuff_string(buf, F_NAME);
+			stuff_string(buf, F_NAME, sizeof(buf));
 
 			idx = gameseq_get_state_idx(buf);
 
@@ -575,7 +575,7 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 	Assert(out_index != NULL);
 	Assert(debug_str != NULL);
 
-	char buf[PARSE_BUF_SIZE] = {0};
+	char buf[PARSE_BUF_SIZE];
 
 	if(check_for_string("[["))
 	{
@@ -654,7 +654,7 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		strcpy(buf, "return ");
 
 		//Stuff it
-		stuff_string(buf+strlen(buf), F_RAW, NULL, sizeof(buf)-1);
+		stuff_string(buf+strlen(buf), F_RAW, sizeof(buf));
 
 		//Load it into a buffer & parse it
 		luaL_loadbuffer(GetLuaSession(), buf, strlen(buf), debug_str);

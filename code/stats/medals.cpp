@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.16 $
- * $Date: 2005-09-14 20:03:40 $
+ * $Revision: 2.17 $
+ * $Date: 2006-09-11 06:51:17 $
  * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2005/09/14 20:03:40  taylor
+ * fix ace badges not getting displayed in debriefing
+ *
  * Revision 2.15  2005/07/24 00:32:45  wmcoolmon
  * Synced 3D shockwaves' glowmaps with the model, tossed in some medals.tbl
  * support for the demo/FS1
@@ -423,10 +426,10 @@ void parse_medal_tbl()
 		medal_stuff temp_medal;
 
 		required_string("$Name:");
-		stuff_string( temp_medal.name, F_NAME, NULL );
+		stuff_string( temp_medal.name, F_NAME, NAME_LENGTH );
 
 		required_string("$Bitmap:");
-		stuff_string( temp_medal.bitmap, F_NAME, NULL );
+		stuff_string( temp_medal.bitmap, F_NAME, MAX_FILENAME_LEN );
 
 		required_string("$Num mods:");
 		stuff_int( &temp_medal.num_versions);
@@ -439,19 +442,19 @@ void parse_medal_tbl()
 			stuff_int( &temp_medal.kills_needed );
 
 			if(optional_string("$Wavefile 1:"))
-				stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
+				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
 			if(optional_string("$Wavefile 2:"))
-				stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
+				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
 			//stuff_string(Badge_info[bi].wave2, F_NAME, NULL, MAX_FILENAME_LEN);
 
 			if(optional_string("$Wavefile Base:"))
-				stuff_string(temp_medal.voice_base, F_NAME, NULL, MAX_FILENAME_LEN);
+				stuff_string(temp_medal.voice_base, F_NAME, MAX_FILENAME_LEN);
 
 			//required_string("$Wavefile 2:");
 			//stuff_string(Badge_info[bi].wave2, F_NAME, NULL, MAX_FILENAME_LEN);
 
 			required_string("$Promotion Text:");
-			stuff_string(buf, F_MULTITEXT, NULL);
+			stuff_string(buf, F_MULTITEXT, sizeof(buf));
 			temp_medal.promotion_text = vm_strdup(buf);
 
 			// since badges (ace ranks) are handled a little differently we need to know

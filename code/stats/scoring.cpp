@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.17 $
- * $Date: 2006-08-03 01:33:56 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2006-09-11 06:51:17 $
+ * $Author: taylor $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/08/03 01:33:56  Goober5000
+ * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
+ * --Goober5000
+ *
  * Revision 2.16  2006/01/13 03:31:20  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -312,15 +316,15 @@ void parse_rank_tbl()
 	while ( required_string_either("#End", "$Name:") ) {
 		Assert ( idx < NUM_RANKS );
 		required_string("$Name:");
-		stuff_string( Ranks[idx].name, F_NAME, NULL );
+		stuff_string( Ranks[idx].name, F_NAME, NAME_LENGTH );
 		required_string("$Points:");
 		stuff_int( &Ranks[idx].points );
 		required_string("$Bitmap:");
-		stuff_string( Ranks[idx].bitmap, F_NAME, NULL );
+		stuff_string( Ranks[idx].bitmap, F_NAME, MAX_FILENAME_LEN );
 		required_string("$Promotion Voice Base:");
-		stuff_string( Ranks[idx].promotion_voice_base, F_NAME, NULL, MAX_FILENAME_LEN - 2 );
+		stuff_string( Ranks[idx].promotion_voice_base, F_NAME, MAX_FILENAME_LEN );
 		required_string("$Promotion Text:");
-		stuff_string(buf, F_MULTITEXT, NULL);
+		stuff_string(buf, F_MULTITEXT, sizeof(buf));
 		drop_white_space(buf);
 		compact_multitext_string(buf);
 		Ranks[idx].promotion_text = vm_strdup(buf);

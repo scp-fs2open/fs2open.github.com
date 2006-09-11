@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.13 $
- * $Date: 2006-09-11 06:08:08 $
+ * $Revision: 2.14 $
+ * $Date: 2006-09-11 06:49:38 $
  * $Author: taylor $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/09/11 06:08:08  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 2.12  2005/09/25 20:31:42  Goober5000
  * okay; everything should be good to go
  * --Goober5000
@@ -205,7 +208,7 @@ extern asteroid_obj Asteroid_obj_list;
 
 typedef struct asteroid_info {
 	char			name[NAME_LENGTH];								// name for the asteroid
-	char			pof_files[NUM_DEBRIS_POFS][NAME_LENGTH];		// POF files to load/associate with ship
+	char			pof_files[NUM_DEBRIS_POFS][MAX_FILENAME_LEN];		// POF files to load/associate with ship
 	int			num_detail_levels;									// number of detail levels for this ship
 	int			detail_distance[MAX_ASTEROID_DETAIL_LEVELS];		// distance to change detail levels at
 	float			max_speed;												// cap on speed for asteroid

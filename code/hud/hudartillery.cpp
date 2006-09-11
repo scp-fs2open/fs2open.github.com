@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.14 $
- * $Date: 2005-10-14 07:22:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2006-09-11 06:49:39 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/10/14 07:22:24  Goober5000
+ * removed an unneeded parameter and renamed some stuff
+ * --Goober5000
+ *
  * Revision 2.13  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -145,7 +149,7 @@ int ssm_info_lookup(char *name)
 void ssm_init()
 {	
 	ssm_info bogus, *s;
-	char weapon_name[NAME_LENGTH+1] = "";
+	char weapon_name[NAME_LENGTH];
 
 	read_file_text("ssm.tbl");
 	reset_parse();
@@ -163,11 +167,11 @@ void ssm_init()
 			}
 
 			// name
-			stuff_string(s->name, F_NAME, NULL);
+			stuff_string(s->name, F_NAME, NAME_LENGTH);
 
 			// stuff data
 			required_string("+Weapon:");
-			stuff_string(weapon_name, F_NAME, NULL);
+			stuff_string(weapon_name, F_NAME, NAME_LENGTH);
 			required_string("+Count:");
 			stuff_int(&s->count);
 			required_string("+WarpRadius:");

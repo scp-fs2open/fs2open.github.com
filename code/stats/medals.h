@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.h $
- * $Revision: 2.11 $
- * $Date: 2006-01-20 07:10:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2006-09-11 06:51:17 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/01/20 07:10:34  Goober5000
+ * reordered #include files to quash Microsoft warnings
+ * --Goober5000
+ *
  * Revision 2.10  2005/09/24 02:40:10  Goober5000
  * get rid of a whole bunch of Microsoft warnings
  * --Goober5000
@@ -113,7 +117,7 @@ extern scoring_struct *Player_score;
 
 typedef struct medal_stuff {
 	char	name[NAME_LENGTH];
-	char	bitmap[NAME_LENGTH];
+	char	bitmap[MAX_FILENAME_LEN];
 	int	num_versions;
 	int	kills_needed;
 	int badge_num;

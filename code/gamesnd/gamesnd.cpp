@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.31 $
- * $Date: 2006-09-11 06:08:08 $
+ * $Revision: 2.32 $
+ * $Date: 2006-09-11 06:49:39 $
  * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/09/11 06:08:08  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 2.30  2006/05/27 17:09:43  taylor
  * don't setup all of the sound stuff for a mission if sound is disabled
  *
@@ -341,7 +344,7 @@ void parse_sound(char* tag, int *idx_dest, char* object_name)
 
 	if(optional_string(tag))
 	{
-		stuff_string(buf, F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(buf, F_NAME, MAX_FILENAME_LEN);
 		idx = gamesnd_get_by_name(buf);
 		if(idx != -1)
 			(*idx_dest) = idx;
@@ -475,7 +478,7 @@ void gamesnd_parse_line(game_snd *gs, char *tag)
 
 	required_string(tag);
 	stuff_int(&gs->sig);
-	stuff_string(gs->filename, F_NAME, ",");
+	stuff_string(gs->filename, F_NAME, MAX_FILENAME_LEN, ",");
 	if ( !stricmp(gs->filename,NOX("empty")) ) {
 		gs->filename[0] = 0;
 		advance_to_eoln(NULL);

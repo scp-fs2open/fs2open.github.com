@@ -9,16 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-05-09 09:21:15 $
+ * $Revision: 2.19 $
+ * $Date: 2006-09-11 06:49:38 $
  * $Author: taylor $
- * $Revision: 2.18 $
- * $Date: 2006-05-09 09:21:15 $
+ * $Revision: 2.19 $
+ * $Date: 2006-09-11 06:49:38 $
  * $Author: taylor $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/05/09 09:21:15  taylor
+ * fix incorrect button locations, it matches the correct layout of the other techroom screens now
+ *    (thought Backslash was going to fix this, but I got tired of waiting. :))
+ *
  * Revision 2.17  2005/07/02 19:42:14  taylor
  * ton of non-standard resolution fixes
  *
@@ -286,11 +290,11 @@ void cutscene_init()
 	while ( required_string_either("#End", "$Filename:") ) {
 		Assert ( Num_cutscenes < MAX_CUTSCENES );
 		required_string("$Filename:");
-		stuff_string( Cutscenes[Num_cutscenes].filename, F_PATHNAME, NULL );
+		stuff_string( Cutscenes[Num_cutscenes].filename, F_PATHNAME, MAX_FILENAME_LEN );
 		required_string("$Name:");
-		stuff_string( Cutscenes[Num_cutscenes].name, F_NAME, NULL );
+		stuff_string( Cutscenes[Num_cutscenes].name, F_NAME, NAME_LENGTH );
 		required_string("$Description:");
-		stuff_string(buf, F_MULTITEXT, NULL);
+		stuff_string(buf, F_MULTITEXT, sizeof(buf));
 		drop_white_space(buf);
 		compact_multitext_string(buf);
 		Cutscenes[Num_cutscenes].description = vm_strdup(buf);

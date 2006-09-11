@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-07-18 03:44:00 $
+ * $Revision: 2.12 $
+ * $Date: 2006-09-11 06:49:39 $
  * $Author: taylor $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/07/18 03:44:00  taylor
+ * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
+ * more non-standard res fixing
+ *  - I think everything should default to resize now (much easier than having to figure that crap out)
+ *  - new mouse_get_pos_unscaled() function to return 1024x768/640x480 relative values so we don't have to do it later
+ *  - lots of little cleanups which fix several strange offset/size problems
+ *  - fix gr_resize/unsize_screen_pos() so that it won't wrap on int (took too long to track this down)
+ *
  * Revision 2.10  2005/05/12 17:49:11  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -591,7 +599,7 @@ void parse_helptbl()
 					stuff_int(&(help_overlaylist[overlay_id].textlist[GR_1024][currcount].y_coord));
 
 					// get string (always use the GR_640 one)
-					stuff_string(buf, F_MESSAGE, NULL);
+					stuff_string(buf, F_MESSAGE, sizeof(buf));
 					help_overlaylist[overlay_id].textlist[GR_640][currcount].string = vm_strdup(buf);
 
 					//mprintf(("Found text %d on overlay %d - location (%d,%d) @ 640x480 :: location (%d,%d) @ 1024x768\n", currcount, overlay_id, help_overlaylist[overlay_id].textlist[GR_640][currcount].x_coord, help_overlaylist[overlay_id].textlist[GR_640][currcount].y_coord, help_overlaylist[overlay_id].textlist[GR_1024][currcount].x_coord, help_overlaylist[overlay_id].textlist[GR_1024][currcount].x_coord));

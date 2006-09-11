@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.90 $
- * $Author: Kazan $
- * $Date: 2006-07-30 20:01:56 $
+ * $Revision: 2.91 $
+ * $Author: taylor $
+ * $Date: 2006-09-11 06:50:42 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2006/07/30 20:01:56  Kazan
+ * resolve 1018 and an interface problem in fred2's ship editor
+ *
  * Revision 2.89  2006/07/06 21:00:13  Goober5000
  * remove obsolete (and hackish) flag
  * --Goober5000
@@ -652,11 +655,11 @@ typedef struct mission {
 	int	num_players;									// valid in multiplayer missions -- number of players supported
 	uint	num_respawns;									// valid in multiplayer missions -- number of respawns allowed
 	support_ship_info	support_ships;		// Goober5000
-	char	squad_filename[MAX_FILENAME_LEN+1];		// if the player has been reassigned to a squadron, this is the filename of the logo, otherwise empty string
-	char	squad_name[NAME_LENGTH+1];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
-	char	loading_screen[GR_NUM_RESOLUTIONS][NAME_LENGTH];
-	char	skybox_model[NAME_LENGTH];
-	char	envmap_name[NAME_LENGTH];
+	char	squad_filename[MAX_FILENAME_LEN];		// if the player has been reassigned to a squadron, this is the filename of the logo, otherwise empty string
+	char	squad_name[NAME_LENGTH];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
+	char	loading_screen[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
+	char	skybox_model[MAX_FILENAME_LEN];
+	char	envmap_name[MAX_FILENAME_LEN];
 	int		contrail_threshold;
 	int		ambient_light_level;
 

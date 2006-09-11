@@ -648,8 +648,8 @@ PyBytecode python_parse()
 		sprintf(debug_str, "parse_python(ln) %d", Total_lines_parsed++);
 
 		//Stuff it
-		char buf[PARSE_BUF_SIZE] = {0};
-		stuff_string(buf, F_RAW, NULL, sizeof(buf)-1);
+		char buf[PARSE_BUF_SIZE];
+		stuff_string(buf, F_RAW, sizeof(buf));
 
 		//Compile & return it
 		return PyBytecode(Py_CompileString(buf, debug_str, Py_eval_input));

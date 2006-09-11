@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-04-12 22:23:41 $
+ * $Revision: 2.14 $
+ * $Date: 2006-09-11 06:50:42 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/04/12 22:23:41  taylor
+ * compiler warning fixes to make GCC 4.1 shut the hell up
+ *
  * Revision 2.12  2005/10/30 20:03:39  taylor
  * add a bunch of Assert()'s and NULL checks to either help debug or avoid errors
  * fix Mantis bug #381
@@ -381,7 +384,8 @@ int nebl_get_storm_index(char *name);
 // initialize nebula lightning at game startup
 void nebl_init()
 {
-	char name[NAME_LENGTH+10] = "";
+//	char name[NAME_LENGTH+10];
+	char name[MAX_FILENAME_LEN];
 	bolt_type bogus_lightning, *l;
 	storm_type bogus_storm, *s;
 	int temp;
@@ -407,7 +411,7 @@ void nebl_init()
 
 		// bolt title
 		required_string("$Bolt:");
-		stuff_string(l->name, F_NAME, NULL);
+		stuff_string(l->name, F_NAME, NAME_LENGTH);
 
 		// b_scale
 		required_string("+b_scale:");
@@ -448,14 +452,14 @@ void nebl_init()
 
 		// texture
 		required_string("+b_texture:");
-		stuff_string(name, F_NAME, NULL);
+		stuff_string(name, F_NAME, sizeof(name));
 		if((l != &bogus_lightning) && !Fred_running){
 			l->texture = bm_load(name);
 		}
 
 		// glow
 		required_string("+b_glow:");
-		stuff_string(name, F_NAME, NULL);
+		stuff_string(name, F_NAME, sizeof(name));
 		if((l != &bogus_lightning) && !Fred_running){
 			l->glow = bm_load(name);
 		}
@@ -485,12 +489,12 @@ void nebl_init()
 
 		// bolt title
 		required_string("$Storm:");
-		stuff_string(s->name, F_NAME, NULL);
+		stuff_string(s->name, F_NAME, NAME_LENGTH);
 
 		// bolt types
 		s->num_bolt_types = 0;
 		while(optional_string("+bolt:")){			
-			stuff_string(name, F_NAME, NULL);			
+			stuff_string(name, F_NAME, sizeof(name));			
 
 			// fill this guy in
 			if(s->num_bolt_types < MAX_BOLT_TYPES){

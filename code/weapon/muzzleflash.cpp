@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-09-11 05:44:23 $
+ * $Revision: 2.10 $
+ * $Date: 2006-09-11 06:51:17 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/09/11 05:44:23  taylor
+ * make muzzle flash info dynamic
+ * add support for modular mflash tables (*-mfl.tbm)
+ *
  * Revision 2.8  2006/06/07 04:48:38  wmcoolmon
  * Limbo flag support; removed unneeded muzzle flash flag
  *
@@ -165,13 +169,13 @@ void parse_mflash_tbl(char *filename)
 		mflash_info mflash;
 
 		required_string("+name:");
-		stuff_string(mflash.name, F_NAME, NULL, MAX_FILENAME_LEN-1);
+		stuff_string(mflash.name, F_NAME, MAX_FILENAME_LEN);
 
 		// read in all blobs
 		while ( optional_string("+blob_name:") ) {
 			mflash_blob_info mblob;
 
-			stuff_string(mblob.name, F_NAME, NULL, MAX_FILENAME_LEN-1);
+			stuff_string(mblob.name, F_NAME, MAX_FILENAME_LEN);
 
 			required_string("+blob_offset:");
 			stuff_float(&mblob.offset);

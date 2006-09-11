@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.77 $
- * $Author: wmcoolmon $
- * $Date: 2006-09-04 05:50:58 $
+ * $Revision: 2.78 $
+ * $Author: taylor $
+ * $Date: 2006-09-11 06:50:42 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2006/09/04 05:50:58  wmcoolmon
+ * Added flag-to-string function for error messages
+ *
  * Revision 2.76  2006/08/03 01:33:56  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
@@ -1212,12 +1215,18 @@ char* alloc_block(char* startstr, char* endstr)
 //	Stuff a string into a string buffer.
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override
 // the default string length if using the F_NAME case.
-void stuff_string(char *pstr, int type, char *terminators, int len)
-{	
+void stuff_string(char *pstr, int type, int len, char *terminators)
+{
 	char read_str[PARSE_BUF_SIZE] = "";
 	int read_len = PARSE_BUF_SIZE;
-	int final_len = len;
+	int final_len = len - 1;
 	int tag_id;
+
+	// make sure we have enough room
+	Assert( final_len > 0 );
+
+	// make sure it's zero'd out
+	memset( pstr, 0, len );
 
 	switch (type) {
 		case F_RAW:
@@ -1228,9 +1237,6 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 			break;
 
 		case F_LNAME:
-			if (!len){
-				final_len = MAX_FILENAME_LEN;
-			}
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
@@ -1238,9 +1244,6 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 			break;
 
 		case F_NAME:
-			if (!len){
-				final_len = NAME_LENGTH;
-			}
 			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
@@ -1248,8 +1251,7 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 			break;
 
 		case F_DATE:
-			ignore_gray_space();			
-			final_len = DATE_LENGTH;
+			ignore_gray_space();
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
@@ -1257,7 +1259,6 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 
 		case F_NOTES:
 			ignore_white_space();
-			final_len = NOTES_LENGTH;
 			copy_text_until(read_str, Mp, "$End Notes:", read_len);
 			Mp += strlen(read_str);
 			required_string("$End Notes:");
@@ -1265,7 +1266,6 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 
 		case F_FILESPEC:
 			ignore_gray_space();
-			final_len = FILESPEC_LENGTH;
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
@@ -1275,16 +1275,12 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 
 		case F_MULTITEXTOLD:		
 			ignore_white_space();
-			final_len = NOTES_LENGTH;
 			copy_text_until(read_str, Mp, "$End Briefing Text:", read_len);
 			Mp += strlen(read_str);
 			required_string("$End Briefing Text:");
 			break;
 
 		case F_MULTITEXT:		
-			if (!len){
-				final_len = MULTITEXT_LENGTH;
-			}
 			ignore_white_space();
 			copy_text_until(read_str, Mp, "$end_multi_text", read_len);
 			Mp += strlen(read_str);
@@ -1294,7 +1290,6 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 
 		case F_PATHNAME:
 			ignore_gray_space();
-			final_len = PATHNAME_LENGTH;
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
@@ -1302,7 +1297,6 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 
 		case F_MESSAGE:
 			ignore_gray_space();
-			final_len = MESSAGE_LENGTH;
 			copy_to_eoln(read_str, terminators, Mp, read_len);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
@@ -1324,7 +1318,10 @@ void stuff_string(char *pstr, int type, char *terminators, int len)
 	}
 	else
 	{
-		strcpy(pstr, read_str);
+		if ( strlen(read_str) > (uint)final_len )
+			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", read_str, strlen(read_str), final_len);
+
+		strncpy(pstr, read_str, final_len);
 	}
 
 	diag_printf("Stuffed string = [%.30s]\n", pstr);
@@ -1335,16 +1332,17 @@ void stuff_string_line(char *pstr, int len)
 {
 	char read_str[PARSE_BUF_SIZE] = "";
 	int read_len = PARSE_BUF_SIZE;
-	int final_len = len;
+	int final_len = len - 1;
 	int tag_id;
-	
+
+	Assert( final_len > 0 );
+
 	// read in a line
-	final_len = len;
 	copy_to_eoln(read_str, "\n", Mp, read_len);
 	drop_trailing_white_space(read_str);
 	advance_to_eoln("");
 	Mp++;
-			
+
 	// now we want to do any final localization
 	lcl_ext_localize(read_str, pstr, final_len, &tag_id);
 
@@ -1364,8 +1362,12 @@ char *stuff_and_malloc_string( int type, char *terminators, int len)
 	int l;
 
 	char tmp_result[MAX_TMP_STRING_LENGTH];
+	int final_len = len;
 
-	stuff_string(tmp_result, type, terminators, len);
+	if ( !len || (len > MAX_TMP_STRING_LENGTH) )
+		final_len = MAX_TMP_STRING_LENGTH;
+
+	stuff_string(tmp_result, type, final_len, terminators);
 	drop_white_space(tmp_result);
 
 	l = strlen(tmp_result);
@@ -2830,7 +2832,7 @@ void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, c
 
 	// don't say errors when we're checking classes because 1) we have more checking to do; and 2) we will say a redundant error later
 	required_string(id);
-	stuff_string(token, f_type, NULL);
+	stuff_string(token, f_type, sizeof(token));
 	*addr = string_lookup(token, strlist, max, description, !checking_ship_classes);
 
 	// Goober5000 - handle certain FSPort idiosyncracies with ship classes
@@ -2927,7 +2929,7 @@ void find_and_stuff_optional(char *id, int *addr, int f_type, char *strlist[], i
 	
 	if(optional_string(id))
 	{
-		stuff_string(token, f_type, NULL);
+		stuff_string(token, f_type, sizeof(token));
 		*addr = string_lookup(token, strlist, max, description, 1);
 	}
 }
@@ -2939,7 +2941,7 @@ int match_and_stuff(int f_type, char *strlist[], int max, char *description)
 {
 	char	token[128];
 
-	stuff_string(token, f_type, NULL);
+	stuff_string(token, f_type, sizeof(token));
 	return string_lookup(token, strlist, max, description, 0);
 }
 
@@ -2950,7 +2952,7 @@ void find_and_stuff_or_add(char *id, int *addr, int f_type, char *strlist[], int
 
 	*addr = -1;
 	required_string(id);
-	stuff_string(token, f_type, NULL);
+	stuff_string(token, f_type, sizeof(token));
 	if (*total)
 		*addr = string_lookup(token, strlist, *total, description, 0);
 
@@ -3506,4 +3508,3 @@ int parse_modular_table(char *name_check, void (*parse_callback)(char *filename)
 
 	return num_files;
 }
-

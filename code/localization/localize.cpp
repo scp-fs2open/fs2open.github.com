@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-09-08 06:20:14 $
+ * $Revision: 2.22 $
+ * $Date: 2006-09-11 06:50:42 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/09/08 06:20:14  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.20  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -611,7 +614,7 @@ void lcl_xstr_init()
 			int num_offsets_on_this_line = 0;
 
 			stuff_int(&index);
-			stuff_string(buf, F_NAME, NULL, 4096);
+			stuff_string(buf, F_NAME, sizeof(buf));
 
 			if (Lcl_pl)
 				lcl_fix_polish(buf);
@@ -924,14 +927,14 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 
 	// if the string is < 9 chars, it can't be an XSTR("",) tag, so just copy it
 	if(str_len < 9){
-		if(str_len > max_len){
+		if (str_len > max_len)
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, str_len, max_len);
-			return;
-		}		
-		strcpy(out, in);
-		if(id != NULL){
+
+		strncpy(out, in, max_len);
+
+		if (id != NULL)
 			*id = -2;
-		}
+
 		return;
 	}
 
@@ -940,60 +943,65 @@ void lcl_ext_localize_sub(char *in, char *out, int max_len, int *id)
 	strncpy(first_four, in, 4);
 	if(stricmp(first_four, "XSTR")){
 		// NOT an XSTR() tag
-		if(str_len > max_len){
+		if (str_len > max_len)
 			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, str_len, max_len);
-			return;
-		}		
-		strcpy(out, in);
-		if(id != NULL){
+
+		strncpy(out, in, max_len);
+
+		if (id != NULL)
 			*id = -2;
-		}
+
 		return;
 	}
 
 	// at this point we _know_ its an XSTR() tag, so split off the strings and id sections		
 	if(!lcl_ext_get_text(in, text_str)){
 		Int3();
-		strcpy(out, in);
+		strncpy(out, in, max_len);
 		if(id != NULL){
 			*id = -1;
 		}
 		return;
 	}
 	if(!lcl_ext_get_id(in, &str_id)){
-		strcpy(out, in);
-		if(id != NULL){
+		if ( strlen(in) > (uint)max_len )
+			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", in, strlen(in), max_len);
+
+		strncpy(out, in, max_len);
+
+		if (id != NULL)
 			*id = -1;
-		}
+
 		return;
 	}
 	
 	// if the localization file is not open, or we're running in the default language, return the original string
-	if((Lcl_ext_file == NULL) || (str_id < 0) || (Lcl_current_lang == LCL_DEFAULT_LANGUAGE)){
-		strcpy(out, text_str);
-		if(id != NULL){
+	if ( (Lcl_ext_file == NULL) || (str_id < 0) || (Lcl_current_lang == LCL_DEFAULT_LANGUAGE) ) {
+		if ( strlen(text_str) > (uint)max_len )
+			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", text_str, strlen(text_str), max_len);
+
+		strncpy(out, text_str, max_len);
+
+		if (id != NULL)
 			*id = str_id;
-		}
+
 		return;
 	}		
 
 	// attempt to find the string
 	if(lcl_ext_lookup(lookup_str, str_id)){
 		// copy to the outgoing string
-		Assert(strlen(lookup_str) <= (unsigned int)(max_len - 1));
+		if ( strlen(lookup_str) > (uint)max_len )
+			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", lookup_str, strlen(lookup_str), max_len);
 
-		if (strlen(lookup_str) > (unsigned int)(max_len-1)) {
-			// be safe and truncate string to fit
-			strncpy(out, lookup_str, (size_t) (max_len-1));
-			out[max_len-1] = '\0';		// ensure null terminator, since strncpy(...) doesnt.
-		} else {
-			strcpy(out, lookup_str);
-		}
-
+		strncpy(out, lookup_str, max_len);
 	}
 	// otherwise use what we have - probably should Int3() or assert here
 	else {
-		strcpy(out, text_str);
+		if ( strlen(text_str) > (uint)max_len )
+			error_display(0, "Token too long: [%s].  Length = %i.  Max is %i.\n", text_str, strlen(text_str), max_len);
+
+		strncpy(out, text_str, max_len);
 	}	
 
 	// set the id #
