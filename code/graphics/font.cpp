@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.17 $
- * $Date: 2006-09-11 06:36:38 $
+ * $Revision: 2.18 $
+ * $Date: 2006-09-11 06:45:39 $
  * $Author: taylor $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/09/11 06:36:38  taylor
+ * clean up the grstub mess (for work on standalone server, and just for sanity sake)
+ * move color and shader functions to 2d.cpp since they are exactly the same everywhere
+ * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
+ *
  * Revision 2.16  2006/06/27 05:07:48  taylor
  * fix various compiler warnings and things that Valgrind complained about
  *
@@ -501,7 +506,7 @@ void gr_get_string_size(int *w1, int *h1, char *text, int len)
 }
 
 
-MONITOR( FontChars );	
+MONITOR( FontChars )
 
 
 /*

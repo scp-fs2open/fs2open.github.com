@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.64 $
- * $Date: 2006-08-02 22:31:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.65 $
+ * $Date: 2006-09-11 06:45:39 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.64  2006/08/02 22:31:15  Goober5000
+ * fix display of ship copy class names in ship loadout screen
+ * --Goober5000
+ *
  * Revision 2.63  2006/06/23 04:57:09  wmcoolmon
  * Remove Assert, should be caught by aforementioned warning
  *
@@ -669,7 +673,7 @@ static int Ss_delta_x, Ss_delta_y;	// used to offset the carried icon to make it
 float ShipSelectScreenShipRot = 0.0f;
 int ShipSelectModelNum = -1;
 
-static matrix ShipScreenOrient = IDENTITY_MATRIX;
+//static matrix ShipScreenOrient = IDENTITY_MATRIX;
 
 //////////////////////////////////////////////////////
 // UI Data structs
@@ -4130,4 +4134,4 @@ void ss_recalc_multiplayer_slots()
 			}
 		}
 	}
-} 
+}

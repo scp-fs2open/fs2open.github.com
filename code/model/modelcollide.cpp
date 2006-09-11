@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.16 $
- * $Date: 2006-07-06 04:06:04 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2006-09-11 06:45:40 $
+ * $Author: taylor $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/07/06 04:06:04  Goober5000
+ * 1) complete (almost) changeover to reorganized texture mapping system
+ * 2) finally fix texture animation; textures now animate at the correct speed
+ * --Goober5000
+ *
  * Revision 2.15  2006/07/04 07:42:48  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
@@ -1036,7 +1041,7 @@ NoHit:
 
 }
 
-MONITOR(NumFVI);
+MONITOR(NumFVI)
 
 // See model.h for usage.   I don't want to put the
 // usage here because you need to see the #defines and structures

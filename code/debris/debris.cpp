@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.27 $
- * $Date: 2006-09-11 06:08:08 $
+ * $Revision: 2.28 $
+ * $Date: 2006-09-11 06:45:39 $
  * $Author: taylor $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/09/11 06:08:08  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 2.26  2006/08/20 00:46:02  taylor
  * an int wrap-around issue could (and was) make debris not have electrical arcs (or lighting or sounds) since it would always fail this check
  *
@@ -452,8 +455,8 @@ void debris_page_in()
 	
 }
 
-MONITOR(NumSmallDebrisRend);
-MONITOR(NumHullDebrisRend);
+MONITOR(NumSmallDebrisRend)
+MONITOR(NumHullDebrisRend)
 
 // ---------------------------------------------------------------------------------------
 // debris_render()
@@ -581,8 +584,8 @@ void debris_process_pre( object *objp, float frame_time)
 {
 }
 
-MONITOR(NumSmallDebris);
-MONITOR(NumHullDebris);
+MONITOR(NumSmallDebris)
+MONITOR(NumHullDebris)
 
 // ---------------------------------------------------------------------------------------
 // debris_process_post()
