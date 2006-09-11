@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.182 $
- * $Date: 2006-09-11 06:09:30 $
+ * $Revision: 2.183 $
+ * $Date: 2006-09-11 06:36:38 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.182  2006/09/11 06:09:30  taylor
+ * allow W32 init fallback if desktop depth is less than requested game depth (it may look like crap, but at least it will work)
+ *
  * Revision 2.181  2006/08/20 00:46:42  taylor
  * OMG!  MEMLEAK!!!!  (maybe no one will notice that it was my fault ;))
  *
@@ -1706,27 +1709,6 @@ void gr_opengl_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode,
 	gr_screen.current_bitmap = bitmap_num;
 }
 
-void gr_opengl_create_shader(shader * shade, float r, float g, float b, float c )
-{
-	shade->screen_sig = gr_screen.signature;
-	shade->r = r;
-	shade->g = g;
-	shade->b = b;
-	shade->c = c;	
-}
-
-void gr_opengl_set_shader( shader * shade )
-{	
-	if ( shade )	{
-		if (shade->screen_sig != gr_screen.signature)	{
-			gr_create_shader( shade, shade->r, shade->g, shade->b, shade->c );
-		}
-		gr_screen.current_shader = *shade;
-	} else {
-		gr_create_shader( &gr_screen.current_shader, 0.0f, 0.0f, 0.0f, 0.0f );
-	}
-}
-
 void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, bool resize, bool mirror)
 {
 	if ( w < 1 ) return;
@@ -2691,7 +2673,7 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 			// Blend with screen pixel using src*alpha+dst
 			float factor = gr_screen.current_alpha;
 
-			if ( factor > 1.0f ) {
+			if ( factor >= 1.0f ) {
 				alpha = 255;
 			} else {
 				alpha = fl2i(gr_screen.current_alpha*255.0f);
@@ -3029,63 +3011,6 @@ void gr_opengl_set_palette(ubyte *new_palette, int is_alphacolor)
 {
 }
 
-void gr_opengl_get_color( int * r, int * g, int * b )
-{
-	if (r) *r = gr_screen.current_color.red;
-	if (g) *g = gr_screen.current_color.green;
-	if (b) *b = gr_screen.current_color.blue;
-}
-
-void gr_opengl_init_color(color *c, int r, int g, int b)
-{
-	c->screen_sig = gr_screen.signature;
-	c->red = (unsigned char)r;
-	c->green = (unsigned char)g;
-	c->blue = (unsigned char)b;
-	c->alpha = 255;
-	c->ac_type = AC_TYPE_NONE;
-	c->alphacolor = -1;
-	c->is_alphacolor = 0;
-	c->magic = 0xAC01;
-}
-
-void gr_opengl_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type )
-{
-	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
-	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
-	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
-	if ( alpha < 0 ) alpha = 0; else if ( alpha > 255 ) alpha = 255;
-
-	gr_opengl_init_color( clr, r, g, b );
-
-	clr->alpha = (ubyte)alpha;
-	clr->ac_type = (ubyte)type;
-	clr->alphacolor = -1;
-	clr->is_alphacolor = 1;
-}
-
-void gr_opengl_set_color( int r, int g, int b )
-{
-	Assert((r >= 0) && (r < 256));
-	Assert((g >= 0) && (g < 256));
-	Assert((b >= 0) && (b < 256));
-
-	gr_opengl_init_color( &gr_screen.current_color, r, g, b );	
-}
-
-void gr_opengl_set_color_fast(color *dst)
-{
-	if ( dst->screen_sig != gr_screen.signature )	{
-		if ( dst->is_alphacolor )       {
-			gr_opengl_init_alphacolor( dst, dst->red, dst->green, dst->blue, dst->alpha, dst->ac_type );
-		} else {
-			gr_opengl_init_color( dst, dst->red, dst->green, dst->blue );
-		}
-	}
-	gr_screen.current_color = *dst;
-}
-
-
 void gr_opengl_print_screen(char *filename)
 {
 	char tmp[MAX_PATH_LEN];
@@ -3293,7 +3218,7 @@ void gr_opengl_fog_set(int fog_mode, int r, int g, int b, float fog_near, float 
 			(gr_screen.current_fog_color.blue != b) ) {
 		GLfloat fc[4];
 		
-		gr_opengl_init_color( &gr_screen.current_fog_color, r, g, b );
+		gr_init_color( &gr_screen.current_fog_color, r, g, b );
 	
 		fc[0] = (float)r/255.0f;
 		fc[1] = (float)g/255.0f;
@@ -4522,12 +4447,8 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_flip_window = gr_opengl_flip_window;
 	gr_screen.gf_set_clip = gr_opengl_set_clip;
 	gr_screen.gf_reset_clip = gr_opengl_reset_clip;
-	gr_screen.gf_set_font = grx_set_font;
 	
-	gr_screen.gf_set_color = gr_opengl_set_color;
 	gr_screen.gf_set_bitmap = gr_opengl_set_bitmap;
-	gr_screen.gf_create_shader = gr_opengl_create_shader;
-	gr_screen.gf_set_shader = gr_opengl_set_shader;
 	gr_screen.gf_clear = gr_opengl_clear;
 //	gr_screen.gf_bitmap = gr_opengl_bitmap;
 	gr_screen.gf_bitmap_ex = gr_opengl_bitmap_ex;
@@ -4549,10 +4470,6 @@ void opengl_setup_function_pointers()
 	gr_screen.gf_gradient = gr_opengl_gradient;
 
 	gr_screen.gf_set_palette = gr_opengl_set_palette;
-	gr_screen.gf_get_color = gr_opengl_get_color;
-	gr_screen.gf_init_color = gr_opengl_init_color;
-	gr_screen.gf_init_alphacolor = gr_opengl_init_alphacolor;
-	gr_screen.gf_set_color_fast = gr_opengl_set_color_fast;
 	gr_screen.gf_print_screen = gr_opengl_print_screen;
 
 	gr_screen.gf_fade_in = gr_opengl_fade_in;

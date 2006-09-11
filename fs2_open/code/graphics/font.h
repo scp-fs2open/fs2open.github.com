@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 02:50:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2006-09-11 06:36:38 $
+ * $Author: taylor $
  *
  * header file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 02:50:47  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -157,7 +161,7 @@ extern font *Current_font;
 #define FONT3				2				// font03.vf
 
 // extern definitions for basic font functions
-extern void grx_set_font(int fontnum);
+extern void gr_set_font(int fontnum);
 extern void gr8_string(int x,int y,char * text);
 
 void gr_print_timestamp(int x, int y, int timestamp);
