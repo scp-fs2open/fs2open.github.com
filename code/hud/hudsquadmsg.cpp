@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-05-20 02:03:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.33 $
+ * $Date: 2006-09-11 05:56:23 $
+ * $Author: taylor $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/05/20 02:03:01  Goober5000
+ * fix for Mantis #755, plus make the missionlog #defines uniform
+ * --Goober5000
+ *
  * Revision 2.31  2006/04/05 19:59:11  karajorma
  * Bah! Silly error.
  *
@@ -570,7 +574,7 @@ char *comm_order_get_text(int item)
 }
 
 int squadmsg_history_index = 0;
-squadmsg_history Squadmsg_history[SQUADMSG_HISTORY_MAX] = { 0 };
+squadmsg_history Squadmsg_history[SQUADMSG_HISTORY_MAX];
 
 // used for Message box gauge
 #define NUM_MBOX_FRAMES		3
