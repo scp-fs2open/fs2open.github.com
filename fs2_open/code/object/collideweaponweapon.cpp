@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-06-07 04:42:22 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2006-09-11 05:36:43 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/06/07 04:42:22  wmcoolmon
+ * Limbo flag support; further scripting 3.6.9 update
+ *
  * Revision 2.10  2006/05/24 05:08:28  wmcoolmon
  * Fix for Mantis bug #0000922
  *
@@ -171,8 +174,11 @@ int collide_weapon_weapon( obj_pair * pair )
 		//WMC - If both are overrides, favor A.
 		if(wipA->sc_collide_weapon.IsValid() && (!Script_system.IsOverride(wipB->sc_collide_weapon) || Script_system.IsOverride(wipA->sc_collide_weapon)))
 		{
-			Script_system.SetGlobal("Self", 'o', &l_Weapon.Set(object_h(A)));
-			Script_system.SetGlobal("Weapon", 'o', &l_Weapon.Set(object_h(B)));
+			script_lua_odata lua_self_obj = l_Weapon.Set(object_h(A));
+			script_lua_odata lua_weap_obj = l_Weapon.Set(object_h(B));
+			
+			Script_system.SetGlobal("Self", 'o', &lua_self_obj);
+			Script_system.SetGlobal("Weapon", 'o', &lua_weap_obj);
 
 			Script_system.RunBytecode(wipA->sc_collide_weapon);
 
@@ -185,8 +191,11 @@ int collide_weapon_weapon( obj_pair * pair )
 
 		if(wipB->sc_collide_weapon.IsValid())
 		{
-			Script_system.SetGlobal("Self", 'o', &l_Weapon.Set(object_h(B)));
-			Script_system.SetGlobal("Weapon", 'o', &l_Weapon.Set(object_h(A)));
+			script_lua_odata lua_self_obj = l_Weapon.Set(object_h(B));
+			script_lua_odata lua_weap_obj = l_Weapon.Set(object_h(A));
+
+			Script_system.SetGlobal("Self", 'o', &lua_self_obj);
+			Script_system.SetGlobal("Weapon", 'o', &lua_weap_obj);
 
 			Script_system.RunBytecode(wipB->sc_collide_weapon);
 
