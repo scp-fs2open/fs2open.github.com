@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.194 $
- * $Date: 2006-09-04 05:54:14 $
- * $Author: wmcoolmon $
+ * $Revision: 2.195 $
+ * $Date: 2006-09-11 06:08:09 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.194  2006/09/04 05:54:14  wmcoolmon
+ * Fix bug (under Win32) where FRED would warn about unacceptable accepted orders, but not do anything about them.
+ *
  * Revision 2.193  2006/08/21 04:02:41  Goober5000
  * a tweak and a fix
  *
@@ -1459,7 +1462,6 @@ MONITOR(NumShipArrivals);
 MONITOR(NumShipDepartures);
 
 
-extern int Num_species;
 void parse_mission_info(mission *pm, bool basic = false)
 {
 	int i;
@@ -1612,7 +1614,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	pm->support_ships.support_available_for_species = 0;
 
 	// for each species, store whether support is available
-	for (int species = 0; species < Num_species; species++)
+	for (int species = 0; species < (int)Species_info.size(); species++)
 	{
 		for (int ship_class = 0; ship_class < Num_ship_classes; ship_class++)
 		{

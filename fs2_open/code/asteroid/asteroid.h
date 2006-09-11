@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.12 $
- * $Date: 2005-09-25 20:31:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2006-09-11 06:08:08 $
+ * $Author: taylor $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/09/25 20:31:42  Goober5000
+ * okay; everything should be good to go
+ * --Goober5000
+ *
  * Revision 2.11  2005/09/25 08:25:14  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -161,6 +165,8 @@
 #ifndef __ASTEROID_H__
 #define __ASTEROID_H__
 
+#include <vector>
+
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"		// for NAME_LENGTH
 
@@ -179,7 +185,8 @@ struct collision_info_struct;
 
 // This is for the asteroid types plus DEBRIS_X_Y
 // (X is each species and Y is SMALL, MEDIUM, and LARGE)
-#define	MAX_DEBRIS_TYPES	((MAX_SPECIES + 1) * NUM_DEBRIS_SIZES)
+// 20060826 - made dynamic -- taylor
+//#define	MAX_DEBRIS_TYPES	((MAX_SPECIES + 1) * NUM_DEBRIS_SIZES)
 
 // these should always be equal for the benefit of generic asteroids (c.f. asteroid_page_in)
 #define	MAX_ACTIVE_DEBRIS_TYPES		NUM_DEBRIS_SIZES
@@ -209,6 +216,8 @@ typedef struct asteroid_info {
 	float			initial_asteroid_strength;								// starting strength of asteroid
 	polymodel	*modelp[NUM_DEBRIS_POFS];
 	int			model_num[NUM_DEBRIS_POFS];
+
+	asteroid_info() { memset(this, 0, sizeof(asteroid_info)); };
 } asteroid_info;
 
 
@@ -255,7 +264,7 @@ typedef	struct asteroid_field {
 	int				field_debris_type[MAX_ACTIVE_DEBRIS_TYPES];	// one of the debris type defines above
 } asteroid_field;
 
-extern asteroid_info Asteroid_info[MAX_DEBRIS_TYPES];
+extern std::vector<asteroid_info> Asteroid_info;
 extern asteroid Asteroids[MAX_ASTEROIDS];
 extern asteroid_field	Asteroid_field;
 

@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.370 $
- * $Date: 2006-09-08 06:19:02 $
+ * $Revision: 2.371 $
+ * $Date: 2006-09-11 06:08:09 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.370  2006/09/08 06:19:02  taylor
+ * fix for Mantis bug #1038 (glow point bank storage being wrong after changing ships in shipselect)
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.369  2006/09/04 18:06:37  Goober5000
  * fix macros
  *
@@ -2232,6 +2236,8 @@ ship_subsys		Ship_subsystems[MAX_SHIP_SUBOBJECTS];
 ship_subsys		ship_subsys_free_list;
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
 
+static char **tspecies_names = NULL;
+
 std::vector<ship_type_info> Ship_types;
 
 std::vector<ArmorType> Armor_types;
@@ -2850,11 +2856,8 @@ int parse_ship(bool replace)
 	}
 	diag_printf ("Ship short name -- %s\n", sip->short_name);
 
-	// static alias stuff - stupid, but it seems to be necessary
-	static char *tspecies_names[MAX_SPECIES];
-	for (i = 0; i < Num_species; i++)
-		tspecies_names[i] = Species_info[i].species_name;
-	find_and_stuff_optional("$Species:", &sip->species, F_NAME, tspecies_names, Num_species, "species names");
+	Assert( tspecies_names );
+	find_and_stuff_optional("$Species:", &sip->species, F_NAME, tspecies_names, Species_info.size(), "species names");
 
 	diag_printf ("Ship species -- %s\n", Species_info[sip->species].species_name);
 
@@ -4842,6 +4845,11 @@ void ship_init()
 			Num_ship_classes = 0;
 			strcpy(default_player_ship, "");
 
+			// static alias stuff - stupid, but it seems to be necessary
+			tspecies_names = (char **) vm_malloc( Species_info.size() * sizeof(char*) );
+			for (i = 0; i < Species_info.size(); i++)
+				tspecies_names[i] = Species_info[i].species_name;
+
 			//Parse main TBL first
 			parse_shiptbl("ships.tbl");
 
@@ -4853,6 +4861,10 @@ void ship_init()
 			}
 
 			ships_inited = 1;
+
+			// cleanup
+			vm_free(tspecies_names);
+			tspecies_names = NULL;
 		}
 	}
 
@@ -7441,7 +7453,7 @@ void ship_init_thrusters()
 	if ( Thrust_anim_inited == 1 )
 		return;
 
-	for (int i = 0; i < Num_species; i++)
+	for (uint i = 0; i < Species_info.size(); i++)
 	{
 		species_info *species = &Species_info[i];
 
@@ -14558,7 +14570,7 @@ void ship_page_in()
 
 	generic_anim *ta;
 	thrust_info *thruster;
-	for ( i = 0; i < Num_species; i++ ) {
+	for ( i = 0; i < (int)Species_info.size(); i++ ) {
 		thruster = &Species_info[i].thruster_info;
 
 		ta = &thruster->flames.normal;

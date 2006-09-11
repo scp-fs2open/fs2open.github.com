@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.30 $
- * $Date: 2006-05-27 17:09:43 $
+ * $Revision: 2.31 $
+ * $Date: 2006-09-11 06:08:08 $
  * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/05/27 17:09:43  taylor
+ * don't setup all of the sound stuff for a mission if sound is disabled
+ *
  * Revision 2.29  2006/04/03 07:45:43  wmcoolmon
  * gamesnd_get_by_name now ignores extensions, mostly for parse_sound reasons.
  *
@@ -504,8 +507,8 @@ void gamesnd_parse_soundstbl()
 	int		num_iface_sounds = 0;
 	int		i;
 	char	cstrtemp[NAME_LENGTH+3];
-	char	missing_species_names[MAX_SPECIES * (NAME_LENGTH+2)];
-	ubyte	missing_species[MAX_SPECIES];
+	char	*missing_species_names = NULL;
+	ubyte	*missing_species = NULL;
 	int		sanity_check = 0;
 
 	// open localization
@@ -544,12 +547,15 @@ void gamesnd_parse_soundstbl()
 	// parse flyby sound section	
 	required_string("#Flyby Sounds Start");
 
-	memset( &missing_species_names, 0, sizeof(missing_species_names) );
-	memset( &missing_species, 1, sizeof(missing_species) );	// assume they are all missing
+	missing_species_names = new char[Species_info.size() * (NAME_LENGTH+2)];
+	missing_species = new ubyte[Species_info.size()];
 
-	while ( !check_for_string("#Flyby Sounds End") && (sanity_check <= Num_species) )
+	memset( missing_species_names, 0, Species_info.size() * (NAME_LENGTH+2) );
+	memset( missing_species, 1, Species_info.size() );	// assume they are all missing
+
+	while ( !check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()) )
 	{
-		for (i = 0; i < Num_species; i++) {
+		for (i = 0; i < (int)Species_info.size(); i++) {
 			species_info *species = &Species_info[i];
 
 			sprintf(cstrtemp, "$%s:", species->species_name);
@@ -566,7 +572,7 @@ void gamesnd_parse_soundstbl()
 	}
 
 	// if we are missing any species then report it
-	for (i = 0; i < Num_species; i++) {
+	for (i = 0; i < (int)Species_info.size(); i++) {
 		if ( missing_species[i] ) {
 			strcat(missing_species_names, Species_info[i].species_name);
 			strcat(missing_species_names, "\n");
@@ -576,6 +582,9 @@ void gamesnd_parse_soundstbl()
 	if ( strlen(missing_species_names) ) {
 		Error( LOCATION, "The following species are missing flyby sounds in sounds.tbl:\n%s", missing_species_names );
 	}
+
+	delete[] missing_species_names;
+	delete[] missing_species;
 
 	required_string("#Flyby Sounds End");
 

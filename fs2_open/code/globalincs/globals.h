@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.23 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 1.24 $
+ * $Date: 2006-09-11 06:08:08 $
+ * $Author: taylor $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.22  2006/01/30 06:41:34  taylor
  * make MAX_LIGHTS global
  *
@@ -130,7 +133,8 @@
 // from missionparse.h
 // This must be less than or equal to the number of bits in an int!  If you really must have that many species,
 // then please update the support_ship_info struct.
-#define	MAX_SPECIES		8
+// 20060826 - made it dynamic -- taylor
+//#define	MAX_SPECIES		8
 
 #define MAX_IFFS		10
 

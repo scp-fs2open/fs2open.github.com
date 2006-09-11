@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.16 $
- * $Date: 2006-08-06 18:47:29 $
- * $Author: Goober5000 $
+ * $Revision: 1.17 $
+ * $Date: 2006-09-11 06:08:08 $
+ * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2006/08/06 18:47:29  Goober5000
+ * add the multiple background feature
+ * --Goober5000
+ *
  * Revision 1.15  2006/07/10 21:48:33  taylor
  * fix undo system
  * restore the two autosave points that got removed for some reason (yes, these are needed for things to work properly)
@@ -738,7 +742,7 @@ void brief_init_colors();
 void fred_preload_all_briefing_icons()
 {
 	int i,j;
-	for (i = 0; i < Num_species; i++)
+	for (i = 0; i < Species_info.size(); i++)
 	{
 		for (j = 0; j < MAX_BRIEF_ICONS; j++)
 		{
