@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.16 $
- * $Date: 2005-11-21 23:57:26 $
+ * $Revision: 1.17 $
+ * $Date: 2006-09-11 06:08:09 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2005/11/21 23:57:26  taylor
+ * some minor thruster cleanup, if you could actually use the term "clean"
+ *
  * Revision 1.15  2005/10/24 07:13:05  Goober5000
  * merge Bobboau's thruster code back in; hopefully this covers everything
  * --Goober5000
@@ -74,6 +77,8 @@
 
 #ifndef _SPECIES_DEFS_H_
 #define _SPECIES_DEFS_H_
+
+#include <vector>
 
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
@@ -150,9 +155,7 @@ typedef struct species_info {
 
 } species_info;
 
-
-extern int Num_species;
-extern species_info Species_info[MAX_SPECIES];
+extern std::vector<species_info> Species_info;
 
 
 // load up the species_defs.tbl into the correct data areas

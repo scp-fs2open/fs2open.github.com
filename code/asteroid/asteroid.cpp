@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.38 $
- * $Date: 2006-08-20 00:51:05 $
+ * $Revision: 2.39 $
+ * $Date: 2006-09-11 06:08:08 $
  * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2006/08/20 00:51:05  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.37  2006/07/06 04:06:03  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
@@ -398,6 +401,8 @@
  */
 
 
+#include <vector>
+
 #include "asteroid/asteroid.h"
 #include "object/object.h"
 #include "object/objcollide.h"
@@ -447,11 +452,10 @@ int	Num_asteroids = 0;
 int	Asteroid_throw_objnum = -1;		//	Object index of ship to throw asteroids at.
 int	Next_asteroid_throw;
 
-asteroid_info	Asteroid_info[MAX_DEBRIS_TYPES];
+std::vector<asteroid_info> Asteroid_info;
 asteroid			Asteroids[MAX_ASTEROIDS];
 asteroid_field	Asteroid_field;
 
-static int Num_debris_types;
 
 static int		Asteroid_impact_explosion_ani;
 static float	Asteroid_impact_explosion_radius;
@@ -526,7 +530,7 @@ float asteroid_cap_speed(int asteroid_info_index, float speed)
 {
 	float max, double_max;
 
-	Assert( asteroid_info_index < Num_debris_types );
+	Assert( asteroid_info_index < (int)Asteroid_info.size() );
 
 	max = Asteroid_info[asteroid_info_index].max_speed;
 	double_max = max * 2;
@@ -631,7 +635,7 @@ object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroi
 		return NULL;
 	}
 
-	if((asteroid_type < 0) || (asteroid_type >= ((Num_species + 1) * NUM_DEBRIS_SIZES))) {
+	if((asteroid_type < 0) || (asteroid_type >= (((int)Species_info.size() + 1) * NUM_DEBRIS_SIZES))) {
 		return NULL;
 	}
 
@@ -822,10 +826,10 @@ void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 	asteroid_info	*asip;
 //	int				pof_index;
 
-	Assert( asteroid_info_index < Num_debris_types );
+	Assert( asteroid_info_index < (int)Asteroid_info.size() );
 	Assert( asteroid_subtype < NUM_DEBRIS_POFS );
 
-	if ( (asteroid_info_index >= Num_debris_types) || (asteroid_subtype >= NUM_DEBRIS_POFS) ) {
+	if ( (asteroid_info_index >= (int)Asteroid_info.size()) || (asteroid_subtype >= NUM_DEBRIS_POFS) ) {
 		return;
 	}
 
@@ -2105,13 +2109,11 @@ void asteroid_parse_section(asteroid_info *asip)
 	stuff_float(&asip->initial_asteroid_strength);
 }
 
-extern int Num_species;
 // read in data from asteroid.tbl into Asteroid_info[] array
 void asteroid_parse_tbl()
 {
 	char impact_ani_file[FILESPEC_LENGTH];
-	int asteroid_tally[MAX_SPECIES+1];
-	asteroid_info *asip;
+	int *asteroid_tally = NULL;
 	int i;
 
 	// open localization
@@ -2122,37 +2124,27 @@ void asteroid_parse_tbl()
 
 	required_string("#Asteroid Types");
 
-	Num_debris_types = 0;
+	asteroid_tally = new int[Species_info.size() + 1];
 
-	memset(asteroid_tally, 0, sizeof(int) * (MAX_SPECIES+1));
-	memset(Asteroid_info, 0, sizeof(asteroid_info) * MAX_DEBRIS_TYPES);
+	memset(asteroid_tally, 0, sizeof(int) * (Species_info.size()+1));
 
 
 	while (required_string_either("#End","$Name:"))
 	{
-		Assert( Num_debris_types < MAX_DEBRIS_TYPES );
+		asteroid_info new_asteroid;
 
-		if (Num_debris_types >= MAX_DEBRIS_TYPES)
-			continue;
+		for (i = 0; i < NUM_DEBRIS_POFS; i++)
+			new_asteroid.model_num[i] = -1;
 
+		asteroid_parse_section( &new_asteroid );
 
-		asip = &Asteroid_info[Num_debris_types];
-
-		memset(asip, 0, sizeof(asteroid_info));
-
-		for (i = 0; i < NUM_DEBRIS_POFS; i++) {
-			asip->model_num[i] = -1;
-		}
-
-		asteroid_parse_section( asip );
-
-
+		Assert( Species_info.size() );
 		// sanity check for debris type sizes
-		for (i = Num_species; i >= 0; i--) {
+		for (i = Species_info.size(); i >= 0; i--) {
 			// must remain in proper order
 			//   0 - generic debris types
 			// > 0 - species specific debris types
-			if ( (i == 0) || stristr(asip->name, Species_info[i-1].species_name) ) {
+			if ( (i == 0) || stristr(new_asteroid.name, Species_info[i-1].species_name) ) {
 				Assert( asteroid_tally[i] < NUM_DEBRIS_SIZES );
 
 				if ( asteroid_tally[i] >= NUM_DEBRIS_SIZES ) {
@@ -2163,7 +2155,7 @@ void asteroid_parse_tbl()
 
 				// we're safe to continue
 				asteroid_tally[i]++;
-				Num_debris_types++;
+				Asteroid_info.push_back( new_asteroid );
 				break;
 			}
 		}
@@ -2188,10 +2180,10 @@ void asteroid_parse_tbl()
 
 
 	// check for any missing info
-	char errormsg[70 + (MAX_SPECIES * (NAME_LENGTH+1))];
+	char *errormsg = new char[70 + (Species_info.size() * (NAME_LENGTH+1))];
 	bool species_missing = false;
 	strcpy(errormsg, "The following species are missing debris types in asteroids.tbl:\n");
-	for (i = 0; i < Num_species; i++)
+	for (i = 0; i < (int)Species_info.size(); i++)
 	{
 		int idx = (i+1);	// offset from generic asteroids at 0..NUM_DEBRIS_SIZES
 
@@ -2208,6 +2200,9 @@ void asteroid_parse_tbl()
 	{
 		Error(LOCATION, errormsg);
 	}
+
+	delete[] asteroid_tally;
+	delete[] errormsg;
 }
 
 //	Return number of asteroids expected to collide with a ship.

@@ -1622,7 +1622,7 @@ LUA_VAR(Name, l_Species, "String", "Species name")
 	if(!lua_get_args(L, "o|s", l_Species.Get(&idx), &s))
 		return LUA_RETURN_NIL;
 
-	if(idx < 0 || idx > Num_species)
+	if(idx < 0 || idx >= (int)Species_info.size())
 		return LUA_RETURN_NIL;
 
 	if(LUA_SETTING_VAR && s != NULL) {
@@ -2169,7 +2169,7 @@ LUA_VAR(Species, l_Shipclass, "Species", "Ship class species")
 	if(idx < 0 || idx > Num_ship_classes)
 		return LUA_RETURN_NIL;
 
-	if(LUA_SETTING_VAR && sidx > -1 && sidx < Num_species) {
+	if(LUA_SETTING_VAR && sidx > -1 && sidx < (int)Species_info.size()) {
 		Ship_info[idx].species = sidx;
 	}
 

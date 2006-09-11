@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.42 $
- * $Date: 2006-09-04 05:59:47 $
- * $Author: wmcoolmon $
+ * $Revision: 2.43 $
+ * $Date: 2006-09-11 06:08:09 $
+ * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2006/09/04 05:59:47  wmcoolmon
+ * Changes to allow for a species with no shield anim
+ *
  * Revision 2.41  2006/05/27 16:49:05  taylor
  * comment out some pointless checks which look for not using either D3D or OGL
  * don't run through ships on level load setting up the sound environment if sound is disabled
@@ -395,14 +398,14 @@ void load_shield_hit_bitmap()
 {
 	#ifndef DEMO // not for FS2_DEMO
 
-	int i;
+	uint i;
 	// Check if we've already allocated the shield effect bitmaps
 	if ( Shield_bitmaps_loaded )
 		return;
 
 	Shield_bitmaps_loaded = 1;
 
-	for (i=0; i<Num_species; i++ )	
+	for (i = 0; i < Species_info.size(); i++ )	
     {
 		if(strlen(Species_info[i].shield_anim.filename))
 		{
@@ -426,13 +429,13 @@ void load_shield_hit_bitmap()
 
 void shield_hit_page_in()
 {
-	int i;
+	uint i;
 
 	if ( !Shield_bitmaps_loaded )	{
 		load_shield_hit_bitmap();
 	}
 
-	for (i=0; i<Num_species; i++ )	{
+	for (i = 0; i < Species_info.size(); i++) {
 		generic_anim *sa = &Species_info[i].shield_anim;
 		if ( sa->first_frame >= 0 ) {
 			bm_page_in_xparent_texture(sa->first_frame, sa->num_frames );
@@ -771,7 +774,7 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 	// mprintf(("Percent = %7.3f\n", f2fl(Missiontime - Shield_hits[shield_num].start_time)));
 
 	// Do some sanity checking
-	Assert( (si->species >= 0) && (si->species < Num_species) );
+	Assert( (si->species >= 0) && (si->species < (int)Species_info.size()) );
 
 	generic_anim *sa = &Species_info[si->species].shield_anim;
 

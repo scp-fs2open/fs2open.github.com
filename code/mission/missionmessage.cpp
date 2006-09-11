@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.53 $
- * $Date: 2006-07-06 20:46:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.54 $
+ * $Date: 2006-09-11 06:08:09 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2006/07/06 20:46:39  Goober5000
+ * WCS screaming stuff
+ * --Goober5000
+ *
  * Revision 2.52  2006/05/27 17:00:02  taylor
  * only display that "no wavefile for voice" message if sound is enabled
  *
@@ -825,7 +829,7 @@ void persona_parse()
 	{
 		stuff_string(cstrtemp, F_NAME, NULL, NAME_LENGTH);
 
-		for (int j = 0; j < Num_species; j++)
+		for (int j = 0; j < (int)Species_info.size(); j++)
 		{
 			if (!strcmp(cstrtemp, Species_info[j].species_name))
 			{

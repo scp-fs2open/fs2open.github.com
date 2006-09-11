@@ -448,7 +448,7 @@ void asteroid_editor::update_init()
 	char *debris_size[NUM_DEBRIS_SIZES] = { "Small", "Medium", "Large" };
 
 	// each species
-	for (i = 0; i < Num_species; i++)
+	for (i = 0; i < Species_info.size(); i++)
 	{
 		// each size
 		for (j = 0; j < NUM_DEBRIS_SIZES; j++)

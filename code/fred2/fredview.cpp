@@ -9,9 +9,9 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.8 $
- * $Date: 2006-09-02 20:07:34 $
- * $Author: Goober5000 $
+ * $Revision: 1.9 $
+ * $Date: 2006-09-11 06:08:08 $
+ * $Author: taylor $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2006/09/02 20:07:34  Goober5000
+ * remove unnecessary warning
+ *
  * Revision 1.7  2006/06/27 02:48:41  Goober5000
  * slight optimization
  * --Goober5000
@@ -2006,7 +2009,8 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 		if (menu.LoadMenu(IDR_MENU_EDIT_POPUP)) {
 			int i;
 			CMenu* pPopup = menu.GetSubMenu(0);
-			CMenu shipPopup, player_submenu, species_submenu[MAX_SPECIES];
+			CMenu shipPopup, player_submenu;
+			CMenu *species_submenu = new CMenu[Species_info.size()];
 			ASSERT(pPopup != NULL);
 
 			// create a popup menu based on the ship models read in ship.cpp.
@@ -2014,7 +2018,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_waypoint, "Waypoint");
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_jump_node, "Jump Node");
-			for (i=0; i<Num_species; i++) {
+			for (i=0; i<(int)Species_info.size(); i++) {
 				species_submenu[i].CreatePopupMenu();
 				shipPopup.AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
 					(UINT) species_submenu[i].m_hMenu, Species_info[i].species_name);
@@ -5249,4 +5253,3 @@ void CFREDView::OnUpdateShowIFF9(CCmdUI* pCmdUI)
 {
 	OnUpdateShowIFF(9, pCmdUI);
 }
-
