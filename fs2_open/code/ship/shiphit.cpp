@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.63.2.2 $
- * $Date: 2006-07-05 23:36:56 $
- * $Author: Goober5000 $
+ * $Revision: 2.63.2.3 $
+ * $Date: 2006-09-11 01:00:28 $
+ * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.2  2006/07/05 23:36:56  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.63.2.1  2006/06/27 04:06:17  Goober5000
  * handle docked objects during death roll
  * --Goober5000
@@ -2320,8 +2323,8 @@ void shiphit_hit_after_death(object *ship_obj, float damage)
 	shipp->final_death_time = timestamp(delta_time);	// Adjust time until explosion.
 }
 
-MONITOR( ShipHits );
-MONITOR( ShipNumDied );
+MONITOR( ShipHits )
+MONITOR( ShipNumDied )
 
 int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *damage)
 {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.17 $
- * $Date: 2006-09-08 06:14:43 $
+ * $Revision: 2.243.2.18 $
+ * $Date: 2006-09-11 01:00:27 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.17  2006/09/08 06:14:43  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.243.2.16  2006/08/22 05:45:15  taylor
  * some fixes for the standalone server
  *  - get init order correct for lcl and std init
@@ -3963,11 +3966,11 @@ float Timing_render3 = 0.0f;
 float Timing_flip = 0.0f;
 float Timing_clear = 0.0f;
 
-MONITOR(NumPolysDrawn);
-MONITOR(NumPolys);
-MONITOR(NumVerts);
-MONITOR(BmpUsed);
-MONITOR(BmpNew);
+MONITOR(NumPolysDrawn)
+MONITOR(NumPolys)
+MONITOR(NumVerts)
+MONITOR(BmpUsed)
+MONITOR(BmpNew)
 
 
 int Mem_starttime_phys;

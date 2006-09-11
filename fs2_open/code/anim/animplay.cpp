@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.19.2.1 $
- * $Date: 2006-06-22 14:59:44 $
+ * $Revision: 2.19.2.2 $
+ * $Date: 2006-09-11 01:00:27 $
  * $Author: taylor $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19.2.1  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
+ *
  * Revision 2.19  2006/03/21 00:27:27  taylor
  * some minor cleanup
  *
@@ -377,7 +380,7 @@ void anim_render_one(int screen_id, anim_instance *ani, float frametime)
 	}	
 }
 
-MONITOR(NumANIPlayed);
+MONITOR(NumANIPlayed)
 
 // Setup an anim_play_struct for passing into anim_play().  Will fill in default values, which you
 // can then change before calling anim_play().
