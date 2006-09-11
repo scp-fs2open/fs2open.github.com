@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.371 $
- * $Date: 2006-09-11 06:08:09 $
+ * $Revision: 2.372 $
+ * $Date: 2006-09-11 06:48:40 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.371  2006/09/11 06:08:09  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 2.370  2006/09/08 06:19:02  taylor
  * fix for Mantis bug #1038 (glow point bank storage being wrong after changing ships in shipselect)
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
@@ -2470,7 +2473,7 @@ void parse_engine_wash(bool replace)
 
 	// name of engine wash info
 	required_string("$Name:");
-	stuff_string(ewt.name, F_NAME, NULL);
+	stuff_string(ewt.name, F_NAME, NAME_LENGTH);
 
 	if(optional_string("+nocreate")) {
 		if(!replace) {
@@ -2752,7 +2755,7 @@ void init_ship_entry(int ship_info_index)
 // function to parse the information for a specific ship type.	
 int parse_ship(bool replace)
 {
-	char buf[SHIP_MULTITEXT_LENGTH + 1];
+	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip;
 	int i, j, num_allowed;
 	int allowed_weapons[MAX_WEAPON_TYPES];
@@ -2762,7 +2765,7 @@ int parse_ship(bool replace)
 	char name_tmp[NAME_LENGTH];
 
 	required_string("$Name:");
-	stuff_string(buf, F_NAME, NULL);
+	stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 
 	if(optional_string("+nocreate")) {
 		if(!replace) {
@@ -2838,7 +2841,7 @@ int parse_ship(bool replace)
 	}
 
 	if(optional_string("$Short name:"))
-		stuff_string(sip->short_name, F_NAME, NULL);
+		stuff_string(sip->short_name, F_NAME, NAME_LENGTH);
 	else if(first_time)
 	{
 		char *srcpos, *srcend, *destpos, *destend;
@@ -2905,8 +2908,8 @@ int parse_ship(bool replace)
 
 	if(optional_string( "$POF file:" ))
 	{
-		char temp[NAME_LENGTH];
-		stuff_string(temp, F_NAME, NULL);
+		char temp[MAX_FILENAME_LEN];
+		stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
 
 		// assume we're using this file name
 		bool valid = true;
@@ -2923,7 +2926,7 @@ int parse_ship(bool replace)
 
 	// optional hud targeting model
 	if(optional_string( "$POF target file:")){
-		stuff_string(sip->pof_file_hud, F_NAME, NULL);
+		stuff_string(sip->pof_file_hud, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	// optional hud target LOD if not using special hud model
@@ -3026,7 +3029,7 @@ int parse_ship(bool replace)
 
 	if(optional_string("$Warpin type:"))
 	{
-		stuff_string(buf, F_NAME);
+		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 		j = warptype_match(buf);
 		if(j > -1) {
 			sip->warpin_type = j;
@@ -3064,12 +3067,12 @@ int parse_ship(bool replace)
 
 	if(optional_string("$Warpin animation:"))
 	{
-		stuff_string(sip->warpin_anim, F_NAME);
+		stuff_string(sip->warpin_anim, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	if(optional_string("$Warpout type:"))
 	{
-		stuff_string(buf, F_NAME);
+		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 		j = warptype_match(buf);
 		if(j > -1) {
 			sip->warpout_type = j;
@@ -3107,7 +3110,7 @@ int parse_ship(bool replace)
 
 	if(optional_string("$Warpout animation:"))
 	{
-		stuff_string(sip->warpout_anim, F_NAME);
+		stuff_string(sip->warpout_anim, F_NAME, MAX_FILENAME_LEN);
 	}
 
 
@@ -3142,7 +3145,7 @@ int parse_ship(bool replace)
 	}
 
 	if(optional_string("$Shockwave Damage Type:")) {
-		stuff_string(buf, F_NAME);
+		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 		sci->damage_type_idx = damage_type_add(buf);
 	}
 
@@ -3155,11 +3158,11 @@ int parse_ship(bool replace)
 	}
 
 	if(optional_string("$Shockwave model:")){
-		stuff_string( sci->pof_name, F_NAME, NULL);
+		stuff_string( sci->pof_name, F_NAME, MAX_FILENAME_LEN);
 	}
 	
 	if(optional_string("$Shockwave name:")) {
-		stuff_string( sci->name, F_NAME, NULL);
+		stuff_string( sci->name, F_NAME, NAME_LENGTH);
 	}
 
 char temp_error[64];
@@ -3490,7 +3493,7 @@ strcpy(parse_error_text, temp_error);
 	
 	if(optional_string("$Armor Type:"))
 	{
-		stuff_string(buf, F_NAME, NULL);
+		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 		sip->armor_type_idx = armor_type_get_idx(buf);
 
 		if(sip->armor_type_idx == -1)
@@ -3667,7 +3670,7 @@ strcpy(parse_error_text, temp_error);
 
 		if(optional_string("+Bitmap:")) {
 			trails_warning = false;
-			stuff_string(sip->ABtrail_bitmap_name, F_NAME, NULL);
+			stuff_string(sip->ABtrail_bitmap_name, F_NAME, MAX_FILENAME_LEN);
 			sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
 		}
 		
@@ -3692,7 +3695,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if(optional_string("$Countermeasure type:")) {
-		stuff_string(buf, F_NAME);
+		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 		int res = weapon_info_lookup(buf);
 		if(res == -1) {
 			Warning(LOCATION, "Could not find weapon type '%s' to use as countermeasure on ship class '%s'", sip->name);
@@ -3745,23 +3748,23 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if (optional_string("$Shield_icon:")) {
-		stuff_string(name_tmp, F_NAME, NULL);
+		stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 		hud_shield_assign_info(sip, name_tmp);
 	}
 
 	// read in filename for icon that is used in ship selection
 	if ( optional_string("$Ship_icon:") ) {
-		stuff_string(sip->icon_filename, F_NAME, NULL);
+		stuff_string(sip->icon_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	// read in filename for animation that is used in ship selection
 	if ( optional_string("$Ship_anim:") ) {
-		stuff_string(sip->anim_filename, F_NAME, NULL);
+		stuff_string(sip->anim_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	// read in filename for animation that is used in ship selection
 	if ( optional_string("$Ship_overhead:") ) {
-		stuff_string(sip->overhead_filename, F_NAME, NULL);
+		stuff_string(sip->overhead_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	if ( optional_string("$Score:") ){
@@ -3778,7 +3781,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if ( optional_string("$Thruster Bitmap 1:") ) {
-		stuff_string( name_tmp, F_NAME, NULL );
+		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 	
 		if ( stricmp(name_tmp, NOX("none")) ) {
 			generic_anim_init( &sip->thruster_glow_info.normal, name_tmp );
@@ -3786,7 +3789,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if ( optional_string("$Thruster Bitmap 1a:") ) {
-		stuff_string( name_tmp, F_NAME, NULL );
+		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
 		if ( stricmp(name_tmp, NOX("none")) ) {
 			generic_anim_init( &sip->thruster_glow_info.afterburn, name_tmp );
@@ -3798,7 +3801,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if ( optional_string("$Thruster Bitmap 2:") ) {
-		stuff_string( name_tmp, F_NAME, NULL );
+		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
 		if ( stricmp(name_tmp, NOX("none")) ) {
 			generic_bitmap_init( &sip->thruster_secondary_glow_info.normal, name_tmp );
@@ -3806,7 +3809,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if ( optional_string("$Thruster Bitmap 2a:") ) {
-		stuff_string( name_tmp, F_NAME, NULL );
+		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
 		if ( stricmp(name_tmp, NOX("none")) ) {
 			generic_bitmap_init( &sip->thruster_secondary_glow_info.afterburn, name_tmp );
@@ -3822,7 +3825,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if ( optional_string("$Thruster Bitmap 3:") ) {
-		stuff_string( name_tmp, F_NAME, NULL );
+		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
 		if ( stricmp(name_tmp, NOX("none")) ) {
 			generic_bitmap_init( &sip->thruster_tertiary_glow_info.normal, name_tmp );
@@ -3830,7 +3833,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if ( optional_string("$Thruster Bitmap 3a:") ) {
-		stuff_string( name_tmp, F_NAME, NULL );
+		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
 		if ( stricmp(name_tmp, NOX("none")) ) {
 			generic_bitmap_init( &sip->thruster_tertiary_glow_info.afterburn, name_tmp );
@@ -3865,7 +3868,7 @@ strcpy(parse_error_text, temp_error);
 			break;
 		}
 
-		stuff_string(t->thruster_particle_bitmap01_name, F_NAME, NULL );
+		stuff_string(t->thruster_particle_bitmap01_name, F_NAME, MAX_FILENAME_LEN);
 
 		required_string("$Min Radius:");
 		stuff_float(&t->min_rad);
@@ -3910,7 +3913,7 @@ strcpy(parse_error_text, temp_error);
 		}
 	}
 
-	char trail_name[MAX_FILENAME_LEN] = "";
+	char trail_name[MAX_FILENAME_LEN];
 	trail_info *ci;
 	while(optional_string("$Trail:"))
 	{
@@ -3945,7 +3948,7 @@ strcpy(parse_error_text, temp_error);
 		stuff_int(&ci->stamp);		
 
 		required_string("+Bitmap:");
-		stuff_string(trail_name, F_NAME, NULL);
+		stuff_string(trail_name, F_NAME, MAX_FILENAME_LEN );
 		ci->bitmap = bm_load(trail_name);
 	}
 
@@ -3989,7 +3992,7 @@ strcpy(parse_error_text, temp_error);
 
 		if(optional_string("+Texture:"))
 		{
-			stuff_string(name_tmp, F_NAME);
+			stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 			int tex_fps=0, tex_nframes=0, tex_id=-1;;
 			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, 1);
 			if(tex_id < 0)
@@ -4048,7 +4051,7 @@ strcpy(parse_error_text, temp_error);
 			
 			int sfo_return;
 			required_string("$Subsystem:");
-			stuff_string(name_tmp, F_NAME, ",");
+			stuff_string(name_tmp, F_NAME, sizeof(name_tmp), ",");
 			Mp++;
 			for(i = 0;i < sip->n_subsystems; i++)
 			{
@@ -4122,7 +4125,7 @@ strcpy(parse_error_text, temp_error);
 			}
 
 			if(optional_string("$Armor Type:")) {
-				stuff_string(buf, F_NAME);
+				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 				sp->armor_type_idx = armor_type_get_idx(buf);
 			}
 
@@ -4156,7 +4159,7 @@ strcpy(parse_error_text, temp_error);
 
 			// Get optional engine wake info
 			if (optional_string("$Engine Wash:")) {
-				stuff_string(name_tmp, F_NAME, NULL);
+				stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 				// get and set index
 				sp->engine_wash_pointer = get_engine_wash_pointer(name_tmp);
 			}
@@ -4206,7 +4209,7 @@ strcpy(parse_error_text, temp_error);
 
 			while(optional_string("$animation:"))
 			{
-				stuff_string(name_tmp, F_NAME);
+				stuff_string(name_tmp, F_NAME, sizeof(name_tmp));
 				if(!stricmp(name_tmp, "triggered"))
 				{
 					queued_animation *current_trigger;
@@ -4217,8 +4220,8 @@ strcpy(parse_error_text, temp_error);
 					//add a new trigger
 
 					required_string("$type:");
-					char atype[128];
-					stuff_string(atype, F_NAME, NULL);
+					char atype[NAME_LENGTH];
+					stuff_string(atype, F_NAME, NAME_LENGTH);
 					current_trigger->type = match_animation_type(atype);
 
 					if(optional_string("+sub_type:")){
@@ -4441,7 +4444,7 @@ void parse_ship_type()
 	ship_type_info stp_tmp, *stp = NULL;
 
 	required_string("$Name:");
-	stuff_string(name_buf, F_NAME);
+	stuff_string(name_buf, F_NAME, NAME_LENGTH);
 
 	if(optional_string("+nocreate")) {
 		nocreate = true;
@@ -4687,7 +4690,7 @@ void parse_shiptbl(char* longname)
 	if(optional_string("#Default Player Ship"))
 	{
 		required_string("$Name:");
-		stuff_string(default_player_ship, F_NAME, NULL, 254);
+		stuff_string(default_player_ship, F_NAME, sizeof(default_player_ship));
 		required_string("#End");
 	}
 	//Add engine washes
@@ -5809,7 +5812,7 @@ int Ship_shadows = 0;
 
 DCF_BOOL( ship_shadows, Ship_shadows )
 
-MONITOR( NumShipsRend );	
+MONITOR( NumShipsRend )
 
 int Show_shield_hits = 0;
 DCF_BOOL( show_shield_hits, Show_shield_hits )
@@ -8022,7 +8025,7 @@ void ship_process_pre(object *objp, float frametime)
 		return;
 }
 
-MONITOR( NumShips );	
+MONITOR( NumShips )
 
 //	Player ship uses this code, but does a quick out after doing a few things.
 // when adding code to this function, decide whether or not a client in a multiplayer game
@@ -14439,6 +14442,7 @@ void ship_page_in()
 	// Page in all the ship classes that are used on this level
 	//
 	int num_ship_types_used = 0;
+	int test_id = -1;
 
 	for (i=0; i<Num_ship_classes; i++ )
 	{//Num_ship_classes not MAX_SHIPTYPES ship_class_used is dynamicly allocated to Num_ship_classes -Bobboau
@@ -14462,7 +14466,7 @@ void ship_page_in()
 
 					// the model should already be loaded so this wouldn't take long, but
 					// we need to make sure that the load count for the model is correct
-					int test_id = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+					test_id = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 					Assert( test_id == model_previously_loaded );
 
 					break;
@@ -15968,7 +15972,7 @@ void ArmorType::ParseData()
 	do
 	{
 		//Get damage type name
-		stuff_string(buf, F_NAME, NULL);
+		stuff_string(buf, F_NAME, NAME_LENGTH);
 		
 		//Clear the struct and set the index
 		adt.clear();
@@ -15979,7 +15983,7 @@ void ArmorType::ParseData()
 		do
 		{
 			//+Calculation
-			stuff_string(buf, F_NAME, NULL);
+			stuff_string(buf, F_NAME, NAME_LENGTH);
 
 			calc_type = calculation_type_get(buf);
 
@@ -16035,7 +16039,7 @@ void parse_armor_type()
 	ArmorType tat("");
 	
 	required_string("$Name:");
-	stuff_string(name_buf, F_NAME, NULL);
+	stuff_string(name_buf, F_NAME, NAME_LENGTH);
 	
 	tat = ArmorType(name_buf);
 	

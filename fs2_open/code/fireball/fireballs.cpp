@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-02-25 21:46:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.34 $
+ * $Date: 2006-09-11 06:48:40 $
+ * $Author: taylor $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/02/25 21:46:59  Goober5000
+ * spelling
+ *
  * Revision 2.32  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -586,7 +589,7 @@ void parse_fireball_tbl(char *longname)
 
 		// base filename
 		required_string("$Name:");
-		stuff_string(lod_check.filename, F_NAME, NULL);
+		stuff_string(lod_check.filename, F_NAME, MAX_FILENAME_LEN);
 
 		lod_check.override = -1;
 
@@ -743,7 +746,7 @@ void fireball_init()
 	mprintf((" %d\n", Warp_model));
 }
 
-MONITOR( NumFireballsRend );	
+MONITOR( NumFireballsRend )
 
 void fireball_render(object * obj)
 {
@@ -1030,7 +1033,7 @@ void fireball_maybe_play_warp_close_sound(fireball *fb)
 	}
 }
 
-MONITOR( NumFireballs );	
+MONITOR( NumFireballs )
 
 void fireball_process_post(object * obj, float frame_time)
 {

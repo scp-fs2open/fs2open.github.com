@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.186  2006/09/11 05:44:23  taylor
+ * make muzzle flash info dynamic
+ * add support for modular mflash tables (*-mfl.tbm)
+ *
  * Revision 2.185  2006/07/08 11:30:40  taylor
  * debug-build-only issue, make sure that thrusters are properly enabled if needed for POF based weapons when using cheat keys
  *
@@ -1372,7 +1376,7 @@ void parse_weapon_expl_tbl(char* longname)
 
 		// base filename
 		required_string("$Name:");
-		stuff_string(lod_check.filename, F_NAME, NULL);
+		stuff_string(lod_check.filename, F_NAME, MAX_FILENAME_LEN);
 
 		//Do we have an LOD num
 		if (optional_string("$LOD:"))
@@ -1664,7 +1668,7 @@ void parse_wi_flags(weapon_info *weaponp)
 
 void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
 {
-	char buf[32];
+	char buf[NAME_LENGTH];
 
 	sprintf(buf, "%sShockwave damage:", pre_char);
 	if(optional_string(buf)) {
@@ -1673,7 +1677,7 @@ void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
 
 	sprintf(buf, "%sShockwave damage type:", pre_char);
 	if(optional_string(buf)) {
-		stuff_string(buf, F_NAME);
+		stuff_string(buf, F_NAME, NAME_LENGTH);
 		sci->damage_type_idx = damage_type_add(buf);
 	}
 
@@ -1720,12 +1724,12 @@ void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
 
 	sprintf(buf, "%sShockwave Model:", pre_char);
 	if(optional_string(buf)) {
-		stuff_string(sci->pof_name, F_NAME, NULL);
+		stuff_string(sci->pof_name, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	sprintf(buf, "%sShockwave Name:", pre_char);
 	if(optional_string(buf)) {
-		stuff_string(sci->name, F_NAME, NULL);
+		stuff_string(sci->name, F_NAME, NAME_LENGTH);
 	}
 }
 
@@ -1970,14 +1974,14 @@ int parse_weapon(int subtype, bool replace)
 {
 	char buf[WEAPONS_MULTITEXT_LENGTH];
 	weapon_info *wip = NULL;
-	char fname[255] = "";
+	char fname[NAME_LENGTH];
 	int idx;
 	int primary_rearm_rate_specified=0;
 	bool first_time = false;
 	bool create_if_not_found  = true;
 
 	required_string("$Name:");
-	stuff_string(fname, F_NAME, NULL);
+	stuff_string(fname, F_NAME, NAME_LENGTH);
 	diag_printf ("Weapon name -- %s\n", fname);
 
 	if(optional_string("+nocreate")) {
@@ -2046,7 +2050,7 @@ int parse_weapon(int subtype, bool replace)
 	//Set subtype
 	if(optional_string("$Subtype:"))
 	{
-		stuff_string(fname, F_NAME);
+		stuff_string(fname, F_NAME, NAME_LENGTH);
 
 		if(!stricmp("Primary", fname)) {
 			wip->subtype = WP_LASER;
@@ -2068,7 +2072,7 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if (optional_string("+Title:")) {
-		stuff_string(wip->title, F_NAME, NULL, WEAPON_TITLE_LEN);
+		stuff_string(wip->title, F_NAME, WEAPON_TITLE_LEN);
 	}
 
 	if (optional_string("+Description:")) {
@@ -2076,11 +2080,11 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if (optional_string("+Tech Title:")) {
-		stuff_string(wip->tech_title, F_NAME, NULL, NAME_LENGTH);
+		stuff_string(wip->tech_title, F_NAME, NAME_LENGTH);
 	}
 
 	if (optional_string("+Tech Anim:")) {
-		stuff_string(wip->tech_anim_filename, F_NAME, NULL, NAME_LENGTH);
+		stuff_string(wip->tech_anim_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	if (optional_string("+Tech Description:")) {
@@ -2090,13 +2094,13 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if(optional_string("$Tech Model:")) {
-		stuff_string(wip->tech_model, F_NAME, NULL);
+		stuff_string(wip->tech_model, F_NAME, MAX_FILENAME_LEN);
 	}
 		
 
 	//Check for the HUD image string
 	if(optional_string("$HUD Image:")) {
-		stuff_string(wip->hud_filename, F_NAME, NULL);
+		stuff_string(wip->hud_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	//	Read the model file.  It can be a POF file or none.
@@ -2104,7 +2108,7 @@ int parse_weapon(int subtype, bool replace)
 	//	laser renderer which requires inner, middle and outer information.
 	if(optional_string("$Model file:"))
 	{
-		stuff_string(wip->pofbitmap_name, F_NAME, NULL);
+		stuff_string(wip->pofbitmap_name, F_NAME, MAX_FILENAME_LEN);
 		if(stricmp(wip->pofbitmap_name, NOX("none")) && strlen(wip->pofbitmap_name))
 		{
 			wip->render_type = WRT_POF;
@@ -2123,7 +2127,7 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if (optional_string("$External Model File:")) {
-		stuff_string(wip->external_model_name, F_NAME, NULL);	
+		stuff_string(wip->external_model_name, F_NAME, MAX_FILENAME_LEN);	
 	}
 
 	if (optional_string("$Submodel Rotation Speed:"))
@@ -2139,7 +2143,7 @@ int parse_weapon(int subtype, bool replace)
 	if(optional_string("@Laser Bitmap:"))
 	{
 		int new_laser = -1;
-		stuff_string(fname, F_NAME, NULL);
+		stuff_string(fname, F_NAME, NAME_LENGTH);
 
 		if(!Fred_running)
 		{
@@ -2182,7 +2186,7 @@ int parse_weapon(int subtype, bool replace)
 	// optional laser glow
 	if(optional_string("@Laser Glow:"))
 	{
-		stuff_string(fname, F_NAME, NULL);		
+		stuff_string(fname, F_NAME, NAME_LENGTH);		
 		if(!Fred_running)
 		{
 			int new_glow = bm_load( fname );
@@ -2280,7 +2284,7 @@ int parse_weapon(int subtype, bool replace)
 	if(optional_string("$Damage Type:")) {
 		//This is checked for validity on every armor type
 		//If it's invalid (or -1), then armor has no effect
-		stuff_string(buf, F_NAME, NULL);
+		stuff_string(buf, F_NAME, WEAPONS_MULTITEXT_LENGTH);
 		wip->damage_type_idx = damage_type_add(buf);
 	}
 
@@ -2376,12 +2380,12 @@ int parse_weapon(int subtype, bool replace)
 
 	if (is_homing || (wip->wi_flags & WIF_HOMING))
 	{
-		char	temp_type[128];
+		char	temp_type[NAME_LENGTH];
 
 		// the following five items only need to be recorded if the weapon is a homing weapon
 		if(optional_string("+Type:"))
 		{
-			stuff_string(temp_type, F_NAME, NULL);
+			stuff_string(temp_type, F_NAME, NAME_LENGTH);
 			if (!stricmp(temp_type, NOX("HEAT")))
 			{
 				if(wip->wi_flags & WIF_HOMING_ASPECT) {
@@ -2527,7 +2531,7 @@ int parse_weapon(int subtype, bool replace)
 	if(optional_string("$Model:"))
 	{
 		wip->render_type = WRT_POF;
-		stuff_string(wip->pofbitmap_name, F_NAME, NULL);
+		stuff_string(wip->pofbitmap_name, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	// handle rearm rate - modified by Goober5000
@@ -2629,7 +2633,7 @@ int parse_weapon(int subtype, bool replace)
 		}
 	}
 
-	char trail_name[MAX_FILENAME_LEN] = "";
+	char trail_name[MAX_FILENAME_LEN];
 	trail_info *ti = &wip->tr_info;
 	if(optional_string("$Trail:")){	
 		wip->wi_flags |= WIF_TRAIL;		// missile leaves a trail
@@ -2658,7 +2662,7 @@ int parse_weapon(int subtype, bool replace)
 		}
 
 		if(optional_string("+Bitmap:")) {
-			stuff_string(trail_name, F_NAME, NULL);
+			stuff_string(trail_name, F_NAME, MAX_FILENAME_LEN);
 			//TODO: Remove this bm_load call. -WMC
 			ti->bitmap = bm_load(trail_name);
 		}
@@ -2667,12 +2671,12 @@ int parse_weapon(int subtype, bool replace)
 
 	// read in filename for icon that is used in weapons selection
 	if ( optional_string("$Icon:") ) {
-		stuff_string(wip->icon_filename, F_NAME, NULL);
+		stuff_string(wip->icon_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	// read in filename for animation that is used in weapons selection
 	if ( optional_string("$Anim:") ) {
-		stuff_string(wip->anim_filename, F_NAME, NULL);
+		stuff_string(wip->anim_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	if(optional_string("$Collide Ship:")) {
@@ -2684,9 +2688,9 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 
-	char impact_ani_file[FILESPEC_LENGTH];
+	char impact_ani_file[MAX_FILENAME_LEN];
 	if ( optional_string("$Impact Explosion:") ) {
-		stuff_string(impact_ani_file, F_NAME, NULL);
+		stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
 		if ( stricmp(impact_ani_file,NOX("none")))	{
 			wip->impact_weapon_expl_index = Weapon_explosions.Load(impact_ani_file);
 		}
@@ -2698,7 +2702,7 @@ int parse_weapon(int subtype, bool replace)
 
 	if ( optional_string("$Dinky Impact Explosion:") )
 	{
-		stuff_string(impact_ani_file, F_NAME, NULL);
+		stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
 		if ( stricmp(impact_ani_file,NOX("none")))	{
 			wip->dinky_impact_weapon_expl_index = Weapon_explosions.Load(impact_ani_file);
 		}
@@ -2715,9 +2719,9 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	// muzzle flash
-	char mflash_string[255] = "";
+	char mflash_string[MAX_FILENAME_LEN];
 	if( optional_string("$Muzzleflash:") ){
-		stuff_string(mflash_string, F_NAME, NULL);
+		stuff_string(mflash_string, F_NAME, MAX_FILENAME_LEN);
 
 		// look it up
 		wip->muzzle_flash = mflash_lookup(mflash_string);
@@ -2922,7 +2926,7 @@ int parse_weapon(int subtype, bool replace)
 		// particle bitmap/ani		
 		if(optional_string("+PAni:"))
 		{
-			stuff_string(fname, F_NAME, NULL);
+			stuff_string(fname, F_NAME, NAME_LENGTH);
 
 			if(!Fred_running){
 				new_nframes = 1;
@@ -2961,7 +2965,7 @@ int parse_weapon(int subtype, bool replace)
 		// glow bitmap
 		if(optional_string("+Muzzleglow:"))
 		{
-			stuff_string(fname, F_NAME, NULL);
+			stuff_string(fname, F_NAME, NAME_LENGTH);
 			if(!Fred_running){
 				new_tex = bm_load_animation(fname, &new_nframes, &new_fps);
 
@@ -3079,7 +3083,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 			}
 
-			char tex_name[255] = "";
+			char tex_name[MAX_FILENAME_LEN];
 			
 			// section width
 			if(optional_string("+Width:")) {
@@ -3089,7 +3093,7 @@ int parse_weapon(int subtype, bool replace)
 			// texture
 			if(optional_string("+Texture:"))
 			{
-				stuff_string(tex_name, F_NAME, NULL);
+				stuff_string(tex_name, F_NAME, MAX_FILENAME_LEN);
 
 				if(!Fred_running)
 				{
@@ -3172,7 +3176,7 @@ int parse_weapon(int subtype, bool replace)
 			required_string("+Scale:");
 			stuff_float(&wip->Weapon_particle_spew_scale);
 			required_string("+Bitmap:");
-			stuff_string(wip->Weapon_particle_spew_bitmap_name, F_NAME, NULL);
+			stuff_string(wip->Weapon_particle_spew_bitmap_name, F_NAME, MAX_FILENAME_LEN);
 		
 			wip->Weapon_particle_spew_bitmap = bm_load( wip->Weapon_particle_spew_bitmap_name );
 			if(wip->Weapon_particle_spew_bitmap < 0)
@@ -3217,22 +3221,22 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if( optional_string("$decal:")){
-		char tex_name[64], temp[64];
+		char tex_name[MAX_FILENAME_LEN], temp[MAX_FILENAME_LEN];
 
 		required_string("+texture:");
-		stuff_string(tex_name, F_NAME, NULL);
+		stuff_string(tex_name, F_NAME, MAX_FILENAME_LEN);
 		wip->decal_texture = bm_load(tex_name);
 
 		strcpy(temp, tex_name);
-		strcat(tex_name, "-glow");
+		SAFE_STRCAT( tex_name, "-glow", sizeof(tex_name) );
 		wip->decal_glow_texture = bm_load(tex_name);
 
 		strcpy(tex_name, temp);
-		strcat(tex_name, "-burn");
+		SAFE_STRCAT( tex_name, "-burn", sizeof(tex_name) );
 		wip->decal_burn_texture = bm_load(tex_name);
 
 		if( optional_string("+backface texture:")){
-			stuff_string(tex_name, F_NAME, NULL);
+			stuff_string(tex_name, F_NAME, MAX_FILENAME_LEN);
 			wip->decal_backface_texture = bm_load(tex_name);
 		}
 
@@ -3810,7 +3814,7 @@ void weapon_level_init()
 	Weapon_impact_timer = 1;	// inited each level, used to reduce impact sounds
 }
 
-MONITOR( NumWeaponsRend );	
+MONITOR( NumWeaponsRend )
 
 float weapon_glow_scale_f = 2.3f;
 float weapon_glow_scale_r = 2.3f;
@@ -4688,7 +4692,7 @@ void weapon_process_pre( object *obj, float frame_time)
 int	Homing_hits = 0, Homing_misses = 0;
 
 
-MONITOR( NumWeapons );	
+MONITOR( NumWeapons )
 
 // maybe play a "whizz sound" if close enough to view position
 void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
@@ -6662,4 +6666,3 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	
 	return total_scale;
 }
-
