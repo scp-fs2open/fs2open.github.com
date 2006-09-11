@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.43 $
- * $Date: 2006-09-11 06:08:09 $
+ * $Revision: 2.44 $
+ * $Date: 2006-09-11 06:45:40 $
  * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/09/11 06:08:09  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 2.42  2006/09/04 05:59:47  wmcoolmon
  * Changes to allow for a species with no shield anim
  *
@@ -705,7 +708,7 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 	}
 }
 
-MONITOR(NumShieldRend);
+MONITOR(NumShieldRend)
 
 //	Render a shield mesh in the global array Shield_hits[]
 void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
@@ -1130,7 +1133,7 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 	// render_shield(orient, centerp);
 }
 
-MONITOR(NumShieldHits);
+MONITOR(NumShieldHits)
 
 //	Add data for a shield hit.
 void add_shield_point(int objnum, int tri_num, vec3d *hit_pos)

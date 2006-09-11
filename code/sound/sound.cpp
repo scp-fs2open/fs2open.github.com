@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.35 $
- * $Date: 2006-07-08 18:10:59 $
+ * $Revision: 2.36 $
+ * $Date: 2006-09-11 06:45:40 $
  * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/07/08 18:10:59  taylor
+ * require OpenAL 1.1 under Windows, I think it's causing problems for us to mix users with 1.0 and builds for 1.1
+ *   (having 1.0 is fatal to sound, but the game should still work, a corresponding Launcher change goes with this too)
+ * clean up some of the error messages to not say "DirectSound" is doing this or that, just say "Audio" instead
+ *
  * Revision 2.34  2006/04/20 06:32:30  Goober5000
  * proper capitalization according to Volition
  *
@@ -893,8 +898,8 @@ int snd_play_raw( int soundnum, float pan, float vol_scale, int priority )
 	return rval;
 }
 
-MONITOR( NumSoundsStarted );
-MONITOR( NumSoundsLoaded );
+MONITOR( NumSoundsStarted )
+MONITOR( NumSoundsLoaded )
 
 // ---------------------------------------------------------------------------------------
 //	snd_play()
@@ -961,8 +966,8 @@ int snd_play( game_snd *gs, float pan, float vol_scale, int priority, bool is_vo
 	return handle;
 }
 
-MONITOR( Num3DSoundsStarted );
-MONITOR( Num3DSoundsLoaded );
+MONITOR( Num3DSoundsStarted )
+MONITOR( Num3DSoundsLoaded )
 
 // ---------------------------------------------------------------------------------------
 // snd_play_3d()
@@ -1475,7 +1480,7 @@ int snd_get_duration(int snd_id)
 }
 
 
-MONITOR( SoundChannels );
+MONITOR( SoundChannels )
 
 // update the position of the listener for the specific 3D sound API we're 
 // using

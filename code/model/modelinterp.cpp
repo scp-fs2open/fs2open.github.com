@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.167 $
- * $Date: 2006-09-08 06:20:14 $
+ * $Revision: 2.168 $
+ * $Date: 2006-09-11 06:45:40 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.167  2006/09/08 06:20:14  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.166  2006/07/17 01:12:19  taylor
  * fix some missile autocentering issues
  *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
@@ -3067,10 +3070,10 @@ int Model_polys = 1;
 DCF_BOOL( model_texturing, Model_texturing )
 DCF_BOOL( model_polys, Model_polys )
 
-MONITOR( NumModelsRend );	
-MONITOR( NumHiModelsRend );	
-MONITOR( NumMedModelsRend );	
-MONITOR( NumLowModelsRend );	
+MONITOR( NumModelsRend )
+MONITOR( NumHiModelsRend )
+MONITOR( NumMedModelsRend )
+MONITOR( NumLowModelsRend )
 
 /*
 typedef struct model_cache {

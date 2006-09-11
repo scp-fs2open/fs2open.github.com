@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dMath.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-05 05:53:24 $
+ * $Revision: 2.9 $
+ * $Date: 2006-09-11 06:45:40 $
  * $Author: taylor $
  *
  * 3d Math routines used by the Renderer lib
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/05 05:53:24  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.7  2005/01/28 11:06:22  Goober5000
  * changed a bunch of transpose-rotate sequences to use unrotate instead
  * --Goober5000
@@ -205,7 +208,7 @@ ubyte g3_transfer_vertex(vertex *dest,vec3d *src)
 }
 
 
-MONITOR( NumRotations );	
+MONITOR( NumRotations )
 
 ubyte g3_rotate_vertex(vertex *dest,vec3d *src)
 {
@@ -459,5 +462,3 @@ float g3_calc_point_depth(vec3d *pnt)
 
 	return q;
 }
-
-
