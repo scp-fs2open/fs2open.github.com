@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.38 $
- * $Date: 2006-05-13 07:09:25 $
+ * $Revision: 2.39 $
+ * $Date: 2006-09-11 06:46:04 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2006/05/13 07:09:25  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 2.37  2006/02/25 21:47:00  Goober5000
  * spelling
  *
@@ -692,6 +696,7 @@ void techroom_select_new_entry()
 	}
 
 	Cur_entry_index = Current_list[Cur_entry].index;
+	Assert( Cur_entry_index >= 0 );
 
 	// if we are in the ships tab, load the ship model
 	if (Tab == SHIPS_DATA_TAB) {
@@ -827,10 +832,11 @@ void tech_common_render()
 			gr_set_color_fast(&Color_text_normal);
 		}
 
-		strcpy(buf, Current_list[z].name);
-		if (Lcl_gr) {
+		memset( buf, 0, sizeof(buf) );
+		strncpy(buf, Current_list[z].name, sizeof(buf) - 1);
+
+		if (Lcl_gr)
 			lcl_translate_ship_name(buf);
-		}
 
 		gr_force_fit_string(buf, 255, Tech_list_coords[gr_screen.res][SHIP_W_COORD]);
 		gr_string(Tech_list_coords[gr_screen.res][SHIP_X_COORD], Tech_list_coords[gr_screen.res][SHIP_Y_COORD] + y, buf);
@@ -1141,7 +1147,7 @@ void techroom_start_anim()
 
 void techroom_change_tab(int num)
 {
-	int i, multi = 0, mask, font_height, max_num_entries_viewable;	
+	int i, multi = 0, mask, mask2, font_height, max_num_entries_viewable;	
 
 	Tab = num;
 	// Assert(Current_list_size >= 0);
@@ -1162,6 +1168,7 @@ void techroom_change_tab(int num)
 	switch (Tab) {
 		case SHIPS_DATA_TAB:
 			mask = multi ? SIF_IN_TECH_DATABASE_M : SIF_IN_TECH_DATABASE;
+			mask2 = multi ? SIF2_DEFAULT_IN_TECH_DATABASE_M : SIF2_DEFAULT_IN_TECH_DATABASE;
 			
 			// load ship info if necessary
 			if ( Ships_loaded == 0 ) {
@@ -1173,9 +1180,10 @@ void techroom_change_tab(int num)
 				}
 
 				Ship_list_size = 0;
+
 				for (i=0; i<Num_ship_classes; i++)
 				{
-					if (Techroom_show_all || (Ship_info[i].flags & mask))
+					if (Techroom_show_all || (Ship_info[i].flags & mask) || (Ship_info[i].flags2 & mask2))
 					{
 						// this ship should be displayed, fill out the entry struct
 						Ship_list[Ship_list_size].bitmap = -1;
@@ -1186,9 +1194,23 @@ void techroom_change_tab(int num)
 						Ship_list[Ship_list_size].desc = Ship_info[i].tech_desc;
 						Ship_list[Ship_list_size].model_num = -1;
 						Ship_list[Ship_list_size].textures_loaded = 0;
+
 						Ship_list_size++;
 					}				
 				}
+
+				// make sure that at least the default entry is cleared out if we didn't grab anything
+				if (Num_ship_classes && !Ship_list_size) {
+					Ship_list[0].index = -1;
+					Ship_list[0].desc = NULL;
+					Ship_list[0].name = NULL;
+					Ship_list[0].bitmap = -1;
+					Ship_list[0].has_anim = 0;
+					Ship_list[0].animation = NULL;
+					Ship_list[0].model_num = -1;
+					Ship_list[0].textures_loaded = 0;
+				}
+
 				Ships_loaded = 1;
 			}
 
@@ -1215,10 +1237,11 @@ void techroom_change_tab(int num)
 
 				Weapon_list_size = 0;
 				mask = multi ? WIF_PLAYER_ALLOWED : WIF_IN_TECH_DATABASE;
+				mask2 = WIF2_DEFAULT_IN_TECH_DATABASE;
 
 				for (i=0; i<Num_weapon_types; i++)
 				{
-					if (Techroom_show_all || (Weapon_info[i].wi_flags & mask))
+					if (Techroom_show_all || (Weapon_info[i].wi_flags & mask) || (Weapon_info[i].wi_flags2 & mask2))
 					{ 
 						//following was commented out to fix the tech room crash bug when modified weapons.tbl is used.  Fix by Phreak, implemented by Sesquipedalian.
 						// note: hack here to exclude dogfight weapons -- dont put weapon in if it has same description as pvs weapon
@@ -1252,6 +1275,18 @@ void techroom_change_tab(int num)
 					}				
 				}
 
+				// make sure that at least the default entry is cleared out if we didn't grab anything
+				if (Num_weapon_types && !Weapon_list_size) {
+					Weapon_list[0].index = -1;
+					Weapon_list[0].desc = NULL;
+					Weapon_list[0].name = NULL;
+					Weapon_list[0].bitmap = -1;
+					Weapon_list[0].has_anim = 0;
+					Weapon_list[0].animation = NULL;
+					Weapon_list[0].model_num = -1;
+					Weapon_list[0].textures_loaded = 0;
+				}
+
 				Weapons_loaded = 1;
 			}
 
@@ -1271,9 +1306,9 @@ void techroom_change_tab(int num)
 			if ( Intel_loaded == 0 ) {
 				// now populate the entry structs
 				Intel_list_size = 0;
-				for (i=0; i<Intel_info_size; i++) {
 
-					if (Techroom_show_all || (Intel_info[i].flags & IIF_IN_TECH_DATABASE)) {
+				for (i=0; i<Intel_info_size; i++) {
+					if (Techroom_show_all || (Intel_info[i].flags & IIF_IN_TECH_DATABASE) || (Intel_info[i].flags & IIF_DEFAULT_IN_TECH_DATABASE)) {
 						// leave option for no animation if string == "none"
 						if (!strcmp(Intel_info[i].anim_filename, "none")) {
 							Intel_list[Intel_list_size].has_anim = 0;
@@ -1294,9 +1329,23 @@ void techroom_change_tab(int num)
 						Intel_list[Intel_list_size].name = Intel_info[i].name;
 						Intel_list[Intel_list_size].model_num = -1;
 						Intel_list[Intel_list_size].textures_loaded = 0;
+
 						Intel_list_size++;
 					}
-				}	
+				}
+
+				// make sure that at least the default entry is cleared out if we didn't grab anything
+				if (Intel_info_size && !Intel_list_size) {
+					Intel_list[0].index = -1;
+					Intel_list[0].desc = NULL;
+					Intel_list[0].name = NULL;
+					Intel_list[0].bitmap = -1;
+					Intel_list[0].has_anim = 0;
+					Intel_list[0].animation = NULL;
+					Intel_list[0].model_num = -1;
+					Intel_list[0].textures_loaded = 0;
+				}
+
 				Intel_loaded = 1;
 			}
 
@@ -1476,9 +1525,9 @@ void techroom_intel_init()
 				Intel_info[Intel_info_size].flags = IIF_DEFAULT_VALUE;
 
 				required_string("$Name:");
-				stuff_string(Intel_info[Intel_info_size].name, F_NAME, NULL, 32);
+				stuff_string(Intel_info[Intel_info_size].name, F_NAME, NAME_LENGTH);
 				required_string("$Anim:");
-				stuff_string(Intel_info[Intel_info_size].anim_filename, F_NAME, NULL, 32);
+				stuff_string(Intel_info[Intel_info_size].anim_filename, F_NAME, NAME_LENGTH);
 				required_string("$AlwaysInTechRoom:");
 				stuff_int(&temp);
 				if (temp)
@@ -1488,7 +1537,7 @@ void techroom_intel_init()
 					Intel_info[Intel_info_size].flags |= IIF_DEFAULT_IN_TECH_DATABASE;
 				}
 				required_string("$Description:");
-				stuff_string(Intel_info[Intel_info_size].desc, F_MULTITEXT, NULL, TECH_INTEL_DESC_LEN);
+				stuff_string(Intel_info[Intel_info_size].desc, F_MULTITEXT, TECH_INTEL_DESC_LEN);
 
 				Intel_info_size++;
 			}
