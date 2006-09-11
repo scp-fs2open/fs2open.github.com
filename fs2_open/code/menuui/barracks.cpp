@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.29 $
- * $Date: 2005-12-29 08:08:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.30 $
+ * $Date: 2006-09-11 06:02:14 $
+ * $Author: taylor $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2005/12/29 08:08:36  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.28  2005/10/10 17:21:05  taylor
  * remove NO_NETWORK
  *
@@ -715,13 +718,13 @@ int barracks_new_pilot_selected()
 		if (Player_sel_mode == PLAYER_SELECT_MODE_SINGLE) {
 			mission_load_up_campaign(Cur_pilot);
 
-			if (Campaign_file_missing) {
+		/*	if (Campaign_file_missing) {
 				// error popup for a missing campaign file, abort loading of pilot in this case
 				// TODO: need to handle reading of info without the risk of saving improper data later
 				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign for this pilot cannot be found.  Unable to safely open pilot.", -1));
 				Cur_pilot->callsign[0] = 0; // this indicates no pilot active
 				return -1;
-			}
+			} */
 		}
 	}
 
@@ -1210,13 +1213,24 @@ void barracks_button_pressed(int n)
 				}
 			} else {
 				gamesnd_play_iface(SND_SCROLL);
+
+				if (Campaign_file_missing) {
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", -1));
+					gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
+				}
 			}
 			break;
 
 		case B_ACCEPT_BUTTON:			
 			if (Num_pilots && !barracks_pilot_accepted()) {
 				gamesnd_play_iface(SND_COMMIT_PRESSED);
-				gameseq_post_event(GS_EVENT_MAIN_MENU);
+
+				if (Campaign_file_missing) {
+					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", -1));
+					gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
+				} else {
+					gameseq_post_event(GS_EVENT_MAIN_MENU);
+				}
 			} else {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 
