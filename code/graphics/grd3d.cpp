@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.95 $
- * $Date: 2006-05-27 17:07:48 $
+ * $Revision: 2.96 $
+ * $Date: 2006-09-11 06:38:32 $
  * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2006/05/27 17:07:48  taylor
+ * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
+ * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
+ * clean up TMAP flags
+ * fix a couple of minor OpenGL state change issues with spec and env map rendering
+ * make sure we build again for OS X (OGL extension functions work a little different there)
+ * render targets always need to be power-of-2 to avoid incomplete buffer issues in the code
+ * when we disable culling in opengl_3dunlit be sure that we re-enable it on exit of function
+ * re-fix screenshots
+ * add true alpha blending support (with cmdline for now since the artwork has the catch up)
+ * draw lines with float positioning, to be more accurate with resizing on non-standard resolutions
+ * don't load cubemaps from file for D3D, not sure how to do it anyway
+ * update geometry batcher code, memory fixes, dynamic stuff, basic fixage, etc.
+ *
  * Revision 2.94  2006/02/25 21:46:59  Goober5000
  * spelling
  *
@@ -1963,7 +1977,7 @@ void gr_d3d_fog_set(int fog_mode, int r, int g, int b, float fog_near, float fog
 	// is color changing?
 	if( (gr_screen.current_fog_color.red != r) || (gr_screen.current_fog_color.green != g) || (gr_screen.current_fog_color.blue != b) ){
 		// store the values
-		gr_d3d_init_color( &gr_screen.current_fog_color, r, g, b );
+		gr_init_color( &gr_screen.current_fog_color, r, g, b );
 
 		color = D3DCOLOR_XRGB(r, g, b);
 		d3d_SetRenderState(D3DRS_FOGCOLOR, color);	
