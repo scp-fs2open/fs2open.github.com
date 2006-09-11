@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.46 $
- * $Date: 2006-09-11 06:02:14 $
+ * $Revision: 2.47 $
+ * $Date: 2006-09-11 06:10:28 $
  * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2006/09/11 06:02:14  taylor
+ * quite a few fixes to handle missing campaigns better
+ * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
+ * clean up the getting of a list of available campaigns
+ * fix simroom issue where single missions, with the [V] icon, would display wrong (this was a retail bug, but it doesn't show normally)
+ * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
+ * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
+ *
  * Revision 2.45  2006/09/04 06:03:10  wmcoolmon
  * Allow use of the techroom, even if no current campaign exists.
  *
@@ -1325,7 +1333,7 @@ void main_hall_do(float frametime)
 				// error popup for a missing campaign file, don't try to enter ready room in this case
 				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
 				break;
-			} else if ( !strlen(Campaign.filename) ) {
+			} else if ( !(Player->flags & PLAYER_FLAGS_IS_MULTI) && !strlen(Campaign.filename) ) {
 				// no campaign loaded...
 				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "No active campaign is available.  Please choose one in the Campaign Room.", -1));
 				break;
