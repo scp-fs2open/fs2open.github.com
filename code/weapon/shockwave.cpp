@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.28 $
- * $Date: 2006-08-20 00:51:07 $
+ * $Revision: 2.29 $
+ * $Date: 2006-09-11 05:37:33 $
  * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2006/08/20 00:51:07  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.27  2006/07/06 22:01:50  taylor
  * add some minor error catches for invalid values
  *
@@ -943,6 +946,8 @@ void shockwave_page_in()
 		bm_page_in_texture( si->bitmap_id, si->num_frames );
 	}
 
+	if (default_shockwave_model >= 0)
+		model_page_in_textures(default_shockwave_model);
 }
 
 int shockwave_add(char *bm_name)
@@ -976,6 +981,7 @@ void shockwave_create_info::load()
 	}
 	if(strlen(pof_name))
 	{
-		model_load(pof_name, 0, NULL);
+		int index = model_load(pof_name, 0, NULL);
+		model_page_in_textures(index);
 	}
 }
