@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.86.2.5 $
- * $Date: 2006-08-19 04:20:22 $
+ * $Revision: 2.86.2.6 $
+ * $Date: 2006-09-11 01:12:50 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86.2.5  2006/08/19 04:20:22  taylor
+ * ever so slight speed up for bm_set_components_* (this crap is slow, and it's called a LOT)
+ *
  * Revision 2.86.2.4  2006/07/21 16:08:32  taylor
  * minor changes to game_busy() debug text
  *  - don't alloc it for bmpman, and make sure to only call on textures that we are loading
@@ -1628,7 +1631,7 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 	reset_parse(file_text);
 
 	required_string("$Type:");
-	stuff_string(ext, F_NAME, NULL);
+	stuff_string(ext, F_NAME, sizeof(ext));
 
 	required_string( "$Frames:" );
 	stuff_int(&frames);
@@ -2443,8 +2446,8 @@ void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 #endif
 }
 
-MONITOR( NumBitmapPage );
-MONITOR( SizeBitmapPage );
+MONITOR( NumBitmapPage )
+MONITOR( SizeBitmapPage )
 
 // This locks down a bitmap and returns a pointer to a bitmap
 // that can be accessed until you call bm_unlock.   Only lock
