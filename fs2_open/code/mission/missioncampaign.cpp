@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.44 $
- * $Date: 2006-09-11 06:02:14 $
+ * $Revision: 2.45 $
+ * $Date: 2006-09-11 06:46:36 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2006/09/11 06:02:14  taylor
+ * quite a few fixes to handle missing campaigns better
+ * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
+ * clean up the getting of a list of available campaigns
+ * fix simroom issue where single missions, with the [V] icon, would display wrong (this was a retail bug, but it doesn't show normally)
+ * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
+ * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
+ *
  * Revision 2.43  2006/06/27 05:07:49  taylor
  * fix various compiler warnings and things that Valgrind complained about
  *
@@ -469,7 +477,7 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 	// open localization
 	lcl_ext_open();
 
-	strcpy(fname, filename);
+	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
 	if ((strlen(fname) < 4) || stricmp(fname + strlen(fname) - 4, FS_CAMPAIGN_FILE_EXT)){
 		strcat(fname, FS_CAMPAIGN_FILE_EXT);
 	}
@@ -491,7 +499,7 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 		reset_parse();
 		required_string("$Name:");
 
-		stuff_string( name, F_NAME, NULL );
+		stuff_string( name, F_NAME, NAME_LENGTH );
 		if ( name == NULL ) {
 			Int3();
 			nprintf(("Warning", "No name found for campaign file %s\n", filename));
@@ -503,7 +511,7 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 		}
 
 		required_string( "$Type:" );
-		stuff_string( campaign_type, F_NAME, NULL );
+		stuff_string( campaign_type, F_NAME, NAME_LENGTH );
 
 		*type = -1;
 		for (i=0; i<MAX_CAMPAIGN_TYPES; i++) {
@@ -548,7 +556,7 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 int mission_campaign_get_mission_list(char *filename, char **list, int max)
 {
 	int rval, i, num = 0;
-	char name[NAME_LENGTH];
+	char name[MAX_FILENAME_LEN];
 
 	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
 
@@ -565,7 +573,7 @@ int mission_campaign_get_mission_list(char *filename, char **list, int max)
 		reset_parse();
 
 		while (skip_to_string("$Mission:") > 0) {
-			stuff_string(name, F_NAME, NULL);
+			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 			if (num < max)
 				list[num++] = vm_strdup(name);
 		}
@@ -652,6 +660,7 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 	char wild_card[10];
 	int i, j, incr = 0;
 	char *t = NULL;
+	int rc = 0;
 
 	if (Campaign_names_inited)
 		return;
@@ -674,7 +683,7 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 
 	// now get the list of all mission names
 	// NOTE: we don't do sorting here, but we assume CF_SORT_NAME, and do it manually below
-	int rc = cf_get_file_list(MAX_CAMPAIGNS, Campaign_file_names, CF_TYPE_MISSIONS, wild_card, CF_SORT_NONE);
+	rc = cf_get_file_list(MAX_CAMPAIGNS, Campaign_file_names, CF_TYPE_MISSIONS, wild_card, CF_SORT_NONE);
 	Assert( rc == Num_campaigns );
 
 
@@ -834,13 +843,13 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 		Campaign.filename[len] = 0;
 
 		required_string("$Name:");
-		stuff_string( name, F_NAME, NULL );
+		stuff_string( name, F_NAME, NAME_LENGTH );
 		
 		//Store campaign name in the global struct
 		strcpy( Campaign.name, name );
 
 		required_string( "$Type:" );
-		stuff_string( type, F_NAME, NULL );
+		stuff_string( type, F_NAME, NAME_LENGTH );
 
 		for (i = 0; i < MAX_CAMPAIGN_TYPES; i++ ) {
 			if ( !stricmp(type, campaign_types[i]) ) {
@@ -879,13 +888,13 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 			cmission *cm;
 
 			required_string("$Mission:");
-			stuff_string(name, F_NAME, NULL);
+			stuff_string(name, F_NAME, NAME_LENGTH);
 			cm = &Campaign.missions[Campaign.num_missions];
 			cm->name = vm_strdup(name);
 
 			cm->briefing_cutscene[0] = 0;
 			if ( optional_string("+Briefing Cutscene:") )
-				stuff_string( cm->briefing_cutscene, F_NAME, NULL );
+				stuff_string( cm->briefing_cutscene, F_NAME, NAME_LENGTH );
 
 			cm->flags = 0;
 			if (optional_string("+Flags:"))
@@ -2538,7 +2547,7 @@ int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int
 
 	} else {
 		read_file_text(filename);
-		Assert(strlen(filename) < MAX_FILENAME_LEN - 1);  // make sure no overflow
+		Assert( strlen(filename) < MAX_FILENAME_LEN );  // make sure no overflow
 
 		reset_parse();
 		required_string("$Name:");
@@ -2550,7 +2559,7 @@ int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int
 		// parse the mission file and actually read in the mission stuff
 		*num = 0;
 		while ( skip_to_string("$Mission:") == 1 ) {
-			stuff_string(dest[*num], F_NAME, NULL);
+			stuff_string(dest[*num], F_NAME, NAME_LENGTH);
 			(*num)++;
 		}
 	}
@@ -2582,7 +2591,7 @@ void read_mission_goal_list(int num)
 	// first, read the mission notes for this mission.  Used in campaign editor
 	if (skip_to_string("#Mission Info")) {
 		if (skip_to_string("$Notes:")) {
-			stuff_string(notes, F_NOTES, NULL);
+			stuff_string(notes, F_NOTES, NAME_LENGTH);
 			if (Campaign.missions[num].notes){
 				vm_free(Campaign.missions[num].notes);
 			}
@@ -2606,7 +2615,7 @@ void read_mission_goal_list(int num)
 			}
 
 			if (z == 1){
-				stuff_string(events[event_count], F_NAME, NULL);
+				stuff_string(events[event_count], F_NAME, NAME_LENGTH);
 			} else {
 				sprintf(events[event_count], NOX("Event #%d"), event_count + 1);
 			}
@@ -2629,7 +2638,7 @@ void read_mission_goal_list(int num)
 			}
 
 			if (z == 1){
-				stuff_string(goals[count], F_NAME, NULL);
+				stuff_string(goals[count], F_NAME, NAME_LENGTH);
 			} else {
 				sprintf(goals[count], NOX("Goal #%d"), count + 1);
 			}
@@ -2734,18 +2743,18 @@ void mission_campaign_maybe_play_movie(int type)
 int mission_campaign_parse_is_multi(char *filename, char *name)
 {	
 	int i;
-	char temp[50];
+	char temp[NAME_LENGTH];
 	
 	read_file_text( filename );
 	reset_parse();
 	
 	required_string("$Name:");
-	stuff_string( temp, F_NAME, NULL );	
+	stuff_string( temp, F_NAME, NAME_LENGTH );	
 	if ( name )
 		strcpy( name, temp );
 
 	required_string( "$Type:" );
-	stuff_string( temp, F_NAME, NULL );
+	stuff_string( temp, F_NAME, NAME_LENGTH );
 
 	for (i = 0; i < MAX_CAMPAIGN_TYPES; i++ ) {
 		if ( !stricmp(temp, campaign_types[i]) ) {
