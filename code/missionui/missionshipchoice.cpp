@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.62.2.3 $
- * $Date: 2006-08-05 10:37:51 $
- * $Author: karajorma $
+ * $Revision: 2.62.2.4 $
+ * $Date: 2006-09-11 01:00:28 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62.2.3  2006/08/05 10:37:51  karajorma
+ * Remove common_select_close(). This should be handled in freespace.cpp
+ *
  * Revision 2.62.2.2  2006/08/04 19:13:38  karajorma
  * Fix a multiplayer crash if the server committed before the 2nd team captain unlocked.
  *
@@ -673,7 +676,7 @@ static int Ss_delta_x, Ss_delta_y;	// used to offset the carried icon to make it
 float ShipSelectScreenShipRot = 0.0f;
 int ShipSelectModelNum = -1;
 
-static matrix ShipScreenOrient = IDENTITY_MATRIX;
+//static matrix ShipScreenOrient = IDENTITY_MATRIX;
 
 //////////////////////////////////////////////////////
 // UI Data structs
@@ -4131,4 +4134,4 @@ void ss_recalc_multiplayer_slots()
 			}
 		}
 	}
-} 
+}

@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.2 $
- * $Date: 2006-07-27 19:17:33 $
- * $Author: Kazan $
+ * $Revision: 1.23.2.3 $
+ * $Date: 2006-09-11 01:00:27 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.2  2006/07/27 19:17:33  Kazan
+ * Lock player primaries during autopilot
+ *
  * Revision 1.23.2.1  2006/07/26 14:53:38  Kazan
  * Resolve Mantis #1010
  *
@@ -823,7 +826,7 @@ unsigned int DistanceTo(int nav)
 	if (nav > MAX_NAVPOINTS && nav < 0)
 		return 0xFFFFFFFF;
 
-	return vm_vec_dist_quick(&Player_obj->pos, Navs[nav].GetPosition());
+	return (uint)vm_vec_dist_quick(&Player_obj->pos, Navs[nav].GetPosition());
 }
 
 //+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -844,4 +847,3 @@ bool IsVisited(int nav)
 		return 1;
 	return 0;
 }
-

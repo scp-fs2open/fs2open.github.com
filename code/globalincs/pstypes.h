@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.42.2.2 $
- * $Date: 2006-08-19 04:38:46 $
+ * $Revision: 2.42.2.3 $
+ * $Date: 2006-09-11 01:00:27 $
  * $Author: taylor $
- * $Revision: 2.42.2.2 $
- * $Date: 2006-08-19 04:38:46 $
+ * $Revision: 2.42.2.3 $
+ * $Date: 2006-09-11 01:00:27 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42.2.2  2006/08/19 04:38:46  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.42.2.1  2006/06/07 03:19:20  wmcoolmon
  * Scripting system prep for 3.6.9
  *
@@ -904,7 +907,7 @@ class monitor {
 };
 
 // Creates a monitor variable
-#define MONITOR(function_name)				monitor mon_##function_name(#function_name)
+#define MONITOR(function_name)				monitor mon_##function_name(#function_name);
 
 // Increments a monitor variable
 #define MONITOR_INC(function_name,inc)		do { mon_##function_name.value+=(inc); } while(0)

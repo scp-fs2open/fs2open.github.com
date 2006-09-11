@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.41.2.1 $
- * $Date: 2006-08-27 18:12:41 $
+ * $Revision: 2.41.2.2 $
+ * $Date: 2006-09-11 01:00:28 $
  * $Author: taylor $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41.2.1  2006/08/27 18:12:41  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 2.41  2006/05/27 16:49:05  taylor
  * comment out some pointless checks which look for not using either D3D or OGL
  * don't run through ships on level load setting up the sound environment if sound is disabled
@@ -697,7 +700,7 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 	}
 }
 
-MONITOR(NumShieldRend);
+MONITOR(NumShieldRend)
 
 //	Render a shield mesh in the global array Shield_hits[]
 void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
@@ -1122,7 +1125,7 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 	// render_shield(orient, centerp);
 }
 
-MONITOR(NumShieldHits);
+MONITOR(NumShieldHits)
 
 //	Add data for a shield hit.
 void add_shield_point(int objnum, int tri_num, vec3d *hit_pos)

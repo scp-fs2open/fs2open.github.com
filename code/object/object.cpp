@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.63.2.3 $
- * $Date: 2006-08-19 04:29:08 $
+ * $Revision: 2.63.2.4 $
+ * $Date: 2006-09-11 01:00:28 $
  * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.3  2006/08/19 04:29:08  taylor
+ * very slight speed optimization to avoid math that we really don't need to do anyway
+ *
  * Revision 2.63.2.2  2006/07/05 23:36:56  Goober5000
  * cvs comment tweaks
  *
@@ -2032,7 +2035,7 @@ int Collisions_enabled = 1;
 
 DCF_BOOL( collisions, Collisions_enabled )
 
-MONITOR( NumObjects );	
+MONITOR( NumObjects )
 
 //--------------------------------------------------------------------
 //move all objects for the current frame
@@ -2151,7 +2154,7 @@ void obj_move_all(float frametime)
 }
 
 
-MONITOR( NumObjectsRend );	
+MONITOR( NumObjectsRend )
 
 // -----------------------------------------------------------------------------
 //	Render an object.  Calls one of several routines based on type
