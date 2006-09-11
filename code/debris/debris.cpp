@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.26 $
- * $Date: 2006-08-20 00:46:02 $
+ * $Revision: 2.27 $
+ * $Date: 2006-09-11 06:08:08 $
  * $Author: taylor $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2006/08/20 00:46:02  taylor
+ * an int wrap-around issue could (and was) make debris not have electrical arcs (or lighting or sounds) since it would always fail this check
+ *
  * Revision 2.25  2006/07/06 04:06:03  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
@@ -421,7 +424,7 @@ void debris_init()
 // Page in debris bitmaps at level load
 void debris_page_in()
 {
-	int i;
+	uint i;
 
 	Debris_model = model_load( NOX("debris01.pof"), 0, NULL );
 	if (Debris_model >= 0)	{
@@ -432,7 +435,7 @@ void debris_page_in()
 
 	Debris_vaporize_model = model_load( NOX("debris02.pof"), 0, NULL );
 
-	for (i=0; i<Num_species; i++ )
+	for (i=0; i<Species_info.size(); i++ )
 	{
 		species_info *species = &Species_info[i];
 
@@ -1389,5 +1392,3 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs 
 	pi->I_body_inv.vec.fvec.xyz.y = 0.0f;
 	pi->I_body_inv.vec.fvec.xyz.z = 12.0f / (pi->mass *  (dx*dx + dy*dy));
 }
-
-

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.49 $
- * $Date: 2006-01-13 03:31:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2006-09-11 06:08:09 $
+ * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2006/01/13 03:31:09  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.48  2005/12/29 00:49:43  phreak
  * Briefing icons can now be mirrored so one can point them in the opposite direction.
  *
@@ -636,9 +639,12 @@ void brief_parse_icon_tbl()
 	int species, icon;
 	int num_species_covered;
 
-	generic_anim temp_icon_bitmaps[MAX_SPECIES * MAX_BRIEF_ICONS];
-	hud_anim temp_icon_fade_anims[MAX_SPECIES * MAX_BRIEF_ICONS];
-	hud_anim temp_icon_highlight_anims[MAX_SPECIES * MAX_BRIEF_ICONS];
+	const int max_icons = Species_info.size() * MAX_BRIEF_ICONS;
+	Assert( max_icons > 0 );
+
+	generic_anim *temp_icon_bitmaps = new generic_anim[max_icons];
+	hud_anim *temp_icon_fade_anims = new hud_anim[max_icons];
+	hud_anim *temp_icon_highlight_anims = new hud_anim[max_icons];
 
 	// open localization
 	lcl_ext_open();
@@ -656,7 +662,7 @@ void brief_parse_icon_tbl()
 	num_icons = 0;
 	while (required_string_either("#End","$Name:"))
 	{
-		Assert(num_icons < (MAX_SPECIES * MAX_BRIEF_ICONS));
+		Verify( num_icons < max_icons );
 
 		// parse regular frames
 		required_string("$Name:");
@@ -701,11 +707,12 @@ void brief_parse_icon_tbl()
 	}
 
 	// error check
-	if (num_species_covered < Num_species)
+	if (num_species_covered < (int)Species_info.size())
 	{
-		char errormsg[65 + (MAX_SPECIES * (NAME_LENGTH+1))];
+		char *errormsg = new char[65 + (Species_info.size() * (NAME_LENGTH+1))];
+
 		strcpy(errormsg, "The following species are missing icon info in icons.tbl:\n");
-		for (species = num_species_covered; species < Num_species; species++)
+		for (species = num_species_covered; species < (int)Species_info.size(); species++)
 		{
 			strcat(errormsg, Species_info[species].species_name);
 			strcat(errormsg, "\n");
@@ -713,7 +720,14 @@ void brief_parse_icon_tbl()
 		strcat(errormsg, "\0");
 
 		Error(LOCATION, errormsg);
+
+		// probably won't get here, but just so we know about it
+		delete[] errormsg;
 	}
+
+	delete[] temp_icon_bitmaps;
+	delete[] temp_icon_fade_anims;
+	delete[] temp_icon_highlight_anims;
 }
 
 
@@ -2513,7 +2527,7 @@ void brief_unload_anims()
 	int icon, species;
 	species_info *spinfo;
 	
-	for(species=0; species<Num_species; species++)
+	for (species = 0; species < (int)Species_info.size(); species++)
 	{
 		spinfo = &Species_info[species];
 
