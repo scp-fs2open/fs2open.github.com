@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.44 $
- * $Date: 2006-09-08 06:16:18 $
+ * $Revision: 1.45 $
+ * $Date: 2006-09-11 09:43:35 $
  * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44  2006/09/08 06:16:18  taylor
+ * fix for Mantis bug #687 (at least until better swarming code can be written, post-3.6.9)
+ * a quick speed/sanity check for turrets to be sure that they actually have a weapon to fire before processing them
+ *
  * Revision 1.43  2006/09/04 18:06:36  Goober5000
  * fix macros
  *
@@ -1181,11 +1185,11 @@ int turret_should_pick_new_target(ship_subsys *turret)
 		return 1;
 	}
 
-
+/*
 	if ( turret->turret_enemy_objnum == -1 ) {
 		return 1;
 	}
-/*		
+	
 	target_type = Objects[turret->turret_enemy_objnum].type;
 	if ( (target_type != OBJ_SHIP) && (target_type != OBJ_ASTEROID) ) {
 		return 1;
@@ -1562,7 +1566,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	Assert((parent_objnum >= 0) && (parent_objnum < MAX_OBJECTS));
 	objp = &Objects[parent_objnum];
-	lep = &Objects[ss->turret_enemy_objnum];
 	Assert(objp->type == OBJ_SHIP);
 	Assert( shipp->objnum == parent_objnum );
 
@@ -1574,6 +1577,11 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		ss->turret_enemy_objnum = -1;
 		lep = NULL;
 	}
+	else
+	{
+		lep = &Objects[ss->turret_enemy_objnum];
+	}
+
 	
 	//aip = &Ai_info[Ships[objp->instance].ai_index];
 
