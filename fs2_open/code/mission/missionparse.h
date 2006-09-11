@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.85.2.4 $
- * $Author: Kazan $
- * $Date: 2006-07-30 20:00:47 $
+ * $Revision: 2.85.2.5 $
+ * $Author: taylor $
+ * $Date: 2006-09-11 01:16:31 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85.2.4  2006/07/30 20:00:47  Kazan
+ * resolve 1018 and an interface problem in fred2's ship editor
+ *
  * Revision 2.85.2.3  2006/07/20 00:41:26  Goober5000
  * add WCS screaming stuff to RC branch
  * --Goober5000
@@ -647,11 +650,11 @@ typedef struct mission {
 	int	num_players;									// valid in multiplayer missions -- number of players supported
 	uint	num_respawns;									// valid in multiplayer missions -- number of respawns allowed
 	support_ship_info	support_ships;		// Goober5000
-	char	squad_filename[MAX_FILENAME_LEN+1];		// if the player has been reassigned to a squadron, this is the filename of the logo, otherwise empty string
-	char	squad_name[NAME_LENGTH+1];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
-	char	loading_screen[GR_NUM_RESOLUTIONS][NAME_LENGTH];
-	char	skybox_model[NAME_LENGTH];
-	char	envmap_name[NAME_LENGTH];
+	char	squad_filename[MAX_FILENAME_LEN];		// if the player has been reassigned to a squadron, this is the filename of the logo, otherwise empty string
+	char	squad_name[NAME_LENGTH];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
+	char	loading_screen[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
+	char	skybox_model[MAX_FILENAME_LEN];
+	char	envmap_name[MAX_FILENAME_LEN];
 	int		contrail_threshold;
 	int		ambient_light_level;
 

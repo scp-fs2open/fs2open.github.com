@@ -9,15 +9,19 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.42.2.1 $
- * $Author: Goober5000 $
- * $Date: 2006-08-03 01:33:25 $
+ * $Revision: 2.42.2.2 $
+ * $Author: taylor $
+ * $Date: 2006-09-11 01:16:31 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.42.2.1  2006/08/03 01:33:25  Goober5000
+ * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
+ * --Goober5000
+ *
  * Revision 2.42  2006/04/14 18:44:16  taylor
  * remove all of the *_ex() parsing functions added for use by EFFs
  * add a pause/unpause for parsing so that we can safely start parsing something new then continue parsing something old
@@ -495,7 +499,7 @@ extern void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int 
 extern void copy_text_until(char *outstr, char *instr, char *endstr, int max_chars);
 extern void stuff_string_white(char *pstr, int len = 0);
 extern void stuff_string_until(char *pstr, char *endstr, int len = 0);
-extern void stuff_string(char *pstr, int type, char *terminators = NULL, int len = 0);
+extern void stuff_string(char *pstr, int type, int len, char *terminators = NULL);
 extern void stuff_string_line(char *pstr, int len);
 
 //alloc

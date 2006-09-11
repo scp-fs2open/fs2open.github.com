@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.27.2.2 $
- * $Date: 2006-06-23 16:08:55 $
- * $Author: karajorma $
+ * $Revision: 2.27.2.3 $
+ * $Date: 2006-09-11 01:16:31 $
+ * $Author: taylor $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27.2.2  2006/06/23 16:08:55  karajorma
+ * Was feeling left out :)
+ *
  * Revision 2.27.2.1  2006/06/08 06:48:13  Goober5000
  * update credits
  *
@@ -590,7 +593,7 @@ void credits_init()
 		bool first_run = true;
 		while(!check_for_string_raw("#end")){ 
 			
-			stuff_string_line(line, 511);
+			stuff_string_line(line, sizeof(line));
 
 			// This is a bit odd but it means if a total conversion uses different credits the 
 			// Volition credit wont happen

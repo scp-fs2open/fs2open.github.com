@@ -6,11 +6,15 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.9.2.1 $
- * $Date: 2006-07-08 19:36:04 $
- * $Author: Goober5000 $
+ * $Revision: 1.9.2.2 $
+ * $Date: 2006-09-11 01:15:04 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9.2.1  2006/07/08 19:36:04  Goober5000
+ * iff defs should allow specification of both flag fields
+ * --Goober5000
+ *
  * Revision 1.9  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -166,7 +170,7 @@ void iff_init()
 
 	// get the traitor
 	required_string("$Traitor IFF:");
-	stuff_string(traitor_name, F_NAME, NULL, NAME_LENGTH);
+	stuff_string(traitor_name, F_NAME, NAME_LENGTH);
 
 	// begin reading data
 	Num_iffs = 0;
@@ -194,7 +198,7 @@ void iff_init()
 
 		// get the iff name
 		required_string("$IFF Name:");
-		stuff_string(iff->iff_name, F_NAME, NULL, NAME_LENGTH);
+		stuff_string(iff->iff_name, F_NAME, NAME_LENGTH);
 
 		// get the iff color
 		if (check_for_string("$Colour:"))
