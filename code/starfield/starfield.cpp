@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.72.2.8 $
- * $Date: 2006-08-19 04:33:00 $
+ * $Revision: 2.72.2.9 $
+ * $Date: 2006-09-11 01:17:07 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72.2.8  2006/08/19 04:33:00  taylor
+ * slight optimizations
+ * compiler warning fixes
+ *
  * Revision 2.72.2.7  2006/08/06 18:47:12  Goober5000
  * add the multiple background feature
  * --Goober5000
@@ -1053,7 +1057,7 @@ void parse_startbl(char *longname)
 		// intensity alpha bitmap
 		if(optional_string("$Bitmap:"))
 		{
-			stuff_string(sbm.filename, F_NAME, NULL);
+			stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
 			sbm.xparent = 0;
 
 			if ( (idx = stars_find_bitmap(sbm.filename)) >= 0 ) {
@@ -1070,7 +1074,7 @@ void parse_startbl(char *longname)
 		// green xparency bitmap
 		else if(optional_string("$BitmapX:"))
 		{
-			stuff_string(sbm.filename, F_NAME, NULL);
+			stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
 			sbm.xparent = 1;
 
 			if ( (idx = stars_find_bitmap(sbm.filename)) >= 0 ) {
@@ -1100,11 +1104,11 @@ void parse_startbl(char *longname)
 		{
 			starfield_bitmap_entry_init( &sbm );
 
-			stuff_string(sbm.filename, F_NAME, NULL);
+			stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
 
 			// associated glow
 			required_string("$Sunglow:");
-			stuff_string(sbm.glow_filename, F_NAME, NULL);
+			stuff_string(sbm.glow_filename, F_NAME, MAX_FILENAME_LEN);
 
 			// associated lighting values
 			required_string("$SunRGBI:");
@@ -1133,7 +1137,7 @@ void parse_startbl(char *longname)
 
 				// if there's a flare, it has to have at least one texture
 				required_string("$FlareTexture1:");
-				stuff_string(sbm.flare_bitmaps[0].filename, F_NAME, NULL);
+				stuff_string(sbm.flare_bitmaps[0].filename, F_NAME, MAX_FILENAME_LEN);
 
 				sbm.n_flare_bitmaps = 1;
 
@@ -1143,7 +1147,7 @@ void parse_startbl(char *longname)
 
 					if (optional_string(tempf)) {
 						sbm.n_flare_bitmaps++;
-						stuff_string(sbm.flare_bitmaps[idx].filename, F_NAME, NULL);
+						stuff_string(sbm.flare_bitmaps[idx].filename, F_NAME, MAX_FILENAME_LEN);
 					}
 				//	else break; //don't allow flaretexture1 and then 3, etc.
 				}
@@ -1216,7 +1220,7 @@ void parse_startbl(char *longname)
 			required_string("$Debris:");
 		}
 
-		stuff_string(filename, F_NAME, NULL);
+		stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
 
 		if(Num_debris_normal < MAX_DEBRIS_VCLIPS){
 			strcpy(Debris_vclips_normal[Num_debris_normal++].name, filename);
@@ -1234,7 +1238,7 @@ void parse_startbl(char *longname)
 			required_string("$DebrisNeb:");
 		}
 
-		stuff_string(filename, F_NAME, NULL);
+		stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
 
 		if(Num_debris_nebula < MAX_DEBRIS_VCLIPS){
 			strcpy(Debris_vclips_nebula[Num_debris_nebula++].name, filename);

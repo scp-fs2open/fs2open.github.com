@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.32.2.1 $
- * $Date: 2006-08-27 18:12:42 $
+ * $Revision: 1.32.2.2 $
+ * $Date: 2006-09-11 01:17:07 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32.2.1  2006/08/27 18:12:42  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 1.32  2006/02/13 03:11:19  Goober5000
  * nitpick
  *
@@ -182,14 +185,14 @@ void parse_thrust_anims(species_info *species, bool no_create)
 	if (no_create)
 	{
 		if (optional_string("+Pri_Normal:") || optional_string("+Normal:"))
-			stuff_string(species->thruster_info.flames.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(species->thruster_info.flames.normal.filename, F_NAME, MAX_FILENAME_LEN);
 	}
 	else
 	{
 		if (!optional_string("+Pri_Normal:"))
 			required_string("+Normal:");
 
-		stuff_string(species->thruster_info.flames.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(species->thruster_info.flames.normal.filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	// if no primary thruster anim is wanted then clear it
@@ -200,14 +203,14 @@ void parse_thrust_anims(species_info *species, bool no_create)
 	if (no_create)
 	{
 		if (optional_string("+Pri_Afterburn:") || optional_string("+Afterburn:"))
-			stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, MAX_FILENAME_LEN);
 	}
 	else
 	{
 		if (!optional_string("+Pri_Afterburn:"))
 			required_string("+Afterburn:");
 
-		stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(species->thruster_info.flames.afterburn.filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	// if no primary thruster anim is wanted then clear it
@@ -216,19 +219,19 @@ void parse_thrust_anims(species_info *species, bool no_create)
 
 	// extra thruster stuff, bah
 	if (optional_string("+Sec_Normal:"))
-		stuff_string(species->thruster_secondary_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(species->thruster_secondary_glow_info.normal.filename, F_NAME, MAX_FILENAME_LEN);
 
 	// etc.
 	if (optional_string("+Sec_Afterburn:"))
-		stuff_string(species->thruster_secondary_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(species->thruster_secondary_glow_info.afterburn.filename, F_NAME, MAX_FILENAME_LEN);
 
 	// etc.
 	if (optional_string("+Ter_Normal:"))
-		stuff_string(species->thruster_tertiary_glow_info.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(species->thruster_tertiary_glow_info.normal.filename, F_NAME, MAX_FILENAME_LEN);
 
 	// etc.
 	if (optional_string("+Ter_Afterburn:"))
-		stuff_string(species->thruster_tertiary_glow_info.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(species->thruster_tertiary_glow_info.afterburn.filename, F_NAME, MAX_FILENAME_LEN);
 }
 
 void parse_thrust_glows(species_info *species, bool no_create)
@@ -248,12 +251,12 @@ void parse_thrust_glows(species_info *species, bool no_create)
 	if (no_create)
 	{
 		if (optional_string("+Normal:"))
-			stuff_string(species->thruster_info.glow.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(species->thruster_info.glow.normal.filename, F_NAME, MAX_FILENAME_LEN);
 	}
 	else
 	{
 		required_string("+Normal:");
-		stuff_string(species->thruster_info.glow.normal.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(species->thruster_info.glow.normal.filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	// if no glow is wanted then clear it
@@ -263,12 +266,12 @@ void parse_thrust_glows(species_info *species, bool no_create)
 	if (no_create)
 	{
 		if (optional_string("+Afterburn:"))
-			stuff_string(species->thruster_info.glow.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(species->thruster_info.glow.afterburn.filename, F_NAME, MAX_FILENAME_LEN);
 	}
 	else
 	{
 		required_string("+Afterburn:");
-		stuff_string(species->thruster_info.glow.afterburn.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+		stuff_string(species->thruster_info.glow.afterburn.filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	// if no glow is wanted then clear it
@@ -321,7 +324,7 @@ void parse_species_tbl(char *longname)
 
 		// Start Species - Get its name
 		required_string("$Species_Name:");
-		stuff_string(species_name, F_NAME, NULL, NAME_LENGTH);
+		stuff_string(species_name, F_NAME, NAME_LENGTH);
 
 		if (optional_string("+nocreate"))
 		{
@@ -346,7 +349,7 @@ void parse_species_tbl(char *longname)
 		{
 			bool iff_found = false;
 			char temp_name[NAME_LENGTH];
-			stuff_string(temp_name, F_NAME, NULL, NAME_LENGTH);
+			stuff_string(temp_name, F_NAME, NAME_LENGTH);
 
 			// search for it in iffs
 			for (int i = 0; i < Num_iffs; i++)
@@ -423,7 +426,7 @@ void parse_species_tbl(char *longname)
 		if ((!no_create && required_string("+Debris_Texture:")) || optional_string("+Debris_Texture:"))
 		{
 			generic_bitmap_init(&species->debris_texture, NULL);
-			stuff_string(species->debris_texture.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(species->debris_texture.filename, F_NAME, MAX_FILENAME_LEN);
 		}
 
 
@@ -431,7 +434,7 @@ void parse_species_tbl(char *longname)
 		if ((!no_create && required_string("+Shield_Hit_ani:")) || optional_string("+Shield_Hit_ani:"))
 		{
 			generic_anim_init(&species->shield_anim, NULL);
-			stuff_string(species->shield_anim.filename, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(species->shield_anim.filename, F_NAME, MAX_FILENAME_LEN);
 		}
 
 

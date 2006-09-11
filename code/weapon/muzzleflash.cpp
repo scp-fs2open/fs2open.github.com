@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.7.2.1 $
- * $Date: 2006-08-22 05:50:12 $
+ * $Revision: 2.7.2.2 $
+ * $Date: 2006-09-11 01:17:07 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7.2.1  2006/08/22 05:50:12  taylor
+ * make muzzle flash info dynamic
+ * add support for modular mflash tables (*-mfl.tbm)
+ *
  * Revision 2.7  2005/10/30 06:44:59  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -162,13 +166,13 @@ void parse_mflash_tbl(char *filename)
 		mflash_info mflash;
 
 		required_string("+name:");
-		stuff_string(mflash.name, F_NAME, NULL, MAX_FILENAME_LEN-1);
+		stuff_string(mflash.name, F_NAME, MAX_FILENAME_LEN);
 
 		// read in all blobs
 		while ( optional_string("+blob_name:") ) {
 			mflash_blob_info mblob;
 
-			stuff_string(mblob.name, F_NAME, NULL, MAX_FILENAME_LEN-1);
+			stuff_string(mblob.name, F_NAME, MAX_FILENAME_LEN);
 
 			required_string("+blob_offset:");
 			stuff_float(&mblob.offset);
