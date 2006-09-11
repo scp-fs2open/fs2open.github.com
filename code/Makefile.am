@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.34 2006-08-20 00:44:36 taylor Exp $
+## $Id: Makefile.am,v 1.35 2006-09-11 06:08:46 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -179,7 +179,6 @@ EXTRA_DIST =	\
 	fred2/res/toolbar.bmp	\
 	fred2/res/toolbar1.bmp	\
 	fred2/res/variable.bmp	\
-	sound/phrases.cfg	\
 	sound/phrases.xml	\
 	sound/gc.exe	\
 	wxfred2/res/fred.ico	\
