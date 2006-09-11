@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.79 $
- * $Date: 2006-05-27 17:07:48 $
+ * $Revision: 2.80 $
+ * $Date: 2006-09-11 06:36:38 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2006/05/27 17:07:48  taylor
+ * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
+ * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
+ * clean up TMAP flags
+ * fix a couple of minor OpenGL state change issues with spec and env map rendering
+ * make sure we build again for OS X (OGL extension functions work a little different there)
+ * render targets always need to be power-of-2 to avoid incomplete buffer issues in the code
+ * when we disable culling in opengl_3dunlit be sure that we re-enable it on exit of function
+ * re-fix screenshots
+ * add true alpha blending support (with cmdline for now since the artwork has the catch up)
+ * draw lines with float positioning, to be more accurate with resizing on non-standard resolutions
+ * don't load cubemaps from file for D3D, not sure how to do it anyway
+ * update geometry batcher code, memory fixes, dynamic stuff, basic fixage, etc.
+ *
  * Revision 2.78  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -879,14 +893,14 @@ typedef struct screen {
 	// resets the clipping region to entire screen
 	void (*gf_reset_clip)();
 
-	void (*gf_set_color)( int r, int g, int b );
-	void (*gf_get_color)( int * r, int * g, int * b );
-	void (*gf_init_color)( color * dst, int r, int g, int b );
+	//void (*gf_set_color)( int r, int g, int b );
+	//void (*gf_get_color)( int * r, int * g, int * b );
+	//void (*gf_init_color)( color * dst, int r, int g, int b );
 
-	void (*gf_init_alphacolor)( color * dst, int r, int g, int b, int alpha, int type );
-	void (*gf_set_color_fast)( color * dst );
+	//void (*gf_init_alphacolor)( color * dst, int r, int g, int b, int alpha, int type );
+	//void (*gf_set_color_fast)( color * dst );
 
-	void (*gf_set_font)(int fontnum);
+	//void (*gf_set_font)(int fontnum);
 
 	// Sets the current bitmap
 	void (*gf_set_bitmap)( int bitmap_num, int alphablend, int bitbltmode, float alpha);
@@ -903,11 +917,11 @@ typedef struct screen {
 	// .3 .3 .3  0
 	// To turn everything green, use:
 	//  0 .3  0  0
-	void (*gf_create_shader)(shader * shade, float r, float g, float b, float c );
+	//void (*gf_create_shader)(shader * shade, float r, float g, float b, float c );
 
 	// Initialize the "shader" by calling gr_create_shader()
 	// Passing a NULL makes a shader that turns everything black.
-	void (*gf_set_shader)( shader * shade );
+	//void (*gf_set_shader)( shader * shade );
 
 	// clears entire clipping region to current color
 	void (*gf_clear)();
@@ -1194,18 +1208,18 @@ __inline void gr_set_clip(int x, int y, int w, int h, bool resize=true)
 	(*gr_screen.gf_set_clip)(x,y,w,h,resize);
 }
 #define gr_reset_clip		GR_CALL(gr_screen.gf_reset_clip)
-#define gr_set_font			GR_CALL(gr_screen.gf_set_font)
+//#define gr_set_font			GR_CALL(gr_screen.gf_set_font)
 
-#define gr_init_color		GR_CALL(gr_screen.gf_init_color)
+//#define gr_init_color		GR_CALL(gr_screen.gf_init_color)
 //#define gr_init_alphacolor	GR_CALL(gr_screen.gf_init_alphacolor)
-__inline void gr_init_alphacolor( color * dst, int r, int g, int b, int alpha, int type=AC_TYPE_HUD )
-{
-	(*gr_screen.gf_init_alphacolor)(dst, r, g, b, alpha,type );
-}
+//__inline void gr_init_alphacolor( color * dst, int r, int g, int b, int alpha, int type=AC_TYPE_HUD )
+//{
+//	(*gr_screen.gf_init_alphacolor)(dst, r, g, b, alpha,type );
+//}
 
-#define gr_set_color			GR_CALL(gr_screen.gf_set_color)
-#define gr_get_color			GR_CALL(gr_screen.gf_get_color)
-#define gr_set_color_fast	GR_CALL(gr_screen.gf_set_color_fast)
+//#define gr_set_color			GR_CALL(gr_screen.gf_set_color)
+//#define gr_get_color			GR_CALL(gr_screen.gf_get_color)
+//#define gr_set_color_fast	GR_CALL(gr_screen.gf_set_color_fast)
 
 //#define gr_set_bitmap			GR_CALL(gr_screen.gf_set_bitmap)
 __inline void gr_set_bitmap( int bitmap_num, int alphablend=GR_ALPHABLEND_NONE, int bitbltmode=GR_BITBLT_MODE_NORMAL, float alpha=1.0f )
@@ -1213,8 +1227,8 @@ __inline void gr_set_bitmap( int bitmap_num, int alphablend=GR_ALPHABLEND_NONE, 
 	(*gr_screen.gf_set_bitmap)(bitmap_num, alphablend, bitbltmode, alpha);
 }
 
-#define gr_create_shader	GR_CALL(gr_screen.gf_create_shader)
-#define gr_set_shader		GR_CALL(gr_screen.gf_set_shader)
+//#define gr_create_shader	GR_CALL(gr_screen.gf_create_shader)
+//#define gr_set_shader		GR_CALL(gr_screen.gf_set_shader)
 #define gr_clear				GR_CALL(gr_screen.gf_clear)
 //#define gr_aabitmap			GR_CALL(gr_screen.gf_aabitmap)
 __inline void gr_aabitmap(int x, int y, bool resize = true, bool mirror = false)
@@ -1403,6 +1417,17 @@ __inline void gr_render_buffer(int start, int n_prim, ushort* index_buffer, int 
 #define	gr_display_sprites GR_CALL		(*gr_screen.gf_display_sprites)
 */
 
+// color functions
+void gr_get_color( int *r, int *g, int  b );
+void gr_init_color(color *c, int r, int g, int b);
+void gr_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type = AC_TYPE_HUD );
+void gr_set_color( int r, int g, int b );
+void gr_set_color_fast(color *dst);
+
+// shader functions
+void gr_create_shader(shader *shade, float r, float g, float b, float c);
+void gr_set_shader(shader *shade);
+
 // new bitmap functions
 void gr_bitmap(int x, int y, bool resize = true);
 void gr_bitmap_list(bitmap_2d_list* list, int n_bm, bool allow_scaling);
@@ -1426,4 +1451,3 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize=true);
 void poly_tsb_calc(vertex *v0, vertex *v1, vertex *v2, vec3d *o_norm, vec3d *o_stan, vec3d *o_ttan);
 
 #endif
-

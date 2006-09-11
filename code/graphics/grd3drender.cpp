@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.89 $
- * $Date: 2006-07-05 23:35:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.90 $
+ * $Date: 2006-09-11 06:36:38 $
+ * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2006/07/05 23:35:42  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.88  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -2485,101 +2488,6 @@ void gr_d3d_reset_clip()
 }
 
 /**
- * @param color *c
- * @param int r
- * @param int g
- * @param int b
- *
- * @return void
- */
-void gr_d3d_init_color(color *c, int r, int g, int b)
-{
-	c->screen_sig = gr_screen.signature;
-	c->red   = unsigned char(r);
-	c->green = unsigned char(g);
-	c->blue  = unsigned char(b);
-	c->alpha = 255;
-	c->ac_type = AC_TYPE_NONE;
-	c->alphacolor = -1;
-	c->is_alphacolor = 0;
-	c->magic = 0xAC01;
-}
-
-/**
- * @param color *clr
- * @param int r
- * @param int g
- * @param int b
- * @param int alpha
- * @param int type
- *
- * @return void
- */
-void gr_d3d_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type )
-{
-	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
-	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
-	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
-	if ( alpha < 0 ) alpha = 0; else if ( alpha > 255 ) alpha = 255;
-
-	gr_d3d_init_color( clr, r, g, b );
-
-	clr->alpha = (unsigned char) alpha;
-	clr->ac_type = (ubyte)type;
-	clr->alphacolor = -1;
-	clr->is_alphacolor = 1;
-}
-
-/**
- * Wrapper for gr_d3d_init_color
- *
- * @param int r
- * @param int g
- * @param int b
- *
- * @return void
- */
-void gr_d3d_set_color( int r, int g, int b )
-{
-	Assert((r >= 0) && (r < 256));
-	Assert((g >= 0) && (g < 256));
-	Assert((b >= 0) && (b < 256));
-
-	gr_d3d_init_color( &gr_screen.current_color, r, g, b );
-}
-
-/**
- * @param int *r
- * @param int *g
- * @param int *b
- *
- * @return void
- */
-void gr_d3d_get_color( int *r, int *g, int *b )
-{
-	if (r) *r = gr_screen.current_color.red;
-	if (g) *g = gr_screen.current_color.green;
-	if (b) *b = gr_screen.current_color.blue;
-}
-
-/**
- * @param color *dst
- *
- * @return void
- */
-void gr_d3d_set_color_fast(color *dst)
-{
-	if ( dst->screen_sig != gr_screen.signature )	{
-		if ( dst->is_alphacolor )	{
-			gr_d3d_init_alphacolor( dst, dst->red, dst->green, dst->blue, dst->alpha, dst->ac_type );
-		} else {
-			gr_d3d_init_color( dst, dst->red, dst->green, dst->blue );
-		}
-	}
-	gr_screen.current_color = *dst;
-}
-
-/**
  * @param int bitmap_num
  * @param int alphablend_mode
  * @param int bitblt_mode
@@ -3344,40 +3252,6 @@ void gr_d3d_flash_alpha(int r, int g, int b, int a)
 	}
 }
 
-/**
- * @param shader * shade
- * @param float r
- * @param float g
- * @param float b
- * @param float c
- *
- * @return void
- */
-void gr_d3d_create_shader(shader * shade, float r, float g, float b, float c )
-{
-	shade->screen_sig = gr_screen.signature;
-	shade->r = r;
-	shade->g = g;
-	shade->b = b;
-	shade->c = c;
-}
-
-/**
- * @param shader *shade
- *
- * @return void
- */
-void gr_d3d_set_shader( shader *shade )
-{	
-	if ( shade )	{
-		if (shade->screen_sig != gr_screen.signature)	{
-			gr_create_shader( shade, shade->r, shade->g, shade->b, shade->c );
-		}
-		gr_screen.current_shader = *shade;
-	} else {
-		gr_create_shader( &gr_screen.current_shader, 0.0f, 0.0f, 0.0f, 0.0f );
-	}
-}
 
 /**
  * @param int x
