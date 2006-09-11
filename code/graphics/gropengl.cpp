@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.181 $
- * $Date: 2006-08-20 00:46:42 $
+ * $Revision: 2.182 $
+ * $Date: 2006-09-11 06:09:30 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.181  2006/08/20 00:46:42  taylor
+ * OMG!  MEMLEAK!!!!  (maybe no one will notice that it was my fault ;))
+ *
  * Revision 2.180  2006/08/09 14:41:44  taylor
  * very small math optimization
  *
@@ -4362,10 +4365,12 @@ int opengl_init_display_device()
 #ifdef _WIN32
 	int PixelFormat;
 	HWND wnd = 0;
+	PIXELFORMATDESCRIPTOR pfd_test;
 
 	mprintf(("  Initializing WGL...\n"));
 
 	memset(&pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
+	memset(&pfd_test, 0, sizeof(PIXELFORMATDESCRIPTOR));
 	
 	pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
 	pfd.nVersion = 1;
@@ -4395,6 +4400,33 @@ int opengl_init_display_device()
 	if (!PixelFormat) {
 		MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
 		return 1;
+	} else {
+		DescribePixelFormat(dev_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
+
+		// make sure that we are hardware accelerated and not using the generic implementation
+		if ( (pfd_test.dwFlags & PFD_GENERIC_FORMAT) && !(pfd_test.dwFlags & PFD_GENERIC_ACCELERATED) ) {
+			Assert( bpp == 32 );
+
+			// if we failed at 32-bit then we are probably a 16-bit desktop, so try and init a 16-bit visual instead
+			pfd.cAlphaBits = 0;
+			pfd.cDepthBits = 16;
+			// NOTE: the bit values for colors should get updated automatically by ChoosePixelFormat()
+
+			PixelFormat = ChoosePixelFormat(dev_context, &pfd);
+
+			if (!PixelFormat) {
+				MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
+				return 1;
+			}
+
+			// double-check that we are correct now
+			DescribePixelFormat(dev_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
+
+			if ( (pfd_test.dwFlags & PFD_GENERIC_FORMAT) && !(pfd_test.dwFlags & PFD_GENERIC_ACCELERATED) ) {
+				MessageBox(wnd, "Unable to get proper pixel format for OpenGL W32!", "Error", MB_ICONERROR | MB_OK);
+				return 1;
+			}
+		}
 	}
 
 	if (!SetPixelFormat(dev_context, PixelFormat, &pfd)) {
