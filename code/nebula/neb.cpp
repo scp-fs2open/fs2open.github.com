@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.51 $
- * $Date: 2006-06-07 05:19:49 $
- * $Author: wmcoolmon $
+ * $Revision: 2.52 $
+ * $Date: 2006-09-11 06:50:42 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2006/06/07 05:19:49  wmcoolmon
+ * Move fog disappearance factor to objecttypes.tbl
+ *
  * Revision 2.50  2006/04/12 01:03:00  taylor
  * more s/colour/color/ changes
  * throw in a couple of safety checks for some neb2 functions
@@ -569,7 +572,7 @@ void neb2_regen();
 // initialize neb2 stuff at game startup
 void neb2_init()
 {	
-	char name[255] = "";
+	char name[MAX_FILENAME_LEN];
 
 	// read in the nebula.tbl
 	read_file_text("nebula.tbl");
@@ -580,7 +583,7 @@ void neb2_init()
 	while(!optional_string("#end")){
 		// nebula
 		required_string("+Nebula:");
-		stuff_string(name, F_NAME, NULL);
+		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 		
 		if(Neb2_bitmap_count < MAX_NEB2_BITMAPS){
 			strcpy(Neb2_bitmap_filenames[Neb2_bitmap_count++], name);
@@ -592,7 +595,7 @@ void neb2_init()
 	while(!optional_string("#end")){
 		// nebula
 		required_string("+Poof:");
-		stuff_string(name, F_NAME, NULL);
+		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
 		if(Neb2_poof_count < MAX_NEB2_POOFS){
 			strcpy(Neb2_poof_filenames[Neb2_poof_count++], name);

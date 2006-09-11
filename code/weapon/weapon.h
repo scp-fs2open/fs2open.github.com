@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2006/06/07 04:48:38  wmcoolmon
+ * Limbo flag support; removed unneeded muzzle flash flag
+ *
  * Revision 2.69  2006/02/25 21:47:19  Goober5000
  * spelling
  *
@@ -751,18 +754,18 @@ typedef struct weapon_info {
 	char	*desc;								// weapon's description (used by tooltips)
 	int	subtype;								// one of the WP_* macros above
 	int	render_type;						//	rendering method, laser, pof, avi
-	char	pofbitmap_name[NAME_LENGTH];	// Name of the pof representing this if POF, or bitmap filename if bitmap
+	char	pofbitmap_name[MAX_FILENAME_LEN];	// Name of the pof representing this if POF, or bitmap filename if bitmap
 	int	model_num;							// modelnum of weapon -- -1 if no model
-	char external_model_name[NAME_LENGTH];					//the model rendered on the weapon points of a ship
+	char external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
 	int external_model_num;					//the model rendered on the weapon points of a ship
 	int hud_target_lod;						// LOD to use when rendering weapon model to the hud targetbox
 
 	char	*tech_desc;								// weapon's description (in tech database)
-	char	tech_anim_filename[NAME_LENGTH];	// weapon's tech room animation
+	char	tech_anim_filename[MAX_FILENAME_LEN];	// weapon's tech room animation
 	char	tech_title[NAME_LENGTH];			// weapon's name (in tech database)
 
-	char	tech_model[NAME_LENGTH];		//Image to display in the techroom (TODO) or the weapon selection screen if the ANI isn't specified/missing
-	char hud_filename[NAME_LENGTH];			//Name of image to display on HUD in place of text
+	char	tech_model[MAX_FILENAME_LEN];		//Image to display in the techroom (TODO) or the weapon selection screen if the ANI isn't specified/missing
+	char hud_filename[MAX_FILENAME_LEN];			//Name of image to display on HUD in place of text
 	int hud_image_index;					//teh index of the image
 
 	int	laser_bitmap;						// Which bitmap renders for laser, -1 if none
@@ -838,8 +841,8 @@ typedef struct weapon_info {
 	// Specific to weapons with TRAILS:
 	trail_info tr_info;			
 
-	char	icon_filename[NAME_LENGTH];	// filename for icon that is displayed in weapon selection
-	char	anim_filename[NAME_LENGTH];	// filename for animation that plays in weapon selection
+	char	icon_filename[MAX_FILENAME_LEN];	// filename for icon that is displayed in weapon selection
+	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in weapon selection
 
 	int	impact_weapon_expl_index;		// Index into Weapon_expl_info of which ANI should play when this thing impacts something
 	float	impact_explosion_radius;		// How big the explosion should be
@@ -875,7 +878,7 @@ typedef struct weapon_info {
 	float Weapon_particle_spew_lifetime;
 	float Weapon_particle_spew_scale;
 	int Weapon_particle_spew_bitmap;
-	char Weapon_particle_spew_bitmap_name[NAME_LENGTH];			//p_spew stuff -Bobboau
+	char Weapon_particle_spew_bitmap_name[MAX_FILENAME_LEN];			//p_spew stuff -Bobboau
 	int Weapon_particle_spew_nframes;
 	int Weapon_particle_spew_fps;
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.47 $
- * $Date: 2006-09-11 06:10:28 $
+ * $Revision: 2.48 $
+ * $Date: 2006-09-11 06:50:42 $
  * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2006/09/11 06:10:28  taylor
+ * crap, there was supposed to be a multi check there
+ *
  * Revision 2.46  2006/09/11 06:02:14  taylor
  * quite a few fixes to handle missing campaigns better
  * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
@@ -571,12 +574,12 @@
 #define NUM_REGIONS									7				// (6 + 1 for multiplayer equivalent of campaign room)
 typedef struct main_hall_defines {
 	// bitmap and mask
-	char bitmap[MAX_FILENAME_LEN+1];
-	char mask[MAX_FILENAME_LEN+1];
+	char bitmap[MAX_FILENAME_LEN];
+	char mask[MAX_FILENAME_LEN];
 
 	// music
-	char music_name[MAX_FILENAME_LEN+1];
-	char substitute_music_name[MAX_FILENAME_LEN+1];
+	char music_name[MAX_FILENAME_LEN];
+	char substitute_music_name[MAX_FILENAME_LEN];
 
 	// intercom defines -------------------
 	
@@ -599,7 +602,7 @@ typedef struct main_hall_defines {
 	int num_misc_animations;
 
 	// filenames of the misc animations
-	char misc_anim_name[MAX_MISC_ANIMATIONS][MAX_FILENAME_LEN+1];
+	char misc_anim_name[MAX_MISC_ANIMATIONS][MAX_FILENAME_LEN];
 
 	// Time until we will next play a given misc animation, min delay, and max delay
 	int misc_anim_delay[MAX_MISC_ANIMATIONS][3];
@@ -632,7 +635,7 @@ typedef struct main_hall_defines {
 	int num_door_animations;
 	
 	// filenames of the door animations
-	char door_anim_name[MAX_DOOR_ANIMATIONS][MAX_FILENAME_LEN+1];	
+	char door_anim_name[MAX_DOOR_ANIMATIONS][MAX_FILENAME_LEN];	
 
 	// first pair : coords of where to play a given door anim
 	// second pair : center of a given door anim in windowed mode
@@ -2303,17 +2306,17 @@ void main_hall_read_table()
 
 			// bitmap and mask
 			required_string("+Bitmap:");
-			stuff_string(m->bitmap, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(m->bitmap, F_NAME, MAX_FILENAME_LEN);
 			required_string("+Mask:");
-			stuff_string(m->mask, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(m->mask, F_NAME, MAX_FILENAME_LEN);
 
 #ifndef FS2_DEMO
 			required_string("+Music:");
-			stuff_string(m->music_name, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(m->music_name, F_NAME, MAX_FILENAME_LEN);
 
 			// Goober5000
 			if (optional_string("+Substitute Music:"))
-				stuff_string(m->substitute_music_name, F_NAME, NULL, MAX_FILENAME_LEN);
+				stuff_string(m->substitute_music_name, F_NAME, MAX_FILENAME_LEN);
 #endif
 
 			// intercom sounds
@@ -2342,7 +2345,7 @@ void main_hall_read_table()
 			for(idx=0; idx<m->num_misc_animations; idx++){
 				// anim names
 				required_string("+Misc anim:");
-				stuff_string(m->misc_anim_name[idx], F_NAME, NULL);
+				stuff_string(m->misc_anim_name[idx], F_NAME, MAX_FILENAME_LEN);
 			}
 			for(idx=0; idx<m->num_misc_animations; idx++){
 				// anim delay
@@ -2400,7 +2403,7 @@ void main_hall_read_table()
 			for(idx=0; idx<m->num_door_animations; idx++){
 				// door name
 				required_string("+Door anim:");
-				stuff_string(m->door_anim_name[idx], F_NAME, NULL);
+				stuff_string(m->door_anim_name[idx], F_NAME, MAX_FILENAME_LEN);
 			}
 			for(idx=0; idx<m->num_door_animations; idx++){
 				// door coords

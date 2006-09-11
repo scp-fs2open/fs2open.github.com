@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.50 $
- * $Date: 2006-09-11 06:08:09 $
+ * $Revision: 2.51 $
+ * $Date: 2006-09-11 06:50:42 $
  * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2006/09/11 06:08:09  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 2.49  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -633,7 +636,7 @@ int brief_text_wipe_finished();
 void brief_parse_icon_tbl()
 {
 	int			num_icons, current_icon, rval;
-	char			name[NAME_LENGTH];
+	char			name[MAX_FILENAME_LEN];
 	generic_anim	*ga;
 	hud_anim		*ha;
 	int species, icon;
@@ -666,19 +669,19 @@ void brief_parse_icon_tbl()
 
 		// parse regular frames
 		required_string("$Name:");
-		stuff_string(name, F_NAME, NULL);
+		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 		ga = &temp_icon_bitmaps[num_icons];
 		generic_anim_init(ga, name);
 	
 		// parse fade frames
 		required_string("$Name:");
-		stuff_string(name, F_NAME, NULL);
+		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 		ha = &temp_icon_fade_anims[num_icons];
 		hud_anim_init(ha, 0, 0, name);
 
 		// parse highlighting frames
 		required_string("$Name:");
-		stuff_string(name, F_NAME, NULL);
+		stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 		ha = &temp_icon_highlight_anims[num_icons];
 		hud_anim_init(ha, 0, 0, name);
 
@@ -709,7 +712,7 @@ void brief_parse_icon_tbl()
 	// error check
 	if (num_species_covered < (int)Species_info.size())
 	{
-		char *errormsg = new char[65 + (Species_info.size() * (NAME_LENGTH+1))];
+		char *errormsg = new char[70 + (Species_info.size() * (NAME_LENGTH))];
 
 		strcpy(errormsg, "The following species are missing icon info in icons.tbl:\n");
 		for (species = num_species_covered; species < (int)Species_info.size(); species++)

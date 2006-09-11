@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.h $
- * $Revision: 2.6 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.7 $
+ * $Date: 2006-09-11 06:49:39 $
+ * $Author: taylor $
  * 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.5  2005/04/05 05:53:17  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -67,7 +71,7 @@
 
 // global ssm types
 typedef struct ssm_info {
-	char			name[NAME_LENGTH+1];				// strike name
+	char			name[NAME_LENGTH];				// strike name
 	int			count;								// # of missiles in this type of strike
 	int			weapon_info_index;				// missile type
 	float			warp_radius;						// radius of associated warp effect	

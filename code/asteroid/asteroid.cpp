@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.39 $
- * $Date: 2006-09-11 06:08:08 $
+ * $Revision: 2.40 $
+ * $Date: 2006-09-11 06:49:38 $
  * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2006/09/11 06:08:08  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 2.38  2006/08/20 00:51:05  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -2072,17 +2075,17 @@ float asteroid_time_to_impact(object *asteroid_objp)
 void asteroid_parse_section(asteroid_info *asip)
 {
 	required_string("$Name:");
-	stuff_string(asip->name, F_NAME, NULL);
+	stuff_string(asip->name, F_NAME, NAME_LENGTH);
 
 	required_string( "$POF file1:" );
-	stuff_string(asip->pof_files[0], F_NAME, NULL);
+	stuff_string(asip->pof_files[0], F_NAME, MAX_FILENAME_LEN);
 
 	required_string( "$POF file2:" );
-	stuff_string(asip->pof_files[1], F_NAME, NULL);
+	stuff_string(asip->pof_files[1], F_NAME, MAX_FILENAME_LEN);
 
 	if ( (stristr(asip->name,"Asteroid") != NULL) ) {
 		required_string( "$POF file3:" );
-		stuff_string(asip->pof_files[2], F_NAME, NULL);
+		stuff_string(asip->pof_files[2], F_NAME, MAX_FILENAME_LEN);
 	}
 
 	asip->num_detail_levels = 0;
@@ -2112,7 +2115,7 @@ void asteroid_parse_section(asteroid_info *asip)
 // read in data from asteroid.tbl into Asteroid_info[] array
 void asteroid_parse_tbl()
 {
-	char impact_ani_file[FILESPEC_LENGTH];
+	char impact_ani_file[MAX_FILENAME_LEN];
 	int *asteroid_tally = NULL;
 	int i;
 
@@ -2165,7 +2168,7 @@ void asteroid_parse_tbl()
 
 	Asteroid_impact_explosion_ani = -1;
 	required_string("$Impact Explosion:");
-	stuff_string(impact_ani_file, F_NAME, NULL);
+	stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
 	if ( stricmp(impact_ani_file,NOX("none")))
 	{
 		int num_frames;
@@ -2180,7 +2183,7 @@ void asteroid_parse_tbl()
 
 
 	// check for any missing info
-	char *errormsg = new char[70 + (Species_info.size() * (NAME_LENGTH+1))];
+	char *errormsg = new char[75 + (Species_info.size() * (NAME_LENGTH))];
 	bool species_missing = false;
 	strcpy(errormsg, "The following species are missing debris types in asteroids.tbl:\n");
 	for (i = 0; i < (int)Species_info.size(); i++)

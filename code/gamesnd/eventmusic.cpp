@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.41 $
- * $Date: 2006-08-06 19:24:56 $
- * $Author: Goober5000 $
+ * $Revision: 2.42 $
+ * $Date: 2006-09-11 06:49:39 $
+ * $Author: taylor $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2006/08/06 19:24:56  Goober5000
+ * deprecate change-ship-model
+ *
  * Revision 2.40  2006/05/30 02:13:22  Goober5000
  * add substitute music boxes to FRED, and reset music properly when mission is cleared
  * --Goober5000
@@ -1370,7 +1373,7 @@ bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 	int count = 0;
 
 	// line_buf holds 3 fields:  filename, num measures, bytes per measure
-	stuff_string(line_buf, F_NAME, NULL);
+	stuff_string(line_buf, F_NAME, sizeof(line_buf));
 
 	//Check if we can add this pattern
 	if( pattern_idx >= MAX_PATTERNS ) {
@@ -1416,7 +1419,7 @@ void parse_soundtrack()
 
 	//Get the name, and do we have this track already?
 	required_string("$SoundTrack Name:");
-	stuff_string(namebuf, F_NAME, NULL);
+	stuff_string(namebuf, F_NAME, NAME_LENGTH);
 	strack_idx = event_music_get_soundtrack_index(namebuf);
 
 	//Do we have a nocreate?
@@ -1453,7 +1456,7 @@ void parse_soundtrack()
 	if (optional_string("+Cycle:"))
 	{
 		char temp[NAME_LENGTH];
-		stuff_string(temp, F_NAME, NULL);
+		stuff_string(temp, F_NAME, NAME_LENGTH);
 		if (!stricmp(temp, "FS1"))
 			Soundtracks[strack_idx].flags |= EMF_CYCLE_FS1;
 	}
@@ -1556,7 +1559,7 @@ void parse_menumusic()
 	bool nocreate = false;
 
 	required_string("$Name:");
-	stuff_string(spoolname, F_NAME, NULL);
+	stuff_string(spoolname, F_NAME, NAME_LENGTH);
 
 	if(optional_string("+nocreate")) {
 		nocreate = true;
@@ -1586,7 +1589,7 @@ void parse_menumusic()
 
 	if(optional_string("$Filename:"))
 	{
-		stuff_string(fname, F_LNAME, NULL);
+		stuff_string(fname, F_LNAME, MAX_FILENAME_LEN);
 		if ( strnicmp(fname, NOX("none.wav"), 4)  ) {
 			strcpy( Spooled_music[idx].filename, fname );
 		}
