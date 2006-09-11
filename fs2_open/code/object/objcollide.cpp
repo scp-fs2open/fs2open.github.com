@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-10-17 05:48:18 $
+ * $Revision: 2.12 $
+ * $Date: 2006-09-11 06:45:40 $
  * $Author: taylor $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/10/17 05:48:18  taylor
+ * dynamically allocate object collision pairs
+ *
  * Revision 2.10  2005/10/09 01:50:04  wmcoolmon
  * Bumped MAX_PAIRS to prevent objects flying through other objects
  *
@@ -719,8 +722,8 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 
 }
 
-MONITOR(NumPairs);
-MONITOR(NumPairsChecked);
+MONITOR(NumPairs)
+MONITOR(NumPairsChecked)
 
 extern int Cmdline_dis_collisions;
 void obj_check_all_collisions()

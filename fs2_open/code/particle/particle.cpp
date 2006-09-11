@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-09-08 06:18:29 $
+ * $Revision: 2.21 $
+ * $Date: 2006-09-11 06:45:40 $
  * $Author: taylor $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/09/08 06:18:29  taylor
+ * small optimization
+ *
  * Revision 2.19  2006/09/04 06:17:26  wmcoolmon
  * Commit of 'new' BTRL FTL effect work
  *
@@ -470,7 +473,7 @@ void particle_create( vec3d *pos, vec3d *vel, float lifetime, float rad, int typ
 	particle_create(&pinfo);
 }
 
-MONITOR( NumParticles );	
+MONITOR( NumParticles )
 
 void particle_move_all(float frametime)
 {
@@ -528,7 +531,7 @@ void particle_kill_all()
 	Particles.clear();
 }
 
-MONITOR( NumParticlesRend );	
+MONITOR( NumParticlesRend )
 
 void particle_render_all()
 {

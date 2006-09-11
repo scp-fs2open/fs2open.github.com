@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2006-09-11 06:45:39 $
+ * $Author: taylor $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.10  2006/01/27 20:29:30  Goober5000
  * some tweaks for insertion sort
  * --Goober5000
@@ -517,7 +520,7 @@ DCF(monitor,"Monitors game performace")
 }
 
 
-MONITOR(FrameRateX100);
+MONITOR(FrameRateX100)
 
 void monitor_update()
 {

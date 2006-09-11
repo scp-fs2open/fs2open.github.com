@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.261 $
- * $Date: 2006-09-11 05:35:51 $
+ * $Revision: 2.262 $
+ * $Date: 2006-09-11 06:45:39 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.261  2006/09/11 05:35:51  taylor
+ * some fixes for the standalone server
+ *  - get init order correct for lcl and std init
+ *  - turn off some cmdlines that are just graphics related when Is_standalone
+ *  - skip radar_mission_init() (may need to rethink that though, it's bound to cause problems)
+ *
  * Revision 2.260  2006/09/08 06:20:14  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -3967,11 +3973,11 @@ float Timing_render3 = 0.0f;
 float Timing_flip = 0.0f;
 float Timing_clear = 0.0f;
 
-MONITOR(NumPolysDrawn);
-MONITOR(NumPolys);
-MONITOR(NumVerts);
-MONITOR(BmpUsed);
-MONITOR(BmpNew);
+MONITOR(NumPolysDrawn)
+MONITOR(NumPolys)
+MONITOR(NumVerts)
+MONITOR(BmpUsed)
+MONITOR(BmpNew)
 
 
 int Mem_starttime_phys;
