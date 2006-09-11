@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.17 $
- * $Date: 2006-02-13 00:20:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2006-09-11 05:49:05 $
+ * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/02/13 00:20:45  Goober5000
+ * more tweaks, plus clarification of checks for the existence of files
+ * --Goober5000
+ *
  * Revision 2.16  2006/01/17 02:33:20  wmcoolmon
  * data/scripts directory
  *
@@ -671,6 +675,20 @@ void cf_sort_filenames( int n, char **list, int sort, file_list_info *info = NUL
 //         offset      - Offset into pack file.  0 if not a packfile.
 // Returns: If not found returns 0.
 int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize = false);
+
+// Searches for a file.   Follows all rules and precedence and searches
+// CD's and pack files.  Searches all locations in order for first filename using ext filter list.
+// Input:  filename    - Filename & extension
+//         ext_num     - number of extensions to look for
+//         ext_list    - extension filter list
+//         pathtype    - See CF_TYPE_ defines in CFILE.H
+//         max_out     - Maximum string length that should be stuffed into pack_filename
+// Output: pack_filename - Absolute path and filename of this file.   Could be a packfile or the actual file.
+//         size        - File size
+//         offset      - Offset into pack file.  0 if not a packfile.
+// Returns: If not found returns -1, else returns offset into ext_list.
+// (NOTE: This function is exponentially slow, so don't use it unless truely needed!!)
+int cf_find_file_location_ext(char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out = 0, char *pack_filename = NULL, int *size = NULL, int *offset = NULL, bool localize = false);
 
 // Functions to change directories
 int cfile_chdir(char *dir);

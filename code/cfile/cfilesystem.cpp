@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.35 $
- * $Date: 2006-07-28 02:36:07 $
+ * $Revision: 2.36 $
+ * $Date: 2006-09-11 05:49:05 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/07/28 02:36:07  taylor
+ * include CF_TYPE_PLAYERS in special pilot path consideration, prevents moddirs from always getting and empty data/players/
+ *
  * Revision 2.34  2006/04/16 05:28:10  taylor
  * extra safety check when creating a default path string, filename is optional be we need to available if root0 is missing (CFILE not initted yet)
  * fix that crazy compiler<->constructor<->linker<->server.txt deal caused by some bad code and a freaky link thing in freespace.cpp
@@ -1024,12 +1027,15 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 {
 	int i;
 	int cfs_slow_search = 0;
+	char longname[MAX_PATH_LEN];
 
-	Assert(filespec && strlen(filespec));
+#if defined WIN32
+	long findhandle;
+	_finddata_t findstruct;
+#endif
 
-	if ( pack_filename != NULL ) {
-		Assert( max_out > 1 );
-	}
+	Assert( (filespec != NULL) && (strlen(filespec) > 0) );
+	Assert( (pack_filename == NULL) || (max_out > 1) );
 
 	// see if we have something other than just a filename
 	// our current rules say that any file that specifies a direct
@@ -1063,23 +1069,19 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 
 	if ( CF_TYPE_SPECIFIED(pathtype) )	{
 		search_order[num_search_dirs++] = pathtype;
-	}
-
-	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++)	{
-		if ( i != pathtype )	{
-			search_order[num_search_dirs++] = i;
+	} else {
+		for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++) {
+			if (i != pathtype)
+				search_order[num_search_dirs++] = i;
 		}
 	}
 
-#if defined WIN32
-	long findhandle;
-	_finddata_t findstruct;
-#endif
+	memset( longname, 0, sizeof(longname) );
+
 
 	for (i=0; i<num_search_dirs; i++ )	{
-		char longname[MAX_PATH_LEN];
-
-		switch (search_order[i]) {
+		switch (search_order[i])
+		{
 			case CF_TYPE_ROOT:
 			case CF_TYPE_DATA:
 			case CF_TYPE_SINGLE_PLAYERS:
@@ -1091,7 +1093,8 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 				break;
  
 			default:
-				cfs_slow_search = 0;
+				// always hit the disk if we are looking in only one path
+				cfs_slow_search = (num_search_dirs == 1) ? 1 : 0;
 				break;
 		}
  
@@ -1099,125 +1102,327 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
 
 #if defined _WIN32
-			if(!Cmdline_safeloading)
-			{
+			if (!Cmdline_safeloading) {
 				findhandle = _findfirst(longname, &findstruct);
-				if (findhandle != -1)	{
-					if ( size ) {
+				if (findhandle != -1) {
+					if (size)
 						*size = findstruct.size;
-					}
 
 					_findclose(findhandle);
 
-					if ( offset ) *offset = 0;
-					if ( pack_filename ) {
+					if (offset)
+						*offset = 0;
+
+					if (pack_filename)
 						strncpy( pack_filename, longname, max_out );
-					};
+
 					return 1;
 				}
-			}
-			else
+			} else
+#endif
 			{
 				FILE *fp = fopen(longname, "rb" );
-				if(fp) {
-					if( size ) {
+
+				if (fp) {
+					if (size)
 						*size = filelength( fileno(fp) );
-					}
 
 					fclose(fp);
 
-					if(offset) *offset = 0;
-					if( pack_filename ) {
+					if (offset)
+						*offset = 0;
+
+					if (pack_filename)
 						strncpy(pack_filename, longname, max_out);
-					}
 
 					return 1;
 				}
 			}
-#elif defined SCP_UNIX
-			FILE *fp = fopen(longname, "rb" );
-			if (fp) {
-				if ( size ) {
-					struct stat statbuf;
-					fstat(fileno(fp), &statbuf);
-					*size = statbuf.st_size;
-				}
-
-				fclose(fp);
-				
-				if ( offset ) *offset = 0;
-				if ( pack_filename ) {
-					strncpy( pack_filename, longname, max_out );
-				}	
-				return 1;		
-			}
-#endif
 		}
 	}
 
 	// Search the pak files and CD-ROM.
 
-	for (i=0; i<Num_files; i++ )	{
-		cf_file * f = cf_get_file(i);
+	for (i = 0; i < Num_files; i++ )	{
+		cf_file *f = cf_get_file(i);
 
 		// only search paths we're supposed to...
-		if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index)  )	{
+		if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index) )
 			continue;
-		}
+
 
 		if (localize) {
 			// create localized filespec
-			char filespec_tmp[MAX_PATH_LEN] = { 0 };
-			strncpy(filespec_tmp, filespec, MAX_PATH_LEN - 1);
+			strncpy(longname, filespec, MAX_PATH_LEN - 1);
 
-			if(lcl_add_dir_to_path_with_filename(filespec_tmp, MAX_PATH_LEN - 1))
-			{
-				if ( !stricmp(filespec_tmp, f->name_ext) )	{
-					if ( size ) *size = f->size;
-					if ( offset ) *offset = f->pack_offset;
-					if ( pack_filename ) {
-						cf_root * r = cf_get_root(f->root_index);
+			if ( lcl_add_dir_to_path_with_filename(longname, MAX_PATH_LEN - 1) ) {
+				if ( !stricmp(longname, f->name_ext) ) {
+					if (size)
+						*size = f->size;
+
+					if (offset)
+						*offset = f->pack_offset;
+
+					if (pack_filename) {
+						cf_root *r = cf_get_root(f->root_index);
 
 						strncpy( pack_filename, r->path, max_out );
-						if ( f->pack_offset < 1 )	{
+
+						if (f->pack_offset < 1) {
 							SAFE_STRCAT( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
-							if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR ) {
+
+							if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
 								SAFE_STRCAT( pack_filename, DIR_SEPARATOR_STR, max_out );
-							}
+
 							SAFE_STRCAT( pack_filename, f->name_ext, max_out );
 						}
 					}
+
 					return 1;
 				}
 			}
 		}
 
 		// file either not localized or localized version not found
-		if ( !stricmp(filespec, f->name_ext) )	{
-			if ( size ) *size = f->size;
-			if ( offset ) *offset = f->pack_offset;
-			if ( pack_filename ) {
-				cf_root * r = cf_get_root(f->root_index);
+		if ( !stricmp(filespec, f->name_ext) ) {
+			if (size)
+				*size = f->size;
+
+			if (offset)
+				*offset = f->pack_offset;
+
+			if (pack_filename) {
+				cf_root *r = cf_get_root(f->root_index);
 
 				strcpy( pack_filename, r->path );
-				if ( f->pack_offset < 1 )	{
 
-					if(strlen(Pathtypes[f->pathtype_index].path)){
+				if (f->pack_offset < 1) {
+					if ( strlen(Pathtypes[f->pathtype_index].path) ) {
 						SAFE_STRCAT( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
-						if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR ) {
+
+						if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
 							SAFE_STRCAT( pack_filename, DIR_SEPARATOR_STR, max_out );
-						}
 					}
 
 					SAFE_STRCAT( pack_filename, f->name_ext, max_out );
 				}
 			}
-				
+
 			return 1;
 		}
 	}
 		
 	return 0;
+}
+
+// Searches for a file.   Follows all rules and precedence and searches
+// CD's and pack files.  Searches all locations in order for first filename using filter list.
+// Input:  filename    - Filename & extension
+//         ext_num     - number of extensions to look for
+//         ext_list    - extension filter list
+//         pathtype    - See CF_TYPE_ defines in CFILE.H
+//         max_out     - Maximum string length that should be stuffed into pack_filename
+// Output: pack_filename - Absolute path and filename of this file.   Could be a packfile or the actual file.
+//         size        - File size
+//         offset      - Offset into pack file.  0 if not a packfile.
+// Returns: If not found returns -1, else returns offset into ext_list.
+// (NOTE: This function is exponentially slow, so don't use it unless truely needed!!)
+int cf_find_file_location_ext( char *filename, const int ext_num, const char **ext_list, int pathtype, int max_out, char *pack_filename, int *size, int *offset, bool localize )
+{
+	int i, cur_ext;
+	int cfs_slow_search = 0;
+	char longname[MAX_PATH_LEN];
+	char filespec[MAX_FILENAME_LEN];
+
+#if defined WIN32
+	long findhandle;
+	_finddata_t findstruct;
+#endif
+
+	Assert( (filename != NULL) && (strlen(filename) < MAX_FILENAME_LEN) );
+	Assert( (ext_list != NULL) && (ext_num > 1) );	// if we are searching for just one ext
+													// then this is the wrong function to use
+	Assert( (pack_filename == NULL) || (max_out > 1) );
+
+
+	// if we have a full path already then fail.  this function if for searching via filter only!
+#ifdef SCP_UNIX
+	if ( strpbrk(filename, "/") ) {			// do we have a full path already?
+#else
+	if ( strpbrk(filename,"/\\:")  ) {		// do we have a full path already?
+#endif
+		Int3();
+		return 0;
+	}
+
+	// Search the hard drive for files first.
+	int num_search_dirs = 0;
+	int search_order[CF_MAX_PATH_TYPES];
+
+	if ( CF_TYPE_SPECIFIED(pathtype) )	{
+		search_order[num_search_dirs++] = pathtype;
+	} else {
+		for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++)
+			search_order[num_search_dirs++] = i;
+	}
+
+	memset( longname, 0, sizeof(longname) );
+	memset( filespec, 0, sizeof(filespec) );
+
+	// strip any existing extension
+	strncpy(filespec, filename, MAX_FILENAME_LEN-1);
+
+	for (i = 0; i < num_search_dirs; i++) {
+		for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
+			// strip any extension and add the one we want to check for
+			char *p = strchr(filespec, '.');
+			if ( p ) *p = 0;
+
+			SAFE_STRCAT( filespec, ext_list[cur_ext], sizeof(filespec)-1 );
+
+			switch (search_order[i])
+			{
+				case CF_TYPE_ROOT:
+				case CF_TYPE_DATA:
+				case CF_TYPE_SINGLE_PLAYERS:
+				case CF_TYPE_MULTI_PLAYERS:
+				case CF_TYPE_MULTI_CACHE:
+				case CF_TYPE_MISSIONS:
+				case CF_TYPE_CACHE:
+					cfs_slow_search = 1;
+					break;
+ 
+				default:
+					// always hit the disk if we are looking in only one path
+					cfs_slow_search = (num_search_dirs == 1) ? 1 : 0;
+					break;
+			}
+ 
+			if (cfs_slow_search) {
+				cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
+
+#if defined _WIN32
+				if (!Cmdline_safeloading) {
+					findhandle = _findfirst(longname, &findstruct);
+					if (findhandle != -1) {
+						if (size)
+							*size = findstruct.size;
+
+						_findclose(findhandle);
+
+						if (offset)
+							*offset = 0;
+
+						if (pack_filename)
+							strncpy( pack_filename, longname, max_out );
+
+						return cur_ext;
+					}
+				} else
+#endif
+				{
+					FILE *fp = fopen(longname, "rb" );
+
+					if (fp) {
+						if (size)
+							*size = filelength( fileno(fp) );
+
+						fclose(fp);
+
+						if (offset)
+							*offset = 0;
+
+						if (pack_filename)
+							strncpy(pack_filename, longname, max_out);
+
+						return cur_ext;
+					}
+				}
+			}
+		}
+	}
+
+	// Search the pak files and CD-ROM.
+
+	for (i = 0; i < Num_files; i++ ) {
+		cf_file *f = cf_get_file(i);
+
+		// only search paths we're supposed to...
+		if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index) )
+			continue;
+
+
+		for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
+			// strip extension and add the one we want to check for
+			char *p = strchr(filespec, '.');
+			if ( p ) *p = 0;
+
+			SAFE_STRCAT( filespec, ext_list[cur_ext], sizeof(filespec)-1 );
+
+			if (localize) {
+				// create localized filespec
+				strncpy(longname, filespec, MAX_PATH_LEN - 1);
+
+				if ( lcl_add_dir_to_path_with_filename(longname, MAX_PATH_LEN - 1) ) {
+					if ( !stricmp(longname, f->name_ext) ) {
+						if (size)
+							*size = f->size;
+
+						if (offset)
+							*offset = f->pack_offset;
+
+						if (pack_filename) {
+							cf_root *r = cf_get_root(f->root_index);
+
+							strncpy( pack_filename, r->path, max_out );
+
+							if (f->pack_offset < 1) {
+								SAFE_STRCAT( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
+
+								if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
+									SAFE_STRCAT( pack_filename, DIR_SEPARATOR_STR, max_out );
+
+								SAFE_STRCAT( pack_filename, f->name_ext, max_out );
+							}
+						}
+
+						return cur_ext;
+					}
+				}
+			}
+
+			// file either not localized or localized version not found
+			if ( !stricmp(filespec, f->name_ext) ) {
+				if (size)
+					*size = f->size;
+
+				if (offset)
+					*offset = f->pack_offset;
+
+				if (pack_filename) {
+					cf_root *r = cf_get_root(f->root_index);
+
+					strcpy( pack_filename, r->path );
+
+					if (f->pack_offset < 1) {
+
+						if ( strlen(Pathtypes[f->pathtype_index].path) ) {
+							SAFE_STRCAT( pack_filename, Pathtypes[f->pathtype_index].path, max_out );
+
+							if ( pack_filename[strlen(pack_filename)-1] != DIR_SEPARATOR_CHAR )
+								SAFE_STRCAT( pack_filename, DIR_SEPARATOR_STR, max_out );
+						}
+
+						SAFE_STRCAT( pack_filename, f->name_ext, max_out );
+					}
+				}
+
+				return cur_ext;
+			}
+		}
+	}
+
+	return -1;
 }
 
 
