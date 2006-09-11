@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.16 $
- * $Date: 2006-06-27 05:07:48 $
+ * $Revision: 2.17 $
+ * $Date: 2006-09-11 06:36:38 $
  * $Author: taylor $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/06/27 05:07:48  taylor
+ * fix various compiler warnings and things that Valgrind complained about
+ *
  * Revision 2.15  2005/10/30 06:44:57  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -955,7 +958,7 @@ int gr_create_font(char * typeface)
 	return fontnum;
 }
 
-void grx_set_font(int fontnum)
+void gr_set_font(int fontnum)
 {
 	if ( fontnum < 0 ) {
 		Current_font = NULL;

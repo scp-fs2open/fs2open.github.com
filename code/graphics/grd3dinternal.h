@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.54 $
- * $Date: 2006-05-27 17:07:48 $
+ * $Revision: 2.55 $
+ * $Date: 2006-09-11 06:36:38 $
  * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2006/05/27 17:07:48  taylor
+ * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
+ * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
+ * clean up TMAP flags
+ * fix a couple of minor OpenGL state change issues with spec and env map rendering
+ * make sure we build again for OS X (OGL extension functions work a little different there)
+ * render targets always need to be power-of-2 to avoid incomplete buffer issues in the code
+ * when we disable culling in opengl_3dunlit be sure that we re-enable it on exit of function
+ * re-fix screenshots
+ * add true alpha blending support (with cmdline for now since the artwork has the catch up)
+ * draw lines with float positioning, to be more accurate with resizing on non-standard resolutions
+ * don't load cubemaps from file for D3D, not sure how to do it anyway
+ * update geometry batcher code, memory fixes, dynamic stuff, basic fixage, etc.
+ *
  * Revision 2.53  2006/04/15 00:13:22  phreak
  * gr_flash_alpha(), much like gr_flash(), but allows an alpha value to be passed
  *
@@ -642,19 +656,12 @@ void gr_d3d_pixel(int x, int y, bool resize);
 void gr_d3d_clear();
 void gr_d3d_set_clip(int x,int y,int w,int h,bool resize);
 void gr_d3d_reset_clip();
-void gr_d3d_init_color(color *c, int r, int g, int b);
-void gr_d3d_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type );
-void gr_d3d_set_color( int r, int g, int b );
-void gr_d3d_get_color( int * r, int * g, int * b );
-void gr_d3d_set_color_fast(color *dst);
 void gr_d3d_set_bitmap( int bitmap_num, int alphablend_mode, int bitblt_mode, float alpha );
 void gr_d3d_bitmap(int x, int y);
 void gr_d3d_bitmap_ex(int x, int y, int w, int h, int sx, int sy, bool resize);
 void gr_d3d_aabitmap_ex(int x,int y,int w,int h,int sx,int sy,bool resize, bool mirror);
 void gr_d3d_aabitmap(int x, int y, bool resize, bool mirror);
 //void gr_d3d_rect(int x,int y,int w,int h,bool resize);
-void gr_d3d_create_shader(shader * shade, float r, float g, float b, float c );
-void gr_d3d_set_shader( shader * shade );
 //void gr_d3d_shade(int x,int y,int w,int h);
 void gr_d3d_create_font_bitmap();
 void gr_d3d_char(int x,int y,int letter);

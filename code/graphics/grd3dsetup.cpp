@@ -9,6 +9,9 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2006/06/01 04:44:19  taylor
+ * fix the scope issues that someone complained about in the forums
+ *
  * Revision 2.58  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -791,18 +794,8 @@ void d3d_setup_function_pointers()
 	gr_screen.gf_flip = gr_d3d_flip;
 	gr_screen.gf_set_clip = gr_d3d_set_clip;
 	gr_screen.gf_reset_clip = gr_d3d_reset_clip;
-	gr_screen.gf_set_font = grx_set_font;
-
-	gr_screen.gf_get_color = gr_d3d_get_color;
-	gr_screen.gf_init_color = gr_d3d_init_color;
-	gr_screen.gf_set_color_fast = gr_d3d_set_color_fast;
-	gr_screen.gf_set_color = gr_d3d_set_color;
-	gr_screen.gf_init_color = gr_d3d_init_color;
-	gr_screen.gf_init_alphacolor = gr_d3d_init_alphacolor;
 
 	gr_screen.gf_set_bitmap = gr_d3d_set_bitmap;
-	gr_screen.gf_create_shader = gr_d3d_create_shader;
-	gr_screen.gf_set_shader = gr_d3d_set_shader;
 	gr_screen.gf_clear = gr_d3d_clear;
 	gr_screen.gf_bitmap_ex = gr_d3d_bitmap_ex;
 	gr_screen.gf_aabitmap = gr_d3d_aabitmap;

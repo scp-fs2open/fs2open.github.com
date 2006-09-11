@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.75 $
- * $Date: 2006-09-04 06:12:35 $
- * $Author: wmcoolmon $
+ * $Revision: 2.76 $
+ * $Date: 2006-09-11 06:36:38 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2006/09/04 06:12:35  wmcoolmon
+ * Conditional hook
+ *
  * Revision 2.74  2006/06/07 03:21:53  wmcoolmon
  * Scripting system prep for 3.6.9
  *
@@ -1581,6 +1584,89 @@ void gr_activate(int active)
 			Int3();		// Invalid graphics mode
 	}
 
+}
+
+// color stuff
+void gr_get_color( int *r, int *g, int *b )
+{
+	if (r) *r = gr_screen.current_color.red;
+	if (g) *g = gr_screen.current_color.green;
+	if (b) *b = gr_screen.current_color.blue;
+}
+
+void gr_init_color(color *c, int r, int g, int b)
+{
+	CAP(r, 0, 255);
+	CAP(g, 0, 255);
+	CAP(b, 0, 255);
+
+	c->screen_sig = gr_screen.signature;
+	c->red = (ubyte)r;
+	c->green = (ubyte)g;
+	c->blue = (ubyte)b;
+	c->alpha = 255;
+	c->ac_type = AC_TYPE_NONE;
+	c->alphacolor = -1;
+	c->is_alphacolor = 0;
+	c->magic = 0xAC01;
+}
+
+void gr_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type )
+{
+	CAP(r, 0, 255);
+	CAP(g, 0, 255);
+	CAP(b, 0, 255);
+	CAP(alpha, 0, 255);
+
+	gr_init_color( clr, r, g, b );
+
+	clr->alpha = (ubyte)alpha;
+	clr->ac_type = (ubyte)type;
+	clr->alphacolor = -1;
+	clr->is_alphacolor = 1;
+}
+
+void gr_set_color( int r, int g, int b )
+{
+	Assert((r >= 0) && (r < 256));
+	Assert((g >= 0) && (g < 256));
+	Assert((b >= 0) && (b < 256));
+
+	gr_init_color( &gr_screen.current_color, r, g, b );	
+}
+
+void gr_set_color_fast(color *dst)
+{
+	if ( dst->screen_sig != gr_screen.signature ) {
+		if (dst->is_alphacolor)
+			gr_init_alphacolor( dst, dst->red, dst->green, dst->blue, dst->alpha, dst->ac_type );
+		else
+			gr_init_color( dst, dst->red, dst->green, dst->blue );
+	}
+
+	gr_screen.current_color = *dst;
+}
+
+// shader functions
+void gr_create_shader(shader *shade, float r, float g, float b, float c )
+{
+	shade->screen_sig = gr_screen.signature;
+	shade->r = r;
+	shade->g = g;
+	shade->b = b;
+	shade->c = c;	
+}
+
+void gr_set_shader(shader *shade)
+{	
+	if (shade) {
+		if (shade->screen_sig != gr_screen.signature)
+			gr_create_shader( shade, shade->r, shade->g, shade->b, shade->c );
+
+		gr_screen.current_shader = *shade;
+	} else {
+		gr_create_shader( &gr_screen.current_shader, 0.0f, 0.0f, 0.0f, 0.0f );
+	}
 }
 
 // -----------------------------------------------------------------------
