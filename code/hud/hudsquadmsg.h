@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.17 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2006-09-11 05:56:23 $
+ * $Author: taylor $
  *
  * header file for squadmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.16  2006/03/18 22:00:43  Goober5000
  * fix comm order initialization bug
  * --Goober5000
@@ -276,10 +279,12 @@ extern comm_order Comm_orders[];
 
 #define SQUADMSG_HISTORY_MAX 160
 
-typedef struct {
+typedef struct squadmsg_history {
 	int ship;  // ship that received the order
 	int order;  // order that the ship received (see defines above)
-	int target;  // ship that is the target of the order 
+	int target;  // ship that is the target of the order
+
+	squadmsg_history(): ship(-1), order(-1), target(-1) {};
 } squadmsg_history;
 
 extern int squadmsg_history_index;
