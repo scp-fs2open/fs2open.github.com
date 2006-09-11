@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/UI.H $
- * $Revision: 2.8 $
- * $Date: 2006-04-20 06:32:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.9 $
+ * $Date: 2006-09-11 05:39:48 $
+ * $Author: taylor $
  *
  * Include file for our user interface.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2006/04/20 06:32:30  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.7  2005/07/22 03:53:32  taylor
  * fix crash on commit in the multi ship selection screen
  * mask_data in the UI code is always cast to ubyte so why it was a ushort type I'll never know
@@ -357,6 +360,7 @@
 #define _UI_H
 
 #include "graphics/2d.h"
+#include "graphics/font.h"
 
 #define UI_KIND_BUTTON				1
 #define UI_KIND_KEYTRAP				2
