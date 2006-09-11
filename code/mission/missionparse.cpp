@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.195 $
- * $Date: 2006-09-11 06:08:09 $
+ * $Revision: 2.196 $
+ * $Date: 2006-09-11 06:47:07 $
  * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.195  2006/09/11 06:08:09  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 2.194  2006/09/04 05:54:14  wmcoolmon
  * Fix bug (under Win32) where FRED would warn about unacceptable accepted orders, but not do anything about them.
  *
@@ -1458,8 +1461,8 @@ void restore_one_primary_bank(int *ship_primary_weapons, int *default_primary_we
 void restore_one_secondary_bank(int *ship_secondary_weapons, int *default_secondary_weapons);
 
 
-MONITOR(NumShipArrivals);
-MONITOR(NumShipDepartures);
+MONITOR(NumShipArrivals)
+MONITOR(NumShipDepartures)
 
 
 void parse_mission_info(mission *pm, bool basic = false)
@@ -1478,22 +1481,22 @@ void parse_mission_info(mission *pm, bool basic = false)
 		mprintf(("Older mission, should update it (%.2f<-->%.2f)", pm->version, MISSION_VERSION));
 
 	required_string("$Name:");
-	stuff_string(pm->name, F_NAME, NULL);
+	stuff_string(pm->name, F_NAME, NAME_LENGTH);
 
 	required_string("$Author:");
-	stuff_string(pm->author, F_NAME, NULL);
+	stuff_string(pm->author, F_NAME, NAME_LENGTH);
 
 	required_string("$Created:");
-	stuff_string(pm->created, F_DATE, NULL);
+	stuff_string(pm->created, F_DATE, DATE_TIME_LENGTH);
 
 	required_string("$Modified:");
-	stuff_string(pm->modified, F_DATE, NULL);
+	stuff_string(pm->modified, F_DATE, DATE_TIME_LENGTH);
 
 	required_string("$Notes:");
-	stuff_string(pm->notes, F_NOTES, NULL);
+	stuff_string(pm->notes, F_NOTES, NOTES_LENGTH);
 
 	if (optional_string("$Mission Desc:"))
-		stuff_string(pm->mission_desc, F_MULTITEXT, NULL, MISSION_DESC_LENGTH);
+		stuff_string(pm->mission_desc, F_MULTITEXT, MISSION_DESC_LENGTH);
 	else
 		strcpy(pm->mission_desc, NOX("No description\n"));
 
@@ -1502,7 +1505,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		// HACK HACK HACK -- stuff_string was changed to *not* ignore carriage returns.  Since the
 		// old style missions may have carriage returns, deal with it here.
 		ignore_white_space();
-		stuff_string(game_string, F_NAME, NULL);
+		stuff_string(game_string, F_NAME, NAME_LENGTH);
 		for ( i = 0; i < OLD_MAX_GAME_TYPES; i++ ) {
 			if ( !stricmp(game_string, Old_game_types[i]) ) {
 
@@ -1542,7 +1545,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		stuff_float(&Neb2_awacs);
 	}
 	if(optional_string("+Storm:")){
-		stuff_string(Mission_parse_storm_name, F_NAME, NULL);
+		stuff_string(Mission_parse_storm_name, F_NAME, NAME_LENGTH);
 
 		if (!basic)
 			nebl_set_storm(Mission_parse_storm_name);
@@ -1687,9 +1690,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 	strcpy(pm->squad_name, "");
 	strcpy(pm->squad_filename, "");
 	if(optional_string("+SquadReassignName:")){
-		stuff_string(pm->squad_name, F_NAME, NULL);
+		stuff_string(pm->squad_name, F_NAME, NAME_LENGTH);
 		if(optional_string("+SquadReassignLogo:")){
-			stuff_string(pm->squad_filename, F_NAME, NULL);
+			stuff_string(pm->squad_filename, F_NAME, MAX_FILENAME_LEN);
 		}
 	}	
 	// always clear out squad reassignments if not single player
@@ -1747,12 +1750,12 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if (optional_string("$Load Screen 640:"))
 	{
 		found640=1;
-		stuff_string(pm->loading_screen[GR_640],F_NAME,NULL);	
+		stuff_string(pm->loading_screen[GR_640], F_NAME, MAX_FILENAME_LEN);	
 	}
 	if (optional_string("$Load Screen 1024:"))
 	{
 		found1024=1;
-		stuff_string(pm->loading_screen[GR_1024],F_NAME,NULL);
+		stuff_string(pm->loading_screen[GR_1024], F_NAME, MAX_FILENAME_LEN);
 	}
 
 	//error testing
@@ -1768,7 +1771,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	strcpy(pm->skybox_model, "");
 	if (optional_string("$Skybox model:"))
 	{
-		stuff_string(pm->skybox_model,F_NAME,NULL);
+		stuff_string(pm->skybox_model, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	// Goober5000 - AI on a per-mission basis
@@ -1778,7 +1781,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		int index;
 		char temp[NAME_LENGTH];
 
-		stuff_string(temp, F_NAME, NULL);
+		stuff_string(temp, F_NAME, NAME_LENGTH);
 		index = ai_profile_lookup(temp);
 
 		if (index >= 0)
@@ -1794,7 +1797,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 
 void parse_player_info(mission *pm)
 {
-	char alt[NAME_LENGTH + 2] = "";
+	char alt[NAME_LENGTH];
 	Assert(pm != NULL);
 
 // alternate type names begin here	
@@ -1803,7 +1806,7 @@ void parse_player_info(mission *pm)
 		// read them all in
 		while(!optional_string("#end")){
 			required_string("$Alt:");
-			stuff_string(alt, F_NAME, NULL, NAME_LENGTH);
+			stuff_string(alt, F_NAME, NAME_LENGTH);
 
 			// maybe store it
 			mission_parse_add_alt(alt);			
@@ -1833,7 +1836,7 @@ void parse_player_info2(mission *pm)
 		// get the shipname for single player missions
 		// MWA -- make this required later!!!!
 		if ( optional_string("$Starting Shipname:") )
-			stuff_string( Player_start_shipname, F_NAME, NULL );
+			stuff_string( Player_start_shipname, F_NAME, NAME_LENGTH );
 
 		required_string("$Ship Choices:");
 		total = stuff_ship_list(list, MAX_SHIP_CLASSES * 4, MISSION_LOADOUT_SHIP_LIST);
@@ -1876,7 +1879,7 @@ void parse_player_info2(mission *pm)
 
 		ptr->default_ship = -1;
 		if (optional_string("+Default_ship:")) {
-			stuff_string(str, F_NAME, NULL);
+			stuff_string(str, F_NAME, NAME_LENGTH);
 			ptr->default_ship = ship_info_lookup(str);
 			// see if the player's default ship is an allowable ship (campaign only). If not, then what
 			// do we do?  choose the first allowable one?
@@ -1930,22 +1933,22 @@ void parse_plot_info(mission *pm)
 		char dummy_name[NAME_LENGTH];
 
 		required_string("$Tour:");
-		stuff_string(dummy_name, F_NAME, NULL);
+		stuff_string(dummy_name, F_NAME, NAME_LENGTH);
 
 		required_string("$Pre-Briefing Cutscene:");
-		stuff_string(dummy_filespec, F_FILESPEC, NULL);
+		stuff_string(dummy_filespec, F_FILESPEC, FILESPEC_LENGTH);
 
 		required_string("$Pre-Mission Cutscene:");
-		stuff_string(dummy_filespec, F_FILESPEC, NULL);
+		stuff_string(dummy_filespec, F_FILESPEC, FILESPEC_LENGTH);
 
 		required_string("$Next Mission Success:");
-		stuff_string(dummy_name, F_NAME, NULL);
+		stuff_string(dummy_name, F_NAME, NAME_LENGTH);
 
 		required_string("$Next Mission Partial:");
-		stuff_string(dummy_name, F_NAME, NULL);
+		stuff_string(dummy_name, F_NAME, NAME_LENGTH);
 
 		required_string("$Next Mission Failure:");
-		stuff_string(dummy_name, F_NAME, NULL);
+		stuff_string(dummy_name, F_NAME, NAME_LENGTH);
 	}
 }
 
@@ -1957,40 +1960,40 @@ void parse_briefing_info(mission *pm)
 		return;
 
 	required_string("$Briefing Voice 1:");
-	stuff_string(junk, F_FILESPEC, NULL);
+	stuff_string(junk, F_FILESPEC, sizeof(junk));
 
 	required_string("$Briefing Text 1:");
-	stuff_string(junk, F_MULTITEXTOLD, NULL);
+	stuff_string(junk, F_MULTITEXTOLD, sizeof(junk));
 
 	required_string("$Briefing Voice 2:");
-	stuff_string(junk, F_FILESPEC, NULL);
+	stuff_string(junk, F_FILESPEC, sizeof(junk));
 
 	required_string("$Briefing Text 2:");
-	stuff_string(junk, F_MULTITEXTOLD, NULL);
+	stuff_string(junk, F_MULTITEXTOLD, sizeof(junk));
 
 	required_string("$Briefing Voice 3:");
-	stuff_string(junk, F_FILESPEC, NULL);
+	stuff_string(junk, F_FILESPEC, sizeof(junk));
 
 	required_string("$Briefing Text 3:");
-	stuff_string(junk, F_MULTITEXTOLD, NULL);
+	stuff_string(junk, F_MULTITEXTOLD, sizeof(junk));
 
 	required_string("$Debriefing Voice 1:");
-	stuff_string(junk, F_FILESPEC, NULL);
+	stuff_string(junk, F_FILESPEC, sizeof(junk));
 
 	required_string("$Debriefing Text 1:");
-	stuff_string(junk, F_MULTITEXTOLD, NULL);
+	stuff_string(junk, F_MULTITEXTOLD, sizeof(junk));
 
 	required_string("$Debriefing Voice 2:");
-	stuff_string(junk, F_FILESPEC, NULL);
+	stuff_string(junk, F_FILESPEC, sizeof(junk));
 
 	required_string("$Debriefing Text 2:");
-	stuff_string(junk, F_MULTITEXTOLD, NULL);
+	stuff_string(junk, F_MULTITEXTOLD, sizeof(junk));
 
 	required_string("$Debriefing Voice 3:");
-	stuff_string(junk, F_FILESPEC, NULL);
+	stuff_string(junk, F_FILESPEC, sizeof(junk));
 
 	required_string("$Debriefing Text 3:");
-	stuff_string(junk, F_MULTITEXTOLD, NULL);
+	stuff_string(junk, F_MULTITEXTOLD, sizeof(junk));
 }
 
 // parse the event music and briefing music for the mission
@@ -2007,30 +2010,30 @@ void parse_music(mission *pm, int flags)
 	}
 
 	required_string("$Event Music:");
-	stuff_string(pm->event_music_name, F_NAME, NULL);
+	stuff_string(pm->event_music_name, F_NAME, NAME_LENGTH);
 
 	// Goober5000
 	if (optional_string("$Substitute Event Music:"))
-		stuff_string(pm->substitute_event_music_name, F_NAME, NULL);
+		stuff_string(pm->substitute_event_music_name, F_NAME, NAME_LENGTH);
 
 	required_string("$Briefing Music:");
-	stuff_string(pm->briefing_music_name, F_NAME, NULL);
+	stuff_string(pm->briefing_music_name, F_NAME, NAME_LENGTH);
 
 	// Goober5000
 	if (optional_string("$Substitute Briefing Music:"))
-		stuff_string(pm->substitute_briefing_music_name, F_NAME, NULL);
+		stuff_string(pm->substitute_briefing_music_name, F_NAME, NAME_LENGTH);
 
 	// old stuff, apparently
 	if (optional_string("$Debriefing Success Music:"))
 	{
-		stuff_string(temp, F_NAME, NULL);
+		stuff_string(temp, F_NAME, NAME_LENGTH);
 		event_music_set_score(SCORE_DEBRIEF_SUCCESS, temp);
 	}
 
 	// ditto
 	if (optional_string("$Debriefing Fail Music:"))
 	{
-		stuff_string(temp, F_NAME, NULL);
+		stuff_string(temp, F_NAME, NAME_LENGTH);
 		event_music_set_score(SCORE_DEBRIEF_FAIL, temp);
 	}
 
@@ -2043,9 +2046,9 @@ void parse_music(mission *pm, int flags)
 	// Goober5000 - old way of grabbing substitute music, but here for reverse compatibility
 	if (optional_string("$Substitute Music:"))
 	{
-		stuff_string(pm->substitute_event_music_name, F_NAME, ",");
+		stuff_string(pm->substitute_event_music_name, F_NAME, NAME_LENGTH, "," );
 		Mp++;
-		stuff_string(pm->substitute_briefing_music_name, F_NAME, NULL);
+		stuff_string(pm->substitute_briefing_music_name, F_NAME, NAME_LENGTH);
 	}
 
 	// Goober5000 - if the mission is being imported, the substitutes are the specified tracks
@@ -2159,9 +2162,9 @@ void parse_cmd_brief(mission *pm)
 		Assert(Cur_cmd_brief->stage[stage].text);
 
 		required_string("$Ani Filename:");
-		stuff_string(Cur_cmd_brief->stage[stage].ani_filename, F_FILESPEC, NULL);
+		stuff_string(Cur_cmd_brief->stage[stage].ani_filename, F_FILESPEC, MAX_FILENAME_LEN);
 		if (optional_string("+Wave Filename:"))
-			stuff_string(Cur_cmd_brief->stage[stage].wave_filename, F_FILESPEC, NULL);
+			stuff_string(Cur_cmd_brief->stage[stage].wave_filename, F_FILESPEC, MAX_FILENAME_LEN);
 		else
 			Cur_cmd_brief->stage[stage].wave_filename[0] = 0;
 
@@ -2223,12 +2226,12 @@ void parse_briefing(mission *pm, int flags)
 			bs = &bp->stages[stage_num++];
 			required_string("$multi_text");
 			if ( Fred_running )	{
-				stuff_string(bs->new_text, F_MULTITEXT, NULL, MAX_BRIEF_LEN);
+				stuff_string(bs->new_text, F_MULTITEXT, MAX_BRIEF_LEN);
 			} else {
 				bs->new_text = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_BRIEF_LEN);
 			}
 			required_string("$voice:");
-			stuff_string(bs->voice, F_FILESPEC, NULL);
+			stuff_string(bs->voice, F_FILESPEC, MAX_FILENAME_LEN);
 			required_string("$camera_pos:");
 			stuff_vector(&bs->camera_pos);
 			required_string("$camera_orient:");
@@ -2346,7 +2349,7 @@ void parse_briefing(mission *pm, int flags)
 
 				bi->label[0] = 0;
 				if (optional_string("$label:"))
-					stuff_string(bi->label, F_MESSAGE, NULL);
+					stuff_string(bi->label, F_MESSAGE, MAX_LABEL_LEN);
 
 				if (optional_string("+id:")) {
 					stuff_int(&bi->id);
@@ -2383,8 +2386,8 @@ void parse_briefing(mission *pm, int flags)
 				}
 
 				required_string("$multi_text");
-//				stuff_string(bi->text, F_MULTITEXT, NULL, MAX_ICON_TEXT_LEN);
-				stuff_string(not_used_text, F_MULTITEXT, NULL, MAX_ICON_TEXT_LEN);
+//				stuff_string(bi->text, F_MULTITEXT, MAX_ICON_TEXT_LEN);
+				stuff_string(not_used_text, F_MULTITEXT, MAX_ICON_TEXT_LEN);
 				required_string("$end_icon");
 			} // end while
 			Assert(bs->num_icons == icon_num);
@@ -2424,9 +2427,9 @@ void parse_debriefing_old(mission *pm)
 		while (required_string_either("$end_debriefing", "$start_stage")) {
 			required_string("$start_stage");
 			required_string("$multi_text");
-			stuff_string(waste, F_MULTITEXT, NULL, MAX_DEBRIEF_LEN);
+			stuff_string(waste, F_MULTITEXT, MAX_DEBRIEF_LEN);
 			required_string("$voice:");
-			stuff_string(waste, F_FILESPEC, NULL);
+			stuff_string(waste, F_FILESPEC, MAX_DEBRIEF_LEN);
 			required_string("$end_stage");
 		} // end while
 		required_string("$end_debriefing");
@@ -2472,15 +2475,15 @@ void parse_debriefing_new(mission *pm)
 			dbs->formula = get_sexp_main();
 			required_string("$multi text");
 			if ( Fred_running )	{
-				stuff_string(dbs->new_text, F_MULTITEXT, NULL, MAX_DEBRIEF_LEN);
+				stuff_string(dbs->new_text, F_MULTITEXT, MAX_DEBRIEF_LEN);
 			} else {
 				dbs->new_text = stuff_and_malloc_string(F_MULTITEXT, NULL, MAX_DEBRIEF_LEN);
 			}
 			required_string("$Voice:");
-			stuff_string(dbs->voice, F_FILESPEC, NULL);
+			stuff_string(dbs->voice, F_FILESPEC, MAX_FILENAME_LEN);
 			required_string("$Recommendation text:");
 			if ( Fred_running )	{
-				stuff_string( dbs->new_recommendation_text, F_MULTITEXT, NULL, MAX_RECOMMENDATION_LEN);
+				stuff_string( dbs->new_recommendation_text, F_MULTITEXT, MAX_RECOMMENDATION_LEN);
 			} else {
 				dbs->new_recommendation_text = stuff_and_malloc_string( F_MULTITEXT, NULL, MAX_RECOMMENDATION_LEN);
 			}
@@ -3393,7 +3396,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	p_objp->prev = NULL;
 
 	required_string("$Name:");
-	stuff_string(p_objp->name, F_NAME, NULL);
+	stuff_string(p_objp->name, F_NAME, NAME_LENGTH);
 	if (mission_parse_get_parse_object(p_objp->name))
 		error_display(0, NOX("Redundant ship name: %s\n"), p_objp->name);
 
@@ -3437,7 +3440,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if(optional_string("$Alt:"))
 	{
 		// alternate name
-		stuff_string(name, F_NAME, NULL, NAME_LENGTH);
+		stuff_string(name, F_NAME, NAME_LENGTH);
 
 		// try and find the alternate name
 		p_objp->alt_type_index = (char)mission_parse_lookup_alt(name);
@@ -3464,8 +3467,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	// legacy code, not even used in FS1
 	if (optional_string("$IFF:"))
 	{
-		char blah[NAME_LENGTH];
-		stuff_string(blah, F_NAME, NULL);
+		stuff_string(name, F_NAME, NAME_LENGTH);
 	}
 
 	find_and_stuff("$AI Behavior:",	&p_objp->behavior, F_NAME, Ai_behavior_names, Num_ai_behaviors, "AI behavior");
@@ -3496,8 +3498,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	p_objp->cargo1 = char(temp);
 	if (optional_string("$Cargo 2:"))
 	{
-		char buf[NAME_LENGTH];
-		stuff_string(buf, F_NAME, NULL);
+		stuff_string(name, F_NAME, NAME_LENGTH);
 	}
 
 	parse_common_object_data(p_objp);  // get initial conditions and subsys status
@@ -3526,7 +3527,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (p_objp->arrival_location != ARRIVE_AT_LOCATION)
 	{
 		required_string("$Arrival Anchor:");
-		stuff_string(name, F_NAME, NULL);
+		stuff_string(name, F_NAME, NAME_LENGTH);
 		p_objp->arrival_anchor = get_anchor(name);
 	}
 
@@ -3570,7 +3571,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (p_objp->departure_location != DEPART_AT_LOCATION)
 	{
 		required_string("$Departure Anchor:");
-		stuff_string(name, F_NAME, NULL);
+		stuff_string(name, F_NAME, NAME_LENGTH);
 		p_objp->departure_anchor = get_anchor(name);
 	}
 
@@ -3597,7 +3598,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	p_objp->departure_cue = get_sexp_main();
 
 	if (optional_string("$Misc Properties:"))
-		stuff_string(p_objp->misc, F_NAME, NULL);
+		stuff_string(p_objp->misc, F_NAME, NAME_LENGTH);
 
 	required_string("$Determination:");
 	stuff_int(&p_objp->determination);
@@ -3717,11 +3718,11 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		// grab docking information
 		// (whoever designed the original docking system
 		// reversed the dockpoints in the mission file)
-		stuff_string(docked_with, F_NAME, NULL);
+		stuff_string(docked_with, F_NAME, NAME_LENGTH);
 		required_string("$Docker Point:");
-		stuff_string(dockee_point, F_NAME, NULL);
+		stuff_string(dockee_point, F_NAME, NAME_LENGTH);
 		required_string("$Dockee Point:");
-		stuff_string(docker_point, F_NAME, NULL);	
+		stuff_string(docker_point, F_NAME, NAME_LENGTH);	
 
 		// make sure we don't overflow the limit
 		if (Total_initially_docked >= MAX_SHIPS)
@@ -3781,9 +3782,9 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 		while ((p_objp->num_texture_replacements < MAX_MODEL_TEXTURES) && (optional_string("+old:")))
 		{
-			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, F_NAME, NULL);
+			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, F_NAME, MAX_FILENAME_LEN);
 			required_string("+new:");
-			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, F_NAME, NULL);
+			stuff_string(p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture, F_NAME, MAX_FILENAME_LEN);
 
 			// get rid of extensions
 			p = strchr(p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture, '.');
@@ -3835,9 +3836,9 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 		while ((Num_texture_replacements < MAX_TEXTURE_REPLACEMENTS) && (optional_string("+old:")))
 		{
 			strcpy(Texture_replace[Num_texture_replacements].ship_name, p_objp->name);
-			stuff_string(Texture_replace[Num_texture_replacements].old_texture, F_NAME, NULL);
+			stuff_string(Texture_replace[Num_texture_replacements].old_texture, F_NAME, MAX_FILENAME_LEN);
 			required_string("+new:");
-			stuff_string(Texture_replace[Num_texture_replacements].new_texture, F_NAME, NULL);
+			stuff_string(Texture_replace[Num_texture_replacements].new_texture, F_NAME, MAX_FILENAME_LEN);
 
 			// get rid of extensions
 			p = strchr(Texture_replace[Num_texture_replacements].old_texture, '.');
@@ -4022,15 +4023,15 @@ void parse_common_object_data(p_object	*objp)
 		i = allocate_subsys_status();
 
 		objp->subsys_count++;
-		stuff_string(Subsys_status[i].name, F_NAME, NULL);
+		stuff_string(Subsys_status[i].name, F_NAME, NAME_LENGTH);
 		
 		if (optional_string("$Damage:"))
 			stuff_float(&Subsys_status[i].percent);
 
 		Subsys_status[i].subsys_cargo_name = -1;
 		if (optional_string("+Cargo Name:")) {
-			char cargo_name[256];
-			stuff_string(cargo_name, F_NAME, NULL);
+			char cargo_name[NAME_LENGTH];
+			stuff_string(cargo_name, F_NAME, NAME_LENGTH);
 			int index = string_lookup(cargo_name, Cargo_names, Num_cargo, "cargo", 0);
 			if (index == -1 && (Num_cargo < MAX_CARGO)) {
 				index = Num_cargo;
@@ -4784,7 +4785,7 @@ void parse_wing(mission *pm)
 	wingp = &Wings[Num_wings];
 
 	required_string("$Name:");
-	stuff_string(wingp->name, F_NAME, NULL);
+	stuff_string(wingp->name, F_NAME, NAME_LENGTH);
 	wingnum = find_wing_name(wingp->name);
 	if (wingnum != -1)
 		error_display(0, NOX("Redundant wing name: %s\n"), wingp->name);
@@ -4795,19 +4796,12 @@ void parse_wing(mission *pm)
 	wingp->total_departed = 0;	// Goober5000
 	wingp->flags = 0;
 
-	// needed because stuff_string uses the NAME_LENGTH limit to load something into an array of
-	// MAX_FILENAME_LEN+1 size!!! (c.f. the regular player squad logo loading routine)
-	// I put this outside the if because the if is optional, and I want to make the Assert
-	// a catch-all to flag the potential error on every mission load: this way you avoid nasty
-	// surprises later :) - Goober5000
-	Assert(NAME_LENGTH <= MAX_FILENAME_LEN+1);
-	
 	// squad logo - Goober5000
 	if (optional_string("+Squad Logo:"))
 	{
 		int flag = -1;
 
-		stuff_string(wingp->wing_squad_filename, F_NAME, NULL);
+		stuff_string(wingp->wing_squad_filename, F_NAME, MAX_FILENAME_LEN);
 
 		// load it only if FRED isn't running
 		if (!Fred_running)
@@ -4865,7 +4859,7 @@ void parse_wing(mission *pm)
 	if ( wingp->arrival_location != ARRIVE_AT_LOCATION )
 	{
 		required_string("$Arrival Anchor:");
-		stuff_string(name, F_NAME, NULL);
+		stuff_string(name, F_NAME, NAME_LENGTH);
 		wingp->arrival_anchor = get_anchor(name);
 	}
 
@@ -4904,7 +4898,7 @@ void parse_wing(mission *pm)
 	if ( wingp->departure_location != DEPART_AT_LOCATION )
 	{
 		required_string("$Departure Anchor:");
-		stuff_string( name, F_NAME, NULL );
+		stuff_string( name, F_NAME, NAME_LENGTH );
 		wingp->departure_anchor = get_anchor(name);
 	}
 
@@ -5250,7 +5244,7 @@ void post_process_ships_wings()
 
 void parse_event(mission *pm)
 {
-	char buf[256];
+	char buf[NAME_LENGTH];
 	mission_event *event;
 
 	event = &Mission_events[Num_mission_events];
@@ -5260,7 +5254,7 @@ void parse_event(mission *pm)
 	event->formula = get_sexp_main();
 
 	if (optional_string("+Name:")){
-		stuff_string(event->name, F_NAME, NULL);
+		stuff_string(event->name, F_NAME, NAME_LENGTH);
 	} else {
 		event->name[0] = 0;
 	}
@@ -5286,14 +5280,14 @@ void parse_event(mission *pm)
 	}
 
 	if ( optional_string("+Objective:") ) {
-		stuff_string(buf, F_NAME, NULL);
+		stuff_string(buf, F_NAME, NAME_LENGTH);
 		event->objective_text = vm_strdup(buf);
 	} else {
 		event->objective_text = NULL;
 	}
 
 	if ( optional_string("+Objective key:") ) {
-		stuff_string(buf, F_NAME, NULL);
+		stuff_string(buf, F_NAME, NAME_LENGTH);
 		event->objective_key_text = vm_strdup(buf);
 	} else {
 		event->objective_key_text = NULL;
@@ -5338,14 +5332,14 @@ void parse_goal(mission *pm)
 	find_and_stuff("$Type:", &goalp->type, F_NAME, Goal_type_names, Num_goal_type_names, "goal type");
 
 	required_string("+Name:");
-	stuff_string(goalp->name, F_NAME, NULL);
+	stuff_string(goalp->name, F_NAME, NAME_LENGTH);
 
 	// backwards compatibility for old Fred missions - all new missions should use $MessageNew
 	if(optional_string("$Message:")){
-		stuff_string(goalp->message, F_NAME, NULL, MAX_GOAL_TEXT);
+		stuff_string(goalp->message, F_NAME, MAX_GOAL_TEXT);
 	} else {
 		required_string("$MessageNew:");
-		stuff_string(goalp->message, F_MULTITEXT, NULL, MAX_GOAL_TEXT);
+		stuff_string(goalp->message, F_MULTITEXT, MAX_GOAL_TEXT);
 	}
 
 	if (optional_string("$Rating:")){
@@ -5393,7 +5387,7 @@ void parse_waypoint_list(mission *pm)
 	wpl = &Waypoint_lists[Num_waypoint_lists];
 
 	required_string("$Name:");
-	stuff_string(wpl->name, F_NAME, NULL);
+	stuff_string(wpl->name, F_NAME, NAME_LENGTH);
 
 	required_string("$List:");
 	wpl->count = stuff_vector_list(wpl->waypoints, MAX_WAYPOINTS_PER_LIST);
@@ -5408,7 +5402,7 @@ void parse_waypoints(mission *pm)
 	required_string("#Waypoints");
 
 	jump_node *jnp;
-	char file_name[64];
+	char file_name[MAX_FILENAME_LEN] = { 0 };
 
 	while (optional_string("$Jump Node:")) {
 		stuff_vector(&pos);
@@ -5416,11 +5410,11 @@ void parse_waypoints(mission *pm)
 		Assert(jnp != NULL);
 
 		if (optional_string("$Jump Node Name:") || optional_string("+Jump Node Name:")) {
-			stuff_string(jnp->get_name_ptr(), F_NAME, NULL);
+			stuff_string(jnp->get_name_ptr(), F_NAME, NAME_LENGTH);
 		}
 
 		if(optional_string("+Model File:")){
-			stuff_string(file_name, F_NAME, NULL);
+			stuff_string(file_name, F_NAME, MAX_FILENAME_LEN);
 			jnp->set_model(file_name);
 		}
 
@@ -5471,7 +5465,7 @@ void parse_reinforcement(mission *pm)
 	ptr = &Reinforcements[Num_reinforcements];
 
 	required_string("$Name:");
-	stuff_string(ptr->name, F_NAME, NULL);	
+	stuff_string(ptr->name, F_NAME, NAME_LENGTH);	
 
 	find_and_stuff("$Type:", &ptr->type, F_NAME, Reinforcement_type_names, Num_reinforcement_type_names, "reinforcement type");
 
@@ -5578,7 +5572,7 @@ void parse_one_background(background_t *background)
 		starfield_list_entry sle;
 
 		// filename
-		stuff_string(sle.filename, F_NAME, NULL);
+		stuff_string(sle.filename, F_NAME, MAX_FILENAME_LEN);
 
 		// angles
 		required_string("+Angles:");
@@ -5603,7 +5597,7 @@ void parse_one_background(background_t *background)
 		starfield_list_entry sle;
 
 		// filename
-		stuff_string(sle.filename, F_NAME, NULL);
+		stuff_string(sle.filename, F_NAME, MAX_FILENAME_LEN);
 
 		// angles
 		required_string("+Angles:");
@@ -5669,7 +5663,7 @@ void parse_bitmaps(mission *pm)
 	strcpy(Neb2_texture_name, "Eraseme3");
 	Neb2_poof_flags = ((1<<0) | (1<<1) | (1<<2) | (1<<3) | (1<<4) | (1<<5));
 	if(optional_string("+Neb2:")){
-		stuff_string(Neb2_texture_name, F_NAME, NULL);
+		stuff_string(Neb2_texture_name, F_NAME, MAX_FILENAME_LEN);
 
 		required_string("+Neb2Flags:");			
 		stuff_int(&Neb2_poof_flags);
@@ -5685,7 +5679,7 @@ void parse_bitmaps(mission *pm)
 		nebula_close();
 	} else {
 		if (optional_string("+Nebula:")) {
-			stuff_string(str, F_NAME, NULL, MAX_FILENAME_LEN);
+			stuff_string(str, F_NAME, MAX_FILENAME_LEN);
 			
 			// parse the proper nebula type (full or not)	
 			for (z=0; z<NUM_NEBULAS; z++){
@@ -5703,7 +5697,7 @@ void parse_bitmaps(mission *pm)
 			}
 
 			if (optional_string("+Color:")) {
-				stuff_string(str, F_NAME, NULL, MAX_FILENAME_LEN);
+				stuff_string(str, F_NAME, MAX_FILENAME_LEN);
 				for (z=0; z<NUM_NEBULA_COLORS; z++){
 					if (!stricmp(str, Nebula_colors[z])) {
 						Mission_palette = z;
@@ -5757,7 +5751,7 @@ void parse_bitmaps(mission *pm)
 	stars_load_first_valid_background();
 
 	if (optional_string("$Environment Map:")) {
-		stuff_string(pm->envmap_name, F_NAME, NULL);
+		stuff_string(pm->envmap_name, F_NAME, MAX_FILENAME_LEN);
 	}
 
 	// bypass spurious stuff from e.g. FS1 missions
@@ -5780,6 +5774,7 @@ void parse_asteroid_fields(mission *pm)
 
 	while (required_string_either("#", "$density:")) {
 		float speed, density;
+		int type;
 
 
 		Assert(i < 1);
@@ -5790,12 +5785,14 @@ void parse_asteroid_fields(mission *pm)
 
 		Asteroid_field.field_type = FT_ACTIVE;
 		if (optional_string("+Field Type:")) {
-			stuff_int((int*)&Asteroid_field.field_type);
+			stuff_int( &type );
+			Asteroid_field.field_type = (field_type_t)type;
 		}
 
 		Asteroid_field.debris_genre = DG_ASTEROID;
 		if (optional_string("+Debris Genre:")) {
-			stuff_int((int*)&Asteroid_field.debris_genre);
+			stuff_int( &type );
+			Asteroid_field.debris_genre = (debris_genre_t)type;
 		}
 
 		Asteroid_field.field_debris_type[0] = -1;
@@ -6670,7 +6667,7 @@ int mission_parse_is_multi(char *filename, char *mission_name)
 
 			return 0;
 		}
-		stuff_string( mission_name, F_NAME, NULL );
+		stuff_string( mission_name, F_NAME, NAME_LENGTH );
 		if ( skip_to_string("+Game Type Flags:") != 1 ) {
 			nprintf(("Network", "Unable to process %s because we couldn't find +Game Type Flags:\n", filename));
 
