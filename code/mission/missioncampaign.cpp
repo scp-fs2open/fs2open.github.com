@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.43 $
- * $Date: 2006-06-27 05:07:49 $
+ * $Revision: 2.44 $
+ * $Date: 2006-09-11 06:02:14 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/06/27 05:07:49  taylor
+ * fix various compiler warnings and things that Valgrind complained about
+ *
  * Revision 2.42  2006/06/10 18:34:08  Goober5000
  * fix parsing/handling of debriefing persona indexes
  * --Goober5000
@@ -403,10 +406,16 @@ int Campaign_ended_in_mission = 0;
 
 // stuff for selecting campaigns.  We need to keep both arrays around since we display the
 // list of campaigns by name, but must load campaigns by filename
-char *Campaign_names[MAX_CAMPAIGNS];
-char *Campaign_file_names[MAX_CAMPAIGNS];
+char *Campaign_names[MAX_CAMPAIGNS] = { NULL };
+char *Campaign_file_names[MAX_CAMPAIGNS] = { NULL };
+char *Campaign_descs[MAX_CAMPAIGNS] = { NULL };
 int	Num_campaigns;
 int Campaign_file_missing;
+int Campaign_names_inited = 0;
+
+// stuff used for campaign list building
+static bool MC_desc = false;
+static bool MC_multiplayer = false;
 
 char *campaign_types[MAX_CAMPAIGN_TYPES] = 
 {
@@ -565,10 +574,40 @@ int mission_campaign_get_mission_list(char *filename, char **list, int max)
 	return num;
 }
 
+void mission_campaign_free_list()
+{
+	int i;
+
+	if ( !Campaign_names_inited )
+		return;
+
+	for (i = 0; i < Num_campaigns; i++) {
+		if (Campaign_names[i] != NULL) {
+			vm_free(Campaign_names[i]);
+			Campaign_names[i] = NULL;
+		}
+
+		if (Campaign_file_names[i] != NULL) {
+			vm_free(Campaign_file_names[i]);
+			Campaign_file_names[i] = NULL;
+		}
+
+		if (Campaign_descs[i] != NULL) {
+			vm_free(Campaign_descs[i]);
+			Campaign_descs[i] = NULL;
+		}
+	}
+
+	Num_campaigns = 0;
+	Campaign_names_inited = 0;
+}
+
 void mission_campaign_maybe_add( char *filename, int multiplayer )
 {
-	char name[NAME_LENGTH];
-	int type,max_players;
+	Int3();
+
+/*	char name[NAME_LENGTH];
+	int type, max_players;
 
 	if ( mission_campaign_get_info( filename, name, &type, &max_players) ) {
 		if ( !multiplayer && ( type == CAMPAIGN_TYPE_SINGLE) ) {
@@ -576,66 +615,109 @@ void mission_campaign_maybe_add( char *filename, int multiplayer )
 			Campaign_file_names[Num_campaigns] = vm_strdup(filename);
 			Num_campaigns++;
 		}
+	}*/
+}
+
+int mission_campaign_maybe_add(char *filename)
+{
+	char name[NAME_LENGTH];
+	char *desc = NULL;
+	int type, max_players;
+
+	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
+		if ( !MC_multiplayer && (type == CAMPAIGN_TYPE_SINGLE) ) {
+			Campaign_names[Num_campaigns] = vm_strdup(name);
+
+			if (MC_desc)
+				Campaign_descs[Num_campaigns] = desc;
+
+			Num_campaigns++;
+
+			return 1;
+		}
 	}
+
+	if (desc != NULL)
+		vm_free(desc);
+
+	return 0;
 }
 
 // mission_campaign_build_list() builds up the list of campaigns that the user might
 // be able to pick from.  It uses the multiplayer flag to tell if we should display a list
 // of single or multiplayer campaigns.  This routine sets the Num_campaigns and Campaign_names
 // global variables
-void mission_campaign_build_list( int multiplayer )
+void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 {
-	Num_campaigns = 0;
-	mission_campaign_maybe_add( BUILTIN_CAMPAIGN, multiplayer);
+	char wild_card[10];
+	int i, j, incr = 0;
+	char *t = NULL;
 
-	char wild_card[256];
-	memset(wild_card, 0, 256);
-	strcpy(wild_card, NOX("data" DIR_SEPARATOR_STR "missions" DIR_SEPARATOR_STR "*"));
+	if (Campaign_names_inited)
+		return;
+
+	MC_desc = desc;
+	MC_multiplayer = multiplayer;
+
+	memset(wild_card, 0, sizeof(wild_card));
+	strcpy(wild_card, NOX("*"));
 	strcat(wild_card, FS_CAMPAIGN_FILE_EXT);
 
-#if defined _WIN32
-	int find_handle;
-	_finddata_t find;
-	find_handle = _findfirst( wild_card, &find );
-	if( find_handle != -1 )	{
-		if ( !(find.attrib & _A_SUBDIR) && stricmp(find.name, BUILTIN_CAMPAIGN) ){
-			mission_campaign_maybe_add( find.name, multiplayer);
-		}
+	// if we have already been loaded then free everything and reload
+	if (Num_campaigns != 0)
+		mission_campaign_free_list();
 
-		while( !_findnext( find_handle, &find ) )	{
-			if ( !(find.attrib & _A_SUBDIR) && stricmp(find.name, BUILTIN_CAMPAIGN) )	{
-				if ( Num_campaigns >= MAX_CAMPAIGNS ){
-					//MessageBox( -2,-2, 1, "Only the first 300 files will be displayed.", "Ok" );
-					break;
-				} else {
-					mission_campaign_maybe_add( find.name, multiplayer);
+	// set filter for cf_get_file_list() if there isn't one set already (the simroom has a special one)
+	if (Get_file_list_filter == NULL)
+		Get_file_list_filter = mission_campaign_maybe_add;
+
+
+	// now get the list of all mission names
+	// NOTE: we don't do sorting here, but we assume CF_SORT_NAME, and do it manually below
+	int rc = cf_get_file_list(MAX_CAMPAIGNS, Campaign_file_names, CF_TYPE_MISSIONS, wild_card, CF_SORT_NONE);
+	Assert( rc == Num_campaigns );
+
+
+	// now sort everything, if we are supposed to
+	if (sort) {
+		incr = Num_campaigns / 2;
+
+		while (incr > 0) {
+			for (i = incr; i < Num_campaigns; i++) {
+				j = i - incr;
+	
+				while (j >= 0) {
+					if (stricmp(Campaign_file_names[j], Campaign_file_names[j + incr]) > 0) {
+						// first, do filenames
+						t = Campaign_file_names[j];
+						Campaign_file_names[j] = Campaign_file_names[j + incr];
+						Campaign_file_names[j + incr] = t;
+
+						// next, actual names
+						t = Campaign_names[j];
+						Campaign_names[j] = Campaign_names[j + incr];
+						Campaign_names[j + incr] = t;
+
+						// finally, do descriptions
+						if (desc) {
+							t = Campaign_descs[j];
+							Campaign_descs[j] = Campaign_descs[j + incr];
+							Campaign_descs[j + incr] = t;
+						}
+
+						j -= incr;
+					} else {
+						break;
+					}
 				}
 			}
+
+			incr /= 2;
 		}
 	}
-#elif defined SCP_UNIX
-	glob_t globinfo;
-	memset(&globinfo, 0, sizeof(globinfo));
-	int status = glob(wild_card, 0, NULL, &globinfo);
-	if (status == 0) {
-		for (unsigned int i = 0;  i < globinfo.gl_pathc;  i++) {
-			// Determine if this is a regular file
-			struct stat statbuf;
-			memset(&statbuf, 0, sizeof(statbuf));
-			stat(globinfo.gl_pathv[i], &statbuf);
-			if (S_ISREG(statbuf.st_mode) &&
-				 (strcasecmp(globinfo.gl_pathv[i], BUILTIN_CAMPAIGN) != 0))
-			{
-				if ( Num_campaigns >= MAX_CAMPAIGNS ){
-					break;
-				} else {
-					mission_campaign_maybe_add(globinfo.gl_pathv[i], multiplayer);
-				}
-			}
-		}
-		globfree(&globinfo);
-	}
-#endif
+
+	// Done!
+	Campaign_names_inited = 1;
 }
 
 
@@ -715,11 +797,15 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 		// the actual campaign.  In this case we bypass the norm and try to access the campaign
 		// savefile anyway.  We HAVE to do this or we get data loss at some point. - taylor
 		if ( !Fred_running && !(pl->flags & PLAYER_FLAGS_IS_MULTI) ) {
-			if ( mission_campaign_savefile_load(filename, pl) )
+			if ( mission_campaign_savefile_load(filename, pl) ) {
 				Campaign_file_missing = 1;
 				return CAMPAIGN_ERROR_MISSING;
+			}
 		}
 
+		Campaign.filename[0] = 0;
+		Campaign.num_missions = 0;
+	
 		return CAMPAIGN_ERROR_CORRUPT;
 
 	} else {
@@ -2431,6 +2517,8 @@ void mission_campaign_close()
 		Campaign.missions[i].num_events = 0;
 		Campaign.missions[i].num_saved_variables = 0;	// Goober5000
 	}
+
+	Campaign.num_missions = 0;
 }
 
 // extract the mission filenames for a campaign.  
@@ -2693,10 +2781,24 @@ int mission_load_up_campaign( player *pl )
 	if ( pl == NULL )
 		pl = Player;
 
-	if (strlen(pl->current_campaign))
+	if ( strlen(pl->current_campaign) ) {
 		return mission_campaign_load(pl->current_campaign, pl);
-	else
-		return mission_campaign_load(BUILTIN_CAMPAIGN, pl);
+	} else {
+		int rc = mission_campaign_load(BUILTIN_CAMPAIGN, pl);
+
+		// if the builtin campaign is missing/corrupt then try and fall back on whatever is available
+		if (rc) {
+			// no descriptions, and no sorting since we want the actual first entry found
+			mission_campaign_build_list(false, false);
+
+			if ( (Campaign_file_names[0] != NULL) && strlen(Campaign_file_names[0]) )
+				rc = mission_campaign_load(Campaign_file_names[0], pl);
+
+			mission_campaign_free_list();
+		}
+
+		return rc;
+	}
 }
 
 // for end of campaign in the single player game.  Called when the end of campaign state is

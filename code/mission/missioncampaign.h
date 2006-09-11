@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.12 $
- * $Date: 2006-06-10 18:34:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2006-09-11 06:02:14 $
+ * $Author: taylor $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/06/10 18:34:08  Goober5000
+ * fix parsing/handling of debriefing persona indexes
+ * --Goober5000
+ *
  * Revision 2.11  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -447,7 +451,9 @@ typedef struct campaign_info
 #define MAX_CAMPAIGNS	128
 extern char *Campaign_names[MAX_CAMPAIGNS];
 extern char *Campaign_file_names[MAX_CAMPAIGNS];
+extern char *Campaign_descs[MAX_CAMPAIGNS];
 extern int	Num_campaigns;
+extern int	Campaign_names_inited;
 
 // if the campaign file is missing this will get set for us to check against
 extern int Campaign_file_missing;
@@ -489,7 +495,8 @@ int mission_campaign_load_fred(char *filename, char *name_verify = NULL);
 // used by Fred to get a mission's list of goals.
 void read_mission_goal_list(int num);
 
-void mission_campaign_build_list( int multiplayer );
+void mission_campaign_build_list(bool desc = false, bool sort = true, bool multiplayer = false);
+void mission_campaign_free_list();
 
 // returns index of mission with passed name
 extern int mission_campaign_find_mission( char *name );
