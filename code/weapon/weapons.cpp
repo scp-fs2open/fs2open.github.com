@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.185  2006/07/08 11:30:40  taylor
+ * debug-build-only issue, make sure that thrusters are properly enabled if needed for POF based weapons when using cheat keys
+ *
  * Revision 2.184  2006/07/06 04:06:04  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
@@ -6257,15 +6260,18 @@ void weapons_page_in()
 				bm_page_in_texture(wip->Weapon_particle_spew_bitmap);//page in the bitmap-Bobboau
 			}
 		}
-	//page in decal textures
+
+		// page in decal textures
 		if(wip->decal_texture != -1){
 			bm_page_in_xparent_texture( wip->decal_texture, 1);
 			if(wip->decal_backface_texture != -1){
 				bm_page_in_xparent_texture( wip->decal_backface_texture);
 			}
-
 		}
 
+		// muzzle flashes
+		if (wip->muzzle_flash >= 0)
+			mflash_mark_as_used(wip->muzzle_flash);
 	}
 
 	// Counter measures
@@ -6310,6 +6316,9 @@ void weapons_page_in_cheats()
 
 
 	Assert( used_weapons != NULL );
+
+	// force a page in of all muzzle flashes
+	mflash_page_in(true);
 
 	// page in models for all weapon types that aren't already loaded
 	for (i=0; i<Num_weapon_types; i++ )	{

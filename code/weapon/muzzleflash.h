@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.h $
- * $Revision: 2.5 $
- * $Date: 2005-10-30 06:44:59 $
- * $Author: wmcoolmon $
+ * $Revision: 2.6 $
+ * $Date: 2006-09-11 05:44:23 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/10/30 06:44:59  wmcoolmon
+ * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
+ *
  * Revision 2.4  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -65,10 +68,6 @@
 struct object;
 struct vec3d;
 
-// muzzle flash types
-#define MAX_MUZZLE_FLASH_TYPES				10
-extern int Num_mflash_types;
-
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH FUNCTIONS
 // 
@@ -93,5 +92,11 @@ void mflash_render_all();
 
 // lookup type by name
 int mflash_lookup(char *name);
+
+// mark as used
+void mflash_mark_as_used(int index = -1);
+
+// level page in
+void mflash_page_in(bool load_all = false);
 
 #endif
