@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.71 $
- * $Date: 2006-07-24 07:36:50 $
+ * $Revision: 2.72 $
+ * $Date: 2006-09-11 05:38:16 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2006/07/24 07:36:50  taylor
+ * minor cleanup/optimization to beam warmup glow rendering function
+ * various lighting code cleanups
+ *  - try to always make sure beam origin lights occur outside of model
+ *  - make Static_lights[] dynamic
+ *  - be sure to reset to first 8 lights when moving on to render spec related texture passes
+ *  - add ambient color to point lights (helps warp effects)
+ *  - sort lights to try and get more important and/or visible lights to always happen in initial render pass
+ *
  * Revision 2.70  2006/07/05 23:36:07  Goober5000
  * cvs comment tweaks
  *
@@ -1718,6 +1727,9 @@ void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *shot, float shrink)
 	
 	// draw all sections	
 	for(s_idx=0; s_idx<bwi->beam_num_sections; s_idx++){
+		if ( (bwi->sections[s_idx].texture < 0) || (bwi->sections[s_idx].width <= 0.0f) )
+			continue;
+
 		// calculate the beam points
 		scale = frand_range(1.0f - bwi->sections[s_idx].flicker, 1.0f + bwi->sections[s_idx].flicker);
 		beam_calc_facing_pts(&top1, &bottom1, &fvec, start, bwi->sections[s_idx].width * scale * shrink, bwi->sections[s_idx].z_add);	
