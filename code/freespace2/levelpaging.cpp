@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/LevelPaging.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-12-08 15:11:29 $
+ * $Revision: 2.10 $
+ * $Date: 2006-09-11 05:44:23 $
  * $Author: taylor $
  *
  * Code to page in all the bitmaps at the beginning of a level.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/12/08 15:11:29  taylor
+ * a few game_busy() changes
+ *
  * Revision 2.8  2005/04/21 15:58:07  taylor
  * initial changes to mission loading and status in debug builds
  *  - move bmpman page in init to an earlier stage to avoid unloading sexp loaded images
@@ -107,6 +110,7 @@ extern void training_mission_page_in();
 extern void neb2_page_in();
 extern void message_pagein_mission_messages();
 extern void model_page_in_stop();
+extern void mflash_page_in(bool);
 
 // Pages in all the texutures for the currently
 // loaded mission.  Call game_busy() occasionally...
@@ -138,6 +142,7 @@ void level_page_in()
 	shield_hit_page_in();
 	asteroid_page_in();
 	neb2_page_in();
+	mflash_page_in(false);  // just so long as it happens after weapons_page_in()
 
 	// preload mission messages if NOT running low-memory (greater than 48MB)
 	if (game_using_low_mem() == false) {

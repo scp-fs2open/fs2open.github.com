@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.8 $
- * $Date: 2006-06-07 04:48:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2006-09-11 05:44:23 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2006/06/07 04:48:38  wmcoolmon
+ * Limbo flag support; removed unneeded muzzle flash flag
+ *
  * Revision 2.7  2005/10/30 06:44:59  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -85,6 +88,8 @@
  * $NoKeywords: $
  */
 
+#include <vector>
+
 #include "globalincs/systemvars.h"
 #include "parse/parselo.h"
 #include "weapon/muzzleflash.h"
@@ -98,20 +103,27 @@
 // 
 
 // muzzle flash info - read from a table
-#define MAX_MFLASH_NAME_LEN		32
-#define MAX_MFLASH_BLOBS			5
-typedef struct mflash_info {
-	char		name[MAX_MFLASH_NAME_LEN+1];
-	char		blob_names[MAX_MFLASH_BLOBS][MAX_MFLASH_NAME_LEN+1];			// blob anim name
-	int		blob_anims[MAX_MFLASH_BLOBS];											// blob anim
-	float		blob_offset[MAX_MFLASH_BLOBS];										// blob offset from muzzle
-	float		blob_radius[MAX_MFLASH_BLOBS];										// blob radius
-	int		num_blobs;																	// # of blobs
-} mflash_info;
-mflash_info Mflash_info[MAX_MUZZLE_FLASH_TYPES];
-int Num_mflash_types = 0;
+typedef struct mflash_blob_info {
+	char name[MAX_FILENAME_LEN];
+	int anim_id;
+	float offset;
+	float radius;
 
-#define MAX_MFLASH				50
+	mflash_blob_info() { memset(this, 0, sizeof(mflash_blob_info)); anim_id = -1; };
+} mflash_blob_info;
+
+typedef struct mflash_info {
+	char name[MAX_FILENAME_LEN];
+	int	 used_this_level;
+	std::vector<mflash_blob_info> blobs;
+
+	mflash_info() { memset(this, 0, sizeof(mflash_info)); };
+} mflash_info;
+
+std::vector<mflash_info> Mflash_info;
+
+
+//#define MAX_MFLASH				50
 
 // Stuff for missile trails doesn't need to be saved or restored... or does it?
 /*
@@ -134,56 +146,54 @@ mflash Mflash_used_list;
 // MUZZLE FLASH FUNCTIONS
 // 
 
-// initialize muzzle flash stuff for the whole game
-void mflash_game_init()
+void parse_mflash_tbl(char *filename)
 {
-	mflash_info bogus;
-	mflash_info *m;	
-	char name[MAX_MFLASH_NAME_LEN];
-	float offset, radius;
-	int idx;
+	int rval;
+	uint i;
 
-	read_file_text("mflash.tbl");
-	reset_parse();
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("Unable to parse %s!  Code = %i.\n", rval, filename));
+	} else {
+		read_file_text(filename);
+		reset_parse();		
+	}
 
 	// header
 	required_string("#Muzzle flash types");
 
-	// read em in
-	Num_mflash_types = 0;	
-	while(optional_string("$Mflash:")){
-		if(Num_mflash_types < MAX_MUZZLE_FLASH_TYPES){
-			m = &Mflash_info[Num_mflash_types++];
-		} else {
-			m = &bogus;
-		}
-		memset(m, 0, sizeof(mflash_info));
-		for(idx=0; idx<MAX_MFLASH_BLOBS; idx++){
-			m->blob_anims[idx] = -1;
-		}
+	while ( optional_string("$Mflash:") ) {
+		mflash_info mflash;
 
 		required_string("+name:");
-		stuff_string(m->name, F_NAME, NULL);
+		stuff_string(mflash.name, F_NAME, NULL, MAX_FILENAME_LEN-1);
 
 		// read in all blobs
-		m->num_blobs = 0;
-		while(optional_string("+blob_name:")){
-			stuff_string(name, F_NAME, NULL, MAX_MFLASH_NAME_LEN);
+		while ( optional_string("+blob_name:") ) {
+			mflash_blob_info mblob;
+
+			stuff_string(mblob.name, F_NAME, NULL, MAX_FILENAME_LEN-1);
 
 			required_string("+blob_offset:");
-			stuff_float(&offset);
+			stuff_float(&mblob.offset);
 
 			required_string("+blob_radius:");
-			stuff_float(&radius);
+			stuff_float(&mblob.radius);
 
-			// if we have room left
-			if(m->num_blobs < MAX_MFLASH_BLOBS){
-				strcpy(m->blob_names[m->num_blobs], name);
-				m->blob_offset[m->num_blobs] = offset;
-				m->blob_radius[m->num_blobs] = radius;				
+			mflash.blobs.push_back(mblob);
+		}
 
-				m->num_blobs++;
-			}
+		for (i = 0; i < Mflash_info.size(); i++) {
+			if ( !stricmp(mflash.name, Mflash_info[i].name) )
+				break;
+		}
+
+		// no matching name exists so add as new
+		if (i == Mflash_info.size()) {
+			Mflash_info.push_back(mflash);
+		}
+		// a mflash of the same name exists, don't add it again
+		else {
+			Warning(LOCATION, "Muzzle flash \"%s\" already exists!  Using existing entry instead.", mflash.name);
 		}
 	}
 
@@ -191,11 +201,53 @@ void mflash_game_init()
 	required_string("#end");
 }
 
+// initialize muzzle flash stuff for the whole game
+void mflash_game_init()
+{
+	// parse main table first
+	parse_mflash_tbl("mflash.tbl");
+
+	// look for any modular tables
+	parse_modular_table(NOX("*-mfl.tbm"), parse_mflash_tbl);
+}
+
+void mflash_mark_as_used(int index)
+{
+	if (index < 0)
+		return;
+
+	Assert( index < (int)Mflash_info.size() );
+
+	Mflash_info[index].used_this_level++;
+}
+
+void mflash_page_in(bool load_all)
+{
+	uint i, idx;
+	int num_frames, fps;
+
+	// load up all anims
+	for ( i = 0; i < Mflash_info.size(); i++) {
+		// skip if it's not used
+		if ( !load_all && !Mflash_info[i].used_this_level )
+			continue;
+
+		// blobs
+		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
+			Mflash_info[i].blobs[idx].anim_id = bm_load_animation(Mflash_info[i].blobs[idx].name, &num_frames, &fps, 1);
+		//	Assert( Mflash_info[i].blobs[idx].anim_id >= 0 );
+			if (Mflash_info[i].blobs[idx].anim_id < 0)
+				Warning(LOCATION, "Missing muzzle flash blob '%s' in mflash.tbl", Mflash_info[i].blob_names[idx]);
+			else
+				bm_page_in_xparent_texture( Mflash_info[i].blobs[idx].anim_id );
+		}
+	}
+}
+
 // initialize muzzle flash stuff for the level
 void mflash_level_init()
 {
-	int i, idx;
-	int num_frames, fps;
+	uint i, idx;
 
 	/*
 	Num_mflash = 0;
@@ -209,15 +261,10 @@ void mflash_level_init()
 	}
 	*/
 
-	// load up all anims
-	for(i=0; i<Num_mflash_types; i++){
-		// blobs
-		for(idx=0; idx<Mflash_info[i].num_blobs; idx++){
-			Mflash_info[i].blob_anims[idx] = -1;
-			Mflash_info[i].blob_anims[idx] = bm_load_animation(Mflash_info[i].blob_names[idx], &num_frames, &fps, 1);
-			if(Mflash_info[i].blob_anims[idx] < 0) {
-				Warning(LOCATION, "Missing muzzle flash blob '%s' in mflash.tbl", Mflash_info[i].blob_names[idx]);
-			}
+	// reset all anim usage for this level
+	for ( i = 0; i < Mflash_info.size(); i++) {
+		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
+			Mflash_info[i].used_this_level = 0;
 		}
 	}
 }
@@ -225,6 +272,19 @@ void mflash_level_init()
 // shutdown stuff for the level
 void mflash_level_close()
 {
+	uint i, idx;
+
+	// release all anims
+	for ( i = 0; i < Mflash_info.size(); i++) {
+		// blobs
+		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
+			if ( Mflash_info[i].blobs[idx].anim_id < 0 )
+				continue;
+
+			bm_release( Mflash_info[i].blobs[idx].anim_id );
+			Mflash_info[i].blobs[idx].anim_id = -1;
+		}
+	}
 }
 
 // create a muzzle flash on the guy
@@ -232,8 +292,9 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 {	
 	// mflash *mflashp;
 	mflash_info *mi;
+	mflash_blob_info *mbi;
 	particle_info p;
-	int idx;
+	uint idx;
 
 	// standalone server should never create trails
 	if(Game_mode & GM_STANDALONE_SERVER){
@@ -241,9 +302,8 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 	}
 
 	// illegal value
-	if((mflash_type >= Num_mflash_types) || (mflash_type < 0)){
+	if ( (mflash_type < 0) || (mflash_type >= (int)Mflash_info.size()) )
 		return;
-	}
 
 	/*
 	if (Num_mflash >= MAX_MFLASH ) {
@@ -269,20 +329,21 @@ void mflash_create(vec3d *gun_pos, vec3d *gun_dir, physics_info *pip, int mflash
 
 	// create the actual animations	
 	mi = &Mflash_info[mflash_type];
-	for(idx=0; idx<mi->num_blobs; idx++){		
+
+	for (idx = 0; idx < mi->blobs.size(); idx++) {
+		mbi = &mi->blobs[idx];
 
 		// bogus anim
-		if(mi->blob_anims[idx] < 0){
+		if (mbi->anim_id < 0)
 			continue;
-		}
-		
+
 		// fire it up
 		memset(&p, 0, sizeof(particle_info));
-		vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mi->blob_offset[idx]);
+		vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 		vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-		p.rad = mi->blob_radius[idx];
+		p.rad = mbi->radius;
 		p.type = PARTICLE_BITMAP;
-		p.optional_data = mi->blob_anims[idx];
+		p.optional_data = mbi->anim_id;
 		p.attached_objnum = -1;
 		p.attached_sig = 0;
 		particle_create(&p);
@@ -332,13 +393,12 @@ void mflash_render_all()
 // lookup type by name
 int mflash_lookup(char *name)
 {	
-	int idx;
+	uint idx;
 
 	// look it up
-	for(idx=0; idx<Num_mflash_types; idx++){
-		if(!stricmp(name, Mflash_info[idx].name)){
+	for (idx = 0; idx < Mflash_info.size(); idx++) {
+		if ( !stricmp(name, Mflash_info[idx].name) )
 			return idx;
-		}
 	}
 
 	// couldn't find it
