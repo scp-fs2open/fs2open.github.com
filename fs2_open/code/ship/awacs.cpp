@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.29 $
- * $Date: 2006-07-09 01:55:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.30 $
+ * $Date: 2006-09-11 06:47:59 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2006/07/09 01:55:41  Goober5000
+ * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
+ * this should fix Mantis #977
+ * --Goober5000
+ *
  * Revision 2.28  2006/07/06 22:00:39  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
@@ -369,8 +374,8 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	float test;
 	int closest_index = -1;
 	int idx, friendly_invisible = 0;
-	ship *shipp;
-	ship_info *sip;
+	ship *shipp = NULL;
+	ship_info *sip = NULL;
 
 	int viewer_has_primitive_sensors = (viewer->flags2 & SF2_PRIMITIVE_SENSORS);
 
@@ -400,13 +405,13 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		friendly_invisible = (shipp->flags2 & SF2_STEALTH) && (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS);
 	}
 	
-	int stealth_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (shipp->flags2 & SF2_STEALTH);
+	int stealth_ship = (target->type == OBJ_SHIP) && (shipp != NULL) && (shipp->flags2 & SF2_STEALTH);
 	int nebula_enabled = (The_mission.flags & MISSION_FLAG_FULLNEB);
-	int check_huge_ship = (target->type == OBJ_SHIP) && (target->instance >= 0) && (sip->flags & SIF_HUGE_SHIP);
+	int check_huge_ship = (target->type == OBJ_SHIP) && (sip != NULL) && (sip->flags & SIF_HUGE_SHIP);
 
 	// ships on the same team are always viewable
 	// not necessarily now! :) -- Goober5000
-	if ((target->type == OBJ_SHIP) && (shipp->team == viewer->team) && (!friendly_invisible))
+	if ((target->type == OBJ_SHIP) && (shipp != NULL) && (shipp->team == viewer->team) && (!friendly_invisible))
 		return FULLY_TARGETABLE;
 
 	// only check for Awacs if stealth ship or Nebula mission
@@ -461,6 +466,7 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 	// check for a tagged ship. TAG'd ships are _always_ visible
 	if (target->type == OBJ_SHIP)
 	{
+		Assert( shipp != NULL );
 		if (shipp->tag_left > 0.0f || shipp->level2_tag_left > 0.0f)
 			return FULLY_TARGETABLE;
 	}
