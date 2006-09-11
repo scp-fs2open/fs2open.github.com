@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.55 $
- * $Date: 2006-09-08 06:17:07 $
+ * $Revision: 2.56 $
+ * $Date: 2006-09-11 06:51:17 $
  * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2006/09/08 06:17:07  taylor
+ * add support for a server name in fs2open_pxo.cfg, rather than just an IP address for the server
+ *
  * Revision 2.54  2006/06/10 18:34:08  Goober5000
  * fix parsing/handling of debriefing persona indexes
  * --Goober5000
@@ -1599,13 +1602,13 @@ void debrief_traitor_init()
 		stagep->formula = get_sexp_main();
 		required_string("$multi text");
 		if ( Fred_running )	{
-			stuff_string( stagep->new_text, F_MULTITEXT, NULL, MAX_DEBRIEF_LEN);
+			stuff_string( stagep->new_text, F_MULTITEXT, MAX_DEBRIEF_LEN);
 		} else {
 			stagep->new_text = stuff_and_malloc_string( F_MULTITEXT, NULL, MAX_DEBRIEF_LEN);
 		}
 		required_string("$Voice:");
-		char traitor_voice_file[NAME_LENGTH];
-		stuff_string(traitor_voice_file, F_FILESPEC, NULL);
+		char traitor_voice_file[MAX_FILENAME_LEN];
+		stuff_string(traitor_voice_file, F_FILESPEC, MAX_FILENAME_LEN);
 
 // DKA 9/13/99	Only 1 traitor msg for FS2
 //		if ( Player->main_hall ) {
@@ -1619,7 +1622,7 @@ void debrief_traitor_init()
 
 		required_string("$Recommendation text:");
 		if ( Fred_running )	{
-			stuff_string( stagep->new_recommendation_text, F_MULTITEXT, NULL, MAX_RECOMMENDATION_LEN);
+			stuff_string( stagep->new_recommendation_text, F_MULTITEXT, MAX_RECOMMENDATION_LEN);
 		} else {
 			stagep->new_recommendation_text = stuff_and_malloc_string( F_MULTITEXT, NULL, MAX_RECOMMENDATION_LEN);
 		}

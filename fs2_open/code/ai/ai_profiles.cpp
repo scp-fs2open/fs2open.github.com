@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.16 $
- * $Date: 2006-07-12 04:59:03 $
+ * $Revision: 1.17 $
+ * $Date: 2006-09-11 06:49:38 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2006/07/12 04:59:03  taylor
+ * fix the endless-loop fix ;)  (this is what broke shield recharging btw)
+ *
  * Revision 1.15  2006/07/06 18:19:59  Goober5000
  * fix dumb endless loop bug
  * --Goober5000
@@ -142,7 +145,7 @@ void parse_ai_profiles_tbl(char *longname)
 
 	// new default?
 	if (optional_string("$Default Profile:"))
-		stuff_string(Default_profile_name, F_NAME, NULL, NAME_LENGTH);
+		stuff_string(Default_profile_name, F_NAME, NAME_LENGTH);
 
 	// begin reading data
 	while (required_string_either("#End","$Profile Name:"))
@@ -159,7 +162,7 @@ void parse_ai_profiles_tbl(char *longname)
 
 		// get the name
 		required_string("$Profile Name:");
-		stuff_string(profile_name, F_NAME, NULL, NAME_LENGTH);
+		stuff_string(profile_name, F_NAME, NAME_LENGTH);
 
 		// modular table stuff
 		if (optional_string("+nocreate"))

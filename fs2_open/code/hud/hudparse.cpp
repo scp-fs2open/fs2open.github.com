@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.43 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.44 $
+ * $Date: 2006-09-11 06:49:39 $
+ * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.42  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -664,27 +667,27 @@ int stuff_coords(hud_info* dest_hud, gauge_info* cg, bool required = false)
 		HUD_INT(dest_hud, cg->coord_dest)[1] += fl2i(percentage_temp[1]);
 	}
 
-	char buffer[32];
+	char buffer[MAX_FILENAME_LEN];
 	if(optional_string("+Image:"))
 	{
 		if(cg->image_dest)
 		{
-			stuff_string(HUD_CHAR(dest_hud, cg->image_dest), F_NAME, NULL);
+			stuff_string(HUD_CHAR(dest_hud, cg->image_dest), F_NAME, MAX_FILENAME_LEN);
 		}
 		else
 		{
-			stuff_string(buffer, F_NAME, NULL);
+			stuff_string(buffer, F_NAME, MAX_FILENAME_LEN);
 		}
 	}
 	if(optional_string("+Text:"))
 	{
 		if(cg->text_dest)
 		{
-			stuff_string(HUD_CHAR(dest_hud, cg->text_dest),  F_NAME, NULL);
+			stuff_string(HUD_CHAR(dest_hud, cg->text_dest), F_NAME, NAME_LENGTH);
 		}
 		else
 		{
-			stuff_string(buffer, F_NAME, NULL);
+			stuff_string(buffer, F_NAME, MAX_FILENAME_LEN);
 		}
 	}
 	if(optional_string("+Color:"))
@@ -724,12 +727,12 @@ static void parse_resolution(hud_info* dest_hud)
 
 static void parse_resolution_gauges(hud_info* dest_hud)
 {
-	char gaugename[32];
+	char gaugename[NAME_LENGTH];
 	gauge_info *cg, *parent;
 	while(!required_string_3("$Gauge:","$Resolution:","#End"))
 	{
 		required_string("$Gauge:");
-		stuff_string(gaugename, F_NAME, NULL);
+		stuff_string(gaugename, F_NAME, NAME_LENGTH);
 
 		parent = NULL;
 
@@ -781,7 +784,7 @@ hud_info* parse_ship_start()
 	required_string("$Ship:");
 	char shipname[NAME_LENGTH];
 	int ship_index;
-	stuff_string(shipname, F_NAME, NULL);
+	stuff_string(shipname, F_NAME, NAME_LENGTH);
 	ship_index = ship_info_lookup(shipname);
 
 	if(ship_index == -1)
@@ -843,7 +846,7 @@ void parse_custom_gauge()
 {
 	if(Num_gauge_types < MAX_HUD_GAUGE_TYPES)
 	{
-		char buffer[32];
+		char buffer[NAME_LENGTH];
 
 		gauge_info* cg = &gauges[Num_gauge_types];
 		memset(cg, 0, sizeof(gauge_info));
@@ -858,7 +861,7 @@ void parse_custom_gauge()
 		required_string("$Name:");
 		//Gotta make this a token
 		cg->fieldname[0] = '$';
-		stuff_string(cg->fieldname + 1, F_NAME, NULL);
+		stuff_string(cg->fieldname + 1, F_NAME, sizeof(cg->fieldname) - 1);
 		strcat(cg->fieldname, ":");
 
 		if(optional_string("+Default640X:"))
@@ -879,7 +882,7 @@ void parse_custom_gauge()
 		}
 		if(optional_string("+Parent:"))
 		{
-			stuff_string(buffer, F_NAME, NULL);
+			stuff_string(buffer, F_NAME, NAME_LENGTH);
 			cg->parent = hud_get_gauge(buffer);
 		}
 

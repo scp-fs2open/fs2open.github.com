@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.h $
- * $Revision: 2.8 $
- * $Date: 2005-12-29 08:08:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2006-09-11 06:51:17 $
+ * $Author: taylor $
  *
  * Scoring system structures, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.7  2005/07/13 03:35:32  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -246,8 +249,8 @@ typedef struct rank_stuff {
 	char		name[NAME_LENGTH];		// name of this rank
 	char		*promotion_text;			// text to display when promoted to this rank
 	int		points;						// points needed to reach this rank
-	char		bitmap[NAME_LENGTH];		// bitmap of this rank medal
-	char		promotion_voice_base[MAX_FILENAME_LEN - 1];
+	char		bitmap[MAX_FILENAME_LEN];		// bitmap of this rank medal
+	char		promotion_voice_base[MAX_FILENAME_LEN];
 } rank_stuff;
 
 #define STATS_FLAG_INVALID			(1<<0)

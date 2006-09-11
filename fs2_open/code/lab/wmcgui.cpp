@@ -9,11 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.29 $
- * $Date: 2006-08-20 00:47:10 $
+ * $Revision: 1.30 $
+ * $Date: 2006-09-11 06:49:39 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2006/08/20 00:47:10  taylor
+ * add render option for no glowmaps
+ * remove render option for fog (why was this even there??)
+ * add tech model view for missiles with special tech models (will hopefully help spur some work towards fixing the currently broken models)
+ * handle Z-buf issue that made the lab interface disappear when the transparent render option was ticked
+ *
  * Revision 1.28  2006/03/22 18:20:06  taylor
  * minor warning fixage
  *
@@ -92,14 +98,16 @@ bool ObjectClassInfoEntry::Parse()
 		char buf[NAME_LENGTH];
 		char buf2[NAME_LENGTH+3];	//for the end tag and name buffer
 
+		Assert( sizeof(buf2) >= (sizeof(buf) + 3) );
+
 		//Find the name of the thing we're parsing
 		parse_advance(1);
-		stuff_string(buf, F_NAME, ">", sizeof(buf)/sizeof(char));
+		stuff_string(buf, F_NAME, sizeof(buf), ">");
 		parse_advance(1);	//skip the end ">"
 
 		if(optional_string("+Name:"))
 		{
-			stuff_string(buf2, F_NAME, NULL, NAME_LENGTH);
+			stuff_string(buf2, F_NAME, sizeof(buf2));
 			Name = buf2;
 		}
 		if(optional_string("+Coords:"))
@@ -175,7 +183,7 @@ bool ScreenClassInfoEntry::Parse()
 
 		//Find the name of the thing we're parsing
 		parse_advance(1);
-		stuff_string(buf, F_NAME, NULL, sizeof(buf)/sizeof(char));
+		stuff_string(buf, F_NAME, sizeof(buf));
 
 		Name = buf;
 
@@ -240,7 +248,7 @@ void ClassInfoEntry::Parse(char* tag, int in_type)
 		if(in_type == CIE_IMAGE || in_type == CIE_IMAGE_NMCSD)
 		{
 			int num_frames;
-			stuff_string(buf, F_NAME, NULL, sizeof(buf));
+			stuff_string(buf, F_NAME, sizeof(buf));
 			Handles[CIE_HANDLE_N].Image = IMG_LOAD_ANIM(buf, &num_frames, NULL);
 			if(IMG_HANDLE_IS_VALID(Handles[CIE_HANDLE_N].Image) && num_frames)
 			{
@@ -261,22 +269,22 @@ void ClassInfoEntry::Parse(char* tag, int in_type)
 			{
 				if(optional_string("+Mouseover:"))
 				{
-					stuff_string(buf, F_NAME, NULL, sizeof(buf));
+					stuff_string(buf, F_NAME, sizeof(buf));
 					Handles[CIE_HANDLE_M].Image = IMG_LOAD(buf);
 				}
 				if(optional_string("+Clicked:"))
 				{
-					stuff_string(buf, F_NAME, NULL, sizeof(buf));
+					stuff_string(buf, F_NAME, sizeof(buf));
 					Handles[CIE_HANDLE_C].Image = IMG_LOAD(buf);
 				}
 				if(optional_string("+Selected:"))
 				{
-					stuff_string(buf, F_NAME, NULL, sizeof(buf));
+					stuff_string(buf, F_NAME, sizeof(buf));
 					Handles[CIE_HANDLE_S].Image = IMG_LOAD(buf);
 				}
 				if(optional_string("+Disabled:"))
 				{
-					stuff_string(buf, F_NAME, NULL, sizeof(buf));
+					stuff_string(buf, F_NAME, sizeof(buf));
 					Handles[CIE_HANDLE_D].Image = IMG_LOAD(buf);
 				}
 			}
@@ -287,42 +295,42 @@ void ClassInfoEntry::Parse(char* tag, int in_type)
 		{
 			if(optional_string("+Top Left:"))
 			{
-				stuff_string(buf, F_NAME, NULL, sizeof(buf));
+				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_TL].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Top Mid:"))
 			{
-				stuff_string(buf, F_NAME, NULL, sizeof(buf));
+				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_TM].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Top Right:"))
 			{
-				stuff_string(buf, F_NAME, NULL, sizeof(buf));
+				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_TR].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Mid Left:"))
 			{
-				stuff_string(buf, F_NAME, NULL, sizeof(buf));
+				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_ML].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Mid Right:"))
 			{
-				stuff_string(buf, F_NAME, NULL, sizeof(buf));
+				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_MR].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Bottom left:"))
 			{
-				stuff_string(buf, F_NAME, NULL, sizeof(buf));
+				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_BL].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Bottom Mid:"))
 			{
-				stuff_string(buf, F_NAME, NULL, sizeof(buf));
+				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_BM].Image = IMG_LOAD(buf);
 			}
 			if(optional_string("+Bottom Right:"))
 			{
-				stuff_string(buf, F_NAME, NULL, sizeof(buf));
+				stuff_string(buf, F_NAME, sizeof(buf));
 				Handles[CIE_HANDLE_BR].Image = IMG_LOAD(buf);
 			}
 		}

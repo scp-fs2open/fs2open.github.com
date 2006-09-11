@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.24 $
- * $Date: 2006-09-08 06:20:14 $
+ * $Revision: 2.25 $
+ * $Date: 2006-09-11 06:49:39 $
  * $Author: taylor $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2006/09/08 06:20:14  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.23  2006/01/26 03:23:29  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -1929,7 +1932,7 @@ void hud_config_color_save(char *name)
 void hud_config_color_load(char *name)
 {
 	int idx, rval;
-	char str[1024] = "";
+	char str[1024];
 	char *fname;
 
 	fname = cf_add_ext(name, ".hcf");
@@ -1945,7 +1948,7 @@ void hud_config_color_load(char *name)
 	// write out all gauges
 	for(idx=0; idx<NUM_HUD_GAUGES; idx++){		
 		required_string("+Gauge:");
-		stuff_string(str, F_NAME, NULL, 1023);
+		stuff_string(str, F_NAME, sizeof(str));
 
 		required_string("+RGBA:");
 		stuff_ubyte(&HUD_config.clr[idx].red);

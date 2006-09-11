@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.54 $
- * $Date: 2006-09-11 06:08:09 $
+ * $Revision: 2.55 $
+ * $Date: 2006-09-11 06:50:42 $
  * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2006/09/11 06:08:09  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 2.53  2006/07/06 20:46:39  Goober5000
  * WCS screaming stuff
  * --Goober5000
@@ -803,11 +806,11 @@ void persona_parse()
 	memset(&Personas[Num_personas], 0, sizeof(Persona));
 
 	required_string("$Persona:");
-	stuff_string(Personas[Num_personas].name, F_NAME, NULL);
+	stuff_string(Personas[Num_personas].name, F_NAME, NAME_LENGTH);
 
 	// get the type name and set the appropriate flag
 	required_string("$Type:");
-	stuff_string( type, F_NAME, NULL );
+	stuff_string( type, F_NAME, NAME_LENGTH );
 	for ( i = 0; i < MAX_PERSONA_TYPES; i++ ) {
 		if ( !stricmp( type, Persona_type_names[i]) ) {
 
@@ -824,10 +827,9 @@ void persona_parse()
 	}
 
 	char cstrtemp[NAME_LENGTH];
-	memset(cstrtemp, 0, NAME_LENGTH);
 	if ( optional_string("+") )
 	{
-		stuff_string(cstrtemp, F_NAME, NULL, NAME_LENGTH);
+		stuff_string(cstrtemp, F_NAME, NAME_LENGTH);
 
 		for (int j = 0; j < (int)Species_info.size(); j++)
 		{
@@ -896,7 +898,7 @@ void message_parse( )
 	msgp = &Messages[Num_messages];
 
 	required_string("$Name:");
-	stuff_string(msgp->name, F_NAME, NULL);
+	stuff_string(msgp->name, F_NAME, NAME_LENGTH);
 
 	// team
 	msgp->multi_team = -1;
@@ -917,15 +919,15 @@ void message_parse( )
 
 	// backwards compatibility for old fred missions - all new ones should use $MessageNew
 	if(optional_string("$Message:")){
-		stuff_string(msgp->message, F_MESSAGE, NULL);
+		stuff_string(msgp->message, F_MESSAGE, MESSAGE_LENGTH);
 	} else {
 		required_string("$MessageNew:");
-		stuff_string(msgp->message, F_MULTITEXT, NULL);
+		stuff_string(msgp->message, F_MULTITEXT, MESSAGE_LENGTH);
 	}
 
 	msgp->persona_index = -1;
 	if ( optional_string("+Persona:") ) {
-		stuff_string(persona_name, F_NAME, NULL);
+		stuff_string(persona_name, F_NAME, NAME_LENGTH);
 		msgp->persona_index = message_persona_name_lookup( persona_name );
 	}
 
@@ -937,7 +939,7 @@ void message_parse( )
 	if ( optional_string("+AVI Name:") ) {
 		char avi_name[MAX_FILENAME_LEN];
 
-		stuff_string(avi_name, F_NAME, NULL);
+		stuff_string(avi_name, F_NAME, MAX_FILENAME_LEN);
 		if ( !Fred_running ) {
 			msgp->avi_info.index = add_avi(avi_name);
 		} else {
@@ -953,7 +955,7 @@ void message_parse( )
 	if ( optional_string("+Wave Name:") ) {
 		char wave_name[MAX_FILENAME_LEN];
 
-		stuff_string(wave_name, F_NAME, NULL);
+		stuff_string(wave_name, F_NAME, MAX_FILENAME_LEN);
 		if ( !Fred_running ) {
 			msgp->wave_info.index = add_wave(wave_name);
 		} else {

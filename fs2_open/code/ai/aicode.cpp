@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.84 $
- * $Date: 2006-08-20 00:49:39 $
+ * $Revision: 1.85 $
+ * $Date: 2006-09-11 06:49:38 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.84  2006/08/20 00:49:39  taylor
+ * slight optimizations
+ * fix AI shields to not get overly charged or overly drained when AI does equalize (it's closer to player now, but still within retail intent of function, I think)
+ *
  * Revision 1.83  2006/08/14 21:59:14  Goober5000
  * extremely minor optimizations
  *
@@ -1630,7 +1634,7 @@ void parse_ai_class()
 	ai_class	*aicp = &Ai_classes[Num_ai_classes];
 
 	required_string("$Name:");
-	stuff_string(aicp->name, F_NAME, NULL);
+	stuff_string(aicp->name, F_NAME, NAME_LENGTH);
 
 	Ai_class_names[Num_ai_classes] = aicp->name;
 

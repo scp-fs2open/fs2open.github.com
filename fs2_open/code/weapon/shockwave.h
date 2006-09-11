@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.11 $
- * $Date: 2005-12-04 19:02:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2006-09-11 06:51:17 $
+ * $Author: taylor $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/12/04 19:02:36  wmcoolmon
+ * Better XMT beam section handling ("+Index:"); weapon shockwave armor support; countermeasures as weapons
+ *
  * Revision 2.10  2005/10/30 06:44:59  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -166,7 +169,7 @@ typedef struct shockwave {
 
 typedef struct shockwave_create_info {
 	char name[NAME_LENGTH];
-	char pof_name[NAME_LENGTH];
+	char pof_name[MAX_FILENAME_LEN];
 
 	float inner_rad;
 	float outer_rad;
