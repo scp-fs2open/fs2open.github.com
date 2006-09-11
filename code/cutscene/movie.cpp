@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.36 $
- * $Date: 2006-09-09 21:28:19 $
+ * $Revision: 2.37 $
+ * $Date: 2006-09-11 05:54:37 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2006/09/09 21:28:19  taylor
+ * be sure to reset color and clear color before MVE playback (fix for Mantis bug #1041)
+ *
  * Revision 2.35  2006/08/20 00:44:36  taylor
  * add decoder for 8-bit MVEs
  * a basic fix for finding AVIs over MVEs, for mod dir stuff (this needs some CFILE support added to be a true fix, it's on the TODO list)
@@ -95,11 +98,11 @@
 // to know if we are in a movie, needed for non-MVE only
 bool Playing_movie = false;
 
-#define MOVIE_NONE	0
-#define MOVIE_AVI	1
-#define MOVIE_MPG	2
-#define MOVIE_OGG	3
-#define MOVIE_MVE	4
+#define MOVIE_NONE	-1
+#define MOVIE_AVI	0
+#define MOVIE_MPG	1
+#define MOVIE_OGG	2
+#define MOVIE_MVE	3
 
 // This module links freespace movie calls to the actual API calls the play the movie.
 // This module handles all the different requires of OS and gfx API and finding the file to play
@@ -124,8 +127,7 @@ int movie_find(char *filename, char *out_name)
 {
 	char full_path[MAX_PATH];
 	char tmp_name[MAX_PATH];
-	char search_name[MAX_PATH];
-	int i, size, offset = 0;
+	int size, offset = 0;
 	const int NUM_EXT = 4;
  	// NOTE: search order assumes that retail movies will be in MVE format, or that all movies will be in AVI format.
  	//       this isn't pretty, but short of CFILE changes to do filter searching, it's about the only option for mods
@@ -134,30 +136,26 @@ int movie_find(char *filename, char *out_name)
  	if (out_name == NULL)
  		return MOVIE_NONE;
 
+
+	memset( full_path, 0, sizeof(full_path) );
+	memset( tmp_name, 0, sizeof(tmp_name) );
+
 	// remove extension
 	strcpy( tmp_name, filename );
-	char *p = strchr( tmp_name, '.' );
+	char *p = strchr(tmp_name, '.');
 	if ( p ) *p = 0;
-	
-	for (i=0; i<NUM_EXT; i++) {
-		strcpy( search_name, tmp_name );
-		strcat( search_name, movie_ext[i] );
 
-		// try and find the file
-    	if ( cf_find_file_location(search_name, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0) ) {
-			// if it's not in a packfile then we're done
-			// NOTE: MVEs use CFILE internally for the player, so they can work out of VPs
-			if ( ((i+1) == MOVIE_MVE) || (offset == 0) ) {
-				strcpy( out_name, full_path );
-				return (i+1); // return value should match one of MOVIE_* defines
-			}
-    	}
-		
-		// clear old string
-		memset( search_name, 0, sizeof(search_name) );
-	}
+	int rc = cf_find_file_location_ext(tmp_name, NUM_EXT, movie_ext, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0);
 
-	return MOVIE_NONE;
+	// if it's not in a packfile then we're done
+	// NOTE: MVEs use CFILE internally for the player, so they can work out of VPs
+	if ( (rc != MOVIE_MVE) && (offset != 0) )
+		rc = MOVIE_NONE;
+	else
+		strcpy( out_name, full_path );
+
+  
+	return rc;
 }
 
 // Play one movie
@@ -183,7 +181,7 @@ bool movie_play(char *name)
 
 	rc = movie_find(name, full_name);
 
-	if (!rc) {
+	if (rc == MOVIE_NONE) {
 		mprintf(("MOVIE ERROR: Unable to open movie file '%s' in any supported format.", name));
 		return false;
 	} else {
