@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.20 $
- * $Date: 2006-06-27 05:02:22 $
+ * $Revision: 1.21 $
+ * $Date: 2006-09-11 05:55:18 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2006/06/27 05:02:22  taylor
+ * add -disable_fbo option to help troubleshoot crappy ATI drivers
+ * address a strange resize error that triggers an Assert() in the texture code with mipmaps
+ *
  * Revision 1.19  2006/06/15 00:36:33  taylor
  * fix Assert() on value of face variable, it should be able to be -1 for non-cubemap images
  *
@@ -637,7 +641,7 @@ void gr_opengl_bm_save_render_target(int n)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
-	if (Cmdline_no_fbo)
+	if ( !Is_Extension_Enabled(OGL_EXT_FRAMEBUFFER_OBJECT) || Cmdline_no_fbo )
 		return;
 
 	bitmap_entry *be = &bm_bitmaps[n];
