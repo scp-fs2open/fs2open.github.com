@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.260 $
- * $Date: 2006-09-08 06:20:14 $
+ * $Revision: 2.261 $
+ * $Date: 2006-09-11 05:35:51 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.260  2006/09/08 06:20:14  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.259  2006/09/04 20:56:12  wmcoolmon
  * Better static mouse cursor support
  *
@@ -2673,7 +2676,10 @@ void game_level_init(int seed)
 	debris_init();
 //	cmeasure_init();			//WMC - cmeasures are now weapons
 	shield_hit_init();				//	Initialize system for showing shield hits
-	radar_mission_init();
+
+	if ( !Is_standalone )
+		radar_mission_init();
+
 	mission_init_goals();
 	mission_log_init();
 	messages_init();
@@ -3503,15 +3509,7 @@ void game_init()
 	timer_init();
 
 	// init os stuff next
-#if !defined(NO_STANDALONE)
-	if (Is_standalone) {
-		std_init_standalone();
-	}
-	else
-#else
-		Assert(!Is_standalone);
-#endif
-	{		
+	if ( !Is_standalone ) {		
 		os_init( Osreg_class_name, Osreg_app_name );
 	}
 
@@ -3547,9 +3545,20 @@ void game_init()
 
 	e1 = timer_get_milliseconds();
 
-	// initialize localization module. Make sure this is down AFTER initialzing OS.
+	// initialize localization module. Make sure this is done AFTER initialzing OS.
 	lcl_init( detect_lang() );	
 	lcl_xstr_init();
+
+	if (Is_standalone) {
+		// force off some cmdlines if they are on
+		Cmdline_nospec = 1;
+		Cmdline_noglow = 1;
+		Cmdline_env = 0;
+		Cmdline_3dwarp = 0;
+
+		// now init the standalone server code
+		std_init_standalone();
+	}
 
 	// verify that he has a valid ships.tbl (will Game_ships_tbl_valid if so)
 	verify_ships_tbl();
