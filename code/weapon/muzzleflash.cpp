@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-09-11 06:51:17 $
+ * $Revision: 2.11 $
+ * $Date: 2006-09-13 03:56:29 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/09/11 06:51:17  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.9  2006/09/11 05:44:23  taylor
  * make muzzle flash info dynamic
  * add support for modular mflash tables (*-mfl.tbm)
@@ -241,7 +244,7 @@ void mflash_page_in(bool load_all)
 			Mflash_info[i].blobs[idx].anim_id = bm_load_animation(Mflash_info[i].blobs[idx].name, &num_frames, &fps, 1);
 		//	Assert( Mflash_info[i].blobs[idx].anim_id >= 0 );
 			if (Mflash_info[i].blobs[idx].anim_id < 0)
-				Warning(LOCATION, "Missing muzzle flash blob '%s' in mflash.tbl", Mflash_info[i].blob_names[idx]);
+				Warning(LOCATION, "Missing muzzle flash blob '%s' in mflash.tbl", Mflash_info[i].blobs[idx].name);
 			else
 				bm_page_in_xparent_texture( Mflash_info[i].blobs[idx].anim_id );
 		}
