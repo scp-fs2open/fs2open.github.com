@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.45 $
- * $Date: 2006-09-11 09:43:35 $
+ * $Revision: 1.46 $
+ * $Date: 2006-09-13 03:17:06 $
  * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.45  2006/09/11 09:43:35  taylor
+ * revert to retail behavior for turret_should_pick_new_target()
+ * fix out-of-bounds issue
+ *
  * Revision 1.44  2006/09/08 06:16:18  taylor
  * fix for Mantis bug #687 (at least until better swarming code can be written, post-3.6.9)
  * a quick speed/sanity check for turrets to be sure that they actually have a weapon to fire before processing them
@@ -1067,7 +1071,14 @@ float	aifft_compute_turret_dot(object *objp, object *enemy_objp, vec3d *abs_gunp
 
 }
 
-#define MAX_AIFFT_TURRETS			200
+// NOTE:  Do not change this value unless you understand exactly what it means and what it does.
+//        It refers to how many (non-destroyed) subsystems (and turrets) will be scanned for possible
+//        targetting, per turret, per frame.  A higher value will process more systems at once,
+//        but it will be much slower to scan though them.  It is not necessary to scan all
+//        non-destroyed subsystem each frame for each turret.  Also, "aifft_max_checks" is balanced
+//        against the original value, be sure to account for this discrepancy with any changes.
+#define MAX_AIFFT_TURRETS			60
+
 ship_subsys *aifft_list[MAX_AIFFT_TURRETS];
 float aifft_rank[MAX_AIFFT_TURRETS];
 int aifft_list_size = 0;
