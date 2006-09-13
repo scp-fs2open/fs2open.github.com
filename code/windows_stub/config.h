@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.19 $
- * $Date: 2006-09-08 06:20:15 $
+ * $Revision: 2.20 $
+ * $Date: 2006-09-13 03:55:50 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/09/08 06:20:15  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.18  2006/08/20 00:48:47  taylor
  * clean out some crap that we don't really need
  *
@@ -192,7 +195,7 @@ typedef void *LPMMIOPROC;
 #if __WORDSIZE == 64
 #define __int64 long int
 #else
-#define __int64 __extension__ long long int	// TODO: really need a compile-time assert on all of this
+#define __int64 long long int	// TODO: really need a compile-time assert on all of this
 #endif
 #define __int32 int
 
