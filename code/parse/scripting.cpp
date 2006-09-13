@@ -756,7 +756,7 @@ bool script_state::ParseCondition(char *debug_str)
 			case CHC_SHIP:
 			case CHC_MISSION:
 			default:
-				stuff_string(sct.data.name, F_NAME);
+				stuff_string(sct.data.name, F_NAME, NAME_LENGTH);
 				break;
 		}
 

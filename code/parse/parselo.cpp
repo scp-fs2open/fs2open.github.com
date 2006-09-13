@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.78 $
+ * $Revision: 2.79 $
  * $Author: taylor $
- * $Date: 2006-09-11 06:50:42 $
+ * $Date: 2006-09-13 03:57:00 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2006/09/11 06:50:42  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.77  2006/09/04 05:50:58  wmcoolmon
  * Added flag-to-string function for error messages
  *
@@ -2601,7 +2604,7 @@ int stuff_loadout_quantity(int *ilp, int count, int lookup_type)
 		Mp++;
 		int quantity = -1; 
 		char str[128];
-		stuff_string(str, F_NAME, NULL);
+		stuff_string(str, F_NAME, sizeof(str));
 
 		int index = get_index_sexp_variable_name(str); 
 			
