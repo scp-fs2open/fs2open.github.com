@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.31 $
- * $Date: 2006-08-20 00:51:06 $
+ * $Revision: 2.32 $
+ * $Date: 2006-09-13 03:18:15 $
  * $Author: taylor $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/08/20 00:51:06  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.30  2006/05/24 05:09:25  wmcoolmon
  * Fix for Mantis bug #0000922
  *
@@ -884,6 +887,8 @@ float vm_vec_normalize_quick(vec3d *src)
 	float im;
 
 	im = vm_vec_imag(src);
+
+	Assert(im > 0.0f);
 
 	src->xyz.x = src->xyz.x*im;
 	src->xyz.y = src->xyz.y*im;
