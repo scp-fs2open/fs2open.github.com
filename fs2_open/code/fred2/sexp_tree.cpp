@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.8.2.2 $
- * $Date: 2006-08-06 19:27:12 $
- * $Author: Goober5000 $
+ * $Revision: 1.8.2.3 $
+ * $Date: 2006-09-13 17:30:25 $
+ * $Author: taylor $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8.2.2  2006/08/06 19:27:12  Goober5000
+ * deprecate change-ship-model
+ *
  * Revision 1.8.2.1  2006/07/31 21:09:10  karajorma
  * Fix for Mantis 1020.
  *
@@ -1325,7 +1328,7 @@ void sexp_tree::right_clicked(int mode)
 		update_help(h);
 		popup_menu = menu.GetSubMenu(0);
 		ASSERT(popup_menu != NULL);
-		SelectDropTarget(h);
+		//SelectDropTarget(h);  // WTF: Why was this here???
 
 		add_op_menu = replace_op_menu = insert_op_menu = NULL;
 
