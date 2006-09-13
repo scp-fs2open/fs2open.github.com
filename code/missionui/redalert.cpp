@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.21 $
- * $Date: 2005-11-16 05:46:27 $
+ * $Revision: 2.22 $
+ * $Date: 2006-09-13 03:17:59 $
  * $Author: taylor $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2005/11/16 05:46:27  taylor
+ * bunch of error checking and code cleanup for the team stuff in ship/weapon select
+ *
  * Revision 2.20  2005/10/10 17:21:06  taylor
  * remove NO_NETWORK
  *
@@ -572,7 +575,8 @@ void red_alert_init()
 
 	red_alert_voice_load();
 
-	// we have to setup the weaponselect pointers before moving on
+	// we have to reset/setup the shipselect and weaponselect pointers before moving on
+	ship_select_common_init();
 	weapon_select_common_init();
 
 	Text_delay = timestamp(200);
