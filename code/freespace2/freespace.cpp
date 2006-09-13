@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.262 $
- * $Date: 2006-09-11 06:45:39 $
+ * $Revision: 2.263 $
+ * $Date: 2006-09-13 03:17:34 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.262  2006/09/11 06:45:39  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.261  2006/09/11 05:35:51  taylor
  * some fixes for the standalone server
  *  - get init order correct for lcl and std init
@@ -7919,7 +7922,7 @@ void game_enter_state( int old_state, int new_state )
 				gameseq_post_event(GS_EVENT_RED_ALERT);
 			} else {
 				// maybe play a movie before the briefing.  don't play if entering briefing screen from ship or weapon select.
-				if ( (old_state == GS_STATE_DEBRIEF) || (old_state == GS_STATE_SIMULATOR_ROOM) || (old_state == GS_STATE_MAIN_MENU))
+				if ( (old_state == GS_STATE_DEBRIEF) || (old_state == GS_STATE_SIMULATOR_ROOM) || (old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_GAME_PLAY) )
 					mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
 
 				set_time_compression(1.0f);
@@ -7988,7 +7991,7 @@ void game_enter_state( int old_state, int new_state )
 					gameseq_post_event(GS_EVENT_RED_ALERT);
 				} else {
 					// maybe play a movie before the briefing.  don't play if entering briefing screen from ship or weapon select.
-					if ( (old_state == GS_STATE_DEBRIEF) || (old_state == GS_STATE_SIMULATOR_ROOM) || (old_state == GS_STATE_MAIN_MENU))
+					if ( (old_state == GS_STATE_DEBRIEF) || (old_state == GS_STATE_SIMULATOR_ROOM) || (old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_GAME_PLAY) )
 						mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
 
 					set_time_compression(1.0f);
