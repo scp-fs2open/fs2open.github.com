@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/DebriefingEditorDlg.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-01-26 04:01:58 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2006-09-14 23:29:47 $
+ * $Author: taylor $
  *
  * Debriefing editor dialog.  Used to edit mission debriefings of course.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/26 04:01:58  Goober5000
+ * spelling
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -429,6 +432,7 @@ void debriefing_editor_dlg::copy_stage(int from, int to, int clear_formula)
 	if ((from < 0) || (from >= Debriefing->num_stages)) {
 		strcpy(Debriefing->stages[to].new_text, "<Text here>");
 		strcpy(Debriefing->stages[to].voice, "none.wav");
+		strcpy(Debriefing->stages[to].new_recommendation_text, "We have no recommendations for you.");
 		Debriefing->stages[to].formula = -1;
 		return;
 	}
