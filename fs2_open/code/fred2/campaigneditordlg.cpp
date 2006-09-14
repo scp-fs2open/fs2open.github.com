@@ -217,7 +217,7 @@ void campaign_editor::load_campaign()
 	if (!strlen(Campaign.filename))
 		strcpy(Campaign.filename, BUILTIN_CAMPAIGN);
 
-	if (mission_campaign_load(Campaign.filename, 0)) {
+	if (mission_campaign_load(Campaign.filename, NULL, 0)) {
 		MessageBox("Couldn't open Campaign file!", "Error");
 		Campaign_wnd->OnCpgnFileNew();
 		return;

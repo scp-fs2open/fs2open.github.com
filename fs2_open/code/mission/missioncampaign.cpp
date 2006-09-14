@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.45 $
- * $Date: 2006-09-11 06:46:36 $
+ * $Revision: 2.46 $
+ * $Date: 2006-09-14 18:48:17 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2006/09/11 06:46:36  taylor
+ * fixes for stuff_string() bounds checking
+ * compiler warning fixes
+ *
  * Revision 2.44  2006/09/11 06:02:14  taylor
  * quite a few fixes to handle missing campaigns better
  * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
@@ -793,7 +797,10 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	if ( pl == NULL )
 		pl = Player;
 
-	Assert( pl != NULL);
+	if ( !Fred_running && load_savefile && (pl == NULL) ) {
+		Int3();
+		load_savefile = 0;
+	}
 
 	// read the mission file and get the list of mission filenames
 	if ((rval = setjmp(parse_abort)) != 0) {
