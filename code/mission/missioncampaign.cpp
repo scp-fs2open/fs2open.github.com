@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.40.2.5 $
- * $Date: 2006-09-11 01:04:20 $
+ * $Revision: 2.40.2.6 $
+ * $Date: 2006-09-14 18:47:39 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40.2.5  2006/09/11 01:04:20  taylor
+ * fixes for stuff_string() bounds checking
+ * compiler warning fixes
+ *
  * Revision 2.40.2.4  2006/08/28 17:14:52  taylor
  * stupid, stupid, stupid...
  *  - fix AVI/MPG movie playback
@@ -791,7 +795,10 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	if ( pl == NULL )
 		pl = Player;
 
-	Assert( pl != NULL);
+	if ( !Fred_running && load_savefile && (pl == NULL) ) {
+		Int3();
+		load_savefile = 0;
+	}
 
 	// read the mission file and get the list of mission filenames
 	if ((rval = setjmp(parse_abort)) != 0) {
