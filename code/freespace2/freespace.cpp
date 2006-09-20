@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.19 $
- * $Date: 2006-09-13 03:08:09 $
+ * $Revision: 2.243.2.20 $
+ * $Date: 2006-09-20 04:55:12 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.19  2006/09/13 03:08:09  taylor
+ * be sure that we still try to play a movie if we get to the cmd/brief screen right from another mission without debrief (Mantis bug 1043)
+ *
  * Revision 2.243.2.18  2006/09/11 01:00:27  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -3976,9 +3979,9 @@ MONITOR(BmpUsed)
 MONITOR(BmpNew)
 
 
-int Mem_starttime_phys;
-int Mem_starttime_pagefile;
-int Mem_starttime_virtual;
+uint Mem_starttime_phys;
+uint Mem_starttime_pagefile;
+uint Mem_starttime_virtual;
 
 void game_get_framerate()
 {	
@@ -4057,21 +4060,29 @@ void game_get_framerate()
 		MEMORYSTATUS mem_stats;
 		GlobalMemoryStatus(&mem_stats);
 
-		sprintf(mem_buffer,"Using Physical: %d Meg",(Mem_starttime_phys - mem_stats.dwAvailPhys)/1024/1024);
+		// on win2k+, it should be == -1 if >4gig (indicates wrap around)
+		if ( ((int)Mem_starttime_phys == -1) || ((int)mem_stats.dwAvailPhys == -1) )
+			sprintf(mem_buffer, "Using Physical: *** (>4G)");
+		else
+			sprintf(mem_buffer,"Using Physical: %d Meg",(Mem_starttime_phys - mem_stats.dwAvailPhys)/1024/1024);
 		gr_string( 20, 120, mem_buffer);
 		sprintf(mem_buffer,"Using Pagefile: %d Meg",(Mem_starttime_pagefile - mem_stats.dwAvailPageFile)/1024/1024);
 		gr_string( 20, 130, mem_buffer);
 		sprintf(mem_buffer,"Using Virtual:  %d Meg",(Mem_starttime_virtual - mem_stats.dwAvailVirtual)/1024/1024);
 		gr_string( 20, 140, mem_buffer);
 
-		sprintf(mem_buffer,"Physical Free: %d / %d Meg",mem_stats.dwAvailPhys/1024/1024, mem_stats.dwTotalPhys/1024/1024);
+		if ( ((int)mem_stats.dwAvailPhys == -1) || ((int)mem_stats.dwTotalPhys == -1) )
+			sprintf(mem_buffer, "Physical Free: *** / *** (>4G)");
+		else
+			sprintf(mem_buffer,"Physical Free: %d / %d Meg",mem_stats.dwAvailPhys/1024/1024, mem_stats.dwTotalPhys/1024/1024);
 		gr_string( 20, 160, mem_buffer);
 		sprintf(mem_buffer,"Pagefile Free: %d / %d Meg",mem_stats.dwAvailPageFile/1024/1024, mem_stats.dwTotalPageFile/1024/1024);
 		gr_string( 20, 170, mem_buffer);
 		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.dwAvailVirtual/1024/1024, mem_stats.dwTotalVirtual/1024/1024);
 		gr_string( 20, 180, mem_buffer);
+
 #elif defined(SCP_UNIX)
-	STUB_FUNCTION;
+		STUB_FUNCTION;
 #endif
 	}
 
@@ -8677,7 +8688,7 @@ void game_do_state(int state)
 
 #ifdef _WIN32
 // return 0 if there is enough RAM to run FreeSpace, otherwise return -1
-int game_do_ram_check(int ram_in_bytes)
+int game_do_ram_check(uint ram_in_bytes)
 {
 	if ( ram_in_bytes < 30*1024*1024 )	{
 		int allowed_to_run = 1;
@@ -8686,8 +8697,8 @@ int game_do_ram_check(int ram_in_bytes)
 		}
 
 		char tmp[1024];
-		int FreeSpace_total_ram_MB;
-		FreeSpace_total_ram_MB = fl2i(ram_in_bytes/(1024*1024));
+		uint FreeSpace_total_ram_MB;
+		FreeSpace_total_ram_MB = (uint)(ram_in_bytes/(1024*1024));
 
 		if ( allowed_to_run ) {
 
