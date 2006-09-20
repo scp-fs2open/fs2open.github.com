@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.85 $
- * $Date: 2006-09-11 06:49:38 $
- * $Author: taylor $
+ * $Revision: 1.86 $
+ * $Date: 2006-09-20 05:19:01 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.85  2006/09/11 06:49:38  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 1.84  2006/08/20 00:49:39  taylor
  * slight optimizations
  * fix AI shields to not get overly charged or overly drained when AI does equalize (it's closer to player now, but still within retail intent of function, I think)
@@ -11183,8 +11186,6 @@ int maybe_dock_obstructed(object *cur_objp, object *goal_objp, int big_only_flag
 }
 
 
-int Dock_path_warning_given = 0;
-
 //	Docking behavior.
 //	Approach a ship, follow path to docking platform, approach platform, after awhile,
 //	undock.
@@ -11255,9 +11256,15 @@ void ai_dock()
 		//aip->path_start = -1;
 		//nprintf(("AI", "Time = %7.3f, submode = %i\n", f2fl(Missiontime), aip->submode));
 		ai_path();
-		if (!Dock_path_warning_given && (aip->path_length < 4)) {
-			Warning( LOCATION, "Ship '%s' has only %i points on dock path.  Docking will look strange.  Contact Adam.", shipp->ship_name, aip->path_length );
-			Dock_path_warning_given = 1;		//	This is on a mission-wide basis, but it's just a hack for now...
+		if (aip->path_length < 4)
+		{
+			Assert(goal_objp != NULL);
+			ship_info *goal_sip = &Ship_info[Ships[goal_objp->instance].ship_info_index];
+			char *goal_ship_class_name = goal_sip->name;
+			char *goal_dock_path_name = model_get(goal_sip->modelnum)->paths[aip->mp_index].name;
+
+			Warning(LOCATION, "Ship class %s has only %i points on dock path \"%s\".  Recommended minimum number of points is 4.  "\
+				"Docking along that path will look strange.  You may wish to edit the model.", goal_ship_class_name, aip->path_length, goal_dock_path_name);
 		}
 
 		aip->submode = AIS_DOCK_1;
@@ -15150,8 +15157,6 @@ void init_ai_system()
 
 	Ppfp = Path_points;
 	Waypoints_created = 0;
-
-	Dock_path_warning_given = 0;
 
 /*	for (int i=0; i<MAX_IGNORE_OBJECTS; i++) {
 		Ignore_objects[i].objnum = -1;
