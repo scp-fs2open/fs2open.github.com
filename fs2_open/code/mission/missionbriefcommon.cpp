@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.51 $
- * $Date: 2006-09-11 06:50:42 $
+ * $Revision: 2.52 $
+ * $Date: 2006-09-20 05:02:41 $
  * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2006/09/11 06:50:42  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.50  2006/09/11 06:08:09  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -771,25 +774,44 @@ void mission_brief_common_init()
 
 	if ( Fred_running )	{
 		// If Fred is running malloc out max space
-		for (i=0; i<MAX_TVT_TEAMS; i++ )	{
-			for (j=0; j<MAX_BRIEF_STAGES; j++ )	{
-				Briefings[i].stages[j].new_text = (char *)vm_malloc(MAX_BRIEF_LEN);
-				Assert(Briefings[i].stages[j].new_text!=NULL);
-				Briefings[i].stages[j].icons = (brief_icon *)vm_malloc(sizeof(brief_icon)*MAX_STAGE_ICONS);
-				Assert(Briefings[i].stages[j].icons!=NULL);
-				Briefings[i].stages[j].lines = (brief_line *)vm_malloc(sizeof(brief_line)*MAX_BRIEF_STAGE_LINES);
-				Assert(Briefings[i].stages[j].lines!=NULL);
+		for (i = 0; i < MAX_TVT_TEAMS; i++) {
+			for (j = 0; j < MAX_BRIEF_STAGES; j++) {
+				if (Briefings[i].stages[j].new_text == NULL) {
+					Briefings[i].stages[j].new_text = (char *)vm_malloc(MAX_BRIEF_LEN);
+					Assert( Briefings[i].stages[j].new_text != NULL );
+					memset( Briefings[i].stages[j].new_text, 0, MAX_BRIEF_LEN );
+				}
+
+				if (Briefings[i].stages[j].icons == NULL) {
+					Briefings[i].stages[j].icons = (brief_icon *)vm_malloc(sizeof(brief_icon) * MAX_STAGE_ICONS);
+					Assert( Briefings[i].stages[j].icons != NULL );
+					memset( Briefings[i].stages[j].icons, 0, sizeof(brief_icon) * MAX_STAGE_ICONS );
+				}
+
+				if (Briefings[i].stages[j].lines == NULL) {
+					Briefings[i].stages[j].lines = (brief_line *)vm_malloc(sizeof(brief_line) * MAX_BRIEF_STAGE_LINES);
+					Assert( Briefings[i].stages[j].lines != NULL );
+					memset( Briefings[i].stages[j].lines, 0, sizeof(brief_line) * MAX_BRIEF_STAGE_LINES );
+				}	
+
 				Briefings[i].stages[j].num_icons = 0;
 				Briefings[i].stages[j].num_lines = 0;
 			}
 		}
 
-		for (i=0; i<MAX_TVT_TEAMS; i++ )	{
-			for (j=0; j<MAX_DEBRIEF_STAGES; j++ )	{
-				Debriefings[i].stages[j].new_text = (char *)vm_malloc(MAX_DEBRIEF_LEN);
-				Assert(Debriefings[i].stages[j].new_text!=NULL);
-				Debriefings[i].stages[j].new_recommendation_text = (char *)vm_malloc(MAX_RECOMMENDATION_LEN);
-				Assert(Debriefings[i].stages[j].new_recommendation_text!=NULL);
+		for (i = 0; i < MAX_TVT_TEAMS; i++) {
+			for (j = 0; j < MAX_DEBRIEF_STAGES; j++) {
+				if (Debriefings[i].stages[j].new_text == NULL) {
+					Debriefings[i].stages[j].new_text = (char *)vm_malloc(MAX_DEBRIEF_LEN);
+					Assert( Debriefings[i].stages[j].new_text != NULL );
+					memset( Debriefings[i].stages[j].new_text, 0, MAX_DEBRIEF_LEN );
+				}
+
+				if (Debriefings[i].stages[j].new_recommendation_text == NULL) {
+					Debriefings[i].stages[j].new_recommendation_text = (char *)vm_malloc(MAX_RECOMMENDATION_LEN);
+					Assert(Debriefings[i].stages[j].new_recommendation_text != NULL);
+					memset( Debriefings[i].stages[j].new_recommendation_text, 0, MAX_RECOMMENDATION_LEN );
+				}
 			}
 		}
 
@@ -820,27 +842,43 @@ void mission_brief_common_init()
 // and sets all pointers to NULL.
 void mission_brief_common_reset()
 {
-	int i,j;
+	int i, j;
 
-	if ( Fred_running )	{
-		return;						// Don't free these under Fred.
-	}
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		Briefings[i].num_stages = 0;
 
-	for (i=0; i<MAX_TVT_TEAMS; i++ )	{
-		for (j=0; j<MAX_BRIEF_STAGES; j++ )	{
-			if ( Briefings[i].stages[j].new_text )	{
-				vm_free(Briefings[i].stages[j].new_text);
-				Briefings[i].stages[j].new_text = NULL;			
-			}
+		for (j = 0; j < MAX_BRIEF_STAGES; j++) {
+			Briefings[i].stages[j].num_icons = 0;
+			Briefings[i].stages[j].num_lines = 0;
+
+			if (Fred_running) {
+				if ( Briefings[i].stages[j].new_text )
+					memset( Briefings[i].stages[j].new_text, 0, MAX_BRIEF_LEN );
+
+				if ( Briefings[i].stages[j].icons ) {
+					memset( Briefings[i].stages[j].icons, 0, sizeof(brief_icon) * MAX_STAGE_ICONS );
+					Briefings[i].stages[j].icons->ship_class = -1;
+					Briefings[i].stages[j].icons->modelnum = -1;
+					Briefings[i].stages[j].icons->bitmap_id = -1;
+				}
+
+				if ( Briefings[i].stages[j].lines )
+					memset( Briefings[i].stages[j].lines, 0, sizeof(brief_line) * MAX_BRIEF_STAGE_LINES );
+			} else {
+				if ( Briefings[i].stages[j].new_text )	{
+					vm_free(Briefings[i].stages[j].new_text);
+					Briefings[i].stages[j].new_text = NULL;			
+				}
 	
-			if ( Briefings[i].stages[j].icons )	{
-				vm_free(Briefings[i].stages[j].icons);
-				Briefings[i].stages[j].icons = NULL;
-			}
+				if ( Briefings[i].stages[j].icons )	{
+					vm_free(Briefings[i].stages[j].icons);
+					Briefings[i].stages[j].icons = NULL;
+				}
 
-			if ( Briefings[i].stages[j].lines )	{
-				vm_free(Briefings[i].stages[j].lines);
-				Briefings[i].stages[j].lines = NULL;
+				if ( Briefings[i].stages[j].lines )	{
+					vm_free(Briefings[i].stages[j].lines);
+					Briefings[i].stages[j].lines = NULL;
+				}
 			}
 		}
 	}
@@ -851,20 +889,26 @@ void mission_debrief_common_reset()
 {
 	int i, j;
 
-	if ( Fred_running ) {
-		return;						// Don't free these under Fred.
-	}
+	for (i = 0; i < MAX_TVT_TEAMS; i++) {
+		Debriefings[i].num_stages = 0;
 
-	for (i=0; i<MAX_TVT_TEAMS; i++ )	{
-		for (j=0; j<MAX_DEBRIEF_STAGES; j++ )	{
-			if ( Debriefings[i].stages[j].new_text )	{
-				vm_free(Debriefings[i].stages[j].new_text);
-				Debriefings[i].stages[j].new_text = NULL;
-			}
+		for (j = 0; j < MAX_DEBRIEF_STAGES; j++) {
+			if (Fred_running) {
+				if ( Debriefings[i].stages[j].new_text )
+					memset( Debriefings[i].stages[j].new_text, 0, MAX_DEBRIEF_LEN );
 
-			if ( Debriefings[i].stages[j].new_recommendation_text )	{
-				vm_free(Debriefings[i].stages[j].new_recommendation_text);
-				Debriefings[i].stages[j].new_recommendation_text = NULL;
+				if ( Debriefings[i].stages[j].new_recommendation_text )
+					memset( Debriefings[i].stages[j].new_recommendation_text, 0, MAX_RECOMMENDATION_LEN );
+			} else {
+				if ( Debriefings[i].stages[j].new_text ) {
+					vm_free(Debriefings[i].stages[j].new_text);
+					Debriefings[i].stages[j].new_text = NULL;
+				}
+
+				if ( Debriefings[i].stages[j].new_recommendation_text ) {
+					vm_free(Debriefings[i].stages[j].new_recommendation_text);
+					Debriefings[i].stages[j].new_recommendation_text = NULL;
+				}
 			}
 		}
 	}
@@ -879,11 +923,9 @@ void mission_debrief_common_reset()
 //
 void brief_reset()
 {
-	int i;
+	mission_brief_common_reset();
 
 	Briefing = NULL;
-	for ( i = 0; i < MAX_TVT_TEAMS; i++ ) 
-		Briefings[i].num_stages = 0;
 	Cur_brief_id = 1;
 }
 
@@ -893,12 +935,9 @@ void brief_reset()
 //
 void debrief_reset()
 {
-	int i;
+	mission_debrief_common_reset();
 
 	Debriefing = NULL;
-	for ( i = 0; i < MAX_TVT_TEAMS; i++ ) {
-		Debriefings[i].num_stages = 0;
-	}
 
 	// MWA 4/27/98 -- must initialize this variable here since we cannot do it as debrief
 	// init time because race conditions between all players in the game make that type of
