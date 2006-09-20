@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:33 $
- * $Author: Kazan $
+ * $Revision: 2.4 $
+ * $Date: 2006-09-20 05:05:07 $
+ * $Author: taylor $
  *
  * Code to read the joystick
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:33  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:32:51  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -302,7 +305,22 @@ DWORD joy_process(DWORD lparam)
 	MMRESULT		rs;
 	JOYINFOEX	ji;
 	int			i,state;
-	joy_button_info	*bi;	
+	joy_button_info	*bi;
+	EXECUTION_STATE last_exectution_state = 0;
+	uint last_ssav_time = 0;
+
+
+	// power management stuff, we need to handle this manually for joysticks
+	{
+		// give notification that we need both display and system (for multi) resources to remain available
+		// NOTE: we'll have to restore the previous execution state before exiting this thread
+		last_exectution_state = SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
+
+		// turn of screen saver, but save the current timeout so that we can restore it later
+		SystemParametersInfo(SPI_GETSCREENSAVETIMEOUT, 0, &last_ssav_time, 0);
+		SystemParametersInfo(SPI_SETSCREENSAVETIMEOUT, 0, NULL, 0);
+	}
+
 
 	for ( i = 0; i < JOY_TOTAL_BUTTONS; i++) {
 		bi = &joy_buttons[i];
@@ -418,6 +436,15 @@ DWORD joy_process(DWORD lparam)
 		}  // end for
 
 		LeaveCriticalSection(&joy_lock);
+	}
+
+	// power management stuff, we need to handle this manually for joysticks
+	{
+		// restore the original execution state
+		last_exectution_state = SetThreadExecutionState(last_exectution_state);
+
+		// restore the original screensaver timeout value
+		SystemParametersInfo(SPI_SETSCREENSAVETIMEOUT, last_ssav_time, NULL, 0);
 	}
 
 	SetEvent(Joy_thread_says_its_done_event);	
