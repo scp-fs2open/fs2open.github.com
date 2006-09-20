@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.42.2.3 $
- * $Date: 2006-09-11 01:00:27 $
+ * $Revision: 2.42.2.4 $
+ * $Date: 2006-09-20 04:56:36 $
  * $Author: taylor $
- * $Revision: 2.42.2.3 $
- * $Date: 2006-09-11 01:00:27 $
+ * $Revision: 2.42.2.4 $
+ * $Date: 2006-09-20 04:56:36 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42.2.3  2006/09/11 01:00:27  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.42.2.2  2006/08/19 04:38:46  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -509,6 +512,7 @@ typedef struct vectora {
 	float	xyz[3];
 } vectora;
 
+/*
 typedef struct vec2d {
 	float i,j;
 } vec2d;
@@ -517,6 +521,7 @@ typedef struct vec2d {
 typedef struct vert2df {
 	float x, y;
 } vert2df;
+*/
 
 typedef struct angles {
 	float	p, b, h;
