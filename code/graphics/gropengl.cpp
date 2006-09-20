@@ -2,13 +2,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.183 $
- * $Date: 2006-09-11 06:36:38 $
+ * $Revision: 2.184 $
+ * $Date: 2006-09-20 05:04:22 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.183  2006/09/11 06:36:38  taylor
+ * clean up the grstub mess (for work on standalone server, and just for sanity sake)
+ * move color and shader functions to 2d.cpp since they are exactly the same everywhere
+ * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
+ *
  * Revision 2.182  2006/09/11 06:09:30  taylor
  * allow W32 init fallback if desktop depth is less than requested game depth (it may look like crap, but at least it will work)
  *
@@ -1122,8 +1127,9 @@ static int OGL_fogmode=0;
 static HDC dev_context = NULL;
 static HGLRC rend_context = NULL;
 static PIXELFORMATDESCRIPTOR pfd;
-static WORD original_gamma_ramp[3][256];
 #endif
+
+static ushort *GL_original_gamma_ramp = NULL;
 
 int VBO_ENABLED = 0;
 int Use_PBOs = 0;
@@ -3267,9 +3273,9 @@ void gr_opengl_set_clear_color(int r, int g, int b)
 
 void gr_opengl_flash(int r, int g, int b)
 {
-	CAP(r,0,255);
-	CAP(g,0,255);
-	CAP(b,0,255);
+	CLAMP(r, 0, 255);
+	CLAMP(g, 0, 255);
+	CLAMP(b, 0, 255);
 	
 	if ( r || g || b ) {
 		opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_NONE );
@@ -3295,10 +3301,10 @@ void gr_opengl_flash(int r, int g, int b)
 
 void gr_opengl_flash_alpha(int r, int g, int b, int a)
 {
-	CAP(r,0,255);
-	CAP(g,0,255);
-	CAP(b,0,255);
-	CAP(a,0,255);
+	CLAMP(r, 0, 255);
+	CLAMP(g, 0, 255);
+	CLAMP(b, 0, 255);
+	CLAMP(a, 0, 255);
 	
 	if ( r || g || b || a ) {
 		opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
@@ -3365,16 +3371,66 @@ void gr_opengl_zbuffer_clear(int mode)
 	}
 }
 
-// copied out of grd3d.cpp
-inline ushort ogl_ramp_val(uint i, float recip_gamma, int scale = 65535)
+// I feel dirty...
+static void opengl_make_gamma_ramp(float gamma, ushort *ramp)
 {
-    return (ushort)(scale * pow(i/255.0f, 1.0f/recip_gamma));
+	int x, y;
+	ushort base_ramp[256];
+
+	Assert( ramp != NULL );
+
+	// generate the base ramp values first off
+
+	// if no gamma set then just do this quickly
+	if (gamma <= 0.0f) {
+		memset( ramp, 0, 3 * 256 * sizeof(ushort) );
+		return;
+	}
+	// identity gamma, avoid all of the math
+	else if ( (gamma == 1.0f) || (GL_original_gamma_ramp == NULL) ) {
+		if (GL_original_gamma_ramp != NULL) {
+			memcpy( ramp, GL_original_gamma_ramp, 3 * 256 * sizeof(ushort) );
+		}
+		// set identity if no original ramp
+		else {
+			for (x = 0; x < 256; x++) {
+				ramp[x]	= (x << 8) | x;
+				ramp[x + 256] = (x << 8) | x;
+				ramp[x + 512] = (x << 8) | x;
+			}
+		}
+
+		return;
+	}
+	// for everything else we need to actually figure it up
+	else {
+		double g = 1.0 / (double)gamma;
+		int val;
+
+		Assert( GL_original_gamma_ramp != NULL );
+
+		for (x = 0; x < 256; x++) {
+			val = (int) (pow(x/255.0, g) * 65535.0 + 0.5);
+			CLAMP( val, 0, 65535 );
+
+			base_ramp[x] = (ushort)val;
+		}
+
+		for (y = 0; y < 3; y++) {
+			for (x = 0; x < 256; x++) {
+				val = (base_ramp[x] * 2) - GL_original_gamma_ramp[x + y * 256];
+				CLAMP( val, 0, 65535 );
+
+				ramp[x + y * 256] = (ushort)val;
+			}
+		}
+	}
 }
 
 void gr_opengl_set_gamma(float gamma)
 {
 	int i;
-	ushort g, gamma_ramp[3][256];
+	ushort *gamma_ramp = NULL;
 
 	Gr_gamma = gamma;
 	Gr_gamma_int = int (Gr_gamma*10);
@@ -3403,19 +3459,29 @@ void gr_opengl_set_gamma(float gamma)
 
 	// new way - but not while running FRED
 	if (!Fred_running && !Cmdline_no_set_gamma) {
-		// Create the Gamma lookup table
-		for (i = 0; i < 256; i++) {
-			g = ogl_ramp_val(i, gamma);
-		  	gamma_ramp[0][i] = gamma_ramp[1][i] = gamma_ramp[2][i] = g;
+		gamma_ramp = (ushort*) vm_malloc_q( 3 * 256 * sizeof(ushort) );
+
+		if (gamma_ramp == NULL) {
+			Int3();
+			goto Done;
 		}
+
+		memset( gamma_ramp, 0, 3 * 256 * sizeof(ushort) );
+
+		// Create the Gamma lookup table
+		opengl_make_gamma_ramp(gamma, gamma_ramp);
 
 #ifdef _WIN32
 		SetDeviceGammaRamp( dev_context, gamma_ramp );
 #else
-		SDL_SetGammaRamp( gamma_ramp[0], gamma_ramp[1], gamma_ramp[2] );
+		SDL_SetGammaRamp( gamma_ramp, (gamma_ramp+256), (gamma_ramp+512) );
 #endif
+
+		vm_free(gamma_ramp);
 	}
 
+
+Done:
 	// Flush any existing textures
 	opengl_tcache_flush();
 }
@@ -4141,13 +4207,22 @@ void gr_opengl_shutdown()
 {
 #ifdef _WIN32
 	// restore original gamma settings
-	SetDeviceGammaRamp( dev_context, original_gamma_ramp );
+	if (GL_original_gamma_ramp != NULL)
+		SetDeviceGammaRamp( dev_context, GL_original_gamma_ramp );
 
 	// swap out our window mode and un-jail the cursor
 	ShowWindow((HWND)os_get_window(), SW_HIDE);
 	ClipCursor(NULL);
 	ChangeDisplaySettings( NULL, 0 );
+#else
+	if (GL_original_gamma_ramp != NULL)
+		SDL_SetGammaRamp( GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
 #endif
+
+	if (GL_original_gamma_ramp != NULL) {
+		vm_free(GL_original_gamma_ramp);
+		GL_original_gamma_ramp = NULL;
+	}
 }
 
 // NOTE: This should only ever be called through atexit()!!!
@@ -4286,6 +4361,21 @@ int opengl_init_display_device()
 	Gr_ta_alpha.shift = 12;
 	Gr_ta_alpha.scale = 17;
 
+	// allocate storage for original gamma settings
+	if ( !Cmdline_no_set_gamma && (GL_original_gamma_ramp == NULL) ) {
+		GL_original_gamma_ramp = (ushort*) vm_malloc_q( 3 * 256 * sizeof(ushort) );
+
+		if (GL_original_gamma_ramp == NULL) {
+			mprintf(("  Unable to allocate memory for gamma ramp!  Disabling...\n"));
+			Cmdline_no_set_gamma = 1;
+		} else {
+			// assume identity ramp by default, to be overwritten by true ramp later
+			for (int x = 0; x < 256; x++) {
+				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (x << 8) | x;
+			}
+		}
+	}
+
 	// now init the display device
 #ifdef _WIN32
 	int PixelFormat;
@@ -4387,7 +4477,8 @@ int opengl_init_display_device()
 	mprintf(("  Actual WGL Video values    = R: %d, G: %d, B: %d, depth: %d, double-buffer: %d\n", r, g, b, depth, db));
 
 	// get the default gamma ramp so that we can restore it on close
-	GetDeviceGammaRamp( dev_context, &original_gamma_ramp );
+	if (GL_original_gamma_ramp != NULL)
+		GetDeviceGammaRamp( dev_context, GL_original_gamma_ramp );
 
 #else
 
@@ -4431,6 +4522,9 @@ int opengl_init_display_device()
 
 	/* might as well put this here */
 	SDL_EnableKeyRepeat(SDL_DEFAULT_REPEAT_DELAY, SDL_DEFAULT_REPEAT_INTERVAL);
+
+	if (GL_original_gamma_ramp != NULL)
+		SDL_GetGammaRamp( GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
 #endif
 
 	return 0;
