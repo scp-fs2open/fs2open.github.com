@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.264 $
- * $Date: 2006-09-20 05:03:12 $
+ * $Revision: 2.265 $
+ * $Date: 2006-09-20 05:06:54 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.264  2006/09/20 05:03:12  taylor
+ * properly support 4gig of RAM, and don't totally freak out if user has more than that
+ *
  * Revision 2.263  2006/09/13 03:17:34  taylor
  * be sure that we still try to play a movie if we get to the cmd/brief screen right from another mission without debrief (Mantis bug 1043)
  *
@@ -3643,7 +3646,7 @@ void game_init()
 
 	if (!Is_standalone)
 	{
-		UserSampleRate = (ushort) os_config_read_uint(NULL, "SoundSampleRate", 22050);
+		UserSampleRate = (ushort) os_config_read_uint(NULL, "SoundSampleRate", 44100);
 		UserSampleBits = (ushort) os_config_read_uint(NULL, "SoundSampleBits", 16);
 		snd_init(use_a3d, use_eax, UserSampleRate, UserSampleBits);
 	}
