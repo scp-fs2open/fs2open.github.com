@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.56 $
- * $Date: 2006-09-11 06:51:17 $
+ * $Revision: 2.57 $
+ * $Date: 2006-09-20 05:05:28 $
  * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2006/09/11 06:51:17  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.55  2006/09/08 06:17:07  taylor
  * add support for a server name in fs2open_pxo.cfg, rather than just an IP address for the server
  *
@@ -2564,14 +2567,15 @@ void debrief_init()
 		cf_chksum_long(Netgame.mission_name, &CurrentMissionChsum);
 
 		int mValidStatus = 0;
-		if (Om_tracker_flag)
+
+		if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized())
 			mValidStatus = CheckSingleMission(Netgame.mission_name, CurrentMissionChsum, FS2OpenPXO_Socket, PXO_Server, PXO_port);
 
 		//
 		// Netgame.mission_name
 		
 			
-		if (Om_tracker_flag && multi_num_players() > 1 && !game_hacked_data() && mValidStatus)
+		if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized() && (multi_num_players() > 1) && !game_hacked_data() && mValidStatus)
 		{
 			// --------------------- STICK STATS STORAGE CODE IN HERE ---------------------
 			int spd_ret = SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port);

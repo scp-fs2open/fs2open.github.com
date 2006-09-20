@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.46 $
- * $Date: 2006-08-20 00:51:06 $
+ * $Revision: 2.47 $
+ * $Date: 2006-09-20 05:05:28 $
  * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2006/08/20 00:51:06  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.45  2006/02/06 02:06:02  wmcoolmon
  * Various fixes; very beginnings of Directives scripting support
  *
@@ -3437,7 +3440,7 @@ void multi_update_validate_missions_DrawString(char *str)
 void multi_update_ban_list()
 {
 	// if we're not on FS2NetD (PXO) then don't bother with this function
-	if (!Om_tracker_flag)
+	if (!Om_tracker_flag || !FS2OpenPXO_Socket.isInitialized())
 		return;
 
 	// destroy the file prior to updating
@@ -3487,7 +3490,7 @@ void multi_update_ban_list()
 	
 bool fs2netd_player_banned(net_addr *addr)
 {
-	if (!Om_tracker_flag)
+	if (!Om_tracker_flag || !FS2OpenPXO_Socket.isInitialized())
 		return false; // no tracker, no bannination
 
 	char line[32]; // no line should be larger than 16, but let's be safe
@@ -3520,7 +3523,7 @@ void multi_update_valid_missions()
 {
 
 	// if we're not on FS2NetD (PXO) then don't bother with this function
-	if (!Om_tracker_flag)
+	if (!Om_tracker_flag || !FS2OpenPXO_Socket.isInitialized())
 		return;
 
 	// destroy the file prior to updating
@@ -3702,7 +3705,7 @@ void Kaz_NoBackGround_DrawString(char *str)
 void multi_update_valid_tables()
 {
 	// if we're not on FS2NetD (PXO) then don't bother with this function
-	if (!Om_tracker_flag)
+	if (!Om_tracker_flag || !FS2OpenPXO_Socket.isInitialized())
 		return;
 
 	static char Server[32];

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.14 $
- * $Date: 2006-01-16 11:02:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15 $
+ * $Date: 2006-09-20 05:05:28 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/01/16 11:02:23  wmcoolmon
+ * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
+ *
  * Revision 2.13  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -350,14 +353,15 @@ void multi_df_debrief_init()
 	cf_chksum_long(Netgame.mission_name, &CurrentMissionChsum);
 
 	int mValidStatus = 0;
-	if (Om_tracker_flag)
+
+	if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized())
 		mValidStatus = CheckSingleMission(Netgame.mission_name, CurrentMissionChsum, FS2OpenPXO_Socket, PXO_Server, PXO_port);
 
 	//
 	// Netgame.mission_name
 
 		
-	if (Om_tracker_flag && multi_num_players() > 1 && !game_hacked_data() && mValidStatus)
+	if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized() && (multi_num_players() > 1) && !game_hacked_data() && mValidStatus)
 	{
 		// --------------------- STICK STATS STORAGE CODE IN HERE ---------------------
 		int spd_ret = SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port);
