@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.14 $
- * $Date: 2006-01-26 04:01:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2006-09-20 05:02:41 $
+ * $Author: taylor $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/01/26 04:01:58  Goober5000
+ * spelling
+ *
  * Revision 2.13  2005/12/29 00:49:43  phreak
  * Briefing icons can now be mirrored so one can point them in the opposite direction.
  *
@@ -330,6 +333,8 @@ typedef struct brief_stage
 	brief_icon	*icons;
 	int			num_lines;
 	brief_line	*lines;
+
+	brief_stage() { memset(this, 0, sizeof(brief_stage)); formula = -1; };
 } brief_stage;
 
 typedef struct debrief_stage
@@ -338,6 +343,8 @@ typedef struct debrief_stage
 	char			*new_text;
 	char			voice[MAX_FILENAME_LEN];
 	char			*new_recommendation_text;
+
+	debrief_stage() { memset(this, 0, sizeof(debrief_stage)); formula = -1; };
 } debrief_stage;
 
 typedef struct briefing {
