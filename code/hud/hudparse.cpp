@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.44 $
- * $Date: 2006-09-11 06:49:39 $
+ * $Revision: 2.45 $
+ * $Date: 2006-09-20 05:04:42 $
  * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2006/09/11 06:49:39  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.43  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -819,7 +822,7 @@ hud_info* parse_resolution_start(hud_info* dest_hud, int str_token)
 		required_string("$Resolution:");
 		stuff_int_list(buffer, 2, RAW_INTEGER_TYPE);
 
-		if(buffer[0] == gr_screen.max_w && buffer[1] == gr_screen.max_h)
+		if ( (buffer[0] == gr_screen.max_w_unscaled) && (buffer[1] == gr_screen.max_h_unscaled) )
 		{
 			//Get the ship HUD ready w/ defaults
 			if(default_hud.loaded)
