@@ -10,12 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Socket.cpp $
- * $Revision: 1.20 $
- * $Date: 2006-09-08 06:17:07 $
+ * $Revision: 1.21 $
+ * $Date: 2006-09-20 05:03:41 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2006/09/08 06:17:07  taylor
+ * add support for a server name in fs2open_pxo.cfg, rather than just an IP address for the server
+ *
  * Revision 1.19  2006/01/26 03:23:29  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -251,9 +254,11 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 
 
 	mySocket = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	int my_error = errno;
+
 	if (mySocket == -1)
 	{
-		cout << "Couldn't Get Socket (" << strerror(errno) << ")" << endl;
+		ml_printf("FS2NetD ERROR: Couldn't get socket (\"%s\")!\n", strerror(my_error));
 		return false;
 	}
 
@@ -262,13 +267,13 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 	{
 		if (bind(mySocket, (sockaddr *)&adr_inet, sizeof(adr_inet)) == -1)
 		{
-			cout << "Couldn't Bind Socket" << endl;
+			ml_printf("FS2NetD ERROR: Couldn't bind socket!\n");
 			return false;
 		}
 
 		if (listen(mySocket, 10) == -1)
 		{
-			cout << "Couldn't create Listen Socket" << endl;
+			ml_printf("FS2NetD ERROR: Couldn't create listen socket!\n");
 			return false;
 		}
 	}
@@ -276,7 +281,7 @@ bool TCP_Socket::InitSocket(std::string rem_host, int rem_port)
 	{
 		if (connect(mySocket, (sockaddr *)&adr_inet, sizeof(sockaddr_in)) == -1)
 		{
-			cout << "Couldn't Connect to Remote system" << endl;
+			ml_printf("FS2NetD ERROR: Couldn't connect to remote system!\n");
 			return false;
 		}
 	}
