@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/DebriefingEditorDlg.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-09-14 23:29:47 $
+ * $Revision: 1.4 $
+ * $Date: 2006-09-20 05:02:41 $
  * $Author: taylor $
  *
  * Debriefing editor dialog.  Used to edit mission debriefings of course.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/09/14 23:29:47  taylor
+ * add default recommendation text for debriefing, it's either this or making sure that it's nul
+ *
  * Revision 1.2  2006/01/26 04:01:58  Goober5000
  * spelling
  *
@@ -432,7 +435,6 @@ void debriefing_editor_dlg::copy_stage(int from, int to, int clear_formula)
 	if ((from < 0) || (from >= Debriefing->num_stages)) {
 		strcpy(Debriefing->stages[to].new_text, "<Text here>");
 		strcpy(Debriefing->stages[to].voice, "none.wav");
-		strcpy(Debriefing->stages[to].new_recommendation_text, "We have no recommendations for you.");
 		Debriefing->stages[to].formula = -1;
 		return;
 	}
