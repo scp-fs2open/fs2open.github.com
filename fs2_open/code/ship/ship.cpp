@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.374 $
- * $Date: 2006-09-21 13:33:27 $
- * $Author: taylor $
+ * $Revision: 2.375 $
+ * $Date: 2006-09-22 09:22:08 $
+ * $Author: Backslash $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.374  2006/09/21 13:33:27  taylor
+ * revert Backslash's commit, *way* too many changes there for a single friggin line
+ *
  * Revision 2.372  2006/09/11 06:48:40  taylor
  * fixes for stuff_string() bounds checking
  * stict compiler build fixes
@@ -2996,7 +2999,7 @@ int parse_ship(bool replace)
 		stuff_vector(&sip->max_vel);
 
 	// calculate the max speed from max_velocity
-	sip->max_speed = vm_vec_mag(&sip->max_vel);
+	sip->max_speed = sip->max_vel.xyz.z; // = vm_vec_mag(&sip->max_vel);
 
 	if(optional_string("$Rotation Time:"))
 	{
