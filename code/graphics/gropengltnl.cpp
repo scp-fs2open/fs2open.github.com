@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.46 $
- * $Date: 2006-07-28 02:38:35 $
+ * $Revision: 1.47 $
+ * $Date: 2006-09-24 13:31:52 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.46  2006/07/28 02:38:35  taylor
+ * don't render extra lighting passes when fog is enabled, prevents fog fragment from getting added for each pass
+ * wobble wobble no more!!
+ *
  * Revision 1.45  2006/07/24 07:36:50  taylor
  * minor cleanup/optimization to beam warmup glow rendering function
  * various lighting code cleanups
@@ -301,6 +305,9 @@ static int GL_htl_projection_matrix_set = 0;
 static int GL_htl_view_matrix_set = 0;
 static int GL_htl_2d_matrix_depth = 0;
 static int GL_htl_2d_matrix_set = 0;
+
+static GLfloat GL_env_texture_matrix[16] = { 0.0f };
+static bool GL_env_texture_matrix_set = false;
 
 int GL_vertex_data_in = 0;
 
@@ -882,6 +889,15 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
 		glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
 
+		// set the matrix for the texture mode
+		if (GL_env_texture_matrix_set) {
+			glMatrixMode(GL_TEXTURE);
+			glPushMatrix();
+			glLoadMatrixf(GL_env_texture_matrix);
+			// switch back to the default modelview mode
+			glMatrixMode(GL_MODELVIEW);
+		}
+
 		render_pass++; // bump!
 
 		vglLockArraysEXT( 0, vbp->n_verts );
@@ -917,6 +933,13 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 		glDisable(GL_TEXTURE_CUBE_MAP);
 
 		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
+
+		// pop off the texture matrix we used for the envmap
+		if (GL_env_texture_matrix_set) {
+			glMatrixMode(GL_TEXTURE);
+			glPopMatrix();
+			glMatrixMode(GL_MODELVIEW);
+		}
 
 		opengl_set_texture_target();
 
@@ -1007,7 +1030,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 #endif
 }
 
-void gr_opengl_start_instance_matrix(vec3d *offset, matrix* rotation)
+void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
 {
 	if (Cmdline_nohtl)
 		return;
@@ -1030,6 +1053,19 @@ void gr_opengl_start_instance_matrix(vec3d *offset, matrix* rotation)
 	glTranslatef( offset->xyz.x, offset->xyz.y, offset->xyz.z );
 	glRotatef( fl_degrees(ang), axis.xyz.x, axis.xyz.y, axis.xyz.z );
 
+	if (Cmdline_env) {
+		// setup the texture matrix which will keep the envmap lined up properly with the environment
+		GLfloat mview[16];
+
+		glGetFloatv(GL_MODELVIEW_MATRIX, mview);
+
+		// transpose/invert the view matrix (basically stole this out of a google search)
+		GL_env_texture_matrix[0] = mview[0]; GL_env_texture_matrix[1] = mview[4]; GL_env_texture_matrix[2]  = -mview[8];
+		GL_env_texture_matrix[4] = mview[1]; GL_env_texture_matrix[5] = mview[5]; GL_env_texture_matrix[6]  = -mview[9];
+		GL_env_texture_matrix[8] = mview[2]; GL_env_texture_matrix[9] = mview[6]; GL_env_texture_matrix[10] = -mview[10];
+		GL_env_texture_matrix[15] = 1.0f;
+	}
+
 	GL_modelview_matrix_depth++;
 }
 
@@ -1042,7 +1078,7 @@ void gr_opengl_start_instance_angles(vec3d *pos, angles *rotation)
 	Assert(GL_htl_view_matrix_set);
 
 	matrix m;
-	vm_angles_2_matrix(&m,rotation);
+	vm_angles_2_matrix(&m, rotation);
 
 	gr_opengl_start_instance_matrix(pos, &m);
 }
@@ -1061,19 +1097,20 @@ void gr_opengl_end_instance_matrix()
 	GL_modelview_matrix_depth--;
 }
 
-//the projection matrix; fov, aspect ratio, near, far
+// the projection matrix; fov, aspect ratio, near, far
 void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, float z_far)
 {
 	if (Cmdline_nohtl)
 		return;
 
+	glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
+
 	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
 	glLoadIdentity();
 
 	GLdouble clip_width, clip_height;
 
-	clip_height = tan( (double)fov / 2 ) * z_near;
+	clip_height = tan( (double)fov / 2.0 ) * z_near;
 	clip_width = clip_height * (GLdouble)aspect;
 
 	glFrustum( -clip_width, clip_width, -clip_height, clip_height, z_near, z_far );
@@ -1088,8 +1125,12 @@ void gr_opengl_end_projection_matrix()
 	if (Cmdline_nohtl)
 		return;
 
+	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+
 	glMatrixMode(GL_PROJECTION);
-	glPopMatrix();
+	glLoadIdentity();
+	glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
+
 	glMatrixMode(GL_MODELVIEW);
 
 	GL_htl_projection_matrix_set = 0;
@@ -1104,8 +1145,8 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix* orient)
 	Assert(GL_modelview_matrix_depth == 1);
 
 	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
 	glPushMatrix();
+	glLoadIdentity();
 
 	GLdouble eyex = (GLdouble)pos->xyz.x;
 	GLdouble eyey = (GLdouble)pos->xyz.y;
@@ -1123,7 +1164,21 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix* orient)
 
 	glScalef(1.0f, 1.0f, -1.0f);
 
-	glViewport(gr_screen.offset_x,gr_screen.max_h-gr_screen.offset_y-gr_screen.clip_height,gr_screen.clip_width,gr_screen.clip_height);
+	if (Cmdline_env) {
+		// setup the texture matrix which will make the the envmap keep lined up properly
+		// with the environment
+		GLfloat mview[16];
+
+		glGetFloatv(GL_MODELVIEW_MATRIX, mview);
+
+		// transpose/invert the view matrix (basically stole this out of a google search)
+		GL_env_texture_matrix[0] = mview[0]; GL_env_texture_matrix[1] = mview[4]; GL_env_texture_matrix[2]  = -mview[8];
+		GL_env_texture_matrix[4] = mview[1]; GL_env_texture_matrix[5] = mview[5]; GL_env_texture_matrix[6]  = -mview[9];
+		GL_env_texture_matrix[8] = mview[2]; GL_env_texture_matrix[9] = mview[6]; GL_env_texture_matrix[10] = -mview[10];
+		GL_env_texture_matrix[15] = 1.0f;
+
+		GL_env_texture_matrix_set = true;
+	}
 
 	GL_modelview_matrix_depth = 2;
 	GL_htl_view_matrix_set = 1;	
@@ -1140,10 +1195,9 @@ void gr_opengl_end_view_matrix()
 	glPopMatrix();
 	glLoadIdentity();
 
-	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
-
 	GL_modelview_matrix_depth = 1;
 	GL_htl_view_matrix_set = 0;
+	GL_env_texture_matrix_set = false;
 }
 
 // set a view and projection matrix for a 2D element
@@ -1160,21 +1214,26 @@ void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/)
 	Assert( GL_htl_2d_matrix_set == 0 );
 	Assert( GL_htl_2d_matrix_depth == 0 );
 
+	// the viewport needs to be the full screen size since glOrtho() is relative to it
+	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+
 	glMatrixMode( GL_PROJECTION );
 	glPushMatrix();
 	glLoadIdentity();
 
 	// the top and bottom positions are reversed on purpose
 	glOrtho( 0, gr_screen.max_w, gr_screen.max_h, 0, -1, 1 );
-//	glOrtho( gr_screen.offset_x, gr_screen.offset_x + gr_screen.clip_width, gr_screen.offset_y + gr_screen.clip_height, 
-//				gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height, 0, 1 );
 
 	glMatrixMode( GL_MODELVIEW );
 	glPushMatrix();
 	glLoadIdentity();
 
-	// the viewport needs to be the full screen size since glOrtho() is relative to it
-	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
+#ifndef NDEBUG
+	// safety check to make sure we don't use more than 2 projection matrices
+	GLint num_proj_stacks = 0;
+	glGetIntegerv( GL_PROJECTION_STACK_DEPTH, &num_proj_stacks );
+	Assert( num_proj_stacks <= 2 );
+#endif
 
 	GL_htl_2d_matrix_set++;
 	GL_htl_2d_matrix_depth++;
@@ -1190,6 +1249,9 @@ void gr_opengl_end_2d_matrix()
 		return;
 
 	Assert( GL_htl_2d_matrix_depth == 1 );
+
+	// reset viewport to what it was originally set to by the proj matrix
+	glViewport(gr_screen.offset_x, (gr_screen.max_h - gr_screen.offset_y - gr_screen.clip_height), gr_screen.clip_width, gr_screen.clip_height);
 
 	glMatrixMode( GL_PROJECTION );
 	glPopMatrix();
@@ -1210,7 +1272,9 @@ void gr_opengl_push_scale_matrix(vec3d *scale_factor)
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
+
 	GL_modelview_matrix_depth++;
+
 	glScalef(scale_factor->xyz.x, scale_factor->xyz.y, scale_factor->xyz.z);
 }
 
@@ -1224,6 +1288,7 @@ void gr_opengl_pop_scale_matrix()
 
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
+
 	GL_modelview_matrix_depth--;
 }
 
@@ -1240,17 +1305,17 @@ void gr_opengl_start_clip_plane()
 	if (Cmdline_nohtl)
 		return;
 
-	double clip_equation[4];
-	vec3d n;
-	vec3d p;
+	GLdouble clip_equation[4];
 
-	n=G3_user_clip_normal;	
-	p=G3_user_clip_point;
+	clip_equation[0] = (GLdouble)G3_user_clip_normal.xyz.x;
+	clip_equation[1] = (GLdouble)G3_user_clip_normal.xyz.y;
+	clip_equation[2] = (GLdouble)G3_user_clip_normal.xyz.z;
 
-	clip_equation[0]=n.xyz.x;
-	clip_equation[1]=n.xyz.y;
-	clip_equation[2]=n.xyz.z;
-	clip_equation[3]=-vm_vec_dot(&p, &n);
+	clip_equation[3] = (GLdouble)(G3_user_clip_normal.xyz.x * G3_user_clip_point.xyz.x)
+						+ (GLdouble)(G3_user_clip_normal.xyz.y * G3_user_clip_point.xyz.y)
+						+ (GLdouble)(G3_user_clip_normal.xyz.z * G3_user_clip_point.xyz.z);
+	clip_equation[3] *= -1.0;
+
 	glClipPlane(GL_CLIP_PLANE0, clip_equation);
 	glEnable(GL_CLIP_PLANE0);
 }
