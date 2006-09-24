@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.184 $
- * $Date: 2006-09-20 05:04:22 $
+ * $Revision: 2.185 $
+ * $Date: 2006-09-24 13:31:52 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.184  2006/09/20 05:04:22  taylor
+ * some gamma ramp fixage, still hasn't gotten a steller review from DaBrain but it does work much better than before, so I'll tweak it later if need be
+ *
  * Revision 2.183  2006/09/11 06:36:38  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
@@ -1625,7 +1628,7 @@ void gr_opengl_flip_window(uint _hdc, int x, int y, int w, int h )
 	// Not used.
 }
 
-void gr_opengl_set_clip(int x,int y,int w,int h, bool resize)
+void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 {
 	// check for sanity of parameters
 	if (x < 0)
@@ -2471,50 +2474,53 @@ void gr_opengl_stuff_fog_coord(vertex *v)
 
 void gr_opengl_stuff_secondary_color(vertex *v, ubyte fr, ubyte fg, ubyte fb)
 {
+	GLfloat color[3] = { 0.0f, 0.0f, 0.0f };
 
-	float color[]={	(float)fr/255.0f,
-					(float)fg/255.0f,
-					(float)fb/255.0f};
-
-	if ((fr==0) && (fg==0) && (fb==0))
-	{
-		//easy out
+	// check for easy out first
+	if ( (fr == 0) && (fg == 0) && (fb == 0) ) {
 		vglSecondaryColor3fvEXT(color);
 		return;
 	}
 
-	float d;
-	float d_over_far;
-	vec3d pos;			//position of the vertex in question
-	vm_vec_add(&pos, Interp_pos,&Interp_offset);
+	float d, d_over_far;
+	vec3d pos;			// position of the vertex in question
+
+	vm_vec_add(&pos, Interp_pos, &Interp_offset);
 	vm_vec_add2(&pos, &v->real_pos);
-	d=vm_vec_dist_squared(&pos,&Eye_position);
+
+	d = vm_vec_dist_squared(&pos, &Eye_position);
 	
-	d_over_far = d/(gr_screen.fog_far*gr_screen.fog_far);
+	d_over_far = d / (gr_screen.fog_far * gr_screen.fog_far);
 
-	if (d_over_far <= (gr_screen.fog_near * gr_screen.fog_near))
-	{
-		memset(color,0,sizeof(float)*3);
+	if ( d_over_far <= (gr_screen.fog_near * gr_screen.fog_near) ) {
 		vglSecondaryColor3fvEXT(color);
 		return;
 	}
 
-	if (d_over_far >= 1.0f)
-	{
-		//another easy out
+	if ( (fr == 255) && (fg == 255) && (fb == 255) ) {
+		color[0] = color[1] = color[2] = 1.0f;
+	} else {
+		color[0] = (GLfloat)fr / 255.0f;
+		color[1] = (GLfloat)fg / 255.0f;
+		color[2] = (GLfloat)fb / 255.0f;
+	}
+
+	if (d_over_far >= 1.0f) {
+		// another easy out
 		vglSecondaryColor3fvEXT(color);
 		return;
 	}
 
-	color[0]*=d_over_far;
-	color[1]*=d_over_far;
-	color[2]*=d_over_far;
+	color[0] *= d_over_far;
+	color[1] *= d_over_far;
+	color[2] *= d_over_far;
 
 	vglSecondaryColor3fvEXT(color);
+
 	return;
 }
 
-void opengl_draw_primitive(int nv, vertex ** verts, uint flags, float u_scale, float v_scale, int r, int g, int b, int alpha, int override_primary = 0)
+void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, float v_scale, int r, int g, int b, int alpha, int override_primary = 0)
 {
 
 	if (flags & TMAP_FLAG_TRISTRIP) {
@@ -4735,11 +4741,10 @@ void gr_opengl_init(int reinit)
 	glViewport(0, 0, gr_screen.max_w, gr_screen.max_h);
 
 	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
 	glLoadIdentity();
-	glOrtho(0, gr_screen.max_w, gr_screen.max_h,0, -1.0, 1.0);
+	glOrtho(0, gr_screen.max_w, gr_screen.max_h, 0, -1.0, 1.0);
+
 	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
 	glLoadIdentity();
 
 	glShadeModel(GL_SMOOTH);
