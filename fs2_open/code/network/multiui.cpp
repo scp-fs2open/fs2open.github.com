@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.47.2.2 $
- * $Date: 2006-09-08 06:07:59 $
+ * $Revision: 2.47.2.3 $
+ * $Date: 2006-09-24 22:53:22 $
  * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47.2.2  2006/09/08 06:07:59  taylor
+ * add support for a server name in fs2open_pxo.cfg, rather than just an IP address for the server
+ *
  * Revision 2.47.2.1  2006/08/03 17:55:01  karajorma
  * Stop multiplayer campaigns crashing if the campaign lacks a description
  *
@@ -945,6 +948,9 @@ void multi_load_common_icons()
 {
 	int idx;
 
+	if (Is_standalone)
+		return;
+
 	// load all icons
 	for(idx=0; idx<MULTI_NUM_COMMON_ICONS; idx++){
 		Multi_common_icons[idx] = -1;
@@ -955,6 +961,9 @@ void multi_load_common_icons()
 void multi_unload_common_icons()
 {
 	int idx;
+
+	if (Is_standalone)
+		return;
 
 	// unload all icons
 	for(idx=0; idx<MULTI_NUM_COMMON_ICONS; idx++){

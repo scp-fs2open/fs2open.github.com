@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.21 $
- * $Date: 2006-09-24 13:21:33 $
+ * $Revision: 2.243.2.22 $
+ * $Date: 2006-09-24 22:53:22 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.21  2006/09/24 13:21:33  taylor
+ * small optimizations and code cleanup
+ * use the real frametime for FPS counter stuff, no reason to deal with time compression there (Mantis bug #1058)
+ *
  * Revision 2.243.2.20  2006/09/20 04:55:12  taylor
  * properly support 4gig of RAM, and don't totally freak out if user has more than that
  *
@@ -3879,8 +3883,7 @@ void game_init()
 	mouse_init();
 	gamesnd_parse_soundstbl();
 
-	if (!Is_standalone)
-		select_radar_mode(Cmdline_orb_radar);
+	select_radar_mode(Cmdline_orb_radar);
 
 	gameseq_init();
 
@@ -3909,10 +3912,7 @@ void game_init()
 	anim_init();
 	context_help_init();			
 	techroom_intel_init();			// parse species.tbl, load intel info  
-	if(!Is_standalone)
-	{
-		hud_positions_init();		//Setup hud positions
-	}
+	hud_positions_init();		//Setup hud positions
 	
 	// initialize psnet
 	psnet_init( Multi_options_g.protocol, Multi_options_g.port );						// initialize the networking code		
