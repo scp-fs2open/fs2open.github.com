@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.26 $
- * $Date: 2006-04-20 06:32:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.27 $
+ * $Date: 2006-09-24 22:55:17 $
+ * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2006/04/20 06:32:23  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.25  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -819,6 +822,15 @@ int read_pilot_file(char *callsign, int single, player *p)
 	int pfile_upgrade = 0;
 	char *ext;
 
+	// if we're a standalone server in multiplayer, just fill in some bogus values since we don't have a pilot file
+	if ((Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_STANDALONE_SERVER)) {
+		memset(Player, 0, sizeof(player));
+		Player->insignia_texture = -1;
+		strcpy(Player->callsign, NOX("Standalone"));
+		strcpy(Player->short_callsign, NOX("Standalone"));
+		return 0;
+	}
+
 	if (!p) {
 		Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
 		p = &Players[Player_num];
@@ -837,14 +849,6 @@ int read_pilot_file(char *callsign, int single, player *p)
 	strcpy( filename, callsign );
 	strcat( filename, ext );
 
-	// if we're a standalone server in multiplayer, just fill in some bogus values since we don't have a pilot file
-	if ((Game_mode & GM_MULTIPLAYER) && (Game_mode & GM_STANDALONE_SERVER)) {
-		memset(Player, 0, sizeof(player));
-		strcpy(Player->callsign, NOX("Standalone"));
-		strcpy(Player->short_callsign, NOX("Standalone"));
-		return 0;
-	}
-	
 	// see comments at the beginning of function
 	if (single) {
 		file = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SINGLE_PLAYERS);
