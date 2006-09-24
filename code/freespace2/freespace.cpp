@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.20 $
- * $Date: 2006-09-20 04:55:12 $
+ * $Revision: 2.243.2.21 $
+ * $Date: 2006-09-24 13:21:33 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.20  2006/09/20 04:55:12  taylor
+ * properly support 4gig of RAM, and don't totally freak out if user has more than that
+ *
  * Revision 2.243.2.19  2006/09/13 03:08:09  taylor
  * be sure that we still try to play a movie if we get to the cmd/brief screen right from another mission without debrief (Mantis bug 1043)
  *
@@ -3966,11 +3969,13 @@ float	Start_time = 0.0f;
 
 float Framerate = 0.0f;
 
+#ifndef NDEBUG
 float Timing_total = 0.0f;
 float Timing_render2 = 0.0f;
 float Timing_render3 = 0.0f;
 float Timing_flip = 0.0f;
 float Timing_clear = 0.0f;
+#endif
 
 MONITOR(NumPolysDrawn)
 MONITOR(NumPolys)
@@ -4025,8 +4030,8 @@ void game_get_framerate()
 		frame_int = 0;
 	}
 	frametotal -= frametimes[frame_int];
-	frametotal += flFrametime;
-	frametimes[frame_int] = flFrametime;
+	frametotal += flRealframetime;
+	frametimes[frame_int] = flRealframetime;
 	frame_int = (frame_int + 1 ) % FRAME_FILTER;
 
 	if ( frametotal != 0.0 )	{
@@ -4034,7 +4039,7 @@ void game_get_framerate()
 			Framerate = FRAME_FILTER / frametotal;
 		else
 			Framerate = Framecount / frametotal;
-		sprintf( text, NOX("FPS: %.1f"), Framerate * (Game_time_compression>>16));
+		sprintf( text, NOX("FPS: %.1f"), Framerate);
 	} else {
 		sprintf( text, NOX("FPS: ?") );
 	}
@@ -4316,8 +4321,8 @@ void game_show_standalone_framerate()
 		frame_int = 0;
 	}
 	frametotal -= frametimes[frame_int];
-	frametotal += flFrametime;
-	frametimes[frame_int] = flFrametime;
+	frametotal += flRealframetime;
+	frametimes[frame_int] = flRealframetime;
 	frame_int = (frame_int + 1 ) % FRAME_FILTER;
 
 	if ( frametotal != 0.0 )	{
@@ -4463,6 +4468,7 @@ void game_reset_view_clip()
 	Cutscene_delta_time = 1.0f;
 	Cutscene_bars_progress = 1.0f;
 }
+
 void game_set_view_clip(float frametime)
 {
 	if ((Game_mode & GM_DEAD) || (supernova_active() >= 2))
@@ -5182,11 +5188,6 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 	if ( Viewer_mode & VM_PADLOCK_ANY ) {
 		player_display_packlock_view();
 	}
-	
-	if(!Time_compression_locked)
-		game_set_view_clip(flFrametime);
-	else
-		game_set_view_clip(flRealframetime);
 
 	if (Game_mode & GM_DEAD) {
 		vec3d	vec_to_deader, view_pos;
@@ -5405,6 +5406,7 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 
 	// setup neb2 rendering
 	neb2_render_setup(eye_pos, eye_orient);
+
 	if(!Time_compression_locked)
 		game_set_view_clip(flFrametime);
 	else
@@ -6108,14 +6110,22 @@ void obj_script_set_global(char *global_name, object *objp)
 	Script_system.SetGlobal(global_name, 'o', &luaobj);
 }
 
+#ifndef NDEBUG
+#define DEBUG_GET_TIME(x)	{ x = timer_get_fixed_seconds(); }
+#else
+#define DEBUG_GET_TIME(x)
+#endif
+
 void game_frame(int paused)
 {
-	int actually_playing;
+#ifndef NDEBUG
 	fix total_time1, total_time2;
 	fix render2_time1=0, render2_time2=0;
 	fix render3_time1=0, render3_time2=0;
 	fix flip_time1=0, flip_time2=0;
 	fix clear_time1=0, clear_time2=0;
+#endif
+	int actually_playing;
 	vec3d eye_pos;
 	matrix eye_orient;
 
@@ -6138,7 +6148,7 @@ void game_frame(int paused)
 		// start timing frame
 		timing_frame_start();
 	
-		total_time1 = timer_get_fixed_seconds();
+		DEBUG_GET_TIME( total_time1 )
 
 	if(paused)
 	{
@@ -6213,7 +6223,7 @@ void game_frame(int paused)
 
 	if (!Pre_player_entry) {
 		if (! (Game_mode & GM_STANDALONE_SERVER)) {
-			clear_time1 = timer_get_fixed_seconds();
+			DEBUG_GET_TIME( clear_time1 )
 			// clear the screen to black
 			gr_reset_clip();
 			if ( (Game_detail_flags & DETAIL_FLAG_CLEAR) ) {
@@ -6222,8 +6232,8 @@ void game_frame(int paused)
 
 			obj_script_set_global("plr", Player_obj);
 
-			clear_time2 = timer_get_fixed_seconds();
-			render3_time1 = timer_get_fixed_seconds();
+			DEBUG_GET_TIME( clear_time2 )
+			DEBUG_GET_TIME( render3_time1 )
 			game_render_frame_setup(&eye_pos, &eye_orient);
 			obj_script_set_global("slf", Viewer_obj);
 
@@ -6283,9 +6293,9 @@ void game_frame(int paused)
 					Player_multi_died_check = -1;
 				}
 			}
-	
-			render3_time2 = timer_get_fixed_seconds();
-			render2_time1 = timer_get_fixed_seconds();
+
+			DEBUG_GET_TIME( render3_time2 )
+			DEBUG_GET_TIME( render2_time1 )
 
 			gr_reset_clip();
 			game_get_framerate();
@@ -6321,7 +6331,7 @@ void game_frame(int paused)
 
 			game_tst_frame();
 
-			render2_time2 = timer_get_fixed_seconds();
+			DEBUG_GET_TIME( render2_time2 )
 
 			// maybe render and process the dead popup
 			game_maybe_do_dead_popup(flFrametime);
@@ -6332,9 +6342,9 @@ void game_frame(int paused)
 
 			// If a regular popup is active, don't flip (popup code flips)
 			if( !popup_running_state() ){
-				flip_time1 = timer_get_fixed_seconds();
+				DEBUG_GET_TIME( flip_time1 )
 				game_flip_page_and_time_it();
-				flip_time2 = timer_get_fixed_seconds();
+				DEBUG_GET_TIME( flip_time2 )
 			}
 
 #ifndef NDEBUG
@@ -6354,14 +6364,16 @@ void game_frame(int paused)
 	// process lightning (nebula only)
 	nebl_process();
 
-	total_time2 = timer_get_fixed_seconds();
-	
+	DEBUG_GET_TIME( total_time2 )
+
+#ifndef NDEBUG
 	// Got some timing numbers
 	Timing_total = f2fl( total_time2 - total_time1 ) * 1000.0f;
 	Timing_clear = f2fl( clear_time2 - clear_time1 ) * 1000.0f;
 	Timing_render2 = f2fl( render2_time2- render2_time1 ) * 1000.0f;
 	Timing_render3 = f2fl( render3_time2- render3_time1 ) * 1000.0f;
 	Timing_flip = f2fl( flip_time2 - flip_time1 ) * 1000.0f;
+#endif
 
 #ifdef DEMO_SYSTEM
 	demo_do_frame_end();
