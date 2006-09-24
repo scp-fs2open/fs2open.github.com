@@ -1,17 +1,32 @@
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.cpp $
- * $Revision: 2.1 $
- * $Date: 2006-09-11 06:36:38 $
+ * $Revision: 2.2 $
+ * $Date: 2006-09-24 22:55:17 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2006/09/11 06:36:38  taylor
+ * clean up the grstub mess (for work on standalone server, and just for sanity sake)
+ * move color and shader functions to 2d.cpp since they are exactly the same everywhere
+ * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
+ *
  *
  * $NoKeywords: $
  */
 
 #include "graphics/2d.h"
 #include "graphics/grinternal.h"
+#include "bmpman/bmpman.h"
+#include "ddsutils/ddsutils.h"
+#include "tgautils/tgautils.h"
+#include "jpgutils/jpgutils.h"
+#include "pcxutils/pcxutils.h"
+#include "globalincs/systemvars.h"
+#include "anim/animplay.h"
+#include "anim/packunpack.h"
 
+#define BMPMAN_INTERNAL
+#include "bmpman/bm_internal.h"
 
 
 uint gr_stub_lock()
@@ -369,15 +384,217 @@ void gr_stub_zbuffer_clear(int mode)
 {
 }*/
 
+void gr_stub_set_ambient_light(int red, int green, int blue)
+{
+}
+
+void gr_stub_set_texture_panning(float u, float v, bool enable)
+{
+}
+
+void gr_stub_setup_background_fog(bool set)
+{
+}
+
+void gr_stub_start_state_block()
+{
+	gr_screen.recording_state_block = false;
+}
+
+int gr_stub_end_state_block()
+{
+	return -1;
+}
+
+void gr_stub_set_state_block(int handle)
+{
+}
+
+
+void gr_stub_draw_htl_line(vec3d *start, vec3d* end)
+{
+}
+
+void gr_stub_draw_htl_sphere(float rad)
+{
+}
+
+void gr_stub_draw_line_list(colored_vector *lines, int num)
+{
+}
+
 // bitmap functions
 int gr_stub_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size)
 {
+	int dds_ct;
+
+	if (type == BM_TYPE_DDS) {
+		int dds_error = dds_read_header( filename, img_cfp, w, h, bpp, &dds_ct, mm_lvl, size );
+		if (dds_error != DDS_ERROR_NONE) {
+			mprintf(("DDS ERROR: Couldn't open '%s' -- %s\n", filename, dds_error_string(dds_error)));
+			return -1;
+		}
+
+		switch (dds_ct) {
+			case DDS_DXT1:
+				*c_type = BM_TYPE_DXT1;
+				break;
+
+			case DDS_DXT3:
+				*c_type = BM_TYPE_DXT3;
+				break;
+
+			case DDS_DXT5:
+				*c_type = BM_TYPE_DXT5;
+				break;
+
+			case DDS_UNCOMPRESSED:
+				*c_type = BM_TYPE_DDS;
+				break;
+
+			case DDS_CUBEMAP_DXT1:
+				*c_type = BM_TYPE_CUBEMAP_DXT1;
+				break;
+
+			case DDS_CUBEMAP_DXT3:
+				*c_type = BM_TYPE_CUBEMAP_DXT3;
+				break;
+
+			case DDS_CUBEMAP_DXT5:
+				*c_type = BM_TYPE_CUBEMAP_DXT5;
+				break;
+
+			case DDS_CUBEMAP_UNCOMPRESSED:
+				*c_type = BM_TYPE_CUBEMAP_DDS;
+				break;
+
+			default:
+				Error(LOCATION, "bad DDS file compression.  Not using DXT1,3,5 %s", filename);
+				return -1;
+		}
+	}
+	// if its a tga file
+	else if (type == BM_TYPE_TGA) {
+		int tga_error = targa_read_header( filename, img_cfp, w, h, bpp, NULL );
+		if ( tga_error != TARGA_ERROR_NONE )	{
+			mprintf(( "tga: Couldn't open '%s'\n", filename ));
+			return -1;
+		}
+	}
+	// if its a jpg file
+	else if (type == BM_TYPE_JPG) {
+		int jpg_error=jpeg_read_header( filename, img_cfp, w, h, bpp, NULL );
+		if ( jpg_error != JPEG_ERROR_NONE ) {
+			mprintf(( "jpg: Couldn't open '%s'\n", filename ));
+			return -1;
+		}
+	}
+	// if its a pcx file
+	else if (type == BM_TYPE_PCX) {
+		int pcx_error = pcx_read_header( filename, img_cfp, w, h, bpp, NULL );
+		if ( pcx_error != PCX_ERROR_NONE )	{
+			mprintf(( "pcx: Couldn't open '%s'\n", filename ));
+			return -1;
+		}
+	} else {
+		Assert( 0 );
+
+		return -1;
+	}
+
 	return 0;
 }
 
 int gr_stub_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags)
 {
-	return -1;
+	ubyte c_type = BM_TYPE_NONE;
+	ubyte true_bpp;
+
+	bitmap_entry *be = &bm_bitmaps[bitmapnum];
+	bitmap *bmp = &be->bm;
+
+	true_bpp = 8;
+
+	// don't do a bpp check here since it could be different in OGL - taylor
+	if ( (bmp->data == 0) ) {
+		Assert(be->ref_count == 1);
+
+		if ( be->type != BM_TYPE_USER ) {
+			if ( bmp->data == 0 ) {
+				nprintf (("BmpMan","Loading %s for the first time.\n", be->filename));
+			}
+		}
+
+		if ( !Bm_paging )	{
+			if ( be->type != BM_TYPE_USER ) {							
+				nprintf(( "Paging", "Loading %s (%dx%dx%d)\n", be->filename, bmp->w, bmp->h, true_bpp ));
+			}
+		}
+
+		// select proper format
+		if(flags & BMP_AABITMAP){
+			BM_SELECT_ALPHA_TEX_FORMAT();
+		} else if(flags & BMP_TEX_ANY){
+			BM_SELECT_TEX_FORMAT();					
+		} else {
+			BM_SELECT_SCREEN_FORMAT();
+		}
+
+		// make sure we use the real graphic type for EFFs
+		if ( be->type == BM_TYPE_EFF ) {
+			c_type = be->info.ani.eff.type;
+		} else {
+			c_type = be->type;
+		}
+
+		switch ( c_type ) {
+			case BM_TYPE_PCX:
+				bm_lock_pcx( handle, bitmapnum, be, bmp, true_bpp, flags );
+				break;
+
+			case BM_TYPE_ANI:
+				bm_lock_ani( handle, bitmapnum, be, bmp, true_bpp, flags );
+				break;
+
+			case BM_TYPE_TGA:
+				bm_lock_tga( handle, bitmapnum, be, bmp, true_bpp, flags );
+				break;
+
+			case BM_TYPE_JPG:
+				bm_lock_jpg( handle, bitmapnum, be, bmp, bmp->true_bpp, flags );
+				break;
+
+			case BM_TYPE_DDS:
+			case BM_TYPE_DXT1:
+			case BM_TYPE_DXT3:
+			case BM_TYPE_DXT5:
+			case BM_TYPE_CUBEMAP_DDS:
+			case BM_TYPE_CUBEMAP_DXT1:
+			case BM_TYPE_CUBEMAP_DXT3:
+			case BM_TYPE_CUBEMAP_DXT5:
+				bm_lock_dds( handle, bitmapnum, be, bmp, true_bpp, flags );
+				break;
+
+			case BM_TYPE_USER:	
+				bm_lock_user( handle, bitmapnum, be, bmp, true_bpp, flags );
+				break;
+
+			default:
+				Warning(LOCATION, "Unsupported type in bm_lock -- %d\n", c_type );
+				return -1;
+		}		
+
+		// always go back to screen format
+		BM_SELECT_SCREEN_FORMAT();
+	}
+
+	// make sure we actually did something
+	if ( !(bmp->data) ) {
+		// crap, bail...
+		return -1;
+	}
+
+	return 0;
 }
 int gr_stub_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags)
 {
@@ -433,128 +650,134 @@ void gr_stub_init()
 	Gr_t_blue = Gr_blue;
 
 	// function pointers...
-	gr_screen.gf_flip = gr_stub_flip;
-	gr_screen.gf_flip_window = gr_stub_flip_window;
-	gr_screen.gf_set_clip = gr_stub_set_clip;
-	gr_screen.gf_reset_clip = gr_stub_reset_clip;
+	gr_screen.gf_flip				= gr_stub_flip;
+	gr_screen.gf_flip_window		= gr_stub_flip_window;
+	gr_screen.gf_set_clip			= gr_stub_set_clip;
+	gr_screen.gf_reset_clip			= gr_stub_reset_clip;
 	
-	gr_screen.gf_set_bitmap = gr_stub_set_bitmap;
-	gr_screen.gf_clear = gr_stub_clear;
-	gr_screen.gf_bitmap_ex = gr_stub_bitmap_ex;
-	gr_screen.gf_aabitmap = gr_stub_aabitmap;
-	gr_screen.gf_aabitmap_ex = gr_stub_aabitmap_ex;
+	gr_screen.gf_set_bitmap			= gr_stub_set_bitmap;
+	gr_screen.gf_clear				= gr_stub_clear;
+//	gr_screen.gf_bitmap				= gr_stub_bitmap;
+	gr_screen.gf_bitmap_ex			= gr_stub_bitmap_ex;
+	gr_screen.gf_aabitmap			= gr_stub_aabitmap;
+	gr_screen.gf_aabitmap_ex		= gr_stub_aabitmap_ex;
 	
-//	gr_screen.gf_rect = gr_stub_rect;
-//	gr_screen.gf_shade = gr_stub_shade;
-	gr_screen.gf_string = gr_stub_string;
-	gr_screen.gf_circle = gr_stub_circle;
-	gr_screen.gf_curve	= gr_stub_curve;
+//	gr_screen.gf_rect				= gr_stub_rect;
+//	gr_screen.gf_shade				= gr_stub_shade;
+	gr_screen.gf_string				= gr_stub_string;
+	gr_screen.gf_circle				= gr_stub_circle;
+	gr_screen.gf_curve				= gr_stub_curve;
 
-	gr_screen.gf_line = gr_stub_line;
-	gr_screen.gf_aaline = gr_stub_aaline;
-	gr_screen.gf_pixel = gr_stub_pixel;
-	gr_screen.gf_scaler = gr_stub_scaler;
-	gr_screen.gf_tmapper = gr_stub_tmapper;
+	gr_screen.gf_line				= gr_stub_line;
+	gr_screen.gf_aaline				= gr_stub_aaline;
+	gr_screen.gf_pixel				= gr_stub_pixel;
+	gr_screen.gf_scaler				= gr_stub_scaler;
+	gr_screen.gf_tmapper			= gr_stub_tmapper;
 
-	gr_screen.gf_gradient = gr_stub_gradient;
+	gr_screen.gf_gradient			= gr_stub_gradient;
 
-	gr_screen.gf_set_palette = gr_stub_set_palette;
-	gr_screen.gf_print_screen = gr_stub_print_screen;
+	gr_screen.gf_set_palette		= gr_stub_set_palette;
+	gr_screen.gf_print_screen		= gr_stub_print_screen;
 
-	gr_screen.gf_fade_in = gr_stub_fade_in;
-	gr_screen.gf_fade_out = gr_stub_fade_out;
-	gr_screen.gf_flash = gr_stub_flash;
-	gr_screen.gf_flash_alpha = gr_stub_flash_alpha;
+	gr_screen.gf_fade_in			= gr_stub_fade_in;
+	gr_screen.gf_fade_out			= gr_stub_fade_out;
+	gr_screen.gf_flash				= gr_stub_flash;
+	gr_screen.gf_flash_alpha		= gr_stub_flash_alpha;
 	
-	gr_screen.gf_zbuffer_get = gr_stub_zbuffer_get;
-	gr_screen.gf_zbuffer_set = gr_stub_zbuffer_set;
-	gr_screen.gf_zbuffer_clear = gr_stub_zbuffer_clear;
+	gr_screen.gf_zbuffer_get		= gr_stub_zbuffer_get;
+	gr_screen.gf_zbuffer_set		= gr_stub_zbuffer_set;
+	gr_screen.gf_zbuffer_clear		= gr_stub_zbuffer_clear;
 	
-	gr_screen.gf_save_screen = gr_stub_save_screen;
-	gr_screen.gf_restore_screen = gr_stub_restore_screen;
-	gr_screen.gf_free_screen = gr_stub_free_screen;
+	gr_screen.gf_save_screen		= gr_stub_save_screen;
+	gr_screen.gf_restore_screen		= gr_stub_restore_screen;
+	gr_screen.gf_free_screen		= gr_stub_free_screen;
 	
-	gr_screen.gf_dump_frame_start = gr_stub_dump_frame_start;
-	gr_screen.gf_dump_frame_stop = gr_stub_dump_frame_stop;
-	gr_screen.gf_dump_frame = gr_stub_dump_frame;
+	gr_screen.gf_dump_frame_start	= gr_stub_dump_frame_start;
+	gr_screen.gf_dump_frame_stop	= gr_stub_dump_frame_stop;
+	gr_screen.gf_dump_frame			= gr_stub_dump_frame;
 	
-	gr_screen.gf_set_gamma = gr_stub_set_gamma;
+	gr_screen.gf_set_gamma			= gr_stub_set_gamma;
 	
-	gr_screen.gf_lock = gr_stub_lock;
-	gr_screen.gf_unlock = gr_stub_unlock;
+	gr_screen.gf_lock				= gr_stub_lock;
+	gr_screen.gf_unlock				= gr_stub_unlock;
 	
-	gr_screen.gf_fog_set = gr_stub_fog_set;	
+	gr_screen.gf_fog_set			= gr_stub_fog_set;	
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
-	gr_screen.gf_get_region = gr_stub_get_region;
+	gr_screen.gf_get_region			= gr_stub_get_region;
 
 	// now for the bitmap functions
-	gr_screen.gf_bm_free_data				= gr_stub_bm_free_data;
-	gr_screen.gf_bm_create					= gr_stub_bm_create;
-	gr_screen.gf_bm_init					= gr_stub_bm_init;
-	gr_screen.gf_bm_load					= gr_stub_bm_load;
-	gr_screen.gf_bm_page_in_start			= gr_stub_bm_page_in_start;
-	gr_screen.gf_bm_lock					= gr_stub_bm_lock;
-	gr_screen.gf_bm_make_render_target		= gr_stub_bm_make_render_target;
-	gr_screen.gf_bm_set_render_target		= gr_stub_bm_set_render_target;
+	gr_screen.gf_bm_free_data			= gr_stub_bm_free_data;
+	gr_screen.gf_bm_create				= gr_stub_bm_create;
+	gr_screen.gf_bm_init				= gr_stub_bm_init;
+	gr_screen.gf_bm_load				= gr_stub_bm_load;
+	gr_screen.gf_bm_page_in_start		= gr_stub_bm_page_in_start;
+	gr_screen.gf_bm_lock				= gr_stub_bm_lock;
+	gr_screen.gf_bm_make_render_target	= gr_stub_bm_make_render_target;
+	gr_screen.gf_bm_set_render_target	= gr_stub_bm_set_render_target;
 
-	gr_screen.gf_get_pixel = gr_stub_get_pixel;
+	gr_screen.gf_get_pixel			= gr_stub_get_pixel;
 
-	gr_screen.gf_set_cull = gr_stub_set_cull;
+	gr_screen.gf_set_cull			= gr_stub_set_cull;
 
-	gr_screen.gf_cross_fade = gr_stub_cross_fade;
+	gr_screen.gf_cross_fade			= gr_stub_cross_fade;
 
-	gr_screen.gf_filter_set = gr_stub_filter_set;
+	gr_screen.gf_filter_set			= gr_stub_filter_set;
 
-	gr_screen.gf_tcache_set = gr_stub_tcache_set;
+	gr_screen.gf_tcache_set			= gr_stub_tcache_set;
 
-	gr_screen.gf_set_clear_color = gr_stub_set_clear_color;
+	gr_screen.gf_set_clear_color	= gr_stub_set_clear_color;
 
-	gr_screen.gf_preload = gr_stub_preload;
+	gr_screen.gf_preload			= gr_stub_preload;
 
-	gr_screen.gf_push_texture_matrix = gr_stub_push_texture_matrix;
-	gr_screen.gf_pop_texture_matrix = gr_stub_pop_texture_matrix;
-	gr_screen.gf_translate_texture_matrix = gr_stub_translate_texture_matrix;
+	gr_screen.gf_push_texture_matrix		= gr_stub_push_texture_matrix;
+	gr_screen.gf_pop_texture_matrix			= gr_stub_pop_texture_matrix;
+	gr_screen.gf_translate_texture_matrix	= gr_stub_translate_texture_matrix;
 
-	gr_screen.gf_set_texture_addressing = gr_stub_set_texture_addressing;
-	gr_screen.gf_zbias = gr_stub_zbias_stub;
-	gr_screen.gf_set_fill_mode = gr_set_fill_mode_stub;
+	gr_screen.gf_set_texture_addressing	= gr_stub_set_texture_addressing;
+	gr_screen.gf_zbias					= gr_stub_zbias_stub;
+	gr_screen.gf_set_fill_mode			= gr_set_fill_mode_stub;
+	gr_screen.gf_set_texture_panning	= gr_stub_set_texture_panning;
 
-	gr_screen.gf_make_buffer = gr_stub_make_buffer;
-	gr_screen.gf_destroy_buffer = gr_stub_destroy_buffer;
-	gr_screen.gf_render_buffer = gr_stub_render_buffer;
-	gr_screen.gf_set_buffer = gr_stub_set_buffer;
+	gr_screen.gf_make_buffer		= gr_stub_make_buffer;
+	gr_screen.gf_destroy_buffer		= gr_stub_destroy_buffer;
+	gr_screen.gf_render_buffer		= gr_stub_render_buffer;
+	gr_screen.gf_set_buffer			= gr_stub_set_buffer;
 
-	gr_screen.gf_start_instance_matrix = gr_stub_start_instance_matrix;
-	gr_screen.gf_end_instance_matrix = gr_stub_end_instance_matrix;
-	gr_screen.gf_start_angles_instance_matrix = gr_stub_start_instance_angles;
+	gr_screen.gf_start_instance_matrix			= gr_stub_start_instance_matrix;
+	gr_screen.gf_end_instance_matrix			= gr_stub_end_instance_matrix;
+	gr_screen.gf_start_angles_instance_matrix	= gr_stub_start_instance_angles;
 
-	gr_screen.gf_make_light = gr_stub_make_light;
-	gr_screen.gf_modify_light = gr_stub_modify_light;
-	gr_screen.gf_destroy_light = gr_stub_destroy_light;
-	gr_screen.gf_set_light = gr_stub_set_light;
-	gr_screen.gf_reset_lighting = gr_stub_reset_lighting;
+	gr_screen.gf_make_light			= gr_stub_make_light;
+	gr_screen.gf_modify_light		= gr_stub_modify_light;
+	gr_screen.gf_destroy_light		= gr_stub_destroy_light;
+	gr_screen.gf_set_light			= gr_stub_set_light;
+	gr_screen.gf_reset_lighting		= gr_stub_reset_lighting;
+	gr_screen.gf_set_ambient_light	= gr_stub_set_ambient_light;
 
-	gr_screen.gf_start_clip_plane = gr_stub_start_clip_plane;
-	gr_screen.gf_end_clip_plane = gr_stub_end_clip_plane;
+	gr_screen.gf_start_clip_plane	= gr_stub_start_clip_plane;
+	gr_screen.gf_end_clip_plane		= gr_stub_end_clip_plane;
 
-	gr_screen.gf_lighting = gr_stub_set_lighting;
+	gr_screen.gf_lighting			= gr_stub_set_lighting;
 
-	gr_screen.gf_set_proj_matrix=gr_stub_set_projection_matrix;
-	gr_screen.gf_end_proj_matrix=gr_stub_end_projection_matrix;
+	gr_screen.gf_set_proj_matrix	= gr_stub_set_projection_matrix;
+	gr_screen.gf_end_proj_matrix	= gr_stub_end_projection_matrix;
 
-	gr_screen.gf_set_view_matrix=gr_stub_set_view_matrix;
-	gr_screen.gf_end_view_matrix=gr_stub_end_view_matrix;
+	gr_screen.gf_set_view_matrix	= gr_stub_set_view_matrix;
+	gr_screen.gf_end_view_matrix	= gr_stub_end_view_matrix;
 
-	gr_screen.gf_push_scale_matrix = gr_stub_push_scale_matrix;
-	gr_screen.gf_pop_scale_matrix = gr_stub_pop_scale_matrix;
-	gr_screen.gf_center_alpha = gr_stub_center_alpha;
+	gr_screen.gf_push_scale_matrix	= gr_stub_push_scale_matrix;
+	gr_screen.gf_pop_scale_matrix	= gr_stub_pop_scale_matrix;
+	gr_screen.gf_center_alpha		= gr_stub_center_alpha;
 
-	gr_screen.gf_make_light = gr_stub_make_light;
-	gr_screen.gf_modify_light = gr_stub_modify_light;
-	gr_screen.gf_destroy_light = gr_stub_destroy_light;
-	gr_screen.gf_set_light = gr_stub_set_light;
-	gr_screen.gf_reset_lighting = gr_stub_reset_lighting;
+	gr_screen.gf_setup_background_fog	= gr_stub_setup_background_fog;
 
-	gr_screen.gf_lighting = gr_stub_set_lighting;
+	gr_screen.gf_start_state_block	= gr_stub_start_state_block;
+	gr_screen.gf_end_state_block	= gr_stub_end_state_block;
+	gr_screen.gf_set_state_block	= gr_stub_set_state_block;
+
+	gr_screen.gf_draw_line_list		= gr_stub_draw_line_list;
+
+	gr_screen.gf_draw_htl_line		= gr_stub_draw_htl_line;
+	gr_screen.gf_draw_htl_sphere	= gr_stub_draw_htl_sphere;
 }
