@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.35.2.3 $
- * $Date: 2006-08-25 21:15:31 $
- * $Author: karajorma $
+ * $Revision: 2.35.2.4 $
+ * $Date: 2006-09-24 22:53:22 $
+ * $Author: taylor $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35.2.3  2006/08/25 21:15:31  karajorma
+ * Fix TvT problem with scores appearing incorrectly.
+ * Fix a CVS issue
+ *
  * Revision 2.35  2006/06/02 09:10:01  karajorma
  * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
  *
@@ -1927,6 +1931,10 @@ void standalone_main_init()
 
 	// reset timer
 	timestamp_reset();
+
+	// setup a blank pilot (this is a standalone usage only!)
+	extern int read_pilot_file(char* callsign, int single = 1, player *p = NULL);
+	read_pilot_file(NULL);
 
 	// setup the netplayer for the standalone
 	Net_player = &Net_players[0];	
