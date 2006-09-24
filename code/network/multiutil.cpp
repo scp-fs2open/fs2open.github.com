@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.47 $
- * $Date: 2006-09-20 05:05:28 $
+ * $Revision: 2.48 $
+ * $Date: 2006-09-24 13:32:47 $
  * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2006/09/20 05:05:28  taylor
+ * add some extra FS2NetD safety checks around to prevent the code from doing stupid crash-happy things
+ *
  * Revision 2.46  2006/08/20 00:51:06  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -3521,9 +3524,8 @@ bool fs2netd_player_banned(net_addr *addr)
 
 void multi_update_valid_missions()
 {
-
 	// if we're not on FS2NetD (PXO) then don't bother with this function
-	if (!Om_tracker_flag || !FS2OpenPXO_Socket.isInitialized())
+	if ( !Om_tracker_flag )
 		return;
 
 	// destroy the file prior to updating
@@ -3533,6 +3535,10 @@ void multi_update_valid_missions()
 	static int port = -1;
 
 	fs2netd_maybe_init();
+
+	// if we didn't connect to FS2NetD then bail out now
+	if ( !FS2OpenPXO_Socket.isInitialized() )
+		return;
 
 #ifndef NO_STANDALONE
 	// if we're a standalone, show a dialog saying "validating missions"
@@ -3705,13 +3711,17 @@ void Kaz_NoBackGround_DrawString(char *str)
 void multi_update_valid_tables()
 {
 	// if we're not on FS2NetD (PXO) then don't bother with this function
-	if (!Om_tracker_flag || !FS2OpenPXO_Socket.isInitialized())
+	if ( !Om_tracker_flag )
 		return;
 
 	static char Server[32];
 	static int port = -1;
 
 	fs2netd_maybe_init();
+
+	// if we didn't connect to FS2NetD then bail out now
+	if ( !FS2OpenPXO_Socket.isInitialized() )
+		return;
 
 #ifndef NO_STANDALONE
 	// if we're a standalone, show a dialog saying "validating missions"
