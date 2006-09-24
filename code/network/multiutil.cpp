@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.48 $
- * $Date: 2006-09-24 13:32:47 $
+ * $Revision: 2.49 $
+ * $Date: 2006-09-24 22:55:17 $
  * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2006/09/24 13:32:47  taylor
+ * move FS2NetD connection checks to *after* it tries to connect ;)  (Mantis bug #1065)
+ *
  * Revision 2.47  2006/09/20 05:05:28  taylor
  * add some extra FS2NetD safety checks around to prevent the code from doing stupid crash-happy things
  *
@@ -1168,6 +1171,7 @@ int multi_create_player( int net_player_num, player *pl, char* name, net_addr* a
 	pilot_set_short_callsign(pl, SHORT_CALLSIGN_PIXEL_W);   // calculate the short callsign 
 	pl->flags |= PLAYER_FLAGS_STRUCTURE_IN_USE;
 	pl->objnum = -1;
+	pl->insignia_texture = -1;
 
 #ifndef NO_STANDALONE
 	// if we're the standalone server and this is the first guy to join, mark him as the host

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.266 $
- * $Date: 2006-09-24 13:30:33 $
+ * $Revision: 2.267 $
+ * $Date: 2006-09-24 22:55:17 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.266  2006/09/24 13:30:33  taylor
+ * small optimizations and code cleanup
+ * use the real frametime for FPS counter stuff, no reason to deal with time compression there (Mantis bug #1058)
+ *
  * Revision 2.265  2006/09/20 05:06:54  taylor
  * default to 44100 sound sample rate (OpenAL tends to works much better with this)
  *
@@ -3889,8 +3893,7 @@ void game_init()
 	mouse_init();
 	gamesnd_parse_soundstbl();
 
-	if (!Is_standalone)
-		select_radar_mode(Cmdline_orb_radar);
+	select_radar_mode(Cmdline_orb_radar);
 
 	gameseq_init();
 
@@ -3919,10 +3922,7 @@ void game_init()
 	anim_init();
 	context_help_init();			
 	techroom_intel_init();			// parse species.tbl, load intel info  
-	if(!Is_standalone)
-	{
-		hud_positions_init();		//Setup hud positions
-	}
+	hud_positions_init();		//Setup hud positions
 	
 	// initialize psnet
 	psnet_init( Multi_options_g.protocol, Multi_options_g.port );						// initialize the networking code		
