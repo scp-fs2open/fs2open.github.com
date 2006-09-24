@@ -2,13 +2,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.185 $
- * $Date: 2006-09-24 13:31:52 $
+ * $Revision: 2.186 $
+ * $Date: 2006-09-24 22:54:24 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.185  2006/09/24 13:31:52  taylor
+ * minor clean and code optimizations
+ * clean up view/proj matrix fubar that made us need far more matrix levels that actually needed (partial fix for Mantis #563)
+ * add debug safety check to make sure that we don't use more than 2 proj matrices (all that GL is required to support)
+ * set up a texture matrix for the env map to that it doesn't move/look funky
+ *
  * Revision 2.184  2006/09/20 05:04:22  taylor
  * some gamma ramp fixage, still hasn't gotten a steller review from DaBrain but it does work much better than before, so I'll tweak it later if need be
  *
@@ -4543,136 +4549,136 @@ void opengl_setup_function_pointers()
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
 
-	gr_screen.gf_flip = gr_opengl_flip;
-	gr_screen.gf_flip_window = gr_opengl_flip_window;
-	gr_screen.gf_set_clip = gr_opengl_set_clip;
-	gr_screen.gf_reset_clip = gr_opengl_reset_clip;
+	gr_screen.gf_flip				= gr_opengl_flip;
+	gr_screen.gf_flip_window		= gr_opengl_flip_window;
+	gr_screen.gf_set_clip			= gr_opengl_set_clip;
+	gr_screen.gf_reset_clip			= gr_opengl_reset_clip;
 	
-	gr_screen.gf_set_bitmap = gr_opengl_set_bitmap;
-	gr_screen.gf_clear = gr_opengl_clear;
-//	gr_screen.gf_bitmap = gr_opengl_bitmap;
-	gr_screen.gf_bitmap_ex = gr_opengl_bitmap_ex;
-	gr_screen.gf_aabitmap = gr_opengl_aabitmap;
-	gr_screen.gf_aabitmap_ex = gr_opengl_aabitmap_ex;
+	gr_screen.gf_set_bitmap			= gr_opengl_set_bitmap;
+	gr_screen.gf_clear				= gr_opengl_clear;
+//	gr_screen.gf_bitmap				= gr_opengl_bitmap;
+	gr_screen.gf_bitmap_ex			= gr_opengl_bitmap_ex;
+	gr_screen.gf_aabitmap			= gr_opengl_aabitmap;
+	gr_screen.gf_aabitmap_ex		= gr_opengl_aabitmap_ex;
 	
-//	gr_screen.gf_rect = gr_opengl_rect;
-//	gr_screen.gf_shade = gr_opengl_shade;
-	gr_screen.gf_string = gr_opengl_string;
-	gr_screen.gf_circle = gr_opengl_circle;
-	gr_screen.gf_curve = gr_opengl_curve;
+//	gr_screen.gf_rect				= gr_opengl_rect;
+//	gr_screen.gf_shade				= gr_opengl_shade;
+	gr_screen.gf_string				= gr_opengl_string;
+	gr_screen.gf_circle				= gr_opengl_circle;
+	gr_screen.gf_curve				= gr_opengl_curve;
 
-	gr_screen.gf_line = gr_opengl_line;
-	gr_screen.gf_aaline = gr_opengl_aaline;
-	gr_screen.gf_pixel = gr_opengl_pixel;
-	gr_screen.gf_scaler = gr_opengl_scaler;
-	gr_screen.gf_tmapper = gr_opengl_tmapper;
+	gr_screen.gf_line				= gr_opengl_line;
+	gr_screen.gf_aaline				= gr_opengl_aaline;
+	gr_screen.gf_pixel				= gr_opengl_pixel;
+	gr_screen.gf_scaler				= gr_opengl_scaler;
+	gr_screen.gf_tmapper			= gr_opengl_tmapper;
 
-	gr_screen.gf_gradient = gr_opengl_gradient;
+	gr_screen.gf_gradient			= gr_opengl_gradient;
 
-	gr_screen.gf_set_palette = gr_opengl_set_palette;
-	gr_screen.gf_print_screen = gr_opengl_print_screen;
+	gr_screen.gf_set_palette		= gr_opengl_set_palette;
+	gr_screen.gf_print_screen		= gr_opengl_print_screen;
 
-	gr_screen.gf_fade_in = gr_opengl_fade_in;
-	gr_screen.gf_fade_out = gr_opengl_fade_out;
-	gr_screen.gf_flash = gr_opengl_flash;
-	gr_screen.gf_flash_alpha = gr_opengl_flash_alpha;
+	gr_screen.gf_fade_in			= gr_opengl_fade_in;
+	gr_screen.gf_fade_out			= gr_opengl_fade_out;
+	gr_screen.gf_flash				= gr_opengl_flash;
+	gr_screen.gf_flash_alpha		= gr_opengl_flash_alpha;
 	
-	gr_screen.gf_zbuffer_get = gr_opengl_zbuffer_get;
-	gr_screen.gf_zbuffer_set = gr_opengl_zbuffer_set;
-	gr_screen.gf_zbuffer_clear = gr_opengl_zbuffer_clear;
+	gr_screen.gf_zbuffer_get		= gr_opengl_zbuffer_get;
+	gr_screen.gf_zbuffer_set		= gr_opengl_zbuffer_set;
+	gr_screen.gf_zbuffer_clear		= gr_opengl_zbuffer_clear;
 	
-	gr_screen.gf_save_screen = gr_opengl_save_screen;
-	gr_screen.gf_restore_screen = gr_opengl_restore_screen;
-	gr_screen.gf_free_screen = gr_opengl_free_screen;
+	gr_screen.gf_save_screen		= gr_opengl_save_screen;
+	gr_screen.gf_restore_screen		= gr_opengl_restore_screen;
+	gr_screen.gf_free_screen		= gr_opengl_free_screen;
 	
-	gr_screen.gf_dump_frame_start = gr_opengl_dump_frame_start;
-	gr_screen.gf_dump_frame_stop = gr_opengl_dump_frame_stop;
-	gr_screen.gf_dump_frame = gr_opengl_dump_frame;
+	gr_screen.gf_dump_frame_start	= gr_opengl_dump_frame_start;
+	gr_screen.gf_dump_frame_stop	= gr_opengl_dump_frame_stop;
+	gr_screen.gf_dump_frame			= gr_opengl_dump_frame;
 	
-	gr_screen.gf_set_gamma = gr_opengl_set_gamma;
+	gr_screen.gf_set_gamma			= gr_opengl_set_gamma;
 	
-	gr_screen.gf_lock = gr_opengl_lock;
-	gr_screen.gf_unlock = gr_opengl_unlock;
+	gr_screen.gf_lock				= gr_opengl_lock;
+	gr_screen.gf_unlock				= gr_opengl_unlock;
 	
-	gr_screen.gf_fog_set = gr_opengl_fog_set;	
+	gr_screen.gf_fog_set			= gr_opengl_fog_set;	
 
 	// UnknownPlayer : Don't recognize this - MAY NEED DEBUGGING
-	gr_screen.gf_get_region = gr_opengl_get_region;
+	gr_screen.gf_get_region			= gr_opengl_get_region;
 
-	gr_screen.gf_bm_free_data				= gr_opengl_bm_free_data;
-	gr_screen.gf_bm_create					= gr_opengl_bm_create;
-	gr_screen.gf_bm_init					= gr_opengl_bm_init;
-	gr_screen.gf_bm_load					= gr_opengl_bm_load;
-	gr_screen.gf_bm_page_in_start			= gr_opengl_bm_page_in_start;
-	gr_screen.gf_bm_lock					= gr_opengl_bm_lock;
+	// now for the bitmap functions
+	gr_screen.gf_bm_free_data			= gr_opengl_bm_free_data;
+	gr_screen.gf_bm_create				= gr_opengl_bm_create;
+	gr_screen.gf_bm_init				= gr_opengl_bm_init;
+	gr_screen.gf_bm_load				= gr_opengl_bm_load;
+	gr_screen.gf_bm_page_in_start		= gr_opengl_bm_page_in_start;
+	gr_screen.gf_bm_lock				= gr_opengl_bm_lock;
+	gr_screen.gf_bm_make_render_target	= gr_opengl_bm_make_render_target;
+	gr_screen.gf_bm_set_render_target	= gr_opengl_bm_set_render_target;
 
-	gr_screen.gf_get_pixel = gr_opengl_get_pixel;
+	gr_screen.gf_get_pixel			= gr_opengl_get_pixel;
 
-	gr_screen.gf_set_cull = gr_opengl_set_cull;
+	gr_screen.gf_set_cull			= gr_opengl_set_cull;
 
-	gr_screen.gf_cross_fade = gr_opengl_cross_fade;
+	gr_screen.gf_cross_fade			= gr_opengl_cross_fade;
 
-	gr_screen.gf_filter_set = gr_opengl_filter_set;
+	gr_screen.gf_filter_set			= gr_opengl_filter_set;
 
-	gr_screen.gf_tcache_set = gr_opengl_tcache_set;
+	gr_screen.gf_tcache_set			= gr_opengl_tcache_set;
 
-	gr_screen.gf_set_clear_color = gr_opengl_set_clear_color;
+	gr_screen.gf_set_clear_color	= gr_opengl_set_clear_color;
 
-	gr_screen.gf_preload = gr_opengl_preload;
+	gr_screen.gf_preload			= gr_opengl_preload;
 
-	gr_screen.gf_push_texture_matrix = gr_opengl_push_texture_matrix;
-	gr_screen.gf_pop_texture_matrix = gr_opengl_pop_texture_matrix;
-	gr_screen.gf_translate_texture_matrix = gr_opengl_translate_texture_matrix;
+	gr_screen.gf_push_texture_matrix		= gr_opengl_push_texture_matrix;
+	gr_screen.gf_pop_texture_matrix			= gr_opengl_pop_texture_matrix;
+	gr_screen.gf_translate_texture_matrix	= gr_opengl_translate_texture_matrix;
 
-	gr_screen.gf_set_texture_addressing = gr_opengl_set_texture_addressing;
-	gr_screen.gf_zbias = gr_opengl_zbias_stub;
-	gr_screen.gf_set_fill_mode = gr_opengl_set_fill_mode;
-	gr_screen.gf_set_texture_panning = gr_opengl_set_texture_panning;
+	gr_screen.gf_set_texture_addressing	= gr_opengl_set_texture_addressing;
+	gr_screen.gf_zbias					= gr_opengl_zbias_stub;
+	gr_screen.gf_set_fill_mode			= gr_opengl_set_fill_mode;
+	gr_screen.gf_set_texture_panning	= gr_opengl_set_texture_panning;
 
-	gr_screen.gf_make_buffer = gr_opengl_make_buffer;
-	gr_screen.gf_destroy_buffer = gr_opengl_destroy_buffer;
-	gr_screen.gf_render_buffer = gr_opengl_render_buffer;
-	gr_screen.gf_set_buffer = gr_opengl_set_buffer;
+	gr_screen.gf_make_buffer		= gr_opengl_make_buffer;
+	gr_screen.gf_destroy_buffer		= gr_opengl_destroy_buffer;
+	gr_screen.gf_render_buffer		= gr_opengl_render_buffer;
+	gr_screen.gf_set_buffer			= gr_opengl_set_buffer;
 
-	gr_screen.gf_start_instance_matrix = gr_opengl_start_instance_matrix;
-	gr_screen.gf_end_instance_matrix = gr_opengl_end_instance_matrix;
-	gr_screen.gf_start_angles_instance_matrix = gr_opengl_start_instance_angles;
+	gr_screen.gf_start_instance_matrix			= gr_opengl_start_instance_matrix;
+	gr_screen.gf_end_instance_matrix			= gr_opengl_end_instance_matrix;
+	gr_screen.gf_start_angles_instance_matrix	= gr_opengl_start_instance_angles;
 
-	gr_screen.gf_make_light = gr_opengl_make_light;
-	gr_screen.gf_modify_light = gr_opengl_modify_light;
-	gr_screen.gf_destroy_light = gr_opengl_destroy_light;
-	gr_screen.gf_set_light = gr_opengl_set_light;
-	gr_screen.gf_reset_lighting = gr_opengl_reset_lighting;
-	gr_screen.gf_set_ambient_light = gr_opengl_set_ambient_light;
+	gr_screen.gf_make_light			= gr_opengl_make_light;
+	gr_screen.gf_modify_light		= gr_opengl_modify_light;
+	gr_screen.gf_destroy_light		= gr_opengl_destroy_light;
+	gr_screen.gf_set_light			= gr_opengl_set_light;
+	gr_screen.gf_reset_lighting		= gr_opengl_reset_lighting;
+	gr_screen.gf_set_ambient_light	= gr_opengl_set_ambient_light;
 
-	gr_screen.gf_start_clip_plane = gr_opengl_start_clip_plane;
-	gr_screen.gf_end_clip_plane = gr_opengl_end_clip_plane;
+	gr_screen.gf_start_clip_plane	= gr_opengl_start_clip_plane;
+	gr_screen.gf_end_clip_plane		= gr_opengl_end_clip_plane;
 
-	gr_screen.gf_lighting = gr_opengl_set_lighting;
+	gr_screen.gf_lighting			= gr_opengl_set_lighting;
 
-	gr_screen.gf_set_proj_matrix=gr_opengl_set_projection_matrix;
-	gr_screen.gf_end_proj_matrix=gr_opengl_end_projection_matrix;
+	gr_screen.gf_set_proj_matrix	= gr_opengl_set_projection_matrix;
+	gr_screen.gf_end_proj_matrix	= gr_opengl_end_projection_matrix;
 
-	gr_screen.gf_set_view_matrix=gr_opengl_set_view_matrix;
-	gr_screen.gf_end_view_matrix=gr_opengl_end_view_matrix;
+	gr_screen.gf_set_view_matrix	= gr_opengl_set_view_matrix;
+	gr_screen.gf_end_view_matrix	= gr_opengl_end_view_matrix;
 
-	gr_screen.gf_push_scale_matrix = gr_opengl_push_scale_matrix;
-	gr_screen.gf_pop_scale_matrix = gr_opengl_pop_scale_matrix;
-	gr_screen.gf_center_alpha = gr_opengl_center_alpha;
+	gr_screen.gf_push_scale_matrix	= gr_opengl_push_scale_matrix;
+	gr_screen.gf_pop_scale_matrix	= gr_opengl_pop_scale_matrix;
+	gr_screen.gf_center_alpha		= gr_opengl_center_alpha;
 
-	gr_screen.gf_setup_background_fog = gr_opengl_setup_background_fog;
+	gr_screen.gf_setup_background_fog	= gr_opengl_setup_background_fog;
 
-	gr_screen.gf_bm_make_render_target = gr_opengl_bm_make_render_target;
-	gr_screen.gf_bm_set_render_target = gr_opengl_bm_set_render_target;
+	gr_screen.gf_start_state_block	= gr_opengl_start_state_block;
+	gr_screen.gf_end_state_block	= gr_opengl_end_state_block;
+	gr_screen.gf_set_state_block	= gr_opengl_set_state_block;
 
-	gr_screen.gf_start_state_block = gr_opengl_start_state_block;
-	gr_screen.gf_end_state_block = gr_opengl_end_state_block;
-	gr_screen.gf_set_state_block = gr_opengl_set_state_block;
+	gr_screen.gf_draw_line_list		= gr_opengl_draw_line_list;
 
-	gr_screen.gf_draw_line_list = gr_opengl_draw_line_list;
-
-	gr_screen.gf_draw_htl_line = gr_opengl_draw_htl_line;
-	gr_screen.gf_draw_htl_sphere = gr_opengl_draw_htl_sphere;
+	gr_screen.gf_draw_htl_line		= gr_opengl_draw_htl_line;
+	gr_screen.gf_draw_htl_sphere	= gr_opengl_draw_htl_sphere;
 
 	// NOTE: All function pointers here should have a Cmdline_nohtl check at the top
 	//       if they shouldn't be run in non-HTL mode, Don't keep separate entries.
