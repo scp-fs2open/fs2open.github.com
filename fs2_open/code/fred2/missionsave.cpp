@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.23 $
- * $Date: 2006-08-19 21:46:05 $
+ * $Revision: 1.24 $
+ * $Date: 2006-09-28 23:47:24 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2006/08/19 21:46:05  Goober5000
+ * disable duplicate model texture replace
+ *
  * Revision 1.22  2006/08/06 18:47:29  Goober5000
  * add the multiple background feature
  * --Goober5000
@@ -1966,50 +1969,41 @@ int CFred_mission_save::save_objects()
 		}
 
 		// Goober5000 - deal with texture replacement ----------------
-		if (Format_fs2_open)
+		k = 0;
+		wrote_heading = 0;
+		while (k < Fred_num_texture_replacements)
 		{
-			k=0;
-			wrote_heading=0;
-			while (k < Fred_num_texture_replacements)
+			if (!stricmp(Ships[i].ship_name, Fred_texture_replacements[k].ship_name))
 			{
-				if (!stricmp(Ships[i].ship_name, Fred_texture_replacements[k].ship_name))
+				// see about writing the title
+				if (!wrote_heading)
 				{
-					// see about writing the title
-					if (!wrote_heading)
+					// determine which one
+					if (Fred_texture_replacements[k].new_texture_id == FRED_TEXTURE_REPLACE)
 					{
-						// determine which one
-						if (Fred_texture_replacements[k].new_texture_id == FRED_TEXTURE_REPLACE)
-						{
-							if (optional_string_fred("$Texture Replace:", "$Name:"))
-								parse_comments();
-							else
-								fout("\n$Texture Replace:");
-						}
-						// more determining
-						else if (Fred_texture_replacements[k].new_texture_id == FRED_DUPLICATE_MODEL_TEXTURE_REPLACE)
-						{
-							if (optional_string_fred("$Texture Replace:", "$Name:"))
-								parse_comments();
-							else
-								fout("\n$Texture Replace:");
-						}
-						// no match? bug...
-						else
-						{
-							Int3();	// invalid flag
-						}
-
-						// set the flag
-						wrote_heading = 1;
+						fout_and_bypass("\n;;FSO 3.6.8;; $Texture Replace:");
+					}
+					// more determining
+					else if (Fred_texture_replacements[k].new_texture_id == FRED_DUPLICATE_MODEL_TEXTURE_REPLACE)
+					{
+						fout_and_bypass("\n;;FSO 3.6.8;; $Texture Replace:");
+					}
+					// no match? bug...
+					else
+					{
+						Int3();	// invalid flag
 					}
 
-					// write out this entry
-					fout("\n+old: %s", Fred_texture_replacements[k].old_texture);
-					fout("\n+new: %s", Fred_texture_replacements[k].new_texture);
+					// set the flag
+					wrote_heading = 1;
 				}
 
-				k++;	// increment down the list of texture replacements
+				// write out this entry
+				fout_and_bypass("\n;;FSO 3.6.8;; +old: %s", Fred_texture_replacements[k].old_texture);
+				fout_and_bypass("\n;;FSO 3.6.8;; +new: %s", Fred_texture_replacements[k].new_texture);
 			}
+
+			k++;	// increment down the list of texture replacements
 		}
 		// end of texture replacement -------------------------------
 
