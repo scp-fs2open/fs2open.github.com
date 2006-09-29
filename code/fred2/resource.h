@@ -8,9 +8,8 @@
 #define IDC_NO_SHIELDS                  5
 #define IDD_ABOUTBOX                    100
 #define ID_MY_STATUS_BAR                101
-#define IDD_VOICE_FILES                 102
+#define IDD_VOICE_MANAGER               102
 #define IDD_BRIEFING_PERSONAS           103
-#define IDD_VOICE_MANAGER               104
 #define IDR_MAINFRAME                   128
 #define IDR_MAINMENU                    128
 #define IDR_FREDTYPE                    129
@@ -320,8 +319,7 @@
 #define IDC_DUMP_TO_FILE                1062
 #define IDC_LOOP_BRIEF_BROWSE           1062
 #define IDC_BUG                         1062
-#define IDC_AUTOGENERATE                1062
-#define IDC_GEN_FILENAMES               1062
+#define IDC_GENERATE_FILE_NAMES         1062
 #define IDC_OBJECT_POSITIONY6           1063
 #define IDC_SOUND_CLIP_VOLUME           1063
 #define IDC_ADD_SBITMAP                 1063
@@ -514,6 +512,7 @@
 #define IDC_OLD_TEXTURE                 1188
 #define IDC_ASCT1_CLASS_COMBO1          1188
 #define IDC_SHIP_VARIABLES_COMBO        1188
+#define IDC_SUFFIX                      1188
 #define IDC_CREATED                     1189
 #define IDC_DEPARTURE_TARGET            1189
 #define IDC_SBITMAP                     1189
@@ -1044,7 +1043,9 @@
 #define IDC_LBL_ABBREV_MISSION          1578
 #define IDC_FLIP_ICON                   1578
 #define IDC_DISABLE_BUILTIN_SHIP        1579
+#define IDC_OTHER                       1579
 #define IDC_DISABLE_BUILTIN_COMMAND_MSGS 1580
+#define IDC_LBL_OTHER_SUFFIX            1580
 #define IDC_PRIMARIES_LOCKED            1581
 #define IDC_SECONDARIES_LOCKED          1582
 #define IDC_ASCT1_GROUP_ONE             1582
@@ -1305,7 +1306,7 @@
 #define ID_TEAM_1                       33051
 #define ID_TEAM_2                       33052
 #define ID_TEAM_3                       33053
-#define ID_CMD_BRIEF                    33054
+#define ID_EDITORS_CMD_BRIEF            33054
 #define ID_DISABLE_UNDO                 33055
 #define ID_END_OF_CAMPAIGN              33056
 #define ID_SEXP_TREE_ADD_VARIABLE       33057
@@ -1324,7 +1325,7 @@
 #define ID_FILE_IMPORT_FSM              33074
 #define ID_FILE_IMPORT_WEAPONS          33075
 #define ID_VIEW_LIGHTING                33079
-#define ID_EDITORS_VOICE_MANAGER        33080
+#define ID_EDITORS_VOICE                33080
 #define ID_SHOW_IFF_0                   33081
 #define ID_SHOW_IFF_1                   33082
 #define ID_SHOW_IFF_2                   33083
@@ -1344,7 +1345,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        273
+#define _APS_NEXT_RESOURCE_VALUE        274
 #define _APS_NEXT_COMMAND_VALUE         33090
 #define _APS_NEXT_CONTROL_VALUE         1590
 #define _APS_NEXT_SYMED_VALUE           105

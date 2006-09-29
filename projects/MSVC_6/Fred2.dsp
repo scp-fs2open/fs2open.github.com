@@ -342,10 +342,6 @@ SOURCE=..\..\code\fred2\VoiceActingManager.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\fred2\VoiceFileManager.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\fred2\WaypointPathDlg.cpp
 # End Source File
 # Begin Source File
@@ -595,10 +591,6 @@ SOURCE=..\..\code\fred2\TextViewDlg.h
 # Begin Source File
 
 SOURCE=..\..\code\fred2\VoiceActingManager.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fred2\VoiceFileManager.h
 # End Source File
 # Begin Source File
 
