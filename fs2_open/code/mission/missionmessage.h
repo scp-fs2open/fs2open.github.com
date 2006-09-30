@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.12 $
- * $Date: 2006-04-20 06:32:07 $
+ * $Revision: 2.13 $
+ * $Date: 2006-09-30 21:58:09 $
  * $Author: Goober5000 $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.11  2005/08/25 22:40:03  taylor
  * basic cleaning, removing old/useless code, sanity stuff, etc:
  *  - very minor performance boost from not doing stupid things :)
@@ -425,5 +428,8 @@ void message_pagein_mission_messages();
 
 // given a message id#, should it be filtered for me?
 int message_filter_multi(int id);
+
+// Goober5000
+bool message_filename_is_generic(char *filename);
 
 #endif
