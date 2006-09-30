@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.55 $
- * $Date: 2006-09-11 06:50:42 $
- * $Author: taylor $
+ * $Revision: 2.56 $
+ * $Date: 2006-09-30 21:58:08 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2006/09/11 06:50:42  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.54  2006/09/11 06:08:09  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -1379,6 +1382,17 @@ void message_load_wave(int index, const char *filename)
 	}
 }
 
+// Goober5000
+bool message_filename_is_generic(char *filename)
+{
+	if (!strnicmp(filename, "cuevoice.wav", 8)) return true;
+	if (!strnicmp(filename, "emptymsg.wav", 8)) return true;
+	if (!strnicmp(filename, "generic.wav", 7)) return true;
+	if (!strnicmp(filename, "msgstart.wav", 8)) return true;
+
+	return false;
+}
+
 // Play wave file associated with message
 // input: m		=>		pointer to message description
 //
@@ -1404,13 +1418,8 @@ bool message_play_wave( message_q *q )
 		strcpy( filename, Message_waves[index].name );
 
 		// Goober5000 - if we're using simulated speech, it should pre-empt the generic beeps
-		if (fsspeech_play_from(FSSPEECH_FROM_INGAME))
-		{
-			if (!strnicmp(filename, "emptymsg.wav", 8)) return false;
-			if (!strnicmp(filename, "generic.wav", 7)) return false;
-			if (!strnicmp(filename, "msgstart.wav", 8)) return false;
-			if (!strnicmp(filename, "cuevoice.wav", 8)) return false;
-		}
+		if (fsspeech_play_from(FSSPEECH_FROM_INGAME) && message_filename_is_generic(filename))
+			return false;
 
 		// if we need to bash the wave name because of "conversion" to terran command, do it here
 		if ( q->flags & MQF_CONVERT_TO_COMMAND ) {
