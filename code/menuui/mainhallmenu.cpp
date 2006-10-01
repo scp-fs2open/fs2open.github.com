@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.44.2.3 $
- * $Date: 2006-09-11 01:16:31 $
- * $Author: taylor $
+ * $Revision: 2.44.2.4 $
+ * $Date: 2006-10-01 08:34:43 $
+ * $Author: karajorma $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44.2.3  2006/09/11 01:16:31  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.44.2.2  2006/08/29 21:32:25  taylor
  * crap, there was supposed to be a multi check there
  *
@@ -1331,7 +1334,7 @@ void main_hall_do(float frametime)
 		case READY_ROOM_REGION:
 			if (Campaign_file_missing) {
 				// error popup for a missing campaign file, don't try to enter ready room in this case
-				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
+				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.\n\n Please select another in the Campaign Room.", -1));
 				break;
 			} else if ( !(Player->flags & PLAYER_FLAGS_IS_MULTI) && !strlen(Campaign.filename) ) {
 				// no campaign loaded...
