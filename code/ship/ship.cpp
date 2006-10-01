@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.375 $
- * $Date: 2006-09-22 09:22:08 $
- * $Author: Backslash $
+ * $Revision: 2.376 $
+ * $Date: 2006-10-01 18:53:59 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.375  2006/09/22 09:22:08  Backslash
+ * Ok, maybe this one will be better.  Sorry about that.
+ *
  * Revision 2.374  2006/09/21 13:33:27  taylor
  * revert Backslash's commit, *way* too many changes there for a single friggin line
  *
@@ -2932,8 +2935,22 @@ int parse_ship(bool replace)
 	}
 
 	// optional hud targeting model
-	if(optional_string( "$POF target file:")){
-		stuff_string(sip->pof_file_hud, F_NAME, MAX_FILENAME_LEN);
+	if(optional_string( "$POF target file:"))
+	{
+		char temp[MAX_FILENAME_LEN];
+		stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
+
+		// assume we're using this file name
+		bool valid = true;
+
+		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
+		if (replace)
+			if (strlen(sip->pof_file) > 0)
+				if (!cf_exists_full(temp, CF_TYPE_MODELS))
+					valid = false;
+
+		if (valid)
+			strcpy(sip->pof_file_hud, temp);
 	}
 
 	// optional hud target LOD if not using special hud model
