@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.17 $
- * $Date: 2006-09-11 06:08:08 $
- * $Author: taylor $
+ * $Revision: 1.18 $
+ * $Date: 2006-10-01 01:12:32 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2006/09/11 06:08:08  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 1.16  2006/08/06 18:47:29  Goober5000
  * add the multiple background feature
  * --Goober5000
@@ -851,6 +854,17 @@ bool fred_init()
 	// Goober5000
 	for (i = 0; i < MAX_IFFS; i++)
 		Show_iff[i] = true;
+
+	// Goober5000
+	strcpy(Voice_abbrev_briefing, "");
+	strcpy(Voice_abbrev_campaign, "");
+	strcpy(Voice_abbrev_command_briefing, "");
+	strcpy(Voice_abbrev_debriefing, "");
+	strcpy(Voice_abbrev_message, "");
+	strcpy(Voice_abbrev_mission, "");
+	Voice_no_replace_filenames = false;
+	strcpy(Voice_script_entry_format, "Persona: $persona\r\nFile: $filename\r\nMessage: $message");
+	Voice_export_selection = 0;
 
 	hud_init_comm_orders();		// Goober5000
 	

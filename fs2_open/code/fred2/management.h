@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.h $
- * $Revision: 1.2 $
- * $Date: 2006-04-20 06:32:01 $
+ * $Revision: 1.3 $
+ * $Date: 2006-10-01 01:12:32 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -330,6 +333,17 @@ extern char	*Docking_bay_list[];
 
 extern char Fred_exe_dir[512];
 extern char Fred_base_dir[512];
+
+// Goober5000 - for voice acting manager
+extern char Voice_abbrev_briefing[NAME_LENGTH];
+extern char Voice_abbrev_campaign[NAME_LENGTH];
+extern char Voice_abbrev_command_briefing[NAME_LENGTH];
+extern char Voice_abbrev_debriefing[NAME_LENGTH];
+extern char Voice_abbrev_message[NAME_LENGTH];
+extern char Voice_abbrev_mission[NAME_LENGTH];
+extern bool Voice_no_replace_filenames;
+extern char Voice_script_entry_format[NOTES_LENGTH];
+extern int Voice_export_selection;
 
 // Goober5000
 extern bool Show_iff[];

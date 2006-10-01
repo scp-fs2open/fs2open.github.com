@@ -2339,12 +2339,12 @@ BEGIN
                     58,100,14
 END
 
-IDD_VOICE_MANAGER DIALOG DISCARDABLE  0, 0, 144, 206
+IDD_VOICE_MANAGER DIALOG DISCARDABLE  0, 0, 397, 218
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Voice Acting Manager"
 FONT 8, "MS Sans Serif"
 BEGIN
-    GROUPBOX        "File Name Options",IDC_FILENAME_OPTIONS,7,7,130,192
+    GROUPBOX        "File Name Options",IDC_FILE_NAME_OPTIONS,7,7,130,204
     GROUPBOX        "Abbreviations",IDC_ABBREVIATIONS,12,17,120,101
     LTEXT           "Campaign",IDC_LBL_ABBREV_CAMPAIGN,17,28,58,10
     EDITTEXT        IDC_ABBREV_CAMPAIGN,82,27,44,12,ES_AUTOHSCROLL
@@ -2359,13 +2359,34 @@ BEGIN
     EDITTEXT        IDC_ABBREV_DEBRIEFING,82,86,44,12,ES_AUTOHSCROLL
     LTEXT           "Message",IDC_LBL_ABBREV_MESSAGE,17,101,60,10
     EDITTEXT        IDC_ABBREV_MESSAGE,82,101,44,12,ES_AUTOHSCROLL
-    LTEXT           "Example",IDC_LBL_EXAMPLE,17,162,31,10
-    EDITTEXT        IDC_EXAMPLE,49,160,77,12,ES_AUTOHSCROLL | ES_READONLY
-    PUSHBUTTON      "Generate File Names",IDC_GENERATE_FILE_NAMES,12,179,120,14
-    GROUPBOX        "Other",IDC_OTHER,12,123,120,30
+    GROUPBOX        "Other",IDC_OTHER,12,123,120,27
     LTEXT           "Suffix",IDC_LBL_OTHER_SUFFIX,18,136,60,10
     COMBOBOX        IDC_SUFFIX,81,133,44,38,CBS_DROPDOWNLIST | WS_VSCROLL | 
                     WS_TABSTOP
+    LTEXT           "Example",IDC_LBL_EXAMPLE,17,158,31,10
+    EDITTEXT        IDC_EXAMPLE,49,156,77,12,ES_AUTOHSCROLL | ES_READONLY
+    CONTROL         "Don't replace existing file names",IDC_NO_REPLACE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,175,112,10
+    PUSHBUTTON      "Generate File Names",IDC_GENERATE_FILE_NAMES,12,190,120,
+                    14
+    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,247,204
+    GROUPBOX        "Script Entry Format",IDC_ENTRY,148,17,237,76
+    EDITTEXT        IDC_ENTRY_FORMAT,153,28,109,56,ES_MULTILINE | 
+                    ES_AUTOHSCROLL | ES_WANTRETURN
+    LTEXT           "$filename - name of the message file\r\n$message - text of the message\r\n$persona - persona of the sender\r\n\r\nNote that $persona will only appear for the Message section.",
+                    IDC_STATIC,269,28,112,58
+    GROUPBOX        "Export",IDC_EXPORT,148,98,119,64
+    CONTROL         "Everything",IDC_EXPORT_EVERYTHING,"Button",
+                    BS_AUTORADIOBUTTON,152,108,99,9
+    CONTROL         "Just Command Briefings",IDC_EXPORT_COMMAND_BRIEFINGS,
+                    "Button",BS_AUTORADIOBUTTON,152,118,99,9
+    CONTROL         "Just Briefings",IDC_EXPORT_BRIEFINGS,"Button",
+                    BS_AUTORADIOBUTTON,152,128,99,9
+    CONTROL         "Just Debriefings",IDC_EXPORT_DEBRIEFINGS,"Button",
+                    BS_AUTORADIOBUTTON,152,138,99,9
+    CONTROL         "Just Messages",IDC_EXPORT_MESSAGES,"Button",
+                    BS_AUTORADIOBUTTON,152,148,99,9
+    PUSHBUTTON      "Generate Script",IDC_GENERATE_SCRIPT,148,190,120,14
 END
 
 IDD_BRIEFING_PERSONAS DIALOG DISCARDABLE  0, 0, 320, 201
@@ -2806,9 +2827,9 @@ BEGIN
     IDD_VOICE_MANAGER, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 137
+        RIGHTMARGIN, 390
         TOPMARGIN, 7
-        BOTTOMMARGIN, 199
+        BOTTOMMARGIN, 211
     END
 
     IDD_BRIEFING_PERSONAS, DIALOG
