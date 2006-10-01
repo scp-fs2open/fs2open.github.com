@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.42.2.5 $
- * $Date: 2006-09-24 13:22:38 $
+ * $Revision: 2.42.2.6 $
+ * $Date: 2006-10-01 19:22:15 $
  * $Author: taylor $
- * $Revision: 2.42.2.5 $
- * $Date: 2006-09-24 13:22:38 $
+ * $Revision: 2.42.2.6 $
+ * $Date: 2006-10-01 19:22:15 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42.2.5  2006/09/24 13:22:38  taylor
+ * fix SAFE_STRCAT() so that it can work in an if() statement that doesn't have braces
+ *
  * Revision 2.42.2.4  2006/09/20 04:56:36  taylor
  * neither of these two structs appear to be used anywhere, so lets just comment them out
  *
@@ -875,8 +878,11 @@ typedef struct lod_checker {
 // x = dest string
 // y = src  string
 // z = max dest string size
-#define SAFE_STRCAT(x,y, z)	if ( (strlen((y)) + 1) <= ((z) - strlen(x)) ) \
-								strncat((x), (y), (z) - strlen((x)) - 1)
+#define SAFE_STRCAT(x, y, z) {	\
+	if ( (strlen((y)) + 1) <= ((z) - strlen(x)) ) {	\
+		strncat((x), (y), (z) - strlen((x)) - 1);	\
+	}	\
+}
 
 
 // Callback Loading function. 
