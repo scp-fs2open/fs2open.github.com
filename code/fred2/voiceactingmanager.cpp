@@ -335,7 +335,7 @@ void VoiceActingManager::OnGenerateScript()
 	}
 
 	fout("%s\n", Mission_filename);
-	fout("%s\n", The_mission.name);
+	fout("%s\n\n", The_mission.name);
 
 	if (m_export_everything || m_export_command_briefings)
 	{
@@ -349,7 +349,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$message", stage->text);
 			entry.Replace("$persona", "<no persona specified>");
 
-			fout("%s\n", (char *) (LPCTSTR) entry);
+			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
 	}
 
@@ -365,7 +365,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$message", stage->new_text);
 			entry.Replace("$persona", "<no persona specified>");
 
-			fout("%s\n", (char *) (LPCTSTR) entry);
+			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
 	}
 
@@ -381,7 +381,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$message", stage->new_text);
 			entry.Replace("$persona", "<no persona specified>");
 	
-			fout("%s\n", (char *) (LPCTSTR) entry);
+			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
 	}
 
@@ -400,7 +400,7 @@ void VoiceActingManager::OnGenerateScript()
 			else
 				entry.Replace("$persona", "<none>");
 	
-			fout("%s\n", (char *) (LPCTSTR) entry);
+			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
 	}
 
