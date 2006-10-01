@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.18 $
- * $Date: 2006-10-01 01:12:32 $
+ * $Revision: 1.19 $
+ * $Date: 2006-10-01 03:22:58 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2006/10/01 01:12:32  Goober5000
+ * enhanced voice acting manager, now with script generator :)
+ *
  * Revision 1.17  2006/09/11 06:08:08  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -863,7 +866,7 @@ bool fred_init()
 	strcpy(Voice_abbrev_message, "");
 	strcpy(Voice_abbrev_mission, "");
 	Voice_no_replace_filenames = false;
-	strcpy(Voice_script_entry_format, "Persona: $persona\r\nFile: $filename\r\nMessage: $message");
+	strcpy(Voice_script_entry_format, "Sender: $sender\r\nPersona: $persona\r\nFile: $filename\r\nMessage: $message");
 	Voice_export_selection = 0;
 
 	hud_init_comm_orders();		// Goober5000

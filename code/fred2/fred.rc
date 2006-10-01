@@ -2373,7 +2373,7 @@ BEGIN
     GROUPBOX        "Script Entry Format",IDC_ENTRY,148,17,237,76
     EDITTEXT        IDC_ENTRY_FORMAT,153,28,109,56,ES_MULTILINE | 
                     ES_AUTOHSCROLL | ES_WANTRETURN
-    LTEXT           "$filename - name of the message file\r\n$message - text of the message\r\n$persona - persona of the sender\r\n\r\nNote that $persona will only appear for the Message section.",
+    LTEXT           "$filename - name of the message file\r\n$message - text of the message\r\n$persona - persona of the sender\r\n$sender - name of the sender\r\n\r\nNote that $persona and $sender will only appear for the Message section.",
                     IDC_STATIC,269,28,112,58
     GROUPBOX        "Export",IDC_EXPORT,148,98,119,64
     CONTROL         "Everything",IDC_EXPORT_EVERYTHING,"Button",

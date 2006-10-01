@@ -51,6 +51,7 @@ protected:
 	void build_example();
 	void build_example(CString section);
 	CString generate_filename(CString section, int number, int digits);
+	char *get_message_sender(char *message);
 
 	CFILE *fp;
 	int fout(char *format, ...);
