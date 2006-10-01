@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.8 $
- * $Date: 2006-09-28 23:47:25 $
+ * $Revision: 1.14.2.9 $
+ * $Date: 2006-10-01 06:18:36 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.8  2006/09/28 23:47:25  Goober5000
+ * fix for Mantis #1070
+ *
  * Revision 1.14.2.7  2006/08/19 21:46:02  Goober5000
  * disable duplicate model texture replace
  *
@@ -2481,7 +2484,7 @@ int CFred_mission_save::save_messages()
 	fred_parse_flag = 0;
 	required_string_fred("#Messages");
 	parse_comments(2);
-	fout("\t\t;! %d total\n", Num_messages);
+	fout("\t\t;! %d total\n", Num_messages-Num_builtin_messages);
 
 	for (i=Num_builtin_messages; i<Num_messages; i++) {
 		required_string_either_fred("$Name:", "#Reinforcements");
