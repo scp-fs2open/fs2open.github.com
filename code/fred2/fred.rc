@@ -2339,7 +2339,7 @@ BEGIN
                     58,100,14
 END
 
-IDD_VOICE_MANAGER DIALOG DISCARDABLE  0, 0, 397, 218
+IDD_VOICE_MANAGER DIALOG DISCARDABLE  0, 0, 407, 218
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Voice Acting Manager"
 FONT 8, "MS Sans Serif"
@@ -2369,24 +2369,24 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,175,112,10
     PUSHBUTTON      "Generate File Names",IDC_GENERATE_FILE_NAMES,12,190,120,
                     14
-    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,247,204
-    GROUPBOX        "Script Entry Format",IDC_ENTRY,148,17,237,76
-    EDITTEXT        IDC_ENTRY_FORMAT,153,28,109,56,ES_MULTILINE | 
+    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,204
+    GROUPBOX        "Script Entry Format",IDC_ENTRY,149,17,246,76
+    EDITTEXT        IDC_ENTRY_FORMAT,154,28,109,56,ES_MULTILINE | 
                     ES_AUTOHSCROLL | ES_WANTRETURN
     LTEXT           "$filename - name of the message file\r\n$message - text of the message\r\n$persona - persona of the sender\r\n$sender - name of the sender\r\n\r\nNote that $persona and $sender will only appear for the Message section.",
-                    IDC_STATIC,269,28,112,58
-    GROUPBOX        "Export",IDC_EXPORT,148,98,119,64
+                    IDC_STATIC,270,28,120,58
+    GROUPBOX        "Export",IDC_EXPORT,149,98,119,64
     CONTROL         "Everything",IDC_EXPORT_EVERYTHING,"Button",
-                    BS_AUTORADIOBUTTON,152,108,99,9
+                    BS_AUTORADIOBUTTON,153,108,99,9
     CONTROL         "Just Command Briefings",IDC_EXPORT_COMMAND_BRIEFINGS,
-                    "Button",BS_AUTORADIOBUTTON,152,118,99,9
+                    "Button",BS_AUTORADIOBUTTON,153,118,99,9
     CONTROL         "Just Briefings",IDC_EXPORT_BRIEFINGS,"Button",
-                    BS_AUTORADIOBUTTON,152,128,99,9
+                    BS_AUTORADIOBUTTON,153,128,99,9
     CONTROL         "Just Debriefings",IDC_EXPORT_DEBRIEFINGS,"Button",
-                    BS_AUTORADIOBUTTON,152,138,99,9
+                    BS_AUTORADIOBUTTON,153,138,99,9
     CONTROL         "Just Messages",IDC_EXPORT_MESSAGES,"Button",
-                    BS_AUTORADIOBUTTON,152,148,99,9
-    PUSHBUTTON      "Generate Script",IDC_GENERATE_SCRIPT,148,190,120,14
+                    BS_AUTORADIOBUTTON,153,148,99,9
+    PUSHBUTTON      "Generate Script",IDC_GENERATE_SCRIPT,149,190,120,14
 END
 
 IDD_BRIEFING_PERSONAS DIALOG DISCARDABLE  0, 0, 320, 201
@@ -2827,7 +2827,7 @@ BEGIN
     IDD_VOICE_MANAGER, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 390
+        RIGHTMARGIN, 400
         TOPMARGIN, 7
         BOTTOMMARGIN, 211
     END
