@@ -7,6 +7,7 @@
 #include "missionui/missioncmdbrief.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missionmessage.h"
+#include "parse/sexp.h"
 #include <math.h>
 
 #ifdef _DEBUG
@@ -310,7 +311,7 @@ void VoiceActingManager::OnGenerateFileNames()
 	}
 
 	// notify
-	MessageBox("Filename generation complete.", "Woohoo!");
+	MessageBox("File name generation complete.", "Woohoo!");
 }
 
 void VoiceActingManager::OnGenerateScript()
@@ -348,6 +349,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$filename", stage->wave_filename);
 			entry.Replace("$message", stage->text);
 			entry.Replace("$persona", "<no persona specified>");
+			entry.Replace("$sender", "<no sender specified>");
 
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -364,6 +366,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$filename", stage->voice);
 			entry.Replace("$message", stage->new_text);
 			entry.Replace("$persona", "<no persona specified>");
+			entry.Replace("$sender", "<no sender specified>");
 
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -380,6 +383,7 @@ void VoiceActingManager::OnGenerateScript()
 			entry.Replace("$filename", stage->voice);
 			entry.Replace("$message", stage->new_text);
 			entry.Replace("$persona", "<no persona specified>");
+			entry.Replace("$sender", "<no sender specified>");
 	
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -399,6 +403,7 @@ void VoiceActingManager::OnGenerateScript()
 				entry.Replace("$persona", Personas[message->persona_index].name);
 			else
 				entry.Replace("$persona", "<none>");
+			entry.Replace("$sender", get_message_sender(message->name));
 	
 			fout("%s\n\n\n", (char *) (LPCTSTR) entry);
 		}
@@ -553,4 +558,66 @@ int VoiceActingManager::fout(char *format, ...)
 
 	cfputs(str, fp);
 	return 0;
+}
+
+// Loops through all the sexps and finds the sender of the specified message.  This assumes there is only one possible
+// sender of the message, which is probably nearly always true (especially for voice-acted missions).
+char *VoiceActingManager::get_message_sender(char *message)
+{
+	int i;
+
+	for (i = 0; i < MAX_SEXP_NODES; i++)
+	{
+		if (Sexp_nodes[i].type == SEXP_NOT_USED)
+			continue;
+
+		// stuff
+		int op = get_operator_const(Sexp_nodes[i].text);
+		int n = CDR(i);
+
+		// find the message sexps
+		if (op == OP_SEND_MESSAGE)
+		{
+			// the first argument is the sender; the third is the message
+			if (!strcmp(message, Sexp_nodes[CDDR(n)].text))
+				return Sexp_nodes[n].text;
+		}
+		else if (op == OP_SEND_MESSAGE_LIST)
+		{
+			// check the argument list
+			while (n != -1)
+			{
+				// as before
+				if (!strcmp(message, Sexp_nodes[CDDR(n)].text))
+					return Sexp_nodes[n].text;
+
+				// iterate along the list
+				n = CDDDDR(n);
+			}
+		}
+		else if (op == OP_SEND_RANDOM_MESSAGE)
+		{
+			// as before, sort of
+			char *sender = Sexp_nodes[n].text;
+
+			// check the argument list
+			n = CDDR(n);
+			while (n != -1)
+			{
+				if (!strcmp(message, Sexp_nodes[n].text))
+					return sender;
+
+				// iterate along the list
+				n = CDR(n);
+			}
+		}
+		else if (op == OP_TRAINING_MSG)
+		{
+			// just check the message
+			if (!strcmp(message, Sexp_nodes[n].text))
+				return "Training Message";
+		}
+	}
+
+	return "<none>";
 }
