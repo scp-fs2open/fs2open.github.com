@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.26.2.3 $
- * $Date: 2006-08-22 05:47:00 $
+ * $Revision: 2.26.2.4 $
+ * $Date: 2006-10-01 19:29:35 $
  * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26.2.3  2006/08/22 05:47:00  taylor
+ * make sure that we properly page in textures for 3d shockwave models
+ *
  * Revision 2.26.2.2  2006/08/19 04:38:47  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -850,9 +853,10 @@ void shockwave_level_init()
 // Call at the close of each level (mission)
 void shockwave_level_close()
 {
-	if(Shockwave_inited){
+	if (Shockwave_inited)
 		shockwave_delete_all();		
-	}
+	else
+		return;
 	
 	//Unload all non-default shockwaves
 	int i;
