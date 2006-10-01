@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.23.2.3 $
- * $Date: 2006-08-28 17:14:52 $
+ * $Revision: 2.23.2.4 $
+ * $Date: 2006-10-01 19:27:28 $
  * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23.2.3  2006/08/28 17:14:52  taylor
+ * stupid, stupid, stupid...
+ *  - fix AVI/MPG movie playback
+ *  - fix missing campaign craziness
+ *
  * Revision 2.23.2.2  2006/08/27 18:11:37  taylor
  * quite a few fixes to handle missing campaigns better
  * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
@@ -1061,10 +1066,37 @@ int sim_room_maybe_resume_savegame()
 
 int readyroom_continue_campaign()
 {
+	// check for possible mission loop, need to do this before calling mission_campaign_next_mission()!
+	if ( !(Game_mode & GM_MULTIPLAYER) && !Campaign.loop_enabled && (Campaign.current_mission == -1) &&
+		(Campaign.prev_mission != -1) && (Campaign.next_mission != -1) )
+	{
+		if (Campaign.missions[Campaign.prev_mission].has_mission_loop) {
+			// NOTE: the order of these calls is *very* important
+
+			// we must manually set the current mission to the *previous* mission and the mission name.
+			// this isn't the same thing that is done in mission_campaign_next_mission(), but it's
+			// cleaner to do this here than it is to hack that function to do the same thing
+			Campaign.current_mission = Campaign.prev_mission;
+			strncpy( Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN );
+
+			// set the bit for campaign mode
+			Game_mode |= GM_CAMPAIGN_MODE;
+
+			// eval the mission (may be needed to setup loop mission stuff)
+			if (Campaign.loop_mission == CAMPAIGN_LOOP_MISSION_UNINITIALIZED)
+				mission_campaign_eval_next_mission();
+	
+			// only proceed to loop if we have a loop
+			if (Campaign.loop_mission > 0) {
+				gameseq_post_event(GS_EVENT_LOOP_BRIEF);
+				return 0;
+			}
+		}
+	}
+
 	int mc_rval = mission_campaign_next_mission();
 	if (mc_rval == -1)
 	{  // is campaign and next mission valid?
-
 #ifdef FS2_DEMO
 		int reset_campaign = 0;
 		reset_campaign = popup(PF_BODY_BIG, 2, POPUP_NO, POPUP_YES, XSTR( "Demo Campaign Is Over.  Would you like to play the campaign again?", 111) );

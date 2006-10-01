@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.53.2.4 $
- * $Date: 2006-09-20 05:01:36 $
+ * $Revision: 2.53.2.5 $
+ * $Date: 2006-10-01 19:27:28 $
  * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53.2.4  2006/09/20 05:01:36  taylor
+ * add some extra FS2NetD safety checks around to prevent the code from doing stupid crash-happy things
+ *
  * Revision 2.53.2.3  2006/09/11 01:17:06  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -1903,17 +1906,14 @@ void debrief_accept(int ok_to_post_start_game_event)
 			}			
 
 			// loopy loopy time
-			if (go_loop) {
-				if(ok_to_post_start_game_event){
-					gameseq_post_event(GS_EVENT_LOOP_BRIEF);
-				} else {
-					play_commit_sound = 0;
-				}
+			if (go_loop && ok_to_post_start_game_event) {
+				gameseq_post_event( GS_EVENT_LOOP_BRIEF );
 			}
 			// continue as normal
 			else {
 				// end the mission
-				mission_campaign_mission_over();
+				// if we can loop, but don't want to right now, then setup so that we can later
+				mission_campaign_mission_over( (go_loop) ? false : true );
 
 				// check to see if we are out of the loop now
 				if ( Campaign.next_mission == Campaign.loop_reentry ) {
