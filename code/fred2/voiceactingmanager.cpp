@@ -369,7 +369,7 @@ void VoiceActingManager::OnGenerateScript()
 		}
 	}
 
-	if (m_export_everything || m_export_command_briefings)
+	if (m_export_everything || m_export_debriefings)
 	{
 		fout("\n\nDebriefings\n-----------\n\n");
 
@@ -385,7 +385,7 @@ void VoiceActingManager::OnGenerateScript()
 		}
 	}
 
-	if (m_export_everything || m_export_command_briefings)
+	if (m_export_everything || m_export_messages)
 	{
 		fout("\n\nMessages\n--------\n\n");
 
@@ -398,7 +398,7 @@ void VoiceActingManager::OnGenerateScript()
 			if (message->persona_index >= 0)
 				entry.Replace("$persona", Personas[message->persona_index].name);
 			else
-				entry.Replace("$persona", <none>");
+				entry.Replace("$persona", "<none>");
 	
 			fout("%s\n", (char *) (LPCTSTR) entry);
 		}
