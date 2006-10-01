@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.32 $
- * $Date: 2006-09-11 01:12:50 $
- * $Author: taylor $
+ * $Revision: 2.336.2.33 $
+ * $Date: 2006-10-01 18:53:50 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.32  2006/09/11 01:12:50  taylor
+ * fixes for stuff_string() bounds checking
+ * stict compiler build fixes
+ *
  * Revision 2.336.2.31  2006/09/08 06:13:29  taylor
  * fix for Mantis bug #1038 (glow point bank storage being wrong after changing ships in shipselect)
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
@@ -2895,8 +2899,22 @@ int parse_ship(bool replace)
 	}
 
 	// optional hud targeting model
-	if(optional_string( "$POF target file:")){
-		stuff_string(sip->pof_file_hud, F_NAME, MAX_FILENAME_LEN);
+	if(optional_string( "$POF target file:"))
+	{
+		char temp[MAX_FILENAME_LEN];
+		stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
+
+		// assume we're using this file name
+		bool valid = true;
+
+		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
+		if (replace)
+			if (strlen(sip->pof_file) > 0)
+				if (!cf_exists_full(temp, CF_TYPE_MODELS))
+					valid = false;
+
+		if (valid)
+			strcpy(sip->pof_file_hud, temp);
 	}
 
 	// optional hud target LOD if not using special hud model
