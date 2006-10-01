@@ -197,6 +197,7 @@
 #define IDC_REGULAR_REPLACE             1034
 #define IDC_SEP_UNDERSCORES             1034
 #define IDC_ASCT1_CLASS_RADIO1          1034
+#define IDC_EXPORT_EVERYTHING           1034
 #define IDC_RADIO2                      1035
 #define IDC_AI_ACCURACY                 1035
 #define IDC_SHIP_EDITOR                 1035
@@ -208,6 +209,7 @@
 #define IDC_DUPLICATE_REPLACE           1035
 #define IDC_SEP_NOTHING                 1035
 #define IDC_ASCT1_VARIABLES_RADIO1      1035
+#define IDC_EXPORT_COMMAND_BRIEFINGS    1035
 #define IDC_RADIO3                      1036
 #define IDC_SCLASS_MAX_ROLL             1036
 #define IDC_GOAL_EDITOR                 1036
@@ -217,12 +219,14 @@
 #define IDC_ACTIVE_FIELD                1036
 #define IDC_SEP_DASHES                  1036
 #define IDC_ASCT1_CLASS_RADIO2          1036
+#define IDC_EXPORT_BRIEFINGS            1036
 #define IDC_SPIN_POSITIONX6             1037
 #define IDC_RADIO4                      1037
 #define IDC_WAYPOINTS                   1037
 #define IDC_TEAMVTEAM                   1037
 #define IDC_PASSIVE_FIELD               1037
 #define IDC_ASCT1_VARIABLES_RADIO2      1037
+#define IDC_EXPORT_DEBRIEFINGS          1037
 #define IDC_SPIN_POSITIONX10            1038
 #define IDC_OBJECT_POSITIONY2           1038
 #define IDC_SCLASS_SCORE                1038
@@ -231,6 +235,7 @@
 #define IDC_SHIP_RESET                  1038
 #define IDC_ARRIVAL_CUE1                1038
 #define IDC_ASCT1_CLASS_RADIO3          1038
+#define IDC_EXPORT_MESSAGES             1038
 #define IDC_SPIN_POSITIONY2             1039
 #define IDC_SOUNDS                      1039
 #define IDC_RADIO5                      1039
@@ -323,6 +328,7 @@
 #define IDC_OBJECT_POSITIONY6           1063
 #define IDC_SOUND_CLIP_VOLUME           1063
 #define IDC_ADD_SBITMAP                 1063
+#define IDC_GENERATE_SCRIPT             1063
 #define IDC_SPIN_POSITIONY6             1064
 #define IDC_OBJECT_POSITIONZ6           1065
 #define IDC_MISSION_NOTES               1065
@@ -1027,7 +1033,10 @@
 #define IDC_AMBIENT_B_TEXT              1566
 #define IDC_CONTRAIL_THRESHOLD_CHECK    1567
 #define IDC_FILENAME_OPTIONS            1568
+#define IDC_FILE_NAME_OPTIONS           1568
+#define IDC_SCRIPT_OPTIONS              1569
 #define IDC_SEPARATORS                  1570
+#define IDC_ENTRY                       1570
 #define IDC_LBL_ABBREV_CAMPAIGN         1571
 #define IDC_ABBREVIATIONS               1572
 #define IDC_CUSTOM_WING_NAMES           1572
@@ -1047,6 +1056,7 @@
 #define IDC_DISABLE_BUILTIN_COMMAND_MSGS 1580
 #define IDC_LBL_OTHER_SUFFIX            1580
 #define IDC_PRIMARIES_LOCKED            1581
+#define IDC_EXPORT                      1581
 #define IDC_SECONDARIES_LOCKED          1582
 #define IDC_ASCT1_GROUP_ONE             1582
 #define IDC_ALT_SHIP_CLASS              1583
@@ -1059,6 +1069,8 @@
 #define IDC_SUBSTITUTE_BRIEFING_MUSIC   1588
 #define IDC_RESTRICT_PATHS_LABEL        1589
 #define IDC_PATH_LIST                   1590
+#define IDC_ENTRY_FORMAT                1590
+#define IDC_NO_REPLACE                  1591
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1347,7 +1359,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        274
 #define _APS_NEXT_COMMAND_VALUE         33090
-#define _APS_NEXT_CONTROL_VALUE         1590
+#define _APS_NEXT_CONTROL_VALUE         1592
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
