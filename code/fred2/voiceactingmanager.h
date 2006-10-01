@@ -26,6 +26,13 @@ public:
 	CString	m_abbrev_message;
 	CString	m_abbrev_mission;
 	CString	m_example;
+	BOOL m_no_replace;
+	CString m_script_entry_format;
+	BOOL m_export_everything;
+	BOOL m_export_command_briefings;
+	BOOL m_export_briefings;
+	BOOL m_export_debriefings;
+	BOOL m_export_messages;
 	//}}AFX_DATA
 
 
@@ -45,15 +52,20 @@ protected:
 	void build_example(CString section);
 	CString generate_filename(CString section, int number, int digits);
 
+	CFILE *fp;
+	int fout(char *format, ...);
+
 	// Generated message map functions
 	//{{AFX_MSG(VoiceActingManager)
 	virtual BOOL OnInitDialog();
+	afx_msg void OnClose();
 	afx_msg void OnSetfocusAbbrevBriefing();
 	afx_msg void OnSetfocusAbbrevCampaign();
 	afx_msg void OnSetfocusAbbrevCommandBriefing();
 	afx_msg void OnSetfocusAbbrevDebriefing();
 	afx_msg void OnSetfocusAbbrevMessage();
 	afx_msg void OnSetfocusAbbrevMission();
+	afx_msg void OnSetfocusSuffix();
 	afx_msg void OnChangeAbbrevBriefing();
 	afx_msg void OnChangeAbbrevCampaign();
 	afx_msg void OnChangeAbbrevCommandBriefing();
@@ -61,7 +73,9 @@ protected:
 	afx_msg void OnChangeAbbrevMessage();
 	afx_msg void OnChangeAbbrevMission();
 	afx_msg void OnChangeOtherSuffix();
+	afx_msg void OnChangeNoReplace();
 	afx_msg void OnGenerateFileNames();
+	afx_msg void OnGenerateScript();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
