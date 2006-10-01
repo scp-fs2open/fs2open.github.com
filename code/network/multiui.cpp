@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.47.2.3 $
- * $Date: 2006-09-24 22:53:22 $
+ * $Revision: 2.47.2.4 $
+ * $Date: 2006-10-01 19:28:28 $
  * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47.2.3  2006/09/24 22:53:22  taylor
+ * more standalone server fixes:
+ *  - add some basic bmpman functionality to grstub, since it needs to do something at least
+ *  - add missing gr_* function ptrs to grstrub
+ *  - (re-)enable radar and hud setup functions that used to crash (problems are fixed now)
+ *  - deal with default pilot file properly (also caused a bmpman headache)
+ *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
+ *
  * Revision 2.47.2.2  2006/09/08 06:07:59  taylor
  * add support for a server name in fs2open_pxo.cfg, rather than just an IP address for the server
  *
@@ -4002,7 +4010,7 @@ char *Multi_create_loading_fname[GR_NUM_RESOLUTIONS] = {
 UI_WINDOW Multi_create_window;										// the window object for the create screen
 UI_BUTTON Multi_create_player_select_button;						// for selecting players
 UI_BUTTON Multi_create_list_select_button;						// for selecting missions/campaigns
-int Multi_create_bitmap;												// the background bitmap
+int Multi_create_bitmap = -1;												// the background bitmap
 UI_SLIDER2 Multi_create_slider;										// for create list
 
 // constants for coordinate look ups
