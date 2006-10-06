@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.13 $
- * $Date: 2006-09-11 06:02:14 $
+ * $Revision: 2.14 $
+ * $Date: 2006-10-06 09:33:10 $
  * $Author: taylor $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/09/11 06:02:14  taylor
+ * quite a few fixes to handle missing campaigns better
+ * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
+ * clean up the getting of a list of available campaigns
+ * fix simroom issue where single missions, with the [V] icon, would display wrong (this was a retail bug, but it doesn't show normally)
+ * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
+ * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
+ *
  * Revision 2.12  2006/06/10 18:34:08  Goober5000
  * fix parsing/handling of debriefing persona indexes
  * --Goober5000
@@ -484,7 +492,7 @@ extern int mission_campaign_parse_is_multi(char *filename, char *name);
 extern int mission_campaign_next_mission( void );
 
 // function which is called with the current mission in this campaign is over
-extern void mission_campaign_mission_over( void );
+extern void mission_campaign_mission_over( bool do_next_mission = true );
 
 // frees all memory at game close time
 extern void mission_campaign_close( void );

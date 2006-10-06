@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.46 $
- * $Date: 2006-09-14 18:48:17 $
+ * $Revision: 2.47 $
+ * $Date: 2006-10-06 09:33:10 $
  * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2006/09/14 18:48:17  taylor
+ * prevent FRED from hitting an Assert() that it shouldn't have had to hit in the first place
+ *
  * Revision 2.45  2006/09/11 06:46:36  taylor
  * fixes for stuff_string() bounds checking
  * compiler warning fixes
@@ -1014,7 +1017,8 @@ int mission_campaign_load( char *filename, player *pl, int load_savefile )
 	// save file will get written when a mission has ended by player choice.
 	Campaign.next_mission = 0;
 	Campaign.prev_mission = -1;
-	Campaign.current_mission = -1;	
+	Campaign.current_mission = -1;
+	Campaign.loop_mission = CAMPAIGN_LOOP_MISSION_UNINITIALIZED;
 
 	// loading the campaign will get us to the current and next mission that the player must fly
 	// plus load all of the old goals that future missions might rely on.
@@ -2383,7 +2387,7 @@ void mission_campaign_store_goals_and_events_and_variables()
 // this function is called when the player's mission is over.  It updates the internal store of goals
 // and their status then saves the state of the campaign in the campaign file.  This gets called
 // after player accepts mission results in debriefing.
-void mission_campaign_mission_over()
+void mission_campaign_mission_over(bool do_next_mission)
 {
 	int mission_num, i;
 	cmission *mission;
@@ -2415,9 +2419,12 @@ void mission_campaign_mission_over()
 	//	mission_campaign_eval_next_mission(1);
 
 	// update campaign.mission stats (used to allow backout inRedAlert)
-	memcpy( &mission->stats, &Player->stats, sizeof(Player->stats) );
-	if(!(Game_mode & GM_MULTIPLAYER)){
-		scoring_backout_accept( &mission->stats );
+	// .. but we don't do this if we are inside of the prev/current loop hack
+	if ( Campaign.prev_mission != Campaign.current_mission ) {
+		memcpy( &mission->stats, &Player->stats, sizeof(Player->stats) );
+		if(!(Game_mode & GM_MULTIPLAYER)){
+			scoring_backout_accept( &mission->stats );
+		}
 	}
 
 	// if we are moving to a new mission, then change our data.  If we are staying on the same mission,
@@ -2425,6 +2432,7 @@ void mission_campaign_mission_over()
 	if ( Campaign.next_mission != mission_num ) {
 		Campaign.prev_mission = mission_num;
 		Campaign.current_mission = -1;
+
 		// very minor support for non-linear campaigns - taylor
 		if (Campaign.missions[mission_num].completed != 1) {
 			Campaign.num_missions_completed++;
@@ -2467,7 +2475,8 @@ void mission_campaign_mission_over()
 	Assert(Player);
 	Player->main_hall = Campaign.missions[Campaign.next_mission].main_hall;
 
-	mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
+	if (do_next_mission)
+		mission_campaign_next_mission();			// sets up whatever needs to be set to actually play next mission
 }
 
 // called when the game closes -- to get rid of memory errors for Bounds checker
