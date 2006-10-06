@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.15 $
- * $Date: 2006-01-18 16:14:04 $
+ * $Revision: 1.16 $
+ * $Date: 2006-10-06 09:32:16 $
  * $Author: taylor $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2006/01/18 16:14:04  taylor
+ * allow gr_render_buffer() to take TMAP flags
+ * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
+ * add MR_SHOW_OUTLINE_HTL flag so we easily render using HTL mode for wireframe views
+ * make Interp_verts/Interp_norms/etc. dynamic and get rid of the extra htl_* versions
+ *
  * Revision 1.14  2005/10/16 11:20:43  taylor
  * use unsigned index buffers
  *
@@ -102,12 +108,12 @@ extern GLint GL_max_elements_indices;
 
 struct poly_list;
 
-void gr_opengl_start_instance_matrix(vec3d *offset, matrix* rotation);
-void gr_opengl_start_instance_angles(vec3d *pos, angles* rotation);
+void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation);
+void gr_opengl_start_instance_angles(vec3d *pos, angles *rotation);
 void gr_opengl_end_instance_matrix();
 void gr_opengl_set_projection_matrix(float fov, float aspect, float z_near, float z_far);
 void gr_opengl_end_projection_matrix();
-void gr_opengl_set_view_matrix(vec3d *pos, matrix* orient);
+void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient);
 void gr_opengl_end_view_matrix();
 void gr_opengl_set_2d_matrix(/*int x, int y, int w, int h*/);
 void gr_opengl_end_2d_matrix();
@@ -117,18 +123,17 @@ void gr_opengl_pop_scale_matrix();
 void gr_opengl_start_clip_plane();
 void gr_opengl_end_clip_plane();
 
-void opengl_init_vertex_buffers();
 int gr_opengl_make_buffer(poly_list *list, uint flags);
 void gr_opengl_destroy_buffer(int idx);
 void gr_opengl_set_buffer(int idx);
-void gr_opengl_render_buffer(int start, int n_prim, ushort *index_list, int flags);
+void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int flags);
 void gr_opengl_render_to_env(int FACE);
 
 void gr_opengl_start_state_block();
 int gr_opengl_end_state_block();
 void gr_opengl_set_state_block(int);
 
-void gr_opengl_draw_htl_line(vec3d *start, vec3d* end);
+void gr_opengl_draw_htl_line(vec3d *start, vec3d *end);
 void gr_opengl_draw_htl_sphere(float rad);
 
 #endif //_GROPENGLTNL_H

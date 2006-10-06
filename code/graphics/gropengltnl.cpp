@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.47 $
- * $Date: 2006-09-24 13:31:52 $
+ * $Revision: 1.48 $
+ * $Date: 2006-10-06 09:32:16 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.47  2006/09/24 13:31:52  taylor
+ * minor clean and code optimizations
+ * clean up view/proj matrix fubar that made us need far more matrix levels that actually needed (partial fix for Mantis #563)
+ * add debug safety check to make sure that we don't use more than 2 proj matrices (all that GL is required to support)
+ * set up a texture matrix for the env map to that it doesn't move/look funky
+ *
  * Revision 1.46  2006/07/28 02:38:35  taylor
  * don't render extra lighting passes when fog is enabled, prevents fog fragment from getting added for each pass
  * wobble wobble no more!!
@@ -288,6 +294,7 @@
 
 #include "debugconsole/timerbar.h"
 
+#include <vector>
 
 
 extern int VBO_ENABLED;
@@ -317,61 +324,25 @@ GLint GL_max_elements_indices = 4096;
 
 struct opengl_vertex_buffer
 {
-	int used;
-	int stride;			// the current stride
+	uint stride;		// the current stride
 	GLenum format;		// the format passed to glInterleavedArrays()
-	int n_prim;
-	int n_verts;
+	uint n_prim;
+	uint n_verts;
 	float *array_list;	// interleaved array
 	GLuint vbo;			// buffer for VBO
 	uint flags;			// FVF
-	int vbo_size;
-#ifdef BUMPMAPPING
-	//Bumping
-	float *b_array_list;
-	GLuint b_vbo;
-	int b_vbo_size;
-	int b_stride;
-#endif
+	uint vbo_size;
+
+	opengl_vertex_buffer() { memset( this, 0, sizeof(opengl_vertex_buffer) ); }
 };
 
 
-static opengl_vertex_buffer vertex_buffers[MAX_BUFFERS];
-static opengl_vertex_buffer *g_vbp;
+static std::vector<opengl_vertex_buffer> GL_vertex_buffers;
+static opengl_vertex_buffer *g_vbp = NULL;
+static int GL_vertex_buffers_in_use = 0;
 
-//zeros everything out
-void opengl_init_vertex_buffers()
-{
-	memset(vertex_buffers,0,sizeof(opengl_vertex_buffer)*MAX_BUFFERS);
-}
 
-int opengl_find_first_free_buffer()
-{
-	for (int i=0; i < MAX_BUFFERS; i++)
-	{
-		if (!vertex_buffers[i].used)
-			return i;
-	}
-	
-	return -1;
-}
-
-int opengl_mod_depth()
-{
-	GLint mv;
-	glGetIntegerv(GL_MODELVIEW_STACK_DEPTH, &mv);
-	return (int)mv;
-}
-
-void gr_opengl_set_buffer(int idx)
-{
-	if (Cmdline_nohtl)
-		return;
-
-	g_vbp = &vertex_buffers[idx];
-}
-
-uint opengl_create_vbo(uint size, GLfloat *data)
+GLuint opengl_create_vbo(uint size, GLfloat *data)
 {
 	if (!data)
 		return 0;
@@ -386,23 +357,21 @@ uint opengl_create_vbo(uint size, GLfloat *data)
 	// Kazan: A) This makes that if (buffer_name) work correctly (false = 0, true = anything not 0)
 	//				if glGenBuffersARB() doesn't initialized it for some reason
 	//        B) It shuts up MSVC about may be used without been initialized
-	GLuint buffer_name=0;
+	GLuint buffer_name = 0;
 
 	vglGenBuffersARB(1, &buffer_name);
 	
-	//make sure we have one
-	if (buffer_name)
-	{
+	// make sure we have one
+	if (buffer_name) {
 		vglBindBufferARB(GL_ARRAY_BUFFER_ARB, buffer_name);
 		vglBufferDataARB(GL_ARRAY_BUFFER_ARB, size, data, GL_STATIC_DRAW_ARB );
 
 		// just in case
-		if (opengl_check_for_errors()) {
+		if ( opengl_check_for_errors() )
 			return 0;
-		}
 	}
 
-	return (int)buffer_name;
+	return buffer_name;
 }
 
 int gr_opengl_make_buffer(poly_list *list, uint flags)
@@ -410,184 +379,124 @@ int gr_opengl_make_buffer(poly_list *list, uint flags)
 	if (Cmdline_nohtl)
 		return -1;
 
-	int buffer_num = -1;
-
-	buffer_num = opengl_find_first_free_buffer();
+	int i;
+	uint arsize = 0, list_size = 0;
+	bool make_vbo = false;
+	opengl_vertex_buffer vbuffer;
 
 	// clear out any old errors before we continue with this
 	opengl_check_for_errors();
 
-	//we have a valid buffer
-	if (buffer_num > -1) {
-		int arsize = 0, make_vbo = 0;
-		int list_size, i;
+	// don't create vbo for small stuff, performance gain
+	// FIXME: This little speed increase appears to cause problems with some cards/drivers.
+	//        Disabling it until I can find a solution that works better.
+	if (VBO_ENABLED /*&& (list->n_verts >= 250)*/)
+		make_vbo = true;
 
-		gr_opengl_set_buffer( buffer_num );
-
-		opengl_vertex_buffer *vbp = g_vbp;
-
-		// defaults
-		vbp->format = 0;
-		vbp->vbo = 0;
-#ifdef BUMPMAPPING
-		//Bumping
-		vbp->b_vbo = 0;
-		vbp->b_array_list = NULL;
-#endif
-		// don't create vbo for small stuff, performance gain
-		// FIXME: This little speed increase appears to cause problems with some cards/drivers.
-		//        Disabling it until I can find a solution that works better.
-		if (VBO_ENABLED /*&& (list->n_verts >= 250)*/)
-			make_vbo = 1;
-
-		// setup using flags
-		if ( (flags & VERTEX_FLAG_UV1) && (flags & VERTEX_FLAG_NORMAL) && (flags & VERTEX_FLAG_POSITION) ) {
-			vbp->stride = (8 * sizeof(float));
-			vbp->format = GL_T2F_N3F_V3F;
-		} else if ( (flags & VERTEX_FLAG_UV1) && (flags & VERTEX_FLAG_POSITION) ) {
-			vbp->stride = (5 * sizeof(float));
-			vbp->format = GL_T2F_V3F;
-		} else if ( (flags & VERTEX_FLAG_POSITION) ) {
-			vbp->stride = (3 * sizeof(float));
-			vbp->format = GL_V3F;
-		} else {
-			Assert( 0 );
-		}
-
-		// total size of data
-		list_size = vbp->stride * list->n_verts;
-
-		// allocate the storage list
-		vbp->array_list = (float*)vm_malloc(list_size);
-
-		// return invalid if we don't have the memory
-		if (vbp->array_list == NULL)
-			return -1;
-		
-		memset(vbp->array_list, 0, list_size);
-
-		// generate the array
-		for (i=0; i<list->n_verts; i++) {
-			vertex *vl = &list->vert[i];
-			vec3d *nl = &list->norm[i];
-
-			// don't try to generate more data than what's available
-			Assert( int((arsize * sizeof(float)) + vbp->stride) <= list_size );
-
-			// NOTE: TEX->NORM->VERT, This array order *must* be preserved!!
-
-			// tex coords
-			if (flags & VERTEX_FLAG_UV1) {
-				vbp->array_list[arsize++] = vl->u;
-				vbp->array_list[arsize++] = vl->v;
-			}
-
-			// normals
-			if (flags & VERTEX_FLAG_NORMAL) {
-				vbp->array_list[arsize++] = nl->xyz.x;
-				vbp->array_list[arsize++] = nl->xyz.y;
-				vbp->array_list[arsize++] = nl->xyz.z;
-			}
-
-			// verts
-			if (flags & VERTEX_FLAG_POSITION) {
-				vbp->array_list[arsize++] = vl->x;
-				vbp->array_list[arsize++] = vl->y;
-				vbp->array_list[arsize++] = vl->z;
-			}
-		}
-
-		vbp->used = 1;
-		vbp->flags = flags;
-
-		vbp->n_prim = (list->n_verts / 3);
-		vbp->n_verts = list->n_verts;
-
-		// maybe load it into a vertex buffer object
-		if (make_vbo) {
-			vbp->vbo = opengl_create_vbo( list_size, vbp->array_list );
-
-			if (vbp->vbo) {
-				// figure up the size so we can know how much VBO data is in card memory
-				vbp->vbo_size = list_size;
-				GL_vertex_data_in += list_size;
-				vm_free(vbp->array_list);
-				vbp->array_list = NULL;
-			}
-		}
-#ifdef BUMPMAPPING
-		if(flags & VERTEX_FLAG_POSITION)
-		{
-			//WMC - since we should know the format, don't bother with setting flags and such.
-			vbp->b_stride = 3 * sizeof(float);
-
-			arsize = 0;
-			list_size = list_size = vbp->b_stride * list->n_verts;
-
-			// allocate the storage list
-			vbp->b_array_list = (float*)vm_malloc(list_size);
-
-			//OH NOES!!!
-			if (vbp->b_array_list == NULL)
-				return -1;
-
-			vec3d norm, stan, ttan;
-
-			//WMC - calc light vector in localspace
-			//Only know how to do this for one light right now...
-			float rot_matrix[16];
-			vec3d lightvec, g_lightvec;
-			light_get_global_dir(&g_lightvec, 0);
-			glGetFloatv(GL_MODELVIEW_MATRIX, rot_matrix);
-
-			lightvec.xyz.x = g_lightvec.xyz.x * rot_matrix[0]
-							+g_lightvec.xyz.y * rot_matrix[4]
-							+g_lightvec.xyz.z * rot_matrix[8];
-			lightvec.xyz.y = g_lightvec.xyz.x * rot_matrix[1]
-							+g_lightvec.xyz.y * rot_matrix[5]
-							+g_lightvec.xyz.z * rot_matrix[9];
-			lightvec.xyz.z = g_lightvec.xyz.x * rot_matrix[2]
-							+g_lightvec.xyz.y * rot_matrix[6]
-							+g_lightvec.xyz.z * rot_matrix[10];
-
-			//WMC - I assume all the stuff is in tris
-			//WMC - Hmm...maybe not.
-			//Assert(list->n_verts % 3 == 0);
-			for (i=0; (list->n_verts - i) > 2; i++)
-			{
-				poly_tsb_calc(&list->vert[i], &list->vert[i+1], &list->vert[i+2], &norm, &stan, &ttan);
-
-				vbp->b_array_list[arsize++] = vm_vec_dotprod(&stan, &lightvec);
-				vbp->b_array_list[arsize++] = vm_vec_dotprod(&ttan, &lightvec);
-				vbp->b_array_list[arsize++] = vm_vec_dotprod(&norm, &lightvec);
-			}
-
-			if(make_vbo) {
-				vbp->b_vbo = opengl_create_vbo(list_size, vbp->b_array_list);
-
-				if(vbp->b_vbo) {
-					vbp->b_vbo_size = list_size;
-					GL_vertex_data_in += list_size;
-					vm_free(vbp->b_array_list);
-					vbp->b_array_list = NULL;
-				}
-			}
-		}
-#endif
+	// setup using flags
+	if ( (flags & VERTEX_FLAG_UV1) && (flags & VERTEX_FLAG_NORMAL) && (flags & VERTEX_FLAG_POSITION) ) {
+		vbuffer.stride = (8 * sizeof(float));
+		vbuffer.format = GL_T2F_N3F_V3F;
+	} else if ( (flags & VERTEX_FLAG_UV1) && (flags & VERTEX_FLAG_POSITION) ) {
+		vbuffer.stride = (5 * sizeof(float));
+		vbuffer.format = GL_T2F_V3F;
+	} else if ( (flags & VERTEX_FLAG_POSITION) ) {
+		vbuffer.stride = (3 * sizeof(float));
+		vbuffer.format = GL_V3F;
+	} else {
+		Assert( 0 );
 	}
 
-	return buffer_num;
+	// total size of data
+	list_size = vbuffer.stride * list->n_verts;
+
+	// allocate the storage list
+	vbuffer.array_list = (float*)vm_malloc(list_size);
+
+	// return invalid if we don't have the memory
+	if (vbuffer.array_list == NULL)
+		return -1;
+		
+	memset( vbuffer.array_list, 0, list_size );
+
+	// generate the array
+	for (i = 0; i < list->n_verts; i++) {
+		vertex *vl = &list->vert[i];
+		vec3d *nl = &list->norm[i];
+
+		// don't try to generate more data than what's available
+		Assert( ((arsize * sizeof(float)) + vbuffer.stride) <= list_size );
+
+		// NOTE: TEX->NORM->VERT, This array order *must* be preserved!!
+
+		// tex coords
+		if (flags & VERTEX_FLAG_UV1) {
+			vbuffer.array_list[arsize++] = vl->u;
+			vbuffer.array_list[arsize++] = vl->v;
+		}
+
+		// normals
+		if (flags & VERTEX_FLAG_NORMAL) {
+			vbuffer.array_list[arsize++] = nl->xyz.x;
+			vbuffer.array_list[arsize++] = nl->xyz.y;
+			vbuffer.array_list[arsize++] = nl->xyz.z;
+		}
+
+		// verts
+		if (flags & VERTEX_FLAG_POSITION) {
+			vbuffer.array_list[arsize++] = vl->x;
+			vbuffer.array_list[arsize++] = vl->y;
+			vbuffer.array_list[arsize++] = vl->z;
+		}
+	}
+
+	vbuffer.flags = flags;
+
+	vbuffer.n_prim = (list->n_verts / 3);
+	vbuffer.n_verts = list->n_verts;
+
+	// maybe load it into a vertex buffer object
+	if (make_vbo) {
+		vbuffer.vbo = opengl_create_vbo( list_size, vbuffer.array_list );
+
+		if (vbuffer.vbo) {
+			// figure up the size so we can know how much VBO data is in card memory
+			vbuffer.vbo_size = list_size;
+			GL_vertex_data_in += list_size;
+
+			vm_free(vbuffer.array_list);
+			vbuffer.array_list = NULL;
+		}
+	}
+
+	GL_vertex_buffers.push_back( vbuffer );
+	GL_vertex_buffers_in_use++;
+
+	return (int)(GL_vertex_buffers.size() - 1);
 }
-	
+
+void gr_opengl_set_buffer(int idx)
+{
+	if (Cmdline_nohtl)
+		return;
+
+	g_vbp = NULL;
+
+	if ( (idx < 0) || (idx >= (int)GL_vertex_buffers.size()) )
+		return;
+
+	g_vbp = &GL_vertex_buffers[idx];
+}
+
 void gr_opengl_destroy_buffer(int idx)
 {
 	if (Cmdline_nohtl)
 		return;
 
-	if (idx > -1)
-		gr_opengl_set_buffer(idx);
+	if ( (idx < 0) || (idx >= (int)GL_vertex_buffers.size()) )
+		return;
 
-	opengl_vertex_buffer *vbp = g_vbp;
+	opengl_vertex_buffer *vbp = &GL_vertex_buffers[idx];
 
 	if (vbp->array_list)
 		vm_free(vbp->array_list);
@@ -597,15 +506,47 @@ void gr_opengl_destroy_buffer(int idx)
 		GL_vertex_data_in -= vbp->vbo_size;
 	}
 
-	memset(vbp, 0, sizeof(opengl_vertex_buffer));
+	memset( vbp, 0, sizeof(opengl_vertex_buffer) );
+
+	// we try to take advantage of the fact that there shouldn't be a lot of buffer
+	// deletions/additions going on all of the time, so a model_unload_all() and/or
+	// game_level_close() should pretty much keep everything cleared out on a
+	// pretty much regular basis
+	if (--GL_vertex_buffers_in_use <= 0)
+		GL_vertex_buffers.clear();
+
+	g_vbp = NULL;
+}
+
+#define DO_RENDER() {	\
+	if (index_buffer != NULL) {	\
+		if ( multiple_elements ) {	\
+			start_tmp = 0;	\
+			end_tmp = (GL_max_elements_indices - 1);	\
+			count_tmp = (end_tmp - start_tmp + 1);	\
+\
+			vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);	\
+\
+			while (end_tmp < end) {	\
+				start_tmp += (GL_max_elements_indices - 1);	\
+				end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );	\
+				count_tmp = (end_tmp - start_tmp + 1);	\
+\
+				vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);	\
+			}	\
+		} else {	\
+			vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);	\
+		}	\
+	} else {	\
+		glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);	\
+	}	\
 }
 
 //#define DRAW_DEBUG_LINES
-extern float Model_Interp_scale_x,Model_Interp_scale_y,Model_Interp_scale_z;
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
 //start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
-void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int flags)
+void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int flags)
 {
 	if (Cmdline_nohtl)
 		return;
@@ -625,6 +566,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 	int start_tmp, end_tmp, count_tmp, multiple_elements = 0;
 
 	opengl_vertex_buffer *vbp = g_vbp;
+	Assert( g_vbp );
 
 
 	// disable all arbs before we start
@@ -729,27 +671,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 	vglLockArraysEXT( 0, vbp->n_verts);
 
-	if (index_buffer != NULL) {
-		if ( multiple_elements ) {
-			start_tmp = 0;
-			end_tmp = (GL_max_elements_indices - 1);
-			count_tmp = (end_tmp - start_tmp + 1);
-
-			vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
-
-			while (end_tmp < end) {
-				start_tmp += (GL_max_elements_indices - 1);
-				end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );
-				count_tmp = (end_tmp - start_tmp + 1);
-
-				vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
-			}
-		} else {
-			vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);
-		}
-	} else {
-		glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
-	}
+	// DRAW IT!!
+	DO_RENDER();
 
 	vglUnlockArraysEXT();
 
@@ -779,27 +702,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 			for (i = 1; (i < ((Num_active_gl_lights-1)/GL_max_lights)) && (i < max_passes); i++) {
 				opengl_change_active_lights(i);
 
-				if (index_buffer != NULL) {
-					if ( multiple_elements ) {
-						start_tmp = 0;
-						end_tmp = (GL_max_elements_indices - 1);
-						count_tmp = (end_tmp - start_tmp + 1);
-
-						vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
-
-						while (end_tmp < end) {
-							start_tmp += (GL_max_elements_indices - 1);
-							end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );
-							count_tmp = (end_tmp - start_tmp + 1);
-
-							vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
-						}
-					} else {
-						vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);
-					}
-				} else {
-					glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
-				}
+				// DRAW IT!!
+				DO_RENDER();
 			}
 
 			vglUnlockArraysEXT();
@@ -902,27 +806,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 		vglLockArraysEXT( 0, vbp->n_verts );
 
-		if (index_buffer != NULL) {
-			if ( multiple_elements ) {
-				start_tmp = 0;
-				end_tmp = (GL_max_elements_indices - 1);
-				count_tmp = (end_tmp - start_tmp + 1);
-
-				vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
-
-				while (end_tmp < end) {
-					start_tmp += (GL_max_elements_indices - 1);
-					end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );
-					count_tmp = (end_tmp - start_tmp + 1);
-
-					vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
-				}
-			} else {
-				vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);
-			}
-		} else {
-			glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
-		}
+		// DRAW IT!!
+		DO_RENDER();
 
 		vglUnlockArraysEXT();
 
@@ -975,27 +860,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort* index_buffer, int fl
 
 		vglLockArraysEXT( 0, vbp->n_verts );
 
-		if (index_buffer != NULL) {
-			if ( multiple_elements ) {
-				start_tmp = 0;
-				end_tmp = (GL_max_elements_indices - 1);
-				count_tmp = (end_tmp - start_tmp + 1);
-
-				vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
-
-				while (end_tmp < end) {
-					start_tmp += (GL_max_elements_indices - 1);
-					end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );
-					count_tmp = (end_tmp - start_tmp + 1);
-
-					vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);
-				}
-			} else {
-				vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);
-			}
-		} else {
-			glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);
-		}
+		// DRAW IT!!
+		DO_RENDER();
 
 		vglUnlockArraysEXT();
 

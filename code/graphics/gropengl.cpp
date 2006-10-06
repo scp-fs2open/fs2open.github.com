@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.186 $
- * $Date: 2006-09-24 22:54:24 $
+ * $Revision: 2.187 $
+ * $Date: 2006-10-06 09:32:16 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.186  2006/09/24 22:54:24  taylor
+ * clean up the function ptrs so that it's a bit easier to read
+ *
  * Revision 2.185  2006/09/24 13:31:52  taylor
  * minor clean and code optimizations
  * clean up view/proj matrix fubar that made us need far more matrix levels that actually needed (partial fix for Mantis #563)
@@ -4733,8 +4736,6 @@ void gr_opengl_init(int reinit)
 		// ready the texture system
 		opengl_tcache_init();
 
-		opengl_init_vertex_buffers();
-
 		opengl_go_fullscreen();
 	}
 
@@ -4829,9 +4830,6 @@ void gr_opengl_init(int reinit)
 
 	// setup the lighting stuff that will get used later
 	opengl_init_light();
-
-	// only used in HTL mode but HTL is not required for this function to work
-	opengl_init_vertex_buffers();
 
 	glDisable(GL_LIGHTING); // just making sure of it
 
