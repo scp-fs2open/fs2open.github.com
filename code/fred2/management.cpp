@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.4 $
- * $Date: 2006-08-27 18:12:41 $
+ * $Revision: 1.12.2.5 $
+ * $Date: 2006-10-06 09:44:32 $
  * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.4  2006/08/27 18:12:41  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 1.12.2.3  2006/08/06 18:47:12  Goober5000
  * add the multiple background feature
  * --Goober5000
@@ -857,6 +860,7 @@ bool fred_init()
 	model_free_all();				// Free all existing models
 	ai_init();
 	ai_profiles_init();
+	armor_init()
 	weapon_init();
 	parse_medal_tbl();			// get medal names for sexpression usage
 	ship_init();
