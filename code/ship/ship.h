@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.166 $
- * $Date: 2006-09-11 06:51:17 $
+ * $Revision: 2.167 $
+ * $Date: 2006-10-06 09:55:36 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.166  2006/09/11 06:51:17  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.165  2006/09/04 06:17:26  wmcoolmon
  * Commit of 'new' BTRL FTL effect work
  *
@@ -1526,12 +1529,15 @@ typedef struct exited_ship {
 	char		ship_name[NAME_LENGTH];
 	int		ship_class;						// The ships index in Ship_info
 	int		obj_signature;
+	int		ship_class;
 	int		team;
 	int		flags;
 	fix		time;
 	int		hull_strength;
 	fix		time_cargo_revealed;
 	char	cargo1;
+
+	exited_ship() { memset(this, 0, sizeof(exited_ship)); obj_signature = ship_class = -1; }
 } exited_ship;
 
 extern exited_ship Ships_exited[MAX_EXITED_SHIPS];
