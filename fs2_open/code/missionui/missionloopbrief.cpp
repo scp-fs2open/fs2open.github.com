@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionLoopBrief.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-07-02 19:43:54 $
+ * $Revision: 2.9 $
+ * $Date: 2006-10-06 09:33:10 $
  * $Author: taylor $
  *
  * Campaign Loop briefing screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/02 19:43:54  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.7  2005/02/23 04:55:07  taylor
  * more bm_unload() -> bm_release() changes
  *
@@ -85,6 +88,7 @@
 #include "anim/animplay.h"
 #include "freespace2/freespace.h"
 #include "sound/fsspeech.h"
+#include "popup/popup.h"
 
 
 
@@ -278,10 +282,24 @@ void loop_brief_do()
 	k = Loop_brief_window.process();	
 
 	switch (k) {
-	case KEY_ESC:		
+	case KEY_ESC:
+		int do_loop = 0;
+
+		// this popup should be straight forward, and also not allow you to get out
+		// of it without actually picking one of the two options
+		do_loop = popup(PF_USE_NEGATIVE_ICON | PF_USE_AFFIRMATIVE_ICON | PF_IGNORE_ESC | PF_BODY_BIG, 2, XSTR("Decline", 1467), XSTR("Accept", 1035), XSTR("You must either Accept or Decline before returning to the Main Hall", -1));
+
+		// if we accepted moving into loop then set it up for the next time the user plays
+		if (do_loop == 1) {
+			// select the loop mission		
+			Campaign.loop_enabled = 1;
+			Campaign.loop_reentry = Campaign.next_mission;			// save reentry pt, so we can break out of loop
+			Campaign.next_mission = Campaign.loop_mission;
+		}
+
 		gameseq_post_event(GS_EVENT_MAIN_MENU);
-		break;
-	}	
+		return;
+	}
 
 	// process button presses
 	for (idx=0; idx<NUM_LOOP_BRIEF_BUTTONS; idx++){
