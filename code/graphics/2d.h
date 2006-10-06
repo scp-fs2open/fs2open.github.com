@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.80 $
- * $Date: 2006-09-11 06:36:38 $
+ * $Revision: 2.81 $
+ * $Date: 2006-10-06 09:56:42 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2006/09/11 06:36:38  taylor
+ * clean up the grstub mess (for work on standalone server, and just for sanity sake)
+ * move color and shader functions to 2d.cpp since they are exactly the same everywhere
+ * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
+ *
  * Revision 2.79  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -733,6 +738,10 @@ extern const float Default_max_draw_distance;
 extern float Min_draw_distance;
 extern float Max_draw_distance;
 extern int Gr_inited;
+
+// z-buffering stuff
+extern int gr_zbuffering, gr_zbuffering_mode;
+extern int gr_global_zbuffering;
 
 // This is a structure used by the shader to keep track
 // of the values you want to use in the shade primitive.

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.14 $
- * $Date: 2006-09-08 06:20:14 $
+ * $Revision: 2.15 $
+ * $Date: 2006-10-06 09:56:42 $
  * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/09/08 06:20:14  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.13  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -230,7 +233,6 @@
 
 #include "graphics/font.h"
 #include "graphics/2d.h"
-#include "graphics/grzbuffer.h"
 #include "globalincs/pstypes.h" // IAM_64BIT
 #include "globalincs/globals.h" // just in case pstypes.h messed up
 

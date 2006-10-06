@@ -604,14 +604,6 @@ SOURCE=..\..\code\graphics\grstub.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\Graphics\GrZbuffer.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\Graphics\GrZbuffer.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\Graphics\Line.h
 # End Source File
 # End Group

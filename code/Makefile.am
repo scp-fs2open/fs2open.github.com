@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.36 2006-09-11 06:36:38 taylor Exp $
+## $Id: Makefile.am,v 1.37 2006-10-06 09:56:42 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -317,8 +317,6 @@ FS2_SOURCES =	\
 	graphics/gropengltnl.h	\
 	graphics/grstub.cpp	\
 	graphics/grstub.h	\
-	graphics/grzbuffer.cpp	\
-	graphics/grzbuffer.h	\
 	graphics/line.h	\
 	graphics/tmapper.h	\
 	hud/hud.cpp	\

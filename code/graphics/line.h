@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Line.h $
- * $Revision: 2.3 $
- * $Date: 2005-07-13 03:15:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.4 $
+ * $Date: 2006-10-06 09:56:42 $
+ * $Author: taylor $
  *
  * Header file for line.cpp
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/07/13 03:15:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.2  2004/08/11 05:06:24  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -70,9 +74,9 @@
 #ifndef _LINE_H
 #define _LINE_H
 
-void gr8_line(int x1,int y1,int x2,int y2, bool b);
-void gr8_aaline(vertex *v1, vertex *v2);
-											
+//void gr8_line(int x1,int y1,int x2,int y2, bool b);
+//void gr8_aaline(vertex *v1, vertex *v2);
+
 
 #define INT_EXCHG(a,b) do {                                              \
     int __temp__ = (a);                                                 \
@@ -226,4 +230,3 @@ void gr8_aaline(vertex *v1, vertex *v2);
 } while(0)
 
 #endif
-
