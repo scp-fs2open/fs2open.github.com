@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.5 $
- * $Date: 2006-10-06 09:44:32 $
- * $Author: taylor $
+ * $Revision: 1.12.2.6 $
+ * $Date: 2006-10-06 13:41:41 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.5  2006/10/06 09:44:32  taylor
+ * make sure that the armor stuff gets initted (should fix Mantis bug #1080)
+ *
  * Revision 1.12.2.4  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -860,7 +863,7 @@ bool fred_init()
 	model_free_all();				// Free all existing models
 	ai_init();
 	ai_profiles_init();
-	armor_init()
+	armor_init();
 	weapon_init();
 	parse_medal_tbl();			// get medal names for sexpression usage
 	ship_init();
