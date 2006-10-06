@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.33 $
- * $Date: 2006-10-01 18:53:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.336.2.34 $
+ * $Date: 2006-10-06 09:47:10 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.33  2006/10/01 18:53:50  Goober5000
+ * check that targetview model files exist as well
+ *
  * Revision 2.336.2.32  2006/09/11 01:12:50  taylor
  * fixes for stuff_string() bounds checking
  * stict compiler build fixes
@@ -4947,6 +4950,7 @@ void ship_add_exited_ship( ship *sp, int reason )
 
 	strcpy( Ships_exited[entry].ship_name, sp->ship_name );
 	Ships_exited[entry].obj_signature = Objects[sp->objnum].signature;
+	Ships_exited[entry].ship_class = sp->ship_info_index;
 	Ships_exited[entry].team = sp->team;
 	Ships_exited[entry].flags = reason;
 	// if ship is red alert, flag as such

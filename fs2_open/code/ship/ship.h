@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.9 $
- * $Date: 2006-09-11 01:17:07 $
+ * $Revision: 2.150.2.10 $
+ * $Date: 2006-10-06 09:47:11 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.9  2006/09/11 01:17:07  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.150.2.8  2006/08/03 01:33:26  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
@@ -1481,12 +1484,15 @@ typedef struct ship {
 typedef struct exited_ship {
 	char		ship_name[NAME_LENGTH];
 	int		obj_signature;
+	int		ship_class;
 	int		team;
 	int		flags;
 	fix		time;
 	int		hull_strength;
 	fix		time_cargo_revealed;
 	char	cargo1;
+
+	exited_ship() { memset(this, 0, sizeof(exited_ship)); obj_signature = ship_class = -1; }
 } exited_ship;
 
 extern exited_ship Ships_exited[MAX_EXITED_SHIPS];
