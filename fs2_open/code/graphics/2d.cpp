@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.76 $
- * $Date: 2006-09-11 06:36:38 $
+ * $Revision: 2.77 $
+ * $Date: 2006-10-06 09:56:42 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2006/09/11 06:36:38  taylor
+ * clean up the grstub mess (for work on standalone server, and just for sanity sake)
+ * move color and shader functions to 2d.cpp since they are exactly the same everywhere
+ * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
+ *
  * Revision 2.75  2006/09/04 06:12:35  wmcoolmon
  * Conditional hook
  *
@@ -861,6 +866,11 @@ uint Gr_signature = 0;
 float Gr_gamma = 1.8f;
 int Gr_gamma_int = 180;
 int Gr_gamma_lookup[256];
+
+// z-buffer stuff
+int gr_zbuffering = 0;
+int gr_zbuffering_mode = 0;
+int gr_global_zbuffering = 0;
 
 //Default clipping distances
 const float Default_min_draw_distance = 1.0f;
