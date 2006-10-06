@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.34 $
- * $Date: 2006-10-06 09:47:10 $
- * $Author: taylor $
+ * $Revision: 2.336.2.35 $
+ * $Date: 2006-10-06 15:12:55 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.34  2006/10/06 09:47:10  taylor
+ * For redalert stored data be sure that dead ships don't come back, and departed ships come back just as they left (Mantis bug #810)
+ *
  * Revision 2.336.2.33  2006/10/01 18:53:50  Goober5000
  * check that targetview model files exist as well
  *
@@ -11802,6 +11805,12 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 	//Figure out how much of the ship's hull we can repair
 	max_hull_repair = shipp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
+
+	//Don't repair the hull if it's already above the max repair threshold
+	if (max_hull_repair < objp->hull_strength)
+	{
+		max_hull_repair = objp->hull_strength;
+	}
 	
 	if(The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
 	{
