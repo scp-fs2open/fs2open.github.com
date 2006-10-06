@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.376 $
- * $Date: 2006-10-01 18:53:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.377 $
+ * $Date: 2006-10-06 09:55:36 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.376  2006/10/01 18:53:59  Goober5000
+ * check that targetview model files exist as well
+ *
  * Revision 2.375  2006/09/22 09:22:08  Backslash
  * Ok, maybe this one will be better.  Sorry about that.
  *
@@ -5015,6 +5018,7 @@ void ship_add_exited_ship( ship *sp, int reason )
 
 	strcpy( Ships_exited[entry].ship_name, sp->ship_name );
 	Ships_exited[entry].obj_signature = Objects[sp->objnum].signature;
+	Ships_exited[entry].ship_class = sp->ship_info_index;
 	Ships_exited[entry].team = sp->team;
 	Ships_exited[entry].ship_class = sp->ship_info_index;
 	Ships_exited[entry].flags = reason;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.22 $
- * $Date: 2006-09-13 03:17:59 $
+ * $Revision: 2.23 $
+ * $Date: 2006-10-06 09:55:36 $
  * $Author: taylor $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/09/13 03:17:59  taylor
+ * be sure to setup/reset ship team data too when moving to a red-alert mission (Mantis bug 1042)
+ *   (this will hopefully fix Mantis bug 860 as well, which is a separate but related issue)
+ *
  * Revision 2.21  2005/11/16 05:46:27  taylor
  * bunch of error checking and code cleanup for the team stuff in ship/weapon select
  *
@@ -897,7 +901,17 @@ void red_alert_store_wingman_status()
 
 			strcpy(ras->name, Ships_exited[idx].ship_name);
 			ras->hull = float(Ships_exited[idx].hull_strength);
-			ras->ship_class = RED_ALERT_EXITED_SHIP_CLASS; //shipp->ship_info_index;
+
+			// if a ship has been destroyed or removed manually by the player, then mark it as such ...
+			if ( (Ships_exited[idx].flags & SEF_DESTROYED) || (Ships_exited[idx].flags & SEF_PLAYER_DELETED) ) {
+				ras->ship_class = RED_ALERT_EXITED_SHIP_CLASS;
+			}
+			// ... otherwise we want to make sure and carry over the ship class
+			else {
+				Assert( Ships_exited[idx].ship_class >= 0 );
+				ras->ship_class = Ships_exited[idx].ship_class;
+			}
+
 			red_alert_store_weapons(ras, NULL);
 			red_alert_store_subsys_status(ras, NULL);
 		}
@@ -956,21 +970,18 @@ void red_alert_bash_wingman_status()
 		for ( i = 0; i < Red_alert_num_slots_used; i++ ) {
 			ras = &Red_alert_wingman_status[i];
 
-			if ( !stricmp(ras->name, shipp->ship_name) ) {
+			// we only want to restore ships which haven't been destroyed (which the RED_ALERT_EXITED_SHIP_CLASS identifies)
+			if ( !stricmp(ras->name, shipp->ship_name) && (ras->ship_class != RED_ALERT_EXITED_SHIP_CLASS) ) {
 				found_match = 1;
-				if ( ras->ship_class == RED_ALERT_EXITED_SHIP_CLASS) {
-					// if exited ship, we can only restore hull strength
-					ship_objp->hull_strength = ras->hull;
-				} else {
-					// if necessary, restore correct ship class
-					if ( ras->ship_class != shipp->ship_info_index ) {
-						change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
-					}
-					// restore hull and weapons
-					ship_objp->hull_strength = ras->hull;
-					red_alert_bash_weapons(ras, &shipp->weapons);
-					red_alert_bash_subsys_status(ras, shipp);
+
+				// if necessary, restore correct ship class
+				if ( ras->ship_class != shipp->ship_info_index ) {
+					change_ship_type(SHIP_INDEX(shipp), ras->ship_class);
 				}
+				// restore hull and weapons
+				ship_objp->hull_strength = ras->hull;
+				red_alert_bash_weapons(ras, &shipp->weapons);
+				red_alert_bash_subsys_status(ras, shipp);
 			}
 		}
 
