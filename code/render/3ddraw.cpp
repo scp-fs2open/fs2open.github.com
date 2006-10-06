@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.53 $
- * $Date: 2006-08-20 00:51:06 $
+ * $Revision: 2.54 $
+ * $Date: 2006-10-06 10:04:03 $
  * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2006/08/20 00:51:06  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.52  2006/05/27 16:47:12  taylor
  * remove some of the old batcher functions, nothing is using them now anyway
  * minor cleanup
@@ -1295,7 +1298,8 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	vec3d fvec, rvec, uvec;
 
 	vm_vec_sub(&fvec, &View_position, &PNT);
-	vm_vec_normalize(&fvec);
+	// VECMAT-ERROR: NULL VEC3D (PNT == View_position, multiplayer respawn or death sequence)
+	vm_vec_normalize_safe(&fvec);
 
 	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &fvec);
 //	uvec = View_matrix.vec.uvec;
