@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.46.2.6 $
- * $Date: 2006-08-19 04:31:24 $
- * $Author: taylor $
+ * $Revision: 2.46.2.7 $
+ * $Date: 2006-10-06 04:58:25 $
+ * $Author: wmcoolmon $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46.2.6  2006/08/19 04:31:24  taylor
+ * cleanup
+ * bugfixes
+ * error-handling
+ * (lots of crap got fixed to work better, and lets leave it at that, the commit log would be too long otherwise :))
+ *
  * Revision 2.46.2.5  2006/07/08 18:07:31  taylor
  * require OpenAL 1.1 under Windows, I think it's causing problems for us to mix users with 1.0 and builds for 1.1
  *   (having 1.0 is fatal to sound, but the game should still work, a corresponding Launcher change goes with this too)
@@ -864,7 +870,8 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 			(*header)->nBlockAlign = (ushort)(ovf->vi->channels * 2);
 			(*header)->nAvgBytesPerSec =  ovf->vi->rate * ovf->vi->channels * 2;
 
-			*dest_size = (uint)(ovf->vi->rate * ovf->vi->channels * 16 * 2);
+			//WMC - Total samples * channels * bits/sample
+			*dest_size = (uint)(ov_pcm_total(ovf, -1) * ovf->vi->channels * 2);
 		} else {
 			Assert( 0 );
 			return -1;
