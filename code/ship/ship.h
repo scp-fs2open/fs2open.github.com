@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.167 $
- * $Date: 2006-10-06 09:55:36 $
- * $Author: taylor $
+ * $Revision: 2.168 $
+ * $Date: 2006-10-06 13:32:23 $
+ * $Author: karajorma $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.167  2006/10/06 09:55:36  taylor
+ * For redalert stored data be sure that dead ships don't come back, and departed ships come back just as they left (Mantis bug #810)
+ *
  * Revision 2.166  2006/09/11 06:51:17  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -1529,7 +1532,6 @@ typedef struct exited_ship {
 	char		ship_name[NAME_LENGTH];
 	int		ship_class;						// The ships index in Ship_info
 	int		obj_signature;
-	int		ship_class;
 	int		team;
 	int		flags;
 	fix		time;
