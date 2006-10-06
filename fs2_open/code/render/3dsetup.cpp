@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.22 $
- * $Date: 2006-05-13 07:09:25 $
+ * $Revision: 2.23 $
+ * $Date: 2006-10-06 09:34:19 $
  * $Author: taylor $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/05/13 07:09:25  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 2.21  2006/03/18 10:23:46  taylor
  * make the main vital TMAP_MAX_VERTS stuff dynamic, should handle the major non-HTL related crashes
  *
@@ -327,7 +331,8 @@ void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 
 	View_matrix = *view_matrix;
 
-	Proj_fov = (4.0f/9.0f) * PI * View_zoom;
+//	Proj_fov = (4.0f/9.0f) * PI * View_zoom;
+	Proj_fov = 1.39626348f * View_zoom;
 
 	Eye_matrix = View_matrix;
 	Eye_position = *view_pos;
@@ -576,7 +581,3 @@ int g3_point_behind_user_plane( vec3d *pnt )
 
 	return 0;
 }
-
-
-
-
