@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/graphics/generic.cpp $
- * $Revision: 1.1 $
- * $Date: 2005-11-21 23:55:00 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2006-10-07 02:43:44 $
+ * $Author: Goober5000 $
  *
  * Generic graphics functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/11/21 23:55:00  taylor
+ * add generic.cpp and generic.h
+ *
  *
  * $NoKeywords: $
  */
@@ -65,7 +68,7 @@ int generic_anim_load(generic_anim *ga)
 
 int generic_bitmap_load(generic_bitmap *gb)
 {
-	if ( !strlen(gb->filename) )
+	if ( !strlen(gb->filename) || !stricmp(gb->filename, "none") )
 		return -1;
 	
 	gb->bitmap = bm_load(gb->filename);
