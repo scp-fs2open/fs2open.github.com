@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.9 $
- * $Date: 2006-10-08 05:21:44 $
+ * $Revision: 1.10 $
+ * $Date: 2006-10-08 08:04:52 $
  * $Author: Goober5000 $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
@@ -19,6 +19,9 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/10/08 05:21:44  Goober5000
+ * nitpick
+ *
  * Revision 1.8  2006/10/01 00:53:58  Goober5000
  * fix crlf
  *
@@ -1292,7 +1295,7 @@ void CFREDDoc::OnFileImportFSM()
 		// success
 	}
 
-	reset_mission();
+	create_new_mission();
 
 	MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
 }
