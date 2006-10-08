@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.72 $
- * $Date: 2006-09-11 05:38:16 $
- * $Author: taylor $
+ * $Revision: 2.73 $
+ * $Date: 2006-10-08 02:05:38 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2006/09/11 05:38:16  taylor
+ * don't try to draw beam sections if there is no valid texture for it, or if there is no width
+ *
  * Revision 2.71  2006/07/24 07:36:50  taylor
  * minor cleanup/optimization to beam warmup glow rendering function
  * various lighting code cleanups
@@ -112,7 +115,7 @@
  * Surface shields.
  *
  * See forum thread:
- * http://dynamic4.gamespy.com/~freespace/forums/showthread.php?s=&threadid=29643
+ * http://www.hard-light.net/forums/index.php/topic,29643.0.html
  *
  * -- _argv[-1]
  *

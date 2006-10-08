@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.378 $
- * $Date: 2006-10-06 15:23:42 $
- * $Author: karajorma $
+ * $Revision: 2.379 $
+ * $Date: 2006-10-08 02:05:38 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.378  2006/10/06 15:23:42  karajorma
+ * Fix for Mantis 1092 - (Support ships damage hull)
+ *
  * Revision 2.377  2006/10/06 09:55:36  taylor
  * For redalert stored data be sure that dead ships don't come back, and departed ships come back just as they left (Mantis bug #810)
  *
@@ -818,7 +821,7 @@
  * Surface shields.
  *
  * See forum thread:
- * http://dynamic4.gamespy.com/~freespace/forums/showthread.php?s=&threadid=29643
+ * http://www.hard-light.net/forums/index.php/topic,29643.0.html
  *
  * -- _argv[-1]
  *

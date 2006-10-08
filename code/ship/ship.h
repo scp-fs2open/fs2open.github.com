@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.168 $
- * $Date: 2006-10-06 13:32:23 $
- * $Author: karajorma $
+ * $Revision: 2.169 $
+ * $Date: 2006-10-08 02:05:38 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.168  2006/10/06 13:32:23  karajorma
+ * Remove the extra ship_class variable. I'd already added on as part of the team loadout changes
+ *
  * Revision 2.167  2006/10/06 09:55:36  taylor
  * For redalert stored data be sure that dead ships don't come back, and departed ships come back just as they left (Mantis bug #810)
  *
@@ -343,7 +346,7 @@
  * Surface shields.
  *
  * See forum thread:
- * http://dynamic4.gamespy.com/~freespace/forums/showthread.php?s=&threadid=29643
+ * http://www.hard-light.net/forums/index.php/topic,29643.0.html
  *
  * -- _argv[-1]
  *

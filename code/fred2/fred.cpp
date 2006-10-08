@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FRED.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-04-20 06:32:01 $
+ * $Revision: 1.3 $
+ * $Date: 2006-10-08 02:05:38 $
  * $Author: Goober5000 $
  *
  * FRED.cpp : Defines the class behaviors for the application.
@@ -18,6 +18,9 @@
  * application (MFC level at least), processes the INI file.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -893,7 +896,7 @@ void CAboutDlg::OnBug()
 
 void CAboutDlg::OnForums() 
 {
-	char *path = "http://dynamic4.gamespy.com/~freespace/forums/";
+	char *path = "http://www.hard-light.net/forums/";
 
 	char buffer[MAX_PATH];
 	sprintf(buffer,"explorer.exe \"%s\"", path);
