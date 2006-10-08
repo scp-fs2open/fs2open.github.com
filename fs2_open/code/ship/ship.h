@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.10 $
- * $Date: 2006-10-06 09:47:11 $
- * $Author: taylor $
+ * $Revision: 2.150.2.11 $
+ * $Date: 2006-10-08 02:05:34 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.10  2006/10/06 09:47:11  taylor
+ * For redalert stored data be sure that dead ships don't come back, and departed ships come back just as they left (Mantis bug #810)
+ *
  * Revision 2.150.2.9  2006/09/11 01:17:07  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -317,7 +320,7 @@
  * Surface shields.
  *
  * See forum thread:
- * http://dynamic4.gamespy.com/~freespace/forums/showthread.php?s=&threadid=29643
+ * http://www.hard-light.net/forums/index.php/topic,29643.0.html
  *
  * -- _argv[-1]
  *
