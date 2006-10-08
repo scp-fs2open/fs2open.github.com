@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.27.2.2 $
- * $Date: 2006-08-22 05:45:39 $
- * $Author: taylor $
+ * $Revision: 2.27.2.3 $
+ * $Date: 2006-10-08 02:05:33 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27.2.2  2006/08/22 05:45:39  taylor
+ * compiler warning fixes
+ *
  * Revision 2.27.2.1  2006/06/07 03:52:21  wmcoolmon
  * Scripting system prep for 3.6.9
  *
@@ -68,7 +71,7 @@
  * Surface shields.
  *
  * See forum thread:
- * http://dynamic4.gamespy.com/~freespace/forums/showthread.php?s=&threadid=29643
+ * http://www.hard-light.net/forums/index.php/topic,29643.0.html
  *
  * -- _argv[-1]
  *
