@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.13 $
- * $Date: 2006-10-09 04:44:58 $
+ * $Revision: 1.14 $
+ * $Date: 2006-10-09 05:25:18 $
  * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2006/10/09 04:44:58  Goober5000
+ * preliminary commit of sexp node bump... fred only, just changing some names for clarity
+ *
  * Revision 1.12  2006/09/13 17:29:43  taylor
  * fix for Mantis bug #1006
  *
@@ -795,6 +798,8 @@
 #include "hud/hudartillery.h"
 #include "iff_defs/iff_defs.h"
 
+#define TREE_NODE_INCREMENT	100
+
 #define MAX_OP_MENUS	30
 #define MAX_SUBMENUS	(MAX_OP_MENUS * MAX_OP_MENUS)
 
@@ -842,11 +847,10 @@ sexp_tree::sexp_tree()
 // clears out the tree, so all the nodes are unused.
 void sexp_tree::clear_tree(char *op)
 {
-	int i;
+	mprintf(("Resetting dynamic tree node limit from %d to %d...\n", tree_nodes.size(), 0));
 
 	total_nodes = flag = 0;
-	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-		tree_nodes[i].type = SEXPT_UNUSED;
+	tree_nodes.clear();
 
 	if (op) {
 		DeleteAllItems();
@@ -861,7 +865,7 @@ void sexp_tree::reset_handles()
 {
 	int i;
 
-	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
+	for (i=0; i<tree_nodes.size(); i++)
 		tree_nodes[i].handle = NULL;
 }
 
@@ -906,10 +910,9 @@ void get_combined_variable_name(char *combined_name, const char *sexp_var_name)
 	sprintf(combined_name, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
 }
 
-
-
 // creates a tree from a given Sexp_nodes[] point under a given parent.  Recursive.
-void sexp_tree::load_branch(int index, int parent)
+// Returns the allocated current node.
+int sexp_tree::load_branch(int index, int parent)
 {
 	int cur = -1;
 	char combined_var_name[2*TOKEN_LENGTH + 2];
@@ -928,7 +931,7 @@ void sexp_tree::load_branch(int index, int parent)
 
 			set_node(cur, (SEXPT_OPERATOR | SEXPT_VALID), Sexp_nodes[index].text);
 			load_branch(Sexp_nodes[index].rest, cur);  // operator is new parent now
-			return;  // 'rest' was just used, so nothing left to use.
+			return cur;  // 'rest' was just used, so nothing left to use.
 
 		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_NUMBER) {
 			cur = allocate_node(parent);
@@ -958,8 +961,10 @@ void sexp_tree::load_branch(int index, int parent)
 
 		index = Sexp_nodes[index].rest;
 		if (index == -1)
-			return;
+			return cur;
 	}
+
+	return cur;
 }
 
 int sexp_tree::query_false(int node)
@@ -1059,7 +1064,7 @@ int sexp_tree::find_free_node()
 {
 	int i;
 
-	for (i = 0; i < MAX_SEXP_TREE_SIZE; i++)
+	for (i = 0; i < tree_nodes.size(); i++)
 	{
 		if (tree_nodes[i].type == SEXPT_UNUSED)
 			return i;
@@ -1071,20 +1076,43 @@ int sexp_tree::find_free_node()
 // allocate a node.  Remains used until freed.
 int sexp_tree::allocate_node()
 {
-	int i;
+	int node = find_free_node();
 
-	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-		if (tree_nodes[i].type == SEXPT_UNUSED) {
-			tree_nodes[i].type = SEXPT_UNINIT;
-			tree_nodes[i].parent = -1;
-			tree_nodes[i].child = -1;
-			tree_nodes[i].next = -1;
-			total_nodes++;
-			return i;
+	// need more tree nodes?
+	if (node < 0)
+	{
+		int old_size = tree_nodes.size();
+
+		Assert(TREE_NODE_INCREMENT > 0);
+
+		// allocate in blocks of TREE_NODE_INCREMENT
+		tree_nodes.resize(tree_nodes.size() + TREE_NODE_INCREMENT);
+
+		mprintf(("Bumping dynamic tree node limit from %d to %d...\n", old_size, tree_nodes.size()));
+
+#ifndef NDEBUG
+		for (int i = old_size; i < tree_nodes.size(); i++)
+		{
+			sexp_tree_item *item = &tree_nodes[i];
+			Assert(item->type == SEXPT_UNUSED);
 		}
+#endif
 
-	MessageBox("Out of sexp tree nodes!");
-	return -1;
+		// our new sexp is the first out of the ones we just created
+		node = old_size;
+	}
+
+	// reset the new node
+	tree_nodes[node].type = SEXPT_UNINIT;
+	tree_nodes[node].parent = -1;
+	tree_nodes[node].child = -1;
+	tree_nodes[node].next = -1;
+	tree_nodes[node].flags = 0;
+	strcpy(tree_nodes[node].text, "<uninitialized tree node>");
+	tree_nodes[node].handle = NULL;
+
+	total_nodes++;
+	return node;
 }
 
 // allocate a child node under 'parent'.  Appends to end of list.
@@ -1202,7 +1230,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 //	char str[80];
 	int node2;
 
-	Assert(node >= 0 && node < MAX_SEXP_TREE_SIZE);
+	Assert(node >= 0 && node < tree_nodes.size());
 	node2 = tree_nodes[node].child;
 
 	// check for single argument operator case (prints as one line)
@@ -1234,7 +1262,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 
 	node = node2;
 	while (node != -1) {
-		Assert(node >= 0 && node < MAX_SEXP_TREE_SIZE);
+		Assert(node >= 0 && node < tree_nodes.size());
 		Assert(tree_nodes[node].type & SEXPT_VALID);
 		if (tree_nodes[node].type & SEXPT_OPERATOR)	{
 			add_sub_tree(node, root);
@@ -1269,8 +1297,7 @@ int sexp_tree::load_sub_tree(int index, bool valid, char *text)
 	// with child/parent relations otherwise, and it should be this way anyway, since the
 	// return type of the whole sexp is boolean, and only operators can satisfy this.
 	Assert(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR);
-	cur = find_free_node();
-	load_branch(index, -1);
+	cur = load_branch(index, -1);
 	return cur;
 }
 
@@ -1283,7 +1310,7 @@ void sexp_tree::setup_selected(HTREEITEM h)
 	if (!h)
 		item_handle = GetSelectedItem();
 
-	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
+	for (i=0; i<tree_nodes.size(); i++)
 		if (tree_nodes[i].handle == item_handle) {
 			item_index = i;
 			break;
@@ -1419,7 +1446,7 @@ void sexp_tree::right_clicked(int mode)
 
 		// get item_index
 		item_index = -1;
-		for (i=0; i<MAX_SEXP_TREE_SIZE; i++) {
+		for (i=0; i<tree_nodes.size(); i++) {
 			if (tree_nodes[i].handle == h) {
 				item_index = i;
 				break;
@@ -1607,7 +1634,7 @@ void sexp_tree::right_clicked(int mode)
 
 		// find local index (i) of current item (from its handle)
 		SelectItem(item_handle = h);
-		for (i=0; i<MAX_SEXP_TREE_SIZE; i++) {
+		for (i=0; i<tree_nodes.size(); i++) {
 			if (tree_nodes[i].handle == h) {
 				break;
 			}
@@ -2034,14 +2061,14 @@ int sexp_tree::edit_label(HTREEITEM h)
 {
 	int i;
 
-	for (i=0; i<MAX_SEXP_TREE_SIZE; i++) {
+	for (i=0; i<tree_nodes.size(); i++) {
 		if (tree_nodes[i].handle == h) {
 			break;
 		}
 	}
 
 	// Check if tree root
-	if (i == MAX_SEXP_TREE_SIZE) {
+	if (i == tree_nodes.size()) {
 		if (m_mode & ST_ROOT_EDITABLE) {
 			return 1;
 		}
@@ -2090,11 +2117,11 @@ int sexp_tree::end_label_edit(HTREEITEM h, char *str)
 	if (!str)
 		return 0;
 
-	for (node=0; node<MAX_SEXP_TREE_SIZE; node++)
+	for (node=0; node<tree_nodes.size(); node++)
 		if (tree_nodes[node].handle == h)
 			break;
 
-	if (node == MAX_SEXP_TREE_SIZE) {
+	if (node == tree_nodes.size()) {
 		if (m_mode == MODE_EVENTS) {
 			item_index = GetItemData(h);
 			Assert(Event_editor_dlg);
@@ -2105,7 +2132,7 @@ int sexp_tree::end_label_edit(HTREEITEM h, char *str)
 			Int3();  // root labels shouldn't have been editable!
 	}
 
-	Assert(node < MAX_SEXP_TREE_SIZE);
+	Assert(node < tree_nodes.size());
 	if (tree_nodes[node].type & SEXPT_OPERATOR) {
 		str = match_closest_operator(str, node);
 		if (!str) return 0;	// Goober5000 - avoids crashing
@@ -3459,7 +3486,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 	if (!total_nodes)
 		return 0;  // nothing to check
 
-	Assert(node >= 0 && node < MAX_SEXP_TREE_SIZE);
+	Assert(node >= 0 && node < tree_nodes.size());
 	Assert(tree_nodes[node].type == SEXPT_OPERATOR);
 
 	op = get_operator_index(tree_nodes[node].text);
@@ -3980,11 +4007,11 @@ HTREEITEM sexp_tree::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM a
 	HTREEITEM h = 0, child, next;
 
 	if (source) {
-		for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
+		for (i=0; i<tree_nodes.size(); i++)
 			if (tree_nodes[i].handle == source)
 				break;
 
-		if (i < MAX_SEXP_TREE_SIZE) {
+		if (i < tree_nodes.size()) {
 			GetItemImage(source, image1, image2);
 			h = insert(GetItemText(source), image1, image2, parent, after);
 			tree_nodes[i].handle = h;
@@ -4017,11 +4044,11 @@ void sexp_tree::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 	HTREEITEM h, child;
 
 	if (source) {
-		for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
+		for (i=0; i<tree_nodes.size(); i++)
 			if (tree_nodes[i].handle == source)
 				break;
 
-		if (i < MAX_SEXP_TREE_SIZE) {
+		if (i < tree_nodes.size()) {
 			GetItemImage(source, image1, image2);
 			h = insert(GetItemText(source), image1, image2, parent, after);
 			tree_nodes[i].handle = h;
@@ -4264,11 +4291,11 @@ int sexp_tree::get_type(HTREEITEM h)
 	int i;
 
 	// get index into sexp_tree 
-	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
+	for (i=0; i<tree_nodes.size(); i++)
 		if (tree_nodes[i].handle == h)
 			break;
 
-	if ( (i >= MAX_SEXP_TREE_SIZE) ) {
+	if ( (i >= tree_nodes.size()) ) {
 		// Int3();	// This would be the root of the tree  -- ie, event name
 		return -1;
 	}
@@ -4295,11 +4322,11 @@ void sexp_tree::update_help(HTREEITEM h)
 	if (!help_box || !::IsWindow(help_box->m_hWnd))
 		return;
 
-	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
+	for (i=0; i<tree_nodes.size(); i++)
 		if (tree_nodes[i].handle == h)
 			break;
 
-	if ((i >= MAX_SEXP_TREE_SIZE) || !tree_nodes[i].type) {
+	if ((i >= tree_nodes.size()) || !tree_nodes[i].type) {
 		help_box->SetWindowText("");
 		return;
 	}
@@ -4355,7 +4382,7 @@ int sexp_tree::find_text(char *text, int *find)
 
 	find_count = 0;
 
-	for (i=0; i<MAX_SEXP_TREE_SIZE; i++) {
+	for (i=0; i<tree_nodes.size(); i++) {
 		// only look at used and editable nodes
 		if ((tree_nodes[i].flags & EDITABLE && (tree_nodes[i].type != SEXPT_UNUSED))) {
 			// find the text
@@ -5757,7 +5784,7 @@ void sexp_tree::delete_sexp_tree_variable(const char *var_name)
 	// store old item index
 	int old_item_index = item_index;
 
-	for (int idx=0; idx<MAX_SEXP_TREE_SIZE; idx++) {
+	for (int idx=0; idx<tree_nodes.size(); idx++) {
 		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
 			if ( strstr(tree_nodes[idx].text, search_str) != NULL ) {
 
@@ -5808,7 +5835,7 @@ void sexp_tree::modify_sexp_tree_variable(const char *old_name, int sexp_var_ind
 	// Search string in sexp_tree nodes
 	sprintf(search_str, "%s(", old_name);
 
-	for (int idx=0; idx<MAX_SEXP_TREE_SIZE; idx++) {
+	for (int idx=0; idx<tree_nodes.size(); idx++) {
 		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
 			if ( strstr(tree_nodes[idx].text, search_str) != NULL ) {
 				// temp set item_index
@@ -5863,7 +5890,7 @@ int sexp_tree::get_variable_count(const char *var_name)
 	strcat(compare_name, "(");
 
 	// look for compare name
-	for (idx=0; idx<MAX_SEXP_TREE_SIZE; idx++) {
+	for (idx=0; idx<tree_nodes.size(); idx++) {
 		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
 			if ( strstr(tree_nodes[idx].text, compare_name) ) {
 				count++;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MissionGoalsDlg.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-10-09 05:25:18 $
  * $Author: Goober5000 $
  *
  * Mission goals editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.4  2005/07/13 02:40:50  Goober5000
  * remove PreProcDefine #includes in FRED
  * --Goober5000
@@ -104,11 +108,8 @@
 #define OPERAND	0x01
 #define EDITABLE	0x02
 
-class sexp_goal_tree : public sexp_tree
+class goal_sexp_tree : public sexp_tree
 {
-public:
-	int load_sub_tree(int index);
-	int get_new_node_position();
 };
 
 class CMissionGoalsDlg : public CDialog
@@ -132,7 +133,7 @@ public:
 // Dialog Data
 	//{{AFX_DATA(CMissionGoalsDlg)
 	enum { IDD = IDD_MISSION_GOALS };
-	sexp_goal_tree	m_goals_tree;
+	goal_sexp_tree	m_goals_tree;
 	CString	m_goal_desc;
 	int		m_goal_type;
 	int		m_display_goal_types;

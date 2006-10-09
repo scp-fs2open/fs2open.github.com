@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.282 $
- * $Date: 2006-09-11 06:47:33 $
- * $Author: taylor $
+ * $Revision: 2.283 $
+ * $Date: 2006-10-09 05:25:18 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.282  2006/09/11 06:47:33  taylor
+ * fix bug where set-object-speed-* could set speed subjectively if left to default
+ *
  * Revision 2.281  2006/09/08 07:25:05  taylor
  * crap, knew I should have fixed that in the patch so that it would be right in both branches...
  *
@@ -1985,7 +1988,14 @@ int	Training_context_at_waypoint;
 float	Training_context_distance;
 char	Sexp_error_text[MAX_SEXP_TEXT];
 char	*Sexp_string; //[1024] = {0};
-sexp_node Sexp_nodes[MAX_SEXP_NODES];
+
+// Goober5000 - it's dynamic now
+//sexp_node Sexp_nodes[MAX_SEXP_NODES];
+
+#define SEXP_NODE_INCREMENT	100
+int Num_sexp_nodes = 0;
+sexp_node *Sexp_nodes = NULL;
+
 sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
 
 int Players_target = UNINITIALIZED;
@@ -2047,26 +2057,76 @@ int arg_item::empty()
 }
 //-------------------------------------------------------------------------------------------------
 
+void sexp_nodes_init()
+{
+	if (Num_sexp_nodes == 0 || Sexp_nodes == NULL)
+		return;
+
+	mprintf(("Reinitializing sexp nodes...\n"));
+	mprintf(("Entered function with %d nodes;\n", Num_sexp_nodes));
+
+	// usually, the persistent nodes are grouped at the beginning of the array;
+	// so we ought to be able to free all the subsequent nodes
+	int i, last_persistent_node = -1;
+
+	for (i = 0; i < Num_sexp_nodes; i++)
+	{
+		if (Sexp_nodes[i].type & SEXP_FLAG_PERSISTENT)
+			last_persistent_node = i;					// keep track of it
+		else
+			Sexp_nodes[i].type = SEXP_NOT_USED;			// it's not needed
+	}
+
+	mprintf(("last persistent node index is %d;\n", last_persistent_node));
+
+	// if all the persistent nodes are gone, free all the nodes
+	if (last_persistent_node == -1)
+	{
+		vm_free(Sexp_nodes);
+		Sexp_nodes = NULL;
+		Num_sexp_nodes = 0;
+	}
+	// if there's enough of a difference to make it worthwhile, free some nodes
+	else if (Num_sexp_nodes - (last_persistent_node + 1) > 2 * SEXP_NODE_INCREMENT)
+	{
+		// round it up to the next evenly divisible size
+		Num_sexp_nodes = (last_persistent_node + 1);
+		Num_sexp_nodes += SEXP_NODE_INCREMENT - (Num_sexp_nodes % SEXP_NODE_INCREMENT);
+
+		Sexp_nodes = (sexp_node *) vm_realloc(Sexp_nodes, sizeof(sexp_node) * Num_sexp_nodes);
+		Verify(Sexp_nodes != NULL);
+	}
+
+	mprintf(("exited function with %d nodes.\n", Num_sexp_nodes));
+}
+
+void sexp_nodes_close()
+{
+	// free all sexp nodes... should only be done on game shutdown
+	if (Sexp_nodes != NULL)
+	{
+		vm_free(Sexp_nodes);
+		Sexp_nodes = NULL;
+		Num_sexp_nodes = 0;
+	}
+}
+
 void init_sexp()
 {
-	int i;
-
 	// Goober5000
 	Sexp_current_replacement_argument = NULL;
 	Sexp_applicable_argument_list.expunge();
 
-	for (i=0; i<MAX_SEXP_NODES; i++) {
-		if ( !(Sexp_nodes[i].type & SEXP_FLAG_PERSISTENT) ){
-			Sexp_nodes[i].type = SEXP_NOT_USED;
-		}
-	}
+	sexp_nodes_init();
+	atexit(sexp_nodes_close);	// hopefully this is correct
 
 	init_sexp_vars();
-
 	Locked_sexp_false = Locked_sexp_true = -1;
+
 	Locked_sexp_false = alloc_sexp("false", SEXP_LIST, SEXP_ATOM_OPERATOR, -1, -1);
 	Assert(Locked_sexp_false != -1);
 	Sexp_nodes[Locked_sexp_false].type = SEXP_ATOM;  // fix bypassing value
+
 	Locked_sexp_true = alloc_sexp("true", SEXP_LIST, SEXP_ATOM_OPERATOR, -1, -1);
 	Assert(Locked_sexp_true != -1);
 	Sexp_nodes[Locked_sexp_true].type = SEXP_ATOM;  // fix bypassing value
@@ -2075,83 +2135,97 @@ void init_sexp()
 // allocates an sexp node.
 int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 {
-	int i;
-	int sexp_const;
+	int node;
+	int sexp_const = get_operator_const(text);
 
-	sexp_const = get_operator_const(text);
-	if ((sexp_const == OP_TRUE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR)) {
+	if ((sexp_const == OP_TRUE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR))
 		return Locked_sexp_true;
-	} else if ((sexp_const == OP_FALSE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR)) {
+
+	else if ((sexp_const == OP_FALSE) && (type == SEXP_ATOM) && (subtype == SEXP_ATOM_OPERATOR))
 		return Locked_sexp_false;
-	}
 
-	i = find_free_sexp();
-	Assert(i != Locked_sexp_true);
-	Assert(i != Locked_sexp_false);
+	node = find_free_sexp();
 
-	// Goober5000 - ACK!! find_free_sexp() returns -1!!
-	if (i == MAX_SEXP_NODES || i == -1)
+	// need more sexp nodes?
+	if (node == Num_sexp_nodes || node == -1)
 	{
-		Error(LOCATION, "Out of sexp nodes!");
-		return -1;
+		int old_size = Num_sexp_nodes;
+
+		Assert(SEXP_NODE_INCREMENT > 0);
+
+		// allocate in blocks of SEXP_NODE_INCREMENT
+		Num_sexp_nodes += SEXP_NODE_INCREMENT;
+		Sexp_nodes = (sexp_node *) vm_realloc(Sexp_nodes, sizeof(sexp_node) * Num_sexp_nodes);
+
+		Verify(Sexp_nodes != NULL);
+		mprintf(("Bumping dynamic sexp node limit from %d to %d...\n", old_size, Num_sexp_nodes));
+
+		// clear all the new sexp nodes we just allocated
+		memset(&Sexp_nodes[old_size], 0, sizeof(sexp_node) * SEXP_NODE_INCREMENT);
+
+		// our new sexp is the first out of the ones we just created
+		node = old_size;
 	}
 
+	Assert(node != Locked_sexp_true);
+	Assert(node != Locked_sexp_false);
 	Assert(strlen(text) < TOKEN_LENGTH);
-	strcpy(Sexp_nodes[i].text, text);
 	Assert(type >= 0);
-	Sexp_nodes[i].type = type;
-	Sexp_nodes[i].subtype = subtype;
-	Sexp_nodes[i].first = first;
-	Sexp_nodes[i].rest = rest;
-	Sexp_nodes[i].value = SEXP_UNKNOWN;
-	Sexp_nodes[i].flags = SNF_DEFAULT_VALUE;	// Goober5000
 
-	return i;
+	strcpy(Sexp_nodes[node].text, text);
+	Sexp_nodes[node].type = type;
+	Sexp_nodes[node].subtype = subtype;
+	Sexp_nodes[node].first = first;
+	Sexp_nodes[node].rest = rest;
+	Sexp_nodes[node].value = SEXP_UNKNOWN;
+	Sexp_nodes[node].flags = SNF_DEFAULT_VALUE;	// Goober5000
+
+	return node;
 }
 
-int Sexp_hwm = 0;
+static int Sexp_hwm = 0;
 
 int count_free_sexp_nodes()
 {
 	int i, f = 0, p = 0;
 
-	for (i=0; i<MAX_SEXP_NODES; i++) {
-		if (Sexp_nodes[i].type == SEXP_NOT_USED){
+	for (i = 0; i < Num_sexp_nodes; i++)
+	{
+		if (Sexp_nodes[i].type == SEXP_NOT_USED)
 			f++;
-		} else if (Sexp_nodes[i].type & SEXP_FLAG_PERSISTENT){
+		else if (Sexp_nodes[i].type & SEXP_FLAG_PERSISTENT)
 			p++;
-		}
 	}
 
-	if (MAX_SEXP_NODES - f > Sexp_hwm) {
-		nprintf(("Sexp", "Sexp nodes: Free=%d, Used=%d, Persistent=%d\n", f, MAX_SEXP_NODES - f, p));
-		Sexp_hwm = MAX_SEXP_NODES - f;
+	if (Num_sexp_nodes - f > Sexp_hwm)
+	{
+		nprintf(("Sexp", "Sexp nodes: Free=%d, Used=%d, Persistent=%d\n", f, Num_sexp_nodes - f, p));
+		Sexp_hwm = Num_sexp_nodes - f;
 	}
 
 	return f;
 }
 
-// find the next free sexp and return it's index.
+// find the next free sexp and return its index.
 int find_free_sexp()
 {
 	int i;
 
-	for (i=0; i<MAX_SEXP_NODES; i++){
-		if (Sexp_nodes[i].type == SEXP_NOT_USED){
-			break;
-		}
-	}
+	// sanity
+	if (Num_sexp_nodes == 0 || Sexp_nodes == NULL)
+		return -1;
 
 #ifndef NDEBUG
 	//count_free_sexp_nodes();
 #endif
 
-	Assert(i != MAX_SEXP_NODES);  // time to raise the limit..
-	if (i == MAX_SEXP_NODES){
-		return -1;
+	for (i = 0; i < Num_sexp_nodes; i++)
+	{
+		if (Sexp_nodes[i].type == SEXP_NOT_USED)
+			return i;
 	}
 
-	return i;
+	return -1;
 }
 
 // sexp_mark_persistent() marks a whole sexp tree with the persistent flag so that it won't
@@ -2196,13 +2270,12 @@ void sexp_unmark_persistent(int n)
 // just frees up the specified sexp node,  Leaves link chains untouched.
 int free_one_sexp(int num)
 {
-	Assert( (num >= 0) && (num < MAX_SEXP_NODES) );
+	Assert((num >= 0) && (num < Num_sexp_nodes));
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
-	Assert( !(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT) );
+	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
 
-	if ((num == Locked_sexp_true) || (num == Locked_sexp_false)){
+	if ((num == Locked_sexp_true) || (num == Locked_sexp_false))
 		return 0;
-	}
 
 	Sexp_nodes[num].type = SEXP_NOT_USED;
 	return 1;
@@ -2215,32 +2288,31 @@ int free_sexp(int num)
 {
 	int i, rest, count = 0;
 
-	Assert( (num >= 0) && (num < MAX_SEXP_NODES) );
+	Assert((num >= 0) && (num < Num_sexp_nodes));
 	Assert(Sexp_nodes[num].type != SEXP_NOT_USED);  // make sure it is actually used
-	Assert( !(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT) );
+	Assert(!(Sexp_nodes[num].type & SEXP_FLAG_PERSISTENT));
 
-	if ((num == Locked_sexp_true) || (num == Locked_sexp_false) || (num == -1) ){
+	if ((num == Locked_sexp_true) || (num == Locked_sexp_false))
 		return 0;
-	}
 
 	Sexp_nodes[num].type = SEXP_NOT_USED;
 	count++;
 
 	i = Sexp_nodes[num].first;
-	while (i != -1){
+	while (i != -1)
+	{
 		count += free_sexp(i);
 		i = Sexp_nodes[i].rest;
 	}
 
 	rest = Sexp_nodes[num].rest;
-	for (i=0; i<MAX_SEXP_NODES; i++) {
-		if (Sexp_nodes[i].first == num){
+	for (i = 0; i < Num_sexp_nodes; i++)
+	{
+		if (Sexp_nodes[i].first == num)
 			Sexp_nodes[i].first = rest;
-		}
 
-		if (Sexp_nodes[i].rest == num){
+		if (Sexp_nodes[i].rest == num)
 			Sexp_nodes[i].rest = rest;
-		}
 	}
 
 	return count;  // total elements freed up.
@@ -2380,10 +2452,10 @@ int find_sexp_list(int num)
 {
 	int i;
 
-	for (i=0; i<MAX_SEXP_NODES; i++){
-		if (Sexp_nodes[i].first == num){
+	for (i = 0; i < Num_sexp_nodes; i++)
+	{
+		if (Sexp_nodes[i].first == num)
 			return i;
-		}
 	}
 
 	return -1;
@@ -2394,22 +2466,21 @@ int find_parent_operator(int node)
 {
 	int i;
 
-	Assert( (node >= 0) && (node < MAX_SEXP_NODES) );
+	Assert((node >= 0) && (node < Num_sexp_nodes));
 
-	if (Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR){
+	if (Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR)
 		node = find_sexp_list(node);
-	}
 
-	while (Sexp_nodes[node].subtype != SEXP_ATOM_OPERATOR) {
-		for (i=0; i<MAX_SEXP_NODES; i++){
-			if (Sexp_nodes[i].rest == node){
+	while (Sexp_nodes[node].subtype != SEXP_ATOM_OPERATOR)
+	{
+		for (i = 0; i < Num_sexp_nodes; i++)
+		{
+			if (Sexp_nodes[i].rest == node)
 				break;
-			}
 		}
 
-		if (i == MAX_SEXP_NODES){
+		if (i == Num_sexp_nodes)
 			return -1;  // not found, probably at top node already.
-		}
 
 		node = i;
 	}
@@ -2423,19 +2494,18 @@ int is_sexp_top_level( int node )
 {
 	int i;
 
-	Assert( (node >= 0) && (node < MAX_SEXP_NODES) );
+	Assert((node >= 0) && (node < Num_sexp_nodes));
 
-	if ( Sexp_nodes[node].type == SEXP_NOT_USED ){
+	if (Sexp_nodes[node].type == SEXP_NOT_USED)
 		return 0;
-	}
 
-	for (i = 0; i < MAX_SEXP_NODES; i++ ) {
-		if ( (Sexp_nodes[i].type == SEXP_NOT_USED) || ( i == node ) ){				// don't check myself or unused nodes
+	for (i = 0; i < Num_sexp_nodes; i++)
+	{
+		if ((Sexp_nodes[i].type == SEXP_NOT_USED) || (i == node ))				// don't check myself or unused nodes
 			continue;
-		}
-		if ( (Sexp_nodes[i].first == node) || (Sexp_nodes[i].rest == node) ){
+
+		if ((Sexp_nodes[i].first == node) || (Sexp_nodes[i].rest == node))
 			return 0;
-		}
 	}
 
 	return 1;
@@ -2510,7 +2580,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 	int i = 0, z, t, type, argnum = 0, count, op, type2 = 0, op2;
 	int op_node;
 
-	Assert(node >= 0 && node < MAX_SEXP_NODES);
+	Assert(node >= 0 && node < Num_sexp_nodes);
 	Assert(Sexp_nodes[node].type != SEXP_NOT_USED);
 	if (Sexp_nodes[node].subtype == SEXP_ATOM_NUMBER && return_type == OPR_BOOL) {
 		// special case Mark seems to want supported
@@ -4023,7 +4093,7 @@ int stuff_sexp_variable_list()
 //
 void build_sexp_text_string(char *buffer, int node, int mode)
 {
-	Assert( (node >= 0) && (node < MAX_SEXP_NODES) );
+	Assert( (node >= 0) && (node < Num_sexp_nodes) );
 
 	if (Sexp_nodes[node].type & SEXP_FLAG_VARIABLE) {
 
@@ -4087,7 +4157,7 @@ int build_sexp_string(int cur_node, int level, int mode)
 	strcat(Sexp_string, "( ");
 	node = cur_node;
 	while (node != -1) {
-		Assert(node >= 0 && node < MAX_SEXP_NODES);
+		Assert(node >= 0 && node < Num_sexp_nodes);
 		if (Sexp_nodes[node].first == -1) {
 			// build text to string
 			build_sexp_text_string(pstr, node, mode);
@@ -4124,7 +4194,7 @@ void build_extended_sexp_string(int cur_node, int level, int mode)
 				strcat(Sexp_string, "   ");
 
 		flag = 1;
-		Assert(node >= 0 && node < MAX_SEXP_NODES);
+		Assert(node >= 0 && node < Num_sexp_nodes);
 		if (Sexp_nodes[node].first == -1) {
 			build_sexp_text_string(pstr,node, mode);
 			strcat(Sexp_string, pstr);
@@ -8511,14 +8581,7 @@ void sexp_play_sound_from_table(int n)
 // Goober5000
 void sexp_close_sound_from_file(int n)
 {
-	Assert( (n >= 0) && (n < MAX_SEXP_NODES) );
-
-	if (Sexp_nodes[Sexp_nodes[n].first].value != SEXP_KNOWN_TRUE)
-	{
-		sexp_stop_music(0);
-	}
-
-	sexp_stop_music();
+	sexp_stop_music(is_sexp_true(n));
 }
 
 // Goober5000
@@ -9751,7 +9814,7 @@ void sexp_add_background_bitmap(int n)
 	if (sle.div_y > 5) sle.div_y = 5;
 	if (sle.div_y < 1) sle.div_y = 1;
 
-	Assert((n >= 0) && (n < MAX_SEXP_NODES));
+	Assert((n >= 0) && (n < Num_sexp_nodes));
 
 	// ripped from sexp_modify_variable()
 	// get sexp_variable index
@@ -9830,7 +9893,7 @@ void sexp_add_sun_bitmap(int n)
 	if (sle.scale_y > 50) sle.scale_y = 50;
 	if (sle.scale_y < 0.1f) sle.scale_y = 0.1f;
 	
-	Assert((n >= 0) && (n < MAX_SEXP_NODES));
+	Assert((n >= 0) && (n < Num_sexp_nodes));
 
 	// ripped from sexp_modify_variable()
 	// get sexp_variable index
@@ -17886,12 +17949,11 @@ void update_sexp_references(char *old_name, char *new_name)
 	update_block_names(old_name, new_name);
 
 	Assert(strlen(new_name) < TOKEN_LENGTH);
-	for (i=0; i<MAX_SEXP_NODES; i++){
-		if ((SEXP_NODE_TYPE(i) == SEXP_ATOM) && (Sexp_nodes[i].subtype == SEXP_ATOM_STRING)){
-			if (!stricmp(CTEXT(i), old_name)){
+	for (i = 0; i < Num_sexp_nodes; i++)
+	{
+		if ((SEXP_NODE_TYPE(i) == SEXP_ATOM) && (Sexp_nodes[i].subtype == SEXP_ATOM_STRING))
+			if (!stricmp(CTEXT(i), old_name))
 				strcpy(CTEXT(i), new_name);
-			}
-		}
 	}
 }
 
@@ -17902,10 +17964,10 @@ void update_sexp_references(char *old_name, char *new_name, int format)
 	int i;
 
 	Assert(strlen(new_name) < TOKEN_LENGTH);
-	for (i=0; i<MAX_SEXP_NODES; i++){
-		if (is_sexp_top_level(i)){
+	for (i = 0; i < Num_sexp_nodes; i++)
+	{
+		if (is_sexp_top_level(i))
 			update_sexp_references(old_name, new_name, format, i);
-		}
 	}
 }
 
@@ -17915,42 +17977,44 @@ void update_sexp_references(char *old_name, char *new_name, int format, int node
 {
 	int i, n, op;
 
-	if (node < 0){
+	if (node < 0)
 		return;
-	}
 
-	if ((SEXP_NODE_TYPE(node) == SEXP_LIST) && (Sexp_nodes[node].subtype == SEXP_ATOM_LIST)) {
-		if (Sexp_nodes[node].first){
+	if ((SEXP_NODE_TYPE(node) == SEXP_LIST) && (Sexp_nodes[node].subtype == SEXP_ATOM_LIST))
+	{
+		if (Sexp_nodes[node].first)
 			update_sexp_references(old_name, new_name, format, Sexp_nodes[node].first);
-		}
-		if (Sexp_nodes[node].rest){
+
+		if (Sexp_nodes[node].rest)
 			update_sexp_references(old_name, new_name, format, Sexp_nodes[node].rest);
-		}
 
 		return;
 	}
 
-	if (SEXP_NODE_TYPE(node) != SEXP_ATOM){
+	if (SEXP_NODE_TYPE(node) != SEXP_ATOM)
 		return;
-	}
 
-	if (Sexp_nodes[node].subtype != SEXP_ATOM_OPERATOR){
+	if (Sexp_nodes[node].subtype != SEXP_ATOM_OPERATOR)
 		return;
-	}
 
 	op = get_operator_index(CTEXT(node));
 	Assert(Sexp_nodes[node].first < 0);
 	n = Sexp_nodes[node].rest;
 	i = 0;
-	while (n >= 0) {
-		if (SEXP_NODE_TYPE(n) == SEXP_LIST){
+	while (n >= 0)
+	{
+		if (SEXP_NODE_TYPE(n) == SEXP_LIST)
+		{
 			update_sexp_references(old_name, new_name, format, Sexp_nodes[n].first);
-		} else {
+		}
+		else
+		{
 			Assert((SEXP_NODE_TYPE(n) == SEXP_ATOM) && ((Sexp_nodes[n].subtype == SEXP_ATOM_NUMBER) || (Sexp_nodes[n].subtype == SEXP_ATOM_STRING)));
-			if (query_operator_argument_type(op, i) == format) {
-				if (!stricmp(CTEXT(n), old_name)){
+
+			if (query_operator_argument_type(op, i) == format)
+			{
+				if (!stricmp(CTEXT(n), old_name))
 					strcpy(CTEXT(n), new_name);
-				}
 			}
 		}
 
@@ -17963,7 +18027,7 @@ int query_referenced_in_sexp(int mode, char *name, int *node)
 {
 	int i, n, j;
 
-	for (n=0; n<MAX_SEXP_NODES; n++){
+	for (n=0; n<Num_sexp_nodes; n++){
 		if ((SEXP_NODE_TYPE(n) == SEXP_ATOM) && (Sexp_nodes[n].subtype == SEXP_ATOM_STRING)){
 			if (!stricmp(CTEXT(n), name)){
 				break;
@@ -17971,7 +18035,7 @@ int query_referenced_in_sexp(int mode, char *name, int *node)
 		}
 	}
 
-	if (n == MAX_SEXP_NODES){
+	if (n == Num_sexp_nodes){
 		return 0;
 	}
 

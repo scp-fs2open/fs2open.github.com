@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-04-30 16:39:43 $
- * $Author: phreak $
+ * $Revision: 1.3 $
+ * $Date: 2006-10-09 05:25:18 $
+ * $Author: Goober5000 $
  *
  * Event editor dialog box class and event tree class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/04/30 16:39:43  phreak
+ * You can now preview sounds again in the event editor.
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -172,38 +175,6 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 event_editor *Event_editor_dlg = NULL; // global reference needed by event tree class
-
-// determine the node number that would be allocated without actually allocating it yet.
-int sexp_event_tree::get_new_node_position()
-{
-	int i;
-
-	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-		if (nodes[i].type == SEXPT_UNUSED)
-			return i;
-
-	return -1;
-}
-
-// construct tree nodes for an sexp, adding them to the list and returning first node
-int sexp_event_tree::load_sub_tree(int index)
-{
-	int cur;
-
-	if (index < 0) {
-		cur = allocate_node(-1);
-		set_node(cur, SEXPT_OPERATOR, "do-nothing");  // setup a default tree if none
-		return cur;
-	}
-
-	// assumption: first token is an operator.  I require this because it would cause problems
-	// with child/parent relations otherwise, and it should be this way anyway, since the
-	// return type of the whole sexp is boolean, and only operators can satisfy this.
-	Assert(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR);
-	cur = get_new_node_position();
-	load_branch(index, -1);
-	return cur;
-}
 
 /////////////////////////////////////////////////////////////////////////////
 // event_editor dialog
@@ -473,7 +444,7 @@ void event_editor::load_tree()
 			strcpy(m_events[i].name, "<Unnamed>");
 		}
 
-		m_events[i].formula = m_event_tree.load_sub_tree(Mission_events[i].formula);
+		m_events[i].formula = m_event_tree.load_sub_tree(Mission_events[i].formula, false, "do-nothing");
 
 		// we must check for the case of the repeat count being 0.  This would happen if the repeat
 		// count is not specified in a mission

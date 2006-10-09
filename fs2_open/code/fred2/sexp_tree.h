@@ -10,46 +10,50 @@
 #ifndef _SEXP_TREE_H
 #define _SEXP_TREE_H
 
+// 4786 is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000
+#pragma warning(disable: 4786)
+#include <vector>
+
 #include "parse/sexp.h"
 #include "parse/parselo.h"
 
+// Goober5000 - it's dynamic now
 //#define MAX_SEXP_TREE_SIZE 500
 //#define MAX_SEXP_TREE_SIZE 1050
 //#define MAX_SEXP_TREE_SIZE ((MAX_SEXP_NODES)*2/3)
-#define MAX_SEXP_TREE_SIZE	3000
 
 // tree_node type
-#define SEXPT_UNUSED		0x0000
-#define SEXPT_UNINIT		0x0001
+#define SEXPT_UNUSED	0x0000
+#define SEXPT_UNINIT	0x0001
 #define SEXPT_UNKNOWN	0x0002
 
 #define SEXPT_VALID		0x1000
-#define SEXPT_TYPE_MASK	0X00ff
+#define SEXPT_TYPE_MASK	0x00ff
 #define SEXPT_TYPE(X)	(SEXPT_TYPE_MASK & X)
 
 #define SEXPT_OPERATOR	0x0010
-#define SEXPT_NUMBER		0x0020
-#define SEXPT_STRING		0x0040
-#define SEXPT_VARIABLE	0X0080
+#define SEXPT_NUMBER	0x0020
+#define SEXPT_STRING	0x0040
+#define SEXPT_VARIABLE	0x0080
 
 // tree_node flag
-#define NOT_EDITABLE 0X00
-#define OPERAND		0x01
+#define NOT_EDITABLE	0x00
+#define OPERAND			0x01
 #define EDITABLE		0x02
 #define COMBINED		0x04
 
 // Bitmaps
-#define BITMAP_OPERATOR 0
-#define BITMAP_DATA 1
-#define BITMAP_VARIABLE 2
-#define BITMAP_ROOT 3
-#define BITMAP_ROOT_DIRECTIVE 4
-#define BITMAP_CHAIN 5
-#define BITMAP_CHAIN_DIRECTIVE 6
-#define BITMAP_GREEN_DOT 7
-#define BITMAP_BLACK_DOT 8
-#define BITMAP_BLUE_DOT BITMAP_ROOT
-#define BITMAP_RED_DOT BITMAP_ROOT_DIRECTIVE
+#define BITMAP_OPERATOR			0
+#define BITMAP_DATA				1
+#define BITMAP_VARIABLE			2
+#define BITMAP_ROOT				3
+#define BITMAP_ROOT_DIRECTIVE	4
+#define BITMAP_CHAIN			5
+#define BITMAP_CHAIN_DIRECTIVE	6
+#define BITMAP_GREEN_DOT		7
+#define BITMAP_BLACK_DOT		8
+#define BITMAP_BLUE_DOT			BITMAP_ROOT
+#define BITMAP_RED_DOT			BITMAP_ROOT_DIRECTIVE
 
 
 
@@ -64,7 +68,7 @@
 
 // various tree operations notification codes (to be handled by derived class)
 #define ROOT_DELETED	1
-#define ROOT_RENAMED 2
+#define ROOT_RENAMED	2
 
 #define SEXP_ITEM_F_DUP	(1<<0)
 
@@ -269,14 +273,14 @@ protected:
 	afx_msg void OnKeydown(NMHDR* pNMHDR, LRESULT* pResult);
 	//}}AFX_MSG
 
-	void load_branch(int index, int parent);
+	int load_branch(int index, int parent);
 	int save_branch(int cur, int at_root = 0);
 	void free_node2(int node);
 
 	int flag;
 	int *modified;
 
-	sexp_tree_item tree_nodes[MAX_SEXP_TREE_SIZE];
+	std::vector<sexp_tree_item> tree_nodes;
 	int total_nodes;
 
 	HTREEITEM item_handle;
