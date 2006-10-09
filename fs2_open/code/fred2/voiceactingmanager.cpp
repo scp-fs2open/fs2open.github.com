@@ -566,7 +566,7 @@ char *VoiceActingManager::get_message_sender(char *message)
 {
 	int i;
 
-	for (i = 0; i < MAX_SEXP_NODES; i++)
+	for (i = 0; i < Num_sexp_nodes; i++)
 	{
 		if (Sexp_nodes[i].type == SEXP_NOT_USED)
 			continue;
