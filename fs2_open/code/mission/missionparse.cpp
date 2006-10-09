@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.16 $
- * $Date: 2006-10-09 05:25:07 $
+ * $Revision: 2.178.2.17 $
+ * $Date: 2006-10-09 20:50:02 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.16  2006/10/09 05:25:07  Goober5000
+ * make sexp nodes dynamic
+ *
  * Revision 2.178.2.15  2006/09/11 01:06:20  taylor
  * fixes for stuff_string() bounds checking
  * compiler warning and stict compiling fixes
@@ -1592,9 +1595,9 @@ void parse_mission_info(mission *pm, bool basic = false)
 
 
 	// set up support ships
-	pm->support_ships.arrival_location = 0;		// ASSUMPTION: hyperspace
+	pm->support_ships.arrival_location = ARRIVE_AT_LOCATION;
 	pm->support_ships.arrival_anchor = -1;
-	pm->support_ships.departure_location = 0;	// ASSUMPTION: hyperspace
+	pm->support_ships.departure_location = DEPART_AT_LOCATION;
 	pm->support_ships.departure_anchor = -1;
 	pm->support_ships.max_hull_repair_val = 100.0f;	//ASSUMPTION: full repair capabilities
 	pm->support_ships.max_subsys_repair_val = 100.0f;
@@ -3383,6 +3386,13 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (optional_string("+Arrival Distance:"))
 	{
 		stuff_int(&p_objp->arrival_distance);
+
+		// Goober5000
+		if ((p_objp->arrival_distance <= 0) && ((p_objp->arrival_location == ARRIVE_NEAR_SHIP) || (p_objp->arrival_location == ARRIVE_IN_FRONT_OF_SHIP)))
+		{
+			Warning(LOCATION, "Arrival distance for ship %s cannot be %d.  Setting to 1.\n", p_objp->name, p_objp->arrival_distance);
+			p_objp->arrival_distance = 1;
+		}
 	}
 
 	if (p_objp->arrival_location != ARRIVE_AT_LOCATION)
@@ -4505,6 +4515,13 @@ void parse_wing(mission *pm)
 	if ( optional_string("+Arrival Distance:") )
 	{
 		stuff_int( &wingp->arrival_distance );
+
+		// Goober5000
+		if ((wingp->arrival_distance <= 0) && ((wingp->arrival_location == ARRIVE_NEAR_SHIP) || (wingp->arrival_location == ARRIVE_IN_FRONT_OF_SHIP)))
+		{
+			Warning(LOCATION, "Arrival distance for wing %s cannot be %d.  Setting to 1.\n", wingp->name, wingp->arrival_distance);
+			wingp->arrival_distance = 1;
+		}
 	}
 
 	if ( wingp->arrival_location != ARRIVE_AT_LOCATION )
@@ -7526,7 +7543,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->arrival_path_mask = 0;
 	pobj->departure_path_mask = 0;
 
-//	pobj->arrival_location = 0;			// ASSUMPTION: this is index to arrival_lcation string array for hyperspace!!!!
+//	pobj->arrival_location = ARRIVE_AT_LOCATION;
 	pobj->arrival_distance = 0;
 //	pobj->arrival_anchor = -1;
 	pobj->arrival_cue = Locked_sexp_true;
@@ -7537,7 +7554,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->initial_hull = 100;			// start at 100% hull	
 	pobj->initial_shields = 100;		// and 100% shields
 
-//	pobj->departure_location = 0;		// ASSUMPTION: this is index to departure_lcation string array for hyperspace!!!!
+//	pobj->departure_location = DEPART_AT_LOCATION;
 //	pobj->departure_anchor = -1;
 	pobj->departure_cue = Locked_sexp_false;
 	pobj->departure_delay = 0;
