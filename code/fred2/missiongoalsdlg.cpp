@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/MissionGoalsDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-10-09 05:25:18 $
  * $Author: Goober5000 $
  *
  * Mission goals editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.2  2002/08/15 01:06:34  penguin
  * Include filename reorg (to coordinate w/ fs2_open)
  *
@@ -179,38 +183,6 @@ CMissionGoalsDlg *Goal_editor_dlg; // global reference needed by sexp_tree class
 /////////////////////////////////////////////////////////////////////////////
 // sexp_goal_tree class member functions
 
-// determine the node number that would be allocated without actually allocating it yet.
-int sexp_goal_tree::get_new_node_position()
-{
-	int i;
-
-	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-		if (nodes[i].type == SEXPT_UNUSED)
-			return i;
-
-	return -1;
-}
-
-// construct tree nodes for an sexp, adding them to the list and returning first node
-int sexp_goal_tree::load_sub_tree(int index)
-{
-	int cur;
-
-	if (index < 0) {
-		cur = allocate_node(-1);
-		set_node(cur, (SEXPT_OPERATOR | SEXPT_VALID), "true");  // setup a default tree if none
-		return cur;
-	}
-
-	// assumption: first token is an operator.  I require this because it would cause problems
-	// with child/parent relations otherwise, and it should be this way anyway, since the
-	// return type of the whole sexp is boolean, and only operators can satisfy this.
-	Assert(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR);
-	cur = get_new_node_position();
-	load_branch(index, -1);
-	return cur;
-}
-
 /////////////////////////////////////////////////////////////////////////////
 // CMissionGoalsDlg dialog class member functions
 
@@ -318,7 +290,7 @@ void CMissionGoalsDlg::load_tree()
 		if (!(*m_goals[i].name))
 			strcpy(m_goals[i].name, "<unnamed>");
 
-		m_goals[i].formula = m_goals_tree.load_sub_tree(Mission_goals[i].formula);
+		m_goals[i].formula = m_goals_tree.load_sub_tree(Mission_goals[i].formula, true, "true");
 	}
 
 	m_goals_tree.post_load();
