@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.12 $
- * $Date: 2006-09-13 17:29:43 $
- * $Author: taylor $
+ * $Revision: 1.13 $
+ * $Date: 2006-10-09 04:44:58 $
+ * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2006/09/13 17:29:43  taylor
+ * fix for Mantis bug #1006
+ *
  * Revision 1.11  2006/08/06 19:24:56  Goober5000
  * deprecate change-ship-model
  *
@@ -841,9 +844,9 @@ void sexp_tree::clear_tree(char *op)
 {
 	int i;
 
-	total = flag = 0;
+	total_nodes = flag = 0;
 	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-		nodes[i].type = SEXPT_UNUSED;
+		tree_nodes[i].type = SEXPT_UNUSED;
 
 	if (op) {
 		DeleteAllItems();
@@ -859,7 +862,7 @@ void sexp_tree::reset_handles()
 	int i;
 
 	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-		nodes[i].handle = NULL;
+		tree_nodes[i].handle = NULL;
 }
 
 // initializes and creates a tree from a given sexp startpoint.
@@ -965,9 +968,9 @@ int sexp_tree::query_false(int node)
 		node = root_item;
 
 	Assert(node >= 0);
-	Assert(nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID));
-	Assert(nodes[node].next == -1);  // must make this assumption or else it will confuse code!
-	if (get_operator_const(nodes[node].text) == OP_FALSE){
+	Assert(tree_nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID));
+	Assert(tree_nodes[node].next == -1);  // must make this assumption or else it will confuse code!
+	if (get_operator_const(tree_nodes[node].text) == OP_FALSE){
 		return TRUE;
 	}
 
@@ -981,8 +984,8 @@ int sexp_tree::save_tree(int node)
 		node = root_item;
 
 	Assert(node >= 0);
-	Assert(nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID));
-	Assert(nodes[node].next == -1);  // must make this assumption or else it will confuse code!
+	Assert(tree_nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID));
+	Assert(tree_nodes[node].next == -1);  // must make this assumption or else it will confuse code!
 	return save_branch(node);
 }
 
@@ -1005,30 +1008,30 @@ int sexp_tree::save_branch(int cur, int at_root)
 
 	start = -1;
 	while (cur != -1) {
-		if (nodes[cur].type & SEXPT_OPERATOR) {
-			node = alloc_sexp(nodes[cur].text, SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, save_branch(nodes[cur].child));
+		if (tree_nodes[cur].type & SEXPT_OPERATOR) {
+			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, save_branch(tree_nodes[cur].child));
 
-			if ((nodes[cur].parent >= 0) && !at_root) {
+			if ((tree_nodes[cur].parent >= 0) && !at_root) {
 				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
 			}
-		} else if (nodes[cur].type & SEXPT_NUMBER) {
+		} else if (tree_nodes[cur].type & SEXPT_NUMBER) {
 			// allocate number, maybe variable
-			if (nodes[cur].type & SEXPT_VARIABLE) {
-				var_name_from_sexp_tree_text(var_name_text, nodes[cur].text);
+			if (tree_nodes[cur].type & SEXPT_VARIABLE) {
+				var_name_from_sexp_tree_text(var_name_text, tree_nodes[cur].text);
 				node = alloc_sexp(var_name_text, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_NUMBER, -1, -1);
 			} else {
-				node = alloc_sexp(nodes[cur].text, SEXP_ATOM, SEXP_ATOM_NUMBER, -1, -1);
+				node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_NUMBER, -1, -1);
 			}
-		} else if (nodes[cur].type & SEXPT_STRING) {
+		} else if (tree_nodes[cur].type & SEXPT_STRING) {
 			// allocate string, maybe variable
-			if (nodes[cur].type & SEXPT_VARIABLE) {
-				var_name_from_sexp_tree_text(var_name_text, nodes[cur].text);
+			if (tree_nodes[cur].type & SEXPT_VARIABLE) {
+				var_name_from_sexp_tree_text(var_name_text, tree_nodes[cur].text);
 				node = alloc_sexp(var_name_text, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_STRING, -1, -1);
 			} else {
-				node = alloc_sexp(nodes[cur].text, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
+				node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
 			}
-		} else if (nodes[cur].type & SEXPT_STRING) {
-			Assert( !(nodes[cur].type & SEXPT_VARIABLE) );
+		} else if (tree_nodes[cur].type & SEXPT_STRING) {
+			Assert( !(tree_nodes[cur].type & SEXPT_VARIABLE) );
 			Int3();
 		} else {
 			Assert(0); // unknown and/or invalid type
@@ -1042,7 +1045,7 @@ int sexp_tree::save_branch(int cur, int at_root)
 
 		last = node;
 		Assert(last != NO_PREVIOUS_NODE);  // should be impossible
-		cur = nodes[cur].next;
+		cur = tree_nodes[cur].next;
 		if (at_root){
 			return start;
 		}
@@ -1051,18 +1054,32 @@ int sexp_tree::save_branch(int cur, int at_root)
 	return start;
 }
 
+// find the next free tree node and return its index.
+int sexp_tree::find_free_node()
+{
+	int i;
+
+	for (i = 0; i < MAX_SEXP_TREE_SIZE; i++)
+	{
+		if (tree_nodes[i].type == SEXPT_UNUSED)
+			return i;
+	}
+
+	return -1;
+}
+
 // allocate a node.  Remains used until freed.
 int sexp_tree::allocate_node()
 {
 	int i;
 
 	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-		if (nodes[i].type == SEXPT_UNUSED) {
-			nodes[i].type = SEXPT_UNINIT;
-			nodes[i].parent = -1;
-			nodes[i].child = -1;
-			nodes[i].next = -1;
-			total++;
+		if (tree_nodes[i].type == SEXPT_UNUSED) {
+			tree_nodes[i].type = SEXPT_UNINIT;
+			tree_nodes[i].parent = -1;
+			tree_nodes[i].child = -1;
+			tree_nodes[i].next = -1;
+			total_nodes++;
 			return i;
 		}
 
@@ -1076,20 +1093,20 @@ int sexp_tree::allocate_node(int parent, int after)
 	int i, index = allocate_node();
 
 	if (parent != -1) {
-		i = nodes[parent].child;
+		i = tree_nodes[parent].child;
 		if (i == -1) {
-			nodes[parent].child = index;
+			tree_nodes[parent].child = index;
 
 		} else {
-			while ((i != after) && (nodes[i].next != -1))
-				i = nodes[i].next;
+			while ((i != after) && (tree_nodes[i].next != -1))
+				i = tree_nodes[i].next;
 
-			nodes[index].next = nodes[i].next;
-			nodes[i].next = index;
+			tree_nodes[index].next = tree_nodes[i].next;
+			tree_nodes[i].next = index;
 		}
 	}
 
-	nodes[index].parent = parent;
+	tree_nodes[index].parent = parent;
 	return index;
 }
 
@@ -1103,25 +1120,25 @@ void sexp_tree::free_node(int node, int cascade)
 	int i;
 
 	// clear the pointer to node
-	i = nodes[node].parent;
+	i = tree_nodes[node].parent;
 	Assert(i != -1);
-	if (nodes[i].child == node)
-		nodes[i].child = nodes[node].next;
+	if (tree_nodes[i].child == node)
+		tree_nodes[i].child = tree_nodes[node].next;
 
 	else {
-		i = nodes[i].child;
-		while (nodes[i].next != -1) {
-			if (nodes[i].next == node) {
-				nodes[i].next = nodes[node].next;
+		i = tree_nodes[i].child;
+		while (tree_nodes[i].next != -1) {
+			if (tree_nodes[i].next == node) {
+				tree_nodes[i].next = tree_nodes[node].next;
 				break;
 			}
 
-			i = nodes[i].next;
+			i = tree_nodes[i].next;
 		}
 	}
 
 	if (!cascade)
-		nodes[node].next = -1;
+		tree_nodes[node].next = -1;
 
 	// now free up the node and its children
 	free_node2(node);
@@ -1134,24 +1151,24 @@ void sexp_tree::free_node(int node, int cascade)
 void sexp_tree::free_node2(int node)
 {
 	Assert(node != -1);
-	Assert(nodes[node].type != SEXPT_UNUSED);
-	Assert(total > 0);
+	Assert(tree_nodes[node].type != SEXPT_UNUSED);
+	Assert(total_nodes > 0);
 	*modified = 1;
-	nodes[node].type = SEXPT_UNUSED;
-	total--;
-	if (nodes[node].child != -1)
-		free_node2(nodes[node].child);
+	tree_nodes[node].type = SEXPT_UNUSED;
+	total_nodes--;
+	if (tree_nodes[node].child != -1)
+		free_node2(tree_nodes[node].child);
 
-	if (nodes[node].next != -1)
-		free_node2(nodes[node].next);
+	if (tree_nodes[node].next != -1)
+		free_node2(tree_nodes[node].next);
 }
 
 // initialize the data for a node.  Should be called right after a new node is allocated.
 void sexp_tree::set_node(int node, int type, char *text)
 {
 	Assert(type != SEXPT_UNUSED);
-	Assert(nodes[node].type != SEXPT_UNUSED);
-	nodes[node].type = type;
+	Assert(tree_nodes[node].type != SEXPT_UNUSED);
+	tree_nodes[node].type = type;
 	size_t max_length;
 	if (type & SEXPT_VARIABLE) {
 		max_length = 2 * TOKEN_LENGTH + 2;
@@ -1159,7 +1176,7 @@ void sexp_tree::set_node(int node, int type, char *text)
 		max_length = TOKEN_LENGTH;
 	}
 	Assert(strlen(text) < max_length);
-	strcpy(nodes[node].text, text);
+	strcpy(tree_nodes[node].text, text);
 }
 
 void sexp_tree::post_load()
@@ -1186,55 +1203,75 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 	int node2;
 
 	Assert(node >= 0 && node < MAX_SEXP_TREE_SIZE);
-	node2 = nodes[node].child;
+	node2 = tree_nodes[node].child;
 
 	// check for single argument operator case (prints as one line)
-/*	if (node2 != -1 && nodes[node2].child == -1 && nodes[node2].next == -1) {
-		sprintf(str, "%s %s", nodes[node].text, nodes[node2].text);
-		nodes[node].handle = insert(str, root);
-		nodes[node].flags = OPERAND | EDITABLE;
-		nodes[node2].flags = COMBINED;
+/*	if (node2 != -1 && tree_nodes[node2].child == -1 && tree_nodes[node2].next == -1) {
+		sprintf(str, "%s %s", tree_nodes[node].text, tree_nodes[node2].text);
+		tree_nodes[node].handle = insert(str, root);
+		tree_nodes[node].flags = OPERAND | EDITABLE;
+		tree_nodes[node2].flags = COMBINED;
 		return;
 	}*/
 
 	// bitmap to draw in tree
 	int bitmap;
 
-	if (nodes[node].type & SEXPT_OPERATOR) {
-		nodes[node].flags = OPERAND;
+	if (tree_nodes[node].type & SEXPT_OPERATOR) {
+		tree_nodes[node].flags = OPERAND;
 		bitmap = BITMAP_OPERATOR;
 	} else {
-		if (nodes[node].type & SEXPT_VARIABLE) {
-			nodes[node].flags = NOT_EDITABLE;
+		if (tree_nodes[node].type & SEXPT_VARIABLE) {
+			tree_nodes[node].flags = NOT_EDITABLE;
 			bitmap = BITMAP_VARIABLE;
 		} else {
-			nodes[node].flags = EDITABLE;
+			tree_nodes[node].flags = EDITABLE;
 			bitmap = BITMAP_DATA;
 		}
 	}
 
-	root = nodes[node].handle = insert(nodes[node].text, bitmap, bitmap, root);
+	root = tree_nodes[node].handle = insert(tree_nodes[node].text, bitmap, bitmap, root);
 
 	node = node2;
 	while (node != -1) {
 		Assert(node >= 0 && node < MAX_SEXP_TREE_SIZE);
-		Assert(nodes[node].type & SEXPT_VALID);
-		if (nodes[node].type & SEXPT_OPERATOR)	{
+		Assert(tree_nodes[node].type & SEXPT_VALID);
+		if (tree_nodes[node].type & SEXPT_OPERATOR)	{
 			add_sub_tree(node, root);
 
 		} else {
-			Assert(nodes[node].child == -1);
-			if (nodes[node].type & SEXPT_VARIABLE) {
-				nodes[node].handle = insert(nodes[node].text, BITMAP_VARIABLE, BITMAP_VARIABLE, root);
-				nodes[node].flags = NOT_EDITABLE;
+			Assert(tree_nodes[node].child == -1);
+			if (tree_nodes[node].type & SEXPT_VARIABLE) {
+				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_VARIABLE, BITMAP_VARIABLE, root);
+				tree_nodes[node].flags = NOT_EDITABLE;
 			} else {
-				nodes[node].handle = insert(nodes[node].text, BITMAP_DATA, BITMAP_DATA, root);
-				nodes[node].flags = EDITABLE;
+				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_DATA, BITMAP_DATA, root);
+				tree_nodes[node].flags = EDITABLE;
 			}
 		}
 
-		node = nodes[node].next;
+		node = tree_nodes[node].next;
 	}
+}
+
+// construct tree nodes for an sexp, adding them to the list and returning first node
+int sexp_tree::load_sub_tree(int index, bool valid, char *text)
+{
+	int cur;
+
+	if (index < 0) {
+		cur = allocate_node(-1);
+		set_node(cur, (SEXPT_OPERATOR | (valid ? SEXPT_VALID : 0)), text);  // setup a default tree if none
+		return cur;
+	}
+
+	// assumption: first token is an operator.  I require this because it would cause problems
+	// with child/parent relations otherwise, and it should be this way anyway, since the
+	// return type of the whole sexp is boolean, and only operators can satisfy this.
+	Assert(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR);
+	cur = find_free_node();
+	load_branch(index, -1);
+	return cur;
 }
 
 void sexp_tree::setup_selected(HTREEITEM h)
@@ -1247,7 +1284,7 @@ void sexp_tree::setup_selected(HTREEITEM h)
 		item_handle = GetSelectedItem();
 
 	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-		if (nodes[i].handle == item_handle) {
+		if (tree_nodes[i].handle == item_handle) {
 			item_index = i;
 			break;
 		}
@@ -1383,7 +1420,7 @@ void sexp_tree::right_clicked(int mode)
 		// get item_index
 		item_index = -1;
 		for (i=0; i<MAX_SEXP_TREE_SIZE; i++) {
-			if (nodes[i].handle == h) {
+			if (tree_nodes[i].handle == h) {
 				item_index = i;
 				break;
 			}
@@ -1411,18 +1448,18 @@ void sexp_tree::right_clicked(int mode)
 				// get type of sexp_tree item clicked on
 				int type = get_type(h);
 
-				int parent = nodes[item_index].parent;
+				int parent = tree_nodes[item_index].parent;
 				if (parent >= 0) {
-					op = get_operator_index(nodes[parent].text);
+					op = get_operator_index(tree_nodes[parent].text);
 					Assert(op >= 0);
-					int first_arg = nodes[parent].child;
+					int first_arg = tree_nodes[parent].child;
 
 					// get arg count of item to replace
 					Replace_count = 0;
 					int temp = first_arg;
 					while (temp != item_index) {
 						Replace_count++;
-						temp = nodes[temp].next;
+						temp = tree_nodes[temp].next;
 
 						// DB - added 3/4/99
 						if(temp == -1){
@@ -1440,7 +1477,7 @@ void sexp_tree::right_clicked(int mode)
 						// Goober5000 - given the above, we have to figure out what type this stands for
 						if (op_type == OPF_AMBIGUOUS)
 						{
-							type = nodes[first_arg].type;
+							type = tree_nodes[first_arg].type;
 						}
 						
 						if ( (type & SEXPT_STRING) || (type & SEXPT_NUMBER) ) {
@@ -1571,7 +1608,7 @@ void sexp_tree::right_clicked(int mode)
 		// find local index (i) of current item (from its handle)
 		SelectItem(item_handle = h);
 		for (i=0; i<MAX_SEXP_TREE_SIZE; i++) {
-			if (nodes[i].handle == h) {
+			if (tree_nodes[i].handle == h) {
 				break;
 			}
 		}
@@ -1596,32 +1633,32 @@ void sexp_tree::right_clicked(int mode)
 		}
 
 		Assert(item_index != -1);  // handle not found, which should be impossible.
-		if (!(nodes[item_index].flags & EDITABLE)) {
+		if (!(tree_nodes[item_index].flags & EDITABLE)) {
 			menu.EnableMenuItem(ID_EDIT_TEXT, MF_GRAYED);
 		}
 
-		if (nodes[item_index].parent == -1) {  // root node
+		if (tree_nodes[item_index].parent == -1) {  // root node
 			menu.EnableMenuItem(ID_DELETE, MF_GRAYED);  // can't delete the root item.
 		}
 
-/*		if ((nodes[item_index].flags & OPERAND) && (nodes[item_index].flags & EDITABLE))  // expandable?
+/*		if ((tree_nodes[item_index].flags & OPERAND) && (tree_nodes[item_index].flags & EDITABLE))  // expandable?
 			menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);
 
-		z = nodes[item_index].child;
-		if (z != -1 && nodes[z].next == -1 && nodes[z].child == -1)
+		z = tree_nodes[item_index].child;
+		if (z != -1 && tree_nodes[z].next == -1 && tree_nodes[z].child == -1)
 			menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);
 
-		z = nodes[nodes[item_index].parent].child;
-		if (z != -1 && nodes[z].next == -1 && nodes[z].child == -1)
+		z = tree_nodes[tree_nodes[item_index].parent].child;
+		if (z != -1 && tree_nodes[z].next == -1 && tree_nodes[z].child == -1)
 			menu.EnableMenuItem(ID_SPLIT_LINE, MF_ENABLED);*/
 
 		// change enabled status of 'add' type menu options.
 		add_type = 0;
-		if (nodes[item_index].flags & OPERAND)	{
+		if (tree_nodes[item_index].flags & OPERAND)	{
 			add_type = OPR_STRING;
-			int child = nodes[item_index].child;
+			int child = tree_nodes[item_index].child;
 			Add_count = count_args(child);
-			op = get_operator_index(nodes[item_index].text);
+			op = get_operator_index(tree_nodes[item_index].text);
 			Assert(op >= 0);
 
 			// get listing of valid argument values and add to menus
@@ -1695,13 +1732,13 @@ void sexp_tree::right_clicked(int mode)
 
 		// change enabled status of 'replace' type menu options.
 		replace_type = 0;
-		int parent = nodes[item_index].parent;
+		int parent = tree_nodes[item_index].parent;
 		if (parent >= 0) {
 			replace_type = OPR_STRING;
-			op = get_operator_index(nodes[parent].text);
+			op = get_operator_index(tree_nodes[parent].text);
 			Assert(op >= 0);
-			int first_arg = nodes[parent].child;
-			count = count_args(nodes[parent].child);
+			int first_arg = tree_nodes[parent].child;
+			count = count_args(tree_nodes[parent].child);
 
 			// already at minimum number of arguments?
 			if (count <= Operators[op].min) {
@@ -1713,7 +1750,7 @@ void sexp_tree::right_clicked(int mode)
 			int temp = first_arg;
 			while (temp != item_index) {
 				Replace_count++;
-				temp = nodes[temp].next;
+				temp = tree_nodes[temp].next;
 
 				// DB - added 3/4/99
 				if(temp == -1){
@@ -1827,16 +1864,16 @@ void sexp_tree::right_clicked(int mode)
 
 
 		// change enabled status of 'insert' type menu options.
-		z = nodes[item_index].parent;
+		z = tree_nodes[item_index].parent;
 		Assert(z >= -1);
 		if (z != -1) {
-			op = get_operator_index(nodes[z].text);
+			op = get_operator_index(tree_nodes[z].text);
 			Assert(op != -1);
-			j = nodes[z].child;
+			j = tree_nodes[z].child;
 			count = 0;
 			while (j != item_index) {
 				count++;
-				j = nodes[j].next;
+				j = tree_nodes[j].next;
 			}
 
 			type = query_operator_argument_type(op, count); // check argument type at this position
@@ -1957,7 +1994,7 @@ int sexp_tree::count_args(int node)
 
 	while (node != -1) {
 		count++;
-		node = nodes[node].next;
+		node = tree_nodes[node].next;
 	}
 
 	return count;
@@ -1971,10 +2008,10 @@ int sexp_tree::identify_arg_type(int node)
 	int type = -1;
 
 	while (node != -1) {
-		Assert(nodes[node].type & SEXPT_VALID);
-		switch (SEXPT_TYPE(nodes[node].type)) {
+		Assert(tree_nodes[node].type & SEXPT_VALID);
+		switch (SEXPT_TYPE(tree_nodes[node].type)) {
 			case SEXPT_OPERATOR:
-				type = get_operator_const(nodes[node].text);
+				type = get_operator_const(tree_nodes[node].text);
 				Assert(type);
 				return query_operator_return_type(type);
 
@@ -1986,7 +2023,7 @@ int sexp_tree::identify_arg_type(int node)
 				break;  // don't return, because maybe we can narrow selection down more.
 		}
 
-		node = nodes[node].next;
+		node = tree_nodes[node].next;
 	}
 
 	return type;
@@ -1998,7 +2035,7 @@ int sexp_tree::edit_label(HTREEITEM h)
 	int i;
 
 	for (i=0; i<MAX_SEXP_TREE_SIZE; i++) {
-		if (nodes[i].handle == h) {
+		if (tree_nodes[i].handle == h) {
 			break;
 		}
 	}
@@ -2013,17 +2050,17 @@ int sexp_tree::edit_label(HTREEITEM h)
 	}
 
 	// Operators are editable
-	if (nodes[i].type & SEXPT_OPERATOR) {
+	if (tree_nodes[i].type & SEXPT_OPERATOR) {
 		return 1;
 	}
 
 	// Variables must be edited through dialog box
-	if (nodes[i].type & SEXPT_VARIABLE) {
+	if (tree_nodes[i].type & SEXPT_VARIABLE) {
 		return 0;
 	}
 
 	// Don't edit if not flaged as editable
-	if (!(nodes[i].flags & EDITABLE)) {
+	if (!(tree_nodes[i].flags & EDITABLE)) {
 		return 0;
 	}
 
@@ -2031,13 +2068,13 @@ int sexp_tree::edit_label(HTREEITEM h)
 	return 1;
 
 /*
-	if (nodes[i].flags & OPERAND) {
-		data = nodes[i].child;
+	if (tree_nodes[i].flags & OPERAND) {
+		data = tree_nodes[i].child;
 
-		SetItemText(h, nodes[i].text);
-		nodes[i].flags = OPERAND;
-		item_handle = nodes[data].handle = insert(nodes[data].text, nodes[data].type, nodes[data].flags, h);
-		nodes[data].flags = EDITABLE;
+		SetItemText(h, tree_nodes[i].text);
+		tree_nodes[i].flags = OPERAND;
+		item_handle = tree_nodes[data].handle = insert(tree_nodes[data].text, tree_nodes[data].type, tree_nodes[data].flags, h);
+		tree_nodes[data].flags = EDITABLE;
 		Expand(h, TVE_EXPAND);
 		SelectItem(item_handle);
 		return 2;
@@ -2054,7 +2091,7 @@ int sexp_tree::end_label_edit(HTREEITEM h, char *str)
 		return 0;
 
 	for (node=0; node<MAX_SEXP_TREE_SIZE; node++)
-		if (nodes[node].handle == h)
+		if (tree_nodes[node].handle == h)
 			break;
 
 	if (node == MAX_SEXP_TREE_SIZE) {
@@ -2069,7 +2106,7 @@ int sexp_tree::end_label_edit(HTREEITEM h, char *str)
 	}
 
 	Assert(node < MAX_SEXP_TREE_SIZE);
-	if (nodes[node].type & SEXPT_OPERATOR) {
+	if (tree_nodes[node].type & SEXPT_OPERATOR) {
 		str = match_closest_operator(str, node);
 		if (!str) return 0;	// Goober5000 - avoids crashing
 
@@ -2084,13 +2121,13 @@ int sexp_tree::end_label_edit(HTREEITEM h, char *str)
 	if (len >= TOKEN_LENGTH)
 		len = TOKEN_LENGTH - 1;
 
-	strncpy(nodes[node].text, str, len);
-	nodes[node].text[len] = 0;
+	strncpy(tree_nodes[node].text, str, len);
+	tree_nodes[node].text[len] = 0;
 
-/*	node = nodes[node].parent;
+/*	node = tree_nodes[node].parent;
 	if (node != -1) {
-		child = nodes[node].child;
-		if (child != -1 && nodes[child].next == -1 && nodes[child].child == -1) {
+		child = tree_nodes[node].child;
+		if (child != -1 && tree_nodes[child].next == -1 && tree_nodes[child].child == -1) {
 			merge_operator(child);
 			return 0;
 		}
@@ -2108,17 +2145,17 @@ char *sexp_tree::match_closest_operator(char *str, int node)
 	int z, i, op, arg_num, opf, opr;
 	char *sub_best = NULL, *best = NULL;
 
-	z = nodes[node].parent;
+	z = tree_nodes[node].parent;
 	if (z < 0) {
 		return str;
 	}
 
-	op = get_operator_index(nodes[z].text);
+	op = get_operator_index(tree_nodes[z].text);
 	if (op < 0)
 		return str;
 
 	// determine which argument we are of the parent
-	arg_num = find_argument_number(z, nodes[z].child);
+	arg_num = find_argument_number(z, tree_nodes[z].child);
 
 	opf = query_operator_argument_type(op, arg_num); // check argument type at this position
 	opr = query_operator_return_type(op);
@@ -2141,18 +2178,18 @@ char *sexp_tree::match_closest_operator(char *str, int node)
 /*	char buf[256];
 	int child;
 
-	if (nodes[node].flags == EDITABLE)  // data
-		node = nodes[node].parent;
+	if (tree_nodes[node].flags == EDITABLE)  // data
+		node = tree_nodes[node].parent;
 
 	if (node != -1) {
-		child = nodes[node].child;
-		if (child != -1 && nodes[child].next == -1 && nodes[child].child == -1) {
-			sprintf(buf, "%s %s", nodes[node].text, nodes[child].text);
-			SetItemText(nodes[node].handle, buf);
-			nodes[node].flags = OPERAND | EDITABLE;
-			nodes[child].flags = COMBINED;
-			DeleteItem(nodes[child].handle);
-			nodes[child].handle = NULL;
+		child = tree_nodes[node].child;
+		if (child != -1 && tree_nodes[child].next == -1 && tree_nodes[child].child == -1) {
+			sprintf(buf, "%s %s", tree_nodes[node].text, tree_nodes[child].text);
+			SetItemText(tree_nodes[node].handle, buf);
+			tree_nodes[node].flags = OPERAND | EDITABLE;
+			tree_nodes[child].flags = COMBINED;
+			DeleteItem(tree_nodes[child].handle);
+			tree_nodes[child].handle = NULL;
 			return;
 		}
 	}*/
@@ -2165,8 +2202,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 	sexp_list_item *list, *ptr;
 	HTREEITEM h;
 
-	if ((item_index >= 0) && (item_index < total))
-		item_handle = nodes[item_index].handle;
+	if ((item_index >= 0) && (item_index < total_nodes))
+		item_handle = tree_nodes[item_index].handle;
 
 	id = LOWORD(wParam);
 
@@ -2321,7 +2358,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	if ((id >= ID_ADD_MENU) && (id < ID_ADD_MENU + 511)) {
 		Assert(item_index >= 0);
-		op = get_operator_index(nodes[item_index].text);
+		op = get_operator_index(tree_nodes[item_index].text);
 		Assert(op >= 0);
 
 		type = query_operator_argument_type(op, Add_count);
@@ -2345,12 +2382,12 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 	if ((id >= ID_REPLACE_MENU) && (id < ID_REPLACE_MENU + 511)) {
 		Assert(item_index >= 0);
-		Assert(nodes[item_index].parent >= 0);
-		op = get_operator_index(nodes[nodes[item_index].parent].text);
+		Assert(tree_nodes[item_index].parent >= 0);
+		op = get_operator_index(tree_nodes[tree_nodes[item_index].parent].text);
 		Assert(op >= 0);
 
 		type = query_operator_argument_type(op, Replace_count); // check argument type at this position
-		list = get_listing_opf(type, nodes[item_index].parent, Replace_count);
+		list = get_listing_opf(type, tree_nodes[item_index].parent, Replace_count);
 		Assert(list);
 
 		id -= ID_REPLACE_MENU;
@@ -2382,16 +2419,16 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		if (id == (Operators[op].value | OP_INSERT_FLAG)) {
 			int flags;
 
-			z = nodes[item_index].parent;
-			flags = nodes[item_index].flags;
+			z = tree_nodes[item_index].parent;
+			flags = tree_nodes[item_index].flags;
 			node = allocate_node(z, item_index);
 			set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text);
-			nodes[node].flags = flags;
+			tree_nodes[node].flags = flags;
 			if (z >= 0)
-				h = nodes[z].handle;
+				h = tree_nodes[z].handle;
 
 			else {
-				h = GetParentItem(nodes[item_index].handle);
+				h = GetParentItem(tree_nodes[item_index].handle);
 				if (m_mode == MODE_GOALS) {
 					Assert(Goal_editor_dlg);
 					Goal_editor_dlg->insert_handler(item_index, node);
@@ -2412,7 +2449,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				}
 			}
 
-			item_handle = nodes[node].handle = insert(Operators[op].text, BITMAP_OPERATOR, BITMAP_OPERATOR, h, nodes[item_index].handle);
+			item_handle = tree_nodes[node].handle = insert(Operators[op].text, BITMAP_OPERATOR, BITMAP_OPERATOR, h, tree_nodes[item_index].handle);
 			move_branch(item_index, node);
 
 			item_index = node;
@@ -2448,10 +2485,10 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				replace_operator(CTEXT(Sexp_clipboard));
 				if (Sexp_nodes[Sexp_clipboard].rest != -1) {
 					load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
-					i = nodes[item_index].child;
+					i = tree_nodes[item_index].child;
 					while (i != -1) {
-						add_sub_tree(i, nodes[item_index].handle);
-						i = nodes[i].next;
+						add_sub_tree(i, tree_nodes[item_index].handle);
+						i = tree_nodes[i].next;
 					}
 				}
 
@@ -2480,10 +2517,10 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				add_operator(CTEXT(Sexp_clipboard));
 				if (Sexp_nodes[Sexp_clipboard].rest != -1) {
 					load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
-					i = nodes[item_index].child;
+					i = tree_nodes[item_index].child;
 					while (i != -1) {
-						add_sub_tree(i, nodes[item_index].handle);
-						i = nodes[i].next;
+						add_sub_tree(i, tree_nodes[item_index].handle);
+						i = tree_nodes[i].next;
 					}
 				}
 
@@ -2503,7 +2540,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			return 1;
 
 /*		case ID_SPLIT_LINE:
-			if ((nodes[item_index].flags & OPERAND) && (nodes[item_index].flags & EDITABLE))  // expandable?
+			if ((tree_nodes[item_index].flags & OPERAND) && (tree_nodes[item_index].flags & EDITABLE))  // expandable?
 				expand_operator(item_index);
 			else
 				merge_operator(item_index);
@@ -2526,7 +2563,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			int node;
 			
 			node = add_data("string", (SEXPT_STRING | SEXPT_VALID));
-			EditLabel(nodes[node].handle);
+			EditLabel(tree_nodes[node].handle);
 			return 1;
 		}
 
@@ -2534,7 +2571,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			int node;
 
 			node = add_data("number", (SEXPT_NUMBER | SEXPT_VALID));
-			EditLabel(nodes[node].handle);
+			EditLabel(tree_nodes[node].handle);
 			return 1;
 		}
 
@@ -2576,21 +2613,21 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			Assert(item_index >= 0);
 			h = GetParentItem(item_handle);
-			parent = nodes[item_index].parent;
+			parent = tree_nodes[item_index].parent;
 			if ((parent == -1) && (m_mode == MODE_EVENTS))
 				Int3();  // no longer used, temporary to check if called still.
 
-			Assert(parent != -1 && nodes[parent].handle == h);
+			Assert(parent != -1 && tree_nodes[parent].handle == h);
 			free_node(item_index);
 			DeleteItem(item_handle);
 
-			node = nodes[parent].child;
-/*			if (node != -1 && nodes[node].next == -1 && nodes[node].child == -1) {
-				sprintf(buf, "%s %s", nodes[parent].text, nodes[node].text);
+			node = tree_nodes[parent].child;
+/*			if (node != -1 && tree_nodes[node].next == -1 && tree_nodes[node].child == -1) {
+				sprintf(buf, "%s %s", tree_nodes[parent].text, tree_nodes[node].text);
 				SetItem(h, TVIF_TEXT, buf, 0, 0, 0, 0, 0);
-				nodes[parent].flags = OPERAND | EDITABLE;
-				nodes[node].flags = COMBINED;
-				DeleteItem(nodes[node].handle);
+				tree_nodes[parent].flags = OPERAND | EDITABLE;
+				tree_nodes[node].flags = COMBINED;
+				DeleteItem(tree_nodes[node].handle);
 			}*/
 
 			*modified = 1;
@@ -2608,10 +2645,10 @@ void sexp_tree::add_or_replace_operator(int op, int replace_flag)
 
 	op_index = item_index;
 	if (replace_flag) {
-		if (nodes[item_index].flags & OPERAND) {  // are both operators?
-			op2 = get_operator_index(nodes[item_index].text);
+		if (tree_nodes[item_index].flags & OPERAND) {  // are both operators?
+			op2 = get_operator_index(tree_nodes[item_index].text);
 			Assert(op2 >= 0);
-			i = count_args(nodes[item_index].child);
+			i = count_args(tree_nodes[item_index].child);
 			if ((i >= Operators[op].min) && (i <= Operators[op].max)) {  // are old num args valid?
 				while (i--)
 					if (query_operator_argument_type(op2, i) != query_operator_argument_type(op, i))  // does each arg match expected type?
@@ -2619,8 +2656,8 @@ void sexp_tree::add_or_replace_operator(int op, int replace_flag)
 
 				if (i < 0) {  // everything is ok, so we can keep old arguments with new operator
 					set_node(item_index, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text);
-					SetItemText(nodes[item_index].handle, Operators[op].text);
-					nodes[item_index].flags = OPERAND;
+					SetItemText(tree_nodes[item_index].handle, Operators[op].text);
+					tree_nodes[item_index].flags = OPERAND;
 					return;
 				}
 			}
@@ -3282,21 +3319,21 @@ void sexp_tree::expand_operator(int node)
 	int data;
 	HTREEITEM h;
 
-	if (nodes[node].flags & COMBINED) {
-		node = nodes[node].parent;
-		Assert((nodes[node].flags & OPERAND) && (nodes[node].flags & EDITABLE));
+	if (tree_nodes[node].flags & COMBINED) {
+		node = tree_nodes[node].parent;
+		Assert((tree_nodes[node].flags & OPERAND) && (tree_nodes[node].flags & EDITABLE));
 	}
 
-	if ((nodes[node].flags & OPERAND) && (nodes[node].flags & EDITABLE)) {  // expandable?
-		Assert(nodes[node].type & SEXPT_OPERATOR);
-		h = nodes[node].handle;
-		data = nodes[node].child;
-		Assert(data != -1 && nodes[data].next == -1 && nodes[data].child == -1);
+	if ((tree_nodes[node].flags & OPERAND) && (tree_nodes[node].flags & EDITABLE)) {  // expandable?
+		Assert(tree_nodes[node].type & SEXPT_OPERATOR);
+		h = tree_nodes[node].handle;
+		data = tree_nodes[node].child;
+		Assert(data != -1 && tree_nodes[data].next == -1 && tree_nodes[data].child == -1);
 
-		SetItem(h, TVIF_TEXT, nodes[node].text, 0, 0, 0, 0, 0);
-		nodes[node].flags = OPERAND;
-		nodes[data].handle = insert(nodes[data].text, BITMAP_DATA, BITMAP_DATA, h);
-		nodes[data].flags = EDITABLE;
+		SetItem(h, TVIF_TEXT, tree_nodes[node].text, 0, 0, 0, 0, 0);
+		tree_nodes[node].flags = OPERAND;
+		tree_nodes[data].handle = insert(tree_nodes[data].text, BITMAP_DATA, BITMAP_DATA, h);
+		tree_nodes[data].flags = EDITABLE;
 		Expand(h, TVE_EXPAND);
 	}
 }
@@ -3317,18 +3354,18 @@ void sexp_tree::merge_operator(int node)
 /*	char buf[256];
 	int child;
 
-	if (nodes[node].flags == EDITABLE)  // data
-		node = nodes[node].parent;
+	if (tree_nodes[node].flags == EDITABLE)  // data
+		node = tree_nodes[node].parent;
 
 	if (node != -1) {
-		child = nodes[node].child;
-		if (child != -1 && nodes[child].next == -1 && nodes[child].child == -1) {
-			sprintf(buf, "%s %s", nodes[node].text, nodes[child].text);
-			SetItemText(nodes[node].handle, buf);
-			nodes[node].flags = OPERAND | EDITABLE;
-			nodes[child].flags = COMBINED;
-			DeleteItem(nodes[child].handle);
-			nodes[child].handle = NULL;
+		child = tree_nodes[node].child;
+		if (child != -1 && tree_nodes[child].next == -1 && tree_nodes[child].child == -1) {
+			sprintf(buf, "%s %s", tree_nodes[node].text, tree_nodes[child].text);
+			SetItemText(tree_nodes[node].handle, buf);
+			tree_nodes[node].flags = OPERAND | EDITABLE;
+			tree_nodes[child].flags = COMBINED;
+			DeleteItem(tree_nodes[child].handle);
+			tree_nodes[child].handle = NULL;
 			return;
 		}
 	}*/
@@ -3342,8 +3379,8 @@ int sexp_tree::add_data(char *data, int type)
 	expand_operator(item_index);
 	node = allocate_node(item_index);
 	set_node(node, type, data);
-	nodes[node].handle = insert(data, BITMAP_DATA, BITMAP_DATA, nodes[item_index].handle);
-	nodes[node].flags = EDITABLE;
+	tree_nodes[node].handle = insert(data, BITMAP_DATA, BITMAP_DATA, tree_nodes[item_index].handle);
+	tree_nodes[node].flags = EDITABLE;
 	*modified = 1;
 	return node;
 }
@@ -3358,8 +3395,8 @@ int sexp_tree::add_variable_data(char *data, int type)
 	expand_operator(item_index);
 	node = allocate_node(item_index);
 	set_node(node, type, data);
-	nodes[node].handle = insert(data, BITMAP_VARIABLE, BITMAP_VARIABLE, nodes[item_index].handle);
-	nodes[node].flags = NOT_EDITABLE;
+	tree_nodes[node].handle = insert(data, BITMAP_VARIABLE, BITMAP_VARIABLE, tree_nodes[item_index].handle);
+	tree_nodes[node].flags = NOT_EDITABLE;
 	*modified = 1;
 	return node;
 }
@@ -3373,16 +3410,16 @@ void sexp_tree::add_operator(char *op, HTREEITEM h)
 	if (item_index == -1) {
 		node = allocate_node(-1);
 		set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), op);
-		item_handle = nodes[node].handle = insert(op, BITMAP_OPERATOR, BITMAP_OPERATOR, h);
+		item_handle = tree_nodes[node].handle = insert(op, BITMAP_OPERATOR, BITMAP_OPERATOR, h);
 
 	} else {
 		expand_operator(item_index);
 		node = allocate_node(item_index);
 		set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), op);
-		item_handle = nodes[node].handle = insert(op, BITMAP_OPERATOR, BITMAP_OPERATOR, nodes[item_index].handle);
+		item_handle = tree_nodes[node].handle = insert(op, BITMAP_OPERATOR, BITMAP_OPERATOR, tree_nodes[item_index].handle);
 	}
 
-	nodes[node].flags = OPERAND;
+	tree_nodes[node].flags = OPERAND;
 	item_index = node;
 	*modified = 1;
 }
@@ -3401,9 +3438,9 @@ void sexp_tree::add_operator(char *op, HTREEITEM h)
 	set_node(node1, SEXPT_OPERATOR, op);
 	set_node(node2, type, data);
 	sprintf(str, "%s %s", op, data);
-	nodes[node1].handle = insert(str, nodes[item_index].handle);
-	nodes[node1].flags = OPERAND | EDITABLE;
-	nodes[node2].flags = COMBINED;
+	tree_nodes[node1].handle = insert(str, tree_nodes[item_index].handle);
+	tree_nodes[node1].flags = OPERAND | EDITABLE;
+	tree_nodes[node2].flags = COMBINED;
 	*modified = 1;
 }*/
 
@@ -3419,43 +3456,43 @@ int sexp_tree::verify_tree(int node, int *bypass)
 {
 	int i, type, count, op, type2, op2, argnum = 0;
 
-	if (!total)
+	if (!total_nodes)
 		return 0;  // nothing to check
 
 	Assert(node >= 0 && node < MAX_SEXP_TREE_SIZE);
-	Assert(nodes[node].type == SEXPT_OPERATOR);
+	Assert(tree_nodes[node].type == SEXPT_OPERATOR);
 
-	op = get_operator_index(nodes[node].text);
+	op = get_operator_index(tree_nodes[node].text);
 	if (op == -1)
 		return node_error(node, "Unknown operator", bypass);
 
-	count = count_args(nodes[node].child);
+	count = count_args(tree_nodes[node].child);
 	if (count < Operators[op].min)
 		return node_error(node, "Too few arguments for operator", bypass);
 	if (count > Operators[op].max)
 		return node_error(node, "Too many arguments for operator", bypass);
 
-	node = nodes[node].child;  // get first argument
+	node = tree_nodes[node].child;  // get first argument
 	while (node != -1) {
 		type = query_operator_argument_type(op, argnum);
-		Assert(nodes[node].type & SEXPT_VALID);
-		if (nodes[node].type == SEXPT_OPERATOR) {
+		Assert(tree_nodes[node].type & SEXPT_VALID);
+		if (tree_nodes[node].type == SEXPT_OPERATOR) {
 			if (verify_tree(node) == -1)
 				return -1;
 
-			op2 = get_operator_index(nodes[node].text);  // no error checking, because it was done in the call above.
+			op2 = get_operator_index(tree_nodes[node].text);  // no error checking, because it was done in the call above.
 			type2 = query_operator_return_type(op2);
 
-		} else if (nodes[node].type == SEXPT_NUMBER) {
+		} else if (tree_nodes[node].type == SEXPT_NUMBER) {
 			char *ptr;
 
 			type2 = OPR_NUMBER;
-			ptr = nodes[node].text;
+			ptr = tree_nodes[node].text;
 			while (*ptr)
 				if (!isdigit(*ptr++))
 					return node_error(node, "Number is invalid", bypass);
 
-		} else if (nodes[node].type == SEXPT_STRING) {
+		} else if (tree_nodes[node].type == SEXPT_STRING) {
 			type2 = SEXP_ATOM_STRING;
 
 		} else
@@ -3470,7 +3507,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 
 			case OPF_SHIP:
 				if (type2 == SEXP_ATOM_STRING)
-					if (ship_name_lookup(nodes[node].text, 1) == -1)
+					if (ship_name_lookup(tree_nodes[node].text, 1) == -1)
 						type2 = 0;
 
 				if (type2 != SEXP_ATOM_STRING)
@@ -3480,7 +3517,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 
 			case OPF_WING:
 				if (type2 == SEXP_ATOM_STRING)
-					if (wing_name_lookup(nodes[node].text) == -1)
+					if (wing_name_lookup(tree_nodes[node].text) == -1)
 						type2 = 0;
 
 				if (type2 != SEXP_ATOM_STRING)
@@ -3490,8 +3527,8 @@ int sexp_tree::verify_tree(int node, int *bypass)
 
 			case OPF_SHIP_WING:
 				if (type2 == SEXP_ATOM_STRING)
-					if (ship_name_lookup(nodes[node].text, 1) == -1)
-						if (wing_name_lookup(nodes[node].text) == -1)
+					if (ship_name_lookup(tree_nodes[node].text, 1) == -1)
+						if (wing_name_lookup(tree_nodes[node].text) == -1)
 							type2 = 0;
 
 				if (type2 != SEXP_ATOM_STRING)
@@ -3512,7 +3549,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 				break;
 
 			case OPF_POINT:
-				if (type2 != SEXP_ATOM_STRING || verify_vector(nodes[node].text))
+				if (type2 != SEXP_ATOM_STRING || verify_vector(tree_nodes[node].text))
 					return node_error(node, "3d coordinate expected here", bypass);
 
 				break;
@@ -3521,7 +3558,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 			case OPF_AWACS_SUBSYSTEM:
 			case OPF_ROTATING_SUBSYSTEM:
 				if (type2 == SEXP_ATOM_STRING)
-					if (ai_get_subsystem_type(nodes[node].text) == SUBSYSTEM_UNKNOWN)
+					if (ai_get_subsystem_type(tree_nodes[node].text) == SUBSYSTEM_UNKNOWN)
 						type2 = 0;
 
 				if (type2 != SEXP_ATOM_STRING)
@@ -3532,7 +3569,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 			case OPF_IFF:
 				if (type2 == SEXP_ATOM_STRING) {
 					for (i=0; i<Num_team_names; i++)
-						if (!stricmp(Team_names[i], nodes[node].text))
+						if (!stricmp(Team_names[i], tree_nodes[node].text))
 							break;
 				}
 
@@ -3569,7 +3606,7 @@ int sexp_tree::verify_tree(int node, int *bypass)
 				break;
 		}
 
-		node = nodes[node].next;
+		node = tree_nodes[node].next;
 		argnum++;
 	}
 
@@ -3586,9 +3623,9 @@ int sexp_tree::node_error(int node, char *msg, int *bypass)
 		*bypass = 1;
 
 	item_index = node;
-	item_handle = nodes[node].handle;
-	if (nodes[node].flags & COMBINED)
-		item_handle = nodes[nodes[node].parent].handle;
+	item_handle = tree_nodes[node].handle;
+	if (tree_nodes[node].flags & COMBINED)
+		item_handle = tree_nodes[tree_nodes[node].parent].handle;
 
 	ensure_visible(node);
 	SelectItem(item_handle);
@@ -3602,18 +3639,18 @@ int sexp_tree::node_error(int node, char *msg, int *bypass)
 void sexp_tree::hilite_item(int node)
 {
 	ensure_visible(node);
-	SelectItem(nodes[node].handle);
+	SelectItem(tree_nodes[node].handle);
 }
 
 // because the MFC function EnsureVisible() doesn't do what it says it does, I wrote this.
 void sexp_tree::ensure_visible(int node)
 {
 	Assert(node != -1);
-	if (nodes[node].parent != -1)
-		ensure_visible(nodes[node].parent);  // expand all parents first
+	if (tree_nodes[node].parent != -1)
+		ensure_visible(tree_nodes[node].parent);  // expand all parents first
 
-	if (nodes[node].child != -1)  // expandable?
-		Expand(nodes[node].handle, TVE_EXPAND);  // expand this item
+	if (tree_nodes[node].child != -1)  // expandable?
+		Expand(tree_nodes[node].handle, TVE_EXPAND);  // expand this item
 }
 
 void sexp_tree::link_modified(int *ptr)
@@ -3653,9 +3690,9 @@ int sexp_tree::get_modify_variable_type(int parent)
 	Assert(parent != -1);
 	int sexp_var_index = -1;
 
-	if ( !stricmp(nodes[parent].text, "modify-variable") ) {
-		Assert(nodes[parent].child != -1);
-		sexp_var_index = get_tree_name_to_sexp_variable_index(nodes[nodes[parent].child].text);
+	if ( !stricmp(tree_nodes[parent].text, "modify-variable") ) {
+		Assert(tree_nodes[parent].child != -1);
+		sexp_var_index = get_tree_name_to_sexp_variable_index(tree_nodes[tree_nodes[parent].child].text);
 		Assert(sexp_var_index != -1);
 	} else {
 		Int3();  // should not be called otherwise
@@ -3682,7 +3719,7 @@ void sexp_tree::verify_and_fix_arguments(int node)
 		return;
 
 	flag++;
-	op = get_operator_index(nodes[node].text);
+	op = get_operator_index(tree_nodes[node].text);
 	if (op < 0)
 		return;
 
@@ -3690,7 +3727,7 @@ void sexp_tree::verify_and_fix_arguments(int node)
 	item_index = node;
 
 	arg_num = 0;
-	item_index = nodes[node].child;
+	item_index = tree_nodes[node].child;
 	while (item_index >= 0) {
 		// get listing of valid argument values for node item_index
 		type = query_operator_argument_type(op, arg_num);
@@ -3708,24 +3745,24 @@ void sexp_tree::verify_and_fix_arguments(int node)
 			}
 
 			if (list) {
-				// get a pointer to nodes[item_index].text for normal value
+				// get a pointer to tree_nodes[item_index].text for normal value
 				// or default variable value if variable
 				char *text_ptr;
 				char default_variable_text[TOKEN_LENGTH];
-				if (nodes[item_index].type & SEXPT_VARIABLE) {
+				if (tree_nodes[item_index].type & SEXPT_VARIABLE) {
 					// special case for modify-variable
 					if ( !stricmp(Operators[op].text, "modify-variable") ||
 						 !stricmp(Operators[op].text, "add-background-bitmap") ||
 						 !stricmp(Operators[op].text, "add-sun-bitmap")) {
 						// make text_ptr to start - before '('
-						get_variable_name_from_sexp_tree_node_text(nodes[item_index].text, default_variable_text);
+						get_variable_name_from_sexp_tree_node_text(tree_nodes[item_index].text, default_variable_text);
 						text_ptr = default_variable_text;
 					} else {
-						get_variable_default_text_from_variable_text(nodes[item_index].text, default_variable_text);
+						get_variable_default_text_from_variable_text(tree_nodes[item_index].text, default_variable_text);
 						text_ptr = default_variable_text;
 					}
 				} else {
-					text_ptr = nodes[item_index].text;
+					text_ptr = tree_nodes[item_index].text;
 				}
 
 				ptr = list;
@@ -3755,11 +3792,11 @@ void sexp_tree::verify_and_fix_arguments(int node)
 			} else {
 				bool invalid = false;
 				if (type == OPF_AMBIGUOUS) {
-					if (SEXPT_TYPE(nodes[item_index].type) == SEXPT_OPERATOR) {
+					if (SEXPT_TYPE(tree_nodes[item_index].type) == SEXPT_OPERATOR) {
 						invalid = true;
 					}
 				} else {
-					if (SEXPT_TYPE(nodes[item_index].type) != SEXPT_OPERATOR) {
+					if (SEXPT_TYPE(tree_nodes[item_index].type) != SEXPT_OPERATOR) {
 						invalid = true;
 					}
 				}
@@ -3769,11 +3806,11 @@ void sexp_tree::verify_and_fix_arguments(int node)
 				}
 			}
 
-			if (nodes[item_index].type & SEXPT_OPERATOR)
+			if (tree_nodes[item_index].type & SEXPT_OPERATOR)
 				verify_and_fix_arguments(item_index);
 		}
 
-		item_index = nodes[item_index].next;
+		item_index = tree_nodes[item_index].next;
 		arg_num++;
 	}
 
@@ -3786,22 +3823,22 @@ void sexp_tree::replace_data(char *data, int type)
 	int node;
 	HTREEITEM h;
 
-	node = nodes[item_index].child;
+	node = tree_nodes[item_index].child;
 	if (node != -1)
 		free_node2(node);
 
-	nodes[item_index].child = -1;
-	h = nodes[item_index].handle;
+	tree_nodes[item_index].child = -1;
+	h = tree_nodes[item_index].handle;
 	while (ItemHasChildren(h))
 		DeleteItem(GetChildItem(h));
 
 	set_node(item_index, type, data);
 	SetItemText(h, data);
 	SetItemImage(h, BITMAP_DATA, BITMAP_DATA);
-	nodes[item_index].flags = EDITABLE;
+	tree_nodes[item_index].flags = EDITABLE;
 
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
-	verify_and_fix_arguments(nodes[item_index].parent);
+	verify_and_fix_arguments(tree_nodes[item_index].parent);
 
 	*modified = 1;
 	update_help(GetSelectedItem());
@@ -3817,12 +3854,12 @@ void sexp_tree::replace_variable_data(int var_idx, int type)
 
 	Assert(type & SEXPT_VARIABLE);
 
-	node = nodes[item_index].child;
+	node = tree_nodes[item_index].child;
 	if (node != -1)
 		free_node2(node);
 
-	nodes[item_index].child = -1;
-	h = nodes[item_index].handle;
+	tree_nodes[item_index].child = -1;
+	h = tree_nodes[item_index].handle;
 	while (ItemHasChildren(h)) {
 		DeleteItem(GetChildItem(h));
 	}
@@ -3833,10 +3870,10 @@ void sexp_tree::replace_variable_data(int var_idx, int type)
 	set_node(item_index, type, buf);
 	SetItemText(h, buf);
 	SetItemImage(h, BITMAP_VARIABLE, BITMAP_VARIABLE);
-	nodes[item_index].flags = NOT_EDITABLE;
+	tree_nodes[item_index].flags = NOT_EDITABLE;
 
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
-	verify_and_fix_arguments(nodes[item_index].parent);
+	verify_and_fix_arguments(tree_nodes[item_index].parent);
 
 	*modified = 1;
 	update_help(GetSelectedItem());
@@ -3849,18 +3886,18 @@ void sexp_tree::replace_operator(char *op)
 	int node;
 	HTREEITEM h;
 
-	node = nodes[item_index].child;
+	node = tree_nodes[item_index].child;
 	if (node != -1)
 		free_node2(node);
 
-	nodes[item_index].child = -1;
-	h = nodes[item_index].handle;
+	tree_nodes[item_index].child = -1;
+	h = tree_nodes[item_index].handle;
 	while (ItemHasChildren(h))
 		DeleteItem(GetChildItem(h));
 
 	set_node(item_index, (SEXPT_OPERATOR | SEXPT_VALID), op);
 	SetItemText(h, op);
-	nodes[item_index].flags = OPERAND;
+	tree_nodes[item_index].flags = OPERAND;
 	*modified = 1;
 	update_help(GetSelectedItem());
 
@@ -3874,12 +3911,12 @@ void sexp_tree::replace_operator(char *op)
 	int node;
 	HTREEITEM h;
 
-	node = nodes[item_index].child;
+	node = tree_nodes[item_index].child;
 	if (node != -1)
 		free_node2(node);
 
-	nodes[item_index].child = -1;
-	h = nodes[item_index].handle;
+	tree_nodes[item_index].child = -1;
+	h = tree_nodes[item_index].handle;
 	while (ItemHasChildren(h))
 		DeleteItem(GetChildItem(h));
 	
@@ -3888,8 +3925,8 @@ void sexp_tree::replace_operator(char *op)
 	set_node(node, type, data);
 	sprintf(str, "%s %s", op, data);
 	SetItemText(h, str);
-	nodes[item_index].flags = OPERAND | EDITABLE;
-	nodes[node].flags = COMBINED;
+	tree_nodes[item_index].flags = OPERAND | EDITABLE;
+	tree_nodes[node].flags = COMBINED;
 	*modified = 1;
 	update_help(GetSelectedItem());
 }*/
@@ -3902,38 +3939,38 @@ void sexp_tree::move_branch(int source, int parent)
 
 	// if no source, skip everything
 	if (source != -1) {
-		node = nodes[source].parent;
+		node = tree_nodes[source].parent;
 		if (node != -1) {
-			if (nodes[node].child == source)
-				nodes[node].child = nodes[source].next;
+			if (tree_nodes[node].child == source)
+				tree_nodes[node].child = tree_nodes[source].next;
 			else {
-				node = nodes[node].child;
-				while (nodes[node].next != source) {
-					node = nodes[node].next;
+				node = tree_nodes[node].child;
+				while (tree_nodes[node].next != source) {
+					node = tree_nodes[node].next;
 					Assert(node != -1);
 				}
 
-				nodes[node].next = nodes[source].next;
+				tree_nodes[node].next = tree_nodes[source].next;
 			}
 		}
 
-		nodes[source].parent = parent;
-		nodes[source].next = -1;
+		tree_nodes[source].parent = parent;
+		tree_nodes[source].next = -1;
 		if (parent) {
-			if (nodes[parent].child == -1)
-				nodes[parent].child = source;
+			if (tree_nodes[parent].child == -1)
+				tree_nodes[parent].child = source;
 			else {
-				node = nodes[parent].child;
-				while (nodes[node].next != -1)
-					node = nodes[node].next;
+				node = tree_nodes[parent].child;
+				while (tree_nodes[node].next != -1)
+					node = tree_nodes[node].next;
 
-				nodes[node].next = source;
+				tree_nodes[node].next = source;
 			}
 
-			move_branch(nodes[source].handle, nodes[parent].handle);
+			move_branch(tree_nodes[source].handle, tree_nodes[parent].handle);
 
 		} else
-			move_branch(nodes[source].handle);
+			move_branch(tree_nodes[source].handle);
 	}
 }
 
@@ -3944,13 +3981,13 @@ HTREEITEM sexp_tree::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM a
 
 	if (source) {
 		for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-			if (nodes[i].handle == source)
+			if (tree_nodes[i].handle == source)
 				break;
 
 		if (i < MAX_SEXP_TREE_SIZE) {
 			GetItemImage(source, image1, image2);
 			h = insert(GetItemText(source), image1, image2, parent, after);
-			nodes[i].handle = h;
+			tree_nodes[i].handle = h;
 
 		} else {
 			GetItemImage(source, image1, image2);
@@ -3981,13 +4018,13 @@ void sexp_tree::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 
 	if (source) {
 		for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-			if (nodes[i].handle == source)
+			if (tree_nodes[i].handle == source)
 				break;
 
 		if (i < MAX_SEXP_TREE_SIZE) {
 			GetItemImage(source, image1, image2);
 			h = insert(GetItemText(source), image1, image2, parent, after);
-			nodes[i].handle = h;
+			tree_nodes[i].handle = h;
 
 		} else {
 			GetItemImage(source, image1, image2);
@@ -4202,7 +4239,7 @@ void sexp_tree::OnDestroy()
 
 HTREEITEM sexp_tree::handle(int node)
 {
-	return nodes[node].handle;
+	return tree_nodes[node].handle;
 }
 
 char *sexp_tree::help(int code)
@@ -4228,7 +4265,7 @@ int sexp_tree::get_type(HTREEITEM h)
 
 	// get index into sexp_tree 
 	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-		if (nodes[i].handle == h)
+		if (tree_nodes[i].handle == h)
 			break;
 
 	if ( (i >= MAX_SEXP_TREE_SIZE) ) {
@@ -4236,7 +4273,7 @@ int sexp_tree::get_type(HTREEITEM h)
 		return -1;
 	}
 
-	return nodes[i].type;
+	return tree_nodes[i].type;
 }
 
 
@@ -4259,34 +4296,34 @@ void sexp_tree::update_help(HTREEITEM h)
 		return;
 
 	for (i=0; i<MAX_SEXP_TREE_SIZE; i++)
-		if (nodes[i].handle == h)
+		if (tree_nodes[i].handle == h)
 			break;
 
-	if ((i >= MAX_SEXP_TREE_SIZE) || !nodes[i].type) {
+	if ((i >= MAX_SEXP_TREE_SIZE) || !tree_nodes[i].type) {
 		help_box->SetWindowText("");
 		return;
 	}
 
-	if (SEXPT_TYPE(nodes[i].type) != SEXPT_OPERATOR) {
-		z = nodes[i].parent;
+	if (SEXPT_TYPE(tree_nodes[i].type) != SEXPT_OPERATOR) {
+		z = tree_nodes[i].parent;
 		if (z < 0) {
-			Warning(LOCATION, "Sexp data \"%s\" has no parent!", nodes[i].text);
+			Warning(LOCATION, "Sexp data \"%s\" has no parent!", tree_nodes[i].text);
 			return;
 		}
 
-		code = get_operator_index(nodes[z].text);
+		code = get_operator_index(tree_nodes[z].text);
 		if (code >= 0) {
 			c = 0;
-			j = nodes[z].child;
+			j = tree_nodes[z].child;
 			while ((j >= 0) && (j != i)) {
-				j = nodes[j].next;
+				j = tree_nodes[j].next;
 				c++;
 			}
 
 			Assert(j >= 0);
 			if (query_operator_argument_type(code, c) == OPF_MESSAGE) {
 				for (j=0; j<Num_messages; j++)
-					if (!stricmp(Messages[j].name, nodes[i].text)) {
+					if (!stricmp(Messages[j].name, tree_nodes[i].text)) {
 						text.Format("Message Text:\r\n%s", Messages[j].message);
 						help_box->SetWindowText(text);
 						return;
@@ -4297,7 +4334,7 @@ void sexp_tree::update_help(HTREEITEM h)
 		i = z;
 	}
 
-	code = get_operator_const(nodes[i].text);
+	code = get_operator_const(tree_nodes[i].text);
 	str = help(code);
 	if (!str)
 		str = "No help available";
@@ -4320,9 +4357,9 @@ int sexp_tree::find_text(char *text, int *find)
 
 	for (i=0; i<MAX_SEXP_TREE_SIZE; i++) {
 		// only look at used and editable nodes
-		if ((nodes[i].flags & EDITABLE && (nodes[i].type != SEXPT_UNUSED))) {
+		if ((tree_nodes[i].flags & EDITABLE && (tree_nodes[i].type != SEXPT_UNUSED))) {
 			// find the text
-			if ( !stricmp(nodes[i].text, text)  ) {
+			if ( !stricmp(tree_nodes[i].text, text)  ) {
 				find[find_count++] = i;
 
 				// don't exceed max count - array bounds
@@ -4385,9 +4422,9 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 	int i, current_node, w_arg, e_arg;
 
 	// get the current node
-	current_node = nodes[parent_node].child;
+	current_node = tree_nodes[parent_node].child;
 	for (i = 0; i < arg_index; i++)
-		current_node = nodes[current_node].next;
+		current_node = tree_nodes[current_node].next;
 
 	switch (opf) {
 		case OPF_NONE:
@@ -4659,7 +4696,7 @@ int sexp_tree::find_argument_number(int parent_node, int child_node)
 
 	// code moved/adapted from match_closest_operator
 	arg_num = 0;
-	current_node = nodes[parent_node].child;
+	current_node = tree_nodes[parent_node].child;
 	while (current_node >= 0)
 	{
 		// found?
@@ -4668,7 +4705,7 @@ int sexp_tree::find_argument_number(int parent_node, int child_node)
 
 		// continue iterating
 		arg_num++;
-		current_node = nodes[current_node].next;
+		current_node = tree_nodes[current_node].next;
 	}	
 
 	// not found
@@ -4687,17 +4724,17 @@ int sexp_tree::find_ancestral_argument_number(int parent_op, int child_node)
 	int current_node;
 
 	current_node = child_node;
-	parent_node = nodes[current_node].parent;
+	parent_node = tree_nodes[current_node].parent;
 
 	while (parent_node >= 0)
 	{
 		// check if the parent operator is the one we're looking for
-		if (get_operator_const(nodes[parent_node].text) == parent_op)
+		if (get_operator_const(tree_nodes[parent_node].text) == parent_op)
 			return find_argument_number(parent_node, current_node);
 
 		// continue iterating up the tree
 		current_node = parent_node;
-		parent_node = nodes[current_node].parent;
+		parent_node = tree_nodes[current_node].parent;
 	}
 
 	// not found
@@ -4740,7 +4777,7 @@ sexp_list_item *sexp_tree::get_listing_opf_bool(int parent_node)
 	if ( parent_node != -1 ) {
 		int op;
 
-		op = get_operator_const(nodes[parent_node].text);
+		op = get_operator_const(tree_nodes[parent_node].text);
 		if ( (op == OP_PREVIOUS_GOAL_TRUE) || (op == OP_PREVIOUS_GOAL_FALSE) || (op == OP_PREVIOUS_EVENT_TRUE) || (op == OP_PREVIOUS_EVENT_FALSE) )
 			only_basic = 1;
 
@@ -4795,10 +4832,10 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 	// look at the parent node and get the operator.  Some ship lists should be filtered based
 	// on what the parent operator is
 	if ( parent_node >= 0 ) {
-		op = get_operator_const(nodes[parent_node].text);
+		op = get_operator_const(tree_nodes[parent_node].text);
 
 		// prune out to only capital ships
-		if (!stricmp(nodes[parent_node].text, "cap-subsys-cargo-known-delay")) {
+		if (!stricmp(tree_nodes[parent_node].text, "cap-subsys-cargo-known-delay")) {
 			require_cap_ship = 1;
 		}
 
@@ -4808,14 +4845,14 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 		if ( op == OP_AI_DOCK ) {
 			int z;
 
-			z = nodes[parent_node].parent;
+			z = tree_nodes[parent_node].parent;
 			Assert(z >= 0);
-			Assert(!stricmp(nodes[z].text, "add-ship-goal") || !stricmp(nodes[z].text, "add-wing-goal") || !stricmp(nodes[z].text, "add-goal"));
+			Assert(!stricmp(tree_nodes[z].text, "add-ship-goal") || !stricmp(tree_nodes[z].text, "add-wing-goal") || !stricmp(tree_nodes[z].text, "add-goal"));
 
-			z = nodes[z].child;
+			z = tree_nodes[z].child;
 			Assert(z >= 0);
 
-			dock_ship = ship_name_lookup(nodes[z].text, 1);
+			dock_ship = ship_name_lookup(tree_nodes[z].text, 1);
 			Assert( dock_ship != -1 );
 		}
 	}
@@ -4873,10 +4910,10 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 	Assert(parent_node >= 0);	
 	
 	// get the operator type of the node
-	op = get_operator_const(nodes[parent_node].text);
+	op = get_operator_const(tree_nodes[parent_node].text);
 
 	// first child node
-	child = nodes[parent_node].child;
+	child = tree_nodes[parent_node].child;
 	Assert(child >= 0);
 
 	switch(op)
@@ -4906,7 +4943,7 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			special_subsys = OPS_CAP_CARGO;
 			
 			// get the next sibling
-			child = nodes[child].next;		
+			child = tree_nodes[child].next;		
 			break;
 
 		// where we care about turrets carrying beam weapons
@@ -4916,9 +4953,9 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 			// if this is arg index 3 (targeted ship)
 			if(arg_index == 3)
 			{
-				child = nodes[child].next;
+				child = tree_nodes[child].next;
 				Assert(child >= 0);			
-				child = nodes[child].next;			
+				child = tree_nodes[child].next;			
 			}
 			else
 			{
@@ -4935,33 +4972,33 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		case OP_MISSILE_LOCKED:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 			// iterate to the next field
-			child = nodes[child].next;
+			child = tree_nodes[child].next;
 			break;
 
 		// this sexp checks the subsystem of the *ninth entry* on the list
 		case OP_WEAPON_CREATE:
 			// iterate to the next field eight times
-			child = nodes[child].next;
+			child = tree_nodes[child].next;
 			Assert(child >= 0);
-			child = nodes[child].next;
+			child = tree_nodes[child].next;
 			Assert(child >= 0);
-			child = nodes[child].next;
+			child = tree_nodes[child].next;
 			Assert(child >= 0);
-			child = nodes[child].next;
+			child = tree_nodes[child].next;
 			Assert(child >= 0);
-			child = nodes[child].next;
+			child = tree_nodes[child].next;
 			Assert(child >= 0);
-			child = nodes[child].next;
+			child = tree_nodes[child].next;
 			Assert(child >= 0);
-			child = nodes[child].next;
+			child = tree_nodes[child].next;
 			Assert(child >= 0);
-			child = nodes[child].next;
+			child = tree_nodes[child].next;
 			break;
 	}			
 
 	// now find the ship and add all relevant subsystems
 	Assert(child >= 0);
-	sh = ship_name_lookup(nodes[child].text, 1);
+	sh = ship_name_lookup(tree_nodes[child].text, 1);
 	if (sh >= 0) {
 		subsys = GET_FIRST(&Ships[sh].subsys_list);
 		while (subsys != END_OF_LIST(&Ships[sh].subsys_list)) {
@@ -5173,9 +5210,9 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_goal(int parent_node)
 	sexp_list_item head;
 
 	Assert(parent_node >= 0);
-	child = nodes[parent_node].child;
+	child = tree_nodes[parent_node].child;
 	Assert(child >= 0);
-	n = ship_name_lookup(nodes[child].text, 1);
+	n = ship_name_lookup(tree_nodes[child].text, 1);
 	if (n >= 0) {
 		// add operators if it's an ai-goal and ai-goal is allowed for that ship
 		for (i=0; i<Num_operators; i++) {
@@ -5184,7 +5221,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ai_goal(int parent_node)
 		}
 
 	} else {
-		z = wing_name_lookup(nodes[child].text);
+		z = wing_name_lookup(tree_nodes[child].text);
 		if (z >= 0) {
 			for (w=0; w<Wings[z].wave_count; w++) {
 				n = Wings[z].ship_index[w];
@@ -5208,16 +5245,16 @@ sexp_list_item *sexp_tree::get_listing_opf_docker_point(int parent_node)
 	sexp_list_item head;
 
 	Assert(parent_node >= 0);
-	Assert(!stricmp(nodes[parent_node].text, "ai-dock"));
+	Assert(!stricmp(tree_nodes[parent_node].text, "ai-dock"));
 
-	z = nodes[parent_node].parent;
+	z = tree_nodes[parent_node].parent;
 	Assert(z >= 0);
-	Assert(!stricmp(nodes[z].text, "add-ship-goal") || !stricmp(nodes[z].text, "add-wing-goal") || !stricmp(nodes[z].text, "add-goal"));
+	Assert(!stricmp(tree_nodes[z].text, "add-ship-goal") || !stricmp(tree_nodes[z].text, "add-wing-goal") || !stricmp(tree_nodes[z].text, "add-goal"));
 
-	z = nodes[z].child;
+	z = tree_nodes[z].child;
 	Assert(z >= 0);
 
-	sh = ship_name_lookup(nodes[z].text, 1);
+	sh = ship_name_lookup(tree_nodes[z].text, 1);
 	if (sh >= 0) {
 		z = get_docking_list(Ships[sh].modelnum);
 		for (i=0; i<z; i++)
@@ -5233,12 +5270,12 @@ sexp_list_item *sexp_tree::get_listing_opf_dockee_point(int parent_node)
 	sexp_list_item head;
 
 	Assert(parent_node >= 0);
-	Assert(!stricmp(nodes[parent_node].text, "ai-dock"));
+	Assert(!stricmp(tree_nodes[parent_node].text, "ai-dock"));
 
-	z = nodes[parent_node].child;
+	z = tree_nodes[parent_node].child;
 	Assert(z >= 0);
 
-	sh = ship_name_lookup(nodes[z].text, 1);
+	sh = ship_name_lookup(tree_nodes[z].text, 1);
 	if (sh >= 0) {
 		z = get_docking_list(Ships[sh].modelnum);
 		for (i=0; i<z; i++)
@@ -5363,11 +5400,11 @@ sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 		int child;
 
 		Assert(parent_node >= 0);
-		child = nodes[parent_node].child;
+		child = tree_nodes[parent_node].child;
 		Assert(child >= 0);
 
 		for (m=0; m<Campaign.num_missions; m++)
-			if (!stricmp(Campaign.missions[m].name, nodes[child].text))
+			if (!stricmp(Campaign.missions[m].name, tree_nodes[child].text))
 				break;
 
 		if (m < Campaign.num_missions) {
@@ -5431,11 +5468,11 @@ sexp_list_item *sexp_tree::get_listing_opf_event_name(int parent_node)
 		int child;
 
 		Assert(parent_node >= 0);
-		child = nodes[parent_node].child;
+		child = tree_nodes[parent_node].child;
 		Assert(child >= 0);
 
 		for (m=0; m<Campaign.num_missions; m++)
-			if (!stricmp(Campaign.missions[m].name, nodes[child].text))
+			if (!stricmp(Campaign.missions[m].name, tree_nodes[child].text))
 				break;
 
 		if (m < Campaign.num_missions) {
@@ -5721,17 +5758,17 @@ void sexp_tree::delete_sexp_tree_variable(const char *var_name)
 	int old_item_index = item_index;
 
 	for (int idx=0; idx<MAX_SEXP_TREE_SIZE; idx++) {
-		if (nodes[idx].type & SEXPT_VARIABLE) {
-			if ( strstr(nodes[idx].text, search_str) != NULL ) {
+		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
+			if ( strstr(tree_nodes[idx].text, search_str) != NULL ) {
 
 				// check type is number or string
-				Assert( (nodes[idx].type & SEXPT_NUMBER) || (nodes[idx].type & SEXPT_STRING) );
+				Assert( (tree_nodes[idx].type & SEXPT_NUMBER) || (tree_nodes[idx].type & SEXPT_STRING) );
 
 				// reset type as not variable
-				int type = nodes[idx].type &= ~SEXPT_VARIABLE;
+				int type = tree_nodes[idx].type &= ~SEXPT_VARIABLE;
 
 				// reset text
-				if (nodes[idx].type & SEXPT_NUMBER) {
+				if (tree_nodes[idx].type & SEXPT_NUMBER) {
 					strcpy(replace_text, "number");
 				} else {
 					strcpy(replace_text, "string");
@@ -5772,8 +5809,8 @@ void sexp_tree::modify_sexp_tree_variable(const char *old_name, int sexp_var_ind
 	sprintf(search_str, "%s(", old_name);
 
 	for (int idx=0; idx<MAX_SEXP_TREE_SIZE; idx++) {
-		if (nodes[idx].type & SEXPT_VARIABLE) {
-			if ( strstr(nodes[idx].text, search_str) != NULL ) {
+		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
+			if ( strstr(tree_nodes[idx].text, search_str) != NULL ) {
 				// temp set item_index
 				item_index = idx;
 
@@ -5792,9 +5829,9 @@ void sexp_tree::modify_sexp_tree_variable(const char *old_name, int sexp_var_ind
 int sexp_tree::get_item_index_to_var_index()
 {
 	// check valid item index and node is a variable
-	if ( (item_index > 0) && (nodes[item_index].type & SEXPT_VARIABLE) ) {
+	if ( (item_index > 0) && (tree_nodes[item_index].type & SEXPT_VARIABLE) ) {
 
-		return get_tree_name_to_sexp_variable_index(nodes[item_index].text);
+		return get_tree_name_to_sexp_variable_index(tree_nodes[item_index].text);
 	} else {
 		return -1;
 	}
@@ -5827,8 +5864,8 @@ int sexp_tree::get_variable_count(const char *var_name)
 
 	// look for compare name
 	for (idx=0; idx<MAX_SEXP_TREE_SIZE; idx++) {
-		if (nodes[idx].type & SEXPT_VARIABLE) {
-			if ( strstr(nodes[idx].text, compare_name) ) {
+		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
+			if ( strstr(tree_nodes[idx].text, compare_name) ) {
 				count++;
 			}
 		}
