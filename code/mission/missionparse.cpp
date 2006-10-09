@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.15 $
- * $Date: 2006-09-11 01:06:20 $
- * $Author: taylor $
+ * $Revision: 2.178.2.16 $
+ * $Date: 2006-10-09 05:25:07 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.15  2006/09/11 01:06:20  taylor
+ * fixes for stuff_string() bounds checking
+ * compiler warning and stict compiling fixes
+ *
  * Revision 2.178.2.14  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -5730,7 +5734,7 @@ void post_process_mission()
 	// before doing anything else, we must validate all of the sexpressions that were loaded into the mission.
 	// Loop through the Sexp_nodes array and send the top level functions to the check_sexp_syntax parser
 
-	for (i = 0; i < MAX_SEXP_NODES; i++) {
+	for (i = 0; i < Num_sexp_nodes; i++) {
 		if ( is_sexp_top_level(i) && (!Fred_running || (i != Sexp_clipboard))) {
 			int result, bad_node, op;
 

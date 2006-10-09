@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122.2.1 $
+ * $Revision: 2.122.2.2 $
  * $Author: Goober5000 $
- * $Date: 2006-08-06 19:27:13 $
+ * $Date: 2006-10-09 05:25:08 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122.2.1  2006/08/06 19:27:13  Goober5000
+ * deprecate change-ship-model
+ *
  * Revision 2.122  2006/04/07 20:16:30  karajorma
  * Added SEXPs to lock and unlock the primary and secondary weapons
  *
@@ -803,6 +806,7 @@ struct ship_subsys;
 #define	OPERATOR_LENGTH	30  // if this ever exceeds TOKEN_LENGTH, let JasonH know!
 #define	TOKEN_LENGTH		32
 
+/*
 #ifdef FS2_DEMO
 	#define	MAX_SEXP_NODES	1600
 #else
@@ -817,7 +821,9 @@ struct ship_subsys;
 											// Goober5000 04/17/2005 reduced to 3000, now that we solved the root problem
 											// taylor 03/11/2006 bumped to 4000, it's going dynamic soon so it should be ok to leave it this high
 											//                                   until then.
+											// Goober5000 10/8/2006 made dynamic :)
 #endif
+*/
 
 #define MAX_SEXP_VARIABLES 100
 
@@ -1584,9 +1590,15 @@ class arg_item
 // waves for a wing.  bascially a hack for the directives display.
 #define DIRECTIVE_WING_ZERO		-999
 
-extern sexp_oper Operators[];
-extern sexp_node Sexp_nodes[MAX_SEXP_NODES];
+// Goober5000 - it's dynamic now
+//extern sexp_node Sexp_nodes[MAX_SEXP_NODES];
+
+extern int Num_sexp_nodes;
+extern sexp_node *Sexp_nodes;
+
 extern sexp_variable Sexp_variables[MAX_SEXP_VARIABLES];
+
+extern sexp_oper Operators[];
 extern int Num_operators;
 extern int Locked_sexp_true, Locked_sexp_false;
 extern int Directive_count;

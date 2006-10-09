@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.9 $
- * $Date: 2006-10-01 06:18:36 $
+ * $Revision: 1.14.2.10 $
+ * $Date: 2006-10-09 05:25:07 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.9  2006/10/01 06:18:36  Goober5000
+ * more accurate message number
+ *
  * Revision 1.14.2.8  2006/09/28 23:47:25  Goober5000
  * fix for Mantis #1070
  *
@@ -689,9 +692,6 @@ int CFred_mission_save::autosave_mission_file(char *pathname)
 
 int CFred_mission_save::save_mission_info()
 {
-	// int f = count_free_sexp_nodes();
-	// fout("// Of %d total sexp nodes, %d free, %d used\n\n",MAX_SEXP_NODES, f, MAX_SEXP_NODES - f);
-
 	required_string_fred("#Mission Info");
 	parse_comments(0);
 
