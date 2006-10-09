@@ -31,42 +31,8 @@ static char THIS_FILE[] = __FILE__;
 int Cur_campaign_mission = -1;
 int Cur_campaign_link = -1;
 
-// determine the node number that would be allocated without actually allocating it yet.
-int campaign_sexp_tree::get_new_node_position()
-{
-	int i;
-
-	for (i=0; i<MAX_SEXP_TREE_SIZE; i++){
-		if (nodes[i].type == SEXPT_UNUSED){
-			return i;
-		}
-	}
-
-	return -1;
-}
-
-// construct tree nodes for an sexp, adding them to the list and returning first node
-int campaign_sexp_tree::load_sub_tree(int index)
-{
-	int cur;
-
-	if (index < 0) {
-		cur = allocate_node(-1);
-		set_node(cur, (SEXPT_OPERATOR  | SEXPT_VALID), "do-nothing");  // setup a default tree if none
-		return cur;
-	}
-
-	// assumption: first token is an operator.  I require this because it would cause problems
-	// with child/parent relations otherwise, and it should be this way anyway, since the
-	// return type of the whole sexp is boolean, and only operators can satisfy this.
-	Assert(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR);
-	cur = get_new_node_position();
-	load_branch(index, -1);
-	return cur;
-}
-
 /////////////////////////////////////////////////////////////////////////////
-// campaign_editor
+// campaign_editor dialog
 
 IMPLEMENT_DYNCREATE(campaign_editor, CFormView)
 
@@ -383,7 +349,7 @@ void campaign_editor::load_tree(int save_first)
 
 	for (i=0; i<Total_links; i++) {
 		if (Links[i].from == Cur_campaign_mission) {
-			Links[i].node = m_tree.load_sub_tree(Links[i].sexp);
+			Links[i].node = m_tree.load_sub_tree(Links[i].sexp, true, "do-nothing");
 			m_num_links++;
 
 			if (Links[i].from == Links[i].to) {

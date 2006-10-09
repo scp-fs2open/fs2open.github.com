@@ -9,8 +9,8 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.10 $
- * $Date: 2006-09-29 06:38:28 $
+ * $Revision: 1.11 $
+ * $Date: 2006-10-09 05:25:18 $
  * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2006/09/29 06:38:28  Goober5000
+ * merge voice file manager into voice acting manager, plus make a few tweaks to it
+ *
  * Revision 1.9  2006/09/11 06:08:08  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -4156,7 +4159,7 @@ void fred_check_message_personas()
 	}
 
 
-	for (i = 0; i < MAX_SEXP_NODES; i++ ) {
+	for (i = 0; i < Num_sexp_nodes; i++ ) {
 		if ( Sexp_nodes[i].type == SEXP_NOT_USED )
 			continue;
 

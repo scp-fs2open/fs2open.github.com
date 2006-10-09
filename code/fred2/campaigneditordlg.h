@@ -23,9 +23,6 @@
 
 class campaign_sexp_tree : public sexp_tree
 {
-public:
-	int load_sub_tree(int index);
-	int get_new_node_position();
 };
 
 class campaign_editor : public CFormView

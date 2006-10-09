@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/EventEditor.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
+ * $Revision: 1.2 $
+ * $Date: 2006-10-09 05:25:18 $
  * $Author: Goober5000 $
  *
  * Event editor dialog box class and event tree class (used for dialog)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.4  2005/07/13 02:40:50  Goober5000
  * remove PreProcDefine #includes in FRED
  * --Goober5000
@@ -147,11 +151,8 @@
 
 #define MAX_SEARCH_MESSAGE_DEPTH		5		// maximum search number of event nodes with message text
 
-class sexp_event_tree : public sexp_tree
+class event_sexp_tree : public sexp_tree
 {
-public:
-	int load_sub_tree(int index);
-	int get_new_node_position();
 };
 
 /////////////////////////////////////////////////////////////////////////////
@@ -185,7 +186,7 @@ public:
 // Dialog Data
 	//{{AFX_DATA(event_editor)
 	enum { IDD = IDD_EVENT_EDITOR };
-	sexp_event_tree	m_event_tree;
+	event_sexp_tree	m_event_tree;
 	UINT	m_repeat_count;
 	UINT	m_interval;
 	int		m_event_score;
