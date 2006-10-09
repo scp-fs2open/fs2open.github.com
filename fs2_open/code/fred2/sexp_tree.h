@@ -15,7 +15,8 @@
 
 //#define MAX_SEXP_TREE_SIZE 500
 //#define MAX_SEXP_TREE_SIZE 1050
-#define MAX_SEXP_TREE_SIZE ((MAX_SEXP_NODES)*2/3)
+//#define MAX_SEXP_TREE_SIZE ((MAX_SEXP_NODES)*2/3)
+#define MAX_SEXP_TREE_SIZE	3000
 
 // tree_node type
 #define SEXPT_UNUSED		0x0000
@@ -75,6 +76,8 @@
 class sexp_tree_item
 {
 public:
+	sexp_tree_item() : type(SEXPT_UNUSED) {}
+
 	int type;
 	int parent;	// pointer to parent of this item
 	int child;	// pointer to first child of this item
@@ -94,6 +97,7 @@ public:
 	sexp_list_item *next;
 
 	sexp_list_item() : flags(0), next(NULL) {}
+
 	void set_op(int op_num);
 	void set_data(char *str, int t = (SEXPT_STRING | SEXPT_VALID));
 	void set_data_dup(char *str, int t = (SEXPT_STRING | SEXPT_VALID));
@@ -151,6 +155,7 @@ public:
 	void free_node(int node, int cascade = 0);
 	int allocate_node(int parent, int after = -1);
 	int allocate_node();
+	int find_free_node();
 	void clear_tree(char *op = NULL);
 	void reset_handles();
 	int save_tree(int node = -1);
@@ -160,6 +165,7 @@ public:
 	int add_data(char *data, int type);
 	int add_variable_data(char *data, int type);
 	void add_sub_tree(int node, HTREEITEM root);
+	int load_sub_tree(int index, bool valid, char *text);
 	void hilite_item(int node);
 	char *match_closest_operator(char *str, int node);
 	void delete_sexp_tree_variable(const char *var_name);
@@ -269,8 +275,10 @@ protected:
 
 	int flag;
 	int *modified;
-	sexp_tree_item nodes[MAX_SEXP_TREE_SIZE];
-	int total;
+
+	sexp_tree_item tree_nodes[MAX_SEXP_TREE_SIZE];
+	int total_nodes;
+
 	HTREEITEM item_handle;
 	int root_item;
 	// these 2 variables are used to help location data sources.  Sometimes looking up
