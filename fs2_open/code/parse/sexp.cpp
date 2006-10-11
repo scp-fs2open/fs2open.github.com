@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.23 $
- * $Date: 2006-10-09 05:25:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.259.2.24 $
+ * $Date: 2006-10-11 03:10:53 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.23  2006/10/09 05:25:08  Goober5000
+ * make sexp nodes dynamic
+ *
  * Revision 2.259.2.22  2006/09/11 01:09:33  taylor
  * fix bug where set-object-speed-* could set speed subjectively if left to default
  *
@@ -14201,6 +14204,7 @@ void sexp_set_camera_position(int n)
 {
 	Viewer_mode |= VM_FREECAMERA;
 	Current_camera = Free_camera;
+	hud_set_draw(0);
 
 	vec3d camera_vec;
 	//float camera_time = 0.0f;
@@ -14218,6 +14222,7 @@ void sexp_set_camera_rotation(int n)
 {
 	Viewer_mode |= VM_FREECAMERA;
 	Current_camera = Free_camera;
+	hud_set_draw(0);
 
 	angles rot_angles;
 	float rot_time = 0.0f;
@@ -14245,6 +14250,7 @@ void sexp_set_camera_facing(int n)
 {
 	Viewer_mode |= VM_FREECAMERA;
 	Current_camera = Free_camera;
+	hud_set_draw(0);
 
 	vec3d location;
 	matrix cam_orient;
@@ -14338,6 +14344,7 @@ void sexp_reset_fov()
 void sexp_reset_camera()
 {
 	Viewer_mode &= ~VM_FREECAMERA;
+	hud_set_draw(1);
 }
 
 void sexp_show_subtitle(int node)

@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.22 $
- * $Date: 2006-09-24 22:53:22 $
- * $Author: taylor $
+ * $Revision: 2.243.2.23 $
+ * $Date: 2006-10-11 03:10:53 $
+ * $Author: wmcoolmon $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.22  2006/09/24 22:53:22  taylor
+ * more standalone server fixes:
+ *  - add some basic bmpman functionality to grstub, since it needs to do something at least
+ *  - add missing gr_* function ptrs to grstrub
+ *  - (re-)enable radar and hud setup functions that used to crash (problems are fixed now)
+ *  - deal with default pilot file properly (also caused a bmpman headache)
+ *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
+ *
  * Revision 2.243.2.21  2006/09/24 13:21:33  taylor
  * small optimizations and code cleanup
  * use the real frametime for FPS counter stuff, no reason to deal with time compression there (Mantis bug #1058)
@@ -6174,7 +6182,7 @@ void game_frame(int paused)
 		}
 	
 		//	Note: These are done even before the player enters, else buffers can overflow.
-		if (! (Game_mode & GM_STANDALONE_SERVER) && !(Viewer_mode & VM_FREECAMERA)){
+		if (! (Game_mode & GM_STANDALONE_SERVER)){
 			radar_frame_init();
 		}
 	
@@ -6249,12 +6257,12 @@ void game_frame(int paused)
 			if(Script_system.RunBytecode(Script_hudhook) && Script_system.IsOverride(Script_hudhook))
 				Scripting_didnt_draw_hud = 0;
 
-			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
+			if(Scripting_didnt_draw_hud)
 			{
 				hud_show_target_model();
 			}
 
-			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
+			if(Scripting_didnt_draw_hud)
 			{
 				hud_show_radar();
 			}
@@ -6316,7 +6324,7 @@ void game_frame(int paused)
 #endif
 
 			// Draw the 2D HUD gauges
-			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
+			if(Scripting_didnt_draw_hud)
 			{
 				if(supernova_active() <	3){
 					game_render_hud_2d();
