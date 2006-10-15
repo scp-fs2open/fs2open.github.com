@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.26 $
- * $Date: 2006-10-09 05:25:18 $
- * $Author: Goober5000 $
+ * $Revision: 1.27 $
+ * $Date: 2006-10-15 22:01:38 $
+ * $Author: wmcoolmon $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2006/10/09 05:25:18  Goober5000
+ * make sexp nodes dynamic
+ *
  * Revision 1.25  2006/10/01 06:18:35  Goober5000
  * more accurate message number
  *
@@ -2528,6 +2531,44 @@ int CFred_mission_save::save_waypoints()
 		required_string_fred("$Jump Node Name:", "$Jump Node:");
 		parse_comments();
 		fout(" %s", jnp->get_name_ptr());
+
+		if(jnp->is_special_model())
+		{
+			if ( optional_string_fred("+Model File:", "$Jump Node:"))
+				parse_comments();
+			else
+				fout("\n+Model File:");
+
+			int model = jnp->get_modelnum();
+			polymodel *pm = model_get(model);
+			fout(" %s", pm->filename );
+		}
+
+		if(jnp->is_colored())
+		{
+			if ( optional_string_fred("+Alphacolor:", "$Jump Node:"))
+				parse_comments();
+			else
+				fout("\n+Alphacolor:");
+
+			color jn_color = jnp->get_color();
+			fout(" %u %u %u %u", jn_color.red, jn_color.green, jn_color.blue, jn_color.alpha );
+		}
+
+		int hidden_is_there = optional_string_fred("+Hidden:", "$Jump Node:");
+		if(hidden_is_there)
+			parse_comments();
+
+		if(hidden_is_there || jnp->is_hidden())
+		{
+			if(!hidden_is_there)
+				fout("\n+Hidden:");
+
+			if(jnp->is_hidden())
+				fout(" %s", "true");
+			else
+				fout(" %s", "false");
+		}
 	}
 
 	for (i=0; i<Num_waypoint_lists; i++)
@@ -3165,7 +3206,8 @@ int CFred_mission_save::save_reinforcements()
 
 int CFred_mission_save::save_bitmaps()
 {	
-	int i, j;
+	int i;
+	uint j;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Background bitmaps");
