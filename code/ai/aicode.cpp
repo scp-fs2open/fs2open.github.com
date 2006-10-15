@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.86 $
- * $Date: 2006-09-20 05:19:01 $
+ * $Revision: 1.87 $
+ * $Date: 2006-10-15 00:40:56 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.86  2006/09/20 05:19:01  Goober5000
+ * more descriptive warning message for docking paths
+ *
  * Revision 1.85  2006/09/11 06:49:38  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -1434,12 +1437,18 @@ void ai_good_secondary_time( int team, int weapon_index, int max_fire_count, cha
 	int i, index;
 
 	// find an open slot to put this data
-	for ( i = 0; i < MAX_HUGE_SECONDARY_INFO; i++ ) {
-		if ( Ai_huge_fire_info[i].weapon_index == -1 )
+	for (i = 0; i < MAX_HUGE_SECONDARY_INFO; i++)
+	{
+		if (Ai_huge_fire_info[i].weapon_index == -1)
 			break;
 	}
 
-	Assert( i < MAX_HUGE_SECONDARY_INFO );			// we've run out of room
+	// have we run out of room?
+	if (i >= MAX_HUGE_SECONDARY_INFO)
+	{
+		Int3();
+		return;
+	}
 
 	Ai_huge_fire_info[i].weapon_index = weapon_index;
 	Ai_huge_fire_info[i].team = team;
