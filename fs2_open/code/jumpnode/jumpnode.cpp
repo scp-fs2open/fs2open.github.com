@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-01-18 15:59:33 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2006-10-20 20:34:34 $
+ * $Author: wmcoolmon $
  *
  * Module for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/01/18 15:59:33  taylor
+ * show poly flag setting was reversed
+ *
  * Revision 2.19  2006/01/10 00:11:03  phreak
  * Argument checking when setting jumpnode color.
  *
@@ -206,7 +209,8 @@ void jump_node::render(vec3d *pos, vec3d *view_pos)
 void jump_node::set_model(char *model_name, bool show_polys)
 {
 	//Try to load the new model; if we can't, then we can't set it
-	int new_model = model_load(model_name, 0, NULL);
+	//WMC - TODO, change ferror back to -1
+	int new_model = model_load(model_name, 0, NULL, 0);
 
 	if(new_model == -1)
 	{
@@ -220,6 +224,7 @@ void jump_node::set_model(char *model_name, bool show_polys)
 
 	//Now actually set stuff
 	m_modelnum = new_model;
+	m_flags |= JN_SPECIAL_MODEL;
 
 	//Do we want to change poly showing?
 	if(show_polys)
@@ -254,7 +259,8 @@ jump_node::jump_node(vec3d *pos)
 	sprintf(m_name, XSTR( "Jump Node %d", 632), Num_jump_nodes);
 
 	//Set model
-	m_modelnum = model_load(NOX("subspacenode.pof"), 0, NULL);
+	//WMC - TODO, change ferror back to -1
+	m_modelnum = model_load(NOX("subspacenode.pof"), 0, NULL, 0);
 	if ( m_modelnum < 0 ) {
 		Warning(LOCATION, "Could not load default model for %s", m_name);
 		radius = 0.0f;

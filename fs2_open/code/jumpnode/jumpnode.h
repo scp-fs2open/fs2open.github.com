@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.h $
- * $Revision: 2.13 $
- * $Date: 2005-07-13 03:15:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.14 $
+ * $Date: 2006-10-20 20:34:34 $
+ * $Author: wmcoolmon $
  *
  * Header for everything to do with jump nodes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2005/07/13 03:15:53  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.12  2005/04/05 05:53:18  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -93,6 +97,7 @@ struct object;
 #define JN_USE_DISPLAY_COLOR		(1<<0)		//Use display_color instead of HUD color
 #define JN_SHOW_POLYS				(1<<1)		//Display model normally, rather than as wireframe
 #define JN_HIDE						(1<<2)		//Hides a jump node
+#define JN_SPECIAL_MODEL			(1<<3)		//If non-default model
 
 class jump_node : public linked_list<jump_node>
 {
@@ -109,11 +114,14 @@ public:
 	~jump_node();
 	
 	//Getting
+	color get_color(){return m_display_color;}
 	int get_modelnum(){return m_modelnum;}
 	int get_objnum(){return m_objnum;}
 	object *get_obj(){return &Objects[m_objnum];}
 	char *get_name_ptr(){return m_name;}
 	bool is_hidden(){if(m_flags & JN_HIDE){return true;}else{return false;}}
+	bool is_colored(){return ((m_flags & JN_USE_DISPLAY_COLOR) != 0);}
+	bool is_special_model(){return ((m_flags & JN_SPECIAL_MODEL) != 0);}
 
 	//Setting
 	void set_alphacolor(int r, int g, int b, int alpha);
