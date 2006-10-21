@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122.2.2 $
- * $Author: Goober5000 $
- * $Date: 2006-10-09 05:25:08 $
+ * $Revision: 2.122.2.3 $
+ * $Author: karajorma $
+ * $Date: 2006-10-21 21:57:08 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122.2.2  2006/10/09 05:25:08  Goober5000
+ * make sexp nodes dynamic
+ *
  * Revision 2.122.2.1  2006/08/06 19:27:13  Goober5000
  * deprecate change-ship-model
  *
@@ -1686,8 +1689,8 @@ void sexp_variable_block_free(const char *ship_name, int start_index, int block_
 
 
 // Karajorma
-void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit);
-void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit);
+void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1);
+void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1);
 
 
 // menu and category stuff

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.24 $
- * $Date: 2006-10-11 03:10:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.259.2.25 $
+ * $Date: 2006-10-21 21:57:07 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.24  2006/10/11 03:10:53  wmcoolmon
+ * Fix Freecamera forcing HUD draw bug.
+ *
  * Revision 2.259.2.23  2006/10/09 05:25:08  Goober5000
  * make sexp nodes dynamic
  *
@@ -11831,15 +11834,20 @@ void sexp_set_primary_ammo (int node)
 		return ;
 	}
 	
-	node = CDR(node);	
-	// Attempt to read in the optional rearm limit value. Negative value indicate that this should not be altered.
-	rearm_limit = eval_num(CDR(node)); 
+	node = CDDR(node);	
 
-	set_primary_ammo (sindex, requested_bank, requested_weapons, rearm_limit);
+	// If a rearm limit hasn't been specified simply change the ammo.Otherwise read in the rearm limit
+	if (node < 0) {
+		set_primary_ammo (sindex, requested_bank, requested_weapons);
+	}
+	else {
+		rearm_limit = eval_num(node); 
+		set_primary_ammo (sindex, requested_bank, requested_weapons, rearm_limit);
+	}
 }
 
 //Karajorma - Helper function for the set-primary-ammo and weapon functions
-void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit = -1)
+void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit)
 {
 	ship *shipp;
 	int maximum_allowed ;
@@ -11969,16 +11977,20 @@ void sexp_set_secondary_ammo (int node)
 		return ;
 	}
 
-	// If a rearm limit has been specified set it. 
-	node = CDR(node);	
-	// No need to check if this is a valid entry. Invalid entries will be ignored anyway
-	rearm_limit = eval_num(CDR(node));
+	node = CDDR(node);	
 
-	set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
+	// If a rearm limit hasn't been specified simply change the ammo.Otherwise read in the rearm limit
+	if (node < 0) {
+		set_secondary_ammo(sindex, requested_bank, requested_weapons);
+	}
+	else {
+		rearm_limit = eval_num(node); 
+		set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
+	}
 }
 
 //Karajorma - Helper function for the set-secondary-ammo and weapon functions
-void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit = -1)
+void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit)
 {
 	ship *shipp;
 	int maximum_allowed;
@@ -12069,19 +12081,29 @@ void sexp_set_weapon (int node, bool primary)
 		shipp->weapons.secondary_bank_weapons[requested_bank] = windex ;
 	}
 
-	// Check to see if the optional ammo and rearm_limit settings were supplied
-	requested_ammo = eval_num(CDR(node)); 
 	
+	// Check to see if the optional ammo and rearm_limit settings were supplied
+	node = CDR(node);
+
 	// If nothing was supplied we're done. Bail. 
-	if (requested_ammo < 0)
-	{
+	if (node < 0) {
 		return ;
 	}
 
+	requested_ammo = eval_num(node); 
+	
+	if (requested_ammo < 0) {
+		requested_ammo = 0; 
+	}
 	node = CDR(node);
-	// No need to check if this is a valid entry. Invalid entries will be ignored anyway
-	rearm_limit = eval_num(CDR(node)); 
-
+	
+	// If nothing was supplied then set the rearm limit to a negative value so that it is ignored
+	if (node < 0) {
+		rearm_limit = -1;
+	}
+	else {
+		rearm_limit = eval_num(node); 
+	}
 
 	if (primary)
 	{
