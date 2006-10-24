@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.16 $
- * $Date: 2006-10-01 19:24:45 $
+ * $Revision: 2.174.2.17 $
+ * $Date: 2006-10-24 13:39:26 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.16  2006/10/01 19:24:45  taylor
+ * bit of cleanup (technically the vertex buffer stuff is part of a much larger change slated for post-3.6.9, but this should be a little faster)
+ *
  * Revision 2.174.2.15  2006/09/24 22:50:03  taylor
  * clean up the function ptrs so that it's a bit easier to read
  *
@@ -1470,7 +1473,6 @@ void opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type z
 {
 
 	opengl_set_tex_src(ts);
-
 
 	if (ab != GL_current_alpha_blend) {
 		switch (ab) {
@@ -4443,7 +4445,7 @@ int opengl_init_display_device()
 		DescribePixelFormat(dev_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
 
 		// make sure that we are hardware accelerated and not using the generic implementation
-		if ( (pfd_test.dwFlags & PFD_GENERIC_FORMAT) && !(pfd_test.dwFlags & PFD_GENERIC_ACCELERATED) ) {
+		if ( !Fred_running && (pfd_test.dwFlags & PFD_GENERIC_FORMAT) && !(pfd_test.dwFlags & PFD_GENERIC_ACCELERATED) ) {
 			Assert( bpp == 32 );
 
 			// if we failed at 32-bit then we are probably a 16-bit desktop, so try and init a 16-bit visual instead
