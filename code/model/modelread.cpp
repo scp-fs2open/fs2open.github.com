@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.105.2.10 $
- * $Date: 2006-08-19 04:38:47 $
+ * $Revision: 2.105.2.11 $
+ * $Date: 2006-10-24 13:24:11 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105.2.10  2006/08/19 04:38:47  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.105.2.9  2006/07/21 16:08:32  taylor
  * minor changes to game_busy() debug text
  *  - don't alloc it for bmpman, and make sure to only call on textures that we are loading
@@ -1259,7 +1262,7 @@ int Num_dock_type_names = sizeof(Dock_type_names) / sizeof(flag_def_list);
 // With the basic page in system this can be called from outside of modelread.cpp
 void model_unload(int modelnum, int force)
 {
-	int i,j,num;
+	int i, j, num;
 
 	if ( modelnum >= MAX_POLYGON_MODELS ) {
 		num = modelnum % MAX_POLYGON_MODELS;
@@ -1348,12 +1351,14 @@ void model_unload(int modelnum, int force)
 
 	model_octant_free( pm );
 
-	if (pm->submodel)	{
-		for (i=0; i<pm->n_models; i++ )	{
-			if(!Cmdline_nohtl) {
-		/*		for (int k=0; k<pm->submodel[i].n_buffers; k++ ){
-					gr_destroy_buffer(pm->submodel[i].buffer[k].vertex_buffer);
-				}*/
+	if (pm->submodel) {
+		for (i = 0; i < pm->n_models; i++) {
+			if ( !Cmdline_nohtl ) {
+				for (j = 0; j < (int)pm->submodel[i].buffer.size(); j++) {
+					pm->submodel[i].buffer[j].index_buffer.release();
+				}
+
+				pm->submodel[i].buffer.clear();
 				gr_destroy_buffer(pm->submodel[i].indexed_vertex_buffer);
 			}
 			
@@ -1361,6 +1366,7 @@ void model_unload(int modelnum, int force)
 				vm_free(pm->submodel[i].bsp_data);
 			}
 		}
+
 		vm_free(pm->submodel);
 	}
 
@@ -1593,9 +1599,9 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		mprintf(("Warning: Ignoring unrecognized subsystem %s, believed to be in ship %s\n", dname, Global_filename));
 	}
 
-	if ( (p = strstr(props, "$triggered:")) != NULL)	{
-				subsystemp->flags |= MSS_FLAG_ROTATES;
-				subsystemp->flags |= MSS_FLAG_TRIGGERED;
+	if ( (p = strstr(props, "$triggered:")) != NULL ) {
+		subsystemp->flags |= MSS_FLAG_ROTATES;
+		subsystemp->flags |= MSS_FLAG_TRIGGERED;
 	}
 
 	// Rotating subsystem
