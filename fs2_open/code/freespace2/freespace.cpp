@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.23 $
- * $Date: 2006-10-11 03:10:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.243.2.24 $
+ * $Date: 2006-10-24 13:40:31 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.23  2006/10/11 03:10:53  wmcoolmon
+ * Fix Freecamera forcing HUD draw bug.
+ *
  * Revision 2.243.2.22  2006/09/24 22:53:22  taylor
  * more standalone server fixes:
  *  - add some basic bmpman functionality to grstub, since it needs to do something at least
@@ -3168,7 +3171,8 @@ int game_start_mission()
 
 	get_mission_info(Game_current_mission_filename, &The_mission, false);
 
-	game_loading_callback_init();
+	if ( !(Game_mode & GM_STANDALONE_SERVER) )
+		game_loading_callback_init();
 
 	game_level_init();
 	
