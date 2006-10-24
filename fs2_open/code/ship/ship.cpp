@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.379 $
- * $Date: 2006-10-08 02:05:38 $
+ * $Revision: 2.380 $
+ * $Date: 2006-10-24 23:56:49 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.379  2006/10/08 02:05:38  Goober5000
+ * fix forum links
+ *
  * Revision 2.378  2006/10/06 15:23:42  karajorma
  * Fix for Mantis 1092 - (Support ships damage hull)
  *
@@ -11916,8 +11919,8 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	//Figure out how much of the ship's hull we can repair
 	max_hull_repair = shipp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 
-	//Don't repair the hull if it's already above the max repair threshold
-	if (max_hull_repair < objp->hull_strength)
+	//Don't "reverse-repair" the hull if it's already above the max repair threshold
+	if (objp->hull_strength > max_hull_repair)
 	{
 		max_hull_repair = objp->hull_strength;
 	}
