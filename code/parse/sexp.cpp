@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.283 $
- * $Date: 2006-10-09 05:25:18 $
+ * $Revision: 2.284 $
+ * $Date: 2006-10-24 23:28:49 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.283  2006/10/09 05:25:18  Goober5000
+ * make sexp nodes dynamic
+ *
  * Revision 2.282  2006/09/11 06:47:33  taylor
  * fix bug where set-object-speed-* could set speed subjectively if left to default
  *
@@ -2100,7 +2103,7 @@ void sexp_nodes_init()
 	mprintf(("exited function with %d nodes.\n", Num_sexp_nodes));
 }
 
-void sexp_nodes_close()
+static void sexp_nodes_close()
 {
 	// free all sexp nodes... should only be done on game shutdown
 	if (Sexp_nodes != NULL)
@@ -2117,9 +2120,14 @@ void init_sexp()
 	Sexp_current_replacement_argument = NULL;
 	Sexp_applicable_argument_list.expunge();
 
-	sexp_nodes_init();
-	atexit(sexp_nodes_close);	// hopefully this is correct
+	static bool done_sexp_atexit = false;
+	if (!done_sexp_atexit)
+	{
+		atexit(sexp_nodes_close);
+		done_sexp_atexit = true;
+	}
 
+	sexp_nodes_init();
 	init_sexp_vars();
 	Locked_sexp_false = Locked_sexp_true = -1;
 
