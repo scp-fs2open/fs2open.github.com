@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.5.2.2 $
- * $Date: 2006-08-06 18:47:12 $
- * $Author: Goober5000 $
+ * $Revision: 1.5.2.3 $
+ * $Date: 2006-10-24 13:44:54 $
+ * $Author: taylor $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5.2.2  2006/08/06 18:47:12  Goober5000
+ * add the multiple background feature
+ * --Goober5000
+ *
  * Revision 1.5.2.1  2006/07/20 21:15:11  karajorma
  * Fix for Mantis 996
  *
@@ -209,7 +213,9 @@ static char THIS_FILE[] = __FILE__;
 bg_bitmap_dlg::bg_bitmap_dlg(CWnd* pParent) : CDialog(bg_bitmap_dlg::IDD, pParent)
 {
 	//{{AFX_DATA_INIT(bg_bitmap_dlg)		
-	m_neb_intensity = _T("");	
+	m_neb_intensity = _T("");
+	m_skybox_model = _T("");
+	m_envmap = _T("");
 	m_nebula_color = -1;
 	m_nebula_index = -1;
 	m_bank = 0;
@@ -287,6 +293,7 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_SBITMAP_DIV_Y, b_div_y);
 	DDV_MinMaxInt(pDX, b_div_y, 1, 5);
 	DDX_Text(pDX, IDC_SKYBOX_FNAME, m_skybox_model);
+	DDX_Text(pDX, IDC_ENVMAP, m_envmap);
 	//}}AFX_DATA_MAP
 }
 
@@ -325,6 +332,8 @@ BEGIN_MESSAGE_MAP(bg_bitmap_dlg, CDialog)
 	ON_BN_CLICKED(IDC_IMPORT_BACKGROUND, OnImportBackground)
 	ON_BN_CLICKED(IDC_SWAP_BACKGROUND, OnSwapBackground)
 	ON_CBN_SELCHANGE(IDC_BACKGROUND_NUM, OnBackgroundDropdownChange)
+	ON_BN_CLICKED(IDC_SKYBOX_MODEL, OnSkyboxBrowse)
+	ON_BN_CLICKED(IDC_ENVMAP_BROWSE, OnEnvmapBrowse)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -361,7 +370,9 @@ void bg_bitmap_dlg::create()
 	GetDlgItem(IDC_POOF3)->SetWindowText(Neb2_poof_filenames[3]);
 	GetDlgItem(IDC_POOF4)->SetWindowText(Neb2_poof_filenames[4]);
 	GetDlgItem(IDC_POOF5)->SetWindowText(Neb2_poof_filenames[5]);
-	GetDlgItem(IDC_SKYBOX_FNAME)->SetWindowText(The_mission.skybox_model);
+
+	m_skybox_model = _T(The_mission.skybox_model);
+	m_envmap = _T(The_mission.envmap_name);
 
 	for(i=0; i<MAX_NEB2_BITMAPS; i++){
 		if(strlen(Neb2_bitmap_filenames[i]) > 0){
@@ -550,7 +561,8 @@ void bg_bitmap_dlg::OnClose()
 		The_mission.flags &= ~MISSION_FLAG_SUBSPACE;		
 	}
 
-	string_copy(The_mission.skybox_model, m_skybox_model,NAME_LENGTH, 1);
+	string_copy(The_mission.skybox_model, m_skybox_model, NAME_LENGTH, 1);
+	string_copy(The_mission.envmap_name, m_envmap, NAME_LENGTH, 1);
 
 	// close sun data
 	sun_data_close();
@@ -1431,4 +1443,70 @@ void bg_bitmap_dlg::OnSwapBackground()
 
 	// refresh dialog
 	reinitialize_lists();
+}
+
+
+char *Model_file_ext =	"Model Files (*.pof)|*.pof|"
+						"|";
+
+char *Image_file_ext =	"Image Files (*.dds, *.pcx, *.jpg, *.tga)|*.dds;*.pcx;*.jpg;*.tga|"
+						"DDS Files (*.dds)|*.dds|"
+						"PCX Files (*.pcx)|*.pcx|"
+						"JPG Files (*.jpg)|*.jpg|"
+						"TGA Files (*.tga)|*.tga|"
+						"All Files (*.*)|*.*|"
+						"|";
+
+void bg_bitmap_dlg::OnSkyboxBrowse()
+{
+	CString filename;
+	int z;
+
+	UpdateData(TRUE);
+
+	// get list of
+	z = cfile_push_chdir(CF_TYPE_DATA);
+	CFileDialog dlg(TRUE, NULL, filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Model_file_ext);
+
+	// if we have a result
+	if (dlg.DoModal() == IDOK) {
+		m_skybox_model = dlg.GetFileName();		
+//	} else {
+//		m_skybox_model = _T("");
+	}
+
+	UpdateData(FALSE);		
+
+	// restore directory
+	if (!z){
+		cfile_pop_dir();
+	}	
+}
+
+void bg_bitmap_dlg::OnEnvmapBrowse()
+{
+	CString filename;
+	int z;
+
+	UpdateData(TRUE);
+
+	ENVMAP = -1;
+
+	// get list of
+	z = cfile_push_chdir(CF_TYPE_DATA);
+	CFileDialog dlg(TRUE, NULL, filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, Image_file_ext);
+
+	// if we have a result
+	if (dlg.DoModal() == IDOK) {
+		m_envmap = dlg.GetFileName();		
+//	} else {
+//		m_envmap = _T("");
+	}
+
+	UpdateData(FALSE);		
+
+	// restore directory
+	if (!z){
+		cfile_pop_dir();
+	}	
 }

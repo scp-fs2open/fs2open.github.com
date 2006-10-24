@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.6 $
- * $Date: 2006-10-06 13:41:41 $
- * $Author: Goober5000 $
+ * $Revision: 1.12.2.7 $
+ * $Date: 2006-10-24 13:44:54 $
+ * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.6  2006/10/06 13:41:41  Goober5000
+ * <nelson> Ha, ha! </nelson>
+ *
  * Revision 1.12.2.5  2006/10/06 09:44:32  taylor
  * make sure that the armor stuff gets initted (should fix Mantis bug #1080)
  *
@@ -1483,6 +1486,10 @@ void clear_mission()
 
 	strcpy(The_mission.loading_screen[GR_640],"");
 	strcpy(The_mission.loading_screen[GR_1024],"");
+	strcpy(The_mission.skybox_model, "");
+	strcpy(The_mission.envmap_name, "");
+
+	ENVMAP = -1;
 
 	set_modified(FALSE);
 	Update_window = 1;
