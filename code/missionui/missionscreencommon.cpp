@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.32.2.2 $
- * $Date: 2006-08-19 04:38:46 $
+ * $Revision: 2.32.2.3 $
+ * $Date: 2006-10-24 13:31:32 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32.2.2  2006/08/19 04:38:46  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.32.2.1  2006/07/17 01:09:03  taylor
  * fix some missile autocentering issues
  *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
@@ -1333,7 +1336,7 @@ void common_select_close()
 		multi_ts_close();
 	} 
 
-	ship_select_close();	
+	ship_select_close();
 	brief_close();	
 
 	common_free_interface_palette();
