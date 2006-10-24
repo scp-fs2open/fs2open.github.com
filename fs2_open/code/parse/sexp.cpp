@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.26 $
- * $Date: 2006-10-24 13:17:24 $
- * $Author: taylor $
+ * $Revision: 2.259.2.27 $
+ * $Date: 2006-10-24 23:28:56 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.26  2006/10/24 13:17:24  taylor
+ * various bits of cleanup (warning messages, things that Valgrind complained about, etc.)
+ * fix an out-of-bounds issue on Sexp_nodes[] which was leading to stack corruption
+ *
  * Revision 2.259.2.25  2006/10/21 21:57:07  karajorma
  * Fix Int3() with Set primary and Secondary ammo\weapons
  *
@@ -2100,7 +2104,7 @@ void sexp_nodes_init()
 	nprintf(("SEXP", "Exited function with %d nodes.\n", Num_sexp_nodes));
 }
 
-void sexp_nodes_close()
+static void sexp_nodes_close()
 {
 	// free all sexp nodes... should only be done on game shutdown
 	if (Sexp_nodes != NULL)
@@ -2117,9 +2121,14 @@ void init_sexp()
 	Sexp_current_replacement_argument = NULL;
 	Sexp_applicable_argument_list.expunge();
 
-	sexp_nodes_init();
-	atexit(sexp_nodes_close);	// hopefully this is correct
+	static bool done_sexp_atexit = false;
+	if (!done_sexp_atexit)
+	{
+		atexit(sexp_nodes_close);
+		done_sexp_atexit = true;
+	}
 
+	sexp_nodes_init();
 	init_sexp_vars();
 	Locked_sexp_false = Locked_sexp_true = -1;
 
