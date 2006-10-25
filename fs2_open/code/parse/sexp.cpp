@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.27 $
- * $Date: 2006-10-24 23:28:56 $
+ * $Revision: 2.259.2.28 $
+ * $Date: 2006-10-25 01:01:55 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.27  2006/10/24 23:28:56  Goober5000
+ * make sure to only add the sexp callback once
+ *
  * Revision 2.259.2.26  2006/10/24 13:17:24  taylor
  * various bits of cleanup (warning messages, things that Valgrind complained about, etc.)
  * fix an out-of-bounds issue on Sexp_nodes[] which was leading to stack corruption
@@ -1605,6 +1608,8 @@ sexp_oper Operators[] = {
 
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
+	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
+	{ "num-ships-in-wing",			OP_NUM_SHIPS_IN_WING,			1,	INT_MAX},	// Karajorma
 	{ "num-players",					OP_NUM_PLAYERS,				0, 0, },
 	{ "num_kills",								OP_NUM_KILLS,							1, 1			},
 	{ "num_type_kills",						OP_NUM_TYPE_KILLS,					2,	2			},
@@ -1612,6 +1617,7 @@ sexp_oper Operators[] = {
 	{ "team-score",					OP_TEAM_SCORE,					1,	1,	}, 
 	{ "was-promotion-granted",				OP_WAS_PROMOTION_GRANTED,			0, 1,			},
 	{ "was-medal-granted",					OP_WAS_MEDAL_GRANTED,				0, 1,			},
+	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
 	
 	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,	1,	1,	},
 	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,	1,	1,	},
@@ -1645,7 +1651,6 @@ sexp_oper Operators[] = {
 	{ "unscramble-messages",		OP_UNSCRAMBLE_MESSAGES,		0,	0,},
 	{ "disable-builtin-messages",	OP_DISABLE_BUILTIN_MESSAGES,	0,	INT_MAX,},	// Karajorma
 	{ "enable-builtin-messages",	OP_ENABLE_BUILTIN_MESSAGES,		0,	INT_MAX,},	// Karajorma
-
 
 	{ "add-goal",					OP_ADD_GOAL,					2, 2, },
 	{ "remove-goal",				OP_REMOVE_GOAL,					2, 2, },			// Goober5000
@@ -1691,13 +1696,6 @@ sexp_oper Operators[] = {
 	{ "unlock-primary-weapon",		OP_UNLOCK_PRIMARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "lock-secondary-weapon",		OP_LOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "unlock-secondary-weapon",	OP_UNLOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
-
-	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
-	{ "num-ships-in-wing",			OP_NUM_SHIPS_IN_WING,			1,	INT_MAX},	// Karajorma
-	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
-
-	{ "is-nav-visited",				OP_NAV_ISVISITED,				1, 1 }, // Kazan
-	{ "distance-to-nav",			OP_NAV_DISTANCE,				1, 1 }, // Kazan
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
@@ -1746,6 +1744,8 @@ sexp_oper Operators[] = {
 	{ "end-campaign",					OP_END_CAMPAIGN,				0, 0 },
 	{ "end-of-campaign",				OP_END_OF_CAMPAIGN,				0, 0 },
 
+	{ "is-nav-visited",					OP_NAV_IS_VISITED,				1, 1 }, // Kazan
+	{ "distance-to-nav",				OP_NAV_DISTANCE,				1, 1 }, // Kazan
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,			3, 3 }, //kazan
 	{ "add-nav-ship",					OP_NAV_ADD_SHIP,				2, 2 }, //kazan
 	{ "del-nav",						OP_NAV_DEL,						1, 1 }, //kazan
@@ -1899,7 +1899,6 @@ sexp_oper Operators[] = {
 	{ "script-eval-num",			OP_SCRIPT_EVAL_NUM,						1, 1, },
 	{ "script-eval-string",			OP_SCRIPT_EVAL_STRING,					1, 1, },
 	{ "script-eval",				OP_SCRIPT_EVAL,							1, INT_MAX},
-
 
 	{ "do-nothing",	OP_NOP,	0, 0,			},
 };
@@ -15917,7 +15916,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_current_speed(node);
 				break;
 
-			case OP_NAV_ISVISITED: //kazan
+			case OP_NAV_IS_VISITED: //kazan
 				sexp_val = is_nav_visited(node);
 				break;
 
@@ -16291,7 +16290,7 @@ int query_operator_return_type(int op)
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
 		case OP_IS_CARGO:
 		case OP_MISSILE_LOCKED:
-		case OP_NAV_ISVISITED:
+		case OP_NAV_IS_VISITED:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -17682,7 +17681,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_CURRENT_SPEED:
 			return OPF_SHIP_WING;
 
-		case OP_NAV_ISVISITED:		//Kazan
+		case OP_NAV_IS_VISITED:		//Kazan
 		case OP_NAV_DISTANCE:		//kazan
 		case OP_NAV_DEL:			//kazan
 		case OP_NAV_HIDE:			//kazan
@@ -19000,7 +18999,7 @@ sexp_help_struct Sexp_help[] = {
 		"\t3:\t(optional) A seed to use when generating numbers. (Setting this to 0 is the same as having no seed at all)" },
 
 	// -------------------------- Nav Points --- Kazan -------------------------- 
-	{ OP_NAV_ISVISITED, "Takes 1 argument: The Nav Point Name\r\n"
+	{ OP_NAV_IS_VISITED, "Takes 1 argument: The Nav Point Name\r\n"
 		"Returns whether that nav point has been visited (player within 1000 meters)" },
 
 	{ OP_NAV_DISTANCE, "Takes 1 argument: The Nav point Name\r\n"
