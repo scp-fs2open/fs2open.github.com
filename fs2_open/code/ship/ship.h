@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.11 $
- * $Date: 2006-10-08 02:05:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.150.2.12 $
+ * $Date: 2006-10-27 21:33:06 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.11  2006/10/08 02:05:34  Goober5000
+ * fix forum links
+ *
  * Revision 2.150.2.10  2006/10/06 09:47:11  taylor
  * For redalert stored data be sure that dead ships don't come back, and departed ships come back just as they left (Mantis bug #810)
  *
@@ -874,6 +877,7 @@
 #include "globalincs/globals.h"		// for defintions of token lengths -- maybe move this elsewhere later (Goober5000 - moved to globals.h)
 #include "graphics/2d.h"			// for color def
 #include "model/model.h"
+#include "model/modelanim.h"
 #include "palman/palman.h"
 #include "weapon/trails.h"
 #include "ai/ai.h"
@@ -988,8 +992,8 @@ typedef struct ship_weapon {
 	int ai_class;
 
 	int flags;								// see SW_FLAG_* defines above
-	bool primary_animation_position[MAX_SHIP_PRIMARY_BANKS];
-	bool secondary_animation_position[MAX_SHIP_SECONDARY_BANKS];
+	ubyte primary_animation_position[MAX_SHIP_PRIMARY_BANKS];
+	ubyte secondary_animation_position[MAX_SHIP_SECONDARY_BANKS];
 	int primary_animation_done_time[MAX_SHIP_PRIMARY_BANKS];
 	int  secondary_animation_done_time[MAX_SHIP_SECONDARY_BANKS];
 } ship_weapon;
@@ -1079,7 +1083,7 @@ typedef	struct ship_subsys {
 	int		turret_pick_big_attack_point_timestamp;	//	Next time to pick an attack point for this turret
 	vec3d	turret_big_attack_point;			//	local coordinate of point for this turret to attack on enemy
 
-	bool	turret_animation_position;
+	ubyte	turret_animation_position;
 	int		turret_animation_done_time;
 
 	// swarm (rapid fire) info
@@ -1104,7 +1108,6 @@ typedef	struct ship_subsys {
 	fix time_subsys_cargo_revealed;	// added by Goober5000
 
 	triggered_rotation trigger;		//the actual currently running animation and assosiated states
-
 } ship_subsys;
 
 // structure for subsystems which tells us the total count of a particular type of subsystem (i.e.
@@ -1447,17 +1450,16 @@ typedef struct ship {
 
 	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 
-	bool bay_doors_open;			//are the bay doors open right now
-	int bay_number_wanting_open;	//the number of fighters that want my bay doors open
-	bool bay_doors_want_open;		//when this value changes I tell my parent
-	int bay_doors_open_time;		//the time when the bay doors will be open
-	bool bay_doors_open_last_frame;	//start moveing as soon as the bay doors are totaly open
-	int launched_from;				//wich bay path I launched from
+	// fighter bay door stuff, parent side
+	int bay_doors_anim_done_time;		// ammount of time to transition from one animation state to another
+	ubyte bay_doors_status;			// anim status of the bay doors (closed/not-animating, opening, open/not-animating)
+	int bay_doors_wanting_open;		// how many ships want/need the bay door open
 
-	//ok, when a fighter is made in a fighter bay it will add one to bay_number_wanting_open
-	//when a fighter reaches the second point on a bay path it will subtract one from this variable
-	//when nobody wants the bay doors open anymore, the parent ship will close them
-
+	// figther bay door stuff, client side
+	ubyte bay_doors_launched_from;	// the bay door that I launched from
+	bool bay_doors_need_open;		// keep track of whether I need the door open or not
+	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
+	
 	float secondary_point_reload_pct[MAX_SHIP_SECONDARY_BANKS][MAX_SLOTS];	//after fireing a secondary it takes some time for that secondary weapon to reload, this is how far along in that proces it is (from 0 to 1)
 	float reload_time[MAX_SHIP_SECONDARY_BANKS]; //how many seconds it will take for any point in a bank to reload
 	float primary_rotate_rate[MAX_SHIP_PRIMARY_BANKS];
@@ -2362,15 +2364,6 @@ extern int ship_has_engine_power(ship *shipp);
 
 //WMC - Warptype stuff
 int warptype_match(char *p);
-
-//Gets animation type index from string name
-int match_animation_type(char *p);
-//starts an animation of a certan type that may be assosiated with a submodel of a ship
-void ship_start_animation_type(ship *shipp, int animation_type, int subtype, int direction);
-//how long untill the animation is done
-int ship_get_animation_time_type(ship *shipp, int animation_type, int subtype);
-
-void ship_animation_set_initial_states(ship *shipp);
 
 // Goober5000
 int ship_starting_wing_lookup(char *wing_name);
