@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.24 $
- * $Date: 2006-10-24 13:40:31 $
+ * $Revision: 2.243.2.25 $
+ * $Date: 2006-10-27 21:39:27 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.24  2006/10/24 13:40:31  taylor
+ * fix loading callback issue in standalone
+ *
  * Revision 2.243.2.23  2006/10/11 03:10:53  wmcoolmon
  * Fix Freecamera forcing HUD draw bug.
  *
@@ -3232,7 +3235,7 @@ int game_start_mission()
 			}
 			shipp = &Ships[Objects[moveup->objnum].instance];
 
-			ship_animation_set_initial_states(shipp);
+			model_anim_set_initial_states(shipp);
 
 			moveup = GET_NEXT(moveup);
 		}

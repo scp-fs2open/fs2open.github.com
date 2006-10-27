@@ -3384,11 +3384,11 @@ LUA_FUNC(getAnimationDoneTime, l_Ship, "Type, Subtype", "Time (milliseconds)", "
 	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	int type = match_animation_type(s);
+	int type = model_anim_match_type(s);
 	if(type < 0)
 		return LUA_RETURN_FALSE;
 
-	return lua_set_args(L, "i", ship_get_animation_time_type(&Ships[objh->objp->instance], type, subtype));
+	return lua_set_args(L, "i", model_anim_get_time_type(&Ships[objh->objp->instance], type, subtype));
 }
 
 LUA_FUNC(triggerAnimation, l_Ship, "Type, [Subtype, Forwards]", "True",
@@ -3406,7 +3406,7 @@ LUA_FUNC(triggerAnimation, l_Ship, "Type, [Subtype, Forwards]", "True",
 	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	int type = match_animation_type(s);
+	int type = model_anim_match_type(s);
 	if(type < 0)
 		return LUA_RETURN_FALSE;
 
@@ -3414,7 +3414,7 @@ LUA_FUNC(triggerAnimation, l_Ship, "Type, [Subtype, Forwards]", "True",
 	if(!b)
 		dir = -1;
 
-	ship_start_animation_type(&Ships[objh->objp->instance], type, subtype, dir);
+	model_anim_start_type(&Ships[objh->objp->instance], type, subtype, dir);
 
 	return LUA_RETURN_TRUE;
 }

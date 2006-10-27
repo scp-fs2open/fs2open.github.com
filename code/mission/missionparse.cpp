@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.18 $
- * $Date: 2006-10-24 13:34:33 $
+ * $Revision: 2.178.2.19 $
+ * $Date: 2006-10-27 21:39:27 $
  * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.18  2006/10/24 13:34:33  taylor
+ * remove a basically useless debug message
+ * fix parse_init() so that it doesn't absolutely have to init sexps (doesn't need them when getting basic info, and causes memory fragmentation otherwise)
+ * fix multiplayer mission info getting to just get basic info (fixes a couple of minor multi issues that were already fixed in single)
+ *
  * Revision 2.178.2.17  2006/10/09 20:50:02  Goober5000
  * betterized some things with mission arrivals and departures
  *
@@ -3144,7 +3149,7 @@ int parse_create_object_sub(p_object *p_objp)
 					ptr->weapons.ai_class = sssp->ai_class;
 
 				ptr->turret_best_weapon = -1;
-				ptr->turret_animation_position = false;
+				ptr->turret_animation_position = 0;	// MA_POS_NOT_SET -> model animation position is not set
 				ptr->turret_animation_done_time = 0;
 			}
 
