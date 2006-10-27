@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.44.2.6 $
- * $Date: 2006-10-24 13:38:23 $
+ * $Revision: 1.44.2.7 $
+ * $Date: 2006-10-27 06:42:29 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44.2.6  2006/10/24 13:38:23  taylor
+ * fix the envmap-getting-rotated-by-turrets bug (though it did make me chuckle a bit when I first saw it ;))
+ * try to reuse old view setup info, if we are using the same settings again (for speed up purposes, will be a bigger deal when bumpmapping gets here)
+ *
  * Revision 1.44.2.5  2006/10/01 19:24:46  taylor
  * bit of cleanup (technically the vertex buffer stuff is part of a much larger change slated for post-3.6.9, but this should be a little faster)
  *
@@ -695,8 +699,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 		//  - LOD0:  only 2 extra passes (3 main passes total, rendering 24 light sources)
 		//  - LOD1:  only 1 extra pass   (2 main passes total, rendering 16 light sources)
 		//  - LOD2+: no extra passes     (1 main pass   total, rendering  8 light sources)
-		extern int model_current_LOD;
-		int max_passes = (2 - model_current_LOD);
+		extern int Interp_detail_level;
+		int max_passes = (2 - Interp_detail_level);
 
 		if (max_passes > 0) {
 			opengl_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
