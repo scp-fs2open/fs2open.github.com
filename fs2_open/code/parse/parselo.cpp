@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.73.2.3 $
- * $Author: taylor $
- * $Date: 2006-09-11 01:16:31 $
+ * $Revision: 2.73.2.4 $
+ * $Author: Goober5000 $
+ * $Date: 2006-10-27 16:01:49 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73.2.3  2006/09/11 01:16:31  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.73.2.2  2006/08/03 01:33:25  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
@@ -572,7 +575,7 @@ int get_line_num()
 	char	*p;
 
 	p = Mission_text_raw;
-	stoploc = (Mp - Mission_text) + p;
+	stoploc = Mp;
 
 	while (p < stoploc)
 	{
