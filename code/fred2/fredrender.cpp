@@ -9,14 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.5.2.1 $
- * $Date: 2006-10-24 13:44:54 $
+ * $Revision: 1.5.2.2 $
+ * $Date: 2006-10-27 06:33:38 $
  * $Author: taylor $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5.2.1  2006/10/24 13:44:54  taylor
+ * add envmap selection to background editor
+ * change skybox selection to be a text entry or browse instead of only text entry
+ * allow envmap selected in background editor to be used by FRED
+ * make texture replacement work in FRED for ships (Mantis bug #1068)
+ *
  * Revision 1.5  2006/05/16 12:45:20  karajorma
  * Fix the lack of a background in FRED
  *
@@ -1189,6 +1195,10 @@ void render_one_model_htl(object *objp)
 		if(!Lighting_on) {
 			j |= MR_NO_LIGHTING;
 			gr_set_lighting(false,false);
+		}
+
+		if (FullDetail) {
+			j |= MR_FULL_DETAIL;
 		}
 
 		if (Fred_outline)	{
