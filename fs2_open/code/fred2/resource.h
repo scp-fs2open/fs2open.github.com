@@ -1310,6 +1310,7 @@
 #define ID_SHOW_IFF_6                   33087
 #define ID_SHOW_IFF_7                   33088
 #define ID_SHOW_IFF_8                   33089
+#define ID_VIEW_FULL_DETAIL             33090
 #define ID_INDICATOR_MODE               59142
 #define ID_INDICATOR_LEFT               59143
 #define ID_INDICATOR_RIGHT              59144
@@ -1321,7 +1322,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        273
-#define _APS_NEXT_COMMAND_VALUE         33090
+#define _APS_NEXT_COMMAND_VALUE         33091
 #define _APS_NEXT_CONTROL_VALUE         1593
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
