@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.26.2.4 $
- * $Date: 2006-10-01 19:29:35 $
+ * $Revision: 2.26.2.5 $
+ * $Date: 2006-10-27 06:42:30 $
  * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26.2.4  2006/10/01 19:29:35  taylor
+ * if shockwaves weren't loaded then don't try to unload them (fixes standalone crash)
+ *
  * Revision 2.26.2.3  2006/08/22 05:47:00  taylor
  * make sure that we properly page in textures for 3d shockwave models
  *
@@ -738,7 +741,7 @@ void shockwave_render(object *objp)
 	if (sw->model > -1) {
 		float model_Interp_scale_xyz = sw->radius / 50.0f;
 
-		set_warp_globals( model_Interp_scale_xyz, model_Interp_scale_xyz, model_Interp_scale_xyz, -1, 1.0f - (sw->radius/sw->outer_radius) );
+		model_set_warp_globals( model_Interp_scale_xyz, model_Interp_scale_xyz, model_Interp_scale_xyz, -1, 1.0f - (sw->radius/sw->outer_radius) );
 		
 		float dist = vm_vec_dist_quick( &sw->pos, &Eye_position );
 
@@ -747,7 +750,7 @@ void shockwave_render(object *objp)
 		model_render( sw->model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NO_FOGGING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL, sw->objnum);
 		gr_set_cull(1);
 
-		set_warp_globals( 1.0f, 1.0f, 1.0f, -1, -1.0f);
+		model_set_warp_globals( 1.0f, 1.0f, 1.0f, -1, -1.0f);
 	}else{
 		if (!Cmdline_nohtl) {
 			g3_transfer_vertex(&p, &sw->pos);
