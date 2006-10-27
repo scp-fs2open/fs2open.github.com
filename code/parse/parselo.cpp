@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.79 $
- * $Author: taylor $
- * $Date: 2006-09-13 03:57:00 $
+ * $Revision: 2.80 $
+ * $Author: Goober5000 $
+ * $Date: 2006-10-27 16:01:46 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2006/09/13 03:57:00  taylor
+ * fix some stuff_string()'s that got missed previously
+ *
  * Revision 2.78  2006/09/11 06:50:42  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -584,7 +587,7 @@ int get_line_num()
 	char	*p;
 
 	p = Mission_text_raw;
-	stoploc = (Mp - Mission_text) + p;
+	stoploc = Mp;
 
 	while (p < stoploc)
 	{
