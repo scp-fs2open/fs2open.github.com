@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.19.2.1 $
- * $Date: 2006-10-26 15:46:35 $
+ * $Revision: 2.19.2.2 $
+ * $Date: 2006-10-27 06:44:35 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19.2.1  2006/10/26 15:46:35  taylor
+ * give the standalone chat box a horizontal scroll capability, not terribly accurate but it's good enough for the purpose (Mantis bug #1095)
+ *
  * Revision 2.19  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -2103,6 +2106,15 @@ void std_add_chat_text(char *text,int player_index,int add_id)
 	} else {
 		strcpy(format, text);
 	}
+
+	// this thing isn't all that accurate, it typically produces a longer line, but I don't really care :p
+	if (Godstuff_player_messages_HDC)
+		GetTextExtentPoint32(Godstuff_player_messages_HDC, format, strlen(format), &text_size);
+
+	if (Godstuff_longest_message < text_size.cx)
+		Godstuff_longest_message = (int)text_size.cx;
+
+	SendMessage(Godstuff_player_messages, LB_SETHORIZONTALEXTENT, (WPARAM)Godstuff_longest_message, (LPARAM)0);
 
 	// this thing isn't all that accurate, it typically produces a longer line, but I don't really care :p
 	if (Godstuff_player_messages_HDC)

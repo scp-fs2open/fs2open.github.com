@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.17 $
- * $Date: 2006-10-24 13:39:26 $
+ * $Revision: 2.174.2.18 $
+ * $Date: 2006-10-27 06:44:35 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.17  2006/10/24 13:39:26  taylor
+ * don't require hardware GL if running FRED (this is mainly for my benefit since I always forget to add that locally)
+ *
  * Revision 2.174.2.16  2006/10/01 19:24:45  taylor
  * bit of cleanup (technically the vertex buffer stuff is part of a much larger change slated for post-3.6.9, but this should be a little faster)
  *
