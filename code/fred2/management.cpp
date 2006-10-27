@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.7 $
- * $Date: 2006-10-24 13:44:54 $
+ * $Revision: 1.12.2.8 $
+ * $Date: 2006-10-27 06:34:40 $
  * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,12 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.7  2006/10/24 13:44:54  taylor
+ * add envmap selection to background editor
+ * change skybox selection to be a text entry or browse instead of only text entry
+ * allow envmap selected in background editor to be used by FRED
+ * make texture replacement work in FRED for ships (Mantis bug #1068)
+ *
  * Revision 1.12.2.6  2006/10/06 13:41:41  Goober5000
  * <nelson> Ha, ha! </nelson>
  *
@@ -742,7 +748,7 @@ void parse_medal_tbl()
 }
 */
 
-void parse_init();
+void parse_init(bool basic = false);
 void brief_init_colors();
 
 void fred_preload_all_briefing_icons()
