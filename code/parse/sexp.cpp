@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.28 $
- * $Date: 2006-10-25 01:01:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.259.2.29 $
+ * $Date: 2006-10-28 21:17:04 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.28  2006/10/25 01:01:55  Goober5000
+ * moved some stuff around in the sexp menus
+ *
  * Revision 2.259.2.27  2006/10/24 23:28:56  Goober5000
  * make sure to only add the sexp callback once
  *
@@ -4011,6 +4014,7 @@ int stuff_sexp_variable_list()
 	char default_value[TOKEN_LENGTH];
 	char str_type[TOKEN_LENGTH];
 	char persistent[TOKEN_LENGTH];
+	char network[TOKEN_LENGTH];
 	int index;
 	int type;
 
@@ -4059,6 +4063,16 @@ int stuff_sexp_variable_list()
 		} else {
 			type = SEXP_VARIABLE_UNKNOWN;
 			Error(LOCATION, "SEXP variable '%s' is an unknown type!", var_name);
+		}
+
+		// possibly get network-variable
+		if (check_for_string("\"network-variable\"")) {
+			// eat it
+			get_string(network);
+			ignore_white_space();
+
+			// set type
+			type |= SEXP_VARIABLE_NETWORK;
 		}
 
 		// possibly get player-persistent
@@ -18440,7 +18454,7 @@ void sexp_modify_variable(char *text, int index)
 
 	// do multi_callback_here
 	// send a network packet if we need to
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER))
+	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK))
 	{
 		send_variable_update_packet(index, Sexp_variables[index].text);
 	}

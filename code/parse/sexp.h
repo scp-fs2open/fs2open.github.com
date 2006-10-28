@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122.2.4 $
- * $Author: Goober5000 $
- * $Date: 2006-10-25 01:01:55 $
+ * $Revision: 2.122.2.5 $
+ * $Author: karajorma $
+ * $Date: 2006-10-28 21:17:04 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122.2.4  2006/10/25 01:01:55  Goober5000
+ * moved some stuff around in the sexp menus
+ *
  * Revision 2.122.2.3  2006/10/21 21:57:08  karajorma
  * Fix Int3() with Set primary and Secondary ammo\weapons
  *
@@ -1453,6 +1456,8 @@ char *CTEXT(int n);
 
 // Goober5000 - hopefully this should work and not conflict with anything
 #define SEXP_VARIABLE_CAMPAIGN_PERSISTENT	(1<<29)	//	(0x0100)
+//Karajorma
+#define SEXP_VARIABLE_NETWORK				(1<<28)
 
 #define BLOCK_EXP_SIZE					6
 #define INNER_RAD							0
