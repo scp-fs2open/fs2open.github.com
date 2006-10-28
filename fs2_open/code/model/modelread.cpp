@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.105.2.11 $
- * $Date: 2006-10-24 13:24:11 $
+ * $Revision: 2.105.2.12 $
+ * $Date: 2006-10-28 04:01:33 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105.2.11  2006/10/24 13:24:11  taylor
+ * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
+ * deal with a index_buffer memory leak that Valgrind has always complained about
+ * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
+ * get rid of MAX_BUFFERS
+ * make D3D vertex buffers dynamic, like OGL has already done
+ *
  * Revision 2.105.2.10  2006/08/19 04:38:47  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -2237,30 +2244,34 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				//parse_triggers(pm->submodel[n].n_triggers, &pm->submodel[n].triggers, &props[0]);
 
-				if ( ( p = strstr(props, "$gun_rotation:"))== NULL )pm->submodel[n].gun_rotation = true;
-				else pm->submodel[n].gun_rotation = false;
+				if ( (p = strstr(props, "$gun_rotation:")) == NULL )
+					pm->submodel[n].gun_rotation = true;
+				else
+					pm->submodel[n].gun_rotation = false;
 
-				if ( ( p = strstr(props, "$detail_box:"))!= NULL ) {
-					p+=13;
+				if ( (p = strstr(props, "$detail_box:")) != NULL ) {
+					p += 13;
 					pm->submodel[n].use_render_box = atoi(p);
-					if ( ( p = strstr(props, "$box_min:"))!= NULL ){
-						p+=10;
-						pm->submodel[n].render_box_min.xyz.x = (float)atof(p);
-						while(*p!=',')p++;
-						pm->submodel[n].render_box_min.xyz.y = (float)atof(p);
-						while(*p!=',')p++;
-						pm->submodel[n].render_box_min.xyz.z = (float)atof(p);
-					}else{
+
+					if ( (p = strstr(props, "$box_min:")) != NULL ) {
+						p += 10;
+						pm->submodel[n].render_box_min.xyz.x = (float)strtod(p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_min.xyz.y = (float)strtod(++p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_min.xyz.z = (float)strtod(++p, (char **)NULL);
+					} else {
 						pm->submodel[n].render_box_min = pm->submodel[n].min;
 					}
-					if ( ( p = strstr(props, "$box_max:"))!= NULL ){
-						p+=10;
-						pm->submodel[n].render_box_max.xyz.x = (float)atof(p);
-						while(*p!=',')p++;
-						pm->submodel[n].render_box_max.xyz.y = (float)atof(p);
-						while(*p!=',')p++;
-						pm->submodel[n].render_box_max.xyz.z = (float)atof(p);
-					}else{
+
+					if ( (p = strstr(props, "$box_max:")) != NULL ) {
+						p += 10;
+						pm->submodel[n].render_box_max.xyz.x = (float)strtod(p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_max.xyz.y = (float)strtod(++p, (char **)NULL);
+						while (*p != ',') p++;
+						pm->submodel[n].render_box_max.xyz.z = (float)strtod(++p, (char **)NULL);
+					} else {
 						pm->submodel[n].render_box_max = pm->submodel[n].max;
 					}
 				}
