@@ -36,6 +36,7 @@ public:
 	bool		m_type_number;
 	bool		m_type_campaign_persistent;
 	bool		m_type_player_persistent;
+	bool		m_type_network_variable;
 	bool		m_create;
 	int		m_sexp_var_index;
 	//}}AFX_DATA
@@ -61,6 +62,7 @@ protected:
 	afx_msg void OnTypeString();
 	afx_msg void OnTypePlayerPersistent();
 	afx_msg void OnTypeCampaignPersistent();
+	afx_msg void OnTypeNetworkVariable();
 	afx_msg void set_variable_type();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()

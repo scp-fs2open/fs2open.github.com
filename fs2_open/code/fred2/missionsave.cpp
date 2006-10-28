@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.11 $
- * $Date: 2006-10-15 22:03:16 $
- * $Author: wmcoolmon $
+ * $Revision: 1.14.2.12 $
+ * $Date: 2006-10-28 20:54:35 $
+ * $Author: karajorma $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.11  2006/10/15 22:03:16  wmcoolmon
+ * Fix extra jumpnode settings not saving. They still don't show up in FRED, unfortunately.
+ *
  * Revision 1.14.2.10  2006/10/09 05:25:07  Goober5000
  * make sexp nodes dynamic
  *
@@ -1323,9 +1326,14 @@ int CFred_mission_save::save_variables()
 			// index "var name" "default" "type"
 			fout("\n\t\t%d\t\t\"%s\"\t\t\"%s\"\t\t\"%s\"", i, Sexp_variables[i].variable_name, Sexp_variables[i].text, type);
 
-			// persistent variables
+			// persistent and network variables
 			if (Format_fs2_open)
 			{
+				// Network variable - Karajorma
+				if (Sexp_variables[i].type & SEXP_VARIABLE_NETWORK) {
+					fout("\t\t\"%s\"", "network-variable");
+				}
+
 				// player-persistent - Goober5000
 				if (Sexp_variables[i].type & SEXP_VARIABLE_PLAYER_PERSISTENT) {
 					fout("\t\t\"%s\"", "player-persistent");
