@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.157.2.14 $
- * $Date: 2006-10-27 21:37:11 $
+ * $Revision: 2.157.2.15 $
+ * $Date: 2006-10-28 04:00:09 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157.2.14  2006/10/27 21:37:11  taylor
+ * more cleanup of warp_global crap
+ * scale render/detail box limits with detail level setting
+ * make sure that we reset culling and zbuffer after each model buffer that gets rendered
+ *
  * Revision 2.157.2.13  2006/10/27 06:42:29  taylor
  * rename set_warp_globals() to model_set_warp_globals()
  * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
@@ -6267,7 +6272,12 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 		}
 		// trying to get transperent textures-Bobboau
 		else if (pm->maps[tmap_num].is_transparent) {
-			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
+			// for special shockwave/warpmap usage
+			if (Interp_warp_alpha != -1.0f)
+				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_warp_alpha );
+			else
+				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
+
 			gr_zbuffer_set(GR_ZBUFF_READ);
 		}
 		else if (!no_texturing) {
