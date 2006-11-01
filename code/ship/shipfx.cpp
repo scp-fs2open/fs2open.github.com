@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.7 $
- * $Date: 2006-11-01 18:35:58 $
+ * $Revision: 2.66.2.8 $
+ * $Date: 2006-11-01 18:46:22 $
  * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.7  2006/11/01 18:35:58  taylor
+ * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
+ *
  * Revision 2.66.2.6  2006/09/08 06:14:44  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -3395,7 +3398,7 @@ void engine_wash_ship_process(ship *shipp)
 							}
 						} else {
 							// check if inside cone - first fine apex of cone
-							inset_depth = (bank->points[j].radius / fl_tan(half_angle);
+							inset_depth = (bank->points[j].radius / fl_tan(half_angle));
 							vm_vec_scale_add(&apex, &world_thruster_pos, &world_thruster_norm, -inset_depth);
 							vm_vec_sub(&apex_to_ship, &objp->pos, &apex);
 							vm_vec_normalize(&apex_to_ship);
