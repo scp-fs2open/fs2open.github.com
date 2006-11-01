@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.25 $
- * $Date: 2006-10-27 21:39:27 $
+ * $Revision: 2.243.2.26 $
+ * $Date: 2006-11-01 06:12:59 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.25  2006/10/27 21:39:27  taylor
+ * updated/fixed modelanim code
+ *
  * Revision 2.243.2.24  2006/10/24 13:40:31  taylor
  * fix loading callback issue in standalone
  *
@@ -2410,7 +2413,6 @@ void game_sunspot_process(float frametime)
 			}
 
 			// draw the sun glow
-			Assert(Viewer_obj);
 			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, 0 ) )	{
 				// draw the glow for this sun
 				stars_draw_sun_glow(0);	
