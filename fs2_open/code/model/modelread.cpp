@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.105.2.12 $
- * $Date: 2006-10-28 04:01:33 $
+ * $Revision: 2.105.2.13 $
+ * $Date: 2006-11-01 18:35:57 $
  * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105.2.12  2006/10/28 04:01:33  taylor
+ * forgot this part of the render box fix (obviously no one ever really tried to use this feature, since it has never worked)
+ *
  * Revision 2.105.2.11  2006/10/24 13:24:11  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
@@ -1342,11 +1345,21 @@ void model_unload(int modelnum, int force)
 	}
 
 
-	if ( pm->thrusters )	{
+	if ( pm->thrusters ) {
+		for (i = 0; i < pm->n_thrusters; i++) {
+			if (pm->thrusters[i].points)
+				vm_free(pm->thrusters[i].points);
+		}
+
 		vm_free(pm->thrusters);
 	}
 
 	if ( pm->glow_point_banks )	{ // free the glows!!! -Bobboau
+		for (i = 0; i < pm->n_glow_point_banks; i++) {
+			if (pm->glow_point_banks[i].points)
+				vm_free(pm->glow_point_banks[i].points);
+		}
+
 		vm_free(pm->glow_point_banks);
 	}
 
@@ -2458,11 +2471,10 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				char props[MAX_PROP_LEN];
 
 				int gpb_num = cfread_int(fp);
-				glow_point gp_temp;
 
 				pm->n_glow_point_banks = gpb_num;
-
 				pm->glow_point_banks = NULL;
+
 				if (gpb_num > 0)
 				{
 					pm->glow_point_banks = (glow_point_bank *) vm_malloc(sizeof(glow_point_bank) * gpb_num);
@@ -2481,7 +2493,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					bank->submodel_parent = cfread_int(fp);
 					bank->LOD = cfread_int(fp);
 					bank->type = cfread_int(fp);
-					bank->num_slots = cfread_int(fp);
+					bank->num_points = cfread_int(fp);
+					bank->points = NULL;
+
+					if (bank->num_points > 0)
+						bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
 
 					if((bank->off_time > 0) && (bank->disp_time > 0))
 						bank->is_on = 0;
@@ -2526,23 +2542,13 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						}
 					}
 
-					for (j = 0; j < bank->num_slots; j++)
+					for (j = 0; j < bank->num_points; j++)
 					{
-						glow_point *p;
-
-						if (j < MAX_THRUSTER_SLOTS)
-							p = &bank->point[j];
-						else
-							p = &gp_temp;
+						glow_point *p = &bank->points[j];
 
 						cfread_vector(&(p->pnt), fp);
 						cfread_vector(&(p->norm), fp);
 						p->radius = cfread_float( fp);
-					}
-
-					if ( bank->num_slots >= MAX_THRUSTER_SLOTS ) {
-						Warning(LOCATION, "Number of glow points per bank exceeds maximum.  Limit is %d per bank.", MAX_THRUSTER_SLOTS);
-						bank->num_slots = MAX_THRUSTER_SLOTS;
 					}
 				}
 				break;					
@@ -2559,7 +2565,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					for (i = 0; i < pm->n_thrusters; i++ ) {
 						thruster_bank *bank = &pm->thrusters[i];
 
-						bank->num_slots = cfread_int(fp);
+						bank->num_points = cfread_int(fp);
+						bank->points = NULL;
+
+						if (bank->num_points > 0)
+							bank->points = (glow_point *) vm_malloc(sizeof(glow_point) * bank->num_points);
 
 						bank ->obj_num = -1;
 
@@ -2610,10 +2620,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 							}
 						}
 
-						for (j = 0; j < bank->num_slots; j++) {
-							glow_point *p = &bank->point[j];
+						for (j = 0; j < bank->num_points; j++) {
+							glow_point *p = &bank->points[j];
+
 							cfread_vector( &(p->pnt), fp );
 							cfread_vector( &(p->norm), fp );
+
 							if ( pm->version > 2004 )	{
 								p->radius = cfread_float( fp );
 								//mprintf(( "Rad = %.2f\n", rad ));
