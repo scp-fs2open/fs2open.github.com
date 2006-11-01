@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.267 $
- * $Date: 2006-09-24 22:55:17 $
+ * $Revision: 2.268 $
+ * $Date: 2006-11-01 06:15:25 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.267  2006/09/24 22:55:17  taylor
+ * more standalone server fixes:
+ *  - add some basic bmpman functionality to grstub, since it needs to do something at least
+ *  - add missing gr_* function ptrs to grstrub
+ *  - (re-)enable radar and hud setup functions that used to crash (problems are fixed now)
+ *  - deal with default pilot file properly (also caused a bmpman headache)
+ *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
+ *
  * Revision 2.266  2006/09/24 13:30:33  taylor
  * small optimizations and code cleanup
  * use the real frametime for FPS counter stuff, no reason to deal with time compression there (Mantis bug #1058)
@@ -2401,7 +2409,6 @@ void game_sunspot_process(float frametime)
 			}
 
 			// draw the sun glow
-			Assert(Viewer_obj);
 			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, 0 ) )	{
 				// draw the glow for this sun
 				stars_draw_sun_glow(0);	
