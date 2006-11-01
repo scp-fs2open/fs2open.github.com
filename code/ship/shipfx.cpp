@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.6 $
- * $Date: 2006-09-08 06:14:44 $
+ * $Revision: 2.66.2.7 $
+ * $Date: 2006-11-01 18:35:58 $
  * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.6  2006/09/08 06:14:44  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.66.2.5  2006/08/18 17:48:39  karajorma
  * More typos revealed while trying to merge changes to the HEAD branch!
  *
@@ -3357,13 +3360,13 @@ void engine_wash_ship_process(ship *shipp)
 			half_angle = ewp->angle;
 			radius_mult = ewp->radius_mult;
 
-			for (j=0; j<bank->num_slots; j++) {
+			for (j=0; j<bank->num_points; j++) {
 				// get world pos of thruster
-				vm_vec_unrotate(&world_thruster_pos, &bank->point[j].pnt, &ship_objp->orient);
+				vm_vec_unrotate(&world_thruster_pos, &bank->points[j].pnt, &ship_objp->orient);
 				vm_vec_add2(&world_thruster_pos, &ship_objp->pos);
 				
 				// get world norm of thruster;
-				vm_vec_unrotate(&world_thruster_norm, &bank->point[j].norm, &ship_objp->orient);
+				vm_vec_unrotate(&world_thruster_norm, &bank->points[j].norm, &ship_objp->orient);
 
 				// get vector from thruster to ship
 				vm_vec_sub(&thruster_to_ship, &objp->pos, &world_thruster_pos);
@@ -3373,14 +3376,14 @@ void engine_wash_ship_process(ship *shipp)
 				if (dot_to_ship > 0) {
 
 					// get max wash distance
-					max_wash_dist = MAX(ewp->length, bank->point[j].radius*ewp->radius_mult);
+					max_wash_dist = MAX(ewp->length, bank->points[j].radius * ewp->radius_mult);
 
 					// check if within dist range
 					dist_sqr = vm_vec_mag_squared(&thruster_to_ship);
 					if (dist_sqr < max_wash_dist*max_wash_dist) {
 
 						// check if inside the sphere
-						if (dist_sqr < radius_mult*radius_mult*bank->point[j].radius*bank->point[j].radius) {
+						if ( dist_sqr < ((radius_mult * radius_mult) * (bank->points[j].radius * bank->points[j].radius)) ) {
 							vm_vec_crossprod(&temp, &world_thruster_norm, &thruster_to_ship);
 							vm_vec_scale_add2(&shipp->wash_rot_axis, &temp, dot_to_ship / dist_sqr);
 //							shipp->wash_intensity += (1.0f - dist_sqr / (max_wash_dist*max_wash_dist));
@@ -3392,7 +3395,7 @@ void engine_wash_ship_process(ship *shipp)
 							}
 						} else {
 							// check if inside cone - first fine apex of cone
-							inset_depth = float(bank->point[j].radius / tan(half_angle));
+							inset_depth = (bank->points[j].radius / fl_tan(half_angle);
 							vm_vec_scale_add(&apex, &world_thruster_pos, &world_thruster_norm, -inset_depth);
 							vm_vec_sub(&apex_to_ship, &objp->pos, &apex);
 							vm_vec_normalize(&apex_to_ship);
