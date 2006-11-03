@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.27 $
- * $Date: 2006-09-04 09:21:55 $
- * $Author: Backslash $
+ * $Revision: 1.28 $
+ * $Date: 2006-11-03 18:45:11 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2006/09/04 09:21:55  Backslash
+ * Turn off gliding upon activating autopilot
+ *
  * Revision 1.26  2006/09/04 06:06:38  wmcoolmon
  * Cover-up a bloody annoying warning
  *
@@ -224,7 +227,7 @@ char* NavPoint::GetInteralName()
 //        * Destination > 1,000 meters away
 bool CanAutopilot()
 {
-	if (CurrentNav == -1)
+	if (CurrentNav == -1 || object_get_gliding(Player_obj))
 		return false;
 
 	// You cannot autopilot if you're within 1000 meters of your destination nav point
