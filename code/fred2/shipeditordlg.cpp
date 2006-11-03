@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.8 $
- * $Date: 2006-07-30 20:01:56 $
- * $Author: Kazan $
+ * $Revision: 1.9 $
+ * $Date: 2006-11-03 21:36:56 $
+ * $Author: karajorma $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2006/07/30 20:01:56  Kazan
+ * resolve 1018 and an interface problem in fred2's ship editor
+ *
  * Revision 1.7  2006/06/04 01:01:52  Goober5000
  * add fighterbay restriction code
  * --Goober5000
@@ -1531,15 +1534,18 @@ int CShipEditorDlg::update_ship(int ship)
 	if (m_departure_location != -1)
 		MODIFY(Ships[ship].departure_location, m_departure_location);
 
-	// do the persona update
-	// m_persona holds the index into the list.  Get the item data associated with this index and then
-	// assign to the ship taking care that we check for the NO_PERSONA_INDEX id
-	box = (CComboBox *)GetDlgItem(IDC_SHIP_PERSONA);
-	persona = box->GetItemData(m_persona);
-	if ( persona == NO_PERSONA_INDEX )
-		persona = -1;
+	if (m_persona != -1)
+	{
+		// do the persona update
+		// m_persona holds the index into the list.  Get the item data associated with this index and then
+		// assign to the ship taking care that we check for the NO_PERSONA_INDEX id
+		box = (CComboBox *)GetDlgItem(IDC_SHIP_PERSONA);
+		persona = box->GetItemData(m_persona);
+		if ( persona == NO_PERSONA_INDEX )
+			persona = -1;
 
-	MODIFY(Ships[ship].persona_index, persona);
+		MODIFY(Ships[ship].persona_index, persona);
+	}
 
 	if (Ships[ship].wingnum < 0) {
 		if (!multi_edit || m_update_arrival) {  // should we update the arrival cue?
