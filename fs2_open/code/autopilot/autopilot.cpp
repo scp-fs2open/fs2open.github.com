@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.3 $
- * $Date: 2006-09-11 01:00:27 $
- * $Author: taylor $
+ * $Revision: 1.23.2.4 $
+ * $Date: 2006-11-03 18:44:11 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.3  2006/09/11 01:00:27  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 1.23.2.2  2006/07/27 19:17:33  Kazan
  * Lock player primaries during autopilot
  *
@@ -221,7 +224,7 @@ char* NavPoint::GetInteralName()
 //        * Destination > 1,000 meters away
 bool CanAutopilot()
 {
-	if (CurrentNav == -1)
+	if (CurrentNav == -1 || object_get_gliding(Player_obj))
 		return false;
 
 	// You cannot autopilot if you're within 1000 meters of your destination nav point
