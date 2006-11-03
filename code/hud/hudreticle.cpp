@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.11 $
- * $Date: 2005-10-10 17:21:04 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2006-11-03 18:47:43 $
+ * $Author: Kazan $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2005/10/10 17:21:04  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.10  2005/07/22 10:18:38  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -615,7 +618,9 @@ void hud_show_throttle()
 	// hud_render_throttle_background(y_end);
 
 	// draw throttle speed number
-	hud_render_throttle_speed(current_speed, y_end);
+	//hud_render_throttle_speed(current_speed, y_end);
+	// Absolute speed, not forward speed, for hud speed reticle - fixes the guage for sliding -- kazan
+	hud_render_throttle_speed(Player_obj->phys_info.speed, y_end);
 
 	// draw the "desired speed" bar on the throttle
 	hud_render_throttle_line(desired_y_pos);
