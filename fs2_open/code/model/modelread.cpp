@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.105.2.13 $
- * $Date: 2006-11-01 18:35:57 $
- * $Author: taylor $
+ * $Revision: 2.105.2.14 $
+ * $Date: 2006-11-04 17:22:54 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105.2.13  2006/11/01 18:35:57  taylor
+ * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
+ *
  * Revision 2.105.2.12  2006/10/28 04:01:33  taylor
  * forgot this part of the render box fix (obviously no one ever really tried to use this feature, since it has never worked)
  *
@@ -2454,7 +2457,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						bay->num_slots = cfread_int(fp);
 
 						if(bay->num_slots != 2) {
-							Warning(LOCATION, "Model '%s' has %d dockpoints in model file; models must have %d dock slots per dock point.", filename, bay->num_slots, 2);
+							Warning(LOCATION, "Model '%s' has %d slots in dock point '%s'; models must have exactly %d slots per dock point.", filename, bay->num_slots, bay->name, 2);
 						}
 
 						for (j = 0; j < bay->num_slots; j++) {
