@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.115 $
- * $Date: 2006-08-20 00:51:06 $
- * $Author: taylor $
+ * $Revision: 2.116 $
+ * $Date: 2006-11-04 17:21:49 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.115  2006/08/20 00:51:06  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.114  2006/07/21 16:06:56  taylor
  * minor changes to game_busy() debug text
  *  - don't alloc it for bmpman, and make sure to only call on textures that we are loading
@@ -2424,7 +2427,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						bay->num_slots = cfread_int(fp);
 
 						if(bay->num_slots != 2) {
-							Warning(LOCATION, "Model '%s' has %d dockpoints in model file; models must have %d dock slots per dock point.", filename, bay->num_slots, 2);
+							Warning(LOCATION, "Model '%s' has %d slots in dock point '%s'; models must have exactly %d slots per dock point.", filename, bay->num_slots, bay->name, 2);
 						}
 
 						for (j = 0; j < bay->num_slots; j++) {
