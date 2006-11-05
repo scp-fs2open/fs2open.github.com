@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.48 $
- * $Date: 2006-09-11 06:50:42 $
- * $Author: taylor $
+ * $Revision: 2.49 $
+ * $Date: 2006-11-05 18:41:39 $
+ * $Author: Goober5000 $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2006/09/11 06:50:42  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.47  2006/09/11 06:10:28  taylor
  * crap, there was supposed to be a multi check there
  *
@@ -1097,7 +1100,7 @@ void main_hall_init(int main_hall_num)
 	// load the mask
 	Main_hall_mask = bm_load(Main_hall->mask);
 	if (Main_hall_mask < 0) {
-		Error(LOCATION,"Could not load in main hall mask '%s'!", Main_hall->mask);
+		Error(LOCATION,"Could not load in main hall mask '%s'!\n\n(This error most likely means that you are missing required 1024x768 interface art.)", Main_hall->mask);
 	} else {
 		// get a pointer to bitmap by using bm_lock(), so we can feed it to he snazzy menu system
 		Main_hall_mask_bitmap = bm_lock(Main_hall_mask, 8, BMP_AABITMAP);
