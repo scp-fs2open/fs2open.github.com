@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.29 $
- * $Date: 2006-10-28 21:17:04 $
- * $Author: karajorma $
+ * $Revision: 2.259.2.30 $
+ * $Date: 2006-11-05 18:42:25 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.29  2006/10/28 21:17:04  karajorma
+ * Adding the network-variable option to SEXP variables. This change will revert variables to the same behaviour they displayed in retail (i.e they don't update for clients) unless a variable is set to be a network-variable.
+ *
  * Revision 2.259.2.28  2006/10/25 01:01:55  Goober5000
  * moved some stuff around in the sexp menus
  *
@@ -17275,10 +17278,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_EVENT_INCOMPLETE:
 		case OP_EVENT_TRUE_DELAY:
 		case OP_EVENT_FALSE_DELAY:
-			if (!argnum)
+			if (argnum == 0)
 				return OPF_EVENT_NAME;
-			else
+			else if (argnum == 1)
 				return OPF_POSITIVE;
+			else if (argnum == 2)
+				return OPF_BOOL;
 
 		case OP_GOAL_INCOMPLETE:
 		case OP_GOAL_TRUE_DELAY:
