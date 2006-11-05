@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.285 $
- * $Date: 2006-10-25 01:01:51 $
+ * $Revision: 2.286 $
+ * $Date: 2006-11-05 18:42:25 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.285  2006/10/25 01:01:51  Goober5000
+ * moved some stuff around in the sexp menus
+ *
  * Revision 2.284  2006/10/24 23:28:49  Goober5000
  * make sure to only add the sexp callback once
  *
@@ -17370,10 +17373,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_EVENT_INCOMPLETE:
 		case OP_EVENT_TRUE_DELAY:
 		case OP_EVENT_FALSE_DELAY:
-			if (!argnum)
+			if (argnum == 0)
 				return OPF_EVENT_NAME;
-			else
+			else if (argnum == 1)
 				return OPF_POSITIVE;
+			else if (argnum == 2)
+				return OPF_BOOL;
 
 		case OP_GOAL_INCOMPLETE:
 		case OP_GOAL_TRUE_DELAY:
