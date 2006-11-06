@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.97 $
- * $Date: 2006-11-06 05:42:44 $
+ * $Revision: 2.98 $
+ * $Date: 2006-11-06 06:33:48 $
  * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2006/11/06 05:42:44  taylor
+ * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
+ * deal with a index_buffer memory leak that Valgrind has always complained about
+ * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
+ * get rid of MAX_BUFFERS
+ * make D3D vertex buffers dynamic, like OGL has already done
+ *
  * Revision 2.96  2006/09/11 06:38:32  taylor
  * crap.  ... again
  *
@@ -881,10 +888,6 @@ extern matrix Object_matrix;
 extern float	Canv_w2;				// Canvas_width / 2
 extern float	Canv_h2;				// Canvas_height / 2
 extern float	View_zoom;
-
-extern float Model_Interp_scale_x;	//added these three for warpin stuff-Bobbau
-extern float Model_Interp_scale_y;
-extern float Model_Interp_scale_z;
 
 extern int G3_user_clip;
 extern vec3d G3_user_clip_normal;

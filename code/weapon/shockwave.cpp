@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.31 $
- * $Date: 2006-11-06 06:19:17 $
+ * $Revision: 2.32 $
+ * $Date: 2006-11-06 06:33:48 $
  * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/11/06 06:19:17  taylor
+ * rename set_warp_globals() to model_set_warp_globals()
+ * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
+ * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
+ * change "model_current_LOD" to a global "Interp_detail_level" and the static "Interp_detail_level" to "Interp_detail_level_locked", a bit more descriptive
+ * minor bits of cleanup
+ * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
+ *
  * Revision 2.30  2006/10/06 09:33:56  taylor
  * if shockwaves weren't loaded then don't try to unload them (fixes standalone crash)
  *
@@ -750,7 +758,7 @@ void shockwave_render(object *objp)
 		model_render( sw->model, &Objects[sw->objnum].orient, &sw->pos, MR_NO_LIGHTING | MR_NO_FOGGING | MR_NORMAL | MR_CENTER_ALPHA | MR_NO_CULL, sw->objnum);
 		gr_set_cull(1);
 
-		model_set_warp_globals( 1.0f, 1.0f, 1.0f, -1, -1.0f);
+		model_set_warp_globals();
 	}else{
 		if (!Cmdline_nohtl) {
 			g3_transfer_vertex(&p, &sw->pos);

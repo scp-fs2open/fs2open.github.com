@@ -9,13 +9,21 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.34 $
- * $Date: 2006-11-06 06:19:17 $
+ * $Revision: 2.35 $
+ * $Date: 2006-11-06 06:33:48 $
  * $Author: taylor $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2006/11/06 06:19:17  taylor
+ * rename set_warp_globals() to model_set_warp_globals()
+ * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
+ * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
+ * change "model_current_LOD" to a global "Interp_detail_level" and the static "Interp_detail_level" to "Interp_detail_level_locked", a bit more descriptive
+ * minor bits of cleanup
+ * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
+ *
  * Revision 2.33  2006/07/21 16:04:46  taylor
  * little cleanup
  *
@@ -317,7 +325,6 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 
 	vm_vec_scale_add( &center, pos, &orient->vec.fvec, -(max_radius/2.5f)/3.0f );
 
-//	Warp_Map = texture_bitmap_num;//sets the warp map, and thus sets the interp flag for this being a warpin effect
 	vec3d vecs[5];
 	vertex verts[5];
 
@@ -394,9 +401,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 		model_render( Warp_model, orient, pos, MR_NO_LIGHTING | MR_NORMAL | MR_NO_FOGGING);
 		gr_set_cull(1);
 
-//	Warp_Map = -1;//un sets the warp map
-
-		model_set_warp_globals(1.0f, 1.0f, 1.0f, -1, -1.0f);
+		model_set_warp_globals();
 
 /*
 //this is that half done effect that was pissing people off-Bobboau
