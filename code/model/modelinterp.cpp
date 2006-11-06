@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.168 $
- * $Date: 2006-09-11 06:45:40 $
+ * $Revision: 2.169 $
+ * $Date: 2006-11-06 06:15:01 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.168  2006/09/11 06:45:40  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.167  2006/09/08 06:20:14  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -1111,12 +1114,13 @@ int Interp_cloakmap_alpha=255;
 
 int model_current_LOD = 0;
 
-void set_warp_globals(float a, float b, float c, int d, float e){
-	Model_Interp_scale_x =a;
-	Model_Interp_scale_y=b;
-	Model_Interp_scale_z=c;
-	Warp_Map=d;
-	Warp_Alpha=e;
+void set_warp_globals(float a, float b, float c, int d, float e)
+{
+	Model_Interp_scale_x = a;
+	Model_Interp_scale_y = b;
+	Model_Interp_scale_z = c;
+	Warp_Map = d;
+	Warp_Alpha = e;
 //	mprintf(("warpmap being set to %d\n",Warp_Map));
 }
 
@@ -1130,7 +1134,7 @@ void (*model_interp_sortnorm)(ubyte * p,polymodel * pm, bsp_info *sm, int do_box
 
 int model_should_render_engine_glow(int objnum, int bank_obj);
 
-void model_render_buffers(bsp_info* model, polymodel * pm);
+void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child = false);
 void model_render_children_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level);
 
 int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
@@ -1856,14 +1860,19 @@ void model_interp_flatpoly(ubyte * p,polymodel * pm)
 	}
 }
 
-void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pnt, vec3d *norm, float alpha, bool invert = false){
+void model_interp_edge_alpha( ubyte *param_r, ubyte *param_g, ubyte *param_b, vec3d *pnt, vec3d *norm, float alpha, bool invert = false)
+{
 	vec3d r;
+
 	vm_vec_sub(&r, &View_position, pnt);
 	vm_vec_normalize(&r);
-	float d = vm_vec_dot(&r, norm);
-	if(d<0.0f)d=-d;
 
-	if(invert)
+	float d = vm_vec_dot(&r, norm);
+
+	if (d < 0.0f)
+		d = -d;
+
+	if (invert)
 		*param_r = *param_g = *param_b = ubyte( fl2i((1.0f - d) * 254.0f * alpha));
 	else
 		*param_r = *param_g = *param_b = ubyte( fl2i(d * 254.0f * alpha) );
@@ -3965,12 +3974,264 @@ void moldel_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, fl
 }
 
 geometry_batcher primary_thruster_batcher, secondary_thruster_batcher, tertiary_thruster_batcher;
- 
+
+// maybe draw mode thruster glows
+void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orient, vec3d *pos)
+{
+	int i, j, k;
+	int n_q = 0;
+	vec3d norm, norm2, fvec, pnt, npnt;
+	thruster_bank *bank = NULL;
+	vertex p;	
+
+	if ( pm == NULL ) {
+		Int3();
+		return;
+	}
+
+	if ( !(Interp_flags & MR_SHOW_THRUSTERS) /*|| !(Detail.engine_glows)*/ )
+		return;
+
+	if ( Interp_thrust_glow_bitmap < 0 )
+		return;
+
+
+	// get an initial count to figure out how man geo batchers we need allocated
+	for (i = 0; i < pm->n_thrusters; i++ ) {
+		bank = &pm->thrusters[i];
+
+		n_q += bank->num_slots;
+	}
+
+	primary_thruster_batcher.allocate(n_q);
+
+	// Bobboau's thruster stuff
+	{
+		if (Interp_secondary_thrust_glow_bitmap >= 0)
+			secondary_thruster_batcher.allocate(n_q);
+
+		if (Interp_tertiary_thrust_glow_bitmap >= 0)
+			tertiary_thruster_batcher.allocate(n_q);
+
+		// this is used for the secondary thruster glows 
+		// it only needs to be calculated once so I'm doing it here -Bobboau
+		/* norm = bank->norm[j] */;
+		norm.xyz.z = -1.0f;
+		norm.xyz.x = 1.0f;
+		norm.xyz.y = -1.0f;
+
+		norm.xyz.x *= controle_rotval.xyz.y/2;
+		norm.xyz.y *= controle_rotval.xyz.x/2;
+
+		vm_vec_normalize(&norm);
+	}
+
+	for (i = 0; i < pm->n_thrusters; i++ ) {
+		bank = &pm->thrusters[i];
+
+		// don't draw this thruster if the engine is destroyed or just not on
+		if ( !model_should_render_engine_glow(objnum, bank->obj_num) )
+			continue;
+
+		for (j = 0; j < bank->num_slots; j++) {
+			float d, D;
+			vec3d tempv;
+
+			vm_vec_sub(&tempv, &View_position, &bank->point[j].pnt);
+			vm_vec_normalize(&tempv);
+
+			D = d = vm_vec_dot(&tempv, &bank->point[j].norm);
+
+			//ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
+			#define NOISE_SCALE 0.5f
+			#define MIN_SCALE 3.4f
+			#define MAX_SCALE 4.7f
+			float scale = MIN_SCALE;
+						
+			// the following replaces Bobboau's code, commented out below - Goober5000
+			float magnitude;
+			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
+
+			// normalize banks, in case of incredibly big normals
+			// VECMAT-ERROR: NULL VEC3D (norm == nul)
+			if ( !IS_VEC_NULL(&bank->point[j].norm) )
+				vm_vec_copy_normalize(&scale_vec, &bank->point[j].norm);
+
+			// adjust for thrust
+			(scale_vec.xyz.x *= Interp_thrust_scale_x) -= 0.1f;
+			(scale_vec.xyz.y *= Interp_thrust_scale_y) -= 0.1f;
+			(scale_vec.xyz.z *= Interp_thrust_scale)   -= 0.1f;
+
+			// get magnitude, which we will use as the scaling reference
+			magnitude = vm_vec_normalize(&scale_vec);
+
+			// get absolute value
+			if (magnitude < 0.0f)
+				magnitude *= -1.0f;
+
+			scale = magnitude * (MAX_SCALE - MIN_SCALE) + MIN_SCALE;
+
+			if (d > 0.0f){
+				// Make glow bitmap fade in/out quicker from sides.
+				d *= 3.0f;
+
+				if (d > 1.0f)
+					d = 1.0f;
+			}
+
+			float fog_int = 1.0f;
+
+			// fade them in the nebula as well
+			if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+				vm_vec_rotate(&npnt, &bank->point[j].pnt, orient);
+				vm_vec_add2(&npnt, pos);
+
+				fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
+	
+				d *= fog_int;
+
+				if (d > 1.0f)
+					d = 1.0f;
+
+				if (fog_int > 1.0f)
+					fog_int = 1.0f;
+
+				// also need to disable fogging
+				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
+			}
+
+			// this is the original scaling code - Goober5000
+		//	scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
+
+			float w = bank->point[j].radius * (scale + Interp_thrust_glow_noise * NOISE_SCALE);
+
+			// these lines are used by the tertiary glows, thus we will need to project this all of the time
+			if (Cmdline_nohtl) {
+				g3_rotate_vertex( &p, &bank->point[j].pnt );
+			} else {
+				g3_transfer_vertex( &p, &bank->point[j].pnt );
+			}
+
+			if ( d > 0.0f) {
+				p.r = p.g = p.b = p.a = (ubyte)(255.0f * d);
+
+				primary_thruster_batcher.draw_bitmap( &p, 0, (w * 0.5f * Interp_thrust_glow_rad_factor), (w * 0.325f) );
+			}
+			// end primary thruster glows
+
+			// start tertiary thruster glows
+			if (Interp_tertiary_thrust_glow_bitmap >= 0) {
+				// tertiary thruster glows, suposet to be a complement to the secondary thruster glows, it simulates the effect of an ion wake or something, 
+				// thus is mostly for haveing a glow that is visable from the front
+				p.sw -= w;
+
+				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
+
+				tertiary_thruster_batcher.draw_bitmap( &p, 0, (magnitude * 4 * Interp_tertiary_thrust_glow_rad_factor), (w * 0.6f), (-(D > 0) ? D : -D) );
+			}
+			// end tertiary thruster glows
+
+			// begin secondary glows ....
+			if (Interp_secondary_thrust_glow_bitmap >= 0) {
+				// secondary thruster glows, they are based on the beam rendering code
+				// they are suposed to simulate... an ion wake... or... something
+				// ok, how's this there suposed to look cool! hows that, 
+				// it that scientific enough for you!! you anti-asthetic basturds!!!
+				// AAAHHhhhh!!!!
+				pnt = bank->point[j].pnt;
+
+				scale = magnitude * (MAX_SCALE - (MIN_SCALE / 2)) + (MIN_SCALE / 2);
+
+				d = vm_vec_dot(&tempv, &norm);
+				d += 0.75f;
+				d *= 3.0f;
+
+				if (d > 1.0f)
+					d = 1.0f;
+
+				if (d > 0.0f) {
+					vm_vec_add(&norm2, &norm, &pnt);
+					vm_vec_sub(&fvec, &norm2, &pnt);
+					vm_vec_normalize(&fvec);
+
+					float w = bank->point[j].radius * scale * 2;
+
+					vm_vec_scale_add(&norm2, &pnt, &fvec, w * 2 * Interp_thrust_glow_len_factor);
+
+					if (The_mission.flags & MISSION_FLAG_FULLNEB) {
+						vm_vec_add(&npnt, &pnt, pos);
+						d *= fog_int;
+					}
+
+					secondary_thruster_batcher.draw_beam(&pnt, &norm2, w*Interp_secondary_thrust_glow_rad_factor*0.5f, d);
+				}
+			}
+			// end secondary glows
+
+			// begin particles
+			if (shipp) {
+				ship_info *sip = &Ship_info[shipp->ship_info_index];
+				particle_emitter	pe;
+				thruster_particles* tp;
+
+				for (k = 0; k < sip->n_thruster_particles; k++) {
+					if (Interp_AB)
+						tp = &sip->afterburner_thruster_particles[k];
+					else
+						tp = &sip->normal_thruster_particles[k];
+
+					float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
+					vm_vec_unrotate(&npnt, &bank->point[j].pnt, orient);
+					vm_vec_add2(&npnt, pos);
+
+					pe.pos = npnt;				// Where the particles emit from
+					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;	// Initial velocity of all the particles
+	
+					vec3d nn = orient->vec.fvec;
+					vm_vec_negate(&nn);
+				//	vm_vec_unrotate(&nn, &bank->norm[j], orient);
+
+					pe.normal = nn;	// What normal the particle emit around
+					pe.min_vel = v * 0.75f;
+					pe.max_vel =  v * 1.25f;
+
+					pe.num_low = tp->n_low;								// Lowest number of particles to create
+					pe.num_high = tp->n_high;							// Highest number of particles to create
+					pe.min_rad = bank->point[j].radius * tp->min_rad; // * objp->radius;
+					pe.max_rad = bank->point[j].radius * tp->max_rad; // * objp->radius;
+					pe.normal_variance = tp->variance;					//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+
+					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_particle_bitmap01);
+				}
+				// end particles
+
+				// do sound - maybe start a random sound, if it has played far enough.
+			}
+		}
+	}
+
+	if (Interp_thrust_glow_bitmap >= 0) {
+		gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
+		primary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+	}
+
+	if (Interp_secondary_thrust_glow_bitmap >= 0) {
+		gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
+		secondary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
+	}
+
+	if (Interp_tertiary_thrust_glow_bitmap >= 0) {
+		gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
+		tertiary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+	}
+}
+
+
 void light_set_all_relevent();
 
-#define mSTUFF_VERTICES()	do { verts[0]->u = 0.0f; verts[0]->v = 0.0f;	verts[1]->u = 1.0f; verts[1]->v = 0.0f; verts[2]->u = 1.0f;	verts[2]->v = 1.0f; verts[3]->u = 0.0f; verts[3]->v = 1.0f; } while(0);
-#define mR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
-#define mP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
+//#define mSTUFF_VERTICES()	do { verts[0]->u = 0.0f; verts[0]->v = 0.0f;	verts[1]->u = 1.0f; verts[1]->v = 0.0f; verts[2]->u = 1.0f;	verts[2]->v = 1.0f; verts[3]->u = 0.0f; verts[3]->v = 1.0f; } while(0);
+//#define mR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
+//#define mP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 
 extern int Warp_model;
 
@@ -4501,316 +4762,10 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 //	gr_printf((200), (20), "x %0.2f, y %0.2f, z %0.2f", Eye_position.xyz.x, Eye_position.xyz.y, Eye_position.xyz.z);
 
 	// Draw the thruster glow
-	if ( (Interp_thrust_glow_bitmap != -1) && !is_outlines_only && !is_outlines_only_htl && (Interp_flags & MR_SHOW_THRUSTERS) /*&& (Detail.engine_glows)*/ )	{
-		int i;
-		int n_q = 0;
-		vec3d norm;
-		for (i = 0; i < pm->n_thrusters; i++ ) {
-			thruster_bank *bank = &pm->thrusters[i];
-		//	for ( int j=0; j<bank->num_slots; j++ )
-				n_q+=bank->num_slots;
-		}
-
-		primary_thruster_batcher.allocate(n_q);
-
-		// Bobboau's thruster stuff
-		{
-			secondary_thruster_batcher.allocate(n_q);
-			tertiary_thruster_batcher.allocate(n_q);
-
-			//this is used for the secondary thruster glows 
-			//it only needs to be calculated once so I'm doing it here -Bobboau
-			/* norm = bank->norm[j] */;
-			norm.xyz.z = -1.0f;
-			norm.xyz.x = 1.0f;
-			norm.xyz.y = -1.0f;
-
-			norm.xyz.x *= controle_rotval.xyz.y/2;
-			norm.xyz.y *= controle_rotval.xyz.x/2;
-
-			vm_vec_normalize(&norm);
-		}
-
-		for (i = 0; i < pm->n_thrusters; i++ ) {
-			thruster_bank *bank = &pm->thrusters[i];
-			int j;
-
-			// don't draw this thruster if the engine is destroyed or just not on
-			if ( !model_should_render_engine_glow(objnum, bank->obj_num) )
-				continue;
-
-			for ( j=0; j<bank->num_slots; j++ )	{
-				float d, D;
-				vec3d tempv;
-				vm_vec_sub(&tempv,&View_position,&bank->point[j].pnt);
-				vm_vec_normalize(&tempv);
-
-				D = d = vm_vec_dot(&tempv,&bank->point[j].norm);
-
-				//ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
-				#define NOISE_SCALE 0.5f
-				#define MIN_SCALE 3.4f
-				#define MAX_SCALE 4.7f
-				float scale = MIN_SCALE;
-						
-				// the following replaces Bobboau's code, commented out below - Goober5000
-				float magnitude;
-				vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
-
-				// normalize banks, in case of incredibly big normals
-				// VECMAT-ERROR: NULL VEC3D (norm == nul)
-				if ( !IS_VEC_NULL(&bank->point[j].norm) )
-					vm_vec_copy_normalize(&scale_vec, &bank->point[j].norm);
-
-				// adjust for thrust
-				(scale_vec.xyz.x *= Interp_thrust_scale_x) -= 0.1f;
-				(scale_vec.xyz.y *= Interp_thrust_scale_y) -= 0.1f;
-				(scale_vec.xyz.z *= Interp_thrust_scale) -= 0.1f;
-
-				// get magnitude, which we will use as the scaling reference
-				magnitude = vm_vec_normalize(&scale_vec);
-
-				// get absolute value
-				if (magnitude < 0.0f)
-					magnitude *= -1.0f;
-
-				scale = magnitude*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
+	if ( !is_outlines_only && !is_outlines_only_htl )
+		model_render_thrusters( pm, objnum, shipp, orient, pos );
 
 
-				vertex p;	
-				
-				if (d > 0.0f){
-					// Make glow bitmap fade in/out quicker from sides.
-					d *= 3.0f;
-
-					if (d > 1.0f)
-						d = 1.0f;
-				}
-
-				vec3d npnt;
-				float fog_int = 1.0f;
-
-				// fade them in the nebula as well
-				if (The_mission.flags & MISSION_FLAG_FULLNEB) {
-				//	vec3d npnt;
-					vm_vec_rotate(&npnt, &bank->point[j].pnt, orient);
-					vm_vec_add2(&npnt, pos);
-					fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
-					d *= fog_int;
-
-					if (d > 1.0f)
-						d = 1.0f;
-
-					if (fog_int > 1.0f)
-						fog_int = 1.0f;
-
-					// also need to disable fogging
-					gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
-				}
-
-				// this is the original scaling code - Goober5000
-			//	scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
-
-				float w = bank->point[j].radius*(scale+Interp_thrust_glow_noise*NOISE_SCALE );
-
-				// these lines are used by the tertiary glows, thus we will need to project this all of the time
-				if (Cmdline_nohtl) {
-					g3_rotate_vertex( &p, &bank->point[j].pnt );
-				} else {
-					g3_transfer_vertex(&p, &bank->point[j].pnt);
-				}
-
-
-				ubyte _color = 255;
-
-				if ( d > 0.0f) {
-					_color = (ubyte)(255.0f * d);
-					p.r = p.g = p.b = p.a = _color;
-
-					primary_thruster_batcher.draw_bitmap( &p, 0, (w * 0.5f * Interp_thrust_glow_rad_factor), (w * 0.325f) );
-				}
-
-				if (Interp_tertiary_thrust_glow_bitmap > -1) {
-					// tertiary thruster glows, suposet to be a complement to the secondary thruster glows, it simulates the effect of an ion wake or something, 
-					// thus is mostly for haveing a glow that is visable from the front
-					p.sw -= w;
-
-					_color = (ubyte)(255.0f * fog_int);
-					p.r = p.g = p.b = p.a = _color;
-
-					tertiary_thruster_batcher.draw_bitmap( &p, 0, (magnitude * 4 * Interp_tertiary_thrust_glow_rad_factor), (w * 0.6f), -(D>0)?D:-D);
-				}
-				
-
-/*begin secondary glows*/
-				//secondary thruster glows, they are based on the beam rendering code
-				//they are suposed to simulate... an ion wake... or... something
-				//ok, how's this there suposed to look cool! hows that, 
-				//it that scientific enough for you!! you anti-asthetic basturds!!!
-				///AAAHHhhhh!!!!
-				vec3d pnt = bank->point[j].pnt;
-
-				scale = magnitude*(MAX_SCALE-(MIN_SCALE/2))+(MIN_SCALE/2);
-																				    
-			//	vertex h1[4];				// halves of a beam section	
-			//	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
-				vec3d fvec, norm2;
-			//	vec3d top1, bottom1, top2, bottom2;
-
-				d = vm_vec_dot(&tempv, &norm);
-				d += 0.75f;
-				d *=3;
-				if(d> 1.0f)d = 1.0f;
-				if(d > 0)
-				{
-					vm_vec_add(&norm2, &norm, &pnt);
-
-			//	vm_vec_rotate(&start, &pnt, orient);
-			//	vm_vec_rotate(&end, &norm, orient);
-			//	vm_vec_sub(&fvec, &end, &start);
-					vm_vec_sub(&fvec, &norm2, &pnt);
-
-					vm_vec_normalize(&fvec);
-
-					float w = bank->point[j].radius*scale*2;
-
-			//		vm_vec_scale_add(&pnt, &pnt, &fvec, -0.25f * w*2*);
-			//	vm_vec_scale_add(&norm, &pnt, &fvec, 0.75f);
-
-					vm_vec_scale_add(&norm2, &pnt, &fvec, w*2*Interp_thrust_glow_len_factor);
-
-/*				vec3d eyepos;
-				eyepos = Eye_position;
-				vm_vec_add2(&eyepos, pos);
-*/
-/*					moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, w*Interp_secondary_thrust_glow_rad_factor, 1.0f, &View_position);	
-					moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm2, w*Interp_secondary_thrust_glow_rad_factor, 1.0f, &View_position);	
-	
-					int idx = 0;
-
-
-
-					if(Cmdline_nohtl) {
-						g3_rotate_vertex(verts[0], &bottom1); 
-						g3_rotate_vertex(verts[1], &bottom2);	
-						g3_rotate_vertex(verts[2], &top2); 
-						g3_rotate_vertex(verts[3], &top1); 	  
-					}else{
-						g3_transfer_vertex(verts[0], &bottom1); 
-						g3_transfer_vertex(verts[1], &bottom2);
-						g3_transfer_vertex(verts[2], &top2);    
-						g3_transfer_vertex(verts[3], &top1); 	  
-					}
-
-					for(idx=0; idx<4; idx++) g3_project_vertex(verts[idx]);
-					verts[0]->u = 0.0f; verts[0]->v = 0.0f;	
-					verts[1]->u = 1.0f; verts[1]->v = 0.0f; 
-					verts[2]->u = 1.0f;	verts[2]->v = 1.0f; 
-					verts[3]->u = 0.0f; verts[3]->v = 1.0f; 
-
-					vm_vec_sub(&tempv,&View_position,&pnt);
-					vm_vec_normalize(&tempv);
-
-*/
-					if(The_mission.flags & MISSION_FLAG_FULLNEB) {
-						vec3d npnt;
-						vm_vec_add(&npnt, &pnt, pos);
-						d *= fog_int;
-					}
-
-/*					gr_set_cull(0);
-					gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, d);		
-					g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
-					gr_set_cull(1);
-*/
-					secondary_thruster_batcher.draw_beam(&pnt, &norm2, w*Interp_secondary_thrust_glow_rad_factor*0.5f, d);
-				}
-
-//end secondary glows
-//begin particles
-				if(shipp) {
-					ship_info* sip = &Ship_info[shipp->ship_info_index];
-/*					particle_emitter pe;
-					float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
-					pe.max_life = v;
-					pe.max_rad = bank->radius[j]*0.75f;
-					pe.max_vel = v;
-					pe.min_life = v*0.5f;
-					pe.min_rad = bank->radius[j]*0.5f;
-					pe.min_vel = v*0.75f;
-					pe.normal = bank->norm[j];
-					pe.normal_variance = 0.2f;
-					pe.num_high = 5;
-					pe.num_low = 1;
-						vec3d npnt;
-						vm_vec_add(&npnt, &pnt, pos);
-					pe.pos = npnt;
-					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;
-					particle_emit( &pe, PARTICLE_BITMAP, Interp_thruster_particle_bitmap );
-					*/
-					particle_emitter	pe;
-					thruster_particles* tp;
-
-					for(int P = 0; P < sip->n_thruster_particles; P++){
-						if(Interp_AB)
-							tp = &sip->afterburner_thruster_particles[P];
-						else
-							tp = &sip->normal_thruster_particles[P];
-
-						float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
-						vec3d npnt = pnt;
-						vm_vec_unrotate(&npnt, &pnt, orient);
-						vm_vec_add(&npnt, &npnt, pos);
-
-						pe.pos = npnt;				// Where the particles emit from
-						pe.vel = Objects[shipp->objnum].phys_info.desired_vel;	// Initial velocity of all the particles
-	
-						vec3d nn = orient->vec.fvec;
-						vm_vec_negate(&nn);
-					//	vm_vec_unrotate(&nn, &bank->norm[j], orient);
-
-						pe.normal = nn;	// What normal the particle emit around
-						pe.min_vel = v*0.75f;
-						pe.max_vel =  v*1.25f;
-
-						pe.num_low = tp->n_low;					// Lowest number of particles to create
-						pe.num_high = tp->n_high;				// Highest number of particles to create
-						pe.min_rad = bank->point[j].radius*tp->min_rad;	// * objp->radius;
-						pe.max_rad = bank->point[j].radius*tp->max_rad; // * objp->radius;
-						pe.normal_variance = tp->variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-
-						particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_particle_bitmap01);
-					}
-
-					// do sound - maybe start a random sound, if it has played far enough.
-				}
-			}
-		}
-
-		if (Interp_thrust_glow_bitmap >= 0) {
-			gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-			primary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-		}
-
-		if (Interp_secondary_thrust_glow_bitmap >= 0) {
-			gr_set_bitmap(Interp_secondary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
-			secondary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
-		}
-
-		if (Interp_tertiary_thrust_glow_bitmap >= 0) {
-			gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-			tertiary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-		}
-	}
-/*
-	Interp_thrust_glow_rad_factor = trf1;
-	Interp_secondary_thrust_glow_rad_factor = trf2;
-	Interp_tertiary_thrust_glow_rad_factor = trf3;
-	Interp_thrust_glow_len_factor = tlf;
-*/
-//	Interp_thrust_glow_bitmap = -1;	
-//	Interp_secondary_thrust_glow_bitmap = -1;
-//	Interp_tertiary_thrust_glow_bitmap = -1;
 	vm_vec_zero(&controle_rotval);
 
 	gr_set_cull(0);	
@@ -4871,7 +4826,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 //	if(Interp_tmap_flags & TMAP_FLAG_PIXEL_FOG)gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 
 	g3_done_instance(use_api);
-	
+
 	gr_zbuffer_set(save_gr_zbuffering_mode);
 	
 	memset(&Interp_offset,0,sizeof(vec3d));
@@ -5486,36 +5441,36 @@ void model_page_out_textures(int model_num, bool release)
 }
 
 
-//**********verrtex buffer stuff**********//
+//**********vertex buffer stuff**********//
 int tri_count[MAX_MODEL_TEXTURES];
-poly_list list[MAX_MODEL_TEXTURES];
-poly_list flat_list;
-line_list flat_line_list;
+poly_list polygon_list[MAX_MODEL_TEXTURES];
+//poly_list flat_list;
+//line_list flat_line_list;
 
-#define parseF(dest, f, off)	{memcpy(&dest, &f[off], sizeof(float)); off += sizeof(float);}
-#define parseI(dest, f, off)	{memcpy(&dest, &f[off], sizeof(int)); off += sizeof(int);}
-#define parseV(dest, f, off)	{parseF(dest.x, f, off); parseF(dest.y, f, off); parseF(dest.z, f, off); }
-#define parseS(dest, f, off)	{memset(dest.str, 0, STRLEN); memcpy(&dest.n_char, &f[off], sizeof(int)); off += sizeof(int); memcpy(&dest.str, &f[off], dest.n_char); off += dest.n_char;}
+//#define parseF(dest, f, off)	{memcpy(&dest, &f[off], sizeof(float)); off += sizeof(float);}
+//#define parseI(dest, f, off)	{memcpy(&dest, &f[off], sizeof(int)); off += sizeof(int);}
+//#define parseV(dest, f, off)	{parseF(dest.x, f, off); parseF(dest.y, f, off); parseF(dest.z, f, off); }
+//#define parseS(dest, f, off)	{memset(dest.str, 0, STRLEN); memcpy(&dest.n_char, &f[off], sizeof(int)); off += sizeof(int); memcpy(&dest.str, &f[off], dest.n_char); off += dest.n_char;}
 
 
-void parse_defpoint(int off, ubyte *bsp_data){
-
+void parse_defpoint(int off, ubyte *bsp_data)
+{
 	int i, n;
 //	off+=4;
 	int nverts = w(off+bsp_data+8);	
 	int offset = w(off+bsp_data+16);
 	int next_norm = 0;
 
-	ubyte * normcount = off+bsp_data+20;
+	ubyte *normcount = off+bsp_data+20;
 //	vertex *dest = Interp_points;
 	vec3d *src = vp(off+bsp_data+offset);
 
 	// Get pointer to lights
 	Interp_lights = off+bsp_data+20+nverts;
 
-	#ifndef NDEBUG
+#ifndef NDEBUG
 	modelstats_num_verts += nverts;
-	#endif
+#endif
 
 	for (n = 0; n < nverts; n++) {
 		Interp_verts[n] = src;
@@ -5549,16 +5504,17 @@ int check_values(vec3d *N)
 
 int Parse_normal_problem_count = 0;
 
-void parse_tmap(int offset, ubyte *bsp_data){
+void parse_tmap(int offset, ubyte *bsp_data)
+{
 	int pof_tex = w(bsp_data+offset+40);
 	int n_vert = w(bsp_data+offset+36);
 	//int n_tri = n_vert - 2;
-	ubyte *temp_verts;
+//	ubyte *temp_verts;
 	ubyte *p = &bsp_data[offset+8];
-
 	model_tmap_vert *tverts;
+
 	tverts = (model_tmap_vert *)&bsp_data[offset+44];
-	temp_verts = &bsp_data[offset+44];
+//	temp_verts = &bsp_data[offset+44];
 
 	vertex *V;
 	vec3d *v;
@@ -5566,17 +5522,19 @@ void parse_tmap(int offset, ubyte *bsp_data){
 
 	int problem_count = 0;
 
-	for(int i = 1; i<n_vert-1; i++){
-		V = &list[pof_tex].vert[(list[pof_tex].n_verts)];
-		N = &list[pof_tex].norm[(list[pof_tex].n_verts)];
+	for (int i = 1; i < (n_vert-1); i++) {
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)];
 		v = Interp_verts[(int)tverts[0].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
 		V->z = v->xyz.z;
 		V->u = tverts[0].u;
 		V->v = tverts[0].v;
+
 		*N = *Interp_norms[(int)tverts[0].normnum];
-		if(IS_VEC_NULL(N))
+
+		if ( IS_VEC_NULL(N) )
 			*N = *vp(p);
 
 	  	problem_count += check_values(N);
@@ -5584,16 +5542,18 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		vm_vec_normalize_safe(N);
 //		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
-		V = &list[pof_tex].vert[(list[pof_tex].n_verts)+1];
-		N = &list[pof_tex].norm[(list[pof_tex].n_verts)+1];
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+1];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+1];
 		v = Interp_verts[(int)tverts[i].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
 		V->z = v->xyz.z;
 		V->u = tverts[i].u;
 		V->v = tverts[i].v;
+
 		*N = *Interp_norms[(int)tverts[i].normnum];
-		if(IS_VEC_NULL(N))
+
+		if ( IS_VEC_NULL(N) )
 			*N = *vp(p);
 
 	 	problem_count += check_values(N);
@@ -5601,16 +5561,18 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		vm_vec_normalize_safe(N);
 //		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
-		V = &list[pof_tex].vert[(list[pof_tex].n_verts)+2];
-		N = &list[pof_tex].norm[(list[pof_tex].n_verts)+2];
+		V = &polygon_list[pof_tex].vert[(polygon_list[pof_tex].n_verts)+2];
+		N = &polygon_list[pof_tex].norm[(polygon_list[pof_tex].n_verts)+2];
 		v = Interp_verts[(int)tverts[i+1].vertnum];
 		V->x = v->xyz.x;
 		V->y = v->xyz.y;
 		V->z = v->xyz.z;
 		V->u = tverts[i+1].u;
 		V->v = tverts[i+1].v;
+
 		*N = *Interp_norms[(int)tverts[i+1].normnum];
-		if(IS_VEC_NULL(N))
+
+		if ( IS_VEC_NULL(N) )
 			*N = *vp(p);
 
 		problem_count += check_values(N);
@@ -5618,9 +5580,8 @@ void parse_tmap(int offset, ubyte *bsp_data){
 		vm_vec_normalize_safe(N);
 //		vm_vec_scale(N, global_scaleing_factor);//global scaleing
 
-		list[pof_tex].n_verts += 3;
-		list[pof_tex].n_prim++;
-	
+		polygon_list[pof_tex].n_verts += 3;
+		polygon_list[pof_tex].n_prim++;
 	}
 
 	Parse_normal_problem_count += problem_count;
@@ -5726,41 +5687,53 @@ void parse_flat_poly(int offset, ubyte *bsp_data)
 
 void parse_sortnorm(int offset, ubyte *bsp_data);
 
-
-void parse_bsp(int offset, ubyte *bsp_data){
+void parse_bsp(int offset, ubyte *bsp_data)
+{
 	int id = w(bsp_data+offset);
 	int size = w(bsp_data+offset+4);
 
-	while(id!=0){
-		switch(id){
-		case OP_EOF:	
-			return;
-			break;
-		case OP_DEFPOINTS:	parse_defpoint(offset, bsp_data);
-			break;
-		case OP_SORTNORM:	parse_sortnorm(offset, bsp_data);
-			break;
-		case OP_FLATPOLY:	parse_flat_poly(offset, bsp_data);
-			break;
-		case OP_TMAPPOLY:	parse_tmap(offset, bsp_data);
-			break;
-		case OP_BOUNDBOX:
-			break;
-		default:
-			return;
+	while (id != 0) {
+		switch (id)
+		{
+			case OP_EOF:	
+				return;
+
+			case OP_DEFPOINTS:
+				parse_defpoint(offset, bsp_data);
+				break;
+
+			case OP_SORTNORM:
+				parse_sortnorm(offset, bsp_data);
+				break;
+
+			case OP_FLATPOLY:
+			//	parse_flat_poly(offset, bsp_data);
+				break;
+
+			case OP_TMAPPOLY:
+				parse_tmap(offset, bsp_data);
+				break;
+
+			case OP_BOUNDBOX:
+				break;
+
+			default:
+				return;
 		}
+
 		offset += size;
 		id = w(bsp_data+offset);
 		size = w(bsp_data+offset+4);
 
-		if(size < 1) id=OP_EOF;
+		if (size < 1)
+			id = OP_EOF;
 	}
 }
 
-
-void parse_sortnorm(int offset, ubyte *bsp_data){
-
+void parse_sortnorm(int offset, ubyte *bsp_data)
+{
 	int frontlist, backlist, prelist, postlist, onlist;
+
 	frontlist = w(bsp_data+offset+36);
 	backlist = w(bsp_data+offset+40);
 	prelist = w(bsp_data+offset+44);
@@ -5774,40 +5747,140 @@ void parse_sortnorm(int offset, ubyte *bsp_data){
 	if (postlist) parse_bsp(offset+postlist, bsp_data);
 }
 
-void find_tri_counts(int offset, ubyte *bsp_data);
-
-void allocate_poly_list()
+void find_tmap(int offset, ubyte *bsp_data)
 {
-	for(int i = 0; i<MAX_MODEL_TEXTURES; i++){
-		list[i].allocate(tri_count[i]*3);
+	int pof_tex = w(bsp_data+offset+40);
+	int n_vert = w(bsp_data+offset+36);
+
+	tri_count[pof_tex] += n_vert-2;	
+}
+
+void find_defpoint(int off, ubyte *bsp_data)
+{
+	int n;
+//	off+=4;
+	int nverts = w(off+bsp_data+8);	
+//	int offset = w(off+bsp_data+16);
+
+	ubyte * normcount = off+bsp_data+20;
+//	vec3d *src = vp(off+bsp_data+offset);
+
+	// Get pointer to lights
+	Interp_lights = off+bsp_data+20+nverts;
+
+#ifndef NDEBUG
+	modelstats_num_verts += nverts;
+#endif
+
+	int norm_num = 0;
+
+	for (n = 0; n < nverts; n++) {	
+		norm_num += normcount[n];
+	}
+
+	Interp_num_verts = nverts;
+	Interp_num_norms = norm_num;
+}
+
+void find_sortnorm(int offset, ubyte *bsp_data);
+
+// tri_count
+void find_tri_counts(int offset, ubyte *bsp_data)
+{
+	int id = w(bsp_data+offset);
+	int size = w(bsp_data+offset+4);
+
+	while (id != 0) {
+		switch (id)
+		{
+			case OP_EOF:	
+				return;
+
+			case OP_DEFPOINTS:
+				find_defpoint(offset, bsp_data);
+				break;
+
+			case OP_SORTNORM:
+				find_sortnorm(offset, bsp_data);
+				break;
+
+			case OP_FLATPOLY:
+				break;
+
+			case OP_TMAPPOLY:
+				find_tmap(offset, bsp_data);
+				break;
+
+			case OP_BOUNDBOX:
+				break;
+
+			default:
+				return;
+		}
+
+		offset += size;
+		id = w(bsp_data+offset);
+		size = w(bsp_data+offset+4);
+
+		if (size < 1)
+			id = OP_EOF;
+	}
+}
+
+void find_sortnorm(int offset, ubyte *bsp_data)
+{
+	int frontlist, backlist, prelist, postlist, onlist;
+
+	frontlist = w(bsp_data+offset+36);
+	backlist = w(bsp_data+offset+40);
+	prelist = w(bsp_data+offset+44);
+	postlist = w(bsp_data+offset+48);
+	onlist = w(bsp_data+offset+52);
+
+	if (prelist) find_tri_counts(offset+prelist,bsp_data);
+	if (backlist) find_tri_counts(offset+backlist, bsp_data);
+	if (onlist) find_tri_counts(offset+onlist, bsp_data);
+	if (frontlist) find_tri_counts(offset+frontlist, bsp_data);
+	if (postlist) find_tri_counts(offset+postlist, bsp_data);
+}
+
+
+static void allocate_poly_list()
+{
+	for (int i = 0; i < MAX_MODEL_TEXTURES; i++) {
+		polygon_list[i].allocate(tri_count[i]*3);
 	}
 
 	model_allocate_interp_data(Interp_num_verts, Interp_num_norms);
 }
 
 int recode_check = 0;
-void recode_bsp(int offset, ubyte *bsp_data);
-void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* index_buffer);
+//void recode_bsp(int offset, ubyte *bsp_data);
+//void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* index_buffer);
 poly_list model_list;
 
-void generate_vertex_buffers(bsp_info* model, polymodel * pm){
-	int i, first_index;
-	for(i =0; i<MAX_MODEL_TEXTURES; i++){
-		list[i].n_prim=0;
-		list[i].n_verts=0;
-		tri_count[i]=0;
+void generate_vertex_buffers(bsp_info *model, polymodel *pm)
+{
+	int i, j, first_index;
+	int total_verts = 0;
+
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
+		polygon_list[i].n_prim = 0;
+		polygon_list[i].n_verts = 0;
+		tri_count[i] = 0;
 	}
 
 //	flat_list.n_poly = 0;
-	flat_line_list.n_line = 0;
+//	flat_line_list.n_line = 0;
 
 	find_tri_counts(0, model->bsp_data);
-	int total_verts = 0;
 
-	for(i = 0; i<MAX_MODEL_TEXTURES; i++){
+
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		total_verts += tri_count[i];
 	}
-	if(total_verts < 1){
+
+	if (total_verts < 1) {
 		model->indexed_vertex_buffer = -1;
 		return;
 	}
@@ -5815,22 +5888,25 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 	allocate_poly_list();
 
 	parse_bsp(0, model->bsp_data);
-	model->n_buffers = 0;
 
 	total_verts = 0;
-	for(i=0; i<MAX_MODEL_TEXTURES; i++){
-		total_verts += list[i].n_verts;
+
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
+		total_verts += polygon_list[i].n_verts;
 	}
 
 	model_list.allocate(total_verts);
 	model_list.n_verts = 0;
 	model_list.n_prim = 0;
 
-	for(i=0; i<MAX_MODEL_TEXTURES; i++){
-		if(!list[i].n_verts)continue;
-		memcpy( (model_list.vert) + model_list.n_verts, list[i].vert, sizeof(vertex) * list[i].n_verts);
-		memcpy( (model_list.norm) + model_list.n_verts, list[i].norm, sizeof(vec3d) * list[i].n_verts);
-		model_list.n_verts += list[i].n_verts;
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
+		if ( !polygon_list[i].n_verts )
+			continue;
+
+		memcpy( (model_list.vert) + model_list.n_verts, polygon_list[i].vert, sizeof(vertex) * polygon_list[i].n_verts );
+		memcpy( (model_list.norm) + model_list.n_verts, polygon_list[i].norm, sizeof(vec3d) * polygon_list[i].n_verts );
+
+		model_list.n_verts += polygon_list[i].n_verts;
 	}
 
 	if ( model_list.n_verts > USHRT_MAX ) {
@@ -5867,7 +5943,7 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 			model_list.make_index_buffer();
 		} else {
 			// it's all good
-			for (i=0; i<ibx_verts; i++) {
+			for (i = 0; i < ibx_verts; i++) {
 				model_list.vert[i].x = cfread_float( ibuffer_info.read );
 				model_list.vert[i].y = cfread_float( ibuffer_info.read );
 				model_list.vert[i].z = cfread_float( ibuffer_info.read );
@@ -5889,7 +5965,7 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 		if ( ibuffer_info.write != NULL ) {
 			cfwrite_int( model_list.n_verts, ibuffer_info.write );
 
-			for (i=0; i<model_list.n_verts; i++) {
+			for (i = 0; i < model_list.n_verts; i++) {
 				cfwrite_float( model_list.vert[i].x, ibuffer_info.write );
 				cfwrite_float( model_list.vert[i].y, ibuffer_info.write );
 				cfwrite_float( model_list.vert[i].z, ibuffer_info.write );
@@ -5901,139 +5977,68 @@ void generate_vertex_buffers(bsp_info* model, polymodel * pm){
 	}
 
 	model->indexed_vertex_buffer = gr_make_buffer(&model_list, VERTEX_FLAG_POSITION | VERTEX_FLAG_NORMAL | VERTEX_FLAG_UV1);
-	if(model->indexed_vertex_buffer == -1)
+
+	if (model->indexed_vertex_buffer == -1)
 		Error(LOCATION, "Could not generate model->indexed_vertex_buffer");
+
 	recode_check = 0;
 //	recode_bsp(0, model->bsp_data);
 
-	for(i=0; i<MAX_MODEL_TEXTURES; i++){	
-		if(!list[i].n_verts)continue;
+	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
+		if ( !polygon_list[i].n_verts )
+			continue;
 
-		if (model->n_buffers >= MAX_BUFFERS_PER_SUBMODEL)
-			Error(LOCATION, "Submodel %s on model %s has more than %d textures.\nFind a high-limit build or remap the model.", model->name, pm->filename, MAX_BUFFERS_PER_SUBMODEL);
+		buffer_data new_buffer;
 
-		model->buffer[model->n_buffers].index_buffer.allocate_index_buffer(list[i].n_verts);
-		for(int j = 0; j < list[i].n_verts; j++){
+		new_buffer.index_buffer.allocate( polygon_list[i].n_verts );
+
+		for (j = 0; j < polygon_list[i].n_verts; j++) {
 			if ( ibuffer_info.read != NULL ) {
-				model->buffer[model->n_buffers].index_buffer.index_buffer[j] = cfread_ushort( ibuffer_info.read );
+				new_buffer.index_buffer.ibuffer[j] = cfread_ushort( ibuffer_info.read );
 			} else {
-				first_index = find_first_index_vb(&list[i], j, &model_list);
+				first_index = find_first_index_vb( &polygon_list[i], j, &model_list );
 				Assert(first_index != -1);
-				model->buffer[model->n_buffers].index_buffer.index_buffer[j] = (ushort)first_index;
 
-				Assert(same_vert(&model_list.vert[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].vert[j], &model_list.norm[model->buffer[model->n_buffers].index_buffer.index_buffer[j]], &list[i].norm[j]));
+				new_buffer.index_buffer.ibuffer[j] = (ushort)first_index;
+
+				Assert( same_vert(&model_list.vert[new_buffer.index_buffer.ibuffer[j]], &polygon_list[i].vert[j], &model_list.norm[new_buffer.index_buffer.ibuffer[j]], &polygon_list[i].norm[j]) );
 			//	Assert(find_first_index_vb(&model_list, j, &list[i]) == j);//there should never ever be any redundant verts
 
 				// try to write out generated index buffer for later use
 				if ( ibuffer_info.write != NULL ) {
-					cfwrite_ushort( model->buffer[model->n_buffers].index_buffer.index_buffer[j], ibuffer_info.write );
+					cfwrite_ushort( new_buffer.index_buffer.ibuffer[j], ibuffer_info.write );
 				}
 			}
 		}
-		model->buffer[model->n_buffers].n_prim = tri_count[i];
-		model->buffer[model->n_buffers].texture = i;
-		model->n_buffers++;
+
+		new_buffer.n_prim = tri_count[i];
+		new_buffer.texture = i;
+
+		model->buffer.push_back( new_buffer );
 	}
 
 }
 
 
-void find_tmap(int offset, ubyte *bsp_data){
-	int pof_tex = w(bsp_data+offset+40);
-	int n_vert = w(bsp_data+offset+36);
+inline int in_box(vec3d *min, vec3d *max, vec3d *pos)
+{
+	vec3d point;
 
-	tri_count[pof_tex] += n_vert-2;	
-}
+	vm_vec_sub(&point, &View_position, pos);
 
-void find_sortnorm(int offset, ubyte *bsp_data){
-
-	int frontlist, backlist, prelist, postlist, onlist;
-	frontlist = w(bsp_data+offset+36);
-	backlist = w(bsp_data+offset+40);
-	prelist = w(bsp_data+offset+44);
-	postlist = w(bsp_data+offset+48);
-	onlist = w(bsp_data+offset+52);
-
-	if (prelist) find_tri_counts(offset+prelist,bsp_data);
-	if (backlist) find_tri_counts(offset+backlist, bsp_data);
-	if (onlist) find_tri_counts(offset+onlist, bsp_data);
-	if (frontlist) find_tri_counts(offset+frontlist, bsp_data);
-	if (postlist) find_tri_counts(offset+postlist, bsp_data);
-}
-
-void find_defpoint(int off, ubyte *bsp_data){
-
-	int n;
-//	off+=4;
-	int nverts = w(off+bsp_data+8);	
-//	int offset = w(off+bsp_data+16);
-
-	ubyte * normcount = off+bsp_data+20;
-//	vec3d *src = vp(off+bsp_data+offset);
-
-	// Get pointer to lights
-	Interp_lights = off+bsp_data+20+nverts;
-
-	#ifndef NDEBUG
-	modelstats_num_verts += nverts;
-	#endif
-
-
-	int norm_num = 0;
-
-	for (n = 0; n < nverts; n++) {	
-		norm_num += normcount[n];
+	if ( (point.xyz.x >= min->xyz.x) && (point.xyz.x <= max->xyz.x)
+		&& (point.xyz.y >= min->xyz.y) && (point.xyz.y <= max->xyz.y)
+		&& (point.xyz.z >= min->xyz.z) && (point.xyz.z <= max->xyz.z) )
+	{
+		return 1;
 	}
 
-	Interp_num_verts = nverts;
-	Interp_num_norms = norm_num;
-}
-
-
-//tri_count
-void find_tri_counts(int offset, ubyte *bsp_data){
-	int id = w(bsp_data+offset);
-	int size = w(bsp_data+offset+4);
-
-	while(id!=0){
-		switch(id){
-		case OP_EOF:	
-			return;
-			break;
-		case OP_DEFPOINTS:	find_defpoint(offset, bsp_data);
-			break;
-		case OP_SORTNORM:	find_sortnorm(offset, bsp_data);
-			break;
-		case OP_FLATPOLY:	//find_flat_poly(offset, bsp_data);
-			break;
-		case OP_TMAPPOLY:	find_tmap(offset, bsp_data);
-			break;
-		case OP_BOUNDBOX:
-			break;
-		default:
-			return;
-		}
-		offset += size;
-		id = w(bsp_data+offset);
-		size = w(bsp_data+offset+4);
-
-		if(size < 1) id=OP_EOF;
-	}
-}
-
-
-int in_box(vec3d *min, vec3d *max, vec3d * point){
-	if(point->xyz.x >= min->xyz.x && point->xyz.x <= max->xyz.x &&
-		point->xyz.y >= min->xyz.y && point->xyz.y <= max->xyz.y &&
-		point->xyz.z >= min->xyz.z && point->xyz.z <= max->xyz.z)return 1;
 	return -1;
 }
 
 
-void model_render_children_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level){
-
-	if(model->use_render_box && -model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &View_position))return;
-	
+void model_render_children_buffers(bsp_info *model, polymodel *pm, int mn, int detail_level)
+{
 	int i;
 	int zbuf_mode = gr_zbuffering_mode;
 
@@ -6043,54 +6048,59 @@ void model_render_children_buffers(bsp_info* model, polymodel * pm, int mn, int 
 	Assert( mn >= 0 );
 	Assert( mn < pm->n_models );
 
-	
-	if (pm->submodel[mn].blown_off){
+	if (pm->submodel[mn].blown_off)
 		return;
-	}
 
-	unsigned int fl = Interp_flags;
-	if (pm->submodel[mn].is_thruster )	{
-		if ( !(Interp_flags & MR_SHOW_THRUSTERS) ){
+
+	uint fl = Interp_flags;
+
+	if (pm->submodel[mn].is_thruster) {
+		if ( !(Interp_flags & MR_SHOW_THRUSTERS) )
 			return;
-		}
+
 		Interp_flags |= MR_NO_LIGHTING;
-		Interp_thrust_scale_subobj=1;
+		Interp_thrust_scale_subobj = 1;
 	} else {
-		Interp_thrust_scale_subobj=0;
+		Interp_thrust_scale_subobj = 0;
 	}
 
-	vm_vec_add2(&Interp_offset,&pm->submodel[mn].offset);
+	vm_vec_add2(&Interp_offset, &pm->submodel[mn].offset);
 
-	if(model->gun_rotation){
-			if (pm->gun_submodel_rotation > PI2 )
-				pm->gun_submodel_rotation -= PI2;
-			else if (pm->gun_submodel_rotation < 0.0f )
-				pm->gun_submodel_rotation += PI2;
+	// if using detail boxes, check that we are valid for the range
+	if ( model->use_render_box && (-model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &model->offset)) )
+		return;
+
+	if (model->gun_rotation) {
+		if (pm->gun_submodel_rotation > PI2 )
+			pm->gun_submodel_rotation -= PI2;
+		else if (pm->gun_submodel_rotation < 0.0f )
+			pm->gun_submodel_rotation += PI2;
 	
 		angles ang = pm->submodel[mn].angs;
 		ang.b += pm->gun_submodel_rotation;
 
 		g3_start_instance_angles(&pm->submodel[mn].offset, &ang);
-	}else{
+	} else {
 		g3_start_instance_angles(&pm->submodel[mn].offset, &pm->submodel[mn].angs);
 	}
-	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
-		light_rotate_all();
-	}
 
-	model_render_buffers( model, pm );
+	if ( !(Interp_flags & MR_NO_LIGHTING) )
+		light_rotate_all();
+
+	model_render_buffers( model, pm, true );
 
 	if (Interp_flags & MR_SHOW_PIVOTS )
 		model_draw_debug_points( pm, &pm->submodel[mn] );
 
-	if ( pm->submodel[mn].num_arcs )	{
+	if ( pm->submodel[mn].num_arcs )
 		interp_render_lightning( pm, &pm->submodel[mn]);
-	}
+
 
 	i = pm->submodel[mn].first_child;
-	while( i >= 0 )	{
-		if (!pm->submodel[i].is_thruster )	{
-			if(Interp_flags & MR_NO_ZBUFFER){
+
+	while (i >= 0) {
+		if ( !pm->submodel[i].is_thruster ) {
+			if (Interp_flags & MR_NO_ZBUFFER) {
 				zbuf_mode = GR_ZBUFF_NONE;
 			} else {
 				zbuf_mode = GR_ZBUFF_FULL;		// read only
@@ -6100,30 +6110,30 @@ void model_render_children_buffers(bsp_info* model, polymodel * pm, int mn, int 
 
 			model_render_children_buffers( &pm->submodel[i], pm, i, detail_level );
 		}
+
 		i = pm->submodel[i].next_sibling;
 	}
 
 	vm_vec_sub2(&Interp_offset,&pm->submodel[mn].offset);
 
-
-
 	Interp_flags = fl;
 	g3_done_instance(true);
 }
 
-void model_render_buffers(bsp_info* model, polymodel * pm)
+void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 {
-	if(model->use_render_box && -model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &View_position))
+	if (model->indexed_vertex_buffer == -1)
 		return;
-	
-	if(model->indexed_vertex_buffer == -1)
+
+	if ( !is_child && model->use_render_box && (-model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &model->offset)) )
 		return;
 
 	// Goober5000
 	fix base_frametime = 0;
-	if (Interp_objnum >= 0)
-	{
+
+	if (Interp_objnum >= 0) {
 		object *objp = &Objects[Interp_objnum];
+
 		if (objp->type == OBJ_SHIP)
 			base_frametime = Ships[objp->instance].base_texture_anim_frametime;
 	}
@@ -6154,19 +6164,24 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 	gr_push_scale_matrix(&scale);
 
 	gr_set_buffer(model->indexed_vertex_buffer);
-	for(int i = 0; i<model->n_buffers; i++){
+
+	for (uint i = 0; i < model->buffer.size(); i++) {
 		int texture = -1;
 		int tmap_num = model->buffer[i].texture;
 
-		if((Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0)) {
+		if ( (Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0) ) {
 			texture = Interp_forced_bitmap;
-		} else if(Warp_Map > -1){
+		}
+		else if (Warp_Map > -1) {
 			texture = Warp_Map;
-		} else if((Interp_replacement_textures != NULL) && (Interp_replacement_textures[tmap_num] >= 0)) {
+		}
+		else if ( (Interp_replacement_textures != NULL) && (Interp_replacement_textures[tmap_num] >= 0) ) {
 			texture = Interp_replacement_textures[tmap_num];
-		} else if(Interp_thrust_scale_subobj && !no_texturing) {
+		}
+		else if ( Interp_thrust_scale_subobj && !no_texturing ) {
 			texture = Interp_thrust_bitmap;
-		} else if (!no_texturing) {
+		}
+		else if (!no_texturing) {
 			// pick the texture, animating it if necessary
 			texture = model_interp_get_texture(&pm->maps[tmap_num].base_map, base_frametime);
 
@@ -6180,8 +6195,7 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 				}
 			}
 
-			if((Detail.lighting > 2)  && (model_current_LOD < 2))
-			{
+			if ( (Detail.lighting > 2)  && (model_current_LOD < 2) ) {
 				// likewise, etc.
 				SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map, base_frametime);
 #ifdef BUMPMAPPING
@@ -6190,11 +6204,8 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 			}
 		}
 
-		if ((texture == -1) && !no_texturing)
+		if ( (texture == -1) && !no_texturing )
 			continue;
-
-//		extern int big_ole_honkin_hack_test;
-//		texture = big_ole_honkin_hack_test;
 
 
 		if (Interp_thrust_scale_subobj) {
@@ -6202,15 +6213,19 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f);
 
 			gr_zbuffer_set(GR_ZBUFF_READ);
-		} else if (Interp_flags & MR_ALL_XPARENT) {
+		}
+		else if (Interp_flags & MR_ALL_XPARENT) {
 			gr_set_cull(0);
 			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_xparent_alpha );
 			gr_zbuffer_set(GR_ZBUFF_NONE);
-		} else if (Warp_Map >= 0) {	// trying to get transperent textures-Bobboau
+		}
+		else if (Warp_Map >= 0) {
 			gr_set_cull(0);
 			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			gr_zbuffer_set(GR_ZBUFF_READ);
-		} else if (pm->maps[tmap_num].is_transparent) {	// trying to get transperent textures-Bobboau
+		}
+		// trying to get transperent textures-Bobboau
+		else if (pm->maps[tmap_num].is_transparent) {
 			if (Warp_Alpha != -1.0f) {
 				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
 			} else {
@@ -6218,7 +6233,8 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 			}
 
 			gr_zbuffer_set(GR_ZBUFF_READ);
-		} else if (!no_texturing) {
+		}
+		else if (!no_texturing) {
 		//	gr_set_state(TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_DEFAULT);
 			gr_set_bitmap( texture, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 1.0f );
 	//		gr_zbuffer_set(GR_ZBUFF_FULL);
@@ -6234,24 +6250,19 @@ void model_render_buffers(bsp_info* model, polymodel * pm)
 
 	//	model_resort_index_buffer(model->bsp_data, 1, tmap_num, model->buffer[i].index_buffer.index_buffer);
 		
-		gr_render_buffer(0, model->buffer[i].n_prim, model->buffer[i].index_buffer.index_buffer, Interp_tmap_flags);
+		gr_render_buffer(0, model->buffer[i].n_prim, model->buffer[i].index_buffer.ibuffer, Interp_tmap_flags);
 
 		GLOWMAP = -1;
 		SPECMAP = -1;
 		BUMPMAP = -1;
 	}
 
-//	if(model->flat_buffer != -1)gr_render_buffer(model->flat_buffer);
-	//we don't need this
-//	if(model->flat_line_buffer != -1)gr_render_buffer(model->flat_line_buffer);
-
 	gr_pop_scale_matrix();
 
-	gr_set_lighting(false,false);
-
+	gr_set_lighting(false, false);
 }
 
-
+/*
 //int recode_check = 0;
 void recode_tmap(int offset, ubyte *bsp_data){
 
@@ -6345,17 +6356,6 @@ void recode_sortnorm(int offset, ubyte *bsp_data){
 	if (postlist) recode_bsp(offset+postlist, bsp_data);
 }
 
-/*
-buffer[j] = find_first_index_vb(list, j, model_list)
-short find_first_index_vb(poly_list *plist, int idx, poly_list *v){
-	for(short i = 0; i<v->n_verts; i++){
-		if(same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx])){
-			return i;
-		}
-	}
-	return -1;
-}
-*/
 void model_resort_index_buffer_tmap(int offset, ubyte *bsp_data, short* index_buffer, int texture){
 	if(texture != w(bsp_data+offset+40))return;
 
@@ -6535,6 +6535,7 @@ void model_resort_index_buffer(ubyte *bsp_data, bool f2b, int texture, short* in
 	model_resort_index_buffer_n_verts = 0;
 	model_resort_index_buffer_bsp(0, bsp_data, f2b, texture, index_buffer);
 }
+*/
 
 /*
 struct silhouette_index{
