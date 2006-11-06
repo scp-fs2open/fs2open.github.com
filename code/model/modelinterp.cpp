@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.173 $
- * $Date: 2006-11-06 06:39:11 $
+ * $Revision: 2.174 $
+ * $Date: 2006-11-06 06:42:22 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.173  2006/11/06 06:39:11  taylor
+ * forgot to reset default value for Interp_warp_alpha when it was changed earlier
+ * be sure that we are using the proper zbuffer setting when rendering thruster glows
+ *
  * Revision 2.172  2006/11/06 06:37:59  taylor
  * ok, so apparently that did actually do something  ;)
  *
@@ -4008,7 +4012,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 	for (i = 0; i < pm->n_thrusters; i++ ) {
 		bank = &pm->thrusters[i];
 
-		n_q += bank->num_slots;
+		n_q += bank->num_points;
 	}
 
 	primary_thruster_batcher.allocate(n_q);
@@ -4041,14 +4045,17 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		if ( !model_should_render_engine_glow(objnum, bank->obj_num) )
 			continue;
 
-		for (j = 0; j < bank->num_slots; j++) {
+		for (j = 0; j < bank->num_points; j++) {
+			Assert( bank->points != NULL );
+
 			float d, D;
 			vec3d tempv;
+			glow_point *gpt = &bank->points[j];
 
-			vm_vec_sub(&tempv, &View_position, &bank->point[j].pnt);
+			vm_vec_sub(&tempv, &View_position, &gpt->pnt);
 			vm_vec_normalize(&tempv);
 
-			D = d = vm_vec_dot(&tempv, &bank->point[j].norm);
+			D = d = vm_vec_dot(&tempv, &gpt->norm);
 
 			//ADAM: Min throttle draws rad*MIN_SCALE, max uses max.
 			#define NOISE_SCALE 0.5f
@@ -4062,8 +4069,8 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			// normalize banks, in case of incredibly big normals
 			// VECMAT-ERROR: NULL VEC3D (norm == nul)
-			if ( !IS_VEC_NULL(&bank->point[j].norm) )
-				vm_vec_copy_normalize(&scale_vec, &bank->point[j].norm);
+			if ( !IS_VEC_NULL(&gpt->norm) )
+				vm_vec_copy_normalize(&scale_vec, &gpt->norm);
 
 			// adjust for thrust
 			(scale_vec.xyz.x *= Interp_thrust_scale_x) -= 0.1f;
@@ -4091,7 +4098,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 			// fade them in the nebula as well
 			if (The_mission.flags & MISSION_FLAG_FULLNEB) {
-				vm_vec_rotate(&npnt, &bank->point[j].pnt, orient);
+				vm_vec_rotate(&npnt, &gpt->pnt, orient);
 				vm_vec_add2(&npnt, pos);
 
 				fog_int = (1.0f - (neb2_get_fog_intensity(&npnt)));
@@ -4111,13 +4118,13 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			// this is the original scaling code - Goober5000
 		//	scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
-			float w = bank->point[j].radius * (scale + Interp_thrust_glow_noise * NOISE_SCALE);
+			float w = gpt->radius * (scale + Interp_thrust_glow_noise * NOISE_SCALE);
 
 			// these lines are used by the tertiary glows, thus we will need to project this all of the time
 			if (Cmdline_nohtl) {
-				g3_rotate_vertex( &p, &bank->point[j].pnt );
+				g3_rotate_vertex( &p, &gpt->pnt );
 			} else {
-				g3_transfer_vertex( &p, &bank->point[j].pnt );
+				g3_transfer_vertex( &p, &gpt->pnt );
 			}
 
 			if ( d > 0.0f) {
@@ -4146,7 +4153,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				// ok, how's this there suposed to look cool! hows that, 
 				// it that scientific enough for you!! you anti-asthetic basturds!!!
 				// AAAHHhhhh!!!!
-				pnt = bank->point[j].pnt;
+				pnt = gpt->pnt;
 
 				scale = magnitude * (MAX_SCALE - (MIN_SCALE / 2)) + (MIN_SCALE / 2);
 
@@ -4162,7 +4169,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					vm_vec_sub(&fvec, &norm2, &pnt);
 					vm_vec_normalize(&fvec);
 
-					float w = bank->point[j].radius * scale * 2;
+					float w = gpt->radius * scale * 2;
 
 					vm_vec_scale_add(&norm2, &pnt, &fvec, w * 2 * Interp_thrust_glow_len_factor);
 
@@ -4189,7 +4196,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 						tp = &sip->normal_thruster_particles[k];
 
 					float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
-					vm_vec_unrotate(&npnt, &bank->point[j].pnt, orient);
+					vm_vec_unrotate(&npnt, &gpt->pnt, orient);
 					vm_vec_add2(&npnt, pos);
 
 					pe.pos = npnt;				// Where the particles emit from
@@ -4205,8 +4212,8 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 					pe.num_low = tp->n_low;								// Lowest number of particles to create
 					pe.num_high = tp->n_high;							// Highest number of particles to create
-					pe.min_rad = bank->point[j].radius * tp->min_rad; // * objp->radius;
-					pe.max_rad = bank->point[j].radius * tp->max_rad; // * objp->radius;
+					pe.min_rad = gpt->radius * tp->min_rad; // * objp->radius;
+					pe.max_rad = gpt->radius * tp->max_rad; // * objp->radius;
 					pe.normal_variance = tp->variance;					//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 
 					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_particle_bitmap01);
@@ -4640,7 +4647,8 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 					continue;
 
 
-				for (j = 0; j < bank->num_slots; j++) {
+				for (j = 0; j < bank->num_points; j++) {
+					Assert( bank->points != NULL );
 					int flick;
 
 					if (pm->submodel[pm->detail[0]].num_arcs) {
@@ -4650,7 +4658,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 					}
  
 					if (flick == 1) {
-						glow_point *gpt = &bank->point[j];
+						glow_point *gpt = &bank->points[j];
 						vec3d pnt = gpt->pnt;
 						vec3d norm = gpt->norm;
 					
@@ -4687,7 +4695,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 							{
 								float d;
 
-								if ( (bank->point[j].norm.xyz.x == 0.0f) && (bank->point[j].norm.xyz.z == 0.0f) && (bank->point[j].norm.xyz.z == 0.0f) ) {
+								if ( (gpt->norm.xyz.x == 0.0f) && (gpt->norm.xyz.z == 0.0f) && (gpt->norm.xyz.z == 0.0f) ) {
 									d = 1.0f;	//if given a nul vector then always show it
 								} else {
 									vm_vec_sub(&tempv,&View_position,&pnt);
@@ -4705,7 +4713,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 									if (d > 1.0f)
 										d = 1.0f;
 
-									float w = bank->point[j].radius;
+									float w = gpt->radius;
 
 									// fade them in the nebula as well
 									if (The_mission.flags & MISSION_FLAG_FULLNEB) {
@@ -4749,8 +4757,8 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 								vm_vec_normalize(&fvec);
 
-								moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, bank->point[j].radius, 1.0f, &View_position);
-								moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, bank->point[j].radius, 1.0f, &View_position);
+								moldel_calc_facing_pts(&top1, &bottom1, &fvec, &pnt, gpt->radius, 1.0f, &View_position);
+								moldel_calc_facing_pts(&top2, &bottom2, &fvec, &norm, gpt->radius, 1.0f, &View_position);
 
 								int idx = 0;
  
