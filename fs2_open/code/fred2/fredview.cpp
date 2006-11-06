@@ -9,9 +9,9 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.11 $
- * $Date: 2006-10-09 05:25:18 $
- * $Author: Goober5000 $
+ * $Revision: 1.12 $
+ * $Date: 2006-11-06 05:58:05 $
+ * $Author: taylor $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2006/10/09 05:25:18  Goober5000
+ * make sexp nodes dynamic
+ *
  * Revision 1.10  2006/09/29 06:38:28  Goober5000
  * merge voice file manager into voice acting manager, plus make a few tweaks to it
  *
@@ -665,6 +668,7 @@ int Show_compass = 1;
 int Show_dock_points = 0;
 int Show_paths_fred = 0;
 int Lighting_on = 0;
+int FullDetail = 0;
 int Selection_lock = 0;
 int viewpoint = 0;
 int view_obj;
@@ -916,6 +920,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_WM_ERASEBKGND()
 	ON_COMMAND(ID_VIEW_LIGHTING, OnViewLighting)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_LIGHTING, OnUpdateViewLighting)
+	ON_COMMAND(ID_VIEW_FULL_DETAIL, OnViewFullDetail)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_FULL_DETAIL, OnUpdateViewFullDetail)
 	//}}AFX_MSG_MAP
 	ON_COMMAND(ID_FILE_PRINT, CView::OnFilePrint)
 	ON_COMMAND(ID_FILE_PRINT_DIRECT, CView::OnFilePrint)
@@ -5152,6 +5158,16 @@ void CFREDView::OnViewLighting()
 void CFREDView::OnUpdateViewLighting(CCmdUI* pCmdUI) 
 {
 	pCmdUI->SetCheck(Lighting_on);
+}
+
+void CFREDView::OnViewFullDetail()
+{
+	FullDetail = !FullDetail;
+}
+
+void CFREDView::OnUpdateViewFullDetail(CCmdUI *pCmdUI)
+{
+	pCmdUI->SetCheck(FullDetail);
 }
 
 BOOL CFREDView::DestroyWindow() 
