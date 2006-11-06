@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.384 $
- * $Date: 2006-11-06 06:42:22 $
+ * $Revision: 2.385 $
+ * $Date: 2006-11-06 06:43:58 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.384  2006/11/06 06:42:22  taylor
+ * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
+ *
  * Revision 2.383  2006/11/06 06:32:30  taylor
  * updated/fixed modelanim code
  * add ships.tbl subsystem flag ("+fire-down-normals") which will force a turret to fire down it's barrel line (Mantis bug #591)
@@ -14186,6 +14189,8 @@ void ship_primary_changed(ship *sp)
 				if ( model_anim_start_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, 1) ) {
 					swp->primary_animation_done_time[i] = model_anim_get_time_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i);
 					swp->primary_animation_position[i] = MA_POS_SET;
+				} else {
+					swp->primary_animation_position[i] = MA_POS_READY;
 				}
 			}
 		}
@@ -14198,6 +14203,8 @@ void ship_primary_changed(ship *sp)
 					if ( model_anim_start_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, 1) ) {
 						swp->primary_animation_done_time[i] = model_anim_get_time_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i);
 						swp->primary_animation_position[i] = MA_POS_SET;
+					} else {
+						swp->primary_animation_position[i] = MA_POS_READY;
 					}
 				}
 			} else {
@@ -14241,6 +14248,8 @@ void ship_secondary_changed(ship *sp)
 					if ( model_anim_start_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i, 1) ) {
 						swp->secondary_animation_done_time[i] = model_anim_get_time_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i);
 						swp->secondary_animation_position[i] = MA_POS_SET;
+					} else {
+						swp->secondary_animation_position[i] = MA_POS_READY;
 					}
 				}
 			} else {
