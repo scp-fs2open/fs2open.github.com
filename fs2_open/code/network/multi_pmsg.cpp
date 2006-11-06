@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pmsg.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-03-30 04:15:20 $
- * $Author: Goober5000 $
+ * $Revision: 2.12 $
+ * $Date: 2006-11-06 05:40:57 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/03/30 04:15:20  Goober5000
+ * hehe, grammar
+ * --Goober5000
+ *
  * Revision 2.10  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -511,29 +515,29 @@ void multi_msg_text_flush()
 int multi_msg_check_command(char *str)
 {
 	int idx;
-	char *prefix,*predicate,param[MULTI_MSG_MAX_TEXT_LEN+1];
+	char *prefix = NULL, *predicate = NULL, param[MULTI_MSG_MAX_TEXT_LEN+1];
+	char temp_str[MULTI_MSG_MAX_TEXT_LEN+1];
 
 	// look for a colon
 	if(strstr(str,":") == NULL){
 		return 0;
 	}
 
+	// we don't want to modify the original string, which strtok() does
+	strcpy(temp_str, str);
+
 	// try and find a command prefix
-	prefix = NULL;	
-	prefix = strtok(str,":");
-	if(prefix == NULL){
+	prefix = strtok(temp_str, ":");
+	if (prefix == NULL)
 		return 0;
-	}
 
 	// get all the text after the message
-	predicate = NULL;
 	predicate = strtok(NULL, NOX("\n\0"));
-	if(predicate == NULL){
+	if (predicate == NULL)
 		return 0;
-	} 
 	
 	// store the text as the actual parameter
-	strcpy(param,predicate);
+	strcpy(param, predicate);
 	drop_leading_white_space(param);
 
 	// go through all existing commands and see what we can do
@@ -546,7 +550,8 @@ int multi_msg_check_command(char *str)
 			return 1;
 		}
 	}
-	
+
+	/*
 	// apply the results as a general expression, if we're in message all mode
 	if(Multi_msg_mode == MULTI_MSG_ALL){
 		strcpy(Multi_msg_text,param);
@@ -560,7 +565,8 @@ int multi_msg_check_command(char *str)
 		// return true
 		return 1;
 	}	
-	
+	*/
+
 	// no commands performed
 	return 0;
 }
