@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.65 $
- * $Date: 2006-09-11 06:45:39 $
+ * $Revision: 2.66 $
+ * $Date: 2006-11-06 05:43:36 $
  * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2006/09/11 06:45:39  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.64  2006/08/02 22:31:15  Goober5000
  * fix display of ship copy class names in ship loadout screen
  * --Goober5000
@@ -938,10 +941,9 @@ void ss_init_pool(team_data *pteam);
 int create_wings();
 
 // loading/unloading
-void ss_unload_icons();
+void ss_unload_all_icons();
+void ss_unload_all_anims();
 void ss_init_units();
-void unload_ship_anim_instances();
-void unload_ship_anims();
 anim* ss_load_individual_animation(int ship_class);
 
 // Carry icon functions
@@ -2195,6 +2197,8 @@ void ship_select_close()
 {
 	key_flush();
 
+	ship_select_common_close();
+
 	if ( !Ship_select_open ) {
 		nprintf(("Alan","ship_select_close() returning without doing anything\n"));
 		return;
@@ -2209,15 +2213,6 @@ void ship_select_close()
 	bm_release(ShipSelectMaskBitmap);
 	help_overlay_unload(SS_OVERLAY);
 
-	// release the bitmpas that were previously extracted from anim files
-	ss_unload_icons();
-
-	// Release any active ship anim instances
-	unload_ship_anim_instances();
-
-	// unload ship animations if they were loaded
-	unload_ship_anims();
-
 	Ship_select_ui_window.destroy();
 
 	Ship_anim_class = -1;
@@ -2230,7 +2225,7 @@ void ship_select_close()
 }
 
 //	ss_unload_icons() frees the bitmaps used for ship icons 
-void ss_unload_icons()
+void ss_unload_all_icons()
 {
 	int					i,j;
 	ss_icon_info		*icon;
@@ -2522,6 +2517,15 @@ void unload_ship_anim_instances()
 			Ss_icons[i].ss_anim_instance = NULL;
 		}
 	}
+}
+
+void ss_unload_all_anims()
+{
+	// stop any playing anims first
+	unload_ship_anim_instances();
+
+	// now free up any loaded anims
+	unload_ship_anims();
 }
 
 // ------------------------------------------------------------------------
@@ -3839,6 +3843,12 @@ void ship_select_common_init()
 
 	ss_reset_selected_ship();
 	ss_reset_carried_icon();
+}
+
+void ship_select_common_close()
+{
+	ss_unload_all_icons();
+	ss_unload_all_anims();
 }
 
 // change any interface data based on updated Wss_slots[] and Ss_pool[]
