@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.382 $
- * $Date: 2006-11-06 06:19:17 $
+ * $Revision: 2.383 $
+ * $Date: 2006-11-06 06:32:30 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.382  2006/11/06 06:19:17  taylor
+ * rename set_warp_globals() to model_set_warp_globals()
+ * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
+ * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
+ * change "model_current_LOD" to a global "Interp_detail_level" and the static "Interp_detail_level" to "Interp_detail_level_locked", a bit more descriptive
+ * minor bits of cleanup
+ * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
+ *
  * Revision 2.381  2006/11/06 02:19:58  Goober5000
  * minor bugfixes
  *
@@ -2333,9 +2341,10 @@ int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
 
 flag_def_list Subsystem_flags[] = 
 {
-	{ "untargetable",		MSS_FLAG_UNTARGETABLE},
-	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE},
-	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS},
+	{ "untargetable",		MSS_FLAG_UNTARGETABLE },
+	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE },
+	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS },
+	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL }
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -2361,7 +2370,6 @@ static int Ship_cargo_check_timer;
 
 static int Thrust_anim_inited = 0;
 
-void ship_fix_reverse_times(ship_info *sip);
 
 // set the ship_obj struct fields to default values
 void ship_obj_list_reset_slot(int index)
@@ -4246,6 +4254,11 @@ strcpy(parse_error_text, temp_error);
 				old_flags = true;
 			}
 
+			if (optional_string("+fire-down-normals")) {
+				sp->flags |= MSS_FLAG_FIRE_ON_NORMAL;
+				old_flags = true;
+			}
+
 			if(old_flags)
 				Warning(LOCATION, "Use of deprecated subsystem syntax. Please use $Flags: field for subsystem flags.");
 
@@ -4264,7 +4277,7 @@ strcpy(parse_error_text, temp_error);
 					required_string("$type:");
 					char atype[NAME_LENGTH];
 					stuff_string(atype, F_NAME, NAME_LENGTH);
-					current_trigger->type = match_animation_type(atype);
+					current_trigger->type = model_anim_match_type(atype);
 
 					if(optional_string("+sub_type:")){
 						stuff_int(&current_trigger->subtype);
@@ -4379,8 +4392,8 @@ strcpy(parse_error_text, temp_error);
 						}
 					}
 
-					current_trigger->corect();
-					//makes sure that the amount of time it takes to accelerate up and down doesn't make it go farther than the angle
+					//make sure that the amount of time it takes to accelerate up and down doesn't make it go farther than the angle
+					current_trigger->correct();
 				}
 				else if(!stricmp(name_tmp, "linked"))
 				{
@@ -4420,7 +4433,7 @@ strcpy(parse_error_text, temp_error);
 		}
 	}
 
-	ship_fix_reverse_times(sip);
+	model_anim_fix_reverse_times(sip);
 
 	// if we have a ship copy, then check to be sure that our base ship exists
 	// This should really be moved -C
@@ -5294,10 +5307,10 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		swp->next_primary_fire_stamp[i] = timestamp(0);	
 		swp->primary_bank_rearm_time[i] = timestamp(0);		// added by Goober5000
 
-		swp->primary_animation_position[i] = false;
-		swp->secondary_animation_position[i] = false;
-		swp->primary_animation_done_time[i] = 0;
-		swp->secondary_animation_done_time[i] = 0;
+		swp->primary_animation_position[i] = MA_POS_NOT_SET;
+		swp->secondary_animation_position[i] = MA_POS_NOT_SET;
+		swp->primary_animation_done_time[i] = timestamp(0);
+		swp->secondary_animation_done_time[i] = timestamp(0);
 	}
 
 	shipp->cmeasure_fire_stamp = timestamp(0);
@@ -5491,10 +5504,13 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->ship_decal_system.decals_modified = false;
 	shipp->ship_decal_system.max_decals = sip->max_decals;
 
-	shipp->bay_doors_open = false;
-	shipp->bay_number_wanting_open = 0;
-	shipp->bay_doors_want_open = false;
-	shipp->bay_doors_open_time = -1;
+	// fighter bay door stuff
+	shipp->bay_doors_status = MA_POS_NOT_SET;
+	shipp->bay_doors_wanting_open = 0;
+	shipp->bay_doors_need_open = false;
+	shipp->bay_doors_anim_done_time = 0;
+	shipp->bay_doors_launched_from = 0;
+	shipp->bay_doors_parent_shipnum = -1;
 
 	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
 		for(int k = 0; k<MAX_SLOTS; k++){
@@ -8234,8 +8250,10 @@ void ship_process_post(object * obj, float frametime)
 		//	Do AI.
 
 		// for multiplayer people.  return here if in multiplay and not the host
-		if ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) )
-			return;	
+		if ( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+			model_anim_handle_multiplayer( &Ships[num] );
+			return;
+		}
 
 		// MWA -- moved the code to maybe fire swarm missiles to after the check for
 		// multiplayer master.  Only single player and multi server needs to do this code
@@ -8813,7 +8831,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	// call the contrail system
 	ct_ship_create(shipp);
 
-	ship_animation_set_initial_states(shipp);
+	model_anim_set_initial_states(shipp);
 /*
 	polymodel *pm = model_get(shipp->modelnum);
 	if(shipp->debris_flare)vm_free(shipp->debris_flare);
@@ -9148,7 +9166,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	for( i = 0; i<MAX_SHIP_SECONDARY_BANKS;i++){
 			swp->secondary_animation_position[i] = false;
 	}
-	ship_animation_set_initial_states(sp);
+	model_anim_set_initial_states(sp);
 
 	for(i = 0; i<MAX_SHIP_SECONDARY_BANKS; i++){
 		if(Weapon_info[swp->secondary_bank_weapons[i]].fire_wait == 0.0){
@@ -9641,7 +9659,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			continue;
 		}		
 
-		if(swp->primary_animation_done_time[bank_to_fire] > timestamp())continue;
+		if (swp->primary_animation_position[bank_to_fire] == MA_POS_SET) {
+			if ( timestamp_elapsed(swp->primary_animation_done_time[bank_to_fire]) )
+				swp->primary_animation_position[bank_to_fire] = MA_POS_READY;
+			else
+				continue;
+		}
 
 		weapon_info* winfo_p = &Weapon_info[weapon];
 
@@ -10431,7 +10454,12 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		return 0;
 	}
 
-	if(swp->secondary_animation_done_time[bank] > timestamp())return 0;
+	if (swp->secondary_animation_position[bank] == MA_POS_SET) {
+		if ( timestamp_elapsed(swp->secondary_animation_done_time[bank]) )
+			swp->secondary_animation_position[bank] = MA_POS_READY;
+		else
+			return 0;
+	}
 
 	weapon = swp->secondary_bank_weapons[bank];
 	Assert( (swp->secondary_bank_weapons[bank] >= 0) && (swp->secondary_bank_weapons[bank] < MAX_WEAPON_TYPES) );
@@ -14142,49 +14170,49 @@ void ship_maybe_tell_about_rearm(ship *sp)
 // input:	sp			=>	pointer to ship that modified primaries
 void ship_primary_changed(ship *sp)
 {
+	int i;
 	ship_weapon	*swp;
 	swp = &sp->weapons;
 
 
-	if(sp->flags & SF_PRIMARY_LINKED){
-		//if we are linked now find any body who is down and flip them up
-		for(int i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
-			if(!swp->primary_animation_position[i]){
-				swp->primary_animation_position[i] = true;
-				ship_start_animation_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, 1);
-				if(swp->primary_animation_done_time[i])swp->primary_animation_done_time[i] = ship_get_animation_time_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i);
-				else swp->primary_animation_done_time[i] = 1;
+	if (sp->flags & SF_PRIMARY_LINKED) {
+		// if we are linked now find any body who is down and flip them up
+		for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+			if (swp->primary_animation_position[i] == MA_POS_NOT_SET) {
+				if ( model_anim_start_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, 1) ) {
+					swp->primary_animation_done_time[i] = model_anim_get_time_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i);
+					swp->primary_animation_position[i] = MA_POS_SET;
+				}
 			}
 		}
-	}else{
-		//find anything that is up that shouldn't be
-		for(int i = 0; i<MAX_SHIP_PRIMARY_BANKS;i++){
-			if(i == swp->current_primary_bank){
-				//if the current bank is down raise it up
-				if(!swp->primary_animation_position[i]){
-					swp->primary_animation_position[i] = true;
-					ship_start_animation_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, 1);
-					if(swp->primary_animation_done_time[i])swp->primary_animation_done_time[i] = ship_get_animation_time_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i);
-					else swp->primary_animation_done_time[i] = 1;
+	} else {
+		// find anything that is up that shouldn't be
+		for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+			if (i == swp->current_primary_bank) {
+				// if the current bank is down raise it up
+				if (swp->primary_animation_position[i] == MA_POS_NOT_SET) {
+					if ( model_anim_start_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, 1) ) {
+						swp->primary_animation_done_time[i] = model_anim_get_time_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i);
+						swp->primary_animation_position[i] = MA_POS_SET;
+					}
 				}
-			}else{
-				//everyone else should be down, if they are not make them so
-				if(swp->primary_animation_position[i]){
-					swp->primary_animation_position[i] = false;
-					ship_start_animation_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, -1);
+			} else {
+				// everyone else should be down, if they are not make them so
+				if (swp->primary_animation_position[i] != MA_POS_NOT_SET) {
+					model_anim_start_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, -1);
+					swp->primary_animation_position[i] = MA_POS_NOT_SET;
 				}
 			}
 		}
 	}
-#if 0
 
+#if 0
 	// we only need to deal with multiplayer issues for now, so bail it not multiplayer
 	if ( !(Game_mode & GM_MULTIPLAYER) )
 		return;
 
 	Assert(sp);
 
-	
 	if ( MULTIPLAYER_MASTER )
 		send_ship_weapon_change( sp, MULTI_PRIMARY_CHANGED, swp->current_primary_bank, (sp->flags & SF_PRIMARY_LINKED)?1:0 );
 #endif
@@ -14195,30 +14223,33 @@ void ship_primary_changed(ship *sp)
 // input:	sp					=>	pointer to ship that modified secondaries
 void ship_secondary_changed(ship *sp)
 {
-	ship_weapon	*swp;
-	swp = &sp->weapons;
+	Assert( sp != NULL );
 
-		//find anything that is up that shouldn't be
-	if(timestamp() > 10)
-	for(int i = 0; i<MAX_SHIP_SECONDARY_BANKS;i++){
-		if(i == swp->current_secondary_bank){
-			//if the current bank is down raise it up
-			if(!swp->secondary_animation_position[i]){
-				swp->secondary_animation_position[i] = true;
-				ship_start_animation_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i, 1);
-				if(swp->secondary_animation_done_time[i])swp->secondary_animation_done_time[i] = ship_get_animation_time_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i);
-				else swp->secondary_animation_done_time[i] = 1;
-			}
-		}else{
-			//everyone else should be down, if they are not make them so
-			if(swp->secondary_animation_position[i]){
-				swp->secondary_animation_position[i] = false;
-				ship_start_animation_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i, -1);
+	int i;
+	ship_weapon	*swp = &sp->weapons;
+
+	// find anything that is up that shouldn't be
+	if (timestamp() > 10) {
+		for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
+			if (i == swp->current_secondary_bank) {
+				// if the current bank is down raise it up
+				if (swp->secondary_animation_position[i] == MA_POS_NOT_SET) {
+					if ( model_anim_start_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i, 1) ) {
+						swp->secondary_animation_done_time[i] = model_anim_get_time_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i);
+						swp->secondary_animation_position[i] = MA_POS_SET;
+					}
+				}
+			} else {
+				// everyone else should be down, if they are not make them so
+				if (swp->secondary_animation_position[i] != MA_POS_NOT_SET) {
+					model_anim_start_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i, -1);
+					swp->secondary_animation_position[i] = MA_POS_NOT_SET;
+				}
 			}
 		}
 	}
-#if 0
 
+#if 0
 	// we only need to deal with multiplayer issues for now, so bail it not multiplayer
 	if ( !(Game_mode & GM_MULTIPLAYER) ){
 		return;
@@ -15657,9 +15688,6 @@ int ship_subsys_takes_damage(ship_subsys *ss)
 	return (ss->max_hits > SUBSYS_MAX_HITS_THRESHOLD);
 }
 
-
-void submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss);
-
 // Goober5000
 void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *pss)
 {
@@ -15672,16 +15700,9 @@ void ship_do_submodel_rotation(ship *shipp, model_subsystem *psub, ship_subsys *
 		return;
 	}
 
-	if(psub->flags & MSS_FLAG_TRIGGERED){
-/*		if(test_hack_time < timestamp()){
-			ship_start_animation_type(shipp, TRIGGER_TYPE_DOCK_BAY_DOOR, test_hack_direction);
-			test_hack_direction *=-1;
-			test_hack_time = timestamp() + 4000;
-			if(test_hack_direction == 1)test_hack_time += 3000;
-		}
-*/
-		pss->trigger.proces_queue();
-		submodel_trigger_rotate(psub, pss );
+	if (psub->flags & MSS_FLAG_TRIGGERED) {
+		pss->trigger.process_queue();
+		model_anim_submodel_trigger_rotate(psub, pss );
 		return;
 	
 	}
