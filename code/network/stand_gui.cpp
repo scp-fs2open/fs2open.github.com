@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-04-20 06:32:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2006-11-06 05:55:43 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/04/20 06:32:15  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.18  2006/01/26 03:23:30  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -1665,6 +1668,10 @@ static HWND Godstuff_fps;									// the framerate text box
 static HWND Godstuff_broadcast_text;					// the text input box for sending messages to players
 static HWND Godstuff_broadcast_button;					// the button to send the text messages
 static HWND Godstuff_player_messages;					// handle to the list box containing player chatter
+static HDC  Godstuff_player_messages_HDC = 0;		// DC handle to the list box containing player chatter
+
+static int  Godstuff_longest_message = 0;				// longest width of a string in the godstuff list box
+
 
 // initialize all the controls in the godstuff tab
 void std_gs_init_godstuff_controls(HWND hwndDlg);
@@ -1760,8 +1767,13 @@ void std_gs_init_godstuff_controls(HWND hwndDlg)
 	SendMessage(Godstuff_broadcast_text, EM_FMTLINES, (WPARAM)TRUE, (LPARAM)0);
 
 	// create the player chatter list box
-	Godstuff_player_messages = GetDlgItem(Page_handles[GODSTUFF_PAGE], (int)MAKEINTRESOURCE(IDC_GOD_CHAT));			
-	
+	Godstuff_player_messages = GetDlgItem(Page_handles[GODSTUFF_PAGE], (int)MAKEINTRESOURCE(IDC_GOD_CHAT));	
+	// we'll need a DC for player messages as well
+	if (!Godstuff_player_messages_HDC)
+		Godstuff_player_messages_HDC = GetDC(Godstuff_player_messages);
+	// and set/rest the string with tracker too
+	Godstuff_longest_message = 0;
+
 	// initialize the message broadcast button
 	Godstuff_broadcast_button = GetDlgItem(Page_handles[GODSTUFF_PAGE], (int)MAKEINTRESOURCE(IDC_GODSTUFF_SENDMESS));
 	// hide the button -- we can now process return key
@@ -1772,48 +1784,68 @@ void std_gs_init_godstuff_controls(HWND hwndDlg)
 // message handler for the godstuff tab
 BOOL CALLBACK godstuff_proc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	switch(uMsg){
-	// initialize the dialog
-	case WM_INITDIALOG:
-		// setup the page handle
-		Page_handles[GODSTUFF_PAGE] = hwndDlg;
+	switch (uMsg)
+	{
+		// initialize the dialog
+		case WM_INITDIALOG:
+		{
+			// setup the page handle
+			Page_handles[GODSTUFF_PAGE] = hwndDlg;
 
-		// initialize the controls for this page
-      std_gs_init_godstuff_controls(hwndDlg);
-		return 1;
+			// initialize the controls for this page
+			std_gs_init_godstuff_controls(hwndDlg);
+
+			return 1;
+		}
 		break;
 
-	// a notification message
-	case WM_NOTIFY :
-		// set this page to be the currently active one
-		if(((LPNMHDR)lParam)->code == PSN_SETACTIVE){
-			Active_standalone_page = GODSTUFF_PAGE;
-		} else if ( (((LPNMHDR)lParam)->code == PSN_APPLY) || (((LPNMHDR)lParam)->code == PSN_RESET) ) {
-			PostMessage( Psht, WM_DESTROY, 0, 0 );
+		// destroy the dialog
+		case WM_DESTROY:
+		{
+			if (Godstuff_player_messages_HDC) {
+				ReleaseDC(Godstuff_player_messages, Godstuff_player_messages_HDC);
+			}
+		}
+		break;
+
+		// a notification message
+		case WM_NOTIFY:
+		{
+			// set this page to be the currently active one
+			if(((LPNMHDR)lParam)->code == PSN_SETACTIVE){
+				Active_standalone_page = GODSTUFF_PAGE;
+			} else if ( (((LPNMHDR)lParam)->code == PSN_APPLY) || (((LPNMHDR)lParam)->code == PSN_RESET) ) {
+				PostMessage( Psht, WM_DESTROY, 0, 0 );
+			}
 		}
 		break;	
 
 
-	// a command message of some kind
-	case WM_COMMAND:		
-		switch(HIWORD(wParam)){
-		// a button click
-		case BN_CLICKED :
-			switch(LOWORD(wParam)){
-			// send the message to the player
-			case IDC_GODSTUFF_SENDMESS : 
-				std_gs_send_godstuff_message();   
-				break;
-			}
-			break;
+		// a command message of some kind
+		case WM_COMMAND:
+		{
+			switch ( HIWORD(wParam) )
+			{
+				// a button click
+				case BN_CLICKED:
+					switch ( LOWORD(wParam) )
+					{
+						// send the message to the player
+						case IDC_GODSTUFF_SENDMESS:
+							std_gs_send_godstuff_message();   
+							break;
+					}
 
+					break;
+			}
 		}
 		break;
 
-	default :
-		return 0;
-		break;
+		default:
+			return 0;
+			break;
 	}
+
 	return 0;
 }
 
@@ -2055,28 +2087,39 @@ void std_add_chat_text(char *text,int player_index,int add_id)
 {
 	int num_items,ret_val;
 	char format[512];
+	SIZE text_size = { 0, 0 };
 
 	// invalid player ?
-	if(player_index == -1){
+	if (player_index == -1)
 		return;
-	}
 
 	// format the chat text nicely
-	if(add_id){
-		if(MULTI_STANDALONE(Net_players[player_index])){
-			sprintf(format,XSTR("<SERVER> %s",924),text);
+	if (add_id) {
+		if ( MULTI_STANDALONE(Net_players[player_index]) ) {
+			sprintf(format, XSTR("<SERVER> %s", 924), text);
 		} else {
-			sprintf(format,"%s: %s",Net_players[player_index].m_player->callsign,text);
+			sprintf(format, "%s: %s", Net_players[player_index].m_player->callsign, text);
 		}
 	} else {
-		strcpy(format,text);
+		strcpy(format, text);
 	}
 
+	// this thing isn't all that accurate, it typically produces a longer line, but I don't really care :p
+	if (Godstuff_player_messages_HDC)
+		GetTextExtentPoint32(Godstuff_player_messages_HDC, format, strlen(format), &text_size);
+
+	if (Godstuff_longest_message < text_size.cx)
+		Godstuff_longest_message = (int)text_size.cx;
+
+	SendMessage(Godstuff_player_messages, LB_SETHORIZONTALEXTENT, (WPARAM)Godstuff_longest_message, (LPARAM)0);
+
 	// insert the text string into the godstuff chat box and scroll it down to the bottom
-	SendMessage(Godstuff_player_messages,LB_INSERTSTRING,(WPARAM)-1,(LPARAM)format);
-	num_items = SendMessage(Godstuff_player_messages,LB_GETCOUNT,(WPARAM)0,(LPARAM)0);
-	if(num_items > 19){
-		ret_val = SendMessage(Godstuff_player_messages,LB_SETTOPINDEX,(WPARAM)num_items - GODSTUFF_MAX_ITEMS,(LPARAM)0);		
+	SendMessage(Godstuff_player_messages, LB_INSERTSTRING, (WPARAM)-1, (LPARAM)format);
+
+	num_items = SendMessage(Godstuff_player_messages, LB_GETCOUNT, (WPARAM)0, (LPARAM)0);
+
+	if (num_items > 19) {
+		ret_val = SendMessage(Godstuff_player_messages, LB_SETTOPINDEX, (WPARAM)num_items - GODSTUFF_MAX_ITEMS, (LPARAM)0);		
 	}
 }
 
