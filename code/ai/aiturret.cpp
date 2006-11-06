@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.47 $
- * $Date: 2006-11-06 06:32:30 $
+ * $Revision: 1.48 $
+ * $Date: 2006-11-06 07:00:05 $
  * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.47  2006/11/06 06:32:30  taylor
+ * updated/fixed modelanim code
+ * add ships.tbl subsystem flag ("+fire-down-normals") which will force a turret to fire down it's barrel line (Mantis bug #591)
+ *
  * Revision 1.46  2006/09/13 03:17:06  taylor
  * restore MAX_AIFTT_TURRETS to retail level, and add comment as to what it means for the next person that tries to change it
  *
@@ -1358,13 +1362,13 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				shipfx_start_cloak(parent_ship,bip->beam_warmup + bip->beam_warmdown + (int)(bip->beam_life*1000.0f) + 1000);
 			}
 
-			return;
+			return true;
 		}
 		// don't fire swam, but set up swarm info instead
 		else if (wip->wi_flags & WIF_SWARM) {
 			turret_swarm_set_up_info(parent_objnum, turret, wip);
 
-			return;
+			return true;
 		}
 		// now do anything else
 		else {
