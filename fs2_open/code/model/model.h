@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.92 $
- * $Date: 2006-11-06 06:37:59 $
+ * $Revision: 2.93 $
+ * $Date: 2006-11-06 06:42:22 $
  * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2006/11/06 06:37:59  taylor
+ * ok, so apparently that did actually do something  ;)
+ *
  * Revision 2.91  2006/11/06 06:36:44  taylor
  * updated/fixed modelanim code
  *
@@ -969,7 +972,6 @@ typedef struct model_tmap_vert {
 // only be two slots for each docking bay
 
 #define MAX_SLOTS		25
-#define MAX_THRUSTER_SLOTS		30
 
 typedef struct w_bank {
 	int		num_slots;
@@ -985,8 +987,8 @@ struct glow_point{
 };
 
 typedef struct thruster_bank {
-	int		num_slots;
-	glow_point point[MAX_THRUSTER_SLOTS];
+	int		num_points;
+	glow_point *points;
 
 	// Engine wash info
 	struct engine_wash_info	*wash_info_pointer;			// index into Engine_wash_info
@@ -1004,8 +1006,8 @@ typedef struct glow_point_bank {  // glow bank structure -Bobboau
 	int			is_active; 
 	int			submodel_parent; 
 	int			LOD; 
-	int			num_slots; 
-	glow_point	point[MAX_THRUSTER_SLOTS];
+	int			num_points; 
+	glow_point	*points;
 	int			glow_bitmap; 
 	int			glow_neb_bitmap; 
 } glow_point_bank;
