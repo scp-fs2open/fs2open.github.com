@@ -1472,6 +1472,10 @@ SOURCE=..\..\code\model\ModelAnim.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\model\modelanim.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Model\ModelCollide.cpp
 # End Source File
 # Begin Source File
