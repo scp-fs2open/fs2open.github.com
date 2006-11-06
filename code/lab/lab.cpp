@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.32 $
- * $Date: 2006-09-11 06:08:09 $
+ * $Revision: 1.33 $
+ * $Date: 2006-11-06 05:59:36 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2006/09/11 06:08:09  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 1.31  2006/08/20 00:47:10  taylor
  * add render option for no glowmaps
  * remove render option for fog (why was this even there??)
@@ -489,6 +492,10 @@ void make_options_window(Button *caller)
 	y += ccp->GetHeight() + 10;
 	ccp = RenderOptWin->AddChild(new Checkbox("Show invisible faces", 0, y));
 	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_SHOW_INVISIBLE_FACES);
+
+	y += ccp->GetHeight() + 10;
+	ccp = RenderOptWin->AddChild(new Checkbox("Render full detail", 0, y));
+	((Checkbox*)ccp)->SetFlag(&ModelFlags, MR_FULL_DETAIL);
 
 	RenderOptWin->SetCloseFunction(zero_render_opt_win);
 }
