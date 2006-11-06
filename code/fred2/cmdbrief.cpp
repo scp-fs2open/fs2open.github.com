@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/CmdBrief.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-11-06 05:49:02 $
+ * $Author: taylor $
  *
  * Command Briefing Editor
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.3  2005/10/22 05:54:48  wmcoolmon
  * Fixed cf_find_file_location
  *
@@ -258,6 +262,7 @@ void cmd_brief_dlg::OnInsertStage()
 	Cur_cmd_brief->num_stages++;
 	copy_stage(z, z + 1);
 	m_cur_stage = z;
+	m_last_stage = -1;
 	update_data(0);
 }
 
@@ -280,6 +285,8 @@ void cmd_brief_dlg::OnDeleteStage()
 
 	Cur_cmd_brief->num_stages--;
 	m_cur_stage = z;
+	m_last_stage = -1;
+
 	if (m_cur_stage >= Cur_cmd_brief->num_stages)
 		m_cur_stage = Cur_cmd_brief->num_stages - 1;
 
