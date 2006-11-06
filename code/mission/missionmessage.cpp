@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.56 $
- * $Date: 2006-09-30 21:58:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.57 $
+ * $Date: 2006-11-06 05:45:13 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2006/09/30 21:58:08  Goober5000
+ * more flexible checking of generic messages
+ *
  * Revision 2.55  2006/09/11 06:50:42  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -793,12 +796,26 @@ void message_maybe_distort_text(char *text);
 
 // following functions to parse messages.tbl -- code pretty much ripped from weapon/ship table parsing code
 
+static void persona_parse_close()
+{
+	if (Personas != NULL) {
+		vm_free(Personas);
+		Personas = NULL;
+	}
+}
+
 // functions to deal with parsing personas.  Personas are just a list of names that give someone
 // sending a message an identity which spans the life of the mission
 void persona_parse()
 {
 	int i;
 	char type[NAME_LENGTH];
+
+	static bool done_at_exit = false;
+	if ( !done_at_exit ) {
+		atexit( persona_parse_close );
+		done_at_exit = true;
+	}
 
 	// this way should cause the least amount of problems on the various platforms - taylor
 	Personas = (Persona*)vm_realloc( Personas, sizeof(Persona) * (Num_personas + 1) );
