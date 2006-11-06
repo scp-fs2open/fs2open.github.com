@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.169 $
- * $Date: 2006-11-06 06:15:01 $
+ * $Revision: 2.170 $
+ * $Date: 2006-11-06 06:19:17 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.169  2006/11/06 06:15:01  taylor
+ * a LOT of cleanup:
+ *  * remove a bunch of old/dead code
+ *  * some reformatting to help with readability
+ *  * rearrange/rename some code so that it is a little clearer
+ *  * move thruster glow code to it's own function (model_render_thrusters())
+ * make HTL model buffers dynamic
+ * fix detail boxes so that they actually work for the first time
+ *
  * Revision 2.168  2006/09/11 06:45:40  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -1001,7 +1010,6 @@ int modelstats_num_sortnorms = 0;
 int modelstats_num_boxes = 0;
 #endif
 
-extern int Cmdline_nohtl;
 extern fix game_get_overall_frametime();	// for texture animation
 
 typedef struct model_light {
@@ -1062,12 +1070,12 @@ static float Interp_fog_level = 0.0f;
 
 // Stuff to control rendering parameters
 static color Interp_outline_color;
-static int Interp_detail_level = 0;
+static int Interp_detail_level_locked = 0;
 static uint Interp_flags = 0;
 static uint Interp_tmap_flags = 0;
 
 // If non-zero, then the subobject gets scaled by Interp_thrust_scale.
-static int Interp_thrust_scale_subobj=0;
+static int Interp_thrust_scale_subobj = 0;
 static float Interp_thrust_scale = 0.1f;
 static float Interp_thrust_scale_x = 0.0f;//added -bobboau
 static float Interp_thrust_scale_y = 0.0f;//added -bobboau
@@ -1075,7 +1083,7 @@ static float Interp_thrust_scale_y = 0.0f;//added -bobboau
 static int Interp_thrust_bitmap = -1;
 static int Interp_thrust_glow_bitmap = -1;
 static float Interp_thrust_glow_noise = 1.0f;
-static bool Interp_AB=false;
+static bool Interp_AB = false;
 
 float Model_Interp_scale_x = 1.0f;	//added these three for warpin stuff-Bobbau
 float Model_Interp_scale_y = 1.0f;
@@ -1109,41 +1117,26 @@ static float Interp_xparent_alpha = 1.0f;
 
 float Interp_light = 0.0f;
 
-int Interp_multitex_cloakmap=-1;
-int Interp_cloakmap_alpha=255;
+int Interp_multitex_cloakmap = -1;
+int Interp_cloakmap_alpha = 255;
 
-int model_current_LOD = 0;
+// our current level of detail (LOD)
+int Interp_detail_level = 0;
 
-void set_warp_globals(float a, float b, float c, int d, float e)
-{
-	Model_Interp_scale_x = a;
-	Model_Interp_scale_y = b;
-	Model_Interp_scale_z = c;
-	Warp_Map = d;
-	Warp_Alpha = e;
-//	mprintf(("warpmap being set to %d\n",Warp_Map));
-}
-
-static int FULLCLOAK=-1;
-
-void model_interp_sortnorm_b2f(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
-void model_interp_sortnorm_f2b(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
-
-void (*model_interp_sortnorm)(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check) = model_interp_sortnorm_b2f;
-
-
-int model_should_render_engine_glow(int objnum, int bank_obj);
-
-void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child = false);
-void model_render_children_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level);
-
-int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
+static int FULLCLOAK = -1;
 
 // forward references
 int model_interp_sub(void *model_ptr, polymodel * pm, bsp_info *sm, int do_box_check);
-void set_warp_globals(float, float, float, int, float);
 void model_try_cache_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int num_lights);
 void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum = -1);
+void model_interp_sortnorm_b2f(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
+void model_interp_sortnorm_f2b(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check);
+void (*model_interp_sortnorm)(ubyte * p,polymodel * pm, bsp_info *sm, int do_box_check) = model_interp_sortnorm_b2f;
+int model_should_render_engine_glow(int objnum, int bank_obj);
+void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child = false);
+void model_render_children_buffers(bsp_info* model, polymodel * pm, int mn, int detail_level);
+int model_interp_get_texture(texture_info *tinfo, fix base_frametime);
+
 
 
 void model_deallocate_interp_data()
@@ -2046,7 +2039,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 		
 				if ( Interp_flags & MR_NO_SMOOTHING )	{
 					light_apply_rgb( &Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[vertnum], vp(p+8), Interp_light );
-					if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell && !Cmdline_nospec )
+					if((Detail.lighting > 2) && (Interp_detail_level < 2) && !Cmdline_cell && !Cmdline_nospec )
 						light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], vp(p+8),  &View_position);
 					//	interp_compute_environment_mapping(vp(p+8), Interp_list[i]);
 				} else {					
@@ -2054,13 +2047,13 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					if ( !Interp_use_saved_lighting && !Interp_light_applied[norm] )	{
 
 						light_apply_rgb( &Interp_lighting->lights[norm].r, &Interp_lighting->lights[norm].g, &Interp_lighting->lights[norm].b, Interp_verts[vertnum], Interp_norms[norm], Interp_light );
-						if((Detail.lighting > 2) && (model_current_LOD < 2) && !Cmdline_cell && !Cmdline_nospec )
+						if((Detail.lighting > 2) && (Interp_detail_level < 2) && !Cmdline_cell && !Cmdline_nospec )
 							light_apply_specular( &Interp_lighting->lights[norm].spec_r, &Interp_lighting->lights[norm].spec_g, &Interp_lighting->lights[norm].spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 						//	interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
 
 						Interp_light_applied[norm] = 1;
 					}else if(Interp_light_applied[norm]){
-					//	if((Detail.lighting > 2) && (model_current_LOD < 2))
+					//	if((Detail.lighting > 2) && (Interp_detail_level < 2))
 					//		light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 					//	interp_compute_environment_mapping(Interp_verts[vertnum], Interp_list[i]);
 					}
@@ -2072,7 +2065,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 					Interp_list[i]->r = Interp_lighting->lights[norm].r;
 					Interp_list[i]->g = Interp_lighting->lights[norm].g;
 					Interp_list[i]->b = Interp_lighting->lights[norm].b;
-//					if((Detail.lighting > 2) && (model_current_LOD < 2))
+//					if((Detail.lighting > 2) && (Interp_detail_level < 2))
 //						light_apply_specular( &Interp_list[i]->spec_r, &Interp_list[i]->spec_g, &Interp_list[i]->spec_b, Interp_verts[vertnum], Interp_norms[norm],  &View_position);
 				}
 			}
@@ -2140,7 +2133,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 							}
 						}
 
-						if((Detail.lighting > 2)  && (model_current_LOD < 2))
+						if((Detail.lighting > 2)  && (Interp_detail_level < 2))
 						{
 							// likewise, etc.
 							SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map, base_frametime);
@@ -4237,7 +4230,7 @@ extern int Warp_model;
 
 void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum )
 {
-	int i, detail_level;
+	int i;
 	polymodel * pm;
 
 	uint save_gr_zbuffering_mode;
@@ -4346,7 +4339,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	if ( pm->n_detail_levels > 1 )	{
 
 		if ( Interp_flags & MR_LOCK_DETAIL )	{
-			i = Interp_detail_level+1;
+			i = Interp_detail_level_locked+1;
 		} else {
 
 			//gr_set_color(0,128,0);
@@ -4396,25 +4389,25 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			i++;
 		}
 
-		//detail_level = fl2i(depth/10.0f);		
-		//detail_level = 0;
-		model_current_LOD = detail_level = i-1-tmp_detail_level;
+		//Interp_detail_level = fl2i(depth/10.0f);		
+		//Interp_detail_level = 0;
+		Interp_detail_level = i-1-tmp_detail_level;
 
-		if ( detail_level < 0 ) 
-			model_current_LOD = detail_level = 0;
-		else if (detail_level >= pm->n_detail_levels ) 
-			model_current_LOD = detail_level = pm->n_detail_levels-1;
+		if ( Interp_detail_level < 0 ) 
+			Interp_detail_level = 0;
+		else if (Interp_detail_level >= pm->n_detail_levels ) 
+			Interp_detail_level = pm->n_detail_levels-1;
 
-		//mprintf(( "Depth = %.2f, detail = %d\n", depth, detail_level ));
+		//mprintf(( "Depth = %.2f, detail = %d\n", depth, Interp_detail_level ));
 
 	} else {
-		model_current_LOD = detail_level = 0;
+		Interp_detail_level = 0;
 	}
 
 #ifndef NDEBUG
-	if ( detail_level==0 )	{
+	if ( Interp_detail_level == 0 )	{
 		MONITOR_INC( NumHiModelsRend, 1 );
-	} else if ( detail_level ==pm->n_detail_levels-1 )	{
+	} else if ( Interp_detail_level == pm->n_detail_levels-1 ) {
 		MONITOR_INC( NumLowModelsRend, 1 );
 	}  else {
 		MONITOR_INC( NumMedModelsRend, 1 );
@@ -4432,7 +4425,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		}
 		// fake autocenter if we are a missile and don't already have autocen info
 		else if (Interp_flags & MR_IS_MISSILE) {
-			auto_back.xyz.z = -( (pm->submodel[pm->detail[detail_level]].max.xyz.z - pm->submodel[pm->detail[detail_level]].min.xyz.z) / 2.0f );
+			auto_back.xyz.z = -( (pm->submodel[pm->detail[Interp_detail_level]].max.xyz.z - pm->submodel[pm->detail[Interp_detail_level]].min.xyz.z) / 2.0f );
 			set_autocen = true;
 		}
 
@@ -4456,7 +4449,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	}
 
 	// Draw the subobjects	
-	i = pm->submodel[pm->detail[detail_level]].first_child;
+	i = pm->submodel[pm->detail[Interp_detail_level]].first_child;
 
 	if (is_outlines_only_htl) {
 		gr_set_fill_mode( GR_FILL_MODE_WIRE );
@@ -4484,9 +4477,9 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 			// When in htl mode render with htl method unless its a jump node
 			if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
-				model_render_children_buffers(&pm->submodel[i], pm, i, detail_level);
+				model_render_children_buffers(&pm->submodel[i], pm, i, Interp_detail_level);
 			} else {
-				model_interp_subcall( pm, i, detail_level );
+				model_interp_subcall( pm, i, Interp_detail_level );
 			}
 		} 
 		i = pm->submodel[i].next_sibling;
@@ -4502,7 +4495,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		}
 	}
 
-	if ( pm->submodel[pm->detail[detail_level]].num_children > 0 ){
+	if ( pm->submodel[pm->detail[Interp_detail_level]].num_children > 0 ){
 //		zbuf_mode |= GR_ZBUFF_WRITE;		// write only
 		zbuf_mode = GR_ZBUFF_FULL;
 	}
@@ -4515,15 +4508,15 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	gr_zbuffer_set(zbuf_mode);
 	gr_zbias(0);	
 
-	model_radius = pm->submodel[pm->detail[detail_level]].rad;
+	model_radius = pm->submodel[pm->detail[Interp_detail_level]].rad;
 
 	//*************************** draw the hull of the ship *********************************************
 
 	// When in htl mode render with htl method unless its a jump node
 	if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
-		model_render_buffers(&pm->submodel[pm->detail[detail_level]], pm);
+		model_render_buffers(&pm->submodel[pm->detail[Interp_detail_level]], pm);
 	} else {
-		model_interp_subcall(pm,pm->detail[detail_level],detail_level);
+		model_interp_subcall(pm,pm->detail[Interp_detail_level], Interp_detail_level);
 	}
 
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
@@ -4553,7 +4546,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	if (Interp_flags & MR_SHOW_PIVOTS )	{
 		model_draw_debug_points( pm, NULL );
-		model_draw_debug_points( pm, &pm->submodel[pm->detail[detail_level]] );
+		model_draw_debug_points( pm, &pm->submodel[pm->detail[Interp_detail_level]] );
 
 		if(pm->flags & PM_FLAG_AUTOCEN){
 			gr_set_color(255, 255, 255);
@@ -4569,7 +4562,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	if (!Cmdline_nohtl)	gr_set_texture_panning(0.0, 0.0, false);
 
 	gr_zbuffer_set(GR_ZBUFF_READ);
-	model_render_insignias(pm, detail_level);	
+	model_render_insignias(pm, Interp_detail_level);	
 
 	gr_zbias(0);  
 
@@ -4784,7 +4777,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 		gr_set_fill_mode( GR_FILL_MODE_SOLID );
 	}
 
-	i = pm->submodel[pm->detail[detail_level]].first_child;
+	i = pm->submodel[pm->detail[Interp_detail_level]].first_child;
 	while( i >= 0 )	{
 		if (pm->submodel[i].is_thruster )	{
 			zbuf_mode = GR_ZBUFF_READ;
@@ -4797,9 +4790,9 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 			gr_zbuffer_set(zbuf_mode);
 
 			if (is_outlines_only_htl || (!Cmdline_nohtl && !is_outlines_only)) {
-				model_render_children_buffers(&pm->submodel[i], pm, i, detail_level);
+				model_render_children_buffers(&pm->submodel[i], pm, i, Interp_detail_level);
 			} else {
-				model_interp_subcall( pm, i, detail_level );
+				model_interp_subcall( pm, i, Interp_detail_level );
 			}
 		}
 		i = pm->submodel[i].next_sibling;
@@ -5048,7 +5041,7 @@ void model_set_outline_color_fast(void *outline_color)
 // This defaults to 0. (0=highest, larger=lower)
 void model_set_detail_level(int n)
 {
-	Interp_detail_level = n;
+	Interp_detail_level_locked = n;
 }
 
 
@@ -6067,7 +6060,7 @@ void model_render_children_buffers(bsp_info *model, polymodel *pm, int mn, int d
 	vm_vec_add2(&Interp_offset, &pm->submodel[mn].offset);
 
 	// if using detail boxes, check that we are valid for the range
-	if ( model->use_render_box && (-model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &model->offset)) )
+	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_box && (-model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &model->offset)) )
 		return;
 
 	if (model->gun_rotation) {
@@ -6125,7 +6118,7 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 	if (model->indexed_vertex_buffer == -1)
 		return;
 
-	if ( !is_child && model->use_render_box && (-model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &model->offset)) )
+	if ( !(Interp_flags & MR_FULL_DETAIL) && !is_child && model->use_render_box && (-model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &model->offset)) )
 		return;
 
 	// Goober5000
@@ -6195,7 +6188,7 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 				}
 			}
 
-			if ( (Detail.lighting > 2)  && (model_current_LOD < 2) ) {
+			if ( (Detail.lighting > 2)  && (Interp_detail_level < 2) ) {
 				// likewise, etc.
 				SPECMAP = model_interp_get_texture(&pm->maps[tmap_num].spec_map, base_frametime);
 #ifdef BUMPMAPPING
@@ -6649,4 +6642,16 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 
 	// done
 	return texture;
+}
+
+void model_set_warp_globals(float a, float b, float c, int d, float e)
+{
+	Model_Interp_scale_x = a;
+	Model_Interp_scale_y = b;
+	Model_Interp_scale_z = c;
+
+	Warp_Map = d;
+	Warp_Alpha = e;
+
+//	mprintf(("warpmap being set to %d\n",Warp_Map));
 }

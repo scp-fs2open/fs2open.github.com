@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.89 $
- * $Date: 2006-11-06 05:42:44 $
+ * $Revision: 2.90 $
+ * $Date: 2006-11-06 06:19:17 $
  * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2006/11/06 05:42:44  taylor
+ * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
+ * deal with a index_buffer memory leak that Valgrind has always complained about
+ * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
+ * get rid of MAX_BUFFERS
+ * make D3D vertex buffers dynamic, like OGL has already done
+ *
  * Revision 2.88  2006/07/17 01:12:51  taylor
  * make glow point banks dynamic
  *
@@ -1369,37 +1376,40 @@ void model_set_outline_color_fast(void *outline_color);
 void model_set_detail_level(int n);
 
 // Flags you can pass to model_render
-#define MR_NORMAL						(0)			// Draw a normal object
+#define MR_NORMAL					(0)			// Draw a normal object
 #define MR_SHOW_OUTLINE				(1<<0)		// Draw the object in outline mode. Color specified by model_set_outline_color
 #define MR_SHOW_PIVOTS				(1<<1)		// Show the pivot points
 #define MR_SHOW_PATHS				(1<<2)		// Show the paths associated with a model
 #define MR_SHOW_RADIUS				(1<<3)		// Show the radius around the object
-#define MR_SHOW_DAMAGE				(1<<4)		// Show the "destroyed" subobjects
-#define MR_SHOW_SHIELDS				(1<<5)		// Show the shield mesh
-#define MR_SHOW_THRUSTERS			(1<<6)		// Show the engine thrusters. See model_set_thrust for how long it draws.
-#define MR_LOCK_DETAIL				(1<<7)		// Only draw the detail level defined in model_set_detail_level
-#define MR_NO_POLYS					(1<<8)		// Don't draw the polygons.
-#define MR_NO_LIGHTING				(1<<9)		// Don't perform any lighting on the model.
-#define MR_NO_TEXTURING				(1<<10)		// Draw textures as flat-shaded polygons.
-#define MR_NO_CORRECT				(1<<11)		// Don't to correct texture mapping
-#define MR_NO_SMOOTHING				(1<<12)		// Don't perform smoothing on vertices.
-#define MR_ALWAYS_REDRAW			(1<<13)		// Don't do any model caching; redraw this model each frame!
-#define MR_IS_ASTEROID				(1<<14)		// When set, treat this as an asteroid.  
-#define MR_IS_MISSILE				(1<<15)		// When set, treat this as a missilie.  No lighting, small thrusters.
-#define MR_SHOW_OUTLINE_PRESET	(1<<16)		// Draw the object in outline mode. Color assumed to be set already.	
-#define MR_SHOW_INVISIBLE_FACES	(1<<17)		// Show invisible faces as green...
-#define MR_AUTOCENTER				(1<<18)		// Always use the center of the hull bounding box as the center, instead of the pivot point
-#define MR_BAY_PATHS					(1<<19)		// draw bay paths
-#define MR_ALL_XPARENT				(1<<20)		// render it fully transparent
-#define MR_NO_ZBUFFER				(1<<21)		// switch z-buffering off completely 
-#define MR_NO_CULL					(1<<22)		// don't cull backfacing poly's
-#define MR_FORCE_TEXTURE			(1<<23)		// force a given texture to always be used
-#define MR_FORCE_LOWER_DETAIL		(1<<24)		// force the model to draw 1 LOD lower, if possible
-#define MR_EDGE_ALPHA		(1<<25)		// makes norms that are faceing away from you render more transparent -Bobboau
-#define MR_CENTER_ALPHA		(1<<26)		// oposite of above -Bobboau
-#define MR_NO_FOGGING				(1<<27)		// Don't fog - taylor
-#define MR_SHOW_OUTLINE_HTL			(1<<28)		// Show outlines (wireframe view) using HTL method
-#define MR_NO_GLOWMAPS				(1<<29)		// disable rendering of glowmaps - taylor
+#define MR_SHOW_SHIELDS				(1<<4)		// Show the shield mesh
+#define MR_SHOW_THRUSTERS			(1<<5)		// Show the engine thrusters. See model_set_thrust for how long it draws.
+#define MR_LOCK_DETAIL				(1<<6)		// Only draw the detail level defined in model_set_detail_level
+#define MR_NO_POLYS					(1<<7)		// Don't draw the polygons.
+#define MR_NO_LIGHTING				(1<<8)		// Don't perform any lighting on the model.
+#define MR_NO_TEXTURING				(1<<9)		// Draw textures as flat-shaded polygons.
+#define MR_NO_CORRECT				(1<<10)		// Don't to correct texture mapping
+#define MR_NO_SMOOTHING				(1<<11)		// Don't perform smoothing on vertices.
+#define MR_IS_ASTEROID				(1<<12)		// When set, treat this as an asteroid.  
+#define MR_IS_MISSILE				(1<<13)		// When set, treat this as a missilie.  No lighting, small thrusters.
+#define MR_SHOW_OUTLINE_PRESET		(1<<14)		// Draw the object in outline mode. Color assumed to be set already.	
+#define MR_SHOW_INVISIBLE_FACES		(1<<15)		// Show invisible faces as green...
+#define MR_AUTOCENTER				(1<<16)		// Always use the center of the hull bounding box as the center, instead of the pivot point
+#define MR_BAY_PATHS				(1<<17)		// draw bay paths
+#define MR_ALL_XPARENT				(1<<18)		// render it fully transparent
+#define MR_NO_ZBUFFER				(1<<19)		// switch z-buffering off completely 
+#define MR_NO_CULL					(1<<20)		// don't cull backfacing poly's
+#define MR_FORCE_TEXTURE			(1<<21)		// force a given texture to always be used
+#define MR_FORCE_LOWER_DETAIL		(1<<22)		// force the model to draw 1 LOD lower, if possible
+#define MR_EDGE_ALPHA				(1<<23)		// makes norms that are faceing away from you render more transparent -Bobboau
+#define MR_CENTER_ALPHA				(1<<24)		// oposite of above -Bobboau
+#define MR_NO_FOGGING				(1<<25)		// Don't fog - taylor
+#define MR_SHOW_OUTLINE_HTL			(1<<26)		// Show outlines (wireframe view) using HTL method
+#define MR_NO_GLOWMAPS				(1<<27)		// disable rendering of glowmaps - taylor
+#define MR_FULL_DETAIL				(1<<28)		// render all valid objects, particularly ones that are otherwise in/out of render boxes - taylor
+
+// old/obsolete flags
+//#define MR_SHOW_DAMAGE			(1<<4)		// Show the "destroyed" subobjects
+//#define MR_ALWAYS_REDRAW			(1<<13)		// Don't do any model caching; redraw this model each frame!
 
 // Renders a model and all it's submodels.
 // See MR_? defines for values for flags
@@ -1764,7 +1774,7 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
 
-void set_warp_globals(float, float, float, int, float);
+void model_set_warp_globals(float, float, float, int, float);
 
 void model_set_replacement_textures(int *replacement_textures);
 

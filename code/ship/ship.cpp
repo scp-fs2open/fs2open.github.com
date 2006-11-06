@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.381 $
- * $Date: 2006-11-06 02:19:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.382 $
+ * $Date: 2006-11-06 06:19:17 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.381  2006/11/06 02:19:58  Goober5000
+ * minor bugfixes
+ *
  * Revision 2.380  2006/10/24 23:56:49  Goober5000
  * clarified this; it was confusing before
  *
@@ -6062,7 +6065,7 @@ void ship_render(object * obj)
 		ship_model_start(obj);
 
 		uint render_flags = MR_NORMAL;
-
+/*
 		// Turn off model caching for the player ship in external view.
 		if (obj == Player_obj)	{
 			render_flags |= MR_ALWAYS_REDRAW;	
@@ -6072,7 +6075,7 @@ void ship_render(object * obj)
 		if ( Player_ai->target_objnum == OBJ_INDEX(obj))	{
 			render_flags |= MR_ALWAYS_REDRAW;	
 		}	
-
+*/
 	#ifndef NDEBUG
 		if(Show_paths || Show_fpaths){
 			render_flags |= MR_BAY_PATHS;
@@ -6084,7 +6087,7 @@ void ship_render(object * obj)
 			int i;
 			for (i=0; i<MAX_SHIP_ARCS; i++ )	{
 				if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
-					render_flags |= MR_ALWAYS_REDRAW;	// Turn off model caching if arcing.
+				//	render_flags |= MR_ALWAYS_REDRAW;	// Turn off model caching if arcing.
 					model_add_arc( shipp->modelnum, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i] );
 				}
 			}
@@ -6185,7 +6188,7 @@ void ship_render(object * obj)
 						vec3d start, tmpend, end;
 						//Start
 						vm_vec_unrotate(&start, &mtp->pos, &obj->orient);
-						vm_vec_scale_add2(&start, &obj->pos, 1.0f);
+						vm_vec_add2(&start, &obj->pos);
 
 						//End
 						if(mtp->flags & MTF_NO_SCALE)
@@ -6193,7 +6196,7 @@ void ship_render(object * obj)
 						else
 							vm_vec_scale_add(&tmpend, &mtp->pos, &mtp->norm, len * render_amount);
 						vm_vec_unrotate(&end, &tmpend, &obj->orient);
-						vm_vec_scale_add2(&end, &obj->pos, 1.0f);
+						vm_vec_add2(&end, &obj->pos);
 
 						//Draw
 						int bmap_frame = mtp->tex_id;
@@ -6221,7 +6224,7 @@ void ship_render(object * obj)
 						//Get world pos
 						vec3d start;
 						vm_vec_unrotate(&start, &mtp->pos, &obj->orient);
-						vm_vec_scale_add2(&start, &obj->pos, 1.0f);
+						vm_vec_add2(&start, &obj->pos);
 
 						snd_play_3d( &Snds[mtp->stop_snd], &mtp->pos, &Eye_position, 0.0f, &obj->phys_info.vel );
 					}
@@ -6304,7 +6307,7 @@ void ship_render(object * obj)
 					g3_start_user_clip_plane( &warp_shipp->warp_effect_pos, &warp_shipp->warp_effect_fvec );
 
 					// Turn off model caching while going thru warp effect.
-					render_flags |= MR_ALWAYS_REDRAW;
+				//	render_flags |= MR_ALWAYS_REDRAW;
 				}
 			}
 
