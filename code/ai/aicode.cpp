@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.87 $
- * $Date: 2006-10-15 00:40:56 $
+ * $Revision: 1.88 $
+ * $Date: 2006-11-06 02:19:58 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.87  2006/10/15 00:40:56  Goober5000
+ * better safety check
+ *
  * Revision 1.86  2006/09/20 05:19:01  Goober5000
  * more descriptive warning message for docking paths
  *
@@ -2272,7 +2275,7 @@ int set_target_objnum(ai_info *aip, int objnum)
 		}
 
 		// if stealth target, init ai_info for stealth
-		if ( (objnum > 0) && is_object_stealth_ship(&Objects[objnum]) ) {
+		if ( (objnum >= 0) && is_object_stealth_ship(&Objects[objnum]) ) {
 			init_ai_stealth_info(aip, &Objects[objnum]);
 		}
 
