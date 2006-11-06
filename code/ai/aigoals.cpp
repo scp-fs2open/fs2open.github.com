@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.29 $
- * $Date: 2006-09-08 06:20:14 $
- * $Author: taylor $
+ * $Revision: 1.30 $
+ * $Date: 2006-11-06 03:38:32 $
+ * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2006/09/08 06:20:14  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 1.28  2006/06/01 04:47:23  taylor
  * make sure FORM_ON_WING goal is valid since it works for ships other than player now
  *
@@ -717,7 +720,7 @@
 
 
 #define AI_GOAL_ACHIEVABLE			1
-#define AI_GOAL_NOT_ACHIEVABLE	2
+#define AI_GOAL_NOT_ACHIEVABLE		2
 #define AI_GOAL_NOT_KNOWN			3
 #define AI_GOAL_SATISFIED			4
 
@@ -1803,13 +1806,9 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 		// locate a capital ship on the same team:
 		if (ship_get_ship_with_dock_bay(shipp->team) >= 0)
-		{
 			return AI_GOAL_ACHIEVABLE;
-		}
 		else
-		{
-			return AI_GOAL_NOT_ACHIEVABLE;
-		}
+			return AI_GOAL_NOT_KNOWN;
 	}
 
 
@@ -1853,9 +1852,8 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	switch ( aigp->ai_mode )
 	{
 		case AI_GOAL_DOCK:
-		case AI_GOAL_CHASE_WING:
 		case AI_GOAL_UNDOCK:
-			//status = mission_log_get_time( LOG_SHIP_DOCK, ai_shipname, aigp->ship_name, NULL);
+			//status = mission_log_get_time( LOG_SHIP_DOCK, ai_shipname, aigp->ship_name, NULL );
 			//status = mission_log_get_time( LOG_SHIP_UNDOCK, ai_shipname, aigp->ship_name, NULL );
 			//MWA 3/20/97 -- cannot short circuit a dock or undock goal already succeeded -- we must
 			// rely on the goal removal code to just remove this goal.  This is because docking/undock
@@ -1899,14 +1897,14 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 
 		// to guard or ignore a ship, the goal cannot continue if the ship being guarded is either destroyed
 		// or has departed.
+		case AI_GOAL_CHASE:
 		case AI_GOAL_GUARD:
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_EVADE_SHIP:
-		case AI_GOAL_CHASE:
 		case AI_GOAL_STAY_NEAR_SHIP:
-		case AI_GOAL_REARM_REPAIR:
 		case AI_GOAL_FLY_TO_SHIP:
+		case AI_GOAL_REARM_REPAIR:
 		{
 			// MWA -- 4/22/98.  Check for the ship actually being in the mission before
 			// checking departure and destroyed.  In multiplayer, since ships can respawn,
@@ -1926,6 +1924,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			break;
 		}
 
+		case AI_GOAL_CHASE_WING:
 		case AI_GOAL_GUARD_WING:
 		{
 			status = mission_log_get_time( LOG_WING_DEPARTED, aigp->ship_name, NULL, NULL );
@@ -1977,7 +1976,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		sindex = wing_name_lookup( aigp->ship_name );
 
 		if (sindex < 0)
-			return AI_GOAL_NOT_ACHIEVABLE;
+			return AI_GOAL_NOT_KNOWN;
 
 		wing *wingp = &Wings[sindex];
 
@@ -2154,13 +2153,14 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	switch ( aigp->ai_mode )
 	{
 		case AI_GOAL_CHASE:
+		case AI_GOAL_CHASE_WING:
 		case AI_GOAL_DOCK:
-		case AI_GOAL_DESTROY_SUBSYSTEM:
 		case AI_GOAL_UNDOCK:
 		case AI_GOAL_GUARD:
 		case AI_GOAL_GUARD_WING:
 		case AI_GOAL_DISABLE_SHIP:
 		case AI_GOAL_DISARM_SHIP:
+		case AI_GOAL_DESTROY_SUBSYSTEM:
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_EVADE_SHIP:
