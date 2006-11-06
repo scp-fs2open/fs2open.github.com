@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.40 $
- * $Date: 2006-11-01 18:35:57 $
- * $Author: taylor $
+ * $Revision: 2.336.2.41 $
+ * $Date: 2006-11-06 02:20:00 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.40  2006/11/01 18:35:57  taylor
+ * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
+ *
  * Revision 2.336.2.39  2006/10/27 21:33:06  taylor
  * updated/fixed modelanim code
  * add ships.tbl subsystem flag ("+fire-down-normals") which will force a turret to fire down it's barrel line (Mantis bug #591)
@@ -9201,7 +9204,7 @@ send_countermeasure_fired:
 		}
 	}
 
-	return (cobjnum>0);		// return 0 if not fired, 1 otherwise
+	return (cobjnum >= 0);		// return 0 if not fired, 1 otherwise
 }
 
 // internal function.. see if enough time has elapsed to play fail sound again

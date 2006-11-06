@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72.2.13 $
- * $Date: 2006-10-27 21:29:26 $
- * $Author: taylor $
+ * $Revision: 1.72.2.14 $
+ * $Date: 2006-11-06 02:20:00 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72.2.13  2006/10/27 21:29:26  taylor
+ * updated/fixed modelanim code
+ *
  * Revision 1.72.2.12  2006/10/15 00:41:01  Goober5000
  * better safety check
  *
@@ -2264,7 +2267,7 @@ int set_target_objnum(ai_info *aip, int objnum)
 		}
 
 		// if stealth target, init ai_info for stealth
-		if ( (objnum > 0) && is_object_stealth_ship(&Objects[objnum]) ) {
+		if ( (objnum >= 0) && is_object_stealth_ship(&Objects[objnum]) ) {
 			init_ai_stealth_info(aip, &Objects[objnum]);
 		}
 
