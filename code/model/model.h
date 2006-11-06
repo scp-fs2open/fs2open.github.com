@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.90 $
- * $Date: 2006-11-06 06:19:17 $
+ * $Revision: 2.91 $
+ * $Date: 2006-11-06 06:36:44 $
  * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2006/11/06 06:19:17  taylor
+ * rename set_warp_globals() to model_set_warp_globals()
+ * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
+ * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
+ * change "model_current_LOD" to a global "Interp_detail_level" and the static "Interp_detail_level" to "Interp_detail_level_locked", a bit more descriptive
+ * minor bits of cleanup
+ * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
+ *
  * Revision 2.89  2006/11/06 05:42:44  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
@@ -712,7 +720,6 @@ struct object;
 
 #define MAX_SPLIT_PLANE				3				// number of artist specified split planes (used in big ship explosions)
 
-class triggered_rotation;
 // Data specific to a particular instance of a submodel.  This gets stuffed/unstuffed using
 // the model_clear_instance, model_set_instance, model_get_instance functions.
 typedef struct submodel_instance_info {
@@ -741,6 +748,7 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_UNTARGETABLE		(1 << 8)		// Goober5000
 #define MSS_FLAG_CARRY_NO_DAMAGE	(1 << 9)		// WMC
 #define MSS_FLAG_USE_MULTIPLE_GUNS	(1 << 10)		// WMC
+#define MSS_FLAG_FIRE_ON_NORMAL		(1 << 11)		// forces a turret to fire down it's normal vecs
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -760,107 +768,7 @@ typedef struct stepped_rotation {
 	int time;
 } ai_rotation_t;*/
 
-#define MAX_TRIGGERED_ANIMATIONS 15
-
-//WMC: Steps to adding a triggered animation
-//1 - add TRIGGER_TYPE define
-//2 - increment MAX_TRIGGER_ANIMATION_TYPES
-//3 - add name to animation_type_names array
-//4 - add start trigger (ship_start_animation_type)
-//5 - add stop trigger (ship_start_animation_type)
-
-#define TRIGGER_TYPE_NONE					-1		//no animation
-#define TRIGGER_TYPE_INITIAL				0		//this is just the position the subobject should be placed in
-#define TRIGGER_TYPE_DOCKING				1		//before you dock
-#define TRIGGER_TYPE_DOCKED					2		//after you have docked
-#define TRIGGER_TYPE_PRIMARY_BANK			3		//primary banks
-#define TRIGGER_TYPE_SECONDARY_BANK			4		//secondary banks
-#define TRIGGER_TYPE_DOCK_BAY_DOOR			5		//fighter bays
-#define TRIGGER_TYPE_AFTERBURNER			6		//Afterburner -C
-#define TRIGGER_TYPE_TURRET_FIRING			7		//Turret shooting -C
-#define TRIGGER_TYPE_SCRIPTEDturret_animation_position				8		//Triggered exclusively by scripting...maybe SEXPs? -C
-
-#define MAX_TRIGGER_ANIMATION_TYPES			9
-
-
-extern char* animation_type_names[MAX_TRIGGER_ANIMATION_TYPES];
-
-#define ANIMATION_SUBTYPE_ALL -1
-
-//this is an object responsable for storeing the animation information assosiated with a specific triggered animation, one subobject can have many triggered animations
-struct queued_animation{
-	queued_animation(float an,float v,float a,int s, int e, int t, int st, int axis);
-	queued_animation(vec3d an,vec3d v,vec3d a,int s, int e, int t, int st):angle(an),vel(v),accel(a),start(s),end(e),absolute(false), type(t), subtype(st){};
-	queued_animation():start(0),end(0),absolute(false),type(TRIGGER_TYPE_NONE),subtype(ANIMATION_SUBTYPE_ALL){angle.xyz.x=0;angle.xyz.y=0;angle.xyz.z=0;vel.xyz.x=0;vel.xyz.y=0;vel.xyz.z=0;accel.xyz.x=0;accel.xyz.y=0;accel.xyz.z=0;};
-
-	vec3d angle;
-	vec3d vel;
-	vec3d accel;
-	int start;
-	int reverse_start;
-	int end;
-	bool absolute;
-	int type;
-	int subtype;
-	int instance;
-	int real_end_time;
-
-	int start_sound;
-	int loop_sound;
-	int end_sound;
-	float snd_rad;
-
-//	void rotate_radian_relative(float theda, float accel, float vel, int axis);			//rotate theda radians, useing accell accelleration
-//	void rotate_radian_time_relative(float theda, float vel, float time, int axis);	//rotate theda radians, at the specifyed velocity in the specifyed time
-//	void rotate_radian_absolute(float theda, float accel, float vel, int axis);			//rotate theda radians, useing accell accelleration
-//	void rotate_radian_time_absolute(float theda, float vel, float time, int axis);	//rotate theda radians, at the specifyed velocity in the specifyed time
-	void corect();
-};
-/*
-struct trigger_instance{
-	int type;
-	int sub_type;
-	queued_animation properties;
-	void corect();
-};
-*/
-
-//this is the triggered animation object, it is responcable for controleing how the current triggered animation works
-//rot_accel is the accelleration for starting to move and stopping, so figure it in twice
-class triggered_rotation{
-public:
-	triggered_rotation();//{current_ang = ZERO_VECTOR;	current_vel = ZERO_VECTOR;	rot_accel = ZERO_VECTOR;	rot_vel = ZERO_VECTOR;	slow_angle = ZERO_VECTOR;	end_time = ZERO_VECTOR;	end_angle = ZERO_VECTOR;}
-	~triggered_rotation();
-
-	vec3d current_ang;
-	vec3d current_vel;
-	vec3d rot_accel;	//rotational accelleration, 0 means instant
-	vec3d rot_vel;		//radians per second, hold this speed when rot_accel has pushed it to this
-	vec3d slow_angle;	//angle that we should start to slow down
-	vec3d end_angle;	//lock it in
-	vec3d direction;
-	int end_time;	//time that we should stop
-	int start_time;		//the time the current animation started
-	int instance;		//wich animation this is (for reversals)
-
-	int n_queue;
-	queued_animation queue[MAX_TRIGGERED_ANIMATIONS];
-
-	vec3d snd_pnt;
-	int start_sound;
-	int loop_sound;
-	int end_sound;
-	int current_snd;
-	int current_snd_index;
-	float snd_rad;
-	int obj_num;
-
-	void start(queued_animation* q);
-	void set_to_end(queued_animation* q);
-
-	void add_queue(queued_animation* new_queue, int direction);
-	void proces_queue();
-};
+struct queued_animation;
 
 // definition for model subsystems.
 typedef struct model_subsystem {					/* contains rotation rate info */
@@ -1774,7 +1682,7 @@ void model_page_in_textures(int modelnum, int ship_info_index = -1);
 // given a model, unload all of its textures
 void model_page_out_textures(int model_num, bool release = false);
 
-void model_set_warp_globals(float, float, float, int, float);
+void model_set_warp_globals(float scale_x = 1.0f, float scale_y = 1.0f, float scale_z = 1.0f, int bitmap_id = -1, float alpha = 1.0f);
 
 void model_set_replacement_textures(int *replacement_textures);
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.269 $
- * $Date: 2006-11-06 05:48:15 $
+ * $Revision: 2.270 $
+ * $Date: 2006-11-06 06:36:44 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.269  2006/11/06 05:48:15  taylor
+ * fix loading callback issue in standalone
+ *
  * Revision 2.268  2006/11/01 06:15:25  taylor
  * remove Assert() on Viewer_obj for supernova sun processing, it's not really needed and a NULL obj is easily dealt with by the code
  *
@@ -3236,7 +3239,7 @@ int game_start_mission()
 			}
 			shipp = &Ships[Objects[moveup->objnum].instance];
 
-			ship_animation_set_initial_states(shipp);
+			model_anim_set_initial_states(shipp);
 
 			moveup = GET_NEXT(moveup);
 		}

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.73 $
- * $Date: 2006-10-08 02:05:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.74 $
+ * $Date: 2006-11-06 06:36:44 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2006/10/08 02:05:38  Goober5000
+ * fix forum links
+ *
  * Revision 2.72  2006/09/11 05:38:16  taylor
  * don't try to draw beam sections if there is no valid texture for it, or if there is no width
  *
@@ -2255,6 +2258,11 @@ void beam_delete(beam *b)
 		snd_stop(b->beam_sound_loop);
 		b->beam_sound_loop = -1;
 	}	
+
+	// handle model animation reversal (closing)
+	// (beam animations should end pretty much immediately - taylor)
+	if (b->subsys->turret_animation_position == MA_POS_READY)
+		b->subsys->turret_animation_done_time = timestamp(50);
 
 	// subtract one
 	Beam_count--;

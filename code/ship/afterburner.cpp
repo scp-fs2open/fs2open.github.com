@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-03-18 20:24:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.22 $
+ * $Date: 2006-11-06 06:36:44 $
+ * $Author: taylor $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/03/18 20:24:54  wmcoolmon
+ * Nitpicketiness
+ *
  * Revision 2.20  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -327,7 +330,7 @@ void afterburners_start(object *objp)
 	percent_left = shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 
 	//Do anim
-	ship_start_animation_type(shipp, TRIGGER_TYPE_AFTERBURNER, ANIMATION_SUBTYPE_ALL, 1);
+	model_anim_start_type(shipp, TRIGGER_TYPE_AFTERBURNER, ANIMATION_SUBTYPE_ALL, 1);
 
 	if ( objp == Player_obj ) {
 		Player_afterburner_start_time = timer_get_milliseconds();
@@ -507,7 +510,7 @@ void afterburners_stop(object *objp, int key_released)
 	percent_left = shipp->afterburner_fuel / sip->afterburner_fuel_capacity;
 
 	//Do anim
-	ship_start_animation_type(shipp, TRIGGER_TYPE_AFTERBURNER, ANIMATION_SUBTYPE_ALL, -1);
+	model_anim_start_type(shipp, TRIGGER_TYPE_AFTERBURNER, ANIMATION_SUBTYPE_ALL, -1);
 
 	if ( objp == Player_obj ) {
 

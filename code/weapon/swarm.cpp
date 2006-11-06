@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Swarm.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-05 05:53:25 $
+ * $Revision: 2.9 $
+ * $Date: 2006-11-06 06:36:44 $
  * $Author: taylor $
  *
  * C module for managing swarm missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/05 05:53:25  taylor
+ * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
+ *
  * Revision 2.7  2005/03/25 06:57:38  wmcoolmon
  * Big, massive, codebase commit. I have not removed the old ai files as the ones I uploaded aren't up-to-date (But should work with the rest of the codebase)
  *
@@ -694,6 +697,11 @@ void turret_swarm_maybe_fire_missile(int shipnum)
 					tsi->num_to_launch--;
 
 					if (tsi->num_to_launch == 0) {
+						// we are done firing, so see about resetting any animation timestamps for reversal (closing)...
+						// (I figure that a good estimate is to trigger a close after three additional swarms had fired - taylor)
+						if (subsys->turret_animation_position == MA_POS_READY)
+							subsys->turret_animation_done_time = timestamp( Weapon_info[tsi->weapon_class].SwarmWait * 3);
+
 						shipp->num_turret_swarm_info--;
 						turret_swarm_delete(subsys->turret_swarm_info_index);
 						subsys->turret_swarm_info_index = -1;
