@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-05-16 12:45:20 $
- * $Author: karajorma $
+ * $Revision: 1.6 $
+ * $Date: 2006-11-06 05:54:13 $
+ * $Author: taylor $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/05/16 12:45:20  karajorma
+ * Fix the lack of a background in FRED
+ *
  * Revision 1.4  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -944,6 +947,10 @@ void render_models(void)
 
 	render_count = 0;
 
+	if ( (ENVMAP == -1) && strlen(The_mission.envmap_name) ) {
+		ENVMAP = bm_load(The_mission.envmap_name);
+	}
+
 	bool f=false;
 	if (Cmdline_nohtl)
 	{
@@ -1053,9 +1060,9 @@ void render_one_model_nohtl(object *objp)
 		{
 			if (Fred_outline)	{
 				model_set_outline_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-				model_render(Ships[z].modelnum, &objp->orient, &objp->pos, j | MR_SHOW_OUTLINE);
+				model_render(Ships[z].modelnum, &objp->orient, &objp->pos, j | MR_SHOW_OUTLINE, -1, -1, Ships[z].replacement_textures);
 			} else {
-				model_render(Ships[z].modelnum, &objp->orient, &objp->pos, j);
+				model_render(Ships[z].modelnum, &objp->orient, &objp->pos, j, -1, -1, Ships[z].replacement_textures);
 			}
 		}
 	
@@ -1190,7 +1197,7 @@ void render_one_model_htl(object *objp)
 		}
 
 		g3_done_instance(0);
-	  	model_render(Ships[z].modelnum, &objp->orient, &objp->pos, j);
+	  	model_render(Ships[z].modelnum, &objp->orient, &objp->pos, j, -1, -1, Ships[z].replacement_textures);
 	} else {
 		int r = 0, g = 0, b = 0;
 
