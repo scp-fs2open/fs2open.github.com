@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.81 $
- * $Date: 2006-10-06 09:56:42 $
+ * $Revision: 2.82 $
+ * $Date: 2006-11-06 05:42:44 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2006/10/06 09:56:42  taylor
+ * clean up some old software rendering stuff that we don't use any longer
+ * remove grzbuffer.*, since all it did was give us 3 variables, which were moved to 2d.*
+ *
  * Revision 2.80  2006/09/11 06:36:38  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
@@ -727,12 +731,12 @@ gr_line(x1,y1,x2,y2)
 #include "bmpman/bmpman.h"
 
 
-#define MATRIX_TRANSFORM_TYPE_WORLD 0
-#define MATRIX_TRANSFORM_TYPE_VIEW 1
+//#define MATRIX_TRANSFORM_TYPE_WORLD 0
+//#define MATRIX_TRANSFORM_TYPE_VIEW 1
 
 
 //MAX_POLYGON_NORMS
-#define MAX_POLYGON_TRI_POINTS 15000
+//#define MAX_POLYGON_TRI_POINTS 15000
 extern const float Default_min_draw_distance;
 extern const float Default_max_draw_distance;
 extern float Min_draw_distance;
@@ -771,33 +775,28 @@ typedef struct color {
 	int		magic;		
 } color;
 
-struct index_list{
-	index_list():index_buffer(NULL){};
-	~index_list(){if(index_buffer)vm_free(index_buffer);};
-	void allocate_index_buffer(int size){if(index_buffer)vm_free(index_buffer); index_buffer = (ushort*)vm_malloc(sizeof(ushort) * size);};
-	ushort *index_buffer;
-};
 
-//this should be basicly just like it is in the VB
-//a list of triangles and there assosiated normals
-
-struct poly_list{
-	poly_list(): n_prim(0), n_verts(0), vert(NULL), norm(NULL), currently_allocated(0) {};
+// this should be basicly just like it is in the VB
+// a list of triangles and their associated normals
+struct poly_list {
+	poly_list(): n_prim(0), n_verts(0), vert(NULL), norm(NULL), currently_allocated(0) {}
 	~poly_list();
+	poly_list& operator = (poly_list&);
+
 	void allocate(int size);
 	void make_index_buffer();
-	poly_list& operator = (poly_list&);
 	int n_prim;
 	int n_verts;
 	vertex *vert;
 	vec3d *norm;
+
 private:
 	int currently_allocated;
 };
 
 
-struct colored_vector{
-	colored_vector():pad(1.0f){};
+struct colored_vector {
+	colored_vector(): pad(1.0f) {}
 	vec3d vec;
 	float pad;	//needed so I can just memcpy it in d3d
 	ubyte color[4];
@@ -812,7 +811,7 @@ int find_first_index(poly_list *plist, int idx);
 int find_first_index_vb(poly_list *plist, int idx, poly_list *v);
 
 
-struct line_list{
+struct line_list {
 	int n_line;
 	vertex *vert;
 };
