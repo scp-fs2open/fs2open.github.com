@@ -1071,6 +1071,9 @@
 #define IDC_PATH_LIST                   1590
 #define IDC_ENTRY_FORMAT                1590
 #define IDC_NO_REPLACE                  1591
+#define IDC_ENVMAP                      1582
+#define IDC_ENVMAP_BROWSE               1593
+#define IDC_SKYBOX_MODEL                1594
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1359,7 +1362,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        274
 #define _APS_NEXT_COMMAND_VALUE         33090
-#define _APS_NEXT_CONTROL_VALUE         1592
+#define _APS_NEXT_CONTROL_VALUE         1595
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

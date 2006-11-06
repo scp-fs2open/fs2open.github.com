@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.h $
- * $Revision: 1.3 $
- * $Date: 2006-08-06 18:47:29 $
- * $Author: Goober5000 $
+ * $Revision: 1.4 $
+ * $Date: 2006-11-06 05:54:13 $
+ * $Author: taylor $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/08/06 18:47:29  Goober5000
+ * add the multiple background feature
+ * --Goober5000
+ *
  * Revision 1.2  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -204,6 +208,7 @@ public:
 	int b_div_y;
 	int b_index;
 	CString m_skybox_model;
+	CString m_envmap;
 	//}}AFX_DATA
 
 // Overrides
@@ -259,6 +264,8 @@ protected:
 	afx_msg void OnImportBackground();
 	afx_msg void OnSwapBackground();
 	afx_msg void OnBackgroundDropdownChange();
+	afx_msg void OnSkyboxBrowse();
+	afx_msg void OnEnvmapBrowse();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
