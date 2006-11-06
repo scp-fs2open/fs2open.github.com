@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.50.2.1 $
- * $Date: 2006-09-11 01:16:31 $
+ * $Revision: 2.50.2.2 $
+ * $Date: 2006-11-06 05:26:38 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50.2.1  2006/09/11 01:16:31  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.50  2006/04/12 01:03:00  taylor
  * more s/colour/color/ changes
  * throw in a couple of safety checks for some neb2 functions
@@ -1595,7 +1598,7 @@ void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient)
 	Neb2_render_mode = NEB2_RENDER_NONE;
 
 	// draw background stuff nebula			
-	stars_draw_background(0);		
+	stars_draw_background();		
 
 	Neb2_render_mode = neb_save;
 	
