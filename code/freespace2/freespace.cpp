@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.268 $
- * $Date: 2006-11-01 06:15:25 $
+ * $Revision: 2.269 $
+ * $Date: 2006-11-06 05:48:15 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.268  2006/11/01 06:15:25  taylor
+ * remove Assert() on Viewer_obj for supernova sun processing, it's not really needed and a NULL obj is easily dealt with by the code
+ *
  * Revision 2.267  2006/09/24 22:55:17  taylor
  * more standalone server fixes:
  *  - add some basic bmpman functionality to grstub, since it needs to do something at least
@@ -3172,7 +3175,8 @@ int game_start_mission()
 
 	get_mission_info(Game_current_mission_filename, &The_mission, false);
 
-	game_loading_callback_init();
+	if ( !(Game_mode & GM_STANDALONE_SERVER) )
+		game_loading_callback_init();
 
 	game_level_init();
 	
