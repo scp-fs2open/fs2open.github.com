@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.270 $
- * $Date: 2006-11-06 06:36:44 $
+ * $Revision: 2.271 $
+ * $Date: 2006-11-06 06:46:08 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.270  2006/11/06 06:36:44  taylor
+ * updated/fixed modelanim code
+ *
  * Revision 2.269  2006/11/06 05:48:15  taylor
  * fix loading callback issue in standalone
  *
@@ -5046,22 +5049,21 @@ extern void compute_slew_matrix(matrix *orient, angles *a);	// TODO: move code t
 vec3d	Dead_player_last_vel = { { { 1.0f, 1.0f, 1.0f } } };
 
 extern float View_zoom;
-inline void render_environment(int i, matrix *new_orient, float new_zoom)
+inline void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
 {
-	vec3d nv = ZERO_VECTOR;
-
 	bm_set_render_target( (Game_subspace_effect) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map, i);
 
 	gr_clear();
 
-	g3_set_view_matrix( &nv, new_orient, new_zoom );
-	gr_set_proj_matrix( PI_2, 1.0f, Min_draw_distance, Max_draw_distance );
+	g3_set_view_matrix( eye_pos, new_orient, new_zoom );
+
+	gr_set_proj_matrix( PI_2 * new_zoom, 1.0f, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix( &Eye_position, &Eye_matrix );
 
 	if ( Game_subspace_effect ) {
-		stars_draw(0,0,0,1,1);
+		stars_draw(0, 0, 0, 1, 1);
 	} else {
-		stars_draw(0,1,1,0,1);
+		stars_draw(0, 1, 1, 0, 1);
 	}
 
 	gr_end_view_matrix();
@@ -5071,7 +5073,7 @@ inline void render_environment(int i, matrix *new_orient, float new_zoom)
 void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 {
 	matrix new_orient = IDENTITY_MATRIX;
-	float old_zoom = View_zoom, new_zoom = 0.925f;
+	float old_zoom = View_zoom, new_zoom = 1.0f;//0.925f;
 	int i = 0;
 
 
@@ -5088,7 +5090,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 	}
 
 	if ( (Game_subspace_effect && (gr_screen.dynamic_environment_map < 0)) || (!Game_subspace_effect && (gr_screen.static_environment_map < 0)) ) {
-		if (ENVMAP > -1)
+		if (ENVMAP >= 0)
 			return;
 
 		if (strlen(The_mission.envmap_name)) {
@@ -5105,46 +5107,117 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 
 	ENVMAP = (Game_subspace_effect) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map;
 
-	// face 1
-	new_orient.vec.fvec.xyz.x = 1.0f;	new_orient.vec.fvec.xyz.y = 0.0f;	new_orient.vec.fvec.xyz.z = 0.0f;
-	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 1.0f;	new_orient.vec.uvec.xyz.z = 0.0f;
-	vm_fix_matrix(&new_orient);
-	render_environment(i, &new_orient, new_zoom);
-	i++; // bump!
+/*
+	Envmap matrix setup -- left-handed (right-handed)
+	-------------------------------------------------
+	Image	Forward Axis	Up Axis		Right Axis
+	px		+X  (-X)		+Y			-Z
+	nx		-X  (+X)		+Y			+Z
+	py		+Y  (-Y)		-Z			+X
+	ny		-Y  (+Y)		+Z			+X
+	pz		+Z  (-Z)		+Y			+X
+	nz		-Z  (+Z)		+Y			-X
+*/
 
-	// face 2
-	new_orient.vec.fvec.xyz.x = -1.0f;	new_orient.vec.fvec.xyz.y = 0.0f;	new_orient.vec.fvec.xyz.z = 0.0f;
-	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 1.0f;	new_orient.vec.uvec.xyz.z = 0.0f;
-	vm_fix_matrix(&new_orient);
-	render_environment(i, &new_orient, new_zoom);
-	i++; // bump!
+	// OpenGL needs a right-handed setup
+	if (gr_screen.mode == GR_OPENGL) {
+		// face 1 (px / right)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.x = -1.0f;
+		new_orient.vec.uvec.xyz.y =  1.0f;
+		new_orient.vec.rvec.xyz.z = -1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+		i++; // bump!
 
-	// face 3
-	new_orient.vec.fvec.xyz.x = 0.0f;	new_orient.vec.fvec.xyz.y = 1.0f;	new_orient.vec.fvec.xyz.z = 0.0f;
-	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 0.0f;	new_orient.vec.uvec.xyz.z = -1.0f;
-	vm_fix_matrix(&new_orient);
-	render_environment(i, &new_orient, new_zoom);
-	i++; // bump!
+		// face 2 (nx / left)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.x =  1.0f;
+		new_orient.vec.uvec.xyz.y =  1.0f;
+		new_orient.vec.rvec.xyz.z =  1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+		i++; // bump!
 
-	// face 4
-	new_orient.vec.fvec.xyz.x = 0.0f;	new_orient.vec.fvec.xyz.y = -1.0f;	new_orient.vec.fvec.xyz.z = 0.0f;
-	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 0.0f;	new_orient.vec.uvec.xyz.z = 1.0f;
-	vm_fix_matrix(&new_orient);
-	render_environment(i, &new_orient, new_zoom);
-	i++; // bump!
+		// face 3 (py / up)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.y = -1.0f;
+		new_orient.vec.uvec.xyz.z = -1.0f;
+		new_orient.vec.rvec.xyz.x =  1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+		i++; // bump!
 
-	// face 5
-	new_orient.vec.fvec.xyz.x = 0.0f;	new_orient.vec.fvec.xyz.y = 0.0f;	new_orient.vec.fvec.xyz.z = 1.0f;
-	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 1.0f;	new_orient.vec.uvec.xyz.z = 0.0f;
-	vm_fix_matrix(&new_orient);
-	render_environment(i, &new_orient, new_zoom);
-	i++; // bump!
+		// face 4 (ny / down)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.y =  1.0f;
+		new_orient.vec.uvec.xyz.z =  1.0f;
+		new_orient.vec.rvec.xyz.x =  1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+		i++; // bump!
 
-	// face 6
-	new_orient.vec.fvec.xyz.x = 0.0f;	new_orient.vec.fvec.xyz.y = 0.0f;	new_orient.vec.fvec.xyz.z = -1.0f;
-	new_orient.vec.uvec.xyz.x = 0.0f;	new_orient.vec.uvec.xyz.y = 1.0f;	new_orient.vec.uvec.xyz.z = 0.0f;
-	vm_fix_matrix(&new_orient);
-	render_environment(i, &new_orient, new_zoom);
+		// face 5 (pz / forward)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.z = -1.0f;
+		new_orient.vec.uvec.xyz.y =  1.0f;
+		new_orient.vec.rvec.xyz.x =  1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+		i++; // bump!
+
+		// face 6 (nz / back)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.z =  1.0f;
+		new_orient.vec.uvec.xyz.y =  1.0f;
+		new_orient.vec.rvec.xyz.x = -1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+	}
+	// otherwise use a left-handed setup
+	else {
+		// face 1 (px / right)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.x =  1.0f;
+		new_orient.vec.uvec.xyz.y =  1.0f;
+		new_orient.vec.rvec.xyz.z = -1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+		i++; // bump!
+
+		// face 2 (nx / left)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.x = -1.0f;
+		new_orient.vec.uvec.xyz.y =  1.0f;
+		new_orient.vec.rvec.xyz.z =  1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+		i++; // bump!
+
+		// face 3 (py / up)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.y =  1.0f;
+		new_orient.vec.uvec.xyz.z = -1.0f;
+		new_orient.vec.rvec.xyz.x =  1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+		i++; // bump!
+
+		// face 4 (ny / down)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.y = -1.0f;
+		new_orient.vec.uvec.xyz.z =  1.0f;
+		new_orient.vec.rvec.xyz.x =  1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+		i++; // bump!
+
+		// face 5 (pz / forward)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.z =  1.0f;
+		new_orient.vec.uvec.xyz.y =  1.0f;
+		new_orient.vec.rvec.xyz.x =  1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+		i++; // bump!
+
+		// face 6 (nz / back)
+		memset( &new_orient, 0, sizeof(matrix) );
+		new_orient.vec.fvec.xyz.z = -1.0f;
+		new_orient.vec.uvec.xyz.y =  1.0f;
+		new_orient.vec.rvec.xyz.x = -1.0f;
+		render_environment(i, eye_pos, &new_orient, new_zoom);
+	}
+
 
 	// we're done, so now reset
 	bm_set_render_target(-1);
@@ -5488,7 +5561,7 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	bool draw_viewer_last = false;
 	obj_render_all(obj_render, &draw_viewer_last);
 
-	mflash_render_all();						// render all muzzle flashes	
+	//mflash_render_all();						// render all muzzle flashes	
 	//	Why do we not show the shield effect in these modes?  Seems ok.
 	//if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | VM_CHASE | VM_DEAD_VIEW))) {
 	render_shields();
