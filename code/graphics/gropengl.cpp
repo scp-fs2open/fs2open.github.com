@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.18 $
- * $Date: 2006-10-27 06:44:35 $
+ * $Revision: 2.174.2.19 $
+ * $Date: 2006-11-06 05:21:32 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.18  2006/10/27 06:44:35  taylor
+ * grrr ... fix dos EOL chars
+ *
  * Revision 2.174.2.17  2006/10/24 13:39:26  taylor
  * don't require hardware GL if running FRED (this is mainly for my benefit since I always forget to add that locally)
  *
@@ -1509,6 +1512,12 @@ void opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type z
 			glDisable(GL_BLEND);
 		} else {
 			glEnable(GL_BLEND);
+		}
+
+		if (GL_current_alpha_blend <= ALPHA_BLEND_ADDITIVE) {
+			glDisable(GL_ALPHA_TEST);
+		} else {
+			glEnable(GL_ALPHA_TEST);
 		}
 	}
 
