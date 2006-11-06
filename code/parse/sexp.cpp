@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.286 $
- * $Date: 2006-11-05 18:42:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.287 $
+ * $Date: 2006-11-06 05:40:06 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.286  2006/11/05 18:42:25  Goober5000
+ * fix is-event-x-delay optional argument type
+ *
  * Revision 2.285  2006/10/25 01:01:51  Goober5000
  * moved some stuff around in the sexp menus
  *
@@ -2067,8 +2070,8 @@ void sexp_nodes_init()
 	if (Num_sexp_nodes == 0 || Sexp_nodes == NULL)
 		return;
 
-	mprintf(("Reinitializing sexp nodes...\n"));
-	mprintf(("Entered function with %d nodes;\n", Num_sexp_nodes));
+	nprintf(("SEXP", "Reinitializing sexp nodes...\n"));
+	nprintf(("SEXP", "Entered function with %d nodes.\n", Num_sexp_nodes));
 
 	// usually, the persistent nodes are grouped at the beginning of the array;
 	// so we ought to be able to free all the subsequent nodes
@@ -2082,7 +2085,7 @@ void sexp_nodes_init()
 			Sexp_nodes[i].type = SEXP_NOT_USED;			// it's not needed
 	}
 
-	mprintf(("last persistent node index is %d;\n", last_persistent_node));
+	nprintf(("SEXP", "Last persistent node index is %d.\n", last_persistent_node));
 
 	// if all the persistent nodes are gone, free all the nodes
 	if (last_persistent_node == -1)
@@ -2102,7 +2105,7 @@ void sexp_nodes_init()
 		Verify(Sexp_nodes != NULL);
 	}
 
-	mprintf(("exited function with %d nodes.\n", Num_sexp_nodes));
+	nprintf(("SEXP", "Exited function with %d nodes.\n", Num_sexp_nodes));
 }
 
 static void sexp_nodes_close()
@@ -2168,7 +2171,7 @@ int alloc_sexp(char *text, int type, int subtype, int first, int rest)
 		Sexp_nodes = (sexp_node *) vm_realloc(Sexp_nodes, sizeof(sexp_node) * Num_sexp_nodes);
 
 		Verify(Sexp_nodes != NULL);
-		mprintf(("Bumping dynamic sexp node limit from %d to %d...\n", old_size, Num_sexp_nodes));
+		nprintf(("SEXP", "Bumping dynamic sexp node limit from %d to %d...\n", old_size, Num_sexp_nodes));
 
 		// clear all the new sexp nodes we just allocated
 		memset(&Sexp_nodes[old_size], 0, sizeof(sexp_node) * SEXP_NODE_INCREMENT);
@@ -2468,34 +2471,38 @@ int find_sexp_list(int num)
 			return i;
 	}
 
-	return -1;
+	// assume that it was the first item in the list
+	return num;
 }
 
 // find node of operator that item is an argument of.
 int find_parent_operator(int node)
 {
 	int i;
+	int n = node;
 
 	Assert((node >= 0) && (node < Num_sexp_nodes));
 
-	if (Sexp_nodes[node].subtype == SEXP_ATOM_OPERATOR)
-		node = find_sexp_list(node);
+	if (Sexp_nodes[n].subtype == SEXP_ATOM_OPERATOR)
+		n = find_sexp_list(n);
 
-	while (Sexp_nodes[node].subtype != SEXP_ATOM_OPERATOR)
+	Assert( (n >= 0) && (n < Num_sexp_nodes) );
+
+	while (Sexp_nodes[n].subtype != SEXP_ATOM_OPERATOR)
 	{
 		for (i = 0; i < Num_sexp_nodes; i++)
 		{
-			if (Sexp_nodes[i].rest == node)
+			if (Sexp_nodes[i].rest == n)
 				break;
 		}
 
 		if (i == Num_sexp_nodes)
 			return -1;  // not found, probably at top node already.
 
-		node = i;
+		n = i;
 	}
 
-	return node;
+	return n;
 }
 
 // function to determine if an sexpression node is the top level node of an sexpression tree.  Top
@@ -6425,7 +6432,7 @@ int sexp_get_object_coordinate(int n, int axis)
 	Assert(n >= 0);
 
 	char *subsystem_name = NULL;
-	vec3d *pos, *relative_location = NULL, relative_location_buf, subsys_pos_buf;
+	vec3d *pos = NULL, *relative_location = NULL, relative_location_buf, subsys_pos_buf;
 	object_ship_wing_point_team oswpt;
 
 	sexp_get_object_ship_wing_point_team(&oswpt, CTEXT(n));
@@ -9280,10 +9287,10 @@ void sexp_set_subsystem_strength(int n)
 	shipp = &Ships[shipnum];
 
 	if ( percentage > 100 ) {
-		nprintf(("Warning", "percentage for set_subsystem_strength > 100 -- setting to 100\n"));
+		mprintf(("Percentage for set_subsystem_strength > 100 on ship %s for subsystem '%s'-- setting to 100\n", shipname, subsystem));
 		percentage = 100;
 	} else if ( percentage < 0 ) {
-		nprintf(("Werning", "percantage for set_subsystem_strength < 0 -- setting to 0\n"));
+		mprintf(("Percantage for set_subsystem_strength < 0 on ship %s for subsystem '%s' -- setting to 0\n", shipname, subsystem));
 		percentage = 0;
 	}
 
