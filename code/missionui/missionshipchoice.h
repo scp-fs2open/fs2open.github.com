@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.h $
- * $Revision: 2.8 $
- * $Date: 2005-11-16 05:46:27 $
+ * $Revision: 2.9 $
+ * $Date: 2006-11-06 05:43:36 $
  * $Author: taylor $
  *
  * Header file to support functions that allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/11/16 05:46:27  taylor
+ * bunch of error checking and code cleanup for the team stuff in ship/weapon select
+ *
  * Revision 2.7  2005/07/13 03:25:58  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -291,6 +294,7 @@ void ship_select_init();
 void ship_select_do(float frametime);
 void ship_select_close();
 void ship_select_common_init();
+void ship_select_common_close();
 void ship_stop_animation();
 int ss_get_ship_class(int ship_entry_index);
 int ss_get_selected_ship();
