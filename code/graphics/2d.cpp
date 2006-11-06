@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.77 $
- * $Date: 2006-10-06 09:56:42 $
+ * $Revision: 2.78 $
+ * $Date: 2006-11-06 05:42:44 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2006/10/06 09:56:42  taylor
+ * clean up some old software rendering stuff that we don't use any longer
+ * remove grzbuffer.*, since all it did was give us 3 variables, which were moved to 2d.*
+ *
  * Revision 2.76  2006/09/11 06:36:38  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
@@ -1993,8 +1997,9 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 }
 
 
-bool same_vert(vertex *v1, vertex *v2, vec3d *n1, vec3d *n2){
-	return(
+inline bool same_vert(vertex *v1, vertex *v2, vec3d *n1, vec3d *n2)
+{
+	return (
 		(v1->x == v2->x) &&
 		(v1->y == v2->y) &&
 		(v1->z == v2->z) &&
@@ -2003,30 +2008,35 @@ bool same_vert(vertex *v1, vertex *v2, vec3d *n1, vec3d *n2){
 		(n1->xyz.x == n2->xyz.x) &&
 		(n1->xyz.y == n2->xyz.y) &&
 		(n1->xyz.z == n2->xyz.z) 
-		);
+	);
 }
 
 //finds the first occorence of a vertex within a poly list
-int find_first_index(poly_list *plist, int idx){
+int find_first_index(poly_list *plist, int idx)
+{
 	vec3d norm = plist->norm[idx];
 	vertex vert = plist->vert[idx];
 	int missed = 0;
-	for(ushort i = 0; i<plist->n_verts; i++){
-		if(same_vert(&plist->vert[i+ missed], &vert, &plist->norm[i+missed], &norm)){
+
+	for (ushort i = 0; i<plist->n_verts; i++) {
+		if ( same_vert(&plist->vert[i+missed], &vert, &plist->norm[i+missed], &norm) ) {
 			return i;
 		}
 	}
+
 	return -1;
 }
 //index_buffer[j] = find_first_index_vb(&list[i], j, &model_list);
 
 //given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
-int find_first_index_vb(poly_list *plist, int idx, poly_list *v){
-	for(ushort i = 0; i<v->n_verts; i++){
-		if(same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx])){
+int find_first_index_vb(poly_list *plist, int idx, poly_list *v)
+{
+	for (ushort i = 0; i<v->n_verts; i++) {
+		if ( same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx]) ) {
 			return i;
 		}
 	}
+
 	return -1;
 }
 
@@ -2069,7 +2079,7 @@ poly_list::~poly_list()
 	}
 }
 
-poly_list poly_list_index_bufer_internal_list;
+poly_list poly_list_index_buffer_internal_list;
 
 void poly_list::make_index_buffer()
 {
@@ -2084,40 +2094,44 @@ void poly_list::make_index_buffer()
 	memset( nverts_good, 0, n_verts );
 
 	for (j = 0; j < n_verts; j++) {
-		if ((find_first_index(this, j)) == j) {
+		if ( (find_first_index(this, j)) == j ) {
 			nverts++;
 			nverts_good[j] = 1;
 		}
 	}
 
-	poly_list_index_bufer_internal_list.n_verts = 0;
-	poly_list_index_bufer_internal_list.allocate(nverts);
+	poly_list_index_buffer_internal_list.n_verts = 0;
+	poly_list_index_buffer_internal_list.allocate(nverts);
 
 	for (j = 0; j < n_verts; j++) {
 		if ( !nverts_good[j] )
 			continue;
 
-		poly_list_index_bufer_internal_list.vert[z] = vert[j];
-		poly_list_index_bufer_internal_list.norm[z] = norm[j];
-		poly_list_index_bufer_internal_list.n_verts++;
-		Assert(find_first_index(&poly_list_index_bufer_internal_list, z) == z);
+		poly_list_index_buffer_internal_list.vert[z] = vert[j];
+		poly_list_index_buffer_internal_list.norm[z] = norm[j];
+		poly_list_index_buffer_internal_list.n_verts++;
+		Assert( find_first_index(&poly_list_index_buffer_internal_list, z) == z );
 		z++;
 	}
 
-	Assert(nverts == poly_list_index_bufer_internal_list.n_verts);
+	Assert(nverts == poly_list_index_buffer_internal_list.n_verts);
 
 	if (nverts_good != NULL)
 		vm_free(nverts_good);
 
-	(*this) = poly_list_index_bufer_internal_list;
+	(*this) = poly_list_index_buffer_internal_list;
 }
 
-poly_list& poly_list::operator = (poly_list &other_list){
+poly_list& poly_list::operator = (poly_list &other_list)
+{
 	allocate(other_list.n_verts);
+
 	memcpy(norm, other_list.norm, sizeof(vec3d) * other_list.n_verts);
 	memcpy(vert, other_list.vert, sizeof(vertex) * other_list.n_verts);
+
 	n_verts = other_list.n_verts;
 	n_prim = other_list.n_prim;
+
 	return *this;
 }
 

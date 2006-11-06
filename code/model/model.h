@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.88 $
- * $Date: 2006-07-17 01:12:51 $
+ * $Revision: 2.89 $
+ * $Date: 2006-11-06 05:42:44 $
  * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2006/07/17 01:12:51  taylor
+ * make glow point banks dynamic
+ *
  * Revision 2.87  2006/07/17 00:10:00  Goober5000
  * stage 2 of animation fix (add base frame time to each ship)
  * --Goober5000
@@ -647,11 +650,12 @@
 #ifndef _MODEL_H
 #define _MODEL_H
 
-
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"	// for NAME_LENGTH
 #include "graphics/2d.h"
 #include "decals/decals.h"
+
+#include <vector>
 
 struct object;
 
@@ -922,12 +926,24 @@ typedef struct model_special {
 
 #define MAX_LIVE_DEBRIS	7
 
-struct buffer_data{
-	int vertex_buffer;     //index to a array of pointers to vertex buffers
-	int texture;     //this is the texture the vertex buffer will use
+struct index_list {
+	ushort *ibuffer;
+
+	index_list(): ibuffer(NULL) {}
+	// the destuctor body is commented out so that we can use this dynamically without a clone()
+	// we kill it off with release() instead
+	~index_list() { /*if (ibuffer) vm_free(ibuffer);*/ }
+
+	void allocate(int size) { if (ibuffer) vm_free(ibuffer); ibuffer = (ushort*)vm_malloc(sizeof(ushort) * size); }
+	void release() { if (ibuffer) vm_free(ibuffer); ibuffer = NULL; }
+};
+
+struct buffer_data {
+	int texture;		// this is the texture the vertex buffer will use
 	int n_prim;
 	index_list index_buffer;
-//other things we may want to keep track of for vertex buffers, like material settings
+
+	buffer_data(): texture(-1), n_prim(0) {}
 };
 
 // IBX stuff
@@ -987,13 +1003,11 @@ typedef struct bsp_info {
 	vec3d	arc_pts[MAX_ARC_EFFECTS][2];	
 	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
 	
-
-	int n_buffers;
+	// buffers used by HT&L
 	int indexed_vertex_buffer;
-	int flat_buffer;
-	int flat_line_buffer;
-	buffer_data buffer[MAX_BUFFERS_PER_SUBMODEL];
-	//I figured that, 64 textures per model, half of that would probly be in LOD0, and half of that might be in the main model, I don't think we'd need more than 12 textures (and thus vertex buffers) per submodel
+	std::vector<buffer_data> buffer;
+//	int flat_buffer;
+//	int flat_line_buffer;
 
 	vec3d	render_box_min;
 	vec3d	render_box_max;

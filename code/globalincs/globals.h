@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.24 $
- * $Date: 2006-09-11 06:08:08 $
+ * $Revision: 1.25 $
+ * $Date: 2006-11-06 05:42:44 $
  * $Author: taylor $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.24  2006/09/11 06:08:08  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 1.23  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -223,10 +226,8 @@
 
 #ifdef INF_BUILD
 	#define MAX_POLYGON_MODELS  300
-	#define MAX_BUFFERS_PER_SUBMODEL 24
 #else
 	#define MAX_POLYGON_MODELS  128 //DTP reset from 198 to original value of 128
-	#define MAX_BUFFERS_PER_SUBMODEL 16
 #endif
 
 
