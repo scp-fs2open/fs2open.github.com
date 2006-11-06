@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.170 $
- * $Date: 2006-11-06 06:19:17 $
+ * $Revision: 2.171 $
+ * $Date: 2006-11-06 06:33:48 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.170  2006/11/06 06:19:17  taylor
+ * rename set_warp_globals() to model_set_warp_globals()
+ * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
+ * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
+ * change "model_current_LOD" to a global "Interp_detail_level" and the static "Interp_detail_level" to "Interp_detail_level_locked", a bit more descriptive
+ * minor bits of cleanup
+ * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
+ *
  * Revision 2.169  2006/11/06 06:15:01  taylor
  * a LOT of cleanup:
  *  * remove a bunch of old/dead code
@@ -1040,6 +1048,10 @@ static int Interp_num_verts = 0;
 static vertex **Interp_list = NULL;
 static int  Num_interp_list_verts_allocated = 0;
 
+static float Interp_box_scale = 1.0f;
+static vec3d Interp_render_box_min = ZERO_VECTOR;
+static vec3d Interp_render_box_max = ZERO_VECTOR;
+
 // -------------------------------------------------------------------
 // lighting save stuff 
 //
@@ -1085,10 +1097,6 @@ static int Interp_thrust_glow_bitmap = -1;
 static float Interp_thrust_glow_noise = 1.0f;
 static bool Interp_AB = false;
 
-float Model_Interp_scale_x = 1.0f;	//added these three for warpin stuff-Bobbau
-float Model_Interp_scale_y = 1.0f;
-float Model_Interp_scale_z = 1.0f;
-
 // Bobboau's thruster stuff
 static int Interp_secondary_thrust_glow_bitmap = -1;
 static int Interp_tertiary_thrust_glow_bitmap = -1;
@@ -1098,9 +1106,13 @@ static float Interp_tertiary_thrust_glow_rad_factor = 1.0f;
 static float Interp_thrust_glow_len_factor = 1.0f;
 static vec3d controle_rotval = ZERO_VECTOR;
 
-int Warp_Model = -1; //global warp model number
-int Warp_Map = -1;	//global map to be used while rendering the warp model
-float Warp_Alpha = -1.0f;
+// Bobboau's warp stuff
+static float Interp_warp_scale_x = 1.0f;
+static float Interp_warp_scale_y = 1.0f;
+static float Interp_warp_scale_z = 1.0f;
+static int Interp_warp_bitmap = -1;
+static float Interp_warp_alpha = 1.0f;
+
 static int Interp_objnum = -1;
 
 // if != -1, use this bitmap when rendering ship insignias
@@ -1424,6 +1436,10 @@ void interp_clear_instance()
 
 		vm_vec_zero(&controle_rotval);
 	}
+
+	Interp_box_scale = 1.0f;
+	Interp_render_box_min = vmd_zero_vector;
+	Interp_render_box_max = vmd_zero_vector;
 }
 
 // Scales the engines thrusters by this much
@@ -1636,19 +1652,17 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 			}
 			dest++;
 		} 
-
-	} else if((Model_Interp_scale_x != 1) || (Model_Interp_scale_y != 1) || (Model_Interp_scale_z != 1)) {
-
+	} else if ( (Interp_warp_scale_x != 1.0f) || (Interp_warp_scale_y != 1.0f) || (Interp_warp_scale_z != 1.0f)) {
 		// SHUT UP! -- Kazan -- This is massively slowing debug builds down
-		//mprintf(("warp model being scaled by %f %f %f\n",Model_Interp_scale_x ,Model_Interp_scale_y, Model_Interp_scale_z));
+		//mprintf(("warp model being scaled by %f %f %f\n", Interp_warp_scale_x, Interp_warp_scale_y, Interp_warp_scale_z));
 		for (n=0; n<nverts; n++ )	{
 			vec3d tmp;
 
 			Interp_verts[n] = src;
 
-				tmp.xyz.x = (src->xyz.x) * Model_Interp_scale_x;
-				tmp.xyz.y = (src->xyz.y) * Model_Interp_scale_y;
-				tmp.xyz.z = (src->xyz.z) * Model_Interp_scale_z;
+			tmp.xyz.x = (src->xyz.x) * Interp_warp_scale_x;
+			tmp.xyz.y = (src->xyz.y) * Interp_warp_scale_y;
+			tmp.xyz.z = (src->xyz.z) * Interp_warp_scale_z;
 			
 			g3_rotate_vertex(dest,&tmp);
 		
@@ -1663,9 +1677,7 @@ void model_interp_defpoints(ubyte * p, polymodel *pm, bsp_info *sm)
 			}
 			dest++;
 		} 
-	}else{
-
-
+	} else {
 		vec3d point;
 
 		for (n=0; n<nverts; n++ )	{	
@@ -1910,19 +1922,14 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	}
 
 	int is_invisible = 0;
-	if ((Warp_Map < 0))
-	{
-		if ((!Interp_thrust_scale_subobj) && (pm->maps[tmap_num].base_map.texture < 0))
-		{
+
+	if (Interp_warp_bitmap < 0) {
+		if ( (!Interp_thrust_scale_subobj) && (pm->maps[tmap_num].base_map.texture < 0) ) {
 			// Don't draw invisible polygons.
-			if (!(Interp_flags & MR_SHOW_INVISIBLE_FACES))
-			{
+			if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES) )
 				return;
-			}
 			else
-			{
 				is_invisible = 1;
-			}
 		}
 	}
 
@@ -1950,8 +1957,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 
 	model_allocate_interp_data(max_n_verts, max_n_norms, nv);
 
-	if(!Cmdline_nohtl) {
-		if((Warp_Map < 0)){
+	if ( !Cmdline_nohtl ) {
+		if (Interp_warp_bitmap < 0) {
 			if (!g3_check_normal_facing(vp(p+20),vp(p+8)) && !(Interp_flags & MR_NO_CULL)){
 				if(Cmdline_cell){
 					for (i=0;i<nv;i++){
@@ -2023,11 +2030,11 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				Interp_list[i]->spec_b = 0;
 				
 				if (Interp_flags & MR_EDGE_ALPHA) {
-					model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, false);
+					model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Interp_warp_alpha, false);
 				}
 
 				if (Interp_flags & MR_CENTER_ALPHA) {
-					model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Warp_Alpha, true);
+					model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], Interp_warp_alpha, true);
 				}
 
 				SPECMAP = -1;
@@ -2096,8 +2103,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				tflags &=  (~(TMAP_FLAG_TEXTURED|TMAP_FLAG_TILED|TMAP_FLAG_CORRECT));
 				g3_draw_poly( nv, Interp_list, tflags );		
 			}
-		} else if(Warp_Map >= 0){	//warpin effect-Bobboau
-			gr_set_bitmap( Warp_Map, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
+		} else if (Interp_warp_bitmap >= 0) {	//warpin effect-Bobboau
+			gr_set_bitmap( Interp_warp_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_warp_alpha );
 			g3_draw_poly( nv, Interp_list, TMAP_FLAG_TEXTURED );
 		}else{
 #ifndef NO_DIRECT3D
@@ -4414,6 +4421,35 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	}
 #endif
 
+	// scale the render box settings based on the "Model Detail" slider
+	switch (Detail.detail_distance)
+	{
+		// 1st dot is 20%
+		case 0:
+			Interp_box_scale = 0.2f;
+			break;
+
+		// 2nd dot is 50%
+		case 1:
+			Interp_box_scale = 0.5f;
+			break;
+
+		// 3rd dot is 80%
+		case 2:
+			Interp_box_scale = 0.8f;
+			break;
+
+		// 4th dot is 100% (this is the default setting for "High" and "Very High" settings)
+		case 3:
+			Interp_box_scale = 1.0f;
+			break;
+
+		// 5th dot (max) is 120%
+		case 4:
+			Interp_box_scale = 1.2f;
+			break;
+	}
+
 	if (Interp_flags & MR_AUTOCENTER) {
 		vec3d auto_back = ZERO_VECTOR;
 
@@ -6060,8 +6096,13 @@ void model_render_children_buffers(bsp_info *model, polymodel *pm, int mn, int d
 	vm_vec_add2(&Interp_offset, &pm->submodel[mn].offset);
 
 	// if using detail boxes, check that we are valid for the range
-	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_box && (-model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &model->offset)) )
-		return;
+	if ( !(Interp_flags & MR_FULL_DETAIL) && model->use_render_box ) {
+		vm_vec_copy_scale(&Interp_render_box_min, &model->render_box_min, Interp_box_scale);
+		vm_vec_copy_scale(&Interp_render_box_max, &model->render_box_max, Interp_box_scale);
+
+		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &model->offset)) )
+			return;
+	}
 
 	if (model->gun_rotation) {
 		if (pm->gun_submodel_rotation > PI2 )
@@ -6118,8 +6159,14 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 	if (model->indexed_vertex_buffer == -1)
 		return;
 
-	if ( !(Interp_flags & MR_FULL_DETAIL) && !is_child && model->use_render_box && (-model->use_render_box + in_box(&model->render_box_min, &model->render_box_max, &model->offset)) )
-		return;
+	// if using detail boxes, check that we are valid for the range
+	if ( !(Interp_flags & MR_FULL_DETAIL) && !is_child && model->use_render_box ) {
+		vm_vec_copy_scale(&Interp_render_box_min, &model->render_box_min, Interp_box_scale);
+		vm_vec_copy_scale(&Interp_render_box_max, &model->render_box_max, Interp_box_scale);
+
+		if ( (-model->use_render_box + in_box(&Interp_render_box_min, &Interp_render_box_max, &model->offset)) )
+			return;
+	}
 
 	// Goober5000
 	fix base_frametime = 0;
@@ -6141,9 +6188,9 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 		scale.xyz.y = 1.0f;
 		scale.xyz.z = Interp_thrust_scale;
 	} else {
-		scale.xyz.x = Model_Interp_scale_x;
-		scale.xyz.y = Model_Interp_scale_y;
-		scale.xyz.z = Model_Interp_scale_z;
+		scale.xyz.x = Interp_warp_scale_x;
+		scale.xyz.y = Interp_warp_scale_y;
+		scale.xyz.z = Interp_warp_scale_z;
 	}
 
 	if (Interp_flags & MR_NO_CULL) {
@@ -6153,6 +6200,7 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 	}
 
 	int no_texturing = (Interp_flags & MR_NO_TEXTURING);
+	int zbuffer_save = gr_zbuffering_mode;
 
 	gr_push_scale_matrix(&scale);
 
@@ -6165,8 +6213,8 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 		if ( (Interp_flags & MR_FORCE_TEXTURE) && (Interp_forced_bitmap >= 0) ) {
 			texture = Interp_forced_bitmap;
 		}
-		else if (Warp_Map > -1) {
-			texture = Warp_Map;
+		else if (Interp_warp_bitmap > -1) {
+			texture = Interp_warp_bitmap;
 		}
 		else if ( (Interp_replacement_textures != NULL) && (Interp_replacement_textures[tmap_num] >= 0) ) {
 			texture = Interp_replacement_textures[tmap_num];
@@ -6212,19 +6260,14 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_xparent_alpha );
 			gr_zbuffer_set(GR_ZBUFF_NONE);
 		}
-		else if (Warp_Map >= 0) {
+		else if (Interp_warp_bitmap >= 0) {
 			gr_set_cull(0);
-			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
+			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Interp_warp_alpha );
 			gr_zbuffer_set(GR_ZBUFF_READ);
 		}
 		// trying to get transperent textures-Bobboau
 		else if (pm->maps[tmap_num].is_transparent) {
-			if (Warp_Alpha != -1.0f) {
-				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, Warp_Alpha );
-			} else {
-				gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
-			}
-
+			gr_set_bitmap( texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f );
 			gr_zbuffer_set(GR_ZBUFF_READ);
 		}
 		else if (!no_texturing) {
@@ -6248,6 +6291,13 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 		GLOWMAP = -1;
 		SPECMAP = -1;
 		BUMPMAP = -1;
+
+		// reset culling if it was disabled
+		if ( !(Interp_flags & MR_NO_CULL) )
+			gr_set_cull(1);
+
+		// reset z-buffer
+		gr_zbuffer_set(zbuffer_save);
 	}
 
 	gr_pop_scale_matrix();
@@ -6644,14 +6694,12 @@ int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 	return texture;
 }
 
-void model_set_warp_globals(float a, float b, float c, int d, float e)
+void model_set_warp_globals(float scale_x, float scale_y, float scale_z, int bitmap_id, float alpha)
 {
-	Model_Interp_scale_x = a;
-	Model_Interp_scale_y = b;
-	Model_Interp_scale_z = c;
+	Interp_warp_scale_x = scale_x;
+	Interp_warp_scale_y = scale_y;
+	Interp_warp_scale_z = scale_z;
 
-	Warp_Map = d;
-	Warp_Alpha = e;
-
-//	mprintf(("warpmap being set to %d\n",Warp_Map));
+	Interp_warp_bitmap = bitmap_id;
+	Interp_warp_alpha = alpha;
 }
