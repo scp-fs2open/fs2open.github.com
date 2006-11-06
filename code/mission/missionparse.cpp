@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.198 $
- * $Date: 2006-10-09 20:50:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.199 $
+ * $Date: 2006-11-06 05:44:33 $
+ * $Author: taylor $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.198  2006/10/09 20:50:13  Goober5000
+ * betterized some things with mission arrivals and departures
+ *
  * Revision 2.197  2006/10/09 05:25:18  Goober5000
  * make sexp nodes dynamic
  *
@@ -1445,7 +1448,7 @@ void mission_parse_set_up_initial_docks();
 void mission_parse_set_arrival_locations();
 void mission_set_wing_arrival_location( wing *wingp, int num_to_set );
 int parse_lookup_alt_name(char *name);
-void parse_init();
+void parse_init(bool basic = false);
 void parse_object_set_handled_flag_helper(p_object *pobjp, p_dock_function_info *infop);
 void parse_object_clear_all_handled_flags();
 int parse_object_on_arrival_list(p_object *pobjp);
@@ -1706,7 +1709,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	if(Game_mode & GM_MULTIPLAYER){
 		strcpy(pm->squad_name, "");
 		strcpy(pm->squad_filename, "");
-		mprintf(("Ignoring squadron reassignment in parse_mission_info\n"));
+	//	mprintf(("Ignoring squadron reassignment in parse_mission_info\n"));
 	}
 	// reassign the player
 	else {		
@@ -6282,7 +6285,7 @@ int get_mission_info(char *filename, mission *mission_p, bool basic)
 
 		read_file_text(real_fname, CF_TYPE_MISSIONS);
 		memset( mission_p, 0, sizeof(mission) );
-		parse_init();
+		parse_init(basic);
 		parse_mission_info(mission_p, basic);
 
 		// close localization
@@ -6294,7 +6297,7 @@ int get_mission_info(char *filename, mission *mission_p, bool basic)
 
 // Goober5000 - changed and moved from parselo.cpp
 // Initialize the mission parse process.
-void parse_init()
+void parse_init(bool basic)
 {
 	reset_parse();
 
@@ -6302,7 +6305,11 @@ void parse_init()
 		Cargo_names[i] = Cargo_names_buf[i]; // make a pointer array for compatibility
 
 	Total_goal_ship_names = 0;
-	init_sexp();
+
+	// if we are just wanting basic info then we shouldn't need sexps
+	// (prevents memory fragmentation with the now dynamic Sexp_nodes[])
+	if ( !basic )
+		init_sexp();
 }
 
 // mai parse routine for parsing a mission.  The default parameter flags tells us which information
@@ -6719,9 +6726,8 @@ int mission_parse_is_multi(char *filename, char *mission_name)
 
 int mission_parse_get_multi_mission_info( char *filename )
 {
-	if ( parse_main(filename, MPF_ONLY_MISSION_INFO) ){
+	if ( get_mission_info(filename, &The_mission) )
 		return -1;
-	}
 
 	Assert( The_mission.game_type & MISSION_TYPE_MULTI );		// assume multiplayer only for now?
 
