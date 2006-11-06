@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FREDView.h $
- * $Revision: 1.2 $
- * $Date: 2006-04-20 06:32:01 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2006-11-06 05:58:05 $
+ * $Author: taylor $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -554,6 +557,8 @@ protected:
 	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	afx_msg void OnViewLighting();
 	afx_msg void OnUpdateViewLighting(CCmdUI* pCmdUI);
+	afx_msg void OnViewFullDetail();
+	afx_msg void OnUpdateViewFullDetail(CCmdUI *pCmdUI);
 	//}}AFX_MSG
 	afx_msg void OnGroup(UINT nID);
 	afx_msg void OnSetGroup(UINT nID);
@@ -595,6 +600,7 @@ extern int Show_ship_models;
 extern int Show_ship_info;
 extern int Show_dock_points;
 extern int Lighting_on;
+extern int FullDetail;
 extern int Show_paths_fred;
 extern int Selection_lock;
 extern int Cursor_over;
