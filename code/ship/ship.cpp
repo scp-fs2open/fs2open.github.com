@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.383 $
- * $Date: 2006-11-06 06:32:30 $
+ * $Revision: 2.384 $
+ * $Date: 2006-11-06 06:42:22 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.383  2006/11/06 06:32:30  taylor
+ * updated/fixed modelanim code
+ * add ships.tbl subsystem flag ("+fire-down-normals") which will force a turret to fire down it's barrel line (Mantis bug #591)
+ *
  * Revision 2.382  2006/11/06 06:19:17  taylor
  * rename set_warp_globals() to model_set_warp_globals()
  * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
@@ -8796,7 +8800,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 		{
 			thruster_bank *bank = &pm_orig->thrusters[i];
 
-			for(j = 0; j < bank->num_slots; j++)
+			for(j = 0; j < bank->num_points; j++)
 			{
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
@@ -8804,11 +8808,11 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 				ci = &shipp->ab_info[shipp->ab_count];
 			//	ci = &sip->ct_info[sip->ct_count++];
 
-				if (bank->point[j].norm.xyz.z > -0.5)
+				if (bank->points[j].norm.xyz.z > -0.5)
 					continue;// only make ab trails for thrusters that are pointing backwards
 
-				ci->pt = bank->point[j].pnt;//offset
-				ci->w_start = bank->point[j].radius * sip->ABwidth_factor;//width * table loaded width factor
+				ci->pt = bank->points[j].pnt;//offset
+				ci->w_start = bank->points[j].radius * sip->ABwidth_factor;//width * table loaded width factor
 	
 				ci->w_end = 0.05f;//end width
 	
@@ -9119,7 +9123,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		trail_info *ci;
 		for(int h = 0; h < pm_orig->n_thrusters; h++)
 		{
-			for(int j = 0; j < pm_orig->thrusters->num_slots; j++)
+			for(int j = 0; j < pm_orig->thrusters->num_points; j++)
 			{
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
@@ -9128,10 +9132,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			//	ci = &sip->ct_info[sip->ct_count++];
 
 
-			if(pm_orig->thrusters[h].point[j].norm.xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
+			if(pm_orig->thrusters[h].points[j].norm.xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
 
-			ci->pt = pm_orig->thrusters[h].point[j].pnt;//offset
-				ci->w_start = pm_orig->thrusters[h].point[j].radius * sip->ABwidth_factor;//width * table loaded width factor
+			ci->pt = pm_orig->thrusters[h].points[j].pnt;//offset
+				ci->w_start = pm_orig->thrusters[h].points[j].radius * sip->ABwidth_factor;//width * table loaded width factor
 	
 				ci->w_end = 0.05f;//end width
 	
