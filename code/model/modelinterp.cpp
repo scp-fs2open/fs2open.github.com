@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.172 $
- * $Date: 2006-11-06 06:37:59 $
+ * $Revision: 2.173 $
+ * $Date: 2006-11-06 06:39:11 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.172  2006/11/06 06:37:59  taylor
+ * ok, so apparently that did actually do something  ;)
+ *
  * Revision 2.171  2006/11/06 06:33:48  taylor
  * more cleanup of warp_global crap
  * scale render/detail box limits with detail level setting
@@ -1116,7 +1119,7 @@ static float Interp_warp_scale_x = 1.0f;
 static float Interp_warp_scale_y = 1.0f;
 static float Interp_warp_scale_z = 1.0f;
 static int Interp_warp_bitmap = -1;
-static float Interp_warp_alpha = 1.0f;
+static float Interp_warp_alpha = -1.0f;
 
 static int Interp_objnum = -1;
 
@@ -4215,6 +4218,10 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		}
 	}
 
+	// save current zbuffer, and set the correct mode for us
+	int zbuff_save = gr_zbuffering_mode;
+	gr_zbuffer_set(GR_ZBUFF_READ);
+
 	if (Interp_thrust_glow_bitmap >= 0) {
 		gr_set_bitmap( Interp_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 		primary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
@@ -4229,6 +4236,9 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 		gr_set_bitmap( Interp_tertiary_thrust_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
 		tertiary_thruster_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 	}
+
+	// reset zbuffer to original setting
+	gr_zbuffer_set(zbuff_save);
 }
 
 
