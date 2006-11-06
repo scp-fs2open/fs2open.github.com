@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.46 $
- * $Date: 2006-09-13 03:17:06 $
+ * $Revision: 1.47 $
+ * $Date: 2006-11-06 06:32:30 $
  * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.46  2006/09/13 03:17:06  taylor
+ * restore MAX_AIFTT_TURRETS to retail level, and add comment as to what it means for the next person that tries to change it
+ *
  * Revision 1.45  2006/09/11 09:43:35  taylor
  * revert to retail behavior for turret_should_pick_new_target()
  * fix out-of-bounds issue
@@ -968,13 +971,11 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 
 	model_find_world_point(gpos, gun_pos, tp->model_num, tp->turret_gun_sobj, &objp->orient, &objp->pos );
 
-	//WMC - use_angles was always 0
 	if (use_angles)
 		model_find_world_dir(gvec, &tp->turret_norm, tp->model_num, tp->turret_gun_sobj, &objp->orient, &objp->pos );
 	else {
 		//vector	gun_pos2;
 		//vm_vec_add(&gun_pos2, gpos, gun_pos);
-
 		vm_vec_normalized_dir(gvec, targetp, gpos);
 	}
 
@@ -986,10 +987,11 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 //	Some obscure model thing only John Slagel knows about.
 //	Sets predicted enemy position.
 //	If the turret (*ss) has a subsystem targeted, the subsystem is used as the predicted point.
-void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object *objp, object *lep, vec3d *predicted_enemy_pos, vec3d *gvec)
+int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object *objp, object *lep, vec3d *predicted_enemy_pos, vec3d *gvec)
 {
-	if (ss->turret_enemy_objnum != -1)
-	{
+	int ret_val = 0;
+
+	if (ss->turret_enemy_objnum != -1) {
 		model_subsystem *tp = ss->system_info;
 		vec3d	gun_pos, gun_vec;
 		//float		weapon_speed;
@@ -1000,8 +1002,8 @@ void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object
 		int best_weapon_tidx = turret_select_best_weapon(ss, lep);
 
 		//This turret doesn't have any good weapons
-		if(best_weapon_tidx < 0)
-			return;
+		if (best_weapon_tidx < 0)
+			return 0;
 
 		weapon_info *wip = get_turret_weapon_wip(&ss->weapons, best_weapon_tidx);
 
@@ -1042,13 +1044,22 @@ void aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object
 		//If the dot product is smaller than or equal to the turret's FOV, try and point the gun at it.
 		vec3d	v2e;
 		vm_vec_normalized_dir(&v2e, predicted_enemy_pos, &gun_pos);
-		if (vm_vec_dot(&v2e, gvec) > tp->turret_fov) {
 
-			model_rotate_gun(shipp->modelnum, ss->system_info, &Objects[parent_objnum].orient, 
-				&ss->submodel_info_1.angs, &ss->submodel_info_2.angs,
-				&Objects[parent_objnum].pos, predicted_enemy_pos);
+		if (vm_vec_dot(&v2e, gvec) > tp->turret_fov) {
+			ret_val = model_rotate_gun(shipp->modelnum, ss->system_info, &Objects[parent_objnum].orient, 
+										&ss->submodel_info_1.angs, &ss->submodel_info_2.angs,
+										&Objects[parent_objnum].pos, predicted_enemy_pos);
 		}
 	}
+
+	// by default "ret_val" should be set to 1 for multi-part turrets, and 0 for single-part turrets
+	// but we need to keep retail behavior by default, which means always returning 0 unless a special
+	// flag is used.  the "ret_val" stuff is here is needed/wanted at a later date however.
+	//return ret_val;
+
+	// return 0 by default (to preserve retail behavior) but allow for a per-subsystem option
+	// for using the turret normals for firing
+	return ((ss->system_info->flags & MSS_FLAG_FIRE_ON_NORMAL) ? 1 : 0);
 }
 
 //	Determine if subsystem *enemy_subsysp is hittable from objp.
@@ -1312,14 +1323,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	int turret_weapon_class = WEAPON_INFO_INDEX(wip);
 
 	if (check_ok_to_fire(parent_objnum, turret->turret_enemy_objnum, wip)) {
-		//WMC - do animation
-		if(!turret->turret_animation_position)
-		{
-			ship_start_animation_type(parent_ship, TRIGGER_TYPE_TURRET_FIRING, turret->system_info->subobj_num, 1);
-			turret->turret_animation_position = true;
-			turret->turret_animation_done_time = ship_get_animation_time_type(parent_ship, TRIGGER_TYPE_TURRET_FIRING, turret->system_info->subobj_num);
-		}
-
 		vm_vector_2_matrix(&turret_orient, turret_fvec, NULL, NULL);
 		turret->turret_last_fire_direction = *turret_fvec;
 
@@ -1327,7 +1330,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		turret_set_next_fire_timestamp(weapon_num, wip, turret, parent_aip);
 
 		// if this weapon is a beam weapon, handle it specially
-		if(wip->wi_flags & WIF_BEAM){
+		if (wip->wi_flags & WIF_BEAM) {
 			// if this beam isn't free to fire
 			if (!(turret->weapons.flags & SW_FLAG_BEAM_FREE)) {
 				//WMC - remove this
@@ -1350,23 +1353,21 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			// fire a beam weapon
 			beam_fire(&fire_info);
 
-			if (parent_ship->cloak_stage == 2)
-			{
+			if (parent_ship->cloak_stage == 2) {
 				beam_weapon_info *bip=&wip->b_info;
 				shipfx_start_cloak(parent_ship,bip->beam_warmup + bip->beam_warmdown + (int)(bip->beam_life*1000.0f) + 1000);
 			}
 
-		} else {
+			return;
+		}
+		// don't fire swam, but set up swarm info instead
+		else if (wip->wi_flags & WIF_SWARM) {
+			turret_swarm_set_up_info(parent_objnum, turret, wip);
 
-			// don't fire swarm, but set up swarm info
-			if (wip->wi_flags & WIF_SWARM) {
-				/*if(wip->muzzle_flash > -1)
-					mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, Weapon_info[turret_weapon_class].muzzle_flash);*/
-
-				turret_swarm_set_up_info(parent_objnum, turret, wip);
-				return true;
-			}
-			
+			return;
+		}
+		// now do anything else
+		else {
 			for (int i=0; i < wip->shots; i++)
 			{		
 				weapon_objnum = weapon_create( turret_pos, &turret_orient, turret_weapon_class, parent_objnum, -1, 1);
@@ -1429,6 +1430,11 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					shipfx_start_cloak(parent_ship,500);
 				}
 			}
+
+			// reset any animations if we need to
+			// (I'm not sure how accurate this timestamp would be in practice - taylor)
+			if (turret->turret_animation_position == MA_POS_READY)
+				turret->turret_animation_done_time = timestamp(100);
 		}
 	}
 	//Not useful -WMC
@@ -1517,22 +1523,9 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	object	*lep;		//	Last enemy pointer
 	model_subsystem	*tp = ss->system_info;
 	ship_weapon *swp = &ss->weapons;
-	vec3d	predicted_enemy_pos;
+	vec3d	predicted_enemy_pos = vmd_zero_vector;
 	object	*objp;
 	//ai_info	*aip;
-
-	if(ss->turret_animation_position) {
-		if(ss->turret_animation_done_time <= timestamp())
-		{
-			ship_start_animation_type(shipp, TRIGGER_TYPE_TURRET_FIRING, ss->system_info->subobj_num, -1);
-			ss->turret_animation_position = false;
-			ss->turret_animation_done_time = ship_get_animation_time_type(shipp, TRIGGER_TYPE_TURRET_FIRING, ss->system_info->subobj_num);
-		}
-	}
-
-	if(ss->turret_animation_done_time > timestamp()) {
-		return;
-	}
 
 	if (!Ai_firing_enabled) {
 		return;
@@ -1551,8 +1544,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		return;
 	}
 
-	// If beam weapon, check beam free
-	if ( all_turret_weapons_have_flags(swp, WIF_BEAM) && !(swp->flags & SW_FLAG_BEAM_FREE) ) {
+	if ( !timestamp_elapsed(ss->turret_next_fire_stamp) ) {
 		return;
 	}
 
@@ -1574,6 +1566,31 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 			return;
 	}
 
+	// If beam weapon, check beam free
+	if ( all_turret_weapons_have_flags(swp, WIF_BEAM) && !(swp->flags & SW_FLAG_BEAM_FREE) ) {
+		return;
+	}
+
+	// starting animation checks
+	if (ss->turret_animation_position == MA_POS_NOT_SET) {
+		if ( model_anim_start_type(shipp, TRIGGER_TYPE_TURRET_FIRING, ss->system_info->subobj_num, 1) ) {
+			ss->turret_animation_done_time = model_anim_get_time_type(shipp, TRIGGER_TYPE_TURRET_FIRING, ss->system_info->subobj_num);
+			ss->turret_animation_position = MA_POS_SET;
+		}
+	}
+
+	if (ss->turret_animation_position == MA_POS_SET) {
+		if ( timestamp_elapsed(ss->turret_animation_done_time) ) {
+			ss->turret_animation_position = MA_POS_READY;
+			// setup a reversal (closing) timestamp at 1 second
+			// (NOTE: this will probably get changed by other parts of the code (swarming, beams, etc) to be
+			// a more accurate time, but we need to give it a long enough time for the other parts of the code
+			// to change the timestamp before it gets acted upon - taylor)
+			ss->turret_animation_done_time = timestamp(1000);
+		} else {
+			return;
+		}
+	}
 
 	Assert((parent_objnum >= 0) && (parent_objnum < MAX_OBJECTS));
 	objp = &Objects[parent_objnum];
@@ -1601,13 +1618,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	ship_get_global_turret_info(&Objects[parent_objnum], tp, &gpos, &gvec);
 
 	// Rotate the turret even if time hasn't elapsed, since it needs to turn to face its target.
-	aifft_rotate_turret(shipp, parent_objnum, ss, objp, lep, &predicted_enemy_pos, &gvec);
-
-	if ( !timestamp_elapsed(ss->turret_next_fire_stamp)){
-	//	static int i=1;
-	//	mprintf(("turret timestamp hasn't elapsed: %d!\n", i));
-		return;
-	}
+	int use_angles = aifft_rotate_turret(shipp, parent_objnum, ss, objp, lep, &predicted_enemy_pos, &gvec);
 
 	// Don't try to fire beyond weapon_limit_range
 	//WMC - OTC
@@ -1830,7 +1841,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		// We're ready to fire... now get down to specifics, like where is the
 		// actual gun point and normal, not just the one for whole turret.
 		//WMC - use_angles was always 0
-		ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, 0, &predicted_enemy_pos);
+		ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
 		ss->turret_next_fire_pos++;
 
 		// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
