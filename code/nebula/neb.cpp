@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.52 $
- * $Date: 2006-09-11 06:50:42 $
+ * $Revision: 2.53 $
+ * $Date: 2006-11-06 06:46:08 $
  * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2006/09/11 06:50:42  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.51  2006/06/07 05:19:49  wmcoolmon
  * Move fog disappearance factor to objecttypes.tbl
  *
@@ -1591,7 +1594,7 @@ void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient)
 	Neb2_render_mode = NEB2_RENDER_NONE;
 
 	// draw background stuff nebula			
-	stars_draw_background(0);		
+	stars_draw_background();		
 
 	Neb2_render_mode = neb_save;
 	

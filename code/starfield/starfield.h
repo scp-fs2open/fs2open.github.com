@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.17 $
- * $Date: 2006-08-06 18:47:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.18 $
+ * $Date: 2006-11-06 06:46:08 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/08/06 18:47:29  Goober5000
+ * add the multiple background feature
+ * --Goober5000
+ *
  * Revision 2.16  2006/04/20 06:32:30  Goober5000
  * proper capitalization according to Volition
  *
@@ -262,7 +266,7 @@ void stars_pre_level_init(bool clear_backgrounds = true);
 void stars_post_level_init();
 
 // draw background bitmaps
-void stars_draw_background(int env);
+void stars_draw_background();
 
 // This *must* be called to initialize the lighting.
 // You can turn off all the stars and suns and nebulas, though.
