@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.41 $
- * $Date: 2006-11-06 02:20:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.336.2.42 $
+ * $Date: 2006-11-06 05:19:59 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.41  2006/11/06 02:20:00  Goober5000
+ * minor bugfixes
+ *
  * Revision 2.336.2.40  2006/11/01 18:35:57  taylor
  * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
  *
@@ -14076,6 +14079,8 @@ void ship_primary_changed(ship *sp)
 				if ( model_anim_start_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, 1) ) {
 					swp->primary_animation_done_time[i] = model_anim_get_time_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i);
 					swp->primary_animation_position[i] = MA_POS_SET;
+				} else {
+					swp->primary_animation_position[i] = MA_POS_READY;
 				}
 			}
 		}
@@ -14088,6 +14093,8 @@ void ship_primary_changed(ship *sp)
 					if ( model_anim_start_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i, 1) ) {
 						swp->primary_animation_done_time[i] = model_anim_get_time_type(sp, TRIGGER_TYPE_PRIMARY_BANK, i);
 						swp->primary_animation_position[i] = MA_POS_SET;
+					} else {
+						swp->primary_animation_position[i] = MA_POS_READY;
 					}
 				}
 			} else {
@@ -14131,6 +14138,8 @@ void ship_secondary_changed(ship *sp)
 					if ( model_anim_start_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i, 1) ) {
 						swp->secondary_animation_done_time[i] = model_anim_get_time_type(sp, TRIGGER_TYPE_SECONDARY_BANK, i);
 						swp->secondary_animation_position[i] = MA_POS_SET;
+					} else {
+						swp->secondary_animation_position[i] = MA_POS_READY;
 					}
 				}
 			} else {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72.2.14 $
- * $Date: 2006-11-06 02:20:00 $
- * $Author: Goober5000 $
+ * $Revision: 1.72.2.15 $
+ * $Date: 2006-11-06 05:19:59 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72.2.14  2006/11/06 02:20:00  Goober5000
+ * minor bugfixes
+ *
  * Revision 1.72.2.13  2006/10/27 21:29:26  taylor
  * updated/fixed modelanim code
  *
@@ -13199,6 +13202,8 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 		if ( model_anim_start_type(parent_ship, TRIGGER_TYPE_DOCK_BAY_DOOR, shipp->bay_doors_launched_from, 1) ) {
 			parent_ship->bay_doors_status = MA_POS_SET;
 			parent_ship->bay_doors_anim_done_time = model_anim_get_time_type(parent_ship, TRIGGER_TYPE_DOCK_BAY_DOOR, shipp->bay_doors_launched_from);
+		} else {
+			parent_ship->bay_doors_status = MA_POS_READY;
 		}
 	}
 
