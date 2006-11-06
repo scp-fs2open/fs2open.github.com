@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.380 $
- * $Date: 2006-10-24 23:56:49 $
+ * $Revision: 2.381 $
+ * $Date: 2006-11-06 02:19:58 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.380  2006/10/24 23:56:49  Goober5000
+ * clarified this; it was confusing before
+ *
  * Revision 2.379  2006/10/08 02:05:38  Goober5000
  * fix forum links
  *
@@ -9286,7 +9289,7 @@ send_countermeasure_fired:
 		}
 	}
 
-	return (cobjnum>0);		// return 0 if not fired, 1 otherwise
+	return (cobjnum >= 0);		// return 0 if not fired, 1 otherwise
 }
 
 // internal function.. see if enough time has elapsed to play fail sound again
