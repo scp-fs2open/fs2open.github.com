@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.15 $
- * $Date: 2006-10-06 09:56:42 $
+ * $Revision: 2.16 $
+ * $Date: 2006-11-06 05:42:44 $
  * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/10/06 09:56:42  taylor
+ * clean up some old software rendering stuff that we don't use any longer
+ * remove grzbuffer.*, since all it did was give us 3 variables, which were moved to 2d.*
+ *
  * Revision 2.14  2006/09/08 06:20:14  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -318,10 +322,6 @@ extern int Gr_gamma_lookup[256];
 extern int Ambient_r_default;
 extern int Ambient_g_default;
 extern int Ambient_b_default;
-
-#define MAX_SUBOBJECTS 64
-
-#define MAX_BUFFERS MAX_POLYGON_MODELS*MAX_SUBOBJECTS*MAX_BUFFERS_PER_SUBMODEL
 
 #define NEBULA_COLORS 20
 

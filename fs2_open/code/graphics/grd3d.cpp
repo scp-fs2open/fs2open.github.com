@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.96 $
- * $Date: 2006-09-11 06:38:32 $
+ * $Revision: 2.97 $
+ * $Date: 2006-11-06 05:42:44 $
  * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2006/09/11 06:38:32  taylor
+ * crap.  ... again
+ *
  * Revision 2.95  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -832,13 +835,14 @@
 #include "freespace2/freespaceresource.h"   
 #include "cmdline/cmdline.h"
 
+#include <vector>
 
 
 enum vertex_buffer_type{TRILIST_,LINELIST_,FLAT_};
+
 // Structures and enums
-struct Vertex_buffer{
-	Vertex_buffer(): ocupied(false), n_verts(0), n_prim(0){};
-	bool ocupied;
+struct Vertex_buffer {
+	Vertex_buffer() { memset(this, 0, sizeof(Vertex_buffer)); };
 	int n_prim;
 	int n_verts;
 	vertex_buffer_type type;
@@ -899,7 +903,8 @@ stage_state current_render_state = NONE;
 int In_frame = 0;
 
 IDirect3DSurface8 *Gr_saved_surface = NULL;
-Vertex_buffer vertex_buffer[MAX_BUFFERS];
+std::vector<Vertex_buffer> D3D_vertex_buffers;
+static int D3D_vertex_buffers_in_use = 0;
 extern int n_active_lights;
 
 D3DXPLANE d3d_user_clip_plane;
@@ -2252,103 +2257,104 @@ void fill_vert(void *V, vertex *L, vec3d* N, uint flags){
 				}
 }
 
-//finds the first unocupyed buffer
-int find_first_empty_buffer(){
-	for(int i = 0; i<MAX_BUFFERS; i++)if(!vertex_buffer[i].ocupied)return i;
-	return -1;
-}
-
 //makes the vertex buffer, returns an index to it
-int gr_d3d_make_buffer(poly_list *list, uint flags){
-	int idx = find_first_empty_buffer();
+int gr_d3d_make_buffer(poly_list *list, uint flags)
+{
+	int k;
+	byte *v;
+	Vertex_buffer new_buffer;
 
-	if(idx > -1){
-		int k;
+	new_buffer.size = vertex_size(flags);
+	new_buffer.FVF = convert_to_fvf(flags);
 
-		vertex_buffer[idx].size = vertex_size(flags);
-		vertex_buffer[idx].FVF = convert_to_fvf(flags);
-
-//		d3d_CreateVertexBuffer(D3DVT_VERTEX, (list->n_verts), NULL, (void**)buffer);
+//	d3d_CreateVertexBuffer(D3DVT_VERTEX, (list->n_verts), NULL, (void**)buffer);
 		
-		k = GlobalD3DVars::lpD3DDevice->CreateVertexBuffer(	
-			vertex_buffer[idx].size * (list->n_verts ? list->n_verts : 1), 
+	k = GlobalD3DVars::lpD3DDevice->CreateVertexBuffer(	
+			new_buffer.size * (list->n_verts ? list->n_verts : 1), 
 			D3DUSAGE_WRITEONLY, 
-			vertex_buffer[idx].FVF,
+			new_buffer.FVF,
 			D3DPOOL_MANAGED,
-			&vertex_buffer[idx].buffer);
+			&new_buffer.buffer);
 
-		switch(k)
-		{
-			case D3DERR_INVALIDCALL:
-				Error(LOCATION, "CreateVertexBuffer returned D3DERR_INVALIDCALL.");
-				break;
-			case D3DERR_OUTOFVIDEOMEMORY:
-				Error(LOCATION, "CreateVertexBuffer returned D3DERR_OUTOFVIDEOMEMORY");
-				break;
-			case E_OUTOFMEMORY:
-				Error(LOCATION, "CreateVertexBuffer returned E_OUTOFMEMORY");
-				break;
-			default:
-				break;
-		}
+	switch (k)
+	{
+		case D3DERR_INVALIDCALL:
+			Error(LOCATION, "CreateVertexBuffer returned D3DERR_INVALIDCALL.");
+			break;
 
-		if(vertex_buffer[idx].buffer == NULL)
-			return -1;
+		case D3DERR_OUTOFVIDEOMEMORY:
+			Error(LOCATION, "CreateVertexBuffer returned D3DERR_OUTOFVIDEOMEMORY");
+			break;
 
-		byte* v;
+		case E_OUTOFMEMORY:
+			Error(LOCATION, "CreateVertexBuffer returned E_OUTOFMEMORY");
+			break;
 
-		vertex_buffer[idx].buffer->Lock(0, 0, &v, 0);
-		for(k = 0; k<list->n_verts; k++){
-				fill_vert(&v[k*vertex_buffer[idx].size],  &list->vert[k], &list->norm[k], flags);
-				vertex_buffer[idx].n_verts++;
-		}
-
-		vertex_buffer[idx].buffer->Unlock();
-
-		vertex_buffer[idx].ocupied = true;
-		vertex_buffer[idx].n_verts  = list->n_verts;
-		vertex_buffer[idx].n_prim  = list->n_verts;
-		vertex_buffer[idx].type = TRILIST_;
+		default:
+			break;
 	}
-	return idx;
+
+	if (new_buffer.buffer == NULL)
+		return -1;
+
+	new_buffer.buffer->Lock(0, 0, &v, 0);
+
+	for(k = 0; k<list->n_verts; k++){
+			fill_vert(&v[k * new_buffer.size],  &list->vert[k], &list->norm[k], flags);
+			new_buffer.n_verts++;
+	}
+
+	new_buffer.buffer->Unlock();
+
+	new_buffer.n_verts  = list->n_verts;
+	new_buffer.n_prim  = list->n_verts;
+	new_buffer.type = TRILIST_;
+
+	D3D_vertex_buffers.push_back( new_buffer );
+	D3D_vertex_buffers_in_use++;
+
+	return (int)(D3D_vertex_buffers.size() - 1);
 }
 
 //makes the vertex buffer, returns an index to it
-int gr_d3d_make_flat_buffer(poly_list *list){
-	int idx = find_first_empty_buffer();
+int gr_d3d_make_flat_buffer(poly_list *list)
+{
+	int k;
+	D3DLVERTEX *v, *V;
+	vertex *L;
+//	vec3d *N;
+	Vertex_buffer new_buffer;
 
-	if(idx > -1){
-		IDirect3DVertexBuffer8 **buffer = &vertex_buffer[idx].buffer;
+	IDirect3DVertexBuffer8 **buffer = &new_buffer.buffer;
 
-		d3d_CreateVertexBuffer(D3DVT_LVERTEX, (list->n_verts), NULL, (void**)buffer);
+	d3d_CreateVertexBuffer(D3DVT_LVERTEX, (list->n_verts), NULL, (void**)buffer);
 
-		D3DLVERTEX *v, *V;
-		vertex *L;
-//		vec3d *N;
+	new_buffer.buffer->Lock(0, 0, (BYTE **)&v, NULL);
 
-		vertex_buffer[idx].buffer->Lock(0, 0, (BYTE **)&v, NULL);
-		for(int k = 0; k<list->n_verts; k++){
-				V = &v[k];
-				L = &list->vert[k];
-			//	N = &list->norm[k]; //these don't have normals :\
+	for (k = 0; k < list->n_verts; k++) {
+		V = &v[k];
+		L = &list->vert[k];
+	//	N = &list->norm[k]; //these don't have normals :\
 
-				V->sx = L->x;
-				V->sy = L->y;
-				V->sz = L->z;
+		V->sx = L->x;
+		V->sy = L->y;
+		V->sz = L->z;
 
-				V->tu = L->u;
-				V->tv = L->v;
+		V->tu = L->u;
+		V->tv = L->v;
 
-				V->color = D3DCOLOR_ARGB(255,L->r,L->g,L->b);
-		}
-
-		vertex_buffer[idx].buffer->Unlock();
-
-		vertex_buffer[idx].ocupied = true;
-		vertex_buffer[idx].n_prim  = list->n_verts/3;
-		vertex_buffer[idx].type = FLAT_;
+		V->color = D3DCOLOR_ARGB(255,L->r,L->g,L->b);
 	}
-	return idx;
+
+	new_buffer.buffer->Unlock();
+
+	new_buffer.n_prim  = list->n_verts/3;
+	new_buffer.type = FLAT_;
+
+	D3D_vertex_buffers.push_back( new_buffer );
+	D3D_vertex_buffers_in_use++;
+
+	return (int)(D3D_vertex_buffers.size() - 1);
 }
 
 
@@ -2399,31 +2405,45 @@ int gr_d3d_make_line_buffer(line_list *list){
 }
 	
 //kills buffers dead!
-void gr_d3d_destroy_buffer(int idx){
-	if(idx < 0)return;
-	if(vertex_buffer[idx].buffer != NULL)
-		vertex_buffer[idx].buffer->Release();
-	vertex_buffer[idx].ocupied = false;
-	vertex_buffer[idx].FVF = 0;
-	vertex_buffer[idx].n_verts = 0;
-	vertex_buffer[idx].n_prim = 0;
-	vertex_buffer[idx].buffer = NULL;
+void gr_d3d_destroy_buffer(int idx)
+{
+	if ( (idx < 0) || (idx >= (int)D3D_vertex_buffers.size()) )
+		return;
+
+	Vertex_buffer *vbp = &D3D_vertex_buffers[idx];
+
+	if (vbp->buffer != NULL)
+		vbp->buffer->Release();
+
+	memset( vbp, 0, sizeof(Vertex_buffer) );
+
+	// we try to take advantage of the fact that there shouldn't be a lot of buffer
+	// deletions/additions going on all of the time, so a model_unload_all() and/or
+	// game_level_close() should pretty much keep everything cleared out on a
+	// regular basis
+	if (--D3D_vertex_buffers_in_use <= 0)
+		D3D_vertex_buffers.clear();
 }
 
 //enum vertex_buffer_type{TRILIST_,LINELIST_,FLAT_};
 
-void gr_d3d_render_line_buffer(int idx){
-	if(idx<0)return;
-	if(!vertex_buffer[idx].ocupied)return;
+void gr_d3d_render_line_buffer(int idx)
+{
+	if ( (idx < 0) || (idx >= (int)D3D_vertex_buffers.size()) )
+		return;
+
+	if (D3D_vertex_buffers[idx].buffer == NULL)
+		return;
+
 	d3d_SetVertexShader(vertex_types[D3DVT_LVERTEX].fvf);
 
-	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, vertex_buffer[idx].buffer, sizeof(D3DLVERTEX));
+	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, D3D_vertex_buffers[idx].buffer, sizeof(D3DLVERTEX));
 	
 	gr_d3d_fog_set(GR_FOGMODE_NONE, 0,0,0, gr_screen.fog_near, gr_screen.fog_far);		//it's a HUD item, should never be fogged
 
 	gr_d3d_set_cull(0);
 	d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
-	GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_LINELIST , 0, vertex_buffer[idx].n_prim);
+	GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_LINELIST , 0, D3D_vertex_buffers[idx].n_prim);
 	d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
 	gr_d3d_set_cull(1);
 }
@@ -2434,9 +2454,15 @@ extern bool lighting_enabled;
 void gr_d3d_center_alpha_int(int type);
 Vertex_buffer *set_buffer;
 
-void gr_d3d_set_buffer(int idx){
-	if(idx <0){set_buffer = NULL; return;}
-	set_buffer = &vertex_buffer[idx];
+void gr_d3d_set_buffer(int idx)
+{
+	set_buffer = NULL;
+
+	if ( (idx < 0) || (idx >= (int)D3D_vertex_buffers.size()) )
+		return;
+
+	set_buffer = &D3D_vertex_buffers[idx];
+
 	d3d_SetVertexShader(set_buffer->FVF);
 	GlobalD3DVars::lpD3DDevice->SetStreamSource(0, set_buffer->buffer, set_buffer->size);
 }
@@ -2498,7 +2524,7 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, int flags
 		}
 
 
-		if(!set_buffer->ocupied) {
+		if (set_buffer->buffer == NULL) {
 			return;
 		}
 /*	if(set_buffer->type == LINELIST_) {
