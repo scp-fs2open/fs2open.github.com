@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-07-21 16:04:46 $
+ * $Revision: 2.34 $
+ * $Date: 2006-11-06 06:19:17 $
  * $Author: taylor $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/07/21 16:04:46  taylor
+ * little cleanup
+ *
  * Revision 2.32  2006/03/31 10:20:01  wmcoolmon
  * Prelim. BSG warpin effect stuff
  *
@@ -382,7 +385,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 	{
 		float model_Interp_scale_xyz = radius / 20.0f;
 
-		set_warp_globals(model_Interp_scale_xyz, model_Interp_scale_xyz, model_Interp_scale_xyz, texture_bitmap_num, (radius/max_radius) );
+		model_set_warp_globals(model_Interp_scale_xyz, model_Interp_scale_xyz, model_Interp_scale_xyz, texture_bitmap_num, (radius/max_radius) );
 		
 		float dist = vm_vec_dist_quick( pos, &Eye_position );
 
@@ -393,7 +396,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 
 //	Warp_Map = -1;//un sets the warp map
 
-		set_warp_globals(1.0f, 1.0f, 1.0f, -1, -1.0f);
+		model_set_warp_globals(1.0f, 1.0f, 1.0f, -1, -1.0f);
 
 /*
 //this is that half done effect that was pissing people off-Bobboau
@@ -490,4 +493,3 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 	}
 	gr_zbuffer_set( saved_gr_zbuffering );
 }
-

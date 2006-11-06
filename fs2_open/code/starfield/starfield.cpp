@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.82 $
- * $Date: 2006-09-11 06:51:17 $
+ * $Revision: 2.83 $
+ * $Date: 2006-11-06 06:19:17 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2006/09/11 06:51:17  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.81  2006/09/04 06:08:20  wmcoolmon
  * Don't force fs2_open to load motion debris.
  *
@@ -2135,7 +2138,7 @@ void subspace_render(int env)
 
 	} else {
 */
-		int render_flags = MR_NO_LIGHTING | MR_ALWAYS_REDRAW | MR_ALL_XPARENT;
+		int render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT; // | MR_ALWAYS_REDRAW;
 
 		Interp_subspace = 1;
 		Interp_subspace_offset_u = 1.0f - subspace_offset_u;
