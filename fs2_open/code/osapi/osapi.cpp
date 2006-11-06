@@ -9,13 +9,17 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.34 $
- * $Date: 2006-07-13 22:15:02 $
+ * $Revision: 2.35 $
+ * $Date: 2006-11-06 06:23:27 $
  * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2006/07/13 22:15:02  taylor
+ * handle non-MVE movies a bit better in OpenGL (don't get freaky with the window, don't lose input, etc.)
+ * some cleanup to OpenGL window handling, to fix min/max/full issues, and try to make shutdown a little nicer
+ *
  * Revision 2.33  2006/01/26 03:23:30  Goober5000
  * pare down the pragmas some more
  * --Goober5000
