@@ -225,6 +225,7 @@ BEGIN
         MENUITEM "Restore Camera Pos\tCtrl+R",  ID_RESTORE_CAMERA
         MENUITEM SEPARATOR
         MENUITEM "Lighting from Suns",          ID_VIEW_LIGHTING
+        MENUITEM "Render full detail",          ID_VIEW_FULL_DETAIL
     END
     POPUP "&Speed"
     BEGIN
