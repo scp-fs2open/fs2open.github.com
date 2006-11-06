@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.48 $
- * $Date: 2006-10-06 09:32:16 $
+ * $Revision: 1.49 $
+ * $Date: 2006-11-06 05:46:54 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48  2006/10/06 09:32:16  taylor
+ * bit of cleanup (technically the vertex buffer stuff is part of a much larger change slated for post-3.6.9, but this should be a little faster)
+ *
  * Revision 1.47  2006/09/24 13:31:52  taylor
  * minor clean and code optimizations
  * clean up view/proj matrix fubar that made us need far more matrix levels that actually needed (partial fix for Mantis #563)
@@ -340,7 +343,6 @@ struct opengl_vertex_buffer
 static std::vector<opengl_vertex_buffer> GL_vertex_buffers;
 static opengl_vertex_buffer *g_vbp = NULL;
 static int GL_vertex_buffers_in_use = 0;
-
 
 GLuint opengl_create_vbo(uint size, GLfloat *data)
 {
@@ -919,19 +921,6 @@ void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
 	glTranslatef( offset->xyz.x, offset->xyz.y, offset->xyz.z );
 	glRotatef( fl_degrees(ang), axis.xyz.x, axis.xyz.y, axis.xyz.z );
 
-	if (Cmdline_env) {
-		// setup the texture matrix which will keep the envmap lined up properly with the environment
-		GLfloat mview[16];
-
-		glGetFloatv(GL_MODELVIEW_MATRIX, mview);
-
-		// transpose/invert the view matrix (basically stole this out of a google search)
-		GL_env_texture_matrix[0] = mview[0]; GL_env_texture_matrix[1] = mview[4]; GL_env_texture_matrix[2]  = -mview[8];
-		GL_env_texture_matrix[4] = mview[1]; GL_env_texture_matrix[5] = mview[5]; GL_env_texture_matrix[6]  = -mview[9];
-		GL_env_texture_matrix[8] = mview[2]; GL_env_texture_matrix[9] = mview[6]; GL_env_texture_matrix[10] = -mview[10];
-		GL_env_texture_matrix[15] = 1.0f;
-	}
-
 	GL_modelview_matrix_depth++;
 }
 
@@ -1002,7 +991,17 @@ void gr_opengl_end_projection_matrix()
 	GL_htl_projection_matrix_set = 0;
 }
 
-void gr_opengl_set_view_matrix(vec3d *pos, matrix* orient)
+
+static GLdouble eyex, eyey, eyez;
+static GLdouble centerx, centery, centerz;
+static GLdouble upx, upy, upz;
+
+static vec3d last_view_pos;
+static matrix last_view_orient;
+
+static bool use_last_view = false;
+
+void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient)
 {
 	if (Cmdline_nohtl)
 		return;
@@ -1014,40 +1013,56 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix* orient)
 	glPushMatrix();
 	glLoadIdentity();
 
-	GLdouble eyex = (GLdouble)pos->xyz.x;
-	GLdouble eyey = (GLdouble)pos->xyz.y;
-	GLdouble eyez = (GLdouble)pos->xyz.z;
+	// right now it depends on your settings as to whether this has any effect in-mission
+	// not much good now, but should be a bit more useful later on
+	if ( !memcmp(pos, &last_view_pos, sizeof(vec3d)) && !memcmp(orient, &last_view_orient, sizeof(matrix)) ) {
+		use_last_view = true;
+	} else {
+		memcpy(&last_view_pos, pos, sizeof(vec3d));
+		memcpy(&last_view_orient, orient, sizeof(matrix));
 
-	GLdouble centerx = eyex + (GLdouble)orient->vec.fvec.xyz.x;
-	GLdouble centery = eyey + (GLdouble)orient->vec.fvec.xyz.y;
-	GLdouble centerz = eyez + (GLdouble)orient->vec.fvec.xyz.z;
+		use_last_view = false;
+	}
 
-	GLdouble upx = (GLdouble)orient->vec.uvec.xyz.x;
-	GLdouble upy = (GLdouble)orient->vec.uvec.xyz.y;
-	GLdouble upz = (GLdouble)orient->vec.uvec.xyz.z;
+	if ( !use_last_view ) {
+		eyex = (GLdouble)pos->xyz.x;
+		eyey = (GLdouble)pos->xyz.y;
+		eyez = (GLdouble)pos->xyz.z;
+
+		centerx = eyex + (GLdouble)orient->vec.fvec.xyz.x;
+		centery = eyey + (GLdouble)orient->vec.fvec.xyz.y;
+		centerz = eyez + (GLdouble)orient->vec.fvec.xyz.z;
+
+		upx = (GLdouble)orient->vec.uvec.xyz.x;
+		upy = (GLdouble)orient->vec.uvec.xyz.y;
+		upz = (GLdouble)orient->vec.uvec.xyz.z;
+	}
 
 	gluLookAt(eyex, eyey, -eyez, centerx, centery, -centerz, upx, upy, -upz);
 
 	glScalef(1.0f, 1.0f, -1.0f);
 
-	if (Cmdline_env) {
-		// setup the texture matrix which will make the the envmap keep lined up properly
-		// with the environment
-		GLfloat mview[16];
-
-		glGetFloatv(GL_MODELVIEW_MATRIX, mview);
-
-		// transpose/invert the view matrix (basically stole this out of a google search)
-		GL_env_texture_matrix[0] = mview[0]; GL_env_texture_matrix[1] = mview[4]; GL_env_texture_matrix[2]  = -mview[8];
-		GL_env_texture_matrix[4] = mview[1]; GL_env_texture_matrix[5] = mview[5]; GL_env_texture_matrix[6]  = -mview[9];
-		GL_env_texture_matrix[8] = mview[2]; GL_env_texture_matrix[9] = mview[6]; GL_env_texture_matrix[10] = -mview[10];
-		GL_env_texture_matrix[15] = 1.0f;
-
+	if ( Cmdline_env ) {
 		GL_env_texture_matrix_set = true;
+
+		// if our view setup is the same as previous call then we can skip this
+		if ( !use_last_view ) {
+			// setup the texture matrix which will make the the envmap keep lined
+			// up properly with the environment
+			GLfloat mview[16];
+
+			glGetFloatv(GL_MODELVIEW_MATRIX, mview);
+
+			// transpose/invert the view matrix (basically stole this out of a google search)
+			GL_env_texture_matrix[0] = mview[0]; GL_env_texture_matrix[1] = mview[4]; GL_env_texture_matrix[2]  = -mview[8];
+			GL_env_texture_matrix[4] = mview[1]; GL_env_texture_matrix[5] = mview[5]; GL_env_texture_matrix[6]  = -mview[9];
+			GL_env_texture_matrix[8] = mview[2]; GL_env_texture_matrix[9] = mview[6]; GL_env_texture_matrix[10] = -mview[10];
+			GL_env_texture_matrix[15] = 1.0f;
+		}
 	}
 
 	GL_modelview_matrix_depth = 2;
-	GL_htl_view_matrix_set = 1;	
+	GL_htl_view_matrix_set = 1;
 }
 
 void gr_opengl_end_view_matrix()
