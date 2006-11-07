@@ -703,7 +703,7 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, int bit
 	ubyte c_type = BM_TYPE_NONE;
 
 	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_RENDER_TARGET_DYNAMIC) || (bm_bitmaps[bitmapnum].type == BM_TYPE_RENDER_TARGET_STATIC) )
-		return true;
+		return false;
 
 	if (Is_standalone) {
 		true_bpp = 8;
@@ -883,6 +883,7 @@ void bm_post_lost(){
 
 int gr_d3d_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int *mm_lvl, int flags)
 {
+	*mm_lvl = 1;
 	int x = *width;
 	int y = *height;
 
@@ -890,14 +891,14 @@ int gr_d3d_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int
 
 	Assert(d3d_bitmap_entry[n].tinterface == NULL);
 
-#if 1
+#if 0
 	return false;
 #else
 	//mark this surface as haveing a resource we are going to have to clean up dureing a lost device
 		d3d_bitmap_entry[n].flags |= DXT_DEFAULT_MEM_POOL;
 
 		//make the drimary drawing surface
-		if(flags & BMP_TEX_CUBEMAP){
+		if(flags & BMP_FLAG_CUBEMAP){
 			d3d_bitmap_entry[n].flags |= DXT_CUBEMAP;
 			GlobalD3DVars::lpD3DDevice->CreateCubeTexture(max(x,y),1,D3DUSAGE_RENDERTARGET,D3DFMT_X8R8G8B8,D3DPOOL_DEFAULT, (IDirect3DCubeTexture8**)&d3d_bitmap_entry[n].tinterface);
 		}else{
@@ -909,7 +910,7 @@ int gr_d3d_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int
 			//if this is a static render target 
 			//then we are going to want to keep a copy of it in system memory
 			d3d_bitmap_entry[n].flags	|= DXT_STATIC;
-			if(flags & BMP_TEX_CUBEMAP){
+			if(flags & BMP_FLAG_CUBEMAP){
 				GlobalD3DVars::lpD3DDevice->CreateCubeTexture	(max(x,y),	1,D3DUSAGE_DYNAMIC,D3DFMT_X8R8G8B8,D3DPOOL_SYSTEMMEM, (IDirect3DCubeTexture8**)	&d3d_bitmap_entry[n].backup_tinterface);
 			}else{
 				GlobalD3DVars::lpD3DDevice->CreateTexture		(x,y,		1,D3DUSAGE_DYNAMIC,D3DFMT_X8R8G8B8,D3DPOOL_SYSTEMMEM, (IDirect3DTexture8**)		&d3d_bitmap_entry[n].backup_tinterface);
@@ -922,7 +923,7 @@ int gr_d3d_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int
 
 		//now see what we actualy got
 	D3DSURFACE_DESC desc;
-	if(flags & BMP_TEX_CUBEMAP){
+	if(flags & BMP_FLAG_CUBEMAP){
 		((IDirect3DCubeTexture8*)(d3d_bitmap_entry[n].tinterface))->GetLevelDesc(0, &desc);
 	}else{
 		((IDirect3DTexture8*)(d3d_bitmap_entry[n].tinterface))->GetLevelDesc(0, &desc);
@@ -949,7 +950,7 @@ int gr_d3d_bm_set_render_target(int n, int face)
 	if(!once){atexit(bm_pre_lost);once = true;}
 	//some cleanup code, these have to be frees before the program terminates
 
-#if 1
+#if 0
 	return false;
 #else
 	if(n != -1){
@@ -959,7 +960,7 @@ int gr_d3d_bm_set_render_target(int n, int face)
 
 		Assert(d3d_bitmap_entry[n].tinterface != NULL);	//make sure this texture has a surface
 
-		if(bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET){
+		if(bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET_STATIC && bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET_DYNAMIC){
 			//odds are somone passed a normal texture created with bm_load
 			Error( LOCATION, "trying to set invalid bitmap as render target" );
 			return false;
@@ -1025,6 +1026,7 @@ int gr_d3d_bm_set_render_target(int n, int face)
 	return true;
 #endif
 }
+
 
 IDirect3DBaseTexture8* get_render_target_texture(int handle){
 	int n = handle % MAX_BITMAPS;
