@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.57.2.3 $
- * $Date: 2006-08-25 21:15:31 $
+ * $Revision: 2.57.2.4 $
+ * $Date: 2006-11-12 17:52:21 $
  * $Author: karajorma $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57.2.3  2006/08/25 21:15:31  karajorma
+ * Fix TvT problem with scores appearing incorrectly.
+ * Fix a CVS issue
+ *
  * Revision 2.57  2006/06/02 09:10:01  karajorma
  * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
  *
@@ -2254,7 +2258,7 @@ void send_leave_game_packet(short player_id, int kicked_reason, net_player *targ
 	}
 }
 
-// process a notification the a player has left the game
+// process a notification that a player has left the game
 void process_leave_game_packet(ubyte* data, header* hinfo)
 {
 	int offset;
@@ -8480,7 +8484,7 @@ void process_variable_update_packet( ubyte *data, header *hinfo)
 	PACKET_SET_SIZE();
 
 	// set the sexp_variable
-	if (variable_index > 0 && variable_index < sexp_variable_count()) 
+	if ( (variable_index >= 0) && (variable_index < sexp_variable_count()) )
 	{
 		strcpy(Sexp_variables[variable_index].text, value); 
 	}	
