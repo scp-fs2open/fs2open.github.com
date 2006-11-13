@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.42 $
- * $Date: 2006-11-06 05:19:59 $
- * $Author: taylor $
+ * $Revision: 2.336.2.43 $
+ * $Date: 2006-11-13 23:29:11 $
+ * $Author: phreak $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.42  2006/11/06 05:19:59  taylor
+ * if a submodel anim fails to start then move directly to ready position flag (set it up to do this, just forgot to do it ;))  (fix for Mantis bug #1133)
+ *
  * Revision 2.336.2.41  2006/11/06 02:20:00  Goober5000
  * minor bugfixes
  *
@@ -8304,6 +8307,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 				capacity = (float) sip->primary_bank_ammo_capacity[i];
 				size = (float) wip->cargo_size;
 				swp->primary_bank_ammo[i] = fl2i((capacity / size)+0.5f);
+				swp->primary_bank_start_ammo[i] = swp->primary_bank_ammo[i];
 			}
 
 			swp->primary_bank_capacity[i] = sip->primary_bank_ammo_capacity[i];
@@ -11789,7 +11793,7 @@ float ship_calculate_rearm_duration( object *objp )
 //
 int ship_do_rearm_frame( object *objp, float frametime )
 {
-	int			i, banks_full, primary_banks_full, subsys_type, subsys_all_ok;
+	int			i, banks_full, primary_banks_full, subsys_type, subsys_all_ok, last_ballistic_idx = 0;
 	float			shield_str, repair_delta, repair_allocated, max_hull_repair, max_subsys_repair;
 	ship			*shipp;
 	ship_weapon	*swp;
@@ -11972,6 +11976,15 @@ int ship_do_rearm_frame( object *objp, float frametime )
 		// rearm ballistic primaries - Goober5000
 		if (sip->flags & SIF_BALLISTIC_PRIMARIES)
 		{
+			if ( aip->rearm_first_ballistic_primary == TRUE)
+			{
+				for (i = 1; i < swp->num_primary_banks; i++ )
+				{
+					if ( Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC )
+						last_ballistic_idx = i;
+				}
+			}
+
 			for (i = 0; i < swp->num_primary_banks; i++ )
 			{
 				if ( Weapon_info[swp->primary_bank_weapons[i]].wi_flags2 & WIF2_BALLISTIC )
@@ -11989,7 +12002,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 
 						swp->primary_bank_rearm_time[i] = timestamp(snd_get_duration(Snds[sound_index].id));			
 
-						if (i == swp->num_primary_banks - 1) 
+						if (i == last_ballistic_idx) 
 							aip->rearm_first_ballistic_primary = FALSE;
 					}
 
