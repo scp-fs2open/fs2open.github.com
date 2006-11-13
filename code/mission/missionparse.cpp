@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.19 $
- * $Date: 2006-10-27 21:39:27 $
- * $Author: taylor $
+ * $Revision: 2.178.2.20 $
+ * $Date: 2006-11-13 23:09:59 $
+ * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.19  2006/10/27 21:39:27  taylor
+ * updated/fixed modelanim code
+ *
  * Revision 2.178.2.18  2006/10/24 13:34:33  taylor
  * remove a basically useless debug message
  * fix parse_init() so that it doesn't absolutely have to init sexps (doesn't need them when getting basic info, and causes memory fragmentation otherwise)
@@ -6932,22 +6935,22 @@ void mission_eval_arrivals()
 
 				// see if this is a starting player wing
 				// Goober5000 - we have to test the actual names here, because the voice files are scripted for certain wings
-				if (!stricmp(wingp->name, "beta"))
+				if (!stricmp(wingp->name, Squadron_wing_names[1]))
 				{
 					if (rship >= 0)
 						message_send_builtin_to_player(MESSAGE_BETA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 				}
-				else if (!stricmp(wingp->name, "gamma"))
+				else if (!stricmp(wingp->name, Squadron_wing_names[2]))
 				{
 					if (rship >= 0)
 						message_send_builtin_to_player(MESSAGE_GAMMA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 				}
-				else if (!stricmp(wingp->name, "delta"))
+				else if (!stricmp(wingp->name, Squadron_wing_names[3]))
 				{
 					if (rship >= 0)
 						message_send_builtin_to_player(MESSAGE_DELTA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
 				}
-				else if (!stricmp(wingp->name, "epsilon"))
+				else if (!stricmp(wingp->name, Squadron_wing_names[4]))
 				{
 					if (rship >= 0)
 						message_send_builtin_to_player( MESSAGE_EPSILON_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
