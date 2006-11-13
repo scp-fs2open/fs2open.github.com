@@ -17,12 +17,14 @@
 
 #ifdef LAUNCHER
 #include "stdafx.h"
+
 #endif	//LAUNCHER
 
 
 
 #include <sphelper.h>                           // Contains definitions of SAPI functions
 #include <stdio.h>
+
 
 #include "voicerec.h"
 #include "grammar.h"
@@ -32,6 +34,7 @@
 #include "io/keycontrol.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
+#include "cfile/cfile.h"
 
 CComPtr<ISpRecoGrammar>         p_grammarObject; // Pointer to our grammar object
 CComPtr<ISpRecoContext>         p_recogContext;  // Pointer to our recognition context
@@ -39,16 +42,86 @@ CComPtr<ISpRecognizer>			p_recogEngine;   // Pointer to our recognition engine i
 
 const bool DEBUG_ON = false;
 
+extern int button_function(int n);
+extern void hud_squadmsg_msg_all_fighters();
+extern void hud_squadmsg_shortcut( int command );
+
+//extern void hud_squadmsg_ship_command();
+extern int Msg_instance;;
+extern int Msg_shortcut_command;
+extern int Squad_msg_mode;
+
+void doVid_Action(int action)
+{
+	// If menu is up
+	if(Player->flags & PLAYER_FLAGS_MSG_MODE)
+	{
+		switch(action)
+		{					
+			case VID_DestroyTarget: Msg_shortcut_command = ATTACK_TARGET_ITEM;			break;
+			case VID_DisableTarget:	Msg_shortcut_command = DISABLE_TARGET_ITEM;			break;
+			case VID_DisarmTarget:	Msg_shortcut_command = DISARM_TARGET_ITEM;			break;
+			case VID_DestroySubsys:	Msg_shortcut_command = DISABLE_SUBSYSTEM_ITEM;		break;
+			case VID_ProtectTarget:	Msg_shortcut_command = PROTECT_TARGET_ITEM;			break;
+			case VID_IgnoreTarget:	Msg_shortcut_command = IGNORE_TARGET_ITEM;			break;
+			case VID_FormWing:		Msg_shortcut_command = FORMATION_ITEM;				break;
+			case VID_CoverMe:		Msg_shortcut_command = COVER_ME_ITEM;				break;
+			case VID_EngageEnemy:	Msg_shortcut_command = ENGAGE_ENEMY_ITEM;			break;
+			case VID_Depart:		Msg_shortcut_command = DEPART_ITEM;					break;
+			default:				Msg_shortcut_command = -1;							break;
+
+		}
+
+		if(Msg_instance == MESSAGE_ALL_FIGHTERS || Squad_msg_mode == SM_MODE_ALL_FIGHTERS )
+		{
+			//	nprintf(("warning", "VOICER hud_squadmsg_send_to_all_fighters\n"));
+			hud_squadmsg_send_to_all_fighters(Msg_shortcut_command);
+		}
+		else if(Squad_msg_mode == SM_MODE_SHIP_COMMAND)
+		{
+			//	nprintf(("warning", "VOICER msg ship %d\n", Msg_instance));
+			hud_squadmsg_send_ship_command( Msg_instance, Msg_shortcut_command, 1 );
+		}
+		else if(Squad_msg_mode == SM_MODE_WING_COMMAND)
+		{
+			//	nprintf(("warning", "VOICER msg wing %d\n", Msg_instance));
+			hud_squadmsg_send_wing_command( Msg_instance, Msg_shortcut_command, 1 );
+		}
+		else if(Squad_msg_mode == SM_MODE_REINFORCEMENTS )
+		{
+		}
+
+		hud_squadmsg_toggle();
+	}
+	else
+	{
+		switch(action)
+		{					
+			case VID_DestroyTarget: button_function(ATTACK_MESSAGE);				break;
+			case VID_DisableTarget:	button_function(DISABLE_MESSAGE);				break;
+			case VID_DisarmTarget:	button_function(DISARM_MESSAGE);				break;
+			case VID_DestroySubsys:	button_function(ATTACK_SUBSYSTEM_MESSAGE);		break;
+			case VID_ProtectTarget:	button_function(PROTECT_MESSAGE);				break;
+			case VID_IgnoreTarget:	button_function(IGNORE_MESSAGE);				break;
+			case VID_FormWing:		button_function(FORM_MESSAGE);					break;
+			case VID_CoverMe:		button_function(COVER_MESSAGE);					break;
+			case VID_EngageEnemy:	button_function(ENGAGE_MESSAGE);				break;
+			case VID_Depart:		button_function(WARP_MESSAGE);					break;
+		}
+	}
+}
+
+
 bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource)
 {
     HRESULT hr = S_OK;
     CComPtr<ISpAudio> cpAudio;
 
-    while ( 1 )
+    while (true)
     {
         // create a recognition engine
         hr = p_recogEngine.CoCreateInstance(CLSID_SpSharedRecognizer);
-        if ( FAILED( hr ) )
+        if (FAILED(hr))
         {
 			MessageBox(hWnd,"Failed to create a recognition engine\n","Error",MB_OK);
 			printf("Failed to create a recognition engine\n");
@@ -57,7 +130,7 @@ bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource
        
         // create the command recognition context
         hr = p_recogEngine->CreateRecoContext( &p_recogContext );
-        if ( FAILED( hr ) )
+        if (FAILED(hr))
         {
 			MessageBox(hWnd,"Failed to create the command recognition context\n","Error",MB_OK);
 			printf("Failed to create the command recognition context\n");
@@ -67,7 +140,7 @@ bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource
         // Let SR know that window we want it to send event information to, and using
         // what message
         hr = p_recogContext->SetNotifyWindowMessage( hWnd, event_id, 0, 0 );
-        if ( FAILED( hr ) )
+        if (FAILED(hr))
         {
 			MessageBox(hWnd,"Failed to SetNotifyWindowMessage\n","Error",MB_OK);
             break;
@@ -76,33 +149,38 @@ bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource
 	    // Tell SR what types of events interest us.  Here we only care about command
         // recognition.
         hr = p_recogContext->SetInterest( SPFEI(SPEI_RECOGNITION), SPFEI(SPEI_RECOGNITION) );
-        if ( FAILED( hr ) )
+        if (FAILED(hr))
         {
 			MessageBox(hWnd,"Failed to set events\n","Error",MB_OK);
             break;
         }
 
-        // Load our grammar, which is the compiled form of simple.xml bound into this executable as a
-        // user defined ("SRGRAMMAR") resource type.
+		// Create a grammar
         hr = p_recogContext->CreateGrammar(grammar_id, &p_grammarObject);
         if (FAILED(hr))
         {
-			MessageBox(hWnd,"Failed to load grammar\n","Error",MB_OK);
+			MessageBox(hWnd,"Failed to create grammar\n","Error",MB_OK);
             break;
         }
 
-        hr = p_grammarObject->LoadCmdFromResource(NULL, MAKEINTRESOURCEW(command_resource),
+        // Load our grammar from data\phrases.xml, or if that doesn't exist, from the compiled in 
+        // user defined ("SRGRAMMAR") resource type.
+		hr = p_grammarObject->LoadCmdFromFile(L"data\\phrases.xml", SPLO_STATIC);
+        if (FAILED(hr))
+        {
+			hr = p_grammarObject->LoadCmdFromResource(NULL, MAKEINTRESOURCEW(command_resource),
                                                  L"SRGRAMMAR", MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL),
                                                  SPLO_DYNAMIC);
-        if ( FAILED( hr ) )
-        {
-			MessageBox(hWnd,"Failed to load resource\n","Error",MB_OK);
-            break;
+			if (FAILED(hr))
+			{
+				MessageBox(hWnd,"Failed to load resource\n","Error",MB_OK);
+		        break;
+			}
         }
 
         // Set rules to active, we are now listening for commands
         hr = p_grammarObject->SetRuleState(NULL, NULL, SPRS_ACTIVE );
-        if ( FAILED( hr ) )
+        if (FAILED(hr))
         {
 			MessageBox(hWnd,"Failed to set listening for commands\n","Error",MB_OK);
             break;
@@ -112,7 +190,7 @@ bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource
     }
 
     // if we failed and have a partially setup SAPI, close it all down
-    if ( FAILED( hr ) )
+    if (FAILED(hr))
     {
         VOICEREC_deinit();
     }
@@ -195,14 +273,6 @@ char *wing_names[] =
 *       Called to Execute commands that have been identified by the speech engine.
 *
 ******************************************************************************/
-extern int button_function(int n);
-extern void hud_squadmsg_msg_all_fighters();
-extern void hud_squadmsg_shortcut( int command );
-
-//extern void hud_squadmsg_ship_command();
-extern int Msg_instance;;
-extern int Msg_shortcut_command;
-extern int Squad_msg_mode;
 
 char VOICEREC_lastCommand[30];
 
@@ -214,118 +284,99 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
     // the grammar.  Switch on it to figure out which command was recognized.
     if (SUCCEEDED(pPhrase->GetPhrase(&pElements)))
     {     
+#ifndef NDEBUG
 		if(DEBUG_ON)
 		{
 			WCHAR *pwszText;
+			char szText[255];
+			int i;
+
 			pPhrase->GetText(SP_GETWHOLEPHRASE, SP_GETWHOLEPHRASE, TRUE, &pwszText, NULL);
-			MessageBoxW(NULL,pwszText,NULL,MB_OK);	
+
+			memset(szText, 0, 255);
+			for (i=0;i<254;i++) 
+			{
+				if (*(pwszText + i) == 0)
+				{
+					break;
+				}
+				szText[i] = (char)(*(pwszText + i));
+				szText[i+1] = 0;
+			}
+
+			mprintf(( "recognized speech : %s \n", szText ));
+			mprintf(( "speech Rule.ulId : %d \n", pElements->Rule.ulId ));
+			//MessageBoxW(NULL,pwszText,NULL,MB_OK);	
 		}
-		
+#endif		
+		int part1, part2, part3;
+		part1 = part2 = part3 = -1;
         switch ( pElements->Rule.ulId )
         {
-			case VID_ShipName: 
-			{
-				int wingType = pElements->pProperties->vValue.ulVal;
-				int shipNum = pElements->pProperties->pNextSibling->vValue.ulVal;
 
-				// Cant issue commands to yourself
-				if(wingType == 0 && shipNum == 1)
-				{
-					break;
-				}
-
-				char shipName[20];
-				sprintf(shipName,"%s %d", wing_names[wingType], shipNum);
-
-				Msg_instance = ship_name_lookup(shipName);
-				if (Msg_instance < 0)
-					break;
-
-				if(!(Player->flags & PLAYER_FLAGS_MSG_MODE))
-				{
-					hud_squadmsg_toggle();
-				}
-
-				hud_squadmsg_do_mode(SM_MODE_SHIP_COMMAND);
-				break;
-			}
 			case VID_WingName: 
 			{
-				int wingType  = pElements->pProperties->vValue.ulVal;
 
-				Msg_instance  = wing_lookup(wing_names[wingType]);
-				if (Msg_instance < 0)
-					break;
-
-				if(!(Player->flags & PLAYER_FLAGS_MSG_MODE))
+				part1 = pElements->pProperties->vValue.ulVal;
+				if (pElements->pProperties->pNextSibling) 
 				{
-					hud_squadmsg_toggle();
+					part2 = pElements->pProperties->pNextSibling->vValue.ulVal;
+					if (pElements->pProperties->pNextSibling->pNextSibling) 
+					{
+						part3 = pElements->pProperties->pNextSibling->pNextSibling->vValue.ulVal;
+					}
+				}
+				if (part2 == -1) 
+					break; // no ship number or wing
+
+				if (part2 == 0) 
+				{
+					Msg_instance = wing_lookup(wing_names[part1]);
+					if (Msg_instance < 0)
+						break;
+
+					if(!(Player->flags & PLAYER_FLAGS_MSG_MODE))
+					{
+						hud_squadmsg_toggle();
+					}
+
+					hud_squadmsg_do_mode(SM_MODE_WING_COMMAND);				
+				}
+				else 
+				{
+					char shipName[20];
+					sprintf(shipName,"%s %d", wing_names[part1], part2);
+					
+					Msg_instance = ship_name_lookup(shipName);
+					if (Msg_instance < 0)
+						break;
+
+					if(!(Player->flags & PLAYER_FLAGS_MSG_MODE))
+					{
+						hud_squadmsg_toggle();
+					}
+
+					hud_squadmsg_do_mode(SM_MODE_SHIP_COMMAND);				
+
 				}
 
-				hud_squadmsg_do_mode(SM_MODE_WING_COMMAND);
-				break;
+				if (part3 == -1) 
+					break;
 			}
 
 			case VID_Action:
 			{
-				int action = pElements->pProperties->vValue.ulVal;					
-
-				// If menu is up
-				if(Player->flags & PLAYER_FLAGS_MSG_MODE)
+				int action;
+				if (part3 == -1) 
 				{
-					switch(action)
-					{					
-					case VID_DestoryTarget: Msg_shortcut_command = ATTACK_TARGET_ITEM;			break;
-					case VID_DisableTarget:	Msg_shortcut_command = DISABLE_TARGET_ITEM;			break;
-					case VID_DisarmTarget:	Msg_shortcut_command = DISARM_TARGET_ITEM;			break;
-					case VID_DestroySubsys:	Msg_shortcut_command = DISABLE_SUBSYSTEM_ITEM;		break;
-					case VID_ProtectTarget:	Msg_shortcut_command = PROTECT_TARGET_ITEM;			break;
-					case VID_IgnoreTarget:	Msg_shortcut_command = IGNORE_TARGET_ITEM;			break;
-					case VID_FormWing:		Msg_shortcut_command = FORMATION_ITEM;				break;
-					case VID_CoverMe:		Msg_shortcut_command = COVER_ME_ITEM;				break;
-					case VID_EngageEnemy:	Msg_shortcut_command = ENGAGE_ENEMY_ITEM;			break;
-					case VID_Depart:		Msg_shortcut_command = DEPART_ITEM;					break;
-					default:				Msg_shortcut_command = -1;							break;
-
-					}
-
-					if(Msg_instance == MESSAGE_ALL_FIGHTERS || Squad_msg_mode == SM_MODE_ALL_FIGHTERS )
-					{
-					//	nprintf(("warning", "VOICER hud_squadmsg_send_to_all_fighters\n"));
-						hud_squadmsg_send_to_all_fighters(Msg_shortcut_command);
-					}
-					else if(Squad_msg_mode == SM_MODE_SHIP_COMMAND)
-					{
-					//	nprintf(("warning", "VOICER msg ship %d\n", Msg_instance));
-						hud_squadmsg_send_ship_command( Msg_instance, Msg_shortcut_command, 1 );
-					}
-					else if(Squad_msg_mode == SM_MODE_WING_COMMAND)
-					{
-					//	nprintf(("warning", "VOICER msg wing %d\n", Msg_instance));
-						hud_squadmsg_send_wing_command( Msg_instance, Msg_shortcut_command, 1 );
-					}
-					else if(Squad_msg_mode == SM_MODE_REINFORCEMENTS )
-					{
-					}
-
-					hud_squadmsg_toggle();
+					action = pElements->pProperties->vValue.ulVal;					
 				}
 				else
 				{
-					switch(action)
-					{					
-					case VID_DestoryTarget: button_function(ATTACK_MESSAGE);				break;
-					case VID_DisableTarget:	button_function(DISABLE_MESSAGE);				break;
-					case VID_DisarmTarget:	button_function(DISARM_MESSAGE);				break;
-					case VID_DestroySubsys:	button_function(ATTACK_SUBSYSTEM_MESSAGE);		break;
-					case VID_ProtectTarget:	button_function(PROTECT_MESSAGE);				break;
-					case VID_IgnoreTarget:	button_function(IGNORE_MESSAGE);				break;
-					case VID_FormWing:		button_function(FORM_MESSAGE);					break;
-					case VID_CoverMe:		button_function(COVER_MESSAGE);					break;
-					case VID_EngageEnemy:	button_function(ENGAGE_MESSAGE);				break;
-					case VID_Depart:		button_function(WARP_MESSAGE);					break;
-					}
+					action = part3;
 				}
+
+				doVid_Action(action);
 		
 				break;
 			}
@@ -361,6 +412,9 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 					//	Msg_instance = MESSAGE_ALL_FIGHTERS;
 					//	Squad_msg_mode == SM_MODE_ALL_FIGHTERS
 						hud_squadmsg_msg_all_fighters();
+						if (pElements->pProperties->pNextSibling) {
+							doVid_Action(pElements->pProperties->pNextSibling->vValue.ulVal);
+						}
 
 					//	if(Msg_shortcut_command == -1)
 					//	{
@@ -386,8 +440,62 @@ void VOICEREC_execute_command(ISpPhrase *pPhrase, HWND hWnd)
 
 				break;
 			}
+			case VID_shields:
+			{
+				int action = pElements->pProperties->vValue.ulVal;
+				mprintf(("Shield Transfer %d \n", action));
 
+				switch(action)
+				{
+					case 0: button_function( SHIELD_XFER_TOP ); break;
+					case 1: button_function( SHIELD_XFER_LEFT ); break;
+					case 2: button_function( SHIELD_XFER_RIGHT ); break;
+					case 3: button_function( SHIELD_XFER_BOTTOM ); break;
+					case 4: button_function( SHIELD_EQUALIZE ); break;
 
+				}
+
+				break;
+			}
+			case VID_speed:
+			case VID_targeting:
+			case VID_other:
+			{
+				int action = pElements->pProperties->vValue.ulVal;
+				mprintf(("Targeting/speed %d \n", action));
+
+				if (action > -1) 
+				{
+					button_function( action );
+				}
+				break;
+				/*
+				switch(action)
+				{
+					case 0: button_function( TARGET_NEXT ); break;
+						cas
+				}
+				break;
+				*/
+			}
+			case VID_power:
+			{
+				int action = pElements->pProperties->vValue.ulVal;
+
+				if (action >= INCREASE_WEAPON && action <= ETS_EQUALIZE)
+				{
+					button_function( action );
+				}
+				else
+					// this is for the max engines etc.
+				{
+					for (int i=1; i<7; i++)
+					{
+						button_function( action - 132 );
+					}
+				}
+				break;
+			}
 	
 	
 	/*	
@@ -405,6 +513,7 @@ hud_squadmsg_do_mode( SM_MODE_SHIP_COMMAND );
     }
 
 }
+
 
 #endif // VOICER
 #endif // _WIN32
