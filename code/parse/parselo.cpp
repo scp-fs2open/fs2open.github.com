@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.73.2.5 $
- * $Author: taylor $
- * $Date: 2006-10-27 16:31:09 $
+ * $Revision: 2.73.2.6 $
+ * $Author: phreak $
+ * $Date: 2006-11-13 23:23:26 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73.2.5  2006/10/27 16:31:09  taylor
+ * add the part of the fix which actually did something ;)
+ *
  * Revision 2.73.2.4  2006/10/27 16:01:49  Goober5000
  * fix error line reporting (Mantis #1120)
  *
@@ -459,6 +462,11 @@ int is_gray_space(char ch)
 	return ((ch == ' ') || (ch == '\t'));
 }
 
+int is_parenthesis(char ch)
+{
+	return ((ch == '(') || (ch == ')'));
+}
+
 //	Advance global Mp (mission pointer) past all current white space.
 //	Leaves Mp pointing at first non white space character.
 void ignore_white_space()
@@ -673,6 +681,10 @@ void advance_to_next_white()
 
 		if (!in_quotes && is_white_space(*Mp))
 			break;
+
+		if (!in_quotes && is_parenthesis(*Mp))
+			break;
+
 		Mp++;
 	}
 }
@@ -1047,8 +1059,13 @@ void copy_to_next_white(char *outstr, char *instr, int max)
 			in_quotes = !in_quotes;
 			continue;
 		}
+
 		if ( !in_quotes && is_white_space(ch) )	// not in quotes, white space terminates string
 			break;
+
+		if ( !in_quotes && is_parenthesis(ch) ) // not in quotes, parentheses are important for parsing so we don't want to copy them
+			break;
+
 		*outstr++ = ch;
 		count++;
 	}
