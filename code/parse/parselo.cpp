@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.82 $
+ * $Revision: 2.83 $
  * $Author: phreak $
- * $Date: 2006-11-12 19:58:13 $
+ * $Date: 2006-11-13 23:11:08 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2006/11/12 19:58:13  phreak
+ * Don't copy parentheses to parse buffers if outside of quotation marks.  Otherwise
+ *  the parsing syntax will be copied to said buffer and some warnings/errors would occur.
+ *
  * Revision 2.81  2006/10/27 16:30:12  taylor
  * add the part of the fix which actually did something ;)
  *
@@ -1076,6 +1080,7 @@ void copy_to_next_white(char *outstr, char *instr, int max)
 			break;
 
 		if ( !in_quotes && is_parenthesis(ch) ) // not in quotes, parentheses are important for parsing so we don't want to copy them
+			break;
 
 		*outstr++ = ch;
 		count++;
