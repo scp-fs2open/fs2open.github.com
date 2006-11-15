@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.8 $
- * $Date: 2006-09-08 06:14:43 $
+ * $Revision: 2.140.2.9 $
+ * $Date: 2006-11-15 00:21:40 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.8  2006/09/08 06:14:43  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.140.2.7  2006/08/22 05:42:56  taylor
  * minor spelling/grammer fixes
  *
@@ -976,14 +979,14 @@ Flag exe_params[] =
 //	{ "-fixbugs",			"Fix bugs",									true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
 //	{ "-nocrash",			"Disable crashing",							true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
 //#endif
-	{ "-oldfire",			"",											true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-oldfire", },
+	{ "-oldfire",			"",											false,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-oldfire", },
 	{ "-nohtl",				"Software mode (very slow)",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nohtl", },
 	{ "-no_set_gamma",		"Disable setting of gamma",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_set_gamma", },
 	{ "-nomovies",			"Disable video playback",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomovies", },
 	{ "-noparseerrors",		"Disable parsing errors",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noparseerrors", },
 	{ "-safeloading",		"",											true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-safeloading", },
 	{ "-query_speech",		"Does this build have speech?",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-query_speech", },
-	{ "-d3d_bad_tsys",		"Enable inefficient textures",				false,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-d3d_bad_tsys", },
+	{ "-d3d_bad_tsys",		"Enable inefficient textures",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-d3d_bad_tsys", },
 	{ "-novbo",				"Disable OpenGL VBO",						true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-novbo",	},
 	{ "-noibx",				"Don't use cached index buffers (IBX)",		true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noibx",	},
 	{ "-loadallweps",		"Load all weapons, even those not used",	true,	0,					EASY_DEFAULT,		"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-loadallweps", },
@@ -1008,6 +1011,7 @@ Flag exe_params[] =
 	{ "-output_sexps",		"Outputs SEXPs to sexps.html",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_sexps", },
 	{ "-output_scripting",	"Outputs scripting to scripting.html",		true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_scripting", },
 	{ "-save_render_target",	"Save render targets to file",			true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
+	{ "-debug_window",		"Display debug window",						true,	0,					EASY_DEFAULT,		"Dev Tool",		"", },
 #ifdef SCP_UNIX
 	{ "-nograb",			"Don't grab mouse/keyboard in a window",	true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nograb", },
 #endif
@@ -1034,7 +1038,7 @@ cmdline_parm client_dodamage("-clientdamage", NULL);	// Cmdline_client_dodamage
 cmdline_parm pof_spew("-pofspew", NULL);			// Cmdline_spew_pof_info
 cmdline_parm mouse_coords("-coords", NULL);			// Cmdline_mouse_coords
 cmdline_parm timeout("-timeout", NULL);				// Cmdline_timeout
-cmdline_parm window("-window", NULL);				// Cmdline_window
+cmdline_parm bit32_arg("-32bit", NULL);				// (only here for retail compatibility reasons, doesn't actually do anything)
 
 char *Cmdline_connect_addr = NULL;
 char *Cmdline_game_name = NULL;
@@ -1057,7 +1061,6 @@ int Cmdline_spew_pof_info = 0;
 int Cmdline_start_netgame = 0;
 int Cmdline_timeout = -1;
 int Cmdline_use_last_pilot = 0;
-int Cmdline_window = 0;
 
 
 // FSO options -------------------------------------------------
@@ -1205,6 +1208,8 @@ cmdline_parm pos_arg("-pos", NULL);					// Cmdline_show_pos
 cmdline_parm stats_arg("-stats", NULL);				// Cmdline_show_stats
 cmdline_parm timerbar_arg("-timerbar", NULL);		// Cmdline_timerbar
 cmdline_parm save_render_targets_arg("-save_render_target", NULL);	// Cmdline_save_render_targets
+cmdline_parm debug_window_arg("-debug_window", NULL);	// Cmdline_debug_window
+cmdline_parm window("-window", NULL);				// Cmdline_window
 #ifdef SCP_UNIX
 cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 #endif
@@ -1219,6 +1224,8 @@ int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_timerbar = 0;
 int Cmdline_save_render_targets = 0;
+int Cmdline_debug_window = 0;
+int Cmdline_window = 0;
 #ifdef SCP_UNIX
 int Cmdline_no_grab = 0;
 #endif
@@ -2297,6 +2304,9 @@ bool SetCmdlineParams()
 	if (save_render_targets_arg.found()) {
 		Cmdline_save_render_targets = 1;
 	}
+
+	if ( debug_window_arg.found() )
+		Cmdline_debug_window = 1;
 
 #if 0
 //#ifdef WIN32
