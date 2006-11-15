@@ -89,14 +89,11 @@ class lua_lib {
 private:
 	int lib_idx;
 public:
-	lua_lib(char *in_name, char *in_shortname=NULL, char *in_desc=NULL) {
-		lua_Libraries.push_back(lua_lib_h(in_name, in_shortname, in_desc));
-		lib_idx = lua_Libraries.size()-1;
-	}
+	lua_lib(char *in_name, char *in_shortname = NULL, char *in_desc = NULL);
 
-	void AddFunc(lua_func_hh *f){lua_Libraries[lib_idx].Functions.push_back(*f);}
-	void AddVar(lua_var_hh *v){lua_Libraries[lib_idx].Variables.push_back(*v);}
-	void SetIndexer(lua_CFunction func, char *desc){lua_Libraries[lib_idx].Indexer = func; lua_Libraries[lib_idx].IndexerDescription = desc;}
+	void AddFunc(lua_func_hh *f);
+	void AddVar(lua_var_hh *v);
+	void SetIndexer(lua_CFunction func, char *desc);
 };
 
 //Lua_obj helper class
@@ -108,100 +105,31 @@ class lua_obj_h
 public:
 	int obj_idx;
 public:
-	lua_obj_h(char *in_name, char *in_desc, lua_obj_h *in_deriv = NULL) {
-		lua_Objects.push_back(lua_lib_h(in_name, NULL, in_desc, in_deriv == NULL ? -1 : in_deriv->obj_idx));	//WMC - Handle NULL case
-		obj_idx = lua_Objects.size()-1;
-	}
+	lua_obj_h(char *in_name, char *in_desc, lua_obj_h *in_deriv = NULL);
 
-	void AddFunc(lua_func_hh *f){lua_Objects[obj_idx].Functions.push_back(*f);}
-	void AddVar(lua_var_hh *v){lua_Objects[obj_idx].Variables.push_back(*v);}
-	void SetIndexer(lua_CFunction func, char *desc){lua_Objects[obj_idx].Indexer = func; lua_Objects[obj_idx].IndexerDescription = desc;}
+	void AddFunc(lua_func_hh *f);
+	void AddVar(lua_var_hh *v);
+	void SetIndexer(lua_CFunction func, char *desc);
 };
 
 //Function helper class
 //Lets us add functions via its constructor
 class lua_func_h {
 public:
-	lua_func_h(char *name, lua_CFunction func, lua_lib &lib, char *args=NULL, char *retvals=NULL, char *desc=NULL) {
-		lua_func_hh f;
-
-		f.Name = name;
-		f.Function = func;
-		f.Description = desc;
-		f.Arguments = args;
-		f.ReturnValues = retvals;
-
-		lib.AddFunc(&f);
-	}
-
-	lua_func_h(char *name, lua_CFunction func, lua_obj_h &obj, char *args=NULL, char *retvals=NULL, char *desc=NULL) {
-		lua_func_hh f;
-
-		f.Name = name;
-		f.Function = func;
-		f.Description = desc;
-		f.Arguments = args;
-		f.ReturnValues = retvals;
-
-		obj.AddFunc(&f);
-	}
+	lua_func_h(char *name, lua_CFunction func, lua_lib &lib, char *args = NULL, char *retvals = NULL, char *desc = NULL);
+	lua_func_h(char *name, lua_CFunction func, lua_obj_h &obj, char *args = NULL, char *retvals = NULL, char *desc = NULL);
 };
 
 class lua_var_h {
 public:
-	lua_var_h(char *name, lua_CFunction func, lua_lib &lib, bool isarray, char *type=NULL, char *desc=NULL) {
-		lua_var_hh v;
-
-		v.Name = name;
-		v.IsArray = isarray;
-		v.Function = func;
-		v.Type = type;
-		v.Description = desc;
-
-		lib.AddVar(&v);
-	}
-
-	lua_var_h(char *name, lua_CFunction func, lua_obj_h &obj, bool isarray, char *type=NULL, char *desc=NULL) {
-		lua_var_hh v;
-
-		v.Name = name;
-		v.IsArray = isarray;
-		v.Function = func;
-		v.Type = type;
-		v.Description = desc;
-
-		obj.AddVar(&v);
-	}
+	lua_var_h(char *name, lua_CFunction func, lua_lib &lib, bool isarray, char *type = NULL, char *desc = NULL);
+	lua_var_h(char *name, lua_CFunction func, lua_obj_h &obj, bool isarray, char *type = NULL, char *desc = NULL);
 };
 
 class lua_indexer_h {
 public:
-	lua_indexer_h(lua_CFunction func, lua_lib &lib, char *args=NULL, char *retvals=NULL, char *desc=NULL) {
-		lib.SetIndexer(func, desc);
-
-		//Add function for meta
-		lua_func_hh f={0};
-		f.Name = "__indexer";
-		f.Function = NULL;
-		f.Arguments = args;
-		f.ReturnValues = retvals;
-		f.Description = desc;
-
-		lib.AddFunc(&f);
-	}
-
-	lua_indexer_h(lua_CFunction func, lua_obj_h &obj, char *args=NULL, char *retvals=NULL, char *desc=NULL) {
-		obj.SetIndexer(func, desc);
-
-		//Add function for meta
-		lua_func_hh f={0};
-		f.Name = "__indexer";
-		f.Function = NULL;
-		f.Arguments = args;
-		f.ReturnValues = retvals;
-		f.Description = desc;
-		obj.AddFunc(&f);
-	}
+	lua_indexer_h(lua_CFunction func, lua_lib &lib, char *args = NULL, char *retvals = NULL, char *desc = NULL);
+	lua_indexer_h(lua_CFunction func, lua_obj_h &obj, char *args = NULL, char *retvals = NULL, char *desc = NULL);
 };
 
 

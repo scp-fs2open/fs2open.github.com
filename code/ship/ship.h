@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.12 $
- * $Date: 2006-10-27 21:33:06 $
+ * $Revision: 2.150.2.13 $
+ * $Date: 2006-11-15 00:40:59 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.12  2006/10/27 21:33:06  taylor
+ * updated/fixed modelanim code
+ * add ships.tbl subsystem flag ("+fire-down-normals") which will force a turret to fire down it's barrel line (Mantis bug #591)
+ *
  * Revision 2.150.2.11  2006/10/08 02:05:34  Goober5000
  * fix forum links
  *
@@ -1017,7 +1021,7 @@ private:
 	std::vector<float>	Arguments;
 
 public:
-	void clear(){DamageTypeIndex=-1;Calculations.clear();Arguments.clear();}
+	void clear();
 };
 
 class ArmorType

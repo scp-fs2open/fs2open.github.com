@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.h $
- * $Revision: 1.15 $
- * $Date: 2006-04-16 05:28:10 $
+ * $Revision: 1.15.2.1 $
+ * $Date: 2006-11-15 00:40:59 $
  * $Author: taylor $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2006/04/16 05:28:10  taylor
+ * extra safety check when creating a default path string, filename is optional be we need to available if root0 is missing (CFILE not initted yet)
+ * fix that crazy compiler<->constructor<->linker<->server.txt deal caused by some bad code and a freaky link thing in freespace.cpp
+ *
  * Revision 1.14  2006/01/26 03:23:29  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -102,7 +106,7 @@ class irc_channel
 		const std::string& GetTopic() const { return topic; }
 
 		const std::string& GetModeline(int i) const { return channel_modes[i]; }
-		int NumModlines() const { return channel_modes.size(); }
+		const int NumModlines();
 		
 
 		const std::string& GetMessage(int i) const { return messages[i]; }

@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.23 $
- * $Date: 2006-04-16 05:28:10 $
+ * $Revision: 1.23.2.1 $
+ * $Date: 2006-11-15 00:40:59 $
  * $Author: taylor $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2006/04/16 05:28:10  taylor
+ * extra safety check when creating a default path string, filename is optional be we need to available if root0 is missing (CFILE not initted yet)
+ * fix that crazy compiler<->constructor<->linker<->server.txt deal caused by some bad code and a freaky link thing in freespace.cpp
+ *
  * Revision 1.22  2006/01/26 03:23:29  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -187,6 +191,11 @@ void irc_channel::EndLogging()
 		LogStream.close();
 		Log = false;
 	}
+}
+
+const int irc_channel::NumModlines()
+{
+	return channel_modes.size();
 }
 
 
