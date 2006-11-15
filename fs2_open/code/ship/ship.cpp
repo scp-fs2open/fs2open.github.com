@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.43 $
- * $Date: 2006-11-13 23:29:11 $
- * $Author: phreak $
+ * $Revision: 2.336.2.44 $
+ * $Date: 2006-11-15 00:40:59 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.43  2006/11/13 23:29:11  phreak
+ * two fixes:
+ *
+ * 1) Fix for mantis #1099, part 2.
+ *
+ * 2) when changing the player's ship using debug_cycle_player_ship(), initialize the
+ *  primary bank starting capacity so the support ship will rearm it.
+ *
  * Revision 2.336.2.42  2006/11/06 05:19:59  taylor
  * if a submodel anim fails to start then move directly to ready position flag (set it up to do this, just forgot to do it ;))  (fix for Mantis bug #1133)
  *
@@ -15790,6 +15798,14 @@ int damage_type_add(char *name)
 
 	Damage_types.push_back(dts);
 	return Damage_types.size()-1;
+}
+
+void ArmorDamageType::clear()
+{
+	DamageTypeIndex = -1;
+
+	Calculations.clear();
+	Arguments.clear();
 }
 
 //**************************************************************

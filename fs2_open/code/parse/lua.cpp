@@ -5730,3 +5730,128 @@ void script_state::OutputLuaMeta(FILE *fp)
 	}
 	fputs("</dl>", fp);
 }
+
+lua_lib::lua_lib(char *in_name, char *in_shortname, char *in_desc)
+{
+	lua_Libraries.push_back( lua_lib_h(in_name, in_shortname, in_desc) );
+	lib_idx = lua_Libraries.size() - 1;
+}
+
+void lua_lib::AddFunc(lua_func_hh *f)
+{
+	lua_Libraries[lib_idx].Functions.push_back(*f);
+}
+
+void lua_lib::AddVar(lua_var_hh *v)
+{
+	lua_Libraries[lib_idx].Variables.push_back(*v);
+}
+
+void lua_lib::SetIndexer(lua_CFunction func, char *desc)
+{
+	lua_Libraries[lib_idx].Indexer = func;
+	lua_Libraries[lib_idx].IndexerDescription = desc;
+}
+
+lua_obj_h::lua_obj_h(char *in_name, char *in_desc, lua_obj_h *in_deriv)
+{
+	lua_Objects.push_back( lua_lib_h(in_name, NULL, in_desc, (in_deriv == NULL) ? -1 : in_deriv->obj_idx) );	//WMC - Handle NULL case
+	obj_idx = lua_Objects.size() - 1;
+}
+
+void lua_obj_h::AddFunc(lua_func_hh *f)
+{
+	lua_Objects[obj_idx].Functions.push_back(*f);
+}
+
+void lua_obj_h::AddVar(lua_var_hh *v)
+{
+	lua_Objects[obj_idx].Variables.push_back(*v);
+}
+
+void lua_obj_h::SetIndexer(lua_CFunction func, char *desc)
+{
+	lua_Objects[obj_idx].Indexer = func;
+	lua_Objects[obj_idx].IndexerDescription = desc;
+}
+
+lua_func_h::lua_func_h(char *name, lua_CFunction func, lua_lib &lib, char *args, char *retvals, char *desc)
+{
+	lua_func_hh f;
+
+	f.Name = name;
+	f.Function = func;
+	f.Description = desc;
+	f.Arguments = args;
+	f.ReturnValues = retvals;
+
+	lib.AddFunc(&f);
+}
+
+lua_func_h::lua_func_h(char *name, lua_CFunction func, lua_obj_h &obj, char *args, char *retvals, char *desc)
+{
+	lua_func_hh f;
+
+	f.Name = name;
+	f.Function = func;
+	f.Description = desc;
+	f.Arguments = args;
+	f.ReturnValues = retvals;
+
+	obj.AddFunc(&f);
+}
+
+lua_var_h::lua_var_h(char *name, lua_CFunction func, lua_lib &lib, bool isarray, char *type, char *desc)
+{
+	lua_var_hh v;
+
+	v.Name = name;
+	v.IsArray = isarray;
+	v.Function = func;
+	v.Type = type;
+	v.Description = desc;
+
+	lib.AddVar(&v);
+}
+
+lua_var_h::lua_var_h(char *name, lua_CFunction func, lua_obj_h &obj, bool isarray, char *type, char *desc)
+{
+	lua_var_hh v;
+
+	v.Name = name;
+	v.IsArray = isarray;
+	v.Function = func;
+	v.Type = type;
+	v.Description = desc;
+
+	obj.AddVar(&v);
+}
+
+lua_indexer_h::lua_indexer_h(lua_CFunction func, lua_lib &lib, char *args, char *retvals, char *desc)
+{
+	lib.SetIndexer(func, desc);
+
+	//Add function for meta
+	lua_func_hh f={0};
+	f.Name = "__indexer";
+	f.Function = NULL;
+	f.Arguments = args;
+	f.ReturnValues = retvals;
+	f.Description = desc;
+
+	lib.AddFunc(&f);
+}
+
+lua_indexer_h::lua_indexer_h(lua_CFunction func, lua_obj_h &obj, char *args, char *retvals, char *desc)
+{
+	obj.SetIndexer(func, desc);
+
+	//Add function for meta
+	lua_func_hh f={0};
+	f.Name = "__indexer";
+	f.Function = NULL;
+	f.Arguments = args;
+	f.ReturnValues = retvals;
+	f.Description = desc;
+	obj.AddFunc(&f);
+}

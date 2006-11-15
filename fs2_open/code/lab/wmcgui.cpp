@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.28.2.2 $
- * $Date: 2006-09-11 01:15:04 $
+ * $Revision: 1.28.2.3 $
+ * $Date: 2006-11-15 00:40:59 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28.2.2  2006/09/11 01:15:04  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 1.28.2.1  2006/08/19 04:26:32  taylor
  * add render option for no glowmaps
  * remove render option for fog (why was this even there??)
@@ -379,6 +382,16 @@ int ClassInfoEntry::GetCoords(int *x, int *y)
 	return rval;
 }
 
+int ObjectClassInfoEntry::GetImageHandle(int id, int handle_num)
+{
+	return Entries[id].GetImageHandle(handle_num);
+}
+
+int ObjectClassInfoEntry::GetCoords(int id, int *x, int *y)
+{
+	return Entries[id].GetCoords(x, y);
+}
+
 int ObjectClassInfoEntry::GetObjectCoords(int *x, int *y, int *w, int *h)
 {
 	int rval = CIE_GC_NONE_SET;
@@ -648,6 +661,11 @@ GUIObject* GUIScreen::Add(GUIObject* new_gauge)
 	new_gauge->OnRefreshSize();
 
 	return new_gauge;
+}
+
+void GUIScreen::DeleteObject(GUIObject* dgp)
+{
+	DeletionCache.push_back(dgp);
 }
 
 int GUIScreen::OnFrame(float frametime, bool doevents)
