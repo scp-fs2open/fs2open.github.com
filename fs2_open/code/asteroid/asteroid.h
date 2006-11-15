@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.12.2.2 $
- * $Date: 2006-09-11 01:15:04 $
+ * $Revision: 2.12.2.3 $
+ * $Date: 2006-11-15 00:36:08 $
  * $Author: taylor $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12.2.2  2006/09/11 01:15:04  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.12.2.1  2006/08/27 18:12:39  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -168,10 +171,10 @@
 #ifndef __ASTEROID_H__
 #define __ASTEROID_H__
 
-#include <vector>
-
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"		// for NAME_LENGTH
+
+#include <vector>
 
 struct object;
 struct polymodel;
