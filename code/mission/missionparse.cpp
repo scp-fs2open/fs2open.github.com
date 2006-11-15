@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.20 $
- * $Date: 2006-11-13 23:09:59 $
- * $Author: karajorma $
+ * $Revision: 2.178.2.21 $
+ * $Date: 2006-11-15 04:02:28 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.20  2006/11/13 23:09:59  karajorma
+ * Dragoniz3r's fix for builtin messages not being sent when custom named wings arrive.
+ *
  * Revision 2.178.2.19  2006/10/27 21:39:27  taylor
  * updated/fixed modelanim code
  *
@@ -6928,48 +6931,38 @@ void mission_eval_arrivals()
 					message_send_builtin_to_player(MESSAGE_ARRIVE_ENEMY, NULL, MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, multi_team_filter);
 				}
 			}
+			// does the player attack this ship?
+			else if (iff_x_attacks_y(Player_ship->team, Ships[wingp->ship_index[0]].team))
+			{
+				// there are two timestamps at work here.  One to control how often the player receives
+				// messages about incoming hostile waves, and the other to control how long after
+				// the wing arrives does the player actually get the message.
+				if (timestamp_elapsed(Allow_arrival_message_timestamp))
+				{
+					if (!timestamp_valid(Arrival_message_delay_timestamp))
+					{
+						Arrival_message_delay_timestamp = timestamp_rand(ARRIVAL_MESSAGE_DELAY_MIN, ARRIVAL_MESSAGE_DELAY_MAX);
+					}
+					Allow_arrival_message_timestamp = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
+				}
+			}
 			// everything else
 			else
 			{
 				rship = ship_get_random_ship_in_wing(i, SHIP_GET_UNSILENCED);
+				if (rship >= 0)
+				{
+					int j;
+					char message_name[NAME_LENGTH + 10];
+					sprintf(message_name, "%s Arrived", wingp->name);
 
-				// see if this is a starting player wing
-				// Goober5000 - we have to test the actual names here, because the voice files are scripted for certain wings
-				if (!stricmp(wingp->name, Squadron_wing_names[1]))
-				{
-					if (rship >= 0)
-						message_send_builtin_to_player(MESSAGE_BETA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
-				}
-				else if (!stricmp(wingp->name, Squadron_wing_names[2]))
-				{
-					if (rship >= 0)
-						message_send_builtin_to_player(MESSAGE_GAMMA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
-				}
-				else if (!stricmp(wingp->name, Squadron_wing_names[3]))
-				{
-					if (rship >= 0)
-						message_send_builtin_to_player(MESSAGE_DELTA_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
-				}
-				else if (!stricmp(wingp->name, Squadron_wing_names[4]))
-				{
-					if (rship >= 0)
-						message_send_builtin_to_player( MESSAGE_EPSILON_ARRIVED, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
-				}
-				else if (rship >= 0)
-				{
-
-					if (iff_x_attacks_y(Player_ship->team, Ships[rship].team))
+					// see if this wing has an arrival message associated with it
+					for (j = 0; j < MAX_BUILTIN_MESSAGE_TYPES; j++)
 					{
-						// there are two timestamps at work here.  One to control how often the player receives
-						// messages about incoming hostile waves, and the other to control how long after
-						// the wing arrives does the player actually get the message.
-						if (timestamp_elapsed(Allow_arrival_message_timestamp))
+						if (!stricmp(message_name, Builtin_message_types[j]))
 						{
-							if (!timestamp_valid(Arrival_message_delay_timestamp))
-							{
-								Arrival_message_delay_timestamp = timestamp_rand(ARRIVAL_MESSAGE_DELAY_MIN, ARRIVAL_MESSAGE_DELAY_MAX);
-							}
-							Allow_arrival_message_timestamp = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
+							message_send_builtin_to_player(j, &Ships[rship], MESSAGE_PRIORITY_LOW, MESSAGE_TIME_SOON, 0, 0, -1, -1);
+							break;
 						}
 					}
 				}
