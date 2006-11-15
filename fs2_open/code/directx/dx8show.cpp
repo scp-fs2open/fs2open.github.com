@@ -115,7 +115,7 @@ HRESULT PlayMovieInWindow(HWND ghApp, LPTSTR szFile)
         HRESULT load_attempt = pGB->RenderFile(wFile, NULL);
 
 		// f%#$ing DivX6...
-		SetForegroundWindow(ghApp);
+	//	SetForegroundWindow(ghApp);
 
         // Have the graph builder construct its the appropriate graph automatically
         if(FAILED(load_attempt))
@@ -154,11 +154,8 @@ HRESULT PlayMovieInWindow(HWND ghApp, LPTSTR szFile)
             JIF(pVW->put_WindowStyle(WS_CHILD | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_VISIBLE));
 			JIF(InitVideoWindow(ghApp, width, height));
 			JIF(pVW->SetWindowForeground(OATRUE));
+			JIF(pVW->put_MessageDrain((OAHWND)ghApp));
  		}
-
-		// we appear to lose key focus, and not get it back during the movie, when
-		// in OGL fullscreen mode, this should get it back for us
-		SetFocus(ghApp);
 
         // Run the graph to play the media file
         JIF(pMC->Run());
@@ -347,4 +344,3 @@ bool dx8show_stream_movie(void)
 
     return false;
 }
-
