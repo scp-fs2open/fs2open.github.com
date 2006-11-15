@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.8 $
- * $Date: 2006-10-27 06:34:40 $
+ * $Revision: 1.12.2.9 $
+ * $Date: 2006-11-15 00:38:02 $
  * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.8  2006/10/27 06:34:40  taylor
+ * fix compiler problem due to change in parse_init() function
+ * fix dos EOL chars
+ *
  * Revision 1.12.2.7  2006/10/24 13:44:54  taylor
  * add envmap selection to background editor
  * change skybox selection to be a text entry or browse instead of only text entry
@@ -789,6 +793,11 @@ bool fred_init()
 	// this should enable mods - Kazan
 	fred2_parse_cmdline(__argc, __argv);
 
+#ifndef NDEBUG
+	extern void cmdline_debug_print_cmdline();
+	cmdline_debug_print_cmdline();
+#endif
+
 	// d'oh
 	DBUGFILE_OUTPUT_0("About to cfile_init");
 	if(cfile_init(Fred_exe_dir)){
@@ -805,9 +814,9 @@ bool fred_init()
 	extern int Xstr_inited;
 	Xstr_inited = 1;
 
-	#ifndef NDEBUG
+#ifndef NDEBUG
 	load_filter_info();
-	#endif
+#endif
 
 	//CFREDView *window = CFREDView::GetView();
 	//HWND hwndApp = window->GetSafeHwnd();
