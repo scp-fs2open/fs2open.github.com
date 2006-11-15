@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.30 $
- * $Date: 2006-11-05 18:42:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.259.2.31 $
+ * $Date: 2006-11-15 00:33:15 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.30  2006/11/05 18:42:25  Goober5000
+ * fix is-event-x-delay optional argument type
+ *
  * Revision 2.259.2.29  2006/10/28 21:17:04  karajorma
  * Adding the network-variable option to SEXP variables. This change will revert variables to the same behaviour they displayed in retail (i.e they don't update for clients) unless a variable is set to be a network-variable.
  *
@@ -4906,8 +4909,8 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	{
 		wing *wingp = &Wings[wing_num];
 
-		// make sure at least one ship exists
-		if (wingp->current_count >= 0)
+		// make sure that at least one ship exists and that the wing leader is valid
+		if ( (wingp->current_count >= 0) && (wingp->ship_index[wingp->special_ship] >= 0) )
 		{
 			oswpt->type = OSWPT_TYPE_WING;
 
