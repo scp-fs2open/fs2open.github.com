@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.35.2.5 $
- * $Date: 2006-09-11 01:15:03 $
+ * $Revision: 2.35.2.6 $
+ * $Date: 2006-11-15 00:36:08 $
  * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35.2.5  2006/09/11 01:15:03  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.35.2.4  2006/08/27 18:12:38  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -404,8 +407,6 @@
  */
 
 
-#include <vector>
-
 #include "asteroid/asteroid.h"
 #include "object/object.h"
 #include "object/objcollide.h"
@@ -435,6 +436,8 @@
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #include "network/multi.h"
+
+#include <vector>
 
 
 //WMC - we want asteroid ability with demo!!
