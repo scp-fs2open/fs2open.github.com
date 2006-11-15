@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.89.2.3 $
- * $Date: 2006-07-08 18:09:41 $
+ * $Revision: 2.89.2.4 $
+ * $Date: 2006-11-15 00:21:40 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89.2.3  2006/07/08 18:09:41  taylor
+ * remove -allslev
+ * make CTRL-SHIFT-S hotkey work in mission simulator (it's a toggle, so you can turn it on or off while on the screen)
+ * fix a bug where blank lines would show up in the campaign list for branch/alternate type missions that are otherwise marked as not completed
+ *
  * Revision 2.89.2.2  2006/06/18 17:21:49  taylor
  * add a -disable_fbo troubleshooting option for those ATI users having trouble with FBOs, but can still use envmapping otherwise
  *
@@ -698,6 +703,7 @@ extern int Cmdline_show_pos;
 extern int Cmdline_show_stats;
 extern int Cmdline_timerbar;
 extern int Cmdline_save_render_targets;
+extern int Cmdline_debug_window;
 #ifdef SCP_UNIX
 extern int Cmdline_no_grab;
 #endif
