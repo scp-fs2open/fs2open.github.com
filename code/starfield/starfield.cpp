@@ -9,14 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.72.2.11 $
- * $Date: 2006-11-06 05:26:38 $
+ * $Revision: 2.72.2.12 $
+ * $Date: 2006-11-15 00:30:10 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72.2.11  2006/11/06 05:26:38  taylor
+ * fix some of the envmap issues
+ *  - use proper hand-ness for OGL
+ *  - fix distortion
+ *  - get rid of extra index buffer requirement
+ * change starfield bitmaps to use an instance matrix rather than going through all the trouble of resetting the view matrix
+ * basic cleanup and get rid of a couple of struct/variable naming issues (compiler sanity)
+ * make double sure that we aren't using culling of z-buffering when rendering starfield bitmaps
+ *
  * Revision 2.72.2.10  2006/10/27 06:42:30  taylor
  * rename set_warp_globals() to model_set_warp_globals()
  * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
@@ -1424,12 +1433,6 @@ void stars_post_level_init()
 	float dist, dist_max;
 	ubyte red,green,blue,alpha;
 
-	// reset to -1 so we reload it each mission (if we need to)
-	Nmodel_num = -1;		
-	if(Nmodel_bitmap != -1){
-		bm_release(Nmodel_bitmap);
-		Nmodel_bitmap = -1;
-	}
 
 	stars_set_background_model(The_mission.skybox_model, "");
 
@@ -2930,15 +2933,18 @@ void stars_draw_background()
 // call this to set a specific model as the background model
 void stars_set_background_model(char *model_name, char *texture_name)
 {
-	if (Nmodel_bitmap >= 0)
+	if (Nmodel_bitmap >= 0) {
 		bm_unload(Nmodel_bitmap);
-	
-	if (Nmodel_num >= 0)
-		model_unload(Nmodel_num);
-
-	if (!stricmp(model_name,"")) {
-		return;
+		Nmodel_bitmap = -1;
 	}
+	
+	if (Nmodel_num >= 0) {
+		model_unload(Nmodel_num);
+		Nmodel_num = -1;
+	}
+
+	if ( (model_name == NULL) || (strlen(model_name) < 1) )
+		return;
 
 	Nmodel_num = model_load(model_name, 0, NULL, 0);
 	Nmodel_bitmap = bm_load(texture_name);
