@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.14 $
- * $Date: 2006-01-26 03:23:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2006-11-16 00:52:28 $
+ * $Author: taylor $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2006/01/26 03:23:30  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.13  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -827,7 +831,7 @@ int hotkey_build_team_listing(int enemy_team_mask, int y, bool list_enemies)
 	}
 
 	for (i=0; i<Num_wings; i++) {
-		if (Wings[i].current_count && iff_matches_mask(Ships[Wings[i].ship_index[Wings[i].special_ship]].team, team_mask)) {
+		if (Wings[i].current_count && (Wings[i].ship_index[Wings[i].special_ship] >= 0) && iff_matches_mask(Ships[Wings[i].ship_index[Wings[i].special_ship]].team, team_mask)) {
 			// special check for the player's wing.  If he's in a wing, and the only guy left, don't
 			// do anything
 			if ( (Player_ship->wingnum == i) && (Wings[i].current_count == 1) )

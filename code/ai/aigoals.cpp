@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.30 $
- * $Date: 2006-11-06 03:38:32 $
- * $Author: Goober5000 $
+ * $Revision: 1.31 $
+ * $Date: 2006-11-16 00:52:28 $
+ * $Author: taylor $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2006/11/06 03:38:32  Goober5000
+ * --prevent the ai from "forgetting" that it's attacking a wing (fix for Mantis #1131)
+ * --move AI_CHASE_WING goal check so that it will properly short-circuit when appropriate (discussed in the same bug)
+ *
  * Revision 1.29  2006/09/08 06:20:14  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -805,6 +809,10 @@ void ai_maybe_add_form_goal( wing *wingp )
 {
 	int j;
 	char *wing_leader;
+
+	// if the wing leader isn't available (ie, dead/departed) then go ahead and bail now
+	if (wingp->ship_index[wingp->special_ship] < 0)
+		return;
 
 	// Goober5000 - the wing leader is now not necessarily the player
 	wing_leader = Ships[wingp->ship_index[wingp->special_ship]].ship_name;

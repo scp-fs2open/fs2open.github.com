@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-09-11 05:56:23 $
+ * $Revision: 2.34 $
+ * $Date: 2006-11-16 00:52:28 $
  * $Author: taylor $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/09/11 05:56:23  taylor
+ * fix a compiler warning/error on Squadmsg_history[] init
+ *
  * Revision 2.32  2006/05/20 02:03:01  Goober5000
  * fix for Mantis #755, plus make the missionlog #defines uniform
  * --Goober5000
@@ -1436,7 +1439,11 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 
 		// get the first ship on the wing list and look at its team and then its type
 		shipnum = Wings[i].ship_index[Wings[i].special_ship];
-		Assert( shipnum != -1 );
+
+		// if special ship isn't valid then just move on
+		if (shipnum < 0)
+			continue;
+
 		shipp = &Ships[shipnum];
 
 		// can't message if not on players team
