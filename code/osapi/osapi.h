@@ -6,12 +6,13 @@
  * source.
  *
 */
- 
-#include "globalincs/pstypes.h"
-#include "osapi/osregistry.h"
+
 
 #ifndef _OSAPI_H
 #define _OSAPI_H
+
+#include "globalincs/pstypes.h"
+#include "osapi/osregistry.h"
 
 // --------------------------------------------------------------------------------------------------
 // OSAPI DEFINES/VARS
@@ -48,9 +49,8 @@ extern int Os_debugger_running;
 
 // initialization/shutdown functions -----------------------------------------------
 
-#ifdef SCP_UNIX
+// detect the home/base/writable directory to use
 extern const char *detect_home(void);
-#endif
 
 // If app_name is NULL or ommited, then TITLE is used
 // for the app name, which is where registry keys are stored.

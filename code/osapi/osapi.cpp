@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.35 $
- * $Date: 2006-11-06 06:23:27 $
+ * $Revision: 2.36 $
+ * $Date: 2006-11-16 00:54:15 $
  * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/11/06 06:23:27  taylor
+ * grrr ... fix dos EOL chars
+ *
  * Revision 2.34  2006/07/13 22:15:02  taylor
  * handle non-MVE movies a bit better in OpenGL (don't get freaky with the window, don't lose input, etc.)
  * some cleanup to OpenGL window handling, to fix min/max/full issues, and try to make shutdown a little nicer
@@ -310,13 +313,23 @@ BOOL __stdcall os_enum_windows( HWND hwnd, char * search_string );
 // message handler for the main thread
 LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam);
 
-// create the main window
-BOOL win32_create_window();
-
 
 // ----------------------------------------------------------------------------------------------------
 // OSAPI FUNCTIONS
 //
+
+// detect home/base directory  (placeholder for possible future Win32 userdir support, just returns current directory for now)
+char Cur_path[MAX_PATH_LEN];
+const char *detect_home(void)
+{
+	if ( strlen(Cfile_root_dir) )
+		return Cfile_root_dir;
+
+	memset( Cur_path, 0, MAX_PATH_LEN );
+	GetCurrentDirectory( MAX_PATH_LEN-1, Cur_path );
+
+	return Cur_path;
+}
 
 // initialization/shutdown functions -----------------------------------------------
 
@@ -324,8 +337,12 @@ BOOL win32_create_window();
 // for the app name, which is where registry keys are stored.
 void os_init(char * wclass, char * title, char *app_name, char *version_string )
 {
+#ifndef NDEBUG
+	outwnd_init(1);
+#endif
+
 	os_init_registry_stuff(Osreg_company_name, title, version_string);
-	
+
 	strcpy( szWinTitle, title );
 	strcpy( szWinClass, wclass );	
 
@@ -342,8 +359,6 @@ void os_init(char * wclass, char * title, char *app_name, char *version_string )
 		}
 		CloseHandle(Window_created);
 		Window_created = NULL;
-	#else
-		win32_process1(0);
 	#endif // THREADED
 
 	// initialized
@@ -373,9 +388,9 @@ void os_cleanup()
 	// destroy the window (takes care of a lot of window related cleanup and sys messages)
 	DestroyWindow( hwndApp );
 
-	#ifndef NDEBUG
-		outwnd_close();
-	#endif
+#ifndef NDEBUG
+	outwnd_close();
+#endif
 }
 
 
@@ -425,13 +440,12 @@ void os_resume()
 // OSAPI FORWARD DECLARATIONS
 //
 
-#pragma warning(disable:4702)	// unreachable code
 #ifdef THREADED_PROCESS
 
 // thread handler for the main message thread
 DWORD win32_process(DWORD lparam)
 {
-	MSG msg;
+/*	MSG msg;
 	HANDLE Window_created = (HANDLE)lparam;
 
 	if ( !win32_create_window() )
@@ -456,25 +470,18 @@ DWORD win32_process(DWORD lparam)
 			}
 			LEAVE_CRITICAL_SECTION( Os_lock );
 		} 
-	}
+	}*/
+
 	return 0;
 }
 
 #else
-DWORD win32_process1(DWORD lparam)
-{
-	if ( !win32_create_window() )
-		return 0;
 
-	return 0;
-}
-
-
-DWORD win32_process2(DWORD lparam)
+DWORD win32_process(DWORD lparam)
 {
 	MSG msg;
 
-	while(PeekMessage(&msg,0,0,0,PM_REMOVE))	{
+	while ( PeekMessage(&msg, 0, 0, 0, PM_REMOVE) ) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
@@ -482,7 +489,6 @@ DWORD win32_process2(DWORD lparam)
 	return 0;
 }
 #endif // THREADED_PROCESS
-#pragma warning(default:4702)	// unreachable code
 
 // Fills in the Os_debugger_running with non-zero if debugger detected.
 void os_check_debugger()
@@ -787,123 +793,107 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 }
 
 // create the main window
-BOOL win32_create_window()
+void win32_create_window(int width, int height)
 {
 	WNDCLASSEX wclass;							// Huh?
 	HINSTANCE hInst = GetModuleHandle(NULL);
 
+	memset( &wclass, 0, sizeof(WNDCLASSEX) );
+
 	wclass.hInstance 		= hInst;
-	wclass.lpszClassName = szWinClass;
-	wclass.lpfnWndProc	= (WNDPROC)win32_message_handler;	  
-	
-	if(Cmdline_window){
-		wclass.style			= CS_VREDRAW | CS_HREDRAW | CS_OWNDC;
-	} else {
-		wclass.style			= CS_BYTEALIGNCLIENT|CS_VREDRAW | CS_HREDRAW;
-	}	
+	wclass.lpszClassName	= szWinClass;
+	wclass.lpfnWndProc		= (WNDPROC)win32_message_handler;	  
+
+//	if (Cmdline_window) {
+//		wclass.style			= CS_VREDRAW | CS_HREDRAW | CS_OWNDC;
+//	} else {
+//		wclass.style			= CS_BYTEALIGNCLIENT | CS_VREDRAW | CS_HREDRAW;
+//	}
+	wclass.style			= 0;
 	
 	wclass.cbSize			= sizeof(WNDCLASSEX);
 	wclass.hIcon			= LoadIcon(hInst, MAKEINTRESOURCE(IDI_APP_ICON) );
-	wclass.hIconSm			= NULL;	//LoadIcon(hInst, MAKEINTRESOURCE(IDI_ICON1) );
 	wclass.hCursor			= LoadCursor(NULL, IDC_ARROW);
-	wclass.lpszMenuName	= NULL;	//"FreeSpaceMenu";
+	wclass.lpszMenuName		= NULL;	//"FreeSpaceMenu";
 	wclass.cbClsExtra		= 0;
 	wclass.cbWndExtra		= 0;
-	wclass.hbrBackground = (HBRUSH)NULL;
+	// set background to erase/clear with a black brush
+	// (NULL means that we had to do it ourselves, and created a white-screen problem)
+	wclass.hbrBackground	= (HBRUSH)GetStockObject(BLACK_BRUSH);
 
-	if (!RegisterClassEx(&wclass)) return FALSE;
-	
-	int style;
-	if(Cmdline_window){
-		style = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-	} else {
-		style = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS;
-	}	
-
-	// make sure we adjust for the actual window border	
-	int x_add = 0;
-	int y_add = 0;
-	x_add += GetSystemMetrics(SM_CXFIXEDFRAME) * 2;
-	y_add += 2*GetSystemMetrics(SM_CYFIXEDFRAME) + GetSystemMetrics(SM_CYCAPTION);
-
-	// Make a 32x32 window.  It never should get shown, because the graphics code
-	// will then size it.
-	if(Cmdline_window)			// Let it here be known that I hate the coding style they use for {'s - UP
-	{
-		int hires = 1;
-		int cdepth, width, height;
-		char *ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL);
-		
-		// Lets work this out the other way round, assume its hi-res
-		// For example 800x600 would be better running with 1024x768 data
-		if(ptr && strstr(ptr, NOX("640"))){
-			hires = 0;
-		}
-
-		//make windowed mode use non-standard resolutions
-		if (strstr(ptr, NOX("D3D8-") ))	
-		{
-			sscanf(ptr, "D3D8-(%dx%d)x%d bit", &width, &height, &cdepth);
-		} 
-		else if (strstr(ptr, NOX("OGL -") ))
-		{
-			sscanf(ptr, "OGL -(%dx%d)x%d bit", &width, &height, &cdepth);			
-		} 
-		else
-		{
-			width = 640;
-			height =480;
-		}
-
-		RECT r;
-		GetWindowRect(GetDesktopWindow(),&r);
-		int start_x = (r.right - width - x_add) / 2;
-		int start_y = (r.bottom - height - y_add) / 2;
-
-		if (start_x < 0) start_x = 0;
-		if (start_y < 0) start_y = 0;
-
-		hwndApp = CreateWindow( szWinClass, szWinTitle,
-									style,   
-									start_x,
-									start_y,
-									width + x_add,
-									height + y_add,
-									NULL, (HMENU)NULL, hInst, (LPSTR)NULL);	
-	} 
-	else 
-	{
-		// Make a 32x32 window.  It never should get shown, because the graphics code
-		// will then size it.
-		hwndApp = CreateWindow( szWinClass, szWinTitle,
-									style,   
-									(GetSystemMetrics( SM_CXSCREEN )-32 )/2,	//x
-									(GetSystemMetrics( SM_CYSCREEN )-32 )/2,	//y
-									32,32,									// wh
-									NULL, (HMENU)NULL, hInst, (LPSTR)NULL);	
+	if ( !RegisterClassEx(&wclass) ) {
+		Error( LOCATION, "FATAL ERROR:  Unable to register window class!!" );
 	}
 
-	// Hack!! Turn off Window's cursor.
+	int style = WS_POPUP | WS_CLIPCHILDREN | WS_CLIPSIBLINGS | WS_VISIBLE;
+
+	if (Cmdline_window)
+		style |= (WS_CAPTION | WS_SYSMENU | WS_BORDER);
+
+	int x_add, y_add;
+	int start_x, start_y;
+
+	if (Cmdline_window) {
+		RECT my_rect;
+
+		// make sure we adjust for the actual window border	
+		x_add = GetSystemMetrics(SM_CXFIXEDFRAME) * 2;
+		y_add = 2 * GetSystemMetrics(SM_CYFIXEDFRAME) + GetSystemMetrics(SM_CYCAPTION);
+
+		GetWindowRect( GetDesktopWindow(), &my_rect );
+
+		start_x = (my_rect.right - width - x_add) / 2;
+		start_y = (my_rect.bottom - height - y_add) / 2;
+
+		if (start_x < 0)
+			start_x = 0;
+		if (start_y < 0)
+			start_y = 0;
+	} else {
+		x_add = y_add = 0;
+		start_x = start_y = 0;
+	}
+
+	// we don't sicky TOPMOST for windowed mode since we wouldn't be able to bring
+	// the debug window (or anything else) to the true foreground otherwise
+	hwndApp = CreateWindowEx( (Cmdline_window) ? 0 : WS_EX_TOPMOST,
+								szWinClass, szWinTitle,
+								style,   
+								start_x,		// x
+								start_y,		// y
+								width + x_add,	// w
+								height + y_add,	// h
+								NULL, (HMENU)NULL, hInst,
+								(LPSTR)NULL );
+
+	if ( !hwndApp ) {
+		Error( LOCATION, "FATAL ERROR:  Unable to create game window!!" );
+	}
 
 	main_window_inited = 1;
-	#ifndef NDEBUG
-		outwnd_init(1);
-	#endif	
 
-	if(Cmdline_window){
-		ShowWindow( hwndApp, SW_SHOWNORMAL );
-		UpdateWindow( hwndApp );
-	}
+#ifndef NDEBUG
+	extern void outwnd_init_debug_window(int);
+	outwnd_init_debug_window(1);
+#endif
 
+	ShowWindow( hwndApp, SW_SHOWNORMAL );
+
+	SetForegroundWindow( hwndApp );
+	SetActiveWindow( hwndApp );
+	SetFocus( hwndApp );
+
+	// Hack!! Turn off Window's cursor.
 	ShowCursor(false);
 	ClipCursor(NULL);
-	return TRUE;
+
+	return;// TRUE;
 }
 
 void os_poll()
 {
 #ifndef THREADED_PROCESS
-	win32_process2(0);
+	win32_process(0);
 #else
 	MSG msg;
 	ENTER_CRITICAL_SECTION( Os_lock );
