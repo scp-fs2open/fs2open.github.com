@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.287 $
- * $Date: 2006-11-06 05:40:06 $
+ * $Revision: 2.288 $
+ * $Date: 2006-11-16 00:52:28 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.287  2006/11/06 05:40:06  taylor
+ * various bits of cleanup (warning messages, things that Valgrind complained about, etc.)
+ * fix an out-of-bounds issue on Sexp_nodes[] which was leading to stack corruption
+ *
  * Revision 2.286  2006/11/05 18:42:25  Goober5000
  * fix is-event-x-delay optional argument type
  *
@@ -4894,8 +4898,8 @@ void sexp_get_object_ship_wing_point_team(object_ship_wing_point_team *oswpt, ch
 	{
 		wing *wingp = &Wings[wing_num];
 
-		// make sure at least one ship exists
-		if (wingp->current_count >= 0)
+		// make sure that at least one ship exists and that the wing leader is valid
+		if ( (wingp->current_count >= 0) && (wingp->ship_index[wingp->special_ship] >= 0) )
 		{
 			oswpt->type = OSWPT_TYPE_WING;
 
