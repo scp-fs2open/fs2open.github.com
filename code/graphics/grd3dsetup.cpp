@@ -9,6 +9,11 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2006/09/11 06:36:38  taylor
+ * clean up the grstub mess (for work on standalone server, and just for sanity sake)
+ * move color and shader functions to 2d.cpp since they are exactly the same everywhere
+ * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
+ *
  * Revision 2.59  2006/06/01 04:44:19  taylor
  * fix the scope issues that someone complained about in the forums
  *
@@ -271,13 +276,13 @@ void d3d_release_rendering_objects()
 bool d3d_init_win32(int screen_width, int screen_height)
 {
 	HWND hwnd = (HWND)os_get_window();
-	RECT rect;
+//	RECT rect;
 
 	if ( !hwnd )	{
 		strcpy(Device_init_error, "Could not get application window handle");
 		return false;
 	}
-
+/*
 	// windowed
 	if(GlobalD3DVars::D3D_window)
 	{
@@ -300,9 +305,11 @@ bool d3d_init_win32(int screen_width, int screen_height)
 		SetWindowPos( hwnd, HWND_TOPMOST, 0, 0, gr_screen.max_w, gr_screen.max_h, 0 );	
 	#endif
 	}
+*/
 
-	SetActiveWindow(hwnd);
 	SetForegroundWindow(hwnd);
+	SetActiveWindow(hwnd);
+	SetFocus(hwnd);
 
 	d3d_clip_cursor();
 	return true;

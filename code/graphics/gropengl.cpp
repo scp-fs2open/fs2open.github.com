@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.190 $
- * $Date: 2006-11-06 06:44:43 $
+ * $Revision: 2.191 $
+ * $Date: 2006-11-16 00:54:41 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.190  2006/11/06 06:44:43  taylor
+ * enable/disable alpha test based on blend mode (found this hidden in an old tree, may help with blending the newer alphablend mode)
+ *
  * Revision 2.189  2006/11/06 06:23:27  taylor
  * grrr ... fix dos EOL chars
  *
@@ -1231,13 +1234,12 @@ extern bool Playing_movie;
 
 void opengl_go_fullscreen()
 {
-	if (Cmdline_window || GL_fullscreen || Playing_movie)
+	if (Cmdline_window || GL_fullscreen || Fred_running || Playing_movie)
 		return;
 
 #ifdef _WIN32
 	DEVMODE dm;
 	RECT cursor_clip;
-	DWORD ws_style;
 	HWND wnd = (HWND)os_get_window();
 
 	Assert( wnd );
@@ -1268,18 +1270,18 @@ void opengl_go_fullscreen()
 		} else {
 			Warning( LOCATION, "Unable to go fullscreen!" );
 		}
-	} else {
-		ws_style = GetWindowLong( wnd, GWL_STYLE );
-		ws_style &= ~(WS_THICKFRAME | WS_MAXIMIZEBOX | WS_MAXIMIZE);
-		ws_style |= WS_POPUP;
-
-		SetWindowLong( wnd, GWL_STYLE, ws_style );
-		SetWindowPos( wnd, HWND_TOPMOST, 0, 0, gr_screen.max_w, gr_screen.max_h, SWP_SHOWWINDOW );
-		SetForegroundWindow( wnd );
 	}
+
+	ShowWindow( wnd, SW_SHOWNORMAL );
+	UpdateWindow( wnd );
+
+	SetForegroundWindow( wnd );
+	SetActiveWindow( wnd );
+	SetFocus( wnd );
 
 	GetWindowRect((HWND)os_get_window(), &cursor_clip);
 	ClipCursor(&cursor_clip);
+	ShowCursor(FALSE);
 
 	os_resume();  
 #else
@@ -1299,57 +1301,29 @@ void opengl_go_fullscreen()
 
 	GL_fullscreen = 1;
 	GL_minimized = 0;
+	GL_windowed = 0;
 }
 
 void opengl_go_windowed()
 {
-	int width, height;
-
-	if (Cmdline_window)
+	if ( !Cmdline_window || GL_windowed || Fred_running || Playing_movie )
 		return;
 
-	if (GL_windowed) {
-		GL_windowed = 0;
-		opengl_go_fullscreen();
-	}
-
-	if (gr_screen.max_w >= 1024 && gr_screen.max_h >= 768) {
-		width = 1024;
-		height = 768;
-	} else {
-		width = 640;
-		height = 480;
-	}
-
 #ifdef _WIN32
-	DEVMODE dm;
 	HWND wnd = (HWND)os_get_window();
-
 	Assert( wnd );
 
 	os_suspend();
-	SetWindowLong( wnd, GWL_EXSTYLE, 0 );
-	SetWindowLong( wnd, GWL_STYLE, WS_POPUP );
-	ShowWindow(wnd, SW_SHOWNORMAL );
-	SetWindowPos( wnd, HWND_TOPMOST, 0, 0, width, height, 0 );	
-	SetActiveWindow(wnd);
-	SetForegroundWindow(wnd);
 
-	memset((void*)&dm, 0, sizeof(DEVMODE));
+	ShowWindow( wnd, SW_SHOWNORMAL );
+	UpdateWindow( wnd );
 
-	dm.dmSize = sizeof(DEVMODE);
-	dm.dmPelsHeight = height;
-	dm.dmPelsWidth = width;
-	dm.dmBitsPerPel = gr_screen.bits_per_pixel;
-	dm.dmDisplayFrequency = 0;
-	dm.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
-
-
-	if ( (ChangeDisplaySettings(&dm, 0)) != DISP_CHANGE_SUCCESSFUL ) {
-		Warning( LOCATION, "Unable to enter windowed mode!" );
-	}
+	SetForegroundWindow( wnd );
+	SetActiveWindow( wnd );
+	SetFocus( wnd );
 
 	ClipCursor(NULL);
+	ShowCursor(FALSE);
 
 	os_resume();  
 
@@ -1359,7 +1333,7 @@ void opengl_go_windowed()
 		os_suspend();
 
 	//	SDL_WM_ToggleFullScreen( SDL_GetVideoSurface() );
-		if ( (SDL_SetVideoMode(width, height, 0, SDL_OPENGL)) == NULL ) {
+		if ( (SDL_SetVideoMode(gr_screen.max_w, gr_screen.max_h, 0, SDL_OPENGL)) == NULL ) {
 			Warning( LOCATION, "Unable to enter windowed mode!" );
 		}
 
@@ -1367,24 +1341,29 @@ void opengl_go_windowed()
 	}
 #endif
 
-	GL_fullscreen = 0;
 	GL_windowed = 1;
+	GL_minimized = 0;
+	GL_fullscreen = 0;
 }
 
 void opengl_minimize()
 {
-	// don't attempt to minimize if we are already in a window or already minimized
-	// or when playing a movie
+	// don't attempt to minimize if we are already in a window, or already minimized, or when playing a movie
 	if (GL_minimized || GL_windowed || Cmdline_window || Fred_running || Playing_movie)
 		return;
 
 #ifdef _WIN32
 	HWND wnd = (HWND)os_get_window();
+	Assert( wnd );
 
 	os_suspend();
+
 	ShowWindow(wnd, SW_MINIMIZE);
 	ChangeDisplaySettings(NULL, 0);
+
 	ClipCursor(NULL);
+	ShowCursor(TRUE);
+
 	os_resume();
 #else
 	// lets not minimize if we are in windowed mode
@@ -1397,7 +1376,36 @@ void opengl_minimize()
 #endif
 
 	GL_minimized = 1;
+	GL_windowed = 0;
 	GL_fullscreen = 0;
+}
+
+void gr_opengl_activate(int active)
+{
+	if (active) {
+		GL_activate++;
+
+		if (Cmdline_window)
+			opengl_go_windowed();
+		else
+			opengl_go_fullscreen();
+
+#ifdef SCP_UNIX
+		// Check again and if we didn't go fullscreen turn on grabbing if possible
+		if(!Cmdline_no_grab && !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN)) {
+			SDL_WM_GrabInput(SDL_GRAB_ON);
+		}
+#endif
+	} else {
+		GL_deactivate++;
+		opengl_minimize();
+
+#ifdef SCP_UNIX
+		// let go of mouse/keyboard
+		if (SDL_WM_GrabInput(SDL_GRAB_QUERY) == SDL_GRAB_ON)
+			SDL_WM_GrabInput(SDL_GRAB_OFF);
+#endif
+	}
 }
 
 void opengl_set_tex_state_combine(gr_texture_source ts)
@@ -1540,32 +1548,6 @@ void opengl_set_state(gr_texture_source ts, gr_alpha_blend ab, gr_zbuffer_type z
 
 		GL_current_ztype = zt;
 	}
-}
-
-void gr_opengl_activate(int active)
-{
-	if (active) {
-		GL_activate++;
-		opengl_go_fullscreen();
-
-#ifdef SCP_UNIX
-		// Check again and if we didn't go fullscreen turn on grabbing if possible
-		if(!Cmdline_no_grab && !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN)) {
-			SDL_WM_GrabInput(SDL_GRAB_ON);
-		}
-#endif
-	} else {
-		GL_deactivate++;
-		opengl_minimize();
-	//	opengl_go_windowed();
-
-#ifdef SCP_UNIX
-		// let go of mouse/keyboard
-		if (SDL_WM_GrabInput(SDL_GRAB_QUERY) == SDL_GRAB_ON)
-			SDL_WM_GrabInput(SDL_GRAB_OFF);
-#endif
-	}
-	
 }
 
 void gr_opengl_pixel(int x, int y, bool resize)
@@ -4750,7 +4732,11 @@ void gr_opengl_init(int reinit)
 		// ready the texture system
 		opengl_tcache_init();
 
-		opengl_go_fullscreen();
+		if (Cmdline_window) {
+			opengl_go_windowed();
+		} else {
+			opengl_go_fullscreen();
+		}
 	}
 
 	// must be called after extensions are setup
