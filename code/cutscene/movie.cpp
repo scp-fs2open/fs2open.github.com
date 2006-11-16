@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-09-11 05:54:37 $
+ * $Revision: 2.38 $
+ * $Date: 2006-11-16 00:50:38 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/09/11 05:54:37  taylor
+ * switch to using cf_find_file_location_ext() when looking for movies
+ *
  * Revision 2.36  2006/09/09 21:28:19  taylor
  * be sure to reset color and clear color before MVE playback (fix for Mantis bug #1041)
  *
@@ -248,48 +251,44 @@ bool movie_play(char *name)
 	gr_zbuffer_clear(1);
 	gr_flip(); // cycle in the clear'd buffer
 
+	HWND hWnd = (HWND)os_get_window();
+
 	// This clears the screen
- 	InvalidateRect((HWND) os_get_window(), NULL, TRUE);
+ 	InvalidateRect(hWnd, NULL, TRUE);
 	PAINTSTRUCT paint_info;
-	HDC clear_hdc = BeginPaint((HWND) os_get_window(),&paint_info);
+	HDC clear_hdc = BeginPaint(hWnd,&paint_info);
 
-	if(clear_hdc)
-	{
-
+	if (clear_hdc) {
 		POINT points[4] = {
-			{0,0}, 
-			{gr_screen.max_w,0}, 
-			{gr_screen.max_w, gr_screen.max_h}, 
-			{0, gr_screen.max_h}};
-		
-		HBRUSH hBrush    = CreateSolidBrush(0x00000000);
-		HBRUSH hOldBrush = (HBRUSH)SelectObject(clear_hdc, hBrush);
-		SelectObject(clear_hdc, hBrush);
-		
+			{ 0, 0 }, 
+			{ gr_screen.max_w, 0 }, 
+			{ gr_screen.max_w, gr_screen.max_h }, 
+			{ 0, gr_screen.max_h }
+		};
+
+		SelectObject( clear_hdc, GetStockObject(BLACK_BRUSH) );
+
 		Polygon(clear_hdc, points, 4);
-		
-		SelectObject(clear_hdc, hOldBrush);
-		DeleteObject(hBrush);
-		
-		EndPaint((HWND) os_get_window(),&paint_info);
+
+		EndPaint(hWnd,&paint_info);
 	}
 
   	process_messages();
 
-	if (OpenClip((HWND) os_get_window(), full_name)) {
+	if (OpenClip(hWnd, full_name)) {
 		do {
 			// Give system threads time to run (and don't sample user input madly)
 			Sleep(100);
 
 			MSG msg;
 
-			while (PeekMessage(&msg, (HWND) os_get_window(), 0, 0, PM_REMOVE)) {
+			while (PeekMessage(&msg, hWnd, 0, 0, PM_REMOVE)) {
  				TranslateMessage(&msg);
 
 				if (msg.message == WM_ERASEBKGND)
 					continue;
 
-				PassMsgToVideoWindow((HWND) os_get_window(), msg.message, msg.wParam, msg.lParam);
+			//	PassMsgToVideoWindow(hWnd, msg.message, msg.wParam, msg.lParam);
 
 				if (msg.message == WM_KEYDOWN) {
 					switch (msg.wParam)
@@ -300,7 +299,7 @@ bool movie_play(char *name)
 						case VK_RETURN:
 						{
 							// Terminate movie playback early
-							CloseClip((HWND) os_get_window());
+							CloseClip(hWnd);
 #ifndef NO_DIRECT3D
 							if (gr_screen.mode == GR_DIRECT3D) {
 						 		GlobalD3DVars::D3D_activate = 1;
@@ -320,7 +319,11 @@ bool movie_play(char *name)
 	}
 
 	// We finished playing the movie
-	CloseClip((HWND) os_get_window());
+	CloseClip( hWnd );
+
+	// reset window settings (works the same for fullscreen too)
+	SetForegroundWindow( hWnd );
+	SetActiveWindow( hWnd );
 
 #ifndef NO_DIRECT3D
 	if (gr_screen.mode == GR_DIRECT3D) {
