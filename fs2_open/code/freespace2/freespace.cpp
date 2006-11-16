@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.271 $
- * $Date: 2006-11-06 06:46:08 $
+ * $Revision: 2.272 $
+ * $Date: 2006-11-16 00:55:08 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.271  2006/11/06 06:46:08  taylor
+ * fix some of the envmap issues
+ *  - use proper hand-ness for OGL
+ *  - fix distortion
+ *  - get rid of extra index buffer requirement
+ * change starfield bitmaps to use an instance matrix rather than going through all the trouble of resetting the view matrix
+ * basic cleanup and get rid of a couple of struct/variable naming issues (compiler sanity)
+ * make double sure that we aren't using culling of z-buffering when rendering starfield bitmaps
+ *
  * Revision 2.270  2006/11/06 06:36:44  taylor
  * updated/fixed modelanim code
  *
@@ -3537,9 +3546,9 @@ void game_init()
 
 	Framerate_delay = 0;
 
-	#ifndef NDEBUG
+#ifndef NDEBUG
 	load_filter_info();
-	#endif
+#endif
 
 	// encrypt stuff
 	encrypt_init();
@@ -3714,8 +3723,10 @@ void game_init()
 
 
 	if (!Is_standalone) {
-		int width, height, cdepth;
-		char Device_init_error[512];		
+		int width = 640, height = 480, cdepth = 16, res = GR_640, mode = GR_OPENGL;
+		char Device_init_error[512];
+		bool is_640x480 = true; // default to 640x480 res
+
 
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(NULL, NOX("VideocardFs2open"), NULL); 
@@ -3728,41 +3739,35 @@ void game_init()
 
 		Assert( ptr != NULL );
 
-		bool is_640x480 = true; // default to 640x480 res
+		// OpenGL should be default
+		mode = GR_OPENGL;
+
+#ifndef NO_DIRECT3D
+		if ( !strncmp(ptr, NOX("D3D8"), 4) )
+			mode = GR_DIRECT3D;
+#endif
 
 		// NOTE: The "ptr+5" is to skip over the initial "????-" in the video string.
 		//       If the format of that string changes you'll have to change this too!!!
-		if ( sscanf(ptr+5, "(%dx%d)", &width, &height) == 2 ) {
-			// if we are less than 1024x768 res then stay at low-res, otherwise bump it
-			is_640x480 = ( (width < 1024) && (height < 768) );
-		} else {
-			mprintf(("Couldn't determine if we are really using 640x480 res or not!  Going with default..."));
+		if ( sscanf(ptr+5, "(%dx%d)x%d ", &width, &height, &cdepth) != 3 ) {
+			strcpy(Device_init_error, "Can't understand 'VideocardFs2open' registry entry!");
+			goto VidInitError;
 		}
 
-		int res = (!is_640x480 && has_sparky_hi) ? GR_1024 : GR_640;
+		// if we are less than 1024x768 res then stay at low-res, otherwise bump it
+		is_640x480 = ( (width < 1024) && (height < 768) );
+	
+		res = (!is_640x480 && has_sparky_hi) ? GR_1024 : GR_640;
 
-		// see if we should be using D3D first thing
-		if ( strstr(ptr, NOX("D3D8-")) ) {
-			if ( sscanf(ptr, "D3D8-(%dx%d)x%d bit", &width, &height, &cdepth) != 3 ) {
-				strcpy(Device_init_error, "Cant understand 'VideocardFs2open' Direct3D reg entry.");
-			} else {
-#ifdef NO_DIRECT3D
-				// if we are a non-D3D build then always use OpenGL
-				gr_init(res, GR_OPENGL, cdepth, width, height);
-#else
-				gr_init(res, GR_DIRECT3D, cdepth, width, height);
+#ifdef WIN32
+		// for Windows, we need to do this just before the gr_init() call
+		extern void win32_create_window(int width, int height);
+		win32_create_window( width, height );
 #endif
-			}
-		}
-		// if we aren't D3D then use OpenGL as the default
-		else {
-			if ( sscanf(ptr, "OGL -(%dx%d)x%d bit", &width, &height, &cdepth) != 3 ) {
-				strcpy(Device_init_error, "Cant understand 'VideocardFs2open' OpenGL reg entry.");
-			} else {
-				gr_init(res, GR_OPENGL, cdepth, width, height);
-			}
-		}
-			
+
+		gr_init(res, mode, cdepth, width, height);
+
+VidInitError:
 		extern int Gr_inited;
 		if (!Gr_inited) {
 #ifdef _WIN32
