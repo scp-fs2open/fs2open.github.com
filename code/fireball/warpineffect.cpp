@@ -9,13 +9,18 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.35 $
- * $Date: 2006-11-06 06:33:48 $
+ * $Revision: 2.36 $
+ * $Date: 2006-11-16 01:10:47 $
  * $Author: taylor $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/11/06 06:33:48  taylor
+ * more cleanup of warp_global crap
+ * scale render/detail box limits with detail level setting
+ * make sure that we reset culling and zbuffer after each model buffer that gets rendered
+ *
  * Revision 2.34  2006/11/06 06:19:17  taylor
  * rename set_warp_globals() to model_set_warp_globals()
  * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
@@ -397,9 +402,7 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 		float dist = vm_vec_dist_quick( pos, &Eye_position );
 
 		model_set_detail_level((int)(dist / (radius * 10.0f)));
-		gr_set_cull(0);
-		model_render( Warp_model, orient, pos, MR_NO_LIGHTING | MR_NORMAL | MR_NO_FOGGING);
-		gr_set_cull(1);
+		model_render( Warp_model, orient, pos, MR_NO_LIGHTING | MR_NORMAL | MR_NO_FOGGING | MR_NO_CULL );
 
 		model_set_warp_globals();
 
