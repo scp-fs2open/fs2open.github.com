@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.16 $
- * $Date: 2006-04-20 06:32:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2006-11-16 00:56:16 $
+ * $Author: taylor $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/04/20 06:32:23  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.15  2006/01/26 03:23:30  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -200,15 +203,20 @@
 #include <winioctl.h>
 #include <conio.h>
 
-#include "osapi/OsApi.h"
+#include "osapi/osapi.h"
 #include "osapi/outwnd.h"
 #include "osapi/monopub.h"
 #include "graphics/2d.h"
 #include "freespace2/freespaceresource.h"
 #include "globalincs/systemvars.h"
+#include "cfile/cfilesystem.h"
+#include "globalincs/globals.h"
+
+#include <vector>
+
+extern int Cmdline_debug_window;
 
 
-#define MAX_FILTERS 48
 #define SCROLL_BUFFER_SIZE	512
 #define MAX_LINE_WIDTH	128
 #define TASKBAR_HEIGHT 30
@@ -226,21 +234,24 @@ DWORD OutputThreadID;
 HWND hOutputWnd;
 char szOutputClass[] = "OutputWindow";
 char spaces[MAX_LINE_WIDTH + 1];
-int outwnd_filter_count = 0;
-int outwnd_filter_loaded = 0;
+ubyte outwnd_filter_loaded = 0;
 char find_text[85];
 
 struct outwnd_filter_struct {
-	char name[FILTER_NAME_LENGTH];
-	int state;
-} *outwnd_filter[MAX_FILTERS], real_outwnd_filter[MAX_FILTERS];
+	char name[NAME_LENGTH];
+	bool enabled;
+
+	outwnd_filter_struct() { memset(this, 0, sizeof(outwnd_filter_struct)); }
+};
+
+std::vector<outwnd_filter_struct> OutwndFilter;
 
 int mprintf_last_line = -1;
 char outtext[SCROLL_BUFFER_SIZE][MAX_LINE_WIDTH];
 int old_scroll_pos = -32768;
 int nTextHeight=0, nTextWidth=0, nCharRows=0;
-int outwnd_inited = FALSE;
-int outwnd_disabled = TRUE;
+bool outwnd_inited = false;
+bool outwnd_disabled = true;
 int max_scroll_pos = SCROLL_BUFFER_SIZE - 1;
 static int marked = 0;
 int marked_top, marked_bottom, marked_left, marked_right;
@@ -253,6 +264,7 @@ int Outwnd_changed = 0;
 int find_line = -1, find_pos;
 
 // monochrome screen info
+#define NMONO
 HANDLE  mono_driver=NULL;				// handle to the monochrome driver
 
 void outwnd_print(char *id, char *tmp);
@@ -262,14 +274,15 @@ void outwnd_copy_marked_selection(HWND hwnd);
 void outwnd_update_marking(LPARAM l_parm, HWND hwnd);
 void outwnd_paint(HWND hwnd);
 
-int Outwnd_no_filter_file = 0;		// 0 = .cfg file found, 1 = not found and warning not printed yet, 2 = not found and warning printed
+ubyte Outwnd_no_filter_file = 0;		// 0 = .cfg file found, 1 = not found and warning not printed yet, 2 = not found and warning printed
 
 // used for file logging
-#ifndef NDEBUG
-	int Log_debug_output_to_file = 1;
-	FILE *Log_fp;
-	char *FreeSpace_logfilename = "fs.log";
-#endif
+int Log_debug_output_to_file = 1;
+FILE *Log_fp = NULL;
+char *FreeSpace_logfilename = "fs2_open.log";
+
+char safe_string[512] = { 0 };
+
 
 
 #ifndef _MSC_VER
@@ -336,68 +349,74 @@ inline void fix_marking_coords(int &x, int &y, LPARAM l_parm)
 
 void load_filter_info(void)
 {
-	FILE *fp;
-	char pathname[256], inbuf[FILTER_NAME_LENGTH+4];
+	FILE *fp = NULL;
+	char pathname[MAX_PATH_LEN];
+	char inbuf[NAME_LENGTH+4];
+	outwnd_filter_struct new_filter;
 	int z;
 
 	outwnd_filter_loaded = 1;
-	outwnd_filter_count = 0;
-	strcpy(pathname, "Debug_filter.cfg" );
+
+	memset( pathname, 0, sizeof(pathname) );
+	snprintf( pathname, MAX_PATH_LEN, "%s\\%s\\%s", detect_home(), Pathtypes[CF_TYPE_DATA].path, NOX("debug_filter.cfg") );
+
 	fp = fopen(pathname, "rt");
-	if (!fp)	{
+
+	if (!fp) {
 		Outwnd_no_filter_file = 1;
 
-		outwnd_filter[outwnd_filter_count] = &real_outwnd_filter[outwnd_filter_count];
-		strcpy( outwnd_filter[outwnd_filter_count]->name, "error" );
-		outwnd_filter[outwnd_filter_count]->state = 1;
-		outwnd_filter_count++;
+		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
+		strcpy( new_filter.name, "error" );
+		new_filter.enabled = true;
 
-		outwnd_filter[outwnd_filter_count] = &real_outwnd_filter[outwnd_filter_count];
-		strcpy( outwnd_filter[outwnd_filter_count]->name, "general" );
-		outwnd_filter[outwnd_filter_count]->state = 1;
-		outwnd_filter_count++;
+		OutwndFilter.push_back( new_filter );
 
-		outwnd_filter[outwnd_filter_count] = &real_outwnd_filter[outwnd_filter_count];
-		strcpy( outwnd_filter[outwnd_filter_count]->name, "warning" );
-		outwnd_filter[outwnd_filter_count]->state = 1;
-		outwnd_filter_count++;
+		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
+		strcpy( new_filter.name, "general" );
+		new_filter.enabled = true;
+
+		OutwndFilter.push_back( new_filter );
+
+		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
+		strcpy( new_filter.name, "warning" );
+		new_filter.enabled = true;
+
+		OutwndFilter.push_back( new_filter );
 
 		return;
 	}
 
 	Outwnd_no_filter_file = 0;
 
-	while (fgets(inbuf, FILTER_NAME_LENGTH+3, fp))
-	{
-		if (outwnd_filter_count == MAX_FILTERS)
-			break;
+	while ( fgets(inbuf, NAME_LENGTH+3, fp) ) {
+		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
 
-		outwnd_filter[outwnd_filter_count] = &real_outwnd_filter[outwnd_filter_count];
 		if (*inbuf == '+')
-			outwnd_filter[outwnd_filter_count]->state = 1;
+			new_filter.enabled = true;
 		else if (*inbuf == '-')
-			outwnd_filter[outwnd_filter_count]->state = 0;
-		else continue;  // skip everything else
+			new_filter.enabled = false;
+		else
+			continue;	// skip everything else
 
 		z = strlen(inbuf) - 1;
 		if (inbuf[z] == '\n')
 			inbuf[z] = 0;
 
-		Assert(strlen(inbuf+1) < FILTER_NAME_LENGTH);
-		strcpy(outwnd_filter[outwnd_filter_count]->name, inbuf + 1);
+		Assert( strlen(inbuf+1) < NAME_LENGTH );
+		strcpy(new_filter.name, inbuf + 1);
 
-		if ( !stricmp( outwnd_filter[outwnd_filter_count]->name, "error" ) )	{
-			outwnd_filter[outwnd_filter_count]->state = 1;
-		} else if ( !stricmp( outwnd_filter[outwnd_filter_count]->name, "general" ) )	{
-			outwnd_filter[outwnd_filter_count]->state = 1;
-		} else if ( !stricmp( outwnd_filter[outwnd_filter_count]->name, "warning" ) )	{
-			outwnd_filter[outwnd_filter_count]->state = 1;
+		if ( !stricmp(new_filter.name, "error") ) {
+			new_filter.enabled = true;
+		} else if ( !stricmp(new_filter.name, "general") ) {
+			new_filter.enabled = true;
+		} else if ( !stricmp(new_filter.name, "warning") ) {
+			new_filter.enabled = true;
 		}
 
-		outwnd_filter_count++;
+		OutwndFilter.push_back( new_filter );
 	}
 
-	if (ferror(fp) && !feof(fp))
+	if ( ferror(fp) && !feof(fp) )
 		nprintf(("Error", "Error reading \"%s\"\n", pathname));
 
 	fclose(fp);
@@ -405,44 +424,45 @@ void load_filter_info(void)
 
 void save_filter_info(void)
 {
-	FILE *fp;
-	int i;
-	char pathname[256];
+	FILE *fp = NULL;
+	char pathname[MAX_PATH_LEN];
 
-	if (!outwnd_filter_loaded)
+	if ( !outwnd_filter_loaded )
 		return;
 
-	if ( Outwnd_no_filter_file )	{
+	if (Outwnd_no_filter_file)
 		return;	// No file, don't save
-	}
 
-	strcpy(pathname, "Debug_filter.cfg" );
+
+	memset( pathname, 0, sizeof(pathname) );
+	snprintf( pathname, MAX_PATH_LEN, "%s\\%s\\%s", detect_home(), Pathtypes[CF_TYPE_DATA].path, NOX("debug_filter.cfg") );
+
 	fp = fopen(pathname, "wt");
-	if (fp)
-	{
-		for (i=0; i<outwnd_filter_count; i++)
-			fprintf(fp, "%c%s\n", outwnd_filter[i]->state ? '+' : '-', outwnd_filter[i]->name);
+
+	if (fp) {
+		for (uint i = 0; i < OutwndFilter.size(); i++)
+			fprintf(fp, "%c%s\n", OutwndFilter[i].enabled ? '+' : '-', OutwndFilter[i].name);
 
 		fclose(fp);
 	}
 }
 
-#include "debugconsole/dbugfile.h"
-
 void outwnd_printf2(char *format, ...)
 {
 	char tmp[MAX_LINE_WIDTH*4];
 	va_list args;
-	
+
+	if (format == NULL)
+		return;
+
 	va_start(args, format);
 	vsprintf(tmp, format, args);
 	va_end(args);
-	outwnd_print("General", tmp);
 
-// 	DBUGFILE_OUTPUT_0(tmp);
+	outwnd_print("General", tmp);
 }
 
-
+#ifndef NMONO
 char mono_ram[80*25*2];
 int mono_x, mono_y;
 int mono_found = 0;
@@ -491,7 +511,9 @@ void mono_print( char * text, int len )
 {
 	int i, j;
 
-	if ( !mono_found ) return;
+	if ( !mono_found )
+		return;
+
 
 	for (i=0; i<len; i++ )	{
 		int scroll_it = 0;
@@ -526,16 +548,21 @@ void mono_print( char * text, int len )
 	}
 	mono_flush();
 }
+#endif // NMONO
 
 
 void outwnd_printf(char *id, char *format, ...)
 {
 	char tmp[MAX_LINE_WIDTH*4];
 	va_list args;
-	
+
+	if ( (id == NULL) || (format == NULL) )
+		return;
+
 	va_start(args, format);
 	vsprintf(tmp, format, args);
 	va_end(args);
+
 	outwnd_print(id, tmp);
 }
 
@@ -543,13 +570,16 @@ void outwnd_print(char *id, char *tmp)
 {
 	char *sptr;
 	char *dptr;
-	int i, nrows, ccol;
-	outwnd_filter_struct *temp;
+	int nrows, ccol;
+	uint i;
 
-	if (!outwnd_inited)
+	if ( (id == NULL) || (tmp == NULL) )
 		return;
 
-	if ( Outwnd_no_filter_file == 1 )	{
+  	if ( !outwnd_inited )
+  		return;
+
+	if (Outwnd_no_filter_file == 1) {
 		Outwnd_no_filter_file = 2;
 
 		outwnd_print( "general", "==========================================================================\n" );
@@ -558,47 +588,44 @@ void outwnd_print(char *id, char *tmp)
 		outwnd_print( "general", "==========================================================================\n" );
 	}
 
-	if (!id)
+	if ( !id )
 		id = "General";
 
-	for (i=0; i<outwnd_filter_count; i++)
-		if (!stricmp(id, outwnd_filter[i]->name))
+	for (i = 0; i < OutwndFilter.size(); i++) {
+		if ( !stricmp(id, OutwndFilter[i].name) )
 			break;
+	}
 
-
-	if (i == outwnd_filter_count)  // new id found that's not yet in filter list
-	{
+	// id found that isn't in the filter list yet
+	if ( i == OutwndFilter.size() ) {
 		// Only create new filters if there was a filter file
-		if ( Outwnd_no_filter_file )	{
+		if (Outwnd_no_filter_file)
 			return;
-		}
 
-		if (outwnd_filter_count >= MAX_FILTERS) {
-			Assert(outwnd_filter_count == MAX_FILTERS);  // how did it get over the max?  Very bad..
-			outwnd_printf("General", "Outwnd filter limit reached.  Recycling \"%s\" to add \"%s\"",
-				outwnd_filter[MAX_FILTERS - 1]->name, id);
+		Assert( strlen(id)+1 < NAME_LENGTH );
+		outwnd_filter_struct new_filter;
 
-			i--;  // overwrite the last element (oldest used filter in the list)
-		}
+		strcpy(new_filter.name, id);
+		new_filter.enabled = true;
 
-		Assert(strlen(id) < FILTER_NAME_LENGTH);
-		outwnd_filter[i] = &real_outwnd_filter[i];  // note: this assumes the list doesn't have gaps (from deleting an element for example)
-		strcpy(outwnd_filter[i]->name, id);
-		outwnd_filter[i]->state = 1;
-		outwnd_filter_count = i + 1;
+		OutwndFilter.push_back( new_filter );
 		save_filter_info();
 	}
 
-	// sort the filters from most recently used to oldest, so oldest ones will get recycled first
-	temp = outwnd_filter[i];
-	while (i--)
-		outwnd_filter[i + 1] = outwnd_filter[i];
-
-	i++;
-	outwnd_filter[i] = temp;
-
-	if (!outwnd_filter[i]->state)
+	if ( !OutwndFilter[i].enabled )
 		return;
+
+	if (Log_debug_output_to_file) {
+		if (Log_fp != NULL) {
+			fputs(tmp, Log_fp);	
+			fflush(Log_fp);
+		}
+	}
+
+	if ( !Cmdline_debug_window )
+		return;
+
+	// everything after this point relates to printing in the debug window
 
 	if (mprintf_last_line == -1 )	{
 		for (i=0; i<SCROLL_BUFFER_SIZE;i++)	{
@@ -613,25 +640,16 @@ void outwnd_print(char *id, char *tmp)
 		DWORD   cbReturned;
 
 		DeviceIoControl (mono_driver, (DWORD)IOCTL_MONO_PRINT, tmp, strlen(tmp), NULL, 0, &cbReturned, 0 );
+#ifndef NMONO
 	} else {
 		mono_print(tmp, strlen(tmp) );
+#endif
 	}
 
 	sptr = tmp;
 	ccol = strlen(outtext[mprintf_last_line] );
 	dptr = &outtext[mprintf_last_line][ccol];
 	nrows = 0;
-
-#ifndef NDEBUG
-
-	if ( Log_debug_output_to_file ) {
-		if ( Log_fp != NULL ) {
-			fputs(tmp, Log_fp);	
-			fflush(Log_fp);
-		}
-	}
-
-#endif
 
 	while(*sptr) {
 		if ( (*sptr == '\n') || (ccol >= MAX_LINE_WIDTH-1 ) )	{
@@ -654,11 +672,10 @@ void outwnd_print(char *id, char *tmp)
 		sptr++;
 	} 
 
-	if ( outwnd_disabled ){
+	if (outwnd_disabled)
 		return;
-	}
 
-	if ( !OutputActive )	{
+	if ( !OutputActive ) {
 		int oldpos = GetScrollPos( hOutputWnd, SB_VERT );
 		if ( oldpos != max_scroll_pos )	{
 			SCROLLINFO si;
@@ -686,7 +703,6 @@ void outwnd_print(char *id, char *tmp)
 
 LRESULT CALLBACK outwnd_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam)
 {
-	
 	switch(msg)	{
 	case WM_ACTIVATEAPP:
 		// The application z-ordering has change
@@ -723,17 +739,17 @@ LRESULT CALLBACK outwnd_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam)
 		int z;
 
 		z = LOWORD(wParam);
-		if (z >= ID_FILTER && z < ID_FILTER + outwnd_filter_count)
+		if (z >= ID_FILTER && z < ID_FILTER + OutwndFilter.size())
 		{
 			z -= ID_FILTER;
-			outwnd_filter[z]->state = !outwnd_filter[z]->state;
+			OutwndFilter[z].enabled = !OutwndFilter[z].enabled;
 
-			if ( !stricmp( outwnd_filter[z]->name, "error" ) )	{
-				outwnd_filter[z]->state = 1;
-			} else if ( !stricmp( outwnd_filter[z]->name, "general" ) )	{
-				outwnd_filter[z]->state = 1;
-			} else if ( !stricmp( outwnd_filter[z]->name, "warning" ) )	{
-				outwnd_filter[z]->state = 1;
+			if ( !stricmp( OutwndFilter[z].name, "error" ) )	{
+				OutwndFilter[z].enabled = 1;
+			} else if ( !stricmp( OutwndFilter[z].name, "general" ) )	{
+				OutwndFilter[z].enabled = 1;
+			} else if ( !stricmp( OutwndFilter[z].name, "warning" ) )	{
+				OutwndFilter[z].enabled = 1;
 			}
 			save_filter_info();
 			break;
@@ -763,24 +779,22 @@ LRESULT CALLBACK outwnd_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam)
 			HMENU h_menu = CreatePopupMenu();
 			HMENU h_sub_menu = CreatePopupMenu();
 			POINT pt;
-			int i;
 
-			for (i=0; i<outwnd_filter_count; i++)
-			{
+			for (uint i = 0; i < OutwndFilter.size(); i++) {
 				UINT flags = MFT_STRING;	//MF_GRAYED;
 
-				if ( !stricmp( outwnd_filter[i]->name, "error" ) )	{
+				if ( !stricmp( OutwndFilter[i].name, "error" ) )	{
 					flags |= MF_GRAYED;
-				} else if ( !stricmp( outwnd_filter[i]->name, "general" ) )	{
+				} else if ( !stricmp( OutwndFilter[i].name, "general" ) )	{
 					flags |= MF_GRAYED;
-				} else if ( !stricmp( outwnd_filter[i]->name, "warning" ) )	{
+				} else if ( !stricmp( OutwndFilter[i].name, "warning" ) )	{
 					flags |= MF_GRAYED;
 				}
 
-				if (outwnd_filter[i]->state)
-					AppendMenu(h_sub_menu, flags | MF_CHECKED, ID_FILTER + i, outwnd_filter[i]->name);
+				if (OutwndFilter[i].enabled)
+					AppendMenu(h_sub_menu, flags | MF_CHECKED, ID_FILTER + i, OutwndFilter[i].name);
 				else
-					AppendMenu(h_sub_menu, flags, ID_FILTER + i, outwnd_filter[i]->name);
+					AppendMenu(h_sub_menu, flags, ID_FILTER + i, OutwndFilter[i].name);
 			}
 
 			AppendMenu(h_menu, MFT_STRING, ID_COPY, "&Copy\tEnter");
@@ -912,7 +926,7 @@ LRESULT CALLBACK outwnd_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam)
 		break;
 
 	case WM_DESTROY:
-		outwnd_disabled = 1;
+		outwnd_disabled = true;
 		PostQuitMessage(0);
 		break;
 
@@ -1274,7 +1288,7 @@ BOOL outwnd_create(int display_under_freespace_window)
 	// with fullscreen startups in main window.
 	SetWindowPos( hOutputWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE|SWP_SHOWWINDOW );
 
-	outwnd_disabled = FALSE;
+	outwnd_disabled = false;
 	SetTimer(hOutputWnd, TIMER1, 50, NULL);
 	for (x=0; x<MAX_LINE_WIDTH; x++)
 		spaces[x] = ' ';
@@ -1310,36 +1324,71 @@ void close_mono()
 		CloseHandle(hOutputThread);
 		hOutputThread = NULL;
 	}
-	if (mono_driver)	{
+
+	if (mono_driver) {
 		CloseHandle(mono_driver);
 		mono_driver = NULL;
 	}
 }
-#define NMONO
+
+void outwnd_init_debug_window(int display_under_freespace_window)
+{
+	static debug_window_inited = false;
+
+	if ( !Cmdline_debug_window || !outwnd_inited || debug_window_inited )
+		return;
+
+ 	hOutputThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)outwnd_thread, (LPVOID)display_under_freespace_window, 0, &OutputThreadID);
+	//SetThreadPriority(hOutputThread, THREAD_PRIORITY_TIME_CRITICAL);
+
+#ifndef NMONO
+	// set up the monochrome drivers
+    if ( (mono_driver = CreateFile("\\\\.\\MONO", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)) == ((HANDLE)-1))	{
+		outwnd_printf2("Cannot get handle to monochrome driver.\n");
+		mono_init();
+	}
+
+	atexit(close_mono);
+#endif
+
+	debug_window_inited = true;
+}
+
 void outwnd_init(int display_under_freespace_window)
 {
-
-	if (!outwnd_inited)	{
-		outwnd_inited = TRUE;
+	if (outwnd_inited)
+		return;
+/*
+	if (Cmdline_debug_window) {
  		hOutputThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)outwnd_thread, (LPVOID)display_under_freespace_window, 0, &OutputThreadID);
 		//SetThreadPriority(hOutputThread, THREAD_PRIORITY_TIME_CRITICAL);
 #ifndef NMONO
 		// set up the monochrome drivers
-    if ( (mono_driver = CreateFile("\\\\.\\MONO", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)) == ((HANDLE)-1))	{
-		 outwnd_printf2("Cannot get handle to monochrome driver.\n");
-		 mono_init();
+    	if ( (mono_driver = CreateFile("\\\\.\\MONO", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL)) == ((HANDLE)-1))	{
+			outwnd_printf2("Cannot get handle to monochrome driver.\n");
+			mono_init();
 		}
 
-	 atexit(close_mono);
+		atexit(close_mono);
 #endif
 	}
+*/
+	if (Log_fp == NULL) {
+		char pathname[MAX_PATH_LEN];
 
+		memset( pathname, 0, sizeof(pathname) );
+		snprintf(pathname, MAX_PATH_LEN-1, "%s\\%s\\%s", detect_home(), Pathtypes[CF_TYPE_DATA].path, FreeSpace_logfilename);
 
-#ifndef NDEBUG
-	if ( Log_fp == NULL ) {
-		Log_fp = fopen(FreeSpace_logfilename, "wb");
+		Log_fp = fopen(pathname, "wb");
+
+		if (Log_fp == NULL) {
+			outwnd_printf("Error", "Error opening %s\n", pathname);
+		} else {
+			outwnd_printf("General", "Opened %s OK\n", pathname);
+		}
 	}
-#endif 
+
+	outwnd_inited = true;
 }
 
 BOOL CALLBACK find_dlg_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam)
@@ -1442,35 +1491,23 @@ void find_text_in_outwindow(int n, int p)
 
 void outwnd_close()
 {
-#ifndef NDEBUG
 	if ( Log_fp != NULL ) {
 		fclose(Log_fp);
 		Log_fp = NULL;
 	}
-#endif
 
+	outwnd_inited = false;
 }
 
-
-#endif //NDEBUG
-
-
-#include "debugconsole/dbugfile.h"
-#include <stdarg.h>
-
-#include <stdio.h>
-#include <stdarg.h>
-#include <string.h>
-
-char safe_string[512] = {0};
-
-void safe_point_print(char *format, ...){
+void safe_point_print(char *format, ...)
+{
 	char tmp[512];
 	va_list args;
 	
 	va_start(args, format);
 	vsprintf(tmp, format, args);
 	va_end(args);
+
 	strcpy(safe_string, tmp);
 }
 
@@ -1479,4 +1516,4 @@ void safe_point(char *file, int line, char *format, ...)
 	safe_point_print("last safepoint: %s, %d; [%s]", file, line, format);
 }
 
-
+#endif //NDEBUG
