@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.8 $
- * $Date: 2006-11-01 18:46:22 $
+ * $Revision: 2.66.2.9 $
+ * $Date: 2006-11-16 01:09:00 $
  * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.8  2006/11/01 18:46:22  taylor
+ * Ooopps!  ;)
+ *
  * Revision 2.66.2.7  2006/11/01 18:35:58  taylor
  * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
  *
@@ -1112,9 +1115,16 @@ void shipfx_warpin_start( object *objp )
 		{
 			// cap radius to size of knossos
 			effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
-			// the knossos effect always seems to appear backwards, so flip it. may need to keep and eye on this in case it breaks some mods though - taylor
+
+			// make sure that the warp effect will always have a forward orient facing the exit direction of the warpin ship - taylor
 			matrix knossos_orient = Objects[shipp->special_warp_objnum].orient;
-			knossos_orient.vec.fvec.xyz.z = -knossos_orient.vec.fvec.xyz.z;
+			if ( (knossos_orient.vec.fvec.xyz.z < 0.0f) && (objp->orient.vec.fvec.xyz.z > 0.0f) ||
+				(knossos_orient.vec.fvec.xyz.z > 0.0f) && (objp->orient.vec.fvec.xyz.z < 0.0f) )
+			{
+				knossos_orient.vec.uvec.xyz.y = -knossos_orient.vec.uvec.xyz.y;
+				knossos_orient.vec.fvec.xyz.z = -knossos_orient.vec.fvec.xyz.z;
+			}
+
 			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index, &knossos_orient);
 		}
 		else
