@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.7 $
- * $Date: 2006-04-20 06:32:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2006-11-16 00:56:16 $
+ * $Author: taylor $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2006/04/20 06:32:23  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.6  2005/10/23 20:34:30  taylor
  * some cleanup, fix some general memory leaks, safety stuff and whatever else Valgrind complained about
  *
@@ -167,101 +170,106 @@
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
 #include "cfile/cfilesystem.h"
+#include "globalincs/globals.h"
+
+#include <vector>
+
 
 void outwnd_print(char *id = NULL, char *tmp = NULL);
 
-#define MAX_FILTERS 48
 #define MAX_LINE_WIDTH	128
 
 bool outwnd_inited = false;
-bool outwnd_disabled = true;
-bool OutputActive = false;
-int Outwnd_no_filter_file = 0;		// 0 = .cfg file found, 1 = not found and warning not printed yet, 2 = not found and warning printed
+ubyte Outwnd_no_filter_file = 0;		// 0 = .cfg file found, 1 = not found and warning not printed yet, 2 = not found and warning printed
 
 struct outwnd_filter_struct {
-	char name[FILTER_NAME_LENGTH];
-	int state;
-} *outwnd_filter[MAX_FILTERS], real_outwnd_filter[MAX_FILTERS];
+	char name[NAME_LENGTH];
+	bool enabled;
 
+	outwnd_filter_struct() { memset(this, 0, sizeof(outwnd_filter_struct)); }
+};
 
-int outwnd_filter_count = 0;
+std::vector<outwnd_filter_struct> OutwndFilter;
+
 int outwnd_filter_loaded = 0;
 
 // used for file logging
-#ifndef NDEBUG
-	int Log_debug_output_to_file = 1;
-	FILE *Log_fp;
-	char *FreeSpace_logfilename = "fs2_open.log";
-#endif
+int Log_debug_output_to_file = 1;
+FILE *Log_fp = NULL;
+char *FreeSpace_logfilename = "fs2_open.log";
+
+char safe_string[512] = { 0 };
+
 
 void load_filter_info(void)
 {
-	FILE *fp;
+	FILE *fp = NULL;
 	char pathname[MAX_PATH_LEN];
-	char inbuf[FILTER_NAME_LENGTH+4];
+	char inbuf[NAME_LENGTH+4];
+	outwnd_filter_struct new_filter;
 	int z;
 
 	outwnd_filter_loaded = 1;
-	outwnd_filter_count = 0;
 
-	snprintf(pathname, MAX_PATH_LEN, "%s/%s/%s/", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path);
-	strcat(pathname, "debug_filter.cfg" );
+	snprintf( pathname, MAX_PATH_LEN, "%s/%s/%s/%s", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path, NOX("debug_filter.cfg") );
 
 	fp = fopen(pathname, "rt");
-	if (!fp)	{
+
+	if (!fp) {
 		Outwnd_no_filter_file = 1;
 
-		outwnd_filter[outwnd_filter_count] = &real_outwnd_filter[outwnd_filter_count];
-		strcpy( outwnd_filter[outwnd_filter_count]->name, "error" );
-		outwnd_filter[outwnd_filter_count]->state = 1;
-		outwnd_filter_count++;
+		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
+		strcpy( new_filter.name, "error" );
+		new_filter.enabled = true;
 
-		outwnd_filter[outwnd_filter_count] = &real_outwnd_filter[outwnd_filter_count];
-		strcpy( outwnd_filter[outwnd_filter_count]->name, "general" );
-		outwnd_filter[outwnd_filter_count]->state = 1;
-		outwnd_filter_count++;
+		OutwndFilter.push_back( new_filter );
 
-		outwnd_filter[outwnd_filter_count] = &real_outwnd_filter[outwnd_filter_count];
-		strcpy( outwnd_filter[outwnd_filter_count]->name, "warning" );
-		outwnd_filter[outwnd_filter_count]->state = 1;
-		outwnd_filter_count++;
+		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
+		strcpy( new_filter.name, "general" );
+		new_filter.enabled = true;
+
+		OutwndFilter.push_back( new_filter );
+
+		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
+		strcpy( new_filter.name, "warning" );
+		new_filter.enabled = true;
+
+		OutwndFilter.push_back( new_filter );
 
 		return;
 	}
 
 	Outwnd_no_filter_file = 0;
 
-	while (fgets(inbuf, FILTER_NAME_LENGTH+3, fp))
-	{
-		if (outwnd_filter_count == MAX_FILTERS)
-			break;
+	while ( fgets(inbuf, NAME_LENGTH+3, fp) ) {
+		memset( &new_filter, 0, sizeof(outwnd_filter_struct) );
 
-		outwnd_filter[outwnd_filter_count] = &real_outwnd_filter[outwnd_filter_count];
 		if (*inbuf == '+')
-			outwnd_filter[outwnd_filter_count]->state = 1;
+			new_filter.enabled = true;
 		else if (*inbuf == '-')
-			outwnd_filter[outwnd_filter_count]->state = 0;
-		else continue;  // skip everything else
+			new_filter.enabled = false;
+		else
+			continue;	// skip everything else
 
 		z = strlen(inbuf) - 1;
 		if (inbuf[z] == '\n')
 			inbuf[z] = 0;
 
-		Assert(strlen(inbuf+1) < FILTER_NAME_LENGTH);
-		strcpy(outwnd_filter[outwnd_filter_count]->name, inbuf + 1);
+		Assert( strlen(inbuf+1) < NAME_LENGTH );
+		strcpy(new_filter.name, inbuf + 1);
 
-		if ( !stricmp( outwnd_filter[outwnd_filter_count]->name, "error" ) )	{
-			outwnd_filter[outwnd_filter_count]->state = 1;
-		} else if ( !stricmp( outwnd_filter[outwnd_filter_count]->name, "general" ) )	{
-			outwnd_filter[outwnd_filter_count]->state = 1;
-		} else if ( !stricmp( outwnd_filter[outwnd_filter_count]->name, "warning" ) )	{
-			outwnd_filter[outwnd_filter_count]->state = 1;
+		if ( !stricmp(new_filter.name, "error") ) {
+			new_filter.enabled = true;
+		} else if ( !stricmp(new_filter.name, "general") ) {
+			new_filter.enabled = true;
+		} else if ( !stricmp(new_filter.name, "warning") ) {
+			new_filter.enabled = true;
 		}
 
-		outwnd_filter_count++;
+		OutwndFilter.push_back( new_filter );
 	}
 
-	if (ferror(fp) && !feof(fp))
+	if ( ferror(fp) && !feof(fp) )
 		nprintf(("Error", "Error reading \"%s\"\n", pathname));
 
 	fclose(fp);
@@ -269,25 +277,23 @@ void load_filter_info(void)
 
 void save_filter_info(void)
 {
-	FILE *fp;
-	int i;
+	FILE *fp = NULL;
 	char pathname[MAX_PATH_LEN];
 
-	if (!outwnd_filter_loaded)
+	if ( !outwnd_filter_loaded )
 		return;
 
-	if ( Outwnd_no_filter_file )	{
+	if (Outwnd_no_filter_file)
 		return;	// No file, don't save
-	}
 
-	snprintf(pathname, MAX_PATH_LEN, "%s/%s/%s/", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path);
-	strcat(pathname, "debug_filter.cfg" );
+
+	snprintf( pathname, MAX_PATH_LEN, "%s/%s/%s/%s", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path, NOX("debug_filter.cfg") );
 
 	fp = fopen(pathname, "wt");
-	if (fp)
-	{
-		for (i=0; i<outwnd_filter_count; i++)
-			fprintf(fp, "%c%s\n", outwnd_filter[i]->state ? '+' : '-', outwnd_filter[i]->name);
+
+	if (fp) {
+		for (uint i = 0; i < OutwndFilter.size(); i++)
+			fprintf(fp, "%c%s\n", OutwndFilter[i].enabled ? '+' : '-', OutwndFilter[i].name);
 
 		fclose(fp);
 	}
@@ -304,6 +310,7 @@ void outwnd_printf2(char *format, ...)
 	va_start(args, format);
 	vsprintf(tmp, format, args);
 	va_end(args);
+
 	outwnd_print("General", tmp);
 }
 
@@ -318,25 +325,26 @@ void outwnd_printf(char *id, char *format, ...)
 	va_start(args, format);
 	vsprintf(tmp, format, args);
 	va_end(args);
+
 	outwnd_print(id, tmp);
 }
 
 void outwnd_print(char *id, char *tmp)
 {
-	int i;
-	outwnd_filter_struct *temp;
+	uint i;
 
 	if ( (id == NULL) || (tmp == NULL) )
 		return;
 
-  	if (!outwnd_inited) {
+  	if ( !outwnd_inited ) {
   		fputs("outwnd not initialized yet...  ", stdout);
 		fputs(tmp, stdout);
 		fflush(stdout);
+
   		return;
 	}
 
-	if ( Outwnd_no_filter_file == 1 )	{
+	if (Outwnd_no_filter_file == 1) {
 		Outwnd_no_filter_file = 2;
 
 		outwnd_print( "general", "==========================================================================\n" );
@@ -345,52 +353,35 @@ void outwnd_print(char *id, char *tmp)
 		outwnd_print( "general", "==========================================================================\n" );
 	}
 
-	if (!id)
+	if ( !id )
 		id = "General";
 
-	for (i=0; i<outwnd_filter_count; i++)
-		if (!stricmp(id, outwnd_filter[i]->name))
+	for (i = 0; i < OutwndFilter.size(); i++) {
+		if ( !stricmp(id, OutwndFilter[i].name) )
 			break;
+	}
 
-
-	if (i == outwnd_filter_count)  // new id found that's not yet in filter list
-	{
+	// id found that isn't in the filter list yet
+	if ( i == OutwndFilter.size() ) {
 		// Only create new filters if there was a filter file
-		if ( Outwnd_no_filter_file )	{
+		if (Outwnd_no_filter_file)
 			return;
-		}
 
-		if (outwnd_filter_count >= MAX_FILTERS) {
-			Assert(outwnd_filter_count == MAX_FILTERS);  // how did it get over the max?  Very bad..
-			outwnd_printf("General", "Outwnd filter limit reached.  Recycling \"%s\" to add \"%s\"",
-				outwnd_filter[MAX_FILTERS - 1]->name, id);
+		Assert( strlen(id)+1 < NAME_LENGTH );
+		outwnd_filter_struct new_filter;
 
-			i--;  // overwrite the last element (oldest used filter in the list)
-		}
+		strcpy(new_filter.name, id);
+		new_filter.enabled = true;
 
-		Assert(strlen(id) < FILTER_NAME_LENGTH);
-		outwnd_filter[i] = &real_outwnd_filter[i];  // note: this assumes the list doesn't have gaps (from deleting an element for example)
-		strcpy(outwnd_filter[i]->name, id);
-		outwnd_filter[i]->state = 1;
-		outwnd_filter_count = i + 1;
+		OutwndFilter.push_back( new_filter );
 		save_filter_info();
 	}
 
-	// sort the filters from most recently used to oldest, so oldest ones will get recycled first
-	temp = outwnd_filter[i];
-	while (i--)
-		outwnd_filter[i + 1] = outwnd_filter[i];
-
-	i++;
-	outwnd_filter[i] = temp;
-
-	if (!outwnd_filter[i]->state)
+	if ( !OutwndFilter[i].enabled )
 		return;
 
-#ifndef NDEBUG
-
-	if ( Log_debug_output_to_file ) {
-		if ( Log_fp != NULL ) {
+	if (Log_debug_output_to_file) {
+		if (Log_fp != NULL) {
 			fputs(tmp, Log_fp);	
 			fflush(Log_fp);
 		}
@@ -398,52 +389,41 @@ void outwnd_print(char *id, char *tmp)
 		fputs(tmp, stdout);
 		fflush(stdout);
 	}
-
-#else
-
-	fputs(tmp, stdout);
-	fflush(stdout);
-
-#endif
 }
 
 
 void outwnd_init(int display_under_freespace_window)
 {
-	outwnd_inited = TRUE;
+	outwnd_inited = true;
 
-#ifndef NDEBUG
 	char pathname[MAX_PATH_LEN];
 
-	snprintf(pathname, MAX_PATH_LEN, "%s/%s/%s/", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path);
-	strcat(pathname, FreeSpace_logfilename);
+	snprintf(pathname, MAX_PATH_LEN, "%s/%s/%s/%s", detect_home(), Osreg_user_dir, Pathtypes[CF_TYPE_DATA].path, FreeSpace_logfilename);
 
-	if ( Log_fp == NULL ) {
+	if (Log_fp == NULL) {
 		Log_fp = fopen(pathname, "wb");
-		if ( Log_fp == NULL ) {
+
+		if (Log_fp == NULL) {
 			outwnd_printf("Error", "Error opening %s\n", pathname);
 		} else {
 			outwnd_printf("General", "Opened %s OK\n", pathname);
 			printf("Future debug output directed to: %s\n", pathname);
 		}
 	}
-#endif 
 }
 
 void outwnd_close()
 {
-#ifndef NDEBUG
-	if ( Log_fp != NULL ) {
+	if (Log_fp != NULL) {
 		fclose(Log_fp);
 		Log_fp = NULL;
 	}
-#endif
 
+	outwnd_inited = false;
 }
 
-char safe_string[512] = {0};
-
-void safe_point_print(char *format, ...){
+void safe_point_print(char *format, ...)
+{
 	char tmp[512];
 	va_list args;
 	
