@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.8 $
- * $Date: 2006-11-06 05:54:13 $
+ * $Revision: 1.9 $
+ * $Date: 2006-11-16 00:51:43 $
  * $Author: taylor $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2006/11/06 05:54:13  taylor
+ * add envmap selection to background editor
+ * change skybox selection to be a text entry or browse instead of only text entry
+ * allow envmap selected in background editor to be used by FRED
+ * make texture replacement work in FRED for ships (Mantis bug #1068)
+ *
  * Revision 1.7  2006/08/06 18:47:29  Goober5000
  * add the multiple background feature
  * --Goober5000
@@ -451,8 +457,6 @@ void bg_bitmap_dlg::create()
 	
 	// determine if subspace is active
 	m_subspace = (The_mission.flags & MISSION_FLAG_SUBSPACE) ? 1 : 0;
-	
-	m_skybox_model=The_mission.skybox_model;
 
 	m_amb_red.SetRange(1,255);
 	m_amb_green.SetRange(1,255);
@@ -576,7 +580,7 @@ void bg_bitmap_dlg::OnClose()
 	// pack background array
 	stars_pack_backgrounds();
 	
-	//Reset the starfield structures
+	// reset the starfield structures
 	stars_pre_level_init(false);
 	stars_load_first_valid_background();
 	
@@ -1452,12 +1456,7 @@ void bg_bitmap_dlg::OnSwapBackground()
 char *Model_file_ext =	"Model Files (*.pof)|*.pof|"
 						"|";
 
-char *Image_file_ext =	"Image Files (*.dds, *.pcx, *.jpg, *.tga)|*.dds;*.pcx;*.jpg;*.tga|"
-						"DDS Files (*.dds)|*.dds|"
-						"PCX Files (*.pcx)|*.pcx|"
-						"JPG Files (*.jpg)|*.jpg|"
-						"TGA Files (*.tga)|*.tga|"
-						"All Files (*.*)|*.*|"
+char *Image_file_ext =	"DDS Files (*.dds)|*.dds|"
 						"|";
 
 void bg_bitmap_dlg::OnSkyboxBrowse()
@@ -1481,9 +1480,11 @@ void bg_bitmap_dlg::OnSkyboxBrowse()
 	UpdateData(FALSE);		
 
 	// restore directory
-	if (!z){
+	if ( !z )
 		cfile_pop_dir();
-	}	
+
+	// load/display new skybox model (if one was selected)
+	stars_set_background_model( (char*)(LPCTSTR)m_skybox_model, NULL );
 }
 
 void bg_bitmap_dlg::OnEnvmapBrowse()
@@ -1509,7 +1510,9 @@ void bg_bitmap_dlg::OnEnvmapBrowse()
 	UpdateData(FALSE);		
 
 	// restore directory
-	if (!z){
+	if ( !z )
 		cfile_pop_dir();
-	}	
+
+	// set the new envmap
+	ENVMAP = bm_load( (char*)(LPCTSTR)m_envmap );
 }
