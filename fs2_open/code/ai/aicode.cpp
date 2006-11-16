@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.90 $
- * $Date: 2006-11-06 06:43:58 $
+ * $Revision: 1.91 $
+ * $Date: 2006-11-16 00:49:35 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.90  2006/11/06 06:43:58  taylor
+ * if a submodel anim fails to start then move directly to ready position flag (set it up to do this, just forgot to do it ;))  (fix for Mantis bug #1133)
+ *
  * Revision 1.89  2006/11/06 06:24:57  taylor
  * updated/fixed modelanim code
  *
@@ -13565,7 +13568,7 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_
 	// keep track of my own status as well
 	shipp->bay_doors_need_open = true;
 	shipp->bay_doors_launched_from = ship_bay_path;
-	shipp->bay_doors_parent_shipnum = objnum;
+	shipp->bay_doors_parent_shipnum = Objects[objnum].instance;
 
 	Assert(pm->n_paths > path_index);
 	ai_find_path(pl_objp, objnum, path_index, 0);
@@ -13621,8 +13624,6 @@ void ai_bay_depart()
 		return;
 	}
 
-	// Bobboau
-//	bay_process_doors(Pl_objp, false);
 	ai_manage_bay_doors(Pl_objp, aip, false);
 
 	if ( Ships[anchor_shipnum].bay_doors_status != MA_POS_READY )
