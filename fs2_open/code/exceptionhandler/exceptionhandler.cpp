@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-01-26 03:23:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2006-11-16 00:51:04 $
+ * $Author: taylor $
  *
  * Main file for dealing with exception handling
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/01/26 03:23:29  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 2.9  2006/01/20 07:10:33  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -558,7 +562,10 @@ int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char *Message)
 	}
 #endif
 
-	
+#ifndef NDEBUG
+	if (safe_string[0])
+		hprintf(LogFile, "Last safe point: %s\r\n", safe_string);
+#endif
 
 	RecordModuleList(LogFile);
 
@@ -566,7 +573,6 @@ int __cdecl RecordExceptionInfo(PEXCEPTION_POINTERS data, const char *Message)
 	// Return the magic value which tells Win32 that this handler didn't
 	// actually handle the exception - so that things will proceed as per
 	// normal.
-	if(safe_string[0])hprintf(LogFile, "\nlast safe point \n%s\n",safe_string);
 
 	return EXCEPTION_CONTINUE_SEARCH;
 }
