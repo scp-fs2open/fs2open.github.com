@@ -9,14 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.18 $
- * $Date: 2006-11-06 06:46:08 $
+ * $Revision: 2.19 $
+ * $Date: 2006-11-16 00:53:12 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/11/06 06:46:08  taylor
+ * fix some of the envmap issues
+ *  - use proper hand-ness for OGL
+ *  - fix distortion
+ *  - get rid of extra index buffer requirement
+ * change starfield bitmaps to use an instance matrix rather than going through all the trouble of resetting the view matrix
+ * basic cleanup and get rid of a couple of struct/variable naming issues (compiler sanity)
+ * make double sure that we aren't using culling of z-buffering when rendering starfield bitmaps
+ *
  * Revision 2.17  2006/08/06 18:47:29  Goober5000
  * add the multiple background feature
  * --Goober5000
@@ -188,11 +197,11 @@
 #ifndef _STARFIELD_H
 #define _STARFIELD_H
 
-#include <vector>
-
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
+
+#include <vector>
 
 #define MAX_STARFIELD_BITMAP_LISTS	1
 #define MAX_ASTEROID_FIELDS			4

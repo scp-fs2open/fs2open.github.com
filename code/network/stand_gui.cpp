@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-11-06 05:55:43 $
+ * $Revision: 2.21 $
+ * $Date: 2006-11-16 00:53:12 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/11/06 05:55:43  taylor
+ * give the standalone chat box a horizontal scroll capability, not terribly accurate but it's good enough for the purpose (Mantis bug #1095)
+ *
  * Revision 2.19  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -2405,9 +2408,9 @@ BOOL std_create_standalone_window()
 	std_reset_standalone_gui();
 
 	// initialize the debug outwindow
-	#ifndef NDEBUG
-		outwnd_init();
-	#endif
+#ifndef NDEBUG
+	outwnd_init();
+#endif
 
 	return TRUE;
 }

@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FRED.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-10-08 02:05:38 $
- * $Author: Goober5000 $
+ * $Revision: 1.4 $
+ * $Date: 2006-11-16 00:53:12 $
+ * $Author: taylor $
  *
  * FRED.cpp : Defines the class behaviors for the application.
  * Global editor dialog box classes are instantiated here, initializes the
  * application (MFC level at least), processes the INI file.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/10/08 02:05:38  Goober5000
+ * fix forum links
+ *
  * Revision 1.2  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -355,9 +358,9 @@ CFREDApp::CFREDApp()
 
 	DBUGFILE_INIT();
 
-	#ifndef NDEBUG
+#ifndef NDEBUG
 	outwnd_init();
-	#endif
+#endif
 }
 
 CFREDApp::~CFREDApp()

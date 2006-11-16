@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.78 $
- * $Date: 2006-11-06 05:42:44 $
+ * $Revision: 2.79 $
+ * $Date: 2006-11-16 00:53:12 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2006/11/06 05:42:44  taylor
+ * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
+ * deal with a index_buffer memory leak that Valgrind has always complained about
+ * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
+ * get rid of MAX_BUFFERS
+ * make D3D vertex buffers dynamic, like OGL has already done
+ *
  * Revision 2.77  2006/10/06 09:56:42  taylor
  * clean up some old software rendering stuff that we don't use any longer
  * remove grzbuffer.*, since all it did was give us 3 variables, which were moved to 2d.*
@@ -1552,7 +1559,7 @@ void gr_force_windowed()
 #endif  // ifdef WIN32
 
 		case GR_OPENGL:
-			extern void opengl_minimize();
+		//	extern void opengl_minimize();
 			//opengl_minimize();
 			break;
 
