@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.9.2.3 $
- * $Date: 2006-08-25 21:15:31 $
+ * $Revision: 2.9.2.4 $
+ * $Date: 2006-11-21 23:06:57 $
  * $Author: karajorma $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9.2.3  2006/08/25 21:15:31  karajorma
+ * Fix TvT problem with scores appearing incorrectly.
+ * Fix a CVS issue
+ *
  * Revision 2.9  2006/06/02 09:10:02  karajorma
  * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
  *
@@ -742,6 +746,10 @@ void process_event_update_packet(ubyte *data, header *hinfo);
 // variable update packet
 void send_variable_update_packet(int variable_index, char *value);
 void process_variable_update_packet( ubyte *data, header *hinfo);
+
+// weapons or ammo changed packet
+void send_weapon_or_ammo_changed_packet (int ship_index, int bank_type, int bank_number, int ammo_left, int rearm_limit, int new_weapon_index);
+void process_weapon_or_ammo_changed_packet( ubyte *data, header *hinfo);
 
 // weapon detonate packet
 void send_weapon_detonate_packet(object *objp);

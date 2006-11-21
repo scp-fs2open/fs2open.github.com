@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.57.2.4 $
- * $Date: 2006-11-12 17:52:21 $
+ * $Revision: 2.57.2.5 $
+ * $Date: 2006-11-21 23:06:57 $
  * $Author: karajorma $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57.2.4  2006/11/12 17:52:21  karajorma
+ * Doh!
+ *
  * Revision 2.57.2.3  2006/08/25 21:15:31  karajorma
  * Fix TvT problem with scores appearing incorrectly.
  * Fix a CVS issue
@@ -8451,6 +8454,88 @@ void process_event_update_packet(ubyte *data, header *hinfo)
 	}	
 }
 
+void send_weapon_or_ammo_changed_packet (int ship_index, int bank_type, int bank_number, int ammo_left, int rearm_limit, int new_weapon_index)
+{
+	ubyte data[MAX_PACKET_SIZE];
+	int packet_size = 0;
+
+	if(Net_player == NULL){
+		return;
+	}
+	if(!(Net_player->flags & NETINFO_FLAG_AM_MASTER)){
+		return;
+	}
+
+	// build the packet and add the data
+	BUILD_HEADER(WEAPON_OR_AMMO_CHANGED);
+	ADD_INT(ship_index);
+	ADD_INT(bank_type);
+	ADD_INT(bank_number);
+	ADD_INT(ammo_left);
+	ADD_INT(rearm_limit);
+	ADD_INT(new_weapon_index);
+
+	//Send it to the player whose weapons have changes
+	multi_io_send_to_all_reliable(data, packet_size);
+}
+
+void process_weapon_or_ammo_changed_packet(ubyte *data, header *hinfo)
+{
+	int offset = HEADER_LENGTH;
+	int ship_index, bank_type, bank_number, ammo_left, rearm_limit, new_weapon_index;
+	ship *shipp;
+
+	// get the data
+	GET_INT(ship_index);
+	GET_INT(bank_type);
+	GET_INT(bank_number);
+	GET_INT(ammo_left);
+	GET_INT(rearm_limit);
+	GET_INT(new_weapon_index);
+	PACKET_SET_SIZE();
+
+	// Now set the ships values up. 
+	
+	//Primary weapons
+	if (bank_type == 0) 
+	{
+		// don't swap weapons
+		if (new_weapon_index < 0)
+		{
+			set_primary_ammo(ship_index, bank_number, ammo_left, rearm_limit);
+		}
+		else 
+		{
+			Assert (new_weapon_index < MAX_WEAPON_TYPES);
+			shipp = &Ships[ship_index];
+			shipp->weapons.primary_bank_weapons[bank_number] = new_weapon_index;
+			set_primary_ammo(Player_obj->instance, bank_number, ammo_left, rearm_limit);
+		}
+	}
+	// Secondary weapons
+	else if (bank_type == 1)
+	{
+		// don't swap weapons
+		if (new_weapon_index < 0)
+		{
+			set_secondary_ammo(ship_index, bank_number, ammo_left, rearm_limit);
+		}
+		else 
+		{
+			Assert (new_weapon_index < MAX_WEAPON_TYPES);
+			shipp = &Ships[ship_index];
+			shipp->weapons.secondary_bank_weapons[bank_number] = new_weapon_index;
+			set_secondary_ammo(Player_obj->instance, bank_number, ammo_left, rearm_limit);
+		}
+	}
+	else
+	{
+		nprintf(("network", "weapon_or_ammo_changed_packet recived for tertiary or other unsupported type\n"));
+		return;
+	}
+}
+
+// Karajorma - Sends a packet to all clients telling them that a SEXP variable has changed its value
 void send_variable_update_packet(int variable_index, char *value)
 {
 	ubyte data[MAX_PACKET_SIZE];

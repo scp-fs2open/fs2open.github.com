@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122.2.5 $
+ * $Revision: 2.122.2.6 $
  * $Author: karajorma $
- * $Date: 2006-10-28 21:17:04 $
+ * $Date: 2006-11-21 23:07:27 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122.2.5  2006/10/28 21:17:04  karajorma
+ * Adding the network-variable option to SEXP variables. This change will revert variables to the same behaviour they displayed in retail (i.e they don't update for clients) unless a variable is set to be a network-variable.
+ *
  * Revision 2.122.2.4  2006/10/25 01:01:55  Goober5000
  * moved some stuff around in the sexp menus
  *
@@ -1697,8 +1700,8 @@ void sexp_variable_block_free(const char *ship_name, int start_index, int block_
 
 
 // Karajorma
-void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1);
-void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1);
+void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1, bool update=true);
+void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1, bool update=true);
 
 
 // menu and category stuff
