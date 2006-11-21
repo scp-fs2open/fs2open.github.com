@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.31 $
- * $Date: 2006-11-15 00:33:15 $
- * $Author: taylor $
+ * $Revision: 2.259.2.32 $
+ * $Date: 2006-11-21 23:07:26 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.31  2006/11/15 00:33:15  taylor
+ * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)
+ *
  * Revision 2.259.2.30  2006/11/05 18:42:25  Goober5000
  * fix is-event-x-delay optional argument type
  *
@@ -11882,7 +11885,7 @@ void sexp_set_primary_ammo (int node)
 }
 
 //Karajorma - Helper function for the set-primary-ammo and weapon functions
-void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit)
+void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit, bool update)
 {
 	ship *shipp;
 	int maximum_allowed ;
@@ -11913,8 +11916,8 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 	}
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = fl2i(shipp->weapons.primary_bank_capacity[requested_bank] 
-		/ Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size);
+	maximum_allowed = fl2i((shipp->weapons.primary_bank_capacity[requested_bank] 
+		/ Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size)+0.5);
 	if (maximum_allowed < requested_ammo) 
 	{
 		requested_ammo = maximum_allowed ;
@@ -11933,6 +11936,12 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 		}
 
 		shipp->weapons.primary_bank_start_ammo[requested_bank] = rearm_limit;
+	}
+
+	// The change needs to be passed on if this is a multiplayer game
+	if (MULTIPLAYER_MASTER & update)
+	{
+		send_weapon_or_ammo_changed_packet(ship_index, 0, requested_bank, requested_ammo, rearm_limit, -1);
 	}
 }
 
@@ -12025,7 +12034,7 @@ void sexp_set_secondary_ammo (int node)
 }
 
 //Karajorma - Helper function for the set-secondary-ammo and weapon functions
-void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit)
+void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit, bool update)
 {
 	ship *shipp;
 	int maximum_allowed;
@@ -12069,6 +12078,12 @@ void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo,
 
 		shipp->weapons.secondary_bank_start_ammo[requested_bank] = rearm_limit;
 	}
+
+	// The change needs to be passed on if this is a multiplayer game and we're not already updating the weapon
+	if (MULTIPLAYER_MASTER && update)
+	{
+		send_weapon_or_ammo_changed_packet(ship_index, 1, requested_bank, requested_ammo, rearm_limit, -1);
+	}
 }
 
 // Karajorma - Changes the weapon in the requested bank to the one supplied. Optionally sets the ammo and 
@@ -12076,7 +12091,7 @@ void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo,
 void sexp_set_weapon (int node, bool primary)
 {
 	ship *shipp;	
-	int sindex, requested_bank, windex, requested_ammo, rearm_limit;
+	int sindex, requested_bank, windex, requested_ammo=-1, rearm_limit=-1;
 
 	Assert (node != -1);
 
@@ -12119,34 +12134,51 @@ void sexp_set_weapon (int node, bool primary)
 	
 	// Check to see if the optional ammo and rearm_limit settings were supplied
 	node = CDR(node);
+	if (node >= 0) {
+		requested_ammo = eval_num(node); 
+		
+		if (requested_ammo < 0) {
+			requested_ammo = 0; 
+		}
+		node = CDR(node);
+		
+		// If nothing was supplied then set the rearm limit to a negative value so that it is ignored
+		if (node < 0) {
+			rearm_limit = -1;
+		}
+		else {
+			rearm_limit = eval_num(node); 
+		}
 
-	// If nothing was supplied we're done. Bail. 
-	if (node < 0) {
-		return ;
-	}
-
-	requested_ammo = eval_num(node); 
-	
-	if (requested_ammo < 0) {
-		requested_ammo = 0; 
-	}
-	node = CDR(node);
-	
-	// If nothing was supplied then set the rearm limit to a negative value so that it is ignored
-	if (node < 0) {
-		rearm_limit = -1;
+		// Set the ammo but do not send an ammo changed update packet as we'll do that later from here
+		if (primary) {
+			set_primary_ammo (sindex, requested_bank, requested_ammo, rearm_limit, false);
+		}
+		else {
+			set_secondary_ammo (sindex, requested_bank, requested_ammo, rearm_limit, false);
+		}
 	}
 	else {
-		rearm_limit = eval_num(node); 
+		// read the data 
+		if (primary) {
+			requested_ammo = shipp->weapons.primary_bank_ammo[requested_bank];
+			rearm_limit = shipp->weapons.primary_bank_start_ammo[requested_bank];
+		}
+		else {
+			requested_ammo = shipp->weapons.secondary_bank_ammo[requested_bank];
+			rearm_limit = shipp->weapons.secondary_bank_start_ammo[requested_bank];
+		}
 	}
 
-	if (primary)
+	// Now pass this info on to clients if need be.
+	if (MULTIPLAYER_MASTER)
 	{
-		set_primary_ammo (sindex, requested_bank, requested_ammo, rearm_limit);
-	}
-	else
-	{
-		set_secondary_ammo (sindex, requested_bank, requested_ammo, rearm_limit);
+		if (primary) {
+			send_weapon_or_ammo_changed_packet(sindex, 0, requested_bank, requested_ammo, rearm_limit, windex);
+		}
+		else {
+			send_weapon_or_ammo_changed_packet(sindex, 1, requested_bank, requested_ammo, rearm_limit, windex);
+		}
 	}
 }
 
