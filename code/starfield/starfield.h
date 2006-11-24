@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.16.2.3 $
- * $Date: 2006-11-15 00:36:07 $
- * $Author: taylor $
+ * $Revision: 2.16.2.4 $
+ * $Date: 2006-11-24 22:40:16 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16.2.3  2006/11/15 00:36:07  taylor
+ * various bits of little cleanup
+ * get rid of some more compiler warnings
+ *
  * Revision 2.16.2.2  2006/11/06 05:26:38  taylor
  * fix some of the envmap issues
  *  - use proper hand-ness for OGL
@@ -321,5 +325,7 @@ void stars_modify_entry_FRED(int index, const char *name, starfield_list_entry *
 
 // Goober5000
 void stars_load_first_valid_background();
+int stars_get_first_valid_background();
+void stars_load_background(int background_idx);
 
 #endif
