@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.9 $
- * $Date: 2006-11-16 00:51:43 $
- * $Author: taylor $
+ * $Revision: 1.10 $
+ * $Date: 2006-11-24 22:46:25 $
+ * $Author: Goober5000 $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/11/16 00:51:43  taylor
+ * clean up skybox model selection and usage to work better with FRED
+ * make sure to go ahead and set the skybox model when it's set/changed in FRED
+ * go ahead and load/set the envmap  when it's set/changed in FRED
+ * get rid of extra envmap image types, only DDS is actually supported (not sure what the hell I was thinking there)
+ *
  * Revision 1.8  2006/11/06 05:54:13  taylor
  * add envmap selection to background editor
  * change skybox selection to be a text entry or browse instead of only text entry
@@ -577,11 +583,8 @@ void bg_bitmap_dlg::OnClose()
 	// close bitmap data
 	bitmap_data_close();
 
-	// pack background array
+	// reset the background
 	stars_pack_backgrounds();
-	
-	// reset the starfield structures
-	stars_pre_level_init(false);
 	stars_load_first_valid_background();
 	
 	// close window stuff
@@ -854,6 +857,9 @@ void bg_bitmap_dlg::OnSunChange()
 		if(drop_index != CB_ERR)
 			((CComboBox*) GetDlgItem(IDC_SUN1))->SetCurSel(drop_index);
 	}
+
+	// refresh the background
+	stars_load_background(get_active_background());
 }
 
 void bg_bitmap_dlg::OnAddSun()
@@ -899,6 +905,9 @@ void bg_bitmap_dlg::OnDelSun()
 
 	// no item selected, let the message handler assign a new one
 	s_index = -1;
+
+	// refresh the background
+	stars_load_background(get_active_background());
 }
 
 void bg_bitmap_dlg::OnSunDropdownChange()
@@ -1015,6 +1024,9 @@ void bg_bitmap_dlg::OnBitmapChange()
 		if(drop_index != CB_ERR)
 			((CComboBox*) GetDlgItem(IDC_SBITMAP))->SetCurSel(drop_index);
 	}
+
+	// refresh the background
+	stars_load_background(get_active_background());
 }
 
 void bg_bitmap_dlg::OnAddBitmap()
@@ -1060,6 +1072,9 @@ void bg_bitmap_dlg::OnDelBitmap()
 
 	// no item selected, let the message handler assign a new one
 	b_index = -1;
+
+	// refresh the background
+	stars_load_background(get_active_background());
 }
 
 void bg_bitmap_dlg::OnBitmapDropdownChange()
@@ -1406,6 +1421,9 @@ void bg_bitmap_dlg::reinitialize_lists()
 	// repopulate
 	sun_data_init();
 	bitmap_data_init();
+
+	// refresh the background
+	stars_load_background(get_active_background());
 }
 
 int bg_bitmap_dlg::get_active_background()

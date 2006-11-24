@@ -9,14 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.85 $
- * $Date: 2006-11-16 00:51:43 $
- * $Author: taylor $
+ * $Revision: 2.86 $
+ * $Date: 2006-11-24 22:46:25 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2006/11/16 00:51:43  taylor
+ * clean up skybox model selection and usage to work better with FRED
+ * make sure to go ahead and set the skybox model when it's set/changed in FRED
+ * go ahead and load/set the envmap  when it's set/changed in FRED
+ * get rid of extra envmap image types, only DDS is actually supported (not sure what the hell I was thinking there)
+ *
  * Revision 2.84  2006/11/06 06:46:08  taylor
  * fix some of the envmap issues
  *  - use proper hand-ness for OGL
@@ -3372,11 +3378,26 @@ void stars_delete_instance_FRED(int index, bool sun)
 // Goober5000
 void stars_load_first_valid_background()
 {
+	int background_idx = stars_get_first_valid_background();
+
+	if (background_idx < 0 && !Fred_running)
+	{
+		if (Num_backgrounds > 1)
+			Warning(LOCATION, "Unable to find a sufficient number of bitmaps for any background listed in this mission.  No background will be displayed.");
+		else
+			Warning(LOCATION, "Unable to find a sufficient number of bitmaps for this mission's background.  The background will not be displayed.");
+	}
+
+	stars_load_background(background_idx);
+}
+
+// Goober5000
+int stars_get_first_valid_background()
+{
 	uint i, j;
 
-	Cur_background = -1;
 	if (Num_backgrounds == 0)
-		return;
+		return -1;
 
 	// get the first background with > 50% of its suns and > 50% of its bitmaps present
 	for (i = 0; i < (uint)Num_backgrounds; i++)
@@ -3399,44 +3420,35 @@ void stars_load_first_valid_background()
 
 		// add 1 so rounding will work properly
 		if ((total_suns >= (background->suns.size() + 1) / 2) && (total_bitmaps >= (background->bitmaps.size() + 1) / 2))
-		{
-			Cur_background = i;
-			break;
-		}
+			return i;
 	}
 
 	// didn't find a valid entry
-	if (Cur_background < 0)
-	{
-		// this is handy because it avoids zillions of warning messages
-		if (Num_backgrounds > 1)
-		{
-			Warning(LOCATION, "Unable to find a sufficient number of bitmaps for any background listed in this mission.  No background will be displayed.");
-		}
-		else
-		{
-			Warning(LOCATION, "Unable to find a sufficient number of bitmaps for this mission's background.  The background will not be displayed.");
-		}
-	}
-	// found something, so load it
-	else
+	return -1;
+}
+
+// Goober5000
+void stars_load_background(int background_idx)
+{
+	uint j;
+
+	stars_clear_instances();
+	Cur_background = background_idx;
+
+	if (Cur_background >= 0)
 	{
 		background_t *background = &Backgrounds[Cur_background];
 
 		for (j = 0; j < background->suns.size(); j++)
 		{
-			if (!stars_add_sun_entry(&background->suns[j]))
-			{
+			if (!stars_add_sun_entry(&background->suns[j]) && !Fred_running)
 				Warning(LOCATION, "Failed to add sun '%s' to the mission!", background->suns[j].filename);
-			}
 		}
 
 		for (j = 0; j < background->bitmaps.size(); j++)
 		{
-			if (!stars_add_bitmap_entry(&background->bitmaps[j]))
-			{
+			if (!stars_add_bitmap_entry(&background->bitmaps[j]) && !Fred_running)
 				Warning(LOCATION, "Failed to add starfield bitmap '%s' to the mission!", background->bitmaps[j].filename);
-			}
 		}
 	}
 }
