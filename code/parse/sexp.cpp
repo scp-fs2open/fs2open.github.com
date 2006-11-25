@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.32 $
- * $Date: 2006-11-21 23:07:26 $
- * $Author: karajorma $
+ * $Revision: 2.259.2.33 $
+ * $Date: 2006-11-25 06:33:22 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.32  2006/11/21 23:07:26  karajorma
+ * Fix ammo and weapon SEXP changes not being passed on to the clients
+ *
  * Revision 2.259.2.31  2006/11/15 00:33:15  taylor
  * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)
  *
@@ -2146,10 +2149,12 @@ void init_sexp()
 	Locked_sexp_false = alloc_sexp("false", SEXP_LIST, SEXP_ATOM_OPERATOR, -1, -1);
 	Assert(Locked_sexp_false != -1);
 	Sexp_nodes[Locked_sexp_false].type = SEXP_ATOM;  // fix bypassing value
+	Sexp_nodes[Locked_sexp_false].value = SEXP_KNOWN_FALSE;
 
 	Locked_sexp_true = alloc_sexp("true", SEXP_LIST, SEXP_ATOM_OPERATOR, -1, -1);
 	Assert(Locked_sexp_true != -1);
 	Sexp_nodes[Locked_sexp_true].type = SEXP_ATOM;  // fix bypassing value
+	Sexp_nodes[Locked_sexp_true].value = SEXP_KNOWN_TRUE;
 }
 
 // allocates an sexp node.
