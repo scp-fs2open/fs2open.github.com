@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.201 $
- * $Date: 2006-11-15 04:02:31 $
+ * $Revision: 2.202 $
+ * $Date: 2006-11-25 06:37:06 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.201  2006/11/15 04:02:31  Goober5000
+ * a much better fix for built-in arrival messages... it needs a new feature to fully work for custom wings though
+ *
  * Revision 2.200  2006/11/06 06:36:44  taylor
  * updated/fixed modelanim code
  *
@@ -7051,9 +7054,6 @@ void mission_maybe_make_ship_arrive(p_object *p_objp)
 // Goober5000
 void mission_parse_mark_non_arrival(p_object *p_objp)
 {
-	// mark the sexp
-	Sexp_nodes[p_objp->arrival_cue].value = SEXP_KNOWN_FALSE;
-
 	// mark the flag
 	p_objp->flags |= P_SF_CANNOT_ARRIVE;
 }
@@ -7063,18 +7063,12 @@ void mission_parse_mark_non_arrival(wing *wingp)
 {
 	int wingnum = WING_INDEX(wingp);
 
-	// mark the sexp
-	Sexp_nodes[wingp->arrival_cue].value = SEXP_KNOWN_FALSE;
-
 	// look through all ships yet to arrive...
 	for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 	{
-		// ...and find the ones in this wing
+		// ...and mark the ones in this wing
 		if (p_objp->wingnum == wingnum)
-		{
-			// mark the flag
 			p_objp->flags |= P_SF_CANNOT_ARRIVE;
-		}
 	}	
 }
 
