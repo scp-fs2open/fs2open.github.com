@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.288 $
- * $Date: 2006-11-16 00:52:28 $
- * $Author: taylor $
+ * $Revision: 2.289 $
+ * $Date: 2006-11-25 06:33:15 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.288  2006/11/16 00:52:28  taylor
+ * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)
+ *
  * Revision 2.287  2006/11/06 05:40:06  taylor
  * various bits of cleanup (warning messages, things that Valgrind complained about, etc.)
  * fix an out-of-bounds issue on Sexp_nodes[] which was leading to stack corruption
@@ -2143,10 +2146,12 @@ void init_sexp()
 	Locked_sexp_false = alloc_sexp("false", SEXP_LIST, SEXP_ATOM_OPERATOR, -1, -1);
 	Assert(Locked_sexp_false != -1);
 	Sexp_nodes[Locked_sexp_false].type = SEXP_ATOM;  // fix bypassing value
+	Sexp_nodes[Locked_sexp_false].value = SEXP_KNOWN_FALSE;
 
 	Locked_sexp_true = alloc_sexp("true", SEXP_LIST, SEXP_ATOM_OPERATOR, -1, -1);
 	Assert(Locked_sexp_true != -1);
 	Sexp_nodes[Locked_sexp_true].type = SEXP_ATOM;  // fix bypassing value
+	Sexp_nodes[Locked_sexp_true].value = SEXP_KNOWN_TRUE;
 }
 
 // allocates an sexp node.
