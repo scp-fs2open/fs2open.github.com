@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.33 $
- * $Date: 2006-11-25 06:33:22 $
+ * $Revision: 2.259.2.34 $
+ * $Date: 2006-11-26 03:22:38 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.33  2006/11/25 06:33:22  Goober5000
+ * this may have been an oversight
+ *
  * Revision 2.259.2.32  2006/11/21 23:07:26  karajorma
  * Fix ammo and weapon SEXP changes not being passed on to the clients
  *
@@ -3238,6 +3241,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if (Fred_running) {
 					int ship_num, ship2, w = 0;
 
+					// if it's the "goals" operator, this is part of initial orders, so just assume it's okay
+					if (get_operator_const(Sexp_nodes[op_node].text) == OP_GOALS_ID) {
+						break;
+					}
+
 					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[op_node].rest), 1);	// Goober5000 - include players
 					if (ship_num < 0) {
 						w = wing_name_lookup(CTEXT(Sexp_nodes[op_node].rest));
@@ -3469,6 +3477,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					int ship_num, model;
 
 					z = find_parent_operator(op_node);
+					
+					// if it's the "goals" operator, this is part of initial orders, so just assume it's okay
+					if (get_operator_const(Sexp_nodes[z].text) == OP_GOALS_ID) {
+						break;
+					}
+
+					// look for the ship this goal is being assigned to
 					ship_num = ship_name_lookup(CTEXT(Sexp_nodes[z].rest), 1);
 					if (ship_num < 0) {
 						if (bad_node)
