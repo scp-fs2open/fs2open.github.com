@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.80.2.12 $
- * $Date: 2006-11-01 18:35:57 $
- * $Author: taylor $
+ * $Revision: 2.80.2.13 $
+ * $Date: 2006-11-28 05:48:21 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80.2.12  2006/11/01 18:35:57  taylor
+ * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
+ *
  * Revision 2.80.2.11  2006/10/28 04:00:09  taylor
  * ok, so apparently that did actually do something ;)
  *
@@ -750,7 +753,8 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_TRIGGERED			(1 << 7)		// rotates when triggered by something
 #define MSS_FLAG_UNTARGETABLE		(1 << 8)		// Goober5000
 #define MSS_FLAG_CARRY_NO_DAMAGE	(1 << 9)		// WMC
-#define MSS_FLAG_FIRE_ON_NORMAL		(1 << 10)		// forces a turret to fire down it's normal vecs
+#define MSS_FLAG_USE_MULTIPLE_GUNS	(1 << 10)		// WMC
+#define MSS_FLAG_FIRE_ON_NORMAL		(1 << 11)		// forces a turret to fire down its normal vecs
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
