@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.386 $
- * $Date: 2006-11-12 20:01:55 $
- * $Author: phreak $
+ * $Revision: 2.387 $
+ * $Date: 2006-11-28 05:51:05 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.386  2006/11/12 20:01:55  phreak
+ * two fixes:
+ *
+ * 1) Fix for mantis #1099, part 2.
+ *
+ * 2) when changing the player's ship using debug_cycle_player_ship(), initialize the
+ *  primary bank starting capacity so the support ship will rearm it.
+ *
  * Revision 2.385  2006/11/06 06:43:58  taylor
  * if a submodel anim fails to start then move directly to ready position flag (set it up to do this, just forgot to do it ;))  (fix for Mantis bug #1133)
  *
@@ -4230,15 +4238,21 @@ strcpy(parse_error_text, temp_error);
 				
 			// Get any AWACS info
 			sp->awacs_intensity = 0.0f;
-			if(optional_string("$AWACS:")){
+			if (optional_string("$AWACS:")) {
 				sfo_return = stuff_float_optional(&sp->awacs_intensity);
 				if(sfo_return > 0)
 					stuff_float_optional(&sp->awacs_radius);
 				sip->flags |= SIF_HAS_AWACS;
 			}
 
-			if(optional_string("$Flags:")) {
+			if (optional_string("$Flags:")) {
 				parse_string_flag_list((int*)&sp->flags, Subsystem_flags, Num_subsystem_flags);
+			}
+
+			if (optional_string("+non-targetable"))
+			{
+				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");
+				sp->flags |= MSS_FLAG_UNTARGETABLE;
 			}
 
 			bool old_flags = false;
@@ -4247,19 +4261,12 @@ strcpy(parse_error_text, temp_error);
 				old_flags = true;
 			}
 
-			if (optional_string("+non-targetable"))
-			{
-				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");
-				sp->flags |= MSS_FLAG_UNTARGETABLE;
-				old_flags = true;
-			}
-
-			if(optional_string("+carry-no-damage")) {
+			if (optional_string("+carry-no-damage")) {
 				sp->flags |= MSS_FLAG_CARRY_NO_DAMAGE;
 				old_flags = true;
 			}
 
-			if(optional_string("+use-multiple-guns")) {
+			if (optional_string("+use-multiple-guns")) {
 				sp->flags |= MSS_FLAG_USE_MULTIPLE_GUNS;
 				old_flags = true;
 			}
@@ -4269,8 +4276,14 @@ strcpy(parse_error_text, temp_error);
 				old_flags = true;
 			}
 
-			if(old_flags)
-				Warning(LOCATION, "Use of deprecated subsystem syntax. Please use $Flags: field for subsystem flags.");
+			if (old_flags) {
+				Warning(LOCATION, "Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
+				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
+				"\t+untargetable\n" \
+				"\t+carry-no-damage\n" \
+				"\t+use-multiple-guns\n" \
+				"\t+fire-down-normals\n", sip->name, sp->name);
+			}
 
 			while(optional_string("$animation:"))
 			{
