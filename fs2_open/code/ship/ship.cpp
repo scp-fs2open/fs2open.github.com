@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.44 $
- * $Date: 2006-11-15 00:40:59 $
- * $Author: taylor $
+ * $Revision: 2.336.2.45 $
+ * $Date: 2006-11-28 05:51:03 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.44  2006/11/15 00:40:59  taylor
+ * fix some "stupid-windows-coder-mistakes" (otherwise known as "putting-more-than-you-should-into-header-files")
+ *   (gets rid of some/many compiler warnings, C++ language violations, and strange little bugs/errors)
+ *
  * Revision 2.336.2.43  2006/11/13 23:29:11  phreak
  * two fixes:
  *
@@ -2330,6 +2334,16 @@ flag_def_list Player_orders[] =
 
 int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
 
+flag_def_list Subsystem_flags[] = 
+{
+	{ "untargetable",		MSS_FLAG_UNTARGETABLE },
+	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE },
+	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS },
+	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL }
+};
+
+int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
+
 /*
 int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
 int Player_ship_precedence[MAX_PLAYER_SHIP_CHOICES];	// Array of ship types, precedence list for player ship/wing selection
@@ -4204,20 +4218,44 @@ strcpy(parse_error_text, temp_error);
 				sip->flags |= SIF_HAS_AWACS;
 			}
 
-			if (optional_string("+untargetable"))
-				sp->flags |= MSS_FLAG_UNTARGETABLE;
+			if (optional_string("$Flags:")) {
+				parse_string_flag_list((int*)&sp->flags, Subsystem_flags, Num_subsystem_flags);
+			}
 
-			if (optional_string("+non-targetable"))
-			{
+			if (optional_string("+non-targetable")) {
 				Warning(LOCATION, "Grammar error in table file.  Please change \"+non-targetable\" to \"+untargetable\".");
 				sp->flags |= MSS_FLAG_UNTARGETABLE;
 			}
 
-			if(optional_string("+carry-no-damage"))
-				sp->flags |= MSS_FLAG_CARRY_NO_DAMAGE;
+			bool old_flags = false;
+			if (optional_string("+untargetable")) {
+				sp->flags |= MSS_FLAG_UNTARGETABLE;
+				old_flags = true;
+			}
 
-			if (optional_string("+fire-down-normals"))
+			if (optional_string("+carry-no-damage")) {
+				sp->flags |= MSS_FLAG_CARRY_NO_DAMAGE;
+				old_flags = true;
+			}
+
+			if (optional_string("+use-multiple-guns")) {
+				sp->flags |= MSS_FLAG_USE_MULTIPLE_GUNS;
+				old_flags = true;
+			}
+
+			if (optional_string("+fire-down-normals")) {
 				sp->flags |= MSS_FLAG_FIRE_ON_NORMAL;
+				old_flags = true;
+			}
+
+			if (old_flags) {
+				Warning(LOCATION, "Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
+				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
+				"\t+untargetable\n" \
+				"\t+carry-no-damage\n" \
+				"\t+use-multiple-guns\n" \
+				"\t+fire-down-normals\n", sip->name, sp->name);
+			}
 
 			while(optional_string("$animation:"))
 			{
