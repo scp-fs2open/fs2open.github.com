@@ -9,18 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-09-11 06:45:40 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2006-12-01 04:50:59 $
+ * $Author: Goober5000 $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/09/11 06:45:40  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.20  2006/09/08 06:18:29  taylor
  * small optimization
- *
- * Revision 2.19  2006/09/04 06:17:26  wmcoolmon
- * Commit of 'new' BTRL FTL effect work
  *
  * Revision 2.18  2006/05/27 16:52:50  taylor
  * lots of little cleanup and minor fixage
@@ -762,14 +762,7 @@ void particle_render_all()
 		}
 	}
 
-	//WMC - Terrible hack. If this appears in CVS, get me IMMEDIATELY.
-	//WMC - Commenting this out. TODO: Use this for BTRL flare effect.
-	/*
-	int saved_zbuffer_mode = gr_zbuffer_get();
-	gr_zbuffer_set(GR_ZBUFF_NONE);
 	batch_render_all();
-	gr_zbuffer_set(saved_zbuffer_mode);
-	*/
 
 //	mprintf(( "NP=%d, NCP=%d\n", n, nclipped ));
 }
