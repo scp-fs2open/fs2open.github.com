@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.7  2006/09/11 01:12:50  taylor
+ * fixes for stuff_string() bounds checking
+ * stict compiler build fixes
+ *
  * Revision 2.180.2.6  2006/08/22 05:50:12  taylor
  * make muzzle flash info dynamic
  * add support for modular mflash tables (*-mfl.tbm)
@@ -1729,7 +1733,7 @@ void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
 
 	sprintf(buf, "%sShockwave Name:", pre_char);
 	if(optional_string(buf)) {
-		stuff_string(sci->name, F_NAME, NAME_LENGTH);
+		stuff_string(sci->name, F_NAME, MAX_FILENAME_LEN);
 	}
 }
 
