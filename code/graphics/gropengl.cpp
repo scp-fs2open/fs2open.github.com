@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.20 $
- * $Date: 2006-11-15 00:47:57 $
+ * $Revision: 2.174.2.21 $
+ * $Date: 2006-12-07 18:07:51 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.20  2006/11/15 00:47:57  taylor
+ * properly support the updated window create code (all told: should take of of Mantis bugs #542, #624, #1140, and possibly #962 and #1124)
+ *
  * Revision 2.174.2.19  2006/11/06 05:21:32  taylor
  * enable/disable alpha test based on blend mode (found this hidden in an old tree, may help with blending the newer alphablend mode)
  *
@@ -1174,9 +1177,6 @@ static int GL_dump_frame_count = 0;
 static int GL_dump_frame_count_max = 0;
 static int GL_dump_frame_size = 0;
 
-volatile int GL_activate = 0;
-volatile int GL_deactivate = 0;
-
 static ubyte *GL_saved_screen = NULL;
 static ubyte *GL_saved_mouse_data = NULL;
 static int GL_saved_screen_id = -1;
@@ -1315,12 +1315,23 @@ void opengl_go_fullscreen()
 
 void opengl_go_windowed()
 {
-	if ( !Cmdline_window || GL_windowed || Fred_running || Playing_movie )
+	if ( !Cmdline_window /*|| GL_windowed*/ || Fred_running || Playing_movie )
 		return;
 
 #ifdef _WIN32
 	HWND wnd = (HWND)os_get_window();
 	Assert( wnd );
+
+	// if we are already in a windowed state, then just make sure that we are sane and bail
+	if (GL_windowed) {
+		SetForegroundWindow( wnd );
+		SetActiveWindow( wnd );
+		SetFocus( wnd );
+
+		ClipCursor(NULL);
+		ShowCursor(FALSE);
+		return;
+	}
 
 	os_suspend();
 
@@ -1337,7 +1348,6 @@ void opengl_go_windowed()
 	os_resume();  
 
 #else
-
 	if (SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) {
 		os_suspend();
 
@@ -1358,12 +1368,19 @@ void opengl_go_windowed()
 void opengl_minimize()
 {
 	// don't attempt to minimize if we are already in a window, or already minimized, or when playing a movie
-	if (GL_minimized || GL_windowed || Cmdline_window || Fred_running || Playing_movie)
+	if (GL_minimized /*|| GL_windowed || Cmdline_window*/ || Fred_running || Playing_movie)
 		return;
 
 #ifdef _WIN32
 	HWND wnd = (HWND)os_get_window();
 	Assert( wnd );
+
+	// if we are a window then just show the cursor and bail
+	if (Cmdline_window || GL_windowed) {
+		ClipCursor(NULL);
+		ShowCursor(TRUE);
+		return;
+	}
 
 	os_suspend();
 
@@ -1376,7 +1393,7 @@ void opengl_minimize()
 	os_resume();
 #else
 	// lets not minimize if we are in windowed mode
-	if (!(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN))
+	if ( !(SDL_GetVideoSurface()->flags & SDL_FULLSCREEN) )
 		return;
 
 	os_suspend();
@@ -1392,8 +1409,6 @@ void opengl_minimize()
 void gr_opengl_activate(int active)
 {
 	if (active) {
-		GL_activate++;
-
 		if (Cmdline_window)
 			opengl_go_windowed();
 		else
@@ -1406,7 +1421,6 @@ void gr_opengl_activate(int active)
 		}
 #endif
 	} else {
-		GL_deactivate++;
 		opengl_minimize();
 
 #ifdef SCP_UNIX
@@ -1616,17 +1630,6 @@ void gr_opengl_flip()
 #endif
 
 	opengl_tcache_frame();
-
-	if ( GL_activate )      {
-		GL_activate = 0;
-		opengl_tcache_flush();
-		// gr_opengl_clip_cursor(1); // mouse grab, see opengl_activate
-	}
-	
-	if ( GL_deactivate )      {
-		GL_deactivate = 0;
-		// gr_opengl_clip_cursor(0);  // mouse grab, see opengl_activate
-	}
 
 #ifndef NDEBUG
 	int ic = opengl_check_for_errors();
@@ -3503,7 +3506,8 @@ void gr_opengl_set_gamma(float gamma)
 
 Done:
 	// Flush any existing textures
-	opengl_tcache_flush();
+//	opengl_tcache_flush();
+	return;
 }
 
 void gr_opengl_fade_in(int instantaneous)
