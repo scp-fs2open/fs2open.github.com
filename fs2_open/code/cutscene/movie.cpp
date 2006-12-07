@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.31.2.7 $
- * $Date: 2006-11-15 00:24:47 $
+ * $Revision: 2.31.2.8 $
+ * $Date: 2006-12-07 17:57:25 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.31.2.7  2006/11/15 00:24:47  taylor
+ * clean up AVI movie stuff a bit:
+ *  - use the default black brush for clearing the screen, it's a little less stupid this way
+ *  - have the AVI player send messages back to the game rather than trying to poll for that extra crap
+ *  - remove the only DivX6 fix, there is better addressed by newer window handling code
+ *
  * Revision 2.31.2.6  2006/09/09 21:27:50  taylor
  * be sure to reset color and clear color before MVE playback (fix for Mantis bug #1041)
  *
@@ -226,7 +232,7 @@ bool movie_play(char *name)
 			return true;
 		} else {
 			// uh-oh, MVE is invalid... Abory, Retry, Fail?
-			mprintf(("MOVIE ERROR: Found invalid MVE! (%s)\n", full_name));
+			mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", full_name));
 		}
 	}
 
@@ -247,32 +253,19 @@ bool movie_play(char *name)
 
 	Playing_movie = true;
 
-	// reset the gr_* stuff before trying to play a movie
+	// kill all background sounds
+	main_hall_pause();
+	// clear the screen and hide the mouse cursor
+	Mouse_hidden++;
+	gr_reset_clip();
+	gr_set_color(255, 255, 255);
+	gr_set_clear_color(0, 0, 0);
+	gr_zbuffer_clear(0);
 	gr_clear();
-	gr_zbuffer_clear(1);
-	gr_flip(); // cycle in the clear'd buffer
+	gr_flip();
+	gr_clear(); // fullscreen under Windows appears to need this extra one
 
 	HWND hWnd = (HWND)os_get_window();
-
-	// This clears the screen
- 	InvalidateRect(hWnd, NULL, TRUE);
-	PAINTSTRUCT paint_info;
-	HDC clear_hdc = BeginPaint(hWnd,&paint_info);
-
-	if (clear_hdc) {
-		POINT points[4] = {
-			{ 0, 0 }, 
-			{ gr_screen.max_w, 0 }, 
-			{ gr_screen.max_w, gr_screen.max_h }, 
-			{ 0, gr_screen.max_h }
-		};
-
-		SelectObject( clear_hdc, GetStockObject(BLACK_BRUSH) );
-
-		Polygon(clear_hdc, points, 4);
-
-		EndPaint(hWnd,&paint_info);
-	}
 
   	process_messages();
 
@@ -299,15 +292,7 @@ bool movie_play(char *name)
 						case VK_SPACE:
 						case VK_RETURN:
 						{
-							// Terminate movie playback early
-							CloseClip(hWnd);
-#ifndef NO_DIRECT3D
-							if (gr_screen.mode == GR_DIRECT3D) {
-						 		GlobalD3DVars::D3D_activate = 1;
-							}
-#endif
-							Playing_movie = false;
-							return true;
+							goto Done;
 						}
 					}
 				} else {
@@ -318,6 +303,11 @@ bool movie_play(char *name)
 		// Stream bit of the movie then handle windows messages
 		while (dx8show_stream_movie() == false);
 	}
+
+Done:
+	Mouse_hidden--;
+
+	main_hall_unpause();
 
 	// We finished playing the movie
 	CloseClip( hWnd );
