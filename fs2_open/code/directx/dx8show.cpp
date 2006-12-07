@@ -18,9 +18,9 @@ enum PLAYSTATE {Stopped, Paused, Running, Init};
 void Msg(TCHAR *szFormat, ...);
 
 // Local
-HRESULT InitPlayerWindow(HWND ghApp);
+//HRESULT InitPlayerWindow(HWND ghApp);
 HRESULT InitVideoWindow(HWND ghApp, long w, long h);
-bool HandleGraphEvent(void);
+//bool HandleGraphEvent(void);
 void CheckVisibility(void);
 void CloseInterfaces(void);
 
@@ -59,7 +59,7 @@ char *ParseDShowError(HRESULT hr)
 //
 BOOL      g_bAudioOnly=FALSE;
 LONG      g_lVolume=VOLUME_FULL;
-DWORD     g_dwGraphRegister=0;
+//DWORD     g_dwGraphRegister=0;
 PLAYSTATE g_psCurrent=Stopped;
 
 // DirectShow interfaces
@@ -72,10 +72,11 @@ IBasicVideo   *pBV = NULL;
 IMediaSeeking *pMS = NULL;
 IMediaPosition *pMP = NULL;
 
+/*
 void PassMsgToVideoWindow(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    if (pVW)
-        pVW->NotifyOwnerMessage((long) hWnd, message, wParam, lParam);
+	if (pVW)
+		pVW->NotifyOwnerMessage((long) hWnd, message, wParam, lParam);
 }
 
 void SetCurrentState(PLAYSTATE state)
@@ -92,6 +93,7 @@ BOOL IsAudioOnly()
 {
 	return g_bAudioOnly; 
 }
+*/
 
 HRESULT PlayMovieInWindow(HWND ghApp, LPTSTR szFile)
 {
@@ -285,23 +287,25 @@ void CloseClip(HWND ghApp)
 
 void CloseInterfaces(void)
 {
-    // Relinquish ownership (IMPORTANT!) after hiding video window
-    if(pVW)
-        pVW->put_Visible(OAFALSE);
+	// Relinquish ownership (IMPORTANT!) after hiding video window
+	if (pVW) {
+		pVW->put_Visible(OAFALSE);
+		pVW->put_Owner(NULL);
+	}
 
     // Disable event callbacks
-    if (pME)
-        pME->SetNotifyWindow((OAHWND)NULL, 0, 0);
+	if (pME)
+		pME->SetNotifyWindow((OAHWND)NULL, 0, 0);
 
     // Release and zero DirectShow interfaces
-    SAFE_RELEASE(pME);
-    SAFE_RELEASE(pMS);
-    SAFE_RELEASE(pMP);
-    SAFE_RELEASE(pMC);
-    SAFE_RELEASE(pBA);
-    SAFE_RELEASE(pBV);
-    SAFE_RELEASE(pVW);
-    SAFE_RELEASE(pGB);
+	SAFE_RELEASE(pME);
+	SAFE_RELEASE(pMS);
+	SAFE_RELEASE(pMP);
+	SAFE_RELEASE(pMC);
+	SAFE_RELEASE(pBA);
+	SAFE_RELEASE(pBV);
+	SAFE_RELEASE(pVW);
+	SAFE_RELEASE(pGB);
 }
 
 void Msg(TCHAR *szFormat, ...)
