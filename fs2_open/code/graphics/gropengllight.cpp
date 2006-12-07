@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.29.2.1 $
- * $Date: 2006-07-24 07:38:00 $
+ * $Revision: 1.29.2.2 $
+ * $Date: 2006-12-07 18:10:16 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29.2.1  2006/07/24 07:38:00  taylor
+ * minor cleanup/optimization to beam warmup glow rendering function
+ * various lighting code cleanups
+ *  - try to always make sure beam origin lights occur outside of model
+ *  - make Static_lights[] dynamic
+ *  - be sure to reset to first 8 lights when moving on to render spec related texture passes
+ *  - add ambient color to point lights (helps warp effects)
+ *  - sort lights to try and get more important and/or visible lights to always happen in initial render pass
+ *
  * Revision 1.29  2006/04/12 01:10:35  taylor
  * some cleanup and slight reorg
  *  - remove special uv offsets for non-standard res, they were stupid anyway and don't actually fix the problem (which should actually be fixed now)
@@ -184,7 +193,7 @@
 
 // Variables
 opengl_light *opengl_lights = NULL;
-int *currently_enabled_lights = NULL;
+bool *currently_enabled_lights = NULL;
 bool lighting_is_enabled = true;
 int Num_active_gl_lights = 0;
 int GL_center_alpha = 0;
@@ -204,7 +213,7 @@ static const float GL_light_spec[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 static const float GL_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 static const float GL_light_emission[4] = { 0.1f, 0.1f, 0.1f, 0.7f };
 static const float GL_light_true_zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-static float GL_light_ambient[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
+static float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
 
 
 void FSLight2GLLight(opengl_light *GLLight, light *FSLight)
@@ -285,13 +294,22 @@ void FSLight2GLLight(opengl_light *GLLight, light *FSLight)
 	}
 }
 
+extern float Interp_light;
 void opengl_set_light(int light_num, opengl_light *light)
 {
 	Assert(light_num < GL_max_lights);
 
+	ogl_light_color diffuse = light->Diffuse;
+
+	if ( (light->type == LT_DIRECTIONAL) && (Interp_light < 1.0f) ) {
+		diffuse.r *= Interp_light;
+		diffuse.g *= Interp_light;
+		diffuse.b *= Interp_light;
+	}
+
 	glLightfv(GL_LIGHT0+light_num, GL_POSITION, &light->Position.x);
 	glLightfv(GL_LIGHT0+light_num, GL_AMBIENT, &light->Ambient.r);
-	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, &light->Diffuse.r);
+	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, &diffuse.r);
 	glLightfv(GL_LIGHT0+light_num, GL_SPECULAR, &light->Specular.r);
 	glLightfv(GL_LIGHT0+light_num, GL_SPOT_DIRECTION, &light->SpotDir.x);
 	glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, light->ConstantAtten);
@@ -342,56 +360,82 @@ int opengl_sort_active_lights(const void *a, const void *b)
 	return 0;
 }
 
-//finds the first unocupyed light
+// finds the first unoccupied light
 void opengl_pre_render_init_lights()
 {
 	for (int i = 0; i < GL_max_lights; i++) {
-		if (currently_enabled_lights[i] > -1)
+		if (currently_enabled_lights[i]) {
 			glDisable(GL_LIGHT0+i);
-
-		currently_enabled_lights[i] = -1;
+			currently_enabled_lights[i] = false;
+		}
 	}
 
 	// sort the lights to try and get the most visible lights on the first pass
 	insertion_sort(opengl_lights, Num_active_gl_lights, sizeof(opengl_light), opengl_sort_active_lights);
 }
 
+static GLdouble eyex, eyey, eyez;
+static GLdouble centerx, centery, centerz;
+static GLdouble upx, upy, upz;
+
+static vec3d last_view_pos;
+static matrix last_view_orient;
+
+static bool use_last_view = false;
 
 void opengl_change_active_lights(int pos)
 {
 	if ( !lighting_is_enabled )
 		return;
 
-	int i, k = 0, l = 0;
-	bool move = false;
-	vec3d fwd;
-	vec3d *uvec = &Eye_matrix.vec.uvec;
+	int i;
+	int offset = pos * GL_max_lights;
 
-	glMatrixMode(GL_MODELVIEW); 
-	glPushMatrix();				
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
 	glLoadIdentity();
 
-	vm_vec_add(&fwd, &Eye_position, &Eye_matrix.vec.fvec);
+	if ( !memcmp(&Eye_position, &last_view_pos, sizeof(vec3d)) && !memcmp(&Eye_matrix, &last_view_orient, sizeof(matrix)) ) {
+		use_last_view = true;
+	} else {
+		memcpy(&last_view_pos, &Eye_position, sizeof(vec3d));
+		memcpy(&last_view_orient, &Eye_matrix, sizeof(matrix));
 
-	gluLookAt(Eye_position.xyz.x, Eye_position.xyz.y, -Eye_position.xyz.z,
-				fwd.xyz.x, fwd.xyz.y, -fwd.xyz.z, uvec->xyz.x, uvec->xyz.y, -uvec->xyz.z);
+		use_last_view = false;
+	}
+
+	if ( !use_last_view ) {
+		eyex = (GLdouble)Eye_position.xyz.x;
+		eyey = (GLdouble)Eye_position.xyz.y;
+		eyez = (GLdouble)Eye_position.xyz.z;
+
+		centerx = eyex + (GLdouble)Eye_matrix.vec.fvec.xyz.x;
+		centery = eyey + (GLdouble)Eye_matrix.vec.fvec.xyz.y;
+		centerz = eyez + (GLdouble)Eye_matrix.vec.fvec.xyz.z;
+
+		upx = (GLdouble)Eye_matrix.vec.uvec.xyz.x;
+		upy = (GLdouble)Eye_matrix.vec.uvec.xyz.y;
+		upz = (GLdouble)Eye_matrix.vec.uvec.xyz.z;
+	}
+
+	gluLookAt(eyex, eyey, -eyez, centerx, centery, -centerz, upx, upy, -upz);
 
 	glScalef(1.0f, 1.0f, -1.0f);
 
-	for (i = 0; (i < GL_max_lights) && (((pos * GL_max_lights) + i) < Num_active_gl_lights); i++) {
-		glDisable(GL_LIGHT0+i);
-		move = false;
+	for (i = 0; i < GL_max_lights; i++) {
+		if (currently_enabled_lights[i]) {
+			glDisable(GL_LIGHT0+i);
+			currently_enabled_lights[i] = false;
+		}
 
-		for (k = 0; (k < MAX_LIGHTS) && !move; k++) {
-			int slot = (pos * GL_max_lights) + l;
+		if ( (offset + i) >= Num_active_gl_lights )
+			continue;
 
-			if (opengl_lights[slot].occupied) {
-				opengl_set_light(i,&opengl_lights[slot]);
-				glEnable(GL_LIGHT0+i);
-				currently_enabled_lights[i] = slot;
-				move = true;
-				l++;
-			}
+		if (opengl_lights[offset+i].occupied) {
+			opengl_set_light(i, &opengl_lights[offset+i]);
+
+			glEnable(GL_LIGHT0+i);
+			currently_enabled_lights[i] = true;
 		}
 	}
 
@@ -421,7 +465,7 @@ void gr_opengl_set_light(light *fs_light)
 
 	// init the light
 	FSLight2GLLight(&opengl_lights[Num_active_gl_lights], fs_light);
-	opengl_lights[Num_active_gl_lights++].occupied = 1;
+	opengl_lights[Num_active_gl_lights++].occupied = true;
 }
 
 // this sets up a light to be pointinf from the eye to the object, 
@@ -484,7 +528,7 @@ void gr_opengl_set_center_alpha(int type)
 
 	// first light
 	memcpy( &opengl_lights[Num_active_gl_lights], &glight, sizeof(opengl_light) );
-	opengl_lights[Num_active_gl_lights++].occupied = 1;
+	opengl_lights[Num_active_gl_lights++].occupied = true;
 
 	// second light
 	glight.Position.x = dir.xyz.x;
@@ -492,7 +536,7 @@ void gr_opengl_set_center_alpha(int type)
 	glight.Position.z = dir.xyz.z;
 
 	memcpy( &opengl_lights[Num_active_gl_lights], &glight, sizeof(opengl_light) );
-	opengl_lights[Num_active_gl_lights].occupied = 1;
+	opengl_lights[Num_active_gl_lights].occupied = true;
 
 	// reset center alpha
 	GL_center_alpha = 0;
@@ -518,6 +562,10 @@ void gr_opengl_reset_lighting()
 void opengl_calculate_ambient_factor()
 {
 	float amb_user = 0.0f;
+
+	// assuming that the default is "128", just skip this if not a user setting
+	if (Cmdline_ambient_factor == 128)
+		return;
 
 	amb_user = (float)((Cmdline_ambient_factor * 2) - 255) / 255.0f;
 
@@ -549,7 +597,7 @@ void opengl_init_light()
 	Verify(GL_max_lights > 0);
 
 	if ( currently_enabled_lights == NULL )
-		currently_enabled_lights = (int *) vm_malloc_q(GL_max_lights * sizeof(int));
+		currently_enabled_lights = (bool *) vm_malloc_q(GL_max_lights * sizeof(bool));
 
 	if ( opengl_lights == NULL )
 		opengl_lights = (opengl_light *) vm_malloc_q(MAX_LIGHTS * sizeof(opengl_light));
@@ -557,7 +605,7 @@ void opengl_init_light()
 	if ( (currently_enabled_lights == NULL) || (opengl_lights == NULL) )
 		Error( LOCATION, "Unable to allocate memory for lights!\n");
 
-	memset( currently_enabled_lights, -1, GL_max_lights * sizeof(int) );
+	memset( currently_enabled_lights, 0, GL_max_lights * sizeof(bool) );
 	memset( opengl_lights, 0, MAX_LIGHTS * sizeof(opengl_light) );
 }
 
@@ -609,17 +657,18 @@ void gr_opengl_set_lighting(bool set, bool state)
 		glLightModelfv( GL_LIGHT_MODEL_AMBIENT, GL_light_ambient );
 	}
 
-	for(int i = 0; i<GL_max_lights; i++){
-		if(currently_enabled_lights[i] > -1)glDisable(GL_LIGHT0+i);
-		currently_enabled_lights[i] = -1;
+	for (int i = 0; i < GL_max_lights; i++) {
+		if (currently_enabled_lights[i])
+			glDisable(GL_LIGHT0+i);
 	}
 
-	if(state) {
+	memset( currently_enabled_lights, 0, GL_max_lights * sizeof(bool) );
+
+	if (state) {
 		glEnable(GL_LIGHTING);
 	} else {
 		glDisable(GL_LIGHTING);
 	}
-
 }
 
 void gr_opengl_set_ambient_light(int red, int green, int blue)
