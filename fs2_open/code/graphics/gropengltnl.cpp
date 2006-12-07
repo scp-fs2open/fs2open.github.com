@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.44.2.7 $
- * $Date: 2006-10-27 06:42:29 $
+ * $Revision: 1.44.2.8 $
+ * $Date: 2006-12-07 18:16:11 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44.2.7  2006/10/27 06:42:29  taylor
+ * rename set_warp_globals() to model_set_warp_globals()
+ * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
+ * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
+ * change "model_current_LOD" to a global "Interp_detail_level" and the static "Interp_detail_level" to "Interp_detail_level_locked", a bit more descriptive
+ * minor bits of cleanup
+ * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
+ *
  * Revision 1.44.2.6  2006/10/24 13:38:23  taylor
  * fix the envmap-getting-rotated-by-turrets bug (though it did make me chuckle a bit when I first saw it ;))
  * try to reuse old view setup info, if we are using the same settings again (for speed up purposes, will be a bigger deal when bumpmapping gets here)
@@ -319,6 +327,7 @@ extern vec3d G3_user_clip_normal;
 extern vec3d G3_user_clip_point;
 extern int Interp_multitex_cloakmap;
 extern int Interp_cloakmap_alpha;
+extern float Interp_light;
 
 static int GL_modelview_matrix_depth = 1;
 static int GL_htl_projection_matrix_set = 0;
@@ -577,6 +586,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 	int count = (end - start + 1); //(n_prim * 3);
 	int start_tmp, end_tmp, count_tmp, multiple_elements = 0;
 
+	int textured = (flags & TMAP_FLAG_TEXTURED);
+
 	opengl_vertex_buffer *vbp = g_vbp;
 	Assert( g_vbp );
 
@@ -591,20 +602,11 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 	if ( glIsEnabled(GL_CULL_FACE) )
 		glFrontFace(GL_CW);
 
-
-// -------- Begin 1st PASS ------------------------------------------------------- //
-	if (gr_screen.current_bitmap == CLOAKMAP) {
-		glBlendFunc(GL_ONE,GL_ONE);
-		r = g = b = Interp_cloakmap_alpha;
-		a = 255;
-	}
-
-	int textured = (flags & TMAP_FLAG_TEXTURED);
-
 	opengl_setup_render_states(r, g, b, a, tmap_type, (textured) ? TMAP_FLAG_TEXTURED : 0);
 	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 
 
+// -------- Begin 1st PASS ------------------------------------------------------- //
 	// basic setup of all data and first texture
 	vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
 	if (vbp->vbo) {
@@ -660,7 +662,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 		}
 
 		// determine if we are going to use a specmap (for later checking)
-		if ( (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (SPECMAP > -1) && !Cmdline_nospec && (vbp->flags & VERTEX_FLAG_UV1) ) {
+		if ( (SPECMAP > -1) && !Cmdline_nospec && (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (vbp->flags & VERTEX_FLAG_UV1) ) {
 			use_spec = true;
 		}
 	}
@@ -673,10 +675,10 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 
 	// only change lights if we have a specmap, don't render the specmap when fog is enabled
 	if ( use_spec ) {
-		opengl_default_light_settings(!GL_center_alpha, 1, 0); // don't render with spec lighting here
+		opengl_default_light_settings(!GL_center_alpha, (Interp_light > 0.25f), 0); // don't render with spec lighting here
 	} else {
 		// reset to defaults
-		opengl_default_light_settings(!GL_center_alpha);
+		opengl_default_light_settings(!GL_center_alpha, (Interp_light > 0.25f));
 	}
 
 	gr_opengl_set_center_alpha(GL_center_alpha);
@@ -687,11 +689,10 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 	DO_RENDER();
 
 	vglUnlockArraysEXT();
-
 // -------- End 1st PASS --------------------------------------------------------- //
 
 // -------- Begin lighting pass (conditional but should happen before spec pass) - //
-	if ( (textured) && (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && ((Num_active_gl_lights-1)/GL_max_lights > 0) ) {
+	if ( (textured) && (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (Num_active_gl_lights > GL_max_lights) ) {
 		// the lighting code needs to do this better, may need some adjustment later since I'm only trying
 		// to avoid rendering 7+ extra passes for lights which probably won't affect current object, but as
 		// a performance hack I guess this will have to do for now...
@@ -711,7 +712,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 
 			vglLockArraysEXT( 0, vbp->n_verts);
 
-			for (i = 1; (i < ((Num_active_gl_lights-1)/GL_max_lights)) && (i < max_passes); i++) {
+			int max_lights = (Num_active_gl_lights - 1) / GL_max_lights;
+			for (i = 1; (i < max_lights) && (i < max_passes); i++) {
 				opengl_change_active_lights(i);
 
 				// DRAW IT!!
