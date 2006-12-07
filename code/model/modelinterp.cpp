@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.157.2.17 $
- * $Date: 2006-11-01 18:35:57 $
+ * $Revision: 2.157.2.18 $
+ * $Date: 2006-12-07 18:21:25 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157.2.17  2006/11/01 18:35:57  taylor
+ * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
+ *
  * Revision 2.157.2.16  2006/10/28 17:58:42  taylor
  * forgot to reset default value for Interp_warp_alpha when it was changed earlier
  * be sure that we are using the proper zbuffer setting when rendering thruster glows
@@ -4142,7 +4145,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
 
-				tertiary_thruster_batcher.draw_bitmap( &p, 0, (magnitude * 4 * Interp_tertiary_thrust_glow_rad_factor), (w * 0.6f), (-(D > 0) ? D : -D) );
+				tertiary_thruster_batcher.draw_bitmap( &p, 0, (w * 0.6f * Interp_tertiary_thrust_glow_rad_factor), (magnitude * 4), (-(D > 0) ? D : -D) );
 			}
 			// end tertiary thruster glows
 
