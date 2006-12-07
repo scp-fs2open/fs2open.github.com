@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.39.2.5 $
- * $Date: 2006-10-27 21:33:06 $
+ * $Revision: 1.39.2.6 $
+ * $Date: 2006-12-07 17:51:39 $
  * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39.2.5  2006/10/27 21:33:06  taylor
+ * updated/fixed modelanim code
+ * add ships.tbl subsystem flag ("+fire-down-normals") which will force a turret to fire down it's barrel line (Mantis bug #591)
+ *
  * Revision 1.39.2.4  2006/09/13 03:06:46  taylor
  * restore MAX_AIFTT_TURRETS to retail level, and add comment as to what it means for the next person that tries to change it
  *
@@ -1028,7 +1032,10 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 
 	// return 0 by default (to preserve retail behavior) but allow for a per-subsystem option
 	// for using the turret normals for firing
-	return ((ss->system_info->flags & MSS_FLAG_FIRE_ON_NORMAL) ? 1 : 0);
+	if (ss->system_info->flags & MSS_FLAG_FIRE_ON_NORMAL)
+		return 1;
+
+	return 0;
 }
 
 //	Determine if subsystem *enemy_subsysp is hittable from objp.
@@ -1496,10 +1503,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		return;
 	}
 
-	if ( !timestamp_elapsed(ss->turret_next_fire_stamp) ) {
-		return;
-	}
-
 	// check if there is any available weapon to fire
 	int weap_check;
 	bool valid_weap = false;
@@ -1571,6 +1574,10 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 
 	// Rotate the turret even if time hasn't elapsed, since it needs to turn to face its target.
 	int use_angles = aifft_rotate_turret(shipp, parent_objnum, ss, objp, lep, &predicted_enemy_pos, &gvec);
+
+	if ( !timestamp_elapsed(ss->turret_next_fire_stamp) ) {
+		return;
+	}
 
 	// Don't try to fire beyond weapon_limit_range
 	//WMC - OTC
@@ -1788,7 +1795,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	if (dot > tp->turret_fov ) {
 		// We're ready to fire... now get down to specifics, like where is the
 		// actual gun point and normal, not just the one for whole turret.
-		//WMC - use_angles was always 0
 		ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
 		ss->turret_next_fire_pos++;
 
