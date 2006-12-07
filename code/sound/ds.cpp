@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.46.2.7 $
- * $Date: 2006-10-06 04:58:25 $
- * $Author: wmcoolmon $
+ * $Revision: 2.46.2.8 $
+ * $Date: 2006-12-07 18:24:43 $
+ * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46.2.7  2006/10/06 04:58:25  wmcoolmon
+ * Fix OGG bug where sound files were always allocated 16 seconds of wavedata
+ *
  * Revision 2.46.2.6  2006/08/19 04:31:24  taylor
  * cleanup
  * bugfixes
@@ -709,7 +712,8 @@ const char* openal_error_string(int get_alc)
 	int i;
 
 	if (get_alc) {
-		i = alcGetError(NULL);
+		// Apple implementation requires a valid device to give a valid error msg
+		i = alcGetError(ds_sound_device);
 
 		if ( i != ALC_NO_ERROR )
 			return (const char*) alcGetString(NULL, i);
@@ -1775,10 +1779,13 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	char *device_spec = os_config_read_string( NULL, "SoundDeviceOAL", "Generic Software" );
 	mprintf(("  Using '%s' as OpenAL sound device...\n", device_spec));
 
-	OpenAL_C_ErrorCheck( { ds_sound_device = alcOpenDevice( (const ALCchar *) device_spec ); }, goto AL_InitError );
+	ds_sound_device = alcOpenDevice( (const ALCchar *) device_spec );
 #else
-	OpenAL_C_ErrorCheck( { ds_sound_device = alcOpenDevice( NULL ); }, goto AL_InitError );
+	ds_sound_device = alcOpenDevice( NULL );
 #endif
+
+	if ( !ds_sound_device )
+		goto AL_InitError;
 
 	// Create Sound Device
 	OpenAL_C_ErrorCheck( { ds_sound_context = alcCreateContext( ds_sound_device, attr ); }, goto AL_InitError );
@@ -2131,13 +2138,27 @@ void ds_unload_buffer(int sid, int hid)
 {
 #ifdef USE_OPENAL
 	if (sid != -1) {
+		ALuint bids = 0;
+		ALint p = 0;
 		ALuint buf_id = sound_buffers[sid].buf_id;
+		int channel_idx = sound_buffers[sid].source_id;
 
-		if (buf_id != 0 && alIsBuffer(buf_id)) {
-			OpenAL_ErrorPrint( alDeleteBuffers(1, &buf_id) );
+		// ok, this is a little strange... and probably wrong
+		if ( (channel_idx != -1) && alIsSource(Channels[channel_idx].source_id) ) {
+			OpenAL_ErrorPrint( alSourceStop(Channels[channel_idx].source_id) );
+			OpenAL_ErrorPrint( alGetSourcei(Channels[channel_idx].source_id, AL_BUFFERS_PROCESSED, &p) );
+
+			if (p > 0) {
+				Assert( p == 1 );
+				OpenAL_ErrorPrint( alSourceUnqueueBuffers(Channels[channel_idx].source_id, 1, &bids) );
+			}
 		}
 
+		if ( (buf_id != 0) && alIsBuffer(buf_id) )
+			OpenAL_ErrorPrint( alDeleteBuffers(1, &buf_id) );
+
 		sound_buffers[sid].buf_id = 0;
+		sound_buffers[sid].source_id = -1;
 	}
 
 	/* hid unused */
@@ -2885,7 +2906,6 @@ int ds_play(int sid, int hid, int snd_id, int priority, int volume, int pan, int
 
 
 		OpenAL_ErrorCheck( alSourcei(Channels[channel].source_id, AL_BUFFER, sound_buffers[sid].buf_id), return -1 );
-
 
 		// setup default listener position/orientation
 		// this is needed for 2D pan

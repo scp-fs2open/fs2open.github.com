@@ -1,12 +1,18 @@
 /*
  * $Logfile: $
- * $Revision: 1.29.2.2 $
- * $Date: 2006-08-19 04:31:24 $
+ * $Revision: 1.29.2.3 $
+ * $Date: 2006-12-07 18:24:43 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29.2.2  2006/08/19 04:31:24  taylor
+ * cleanup
+ * bugfixes
+ * error-handling
+ * (lots of crap got fixed to work better, and lets leave it at that, the commit log would be too long otherwise :))
+ *
  * Revision 1.29.2.1  2006/06/18 16:50:19  taylor
  * we don't use alc functions here so no real need for the header
  *
@@ -1185,7 +1191,9 @@ bool AudioStream::Destroy (void)
 	// Stop playback
 	Stop ();
 
-	// Release sound buffers
+	// Release sound sources and buffers
+	OpenAL_ErrorPrint( alDeleteSources(1, &m_source_id) );
+
 	for (int i = 0; i < MAX_STREAM_BUFFERS; i++) {
 		// make sure that the buffer is real before trying to delete, it could crash for some otherwise
 		if ( (m_buffer_ids[i] != 0) && alIsBuffer(m_buffer_ids[i]) ) {
@@ -1193,7 +1201,6 @@ bool AudioStream::Destroy (void)
 		}
 	}
 
-	OpenAL_ErrorPrint( alDeleteSources(1, &m_source_id) );
 	Snd_sram -= (m_cbBufSize * MAX_STREAM_BUFFERS);
 
 	// Delete WaveFile object
