@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.72.2.13 $
- * $Date: 2006-11-24 22:40:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.72.2.14 $
+ * $Date: 2006-12-07 18:26:03 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72.2.13  2006/11/24 22:40:15  Goober5000
+ * FRED again updates backgrounds while the user is editing them
+ *
  * Revision 2.72.2.12  2006/11/15 00:30:10  taylor
  * clean up skybox model selection and usage to work better with FRED
  * make sure to go ahead and set the skybox model when it's set/changed in FRED
@@ -2966,7 +2969,7 @@ int stars_find_bitmap(char *name)
 
 	// lookup
 	for (idx = 0; idx < (int)Starfield_bitmaps.size(); idx++) {
-		if ( !strcmp(name, Starfield_bitmaps[idx].filename) ) {
+		if ( !stricmp(name, Starfield_bitmaps[idx].filename) ) {
 			return idx;
 		}
 	}
@@ -2985,7 +2988,7 @@ int stars_find_sun(char *name)
 
 	// lookup
 	for (idx = 0; idx < (int)Sun_bitmaps.size(); idx++) {
-		if ( !strcmp(name, Sun_bitmaps[idx].filename) ) {
+		if ( !stricmp(name, Sun_bitmaps[idx].filename) ) {
 			return idx;
 		}
 	}
