@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.4 $
- * $Date: 2006-08-19 04:38:46 $
+ * $Revision: 2.87.2.5 $
+ * $Date: 2006-12-07 18:17:19 $
  * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.4  2006/08/19 04:38:46  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.87.2.3  2006/07/02 22:50:03  karajorma
  * Restore the Hostile Warning triangles and the "On your Six" warning messages.
  *
@@ -707,14 +710,14 @@ hud_frames Aburn_bar_gauge;
 hud_frames Wenergy_bar_gauge;
 int Aburn_bar_gauge_loaded = 0;
 int Wenergy_bar_gauge_loaded = 0;
-int Weapon_energy_text_coords[GR_NUM_RESOLUTIONS][2] = {
+/*int Weapon_energy_text_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
 		439, 318
 	},
 	{ // GR_1024
 		708, 509
 	}
-};
+};*/
 
 // animation frames for the countermeasures gauge
 // frames:	0	=>		background
@@ -5277,7 +5280,8 @@ void hud_show_weapon_energy_gauge()
 			}
 			sprintf(buf,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
 			hud_num_make_mono(buf);
-			gr_string(Weapon_energy_text_coords[gr_screen.res][0], Weapon_energy_text_coords[gr_screen.res][1], buf);
+		//	gr_string(Weapon_energy_text_coords[gr_screen.res][0], Weapon_energy_text_coords[gr_screen.res][1], buf);
+			gr_string(current_hud->Wenergy_text_coords[0], current_hud->Wenergy_text_coords[1], buf);
 		}
 
 		hud_set_gauge_color(HUD_WEAPONS_ENERGY);
