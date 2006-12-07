@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.35.2.6 $
- * $Date: 2006-11-15 00:36:08 $
+ * $Revision: 2.35.2.7 $
+ * $Date: 2006-12-07 17:53:08 $
  * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35.2.6  2006/11/15 00:36:08  taylor
+ * various bits of little cleanup
+ * get rid of some more compiler warnings
+ *
  * Revision 2.35.2.5  2006/09/11 01:15:03  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -1264,10 +1268,10 @@ void lerp(float *goal, float f1, float f2, float scale)
 void asteroid_process_pre( object *objp, float frame_time)
 {
 	if (Asteroids_enabled) {
-		vec3d	*v, *vv;
+	//	vec3d	*v, *vv;
 
-		v = &objp->phys_info.vel;
-		vv = &objp->phys_info.desired_vel;
+	//	v = &objp->phys_info.vel;
+	//	vv = &objp->phys_info.desired_vel;
 
 		//nprintf(("AI", "Frm %i: Obj #%2i: Hull: %5.1f Vel: %5.1f %5.1f %5.1f Des: %5.1f %5.1f %5.1f\n", Framecount, objp-Objects, objp->hull_strength, v->xyz.x, v->xyz.y, v->xyz.z, vv->xyz.x, vv->xyz.y, vv->xyz.z));
 
