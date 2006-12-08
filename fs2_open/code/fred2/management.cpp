@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.9 $
- * $Date: 2006-11-15 00:38:02 $
- * $Author: taylor $
+ * $Revision: 1.12.2.10 $
+ * $Date: 2006-12-08 19:18:54 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,10 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.9  2006/11/15 00:38:02  taylor
+ * various bits of little cleanup
+ * add the debug cmdline printer to FRED, so that we can make use of that info in the FRED-debug case too
+ *
  * Revision 1.12.2.8  2006/10/27 06:34:40  taylor
  * fix compiler problem due to change in parse_init() function
  * fix dos EOL chars
@@ -536,6 +540,7 @@
 #include "object/objectdock.h"
 #include "gamesnd/gamesnd.h"
 #include "iff_defs/iff_defs.h"
+#include "menuui/techmenu.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -886,6 +891,7 @@ bool fred_init()
 	parse_medal_tbl();			// get medal names for sexpression usage
 	ship_init();
 	parse_init();
+	techroom_intel_init();
 
 	// initialize and activate external string hash table
 	// make sure to do here so that we don't parse the table files into the hash table - waste of space
