@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.272 $
- * $Date: 2006-11-16 00:55:08 $
- * $Author: taylor $
+ * $Revision: 2.273 $
+ * $Date: 2006-12-20 11:27:06 $
+ * $Author: karajorma $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.272  2006/11/16 00:55:08  taylor
+ * handle the video registry entry better
+ * support for new Windows window creation code
+ * various bits of minor cleanup
+ *
  * Revision 2.271  2006/11/06 06:46:08  taylor
  * fix some of the envmap issues
  *  - use proper hand-ness for OGL
@@ -3699,19 +3704,8 @@ void game_init()
 		fsspeech_play(-1,"Welcome to FS2 open");
 		MessageBox((HWND)os_get_window(), "Speech is compiled and initialised and should be working", "FS2_Open Info", MB_OK);
 	}
-
-#ifdef FS2_VOICER
-	if(Cmdline_voice_recognition)
-	{
-		bool voiceRectOn = VOICEREC_init((HWND)os_get_window(), WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
 	
-		if(voiceRectOn == false)
-		{
-			MessageBox((HWND)os_get_window(), "Failed to init voice rec", "Error", MB_OK);
-		}
-	}
-
-#endif
+//FS2_Voicer Init moved to after os_set_title() 
  
 
 /////////////////////////////
@@ -3798,6 +3792,20 @@ VidInitError:
 
 	// this has to be set after gr_init() is done on *nix
 	os_set_title(Osreg_title);
+
+// Karajorma - Moved here from the sound init code cause otherwise windows complains
+#ifdef FS2_VOICER
+	if(Cmdline_voice_recognition)
+	{
+		bool voiceRectOn = VOICEREC_init((HWND)os_get_window(), WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
+	
+		if(voiceRectOn == false)
+		{
+			MessageBox((HWND)os_get_window(), "Failed to init voice rec", "Error", MB_OK);
+		}
+	}
+
+#endif
 
 	// Set the gamma
 //	if( (gr_screen.mode == GR_DIRECT3D) || (gr_screen.mode == GR_OPENGL) )
