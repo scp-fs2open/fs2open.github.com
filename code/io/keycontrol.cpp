@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.73 $
- * $Date: 2006-09-11 06:08:09 $
- * $Author: taylor $
+ * $Revision: 2.74 $
+ * $Date: 2006-12-25 18:54:15 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2006/09/11 06:08:09  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
  * Revision 2.72  2006/08/07 15:24:32  karajorma
  * Fix a small problem with ballistic primary ammo. Forgot to upload this one earlier
  *
@@ -2619,9 +2622,13 @@ int button_function_demo_valid(int n)
 		if(!Perspective_locked)
 		{
 			Viewer_mode ^= VM_CHASE;
+
+			// Goober5000 -- Mantis #1087
+			/*
 			if ( Viewer_mode & VM_CHASE ) {
 				Viewer_mode &= ~VM_EXTERNAL;
 			}
+			*/
 		}
 		else
 		{
@@ -2636,9 +2643,13 @@ int button_function_demo_valid(int n)
 		{
 			Viewer_mode ^= VM_EXTERNAL;
 			Viewer_mode &= ~VM_EXTERNAL_CAMERA_LOCKED;	// reset camera lock when leave/entering external view
+
+			// Goober5000 -- Mantis #1087
+			/*
 			if ( Viewer_mode & VM_EXTERNAL ) {
 				Viewer_mode &= ~VM_CHASE;
 			}
+			*/
 		}
 		else
 		{
