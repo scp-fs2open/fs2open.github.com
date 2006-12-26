@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.29.2.3 $
- * $Date: 2006-12-07 18:24:43 $
+ * $Revision: 1.29.2.4 $
+ * $Date: 2006-12-26 05:31:22 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29.2.3  2006/12/07 18:24:43  taylor
+ * various sound fixes/changes, mainly for OS X fixage
+ *
  * Revision 1.29.2.2  2006/08/19 04:31:24  taylor
  * cleanup
  * bugfixes
@@ -352,6 +355,7 @@ public:
 	uint m_total_uncompressed_bytes_read;
 	uint m_max_uncompressed_bytes_to_read;
 	uint m_bits_per_sample_uncompressed;
+	ALenum m_ALformat;
 
 protected:
 	uint m_data_offset;						// number of bytes to actual wave data
@@ -536,6 +540,8 @@ void WaveFile::Init(void)
 	m_nBytesPlayed = 0;
 	m_total_uncompressed_bytes_read = 0;
 	m_max_uncompressed_bytes_to_read = AS_HIGHEST_MAX;
+	m_ALformat = AL_FORMAT_MONO16;
+
 	memset(&m_wFilename, 0, MAX_FILENAME_LEN);
 
 	m_hStream_open = 0;
@@ -618,9 +624,9 @@ bool WaveFile::Open (char *pszFilename)
 		m_wfmt.nSamplesPerSec = m_snd_info.vorbis_file.vi->rate;
 		m_wfmt.cbSize = 0;
 
-		if(UserSampleBits == 16 || UserSampleBits == 8)
+		if ( (UserSampleBits == 16) || (UserSampleBits == 8) )
 			m_wfmt.wBitsPerSample = UserSampleBits;				//Decode at whatever the user specifies; only 16 and 8 are supported.
-		else if(UserSampleBits > 16)
+		else if (UserSampleBits > 16)
 			m_wfmt.wBitsPerSample = 16;
 		else
 			m_wfmt.wBitsPerSample = 8;
@@ -630,6 +636,23 @@ bool WaveFile::Open (char *pszFilename)
 
 		m_nBlockAlign = m_wfmt.nBlockAlign;
 		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
+
+		Assert( (m_wfmt.nChannels == 1) || (m_wfmt.nChannels == 2) );
+
+		switch (m_wfmt.wBitsPerSample)
+		{
+			case 8:
+				m_ALformat = (m_wfmt.nChannels == 2) ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
+				break;
+
+			case 16:
+				m_ALformat = (m_wfmt.nChannels == 2) ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
+				break;
+
+			default:
+				Int3();
+				goto OPEN_ERROR;
+		}
 
 		// location of start of file in VP
 		m_data_offset = 0;
@@ -744,6 +767,23 @@ bool WaveFile::Open (char *pszFilename)
 		m_nBlockAlign = m_pwfmt_original->nBlockAlign;
 		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
 
+		Assert( (m_wfmt.nChannels == 1) || (m_wfmt.nChannels == 2) );
+
+		switch (m_wfmt.wBitsPerSample)
+		{
+			case 8:
+				m_ALformat = (m_wfmt.nChannels == 2) ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
+				break;
+
+			case 16:
+				m_ALformat = (m_wfmt.nChannels == 2) ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
+				break;
+
+			default:
+				Int3();
+				goto OPEN_ERROR;
+		}
+
 		// Cue for streaming
 		Cue ();
 
@@ -763,8 +803,8 @@ OPEN_ERROR:
 		m_snd_info.true_offset = 0;
 		m_snd_info.size = 0;
 	}
-	if (m_pwfmt_original)
-	{
+
+	if (m_pwfmt_original) {
 		vm_free(m_pwfmt_original);
 		m_pwfmt_original = NULL;
 	}
@@ -1260,21 +1300,6 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 	if ( num_bytes_read > 0 ) {
 	//	nprintf(("SOUND", "SOUND ==> Queueing %d bytes of Data\n", num_bytes_read));
 
-		// Lock the sound buffer
-		ALenum format = AL_FORMAT_MONO8;
-
-		if (m_pwavefile->m_wfmt.nChannels == 1) {
-			if (m_pwavefile->m_wfmt.wBitsPerSample == 8) 
-				format = AL_FORMAT_MONO8;
-			else if (m_pwavefile->m_wfmt.wBitsPerSample == 16) 
-				format = AL_FORMAT_MONO16;
-		} else if (m_pwavefile->m_wfmt.nChannels == 2) {
-			if (m_pwavefile->m_wfmt.wBitsPerSample == 8) 
-				format = AL_FORMAT_STEREO8;
-			else if (m_pwavefile->m_wfmt.wBitsPerSample == 16) 
-				format = AL_FORMAT_STEREO16;
-		}
-
 		// unqueue and recycle a processed buffer
 		ALint p = 0;
 		ALuint bid[MAX_STREAM_BUFFERS];
@@ -1285,7 +1310,7 @@ bool AudioStream::WriteWaveData (uint size, uint *num_bytes_written, int service
 			OpenAL_ErrorPrint( alSourceUnqueueBuffers(m_source_id, p, bid) );
 		}
 
-		OpenAL_ErrorCheck( alBufferData(m_buffer_ids[m_play_buffer_id], format, uncompressed_wave_data, num_bytes_read, m_pwavefile->m_wfmt.nSamplesPerSec), { fRtn = false; goto ErrorExit; } );
+		OpenAL_ErrorCheck( alBufferData(m_buffer_ids[m_play_buffer_id], m_pwavefile->m_ALformat, uncompressed_wave_data, num_bytes_read, m_pwavefile->m_wfmt.nSamplesPerSec), { fRtn = false; goto ErrorExit; } );
 
 		OpenAL_ErrorCheck( alSourceQueueBuffers(m_source_id, 1, &m_buffer_ids[m_play_buffer_id]), { fRtn = false; goto ErrorExit; } );
 
