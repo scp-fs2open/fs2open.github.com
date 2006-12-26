@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69.2.1  2006/09/11 01:17:07  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.69  2006/02/25 21:47:19  Goober5000
  * spelling
  *
@@ -552,6 +555,8 @@
 #include "weapon/trails.h"
 #include "weapon/shockwave.h"
 
+#include <vector>
+
 struct object;
 struct ship_subsys;
 
@@ -953,13 +958,14 @@ extern missile_obj Missile_obj_list;
 
 // WEAPON EXPLOSION INFO
 #define MAX_WEAPON_EXPL_LOD						4
-#define MAX_WEAPON_EXPL_INFO					20
 
 typedef struct weapon_expl_lod {
 	char	filename[MAX_FILENAME_LEN];
 	int	bitmap_id;
 	int	num_frames;
 	int	fps;
+
+	weapon_expl_lod() { memset(this, 0, sizeof(weapon_expl_lod)); bitmap_id = -1; }
 } weapon_expl_lod;
 
 typedef struct weapon_expl_info	{
@@ -970,9 +976,7 @@ typedef struct weapon_expl_info	{
 class weapon_explosions
 {
 private:
-	int ExplosionNum;
-	weapon_expl_info ExplosionInfo[MAX_WEAPON_EXPL_INFO];
-
+	std::vector<weapon_expl_info> ExplosionInfo;
 	int GetIndex(char *filename);
 
 public:
