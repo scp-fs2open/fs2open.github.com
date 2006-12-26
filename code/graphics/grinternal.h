@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.13.2.3 $
- * $Date: 2006-10-24 13:24:12 $
+ * $Revision: 2.13.2.4 $
+ * $Date: 2006-12-26 05:26:12 $
  * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13.2.3  2006/10/24 13:24:12  taylor
+ * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
+ * deal with a index_buffer memory leak that Valgrind has always complained about
+ * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
+ * get rid of MAX_BUFFERS
+ * make D3D vertex buffers dynamic, like OGL has already done
+ *
  * Revision 2.13.2.2  2006/10/06 09:52:05  taylor
  * clean up some old software rendering stuff that we don't use any longer
  * remove grzbuffer.*, since all it did was give us 3 variables, which were moved to 2d.*
@@ -248,16 +255,15 @@ extern int Gr_cursor;
 extern ubyte Gr_original_palette[768];		// The palette 
 extern ubyte Gr_current_palette[768];
 
-typedef struct alphacolor {
+/*typedef struct alphacolor {
 	int	used;
 	int	r,g,b,alpha;
 	int	type;						// See AC_TYPE_??? define
 	color	*clr;
-	/*
-	union {
-		ubyte		lookup[16][256];		// For 8-bpp rendering modes
-	} table;
-	*/
+
+//	union {
+//		ubyte		lookup[16][256];		// For 8-bpp rendering modes
+//	} table;
 } alphacolor;
 
 // for backwards fred aabitmap compatibility
@@ -272,7 +278,7 @@ typedef struct alphacolor_old {
 } alphacolor_old;
 
 extern alphacolor * Current_alphacolor;
-void gr_init_alphacolors();
+void gr_init_alphacolors();*/
 
 extern char Gr_current_palette_name[128];
 
@@ -301,15 +307,14 @@ extern color_gun *Gr_current_red, *Gr_current_green, *Gr_current_blue, *Gr_curre
 // the current screen format's palette.
 // The size of the dst array is assumed to be gr_screen.bpp
 // bytes per element.
-void gr_xlat_palette( void *dst, bitmap *bmp );
+//void gr_xlat_palette( void *dst, bitmap *bmp );
 
 // CPU identification variables
-extern int Gr_cpu;			// What type of CPU.  5=Pentium, 6=Ppro/PII
-extern int Gr_mmx;			// MMX capabilities?  0=No, 1=Yes
+//extern int Gr_cpu;			// What type of CPU.  5=Pentium, 6=Ppro/PII
+//extern int Gr_mmx;			// MMX capabilities?  0=No, 1=Yes
 
 extern float Gr_gamma;
 extern int Gr_gamma_int;				// int(Gr_gamma*100)
-extern int Gr_gamma_lookup[256];
 
 #define TCACHE_TYPE_AABITMAP				0		// HUD bitmap.  All Alpha.
 #define TCACHE_TYPE_NORMAL					1		// Normal bitmap. Alpha = 0.
@@ -319,9 +324,9 @@ extern int Gr_gamma_lookup[256];
 #define TCACHE_TYPE_COMPRESSED				5		// Compressed bitmap type (DXT1, DXT3, DXT5)
 #define TCACHE_TYPE_CUBEMAP					6
 
-extern int Ambient_r_default;
-extern int Ambient_g_default;
-extern int Ambient_b_default;
+//extern int Ambient_r_default;
+//extern int Ambient_g_default;
+//extern int Ambient_b_default;
 
 #define NEBULA_COLORS 20
 

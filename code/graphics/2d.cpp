@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.73.2.5 $
- * $Date: 2006-11-15 00:36:07 $
+ * $Revision: 2.73.2.6 $
+ * $Date: 2006-12-26 05:26:12 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73.2.5  2006/11/15 00:36:07  taylor
+ * various bits of little cleanup
+ * get rid of some more compiler warnings
+ *
  * Revision 2.73.2.4  2006/10/24 13:24:12  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
@@ -876,7 +880,7 @@ uint Gr_signature = 0;
 
 float Gr_gamma = 1.8f;
 int Gr_gamma_int = 180;
-int Gr_gamma_lookup[256];
+//int Gr_gamma_lookup[256];
 
 // z-buffer stuff
 int gr_zbuffering = 0;

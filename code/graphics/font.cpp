@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.15.2.3 $
- * $Date: 2006-09-11 01:00:28 $
+ * $Revision: 2.15.2.4 $
+ * $Date: 2006-12-26 05:26:12 $
  * $Author: taylor $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15.2.3  2006/09/11 01:00:28  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.15.2.2  2006/08/22 05:41:35  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
@@ -298,7 +301,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include "graphics/grinternal.h"
+
 #include "graphics/2d.h"
 #include "cfile/cfile.h"
 #include "graphics/font.h"
