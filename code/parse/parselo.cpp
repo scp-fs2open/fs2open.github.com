@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.83 $
- * $Author: phreak $
- * $Date: 2006-11-13 23:11:08 $
+ * $Revision: 2.84 $
+ * $Author: Goober5000 $
+ * $Date: 2006-12-26 18:14:42 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2006/11/13 23:11:08  phreak
+ * oops, forgot a break statement
+ *
+ * *scrapes off the rust*
+ *
  * Revision 2.82  2006/11/12 19:58:13  phreak
  * Don't copy parentheses to parse buffers if outside of quotation marks.  Otherwise
  *  the parsing syntax will be copied to said buffer and some warnings/errors would occur.
@@ -2860,7 +2865,7 @@ void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, c
 	char	token[128];
 	int checking_ship_classes = (stricmp(id, "$class:") == 0);
 
-	// don't say errors when we're checking classes because 1) we have more checking to do; and 2) we will say a redundant error later
+	// Goober5000 - don't say errors when we're checking classes because 1) we have more checking to do; and 2) we will say a redundant error later
 	required_string(id);
 	stuff_string(token, f_type, sizeof(token));
 	*addr = string_lookup(token, strlist, max, description, !checking_ship_classes);
@@ -2868,88 +2873,12 @@ void find_and_stuff(char *id, int *addr, int f_type, char *strlist[], int max, c
 	// Goober5000 - handle certain FSPort idiosyncracies with ship classes
 	if (*addr < 0 && checking_ship_classes)
 	{
-		char *p;
-		char name[NAME_LENGTH], temp1[NAME_LENGTH], temp2[NAME_LENGTH];
-
-		// ship copy types might be mismatched
-		p = get_pointer_to_first_hash_symbol(token);
-
-		// nothing to do
-		if (p == NULL)
-		{
-			return;
-		}
-
-		// conversion from FS1 missions
-		if (!stricmp(token, "GTD Orion#1 (Galatea)"))
-		{
-			*addr = string_lookup("GTD Orion#Galatea", strlist, max, description, 0);
-
-			if (*addr < 0)
-				*addr = string_lookup("GTD Orion (Galatea)", strlist, max, description, 0);
-
-			return;
-		}
-		else if (!stricmp(token, "GTD Orion#2 (Bastion)"))
-		{
-			*addr = string_lookup("GTD Orion#Bastion", strlist, max, description, 0);
-
-			if (*addr < 0)
-				*addr = string_lookup("GTD Orion (Bastion)", strlist, max, description, 0);
-
-			return;
-		}
-		else if (!stricmp(token, "SF Dragon#2 (weakened)"))
-		{
-			*addr = string_lookup("SF Dragon#weakened", strlist, max, description, 0);
-
-			if (*addr < 0)
-				*addr = string_lookup("SF Dragon (weakened)", strlist, max, description, 0);
-
-			return;
-		}
-		else if (!stricmp(token, "SF Dragon#3 (Player)"))
-		{
-			*addr = string_lookup("SF Dragon#Terrans", strlist, max, description, 0);
-
-			if (*addr < 0)
-				*addr = string_lookup("SF Dragon (Terrans)", strlist, max, description, 0);
-
-			return;
-		}
-
-		// get first part of new string
-		strcpy(temp1, token);
-		end_string_at_first_hash_symbol(temp1);
-
-		// get second part
-		strcpy(temp2, p + 1);
-
-		// found a hash
-		if (*p == '#')
-		{
-			// assemble using parentheses
-			sprintf(name, "%s (%s)", temp1, temp2);
-		}
-		// found a parenthesis
-		else if (*p == '(')
-		{
-			// chop off right parenthesis (it exists because otherwise the left wouldn't have been flagged)
-			char *p2 = strchr(temp2, ')');
-			*p2 = '\0';
-
-			// assemble using hash
-			sprintf(name, "%s#%s", temp1, temp2);
-		}
-		// oops
+		int idx = ship_info_lookup(token);
+		
+		if (idx >= 0)
+			*addr = string_lookup(Ship_info[idx].name, strlist, max, description, 0);
 		else
-		{
-			Warning(LOCATION, "Unrecognized hash symbol.  Contact a programmer!");
-			return;
-		}
-
-		// finally check the properly matched name
-		*addr = string_lookup(name, strlist, max, description, 0);
+			*addr = -1;
 	}
 }
 
