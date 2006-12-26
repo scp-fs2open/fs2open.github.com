@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.290 $
- * $Date: 2006-11-26 03:22:45 $
+ * $Revision: 2.291 $
+ * $Date: 2006-12-26 18:14:42 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.290  2006/11/26 03:22:45  Goober5000
+ * prevent false positive while error checking
+ *
  * Revision 2.289  2006/11/25 06:33:15  Goober5000
  * this may have been an oversight
  *
@@ -3635,12 +3638,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				for (i = 0; i < Num_ship_classes; i++ ) {
-					if ( !stricmp(CTEXT(node), Ship_info[i].name) )
-						break;
-				}
-
-				if ( i == Num_ship_classes )
+				if (ship_info_lookup(CTEXT(node)) < 0)
 					return SEXP_CHECK_INVALID_SHIP_CLASS_NAME;
 
 				break;
@@ -3673,9 +3671,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				if ( type2 != SEXP_ATOM_STRING )
 					return SEXP_CHECK_TYPE_MISMATCH;
 
-				if(jumpnode_get_by_name != NULL)
-					break;
-				else
+				if (jumpnode_get_by_name == NULL)
 					return SEXP_CHECK_INVALID_JUMP_NODE;
 
 				break;
