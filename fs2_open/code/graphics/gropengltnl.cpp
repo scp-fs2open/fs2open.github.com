@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.44.2.8 $
- * $Date: 2006-12-07 18:16:11 $
+ * $Revision: 1.44.2.9 $
+ * $Date: 2006-12-26 05:25:18 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44.2.8  2006/12/07 18:16:11  taylor
+ * minor cleanups and speedups
+ * when using lighting falloff, be sure to drop emissive light when falloff gets low enough (otherwise we still se everything fine)
+ *
  * Revision 1.44.2.7  2006/10/27 06:42:29  taylor
  * rename set_warp_globals() to model_set_warp_globals()
  * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
@@ -683,12 +687,12 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 
 	gr_opengl_set_center_alpha(GL_center_alpha);
 
+	// NOTE: the unlock call is at the end of all drawing ...
 	vglLockArraysEXT( 0, vbp->n_verts);
 
 	// DRAW IT!!
 	DO_RENDER();
 
-	vglUnlockArraysEXT();
 // -------- End 1st PASS --------------------------------------------------------- //
 
 // -------- Begin lighting pass (conditional but should happen before spec pass) - //
@@ -710,8 +714,6 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 				opengl_switch_arb(i, 0);
 			}
 
-			vglLockArraysEXT( 0, vbp->n_verts);
-
 			int max_lights = (Num_active_gl_lights - 1) / GL_max_lights;
 			for (i = 1; (i < max_lights) && (i < max_passes); i++) {
 				opengl_change_active_lights(i);
@@ -719,8 +721,6 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 				// DRAW IT!!
 				DO_RENDER();
 			}
-
-			vglUnlockArraysEXT();
 
 			// reset the active lights to the first set to render the spec related passes with
 			// for performance and quality reasons they don't get special lighting passes
@@ -730,7 +730,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 // -------- End lighting PASS ---------------------------------------------------- //
 
 // -------- Begin 2nd PASS (env) ------------------------------------------------- //
-	if ( use_spec && Cmdline_env && (ENVMAP >= 0) ) {
+	if ( use_spec && Cmdline_env && (ENVMAP >= 0) && Is_Extension_Enabled(OGL_ARB_TEXTURE_ENV_COMBINE) ) {
 		// turn all previously used arbs off before the specular pass
 		// this fixes the glowmap multitexture rendering problem - taylor
 		for (i = 0; i < render_pass; i++) {
@@ -795,14 +795,15 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
-		glEnable(GL_TEXTURE_GEN_R);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
 		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
 		glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+
+		glEnable(GL_TEXTURE_GEN_S);
+		glEnable(GL_TEXTURE_GEN_T);
+		glEnable(GL_TEXTURE_GEN_R);
 
 		// set the matrix for the texture mode
 		if (GL_env_texture_matrix_set) {
@@ -815,12 +816,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 
 		render_pass++; // bump!
 
-		vglLockArraysEXT( 0, vbp->n_verts );
-
 		// DRAW IT!!
 		DO_RENDER();
-
-		vglUnlockArraysEXT();
 
 		// disable and reset everything we changed
 		glDisable(GL_TEXTURE_GEN_S);
@@ -828,7 +825,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 		glDisable(GL_TEXTURE_GEN_R);
 		glDisable(GL_TEXTURE_CUBE_MAP);
 
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
 
 		// pop off the texture matrix we used for the envmap
 		if (GL_env_texture_matrix_set) {
@@ -869,21 +866,18 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 
 		opengl_set_spec_mapping(tmap_type, &u_scale, &v_scale);
 
-		vglLockArraysEXT( 0, vbp->n_verts );
-
 		// DRAW IT!!
 		DO_RENDER();
 
-		vglUnlockArraysEXT();
-
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
 
 		opengl_reset_spec_mapping();
 	}
 // -------- End 3rd PASS --------------------------------------------------------- //
 
 
-	TIMERBAR_POP();
+	// unlock the arrays
+	vglUnlockArraysEXT();
 
 	// make sure everthing gets turned back off, fixes hud issue with spec lighting and VBO crash in starfield
 	opengl_switch_arb(-1, 0);
@@ -905,6 +899,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 		glVertex3d(0,0,20);
 	glEnd();
 #endif
+
+	TIMERBAR_POP();
 }
 
 void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
@@ -1282,7 +1278,6 @@ void gr_opengl_draw_htl_line(vec3d *start, vec3d* end)
 	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, zbuffer_state);
 	glBegin(GL_LINES);
 		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-		vglSecondaryColor3ubvEXT(GL_zero_3ub);
 		glVertex3fv(start->a1d);
 		glVertex3fv(end->a1d);
 	glEnd();
@@ -1306,7 +1301,6 @@ void gr_opengl_draw_htl_sphere(float rad)
 
 	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
 	glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-	vglSecondaryColor3ubvEXT(GL_zero_3ub);
 
 	// FIXME: opengl_check_for_errors() needs to be modified to work with this at
 	// some point but for now I just don't care so it does nothing

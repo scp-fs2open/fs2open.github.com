@@ -10,13 +10,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.48.2.11 $
- * $Date: 2006-12-07 18:14:49 $
+ * $Revision: 1.48.2.12 $
+ * $Date: 2006-12-26 05:25:18 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48.2.11  2006/12/07 18:14:49  taylor
+ * get rid of "vram_full", it can never actually be full the way the code works, so having this is redundant
+ * comment out APPLE_client_storage extension usage, I think this was messing some stuff up on OS X and causing memory errors
+ * fix handling of cubemap data so that they can be read properly (can't believe it took so long to notice to an obvious and stupid bug)
+ * be sure to un-bind textures during preload to avoid freaky little errors later
+ * ifdef an error message from the framebuffer error code, Apple doesn't have this one define in their headers for some reason
+ *
  * Revision 1.48.2.10  2006/08/12 13:14:45  taylor
  * some minor cleanup to anisotropy setting
  * only use negative lod bias when not using anisotropy to help avoid shimmering
@@ -476,8 +483,11 @@ void opengl_switch_arb(int unit, int state)
 					if (VBO_ENABLED) {
 						vglBindBufferARB(GL_ARRAY_BUFFER_ARB, 0);
 					}
+
+					vglClientActiveTextureARB(GL_TEXTURE0_ARB);
 				}
 
+				vglActiveTextureARB(GL_TEXTURE0_ARB);
 				GL_texture_units_enabled[i] = 0;
 			}
 		}
@@ -514,7 +524,8 @@ void opengl_switch_arb(int unit, int state)
 
 		if ( Is_Extension_Enabled(OGL_ARB_TEXTURE_RECTANGLE) )
 			glDisable(GL_TEXTURE_RECTANGLE_ARB);
-	
+
+		vglActiveTextureARB(GL_TEXTURE0_ARB);
 		GL_texture_units_enabled[unit] = 0;
 	}
 }
@@ -606,6 +617,14 @@ void opengl_tcache_init()
 			GL_anisotropy = GL_max_anisotropy;
 	}
 
+	// set the alpha gamma settings (for fonts)
+	memset( GL_xlat, 0, sizeof(GL_xlat) );
+
+	for (i = 1; i < 15; i++)
+		GL_xlat[i] = (ubyte)(GL_xlat[i-1] + 17);
+
+	GL_xlat[15] = GL_xlat[1];
+
 	//GL_last_detail = Detail.hardware_textures;
 	GL_last_bitmap_id = -1;
 	GL_last_bitmap_type = -1;
@@ -672,6 +691,13 @@ void opengl_free_texture_slot( int n )
 {
 	Tex_used_this_frame[n] = 0;
 	opengl_free_texture( &Textures[n] );
+}
+
+bool opengl_texture_slot_valid(int n)
+{
+	tcache_slot_opengl *t = &Textures[n];
+
+	return ( (t->bitmap_handle >= 0) && glIsTexture(t->texture_id) );
 }
 
 int opengl_free_texture ( tcache_slot_opengl *t )
@@ -984,11 +1010,9 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 
 			Assert( texmem != NULL );
 
-			for (i=0;i<tex_h;i++)
-			{
-				for (j=0;j<tex_w;j++)
-				{
-					if (i < bmap_h && j < bmap_w) {
+			for (i = 0; i < tex_h; i++) {
+				for (j = 0; j < tex_w; j++) {
+					if ( (i < bmap_h) && (j < bmap_w) ) {
 						*texmemp++ = GL_xlat[bmp_data[i*bmap_w+j]];
 					} else {
 						*texmemp++ = 0;
@@ -1016,18 +1040,14 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 
 				Assert( texmem != NULL );
 
-				for (i=0;i<tex_h;i++)
-				{
-					for (j=0;j<tex_w;j++)
-					{
-						if (i < bmap_h && j < bmap_w) {
-							for (k = 0; k < byte_mult; k++) {
+				for (i = 0; i < tex_h; i++) {
+					for (j = 0;j < tex_w; j++) {
+						if ( (i < bmap_h) && (j < bmap_w) ) {
+							for (k = 0; k < byte_mult; k++)
 								*texmemp++ = bmp_data[(i*bmap_w+j)*byte_mult+k];
-							}
 						} else {
-							for (k = 0; k < byte_mult; k++) {
+							for (k = 0; k < byte_mult; k++)
 								*texmemp++ = 0;
-							}
 						}
 					}
 				}
@@ -1561,8 +1581,8 @@ void gr_opengl_set_texture_addressing(int mode)
 			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 		}
 	} else if (mode == TMAP_ADDRESS_CLAMP) {
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	}
 }
 
@@ -1890,20 +1910,22 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	fbo_t *fbo = NULL;
 
 	if (slot < 0) {
-		if ( (render_target != NULL) && (render_target->working_slot >= 0) ) {
-		/*	if (Cmdline_mipmap) {
-				ts = &Textures[render_target->working_slot];
+	/*	if ( (render_target != NULL) && (render_target->working_slot >= 0) ) {
+		//	if (Cmdline_mipmap) {
+		//		ts = &Textures[render_target->working_slot];
 
-				glBindTexture(ts->texture_target, ts->texture_id);
-				vglGenerateMipmapEXT(ts->texture_target);
-				glBindTexture(ts->texture_target, 0);
-			}*/
+		//		glBindTexture(ts->texture_target, ts->texture_id);
+		//		vglGenerateMipmapEXT(ts->texture_target);
+		//		glBindTexture(ts->texture_target, 0);
+		//	}
 
 			if (render_target->is_static) {
 				extern void gr_opengl_bm_save_render_target(int slot);
 				gr_opengl_bm_save_render_target(render_target->working_slot);
 			}
-		}
+		}*/
+
+		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, 0, 0, 0);
 
 		vglBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 		vglBindRenderbufferEXT(GL_RENDERBUFFER_EXT, 0);
@@ -2013,8 +2035,8 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 
 		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		if (flags & BMP_FLAG_CUBEMAP) {
 			// if a cubemap then we have to initalize each face
@@ -2079,8 +2101,8 @@ int opengl_make_render_target( int handle, int slot, int *w, int *h, ubyte *bpp,
 
 	glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	if (flags & BMP_FLAG_CUBEMAP) {
 		// if a cubemap then we have to initalize each face
