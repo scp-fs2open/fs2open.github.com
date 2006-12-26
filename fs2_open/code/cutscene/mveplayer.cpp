@@ -1,12 +1,20 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/mveplayer.cpp $
- * $Revision: 2.1.2.2 $
- * $Date: 2006-12-07 17:55:51 $
+ * $Revision: 2.1.2.3 $
+ * $Date: 2006-12-26 05:14:52 $
  * $Author: taylor $
  *
  * MVE movie playing routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1.2.2  2006/12/07 17:55:51  taylor
+ * port over some Theora player stuff:
+ *  - support for GL_ARB_texture_rectangle
+ *  - fix GL tear-down on movie exit
+ *  - fix sound tear-down order issue on OS X
+ *  - some speed increases, and get rid of the extra gr_clear() per-frame now that it's handled properly
+ *  - proper support for widescreen resolutions
+ *
  * Revision 2.1.2.1  2006/08/19 04:14:57  taylor
  * add decoder for 8-bit MVEs
  * a basic fix for finding AVIs over MVEs, for mod dir stuff (this needs some CFILE support added to be a true fix, it's on the TODO list)
@@ -58,8 +66,6 @@ static int timer_expire;
 
 // audio variables
 #define MVE_AUDIO_BUFFERS 64  // total buffers to interact with stream
-static int mve_audio_buffer_curpos = 0;
-static int mve_audio_buffer_head = 0;
 static int mve_audio_buffer_tail = 0;
 static int mve_audio_playing = 0;
 static int mve_audio_canplay = 0;
@@ -74,7 +80,6 @@ typedef struct MVE_AUDIO_T {
 	int bytes_per_sec;
 	int channels;
 	int bitsize;
-	ALuint audio_data[MVE_AUDIO_BUFFERS];
 	ALuint source_id;
 	ALuint audio_buffer[MVE_AUDIO_BUFFERS];
 } mve_audio_t;
@@ -302,7 +307,6 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 	memset(mas->audio_buffer, 0, MVE_AUDIO_BUFFERS * sizeof(ALuint));
 #endif // USE_OPENAL
 
-    mve_audio_buffer_head = 0;
     mve_audio_buffer_tail = 0;
 
 	audiobuf_created = 1;
@@ -375,12 +379,8 @@ int mve_audio_data(ubyte major, ubyte *data)
 
 			OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_BUFFERS_PROCESSED, &bprocessed), return 0 );
 
-			while (bprocessed-- > 2) {
+			while (bprocessed-- > 2)
 				OpenAL_ErrorPrint( alSourceUnqueueBuffers(mas->source_id, 1, &bid) );
-		
-				if (++mve_audio_buffer_head == MVE_AUDIO_BUFFERS)
-					mve_audio_buffer_head = 0;
-			}
 
 			OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_BUFFERS_QUEUED, &bqueued), return 0 );
 		    
@@ -511,8 +511,8 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 		}
 
 		if (mve_scale_video) {
-			g_screenX = ((fl2i(gr_screen.max_w / scale_by) - g_width) / 2);
-			g_screenY = ((fl2i(gr_screen.max_h / scale_by) - g_height) / 2);
+			g_screenX = ((fl2i(gr_screen.max_w / scale_by + 0.5f) - g_width) / 2);
+			g_screenY = ((fl2i(gr_screen.max_h / scale_by + 0.5f) - g_height) / 2);
 		} else {
 			// centers on 1024x768, fills on 640x480
 			g_screenX = ((gr_screen.max_w - g_width) / 2);
@@ -787,8 +787,6 @@ void mve_end_chunk()
 void mve_init(MVESTREAM *mve)
 {
 	// reset to default values
-	mve_audio_buffer_curpos = 0;
-	mve_audio_buffer_head = 0;
 	mve_audio_buffer_tail = 0;
 	mve_audio_playing = 0;
 	mve_audio_canplay = 0;
@@ -830,14 +828,12 @@ void mve_shutdown()
 			glPopMatrix();
 		}
 
-		opengl_switch_arb(-1, 0);
-		opengl_set_texture_target();
-
-		glBindTexture(GL_previous_texture_target, 0);
+		glBindTexture(GL_texture_target, 0);
 		glDeleteTextures(1, &GLtex);
 		GLtex = 0;
-	
-		glEnable(GL_DEPTH_TEST);
+
+		opengl_switch_arb(-1, 0);
+		opengl_set_texture_target();
 	}
 
 	if (pixelbuf != NULL) {
