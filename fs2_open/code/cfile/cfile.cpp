@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.40.2.1 $
- * $Date: 2006-07-28 02:43:48 $
+ * $Revision: 2.40.2.2 $
+ * $Date: 2006-12-26 05:11:57 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40.2.1  2006/07/28 02:43:48  taylor
+ * don't lowercase the dir for chdir on non-Win32 since it could be, and probably is, case sensitive
+ *
  * Revision 2.40  2006/04/20 06:32:00  Goober5000
  * proper capitalization according to Volition
  *
@@ -370,7 +373,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	// What type this is          Path																									Extensions              Parent type
 	{ CF_TYPE_INVALID,				NULL,																									NULL,							CF_TYPE_INVALID },
 	// Root must be index 1!!	
-	{ CF_TYPE_ROOT,					"",																									".mve .avi .mpg",						CF_TYPE_ROOT	},
+	{ CF_TYPE_ROOT,					"",																									".mve .avi .mpg .ogg",						CF_TYPE_ROOT	},
 	{ CF_TYPE_DATA,					"data",																								".cfg .log .txt",			CF_TYPE_ROOT	},
 	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",																".pcx .ani .eff .tga .jpg .dds",			CF_TYPE_DATA	},
 	{ CF_TYPE_TEXT,					"data" DIR_SEPARATOR_STR "text",																".txt .net",				CF_TYPE_DATA	},
@@ -388,7 +391,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_VOICE_SPECIAL,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "special",						".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_VOICE_TRAINING,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "training",						".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_MUSIC,					"data" DIR_SEPARATOR_STR "music",															".wav .ogg",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOVIES,					"data" DIR_SEPARATOR_STR "movies",															".mve .msb .avi .mpg",				CF_TYPE_DATA	},
+	{ CF_TYPE_MOVIES,					"data" DIR_SEPARATOR_STR "movies",															".mve .msb .avi .mpg .ogg",				CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE,				"data" DIR_SEPARATOR_STR "interface",														".pcx .ani .dds .tga",			CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",															".vf",						CF_TYPE_DATA	},
 	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",															".ani .eff .pcx .neb .tga .jpg .dds",	CF_TYPE_DATA	},
@@ -1941,11 +1944,3 @@ int cflush(CFILE *cfile)
 	Assert(cb->fp != NULL);
 	return fflush(cb->fp);
 }
-
-
-
-
-
-
-
-
