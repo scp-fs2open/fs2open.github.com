@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.72.2.14 $
- * $Date: 2006-12-07 18:26:03 $
+ * $Revision: 2.72.2.15 $
+ * $Date: 2006-12-26 05:32:18 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72.2.14  2006/12/07 18:26:03  taylor
+ * stupid of me to use a case-sensitive comparison there, but then it wasn't really a problem until Goober's bitmap list support ;)
+ *
  * Revision 2.72.2.13  2006/11/24 22:40:15  Goober5000
  * FRED again updates backgrounds while the user is editing them
  *
@@ -1390,6 +1393,8 @@ void stars_pre_level_init(bool clear_backgrounds)
 
 	stars_clear_instances();
 
+	stars_set_background_model(NULL, NULL);
+
 	// mark all starfield and sun bitmaps as unused for this mission and release any current bitmaps
 	// NOTE: that because of how we have to load the bitmaps it's important to release all of
 	//       them first thing rather than after we have marked and loaded only what's needed
@@ -1443,7 +1448,7 @@ void stars_post_level_init()
 	ubyte red,green,blue,alpha;
 
 
-	stars_set_background_model(The_mission.skybox_model, "");
+	stars_set_background_model(The_mission.skybox_model, NULL);
 
 	stars_load_debris( ((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) );
 
