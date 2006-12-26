@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.5 $
- * $Date: 2006-12-07 18:17:19 $
+ * $Revision: 2.87.2.6 $
+ * $Date: 2006-12-26 05:27:15 $
  * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.5  2006/12/07 18:17:19  taylor
+ * add "$Weapons Energy Text:" to hud_gauges.tbl so that the low energy text can be positioned as well (Mantis bug #1166)
+ *
  * Revision 2.87.2.4  2006/08/19 04:38:46  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -2945,8 +2948,10 @@ int object_targetable_in_reticle(object *target_objp)
 	}
 
 	obj_type = target_objp->type;
-		
-	if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_DEBRIS) || (obj_type == OBJ_WEAPON) || (obj_type == OBJ_ASTEROID) || (obj_type == OBJ_JUMP_NODE) ) {
+
+	if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_DEBRIS) || (obj_type == OBJ_WEAPON) || (obj_type == OBJ_ASTEROID)
+			|| ((obj_type == OBJ_JUMP_NODE) && !target_objp->jnp->is_hidden()) )
+	{
 		return 1;
 	}
 
@@ -3025,8 +3030,6 @@ void hud_target_in_reticle_new()
 			}
 			break;
 		case OBJ_JUMP_NODE:
-			if(A->jnp->is_hidden())
-				continue;
 			mc.model_num = A->jnp->get_modelnum();
 			break;
 		default:
