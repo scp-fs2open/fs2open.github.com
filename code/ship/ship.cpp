@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.46 $
- * $Date: 2006-12-07 18:23:37 $
+ * $Revision: 2.336.2.47 $
+ * $Date: 2006-12-26 05:30:00 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.46  2006/12/07 18:23:37  taylor
+ * fix secondary thruster length stuff
+ *  - change thruster_glow_len_factor to thruster02_glow_len_factor so it's a bit more obvious
+ *  - fix tbl entry so that it makes sense what you are setting :)
+ *
  * Revision 2.336.2.45  2006/11/28 05:51:03  Goober5000
  * make an error message more descriptive, and allow the new method of parsing subsystem flags
  *
@@ -4257,12 +4262,18 @@ strcpy(parse_error_text, temp_error);
 			}
 
 			if (old_flags) {
-				Warning(LOCATION, "Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
+			/*	Warning(LOCATION, "Use of depreciated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
 				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
 				"\t+untargetable\n" \
 				"\t+carry-no-damage\n" \
 				"\t+use-multiple-guns\n" \
-				"\t+fire-down-normals\n", sip->name, sp->name);
+				"\t+fire-down-normals\n", sip->name, sp->name); */
+				mprintf(("Use of depreciated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
+				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
+				"\t+untargetable\n" \
+				"\t+carry-no-damage\n" \
+				"\t+use-multiple-guns\n" \
+				"\t+fire-down-normals\n", sip->name, sp->name));
 			}
 
 			while(optional_string("$animation:"))
