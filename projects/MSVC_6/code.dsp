@@ -331,6 +331,14 @@ SOURCE=..\..\code\cutscene\mvelib.h
 
 SOURCE=..\..\code\cutscene\mveplayer.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=..\..\code\cutscene\oggplayer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\cutscene\oggplayer.h
+# End Source File
 # End Group
 # Begin Group "Debris"
 
