@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.47 $
- * $Date: 2006-12-26 05:30:00 $
- * $Author: taylor $
+ * $Revision: 2.336.2.48 $
+ * $Date: 2006-12-26 18:14:38 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.47  2006/12/26 05:30:00  taylor
+ * minor spelling fixage
+ * make depreciated subsystem flag syntax be a debug log warning instead a popup warning (FOR 3.6.9 ONLY!)
+ *
  * Revision 2.336.2.46  2006/12/07 18:23:37  taylor
  * fix secondary thruster length stuff
  *  - change thruster_glow_len_factor to thruster02_glow_len_factor so it's a bit more obvious
@@ -11148,21 +11152,121 @@ int wing_lookup(char *name)
 	return -1;
 }
 
-//	Return the index of Ship_info[].name that is *name.
-int ship_info_lookup(char *name)
+//	Return the index of Ship_info[].name that is *token.
+int ship_info_lookup_sub(char *token)
 {
 	int	i;
 
-	// bogus
-	if(name == NULL){
-		return -1;
-	}
-
-	for (i=0; i < Num_ship_classes; i++)
-		if (!stricmp(name, Ship_info[i].name))
+	for (i = 0; i < Num_ship_classes; i++)
+		if (!stricmp(token, Ship_info[i].name))
 			return i;
 
 	return -1;
+}
+
+// Goober5000
+int ship_info_lookup(char *token)
+{
+	int idx;
+	char *p;
+	char name[NAME_LENGTH], temp1[NAME_LENGTH], temp2[NAME_LENGTH];
+
+	// bogus
+	if (token == NULL)
+		return -1;
+
+	// first try a straightforward lookup
+	idx = ship_info_lookup_sub(token);
+	if (idx >= 0)
+		return idx;
+
+	// ship copy types might be mismatched
+	p = get_pointer_to_first_hash_symbol(token);
+	if (p == NULL)
+		return -1;
+
+	// conversion from FS1 missions
+	if (!stricmp(token, "GTD Orion#1 (Galatea)"))
+	{
+		idx = ship_info_lookup_sub("GTD Orion#Galatea");
+		if (idx >= 0)
+			return idx;
+
+		idx = ship_info_lookup_sub("GTD Orion (Galatea)");
+		if (idx >= 0)
+			return idx;
+
+		return -1;
+	}
+	else if (!stricmp(token, "GTD Orion#2 (Bastion)"))
+	{
+		idx = ship_info_lookup_sub("GTD Orion#Bastion");
+		if (idx >= 0)
+			return idx;
+
+		idx = ship_info_lookup_sub("GTD Orion (Bastion)");
+		if (idx >= 0)
+			return idx;
+
+		return -1;
+	}
+	else if (!stricmp(token, "SF Dragon#2 (weakened)"))
+	{
+		idx = ship_info_lookup_sub("SF Dragon#weakened");
+		if (idx >= 0)
+			return idx;
+
+		idx = ship_info_lookup_sub("SF Dragon (weakened)");
+		if (idx >= 0)
+			return idx;
+
+		return -1;
+	}
+	else if (!stricmp(token, "SF Dragon#3 (Player)"))
+	{
+		idx = ship_info_lookup_sub("SF Dragon#Terrans");
+		if (idx >= 0)
+			return idx;
+
+		idx = ship_info_lookup_sub("SF Dragon (Terrans)");
+		if (idx >= 0)
+			return idx;
+
+		return -1;
+	}
+
+	// get first part of new string
+	strcpy(temp1, token);
+	end_string_at_first_hash_symbol(temp1);
+
+	// get second part
+	strcpy(temp2, p + 1);
+
+	// found a hash
+	if (*p == '#')
+	{
+		// assemble using parentheses
+		sprintf(name, "%s (%s)", temp1, temp2);
+	}
+	// found a parenthesis
+	else if (*p == '(')
+	{
+		// chop off right parenthesis (it exists because otherwise the left wouldn't have been flagged)
+		char *p2 = strchr(temp2, ')');
+		*p2 = '\0';
+
+		// assemble using hash
+		sprintf(name, "%s#%s", temp1, temp2);
+	}
+	// oops
+	else
+	{
+		Warning(LOCATION, "Unrecognized hash symbol.  Contact a programmer!");
+		return -1;
+	}
+
+	// finally check the new name
+	return ship_info_lookup_sub(name);
 }
 
 //	Return the ship index of the ship with name *name.
