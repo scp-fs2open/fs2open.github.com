@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.31.2.8 $
- * $Date: 2006-12-07 17:57:25 $
+ * $Revision: 2.31.2.9 $
+ * $Date: 2006-12-26 05:13:29 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.31.2.8  2006/12/07 17:57:25  taylor
+ * cleanup for movie init stuff (this will be even cleaner once the rest of the Theora code finally gets in)
+ * get rid of the clear screen hack for Windows, we can handle that better now
+ *
  * Revision 2.31.2.7  2006/11/15 00:24:47  taylor
  * clean up AVI movie stuff a bit:
  *  - use the default black brush for clearing the screen, it's a little less stupid this way
@@ -104,15 +108,17 @@
 #include "cutscene/cutscenes.h" // cutscene_mark_viewable()
 #include "freespace2/freespace.h" // for Game_mode, etc.
 #include "cutscene/mvelib.h"
+#include "cutscene/oggplayer.h"
 #include "menuui/mainhallmenu.h"
 
 // to know if we are in a movie, needed for non-MVE only
 bool Playing_movie = false;
 
 #define MOVIE_NONE	-1
-#define MOVIE_AVI	0
-#define MOVIE_MPG	1
-#define MOVIE_MVE	2
+#define MOVIE_OGG	0
+#define MOVIE_MVE	1
+#define MOVIE_AVI	2
+#define MOVIE_MPG	3
 
 // This module links freespace movie calls to the actual API calls the play the movie.
 // This module handles all the different requires of OS and gfx API and finding the file to play
@@ -138,10 +144,8 @@ int movie_find(char *filename, char *out_name)
 	char full_path[MAX_PATH];
 	char tmp_name[MAX_PATH];
 	int size, offset = 0;
-	const int NUM_EXT = 3;
-	// NOTE: search order assumes that retail movies will be in MVE format, or that all movies will be in AVI format.
-	//       this isn't pretty, but short of CFILE changes to do filter searching, it's about the only option for mods
-	const char *movie_ext[NUM_EXT] = { ".avi", ".mpg", ".mve" };
+	const int NUM_EXT = 4;
+	const char *movie_ext[NUM_EXT] = { ".ogg", ".mve", ".avi", ".mpg" };
 
 	if (out_name == NULL)
 		return MOVIE_NONE;
@@ -157,12 +161,17 @@ int movie_find(char *filename, char *out_name)
 
     int rc = cf_find_file_location_ext(tmp_name, NUM_EXT, movie_ext, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0);
 
+	if (rc == MOVIE_NONE)
+		return MOVIE_NONE;
+
 	// if it's not in a packfile then we're done
 	// NOTE: MVEs use CFILE internally for the player, so they can work out of VPs
-	if ( (rc != MOVIE_MVE) && (offset != 0) )
+	if ( ((rc == MOVIE_AVI) || (rc == MOVIE_MPG)) && (offset != 0) ) {
+		mprintf(("MOVIE ERROR:  Found '%s' in a VP archive, but it can't be used from there!\n", full_path));
 		rc = MOVIE_NONE;
-	else
+	} else {
 		strcpy( out_name, full_path );
+	}
 
 
 	return rc;
@@ -180,10 +189,9 @@ bool movie_play(char *name)
 
 	extern int Mouse_hidden;
 	extern int Is_standalone;
-	if(Is_standalone) return false;
- 	if(Cmdline_nomovies) return false;
-	//Commented this out since we have dnoshowvid -WMC
- 	//if(Cmdline_window) return false;
+
+	if (Cmdline_nomovies || Is_standalone)
+		return false;
 
 
 	char full_name[MAX_PATH];
@@ -192,47 +200,62 @@ bool movie_play(char *name)
 	rc = movie_find(name, full_name);
 
 	if (rc == MOVIE_NONE) {
-		mprintf(("MOVIE ERROR: Unable to open movie file '%s' in any supported format.", name));
+		mprintf(("MOVIE ERROR: Unable to open movie file '%s' in any supported format.\n", name));
 		return false;
 	} else {
 		DBUGFILE_OUTPUT_1("About to play: %s", full_name);
 	}
 
 	// MVE checks first since they use a different player
-	if (rc == MOVIE_MVE) {
-		MVESTREAM *movie = NULL;
+	if (rc == MOVIE_MVE || rc == MOVIE_OGG) {
+		MVESTREAM *movie_mve = NULL;
+		THEORAFILE *movie_ogg = NULL;
 
-		// NOTE the MVE code uses CFILE, so only pass the base name and it will load up the movie properly
-		movie = mve_open(name);
+		// NOTE the MVE/Theora code uses CFILE, so only pass the base name and it will load up the movie properly
+		if (rc == MOVIE_MVE)
+			movie_mve = mve_open(name);
+		else
+			movie_ogg = theora_open(name);
 
-		if (movie) {
+		if (movie_mve || movie_ogg) {
 			// kill all background sounds
 			main_hall_pause();
 
 			// clear the screen and hide the mouse cursor
 			Mouse_hidden++;
 			gr_reset_clip();
-			gr_set_color(255, 255, 255);
+			gr_set_color(0, 0, 0);
 			gr_set_clear_color(0, 0, 0);
 			gr_zbuffer_clear(0);
 			gr_clear();
 			gr_flip();
+			gr_clear();
 
 			// ready to play...
-			mve_init(movie);
-			mve_play(movie);
+			if (movie_mve) {
+				mve_init(movie_mve);
+				mve_play(movie_mve);
+			} else if (movie_ogg) {
+				theora_play(movie_ogg);
+			}
 
-			// ... done playing, close the mve and show the cursor again
-			mve_shutdown();
-			mve_close(movie);
+			// ... done playing, close the movie and show the cursor again
+			if (movie_mve) {
+				mve_shutdown();
+				mve_close(movie_mve);
+			} else if (movie_ogg) {
+				theora_close(movie_ogg);
+			}
+
 			Mouse_hidden--;
 
 			main_hall_unpause();
 
 			return true;
 		} else {
-			// uh-oh, MVE is invalid... Abory, Retry, Fail?
+			// uh-oh, movie is invalid... Abory, Retry, Fail?
 			mprintf(("MOVIE ERROR: Found invalid movie! (%s)\n", full_name));
+			return false;
 		}
 	}
 
