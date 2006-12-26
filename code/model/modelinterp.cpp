@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.157.2.18 $
- * $Date: 2006-12-07 18:21:25 $
+ * $Revision: 2.157.2.19 $
+ * $Date: 2006-12-26 05:27:54 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157.2.18  2006/12/07 18:21:25  taylor
+ * unbreak the breakage that I broke when I tried to fix breakage that wasn't broken the second time but initialy broke instead
+ *  (yeah, this one confused me ;))  (Mantis bug #1165)
+ *
  * Revision 2.157.2.17  2006/11/01 18:35:57  taylor
  * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
  *
@@ -1009,7 +1013,6 @@
 #include "bmpman/bmpman.h"
 #include "io/key.h"
 #include "io/timer.h"
-#include "graphics/grinternal.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "math/staticrand.h"
