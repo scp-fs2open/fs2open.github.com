@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.29.2.2 $
- * $Date: 2006-12-07 18:10:16 $
+ * $Revision: 1.29.2.3 $
+ * $Date: 2006-12-26 05:17:28 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29.2.2  2006/12/07 18:10:16  taylor
+ * restore default ambient light values to retail-like settings (I based the previous values on default D3D, which was rather dumb of me)
+ * restore lighting falloff capability from retail and non-HTL modes (only used for asteroids as far as I know)
+ * various cleanups and speedups for dealing with lights
+ *
  * Revision 1.29.2.1  2006/07/24 07:38:00  taylor
  * minor cleanup/optimization to beam warmup glow rendering function
  * various lighting code cleanups
@@ -211,25 +216,26 @@ GLint GL_max_lights = 0;
 static const float GL_light_color[4] = { 0.8f, 0.8f, 0.8f, 1.0f };
 static const float GL_light_spec[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 static const float GL_light_zero[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-static const float GL_light_emission[4] = { 0.1f, 0.1f, 0.1f, 0.7f };
+static const float GL_light_emission[4] = { 0.09f, 0.09f, 0.09f, 1.0f };
 static const float GL_light_true_zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 static float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
 
-
 void FSLight2GLLight(opengl_light *GLLight, light *FSLight)
 {
-	GLLight->Diffuse.r = FSLight->r * FSLight->intensity;
-	GLLight->Diffuse.g = FSLight->g * FSLight->intensity;
-	GLLight->Diffuse.b = FSLight->b * FSLight->intensity;
-	GLLight->Specular.r = FSLight->spec_r * FSLight->intensity;
-	GLLight->Specular.g = FSLight->spec_g * FSLight->intensity;
-	GLLight->Specular.b = FSLight->spec_b * FSLight->intensity;
 	GLLight->Ambient.r = 0.0f;
 	GLLight->Ambient.g = 0.0f;
 	GLLight->Ambient.b = 0.0f;
 	GLLight->Ambient.a = 1.0f;
-	GLLight->Specular.a = 1.0f;
+
+	GLLight->Diffuse.r = FSLight->r * FSLight->intensity;
+	GLLight->Diffuse.g = FSLight->g * FSLight->intensity;
+	GLLight->Diffuse.b = FSLight->b * FSLight->intensity;
 	GLLight->Diffuse.a = 1.0f;
+
+	GLLight->Specular.r = FSLight->spec_r * FSLight->intensity;
+	GLLight->Specular.g = FSLight->spec_g * FSLight->intensity;
+	GLLight->Specular.b = FSLight->spec_b * FSLight->intensity;
+	GLLight->Specular.a = 1.0f;
 
 	GLLight->type = FSLight->type;
 
@@ -585,7 +591,8 @@ void opengl_init_light()
 {
 	opengl_calculate_ambient_factor();
 
-	// only on front, tends to be more believable
+	glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, 0);
+
 	glMaterialf(GL_FRONT, GL_SHININESS, Cmdline_ogl_spec /*80.0f*/ );
 
 	// more realistic lighting model
@@ -616,28 +623,27 @@ void opengl_default_light_settings(int ambient = 1, int emission = 1, int specul
 		return;
 
 	if (ambient) {
-		glMaterialfv( GL_FRONT/*_AND_BACK*/, GL_DIFFUSE, GL_light_color );
-		glMaterialfv( GL_FRONT/*_AND_BACK*/, GL_AMBIENT, GL_light_ambient );
+		glMaterialfv( GL_FRONT, GL_DIFFUSE, GL_light_color );
+		glMaterialfv( GL_FRONT, GL_AMBIENT, GL_light_ambient );
 	} else {
 		if (GL_center_alpha) {
-			glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, GL_light_true_zero );
+			glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_true_zero );
 		} else {
-			glMaterialfv( GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, GL_light_zero );
+			glMaterialfv( GL_FRONT, GL_AMBIENT_AND_DIFFUSE, GL_light_zero );
 		}
 	}
 
 	if (emission && !Cmdline_no_emissive) {
 		// emissive light is just a general glow but without it things are *terribly* dark if there is no light on them
-		glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, GL_light_emission );
+		glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_emission );
 	} else {
-		glMaterialfv( GL_FRONT_AND_BACK, GL_EMISSION, GL_light_zero );
+		glMaterialfv( GL_FRONT, GL_EMISSION, GL_light_zero );
 	}
 
 	if (specular) {
-		// only on front, tends to be more believable
 		glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_spec );
 	} else {
-		glMaterialfv( GL_FRONT_AND_BACK, GL_SPECULAR, GL_light_zero );
+		glMaterialfv( GL_FRONT, GL_SPECULAR, GL_light_zero );
 	}
 }
 
