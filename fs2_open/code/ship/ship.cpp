@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.48 $
- * $Date: 2006-12-26 18:14:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.336.2.49 $
+ * $Date: 2006-12-27 10:27:10 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.48  2006/12/26 18:14:38  Goober5000
+ * allow parsing of similar ship copy names properly (Mantis #1178)
+ *
  * Revision 2.336.2.47  2006/12/26 05:30:00  taylor
  * minor spelling fixage
  * make depreciated subsystem flag syntax be a debug log warning instead a popup warning (FOR 3.6.9 ONLY!)
@@ -2581,7 +2584,7 @@ void parse_engine_wash(bool replace)
 
 char *Warp_types[] = {
 	"Default",
-	"Animation"
+	"BTRL"
 };
 
 int Num_warp_types = sizeof(Warp_types)/sizeof(char*);
