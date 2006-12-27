@@ -10,13 +10,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.44.2.9 $
- * $Date: 2006-12-26 05:25:18 $
+ * $Revision: 1.44.2.10 $
+ * $Date: 2006-12-27 09:26:21 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44.2.9  2006/12/26 05:25:18  taylor
+ * lots of little cleanup, stale code removal, and small performance adjustments
+ * get rid of the default combine texture state, we don't need it in general, and it can screw up fonts
+ * get rid of the secondary color support, it doesn't do much in non-HTL mode, screws up various things, and has long since been obsolete but material setup
+ * get rid of the old gamma setup, it actually conflicts with newer gamma support
+ * default texture wrapping to edge clamp
+ * do second gr_clear() on init to be sure and catch double-buffer
+ * make sure that our active texture will always get reset to 0, rather than leaving it at whatever was used last
+ * fixed that damn FBO bug from it hanging on textures and causing some rendering errors for various people
+ * only lock verts once in HTL model rendering
+ *
  * Revision 1.44.2.8  2006/12/07 18:16:11  taylor
  * minor cleanups and speedups
  * when using lighting falloff, be sure to drop emissive light when falloff gets low enough (otherwise we still se everything fine)
@@ -1058,10 +1069,19 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient)
 
 			glGetFloatv(GL_MODELVIEW_MATRIX, mview);
 
-			// transpose/invert the view matrix (basically stole this out of a google search)
-			GL_env_texture_matrix[0] = mview[0]; GL_env_texture_matrix[1] = mview[4]; GL_env_texture_matrix[2]  = -mview[8];
-			GL_env_texture_matrix[4] = mview[1]; GL_env_texture_matrix[5] = mview[5]; GL_env_texture_matrix[6]  = -mview[9];
-			GL_env_texture_matrix[8] = mview[2]; GL_env_texture_matrix[9] = mview[6]; GL_env_texture_matrix[10] = -mview[10];
+			// r.xyz  <--  r.x, u.x, f.x
+			GL_env_texture_matrix[0]  =  mview[0];
+			GL_env_texture_matrix[1]  = -mview[4];
+			GL_env_texture_matrix[2]  =  mview[8];
+			// u.xyz  <--  r.y, u.y, f.y
+			GL_env_texture_matrix[4]  =  mview[1];
+			GL_env_texture_matrix[5]  = -mview[5];
+			GL_env_texture_matrix[6]  =  mview[9];
+			// f.xyz  <--  r.z, u.z, f.z
+			GL_env_texture_matrix[8]  =  mview[2];
+			GL_env_texture_matrix[9]  = -mview[6];
+			GL_env_texture_matrix[10] =  mview[10];
+
 			GL_env_texture_matrix[15] = 1.0f;
 		}
 	}

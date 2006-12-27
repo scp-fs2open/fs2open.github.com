@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.29 $
- * $Date: 2006-12-20 11:22:21 $
- * $Author: karajorma $
+ * $Revision: 2.243.2.30 $
+ * $Date: 2006-12-27 09:26:20 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.29  2006/12/20 11:22:21  karajorma
+ * Move the voice recognition init to stop Windows complaining and failing to init it.
+ *
  * Revision 2.243.2.28  2006/11/15 00:49:41  taylor
  * handle the video registry entry better
  * support for new Windows window creation code
@@ -1637,7 +1640,6 @@
  * 
  */
 
-// static const char RCS_Name[] = "$Name: not supported by cvs2svn $";
 
 #ifdef _WIN32
  #include <direct.h>
@@ -5114,115 +5116,65 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 	ENVMAP = (Game_subspace_effect) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map;
 
 /*
-	Envmap matrix setup -- left-handed (right-handed)
+	Envmap matrix setup -- left-handed
 	-------------------------------------------------
-	Image	Forward Axis	Up Axis		Right Axis
-	px		+X  (-X)		+Y			-Z
-	nx		-X  (+X)		+Y			+Z
-	py		+Y  (-Y)		-Z			+X
-	ny		-Y  (+Y)		+Z			+X
-	pz		+Z  (-Z)		+Y			+X
-	nz		-Z  (+Z)		+Y			-X
+	Face --	Forward		Up		Right
+	px		+X			+Y		-Z
+	nx		-X			+Y		+Z
+	py		+Y			-Z		+X
+	ny		-Y			+Z		+X
+	pz		+Z 			+Y		+X
+	nz		-Z			+Y		-X
 */
 
-	// OpenGL needs a right-handed setup
-	if (gr_screen.mode == GR_OPENGL) {
-		// face 1 (px / right)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.x = -1.0f;
-		new_orient.vec.uvec.xyz.y =  1.0f;
-		new_orient.vec.rvec.xyz.z = -1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-		i++; // bump!
+	// NOTE: OpenGL needs up/down reversed
 
-		// face 2 (nx / left)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.x =  1.0f;
-		new_orient.vec.uvec.xyz.y =  1.0f;
-		new_orient.vec.rvec.xyz.z =  1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-		i++; // bump!
+	// face 1 (px / right)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.x =  1.0f;
+	new_orient.vec.uvec.xyz.y =  1.0f;
+	new_orient.vec.rvec.xyz.z = -1.0f;
+	render_environment(i, eye_pos, &new_orient, new_zoom);
+	i++; // bump!
 
-		// face 3 (py / up)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.y = -1.0f;
-		new_orient.vec.uvec.xyz.z = -1.0f;
-		new_orient.vec.rvec.xyz.x =  1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-		i++; // bump!
+	// face 2 (nx / left)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.x = -1.0f;
+	new_orient.vec.uvec.xyz.y =  1.0f;
+	new_orient.vec.rvec.xyz.z =  1.0f;
+	render_environment(i, eye_pos, &new_orient, new_zoom);
+	i++; // bump!
 
-		// face 4 (ny / down)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.y =  1.0f;
-		new_orient.vec.uvec.xyz.z =  1.0f;
-		new_orient.vec.rvec.xyz.x =  1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-		i++; // bump!
+	// face 3 (py / up)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
+	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
+	new_orient.vec.rvec.xyz.x =  1.0f;
+	render_environment(i, eye_pos, &new_orient, new_zoom);
+	i++; // bump!
 
-		// face 5 (pz / forward)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.z = -1.0f;
-		new_orient.vec.uvec.xyz.y =  1.0f;
-		new_orient.vec.rvec.xyz.x =  1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-		i++; // bump!
+	// face 4 (ny / down)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.y =  (gr_screen.mode == GR_OPENGL) ?  1.0f : -1.0f;
+	new_orient.vec.uvec.xyz.z =  (gr_screen.mode == GR_OPENGL) ? -1.0f :  1.0f;
+	new_orient.vec.rvec.xyz.x =  1.0f;
+	render_environment(i, eye_pos, &new_orient, new_zoom);
+	i++; // bump!
 
-		// face 6 (nz / back)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.z =  1.0f;
-		new_orient.vec.uvec.xyz.y =  1.0f;
-		new_orient.vec.rvec.xyz.x = -1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-	}
-	// otherwise use a left-handed setup
-	else {
-		// face 1 (px / right)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.x =  1.0f;
-		new_orient.vec.uvec.xyz.y =  1.0f;
-		new_orient.vec.rvec.xyz.z = -1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-		i++; // bump!
+	// face 5 (pz / forward)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.z =  1.0f;
+	new_orient.vec.uvec.xyz.y =  1.0f;
+	new_orient.vec.rvec.xyz.x =  1.0f;
+	render_environment(i, eye_pos, &new_orient, new_zoom);
+	i++; // bump!
 
-		// face 2 (nx / left)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.x = -1.0f;
-		new_orient.vec.uvec.xyz.y =  1.0f;
-		new_orient.vec.rvec.xyz.z =  1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-		i++; // bump!
-
-		// face 3 (py / up)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.y =  1.0f;
-		new_orient.vec.uvec.xyz.z = -1.0f;
-		new_orient.vec.rvec.xyz.x =  1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-		i++; // bump!
-
-		// face 4 (ny / down)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.y = -1.0f;
-		new_orient.vec.uvec.xyz.z =  1.0f;
-		new_orient.vec.rvec.xyz.x =  1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-		i++; // bump!
-
-		// face 5 (pz / forward)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.z =  1.0f;
-		new_orient.vec.uvec.xyz.y =  1.0f;
-		new_orient.vec.rvec.xyz.x =  1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-		i++; // bump!
-
-		// face 6 (nz / back)
-		memset( &new_orient, 0, sizeof(matrix) );
-		new_orient.vec.fvec.xyz.z = -1.0f;
-		new_orient.vec.uvec.xyz.y =  1.0f;
-		new_orient.vec.rvec.xyz.x = -1.0f;
-		render_environment(i, eye_pos, &new_orient, new_zoom);
-	}
+	// face 6 (nz / back)
+	memset( &new_orient, 0, sizeof(matrix) );
+	new_orient.vec.fvec.xyz.z = -1.0f;
+	new_orient.vec.uvec.xyz.y =  1.0f;
+	new_orient.vec.rvec.xyz.x = -1.0f;
+	render_environment(i, eye_pos, &new_orient, new_zoom);
 
 
 	// we're done, so now reset
