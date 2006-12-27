@@ -10,13 +10,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.48.2.12 $
- * $Date: 2006-12-26 05:25:18 $
+ * $Revision: 1.48.2.13 $
+ * $Date: 2006-12-27 09:24:31 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48.2.12  2006/12/26 05:25:18  taylor
+ * lots of little cleanup, stale code removal, and small performance adjustments
+ * get rid of the default combine texture state, we don't need it in general, and it can screw up fonts
+ * get rid of the secondary color support, it doesn't do much in non-HTL mode, screws up various things, and has long since been obsolete but material setup
+ * get rid of the old gamma setup, it actually conflicts with newer gamma support
+ * default texture wrapping to edge clamp
+ * do second gr_clear() on init to be sure and catch double-buffer
+ * make sure that our active texture will always get reset to 0, rather than leaving it at whatever was used last
+ * fixed that damn FBO bug from it hanging on textures and causing some rendering errors for various people
+ * only lock verts once in HTL model rendering
+ *
  * Revision 1.48.2.11  2006/12/07 18:14:49  taylor
  * get rid of "vram_full", it can never actually be full the way the code works, so having this is redundant
  * comment out APPLE_client_storage extension usage, I think this was messing some stuff up on OS X and causing memory errors
@@ -1910,7 +1921,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 	fbo_t *fbo = NULL;
 
 	if (slot < 0) {
-	/*	if ( (render_target != NULL) && (render_target->working_slot >= 0) ) {
+		if ( (render_target != NULL) && (render_target->working_slot >= 0) ) {
 		//	if (Cmdline_mipmap) {
 		//		ts = &Textures[render_target->working_slot];
 
@@ -1923,7 +1934,7 @@ int opengl_set_render_target( int slot, int face, int is_static )
 				extern void gr_opengl_bm_save_render_target(int slot);
 				gr_opengl_bm_save_render_target(render_target->working_slot);
 			}
-		}*/
+		}
 
 		vglFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, 0, 0, 0);
 
