@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.22 $
- * $Date: 2006-05-27 16:47:12 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2006-12-28 00:59:48 $
+ * $Author: wmcoolmon $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/05/27 16:47:12  taylor
+ * remove some of the old batcher functions, nothing is using them now anyway
+ * minor cleanup
+ * add orient UV flipping to HTL drawing functions, like retail/non-HTL has support for
+ *
  * Revision 2.21  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -222,7 +227,7 @@ extern void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno);
 extern void g3_end_frame_func(char *filename, int lineno);
 
 // currently in frame?
-extern int g3_in_frame();
+extern bool g3_in_frame();
 
 //set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
 void g3_set_view_angles(vec3d *view_pos,angles *view_orient,float zoom);

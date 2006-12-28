@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.77 $
- * $Date: 2006-11-16 01:11:28 $
- * $Author: taylor $
+ * $Revision: 2.78 $
+ * $Date: 2006-12-28 00:59:48 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2006/11/16 01:11:28  taylor
+ * handle knossos warp effect flip in a slightly better, slighter safer way (Mantis bug #1048, plus a couple that weren't filed)
+ *
  * Revision 2.76  2006/11/06 06:42:22  taylor
  * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
  *
@@ -1078,7 +1081,16 @@ void shipfx_warpin_start( object *objp )
 		return;
 	}
 
-	Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
+	//WMC - Check if scripting handles this.
+	if(Script_system.IsConditionOverride(CHA_WARPIN, objp))
+	{
+		Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
+		return;
+	}
+	else
+	{
+		Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
+	}
 
 	if (shipp->flags2 & SF2_IN_LIMBO)
 		shipp->flags2 &= ~SF2_IN_LIMBO;
@@ -1259,7 +1271,7 @@ void shipfx_warpin_frame( object *objp, float frametime )
 
 		//WMC - Terrible hack. But this is OK to be in CVS, for now.
 		if ( timestamp_elapsed(shipp->start_warp_time + (14.0f/30.0f) * 1000.0f)) {
-			particle_create(&vmd_zero_vector, &vmd_zero_vector, 0.5f, objp->radius/1.5f , PARTICLE_BITMAP_PERSISTENT, bm_load_animation("ftl_SW", NULL, NULL), 0.0f, objp, false);
+			particle_create(&vmd_zero_vector, &vmd_zero_vector, 0.5f, objp->radius/1.5f , PARTICLE_BITMAP, bm_load_animation("ftl_SW", NULL, NULL), 0.0f, objp, false);
 		}
 	}
 }
@@ -1477,17 +1489,25 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
-	// if we're dying return
-	if ( shipp->flags & SF_DYING ) {
+	if(!Script_system.IsConditionOverride(CHA_WARPIN, objp))
+	{
+		// if we're dying return
+		if ( shipp->flags & SF_DYING ) {
+			return;
+		}
+
+		//return if disabled
+		if ( shipp->flags & SF_DISABLED ){
+			return;
+		}
+
+		Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
+	}
+	else
+	{
+		Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
 		return;
 	}
-
-	//return if disabled
-	if ( shipp->flags & SF_DISABLED ){
-		return;
-	}
-
-	Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
 
 	// if we're HUGE, keep alive - set guardian
 	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP) {
@@ -2103,10 +2123,10 @@ void shipfx_emit_spark( int n, int sn )
 	float ship_radius, spark_scale_factor;
 
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
-	if(sn > -1 && sip->ispew_max_particles == 0)
+	if(sn > -1 && sip->ispew.num_high == 0)
 		return;
 
-	if(sn < 0 && sip->dspew_max_particles == 0)
+	if(sn < 0 && sip->dspew.num_high == 0)
 		return;
 	
 	if ( shipp->num_hits <= 0 )
@@ -2124,9 +2144,9 @@ void shipfx_emit_spark( int n, int sn )
 		spark_scale_factor = 0.0f;
 	}
 
-	float spark_time_scale  = 1.0f + spark_scale_factor * (Particle_life   - 1.0f);
-	float spark_width_scale = 1.0f + spark_scale_factor * (Particle_width  - 1.0f);
-	float spark_num_scale   = 1.0f + spark_scale_factor * (Particle_number - 1.0f);
+	float spark_time_scale  = 1.0f + spark_scale_factor * (Particle_life   - 1.0f);	//1.2f
+	float spark_width_scale = 1.0f + spark_scale_factor * (Particle_width  - 1.0f);	//1.2f
+	float spark_num_scale   = 1.0f + spark_scale_factor * (Particle_number - 1.0f);	//1.2f
 
 	obj = &Objects[shipp->objnum];
 	ship_info* si = &Ship_info[shipp->ship_info_index];
@@ -2172,9 +2192,14 @@ void shipfx_emit_spark( int n, int sn )
 		}
 	}
 
-	if ( create_spark )	{
-
+	if ( create_spark )
+	{
 		particle_emitter	pe;
+
+		if(sn > -1)
+			pe = sip->ispew;
+		else
+			pe = sip->dspew;
 
 		pe.pos = outpnt;				// Where the particles emit from
 
@@ -2207,12 +2232,11 @@ void shipfx_emit_spark( int n, int sn )
 		}
 				
 		pe.normal = tmp_norm;			// What normal the particle emit around
-		pe.normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree
-		pe.min_rad = 0.20f;				// Min radius
-		pe.max_rad = 0.50f;				// Max radius
+		
 
 		// first time through - set up end time and make heavier initially
-		if ( sn > -1 )	{
+		if ( sn > -1 )
+		{
 			// Sparks for first time at this spot
 			if (si->flags & SIF_FIGHTER) {
 				if (hull_percent > 0.6f) {
@@ -2225,36 +2249,50 @@ void shipfx_emit_spark( int n, int sn )
 				}
 			}
 
-			pe.num_low  = 25;				// Lowest number of particles to create (hardware)
-			if(sip->ispew_max_particles > 0) {
-				pe.num_high = sip->ispew_max_particles;
-			} else {
-				pe.num_high = 30;				// Highest number of particles to create (hardware)
-			}
-			pe.normal_variance = 1.0f;	//	How close they stick to that normal 0=good, 1=360 degree
-			pe.min_vel = 2.0f;				// How fast the slowest particle can move
-			pe.max_vel = 12.0f;				// How fast the fastest particle can move
-			pe.min_life = 0.05f;				// How long the particles live
-			pe.max_life = 0.55f;				// How long the particles live
+			//WMC - data for this is now in ship.cpp
 
-			particle_emit( &pe, PARTICLE_FIRE, 0 );
-		} else {
-
-			pe.min_rad = 0.7f;				// Min radius
-			pe.max_rad = 1.3f;				// Max radius
-			pe.num_low  = int (20 * spark_num_scale);		// Lowest number of particles to create (hardware)
-			if(sip->dspew_max_particles > 0) {
-				pe.num_high = sip->dspew_max_particles;
-			} else {
-				pe.num_high = int (50 * spark_num_scale);		// Highest number of particles to create (hardware)
+			//WMC - add user-declared values for stuff
+			vm_vec_add2(&pe.pos, &sip->ispew.pos);
+			vm_vec_add2(&pe.vel, &sip->ispew.vel);
+			vm_vec_add2(&pe.normal, &sip->ispew.normal);
+			if(pe.texture_id < 0)
+			{
+				pe.texture_id = particle_get_fire_id();
+				particle_emit( &pe );
+				pe.texture_id = -1;
 			}
-			pe.normal_variance = 0.2f * spark_width_scale;		//	How close they stick to that normal 0=good, 1=360 degree
-			pe.min_vel = 3.0f;				// How fast the slowest particle can move
-			pe.max_vel = 12.0f;				// How fast the fastest particle can move
-			pe.min_life = 0.35f*2.0f * spark_time_scale;		// How long the particles live
-			pe.max_life = 0.75f*2.0f * spark_time_scale;		// How long the particles live
-			
-			particle_emit( &pe, PARTICLE_SMOKE, 0 );
+			else
+			{
+				particle_emit( &pe );
+			}
+		}
+		else
+		{
+			if(pe.num_low < 0)
+				pe.num_low  = fl2i(20 * spark_num_scale);		// Lowest number of particles to create (hardware)
+			if(pe.num_high < 0)
+				pe.num_high = fl2i(50 * spark_num_scale);		// Highest number of particles to create (hardware)
+			if(pe.normal_variance < 0)
+				pe.normal_variance = 0.2f * spark_width_scale;		//	How close they stick to that normal 0=good, 1=360 degree
+			if(pe.min_life < 0)
+				pe.min_life = 0.70f * spark_time_scale;		// How long the particles live
+			if(pe.max_life < 0)
+				pe.max_life = 1.50f * spark_time_scale;		// How long the particles live
+
+			//WMC - add user-declared values for stuff
+			vm_vec_add2(&pe.pos, &sip->ispew.pos);
+			vm_vec_add2(&pe.vel, &sip->ispew.vel);
+			vm_vec_add2(&pe.normal, &sip->ispew.normal);
+			if(pe.texture_id < 0)
+			{
+				pe.texture_id = particle_get_smoke_id();
+				particle_emit( &pe );
+				pe.texture_id = -1;
+			}
+			else
+			{
+				particle_emit( &pe );
+			}
 		}
 	}
 
@@ -2757,7 +2795,10 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 			pe.min_rad = 0.5f*scale;				// Min radius
 			pe.max_rad = 1.5f*scale;				// Max radius
 
-			particle_emit( &pe, PARTICLE_SMOKE2, 0, range );
+			pe.texture_id = particle_get_smoke2_id();
+			pe.range = range;
+
+			particle_emit( &pe );
 
 		} else {
 			// time out forever

@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-09-11 06:49:38 $
- * $Author: taylor $
- * $Revision: 2.19 $
- * $Date: 2006-09-11 06:49:38 $
- * $Author: taylor $
+ * $Revision: 2.20 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/09/11 06:49:38  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.18  2006/05/09 09:21:15  taylor
  * fix incorrect button locations, it matches the correct layout of the other techroom screens now
  *    (thought Backslash was going to fix this, but I got tired of waiting. :))
@@ -255,26 +258,34 @@ char *Cutscene_mask_name[GR_NUM_RESOLUTIONS] = {
 	"2_ViewFootage-m"
 };
 
-int Num_cutscenes;
+int Num_cutscenes = 0;
 int Cutscenes_viewable;
 int Description_index;
 cutscene_info Cutscenes[MAX_CUTSCENES];
 
 //extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
-void cutsceen_close(){
+void cutscene_close(){
 	for(int i = 0; i<MAX_CUTSCENES; i++)
-	if(Cutscenes[i].description)vm_free(Cutscenes[i].description);
+	{
+		if(Cutscenes[i].description != NULL) {
+			vm_free(Cutscenes[i].description);
+		}
+	}
 }
 
 // initialization stuff for cutscenes
 void cutscene_init()
 {
-	atexit(cutsceen_close);
+	atexit(cutscene_close);
 	char buf[MULTITEXT_LENGTH];
 	int rval;
 
+	//Init stuff
+	Num_cutscenes = 0;
+
 	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Error parsing 'rank.tbl'\r\nError code = %i.\r\n", rval);
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "cutscenes.tbl", rval));
+		return;
 	} 
 
 	// open localization
@@ -284,7 +295,6 @@ void cutscene_init()
 	reset_parse();
 
 	// parse in all the rank names
-	Num_cutscenes = 0;
 	skip_to_string("#Cutscenes");
 	ignore_white_space();
 	while ( required_string_either("#End", "$Filename:") ) {

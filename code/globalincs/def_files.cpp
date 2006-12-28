@@ -7,11 +7,15 @@
 
 /*
  * $Logfile: /Freespace2/code/globalincs/def_files.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-07-06 21:23:20 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2006-12-28 00:59:26 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/07/06 21:23:20  Goober5000
+ * add CVS headers
+ * --Goober5000
+ *
  */
 
 
@@ -204,7 +208,7 @@ char *Default_shiptypes_table = "\
 #Ship types																\n\
 ""\
 $Name:					Navbuoy											\n\
-$Max Debris Speed:		200												\n\
+;;$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		10.0											\n\
 $Fog:																	\n\
@@ -219,7 +223,7 @@ $Counts for Alone:		YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-$Max Debris Speed:		200												\n\
+;;$Max Debris Speed:		200												\n\
 $FF Multiplier:			0.10											\n\
 $EMP Multiplier:		10.0											\n\
 $Fog:																	\n\
@@ -237,7 +241,7 @@ $Name:					Escape Pod										\n\
 $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Warp Pushable:			YES												\n\
-$Max Debris Speed:		200												\n\
+;;$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		10.0											\n\
 $Fog:																	\n\
@@ -251,7 +255,7 @@ $AI:																	\n\
 ""\
 $Name:					Cargo											\n\
 $Scannable:				YES												\n\
-$Max Debris Speed:		200												\n\
+;;$Max Debris Speed:		200												\n\
 $FF Multiplier:			0.10											\n\
 $EMP Multiplier:		10.0											\n\
 $Beams Easily Hit:		YES												\n\
@@ -269,7 +273,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
-$Max Debris Speed:		200												\n\
+;;$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		3.5												\n\
 $Fog:																	\n\
@@ -293,7 +297,7 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-$Max Debris Speed:		200												\n\
+;;$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
@@ -317,7 +321,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
-$Max Debris Speed:		200												\n\
+;;$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
@@ -342,7 +346,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
-$Max Debris Speed:		200												\n\
+;;$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
@@ -368,7 +372,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
-$Max Debris Speed:		200												\n\
+;;$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
@@ -392,7 +396,7 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-$Max Debris Speed:		150												\n\
+;;$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		2.0												\n\
 $Beams Easily Hit:		YES												\n\
@@ -419,7 +423,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Scannable:				YES												\n\
-$Max Debris Speed:		150												\n\
+;;$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		1.75											\n\
 $Beams Easily Hit:		YES												\n\
@@ -446,7 +450,7 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-$Max Debris Speed:		150												\n\
+;;$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.8												\n\
 $Beams Easily Hit:		YES												\n\
@@ -472,7 +476,7 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-$Max Debris Speed:		150												\n\
+;;$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		1.0												\n\
 $Beams Easily Hit:		YES												\n\
@@ -498,7 +502,7 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-$Max Debris Speed:		150												\n\
+;;$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.9												\n\
 $Beams Easily Hit:		YES												\n\
@@ -524,7 +528,7 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-$Max Debris Speed:		150												\n\
+;;$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.3333											\n\
 $Beams Easily Hit:		YES												\n\
@@ -551,7 +555,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushes:			YES												\n\
-$Max Debris Speed:		100												\n\
+;;$Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.2												\n\
 $Beams Easily Hit:		YES												\n\
@@ -578,7 +582,7 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushes:			YES												\n\
-$Max Debris Speed:		100												\n\
+;;$Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.075											\n\
 $Beams Easily Hit:		YES												\n\
@@ -602,7 +606,7 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-$Max Debris Speed:		100												\n\
+;;$Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.5												\n\
 $Beams Easily Hit:		YES												\n\
@@ -625,7 +629,7 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-$Max Debris Speed:		100												\n\
+;;$Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.10											\n\
 $Fog:																	\n\

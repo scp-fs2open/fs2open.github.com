@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.25 $
- * $Date: 2006-12-08 19:18:52 $
- * $Author: Goober5000 $
+ * $Revision: 1.26 $
+ * $Date: 2006-12-28 00:59:20 $
+ * $Author: wmcoolmon $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2006/12/08 19:18:52  Goober5000
+ * fix Mantis #1163
+ *
  * Revision 1.24  2006/11/16 00:53:31  taylor
  * various bits of little cleanup
  * add the debug cmdline printer to FRED, so that we can make use of that info in the FRED-debug case too
@@ -549,6 +552,8 @@
 #include "object/objectdock.h"
 #include "gamesnd/gamesnd.h"
 #include "iff_defs/iff_defs.h"
+#include "parse/scripting.h"
+#include "object/waypoint/waypoint.h"
 #include "menuui/techmenu.h"
 
 #include <direct.h>
@@ -613,7 +618,6 @@ int Ai_goal_list_size = sizeof(Ai_goal_list) / sizeof(ai_goal_list);
 // internal function prototypes
 void set_cur_indices(int obj);
 int common_object_delete(int obj);
-int create_waypoint(vec3d *pos, int list);
 int create_ship(matrix *orient, vec3d *pos, int ship_type);
 int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
@@ -771,14 +775,20 @@ void brief_init_colors();
 
 void fred_preload_all_briefing_icons()
 {
-	int i,j;
+	uint i;
+	int j;
 	for (i = 0; i < Species_info.size(); i++)
 	{
 		for (j = 0; j < MAX_BRIEF_ICONS; j++)
 		{
-			generic_anim_load(&Species_info[i].icon_bitmaps[j]);
-			hud_anim_load(&Species_info[i].icon_fade_anims[j]);
-			hud_anim_load(&Species_info[i].icon_highlight_anims[j]);
+			if(strlen(Species_info[i].icon_bitmaps[j].filename))
+				generic_anim_load(&Species_info[i].icon_bitmaps[j]);
+
+			if(strlen(Species_info[i].icon_fade_anims[j].filename))
+				hud_anim_load(&Species_info[i].icon_fade_anims[j]);
+
+			if(strlen(Species_info[i].icon_highlight_anims[j].filename))
+				hud_anim_load(&Species_info[i].icon_highlight_anims[j]);
 		}
 	}
 }
@@ -869,13 +879,16 @@ bool fred_init()
 	}
 	
 	DBUGFILE_OUTPUT_0("About to init everything");
+	//WMC - init scripting
+	script_init();
 	gr_font_init();					// loads up all fonts  
 //	Fred_font = gr_init_font("font01.vf");
 	gr_set_gamma(3.0f);
 
 	sprintf(palette_filename, "gamepalette%d-%02d", 1, 1);
 	mprintf(("Loading palette %s\n", palette_filename));
-	palette_load_table(palette_filename);
+	//WMC - I dunnit. It doesn't look like this was even used.
+	//palette_load_table(palette_filename);
 
 	key_init();
 	mouse_init();
@@ -1165,8 +1178,12 @@ int dup_object(object *objp)
 			}
 
 	} else if (objp->type == OBJ_WAYPOINT) {
-		obj = create_waypoint(&objp->pos, list);
-		list = Objects[obj].instance;
+		obj = waypoint_create(&objp->pos, list);
+		if(obj > -1)
+		{
+			list = Objects[obj].instance;
+			set_modified();
+		}
 	}
 
 	if (obj == -1)
@@ -1183,8 +1200,7 @@ int create_object(vec3d *pos, int list)
 	int obj, n;
 
 	if (cur_model_index == Id_select_type_waypoint)
-		obj = create_waypoint(pos, list);
-
+		obj = waypoint_create(pos, list);
 	else if (cur_model_index == Id_select_type_start) {
 		if (Player_starts >= MAX_PLAYERS) {
 			Fred_main_wnd->MessageBox("Unable to create new player start point.\n"
@@ -1246,92 +1262,6 @@ int create_player(int num, vec3d *pos, matrix *orient, int type, int init)
 	Ships[Objects[obj].instance].arrival_cue = Locked_sexp_true;
 	Ships[Objects[obj].instance].departure_cue = Locked_sexp_false;
 	obj_merge_created_list();
-	set_modified();
-	return obj;
-}
-
-int query_waypoint_path_name_duplicate(int list)
-{
-	int i;
-
-	for (i=0; i<Num_waypoint_lists; i++)
-		if (i != list)
-			if (!stricmp(Waypoint_lists[i].name, Waypoint_lists[list].name))
-				return 1;
-
-	return 0;
-}
-
-void get_unique_waypoint_path_name(int list)
-{
-	int i = 1;
-
-	sprintf(Waypoint_lists[list].name, "Waypoint path %d", list + 1);
-	while (query_waypoint_path_name_duplicate(list)) {
-		sprintf(Waypoint_lists[list].name, "Waypoint path U%d", i++);
-	}
-}
-
-int create_waypoint(vec3d *pos, int list)
-{
-	int i, obj, index = 0;
-	object *ptr;
-
-	if (list == -1) {  // find a new list to start.
-		for (list=0; list<MAX_WAYPOINT_LISTS; list++){
-			if (!Waypoint_lists[list].count) {
-				get_unique_waypoint_path_name(list);
-				break;
-			}
-		}
-	} else {
-		index = (list & 0xffff) + 1;
-		list /= 65536;
-	}
-
-	if (list == MAX_WAYPOINT_LISTS) {
-		Fred_main_wnd->MessageBox("Unable to create new waypoint path.  You\n"
-			"have reached the maximum limit.", NULL, MB_OK | MB_ICONEXCLAMATION);
-		return -1;
-	}
-
-	Assert((list >= 0) && (list < MAX_WAYPOINT_LISTS));  // illegal index or out of lists.
-	if (Waypoint_lists[list].count >= MAX_WAYPOINTS_PER_LIST) {
-		Fred_main_wnd->MessageBox("Unable to create new waypoint.  You have\n"
-			"reached the maximum limit on waypoints per list.", NULL, MB_OK | MB_ICONEXCLAMATION);
-		return -1;
-	}
-
-	if (Waypoint_lists[list].count > index) {
-		i = Waypoint_lists[list].count;
-		while (i > index) {
-			Waypoint_lists[list].waypoints[i] = Waypoint_lists[list].waypoints[i - 1];
-			Waypoint_lists[list].flags[i] = Waypoint_lists[list].flags[i - 1];
-			i--;
-		}
-	}
-
-	ptr = GET_FIRST(&obj_used_list);
-	while (ptr != END_OF_LIST(&obj_used_list)) {
-		Assert(ptr->type != OBJ_NONE);
-		if (ptr->type == OBJ_WAYPOINT) {
-			i = ptr->instance;
-			if ((i / 65536 == list) && ((i & 0xffff) >= index)){
-				ptr->instance++;
-			}
-		}
-
-		ptr = GET_NEXT(ptr);
-	}
-
-	Waypoint_lists[list].count++;
-	Waypoint_lists[list].flags[index] = 0;
-	Waypoint_lists[list].waypoints[index] = *pos;
-	if (list >= Num_waypoint_lists){
-		Num_waypoint_lists = list + 1;
-	}
-
-	obj = obj_create(OBJ_WAYPOINT, -1, list * 65536 + index, NULL, pos, 0.0f, OF_RENDERS);
 	set_modified();
 	return obj;
 }
@@ -1526,7 +1456,8 @@ void clear_mission()
 	strcpy(palette_filename, "gamepalette1-01");
 //	sprintf( palette_filename, "gamepalette%d-%02d", 1, Mission_palette+1 );
 	mprintf(( "Loading palette %s\n", palette_filename ));
-	palette_load_table(palette_filename);
+	//WMC - I dunnit. It doesn't look like this is really used?
+	//palette_load_table(palette_filename);
 
 	strcpy(The_mission.loading_screen[GR_640],"");
 	strcpy(The_mission.loading_screen[GR_1024],"");

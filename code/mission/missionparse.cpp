@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.202 $
- * $Date: 2006-11-25 06:37:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.203 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.202  2006/11/25 06:37:06  Goober5000
+ * holy crap, this had the potential to mark the locked-true sexp as known-false, which would seriously screw a lot of stuff up
+ *
  * Revision 2.201  2006/11/15 04:02:31  Goober5000
  * a much better fix for built-in arrival messages... it needs a new feature to fully work for custom wings though
  *
@@ -1190,6 +1193,7 @@
 #include "network/multi_respawn.h"
 #include "network/multi_endgame.h"
 #include "object/parseobjectdock.h"
+#include "object/waypoint/waypoint.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -4359,8 +4363,10 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 	Assert (p_obj->ship_max_hull_strength > 0);
 	Assert (old_ship_info->max_hull_strength > 0);
 	
-	float hp_multiplier = p_obj->ship_max_hull_strength / i2fl(old_ship_info->max_hull_strength);
-	p_obj->ship_max_hull_strength = fl2i(new_ship_info->max_hull_strength * hp_multiplier);
+	//WMC - there was some oddness going on with fl2i and i2fl, even though
+	//all of these are floats
+	float hp_multiplier = p_obj->ship_max_hull_strength / old_ship_info->max_hull_strength;
+	p_obj->ship_max_hull_strength = new_ship_info->max_hull_strength * hp_multiplier;
 
 
 	// Shields

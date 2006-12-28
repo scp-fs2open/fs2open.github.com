@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.45 $
- * $Date: 2006-09-20 05:04:42 $
- * $Author: taylor $
+ * $Revision: 2.46 $
+ * $Date: 2006-12-28 00:59:27 $
+ * $Author: wmcoolmon $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2006/09/20 05:04:42  taylor
+ * the resolution checks needed to be based on the unscaled res since you would have to include correct sizes for every single resolution otherwise (fixes a bug noticed in WCS)
+ *
  * Revision 2.44  2006/09/11 06:49:39  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -904,7 +907,7 @@ void parse_hud_gauges_tbl(char* longname)
 	lcl_ext_open();
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("Unable to parse %s!  Code = %i.\n", longname, rval));
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", longname, rval));
 		lcl_ext_close();
 		return;
 	}

@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.22 $
- * $Date: 2006-09-11 06:50:42 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2006-12-28 00:59:27 $
+ * $Author: wmcoolmon $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/09/11 06:50:42  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.21  2006/09/08 06:20:14  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -593,7 +596,7 @@ void lcl_xstr_init()
 	}
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("Error parsing 'strings.tbl'\nError code = %i.\n", rval));
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "strings.tbl", rval));
 	} else {
 		// make sure localization is NOT running
 		lcl_ext_close();

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/OrientEditor.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-12-28 00:59:20 $
+ * $Author: wmcoolmon $
  *
  * Object orientation editor (or just object editor) dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.4  2005/04/13 20:11:06  chhogg
  * Changed vector to vec3d for Fred.
  *
@@ -213,15 +217,15 @@ BOOL orient_editor::OnInitDialog()
 		m_object_index = 0;
 	}
 
-	m_spin1.SetRange(99999, -99999);
+	m_spin1.SetRange((short)99999, (short)-99999);
 	m_spin1.SetPos((int) convert(m_position_x));
-	m_spin2.SetRange(99999, -99999);
+	m_spin2.SetRange( (short)99999, (short)-99999);
 	m_spin2.SetPos((int) convert(m_position_y));
-	m_spin3.SetRange(99999, -99999);
+	m_spin3.SetRange( (short)99999, (short)-99999);
 	m_spin3.SetPos((int) convert(m_position_z));
-	m_spin4.SetRange(99999, -99999);
-	m_spin5.SetRange(99999, -99999);
-	m_spin6.SetRange(99999, -99999);
+	m_spin4.SetRange( (short)99999, (short)-99999);
+	m_spin5.SetRange( (short)99999, (short)-99999);
+	m_spin6.SetRange( (short)99999, (short)-99999);
 	UpdateData(FALSE);
 	return TRUE;
 }

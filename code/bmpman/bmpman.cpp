@@ -10,13 +10,17 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.91 $
- * $Date: 2006-09-11 06:48:40 $
- * $Author: taylor $
+ * $Revision: 2.92 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2006/09/11 06:48:40  taylor
+ * fixes for stuff_string() bounds checking
+ * stict compiler build fixes
+ *
  * Revision 2.90  2006/08/20 00:45:37  taylor
  * ever so slight speed up for bm_set_components_* (this crap is slow, and it's called a LOT)
  *
@@ -1816,7 +1820,6 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		}
 	}
 
-
 	n = find_block_of(anim_frames);
 	if(n < 0){
 		return -1;
@@ -1908,6 +1911,12 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		cfclose(img_cfp);
 
 	return bm_bitmaps[n].handle;
+}
+
+int bm_is_valid(int handle)
+{
+	if(!bm_inited) return 0;
+	return (bm_bitmaps[handle % MAX_BITMAPS].handle == handle);
 }
 
 // Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.

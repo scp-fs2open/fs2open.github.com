@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Key.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-03-03 16:18:19 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2006-12-28 00:59:27 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/03/03 16:18:19  taylor
+ * lockup fixes, and it's Linux friendly too :)
+ *
  * Revision 2.7  2005/02/04 10:12:30  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -509,6 +512,9 @@ int key_checkch()
 //	Return key scancode if a key has been pressed,
 //	else return 0.
 //	Reads keys out of the key buffer and updates keyhead.
+
+//WMC - Added so scripting can get at keys.
+int Current_key_down = 0;
 int key_inkey()
 {
 	int key = 0;
@@ -523,6 +529,8 @@ int key_inkey()
 	}
 
 	LEAVE_CRITICAL_SECTION( key_lock );	
+
+	Current_key_down = key;
 
 	return key;
 }

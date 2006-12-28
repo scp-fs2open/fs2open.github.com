@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.28 $
- * $Date: 2006-09-11 06:45:39 $
- * $Author: taylor $
+ * $Revision: 2.29 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2006/09/11 06:45:39  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.27  2006/09/11 06:08:08  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -558,16 +561,23 @@ void maybe_delete_debris(debris *db)
 {
 	object	*objp;
 
-	if (timestamp_elapsed(db->next_distance_check)) {
-		if (!(Game_mode & GM_MULTIPLAYER)) {		//	In single player game, just check against player.
+	if (timestamp_elapsed(db->next_distance_check) && timestamp_elapsed(db->must_survive_until))
+	{
+		if (!(Game_mode & GM_MULTIPLAYER))
+		{		//	In single player game, just check against player.
 			if (vm_vec_dist_quick(&Player_obj->pos, &Objects[db->objnum].pos) > MAX_DEBRIS_DIST)
 				db->lifeleft = 0.1f;
 			else
 				db->next_distance_check = timestamp(DEBRIS_DISTANCE_CHECK_TIME);
-		} else {
-			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-				if (objp->flags & OF_PLAYER_SHIP) {
-					if (vm_vec_dist_quick(&objp->pos, &Objects[db->objnum].pos) < MAX_DEBRIS_DIST) {
+		}
+		else
+		{
+			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) )
+			{
+				if (objp->flags & OF_PLAYER_SHIP)
+				{
+					if (vm_vec_dist_quick(&objp->pos, &Objects[db->objnum].pos) < MAX_DEBRIS_DIST)
+					{
 						db->next_distance_check = timestamp(DEBRIS_DISTANCE_CHECK_TIME);
 						return;
 					}
@@ -776,13 +786,16 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	ship		*shipp;
 	debris	*db;	
 	polymodel *pm;
+	physics_info *pi;
 	int vaporize;
+	ship_info *sip = NULL;
 
 	parent_objnum = OBJ_INDEX(source_obj);
 
 	Assert( (source_obj->type == OBJ_SHIP ) || (source_obj->type == OBJ_GHOST));
 	Assert( source_obj->instance >= 0 && source_obj->instance < MAX_SHIPS );	
 	shipp = &Ships[source_obj->instance];
+	sip = &Ship_info[shipp->ship_info_index];
 	vaporize = (shipp->flags &SF_VAPORIZE);
 
 	if ( !hull_flag )	{
@@ -817,19 +830,46 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 
 	db = &Debris[n];
 
-	// Create Debris piece n!
-	if ( hull_flag ) {
-		if (rand() < RAND_MAX/6)	// Make some pieces blow up shortly after explosion.
-			db->lifeleft = 2.0f * ((float) myrand()/(float) RAND_MAX) + 0.5f;
-		else
-			db->lifeleft = -1.0f;		// large hull pieces stay around forever
-	}	else {
-		db->lifeleft = (i2fl(myrand())/i2fl(RAND_MAX))*2.0f+0.1f;
+	//WMC - We must survive until now, at least.
+	db->must_survive_until = timestamp();
+
+	if(hull_flag && sip->debris_min_lifetime >= 0.0f && sip->debris_max_lifetime >= 0.0f)
+	{
+		db->lifeleft = (( sip->debris_max_lifetime - sip->debris_min_lifetime ) * frand()) + sip->debris_min_lifetime;
+	}
+	else
+	{
+		// Create Debris piece n!
+		if ( hull_flag ) {
+			if (rand() < RAND_MAX/6)	// Make some pieces blow up shortly after explosion.
+				db->lifeleft = 2.0f * ((float) myrand()/(float) RAND_MAX) + 0.5f;
+			else
+				db->lifeleft = -1.0f;		// large hull pieces stay around forever
+		}	else {
+			db->lifeleft = (i2fl(myrand())/i2fl(RAND_MAX))*2.0f+0.1f;
+		}
+
+		// increase lifetime for vaporized debris
+		if (vaporize) {
+			db->lifeleft *= 3.0f;
+		}
 	}
 
-	// increase lifetime for vaporized debris
-	if (vaporize) {
-		db->lifeleft *= 3.0f;
+	//WMC - Oh noes, we may need to change lifeleft
+	if(hull_flag)
+	{
+		if(sip->debris_min_lifetime >= 0.0f)
+		{
+			db->must_survive_until = timestamp(fl2i(sip->debris_min_lifetime * 1000.0f));
+			if(db->lifeleft < sip->debris_min_lifetime)
+				db->lifeleft = sip->debris_min_lifetime;
+		}
+
+		if(sip->debris_max_lifetime >= 0.0f)
+		{
+			if(db->lifeleft > sip->debris_max_lifetime)
+				db->lifeleft = sip->debris_max_lifetime;
+		}
 	}
 	db->flags |= DEBRIS_USED;
 	db->is_hull = hull_flag;
@@ -888,6 +928,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	db->objnum = objnum;
 	
 	obj = &Objects[objnum];
+	pi = &obj->phys_info;
 
 	// assign the network signature.  The signature will be 0 for non-hull pieces, but since that
 	// is our invalid signature, it should be okay.
@@ -966,48 +1007,10 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	vm_vec_crossprod ( &vel_from_rotvel, &world_rotvel, &to_center );
 	vm_vec_scale ( &vel_from_rotvel, DEBRIS_ROTVEL_SCALE);
 
-	vm_vec_add (&obj->phys_info.vel, &radial_vel, &source_obj->phys_info.vel);
-	vm_vec_add2(&obj->phys_info.vel, &vel_from_rotvel);
+	vm_vec_add (&pi->vel, &radial_vel, &source_obj->phys_info.vel);
+	vm_vec_add2(&pi->vel, &vel_from_rotvel);
 
-#ifdef DEBRIS_SPEED_DEBUG
-	// check that debris is not created with too high a velocity
-	if (hull_flag)
-	{
-		int ship_type = Ship_info[Ships[source_obj->instance].ship_info_index].class_type;
-		if(ship_type > -1)
-		{
-			if(vm_vec_mag_squared(&obj->phys_info.vel) > Ship_types[ship_type].debris_max_speed) {
-				float scale = Ship_types[ship_type].debris_max_speed / vm_vec_mag(&obj->phys_info.vel);
-				vm_vec_scale(&obj->phys_info.vel, scale);
-			}
-		}
-		/*
-		if (ship_info_flag & (SIF_SMALL_SHIP | SIF_NOT_FLYABLE | SIF_HARMLESS))
-		{
-			if (vm_vec_mag_squared(&obj->phys_info.vel) > MAX_SPEED_SMALL_DEBRIS*MAX_SPEED_SMALL_DEBRIS) {
-				float scale = MAX_SPEED_SMALL_DEBRIS / vm_vec_mag(&obj->phys_info.vel);
-				vm_vec_scale(&obj->phys_info.vel, scale);
-			}
-		} else if (ship_info_flag & SIF_BIG_SHIP) {
-			if (vm_vec_mag_squared(&obj->phys_info.vel) > MAX_SPEED_BIG_DEBRIS*MAX_SPEED_BIG_DEBRIS) {
-				float scale = MAX_SPEED_BIG_DEBRIS / vm_vec_mag(&obj->phys_info.vel);
-				vm_vec_scale(&obj->phys_info.vel, scale);
-			}
-		} else if (ship_info_flag & SIF_HUGE_SHIP) {
-			if (vm_vec_mag_squared(&obj->phys_info.vel) > MAX_SPEED_CAPITAL_DEBRIS*MAX_SPEED_CAPITAL_DEBRIS) {
-				float scale = MAX_SPEED_CAPITAL_DEBRIS / vm_vec_mag(&obj->phys_info.vel);
-				vm_vec_scale(&obj->phys_info.vel, scale);
-			}
-		*/
-		}
-		else
-		{
-			Warning(LOCATION, "Ship does not have a type!");
-		}
-	}
-#endif
-
-//	vm_vec_scale_add(&obj->phys_info.vel, &radial_vel, &source_obj->phys_info.vel, frand()/2.0f + 0.5f);
+//	vm_vec_scale_add(&pi->vel, &radial_vel, &source_obj->phys_info.vel, frand()/2.0f + 0.5f);
 //	nprintf(("Andsager","object vel from rotvel: %0.2f, %0.2f, %0.2f\n",vel_from_rotvel.x, vel_from_rotvel.y, vel_from_rotvel.z));
 
 // make sure rotational velocity does not get too high
@@ -1020,26 +1023,81 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 	vm_vec_rand_vec_quick(&rotvel);
 	vm_vec_scale(&rotvel, scale);
 
-	obj->phys_info.flags |= PF_DEAD_DAMP;
-	obj->phys_info.rotvel = rotvel;
+	pi->flags |= PF_DEAD_DAMP;
+	pi->rotvel = rotvel;
 	check_rotvel_limit( &obj->phys_info );
+
+	// check that debris is not created with too high a velocity
+	if (hull_flag)
+	{
+		if(sip->debris_min_speed >= 0.0f && sip->debris_max_speed >= 0.0f)
+		{
+			float debris_speed = (( sip->debris_max_speed - sip->debris_min_speed ) * frand()) + sip->debris_min_speed;
+			float scale = debris_speed / vm_vec_mag(&pi->vel);
+			vm_vec_scale(&pi->vel, scale);
+		}
+		else if(sip->debris_min_speed >= 0.0f)
+		{
+			float curspeed = vm_vec_mag(&pi->vel);
+			if(curspeed < sip->debris_min_speed)
+			{
+				float scale = sip->debris_min_speed / curspeed;
+				vm_vec_scale(&pi->vel, scale);
+			}
+		}
+		else if(sip->debris_max_speed >= 0.0f)
+		{
+			float curspeed = vm_vec_mag(&pi->vel);
+			if(curspeed > sip->debris_max_speed)
+			{
+				float scale = sip->debris_max_speed / curspeed;
+				vm_vec_scale(&pi->vel, scale);
+			}
+		}
+
+		//WMC - Rotational velocity user cap
+		if(sip->debris_min_rotspeed >= 0.0f && sip->debris_max_rotspeed >= 0.0f)
+		{
+			float debris_rotspeed = (( sip->debris_max_rotspeed - sip->debris_min_rotspeed ) * frand()) + sip->debris_min_rotspeed;
+			float scale = debris_rotspeed / vm_vec_mag(&pi->rotvel);
+			vm_vec_scale(&pi->rotvel, scale);
+		}
+		else if(sip->debris_min_rotspeed >= 0.0f)
+		{
+			float curspeed = vm_vec_mag(&pi->rotvel);
+			if(curspeed < sip->debris_min_rotspeed)
+			{
+				float scale = sip->debris_min_rotspeed / curspeed;
+				vm_vec_scale(&pi->rotvel, scale);
+			}
+		}
+		else if(sip->debris_max_rotspeed >= 0.0f)
+		{
+			float curspeed = vm_vec_mag(&pi->rotvel);
+			if(curspeed > sip->debris_max_rotspeed)
+			{
+				float scale = sip->debris_max_rotspeed / curspeed;
+				vm_vec_scale(&pi->rotvel, scale);
+			}
+		}
+	}
 
 
 	// blow out his reverse thrusters. Or drag, same thing.
-	obj->phys_info.rotdamp = 10000.0f;
-	obj->phys_info.side_slip_time_const = 10000.0f;
-	obj->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);	// set damping equal for all axis and not changable
+	pi->rotdamp = 10000.0f;
+	pi->side_slip_time_const = 10000.0f;
+	pi->flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);	// set damping equal for all axis and not changable
 
-	vm_vec_zero(&obj->phys_info.max_vel);		// make so he can't turn on his own VOLITION anymore.
-	vm_vec_zero(&obj->phys_info.max_rotvel);	// make so he can't change speed on his own VOLITION anymore.
+	vm_vec_zero(&pi->max_vel);		// make so he can't turn on his own VOLITION anymore.
+	vm_vec_zero(&pi->max_rotvel);	// make so he can't change speed on his own VOLITION anymore.
 
 
 	// ensure vel is valid
-	Assert( !vm_is_vec_nan(&obj->phys_info.vel) );
+	Assert( !vm_is_vec_nan(&pi->vel) );
 
 //	if ( hull_flag )	{
-//		vm_vec_zero(&obj->phys_info.vel);
-//		vm_vec_zero(&obj->phys_info.rotvel);
+//		vm_vec_zero(&pi->vel);
+//		vm_vec_zero(&pi->rotvel);
 //	}
 
 	return obj;
@@ -1080,7 +1138,8 @@ void debris_hit(object *debris_obj, object *other_obj, vec3d *hitpos, float dama
 		pe.max_vel = 10.0f;				// How fast the fastest particle can move
 		pe.min_life = 0.25f;			// How long the particles live
 		pe.max_life = 0.75f;			// How long the particles live
-		particle_emit( &pe, PARTICLE_FIRE, 0 );
+		pe.texture_id = particle_get_fire_id();
+		particle_emit( &pe );
 	}
 
 	// multiplayer clients bail here

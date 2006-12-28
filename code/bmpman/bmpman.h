@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.40 $
- * $Date: 2006-07-05 23:41:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.41 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2006/07/05 23:41:43  Goober5000
+ * spelling
+ *
  * Revision 2.39  2006/07/05 23:35:42  Goober5000
  * cvs comment tweaks
  *
@@ -569,6 +572,9 @@ extern uint bm_get_signature( int bitmapnum);
 
 // Unlocks a bitmap
 extern void bm_unlock( int bitmapnum );
+
+//WMC - Needed this for scripting
+extern int bm_is_valid(int handle);
 
 // Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.
 //WMC - Returns -1 on failure, handle or first frame handle on success.

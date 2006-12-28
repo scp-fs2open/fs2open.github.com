@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.53 $
- * $Date: 2006-11-06 06:46:08 $
- * $Author: taylor $
+ * $Revision: 2.54 $
+ * $Date: 2006-12-28 00:59:39 $
+ * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2006/11/06 06:46:08  taylor
+ * fix some of the envmap issues
+ *  - use proper hand-ness for OGL
+ *  - fix distortion
+ *  - get rid of extra index buffer requirement
+ * change starfield bitmaps to use an instance matrix rather than going through all the trouble of resetting the view matrix
+ * basic cleanup and get rid of a couple of struct/variable naming issues (compiler sanity)
+ * make double sure that we aren't using culling of z-buffering when rendering starfield bitmaps
+ *
  * Revision 2.52  2006/09/11 06:50:42  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -342,6 +351,7 @@
 #include "mission/missionparse.h"
 #include "ship/ship.h"
 #include "cmdline/cmdline.h"
+#include "io/timer.h"		//WMC - timestamp stuff
 
 
 
@@ -577,12 +587,20 @@ void neb2_init()
 {	
 	char name[MAX_FILENAME_LEN];
 
+	Neb2_bitmap_count = 0;
+	Neb2_poof_count = 0;
+
+	int rval;
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "nebula.tbl", rval));
+		return;
+	} 
+
 	// read in the nebula.tbl
 	read_file_text("nebula.tbl");
 	reset_parse();
 
 	// background bitmaps
-	Neb2_bitmap_count = 0;
 	while(!optional_string("#end")){
 		// nebula
 		required_string("+Nebula:");
@@ -594,7 +612,6 @@ void neb2_init()
 	}
 
 	// poofs
-	Neb2_poof_count = 0;
 	while(!optional_string("#end")){
 		// nebula
 		required_string("+Poof:");
@@ -628,7 +645,8 @@ void neb2_init()
 	}*/
 
 	// should always have 6 neb poofs
-	Assert(Neb2_poof_count == 6);
+	//WMC - Why? Guess we'll find out...
+	//Assert(Neb2_poof_count == 6);
 }
 
 // set detail level
@@ -727,8 +745,12 @@ void neb2_post_level_init()
 
 	// load in all nebula bitmaps
 	for(idx=0; idx<Neb2_poof_count; idx++){
-		if(Neb2_poofs[idx] < 0){
-			Neb2_poofs[idx] = bm_load(Neb2_poof_filenames[idx]);
+		if(Neb2_poofs[idx] < 0)
+		{
+			Neb2_poofs[idx] = bm_load_animation(Neb2_poof_filenames[idx]);
+			if(Neb2_poofs[idx] < 0) {
+				Neb2_poofs[idx] = bm_load(Neb2_poof_filenames[idx]);
+			}
 		}
 	}
 
@@ -1166,6 +1188,7 @@ void neb2_gen_slice(int xyz, int src, vec3d *cube_center)
 
 				// set the bitmap
 				Neb2_cubes[src][idx1][idx2].bmap = neb2_get_bitmap();
+				Neb2_cubes[src][idx1][idx2].init_timestamp = timestamp();
 
 				// set the rotation speed
 				Neb2_cubes[src][idx1][idx2].rot = 0.0f;
@@ -1186,6 +1209,7 @@ void neb2_gen_slice(int xyz, int src, vec3d *cube_center)
 
 				// set the bitmap
 				Neb2_cubes[idx1][src][idx2].bmap = neb2_get_bitmap();
+				Neb2_cubes[idx1][src][idx2].init_timestamp = timestamp();
 
 				// set the rotation speed
 				Neb2_cubes[idx1][src][idx2].rot = 0.0f;
@@ -1206,6 +1230,7 @@ void neb2_gen_slice(int xyz, int src, vec3d *cube_center)
 				
 				// set the bitmap
 				Neb2_cubes[idx1][idx2][src].bmap = neb2_get_bitmap();
+				Neb2_cubes[idx1][idx2][src].init_timestamp = timestamp();
 
 				// set the rotation speed
 				Neb2_cubes[idx1][idx2][src].rot = 0.0f;
@@ -1405,8 +1430,33 @@ void neb2_render_player()
 					continue;
 				}
 	
-				// set the bitmap and render				
-				gr_set_bitmap(Neb2_cubes[idx1][idx2][idx3].bmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
+				// set the bitmap and render
+				int bm_id = Neb2_cubes[idx1][idx2][idx3].bmap;
+
+				//WMC - just in case something bad happens
+				if(bm_id < 0)
+					continue;
+
+				//WMC try animating, if applicable. this copies model_interp_get_texture.
+				int nframes = 0;
+				int fps = 0;
+				bm_get_info(bm_id, NULL, NULL, NULL, &nframes, &fps);
+				if(nframes < 2)
+				{
+					gr_set_bitmap(bm_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
+				}
+				else
+				{
+					float total_time = (float)nframes / (float)fps;
+					float cur_time = f2fl( (game_get_overall_frametime() - Neb2_cubes[idx1][idx2][idx3].init_timestamp) % fl2f(total_time) );
+
+					int frame = fl2i((cur_time * nframes) / total_time);
+
+					if (frame < 0) frame = 0;
+					if (frame >= nframes) frame = nframes - 1;
+
+					gr_set_bitmap(bm_id + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
+				}
 
 /*#ifndef NDEBUG
 				//	float this_area;

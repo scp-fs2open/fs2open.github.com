@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.170 $
- * $Date: 2006-11-06 06:32:30 $
- * $Author: taylor $
+ * $Revision: 2.171 $
+ * $Date: 2006-12-28 00:59:48 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.170  2006/11/06 06:32:30  taylor
+ * updated/fixed modelanim code
+ * add ships.tbl subsystem flag ("+fire-down-normals") which will force a turret to fire down it's barrel line (Mantis bug #591)
+ *
  * Revision 2.169  2006/10/08 02:05:38  Goober5000
  * fix forum links
  *
@@ -913,6 +917,7 @@
 #include "weapon/shockwave.h"
 #include "species_defs/species_defs.h"
 #include "globalincs/pstypes.h"
+#include "particle/particle.h"
 
 #include <vector>
 #include <string>
@@ -998,7 +1003,7 @@ typedef struct ship_weapon {
 	int primary_bank_ammo[MAX_SHIP_PRIMARY_BANKS];			// Number of missiles left in primary bank
 	int primary_bank_start_ammo[MAX_SHIP_PRIMARY_BANKS];	// Number of missiles starting in primary bank
 	int primary_bank_capacity[MAX_SHIP_PRIMARY_BANKS];		// Max number of projectiles in bank
-	int primary_next_slot[MAX_SHIP_PRIMARY_BANKS];			// Next slot to fire in the bank
+	//int primary_next_slot[MAX_SHIP_PRIMARY_BANKS];			// Next slot to fire in the bank
 	int primary_bank_rearm_time[MAX_SHIP_PRIMARY_BANKS];	// timestamp which indicates when bank can get new projectile
 
 	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
@@ -1693,7 +1698,6 @@ typedef struct ship_type_info {
 
 	//Ship
 	int ship_bools;	//For lack of better term
-	float debris_max_speed;
 
 	//Weapons
 	int weapon_bools;
@@ -1837,8 +1841,23 @@ typedef struct ship_info {
 	char shockwave_name[NAME_LENGTH];
 	int shockwave_info_index;*/
 
-	int ispew_max_particles;						//Temp field until someone works on particles -C
-	int dspew_max_particles;						//Temp field until someone works on particles -C
+	particle_emitter	ispew;
+	particle_emitter	dspew;
+
+	//Debris crap
+	float			debris_min_lifetime;
+	float			debris_max_lifetime;
+	float			debris_min_speed;
+	float			debris_max_speed;
+	float			debris_min_rotspeed;
+	float			debris_max_rotspeed;
+	/*
+	int				debris_flags;
+	vec3d			debris_initial_vel;
+	vec3d			debris_max_vel;
+	vec3d			debris_initial_rotvel;
+	vec3d			debris_max_rotvel;
+	*/
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl

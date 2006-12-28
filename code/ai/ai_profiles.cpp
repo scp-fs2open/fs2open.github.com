@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.17 $
- * $Date: 2006-09-11 06:49:38 $
- * $Author: taylor $
+ * $Revision: 1.18 $
+ * $Date: 2006-12-28 00:59:18 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2006/09/11 06:49:38  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 1.16  2006/07/12 04:59:03  taylor
  * fix the endless-loop fix ;)  (this is what broke shield recharging btw)
  *
@@ -123,7 +126,7 @@ void parse_ai_profiles_tbl(char *longname)
 
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("Unable to parse %s!  Code = %i.\n", rval, (longname) ? longname : NOX("<default>")));
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", rval, (longname) ? longname : NOX("<default>")));
 	}
 	else
 	{

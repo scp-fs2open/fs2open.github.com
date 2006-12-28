@@ -24,6 +24,7 @@
 #include "asteroid/asteroid.h"
 #include "species_defs/species_defs.h"
 #include "weapon/weapon.h"
+#include "object/waypoint/waypoint.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -244,9 +245,9 @@ void DumpStats::get_background_stats(CString &buffer)
 
 				// species
 				temp.Format("\t\tSpecies: ");
-				for (i=0; i<Species_info.size(); i++) {
-					if (Asteroid_field.field_debris_type[i] >= 0) {
-						temp += CString(Species_info[(Asteroid_field.field_debris_type[i] / NUM_DEBRIS_SIZES) - 1].species_name) + " ";
+				for (uint species=0; species<Species_info.size(); species++) {
+					if (Asteroid_field.field_debris_type[species] >= 0) {
+						temp += CString(Species_info[(Asteroid_field.field_debris_type[species] / NUM_DEBRIS_SIZES) - 1].species_name) + " ";
 					}
 				}
 
@@ -567,7 +568,8 @@ void DumpStats::get_messaging_info(CString &buffer)
 void DumpStats::get_species_ship_breakdown(CString &buffer)
 {
 	CString temp;
-	int i, species;
+	uint species;
+	int i;
 	object *objp;
 	ship *shipp;
 
@@ -747,7 +749,8 @@ void dump_loadout(ship *shipp, CString &loadout)
 
 void DumpStats::get_default_ship_loadouts(CString &buffer)
 {
-	int i, species;
+	uint species;
+	int i;
 	object *objp;
 	ship *shipp;
 	CString temp, loadout;

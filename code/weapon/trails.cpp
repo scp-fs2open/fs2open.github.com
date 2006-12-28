@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.27 $
- * $Date: 2006-05-27 16:45:11 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2006-12-28 00:59:54 $
+ * $Author: wmcoolmon $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/05/27 16:45:11  taylor
+ * some minor cleanup
+ * remove -nobeampierce
+ * update for geometry batcher changes
+ *
  * Revision 2.26  2006/03/18 10:28:58  taylor
  * meh.
  *
@@ -532,7 +537,8 @@ void trail_move_all(float frametime)
 
 void trail_object_died( trail *trailp )
 {
-	trailp->object_died = true;
+	if(trailp != NULL)
+		trailp->object_died = true;
 }
 
 void trail_render_all()

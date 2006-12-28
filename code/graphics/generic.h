@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/graphics/generic.h $
- * $Revision: 1.1 $
- * $Date: 2005-11-21 23:55:00 $
- * $Author: taylor $
+ * $Revision: 1.2 $
+ * $Date: 2006-12-28 00:59:26 $
+ * $Author: wmcoolmon $
  *
  * Generic graphics functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/11/21 23:55:00  taylor
+ * add generic.cpp and generic.h
+ *
  *
  * $NoKeywords: $
  */
@@ -23,6 +26,8 @@ typedef struct generic_anim {
 	int	first_frame;
 	int	num_frames;
 	int total_time;		// in seconds
+
+	generic_anim(){memset(this, 0, sizeof(generic_anim)); first_frame=-1;}
 } generic_anim;
 
 // Goober5000

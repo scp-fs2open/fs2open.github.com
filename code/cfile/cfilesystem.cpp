@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.36 $
- * $Date: 2006-09-11 05:49:05 $
- * $Author: taylor $
+ * $Revision: 2.37 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,10 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2006/09/11 05:49:05  taylor
+ * various small cleanup and speedup changes
+ * add a cf_find_file_location_ext() function, which you can pass a filename and a list of extensions and it will search for all of them at once
+ *
  * Revision 2.35  2006/07/28 02:36:07  taylor
  * include CF_TYPE_PLAYERS in special pilot path consideration, prevents moddirs from always getting and empty data/players/
  *
@@ -1708,7 +1712,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	// Search the default directories
 #if defined _WIN32
 	cf_create_default_path_string( filespec, sizeof(filespec)-1, pathtype, filter );
-	mprintf(("cf_get_file_list_preallocated looking for type=%d, filter=\"%s\"\n",
+	mprintf(("CFILE: cf_get_file_list_preallocated looking for type=%d, filter=\"%s\"\n",
 				pathtype, filter));
 
 	int find_handle;

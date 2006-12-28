@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-10-06 09:34:19 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2006-12-28 00:59:48 $
+ * $Author: wmcoolmon $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/10/06 09:34:19  taylor
+ * meant to do this before but forgot about it (just replaced "(4.0/9.0) * PI" with it's result)
+ *
  * Revision 2.22  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -243,9 +246,9 @@ int G3_frame_count = 0;
 extern int Cmdline_nohtl;
 
 // check if in frame
-int g3_in_frame()
+bool g3_in_frame()
 {
-	return G3_count;
+	return (G3_count > 0);
 }
 
 //start the frame

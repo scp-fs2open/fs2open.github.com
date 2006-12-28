@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-07-09 01:55:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2006-12-28 00:59:39 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/07/09 01:55:41  Goober5000
+ * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
+ * this should fix Mantis #977
+ * --Goober5000
+ *
  * Revision 2.18  2006/06/07 04:42:22  wmcoolmon
  * Limbo flag support; further scripting 3.6.9 update
  *
@@ -591,6 +596,8 @@
 #include "asteroid/asteroid.h"
 #include "playerman/player.h"
 #include "object/objectdock.h"
+#include "parse/lua.h"
+#include "parse/scripting.h"
 
 
 
@@ -1713,144 +1720,172 @@ int collide_ship_ship( obj_pair * pair )
 		if ((A == FastOne) && (hitpos.x == FastOne->last_pos.x) && (hitpos.y == FastOne->last_pos.y) && (hitpos.z == FastOne->last_pos.z))
 			Int3();
 */
-		if ( hit ) {
-			float		damage;
+		if ( hit )
+		{
+			bool a_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, A);
+			bool b_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, B);
+			if(!a_override && !b_override)
+			{
+				float		damage;
 
-			if ( player_involved && (Player->control_mode == PCM_WARPOUT_STAGE1) )	{
-				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
-				HUD_printf(XSTR( "Warpout sequence aborted.", 466));
-			}
-
-//			vec3d	rel_vec;
-
-			//	Hack, following line would cause a null vector in vm_vec_normalized_dir below.  This should prevent it.
-			// FastOne->pos = FastOne->last_pos;
-//			vm_vec_scale_add2(&FastOne->pos, &FastOne->last_pos, 0.01f);
-//			vm_vec_scale(&FastOne->pos, 1.0f/1.01f);
-
-			//	Amount of damage done by a collision changed by MK, 11/19/96.
-			//	Now uses relative velocity and ignores shield of objects.  No reason
-			//	smacking into a capital ship should damage you 1000 times as much as
-			//	smacking into a fighter.  Depends on your velocity and whether you
-			//	smack headon or barely glance.
-
-			// Amount of damage done by a collision changed by DA 08/26/97.
-			// Amount of damage now depends on impulse imparted by a collision,
-			// scaled by max momentum of a ship, so ramming full speed head on into an
-			// immovable object should kill you.
-//			vm_vec_sub(&rel_vec, &B->phys_info.vel, &A->phys_info.vel);
-//			damage = vm_vec_mag_quick(&rel_vec);
-
-//			float impulse = 0.0f;		// HACK!!! Should be something, right?
-			damage = 0.005f * ship_ship_hit_info.impulse;	//	Cut collision-based damage in half.
-			//	Decrease heavy damage by 2x.
-			if (damage > 5.0f){
-				damage = 5.0f + (damage - 5.0f)/2.0f;
-			}
-
-			do_kamikaze_crash(A, B);
-
-			if (ship_ship_hit_info.impulse > 0) {
-				float	q;
-
-				q = vm_vec_dist_quick(&A->pos, &B->pos) / (A->radius + B->radius);
-
-#ifndef NDEBUG
-//				//nprintf(("AI", "Frame %i: %s and %s, dam=%7.2f.  dist/rad=%5.2f. Zeroing.\n", Framecount, Ships[A->instance].ship_name, Ships[B->instance].ship_name, damage, q));
-//				if (damage > 5.0f) {
-//					if ( player_involved ) {
-//						object	*other_objp;
-//						float		dot;
-//						vec3d	v2h;
-//
-//						if (A == Player_obj)
-//							other_objp = B;
-//						else
-//							other_objp = A;
-//
-//						vm_vec_normalized_dir(&v2h, &ship_ship_hit_info.hit_pos, &Player_obj->pos);
-//						dot = vm_vec_dot(&Player_obj->orient.fvec, &v2h);
-//					//	HUD_printf("Collision %s: %i%%. (dot=%5.2f), dist ratio=%5.2f", Ships[other_objp->instance].ship_name, (int) (100.0f * damage/Ships[Player_obj->instance].ship_max_hull_strength), dot,
-//					//		vm_vec_dist_quick(&Player_obj->pos, &other_objp->pos) / (Player_obj->radius + other_objp->radius));
-//					}
-//				}
-#endif
-				if ( player_involved ) {					
-					hud_start_text_flash(XSTR("Collision", 1431), 2000);
+				if ( player_involved && (Player->control_mode == PCM_WARPOUT_STAGE1) )
+				{
+					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
+					HUD_printf(XSTR( "Warpout sequence aborted.", 466));
 				}
-			}
-			//	damage *= (max_shields of fastest) / (max_impulse_of_fastest)
-			// possibly calculate damage both ways and use largest/smallest/avg?
 
-//			vm_vec_add(&world_hit_pos, &ship_ship_hit_info.heavy->pos, &ship_ship_hit_info.hit_pos);
+	//			vec3d	rel_vec;
 
-			collide_ship_ship_do_sound(&world_hit_pos, A, B, player_involved);
+				//	Hack, following line would cause a null vector in vm_vec_normalized_dir below.  This should prevent it.
+				// FastOne->pos = FastOne->last_pos;
+	//			vm_vec_scale_add2(&FastOne->pos, &FastOne->last_pos, 0.01f);
+	//			vm_vec_scale(&FastOne->pos, 1.0f/1.01f);
 
-			// check if we should do force feedback stuff
-			if (player_involved && (ship_ship_hit_info.impulse > 0)) {
-				float scaler;
-				vec3d v;
+				//	Amount of damage done by a collision changed by MK, 11/19/96.
+				//	Now uses relative velocity and ignores shield of objects.  No reason
+				//	smacking into a capital ship should damage you 1000 times as much as
+				//	smacking into a fighter.  Depends on your velocity and whether you
+				//	smack headon or barely glance.
 
-				scaler = -ship_ship_hit_info.impulse / Player_obj->phys_info.mass * 300;
-				vm_vec_copy_normalize(&v, &world_hit_pos);
-				joy_ff_play_vector_effect(&v, scaler);
-			}
+				// Amount of damage done by a collision changed by DA 08/26/97.
+				// Amount of damage now depends on impulse imparted by a collision,
+				// scaled by max momentum of a ship, so ramming full speed head on into an
+				// immovable object should kill you.
+	//			vm_vec_sub(&rel_vec, &B->phys_info.vel, &A->phys_info.vel);
+	//			damage = vm_vec_mag_quick(&rel_vec);
 
-			//mprintf(("Ship:Ship damage = %7.3f\n", speed));
-			#ifndef NDEBUG
-			if ( !Collide_friendly ) {
-				if ( Ships[A->instance].team == Ships[B->instance].team ) {
-					vec3d	collision_vec, right_angle_vec;
-					vm_vec_normalized_dir(&collision_vec, &ship_ship_hit_info.hit_pos, &A->pos);
-					if (vm_vec_dot(&collision_vec, &A->orient.vec.fvec) > 0.999f){
-						right_angle_vec = A->orient.vec.rvec;
-					} else {
-						vm_vec_cross(&right_angle_vec, &A->orient.vec.uvec, &collision_vec);
+	//			float impulse = 0.0f;		// HACK!!! Should be something, right?
+				damage = 0.005f * ship_ship_hit_info.impulse;	//	Cut collision-based damage in half.
+				//	Decrease heavy damage by 2x.
+				if (damage > 5.0f){
+					damage = 5.0f + (damage - 5.0f)/2.0f;
+				}
+
+				do_kamikaze_crash(A, B);
+
+				if (ship_ship_hit_info.impulse > 0) {
+					float	q;
+
+					q = vm_vec_dist_quick(&A->pos, &B->pos) / (A->radius + B->radius);
+
+	#ifndef NDEBUG
+	//				//nprintf(("AI", "Frame %i: %s and %s, dam=%7.2f.  dist/rad=%5.2f. Zeroing.\n", Framecount, Ships[A->instance].ship_name, Ships[B->instance].ship_name, damage, q));
+	//				if (damage > 5.0f) {
+	//					if ( player_involved ) {
+	//						object	*other_objp;
+	//						float		dot;
+	//						vec3d	v2h;
+	//
+	//						if (A == Player_obj)
+	//							other_objp = B;
+	//						else
+	//							other_objp = A;
+	//
+	//						vm_vec_normalized_dir(&v2h, &ship_ship_hit_info.hit_pos, &Player_obj->pos);
+	//						dot = vm_vec_dot(&Player_obj->orient.fvec, &v2h);
+	//					//	HUD_printf("Collision %s: %i%%. (dot=%5.2f), dist ratio=%5.2f", Ships[other_objp->instance].ship_name, (int) (100.0f * damage/Ships[Player_obj->instance].ship_max_hull_strength), dot,
+	//					//		vm_vec_dist_quick(&Player_obj->pos, &other_objp->pos) / (Player_obj->radius + other_objp->radius));
+	//					}
+	//				}
+	#endif
+					if ( player_involved ) {					
+						hud_start_text_flash(XSTR("Collision", 1431), 2000);
 					}
-
-					vm_vec_scale_add2( &A->phys_info.vel, &right_angle_vec, +2.0f);
-					vm_vec_scale_add2( &B->phys_info.vel, &right_angle_vec, -2.0f);
-					//nprintf(("AI", "A: [%6.3f %6.3f %6.3f] B: [%6.3f %6.3f %6.3f]\n", A->phys_info.vel.x, A->phys_info.vel.y, A->phys_info.vel.z, B->phys_info.vel.x, B->phys_info.vel.y, B->phys_info.vel.z));
-
-					return 0;
 				}
-			}
-			#endif
+				//	damage *= (max_shields of fastest) / (max_impulse_of_fastest)
+				// possibly calculate damage both ways and use largest/smallest/avg?
 
-			// nprintf(("AI", "Ship:ship collision: %s and %s.\n", Ships[A->instance].ship_name, Ships[B->instance].ship_name));
+	//			vm_vec_add(&world_hit_pos, &ship_ship_hit_info.heavy->pos, &ship_ship_hit_info.hit_pos);
 
-			//	Scale damage based on skill level for player.
-			if ((LightOne->flags & OF_PLAYER_SHIP) || (HeavyOne->flags & OF_PLAYER_SHIP)) {
-				damage *= (float) (Game_skill_level*Game_skill_level+1)/(NUM_SKILL_LEVELS+1);
-			} else if (Ships[LightOne->instance].team == Ships[HeavyOne->instance].team) {
-				//	Decrease damage if non-player ships and not large.
-				//	Looks dumb when fighters are taking damage from bumping into each other.
-				if ((LightOne->radius < 50.0f) && (HeavyOne->radius <50.0f)) {
-					damage /= 4.0f;
+				collide_ship_ship_do_sound(&world_hit_pos, A, B, player_involved);
+
+				// check if we should do force feedback stuff
+				if (player_involved && (ship_ship_hit_info.impulse > 0)) {
+					float scaler;
+					vec3d v;
+
+					scaler = -ship_ship_hit_info.impulse / Player_obj->phys_info.mass * 300;
+					vm_vec_copy_normalize(&v, &world_hit_pos);
+					joy_ff_play_vector_effect(&v, scaler);
 				}
+
+				//mprintf(("Ship:Ship damage = %7.3f\n", speed));
+				#ifndef NDEBUG
+				if ( !Collide_friendly ) {
+					if ( Ships[A->instance].team == Ships[B->instance].team ) {
+						vec3d	collision_vec, right_angle_vec;
+						vm_vec_normalized_dir(&collision_vec, &ship_ship_hit_info.hit_pos, &A->pos);
+						if (vm_vec_dot(&collision_vec, &A->orient.vec.fvec) > 0.999f){
+							right_angle_vec = A->orient.vec.rvec;
+						} else {
+							vm_vec_cross(&right_angle_vec, &A->orient.vec.uvec, &collision_vec);
+						}
+
+						vm_vec_scale_add2( &A->phys_info.vel, &right_angle_vec, +2.0f);
+						vm_vec_scale_add2( &B->phys_info.vel, &right_angle_vec, -2.0f);
+						//nprintf(("AI", "A: [%6.3f %6.3f %6.3f] B: [%6.3f %6.3f %6.3f]\n", A->phys_info.vel.x, A->phys_info.vel.y, A->phys_info.vel.z, B->phys_info.vel.x, B->phys_info.vel.y, B->phys_info.vel.z));
+
+						return 0;
+					}
+				}
+				#endif
+
+				// nprintf(("AI", "Ship:ship collision: %s and %s.\n", Ships[A->instance].ship_name, Ships[B->instance].ship_name));
+
+				//	Scale damage based on skill level for player.
+				if ((LightOne->flags & OF_PLAYER_SHIP) || (HeavyOne->flags & OF_PLAYER_SHIP)) {
+					damage *= (float) (Game_skill_level*Game_skill_level+1)/(NUM_SKILL_LEVELS+1);
+				} else if (Ships[LightOne->instance].team == Ships[HeavyOne->instance].team) {
+					//	Decrease damage if non-player ships and not large.
+					//	Looks dumb when fighters are taking damage from bumping into each other.
+					if ((LightOne->radius < 50.0f) && (HeavyOne->radius <50.0f)) {
+						damage /= 4.0f;
+					}
+				}
+				
+				float dam2 = (100.0f * damage/LightOne->phys_info.mass);
+
+				int	quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
+				//nprintf(("AI", "Ship %s hit in quad #%i\n", Ships[ship_ship_hit_info.heavy->instance].ship_name, quadrant_num));
+				if ((ship_ship_hit_info.heavy->flags & OF_NO_SHIELDS) || !ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num) ) {
+					quadrant_num = -1;
+				}
+
+				ship_apply_local_damage(ship_ship_hit_info.heavy, ship_ship_hit_info.light, &world_hit_pos, 100.0f * damage/HeavyOne->phys_info.mass, quadrant_num, CREATE_SPARKS, ship_ship_hit_info.submodel_num, &ship_ship_hit_info.collision_normal);
+				hud_shield_quadrant_hit(ship_ship_hit_info.heavy, quadrant_num);
+
+				//nprintf(("AI", "Ship %s hit in quad #%i\n", Ships[ship_ship_hit_info.light->instance].ship_name, quadrant_num));
+				// don't draw sparks (using sphere hitpos)
+				ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, dam2, MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
+				hud_shield_quadrant_hit(ship_ship_hit_info.light, quadrant_num);
+
+				maybe_push_little_ship_from_fast_big_ship(ship_ship_hit_info.heavy, ship_ship_hit_info.light, ship_ship_hit_info.impulse, &ship_ship_hit_info.collision_normal);
+				//nprintf(("AI", "Damage to %s = %7.3f\n", Ships[LightOne->instance].ship_name, dam2));
 			}
-			
-			float dam2 = (100.0f * damage/LightOne->phys_info.mass);
+			ade_odata ade_shipa_obj = l_Ship.Set(object_h(A));
+			ade_odata ade_shipb_obj = l_Ship.Set(object_h(B));
 
-			int	quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
-			//nprintf(("AI", "Ship %s hit in quad #%i\n", Ships[ship_ship_hit_info.heavy->instance].ship_name, quadrant_num));
-			if ((ship_ship_hit_info.heavy->flags & OF_NO_SHIELDS) || !ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num) ) {
-				quadrant_num = -1;
+			if(!(b_override && !a_override))
+			{
+				Script_system.SetHookVar("Ship", 'o', &ade_shipa_obj);
+				Script_system.SetHookVar("ShipB", 'o', &ade_shipb_obj);
+				Script_system.RunCondition(CHA_COLLIDESHIP, NULL, NULL, A);
+			}
+			if((b_override && !a_override) || (!b_override && !a_override))
+			{
+				Script_system.SetHookVar("Ship", 'o', &ade_shipb_obj);
+				Script_system.SetHookVar("ShipB", 'o', &ade_shipa_obj);
+				Script_system.RunCondition(CHA_COLLIDESHIP, NULL, NULL, B);
 			}
 
-			ship_apply_local_damage(ship_ship_hit_info.heavy, ship_ship_hit_info.light, &world_hit_pos, 100.0f * damage/HeavyOne->phys_info.mass, quadrant_num, CREATE_SPARKS, ship_ship_hit_info.submodel_num, &ship_ship_hit_info.collision_normal);
-			hud_shield_quadrant_hit(ship_ship_hit_info.heavy, quadrant_num);
+			Script_system.RemHookVar("Ship");
+			Script_system.RemHookVar("ShipB");
 
-			//nprintf(("AI", "Ship %s hit in quad #%i\n", Ships[ship_ship_hit_info.light->instance].ship_name, quadrant_num));
-			// don't draw sparks (using sphere hitpos)
-			ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, dam2, MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
-			hud_shield_quadrant_hit(ship_ship_hit_info.light, quadrant_num);
-
-			maybe_push_little_ship_from_fast_big_ship(ship_ship_hit_info.heavy, ship_ship_hit_info.light, ship_ship_hit_info.impulse, &ship_ship_hit_info.collision_normal);
-			//nprintf(("AI", "Damage to %s = %7.3f\n", Ships[LightOne->instance].ship_name, dam2));
 			return 0;
-		}					
-	} else {
+		}		
+	}
+	else
+	{
 		// estimate earliest time at which pair can hit
 
 		// cap ships warping in/out can exceed ship's expected velocity

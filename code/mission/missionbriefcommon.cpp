@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.52 $
- * $Date: 2006-09-20 05:02:41 $
- * $Author: taylor $
+ * $Revision: 2.53 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2006/09/20 05:02:41  taylor
+ * properly fix the new_recommendation_text FRED problem, plus some real cleanup for that code in general, and some memory leak fixes
+ *
  * Revision 2.51  2006/09/11 06:50:42  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -646,7 +649,10 @@ void brief_parse_icon_tbl()
 	int num_species_covered;
 
 	const int max_icons = Species_info.size() * MAX_BRIEF_ICONS;
-	Assert( max_icons > 0 );
+
+	//WMC - Don't need these I guess.
+	if(max_icons < 1)
+		return;
 
 	generic_anim *temp_icon_bitmaps = new generic_anim[max_icons];
 	hud_anim *temp_icon_fade_anims = new hud_anim[max_icons];
@@ -656,7 +662,8 @@ void brief_parse_icon_tbl()
 	lcl_ext_open();
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Unable to parse icons.tbl!  Code = %i.\n", rval);
+		mprintf(("TABLES: Unable to parse icons.tbl!  Code = %i.\n", rval));
+		return;
 	}
 	else {
 		read_file_text("icons.tbl");
@@ -668,7 +675,11 @@ void brief_parse_icon_tbl()
 	num_icons = 0;
 	while (required_string_either("#End","$Name:"))
 	{
-		Verify( num_icons < max_icons );
+		if(num_icons >= max_icons) {
+			Warning(LOCATION, "Too many icons in icons.tbl; only the first %d will be used", num_icons);
+			skip_to_start_of_string("#End");
+			break;
+		}
 
 		// parse regular frames
 		required_string("$Name:");
@@ -2496,8 +2507,9 @@ grid *brief_create_default_grid(void)
 
 	rgrid = brief_create_grid(&Global_grid, &fvec, &rvec, &cvec, 100, 100, 5.0f);
 
-	physics_init(&rgrid->physics);
-	rgrid->physics.flags |= (PF_ACCELERATES | PF_SLIDE_ENABLED);
+	//WMC - Tentative change, not needed?
+	//physics_init(&rgrid->physics);
+	//rgrid->physics.flags |= (PF_ACCELERATES | PF_SLIDE_ENABLED);
 	return rgrid;
 }
 

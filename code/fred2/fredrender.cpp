@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.7 $
- * $Date: 2006-11-06 05:58:05 $
- * $Author: taylor $
+ * $Revision: 1.8 $
+ * $Date: 2006-12-28 00:59:20 $
+ * $Author: wmcoolmon $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2006/11/06 05:58:05  taylor
+ * add a "Render full detail" view option to render models at their full detail for the LOD (for render/detail boxes, Mantis bug #1121)
+ *
  * Revision 1.6  2006/11/06 05:54:13  taylor
  * add envmap selection to background editor
  * change skybox selection to be a text entry or browse instead of only text entry
@@ -2310,7 +2313,7 @@ void render_compass(void)
 	draw_compass_arrow(&v);
 
 	g3_end_frame(); // ** Accounted for
-
+	gr_reset_clip();
 }
 
 void draw_compass_arrow(vec3d *v0)

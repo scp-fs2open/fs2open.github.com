@@ -16,6 +16,7 @@
 #include "object/object.h"
 #include "globalincs/linklist.h"
 #include "parse/parselo.h"
+#include "object/waypoint/waypoint.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

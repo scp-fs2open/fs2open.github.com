@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelOctant.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-03-18 10:23:46 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * Routines for model octants
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/03/18 10:23:46  taylor
+ * make the main vital TMAP_MAX_VERTS stuff dynamic, should handle the major non-HTL related crashes
+ *
  * Revision 2.10  2006/01/30 06:36:35  taylor
  * handle Interp data allocation a little better
  *
@@ -394,8 +397,7 @@ int model_octant_find_faces_sub(polymodel * pm, model_octant * oct, void *model_
 			break;
 		case OP_BOUNDBOX:		break;
 		default:
-			mprintf(( "Bad chunk type %d, len=%d in model_octant_find_faces_sub\n", chunk_type, chunk_size ));
-			Int3();		// Bad chunk type!
+			Warning(LOCATION, "Bad chunk type %d, len=%d in model_octant_find_faces_sub\n", chunk_type, chunk_size );
 			return 0;
 		}
 		p += chunk_size;

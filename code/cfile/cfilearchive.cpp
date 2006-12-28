@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.cpp $
- * $Revision: 2.7 $
- * $Date: 2005-07-24 18:31:17 $
- * $Author: taylor $
+ * $Revision: 2.8 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * Low-level code for reading data out of large archive files or normal files.  All
  * reads/seeks come through here.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2005/07/24 18:31:17  taylor
+ * little 64-bit strangeness (longs are 64-bit here rather than 32)
+ *
  * Revision 2.6  2004/07/26 20:47:25  Kazan
  * remove MCD complete
  *
@@ -112,6 +115,7 @@
 
 #include "cfile/cfile.h"
 #include "cfile/cfilearchive.h"
+#include "luaconf.h"
 
 
 
@@ -308,3 +312,29 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 
 }
 
+int cfread_lua_number(double *buf, CFILE *cfile)
+{
+	Assert(cfile != NULL);
+	Assert(buf != NULL);
+	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
+
+	Cfile_block *cb;
+	cb = &Cfile_block_list[cfile->id];	
+
+	// cfread() not supported for memory-mapped files
+	Assert( !cb->data );
+	Assert(cb->fp != NULL);
+
+	long orig_pos = ftell(cb->fp);
+	int items_read = fscanf(cb->fp, LUA_NUMBER_SCAN, buf);
+	cb->raw_position += ftell(cb->fp)-orig_pos;		
+
+	#if defined(CHECK_POSITION) && !defined(NDEBUG)
+		int tmp_offset;
+		tmp_offset = ftell(cb->fp) - cb->lib_offset;
+		Assert(tmp_offset==cb->raw_position);
+	#endif
+
+	return items_read;
+
+}

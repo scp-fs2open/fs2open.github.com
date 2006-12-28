@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.74 $
- * $Date: 2006-07-17 01:12:19 $
- * $Author: taylor $
+ * $Revision: 2.75 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2006/07/17 01:12:19  taylor
+ * fix some missile autocentering issues
+ *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
+ *  - don't try to autocenter loadout icons when rendered 3d
+ *
  * Revision 2.73  2006/06/23 04:56:31  wmcoolmon
  * Change an Assert to a more verbose Warning, in the case of issues restoring a red alert ship. Also, try and get some backup allocation of weapons in.
  *
@@ -1049,6 +1054,15 @@ typedef struct wl_icon_info
 	int				can_use;
 	anim			*wl_anim;
 	anim_instance	*wl_anim_instance;
+
+	wl_icon_info(){
+		for(int i = 0; i < NUM_ICON_FRAMES; i++)icon_bmaps[i]=-1;
+		laser_bmap = -1;
+		model_index = -1;
+		can_use = 0;
+		wl_anim = NULL;
+		wl_anim_instance = NULL;
+	}
 } wl_icon_info;
 
 wl_icon_info	Wl_icons_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
@@ -2436,13 +2450,10 @@ void wl_get_ship_class_weapons(int ship_class, int *wep, int *wep_count)
 void wl_get_ship_weapons(int ship_index, int *wep, int *wep_count)
 {
 	int			i;
-	wing			*wp;
 	ship_weapon	*swp;
 
 	Assert(ship_index >= 0);
 
-	Assert(Ships[ship_index].wingnum >= 0);
-	wp = &Wings[Ships[ship_index].wingnum];
 	swp = &Ships[ship_index].weapons;
 
 	for ( i = 0; i < swp->num_primary_banks; i++ )

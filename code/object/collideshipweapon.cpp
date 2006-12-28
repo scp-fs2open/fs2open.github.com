@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-10-08 02:05:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.33 $
+ * $Date: 2006-12-28 00:59:39 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/10/08 02:05:38  Goober5000
+ * fix forum links
+ *
  * Revision 2.31  2006/09/11 05:36:43  taylor
  * compiler warning fixes
  *
@@ -534,22 +537,41 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 
 	if ( valid_hit_occured )
 	{
+		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_obj);
+		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_obj);
+		if(!ship_override && !weapon_override) {
+			ship_weapon_do_hit_stuff(ship_obj, weapon_obj, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
+		}
+		ade_odata ade_ship_obj = l_Ship.Set(object_h(ship_obj));
+		ade_odata ade_weapon_obj = l_Weapon.Set(object_h(weapon_obj));
+
+		Script_system.SetHookVar("Ship", 'o', &ade_ship_obj);
+		Script_system.SetHookVar("Weapon", 'o', &ade_weapon_obj);
+
+		if(!(weapon_override && !ship_override))
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, NULL, NULL, ship_obj);
+		if((weapon_override && !ship_override) || (!weapon_override && !ship_override))
+			Script_system.RunCondition(CHA_COLLIDESHIP, NULL, NULL, weapon_obj);
+
+		Script_system.RemHookVar("Ship");
+		Script_system.RemHookVar("Weapon");
+		/*
 		if(!Script_system.IsOverride(wip->sc_collide_ship)) {
 			ship_weapon_do_hit_stuff(ship_obj, weapon_obj, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 		}
 
 		if(wip->sc_collide_ship.IsValid()) {
-			script_lua_odata lua_self_obj = l_Weapon.Set(object_h(weapon_obj));
-			script_lua_odata lua_ship_obj = l_Ship.Set(object_h(ship_obj));
+			ade_odata lua_self_obj = l_Weapon.Set(object_h(weapon_obj));
+			ade_odata lua_ship_obj = l_Ship.Set(object_h(ship_obj));
 			
-			Script_system.SetGlobal("Self", 'o', &lua_self_obj);
-			Script_system.SetGlobal("Ship", 'o', &lua_ship_obj);
+			Script_system.SetHookVar("Self", 'o', &lua_self_obj);
+			Script_system.SetHookVar("Ship", 'o', &lua_ship_obj);
 
 			Script_system.RunBytecode(wip->sc_collide_ship);
 
-			Script_system.RemGlobal("Self");
-			Script_system.RemGlobal("Ship");
-		}
+			Script_system.RemHookVar("Self");
+			Script_system.RemHookVar("Ship");
+		}*/
 	}
 	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->wi_flags & WIF_HOMING) && (wp->homing_object == ship_obj)) {
 		if (dist < wip->shockwave.inner_rad) {

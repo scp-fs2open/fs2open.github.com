@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.31 $
- * $Date: 2006-11-16 00:52:28 $
- * $Author: taylor $
+ * $Revision: 1.32 $
+ * $Date: 2006-12-28 00:59:18 $
+ * $Author: wmcoolmon $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2006/11/16 00:52:28  taylor
+ * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)
+ *
  * Revision 1.30  2006/11/06 03:38:32  Goober5000
  * --prevent the ai from "forgetting" that it's attacking a wing (fix for Mantis #1131)
  * --move AI_CHASE_WING goal check so that it will properly short-circuit when appropriate (discussed in the same bug)
@@ -698,6 +701,7 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "object/objectdock.h"
+#include "object/waypoint/waypoint.h"
 
 
 // all ai goals dealt with in this code are goals that are specified through
