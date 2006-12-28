@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.80.2.13 $
- * $Date: 2006-11-28 05:48:21 $
+ * $Revision: 2.80.2.14 $
+ * $Date: 2006-12-28 22:47:15 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80.2.13  2006/11/28 05:48:21  Goober5000
+ * the grammar nazi strikes again!
+ * (and sneaks an extra #define in there while he's at it!)
+ *
  * Revision 2.80.2.12  2006/11/01 18:35:57  taylor
  * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
  *
@@ -187,7 +191,7 @@
  *
  * Revision 2.53  2005/02/08 23:49:59  taylor
  * update/add .cvsignore files for project file changes
- * silence warning about depreciated strings.h stuff for MSVC 2005
+ * silence warning about deprecated strings.h stuff for MSVC 2005
  * final model_unload() stuff for WMCoolmon, put in missionweaponchoice.cpp
  * remove really old project files
  *

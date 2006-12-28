@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.50 $
- * $Date: 2006-12-28 01:19:14 $
+ * $Revision: 2.336.2.51 $
+ * $Date: 2006-12-28 22:47:15 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.50  2006/12/28 01:19:14  Goober5000
+ * removed obsolete limits
+ *
  * Revision 2.336.2.49  2006/12/27 10:27:10  karajorma
  * Altered the Warpin and Warpout types flag to match those in HEAD.
  *
@@ -25,7 +28,7 @@
  *
  * Revision 2.336.2.47  2006/12/26 05:30:00  taylor
  * minor spelling fixage
- * make depreciated subsystem flag syntax be a debug log warning instead a popup warning (FOR 3.6.9 ONLY!)
+ * make deprecated subsystem flag syntax be a debug log warning instead a popup warning (FOR 3.6.9 ONLY!)
  *
  * Revision 2.336.2.46  2006/12/07 18:23:37  taylor
  * fix secondary thruster length stuff
@@ -3880,7 +3883,7 @@ strcpy(parse_error_text, temp_error);
 
 	if ( optional_string("$Thruster01 Length factor:") ) {
 		stuff_float(&sip->thruster02_glow_len_factor);
-		Warning(LOCATION, "Depreciated spelling: \"$Thruster01 Length factor:\".  Use \"$Thruster02 Length factor:\" instead.");
+		Warning(LOCATION, "Deprecated spelling: \"$Thruster01 Length factor:\".  Use \"$Thruster02 Length factor:\" instead.");
 	}
 
 	if ( optional_string("$Thruster02 Length factor:") ) {
@@ -4267,13 +4270,13 @@ strcpy(parse_error_text, temp_error);
 			}
 
 			if (old_flags) {
-			/*	Warning(LOCATION, "Use of depreciated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
+			/*	Warning(LOCATION, "Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
 				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
 				"\t+untargetable\n" \
 				"\t+carry-no-damage\n" \
 				"\t+use-multiple-guns\n" \
 				"\t+fire-down-normals\n", sip->name, sp->name); */
-				mprintf(("Use of depreciated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
+				mprintf(("Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
 				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
 				"\t+untargetable\n" \
 				"\t+carry-no-damage\n" \
