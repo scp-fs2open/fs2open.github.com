@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.389 $
- * $Date: 2006-12-28 00:59:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.390 $
+ * $Date: 2006-12-28 01:22:04 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.389  2006/12/28 00:59:48  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.388  2006/12/26 18:14:42  Goober5000
  * allow parsing of similar ship copy names properly (Mantis #1178)
  *
@@ -3784,11 +3787,6 @@ strcpy(parse_error_text, temp_error);
 	if (sip->num_primary_banks > MAX_SHIP_PRIMARY_BANKS)
 	{
 		Error(LOCATION, "Sship %s has too many primary banks (%d).  Maximum for ships is currently %d.\n", sip->name, sip->num_primary_banks, MAX_SHIP_PRIMARY_BANKS);
-	}
-
-	if ((sip->flags & SIF_PLAYER_SHIP) && (sip->num_secondary_banks > MAX_PLAYER_SECONDARY_BANKS))
-	{
-		Warning(LOCATION, "Player-allowed ship %s has too many secondary banks (%d).  Maximum for player-allowed ships is currently %d; maximum for all other ships is %d.\n", sip->name, sip->num_secondary_banks, MAX_PLAYER_SECONDARY_BANKS, MAX_SHIP_SECONDARY_BANKS);
 	}
 
 	find_and_stuff_optional("$AI Class:", &sip->ai_class, F_NAME, Ai_class_names, Num_ai_classes, "AI class names");
@@ -11212,7 +11210,7 @@ int ship_select_next_secondary(object *objp)
 		}
 		return 0;
 	}
-	else if ( swp->num_secondary_banks > ((objp == Player_obj) ? MAX_PLAYER_SECONDARY_BANKS : MAX_SHIP_SECONDARY_BANKS) )
+	else if ( swp->num_secondary_banks > MAX_SHIP_SECONDARY_BANKS )
 	{
 		Int3();
 		return 0;
