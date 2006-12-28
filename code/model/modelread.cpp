@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.120 $
- * $Date: 2006-12-28 00:59:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.121 $
+ * $Date: 2006-12-28 22:47:03 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.120  2006/12/28 00:59:32  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.119  2006/11/06 06:42:22  taylor
  * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
  *
@@ -279,7 +282,7 @@
  *
  * Revision 2.55  2005/02/08 23:49:59  taylor
  * update/add .cvsignore files for project file changes
- * silence warning about depreciated strings.h stuff for MSVC 2005
+ * silence warning about deprecated strings.h stuff for MSVC 2005
  * final model_unload() stuff for WMCoolmon, put in missionweaponchoice.cpp
  * remove really old project files
  *

@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.20 $
- * $Date: 2006-09-13 03:55:50 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2006-12-28 22:47:03 $
+ * $Author: Goober5000 $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/09/13 03:55:50  taylor
+ * bah!  stupid.
+ *
  * Revision 2.19  2006/09/08 06:20:15  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -121,7 +124,7 @@
 //      JS: I figured out the disabling 4725 works, but not on the first function in the module.
 //      So to disable this, I add in a stub function at the top of each module that does nothing.
 // 4786 is identifier truncated to 255 characters (happens all the time in Microsoft #includes) -- Goober5000
-// 4996 depreciated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
+// 4996 deprecated strcpy, strcat, sprintf, etc. (from MSVC 2005) - taylor
 #pragma warning(disable: 4100 4127 4201 4390 4410 4511 4512 4514 4611 4663 4710 4711 4725 4786 4996)
 
 #endif

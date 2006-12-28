@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.cpp $
- * $Revision: 1.25 $
- * $Date: 2006-01-26 03:23:29 $
+ * $Revision: 1.26 $
+ * $Date: 2006-12-28 22:47:02 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2006/01/26 03:23:29  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 1.24  2006/01/20 07:10:33  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -113,7 +117,7 @@
 
 PXO_Socket FS2OpenPXO_Socket;
 
-// NOTE: CLK_TCK is depreciated but available for compatibility, use CLOCKS_PER_SEC instead
+// NOTE: CLK_TCK is deprecated but available for compatibility, use CLOCKS_PER_SEC instead
 #ifndef CLK_TCK
 #define CLK_TCK CLOCKS_PER_SEC
 #endif
