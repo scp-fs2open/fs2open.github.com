@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.h $
- * $Revision: 2.6 $
- * $Date: 2005-12-29 08:08:42 $
+ * $Revision: 2.7 $
+ * $Date: 2006-12-28 00:59:54 $
  * $Author: wmcoolmon $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/12/29 08:08:42  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.5  2005/10/30 06:44:59  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -74,10 +77,10 @@ void flak_level_init();
 void flak_level_close();
 
 // given a newly created weapon, turn it into a flak weapon
-void flak_create(weapon *wp);
+//void flak_create(weapon *wp);
 
 // free up a flak object
-void flak_delete(int flak_index);
+//void flak_delete(int flak_index);
 
 // given a just fired flak shell, pick a detonating distance for it
 void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_pos, float weapon_subsys_strength);
@@ -90,10 +93,10 @@ void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_stren
 void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_weapon_class);
 
 // maybe detonate a flak shell early/late (call from weapon_process_pre(...))
-void flak_maybe_detonate(object *obj);
+//void flak_maybe_detonate(object *obj);
 
 // set the range on a flak object
-void flak_set_range(object *objp, vec3d *start_pos, float range);
+void flak_set_range(object *objp, float range);
 
 // get the current range for the flak object
 float flak_get_range(object *objp);

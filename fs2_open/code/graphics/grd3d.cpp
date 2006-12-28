@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.98 $
- * $Date: 2006-11-06 06:33:48 $
- * $Author: taylor $
+ * $Revision: 2.99 $
+ * $Date: 2006-12-28 00:59:26 $
+ * $Author: wmcoolmon $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2006/11/06 06:33:48  taylor
+ * more cleanup of warp_global crap
+ * scale render/detail box limits with detail level setting
+ * make sure that we reset culling and zbuffer after each model buffer that gets rendered
+ *
  * Revision 2.97  2006/11/06 05:42:44  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
@@ -1566,7 +1571,15 @@ void gr_d3d_flip()
 		if ( Gr_cursor != -1 )	{
 			gr_set_bitmap(Gr_cursor);				
 			gr_bitmap( mx, my, false);
-		}		
+		}
+		else
+		{
+			//WMC - Backup cheapo cursor
+			gr_set_color(0, 255, 0);
+			gr_line(mx, my, mx+8, my+8);
+			gr_line(mx, my, mx, my+16);
+			gr_line(mx, my+16, mx+8, my+8);
+		}
 	} 	
 
 	d3d_stop_frame();

@@ -9,6 +9,10 @@
 #include "globalincs/systemvars.h"
 #include "hud/hud.h"
 #include "ship/ship.h"
+#include "mission/missioncampaign.h"
+#include "weapon/weapon.h"
+#include "io/key.h"
+#include "controlconfig/controlsconfig.h"
 
 //tehe. Declare the main event
 script_state Script_system("FS2_Open Scripting");
@@ -21,6 +25,37 @@ script_hook Script_hudhook;
 script_hook Script_globalhook;
 script_hook Script_gameinithook;
 
+flag_def_list Script_conditions[] = 
+{
+	{"State",		CHC_STATE},
+	{"Campaign",	CHC_CAMPAIGN},
+	{"Mission",		CHC_MISSION},
+	{"Object Type", CHC_OBJECTTYPE},
+	{"Ship",		CHC_SHIP},
+	{"Ship class",	CHC_SHIPCLASS},
+	{"Ship type",	CHC_SHIPTYPE},
+	{"Weapon class",CHC_WEAPONCLASS},
+	{"KeyPress",	CHC_KEYPRESS},
+};
+
+int Num_script_conditions = sizeof(Script_conditions)/sizeof(flag_def_list);
+
+flag_def_list Script_actions[] = 
+{
+	{"On Frame",				CHA_ONFRAME},
+	{"On HUD Draw",				CHA_HUDDRAW},
+	{"On Ship Collision",		CHA_COLLIDESHIP},
+	{"On Weapon Collision",		CHA_COLLIDEWEAPON},
+	{"On Debris Collision",		CHA_COLLIDEDEBRIS},
+	{"On Asteroid Collision",	CHA_COLLIDEASTEROID},
+	{"On Object Render",		CHA_OBJECTRENDER},
+	{"On Warpin",				CHA_WARPIN},
+	{"On Warpout",				CHA_WARPOUT},
+	{"On Death",				CHA_DEATH},
+};
+
+int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
+
 //*************************Scripting init and handling*************************
 
 void script_parse_table(char *filename)
@@ -29,7 +64,7 @@ void script_parse_table(char *filename)
 	int rval;
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("Unable to parse %s!  Code = %i.\n", filename, rval));
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", filename, rval));
 		return;
 	}
 	else
@@ -62,7 +97,7 @@ void script_parse_table(char *filename)
 
 		required_string("#End");
 	}
-
+/*
 	if(optional_string("#State Hooks"))
 	{
 		while(optional_string("$State:")) {
@@ -83,10 +118,10 @@ void script_parse_table(char *filename)
 		}
 		required_string("#End");
 	}
-
+*/
 	if(optional_string("#Conditional Hooks"))
 	{
-		while(st->ParseCondition());
+		while(st->ParseCondition(filename));
 		required_string("#End");
 	}
 }
@@ -137,9 +172,8 @@ bool ConditionedHook::AddAction(script_action sa)
 	return true;
 }
 
-bool ConditionedHook::MaybeRun(script_state *sys, int action, char format, void *data, object *objp)
+bool ConditionedHook::ConditionsValid(int action, object *objp)
 {
-	Assert(sys != NULL);
 	uint i;
 
 	//Return false if any conditions are not met
@@ -177,17 +211,68 @@ bool ConditionedHook::MaybeRun(script_state *sys, int action, char format, void 
 					return false;
 				break;
 			case CHC_MISSION:
-				if(stricmp(scp->data.name, Game_current_mission_filename))
+				{
+					//WMC - Get mission filename with Mission_filename
+					//I don't use Game_current_mission_filename, because
+					//Mission_filename is valid in both fs2_open and FRED
+					size_t len = strlen(Mission_filename);
+					if(!len)
+						return false;
+					if(len > 4 && !stricmp(&Mission_filename[len-4], ".fs2"))
+						len -= 4;
+					if(strnicmp(scp->data.name, Mission_filename, len))
+						return false;
+					break;
+				}
+			case CHC_CAMPAIGN:
+				{
+					size_t len = strlen(Campaign.filename);
+					if(!len)
+						return false;
+					if(len > 4 && !stricmp(&Mission_filename[len-4], ".fc2"))
+						len -= 4;
+					if(strnicmp(scp->data.name, Mission_filename, len))
+						return false;
+					break;
+				}
+			case CHC_WEAPONCLASS:
+				if(objp == NULL || objp->type != OBJ_WEAPON)
+					return false;
+				if(stricmp(Weapon_info[Weapons[objp->instance].weapon_info_index].name, scp->data.name))
 					return false;
 				break;
+			case CHC_OBJECTTYPE:
+				if(objp == NULL)
+					return false;
+				if(stricmp(Object_type_names[objp->type], scp->data.name))
+					return false;
+				break;
+			case CHC_KEYPRESS:
+				{
+					extern int Current_key_down;
+					if(gameseq_get_depth() < 0)
+						return false;
+					if(Current_key_down == 0)
+						return false;
+					//WMC - could be more efficient, but whatever.
+					if(Current_key_down == translate_key_to_index(scp->data.name))
+						return false;
+				}
 			default:
 				break;
 		}
 	}
 
+	return true;
+}
+
+bool ConditionedHook::Run(script_state *sys, int action, char format, void *data)
+{
+	Assert(sys != NULL);
+
 	//Do the actions
 	script_action *sap;
-	for(i = 0; i < Actions.size(); i++)
+	for(uint i = 0; i < Actions.size(); i++)
 	{
 		sap = &Actions[i];
 		if(sap->action_type == action)
@@ -197,31 +282,183 @@ bool ConditionedHook::MaybeRun(script_state *sys, int action, char format, void 
 	return true;
 }
 
+bool ConditionedHook::IsOverride(script_state *sys, int action)
+{
+	Assert(sys != NULL);
+	bool b = false;
+
+	//Do the actions
+	script_action *sap;
+	for(uint i = 0; i < Actions.size(); i++)
+	{
+		sap = &Actions[i];
+		if(sap->action_type == action)
+		{
+			if(sys->IsOverride(sap->hook))
+				return true;
+		}
+	}
+
+	return false;
+}
+
 //*************************CLASS: script_state*************************
 //Most of the icky stuff is here. Lots of #ifdefs
 #ifndef USE_PYTHON
 #pragma message("NOTE: Python is not compiled in")
 #endif
 
-void script_state::SetGlobal(char *name, char format, void *data)
+//WMC - defined in parse/lua.h
+int ade_set_object_with_breed(lua_State *L, int obj_idx);
+void script_state::SetHookObject(char *name, int obj_idx)
 {
-	Assert(data != NULL);
+	ade_set_object_with_breed(LuaState, obj_idx);
+	SetHookVar(name, 'o');
+}
+
+void script_state::SetHookVar(char *name, char format, void *data)
+{
+	if(format == '\0')
+		return;
+
 	if(LuaState != NULL)
 	{
 		char fmt[2] = {format, '\0'};
+		int data_ldx = 0;
+		if(data == NULL)
+			data_ldx = lua_gettop(LuaState);
 
-		//ERRORS? LOOK HERE!!!
-		//--------------------
-		//WMC - Now THIS has to be the nastiest hack I've made
-		//Basically, I tell it to copy over enough stack
-		//for a script_lua_odata object. If you pass
-		//_anything_ larger as a stack object, this will not work.
-		//You'll get memory corruption
-		lua_set_args(LuaState, fmt, *(script_lua_odata*)data);
-		//--------------------
-		//WMC - This was a separate function
-		//lua_set_arg(LuaState, format, data);
-		lua_setglobal(LuaState, name);
+		if(data_ldx < 1 && data == NULL)
+			return;
+
+		//Get ScriptVar table
+		lua_pushliteral(LuaState, "sv");
+		lua_gettable(LuaState, LUA_GLOBALSINDEX);
+		int sv_ldx = lua_gettop(LuaState);
+		if(lua_isuserdata(LuaState, sv_ldx))
+		{
+			//Get ScriptVar metatable
+			lua_getmetatable(LuaState, sv_ldx);
+			int mtb_ldx = lua_gettop(LuaState);
+			if(lua_istable(LuaState, mtb_ldx))
+			{
+				//Get ScriptVar/metatable/__ademembers
+				lua_pushstring(LuaState, "__ademembers");
+				lua_rawget(LuaState, mtb_ldx);
+				int amt_ldx = lua_gettop(LuaState);
+				if(lua_istable(LuaState, amt_ldx))
+				{
+					lua_pushstring(LuaState, name);
+					//ERRORS? LOOK HERE!!!
+					//--------------------
+					//WMC - Now THIS has to be the nastiest hack I've made
+					//Basically, I tell it to copy over enough stack
+					//for a ade_odata object. If you pass
+					//_anything_ larger as a stack object, this will not work.
+					//You'll get memory corruption
+					if(data == NULL)
+						lua_pushvalue(LuaState, data_ldx);
+					else
+						ade_set_args(LuaState, fmt, *(ade_odata*)data);
+					//--------------------
+					//WMC - This was a separate function
+					//lua_set_arg(LuaState, format, data);
+					//WMC - switch to the lua library
+					//lua_setglobal(LuaState, name);
+					lua_rawset(LuaState, amt_ldx);
+				}
+				lua_pop(LuaState, 1); //amt
+			}
+			lua_pop(LuaState, 1);	//Metatable
+		}
+		lua_pop(LuaState, 1);	//Library
+
+		if(data_ldx)
+			lua_pop(LuaState, 1);
+	}
+}
+
+//WMC - data can be NULL, if we just want to know if it exists
+bool script_state::GetHookVar(char *name, char format, void *data)
+{
+	bool got_global = false;
+	if(LuaState != NULL)
+	{
+		//Construct format string
+		char fmt[3] = {'|', format, '\0'};
+
+		//WMC - Quick and clean. :)
+		//WMC - *sigh* nostalgia
+		//Get ScriptVar table
+		lua_pushliteral(LuaState, "sv");
+		lua_gettable(LuaState, LUA_GLOBALSINDEX);
+		int sv_ldx = lua_gettop(LuaState);
+		if(lua_isuserdata(LuaState, sv_ldx))
+		{
+			//Get ScriptVar metatable
+			lua_getmetatable(LuaState, sv_ldx);
+			int mtb_ldx = lua_gettop(LuaState);
+			if(lua_istable(LuaState, mtb_ldx))
+			{
+				//Get ScriptVar/metatable/__ademembers
+				lua_pushstring(LuaState, "__ademembers");
+				lua_rawget(LuaState, mtb_ldx);
+				int amt_ldx = lua_gettop(LuaState);
+				if(lua_istable(LuaState, amt_ldx))
+				{
+					lua_pushstring(LuaState, name);
+					lua_rawget(LuaState, amt_ldx);
+					if(!lua_isnil(LuaState, -1))
+					{
+						if(data != NULL) {
+							ade_get_args(LuaState, fmt, data);
+						}
+						got_global = true;
+					}
+					lua_pushstring(LuaState, name);
+				}
+				lua_pop(LuaState, 1); //amt
+			}
+			lua_pop(LuaState, 1);	//Metatable
+		}
+		lua_pop(LuaState, 1);	//Library
+	}
+
+	return got_global;
+}
+
+void script_state::RemHookVar(char *name)
+{
+	if(LuaState != NULL)
+	{
+		//WMC - Quick and clean. :)
+		//WMC - *sigh* nostalgia
+		//Get ScriptVar table
+		lua_pushliteral(LuaState, "sv");
+		lua_gettable(LuaState, LUA_GLOBALSINDEX);
+		int sv_ldx = lua_gettop(LuaState);
+		if(lua_isuserdata(LuaState, sv_ldx))
+		{
+			//Get ScriptVar metatable
+			lua_getmetatable(LuaState, sv_ldx);
+			int mtb_ldx = lua_gettop(LuaState);
+			if(lua_istable(LuaState, mtb_ldx))
+			{
+				//Get ScriptVar/metatable/__ademembers
+				lua_pushstring(LuaState, "__ademembers");
+				lua_rawget(LuaState, mtb_ldx);
+				int amt_ldx = lua_gettop(LuaState);
+				if(lua_istable(LuaState, amt_ldx))
+				{
+					lua_pushstring(LuaState, name);
+					lua_pushnil(LuaState);
+					lua_rawset(LuaState, amt_ldx);
+				}
+				lua_pop(LuaState, 1); //amt
+			}
+			lua_pop(LuaState, 1);	//Metatable
+		}
+		lua_pop(LuaState, 1);	//Library
 	}
 }
 
@@ -239,7 +476,7 @@ bool script_state::GetGlobal(char *name, char format, void *data)
 		if(!lua_isnil(LuaState, -1))
 		{
 			if(data != NULL) {
-				lua_get_args(LuaState, fmt, data);
+				ade_get_args(LuaState, fmt, data);
 			}
 			got_global = true;
 		}
@@ -308,25 +545,34 @@ int script_state::RunBytecodeSub(int in_lang, int in_idx, char format, void *dat
 			if(data != NULL) {
 				args_start = lua_gettop(LuaState);
 			}
-			lua_pushcfunction(GetLuaSession(), lua_friendly_error);
+			lua_pushcfunction(GetLuaSession(), ade_friendly_error);
 			lua_getref(GetLuaSession(), in_idx);
-			if(lua_pcall(GetLuaSession(), 0, format!='\0' ? 1 : 0, -2) != 0)
+			if(lua_isfunction(GetLuaSession(), -1))
 			{
-				return 0;
-			}
+				if(lua_pcall(GetLuaSession(), 0, format!='\0' ? 1 : 0, -2) != 0)
+				{
+					return 0;
+				}
 
-			//WMC - Just allow one argument for now.
-			if(data != NULL)
+				//WMC - Just allow one argument for now.
+				if(data != NULL)
+				{
+					char fmt[2] = {format, '\0'};
+					Ade_get_args_skip = args_start;
+					Ade_get_args_lfunction = true;
+					ade_get_args(LuaState, fmt, data);
+					Ade_get_args_skip = 0;
+					Ade_get_args_lfunction = false;
+				}
+
+				//WMC - Pop anything leftover from the function from the stack
+				args_start = lua_gettop(LuaState) - args_start;
+				for(; args_start > 0; args_start--) lua_pop(LuaState, 1);
+			}
+			else
 			{
-				char fmt[2] = {format, '\0'};
-				Lua_get_args_skip = args_start;
-				lua_get_args(LuaState, fmt, data);
-				Lua_get_args_skip = 0;
+				Warning(LOCATION, "RunBytecodeSub tried to call a non-function value!");
 			}
-
-			//WMC - Pop anything leftover from the function from the stack
-			args_start = lua_gettop(LuaState) - args_start;
-			for(; args_start > 0; args_start--) lua_pop(LuaState, 1);
 		}
 		else if(in_lang == SC_PYTHON)
 		{
@@ -358,10 +604,29 @@ int script_state::RunCondition(int action, char format, void *data, object *objp
 	for(uint i= 0; i < ConditionalHooks.size(); i++)
 	{
 		chp = &ConditionalHooks[i];
-		if(chp->MaybeRun(this, action, format, data, objp))
+		if(chp->ConditionsValid(action, objp))
+		{
+			chp->Run(this, action, format, data);
 			num++;
+		}
 	}
 	return num;
+}
+
+bool script_state::IsConditionOverride(int action, object *objp)
+{
+	ConditionedHook *chp = NULL;
+	bool b = false;
+	for(uint i= 0; i < ConditionalHooks.size(); i++)
+	{
+		chp = &ConditionalHooks[i];
+		if(chp->ConditionsValid(action, objp))
+		{
+			if(chp->IsOverride(this, action))
+				return true;
+		}
+	}
+	return false;
 }
 
 void script_state::Clear()
@@ -455,6 +720,7 @@ void script_state::SetPySession(PyObject *loc, PyObject *glb)
 int script_state::OutputMeta(char *filename)
 {
 	FILE *fp = fopen(filename,"w");
+	int i;
 
 	if(fp == NULL)
 	{
@@ -467,7 +733,29 @@ int script_state::OutputMeta(char *filename)
 	
 	//Scripting languages links
 	fputs("<dl>", fp);
-	fputs("<dt><b>Scripting languages</b></dt>", fp);
+
+	//***Hooks
+	fputs("<dt><h2>Conditional Hooks</h2></dt>", fp);
+	fputs("<dd><dl>", fp);
+
+	//Conditions
+	fputs("<dt><b>Conditions</b></dt>", fp);
+	for(i = 0; i < Num_script_conditions; i++)
+	{
+		fprintf(fp, "<dd>%s</dd>", Script_conditions[i].name);
+	}
+
+	//Actions
+	fputs("<dt><b>Actions</b></dt>", fp);
+	for(i = 0; i < Num_script_actions; i++)
+	{
+		fprintf(fp, "<dd>%s</dd>", Script_actions[i].name);
+	}
+
+	fputs("</dl></dd><br />", fp);
+
+	//***Scripting langs
+	fputs("<dt><h2>Scripting languages</h2></dt>", fp);
 	if(Langs & SC_PYTHON) {
 		fputs("<dd><a href=\"#Python\">Python</a></dd>", fp);
 	}
@@ -544,7 +832,7 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 	int args_start = lua_gettop(LuaState);
 
 	//WMC - Push error handling function
-	lua_pushcfunction(LuaState, lua_friendly_error);
+	lua_pushcfunction(LuaState, ade_friendly_error);
 	//Parse string
 	luaL_loadbuffer(LuaState, s, strlen(s), debug_str);
 	//Call function
@@ -556,7 +844,7 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 	//Only get args if we can put them someplace
 	if(rtn != NULL)
 	{
-		lua_get_args(LuaState, format, *(script_lua_odata*)rtn);
+		ade_get_args(LuaState, format, *(ade_odata*)rtn);
 	}
 
 	//WMC - Pop anything leftover from the function from the stack
@@ -574,8 +862,6 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 	Assert(out_lang != NULL);
 	Assert(out_index != NULL);
 	Assert(debug_str != NULL);
-
-	char buf[PARSE_BUF_SIZE];
 
 	if(check_for_string("[["))
 	{
@@ -602,9 +888,19 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 			cfread(raw_lua, len, 1, cfp);
 			cfclose(cfp);
 
-			luaL_loadbuffer(GetLuaSession(), raw_lua, len, debug_str);
-
-			*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+			if(!luaL_loadbuffer(GetLuaSession(), raw_lua, len, debug_str))
+			{
+				//Stick it in the registry
+				*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+			}
+			else
+			{
+				if(lua_isstring(GetLuaSession(), -1))
+					LuaError(GetLuaSession());
+				else
+					LuaError(GetLuaSession(), "Error parsing %s", debug_str);
+				*out_index = -1;
+			}
 			vm_free(raw_lua);
 		}
 		//dealloc
@@ -623,12 +919,22 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		
 		//Load it into a buffer & parse it
 		//WMC - This is causing an access violation error. Sigh.
-		luaL_loadbuffer(GetLuaSession(), raw_lua, strlen(raw_lua), debug_str);
-
-		//Stick it in the registry
-		*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+		if(!luaL_loadbuffer(GetLuaSession(), raw_lua, strlen(raw_lua), debug_str))
+		{
+			//Stick it in the registry
+			*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+		}
+		else
+		{
+			if(lua_isstring(GetLuaSession(), -1))
+				LuaError(GetLuaSession());
+			else
+				LuaError(GetLuaSession(), "Error parsing %s", debug_str);
+			*out_index = -1;
+		}
 
 		//free the mem
+		//WMC - This makes debug go wonky.
 		//vm_free(raw_lua);
 	}
 	else if(check_for_string("{"))
@@ -648,16 +954,33 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 	}
 	else
 	{
+		char buf[PARSE_BUF_SIZE];
+
 		//Assume lua
 		*out_lang = SC_LUA;
 
 		strcpy(buf, "return ");
 
 		//Stuff it
-		stuff_string(buf+strlen(buf), F_RAW, sizeof(buf));
+		stuff_string(buf+strlen(buf), F_RAW, sizeof(buf) - strlen(buf));
+
+		//Add ending
+		strcat(buf, "\n");
 
 		//Load it into a buffer & parse it
-		luaL_loadbuffer(GetLuaSession(), buf, strlen(buf), debug_str);
+		if(luaL_loadbuffer(GetLuaSession(), buf, strlen(buf), debug_str))
+		{
+			//Stick it in the registry
+			*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
+		}
+		else
+		{
+			if(lua_isstring(GetLuaSession(), -1))
+				LuaError(GetLuaSession());
+			else
+				LuaError(GetLuaSession(), "Error parsing %s", debug_str);
+			*out_index = -1;
+		}
 
 		//Stick it in the registry
 		*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
@@ -683,35 +1006,15 @@ script_hook script_state::ParseChunk(char* debug_str)
 
 	if(optional_string("+Override:"))
 	{
-		char *debug_str_over = new char[strlen(debug_str) + 10];
+		char *debug_str_over = (char*)vm_malloc(strlen(debug_str) + 10);
 		strcpy(debug_str_over, debug_str);
 		strcat(debug_str_over, " override");
 		ParseChunkSub(&rval.o_language, &rval.o_index, debug_str_over);
+		vm_free(debug_str_over);
 	}
 
 	return rval;
 }
-
-flag_def_list Script_conditions[] = 
-{
-	{"Mission",		CHC_MISSION},
-	{"Ship",		CHC_SHIP},
-	{"Ship class",	CHC_SHIPCLASS},
-	{"Ship type",	CHC_SHIPTYPE},
-	{"State",		CHC_STATE},
-};
-
-int Num_script_conditions = sizeof(Script_conditions)/sizeof(flag_def_list);
-
-flag_def_list Script_actions[] = 
-{
-	{"On Warpout",		CHA_WARPOUT},
-	{"On Warpin",		CHA_WARPIN},
-	{"On Death",		CHA_DEATH},
-	{"Hook",			CHA_HOOK},
-};
-
-int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
 
 int script_parse_condition()
 {
@@ -720,24 +1023,24 @@ int script_parse_condition()
 	{
 		sprintf(buf, "$%s:", Script_conditions[i].name);
 		if(optional_string(buf))
-			return i;
+			return Script_conditions[i].def;
 	}
 
 	return CHC_NONE;
 }
-int script_parse_action()
+flag_def_list* script_parse_action()
 {
 	char buf[NAME_LENGTH];
 	for(int i = 0; i < Num_script_actions; i++)
 	{
 		sprintf(buf, "$%s:", Script_actions[i].name);
 		if(optional_string(buf))
-			return i;
+			return &Script_actions[i];
 	}
 
-	return CHA_NONE;
+	return NULL;
 }
-bool script_state::ParseCondition(char *debug_str)
+bool script_state::ParseCondition(char *filename)
 {
 	ConditionedHook *chp = NULL;
 
@@ -755,6 +1058,9 @@ bool script_state::ParseCondition(char *debug_str)
 			case CHC_SHIPTYPE:
 			case CHC_SHIP:
 			case CHC_MISSION:
+			case CHC_CAMPAIGN:
+			case CHC_WEAPONCLASS:
+			case CHC_OBJECTTYPE:
 			default:
 				stuff_string(sct.data.name, F_NAME, NAME_LENGTH);
 				break;
@@ -768,7 +1074,7 @@ bool script_state::ParseCondition(char *debug_str)
 
 		if(!chp->AddCondition(sct))
 		{
-			Warning(LOCATION, "Could not add condition to conditional hook; you may have more than %d", MAX_HOOK_CONDITIONS);
+			Warning(LOCATION, "Could not add condition to conditional hook in file '%s'; you may have more than %d", filename, MAX_HOOK_CONDITIONS);
 		}
 	}
 
@@ -778,21 +1084,30 @@ bool script_state::ParseCondition(char *debug_str)
 	}
 
 	script_action sat;
-	int action;
+	flag_def_list *action;
 	bool actions_added = false;
-	for(action = script_parse_action(); action != CHA_NONE; action = script_parse_action())
+	for(action = script_parse_action(); action != NULL; action = script_parse_action())
 	{
 		sat = script_action();
-		sat.action_type = action;
-		sat.hook = ParseChunk(debug_str);
+		sat.action_type = action->def;
 
+		//WMC - build error string
+		char *buf = (char *)vm_malloc(strlen(filename) + strlen(action->name) + 4);
+		sprintf(buf, "%s - %s", filename, action->name);
+
+		sat.hook = ParseChunk(buf);
+		
+		//Free error string
+		vm_free(buf);
+
+		//Add the action
 		if(chp->AddAction(sat))
 			actions_added = true;
 	}
 
 	if(!actions_added)
 	{
-		Warning(LOCATION, "No actions specified for conditional hook");
+		Warning(LOCATION, "No actions specified for conditional hook in file '%s'", filename);
 		ConditionalHooks.pop_back();
 		return false;
 	}

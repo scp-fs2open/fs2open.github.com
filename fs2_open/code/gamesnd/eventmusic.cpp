@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.42 $
- * $Date: 2006-09-11 06:49:39 $
- * $Author: taylor $
+ * $Revision: 2.43 $
+ * $Date: 2006-12-28 00:59:26 $
+ * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2006/09/11 06:49:39  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.41  2006/08/06 19:24:56  Goober5000
  * deprecate change-ship-model
  *
@@ -1617,7 +1620,7 @@ void event_music_parse_musictbl(char* longname)
 
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Unable to parse %sl!  Code = %i.\n", longname, rval);
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", longname, rval));
 
 	} else {
 		// open localization
@@ -1992,10 +1995,16 @@ void event_music_get_soundtrack_name(char *outbuf)
 // set the current soundtrack based on name
 void event_music_set_soundtrack(char *name)
 {
+	if(name == NULL)
+	{
+		Current_soundtrack_num = -1;
+		return;
+	}
+
 	Current_soundtrack_num = event_music_get_soundtrack_index(name);
 
-	if ( Current_soundtrack_num == -1 ) {
-		mprintf(("Current soundtrack set to -1 in event_music_set_soundtrack\n"));
+	if ( Current_soundtrack_num < 0 ) {
+		mprintf(("Current soundtrack set to -1 in event_music_set_soundtrack; could not find '%s'\n", name));
 	}
 }
 
@@ -2036,7 +2045,7 @@ void event_music_set_score(int score_index, char *name)
 void event_music_reset_choices()
 {
 	Current_soundtrack_num = -1;
-	mprintf(("Current soundtrack set to -1 in event_music_reset_choices\n"));
+	//mprintf(("Current soundtrack set to -1 in event_music_reset_choices\n"));
 	Mission_music[SCORE_BRIEFING] = -1;
 	event_music_set_score(SCORE_DEBRIEF_SUCCESS, "Success");
 	event_music_set_score(SCORE_DEBRIEF_AVERAGE, "Average");

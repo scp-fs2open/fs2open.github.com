@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.291 $
- * $Date: 2006-12-26 18:14:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.292 $
+ * $Date: 2006-12-28 00:59:39 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.291  2006/12/26 18:14:42  Goober5000
+ * allow parsing of similar ship copy names properly (Mantis #1178)
+ *
  * Revision 2.290  2006/11/26 03:22:45  Goober5000
  * prevent false positive while error checking
  *
@@ -1499,6 +1502,7 @@
 #include "network/multi_team.h"
 #include "parse/lua.h"
 #include "parse/scripting.h"
+#include "object/waypoint/waypoint.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -7405,31 +7409,6 @@ int sexp_has_been_tagged_delay(int n)
 		return SEXP_FALSE;
 }
 
-// return object index of waypoint or -1 if no such waypoint
-int waypoint_lookup(char *name)
-{
-	char buf[128];
-	int i;
-	object *ptr;
-
-	if (name == NULL)
-		return -1;
-
-	ptr = GET_FIRST(&obj_used_list);
-	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->type == OBJ_WAYPOINT) {
-			i = ptr->instance;
-			sprintf(buf, "%s:%d", Waypoint_lists[i / 65536].name, (i & 0xffff) + 1);
-			if ( !stricmp(buf, name) )
-				return OBJ_INDEX(ptr);
-		}
-
-		ptr = GET_NEXT(ptr);
-	}
-
-	return -1;
-}
-
 // Goober5000
 void do_action_for_each_special_argument( int cur_node )
 {
@@ -11969,7 +11948,7 @@ void sexp_set_primary_ammo (int node)
 	int sindex;
 	int requested_bank ;
 	int requested_weapons ;
-	int rearm_limit;
+	int rearm_limit = 0;
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
@@ -11995,7 +11974,10 @@ void sexp_set_primary_ammo (int node)
 	
 	node = CDR(node);	
 	// Attempt to read in the optional rearm limit value. Negative value indicate that this should not be altered.
-	rearm_limit = eval_num(CDR(node)); 
+	//WMC - Check for optional data, because sometimes optional data does not exist...
+	if(CDR(node) != -1) {
+		rearm_limit = eval_num(node); 
+	}
 
 	set_primary_ammo (sindex, requested_bank, requested_weapons, rearm_limit);
 }
@@ -12107,7 +12089,7 @@ void sexp_set_secondary_ammo (int node)
 	int sindex;
 	int requested_bank;
 	int requested_weapons;
-	int rearm_limit;
+	int rearm_limit = 0;
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
@@ -12134,7 +12116,10 @@ void sexp_set_secondary_ammo (int node)
 	// If a rearm limit has been specified set it. 
 	node = CDR(node);	
 	// No need to check if this is a valid entry. Invalid entries will be ignored anyway
-	rearm_limit = eval_num(CDR(node));
+	//WMC - Although the Int3() is a bit annoying.
+	if(CDR(node) != -1) {
+		rearm_limit = eval_num(node);
+	}
 
 	set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
 }
@@ -14374,6 +14359,7 @@ void sexp_set_camera_position(int n)
 {
 	Viewer_mode |= VM_FREECAMERA;
 	Current_camera = Free_camera;
+	hud_set_draw(0);
 
 	vec3d camera_vec;
 	//float camera_time = 0.0f;
@@ -14391,6 +14377,7 @@ void sexp_set_camera_rotation(int n)
 {
 	Viewer_mode |= VM_FREECAMERA;
 	Current_camera = Free_camera;
+	hud_set_draw(0);
 
 	angles rot_angles;
 	float rot_time = 0.0f;
@@ -14418,6 +14405,7 @@ void sexp_set_camera_facing(int n)
 {
 	Viewer_mode |= VM_FREECAMERA;
 	Current_camera = Free_camera;
+	hud_set_draw(0);
 
 	vec3d location;
 	matrix cam_orient;
@@ -14511,6 +14499,7 @@ void sexp_reset_fov()
 void sexp_reset_camera()
 {
 	Viewer_mode &= ~VM_FREECAMERA;
+	hud_set_draw(1);
 }
 
 void sexp_show_subtitle(int node)
@@ -18559,10 +18548,13 @@ int sexp_add_variable(const char *text, const char *var_name, int type, int inde
 	}
 
 	if (index >= 0) {
-		strcpy(Sexp_variables[index].text, text);
-		strcpy(Sexp_variables[index].variable_name, var_name);
-		Sexp_variables[index].type &= ~SEXP_VARIABLE_NOT_USED;
-		Sexp_variables[index].type = (type | SEXP_VARIABLE_SET);
+		sexp_variable *sv = &Sexp_variables[index];
+		memset(sv->text, 0, sizeof(sv->text));
+		strncpy(sv->text, text, sizeof(sv->text)-1);
+		memset(sv->variable_name, 0, sizeof(sv->variable_name));
+		strncpy(sv->variable_name, var_name, sizeof(sv->variable_name)-1);
+		sv->type &= ~SEXP_VARIABLE_NOT_USED;
+		sv->type = (type | SEXP_VARIABLE_SET);
 	}
 
 	return index;
@@ -18577,7 +18569,8 @@ void sexp_modify_variable(char *text, int index)
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
 	Assert( !MULTIPLAYER_CLIENT );
 
-	strcpy(Sexp_variables[index].text, text);
+	memset(Sexp_variables[index].text, 0, sizeof(Sexp_variables[index].text));
+	strncpy(Sexp_variables[index].text, text, sizeof(Sexp_variables[index].text)-1);
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
 
 	// do multi_callback_here	
@@ -18641,9 +18634,14 @@ void sexp_fred_modify_variable(const char *text, const char *var_name, int index
 	Assert(Sexp_variables[index].type & SEXP_VARIABLE_SET);
 	Assert( (type & SEXP_VARIABLE_NUMBER) || (type & SEXP_VARIABLE_STRING) );
 
-	strcpy(Sexp_variables[index].text, text);
-	strcpy(Sexp_variables[index].variable_name, var_name);
-	Sexp_variables[index].type = (SEXP_VARIABLE_SET | SEXP_VARIABLE_MODIFIED | type);
+	sexp_variable *sv = &Sexp_variables[index];
+	memset(sv->text, 0, sizeof(sv->text));
+	strncpy(sv->text, text, sizeof(sv->text)-1);
+
+	memset(sv->variable_name, 0, sizeof(sv->variable_name));
+	strncpy(sv->variable_name, var_name, sizeof(sv->variable_name)-1);
+
+	sv->type = (SEXP_VARIABLE_SET | SEXP_VARIABLE_MODIFIED | type);
 }
 
 // return index of sexp_variable_name, -1 if not found

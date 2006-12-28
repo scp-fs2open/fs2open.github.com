@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.10 $
- * $Date: 2006-11-24 22:46:25 $
- * $Author: Goober5000 $
+ * $Revision: 1.11 $
+ * $Date: 2006-12-28 00:59:20 $
+ * $Author: wmcoolmon $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2006/11/24 22:46:25  Goober5000
+ * FRED again updates backgrounds while the user is editing them
+ *
  * Revision 1.9  2006/11/16 00:51:43  taylor
  * clean up skybox model selection and usage to work better with FRED
  * make sure to go ahead and set the skybox model when it's set/changed in FRED
@@ -771,6 +774,7 @@ void bg_bitmap_dlg::build_nebfile_list()
 void bg_bitmap_dlg::sun_data_init()
 {
 	int idx;
+	uint idx2;
 	CComboBox *ccb = (CComboBox*) GetDlgItem(IDC_SUN1);
 	CListBox *clb = (CListBox*) GetDlgItem(IDC_SUN1_LIST);
 	background_t *background = &Backgrounds[get_active_background()];
@@ -786,9 +790,9 @@ void bg_bitmap_dlg::sun_data_init()
  	}
 
 	// add all suns by bitmap filename to the list
-	for (idx = 0; idx < background->suns.size(); idx++)
+	for (idx2 = 0; idx2 < background->suns.size(); idx2++)
 	{	
-		clb->AddString(background->suns[idx].filename);
+		clb->AddString(background->suns[idx2].filename);
 	}		
 
 	// if we have at least one item, select it
@@ -935,6 +939,7 @@ void bg_bitmap_dlg::OnSunDropdownChange()
 void bg_bitmap_dlg::bitmap_data_init()
 {
 	int idx;
+	uint idx2;
 	CComboBox *ccb = (CComboBox*) GetDlgItem(IDC_SBITMAP);
 	CListBox *clb = (CListBox*) GetDlgItem(IDC_SBITMAP_LIST);
 	background_t *background = &Backgrounds[get_active_background()];
@@ -950,9 +955,9 @@ void bg_bitmap_dlg::bitmap_data_init()
  	}
 
 	// add all bitmaps by bitmap filename to the list
-	for (idx = 0; idx < background->bitmaps.size(); idx++)
+	for (idx2 = 0; idx2 < background->bitmaps.size(); idx2++)
 	{	
-		clb->AddString(background->bitmaps[idx].filename);
+		clb->AddString(background->bitmaps[idx2].filename);
 	}		
 
 	// if we have at least one item, select it

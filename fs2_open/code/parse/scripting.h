@@ -3,6 +3,7 @@
 
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
+#include "parse/lua.h"
 
 #include <stdio.h>
 #include <vector>
@@ -31,13 +32,24 @@ struct image_desc
 #define CHC_SHIPCLASS		2
 #define CHC_SHIPTYPE		3
 #define CHC_STATE			4
+#define CHC_CAMPAIGN		5
+#define CHC_WEAPONCLASS		6
+#define CHC_OBJECTTYPE		7
+#define CHC_KEYPRESS		8
 
 //Actions
 #define CHA_NONE			-1
 #define CHA_WARPOUT			0
 #define CHA_WARPIN			1
 #define CHA_DEATH			2
-#define CHA_HOOK			3
+#define CHA_ONFRAME			3
+#define CHA_COLLIDESHIP		4
+#define CHA_COLLIDEWEAPON	5
+#define CHA_COLLIDEDEBRIS	6
+#define CHA_COLLIDEASTEROID	7
+#define CHA_HUDDRAW			8
+#define CHA_OBJECTRENDER	9
+
 
 struct script_condition
 {
@@ -67,7 +79,9 @@ public:
 	bool AddCondition(script_condition sc);
 	bool AddAction(script_action sa);
 
-	bool MaybeRun(class script_state *sys, int action, char format='\0', void *data=NULL, struct object *objp=NULL);
+	bool ConditionsValid(int action, struct object *objp=NULL);
+	bool IsOverride(class script_state *sys, int action);
+	bool Run(class script_state *sys, int action, char format='\0', void *data=NULL);
 };
 
 //**********Main script_state function
@@ -123,19 +137,24 @@ public:
 	//void MoveData(script_state &in);
 
 	//***Variable handling functions
-	void SetGlobal(char *name, char format, void *data);
 	bool GetGlobal(char *name, char format='\0', void *data=NULL);
 	void RemGlobal(char *name);
+
+	void SetHookVar(char *name, char format, void *data=NULL);
+	void SetHookObject(char *name, int obj_idx);
+	bool GetHookVar(char *name, char format='\0', void *data=NULL);
+	void RemHookVar(char *name);
 
 	//***Hook creation functions
 	bool EvalString(char* string, char *format=NULL, void *rtn=NULL, char *debug_str=NULL);
 	script_hook ParseChunk(char* debug_str=NULL);
-	bool ParseCondition(char* debug_str=NULL);
+	bool ParseCondition(char *filename="<Unknown>");
 
 	//***Hook running functions
 	int RunBytecode(script_hook &hd, char format='\0', void *data=NULL);
-	int RunCondition(int condition, char format='\0', void *data=NULL, struct object *objp = NULL);
 	bool IsOverride(script_hook &hd);
+	int RunCondition(int condition, char format='\0', void *data=NULL, struct object *objp = NULL);
+	bool IsConditionOverride(int action, object *objp=NULL);
 };
 
 

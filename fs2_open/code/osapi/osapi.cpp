@@ -9,13 +9,18 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.36 $
- * $Date: 2006-11-16 00:54:15 $
- * $Author: taylor $
+ * $Revision: 2.37 $
+ * $Date: 2006-12-28 00:59:39 $
+ * $Author: wmcoolmon $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2006/11/16 00:54:15  taylor
+ * new window creation code for Windows (gets rid of some stupid :V: voodoo for the software/glide stuff)
+ * use detect_home() on Windows too (needed for now outwnd code)
+ * some bits of minor cleanup
+ *
  * Revision 2.35  2006/11/06 06:23:27  taylor
  * grrr ... fix dos EOL chars
  *
@@ -916,7 +921,7 @@ void debug_int3(char *file, int line)
 	mprintf(("Int3(): From %s at line %d\n", file, line));
 
 	gr_activate(0);
-
+ 
 #ifdef _WIN32
 #if defined _MSC_VER
 	_asm { int 3 };

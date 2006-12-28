@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-09-11 06:49:39 $
- * $Author: taylor $
+ * $Revision: 2.33 $
+ * $Date: 2006-12-28 00:59:26 $
+ * $Author: wmcoolmon $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/09/11 06:49:39  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.31  2006/09/11 06:08:08  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -298,9 +301,6 @@ int Num_iface_sounds = 0;
 game_snd *Snds_iface = NULL;
 int *Snds_iface_handle = NULL;
 
-#define GAME_SND	0
-#define IFACE_SND	1
-
 void gamesnd_add_sound_slot(int type, int num);
 
 void gamesnd_play_iface(int n)
@@ -319,14 +319,10 @@ int gamesnd_get_by_name(char* name)
 		char *p = strchr( Snds[i].filename, '.' );
 		if(p == NULL)
 		{
-			if(!stricmp(Snds[i].filename, name))
+			if(!strextcmp(Snds[i].filename, name))
 			{
 				return i;
 			}
-		}
-		else if(!strnicmp(Snds[i].filename, name, p-Snds[i].filename))
-		{
-			return i;
 		}
 	}
 	return -1;
@@ -519,77 +515,79 @@ void gamesnd_parse_soundstbl()
 
 	gamesnd_init_sounds();
 
+	//WMC - Made sounds.tbl optional, October 5, 2006
 	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Unable to parse sounds.tbl!  Code = %i.\n", rval);
+		mprintf(("TABLES: Unable to parse sounds.tbl!  Code = %i.\n", rval));
 	}
-	else {
+	else
+	{
 		read_file_text("sounds.tbl");
 		reset_parse();		
-	}
 
-	// Parse the gameplay sounds section
-	required_string("#Game Sounds Start");
-	while (required_string_either("#Game Sounds End","$Name:")) {
-		Assert( num_game_sounds < Num_game_sounds);
-		gamesnd_parse_line( &Snds[num_game_sounds], "$Name:" );
-		num_game_sounds++;
-		gamesnd_add_sound_slot( GAME_SND, num_game_sounds );
-	}
-	required_string("#Game Sounds End");
+		// Parse the gameplay sounds section
+		required_string("#Game Sounds Start");
+		while (required_string_either("#Game Sounds End","$Name:")) {
+			Assert( num_game_sounds < Num_game_sounds);
+			gamesnd_parse_line( &Snds[num_game_sounds], "$Name:" );
+			num_game_sounds++;
+			gamesnd_add_sound_slot( GS_GAME_SND, num_game_sounds );
+		}
+		required_string("#Game Sounds End");
 
-	// Parse the interface sounds section
-	required_string("#Interface Sounds Start");
-	while (required_string_either("#Interface Sounds End","$Name:")) {
-		Assert( num_iface_sounds < Num_iface_sounds);
-		gamesnd_parse_line(&Snds_iface[num_iface_sounds], "$Name:");
-		num_iface_sounds++;
-		gamesnd_add_sound_slot( IFACE_SND, num_iface_sounds );
-	}
-	required_string("#Interface Sounds End");
+		// Parse the interface sounds section
+		required_string("#Interface Sounds Start");
+		while (required_string_either("#Interface Sounds End","$Name:")) {
+			Assert( num_iface_sounds < Num_iface_sounds);
+			gamesnd_parse_line(&Snds_iface[num_iface_sounds], "$Name:");
+			num_iface_sounds++;
+			gamesnd_add_sound_slot( GS_IFACE_SND, num_iface_sounds );
+		}
+		required_string("#Interface Sounds End");
 
-	// parse flyby sound section	
-	required_string("#Flyby Sounds Start");
+		// parse flyby sound section	
+		required_string("#Flyby Sounds Start");
 
-	missing_species_names = new char[Species_info.size() * (NAME_LENGTH+2)];
-	missing_species = new ubyte[Species_info.size()];
+		missing_species_names = new char[Species_info.size() * (NAME_LENGTH+2)];
+		missing_species = new ubyte[Species_info.size()];
 
-	memset( missing_species_names, 0, Species_info.size() * (NAME_LENGTH+2) );
-	memset( missing_species, 1, Species_info.size() );	// assume they are all missing
+		memset( missing_species_names, 0, Species_info.size() * (NAME_LENGTH+2) );
+		memset( missing_species, 1, Species_info.size() );	// assume they are all missing
 
-	while ( !check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()) )
-	{
-		for (i = 0; i < (int)Species_info.size(); i++) {
-			species_info *species = &Species_info[i];
+		while ( !check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()) )
+		{
+			for (i = 0; i < (int)Species_info.size(); i++) {
+				species_info *species = &Species_info[i];
 
-			sprintf(cstrtemp, "$%s:", species->species_name);
+				sprintf(cstrtemp, "$%s:", species->species_name);
 
-			if ( check_for_string(cstrtemp) ) {
-				gamesnd_parse_line(&species->snd_flyby_fighter, cstrtemp);
-				gamesnd_parse_line(&species->snd_flyby_bomber, cstrtemp);
-				missing_species[i] = 0;
-				sanity_check--;
-			} else {
-				sanity_check++;
+				if ( check_for_string(cstrtemp) ) {
+					gamesnd_parse_line(&species->snd_flyby_fighter, cstrtemp);
+					gamesnd_parse_line(&species->snd_flyby_bomber, cstrtemp);
+					missing_species[i] = 0;
+					sanity_check--;
+				} else {
+					sanity_check++;
+				}
 			}
 		}
-	}
 
-	// if we are missing any species then report it
-	for (i = 0; i < (int)Species_info.size(); i++) {
-		if ( missing_species[i] ) {
-			strcat(missing_species_names, Species_info[i].species_name);
-			strcat(missing_species_names, "\n");
+		// if we are missing any species then report it
+		for (i = 0; i < (int)Species_info.size(); i++) {
+			if ( missing_species[i] ) {
+				strcat(missing_species_names, Species_info[i].species_name);
+				strcat(missing_species_names, "\n");
+			}
 		}
+
+		if ( strlen(missing_species_names) ) {
+			Error( LOCATION, "The following species are missing flyby sounds in sounds.tbl:\n%s", missing_species_names );
+		}
+
+		delete[] missing_species_names;
+		delete[] missing_species;
+
+		required_string("#Flyby Sounds End");
 	}
-
-	if ( strlen(missing_species_names) ) {
-		Error( LOCATION, "The following species are missing flyby sounds in sounds.tbl:\n%s", missing_species_names );
-	}
-
-	delete[] missing_species_names;
-	delete[] missing_species;
-
-	required_string("#Flyby Sounds End");
 
 	// close localization
 	lcl_ext_close();
@@ -684,7 +682,7 @@ void gamesnd_add_sound_slot(int type, int num)
 	int i;
 
 	switch (type) {
-		case GAME_SND:
+		case GS_GAME_SND:
 		{
 			Assert( Snds != NULL );
 			Assert( num < (Num_game_sounds + increase_by) );
@@ -702,7 +700,7 @@ void gamesnd_add_sound_slot(int type, int num)
 		}
 		break;
 
-		case IFACE_SND:
+		case GS_IFACE_SND:
 		{
 			Assert( Snds_iface != NULL );
 			Assert( num < (Num_game_sounds + increase_by) );

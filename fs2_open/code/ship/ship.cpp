@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.388 $
- * $Date: 2006-12-26 18:14:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.389 $
+ * $Date: 2006-12-28 00:59:48 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.388  2006/12/26 18:14:42  Goober5000
+ * allow parsing of similar ship copy names properly (Mantis #1178)
+ *
  * Revision 2.387  2006/11/28 05:51:05  Goober5000
  * make an error message more descriptive
  *
@@ -2221,6 +2224,7 @@
 #include "iff_defs/iff_defs.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
+#include "object/waypoint/waypoint.h"
 
 
 
@@ -2280,8 +2284,8 @@ engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
 exited_ship Ships_exited[MAX_EXITED_SHIPS];
 int Num_exited_ships;
 
-int	Num_engine_wash_types;
-int	Num_ship_classes;
+int	Num_engine_wash_types = 0;
+int	Num_ship_classes = 0;
 int	Num_ship_subobj_types;
 int	Num_ship_subobjects;
 int	Player_ship_class;	// needs to be player specific, move to player structure	
@@ -2685,7 +2689,33 @@ void init_ship_entry(int ship_info_index)
 	strcpy(sip->shockwave_pof_file, "");
 	sip->shockwave_info_index = -1;
 	strcpy(sip->shockwave_name,"");*/
-	
+
+	//WMC - the rest of these are in ShipFX.cpp
+	particle_emitter *pe = &sip->dspew;
+	pe->min_rad = 0.7f;				// Min radius
+	pe->max_rad = 1.3f;				// Max radius
+	pe->min_vel = 3.0f;				// How fast the slowest particle can move
+	pe->max_vel = 12.0f;			// How fast the fastest particle can move
+
+	//WMC - this is mostly here, other stuff calculated in shipfx.cpp
+	pe = &sip->ispew;
+	pe->normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree
+	pe->min_rad = 0.20f;			// Min radius
+	pe->max_rad = 0.50f;			// Max radius
+	pe->num_low  = 25;				// Lowest number of particles to create (hardware)
+	pe->num_high = 30;				// Highest number of particles to create (hardware)
+	pe->normal_variance = 1.0f;		//	How close they stick to that normal 0=good, 1=360 degree
+	pe->min_vel = 2.0f;				// How fast the slowest particle can move
+	pe->max_vel = 12.0f;			// How fast the fastest particle can move
+	pe->min_life = 0.05f;			// How long the particles live
+	pe->max_life = 0.55f;			// How long the particles live
+
+	sip->debris_min_lifetime = -1.0f;
+	sip->debris_max_lifetime = -1.0f;
+	sip->debris_min_speed = -1.0f;
+	sip->debris_max_speed = -1.0f;
+	sip->debris_min_rotspeed = -1.0f;
+	sip->debris_max_rotspeed = -1.0f;
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
 	{
 		sip->allowed_weapons[i] = 0;
@@ -2801,9 +2831,6 @@ void init_ship_entry(int ship_info_index)
 	
 	sip->n_subsystems = 0;
 	sip->subsystems = NULL;
-
-	sip->ispew_max_particles = -1;
-	sip->dspew_max_particles = -1;
 
 	sip->modelnum = -1;
 	sip->modelnum_hud = -1;
@@ -3032,19 +3059,87 @@ int parse_ship(bool replace)
 	//HACK -
 	//This should really be reworked so that all particle fields
 	//are settable, but erg, just not happening right now -C
+	//WMC - oh hey I actually got back to this. Whaddya know.
 	if(optional_string("$Impact Spew:"))
 	{
-		if(optional_string("+Max particles:"))
-		{
-			stuff_int(&sip->ispew_max_particles);
-		}
+		parse_particle_emitter(&sip->ispew);
 	}
 	if(optional_string("$Damage Spew:"))
 	{
-		if(optional_string("+Max particles:"))
-		{
-			stuff_int(&sip->dspew_max_particles);
+		parse_particle_emitter(&sip->dspew);
+	}
+
+	//Debris crap
+#define SD_INITIAL_VEL			(1<<0)
+#define SD_MAX_VEL				(1<<1)
+#define SD_INITIAL_ROTVEL		(1<<2)
+#define SD_MAX_ROTVEL			(1<<3)
+	if(optional_string("$Debris:"))
+	{
+		if(optional_string("+Min Lifetime:"))	{
+			stuff_float(&sip->debris_min_lifetime);
+			if(sip->debris_min_lifetime < 0.0f)
+				Warning(LOCATION, "Debris min speed on shipclass '%s' is below 0 and will be ignored", sip->name);
 		}
+		if(optional_string("+Max Lifetime:"))	{
+			stuff_float(&sip->debris_max_lifetime);
+			if(sip->debris_max_lifetime < 0.0f)
+				Warning(LOCATION, "Debris max speed on shipclass '%s' is below 0 and will be ignored", sip->name);
+		}
+		if(optional_string("+Min Speed:"))	{
+			stuff_float(&sip->debris_min_speed);
+			if(sip->debris_min_speed < 0.0f)
+				Warning(LOCATION, "Debris min speed on shipclass '%s' is below 0 and will be ignored", sip->name);
+		}
+		if(optional_string("+Max Speed:"))	{
+			stuff_float(&sip->debris_max_speed);
+			if(sip->debris_max_speed < 0.0f)
+				Warning(LOCATION, "Debris max speed on shipclass '%s' is below 0 and will be ignored", sip->name);
+		}
+		if(optional_string("+Min Rotation speed:"))	{
+			stuff_float(&sip->debris_min_rotspeed);
+			if(sip->debris_min_rotspeed < 0.0f)
+				Warning(LOCATION, "Debris min speed on shipclass '%s' is below 0 and will be ignored", sip->name);
+		}
+		if(optional_string("+Max Rotation speed:"))	{
+			stuff_float(&sip->debris_max_rotspeed);
+			if(sip->debris_max_rotspeed < 0.0f)
+				Warning(LOCATION, "Debris max speed on shipclass '%s' is below 0 and will be ignored", sip->name);
+		}
+		/*
+		if(optional_string("+Initial Velocity:")) {
+			sip->debris_flags |= SD_INITIAL_VEL;
+			stuff_vector(&sip->debris_initial_vel);
+		}
+
+		if(optional_string("+Max Velocity:")) {
+			sip->debris_flags |= SD_MAX_VEL;
+			stuff_vector(&sip->debris_max_vel);
+		}
+
+		if(optional_string("+Initial Rotvel:")) {
+			sip->debris_flags |= SD_INITIAL_ROTVEL;
+			stuff_vector(&sip->debris_initial_rotvel);
+		}
+
+		if(optional_string("+Max Rotvel:")) {
+			sip->debris_flags |= SD_MAX_ROTVEL;
+			stuff_vector(&sip->debris_max_rotvel);
+		}
+		*/
+	}
+	//WMC - sanity checking
+	if(sip->debris_min_speed > sip->debris_max_speed && sip->debris_max_speed >= 0.0f) {
+		Warning(LOCATION, "Debris min speed (%f) on shipclass '%s' is greater than debris max speed (%f), and will be set to debris max speed.", sip->debris_min_speed, sip->name, sip->debris_max_speed);
+		sip->debris_min_speed = sip->debris_max_speed;
+	}
+	if(sip->debris_min_rotspeed > sip->debris_max_rotspeed && sip->debris_max_rotspeed >= 0.0f) {
+		Warning(LOCATION, "Debris min rotation speed (%f) on shipclass '%s' is greater than debris max rotation speed (%f), and will be set to debris max rotation speed.", sip->debris_min_rotspeed, sip->name, sip->debris_max_rotspeed);
+		sip->debris_min_rotspeed = sip->debris_max_rotspeed;
+	}
+	if(sip->debris_min_lifetime > sip->debris_max_lifetime && sip->debris_max_lifetime >= 0.0f) {
+		Warning(LOCATION, "Debris min lifetime (%f) on shipclass '%s' is greater than debris max lifetime (%f), and will be set to debris max lifetime.", sip->debris_min_lifetime, sip->name, sip->debris_max_lifetime);
+		sip->debris_min_lifetime = sip->debris_max_lifetime;
 	}
 
 	if(optional_string("$Density:"))
@@ -4587,10 +4682,6 @@ void parse_ship_type()
 		stuff_boolean_flag(&stp->ship_bools, STI_SHIP_WARP_PUSHABLE);
 	}
 
-	if(optional_string("$Max Debris Speed:")) {
-		stuff_float(&stp->debris_max_speed);
-	}
-
 	if(optional_string("$FF Multiplier:")) {
 		stuff_float(&stp->ff_multiplier);
 	}
@@ -4919,14 +5010,15 @@ void ship_init()
 			stp->ai_actively_pursues_temp.clear();
 		}
 
+		Num_engine_wash_types = 0;
+		Num_ship_classes = 0;
+
 		//ships.tbl
 		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", current_ship_table, rval);
+			mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", current_ship_table, rval));
 		} 
 		else
 		{			
-			Num_engine_wash_types = 0;
-			Num_ship_classes = 0;
 			strcpy(default_player_ship, "");
 
 			// static alias stuff - stupid, but it seems to be necessary
@@ -4943,10 +5035,13 @@ void ship_init()
 			if ( num_files > 0 ) {
 				Module_ship_weapons_loaded = true;
 			}
+		}
 
-			ships_inited = 1;
+		ships_inited = 1;
 
-			// cleanup
+		// cleanup
+		if(tspecies_names != NULL)
+		{
 			vm_free(tspecies_names);
 			tspecies_names = NULL;
 		}
@@ -7279,7 +7374,9 @@ void ship_dying_frame(object *objp, int ship_num)
 				pe.max_vel = 350.0f;
 				pe.min_rad = 30.0f;	// * objp->radius;
 				pe.max_rad = 100.0f; // * objp->radius;
-				particle_emit( &pe, PARTICLE_SMOKE2, 0, 50 );
+				pe.texture_id = particle_get_smoke2_id();
+				pe.range = 50.0f;
+				particle_emit( &pe );
 
 				// do sound - maybe start a random sound, if it has played far enough.
 				do_sub_expl_sound(objp->radius, &outpnt, sp->sub_expl_sound_handle);
@@ -7361,24 +7458,24 @@ void ship_dying_frame(object *objp, int ship_num)
 				do_dying_undock_physics(objp, sp);
 			}			
 
-			// play a random explosion
-			particle_emitter	pe;
-
-			pe.num_low = 50;					// Lowest number of particles to create
-			pe.num_high = 100;				// Highest number of particles to create
-			pe.pos = objp->pos;				// Where the particles emit from
-			pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
-			pe.min_life = 0.5f;				// How long the particles live
-			pe.max_life = 4.0f;				// How long the particles live
-			pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
-			pe.normal_variance = 2.0f;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-			pe.min_vel = 0.0f;				// How fast the slowest particle can move
-			pe.max_vel = 20.0f;				// How fast the fastest particle can move
-			pe.min_rad = 0.1f;				// Min radius
-			pe.max_rad = 1.5f;				// Max radius
-
 			if (!knossos_ship) {
-				particle_emit( &pe, PARTICLE_SMOKE2, 0 );
+				// play a random explosion
+				particle_emitter	pe;
+
+				pe.num_low = 50;					// Lowest number of particles to create
+				pe.num_high = 100;				// Highest number of particles to create
+				pe.pos = objp->pos;				// Where the particles emit from
+				pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
+				pe.min_life = 0.5f;				// How long the particles live
+				pe.max_life = 4.0f;				// How long the particles live
+				pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
+				pe.normal_variance = 2.0f;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+				pe.min_vel = 0.0f;				// How fast the slowest particle can move
+				pe.max_vel = 20.0f;				// How fast the fastest particle can move
+				pe.min_rad = 0.1f;				// Min radius
+				pe.max_rad = 1.5f;				// Max radius
+				pe.texture_id = particle_get_smoke2_id();
+				particle_emit( &pe );
 			}
 
 			// If this is a large ship with a propagating explosion, set it to blow up.
@@ -8595,7 +8692,14 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 		return -1;
 	}
 
-	Assert((ship_type >= 0) && (ship_type < Num_ship_classes));
+	if(!Num_ship_classes){
+		return -1;
+	}
+
+	//WMC - Invalid shipclass? Get the first ship class.
+	if(ship_type < 0 || ship_type >= Num_ship_classes)
+		ship_type = 0;
+
 	sip = &(Ship_info[ship_type]);
 	shipp = &Ships[n];
 
@@ -8707,8 +8811,30 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 
 	// Goober5000 - if no ship name specified, or if specified ship already exists,
 	// or if specified ship has exited, use a default name
-	if ((ship_name == NULL) || (ship_name_lookup(ship_name) >= 0) || (ship_find_exited_ship_by_name(ship_name) >= 0)) {
-		sprintf(shipp->ship_name, NOX("%s %d"), Ship_info[ship_type].name, n);
+	//WMC - If name is too long, use a default name.
+	bool name_problem = false;
+	if(ship_name != NULL && strlen(ship_name))
+	{
+		name_problem = strlen(ship_name) > (NAME_LENGTH-1);
+		if(name_problem) Warning(LOCATION, "Ship name '%s' is too long; using default name instead.", ship_name);
+	}
+	else
+	{
+		name_problem = true;
+	}
+	if (name_problem)
+	{
+		if((ship_name_lookup(ship_name) >= 0) || (ship_find_exited_ship_by_name(ship_name) >= 0))
+		{
+			if(strlen(Ship_info[ship_type].name) < (NAME_LENGTH-1))
+			{
+				sprintf(shipp->ship_name, NOX("%s %d"), Ship_info[ship_type].name, n);
+			}
+			else
+			{
+				sprintf(shipp->ship_name, NOX("%d"), n);
+			}
+		}
 	} else {
 		strcpy(shipp->ship_name, ship_name);
 	}
@@ -10065,7 +10191,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							}
 							else
 							{
-								flak_set_range(&Objects[weapon_objnum],&firing_pos,flak_range-20);
+								flak_set_range(&Objects[weapon_objnum], flak_range-20);
 							}
 	
 							if ((winfo_p->muzzle_flash>=0) && (((shipp==Player_ship) && (vm_vec_mag(&Player_obj->phys_info.vel)>=45)) || (shipp!=Player_ship)))
@@ -16268,7 +16394,7 @@ void armor_parse_table(char* filename)
 	lcl_ext_open();
 	if(setjmp(parse_abort) != 0)
 	{
-		mprintf(("Unable to parse %s!\n", filename));
+		mprintf(("TABLES: Unable to parse '%s'.\n", filename));
 		lcl_ext_close();
 		return;
 	}

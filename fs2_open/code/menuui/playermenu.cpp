@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-10-06 09:31:27 $
- * $Author: taylor $
+ * $Revision: 2.33 $
+ * $Date: 2006-12-28 00:59:27 $
+ * $Author: wmcoolmon $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/10/06 09:31:27  taylor
+ * re-fix this crap that I managed to break last time (was Mantis bug 1066 I think)
+ *
  * Revision 2.31  2006/09/24 13:32:11  taylor
  * fix for deletion of multiplayer pilots (Mantis bug #1066)
  *
@@ -1120,9 +1123,12 @@ void player_select_delete_pilot()
 	// make sure we do this based upon whether we're in single or multiplayer mode
 	strcpy( filename, Pilots[Player_select_pilot] );
 
-	if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {
+	if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE)
+	{
 		SAFE_STRCAT( filename, NOX(".pl2"), sizeof(filename) );
-	} else {
+	}
+	else
+	{
 		SAFE_STRCAT( filename, NOX(".plr"), sizeof(filename) );
 	}
 
@@ -1695,6 +1701,13 @@ int Player_tips_shown = 0;
 void player_tips_init()
 {
 	Num_player_tips = 0;
+
+	int rval;
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "ssm.tbl", rval));
+		lcl_ext_close();
+		return;
+	}
 
 	// begin external localization stuff
 	lcl_ext_open();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-08-20 00:51:06 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2006-12-28 00:59:48 $
+ * $Author: wmcoolmon $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/08/20 00:51:06  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.8  2006/05/27 16:42:16  taylor
  * fix slight freakiness with debris vclips (un)loading
  * comment out some code which was only used if neither D3D or OGL
@@ -208,13 +211,15 @@ void supernova_do_particles()
 			whee.vel = norm;
 			vm_vec_scale(&whee.vel, 30.0f);						
 			vm_vec_add2(&whee.vel, &Player_obj->phys_info.vel);			
-			whee.normal = norm;			
-			particle_emit(&whee, PARTICLE_FIRE, 0);
+			whee.normal = norm;
+			whee.texture_id = particle_get_fire_id();
+			particle_emit(&whee);
 
 			vm_vec_unrotate(&b, &tb, &Player_obj->orient);
 			vm_vec_add2(&b, &Player_obj->pos);
-			whee.pos = b;			
-			particle_emit(&whee, PARTICLE_FIRE, 0);
+			whee.pos = b;
+			whee.texture_id = particle_get_fire_id();
+			particle_emit(&whee);
 		}
 	}
 }

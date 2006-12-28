@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.9 $
- * $Date: 2006-11-03 21:36:56 $
- * $Author: karajorma $
+ * $Revision: 1.10 $
+ * $Date: 2006-12-28 00:59:20 $
+ * $Author: wmcoolmon $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/11/03 21:36:56  karajorma
+ * Fix for Mantis 1017. - Hope we've seen the end of that damn persona bug
+ *
  * Revision 1.8  2006/07/30 20:01:56  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
@@ -2084,7 +2087,7 @@ void CShipEditorDlg::show_hide_sexp_help()
 {
 	CRect rect, help;
 	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
-	float box_size = (help.bottom - help.top);
+	long box_size = (help.bottom - help.top);
 
 	if (Show_sexp_help){
 		cue_height += box_size;

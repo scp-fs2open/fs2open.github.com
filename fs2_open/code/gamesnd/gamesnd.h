@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.16 $
- * $Date: 2006-08-18 04:34:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2006-12-28 00:59:26 $
+ * $Author: wmcoolmon $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/08/18 04:34:54  Goober5000
+ * better handling of ballistic rearm sounds
+ * --Goober5000
+ *
  * Revision 2.15  2005/09/25 08:25:15  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -430,6 +434,9 @@ extern int Num_iface_sounds;
 extern game_snd *Snds;
 extern game_snd *Snds_iface;
 
+#define GS_GAME_SND			0
+#define GS_IFACE_SND		1
+#define GS_NUM_SND_TYPES	2
 
 // symbolic names for misc. game sounds.  The order here must match the order in
 // sounds.tbl

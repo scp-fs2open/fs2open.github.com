@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-09-11 06:45:39 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/09/11 06:45:39  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.20  2006/06/27 05:07:48  taylor
  * fix various compiler warnings and things that Valgrind complained about
  *
@@ -946,7 +949,6 @@ void anim_read_header(anim *ptr, CFILE *fp)
 	}
 	
 	ptr->height = cfread_short(fp);
-
 #ifndef NDEBUG
 	// get size of ani compared to power of 2
 	int r, floor_pow;
