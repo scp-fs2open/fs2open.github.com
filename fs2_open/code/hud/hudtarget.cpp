@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.6 $
- * $Date: 2006-12-26 05:27:15 $
- * $Author: taylor $
+ * $Revision: 2.87.2.7 $
+ * $Date: 2006-12-28 01:19:13 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.6  2006/12/26 05:27:15  taylor
+ * make sure that we don't target a hidden jumpnode, and if we do be sure to only detarget it rather than turning off auto-targetting
+ *
  * Revision 2.87.2.5  2006/12/07 18:17:19  taylor
  * add "$Weapons Energy Text:" to hud_gauges.tbl so that the low energy text can be positioned as well (Mantis bug #1166)
  *
@@ -4332,7 +4335,7 @@ int hud_get_best_primary_bank(float *range)
 
 	for ( i = 0; i < num_to_test; i++ )
 	{	
-		bank_to_fire = (swp->current_primary_bank + i) % MAX_PLAYER_PRIMARY_BANKS;
+		bank_to_fire = (swp->current_primary_bank + i) % MAX_SHIP_PRIMARY_BANKS;
 
 		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
