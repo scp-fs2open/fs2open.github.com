@@ -6,13 +6,20 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.25 $
- * $Date: 2006-11-06 05:42:44 $
- * $Author: taylor $
+ * $Revision: 1.26 $
+ * $Date: 2006-12-28 01:22:04 $
+ * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2006/11/06 05:42:44  taylor
+ * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
+ * deal with a index_buffer memory leak that Valgrind has always complained about
+ * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
+ * get rid of MAX_BUFFERS
+ * make D3D vertex buffers dynamic, like OGL has already done
+ *
  * Revision 1.24  2006/09/11 06:08:08  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -181,27 +188,11 @@
 
 #define MAX_TVT_TEAMS		MAX_TVT_WINGS
 
-// from ship.h
-#define MAX_PLAYER_PRIMARY_BANKS	2
-#define MAX_PLAYER_SECONDARY_BANKS	3
-#define MAX_PLAYER_WEAPONS			(MAX_PLAYER_PRIMARY_BANKS+MAX_PLAYER_SECONDARY_BANKS)
-
 
 // from model.h
 #define MAX_SHIP_PRIMARY_BANKS		3
 #define MAX_SHIP_SECONDARY_BANKS	4
 #define MAX_SHIP_WEAPONS			(MAX_SHIP_PRIMARY_BANKS+MAX_SHIP_SECONDARY_BANKS)
-
-
-// limit checks - Goober5000
-
-#if (MAX_PLAYER_PRIMARY_BANKS > MAX_SHIP_PRIMARY_BANKS)
-	#error MAX_PLAYER_PRIMARY_BANKS must be less than or equal to MAX_SHIP_PRIMARY_BANKS
-#endif
-
-#if (MAX_PLAYER_SECONDARY_BANKS > MAX_SHIP_SECONDARY_BANKS)
-	#error MAX_PLAYER_SECONDARY_BANKS must be less than or equal to MAX_SHIP_SECONDARY_BANKS
-#endif
 
 
 // Goober5000 - moved from hudescort.cpp

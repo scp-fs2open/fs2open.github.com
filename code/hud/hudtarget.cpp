@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.93 $
- * $Date: 2006-08-20 00:51:06 $
- * $Author: taylor $
+ * $Revision: 2.94 $
+ * $Date: 2006-12-28 01:22:04 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2006/08/20 00:51:06  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.92  2006/07/09 01:55:41  Goober5000
  * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
  * this should fix Mantis #977
@@ -4336,7 +4339,7 @@ int hud_get_best_primary_bank(float *range)
 
 	for ( i = 0; i < num_to_test; i++ )
 	{	
-		bank_to_fire = (swp->current_primary_bank + i) % MAX_PLAYER_PRIMARY_BANKS;
+		bank_to_fire = (swp->current_primary_bank + i) % MAX_SHIP_PRIMARY_BANKS;
 
 		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
