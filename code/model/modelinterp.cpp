@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.174 $
- * $Date: 2006-11-06 06:42:22 $
- * $Author: taylor $
+ * $Revision: 2.175 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174  2006/11/06 06:42:22  taylor
+ * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
+ *
  * Revision 2.173  2006/11/06 06:39:11  taylor
  * forgot to reset default value for Interp_warp_alpha when it was changed earlier
  * be sure that we are using the proper zbuffer setting when rendering thruster glows
@@ -2145,8 +2148,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						// doing glow maps?
 						if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.texture >= 0) ) {
 							// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
-							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.is_anim) ) {
-								GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.anim.num_frames);
+							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.num_frames > 1) ) {
+								GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.num_frames);
 							} else {
 								GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map, base_frametime);
 							}
@@ -4215,8 +4218,9 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					pe.min_rad = gpt->radius * tp->min_rad; // * objp->radius;
 					pe.max_rad = gpt->radius * tp->max_rad; // * objp->radius;
 					pe.normal_variance = tp->variance;					//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
+					pe.texture_id = tp->thruster_particle_bitmap01;
 
-					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_particle_bitmap01);
+					particle_emit( &pe );
 				}
 				// end particles
 
@@ -6252,8 +6256,8 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 			// doing glow maps?
 			if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.texture >= 0) ) {
 				// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
-				if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.is_anim) ) {
-					GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.anim.num_frames);
+				if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.num_frames > 1) ) {
+					GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.num_frames);
 				} else {
 					GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map, base_frametime);
 				}
@@ -6693,26 +6697,23 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 {
 	int texture, frame;
-	texture_anim_info *anim;
 	float cur_time;
 
 	// get texture
 	texture = tinfo->texture;
 
 	// maybe animate it
-	if (texture >= 0 && tinfo->is_anim)
+	if (texture >= 0 && tinfo->num_frames > 1)
 	{
-		anim = &tinfo->anim;
-
 		// sanity check total_time first thing
-		Assert(anim->total_time > 0.0f);
+		Assert(tinfo->anim_total_time > 0.0f);
 
-		cur_time = f2fl((game_get_overall_frametime() - base_frametime) % fl2f(anim->total_time));
+		cur_time = f2fl((game_get_overall_frametime() - base_frametime) % fl2f(tinfo->anim_total_time));
 
 		// get animation frame
-		frame = fl2i((cur_time * anim->num_frames) / anim->total_time);
+		frame = fl2i((cur_time * tinfo->num_frames) / tinfo->anim_total_time);
 		if (frame < 0) frame = 0;
-		if (frame >= anim->num_frames) frame = anim->num_frames - 1;
+		if (frame >= tinfo->num_frames) frame = tinfo->num_frames - 1;
 
 		// advance to the correct frame
 		texture += frame;

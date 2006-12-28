@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-06-07 04:48:38 $
+ * $Revision: 2.10 $
+ * $Date: 2006-12-28 00:59:54 $
  * $Author: wmcoolmon $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/06/07 04:48:38  wmcoolmon
+ * Limbo flag support; removed unneeded muzzle flash flag
+ *
  * Revision 2.8  2006/01/04 21:48:36  wmcoolmon
  * Flak weapons only use detonation range if targets are further away than $Det range
  *
@@ -91,12 +94,15 @@ int Flak_muzzle_mod = 0;
 float Flak_range = FLAK_RANGE_DEFAULT;
 
 // flak info
+//WMC - Made this generic weapon stuffs
+/*
 #define MAX_FLAK_INFO											350
 typedef struct flak_info {	
 	vec3d start_pos;							// initial pos
 	float range;								// range at which we'll detonate (-1 if unused);
 } flak_info;
 flak_info Flak[MAX_FLAK_INFO];
+*/
 
 
 // --------------------------------------------------------------------------------------------------------------------------------------
@@ -108,7 +114,7 @@ void flak_level_init()
 {
 	int num_frames;
 	int fps;
-	int idx;
+	//int idx;
 
 	// if the muzzle flash ani is not loaded, do so
 	if(Flak_muzzle_flash_ani == -1){
@@ -116,22 +122,30 @@ void flak_level_init()
 	}
 
 	// zero out flak info
+	/*
 	memset(Flak, 0, sizeof(flak_info) * MAX_FLAK_INFO);
 	for(idx=0; idx<MAX_FLAK_INFO; idx++){
 		Flak[idx].range = -1.0f;
 	}
+	*/
 }
 
 // close down flak stuff
 void flak_level_close()
 {
 	// zero out the ani (bitmap manager will take care of releasing it I think)
-	if(Flak_muzzle_flash_ani != -1){
-		Flak_muzzle_flash_ani = -1;
+	//WMC - Check to make sure
+	if(Flak_muzzle_flash_ani != -1)
+	{
+		if(bm_is_valid(Flak_muzzle_flash_ani))
+			bm_unload(Flak_muzzle_flash_ani);
+		else
+			Flak_muzzle_flash_ani = -1;
 	}
 }
 
 // given a newly created weapon, turn it into a flak weapon
+/*
 void flak_create(weapon *wp)
 {
 	int idx;
@@ -162,15 +176,17 @@ void flak_create(weapon *wp)
 	} else {
 		nprintf(("General", "Out of FLAK slots!\n"));
 	}
-}
+}*/
 
 // free up a flak object
+/*
 void flak_delete(int flak_index)
 {
 	Assert((flak_index >= 0) && (flak_index < MAX_FLAK_INFO));
 	memset(&Flak[flak_index], 0, sizeof(flak_info));
 	Flak[flak_index].range = -1;
 }
+*/
 
 // given a just fired flak shell, pick a detonating distance for it
 void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_pos, float weapon_subsys_strength)
@@ -186,9 +202,11 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 	Assert(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_FLAK);	
 	
 	// if the flak index is invalid, do nothing - if this fails the flak simply becomes a non-rendering bullet
+	/*
 	if(Weapons[objp->instance].flak_index < 0){
 		return;
 	}
+	*/
 
 	// get the range to the target
 	vm_vec_sub(&temp, &objp->pos, predicted_target_pos);
@@ -198,7 +216,7 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 	det_range = Weapon_info[Weapons[objp->instance].weapon_info_index].det_range;
 	if(det_range != 0.0f && final_range > det_range)
 	{
-		flak_set_range(objp, firing_pos, det_range);
+		flak_set_range(objp, det_range);
 		return;
 	}
 
@@ -211,7 +229,7 @@ void flak_pick_range(object *objp, vec3d *firing_pos, vec3d *predicted_target_po
 	}
 
 	// set the range
-	flak_set_range(objp, &objp->pos, final_range);
+	flak_set_range(objp, final_range);
 }
 
 // add some jitter to a flak gun's aiming direction, take into account range to target so that we're never _too_ far off
@@ -281,6 +299,7 @@ void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_wea
 }
 
 // maybe detonate a flak shell early/late (call from weapon_process_pre(...))
+/*
 void flak_maybe_detonate(object *objp)
 {			
 	vec3d temp;	
@@ -296,17 +315,17 @@ void flak_maybe_detonate(object *objp)
 		weapon_detonate(objp);		
 	}
 }
+*/
 
 // given a just fired flak shell, pick a detonating distance for it
-void flak_set_range(object *objp, vec3d *start_pos, float range)
+void flak_set_range(object *objp, float range)
 {
 	Assert(objp->type == OBJ_WEAPON);
 	Assert(objp->instance >= 0);	
-	Assert(Weapons[objp->instance].flak_index >= 0);
 
 	// setup the flak info
-	Flak[Weapons[objp->instance].flak_index].range = range;
-	Flak[Weapons[objp->instance].flak_index].start_pos = *start_pos;
+	Weapons[objp->instance].det_range = range;
+	//Flak[Weapons[objp->instance].flak_index].start_pos = *start_pos;
 }
 
 // get the current range for the flak object
@@ -314,9 +333,8 @@ float flak_get_range(object *objp)
 {
 	Assert(objp->type == OBJ_WEAPON);
 	Assert(objp->instance >= 0);	
-	Assert(Weapons[objp->instance].flak_index >= 0);
 	
-	return Flak[Weapons[objp->instance].flak_index].range;
+	return Weapons[objp->instance].det_range;
 }
 
 DCF(flak, "show flak dcf commands")

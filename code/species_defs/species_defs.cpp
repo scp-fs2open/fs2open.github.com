@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.35 $
- * $Date: 2006-09-11 06:51:17 $
- * $Author: taylor $
+ * $Revision: 1.36 $
+ * $Date: 2006-12-28 00:59:48 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2006/09/11 06:51:17  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 1.34  2006/09/11 06:08:09  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -292,7 +295,8 @@ void parse_species_tbl(char *longname)
 
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("Unable to parse %s!  Code = %i.\n", rval, (longname) ? longname : NOX("<default>")));
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", rval, (longname) ? longname : NOX("<default>")));
+		return;
 	}
 	else
 	{

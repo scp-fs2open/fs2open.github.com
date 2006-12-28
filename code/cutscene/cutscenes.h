@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 02:50:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 02:50:50  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2004/08/11 05:06:20  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -77,6 +81,7 @@ typedef struct cutscene_info
 	char		name[NAME_LENGTH];
 	char		*description;
 	int		cd;
+	cutscene_info(){memset(this, 0, sizeof(cutscene_info));}
 } cutscene_info;
 
 extern cutscene_info Cutscenes[MAX_CUTSCENES];

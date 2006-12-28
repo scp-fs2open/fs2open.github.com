@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/FREDDoc.h $
- * $Revision: 1.2 $
- * $Date: 2006-01-31 01:53:36 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2006-12-28 00:59:20 $
+ * $Author: wmcoolmon $
  *
  * FREDDoc.h : interface of the CFREDDoc class
  * Document class for document/view architechure, which we don't really use in
@@ -19,6 +19,10 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/01/31 01:53:36  Goober5000
+ * update FSM import for FSPort v3.0
+ * --Goober5000
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -105,6 +109,7 @@
 
 #include "ai/ailocal.h"
 #include "MissionSave.h"
+#include "object/waypoint/waypoint.h"
 
 #define MISSION_BACKUP_NAME	"Backup"
 

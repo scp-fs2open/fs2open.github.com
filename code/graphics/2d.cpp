@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.79 $
- * $Date: 2006-11-16 00:53:12 $
- * $Author: taylor $
+ * $Revision: 2.80 $
+ * $Date: 2006-12-28 00:59:26 $
+ * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2006/11/16 00:53:12  taylor
+ * various bits of little cleanup
+ * get rid of some more compiler warnings
+ *
  * Revision 2.78  2006/11/06 05:42:44  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
@@ -1488,7 +1492,8 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 			break;
 
 		case GR_STUB: 
-			gr_stub_init();
+			//WMC - This function is missing...?
+			//gr_stub_init();
 			break;
 
 		default:
@@ -1514,14 +1519,15 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 		int nframes;						// used to pass, not really needed (should be 1)
 
 		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
-		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 )
-		{
-			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
+		//if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 )
+		//{
+			/*Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
 				"\t1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
 				"\t2) You've somehow corrupted your FreeSpace 2 installation;\n"
 				"\t3) You haven't installed FreeSpace 2 at all.\n"
-				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.  If neither of these solutions fixes your problem, you've found a bug and should report it.");
-		}	
+				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.  If neither of these solutions fixes your problem, you've found a bug and should report it.");*/
+		//}	
+		Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes);
 	}
 
 	mprintf(("GRAPHICS: Initializing default colors...\n"));
@@ -1704,7 +1710,6 @@ void gr_set_shader(shader *shade)
 void gr_set_cursor_bitmap(int n, int lock)
 {
 	static int locked = 0;			
-	Assert(n >= 0);
 
 	if (!locked || (lock == GR_CURSOR_UNLOCK)) {
 		// if we are changing the cursor to something different
@@ -2208,16 +2213,17 @@ void python_do_frame();
 void gr_flip()
 {
 	//WMC - Evaluate state script hook if not override
+	/*
 	if(gameseq_get_depth() > -1)	//WMC - Make sure we're _in_ a state
 	{
 		int state = gameseq_get_state();
 		if(!Script_system.IsOverride(GS_state_hooks[state])) {
 			Script_system.RunBytecode(GS_state_hooks[state]);
 		}
-	}
+	}*/
 
 	//WMC - Do conditional hooks. Yippee!
-	Script_system.RunCondition(CHA_HOOK);
+	Script_system.RunCondition(CHA_ONFRAME);
 	//WMC - Evaluate global hook if not override.
 	Script_system.RunBytecode(Script_globalhook);
 	gr_screen.gf_flip();

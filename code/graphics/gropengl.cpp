@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.191 $
- * $Date: 2006-11-16 00:54:41 $
- * $Author: taylor $
+ * $Revision: 2.192 $
+ * $Date: 2006-12-28 00:59:27 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.191  2006/11/16 00:54:41  taylor
+ * properly support the updated window create code (all told: should take of of Mantis bugs #542, #624, #1140, and possibly #962 and #1124)
+ *
  * Revision 2.190  2006/11/06 06:44:43  taylor
  * enable/disable alpha test based on blend mode (found this hidden in an old tree, may help with blending the newer alphablend mode)
  *
@@ -1586,6 +1589,14 @@ void gr_opengl_flip()
 		if ( Gr_cursor != -1 ) {
 			gr_set_bitmap(Gr_cursor);
 			gr_bitmap( mx, my, false);
+		}
+		else
+		{
+			//WMC - Backup cheapo cursor
+			gr_set_color(0, 255, 0);
+			gr_line(mx, my, mx+8, my+8);
+			gr_line(mx, my, mx, my+16);
+			gr_line(mx, my+16, mx+8, my+8);
 		}
 	}
 
@@ -3742,7 +3753,7 @@ void gr_opengl_restore_screen(int bmp_id)
 
 void gr_opengl_free_screen(int bmp_id)
 {
-	if (!GL_saved_screen)
+	if (GL_saved_screen == NULL)
 		return;
 
 	vm_free(GL_saved_screen);

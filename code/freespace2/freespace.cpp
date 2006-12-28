@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.273 $
- * $Date: 2006-12-20 11:27:06 $
- * $Author: karajorma $
+ * $Revision: 2.274 $
+ * $Date: 2006-12-28 00:59:20 $
+ * $Author: wmcoolmon $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.273  2006/12/20 11:27:06  karajorma
+ * Move the voice recognition init to stop Windows complaining and failing to init it.
+ *
  * Revision 2.272  2006/11/16 00:55:08  taylor
  * handle the video registry entry better
  * support for new Windows window creation code
@@ -1748,6 +1751,7 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 #include "network/stand_gui.h"
 #include "object/objcollide.h"
 #include "object/objectsnd.h"
+#include "object/waypoint/waypoint.h"
 #include "observer/observer.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
@@ -3496,6 +3500,8 @@ void run_launcher()
 	// This now crashes the launcher since fs2_open is still open
 	return;
 
+	//WMC - Comment out to get rid of unreachable code warning
+	/*
 	// fire up the UpdateLauncher executable
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
@@ -3528,6 +3534,7 @@ void run_launcher()
 			WinExec(launcher_link, SW_SHOW);
 		}
 	}
+	*/
 #endif
 }
 
@@ -3537,7 +3544,7 @@ char full_path[1024];
 
 void game_init()
 {
-	int s1, e1;
+	//int s1, e1;
 //	int s2, e2;
 	char *ptr;
 	char whee[MAX_PATH_LEN];
@@ -3590,13 +3597,13 @@ void game_init()
 	strcat(whee, EXE_FNAME);
 
 	//Initialize the libraries
-	s1 = timer_get_milliseconds();
+	//s1 = timer_get_milliseconds();
 
 	if ( cfile_init(whee, strlen(Game_CDROM_dir) ? Game_CDROM_dir : NULL) ) {			// initialize before calling any cfopen stuff!!!
 		exit(1);
 	}
 
-	e1 = timer_get_milliseconds();
+	//e1 = timer_get_milliseconds();
 
 	// initialize localization module. Make sure this is done AFTER initialzing OS.
 	lcl_init( detect_lang() );	
@@ -3707,7 +3714,6 @@ void game_init()
 	
 //FS2_Voicer Init moved to after os_set_title() 
  
-
 /////////////////////////////
 // SOUND INIT END
 /////////////////////////////
@@ -3715,6 +3721,7 @@ void game_init()
 	// check for hi res pack file 
 	int has_sparky_hi = cf_exists_full("2_ChoosePilot-m.pcx", CF_TYPE_ANY);
 
+	script_init();			//WMC
 
 	if (!Is_standalone) {
 		int width = 640, height = 480, cdepth = 16, res = GR_640, mode = GR_OPENGL;
@@ -3830,7 +3837,7 @@ VidInitError:
 		os_config_write_string( NULL, NOX("Gamma"), tmp_gamma_string );
 	}*/
 
-	script_init();			//WMC
+	//WMC - old script init pos
 
 //#if defined(FS2_DEMO) || defined(OEM_BUILD)
 	gr_font_init();					// loads up all fonts
@@ -3995,10 +4002,10 @@ VidInitError:
 	timeBeginPeriod(1);	
 #endif
 
-	nprintf(("General", "Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
-	nprintf(("General", "Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
+	nprintf(("General", "MULTIPLAYER: Ships.tbl is : %s\n", Game_ships_tbl_valid ? "VALID" : "INVALID!!!!"));
+	nprintf(("General", "MULTIPLAYER: Weapons.tbl is : %s\n", Game_weapons_tbl_valid ? "VALID" : "INVALID!!!!"));
 
-	mprintf(("cfile_init() took %d\n", e1 - s1));
+	//mprintf(("cfile_init() took %d\n", e1 - s1));
 	// mprintf(("1000 cfopens() took %d\n", e2 - s2));	
 	Script_system.RunBytecode(Script_gameinithook);
 }
@@ -5237,6 +5244,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 	g3_set_view_matrix( eye_pos, eye_orient, old_zoom );
 }
 
+//WMC - Scripting island
 int Scripting_didnt_draw_hud = 1;
 
 //	Set eye_pos and eye_orient based on view mode.
@@ -5381,6 +5389,8 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 
 			if(!(Viewer_mode & VM_FREECAMERA))
 				Viewer_obj = Player_obj;
+			else
+				Viewer_obj = NULL;
  
 			if (Viewer_mode & VM_OTHER_SHIP) {
 				if (Player_ai->target_objnum != -1){
@@ -5393,6 +5403,11 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 			} else {
 				last_Viewer_objnum = -1;
 			}
+
+			if(Viewer_obj)
+				Script_system.SetHookObject("Viewer", OBJ_INDEX(Viewer_obj));
+			else
+				Script_system.RemHookVar("Viewer");
 
 			if(Viewer_mode & VM_FREECAMERA) {
 				Viewer_obj = NULL;
@@ -5511,7 +5526,7 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 		}
 	}
 
-	if(!(Viewer_mode & VM_FREECAMERA))
+	if(Scripting_didnt_draw_hud)
 		apply_hud_shake(eye_orient);
 
 	// setup neb2 rendering
@@ -6200,26 +6215,6 @@ void game_render_post_frame()
 	}
 }
 
-//WMC - Used to set an object global, where the Lua type
-//is determined according to object type
-void obj_script_set_global(char *global_name, object *objp)
-{
-	if(objp == NULL) {
-		Script_system.RemGlobal(global_name);
-		return;
-	}
-
-	script_lua_odata luaobj;
-
-	if(objp->type == OBJ_SHIP) {
-		luaobj = l_Ship.Set(object_h(objp));
-	} else {
-		luaobj = l_Object.Set(object_h(objp));
-	}
-
-	Script_system.SetGlobal(global_name, 'o', &luaobj);
-}
-
 #ifndef NDEBUG
 #define DEBUG_GET_TIME(x)	{ x = timer_get_fixed_seconds(); }
 #else
@@ -6284,7 +6279,7 @@ void game_frame(int paused)
 		}
 	
 		//	Note: These are done even before the player enters, else buffers can overflow.
-		if (! (Game_mode & GM_STANDALONE_SERVER) && !(Viewer_mode & VM_FREECAMERA)){
+		if (! (Game_mode & GM_STANDALONE_SERVER)){
 			radar_frame_init();
 		}
 	
@@ -6340,12 +6335,14 @@ void game_frame(int paused)
 				gr_clear();
 			}
 
-			obj_script_set_global("plr", Player_obj);
+			if(Player_obj)
+				Script_system.SetHookObject("Player", OBJ_INDEX(Player_obj));
+			else
+				Script_system.RemHookVar("Player");
 
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
 			game_render_frame_setup(&eye_pos, &eye_orient);
-			obj_script_set_global("slf", Viewer_obj);
 
 			game_render_frame( &eye_pos, &eye_orient );
 
@@ -6356,15 +6353,15 @@ void game_frame(int paused)
 			}
 
 			Scripting_didnt_draw_hud = 1;
-			if(Script_system.IsOverride(Script_hudhook))
+			if(Script_system.IsOverride(Script_hudhook) || Script_system.IsConditionOverride(CHA_HUDDRAW,Viewer_obj))
 				Scripting_didnt_draw_hud = 0;
 
-			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
+			if(Scripting_didnt_draw_hud)
 			{
 				hud_show_target_model();
 			}
 
-			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
+			if(Scripting_didnt_draw_hud)
 			{
 				hud_show_radar();
 			}
@@ -6426,7 +6423,7 @@ void game_frame(int paused)
 #endif
 
 			// Draw the 2D HUD gauges
-			if(!(Viewer_mode & VM_FREECAMERA) && Scripting_didnt_draw_hud)
+			if(Scripting_didnt_draw_hud)
 			{
 				if(supernova_active() <	3){
 					game_render_hud_2d();
@@ -6437,6 +6434,7 @@ void game_frame(int paused)
 			}
 
 			Script_system.RunBytecode(Script_hudhook);
+			Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
 
 			gr_reset_clip();
 			game_render_post_frame();
@@ -7183,7 +7181,7 @@ void end_demo_campaign_do()
 // that you should change the state of the game.
 void game_process_event( int current_state, int event )
 {
-	mprintf(("Got event %s (%d) in state %s (%d)\n", GS_event_text[event], event, GS_state_text[current_state], current_state));
+	mprintf(("GAMESEQUENCE: Got event %s (%d) in state %s (%d)\n", GS_event_text[event], event, GS_state_text[current_state], current_state));
 
 	switch (event) {
 		case GS_EVENT_SIMULATOR_ROOM:
@@ -7639,7 +7637,13 @@ void game_leave_state( int old_state, int new_state )
 	}
 
 	//WMC - Scripting override
+	/*
 	if(GS_state_hooks[old_state].IsValid() && Script_system.IsOverride(GS_state_hooks[old_state])) {
+		return;
+	}
+	*/
+
+	if(Script_system.IsConditionOverride(CHA_ONFRAME)) {
 		return;
 	}
 
@@ -8005,7 +8009,12 @@ void game_leave_state( int old_state, int new_state )
 void game_enter_state( int old_state, int new_state )
 {
 	//WMC - Scripting override
+	/*
 	if(GS_state_hooks[new_state].IsValid() && Script_system.IsOverride(GS_state_hooks[new_state])) {
+		return;
+	}
+	*/
+	if(Script_system.IsConditionOverride(CHA_ONFRAME)) {
 		return;
 	}
 
@@ -8526,6 +8535,13 @@ void game_do_state(int state)
 		return;
 	}
 
+	if(Script_system.IsConditionOverride(CHA_ONFRAME)) {
+		game_set_frametime(state);
+		gr_clear();
+		gr_flip();	//Does state hook automagically
+		return;
+	}
+	/*
 	if(Script_system.IsOverride(GS_state_hooks[state]))
 	{
 		game_set_frametime(state);
@@ -8534,7 +8550,7 @@ void game_do_state(int state)
 		gr_flip();
 		return;
 	}
-	
+	*/
 	switch (state) {
 		case GS_STATE_MAIN_MENU:
 			game_set_frametime(GS_STATE_MAIN_MENU);
@@ -9488,7 +9504,7 @@ void load_animating_pointer(char *filename, int dx, int dy)
 	init_animating_pointer();
 
 //TEMP
-	mprintf(("loading animated cursor \"%s\"\n", filename));
+	//mprintf(("loading animated cursor \"%s\"\n", filename));
 
 
 	am = &Animating_mouse;
@@ -9496,8 +9512,9 @@ void load_animating_pointer(char *filename, int dx, int dy)
 	if(am->first_frame < 0)
 	{
 		am->first_frame = bm_load(filename);
-		if ( am->first_frame == -1 ) 
-			Error(LOCATION, "Could not load image or animation '%s' for the mouse pointer\n", filename);
+		//WMC - Use a placeholder with gr_line.
+		//if ( am->first_frame == -1 ) 
+			//Error(LOCATION, "Could not load image or animation '%s' for the mouse pointer\n", filename);
 		am->current_frame = 0;
 		am->num_frames = 1;
 		am->time = 1.0f;
@@ -9507,6 +9524,9 @@ void load_animating_pointer(char *filename, int dx, int dy)
 		am->current_frame = 0;
 		am->time = am->num_frames / i2fl(fps);
 	}
+
+	if(am->first_frame < 0)
+		mprintf(("GRAPHICS: Could not load cursor '%s'\n", filename));
 }
 
 // ----------------------------------------------------------------------------
@@ -9520,11 +9540,12 @@ void unload_animating_pointer()
 	animating_obj	*am;
 
 	am = &Animating_mouse;
-	for ( i = 0; i < am->num_frames; i++ ) {
-		Assert( (am->first_frame+i) >= 0 );
-
-		// if we are the current cursor then reset to avoid gr_close() issues - taylor
-		gr_unset_cursor_bitmap(am->first_frame + i);
+	if(am->first_frame > -1)
+	{
+		for ( i = 0; i < am->num_frames; i++ ) {
+			// if we are the current cursor then reset to avoid gr_close() issues - taylor
+			gr_unset_cursor_bitmap(am->first_frame + i);
+		}
 	}
 
 	// this will release all of the frames at once

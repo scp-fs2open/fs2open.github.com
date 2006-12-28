@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.84 $
- * $Author: Goober5000 $
- * $Date: 2006-12-26 18:14:42 $
+ * $Revision: 2.85 $
+ * $Author: wmcoolmon $
+ * $Date: 2006-12-28 00:59:39 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2006/12/26 18:14:42  Goober5000
+ * allow parsing of similar ship copy names properly (Mantis #1178)
+ *
  * Revision 2.83  2006/11/13 23:11:08  phreak
  * oops, forgot a break statement
  *
@@ -1935,7 +1938,7 @@ void read_raw_file_text(char *filename, int mode, char *raw_text)
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL)
 	{
-		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
+		//nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
 		longjmp(parse_abort, 5);
 	}
 
@@ -2419,7 +2422,7 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 		Assert(count < max_ints);
 		if (*Mp == '"') {
 			int num = 0;
-			char str[128];
+			char str[128] = {0};
 
 			get_string(str);
 			switch (lookup_type) {
@@ -3392,6 +3395,36 @@ int replace_all(char *str, char *oldstr, char *newstr, uint max_len, int range)
 	}
 
 	return (val < 0) ? val : tally;
+}
+
+//WMC
+//Compares two strings, ignoring (last) extension
+//Returns 0 if equal, nonzero if not
+int strextcmp(char *s1, char* s2)
+{
+	//WMC - sanity check
+	Assert(s1 != NULL && s2 != NULL);
+
+	//Find last '.' in both strings
+	char *s1_end = strrchr(s1, '.');
+	char *s2_end = strrchr(s2, '.');
+
+	//Get length
+	size_t s1_len, s2_len;
+	if(s1_end != NULL)
+		s1_len = s1_end - s1;
+	else
+		s1_len = strlen(s1);
+
+	if(s2_end != NULL)
+		s2_len = s2_end - s2;
+	else
+		s2_len = strlen(s2);
+
+	if(s2_len != s1_len)
+		return 1; //Oops
+
+	return strnicmp(s1, s2, s1_len);
 }
 
 //WMC

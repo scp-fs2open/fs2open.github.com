@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.41 $
- * $Date: 2006-11-16 00:53:12 $
- * $Author: taylor $
+ * $Revision: 2.42 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2006/11/16 00:53:12  taylor
+ * various bits of little cleanup
+ * get rid of some more compiler warnings
+ *
  * Revision 2.40  2006/09/11 06:49:38  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -436,6 +440,7 @@
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
 #include "network/multi.h"
+#include "parse/scripting.h"
 
 #include <vector>
 
@@ -1826,51 +1831,56 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 	if ( timestamp_elapsed(asp->final_death_time) ) {
 		vec3d	relvec, vfh, tvec;
 
-		asteroid_obj->flags |= OF_SHOULD_BE_DEAD;
+		Script_system.SetHookObject("Self", OBJ_INDEX(asteroid_obj));
+		if(!Script_system.IsConditionOverride(CHA_DEATH, asteroid_obj))
+		{
+			asteroid_obj->flags |= OF_SHOULD_BE_DEAD;
 
-		// multiplayer clients won't go through the following code.  asteroid_sub_create will send
-		// a create packet to the client in the above named function
-		if ( !MULTIPLAYER_CLIENT ) {
-			// if this isn't true it's just debris, and debris doesn't break up
-			if (asp->asteroid_type <= ASTEROID_TYPE_LARGE)
-			{
-				switch (asp->asteroid_type) {
-					case ASTEROID_TYPE_SMALL:
-						break;
-					case ASTEROID_TYPE_MEDIUM:
-						asc_get_relvec(&relvec, asteroid_obj, &asp->death_hit_pos);
-						asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &relvec);
-					
-						vm_vec_normalized_dir(&vfh, &asteroid_obj->pos, &asp->death_hit_pos);
-						vm_vec_copy_scale(&tvec, &vfh, 2.0f);
-						vm_vec_sub2(&tvec, &relvec);
-						asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &tvec);
+			// multiplayer clients won't go through the following code.  asteroid_sub_create will send
+			// a create packet to the client in the above named function
+			if ( !MULTIPLAYER_CLIENT ) {
+				// if this isn't true it's just debris, and debris doesn't break up
+				if (asp->asteroid_type <= ASTEROID_TYPE_LARGE)
+				{
+					switch (asp->asteroid_type) {
+						case ASTEROID_TYPE_SMALL:
+							break;
+						case ASTEROID_TYPE_MEDIUM:
+							asc_get_relvec(&relvec, asteroid_obj, &asp->death_hit_pos);
+							asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &relvec);
 						
-						break;
-					case ASTEROID_TYPE_LARGE:
-						asc_get_relvec(&relvec, asteroid_obj, &asp->death_hit_pos);
-						asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_MEDIUM, &relvec);
-					
-						vm_vec_normalized_dir(&vfh, &asteroid_obj->pos, &asp->death_hit_pos);
-						vm_vec_copy_scale(&tvec, &vfh, 2.0f);
-						vm_vec_sub2(&tvec, &relvec);
-						asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_MEDIUM, &tvec);
+							vm_vec_normalized_dir(&vfh, &asteroid_obj->pos, &asp->death_hit_pos);
+							vm_vec_copy_scale(&tvec, &vfh, 2.0f);
+							vm_vec_sub2(&tvec, &relvec);
+							asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &tvec);
+							
+							break;
+						case ASTEROID_TYPE_LARGE:
+							asc_get_relvec(&relvec, asteroid_obj, &asp->death_hit_pos);
+							asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_MEDIUM, &relvec);
+						
+							vm_vec_normalized_dir(&vfh, &asteroid_obj->pos, &asp->death_hit_pos);
+							vm_vec_copy_scale(&tvec, &vfh, 2.0f);
+							vm_vec_sub2(&tvec, &relvec);
+							asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_MEDIUM, &tvec);
 
-						while (frand() > 0.6f) {
-							vec3d	rvec, tvec2;
-							vm_vec_rand_vec_quick(&rvec);
-							vm_vec_scale_add(&tvec2, &vfh, &rvec, 0.75f);
-							asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &tvec2);
-						}
-						break;
+							while (frand() > 0.6f) {
+								vec3d	rvec, tvec2;
+								vm_vec_rand_vec_quick(&rvec);
+								vm_vec_scale_add(&tvec2, &vfh, &rvec, 0.75f);
+								asteroid_sub_create(asteroid_obj, ASTEROID_TYPE_SMALL, &tvec2);
+							}
+							break;
 
-					default: // this isn't going to happen.. really
-						break;
+						default: // this isn't going to happen.. really
+							break;
+					}
 				}
 			}
+			asp->final_death_time = timestamp(-1);
 		}
-
-		asp->final_death_time = timestamp(-1);
+		Script_system.RunCondition(CHA_DEATH, '\0', NULL, asteroid_obj);
+		Script_system.RemHookVar("Self");
 	}
 }
 

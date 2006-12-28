@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.67 $
- * $Date: 2006-09-11 06:45:40 $
- * $Author: taylor $
+ * $Revision: 2.68 $
+ * $Date: 2006-12-28 00:59:39 $
+ * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/09/11 06:45:40  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.66  2006/08/20 00:47:57  taylor
  * very slight speed optimization to avoid math that we really don't need to do anyway
  *
@@ -685,6 +688,7 @@
 #include "object/objectdock.h"
 #include "mission/missionparse.h" //For 2D Mode
 #include "iff_defs/iff_defs.h"
+#include "parse/scripting.h"
 
 
 
@@ -1482,10 +1486,13 @@ void obj_move_call_physics(object *objp, float frametime)
 				//	objp->phys_info.flags &= ~(PF_REDUCED_DAMP | PF_DEAD_DAMP);
 				// objp->phys_info.side_slip_time_const = Ship_info[Ships[objp->instance].ship_info_index].damp;
 			// }
-			for(int i = 0; i < Ships[objp->instance].weapons.num_secondary_banks; i++){
+			for(int i = 0; i < Ships[objp->instance].weapons.num_secondary_banks; i++)
+			{
 				if(Ships[objp->instance].weapons.secondary_bank_ammo[i] == 0)continue;
 				//if there are no missles left don't bother
-				int points = model_get(Ships[objp->instance].modelnum)->missile_banks[i].num_slots;
+				polymodel *pm = model_get(Ships[objp->instance].modelnum); 
+				if(pm==NULL)continue;
+				int points = pm->missile_banks[i].num_slots;
 				int missles_left = Ships[objp->instance].weapons.secondary_bank_ammo[i];
 				int next_point = Ships[objp->instance].weapons.secondary_next_slot[i];
 
@@ -2164,7 +2171,18 @@ void obj_render(object *obj)
 	if ( obj->flags & OF_SHOULD_BE_DEAD ) return;
 //	if ( obj == Viewer_obj ) return;
 
-	MONITOR_INC( NumObjectsRend, 1 );	
+	MONITOR_INC( NumObjectsRend, 1 );
+
+	//WMC - By definition, override statements are executed before the actual statement
+	bool script_return = false;
+	Script_system.SetHookObject("Object", OBJ_INDEX(obj));
+	if(Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj))
+		script_return = true;
+
+	Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
+	Script_system.RemHookVar("Object");
+	if(script_return)
+		return;
 
 	switch( obj->type )	{
 	case OBJ_NONE:

@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.15 $
- * $Date: 2006-09-11 06:49:39 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2006-12-28 00:59:27 $
+ * $Author: wmcoolmon $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/09/11 06:49:39  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.14  2005/10/14 07:22:24  Goober5000
  * removed an unneeded parameter and renamed some stuff
  * --Goober5000
@@ -147,15 +150,22 @@ int ssm_info_lookup(char *name)
 
 // game init
 void ssm_init()
-{	
-	ssm_info bogus, *s;
-	char weapon_name[NAME_LENGTH];
+{
+	Ssm_info_count = 0;
+
+	int rval;
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "ssm.tbl", rval));
+		return;
+	}
 
 	read_file_text("ssm.tbl");
 	reset_parse();
 
+	ssm_info bogus, *s;
+	char weapon_name[NAME_LENGTH];
+
 	// parse the table
-	Ssm_info_count = 0;
 	while(!optional_string("#end")){
 		// another ssm definition
 		if(optional_string("$SSM:")){

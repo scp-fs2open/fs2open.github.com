@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.46 $
- * $Author: taylor $
- * $Date: 2006-09-11 06:50:42 $
+ * $Revision: 2.47 $
+ * $Author: wmcoolmon $
+ * $Date: 2006-12-28 00:59:39 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2006/09/11 06:50:42  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.45  2006/09/04 05:50:58  wmcoolmon
  * Added flag-to-string function for error messages
  *
@@ -594,6 +597,9 @@ extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_l
 
 // Goober5000 (why is this not in the C library?)
 extern char *stristr(const char *str, const char *substr);
+
+//WMC - compares two strings, ignoring the last extension
+extern int strextcmp(char *s1, char* s2);
 
 //WMC - backspaces the first character of given char pointer
 void backspace(char *src);

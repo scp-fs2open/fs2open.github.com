@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.48 $
- * $Date: 2006-11-06 07:00:05 $
- * $Author: taylor $
+ * $Revision: 1.49 $
+ * $Date: 2006-12-28 00:59:18 $
+ * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48  2006/11/06 07:00:05  taylor
+ * fix return values (something that was different between 3_6_9 and HEAD)
+ *
  * Revision 1.47  2006/11/06 06:32:30  taylor
  * updated/fixed modelanim code
  * add ships.tbl subsystem flag ("+fire-down-normals") which will force a turret to fire down it's barrel line (Mantis bug #591)
@@ -1402,7 +1405,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						}
 						else
 						{
-							flak_set_range(objp, turret_pos, flak_range_override);
+							flak_set_range(objp, flak_range_override);
 						}
 					} else if(wip->muzzle_flash > -1) {	
 						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, Weapon_info[turret_weapon_class].muzzle_flash);		

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MissionSave.h $
- * $Revision: 1.4 $
- * $Date: 2006-07-13 06:11:52 $
- * $Author: Goober5000 $
+ * $Revision: 1.5 $
+ * $Date: 2006-12-28 00:59:20 $
+ * $Author: wmcoolmon $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/07/13 06:11:52  Goober5000
+ * * better formatting for substitute music options
+ * * better handling of all special FSO comment tags
+ * --Goober5000
+ *
  * Revision 1.3  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -134,6 +139,7 @@
 #include "ai/ai.h"
 #include "cfile/cfile.h"
 #include "ship/ship.h"
+#include "object/waypoint/waypoint.h"
 
 #define BACKUP_DEPTH	9
 

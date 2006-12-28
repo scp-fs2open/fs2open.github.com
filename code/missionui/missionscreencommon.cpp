@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.35 $
- * $Date: 2006-11-06 05:43:36 $
- * $Author: taylor $
+ * $Revision: 2.36 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/11/06 05:43:36  taylor
+ * fix a memory leak that Valgrind was complaining about (happens mainly when you have a mission without a briefing)
+ *
  * Revision 2.34  2006/08/20 00:51:06  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -1370,13 +1373,22 @@ void load_wing_icons(char *filename)
 	int first_frame, num_frames;
 
 	first_frame = bm_load_animation(filename, &num_frames);
-	if ( first_frame == -1 ) {
+	//WMC - See what happens now
+	/*if ( first_frame == -1 ) {
 		Error(LOCATION, "Could not load icons from %s\n", filename);
 		return;
-	}
+	}*/
 
-	Wing_slot_disabled_bitmap = first_frame;
-	Wing_slot_empty_bitmap = first_frame + 1;
+	if(first_frame > -1)
+	{
+		Wing_slot_disabled_bitmap = first_frame;
+		Wing_slot_empty_bitmap = first_frame + 1;
+	}
+	else
+	{
+		Wing_slot_disabled_bitmap = -1;
+		Wing_slot_empty_bitmap = -1;
+	}
 //	Wing_slot_player_empty_bitmap = first_frame + 2;
 }
 
@@ -1813,6 +1825,10 @@ int restore_wss_data(ubyte *block)
 
 void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, bool resize)
 {
+	//WMC - sanity check
+	if(model_id < 0)
+		return;
+
 	matrix	object_orient	= IDENTITY_MATRIX;
 	angles rot_angles = {0.0f,0.0f,0.0f};
 	float zoom = closeup_zoom * 2.5f;
@@ -1926,6 +1942,10 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 
 void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos, float closeup_zoom, float rev_rate, int flags, bool resize)
 {
+	//WMC - sanity check
+	if(model_id < 0)
+		return;
+
 	angles rot_angles, view_angles;
 	matrix model_orient;
 
@@ -1956,7 +1976,11 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 	else
 	{
 		polymodel *pm = model_get(model_id);
-		vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
+		vec3d pos = vmd_zero_vector;
+		if(pm != NULL)
+			pos.xyz.z = -(pm->rad * 1.5f);
+		else
+			pos.xyz.x = -15.0f;
 		g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
 		flags |= MR_IS_MISSILE;
 	}

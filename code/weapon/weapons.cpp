@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.187  2006/09/11 06:48:40  taylor
+ * fixes for stuff_string() bounds checking
+ * stict compiler build fixes
+ *
  * Revision 2.186  2006/09/11 05:44:23  taylor
  * make muzzle flash info dynamic
  * add support for modular mflash tables (*-mfl.tbm)
@@ -1362,7 +1366,8 @@ void parse_weapon_expl_tbl(char* longname)
 	lcl_ext_open();
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("Unable to parse %s!  Code = %i.\n", rval, longname));
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", longname, rval));
+		return;
 	}
 	else {
 		read_file_text(NOX(longname));
@@ -1794,6 +1799,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->arm_dist = 0.0f;
 	wip->arm_radius = 0.0f;
 	wip->det_range = 0.0f;
+	wip->det_radius = 0.0f;
 	
 	wip->armor_factor = 1.0f;
 	wip->shield_factor = 1.0f;
@@ -2306,6 +2312,10 @@ int parse_weapon(int subtype, bool replace)
 		stuff_float(&wip->det_range);
 	}
 
+	if(optional_string("$Detonation Radius:")) {
+		stuff_float(&wip->det_radius);
+	}
+
 	parse_shockwave_info(&wip->shockwave, "$");
 
 	//Retain compatibility
@@ -2678,15 +2688,6 @@ int parse_weapon(int subtype, bool replace)
 	if ( optional_string("$Anim:") ) {
 		stuff_string(wip->anim_filename, F_NAME, MAX_FILENAME_LEN);
 	}
-
-	if(optional_string("$Collide Ship:")) {
-		wip->sc_collide_ship = Script_system.ParseChunk("$Collide Ship");
-	}
-
-	if(optional_string("$Collide Weapon:")) {
-		wip->sc_collide_weapon = Script_system.ParseChunk("$Collide Weapon");
-	}
-
 
 	char impact_ani_file[MAX_FILENAME_LEN];
 	if ( optional_string("$Impact Explosion:") ) {
@@ -3689,7 +3690,7 @@ void weapon_init()
 
 		// parse weapons.tbl
 		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", rval, current_weapon_table);
+			mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", current_weapon_table, rval));
 		}
 		else
 		{	
@@ -4031,12 +4032,12 @@ void weapon_delete(object *obj)
 		missle_obj_list_remove(wp->missile_list_index);
 		wp->missile_list_index = -1;
 	}
-
+/*
 	if (wp->flak_index >= 0){
 		flak_delete(wp->flak_index);
 		wp->flak_index = -1;
 	}
-
+*/
 	if (wp->trail_ptr != NULL) {
 		trail_object_died(wp->trail_ptr);
 		wp->trail_ptr = NULL;
@@ -4678,14 +4679,42 @@ void weapon_home(object *obj, int num, float frame_time)
 
 void weapon_process_pre( object *obj, float frame_time)
 {
+	if(obj->type != OBJ_WEAPON)
+		return;
+
+	weapon *wp = &Weapons[obj->instance];
+	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
+
 	// if the object is a corkscrew style weapon, process it now
-	if((obj->type == OBJ_WEAPON) && (Weapons[obj->instance].cscrew_index >= 0)){
+	if(wp->cscrew_index >= 0){
 		cscrew_process_pre(obj);
 	}
 
 	// if the weapon is a flak weapon, maybe detonate it early
-	if((obj->type == OBJ_WEAPON) && (Weapon_info[Weapons[obj->instance].weapon_info_index].wi_flags & WIF_FLAK) && (Weapons[obj->instance].flak_index >= 0)){
+	/*
+	if((wip->wi_flags & WIF_FLAK) && (wp->flak_index >= 0)){
 		flak_maybe_detonate(obj);		
+	}*/
+
+	//WMC - Originally flak_maybe_detonate, moved here.
+	if(wip->det_range > 0.0f)
+	{
+		vec3d temp;
+		vm_vec_sub(&temp, &obj->pos, &wp->start_pos);
+		if(vm_vec_mag(&temp) >= wp->det_range){
+			weapon_detonate(obj);		
+		}
+	}
+
+	//WMC - Maybe detonate weapon anyway!
+	if(wip->det_radius > 0.0f && wp->homing_object != NULL)
+	{
+		vec3d spos;
+		if((wp->homing_subsys == NULL && vm_vec_dist(&obj->pos, &wp->homing_object->pos) <= wip->det_radius)
+			|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&obj->pos, &spos) <= wip->det_radius))
+		{
+			weapon_detonate(obj);
+		}
 	}
 }
 
@@ -5102,7 +5131,11 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	weapon		*wp;
 	weapon_info	*wip;
 
-	Assert(weapon_type >= 0 && weapon_type < Num_weapon_types);
+	if(!Num_weapon_types)
+		return -1;
+	
+	if(weapon_type < 0 || weapon_type >= Num_weapon_types)
+		weapon_type = 0;
 
 	wip = &Weapon_info[weapon_type];
 
@@ -5191,6 +5224,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->phys_info.flags |= PF_CONST_VEL;
 	}
 
+	wp->start_pos = *pos;
 	wp->objnum = objnum;
 	wp->homing_object = &obj_used_list;		//	Assume not homing on anything.
 	wp->homing_subsys = NULL;
@@ -5213,6 +5247,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->target_sig = -1;
 	wp->cmeasure_ignore_objnum = -1;
 	wp->cmeasure_chase_objnum = -1;
+	wp->det_range = wip->det_range;
 
 	// Init the thruster info
 	wp->thruster_bitmap = -1;
@@ -5349,10 +5384,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	// if this is a flak weapon shell, make it so
 	// NOTE : this function will change some fundamental things about the weapon object
 	if ( wip->wi_flags & WIF_FLAK ){
-		flak_create(wp);
-	} else {
-		wp->flak_index = -1;
-	}	
+		obj_set_flags(&Objects[wp->objnum], Objects[wp->objnum].flags & ~(OF_RENDERS));
+	}
 
 	wp->missile_list_index = -1;
 	// If this is a missile, then add it to the Missile_obj_list
@@ -6002,12 +6035,12 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 	if ( wip->impact_weapon_expl_index > -1 && armed_weapon)
 	{
 		expl_ani_handle = Weapon_explosions.GetAnim(wip->impact_weapon_expl_index, hitpos, wip->impact_explosion_radius);
-		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
+		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->impact_explosion_radius, PARTICLE_BITMAP, expl_ani_handle );
 	}
 	else if(wip->dinky_impact_weapon_expl_index > -1 && !armed_weapon)
 	{
 		expl_ani_handle = Weapon_explosions.GetAnim(wip->dinky_impact_weapon_expl_index, hitpos, wip->dinky_impact_explosion_radius);
-		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->dinky_impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
+		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->dinky_impact_explosion_radius, PARTICLE_BITMAP, expl_ani_handle );
 	}
 
 	weapon_obj->flags |= OF_SHOULD_BE_DEAD;
@@ -6488,7 +6521,7 @@ void weapon_maybe_spew_particle(object *obj)
 			vm_vec_add(&particle_pos, &obj->pos, &direct);
 
 			if(wip->Weapon_particle_spew_bitmap < 0){
-				particle_create(&particle_pos, &vel, wip->Weapon_particle_spew_lifetime, wip->Weapon_particle_spew_radius, PARTICLE_SMOKE);
+				particle_create(&particle_pos, &vel, wip->Weapon_particle_spew_lifetime, wip->Weapon_particle_spew_radius, PARTICLE_BITMAP, particle_get_smoke_id());
 			}else{
 				particle_create(&particle_pos, &vel, wip->Weapon_particle_spew_lifetime, wip->Weapon_particle_spew_radius, PARTICLE_BITMAP, wip->Weapon_particle_spew_bitmap);
 			}

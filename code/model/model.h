@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.94 $
- * $Date: 2006-11-28 05:47:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.95 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2006/11/28 05:47:28  Goober5000
+ * the grammar nazi strikes again!
+ *
  * Revision 2.93  2006/11/06 06:42:22  taylor
  * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
  *
@@ -1125,19 +1128,27 @@ typedef struct insignia {
 #define PM_FLAG_ALLOW_TILING		(1<<0)					// Allow texture tiling
 #define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
 
+//WMC - combined these two structs for efficiency
 // Goober5000
+/*
 typedef struct texture_anim_info {
 	int num_frames;
 	float total_time;		// in seconds
 } texture_anim_info;
+*/
 
 // Goober5000
 typedef struct texture_info {
 	int original_texture;	// what gets read in from file
 	int texture;			// what texture you draw with; reset to original_textures by model_set_instance
 
+	int num_frames;			// Number of frames in texture
+	float anim_total_time;	// Only for animation
+
+	/*
 	bool is_anim;			// whether this is an animated texture
 	texture_anim_info anim;	// animation info (if animated)
+	*/
 } texture_info;
 
 // taylor

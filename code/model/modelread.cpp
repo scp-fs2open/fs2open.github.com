@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.119 $
- * $Date: 2006-11-06 06:42:22 $
- * $Author: taylor $
+ * $Revision: 2.120 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.119  2006/11/06 06:42:22  taylor
+ * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
+ *
  * Revision 2.118  2006/11/06 06:38:34  taylor
  * forgot this part of the render box fix (obviously no one ever really tried to use this feature, since it has never worked)
  *
@@ -1432,7 +1435,7 @@ void model_free_all()
 		return;
 	}
 
-	mprintf(( "Freeing all existing models...\n" ));
+	mprintf(( "GRAPHICS: Freeing all existing models...\n" ));
 
 	for (i=0;i<MAX_POLYGON_MODELS;i++) {
 		// forcefully unload all loaded models (be careful with this)
@@ -1894,7 +1897,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	if (!fp) {
 		if (ferror == 1) {
 			Error( LOCATION, "Can't open model file <%s>", filename );
-		} else {
+		} else if(ferror == 0) {
 			Warning( LOCATION, "Can't open model file <%s>", filename );
 		}
 
@@ -3032,16 +3035,15 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		}
 
 		// try to load an ANI
-		tmap->base_map.texture = bm_load_animation(tmp_name, &tmap->base_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
+		tmap->base_map.texture = bm_load_animation(tmp_name, &tmap->base_map.num_frames, &fps, 1, CF_TYPE_MAPS);
 		if (tmap->base_map.texture >= 0)
 		{
-			tmap->base_map.is_anim = true;
-			tmap->base_map.anim.total_time = (float) i2fl(tmap->base_map.anim.num_frames) / ((fps > 0) ? fps : 1);
+			tmap->base_map.anim_total_time = (float) i2fl(tmap->base_map.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->base_map.anim.num_frames = 1;
+			tmap->base_map.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->base_map.texture = bm_load(tmp_name);
@@ -3070,16 +3072,15 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strlwr(tmp_name);
 
 		// try to load an ANI
-		tmap->glow_map.texture = bm_load_animation(tmp_name, &tmap->glow_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
+		tmap->glow_map.texture = bm_load_animation(tmp_name, &tmap->glow_map.num_frames, &fps, 1, CF_TYPE_MAPS);
 		if (tmap->glow_map.texture >= 0)
 		{
-			tmap->glow_map.is_anim = true;
-			tmap->glow_map.anim.total_time = (float) i2fl(tmap->glow_map.anim.num_frames) / ((fps > 0) ? fps : 1);
+			tmap->glow_map.anim_total_time = (float) i2fl(tmap->glow_map.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->glow_map.anim.num_frames = 1;
+			tmap->glow_map.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->glow_map.texture = bm_load(tmp_name);
@@ -3107,16 +3108,15 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strlwr(tmp_name);
 
 		// try to load an ANI
-		tmap->spec_map.texture = bm_load_animation(tmp_name, &tmap->spec_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
+		tmap->spec_map.texture = bm_load_animation(tmp_name, &tmap->spec_map.num_frames, &fps, 1, CF_TYPE_MAPS);
 		if (tmap->spec_map.texture >= 0)
 		{
-			tmap->spec_map.is_anim = true;
-			tmap->spec_map.anim.total_time = (float) i2fl(tmap->spec_map.anim.num_frames) / ((fps > 0) ? fps : 1);
+			tmap->spec_map.anim_total_time = (float) i2fl(tmap->spec_map.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->spec_map.anim.num_frames = 1;
+			tmap->spec_map.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->spec_map.texture = bm_load(tmp_name);
@@ -3603,11 +3603,18 @@ polymodel * model_get(int model_num)
 	Assert( model_num > -1 );
 
 	int num = model_num % MAX_POLYGON_MODELS;
-	
-	Assert( num > -1 );
-	Assert( num < MAX_POLYGON_MODELS );
-	Assert( Polygon_models[num] );
-	Assert( Polygon_models[num]->id == model_num );
+
+	//WMC - considering the modulus, these would be very serious indeed
+	//Assert( num > -1 );
+	//Assert( num < MAX_POLYGON_MODELS );
+	if( Polygon_models[num] == NULL){
+		Warning(LOCATION, "model_get was called for a nonexistent model slot");
+		return NULL;
+	}
+	if(Polygon_models[num]->id != model_num) {
+		Warning(LOCATION, "model_get was called with an invalid model handle");
+		return NULL;
+	}
 
 	return Polygon_models[num];
 }

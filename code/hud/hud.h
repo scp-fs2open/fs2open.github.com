@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.23 $
- * $Date: 2006-09-04 09:25:56 $
- * $Author: Backslash $
+ * $Revision: 2.24 $
+ * $Date: 2006-12-28 00:59:27 $
+ * $Author: wmcoolmon $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/09/04 09:25:56  Backslash
+ * Make hud toggle apply to hud framerate, statistics, and camera position
+ *
  * Revision 2.22  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -351,11 +354,13 @@ typedef struct hud_anim {
 	int sx, sy;			// screen (x,y) of top-left corner of animation
 	float total_time;	// total time in seconds for the animation (depends on animation fps)
 	float time_elapsed;	// time that has elapsed (in seconds) since animation started playing
+	hud_anim(){memset(this, 0, sizeof(hud_anim)); first_frame=-1;}
 } hud_anim;
 
 typedef struct hud_frames {
 	int	first_frame;
 	int	num_frames;
+	hud_frames(){first_frame=-1;num_frames=0;}	//WMC - init data
 } hud_frames;
 
 extern int HUD_draw;

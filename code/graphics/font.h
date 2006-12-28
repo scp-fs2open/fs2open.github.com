@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.h $
- * $Revision: 2.5 $
- * $Date: 2006-09-11 06:36:38 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2006-12-28 00:59:26 $
+ * $Author: wmcoolmon $
  *
  * header file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2006/09/11 06:36:38  taylor
+ * clean up the grstub mess (for work on standalone server, and just for sanity sake)
+ * move color and shader functions to 2d.cpp since they are exactly the same everywhere
+ * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
+ *
  * Revision 2.4  2005/07/13 02:50:47  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -156,11 +161,14 @@ extern int Num_fonts;
 extern font Fonts[MAX_FONTS];
 extern font *Current_font;
 
+#define FONT_INDEX(font) (font - &Fonts[0])
+
 #define FONT1				0				// font01.vf
 #define FONT2				1				// font02.vf
 #define FONT3				2				// font03.vf
 
 // extern definitions for basic font functions
+extern int gr_get_fontnum(char *filename);
 extern void gr_set_font(int fontnum);
 extern void gr8_string(int x,int y,char * text);
 

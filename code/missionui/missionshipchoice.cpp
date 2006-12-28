@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.66 $
- * $Date: 2006-11-06 05:43:36 $
- * $Author: taylor $
+ * $Revision: 2.67 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2006/11/06 05:43:36  taylor
+ * fix a memory leak that Valgrind was complaining about (happens mainly when you have a mission without a briefing)
+ *
  * Revision 2.65  2006/09/11 06:45:39  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -688,6 +691,14 @@ typedef struct ss_icon_info
 	int				model_index;
 	anim			*ss_anim;
 	anim_instance	*ss_anim_instance;
+
+	ss_icon_info(){
+		for(int i=0; i < NUM_ICON_FRAMES; i++) icon_bmaps[i] = -1;
+		current_icon_bitmap = -1;
+		model_index = -1;
+		ss_anim = NULL;
+		ss_anim_instance = NULL;
+	}
 } ss_icon_info;
 
 typedef struct ss_slot_info
@@ -2467,7 +2478,7 @@ void start_ship_animation(int ship_class, int play_sound)
 		}
 		
 		// see if we need to get an instance
-		if ( ss_icon->ss_anim_instance == NULL ) {
+		if ( ss_icon->ss_anim_instance == NULL && ss_icon->ss_anim != NULL ) {
 			anim_play_struct aps;
 		
 			anim_play_init(&aps, ss_icon->ss_anim, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1]);
@@ -3461,15 +3472,21 @@ void ss_load_icons(int ship_class)
 
 	icon = &Ss_icons[ship_class];
 	ship_info *sip = &Ship_info[ship_class];
+	int first_frame = -1;
+	int num_frames = 0;
 
-	if(!Cmdline_ship_choice_3d && strlen(sip->icon_filename))
+	if(!Cmdline_ship_choice_3d
+		&& strlen(sip->icon_filename)
+		&& (first_frame = bm_load_animation(sip->icon_filename, &num_frames)) > -1)
 	{
-		int				first_frame, num_frames, i;
+		int	i;
+		/*
 		first_frame = bm_load_animation(sip->icon_filename, &num_frames);
 		if ( first_frame == -1 ) {
 			Int3();	// Could not load in icon frames.. get Alan
 			return;
 		}
+		*/
 
 		for ( i = 0; i < num_frames; i++ ) {
 			icon->icon_bmaps[i] = first_frame+i;

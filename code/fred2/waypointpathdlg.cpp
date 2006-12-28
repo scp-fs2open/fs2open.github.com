@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/WaypointPathDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:32 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2006-12-28 00:59:20 $
+ * $Author: wmcoolmon $
  *
  * Waypoint editor
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:32  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.7  2005/07/12 23:49:13  Goober5000
  * remove restriction on names starting with "player"
  * --Goober5000
@@ -103,6 +107,7 @@
 #include "ai/aigoals.h"
 #include "starfield/starfield.h"
 #include "jumpnode/jumpnode.h"
+#include "object/waypoint/waypoint.h"
 
 #define ID_JUMP_NODE_MENU	8000
 #define ID_WAYPOINT_MENU	9000

@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.17 $
- * $Date: 2006-11-16 00:56:16 $
- * $Author: taylor $
+ * $Revision: 2.18 $
+ * $Date: 2006-12-28 00:59:39 $
+ * $Author: wmcoolmon $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/11/16 00:56:16  taylor
+ * updated outwnd code for both Windows and non-Windows:
+ *  - make print filters dynamic
+ *  - fix various little bugs and issues
+ *  - cleanup some non-used variables (non-Windows)
+ *  - put everything under NDEBUG like it was, or should be
+ *  - change to using data/fs2_open.log for log file (Windows)
+ *  - change to using data/debug_filter.cfg (Windows)
+ *  - make the extra debug window optional, and disabled by default (Windows)
+ *  - fix some possible NULL references
+ *  - clean up the SAFEPOINT() crap
+ *
  * Revision 2.16  2006/04/20 06:32:23  Goober5000
  * proper capitalization according to Volition
  *
@@ -739,7 +751,7 @@ LRESULT CALLBACK outwnd_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam)
 		int z;
 
 		z = LOWORD(wParam);
-		if (z >= ID_FILTER && z < ID_FILTER + OutwndFilter.size())
+		if (z >= ID_FILTER && z < ID_FILTER + (int)OutwndFilter.size())
 		{
 			z -= ID_FILTER;
 			OutwndFilter[z].enabled = !OutwndFilter[z].enabled;

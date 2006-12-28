@@ -434,7 +434,8 @@ void asteroid_editor::update_init()
 	m_box_max_z.Format("%.1f", a_field[cur_field].inner_max_bound.xyz.z);
 
 	// set up combo boxes
-	int i, j, k, index, box_index;
+	uint i;
+	int j, k, index, box_index;
 
 	// add "None" to each box
 	for (k = 0; k < MAX_ACTIVE_DEBRIS_TYPES; k++)

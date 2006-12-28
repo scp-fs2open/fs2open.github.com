@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-09-11 06:45:39 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2006-12-28 00:59:26 $
+ * $Author: wmcoolmon $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/09/11 06:45:39  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.17  2006/09/11 06:36:38  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
@@ -307,6 +310,7 @@
 #include "bmpman/bmpman.h"
 #include "localization/localize.h"
 #include "globalincs/systemvars.h"
+#include "parse/parselo.h"	//For strextcmp
 
 
 
@@ -848,15 +852,15 @@ int gr_create_font(char * typeface)
 	if ( fontnum==MAX_FONTS )	{
 		Error( LOCATION, "Too many fonts!\nSee John, or change MAX_FONTS in Graphics\\Font.h\n" );
 	}
-
-	if ( fontnum == Num_fonts )	{
-		Num_fonts++;
-	}
 	
 	bool localize = true;
 
 	fp = cfopen( typeface, "rb", CFILE_NORMAL, CF_TYPE_ANY, localize );
 	if ( fp == NULL ) return -1;
+
+	if ( fontnum == Num_fonts )	{
+		Num_fonts++;
+	}
 
 	strncpy( fnt->filename, typeface, MAX_FILENAME_LEN );
 	cfread( &fnt->id, 4, 1, fp );
@@ -963,6 +967,18 @@ int gr_create_font(char * typeface)
 	return fontnum;
 }
 
+int gr_get_fontnum(char *filename)
+{
+	int i;
+	for(i = 0; i < Num_fonts; i++)
+	{
+		if(!strextcmp(Fonts[i].filename, filename))
+			return i;
+	}
+
+	return -1;
+}
+
 void gr_set_font(int fontnum)
 {
 	if ( fontnum < 0 ) {
@@ -990,7 +1006,9 @@ int gr_init_font(char * typeface)
 
 	Loaded_fontnum = gr_create_font(typeface);
 
-	Assert( Loaded_fontnum > -1 );
+	//WMC - Handle failure
+	if(Loaded_fontnum < 0)
+		return -1;
 
 	gr_set_font( Loaded_fontnum );
 

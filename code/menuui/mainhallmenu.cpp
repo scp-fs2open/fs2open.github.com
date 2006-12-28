@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.49 $
- * $Date: 2006-11-05 18:41:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2006-12-28 00:59:27 $
+ * $Author: wmcoolmon $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2006/11/05 18:41:39  Goober5000
+ * improve error message
+ *
  * Revision 2.48  2006/09/11 06:50:42  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -1566,11 +1569,14 @@ void main_hall_do(float frametime)
 	gr_flip();
 
 	// see if we have a missing campaign and force the player to select a new campaign if so
+	//WMC - no forcing.
+	/*
 	extern bool Campaign_room_no_campaigns;
 	if ( !(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns ) {
 		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", -1));
 		gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
 	}
+	*/
 
 	// maybe run the player tips popup
 // #if defined(FS2_DEMO) && defined(NDEBUG)

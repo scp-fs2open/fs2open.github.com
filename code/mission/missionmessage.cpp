@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.57 $
- * $Date: 2006-11-06 05:45:13 $
- * $Author: taylor $
+ * $Revision: 2.58 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2006/11/06 05:45:13  taylor
+ * fix Personas memory leak (not really an issue, I just got tired of seeing it in the Valgrind reports)
+ *
  * Revision 2.56  2006/09/30 21:58:08  Goober5000
  * more flexible checking of generic messages
  *
@@ -1050,11 +1053,20 @@ void messages_init()
 	int rval, i;
 	static int table_read = 0;
 
+	//WMC - Init stuff.
+	Num_builtin_messages = Num_builtin_avis = Num_builtin_waves = 0;
+	Num_messages = Num_message_avis = Num_message_waves = 0;
+	Message_debug_index = -1;
+	Message_shipnum = -1;
+	Num_messages_playing = 0;
+	Message_wave_muted = 0;
+	Next_mute_time = 1;
+
 	if ( !table_read ) {
 		Command_persona = -1;
 		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", "messages.tbl", rval);
-
+			mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "messages.tbl", rval));
+			return;
 		} else {			
 			parse_msgtbl();
 			table_read = 1;
@@ -1091,8 +1103,6 @@ void messages_init()
 		Message_waves[i].num = -1;
 	}
 
-	Message_shipnum = -1;
-	Num_messages_playing = 0;
 	for ( i = 0; i < MAX_PLAYING_MESSAGES; i++ ) {
 		Playing_messages[i].anim = NULL;
 		Playing_messages[i].wave = -1;
@@ -1106,9 +1116,6 @@ void messages_init()
 	for ( i = 0; i < Num_personas; i++ ){
 		Personas[i].flags &= ~PERSONA_FLAG_USED;
 	}
-
-	Message_wave_muted = 0;
-	Next_mute_time = 1;
 
 	memset(Message_times, 0, sizeof(int)*MAX_MISSION_MESSAGES);
 

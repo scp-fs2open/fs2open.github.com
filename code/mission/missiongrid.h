@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGrid.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:25:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * Type and defines for grids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:25:59  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2005/04/05 05:53:19  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -72,7 +76,8 @@ typedef struct grid {
 	int		nrows, ncols;
 	vec3d	center;
 	matrix	gmatrix;
-	physics_info	physics;
+	//WMC - Tentative change, not needed?
+	//physics_info	physics;
 	float	square_size;
 	float	planeD;		//	D component of plane equation (A, B, C are uvec in gmatrix)
 	vec3d	gpoints1[MAX_GRIDLINE_POINTS];  // 1 -4 are edge gridpoints for small grid.

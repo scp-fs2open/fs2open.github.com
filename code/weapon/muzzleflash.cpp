@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-09-13 03:56:29 $
- * $Author: taylor $
+ * $Revision: 2.12 $
+ * $Date: 2006-12-28 00:59:54 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/09/13 03:56:29  taylor
+ * forgot to check that error message to match the new struct format
+ *
  * Revision 2.10  2006/09/11 06:51:17  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -158,9 +161,13 @@ void parse_mflash_tbl(char *filename)
 	int rval;
 	uint i;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("Unable to parse %s!  Code = %i.\n", rval, filename));
-	} else {
+	if ((rval = setjmp(parse_abort)) != 0)
+	{
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", filename, rval));
+		return;
+	}
+	else
+	{
 		read_file_text(filename);
 		reset_parse();		
 	}

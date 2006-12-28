@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.86 $
- * $Date: 2006-11-24 22:46:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.87 $
+ * $Date: 2006-12-28 00:59:48 $
+ * $Author: wmcoolmon $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2006/11/24 22:46:25  Goober5000
+ * FRED again updates backgrounds while the user is editing them
+ *
  * Revision 2.85  2006/11/16 00:51:43  taylor
  * clean up skybox model selection and usage to work better with FRED
  * make sure to go ahead and set the skybox model when it's set/changed in FRED
@@ -1058,6 +1061,11 @@ void parse_startbl(char *longname)
 	starfield_bitmap sbm;
 	int idx;
 
+	int rval;
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", longname, rval));
+		return;
+	} 
 
 	read_file_text(longname);
 	reset_parse();
@@ -1487,7 +1495,7 @@ void stars_post_level_init()
 
 	// if we have no sun instances, create one
 	if ( !Suns.size() ) {
-		if ( !strlen(Sun_bitmaps[0].filename) ) {
+		if ( !Sun_bitmaps.size() || !strlen(Sun_bitmaps[0].filename) ) {
 			mprintf(("Trying to add default sun but no default exists!!\n"));
 		} else {
 			mprintf(("Adding default sun.\n"));

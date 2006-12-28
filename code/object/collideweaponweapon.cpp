@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-09-11 05:36:43 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2006-12-28 00:59:39 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/09/11 05:36:43  taylor
+ * compiler warning fixes
+ *
  * Revision 2.11  2006/06/07 04:42:22  wmcoolmon
  * Limbo flag support; further scripting 3.6.9 update
  *
@@ -170,83 +173,71 @@ int collide_weapon_weapon( obj_pair * pair )
 	//	Rats, do collision detection.
 	if (collide_subdivide(&A->last_pos, &A->pos, A_radius, &B->last_pos, &B->pos, B_radius))
 	{
-		//WMC - If one is an override, favor it.
-		//WMC - If both are overrides, favor A.
-		if(wipA->sc_collide_weapon.IsValid() && (!Script_system.IsOverride(wipB->sc_collide_weapon) || Script_system.IsOverride(wipA->sc_collide_weapon)))
+		bool a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, A);
+		bool b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B);
+
+		if(!a_override && !b_override)
 		{
-			script_lua_odata lua_self_obj = l_Weapon.Set(object_h(A));
-			script_lua_odata lua_weap_obj = l_Weapon.Set(object_h(B));
-			
-			Script_system.SetGlobal("Self", 'o', &lua_self_obj);
-			Script_system.SetGlobal("Weapon", 'o', &lua_weap_obj);
+			//Do the normal stuff if no override -C
+			ship	*sap, *sbp;
 
-			Script_system.RunBytecode(wipA->sc_collide_weapon);
+			sap = &Ships[Objects[A->parent].instance];
+			sbp = &Ships[Objects[B->parent].instance];
 
-			Script_system.RemGlobal("Self");
-			Script_system.RemGlobal("Weapon");
-		}
-
-		if(Script_system.IsOverride(wipA->sc_collide_weapon))
-			return 1;
-
-		if(wipB->sc_collide_weapon.IsValid())
-		{
-			script_lua_odata lua_self_obj = l_Weapon.Set(object_h(B));
-			script_lua_odata lua_weap_obj = l_Weapon.Set(object_h(A));
-
-			Script_system.SetGlobal("Self", 'o', &lua_self_obj);
-			Script_system.SetGlobal("Weapon", 'o', &lua_weap_obj);
-
-			Script_system.RunBytecode(wipB->sc_collide_weapon);
-
-			Script_system.RemGlobal("Self");
-			Script_system.RemGlobal("Weapon");
-		}
-
-		if(Script_system.IsOverride(wipB->sc_collide_weapon))
-			return 1;
-
-		//Do the normal stuff if no override -C
-		ship	*sap, *sbp;
-
-		sap = &Ships[Objects[A->parent].instance];
-		sbp = &Ships[Objects[B->parent].instance];
-
-		// MWA -- commented out next line because it was too long for output window on occation.
-		// Yes -- I should fix the output window, but I don't have time to do it now.
-		//nprintf(("AI", "[%s] %s's missile %i shot down by [%s] %s's laser %i\n", Iff_info[sbp->team].iff_name, sbp->ship_name, B->instance, Iff_info[sap->team].iff_name, sap->ship_name, A->instance));
-		if (wipA->wi_flags & WIF_BOMB) {
-			if (wipB->wi_flags & WIF_BOMB) {		//	Two bombs collide, detonate both.
-				Weapons[A->instance].lifeleft = 0.01f;
-				Weapons[B->instance].lifeleft = 0.01f;
-				Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
-				Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
-			} else {
-				A->hull_strength -= wipB->damage;
-				if (A->hull_strength < 0.0f) {
+			// MWA -- commented out next line because it was too long for output window on occation.
+			// Yes -- I should fix the output window, but I don't have time to do it now.
+			//nprintf(("AI", "[%s] %s's missile %i shot down by [%s] %s's laser %i\n", Iff_info[sbp->team].iff_name, sbp->ship_name, B->instance, Iff_info[sap->team].iff_name, sap->ship_name, A->instance));
+			if (wipA->wi_flags & WIF_BOMB) {
+				if (wipB->wi_flags & WIF_BOMB) {		//	Two bombs collide, detonate both.
 					Weapons[A->instance].lifeleft = 0.01f;
+					Weapons[B->instance].lifeleft = 0.01f;
 					Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+					Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+				} else {
+					A->hull_strength -= wipB->damage;
+					if (A->hull_strength < 0.0f) {
+						Weapons[A->instance].lifeleft = 0.01f;
+						Weapons[A->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
+					}
+				}
+			} else if (wipB->wi_flags & WIF_BOMB) {
+				B->hull_strength -= wipA->damage;
+				if (B->hull_strength < 0.0f) {
+					Weapons[B->instance].lifeleft = 0.01f;
+					Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
 				}
 			}
-		} else if (wipB->wi_flags & WIF_BOMB) {
-			B->hull_strength -= wipA->damage;
-			if (B->hull_strength < 0.0f) {
-				Weapons[B->instance].lifeleft = 0.01f;
-				Weapons[B->instance].weapon_flags |= WF_DESTROYED_BY_WEAPON;
-			}
-		}
-#ifndef NDEBUG
-		float dist = 0.0f;
+	#ifndef NDEBUG
+			float dist = 0.0f;
 
-		if (Weapons[A->instance].lifeleft == 0.01f) {
-			dist = vm_vec_dist_quick(&A->pos, &wpA->homing_pos);
-			//nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipA->name, dist, wipA->inner_radius, wipA->outer_radius));
+			if (Weapons[A->instance].lifeleft == 0.01f) {
+				dist = vm_vec_dist_quick(&A->pos, &wpA->homing_pos);
+				//nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipA->name, dist, wipA->inner_radius, wipA->outer_radius));
+			}
+			if (Weapons[B->instance].lifeleft == 0.01f) {
+				dist = vm_vec_dist_quick(&A->pos, &wpB->homing_pos);
+				//nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipB->name, dist, wipB->inner_radius, wipB->outer_radius));
+			}
+	#endif
 		}
-		if (Weapons[B->instance].lifeleft == 0.01f) {
-			dist = vm_vec_dist_quick(&A->pos, &wpB->homing_pos);
-			//nprintf(("AI", "Frame %i: Weapon %s shot down. Dist: %.1f, inner: %.0f, outer: %.0f\n", Framecount, wipB->name, dist, wipB->inner_radius, wipB->outer_radius));
+		ade_odata ade_weapona_obj = l_Weapon.Set(object_h(A));
+		ade_odata ade_weaponb_obj = l_Weapon.Set(object_h(B));
+
+		if(!(b_override && !a_override))
+		{
+			Script_system.SetHookVar("Weapon", 'o', &ade_weapona_obj);
+			Script_system.SetHookVar("WeaponB", 'o', &ade_weaponb_obj);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, NULL, NULL, A);
 		}
-#endif
+		if((b_override && !a_override) || (!b_override && !a_override))
+		{
+			Script_system.SetHookVar("Weapon", 'o', &ade_weaponb_obj);
+			Script_system.SetHookVar("WeaponB", 'o', &ade_weapona_obj);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, NULL, NULL, B);
+		}
+
+		Script_system.RemHookVar("Weapon");
+		Script_system.RemHookVar("WeaponB");
 		return 1;
 	}
 

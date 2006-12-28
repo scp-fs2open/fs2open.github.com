@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGrid.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-05-12 17:49:13 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * C module for grid specific functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/05/12 17:49:13  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.7  2005/04/12 05:26:36  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
@@ -307,7 +311,8 @@ grid *create_default_grid(void)
 
 	rgrid = create_grid(&Global_grid, &fvec, &rvec, &cvec, 100, 100, 5.0f);
 
-	physics_init(&rgrid->physics);
+	//WMC - Tentative change, not needed?
+	//physics_init(&rgrid->physics);
 	return rgrid;
 }
 

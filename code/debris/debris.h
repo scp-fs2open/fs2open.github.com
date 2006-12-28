@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.h $
- * $Revision: 2.5 $
- * $Date: 2005-07-13 02:50:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/07/13 02:50:51  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.4  2005/04/28 05:29:29  wmcoolmon
  * Removed FS2_DEMO defines that looked like they wouldn't cause the universe to collapse
  *
@@ -173,6 +177,7 @@ typedef struct debris {
 	int		team;					// Team of the ship where the debris came from
 	int		objnum;				// What object this is linked to
 	float		lifeleft;			// When 0 or less object dies
+	int		must_survive_until;	//WMC - timestamp of earliest point that it can be murthered.
 	int		model_num;			// What model this uses
 	int		submodel_num;		// What submodel this uses
 	int		next_fireball;		// When to start a fireball

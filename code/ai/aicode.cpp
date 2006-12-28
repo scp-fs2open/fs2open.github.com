@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.91 $
- * $Date: 2006-11-16 00:49:35 $
- * $Author: taylor $
+ * $Revision: 1.92 $
+ * $Date: 2006-12-28 00:59:18 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.91  2006/11/16 00:49:35  taylor
+ * fix stupid bay depart object animation bug (Mantis bug #1133, part 2)
+ *
  * Revision 1.90  2006/11/06 06:43:58  taylor
  * if a submodel anim fails to start then move directly to ready position flag (set it up to do this, just forgot to do it ;))  (fix for Mantis bug #1133)
  *
@@ -1174,6 +1177,7 @@
 //#include "network/multi_team.h"
 #include "network/multi.h"
 #include "ai/ai_profiles.h"
+#include "object/waypoint/waypoint.h"
 
 #include "autopilot/autopilot.h"
 
@@ -1281,8 +1285,6 @@ control_info	AI_ci;
 object *Pl_objp;
 object *En_objp;
 
-waypoint_list Waypoint_lists[MAX_WAYPOINT_LISTS];
-
 #define	REARM_SOUND_DELAY		(3*F1_0)		//	Amount of time to delay rearm/repair after mode start
 #define	REARM_BREAKOFF_DELAY	(3*F1_0)		//	Amount of time to wait after fully rearmed to breakoff.
 
@@ -1306,13 +1308,12 @@ waypoint_list Waypoint_lists[MAX_WAYPOINT_LISTS];
 
 ai_class *Ai_classes = NULL;
 int	Ai_firing_enabled = 1;
-int	Num_ai_classes;
-int Num_alloced_ai_classes;
+int	Num_ai_classes = 0;
+int Num_alloced_ai_classes = 0;
 
 int	AI_FrameCount = 0;
 int	Ship_info_inited = 0;
 int	AI_watch_object = 0; // Debugging, object to spew debug info for.
-int	Num_waypoint_lists = 0;
 int	Mission_all_attack = 0;					//	!0 means all teams attack all teams.
 
 char *Skill_level_names(int level, int translate)
@@ -1743,7 +1744,7 @@ void ai_init()
 		int	rval;
 
 		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Error parsing 'ai.tbl'\r\nError code = %i.\r\n", rval);
+			mprintf(("TABLES: Unable to parse '%s'!  Code = %i.\n", "ai.tbl", rval));
 		} else {			
 			parse_aitbl();			
 		}
@@ -6521,8 +6522,13 @@ void set_primary_weapon_linkage(object *objp)
 			}
 		}
 
-		Assert(total_ammo);	// Goober5000: div-0 check
-		ammo_pct = float (current_ammo) / float (total_ammo) * 100.0f;
+		//Assert(total_ammo);	// Goober5000: div-0 check
+		//WMC - Just use an if()
+		if(!total_ammo)
+			ammo_pct = 100.0f;
+		else
+			ammo_pct = float (current_ammo) / float (total_ammo) * 100.0f;
+		
 
 		// link according to defined levels
 		if (ammo_pct > The_mission.ai_profile->link_ammo_levels_always[Game_skill_level])

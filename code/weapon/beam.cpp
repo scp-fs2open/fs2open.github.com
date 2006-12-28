@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.74 $
- * $Date: 2006-11-06 06:36:44 $
- * $Author: taylor $
+ * $Revision: 2.75 $
+ * $Date: 2006-12-28 00:59:53 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2006/11/06 06:36:44  taylor
+ * updated/fixed modelanim code
+ *
  * Revision 2.73  2006/10/08 02:05:38  Goober5000
  * fix forum links
  *
@@ -3376,7 +3379,7 @@ void beam_handle_collisions(beam *b)
 			// maybe draw an explosion
 			if(wi->impact_weapon_expl_index >= 0){
 				int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
-				particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &vmd_zero_vector, 0.0f, wi->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle );
+				particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &vmd_zero_vector, 0.0f, wi->impact_explosion_radius, PARTICLE_BITMAP, ani_handle );
 			}
 
 			switch(Objects[target].type){

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-09-11 06:45:40 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2006-12-28 00:59:39 $
+ * $Author: wmcoolmon $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/09/11 06:45:40  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.11  2005/10/17 05:48:18  taylor
  * dynamically allocate object collision pairs
  *
@@ -498,21 +501,11 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		awip = &Weapon_info[Weapons[A->instance].weapon_info_index];
 		bwip = &Weapon_info[Weapons[B->instance].weapon_info_index];
 		
-		if (awip->subtype != WP_LASER || bwip->subtype != WP_LASER) {
-			if (awip->subtype == WP_LASER) {
-				if ( bwip->wi_flags & WIF_BOMB ) {
-					check_collision = collide_weapon_weapon;
-				}
-			} else if (bwip->subtype == WP_LASER) {
-				if ( awip->wi_flags & WIF_BOMB ) {
-					check_collision = collide_weapon_weapon;
-					swapped=1;			
-				}
-			} else {
-				if ( (awip->wi_flags&WIF_BOMB) || (bwip->wi_flags&WIF_BOMB) ) {
-					check_collision = collide_weapon_weapon;
-				}
-			}
+		if (bwip->subtype == WP_LASER && (awip->wi_flags & WIF_BOMB)) {
+				check_collision = collide_weapon_weapon;
+				swapped=1;			
+		} else {
+				check_collision = collide_weapon_weapon;
 		}
 /*
 		int	atype, btype;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.42 $
- * $Date: 2006-05-13 07:09:25 $
- * $Author: taylor $
+ * $Revision: 2.43 $
+ * $Date: 2006-12-28 00:59:32 $
+ * $Author: wmcoolmon $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2006/05/13 07:09:25  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 2.41  2006/02/19 00:32:47  Goober5000
  * additional error checking
  * --Goober5000
@@ -1352,11 +1356,9 @@ void brief_init()
 
 	// init the scene-cut data
 	brief_transition_reset();
-
-#ifndef FS2_DEMO	
+	
 	hud_anim_init(&Fade_anim, Brief_static_coords[gr_screen.res][0], Brief_static_coords[gr_screen.res][1], Brief_static_name[gr_screen.res]);
 	hud_anim_load(&Fade_anim);
-#endif
 
 	nprintf(("Alan","Entering brief_init()\n"));
 	common_select_init();
@@ -1700,12 +1702,10 @@ int brief_setup_closeup(brief_icon *bi)
 		*/
 		break;
 	case ICON_ASTEROID_FIELD:
-#ifndef FS2_DEMO
 		strcpy(pof_filename, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);
 		strcpy(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -334.0f);
 		Closeup_zoom = 0.5f;
-#endif
 		break;
 	case ICON_JUMP_NODE:
 		strcpy(pof_filename, NOX("subspacenode.pof"));
@@ -2290,9 +2290,9 @@ void brief_close()
 	// unload the audio streams used for voice playback
 	brief_voice_unload_all();
 
-#ifndef FS2_DEMO
-	bm_unload(Fade_anim.first_frame);
-#endif
+	if(Fade_anim.first_frame > -1) {
+		bm_unload(Fade_anim.first_frame);
+	}
 
 	Brief_ui_window.destroy();
 
@@ -2373,20 +2373,31 @@ void brief_unpause()
 
 void brief_maybe_blit_scene_cut(float frametime)
 {
-	if ( Start_fade_up_anim ) {
+	if(Fade_anim.first_frame < 0)
+	{
+		if(Start_fade_up_anim)
+		{
+			Fade_anim.time_elapsed = 0.0f;
+			Start_fade_up_anim = 0;
+			Start_fade_down_anim = 1;
+			Current_brief_stage = Quick_transition_stage;
 
-#ifdef FS2_DEMO
-		Fade_anim.time_elapsed = 0.0f;
-		Start_fade_up_anim = 0;
-		Start_fade_down_anim = 1;
-		Current_brief_stage = Quick_transition_stage;
-
-		if ( Current_brief_stage < 0 ) {
-			brief_transition_reset();
-			Current_brief_stage = Last_brief_stage;
+			if ( Current_brief_stage < 0 ) {
+				brief_transition_reset();
+				Current_brief_stage = Last_brief_stage;
+			}
 		}
-		goto Fade_down_anim_start;
-#else
+
+		if(Start_fade_down_anim)
+		{
+			Fade_anim.time_elapsed = 0.0f;
+			Start_fade_up_anim = 0;
+			Start_fade_down_anim = 0;
+		}
+
+		return;
+	}
+	if ( Start_fade_up_anim ) {
 		int framenum;
 
 		Fade_anim.time_elapsed += frametime;
@@ -2421,20 +2432,11 @@ void brief_maybe_blit_scene_cut(float frametime)
 		// Blit the bitmap for this frame
 		gr_set_bitmap(Fade_anim.first_frame + framenum);
 		gr_bitmap(Fade_anim.sx, Fade_anim.sy);
-#endif
 	}
 
 
 	Fade_down_anim_start:
 	if ( Start_fade_down_anim ) {
-
-#ifdef FS2_DEMO
-		Fade_anim.time_elapsed = 0.0f;
-		Start_fade_up_anim = 0;
-		Start_fade_down_anim = 0;
-		return;
-#else
-
 		int framenum;
 
 		Fade_anim.time_elapsed += frametime;
@@ -2456,8 +2458,6 @@ void brief_maybe_blit_scene_cut(float frametime)
 		// Blit the bitmap for this frame
 		gr_set_bitmap(Fade_anim.first_frame + (Fade_anim.num_frames-1) - framenum);
 		gr_bitmap(Fade_anim.sx, Fade_anim.sy);
-
-#endif
 	}
 }
 

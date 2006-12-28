@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.38 $
- * $Date: 2006-11-16 00:50:38 $
- * $Author: taylor $
+ * $Revision: 2.39 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2006/11/16 00:50:38  taylor
+ * clean up AVI movie stuff a bit:
+ *  - use the default black brush for clearing the screen, it's a little less stupid this way
+ *  - have the AVI player send messages back to the game rather than trying to poll for that extra crap
+ *  - remove the only DivX6 fix, there is better addressed by newer window handling code
+ *
  * Revision 2.37  2006/09/11 05:54:37  taylor
  * switch to using cf_find_file_location_ext() when looking for movies
  *
@@ -185,7 +191,7 @@ bool movie_play(char *name)
 	rc = movie_find(name, full_name);
 
 	if (rc == MOVIE_NONE) {
-		mprintf(("MOVIE ERROR: Unable to open movie file '%s' in any supported format.", name));
+		mprintf(("CUTSCENES: Unable to open movie file '%s' in any supported format.\n", name));
 		return false;
 	} else {
 		DBUGFILE_OUTPUT_1("About to play: %s", full_name);

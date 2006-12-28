@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/INPUTBOX.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-09-08 06:20:15 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2006-12-28 00:59:53 $
+ * $Author: wmcoolmon $
  *
  * Code to implement input boxes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/09/08 06:20:15  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.9  2005/07/22 03:53:31  taylor
  * fix crash on commit in the multi ship selection screen
  * mask_data in the UI code is always cast to ubyte so why it was a ushort type I'll never know
@@ -313,10 +316,12 @@ void strndel(char *s, int p, int n)
 void UI_INPUTBOX::init_cursor()
 {
 	cursor_first_frame = bm_load_animation("cursor1", &cursor_nframes, &cursor_fps);
+	//WMC - Not needed, :V: already had backup.
+	/*
 	if ( cursor_first_frame < 0 ) {
 		Warning(LOCATION,"Cannot load input box cursor: cursor1.ani\n");
 		return;
-	}
+	}*/
 	cursor_elapsed_time=0;
 	cursor_current_frame=0;
 }
@@ -498,7 +503,7 @@ void UI_INPUTBOX::draw()
 	// draw the "cursor"
 	if (!disabled_flag) {
 		if (my_wnd->selected_gadget == this) {
-			if (cursor_first_frame == -1) {
+			if (cursor_first_frame < 0) {
 				gr_set_color_fast(text_color);
 				ui_vline(1, h1, text_x + tw + 4);
 				ui_vline(1, h1, text_x + tw + 5);

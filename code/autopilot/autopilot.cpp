@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.28 $
- * $Date: 2006-11-03 18:45:11 $
- * $Author: Kazan $
+ * $Revision: 1.29 $
+ * $Date: 2006-12-28 00:59:19 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2006/11/03 18:45:11  Kazan
+ * prevent autopilot initialization while player is gliding
+ *
  * Revision 1.27  2006/09/04 09:21:55  Backslash
  * Turn off gliding upon activating autopilot
  *
@@ -114,6 +117,7 @@
 #include "freespace2/freespace.h"
 #include "globalincs/linklist.h"
 #include "iff_defs/iff_defs.h"
+#include "object/waypoint/waypoint.h"
 
 
 

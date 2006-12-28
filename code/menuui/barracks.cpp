@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Barracks.cpp $
- * $Revision: 2.30 $
- * $Date: 2006-09-11 06:02:14 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2006-12-28 00:59:27 $
+ * $Author: wmcoolmon $
  *
  * C file for implementing barracks section
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/09/11 06:02:14  taylor
+ * quite a few fixes to handle missing campaigns better
+ * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
+ * clean up the getting of a list of available campaigns
+ * fix simroom issue where single missions, with the [V] icon, would display wrong (this was a retail bug, but it doesn't show normally)
+ * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
+ * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
+ *
  * Revision 2.29  2005/12/29 08:08:36  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *
@@ -1214,10 +1222,11 @@ void barracks_button_pressed(int n)
 			} else {
 				gamesnd_play_iface(SND_SCROLL);
 
-				if (Campaign_file_missing) {
+				//WMC - Not really necessary, annoying.
+				/*if (Campaign_file_missing) {
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", -1));
 					gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
-				}
+				}*/
 			}
 			break;
 
@@ -1225,12 +1234,13 @@ void barracks_button_pressed(int n)
 			if (Num_pilots && !barracks_pilot_accepted()) {
 				gamesnd_play_iface(SND_COMMIT_PRESSED);
 
-				if (Campaign_file_missing) {
+				//WMC - Not really necessary, annoying.
+				/*if (Campaign_file_missing) {
 					popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", -1));
 					gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
 				} else {
 					gameseq_post_event(GS_EVENT_MAIN_MENU);
-				}
+				}*/
 			} else {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 
@@ -1397,8 +1407,11 @@ void barracks_display_pilot_callsigns(int prospective_pilot)
 		}
 
 		gr_printf(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD], Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y, Pilots[cur_pilot_idx]);
-		gr_set_bitmap(Rank_pips_bitmaps + Pilot_ranks[cur_pilot_idx]);
-		gr_bitmap(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD] - 34, Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y);
+		if(Rank_pips_bitmaps > -1)
+		{
+			gr_set_bitmap(Rank_pips_bitmaps + Pilot_ranks[cur_pilot_idx]);
+			gr_bitmap(Barracks_list_coords[gr_screen.res][BARRACKS_X_COORD] - 34, Barracks_list_coords[gr_screen.res][BARRACKS_Y_COORD] + y);
+		}
  
 		y += font_height;
 		cur_pilot_idx++;
@@ -1912,7 +1925,9 @@ void barracks_close()
 	}	
 
 	// release rank pip bitmaps
-	bm_release(Rank_pips_bitmaps);	
+	if(Rank_pips_bitmaps > -1) {
+		bm_release(Rank_pips_bitmaps);	
+	}
 
 	// release pilot pic bitmaps
 	for (int i=0; i<Num_pilot_images; i++) {

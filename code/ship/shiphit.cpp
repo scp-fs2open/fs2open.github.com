@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.67 $
- * $Date: 2006-09-11 06:45:40 $
- * $Author: taylor $
+ * $Revision: 2.68 $
+ * $Date: 2006-12-28 00:59:48 $
+ * $Author: wmcoolmon $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/09/11 06:45:40  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.66  2006/09/04 06:12:16  wmcoolmon
  * Conditional hook
  *
@@ -2063,135 +2066,143 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 {
 	Assert(ship_obj);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
-	ship *sp;
-	char *killer_ship_name;
-	int killer_damage_percent = 0;
-	object *killer_objp = NULL;
+	Script_system.SetHookObject("Self", OBJ_INDEX(ship_obj));
+	if(other_obj != NULL)
+		Script_system.SetHookObject("Killer", OBJ_INDEX(other_obj));
+	if(!Script_system.IsConditionOverride(CHA_DEATH, ship_obj))
+	{
+		ship *sp;
+		char *killer_ship_name;
+		int killer_damage_percent = 0;
+		object *killer_objp = NULL;
 
-	sp = &Ships[ship_obj->instance];
-	show_dead_message(ship_obj, other_obj);
+		sp = &Ships[ship_obj->instance];
+		show_dead_message(ship_obj, other_obj);
 
-	if (ship_obj == Player_obj) {
-		player_died_start(other_obj);
-	}
+		if (ship_obj == Player_obj) {
+			player_died_start(other_obj);
+		}
 
-	// maybe vaporize him
-	if(sp->flags & SF_VAPORIZE){
-		ship_vaporize(sp);
-	}
+		// maybe vaporize him
+		if(sp->flags & SF_VAPORIZE){
+			ship_vaporize(sp);
+		}
 
-	// hehe
-	extern void game_tst_mark(object *objp, ship *shipp);
-	game_tst_mark(ship_obj, sp);
+		// hehe
+		extern void game_tst_mark(object *objp, ship *shipp);
+		game_tst_mark(ship_obj, sp);
 
-	// single player and multiplayer masters evaluate the scoring and kill stuff
-	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
-		scoring_eval_kill( ship_obj );
+		// single player and multiplayer masters evaluate the scoring and kill stuff
+		if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
+			scoring_eval_kill( ship_obj );
 
-		// ship is destroyed -- send this event to the mission log stuff to record this event.  Try to find who
-		// killed this ship.  scoring_eval_kill above should leave the obj signature of the ship who killed
-		// this guy (or a -1 if no one got the kill).
-		killer_ship_name = NULL;
-		killer_damage_percent = -1;
-		if ( sp->damage_ship_id[0] != -1 ) {
-			object *objp;
-			int sig;
+			// ship is destroyed -- send this event to the mission log stuff to record this event.  Try to find who
+			// killed this ship.  scoring_eval_kill above should leave the obj signature of the ship who killed
+			// this guy (or a -1 if no one got the kill).
+			killer_ship_name = NULL;
+			killer_damage_percent = -1;
+			if ( sp->damage_ship_id[0] != -1 ) {
+				object *objp;
+				int sig;
 
-			sig = sp->damage_ship_id[0];
-			for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
-				if ( objp->signature == sig ){
-					break;
+				sig = sp->damage_ship_id[0];
+				for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
+					if ( objp->signature == sig ){
+						break;
+					}
 				}
-			}
-			// if the object isn't around, the try to find the object in the list of ships which has exited			
-			if ( objp != END_OF_LIST(&obj_used_list) ) {
-				Assert ( (objp->type == OBJ_SHIP ) || (objp->type == OBJ_GHOST) );					// I suppose that this should be true
-				killer_ship_name = Ships[objp->instance].ship_name;
+				// if the object isn't around, the try to find the object in the list of ships which has exited			
+				if ( objp != END_OF_LIST(&obj_used_list) ) {
+					Assert ( (objp->type == OBJ_SHIP ) || (objp->type == OBJ_GHOST) );					// I suppose that this should be true
+					killer_ship_name = Ships[objp->instance].ship_name;
 
-				killer_objp = objp;
-			} else {
-				int ei;
-
-				ei = ship_find_exited_ship_by_signature( sig );
-				if ( ei != -1 ){
-					killer_ship_name = Ships_exited[ei].ship_name;
-				}
-			}
-			killer_damage_percent = (int)(sp->damage_ship[0] * 100.0f);
-		}		
-
-		if(!self_destruct){
-			// multiplayer
-			if(Game_mode & GM_MULTIPLAYER){
-				char name1[256] = "";
-				char name2[256] = "";
-				int np_index;
-
-				// get first name				
-				np_index = multi_find_player_by_object(ship_obj);				
-				if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
-					strcpy(name1, Net_players[np_index].m_player->callsign);
+					killer_objp = objp;
 				} else {
-					strcpy(name1, sp->ship_name);
+					int ei;
+
+					ei = ship_find_exited_ship_by_signature( sig );
+					if ( ei != -1 ){
+						killer_ship_name = Ships_exited[ei].ship_name;
+					}
 				}
+				killer_damage_percent = (int)(sp->damage_ship[0] * 100.0f);
+			}		
 
-				// argh
-				if((killer_objp != NULL) || (killer_ship_name != NULL)){
+			if(!self_destruct){
+				// multiplayer
+				if(Game_mode & GM_MULTIPLAYER){
+					char name1[256] = "";
+					char name2[256] = "";
+					int np_index;
 
-					// second name
-					if(killer_objp == NULL){
-						strcpy(name2, killer_ship_name);
+					// get first name				
+					np_index = multi_find_player_by_object(ship_obj);				
+					if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
+						strcpy(name1, Net_players[np_index].m_player->callsign);
 					} else {
-						np_index = multi_find_player_by_object(killer_objp);
-						if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
-							strcpy(name2, Net_players[np_index].m_player->callsign);
-						} else {
-							strcpy(name2, killer_ship_name);
-						}
-					}					
-				}
+						strcpy(name1, sp->ship_name);
+					}
 
-				mission_log_add_entry(LOG_SHIP_DESTROYED, name1, name2, killer_damage_percent);
-			} else {
-				// DKA: 8/23/99 allow message log in single player with no killer name
-				//if(killer_ship_name != NULL){
-				mission_log_add_entry(LOG_SHIP_DESTROYED, sp->ship_name, killer_ship_name, killer_damage_percent);
-				//}
+					// argh
+					if((killer_objp != NULL) || (killer_ship_name != NULL)){
+
+						// second name
+						if(killer_objp == NULL){
+							strcpy(name2, killer_ship_name);
+						} else {
+							np_index = multi_find_player_by_object(killer_objp);
+							if((np_index >= 0) && (np_index < MAX_PLAYERS) && (Net_players[np_index].m_player != NULL)){
+								strcpy(name2, Net_players[np_index].m_player->callsign);
+							} else {
+								strcpy(name2, killer_ship_name);
+							}
+						}					
+					}
+
+					mission_log_add_entry(LOG_SHIP_DESTROYED, name1, name2, killer_damage_percent);
+				} else {
+					// DKA: 8/23/99 allow message log in single player with no killer name
+					//if(killer_ship_name != NULL){
+					mission_log_add_entry(LOG_SHIP_DESTROYED, sp->ship_name, killer_ship_name, killer_damage_percent);
+					//}
+				}
+			}
+
+			// maybe praise the player for this kill
+ 			if ( (killer_damage_percent > 10) && (other_obj != NULL) && (other_obj->parent_sig == Player_obj->signature) ) {
+				ship_maybe_praise_player(sp);
 			}
 		}
 
-		// maybe praise the player for this kill
- 		if ( (killer_damage_percent > 10) && (other_obj != NULL) && (other_obj->parent_sig == Player_obj->signature) ) {
-			ship_maybe_praise_player(sp);
+		ship_generic_kill_stuff( ship_obj, percent_killed );
+
+		// mwa -- removed 2/25/98 -- why is this here?  ship_obj->flags &= ~(OF_PLAYER_SHIP);
+		// if it is for observers, must deal with it a separate way!!!!
+		if ( MULTIPLAYER_MASTER ) {
+			// check to see if this ship needs to be respawned
+			multi_respawn_check(ship_obj);		
+				
+			// send the kill packet to all players
+			// maybe send vaporize packet to all players
+			send_ship_kill_packet( ship_obj, other_obj, percent_killed, self_destruct );
 		}
-	}
 
-	ship_generic_kill_stuff( ship_obj, percent_killed );
+		// If ship from a player wing ship has died, then maybe play a scream
+		// (WCSaga wants this for all ships)
+		if ( !(ship_obj->flags & OF_PLAYER_SHIP) && (Cmdline_wcsaga || (sp->flags & SF_FROM_PLAYER_WING)) ) {
+			ship_maybe_scream(sp);
+		}
 
-	// mwa -- removed 2/25/98 -- why is this here?  ship_obj->flags &= ~(OF_PLAYER_SHIP);
-	// if it is for observers, must deal with it a separate way!!!!
-	if ( MULTIPLAYER_MASTER ) {
-		// check to see if this ship needs to be respawned
-		multi_respawn_check(ship_obj);		
-			
-		// send the kill packet to all players
-		// maybe send vaporize packet to all players
-		send_ship_kill_packet( ship_obj, other_obj, percent_killed, self_destruct );
-	}
-
-	// If ship from a player wing ship has died, then maybe play a scream
-	// (WCSaga wants this for all ships)
-	if ( !(ship_obj->flags & OF_PLAYER_SHIP) && (Cmdline_wcsaga || (sp->flags & SF_FROM_PLAYER_WING)) ) {
-		ship_maybe_scream(sp);
-	}
-
-	// If player is dying, have wingman lament (only in single player)
-	if ( (Game_mode & GM_NORMAL) && (ship_obj == Player_obj) ) {
-		ship_maybe_lament();
+		// If player is dying, have wingman lament (only in single player)
+		if ( (Game_mode & GM_NORMAL) && (ship_obj == Player_obj) ) {
+			ship_maybe_lament();
+		}
 	}
 
 	//WMC - Do scripting stuff
 	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_obj);
+	Script_system.RemHookVar("Self");
+	Script_system.RemHookVar("Killer");
 }
 
 // function to simply explode a ship where it is currently at

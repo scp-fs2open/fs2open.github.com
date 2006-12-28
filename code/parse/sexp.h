@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.126 $
- * $Author: Goober5000 $
- * $Date: 2006-10-25 01:01:51 $
+ * $Revision: 2.127 $
+ * $Author: wmcoolmon $
+ * $Date: 2006-12-28 00:59:39 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.126  2006/10/25 01:01:51  Goober5000
+ * moved some stuff around in the sexp menus
+ *
  * Revision 2.125  2006/10/09 05:25:18  Goober5000
  * make sexp nodes dynamic
  *
@@ -1673,7 +1676,6 @@ int special_argument_appears_in_sexp_list(int node);
 // functions to change the attributes of an sexpression tree to persistent or not persistent
 extern void sexp_unmark_persistent( int n );
 extern void sexp_mark_persistent( int n );
-extern int waypoint_lookup(char *name);
 extern int verify_sexp_tree(int node);
 extern int query_sexp_ai_goal_valid(int sexp_ai_goal, int ship);
 int query_node_in_sexp(int node, int sexp);

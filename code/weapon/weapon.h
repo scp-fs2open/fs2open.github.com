@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2006/09/11 06:51:17  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.70  2006/06/07 04:48:38  wmcoolmon
  * Limbo flag support; removed unneeded muzzle flash flag
  *
@@ -646,6 +649,8 @@ typedef struct weapon {
 	int		team;								// The team of the ship that fired this
 	int		species;							// The species of the ship that fired this
 	float		lifeleft;						// life left on this weapon	
+	vec3d	start_pos;
+
 	int		target_num;						//	Object index of target
 	int		target_sig;						//	So we know if the target is the same one we've been tracking
 	float		nearest_dist;					//	nearest distance yet attained to target
@@ -659,6 +664,7 @@ typedef struct weapon {
 	trail		*trail_ptr;						// NULL if no trail, otherwise a pointer to its trail
 	ship_subsys *turret_subsys;			// points to turret that fired weapon, otherwise NULL
 	int		group_id;						// Which group this is in.
+	float	det_range;					//How far from start_pos it blows up
 
 	// Stuff for thruster glows
 	int		thruster_bitmap;					// What frame the current thruster bitmap is at for this weapon
@@ -680,7 +686,7 @@ typedef struct weapon {
 	int		particle_spew_time;			// time to spew next bunch of particles	
 
 	// flak info
-	short flak_index;							// flak info index
+	//short flak_index;							// flak info index
 
 	//local ssm stuff		
 	fix lssm_warpout_time;		//time at which the missile warps out
@@ -792,6 +798,7 @@ typedef struct weapon_info {
 	float arm_dist;
 	float arm_radius;
 	float det_range;
+	float	det_radius;					//How far from target or target subsystem it blows up
 	/*float	blast_force;						// force this weapon exhibits when hitting an object
 	float	inner_radius, outer_radius;	// damage radii for missiles (0 means impact only)
 	float	shockwave_speed;					// speed of shockwave ( 0 means none )*/
@@ -940,11 +947,6 @@ typedef struct weapon_info {
 	float alpha_max;			// maximum alpha value to use
 	float alpha_min;			// minimum alpha value to use
 	float alpha_cycle;			// cycle between max and min by this much each frame
-
-	//WMC - scripting stuff
-	script_hook sc_collide_ship;
-	script_hook sc_collide_weapon;
-
 } weapon_info;
 
 // Data structure to track the active missiles

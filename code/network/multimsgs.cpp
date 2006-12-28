@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.62 $
- * $Date: 2006-08-04 11:45:21 $
- * $Author: karajorma $
+ * $Revision: 2.63 $
+ * $Date: 2006-12-28 00:59:39 $
+ * $Author: wmcoolmon $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2006/08/04 11:45:21  karajorma
+ * Fix bug where end-mission SEXP only resulting in the mission ending for the server
+ *
  * Revision 2.61  2006/07/09 04:05:43  Goober5000
  * fix INF builds
  *
@@ -8721,7 +8724,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		flak_muzzle_flash(&pos, &dir, &objp->phys_info, wid);
 
 		// set its range explicitly - make it long enough so that it's guaranteed to still exist when the server tells us it blew up
-		flak_set_range(&Objects[weapon_objnum], &pos, (float)flak_range);
+		flak_set_range(&Objects[weapon_objnum], (float)flak_range);
 	}
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.22 $
- * $Date: 2006-12-01 04:50:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2006-12-28 00:59:48 $
+ * $Author: wmcoolmon $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/12/01 04:50:59  Goober5000
+ * reverted the buggy commit that caused Mantis bug #1101
+ *
  * Revision 2.21  2006/09/11 06:45:40  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -252,6 +255,7 @@
 #include "object/object.h"
 #include "cmdline/cmdline.h"
 #include "graphics/grbatch.h"
+#include "parse/parselo.h"
 
 #ifndef NDEBUG
 #include "io/timer.h"
@@ -271,109 +275,224 @@ typedef struct particle {
 
 	// new style data
 	float	tracer_length;		// if this is set, draw as a rod to simulate a "tracer" effect
-	short	attached_objnum;	// if this is set, pos is relative to the attached object. velocity is ignored
+	int		attached_objnum;	// if this is set, pos is relative to the attached object. velocity is ignored
 	int		attached_sig;		// to check for dead/nonexistent objects
 	ubyte	reverse;			// play any animations in reverse
 	int		particle_index;		// used to keep particle offset in dynamic array for orient usage
+
+	//WMC data
+	int batcher;
 } particle;
 
-int Num_particles = 0;
+struct particle_batcher {
+private:
+	int bmap_id;
+	int bmap_nframes;
+	geometry_batcher *bmap_batchers;
+	void clone(const particle_batcher &other)
+	{
+		bmap_id = other.bmap_id;
+		bmap_nframes = other.bmap_nframes;
+
+		if(other.bmap_batchers != NULL)
+		{
+			bmap_batchers = new geometry_batcher[bmap_nframes];
+			for(int i = 0; i < bmap_nframes; i++) bmap_batchers[i] = other.bmap_batchers[i];
+		}
+		else
+		{
+			bmap_batchers = NULL;
+		}
+	}
+
+public:
+	particle_batcher(const particle_batcher &pb) { clone(pb); }
+	particle_batcher(){bmap_id=-1;bmap_nframes=0;bmap_batchers=NULL;}
+	int Set(char *fname)
+	{
+		bmap_id = bm_load_animation(fname, &bmap_nframes, NULL, 0);
+		if(bmap_id < 0)
+		{
+			bmap_id = bm_load(fname);
+			if(bmap_id > -1)
+				bmap_nframes = 1;
+			else
+				bmap_nframes = 0;
+		}
+		else
+		{
+			bm_get_info(bmap_id, NULL, NULL, NULL, &bmap_nframes, NULL);
+		}
+
+		if(bmap_batchers != NULL)
+		{
+			delete[] bmap_batchers;
+			bmap_batchers = NULL;
+		}
+		if(bmap_id > -1)
+		{
+			bmap_batchers =	new geometry_batcher[bmap_nframes];
+		}
+
+		return bmap_id;
+	}
+
+	int Set(int n_bmap_id)
+	{
+		if(bmap_batchers != NULL)
+		{
+			delete[] bmap_batchers;
+			bmap_batchers = NULL;
+		}
+		if(!bm_is_valid(n_bmap_id))
+		{
+			bmap_id = -1;
+			bmap_nframes = 0;
+		}
+		else
+		{
+			bmap_id = n_bmap_id;
+			bmap_nframes = 1;
+			bm_get_info(bmap_id, NULL, NULL, NULL, &bmap_nframes, NULL);
+			bmap_batchers = new geometry_batcher[bmap_nframes];
+		}
+
+		return bmap_id;
+	}
+
+	~particle_batcher()
+	{
+		if(bmap_batchers != NULL)
+		{
+			delete[] bmap_batchers;
+			bmap_batchers = NULL;
+		}
+	}
+
+	const particle_batcher &operator =(const particle_batcher &other)
+	{
+		if (this != &other) {
+			clone(other);
+		}
+		return *this;
+	}
+
+	//Funcs
+	int GetBitmapId(){return bmap_id;}
+	
+	bool PageIn()
+	{
+		if(bmap_id > 0)
+		{
+			bm_page_in_texture(bmap_id, bmap_nframes);
+			return true;
+		}
+		else
+			return false;
+	}
+
+	void AddBitmap(int frame_id, vertex *pnt, int orient, float rad, float angle = 1.0f, float depth = 0.0f)
+	{
+		if(bmap_batchers == NULL)
+			return;
+
+		int idx = frame_id - bmap_id;
+		bmap_batchers[idx].add_allocate(1);
+		bmap_batchers[idx].draw_bitmap(pnt, orient, rad, angle, depth);
+	}
+	float AddLaser(int frame_id, vec3d *p0, float width1, vec3d *p1, float width2, int r = 255, int g = 255, int b = 255)
+	{
+		if(bmap_batchers == NULL)
+			return 0.0f;
+
+		int idx = frame_id - bmap_id;
+		bmap_batchers[idx].add_allocate(1);
+		return bmap_batchers[idx].draw_laser(p0, width1, p1, width2, r, g, b);
+	}
+
+	void Render()
+	{
+		if(bmap_batchers == NULL)
+			return;
+
+		int i;
+		for(i = 0; i < bmap_nframes; i++)
+		{
+			const float alpha = 1.0f;
+			const int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
+			if ( bmap_batchers[i].need_to_render() ) {
+				gr_set_bitmap(bmap_id + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
+				bmap_batchers[i].render(tmap_flags);
+			}
+		}
+	}
+};
+
 static std::vector<particle> Particles;
-int Next_particle = 0;
-
-int Anim_bitmap_id_fire = -1;
-int Anim_num_frames_fire = -1;
-
-int Anim_bitmap_id_smoke = -1;
-int Anim_num_frames_smoke = -1;
-
-int Anim_bitmap_id_smoke2 = -1;
-int Anim_num_frames_smoke2 = -1;
-
 static int Particles_enabled = 1;
-
-geometry_batcher *PARTICLE_FIRE_batcher = NULL;
-geometry_batcher *PARTICLE_SMOKE_batcher = NULL;
-geometry_batcher *PARTICLE_SMOKE2_batcher = NULL;
+static std::vector<particle_batcher> Batchers;
 
 
 // Reset everything between levels
 void particle_init()
 {
-	int fps;
-
 //	Particles_enabled = os_config_read_uint( NULL, "UseParticles", 0 );
 
-	Num_particles = 0;
-	Next_particle = 0;
-
 	Particles.clear();
+	Batchers.clear();
+}
 
-	// FIRE!!!
-	if ( Anim_bitmap_id_fire == -1 )	{
-		Anim_bitmap_id_fire = bm_load_animation( "particleexp01", &Anim_num_frames_fire, &fps, 0 );
-	}
+static int Particle_fire = -1;
+int particle_get_fire_id()
+{
+	if(Particle_fire > -1)
+		return Particle_fire;
 
-	if ( (Anim_bitmap_id_fire > -1) && (PARTICLE_FIRE_batcher == NULL) ) {
-		Assert( Anim_num_frames_fire > 0 );
-		PARTICLE_FIRE_batcher = new geometry_batcher[Anim_num_frames_fire];
-		Verify( PARTICLE_FIRE_batcher != NULL );
-	}
+	Particle_fire = bm_load_animation("particleexp01");
+	if(Particle_fire < 0)
+		Particle_fire = bm_load("particleexp01");
 
-	// Cough, cough
-	if ( Anim_bitmap_id_smoke == -1 )	{
-		Anim_bitmap_id_smoke = bm_load_animation( "particlesmoke01", &Anim_num_frames_smoke, &fps, 0 );
-	}
+	return Particle_fire;
+}
 
-	if ( (Anim_bitmap_id_smoke > -1) && (PARTICLE_SMOKE_batcher == NULL) ) {
-		Assert( Anim_num_frames_smoke > 0 );
-		PARTICLE_SMOKE_batcher = new geometry_batcher[Anim_num_frames_smoke];
-		Verify( PARTICLE_SMOKE_batcher != NULL );
-	}
+static int Particle_smoke = -1;
+int particle_get_smoke_id()
+{
+	if(Particle_smoke > -1)
+		return Particle_smoke;
 
-	// wheeze
-	if ( Anim_bitmap_id_smoke2 == -1 )	{
-		Anim_bitmap_id_smoke2 = bm_load_animation( "particlesmoke02", &Anim_num_frames_smoke2, &fps, 0 );
-	}
+	Particle_smoke = bm_load_animation("particlesmoke01");
+	if(Particle_smoke < 0)
+		Particle_smoke = bm_load("particlesmoke02");
 
-	if ( (Anim_bitmap_id_smoke2 > -1) && (PARTICLE_SMOKE2_batcher == NULL) ) {
-		Assert( Anim_num_frames_smoke2 > 0 );
-		PARTICLE_SMOKE2_batcher = new geometry_batcher[Anim_num_frames_smoke2];
-		Verify( PARTICLE_SMOKE2_batcher != NULL );
-	}
+	return Particle_smoke;
+}
+
+static int Particle_smoke2 = -1;
+int particle_get_smoke2_id()
+{
+	if(Particle_smoke2 > -1)
+		return Particle_smoke2;
+
+	Particle_smoke2 = bm_load_animation("particlesmoke02");
+	if(Particle_smoke2 < 0)
+		Particle_smoke2 = bm_load("particlesmoke02");
+
+	return Particle_smoke2;
 }
 
 // only call from game_shutdown()!!!
 void particle_close()
 {
-	if ( PARTICLE_FIRE_batcher != NULL ) {
-		delete[] PARTICLE_FIRE_batcher;
-		PARTICLE_FIRE_batcher = NULL;
-	}
-
-	if ( PARTICLE_SMOKE_batcher != NULL ) {
-		delete[] PARTICLE_SMOKE_batcher;
-		PARTICLE_SMOKE_batcher = NULL;
-	}
-
-	if ( PARTICLE_SMOKE2_batcher != NULL ) {
-		delete[] PARTICLE_SMOKE2_batcher;
-		PARTICLE_SMOKE2_batcher = NULL;
-	}
+	Particles.clear();
+	Batchers.clear();
 }
 
 void particle_page_in()
 {
-	if (Anim_bitmap_id_fire > -1) {
-		bm_page_in_texture( Anim_bitmap_id_fire, Anim_num_frames_fire );
-	}
-
-	if (Anim_bitmap_id_smoke > -1) {
-		bm_page_in_texture( Anim_bitmap_id_smoke, Anim_num_frames_smoke );
-	}
-
-	if (Anim_bitmap_id_smoke2 > -1) {
-		bm_page_in_texture( Anim_bitmap_id_smoke2, Anim_num_frames_smoke2 );
+	for(uint i = 0; i < Batchers.size(); i++)
+	{
+		Batchers[i].PageIn();
 	}
 }
 
@@ -394,6 +513,27 @@ DCF(particles,"Turns particles on/off")
 
 int Num_particles_hwm = 0;
 
+int particle_load_batcher(int bmap_id)
+{
+	//WMC - make sure we get the right batcher
+	int first_frame = bm_get_info(bmap_id);
+	if(first_frame > -1)
+	{
+		for(uint i = 0; i < Batchers.size(); i++)
+		{
+			if(Batchers[i].GetBitmapId() == first_frame)
+				return i;
+		}
+
+		Batchers.push_back(particle_batcher());
+		int nidx = Batchers.size()-1;
+		if(Batchers[nidx].Set(first_frame) == first_frame)
+			return nidx;
+	}
+
+	return -1;
+}
+
 // Creates a single particle. See the PARTICLE_?? defines for types.
 void particle_create( particle_info *pinfo )
 {
@@ -401,6 +541,12 @@ void particle_create( particle_info *pinfo )
 
 	if ( !Particles_enabled )
 		return;
+
+#ifdef NDEBUG
+	//WMC - No texture to emit.
+	if(pinfo->optional_data < 0)
+		return;
+#endif
 
 
 	if (Particles.size() > (uint)Num_particles_hwm) {
@@ -416,22 +562,37 @@ void particle_create( particle_info *pinfo )
 	new_particle.age = 0.0f;
 	new_particle.max_life = pinfo->lifetime;
 	new_particle.radius = pinfo->rad;
-	new_particle.type = pinfo->type;
 	new_particle.optional_data = pinfo->optional_data;
+	new_particle.type = pinfo->type;
+#ifndef NDEBUG
+	if(new_particle.optional_data < 0)
+		new_particle.type = PARTICLE_DEBUG;
+#endif
 	new_particle.tracer_length = pinfo->tracer_length;
 	new_particle.attached_objnum = pinfo->attached_objnum;
 	new_particle.attached_sig = pinfo->attached_sig;
 	new_particle.reverse = pinfo->reverse;
 	new_particle.particle_index = (int)Particles.size();
 
-	if ( (new_particle.type == PARTICLE_BITMAP) || (new_particle.type == PARTICLE_BITMAP_PERSISTENT) )	{
+	if ( (new_particle.type == PARTICLE_BITMAP)/* || (new_particle.type == PARTICLE_BITMAP_PERSISTENT)*/ )
+	{
 		int fps;
-		bm_get_info( new_particle.optional_data, NULL, NULL, NULL, &new_particle.nframes, &fps );
-		if ( new_particle.nframes > 1 )	{
+		int first_frame = bm_get_info( new_particle.optional_data, NULL, NULL, NULL, &new_particle.nframes, &fps );
+		if ( new_particle.nframes > 1 )
+		{
 			// Recalculate max life for ani's
 			new_particle.max_life = i2fl(new_particle.nframes) / i2fl(fps);
+			new_particle.batcher = particle_load_batcher(first_frame);
 		}
-	} else {
+#ifndef NDEBUG
+		else
+		{
+			new_particle.type = PARTICLE_DEBUG;
+		}
+#endif
+	}
+	else
+	{
 		new_particle.nframes = 1;
 	}
 
@@ -479,11 +640,10 @@ void particle_move_all(float frametime)
 {
 	particle *p;
 
-	MONITOR_INC( NumParticles, Num_particles );	
-
 	if ( !Particles_enabled )
 		return;
 
+	MONITOR_INC(NumParticles, Particles.size());
 
 	for (uint i = 0; i < Particles.size(); i++) {
 		p = &Particles[i];
@@ -524,11 +684,10 @@ void particle_kill_all()
 //	int idx;
 
 	// kill all active particles
-	Num_particles = 0;
-	Next_particle = 0;
 	Num_particles_hwm = 0;
 
 	Particles.clear();
+	Batchers.clear();
 }
 
 MONITOR( NumParticlesRend )
@@ -542,19 +701,20 @@ void particle_render_all()
 	vertex pos, pos_htl;
 	vec3d ts, te, temp;
 	int rotate = 1;
-	int i;
-	int framenum, cur_frame;
+	uint i;
+	int framenum;
+//	int cur_frame;
 
 	if ( !Particles_enabled )
 		return;
 
-	MONITOR_INC( NumParticlesRend, Num_particles );	
+	MONITOR_INC( NumParticlesRend, Particles.size() );	
 
 //	int n = 0;
 	int nclipped = 0;
 
 
-	for (i = 0; i < (int)Particles.size(); i++) {
+	for (i = 0; i < Particles.size(); i++) {
 		p = &Particles[i];
 
 	//	n++;
@@ -621,8 +781,7 @@ void particle_render_all()
 				break;
 
 			case PARTICLE_BITMAP:		
-			case PARTICLE_BITMAP_PERSISTENT:
-			{	// A bitmap, optional data is the bitmap number					
+			{	// A bitmap, optional data is the bitmap number	
 				framenum = p->optional_data;
 
 				if ( p->nframes > 1 )	{
@@ -636,133 +795,28 @@ void particle_render_all()
 					framenum += n;
 				}
 
-				// if this is a tracer style particle
-				if (p->tracer_length > 0.0f) {					
-					batch_add_laser( framenum, &ts, p->radius, &te, p->radius );
-				}
-				// draw as a regular bitmap
-				else {
-					int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
-					batch_add_bitmap( framenum, tmap_flags, (Cmdline_nohtl) ? &pos : &pos_htl, p->particle_index % 8, p->radius, alpha );
-				}
-
-				break;
-			}
-
-			case PARTICLE_FIRE:
-			{
-				if ( Anim_bitmap_id_fire == -1 )
+				if(p->batcher < 0)
 					break;
 
-				framenum = fl2i(pct_complete * Anim_num_frames_fire + 0.5);
-
-				if ( framenum < 0 )
-					framenum = 0;
-				else if ( framenum > Anim_num_frames_fire-1 )
-					framenum = Anim_num_frames_fire-1;
-
-				cur_frame = p->reverse ? (Anim_num_frames_fire - framenum - 1) : framenum;
-				Assert(cur_frame < Anim_num_frames_fire);
-
-				PARTICLE_FIRE_batcher[cur_frame].add_allocate(1);
-
 				// if this is a tracer style particle
 				if (p->tracer_length > 0.0f) {					
-					PARTICLE_FIRE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
+					//batch_add_laser( framenum, &ts, p->radius, &te, p->radius );
+					Batchers[p->batcher].AddLaser(framenum, &ts, p->radius, &te, p->radius);
 				}
 				// draw as a regular bitmap
 				else {
-					PARTICLE_FIRE_batcher[cur_frame].draw_bitmap( (Cmdline_nohtl) ? &pos : &pos_htl, p->particle_index % 8, p->radius );
-				}
-
-				break;
-			}
-
-			case PARTICLE_SMOKE:
-			{
-				if ( Anim_bitmap_id_smoke == -1 )
-					break;
-
-				framenum = fl2i(pct_complete * Anim_num_frames_smoke + 0.5);
-
-				if ( framenum < 0 )
-					framenum = 0;
-				else if ( framenum > Anim_num_frames_smoke-1 )
-					framenum = Anim_num_frames_smoke-1;
-
-				cur_frame = p->reverse ? (Anim_num_frames_smoke - framenum - 1) : framenum;
-				Assert(cur_frame < Anim_num_frames_smoke);
-
-				PARTICLE_SMOKE_batcher[cur_frame].add_allocate(1);
-
-				// if this is a tracer style particle
-				if (p->tracer_length > 0.0f) {					
-					PARTICLE_SMOKE_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
-				}
-				// draw as a regular bitmap
-				else {
-					// as part of a coding mistake I thought the freaky UV changing from the orient var was really cool
-					// and added some realism to the smoke effect.  so, it's not using the original particle_index
-					// for UV orient like all of the other effects but the current particle offset instead. - taylor
-					PARTICLE_SMOKE_batcher[cur_frame].draw_bitmap( (Cmdline_nohtl) ? &pos : &pos_htl, (i + cur_frame) % 8, p->radius );
-				}
-
-				break;
-			}
-
-			case PARTICLE_SMOKE2:
-			{
-				if ( Anim_bitmap_id_smoke2 == -1 )
-					break;
-
-				framenum = fl2i(pct_complete * Anim_num_frames_smoke2 + 0.5);
-
-				if ( framenum < 0 )
-					framenum = 0;
-				else if ( framenum > Anim_num_frames_smoke2-1 )
-					framenum = Anim_num_frames_smoke2-1;
-
-				cur_frame = p->reverse ? (Anim_num_frames_smoke2 - framenum - 1) : framenum;
-				Assert(cur_frame < Anim_num_frames_smoke2);
-
-				PARTICLE_SMOKE2_batcher[cur_frame].add_allocate(1);
-
-				// if this is a tracer style particle
-				if (p->tracer_length > 0.0f) {					
-					PARTICLE_SMOKE2_batcher[cur_frame].draw_laser(&ts, p->radius, &te, p->radius, 255,255,255);
-				}
-				// draw as a regular bitmap
-				else {
-					PARTICLE_SMOKE2_batcher[cur_frame].draw_bitmap( (Cmdline_nohtl) ? &pos : &pos_htl, p->particle_index % 8, p->radius );
+					Batchers[p->batcher].AddBitmap(framenum, (Cmdline_nohtl) ? &pos : &pos_htl, p->particle_index % 8, p->radius, alpha);
+					//batch_add_bitmap( framenum, tmap_flags, (Cmdline_nohtl) ? &pos : &pos_htl, p->particle_index % 8, p->radius, alpha );
 				}
 
 				break;
 			}
 		}
 	}
-
-	for (i = 0; i<Anim_num_frames_fire; i++) {
-		if ( PARTICLE_FIRE_batcher[i].need_to_render() ) {
-			gr_set_bitmap(Anim_bitmap_id_fire + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
-			PARTICLE_FIRE_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-		}
+	for(i = 0; i < Batchers.size(); i++)
+	{
+		Batchers[i].Render();
 	}
-
-	for (i = 0; i<Anim_num_frames_smoke; i++) {
-		if ( PARTICLE_SMOKE_batcher[i].need_to_render() ) {
-			gr_set_bitmap(Anim_bitmap_id_smoke + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
-			PARTICLE_SMOKE_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-		}
-	}
-
-	for (i = 0; i<Anim_num_frames_smoke2; i++) {
-		if ( PARTICLE_SMOKE2_batcher[i].need_to_render() ) {
-			gr_set_bitmap(Anim_bitmap_id_smoke2 + i, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
-			PARTICLE_SMOKE2_batcher[i].render(TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
-		}
-	}
-
-	batch_render_all();
 
 //	mprintf(( "NP=%d, NCP=%d\n", n, nclipped ));
 }
@@ -804,12 +858,18 @@ static inline int get_percent(int count)
 
 // Creates a bunch of particles. You pass a structure
 // rather than a bunch of parameters.
-void particle_emit( particle_emitter *pe, int type, uint optional_data, float range )
+void particle_emit( particle_emitter *pe )
 {
 	int i, n;
 
 	if ( !Particles_enabled )
 		return;
+
+#ifdef NDEBUG
+	//WMC - No texture to emit.
+	if(pe->texture_id < 0)
+		return;
+#endif
 
 	int n1, n2;
 
@@ -818,7 +878,7 @@ void particle_emit( particle_emitter *pe, int type, uint optional_data, float ra
 
 	//Particle rendering drops out too soon.  Seems to be around 150 m.  Is it detail level controllable?  I'd like it to be 500-1000 
 	float min_dist = 125.0f;
-	float dist = vm_vec_dist_quick( &pe->pos, &Eye_position ) / range;
+	float dist = vm_vec_dist_quick( &pe->pos, &Eye_position ) / pe->range;
 	if ( dist > min_dist )	{
 		percent = fl2i( i2fl(percent)*min_dist / dist );
 		if ( percent < 1 ) {
@@ -852,7 +912,69 @@ void particle_emit( particle_emitter *pe, int type, uint optional_data, float ra
 		normal.xyz.z = pe->normal.xyz.z + (frand()*2.0f - 1.0f)*pe->normal_variance;
 		vm_vec_normalize_safe( &normal );
 		vm_vec_scale_add( &tmp_vel, &pe->vel, &normal, speed );
-
-		particle_create( &pe->pos, &tmp_vel, life, radius, type, optional_data );
+#ifndef NDEBUG
+		if(pe->texture_id < 0)
+			particle_create( &pe->pos, &tmp_vel, life, radius, PARTICLE_DEBUG);
+#else
+		particle_create( &pe->pos, &tmp_vel, life, radius, PARTICLE_BITMAP, pe->texture_id );
+#endif
 	}
+}
+
+void parse_particle_emitter(particle_emitter *pe)
+{
+	Assert(pe != NULL);
+
+	if(optional_string("+Texture:"))
+	{
+		char buf[MAX_FILENAME_LEN];
+		stuff_string(buf, F_NAME, sizeof(buf));
+
+		int th = bm_load_animation(buf);
+		if(th < 0)
+			th = bm_load(buf);
+
+		if(th > -1)
+		{
+			if(pe->texture_id > -1)
+				bm_unload(pe->texture_id);
+
+			pe->texture_id = th;
+		}
+	}
+	if(optional_string("+Relative Position:"))
+		stuff_vector(&pe->pos);
+
+	if(optional_string("+Relative Velocity:"))
+		stuff_vector(&pe->vel);
+
+	if(optional_string("+Relative Normal:"))
+		stuff_vector(&pe->normal);
+
+	if(optional_string("+Normal Variance:"))
+		stuff_float(&pe->normal_variance);
+
+	if(optional_string("+Min Radius:"))
+		stuff_float(&pe->min_rad);
+
+	if(optional_string("+Max Radius:"))
+		stuff_float(&pe->max_rad);
+
+	if(optional_string("+Min Speed:"))
+		stuff_float(&pe->min_vel);
+
+	if(optional_string("+Max Speed:"))
+		stuff_float(&pe->max_vel);
+
+	if(optional_string("+Min Lifetime:"))
+		stuff_float(&pe->min_life);
+
+	if(optional_string("+Max Lifetime:"))
+		stuff_float(&pe->max_life);
+
+	if(optional_string("+Min Particles:"))
+		stuff_int(&pe->num_low);
+
+	if(optional_string("+Max Particles:"))
+		stuff_int(&pe->num_high);
 }

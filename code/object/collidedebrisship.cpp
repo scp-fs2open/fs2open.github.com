@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-10-09 09:13:29 $
+ * $Revision: 2.11 $
+ * $Date: 2006-12-28 00:59:39 $
  * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/10/09 09:13:29  wmcoolmon
+ * Added warpin/warpout speed override values to ships.tbl
+ *
  * Revision 2.9  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -208,6 +211,7 @@
 #include "asteroid/asteroid.h"
 #include "hud/hud.h"
 #include "object/object.h"
+#include "parse/scripting.h"
 
 
 
@@ -256,63 +260,82 @@ int collide_debris_ship( obj_pair * pair )
 		}
 
 		hit = debris_check_collision(pdebris, pship, &hitpos, &debris_hit_info );
-		if ( hit ) {
-			float		ship_damage;	
-			float		debris_damage;
+		if ( hit )
+		{
+			bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, pship);
+			bool debris_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, pdebris);
+			if(!ship_override && !debris_override)
+			{
+				float		ship_damage;	
+				float		debris_damage;
 
-			// do collision physics
-			calculate_ship_ship_collision_physics( &debris_hit_info );
+				// do collision physics
+				calculate_ship_ship_collision_physics( &debris_hit_info );
 
-			if ( debris_hit_info.impulse < 0.5f )
-				return 0;
+				if ( debris_hit_info.impulse < 0.5f )
+					return 0;
 
-			// calculate ship damage
-			ship_damage = 0.005f * debris_hit_info.impulse;	//	Cut collision-based damage in half.
-			//	Decrease heavy damage by 2x.
-			if (ship_damage > 5.0f)
-				ship_damage = 5.0f + (ship_damage - 5.0f)/2.0f;
+				// calculate ship damage
+				ship_damage = 0.005f * debris_hit_info.impulse;	//	Cut collision-based damage in half.
+				//	Decrease heavy damage by 2x.
+				if (ship_damage > 5.0f)
+					ship_damage = 5.0f + (ship_damage - 5.0f)/2.0f;
 
-			// calculate debris damage and set debris damage to greater or debris and ship
-			// debris damage is needed since we can really whack some small debris with afterburner and not do
-			// significant damage to ship but the debris goes off faster than afterburner speed.
-			debris_damage = debris_hit_info.impulse/pdebris->phys_info.mass;	// ie, delta velocity of debris
-			debris_damage = (debris_damage > ship_damage) ? debris_damage : ship_damage;
+				// calculate debris damage and set debris damage to greater or debris and ship
+				// debris damage is needed since we can really whack some small debris with afterburner and not do
+				// significant damage to ship but the debris goes off faster than afterburner speed.
+				debris_damage = debris_hit_info.impulse/pdebris->phys_info.mass;	// ie, delta velocity of debris
+				debris_damage = (debris_damage > ship_damage) ? debris_damage : ship_damage;
 
-			// supercaps cap damage at 10-20% max hull ship damage
-			if (Ship_info[Ships[pship->instance].ship_info_index].flags & SIF_SUPERCAP) {
-				float cap_percent_damage = frand_range(0.1f, 0.2f);
-				ship_damage = MIN(ship_damage, cap_percent_damage * Ships[pship->instance].ship_max_hull_strength);
-			}
-
-			// apply damage to debris
-			debris_hit( pdebris, pship, &hitpos, debris_damage);		// speed => damage
-			int quadrant_num, apply_ship_damage;
-
-			// apply damage to ship unless 1) debris is from ship
-			// apply_ship_damage = !((pship->signature == pdebris->parent_sig) && ship_is_beginning_warpout_speedup(pship));
-			apply_ship_damage = !(pship->signature == pdebris->parent_sig);
-
-			if ( debris_hit_info.heavy == pship ) {
-				quadrant_num = get_ship_quadrant_from_global(&hitpos, pship);
-				if ((pship->flags & OF_NO_SHIELDS) || !ship_is_shield_up(pship, quadrant_num) ) {
-					quadrant_num = -1;
+				// supercaps cap damage at 10-20% max hull ship damage
+				if (Ship_info[Ships[pship->instance].ship_info_index].flags & SIF_SUPERCAP) {
+					float cap_percent_damage = frand_range(0.1f, 0.2f);
+					ship_damage = MIN(ship_damage, cap_percent_damage * Ships[pship->instance].ship_max_hull_strength);
 				}
-				if (apply_ship_damage) {
-					ship_apply_local_damage(debris_hit_info.heavy, debris_hit_info.light, &hitpos, ship_damage, quadrant_num, CREATE_SPARKS, debris_hit_info.submodel_num);
-				}
-			} else {
-				// don't draw sparks using sphere hit position
-				if (apply_ship_damage) {
-					ship_apply_local_damage(debris_hit_info.light, debris_hit_info.heavy, &hitpos, ship_damage, MISS_SHIELDS, NO_SPARKS);
-				}
-			}
 
-			// maybe print Collision on HUD
-			if ( pship == Player_obj ) {					
-				hud_start_text_flash(XSTR("Collision", 1431), 2000);
-			}
+				// apply damage to debris
+				debris_hit( pdebris, pship, &hitpos, debris_damage);		// speed => damage
+				int quadrant_num, apply_ship_damage;
 
-			collide_ship_ship_do_sound(&hitpos, pship, pdebris, pship==Player_obj);
+				// apply damage to ship unless 1) debris is from ship
+				// apply_ship_damage = !((pship->signature == pdebris->parent_sig) && ship_is_beginning_warpout_speedup(pship));
+				apply_ship_damage = !(pship->signature == pdebris->parent_sig);
+
+				if ( debris_hit_info.heavy == pship ) {
+					quadrant_num = get_ship_quadrant_from_global(&hitpos, pship);
+					if ((pship->flags & OF_NO_SHIELDS) || !ship_is_shield_up(pship, quadrant_num) ) {
+						quadrant_num = -1;
+					}
+					if (apply_ship_damage) {
+						ship_apply_local_damage(debris_hit_info.heavy, debris_hit_info.light, &hitpos, ship_damage, quadrant_num, CREATE_SPARKS, debris_hit_info.submodel_num);
+					}
+				} else {
+					// don't draw sparks using sphere hit position
+					if (apply_ship_damage) {
+						ship_apply_local_damage(debris_hit_info.light, debris_hit_info.heavy, &hitpos, ship_damage, MISS_SHIELDS, NO_SPARKS);
+					}
+				}
+
+				// maybe print Collision on HUD
+				if ( pship == Player_obj ) {					
+					hud_start_text_flash(XSTR("Collision", 1431), 2000);
+				}
+
+				collide_ship_ship_do_sound(&hitpos, pship, pdebris, pship==Player_obj);
+			}
+			ade_odata ade_ship_obj = l_Ship.Set(object_h(pship));
+			ade_odata ade_debris_obj = l_Debris.Set(object_h(pdebris));
+
+			Script_system.SetHookVar("Ship", 'o', &ade_ship_obj);
+			Script_system.SetHookVar("Debris", 'o', &ade_debris_obj);
+
+			if(!(debris_override && !ship_override))
+				Script_system.RunCondition(CHA_COLLIDEDEBRIS, NULL, NULL, pship);
+			if((debris_override && !ship_override) || (!debris_override && !ship_override))
+				Script_system.RunCondition(CHA_COLLIDESHIP, NULL, NULL, pdebris);
+
+			Script_system.RemHookVar("Ship");
+			Script_system.RemHookVar("Debris");
 
 			return 0;
 		}
@@ -351,8 +374,6 @@ int collide_debris_ship( obj_pair * pair )
 // Returns 1 if all future collisions between these can be ignored
 int collide_asteroid_ship( obj_pair * pair )
 {
-#ifndef FS2_DEMO
-
 	if (!Asteroids_enabled)
 		return 0;
 
@@ -389,78 +410,98 @@ int collide_asteroid_ship( obj_pair * pair )
 		}
 
 		hit = asteroid_check_collision(pasteroid, pship, &hitpos, &asteroid_hit_info );
-		if ( hit ) {
-			float		ship_damage;	
-			float		asteroid_damage;
+		if ( hit )
+		{
+			bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, pship);
+			bool asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, pasteroid);
+			if(!ship_override && !asteroid_override)
+			{
+				float		ship_damage;
+				float		asteroid_damage;
 
-			vec3d asteroid_vel = pasteroid->phys_info.vel;
+				vec3d asteroid_vel = pasteroid->phys_info.vel;
 
-			// do collision physics
-			calculate_ship_ship_collision_physics( &asteroid_hit_info );
+				// do collision physics
+				calculate_ship_ship_collision_physics( &asteroid_hit_info );
 
-			if ( asteroid_hit_info.impulse < 0.5f )
-				return 0;
+				if ( asteroid_hit_info.impulse < 0.5f )
+					return 0;
 
-			// limit damage from impulse by making max impulse (for damage) 2*m*v_max_relative
-			float max_ship_impulse = (2.0f*pship->phys_info.max_vel.xyz.z+vm_vec_mag_quick(&asteroid_vel)) * 
-				(pship->phys_info.mass*pasteroid->phys_info.mass) / (pship->phys_info.mass + pasteroid->phys_info.mass);
+				// limit damage from impulse by making max impulse (for damage) 2*m*v_max_relative
+				float max_ship_impulse = (2.0f*pship->phys_info.max_vel.xyz.z+vm_vec_mag_quick(&asteroid_vel)) * 
+					(pship->phys_info.mass*pasteroid->phys_info.mass) / (pship->phys_info.mass + pasteroid->phys_info.mass);
 
-			if (asteroid_hit_info.impulse > max_ship_impulse) {
-				ship_damage = 0.001f * max_ship_impulse;
-			} else {
-				ship_damage = 0.001f * asteroid_hit_info.impulse;	//	Cut collision-based damage in half.
-			}
-
-			//	Decrease heavy damage by 2x.
-			if (ship_damage > 5.0f)
-				ship_damage = 5.0f + (ship_damage - 5.0f)/2.0f;
-
-			if ((ship_damage > 500.0f) && (ship_damage > Ships[pship->instance].ship_max_hull_strength/8.0f)) {
-				ship_damage = Ships[pship->instance].ship_max_hull_strength/8.0f;
-				nprintf(("AI", "Pinning damage to %s from asteroid at %7.3f (%7.3f percent)\n", Ships[pship->instance].ship_name, ship_damage, 100.0f * ship_damage/Ships[pship->instance].ship_max_hull_strength));
-			}
-
-			//	Decrease damage during warp out because it's annoying when your escoree dies during warp out.
-			if (Ai_info[Ships[pship->instance].ai_index].mode == AIM_WARP_OUT)
-				ship_damage /= 3.0f;
-
-			//nprintf(("AI", "Asteroid damage on %s = %7.3f (%6.2f percent)\n", Ships[pship->instance].ship_name, ship_damage, 100.0f * ship_damage/Ships[pship->instance].ship_max_hull_strength));
-
-			// calculate asteroid damage and set asteroid damage to greater or asteroid and ship
-			// asteroid damage is needed since we can really whack some small asteroid with afterburner and not do
-			// significant damage to ship but the asteroid goes off faster than afterburner speed.
-			asteroid_damage = asteroid_hit_info.impulse/pasteroid->phys_info.mass;	// ie, delta velocity of asteroid
-			asteroid_damage = (asteroid_damage > ship_damage) ? asteroid_damage : ship_damage;
-
-			// apply damage to asteroid
-			asteroid_hit( pasteroid, pship, &hitpos, asteroid_damage);		// speed => damage
-
-			//extern fix Missiontime;
-
-			int quadrant_num;
-			if ( asteroid_hit_info.heavy == pship ) {
-				quadrant_num = get_ship_quadrant_from_global(&hitpos, pship);
-				if ((pship->flags & OF_NO_SHIELDS) || !ship_is_shield_up(pship, quadrant_num) ) {
-					quadrant_num = -1;
+				if (asteroid_hit_info.impulse > max_ship_impulse) {
+					ship_damage = 0.001f * max_ship_impulse;
+				} else {
+					ship_damage = 0.001f * asteroid_hit_info.impulse;	//	Cut collision-based damage in half.
 				}
-				ship_apply_local_damage(asteroid_hit_info.heavy, asteroid_hit_info.light, &hitpos, ship_damage, quadrant_num, CREATE_SPARKS, asteroid_hit_info.submodel_num);
-				//if (asteroid_hit_info.heavy->type == OBJ_SHIP) {
-				//	nprintf(("AI", "Time = %7.3f, asteroid #%i applying %7.3f damage to ship %s\n", f2fl(Missiontime), pasteroid-Objects, ship_damage, Ships[asteroid_hit_info.heavy->instance].ship_name));
-				//}
-			} else {
-				// dont draw sparks (using sphere hitpos)
-				ship_apply_local_damage(asteroid_hit_info.light, asteroid_hit_info.heavy, &hitpos, ship_damage, MISS_SHIELDS, NO_SPARKS);
-				//if (asteroid_hit_info.light->type == OBJ_SHIP) {
-				//	nprintf(("AI", "Time = %7.3f, asteroid #%i applying %7.3f damage to ship %s\n", f2fl(Missiontime), pasteroid-Objects, ship_damage, Ships[asteroid_hit_info.light->instance].ship_name));
-				//}
+
+				//	Decrease heavy damage by 2x.
+				if (ship_damage > 5.0f)
+					ship_damage = 5.0f + (ship_damage - 5.0f)/2.0f;
+
+				if ((ship_damage > 500.0f) && (ship_damage > Ships[pship->instance].ship_max_hull_strength/8.0f)) {
+					ship_damage = Ships[pship->instance].ship_max_hull_strength/8.0f;
+					nprintf(("AI", "Pinning damage to %s from asteroid at %7.3f (%7.3f percent)\n", Ships[pship->instance].ship_name, ship_damage, 100.0f * ship_damage/Ships[pship->instance].ship_max_hull_strength));
+				}
+
+				//	Decrease damage during warp out because it's annoying when your escoree dies during warp out.
+				if (Ai_info[Ships[pship->instance].ai_index].mode == AIM_WARP_OUT)
+					ship_damage /= 3.0f;
+
+				//nprintf(("AI", "Asteroid damage on %s = %7.3f (%6.2f percent)\n", Ships[pship->instance].ship_name, ship_damage, 100.0f * ship_damage/Ships[pship->instance].ship_max_hull_strength));
+
+				// calculate asteroid damage and set asteroid damage to greater or asteroid and ship
+				// asteroid damage is needed since we can really whack some small asteroid with afterburner and not do
+				// significant damage to ship but the asteroid goes off faster than afterburner speed.
+				asteroid_damage = asteroid_hit_info.impulse/pasteroid->phys_info.mass;	// ie, delta velocity of asteroid
+				asteroid_damage = (asteroid_damage > ship_damage) ? asteroid_damage : ship_damage;
+
+				// apply damage to asteroid
+				asteroid_hit( pasteroid, pship, &hitpos, asteroid_damage);		// speed => damage
+
+				//extern fix Missiontime;
+
+				int quadrant_num;
+				if ( asteroid_hit_info.heavy == pship ) {
+					quadrant_num = get_ship_quadrant_from_global(&hitpos, pship);
+					if ((pship->flags & OF_NO_SHIELDS) || !ship_is_shield_up(pship, quadrant_num) ) {
+						quadrant_num = -1;
+					}
+					ship_apply_local_damage(asteroid_hit_info.heavy, asteroid_hit_info.light, &hitpos, ship_damage, quadrant_num, CREATE_SPARKS, asteroid_hit_info.submodel_num);
+					//if (asteroid_hit_info.heavy->type == OBJ_SHIP) {
+					//	nprintf(("AI", "Time = %7.3f, asteroid #%i applying %7.3f damage to ship %s\n", f2fl(Missiontime), pasteroid-Objects, ship_damage, Ships[asteroid_hit_info.heavy->instance].ship_name));
+					//}
+				} else {
+					// dont draw sparks (using sphere hitpos)
+					ship_apply_local_damage(asteroid_hit_info.light, asteroid_hit_info.heavy, &hitpos, ship_damage, MISS_SHIELDS, NO_SPARKS);
+					//if (asteroid_hit_info.light->type == OBJ_SHIP) {
+					//	nprintf(("AI", "Time = %7.3f, asteroid #%i applying %7.3f damage to ship %s\n", f2fl(Missiontime), pasteroid-Objects, ship_damage, Ships[asteroid_hit_info.light->instance].ship_name));
+					//}
+				}
+
+				// maybe print Collision on HUD
+				if ( pship == Player_obj ) {					
+					hud_start_text_flash(XSTR("Collision", 1431), 2000);
+				}
+
+				collide_ship_ship_do_sound(&hitpos, pship, pasteroid, pship==Player_obj);
 			}
 
-			// maybe print Collision on HUD
-			if ( pship == Player_obj ) {					
-				hud_start_text_flash(XSTR("Collision", 1431), 2000);
-			}
+			ade_odata ade_ship_obj = l_Ship.Set(object_h(pship));
+			ade_odata ade_asteroid_obj = l_Asteroid.Set(object_h(pasteroid));
 
-			collide_ship_ship_do_sound(&hitpos, pship, pasteroid, pship==Player_obj);
+			Script_system.SetHookVar("Ship", 'o', &ade_ship_obj);
+			Script_system.SetHookVar("Asteroid", 'o', &ade_asteroid_obj);
+
+			if(!(asteroid_override && !ship_override))
+				Script_system.RunCondition(CHA_COLLIDEASTEROID, NULL, NULL, pship);
+			if((asteroid_override && !ship_override) || (!asteroid_override && !ship_override))
+				Script_system.RunCondition(CHA_COLLIDESHIP, NULL, NULL, pasteroid);
+
+			Script_system.RemHookVar("Ship");
+			Script_system.RemHookVar("Asteroid");
 
 			return 0;
 		}
@@ -493,7 +534,4 @@ int collide_asteroid_ship( obj_pair * pair )
 		}
 		return 0;
 	}
-#else
-	return 0;	// no asteroids in demo version
-#endif
 }

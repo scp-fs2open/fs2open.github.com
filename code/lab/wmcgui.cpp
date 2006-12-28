@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.30 $
- * $Date: 2006-09-11 06:49:39 $
- * $Author: taylor $
+ * $Revision: 1.31 $
+ * $Date: 2006-12-28 00:59:27 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2006/09/11 06:49:39  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 1.29  2006/08/20 00:47:10  taylor
  * add render option for no glowmaps
  * remove render option for fog (why was this even there??)
@@ -212,7 +215,7 @@ void GUISystem::ParseClassInfo(char* filename)
 	lcl_ext_open();
 	if(setjmp(parse_abort) != 0)
 	{
-		mprintf(("Unable to parse %s!\n", filename));
+		mprintf(("TABLES: Unable to parse '%s'.\n", filename));
 		lcl_ext_close();
 		return;
 	}
