@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.292 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.293 $
+ * $Date: 2006-12-28 02:07:49 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.292  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.291  2006/12/26 18:14:42  Goober5000
  * allow parsing of similar ship copy names properly (Mantis #1178)
  *
@@ -3158,29 +3161,41 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			case OPF_SHIP_WITH_BAY:
-				if (type2 != SEXP_ATOM_STRING){
-					return SEXP_CHECK_TYPE_MISMATCH;
-				}
+			{
+				char *name = CTEXT(node);
+				p_object *p_objp;
+				int shipnum = -1;
 
-				if (!stricmp(CTEXT(node), "<no anchor>"))
+				if (type2 != SEXP_ATOM_STRING)
+					return SEXP_CHECK_TYPE_MISMATCH;
+
+				if (!stricmp(name, "<no anchor>"))
 					break;
 
-				if (ship_name_lookup(CTEXT(node), 1) < 0)
+				shipnum = ship_name_lookup(name, 1);
+				if (shipnum < 0)
 				{
-					if (Fred_running || !mission_parse_get_arrival_ship(CTEXT(node)))
-					{
+					if (Fred_running)
 						return SEXP_CHECK_INVALID_SHIP;
-					}
+
+					p_objp = mission_parse_get_arrival_ship(name);
+					if (p_objp == NULL)
+						return SEXP_CHECK_INVALID_SHIP;
 				}
 
 				// ship exists at this point
 
+				// Goober5000 - since we can't check POFs for ships which haven't arrived
+				// (not without a bit of work anyway), just assume they're okay
+				if (shipnum < 0)
+					break;
+
 				// now determine if this ship has a docking bay
-				if (!ship_has_dock_bay(ship_name_lookup(CTEXT(node))))
-				{
+				if (!ship_has_dock_bay(shipnum))
 					return SEXP_CHECK_INVALID_SHIP_WITH_BAY;
-				}
+
 				break;
+			}
 
 			case OPF_SUPPORT_SHIP_CLASS:
 				if (type2 != SEXP_ATOM_STRING){
