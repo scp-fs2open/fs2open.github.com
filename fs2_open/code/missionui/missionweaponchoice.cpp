@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.72.2.1 $
- * $Date: 2006-07-17 01:09:03 $
- * $Author: taylor $
+ * $Revision: 2.72.2.2 $
+ * $Date: 2006-12-28 22:47:15 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72.2.1  2006/07/17 01:09:03  taylor
+ * fix some missile autocentering issues
+ *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
+ *  - don't try to autocenter loadout icons when rendered 3d
+ *
  * Revision 2.72  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -162,7 +167,7 @@
  *
  * Revision 2.34  2005/02/08 23:49:59  taylor
  * update/add .cvsignore files for project file changes
- * silence warning about depreciated strings.h stuff for MSVC 2005
+ * silence warning about deprecated strings.h stuff for MSVC 2005
  * final model_unload() stuff for WMCoolmon, put in missionweaponchoice.cpp
  * remove really old project files
  *

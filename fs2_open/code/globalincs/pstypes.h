@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.42.2.6 $
- * $Date: 2006-10-01 19:22:15 $
- * $Author: taylor $
- * $Revision: 2.42.2.6 $
- * $Date: 2006-10-01 19:22:15 $
- * $Author: taylor $
+ * $Revision: 2.42.2.7 $
+ * $Date: 2006-12-28 22:47:15 $
+ * $Author: Goober5000 $
+ * $Revision: 2.42.2.7 $
+ * $Date: 2006-12-28 22:47:15 $
+ * $Author: Goober5000 $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42.2.6  2006/10/01 19:22:15  taylor
+ * re-fix this crap that I managed to break last time (was Mantis bug 1066 I think)
+ *
  * Revision 2.42.2.5  2006/09/24 13:22:38  taylor
  * fix SAFE_STRCAT() so that it can work in an if() statement that doesn't have braces
  *
@@ -126,7 +129,7 @@
  *
  * Revision 2.23  2005/02/08 23:49:58  taylor
  * update/add .cvsignore files for project file changes
- * silence warning about depreciated strings.h stuff for MSVC 2005
+ * silence warning about deprecated strings.h stuff for MSVC 2005
  * final model_unload() stuff for WMCoolmon, put in missionweaponchoice.cpp
  * remove really old project files
  *
