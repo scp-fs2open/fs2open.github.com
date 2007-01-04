@@ -2,8 +2,8 @@
 #define _LUA_H
 
 extern "C" {
-	#include "lauxlib.h"
-	#include "lualib.h"
+	#include "../../lua/lauxlib.h"
+	#include "../../lua/lualib.h"
 }
 
 #include "object/object.h"
