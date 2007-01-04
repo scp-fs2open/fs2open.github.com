@@ -1,5 +1,5 @@
 /*
-** $Id: lfunc.h,v 1.1 2005-10-30 06:44:59 wmcoolmon Exp $
+** $Id: lfunc.h,v 1.2 2007-01-04 04:46:13 Goober5000 Exp $
 ** Auxiliary functions to manipulate prototypes and closures
 ** See Copyright Notice in lua.h
 */
@@ -11,15 +11,24 @@
 #include "lobject.h"
 
 
-Proto *luaF_newproto (lua_State *L);
-Closure *luaF_newCclosure (lua_State *L, int nelems);
-Closure *luaF_newLclosure (lua_State *L, int nelems, TObject *e);
-UpVal *luaF_findupval (lua_State *L, StkId level);
-void luaF_close (lua_State *L, StkId level);
-void luaF_freeproto (lua_State *L, Proto *f);
-void luaF_freeclosure (lua_State *L, Closure *c);
+#define sizeCclosure(n)	(cast(int, sizeof(CClosure)) + \
+                         cast(int, sizeof(TValue)*((n)-1)))
 
-const char *luaF_getlocalname (const Proto *func, int local_number, int pc);
+#define sizeLclosure(n)	(cast(int, sizeof(LClosure)) + \
+                         cast(int, sizeof(TValue *)*((n)-1)))
+
+
+LUAI_FUNC Proto *luaF_newproto (lua_State *L);
+LUAI_FUNC Closure *luaF_newCclosure (lua_State *L, int nelems, Table *e);
+LUAI_FUNC Closure *luaF_newLclosure (lua_State *L, int nelems, Table *e);
+LUAI_FUNC UpVal *luaF_newupval (lua_State *L);
+LUAI_FUNC UpVal *luaF_findupval (lua_State *L, StkId level);
+LUAI_FUNC void luaF_close (lua_State *L, StkId level);
+LUAI_FUNC void luaF_freeproto (lua_State *L, Proto *f);
+LUAI_FUNC void luaF_freeclosure (lua_State *L, Closure *c);
+LUAI_FUNC void luaF_freeupval (lua_State *L, UpVal *uv);
+LUAI_FUNC const char *luaF_getlocalname (const Proto *func, int local_number,
+                                         int pc);
 
 
 #endif
