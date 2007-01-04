@@ -39,6 +39,7 @@ BEGIN_MESSAGE_MAP(SetGlobalShipFlags, CDialog)
 	ON_BN_CLICKED(IDC_NO_SUBSPACE_DRIVE, OnNoSubspaceDrive)
 	ON_BN_CLICKED(IDC_PRIMITIVE_SENSORS, OnPrimitiveSensors)
 	ON_BN_CLICKED(IDC_AFFECTED_BY_GRAVITY, OnAffectedByGravity)
+	ON_BN_CLICKED(IDC_RESET_SCORES, OnResetScores)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -51,11 +52,13 @@ void SetGlobalShipFlags::OnNoShields()
 	
 	for (i=0; i<MAX_SHIPS; i++)
 	{
-		if (Ships[i].objnum >= 0)
-		{
-			Objects[Ships[i].objnum].flags |= OF_NO_SHIELDS;
-		}
+		if (Ships[i].objnum < 0)
+			continue;
+
+		Objects[Ships[i].objnum].flags |= OF_NO_SHIELDS;
 	}
+
+	MessageBox("Task complete.");
 }
 
 void SetGlobalShipFlags::OnNoSubspaceDrive() 
@@ -64,15 +67,17 @@ void SetGlobalShipFlags::OnNoSubspaceDrive()
 	
 	for (i=0; i<MAX_SHIPS; i++)
 	{
-		if (Ships[i].objnum >= 0)
-		{
-			// only for fighters and bombers
-			if (Ship_info[Ships[i].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))
-				Ships[i].flags2 |= SF2_NO_SUBSPACE_DRIVE;
-			else
-				Ships[i].flags2 &= ~SF2_NO_SUBSPACE_DRIVE;
-		}
+		if (Ships[i].objnum < 0)
+			continue;
+
+		// only for fighters and bombers
+		if (Ship_info[Ships[i].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))
+			Ships[i].flags2 |= SF2_NO_SUBSPACE_DRIVE;
+		else
+			Ships[i].flags2 &= ~SF2_NO_SUBSPACE_DRIVE;
 	}
+
+	MessageBox("Task complete.");
 }
 
 void SetGlobalShipFlags::OnPrimitiveSensors() 
@@ -81,15 +86,17 @@ void SetGlobalShipFlags::OnPrimitiveSensors()
 	
 	for (i=0; i<MAX_SHIPS; i++)
 	{
-		if (Ships[i].objnum >= 0)
-		{
-			// only for fighters and bombers
-			if (Ship_info[Ships[i].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))
-				Ships[i].flags2 |= SF2_PRIMITIVE_SENSORS;
-			else
-				Ships[i].flags2 &= ~SF2_PRIMITIVE_SENSORS;
-		}
+		if (Ships[i].objnum < 0)
+			continue;
+
+		// only for fighters and bombers
+		if (Ship_info[Ships[i].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))
+			Ships[i].flags2 |= SF2_PRIMITIVE_SENSORS;
+		else
+			Ships[i].flags2 &= ~SF2_PRIMITIVE_SENSORS;
 	}
+
+	MessageBox("Task complete.");
 }
 
 void SetGlobalShipFlags::OnAffectedByGravity() 
@@ -98,13 +105,34 @@ void SetGlobalShipFlags::OnAffectedByGravity()
 	
 	for (i=0; i<MAX_SHIPS; i++)
 	{
-		if (Ships[i].objnum >= 0)
-		{
-			// only for fighters and bombers
-			if (Ship_info[Ships[i].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))
-				Ships[i].flags2 |= SF2_AFFECTED_BY_GRAVITY;
-			else
-				Ships[i].flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
-		}
+		if (Ships[i].objnum < 0)
+			continue;
+
+		// only for fighters and bombers
+		if (Ship_info[Ships[i].ship_info_index].flags & (SIF_FIGHTER | SIF_BOMBER))
+			Ships[i].flags2 |= SF2_AFFECTED_BY_GRAVITY;
+		else
+			Ships[i].flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
 	}
+
+	MessageBox("Task complete.");
+}
+
+void SetGlobalShipFlags::OnResetScores()
+{
+	int i, ship_class;
+	
+	for (i=0; i<MAX_SHIPS; i++)
+	{
+		if (Ships[i].objnum < 0)
+			continue;
+
+		ship_class = Ships[i].ship_info_index;
+		if (ship_class < 0)
+			continue;
+
+		Ships[i].score = Ship_info[ship_class].score;
+	}
+
+	MessageBox("Task complete.");
 }

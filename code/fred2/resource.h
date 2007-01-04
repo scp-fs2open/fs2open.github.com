@@ -919,6 +919,7 @@
 #define IDC_AFFECTED_BY_GRAVITY         1483
 #define IDC_RESPAWNS                    1484
 #define IDC_NO_DEATH_SCREAM             1484
+#define IDC_RESET_SCORES                1484
 #define IDC_RESPAWN_SPIN                1485
 #define IDC_OBJ_TEAM                    1489
 #define IDC_CAMPAIGN_TYPE               1491
@@ -1059,6 +1060,7 @@
 #define IDC_EXPORT                      1581
 #define IDC_SECONDARIES_LOCKED          1582
 #define IDC_ASCT1_GROUP_ONE             1582
+#define IDC_ENVMAP                      1582
 #define IDC_ALT_SHIP_CLASS              1583
 #define IDC_ASCT1_GROUP_TWO             1583
 #define IDC_ASCT1_GROUP_THREE           1584
@@ -1071,7 +1073,6 @@
 #define IDC_PATH_LIST                   1590
 #define IDC_ENTRY_FORMAT                1590
 #define IDC_NO_REPLACE                  1591
-#define IDC_ENVMAP                      1582
 #define IDC_ENVMAP_BROWSE               1593
 #define IDC_SKYBOX_MODEL                1594
 #define ID_FILE_MISSIONNOTES            32771
