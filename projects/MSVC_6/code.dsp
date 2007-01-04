@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Oy /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_OPENAL" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_OPENAL" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -1498,6 +1498,18 @@ SOURCE=..\..\code\Model\ModelsInc.h
 # Begin Group "Object"
 
 # PROP Default_Filter ""
+# Begin Group "Waypoint"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\object\waypoint\waypoint.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\waypoint\waypoint.h
+# End Source File
+# End Group
 # Begin Source File
 
 SOURCE=..\..\code\Object\CollideDebrisShip.cpp
@@ -2036,7 +2048,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2055,7 +2067,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
