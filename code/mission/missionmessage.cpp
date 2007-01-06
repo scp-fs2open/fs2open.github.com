@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.58 $
- * $Date: 2006-12-28 00:59:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.59 $
+ * $Date: 2007-01-06 23:13:40 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2006/12/28 00:59:32  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.57  2006/11/06 05:45:13  taylor
  * fix Personas memory leak (not really an issue, I just got tired of seeing it in the Valgrind reports)
  *
@@ -1054,7 +1057,6 @@ void messages_init()
 	static int table_read = 0;
 
 	//WMC - Init stuff.
-	Num_builtin_messages = Num_builtin_avis = Num_builtin_waves = 0;
 	Num_messages = Num_message_avis = Num_message_waves = 0;
 	Message_debug_index = -1;
 	Message_shipnum = -1;
@@ -1063,6 +1065,7 @@ void messages_init()
 	Next_mute_time = 1;
 
 	if ( !table_read ) {
+		Num_builtin_messages = Num_builtin_avis = Num_builtin_waves = 0;
 		Command_persona = -1;
 		if ((rval = setjmp(parse_abort)) != 0) {
 			mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "messages.tbl", rval));
