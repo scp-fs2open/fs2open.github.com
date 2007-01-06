@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.94 $
- * $Date: 2006-12-28 01:22:04 $
+ * $Revision: 2.95 $
+ * $Date: 2007-01-06 23:56:30 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2006/12/28 01:22:04  Goober5000
+ * removed obsolete limits
+ *
  * Revision 2.93  2006/08/20 00:51:06  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -4339,7 +4342,7 @@ int hud_get_best_primary_bank(float *range)
 
 	for ( i = 0; i < num_to_test; i++ )
 	{	
-		bank_to_fire = (swp->current_primary_bank + i) % MAX_SHIP_PRIMARY_BANKS;
+		bank_to_fire = (swp->current_primary_bank + i) % swp->num_primary_banks;
 
 		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
