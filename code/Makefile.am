@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.38 2006-11-06 06:50:59 taylor Exp $
+## $Id: Makefile.am,v 1.39 2007-01-07 12:31:16 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -250,6 +250,7 @@ FS2_SOURCES =	\
 	cutscene/mvelib.cpp	\
 	cutscene/mvelib.h	\
 	cutscene/mveplayer.cpp	\
+	cutscene/oggplayer.cpp	\
 	ddsutils/ddsutils.cpp	\
 	ddsutils/ddsutils.h	\
 	debris/debris.cpp	\
@@ -553,6 +554,8 @@ FS2_SOURCES =	\
 	object/objectsort.cpp	\
 	object/parseobjectdock.cpp	\
 	object/parseobjectdock.h	\
+	object/waypoint/waypoint.cpp	\
+	object/waypoint/waypoint.h	\
 	observer/observer.cpp	\
 	observer/observer.h	\
 	palman/palman.cpp	\

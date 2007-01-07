@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.32 2006-06-27 04:50:33 taylor Exp $
+dnl $Id: configure.ac,v 1.33 2007-01-07 12:31:16 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.9)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -370,19 +370,21 @@ fi
 dnl OGG Vorbis
 if test "$fs2_os_unix" = "yes" ; then
 	if test "x$fs2_static_ogg" != "x" ; then
+		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libtheora.a"
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libvorbisfile.a"
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libvorbis.a"
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libogg.a"
 	else
-		FS2_LDFLAGS="$FS2_LDFLAGS -logg -lvorbis -lvorbisfile"
+		FS2_LDFLAGS="$FS2_LDFLAGS -logg -lvorbis -lvorbisfile -ltheora"
 	fi
 elif test "$fs2_os_osx" = "yes" ; then
 	if test "x$fs2_static_ogg" != "x" ; then
+		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libtheora.a"
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libvorbisfile.a"
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libvorbis.a"
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libogg.a"
 	else
-		FS2_LDFLAGS="$FS2_LDFLAGS -L/sw/lib -logg -lvorbis -lvorbisfile"
+		FS2_LDFLAGS="$FS2_LDFLAGS -L/sw/lib -logg -lvorbis -lvorbisfile -ltheora"
 	fi
 	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/sw/include"
 fi
