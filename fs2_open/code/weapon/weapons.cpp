@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.9  2006/12/26 05:32:59  taylor
+ * make weapon_expl info dynamic
+ *
  * Revision 2.180.2.8  2006/12/07 18:30:20  taylor
  * cleanup shockwave code a bit
  * make Shockwave_info dynamic
@@ -2050,6 +2053,11 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if (optional_string("+Description:")) {
+		if (wip->desc != NULL) {
+			vm_free(wip->desc);
+			wip->desc = NULL;
+		}
+
 		stuff_malloc_string(&wip->desc, F_MULTITEXT);
 	}
 
@@ -2062,6 +2070,11 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if (optional_string("+Tech Description:")) {
+		if (wip->tech_desc != NULL) {
+			vm_free(wip->tech_desc);
+			wip->tech_desc = NULL;
+		}
+
 		stuff_malloc_string(&wip->tech_desc, F_MULTITEXT);
 //		stuff_string(buf, F_MULTITEXT, NULL, WEAPONS_MULTITEXT_LENGTH);
 //		wip->tech_desc = vm_strdup(buf);
