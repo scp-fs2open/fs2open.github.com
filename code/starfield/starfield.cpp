@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.72.2.15 $
- * $Date: 2006-12-26 05:32:18 $
- * $Author: taylor $
+ * $Revision: 2.72.2.16 $
+ * $Date: 2007-01-07 03:44:47 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72.2.15  2006/12/26 05:32:18  taylor
+ * be sure to reset our skybox model properly, it can lead to a bad model unload bug on level load otherwise
+ *
  * Revision 2.72.2.14  2006/12/07 18:26:03  taylor
  * stupid of me to use a case-sensitive comparison there, but then it wasn't really a problem until Goober's bitmap list support ;)
  *
@@ -3382,13 +3385,26 @@ void stars_load_first_valid_background()
 {
 	int background_idx = stars_get_first_valid_background();
 
+#ifndef NDEBUG
 	if (background_idx < 0 && !Fred_running)
 	{
-		if (Num_backgrounds > 1)
-			Warning(LOCATION, "Unable to find a sufficient number of bitmaps for any background listed in this mission.  No background will be displayed.");
-		else
-			Warning(LOCATION, "Unable to find a sufficient number of bitmaps for this mission's background.  The background will not be displayed.");
+		int i;
+		bool at_least_one_bitmap = false;
+		for (i = 0; i < (uint)Num_backgrounds; i++)
+		{
+			if (Backgrounds[i].bitmaps.size() > 0)
+				at_least_one_bitmap = true;
+		}
+
+		if (at_least_one_bitmap)
+		{
+			if (Num_backgrounds == 1)
+				Warning(LOCATION, "Unable to find a sufficient number of bitmaps for this mission's background.  The background will not be displayed.");	
+			else if (Num_backgrounds > 1)
+				Warning(LOCATION, "Unable to find a sufficient number of bitmaps for any background listed in this mission.  No background will be displayed.");
+		}
 	}
+#endif
 
 	stars_load_background(background_idx);
 }
