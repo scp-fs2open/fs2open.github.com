@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.26 $
- * $Date: 2006-12-28 01:22:04 $
- * $Author: Goober5000 $
+ * $Revision: 1.27 $
+ * $Date: 2007-01-07 12:33:27 $
+ * $Author: taylor $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2006/12/28 01:22:04  Goober5000
+ * removed obsolete limits
+ *
  * Revision 1.25  2006/11/06 05:42:44  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
@@ -150,18 +153,8 @@
 
 
 // from ship.h
-#ifdef NDEBUG
-	#ifdef FRED
-		#define	MAX_SHIPS					400			// max number of ship instances there can be. DTP; bumped from 100 to 400
-		#define	SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode), DTP bumped from 100 to 400
-	#else
-		#define	MAX_SHIPS					400			// max number of ship instances there can be. /DTP bumped from 100 to 400
-		#define	SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); DTP bumped from 100 to 400
-	#endif
-#else
 #define MAX_SHIPS					400			// max number of ship instances there can be.DTP; bumped from 200 to 400
-#define	SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400
-#endif
+#define SHIPS_LIMIT					400			// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400
 
 // ****************************************************************
 // DO NOT CHANGE THIS - IT WILL LIKELY BREAK FREESPACE2 PXO SUPPORT
