@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.92 $
+ * $Revision: 2.93 $
  * $Author: Goober5000 $
- * $Date: 2007-01-07 00:01:28 $
+ * $Date: 2007-01-07 01:00:18 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2007/01/07 00:01:28  Goober5000
+ * add a feature for specifying the source of Command messages
+ *
  * Revision 2.91  2006/09/11 06:50:42  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -624,6 +627,7 @@ struct p_dock_instance;
 #define MISSION_FLAG_SCRAMBLE					(1<<17)	// a scramble mission - Goober5000
 #define MISSION_FLAG_NO_BUILTIN_COMMAND			(1<<18)	// turns off Command without turning off pilots - Karajorma
 #define MISSION_FLAG_PLAYER_START_AI			(1<<19) // Player Starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
+#define MISSION_FLAG_ALL_ATTACK					(1<<20)	// all teams at war - Goober5000
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)

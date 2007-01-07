@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.14 $
- * $Date: 2006-12-28 00:59:18 $
- * $Author: wmcoolmon $
+ * $Revision: 1.15 $
+ * $Date: 2007-01-07 01:00:18 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2006/12/28 00:59:18  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.13  2006/06/04 01:01:52  Goober5000
  * add fighterbay restriction code
  * --Goober5000
@@ -729,7 +732,6 @@ typedef struct ai_info {
 #define MAX_BURST_DAMAGE	20		// max damage that can be done in BURST_DURATION
 #define BURST_DURATION		500	// decay time over which Player->damage_this_burst falls from MAX_BURST_DAMAGE to 0
 
-extern int Mission_all_attack;	//	!0 means all teams attack all teams.
 extern int Total_goal_ship_names;
 extern char Goal_ship_names[MAX_GOAL_SHIP_NAMES][NAME_LENGTH];
 
