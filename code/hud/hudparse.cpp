@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.43.2.3 $
- * $Date: 2006-12-07 18:17:19 $
+ * $Revision: 2.43.2.4 $
+ * $Date: 2007-01-07 13:18:32 $
  * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43.2.3  2006/12/07 18:17:19  taylor
+ * add "$Weapons Energy Text:" to hud_gauges.tbl so that the low energy text can be positioned as well (Mantis bug #1166)
+ *
  * Revision 2.43.2.2  2006/09/20 04:59:29  taylor
  * the resolution checks needed to be based on the unscaled res since you would have to include correct sizes for every single resolution otherwise (fixes a bug noticed in WCS)
  *
@@ -233,7 +236,7 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 };
 
 //Number of gauges
-int Num_gauge_types = 16;
+int Num_gauge_types = 17;
 int Num_custom_gauges = 0;
 #endif
 #ifdef NEW_HUD
