@@ -10,13 +10,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 1.9 $
- * $Date: 2006-04-12 01:10:35 $
+ * $Revision: 1.10 $
+ * $Date: 2007-01-07 13:07:22 $
  * $Author: taylor $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/04/12 01:10:35  taylor
+ * some cleanup and slight reorg
+ *  - remove special uv offsets for non-standard res, they were stupid anyway and don't actually fix the problem (which should actually be fixed now)
+ *  - avoid some costly math where possible in the drawing functions
+ *  - add opengl_error_string(), this is part of a later update but there wasn't a reason to not go ahead and commit this peice now
+ *  - minor cleanup to Win32 extension defines
+ *  - make opengl_lights[] allocate only when using OGL
+ *  - cleanup some costly per-frame lighting stuff
+ *  - clamp textures for interface and aabitmap (font) graphics since they shouldn't normally repeat anyway (the default)
+ *    (doing this for D3D, if it doesn't already, may fix the blue-lines problem since a similar issue was seen with OGL)
+ *
  * Revision 1.8  2006/01/30 06:40:49  taylor
  * better lighting for OpenGL
  * remove some extra stuff that was from sectional bitmaps since we don't need it anymore
@@ -87,7 +98,7 @@ struct opengl_light
 	float SpotExp, SpotCutOff;
 	float ConstantAtten, LinearAtten, QuadraticAtten;
 
-	ubyte occupied;
+	bool occupied;
 	int priority;
 	int type;
 
@@ -98,7 +109,7 @@ struct light_data;
 
 //Variables
 extern opengl_light *opengl_lights;
-extern int *currently_enabled_lights;
+extern bool *currently_enabled_lights;
 extern bool lighting_is_enabled;
 extern GLint GL_max_lights;
 extern int Num_active_gl_lights;
