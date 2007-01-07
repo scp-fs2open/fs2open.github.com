@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.38 $
+ * $Date: 2007-01-07 13:15:42 $
+ * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.36  2006/11/16 00:54:15  taylor
  * new window creation code for Windows (gets rid of some stupid :V: voodoo for the software/glide stuff)
  * use detect_home() on Windows too (needed for now outwnd code)
@@ -557,26 +560,10 @@ BOOL __stdcall os_enum_windows( HWND hwnd, char * search_string )
 	return TRUE;	// continue enumeration
 }
 
-bool os_app_activate_hook_on = true;
-
-void os_app_activate_set(bool state)
-{
-	os_app_activate_hook_on = state;
-}
-
 void change_window_active_state()
 {
-	
-
-	if(os_app_activate_hook_on == false)
-	{
-		return;
-	}
-
-	if(fAppActive != fOldAppActive)
-	{
-
-		if ( fAppActive )	{
+	if (fAppActive != fOldAppActive) {
+		if (fAppActive) {
 			// maximize it
 			joy_reacquire_ff();
 
@@ -587,9 +574,9 @@ void change_window_active_state()
 #endif
 		} else {
 			joy_unacquire_ff();
-			if (Mouse_hidden)	{
-				Mouse_hidden=0;
-			}
+
+			if (Mouse_hidden)
+				Mouse_hidden = 0;
 
 			// Pause sounds and put up pause screen if necessary
 			game_pause();
@@ -598,21 +585,15 @@ void change_window_active_state()
 			SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );
 #endif
 		}
-		if(!stay_minimized){
-			ShowCursor(!fAppActive);
-			gr_activate(fAppActive);
-		}else{
-			gr_activate(0);
-			ClipCursor(NULL);
-			ShowCursor(true);
-		}
-	}
 
-	fOldAppActive = fAppActive;
+		gr_activate(fAppActive);
+
+		fOldAppActive = fAppActive;
+	}
 }
 
 int Got_message = 0;
-bool stay_minimized = false;
+extern bool Messagebox_active;
 // message handler for the main thread
 LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam)
 {
@@ -733,6 +714,9 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 
 	case WM_KILLFOCUS:
 		{
+			if (Messagebox_active)
+				break;
+
 			key_lost_focus();
 			gr_activate(0);
 			break;
@@ -740,6 +724,9 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 
 	case WM_SETFOCUS:
 		{
+			if (Messagebox_active)
+				break;
+
 			key_got_focus();
 			gr_activate(1);
 			break;
@@ -748,6 +735,9 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 
 	case WM_ACTIVATE:		   
 	{
+		if (Messagebox_active)
+			break;
+
 		int flag = LOWORD(wParam);
 		fAppActive = (( flag == WA_ACTIVE) || (flag==WA_CLICKACTIVE)) ? TRUE : FALSE;
 		change_window_active_state();
@@ -755,6 +745,9 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
 	}
 
 	case WM_ACTIVATEAPP:
+		if (Messagebox_active)
+			break;
+
 		fAppActive = (BOOL)wParam;
 		change_window_active_state();
 		break;
@@ -789,6 +782,11 @@ LRESULT CALLBACK win32_message_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM 
         break;
 #endif
 
+	// report back that we handle this ourselves (with gr_clear()) in order to
+	// prevent flickering (especially with movies)
+	case WM_ERASEBKGND:
+		return TRUE;
+
 	default:
 		return DefWindowProc(hwnd, msg, wParam, lParam);
 		break;
@@ -814,8 +812,8 @@ void win32_create_window(int width, int height)
 //	} else {
 //		wclass.style			= CS_BYTEALIGNCLIENT | CS_VREDRAW | CS_HREDRAW;
 //	}
-	wclass.style			= 0;
-	
+	wclass.style			= CS_OWNDC;	// using CS_OWNDC for better Win9x/WinME support (I think it's implied with WinNT+)
+
 	wclass.cbSize			= sizeof(WNDCLASSEX);
 	wclass.hIcon			= LoadIcon(hInst, MAKEINTRESOURCE(IDI_APP_ICON) );
 	wclass.hCursor			= LoadCursor(NULL, IDC_ARROW);
@@ -889,8 +887,8 @@ void win32_create_window(int width, int height)
 	SetFocus( hwndApp );
 
 	// Hack!! Turn off Window's cursor.
-	ShowCursor(false);
-	ClipCursor(NULL);
+//	ShowCursor(false);
+//	ClipCursor(NULL);
 
 	return;// TRUE;
 }

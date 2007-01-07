@@ -80,8 +80,6 @@ uint os_get_window();
 
 void os_set_window(uint new_handle);	 
 
-void os_app_activate_set(bool state);
-
 // process management --------------------------------------------------------------
 
 // call to process windows messages. only does something in non THREADED mode
@@ -95,8 +93,5 @@ void os_suspend();
 
 // resume message processing
 void os_resume();
-
-
-extern bool stay_minimized;
 
 #endif // _OSAPI_H
