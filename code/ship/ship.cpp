@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.391 $
- * $Date: 2007-01-07 03:08:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.392 $
+ * $Date: 2007-01-07 12:59:54 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.391  2007/01/07 03:08:12  Goober5000
+ * fix bug where built-in lament messages were never played
+ *
  * Revision 2.390  2006/12/28 01:22:04  Goober5000
  * removed obsolete limits
  *
@@ -2821,7 +2824,7 @@ void init_ship_entry(int ship_info_index)
 	sip->thruster01_glow_rad_factor = 1.0f;
 	sip->thruster02_glow_rad_factor = 1.0f;
 	sip->thruster03_glow_rad_factor = 1.0f;
-	sip->thruster_glow_len_factor = 1.0f;
+	sip->thruster02_glow_len_factor = 1.0f;
 	
 //	sip->thruster_particle_bitmap01 = -1;
 
@@ -3988,7 +3991,12 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	if ( optional_string("$Thruster01 Length factor:") ) {
-		stuff_float(&sip->thruster_glow_len_factor);
+		stuff_float(&sip->thruster02_glow_len_factor);
+		Warning(LOCATION, "Depreciated spelling: \"$Thruster01 Length factor:\".  Use \"$Thruster02 Length factor:\" instead.");
+	}
+
+	if ( optional_string("$Thruster02 Length factor:") ) {
+		stuff_float(&sip->thruster02_glow_len_factor);
 	}
 
 	if ( optional_string("$Thruster Bitmap 3:") ) {
@@ -6418,7 +6426,7 @@ void ship_render(object * obj)
 					mst.trf1 = si->thruster01_glow_rad_factor;
 					mst.trf2 = si->thruster02_glow_rad_factor;
 					mst.trf3 = si->thruster03_glow_rad_factor;
-					mst.tlf = si->thruster_glow_len_factor;
+					mst.tlf = si->thruster02_glow_len_factor;
 
 					model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise, use_AB, &mst );
 				}
