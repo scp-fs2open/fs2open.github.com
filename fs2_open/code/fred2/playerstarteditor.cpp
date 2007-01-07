@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/PlayerStartEditor.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2007-01-07 12:18:09 $
+ * $Author: taylor $
  *
  * Player starting point editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.4  2005/12/29 08:21:00  wmcoolmon
  * No my widdle FRED, I didn't forget about you ^_^ (codebase commit)
  *
@@ -175,6 +179,11 @@ void player_start_editor::reset_controls()
 			}
 
 			ct++;
+		} else if (weapon_pool[selected_team][i] > 0) {
+			// not sure if this should be a verbal warning or not, so I'm adding both and making it verbal for now
+			Warning(LOCATION, "Weapon '%s' in weapon pool isn't allowed on player loadout!  Resetting count to 0...\n", Weapon_info[i].name);
+		//	mprintf(("Weapon '%s' in weapon pool isn't allowed on player loadout!  Resetting to 0 count.\n", Weapon_info[i].name));
+			weapon_pool[selected_team][i] = 0;
 		}
 	}	
 
