@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.390 $
- * $Date: 2006-12-28 01:22:04 $
+ * $Revision: 2.391 $
+ * $Date: 2007-01-07 03:08:12 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.390  2006/12/28 01:22:04  Goober5000
+ * removed obsolete limits
+ *
  * Revision 2.389  2006/12/28 00:59:48  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -14258,7 +14261,7 @@ void ship_maybe_lament()
 	{
 		ship_index = ship_get_random_player_wing_ship(SHIP_GET_UNSILENCED);
 		if (ship_index >= 0)
-			message_send_builtin_to_player(MESSAGE_PLAYED_DIED, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
+			message_send_builtin_to_player(MESSAGE_PLAYER_DIED, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
 	}
 }
 
