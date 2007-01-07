@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.88 $
- * $Date: 2007-01-07 03:44:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.89 $
+ * $Date: 2007-01-07 12:46:19 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2007/01/07 03:44:50  Goober5000
+ * don't display any error messages when there are no background bitmaps to load
+ *
  * Revision 2.87  2006/12/28 00:59:48  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1402,6 +1405,8 @@ void stars_pre_level_init(bool clear_backgrounds)
 
 	stars_clear_instances();
 
+	stars_set_background_model(NULL, NULL);
+
 	// mark all starfield and sun bitmaps as unused for this mission and release any current bitmaps
 	// NOTE: that because of how we have to load the bitmaps it's important to release all of
 	//       them first thing rather than after we have marked and loaded only what's needed
@@ -1455,7 +1460,7 @@ void stars_post_level_init()
 	ubyte red,green,blue,alpha;
 
 
-	stars_set_background_model(The_mission.skybox_model, "");
+	stars_set_background_model(The_mission.skybox_model, NULL);
 
 	stars_load_debris( ((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) );
 
@@ -2971,6 +2976,9 @@ void stars_set_background_model(char *model_name, char *texture_name)
 
 	Nmodel_num = model_load(model_name, 0, NULL, 0);
 	Nmodel_bitmap = bm_load(texture_name);
+
+	if (Nmodel_num >= 0)
+		model_page_in_textures(Nmodel_num);
 }
 
 // lookup a starfield bitmap, return index or -1 on fail
@@ -2983,7 +2991,7 @@ int stars_find_bitmap(char *name)
 
 	// lookup
 	for (idx = 0; idx < (int)Starfield_bitmaps.size(); idx++) {
-		if ( !strcmp(name, Starfield_bitmaps[idx].filename) ) {
+		if ( !stricmp(name, Starfield_bitmaps[idx].filename) ) {
 			return idx;
 		}
 	}
@@ -3002,7 +3010,7 @@ int stars_find_sun(char *name)
 
 	// lookup
 	for (idx = 0; idx < (int)Sun_bitmaps.size(); idx++) {
-		if ( !strcmp(name, Sun_bitmaps[idx].filename) ) {
+		if ( !stricmp(name, Sun_bitmaps[idx].filename) ) {
 			return idx;
 		}
 	}
