@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.204 $
- * $Date: 2007-01-07 00:01:28 $
+ * $Revision: 2.205 $
+ * $Date: 2007-01-07 00:24:18 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.204  2007/01/07 00:01:28  Goober5000
+ * add a feature for specifying the source of Command messages
+ *
  * Revision 2.203  2006/12/28 00:59:32  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1737,35 +1740,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 			player_set_squad_bitmap(Player, pm->squad_filename);
 		}
 	}
-
-
-	// command stuff by Goober5000 ---------------------------------------
-	strcpy(pm->command_sender, DEFAULT_COMMAND);
-	if (optional_string("$Command Sender:"))
-	{
-		char temp[NAME_LENGTH];
-		stuff_string(temp, F_NAME, NAME_LENGTH);
-
-		if (*temp == '#')
-			strcpy(pm->command_sender, &temp[1]);
-		else
-			strcpy(pm->command_sender, temp);
-	}
-
-	pm->command_persona = Default_command_persona;
-	if (optional_string("$Command Persona:"))
-	{
-		int idx;
-		char temp[NAME_LENGTH];
-		stuff_string(temp, F_NAME, NAME_LENGTH);
-
-		idx = message_persona_name_lookup(temp);
-		if (idx >= 0)
-			pm->command_persona = idx;
-		else
-			Warning(LOCATION, "Supplied Command Persona is invalid!  Defaulting to %s.", Personas[Default_command_persona].name);
-	}
-	// end of command stuff ----------------------------------------------
 
 
 	// wing stuff by Goober5000 ------------------------------------------
@@ -5516,6 +5490,35 @@ void parse_waypoints(mission *pm)
 void parse_messages(mission *pm)
 {
 	required_string("#Messages");
+
+	// command stuff by Goober5000 ---------------------------------------
+	strcpy(pm->command_sender, DEFAULT_COMMAND);
+	if (optional_string("$Command Sender:"))
+	{
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+
+		if (*temp == '#')
+			strcpy(pm->command_sender, &temp[1]);
+		else
+			strcpy(pm->command_sender, temp);
+	}
+
+	pm->command_persona = Default_command_persona;
+	if (optional_string("$Command Persona:"))
+	{
+		int idx;
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+
+		idx = message_persona_name_lookup(temp);
+		if (idx >= 0)
+			pm->command_persona = idx;
+		else
+			Warning(LOCATION, "Supplied Command Persona is invalid!  Defaulting to %s.", Personas[Default_command_persona].name);
+	}
+	// end of command stuff ----------------------------------------------
+
 
 	mprintf(("Starting mission message count : %d\n", Num_message_waves));
 

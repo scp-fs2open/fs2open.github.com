@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.28 $
- * $Date: 2007-01-07 00:01:28 $
+ * $Revision: 1.29 $
+ * $Date: 2007-01-07 00:24:17 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2007/01/07 00:01:28  Goober5000
+ * add a feature for specifying the source of Command messages
+ *
  * Revision 1.27  2006/10/15 22:01:38  wmcoolmon
  * Fix extra jumpnode settings not saving. They still don't show up in FRED, unfortunately.
  *
@@ -894,18 +897,6 @@ int CFred_mission_save::save_mission_info()
 		if(strlen(The_mission.squad_filename) > 0){
 			fout("\n+SquadReassignLogo: %s", The_mission.squad_filename);
 		}
-	}
-
-	// Goober5000 - special Command info
-	if (Format_fs2_open)
-	{
-		fout ("\n");
-
-		if (stricmp(The_mission.command_sender, DEFAULT_COMMAND))
-			fout("\n$Command Sender: %s", The_mission.command_sender);
-
-		if (The_mission.command_persona != Default_command_persona)
-			fout("\n$Command Persona: %s", Personas[The_mission.command_persona].name);
 	}
 
 	// Goober5000 - special wing info
@@ -2623,15 +2614,25 @@ int CFred_mission_save::save_messages()
 	parse_comments(2);
 	fout("\t\t;! %d total\n", Num_messages-Num_builtin_messages);
 
+	// Goober5000 - special Command info
+	if (Format_fs2_open)
+	{
+		if (stricmp(The_mission.command_sender, DEFAULT_COMMAND))
+			fout("\n$Command Sender: %s", The_mission.command_sender);
+
+		if (The_mission.command_persona != Default_command_persona)
+			fout("\n$Command Persona: %s", Personas[The_mission.command_persona].name);
+	}
+
 	for (i=Num_builtin_messages; i<Num_messages; i++) {
 		required_string_either_fred("$Name:", "#Reinforcements");
 		required_string_fred("$Name:");
-		parse_comments(i ? 2 : 1);
+		parse_comments(2);
 		fout(" %s", Messages[i].name);
 
 		// team
 		required_string_fred("$Team:");
-		parse_comments(i ? 2 : 1);
+		parse_comments(1);
 		if((Messages[i].multi_team < 0) || (Messages[i].multi_team >= 2)){
 			fout(" %d", -1);
 		} else {
