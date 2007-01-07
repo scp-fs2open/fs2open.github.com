@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.30.2.2 $
- * $Date: 2006-09-11 01:15:04 $
+ * $Revision: 2.30.2.3 $
+ * $Date: 2007-01-07 12:11:05 $
  * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30.2.2  2006/09/11 01:15:04  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.30.2.1  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -695,7 +698,7 @@ void gamesnd_add_sound_slot(int type, int num)
 				Num_game_sounds += increase_by;
 
 				// default all new entries
-				for (i = (Num_game_sounds - increase_by - 1); i < Num_game_sounds; i++) {
+				for (i = (Num_game_sounds - increase_by); i < Num_game_sounds; i++) {
 					gamesnd_init_struct(&Snds[i]);
 				}
 			}
@@ -717,7 +720,7 @@ void gamesnd_add_sound_slot(int type, int num)
 				Verify( Snds_iface_handle != NULL );
 
 				// default all new entries
-				for (i = (Num_iface_sounds - increase_by - 1); i < Num_iface_sounds; i++) {
+				for (i = (Num_iface_sounds - increase_by); i < Num_iface_sounds; i++) {
 					gamesnd_init_struct(&Snds_iface[i]);
 					Snds_iface_handle[i] = -1;
 				}
