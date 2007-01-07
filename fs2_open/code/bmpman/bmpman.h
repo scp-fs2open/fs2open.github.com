@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.37.2.3 $
- * $Date: 2006-07-05 23:41:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.37.2.4 $
+ * $Date: 2007-01-07 12:07:40 $
+ * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37.2.3  2006/07/05 23:41:02  Goober5000
+ * spelling
+ *
  * Revision 2.37.2.2  2006/07/05 23:36:55  Goober5000
  * cvs comment tweaks
  *
@@ -648,7 +651,7 @@ void bm_page_in_stop();
 
 // Marks a texture as being used for this level
 // If num_frames is passed, assume this is an animation
-void bm_page_in_texture( int bitmapnum, int num_frames=1 );
+void bm_page_in_texture( int bitmapnum, int num_frames = 0 );
 
 // Marks a texture as being used for this level
 // If num_frames is passed, assume this is an animation
