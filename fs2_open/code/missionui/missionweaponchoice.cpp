@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.72.2.2 $
- * $Date: 2006-12-28 22:47:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.72.2.3 $
+ * $Date: 2007-01-07 12:12:46 $
+ * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72.2.2  2006/12/28 22:47:15  Goober5000
+ * fix spelling... *twitch*
+ *
  * Revision 2.72.2.1  2006/07/17 01:09:03  taylor
  * fix some missile autocentering issues
  *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
@@ -3286,24 +3289,26 @@ void wl_weapon_desc_start_wipe()
 	
 	// break current description into lines (break at the /n's)
 	currchar_src = 0;
-	while (Weapon_info[Selected_wl_class].desc[currchar_src] != '\0') {
-		if (Weapon_info[Selected_wl_class].desc[currchar_src] == '\n') {
-			// break here
-			if (currchar_src != 0) {					// protect against leading /n's
-				Weapon_desc_lines[currline_dest][currchar_dest] = '\0';
-				currline_dest++;
-				currchar_dest = 0;
+	if (Weapon_info[Selected_wl_class].desc != NULL) {
+		while (Weapon_info[Selected_wl_class].desc[currchar_src] != '\0') {
+			if (Weapon_info[Selected_wl_class].desc[currchar_src] == '\n') {
+				// break here
+				if (currchar_src != 0) {					// protect against leading /n's
+					Weapon_desc_lines[currline_dest][currchar_dest] = '\0';
+					currline_dest++;
+					currchar_dest = 0;
+				}
+			} else {
+				// straight copy
+				Weapon_desc_lines[currline_dest][currchar_dest] = Weapon_info[Selected_wl_class].desc[currchar_src];
+				currchar_dest++;
 			}
-		} else {
-			// straight copy
-			Weapon_desc_lines[currline_dest][currchar_dest] = Weapon_info[Selected_wl_class].desc[currchar_src];
-			currchar_dest++;
+
+			currchar_src++;
+
+			Assert(currline_dest < WEAPON_DESC_MAX_LINES);
+			Assert(currchar_dest < WEAPON_DESC_MAX_LENGTH);
 		}
-
-		currchar_src++;
-
-		Assert(currline_dest < WEAPON_DESC_MAX_LINES);
-		Assert(currchar_dest < WEAPON_DESC_MAX_LENGTH);
 	}
 
 	// wrap up the line processing
