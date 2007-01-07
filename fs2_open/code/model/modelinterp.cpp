@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.175 $
- * $Date: 2006-12-28 00:59:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.176 $
+ * $Date: 2007-01-07 12:49:51 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.175  2006/12/28 00:59:32  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.174  2006/11/06 06:42:22  taylor
  * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
  *
@@ -1009,7 +1012,6 @@
 #include "bmpman/bmpman.h"
 #include "io/key.h"
 #include "io/timer.h"
-#include "graphics/grinternal.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "math/staticrand.h"
@@ -4145,7 +4147,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 
 				p.r = p.g = p.b = p.a = (ubyte)(255.0f * fog_int);
 
-				tertiary_thruster_batcher.draw_bitmap( &p, 0, (magnitude * 4 * Interp_tertiary_thrust_glow_rad_factor), (w * 0.6f), (-(D > 0) ? D : -D) );
+				tertiary_thruster_batcher.draw_bitmap( &p, 0, (w * 0.6f * Interp_tertiary_thrust_glow_rad_factor), (magnitude * 4), (-(D > 0) ? D : -D) );
 			}
 			// end tertiary thruster glows
 
@@ -6005,7 +6007,9 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 				model_list.vert[i].z = cfread_float( ibuffer_info.read );
 				model_list.vert[i].u = cfread_float( ibuffer_info.read );
 				model_list.vert[i].v = cfread_float( ibuffer_info.read );
-				cfread_vector( &model_list.norm[i], ibuffer_info.read );
+				model_list.norm[i].xyz.x = cfread_float( ibuffer_info.read );
+				model_list.norm[i].xyz.y = cfread_float( ibuffer_info.read );
+				model_list.norm[i].xyz.z = cfread_float( ibuffer_info.read );
 			}
 
 			model_list.n_verts = ibx_verts;
@@ -6027,7 +6031,9 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 				cfwrite_float( model_list.vert[i].z, ibuffer_info.write );
 				cfwrite_float( model_list.vert[i].u, ibuffer_info.write );
 				cfwrite_float( model_list.vert[i].v, ibuffer_info.write );
-				cfwrite_vector( &model_list.norm[i], ibuffer_info.write );
+				cfwrite_float( model_list.norm[i].xyz.x, ibuffer_info.write );
+				cfwrite_float( model_list.norm[i].xyz.y, ibuffer_info.write );
+				cfwrite_float( model_list.norm[i].xyz.z, ibuffer_info.write );
 			}
 		}
 	}
