@@ -1,12 +1,18 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/mveplayer.cpp $
- * $Revision: 2.2 $
- * $Date: 2006-08-20 00:44:36 $
+ * $Revision: 2.3 $
+ * $Date: 2007-01-07 12:29:43 $
  * $Author: taylor $
  *
  * MVE movie playing routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2006/08/20 00:44:36  taylor
+ * add decoder for 8-bit MVEs
+ * a basic fix for finding AVIs over MVEs, for mod dir stuff (this needs some CFILE support added to be a true fix, it's on the TODO list)
+ * little bits of cleanup for old/unused code
+ * make sure MVE filenames are correct in mvelib
+ *
  * Revision 2.1  2006/05/13 06:59:48  taylor
  * MVE player (audio only works with OpenAL builds!)
  *
@@ -22,6 +28,7 @@
 
 #include "graphics/gropengl.h"
 #include "graphics/gropengltexture.h"
+#include "graphics/gropenglextension.h"
 
 #include "globalincs/pstypes.h"
 #include "cutscene/mvelib.h"
@@ -51,8 +58,6 @@ static int timer_expire;
 
 // audio variables
 #define MVE_AUDIO_BUFFERS 64  // total buffers to interact with stream
-static int mve_audio_buffer_curpos = 0;
-static int mve_audio_buffer_head = 0;
 static int mve_audio_buffer_tail = 0;
 static int mve_audio_playing = 0;
 static int mve_audio_canplay = 0;
@@ -67,7 +72,6 @@ typedef struct MVE_AUDIO_T {
 	int bytes_per_sec;
 	int channels;
 	int bitsize;
-	ALuint audio_data[MVE_AUDIO_BUFFERS];
 	ALuint source_id;
 	ALuint audio_buffer[MVE_AUDIO_BUFFERS];
 } mve_audio_t;
@@ -84,6 +88,10 @@ void *g_vBuffers = NULL;
 void *g_vBackBuf1, *g_vBackBuf2;
 ushort *pixelbuf = NULL;
 static GLuint GLtex = 0;
+static GLint gl_screenYH = 0;
+static GLint gl_screenXW = 0;
+static GLfloat gl_screenU = 0;
+static GLfloat gl_screenV = 0;
 static int g_screenWidth, g_screenHeight;
 static int g_screenX, g_screenY;
 static int g_truecolor = 0;
@@ -97,6 +105,7 @@ static int mve_scale_video = 0;
 
 // video externs from API graphics functions
 extern void opengl_tcache_get_adjusted_texture_size(int w_in, int h_in, int *w_out, int *h_out);
+extern GLenum GL_previous_texture_target;
 
 // the decoders
 extern void decodeFrame16(ubyte *pFrame, ubyte *pMap, int mapRemain, ubyte *pData, int dataRemain);
@@ -290,7 +299,6 @@ void mve_audio_createbuf(ubyte minor, ubyte *data)
 	memset(mas->audio_buffer, 0, MVE_AUDIO_BUFFERS * sizeof(ALuint));
 #endif // USE_OPENAL
 
-    mve_audio_buffer_head = 0;
     mve_audio_buffer_tail = 0;
 
 	audiobuf_created = 1;
@@ -330,6 +338,7 @@ static void mve_audio_stop()
 	OpenAL_ErrorPrint( alSourceStop(mas->source_id) );
 	OpenAL_ErrorPrint( alGetSourcei(mas->source_id, AL_BUFFERS_PROCESSED, &p) );
 	OpenAL_ErrorPrint( alSourceUnqueueBuffers(mas->source_id, p, mas->audio_buffer) );
+	OpenAL_ErrorPrint( alDeleteSources(1, &mas->source_id) );
 
 	for (int i = 0; i < MVE_AUDIO_BUFFERS; i++) {
 		// make sure that the buffer is real before trying to delete, it could crash for some otherwise
@@ -337,8 +346,6 @@ static void mve_audio_stop()
 			OpenAL_ErrorPrint( alDeleteBuffers(1, &mas->audio_buffer[i]) );
 		}
 	}
-
-	OpenAL_ErrorPrint( alDeleteSources(1, &mas->source_id) );
 
 	if (mas != NULL) {
 		vm_free(mas);
@@ -364,12 +371,8 @@ int mve_audio_data(ubyte major, ubyte *data)
 
 			OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_BUFFERS_PROCESSED, &bprocessed), return 0 );
 
-			while (bprocessed-- > 2) {
+			while (bprocessed-- > 2)
 				OpenAL_ErrorPrint( alSourceUnqueueBuffers(mas->source_id, 1, &bid) );
-		
-				if (++mve_audio_buffer_head == MVE_AUDIO_BUFFERS)
-					mve_audio_buffer_head = 0;
-			}
 
 			OpenAL_ErrorCheck( alGetSourcei(mas->source_id, AL_BUFFERS_QUEUED, &bqueued), return 0 );
 		    
@@ -478,6 +481,51 @@ int mve_video_createbuf(ubyte minor, ubyte *data)
 	g_truecolor = truecolor;
 	videobuf_created = 1;
 
+	if (gr_screen.mode == GR_OPENGL) {
+		GLfloat scale_by = 1.0f;
+
+		float screen_ratio = (float)gr_screen.max_w / (float)gr_screen.max_h;
+		float movie_ratio = (float)g_width / (float)g_height;
+
+		if (screen_ratio > movie_ratio)
+			scale_by = (float)gr_screen.max_h / (float)g_height;
+		else
+			scale_by = (float)gr_screen.max_w / (float)g_width;
+
+		// don't bother setting anything if we aren't going to need it
+		if (!Cmdline_noscalevid && (scale_by != 1.0f)) {
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			glLoadIdentity();
+
+			glScalef( scale_by, scale_by, 1.0f );
+			mve_scale_video = 1;
+		}
+
+		if (mve_scale_video) {
+			g_screenX = ((fl2i(gr_screen.max_w / scale_by + 0.5f) - g_width) / 2);
+			g_screenY = ((fl2i(gr_screen.max_h / scale_by + 0.5f) - g_height) / 2);
+		} else {
+			// centers on 1024x768, fills on 640x480
+			g_screenX = ((gr_screen.max_w - g_width) / 2);
+			g_screenY = ((gr_screen.max_h - g_height) / 2);
+		}
+
+		// set additional values for screen width/height and UV coords
+		if (gr_screen.mode == GR_OPENGL) {
+			gl_screenYH = g_screenY + g_height;
+			gl_screenXW = g_screenX + g_width;
+
+			if (GL_texture_target == GL_TEXTURE_RECTANGLE_ARB) {
+				gl_screenU = (GLfloat)g_width;
+				gl_screenV = (GLfloat)g_height;
+			} else {
+				gl_screenU = i2fl(g_width) / i2fl(wp2);
+				gl_screenV = i2fl(g_height) / i2fl(hp2);
+			}
+		}
+	}
+
 	return 1;
 }
 
@@ -500,11 +548,13 @@ static void mve_convert_and_draw()
 
 	pDests = pixelbuf;
 
-	if (g_screenWidth > g_width)
-		pDests += ((g_screenWidth - g_width) / 2) / 2;
+	if (gr_screen.mode != GR_OPENGL) {
+		if (g_screenWidth > g_width)
+			pDests += ((g_screenWidth - g_width) / 2) / 2;
 
-	if (g_screenHeight > g_height)
-		pDests += ((g_screenHeight - g_height) / 2) * g_screenWidth;
+		if (g_screenHeight > g_height)
+			pDests += ((g_screenHeight - g_height) / 2) * g_screenWidth;
+	}
 
 	for (y=0; y<g_height; y++) {
 		for (x = 0; x < g_width; x++) {
@@ -556,26 +606,23 @@ void mve_video_display()
 		mve_video_skiptimer = 0;
 	}
 
-	// because of something freaky in the Windows version, we need to clear the color buffer each frame
-	gr_clear();
-
 	if (gr_screen.mode == GR_OPENGL) {
-		glBindTexture(GL_TEXTURE_2D, GLtex);
+		glBindTexture(GL_texture_target, GLtex);
 
-		glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, g_screenWidth, g_screenHeight, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelbuf);
+		glTexSubImage2D(GL_texture_target, 0, 0, 0, g_width, g_height, GL_BGRA, GL_UNSIGNED_SHORT_1_5_5_5_REV, pixelbuf);
 
 		glBegin(GL_QUADS);
 			glTexCoord2f(0, 0);
 				glVertex2i(g_screenX, g_screenY);
 
-			glTexCoord2f(0, i2fl(g_screenHeight)/i2fl(hp2));
-				glVertex2i(g_screenX, g_screenY+g_screenHeight);
+			glTexCoord2f(0, gl_screenV);
+				glVertex2i(g_screenX, gl_screenYH);
 
-			glTexCoord2f(i2fl(g_screenWidth)/i2fl(wp2), i2fl(g_screenHeight)/i2fl(hp2));
-				glVertex2i(g_screenX+g_screenWidth, g_screenY+g_screenHeight);
+			glTexCoord2f(gl_screenU, gl_screenV);
+				glVertex2i(gl_screenXW, gl_screenYH);
 
-			glTexCoord2f(i2fl(g_screenWidth)/i2fl(wp2), 0);
-				glVertex2i(g_screenX+g_screenWidth, g_screenY);
+			glTexCoord2f(gl_screenU, 0);
+				glVertex2i(gl_screenXW, g_screenY);
 		glEnd();
 	} else {
 		// DDOI - This is probably really fricking slow
@@ -618,8 +665,11 @@ int mve_video_init(ubyte *data)
 	width = mve_get_short(data);
 	height = mve_get_short(data+2);
 
+	g_screenWidth = width;
+	g_screenHeight = height;
+
 	// DDOI - Allocate RGB565 pixel buffer
-	pixelbuf = (ushort *)vm_malloc(width * height * 2);
+	pixelbuf = (ushort *)vm_malloc(g_screenWidth * g_screenHeight * 2);
 
 	if (pixelbuf == NULL) {
 		nprintf(("MOVIE", "ERROR: Can't allocate memory for pixelbuf"));
@@ -627,12 +677,13 @@ int mve_video_init(ubyte *data)
 		return 0;
 	}
 
-	memset(pixelbuf, 0, width * height * 2);
-
-	g_screenWidth = width;
-	g_screenHeight = height;
+	memset(pixelbuf, 0, g_screenWidth * g_screenHeight * 2);
 
 	if (gr_screen.mode == GR_OPENGL) {
+		// set the appropriate texture target
+		if ( Is_Extension_Enabled(OGL_ARB_TEXTURE_RECTANGLE) && !Is_Extension_Enabled(OGL_ARB_TEXTURE_NON_POWER_OF_TWO) )
+			opengl_set_texture_target( GL_TEXTURE_RECTANGLE_ARB );
+
 		opengl_tcache_get_adjusted_texture_size(g_screenWidth, g_screenHeight, &wp2, &hp2);
 
 		glGenTextures(1, &GLtex);
@@ -651,43 +702,25 @@ int mve_video_init(ubyte *data)
 
 		gr_set_lighting(false, false);
 	
-		glBindTexture(GL_TEXTURE_2D, GLtex);
+		glBindTexture(GL_texture_target, GLtex);
 	
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glDepthFunc(GL_ALWAYS);
 		glDepthMask(GL_FALSE);
 		glDisable(GL_DEPTH_TEST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		float scale_by = (float)gr_screen.max_w / (float)g_screenWidth;
-
-		// don't bother setting anything if we aren't going to need it
-		if (!Cmdline_noscalevid && (scale_by != 1.0f)) {
-			glMatrixMode(GL_MODELVIEW);
-			glPushMatrix();
-			glLoadIdentity();
-
-			glScalef( scale_by, scale_by, 1.0f );
-			mve_scale_video = 1;
-		}
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, wp2, hp2, 0, GL_BGRA_EXT, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+		glTexImage2D(GL_texture_target, 0, GL_RGB5_A1, wp2, hp2, 0, GL_BGRA_EXT, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
 	}
 #ifndef NO_DIRECT3D
 	else if (gr_screen.mode == GR_DIRECT3D) {
 		// TODO: is there a fast way to do frames in D3D too?
 	}
 #endif
-
-	if (mve_scale_video) {
-		g_screenX = g_screenY = 0;
-	} else {
-		// centers on 1024x768, fills on 640x480
-		g_screenX = ((gr_screen.max_w - g_screenWidth) / 2);
-		g_screenY = ((gr_screen.max_h - g_screenHeight) / 2);
-	}
 
 	memset(g_palette, 0, 768);
 	
@@ -746,8 +779,6 @@ void mve_end_chunk()
 void mve_init(MVESTREAM *mve)
 {
 	// reset to default values
-	mve_audio_buffer_curpos = 0;
-	mve_audio_buffer_head = 0;
 	mve_audio_buffer_tail = 0;
 	mve_audio_playing = 0;
 	mve_audio_canplay = 0;
@@ -787,16 +818,14 @@ void mve_shutdown()
 		if (mve_scale_video) {
 			glMatrixMode(GL_MODELVIEW);
 			glPopMatrix();
-			glLoadIdentity();
 		}
 
-		opengl_switch_arb(-1, 0);
-
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glBindTexture(GL_texture_target, 0);
 		glDeleteTextures(1, &GLtex);
 		GLtex = 0;
-	
-		glEnable(GL_DEPTH_TEST);
+
+		opengl_switch_arb(-1, 0);
+		opengl_set_texture_target();
 	}
 
 	if (pixelbuf != NULL) {
