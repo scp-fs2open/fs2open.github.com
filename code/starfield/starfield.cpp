@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.72.2.16 $
- * $Date: 2007-01-07 03:44:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.72.2.17 $
+ * $Date: 2007-01-07 12:16:01 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72.2.16  2007/01/07 03:44:47  Goober5000
+ * don't display any error messages when there are no background bitmaps to load
+ *
  * Revision 2.72.2.15  2006/12/26 05:32:18  taylor
  * be sure to reset our skybox model properly, it can lead to a bad model unload bug on level load otherwise
  *
@@ -2965,6 +2968,9 @@ void stars_set_background_model(char *model_name, char *texture_name)
 
 	Nmodel_num = model_load(model_name, 0, NULL, 0);
 	Nmodel_bitmap = bm_load(texture_name);
+
+	if (Nmodel_num >= 0)
+		model_page_in_textures(Nmodel_num);
 }
 
 // lookup a starfield bitmap, return index or -1 on fail
