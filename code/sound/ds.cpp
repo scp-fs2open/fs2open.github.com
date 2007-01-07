@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.51 $
- * $Date: 2006-10-06 04:56:05 $
- * $Author: wmcoolmon $
+ * $Revision: 2.52 $
+ * $Date: 2007-01-07 12:48:18 $
+ * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2006/10/06 04:56:05  wmcoolmon
+ * Fix OGG bug where sound files were always allocated 16 seconds of wavedata
+ *
  * Revision 2.50  2006/08/20 00:48:28  taylor
  * cleanup
  * bugfixes
@@ -705,7 +708,8 @@ const char* openal_error_string(int get_alc)
 	int i;
 
 	if (get_alc) {
-		i = alcGetError(NULL);
+		// Apple implementation requires a valid device to give a valid error msg
+		i = alcGetError(ds_sound_device);
 
 		if ( i != ALC_NO_ERROR )
 			return (const char*) alcGetString(NULL, i);
@@ -1184,9 +1188,9 @@ int ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info
 
 	Snd_sram += size;
 	*final_size = size;
-	
-	OpenAL_ErrorCheck( alBufferData (pi, format, data, size, frequency), return -1 );
-	
+
+	OpenAL_ErrorCheck( alBufferData(pi, format, data, size, frequency), return -1 );
+
 	sound_buffers[*sid].buf_id = pi;
 	sound_buffers[*sid].source_id = -1;
 	sound_buffers[*sid].frequency = frequency;
@@ -1460,7 +1464,7 @@ void ds_init_channels()
 
 	// init the channels
 	for ( i = 0; i < MAX_CHANNELS; i++ ) {
-		OpenAL_ErrorPrint( alGenSources(1, &Channels[i].source_id) );
+		Channels[i].source_id = 0;
 		Channels[i].buf_id = -1;
 		Channels[i].sig = -1;
 		Channels[i].snd_id = -1;
@@ -1771,10 +1775,13 @@ int ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short s
 	char *device_spec = os_config_read_string( NULL, "SoundDeviceOAL", "Generic Software" );
 	mprintf(("  Using '%s' as OpenAL sound device...\n", device_spec));
 
-	OpenAL_C_ErrorCheck( { ds_sound_device = alcOpenDevice( (const ALCchar *) device_spec ); }, goto AL_InitError );
+	ds_sound_device = alcOpenDevice( (const ALCchar *) device_spec );
 #else
-	OpenAL_C_ErrorCheck( { ds_sound_device = alcOpenDevice( NULL ); }, goto AL_InitError );
+	ds_sound_device = alcOpenDevice( NULL );
 #endif
+
+	if ( !ds_sound_device )
+		goto AL_InitError;
 
 	// Create Sound Device
 	OpenAL_C_ErrorCheck( { ds_sound_context = alcCreateContext( ds_sound_device, attr ); }, goto AL_InitError );
@@ -2054,12 +2061,15 @@ char *get_DSERR_text(int DSResult)
 void ds_close_channel(int i)
 {
 #ifdef USE_OPENAL
-	if(Channels[i].source_id != 0 && alIsSource (Channels[i].source_id)) {
-		OpenAL_ErrorPrint( alSourceStop (Channels[i].source_id) );
+	if ( (Channels[i].source_id != 0) && alIsSource(Channels[i].source_id) ) {
+		OpenAL_ErrorPrint( alSourceStop(Channels[i].source_id) );
 
 		OpenAL_ErrorPrint( alDeleteSources(1, &Channels[i].source_id) );
 
 		Channels[i].source_id = 0;
+		Channels[i].buf_id = -1;
+		Channels[i].sig = -1;
+		Channels[i].snd_id = -1;
 	}
 
 	return;
@@ -2128,12 +2138,16 @@ void ds_unload_buffer(int sid, int hid)
 #ifdef USE_OPENAL
 	if (sid != -1) {
 		ALuint buf_id = sound_buffers[sid].buf_id;
+		int channel_idx = sound_buffers[sid].source_id;
 
-		if (buf_id != 0 && alIsBuffer(buf_id)) {
+		if (channel_idx != -1)
+			ds_close_channel(channel_idx);
+
+		if ( (buf_id != 0) && alIsBuffer(buf_id) )
 			OpenAL_ErrorPrint( alDeleteBuffers(1, &buf_id) );
-		}
 
 		sound_buffers[sid].buf_id = 0;
+		sound_buffers[sid].source_id = -1;
 	}
 
 	/* hid unused */
@@ -2379,6 +2393,8 @@ int ds_get_free_channel(int new_volume, int snd_id, int priority)
 			if ( first_free_channel == -1 )
 				first_free_channel = i;
 
+			ds_close_channel(i);
+
 			continue;
 		}
 		else {
@@ -2422,6 +2438,7 @@ int ds_get_free_channel(int new_volume, int snd_id, int priority)
 	if ( instance_count >= limit ) {
 		// If there is a lower volume duplicate, stop it.... otherwise, don't play the sound
 		if ( lowest_instance_vol_index >= 0 && (Channels[lowest_instance_vol_index].vol <= new_volume) ) {
+			ds_close_channel(lowest_instance_vol_index);
 			first_free_channel = lowest_instance_vol_index;
 		} else {
 			first_free_channel = -1;
@@ -2434,14 +2451,20 @@ int ds_get_free_channel(int new_volume, int snd_id, int priority)
 				// Check if the lowest volume playing is less than the volume of the requested sound.
 				// If so, then we are going to trash the lowest volume sound.
 				if ( Channels[lowest_vol_index].vol <= new_volume ) {
+					ds_close_channel(lowest_vol_index);
 					first_free_channel = lowest_vol_index;
 				}
 			}
 		}
 	}
 
+	if ( (first_free_channel >= 0) && (Channels[first_free_channel].source_id == 0) )
+		OpenAL_ErrorCheck( alGenSources(1, &Channels[first_free_channel].source_id), return -1 );
+
 	return first_free_channel;
+
 #else
+
 	int				i, first_free_channel, limit;
 	int				lowest_vol = 0, lowest_vol_index = -1;
 	int				instance_count;	// number of instances of sound already playing
@@ -2607,7 +2630,7 @@ int ds_create_buffer(int frequency, int bits_per_sample, int nchannels, int nsec
 		return -1;
 	}
 
-	OpenAL_ErrorCheck( alGenBuffers (1, &i), return -1 );
+	OpenAL_ErrorCheck( alGenBuffers(1, &i), return -1 );
 	
 	sound_buffers[sid].buf_id = i;
 	sound_buffers[sid].source_id = -1;
@@ -2663,6 +2686,8 @@ int ds_create_buffer(int frequency, int bits_per_sample, int nchannels, int nsec
 int ds_lock_data(int sid, unsigned char *data, int size)
 {
 #ifdef USE_OPENAL
+	STUB_FUNCTION;
+/*
 	Assert(sid >= 0);
 
 	ALuint buf_id = sound_buffers[sid].buf_id;
@@ -2691,7 +2716,7 @@ int ds_lock_data(int sid, unsigned char *data, int size)
 	sound_buffers[sid].nbytes = size;
 
 	OpenAL_ErrorCheck( alBufferData(buf_id, format, data, size, sound_buffers[sid].frequency), return -1 );
-
+*/
 	return 0;
 #else
 	HRESULT					dsrval;
@@ -2765,34 +2790,35 @@ int ds_play_easy(int sid, int volume)
 	if (!ds_initialized)
 		return -1;
 
-	int channel = ds_get_free_channel(volume, -1, DS_MUST_PLAY);
+	int ch_idx = ds_get_free_channel(volume, -1, DS_MUST_PLAY);
 
-	if (channel > -1) {
-		ALuint source_id = Channels[channel].source_id;
+	if (ch_idx < 0)
+		return -1;
 
-		OpenAL_ErrorPrint( alSourceStop(source_id) );
+	ALuint source_id = Channels[ch_idx].source_id;
 
-		if (Channels[channel].buf_id != sid) {
-			ALuint buffer_id = sound_buffers[sid].buf_id;
-			
-			OpenAL_ErrorCheck( alSourcei(source_id, AL_BUFFER, buffer_id), return -1 );
-		}
+	OpenAL_ErrorPrint( alSourceStop(source_id) );
 
-		Channels[channel].buf_id = sid;
+	if (Channels[ch_idx].buf_id != sid) {
+		ALuint buffer_id = sound_buffers[sid].buf_id;
 
-		ALfloat alvol = (volume != -10000) ? powf(10.0f, (float)volume / (-600.0f / log10f(.5f))): 0.0f;
-
-		OpenAL_ErrorPrint( alSourcef(source_id, AL_GAIN, alvol) );
-
-		OpenAL_ErrorPrint( alSourcei(source_id, AL_LOOPING, AL_FALSE) );
-
-		OpenAL_ErrorPrint( alSourcePlay(source_id) );
-
-		return 0;
+		OpenAL_ErrorCheck( alSourcei(source_id, AL_BUFFER, buffer_id), return -1 );
 	}
 
-	return -1;
+	Channels[ch_idx].buf_id = sid;
+
+	ALfloat alvol = (volume != -10000) ? powf(10.0f, (float)volume / (-600.0f / log10f(.5f))): 0.0f;
+
+	OpenAL_ErrorPrint( alSourcef(source_id, AL_GAIN, alvol) );
+
+	OpenAL_ErrorPrint( alSourcei(source_id, AL_LOOPING, AL_FALSE) );
+
+	OpenAL_ErrorPrint( alSourcePlay(source_id) );
+
+	return 0;
+
 #else
+
 	HRESULT					dsrval;
 	LPDIRECTSOUNDBUFFER	pdsb;
 
@@ -2834,104 +2860,79 @@ int ds_play_easy(int sid, int volume)
 int ds_play(int sid, int hid, int snd_id, int priority, int volume, int pan, int looping, bool is_voice_msg)
 {
 #ifdef USE_OPENAL
-	int				channel;
+	int ch_idx;
 
 	if (!ds_initialized)
 		return -1;
 
-	channel = ds_get_free_channel(volume, snd_id, priority);
+	ch_idx = ds_get_free_channel(volume, snd_id, priority);
 
-	if (channel > -1)	{
-		if ( Channels[channel].source_id == 0 ) {
-			return -1;
-		}
-
-		if ( ds_using_ds3d() ) {
-		}
-
-		// Actually play it
-		Channels[channel].vol = volume;
-		Channels[channel].looping = looping;
-		Channels[channel].priority = priority;
-
-		// set new position for pan or zero out if none
-		ALfloat alpan = (float)pan / MAX_PAN;
-
-		if ( alpan ) {
-			OpenAL_ErrorPrint( alSource3f(Channels[channel].source_id, AL_POSITION, alpan, 0.0, 1.0) );
-		} else {
-			OpenAL_ErrorPrint( alSource3f(Channels[channel].source_id, AL_POSITION, 0.0, 0.0, 0.0) );
-		}
-
-		OpenAL_ErrorPrint( alSource3f(Channels[channel].source_id, AL_VELOCITY, 0.0, 0.0, 0.0) );
-
-		OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_PITCH, 1.0) );
-
-		ALfloat alvol = (volume != -10000) ? powf(10.0f, (float)volume / (-600.0f / log10f(.5f))): 0.0f;
-		OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_GAIN, alvol) );
-
-		Channels[channel].is_voice_msg = is_voice_msg;
-
-
-		ALint status;
-		OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status), return -1 );
-		
-		if (status == AL_PLAYING)
-			OpenAL_ErrorPrint( alSourceStop(Channels[channel].source_id) );
-
-
-		OpenAL_ErrorCheck( alSourcei(Channels[channel].source_id, AL_BUFFER, sound_buffers[sid].buf_id), return -1 );
-
-
-		// setup default listener position/orientation
-		// this is needed for 2D pan
-		OpenAL_ErrorPrint( alListener3f(AL_POSITION, 0.0, 0.0, 0.0) );
-
-		ALfloat list_orien[] = { 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f };
-		OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
-
-		OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_SOURCE_RELATIVE, AL_FALSE) );
-
-		OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_LOOPING, (looping) ? AL_TRUE : AL_FALSE) );
-
-		OpenAL_ErrorPrint( alSourcePlay(Channels[channel].source_id) );
-
-		sound_buffers[sid].source_id = channel;
-		Channels[channel].buf_id = sid;
-	}
-	else {
+	if (ch_idx < 0) {
 //		nprintf(( "Sound", "SOUND ==> Not playing sound requested at volume %.2f\n", ds_get_percentage_vol(volume) ));
 		return -1;
 	}
 
-	Channels[channel].snd_id = snd_id;
-	Channels[channel].sig = channel_next_sig++;
-	if (channel_next_sig < 0 ) {
+	if (Channels[ch_idx].source_id == 0)
+		return -1;
+
+	if ( ds_using_ds3d() ) { }
+
+	// set new position for pan or zero out if none
+	ALfloat alpan = (float)pan / MAX_PAN;
+
+	if ( alpan ) {
+		OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_POSITION, alpan, 0.0, 1.0) );
+	} else {
+		OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_POSITION, 0.0, 0.0, 0.0) );
+	}
+
+	OpenAL_ErrorPrint( alSource3f(Channels[ch_idx].source_id, AL_VELOCITY, 0.0, 0.0, 0.0) );
+
+	OpenAL_ErrorPrint( alSourcef(Channels[ch_idx].source_id, AL_PITCH, 1.0) );
+
+	ALfloat alvol = (volume != -10000) ? powf(10.0f, (float)volume / (-600.0f / log10f(.5f))): 0.0f;
+	OpenAL_ErrorPrint( alSourcef(Channels[ch_idx].source_id, AL_GAIN, alvol) );
+
+	ALint status;
+	OpenAL_ErrorCheck( alGetSourcei(Channels[ch_idx].source_id, AL_SOURCE_STATE, &status), return -1 );
+		
+	if (status == AL_PLAYING)
+		OpenAL_ErrorPrint( alSourceStop(Channels[ch_idx].source_id) );
+
+
+	OpenAL_ErrorCheck( alSourcei(Channels[ch_idx].source_id, AL_BUFFER, sound_buffers[sid].buf_id), return -1 );
+
+	// setup default listener position/orientation
+	// this is needed for 2D pan
+	OpenAL_ErrorPrint( alListener3f(AL_POSITION, 0.0, 0.0, 0.0) );
+
+	ALfloat list_orien[] = { 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f };
+	OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
+
+	OpenAL_ErrorPrint( alSourcei(Channels[ch_idx].source_id, AL_SOURCE_RELATIVE, AL_FALSE) );
+
+	OpenAL_ErrorPrint( alSourcei(Channels[ch_idx].source_id, AL_LOOPING, (looping) ? AL_TRUE : AL_FALSE) );
+
+	OpenAL_ErrorPrint( alSourcePlay(Channels[ch_idx].source_id) );
+
+	sound_buffers[sid].source_id = ch_idx;
+
+	Channels[ch_idx].buf_id = sid;
+	Channels[ch_idx].snd_id = snd_id;
+	Channels[ch_idx].sig = channel_next_sig++;
+	Channels[ch_idx].last_position = 0;
+	Channels[ch_idx].is_voice_msg = is_voice_msg;
+	Channels[ch_idx].vol = volume;
+	Channels[ch_idx].looping = looping;
+	Channels[ch_idx].priority = priority;
+
+	if (channel_next_sig < 0)
 		channel_next_sig = 1;
-	}
 
-	Channels[channel].last_position = 0;
+	return Channels[ch_idx].sig;
 
-	// make sure there aren't any looping voice messages
-	for (int i=0; i<MAX_CHANNELS; i++) {
-		if (Channels[i].is_voice_msg == true) {
-			if (Channels[i].source_id == 0) {
-				continue;
-			}
-
-			DWORD current_position = ds_get_play_position(i);
-			if (current_position != 0) {
-				if (current_position < Channels[i].last_position) {
-					ds_stop_channel(i);
-				} else {
-					Channels[i].last_position = current_position;
-				}
-			}
-		}
-	}
-
-	return Channels[channel].sig;
 #else
+
 	int				channel;
 	HRESULT			DSResult;
 
@@ -3388,72 +3389,72 @@ void ds_chg_loop_status(int channel, int loop)
 int ds3d_play(int sid, int hid, int snd_id, vec3d *pos, vec3d *vel, int min, int max, int looping, int max_volume, int estimated_vol, int priority )
 {
 #ifdef USE_OPENAL
-	int channel;
+	int ch_idx;
+	ALfloat alvol = 1.0f, max_vol = 1.0f;
+	ALint status;
 	
 	if (!ds_initialized)
 		return -1;
 
-	channel = ds_get_free_channel(estimated_vol, snd_id, priority);
+	ch_idx = ds_get_free_channel(estimated_vol, snd_id, priority);
 
-	if (channel > -1)	{
-		if ( Channels[channel].source_id == 0 ) {
-			return -1;
-		}
-		
-	//	alDistanceModel(AL_INVERSE_DISTANCE);
-		
-		// reset pitch value since it could have been changed for this source
-		OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_PITCH, 1.0) );
-
-		// set up 3D sound data here
-		ds3d_update_buffer(channel, i2fl(min), i2fl(max), pos, vel);
-		
-		// Actually play it
-		Channels[channel].vol = estimated_vol;
-		Channels[channel].looping = looping;
-		Channels[channel].priority = priority;
-
-		// set volume
-		ALfloat alvol = (estimated_vol != -10000) ? powf(10.0f, (float)estimated_vol / (-600.0f / log10f(.5f))): 0.0f;
-		OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_GAIN, alvol) );
-
-		// set maximum "inner cone" volume
-		ALfloat max_vol = (max_volume != -10000) ? powf(10.0f, (float)max_volume / (-600.0f / log10f(.5f))): 0.0f;
-		OpenAL_ErrorPrint( alSourcef(Channels[channel].source_id, AL_MAX_GAIN, max_vol) );	
-
-		ALint status;
-		OpenAL_ErrorCheck( alGetSourcei(Channels[channel].source_id, AL_SOURCE_STATE, &status), return -1 );
-
-		if (status == AL_PLAYING)
-			OpenAL_ErrorPrint( alSourceStop(Channels[channel].source_id) );
-
-		OpenAL_ErrorCheck( alSourcei(Channels[channel].source_id, AL_BUFFER, sound_buffers[sid].buf_id), return -1 );
-		
-		OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_LOOPING, (looping) ? AL_TRUE : AL_FALSE) );
-
-		OpenAL_ErrorPrint( alSourcei(Channels[channel].source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
-
-		OpenAL_ErrorPrint( alSourcePlay(Channels[channel].source_id) );
-
-		sound_buffers[sid].source_id = channel;
-		Channels[channel].buf_id = sid;
-	}
-	else {
-//		nprintf(( "Sound", "SOUND ==> Not playing sound requested at volume %.2f\n", ds_get_percentage_vol(volume) ));
+	if (ch_idx < 0) {
+	//	nprintf(( "Sound", "SOUND ==> Not playing sound requested at volume %.2f\n", ds_get_percentage_vol(volume) ));
 		return -1;
 	}
 
-	Channels[channel].snd_id = snd_id;
-	Channels[channel].sig = channel_next_sig++;
-	if (channel_next_sig < 0 ) {
+
+	if (Channels[ch_idx].source_id == 0)
+		return -1;
+		
+//	alDistanceModel(AL_INVERSE_DISTANCE);
+		
+	// reset pitch value since it could have been changed for this source
+	OpenAL_ErrorPrint( alSourcef(Channels[ch_idx].source_id, AL_PITCH, 1.0) );
+
+	// set up 3D sound data here
+	ds3d_update_buffer(ch_idx, i2fl(min), i2fl(max), pos, vel);
+		
+	// Actually play it
+	Channels[ch_idx].vol = estimated_vol;
+	Channels[ch_idx].looping = looping;
+	Channels[ch_idx].priority = priority;
+
+	// set volume
+	alvol = (estimated_vol != -10000) ? powf(10.0f, (float)estimated_vol / (-600.0f / log10f(.5f))): 0.0f;
+	OpenAL_ErrorPrint( alSourcef(Channels[ch_idx].source_id, AL_GAIN, alvol) );
+
+	// set maximum "inner cone" volume
+	max_vol = (max_volume != -10000) ? powf(10.0f, (float)max_volume / (-600.0f / log10f(.5f))): 0.0f;
+	OpenAL_ErrorPrint( alSourcef(Channels[ch_idx].source_id, AL_MAX_GAIN, max_vol) );	
+
+	OpenAL_ErrorCheck( alGetSourcei(Channels[ch_idx].source_id, AL_SOURCE_STATE, &status), return -1 );
+
+	if (status == AL_PLAYING)
+		OpenAL_ErrorPrint( alSourceStop(Channels[ch_idx].source_id) );
+
+	OpenAL_ErrorCheck( alSourcei(Channels[ch_idx].source_id, AL_BUFFER, sound_buffers[sid].buf_id), return -1 );
+	
+	OpenAL_ErrorPrint( alSourcei(Channels[ch_idx].source_id, AL_LOOPING, (looping) ? AL_TRUE : AL_FALSE) );
+
+	OpenAL_ErrorPrint( alSourcei(Channels[ch_idx].source_id, AL_SOURCE_RELATIVE, AL_TRUE) );
+
+	OpenAL_ErrorPrint( alSourcePlay(Channels[ch_idx].source_id) );
+
+	sound_buffers[sid].source_id = ch_idx;
+
+	Channels[ch_idx].buf_id = sid;
+	Channels[ch_idx].snd_id = snd_id;
+	Channels[ch_idx].sig = channel_next_sig++;
+	Channels[ch_idx].last_position = 0;
+
+	if (channel_next_sig < 0)
 		channel_next_sig = 1;
-	}
 
-	Channels[channel].last_position = 0;
-
-	return Channels[channel].sig;
+	return Channels[ch_idx].sig;
 
 #else
+
 	int				channel;
 	HRESULT			hr;
 
@@ -4148,11 +4149,7 @@ int ds_eax_is_inited()
 
 bool ds_using_a3d()
 {
-#ifdef USE_OPENAL
 	return false;
-#else
-	return false;
-#endif
 }
 
 // Called once per game frame to make sure voice messages aren't looping
@@ -4161,12 +4158,14 @@ void ds_do_frame()
 {
 	if (!ds_initialized)
 		return;
-	
+
+	int i;
 	channel *cp = NULL;
 
-	for (int i=0; i<MAX_CHANNELS; i++) {
+	for (i = 0; i < MAX_CHANNELS; i++) {
 		cp = &Channels[i];
 		Assert( cp != NULL );
+
 		if (cp->is_voice_msg == true) {
 #ifdef USE_OPENAL
 			if( cp->source_id == 0 ) {
@@ -4179,11 +4178,7 @@ void ds_do_frame()
 			DWORD current_position = ds_get_play_position(i);
 			if (current_position != 0) {
 				if (current_position < cp->last_position) {
-#ifdef USE_OPENAL
-					ds_stop_channel(i);
-#else
 					ds_close_channel(i);
-#endif
 				} else {
 					cp->last_position = current_position;
 				}
