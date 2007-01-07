@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.157.2.19 $
- * $Date: 2006-12-26 05:27:54 $
+ * $Revision: 2.157.2.20 $
+ * $Date: 2007-01-07 12:13:57 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157.2.19  2006/12/26 05:27:54  taylor
+ * remove unneeded header
+ *
  * Revision 2.157.2.18  2006/12/07 18:21:25  taylor
  * unbreak the breakage that I broke when I tried to fix breakage that wasn't broken the second time but initialy broke instead
  *  (yeah, this one confused me ;))  (Mantis bug #1165)
@@ -6007,7 +6010,9 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 				model_list.vert[i].z = cfread_float( ibuffer_info.read );
 				model_list.vert[i].u = cfread_float( ibuffer_info.read );
 				model_list.vert[i].v = cfread_float( ibuffer_info.read );
-				cfread_vector( &model_list.norm[i], ibuffer_info.read );
+				model_list.norm[i].xyz.x = cfread_float( ibuffer_info.read );
+				model_list.norm[i].xyz.y = cfread_float( ibuffer_info.read );
+				model_list.norm[i].xyz.z = cfread_float( ibuffer_info.read );
 			}
 
 			model_list.n_verts = ibx_verts;
@@ -6029,7 +6034,9 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 				cfwrite_float( model_list.vert[i].z, ibuffer_info.write );
 				cfwrite_float( model_list.vert[i].u, ibuffer_info.write );
 				cfwrite_float( model_list.vert[i].v, ibuffer_info.write );
-				cfwrite_vector( &model_list.norm[i], ibuffer_info.write );
+				cfwrite_float( model_list.norm[i].xyz.x, ibuffer_info.write );
+				cfwrite_float( model_list.norm[i].xyz.y, ibuffer_info.write );
+				cfwrite_float( model_list.norm[i].xyz.z, ibuffer_info.write );
 			}
 		}
 	}
