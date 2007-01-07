@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.82 $
- * $Date: 2006-11-06 05:42:44 $
+ * $Revision: 2.83 $
+ * $Date: 2007-01-07 13:13:38 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2006/11/06 05:42:44  taylor
+ * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
+ * deal with a index_buffer memory leak that Valgrind has always complained about
+ * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
+ * get rid of MAX_BUFFERS
+ * make D3D vertex buffers dynamic, like OGL has already done
+ *
  * Revision 2.81  2006/10/06 09:56:42  taylor
  * clean up some old software rendering stuff that we don't use any longer
  * remove grzbuffer.*, since all it did was give us 3 variables, which were moved to 2d.*
@@ -1116,10 +1123,10 @@ typedef struct screen {
 } screen;
 
 // cpu types
-extern int Gr_amd3d;
-extern int Gr_katmai;
-extern int Gr_cpu;	
-extern int Gr_mmx;
+//extern int Gr_amd3d;
+//extern int Gr_katmai;
+//extern int Gr_cpu;	
+//extern int Gr_mmx;
 
 // handy macro
 #define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh, NULL, NULL, NULL); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(0);
