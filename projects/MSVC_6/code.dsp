@@ -331,6 +331,14 @@ SOURCE=..\..\code\cutscene\mvelib.h
 
 SOURCE=..\..\code\cutscene\mveplayer.cpp
 # End Source File
+# Begin Source File
+
+SOURCE=..\..\code\cutscene\oggplayer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\cutscene\oggplayer.h
+# End Source File
 # End Group
 # Begin Group "Debris"
 
@@ -371,14 +379,6 @@ SOURCE=..\..\code\debugconsole\timerbar.h
 # Begin Group "DirectX"
 
 # PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\directx\dx8show.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\directx\dx8show.h
-# End Source File
 # Begin Source File
 
 SOURCE=..\..\code\DirectX\vasync.h
