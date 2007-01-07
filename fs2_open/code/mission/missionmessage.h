@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.12.2.1 $
- * $Date: 2006-09-30 21:58:06 $
+ * $Revision: 2.12.2.2 $
+ * $Date: 2007-01-07 03:10:05 $
  * $Author: Goober5000 $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12.2.1  2006/09/30 21:58:06  Goober5000
+ * more flexible checking of generic messages
+ *
  * Revision 2.12  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -334,7 +337,7 @@ extern char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES];
 #define MESSAGE_REARM_REQUEST		24		// wingman messages player when he calls a support ship
 #define MESSAGE_DISABLE_TARGET	25
 #define MESSAGE_DISARM_TARGET		26
-#define MESSAGE_PLAYED_DIED		27		// message sent when player starts death roll
+#define MESSAGE_PLAYER_DIED		27		// message sent when player starts death roll
 #define MESSAGE_WINGMAN_SCREAM	28
 #define MESSAGE_SUPPORT_KILLED	29
 #define MESSAGE_ALL_CLEAR			30
