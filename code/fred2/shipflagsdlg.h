@@ -53,6 +53,7 @@ public:
 	CButton	m_set_class_dynamically;
 	CButton	m_team_loadout_store_status;
 	CButton m_no_death_scream;
+	CButton m_always_death_scream;
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
 	numeric_edit_control m_destroy_value;
@@ -97,6 +98,7 @@ protected:
 	afx_msg void OnSetClassDynamically();
 	afx_msg void OnTeamLoadoutStoreStatus();
 	afx_msg void OnNoDeathScream();
+	afx_msg void OnAlwaysDeathScream();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

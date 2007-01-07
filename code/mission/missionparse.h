@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.93 $
+ * $Revision: 2.94 $
  * $Author: Goober5000 $
- * $Date: 2007-01-07 01:00:18 $
+ * $Date: 2007-01-07 21:28:11 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2007/01/07 01:00:18  Goober5000
+ * convert a mission variable to a mission flag
+ *
  * Revision 2.92  2007/01/07 00:01:28  Goober5000
  * add a feature for specifying the source of Command messages
  *
@@ -925,7 +928,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	12
+#define MAX_PARSE_OBJECT_FLAGS_2	13
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -939,6 +942,7 @@ typedef struct p_object {
 #define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<9)
 #define P2_SF2_TEAM_LOADOUT_STORE_STATUS	(1<<10)
 #define P2_SF2_NO_DEATH_SCREAM				(1<<11)
+#define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<12)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

@@ -923,6 +923,7 @@
 #define IDC_NO_DEATH_SCREAM             1484
 #define IDC_RESET_SCORES                1484
 #define IDC_RESPAWN_SPIN                1485
+#define IDC_ALWAYS_DEATH_SCREAM         1485
 #define IDC_OBJ_TEAM                    1489
 #define IDC_CAMPAIGN_TYPE               1491
 #define IDC_SUPPORT_ALLOWED             1492

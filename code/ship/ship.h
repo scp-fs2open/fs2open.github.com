@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.172 $
- * $Date: 2007-01-07 12:59:54 $
- * $Author: taylor $
+ * $Revision: 2.173 $
+ * $Date: 2007-01-07 21:28:11 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.172  2007/01/07 12:59:54  taylor
+ * fix thruster 2 length factor tbl entry so that it has the proper name
+ *
  * Revision 2.171  2006/12/28 00:59:48  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1228,9 +1231,10 @@ typedef struct ship_subsys_info {
 #define SF2_SET_CLASS_DYNAMICALLY			(1<<13)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
 #define SF2_TEAM_LOADOUT_STORE_STATUS		(1<<14)		// Karajorma - This ship has been flagged for cleanup at the end of the mission
 #define SF2_NO_DEATH_SCREAM					(1<<15)		// Goober5000 - for WCS
-#define SF2_GLOWMAPS_DISABLED				(1<<16)		// taylor - to disable glow maps
-#define SF2_IN_LIMBO						(1<<17)		// WMC - Ship isn't in mission, but still in Ships array
-#define SF2_DEPART_TO_LIMBO					(1<<18)		// WMC/Goober5000
+#define SF2_ALWAYS_DEATH_SCREAM				(1<<16)		// Goober5000 - for WCS
+#define SF2_GLOWMAPS_DISABLED				(1<<17)		// taylor - to disable glow maps
+#define SF2_IN_LIMBO						(1<<18)		// WMC - Ship isn't in mission, but still in Ships array
+#define SF2_DEPART_TO_LIMBO					(1<<19)		// WMC/Goober5000
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
