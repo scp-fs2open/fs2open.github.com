@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.87 $
- * $Date: 2006-12-28 00:59:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.88 $
+ * $Date: 2007-01-07 03:44:50 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2006/12/28 00:59:48  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.86  2006/11/24 22:46:25  Goober5000
  * FRED again updates backgrounds while the user is editing them
  *
@@ -3388,13 +3391,26 @@ void stars_load_first_valid_background()
 {
 	int background_idx = stars_get_first_valid_background();
 
+#ifndef NDEBUG
 	if (background_idx < 0 && !Fred_running)
 	{
-		if (Num_backgrounds > 1)
-			Warning(LOCATION, "Unable to find a sufficient number of bitmaps for any background listed in this mission.  No background will be displayed.");
-		else
-			Warning(LOCATION, "Unable to find a sufficient number of bitmaps for this mission's background.  The background will not be displayed.");
+		int i;
+		bool at_least_one_bitmap = false;
+		for (i = 0; i < (uint)Num_backgrounds; i++)
+		{
+			if (Backgrounds[i].bitmaps.size() > 0)
+				at_least_one_bitmap = true;
+		}
+
+		if (at_least_one_bitmap)
+		{
+			if (Num_backgrounds == 1)
+				Warning(LOCATION, "Unable to find a sufficient number of bitmaps for this mission's background.  The background will not be displayed.");	
+			else if (Num_backgrounds > 1)
+				Warning(LOCATION, "Unable to find a sufficient number of bitmaps for any background listed in this mission.  No background will be displayed.");
+		}
 	}
+#endif
 
 	stars_load_background(background_idx);
 }
