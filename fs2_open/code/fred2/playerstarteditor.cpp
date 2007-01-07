@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/PlayerStartEditor.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-06-02 09:52:42 $
- * $Author: karajorma $
+ * $Revision: 1.3 $
+ * $Date: 2007-01-07 12:55:57 $
+ * $Author: taylor $
  *
  * Player starting point editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/06/02 09:52:42  karajorma
+ * Complete overhaul of how ship loadout is handled to support the use of variables for setting the class and quantity of ships present in loadout.
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -267,6 +270,11 @@ void player_start_editor::reset_controls()
 			}
 
 			ct++;
+		} else if (weapon_pool[selected_team][i] > 0) {
+			// not sure if this should be a verbal warning or not, so I'm adding both and making it verbal for now
+			Warning(LOCATION, "Weapon '%s' in weapon pool isn't allowed on player loadout!  Resetting count to 0...\n", Weapon_info[i].name);
+		//	mprintf(("Weapon '%s' in weapon pool isn't allowed on player loadout!  Resetting to 0 count.\n", Weapon_info[i].name));
+			weapon_pool[selected_team][i] = 0;
 		}
 	}	
 
