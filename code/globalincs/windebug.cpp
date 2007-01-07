@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.41 $
- * $Date: 2006-12-28 00:59:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.42 $
+ * $Date: 2007-01-07 13:15:42 $
+ * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2006/12/28 00:59:26  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.40  2006/09/09 04:07:57  taylor
  * fix for vanishing FRED2 cursor (Mantis bug #997), plus a little cleanup
  *
@@ -262,6 +265,10 @@
 #include "globalincs/systemvars.h"
 #include "cmdline/cmdline.h"
 #include "parse/lua.h"
+
+extern void gr_activate(int active);
+
+bool Messagebox_active = false;
 
 #ifdef _MSC_VER
 #include <crtdbg.h>
@@ -1002,8 +1009,9 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 
 	int val;
 
-	gr_force_windowed();
+	Messagebox_active = true;
 
+	gr_activate(0);
 
 	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", text, filename, linenum );
 
@@ -1017,27 +1025,23 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel to exit.\r\n");
 
-	stay_minimized = true;
 	val = MessageBox(NULL, dumpBuffer.buffer, "Assertion Failed!", MB_OKCANCEL|flags );
 #else
-	stay_minimized = true;
 	val = MessageBox(NULL, AssertText1, "Assertion Failed!", MB_OKCANCEL|flags );
 #endif
-	stay_minimized = false;
-
-	if (!Fred_running)
-		ShowCursor(false);
 
 	if (val == IDCANCEL)
 		exit(1);
-#ifndef FRED
+
 #ifndef INTERPLAYQA
 	Int3();
 #else
 	AsmInt3();
 #endif
-#endif
 
+	gr_activate(1);
+
+	Messagebox_active = false;
 } 
 
 void LuaDebugPrint(lua_Debug &ar)
@@ -1058,8 +1062,9 @@ void LuaError(struct lua_State *L, char *format, ...)
 {
 	int val;
 
-	gr_force_windowed();
-	
+	Messagebox_active = true;
+
+	gr_activate(0);
 
 	/*
 	va_start(args, format);
@@ -1132,18 +1137,17 @@ void LuaError(struct lua_State *L, char *format, ...)
 	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 	dumpBuffer.Printf( "\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
 
-	stay_minimized = true;
 	val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags|MB_YESNOCANCEL );
-	stay_minimized = false;
-
-	if (!Fred_running)
-		ShowCursor(false);
 
 	if (val == IDCANCEL ) {
 		exit(1);
 	} else if(val == IDYES) {
 		Int3();
 	}
+
+	gr_activate(1);
+
+	Messagebox_active = false;
 }
 
 void _cdecl Error( char * filename, int line, char * format, ... )
@@ -1151,13 +1155,15 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 	int val;
 	va_list args;
 
-//	gr_activate(0);
-	gr_force_windowed();
-
 	va_start(args, format);
-	vsprintf(AssertText1,format,args);
+	vsprintf(AssertText1, format, args);
 	va_end(args);
-	sprintf(AssertText2,"Error: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line );
+
+	sprintf(AssertText2, "Error: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line);
+
+	Messagebox_active = true;
+
+	gr_activate(0);
 
 #ifdef SHOW_CALL_STACK
 	dumpBuffer.Clear();
@@ -1169,84 +1175,50 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 	dumpBuffer.Printf( "\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
 
-	stay_minimized = true;
-	val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags|MB_OKCANCEL );
+	val = MessageBox(NULL, dumpBuffer.buffer, "Error!", flags | MB_DEFBUTTON2 | MB_OKCANCEL );
 #else
 	strcat(AssertText2,"\r\n\r\nUse Ok to break into Debugger, Cancel exits.\r\n");
-	stay_minimized = true;
-	val = MessageBox(NULL, AssertText2, "Error!", flags|MB_OKCANCEL );
+
+	val = MessageBox(NULL, AssertText2, "Error!", flags | MB_DEFBUTTON2 | MB_OKCANCEL );
 #endif
-	stay_minimized = false;
 
-	if (!Fred_running)
-		ShowCursor(false);
+	switch (val)
+	{
+		case IDCANCEL:
+			exit(1);
 
-	if (val == IDCANCEL ) {
-		exit(1);
-	} else {
+		default:
 #ifndef INTERPLAYQA
-		Int3();
+			Int3();
 #else
-		AsmInt3();
+			AsmInt3();
 #endif
+			break;
 	}
+
+	gr_activate(1);
+
+	Messagebox_active = false;
 }
 
-void _cdecl Warning( char * filename, int line, char * format, ... )
+void _cdecl Warning( char *filename, int line, char *format, ... )
 {
-#ifdef FRED
-
-	if (!Cmdline_nowarn)
-	{
-		va_list args;
-		static bool show_warnings = true;
-
-		if(show_warnings == false) return;
-
-		char *explanation = 
-			"This warning system is new to release Fred2_open. The following issue will not prevent "
-			"your mission from loading in FS2 but it could cause instablility (i.e. crashes), please fix it.";
-
-		char *end = "Continue with warnings?";//\n\nYes: continue with warnings\nNo: continue without\nCancel: shutdown Fred";
-
-		va_start(args, format);
-		vsprintf(AssertText1,format,args);
-		va_end(args);
-		sprintf(AssertText2,"%s\n\nWarning: %s\r\nFile:%s\r\nLine: %d\n\n%s", 
-			explanation, AssertText1, filename, line, end);
-
-		stay_minimized = true;
-		int result = MessageBox((HWND) os_get_window(), AssertText2, "Fred Warning", MB_ICONWARNING | MB_YESNO);//CANCEL);
-		stay_minimized = false;
-
-		if (!Fred_running)
-			ShowCursor(false);
-
-		switch(result)
-		{
-			case IDNO: show_warnings = false; break;
-			case IDCANCEL: exit(1);
-		}
-	}
-#else
-
 #ifndef NDEBUG
-#ifndef DONT_SHOW_WARNINGS	// Goober5000
+	va_list args;
+	int result;
 
 	if (Cmdline_nowarn)
 		return;
 
-	va_list args;
-	int id;
+	va_start(args, format);
+	vsprintf(AssertText1, format, args);
+	va_end(args);
 
-	gr_force_windowed();
+	sprintf(AssertText2, "Warning: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line );
+
+	Messagebox_active = true;
 
 	gr_activate(0);
-
-	va_start(args, format);
-	vsprintf(AssertText1,format,args);
-	va_end(args);
-	sprintf(AssertText2,"Warning: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line );
 
 #ifdef SHOW_CALL_STACK
 	dumpBuffer.Clear();
@@ -1258,33 +1230,33 @@ void _cdecl Warning( char * filename, int line, char * format, ... )
 	dumpBuffer.Printf( "\r\n[ This info is in the clipboard so you can paste it somewhere now ]\r\n" );
 	dumpBuffer.Printf("\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
 
-	stay_minimized = true;
-	id = MessageBox(NULL, dumpBuffer.buffer, "Warning!", MB_YESNOCANCEL|flags );
+	result = MessageBox((HWND)os_get_window(), dumpBuffer.buffer, "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
 #else
-	stay_minimized = true;
 	strcat(AssertText2,"\r\n\r\nUse Yes to break into Debugger, No to continue.\r\nand Cancel to Quit");
-	id = MessageBox(NULL, AssertText2, "Warning!", MB_YESNOCANCEL|flags );
+	result = MessageBox((HWND)os_get_window(), AssertText2, "Warning!", MB_YESNOCANCEL | MB_DEFBUTTON2 | MB_ICONWARNING | flags );
 #endif
-	stay_minimized = false;
 
-	if (!Fred_running)
-		ShowCursor(false);
-
-	if ( id == IDCANCEL )
-		exit(1);
-	else if ( id == IDYES ) {
+	switch (result)
+	{
+		case IDYES:
 #ifndef INTERPLAYQA
-		Int3();
+			Int3();
 #else
-		AsmInt3();
+			AsmInt3();
 #endif
+			break;
+
+		case IDNO:
+			break;
+
+		case IDCANCEL:
+			exit(1);
 	}
+
 	gr_activate(1);
 
-#endif // DONT_SHOW_WARNINGS - Goober5000
-#endif // NDEBUG
-
-#endif // FRED OGL else
+	Messagebox_active = false;
+#endif // !NDEBUG
 }
 
 
