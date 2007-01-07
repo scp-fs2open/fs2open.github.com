@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.cpp $
- * $Revision: 2.5 $
- * $Date: 2006-06-27 05:07:49 $
+ * $Revision: 2.6 $
+ * $Date: 2007-01-07 13:00:24 $
  * $Author: taylor $
  *
  * Low-level floating point math routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2006/06/27 05:07:49  taylor
+ * fix various compiler warnings and things that Valgrind complained about
+ *
  * Revision 2.4  2005/04/12 05:26:36  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)
  * fix free on possible NULL in modelinterp.cpp (Jens Granseuer)
@@ -83,7 +86,7 @@
 #include "io/timer.h"
 
 
-
+/*
 #define LOOKUP_BITS	6
 #define EXP_POS		23
 #define EXP_BIAS		127
@@ -98,17 +101,17 @@ typedef float FLOAT;
 #define GET_EMANT(a)	(((a) >> LOOKUP_POS) & LOOKUP_MASK )
 #define SET_MANTSEED(a)	(((unsigned long)(a)) << SEED_POS )
 
-/*
+
 int fl_magic = 0x59C00000;		//representation of 2^51 + 2^52
 const float *p_fl_magic = (const float *)&fl_magic;
-*/
+
 
 union _flint {
 	unsigned long	i;
 	float				f;
 } fi, fo;
 
-/*
+
 static unsigned char iSqrt[TABLE_SIZE];
 static int iSqrt_inited = 0;
 
@@ -126,7 +129,7 @@ static void MakeInverseSqrtLookupTable()
 	}
 	iSqrt[ TABLE_SIZE / 2 ] = 0xFF;
 }
-*/
+
 
 // HACK!
 float fl_isqrt_c( float x )
@@ -146,16 +149,16 @@ float fl_isqrt_c( float x )
 	return r1;
 
 
-/*	if ( !iSqrt_inited )
-		MakeInverseSqrtLookupTable();
+//	if ( !iSqrt_inited )
+//		MakeInverseSqrtLookupTable();
 
-	seed.i = SET_EXP(((3*EXP_BIAS-1) - GET_EXP(a)) >> 1 ) | SET_MANTSEED(iSqrt[GET_EMANT(a)]);
-	r = seed.f;
-	r = (3.0f - r * r * arg ) * r * 0.5f;
-	r = (3.0f - r * r * arg ) * r * 0.5f;
-	return r;
-*/
+//	seed.i = SET_EXP(((3*EXP_BIAS-1) - GET_EXP(a)) >> 1 ) | SET_MANTSEED(iSqrt[GET_EMANT(a)]);
+//	r = seed.f;
+//	r = (3.0f - r * r * arg ) * r * 0.5f;
+//	r = (3.0f - r * r * arg ) * r * 0.5f;
+//	return r;
 }
+*/
 
 // rounds off a floating point number to a multiple of some number
 float fl_roundoff(float x, int multiple)
