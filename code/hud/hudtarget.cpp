@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.96 $
- * $Date: 2007-01-07 03:09:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.97 $
+ * $Date: 2007-01-07 12:53:35 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2007/01/07 03:09:53  Goober5000
+ * fix bug where built-in lament messages were never played
+ *
  * Revision 2.95  2007/01/06 23:56:30  Goober5000
  * taylor's bugfix
  *
@@ -726,14 +729,14 @@ hud_frames Aburn_bar_gauge;
 hud_frames Wenergy_bar_gauge;
 int Aburn_bar_gauge_loaded = 0;
 int Wenergy_bar_gauge_loaded = 0;
-int Weapon_energy_text_coords[GR_NUM_RESOLUTIONS][2] = {
+/*int Weapon_energy_text_coords[GR_NUM_RESOLUTIONS][2] = {
 	{ // GR_640
 		439, 318
 	},
 	{ // GR_1024
 		708, 509
 	}
-};
+};*/
 
 // animation frames for the countermeasures gauge
 // frames:	0	=>		background
@@ -2961,8 +2964,10 @@ int object_targetable_in_reticle(object *target_objp)
 	}
 
 	obj_type = target_objp->type;
-		
-	if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_DEBRIS) || (obj_type == OBJ_WEAPON) || (obj_type == OBJ_ASTEROID) || (obj_type == OBJ_JUMP_NODE) ) {
+
+	if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_DEBRIS) || (obj_type == OBJ_WEAPON) || (obj_type == OBJ_ASTEROID)
+			|| ((obj_type == OBJ_JUMP_NODE) && !target_objp->jnp->is_hidden()) )
+	{
 		return 1;
 	}
 
@@ -3041,8 +3046,6 @@ void hud_target_in_reticle_new()
 			}
 			break;
 		case OBJ_JUMP_NODE:
-			if(A->jnp->is_hidden())
-				continue;
 			mc.model_num = A->jnp->get_modelnum();
 			break;
 		default:
@@ -4350,7 +4353,11 @@ int hud_get_best_primary_bank(float *range)
 		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
 		Assert(bank_to_fire >= 0 && bank_to_fire < swp->num_primary_banks);
-		Assert(swp->primary_bank_weapons[bank_to_fire] >= 0 && swp->primary_bank_weapons[bank_to_fire] < MAX_WEAPON_TYPES);
+		Assert(swp->primary_bank_weapons[bank_to_fire] < MAX_WEAPON_TYPES);
+
+		if (swp->primary_bank_weapons[bank_to_fire] < 0)
+			continue;
+
 		wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
 		weapon_range = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
 
@@ -5296,7 +5303,8 @@ void hud_show_weapon_energy_gauge()
 			}
 			sprintf(buf,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
 			hud_num_make_mono(buf);
-			gr_string(Weapon_energy_text_coords[gr_screen.res][0], Weapon_energy_text_coords[gr_screen.res][1], buf);
+		//	gr_string(Weapon_energy_text_coords[gr_screen.res][0], Weapon_energy_text_coords[gr_screen.res][1], buf);
+			gr_string(current_hud->Wenergy_text_coords[0], current_hud->Wenergy_text_coords[1], buf);
 		}
 
 		hud_set_gauge_color(HUD_WEAPONS_ENERGY);

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.67 $
- * $Date: 2006-08-03 01:33:56 $
- * $Author: Goober5000 $
+ * $Revision: 2.68 $
+ * $Date: 2007-01-07 12:53:35 $
+ * $Author: taylor $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/08/03 01:33:56  Goober5000
+ * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
+ * --Goober5000
+ *
  * Revision 2.66  2006/07/17 01:12:19  taylor
  * fix some missile autocentering issues
  *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
@@ -994,12 +998,6 @@ void hud_targetbox_show_extra_ship_info(ship *target_shipp, object *target_objp)
 // Render a jump node on the target monitor
 void hud_render_target_jump_node(object *target_objp)
 {
-	if(target_objp->jnp->is_hidden())
-	{
-		hud_cease_targeting();
-		return;
-	}
-
 	char			outstr[256];
 	vec3d		obj_pos = ZERO_VECTOR;
 	vec3d		camera_eye = ZERO_VECTOR;
@@ -1007,6 +1005,11 @@ void hud_render_target_jump_node(object *target_objp)
 	vec3d		orient_vec, up_vector;
 	float			factor, dist;
 	int			hx, hy, w, h;
+
+	if ( target_objp->jnp->is_hidden() ) {
+		set_target_objnum( Player_ai, -1 );
+		return;
+	}
 
 	if ( Detail.targetview_model )	{
 		// take the forward orientation to be the vector from the player to the current target

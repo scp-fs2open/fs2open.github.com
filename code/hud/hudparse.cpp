@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.46 $
- * $Date: 2006-12-28 00:59:27 $
- * $Author: wmcoolmon $
+ * $Revision: 2.47 $
+ * $Date: 2007-01-07 12:53:35 $
+ * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2006/12/28 00:59:27  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.45  2006/09/20 05:04:42  taylor
  * the resolution checks needed to be based on the unscaled res since you would have to include correct sizes for every single resolution otherwise (fixes a bug noticed in WCS)
  *
@@ -213,8 +216,9 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 	{ NULL,			HUD_VAR(Player_shield_coords),	"$Player Shield:",			396, 379, 634, 670,	0, 0, 0, 0, 0, -1, -1 },
 	{ NULL,			HUD_VAR(Target_shield_coords),	"$Target Shield:",			142, 379, 292, 670,	0, 0, 0, 0, 0, -1, -1 },
 	{ NULL,			HUD_VAR(Shield_mini_coords),	"$Shield Mini:",			305, 291, 497, 470, 0, HUD_VAR(Shield_mini_fname), 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Aburn_coords),			"$Afterburner Energy:",		171, 265, 274, 424, HUD_VAR(Aburn_size) ,HUD_VAR(Aburn_fname), 0, 0, 0, -1, -1 },
-	{ NULL,			HUD_VAR(Wenergy_coords),		"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size) ,HUD_VAR(Wenergy_fname), 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Aburn_coords),			"$Afterburner Energy:",		171, 265, 274, 424, HUD_VAR(Aburn_size), HUD_VAR(Aburn_fname), 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Wenergy_coords),		"$Weapons Energy:",			416, 265, 666, 424, HUD_VAR(Wenergy_size), HUD_VAR(Wenergy_fname), 0, 0, 0, -1, -1 },
+	{ NULL,			HUD_VAR(Wenergy_text_coords),	"$Weapons Energy Text:",	439, 318, 708, 509, 0, 0, 0, 0, 0, -1, -1 },
 	{ NULL,			HUD_VAR(Escort_coords),			"$Escort List:",			486, 206, 865, 330, 0, HUD_VAR(Escort_filename[0]), 0, HUD_VAR(Escort_htext), 0, -1, -1 },
 
 	//Mini-gauges
@@ -232,7 +236,7 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 };
 
 //Number of gauges
-int Num_gauge_types = 16;
+int Num_gauge_types = 17;
 int Num_custom_gauges = 0;
 #endif
 #ifdef NEW_HUD
