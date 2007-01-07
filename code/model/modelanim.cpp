@@ -6,11 +6,14 @@
 
 /*
  * $Logfile:  $
- * $Revision: 1.3 $
- * $Date: 2006-11-06 06:50:59 $
+ * $Revision: 1.4 $
+ * $Date: 2007-01-07 12:50:51 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/11/06 06:50:59  taylor
+ * updated/fixed modelanim code
+ *
  * Revision 1.2  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -464,6 +467,21 @@ void model_anim_submodel_trigger_rotate(model_subsystem *psub, ship_subsys *ss)
 	sii->angs.p = trigger->current_ang.xyz.x; //- (2.0f * PI2 * (trigger->current_ang.xyz.x / (2.0f * PI2)));
 	sii->angs.h = trigger->current_ang.xyz.y; //- (2.0f * PI2 * (trigger->current_ang.xyz.y / (2.0f * PI2)));
 	sii->angs.b = trigger->current_ang.xyz.z; //- (2.0f * PI2 * (trigger->current_ang.xyz.z / (2.0f * PI2)));
+
+	if (sii->angs.p > PI2)
+		sii->angs.p -= PI2;
+	else if (sii->angs.p < 0.0f)
+		sii->angs.p += PI2;
+
+	if (sii->angs.h > PI2)
+		sii->angs.h -= PI2;
+	else if (sii->angs.h < 0.0f)
+		sii->angs.h += PI2;
+
+	if (sii->angs.b > PI2)
+		sii->angs.b -= PI2;
+	else if (sii->angs.b < 0.0f)
+		sii->angs.b += PI2;
 }
 
 //************************************//
