@@ -63,6 +63,7 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SET_CLASS_DYNAMICALLY, m_set_class_dynamically);
 	DDX_Control(pDX, IDC_TEAM_LOADOUT_STORE_STATUS, m_team_loadout_store_status);
 	DDX_Control(pDX, IDC_NO_DEATH_SCREAM, m_no_death_scream);
+	DDX_Control(pDX, IDC_ALWAYS_DEATH_SCREAM, m_always_death_scream);
 	//}}AFX_DATA_MAP
 
 	if (pDX->m_bSaveAndValidate) {  // get dialog control values
@@ -113,6 +114,7 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_SET_CLASS_DYNAMICALLY, OnSetClassDynamically)
 	ON_BN_CLICKED(IDC_TEAM_LOADOUT_STORE_STATUS, OnTeamLoadoutStoreStatus)
 	ON_BN_CLICKED(IDC_NO_DEATH_SCREAM, OnNoDeathScream)
+	ON_BN_CLICKED(IDC_ALWAYS_DEATH_SCREAM, OnAlwaysDeathScream)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -132,7 +134,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, affected_by_gravity = 0;
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
 	int special_warp = 0, disable_messages = 0, set_class_dynamically = 0, team_loadout_store_status = 0;
-	int no_death_scream = 0;
+	int no_death_scream = 0, always_death_scream = 0;
 	object *objp;
 	bool ship_in_wing = false;
 
@@ -164,6 +166,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					set_class_dynamically = (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY) ? 1 : 0;
 					team_loadout_store_status = (Ships[i].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS) ? 1 : 0;
 					no_death_scream = (Ships[i].flags2 & SF2_NO_DEATH_SCREAM) ? 1 : 0;
+					always_death_scream = (Ships[i].flags2 & SF2_ALWAYS_DEATH_SCREAM) ? 1 : 0;
 
 					destroy_before_mission = (Ships[i].flags & SF_KILL_BEFORE_MISSION) ? 1 : 0;
 					m_destroy_value.init(Ships[i].final_death_time);
@@ -210,6 +213,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					set_class_dynamically = tristate_set(Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY, set_class_dynamically);
 					team_loadout_store_status = tristate_set(Ships[i].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS, team_loadout_store_status);
 					no_death_scream = tristate_set(Ships[i].flags2 & SF2_NO_DEATH_SCREAM, no_death_scream);
+					always_death_scream = tristate_set(Ships[i].flags2 & SF2_ALWAYS_DEATH_SCREAM, always_death_scream);
 
 					// check the final death time and set the internal variable according to whether or not
 					// the final_death_time is set.  Also, the value in the edit box must be set if all the
@@ -270,6 +274,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_set_class_dynamically.SetCheck(set_class_dynamically);
 	m_team_loadout_store_status.SetCheck(team_loadout_store_status);
 	m_no_death_scream.SetCheck(no_death_scream);
+	m_always_death_scream.SetCheck(always_death_scream);
 		
 	m_kdamage.setup(IDC_KDAMAGE, this);
 	m_destroy_value.setup(IDC_DESTROY_VALUE, this);
@@ -727,6 +732,22 @@ void ship_flags_dlg::update_ship(int ship)
 			break;
 	}
 
+	switch (m_always_death_scream.GetCheck()) {
+		case 1:
+			if ( !(Ships[ship].flags2 & SF2_ALWAYS_DEATH_SCREAM) )
+				set_modified();
+
+			Ships[ship].flags2 |= SF2_ALWAYS_DEATH_SCREAM;
+			break;
+
+		case 0:
+			if ( Ships[ship].flags2 & SF2_ALWAYS_DEATH_SCREAM )
+				set_modified();
+
+			Ships[ship].flags2 &= ~SF2_ALWAYS_DEATH_SCREAM;
+			break;
+	}
+
 	Ships[ship].respawn_priority = 0;
 	if(The_mission.game_type & MISSION_TYPE_MULTI) {
 		m_respawn_priority.save(&Ships[ship].respawn_priority);
@@ -967,5 +988,14 @@ void ship_flags_dlg::OnNoDeathScream()
 		m_no_death_scream.SetCheck(0);
 	} else {
 		m_no_death_scream.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnAlwaysDeathScream()
+{
+	if (m_always_death_scream.GetCheck() == 1) {
+		m_always_death_scream.SetCheck(0);
+	} else {
+		m_always_death_scream.SetCheck(1);
 	}
 }
