@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/graphics/generic.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-10-07 02:43:44 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2007-01-07 12:54:35 $
+ * $Author: taylor $
  *
  * Generic graphics functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/10/07 02:43:44  Goober5000
+ * bypass annoying warnings for nonexistent bitmaps
+ *
  * Revision 1.1  2005/11/21 23:55:00  taylor
  * add generic.cpp and generic.h
  *
@@ -50,7 +53,7 @@ int generic_anim_load(generic_anim *ga)
 {
 	int		fps;
 	
-	if ( !strlen(ga->filename) )
+	if ( !strlen(ga->filename) || !stricmp(ga->filename, "none") || !stricmp(ga->filename, "<none>") )
 		return -1;
 	
 	ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames, &fps);
@@ -68,7 +71,7 @@ int generic_anim_load(generic_anim *ga)
 
 int generic_bitmap_load(generic_bitmap *gb)
 {
-	if ( !strlen(gb->filename) || !stricmp(gb->filename, "none") )
+	if ( !strlen(gb->filename) || !stricmp(gb->filename, "none") || !stricmp(gb->filename, "<none>") )
 		return -1;
 	
 	gb->bitmap = bm_load(gb->filename);
