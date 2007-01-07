@@ -1,6 +1,6 @@
 ## lua/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.1 2005-10-30 10:46:23 taylor Exp $
+## $Id: Makefile.am,v 1.2 2007-01-07 12:39:30 taylor Exp $
 
 
 # D_ variants are defaults and should always be used
@@ -32,6 +32,7 @@ liblua_a_SOURCES = \
 	lfunc.h	\
 	lgc.c	\
 	lgc.h	\
+	linit.c	\
 	liolib.c	\
 	llex.c	\
 	llex.h	\
@@ -44,6 +45,7 @@ liblua_a_SOURCES = \
 	lobject.h	\
 	lopcodes.c	\
 	lopcodes.h	\
+	loslib.c	\
 	lparser.c	\
 	lparser.h	\
 	lstate.c	\
@@ -57,14 +59,18 @@ liblua_a_SOURCES = \
 	ltests.c	\
 	ltm.c	\
 	ltm.h	\
+	luac.c	\
+	luaconf.h	\
 	lua.h	\
+	lua.c	\
 	lualib.h	\
 	lundump.c	\
 	lundump.h	\
 	lvm.c	\
 	lvm.h	\
 	lzio.c	\
-	lzio.h
+	lzio.h	\
+	print.c
 
 ##
 ## End Lua library
