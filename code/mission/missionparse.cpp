@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.203 $
- * $Date: 2006-12-28 00:59:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.204 $
+ * $Date: 2007-01-07 00:01:28 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.203  2006/12/28 00:59:32  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.202  2006/11/25 06:37:06  Goober5000
  * holy crap, this had the potential to mark the locked-true sexp as known-false, which would seriously screw a lot of stuff up
  *
@@ -1625,7 +1628,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	//
 	// NOTE: this can be dangerous so be sure that any get_mission_info() call (defaults to basic info) will
 	//       only reference data parsed before this point!! (like current FRED2 and game code does)
-	if (basic == true)
+	if (basic)
 		return;
 
 
@@ -1735,6 +1738,36 @@ void parse_mission_info(mission *pm, bool basic = false)
 		}
 	}
 
+
+	// command stuff by Goober5000 ---------------------------------------
+	strcpy(pm->command_sender, DEFAULT_COMMAND);
+	if (optional_string("$Command Sender:"))
+	{
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+
+		if (*temp == '#')
+			strcpy(pm->command_sender, &temp[1]);
+		else
+			strcpy(pm->command_sender, temp);
+	}
+
+	pm->command_persona = Default_command_persona;
+	if (optional_string("$Command Persona:"))
+	{
+		int idx;
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+
+		idx = message_persona_name_lookup(temp);
+		if (idx >= 0)
+			pm->command_persona = idx;
+		else
+			Warning(LOCATION, "Supplied Command Persona is invalid!  Defaulting to %s.", Personas[Default_command_persona].name);
+	}
+	// end of command stuff ----------------------------------------------
+
+
 	// wing stuff by Goober5000 ------------------------------------------
 	// the wing name arrays are initialized in ship_level_init
 	if (optional_string("$Starting wing names:"))
@@ -1758,6 +1791,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
 	}
 	// end of wing stuff -------------------------------------------------
+
 
 	// set up the Num_teams variable accoriding to the game_type variable'
 	Num_teams = 1;				// assume 1

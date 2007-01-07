@@ -859,7 +859,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,355,184,50,14
 END
 
-IDD_MISSION_NOTES DIALOG DISCARDABLE  0, 0, 322, 370
+IDD_MISSION_NOTES DIALOG DISCARDABLE  0, 0, 320, 414
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Mission Specs"
 FONT 8, "MS Sans Serif"
@@ -915,53 +915,60 @@ BEGIN
     CONTROL         "Allow Daisy-Chained Docking",IDC_ALLOW_DOCK_TREES,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,107,123,10
     CONTROL         "Disallow Support Ships",IDC_SUPPORT_ALLOWED,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,163,128,95,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,163,170,95,10
     CONTROL         "Support Ships Repair Hull",IDC_SUPPORT_REPAIRS_HULL,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,138,123,10
-    EDITTEXT        IDC_MAX_HULL_REPAIR_VAL,242,152,59,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_MAX_SUBSYS_REPAIR_VAL,242,168,59,14,ES_AUTOHSCROLL
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,180,123,10
+    EDITTEXT        IDC_MAX_HULL_REPAIR_VAL,242,194,59,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MAX_SUBSYS_REPAIR_VAL,242,210,59,14,ES_AUTOHSCROLL
     CONTROL         "Toggle (off in nebula; on elsewhere)",
                     IDC_SPECS_TOGGLE_TRAILS,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,163,201,141,10
+                    WS_TABSTOP,163,243,141,10
     CONTROL         "Minimium speed to display",IDC_CONTRAIL_THRESHOLD_CHECK,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,212,93,10
-    EDITTEXT        IDC_CONTRAIL_THRESHOLD,262,211,48,14,ES_READONLY
-    COMBOBOX        IDC_AI_PROFILE,63,236,93,140,CBS_DROPDOWNLIST | 
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,254,93,10
+    EDITTEXT        IDC_CONTRAIL_THRESHOLD,262,253,48,14,ES_READONLY
+    COMBOBOX        IDC_AI_PROFILE,63,279,93,140,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_EVENT_MUSIC,221,236,93,140,CBS_DROPDOWNLIST | 
+    COMBOBOX        IDC_EVENT_MUSIC,221,279,93,140,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_SUBSTITUTE_EVENT_MUSIC,221,253,93,140,CBS_DROPDOWN | 
+    COMBOBOX        IDC_SUBSTITUTE_EVENT_MUSIC,221,296,93,140,CBS_DROPDOWN | 
                     WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_MISSION_DESC,5,280,307,38,ES_MULTILINE | 
+    EDITTEXT        IDC_MISSION_DESC,5,323,307,38,ES_MULTILINE | 
                     ES_AUTOVSCROLL | ES_WANTRETURN
-    EDITTEXT        IDC_MISSION_NOTES,5,326,307,38,ES_MULTILINE | 
+    EDITTEXT        IDC_MISSION_NOTES,5,369,307,38,ES_MULTILINE | 
                     ES_AUTOVSCROLL | ES_WANTRETURN
     DEFPUSHBUTTON   "OK",IDOK,264,7,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,264,25,50,14
     LTEXT           "Max Respawns",IDC_STATIC,8,97,52,8
     RTEXT           "Title",IDC_STATIC,7,10,29,8
-    RTEXT           "Designer Notes",IDC_STATIC,5,318,50,8
+    RTEXT           "Designer Notes",IDC_STATIC,5,361,50,8
     LTEXT           "xx/xx/xx",IDC_MODIFIED,57,51,101,8
     RTEXT           "Designer",IDC_STATIC,7,25,29,8
     RTEXT           "Created:",IDC_STATIC,23,42,28,8
     LTEXT           "xx/xx/xx",IDC_CREATED,57,42,103,8
     RTEXT           "Last Modified:",IDC_STATIC,7,51,45,8
-    LTEXT           "Mission Description",IDC_STATIC,5,270,62,8
-    LTEXT           "Music",IDC_STATIC,164,239,32,8
+    LTEXT           "Mission Description",IDC_STATIC,5,313,62,8
+    LTEXT           "Music",IDC_STATIC,164,282,32,8
     GROUPBOX        "Squadron Reassign",IDC_STATIC,5,133,151,45
     LTEXT           "Name",IDC_STATIC,17,144,28,8
     GROUPBOX        "Loading Screen",IDC_STATIC,5,183,151,46
-    GROUPBOX        "Support Ships",IDC_STATIC,161,119,154,67
-    LTEXT           "Hull Repair Ceiling",IDC_STATIC,163,154,60,8
-    LTEXT           "Subsytem Repair Ceiling",IDC_STATIC,163,170,75,8
-    LTEXT           "%",IDC_STATIC,304,156,8,8
-    LTEXT           "%",IDC_STATIC,304,171,8,8
-    GROUPBOX        "Ship Trails",IDC_STATIC,161,191,154,39
-    LTEXT           "Substitute Music",IDC_STATIC,164,255,52,8
-    LTEXT           "AI Profile",IDC_STATIC,6,238,32,8
+    GROUPBOX        "Support Ships",IDC_STATIC,161,161,154,67
+    LTEXT           "Hull Repair Ceiling",IDC_STATIC,163,196,60,8
+    LTEXT           "Subsytem Repair Ceiling",IDC_STATIC,163,212,75,8
+    LTEXT           "%",IDC_STATIC,304,198,8,8
+    LTEXT           "%",IDC_STATIC,304,213,8,8
+    GROUPBOX        "Ship Trails",IDC_STATIC,161,233,154,39
+    LTEXT           "Substitute Music",IDC_STATIC,164,298,52,8
+    LTEXT           "AI Profile",IDC_STATIC,6,281,32,8
     CONTROL         "Player Starts under AI Control (NO MULTI)",
                     IDC_PLAYER_START_AI,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,255,149,10
+                    WS_TABSTOP,7,298,149,10
+    GROUPBOX        "Built-in Command Messages",IDC_STATIC,5,233,151,39
+    COMBOBOX        IDC_COMMAND_SENDER,56,243,93,140,CBS_DROPDOWN | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Sender",IDC_STATIC,11,245,32,8
+    COMBOBOX        IDC_COMMAND_PERSONA,56,256,93,140,CBS_DROPDOWNLIST | 
+                    WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Persona",IDC_STATIC,11,258,32,8
 END
 
 IDD_PREFERENCES DIALOG DISCARDABLE  0, 0, 333, 81
@@ -2534,11 +2541,6 @@ BEGIN
         RIGHTMARGIN, 405
         TOPMARGIN, 8
         BOTTOMMARGIN, 198
-    END
-
-    IDD_MISSION_NOTES, DIALOG
-    BEGIN
-        BOTTOMMARGIN, 343
     END
 
     IDD_PREFERENCES, DIALOG

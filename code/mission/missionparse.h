@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.91 $
- * $Author: taylor $
- * $Date: 2006-09-11 06:50:42 $
+ * $Revision: 2.92 $
+ * $Author: Goober5000 $
+ * $Date: 2007-01-07 00:01:28 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2006/09/11 06:50:42  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.90  2006/07/30 20:01:56  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
@@ -662,6 +665,10 @@ typedef struct mission {
 	char	envmap_name[MAX_FILENAME_LEN];
 	int		contrail_threshold;
 	int		ambient_light_level;
+
+	// Goober5000
+	int	command_persona;
+	char command_sender[NAME_LENGTH];
 
 	// Goober5000
 	char event_music_name[NAME_LENGTH];
