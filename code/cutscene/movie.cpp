@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.31.2.9 $
- * $Date: 2006-12-26 05:13:29 $
+ * $Revision: 2.31.2.10 $
+ * $Date: 2007-01-07 12:10:18 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.31.2.9  2006/12/26 05:13:29  taylor
+ * add support for Theora movies (the default format)
+ * some little bits of cleanup
+ * add second gr_clear() so that double-buffer'd visuals will work properly (ie, not flicker when playing MVE/OGG)
+ *
  * Revision 2.31.2.8  2006/12/07 17:57:25  taylor
  * cleanup for movie init stuff (this will be even cleaner once the rest of the Theora code finally gets in)
  * get rid of the clear screen hack for Windows, we can handle that better now
@@ -206,6 +211,14 @@ bool movie_play(char *name)
 		DBUGFILE_OUTPUT_1("About to play: %s", full_name);
 	}
 
+#ifndef NO_DIRECT3D
+	// no Theora movies in D3D mode, they don't display properly
+	if ( (rc == MOVIE_OGG) && (gr_screen.mode == GR_DIRECT3D) ) {
+		mprintf(("MOVIE ERROR: Theora movies are not currently supported in Direct3D mode!\n"));
+		return false;
+	}
+#endif
+
 	// MVE checks first since they use a different player
 	if (rc == MOVIE_MVE || rc == MOVIE_OGG) {
 		MVESTREAM *movie_mve = NULL;
@@ -224,11 +237,16 @@ bool movie_play(char *name)
 			// clear the screen and hide the mouse cursor
 			Mouse_hidden++;
 			gr_reset_clip();
-			gr_set_color(0, 0, 0);
+			gr_set_color(255, 255, 255);
 			gr_set_clear_color(0, 0, 0);
 			gr_zbuffer_clear(0);
+			// clear first buffer
 			gr_clear();
 			gr_flip();
+			// clear second buffer (may not be one, but that's ok)
+			gr_clear();
+			gr_flip();
+			// clear third buffer (may not be one, but that's ok)
 			gr_clear();
 
 			// ready to play...
