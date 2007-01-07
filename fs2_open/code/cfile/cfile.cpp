@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.42 $
- * $Date: 2006-08-15 00:25:23 $
- * $Author: Backslash $
+ * $Revision: 2.43 $
+ * $Date: 2007-01-07 12:32:38 $
+ * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2006/08/15 00:25:23  Backslash
+ * add .ogg to the list of recognized movie file extensions
+ *
  * Revision 2.41  2006/07/28 02:34:52  taylor
  * don't lowercase the dir for chdir on non-Win32 since it could be, and probably is, case sensitive
  *
@@ -373,7 +376,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	// What type this is          Path																									Extensions              Parent type
 	{ CF_TYPE_INVALID,				NULL,																									NULL,							CF_TYPE_INVALID },
 	// Root must be index 1!!	
-	{ CF_TYPE_ROOT,					"",																									".mve .avi .mpg .ogg",						CF_TYPE_ROOT	},
+	{ CF_TYPE_ROOT,					"",																									".mve .ogg",						CF_TYPE_ROOT	},
 	{ CF_TYPE_DATA,					"data",																								".cfg .log .txt",			CF_TYPE_ROOT	},
 	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",																".pcx .ani .eff .tga .jpg .dds",			CF_TYPE_DATA	},
 	{ CF_TYPE_TEXT,					"data" DIR_SEPARATOR_STR "text",																".txt .net",				CF_TYPE_DATA	},
@@ -391,7 +394,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_VOICE_SPECIAL,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "special",						".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_VOICE_TRAINING,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "training",						".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_MUSIC,					"data" DIR_SEPARATOR_STR "music",															".wav .ogg",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOVIES,					"data" DIR_SEPARATOR_STR "movies",															".mve .msb .avi .mpg .ogg",				CF_TYPE_DATA	},
+	{ CF_TYPE_MOVIES,					"data" DIR_SEPARATOR_STR "movies",															".mve .ogg",				CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE,				"data" DIR_SEPARATOR_STR "interface",														".pcx .ani .dds .tga",			CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",															".vf",						CF_TYPE_DATA	},
 	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",															".ani .eff .pcx .neb .tga .jpg .dds",	CF_TYPE_DATA	},
