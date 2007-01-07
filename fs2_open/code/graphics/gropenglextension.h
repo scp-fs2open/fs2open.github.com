@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.15 $
- * $Date: 2006-08-09 14:42:24 $
+ * $Revision: 1.16 $
+ * $Date: 2007-01-07 13:08:12 $
  * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2006/08/09 14:42:24  taylor
+ * fix for setting of texture lod bias
+ *
  * Revision 1.14  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -158,25 +161,25 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_ARB_TEXTURE_COMPRESSION			3
 #define OGL_EXT_TEXTURE_COMPRESSION_S3TC	4
 #define OGL_EXT_TEXTURE_FILTER_ANISOTROPIC	5
-#define OGL_NV_FOG_DISTANCE					6
-#define OGL_EXT_SECONDARY_COLOR				7
-#define OGL_ARB_TEXTURE_ENV_COMBINE			8
-#define OGL_EXT_COMPILED_VERTEX_ARRAY		9
-#define OGL_ARB_TRANSPOSE_MATRIX			10
-#define OGL_EXT_DRAW_RANGE_ELEMENTS			11
-#define OGL_ARB_TEXTURE_MIRRORED_REPEAT		12
-#define OGL_ARB_TEXTURE_NON_POWER_OF_TWO	13
-#define OGL_ARB_VERTEX_BUFFER_OBJECT		14
-#define OGL_ARB_PIXEL_BUFFER_OBJECT			15
-#define OGL_APPLE_CLIENT_STORAGE			16
-#define OGL_SGIS_GENERATE_MIPMAP			17
-#define OGL_EXT_FRAMEBUFFER_OBJECT			18
-#define OGL_ARB_TEXTURE_RECTANGLE			19
-#define OGL_EXT_BGRA						20
-#define OGL_ARB_TEXTURE_CUBE_MAP			21
-#define OGL_EXT_TEXTURE_LOD_BIAS			22
+//#define OGL_NV_FOG_DISTANCE				6
+//#define OGL_EXT_SECONDARY_COLOR			7
+#define OGL_ARB_TEXTURE_ENV_COMBINE			6
+#define OGL_EXT_COMPILED_VERTEX_ARRAY		7
+//#define OGL_ARB_TRANSPOSE_MATRIX			10
+#define OGL_EXT_DRAW_RANGE_ELEMENTS			8
+#define OGL_ARB_TEXTURE_MIRRORED_REPEAT		9
+#define OGL_ARB_TEXTURE_NON_POWER_OF_TWO	10
+#define OGL_ARB_VERTEX_BUFFER_OBJECT		11
+#define OGL_ARB_PIXEL_BUFFER_OBJECT			12
+#define OGL_APPLE_CLIENT_STORAGE			13
+#define OGL_SGIS_GENERATE_MIPMAP			14
+#define OGL_EXT_FRAMEBUFFER_OBJECT			15
+#define OGL_ARB_TEXTURE_RECTANGLE			16
+#define OGL_EXT_BGRA						17
+#define OGL_ARB_TEXTURE_CUBE_MAP			18
+#define OGL_EXT_TEXTURE_LOD_BIAS			19
 
-#define NUM_OGL_EXTENSIONS					23
+#define NUM_OGL_EXTENSIONS					20
 
 
 // Functions
@@ -188,36 +191,36 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_COMPRESSED_TEX_IMAGE_2D			5			// 2d compressed texture
 #define OGL_COMPRESSED_TEX_SUB_IMAGE_2D		6			// 2d compressed sub texture
 #define OGL_GET_COMPRESSED_TEX_IMAGE		7
-#define OGL_SECONDARY_COLOR_3FV				8			// for better looking fog
-#define OGL_SECONDARY_COLOR_3UBV			9			// specular
-#define OGL_LOCK_ARRAYS						10			// HTL
-#define OGL_UNLOCK_ARRAYS					11			// HTL
-#define OGL_LOAD_TRANSPOSE_MATRIX_F			12			
-#define OGL_MULT_TRANSPOSE_MATRIX_F			13
-#define OGL_DRAW_RANGE_ELEMENTS				14
-#define OGL_BIND_BUFFER						15
-#define OGL_DELETE_BUFFERS					16
-#define OGL_GEN_BUFFERS						17
-#define OGL_BUFFER_DATA						18
-#define OGL_MAP_BUFFER						19
-#define OGL_UNMAP_BUFFER					20
-#define OGL_IS_RENDERBUFFER					21
-#define OGL_BIND_RENDERBUFFER				22
-#define OGL_DELETE_RENDERBUFFERS			23
-#define OGL_GEN_RENDERBUFFERS				24
-#define OGL_RENDERBUFFER_STORAGE			25
-#define OGL_GET_RENDERBUFFER_PARAMETER_IV	26
-#define OGL_IS_FRAMEBUFFER					27
-#define OGL_BIND_FRAMEBUFFER				28
-#define OGL_DELETE_FRAMEBUFFERS				29
-#define OGL_GEN_FRAMEBUFFERS				30
-#define OGL_CHECK_FRAMEBUFFER_STATUS		31
-#define OGL_FRAMEBUFFER_TEXTURE_2D			32
-#define OGL_FRAMEBUFFER_RENDERBUFFER		33
-#define OGL_GET_FRAMEBUFFER_ATTACHMENT_PARAMETER_IV		34
-#define OGL_GENERATE_MIPMAP					35
+//#define OGL_SECONDARY_COLOR_3FV			8			// for better looking fog
+//#define OGL_SECONDARY_COLOR_3UBV			9			// specular
+#define OGL_LOCK_ARRAYS						8			// HTL
+#define OGL_UNLOCK_ARRAYS					9			// HTL
+//#define OGL_LOAD_TRANSPOSE_MATRIX_F		12			
+//#define OGL_MULT_TRANSPOSE_MATRIX_F		13
+#define OGL_DRAW_RANGE_ELEMENTS				10
+#define OGL_BIND_BUFFER						11
+#define OGL_DELETE_BUFFERS					12
+#define OGL_GEN_BUFFERS						13
+#define OGL_BUFFER_DATA						14
+#define OGL_MAP_BUFFER						15
+#define OGL_UNMAP_BUFFER					16
+#define OGL_IS_RENDERBUFFER					17
+#define OGL_BIND_RENDERBUFFER				18
+#define OGL_DELETE_RENDERBUFFERS			19
+#define OGL_GEN_RENDERBUFFERS				20
+#define OGL_RENDERBUFFER_STORAGE			21
+#define OGL_GET_RENDERBUFFER_PARAMETER_IV	22
+#define OGL_IS_FRAMEBUFFER					23
+#define OGL_BIND_FRAMEBUFFER				24
+#define OGL_DELETE_FRAMEBUFFERS				25
+#define OGL_GEN_FRAMEBUFFERS				26
+#define OGL_CHECK_FRAMEBUFFER_STATUS		27
+#define OGL_FRAMEBUFFER_TEXTURE_2D			28
+#define OGL_FRAMEBUFFER_RENDERBUFFER		29
+#define OGL_GET_FRAMEBUFFER_ATTACHMENT_PARAMETER_IV		30
+#define OGL_GENERATE_MIPMAP					31
 
-#define NUM_OGL_FUNCTIONS					36
+#define NUM_OGL_FUNCTIONS					32
 
 
 // special extensions/functions (OS specific, non-GL stuff)
@@ -255,12 +258,12 @@ void opengl_print_extensions();
 #define vglCompressedTexImage2D			glCompressedTexImage2D
 #define vglCompressedTexSubImage2D		glCompressedTexSubImage2D
 #define vglGetCompressedTexImageARB		glGetCompressedTexImageARB
-#define vglSecondaryColor3fvEXT			glSecondaryColor3fvEXT
-#define vglSecondaryColor3ubvEXT		glSecondaryColor3ubvEXT
+//#define vglSecondaryColor3fvEXT		glSecondaryColor3fvEXT
+//#define vglSecondaryColor3ubvEXT		glSecondaryColor3ubvEXT
 #define vglLockArraysEXT				glLockArraysEXT
 #define vglUnlockArraysEXT				glUnlockArraysEXT
-#define vglLoadTransposeMatrixfARB		glLoadTransposeMatrixfARB
-#define vglMultTransposeMatrixfARB		glMultTransposeMatrixfARB
+//#define vglLoadTransposeMatrixfARB	glLoadTransposeMatrixfARB
+//#define vglMultTransposeMatrixfARB	glMultTransposeMatrixfARB
 #define vglDrawRangeElements			glDrawRangeElements
 #define vglBindBufferARB				glBindBufferARB
 #define vglDeleteBuffersARB				glDeleteBuffersARB
@@ -294,12 +297,12 @@ void opengl_print_extensions();
 #define vglCompressedTexImage2D			GLEXT_CALL( OGL_COMPRESSED_TEX_IMAGE_2D, PFNGLCOMPRESSEDTEXIMAGE2DPROC )
 #define vglCompressedTexSubImage2D		GLEXT_CALL( OGL_COMPRESSED_TEX_SUB_IMAGE_2D, PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC )
 #define vglGetCompressedTexImageARB		GLEXT_CALL( OGL_GET_COMPRESSED_TEX_IMAGE, PFNGLGETCOMPRESSEDTEXIMAGEARBPROC )
-#define vglSecondaryColor3fvEXT			GLEXT_CALL( OGL_SECONDARY_COLOR_3FV, PFNGLSECONDARYCOLOR3FVEXTPROC )
-#define vglSecondaryColor3ubvEXT		GLEXT_CALL( OGL_SECONDARY_COLOR_3UBV, PFNGLSECONDARYCOLOR3UBVEXTPROC )
+//#define vglSecondaryColor3fvEXT		GLEXT_CALL( OGL_SECONDARY_COLOR_3FV, PFNGLSECONDARYCOLOR3FVEXTPROC )
+//#define vglSecondaryColor3ubvEXT		GLEXT_CALL( OGL_SECONDARY_COLOR_3UBV, PFNGLSECONDARYCOLOR3UBVEXTPROC )
 #define vglLockArraysEXT				GLEXT_CALL( OGL_LOCK_ARRAYS, PFNGLLOCKARRAYSEXTPROC )
 #define vglUnlockArraysEXT				GLEXT_CALL( OGL_UNLOCK_ARRAYS, PFNGLUNLOCKARRAYSEXTPROC )
-#define vglLoadTransposeMatrixfARB		GLEXT_CALL( OGL_LOAD_TRANSPOSE_MATRIX_F, PFNGLLOADTRANSPOSEMATRIXFARBPROC )
-#define vglMultTransposeMatrixfARB		GLEXT_CALL( OGL_MULT_TRANSPOSE_MATRIX_F, PFNGLMULTTRANSPOSEMATRIXFARBPROC )
+//#define vglLoadTransposeMatrixfARB	GLEXT_CALL( OGL_LOAD_TRANSPOSE_MATRIX_F, PFNGLLOADTRANSPOSEMATRIXFARBPROC )
+//#define vglMultTransposeMatrixfARB	GLEXT_CALL( OGL_MULT_TRANSPOSE_MATRIX_F, PFNGLMULTTRANSPOSEMATRIXFARBPROC )
 #define vglDrawRangeElements			GLEXT_CALL( OGL_DRAW_RANGE_ELEMENTS, PFNGLDRAWRANGEELEMENTSPROC )
 #define vglBindBufferARB				GLEXT_CALL( OGL_BIND_BUFFER, PFNGLBINDBUFFERARBPROC )
 #define vglDeleteBuffersARB				GLEXT_CALL( OGL_DELETE_BUFFERS, PFNGLDELETEBUFFERSARBPROC )

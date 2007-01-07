@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.16 $
- * $Date: 2006-08-09 14:42:24 $
+ * $Revision: 1.17 $
+ * $Date: 2007-01-07 13:08:12 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2006/08/09 14:42:24  taylor
+ * fix for setting of texture lod bias
+ *
  * Revision 1.15  2006/05/13 07:29:52  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -154,11 +157,11 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	{ 0, 0, 1, { "GL_EXT_texture_filter_anisotropic" }, 0, { NULL } },
 
 	// provides app support to control how distance is calculated in fog computations
-	{ 0, 0, 1, { "GL_NV_fog_distance" }, 0, { NULL } },
+//	{ 0, 0, 1, { "GL_NV_fog_distance" }, 0, { NULL } },
 
 	// specify RGB values for secondary color
-	{ 0, 0, 1, { "GL_EXT_secondary_color" }, 2, {
-		"glSecondaryColor3fvEXT", "glSecondaryColor3ubvEXT" } },
+//	{ 0, 0, 1, { "GL_EXT_secondary_color" }, 2, {
+//		"glSecondaryColor3fvEXT", "glSecondaryColor3ubvEXT" } },
 
 	// "COMBINE" function for texture environment, these two are basically the same
 	{ 0, 0, 2, { "GL_ARB_texture_env_combine", "GL_EXT_texture_env_combine" }, 0, { NULL } },
@@ -168,8 +171,8 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 		"glLockArraysEXT", "glUnlockArraysEXT" } },
 
 	// allows for row major order matrices rather than the standard column major order
-	{ 1, 0, 1, { "GL_ARB_transpose_matrix" }, 2, {
-		"glLoadTransposeMatrixfARB", "glMultTransposeMatrixfARB" } },
+//	{ 1, 0, 1, { "GL_ARB_transpose_matrix" }, 2, {
+//		"glLoadTransposeMatrixfARB", "glMultTransposeMatrixfARB" } },
 
 	// this is obsolete with OGL 1.2, which is why the function name is the standard, but we check for the orginal extension name
 	{ 1, 0, 1, { "GL_EXT_draw_range_elements" }, 1, {
@@ -187,7 +190,7 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 		"glMapBufferARB", "glUnmapBufferARB" } },
 
 	// allows pixel data to use buffer objects
-	{ 0, 0, 1, { "GL_ARB_pixel_buffer_object" }, 6, {
+	{ 0, 0, 2, { "GL_ARB_pixel_buffer_object", "GL_EXT_pixel_buffer_object" }, 6, {
 		"glBindBufferARB", "glDeleteBuffersARB", "glGenBuffersARB", "glBufferDataARB",
 		"glMapBufferARB", "glUnmapBufferARB" } },
 
@@ -234,12 +237,12 @@ ogl_function GL_Functions[NUM_OGL_FUNCTIONS] =
 	{ "glCompressedTexImage2D", 0 },
 	{ "glCompressedTexSubImage2D", 0 },
 	{ "glGetCompressedTexImageARB", 0 },
-	{ "glSecondaryColor3fvEXT", 0 },
-	{ "glSecondaryColor3ubvEXT", 0 },
+//	{ "glSecondaryColor3fvEXT", 0 },
+//	{ "glSecondaryColor3ubvEXT", 0 },
 	{ "glLockArraysEXT", 0 },
 	{ "glUnlockArraysEXT", 0 },
-	{ "glLoadTransposeMatrixfARB", 0 },
-	{ "glMultTransposeMatrixfARB", 0 },
+//	{ "glLoadTransposeMatrixfARB", 0 },
+//	{ "glMultTransposeMatrixfARB", 0 },
 	{ "glDrawRangeElements", 0 },
 	{ "glBindBufferARB", 0 },
 	{ "glDeleteBuffersARB", 0 },
