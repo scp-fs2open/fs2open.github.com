@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.95 $
- * $Date: 2007-01-06 23:56:30 $
+ * $Revision: 2.96 $
+ * $Date: 2007-01-07 03:09:53 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2007/01/06 23:56:30  Goober5000
+ * taylor's bugfix
+ *
  * Revision 2.94  2006/12/28 01:22:04  Goober5000
  * removed obsolete limits
  *
@@ -5838,6 +5841,10 @@ int hud_communications_state(ship *sp, int show_msg)
 	if ( Game_skill_level == 0 || (Game_mode & GM_DEAD) ) {
 		return comm_state;
 	}
+
+	// Goober5000 - if the ship is the player, and he's dying, return OK (so laments can be played)
+	if ((sp == Player_ship) && (sp->flags & SF_DYING))
+		return comm_state;
 
 	str = ship_get_subsystem_strength( sp, SUBSYSTEM_COMMUNICATION );
 //	str = 1.0f; // DEBUG CODE! MK, change, 11/12/97, comm system could be taken out by one laser, too frustrating.
