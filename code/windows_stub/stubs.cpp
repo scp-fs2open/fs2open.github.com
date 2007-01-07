@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.33 $
- * $Date: 2006-09-08 06:20:15 $
+ * $Revision: 2.34 $
+ * $Date: 2007-01-07 12:39:59 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/09/08 06:20:15  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.32  2006/05/27 16:39:40  taylor
  * remove non-Windows timeSetEvent() functions
  * make PDWORD and LPDWORD int instead of long (64-bit issue) (thanks Spike)
@@ -381,7 +384,7 @@ bool QueryPerformanceCounter(LARGE_INTEGER *pcount)
 
 	gettimeofday(&timer_now, NULL);
 
-	pcount->QuadPart = (long long)timer_now.tv_usec;
+	pcount->QuadPart = (longlong)timer_now.tv_usec;
 	
 	return 1;
 }
