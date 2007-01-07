@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.9 $
- * $Date: 2007-01-07 03:10:05 $
- * $Author: Goober5000 $
+ * $Revision: 2.87.2.10 $
+ * $Date: 2007-01-07 12:11:51 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.9  2007/01/07 03:10:05  Goober5000
+ * fix bug where built-in lament messages were never played
+ *
  * Revision 2.87.2.8  2007/01/06 23:56:43  Goober5000
  * taylor's bugfix
  *
@@ -4346,7 +4349,11 @@ int hud_get_best_primary_bank(float *range)
 		// calculate the range of the weapon, and only display the lead target indicator
 		// if the weapon can actually hit the target
 		Assert(bank_to_fire >= 0 && bank_to_fire < swp->num_primary_banks);
-		Assert(swp->primary_bank_weapons[bank_to_fire] >= 0 && swp->primary_bank_weapons[bank_to_fire] < MAX_WEAPON_TYPES);
+		Assert(swp->primary_bank_weapons[bank_to_fire] < MAX_WEAPON_TYPES);
+
+		if (swp->primary_bank_weapons[bank_to_fire] < 0)
+			continue;
+
 		wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
 		weapon_range = MIN((wip->max_speed * wip->lifetime), wip->weapon_range);
 
