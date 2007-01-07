@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/oggplayer.cpp $
- * $Revision: 1.1.2.1 $
- * $Date: 2006-12-25 21:44:11 $
+ * $Revision: 1.1.2.2 $
+ * $Date: 2007-01-07 12:10:18 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.1.2.1  2006/12/25 21:44:11  taylor
+ * initial OGG Theora movie support (likely to be rewritten at least in large part)
+ *
  *
  *
  * $NoKeywords: $
@@ -579,10 +582,7 @@ static void OGG_video_draw(theora_state *tstate)
 				glVertex2i(gl_screenXW, g_screenY);
 		glEnd();
 	} else {
-		int bitmap = bm_create(24, g_screenWidth, g_screenHeight, pixelbuf, 0);
-		gr_set_bitmap(bitmap);
-		gr_bitmap(g_screenX, g_screenY, true);
-		bm_release(bitmap);
+		// TODO:  FIXME!!!
 	}
 
 	gr_flip();
