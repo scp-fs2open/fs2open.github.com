@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.188  2006/12/28 00:59:54  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.187  2006/09/11 06:48:40  taylor
  * fixes for stuff_string() bounds checking
  * stict compiler build fixes
@@ -1138,17 +1141,7 @@ extern int compute_num_homing_objects(object *target_objp);
 
 weapon_explosions::weapon_explosions()
 {
-	int i, j;
-
-	memset( &ExplosionInfo, 0, sizeof(weapon_expl_info) * MAX_WEAPON_EXPL_INFO );
-
-	for ( i = 0; i < MAX_WEAPON_EXPL_INFO; i++ ) {
-		for ( j = 0; j < MAX_WEAPON_EXPL_LOD; j++ ) {
-			ExplosionInfo[i].lod[j].bitmap_id = -1;
-		}
-	}
-
-	ExplosionNum = 0;
+	ExplosionInfo.clear();
 }
 
 int weapon_explosions::GetIndex(char *filename)
@@ -1158,7 +1151,7 @@ int weapon_explosions::GetIndex(char *filename)
 		return -1;
 	}
 
-	for (int i=0; i<ExplosionNum; i++) {
+	for (uint i = 0; i < ExplosionInfo.size(); i++) {
 		if ( !stricmp(ExplosionInfo[i].lod[0].filename, filename)) {
 			return i;
 		}
@@ -1172,90 +1165,64 @@ int weapon_explosions::Load(char *filename, int expected_lods)
 	char name_tmp[MAX_FILENAME_LEN] = "";
 	int bitmap_id = -1;
 	int nframes, nfps;
+	weapon_expl_info new_wei;
 
 	Assert( expected_lods <= MAX_WEAPON_EXPL_LOD );
 
 	//Check if it exists
 	int idx = GetIndex(filename);
-	if(idx != -1) {
+
+	if (idx != -1)
 		return idx;
-	}
 
-	//Guess not. Check if we are full
-	if(ExplosionNum >= MAX_WEAPON_EXPL_INFO) {
-		Warning(LOCATION, "Could not load weapon explosion '%s', because the maximum of %d weapon explosions has been reached.", filename, MAX_WEAPON_EXPL_INFO);
-		return -1;
-	}
+	new_wei.lod_count = 1;
 
-	//OK, we can assume we have an entry to play with
-	weapon_expl_info *wei = &ExplosionInfo[ExplosionNum];
+	strcpy(new_wei.lod[0].filename, filename);
+	new_wei.lod[0].bitmap_id = bm_load_animation(filename, &new_wei.lod[0].num_frames, &new_wei.lod[0].fps, 1);
 
-	wei->lod_count = 0;
-
-	strcpy(wei->lod[0].filename, filename);
-	wei->lod[0].bitmap_id = bm_load_animation(filename, &wei->lod[0].num_frames, &wei->lod[0].fps, 1);
-
-	if(wei->lod[0].bitmap_id < 0)
-	{
+	if (new_wei.lod[0].bitmap_id < 0) {
 		Warning(LOCATION, "Weapon explosion '%s' does not have an LOD0 anim!", filename);
 
 		// if we don't have the first then it's only safe to assume that the rest are missing or not usable
 		return -1;
 	}
-	else
-	{
-		wei->lod_count = 1;
-	}
 
 	// 2 chars for the lod, 4 for the extension that gets added automatically
-	if ( wei->lod_count && (MAX_FILENAME_LEN - strlen(filename) > 6) )
-	{
-		for(idx = 1; idx < expected_lods; idx++)
-		{
+	if ( MAX_FILENAME_LEN - (strlen(filename) > 6) ) {
+		for (idx = 1; idx < expected_lods; idx++) {
 			sprintf(name_tmp, "%s_%d", filename, idx);
 
 			bitmap_id = bm_load_animation(name_tmp, &nframes, &nfps, 1);
 
-			if ( bitmap_id > 0 )
-			{
-				strcpy(wei->lod[idx].filename, name_tmp);
-				wei->lod[idx].bitmap_id = bitmap_id;
-				wei->lod[idx].num_frames = nframes;
-				wei->lod[idx].fps = nfps;
+			if (bitmap_id > 0) {
+				strcpy(new_wei.lod[idx].filename, name_tmp);
+				new_wei.lod[idx].bitmap_id = bitmap_id;
+				new_wei.lod[idx].num_frames = nframes;
+				new_wei.lod[idx].fps = nfps;
 
-				wei->lod_count++;
-			}
-			else
-			{
+				new_wei.lod_count++;
+			} else {
 				break;
 			}
 		}
 
-		if ( wei->lod_count != expected_lods )
-		{
-			Warning(LOCATION, "For '%s', %i of %i LODs are missing!", filename, expected_lods - wei->lod_count, expected_lods);
-		}
+		if (new_wei.lod_count != expected_lods)
+			Warning(LOCATION, "For '%s', %i of %i LODs are missing!", filename, expected_lods - new_wei.lod_count, expected_lods);
 	}
-	else
-	{
+	else {
 		Warning(LOCATION, "Filename '%s' is too long to have any LODs.", filename);
 	}
 
-	if(!wei->lod_count)
-	{
-		//We didn't load anything!
-		return -1;
-	}
+	ExplosionInfo.push_back( new_wei );
 
-	ExplosionNum++;
-	return ExplosionNum-1;
+	return (int)(ExplosionInfo.size() - 1);
 }
 
 void weapon_explosions::PageIn(int idx)
 {
 	int i;
 
-	if ( (idx < 0) || (idx >= ExplosionNum) )
+	if ( (idx < 0) || (idx >= (int)ExplosionInfo.size()) )
 		return;
 
 	weapon_expl_info *wei = &ExplosionInfo[idx];
@@ -1269,16 +1236,14 @@ void weapon_explosions::PageIn(int idx)
 
 int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
 {
-	if(weapon_expl_index < 0 || weapon_expl_index > ExplosionNum) {
+	if ( (weapon_expl_index < 0) || (weapon_expl_index >= (int)ExplosionInfo.size()) )
 		return -1;
-	}
 
 	//Get our weapon expl for the day
 	weapon_expl_info *wei = &ExplosionInfo[weapon_expl_index];
 
-	if (wei->lod_count == 1) {
+	if (wei->lod_count == 1)
 		return wei->lod[0].bitmap_id;
-	}
 
 	// now we have to do some work
 	vertex v;
@@ -1342,16 +1307,16 @@ int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
 	}
 
 	// if it's behind, bump up LOD by 1
-	if (behind) {
+	if (behind)
 		best_lod++;
-	}
 
 	// end the frame
-	if(must_stop){
+	if (must_stop)
 		g3_end_frame();
-	}
 
 	best_lod = MIN(best_lod, wei->lod_count - 1);
+	Assert( (best_lod >= 0) && (best_lod < MAX_WEAPON_EXPL_LOD) );
+
 	return wei->lod[best_lod].bitmap_id;
 }
 
@@ -1734,7 +1699,7 @@ void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
 
 	sprintf(buf, "%sShockwave Name:", pre_char);
 	if(optional_string(buf)) {
-		stuff_string(sci->name, F_NAME, NAME_LENGTH);
+		stuff_string(sci->name, F_NAME, MAX_FILENAME_LEN);
 	}
 }
 
@@ -2082,6 +2047,11 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if (optional_string("+Description:")) {
+		if (wip->desc != NULL) {
+			vm_free(wip->desc);
+			wip->desc = NULL;
+		}
+
 		stuff_malloc_string(&wip->desc, F_MULTITEXT);
 	}
 
@@ -2094,6 +2064,11 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	if (optional_string("+Tech Description:")) {
+		if (wip->tech_desc != NULL) {
+			vm_free(wip->tech_desc);
+			wip->tech_desc = NULL;
+		}
+
 		stuff_malloc_string(&wip->tech_desc, F_MULTITEXT);
 //		stuff_string(buf, F_MULTITEXT, NULL, WEAPONS_MULTITEXT_LENGTH);
 //		wip->tech_desc = vm_strdup(buf);
