@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.11 $
- * $Date: 2006-09-11 06:49:39 $
- * $Author: taylor $
+ * $Revision: 1.12 $
+ * $Date: 2007-01-07 01:00:18 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2006/09/11 06:49:39  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 1.10  2006/07/08 19:35:52  Goober5000
  * iff defs should allow specification of both flag fields
  * --Goober5000
@@ -405,7 +408,7 @@ int iff_get_attackee_mask(int attacker_team)
 	Assert(attacker_team >= 0 && attacker_team < Num_iffs);
 
 	//	All teams attack all other teams.
-	if (Mission_all_attack)
+	if (The_mission.flags & MISSION_FLAG_ALL_ATTACK)
 	{
 		return Iff_info[attacker_team].attackee_bitmask_all_teams_at_war;
 	}

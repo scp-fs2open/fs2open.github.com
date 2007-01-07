@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.92 $
- * $Date: 2006-12-28 00:59:18 $
- * $Author: wmcoolmon $
+ * $Revision: 1.93 $
+ * $Date: 2007-01-07 01:00:18 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.92  2006/12/28 00:59:18  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.91  2006/11/16 00:49:35  taylor
  * fix stupid bay depart object animation bug (Mantis bug #1133, part 2)
  *
@@ -1314,7 +1317,6 @@ int Num_alloced_ai_classes = 0;
 int	AI_FrameCount = 0;
 int	Ship_info_inited = 0;
 int	AI_watch_object = 0; // Debugging, object to spew debug info for.
-int	Mission_all_attack = 0;					//	!0 means all teams attack all teams.
 
 char *Skill_level_names(int level, int translate)
 {

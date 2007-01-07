@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.9 $
- * $Date: 2007-01-07 00:01:28 $
+ * $Revision: 1.10 $
+ * $Date: 2007-01-07 01:00:18 $
  * $Author: Goober5000 $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2007/01/07 00:01:28  Goober5000
+ * add a feature for specifying the source of Command messages
+ *
  * Revision 1.8  2006/07/30 20:01:56  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
@@ -397,9 +400,6 @@ int CMissionNotesDlg::query_modified()
 	if (Current_soundtrack_num != m_event_music - 1){
 		return 1;
 	}
-	if (Mission_all_attack != m_full_war){
-		return 1;
-	}
 
 	return 0;
 	*/
@@ -463,6 +463,13 @@ void CMissionNotesDlg::OnOK()
 		The_mission.flags |= MISSION_FLAG_SCRAMBLE;
 	} else {
 		The_mission.flags &= ~MISSION_FLAG_SCRAMBLE;
+	}
+
+	// set attack all
+	if ( m_full_war ) {
+		The_mission.flags |= MISSION_FLAG_ALL_ATTACK;
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_ALL_ATTACK;
 	}
 
 	// set flags for dock trees
@@ -582,11 +589,6 @@ void CMissionNotesDlg::OnOK()
 	else
 		strcpy(The_mission.command_sender, m_command_sender);
 
-	MODIFY(Mission_all_attack, m_full_war);
-	if (query_modified()){
-		set_modified();
-	}
-
 	theApp.record_window_data(&Mission_notes_wnd_data, this);
 
 	// update the Num_teams variable accoriding to mission types
@@ -623,7 +625,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_mission_desc_orig = m_mission_desc = convert_multiline_string(The_mission.mission_desc);
 	m_red_alert = (The_mission.flags & MISSION_FLAG_RED_ALERT) ? 1 : 0;
 	m_scramble = (The_mission.flags & MISSION_FLAG_SCRAMBLE) ? 1 : 0;
-	m_full_war = Mission_all_attack;
+	m_full_war = (The_mission.flags & MISSION_FLAG_ALL_ATTACK) ? 1 : 0;
 	m_daisy_chained_docking = (The_mission.flags & MISSION_FLAG_ALLOW_DOCK_TREES) ? 1 : 0;
 	m_disallow_support = (The_mission.support_ships.max_support_ships == 0) ? 1 : 0;
 	m_no_promotion = (The_mission.flags & MISSION_FLAG_NO_PROMOTION) ? 1 : 0;
