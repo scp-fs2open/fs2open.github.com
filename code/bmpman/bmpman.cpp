@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.92 $
- * $Date: 2006-12-28 00:59:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.93 $
+ * $Date: 2007-01-07 12:32:06 $
+ * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2006/12/28 00:59:19  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.91  2006/09/11 06:48:40  taylor
  * fixes for stuff_string() bounds checking
  * stict compiler build fixes
@@ -2937,7 +2940,14 @@ void bm_page_in_texture( int bitmapnum, int nframes )
 
 	Assert( bm_bitmaps[n].handle == bitmapnum );
 
-	for (i=0; i<nframes;i++ )	{
+	if (nframes <= 0) {
+		if ( (bm_bitmaps[n].type == BM_TYPE_ANI) || (bm_bitmaps[n].type == BM_TYPE_EFF) )
+			nframes = bm_bitmaps[n].info.ani.num_frames;
+		else
+			nframes = 1;
+	}
+
+	for (i = 0; i < nframes;i++) {
 		bm_bitmaps[n+i].preloaded = 1;
 
 		bm_bitmaps[n+i].preload_count++;
@@ -2945,7 +2955,11 @@ void bm_page_in_texture( int bitmapnum, int nframes )
 		bm_bitmaps[n+i].used_flags = BMP_TEX_OTHER;
 
 		//check if its compressed
-		switch (bm_bitmaps[n+i].comp_type) {
+		switch (bm_bitmaps[n+i].comp_type)
+		{
+			case BM_TYPE_NONE:
+				continue;
+
 			case BM_TYPE_DXT1:
 				bm_bitmaps[n+i].used_flags = BMP_TEX_DXT1;
 				continue;
@@ -3001,7 +3015,7 @@ void bm_page_in_xparent_texture( int bitmapnum, int nframes)
 
 	Assert( bm_bitmaps[n].handle == bitmapnum );
 
-	for (i=0; i<nframes;i++ )	{
+	for (i = 0; i < nframes; i++) {
 		bm_bitmaps[n+i].preloaded = 3;
 
 		bm_bitmaps[n+i].preload_count++;
@@ -3009,7 +3023,11 @@ void bm_page_in_xparent_texture( int bitmapnum, int nframes)
 		bm_bitmaps[n+i].used_flags = BMP_TEX_XPARENT;
 
 		//check if its compressed
-		switch (bm_bitmaps[n+i].comp_type) {
+		switch (bm_bitmaps[n+i].comp_type)
+		{
+			case BM_TYPE_NONE:
+				continue;
+
 			case BM_TYPE_DXT1:
 				bm_bitmaps[n+i].used_flags = BMP_TEX_DXT1;
 				continue;
@@ -3531,6 +3549,9 @@ int bm_is_compressed(int num)
 	type = bm_bitmaps[n].comp_type;
 
 	switch (type) {
+		case BM_TYPE_NONE:
+			return 0;
+
 		case BM_TYPE_DXT1:
 			return DDS_DXT1;
 
