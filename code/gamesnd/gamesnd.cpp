@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-12-28 00:59:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.34 $
+ * $Date: 2007-01-07 12:33:59 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/12/28 00:59:26  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.32  2006/09/11 06:49:39  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -693,7 +696,7 @@ void gamesnd_add_sound_slot(int type, int num)
 				Num_game_sounds += increase_by;
 
 				// default all new entries
-				for (i = (Num_game_sounds - increase_by - 1); i < Num_game_sounds; i++) {
+				for (i = (Num_game_sounds - increase_by); i < Num_game_sounds; i++) {
 					gamesnd_init_struct(&Snds[i]);
 				}
 			}
@@ -715,7 +718,7 @@ void gamesnd_add_sound_slot(int type, int num)
 				Verify( Snds_iface_handle != NULL );
 
 				// default all new entries
-				for (i = (Num_iface_sounds - increase_by - 1); i < Num_iface_sounds; i++) {
+				for (i = (Num_iface_sounds - increase_by); i < Num_iface_sounds; i++) {
 					gamesnd_init_struct(&Snds_iface[i]);
 					Snds_iface_handle[i] = -1;
 				}
