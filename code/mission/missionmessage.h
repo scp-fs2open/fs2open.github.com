@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.13 $
- * $Date: 2006-09-30 21:58:09 $
+ * $Revision: 2.14 $
+ * $Date: 2007-01-07 00:01:28 $
  * $Author: Goober5000 $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/09/30 21:58:09  Goober5000
+ * more flexible checking of generic messages
+ *
  * Revision 2.12  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -297,7 +300,7 @@ extern message_extra		Message_waves[MAX_MESSAGE_WAVES];
 #define MESSAGE_SOURCE_SPECIAL	4
 
 // define used for sender of a message when you want it to be Terran Command
-#define TERRAN_COMMAND			"Command"
+#define DEFAULT_COMMAND			"Command"
 
 // defines for message id's used in FreeSpace code.  Callers to message_send_to_player() should
 // probably use these defines.
@@ -399,6 +402,7 @@ typedef struct persona_s {
 
 extern Persona *Personas;
 extern int Num_personas;
+extern int Default_command_persona;
 
 // function to parse a message from either messages.tbl or the mission file.  Both files have the
 // exact same format, so this function just gets reused in both instances.

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.h $
- * $Revision: 1.5 $
- * $Date: 2006-07-30 20:01:56 $
- * $Author: Kazan $
+ * $Revision: 1.6 $
+ * $Date: 2007-01-07 00:01:28 $
+ * $Author: Goober5000 $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/07/30 20:01:56  Kazan
+ * resolve 1018 and an interface problem in fred2's ship editor
+ *
  * Revision 1.4  2006/05/30 02:13:22  Goober5000
  * add substitute music boxes to FRED, and reset music properly when mission is cleared
  * --Goober5000
@@ -202,6 +205,8 @@ public:
 	int		m_ai_profile;
 	int		m_event_music;
 	CString	m_substitute_event_music;
+	int		m_command_persona;
+	CString	m_command_sender;
 	BOOL		m_full_war;
 	BOOL		m_red_alert;
 	BOOL		m_scramble;

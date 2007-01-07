@@ -579,6 +579,8 @@
 #define IDC_LIST3                       1208
 #define IDC_FILELIST                    1208
 #define IDC_YES_MESSAGE_LIST            1208
+#define IDC_COMMAND_SENDER              1209
+#define IDC_COMMAND_PERSONA             1210
 #define IDC_FILTER_WAYPOINTS            1211
 #define IDC_FILTER_STARTS               1212
 #define IDC_FILTER_SHIPS                1213

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.26 $
- * $Date: 2006-12-28 00:59:20 $
- * $Author: wmcoolmon $
+ * $Revision: 1.27 $
+ * $Date: 2007-01-07 00:01:28 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2006/12/28 00:59:20  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.25  2006/12/08 19:18:52  Goober5000
  * fix Mantis #1163
  *
@@ -1442,6 +1445,10 @@ void clear_mission()
 	Nmodel_bitmap = -1;
 
 	The_mission.contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
+
+	// Goober5000
+	The_mission.command_persona = Default_command_persona;
+	strcpy(The_mission.command_sender, DEFAULT_COMMAND); 
 
 	// Goober5000: reset ALL mission flags, not just nebula!
 	The_mission.flags = 0;

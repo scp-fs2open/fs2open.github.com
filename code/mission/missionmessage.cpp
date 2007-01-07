@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.59 $
- * $Date: 2007-01-06 23:13:40 $
+ * $Revision: 2.60 $
+ * $Date: 2007-01-07 00:01:28 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
@@ -768,7 +768,7 @@ char *Persona_type_names[MAX_PERSONA_TYPES] =
 //XSTR:ON
 };
 
-int Command_persona;
+int Default_command_persona;
 
 ///////////////////////////////////////////////////////////////////
 // used to distort incoming messages when comms are damaged
@@ -842,10 +842,10 @@ void persona_parse()
 
 			Personas[Num_personas].flags |= (1<<i);
 
-			// save the Terran Command persona in a global
+			// save the Command persona in a global
 			if ( Personas[Num_personas].flags & PERSONA_FLAG_COMMAND ) {
-//				Assert ( Command_persona == -1 );
-				Command_persona = Num_personas;
+				if (Default_command_persona < 0)
+					Default_command_persona = Num_personas;
 			}
 
 			break;
@@ -1066,7 +1066,7 @@ void messages_init()
 
 	if ( !table_read ) {
 		Num_builtin_messages = Num_builtin_avis = Num_builtin_waves = 0;
-		Command_persona = -1;
+		Default_command_persona = -1;
 		if ((rval = setjmp(parse_abort)) != 0) {
 			mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "messages.tbl", rval));
 			return;
@@ -1078,9 +1078,9 @@ void messages_init()
 
 	// reset the number of messages that we have for this mission
 	Num_messages = Num_builtin_messages;
-	Message_debug_index = Num_builtin_messages - 1;
 	Num_message_avis = Num_builtin_avis;
 	Num_message_waves = Num_builtin_waves;
+	Message_debug_index = Num_builtin_messages - 1;
 
 	// initialize the stuff for the linked lists of messages
 	MessageQ_num = 0;
@@ -1568,7 +1568,7 @@ void message_play_anim( message_q *q )
 	// attached to it.  Deal with munging the name
 
 	// support ships use a wingman head.
-	// terran command uses it's own set of heads.
+	// terran command uses its own set of heads.
 	int subhead_selected = FALSE;
 	if ( (q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1)) ) {
 		persona_index = m->persona_index;
@@ -1576,7 +1576,7 @@ void message_play_anim( message_q *q )
 		// if this ani should be converted to a terran command, set the persona to the command persona
 		// so the correct head plays.
 		if ( q->flags & MQF_CONVERT_TO_COMMAND ) {
-			persona_index = Command_persona;
+			persona_index = The_mission.command_persona;
 			strcpy( ani_name, COMMAND_HEAD_PREFIX );
 		}
 
@@ -2014,7 +2014,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	// to this message, then set a bit to tell the wave/anim playing code to play the command version
 	// of the wave and head
 	MessageQ[i].flags = 0;
-	if ( !stricmp(who_from, TERRAN_COMMAND) && (m_persona != -1) && (Personas[m_persona].flags & PERSONA_FLAG_WINGMAN) ) {
+	if ( !stricmp(who_from, The_mission.command_sender) && (m_persona != -1) && (Personas[m_persona].flags & PERSONA_FLAG_WINGMAN) ) {
 		MessageQ[i].flags |= MQF_CONVERT_TO_COMMAND;
 		MessageQ[i].source = HUD_SOURCE_TERRAN_CMD;
 	}
@@ -2182,7 +2182,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 			// if the ship is NULL and special_who is not NULL, then this is from special_who
 			// otherwise, message is from ship.
 			if ( m_source == MESSAGE_SOURCE_COMMAND ) {
-				who_from = TERRAN_COMMAND;
+				who_from = The_mission.command_sender;
 				source = HUD_SOURCE_TERRAN_CMD;
 			} else if ( m_source == MESSAGE_SOURCE_SPECIAL ) {
 				who_from = (char *)data;
@@ -2202,7 +2202,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 
 				// if the ship_index is -1, then make the message come from Terran command
 				if ( ship_index == -1 ) {
-					who_from = TERRAN_COMMAND;
+					who_from = The_mission.command_sender;
 					source = HUD_SOURCE_TERRAN_CMD;
 				} else {
 					who_from = Ships[ship_index].ship_name;
@@ -2281,7 +2281,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
 		Assert( !(Ship_info[shipp->ship_info_index].flags & SIF_NOT_FLYABLE) );		// get allender or alan
 	} else {
-		persona_index = Command_persona;				// use the terran command persona
+		persona_index = The_mission.command_persona;				// use the terran command persona
 	}
 
 	// try to find a builtin message with the given type for the given persona
@@ -2305,17 +2305,23 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			}
 
 			// get who this message is from -- kind of a hack since we assume Terran Command in the
-			// absense of a ship.  This will be fixed later
+			// absence of a ship.  This will be fixed later
 			if ( shipp ) {
-				source = HUD_team_get_source( shipp->team );
 				who_from = shipp->ship_name;
+				source = HUD_team_get_source( shipp->team );
 			} else {
-				source = HUD_SOURCE_TERRAN_CMD;
-				who_from = TERRAN_COMMAND;
+				who_from = The_mission.command_sender;
+
+				// Goober5000 - if Command is a ship that is present, change the source accordingly
+				int shipnum = ship_name_lookup(who_from);
+				if (shipnum >= 0)
+					source = HUD_team_get_source( Ships[shipnum].team );
+				else
+					source = HUD_SOURCE_TERRAN_CMD;
 			}
 
 			// maybe change the who from here for special rearm cases (always seems like that is the case :-) )
-			if ( !stricmp(who_from, TERRAN_COMMAND) && (type == MESSAGE_REARM_ON_WAY) ){
+			if ( !stricmp(who_from, The_mission.command_sender) && (type == MESSAGE_REARM_ON_WAY) ){
 				who_from = SUPPORT_NAME;
 			}
 
