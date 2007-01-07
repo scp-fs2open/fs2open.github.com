@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.50 $
- * $Date: 2006-11-06 06:19:17 $
+ * $Revision: 1.51 $
+ * $Date: 2007-01-07 13:02:19 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.50  2006/11/06 06:19:17  taylor
+ * rename set_warp_globals() to model_set_warp_globals()
+ * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
+ * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
+ * change "model_current_LOD" to a global "Interp_detail_level" and the static "Interp_detail_level" to "Interp_detail_level_locked", a bit more descriptive
+ * minor bits of cleanup
+ * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
+ *
  * Revision 1.49  2006/11/06 05:46:54  taylor
  * fix the envmap-getting-rotated-by-turrets bug (though it did make me chuckle a bit when I first saw it ;))
  * try to reuse old view setup info, if we are using the same settings again (for speed up purposes, will be a bigger deal when bumpmapping gets here)
@@ -313,6 +321,7 @@ extern vec3d G3_user_clip_normal;
 extern vec3d G3_user_clip_point;
 extern int Interp_multitex_cloakmap;
 extern int Interp_cloakmap_alpha;
+extern float Interp_light;
 
 static int GL_modelview_matrix_depth = 1;
 static int GL_htl_projection_matrix_set = 0;
@@ -571,6 +580,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 	int count = (end - start + 1); //(n_prim * 3);
 	int start_tmp, end_tmp, count_tmp, multiple_elements = 0;
 
+	int textured = (flags & TMAP_FLAG_TEXTURED);
+
 	opengl_vertex_buffer *vbp = g_vbp;
 	Assert( g_vbp );
 
@@ -585,20 +596,11 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 	if ( glIsEnabled(GL_CULL_FACE) )
 		glFrontFace(GL_CW);
 
-
-// -------- Begin 1st PASS ------------------------------------------------------- //
-	if (gr_screen.current_bitmap == CLOAKMAP) {
-		glBlendFunc(GL_ONE,GL_ONE);
-		r = g = b = Interp_cloakmap_alpha;
-		a = 255;
-	}
-
-	int textured = (flags & TMAP_FLAG_TEXTURED);
-
 	opengl_setup_render_states(r, g, b, a, tmap_type, (textured) ? TMAP_FLAG_TEXTURED : 0);
 	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 
 
+// -------- Begin 1st PASS ------------------------------------------------------- //
 	// basic setup of all data and first texture
 	vglClientActiveTextureARB(GL_TEXTURE0_ARB+render_pass);
 	if (vbp->vbo) {
@@ -654,7 +656,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 		}
 
 		// determine if we are going to use a specmap (for later checking)
-		if ( (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (SPECMAP > -1) && !Cmdline_nospec && (vbp->flags & VERTEX_FLAG_UV1) ) {
+		if ( (SPECMAP > -1) && !Cmdline_nospec && (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (vbp->flags & VERTEX_FLAG_UV1) ) {
 			use_spec = true;
 		}
 	}
@@ -667,25 +669,24 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 
 	// only change lights if we have a specmap, don't render the specmap when fog is enabled
 	if ( use_spec ) {
-		opengl_default_light_settings(!GL_center_alpha, 1, 0); // don't render with spec lighting here
+		opengl_default_light_settings(!GL_center_alpha, (Interp_light > 0.25f), 0); // don't render with spec lighting here
 	} else {
 		// reset to defaults
-		opengl_default_light_settings(!GL_center_alpha);
+		opengl_default_light_settings(!GL_center_alpha, (Interp_light > 0.25f));
 	}
 
 	gr_opengl_set_center_alpha(GL_center_alpha);
 
+	// NOTE: the unlock call is at the end of all drawing ...
 	vglLockArraysEXT( 0, vbp->n_verts);
 
 	// DRAW IT!!
 	DO_RENDER();
 
-	vglUnlockArraysEXT();
-
 // -------- End 1st PASS --------------------------------------------------------- //
 
 // -------- Begin lighting pass (conditional but should happen before spec pass) - //
-	if ( (textured) && (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && ((Num_active_gl_lights-1)/GL_max_lights > 0) ) {
+	if ( (textured) && (lighting_is_enabled) && !(glIsEnabled(GL_FOG)) && (Num_active_gl_lights > GL_max_lights) ) {
 		// the lighting code needs to do this better, may need some adjustment later since I'm only trying
 		// to avoid rendering 7+ extra passes for lights which probably won't affect current object, but as
 		// a performance hack I guess this will have to do for now...
@@ -703,16 +704,13 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 				opengl_switch_arb(i, 0);
 			}
 
-			vglLockArraysEXT( 0, vbp->n_verts);
-
-			for (i = 1; (i < ((Num_active_gl_lights-1)/GL_max_lights)) && (i < max_passes); i++) {
+			int max_lights = (Num_active_gl_lights - 1) / GL_max_lights;
+			for (i = 1; (i < max_lights) && (i < max_passes); i++) {
 				opengl_change_active_lights(i);
 
 				// DRAW IT!!
 				DO_RENDER();
 			}
-
-			vglUnlockArraysEXT();
 
 			// reset the active lights to the first set to render the spec related passes with
 			// for performance and quality reasons they don't get special lighting passes
@@ -722,7 +720,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 // -------- End lighting PASS ---------------------------------------------------- //
 
 // -------- Begin 2nd PASS (env) ------------------------------------------------- //
-	if ( use_spec && Cmdline_env && (ENVMAP >= 0) ) {
+	if ( use_spec && Cmdline_env && (ENVMAP >= 0) && Is_Extension_Enabled(OGL_ARB_TEXTURE_ENV_COMBINE) ) {
 		// turn all previously used arbs off before the specular pass
 		// this fixes the glowmap multitexture rendering problem - taylor
 		for (i = 0; i < render_pass; i++) {
@@ -790,14 +788,15 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-		glEnable(GL_TEXTURE_GEN_S);
-		glEnable(GL_TEXTURE_GEN_T);
-		glEnable(GL_TEXTURE_GEN_R);
+		glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 		glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
 		glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
 		glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+
+		glEnable(GL_TEXTURE_GEN_S);
+		glEnable(GL_TEXTURE_GEN_T);
+		glEnable(GL_TEXTURE_GEN_R);
 
 		// set the matrix for the texture mode
 		if (GL_env_texture_matrix_set) {
@@ -810,12 +809,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 
 		render_pass++; // bump!
 
-		vglLockArraysEXT( 0, vbp->n_verts );
-
 		// DRAW IT!!
 		DO_RENDER();
-
-		vglUnlockArraysEXT();
 
 		// disable and reset everything we changed
 		glDisable(GL_TEXTURE_GEN_S);
@@ -823,7 +818,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 		glDisable(GL_TEXTURE_GEN_R);
 		glDisable(GL_TEXTURE_CUBE_MAP);
 
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
 
 		// pop off the texture matrix we used for the envmap
 		if (GL_env_texture_matrix_set) {
@@ -864,21 +859,18 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 
 		opengl_set_spec_mapping(tmap_type, &u_scale, &v_scale);
 
-		vglLockArraysEXT( 0, vbp->n_verts );
-
 		// DRAW IT!!
 		DO_RENDER();
 
-		vglUnlockArraysEXT();
-
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE, 1.0f);
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
 
 		opengl_reset_spec_mapping();
 	}
 // -------- End 3rd PASS --------------------------------------------------------- //
 
 
-	TIMERBAR_POP();
+	// unlock the arrays
+	vglUnlockArraysEXT();
 
 	// make sure everthing gets turned back off, fixes hud issue with spec lighting and VBO crash in starfield
 	opengl_switch_arb(-1, 0);
@@ -900,6 +892,8 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int fl
 		glVertex3d(0,0,20);
 	glEnd();
 #endif
+
+	TIMERBAR_POP();
 }
 
 void gr_opengl_start_instance_matrix(vec3d *offset, matrix *rotation)
@@ -1057,10 +1051,19 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient)
 
 			glGetFloatv(GL_MODELVIEW_MATRIX, mview);
 
-			// transpose/invert the view matrix (basically stole this out of a google search)
-			GL_env_texture_matrix[0] = mview[0]; GL_env_texture_matrix[1] = mview[4]; GL_env_texture_matrix[2]  = -mview[8];
-			GL_env_texture_matrix[4] = mview[1]; GL_env_texture_matrix[5] = mview[5]; GL_env_texture_matrix[6]  = -mview[9];
-			GL_env_texture_matrix[8] = mview[2]; GL_env_texture_matrix[9] = mview[6]; GL_env_texture_matrix[10] = -mview[10];
+			// r.xyz  <--  r.x, u.x, f.x
+			GL_env_texture_matrix[0]  =  mview[0];
+			GL_env_texture_matrix[1]  = -mview[4];
+			GL_env_texture_matrix[2]  =  mview[8];
+			// u.xyz  <--  r.y, u.y, f.y
+			GL_env_texture_matrix[4]  =  mview[1];
+			GL_env_texture_matrix[5]  = -mview[5];
+			GL_env_texture_matrix[6]  =  mview[9];
+			// f.xyz  <--  r.z, u.z, f.z
+			GL_env_texture_matrix[8]  =  mview[2];
+			GL_env_texture_matrix[9]  = -mview[6];
+			GL_env_texture_matrix[10] =  mview[10];
+
 			GL_env_texture_matrix[15] = 1.0f;
 		}
 	}
@@ -1277,7 +1280,6 @@ void gr_opengl_draw_htl_line(vec3d *start, vec3d* end)
 	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, zbuffer_state);
 	glBegin(GL_LINES);
 		glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-		vglSecondaryColor3ubvEXT(GL_zero_3ub);
 		glVertex3fv(start->a1d);
 		glVertex3fv(end->a1d);
 	glEnd();
@@ -1301,7 +1303,6 @@ void gr_opengl_draw_htl_sphere(float rad)
 
 	opengl_set_state(TEXTURE_SOURCE_NONE, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL);
 	glColor3ub(gr_screen.current_color.red, gr_screen.current_color.green, gr_screen.current_color.blue);
-	vglSecondaryColor3ubvEXT(GL_zero_3ub);
 
 	// FIXME: opengl_check_for_errors() needs to be modified to work with this at
 	// some point but for now I just don't care so it does nothing
