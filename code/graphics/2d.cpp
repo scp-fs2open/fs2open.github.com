@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.80 $
- * $Date: 2006-12-28 00:59:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.81 $
+ * $Date: 2007-01-07 13:13:38 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2006/12/28 00:59:26  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.79  2006/11/16 00:53:12  taylor
  * various bits of little cleanup
  * get rid of some more compiler warnings
@@ -880,7 +883,7 @@ uint Gr_signature = 0;
 
 float Gr_gamma = 1.8f;
 int Gr_gamma_int = 180;
-int Gr_gamma_lookup[256];
+//int Gr_gamma_lookup[256];
 
 // z-buffer stuff
 int gr_zbuffering = 0;

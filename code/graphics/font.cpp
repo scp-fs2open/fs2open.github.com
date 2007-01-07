@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-12-28 00:59:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2007-01-07 13:13:38 $
+ * $Author: taylor $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/12/28 00:59:26  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.18  2006/09/11 06:45:39  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -301,7 +304,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-#include "graphics/grinternal.h"
+
 #include "graphics/2d.h"
 #include "cfile/cfile.h"
 #include "graphics/font.h"
