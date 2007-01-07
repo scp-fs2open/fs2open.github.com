@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.205 $
- * $Date: 2007-01-07 00:24:18 $
+ * $Revision: 2.206 $
+ * $Date: 2007-01-07 01:00:18 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.205  2007/01/07 00:24:18  Goober5000
+ * move this to the Message location of the mission
+ *
  * Revision 2.204  2007/01/07 00:01:28  Goober5000
  * add a feature for specifying the source of Command messages
  *
@@ -1690,10 +1693,8 @@ void parse_mission_info(mission *pm, bool basic = false)
 		}
 	}
 
-	if (optional_string("+All Teams Attack")){
-		Mission_all_attack = 1;
-	} else {
-		Mission_all_attack = 0;
+	if (optional_string("+All Teams Attack")) {
+		pm->flags |= MISSION_FLAG_ALL_ATTACK;
 	}
 
 	//	Maybe delay the player's entry.
@@ -6376,7 +6377,6 @@ int parse_main(char *mission_name, int flags)
 
 	// fill in Ship_class_names array with the names from the ship_info struct;
 	Num_parse_names = 0;
-	Mission_all_attack = 0;	//	Might get set in mission load.
 	Num_path_restrictions = 0;
 	Assert(Num_ship_classes <= MAX_SHIP_CLASSES);	// Goober5000 - should be <=
 

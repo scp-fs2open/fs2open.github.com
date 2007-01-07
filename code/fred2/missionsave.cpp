@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.29 $
- * $Date: 2007-01-07 00:24:17 $
+ * $Revision: 1.30 $
+ * $Date: 2007-01-07 01:00:18 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2007/01/07 00:24:17  Goober5000
+ * move this to the Message location of the mission
+ *
  * Revision 1.28  2007/01/07 00:01:28  Goober5000
  * add a feature for specifying the source of Command messages
  *
@@ -855,12 +858,12 @@ int CFred_mission_save::save_mission_info()
 		fout(" %f", The_mission.support_ships.max_subsys_repair_val);
 	}
 
-	if (Mission_all_attack) {
-		if (optional_string_fred("+All Teams Attack")){
+	if (!Format_fs2_open && (The_mission.flags & MISSION_FLAG_ALL_ATTACK))
+	{
+		if (optional_string_fred("+All Teams Attack"))
 			parse_comments();
-		} else {
+		else
 			fout("\n+All Teams Attack");
-		}
 	}
 
 	if (Entry_delay_time) {
