@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.30 $
- * $Date: 2007-01-07 01:00:18 $
+ * $Revision: 1.31 $
+ * $Date: 2007-01-07 21:28:10 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2007/01/07 01:00:18  Goober5000
+ * convert a mission variable to a mission flag
+ *
  * Revision 1.29  2007/01/07 00:24:17  Goober5000
  * move this to the Message location of the mission
  *
@@ -1832,6 +1835,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"secondaries-locked\"");
 			if (Ships[i].flags2 & SF2_NO_DEATH_SCREAM)
 				fout(" \"no-death-scream\"");
+			if (Ships[i].flags2 & SF2_ALWAYS_DEATH_SCREAM)
+				fout(" \"always-death-scream\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

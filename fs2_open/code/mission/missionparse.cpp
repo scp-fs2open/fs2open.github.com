@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.207 $
- * $Date: 2007-01-07 12:55:57 $
- * $Author: taylor $
+ * $Revision: 2.208 $
+ * $Date: 2007-01-07 21:28:10 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.207  2007/01/07 12:55:57  taylor
+ * safety check to make sure that we don't end up with non-player-usable weapons in the weaponselect pool (Mantis bug #1196)
+ *
  * Revision 2.206  2007/01/07 01:00:18  Goober5000
  * convert a mission variable to a mission flag
  *
@@ -1419,6 +1422,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"set-class-dynamically",
 	"team-loadout-store",
 	"no-death-scream",
+	"always-death-scream",
 };
 
 
@@ -3078,6 +3082,8 @@ int parse_create_object_sub(p_object *p_objp)
 	// Goober5000
 	if (p_objp->flags2 & P2_SF2_NO_DEATH_SCREAM)
 		shipp->flags2 |= SF2_NO_DEATH_SCREAM;
+	if (p_objp->flags2 & P2_SF2_ALWAYS_DEATH_SCREAM)
+		shipp->flags2 |= SF2_ALWAYS_DEATH_SCREAM;
 
 	if (p_objp->flags & P_SF_GUARDIAN)
 		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
