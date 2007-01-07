@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.29.2.4 $
- * $Date: 2006-12-26 05:31:22 $
+ * $Revision: 1.29.2.5 $
+ * $Date: 2007-01-07 12:15:09 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29.2.4  2006/12/26 05:31:22  taylor
+ * fix some sound state stuff that was leading to crashes in OS X and undefined behavior in Windows (this isn't all that pretty, but will handled properly in post-3.6.9 revised code)
+ *
  * Revision 1.29.2.3  2006/12/07 18:24:43  taylor
  * various sound fixes/changes, mainly for OS X fixage
  *
@@ -582,94 +585,106 @@ bool WaveFile::Open (char *pszFilename)
 	WORD cbExtra = 0;
 	bool fRtn = true;    // assume success
 	PCMWAVEFORMAT pcmwf;
-	char fullpath[_MAX_PATH];
+	int FileSize, FileOffset;
+	char fullpath[MAX_PATH];
+	char filename[MAX_FILENAME_LEN];
+	const int NUM_EXT = 2;
+	const char *audio_ext[NUM_EXT] = { ".ogg", ".wav" };
 
 	m_total_uncompressed_bytes_read = 0;
 	m_max_uncompressed_bytes_to_read = AS_HIGHEST_MAX;
 
-	int FileSize, FileOffset;
+	// remove extension
+	strcpy( filename, pszFilename );
+	char *p = strchr(filename, '.');
+	if ( p ) *p = 0;
 
-	if ( !cf_find_file_location(pszFilename, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset ))	{
+	rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+
+	if (rc < 0) {
+		// reset original filename
+		strcpy( filename, pszFilename );
 		goto OPEN_ERROR;
+	} else {
+		// set proper filename for later use
+		SAFE_STRCAT( filename, audio_ext[rc], sizeof(filename) );
 	}
 
 	m_snd_info.cfp = mmioOpen( fullpath, NULL, MMIO_ALLOCBUF | MMIO_READ );
 
-	if ( m_snd_info.cfp == NULL ) {
+	if (m_snd_info.cfp == NULL)
 		goto OPEN_ERROR;
-	}
 
 	m_snd_info.true_offset = FileOffset;
 	m_snd_info.size = FileSize;
 
 	// if in a VP then position the stream at the start of the file
-	if (FileOffset > 0) {
+	if (FileOffset > 0)
 		mmioSeek( m_snd_info.cfp, FileOffset, SEEK_SET );
-	}
 
-	// first check for an OGG
-	if( (rc = ov_open_callbacks(&m_snd_info, &m_snd_info.vorbis_file, NULL, 0, mmio_callbacks)) == 0 ) {
-		// got an OGG so lets read the info in
-		ov_info(&m_snd_info.vorbis_file, -1);
+	// if Ogg Vorbis...
+	if (rc == 0) {
+		if ( ov_open_callbacks(&m_snd_info, &m_snd_info.vorbis_file, NULL, 0, mmio_callbacks) == 0 ) {
+			// got an Ogg Vorbis, so lets read the info in
+			ov_info(&m_snd_info.vorbis_file, -1);
 
-		// we only support one logical bitstream
-		if ( ov_streams(&m_snd_info.vorbis_file) != 1 ) {
-			mprintf(("AUDIOSTR => OGG reading error:  We don't handle bitstream changes!\n"));
-			goto OPEN_ERROR;
-		}
-
-		m_wave_format = OGG_FORMAT_VORBIS;
-		m_wfmt.wFormatTag = WAVE_FORMAT_PCM;
-		m_wfmt.nChannels = (WORD) m_snd_info.vorbis_file.vi->channels;
-		m_wfmt.nSamplesPerSec = m_snd_info.vorbis_file.vi->rate;
-		m_wfmt.cbSize = 0;
-
-		if ( (UserSampleBits == 16) || (UserSampleBits == 8) )
-			m_wfmt.wBitsPerSample = UserSampleBits;				//Decode at whatever the user specifies; only 16 and 8 are supported.
-		else if (UserSampleBits > 16)
-			m_wfmt.wBitsPerSample = 16;
-		else
-			m_wfmt.wBitsPerSample = 8;
-		
-		m_wfmt.nBlockAlign = (ushort)(( m_wfmt.nChannels * m_wfmt.wBitsPerSample ) / 8);
-		m_wfmt.nAvgBytesPerSec = m_wfmt.nSamplesPerSec * m_wfmt.nBlockAlign;
-
-		m_nBlockAlign = m_wfmt.nBlockAlign;
-		m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
-
-		Assert( (m_wfmt.nChannels == 1) || (m_wfmt.nChannels == 2) );
-
-		switch (m_wfmt.wBitsPerSample)
-		{
-			case 8:
-				m_ALformat = (m_wfmt.nChannels == 2) ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
-				break;
-
-			case 16:
-				m_ALformat = (m_wfmt.nChannels == 2) ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
-				break;
-
-			default:
-				Int3();
+			// we only support one logical bitstream
+			if ( ov_streams(&m_snd_info.vorbis_file) != 1 ) {
+				mprintf(("AUDIOSTR => OGG reading error:  We don't handle bitstream changes!\n"));
 				goto OPEN_ERROR;
+			}
+
+			m_wave_format = OGG_FORMAT_VORBIS;
+			m_wfmt.wFormatTag = WAVE_FORMAT_PCM;
+			m_wfmt.nChannels = (WORD) m_snd_info.vorbis_file.vi->channels;
+			m_wfmt.nSamplesPerSec = m_snd_info.vorbis_file.vi->rate;
+			m_wfmt.cbSize = 0;
+
+			if ( (UserSampleBits == 16) || (UserSampleBits == 8) )
+				m_wfmt.wBitsPerSample = UserSampleBits;				//Decode at whatever the user specifies; only 16 and 8 are supported.
+			else if (UserSampleBits > 16)
+				m_wfmt.wBitsPerSample = 16;
+			else
+				m_wfmt.wBitsPerSample = 8;
+		
+			m_wfmt.nBlockAlign = (ushort)(( m_wfmt.nChannels * m_wfmt.wBitsPerSample ) / 8);
+			m_wfmt.nAvgBytesPerSec = m_wfmt.nSamplesPerSec * m_wfmt.nBlockAlign;
+
+			m_nBlockAlign = m_wfmt.nBlockAlign;
+			m_nUncompressedAvgDataRate = m_wfmt.nAvgBytesPerSec;
+
+			Assert( (m_wfmt.nChannels == 1) || (m_wfmt.nChannels == 2) );
+
+			switch (m_wfmt.wBitsPerSample)
+			{
+				case 8:
+					m_ALformat = (m_wfmt.nChannels == 2) ? AL_FORMAT_STEREO8 : AL_FORMAT_MONO8;
+					break;
+
+				case 16:
+					m_ALformat = (m_wfmt.nChannels == 2) ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
+					break;
+
+				default:
+					Int3();
+					goto OPEN_ERROR;
+			}
+
+			// location of start of file in VP
+			m_data_offset = 0;
+			m_nDataSize = m_data_bytes_left = ((int)ov_pcm_total(&m_snd_info.vorbis_file, -1) * m_wfmt.nBlockAlign);
+
+			// Cue for streaming
+			Cue();
+
+			// successful open
+			goto OPEN_DONE;
+		} else {
+			mprintf(("AUDIOSTR => OGG reading error: Not a valid Vorbis file!\n"));
 		}
-
-		// location of start of file in VP
-		m_data_offset = 0;
-		m_nDataSize = m_data_bytes_left = ((int)ov_pcm_total(&m_snd_info.vorbis_file, -1) * m_wfmt.nBlockAlign);
-
-		// Cue for streaming
-		Cue();
-
-		// successful open
-		goto OPEN_DONE;
 	}
-	// not an OGG so assume that it's WAVE
-	else {
-		// extra check, if it's not ogg then continue but if the error was a bad ogg then bail
-		if ( rc && (rc != OV_ENOTVORBIS) )
-			goto OPEN_ERROR;
-
+	// if Wave...
+	else if (rc == 1) {
 		// Skip the "RIFF" tag and file size (8 bytes)
 		// Skip the "WAVE" tag (4 bytes)
 		mmioSeek( m_snd_info.cfp, 12+FileOffset, SEEK_SET );
@@ -790,12 +805,17 @@ bool WaveFile::Open (char *pszFilename)
 		// Successful open
 		goto OPEN_DONE;
 	}
-    
+	// something unkown???
+	else
+		Int3();
+
+
 OPEN_ERROR:
 	// Handle all errors here
-	nprintf(("SOUND","SOUND ==> Could not open wave file %s for streaming\n", pszFilename));
+	nprintf(("SOUND","SOUND ==> Could not open wave file %s for streaming\n", filename));
 
 	fRtn = false;
+
 	if (m_snd_info.cfp != NULL) {
 		// Close file
 		mmioClose( m_snd_info.cfp, 0 );
@@ -810,7 +830,8 @@ OPEN_ERROR:
 	}
 
 OPEN_DONE:
-	strncpy(m_wFilename, pszFilename, MAX_FILENAME_LEN-1);
+	strncpy(m_wFilename, filename, MAX_FILENAME_LEN-1);
+
 	return (fRtn);
 }
 
