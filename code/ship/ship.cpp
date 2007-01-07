@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.51 $
- * $Date: 2006-12-28 22:47:15 $
+ * $Revision: 2.336.2.52 $
+ * $Date: 2007-01-07 03:10:05 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.51  2006/12/28 22:47:15  Goober5000
+ * fix spelling... *twitch*
+ *
  * Revision 2.336.2.50  2006/12/28 01:19:14  Goober5000
  * removed obsolete limits
  *
@@ -14081,7 +14084,7 @@ void ship_maybe_lament()
 	{
 		ship_index = ship_get_random_player_wing_ship(SHIP_GET_UNSILENCED);
 		if (ship_index >= 0)
-			message_send_builtin_to_player(MESSAGE_PLAYED_DIED, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
+			message_send_builtin_to_player(MESSAGE_PLAYER_DIED, &Ships[ship_index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_IMMEDIATE, 0, 0, -1, -1);
 	}
 }
 
