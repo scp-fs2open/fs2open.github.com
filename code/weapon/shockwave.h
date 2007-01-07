@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.12 $
- * $Date: 2006-09-11 06:51:17 $
+ * $Revision: 2.13 $
+ * $Date: 2007-01-07 12:57:36 $
  * $Author: taylor $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/09/11 06:51:17  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.11  2005/12/04 19:02:36  wmcoolmon
  * Better XMT beam section handling ("+Index:"); weapon shockwave armor support; countermeasures as weapons
  *
@@ -134,41 +137,10 @@ struct object;
 #define	SW_WEAPON_KILL		(1<<3)	// Shockwave created when weapon destroyed by another
 
 #define	MAX_SHOCKWAVES					16
-#define	MAX_SHOCKWAVE_TYPES				8
-#define NUM_DEFAULT_SHOCKWAVE_TYPES		1
 #define	SW_MAX_OBJS_HIT	64
 
-typedef struct shockwave_info
-{
-	int	bitmap_id;
-	int	num_frames;
-	int	fps;
-} shockwave_info;
-
-typedef struct shockwave {
-	shockwave	*next, *prev;
-	int			flags;
-	int			objnum;					// index into Objects[] for shockwave
-	int			num_objs_hit;
-	int			obj_sig_hitlist[SW_MAX_OBJS_HIT];
-	float		speed, radius;
-	float		inner_radius, outer_radius, damage;
-	int			weapon_info_index;	// -1 if shockwave not caused by weapon	
-	int			damage_type_idx;			//What type of damage this shockwave does to armor
-	vec3d		pos;
-	float		blast;					// amount of blast to apply
-	int			next_blast;				// timestamp for when to apply next blast damage
-	int			shockwave_info_index;
-	int			current_bitmap;
-	float		time_elapsed;			// in seconds
-	float		total_time;				// total lifetime of animation in seconds
-	int			delay_stamp;			// for delayed shockwaves
-	angles		rot_angles;
-	int			model;
-} shockwave;
-
 typedef struct shockwave_create_info {
-	char name[NAME_LENGTH];
+	char name[MAX_FILENAME_LEN];
 	char pof_name[MAX_FILENAME_LEN];
 
 	float inner_rad;
@@ -180,25 +152,25 @@ typedef struct shockwave_create_info {
 
 	int damage_type_idx;
 
-	shockwave_create_info() {memset(this, 0, sizeof(shockwave_create_info));damage_type_idx=-1;}
 	void load();
-} shockwave_create_info;
 
-extern shockwave			Shockwaves[MAX_SHOCKWAVES];
-extern shockwave_info	Shockwave_info[MAX_SHOCKWAVE_TYPES];
+	shockwave_create_info() { memset(this, 0, sizeof(shockwave_create_info)); damage_type_idx = -1; }
+} shockwave_create_info;
 
 void shockwave_close();
 void shockwave_level_init();
 void shockwave_level_close();
 void shockwave_delete(object *objp);
 void shockwave_move_all(float frametime);
-int shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay = -1);
+int  shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay = -1);
 void shockwave_render(object *objp);
-int shockwave_weapon_index(int index);
-float shockwave_max_radius(int index);
-int shockwave_get_framenum(int index, int num_frames);
 
-//Use to add a shockwave and get its info_index
-int shockwave_add(char *bm_name);
+int   shockwave_get_weapon_index(int index);
+float shockwave_get_min_radius(int index);
+float shockwave_get_max_radius(int index);
+float shockwave_get_damage(int index);
+int   shockwave_get_damage_type_idx(int index);
+int   shockwave_get_framenum(int index, int num_frames);
+int   shockwave_get_flags(int index);
 
 #endif /* __SHOCKWAVE_H__ */

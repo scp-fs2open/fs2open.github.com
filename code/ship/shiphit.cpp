@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.68 $
- * $Date: 2006-12-28 00:59:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.69 $
+ * $Date: 2007-01-07 12:57:36 $
+ * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2006/12/28 00:59:48  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.67  2006/09/11 06:45:40  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -939,7 +942,7 @@ int shiphit_get_damage_weapon(object *damaging_objp)
 			weapon_info_index = Weapons[damaging_objp->instance].weapon_info_index;
 			break;
 		case OBJ_SHOCKWAVE:
-			weapon_info_index = shockwave_weapon_index(damaging_objp->instance);
+			weapon_info_index = shockwave_get_weapon_index(damaging_objp->instance);
 			break;
 		default:
 			weapon_info_index = -1;
@@ -959,7 +962,7 @@ float subsys_get_range(object *other_obj, ship_subsys *subsys)
 	Assert(subsys);	// Goober5000
 
 	if ((other_obj) && (other_obj->type == OBJ_SHOCKWAVE)) {	// Goober5000 - check for NULL when via sexp
-		range = Shockwaves[other_obj->instance].outer_radius * 0.75f;	//	Shockwaves were too lethal to subsystems.
+		range = shockwave_get_max_radius(other_obj->instance) * 0.75f;	//	Shockwaves were too lethal to subsystems.
 	} else if ( subsys->system_info->type == SUBSYSTEM_TURRET ) {
 		range = subsys->system_info->radius*3;
 	} else {
@@ -1086,7 +1089,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 		if ((Ship_info[ship_p->ship_info_index].flags & (SIF_SMALL_SHIP)) && !(The_mission.ai_profile->flags & AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS))
 			return damage;
 		else {
-			damage_left = Shockwaves[other_obj->instance].damage/4.0f;
+			damage_left = shockwave_get_damage(other_obj->instance) / 4.0f;
 		}
 		hitpos2 = other_obj->pos;
 	} else {
@@ -1161,7 +1164,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 
 	int dmg_type_idx = -1;
 	if(other_obj->type == OBJ_SHOCKWAVE) {
-		dmg_type_idx = Shockwaves[other_obj->instance].damage_type_idx;
+		dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
 	}
 	else if(other_obj->type == OBJ_WEAPON) {
 		dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
@@ -1336,7 +1339,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 
 	case OBJ_SHOCKWAVE:
 		p->killer_objtype=OBJ_SHOCKWAVE;
-		p->killer_weapon_index=shockwave_weapon_index(killer_objp->instance);
+		p->killer_weapon_index = shockwave_get_weapon_index(killer_objp->instance);
 		p->killer_species = Ship_info[Ships[Objects[killer_objp->parent].instance].ship_info_index].species;
 
 		if ( &Objects[killer_objp->parent] == Player_obj ) {
@@ -2351,7 +2354,7 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 	float dist, nearest_dist = FLT_MAX;
 	vec3d g_subobj_pos;
 	float max_damage;
-	shockwave *sw;
+	float inner_radius, outer_radius;
 
 	Assert(ship_obj);	// Goober5000 (but not other_obj in case of sexp)
 	Assert(damage);		// Goober5000
@@ -2371,7 +2374,6 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 	}
 
 	shipp = &Ships[ship_obj->instance];
-	sw = &Shockwaves[other_obj->instance];
 
 	// find closest subsystem distance to shockwave origin
 	for (subsys=GET_FIRST(&shipp->subsys_list); subsys != END_OF_LIST(&shipp->subsys_list); subsys = GET_NEXT(subsys) ) {
@@ -2384,19 +2386,22 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 	}
 
 	// get max damage and adjust if needed to account for shockwave created from destroyed weapon
-	max_damage = sw->damage;
-	if (sw->flags & SW_WEAPON_KILL) {
+	max_damage = shockwave_get_damage(other_obj->instance);
+	if (shockwave_get_flags(other_obj->instance) & SW_WEAPON_KILL) {
 		max_damage *= 4.0f;
 	}
 
+	outer_radius = shockwave_get_max_radius(other_obj->instance);
+	inner_radius = shockwave_get_min_radius(other_obj->instance);
+
 	// scale damage
 	// floor of 25%, max if within inner_radius, linear between
-	if (nearest_dist > sw->outer_radius) {
+	if (nearest_dist > outer_radius) {
 		*damage = max_damage / 4.0f;
-	} else if (nearest_dist < sw->inner_radius) {
+	} else if (nearest_dist < inner_radius) {
 		*damage = max_damage;
 	} else {
-		*damage = max_damage * (1.0f - 0.75f * (nearest_dist - sw->inner_radius) / (sw->outer_radius - sw->inner_radius));
+		*damage = max_damage * (1.0f - 0.75f * (nearest_dist - inner_radius) / (outer_radius - inner_radius));
 	}
 
 	return 1;
@@ -2590,7 +2595,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			}
 			else if(other_obj_is_shockwave)
 			{
-				dmg_type_idx = Shockwaves[other_obj->instance].damage_type_idx;
+				dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
 			}
 			
 			if(sip->armor_type_idx != -1)
