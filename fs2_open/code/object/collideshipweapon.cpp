@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.34 $
+ * $Date: 2007-01-08 00:50:58 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.32  2006/10/08 02:05:38  Goober5000
  * fix forum links
  *
@@ -414,10 +417,6 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 
 	// Make ships that are warping in not get collision detection done
 	if ( shipp->flags & SF_ARRIVING )
-		return 0;
-
-	// or for limbo
-	if ( shipp->flags2 & SF2_IN_LIMBO )
 		return 0;
 
 	// if one object is a capital, only check player and player weapons with
