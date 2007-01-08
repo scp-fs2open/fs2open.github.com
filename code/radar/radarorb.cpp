@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.25 $
- * $Date: 2006-07-09 01:55:41 $
+ * $Revision: 1.26 $
+ * $Date: 2007-01-08 00:50:59 $
  * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2006/07/09 01:55:41  Goober5000
+ * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
+ * this should fix Mantis #977
+ * --Goober5000
+ *
  * Revision 1.24  2006/06/07 04:44:57  wmcoolmon
  * Limbo flag support
  *
@@ -324,12 +329,6 @@ void radar_plot_object_orb( object *objp )
 	switch ( objp->type ) {
 	case OBJ_SHIP:
 		// Place to cull ships, such as NavBuoys		
-		//WMC - No limbo ships on radar.
-		//As far as the radar is concerned, they don't even exist.
-		if (Ships[objp->instance].flags2 & SF2_IN_LIMBO) {
-			return;
-		}
-
 		break;
 		
 	case OBJ_JUMP_NODE:

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.93 $
- * $Date: 2007-01-07 01:00:18 $
+ * $Revision: 1.94 $
+ * $Date: 2007-01-08 00:50:58 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.93  2007/01/07 01:00:18  Goober5000
+ * convert a mission variable to a mission flag
+ *
  * Revision 1.92  2006/12/28 00:59:18  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -2959,8 +2962,8 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 			if (shipp->flags & SF_DYING)
 				return;
 
-			// don't fire at a ship arriving or in limbo
-			if ((shipp->flags & SF_ARRIVING) || (shipp->flags2 & SF2_IN_LIMBO))
+			// don't fire at an arriving ship
+			if (shipp->flags & SF_ARRIVING)
 				return;
 
 			if (is_ignore_object(aip, OBJ_INDEX(eno->trial_objp)))
@@ -14555,8 +14558,6 @@ int ai_need_new_target(object *pl_objp, int target_objnum)
 		if ( shipp->flags & SF_DYING ) {
 			return 1;
 		} else if (shipp->team == Ships[pl_objp->instance].team) {
-			return 1;
-		} else if (shipp->flags2 & SF2_IN_LIMBO) {
 			return 1;
 		}
 	}

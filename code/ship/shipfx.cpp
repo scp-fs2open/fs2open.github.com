@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.78 $
- * $Date: 2006-12-28 00:59:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.79 $
+ * $Date: 2007-01-08 00:50:59 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2006/12/28 00:59:48  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.77  2006/11/16 01:11:28  taylor
  * handle knossos warp effect flip in a slightly better, slighter safer way (Mantis bug #1048, plus a couple that weren't filed)
  *
@@ -1092,9 +1095,6 @@ void shipfx_warpin_start( object *objp )
 		Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
 	}
 
-	if (shipp->flags2 & SF2_IN_LIMBO)
-		shipp->flags2 &= ~SF2_IN_LIMBO;
-
 	// if there is no arrival warp, then skip the whole thing
 	if (shipp->flags & SF_NO_ARRIVAL_WARP)
 	{
@@ -1290,14 +1290,13 @@ void shipfx_warpout_helper(object *objp, dock_function_info *infop)
 	}
 	else
 	{
-		if (!(Ships[objp->instance].flags2 & SF2_DEPART_TO_LIMBO))
-			objp->flags |= OF_SHOULD_BE_DEAD;
+		objp->flags |= OF_SHOULD_BE_DEAD;
 
 		if (objp->type == OBJ_SHIP)
 			ship_departed(objp->instance);
 	}
 }
- 
+
 // This is called to actually warp this object out
 // after all the flashy fx are done, or if the flashy fx
 // don't work for some reason.  OR to skip the flashy fx.

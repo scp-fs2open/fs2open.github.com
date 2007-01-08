@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.97 $
- * $Date: 2007-01-07 12:53:35 $
- * $Author: taylor $
+ * $Revision: 2.98 $
+ * $Date: 2007-01-08 00:50:58 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2007/01/07 12:53:35  taylor
+ * add position info for weapon energy text
+ * make sure that we can't target a hidden jumpnode
+ * rest of the weapon switch fix
+ *
  * Revision 2.96  2007/01/07 03:09:53  Goober5000
  * fix bug where built-in lament messages were never played
  *
@@ -596,7 +601,7 @@
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED | SF_DEPART_WARP | SF_DYING | SF_ARRIVING_STAGE_1 | SF_HIDDEN_FROM_SENSORS);
-int TARGET_SHIP_IGNORE_FLAGS_2 = (SF2_IN_LIMBO);
+int TARGET_SHIP_IGNORE_FLAGS_2 = (0);
 
 
 // Global values for the target bracket width and height, used for debugging

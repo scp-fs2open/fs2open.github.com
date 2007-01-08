@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.173 $
- * $Date: 2007-01-07 21:28:11 $
+ * $Revision: 2.174 $
+ * $Date: 2007-01-08 00:50:59 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.173  2007/01/07 21:28:11  Goober5000
+ * yet more tweaks to the WCS death scream stuff
+ * added a ship flag to force screaming
+ *
  * Revision 2.172  2007/01/07 12:59:54  taylor
  * fix thruster 2 length factor tbl entry so that it has the proper name
  *
@@ -1233,8 +1237,6 @@ typedef struct ship_subsys_info {
 #define SF2_NO_DEATH_SCREAM					(1<<15)		// Goober5000 - for WCS
 #define SF2_ALWAYS_DEATH_SCREAM				(1<<16)		// Goober5000 - for WCS
 #define SF2_GLOWMAPS_DISABLED				(1<<17)		// taylor - to disable glow maps
-#define SF2_IN_LIMBO						(1<<18)		// WMC - Ship isn't in mission, but still in Ships array
-#define SF2_DEPART_TO_LIMBO					(1<<19)		// WMC/Goober5000
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;

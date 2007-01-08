@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.393 $
- * $Date: 2007-01-07 21:28:11 $
+ * $Revision: 2.394 $
+ * $Date: 2007-01-08 00:50:59 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.393  2007/01/07 21:28:11  Goober5000
+ * yet more tweaks to the WCS death scream stuff
+ * added a ship flag to force screaming
+ *
  * Revision 2.392  2007/01/07 12:59:54  taylor
  * fix thruster 2 length factor tbl entry so that it has the proper name
  *
@@ -6202,8 +6206,7 @@ void ship_render(object * obj)
 
 
 	// Make ships that are warping in not render during stage 1
-	//WMC - Or limbo.
-	if (!(is_first_stage_arrival) && !(shipp->flags2 & SF2_IN_LIMBO))
+	if (!is_first_stage_arrival)
 	{				
 		if ( Ship_shadows && shipfx_in_shadow( obj ) )	{
 			light_set_shadow(1);
@@ -7028,14 +7031,6 @@ void ship_departed( int num )
 	else
 		mission_log_add_entry(LOG_SHIP_DEPARTED, sp->ship_name, NULL, sp->wingnum);
 
-	if (sp->flags2 & SF2_DEPART_TO_LIMBO)
-	{
-		sp->flags &= ~SF_DEPARTING;
-		sp->flags2 &= ~SF2_DEPART_TO_LIMBO;
-		sp->flags2 |= SF2_IN_LIMBO;
-		return;
-	}
-		
 	ai_ship_destroy(num, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
 
 	// don't bother doing this for demo playback - we don't keep track of wing info
@@ -8248,13 +8243,6 @@ void ship_process_post(object * obj, float frametime)
 	sip = &Ship_info[shipp->ship_info_index];
 
 	shipp->shield_hits = 0;
-
-	//WMC - Ships in limbo do nothing.
-	//Nothing at all.
-	//
-	//>_>
-	if (shipp->flags2 & SF2_IN_LIMBO)
-		return;
 
 	update_ets(obj, frametime);
 

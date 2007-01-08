@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.275 $
- * $Date: 2007-01-07 12:34:36 $
- * $Author: taylor $
+ * $Revision: 2.276 $
+ * $Date: 2007-01-08 00:50:58 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.275  2007/01/07 12:34:36  taylor
+ * proper envmap generation for OpenGL
+ *
  * Revision 2.274  2006/12/28 00:59:20  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -3319,10 +3322,7 @@ DCF(warp, "Tests warpin effect")
 					if(warpin)
 						shipfx_warpin_start(&Objects[Ships[idx].objnum]);
 					else
-					{
-						Ships[idx].flags2 |= SF2_DEPART_TO_LIMBO;
 						shipfx_warpout_start(&Objects[Ships[idx].objnum]);
-					}
 				}
 			}
 			else if(idx < 0)
@@ -3332,10 +3332,7 @@ DCF(warp, "Tests warpin effect")
 					if(warpin)
 						shipfx_warpin_start(&Objects[Player_ai->target_objnum]);
 					else
-					{
-						Ships[idx].flags2 |= SF2_DEPART_TO_LIMBO;
 						shipfx_warpout_start(&Objects[Player_ai->target_objnum]);
-					}
 				}
 			}
 		}

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.31 $
- * $Date: 2006-07-09 01:55:41 $
+ * $Revision: 2.32 $
+ * $Date: 2007-01-08 00:50:58 $
  * $Author: Goober5000 $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2006/07/09 01:55:41  Goober5000
+ * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
+ * this should fix Mantis #977
+ * --Goober5000
+ *
  * Revision 2.30  2006/06/07 04:39:30  wmcoolmon
  * Limbo flag support
  *
@@ -693,7 +698,7 @@ void hud_escort_cull_list()
 			Assert( objnum >=0 && objnum < MAX_OBJECTS );
 			object *objp = &Objects[objnum];
 
-			if ((objp->flags & OF_SHOULD_BE_DEAD) || (Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS) || (Ships[objp->instance].flags2 & SF2_IN_LIMBO)) {
+			if ((objp->flags & OF_SHOULD_BE_DEAD) || (Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS)) {
 				hud_remove_ship_from_escort_index(i, objnum);
 				i--;
 			}

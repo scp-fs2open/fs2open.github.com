@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.30 $
- * $Date: 2006-09-11 06:47:59 $
- * $Author: taylor $
+ * $Revision: 2.31 $
+ * $Date: 2007-01-08 00:50:59 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/09/11 06:47:59  taylor
+ * compiler warning fixes
+ *
  * Revision 2.29  2006/07/09 01:55:41  Goober5000
  * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
  * this should fix Mantis #977
@@ -316,10 +319,6 @@ void awacs_update_all_levels()
 		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING))
 			continue;
 
-		// ignore limbo ships
-		if (shipp->flags2 & SF2_IN_LIMBO)
-			continue;
-
 		// only look at ships that have awacs subsystems
 		if (!(Ship_info[shipp->ship_info_index].flags & SIF_HAS_AWACS))
 			continue;
@@ -565,10 +564,6 @@ void team_visibility_update()
 
 		// ignore dying, departing, or arriving ships
 		if ((shipp->flags & SF_DYING) || (shipp->flags & SF_DEPARTING) || (shipp->flags & SF_ARRIVING))
-			continue;
-
-		// ignore limbo ships
-		if (shipp->flags2 & SF2_IN_LIMBO)
 			continue;
 
 		// check if ship if flagged as invisible

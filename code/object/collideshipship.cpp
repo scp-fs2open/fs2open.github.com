@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21 $
+ * $Date: 2007-01-08 00:50:58 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.19  2006/07/09 01:55:41  Goober5000
  * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
  * this should fix Mantis #977
@@ -709,10 +712,6 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 	// Make ships that are warping in not get collision detection done
 	if ( Ships[num].flags & SF_ARRIVING )
-		return 0;
-
-	// WMC - We don't need collision to LIMBO!
-	if ( Ships[num].flags2 & SF2_IN_LIMBO ) 
 		return 0;
 
 	// Don't do collision detection for docking ships, since they will always collide while trying to dock
@@ -1895,8 +1894,8 @@ int collide_ship_ship( obj_pair * pair )
 		sif_b_flags = Ship_info[Ships[B->instance].ship_info_index].flags;
 
 		// if ship is huge and warping in
-		if ( ((Ships[A->instance].flags & SF_ARRIVING_STAGE_1 || Ships[A->instance].flags2 & SF2_IN_LIMBO) && (sif_a_flags & SIF_HUGE_SHIP))
-			|| ((Ships[B->instance].flags & SF_ARRIVING_STAGE_1 || Ships[B->instance].flags2 & SF2_IN_LIMBO) && (sif_b_flags & SIF_HUGE_SHIP)) ) {
+		if ( ((Ships[A->instance].flags & SF_ARRIVING_STAGE_1) && (sif_a_flags & SIF_HUGE_SHIP))
+			|| ((Ships[B->instance].flags & SF_ARRIVING_STAGE_1) && (sif_b_flags & SIF_HUGE_SHIP)) ) {
 			pair->next_check_time = timestamp(0);	// check next time
 			return 0;
 		}
