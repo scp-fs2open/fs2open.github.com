@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.50 $
- * $Date: 2007-01-07 12:36:51 $
- * $Author: taylor $
+ * $Revision: 1.51 $
+ * $Date: 2007-01-08 00:50:58 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.50  2007/01/07 12:36:51  taylor
+ * make fire-on-normal return value a little more obvious
+ * fix the "infinite genius" move I made by breaking turret movements  ;)
+ *
  * Revision 1.49  2006/12/28 00:59:18  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -478,11 +482,6 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 
 		// don't shoot at arriving ships
 		if (shipp->flags & SF_ARRIVING) {
-			return 0;
-		}
-
-		//WMC - Or limbo ships
-		if (shipp->flags2 & SF2_IN_LIMBO) {
 			return 0;
 		}
 

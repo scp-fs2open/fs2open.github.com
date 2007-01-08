@@ -4509,29 +4509,6 @@ ADE_VIRTVAR(HitpointsMax, l_Ship, "number", "Total hitpoints")
 	return ade_set_args(L, "f", shipp->ship_max_hull_strength);
 }
 
-ADE_VIRTVAR(IsInLimbo, l_Ship, "boolean", "Ship's limbo status")
-{
-	object_h *objh;
-	bool newlimbo = false;
-	if(!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &newlimbo))
-		return ADE_RETURN_NIL;
-
-	if(!objh->IsValid())
-		return ADE_RETURN_NIL;
-
-	ship *shipp = &Ships[objh->objp->instance];
-
-	if(ADE_SETTING_VAR)
-	{
-		if(newlimbo)
-			shipp->flags2 |= SF2_IN_LIMBO;
-		else
-			shipp->flags2 &= ~SF2_IN_LIMBO;
-	}
-
-	return ade_set_args(L, "b", (shipp->flags2 & SF2_IN_LIMBO) != 0);
-}
-
 ADE_VIRTVAR(Model, l_Ship, "model", "Ship's model")
 {
 	object_h *objh;
@@ -4836,18 +4813,15 @@ ADE_FUNC(warpIn, l_Ship, NULL, "True", "Warps ship in")
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(warpOut, l_Ship, "[boolean Departing]", "True", "Warps ship out; argument specifies whether ship cannot warp back in or not.")
+ADE_FUNC(warpOut, l_Ship, "[boolean Departing]", "True", "Warps ship out")
 {
 	object_h *objh;
-	bool b;
-	if(!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), &b))
+	if(!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
 		return ADE_RETURN_NIL;
 
 	if(!objh->IsValid())
 		return ADE_RETURN_NIL;
 
-	if (!b)
-		Ships[objh->objp->instance].flags2 |= SF2_DEPART_TO_LIMBO;
 	shipfx_warpout_start(objh->objp);
 
 	return ADE_RETURN_TRUE;
