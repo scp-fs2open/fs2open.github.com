@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.83 $
- * $Date: 2007-01-07 13:13:38 $
+ * $Revision: 2.84 $
+ * $Date: 2007-01-10 01:44:39 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2007/01/07 13:13:38  taylor
+ * cleanup various bits of obsolete or unused code
+ *
  * Revision 2.82  2006/11/06 05:42:44  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
@@ -1070,7 +1073,7 @@ typedef struct screen {
 	int	 (*gf_make_buffer)(poly_list*, uint flags);
 	void (*gf_destroy_buffer)(int);
 	void (*gf_set_buffer)(int);
-	void (*gf_render_buffer)(int, int, ushort*, int);
+	void (*gf_render_buffer)(int, int, ushort*, uint*, int);
 	int	 (*gf_make_flat_buffer)(poly_list*);
 	int	 (*gf_make_line_buffer)(line_list*);
 	
@@ -1375,9 +1378,9 @@ __inline int gr_bm_set_render_target(int n, int face = -1)
 
 #define gr_make_buffer					 GR_CALL(*gr_screen.gf_make_buffer)            
 #define gr_destroy_buffer				 GR_CALL(*gr_screen.gf_destroy_buffer)
-__inline void gr_render_buffer(int start, int n_prim, ushort* index_buffer, int flags = TMAP_FLAG_TEXTURED)
+__inline void gr_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer = NULL, int flags = TMAP_FLAG_TEXTURED)
 {
-	(*gr_screen.gf_render_buffer)(start, n_prim, index_buffer, flags);
+	(*gr_screen.gf_render_buffer)(start, n_prim, sbuffer, ibuffer, flags);
 }
 
 #define gr_set_buffer				 GR_CALL(*gr_screen.gf_set_buffer)      

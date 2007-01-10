@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.176 $
- * $Date: 2007-01-07 12:49:51 $
+ * $Revision: 2.177 $
+ * $Date: 2007-01-10 01:44:39 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.176  2007/01/07 12:49:51  taylor
+ * fix tertiary glow sizes
+ * fix model vertex normal data that was being read/written incorrectly under OS X (still don't know why this was a problem, but this fixes it)
+ *
  * Revision 2.175  2006/12/28 00:59:32  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -5920,7 +5924,8 @@ poly_list model_list;
 void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 {
 	int i, j, first_index;
-	int total_verts = 0;
+	uint total_verts = 0;
+	bool use_large_buffer = false;
 
 	for (i = 0; i < MAX_MODEL_TEXTURES; i++) {
 		polygon_list[i].n_prim = 0;
@@ -5953,7 +5958,12 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 		total_verts += polygon_list[i].n_verts;
 	}
 
-	model_list.allocate(total_verts);
+	// for the moment we can only support INT_MAX worth of verts
+	if (total_verts > INT_MAX) {
+        Error( LOCATION, "Unable to generate vertex buffer data because model '%s' with %i verts is over the maximum of %i verts!\n", pm->filename, model_list.n_verts, INT_MAX);
+    }
+
+	model_list.allocate( (int)total_verts );
 	model_list.n_verts = 0;
 	model_list.n_prim = 0;
 
@@ -5967,9 +5977,8 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 		model_list.n_verts += polygon_list[i].n_verts;
 	}
 
-	if ( model_list.n_verts > USHRT_MAX ) {
-		Error( LOCATION, "Unable to generate vertex buffer data because model '%s' with %i verts is over the maximum of %i verts!\n", pm->filename, model_list.n_verts, USHRT_MAX);
-	}
+	// check if we need to use a larger index buffer or not
+	use_large_buffer = (model_list.n_verts > USHRT_MAX);
 
 	// IBX stuff
 	extern IBX ibuffer_info;
@@ -5984,7 +5993,12 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 
 		// figure up how big this section of data is going to be
 		ibx_size += ibx_verts * sizeof(float) * 8; // first set of data (here)
-		ibx_size += ibx_verts * sizeof(ushort); // second set of data (next "for" statement)
+
+		// second set of data (next "for" statement)
+		if (ibx_verts > USHRT_MAX)
+			ibx_size += ibx_verts * sizeof(uint);
+		else
+			ibx_size += ibx_verts * sizeof(ushort);
 
 		// safety check for this section
 		// ibuffer_info.size should be greater than or equal to ibx_size at this point
@@ -6019,6 +6033,11 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 		// remember that this includes the next set of reads too
 		ibuffer_info.size -= ibx_size;
 	} else {
+		if ( use_large_buffer && (ibuffer_info.write != NULL) ) {
+			mprintf(("IBX NOTICE:  Vert limit hit for IBX version 1 on subobject '%s', changing file format to version 2...\n", model->name));
+			ibuffer_info.version = 2;
+		}
+
 		// no read file so we'll have to generate
 		model_list.make_index_buffer();
 
@@ -6052,23 +6071,41 @@ void generate_vertex_buffers(bsp_info *model, polymodel *pm)
 
 		buffer_data new_buffer;
 
-		new_buffer.index_buffer.allocate( polygon_list[i].n_verts );
+		new_buffer.index_buffer.allocate( polygon_list[i].n_verts, use_large_buffer );
 
 		for (j = 0; j < polygon_list[i].n_verts; j++) {
 			if ( ibuffer_info.read != NULL ) {
-				new_buffer.index_buffer.ibuffer[j] = cfread_ushort( ibuffer_info.read );
+				if (use_large_buffer) {
+					Assert( new_buffer.index_buffer.ibuffer != NULL );
+					new_buffer.index_buffer.ibuffer[j] = cfread_uint( ibuffer_info.read );
+				} else {
+					Assert( new_buffer.index_buffer.sbuffer != NULL );
+					new_buffer.index_buffer.sbuffer[j] = cfread_ushort( ibuffer_info.read );
+				}
 			} else {
 				first_index = find_first_index_vb( &polygon_list[i], j, &model_list );
 				Assert(first_index != -1);
 
-				new_buffer.index_buffer.ibuffer[j] = (ushort)first_index;
+				if (use_large_buffer) {
+					Assert( new_buffer.index_buffer.ibuffer != NULL );
+					new_buffer.index_buffer.ibuffer[j] = (uint)first_index;
 
-				Assert( same_vert(&model_list.vert[new_buffer.index_buffer.ibuffer[j]], &polygon_list[i].vert[j], &model_list.norm[new_buffer.index_buffer.ibuffer[j]], &polygon_list[i].norm[j]) );
+					Assert( same_vert(&model_list.vert[new_buffer.index_buffer.ibuffer[j]], &polygon_list[i].vert[j], &model_list.norm[new_buffer.index_buffer.ibuffer[j]], &polygon_list[i].norm[j]) );
+				} else {
+					Assert( new_buffer.index_buffer.sbuffer != NULL );
+					new_buffer.index_buffer.sbuffer[j] = (ushort)first_index;
+
+					Assert( same_vert(&model_list.vert[new_buffer.index_buffer.sbuffer[j]], &polygon_list[i].vert[j], &model_list.norm[new_buffer.index_buffer.sbuffer[j]], &polygon_list[i].norm[j]) );
+				}
+
 			//	Assert(find_first_index_vb(&model_list, j, &list[i]) == j);//there should never ever be any redundant verts
 
 				// try to write out generated index buffer for later use
 				if ( ibuffer_info.write != NULL ) {
-					cfwrite_ushort( new_buffer.index_buffer.ibuffer[j], ibuffer_info.write );
+					if (use_large_buffer)
+						cfwrite_uint( new_buffer.index_buffer.ibuffer[j], ibuffer_info.write );
+					else
+						cfwrite_ushort( new_buffer.index_buffer.sbuffer[j], ibuffer_info.write );
 				}
 			}
 		}
@@ -6324,7 +6361,7 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 
 	//	model_resort_index_buffer(model->bsp_data, 1, tmap_num, model->buffer[i].index_buffer.index_buffer);
 		
-		gr_render_buffer(0, model->buffer[i].n_prim, model->buffer[i].index_buffer.ibuffer, Interp_tmap_flags);
+		gr_render_buffer(0, model->buffer[i].n_prim, model->buffer[i].index_buffer.sbuffer, model->buffer[i].index_buffer.ibuffer, Interp_tmap_flags);
 
 		GLOWMAP = -1;
 		SPECMAP = -1;
@@ -6737,4 +6774,33 @@ void model_set_warp_globals(float scale_x, float scale_y, float scale_z, int bit
 
 	Interp_warp_bitmap = bitmap_id;
 	Interp_warp_alpha = alpha;
+}
+
+void index_list::allocate(int size, bool large_buf)
+{
+	if (ibuffer)
+		vm_free(ibuffer);
+
+	if (sbuffer)
+		vm_free(sbuffer);
+
+	ibuffer = NULL;
+	sbuffer = NULL;
+
+	if (large_buf)
+		ibuffer = (uint *) vm_malloc( sizeof(uint) * size );
+	else
+		sbuffer = (ushort *) vm_malloc( sizeof(ushort) * size );
+}
+
+void index_list::release()
+{
+	if (ibuffer)
+		vm_free(ibuffer);
+
+	if (sbuffer)
+		vm_free(sbuffer);
+
+	ibuffer = NULL;
+	sbuffer = NULL;
 }

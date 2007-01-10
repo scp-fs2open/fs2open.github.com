@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.96 $
- * $Date: 2006-12-28 22:47:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.97 $
+ * $Date: 2007-01-10 01:44:39 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2006/12/28 22:47:03  Goober5000
+ * fix spelling... *twitch*
+ *
  * Revision 2.95  2006/12/28 00:59:32  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -857,15 +860,16 @@ typedef struct model_special {
 #define MAX_LIVE_DEBRIS	7
 
 struct index_list {
-	ushort *ibuffer;
+	uint *ibuffer;
+	ushort *sbuffer;
 
-	index_list(): ibuffer(NULL) {}
+	index_list(): ibuffer(NULL), sbuffer(NULL) { }
 	// the destuctor body is commented out so that we can use this dynamically without a clone()
 	// we kill it off with release() instead
-	~index_list() { /*if (ibuffer) vm_free(ibuffer);*/ }
+	~index_list() { }
 
-	void allocate(int size) { if (ibuffer) vm_free(ibuffer); ibuffer = (ushort*)vm_malloc(sizeof(ushort) * size); }
-	void release() { if (ibuffer) vm_free(ibuffer); ibuffer = NULL; }
+	void allocate(int size, bool large_buf);
+	void release();
 };
 
 struct buffer_data {
@@ -881,6 +885,7 @@ typedef struct IBX {
 	CFILE *read;	// reads, if a IBX file already exists
 	CFILE *write;	// writes, if new file created
 	int size;		// file size used to make sure an IBX contains enough data for the whole model
+	int version;	// IBX file version to use: v1 is USHORT only, v2 can mix USHORT and UINT
 	char name[MAX_FILENAME_LEN];	// filename of the ibx, this is used in case a safety check fails and we delete the file
 } IBX;
 
