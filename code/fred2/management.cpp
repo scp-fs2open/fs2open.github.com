@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.27 $
- * $Date: 2007-01-07 00:01:28 $
- * $Author: Goober5000 $
+ * $Revision: 1.28 $
+ * $Date: 2007-01-10 01:41:27 $
+ * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2007/01/07 00:01:28  Goober5000
+ * add a feature for specifying the source of Command messages
+ *
  * Revision 1.26  2006/12/28 00:59:20  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -875,11 +878,8 @@ bool fred_init()
  // 	Cmdline_noglow = 1;
  	Cmdline_window = 1;
 	DBUGFILE_OUTPUT_0("About to gr_init");
-	if (Cmdline_jpgtga) {
-		gr_init(GR_640, GR_OPENGL, 32, 640, 480);
-	} else {
-		gr_init(GR_640, GR_OPENGL, 16, 640, 480);
-	}
+
+	gr_init(GR_640, GR_OPENGL, 32, 640, 480);
 	
 	DBUGFILE_OUTPUT_0("About to init everything");
 	//WMC - init scripting
