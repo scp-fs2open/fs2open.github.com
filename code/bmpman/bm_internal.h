@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/bmpman/bm_internal.h $
- * $Revision: 2.6 $
- * $Date: 2006-05-27 17:20:48 $
+ * $Revision: 2.7 $
+ * $Date: 2007-01-10 01:40:06 $
  * $Author: taylor $
  *
  * bmpman info that's internal to bmpman related files only
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2006/05/27 17:20:48  taylor
+ * clean up BM_TYPE_* stuff so it's a little easier to tell what is what
+ * bm_load_sub_fast() doesn't need to lowercase filenames, so don't
+ * byte-swap 16-bit DDS on big endian (they still don't look right though)
+ * update bm_has_alpha_channel() to be less dumb
+ *
  * Revision 2.5  2006/05/13 07:29:51  taylor
  * OpenGL envmap support
  * newer OpenGL extension support
@@ -71,10 +77,6 @@
 
 #include "globalincs/pstypes.h"
 #include "bmpman/bmpman.h"
-
-
-// keep this defined to use per-ship nondarkening pixels
-#define BMPMAN_SPECIAL_NONDARK
 
 
 // no-type			( used in: bm_bitmaps[i].type )
@@ -181,4 +183,3 @@ void bm_lock_user( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, uby
 #endif // BMPMAN_INTERNAL
 
 #endif // __BM_INTERNAL_H__
-

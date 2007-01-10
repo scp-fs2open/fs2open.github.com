@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.42 $
- * $Date: 2007-01-07 12:32:06 $
+ * $Revision: 2.43 $
+ * $Date: 2007-01-10 01:40:07 $
  * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2007/01/07 12:32:06  taylor
+ * fix bm_page_in_texture() so that it will load all frames of an animation (caused slowdowns in-game with it)
+ *
  * Revision 2.41  2006/12/28 00:59:19  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -464,19 +467,18 @@
 
 #define	BMP_AABITMAP						(1<<0)				// antialiased bitmap
 #define	BMP_TEX_XPARENT						(1<<1)				// transparent texture
-#define	BMP_TEX_NONDARK						(1<<2)				// nondarkening texture
-#define	BMP_TEX_OTHER						(1<<3)				// so we can identify all "normal" textures
-#define BMP_TEX_DXT1						(1<<4)				// dxt1 compressed 8r8g8b1a (24bit)
-#define BMP_TEX_DXT3						(1<<5)				// dxt3 compressed 8r8g8b4a (32bit)
-#define BMP_TEX_DXT5						(1<<6)				// dxt5 compressed 8r8g8b8a (32bit)
-#define BMP_TEX_CUBEMAP						(1<<7)				// a texture made for cubic environment map
+#define	BMP_TEX_OTHER						(1<<2)				// so we can identify all "normal" textures
+#define BMP_TEX_DXT1						(1<<3)				// dxt1 compressed 8r8g8b1a (24bit)
+#define BMP_TEX_DXT3						(1<<4)				// dxt3 compressed 8r8g8b4a (32bit)
+#define BMP_TEX_DXT5						(1<<5)				// dxt5 compressed 8r8g8b8a (32bit)
+#define BMP_TEX_CUBEMAP						(1<<6)				// a texture made for cubic environment map
 // ***** NOTE:  bitmap.flags is an 8-bit value, no more BMP_TEX_* flags can be added unless the type is changed!! ******
 
 //compressed texture types
 #define BMP_TEX_COMP			( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 )
 
 //non compressed textures
-#define BMP_TEX_NONCOMP			( BMP_TEX_XPARENT | BMP_TEX_NONDARK | BMP_TEX_OTHER )
+#define BMP_TEX_NONCOMP			( BMP_TEX_XPARENT | BMP_TEX_OTHER )
 
 // any texture type
 #define	BMP_TEX_ANY				( BMP_TEX_COMP | BMP_TEX_NONCOMP )
@@ -659,10 +661,6 @@ void bm_page_in_stop();
 // Marks a texture as being used for this level
 // If num_frames is passed, assume this is an animation
 void bm_page_in_texture( int bitmapnum, int num_frames = 0 );
-
-// Marks a texture as being used for this level
-// If num_frames is passed, assume this is an animation
-void bm_page_in_nondarkening_texture( int bitmap, int num_frames=1 );
 
 // marks a texture as being a transparent textyre used for this level
 // Marks a texture as being used for this level
