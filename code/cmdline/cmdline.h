@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.93 $
- * $Date: 2006-11-16 00:50:00 $
+ * $Revision: 2.94 $
+ * $Date: 2007-01-10 01:40:43 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2006/11/16 00:50:00  taylor
+ * clean up some cmdline options which were/weren't FSO only
+ * add back the "-32bit" option, for retail compatibility (doesn't do anything, it's just there to avoid the unknown option message)
+ * add "-debug_window" to turn on the Windows-only extra debug output window (it's off by default now, only logging to file instead)
+ *
  * Revision 2.92  2006/07/08 18:11:33  taylor
  * remove -allslev
  * make CTRL-SHIFT-S hotkey work in mission simulator (it's a toggle, so you can turn it on or off while on the screen)
@@ -638,14 +643,12 @@ extern int Cmdline_ambient_factor;
 extern int Cmdline_cell;
 extern int Cmdline_decals;
 extern int Cmdline_env;
-extern int Cmdline_jpgtga;
 extern int Cmdline_mipmap;
 extern int Cmdline_missile_lighting;
 extern int Cmdline_noglow;
 extern int Cmdline_nomotiondebris;
 extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
 extern int Cmdline_nospec;
-extern int Cmdline_pcx32;
 
 // Game Speed related
 extern int Cmdline_cache_bitmaps;
