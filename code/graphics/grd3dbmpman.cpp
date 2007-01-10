@@ -35,7 +35,6 @@
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
 
-extern int Cmdline_jpgtga;
 
 D3DBitmapData d3d_bitmap_entry[MAX_BITMAPS];
 
@@ -576,15 +575,12 @@ int gr_d3d_bm_lock(char *filename, int handle, int bitmapnum, ubyte bpp, ubyte f
 	bitmap_entry *be = &bm_bitmaps[bitmapnum];
 	bitmap *bmp = &be->bm;
 
-	if (Is_standalone) {
-		true_bpp = 8;
-	}
-	// not really sure how well this is going to work out in every case but...
-	else if ( Cmdline_jpgtga && (bmp->true_bpp > bpp) ) {
+	Assert( !Is_standalone );
+
+	if (bmp->true_bpp > bpp)
 		true_bpp = bmp->true_bpp;
-	} else {
+	else
 		true_bpp = bpp;
-	}
 
 	if ( (bmp->data == 0) && (d3d_bitmap_entry[bitmapnum].tinterface == NULL) ) {
 		Assert(be->ref_count == 1);
@@ -705,15 +701,12 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, int bit
 	if ( (bm_bitmaps[bitmapnum].type == BM_TYPE_RENDER_TARGET_DYNAMIC) || (bm_bitmaps[bitmapnum].type == BM_TYPE_RENDER_TARGET_STATIC) )
 		return false;
 
-	if (Is_standalone) {
-		true_bpp = 8;
-	}
-	// not really sure how well this is going to work out in every case but...
-	else if ( Cmdline_jpgtga && (bm_bitmaps[bitmapnum].bm.true_bpp > bpp) ) {
+	Assert( !Is_standalone );
+
+	if (bm_bitmaps[bitmapnum].bm.true_bpp > bpp)
 		true_bpp = bm_bitmaps[bitmapnum].bm.true_bpp;
-	} else {
+	else
 		true_bpp = bpp;
-	}
 
 	ubyte bmp_flags = 0;
 	switch (bitmap_type) {
@@ -726,10 +719,6 @@ bool d3d_lock_and_set_internal_texture(int stage, int handle, ubyte bpp, int bit
 		case TCACHE_TYPE_INTERFACE:
 		case TCACHE_TYPE_XPARENT:
 			bmp_flags |= BMP_TEX_XPARENT;				
-			break;
-		case TCACHE_TYPE_NONDARKENING:		
-			Int3();
-			bmp_flags |= BMP_TEX_NONDARK;
 			break;
 		case TCACHE_TYPE_COMPRESSED:
 			switch (bm_is_compressed(handle)) {
