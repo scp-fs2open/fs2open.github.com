@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.60 $
- * $Date: 2007-01-07 00:01:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.61 $
+ * $Date: 2007-01-10 01:45:56 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2007/01/07 00:01:28  Goober5000
+ * add a feature for specifying the source of Command messages
+ *
  * Revision 2.58  2006/12/28 00:59:32  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1400,13 +1403,18 @@ void message_load_wave(int index, const char *filename)
 		return;
 	}
 
+	if ( !Sound_enabled ) {
+		Message_waves[index].num = -1;
+		return;
+	}
+
 	game_snd tmp_gs;
 	memset(&tmp_gs, 0, sizeof(game_snd));
 	strcpy( tmp_gs.filename, filename );
 	Message_waves[index].num = snd_load( &tmp_gs, 0 );
-	if ( Message_waves[index].num == -1 ) {
-		nprintf (("messaging", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name ));
-	}
+
+	if (Message_waves[index].num == -1)
+		nprintf(("messaging", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
 }
 
 // Goober5000
