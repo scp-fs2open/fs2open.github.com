@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.81 $
- * $Date: 2007-01-07 13:13:38 $
+ * $Revision: 2.82 $
+ * $Date: 2007-01-10 01:44:39 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2007/01/07 13:13:38  taylor
+ * cleanup various bits of obsolete or unused code
+ *
  * Revision 2.80  2006/12/28 00:59:26  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -2031,9 +2034,9 @@ int find_first_index(poly_list *plist, int idx)
 {
 	vec3d norm = plist->norm[idx];
 	vertex vert = plist->vert[idx];
-	int missed = 0;
+	int i, missed = 0;
 
-	for (ushort i = 0; i<plist->n_verts; i++) {
+	for (i = 0; i < plist->n_verts; i++) {
 		if ( same_vert(&plist->vert[i+missed], &vert, &plist->norm[i+missed], &norm) ) {
 			return i;
 		}
@@ -2046,7 +2049,7 @@ int find_first_index(poly_list *plist, int idx)
 //given a list (plist) and an indexed list (v) find the index within the indexed list that the vert at position idx within list is at 
 int find_first_index_vb(poly_list *plist, int idx, poly_list *v)
 {
-	for (ushort i = 0; i<v->n_verts; i++) {
+	for (int i = 0; i < v->n_verts; i++) {
 		if ( same_vert(&v->vert[i], &plist->vert[idx], &v->norm[i], &plist->norm[idx]) ) {
 			return i;
 		}
