@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.16 $
- * $Date: 2006-10-06 09:32:16 $
+ * $Revision: 1.17 $
+ * $Date: 2007-01-10 01:44:39 $
  * $Author: taylor $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2006/10/06 09:32:16  taylor
+ * bit of cleanup (technically the vertex buffer stuff is part of a much larger change slated for post-3.6.9, but this should be a little faster)
+ *
  * Revision 1.15  2006/01/18 16:14:04  taylor
  * allow gr_render_buffer() to take TMAP flags
  * let gr_render_buffer() render untextured polys (OGL only until some D3D people fix it on their side)
@@ -126,7 +129,7 @@ void gr_opengl_end_clip_plane();
 int gr_opengl_make_buffer(poly_list *list, uint flags);
 void gr_opengl_destroy_buffer(int idx);
 void gr_opengl_set_buffer(int idx);
-void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int flags);
+void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags);
 void gr_opengl_render_to_env(int FACE);
 
 void gr_opengl_start_state_block();

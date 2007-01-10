@@ -1,10 +1,18 @@
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.cpp $
- * $Revision: 2.2 $
- * $Date: 2006-09-24 22:55:17 $
+ * $Revision: 2.3 $
+ * $Date: 2007-01-10 01:44:39 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2006/09/24 22:55:17  taylor
+ * more standalone server fixes:
+ *  - add some basic bmpman functionality to grstub, since it needs to do something at least
+ *  - add missing gr_* function ptrs to grstrub
+ *  - (re-)enable radar and hud setup functions that used to crash (problems are fixed now)
+ *  - deal with default pilot file properly (also caused a bmpman headache)
+ *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
+ *
  * Revision 2.1  2006/09/11 06:36:38  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
@@ -256,7 +264,7 @@ void gr_stub_rect(int x, int y, int w, int h, bool resize)
 {
 }
 
-void gr_stub_render_buffer(int start, int n_prim, ushort *index_buffer, int flags)
+void gr_stub_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
 {
 }
 
