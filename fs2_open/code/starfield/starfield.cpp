@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.89 $
- * $Date: 2007-01-07 12:46:19 $
+ * $Revision: 2.90 $
+ * $Date: 2007-01-10 01:45:06 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2007/01/07 12:46:19  taylor
+ * fix problem with model unloading that happened because skyboxes aren't reset properly
+ * be sure that skybox textures are paged in properly
+ * there needs to be a case insensitive string check when looking for existing bitmap filenames
+ *
  * Revision 2.88  2007/01/07 03:44:50  Goober5000
  * don't display any error messages when there are no background bitmaps to load
  *
@@ -2950,7 +2955,7 @@ void stars_draw_background()
 	}
 
 	// draw the model at the player's eye with no z-buffering
-	model_set_alpha(1.0f);	
+	model_set_alpha(1.0f);
 
 	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
 
@@ -3432,7 +3437,7 @@ int stars_get_first_valid_background()
 		return -1;
 
 	// get the first background with > 50% of its suns and > 50% of its bitmaps present
-	for (i = 0; i < (uint)Num_backgrounds; i++)
+	for (i = 0; i < Num_backgrounds; i++)
 	{
 		uint total_suns = 0;
 		uint total_bitmaps = 0;
