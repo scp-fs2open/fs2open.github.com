@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.57 $
- * $Date: 2006-07-05 23:35:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.58 $
+ * $Date: 2007-01-10 01:49:16 $
+ * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2006/07/05 23:35:42  Goober5000
+ * cvs comment tweaks
+ *
  * Revision 2.56  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
  * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
@@ -1098,10 +1101,6 @@ int d3d_create_texture(int bitmap_handle, int bitmap_type, tcache_slot_d3d *tslo
 		case TCACHE_TYPE_INTERFACE:
 		case TCACHE_TYPE_XPARENT:
 			flags |= BMP_TEX_XPARENT;				
-			break;
-		case TCACHE_TYPE_NONDARKENING:		
-			Int3();
-			flags |= BMP_TEX_NONDARK;
 			break;
 		case TCACHE_TYPE_COMPRESSED:
 			switch (bm_is_compressed(bitmap_handle)) {

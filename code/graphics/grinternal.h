@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.17 $
- * $Date: 2007-01-07 13:13:39 $
+ * $Revision: 2.18 $
+ * $Date: 2007-01-10 01:49:16 $
  * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2007/01/07 13:13:39  taylor
+ * cleanup various bits of obsolete or unused code
+ *
  * Revision 2.16  2006/11/06 05:42:44  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
@@ -319,10 +322,9 @@ extern int Gr_gamma_int;				// int(Gr_gamma*100)
 #define TCACHE_TYPE_AABITMAP				0		// HUD bitmap.  All Alpha.
 #define TCACHE_TYPE_NORMAL					1		// Normal bitmap. Alpha = 0.
 #define TCACHE_TYPE_XPARENT					2		// Bitmap with 0,255,0 = transparent.  Alpha=0 if transparent, 1 if not.
-#define TCACHE_TYPE_NONDARKENING			3		// Bitmap with 255,255,255 = non-darkening.  Alpha=1 if non-darkening, 0 if not.
-#define TCACHE_TYPE_INTERFACE				4		// for graphics that are using in the interface (for special filtering or sizing)
-#define TCACHE_TYPE_COMPRESSED				5		// Compressed bitmap type (DXT1, DXT3, DXT5)
-#define TCACHE_TYPE_CUBEMAP					6
+#define TCACHE_TYPE_INTERFACE				3		// for graphics that are using in the interface (for special filtering or sizing)
+#define TCACHE_TYPE_COMPRESSED				4		// Compressed bitmap type (DXT1, DXT3, DXT5)
+#define TCACHE_TYPE_CUBEMAP					5
 
 //extern int Ambient_r_default;
 //extern int Ambient_g_default;

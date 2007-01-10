@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-04-20 06:32:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2007-01-10 01:49:16 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/04/20 06:32:30  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.19  2006/04/05 13:47:01  taylor
  * remove -tga16, it's obsolete now
  * add a temporary -no_emissive_light option to not use emission type light in OGL
@@ -143,8 +146,6 @@
 #include "palman/palman.h"
 #include "graphics/2d.h"
 #include "cmdline/cmdline.h"
-
-extern int Cmdline_jpgtga;
 
 // -----------------
 //
@@ -552,15 +553,10 @@ int targa_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *
 		targa_file = NULL;
 	}
 
-	Assert( (header.pixel_depth == 16) || (header.pixel_depth == 24) || (header.pixel_depth == 32) );
-
-	// If we aren't using the -jpgtga option then don't even try to use anything other
-	// than 16-bit TARGAs.  Otherwise DevIL should be available to deal with heigher bits.
-	if ( !Cmdline_jpgtga && (header.pixel_depth != 16) )
+	if ( (header.pixel_depth != 16) && (header.pixel_depth != 24) && (header.pixel_depth != 32) ) {
+		Int3();
 		return TARGA_ERROR_READING;
-
-	if ( Cmdline_jpgtga && (header.pixel_depth != 16) && (header.pixel_depth != 24) && (header.pixel_depth != 32) )
-		return TARGA_ERROR_READING;
+	}
 
 	if (w) *w = header.width;
 	if (h) *h = header.height;
@@ -715,8 +711,11 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 
 	// we're only allowing 2 bytes per pixel (16 bit compressed), unless Cmdline_jpgtga is used
 	Assert( (bytes_per_pixel == 2) || (bytes_per_pixel == 3) || (bytes_per_pixel == 4) );
-	if(!Cmdline_jpgtga && (bytes_per_pixel != 2)){
+
+	if ( (bytes_per_pixel < 2) || (bytes_per_pixel > 4) ) {
 		cfclose(targa_file);
+		Int3();
+
 		return TARGA_ERROR_READING;
 	}
 
