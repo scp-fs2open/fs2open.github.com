@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.93 $
- * $Date: 2007-01-07 12:32:06 $
+ * $Revision: 2.94 $
+ * $Date: 2007-01-10 01:40:06 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2007/01/07 12:32:06  taylor
+ * fix bm_page_in_texture() so that it will load all frames of an animation (caused slowdowns in-game with it)
+ *
  * Revision 2.92  2006/12/28 00:59:19  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -918,8 +921,6 @@
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
 
-extern int Cmdline_jpgtga;
-extern int Cmdline_pcx32;
 extern int Cmdline_cache_bitmaps;
 
 #ifndef NDEBUG
@@ -1433,20 +1434,17 @@ int bm_load( char * real_filename )
 		// TGA gets listed first and last.  The first is for when -jpgtga is used and the last TGA is a final
 		// check for 16-bit TGAs which may be used for interface graphics.  PCX will have preference though
 		// in order to speed up loading and match retail order - taylor
-		const int NUM_TYPES	= 5;
-		const ubyte type_list[NUM_TYPES] = {BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_DDS, BM_TYPE_PCX, BM_TYPE_TGA};
-		const char *ext_list[NUM_TYPES] = {".tga", ".jpg", ".dds", ".pcx", ".tga"};
-		
-		// Only load TGA and JPG if given flag, support DDS and PCX by default
-		i = n = Cmdline_jpgtga ? 0 : 2; // 2 Means start with DDS and fall back to PCX then TGA
+		const int NUM_TYPES	= 4;
+		const ubyte type_list[NUM_TYPES] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_PCX };
+		const char *ext_list[NUM_TYPES] = { ".dds", ".tga", ".jpg", ".pcx" };
 
-		for(; n<NUM_TYPES; n++) {
+		for (n = 0; n < NUM_TYPES; n++) {
 			// see if it's already loaded
 			if ( bm_load_sub_fast(filename, ext_list[n], &handle) )
 				return handle;
 		}
 
-		for(; i<NUM_TYPES; i++) {
+		for (i = 0; i < NUM_TYPES; i++) {
 			if ( bm_load_sub_slow(filename, ext_list[i], &img_cfp) ) {
 				// found the file
 				strcat(filename, ext_list[i]);
@@ -1457,9 +1455,8 @@ int bm_load( char * real_filename )
 		}
 		
 		// No match was found
-		if(found == false) {
+		if ( !found )
 			return -1;
-		}
 	}
 
 	Assert(type != BM_TYPE_NONE);
@@ -1666,12 +1663,6 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 		return -1;
 	}
 
-	// make sure we can use the format in question
-	if ( !Cmdline_jpgtga && ((c_type == BM_TYPE_TGA) || (c_type == BM_TYPE_JPG)) ) {
-		mprintf(("BMPMAN: EFF is of JPG/TGA format and can't be used!\n"));
-		return -1;
-	}
-
 	if (type)
 		*type = c_type;
 
@@ -1745,7 +1736,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		const ubyte type_list[NUM_TYPES] = {BM_TYPE_EFF, BM_TYPE_ANI};
 		const char *ext_list[NUM_TYPES] = {".eff", ".ani"};
 
-		for (i=0; i<NUM_TYPES; i++) {
+		for (i = 0; i < NUM_TYPES; i++) {
 			if ( bm_load_sub_fast(filename, ext_list[i], &handle, dir_type) ) {
 				n = handle % MAX_BITMAPS;
 				Assert( bm_bitmaps[n].handle == handle );
@@ -1760,7 +1751,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 			}
 		}
 
-		for (i=0; i<NUM_TYPES; i++) {
+		for (i = 0; i < NUM_TYPES; i++) {
 			if ( bm_load_sub_slow(filename, ext_list[i], &img_cfp, dir_type) ) {
 				// File was found
 				strcat(filename, ext_list[i]);
@@ -1771,9 +1762,8 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		}
 		
 		// No match was found
-		if (found == false) {
+		if ( !found )
 			return -1;
-		}
 	}
 
 	// If we found an animation then there is an extra 5 char size limit to adhere to. We don't do this check earlier since it's only needed if we found an anim
@@ -2053,10 +2043,6 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// Unload any existing data
 	bm_free_data( bitmapnum );	
 
-	if ( (bpp == 16) && Cmdline_pcx32) {
-		bpp = 32;
-	}
-
 	be->mem_taken = (bmp->w * bmp->h * (bpp >> 3));
 	data = (ubyte *)bm_malloc(bitmapnum, be->mem_taken);
 	bmp->bpp = bpp;
@@ -2071,13 +2057,12 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 
 	// some sanity checks on flags
 	Assert(!((flags & BMP_AABITMAP) && (flags & BMP_TEX_ANY)));						// no aabitmap textures
-	Assert(!((flags & BMP_TEX_XPARENT) && (flags & BMP_TEX_NONDARK)));			// can't be a transparent texture and a nondarkening texture 
 
 	// make sure we are using the correct filename in the case of an EFF.
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	pcx_error = pcx_read_bitmap( filename, data, NULL, (bpp >> 3), (flags & BMP_AABITMAP), (flags & BMP_TEX_NONDARK) );
+	pcx_error = pcx_read_bitmap( filename, data, NULL, (bpp >> 3), (flags & BMP_AABITMAP), 0 );
 
 	if ( pcx_error != PCX_ERROR_NONE ) {
 		mprintf(("Couldn't load PCX!!! (%s)\n", filename));
@@ -2852,11 +2837,11 @@ int bm_unload_fast( int handle, int clear_render_targets )
 			return 1;
 
 		for ( i=0; i< bm_bitmaps[first].info.ani.num_frames; i++ )	{
-			nprintf(("BmpMan", "Unloading %s frame %d.  %dx%dx%d\n", be->filename, i, bmp->w, bmp->h, bmp->bpp));
+		//	nprintf(("BmpMan", "Unloading %s frame %d.  %dx%dx%d\n", be->filename, i, bmp->w, bmp->h, bmp->bpp));
 			bm_free_data_fast(first+i);		// clears flags, bbp, data, etc
 		}
 	} else {
-		nprintf(("BmpMan", "Unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
+	//	nprintf(("BmpMan", "Unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
 		bm_free_data_fast(n);		// clears flags, bbp, data, etc
 	}
 
@@ -2981,27 +2966,6 @@ void bm_page_in_texture( int bitmapnum, int nframes )
 	}
 }
 
-// Marks a texture as being used for this level
-// If num_frames is passed, assume this is an animation
-void bm_page_in_nondarkening_texture( int bitmapnum, int nframes )
-{
-	int i;
-	int n = bitmapnum % MAX_BITMAPS;
-
-	if (n == -1)
-		return;
-
-	Assert( bm_bitmaps[n].handle == bitmapnum );
-
-	for (i=0; i<nframes;i++ )	{
-		bm_bitmaps[n+i].preloaded = 4;
-
-		bm_bitmaps[n+i].preload_count++;
-
-		bm_bitmaps[n+i].used_flags = BMP_TEX_NONDARK;
-	}
-}
-
 // marks a texture as being a transparent textyre used for this level
 // Marks a texture as being used for this level
 // If num_frames is passed, assume this is an animation
@@ -3120,28 +3084,13 @@ void bm_page_in_stop()
 	for (i = 0; i < MAX_BITMAPS; i++)	{
 		if ( (bm_bitmaps[i].type != BM_TYPE_NONE) && (bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET_DYNAMIC) && (bm_bitmaps[i].type != BM_TYPE_RENDER_TARGET_STATIC) ) {
 			if ( bm_bitmaps[i].preloaded )	{
-#ifdef BMPMAN_SPECIAL_NONDARK
-				// if this is a texture, check to see if a ship uses it
-				ship_info_index = ship_get_texture(bm_bitmaps[i].handle);
-				// use the colors from this ship
-				if((ship_info_index >= 0) && (Ship_info[ship_info_index].num_nondark_colors > 0)){
-					// mprintf(("Using custom pixels for %s\n", Ship_info[ship_info_index].name));
-					palman_set_nondarkening(Ship_info[ship_info_index].nondark_colors, Ship_info[ship_info_index].num_nondark_colors);
-				}
-				// use the colors from the default table
-				else {
-					// mprintf(("Using default pixels\n"));
-					palman_set_nondarkening(Palman_non_darkening_default, Palman_num_nondarkening_default);
-				}
-#endif
-
 				if ( bm_preloading ) {
 					if ( !gr_preload(bm_bitmaps[i].handle, (bm_bitmaps[i].preloaded==2)) )	{
 						mprintf(( "Out of VRAM.  Done preloading.\n" ));
 						bm_preloading = 0;
 					} else {
 						// it's loaded into API memory now so dump the system version of the data
-					//	bm_free_data_fast(i);
+						bm_free_data_fast(i);
 					}
 				} else {
 					// if preloaded == 3, load it as an xparent texture				
