@@ -9,13 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.23 $
- * $Date: 2006-05-27 17:07:48 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2007-01-11 07:08:45 $
+ * $Author: bobboau $
  *
  * Include file for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/05/27 17:07:48  taylor
+ * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
+ * allow us to build without D3D support under Windows (just define NO_DIRECT3D)
+ * clean up TMAP flags
+ * fix a couple of minor OpenGL state change issues with spec and env map rendering
+ * make sure we build again for OS X (OGL extension functions work a little different there)
+ * render targets always need to be power-of-2 to avoid incomplete buffer issues in the code
+ * when we disable culling in opengl_3dunlit be sure that we re-enable it on exit of function
+ * re-fix screenshots
+ * add true alpha blending support (with cmdline for now since the artwork has the catch up)
+ * draw lines with float positioning, to be more accurate with resizing on non-standard resolutions
+ * don't load cubemaps from file for D3D, not sure how to do it anyway
+ * update geometry batcher code, memory fixes, dynamic stuff, basic fixage, etc.
+ *
  * Revision 2.22  2006/02/25 21:47:00  Goober5000
  * spelling
  *
@@ -243,7 +257,7 @@ void gr_d3d_get_region(int front, int w, int h, ubyte *data);
 
 int gr_d3d_make_buffer(poly_list *list, uint flags);
 void gr_d3d_destroy_buffer(int idx);
-void gr_d3d_render_buffer(int start, int n_prim, ushort* index_list, int flags);
+void gr_d3d_render_buffer(int start, int n_prim, ushort* index_list, uint*, int flags);
 void gr_d3d_set_buffer(int idx);
 int gr_d3d_make_flat_buffer(poly_list *list);
 int gr_d3d_make_line_buffer(line_list *list);
