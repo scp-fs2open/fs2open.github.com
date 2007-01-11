@@ -83,7 +83,7 @@ IDirect3DTexture8 *d3d_make_compressed_texture( ubyte *in_data, int width, int h
 	IDirect3DSurface8 *dds_surface = NULL;
 	RECT source_rect;
 	HRESULT hr = D3D_OK;
-	int i;
+//	int i;
 
 	if ( FAILED( GlobalD3DVars::lpD3DDevice->CreateTexture( width, height, 1, 0,
 															(alpha) ? D3DFMT_DXT5 : D3DFMT_DXT1,
@@ -102,7 +102,8 @@ IDirect3DTexture8 *d3d_make_compressed_texture( ubyte *in_data, int width, int h
 	hr = D3DXLoadSurfaceFromMemory( dds_surface, NULL, NULL, in_data, (alpha) ? D3DFMT_A8R8G8B8 : D3DFMT_X8R8G8B8,
 							   (width * (3+alpha)), NULL, &source_rect, D3DX_FILTER_NONE, 0 );
 
-	D3D_RELEASE( dds_surface, i );
+	//D3D_RELEASE( dds_surface, i );
+	dds_surface->Release();
 
 	if ( hr != D3D_OK ) {
 		Int3();
@@ -926,6 +927,40 @@ int gr_d3d_bm_make_render_target(int n, int *width, int *height, ubyte *bpp, int
 
 	*width = x;
 	*height = y;
+
+	if(!(back_depth)){
+		//get the backbuffer's surface so we can return it later
+		GlobalD3DVars::lpD3DDevice->GetDepthStencilSurface(&back_depth);
+	}
+
+	
+	if(surface)surface->Release();
+	(*((IDirect3DCubeTexture8**)(&d3d_bitmap_entry[n].tinterface)))->GetCubeMapSurface(_D3DCUBEMAP_FACES(0),0,&surface);
+	GlobalD3DVars::lpD3DDevice->SetRenderTarget(surface, back_depth);
+	gr_clear();
+	if(surface)surface->Release();
+	(*((IDirect3DCubeTexture8**)(&d3d_bitmap_entry[n].tinterface)))->GetCubeMapSurface(_D3DCUBEMAP_FACES(1),0,&surface);
+	GlobalD3DVars::lpD3DDevice->SetRenderTarget(surface, back_depth);
+	gr_clear();
+	if(surface)surface->Release();
+	(*((IDirect3DCubeTexture8**)(&d3d_bitmap_entry[n].tinterface)))->GetCubeMapSurface(_D3DCUBEMAP_FACES(2),0,&surface);
+	GlobalD3DVars::lpD3DDevice->SetRenderTarget(surface, back_depth);
+	gr_clear();
+	if(surface)surface->Release();
+	(*((IDirect3DCubeTexture8**)(&d3d_bitmap_entry[n].tinterface)))->GetCubeMapSurface(_D3DCUBEMAP_FACES(3),0,&surface);
+	GlobalD3DVars::lpD3DDevice->SetRenderTarget(surface, back_depth);
+	gr_clear();
+	if(surface)surface->Release();
+	(*((IDirect3DCubeTexture8**)(&d3d_bitmap_entry[n].tinterface)))->GetCubeMapSurface(_D3DCUBEMAP_FACES(4),0,&surface);
+	GlobalD3DVars::lpD3DDevice->SetRenderTarget(surface, back_depth);
+	gr_clear();
+	if(surface)surface->Release();
+	(*((IDirect3DCubeTexture8**)(&d3d_bitmap_entry[n].tinterface)))->GetCubeMapSurface(_D3DCUBEMAP_FACES(5),0,&surface);
+	GlobalD3DVars::lpD3DDevice->SetRenderTarget(surface, back_depth);
+	gr_clear();
+	if(surface)surface->Release();
+	GlobalD3DVars::lpD3DDevice->GetBackBuffer(0,D3DBACKBUFFER_TYPE_MONO, &surface);
+	GlobalD3DVars::lpD3DDevice->SetRenderTarget(surface, back_depth);
 
 	return true;
 #endif

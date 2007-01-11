@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.99 $
- * $Date: 2006-12-28 00:59:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.100 $
+ * $Date: 2007-01-11 07:07:46 $
+ * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2006/12/28 00:59:26  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.98  2006/11/06 06:33:48  taylor
  * more cleanup of warp_global crap
  * scale render/detail box limits with detail level setting
@@ -1572,7 +1575,8 @@ void gr_d3d_flip()
 			gr_set_bitmap(Gr_cursor);				
 			gr_bitmap( mx, my, false);
 		}
-		else
+		//was crashing for some reason
+/*		else
 		{
 			//WMC - Backup cheapo cursor
 			gr_set_color(0, 255, 0);
@@ -1580,7 +1584,7 @@ void gr_d3d_flip()
 			gr_line(mx, my, mx, my+16);
 			gr_line(mx, my+16, mx+8, my+8);
 		}
-	} 	
+*/	} 	
 
 	d3d_stop_frame();
 
@@ -2485,23 +2489,43 @@ void gr_d3d_set_buffer(int idx)
 
 IDirect3DIndexBuffer8 *global_index_buffer = NULL;
 int index_buffer_size = 0;
+IDirect3DIndexBuffer8 *global_index_buffer32 = NULL;
+int index_buffer_size32 = 0;
 
 
-void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, int flags)
+void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, uint *ibuf32, int flags)
 {
 	if(set_buffer == NULL)return;
-	if(index_buffer != NULL){
-		if(index_buffer_size < n_prim * 3 || !global_index_buffer){
-			if(global_index_buffer)global_index_buffer->Release();
-			GlobalD3DVars::lpD3DDevice->CreateIndexBuffer(n_prim * 3 * sizeof(ushort), D3DUSAGE_DYNAMIC|D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, (IDirect3DIndexBuffer8**) &global_index_buffer);
-			index_buffer_size = n_prim * 3;
+	if(index_buffer != NULL && ibuf32 !=NULL){
+		Error(LOCATION, "gr_d3d_render_buffer was given TWO indext buffers, that's not cool man!\n only useing the 16 bit one");
+		ibuf32=NULL;
+	}
+	if(index_buffer != NULL || ibuf32 !=NULL){
+		if(index_buffer){
+			if(index_buffer_size < n_prim * 3 || !global_index_buffer){
+				if(global_index_buffer)global_index_buffer->Release();
+				GlobalD3DVars::lpD3DDevice->CreateIndexBuffer(n_prim * 3 * sizeof(ushort), D3DUSAGE_DYNAMIC|D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, (IDirect3DIndexBuffer8**) &global_index_buffer);
+				index_buffer_size = n_prim * 3;
+			}
+			ushort* i_buffer;
+			global_index_buffer->Lock(0, 0, (BYTE **)&i_buffer, D3DLOCK_DISCARD);
+			memcpy(i_buffer, index_buffer, n_prim*3*sizeof(ushort));
+			global_index_buffer->Unlock();
+			GlobalD3DVars::lpD3DDevice->SetIndices(global_index_buffer, 0);
 		}
-		ushort* i_buffer;
+		if(ibuf32) {
+			if(index_buffer_size32 < n_prim * 3 || !global_index_buffer32){
+				if(global_index_buffer32)global_index_buffer32->Release();
+				GlobalD3DVars::lpD3DDevice->CreateIndexBuffer(n_prim * 3 * sizeof(uint), D3DUSAGE_DYNAMIC|D3DUSAGE_WRITEONLY, D3DFMT_INDEX32, D3DPOOL_DEFAULT, (IDirect3DIndexBuffer8**) &global_index_buffer32);
+				index_buffer_size32 = n_prim * 3;
+			}
+			uint* i_buffer32;
+			global_index_buffer32->Lock(0, 0, (BYTE **)&i_buffer32, D3DLOCK_DISCARD);
+			memcpy(i_buffer32, ibuf32, n_prim*3*sizeof(uint));
+			global_index_buffer32->Unlock();
+			GlobalD3DVars::lpD3DDevice->SetIndices(global_index_buffer32, 0);
+		}
 	//	global_index_buffer->Lock(start, n_prim * 3 * sizeof(short), (BYTE **)&index_buffer, D3DLOCK_DISCARD);
-		global_index_buffer->Lock(0, 0, (BYTE **)&i_buffer, D3DLOCK_DISCARD);
-		memcpy(i_buffer, index_buffer, n_prim*3*sizeof(ushort));
-		global_index_buffer->Unlock();
-		GlobalD3DVars::lpD3DDevice->SetIndices(global_index_buffer, 0);
 	}
 //	GlobalD3DVars::d3d_caps.MaxActiveLights = 1;
 
@@ -2667,7 +2691,7 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, int flags
 				gr_zbias(2);
 
 				extern int Game_subspace_effect;
-				gr_screen.gf_set_bitmap((Game_subspace_effect)?gr_screen.dynamic_environment_map:gr_screen.static_environment_map, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+				gr_screen.gf_set_bitmap(ENVMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
 				d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, 0, 1);
 
 				gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
