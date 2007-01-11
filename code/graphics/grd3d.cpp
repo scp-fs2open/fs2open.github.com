@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.100 $
- * $Date: 2007-01-11 07:07:46 $
+ * $Revision: 2.101 $
+ * $Date: 2007-01-11 18:46:35 $
  * $Author: bobboau $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2007/01/11 07:07:46  bobboau
+ * makeing D3D compatable with 32 bit index buffers, and fixing a minor directx
+ * technicality in the texture compression code.
+ *
  * Revision 2.99  2006/12/28 00:59:26  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -2617,7 +2621,7 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, uint *ibu
 
 	gr_d3d_center_alpha_int(GR_center_alpha);
 //	if(!lighting_enabled)		d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
-	if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+	if(index_buffer != NULL || ibuf32 != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
 	else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 //	if(!lighting_enabled)		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
 
@@ -2652,7 +2656,7 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, uint *ibu
 	for(int i = 1; i<passes; i++){
 		shift_active_lights(i);
 		TIMERBAR_PUSH(7);
-		if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+		if(index_buffer != NULL || ibuf32 != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
 		else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 		TIMERBAR_POP();
 	}
@@ -2678,12 +2682,12 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, uint *ibu
 
 		if(set_stage_for_spec_mapped()){
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
-			if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+			if(index_buffer != NULL || ibuf32 != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
 			else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 			d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(0,0,0,0));
 			for(int i = 1; i<passes; i++){
 				shift_active_lights(i);
-				if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+				if(index_buffer != NULL || ibuf32 != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
 				else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 			}
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
@@ -2697,7 +2701,7 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, uint *ibu
 				gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 				set_stage_for_env_mapped();
 				d3d_SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT3);
-				if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+				if(index_buffer != NULL || ibuf32 != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
 				else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 				d3d_SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
 			}
