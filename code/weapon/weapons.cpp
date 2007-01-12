@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.189  2007/01/07 12:41:37  taylor
+ * make expl info dyanmic
+ * fix possible out-of-bounds on expl lod checking
+ * fix memory leak from modular tables
+ *
  * Revision 2.188  2006/12/28 00:59:54  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -4119,13 +4124,16 @@ void find_homing_object(object *weapon_objp, int num)
 				vec3d	vec_to_object;
 
 				if ( objp->type == OBJ_SHIP ) {
-					/* Goober5000: commented this out because if they home in on stealth,
-					// they should home in on hidden ships too (sorry Sandeep)
 					// AL 2-17-98: If ship is immune to sensors, can't home on it (Sandeep says so)!
 					if ( Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS ) {
 						continue;
 					}
-					*/
+
+					// Goober5000: if missiles can't home on sensor-ghosted ships,
+					// they definitely shouldn't home on stealth ships
+					if ( Ships[objp->instance].flags2 & SF2_STEALTH ) {
+						continue;
+					}
 
 					//	MK, 9/4/99.
 					//	If this is a player object, make sure there aren't already too many homers.
