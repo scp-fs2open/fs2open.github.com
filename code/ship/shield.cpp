@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.44 $
- * $Date: 2006-09-11 06:45:40 $
- * $Author: taylor $
+ * $Revision: 2.45 $
+ * $Date: 2007-01-13 16:20:39 $
+ * $Author: bobboau $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2006/09/11 06:45:40  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.43  2006/09/11 06:08:09  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -332,6 +335,7 @@
 #include "network/multi.h"
 #include "species_defs/species_defs.h"
 #include "ship/ship.h"
+#include "math/fvi.h"
 
 
 int	New_shield_system = 1;
@@ -343,9 +347,9 @@ int	Show_shield_mesh = 0;
 //#define	SHIELD_HIT_SCALE	0.075f			//	Scale decreased by MK on 12/18/97, made about 1/4x as large. Note, larger constant means smaller effect
 #define	SHIELD_HIT_SCALE	0.15f			//	Doubled on 12/23/97 by MK.  Was overflowing.  See todo item #924.
 //#define	MAX_SHIELD_HITS	20
-#define	MAX_TRIS_PER_HIT	40					//	Number of triangles per shield hit, maximum.
-#define	MAX_SHIELD_HITS	20					//	Maximum number of active shield hits.
-#define	MAX_SHIELD_TRI_BUFFER	(MAX_SHIELD_HITS*MAX_TRIS_PER_HIT) //(MAX_SHIELD_HITS*20) //	Persistent buffer of triangle comprising all active shield hits.
+//#define	MAX_TRIS_PER_HIT	40					//	Number of triangles per shield hit, maximum.
+//#define	MAX_SHIELD_HITS	20					//	Maximum number of active shield hits.
+//#define	MAX_SHIELD_TRI_BUFFER	(MAX_SHIELD_HITS*MAX_TRIS_PER_HIT) //(MAX_SHIELD_HITS*20) //	Persistent buffer of triangle comprising all active shield hits.
 #define	SHIELD_HIT_DURATION	(3*F1_0/4)	//	Duration, in milliseconds, of shield hit effect
 
 #define	SH_UNUSED			-1					//	Indicates an unused record in Shield_hits
@@ -366,11 +370,11 @@ typedef struct gshield_tri {
 } gshield_tri;
 
 typedef struct shield_hit {
+	shield_hit():type(SH_UNUSED),objnum(-1){};
 	int	start_time;								//	start time of this object
 	int	type;										//	type, probably the weapon type, to indicate the bitmap to use
 	int	objnum;									//	Object index, needed to get current orientation, position.
-	int	num_tris;								//	Number of Shield_tris comprising this shield.
-	int	tri_list[MAX_TRIS_PER_HIT];		//	Indices into Shield_tris, triangles for this shield hit.
+	std::vector<int>	tri_list;		//	Indices into Shield_tris, triangles for this shield hit.
 	ubyte rgb[3];									// rgb colors
 } shield_hit;
 
@@ -380,17 +384,18 @@ typedef struct shield_point {
 	int		objnum;								//	Object that was hit.
 	int		shield_tri;							//	Triangle in shield mesh that took hit.
 	vec3d	hit_point;							//	Point in global 3-space of hit.
+	float	rad;								//	radius
 } shield_point;
 
-#define	MAX_SHIELD_POINTS	100
-shield_point	Shield_points[MAX_SHIELD_POINTS];
+//#define	MAX_SHIELD_POINTS	100
+std::vector<shield_point>	Shield_points;
 int		Num_shield_points;
 int		Num_multi_shield_points;					// used by multiplayer clients
 
-gshield_tri	Global_tris[MAX_SHIELD_TRI_BUFFER];	//	The persistent triangles, part of shield hits.
+std::vector<gshield_tri>	Global_tris;	//	The persistent triangles, part of shield hits.
 int	Num_tris;								//	Number of triangles in current shield.  Would be a local, but needed in numerous routines.
 
-shield_hit	Shield_hits[MAX_SHIELD_HITS];
+std::vector<shield_hit>	Shield_hits;
 
 int Shield_bitmaps_loaded = 0;
 
@@ -452,12 +457,12 @@ void shield_hit_init()
 {
 	int	i;
 
-	for (i=0; i<MAX_SHIELD_HITS; i++) {
+	for (i=0; i<Shield_hits.size(); i++) {
 		Shield_hits[i].type = SH_UNUSED;
 		Shield_hits[i].objnum = -1;
 	}
 
-	for (i=0; i<MAX_SHIELD_TRI_BUFFER; i++) {
+	for (i=0; i<Global_tris.size(); i++) {
 		Global_tris[i].used = 0;
 		Global_tris[i].creation_time = Missiontime;
 	}
@@ -500,6 +505,8 @@ void shield_frame_init()
 	//nprintf(("AI", "Frame %i: Number of shield hits: %i, polycount = %i\n", Framecount, Num_shield_points, Poly_count));
 
 	Poly_count = 0;
+
+	Shield_points.clear();
 
 	Num_shield_points = 0;
 }
@@ -558,6 +565,8 @@ void rs_compute_uvs(shield_tri *stp, shield_vertex *verts, vec3d *tcp, float rad
 		sv->u = vm_vec_dot(&v2cp, rightv) * Shield_scale + 0.5f;
 		sv->v = - vm_vec_dot(&v2cp, upv) * Shield_scale + 0.5f;
 
+		sv->i = 1.0f;
+
 		if (sv->u > UV_MAX){
 			sv->u = UV_MAX;
 		}
@@ -586,11 +595,11 @@ void free_global_tri_records(int shnum)
 {
 	int	i;
 
-	Assert((shnum >= 0) && (shnum < MAX_SHIELD_HITS));
+	Assert((shnum >= 0) && (shnum < Shield_hits.size()));
 
 	//mprintf(("Freeing up %i global records.\n", Shield_hits[shnum].num_tris));
 
-	for (i=0; i<Shield_hits[shnum].num_tris; i++){
+	for (i=0; i<Shield_hits[shnum].tri_list.size(); i++){
 		Global_tris[Shield_hits[shnum].tri_list[i]].used = 0;
 	}
 }
@@ -675,26 +684,20 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 			
 		points[j].u = trip->verts[j].u;
 		points[j].v = trip->verts[j].v;
-		Assert((trip->verts[j].u >= 0.0f) && (trip->verts[j].u <= UV_MAX));
-		Assert((trip->verts[j].v >= 0.0f) && (trip->verts[j].v <= UV_MAX));
+//		Assert((trip->verts[j].u >= 0.0f) && (trip->verts[j].u <= UV_MAX));
+//		Assert((trip->verts[j].v >= 0.0f) && (trip->verts[j].v <= UV_MAX));
 		verts[j] = &points[j];
-	}
 
-	verts[0]->r = r;
-	verts[0]->g = g;
-	verts[0]->b = b;
-	verts[1]->r = r;
-	verts[1]->g = g;
-	verts[1]->b = b;
-	verts[2]->r = r;
-	verts[2]->g = g;
-	verts[2]->b = b;
+		verts[j]->r = r * trip->verts[j].i;
+		verts[j]->g = g * trip->verts[j].i;
+		verts[j]->b = b * trip->verts[j].i;
+	}
 
 	vec3d	norm;
 	Poly_count++;
 	vm_vec_perp(&norm,(vec3d *)&verts[0]->x,(vec3d *)&verts[1]->x,(vec3d*)&verts[2]->x);
 
-	int flags=TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD;
+	int flags=TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT;
 	if (!Cmdline_nohtl) flags |= TMAP_HTL_3D_UNLIT;
 
 	if ( vm_vec_dot(&norm,(vec3d *)&verts[1]->x ) >= 0.0 )	{
@@ -713,6 +716,7 @@ MONITOR(NumShieldRend)
 //	Render a shield mesh in the global array Shield_hits[]
 void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 {
+
 	int		i;
 	vec3d	*centerp;
 	matrix	*orient;
@@ -811,7 +815,7 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 
 			// AL 06/01/97 don't use Assert() until issue with Missiontime being reset to 0 are worked out
 			if ( bitmap_id != - 1 ) {
-				for (i=0; i<Shield_hits[shield_num].num_tris; i++) {
+				for (i=0; i<Shield_hits[shield_num].tri_list.size(); i++) {
 					//if (Missiontime == Shield_hits[shield_num].start_time)
 					//	nprintf(("AI", "Frame %i: Render triangle %i.\n", Framecount, Global_tris[Shield_hits[shield_num].tri_list[i]].trinum));
 					render_shield_triangle(&Global_tris[Shield_hits[shield_num].tri_list[i]], orient, centerp, Shield_hits[shield_num].rgb[0], Shield_hits[shield_num].rgb[1], Shield_hits[shield_num].rgb[2]);
@@ -826,6 +830,10 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 // occur with the ship, perhaps even internal to the ship.
 void render_shields()
 {
+	gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
+	gr_zbuffer_set(GR_ZBUFF_READ);
+	gr_set_cull(0);
+
 	int	i;
 
 	if (Detail.shield_effects == 0){
@@ -836,15 +844,19 @@ void render_shields()
 		return;
 	}
 
-	for (i=0; i<MAX_SHIELD_HITS; i++){
+	for (i=0; i<Shield_hits.size(); i++){
 		if (Shield_hits[i].type != SH_UNUSED){
 			render_shield(i);
 		}
 	}
+
+	gr_set_cull(1);
+	gr_set_texture_addressing(TMAP_ADDRESS_WRAP);
+	gr_zbuffer_set(GR_ZBUFF_FULL);
 }
 
-
 // -----------------------------------------------------------------------------------------------------
+
 void create_tris_containing(vec3d *vp, matrix *orient, shield_info *shieldp, vec3d *tcp, vec3d *centerp, float radius, vec3d *rvec, vec3d *uvec)
 {
 	int	i, j;
@@ -881,13 +893,16 @@ int get_free_global_shield_index()
 {
 	int	gi = 0;
 
-	while ((gi < MAX_SHIELD_TRI_BUFFER) && (Global_tris[gi].used) && (Global_tris[gi].creation_time + SHIELD_HIT_DURATION > Missiontime)) {
+	while ((gi < Global_tris.size()) && (Global_tris[gi].used) && (Global_tris[gi].creation_time + SHIELD_HIT_DURATION > Missiontime)) {
 		gi++;
 	}
 
-	//	If couldn't find one, choose a random one.
-	if (gi == MAX_SHIELD_TRI_BUFFER)
-		gi = (int) (frand() * MAX_SHIELD_TRI_BUFFER);
+	//	If couldn't find one, make a new one.
+	if (gi == Global_tris.size()){
+		gshield_tri gt;
+		gt.used = false;
+		Global_tris.push_back(gt);
+	}
 
 	return gi;
 }
@@ -897,19 +912,70 @@ int get_global_shield_tri()
 	int	shnum;
 
 	//	Find unused shield hit buffer
-	for (shnum=0; shnum<MAX_SHIELD_HITS; shnum++)
+	for (shnum=0; shnum<Shield_hits.size(); shnum++)
 		if (Shield_hits[shnum].type == SH_UNUSED)
 			break;
 
-	if (shnum == MAX_SHIELD_HITS) {
-		//nprintf(("AI", "Warning: Shield_hit buffer full!  Stealing an old one!\n"));
-		shnum = myrand() % MAX_SHIELD_HITS;
+	if (shnum == Shield_hits.size()) {
+		shield_hit sh;
+		sh.objnum =-1;
+		sh.type = SH_UNUSED;
+		Shield_hits.push_back(sh);
 	}
 
-	Assert((shnum >= 0) && (shnum < MAX_SHIELD_HITS));
+	Assert((shnum >= 0) && (shnum < Shield_hits.size()));
 
 	return shnum;
 }
+
+//sets up UVs for a triangle, given a matrix a point and a radius
+//if uv space is out of bound it will rot recurse into it's neighbors
+void create_projected_shield_from_triangle(int trinum, vec3d*pnt, matrix *orient, shield_info *sp, vec3d*dir, float rad)
+{
+	//nprintf(("AI", "[%3i] ", trinum));
+
+	shield_tri* tri = &sp->tris[trinum];
+	tri->used = true;
+	int uo = 0;
+	int vo = 0;
+	int io = 0;
+	for(int i = 0; i<3; i++){
+		shield_vertex*sv = &sp->verts[tri->verts[i]];
+
+		sv->i = vm_vec_dot(dir, &sv->norm);
+		if(sv->i<0.0f)sv->i = 0.0f;
+		
+//		float z = fabs(fvi_point_dist_plane(pnt, &orient->vec.fvec, &sv->pos));
+//		float r =  rad-z;
+		if(sv->i == 0.0f)io++;
+
+		sv->u = fvi_point_dist_plane(pnt, &orient->vec.rvec, &sv->pos)/rad+0.5f;
+		sv->v = fvi_point_dist_plane(pnt, &orient->vec.uvec, &sv->pos)/rad+0.5f;
+
+	
+//		if(r>0.0f){
+			if(sv->u > 1.0f)uo++;
+			if(sv->u < 0.0f)uo--;
+			if(sv->v > 1.0f)vo++;
+			if(sv->v < 0.0f)vo--;
+//		}else{
+//			uo++;
+//			vo++;
+//		}
+	}
+
+	if(!(uo==3 || uo==-3 || vo==3 || vo==-3 || io == 3)){
+		for(int i = 0; i<3; i++){
+			shield_tri* ntri = &sp->tris[tri->neighbors[i]];
+			if(!sp->tris[tri->neighbors[i]].used){
+				if(vm_vec_dot(&sp->tris[tri->neighbors[i]].norm, &orient->vec.fvec) > -0.5f){
+					create_projected_shield_from_triangle(tri->neighbors[i], pnt, orient, sp, dir, rad);
+				}
+			}
+		}
+	}
+}
+
 
 void create_shield_from_triangle(int trinum, matrix *orient, shield_info *shieldp, vec3d *tcp, vec3d *centerp, float radius, vec3d *rvec, vec3d *uvec)
 {
@@ -939,36 +1005,42 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp )
 
 	shnum = get_global_shield_tri();
 	
+	Shield_hits[shnum].tri_list.clear();
 	Shield_hits[shnum].type = SH_TYPE_1;
 	// mprintf(("Creating hit #%i at time = %7.3f\n", shnum, f2fl(Missiontime)));
 
 	for (i = 0; i < shieldp->ntris; i++ ) {
 		if ( shieldp->tris[i].used ) {
-			while ( (gi < MAX_SHIELD_TRI_BUFFER) && (Global_tris[gi].used) && (Global_tris[gi].creation_time + SHIELD_HIT_DURATION > Missiontime)) {
+			while ( (gi < Global_tris.size()) && (Global_tris[gi].used) && (Global_tris[gi].creation_time + SHIELD_HIT_DURATION > Missiontime)) {
 				gi++;
 			}
 			
-			//	If couldn't find one, choose a random one.
-			if (gi == MAX_SHIELD_TRI_BUFFER)
-				gi = (int) (frand() * MAX_SHIELD_TRI_BUFFER);
+			//	If couldn't find one, make a new one.
+			if (gi == Global_tris.size()){
+				gshield_tri gt;
+				gt.used = false;
+				Global_tris.push_back(gt);
+			}
 
 			Global_tris[gi].used = shieldp->tris[i].used;
 			Global_tris[gi].trinum = i;
 			Global_tris[gi].creation_time = Missiontime;
 
 			// copy the pos/u/v elements of the shield_vertex structure into the shield vertex structure for this global triangle.
-			for (j = 0; j < 3; j++)
+			for (j = 0; j < 3; j++){
 				Global_tris[gi].verts[j] = shieldp->verts[shieldp->tris[i].verts[j]];
-			Shield_hits[shnum].tri_list[count++] = gi;
-
-			if (count >= MAX_TRIS_PER_HIT) {
-				mprintf(("Warning: Too many triangles in shield hit.\n"));
-				break;
+				float I = Global_tris[gi].verts[j].i;
 			}
+			Shield_hits[shnum].tri_list.push_back(gi);
+			count++;
+	//		if (count >= MAX_TRIS_PER_HIT) {
+	//			mprintf(("Warning: Too many triangles in shield hit.\n"));
+	//			break;
+	//		}
 		}
 	}
 
-	Shield_hits[shnum].num_tris = count;
+//	Shield_hits[shnum].num_tris = count;
 	Shield_hits[shnum].start_time = Missiontime;
 	Shield_hits[shnum].objnum = objnum;
 
@@ -1037,8 +1109,8 @@ void create_shield_low_detail(int objnum, int model_num, matrix *orient, vec3d *
 	Global_tris[gi].trinum = -1;		//	This tells triangle renderer to not render in case detail_level was switched.
 	Global_tris[gi].creation_time = Missiontime;
 
-	Shield_hits[shnum].tri_list[0] = gi;
-	Shield_hits[shnum].num_tris = 1;
+	Shield_hits[shnum].tri_list.clear();
+	Shield_hits[shnum].tri_list.push_back(gi);
 	Shield_hits[shnum].start_time = Missiontime;
 	Shield_hits[shnum].objnum = objnum;
 
@@ -1076,7 +1148,7 @@ void create_shield_low_detail(int objnum, int model_num, matrix *orient, vec3d *
 // Output of above is a list of triangles with u,v coordinates.  These u,v
 // coordinates will have to be clipped against the explosion texture bounds.
 
-void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *centerp, vec3d *tcp, int tr0)
+void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *centerp, vec3d *tcp, int tr0, float rad)
 {
 //	vec3d	v2c;		//	Vector to center from point tcp
 	matrix	tom;		//	Texture Orientation Matrix
@@ -1123,11 +1195,18 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 	vm_vector_2_matrix(&tom, &shieldp->tris[tr0].norm, NULL, NULL);
 	//vm_vec_sub(&v2c, tcp, &Objects[objnum].pos);
 
-	//	Create the shield from the current triangle, as well as its neighbors.
-	create_shield_from_triangle(tr0, orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
-	//nprintf(("AI", "\n"));
-	for (i=0; i<3; i++)
-		create_shield_from_triangle(shieldp->tris[tr0].neighbors[i], orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
+	//if(Ships[Objects[objnum].instance].flags2 & SIF2_PROJECTED_SHIELDS){
+	if(1){
+	//new style sheilds
+		create_projected_shield_from_triangle(tr0, tcp, &tom, shieldp, &shieldp->tris[tr0].norm, rad);
+	}else{
+	//old styl sheilds
+		//	Create the shield from the current triangle, as well as its neighbors.
+		create_shield_from_triangle(tr0, orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
+		//nprintf(("AI", "\n"));
+		for (i=0; i<3; i++)
+			create_shield_from_triangle(shieldp->tris[tr0].neighbors[i], orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
+	}
 	
 	copy_shield_to_globals(objnum, shieldp);
 	// render_shield(orient, centerp);
@@ -1136,17 +1215,20 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 MONITOR(NumShieldHits)
 
 //	Add data for a shield hit.
-void add_shield_point(int objnum, int tri_num, vec3d *hit_pos)
+void add_shield_point(int objnum, int tri_num, vec3d *hit_pos, float rad)
 {
 	//Assert(Num_shield_points < MAX_SHIELD_POINTS);
-	if (Num_shield_points >= MAX_SHIELD_POINTS)
-		return;
 
 	MONITOR_INC(NumShieldHits,1);
 
-	Shield_points[Num_shield_points].objnum = objnum;
-	Shield_points[Num_shield_points].shield_tri = tri_num;
-	Shield_points[Num_shield_points].hit_point = *hit_pos;
+	shield_point sp;
+
+	sp.objnum = objnum;
+	sp.shield_tri = tri_num;
+	sp.hit_point = *hit_pos;
+	sp.rad = rad;
+
+	Shield_points.push_back(sp);
 
 	Num_shield_points++;
 
@@ -1163,16 +1245,18 @@ void add_shield_point(int objnum, int tri_num, vec3d *hit_pos)
 // more than trivial to solve.  Turns out that I think I can just keep track of the
 // shield_points for multiplayer in a separate count -- then assign the multi count to
 // the normal count at the correct time.
-void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos)
+void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos, float rad)
 {
 	//Assert(Num_multi_shield_points < MAX_SHIELD_POINTS);
 
-	if (Num_multi_shield_points >= MAX_SHIELD_POINTS)
-		return;
+	shield_point sp;
 
-	Shield_points[Num_shield_points].objnum = objnum;
-	Shield_points[Num_shield_points].shield_tri = tri_num;
-	Shield_points[Num_shield_points].hit_point = *hit_pos;
+	sp.objnum = objnum;
+	sp.shield_tri = tri_num;
+	sp.hit_point = *hit_pos;
+	sp.rad = rad;
+
+	Shield_points.push_back(sp);
 
 	Num_multi_shield_points++;
 }
@@ -1217,7 +1301,7 @@ void create_shield_explosion_all(object *objp)
 
 	for (i=0; i<Num_shield_points; i++) {
 		if (Shield_points[i].objnum == objnum) {
-			create_shield_explosion(objnum, shipp->modelnum, &objp->orient, &objp->pos, &Shield_points[i].hit_point, Shield_points[i].shield_tri);
+			create_shield_explosion(objnum, shipp->modelnum, &objp->orient, &objp->pos, &Shield_points[i].hit_point, Shield_points[i].shield_tri, Shield_points[i].rad);
 			count--;
 			if (count <= 0){
 				break;
@@ -1268,7 +1352,7 @@ void ship_draw_shield( object *objp)
 	//	Scan all the triangles in the mesh.
 	for (i=0; i<pm->shield.ntris; i++ )	{
 		int		j;
-		vec3d	gnorm, v2f, tri_point;
+		vec3d	tri_point;
 		vertex prev_pnt, pnt0;
 		shield_tri *tri;
 
@@ -1283,10 +1367,11 @@ void ship_draw_shield( object *objp)
 		vm_vec_rotate(&tri_point, &pm->shield.verts[tri->verts[0]].pos, &Eye_matrix);
 		vm_vec_add2(&tri_point, &objp->pos);
 
-		vm_vec_sub(&v2f, &tri_point, &Eye_position);
-		vm_vec_unrotate(&gnorm, &tri->norm, &objp->orient);
+	//	vm_vec_sub(&v2f, &tri_point, &Eye_position);
+	//	vm_vec_unrotate(&gnorm, &tri->norm, &objp->orient);
 
-		if (vm_vec_dot(&gnorm, &v2f) < 0.0f) {
+//		if (vm_vec_dot(&gnorm, &v2f) < 0.0f) {
+		{
 			int	intensity;
 
 			intensity = (int) (Ships[objp->instance].shield_integrity[i] * 255);
