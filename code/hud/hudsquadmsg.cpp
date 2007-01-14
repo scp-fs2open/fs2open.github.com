@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.32.2.2 $
- * $Date: 2006-11-15 00:33:16 $
- * $Author: taylor $
+ * $Revision: 2.32.2.3 $
+ * $Date: 2007-01-14 20:55:20 $
+ * $Author: karajorma $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32.2.2  2006/11/15 00:33:16  taylor
+ * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)
+ *
  * Revision 2.32.2.1  2006/08/27 18:04:24  taylor
  * fix a compiler warning/error on Squadmsg_history[] init
  *
@@ -2588,6 +2591,7 @@ void hud_init_squadmsg( void )
 	}
 
 	Msg_eat_key_timestamp = timestamp(0);
+	memset(Squadmsg_history, 0, sizeof(squadmsg_history) * SQUADMSG_HISTORY_MAX);
 }
 
 // external entry point into code which changes the messaging mode based on the
