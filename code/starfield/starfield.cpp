@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.90 $
- * $Date: 2007-01-10 01:45:06 $
- * $Author: taylor $
+ * $Revision: 2.91 $
+ * $Date: 2007-01-14 10:26:39 $
+ * $Author: wmcoolmon $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2007/01/10 01:45:06  taylor
+ * compiler warning fixage
+ *
  * Revision 2.89  2007/01/07 12:46:19  taylor
  * fix problem with model unloading that happened because skyboxes aren't reset properly
  * be sure that skybox textures are paged in properly
@@ -3409,7 +3412,7 @@ void stars_load_first_valid_background()
 	{
 		int i;
 		bool at_least_one_bitmap = false;
-		for (i = 0; i < (uint)Num_backgrounds; i++)
+		for (i = 0; i < Num_backgrounds; i++)
 		{
 			if (Backgrounds[i].bitmaps.size() > 0)
 				at_least_one_bitmap = true;
@@ -3431,7 +3434,8 @@ void stars_load_first_valid_background()
 // Goober5000
 int stars_get_first_valid_background()
 {
-	uint i, j;
+	int i;
+	uint j;
 
 	if (Num_backgrounds == 0)
 		return -1;

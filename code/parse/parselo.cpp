@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.85 $
+ * $Revision: 2.86 $
  * $Author: wmcoolmon $
- * $Date: 2006-12-28 00:59:39 $
+ * $Date: 2007-01-14 10:26:38 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.84  2006/12/26 18:14:42  Goober5000
  * allow parsing of similar ship copy names properly (Mantis #1178)
  *
@@ -3273,8 +3276,8 @@ char *stristr(const char *str, const char *substr)
 		return NULL;
 
 	// save both a lowercase and an uppercase version of the first character of substr
-	char substr_ch_lower = tolower(*substr);
-	char substr_ch_upper = toupper(*substr);
+	char substr_ch_lower = (char)tolower(*substr);
+	char substr_ch_upper = (char)toupper(*substr);
 
 	// find the maximum distance to search
 	char *upper_bound = (char *)str + strlen(str) - strlen(substr);

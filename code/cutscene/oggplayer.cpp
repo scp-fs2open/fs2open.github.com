@@ -1,12 +1,17 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/oggplayer.cpp $
- * $Revision: 2.1 $
- * $Date: 2007-01-07 12:29:43 $
- * $Author: taylor $
+ * $Revision: 2.2 $
+ * $Date: 2007-01-14 10:26:37 $
+ * $Author: wmcoolmon $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2007/01/07 12:29:43  taylor
+ * add Theora player
+ * remove DirectShow support from movie player
+ * fix triple-buffer page flipping problem (Mantis bug #1190)
+ *
  * Revision 1.0  2006/12/25 21:44:11  taylor
  *
  * $NoKeywords: $
@@ -875,7 +880,7 @@ void theora_play(THEORAFILE *movie)
 						if (val < -32768)
 							val = -32768;
 
-						audiobuf[count++] = val;
+						audiobuf[count++] = (short)val;
 					}
 				}
 

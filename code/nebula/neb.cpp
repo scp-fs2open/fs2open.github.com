@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.54 $
- * $Date: 2006-12-28 00:59:39 $
+ * $Revision: 2.55 $
+ * $Date: 2007-01-14 10:26:38 $
  * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.53  2006/11/06 06:46:08  taylor
  * fix some of the envmap issues
  *  - use proper hand-ness for OGL
@@ -716,9 +719,9 @@ void neb2_post_level_init()
 				ushort r = 0, g = 0, b = 0, pcount = 0;
 				for (idx = 0; idx < 768; idx += 3) {
 					if (Neb2_htl_fog_data[idx] || Neb2_htl_fog_data[idx+1] || Neb2_htl_fog_data[idx+2]) {
-						r += Neb2_htl_fog_data[idx];
-						g += Neb2_htl_fog_data[idx+1];
-						b += Neb2_htl_fog_data[idx+2];
+						r += (ushort)Neb2_htl_fog_data[idx];
+						g += (ushort)Neb2_htl_fog_data[idx+1];
+						b += (ushort)Neb2_htl_fog_data[idx+2];
 						pcount++;
 					}
 				}
@@ -2054,9 +2057,9 @@ DCF(neb2_fog_color, "")
 	dc_get_arg(ARG_INT);
 	b = Dc_arg_int;
 
-	Neb2_fog_color_r = r;
-	Neb2_fog_color_g = g;
-	Neb2_fog_color_b = b;
+	Neb2_fog_color_r = (ubyte)r;
+	Neb2_fog_color_g = (ubyte)g;
+	Neb2_fog_color_b = (ubyte)b;
 }
 
 //WMC - Going bye-bye for ship types too

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_update.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-04-20 06:32:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.11 $
+ * $Date: 2007-01-14 10:26:38 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/04/20 06:32:15  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.9  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -256,7 +259,7 @@ int multi_update_error_verifying()
 
 	// go back to the main menu
 	default:
-		return MULTI_UPDATE_MAIN_MENU;
+		break;
 	}
 
 	// should never happen, but if so, move back to the main menu

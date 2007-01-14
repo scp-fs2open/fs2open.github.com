@@ -2,13 +2,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.193 $
- * $Date: 2007-01-07 13:12:41 $
- * $Author: taylor $
+ * $Revision: 2.194 $
+ * $Date: 2007-01-14 10:26:37 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.193  2007/01/07 13:12:41  taylor
+ * bunch of cleanup and minor little fixes
+ * get rid of GL_activate and GL_deactivate hold-overs
+ * various fixes for platform window/cursor handling
+ * we don't need texture combine support most of the time, so don't bother with it (fixes fonts not displaying properly)
+ * disable depth testing if we aren't using a zbuffer
+ * get rid of secondary color crap that was just messing things up, there are better ways to do it if we need the basic functionality back later
+ * dump old gamma ramp support, we don't really need it at this point
+ * do edge clamping by default instead of repeat
+ *
  * Revision 2.192  2006/12/28 00:59:27  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -3350,9 +3360,9 @@ static void opengl_make_gamma_ramp(float gamma, ushort *ramp)
 		// set identity if no original ramp
 		else {
 			for (x = 0; x < 256; x++) {
-				ramp[x]	= (x << 8) | x;
-				ramp[x + 256] = (x << 8) | x;
-				ramp[x + 512] = (x << 8) | x;
+				ramp[x]	= (ushort)(x << 8) | x;
+				ramp[x + 256] = (ushort)(x << 8) | x;
+				ramp[x + 512] = (ushort)(x << 8) | x;
 			}
 		}
 
@@ -4320,7 +4330,7 @@ int opengl_init_display_device()
 		} else {
 			// assume identity ramp by default, to be overwritten by true ramp later
 			for (int x = 0; x < 256; x++) {
-				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (x << 8) | x;
+				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (ushort)(x << 8) | x;
 			}
 		}
 	}
