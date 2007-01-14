@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.394 $
- * $Date: 2007-01-08 00:50:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.395 $
+ * $Date: 2007-01-14 14:03:36 $
+ * $Author: bobboau $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.394  2007/01/08 00:50:59  Goober5000
+ * remove WMC's limbo code, per our discussion a few months ago
+ * this will later be handled by copying ship stats using sexps or scripts
+ *
  * Revision 2.393  2007/01/07 21:28:11  Goober5000
  * yet more tweaks to the WCS death scream stuff
  * added a ship flag to force screaming
@@ -2385,7 +2389,8 @@ flag_def_list Subsystem_flags[] =
 	{ "untargetable",		MSS_FLAG_UNTARGETABLE },
 	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE },
 	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS },
-	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL }
+	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL },
+	{ "check hull",			MSS_FLAG_TURRET_HULL_CHECK }
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
@@ -3625,7 +3630,11 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	// The next three fields are used for the ETS
-	if(optional_string("$Power Output:"))
+	if(optional_string("$Power Output:")){
+		stuff_float(&sip->power_output);//need to stuff it some were, why not there?
+		if(sip->power_output!=0.0f)sip->power_output = 1.0f;
+	}
+	if(optional_string("$Power_Output:"))
 		stuff_float(&sip->power_output);
 
 	if(optional_string("$Max Oclk Speed:"))
@@ -3785,6 +3794,8 @@ strcpy(parse_error_text, temp_error);
 				sip->flags2 |= SIF2_DISABLE_WEAP_DAMAGE_SCALING;
 			else if( !stricmp( NOX("gun convergence"), ship_strings[i]))
 				sip->flags2 |= SIF2_GUN_CONVERGENCE;
+			else if( !stricmp( NOX("projected shields"), ship_strings[i]))
+				sip->flags2 |= SIF2_PROJECTED_SHIELDS;
 			else if (ship_type_index < 0)
 				Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 		}
@@ -4390,6 +4401,11 @@ strcpy(parse_error_text, temp_error);
 				old_flags = true;
 			}
 
+			if (optional_string("+check-hull")) {
+				sp->flags |= MSS_FLAG_TURRET_HULL_CHECK;
+				old_flags = true;
+			}
+
 			if (old_flags) {
 				Warning(LOCATION, "Use of deprecated subsystem syntax.  Please use the $Flags: field for subsystem flags.\n\n" \
 				"At least one of the following tags was used on ship %s, subsystem %s:\n" \
@@ -4532,8 +4548,9 @@ strcpy(parse_error_text, temp_error);
 					//make sure that the amount of time it takes to accelerate up and down doesn't make it go farther than the angle
 					current_trigger->correct();
 				}
-				else if(!stricmp(name_tmp, "linked"))
+				else if(!stricmp(name_tmp, "script"))
 				{
+					sp->scripted_rotation = Script_system.ParseChunk("");
 				}
 			}
 		}
@@ -5842,6 +5859,7 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		list_remove( ship_subsys_free_list, ship_system );	// remove the element from the array
 		list_append( &shipp->subsys_list, ship_system );		// link the element into the ship
 
+
 		ship_system->system_info = model_system;				// set the system_info pointer to point to the data read in from the model
 
 		// zero flags
@@ -5948,6 +5966,26 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		// model_clear_instance_info( &ship_system->submodel_info_1 );
 		model_clear_instance_info( &ship_system->submodel_info_2 );
 	}
+
+/*
+	for ( ship_system = GET_FIRST( &shipp->subsys_list); ship_system != END_OF_LIST(&shipp->subsys_list); ship_system = GET_NEXT(ship_system) ){
+		ship_system->parent = NULL;
+		if(ship_system->system_info->model_num < 0)continue;
+		if(ship_system->system_info->subobj_num < 0)continue;
+		int pn = model_get(ship_system->system_info->model_num)->submodel[ship_system->system_info->subobj_num].parent;
+		if(pn<0)continue;
+		if(model_system->subobj_num> -1){
+			for ( ship_subsys*ss = GET_FIRST( &shipp->subsys_list); ss != END_OF_LIST(&shipp->subsys_list); ss = GET_NEXT(ss) ){
+				if(ship_system==ss)continue;
+				if(ss->system_info->model_num < 0)continue;
+				if(ss->system_info->subobj_num < 0)continue;
+				if(pn == ss->system_info->subobj_num){
+					ship_system->parent = ss;
+					break;
+				}
+			}
+		}
+	}*/
 
 	if ( !ignore_subsys_info ) {
 		ship_recalc_subsys_strength( shipp );
@@ -7918,7 +7956,7 @@ void ship_auto_repair_frame(int shipnum, float frametime)
 		real_repair_rate = sip->subsys_repair_rate;
 
 	// AL 3-14-98: only allow auto-repair if power output not zero
-	if (sip->power_output <= 0)
+	if (sip->power_output == 0)
 		return;
 	
 	// iterate through subsystems, repair as needed based on elapsed frametime
@@ -8945,11 +8983,11 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->ab_count = 0;
 	if(sip->flags & SIF_AFTERBURNER)
 	{
-		for(i = 0; i < pm_orig->n_thrusters; i++)
+		for(i = 0; i < pm_orig->submodel[pm_orig->detail[0]].submodel_thruster.size(); i++)
 		{
-			thruster_bank *bank = &pm_orig->thrusters[i];
+			thruster_bank *bank = &pm_orig->submodel[pm_orig->detail[0]].submodel_thruster[i];
 
-			for(j = 0; j < bank->num_points; j++)
+			for(j = 0; j < bank->points.size(); j++)
 			{
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
@@ -9270,9 +9308,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		polymodel * pm_orig;
 		pm_orig = model_get(sp->modelnum);
 		trail_info *ci;
-		for(int h = 0; h < pm_orig->n_thrusters; h++)
+		for(int h = 0; h < pm_orig->submodel[pm_orig->detail[0]].submodel_thruster.size(); h++)
 		{
-			for(int j = 0; j < pm_orig->thrusters->num_points; j++)
+			for(int j = 0; j < pm_orig->submodel[pm_orig->detail[0]].submodel_thruster[h].points.size(); j++)
 			{
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
@@ -9281,10 +9319,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			//	ci = &sip->ct_info[sip->ct_count++];
 
 
-			if(pm_orig->thrusters[h].points[j].norm.xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
+			if(pm_orig->submodel[pm_orig->detail[0]].submodel_thruster[h].points[j].norm.xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
 
-			ci->pt = pm_orig->thrusters[h].points[j].pnt;//offset
-				ci->w_start = pm_orig->thrusters[h].points[j].radius * sip->ABwidth_factor;//width * table loaded width factor
+			ci->pt = pm_orig->submodel[pm_orig->detail[0]].submodel_thruster[h].points[j].pnt;//offset
+				ci->w_start = pm_orig->submodel[pm_orig->detail[0]].submodel_thruster[h].points[j].radius * sip->ABwidth_factor;//width * table loaded width factor
 	
 				ci->w_end = 0.05f;//end width
 	
@@ -9446,7 +9484,7 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 	cobjnum = weapon_create(&pos, &objp->orient, shipp->current_cmeasure, OBJ_INDEX(objp));
 	if(cobjnum > -1)
 	{
-		cmeasure_set_ship_launch_vel(&Objects[cobjnum], objp, arand);
+		if(Weapon_info[shipp->current_cmeasure].max_speed > 0.0f)cmeasure_set_ship_launch_vel(&Objects[cobjnum], objp, arand);
 		nprintf(("Network", "Cmeasure created by %s\n", shipp->ship_name));
 
 		// Play sound effect for counter measure launch
@@ -11614,6 +11652,9 @@ void ship_model_start(object *objp)
 		}
 
 	}
+//	model_do_dumb_rotation(shipp->modelnum);
+
+//	model_do_look_at(shipp->modelnum);
 }
 
 //==========================================================

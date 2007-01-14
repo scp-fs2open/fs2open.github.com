@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-02-25 21:47:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2007-01-14 14:03:32 $
+ * $Author: bobboau $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/02/25 21:47:00  Goober5000
+ * spelling
+ *
  * Revision 2.19  2006/01/09 04:54:51  phreak
  * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
  *
@@ -383,7 +386,7 @@ void update_ets(object* objp, float fl_frametime)
 //	new_energy = fl_frametime * sinfo_p->power_output;
 
 	// update weapon energy
-	max_new_weapon_energy = fl_frametime * MAX_WEAPON_REGEN_PER_SECOND * max_g;
+	max_new_weapon_energy = sinfo_p->power_output * fl_frametime * MAX_WEAPON_REGEN_PER_SECOND * max_g;
 	if ( objp->flags & OF_PLAYER_SHIP ) {
 		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * The_mission.ai_profile->weapon_energy_scale[Game_skill_level];
 	} else {
@@ -395,7 +398,7 @@ void update_ets(object* objp, float fl_frametime)
 	}
 
 	float shield_delta;
-	max_new_shield_energy = fl_frametime * MAX_SHIELD_REGEN_PER_SECOND * max_s;
+	max_new_shield_energy = sinfo_p->power_output * fl_frametime * MAX_SHIELD_REGEN_PER_SECOND * max_s;
 	if ( objp->flags & OF_PLAYER_SHIP ) {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile->shield_energy_scale[Game_skill_level];
 	} else {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.80 $
- * $Date: 2007-01-14 10:26:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.81 $
+ * $Date: 2007-01-14 14:03:37 $
+ * $Author: bobboau $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2007/01/14 10:26:39  wmcoolmon
+ * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ *
  * Revision 2.79  2007/01/08 00:50:59  Goober5000
  * remove WMC's limbo code, per our discussion a few months ago
  * this will later be handled by copying ship stats using sexps or scripts
@@ -3422,8 +3425,8 @@ void engine_wash_ship_process(ship *shipp)
 		else
 			speed_scale = ship_objp->phys_info.speed/20.0f;
 
-		for (idx = 0; idx < pm->n_thrusters; idx++) {
-			thruster_bank *bank = &pm->thrusters[idx];
+		for (idx = 0; idx < pm->submodel[pm->detail[0]].submodel_thruster.size(); idx++) {
+			thruster_bank *bank = &pm->submodel[pm->detail[0]].submodel_thruster[idx];
 
 			// make sure this engine is functional before we try to process a wash from it
 			if ( !model_should_render_engine_glow(OBJ_INDEX(ship_objp), bank->obj_num) ) {
@@ -3445,7 +3448,7 @@ void engine_wash_ship_process(ship *shipp)
 			half_angle = ewp->angle;
 			radius_mult = ewp->radius_mult;
 
-			for (j=0; j<bank->num_points; j++) {
+			for (j=0; j<bank->points.size(); j++) {
 				// get world pos of thruster
 				vm_vec_unrotate(&world_thruster_pos, &bank->points[j].pnt, &ship_objp->orient);
 				vm_vec_add2(&world_thruster_pos, &ship_objp->pos);

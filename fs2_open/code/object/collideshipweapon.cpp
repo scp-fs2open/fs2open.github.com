@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.34 $
- * $Date: 2007-01-08 00:50:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.35 $
+ * $Date: 2007-01-14 14:03:36 $
+ * $Author: bobboau $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2007/01/08 00:50:58  Goober5000
+ * remove WMC's limbo code, per our discussion a few months ago
+ * this will later be handled by copying ship stats using sexps or scripts
+ *
  * Revision 2.33  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -431,6 +435,16 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 	//	Return information for AI to detect incoming fire.
 	//	Could perhaps be done elsewhere at lower cost --MK, 11/7/97
 	float	dist = vm_vec_dist_quick(&ship_obj->pos, &weapon_obj->pos);
+	if(wip->wi_flags2 & WIF2_MINE){
+		object *pobj = &Objects[weapon_obj->parent];
+		if(	!(
+				( (wip->arm_time) && ((Missiontime - wp->creation_time) < wip->arm_time) )
+			||	( (wip->arm_dist) && (pobj != NULL && pobj->type != OBJ_NONE && (vm_vec_dist(&weapon_obj->pos, &pobj->pos) < wip->arm_dist) )  )
+			||	(wip->arm_radius < dist)
+			)	)
+			//if all that this, _ugly_ if statement
+				wp->lifeleft = 0.001f;
+	}
 	if (dist < weapon_obj->phys_info.speed) {
 		update_danger_weapon(ship_obj, weapon_obj);
 	}
@@ -480,11 +494,11 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 					// If this weapon punctures the shield, then do
 					// the hit effect, but act like a shield collision never occurred.
 					quadrant_num = -1;	// ignore shield hit
-					add_shield_point(OBJ_INDEX(ship_obj), mc.shield_hit_tri, &mc.hit_point);
+					add_shield_point(OBJ_INDEX(ship_obj), mc.shield_hit_tri, &mc.hit_point, wip->shield_hit_radius);
 				} else {
 					valid_hit_occured = 1;
 					// shield effect
-					add_shield_point(OBJ_INDEX(ship_obj), mc.shield_hit_tri, &mc.hit_point);
+					add_shield_point(OBJ_INDEX(ship_obj), mc.shield_hit_tri, &mc.hit_point, wip->shield_hit_radius);
 					do_model_check = 0;	// since we hit the shield, no need to check the model
 				}
 			} else {

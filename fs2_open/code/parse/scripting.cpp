@@ -307,7 +307,7 @@ bool ConditionedHook::IsOverride(script_state *sys, int action)
 #ifndef USE_PYTHON
 #pragma message("NOTE: Python is not compiled in")
 #endif
-
+ 
 //WMC - defined in parse/lua.h
 int ade_set_object_with_breed(lua_State *L, int obj_idx);
 void script_state::SetHookObject(char *name, int obj_idx)

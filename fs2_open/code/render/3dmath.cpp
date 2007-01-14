@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dMath.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-09-11 06:45:40 $
- * $Author: taylor $
+ * $Revision: 2.10 $
+ * $Date: 2007-01-14 14:03:36 $
+ * $Author: bobboau $
  *
  * 3d Math routines used by the Renderer lib
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/09/11 06:45:40  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.8  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -294,6 +297,89 @@ ubyte g3_rotate_vector(vec3d *dest,vec3d *src)
 
 	vm_vec_sub(&tempv,src,&View_position);
 	vm_vec_rotate(dest,&tempv,&View_matrix);
+	return g3_code_vector(dest);
+}	
+
+ubyte g3_rotate_normal(vec3d *dest,vec3d *src)
+{
+	vec3d tempv;
+
+	Assert( G3_count == 1 );
+
+	MONITOR_INC( NumRotations, 1 );	
+
+	vm_vec_rotate(dest,&tempv,&View_matrix);
+	return g3_code_vector(dest);
+}	
+
+ubyte g3_unrotate_vector(vec3d *dest,vec3d *src)
+{
+	vec3d tempv;
+
+	Assert( G3_count == 1 );
+
+	MONITOR_INC( NumRotations, 1 );	
+
+	vm_vec_unrotate(dest,&tempv,&View_matrix);
+	vm_vec_add(&tempv,src,&View_position);
+	return g3_code_vector(dest);
+}	
+
+ubyte g3_unrotate_normal(vec3d *dest,vec3d *src)
+{
+	vec3d tempv;
+
+	Assert( G3_count == 1 );
+
+	MONITOR_INC( NumRotations, 1 );	
+
+	vm_vec_unrotate(dest,&tempv,&View_matrix);
+	return g3_code_vector(dest);
+}	
+		
+ubyte g3_local_2_world(vec3d *dest,vec3d *src)
+{
+	vec3d tempv;
+
+	Assert( G3_count == 1 );
+
+	MONITOR_INC( NumRotations, 1 );	
+
+	vm_vec_unrotate(&tempv,src,&Object_matrix);
+	vm_vec_add(dest,&tempv,&Object_position);
+	return g3_code_vector(dest);
+}	
+
+ubyte g3_local_2_world_normal(vec3d *dest,vec3d *src)
+{
+	Assert( G3_count == 1 );
+
+	MONITOR_INC( NumRotations, 1 );	
+
+	vm_vec_unrotate(dest,src,&Object_matrix);
+	return g3_code_vector(dest);
+}	
+
+ubyte g3_world_2_local(vec3d *dest,vec3d *src)
+{
+	vec3d tempv;
+
+	Assert( G3_count == 1 );
+
+	MONITOR_INC( NumRotations, 1 );	
+
+	vm_vec_sub(&tempv,src,&Object_position);
+	vm_vec_rotate(dest,&tempv,&Object_matrix);
+	return g3_code_vector(dest);
+}	
+
+ubyte g3_world_2_local_normal(vec3d *dest,vec3d *src)
+{
+	Assert( G3_count == 1 );
+
+	MONITOR_INC( NumRotations, 1 );	
+
+	vm_vec_rotate(dest,src,&Object_matrix);
 	return g3_code_vector(dest);
 }	
 		
