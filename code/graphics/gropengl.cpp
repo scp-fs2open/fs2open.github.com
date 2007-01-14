@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.194 $
- * $Date: 2007-01-14 10:26:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.195 $
+ * $Date: 2007-01-14 19:35:53 $
+ * $Author: Goober5000 $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.194  2007/01/14 10:26:37  wmcoolmon
+ * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ *
  * Revision 2.193  2007/01/07 13:12:41  taylor
  * bunch of cleanup and minor little fixes
  * get rid of GL_activate and GL_deactivate hold-overs
@@ -3360,9 +3363,9 @@ static void opengl_make_gamma_ramp(float gamma, ushort *ramp)
 		// set identity if no original ramp
 		else {
 			for (x = 0; x < 256; x++) {
-				ramp[x]	= (ushort)(x << 8) | x;
-				ramp[x + 256] = (ushort)(x << 8) | x;
-				ramp[x + 512] = (ushort)(x << 8) | x;
+				ramp[x]	= (ushort) ((x << 8) | x);
+				ramp[x + 256] = (ushort) ((x << 8) | x);
+				ramp[x + 512] = (ushort) ((x << 8) | x);
 			}
 		}
 
@@ -4330,7 +4333,7 @@ int opengl_init_display_device()
 		} else {
 			// assume identity ramp by default, to be overwritten by true ramp later
 			for (int x = 0; x < 256; x++) {
-				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (ushort)(x << 8) | x;
+				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (ushort) ((x << 8) | x);
 			}
 		}
 	}
