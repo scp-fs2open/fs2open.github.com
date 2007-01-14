@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.178 $
- * $Date: 2007-01-13 16:38:22 $
- * $Author: bobboau $
+ * $Revision: 2.179 $
+ * $Date: 2007-01-14 10:26:38 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178  2007/01/13 16:38:22  bobboau
+ * made a last second change of mind on something, made it a bit safer
+ *
  * Revision 2.177  2007/01/10 01:44:39  taylor
  * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
  *
@@ -1775,6 +1778,7 @@ vec3d Interp_offset;
 void interp_compute_environment_mapping( vec3d *nrm, vertex * pnt)
 {
 	return;
+/*
 	vec3d R;
 	float a;
 //	matrix * m = &View_matrix;
@@ -1791,6 +1795,7 @@ void interp_compute_environment_mapping( vec3d *nrm, vertex * pnt)
 	pnt->u2 = (float)atan2( R.xyz.x, -R.xyz.z) / (2.0f * 3.14159f);
 	if (pnt->u2 < 0.0) pnt->u2 += 1.0f;
 	pnt->v2 = 1.0f - (float)atan2( a, R.xyz.y) / 3.14159f;
+*/
 }
 
 

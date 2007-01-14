@@ -285,7 +285,7 @@ bool ConditionedHook::Run(script_state *sys, int action, char format, void *data
 bool ConditionedHook::IsOverride(script_state *sys, int action)
 {
 	Assert(sys != NULL);
-	bool b = false;
+	//bool b = false;
 
 	//Do the actions
 	script_action *sap;
@@ -616,7 +616,7 @@ int script_state::RunCondition(int action, char format, void *data, object *objp
 bool script_state::IsConditionOverride(int action, object *objp)
 {
 	ConditionedHook *chp = NULL;
-	bool b = false;
+	//bool b = false;
 	for(uint i= 0; i < ConditionalHooks.size(); i++)
 	{
 		chp = &ConditionalHooks[i];

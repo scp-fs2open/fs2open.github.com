@@ -4,13 +4,16 @@
 
 /*
  * $Logfile: /Freespace2/code/sound/acm-openal.cpp $
- * $Revision: 2.3 $
- * $Date: 2005-11-16 09:16:24 $
- * $Author: taylor $
+ * $Revision: 2.4 $
+ * $Date: 2007-01-14 10:26:39 $
+ * $Author: wmcoolmon $
  *
  * OS independant ADPCM decoder
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/11/16 09:16:24  taylor
+ * allow for badly encoded ADPCM files if it was otherwise decoded properly
+ *
  * Revision 2.2  2005/05/12 17:49:17  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch
@@ -211,7 +214,7 @@ static void do_adpcm_nibble(ubyte nib, ADPCMBLOCKHEADER *header, int lPredSamp)
 
 	header->iDelta = delta;
 	header->iSamp2 = header->iSamp1;
-	header->iSamp1 = lNewSamp;
+	header->iSamp1 = (short)lNewSamp;
 }
 
 static int decode_adpcm_sample_frame(HMMIO rw, adpcm_fmt_t *fmt)
@@ -535,7 +538,7 @@ int ACM_stream_open(WAVEFORMATEX *pwfxSrc, WAVEFORMATEX *pwfxDest, void **stream
 	acm_stream_t *str = (acm_stream_t *)vm_malloc(sizeof(acm_stream_t));
 	IF_ERR(str == NULL, -1);
 	str->fmt = fmt;
-	str->dest_bps = dest_bps;
+	str->dest_bps = (ushort)dest_bps;
 	str->src_bps = pwfxSrc->wBitsPerSample;
 	*stream = str;
 

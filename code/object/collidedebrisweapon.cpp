@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisWeapon.cpp $
- * $Revision: 2.6 $
- * $Date: 2006-12-28 00:59:39 $
+ * $Revision: 2.7 $
+ * $Date: 2007-01-14 10:26:38 $
  * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.5  2005/04/05 05:53:21  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -194,11 +197,9 @@ int collide_asteroid_weapon( obj_pair * pair )
 		Script_system.RemHookVar("Asteroid");
 		return 0;
 
-	} else {
-		return weapon_will_never_hit( weapon, pasteroid, pair );
 	}
 
-	return 0;
+	return weapon_will_never_hit( weapon, pasteroid, pair );
 }				
 
 

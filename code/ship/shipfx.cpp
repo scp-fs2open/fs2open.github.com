@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.79 $
- * $Date: 2007-01-08 00:50:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.80 $
+ * $Date: 2007-01-14 10:26:39 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2007/01/08 00:50:59  Goober5000
+ * remove WMC's limbo code, per our discussion a few months ago
+ * this will later be handled by copying ship stats using sexps or scripts
+ *
  * Revision 2.78  2006/12/28 00:59:48  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -3607,16 +3611,15 @@ float shipfx_calc_visibility(object *obj, vec3d *view_pt)
 	
 	//otherwise do linear attenuation
 	//(final radius * max_alpha / dx ) - (slope * (dist / radius))
-	else
-	{
-		float factor = dist / obj->radius;
-		float alpha = (10.0f/17.0f) - ((.46875f/17.0f) * factor);
-		return alpha;	
-	}
-	
+	float factor = dist / obj->radius;
+	float alpha = (10.0f/17.0f) - ((.46875f/17.0f) * factor);
+	return alpha;	
+	/*
 	//this can't happen !!
+	//WMC - Then why put it here?
 	Int3();
 	return 1.0f;
+	*/
 
 }
 
