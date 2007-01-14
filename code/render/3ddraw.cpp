@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.55 $
- * $Date: 2007-01-14 10:26:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.56 $
+ * $Date: 2007-01-14 19:35:54 $
+ * $Author: Goober5000 $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2007/01/14 10:26:39  wmcoolmon
+ * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ *
  * Revision 2.54  2006/10/06 10:04:03  taylor
  * handle another null vec warning which can happen during a multiplayer respawn or certain death sequences (Mantis bug #1090)
  *
@@ -2843,17 +2846,17 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
-			ray[i].start.r = (ubyte)(rand()%(max_r-min_r))+min_r;
+			ray[i].start.r = (ubyte) ((rand()%(max_r-min_r))+min_r);
 		}else{
 			ray[i].start.r = 255;
 		}
 		if(min_g != 255){
-			ray[i].start.g = (ubyte)(rand()%(max_g-min_g))+min_g;
+			ray[i].start.g = (ubyte) ((rand()%(max_g-min_g))+min_g);
 		}else{
 			ray[i].start.g = 255;
 		}
 		if(min_b != 255){
-			ray[i].start.b = (ubyte)(rand()%(max_b-min_b))+min_b;
+			ray[i].start.b = (ubyte) ((rand()%(max_b-min_b))+min_b);
 		}else{
 			ray[i].start.b = 255;
 		}
@@ -2981,17 +2984,17 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
-			ray[i].start.r = (ubyte)(rand()%(max_r-min_r))+min_r;
+			ray[i].start.r = (ubyte) ((rand()%(max_r-min_r))+min_r);
 		}else{
 			ray[i].start.r = 255;
 		}
 		if(min_g != 255){
-			ray[i].start.g = (ubyte)(rand()%(max_g-min_g))+min_g;
+			ray[i].start.g = (ubyte) ((rand()%(max_g-min_g))+min_g);
 		}else{
 			ray[i].start.g = 255;
 		}
 		if(min_b != 255){
-			ray[i].start.b = (ubyte)(rand()%(max_b-min_b))+min_b;
+			ray[i].start.b = (ubyte) ((rand()%(max_b-min_b))+min_b);
 		}else{
 			ray[i].start.b = 255;
 		}
