@@ -493,7 +493,7 @@ const char *dds_error_string(int code)
 			return "Cubemaps must have all 6 faces";
 
 		default:
-			return "Abort, retry, fail?";
+			break;
 	}
 
 	//get a warning otherwise

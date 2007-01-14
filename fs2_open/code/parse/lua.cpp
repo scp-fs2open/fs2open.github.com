@@ -822,7 +822,7 @@ ADE_FUNC(getStatus, l_Event, NULL, "Event status", "Gets event's current status 
 		case EVENT_SATISFIED:
 			return ade_set_args(L, "s", "Completed");
 		default:
-			return ADE_RETURN_FALSE;
+			break;
 	}
 
 	return ADE_RETURN_FALSE;
@@ -945,7 +945,7 @@ ADE_FUNC(read, l_File, "number or string, ...", "number or string, ...",
 	{
 		type = lua_type(L, i);
 		char *fmt = NULL;
-		int num = 0;
+		//int num = 0;
 		if(type == LUA_TSTRING)
 		{
 			fmt = (char*)lua_tostring(L, i);
@@ -6499,7 +6499,7 @@ ADE_INDEXER(l_Mission_WaypointLists, "waypointlist index", "waypointlist", "Gets
 		idx = atoi(name);
 		if(idx > 0)
 		{
-			int count=1;
+			//int count=1;
 
 			object *ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list))

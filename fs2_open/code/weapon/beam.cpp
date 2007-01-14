@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.75 $
- * $Date: 2006-12-28 00:59:53 $
+ * $Revision: 2.76 $
+ * $Date: 2007-01-14 10:26:39 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2006/12/28 00:59:53  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.74  2006/11/06 06:36:44  taylor
  * updated/fixed modelanim code
  *
@@ -2316,11 +2319,7 @@ int beam_get_model(object *objp)
 	default:
 		// this shouldn't happen too often
 		mprintf(("Beam couldn't find a good find a good object model/type!! (%d)", objp->type));
-		return -1;
 	}
-
-	// can't happen
-	Int3();
 	return -1;
 }
 
