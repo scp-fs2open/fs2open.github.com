@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.86 $
+ * $Revision: 2.87 $
  * $Author: wmcoolmon $
- * $Date: 2007-01-14 10:26:38 $
+ * $Date: 2007-01-14 12:06:56 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2007/01/14 10:26:38  wmcoolmon
+ * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ *
  * Revision 2.85  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1188,7 +1191,8 @@ void stuff_string_until(char *pstr, char *endstr, int len)
 //Returns a null-terminated string allocated with malloc(),
 //or NULL on failure
 //Does depth checks for the start and end strings
-char* alloc_block(char* startstr, char* endstr)
+//extra_chars indicates extra malloc space that should be allocated.
+char* alloc_block(char* startstr, char* endstr, int extra_chars)
 {
 	Assert(startstr != NULL && endstr != NULL);
 	Assert(stricmp(startstr, endstr));
@@ -1236,7 +1240,7 @@ char* alloc_block(char* startstr, char* endstr)
 		flen = pos-Mp;
 
 		//Allocate the memory
-		rval = (char*) vm_malloc((flen)*sizeof(char));
+		rval = (char*) vm_malloc((flen + extra_chars)*sizeof(char));
 
 		//Copy the text (if memory was allocated)
 		if(rval != NULL) {

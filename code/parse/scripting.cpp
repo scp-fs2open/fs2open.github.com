@@ -811,22 +811,27 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 #endif
 	}
 
-	char *s = string;
-	if(string[0] != '[' && rtn != NULL)
-	{
-		s = new char[strlen(string) + 8];
-		strcpy(s, "return ");
-		strcpy(s, string);
-	}
-	else if(string[0] == ']' && lastchar != ']')
+	if(string[0] == '[' && lastchar != ']')
 	{
 		return false;
 	}
-	else if(string[0] == ']')
+
+	char *s = new char[strlen(string) + 8];
+	if(string[0] != '[' && rtn != NULL)
 	{
-		s++;
-		*lcp = '\0';
+		strcpy(s, "return ");
+		strcat(s, string);
 	}
+	else if(string[0] != '[')
+	{
+		strcpy(s, string);
+	}
+	else if(string[0] == '[')
+	{
+		strcpy(s, string+1);
+	}
+
+	s[strlen(s)-1] = '\0';
 
 	//WMC - So we can pop extra return values
 	int args_start = lua_gettop(LuaState);
@@ -834,25 +839,38 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 	//WMC - Push error handling function
 	lua_pushcfunction(LuaState, ade_friendly_error);
 	//Parse string
-	luaL_loadbuffer(LuaState, s, strlen(s), debug_str);
+	int rval = luaL_loadbuffer(LuaState, s, strlen(s), debug_str);
+	//We don't need s anymore.
+	delete[] s;
 	//Call function
-	if(lua_pcall(LuaState, 0, LUA_MULTRET, -2))
+	if(!rval)
 	{
-		return false;
-	}
+		if(lua_pcall(LuaState, 0, LUA_MULTRET, -2))
+		{
+			return false;
+		}
 
-	//Only get args if we can put them someplace
-	if(rtn != NULL)
+		//Only get args if we can put them someplace
+		if(rtn != NULL)
+		{
+			ade_get_args(LuaState, format, *(ade_odata*)rtn);
+		}
+
+		//WMC - Pop anything leftover from the function from the stack
+		args_start = lua_gettop(LuaState) - args_start;
+		for(; args_start > 0; args_start--) lua_pop(LuaState, 1);
+
+		if(lastchar == ']')
+			*lcp = lastchar;
+	}
+	else
 	{
-		ade_get_args(LuaState, format, *(ade_odata*)rtn);
+		//Or return error
+		if(lua_isstring(GetLuaSession(), -1))
+			LuaError(GetLuaSession());
+		else
+			LuaError(GetLuaSession(), "Error parsing %s", debug_str);
 	}
-
-	//WMC - Pop anything leftover from the function from the stack
-	args_start = lua_gettop(LuaState) - args_start;
-	for(; args_start > 0; args_start--) lua_pop(LuaState, 1);
-
-	if(lastchar == ']')
-		*lcp = lastchar;
 
 	return true;
 }
@@ -915,7 +933,11 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		*out_lang = SC_LUA;
 
 		//Allocate raw script
-		char* raw_lua = alloc_block("[", "]");
+		char* raw_lua = alloc_block("[", "]", 1);
+		//WMC - minor hack to make sure that the last line gets
+		//executed properly. In testing, I couldn't reproduce Nuke's
+		//crash, so this is here just to be on the safe side.
+		strcat(raw_lua, "\n");
 		
 		//Load it into a buffer & parse it
 		//WMC - This is causing an access violation error. Sigh.
@@ -967,8 +989,10 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		//Add ending
 		strcat(buf, "\n");
 
+		int len = strlen(buf);
+
 		//Load it into a buffer & parse it
-		if(luaL_loadbuffer(GetLuaSession(), buf, strlen(buf), debug_str))
+		if(!luaL_loadbuffer(GetLuaSession(), buf, len, debug_str))
 		{
 			//Stick it in the registry
 			*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
@@ -981,9 +1005,6 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 				LuaError(GetLuaSession(), "Error parsing %s", debug_str);
 			*out_index = -1;
 		}
-
-		//Stick it in the registry
-		*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
 	}
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.293 $
- * $Date: 2006-12-28 02:07:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.294 $
+ * $Date: 2007-01-14 12:06:56 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.293  2006/12/28 02:07:49  Goober5000
+ * assume ships-with-bays which haven't yet entered the mission are valid for syntax checking
+ *
  * Revision 2.292  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -14702,13 +14705,13 @@ int sexp_script_eval(int n, int return_type)
 	switch(return_type)
 	{
 		case OPR_NUMBER:
-			success = Script_system.EvalString(s, "|i", &r, "SEXP-OPR_NUMBER");
+			success = Script_system.EvalString(s, "|i", &r, s);
 			break;
 		case OPR_STRING:
 			Error(LOCATION, "SEXP system does not support string return type; Goober must fix this before script-eval-string will work");
 			break;
 		case OPR_NULL:
-			success = Script_system.EvalString(s, NULL, NULL, "SEXP-OPR_NULL");
+			success = Script_system.EvalString(s, NULL, NULL, s);
 			break;
 		default:
 			Error(LOCATION, "Bad type passed to sexp_script_eval - get a coder");
