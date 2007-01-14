@@ -2,45 +2,44 @@
 <VisualStudioProject
 	ProjectType="Visual C++"
 	Version="7.10"
-	Name="libjpeg"
-	SccProjectName=""
-	SccLocalPath="">
+	Name="lua"
+	ProjectGUID="{47740866-D174-4DF1-AF72-EC7F7CEEB93C}"
+	Keyword="Win32Proj">
 	<Platforms>
 		<Platform
 			Name="Win32"/>
 	</Platforms>
 	<Configurations>
 		<Configuration
-			Name="Release|Win32"
+			Name="Debug|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				AdditionalOptions="/O2 /Ob2"
-				InlineFunctionExpansion="1"
+				Optimization="0"
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32,NDEBUG,_LIB"
-				StringPooling="TRUE"
-				RuntimeLibrary="0"
+				AdditionalIncludeDirectories=""
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				MinimalRebuild="TRUE"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="1"
+				BufferSecurityCheck="TRUE"
 				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\libjpeg.pch"
+				UsePrecompiledHeader="0"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
 				ProgramDataBaseFileName="$(IntDir)/"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"/>
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\libjpeg.lib"
-				SuppressStartupBanner="TRUE"/>
+				OutputFile="$(ConfigurationName)\luabuiltin.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -50,9 +49,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -63,39 +60,30 @@
 				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
 		</Configuration>
 		<Configuration
-			Name="Debug|Win32"
+			Name="Release|Win32"
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="0"
+				AdditionalOptions="/O2 /Ob2"
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32,_DEBUG,_LIB"
-				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="5"
-				BufferSecurityCheck="TRUE"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\libjpeg.pch"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
+				RuntimeLibrary="0"
+				UsePrecompiledHeader="0"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
 				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="4"/>
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\libjpeg.lib"
-				SuppressStartupBanner="TRUE"/>
+				OutputFile="$(ConfigurationName)\luabuiltin.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -105,9 +93,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -122,32 +108,29 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32,_DEBUG,_LIB"
+				AdditionalIncludeDirectories=""
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="5"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\libjpeg.pch"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
 				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\libjpeg.lib"
-				SuppressStartupBanner="TRUE"/>
+				OutputFile="$(ConfigurationName)\luabuiltin.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -157,9 +140,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -174,32 +155,26 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/O2 /Ob2"
-				InlineFunctionExpansion="1"
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32,NDEBUG,_LIB"
-				StringPooling="TRUE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\libjpeg.pch"
+				UsePrecompiledHeader="0"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
 				ProgramDataBaseFileName="$(IntDir)/"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"/>
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\libjpeg.lib"
-				SuppressStartupBanner="TRUE"/>
+				OutputFile="$(ConfigurationName)\luabuiltin.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -209,9 +184,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -226,34 +199,28 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/O2 /Ob2"
-				InlineFunctionExpansion="1"
 				OptimizeForProcessor="3"
 				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32,NDEBUG,_LIB"
-				StringPooling="TRUE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
-				EnableFunctionLevelLinking="FALSE"
 				EnableEnhancedInstructionSet="2"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\libjpeg.pch"
+				UsePrecompiledHeader="0"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
 				ProgramDataBaseFileName="$(IntDir)/"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"/>
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\libjpeg.lib"
-				SuppressStartupBanner="TRUE"/>
+				OutputFile="$(ConfigurationName)\luabuiltin.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -263,9 +230,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -280,32 +245,29 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				OptimizeForProcessor="3"
 				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32,_DEBUG,_LIB"
+				AdditionalIncludeDirectories=""
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="5"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\libjpeg.pch"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
 				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\libjpeg.lib"
-				SuppressStartupBanner="TRUE"/>
+				OutputFile="$(ConfigurationName)\luabuiltin.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -315,9 +277,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -332,32 +292,26 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/O2 /Ob2"
-				InlineFunctionExpansion="1"
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32,NDEBUG,_LIB"
-				StringPooling="TRUE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\libjpeg.pch"
+				UsePrecompiledHeader="0"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
 				ProgramDataBaseFileName="$(IntDir)/"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"/>
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\libjpeg.lib"
-				SuppressStartupBanner="TRUE"/>
+				OutputFile="$(ConfigurationName)\luabuiltin.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -367,9 +321,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -384,32 +336,29 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32,_DEBUG,_LIB"
+				AdditionalIncludeDirectories=""
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="5"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\libjpeg.pch"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
 				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\libjpeg.lib"
-				SuppressStartupBanner="TRUE"/>
+				OutputFile="$(ConfigurationName)\luabuiltin.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -419,9 +368,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -436,32 +383,26 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				AdditionalOptions="/O2 /Ob2"
-				InlineFunctionExpansion="1"
 				OptimizeForProcessor="3"
 				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32,NDEBUG,_LIB"
-				StringPooling="TRUE"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
-				EnableFunctionLevelLinking="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\libjpeg.pch"
+				UsePrecompiledHeader="0"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
 				ProgramDataBaseFileName="$(IntDir)/"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"/>
+				Detect64BitPortabilityProblems="TRUE"
+				DebugInformationFormat="3"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\libjpeg.lib"
-				SuppressStartupBanner="TRUE"/>
+				OutputFile="$(ConfigurationName)\luabuiltin.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -471,9 +412,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -488,32 +427,29 @@
 			OutputDirectory="$(ConfigurationName)"
 			IntermediateDirectory="$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
 			CharacterSet="2">
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				OptimizeForProcessor="2"
+				OptimizeForProcessor="3"
 				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32,_DEBUG,_LIB"
+				AdditionalIncludeDirectories=""
+				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
+				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="5"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\libjpeg.pch"
+				RuntimeLibrary="1"
+				UsePrecompiledHeader="0"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
 				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"/>
 			<Tool
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\libjpeg.lib"
-				SuppressStartupBanner="TRUE"/>
+				OutputFile="$(ConfigurationName)\luabuiltin.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -523,9 +459,7 @@
 			<Tool
 				Name="VCPreLinkEventTool"/>
 			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
+				Name="VCResourceCompilerTool"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
 			<Tool
@@ -541,192 +475,178 @@
 	<Files>
 		<Filter
 			Name="Source Files"
-			Filter="cpp;c;cxx;rc;def;r;odl;idl;hpj;bat">
+			Filter="cpp;c;cxx;def;odl;idl;hpj;bat;asm;asmx"
+			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}">
 			<File
-				RelativePath="..\..\libjpeg\jcapimin.c">
+				RelativePath="..\..\lua\lapi.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jcapistd.c">
+				RelativePath="..\..\lua\lauxlib.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jccoefct.c">
+				RelativePath="..\..\lua\lbaselib.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jccolor.c">
+				RelativePath="..\..\lua\lcode.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jcdctmgr.c">
+				RelativePath="..\..\lua\ldblib.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jchuff.c">
+				RelativePath="..\..\lua\ldebug.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jcinit.c">
+				RelativePath="..\..\lua\ldo.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jcmainct.c">
+				RelativePath="..\..\lua\ldump.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jcmarker.c">
+				RelativePath="..\..\lua\lfunc.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jcmaster.c">
+				RelativePath="..\..\lua\lgc.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jcomapi.c">
+				RelativePath="..\..\lua\linit.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jcparam.c">
+				RelativePath="..\..\lua\liolib.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jcphuff.c">
+				RelativePath="..\..\lua\llex.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jcprepct.c">
+				RelativePath="..\..\lua\lmathlib.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jcsample.c">
+				RelativePath="..\..\lua\lmem.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jctrans.c">
+				RelativePath="..\..\lua\loadlib.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdapimin.c">
+				RelativePath="..\..\lua\lobject.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdapistd.c">
+				RelativePath="..\..\lua\lopcodes.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdatadst.c">
+				RelativePath="..\..\lua\loslib.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdatasrc.c">
+				RelativePath="..\..\lua\lparser.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdcoefct.c">
+				RelativePath="..\..\lua\lstate.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdcolor.c">
+				RelativePath="..\..\lua\lstring.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jddctmgr.c">
+				RelativePath="..\..\lua\lstrlib.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdhuff.c">
+				RelativePath="..\..\lua\ltable.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdinput.c">
+				RelativePath="..\..\lua\ltablib.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdmainct.c">
+				RelativePath="..\..\lua\ltests.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdmarker.c">
+				RelativePath="..\..\lua\ltm.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdmaster.c">
+				RelativePath="..\..\lua\lundump.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdmerge.c">
+				RelativePath="..\..\lua\lvm.c">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdphuff.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jdpostct.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jdsample.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jdtrans.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jerror.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jfdctflt.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jfdctfst.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jfdctint.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jidctflt.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jidctfst.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jidctint.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jidctred.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jmemansi.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jmemmgr.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jquant1.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jquant2.c">
-			</File>
-			<File
-				RelativePath="..\..\libjpeg\jutils.c">
+				RelativePath="..\..\lua\lzio.c">
 			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl">
+			Filter="h;hpp;hxx;hm;inl;inc;xsd"
+			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
 			<File
-				RelativePath="..\..\libjpeg\cderror.h">
+				RelativePath="..\..\lua\lapi.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\cdjpeg.h">
+				RelativePath="..\..\lua\lauxlib.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jchuff.h">
+				RelativePath="..\..\lua\lcode.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jconfig_vc.h">
+				RelativePath="..\..\lua\ldebug.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdct.h">
+				RelativePath="..\..\lua\ldo.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jdhuff.h">
+				RelativePath="..\..\lua\lfunc.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jerror.h">
+				RelativePath="..\..\lua\lgc.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jinclude.h">
+				RelativePath="..\..\lua\llex.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jmemsys.h">
+				RelativePath="..\..\lua\llimits.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jmorecfg.h">
+				RelativePath="..\..\lua\lmem.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jpegint.h">
+				RelativePath="..\..\lua\lobject.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jpeglib.h">
+				RelativePath="..\..\lua\lopcodes.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\jversion.h">
+				RelativePath="..\..\lua\lparser.h">
 			</File>
 			<File
-				RelativePath="..\..\libjpeg\transupp.h">
+				RelativePath="..\..\lua\lstate.h">
+			</File>
+			<File
+				RelativePath="..\..\lua\lstring.h">
+			</File>
+			<File
+				RelativePath="..\..\lua\ltable.h">
+			</File>
+			<File
+				RelativePath="..\..\lua\ltm.h">
+			</File>
+			<File
+				RelativePath="..\..\lua\lua.h">
+			</File>
+			<File
+				RelativePath="..\..\lua\lualib.h">
+			</File>
+			<File
+				RelativePath="..\..\lua\lundump.h">
+			</File>
+			<File
+				RelativePath="..\..\lua\lvm.h">
+			</File>
+			<File
+				RelativePath="..\..\lua\lzio.h">
 			</File>
 		</Filter>
+		<Filter
+			Name="Resource Files"
+			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
+			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
+		</Filter>
+		<File
+			RelativePath=".\ReadMe.txt">
+		</File>
 	</Files>
 	<Globals>
 	</Globals>
