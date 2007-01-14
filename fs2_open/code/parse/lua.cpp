@@ -7135,6 +7135,20 @@ void ade_debug_ret(lua_State *L, lua_Debug *ar)
 {
 	//WMC - So Lua isn't mean and uses ade_debug_line for returns
 }
+
+//WMC - because the behavior of the return keyword
+//was changed, I now have to use this in hooks.
+static int ade_return_hack(lua_State *L)
+{
+	int i = 0;
+	int num = lua_gettop(L);
+	for(i = 0; i < num; i++)
+	{
+		lua_pushvalue(L, i+1);
+	}
+
+	return num;
+}
 //Inits LUA
 //Note that "libraries" must end with a {NULL, NULL}
 //element
@@ -7186,6 +7200,12 @@ int script_state::CreateLuaState()
 		if(Ade_table_entries[i].ParentIdx == UINT_MAX)			//WMC - oh hey, we're done with the meaty point in < 10 lines.
 			Ade_table_entries[i].SetTable(L, LUA_GLOBALSINDEX, LUA_GLOBALSINDEX);	//Oh the miracles of OOP.
 	}
+
+	//*****INITIALIZE RETURN HACK FUNCTION
+	lua_pushstring(L, "ade_return_hack");
+	lua_pushboolean(L, 0);
+	lua_pushcclosure(L, ade_return_hack, 2);
+	lua_setglobal(L, "ade_return_hack");
 
 	//*****INITIALIZE ENUMERATION CONSTANTS
 	mprintf(("ADE: Initializing enumeration constants...\n"));
