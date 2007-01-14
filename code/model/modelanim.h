@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/model/modelanim.h $
- * $Revision: 1.2 $
- * $Date: 2006-11-06 06:50:59 $
- * $Author: taylor $
+ * $Revision: 1.3 $
+ * $Date: 2007-01-14 14:03:33 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/11/06 06:50:59  taylor
+ * updated/fixed modelanim code
+ *
  *
  * $NoKeywords: $
  */
@@ -42,7 +45,7 @@
 #define TRIGGER_TYPE_DOCK_BAY_DOOR			5		//fighter bays
 #define TRIGGER_TYPE_AFTERBURNER			6		//Afterburner -C
 #define TRIGGER_TYPE_TURRET_FIRING			7		//Turret shooting -C
-#define TRIGGER_TYPE_SCRIPTEDturret_animation_position				8		//Triggered exclusively by scripting...maybe SEXPs? -C
+#define TRIGGER_TYPE_SCRIPTED				8		//Triggered exclusively by scripting...maybe SEXPs? -C
 
 #define MAX_TRIGGER_ANIMATION_TYPES			9
 

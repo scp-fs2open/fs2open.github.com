@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.127 $
- * $Author: wmcoolmon $
- * $Date: 2006-12-28 00:59:39 $
+ * $Revision: 2.128 $
+ * $Author: bobboau $
+ * $Date: 2007-01-14 14:03:36 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.127  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.126  2006/10/25 01:01:51  Goober5000
  * moved some stuff around in the sexp menus
  *
@@ -1094,6 +1097,7 @@ struct ship_subsys;
 #define OP_GET_PRIMARY_AMMO					(0x002c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_GET_SECONDARY_AMMO				(0x002d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define	OP_NUM_ASSISTS						(0x002e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_FACING_OBJ						(0x002f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Bobboau
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)

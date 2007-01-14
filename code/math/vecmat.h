@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.15 $
- * $Date: 2006-04-12 22:23:41 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2007-01-14 14:03:32 $
+ * $Author: bobboau $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/04/12 22:23:41  taylor
+ * compiler warning fixes to make GCC 4.1 shut the hell up
+ *
  * Revision 2.14  2006/02/25 21:47:00  Goober5000
  * spelling
  *
@@ -240,6 +243,8 @@
 
 //macro to check if vector is zero
 #define IS_VEC_NULL(v) (((v)->xyz.x == 0.0f) && ((v)->xyz.y == 0.0f) && ((v)->xyz.z == 0.0f))
+
+#define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 
 //macro to set a vector to zero.  we could do this with an in-line assembly
 //macro, but it's probably better to let the compiler optimize it.
@@ -544,6 +549,9 @@ matrix *vm_vector_2_matrix_norm(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec);
 //rotates a vector through a matrix. returns ptr to dest vector
 //dest CANNOT equal either source
 vec3d *vm_vec_rotate(vec3d *dest,vec3d *src,matrix *m);
+
+//makes an inverse of the src matrix
+matrix* vm_matrix_inverse(matrix*dest, matrix*src);
 
 //rotates a vector through the transpose of the given matrix. 
 //returns ptr to dest vector

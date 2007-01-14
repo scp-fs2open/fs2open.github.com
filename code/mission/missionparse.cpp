@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.208 $
- * $Date: 2007-01-07 21:28:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.209 $
+ * $Date: 2007-01-14 14:03:33 $
+ * $Author: bobboau $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.208  2007/01/07 21:28:10  Goober5000
+ * yet more tweaks to the WCS death scream stuff
+ * added a ship flag to force screaming
+ *
  * Revision 2.207  2007/01/07 12:55:57  taylor
  * safety check to make sure that we don't end up with non-player-usable weapons in the weaponselect pool (Mantis bug #1196)
  *
@@ -5610,6 +5614,8 @@ void parse_reinforcements(mission *pm)
 
 	while (required_string_either("#Background bitmaps", "$Name:"))
 		parse_reinforcement(pm);
+
+
 }
 
 void parse_bitmap(mission *pm)
@@ -5846,6 +5852,16 @@ void parse_bitmaps(mission *pm)
 
 	if (optional_string("$Environment Map:")) {
 		stuff_string(pm->envmap_name, F_NAME, MAX_FILENAME_LEN);
+	}
+
+	if (optional_string("+skybox_flags:")){
+		pm->skybox_flags = 0;
+		parse_string_flag_list(&pm->skybox_flags, model_render_flags, model_render_flags_size);
+	}else{
+		pm->skybox_flags = DEFALT_NMODEL_FLAGS;
+	}
+	if (optional_string("+dynamic_skybox")){
+		pm->flags |= MISSION_FLAG_DYNAMIC_ENVIRONMENT_MAP;
 	}
 
 	// bypass spurious stuff from e.g. FS1 missions

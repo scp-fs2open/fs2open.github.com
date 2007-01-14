@@ -264,7 +264,24 @@ struct object_h {
 	object_h(){objp=NULL;sig=-1;}
 };
 
+struct ship_subsys;
+//**********HANDLE: Subsystem
+struct ship_subsys_h : public object_h
+{
+	ship_subsys *ss;	//Pointer to subsystem, or NULL for the hull
+
+	bool IsValid(){return objp->signature == sig;}
+	ship_subsys_h() : object_h() {
+		ss = NULL;
+	}
+	ship_subsys_h(object *objp, ship_subsys *sub) : object_h(objp) {
+		ss = sub;
+	}
+};
+
 //*************************Lua globals*************************
+extern ade_obj<vec3d> l_Vector;
+extern ade_obj<ship_subsys_h> l_Subsystem;
 extern ade_obj<object_h> l_Object;
 extern ade_obj<object_h> l_Weapon;
 extern ade_obj<object_h> l_Ship;

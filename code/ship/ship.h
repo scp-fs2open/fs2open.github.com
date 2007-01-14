@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.174 $
- * $Date: 2007-01-08 00:50:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.175 $
+ * $Date: 2007-01-14 14:03:37 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174  2007/01/08 00:50:59  Goober5000
+ * remove WMC's limbo code, per our discussion a few months ago
+ * this will later be handled by copying ship stats using sexps or scripts
+ *
  * Revision 2.173  2007/01/07 21:28:11  Goober5000
  * yet more tweaks to the WCS death scream stuff
  * added a ship flag to force screaming
@@ -927,6 +931,7 @@
 #include "weapon/shockwave.h"
 #include "species_defs/species_defs.h"
 #include "globalincs/pstypes.h"
+#include "parse/scripting.h"
 #include "particle/particle.h"
 
 #include <vector>
@@ -1145,6 +1150,7 @@ typedef	struct ship_subsys {
 	// Things like radar dishes would only use one.
 	submodel_instance_info	submodel_info_1;		// Instance data for main turret or main object
 	submodel_instance_info	submodel_info_2;		// Instance data for turret guns, if there is one
+//	ship_subsys*parent;		//if there is a subsystem that owns this this will be something other than NULL
 
 	int disruption_timestamp;							// time at which subsystem isn't disrupted
 
@@ -1619,6 +1625,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
 #define SIF2_DISABLE_WEAP_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
 #define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
+#define SIF2_PROJECTED_SHIELDS				(1 << 8)	// Bobboau - new projected shield rendering
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE			(SIF_DO_COLLISION_CHECK)
@@ -2184,8 +2191,8 @@ extern void create_shield_explosion(int objnum, int model_num, matrix *orient, v
 extern void shield_hit_init();
 extern void create_shield_explosion_all(object *objp);
 extern void shield_frame_init();
-extern void add_shield_point(int objnum, int tri_num, vec3d *hit_pos);
-extern void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos);
+extern void add_shield_point(int objnum, int tri_num, vec3d *hit_pos, float rad);
+extern void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos, float rad);
 extern void shield_point_multi_setup();
 extern void shield_hit_close();
 
@@ -2340,11 +2347,11 @@ void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos
 //	of the turret.   The gun normal is the unrotated gun normal, (the center of the FOV cone), not
 // the actual gun normal given using the current turret heading.  But it _is_ rotated into the model's orientation
 //	in global space.
-void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos, vec3d *gvec);
+void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos, vec3d *gvec, matrix *tmat = NULL);
 
 // return 1 if objp is in fov of the specified turret, tp.  Otherwise return 0.
 //	dist = distance from turret to center point of object
-int object_in_turret_fov(object *objp, model_subsystem *tp, vec3d *tvec, vec3d *tpos, float dist);
+int object_in_turret_fov(object *objp, model_subsystem *tp, vec3d *tvec, vec3d *tpos, float dist, matrix *tmat = NULL);
 
 // forcible jettison cargo from a ship
 void object_jettison_cargo(object *objp, object *cargo_objp);

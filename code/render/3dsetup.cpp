@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.24 $
- * $Date: 2006-12-28 00:59:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.25 $
+ * $Date: 2007-01-14 14:03:36 $
+ * $Author: bobboau $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2006/12/28 00:59:48  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.23  2006/10/06 09:34:19  taylor
  * meant to do this before but forgot about it (just replaced "(4.0/9.0) * PI" with it's result)
  *
@@ -452,7 +455,7 @@ void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 	vm_matrix_x_matrix(&tempm,&tempm2,&View_matrix);
 	View_matrix = tempm;
 
-	vm_matrix_x_matrix(&Object_matrix,orient,&instance_stack[instance_depth-1].om);
+	vm_matrix_x_matrix(&Object_matrix,&instance_stack[instance_depth-1].om,orient);
 //	Object_matrix = tempm;
 
 	// Update the lighting matrix

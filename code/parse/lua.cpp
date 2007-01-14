@@ -31,7 +31,7 @@
 #include "object/waypoint/waypoint.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"
-
+ 
 //*************************Lua globals*************************
 std::vector<ade_table_entry> Ade_table_entries;
 
@@ -212,15 +212,18 @@ int ade_get_operator(char *tablename)
 int ade_set_object_with_breed(lua_State *L, int obj_idx);
 
 //**********Handles
-/*ade_obj<int> l_Camera("camera", "Camera handle");
+//I had to uncomment this stuff to get Fred to link for some reason, 
+//I also commented out the ones you had further down, as they are here now
+//-Bobboau
+ade_obj<int> l_Camera("camera", "Camera handle");
 ade_obj<int> l_Cmission("cmission", "Campaign mission handle"); //WMC - We can get away with a pointer right now, but if it ever goes dynamic, it'd be a prob
-ade_obj<enum_h> l_Enum("enumeration", "Enumeration object");
+//ade_obj<enum_h> l_Enum("enumeration", "Enumeration object");
 ade_obj<int> l_Event("event", "Mission event handle");
 ade_obj<int> l_Font("font", "font handle");
-ade_obj<matrix_h> l_Matrix("orientation", "Orientation matrix object");
+//ade_obj<matrix_h> l_Matrix("orientation", "Orientation matrix object");
 ade_obj<int> l_Model("model", "3D Model (POF) handle");
 ade_obj<object_h> l_Object("object", "Object handle");
-ade_obj<physics_info_h> l_Physics("physics", "Physics handle");
+//ade_obj<physics_info_h> l_Physics("physics", "Physics handle");
 ade_obj<int> l_Player("player", "Player handle");
 ade_obj<object_h> l_Shields("shields", "Shields handle");
 ade_obj<object_h> l_Ship("ship", "Ship handle", &l_Object);
@@ -234,10 +237,10 @@ ade_obj<int> l_Texture("texture", "Texture handle");
 ade_obj<int> l_Wing("wing", "Wing handle");
 ade_obj<vec3d> l_Vector("vector", "Vector object");
 ade_obj<object_h> l_Weapon("weapon", "Weapon handle", &l_Object);
-ade_obj<ship_bank_h> l_WeaponBank("weaponbank", "Ship/subystem weapons bank handle");
-ade_obj<ship_banktype_h> l_WeaponBankType("weaponbanktype", "Ship/subsystem weapons bank type handle");
+//ade_obj<ship_bank_h> l_WeaponBank("weaponbank", "Ship/subystem weapons bank handle");
+//ade_obj<ship_banktype_h> l_WeaponBankType("weaponbanktype", "Ship/subsystem weapons bank type handle");
 ade_obj<int> l_Weaponclass("weaponclass", "Weapon class handle");
-*/
+
 //###########################################################
 //########################<IMPORTANT>########################
 //###########################################################
@@ -248,7 +251,7 @@ ade_obj<int> l_Weaponclass("weaponclass", "Weapon class handle");
 //###########################################################
 
 //**********HANDLE: cmission
-ade_obj<int> l_Cmission("cmission", "Campaign mission handle");
+//ade_obj<int> l_Cmission("cmission", "Campaign mission handle");
 //WMC - We can get away with a pointer right now, but if it ever goes dynamic, it'd be a prob
 
 int lua_cmission_helper(lua_State *L, int *idx)
@@ -649,7 +652,7 @@ ADE_FUNC(__tostring, l_Enum, NULL, "string", "Returns enumeration name")
 }
 
 //**********HANDLE: event
-ade_obj<int> l_Event("event", "Mission event handle");
+//ade_obj<int> l_Event("event", "Mission event handle");
 
 ADE_VIRTVAR(Name, l_Event, "string", "Mission event name")
 {
@@ -1110,7 +1113,7 @@ ADE_FUNC(write, l_File, "string or number, ...", "Number of items successfully w
 }
 
 //**********HANDLE: Font
-ade_obj<int> l_Font("font", "font handle");
+//ade_obj<int> l_Font("font", "font handle");
 
 ADE_FUNC(__tostring, l_Font, NULL, "string", "Filename of font")
 {
@@ -1171,7 +1174,7 @@ ADE_FUNC(isValid, l_Font, NULL, "True if valid, false or nil if not",  "Detects 
 }
 
 //**********HANDLE: model
-ade_obj<int> l_Model("model", "3D Model (POF) handle");
+//ade_obj<int> l_Model("model", "3D Model (POF) handle");
 
 ADE_VIRTVAR(Filename, l_Model, "string", "Model filename")
 {
@@ -1246,7 +1249,7 @@ ADE_FUNC(isValid, l_Model, NULL, "True if valid, false or nil if not",  "Detects
 
 //**********OBJECT: orientation matrix
 //WMC - So matrix can use vector, I define it up here.
-ade_obj<vec3d> l_Vector("vector", "Vector object");
+//ade_obj<vec3d> l_Vector("vector", "Vector object");
 //WMC - Due to the exorbitant times required to store matrix data,
 //I initially store the matrix in this struct.
 #define MH_FINE					0
@@ -1910,7 +1913,7 @@ ADE_FUNC(delete, l_SEXPVariable, NULL, "False or nil if variable couldn't be fou
 }
 
 //**********HANDLE: Shields
-ade_obj<object_h> l_Shields("shields", "Shields handle");
+//ade_obj<object_h> l_Shields("shields", "Shields handle");
 
 ADE_INDEXER(l_Shields, "SHIELD_* enumeration, NONE, or 1-4", "number", "Gets or sets shield quadrant strength")
 {
@@ -1997,7 +2000,7 @@ ADE_FUNC(isValid, l_Shields, NULL, "True if valid, false or nil if not",  "Detec
 }
 
 //**********HANDLE: Shiptype
-ade_obj<int> l_Shiptype("shiptype", "Ship type handle");
+//ade_obj<int> l_Shiptype("shiptype", "Ship type handle");
 extern int Species_initted;
 
 ADE_VIRTVAR(Name, l_Shiptype, "string", "Ship type name")
@@ -2033,7 +2036,7 @@ ADE_FUNC(isValid, l_Shiptype, NULL, "True if valid, false or nil if not",  "Dete
 }
 
 //**********HANDLE: Species
-ade_obj<int> l_Species("species", "Species handle");
+//ade_obj<int> l_Species("species", "Species handle");
 extern int Species_initted;
 
 ADE_VIRTVAR(Name, l_Species, "string", "Species name")
@@ -2069,7 +2072,7 @@ ADE_FUNC(isValid, l_Species, NULL, "True if valid, false or nil if not",  "Detec
 }
 
 //**********HANDLE: Team
-ade_obj<int> l_Team("team", "Team handle");
+//ade_obj<int> l_Team("team", "Team handle");
 
 ADE_FUNC(__eq, l_Team, "team, team", "true if equal", "Checks whether two teams are the same team")
 {
@@ -2110,7 +2113,7 @@ ADE_FUNC(isValid, l_Team, NULL, "True if valid, false or nil if not",  "Detects 
 }
 
 //**********HANDLE: Texture
-ade_obj<int> l_Texture("texture", "Texture handle");
+//ade_obj<int> l_Texture("texture", "Texture handle");
 //WMC - int should NEVER EVER be an invalid handle. Return Nil instead. Nil FTW.
 
 static float lua_Opacity = 1.0f;
@@ -2481,9 +2484,82 @@ ADE_INDEXER(l_Directives, "Directive number", "directive handle", NULL)
 */
 
 //**********HANDLE: Weaponclass
-ade_obj<int> l_Weaponclass("weaponclass", "Weapon class handle");
+//ade_obj<int> l_Weaponclass("weaponclass", "Weapon class handle");
+
+ADE_VIRTVAR(DesiredVelocity, l_Object, "Local vector", "Object local desired velocity")
+{
+	object_h *objh;
+	vec3d *v3=NULL;
+	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR && v3 != NULL) {
+		objh->objp->phys_info.desired_vel = *v3;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.desired_vel));
+}
+
+
+ADE_VIRTVAR(RotationalVelocity, l_Object, "Local vector", "Object local rotational velocity")
+{
+	object_h *objh;
+	vec3d *v3=NULL;
+	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR && v3 != NULL) {
+		objh->objp->phys_info.rotvel = *v3;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.rotvel));
+}
+
+ADE_VIRTVAR(DesiredRotationalVelocity, l_Object, "Local vector", "Object local desired rotational velocity")
+{
+	object_h *objh;
+	vec3d *v3=NULL;
+	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR && v3 != NULL) {
+		objh->objp->phys_info.desired_rotvel = *v3;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.desired_rotvel));
+}
+
+ADE_VIRTVAR(RotDamp, l_Object, "Number", "rotational damp")
+{
+	object_h *objh = NULL;
+	float f = 0.0f;
+	if(!ade_get_args(L, "o|f", l_Object.GetPtr(&objh), &f))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	//Set hull strength.
+	if(ADE_SETTING_VAR && f >= 0.0f) {
+		objh->objp->phys_info.rotdamp = f;
+	}
+
+	return ade_set_args(L, "f", objh->objp->phys_info.rotdamp);
+}
+
+
 
 ADE_VIRTVAR(Name, l_Weaponclass, "string", "Weapon class name")
+
 {
 	int idx;
 	char *s = NULL;
@@ -2814,7 +2890,7 @@ ADE_VIRTVAR(Position, l_Eyepoint, "vector", "Eyepoint location")
 }
 
 //**********HANDLE: Object
-ade_obj<object_h> l_Object("object", "Object handle");
+//ade_obj<object_h> l_Object("object", "Object handle");
 //Helper function
 //Returns 1 if object sig stored in idx exists, and stores Objects[] index in idx
 //Returns 0 if object sig does not exist, and does not change idx
@@ -2946,6 +3022,7 @@ ADE_FUNC(getBreedName, l_Object, NULL, "Object type name", "Gets object type")
 	return ade_set_args(L, "s", Object_type_names[objh->objp->type]);
 }
 
+//ade_obj<ship_subsys_h> l_Subsystem("subsystem", "Ship subsystem handle");
 //**********HANDLE: Asteroid
 ade_obj<object_h> l_Asteroid("asteroid", "Asteroid handle", &l_Object);
 
@@ -2976,7 +3053,7 @@ ADE_VIRTVAR(Target, l_Asteroid, "Boolean", "Whether or not debris is a piece of 
 }
 
 //**********HANDLE: Camera
-ade_obj<int> l_Camera("camera", "Camera handle");
+//ade_obj<int> l_Camera("camera", "Camera handle");
 
 ADE_FUNC(isValid, l_Camera, NULL, "True if valid, false or nil if not",  "Detects whether handle is valid")
 {
@@ -3064,7 +3141,7 @@ ADE_VIRTVAR(IsHull, l_Debris, "Boolean", "Whether or not debris is a piece of hu
 }
 
 //**********HANDLE: Shipclass
-ade_obj<int> l_Shipclass("shipclass", "Ship class handle");
+//ade_obj<int> l_Shipclass("shipclass", "Ship class handle");
 extern int ships_inited;
 
 ADE_VIRTVAR(Name, l_Shipclass, "string", "Ship class name")
@@ -3535,7 +3612,7 @@ ADE_FUNC(__len, l_WaypointList_Waypoints, NULL, "Number of waypoints in the miss
 }*/
 
 //**********HANDLE: Weapon
-ade_obj<object_h> l_Weapon("weapon", "Weapon handle", &l_Object);
+//ade_obj<object_h> l_Weapon("weapon", "Weapon handle", &l_Object);
 
 ADE_VIRTVAR(Class, l_Weapon, "weaponclass", "Weapon's class")
 {
@@ -3926,21 +4003,6 @@ ADE_FUNC(__len, l_WeaponBankType, NULL, "Number of weapons mounted in bank", "Ge
 	}
 }
 
-//**********HANDLE: Subsystem
-struct ship_subsys_h : public object_h
-{
-	ship_subsys *ss;	//Pointer to subsystem, or NULL for the hull
-
-	bool IsValid(){return objp->signature == sig;}
-	ship_subsys_h() : object_h() {
-		ss = NULL;
-	}
-	ship_subsys_h(object *objp, ship_subsys *sub) : object_h(objp) {
-		ss = sub;
-	}
-};
-ade_obj<ship_subsys_h> l_Subsystem("subsystem", "Ship subsystem handle");
-
 ADE_VIRTVAR(AWACSIntensity, l_Subsystem, "number", "Subsystem AWACS intensity")
 {
 	ship_subsys_h *sso;
@@ -4228,7 +4290,7 @@ ADE_FUNC(getName, l_Subsystem, NULL, "Subsystem name", "Subsystem name")\
 
 
 //**********HANDLE: shiptextures
-ade_obj<object_h> l_ShipTextures("shiptextures", "Ship textures handle");
+//ade_obj<object_h> l_ShipTextures("shiptextures", "Ship textures handle");
 
 ADE_FUNC(__len, l_ShipTextures, NULL, NULL, NULL)
 {
@@ -4331,7 +4393,7 @@ ADE_FUNC(isValid, l_ShipTextures, NULL, "True if valid, false or nil if not",  "
 }
 
 //**********HANDLE: Ship
-ade_obj<object_h> l_Ship("ship", "Ship handle", &l_Object);
+//ade_obj<object_h> l_Ship("ship", "Ship handle", &l_Object);
 
 ADE_INDEXER(l_Ship, "Subsystem name or index", "Subsystem", "Returns subsystem based on name or index passed")
 {
@@ -4828,7 +4890,7 @@ ADE_FUNC(warpOut, l_Ship, "[boolean Departing]", "True", "Warps ship out")
 }
 
 //**********HANDLE: Wing
-ade_obj<int> l_Wing("wing", "Wing handle");
+//ade_obj<int> l_Wing("wing", "Wing handle");
 
 ADE_INDEXER(l_Wing, "Index", "Ship", "Ship via number in wing")
 {
@@ -4849,7 +4911,7 @@ ADE_INDEXER(l_Wing, "Index", "Ship", "Ship via number in wing")
 	return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[Wings[wdx].ship_index[sdx]].objnum])));
 }
 //**********HANDLE: Player
-ade_obj<int> l_Player("player", "Player handle");
+//ade_obj<int> l_Player("player", "Player handle");
 
 int player_helper(lua_State *L, int *idx)
 {

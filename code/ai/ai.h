@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.15 $
- * $Date: 2007-01-07 01:00:18 $
- * $Author: Goober5000 $
+ * $Revision: 1.16 $
+ * $Date: 2007-01-14 14:03:31 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2007/01/07 01:00:18  Goober5000
+ * convert a mission variable to a mission flag
+ *
  * Revision 1.14  2006/12/28 00:59:18  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -418,6 +421,8 @@ typedef struct ai_goal {
 		char	*name;
 		int	index;
 	} dockee;
+
+	int dock_animation_done_time;
 
 } ai_goal;
 

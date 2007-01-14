@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.32 $
- * $Date: 2006-09-13 03:18:15 $
- * $Author: taylor $
+ * $Revision: 2.33 $
+ * $Date: 2007-01-14 14:03:32 $
+ * $Author: bobboau $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2006/09/13 03:18:15  taylor
+ * might as well add this, just to be on the safe side (I haven't hit it anywhere, but it could be made into a warning if it starts getting hit)
+ *
  * Revision 2.31  2006/08/20 00:51:06  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -1061,6 +1064,31 @@ float vm_vec_delta_ang_norm(vec3d *v0,vec3d *v1,vec3d *fvec)
 
 	return a;
 }
+
+matrix* vm_matrix_inverse(matrix*dest, matrix*src){
+/*	float d =	-src->a2d[0][0]*src->a2d[1][2]*src->a2d[2][1]
+				-src->a2d[0][1]*src->a2d[1][0]*src->a2d[2][2]
+				-src->a2d[0][2]*src->a2d[1][1]*src->a2d[2][0]
+				+src->a2d[0][0]*src->a2d[1][1]*src->a2d[2][2];
+				+src->a2d[0][1]*src->a2d[1][2]*src->a2d[2][1]
+				+src->a2d[0][2]*src->a2d[1][0]*src->a2d[2][1]
+				*/
+
+	dest->a2d[0][0] = (-src->a2d[1][2]*src->a2d[2][1]+src->a2d[1][1]*src->a2d[2][2]);
+	dest->a2d[0][1] = ( src->a2d[0][2]*src->a2d[2][1]-src->a2d[0][1]*src->a2d[2][2]);
+	dest->a2d[0][2] = (-src->a2d[0][2]*src->a2d[1][1]+src->a2d[0][1]*src->a2d[1][2]);
+
+	dest->a2d[1][0] = ( src->a2d[1][2]*src->a2d[2][0]-src->a2d[1][0]*src->a2d[2][2]);
+	dest->a2d[1][1] = (-src->a2d[0][2]*src->a2d[2][0]+src->a2d[0][0]*src->a2d[2][2]);
+	dest->a2d[1][2] = ( src->a2d[0][2]*src->a2d[1][0]-src->a2d[0][0]*src->a2d[1][2]);
+
+	dest->a2d[2][0] = (-src->a2d[1][1]*src->a2d[2][0]+src->a2d[1][0]*src->a2d[2][1]);
+	dest->a2d[2][1] = ( src->a2d[0][1]*src->a2d[2][0]-src->a2d[0][0]*src->a2d[2][1]);
+	dest->a2d[2][2] = (-src->a2d[0][1]*src->a2d[1][0]+src->a2d[0][0]*src->a2d[1][1]);
+
+	return dest;
+}
+
 
 matrix *sincos_2_matrix(matrix *m,float sinp,float cosp,float sinb,float cosb,float sinh,float cosh)
 {

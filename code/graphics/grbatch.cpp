@@ -157,6 +157,7 @@ const geometry_batcher &geometry_batcher::operator=(const geometry_batcher &geo)
 void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float depth)
 {
 
+	Assert(n_allocated > n_to_render + 2);
 	vec3d*cam_position;
 	matrix*cam_matrix;
 	if(space == LOCAL_SPACE){
@@ -271,6 +272,7 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float dep
 
 void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float angle, float depth)
 {
+	Assert(n_allocated > n_to_render + 2);
 
 	vec3d*cam_position;
 	matrix*cam_matrix;
@@ -392,6 +394,7 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float ang
 
 void geometry_batcher::draw_tri(vertex* verts)
 {
+	Assert(n_allocated > n_to_render + 1);
 	vertex *P = &vert[n_to_render *3 ];
 
 	for (int i = 0; i < 3; i++)
@@ -402,6 +405,7 @@ void geometry_batcher::draw_tri(vertex* verts)
 
 void geometry_batcher::draw_quad(vertex* verts)
 {
+	Assert(n_allocated > n_to_render + 2);
 	vertex *P = &vert[n_to_render * 3];
 
 	P[0] = verts[0];
@@ -418,6 +422,7 @@ void geometry_batcher::draw_quad(vertex* verts)
 
 void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float intensity)
 {
+	Assert(n_allocated > n_to_render + 2);
 
 	vec3d*cam_position;
 	matrix*cam_matrix;
@@ -489,6 +494,7 @@ void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float in
 
 float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
 {
+	Assert(n_allocated > n_to_render + 2);
 	width1 *= 0.5f;
 	width2 *= 0.5f;
 
@@ -593,13 +599,11 @@ void geometry_batcher::render(int flags)
 // laser batcher
 
 struct batch_item : public geometry_batcher {
-	batch_item(): texture(-1), tmap_flags(0), alpha(1.0f), laser(false) {};
+	batch_item(): texture(-1), tmap_flags(0), alpha(1.0f) {};
 
 	int texture;
 	int tmap_flags;
 	float alpha;
-
-	bool laser;
 };
 
 static std::vector<batch_item> geometry_map;
@@ -607,7 +611,7 @@ static std::vector<batch_item> geometry_map;
 int find_good_batch_item(int texture, int flags)
 {
 	for (uint i = 0; i < geometry_map.size(); i++) {
-		if (geometry_map[i].texture == texture)
+		if (geometry_map[i].texture == texture && geometry_map[i].tmap_flags == flags)
 			return i;
 	}
 
@@ -631,10 +635,9 @@ float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float wid
 	}
 
 	geometry_batcher *item = NULL;
-	int index = find_good_batch_item(texture);
+	int index = find_good_batch_item(texture, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
 	Assert( index >= 0 );
 
-	geometry_map[index].laser = true;
 	item = &geometry_map[index];
 
 	item->add_allocate(1);
@@ -652,8 +655,6 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 	geometry_batcher *item = NULL;
 	int index = find_good_batch_item(texture);
 	Assert( index >= 0 );
-
-	Assert( geometry_map[index].laser == false );
 
 	geometry_map[index].tmap_flags = tmap_flags;
 	geometry_map[index].alpha = alpha;
@@ -694,24 +695,15 @@ void batch_set_flag(int geo, int flag){
 
 void batch_render_lasers()
 {
-	for (uint i = 0; i < geometry_map.size(); i++) {
-		if ( !geometry_map[i].laser )
-			continue;
-
-		if ( !geometry_map[i].need_to_render() )
-			continue;
-
-		Assert( geometry_map[i].texture >= 0 );
-		gr_set_bitmap(geometry_map[i].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
-		geometry_map[i].render(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
-	}
 }
 
 void batch_render_bitmaps()
 {
+}
+
+void batch_render_all()
+{
 	for (uint i = 0; i < geometry_map.size(); i++) {
-		if ( geometry_map[i].laser )
-			continue;
 
 		if ( !geometry_map[i].need_to_render() )
 			continue;
@@ -720,12 +712,6 @@ void batch_render_bitmaps()
 		gr_set_bitmap(geometry_map[i].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, geometry_map[i].alpha);
 		geometry_map[i].render( geometry_map[i].tmap_flags );
 	}
-}
-
-void batch_render_all()
-{
-	batch_render_lasers();
-	batch_render_bitmaps();
 }
 
 void batch_reset()

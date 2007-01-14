@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.39 $
- * $Date: 2006-05-18 14:56:02 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2007-01-14 14:03:32 $
+ * $Author: bobboau $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2006/05/18 14:56:02  taylor
+ * fix bool compiler warning for MSVC
+ *
  * Revision 2.38  2006/05/13 07:09:24  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -588,7 +591,10 @@ void hud_shield_show(object *objp)
 	else
 	{
 		bool g3_yourself = !g3_in_frame();
-		angles rot_angles = {-1.570796327f,0.0f,0.0f};
+		angles rot_angles;
+		rot_angles.b = -1.570796327f;
+		rot_angles.p =0.0f;
+		rot_angles.h =0.0f;
 		matrix	object_orient;
 
 		vm_angles_2_matrix(&object_orient, &rot_angles);

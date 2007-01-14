@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.91 $
- * $Date: 2007-01-14 10:26:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.92 $
+ * $Date: 2007-01-14 14:03:40 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.91  2007/01/14 10:26:39  wmcoolmon
+ * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ *
  * Revision 2.90  2007/01/10 01:45:06  taylor
  * compiler warning fixage
  *
@@ -729,7 +732,9 @@ int stars_debris_loaded = 0;	// 0 = not loaded, 1 = normal vclips, 2 = nebula vc
 
 // background data
 int Stars_background_inited = 0;			// if we're inited
+
 int Nmodel_num = -1;							// model num
+int Nmodel_flags = DEFALT_NMODEL_FLAGS;							// model flags
 int Nmodel_bitmap = -1;						// model texture
 
 int Num_debris_normal = 0;
@@ -1467,8 +1472,15 @@ void stars_post_level_init()
 	float dist, dist_max;
 	ubyte red,green,blue,alpha;
 
+	// reset to -1 so we reload it each mission (if we need to)
+	Nmodel_num = -1;		
+	Nmodel_flags = DEFALT_NMODEL_FLAGS;	
+	if(Nmodel_bitmap != -1){
+		bm_release(Nmodel_bitmap);
+		Nmodel_bitmap = -1;
+	}
 
-	stars_set_background_model(The_mission.skybox_model, NULL);
+	stars_set_background_model(The_mission.skybox_model, "", The_mission.skybox_flags);
 
 	stars_load_debris( ((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) );
 
@@ -1701,6 +1713,43 @@ void stars_get_sun_pos(int sun_n, vec3d *pos)
 	vm_vec_rotate(pos, &temp, &rot);
 }
 
+void stars_add_lights(){
+	int idx;
+	vec3d sun_pos;
+	vec3d sun_dir;
+	vertex sun_vex;	
+	starfield_bitmap *bm;
+	float local_scale = 1.0f;
+
+	// draw all suns
+	for (idx = 0; idx < (int)Suns.size(); idx++) {
+		// get the instance
+		if (Suns[idx].star_bitmap_index < 0)
+			return;
+
+		bm = &Sun_bitmaps[Suns[idx].star_bitmap_index];
+
+		// if no bitmap then bail...
+		if (bm->bitmap_id < 0)
+			continue;
+
+		memset( &sun_vex, 0, sizeof(vertex) );
+
+		// get sun pos
+		sun_pos = vmd_zero_vector;
+		sun_pos.xyz.y = 1.0f;
+		stars_get_sun_pos(idx, &sun_pos);
+		
+		// get the direction		
+		sun_dir = sun_pos;
+		vm_vec_normalize(&sun_dir);
+
+		// add the light source corresponding to the sun, except when rendering to an envmap
+//		if ( !Rendering_to_env )
+			light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b, bm->spec_r, bm->spec_g, bm->spec_b, true);
+
+	}
+}
 // draw sun
 void stars_draw_sun(int show_sun)
 {	
@@ -1742,8 +1791,8 @@ void stars_draw_sun(int show_sun)
 		vm_vec_normalize(&sun_dir);
 
 		// add the light source corresponding to the sun, except when rendering to an envmap
-		if ( !Rendering_to_env )
-			light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b, bm->spec_r, bm->spec_g, bm->spec_b, true);
+//		if ( !Rendering_to_env )
+//			light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b, bm->spec_r, bm->spec_g, bm->spec_b, true);
 
 		// if supernova
 		if ( supernova_active() )
@@ -2610,6 +2659,8 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 
 	Rendering_to_env = env;
 
+//	stars_add_lights();
+
 	if (show_subspace)
 		subspace_render();
 
@@ -2620,6 +2671,10 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 	fix xt1, xt2;
 	xt1 = timer_get_fixed_seconds();
 #endif
+
+	if ( !env && show_stars && ( Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags & MISSION_FLAG_FULLNEB) && (supernova_active() < 3) ) {
+		stars_draw_stars();
+	}
 
 	if ( show_nebulas && (Game_detail_flags & DETAIL_FLAG_NEBULAS) && (Neb2_render_mode != NEB2_RENDER_POF) && (Neb2_render_mode != NEB2_RENDER_LAME))	{
 		nebula_render();
@@ -2638,9 +2693,6 @@ void stars_draw(int show_stars, int show_suns, int show_nebulas, int show_subspa
 		stars_draw_background();
 	}
 
-	if ( !env && show_stars && ( Game_detail_flags & DETAIL_FLAG_STARS) && !(The_mission.flags & MISSION_FLAG_FULLNEB) && (supernova_active() < 3) ) {
-		stars_draw_stars();
-	}
 
 	last_stars_filled = 1;
 
@@ -2947,27 +2999,36 @@ void stars_page_in()
 // background nebula models and planets
 void stars_draw_background()
 {	
-	int flags = MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING;
 
 	if (Nmodel_num < 0)
 		return;
 
 	if (Nmodel_bitmap > -1) {
 		model_set_forced_texture(Nmodel_bitmap);
-		flags |= MR_FORCE_TEXTURE;
+		Nmodel_flags |= MR_FORCE_TEXTURE;
 	}
 
 	// draw the model at the player's eye with no z-buffering
-	model_set_alpha(1.0f);
+	model_set_alpha(1.0f);	
+//	light_filter_push(-1,NULL,0.0f);
+	if(!(Nmodel_flags & MR_NO_LIGHTING ))gr_set_lighting(true, true);
+//	void light_set_all_relevent();
+//	light_set_all_relevent();
 
-	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
+	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, Nmodel_flags, -1);	
+
+//	light_filter_pop();
+	if(!(Nmodel_flags & MR_NO_ZBUFFER ))gr_zbuffer_clear(TRUE);
+
+	if(!(Nmodel_flags & MR_NO_LIGHTING ))gr_set_lighting(false, false);
+//	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
 
 	if (Nmodel_bitmap > -1)
 		model_set_forced_texture(-1);
 }
 
 // call this to set a specific model as the background model
-void stars_set_background_model(char *model_name, char *texture_name)
+void stars_set_background_model(char *model_name, char *texture_name, int flags)
 {
 	if (Nmodel_bitmap >= 0) {
 		bm_unload(Nmodel_bitmap);
@@ -2982,6 +3043,7 @@ void stars_set_background_model(char *model_name, char *texture_name)
 	if ( (model_name == NULL) || (strlen(model_name) < 1) )
 		return;
 
+	Nmodel_flags = flags;
 	Nmodel_num = model_load(model_name, 0, NULL, 0);
 	Nmodel_bitmap = bm_load(texture_name);
 

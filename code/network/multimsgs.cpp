@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.63 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.64 $
+ * $Date: 2007-01-14 14:03:33 $
+ * $Author: bobboau $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.62  2006/08/04 11:45:21  karajorma
  * Fix bug where end-mission SEXP only resulting in the mission ending for the server
  *
@@ -6865,7 +6868,7 @@ void send_shield_explosion_packet( int objnum, int tri_num, vec3d hit_pos )
 	}
 }
 
-void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos);
+void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos, float rad);
 
 void process_shield_explosion_packet( ubyte *data, header *hinfo)
 {
@@ -6907,7 +6910,7 @@ void process_shield_explosion_packet( ubyte *data, header *hinfo)
 			vm_vec_add2( &hit_pos, &(shieldp->verts[stri.verts[i]].pos) );
 		}
 		vm_vec_scale( &hit_pos, 1.0f/3.0f );
-		add_shield_point_multi( OBJ_INDEX(objp), utri_num, &hit_pos );
+		add_shield_point_multi( OBJ_INDEX(objp), utri_num, &hit_pos, 10.0f );
 	}
 }
 

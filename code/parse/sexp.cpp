@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.294 $
- * $Date: 2007-01-14 12:06:56 $
- * $Author: wmcoolmon $
+ * $Revision: 2.295 $
+ * $Date: 2007-01-14 14:03:36 $
+ * $Author: bobboau $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.294  2007/01/14 12:06:56  wmcoolmon
+ * Fix +Override, attempted fix for code adjacent to [] causing crash in scripting.tbl (Unreproducable), and (Untested) fix for script-eval.
+ *
  * Revision 2.293  2006/12/28 02:07:49  Goober5000
  * assume ships-with-bays which haven't yet entered the mission are valid for syntax checking
  *
@@ -1631,6 +1634,7 @@ sexp_oper Operators[] = {
 	{ "set-object-position",		OP_SET_OBJECT_POSITION,			4,	4	},	// WMC
 	{ "set-object-facing",			OP_SET_OBJECT_FACING,				4,	6	},	// Goober5000
 	{ "set-object-facing-object",	OP_SET_OBJECT_FACING_OBJECT,		2,	4	},	// Goober5000
+	{ "is-object-facing",			OP_FACING_OBJ,						3, 3,			}, // Bobboau
 
 	{ "time-elapsed-last-order",	OP_LAST_ORDER_TIME,			2, 2, /*INT_MAX*/ },
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
@@ -11547,6 +11551,42 @@ int sexp_secondaries_depleted(int node)
 	return (num_depleted_banks == num_banks);
 }
 
+int sexp_facing_obj(int node)
+{
+	int looker, looke;
+	float a1, a2;
+	vec3d v1, v2;
+
+	if (ship_query_state(CTEXT(node)) < 0){
+		return SEXP_KNOWN_FALSE;
+	}
+
+	looker = ship_name_lookup(CTEXT(node));
+	if ((looker < 0))	return SEXP_FALSE;
+	
+	looke = ship_name_lookup(CTEXT(CDR(node)));
+	if ((looke < 0))		return SEXP_FALSE;
+
+
+	if(looke == looker)		return SEXP_FALSE;
+
+
+	looker = Ships[looker].objnum;
+	looke = Ships[looke].objnum;
+	v1 = Objects[looker].orient.vec.fvec;
+	vm_vec_normalize(&v1);
+	vm_vec_sub(&v2, &Objects[looke].pos, &Objects[looker].pos);
+	vm_vec_normalize(&v2);
+	a1 = vm_vec_dotprod(&v1, &v2);
+	a2 = (float) cos(ANG_TO_RAD(atof(CTEXT(CDR(CDR(node))))));
+	if (a1 >= a2){
+		return SEXP_TRUE;
+	}
+
+	return SEXP_FALSE;
+}
+
+
 int sexp_facing(int node)
 {
 	int obj, sh;
@@ -15716,6 +15756,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_secondaries_depleted(node);
 				break;
 
+			case OP_FACING_OBJ:
+				sexp_val = sexp_facing_obj(node);
+				break;
+
 			case OP_FACING:
 				sexp_val = sexp_facing(node);
 				break;
@@ -16401,6 +16445,7 @@ int query_operator_return_type(int op)
 		case OP_KEY_PRESSED:
 		case OP_TARGETED:
 		case OP_SPEED:
+		case OP_FACING_OBJ:
 		case OP_FACING:
 		case OP_FACING2:
 		case OP_ORDER:
@@ -16930,6 +16975,12 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_SHIP_UNTAG:
 			return OPF_SHIP;
+
+		case OP_FACING_OBJ:
+			if (argnum <= 1)
+				return OPF_SHIP;
+			else
+				return OPF_POSITIVE;
 
 		case OP_FACING:
 			if (argnum == 0)
@@ -20152,6 +20203,15 @@ sexp_help_struct Sexp_help[] = {
 		"set-training-context-speed for the specified amount of time.\r\n\r\n"
 		"Returns a boolean value.  Takes 1 argument...\r\n"
 		"\t1:\tTime in seconds." },
+
+	{ OP_FACING_OBJ, "Object Facing\r\n"
+		"\tIs true as long as the second object is within the first object's specified "
+		"forward cone.  A forward cone is defined with the third and final parameter as"
+		"an angle.\r\n\r\n"
+		"Returns a boolean value.  Takes 3 argument...\r\n"
+		"\t1:\tShip that is doing the faceing.\r\n"
+		"\t1:\tShip that is being faced.\r\n"
+		"\t2:\tAngle in degrees of the forward cone." },
 
 	{ OP_FACING, "Facing (Boolean training operator)\r\n"
 		"\tIs true as long as the specified ship is within the player's specified "

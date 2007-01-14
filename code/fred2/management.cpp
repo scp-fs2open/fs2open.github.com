@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.28 $
- * $Date: 2007-01-10 01:41:27 $
- * $Author: taylor $
+ * $Revision: 1.29 $
+ * $Date: 2007-01-14 14:03:32 $
+ * $Author: bobboau $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28  2007/01/10 01:41:27  taylor
+ * remove -jpgtga, set 32-bit mode as default (the OGL code will automatically fallback to 16-bit is needed)
+ *
  * Revision 1.27  2007/01/07 00:01:28  Goober5000
  * add a feature for specifying the source of Command messages
  *
@@ -1441,6 +1444,7 @@ void clear_mission()
 	for(i=0; i<MAX_NEB2_POOFS; i++){
 		Neb2_poof_flags |= (1<<i);
 	}
+	Nmodel_flags = DEFALT_NMODEL_FLAGS;	
 	Nmodel_num = -1;
 	Nmodel_bitmap = -1;
 

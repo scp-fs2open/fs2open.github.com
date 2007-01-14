@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.36 $
- * $Date: 2006-12-28 00:59:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.37 $
+ * $Date: 2007-01-14 14:03:33 $
+ * $Author: bobboau $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2006/12/28 00:59:32  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.35  2006/11/06 05:43:36  taylor
  * fix a memory leak that Valgrind was complaining about (happens mainly when you have a mission without a briefing)
  *
@@ -1830,7 +1833,10 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		return;
 
 	matrix	object_orient	= IDENTITY_MATRIX;
-	angles rot_angles = {0.0f,0.0f,0.0f};
+	angles rot_angles;
+	rot_angles.p =0.0f;
+	rot_angles.b =0.0f;
+	rot_angles.h =0.0f;
 	float zoom = closeup_zoom * 2.5f;
 
 	if(sip == NULL)

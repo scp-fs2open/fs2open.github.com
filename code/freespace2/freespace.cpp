@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.276 $
- * $Date: 2007-01-08 00:50:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.277 $
+ * $Date: 2007-01-14 14:03:32 $
+ * $Author: bobboau $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.276  2007/01/08 00:50:58  Goober5000
+ * remove WMC's limbo code, per our discussion a few months ago
+ * this will later be handled by copying ship stats using sexps or scripts
+ *
  * Revision 2.275  2007/01/07 12:34:36  taylor
  * proper envmap generation for OpenGL
  *
@@ -4149,7 +4153,8 @@ void game_get_framerate()
 		char filename[MAX_PATH];
 		int size;
 	  	memblockinfo_sort();
-		for(int i = 0; i < 30; i++)
+		int i;
+		for(i = 0; i < 30; i++)
 		{
 			memblockinfo_sort_get_entry(i, filename, &size);
 
@@ -5071,7 +5076,7 @@ vec3d	Dead_player_last_vel = { { { 1.0f, 1.0f, 1.0f } } };
 extern float View_zoom;
 inline void render_environment(int i, vec3d *eye_pos, matrix *new_orient, float new_zoom)
 {
-	bm_set_render_target( (Game_subspace_effect) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map, i);
+	bm_set_render_target( (Game_subspace_effect || The_mission.flags & MISSION_FLAG_DYNAMIC_ENVIRONMENT_MAP) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map, i);
 
 	gr_clear();
 
@@ -5109,7 +5114,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 			return;
 	}
 
-	if ( (Game_subspace_effect && (gr_screen.dynamic_environment_map < 0)) || (!Game_subspace_effect && (gr_screen.static_environment_map < 0)) ) {
+	if ( ((Game_subspace_effect || The_mission.flags & MISSION_FLAG_DYNAMIC_ENVIRONMENT_MAP) && (gr_screen.dynamic_environment_map < 0)) || (!(Game_subspace_effect || The_mission.flags & MISSION_FLAG_DYNAMIC_ENVIRONMENT_MAP) && (gr_screen.static_environment_map < 0)) ) {
 		if (ENVMAP >= 0)
 			return;
 
@@ -5125,7 +5130,7 @@ void setup_environment_mapping(vec3d *eye_pos, matrix *eye_orient)
 		return;
 	}
 
-	ENVMAP = (Game_subspace_effect) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map;
+	ENVMAP = (Game_subspace_effect || The_mission.flags & MISSION_FLAG_DYNAMIC_ENVIRONMENT_MAP) ? gr_screen.dynamic_environment_map : gr_screen.static_environment_map;
 
 /*
 	Envmap matrix setup -- left-handed
@@ -5514,8 +5519,10 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 		shield_point_multi_setup();
 	}
 
+	void stars_add_lights();
+	stars_add_lights();
 	// this needs to happen after g3_start_frame() and before the primary projection and view matrix is setup
-	if ( Cmdline_env && (!cube_map_drawen || Game_subspace_effect) ) {
+	if ( Cmdline_env && (!cube_map_drawen || Game_subspace_effect || The_mission.flags & MISSION_FLAG_DYNAMIC_ENVIRONMENT_MAP) ) {
 		setup_environment_mapping(eye_pos, eye_orient);
 		cube_map_drawen = true;
 	}

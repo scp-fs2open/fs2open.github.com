@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.97 $
- * $Date: 2007-01-10 01:44:39 $
- * $Author: taylor $
+ * $Revision: 2.98 $
+ * $Date: 2007-01-14 14:03:33 $
+ * $Author: bobboau $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2007/01/10 01:44:39  taylor
+ * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
+ *
  * Revision 2.96  2006/12/28 22:47:03  Goober5000
  * fix spelling... *twitch*
  *
@@ -692,6 +695,8 @@
 
 struct object;
 
+extern flag_def_list model_render_flags[];
+extern int model_render_flags_size;
 
 #define MAX_DEBRIS_OBJECTS	32
 #define MAX_MODEL_DETAIL_LEVELS	8
@@ -699,11 +704,12 @@ struct object;
 #define MAX_NAME_LEN			32
 #define MAX_ARC_EFFECTS		8
 
-#define MOVEMENT_TYPE_NONE				-1
-#define MOVEMENT_TYPE_POS				0
-#define MOVEMENT_TYPE_ROT				1
+#define MOVEMENT_TYPE_NONE			-1
+#define MOVEMENT_TYPE_POS			0
+#define MOVEMENT_TYPE_ROT			1
 #define MOVEMENT_TYPE_ROT_SPECIAL	2		// for turrets only
-#define MOVEMENT_TYPE_TRIGGERED			3	//triggered rotation
+#define MOVEMENT_TYPE_TRIGGERED		3		//triggered rotation
+#define MOVEMENT_TYPE_LOOK_AT		4		// the subobject is always looking at a 'look at' subobject, as best it can - Bobboau
 
 
 // DA 11/13/98 Reordered to account for difference between max and game
@@ -766,7 +772,10 @@ typedef struct submodel_instance_info {
 #define MSS_FLAG_UNTARGETABLE		(1 << 8)		// Goober5000
 #define MSS_FLAG_CARRY_NO_DAMAGE	(1 << 9)		// WMC
 #define MSS_FLAG_USE_MULTIPLE_GUNS	(1 << 10)		// WMC
-#define MSS_FLAG_FIRE_ON_NORMAL		(1 << 11)		// forces a turret to fire down its normal vecs
+#define MSS_FLAG_FIRE_ON_NORMAL		(1 << 11)		// forces a turret to fire down it's normal vecs
+#define MSS_FLAG_TURRET_HULL_CHECK	(1 << 12)		// makes the turret check to see if it's going to shoot through it's own hull before fireing - Bobboau
+#define MSS_FLAG_DUM_ROTATES		(1 << 13)		// rotates in a similar fashion (from the end user's point of view anyway) as rotateing subobjects
+													// haha! dumb is suposed to have a b at the end, but this doesn't! this must be REALLY dumb! hahahahahaha lolololol omgftw! 
 
 // definition of stepped rotation struct
 typedef struct stepped_rotation {
@@ -808,6 +817,7 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	vec3d	turret_norm;						//	direction this turret faces
 	matrix	turret_matrix;						// turret_norm converted to a matrix.
 	float	turret_fov;							//	dot of turret_norm:vec_to_enemy > this means can see
+	float	turret_y_fov;						//	y_component
 	int		turret_num_firing_points;			// number of firing points on this turret
 	vec3d	turret_firing_point[MAX_TFP];		//	in parent object's reference frame, point from which to fire.
 	int		turret_gun_sobj;					// Which subobject in this model the firing points are linked to.
@@ -843,6 +853,8 @@ typedef struct model_subsystem {					/* contains rotation rate info */
 	int n_triggers;
 	queued_animation *triggers;		//all the triggered animations assosiated with this object
 
+	script_hook scripted_rotation;
+
 } model_subsystem;
 
 typedef struct model_special {
@@ -852,6 +864,38 @@ typedef struct model_special {
 	vec3d	pnt;										// point where this special submodel thingy is at
 	vec3d	norm;										// normal for the special submodel thingy
 } model_special;
+
+struct glow_point{
+	vec3d	pnt;
+	vec3d	norm;
+	float	radius;
+};
+
+typedef struct thruster_bank {
+	std::vector<glow_point> points;
+
+	// Engine wash info
+	struct engine_wash_info	*wash_info_pointer;			// index into Engine_wash_info
+
+	int		obj_num;		// what subsystem number this thruster is on
+	int		sub_model;
+} thruster_bank;
+
+typedef struct glow_point_bank {  // glow bank structure -Bobboau
+	int			type;
+	int			glow_timestamp; 
+	int			on_time; 
+	int			off_time; 
+	int			disp_time; 
+	int			is_on; 
+	int			is_active; 
+	int			submodel_parent; 
+	int			LOD; 
+	int			num_points; 
+	glow_point	*points;
+	int			glow_bitmap; 
+	int			glow_neb_bitmap; 
+} glow_point_bank;
 
 // model arc types
 #define MARC_TYPE_NORMAL					0		// standard freespace 1 blue lightning arcs
@@ -892,6 +936,7 @@ typedef struct IBX {
 
 
 typedef struct bsp_info {
+	int sub_object_number;			// who am I again?
 	char		name[MAX_NAME_LEN];	// name of the subsystem.  Probably displayed on HUD
 	int		movement_type;			// -1 if no movement, otherwise rotational or positional movement -- subobjects only
 	int		movement_axis;			// which axis this subobject moves or rotates on.
@@ -913,6 +958,8 @@ typedef struct bsp_info {
 	int		my_replacement;		// If not -1 this subobject is what should get rendered instead of this one
 	int		i_replace;				// If this is not -1, then this subobject will replace i_replace when it is damaged
 	angles	angs;						// The angles from parent.  Stuffed by model_set_instance
+	angles	ang_vel;						// rate of change of above
+	angles	ang_acl;						// rate of change of above
 
 	int		is_live_debris;		// whether current submodel is a live debris model
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
@@ -947,8 +994,18 @@ typedef struct bsp_info {
 	vec3d	render_box_min;
 	vec3d	render_box_max;
 	int		use_render_box;	//0==do nothing, 1==only render this object if you are inside the box, -1==only if your out
+
+	float	render_sphere;
+	int		use_render_sphere;
+
 	bool	gun_rotation;//for animated weapon models
 
+	matrix orientation;
+	int look_at;
+
+	float		dumb_turn_rate;							// The turning rate of this subobject, if MSS_FLAG_ROTATES is set.
+
+	std::vector<thruster_bank> submodel_thruster;
 } bsp_info;
 
 void parse_triggersint(int &n_trig, queued_animation **triggers, char *props);
@@ -994,37 +1051,6 @@ typedef struct w_bank {
 	float		radius[MAX_SLOTS];
 } w_bank;
 
-struct glow_point{
-	vec3d	pnt;
-	vec3d	norm;
-	float	radius;
-};
-
-typedef struct thruster_bank {
-	int		num_points;
-	glow_point *points;
-
-	// Engine wash info
-	struct engine_wash_info	*wash_info_pointer;			// index into Engine_wash_info
-
-	int		obj_num;		// what subsystem number this thruster is on
-} thruster_bank;
-
-typedef struct glow_point_bank {  // glow bank structure -Bobboau
-	int			type;
-	int			glow_timestamp; 
-	int			on_time; 
-	int			off_time; 
-	int			disp_time; 
-	int			is_on; 
-	int			is_active; 
-	int			submodel_parent; 
-	int			LOD; 
-	int			num_points; 
-	glow_point	*points;
-	int			glow_bitmap; 
-	int			glow_neb_bitmap; 
-} glow_point_bank;
 
 // defines for docking bay things.  The types are essentially flags since docking bays can probably
 // be used for multiple things in some cases (i.e. rearming and general docking)
@@ -1074,7 +1100,8 @@ typedef struct shield_tri {
 // The verts array in the shield_tri structure points to one of these members
 typedef struct shield_vertex {
 	vec3d	pos;
-	float		u,v;
+	vec3d	norm;
+	float		u,v,i;
 } shield_vertex;
 
 // the high level shield structure.  A ship without any shield has nverts and ntris set to 0.
@@ -1213,11 +1240,11 @@ typedef struct polymodel {
 	int			n_guns;								// number of primary gun points (not counting turrets)
 	int			n_missiles;							// number of secondary missile points (not counting turrets)
 	int			n_docks;								// number of docking points
-	int			n_thrusters;						// number of thrusters on this ship.
+//	int			n_thrusters;						// number of thrusters on this ship.
 	w_bank		*gun_banks;							// array of gun banks
 	w_bank		*missile_banks;					// array of missile banks
 	dock_bay		*docking_bays;						// array of docking point pairs
-	thruster_bank		*thrusters;							// array of thruster objects -- likely to change in the future
+//	thruster_bank		*thrusters;							// array of thruster objects -- likely to change in the future
 	ship_bay_t		*ship_bay;							// contains path indexes for ship bay approach/depart paths
 
 	shield_info	shield;								// new shield information
@@ -1717,5 +1744,12 @@ int decal_make_model(polymodel * pm);
 
 void model_setup_cloak(vec3d *shift, int full_cloak, int alpha);
 void model_finish_cloak(int full_cloak);
+
+void model_do_look_at(int model_num);
+
+struct ship_subsys;
+void model_2_submodel(polymodel *pm, int sn, vec3d*v, matrix*m);
+void submodel_scripted_rotate(object* obj, ship_subsys	*pss);
+void model_do_dumb_rotation(int modelnum);
 
 #endif // _MODEL_H

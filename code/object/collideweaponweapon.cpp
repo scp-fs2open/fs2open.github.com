@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.14 $
+ * $Date: 2007-01-14 14:03:36 $
+ * $Author: bobboau $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.12  2006/09/11 05:36:43  taylor
  * compiler warning fixes
  *
@@ -133,16 +136,6 @@ int collide_weapon_weapon( obj_pair * pair )
 	Assert( A->type == OBJ_WEAPON );
 	Assert( B->type == OBJ_WEAPON );
 	
-	//	Don't allow ship to shoot down its own missile.
-	if (A->parent_sig == B->parent_sig)
-		return 1;
-
-	//	Only shoot down teammate's missile if not traveling in nearly same direction.
-	if (Weapons[A->instance].team == Weapons[B->instance].team)
-		if (vm_vec_dot(&A->orient.vec.fvec, &B->orient.vec.fvec) > 0.7f)
-			return 1;
-
-	//	Ignore collisions involving a bomb if the bomb is not yet armed.
 	weapon	*wpA, *wpB;
 	weapon_info	*wipA, *wipB;
 
@@ -154,18 +147,38 @@ int collide_weapon_weapon( obj_pair * pair )
 	A_radius = A->radius;
 	B_radius = B->radius;
 
+	// never shoot down teammates mine with a mine
+	if(wipA->wi_flags2 & WIF2_MINE && wipB->wi_flags2 & WIF2_MINE){
+		if (Weapons[A->instance].team == Weapons[B->instance].team)
+			return 1;
+	}
+
+	//you can shoot your own mine, and your team can too
+	if (!(wipA->wi_flags2 & WIF2_MINE || wipB->wi_flags2 & WIF2_MINE )){
+		//	Don't allow ship to shoot down its own missile.
+		if (A->parent_sig == B->parent_sig)
+			return 1;
+
+		//	Only shoot down teammate's missile if not traveling in nearly same direction.
+		if (Weapons[A->instance].team == Weapons[B->instance].team)
+			if (vm_vec_dot(&A->orient.vec.fvec, &B->orient.vec.fvec) > 0.7f)
+				return 1;
+	}
+
+	//	Ignore collisions involving a bomb if the bomb is not yet armed.
+
 	// UnknownPlayer : Should we even be bothering with collision detection is neither one of these is a bomb?
 
 	//WMC - Here's a reason why...scripting now!
 
 	if (wipA->wi_flags & WIF_BOMB) {
-		A_radius *= 2;		// Makes bombs easier to hit
+		if(!(wipA->wi_flags2 & WIF2_MINE))A_radius *= 2;		// Makes bombs easier to hit
 		if (wipA->lifetime - wpA->lifeleft < BOMB_ARM_TIME)
 			return 0;
 	}
 
 	if (wipB->wi_flags & WIF_BOMB) {
-		B_radius *= 2;		// Makes bombs easier to hit
+		if(!(wipB->wi_flags2 & WIF2_MINE))B_radius *= 2;		// Makes bombs easier to hit
 		if (wipB->lifetime - wpB->lifeleft < BOMB_ARM_TIME)
 			return 0;
 	}

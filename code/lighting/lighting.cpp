@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-07-24 07:36:50 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2007-01-14 14:03:32 $
+ * $Author: bobboau $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/07/24 07:36:50  taylor
+ * minor cleanup/optimization to beam warmup glow rendering function
+ * various lighting code cleanups
+ *  - try to always make sure beam origin lights occur outside of model
+ *  - make Static_lights[] dynamic
+ *  - be sure to reset to first 8 lights when moving on to render spec related texture passes
+ *  - add ambient color to point lights (helps warp effects)
+ *  - sort lights to try and get more important and/or visible lights to always happen in initial render pass
+ *
  * Revision 2.20  2006/02/19 23:14:22  Goober5000
  * reduce confusion in naming
  * --Goober5000
@@ -750,6 +759,7 @@ int light_filter_push( int objnum, vec3d *pos, float rad )
 	Assert( Num_light_levels < MAX_LIGHT_LEVELS );
 
 	Num_relevent_lights[n2] = 0;
+	if(objnum < 0)return 0;
 
 	for (i=0; i<Num_relevent_lights[n1]; i++ )	{
 		l = Relevent_lights[i][n1];
@@ -886,6 +896,8 @@ void light_filter_pop()
 	if ( Lighting_off ) return;
 
 	Num_light_levels--;
+
+	
 	Assert( Num_light_levels > 0 );
 }
 

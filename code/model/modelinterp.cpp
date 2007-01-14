@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.179 $
- * $Date: 2007-01-14 10:26:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.180 $
+ * $Date: 2007-01-14 14:03:33 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.179  2007/01/14 10:26:38  wmcoolmon
+ * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ *
  * Revision 2.178  2007/01/13 16:38:22  bobboau
  * made a last second change of mind on something, made it a bit safer
  *
@@ -4062,9 +4065,9 @@ void model_render_thrusters(bsp_info*model, ship *shipp)
 
 
 	geometry_batcher* pri_geo, *sec_geo, *tri_geo;
-	pri_geo = batch_get_geometry(find_good_batch_item(Interp_thrust_glow_bitmap));
-	sec_geo = batch_get_geometry(find_good_batch_item(Interp_secondary_thrust_glow_bitmap));
-	tri_geo = batch_get_geometry(find_good_batch_item(Interp_tertiary_thrust_glow_rad_factor));
+	pri_geo = batch_get_geometry(find_good_batch_item(Interp_thrust_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT));
+	sec_geo = batch_get_geometry(find_good_batch_item(Interp_secondary_thrust_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT));
+	tri_geo = batch_get_geometry(find_good_batch_item(Interp_tertiary_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT));
 	pri_geo->space=WORLD_SPACE;
 	sec_geo->space=WORLD_SPACE;
 	tri_geo->space=WORLD_SPACE;
@@ -4086,6 +4089,10 @@ void model_render_thrusters(bsp_info*model, ship *shipp)
 		// don't draw this thruster if the engine is destroyed or just not on
 		if ( !model_should_render_engine_glow(model->sub_object_number, bank->obj_num) )
 			continue;
+
+		pri_geo->add_allocate(bank->points.size());
+		sec_geo->add_allocate(bank->points.size());
+		tri_geo->add_allocate(bank->points.size());
 
 		for (j = 0; j < bank->points.size(); j++) {
 
