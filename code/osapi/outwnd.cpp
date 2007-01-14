@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.19 $
+ * $Date: 2007-01-14 14:03:36 $
+ * $Author: bobboau $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.17  2006/11/16 00:56:16  taylor
  * updated outwnd code for both Windows and non-Windows:
  *  - make print filters dynamic
@@ -1345,7 +1348,7 @@ void close_mono()
 
 void outwnd_init_debug_window(int display_under_freespace_window)
 {
-	static debug_window_inited = false;
+	static bool debug_window_inited = false;
 
 	if ( !Cmdline_debug_window || !outwnd_inited || debug_window_inited )
 		return;

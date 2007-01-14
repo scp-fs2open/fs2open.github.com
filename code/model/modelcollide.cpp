@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.17 $
- * $Date: 2006-09-11 06:45:40 $
- * $Author: taylor $
+ * $Revision: 2.18 $
+ * $Date: 2007-01-14 14:03:33 $
+ * $Author: bobboau $
  *
  * Routines for detecting collisions of models.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/09/11 06:45:40  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.16  2006/07/06 04:06:04  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
@@ -1031,6 +1034,14 @@ NoHit:
 			vm_vec_add2(&Mc_base, &saved_base );
 
 			vm_angles_2_matrix(&tm, &csm->angs);
+
+			if(!IS_MAT_NULL(&csm->orientation)){
+				matrix inv, f;
+				vm_matrix_inverse(&inv, &csm->orientation);
+				vm_matrix_x_matrix(&f, &tm, &inv);
+				vm_matrix_x_matrix(&tm, &csm->orientation, &f);
+			}
+
 			vm_matrix_x_matrix(&Mc_orient, &saved_orient, &tm);
 
 			mc_check_subobj( i );

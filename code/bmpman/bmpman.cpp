@@ -10,13 +10,19 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.94 $
- * $Date: 2007-01-10 01:40:06 $
- * $Author: taylor $
+ * $Revision: 2.95 $
+ * $Date: 2007-01-14 14:03:32 $
+ * $Author: bobboau $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2007/01/10 01:40:06  taylor
+ * remove the non-dark stuff, it only works on PCX files and stuff to use it has already been ripped out
+ * per earlier discussions: remove -jpgtga and -pcx32, set image load order to DDS->TGA->JPG->PCX
+ * some debug log cleanup
+ * remove bitmap data from system memory once it's in API memory
+ *
  * Revision 2.93  2007/01/07 12:32:06  taylor
  * fix bm_page_in_texture() so that it will load all frames of an animation (caused slowdowns in-game with it)
  *
@@ -2524,8 +2530,8 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 	// read the file data
 	if ( gr_bm_lock( be->filename, handle, bitmapnum, bpp, flags ) == -1 ) {
 		// oops, this isn't good - reset and return NULL
-		bm_unlock( bitmapnum );
-		bm_unload( bitmapnum );
+		bm_unlock( handle );
+		bm_unload( handle );
 
 		return NULL;
 	}

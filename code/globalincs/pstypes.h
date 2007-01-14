@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.49 $
- * $Date: 2006-12-28 22:47:02 $
- * $Author: Goober5000 $
- * $Revision: 2.49 $
- * $Date: 2006-12-28 22:47:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.50 $
+ * $Date: 2007-01-14 14:03:32 $
+ * $Author: bobboau $
+ * $Revision: 2.50 $
+ * $Date: 2007-01-14 14:03:32 $
+ * $Author: bobboau $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2006/12/28 22:47:02  Goober5000
+ * fix spelling... *twitch*
+ *
  * Revision 2.48  2006/10/06 09:31:27  taylor
  * re-fix this crap that I managed to break last time (was Mantis bug 1066 I think)
  *
@@ -530,7 +533,7 @@ typedef struct vert2df {
 */
 
 typedef struct angles {
-	float	p, b, h;
+		float	p, b, h;
 } angles_t;
 
 typedef struct matrix {

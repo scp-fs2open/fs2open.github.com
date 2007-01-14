@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.23 $
- * $Date: 2006-12-28 00:59:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.24 $
+ * $Date: 2007-01-14 14:03:36 $
+ * $Author: bobboau $
  *
  * Include file for 3d rendering functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/12/28 00:59:48  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.22  2006/05/27 16:47:12  taylor
  * remove some of the old batcher functions, nothing is using them now anyway
  * minor cleanup
@@ -314,6 +317,16 @@ ubyte g3_project_vector(vec3d *p, float *sx, float *sy );
 
 //rotates a point.  returns codes.
 ubyte g3_rotate_vector(vec3d *dest,vec3d *src);
+//just like above, but ignores offsets
+ubyte g3_rotate_normal(vec3d *dest,vec3d *src);
+ubyte g3_unrotate_vector(vec3d *dest,vec3d *src);
+ubyte g3_unrotate_normal(vec3d *dest,vec3d *src);
+
+ubyte g3_local_2_world(vec3d *dest,vec3d *src);
+ubyte g3_local_2_world_normal(vec3d *dest,vec3d *src);
+ubyte g3_world_2_local(vec3d *dest,vec3d *src);
+ubyte g3_world_2_local_normal(vec3d *dest,vec3d *src);
+
 
 //Codes a vector.  Returns the codes of a point.
 ubyte g3_code_vector(vec3d * p);

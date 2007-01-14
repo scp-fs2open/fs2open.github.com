@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.76 $
- * $Date: 2007-01-14 10:26:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.77 $
+ * $Date: 2007-01-14 14:03:40 $
+ * $Author: bobboau $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2007/01/14 10:26:39  wmcoolmon
+ * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ *
  * Revision 2.75  2006/12/28 00:59:53  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1375,7 +1378,12 @@ void beam_type_c_move(beam *b)
 	vm_vec_add2(&b->last_start, &b->objp->pos);	
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 
-	Ships[b->objp->instance].weapon_energy -= Weapon_info[b->weapon_info_index].energy_consumed * flFrametime;
+	float e = Weapon_info[b->weapon_info_index].energy_consumed * flFrametime;
+	if(b->warmdown_stamp == -1)Ships[b->objp->instance].weapon_energy -= e;
+	else Ships[b->objp->instance].weapon_energy += e;
+
+	if(Ships[b->objp->instance].weapon_energy < 0) Ships[b->objp->instance].weapon_energy = 0;
+	if(Ships[b->objp->instance].weapon_energy > Ship_info[Ships[b->objp->instance].ship_info_index].max_weapon_reserve) Ships[b->objp->instance].weapon_energy = Ship_info[Ships[b->objp->instance].ship_info_index].max_weapon_reserve;
 }
 
 // type D functions
@@ -1707,9 +1715,11 @@ void beam_move_all_post()
 #define P_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 int poly_beam = 0;
 float U_offset =0.0f; // beam texture offset -Bobboau
-void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *shot, float shrink)
+void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *beam_shot, float shrink)
 {	
 //	mprintf(("about to render a beam\n"));
+	vec3d sh;
+	vec3d *shot = beam_shot;
 	int idx, s_idx;
 	vertex h1[4];				// halves of a beam section	
 	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
@@ -1738,7 +1748,14 @@ void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *shot, float shrink)
 	gr_set_cull(0);
 	
 	// draw all sections	
-	for(s_idx=0; s_idx<bwi->beam_num_sections; s_idx++){
+	for(s_idx=0; s_idx<bwi->sections.size(); s_idx++){
+		// calculate the beam points
+		if(bwi->sections[s_idx].length > 0.0f){
+			shot = &sh;
+			vm_vec_scale_add(shot, start, &fvec, bwi->sections[s_idx].length);
+		}else{
+			shot = beam_shot;
+		}
 		if ( (bwi->sections[s_idx].texture < 0) || (bwi->sections[s_idx].width <= 0.0f) )
 			continue;
 
@@ -3152,7 +3169,7 @@ int beam_collide_early_out(object *a, object *b)
 	}
 
 	if((vm_vec_dist(&bm->last_start, &b->pos)-b->radius) > bwi->b_info.range){
-		return 1;
+		return 0;//it might get closer... dumbass
 	}//if the object is too far away, don't bother trying to colide with it-Bobboau
 
 	// baseline bails
@@ -3211,7 +3228,7 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad, i
 	beam_collision *bc;
 	int idx;
 	int	quadrant_num = -1;
-//	weapon_info *bwi = &Weapon_info[b->weapon_info_index];
+	weapon_info *bwi = &Weapon_info[b->weapon_info_index];
 
 	// if we haven't reached the limit for beam collisions, just add
 	if(b->f_collision_count < MAX_FRAME_COLLISIONS){
@@ -3243,7 +3260,7 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quad, i
 			if (!(hit_object->flags & SF_DYING) ) {
 				if (cinfo->flags & MC_CHECK_SHIELD) {
 					// Don't do this for surface shields.
-					add_shield_point(hit_object-Objects, cinfo->shield_hit_tri, &cinfo->hit_point);
+					add_shield_point(hit_object-Objects, cinfo->shield_hit_tri, &cinfo->hit_point, bwi->shield_hit_radius);
 				}
 				hud_shield_quadrant_hit(hit_object, quadrant_num);
 			}
@@ -3528,7 +3545,7 @@ int beam_ok_to_fire(beam *b)
 	// type C beams are ok to fire all the time
 	if(b->type == BEAM_TYPE_C){
 		ship *shipp = &Ships[b->objp->instance];
-		if(shipp->weapon_energy < 0.0){
+		if(shipp->weapon_energy <= 0.0){
 //			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(Weapon_info[shipp->weapons.primary_bank_weapons[b->bank]].b_info.beam_warmdown*2);
 			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(2000);
 			int ship_maybe_play_primary_fail_sound();
@@ -3578,7 +3595,7 @@ float beam_get_widest(beam *b)
 	}
 
 	// lookup
-	for(idx=0; idx<Weapon_info[b->weapon_info_index].b_info.beam_num_sections; idx++){
+	for(idx=0; idx<Weapon_info[b->weapon_info_index].b_info.sections.size(); idx++){
 		if(Weapon_info[b->weapon_info_index].b_info.sections[idx].width > widest){
 			widest = Weapon_info[b->weapon_info_index].b_info.sections[idx].width;
 		}

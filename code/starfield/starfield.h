@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.20 $
- * $Date: 2006-11-24 22:46:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.21 $
+ * $Date: 2007-01-14 14:03:40 $
+ * $Author: bobboau $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/11/24 22:46:25  Goober5000
+ * FRED again updates backgrounds while the user is editing them
+ *
  * Revision 2.19  2006/11/16 00:53:12  taylor
  * various bits of little cleanup
  * get rid of some more compiler warnings
@@ -204,6 +207,11 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "graphics/2d.h"
+#include "model/model.h"
+
+#define DEFALT_NMODEL_FLAGS  (MR_NO_ZBUFFER | MR_NO_CULL | MR_ALL_XPARENT | MR_NO_LIGHTING)
+extern int Nmodel_num;				// model num
+extern int Nmodel_flags;			// model flags
 
 #include <vector>
 
@@ -295,7 +303,7 @@ void stars_draw_sun_glow(int sun_n);
 void stars_camera_cut();
 
 // call this to set a specific model as the background model
-void stars_set_background_model(char *model_name, char *texture_name);
+void stars_set_background_model(char *model_name, char *texture_name, int flags = DEFALT_NMODEL_FLAGS);
 
 // lookup a starfield bitmap, return index or -1 on fail
 int stars_find_bitmap(char *name);
