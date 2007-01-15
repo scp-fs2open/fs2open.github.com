@@ -332,7 +332,7 @@ void script_state::SetHookVar(char *name, char format, void *data)
 			return;
 
 		//Get ScriptVar table
-		lua_pushliteral(LuaState, "sv");
+		lua_pushliteral(LuaState, "hv");
 		lua_gettable(LuaState, LUA_GLOBALSINDEX);
 		int sv_ldx = lua_gettop(LuaState);
 		if(lua_isuserdata(LuaState, sv_ldx))
@@ -371,6 +371,10 @@ void script_state::SetHookVar(char *name, char format, void *data)
 			}
 			lua_pop(LuaState, 1);	//Metatable
 		}
+		else
+		{
+			LuaError(LuaState, "Could not get HookVariable library to set hook variable '%s' - get a coder", name);
+		}
 		lua_pop(LuaState, 1);	//Library
 
 		if(data_ldx)
@@ -390,7 +394,7 @@ bool script_state::GetHookVar(char *name, char format, void *data)
 		//WMC - Quick and clean. :)
 		//WMC - *sigh* nostalgia
 		//Get ScriptVar table
-		lua_pushliteral(LuaState, "sv");
+		lua_pushliteral(LuaState, "hv");
 		lua_gettable(LuaState, LUA_GLOBALSINDEX);
 		int sv_ldx = lua_gettop(LuaState);
 		if(lua_isuserdata(LuaState, sv_ldx))
@@ -421,6 +425,10 @@ bool script_state::GetHookVar(char *name, char format, void *data)
 			}
 			lua_pop(LuaState, 1);	//Metatable
 		}
+		else
+		{
+			LuaError(LuaState, "Could not get HookVariable library to get hook variable '%' - get a coder", name);
+		}
 		lua_pop(LuaState, 1);	//Library
 	}
 
@@ -434,7 +442,7 @@ void script_state::RemHookVar(char *name)
 		//WMC - Quick and clean. :)
 		//WMC - *sigh* nostalgia
 		//Get ScriptVar table
-		lua_pushliteral(LuaState, "sv");
+		lua_pushliteral(LuaState, "hv");
 		lua_gettable(LuaState, LUA_GLOBALSINDEX);
 		int sv_ldx = lua_gettop(LuaState);
 		if(lua_isuserdata(LuaState, sv_ldx))
@@ -457,6 +465,10 @@ void script_state::RemHookVar(char *name)
 				lua_pop(LuaState, 1); //amt
 			}
 			lua_pop(LuaState, 1);	//Metatable
+		}
+		else
+		{
+			LuaError(LuaState, "Could not get HookVariable library to remove hook variable '%s' - get a coder", name);
 		}
 		lua_pop(LuaState, 1);	//Library
 	}
