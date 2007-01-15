@@ -5417,11 +5417,11 @@ ADE_FUNC(getMissionByIndex, l_Campaign, "Mission number (Zero-based index)", "Cm
 */
 
 //**********LIBRARY: Controls library
-ade_lib l_Mouse("Controls", NULL, "io", "Mouse library");
+ade_lib l_Mouse("Controls", NULL, "io", "Controls library");
 
 extern int mouse_inited;
 
-ADE_FUNC(getX, l_Mouse, NULL, "X pos (Number)", "Gets Mouse X pos")
+ADE_FUNC(getMouseX, l_Mouse, NULL, "X pos (Number)", "Gets Mouse X pos")
 {
 	if(!mouse_inited)
 		return ADE_RETURN_NIL;
@@ -5433,7 +5433,7 @@ ADE_FUNC(getX, l_Mouse, NULL, "X pos (Number)", "Gets Mouse X pos")
 	return ade_set_args(L, "i", x);
 }
 
-ADE_FUNC(getY, l_Mouse, NULL, "Y pos (Number)", "Gets Mouse Y pos")
+ADE_FUNC(getMouseY, l_Mouse, NULL, "Y pos (Number)", "Gets Mouse Y pos")
 {
 	if(!mouse_inited)
 		return ADE_RETURN_NIL;
@@ -5445,7 +5445,7 @@ ADE_FUNC(getY, l_Mouse, NULL, "Y pos (Number)", "Gets Mouse Y pos")
 	return ade_set_args(L, "i", y);
 }
 
-ADE_FUNC(isButtonDown, l_Mouse, "{MOUSE_*_BUTTON enumeration}, [..., ...]", "Whether specified buttons are pressed (Boolean)", "Returns whether the specified mouse buttons are up or down")
+ADE_FUNC(isMouseButtonDown, l_Mouse, "{MOUSE_*_BUTTON enumeration}, [..., ...]", "Whether specified buttons are pressed (Boolean)", "Returns whether the specified mouse buttons are up or down")
 {
 	if(!mouse_inited)
 		return ADE_RETURN_NIL;
@@ -5499,7 +5499,7 @@ ADE_FUNC(setCursorImage, l_Mouse, "Image filename w/o extension, [LOCK or UNLOCK
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(setMouseHidden, l_Mouse, "True to hide mouse, false to show it", NULL, "Shows or hides mouse cursor")
+ADE_FUNC(setCursorHidden, l_Mouse, "True to hide mouse, false to show it", NULL, "Shows or hides mouse cursor")
 {
 	if(!mouse_inited)
 		return ADE_RETURN_NIL;
@@ -6886,7 +6886,7 @@ ADE_FUNC(isKeyPressed, l_Keyboard, "Letter", "True if key is pressed, false if n
 }*/
 
 //**********LIBRARY: Scripting Variables
-ade_lib l_ScriptVar("ScriptingVariables", NULL, "sv", "Scripting variables repository");
+ade_lib l_ScriptVar("HookVariables", NULL, "hv", "Hook variables repository");
 
 ade_lib l_ScriptVar_Globals("Globals", &l_ScriptVar);
 

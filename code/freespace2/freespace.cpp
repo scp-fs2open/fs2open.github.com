@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.277 $
- * $Date: 2007-01-14 14:03:32 $
- * $Author: bobboau $
+ * $Revision: 2.278 $
+ * $Date: 2007-01-15 08:05:47 $
+ * $Author: wmcoolmon $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.277  2007/01/14 14:03:32  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.276  2007/01/08 00:50:58  Goober5000
  * remove WMC's limbo code, per our discussion a few months ago
  * this will later be handled by copying ship stats using sexps or scripts
@@ -3958,13 +3963,14 @@ VidInitError:
 	ai_profiles_init();		// Goober5000
 	ship_init();						// read in ships.tbl	
 
+
 	player_init();	
 	mission_campaign_init();		// load in the default campaign	
 	anim_init();
 	context_help_init();			
 	techroom_intel_init();			// parse species.tbl, load intel info  
 	hud_positions_init();		//Setup hud positions
-	
+
 	// initialize psnet
 	psnet_init( Multi_options_g.protocol, Multi_options_g.port );						// initialize the networking code		
 
@@ -3978,6 +3984,7 @@ VidInitError:
 	ssm_init();	
 	player_tips_init();				// helpful tips
 	beam_init();
+	
 	
 	// load the list of pilot pic filenames (for barracks and pilot select popup quick reference)
 	pilot_load_pic_list();	
