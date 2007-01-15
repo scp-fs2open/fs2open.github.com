@@ -6100,7 +6100,8 @@ ADE_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, uv 
 		h = y2-y1;
 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, lua_Opacity);
-	gr_bitmap_list(&bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2), 1, false);
+	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
+	gr_bitmap_list(&brl, 1, false);
 	//gr_bitmap_ex(x, y, w, h, sx, sy, false);
 
 	return ADE_RETURN_TRUE;
