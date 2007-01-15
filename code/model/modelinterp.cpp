@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.182 $
- * $Date: 2007-01-15 01:52:47 $
- * $Author: bobboau $
+ * $Revision: 2.183 $
+ * $Date: 2007-01-15 02:19:03 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.182  2007/01/15 01:52:47  bobboau
+ * fixing a thruster bug, a geometry batcher bug, and trying to fix a shield bug
+ *
  * Revision 2.181  2007/01/15 01:37:38  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -4042,12 +4045,16 @@ void model_init_thrusters(polymodel*pm){
 
 	// Bobboau's thruster stuff
 	{
-		if ((geo = batch_get_geometry(find_good_batch_item(Interp_secondary_thrust_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT)))){
+		geo = batch_get_geometry(find_good_batch_item(Interp_secondary_thrust_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT));
+		if (geo)
+		{
 			geo->allocate(n_q);
 			geo->space=WORLD_SPACE;
 		}
 
-		if ((geo = batch_get_geometry(find_good_batch_item(Interp_tertiary_thrust_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT)))){
+		geo = batch_get_geometry(find_good_batch_item(Interp_tertiary_thrust_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT));
+		if (geo)
+		{
 			geo->allocate(n_q);
 			geo->space=WORLD_SPACE;
 		}

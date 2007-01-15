@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.92 $
- * $Date: 2007-01-14 14:03:40 $
- * $Author: bobboau $
+ * $Revision: 2.93 $
+ * $Date: 2007-01-15 02:19:03 $
+ * $Author: wmcoolmon $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2007/01/14 14:03:40  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.91  2007/01/14 10:26:39  wmcoolmon
  * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
  *
@@ -1719,7 +1724,7 @@ void stars_add_lights(){
 	vec3d sun_dir;
 	vertex sun_vex;	
 	starfield_bitmap *bm;
-	float local_scale = 1.0f;
+	//float local_scale = 1.0f;
 
 	// draw all suns
 	for (idx = 0; idx < (int)Suns.size(); idx++) {
