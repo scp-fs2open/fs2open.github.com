@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.123 $
- * $Date: 2007-01-14 14:03:33 $
- * $Author: bobboau $
+ * $Revision: 2.124 $
+ * $Date: 2007-01-15 01:37:38 $
+ * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.123  2007/01/14 14:03:33  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.122  2007/01/10 01:44:39  taylor
  * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
  *
@@ -2284,7 +2289,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				}
 				if(( p = strstr(props, "$dumb_rotate:"))!= NULL ){
 					pm->submodel[n].movement_type = MSS_FLAG_DUM_ROTATES;
-					pm->submodel[n].dumb_turn_rate = atof(p+13);
+					pm->submodel[n].dumb_turn_rate = (float)atof(p+13);
 				}else{
 					pm->submodel[n].dumb_turn_rate = 0.0f;
 				}
@@ -2368,28 +2373,28 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				
 					char*c = p;
 						while(*c==' ')c++;//skip spaces
-						o->vec.uvec.xyz.x = atof(c);
+						o->vec.uvec.xyz.x = (float)atof(c);
 						c = strchr(c,',');//find end of number
 						c++;
 						while(*c==' ')c++;//skip spaces
-						o->vec.uvec.xyz.y = atof(c);
+						o->vec.uvec.xyz.y = (float)atof(c);
 						c = strchr(c,',');//find end of number
 						c++;
 						while(*c==' ')c++;//skip spaces
-						o->vec.uvec.xyz.z = atof(c);
+						o->vec.uvec.xyz.z = (float)atof(c);
 					if((p = strstr(props, "$fvec:")) != NULL ){
 						c = p+6;
 				
 						while(*c==' ')c++;//skip spaces
-						o->vec.fvec.xyz.x = atof(c);
+						o->vec.fvec.xyz.x = (float)atof(c);
 						c = strchr(c,',');//find end of number
 						c++;
 						while(*c==' ')c++;//skip spaces
-						o->vec.fvec.xyz.y = atof(c);
+						o->vec.fvec.xyz.y = (float)atof(c);
 						c = strchr(c,',');//find end of number
 						c++;
 						while(*c==' ')c++;//skip spaces
-						o->vec.fvec.xyz.z = atof(c);
+						o->vec.fvec.xyz.z = (float)atof(c);
 		
 						vm_vec_crossprod(&o->vec.rvec, &o->vec.uvec, &o->vec.fvec);
 						vm_vec_crossprod(&o->vec.fvec, &o->vec.rvec, &o->vec.uvec);
@@ -4375,25 +4380,27 @@ void submodel_look_at(polymodel *pm, int mn)
 	float *a;
 	int axis;
 
-	switch( sm->movement_axis )	{
-	case MOVEMENT_AXIS_X:
-		l.xyz.x = 0;
-		mp.xyz.x = 0;
-		a = &angs->p;
-		axis = 0;
-		break;
-	case MOVEMENT_AXIS_Y:
-		l.xyz.y = 0;
-		mp.xyz.y = 0;
-		a = &angs->h;
-		axis = 1;
-		break;
-	case MOVEMENT_AXIS_Z:	
-		l.xyz.z = 0;
-		mp.xyz.z = 0;
-		a = &angs->b;
-		axis = 2;
-		break;
+	switch( sm->movement_axis )
+	{
+		default:
+		case MOVEMENT_AXIS_X:
+			l.xyz.x = 0;
+			mp.xyz.x = 0;
+			a = &angs->p;
+			axis = 0;
+			break;
+		case MOVEMENT_AXIS_Y:
+			l.xyz.y = 0;
+			mp.xyz.y = 0;
+			a = &angs->h;
+			axis = 1;
+			break;
+		case MOVEMENT_AXIS_Z:	
+			l.xyz.z = 0;
+			mp.xyz.z = 0;
+			a = &angs->b;
+			axis = 2;
+			break;
 	}
 
 	vm_vec_normalize(&mp);
@@ -4677,7 +4684,7 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	if((old2.p < gun_angles->p && gun_angles->p > desired_angles.p) || (old2.p > gun_angles->p && gun_angles->p < desired_angles.p))
 		gun_angles->p = desired_angles.p;
 */
-	angles t;
+	//angles t;
 	angles ap;
 
 	ap.h = fabs(desired_angles.h - base_angles->h);
@@ -4686,9 +4693,12 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	//how far it will move this frame
 //	float step_size = turret->turret_turning_rate * flFrametime;
 
-	if(base->ang_vel.h < turret->turret_turning_rate*(ap.h/PI))base->ang_vel.h+=flFrametime*turret->turret_turning_rate;
-	else if(base->ang_vel.h > turret->turret_turning_rate*(ap.h/PI)) base->ang_vel.h-=flFrametime*turret->turret_turning_rate/(ap.h/PI_2+.1);
-	if(base->ang_vel.h > turret->turret_turning_rate)base->ang_vel.h = turret->turret_turning_rate;
+	if(base->ang_vel.h < turret->turret_turning_rate*(ap.h/PI))
+		base->ang_vel.h+=flFrametime*turret->turret_turning_rate;
+	else if(base->ang_vel.h > turret->turret_turning_rate*(ap.h/PI))
+		base->ang_vel.h-=flFrametime*turret->turret_turning_rate/(ap.h/PI_2+0.1f);
+	if(base->ang_vel.h > turret->turret_turning_rate)
+		base->ang_vel.h = turret->turret_turning_rate;
 	if(base->ang_vel.h < 0.0f)base->ang_vel.h = 0.0f;
 
 	if(base_angles->h < desired_angles.h)base_angles->h+=base->ang_vel.h*flFrametime;
@@ -4697,10 +4707,14 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 //	if((old1.h < base_angles->h && base_angles->h > desired_angles.h) || (old1.h > base_angles->h && base_angles->h < desired_angles.h))
 //		base_angles->h = desired_angles.h;
 
-	if(base->ang_vel.p < turret->turret_turning_rate*(ap.p/PI))base->ang_vel.p+=flFrametime*turret->turret_turning_rate;
-	else if(base->ang_vel.p > turret->turret_turning_rate*(ap.p/PI)) base->ang_vel.p-=flFrametime*turret->turret_turning_rate/(ap.p/PI_2+.1);
-	if(base->ang_vel.p > turret->turret_turning_rate)base->ang_vel.p = turret->turret_turning_rate;
-	if(base->ang_vel.p < 0.0f)base->ang_vel.p = 0.0f;
+	if(base->ang_vel.p < turret->turret_turning_rate*(ap.p/PI))
+		base->ang_vel.p+=flFrametime*turret->turret_turning_rate;
+	else if(base->ang_vel.p > turret->turret_turning_rate*(ap.p/PI))
+		base->ang_vel.p-=flFrametime*turret->turret_turning_rate/(ap.p/PI_2+0.1f);
+	if(base->ang_vel.p > turret->turret_turning_rate)
+		base->ang_vel.p = turret->turret_turning_rate;
+	if(base->ang_vel.p < 0.0f)
+		base->ang_vel.p = 0.0f;
 	
 	if(gun_angles->p < desired_angles.p)gun_angles->p+=base->ang_vel.p*flFrametime;
 	else if(gun_angles->p > desired_angles.p)gun_angles->p-=base->ang_vel.p*flFrametime;
@@ -4756,7 +4770,7 @@ void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_mo
 	//instance up the tree for this point
 	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
 		
-		matrix *o = &pm->submodel[mn].orientation;
+		//matrix *o = &pm->submodel[mn].orientation;
 		matrix inv, f;
 
 		vm_angles_2_matrix(&m,&pm->submodel[mn].angs );
@@ -4845,7 +4859,7 @@ void world_find_real_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int
 		return;
 	}
 
-	vec3d os = ZERO_VECTOR;
+	//vec3d os = ZERO_VECTOR;
 	// put into submodel RF
 	make_submodel_world_matrix(pm,submodel_num, &tempv2);
 	*out = tempv2;
@@ -4984,7 +4998,7 @@ void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_
 	//instance up the tree for this point
 	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
 		
-		matrix *o = &pm->submodel[mn].orientation;
+		//matrix *o = &pm->submodel[mn].orientation;
 		matrix inv, f;
 
 		vm_angles_2_matrix(&m,&pm->submodel[mn].angs );

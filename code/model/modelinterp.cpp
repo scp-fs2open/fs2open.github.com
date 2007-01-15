@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.180 $
- * $Date: 2007-01-14 14:03:33 $
- * $Author: bobboau $
+ * $Revision: 2.181 $
+ * $Date: 2007-01-15 01:37:38 $
+ * $Author: wmcoolmon $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180  2007/01/14 14:03:33  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.179  2007/01/14 10:26:38  wmcoolmon
  * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
  *
@@ -4019,7 +4024,7 @@ void model_init_thrusters(polymodel*pm){
 	int n_q = 0;
 	// get an initial count to figure out how many geo batchers we need allocated
 	for(int ip = 0; ip < pm->n_models; ip++){
-		for (int i = 0; i < pm->submodel[ip].submodel_thruster.size(); i++ ) {
+		for (uint i = 0; i < pm->submodel[ip].submodel_thruster.size(); i++ ) {
 			thruster_bank*bank = &pm->submodel[ip].submodel_thruster[i];
 
 			n_q += bank->points.size();
@@ -4049,8 +4054,9 @@ void model_init_thrusters(polymodel*pm){
 // maybe draw model thruster glows
 void model_render_thrusters(bsp_info*model, ship *shipp)
 {
-	int i, j, k;
-	int n_q = 0;
+	uint i, j;
+	int k;
+	//int n_q = 0;
 	vec3d norm, norm2, fvec;
 	thruster_bank *bank = NULL;
 	vertex p;	
@@ -4067,7 +4073,7 @@ void model_render_thrusters(bsp_info*model, ship *shipp)
 	geometry_batcher* pri_geo, *sec_geo, *tri_geo;
 	pri_geo = batch_get_geometry(find_good_batch_item(Interp_thrust_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT));
 	sec_geo = batch_get_geometry(find_good_batch_item(Interp_secondary_thrust_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT));
-	tri_geo = batch_get_geometry(find_good_batch_item(Interp_tertiary_thrust_glow_rad_factor, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT));
+	tri_geo = batch_get_geometry(find_good_batch_item(Interp_tertiary_thrust_glow_bitmap, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT));
 	pri_geo->space=WORLD_SPACE;
 	sec_geo->space=WORLD_SPACE;
 	tri_geo->space=WORLD_SPACE;

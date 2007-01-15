@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.95 $
- * $Date: 2007-01-14 14:03:31 $
- * $Author: bobboau $
+ * $Revision: 1.96 $
+ * $Date: 2007-01-15 01:37:37 $
+ * $Author: wmcoolmon $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.95  2007/01/14 14:03:31  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 1.94  2007/01/08 00:50:58  Goober5000
  * remove WMC's limbo code, per our discussion a few months ago
  * this will later be handled by copying ship stats using sexps or scripts
@@ -6418,6 +6423,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		return i_hullfactor_prev_bank;							// Return
 	}
 
+	/*
 	// Somehow no weapons were found - just take the first one
 	if ( swp->current_primary_bank < 0 ) 
 	{
@@ -6430,6 +6436,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	Assert( swp->current_primary_bank != -1 );		// get Alan or Allender
 
 	return swp->current_primary_bank;
+	*/
 }
 
 //	--------------------------------------------------------------------------
@@ -13270,7 +13277,8 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 //				 0		=> success
 int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_mask, vec3d *pos, vec3d *fvec)
 {
-	int			path_index, bay_path;
+	int			path_index;
+	int			bay_path;
 	ship		*shipp = NULL, *parent_shipp = NULL;
 	polymodel	*pm;
 	ai_info		*aip;

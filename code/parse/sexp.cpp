@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.295 $
- * $Date: 2007-01-14 14:03:36 $
- * $Author: bobboau $
+ * $Revision: 2.296 $
+ * $Date: 2007-01-15 01:37:38 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.295  2007/01/14 14:03:36  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.294  2007/01/14 12:06:56  wmcoolmon
  * Fix +Override, attempted fix for code adjacent to [] causing crash in scripting.tbl (Unreproducable), and (Untested) fix for script-eval.
  *
@@ -3014,7 +3019,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				break;
 			}
-			return SEXP_CHECK_UNKNOWN_ERROR;	// just in case of something going wrong - it won't trickle down
+			//return SEXP_CHECK_UNKNOWN_ERROR;	// just in case of something going wrong - it won't trickle down
 
 			case OPF_POINT:
 				if (type2 != SEXP_ATOM_STRING)

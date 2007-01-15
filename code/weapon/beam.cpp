@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.77 $
- * $Date: 2007-01-14 14:03:40 $
- * $Author: bobboau $
+ * $Revision: 2.78 $
+ * $Date: 2007-01-15 01:37:47 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2007/01/14 14:03:40  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.76  2007/01/14 10:26:39  wmcoolmon
  * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
  *
@@ -1720,7 +1725,8 @@ void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *beam_shot, float sh
 //	mprintf(("about to render a beam\n"));
 	vec3d sh;
 	vec3d *shot = beam_shot;
-	int idx, s_idx;
+	int idx;
+	uint s_idx;
 	vertex h1[4];				// halves of a beam section	
 	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
 	vec3d fvec, top1, bottom1, top2, bottom2;
@@ -3585,7 +3591,7 @@ int beam_ok_to_fire(beam *b)
 // get the width of the widest section of the beam
 float beam_get_widest(beam *b)
 {
-	int idx;
+	uint idx;
 	float widest = -1.0f;
 
 	// sanity

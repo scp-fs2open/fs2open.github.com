@@ -1,12 +1,17 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.52 $
- * $Date: 2007-01-14 14:03:31 $
- * $Author: bobboau $
+ * $Revision: 1.53 $
+ * $Date: 2007-01-15 01:37:37 $
+ * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.52  2007/01/14 14:03:31  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 1.51  2007/01/08 00:50:58  Goober5000
  * remove WMC's limbo code, per our discussion a few months ago
  * this will later be handled by copying ship stats using sexps or scripts
@@ -955,9 +960,9 @@ int find_turret_enemy(ship_subsys *turret_subsys, int objnum, vec3d *tpos, vec3d
 						if ( tagged_only_flag && ship_is_tagged(&Objects[aip->target_objnum]) ) {
 							// select new target if aip->target_objnum is out of field of view
 							vec3d v2e;
-							float dot, dist;
+							float dist;
 							dist = vm_vec_normalized_dir(&v2e, &Objects[aip->target_objnum].pos, tpos);
-						//	dot = vm_vec_dot(&v2e, tvec);
+						//	float dot = vm_vec_dot(&v2e, tvec);
 							//	MODIFY FOR ATTACKING BIG SHIP
 							// dot += (0.5f * Objects[aip->target_objnum].radius / dist);
 //							if (dot > fov) {

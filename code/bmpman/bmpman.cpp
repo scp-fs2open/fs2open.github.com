@@ -10,13 +10,18 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.95 $
- * $Date: 2007-01-14 14:03:32 $
- * $Author: bobboau $
+ * $Revision: 2.96 $
+ * $Date: 2007-01-15 01:37:37 $
+ * $Author: wmcoolmon $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2007/01/14 14:03:32  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.94  2007/01/10 01:40:06  taylor
  * remove the non-dark stuff, it only works on PCX files and stuff to use it has already been ripped out
  * per earlier discussions: remove -jpgtga and -pcx32, set image load order to DDS->TGA->JPG->PCX
@@ -1396,7 +1401,8 @@ int bm_load_sub_fast(char *real_filename, const char *ext, int *handle, int dir_
 int bm_load( char * real_filename )
 {
 	int i, n, first_slot = -1;
-	int w, h, bpp = 8;
+	int w, h;
+	int bpp = 8;
 	int rc = 0;
 	int bm_size = 0, mm_lvl = 0;
 	char filename[MAX_FILENAME_LEN];
@@ -3070,7 +3076,7 @@ extern void multi_ping_send_all();
 void bm_page_in_stop()
 {	
 	int i;	
-	int ship_info_index;
+	//int ship_info_index;
 
 #ifndef NDEBUG
 	char busy_text[60];

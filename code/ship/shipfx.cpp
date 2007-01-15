@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.81 $
- * $Date: 2007-01-14 14:03:37 $
- * $Author: bobboau $
+ * $Revision: 2.82 $
+ * $Date: 2007-01-15 01:37:38 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2007/01/14 14:03:37  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.80  2007/01/14 10:26:39  wmcoolmon
  * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
  *
@@ -3347,7 +3352,8 @@ DCF_BOOL(engine_wash, Wash_on)
 // Assumes length of engine wash is greater than radius of engine wash hemisphere
 void engine_wash_ship_process(ship *shipp)
 {
-	int idx, j;		
+	uint idx;
+	uint j;		
 	object *objp, *ship_objp, *max_ship_intensity_objp;
 	int started_with_no_wash = shipp->wash_intensity <= 0 ? 1 : 0;
 

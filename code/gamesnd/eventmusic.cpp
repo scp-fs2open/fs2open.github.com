@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.43 $
- * $Date: 2006-12-28 00:59:26 $
+ * $Revision: 2.44 $
+ * $Date: 2007-01-15 01:37:37 $
  * $Author: wmcoolmon $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/12/28 00:59:26  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.42  2006/09/11 06:49:39  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -1668,7 +1671,7 @@ void event_music_change_pattern(int new_pattern)
 		return;
 	}
 
-	if ( Current_pattern == new_pattern );
+	if ( Current_pattern == new_pattern )
 		return;	// already playing
 
 	if ( Current_pattern != -1 ) {

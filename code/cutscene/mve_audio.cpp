@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/src/cutscene/mve_audio.cpp $
- * $Revision: 2.1 $
- * $Date: 2006-05-13 06:59:48 $
- * $Author: taylor $
+ * $Revision: 2.2 $
+ * $Date: 2007-01-15 01:37:37 $
+ * $Author: wmcoolmon $
  *
  * Handles compressed audio data in MVE files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2006/05/13 06:59:48  taylor
+ * MVE player (audio only works with OpenAL builds!)
+ *
  * Revision 1.2  2005/03/29 07:50:34  taylor
  * Update to newest movie code with much better video support and audio support from
  *   Pierre Willenbrock.  Movies are enabled always now (no longer a build option)
@@ -49,7 +52,7 @@ static int getWord(unsigned char **fin)
 
 static void sendWord(short **fout, int nOffset)
 {
-    *(*fout)++ = nOffset;
+    *(*fout)++ = (short)nOffset;
 }
 
 static void processSwath(short *fout, unsigned char *data, int swath, int *offsets)
@@ -62,7 +65,7 @@ static void processSwath(short *fout, unsigned char *data, int swath, int *offse
     }
 }
 
-void mveaudio_uncompress(short *buffer, unsigned char *data, int length)
+void mveaudio_uncompress(short *buffer, unsigned char *data)
 {
     int nCurOffsets[2];
     int swath;

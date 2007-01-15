@@ -1,12 +1,17 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/mveplayer.cpp $
- * $Revision: 2.3 $
- * $Date: 2007-01-07 12:29:43 $
- * $Author: taylor $
+ * $Revision: 2.4 $
+ * $Date: 2007-01-15 01:37:37 $
+ * $Author: wmcoolmon $
  *
  * MVE movie playing routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2007/01/07 12:29:43  taylor
+ * add Theora player
+ * remove DirectShow support from movie player
+ * fix triple-buffer page flipping problem (Mantis bug #1190)
+ *
  * Revision 2.2  2006/08/20 00:44:36  taylor
  * add decoder for 8-bit MVEs
  * a basic fix for finding AVIs over MVEs, for mod dir stuff (this needs some CFILE support added to be a true fix, it's on the TODO list)
@@ -79,7 +84,7 @@ typedef struct MVE_AUDIO_T {
 mve_audio_t *mas;  // mve_audio_stream
 
 // audio decompressor
-extern void mveaudio_uncompress(short *buffer, unsigned char *data, int length);
+extern void mveaudio_uncompress(short *buffer, unsigned char *data);
 #endif // USE_OPENAL
 
 // video variables
@@ -394,7 +399,7 @@ int mve_audio_data(ubyte major, ubyte *data)
 						nsamp += 4;
 
 						buf = (short *)vm_malloc(nsamp);
-						mveaudio_uncompress(buf, data, -1); /* XXX */
+						mveaudio_uncompress(buf, data); /* XXX */
 					} else {
 						nsamp -= 8;
 						data += 8;
