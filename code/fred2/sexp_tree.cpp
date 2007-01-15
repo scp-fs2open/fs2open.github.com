@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.15 $
- * $Date: 2006-12-28 00:59:20 $
- * $Author: wmcoolmon $
+ * $Revision: 1.16 $
+ * $Date: 2007-01-15 13:42:59 $
+ * $Author: karajorma $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2006/12/28 00:59:20  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.14  2006/10/09 05:25:18  Goober5000
  * make sexp nodes dynamic
  *
@@ -2254,6 +2257,10 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				type = SEXP_VARIABLE_STRING;
 			}
 
+			if ( dlg.m_type_network_variable ) {
+				type |= SEXP_VARIABLE_NETWORK;
+			}
+
 			if ( dlg.m_type_campaign_persistent ) {
 				type |= SEXP_VARIABLE_CAMPAIGN_PERSISTENT;
 			} else if ( dlg.m_type_player_persistent ) {
@@ -2317,6 +2324,10 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				type = SEXP_VARIABLE_NUMBER;
 			} else {
 				type = SEXP_VARIABLE_STRING;
+			}
+
+			if ( dlg.m_type_network_variable ) {
+				type |= SEXP_VARIABLE_NETWORK;
 			}
 
 			if ( dlg.m_type_campaign_persistent ) {

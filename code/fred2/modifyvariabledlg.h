@@ -36,6 +36,7 @@ public:
 	bool			m_type_number;
 	bool			m_type_player_persistent;
 	bool			m_type_campaign_persistent;
+	bool			m_type_network_variable;
 	bool			m_modified_name;
 	bool			m_modified_value;
 	bool			m_modified_type;
@@ -72,6 +73,7 @@ protected:
 	afx_msg void OnTypeNumber();
 	afx_msg void OnTypePlayerPersistent();
 	afx_msg void OnTypeCampaignPersistent();
+	afx_msg void OnTypeNetworkVariable();
 	afx_msg void OnSelchangeModifyVariableName();
 	afx_msg void OnEditchangeModifyVariableName();
 	virtual BOOL OnInitDialog();
