@@ -639,7 +639,6 @@ float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float wid
 
 	geometry_batcher *item = NULL;
 	uint index = find_good_batch_item(texture, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT, GR_ALPHABLEND_FILTER);
-	Assert( index >= 0 );
 
 	item = &geometry_map[index];
 
@@ -648,7 +647,7 @@ float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float wid
 	return item->draw_laser(p0, width1, p1, width2, r, g, b);
 }
 
-int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, float alpha, float depth)
+int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, int alpha, float depth)
 {
 	if (texture < 0) {
 		Int3();
@@ -656,11 +655,7 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 	}
 
 	geometry_batcher *item = NULL;
-	uint index = find_good_batch_item(texture);
-	Assert( index >= 0 );
-
-	geometry_map[index].tmap_flags = tmap_flags;
-	//geometry_map[index].alpha_mode = alpha;
+	uint index = find_good_batch_item(texture, tmap_flags, alpha);
 
 	item = &geometry_map[index];
 
