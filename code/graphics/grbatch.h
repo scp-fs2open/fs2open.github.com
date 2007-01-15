@@ -77,11 +77,11 @@ public:
 
 
 float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r = 255, int g = 255, int b = 255);
-int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, float alpha = 1.0f, float depth = 0.0f);
+int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, int alpha = GR_ALPHABLEND_FILTER, float depth = 0.0f);
 geometry_batcher* batch_get_geometry(uint geo);
 void batch_render_all();
 void batch_reset();
-uint find_good_batch_item(int texture, int flags = 0, int alpha = GR_ALPHABLEND_FILTER);
+uint find_good_batch_item(int texture, int flags=0, int alpha = GR_ALPHABLEND_FILTER);
 void batch_add_flag(uint geo, int flag);
 void batch_remove_flag(uint geo, int flag);
 void batch_set_flag(uint geo, int flag);
