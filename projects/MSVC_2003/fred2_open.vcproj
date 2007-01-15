@@ -96,7 +96,7 @@
 				InlineFunctionExpansion="1"
 				OptimizeForProcessor="1"
 				AdditionalIncludeDirectories="..\..\code\"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FRED;USE_LUA"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FRED"
 				StringPooling="TRUE"
 				RuntimeLibrary="0"
 				BufferSecurityCheck="FALSE"
