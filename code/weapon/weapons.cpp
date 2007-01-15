@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.191  2007/01/14 14:03:40  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.190  2007/01/12 04:33:49  Goober5000
  * hmm... I guess when I fixed this back in 2004, I fixed it the wrong way :D
  *
@@ -1717,7 +1722,7 @@ void init_weapon_entry(int weap_info_index)
 {
 	Assert(weap_info_index > -1 && weap_info_index < MAX_WEAPON_TYPES);
 	weapon_info *wip = &Weapon_info[weap_info_index];
-	int i, j;
+	int i;
 	
 	wip->wi_flags = WIF_DEFAULT_VALUE;
 	wip->wi_flags2 = WIF2_DEFAULT_VALUE;
@@ -3020,7 +3025,7 @@ int parse_weapon(int subtype, bool replace)
 			if(optional_string("+Index:"))
 			{
 				stuff_int(&bsw_index_override);
-				if(bsw_index_override < 0 || bsw_index_override >= wip->b_info.sections.size())
+				if(bsw_index_override < 0 || bsw_index_override >= (int)wip->b_info.sections.size())
 				{
 					Warning(LOCATION, "Invalid +Index value of %d specified for beam section on weapon '%s'; valid values at this point are %d to %d.", bsw_index_override, wip->name, 0, wip->b_info.sections.size() -1);
 				}
@@ -3032,7 +3037,7 @@ int parse_weapon(int subtype, bool replace)
 			//Where are we saving data?
 			if(bsw_index_override >= 0)
 			{
-				if(bsw_index_override < wip->b_info.sections.size())
+				if(bsw_index_override < (int)wip->b_info.sections.size())
 				{
 					ip = &wip->b_info.sections[bsw_index_override];
 				}
@@ -3050,7 +3055,7 @@ int parse_weapon(int subtype, bool replace)
 					{
 						//here we can just make a new one
 						wip->b_info.sections.resize(wip->b_info.sections.size()+1);
-						ip = wip->b_info.sections.end()-1;
+						ip = &wip->b_info.sections[wip->b_info.sections.size()-1];
 					}
 
 				}
@@ -3058,7 +3063,7 @@ int parse_weapon(int subtype, bool replace)
 			else
 			{
 				wip->b_info.sections.resize(wip->b_info.sections.size()+1);
-				ip = wip->b_info.sections.end()-1;
+				ip = &wip->b_info.sections[wip->b_info.sections.size()-1];
 			}
 
 			char tex_name[MAX_FILENAME_LEN];
@@ -6172,7 +6177,8 @@ void weapon_mark_as_used(int weapon_type)
 
 void weapons_page_in()
 {
-	int i, j, idx;
+	int i, j;
+	uint idx;
 
 	Assert( used_weapons != NULL );
 
