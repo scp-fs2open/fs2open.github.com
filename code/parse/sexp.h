@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.128 $
- * $Author: bobboau $
- * $Date: 2007-01-14 14:03:36 $
+ * $Revision: 2.129 $
+ * $Author: karajorma $
+ * $Date: 2007-01-15 13:46:55 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.128  2007/01/14 14:03:36  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.127  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -967,7 +972,7 @@ struct ship_subsys;
 // to add a #define here (a number from 0x0000 to 0x00ff ORred with the category that it
 // goes under), some appropriate case statements in get_subcategory() (in sexp.cpp) that
 // will return the subcategory for each sexp that uses it, and the submenu name in the
-// op_submenu[] array in sexp.cpp.
+// op_submenu[] array in sexp_tree.cpp.
 #define SUBCATEGORY_MASK									0x00ff
 #define CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS		(0x0000 | OP_CATEGORY_CHANGE)
 #define CHANGE_SUBCATEGORY_AI_AND_IFF						(0x0001 | OP_CATEGORY_CHANGE)
@@ -1393,6 +1398,7 @@ struct ship_subsys;
 #define OP_SET_TRAINING_CONTEXT_SPEED		(0x0011 | OP_CATEGORY_TRAINING)
 #define OP_KEY_RESET_MULTIPLE				(0x0012 | OP_CATEGORY_TRAINING)	// Goober5000
 #define OP_STRING_TO_INT					(0x0013 | OP_CATEGORY_TRAINING) // Karajorma
+#define OP_RESET_ORDERS						(0x0014 | OP_CATEGORY_TRAINING) // Karajorma
 
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"
@@ -1465,6 +1471,8 @@ char *CTEXT(int n);
 
 // Goober5000 - hopefully this should work and not conflict with anything
 #define SEXP_VARIABLE_CAMPAIGN_PERSISTENT	(1<<29)	//	(0x0100)
+//Karajorma
+#define SEXP_VARIABLE_NETWORK				(1<<28)
 
 #define BLOCK_EXP_SIZE					6
 #define INNER_RAD							0
@@ -1703,8 +1711,8 @@ void sexp_variable_block_free(const char *ship_name, int start_index, int block_
 
 
 // Karajorma
-void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit);
-void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit);
+void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1, bool update=true);
+void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit=-1, bool update=true);
 
 
 // menu and category stuff

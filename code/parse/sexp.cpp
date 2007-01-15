@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.296 $
- * $Date: 2007-01-15 01:37:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.297 $
+ * $Date: 2007-01-15 13:46:55 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.296  2007/01/15 01:37:38  wmcoolmon
+ * Fix CVS & correct various warnings under MSVC 2003
+ *
  * Revision 2.295  2007/01/14 14:03:36  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -1898,6 +1901,7 @@ sexp_oper Operators[] = {
 	{ "facing",						OP_FACING,						2, 2,			},
 	{ "facing-waypoint",			OP_FACING2,						2, 2,			},
 	{ "order",						OP_ORDER,						2, 3,			},
+	{ "reset-orders",				OP_RESET_ORDERS,				0, 0,			}, // Karajorma
 	{ "waypoint-missed",			OP_WAYPOINT_MISSED,			0, 0,			},
 	{ "waypoint-twice",			OP_WAYPOINT_TWICE,			0, 0,			},
 	{ "path-flown",				OP_PATH_FLOWN,					0, 0,			},
@@ -3508,7 +3512,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 					int ship_num, model;
 
 					z = find_parent_operator(op_node);
-
+					
 					// if it's the "goals" operator, this is part of initial orders, so just assume it's okay
 					if (get_operator_const(Sexp_nodes[z].text) == OP_GOALS_ID) {
 						break;
@@ -3880,7 +3884,7 @@ int get_sexp(char *token)
 			int len = strcspn(Mp + 1, "\"");
 			
 			Assert(Mp[len + 1] == '\"');    // hit EOF first (unterminated string)
-  			Assert(len < TOKEN_LENGTH);  // token is too long.
+			Assert(len < TOKEN_LENGTH);  // token is too long.
 
 			// check if string variable
 			if ( *(Mp + 1) == SEXP_VARIABLE_CHAR ) {
@@ -3962,7 +3966,7 @@ int get_sexp(char *token)
 
 	Mp++;  // skip past the ')'
 
-
+	
 	// Goober5000 - backwards compatibility for removed ai-chase-any-except
 	if (get_operator_const(CTEXT(start)) == OP_AI_CHASE_ANY)
 	{
@@ -4067,6 +4071,7 @@ int stuff_sexp_variable_list()
 	char default_value[TOKEN_LENGTH];
 	char str_type[TOKEN_LENGTH];
 	char persistent[TOKEN_LENGTH];
+	char network[TOKEN_LENGTH];
 	int index;
 	int type;
 
@@ -4115,6 +4120,16 @@ int stuff_sexp_variable_list()
 		} else {
 			type = SEXP_VARIABLE_UNKNOWN;
 			Error(LOCATION, "SEXP variable '%s' is an unknown type!", var_name);
+		}
+
+		// possibly get network-variable
+		if (check_for_string("\"network-variable\"")) {
+			// eat it
+			get_string(network);
+			ignore_white_space();
+
+			// set type
+			type |= SEXP_VARIABLE_NETWORK;
 		}
 
 		// possibly get player-persistent
@@ -11679,6 +11694,12 @@ int sexp_order(int n)
 	return hud_query_order_issued(ship_or_wing, order, target);
 }
 
+// Karajorma
+void sexp_reset_orders (int n)
+{
+	memset(Squadmsg_history, 0, sizeof(squadmsg_history) * SQUADMSG_HISTORY_MAX);
+}
+
 int sexp_waypoint_missed()
 {
 	if (Training_context & TRAINING_CONTEXT_FLY_PATH) {
@@ -12035,18 +12056,20 @@ void sexp_set_primary_ammo (int node)
 		return ;
 	}
 	
-	node = CDR(node);	
-	// Attempt to read in the optional rearm limit value. Negative value indicate that this should not be altered.
-	//WMC - Check for optional data, because sometimes optional data does not exist...
-	if(CDR(node) != -1) {
-		rearm_limit = eval_num(node); 
-	}
+	node = CDDR(node);	
 
-	set_primary_ammo (sindex, requested_bank, requested_weapons, rearm_limit);
+	// If a rearm limit hasn't been specified simply change the ammo.Otherwise read in the rearm limit
+	if (node < 0) {
+		set_primary_ammo (sindex, requested_bank, requested_weapons);
+	}
+	else {
+		rearm_limit = eval_num(node); 
+		set_primary_ammo (sindex, requested_bank, requested_weapons, rearm_limit);
+	}
 }
 
 //Karajorma - Helper function for the set-primary-ammo and weapon functions
-void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit = -1)
+void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit, bool update)
 {
 	ship *shipp;
 	int maximum_allowed ;
@@ -12077,8 +12100,8 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 	}
 
 	// Is the number requested larger than the maximum allowed for that particular bank? 
-	maximum_allowed = fl2i(shipp->weapons.primary_bank_capacity[requested_bank] 
-		/ Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size);
+	maximum_allowed = fl2i((shipp->weapons.primary_bank_capacity[requested_bank] 
+		/ Weapon_info[shipp->weapons.primary_bank_weapons[requested_bank]].cargo_size)+0.5);
 	if (maximum_allowed < requested_ammo) 
 	{
 		requested_ammo = maximum_allowed ;
@@ -12097,6 +12120,12 @@ void set_primary_ammo (int ship_index, int requested_bank, int requested_ammo, i
 		}
 
 		shipp->weapons.primary_bank_start_ammo[requested_bank] = rearm_limit;
+	}
+
+	// The change needs to be passed on if this is a multiplayer game
+	if (MULTIPLAYER_MASTER & update)
+	{
+		send_weapon_or_ammo_changed_packet(ship_index, 0, requested_bank, requested_ammo, rearm_limit, -1);
 	}
 }
 
@@ -12152,7 +12181,7 @@ void sexp_set_secondary_ammo (int node)
 	int sindex;
 	int requested_bank;
 	int requested_weapons;
-	int rearm_limit = 0;
+	int rearm_limit;
 
 	// Check that a ship has been supplied
 	sindex = ship_name_lookup(CTEXT(node));
@@ -12176,19 +12205,20 @@ void sexp_set_secondary_ammo (int node)
 		return ;
 	}
 
-	// If a rearm limit has been specified set it. 
-	node = CDR(node);	
-	// No need to check if this is a valid entry. Invalid entries will be ignored anyway
-	//WMC - Although the Int3() is a bit annoying.
-	if(CDR(node) != -1) {
-		rearm_limit = eval_num(node);
-	}
+	node = CDDR(node);	
 
-	set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
+	// If a rearm limit hasn't been specified simply change the ammo.Otherwise read in the rearm limit
+	if (node < 0) {
+		set_secondary_ammo(sindex, requested_bank, requested_weapons);
+	}
+	else {
+		rearm_limit = eval_num(node); 
+		set_secondary_ammo(sindex, requested_bank, requested_weapons, rearm_limit);
+	}
 }
 
 //Karajorma - Helper function for the set-secondary-ammo and weapon functions
-void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit = -1)
+void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo, int rearm_limit, bool update)
 {
 	ship *shipp;
 	int maximum_allowed;
@@ -12232,6 +12262,12 @@ void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo,
 
 		shipp->weapons.secondary_bank_start_ammo[requested_bank] = rearm_limit;
 	}
+
+	// The change needs to be passed on if this is a multiplayer game and we're not already updating the weapon
+	if (MULTIPLAYER_MASTER && update)
+	{
+		send_weapon_or_ammo_changed_packet(ship_index, 1, requested_bank, requested_ammo, rearm_limit, -1);
+	}
 }
 
 // Karajorma - Changes the weapon in the requested bank to the one supplied. Optionally sets the ammo and 
@@ -12239,7 +12275,7 @@ void set_secondary_ammo (int ship_index, int requested_bank, int requested_ammo,
 void sexp_set_weapon (int node, bool primary)
 {
 	ship *shipp;	
-	int sindex, requested_bank, windex, requested_ammo, rearm_limit;
+	int sindex, requested_bank, windex, requested_ammo=-1, rearm_limit=-1;
 
 	Assert (node != -1);
 
@@ -12279,27 +12315,54 @@ void sexp_set_weapon (int node, bool primary)
 		shipp->weapons.secondary_bank_weapons[requested_bank] = windex ;
 	}
 
-	// Check to see if the optional ammo and rearm_limit settings were supplied
-	requested_ammo = eval_num(CDR(node)); 
 	
-	// If nothing was supplied we're done. Bail. 
-	if (requested_ammo < 0)
-	{
-		return ;
-	}
-
+	// Check to see if the optional ammo and rearm_limit settings were supplied
 	node = CDR(node);
-	// No need to check if this is a valid entry. Invalid entries will be ignored anyway
-	rearm_limit = eval_num(CDR(node)); 
+	if (node >= 0) {
+		requested_ammo = eval_num(node); 
+		
+		if (requested_ammo < 0) {
+			requested_ammo = 0; 
+		}
+		node = CDR(node);
+		
+		// If nothing was supplied then set the rearm limit to a negative value so that it is ignored
+		if (node < 0) {
+			rearm_limit = -1;
+		}
+		else {
+			rearm_limit = eval_num(node); 
+		}
 
-
-	if (primary)
-	{
-		set_primary_ammo (sindex, requested_bank, requested_ammo, rearm_limit);
+		// Set the ammo but do not send an ammo changed update packet as we'll do that later from here
+		if (primary) {
+			set_primary_ammo (sindex, requested_bank, requested_ammo, rearm_limit, false);
+		}
+		else {
+			set_secondary_ammo (sindex, requested_bank, requested_ammo, rearm_limit, false);
+		}
 	}
-	else
+	else {
+		// read the data 
+		if (primary) {
+			requested_ammo = shipp->weapons.primary_bank_ammo[requested_bank];
+			rearm_limit = shipp->weapons.primary_bank_start_ammo[requested_bank];
+		}
+		else {
+			requested_ammo = shipp->weapons.secondary_bank_ammo[requested_bank];
+			rearm_limit = shipp->weapons.secondary_bank_start_ammo[requested_bank];
+		}
+	}
+
+	// Now pass this info on to clients if need be.
+	if (MULTIPLAYER_MASTER)
 	{
-		set_secondary_ammo (sindex, requested_bank, requested_ammo, rearm_limit);
+		if (primary) {
+			send_weapon_or_ammo_changed_packet(sindex, 0, requested_bank, requested_ammo, rearm_limit, windex);
+		}
+		else {
+			send_weapon_or_ammo_changed_packet(sindex, 1, requested_bank, requested_ammo, rearm_limit, windex);
+		}
 	}
 }
 
@@ -15777,6 +15840,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_order(node);
 				break;
 
+			// Karajorma
+			case OP_RESET_ORDERS:
+				sexp_reset_orders(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_WAYPOINT_MISSED:
 				sexp_val = sexp_waypoint_missed();
 				break;
@@ -16748,6 +16817,7 @@ int query_operator_return_type(int op)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
+		case OP_RESET_ORDERS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -16826,6 +16896,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
 		case OP_DEAL_WITH_SHIP_LOADOUT:
+		case OP_RESET_ORDERS:		
 			return OPF_NONE;
 
 		case OP_AND:
@@ -20243,6 +20314,11 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of ship or wing to check if given order to.\r\n"
 		"\t2:\tName of order to check if player has given.\r\n"
 		"\t3:\tName of the target of the order (optional)." },
+
+	// Karajorma
+	{ OP_RESET_ORDERS, "Reset-Orders (Action training operator)\r\n"
+		"\tResets the list of orders the player has given.\r\n"
+		"Takes no arguments." },
 
 	{ OP_WAYPOINT_MISSED, "Waypoint-missed (Boolean training operator)\r\n"
 		"\tBecomes true when a waypoint is flown, but the waypoint is ahead of the one "
