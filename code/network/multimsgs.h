@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.13 $
- * $Date: 2006-08-04 11:45:21 $
+ * $Revision: 2.14 $
+ * $Date: 2007-01-15 13:40:38 $
  * $Author: karajorma $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/08/04 11:45:21  karajorma
+ * Fix bug where end-mission SEXP only resulting in the mission ending for the server
+ *
  * Revision 2.12  2006/07/09 01:55:41  Goober5000
  * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
  * this should fix Mantis #977
@@ -750,6 +753,10 @@ void process_event_update_packet(ubyte *data, header *hinfo);
 // variable update packet
 void send_variable_update_packet(int variable_index, char *value);
 void process_variable_update_packet( ubyte *data, header *hinfo);
+
+// weapons or ammo changed packet
+void send_weapon_or_ammo_changed_packet (int ship_index, int bank_type, int bank_number, int ammo_left, int rearm_limit, int new_weapon_index);
+void process_weapon_or_ammo_changed_packet( ubyte *data, header *hinfo);
 
 // weapon detonate packet
 void send_weapon_detonate_packet(object *objp);
