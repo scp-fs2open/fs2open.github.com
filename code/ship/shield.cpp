@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.46 $
- * $Date: 2007-01-15 01:37:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.47 $
+ * $Date: 2007-01-15 01:52:47 $
+ * $Author: bobboau $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2007/01/15 01:37:38  wmcoolmon
+ * Fix CVS & correct various warnings under MSVC 2003
+ *
  * Revision 2.45  2007/01/13 16:20:39  bobboau
  * left some test code on super sorry
  *
@@ -703,15 +706,7 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 	int flags=TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT;
 	if (!Cmdline_nohtl) flags |= TMAP_HTL_3D_UNLIT;
 
-	if ( vm_vec_dot(&norm,(vec3d *)&verts[1]->x ) >= 0.0 )	{
-		vertex	*vertlist[3];
-		vertlist[0] = verts[2]; 
-		vertlist[1] = verts[1]; 
-		vertlist[2] = verts[0]; 
-		g3_draw_poly( 3, vertlist, flags);
-	} else {
-		g3_draw_poly( 3, verts, flags);
-	}
+	g3_draw_poly( 3, verts, flags);
 }
 
 MONITOR(NumShieldRend)
@@ -1198,8 +1193,8 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 	vm_vector_2_matrix(&tom, &shieldp->tris[tr0].norm, NULL, NULL);
 	//vm_vec_sub(&v2c, tcp, &Objects[objnum].pos);
 
-	//if(Ships[Objects[objnum].instance].flags2 & SIF2_PROJECTED_SHIELDS){
-	if(1){
+	if(Ships[Objects[objnum].instance].flags2 & SIF2_PROJECTED_SHIELDS){
+//	if(1){
 	//new style sheilds
 		create_projected_shield_from_triangle(tr0, tcp, &tom, shieldp, &shieldp->tris[tr0].norm, rad);
 	}else{
