@@ -7738,12 +7738,9 @@ int ade_set_args(lua_State *L, char *fmt, ...)
 				lua_pushnumber(L, va_arg(vl, int));
 				break;
 			case 's':
-				{
-					//WMC - Don't know why I need the & on va_arg
-					//but whatever. As long as it works.
-					lua_pushstring(L, &va_arg(vl, char));
-					break;
-				}
+				//WMC - Isn't working with HookVar for some strange reason
+				lua_pushstring(L, va_arg(vl, char*));
+				break;
 			case 'u':
 			case 'v':
 				//WMC - Default upvalues, to reserve space for real ones
