@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.40.2.2 $
- * $Date: 2006-09-11 01:15:04 $
- * $Author: taylor $
+ * $Revision: 2.40.2.3 $
+ * $Date: 2007-01-15 01:55:46 $
+ * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40.2.2  2006/09/11 01:15:04  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.40.2.1  2006/08/06 19:27:12  Goober5000
  * deprecate change-ship-model
  *
@@ -1665,7 +1668,7 @@ void event_music_change_pattern(int new_pattern)
 		return;
 	}
 
-	if ( Current_pattern == new_pattern );
+	if ( Current_pattern == new_pattern )
 		return;	// already playing
 
 	if ( Current_pattern != -1 ) {
