@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.16 $
- * $Date: 2006-09-08 06:17:32 $
- * $Author: taylor $
+ * $Revision: 2.17 $
+ * $Date: 2007-01-15 13:40:38 $
+ * $Author: karajorma $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/09/08 06:17:32  taylor
+ * lower client/server version back to retail level, there was no reason to bump it in the first place
+ *
  * Revision 2.15  2006/08/04 11:45:21  karajorma
  * Fix bug where end-mission SEXP only resulting in the mission ending for the server
  *
@@ -454,16 +457,16 @@ struct player;
 #define MULTIPLAYER_MASTER			( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) )
 #define MULTIPLAYER_HOST			( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_GAME_HOST) )
 #define MULTIPLAYER_CLIENT			( (Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER) )
-#define MULTIPLAYER_STANDALONE	( (Game_mode & GM_MULTIPLAYER) && (Net_players[0].flags & NETINFO_FLAG_AM_MASTER) && !(Net_players[0].flags & NETINFO_FLAG_GAME_HOST) )
+#define MULTIPLAYER_STANDALONE		( (Game_mode & GM_MULTIPLAYER) && (Net_players[0].flags & NETINFO_FLAG_AM_MASTER) && !(Net_players[0].flags & NETINFO_FLAG_GAME_HOST) )
 
 // determine the status of the passed player
-#define MULTI_CONNECTED(np)		(np.flags & NETINFO_FLAG_CONNECTED)
+#define MULTI_CONNECTED(np)			(np.flags & NETINFO_FLAG_CONNECTED)
 #define MULTI_HOST(np)				(np.flags & NETINFO_FLAG_GAME_HOST)
 #define MULTI_SERVER(np)			(np.flags & NETINFO_FLAG_AM_MASTER)
 #define MULTI_STANDALONE(np)		((np.flags & NETINFO_FLAG_AM_MASTER) && !(np.flags & NETINFO_FLAG_GAME_HOST))
 #define MULTI_OBSERVER(np)			(np.flags & NETINFO_FLAG_OBSERVER)
-#define MULTI_TEMP_OBSERVER(np)	((np.flags & NETINFO_FLAG_OBSERVER) && (np.flags & NETINFO_FLAG_OBS_PLAYER))
-#define MULTI_PERM_OBSERVER(np)	((np.flags & NETINFO_FLAG_OBSERVER) && !(np.flags & NETINFO_FLAG_OBS_PLAYER))
+#define MULTI_TEMP_OBSERVER(np)		((np.flags & NETINFO_FLAG_OBSERVER) && (np.flags & NETINFO_FLAG_OBS_PLAYER))
+#define MULTI_PERM_OBSERVER(np)		((np.flags & NETINFO_FLAG_OBSERVER) && !(np.flags & NETINFO_FLAG_OBS_PLAYER))
 
 // are we playing on a master tracker registered server
 extern int Om_tracker_flag;
@@ -594,6 +597,7 @@ extern int Om_tracker_flag;
 #define NO_SUBSYS_STRING			"NO-SUBSYS"	// see change_ai_class - because same routine is used
 												// for both ships and subsystems
 #define VARIABLE_UPDATE				0xF0		// Karajorma - a variable update packet from server to all clients
+#define WEAPON_OR_AMMO_CHANGED		0xF1		// Karajorma - The weapon or ammo of a fighter/bomber has been changed
 
 #define MAX_TYPE_ID					0xFF		// better not try to send > 255 in a single byte buddy
 
