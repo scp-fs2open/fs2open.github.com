@@ -1131,7 +1131,7 @@ ADE_VIRTVAR(Filename, l_Font, "string", "Filename of font (including extension)"
 {
 	int font = -1;
 	char *newname = NULL;
-	if(!ade_get_args(L, "o|s", &font, &newname))
+	if(!ade_get_args(L, "o|s", l_Font.Get(&font), &newname))
 		return ADE_RETURN_NIL;
 
 	if(font < 0 || font >= Num_fonts)
@@ -1144,11 +1144,11 @@ ADE_VIRTVAR(Filename, l_Font, "string", "Filename of font (including extension)"
 	return ade_set_args(L, "s", Fonts[font].filename);
 }
 
-ADE_VIRTVAR(Height, l_Font, "string", "Filename of font (including extension)")
+ADE_VIRTVAR(Height, l_Font, "number", "Height of font (in pixels)")
 {
 	int font = -1;
 	int newheight = -1;
-	if(!ade_get_args(L, "o|i", &font, &newheight))
+	if(!ade_get_args(L, "o|i", l_Font.Get(&font), &newheight))
 		return ADE_RETURN_NIL;
 
 	if(font < 0 || font >= Num_fonts)
@@ -1158,13 +1158,13 @@ ADE_VIRTVAR(Height, l_Font, "string", "Filename of font (including extension)")
 		Fonts[font].h = newheight;
 	}
 
-	return ade_set_args(L, "s", Fonts[font].h);
+	return ade_set_args(L, "i", Fonts[font].h);
 }
 
 ADE_FUNC(isValid, l_Font, NULL, "True if valid, false or nil if not",  "Detects whether handle is valid")
 {
 	int font;
-	if(!ade_get_args(L, "o", &font))
+	if(!ade_get_args(L, "o", l_Font.Get(&font)))
 		return ADE_RETURN_NIL;
 
 	if(font < 0 || font >= Num_fonts)
@@ -2486,78 +2486,6 @@ ADE_INDEXER(l_Directives, "Directive number", "directive handle", NULL)
 //**********HANDLE: Weaponclass
 //ade_obj<int> l_Weaponclass("weaponclass", "Weapon class handle");
 
-ADE_VIRTVAR(DesiredVelocity, l_Object, "Local vector", "Object local desired velocity")
-{
-	object_h *objh;
-	vec3d *v3=NULL;
-	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
-
-	if(!objh->IsValid())
-		return ADE_RETURN_NIL;
-
-	if(ADE_SETTING_VAR && v3 != NULL) {
-		objh->objp->phys_info.desired_vel = *v3;
-	}
-
-	return ade_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.desired_vel));
-}
-
-
-ADE_VIRTVAR(RotationalVelocity, l_Object, "Local vector", "Object local rotational velocity")
-{
-	object_h *objh;
-	vec3d *v3=NULL;
-	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
-
-	if(!objh->IsValid())
-		return ADE_RETURN_NIL;
-
-	if(ADE_SETTING_VAR && v3 != NULL) {
-		objh->objp->phys_info.rotvel = *v3;
-	}
-
-	return ade_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.rotvel));
-}
-
-ADE_VIRTVAR(DesiredRotationalVelocity, l_Object, "Local vector", "Object local desired rotational velocity")
-{
-	object_h *objh;
-	vec3d *v3=NULL;
-	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
-
-	if(!objh->IsValid())
-		return ADE_RETURN_NIL;
-
-	if(ADE_SETTING_VAR && v3 != NULL) {
-		objh->objp->phys_info.desired_rotvel = *v3;
-	}
-
-	return ade_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.desired_rotvel));
-}
-
-ADE_VIRTVAR(RotDamp, l_Object, "Number", "rotational damp")
-{
-	object_h *objh = NULL;
-	float f = 0.0f;
-	if(!ade_get_args(L, "o|f", l_Object.GetPtr(&objh), &f))
-		return ADE_RETURN_NIL;
-
-	if(!objh->IsValid())
-		return ADE_RETURN_NIL;
-
-	//Set hull strength.
-	if(ADE_SETTING_VAR && f >= 0.0f) {
-		objh->objp->phys_info.rotdamp = f;
-	}
-
-	return ade_set_args(L, "f", objh->objp->phys_info.rotdamp);
-}
-
-
-
 ADE_VIRTVAR(Name, l_Weaponclass, "string", "Weapon class name")
 
 {
@@ -3021,6 +2949,79 @@ ADE_FUNC(getBreedName, l_Object, NULL, "Object type name", "Gets object type")
 
 	return ade_set_args(L, "s", Object_type_names[objh->objp->type]);
 }
+
+//WMC - These are already defined in the object Physics handle.
+/*
+ADE_VIRTVAR(DesiredVelocity, l_Object, "Local vector", "Object local desired velocity")
+{
+	object_h *objh;
+	vec3d *v3=NULL;
+	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR && v3 != NULL) {
+		objh->objp->phys_info.desired_vel = *v3;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.desired_vel));
+}
+
+
+ADE_VIRTVAR(RotationalVelocity, l_Object, "Local vector", "Object local rotational velocity")
+{
+	object_h *objh;
+	vec3d *v3=NULL;
+	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR && v3 != NULL) {
+		objh->objp->phys_info.rotvel = *v3;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.rotvel));
+}
+
+ADE_VIRTVAR(DesiredRotationalVelocity, l_Object, "Local vector", "Object local desired rotational velocity")
+{
+	object_h *objh;
+	vec3d *v3=NULL;
+	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR && v3 != NULL) {
+		objh->objp->phys_info.desired_rotvel = *v3;
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(objh->objp->phys_info.desired_rotvel));
+}
+
+ADE_VIRTVAR(RotDamp, l_Object, "Number", "rotational damp")
+{
+	object_h *objh = NULL;
+	float f = 0.0f;
+	if(!ade_get_args(L, "o|f", l_Object.GetPtr(&objh), &f))
+		return ADE_RETURN_NIL;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	//Set hull strength.
+	if(ADE_SETTING_VAR && f >= 0.0f) {
+		objh->objp->phys_info.rotdamp = f;
+	}
+
+	return ade_set_args(L, "f", objh->objp->phys_info.rotdamp);
+}
+*/
 
 //ade_obj<ship_subsys_h> l_Subsystem("subsystem", "Ship subsystem handle");
 //**********HANDLE: Asteroid
