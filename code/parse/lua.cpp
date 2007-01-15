@@ -67,7 +67,17 @@ public:
 			Ade_table_entries.push_back(ate);
 		LibIdx = Ade_table_entries.size()-1;
 	}
+
+	char *GetName();
 };
+
+char *ade_lib::GetName()
+{
+	if(GetIdx() == UINT_MAX)
+		return "<Invalid>";
+
+	return Ade_table_entries[GetIdx()].GetName();
+}
 
 //Function helper class
 //Lets us add functions via its constructor
@@ -6886,34 +6896,54 @@ ADE_FUNC(isKeyPressed, l_Keyboard, "Letter", "True if key is pressed, false if n
 }*/
 
 //**********LIBRARY: Scripting Variables
-ade_lib l_ScriptVar("HookVariables", NULL, "hv", "Hook variables repository");
+ade_lib l_HookVar("HookVariables", NULL, "hv", "Hook variables repository");
 
-ade_lib l_ScriptVar_Globals("Globals", &l_ScriptVar);
+//WMC: IMPORTANT
+//Be very careful when modifying this library, as the Globals[] library does depend
+//on the current number of items in the library. If you add _anything_, modify __len.
+//Or run changes by me.
 
-ADE_INDEXER(l_ScriptVar_Globals, "Global index", "Global name", "Indexes globals")
+ade_lib l_HookVar_Globals("Globals", &l_HookVar);
+
+ADE_INDEXER(l_HookVar_Globals, "Global index", "Global name", "Indexes globals")
 {
 	int idx;
 	if(!ade_get_args(L, "*i", &idx))
 		return ADE_RETURN_NIL;
 
+	//Get lib
+	lua_getglobal(L, l_HookVar.GetName());
+	int lib_ldx = lua_gettop(L);
+	if(!lua_isuserdata(L, lib_ldx))
+	{
+		lua_pop(L, 1);
+		return ADE_RETURN_NIL;
+	}
+
 	//Get metatable
-	lua_getmetatable(L, -2);
+	lua_getmetatable(L, lib_ldx);
 	int mtb_ldx = lua_gettop(L);
 	if(!lua_istable(L, mtb_ldx))
+	{
+		lua_pop(L, 2);
 		return ADE_RETURN_NIL;
+	}
 
 	//Get ade members table
 	lua_pushstring(L, "__ademembers");
 	lua_rawget(L, mtb_ldx);
 	int amt_ldx = lua_gettop(L);
 	if(!lua_istable(L, amt_ldx))
+	{
+		lua_pop(L, 3);
 		return ADE_RETURN_NIL;
+	}
 
 	//List 'em
 	char *keyname = NULL;
 	int count = 1;
 	lua_pushnil(L);
-	while(lua_next(L, mtb_ldx))
+	while(lua_next(L, amt_ldx))
 	{
 		//Now on stack: Key, value
 		lua_pushvalue(L, -2);
@@ -6921,33 +6951,67 @@ ADE_INDEXER(l_ScriptVar_Globals, "Global index", "Global name", "Indexes globals
 		if(strcmp(keyname, "Globals"))
 		{
 			if(count == idx)
+			{
+				//lib, mtb, amt, key, value, string go bye-bye
+				lua_pop(L, 5);
 				return ade_set_args(L, "s", keyname);
+			}
 			count++;
 		}
-		lua_pop(L, 2);	//Key, string
+		lua_pop(L, 2);	//Value, string
 	}
-	lua_pop(L, 1);	//Last key
+
+	lua_pop(L, 3);	//lib, mtb, amt
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(__len, l_ScriptVar_Globals, NULL, "Number of globals", "Gets number of globals")
+ADE_FUNC(__len, l_HookVar_Globals, NULL, "Number of globals", "Gets number of globals")
 {
 	//Get metatable
-	lua_getmetatable(L, -2);
+	lua_getglobal(L, l_HookVar.GetName());
+	int lib_ldx = lua_gettop(L);
+	if(!lua_isuserdata(L, lib_ldx))
+	{
+		lua_pop(L, 1);
+		return ADE_RETURN_NIL;
+	}
+
+	lua_getmetatable(L, lib_ldx);
 	int mtb_ldx = lua_gettop(L);
 	if(!lua_istable(L, mtb_ldx))
+	{
+		lua_pop(L, 2);
 		return ADE_RETURN_NIL;
+	}
 
 	//Get ade members table
 	lua_pushstring(L, "__ademembers");
 	lua_rawget(L, mtb_ldx);
 	int amt_ldx = lua_gettop(L);
 	if(!lua_istable(L, amt_ldx))
+	{
+		lua_pop(L, 3);
 		return ADE_RETURN_NIL;
+	}
+
+	//int total_len = lua_objlen(L, amt_ldx);
+
+	//WMC - Fine. Make me do the calculation manually.
+	//See if I care.
+	int total_len = 0;
+	lua_pushnil(L);
+	while(lua_next(L, amt_ldx))
+	{
+		total_len++;
+		lua_pop(L, 1);	//value
+	}
+	int num_sub = Ade_table_entries[l_HookVar.GetIdx()].Num_subentries;
+
+	lua_pop(L, 3);
 
 	//WMC - Return length, minus the 'Globals' library
-	return ade_set_args(L, "i", lua_objlen(L, amt_ldx) - Ade_table_entries[l_ScriptVar.GetIdx()].Num_subentries);
+	return ade_set_args(L, "i", total_len - num_sub);
 }
 
 //**********LIBRARY: Tables
@@ -7674,8 +7738,12 @@ int ade_set_args(lua_State *L, char *fmt, ...)
 				lua_pushnumber(L, va_arg(vl, int));
 				break;
 			case 's':
-				lua_pushstring(L, va_arg(vl, char *));
-				break;
+				{
+					//WMC - Don't know why I need the & on va_arg
+					//but whatever. As long as it works.
+					lua_pushstring(L, &va_arg(vl, char));
+					break;
+				}
 			case 'u':
 			case 'v':
 				//WMC - Default upvalues, to reserve space for real ones
@@ -8252,7 +8320,8 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 		//***Create ade members table
 		lua_createtable(L, 0, Num_subentries);
 		if(lua_istable(L, -1)) {
-			amt_ldx = lua_gettop(L) - 1;
+			//WMC - was lua_gettop(L) - 1 for soem
+			amt_ldx = lua_gettop(L);
 			cleanup_items++;
 
 			//Set it
