@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.55 $
- * $Date: 2007-01-14 10:26:38 $
+ * $Revision: 2.56 $
+ * $Date: 2007-01-15 01:37:38 $
  * $Author: wmcoolmon $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2007/01/14 10:26:38  wmcoolmon
+ * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ *
  * Revision 2.54  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -719,9 +722,9 @@ void neb2_post_level_init()
 				ushort r = 0, g = 0, b = 0, pcount = 0;
 				for (idx = 0; idx < 768; idx += 3) {
 					if (Neb2_htl_fog_data[idx] || Neb2_htl_fog_data[idx+1] || Neb2_htl_fog_data[idx+2]) {
-						r += (ushort)Neb2_htl_fog_data[idx];
-						g += (ushort)Neb2_htl_fog_data[idx+1];
-						b += (ushort)Neb2_htl_fog_data[idx+2];
+						r += Neb2_htl_fog_data[idx];
+						g += Neb2_htl_fog_data[idx+1];
+						b += Neb2_htl_fog_data[idx+2];
 						pcount++;
 					}
 				}

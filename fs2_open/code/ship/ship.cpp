@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.395 $
- * $Date: 2007-01-14 14:03:36 $
- * $Author: bobboau $
+ * $Revision: 2.396 $
+ * $Date: 2007-01-15 01:37:38 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.395  2007/01/14 14:03:36  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.394  2007/01/08 00:50:59  Goober5000
  * remove WMC's limbo code, per our discussion a few months ago
  * this will later be handled by copying ship stats using sexps or scripts
@@ -8983,11 +8988,11 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->ab_count = 0;
 	if(sip->flags & SIF_AFTERBURNER)
 	{
-		for(i = 0; i < pm_orig->submodel[pm_orig->detail[0]].submodel_thruster.size(); i++)
+		for(i = 0; i < (int)pm_orig->submodel[pm_orig->detail[0]].submodel_thruster.size(); i++)
 		{
 			thruster_bank *bank = &pm_orig->submodel[pm_orig->detail[0]].submodel_thruster[i];
 
-			for(j = 0; j < bank->points.size(); j++)
+			for(j = 0; j < (int)bank->points.size(); j++)
 			{
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
@@ -9308,9 +9313,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		polymodel * pm_orig;
 		pm_orig = model_get(sp->modelnum);
 		trail_info *ci;
-		for(int h = 0; h < pm_orig->submodel[pm_orig->detail[0]].submodel_thruster.size(); h++)
+		for(uint h = 0; h < pm_orig->submodel[pm_orig->detail[0]].submodel_thruster.size(); h++)
 		{
-			for(int j = 0; j < pm_orig->submodel[pm_orig->detail[0]].submodel_thruster[h].points.size(); j++)
+			for(uint j = 0; j < pm_orig->submodel[pm_orig->detail[0]].submodel_thruster[h].points.size(); j++)
 			{
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
