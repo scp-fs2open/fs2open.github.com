@@ -599,19 +599,21 @@ void geometry_batcher::render(int flags)
 // laser batcher
 
 struct batch_item : public geometry_batcher {
-	batch_item(): texture(-1), tmap_flags(0), alpha(1.0f) {};
+	batch_item(): texture(-1), tmap_flags(0), alpha_mode(GR_ALPHABLEND_FILTER) {};
+    batch_item(const batch_item &geo) { clone(geo); texture = geo.texture; tmap_flags = geo.tmap_flags; alpha_mode = geo.alpha_mode;}
+    const batch_item &operator=(const batch_item &geo){clone(geo); texture = geo.texture; tmap_flags = geo.tmap_flags; alpha_mode = geo.alpha_mode; return *this;}
 
 	int texture;
 	int tmap_flags;
-	float alpha;
+	int alpha_mode;
 };
 
 static std::vector<batch_item> geometry_map;
 
-int find_good_batch_item(int texture, int flags)
+int find_good_batch_item(int texture, int flags, int alpha)
 {
 	for (uint i = 0; i < geometry_map.size(); i++) {
-		if (geometry_map[i].texture == texture && geometry_map[i].tmap_flags == flags)
+		if (geometry_map[i].texture == texture && geometry_map[i].tmap_flags == flags && geometry_map[i].alpha_mode == alpha)
 			return i;
 	}
 
@@ -620,6 +622,7 @@ int find_good_batch_item(int texture, int flags)
 
 	new_item.texture = texture;
 	new_item.tmap_flags = flags;
+	new_item.alpha_mode = alpha;
 	new_item.space = LOCAL_SPACE;
 
 	geometry_map.push_back(new_item);
@@ -635,7 +638,7 @@ float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float wid
 	}
 
 	geometry_batcher *item = NULL;
-	int index = find_good_batch_item(texture, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
+	int index = find_good_batch_item(texture, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT, GR_ALPHABLEND_FILTER);
 	Assert( index >= 0 );
 
 	item = &geometry_map[index];
@@ -657,7 +660,7 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 	Assert( index >= 0 );
 
 	geometry_map[index].tmap_flags = tmap_flags;
-	geometry_map[index].alpha = alpha;
+	geometry_map[index].alpha_mode = alpha;
 
 	item = &geometry_map[index];
 
@@ -709,7 +712,7 @@ void batch_render_all()
 			continue;
 
 		Assert( geometry_map[i].texture >= 0 );
-		gr_set_bitmap(geometry_map[i].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, geometry_map[i].alpha);
+		gr_set_bitmap(geometry_map[i].texture, geometry_map[i].alpha_mode, GR_BITBLT_MODE_NORMAL, 1.0f);
 		geometry_map[i].render( geometry_map[i].tmap_flags );
 	}
 }

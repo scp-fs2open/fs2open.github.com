@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.181 $
- * $Date: 2007-01-15 01:37:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.182 $
+ * $Date: 2007-01-15 01:52:47 $
+ * $Author: bobboau $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.181  2007/01/15 01:37:38  wmcoolmon
+ * Fix CVS & correct various warnings under MSVC 2003
+ *
  * Revision 2.180  2007/01/14 14:03:33  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -4080,12 +4083,15 @@ void model_render_thrusters(bsp_info*model, ship *shipp)
 
 		// this is used for the secondary thruster glows 
 		// it only needs to be calculated once so I'm doing it here -Bobboau
-		norm.xyz.z = -1.0f;
-		norm.xyz.x = 1.0f;
-		norm.xyz.y = -1.0f;
+		norm2.xyz.z = -1.0f;
+		norm2.xyz.x = 1.0f;
+		norm2.xyz.y = -1.0f;
 
-		norm.xyz.x *= controle_rotval.xyz.y/2;
-		norm.xyz.y *= controle_rotval.xyz.x/2;
+		norm2.xyz.x *= controle_rotval.xyz.y/2;
+		norm2.xyz.y *= controle_rotval.xyz.x/2;
+
+		g3_local_2_world_normal(&norm, &norm2);
+
 
 		vm_vec_normalize(&norm);
 
