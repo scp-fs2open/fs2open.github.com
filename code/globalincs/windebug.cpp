@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.42 $
- * $Date: 2007-01-07 13:15:42 $
- * $Author: taylor $
+ * $Revision: 2.43 $
+ * $Date: 2007-01-15 01:37:38 $
+ * $Author: wmcoolmon $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2007/01/07 13:15:42  taylor
+ * fix up Windows window/cursor handling so that it's up-to-date and more compatible
+ * make sure that we handle background clearing ourselves, fixes several little issues
+ * fix popup warnings to work a bit better and not screw up the game so much or make it difficult to interact with them
+ *
  * Revision 2.41  2006/12/28 00:59:26  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -886,9 +891,6 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
 		//JAS dumpBuffer.Printf( "    address: %8X\r\n", caller ) ;
 		return 0;
 	}
-
-	Int3();
-
 }
 
 const char* Separator = "------------------------------------------------------------------\r\n" ;
@@ -1727,9 +1729,9 @@ void *_vm_malloc( int size, int quiet )
 		register_malloc(actual_size, filename, line, ptr);
 
 	#endif
-#endif
 
 	return ptr;
+#endif
 }
 
 #ifndef NDEBUG

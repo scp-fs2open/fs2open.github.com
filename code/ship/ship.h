@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.175 $
- * $Date: 2007-01-14 14:03:37 $
- * $Author: bobboau $
+ * $Revision: 2.176 $
+ * $Date: 2007-01-15 01:37:38 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.175  2007/01/14 14:03:37  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.174  2007/01/08 00:50:59  Goober5000
  * remove WMC's limbo code, per our discussion a few months ago
  * this will later be handled by copying ship stats using sexps or scripts
@@ -1509,7 +1514,7 @@ typedef struct ship {
 	int bay_doors_wanting_open;		// how many ships want/need the bay door open
 
 	// figther bay door stuff, client side
-	ubyte bay_doors_launched_from;	// the bay door that I launched from
+	int bay_doors_launched_from;	// the bay door that I launched from
 	bool bay_doors_need_open;		// keep track of whether I need the door open or not
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.45 $
- * $Date: 2007-01-13 16:20:39 $
- * $Author: bobboau $
+ * $Revision: 2.46 $
+ * $Date: 2007-01-15 01:37:38 $
+ * $Author: wmcoolmon $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2007/01/13 16:20:39  bobboau
+ * left some test code on super sorry
+ *
  * Revision 2.44  2006/09/11 06:45:40  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -455,7 +458,7 @@ void shield_hit_page_in()
 //	Initialize shield hit system.  Called from game_level_init()
 void shield_hit_init()
 {
-	int	i;
+	uint	i;
 
 	for (i=0; i<Shield_hits.size(); i++) {
 		Shield_hits[i].type = SH_UNUSED;
@@ -591,9 +594,9 @@ void rs_compute_uvs(shield_tri *stp, shield_vertex *verts, vec3d *tcp, float rad
 
 //	----------------------------------------------------------------------------------------------------
 //	Free records in Global_tris previously used by Shield_hits[shnum].tri_list
-void free_global_tri_records(int shnum)
+void free_global_tri_records(uint shnum)
 {
-	int	i;
+	uint	i;
 
 	Assert((shnum >= 0) && (shnum < Shield_hits.size()));
 
@@ -688,9 +691,9 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 //		Assert((trip->verts[j].v >= 0.0f) && (trip->verts[j].v <= UV_MAX));
 		verts[j] = &points[j];
 
-		verts[j]->r = r * trip->verts[j].i;
-		verts[j]->g = g * trip->verts[j].i;
-		verts[j]->b = b * trip->verts[j].i;
+		verts[j]->r = (ubyte)(r * trip->verts[j].i);
+		verts[j]->g = (ubyte)(g * trip->verts[j].i);
+		verts[j]->b = (ubyte)(b * trip->verts[j].i);
 	}
 
 	vec3d	norm;
@@ -714,10 +717,10 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 MONITOR(NumShieldRend)
 
 //	Render a shield mesh in the global array Shield_hits[]
-void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
+void render_shield(uint shield_num) //, matrix *orient, vec3d *centerp)
 {
 
-	int		i;
+	uint		i;
 	vec3d	*centerp;
 	matrix	*orient;
 	object	*objp;
@@ -834,7 +837,7 @@ void render_shields()
 	gr_zbuffer_set(GR_ZBUFF_READ);
 	gr_set_cull(0);
 
-	int	i;
+	uint	i;
 
 	if (Detail.shield_effects == 0){
 		return;	//	No shield effect rendered at lowest detail level.
@@ -891,7 +894,7 @@ int	Gi_max = 0;
 
 int get_free_global_shield_index()
 {
-	int	gi = 0;
+	uint	gi = 0;
 
 	while ((gi < Global_tris.size()) && (Global_tris[gi].used) && (Global_tris[gi].creation_time + SHIELD_HIT_DURATION > Missiontime)) {
 		gi++;
@@ -909,7 +912,7 @@ int get_free_global_shield_index()
 
 int get_global_shield_tri()
 {
-	int	shnum;
+	uint	shnum;
 
 	//	Find unused shield hit buffer
 	for (shnum=0; shnum<Shield_hits.size(); shnum++)
@@ -966,7 +969,7 @@ void create_projected_shield_from_triangle(int trinum, vec3d*pnt, matrix *orient
 
 	if(!(uo==3 || uo==-3 || vo==3 || vo==-3 || io == 3)){
 		for(int i = 0; i<3; i++){
-			shield_tri* ntri = &sp->tris[tri->neighbors[i]];
+			//shield_tri* ntri = &sp->tris[tri->neighbors[i]];
 			if(!sp->tris[tri->neighbors[i]].used){
 				if(vm_vec_dot(&sp->tris[tri->neighbors[i]].norm, &orient->vec.fvec) > -0.5f){
 					create_projected_shield_from_triangle(tri->neighbors[i], pnt, orient, sp, dir, rad);
@@ -999,7 +1002,7 @@ void create_shield_from_triangle(int trinum, matrix *orient, shield_info *shield
 void copy_shield_to_globals( int objnum, shield_info *shieldp )
 {
 	int	i, j;
-	int	gi = 0;
+	uint	gi = 0;
 	int	count = 0;			//	Number of triangles in this shield hit.
 	int	shnum;				//	shield hit number, index in Shield_hits.
 
@@ -1029,7 +1032,7 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp )
 			// copy the pos/u/v elements of the shield_vertex structure into the shield vertex structure for this global triangle.
 			for (j = 0; j < 3; j++){
 				Global_tris[gi].verts[j] = shieldp->verts[shieldp->tris[i].verts[j]];
-				float I = Global_tris[gi].verts[j].i;
+				//float I = Global_tris[gi].verts[j].i;
 			}
 			Shield_hits[shnum].tri_list.push_back(gi);
 			count++;
