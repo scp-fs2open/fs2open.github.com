@@ -2240,6 +2240,8 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,137,47,84,11
     CONTROL         "Player-Persistent",IDC_TYPE_PLAYER_PERSISTENT,"Button",
                     BS_AUTOCHECKBOX | WS_TABSTOP,137,59,84,11
+    CONTROL         "Network-Variable",IDC_TYPE_NETWORK_VARIABLE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,137,71,84,11
 END
 
 IDD_MODIFY_VARIABLE DIALOG DISCARDABLE  0, 0, 422, 102
@@ -2262,9 +2264,11 @@ BEGIN
     LTEXT           "Default Value",IDC_STATIC,251,15,44,8
     GROUPBOX        "Delete Variable and References",IDC_STATIC,7,56,114,38
     CONTROL         "Campaign-Persistent",IDC_TYPE_CAMPAIGN_PERSISTENT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,137,47,84,11
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,138,47,84,11
     CONTROL         "Player-Persistent",IDC_TYPE_PLAYER_PERSISTENT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,137,59,84,11
+                    BS_AUTOCHECKBOX | WS_TABSTOP,138,59,84,11
+    CONTROL         "Network-Variable",IDC_TYPE_NETWORK_VARIABLE,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,138,72,84,11
 END
 
 IDD_SPECIAL_DAMAGE DIALOG DISCARDABLE  0, 0, 234, 103

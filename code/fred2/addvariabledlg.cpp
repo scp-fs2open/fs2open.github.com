@@ -56,6 +56,7 @@ BEGIN_MESSAGE_MAP(CAddVariableDlg, CDialog)
 	ON_BN_CLICKED(IDC_TYPE_STRING, OnTypeString)
 	ON_BN_CLICKED(IDC_TYPE_CAMPAIGN_PERSISTENT, OnTypeCampaignPersistent)
 	ON_BN_CLICKED(IDC_TYPE_PLAYER_PERSISTENT, OnTypePlayerPersistent)
+	ON_BN_CLICKED(IDC_TYPE_NETWORK_VARIABLE, OnTypeNetworkVariable)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -115,6 +116,7 @@ BOOL CAddVariableDlg::OnInitDialog()
 	m_type_number = true;
 	m_type_campaign_persistent = false;
 	m_type_player_persistent = false;
+	m_type_network_variable = false;
 	set_variable_type();
 
 	m_name_validated = false;
@@ -264,6 +266,12 @@ void CAddVariableDlg::OnTypeCampaignPersistent()
 	set_variable_type();
 }
 
+void CAddVariableDlg::OnTypeNetworkVariable()
+{
+	m_type_network_variable = ((CButton *) GetDlgItem(IDC_TYPE_NETWORK_VARIABLE))->GetCheck() ? true : false;
+	set_variable_type();
+}
+
 // Set type check boxes
 void CAddVariableDlg::set_variable_type()
 {
@@ -276,4 +284,5 @@ void CAddVariableDlg::set_variable_type()
 
 	((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->SetCheck(m_type_campaign_persistent);
 	((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->SetCheck(m_type_player_persistent);
+	((CButton *) GetDlgItem(IDC_TYPE_NETWORK_VARIABLE))->SetCheck(m_type_network_variable);
 }

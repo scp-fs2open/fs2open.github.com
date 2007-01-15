@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.31 $
- * $Date: 2007-01-07 21:28:10 $
- * $Author: Goober5000 $
+ * $Revision: 1.32 $
+ * $Date: 2007-01-15 13:42:59 $
+ * $Author: karajorma $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2007/01/07 21:28:10  Goober5000
+ * yet more tweaks to the WCS death scream stuff
+ * added a ship flag to force screaming
+ *
  * Revision 1.30  2007/01/07 01:00:18  Goober5000
  * convert a mission variable to a mission flag
  *
@@ -1342,9 +1346,14 @@ int CFred_mission_save::save_variables()
 			// index "var name" "default" "type"
 			fout("\n\t\t%d\t\t\"%s\"\t\t\"%s\"\t\t\"%s\"", i, Sexp_variables[i].variable_name, Sexp_variables[i].text, type);
 
-			// persistent variables
+			// persistent and network variables
 			if (Format_fs2_open)
 			{
+				// Network variable - Karajorma
+				if (Sexp_variables[i].type & SEXP_VARIABLE_NETWORK) {
+					fout("\t\t\"%s\"", "network-variable");
+				}
+
 				// player-persistent - Goober5000
 				if (Sexp_variables[i].type & SEXP_VARIABLE_PLAYER_PERSISTENT) {
 					fout("\t\t\"%s\"", "player-persistent");
@@ -2545,7 +2554,7 @@ int CFred_mission_save::save_waypoints()
 		required_string_fred("$Jump Node Name:", "$Jump Node:");
 		parse_comments();
 		fout(" %s", jnp->get_name_ptr());
-
+		
 		if(jnp->is_special_model())
 		{
 			if ( optional_string_fred("+Model File:", "$Jump Node:"))
