@@ -57,6 +57,7 @@ BEGIN_MESSAGE_MAP(CModifyVariableDlg, CDialog)
 	ON_BN_CLICKED(IDC_TYPE_NUMBER, OnTypeNumber)
 	ON_BN_CLICKED(IDC_TYPE_PLAYER_PERSISTENT, OnTypePlayerPersistent)
 	ON_BN_CLICKED(IDC_TYPE_CAMPAIGN_PERSISTENT, OnTypeCampaignPersistent)
+	ON_BN_CLICKED(IDC_TYPE_NETWORK_VARIABLE, OnTypeNetworkVariable)
 	ON_CBN_SELCHANGE(IDC_MODIFY_VARIABLE_NAME, OnSelchangeModifyVariableName)
 	ON_CBN_EDITCHANGE(IDC_MODIFY_VARIABLE_NAME, OnEditchangeModifyVariableName)
 	ON_EN_KILLFOCUS(IDC_MODIFY_DEFAULT_VALUE, OnKillfocusModifyDefaultValue)
@@ -206,6 +207,15 @@ void CModifyVariableDlg::OnTypeCampaignPersistent()
 	set_variable_type();
 }
 
+void CModifyVariableDlg::OnTypeNetworkVariable()
+{
+	m_type_network_variable = ((CButton *) GetDlgItem(IDC_TYPE_NETWORK_VARIABLE))->GetCheck() ? true : false;
+
+	m_modified_type = true; 
+
+	set_variable_type();
+}
+
 void CModifyVariableDlg::OnSelchangeModifyVariableName()
 {
 	CComboBox *cbox = (CComboBox *) GetDlgItem(IDC_MODIFY_VARIABLE_NAME);
@@ -240,6 +250,7 @@ void CModifyVariableDlg::OnSelchangeModifyVariableName()
 	m_type_number = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NUMBER) != 0) ? true : false;
 	m_type_campaign_persistent = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) != 0) ? true : false;
 	m_type_player_persistent = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_PLAYER_PERSISTENT) != 0) ? true : false;
+	m_type_network_variable = ((Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_NETWORK) != 0) ? true : false;
 	set_variable_type();
 
 	// Set new default value for selection
@@ -325,6 +336,7 @@ BOOL CModifyVariableDlg::OnInitDialog()
 	m_type_number = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_NUMBER) != 0) ? true : false;
 	m_type_campaign_persistent = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_CAMPAIGN_PERSISTENT) != 0) ? true : false;
 	m_type_player_persistent = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_PLAYER_PERSISTENT) != 0) ? true : false;
+	m_type_network_variable = ((Sexp_variables[last_modified].type & SEXP_VARIABLE_NETWORK) != 0) ? true : false;
 	set_variable_type();
 
 	// keep track of changes
@@ -355,6 +367,7 @@ void CModifyVariableDlg::set_variable_type()
 
 	((CButton *) GetDlgItem(IDC_TYPE_CAMPAIGN_PERSISTENT))->SetCheck(m_type_campaign_persistent);
 	((CButton *) GetDlgItem(IDC_TYPE_PLAYER_PERSISTENT))->SetCheck(m_type_player_persistent);
+	((CButton *) GetDlgItem(IDC_TYPE_NETWORK_VARIABLE))->SetCheck(m_type_network_variable);
 }
 
 void CModifyVariableDlg::OnOK() 
