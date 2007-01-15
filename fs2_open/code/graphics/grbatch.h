@@ -11,6 +11,7 @@
 
 #define LOCAL_SPACE 0
 #define WORLD_SPACE 1
+#include "graphics/2d.h"
 
 
 class geometry_batcher
@@ -27,6 +28,7 @@ private:
 	// you need to figure out how many verts are going to be required
 	void allocate_internal(int n_verts);
 
+protected:
 	void clone(const geometry_batcher &geo);
 
 public:
@@ -78,10 +80,8 @@ float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float wid
 int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, float alpha = 1.0f, float depth = 0.0f);
 geometry_batcher* batch_get_geometry(int geo);
 void batch_render_all();
-void batch_render_bitmaps();
-void batch_render_lasers();
 void batch_reset();
-int find_good_batch_item(int texture, int flags=0);
+int find_good_batch_item(int texture, int flags=0, int alpha = GR_ALPHABLEND_FILTER);
 void batch_add_flag(int geo, int flag);
 void batch_remove_flag(int geo, int flag);
 void batch_set_flag(int geo, int flag);
