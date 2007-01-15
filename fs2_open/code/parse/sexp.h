@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122.2.6 $
+ * $Revision: 2.122.2.7 $
  * $Author: karajorma $
- * $Date: 2006-11-21 23:07:27 $
+ * $Date: 2007-01-15 11:57:02 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122.2.6  2006/11/21 23:07:27  karajorma
+ * Fix ammo and weapon SEXP changes not being passed on to the clients
+ *
  * Revision 2.122.2.5  2006/10/28 21:17:04  karajorma
  * Adding the network-variable option to SEXP variables. This change will revert variables to the same behaviour they displayed in retail (i.e they don't update for clients) unless a variable is set to be a network-variable.
  *
@@ -1387,6 +1390,7 @@ struct ship_subsys;
 #define OP_SET_TRAINING_CONTEXT_SPEED		(0x0011 | OP_CATEGORY_TRAINING)
 #define OP_KEY_RESET_MULTIPLE				(0x0012 | OP_CATEGORY_TRAINING)	// Goober5000
 #define OP_STRING_TO_INT					(0x0013 | OP_CATEGORY_TRAINING) // Karajorma
+#define OP_RESET_ORDERS						(0x0014 | OP_CATEGORY_TRAINING) // Karajorma
 
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"

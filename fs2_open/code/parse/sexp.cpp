@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.36 $
- * $Date: 2006-12-28 02:07:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.259.2.37 $
+ * $Date: 2007-01-15 11:57:02 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.36  2006/12/28 02:07:43  Goober5000
+ * assume ships-with-bays which haven't yet entered the mission are valid for syntax checking
+ *
  * Revision 2.259.2.35  2006/12/26 18:14:37  Goober5000
  * allow parsing of similar ship copy names properly (Mantis #1178)
  *
@@ -1634,23 +1637,23 @@ sexp_oper Operators[] = {
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
 	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
 	{ "num-ships-in-wing",			OP_NUM_SHIPS_IN_WING,			1,	INT_MAX},	// Karajorma
-	{ "num-players",					OP_NUM_PLAYERS,				0, 0, },
-	{ "num_kills",								OP_NUM_KILLS,							1, 1			},
-	{ "num_type_kills",						OP_NUM_TYPE_KILLS,					2,	2			},
-	{ "num_class_kills",						OP_NUM_CLASS_KILLS,					2,	2			},
-	{ "team-score",					OP_TEAM_SCORE,					1,	1,	}, 
-	{ "was-promotion-granted",				OP_WAS_PROMOTION_GRANTED,			0, 1,			},
-	{ "was-medal-granted",					OP_WAS_MEDAL_GRANTED,				0, 1,			},
+	{ "num-players",				OP_NUM_PLAYERS,				0, 0, },
+	{ "num_kills",					OP_NUM_KILLS,				1, 1			},
+	{ "num_type_kills",				OP_NUM_TYPE_KILLS,			2,	2			},
+	{ "num_class_kills",			OP_NUM_CLASS_KILLS,			2,	2			},
+	{ "team-score",					OP_TEAM_SCORE,				1,	1,	}, 
+	{ "was-promotion-granted",		OP_WAS_PROMOTION_GRANTED,	0, 1,			},
+	{ "was-medal-granted",			OP_WAS_MEDAL_GRANTED,		0, 1,			},
 	{ "current-speed",				OP_CURRENT_SPEED,				1, 1},
 	
-	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,	1,	1,	},
-	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,	1,	1,	},
-	{ "time-ship-departed",		OP_TIME_SHIP_DEPARTED,	1,	1,	},
-	{ "time-wing-destroyed",	OP_TIME_WING_DESTROYED,	1,	1,	},
-	{ "time-wing-arrived",		OP_TIME_WING_ARRIVED,	1,	1,	},
-	{ "time-wing-departed",		OP_TIME_WING_DEPARTED,	1,	1,	},
-	{ "mission-time",				OP_MISSION_TIME,			0, 0,	},
-	{ "time-docked",				OP_TIME_DOCKED,			3, 3, },
+	{ "time-ship-destroyed",	OP_TIME_SHIP_DESTROYED,		1,	1,	},
+	{ "time-ship-arrived",		OP_TIME_SHIP_ARRIVED,		1,	1,	},
+	{ "time-ship-departed",		OP_TIME_SHIP_DEPARTED,		1,	1,	},
+	{ "time-wing-destroyed",	OP_TIME_WING_DESTROYED,		1,	1,	},
+	{ "time-wing-arrived",		OP_TIME_WING_ARRIVED,		1,	1,	},
+	{ "time-wing-departed",		OP_TIME_WING_DEPARTED,		1,	1,	},
+	{ "mission-time",			OP_MISSION_TIME,			0, 0,	},
+	{ "time-docked",			OP_TIME_DOCKED,				3, 3, },
 	{ "time-undocked",			OP_TIME_UNDOCKED,			3, 3, },
 
 	{ "cond",					OP_COND,				1, INT_MAX, },
@@ -1885,6 +1888,7 @@ sexp_oper Operators[] = {
 	{ "facing",						OP_FACING,						2, 2,			},
 	{ "facing-waypoint",			OP_FACING2,						2, 2,			},
 	{ "order",						OP_ORDER,						2, 3,			},
+	{ "reset-orders",				OP_RESET_ORDERS,				0, 0,			}, // Karajorma
 	{ "waypoint-missed",			OP_WAYPOINT_MISSED,			0, 0,			},
 	{ "waypoint-twice",			OP_WAYPOINT_TWICE,			0, 0,			},
 	{ "path-flown",				OP_PATH_FLOWN,					0, 0,			},
@@ -11547,6 +11551,12 @@ int sexp_order(int n)
 	return hud_query_order_issued(ship_or_wing, order, target);
 }
 
+// Karajorma
+void sexp_reset_orders (int n)
+{
+	memset(Squadmsg_history, 0, sizeof(squadmsg_history) * SQUADMSG_HISTORY_MAX);
+}
+
 int sexp_waypoint_missed()
 {
 	if (Training_context & TRAINING_CONTEXT_FLY_PATH) {
@@ -15669,6 +15679,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_order(node);
 				break;
 
+			// Karajorma
+			case OP_RESET_ORDERS:
+				sexp_reset_orders(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_WAYPOINT_MISSED:
 				sexp_val = sexp_waypoint_missed();
 				break;
@@ -16636,6 +16652,7 @@ int query_operator_return_type(int op)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
+		case OP_RESET_ORDERS:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -16713,6 +16730,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_RED_ALERT:
 		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
+		case OP_RESET_ORDERS:
 			return OPF_NONE;
 
 		case OP_AND:
@@ -20102,6 +20120,11 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of ship or wing to check if given order to.\r\n"
 		"\t2:\tName of order to check if player has given.\r\n"
 		"\t3:\tName of the target of the order (optional)." },
+
+	// Karajorma
+	{ OP_RESET_ORDERS, "Reset-Orders (Action training operator)\r\n"
+		"\tResets the list of orders the player has given.\r\n"
+		"Takes no arguments." },
 
 	{ OP_WAYPOINT_MISSED, "Waypoint-missed (Boolean training operator)\r\n"
 		"\tBecomes true when a waypoint is flown, but the waypoint is ahead of the one "
