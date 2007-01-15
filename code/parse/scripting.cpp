@@ -75,6 +75,8 @@ void script_parse_table(char *filename)
 
 	if(optional_string("#Global Hooks"))
 	{
+		int num = 42;
+		Script_system.SetHookVar("Version", 'i', &num);
 		if(optional_string("$Global:")) {
 			Script_globalhook = st->ParseChunk("Global");
 		}
