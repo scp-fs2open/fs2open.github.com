@@ -610,7 +610,7 @@ struct batch_item : public geometry_batcher {
 
 static std::vector<batch_item> geometry_map;
 
-int find_good_batch_item(int texture, int flags, int alpha)
+uint find_good_batch_item(int texture, int flags, int alpha)
 {
 	for (uint i = 0; i < geometry_map.size(); i++) {
 		if (geometry_map[i].texture == texture && geometry_map[i].tmap_flags == flags && geometry_map[i].alpha_mode == alpha)
@@ -627,7 +627,7 @@ int find_good_batch_item(int texture, int flags, int alpha)
 
 	geometry_map.push_back(new_item);
 
-	return (int)(geometry_map.size() - 1);
+	return geometry_map.size() - 1;
 }
 
 float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
@@ -638,7 +638,7 @@ float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float wid
 	}
 
 	geometry_batcher *item = NULL;
-	int index = find_good_batch_item(texture, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT, GR_ALPHABLEND_FILTER);
+	uint index = find_good_batch_item(texture, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT, GR_ALPHABLEND_FILTER);
 	Assert( index >= 0 );
 
 	item = &geometry_map[index];
@@ -656,11 +656,11 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 	}
 
 	geometry_batcher *item = NULL;
-	int index = find_good_batch_item(texture);
+	uint index = find_good_batch_item(texture);
 	Assert( index >= 0 );
 
 	geometry_map[index].tmap_flags = tmap_flags;
-	geometry_map[index].alpha_mode = alpha;
+	//geometry_map[index].alpha_mode = alpha;
 
 	item = &geometry_map[index];
 
@@ -671,26 +671,26 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 	return 0;
 }
 
-geometry_batcher* batch_get_geometry(int geo){
+geometry_batcher* batch_get_geometry(uint geo){
 	if(geometry_map.size()<=geo)return NULL;
 	if(0>geo)return NULL;
 	geometry_map[geo].space=LOCAL_SPACE;
 	return &geometry_map[geo];
 }
 
-void batch_add_flag(int geo, int flag){
+void batch_add_flag(uint geo, int flag){
 	if(geometry_map.size()<=geo)return;
 	if(0>geo)return;
 	geometry_map[geo].tmap_flags |= flag;
 }
 
-void batch_remove_flag(int geo, int flag){
+void batch_remove_flag(uint geo, int flag){
 	if(geometry_map.size()<=geo)return;
 	if(0>geo)return;
 	geometry_map[geo].tmap_flags &= ~flag;
 }
 
-void batch_set_flag(int geo, int flag){
+void batch_set_flag(uint geo, int flag){
 	if(geometry_map.size()<=geo)return;
 	if(0>geo)return;
 	geometry_map[geo].tmap_flags = flag;

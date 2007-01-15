@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.31 $
- * $Date: 2006-12-28 00:59:27 $
+ * $Revision: 1.32 $
+ * $Date: 2007-01-15 02:19:03 $
  * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2006/12/28 00:59:27  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.30  2006/09/11 06:49:39  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -2523,7 +2526,7 @@ bool Text::Save()
 		int the_sint =  atoi(Content.c_str());
 		if(the_sint <= SaveMax && the_sint >= SaveMin)
 		{
-			*siSavePointer = the_sint;
+			*siSavePointer = (short)the_sint;
 			return true;
 		}
 	}
