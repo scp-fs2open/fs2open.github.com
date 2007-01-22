@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.195 $
- * $Date: 2007-01-14 19:35:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.196 $
+ * $Date: 2007-01-22 04:02:23 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.195  2007/01/14 19:35:53  Goober5000
+ * operator precedence FTW! :D
+ *
  * Revision 2.194  2007/01/14 10:26:37  wmcoolmon
  * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
  *
@@ -2136,6 +2139,10 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize)
 	}
 
 	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+	//WMC - Stuff for AA lines.
+	//glEnable( GL_LINE_SMOOTH );
+	//glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
+	//glLineWidth( 1.0 );
 
 	if ( x1 == x2 && y1 == y2 ) {
 		gr_opengl_set_2d_matrix();
@@ -2175,6 +2182,7 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize)
 	glEnd ();
 
 	gr_opengl_end_2d_matrix();
+	//glDisable(GL_LINE_SMOOTH);
 }
 
 void gr_opengl_aaline(vertex *v1, vertex *v2)
@@ -2332,7 +2340,10 @@ void gr_opengl_circle( int xc, int yc, int d, bool resize )
 	while(x<y)	{
 		// Draw the first octant
 		gr_opengl_line( xc-y, yc-x, xc+y, yc-x, false );
-		gr_opengl_line( xc-y, yc+x, xc+y, yc+x, false );
+		//WMC - without this, a line would appear through
+		//circles if they weren't 100% opaque
+		if(x > 0)
+			gr_opengl_line( xc-y, yc+x, xc+y, yc+x, false );
                                 
 		if (p<0) 
 			p=p+(x<<2)+6;
