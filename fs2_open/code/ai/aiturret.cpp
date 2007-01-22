@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.53 $
- * $Date: 2007-01-15 01:37:37 $
- * $Author: wmcoolmon $
+ * $Revision: 1.54 $
+ * $Date: 2007-01-22 21:45:10 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.53  2007/01/15 01:37:37  wmcoolmon
+ * Fix CVS & correct various warnings under MSVC 2003
+ *
  * Revision 1.52  2007/01/14 14:03:31  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -2050,8 +2053,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		if(tp->flags & MSS_FLAG_TURRET_HULL_CHECK){
 				polymodel *pm = model_get(shipp->modelnum);		
 				mc_info test_collide;
-				matrix or;
-				vm_vector_2_matrix(&or, &v2e, NULL, NULL);
 				vec3d start, end;
 
 				float r;
