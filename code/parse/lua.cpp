@@ -151,7 +151,7 @@ struct string_conv {
 string_conv ade_Operators[] = {
 	{"__add",		"+"},			//var +  obj
 	{"__sub",		"-"},			//var -  obj
-	{"__mult",		"*"},			//var *  obj
+	{"__mul",		"*"},			//var *  obj
 	{"__div",		"/"},			//var /  obj
 	{"__mod",		"%"},			//var %  obj
 	{"__pow",		"^"},			//var ^  obj
@@ -2365,7 +2365,7 @@ ADE_FUNC(__sub, l_Vector, "{Number, Vector}", "Vector", "Subtracts vector from a
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
-ADE_FUNC(__mult, l_Vector, "number", "Vector", "Scales vector object (Multiplies all axes by number)")
+ADE_FUNC(__mul, l_Vector, "number", "Vector", "Scales vector object (Multiplies all axes by number)")
 {
 	vec3d v3;
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
@@ -2408,6 +2408,23 @@ ADE_FUNC(__tostring, l_Vector, NULL, "string", "Converts a vector to string with
 	sprintf(buf, "(%f,%f,%f)", v3->xyz.x, v3->xyz.y, v3->xyz.z);
 
 	return ade_set_args(L, "s", buf);
+}
+
+ADE_FUNC(getOrientation, l_Vector, NULL, "Orientation",
+		 "Returns orientation object representing the direction of the vector. "
+		 "Does not require vector to be normalized.")
+{
+	vec3d v3;
+	if(!ade_get_args(L, "o", l_Vector.Get(&v3)))
+		return ADE_RETURN_NIL;
+
+	matrix mt = vmd_identity_matrix;
+
+	vm_vec_normalize_safe(&v3);
+	vm_vector_2_matrix_norm(&mt, &v3);
+	matrix_h mh(&mt);
+	
+	return ade_set_args(L, "o", l_Matrix.Set(mh));
 }
 
 ADE_FUNC(getMagnitude, l_Vector, NULL, "Magnitude", "Returns the magnitude of a vector (Total regardless of direction)")
@@ -5790,7 +5807,8 @@ ADE_FUNC(drawCircle, l_Graphics, "Radius, x, y", NULL, "Draws a circle")
 	if(!ade_get_args(L, "iii", &ra,&x,&y))
 		return ADE_RETURN_NIL;
 
-	gr_circle(x,y, ra, false);
+	//WMC - Circle takes...diameter.
+	gr_circle(x,y, ra*2, false);
 
 	return ADE_RETURN_NIL;
 }
