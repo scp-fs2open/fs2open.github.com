@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.16 $
- * $Date: 2007-01-14 14:03:32 $
- * $Author: bobboau $
+ * $Revision: 2.17 $
+ * $Date: 2007-01-22 04:43:28 $
+ * $Author: wmcoolmon $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2007/01/14 14:03:32  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.15  2006/04/12 22:23:41  taylor
  * compiler warning fixes to make GCC 4.1 shut the hell up
  *
@@ -544,7 +549,7 @@ matrix *vm_vector_2_matrix(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec);
 
 //this version of vector_2_matrix requires that the vectors be more-or-less
 //normalized and close to perpendicular
-matrix *vm_vector_2_matrix_norm(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec);
+matrix *vm_vector_2_matrix_norm(matrix *m,vec3d *fvec,vec3d *uvec=NULL,vec3d *rvec=NULL);
 
 //rotates a vector through a matrix. returns ptr to dest vector
 //dest CANNOT equal either source
