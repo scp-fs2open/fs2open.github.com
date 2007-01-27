@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.37 $
- * $Date: 2007-01-15 11:57:02 $
+ * $Revision: 2.259.2.38 $
+ * $Date: 2007-01-27 18:39:09 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.37  2007/01/15 11:57:02  karajorma
+ * Add the reset-orders SEXP
+ * Some general houskeeping to keep 3.6.9 and HEAD throwing up lots of annoying diffs that are just spacing issues.
+ *
  * Revision 2.259.2.36  2006/12/28 02:07:43  Goober5000
  * assume ships-with-bays which haven't yet entered the mission are valid for syntax checking
  *
@@ -13156,7 +13160,8 @@ void sexp_add_remove_escort(int node)
 	flag = eval_num(CDR(node));
 
 	// add/remove
-	if(flag){	
+	if(flag){
+		Ships[sindex].escort_priority = flag ;	
 		hud_add_ship_to_escort(Ships[sindex].objnum, 1);
 	} else {
 		hud_remove_ship_from_escort(Ships[sindex].objnum);
@@ -20697,7 +20702,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_ADD_REMOVE_ESCORT, "add-remove-escort\r\n"
 		"\tAdds or removes a ship from an escort list.\r\n"
 		"\t1: Ship to be added or removed\r\n"
-		"\t2: 0 to remove from the list, any positive value to add to the list\r\n"
+		"\t2: 0 to remove from the list, any positive value will be used as the escort priority\r\n"
 		"NOTE : it _IS_ safe to add a ship which may already be on the list or remove\r\n"
 		"a ship which is not on the list\r\n"},
 
