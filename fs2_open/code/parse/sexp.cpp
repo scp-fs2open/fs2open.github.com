@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.297 $
- * $Date: 2007-01-15 13:46:55 $
+ * $Revision: 2.298 $
+ * $Date: 2007-01-27 19:09:06 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.297  2007/01/15 13:46:55  karajorma
+ * Fix bug in the set ammo and weapon SEXPs
+ * Add the reset-orders SEXP
+ * Add support for network variables
+ *
  * Revision 2.296  2007/01/15 01:37:38  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -13299,7 +13304,8 @@ void sexp_add_remove_escort(int node)
 	flag = eval_num(CDR(node));
 
 	// add/remove
-	if(flag){	
+	if(flag){
+		Ships[sindex].escort_priority = flag ;	
 		hud_add_ship_to_escort(Ships[sindex].objnum, 1);
 	} else {
 		hud_remove_ship_from_escort(Ships[sindex].objnum);
@@ -18718,9 +18724,9 @@ void sexp_modify_variable(char *text, int index)
 	strncpy(Sexp_variables[index].text, text, sizeof(Sexp_variables[index].text)-1);
 	Sexp_variables[index].type |= SEXP_VARIABLE_MODIFIED;
 
-	// do multi_callback_here	
+	// do multi_callback_here
 	// send a network packet if we need to
-	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER))
+	if((Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Sexp_variables[index].type & SEXP_VARIABLE_NETWORK))
 	{
 		send_variable_update_packet(index, Sexp_variables[index].text);
 	}
@@ -20901,7 +20907,7 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_ADD_REMOVE_ESCORT, "add-remove-escort\r\n"
 		"\tAdds or removes a ship from an escort list.\r\n"
 		"\t1: Ship to be added or removed\r\n"
-		"\t2: 0 to remove from the list, any positive value to add to the list\r\n"
+		"\t2: 0 to remove from the list, any positive value will be used as the escort priority\r\n"
 		"NOTE : it _IS_ safe to add a ship which may already be on the list or remove\r\n"
 		"a ship which is not on the list\r\n"},
 
