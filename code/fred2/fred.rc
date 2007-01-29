@@ -2346,9 +2346,9 @@ STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Set Global Ship Flags"
 FONT 8, "MS Sans Serif"
 BEGIN
+    PUSHBUTTON      "Global No-Shields",IDC_NO_SHIELDS,7,7,100,14
     PUSHBUTTON      "Global No-Subspace-Drive",IDC_NO_SUBSPACE_DRIVE,7,24,
                     100,14
-    PUSHBUTTON      "Global No-Shields",IDC_NO_SHIELDS,7,7,100,14
     PUSHBUTTON      "Global Primitive-Sensors",IDC_PRIMITIVE_SENSORS,7,41,
                     100,14
     PUSHBUTTON      "Global Affected-By-Gravity",IDC_AFFECTED_BY_GRAVITY,7,
