@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.396 $
- * $Date: 2007-01-15 01:37:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.397 $
+ * $Date: 2007-01-29 03:39:26 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.396  2007/01/15 01:37:38  wmcoolmon
+ * Fix CVS & correct various warnings under MSVC 2003
+ *
  * Revision 2.395  2007/01/14 14:03:36  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -8852,32 +8855,11 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->ai_index = ai_get_slot(n);
 	Assert( shipp->ai_index >= 0 );
 
-	// Goober5000 - if no ship name specified, or if specified ship already exists,
-	// or if specified ship has exited, use a default name
-	//WMC - If name is too long, use a default name.
-	bool name_problem = false;
-	if(ship_name != NULL && strlen(ship_name))
-	{
-		name_problem = strlen(ship_name) > (NAME_LENGTH-1);
-		if(name_problem) Warning(LOCATION, "Ship name '%s' is too long; using default name instead.", ship_name);
-	}
-	else
-	{
-		name_problem = true;
-	}
-	if (name_problem)
-	{
-		if((ship_name_lookup(ship_name) >= 0) || (ship_find_exited_ship_by_name(ship_name) >= 0))
-		{
-			if(strlen(Ship_info[ship_type].name) < (NAME_LENGTH-1))
-			{
-				sprintf(shipp->ship_name, NOX("%s %d"), Ship_info[ship_type].name, n);
-			}
-			else
-			{
-				sprintf(shipp->ship_name, NOX("%d"), n);
-			}
-		}
+	// Goober5000 - if no ship name specified, or if the name is too long,
+	// or if the specified ship already exists, or if the specified ship has exited,
+	// use a default name
+	if ((ship_name == NULL) || (strlen(ship_name) > (NAME_LENGTH - 1)) || (ship_name_lookup(ship_name) >= 0) || (ship_find_exited_ship_by_name(ship_name) >= 0)) {
+		sprintf(shipp->ship_name, NOX("%s %d"), Ship_info[ship_type].name, n);
 	} else {
 		strcpy(shipp->ship_name, ship_name);
 	}
@@ -9301,6 +9283,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// above removed by Goober5000 in favor of new ship_set_new_ai_class function :)
 	ship_set_new_ai_class(n, sip->ai_class);
+
+	// Goober5000: reset ship score too
+	sp->score = sip->score;
 	
 	//======================================================
 

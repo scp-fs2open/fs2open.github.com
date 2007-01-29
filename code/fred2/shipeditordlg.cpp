@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.10 $
- * $Date: 2006-12-28 00:59:20 $
- * $Author: wmcoolmon $
+ * $Revision: 1.11 $
+ * $Date: 2007-01-29 03:39:25 $
+ * $Author: Goober5000 $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2006/12/28 00:59:20  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.9  2006/11/03 21:36:56  karajorma
  * Fix for Mantis 1017. - Hope we've seen the end of that damn persona bug
  *
@@ -1506,6 +1509,9 @@ int CShipEditorDlg::update_ship(int ship)
 	if ((Ships[ship].ship_info_index != m_ship_class) && (m_ship_class != -1)) {
 		change_ship_type(ship, m_ship_class);
 		set_modified();
+
+		m_score.init(Ships[ship].score);
+		m_score.display();
 	}
 
 	if (m_team != -1)
@@ -1798,6 +1804,9 @@ void CShipEditorDlg::OnSelchangeShipClass()
 			if (Ships[ptr->instance].ship_info_index != m_ship_class) {
 				change_ship_type(ptr->instance, m_ship_class);
 				set_modified();
+
+				m_score.init(Ships[ptr->instance].score);
+				m_score.display();
 			}
 
 		ptr = GET_NEXT(ptr);
