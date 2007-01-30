@@ -146,6 +146,9 @@ void SetGlobalShipFlags::OnResetScores()
 		if (sip == NULL)
 			continue;
 
+		if (shipp->score == sip->score)
+			continue;
+
 		if (confirm_each)
 		{
 			char temp[NAME_LENGTH + NAME_LENGTH + 30];
