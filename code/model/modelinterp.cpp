@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.183 $
- * $Date: 2007-01-15 02:19:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.184 $
+ * $Date: 2007-01-31 05:04:24 $
+ * $Author: phreak $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.183  2007/01/15 02:19:03  wmcoolmon
+ * Finish off warning fixage
+ *
  * Revision 2.182  2007/01/15 01:52:47  bobboau
  * fixing a thruster bug, a geometry batcher bug, and trying to fix a shield bug
  *
@@ -4133,6 +4136,26 @@ void model_render_thrusters(bsp_info*model, ship *shipp)
 			#define MIN_SCALE 3.4f
 			#define MAX_SCALE 4.7f
 			float scale = MIN_SCALE;
+
+			//if we have a clip plane going, make sure 'pt' is on the right side of it, otherwise we'll draw things on the wrong side of the clip plane.
+			//not having this will make the thruster glows draw after the ship has entered subspace which looks like the flames are coming from nowhere.
+			//we should do this for all thruster points because it'll look wierd if we only calculate the culling based on the ships center point
+			//especially for large ships like the deimos or colossus with thruster points going all the way down the length of the ship
+			if (G3_user_clip)
+			{
+				vec3d tmpvec;
+
+				//get the vector going from the origin of the clip plane to the end point
+				vm_vec_sub(&tmpvec, &pt, &G3_user_clip_point);
+
+				//if the dot product is negative, then the point is behind the clip plane
+				//so don't draw it
+				if (vm_vec_dotprod(&tmpvec, &G3_user_clip_normal) < 0)
+				{
+					continue;
+				}
+			}
+
 						
 			// the following replaces Bobboau's code, commented out below - Goober5000
 			float magnitude;
