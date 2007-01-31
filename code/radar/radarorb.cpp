@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.26 $
- * $Date: 2007-01-08 00:50:59 $
- * $Author: Goober5000 $
+ * $Revision: 1.27 $
+ * $Date: 2007-01-31 02:00:21 $
+ * $Author: phreak $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.26  2007/01/08 00:50:59  Goober5000
+ * remove WMC's limbo code, per our discussion a few months ago
+ * this will later be handled by copying ship stats using sexps or scripts
+ *
  * Revision 1.25  2006/07/09 01:55:41  Goober5000
  * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
  * this should fix Mantis #977
@@ -206,9 +210,9 @@ void radar_init_orb()
 		}
 	}
 
-	memset(orb_ring_xy,25*sizeof(vec3d),0);
-	memset(orb_ring_yz,25*sizeof(vec3d),0);
-	memset(orb_ring_xz,25*sizeof(vec3d),0);
+	memset(orb_ring_xy,0,25*sizeof(vec3d));
+	memset(orb_ring_yz,0,25*sizeof(vec3d));
+	memset(orb_ring_xz,0,25*sizeof(vec3d));
 	
 	for (i=0; i < 25; i++)
 	{
