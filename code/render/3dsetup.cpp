@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.25 $
- * $Date: 2007-01-14 14:03:36 $
- * $Author: bobboau $
+ * $Revision: 2.26 $
+ * $Date: 2007-01-31 05:08:35 $
+ * $Author: phreak $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2007/01/14 14:03:36  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.24  2006/12/28 00:59:48  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -552,11 +557,10 @@ void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal )
 	if(!Cmdline_nohtl) {
 		G3_user_clip_normal = *plane_normal;
 		G3_user_clip_point = *plane_point;
-//	return;
-
-
 		gr_start_clip();
+		return;
 	}
+
 	vm_vec_rotate(&G3_user_clip_normal, plane_normal, &View_matrix );
 	vm_vec_normalize(&G3_user_clip_normal);
 
