@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.124 $
- * $Date: 2007-01-15 01:37:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.125 $
+ * $Date: 2007-02-01 22:15:58 $
+ * $Author: karajorma $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.124  2007/01/15 01:37:38  wmcoolmon
+ * Fix CVS & correct various warnings under MSVC 2003
+ *
  * Revision 2.123  2007/01/14 14:03:33  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -2222,7 +2225,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			}
 			
 			case ID_SOBJ: {		//Subobject header
-				int n;
+				int n=0;
 				char *p, props[MAX_PROP_LEN];
 //				float d;
 
