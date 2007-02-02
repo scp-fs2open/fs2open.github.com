@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.98 $
- * $Date: 2007-01-14 14:03:33 $
- * $Author: bobboau $
+ * $Revision: 2.99 $
+ * $Date: 2007-02-02 22:49:07 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2007/01/14 14:03:33  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.97  2007/01/10 01:44:39  taylor
  * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
  *
@@ -936,7 +941,6 @@ typedef struct IBX {
 
 
 typedef struct bsp_info {
-	int sub_object_number;			// who am I again?
 	char		name[MAX_NAME_LEN];	// name of the subsystem.  Probably displayed on HUD
 	int		movement_type;			// -1 if no movement, otherwise rotational or positional movement -- subobjects only
 	int		movement_axis;			// which axis this subobject moves or rotates on.

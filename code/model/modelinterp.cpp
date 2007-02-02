@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.184 $
- * $Date: 2007-01-31 05:04:24 $
- * $Author: phreak $
+ * $Revision: 2.185 $
+ * $Date: 2007-02-02 22:49:07 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.184  2007/01/31 05:04:24  phreak
+ * Do clip plane testing on thruster glows and thruster particles
+ *
  * Revision 2.183  2007/01/15 02:19:03  wmcoolmon
  * Finish off warning fixage
  *
@@ -4065,7 +4068,7 @@ void model_init_thrusters(polymodel*pm){
 }
 
 // maybe draw model thruster glows
-void model_render_thrusters(bsp_info*model, ship *shipp)
+void model_render_thrusters(bsp_info *model, ship *shipp)
 {
 	uint i, j;
 	int k;
@@ -4109,7 +4112,7 @@ void model_render_thrusters(bsp_info*model, ship *shipp)
 		bank = &model->submodel_thruster[i];
 
 		// don't draw this thruster if the engine is destroyed or just not on
-		if ( !model_should_render_engine_glow(model->sub_object_number, bank->obj_num) )
+		if ( !model_should_render_engine_glow(shipp->objnum, bank->obj_num) )
 			continue;
 
 		pri_geo->add_allocate(bank->points.size());
