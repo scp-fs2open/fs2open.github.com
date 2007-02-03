@@ -1,5 +1,9 @@
 code.vcproj.*
-Freespace2.cvproj.*
+Freespace2.vcproj.*
+liblua.vcproj.*
+libjpeg.vcproj.*
+*.suo
 Freespace2.ncb
 Release
 Debug
+Release SSE2

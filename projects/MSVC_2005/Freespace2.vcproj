@@ -3,8 +3,9 @@
 	ProjectType="Visual C++"
 	Version="8.00"
 	Name="Freespace2"
-	ProjectGUID="{A8030FA3-CEAB-4297-99E3-CD2CFB89830B}"
+	ProjectGUID="{D3E51120-BBB2-4D6C-B686-5B62E60917B7}"
 	RootNamespace="Freespace2"
+	Keyword="Win32Proj"
 	>
 	<Platforms>
 		<Platform
@@ -16,20 +17,16 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="Debug"
-			IntermediateDirectory="Debug\Profile"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
+			CharacterSet="0"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-				Description="Copying build..."
-				CommandLine="copy &quot;$(InputPath)&quot; c:\games\freespace2\fs2_open_d.exe&#x0D;&#x0A;"
-				Outputs="c:\games\freespace2\fs2_open_d.exe"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -39,55 +36,38 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName="Debug/Freespace2.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\code,c:\mssdk\include\,c:\dxsdk\include,c:\speech_api\include"
-				PreprocessorDefinitions="NO_CD_CHECK;_DEBUG;WIN32;_WINDOWS"
-				MinimalRebuild="TRUE"
+				AdditionalIncludeDirectories="C:\projects\fs2_open\openal\include;C:\projects\fs2_open\oggvorbis\include;C:\projects\fs2_open\lua;C:\projects\fs2_open\libjpeg;C:\projects\fs2_open\dx8sdk\include;C:\projects\fs2_open\code"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS,USE_OPENAL"
+				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
+				RuntimeLibrary="3"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="Debug\Profile/Freespace2.pch"
-				AssemblerListingLocation="Debug\Profile/"
-				ObjectFile="Debug\Profile/"
-				ProgramDataBaseFileName="Debug\Profile/"
-				BrowseInformation="1"
-				WarningLevel="4"
-				SuppressStartupBanner="TRUE"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
 				DebugInformationFormat="4"
-				UndefinePreprocessorDefinitions="NDEBUG"
+				DisableSpecificWarnings="4244, 4267, 4312, 4311, 4996"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Quartz.lib d3d8.lib d3dx8.lib DxErr8.lib advapi32.lib gdi32.lib user32.lib ole32.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib libjpeg_d.lib code.lib"
-				OutputFile="C:\games\freespace2\fs2_open_d.exe"
+				AdditionalDependencies="code.lib libjpeg.lib liblua.lib vorbis_static_d.lib ogg_static_d.lib vdsound.lib vdinput.lib strmiids.lib dxguid.lib vorbisfile_static_d.lib theora_static_d.lib d3d8.lib d3dx8.lib dxerr8.lib openal32.lib opengl32.lib glu32.lib glaux.lib winmm.lib ws2_32.lib comctl32.lib"
+				OutputFile="$(OutDir)\fs2_open_d.exe"
 				LinkIncremental="2"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="debug,c:\mssdk\lib,c:\dxsdk\lib,c:\speech_api\lib,..\..\..\oggvorbis-sdk\lib,..\..\..\libjpeg-sdk\lib"
-				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="Debug/fs2_open_d.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName="Debug\Profile/fs2_open_d.map"
+				AdditionalLibraryDirectories="C:\projects\fs2_open\code\directx;C:\projects\fs2_open\openal\libs\win32;C:\projects\fs2_open\oggvorbis\lib;C:\projects\fs2_open\lua;C:\projects\fs2_open\libjpeg;C:\projects\fs2_open\dx8sdk\lib;C:\projects\fs2_open\projects\MSVC_2005\Debug"
+				IgnoreDefaultLibraryNames="libcd.lib;libci.lib"
+				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -102,9 +82,9 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="Debug\Profile\*.sbr"
-				SuppressStartupBanner="TRUE"
-				OutputFile="Debug\Profile\Freespace2.bsc"
+			/>
+			<Tool
+				Name="VCFxCopTool"
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
@@ -114,25 +94,24 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="Copying EXE to C:\Games\Freespace2\"
+				CommandLine="copy $(TargetPath) &quot;C:\Games\Freespace2\$(TargetFileName)&quot;"
 			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release\Profile"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
 			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2"
+			CharacterSet="0"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
 			/>
 			<Tool
 				Name="VCCustomBuildTool"
-				Description="Copying build..."
-				CommandLine="copy &quot;$(InputPath)&quot; c:\games\freespace2\fs2_open_r.exe&#x0D;&#x0A;"
-				Outputs="c:\games\freespace2\fs2_open_r.exe"
+				CommandLine=""
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -142,59 +121,44 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName="Release/Freespace2.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				GlobalOptimizations="FALSE"
-				EnableIntrinsicFunctions="TRUE"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
 				FavorSizeOrSpeed="1"
-				OmitFramePointers="TRUE"
-				AdditionalIncludeDirectories="..\..\code,c:\mssdk\include\,c:\dxsdk\include,c:\speech_api\include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS"
-				RuntimeLibrary="0"
+				AdditionalIncludeDirectories="C:\projects\fs2_open\openal\include;C:\projects\fs2_open\oggvorbis\include;C:\projects\fs2_open\lua;C:\projects\fs2_open\libjpeg;C:\projects\fs2_open\dx8sdk\include;C:\projects\fs2_open\code"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS,USE_OPENAL"
+				RuntimeLibrary="2"
+				EnableEnhancedInstructionSet="0"
+				FloatingPointModel="2"
 				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="Release\Profile/Freespace2.pch"
-				AssemblerListingLocation="Release\Profile/"
-				ObjectFile="Release\Profile/"
-				ProgramDataBaseFileName="Release\Profile/"
-				BrowseInformation="1"
-				WarningLevel="2"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="FALSE"
-				DebugInformationFormat="3"
-				UndefinePreprocessorDefinitions="_DEBUG"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="0"
+				DisableSpecificWarnings="4244, 4267, 4312, 4311, 4996"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
 			/>
 			<Tool
 				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Quartz.lib Dxerr8.lib d3d8.lib d3dx8.lib advapi32.lib gdi32.lib user32.lib ole32.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib code.lib"
-				OutputFile="C:\games\freespace2\fs2_open_r.exe"
+				AdditionalDependencies="code.lib libjpeg.lib liblua.lib vorbis_static.lib ogg_static.lib vdsound.lib vdinput.lib strmiids.lib dxguid.lib vorbisfile_static.lib theora_static.lib d3d8.lib d3dx8.lib dxerr8.lib openal32.lib opengl32.lib glu32.lib glaux.lib winmm.lib ws2_32.lib comctl32.lib"
+				OutputFile="$(OutDir)\fs2_open_r.exe"
 				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="release,c:\mssdk\lib,c:\dxsdk\lib,c:\speech_api\lib,..\..\..\libjpeg-sdk\lib,..\..\..\oggvorbis-sdk\lib"
-				IgnoreDefaultLibraryNames="libc.lib;libcd.lib;libci.lib"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="Release/fs2_open_r.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName="Release\Profile/fs2_open_r.map"
-				MapExports="TRUE"
+				AdditionalLibraryDirectories="C:\projects\fs2_open\code\directx;C:\projects\fs2_open\openal\libs\win32;C:\projects\fs2_open\oggvorbis\lib;C:\projects\fs2_open\lua;C:\projects\fs2_open\libjpeg;C:\projects\fs2_open\dx8sdk\lib;C:\projects\fs2_open\projects\MSVC_2005\Release"
+				IgnoreDefaultLibraryNames="libcd.lib;libci.lib"
+				GenerateDebugInformation="false"
 				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				OptimizeForWindows98="1"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -208,9 +172,9 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="Release\Profile\*.sbr"
-				SuppressStartupBanner="TRUE"
-				OutputFile="Release\Profile\Freespace2.bsc"
+			/>
+			<Tool
+				Name="VCFxCopTool"
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
@@ -220,6 +184,98 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="Copying to Freespace2 Directory..."
+				CommandLine="copy $(TargetPath) &quot;C:\Games\Freespace2\$(TargetFileName)&quot;"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release SSE2|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="0"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+				CommandLine=""
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				InlineFunctionExpansion="2"
+				EnableIntrinsicFunctions="true"
+				FavorSizeOrSpeed="1"
+				AdditionalIncludeDirectories="C:\projects\fs2_open\openal\include;C:\projects\fs2_open\oggvorbis\include;C:\projects\fs2_open\lua;C:\projects\fs2_open\libjpeg;C:\projects\fs2_open\dx8sdk\include;C:\projects\fs2_open\code"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS,USE_OPENAL"
+				RuntimeLibrary="2"
+				EnableEnhancedInstructionSet="2"
+				FloatingPointModel="2"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="0"
+				DisableSpecificWarnings="4244, 4267, 4312, 4311, 4996"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="code.lib libjpeg.lib liblua.lib vorbis_static.lib ogg_static.lib vdsound.lib vdinput.lib strmiids.lib dxguid.lib vorbisfile_static.lib theora_static.lib d3d8.lib d3dx8.lib dxerr8.lib openal32.lib opengl32.lib glu32.lib glaux.lib winmm.lib ws2_32.lib comctl32.lib"
+				OutputFile="$(OutDir)\fs2_open_r_sse2.exe"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories="C:\projects\fs2_open\code\directx;C:\projects\fs2_open\openal\libs\win32;C:\projects\fs2_open\oggvorbis\lib;C:\projects\fs2_open\lua;C:\projects\fs2_open\libjpeg;C:\projects\fs2_open\dx8sdk\lib;&quot;C:\projects\fs2_open\projects\MSVC_2005\Release SSE2&quot;"
+				IgnoreDefaultLibraryNames="libcd.lib;libci.lib"
+				GenerateDebugInformation="false"
+				SubSystem="2"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				OptimizeForWindows98="1"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Copying to Freespace2 Directory..."
+				CommandLine="copy &quot;$(TargetPath)&quot; &quot;C:\Games\Freespace2\$(TargetFileName)&quot;"
 			/>
 		</Configuration>
 	</Configurations>
@@ -227,123 +283,27 @@
 	</References>
 	<Files>
 		<File
-			RelativePath="..\..\code\FREESPACE2\app_icon.ico"
+			RelativePath="..\..\code\freespace2\freespace.cpp"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\FREESPACE2\FreeSpace.cpp"
-			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UsePrecompiledHeader="0"
-					BrowseInformation="1"
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="4"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UsePrecompiledHeader="0"
-					BrowseInformation="1"
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-		</File>
-		<File
-			RelativePath="..\..\code\FREESPACE2\FreeSpace.h"
+			RelativePath="..\..\code\freespace2\freespace.h"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\FREESPACE2\FreeSpace.rc"
-			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCResourceCompilerTool"
-					PreprocessorDefinitions=""
-					AdditionalIncludeDirectories="..\..\code\FREESPACE2"
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCResourceCompilerTool"
-					PreprocessorDefinitions=""
-					AdditionalIncludeDirectories="..\..\code\FREESPACE2"
-				/>
-			</FileConfiguration>
-		</File>
-		<File
-			RelativePath="..\..\code\FREESPACE2\FreespaceResource.h"
+			RelativePath="..\..\code\freespace2\freespace.rc"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\goal_com.bmp"
+			RelativePath="..\..\code\freespace2\freespaceresource.h"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\goal_fail.bmp"
+			RelativePath="..\..\code\freespace2\levelpaging.cpp"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\freespace2\goal_inc.bmp"
-			>
-		</File>
-		<File
-			RelativePath="..\..\code\freespace2\goal_none.bmp"
-			>
-		</File>
-		<File
-			RelativePath="..\..\code\freespace2\goal_ord.bmp"
-			>
-		</File>
-		<File
-			RelativePath="..\..\code\graphics\grstub.h"
-			>
-		</File>
-		<File
-			RelativePath="..\..\code\FREESPACE2\LevelPaging.cpp"
-			>
-			<FileConfiguration
-				Name="Debug|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UsePrecompiledHeader="0"
-					BrowseInformation="1"
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="Release|Win32"
-				>
-				<Tool
-					Name="VCCLCompilerTool"
-					Optimization="4"
-					AdditionalIncludeDirectories=""
-					PreprocessorDefinitions=""
-					UsePrecompiledHeader="0"
-					BrowseInformation="1"
-					UndefinePreprocessorDefinitions=""
-				/>
-			</FileConfiguration>
-		</File>
-		<File
-			RelativePath="..\..\code\FREESPACE2\LevelPaging.h"
+			RelativePath="..\..\code\freespace2\levelpaging.h"
 			>
 		</File>
 	</Files>
