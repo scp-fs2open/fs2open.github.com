@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2007/01/14 14:03:40  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.73  2007/01/07 12:41:37  taylor
  * make expl info dyanmic
  * fix possible out-of-bounds on expl lod checking
@@ -637,6 +642,7 @@ extern int Num_weapon_subtypes;
 #define WIF2_MR_NO_LIGHTING				(1 << 8)	// don't render with lighting, regardless of user options
 #define WIF2_TRANSPARENT				(1 << 9)	// render as transparent
 #define WIF2_MINE						(1 << 10)	// it's a mine, start motionless, can be shot down, by same iff if bomb
+#define WIF2_INHERIT_PARENT_TARGET		(1 << 11)	// child weapons home in on the target their parent is homing on.
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
