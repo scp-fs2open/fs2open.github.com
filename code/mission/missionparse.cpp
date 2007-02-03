@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.23 $
- * $Date: 2007-01-07 12:18:09 $
- * $Author: taylor $
+ * $Revision: 2.178.2.24 $
+ * $Date: 2007-02-03 23:16:41 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.23  2007/01/07 12:18:09  taylor
+ * safety check to make sure that we don't end up with non-player-usable weapons in the weaponselect pool (Mantis bug #1196)
+ *
  * Revision 2.178.2.22  2006/11/25 06:36:59  Goober5000
  * holy crap, this had the potential to mark the locked-true sexp as known-false, which would seriously screw a lot of stuff up
  *
@@ -2954,15 +2957,6 @@ int parse_create_object_sub(p_object *p_objp)
 	// Kazan
 	if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY))
 		shipp->flags2 |= SF2_NAVPOINT_CARRY;
-
-	// Goober5000 - moved this here from mission_eval_departures
-	// if ship is in a wing, copy the wing's departure information to the ship
-	if (shipp->wingnum != -1)
-	{
-		shipp->departure_location = Wings[shipp->wingnum].departure_location;
-		shipp->departure_anchor = Wings[shipp->wingnum].departure_anchor;
-		shipp->departure_path_mask = Wings[shipp->wingnum].departure_path_mask;
-	}
 
 	// mwa -- 1/30/98.  Do both flags.  Fred uses the ship flag, and FreeSpace will use the object
 	// flag. I'm to lazy at this point to deal with consolidating them.
@@ -6994,23 +6988,36 @@ int ship_can_use_warp_drive(ship *shipp)
 // called to make object objp depart.
 int mission_do_departure(object *objp)
 {
-	ship *shipp;
-//	int temp = -1;
-//	vec3d v;
-
 	Assert (objp->type == OBJ_SHIP);
-	shipp = &Ships[objp->instance];
-	ai_info *aip = &Ai_info[shipp->ai_index];
+	int location, anchor, path_mask;
+	ship *shipp = &Ships[objp->instance];
+
+	// Goober5000 - if this is a ship which has no subspace drive, departs to hyperspace, and belongs to a wing,
+	// then use the wing departure information
+	if ((shipp->flags2 & SF2_NO_SUBSPACE_DRIVE) && (shipp->departure_location == DEPART_AT_LOCATION) && (shipp->wingnum >= 0))
+	{
+		wing *wingp = &Wings[shipp->wingnum];
+
+		location = wingp->departure_location;
+		anchor = wingp->departure_anchor;
+		path_mask = wingp->departure_path_mask;
+	}
+	else
+	{
+		location = shipp->departure_location;
+		anchor = shipp->departure_anchor;
+		path_mask = shipp->departure_path_mask;
+	}
 
 	// if departing to a docking bay, try to find the anchor ship to depart to.  If not found, then
 	// just make it warp out like anything else.
-	if (shipp->departure_location == DEPART_AT_DOCK_BAY)
+	if (location == DEPART_AT_DOCK_BAY)
 	{
 		int anchor_shipnum;
 		char *name;
 
-		Assert( shipp->departure_anchor >= 0 );
-		name = Parse_names[shipp->departure_anchor];
+		Assert(anchor >= 0);
+		name = Parse_names[anchor];
 
 		// see if ship is yet to arrive.  If so, then warp.
 		if (mission_parse_get_arrival_ship(name))
@@ -7020,8 +7027,8 @@ int mission_do_departure(object *objp)
 
 		// see if ship is in mission.  If not, then we can assume it was destroyed or departed since
 		// it is not on the arrival list (as shown by above if statement).
-		anchor_shipnum = ship_name_lookup( name );
-		if (anchor_shipnum == -1)
+		anchor_shipnum = ship_name_lookup(name);
+		if (anchor_shipnum < 0)
 		{
 			goto try_to_warp;
 		}
@@ -7043,7 +7050,7 @@ int mission_do_departure(object *objp)
 		}
 
 		// find a path
-		if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum, shipp->departure_path_mask) != -1)
+		if (ai_acquire_depart_path(objp, Ships[anchor_shipnum].objnum, path_mask) >= 0)
 		{
 			MONITOR_INC(NumShipDepartures,1);
 
@@ -7052,10 +7059,12 @@ int mission_do_departure(object *objp)
 	}
 
 try_to_warp:
+	ai_info *aip = &Ai_info[shipp->ai_index];
+
 	// Goober5000 - make sure we can actually warp
 	if (ship_can_use_warp_drive(shipp))
 	{
-		ai_set_mode_warp_out(objp, &Ai_info[Ships[objp->instance].ai_index]);
+		ai_set_mode_warp_out(objp, aip);
 		MONITOR_INC(NumShipDepartures,1);
 
 		return 1;
@@ -7156,6 +7165,11 @@ void mission_eval_departures()
 
 				Assert ( shipp->objnum != -1 );
 				objp = &Objects[shipp->objnum];
+				
+				// copy the wing's departure information to the ship
+				shipp->departure_location = Wings[shipp->wingnum].departure_location;
+				shipp->departure_anchor = Wings[shipp->wingnum].departure_anchor;
+				shipp->departure_path_mask = Wings[shipp->wingnum].departure_path_mask;
 				
 				mission_do_departure( objp );
 				// don't add to wingp->total_departed here -- this is taken care of in ship code.
