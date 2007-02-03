@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-12-28 00:59:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.24 $
+ * $Date: 2007-02-03 20:10:17 $
+ * $Author: phreak $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/12/28 00:59:48  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.22  2006/12/01 04:50:59  Goober5000
  * reverted the buggy commit that caused Mantis bug #1101
  *
@@ -584,12 +587,11 @@ void particle_create( particle_info *pinfo )
 			new_particle.max_life = i2fl(new_particle.nframes) / i2fl(fps);
 			new_particle.batcher = particle_load_batcher(first_frame);
 		}
-#ifndef NDEBUG
 		else
 		{
-			new_particle.type = PARTICLE_DEBUG;
+			//we need to load the appropriate batcher as well for static textures
+			new_particle.batcher = particle_load_batcher(first_frame);
 		}
-#endif
 	}
 	else
 	{
