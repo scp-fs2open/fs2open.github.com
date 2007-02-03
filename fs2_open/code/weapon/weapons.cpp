@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.192  2007/01/15 00:55:13  wmcoolmon
+ * Fix HEAD
+ *
  * Revision 2.191  2007/01/14 14:03:40  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -1609,6 +1612,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_MR_NO_LIGHTING;
 		else if (!stricmp(NOX("mine"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_MINE;
+		else if (!stricmp(NOX("inherit parent target"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_INHERIT_PARENT_TARGET;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -1649,6 +1654,10 @@ void parse_wi_flags(weapon_info *weaponp)
 		Warning(LOCATION,"\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon",weaponp->name);
 	}
 
+	if ((weaponp->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (!(weaponp->wi_flags & WIF_CHILD)))
+	{
+		Warning(LOCATION,"Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
+	}
 }
 
 void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
@@ -5464,7 +5473,7 @@ void spawn_child_weapons(object *objp)
 	int	parent_num;
 	ushort starting_sig;
 	weapon	*wp;
-	weapon_info	*wip;
+	weapon_info	*wip, *child_wip;
 
 	Assert(objp->type == OBJ_WEAPON);
 	Assert((objp->instance >= 0) && (objp->instance < MAX_WEAPONS));
@@ -5474,6 +5483,7 @@ void spawn_child_weapons(object *objp)
 	wip = &Weapon_info[wp->weapon_info_index];
 
 	child_id = wip->spawn_type;
+	child_wip = &Weapon_info[child_id];
 
 	parent_num = objp->parent;
 
@@ -5508,6 +5518,12 @@ void spawn_child_weapons(object *objp)
 
 		vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
 		weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
+
+		//if the child inherits parent target, do it only if the parent weapon was locked to begin with
+		if ((child_wip->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (wp->homing_object != &obj_used_list))
+		{
+			weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
+		}
 
 		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
 		if (weapon_objnum != -1) {
