@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.87 $
+ * $Revision: 2.88 $
  * $Author: wmcoolmon $
- * $Date: 2007-01-14 12:06:56 $
+ * $Date: 2007-02-05 08:26:06 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87  2007/01/14 12:06:56  wmcoolmon
+ * Fix +Override, attempted fix for code adjacent to [] causing crash in scripting.tbl (Unreproducable), and (Untested) fix for script-eval.
+ *
  * Revision 2.86  2007/01/14 10:26:38  wmcoolmon
  * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
  *
@@ -2124,19 +2127,27 @@ void stuff_float(float *f)
 	else
 		Mp += strspn(Mp, "+-0123456789.");
 
+	//WMC - add support for those nonconformists who
+	//put spaces between #s and commas
+	ignore_gray_space();
 	if (*Mp ==',')
 		Mp++;
 
 	diag_printf("Stuffed float: %f\n", *f);
 }
 
+//WMC- Retvals
+//0 - Next float should not be checked
+//1 - Next float should be checked; current float was skipped
+//2 - Next float should be checked; current float was read
 int stuff_float_optional(float *f)
 {
 	int skip_len;
 	bool comma = false;
 	
-	ignore_white_space();
-	skip_len = strspn(Mp, "+-0123456789.");
+	ignore_gray_space();
+	//WMC - include gray space
+	skip_len = strspn(Mp, "+-0123456789. \t");
 	if(*(Mp+skip_len) == ',') {
 		comma = true;
 	}
