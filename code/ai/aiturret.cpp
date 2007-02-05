@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.54 $
- * $Date: 2007-01-22 21:45:10 $
- * $Author: Goober5000 $
+ * $Revision: 1.55 $
+ * $Date: 2007-02-05 08:27:13 $
+ * $Author: wmcoolmon $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.54  2007/01/22 21:45:10  Goober5000
+ * removed code that isn't used (see Mantis 1219)
+ *
  * Revision 1.53  2007/01/15 01:37:37  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -1994,8 +1997,20 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
 
 	// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
+	//WMC - This is HIGHLY experimental. I've commented out the original line of code below,
+	//and changed it to a simple assignation. use_angles didn't look like it would do anything before.
+	//However, if use_angles is set to 0 (Which it should be by default, unless the use turret normals
+	//flag is specified) then the same operation should be performed.
+	//
+	//REGARDLESS, this needs to be carefully watched.
+	//WMC - Redid this, so dist_to_enemy would be correct.
 	vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
 	dist_to_enemy = vm_vec_normalize(&v2e);
+
+	//WMC - _now_ set v2e, since we're done with it.
+	//WMC - Comment this out. I don't want to deal with the flak if it causes any bugs.
+	//v2e = gvec;
+
 	ss->turret_next_fire_pos++;
 
 	float dot = vm_vec_dot(&v2e, &gvec);

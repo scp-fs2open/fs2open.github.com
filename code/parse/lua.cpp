@@ -1999,7 +1999,26 @@ ADE_INDEXER(l_Shields, "SHIELD_* enumeration, NONE, or 1-4", "number", "Gets or 
 	//Get one quadrant
 	return ade_set_args(L, "f", objp->shield_quadrant[qdx]);
 }
+/*
+//WMC - Not sure if I want this to be a variable. It'd make more sense
+//as a function, since it modifies all quadrant variables
+ADE_VIRTVAR(TotalLeft, l_Shields, "number", "Total shield hitpoints left (for all quadrants)")
+{
+	object_h *objh;
+	float nval = -1.0f;
+	if(!ade_get_args(L, "o|f", l_Shields.GetPtr(&objh), &nval))
+			return 0;
 
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR && nval >= 0.0f) {
+		set_shield_strength(objh->objp, nval);
+	}
+
+	return ade_set_args(L, "f", get_shield_strength(objh->objp));
+}
+*/
 ADE_FUNC(isValid, l_Shields, NULL, "True if valid, false or nil if not",  "Detects whether handle is valid")
 {
 	object_h *oh;
