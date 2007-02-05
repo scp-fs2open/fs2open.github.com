@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.397 $
- * $Date: 2007-01-29 03:39:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.398 $
+ * $Date: 2007-02-05 08:26:49 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.397  2007/01/29 03:39:26  Goober5000
+ * --fix the empty ship name / U.R.A. Moron bug caused by WMC's commit
+ * --properly update a ship score when its class changes (in FRED or via change-ship-class or via ship loadout)
+ *
  * Revision 2.396  2007/01/15 01:37:38  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -4310,7 +4314,8 @@ strcpy(parse_error_text, temp_error);
 			}
 			if(sfo_return > 0)
 			{
-				if(stuff_float_optional(&turning_rate)==2)
+				sfo_return = stuff_float_optional(&turning_rate);
+				if(sfo_return==2)
 				{
 					// specified as how long to turn 360 degrees in ships.tbl
 					if ( turning_rate > 0.0f ){
@@ -4319,9 +4324,9 @@ strcpy(parse_error_text, temp_error);
 						sp->turret_turning_rate = 0.0f;		
 					}
 				}
-				else
+				else if(sfo_return==1)
 				{
-					Error(LOCATION, "Optional not working");
+					Warning(LOCATION, "Unneccessary comma at the end of the name specifier for subsystem %s of shipclass %s", sp->subobj_name, sip->name);
 				}
 			}
 
