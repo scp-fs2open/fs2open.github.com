@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.176 $
- * $Date: 2007-01-15 01:37:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.177 $
+ * $Date: 2007-02-06 01:27:34 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.176  2007/01/15 01:37:38  wmcoolmon
+ * Fix CVS & correct various warnings under MSVC 2003
+ *
  * Revision 2.175  2007/01/14 14:03:37  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -2293,7 +2296,7 @@ extern int ship_get_by_signature(int signature);
 
 #ifndef NDEBUG
 extern int Ai_render_debug_flag;
-extern int Show_shield_mesh, New_shield_system;
+extern int Show_shield_mesh;
 extern int Ship_auto_repair;	// flag to indicate auto-repair of subsystem should occur
 #endif
 
