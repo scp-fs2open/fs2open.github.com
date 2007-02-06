@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.47 $
- * $Date: 2007-01-15 01:52:47 $
- * $Author: bobboau $
+ * $Revision: 2.48 $
+ * $Date: 2007-02-06 01:27:34 $
+ * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2007/01/15 01:52:47  bobboau
+ * fixing a thruster bug, a geometry batcher bug, and trying to fix a shield bug
+ *
  * Revision 2.46  2007/01/15 01:37:38  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -344,7 +347,6 @@
 #include "math/fvi.h"
 
 
-int	New_shield_system = 1;
 int	Show_shield_mesh = 0;
 
 #ifndef DEMO // not for FS2_DEMO
@@ -838,10 +840,6 @@ void render_shields()
 		return;	//	No shield effect rendered at lowest detail level.
 	}
 
-	if (!New_shield_system){
-		return;
-	}
-
 	for (i=0; i<Shield_hits.size(); i++){
 		if (Shield_hits[i].type != SH_UNUSED){
 			render_shield(i);
@@ -1155,9 +1153,6 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 	polymodel	*pm;
 	int		i;
 
-	if (!New_shield_system)
-		return;
-
 	if (Objects[objnum].flags & OF_NO_SHIELDS)
 		return;
 
@@ -1330,9 +1325,6 @@ void ship_draw_shield( object *objp)
 	int		i;
 	vec3d	pnt;
 	polymodel * pm; 
-
-	if (!New_shield_system)
-		return;
 
 	if (objp->flags & OF_NO_SHIELDS)
 		return;

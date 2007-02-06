@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.278 $
- * $Date: 2007-01-15 08:05:47 $
- * $Author: wmcoolmon $
+ * $Revision: 2.279 $
+ * $Date: 2007-02-06 01:27:34 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.278  2007/01/15 08:05:47  wmcoolmon
+ * Maintain "fileless fs2" capability; change ScriptingVariables library to HookVariables(hv)
+ *
  * Revision 2.277  2007/01/14 14:03:32  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -3298,7 +3301,6 @@ DCF_BOOL( lead_target_cheat, Players[Player_num].lead_target_cheat )
 DCF_BOOL( sound, Sound_enabled )
 #endif
 DCF_BOOL( zbuffer, game_zbuffer )
-DCF_BOOL( shield_system, New_shield_system )
 DCF_BOOL( show_shield_mesh, Show_shield_mesh)
 DCF_BOOL( player_attacking, Player_attacking_enabled )
 DCF_BOOL( show_waypoints, Show_waypoints )

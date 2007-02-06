@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.35 $
- * $Date: 2007-01-14 14:03:36 $
- * $Author: bobboau $
+ * $Revision: 2.36 $
+ * $Date: 2007-02-06 01:27:34 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2007/01/14 14:03:36  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.34  2007/01/08 00:50:58  Goober5000
  * remove WMC's limbo code, per our discussion a few months ago
  * this will later be handled by copying ship stats using sexps or scripts
@@ -469,12 +474,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 	polymodel *pm = model_get( shipp->modelnum );
 
 	// Check the shields for an impact if necessary
-#ifndef NDEBUG
-	if (!(ship_obj->flags & OF_NO_SHIELDS) && New_shield_system && (pm->shield.ntris > 0)) {
-#else
-	if (!(ship_obj->flags & OF_NO_SHIELDS) &&  (pm->shield.ntris > 0)) {
-#endif
-
+	if (!(ship_obj->flags & OF_NO_SHIELDS) && (pm->shield.ntris > 0)) {
 		mc.flags = MC_CHECK_SHIELD;
 
 		if ( model_collide(&mc) )	{
