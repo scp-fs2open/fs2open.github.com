@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.30 $
- * $Date: 2006-12-27 09:26:20 $
- * $Author: taylor $
+ * $Revision: 2.243.2.31 $
+ * $Date: 2007-02-06 01:27:33 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.30  2006/12/27 09:26:20  taylor
+ * fix OpenGL envmap "issues" (ie, stupid taylor stuff)
+ * get rid of that RCS_Name thing, CVS kept changing it automatically and it was getting /really/ annoying
+ *
  * Revision 2.243.2.29  2006/12/20 11:22:21  karajorma
  * Move the voice recognition init to stop Windows complaining and failing to init it.
  *
@@ -3279,7 +3283,6 @@ DCF_BOOL( lead_target_cheat, Players[Player_num].lead_target_cheat )
 DCF_BOOL( sound, Sound_enabled )
 #endif
 DCF_BOOL( zbuffer, game_zbuffer )
-DCF_BOOL( shield_system, New_shield_system )
 DCF_BOOL( show_shield_mesh, Show_shield_mesh)
 DCF_BOOL( player_attacking, Player_attacking_enabled )
 DCF_BOOL( show_waypoints, Show_waypoints )

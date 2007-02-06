@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.27.2.3 $
- * $Date: 2006-10-08 02:05:33 $
+ * $Revision: 2.27.2.4 $
+ * $Date: 2007-02-06 01:27:33 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27.2.3  2006/10/08 02:05:33  Goober5000
+ * fix forum links
+ *
  * Revision 2.27.2.2  2006/08/22 05:45:39  taylor
  * compiler warning fixes
  *
@@ -440,12 +443,7 @@ int ship_weapon_check_collision(object * ship_obj, object * weapon_obj, float ti
 	polymodel *pm = model_get( shipp->modelnum );
 
 	// Check the shields for an impact if necessary
-#ifndef NDEBUG
-	if (!(ship_obj->flags & OF_NO_SHIELDS) && New_shield_system && (pm->shield.ntris > 0)) {
-#else
-	if (!(ship_obj->flags & OF_NO_SHIELDS) &&  (pm->shield.ntris > 0)) {
-#endif
-
+	if (!(ship_obj->flags & OF_NO_SHIELDS) && (pm->shield.ntris > 0)) {
 		mc.flags = MC_CHECK_SHIELD;
 
 		if ( model_collide(&mc) )	{
