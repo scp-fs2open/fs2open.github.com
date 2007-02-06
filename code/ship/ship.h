@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.14 $
- * $Date: 2006-12-07 18:23:38 $
- * $Author: taylor $
+ * $Revision: 2.150.2.15 $
+ * $Date: 2007-02-06 01:27:33 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.14  2006/12/07 18:23:38  taylor
+ * fix secondary thruster length stuff
+ *  - change thruster_glow_len_factor to thruster02_glow_len_factor so it's a bit more obvious
+ *  - fix tbl entry so that it makes sense what you are setting :)
+ *
  * Revision 2.150.2.13  2006/11/15 00:40:59  taylor
  * fix some "stupid-windows-coder-mistakes" (otherwise known as "putting-more-than-you-should-into-header-files")
  *   (gets rid of some/many compiler warnings, C++ language violations, and strange little bugs/errors)
@@ -2210,7 +2215,7 @@ extern int ship_get_by_signature(int signature);
 
 #ifndef NDEBUG
 extern int Ai_render_debug_flag;
-extern int Show_shield_mesh, New_shield_system;
+extern int Show_shield_mesh;
 extern int Ship_auto_repair;	// flag to indicate auto-repair of subsystem should occur
 #endif
 
