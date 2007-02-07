@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.37 $
- * $Date: 2007-02-07 07:35:21 $
+ * $Revision: 2.38 $
+ * $Date: 2007-02-07 07:59:48 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2007/02/07 07:35:21  Goober5000
+ * Cleaned up the ship-weapon collision code for both conventional weapons and beams.  Improved readability and clarity; untangled program flow; cleaned up sloppy enhancements.  Fixed a few bugs too.
+ *
  * Revision 2.36  2007/02/06 01:27:34  Goober5000
  * remove obsolete and unused shield flag
  *
@@ -525,7 +528,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		{
 			// do the hit effect
 			if (shield_collision)
-				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point, wip->shield_hit_radius);
 			else
 				/* TODO */;
 

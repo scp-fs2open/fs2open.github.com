@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.79 $
- * $Date: 2007-02-07 07:35:22 $
+ * $Revision: 2.80 $
+ * $Date: 2007-02-07 07:59:48 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2007/02/07 07:35:22  Goober5000
+ * Cleaned up the ship-weapon collision code for both conventional weapons and beams.  Improved readability and clarity; untangled program flow; cleaned up sloppy enhancements.  Fixed a few bugs too.
+ *
  * Revision 2.78  2007/01/15 01:37:47  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -2862,7 +2865,7 @@ int beam_collide_ship(obj_pair *pair)
 		{
 			// do the hit effect
 			if (shield_collision)
-				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point, bwi->shield_hit_radius);
 			else
 				/* TODO */;
 
