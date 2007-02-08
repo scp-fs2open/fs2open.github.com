@@ -6,11 +6,15 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.h $
- * $Revision: 1.6 $
- * $Date: 2006-07-08 19:35:52 $
+ * $Revision: 1.7 $
+ * $Date: 2007-02-08 07:39:32 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/07/08 19:35:52  Goober5000
+ * iff defs should allow specification of both flag fields
+ * --Goober5000
+ *
  * Revision 1.5  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
  *
@@ -67,8 +71,8 @@ typedef struct iff_info {
 
 	// flags
 	int flags;
-	int default_ship_flags;
-	int default_ship_flags2;
+	int default_parse_flags;
+	int default_parse_flags2;
 
 	// used internally, not parsed
 	int ai_rearm_timestamp;

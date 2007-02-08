@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.12 $
- * $Date: 2007-01-07 01:00:18 $
+ * $Revision: 1.13 $
+ * $Date: 2007-02-08 07:39:32 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2007/01/07 01:00:18  Goober5000
+ * convert a mission variable to a mission flag
+ *
  * Revision 1.11  2006/09/11 06:49:39  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -259,7 +262,7 @@ void iff_init()
 		}
 
 		// get default ship flags
-		iff->default_ship_flags = 0;
+		iff->default_parse_flags = 0;
 		if (optional_string("$Default Ship Flags:"))
 		{
 			int i, j = 0;
@@ -271,7 +274,7 @@ void iff_init()
 				{
 					if (!stricmp(flag_strings[i], Parse_object_flags[j]))
 					{
-						iff->default_ship_flags |= (1 << j);
+						iff->default_parse_flags |= (1 << j);
 						break;
 					}
 				}
@@ -282,7 +285,7 @@ void iff_init()
 		}
 
 		// again
-		iff->default_ship_flags2 = 0;
+		iff->default_parse_flags2 = 0;
 		if (optional_string("$Default Ship Flags2:"))
 		{
 			int i, j = 0;
@@ -294,7 +297,7 @@ void iff_init()
 				{
 					if (!stricmp(flag_strings[i], Parse_object_flags_2[j]))
 					{
-						iff->default_ship_flags2 |= (1 << j);
+						iff->default_parse_flags2 |= (1 << j);
 						break;
 					}
 				}

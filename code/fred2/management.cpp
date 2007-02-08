@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.29 $
- * $Date: 2007-01-14 14:03:32 $
- * $Author: bobboau $
+ * $Revision: 1.30 $
+ * $Date: 2007-02-08 07:39:32 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,11 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29  2007/01/14 14:03:32  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 1.28  2007/01/10 01:41:27  taylor
  * remove -jpgtga, set 32-bit mode as default (the OGL code will automatically fallback to 16-bit is needed)
  *
@@ -1025,7 +1030,7 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 	getcwd(pwd, 128); // get the present working dir - probably <fs2path>[/modpapth]/data/missions/
 	
 
-	int obj, ship, z1, z2;
+	int obj, z1, z2;
 	float temp_max_hull_strength;
 	ship_info *sip;
 
@@ -1042,52 +1047,65 @@ int create_ship(matrix *orient, vec3d *pos, int ship_type)
 
 	Objects[obj].phys_info.speed = 33.0f;
 
-	ship = Objects[obj].instance;
-	sip = &Ship_info[Ships[ship].ship_info_index];
+	ship *shipp = &Ships[Objects[obj].instance];
+	sip = &Ship_info[shipp->ship_info_index];
 
-	if (query_ship_name_duplicate(ship))
-		fix_ship_name(ship);
+	if (query_ship_name_duplicate(Objects[obj].instance))
+		fix_ship_name(Objects[obj].instance);
 
 	// default stuff according to species and IFF
-	Ships[ship].team = Species_info[Ship_info[Ships[ship].ship_info_index].species].default_iff;
-	Ships[ship].flags = Iff_info[Ships[ship].team].default_ship_flags;
-	Ships[ship].flags2 = Iff_info[Ships[ship].team].default_ship_flags2;
+	shipp->team = Species_info[Ship_info[shipp->ship_info_index].species].default_iff;
+	resolve_parse_flags(&Objects[obj], Iff_info[shipp->team].default_parse_flags, Iff_info[shipp->team].default_parse_flags2);
 
 	// default shield setting
-	z1 = Shield_sys_teams[Ships[ship].team];
+	z1 = Shield_sys_teams[shipp->team];
 	z2 = Shield_sys_types[ship_type];
 	if (((z1 == 1) && z2) || (z2 == 1))
 		Objects[obj].flags |= OF_NO_SHIELDS;
 
-	// orders
-	// Goober5000 - just do this by default; you can't issue orders 
-	// to ships not on your team anyway
-	//if ( Ships[ship].team == TEAM_FRIENDLY )
+	// set orders according to whether the ship is on the player ship's team
 	{
-		// if this ship is not a small ship, then make the orders be the default orders without
-		// the depart item
-		if (!(sip->flags & SIF_SMALL_SHIP))
+		object *temp_objp;
+		ship *temp_shipp = NULL;
+
+		// find the first player ship
+		for (temp_objp = GET_FIRST(&obj_used_list); temp_objp != END_OF_LIST(&obj_used_list); temp_objp = GET_NEXT(temp_objp))
 		{
-			Ships[ship].orders_accepted = ship_get_default_orders_accepted( sip );
-			Ships[ship].orders_accepted &= ~DEPART_ITEM;
+			if (temp_objp->type == OBJ_START)
+			{
+				temp_shipp = &Ships[temp_objp->instance];
+				break;
+			}
+		}
+
+		// set orders if teams match, or if player couldn't be found
+		if (temp_shipp == NULL || shipp->team == temp_shipp->team)
+		{
+			// if this ship is not a small ship, then make the orders be the default orders without
+			// the depart item
+			if (!(sip->flags & SIF_SMALL_SHIP))
+			{
+				shipp->orders_accepted = ship_get_default_orders_accepted( sip );
+				shipp->orders_accepted &= ~DEPART_ITEM;
+			}
+		}
+		else
+		{
+			shipp->orders_accepted = 0;
 		}
 	}
-	//else
-	//{
-	//	Ships[ship].orders_accepted = 0;
-	//}
 	
 	// calc kamikaze stuff
-	if (Ships[ship].special_hitpoint_index != -1)
+	if (shipp->special_hitpoint_index != -1)
 	{
-		temp_max_hull_strength = (float) atoi(Sexp_variables[Ships[ship].special_hitpoint_index+HULL_STRENGTH].text);
+		temp_max_hull_strength = (float) atoi(Sexp_variables[shipp->special_hitpoint_index+HULL_STRENGTH].text);
 	}
 	else
 	{
 		temp_max_hull_strength = sip->max_hull_strength;
 	}
 
-	Ai_info[Ships[ship].ai_index].kamikaze_damage = min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
+	Ai_info[shipp->ai_index].kamikaze_damage = min(1000.0f, 200.0f + (temp_max_hull_strength / 4.0f));
 
 	return obj;
 }

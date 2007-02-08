@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.95 $
- * $Author: bobboau $
- * $Date: 2007-01-14 14:03:33 $
+ * $Revision: 2.96 $
+ * $Author: Goober5000 $
+ * $Date: 2007-02-08 07:39:32 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2007/01/14 14:03:33  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.94  2007/01/07 21:28:11  Goober5000
  * yet more tweaks to the WCS death scream stuff
  * added a ship flag to force screaming
@@ -894,35 +899,34 @@ typedef struct p_object {
 // circumstances for those ships.  This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS	20
+#define MAX_PARSE_OBJECT_FLAGS	24
 
-#define P_OF_CARGO_KNOWN			(1<<0)
-#define P_SF_IGNORE_COUNT			(1<<1)
-#define P_OF_PROTECTED				(1<<2)
-#define P_SF_REINFORCEMENT			(1<<3)
-#define P_OF_NO_SHIELDS				(1<<4)
-#define P_SF_ESCORT					(1<<5)
-#define P_OF_PLAYER_START			(1<<6)
-#define P_SF_NO_ARRIVAL_MUSIC		(1<<7)
-#define P_SF_NO_ARRIVAL_WARP		(1<<8)
-#define P_SF_NO_DEPARTURE_WARP		(1<<9)
-#define P_SF_LOCKED					(1<<10)
-#define P_SF_INVULNERABLE			(1<<11)
-#define P_SF_HIDDEN_FROM_SENSORS	(1<<12)
-#define P_SF_SCANNABLE				(1<<13)	// ship is a "scannable" ship
-#define P_AIF_KAMIKAZE				(1<<14)
-#define P_AIF_NO_DYNAMIC			(1<<15)
-#define P_SF_RED_ALERT_STORE_STATUS	(1<<16)
-#define P_OF_BEAM_PROTECTED			(1<<17)
-#define P_SF_GUARDIAN				(1<<18)
-#define P_KNOSSOS_WARP_IN			(1<<19)
+#define P_SF_CARGO_KNOWN				(1<<0)
+#define P_SF_IGNORE_COUNT				(1<<1)
+#define P_OF_PROTECTED					(1<<2)
+#define P_SF_REINFORCEMENT				(1<<3)
+#define P_OF_NO_SHIELDS					(1<<4)
+#define P_SF_ESCORT						(1<<5)
+#define P_OF_PLAYER_START				(1<<6)
+#define P_SF_NO_ARRIVAL_MUSIC			(1<<7)
+#define P_SF_NO_ARRIVAL_WARP			(1<<8)
+#define P_SF_NO_DEPARTURE_WARP			(1<<9)
+#define P_SF_LOCKED						(1<<10)
+#define P_OF_INVULNERABLE				(1<<11)
+#define P_SF_HIDDEN_FROM_SENSORS		(1<<12)
+#define P_SF_SCANNABLE					(1<<13)	// ship is a "scannable" ship
+#define P_AIF_KAMIKAZE					(1<<14)
+#define P_AIF_NO_DYNAMIC				(1<<15)
+#define P_SF_RED_ALERT_STORE_STATUS		(1<<16)
+#define P_OF_BEAM_PROTECTED				(1<<17)
+#define P_SF_GUARDIAN					(1<<18)
+#define P_KNOSSOS_WARP_IN				(1<<19)
+#define P_SF_VAPORIZE					(1<<20)
+#define P_SF2_STEALTH					(1<<21)
+#define P_SF2_FRIENDLY_STEALTH_INVIS	(1<<22)
+#define P_SF2_DONT_COLLIDE_INVIS		(1<<23)
 
-// these flags do not appear in the array; we may want to add them
-// in the future though
-#define P_SF_VAPORIZE					(1<<22)
-#define P_SF2_STEALTH					(1<<23)
-#define P_SF2_FRIENDLY_STEALTH_INVIS	(1<<24)
-#define P_SF2_DONT_COLLIDE_INVIS		(1<<25)
+// 24 and 25 are currently unused
 
 // the following parse object flags are used internally by FreeSpace
 #define P_SF_USE_UNIQUE_ORDERS		(1<<26)	// tells a newly created ship to use the default orders for that ship
@@ -943,7 +947,7 @@ typedef struct p_object {
 #define P2_SF2_NAV_CARRY_STATUS				(1<<2)
 #define P2_SF2_AFFECTED_BY_GRAVITY			(1<<3)
 #define P2_SF2_TOGGLE_SUBSYSTEM_SCANNING	(1<<4)
-#define P2_SF2_TARGETABLE_AS_BOMB			(1<<5)
+#define P2_OF_TARGETABLE_AS_BOMB			(1<<5)
 #define P2_SF2_NO_BUILTIN_MESSAGES			(1<<6)
 #define P2_SF2_PRIMARIES_LOCKED				(1<<7)
 #define P2_SF2_SECONDARIES_LOCKED			(1<<8)
@@ -1030,6 +1034,7 @@ p_object *mission_parse_get_arrival_ship(char *name);
 p_object *mission_parse_get_parse_object(ushort net_signature);
 p_object *mission_parse_get_parse_object(char *name);
 int parse_create_object(p_object *objp);
+void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2);
 
 void mission_parse_close();
 
