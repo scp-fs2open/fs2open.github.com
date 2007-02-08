@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.298 $
- * $Date: 2007-01-27 19:09:06 $
- * $Author: karajorma $
+ * $Revision: 2.299 $
+ * $Date: 2007-02-08 07:39:32 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.298  2007/01/27 19:09:06  karajorma
+ * Fix add-remove-escort to actually use a priority.
+ * Add yet another missing bit of Network variable code
+ *
  * Revision 2.297  2007/01/15 13:46:55  karajorma
  * Fix bug in the set ammo and weapon SEXPs
  * Add the reset-orders SEXP
@@ -10930,12 +10934,12 @@ void sexp_ship_tag( int n, int tag )
 // sexpression to toggle invulnerability flag of ships.
 void sexp_ships_invulnerable( int n, int invulnerable )
 {
-	sexp_deal_with_ship_flag(n, OF_INVULNERABLE, 0, 0, 0, P_SF_INVULNERABLE, 0, invulnerable);
+	sexp_deal_with_ship_flag(n, OF_INVULNERABLE, 0, 0, 0, P_OF_INVULNERABLE, 0, invulnerable);
 }
 
 void sexp_ships_bomb_targetable(int n, int targetable)
 {
-	sexp_deal_with_ship_flag(n, OF_TARGETABLE_AS_BOMB, 0, 0, 0, 0, P2_SF2_TARGETABLE_AS_BOMB, targetable);
+	sexp_deal_with_ship_flag(n, OF_TARGETABLE_AS_BOMB, 0, 0, 0, 0, P2_OF_TARGETABLE_AS_BOMB, targetable);
 }
 
 // Goober5000

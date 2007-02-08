@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.210 $
- * $Date: 2007-02-03 23:16:33 $
+ * $Revision: 2.211 $
+ * $Date: 2007-02-08 07:39:32 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.210  2007/02/03 23:16:33  Goober5000
+ * fix an old subtle bug
+ *
  * Revision 2.209  2007/01/14 14:03:33  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -1416,6 +1419,10 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 	"beam-protect-ship",
 	"guardian",
 	"special-warp",
+	"vaporize",
+	"stealth",
+	"friendly-stealth-invisible"
+	"don't-collide-invisible",
 };
 
 char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
@@ -2918,6 +2925,47 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 	}
 
+
+	// check the parse object's flags for possible things to set on this newly created ship
+	resolve_parse_flags(&Objects[objnum], p_objp->flags, p_objp->flags2);
+
+
+	// other flag checks
+////////////////////////
+	if (p_objp->ship_max_shield_strength == 0.0f)
+		Objects[objnum].flags |= OF_NO_SHIELDS;
+
+	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
+	// game only before the game or during respawning.
+	// MWA -- changed the next line to remove the !(Game_mode & GM_MULTIPLAYER).  We shouldn't be setting
+	// this flag in single player mode -- it gets set in post process mission.
+	//if ((p_objp->flags & P_OF_PLAYER_START) && (((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) || !(Game_mode & GM_MULTIPLAYER)))
+	if ((p_objp->flags & P_OF_PLAYER_START) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)))) 
+		Objects[objnum].flags |= OF_PLAYER_SHIP;
+
+	// a couple of ai_info flags.  Also, do a reasonable default for the kamikaze damage regardless of
+	// whether this flag is set or not
+	if (p_objp->flags & P_AIF_KAMIKAZE)
+	{
+		Ai_info[shipp->ai_index].ai_flags |= AIF_KAMIKAZE;
+		Ai_info[shipp->ai_index].kamikaze_damage = p_objp->kamikaze_damage;
+	}
+
+	if (p_objp->flags & P_AIF_NO_DYNAMIC)
+		Ai_info[shipp->ai_index].ai_flags |= AIF_NO_DYNAMIC;
+
+	if (p_objp->flags & P_SF_RED_ALERT_STORE_STATUS)
+	{
+		Assert(!(Game_mode & GM_MULTIPLAYER));
+		shipp->flags |= SF_RED_ALERT_STORE_STATUS;
+	}
+
+	if (p_objp->flags & P_KNOSSOS_WARP_IN)
+	{
+		Objects[objnum].flags |= OF_SPECIAL_WARP;
+		Knossos_warp_ani_used = 1;
+	}
+
 	// set the orders that this ship will accept.  It will have already been set to default from the
 	// ship create code, so only set them if the parse object flags say they are unique
 	if (p_objp->flags & P_SF_USE_UNIQUE_ORDERS)
@@ -2952,92 +3000,16 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 	}
 
-	// check the parse object's flags for possible flags to set on this newly created ship
-	if (p_objp->flags & P_OF_PROTECTED)
-		Objects[objnum].flags |= OF_PROTECTED;
-
-	if (p_objp->flags & P_OF_BEAM_PROTECTED)
-		Objects[objnum].flags |= OF_BEAM_PROTECTED;
-
-	if (p_objp->flags & P_OF_CARGO_KNOWN)
-		shipp->flags |= SF_CARGO_REVEALED;
-
-	if (p_objp->flags & P_SF_IGNORE_COUNT)
-		shipp->flags |= SF_IGNORE_COUNT;
-
-	if (p_objp->flags & P_SF_REINFORCEMENT)
-		shipp->flags |= SF_REINFORCEMENT;
-
-	if (p_objp->flags & P_OF_NO_SHIELDS || p_objp->ship_max_shield_strength == 0.0f)
-		Objects[objnum].flags |= OF_NO_SHIELDS;
-
-	if (p_objp->flags & P_SF_ESCORT)
-		shipp->flags |= SF_ESCORT;
-
-	if (p_objp->flags & P_KNOSSOS_WARP_IN)
-	{
-		Objects[objnum].flags |= OF_SPECIAL_WARP;
-		Knossos_warp_ani_used = 1;
-	}
-
-	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
-	// game only before the game or during respawning.
-	// MWA -- changed the next line to remove the !(Game_mode & GM_MULTIPLAYER).  We shouldn't be setting
-	// this flag in single player mode -- it gets set in post process mission.
-	//if ((p_objp->flags & P_OF_PLAYER_START) && (((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)) || !(Game_mode & GM_MULTIPLAYER)))
-	if ((p_objp->flags & P_OF_PLAYER_START) && (Fred_running || ((Game_mode & GM_MULTIPLAYER) && !(Game_mode & GM_IN_MISSION)))) 
-		Objects[objnum].flags |= OF_PLAYER_SHIP;
-
-	if (p_objp->flags & P_SF_NO_ARRIVAL_MUSIC)
-		shipp->flags |= SF_NO_ARRIVAL_MUSIC;
-
-	if (p_objp->flags & P_SF_NO_ARRIVAL_WARP)
-		shipp->flags |= SF_NO_ARRIVAL_WARP;
-
-	if (p_objp->flags & P_SF_NO_DEPARTURE_WARP)
-		shipp->flags |= SF_NO_DEPARTURE_WARP;
-
 	if (p_objp->flags & P_SF_DOCK_LEADER)
 		shipp->flags |= SF_DOCK_LEADER;
-
-	if (p_objp->flags & P_SF_LOCKED)
-		shipp->flags |= SF_LOCKED;
 
 	if (p_objp->flags & P_SF_WARP_BROKEN)
 		shipp->flags |= SF_WARP_BROKEN;
 
 	if (p_objp->flags & P_SF_WARP_NEVER)
 		shipp->flags |= SF_WARP_NEVER;
+////////////////////////
 
-	if (p_objp->flags & P_SF_HIDDEN_FROM_SENSORS)
-		shipp->flags |= SF_HIDDEN_FROM_SENSORS;
-
-	if (p_objp->flags & P_SF_VAPORIZE)
-		shipp->flags |= SF_VAPORIZE;
-
-	if (p_objp->flags & P_SF2_STEALTH)
-		shipp->flags2 |= SF2_STEALTH;
-
-	if (p_objp->flags & P_SF2_FRIENDLY_STEALTH_INVIS)
-		shipp->flags2 |= SF2_FRIENDLY_STEALTH_INVIS;
-
-	if (p_objp->flags & P_SF2_DONT_COLLIDE_INVIS)
-		shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
-
-	if (p_objp->flags2 & P2_SF2_PRIMITIVE_SENSORS)
-		shipp->flags2 |= SF2_PRIMITIVE_SENSORS;
-
-	if (p_objp->flags2 & P2_SF2_NO_SUBSPACE_DRIVE)
-		shipp->flags2 |= SF2_NO_SUBSPACE_DRIVE;
-
-	if (p_objp->flags2 & P2_SF2_AFFECTED_BY_GRAVITY)
-		shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
-
-	if (p_objp->flags2 & P2_SF2_TOGGLE_SUBSYSTEM_SCANNING)
-		shipp->flags2 |= SF2_TOGGLE_SUBSYSTEM_SCANNING;
-
-	if (p_objp->flags2 & P2_SF2_NAV_CARRY_STATUS)
-		shipp->flags2 |= SF2_NAVPOINT_CARRY;
 
 	// if ship is in a wing, and the wing's no_warp_effect flag is set, then set the equivalent
 	// flag for the ship
@@ -3047,71 +3019,15 @@ int parse_create_object_sub(p_object *p_objp)
 	if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NO_DEPARTURE_WARP))
 		shipp->flags |= SF_NO_DEPARTURE_WARP;
 
-	// Kazan
+	// ditto for Kazan
 	if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY))
 		shipp->flags2 |= SF2_NAVPOINT_CARRY;
-
-	// mwa -- 1/30/98.  Do both flags.  Fred uses the ship flag, and FreeSpace will use the object
-	// flag. I'm to lazy at this point to deal with consolidating them.
-	if (p_objp->flags & P_SF_INVULNERABLE)
-		Objects[objnum].flags |= OF_INVULNERABLE;
-
-	if (p_objp->flags2 & P2_SF2_TARGETABLE_AS_BOMB)
-		Objects[objnum].flags |= OF_TARGETABLE_AS_BOMB;
-
-	// Karajorma
-	if (p_objp->flags2 & P2_SF2_NO_BUILTIN_MESSAGES) 
-		shipp->flags2 |= SF2_NO_BUILTIN_MESSAGES;
-
-	// Karajorma
-	if (p_objp->flags2 & P2_SF2_PRIMARIES_LOCKED) 
-		shipp->flags2 |= SF2_PRIMARIES_LOCKED;
-
-	// Karajorma
-	if (p_objp->flags2 & P2_SF2_SECONDARIES_LOCKED) 
-		shipp->flags2 |= SF2_SECONDARIES_LOCKED;
-
-	// Karajorma
-	if (p_objp->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY) 
-		shipp->flags2 |= SF2_SET_CLASS_DYNAMICALLY;
-
-	// Karajorma
-	if (p_objp->flags2 & P2_SF2_TEAM_LOADOUT_STORE_STATUS) 
-		shipp->flags2 |= SF2_TEAM_LOADOUT_STORE_STATUS;
-
-	// Goober5000
-	if (p_objp->flags2 & P2_SF2_NO_DEATH_SCREAM)
-		shipp->flags2 |= SF2_NO_DEATH_SCREAM;
-	if (p_objp->flags2 & P2_SF2_ALWAYS_DEATH_SCREAM)
-		shipp->flags2 |= SF2_ALWAYS_DEATH_SCREAM;
-
-	if (p_objp->flags & P_SF_GUARDIAN)
-		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
-
-	if (p_objp->flags & P_SF_SCANNABLE)
-		shipp->flags |= SF_SCANNABLE;
-
-	if (p_objp->flags & P_SF_RED_ALERT_STORE_STATUS)
-	{
-		Assert(!(Game_mode & GM_MULTIPLAYER));
-		shipp->flags |= SF_RED_ALERT_STORE_STATUS;
-	}
-
-	// a couple of ai_info flags.  Also, do a reasonable default for the kamikaze damage regardless of
-	// whether this flag is set or not
-	if (p_objp->flags & P_AIF_KAMIKAZE)
-	{
-		Ai_info[shipp->ai_index].ai_flags |= AIF_KAMIKAZE;
-		Ai_info[shipp->ai_index].kamikaze_damage = p_objp->kamikaze_damage;
-	}
-
-	if (p_objp->flags & P_AIF_NO_DYNAMIC)
-		Ai_info[shipp->ai_index].ai_flags |= AIF_NO_DYNAMIC;
-
+	
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
 	// is useful in multiplayer when ships respawn
 	shipp->wing_status_wing_index = p_objp->wing_status_wing_index;
 	shipp->wing_status_wing_pos = p_objp->wing_status_wing_pos;
+
 
 	// set up the ai_goals for this object -- all ships created here are AI controlled.
 	if (p_objp->ai_goals != -1)
@@ -3426,6 +3342,113 @@ int parse_alt_class(p_object *p_objp, int num_alts, bool alt_type_1)
 	return num_alts; 
 }
 
+// Goober5000
+void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
+{
+	Assert(objp != NULL);
+	ship *shipp = &Ships[objp->instance];
+
+	if (parse_flags & P_SF_CARGO_KNOWN)
+		shipp->flags |= SF_CARGO_REVEALED;
+
+	if (parse_flags & P_SF_IGNORE_COUNT)
+		shipp->flags |= SF_IGNORE_COUNT;
+
+	if (parse_flags & P_OF_PROTECTED)
+		objp->flags |= OF_PROTECTED;
+
+	if (parse_flags & P_SF_REINFORCEMENT)
+		shipp->flags |= SF_REINFORCEMENT;
+
+	if (parse_flags & P_OF_NO_SHIELDS)
+		objp->flags |= OF_NO_SHIELDS;
+
+	if (parse_flags & P_SF_ESCORT)
+		shipp->flags |= SF_ESCORT;
+
+	// P_OF_PLAYER_START is handled in parse_create_object_sub
+
+	if (parse_flags & P_SF_NO_ARRIVAL_MUSIC)
+		shipp->flags |= SF_NO_ARRIVAL_MUSIC;
+
+	if (parse_flags & P_SF_NO_ARRIVAL_WARP)
+		shipp->flags |= SF_NO_ARRIVAL_WARP;
+
+	if (parse_flags & P_SF_NO_DEPARTURE_WARP)
+		shipp->flags |= SF_NO_DEPARTURE_WARP;
+
+	if (parse_flags & P_SF_LOCKED)
+		shipp->flags |= SF_LOCKED;
+
+	if (parse_flags & P_OF_INVULNERABLE)
+		objp->flags |= OF_INVULNERABLE;
+
+	if (parse_flags & P_SF_HIDDEN_FROM_SENSORS)
+		shipp->flags |= SF_HIDDEN_FROM_SENSORS;
+
+	if (parse_flags & P_SF_SCANNABLE)
+		shipp->flags |= SF_SCANNABLE;
+
+	// P_AIF_KAMIKAZE, P_AIF_NO_DYNAMIC, and P_SF_RED_ALERT_CARRY are handled in parse_create_object_sub
+	
+	if (parse_flags & P_OF_BEAM_PROTECTED)
+		objp->flags |= OF_BEAM_PROTECTED;
+
+	if (parse_flags & P_SF_GUARDIAN)
+		shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
+
+	if (parse_flags & P_SF_VAPORIZE)
+		shipp->flags |= SF_VAPORIZE;
+
+	if (parse_flags & P_SF2_STEALTH)
+		shipp->flags2 |= SF2_STEALTH;
+
+	if (parse_flags & P_SF2_FRIENDLY_STEALTH_INVIS)
+		shipp->flags2 |= SF2_FRIENDLY_STEALTH_INVIS;
+
+	if (parse_flags & P_SF2_DONT_COLLIDE_INVIS)
+		shipp->flags2 |= SF2_DONT_COLLIDE_INVIS;
+
+	if (parse_flags2 & P2_SF2_PRIMITIVE_SENSORS)
+		shipp->flags2 |= SF2_PRIMITIVE_SENSORS;
+
+	if (parse_flags2 & P2_SF2_NO_SUBSPACE_DRIVE)
+		shipp->flags2 |= SF2_NO_SUBSPACE_DRIVE;
+
+	if (parse_flags2 & P2_SF2_NAV_CARRY_STATUS)
+		shipp->flags2 |= SF2_NAVPOINT_CARRY;
+
+	if (parse_flags2 & P2_SF2_AFFECTED_BY_GRAVITY)
+		shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
+
+	if (parse_flags2 & P2_SF2_TOGGLE_SUBSYSTEM_SCANNING)
+		shipp->flags2 |= SF2_TOGGLE_SUBSYSTEM_SCANNING;
+
+	if (parse_flags2 & P2_OF_TARGETABLE_AS_BOMB)
+		objp->flags |= OF_TARGETABLE_AS_BOMB;
+
+	if (parse_flags2 & P2_SF2_NO_BUILTIN_MESSAGES) 
+		shipp->flags2 |= SF2_NO_BUILTIN_MESSAGES;
+
+	if (parse_flags2 & P2_SF2_PRIMARIES_LOCKED) 
+		shipp->flags2 |= SF2_PRIMARIES_LOCKED;
+
+	if (parse_flags2 & P2_SF2_SECONDARIES_LOCKED) 
+		shipp->flags2 |= SF2_SECONDARIES_LOCKED;
+
+	if (parse_flags2 & P2_SF2_SET_CLASS_DYNAMICALLY) 
+		shipp->flags2 |= SF2_SET_CLASS_DYNAMICALLY;
+
+	if (parse_flags2 & P2_SF2_TEAM_LOADOUT_STORE_STATUS) 
+		shipp->flags2 |= SF2_TEAM_LOADOUT_STORE_STATUS;
+
+	if (parse_flags2 & P2_SF2_NO_DEATH_SCREAM)
+		shipp->flags2 |= SF2_NO_DEATH_SCREAM;
+	
+	if (parse_flags2 & P2_SF2_ALWAYS_DEATH_SCREAM)
+		shipp->flags2 |= SF2_ALWAYS_DEATH_SCREAM;
+}
+
 //	Mp points at the text of an object, which begins with the "$Name:" field.
 //	Snags all object information.  Creating the ship now only happens after everything has been parsed.
 //
@@ -3722,7 +3745,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 	if (p_objp->flags & P_OF_PLAYER_START)
 	{
-		p_objp->flags |= P_OF_CARGO_KNOWN;				// make cargo known for players
+		p_objp->flags |= P_SF_CARGO_KNOWN;				// make cargo known for players
 		Player_starts++;
 	}
 
