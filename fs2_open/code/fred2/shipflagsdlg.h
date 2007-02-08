@@ -52,6 +52,10 @@ public:
 	CButton	m_special_warp;
 	CButton	m_disable_messages;
 	CButton m_no_death_scream;
+	CButton m_guardian;
+	CButton m_vaporize;
+	CButton m_stealth;
+	CButton m_friendly_stealth_invisible;
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
 	numeric_edit_control m_destroy_value;
@@ -95,6 +99,10 @@ protected:
 	afx_msg void OnToggleSubsystemScanning();
 	afx_msg void OnDisableBuiltinShip();
 	afx_msg void OnNoDeathScream();
+	afx_msg void OnGuardian();
+	afx_msg void OnVaporize();
+	afx_msg void OnStealth();
+	afx_msg void OnFriendlyStealthInvisible();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
