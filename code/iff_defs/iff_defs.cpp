@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.9.2.2 $
- * $Date: 2006-09-11 01:15:04 $
- * $Author: taylor $
+ * $Revision: 1.9.2.3 $
+ * $Date: 2007-02-08 07:39:34 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9.2.2  2006/09/11 01:15:04  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 1.9.2.1  2006/07/08 19:36:04  Goober5000
  * iff defs should allow specification of both flag fields
  * --Goober5000
@@ -256,7 +259,7 @@ void iff_init()
 		}
 
 		// get default ship flags
-		iff->default_ship_flags = 0;
+		iff->default_parse_flags = 0;
 		if (optional_string("$Default Ship Flags:"))
 		{
 			int i, j = 0;
@@ -268,7 +271,7 @@ void iff_init()
 				{
 					if (!stricmp(flag_strings[i], Parse_object_flags[j]))
 					{
-						iff->default_ship_flags |= (1 << j);
+						iff->default_parse_flags |= (1 << j);
 						break;
 					}
 				}
@@ -279,7 +282,7 @@ void iff_init()
 		}
 
 		// again
-		iff->default_ship_flags2 = 0;
+		iff->default_parse_flags2 = 0;
 		if (optional_string("$Default Ship Flags2:"))
 		{
 			int i, j = 0;
@@ -291,7 +294,7 @@ void iff_init()
 				{
 					if (!stricmp(flag_strings[i], Parse_object_flags_2[j]))
 					{
-						iff->default_ship_flags2 |= (1 << j);
+						iff->default_parse_flags2 |= (1 << j);
 						break;
 					}
 				}
