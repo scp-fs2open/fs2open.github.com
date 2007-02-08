@@ -64,6 +64,10 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_TEAM_LOADOUT_STORE_STATUS, m_team_loadout_store_status);
 	DDX_Control(pDX, IDC_NO_DEATH_SCREAM, m_no_death_scream);
 	DDX_Control(pDX, IDC_ALWAYS_DEATH_SCREAM, m_always_death_scream);
+	DDX_Control(pDX, IDC_GUARDIAN, m_guardian);
+	DDX_Control(pDX, IDC_VAPORIZE, m_vaporize);
+	DDX_Control(pDX, IDC_STEALTH, m_stealth);
+	DDX_Control(pDX, IDC_FRIENDLY_STEALTH_INVISIBLE, m_friendly_stealth_invisible);
 	//}}AFX_DATA_MAP
 
 	if (pDX->m_bSaveAndValidate) {  // get dialog control values
@@ -115,6 +119,10 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_TEAM_LOADOUT_STORE_STATUS, OnTeamLoadoutStoreStatus)
 	ON_BN_CLICKED(IDC_NO_DEATH_SCREAM, OnNoDeathScream)
 	ON_BN_CLICKED(IDC_ALWAYS_DEATH_SCREAM, OnAlwaysDeathScream)
+	ON_BN_CLICKED(IDC_GUARDIAN, OnGuardian)
+	ON_BN_CLICKED(IDC_VAPORIZE, OnVaporize)
+	ON_BN_CLICKED(IDC_STEALTH, OnStealth)
+	ON_BN_CLICKED(IDC_FRIENDLY_STEALTH_INVISIBLE, OnFriendlyStealthInvisible)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -128,14 +136,15 @@ void ship_flags_dlg::setup(int n)
 
 BOOL ship_flags_dlg::OnInitDialog() 
 {
-	int i, j, first;
+	int j, first;
 	int protect_ship = 0, beam_protect_ship = 0, ignore_count = 0, reinforcement = 0, cargo_known = 0;
 	int destroy_before_mission = 0, no_arrival_music = 0, escort = 0, invulnerable = 0, targetable_as_bomb = 0;
 	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, affected_by_gravity = 0;
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
-	int special_warp = 0, disable_messages = 0, set_class_dynamically = 0, team_loadout_store_status = 0;
-	int no_death_scream = 0, always_death_scream = 0;
+	int special_warp = 0, disable_messages = 0, guardian = 0, vaporize = 0, stealth = 0, friendly_stealth_invisible = 0;
+	int no_death_scream = 0, always_death_scream = 0, set_class_dynamically = 0, team_loadout_store_status = 0;
 	object *objp;
+	ship *shipp;
 	bool ship_in_wing = false;
 
 	first = 1;
@@ -143,46 +152,51 @@ BOOL ship_flags_dlg::OnInitDialog()
 	while (objp != END_OF_LIST(&obj_used_list)) {
 		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
 			if (objp->flags & OF_MARKED) {
-				i = objp->instance;
+				shipp = &Ships[objp->instance];
+
 				if (first) {
 					first = 0;
-					scannable = (Ships[i].flags & SF_SCANNABLE) ? 1 : 0;
-					red_alert_carry = (Ships[i].flags & SF_RED_ALERT_STORE_STATUS) ? 1 : 0;
-					special_warp = (Objects[Ships[i].objnum].flags & OF_SPECIAL_WARP) ? 1 : 0;
-					protect_ship = (Objects[Ships[i].objnum].flags & OF_PROTECTED) ? 1 : 0;
-					beam_protect_ship = (Objects[Ships[i].objnum].flags & OF_BEAM_PROTECTED) ? 1 : 0;
-					invulnerable = (Objects[Ships[i].objnum].flags & OF_INVULNERABLE) ? 1 : 0;
-					targetable_as_bomb = (Objects[Ships[i].objnum].flags & OF_TARGETABLE_AS_BOMB) ? 1 : 0;
-					hidden_from_sensors = (Ships[i].flags & SF_HIDDEN_FROM_SENSORS) ? 1 : 0;
-					primitive_sensors = (Ships[i].flags2 & SF2_PRIMITIVE_SENSORS) ? 1 : 0;
-					no_subspace_drive = (Ships[i].flags2 & SF2_NO_SUBSPACE_DRIVE) ? 1 : 0;
-					affected_by_gravity = (Ships[i].flags2 & SF2_AFFECTED_BY_GRAVITY) ? 1 : 0;
-					toggle_subsystem_scanning = (Ships[i].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) ? 1 : 0;
-					ignore_count = (Ships[i].flags & SF_IGNORE_COUNT) ? 1 : 0;
-					no_arrival_music = (Ships[i].flags & SF_NO_ARRIVAL_MUSIC) ? 1 : 0;
-					cargo_known = (Ships[i].flags & SF_CARGO_REVEALED) ? 1 : 0;
-					no_dynamic = (Ai_info[Ships[i].ai_index].ai_flags & AIF_NO_DYNAMIC) ? 1 : 0;
-					disable_messages = (Ships[i].flags2 & SF2_NO_BUILTIN_MESSAGES) ? 1 : 0;
-					set_class_dynamically = (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY) ? 1 : 0;
-					team_loadout_store_status = (Ships[i].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS) ? 1 : 0;
-					no_death_scream = (Ships[i].flags2 & SF2_NO_DEATH_SCREAM) ? 1 : 0;
-					always_death_scream = (Ships[i].flags2 & SF2_ALWAYS_DEATH_SCREAM) ? 1 : 0;
+					scannable = (shipp->flags & SF_SCANNABLE) ? 1 : 0;
+					red_alert_carry = (shipp->flags & SF_RED_ALERT_STORE_STATUS) ? 1 : 0;
+					special_warp = (objp->flags & OF_SPECIAL_WARP) ? 1 : 0;
+					protect_ship = (objp->flags & OF_PROTECTED) ? 1 : 0;
+					beam_protect_ship = (objp->flags & OF_BEAM_PROTECTED) ? 1 : 0;
+					invulnerable = (objp->flags & OF_INVULNERABLE) ? 1 : 0;
+					targetable_as_bomb = (objp->flags & OF_TARGETABLE_AS_BOMB) ? 1 : 0;
+					hidden_from_sensors = (shipp->flags & SF_HIDDEN_FROM_SENSORS) ? 1 : 0;
+					primitive_sensors = (shipp->flags2 & SF2_PRIMITIVE_SENSORS) ? 1 : 0;
+					no_subspace_drive = (shipp->flags2 & SF2_NO_SUBSPACE_DRIVE) ? 1 : 0;
+					affected_by_gravity = (shipp->flags2 & SF2_AFFECTED_BY_GRAVITY) ? 1 : 0;
+					toggle_subsystem_scanning = (shipp->flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) ? 1 : 0;
+					ignore_count = (shipp->flags & SF_IGNORE_COUNT) ? 1 : 0;
+					no_arrival_music = (shipp->flags & SF_NO_ARRIVAL_MUSIC) ? 1 : 0;
+					cargo_known = (shipp->flags & SF_CARGO_REVEALED) ? 1 : 0;
+					no_dynamic = (Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC) ? 1 : 0;
+					disable_messages = (shipp->flags2 & SF2_NO_BUILTIN_MESSAGES) ? 1 : 0;
+					set_class_dynamically = (shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY) ? 1 : 0;
+					team_loadout_store_status = (shipp->flags2 & SF2_TEAM_LOADOUT_STORE_STATUS) ? 1 : 0;
+					no_death_scream = (shipp->flags2 & SF2_NO_DEATH_SCREAM) ? 1 : 0;
+					always_death_scream = (shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM) ? 1 : 0;
+					guardian = (shipp->ship_guardian_threshold) ? 1 : 0;
+					vaporize = (shipp->flags & SF_VAPORIZE) ? 1 : 0;
+					stealth = (shipp->flags2 & SF2_STEALTH) ? 1 : 0;
+					friendly_stealth_invisible = (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS) ? 1 : 0;
 
-					destroy_before_mission = (Ships[i].flags & SF_KILL_BEFORE_MISSION) ? 1 : 0;
-					m_destroy_value.init(Ships[i].final_death_time);
+					destroy_before_mission = (shipp->flags & SF_KILL_BEFORE_MISSION) ? 1 : 0;
+					m_destroy_value.init(shipp->final_death_time);
 
-					kamikaze = (Ai_info[Ships[i].ai_index].ai_flags & AIF_KAMIKAZE) ? 1 : 0;
-					m_kdamage.init( (int) Ai_info[Ships[i].ai_index].kamikaze_damage );
+					kamikaze = (Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) ? 1 : 0;
+					m_kdamage.init( (int) Ai_info[shipp->ai_index].kamikaze_damage );
 
-					escort = (Ships[i].flags & SF_ESCORT) ? 1 : 0;
-					m_escort_value.init(Ships[i].escort_priority);
+					escort = (shipp->flags & SF_ESCORT) ? 1 : 0;
+					m_escort_value.init(shipp->escort_priority);
 					
 					if(The_mission.game_type & MISSION_TYPE_MULTI) {
-						m_respawn_priority.init(Ships[i].respawn_priority);
+						m_respawn_priority.init(shipp->respawn_priority);
 					}
 
 					for (j=0; j<Num_reinforcements; j++) {
-						if (!stricmp(Reinforcements[j].name, Ships[i].ship_name)) {
+						if (!stricmp(Reinforcements[j].name, shipp->ship_name)) {
 							break;
 						}
 					}
@@ -190,56 +204,60 @@ BOOL ship_flags_dlg::OnInitDialog()
 					reinforcement = (j < Num_reinforcements) ? 1 : 0;
 
 					// check if ship in wing
-					ship_in_wing = (Ships[i].wingnum != -1);;
+					ship_in_wing = (shipp->wingnum != -1);;
 				} else {
 
-					scannable = tristate_set( Ships[i].flags & SF_SCANNABLE, scannable );
-					red_alert_carry = tristate_set( Ships[i].flags & SF_RED_ALERT_STORE_STATUS, red_alert_carry );
-					special_warp = tristate_set( Objects[Ships[i].objnum].flags & OF_SPECIAL_WARP, special_warp );
-					protect_ship = tristate_set(Objects[Ships[i].objnum].flags & OF_PROTECTED, protect_ship);
-					beam_protect_ship = tristate_set(Objects[Ships[i].objnum].flags & OF_BEAM_PROTECTED, beam_protect_ship);
-					invulnerable = tristate_set(Objects[Ships[i].objnum].flags & OF_INVULNERABLE, invulnerable);
-					targetable_as_bomb = tristate_set(Objects[Ships[i].objnum].flags & OF_TARGETABLE_AS_BOMB, targetable_as_bomb);
-					hidden_from_sensors = tristate_set(Ships[i].flags & SF_HIDDEN_FROM_SENSORS, hidden_from_sensors);
-					primitive_sensors = tristate_set(Ships[i].flags2 & SF2_PRIMITIVE_SENSORS, primitive_sensors);
-					no_subspace_drive = tristate_set(Ships[i].flags2 & SF2_NO_SUBSPACE_DRIVE, no_subspace_drive);
-					affected_by_gravity = tristate_set(Ships[i].flags2 & SF2_AFFECTED_BY_GRAVITY, affected_by_gravity);
-					toggle_subsystem_scanning = tristate_set(Ships[i].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING, toggle_subsystem_scanning);
-					ignore_count = tristate_set(Ships[i].flags & SF_IGNORE_COUNT, ignore_count);
-					no_arrival_music = tristate_set(Ships[i].flags & SF_NO_ARRIVAL_MUSIC, no_arrival_music);
-					cargo_known = tristate_set(Ships[i].flags & SF_CARGO_REVEALED, cargo_known);
-					no_dynamic = tristate_set( Ai_info[Ships[i].ai_index].ai_flags & AIF_NO_DYNAMIC, no_dynamic );
-					disable_messages = tristate_set(Ships[i].flags2 & SF2_NO_BUILTIN_MESSAGES, disable_messages);
-					set_class_dynamically = tristate_set(Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY, set_class_dynamically);
-					team_loadout_store_status = tristate_set(Ships[i].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS, team_loadout_store_status);
-					no_death_scream = tristate_set(Ships[i].flags2 & SF2_NO_DEATH_SCREAM, no_death_scream);
-					always_death_scream = tristate_set(Ships[i].flags2 & SF2_ALWAYS_DEATH_SCREAM, always_death_scream);
+					scannable = tristate_set( shipp->flags & SF_SCANNABLE, scannable );
+					red_alert_carry = tristate_set( shipp->flags & SF_RED_ALERT_STORE_STATUS, red_alert_carry );
+					special_warp = tristate_set( objp->flags & OF_SPECIAL_WARP, special_warp );
+					protect_ship = tristate_set(objp->flags & OF_PROTECTED, protect_ship);
+					beam_protect_ship = tristate_set(objp->flags & OF_BEAM_PROTECTED, beam_protect_ship);
+					invulnerable = tristate_set(objp->flags & OF_INVULNERABLE, invulnerable);
+					targetable_as_bomb = tristate_set(objp->flags & OF_TARGETABLE_AS_BOMB, targetable_as_bomb);
+					hidden_from_sensors = tristate_set(shipp->flags & SF_HIDDEN_FROM_SENSORS, hidden_from_sensors);
+					primitive_sensors = tristate_set(shipp->flags2 & SF2_PRIMITIVE_SENSORS, primitive_sensors);
+					no_subspace_drive = tristate_set(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE, no_subspace_drive);
+					affected_by_gravity = tristate_set(shipp->flags2 & SF2_AFFECTED_BY_GRAVITY, affected_by_gravity);
+					toggle_subsystem_scanning = tristate_set(shipp->flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING, toggle_subsystem_scanning);
+					ignore_count = tristate_set(shipp->flags & SF_IGNORE_COUNT, ignore_count);
+					no_arrival_music = tristate_set(shipp->flags & SF_NO_ARRIVAL_MUSIC, no_arrival_music);
+					cargo_known = tristate_set(shipp->flags & SF_CARGO_REVEALED, cargo_known);
+					no_dynamic = tristate_set( Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC, no_dynamic );
+					disable_messages = tristate_set(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES, disable_messages);
+					set_class_dynamically = tristate_set(shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY, set_class_dynamically);
+					team_loadout_store_status = tristate_set(shipp->flags2 & SF2_TEAM_LOADOUT_STORE_STATUS, team_loadout_store_status);
+					no_death_scream = tristate_set(shipp->flags2 & SF2_NO_DEATH_SCREAM, no_death_scream);
+					always_death_scream = tristate_set(shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM, always_death_scream);
+					guardian = tristate_set(shipp->ship_guardian_threshold, guardian);
+					vaporize = tristate_set(shipp->flags & SF_VAPORIZE, vaporize);
+					stealth = tristate_set(shipp->flags2 & SF2_STEALTH, stealth);
+					friendly_stealth_invisible = tristate_set(shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS, friendly_stealth_invisible);
 
 					// check the final death time and set the internal variable according to whether or not
 					// the final_death_time is set.  Also, the value in the edit box must be set if all the
 					// values are the same, and cleared if the values are not the same.
-					destroy_before_mission = tristate_set(Ships[i].flags & SF_KILL_BEFORE_MISSION, destroy_before_mission);
-					m_destroy_value.set(Ships[i].final_death_time);
+					destroy_before_mission = tristate_set(shipp->flags & SF_KILL_BEFORE_MISSION, destroy_before_mission);
+					m_destroy_value.set(shipp->final_death_time);
 
-					kamikaze = tristate_set( Ai_info[Ships[i].ai_index].ai_flags & AIF_KAMIKAZE, kamikaze );
-					m_kdamage.set( (int) Ai_info[Ships[i].ai_index].kamikaze_damage );
+					kamikaze = tristate_set( Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE, kamikaze );
+					m_kdamage.set( (int) Ai_info[shipp->ai_index].kamikaze_damage );
 
-					escort = tristate_set(Ships[i].flags & SF_ESCORT, escort);
-					m_escort_value.init(Ships[i].escort_priority);
+					escort = tristate_set(shipp->flags & SF_ESCORT, escort);
+					m_escort_value.init(shipp->escort_priority);
 
 					if(The_mission.game_type & MISSION_TYPE_MULTI) {
-						m_respawn_priority.init(Ships[i].escort_priority);
+						m_respawn_priority.init(shipp->escort_priority);
 					}
 
 					for (j=0; j<Num_reinforcements; j++) {
-						if (!stricmp(Reinforcements[j].name, Ships[i].ship_name)) {
+						if (!stricmp(Reinforcements[j].name, shipp->ship_name)) {
 							break;
 						}
 					}
 					reinforcement = tristate_set(j < Num_reinforcements, reinforcement);
 
 					// check if ship in wing
-					ship_in_wing = (Ships[i].wingnum != -1);;
+					ship_in_wing = (shipp->wingnum != -1);;
 				}
 
 			}
@@ -275,6 +293,10 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_team_loadout_store_status.SetCheck(team_loadout_store_status);
 	m_no_death_scream.SetCheck(no_death_scream);
 	m_always_death_scream.SetCheck(always_death_scream);
+	m_guardian.SetCheck(guardian);
+	m_vaporize.SetCheck(vaporize);
+	m_stealth.SetCheck(stealth);
+	m_friendly_stealth_invisible.SetCheck(friendly_stealth_invisible);
 		
 	m_kdamage.setup(IDC_KDAMAGE, this);
 	m_destroy_value.setup(IDC_DESTROY_VALUE, this);
@@ -295,9 +317,9 @@ BOOL ship_flags_dlg::OnInitDialog()
 		GetDlgItem(IDC_RESPAWN_PRIORITY)->EnableWindow(FALSE);
 	}
 
+	// flags that enable/disable according to whether this isn't a player
 	GetDlgItem(IDC_REINFORCEMENT)->EnableWindow(p_enable);
 	GetDlgItem(IDC_CARGO_KNOWN)->EnableWindow(p_enable);
-	GetDlgItem(IDC_PROTECT_SHIP)->EnableWindow(p_enable);
 	GetDlgItem(IDC_DESTROY_CHECK)->EnableWindow(p_enable);
 	GetDlgItem(IDC_DESTROY_VALUE)->EnableWindow(p_enable);
 	GetDlgItem(IDC_DESTROY_SPIN)->EnableWindow(p_enable);
@@ -349,300 +371,303 @@ void ship_flags_dlg::OnOK()
 	CDialog::OnOK();
 }
 
-void ship_flags_dlg::update_ship(int ship)
+void ship_flags_dlg::update_ship(int shipnum)
 {
+	ship *shipp = &Ships[shipnum];
+	object *objp = &Objects[shipp->objnum];
+
 	if (m_reinforcement.GetCheck() != 2)
-		set_reinforcement(Ships[ship].ship_name, m_reinforcement.GetCheck());
+		set_reinforcement(shipp->ship_name, m_reinforcement.GetCheck());
 
 	switch (m_cargo_known.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags & SF_CARGO_REVEALED) )
+			if ( !(shipp->flags & SF_CARGO_REVEALED) )
 				set_modified();
 
-			Ships[ship].flags |= SF_CARGO_REVEALED;
+			shipp->flags |= SF_CARGO_REVEALED;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags & SF_CARGO_REVEALED )
+			if ( shipp->flags & SF_CARGO_REVEALED )
 				set_modified();
 
-			Ships[ship].flags &= ~SF_CARGO_REVEALED;
+			shipp->flags &= ~SF_CARGO_REVEALED;
 			break;
 	}
 
 	// update the flags for IGNORE_COUNT and PROTECT_SHIP
 	switch (m_protect_ship.GetCheck()) {
 		case 1:
-			if (!(Objects[Ships[ship].objnum].flags & OF_PROTECTED) )
+			if (!(objp->flags & OF_PROTECTED) )
 				set_modified();
 
-			Objects[Ships[ship].objnum].flags |= OF_PROTECTED;
+			objp->flags |= OF_PROTECTED;
 			break;
 
 		case 0:
-			if ( Objects[Ships[ship].objnum].flags & OF_PROTECTED )
+			if ( objp->flags & OF_PROTECTED )
 				set_modified();
 
-			Objects[Ships[ship].objnum].flags &= ~OF_PROTECTED;
+			objp->flags &= ~OF_PROTECTED;
 			break;
 	}
 
 	switch (m_beam_protect_ship.GetCheck()) {
 		case 1:
-			if (!(Objects[Ships[ship].objnum].flags & OF_BEAM_PROTECTED) )
+			if (!(objp->flags & OF_BEAM_PROTECTED) )
 				set_modified();
 
-			Objects[Ships[ship].objnum].flags |= OF_BEAM_PROTECTED;
+			objp->flags |= OF_BEAM_PROTECTED;
 			break;
 
 		case 0:
-			if ( Objects[Ships[ship].objnum].flags & OF_BEAM_PROTECTED )
+			if ( objp->flags & OF_BEAM_PROTECTED )
 				set_modified();
 
-			Objects[Ships[ship].objnum].flags &= ~OF_BEAM_PROTECTED;
+			objp->flags &= ~OF_BEAM_PROTECTED;
 			break;
 	}
 
 	switch (m_invulnerable.GetCheck()) {
 		case 1:
-			if ( !(Objects[Ships[ship].objnum].flags & OF_INVULNERABLE) )
+			if ( !(objp->flags & OF_INVULNERABLE) )
 				set_modified();
 
-			Objects[Ships[ship].objnum].flags |= OF_INVULNERABLE;
+			objp->flags |= OF_INVULNERABLE;
 			break;
 
 		case 0:
-			if ( Objects[Ships[ship].objnum].flags & OF_INVULNERABLE )
+			if ( objp->flags & OF_INVULNERABLE )
 				set_modified();
 
-			Objects[Ships[ship].objnum].flags &= ~OF_INVULNERABLE;
+			objp->flags &= ~OF_INVULNERABLE;
 			break;
 	}
 
 	switch (m_targetable_as_bomb.GetCheck()) {
 		case 1:
-			if ( !(Objects[Ships[ship].objnum].flags & OF_TARGETABLE_AS_BOMB) )
+			if ( !(objp->flags & OF_TARGETABLE_AS_BOMB) )
 				set_modified();
 
-			Objects[Ships[ship].objnum].flags |= OF_TARGETABLE_AS_BOMB;
+			objp->flags |= OF_TARGETABLE_AS_BOMB;
 			break;
 
 		case 0:
-			if ( Objects[Ships[ship].objnum].flags & OF_TARGETABLE_AS_BOMB )
+			if ( objp->flags & OF_TARGETABLE_AS_BOMB )
 				set_modified();
 
-			Objects[Ships[ship].objnum].flags &= ~OF_TARGETABLE_AS_BOMB;
+			objp->flags &= ~OF_TARGETABLE_AS_BOMB;
 			break;
 	}
 
 	switch (m_hidden.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags & SF_HIDDEN_FROM_SENSORS) )
+			if ( !(shipp->flags & SF_HIDDEN_FROM_SENSORS) )
 				set_modified();
 
-			Ships[ship].flags |= SF_HIDDEN_FROM_SENSORS;
+			shipp->flags |= SF_HIDDEN_FROM_SENSORS;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags & SF_HIDDEN_FROM_SENSORS )
+			if ( shipp->flags & SF_HIDDEN_FROM_SENSORS )
 				set_modified();
 
-			Ships[ship].flags &= ~SF_HIDDEN_FROM_SENSORS;
+			shipp->flags &= ~SF_HIDDEN_FROM_SENSORS;
 			break;
 	}
 
 	switch (m_primitive_sensors.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags2 & SF2_PRIMITIVE_SENSORS) )
+			if ( !(shipp->flags2 & SF2_PRIMITIVE_SENSORS) )
 				set_modified();
 
-			Ships[ship].flags2 |= SF2_PRIMITIVE_SENSORS;
+			shipp->flags2 |= SF2_PRIMITIVE_SENSORS;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags2 & SF2_PRIMITIVE_SENSORS )
+			if ( shipp->flags2 & SF2_PRIMITIVE_SENSORS )
 				set_modified();
 
-			Ships[ship].flags2 &= ~SF2_PRIMITIVE_SENSORS;
+			shipp->flags2 &= ~SF2_PRIMITIVE_SENSORS;
 			break;
 	}
 
 	switch (m_no_subspace_drive.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags2 & SF2_NO_SUBSPACE_DRIVE) )
+			if ( !(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE) )
 				set_modified();
 
-			Ships[ship].flags2 |= SF2_NO_SUBSPACE_DRIVE;
+			shipp->flags2 |= SF2_NO_SUBSPACE_DRIVE;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags2 & SF2_NO_SUBSPACE_DRIVE )
+			if ( shipp->flags2 & SF2_NO_SUBSPACE_DRIVE )
 				set_modified();
 
-			Ships[ship].flags2 &= ~SF2_NO_SUBSPACE_DRIVE;
+			shipp->flags2 &= ~SF2_NO_SUBSPACE_DRIVE;
 			break;
 	}
 
 	switch (m_affected_by_gravity.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags2 & SF2_AFFECTED_BY_GRAVITY) )
+			if ( !(shipp->flags2 & SF2_AFFECTED_BY_GRAVITY) )
 				set_modified();
 
-			Ships[ship].flags2 |= SF2_AFFECTED_BY_GRAVITY;
+			shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags2 & SF2_AFFECTED_BY_GRAVITY )
+			if ( shipp->flags2 & SF2_AFFECTED_BY_GRAVITY )
 				set_modified();
 
-			Ships[ship].flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
+			shipp->flags2 &= ~SF2_AFFECTED_BY_GRAVITY;
 			break;
 	}
 
 	switch (m_toggle_subsystem_scanning.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) )
+			if ( !(shipp->flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING) )
 				set_modified();
 
-			Ships[ship].flags2 |= SF2_TOGGLE_SUBSYSTEM_SCANNING;
+			shipp->flags2 |= SF2_TOGGLE_SUBSYSTEM_SCANNING;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING )
+			if ( shipp->flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING )
 				set_modified();
 
-			Ships[ship].flags2 &= ~SF2_TOGGLE_SUBSYSTEM_SCANNING;
+			shipp->flags2 &= ~SF2_TOGGLE_SUBSYSTEM_SCANNING;
 			break;
 	}
 
 	switch (m_ignore_count.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags & SF_IGNORE_COUNT) )
+			if ( !(shipp->flags & SF_IGNORE_COUNT) )
 				set_modified();
 
-			Ships[ship].flags |= SF_IGNORE_COUNT;
+			shipp->flags |= SF_IGNORE_COUNT;
 			break;
 
 		case 0:
-			if (Ships[ship].flags & SF_IGNORE_COUNT)
+			if (shipp->flags & SF_IGNORE_COUNT)
 				set_modified();
 
-			Ships[ship].flags &= ~SF_IGNORE_COUNT;
+			shipp->flags &= ~SF_IGNORE_COUNT;
 			break;
 	}
 
 	switch (m_escort.GetCheck()) {
 		case 1:
-			if (!(Ships[ship].flags & SF_ESCORT))
+			if (!(shipp->flags & SF_ESCORT))
 				set_modified();
 
-			Ships[ship].flags |= SF_ESCORT;
-			m_escort_value.save(&Ships[ship].escort_priority);
+			shipp->flags |= SF_ESCORT;
+			m_escort_value.save(&shipp->escort_priority);
 			break;
 
 		case 0:
-			if (Ships[ship].flags & SF_ESCORT)
+			if (shipp->flags & SF_ESCORT)
 				set_modified();
 
-			Ships[ship].flags &= ~SF_ESCORT;
+			shipp->flags &= ~SF_ESCORT;
 			break;
 	}
 
 	// deal with updating the "destroy before the mission" stuff
 	switch (m_destroy.GetCheck()) {
 		case 0:  // this means no check in checkbox
-			if ( Ships[ship].flags & SF_KILL_BEFORE_MISSION )
+			if ( shipp->flags & SF_KILL_BEFORE_MISSION )
 				set_modified();
 
-			Ships[ship].flags &= ~SF_KILL_BEFORE_MISSION;
+			shipp->flags &= ~SF_KILL_BEFORE_MISSION;
 			break;
 
 		case 1:  // this means checkbox is checked
-			if ( !(Ships[ship].flags & SF_KILL_BEFORE_MISSION) )
+			if ( !(shipp->flags & SF_KILL_BEFORE_MISSION) )
 				set_modified();
 
-			Ships[ship].flags |= SF_KILL_BEFORE_MISSION;
-			m_destroy_value.save(&Ships[ship].final_death_time);
+			shipp->flags |= SF_KILL_BEFORE_MISSION;
+			m_destroy_value.save(&shipp->final_death_time);
 			break;
 	}  // a mixed state is 2, and since it's not handled, it doesn't change
 
 	switch (m_no_arrival_music.GetCheck()) {
 		case 0:
-			if (Ships[ship].flags & SF_NO_ARRIVAL_MUSIC)
+			if (shipp->flags & SF_NO_ARRIVAL_MUSIC)
 				set_modified();
 
-			Ships[ship].flags &= ~SF_NO_ARRIVAL_MUSIC;
+			shipp->flags &= ~SF_NO_ARRIVAL_MUSIC;
 			break;
 
 		case 1:
-			if (!(Ships[ship].flags & SF_NO_ARRIVAL_MUSIC))
+			if (!(shipp->flags & SF_NO_ARRIVAL_MUSIC))
 				set_modified();
 
-			Ships[ship].flags |= SF_NO_ARRIVAL_MUSIC;
+			shipp->flags |= SF_NO_ARRIVAL_MUSIC;
 			break;
 	}
 
 	switch (m_scannable.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags & SF_SCANNABLE) )
+			if ( !(shipp->flags & SF_SCANNABLE) )
 				set_modified();
 
-			Ships[ship].flags |= SF_SCANNABLE;
+			shipp->flags |= SF_SCANNABLE;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags & SF_SCANNABLE )
+			if ( shipp->flags & SF_SCANNABLE )
 				set_modified();
 
-			Ships[ship].flags &= ~SF_SCANNABLE;
+			shipp->flags &= ~SF_SCANNABLE;
 			break;
 	}
 
 	switch (m_red_alert_carry.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags & SF_RED_ALERT_STORE_STATUS) )
+			if ( !(shipp->flags & SF_RED_ALERT_STORE_STATUS) )
 				set_modified();
 
-			Ships[ship].flags |= SF_RED_ALERT_STORE_STATUS;
+			shipp->flags |= SF_RED_ALERT_STORE_STATUS;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags & SF_RED_ALERT_STORE_STATUS )
+			if ( shipp->flags & SF_RED_ALERT_STORE_STATUS )
 				set_modified();
 
-			Ships[ship].flags &= ~SF_RED_ALERT_STORE_STATUS;
+			shipp->flags &= ~SF_RED_ALERT_STORE_STATUS;
 			break;
 	}
 
 	switch (m_special_warp.GetCheck()) {
 		case 1:
-			if ( !(Objects[Ships[ship].objnum].flags & OF_SPECIAL_WARP) )
+			if ( !(objp->flags & OF_SPECIAL_WARP) )
 				set_modified();
 
-			Objects[Ships[ship].objnum].flags |= OF_SPECIAL_WARP;
+			objp->flags |= OF_SPECIAL_WARP;
 			break;
 
 		case 0:
-			if ( (Objects[Ships[ship].objnum].flags & OF_SPECIAL_WARP) )
+			if ( (objp->flags & OF_SPECIAL_WARP) )
 				set_modified();
 
-			Objects[Ships[ship].objnum].flags &= (~OF_SPECIAL_WARP);
+			objp->flags &= (~OF_SPECIAL_WARP);
 			break;
 	}
 
 	switch (m_no_dynamic.GetCheck()) {
 		case 1:
-			if ( !(Ai_info[Ships[ship].ai_index].ai_flags & AIF_NO_DYNAMIC) )
+			if ( !(Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC) )
 				set_modified();
 
-			Ai_info[Ships[ship].ai_index].ai_flags |= AIF_NO_DYNAMIC;
+			Ai_info[shipp->ai_index].ai_flags |= AIF_NO_DYNAMIC;
 			break;
 
 		case 0:
-			if ( Ai_info[Ships[ship].ai_index].ai_flags & AIF_NO_DYNAMIC )
+			if ( Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC )
 				set_modified();
 
-			Ai_info[Ships[ship].ai_index].ai_flags &= ~AIF_NO_DYNAMIC;
+			Ai_info[shipp->ai_index].ai_flags &= ~AIF_NO_DYNAMIC;
 			break;
 	}
 
@@ -650,107 +675,171 @@ void ship_flags_dlg::update_ship(int ship)
 		case 1: {
 			int damage;
 
-			if ( !(Ai_info[Ships[ship].ai_index].ai_flags & AIF_KAMIKAZE) )
+			if ( !(Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) )
 				set_modified();
 
-			Ai_info[Ships[ship].ai_index].ai_flags |= AIF_KAMIKAZE;
+			Ai_info[shipp->ai_index].ai_flags |= AIF_KAMIKAZE;
 			m_kdamage.save(&damage);
-			Ai_info[Ships[ship].ai_index].kamikaze_damage = i2fl(damage);
+			Ai_info[shipp->ai_index].kamikaze_damage = i2fl(damage);
 			break;
 		}
 
 		case 0:
-			if ( Ai_info[Ships[ship].ai_index].ai_flags & AIF_KAMIKAZE )
+			if ( Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE )
 				set_modified();
 
-			Ai_info[Ships[ship].ai_index].ai_flags &= ~AIF_KAMIKAZE;
-			Ai_info[Ships[ship].ai_index].kamikaze_damage = 0.0f;
+			Ai_info[shipp->ai_index].ai_flags &= ~AIF_KAMIKAZE;
+			Ai_info[shipp->ai_index].kamikaze_damage = 0.0f;
 			break;
 	}
 
 	switch (m_disable_messages.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags2 & SF2_NO_BUILTIN_MESSAGES) )
+			if ( !(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES) )
 				set_modified();
 
-			Ships[ship].flags2 |= SF2_NO_BUILTIN_MESSAGES;
+			shipp->flags2 |= SF2_NO_BUILTIN_MESSAGES;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags2 & SF2_NO_BUILTIN_MESSAGES )
+			if ( shipp->flags2 & SF2_NO_BUILTIN_MESSAGES )
 				set_modified();
 
-			Ships[ship].flags2 &= ~SF2_NO_BUILTIN_MESSAGES;
+			shipp->flags2 &= ~SF2_NO_BUILTIN_MESSAGES;
 			break;
 	}
 
 	switch (m_set_class_dynamically.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags2 & SF2_SET_CLASS_DYNAMICALLY) )
+			if ( !(shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY) )
 				set_modified();
 
-			Ships[ship].flags2 |= SF2_SET_CLASS_DYNAMICALLY;
+			shipp->flags2 |= SF2_SET_CLASS_DYNAMICALLY;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags2 & SF2_SET_CLASS_DYNAMICALLY )
+			if ( shipp->flags2 & SF2_SET_CLASS_DYNAMICALLY )
 				set_modified();
 
-			Ships[ship].flags2 &= ~SF2_SET_CLASS_DYNAMICALLY;
+			shipp->flags2 &= ~SF2_SET_CLASS_DYNAMICALLY;
 			break;
 	}
 
 	switch (m_team_loadout_store_status.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS) )
+			if ( !(shipp->flags2 & SF2_TEAM_LOADOUT_STORE_STATUS) )
 				set_modified();
 
-			Ships[ship].flags2 |= SF2_TEAM_LOADOUT_STORE_STATUS;
+			shipp->flags2 |= SF2_TEAM_LOADOUT_STORE_STATUS;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS )
+			if ( shipp->flags2 & SF2_TEAM_LOADOUT_STORE_STATUS )
 				set_modified();
 
-			Ships[ship].flags2 &= ~SF2_TEAM_LOADOUT_STORE_STATUS;
+			shipp->flags2 &= ~SF2_TEAM_LOADOUT_STORE_STATUS;
 			break;
 	}
 
 	switch (m_no_death_scream.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags2 & SF2_NO_DEATH_SCREAM) )
+			if ( !(shipp->flags2 & SF2_NO_DEATH_SCREAM) )
 				set_modified();
 
-			Ships[ship].flags2 |= SF2_NO_DEATH_SCREAM;
+			shipp->flags2 |= SF2_NO_DEATH_SCREAM;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags2 & SF2_NO_DEATH_SCREAM )
+			if ( shipp->flags2 & SF2_NO_DEATH_SCREAM )
 				set_modified();
 
-			Ships[ship].flags2 &= ~SF2_NO_DEATH_SCREAM;
+			shipp->flags2 &= ~SF2_NO_DEATH_SCREAM;
 			break;
 	}
 
 	switch (m_always_death_scream.GetCheck()) {
 		case 1:
-			if ( !(Ships[ship].flags2 & SF2_ALWAYS_DEATH_SCREAM) )
+			if ( !(shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM) )
 				set_modified();
 
-			Ships[ship].flags2 |= SF2_ALWAYS_DEATH_SCREAM;
+			shipp->flags2 |= SF2_ALWAYS_DEATH_SCREAM;
 			break;
 
 		case 0:
-			if ( Ships[ship].flags2 & SF2_ALWAYS_DEATH_SCREAM )
+			if ( shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM )
 				set_modified();
 
-			Ships[ship].flags2 &= ~SF2_ALWAYS_DEATH_SCREAM;
+			shipp->flags2 &= ~SF2_ALWAYS_DEATH_SCREAM;
 			break;
 	}
 
-	Ships[ship].respawn_priority = 0;
+	switch (m_guardian.GetCheck()) {
+		case 1:
+			if ( !(shipp->ship_guardian_threshold) )
+				set_modified();
+
+			shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
+			break;
+
+		case 0:
+			if ( shipp->ship_guardian_threshold )
+				set_modified();
+
+			shipp->ship_guardian_threshold = 0;
+			break;
+	}
+
+	switch (m_vaporize.GetCheck()) {
+		case 1:
+			if ( !(shipp->flags & SF_VAPORIZE) )
+				set_modified();
+
+			shipp->flags |= SF_VAPORIZE;
+			break;
+
+		case 0:
+			if ( shipp->flags & SF_VAPORIZE )
+				set_modified();
+
+			shipp->flags &= ~SF_VAPORIZE;
+			break;
+	}
+
+	switch (m_stealth.GetCheck()) {
+		case 1:
+			if ( !(shipp->flags2 & SF2_STEALTH) )
+				set_modified();
+
+			shipp->flags2 |= SF2_STEALTH;
+			break;
+
+		case 0:
+			if ( shipp->flags2 & SF2_STEALTH )
+				set_modified();
+
+			shipp->flags2 &= ~SF2_STEALTH;
+			break;
+	}
+
+	switch (m_friendly_stealth_invisible.GetCheck()) {
+		case 1:
+			if ( !(shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS) )
+				set_modified();
+
+			shipp->flags2 |= SF2_FRIENDLY_STEALTH_INVIS;
+			break;
+
+		case 0:
+			if ( shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS )
+				set_modified();
+
+			shipp->flags2 &= ~SF2_FRIENDLY_STEALTH_INVIS;
+			break;
+	}
+
+	shipp->respawn_priority = 0;
 	if(The_mission.game_type & MISSION_TYPE_MULTI) {
-		m_respawn_priority.save(&Ships[ship].respawn_priority);
+		m_respawn_priority.save(&shipp->respawn_priority);
 	}
 }
 
@@ -997,5 +1086,41 @@ void ship_flags_dlg::OnAlwaysDeathScream()
 		m_always_death_scream.SetCheck(0);
 	} else {
 		m_always_death_scream.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnGuardian()
+{
+	if (m_guardian.GetCheck() == 1) {
+ 		m_guardian.SetCheck(0);
+	} else {
+		m_guardian.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnVaporize()
+{
+	if (m_vaporize.GetCheck() == 1) {
+ 		m_vaporize.SetCheck(0);
+	} else {
+		m_vaporize.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnStealth()
+{
+	if (m_stealth.GetCheck() == 1) {
+ 		m_stealth.SetCheck(0);
+	} else {
+		m_stealth.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnFriendlyStealthInvisible()
+{
+	if (m_friendly_stealth_invisible.GetCheck() == 1) {
+ 		m_friendly_stealth_invisible.SetCheck(0);
+	} else {
+		m_friendly_stealth_invisible.SetCheck(1);
 	}
 }
