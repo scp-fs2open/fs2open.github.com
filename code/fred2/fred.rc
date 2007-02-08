@@ -2147,12 +2147,12 @@ BEGIN
     LTEXT           "Wave Filename",IDC_STATIC,7,139,50,8
 END
 
-IDD_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 149, 338
+IDD_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 150, 372
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Additional Ship Properties"
 FONT 8, "MS Sans Serif"
 BEGIN
-    CONTROL         "Destroy before Mission",IDC_DESTROY_CHECK,"Button",
+    CONTROL         "Destroy Before Mission",IDC_DESTROY_CHECK,"Button",
                     BS_3STATE | WS_TABSTOP,7,7,87,10
     EDITTEXT        IDC_DESTROY_VALUE,19,17,40,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Spin2",IDC_DESTROY_SPIN,"msctls_updown32",
@@ -2165,7 +2165,7 @@ BEGIN
                     WS_TABSTOP,7,43,59,10
     CONTROL         "Toggle Subsystem Scanning",
                     IDC_TOGGLE_SUBSYSTEM_SCANNING,"Button",BS_3STATE | 
-                    WS_TABSTOP,7,52,135,10
+                    WS_TABSTOP,7,52,105,10
     CONTROL         "Reinforcement Unit",IDC_REINFORCEMENT,"Button",
                     BS_3STATE | WS_TABSTOP,7,62,75,10
     CONTROL         "Protect Ship",IDC_PROTECT_SHIP,"Button",BS_3STATE | 
@@ -2176,47 +2176,56 @@ BEGIN
                     BS_3STATE | WS_TABSTOP,7,91,93,10
     CONTROL         "Escort Ship",IDC_ESCORT,"Button",BS_3STATE | WS_TABSTOP,
                     7,101,52,10
-    LTEXT           "Priority",IDC_STATIC,19,114,22,8
     EDITTEXT        IDC_ESCORT_PRIORITY,43,112,26,12,ES_AUTOHSCROLL
+    LTEXT           "Priority",IDC_STATIC,19,114,22,8
     CONTROL         "No Arrival Music",IDC_NO_ARRIVAL_MUSIC,"Button",
                     BS_3STATE | WS_TABSTOP,7,126,67,10
     CONTROL         "Invulnerable",IDC_INVULNERABLE,"Button",BS_3STATE | 
                     WS_TABSTOP,7,136,55,10
-    CONTROL         "Hidden from Sensors",IDC_HIDDEN_FROM_SENSORS,"Button",
-                    BS_3STATE | WS_TABSTOP,7,146,81,10
+    CONTROL         "Guardianed",IDC_GUARDIAN,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,146,55,10
     CONTROL         "Primitive Sensors",IDC_PRIMITIVE_SENSORS,"Button",
-                    BS_3STATE | WS_TABSTOP,7,156,69,10
+                    BS_3STATE | WS_TABSTOP,7,155,69,10
     CONTROL         "No Subspace Drive",IDC_NO_SUBSPACE_DRIVE,"Button",
-                    BS_3STATE | WS_TABSTOP,7,165,78,10
+                    BS_3STATE | WS_TABSTOP,7,164,78,10
+    CONTROL         "Hidden from Sensors",IDC_HIDDEN_FROM_SENSORS,"Button",
+                    BS_3STATE | WS_TABSTOP,7,173,81,10
+    CONTROL         "Stealth",IDC_STEALTH,"Button",BS_3STATE | WS_TABSTOP,7,
+                    182,55,10
+    CONTROL         "Invisible to Friendlies When Stealthed",
+                    IDC_FRIENDLY_STEALTH_INVISIBLE,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,191,131,10
     CONTROL         "Kamikaze",IDC_KAMIKAZE,"Button",BS_3STATE | WS_TABSTOP,
-                    7,175,47,10
-    LTEXT           "Damage",IDC_STATIC,19,186,28,8
-    EDITTEXT        IDC_KDAMAGE,51,184,57,12,ES_AUTOHSCROLL
+                    7,202,43,10
+    EDITTEXT        IDC_KDAMAGE,51,211,57,12,ES_AUTOHSCROLL
+    LTEXT           "Damage",IDC_STATIC,19,213,28,8
     CONTROL         "No Dynamic Goals",IDC_NO_DYNAMIC,"Button",BS_3STATE | 
-                    WS_TABSTOP,7,198,75,10
+                    WS_TABSTOP,7,225,75,10
     CONTROL         "Red Alert Carry Status",IDC_REDALERTCARRY,"Button",
-                    BS_3STATE | WS_TABSTOP,7,208,85,10
+                    BS_3STATE | WS_TABSTOP,7,235,85,10
     CONTROL         "Affected By Gravity",IDC_AFFECTED_BY_GRAVITY,"Button",
-                    BS_3STATE | WS_TABSTOP,7,218,77,10
+                    BS_3STATE | WS_TABSTOP,7,245,77,10
     CONTROL         "Never Scream on Death",IDC_NO_DEATH_SCREAM,"Button",
-                    BS_3STATE | WS_TABSTOP,7,227,135,10
+                    BS_3STATE | WS_TABSTOP,7,254,96,10
     CONTROL         "Always Scream on Death",IDC_ALWAYS_DEATH_SCREAM,"Button",
-                    BS_3STATE | WS_TABSTOP,7,236,135,10
+                    BS_3STATE | WS_TABSTOP,7,263,98,10
+    CONTROL         "Vaporize on Death",IDC_VAPORIZE,"Button",BS_3STATE | 
+                    WS_TABSTOP,7,273,97,10
     CONTROL         "Special Warp",IDC_SPECIAL_WARP,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,246,59,10
-    CONTROL         "Targetable as bomb",IDC_TARGETABLE_AS_BOMB,"Button",
-                    BS_3STATE | WS_TABSTOP,7,256,79,10
+                    WS_TABSTOP,7,284,59,10
+    CONTROL         "Targetable as Bomb",IDC_TARGETABLE_AS_BOMB,"Button",
+                    BS_3STATE | WS_TABSTOP,7,294,79,10
     CONTROL         "Disable Built-in Messages",IDC_DISABLE_BUILTIN_SHIP,
-                    "Button",BS_3STATE | WS_TABSTOP,7,266,96,10
+                    "Button",BS_3STATE | WS_TABSTOP,7,304,96,10
     CONTROL         "Set Class Dynamically",IDC_SET_CLASS_DYNAMICALLY,"Button",
-                    BS_3STATE | WS_TABSTOP,7,275,85,10
+                    BS_3STATE | WS_TABSTOP,7,313,85,10
     CONTROL         "Team Loadout Store Status",
                     IDC_TEAM_LOADOUT_STORE_STATUS,"Button",BS_3STATE | 
-                    WS_TABSTOP,7,285,103,10
-    LTEXT           "Respawn Priority",IDC_STATIC,29,301,54,8
-    EDITTEXT        IDC_RESPAWN_PRIORITY,93,298,49,14,ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "OK",IDOK,7,317,65,14
-    PUSHBUTTON      "Cancel",IDCANCEL,77,317,65,14
+                    WS_TABSTOP,7,323,103,10
+    EDITTEXT        IDC_RESPAWN_PRIORITY,94,333,49,14,ES_AUTOHSCROLL
+    LTEXT           "Respawn Priority",IDC_STATIC,39,336,54,8
+    DEFPUSHBUTTON   "OK",IDOK,7,351,65,14
+    PUSHBUTTON      "Cancel",IDCANCEL,78,351,65,14
 END
 
 IDD_ADD_VARIABLE DIALOG DISCARDABLE  0, 0, 422, 102
@@ -2774,9 +2783,9 @@ BEGIN
     IDD_SHIP_FLAGS, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 142
+        RIGHTMARGIN, 143
         TOPMARGIN, 7
-        BOTTOMMARGIN, 331
+        BOTTOMMARGIN, 365
     END
 
     IDD_ADD_VARIABLE, DIALOG

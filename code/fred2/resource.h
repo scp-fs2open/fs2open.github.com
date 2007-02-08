@@ -906,9 +906,12 @@
 #define IDC_PRIMITIVE_SENSORS           1472
 #define IDC_NO_SUBSPACE_DRIVE           1473
 #define IDC_ANI_FILENAME                1474
+#define IDC_GUARDIAN                    1474
 #define IDC_SCANNABLE                   1475
 #define IDC_RED_ALERT                   1476
+#define IDC_VAPORIZE                    1476
 #define IDC_SCRAMBLE                    1477
+#define IDC_FRIENDLY_STEALTH_INVISIBLE  1477
 #define IDC_KDAMAGE                     1478
 #define IDC_NO_BRIEFING                 1478
 #define IDC_NO_DYNAMIC                  1479
@@ -924,6 +927,7 @@
 #define IDC_RESET_SCORES                1484
 #define IDC_RESPAWN_SPIN                1485
 #define IDC_ALWAYS_DEATH_SCREAM         1485
+#define IDC_STEALTH                     1486
 #define IDC_OBJ_TEAM                    1489
 #define IDC_CAMPAIGN_TYPE               1491
 #define IDC_SUPPORT_ALLOWED             1492
