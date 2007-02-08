@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.38 $
- * $Date: 2007-01-27 18:39:09 $
- * $Author: karajorma $
+ * $Revision: 2.259.2.39 $
+ * $Date: 2007-02-08 07:39:35 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.38  2007/01/27 18:39:09  karajorma
+ * Fix add-remove-escort to actually use a priority.
+ *
  * Revision 2.259.2.37  2007/01/15 11:57:02  karajorma
  * Add the reset-orders SEXP
  * Some general houskeeping to keep 3.6.9 and HEAD throwing up lots of annoying diffs that are just spacing issues.
@@ -10822,12 +10825,12 @@ void sexp_ship_tag( int n, int tag )
 // sexpression to toggle invulnerability flag of ships.
 void sexp_ships_invulnerable( int n, int invulnerable )
 {
-	sexp_deal_with_ship_flag(n, OF_INVULNERABLE, 0, 0, 0, P_SF_INVULNERABLE, 0, invulnerable);
+	sexp_deal_with_ship_flag(n, OF_INVULNERABLE, 0, 0, 0, P_OF_INVULNERABLE, 0, invulnerable);
 }
 
 void sexp_ships_bomb_targetable(int n, int targetable)
 {
-	sexp_deal_with_ship_flag(n, OF_TARGETABLE_AS_BOMB, 0, 0, 0, 0, P2_SF2_TARGETABLE_AS_BOMB, targetable);
+	sexp_deal_with_ship_flag(n, OF_TARGETABLE_AS_BOMB, 0, 0, 0, 0, P2_OF_TARGETABLE_AS_BOMB, targetable);
 }
 
 // Goober5000
