@@ -52,6 +52,7 @@ public:
 	CButton	m_special_warp;
 	CButton	m_disable_messages;
 	CButton m_no_death_scream;
+	CButton m_always_death_scream;
 	CButton m_guardian;
 	CButton m_vaporize;
 	CButton m_stealth;
@@ -99,6 +100,7 @@ protected:
 	afx_msg void OnToggleSubsystemScanning();
 	afx_msg void OnDisableBuiltinShip();
 	afx_msg void OnNoDeathScream();
+	afx_msg void OnAlwaysDeathScream();
 	afx_msg void OnGuardian();
 	afx_msg void OnVaporize();
 	afx_msg void OnStealth();

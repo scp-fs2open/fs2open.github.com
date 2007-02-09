@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.25 $
- * $Date: 2007-02-08 07:39:34 $
+ * $Revision: 2.178.2.26 $
+ * $Date: 2007-02-09 04:53:27 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.25  2007/02/08 07:39:34  Goober5000
+ * fix two bugs:
+ * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
+ * --ships were created with default allowed comm orders regardless of which team they were on
+ *
  * Revision 2.178.2.24  2007/02/03 23:16:41  Goober5000
  * fix an old subtle bug
  *
@@ -1407,6 +1412,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"primaries-locked", 
 	"secondaries-locked",
 	"no-death-scream",
+	"always-death-scream",
 };
 
 
@@ -3301,6 +3307,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_SF2_NO_DEATH_SCREAM)
 		shipp->flags2 |= SF2_NO_DEATH_SCREAM;
+	
+	if (parse_flags2 & P2_SF2_ALWAYS_DEATH_SCREAM)
+		shipp->flags2 |= SF2_ALWAYS_DEATH_SCREAM;
 }
 
 //	Mp points at the text of an object, which begins with the "$Name:" field.

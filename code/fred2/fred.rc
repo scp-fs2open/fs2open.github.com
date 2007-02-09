@@ -2120,7 +2120,7 @@ BEGIN
     LTEXT           "Wave Filename",IDC_STATIC,7,139,50,8
 END
 
-IDD_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 149, 359
+IDD_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 149, 366
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Additional Ship Properties"
 FONT 8, "MS Sans Serif"
@@ -2169,7 +2169,7 @@ BEGIN
                     IDC_FRIENDLY_STEALTH_INVISIBLE,"Button",BS_3STATE | 
                     WS_TABSTOP,7,192,126,10
     CONTROL         "Kamikaze",IDC_KAMIKAZE,"Button",BS_3STATE | WS_TABSTOP,
-                    7,204,47,10
+                    7,204,42,10
     EDITTEXT        IDC_KDAMAGE,51,213,57,12,ES_AUTOHSCROLL
     LTEXT           "Damage",IDC_STATIC,19,215,28,8
     CONTROL         "No Dynamic Goals",IDC_NO_DYNAMIC,"Button",BS_3STATE | 
@@ -2186,14 +2186,16 @@ BEGIN
                     BS_3STATE | WS_TABSTOP,7,277,79,10
     CONTROL         "Disable Built-in Messages",IDC_DISABLE_BUILTIN_SHIP,
                     "Button",BS_3STATE | WS_TABSTOP,7,287,96,10
-    CONTROL         "No Death Scream",IDC_NO_DEATH_SCREAM,"Button",BS_3STATE | 
-                    WS_TABSTOP,7,297,96,10
-    EDITTEXT        IDC_RESPAWN_PRIORITY,93,307,49,14,ES_AUTOHSCROLL
-    LTEXT           "Respawn Priority",IDC_STATIC,29,310,54,8
+    CONTROL         "Never Scream On Death",IDC_NO_DEATH_SCREAM,"Button",
+                    BS_3STATE | WS_TABSTOP,7,297,96,10
+    CONTROL         "Always Scream on Death",IDC_ALWAYS_DEATH_SCREAM,"Button",
+                    BS_3STATE | WS_TABSTOP,7,306,98,10
     CONTROL         "Vaporize on Death",IDC_VAPORIZE,"Button",BS_3STATE | 
-                    WS_TABSTOP,7,322,97,10
-    DEFPUSHBUTTON   "OK",IDOK,7,338,65,14
-    PUSHBUTTON      "Cancel",IDCANCEL,77,338,65,14
+                    WS_TABSTOP,7,316,97,10
+    EDITTEXT        IDC_RESPAWN_PRIORITY,93,328,49,14,ES_AUTOHSCROLL
+    LTEXT           "Respawn Priority",IDC_STATIC,29,331,54,8
+    DEFPUSHBUTTON   "OK",IDOK,7,345,65,14
+    PUSHBUTTON      "Cancel",IDCANCEL,77,345,65,14
 END
 
 IDD_ADD_VARIABLE DIALOG DISCARDABLE  0, 0, 422, 102
@@ -2747,7 +2749,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 142
         TOPMARGIN, 7
-        BOTTOMMARGIN, 352
+        BOTTOMMARGIN, 359
     END
 
     IDD_ADD_VARIABLE, DIALOG
