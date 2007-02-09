@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-12-28 00:59:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.38 $
+ * $Date: 2007-02-09 23:57:24 $
+ * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
  * on the harddrive, cd-rom, or in a pack file on either of those.
@@ -20,6 +20,9 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/12/28 00:59:19  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.36  2006/09/11 05:49:05  taylor
  * various small cleanup and speedup changes
  * add a cf_find_file_location_ext() function, which you can pass a filename and a list of extensions and it will search for all of them at once
@@ -735,10 +738,11 @@ int is_ext_in_list( char *ext_list, char *ext )
 void cf_search_root_path(int root_index)
 {
 	int i;
+	int num_files = 0;
 
 	cf_root *root = cf_get_root(root_index);
 
-	mprintf(( "Searching root '%s'\n", root->path ));
+	mprintf(( "Searching root '%s' ... ", root->path ));
 
 	char search_path[CF_MAX_PATHNAME_LENGTH];
 
@@ -783,8 +787,8 @@ void cf_search_root_path(int root_index)
 							file->size = find.size;
 							file->pack_offset = 0;			// Mark as a non-packed file
 
+							num_files++;
 							//mprintf(( "Found file '%s'\n", file->name_ext ));
-
 						}
 					}
 
@@ -833,6 +837,7 @@ void cf_search_root_path(int root_index)
 
 							file->pack_offset = 0;			// Mark as a non-packed file
 
+							num_files++;
 							//mprintf(( "Found file '%s'\n", file->name_ext ));
 						}
 					}
@@ -842,6 +847,8 @@ void cf_search_root_path(int root_index)
 		}
 #endif
 	}
+
+	mprintf(( "%i files\n", num_files ));
 }
 
 
@@ -860,11 +867,11 @@ typedef struct VP_FILE {
 } VP_FILE;
 
 void cf_search_root_pack(int root_index)
-{	
+{
+	int num_files = 0;
 	cf_root *root = cf_get_root(root_index);
 
 	Assert( root != NULL );
-	mprintf(( "Searching root pack '%s'\n", root->path ));
 
 	// Open data		
 	FILE *fp = fopen( root->path, "rb" );
@@ -872,6 +879,8 @@ void cf_search_root_pack(int root_index)
 	if (!fp) {
 		return;
 	}
+
+	mprintf(( "Searching root pack '%s' ... ", root->path ));
 
 	VP_FILE_HEADER VP_header;
 
@@ -934,6 +943,8 @@ void cf_search_root_pack(int root_index)
 							file->write_time = (time_t)find.write_time;
 							file->size = find.size;
 							file->pack_offset = find.offset;			// Mark as a packed file
+
+							num_files++;
 							//mprintf(( "Found pack file '%s'\n", file->name_ext ));
 						}
 					}
@@ -941,8 +952,10 @@ void cf_search_root_pack(int root_index)
 			}
 		}
 	}
+
 	fclose(fp);
-	
+
+	mprintf(( "%i files\n", num_files ));
 }
 
 
@@ -1277,13 +1290,12 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	strncpy(filespec, filename, MAX_FILENAME_LEN-1);
 
 	for (i = 0; i < num_search_dirs; i++) {
-		for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
-			// strip any extension and add the one we want to check for
-			char *p = strchr(filespec, '.');
-			if ( p ) *p = 0;
-
-			SAFE_STRCAT( filespec, ext_list[cur_ext], sizeof(filespec)-1 );
-
+		// always hit the disk if we are looking in only one path
+		if (num_search_dirs == 1) {
+			cfs_slow_search = 1;
+		}
+		// otherwise hit based on a directory type
+		else {
 			switch (search_order[i])
 			{
 				case CF_TYPE_ROOT:
@@ -1295,52 +1307,56 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 				case CF_TYPE_CACHE:
 					cfs_slow_search = 1;
 					break;
- 
-				default:
-					// always hit the disk if we are looking in only one path
-					cfs_slow_search = (num_search_dirs == 1) ? 1 : 0;
-					break;
 			}
+		}
+
+		if ( !cfs_slow_search )
+			continue;
+
+		for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
+			// strip any extension and add the one we want to check for
+			char *p = strchr(filespec, '.');
+			if ( p ) *p = 0;
+
+			SAFE_STRCAT( filespec, ext_list[cur_ext], sizeof(filespec)-1 );
  
-			if (cfs_slow_search) {
-				cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
+			cf_create_default_path_string( longname, sizeof(longname)-1, search_order[i], filespec, localize );
 
 #if defined _WIN32
-				if (!Cmdline_safeloading) {
-					findhandle = _findfirst(longname, &findstruct);
-					if (findhandle != -1) {
-						if (size)
-							*size = findstruct.size;
+			if (!Cmdline_safeloading) {
+				findhandle = _findfirst(longname, &findstruct);
+				if (findhandle != -1) {
+					if (size)
+						*size = findstruct.size;
 
-						_findclose(findhandle);
+					_findclose(findhandle);
 
-						if (offset)
-							*offset = 0;
+					if (offset)
+						*offset = 0;
 
-						if (pack_filename)
-							strncpy( pack_filename, longname, max_out );
+					if (pack_filename)
+						strncpy( pack_filename, longname, max_out );
 
-						return cur_ext;
-					}
-				} else
+					return cur_ext;
+				}
+			} else
 #endif
-				{
-					FILE *fp = fopen(longname, "rb" );
+			{
+				FILE *fp = fopen(longname, "rb" );
 
-					if (fp) {
-						if (size)
-							*size = filelength( fileno(fp) );
+				if (fp) {
+					if (size)
+						*size = filelength( fileno(fp) );
 
-						fclose(fp);
+					fclose(fp);
 
-						if (offset)
-							*offset = 0;
+					if (offset)
+						*offset = 0;
 
-						if (pack_filename)
-							strncpy(pack_filename, longname, max_out);
+					if (pack_filename)
+						strncpy(pack_filename, longname, max_out);
 
-						return cur_ext;
-					}
+					return cur_ext;
 				}
 			}
 		}
@@ -1348,14 +1364,29 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 
 	// Search the pak files and CD-ROM.
 
+	// first off, make sure that we don't have an extension
+	char *p = strchr(filespec, '.');
+	if ( p ) *p = 0;
+
 	for (i = 0; i < Num_files; i++ ) {
 		cf_file *f = cf_get_file(i);
 
-		// only search paths we're supposed to...
+		// do some quick checks before we get into the really slow part...
+
+		// ... only search paths we're supposed to...
 		if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index) )
 			continue;
 
+		// ... check that our names are the same length (accounting for the missing extension on our own name)
+		if ( strlen(f->name_ext) != strlen(filespec)+4 )
+			continue;
 
+		// ... check that we match at least the base filename
+		if ( strnicmp(f->name_ext, filespec, strlen(filespec)) )
+			continue;
+
+
+		// ok, now we can do the really slow part...
 		for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
 			// strip extension and add the one we want to check for
 			char *p = strchr(filespec, '.');
@@ -1424,6 +1455,11 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 				return cur_ext;
 			}
 		}
+
+		// ok, we're still here, so strip off the extension again in order to
+		// prepare for the next run
+		char *p = strchr(filespec, '.');
+		if ( p ) *p = 0;
 	}
 
 	return -1;
