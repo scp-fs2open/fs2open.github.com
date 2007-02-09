@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.85.2.6 $
+ * $Revision: 2.85.2.7 $
  * $Author: Goober5000 $
- * $Date: 2007-02-08 07:39:35 $
+ * $Date: 2007-02-09 04:53:27 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85.2.6  2007/02/08 07:39:35  Goober5000
+ * fix two bugs:
+ * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
+ * --ships were created with default allowed comm orders regardless of which team they were on
+ *
  * Revision 2.85.2.5  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -897,7 +902,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	11
+#define MAX_PARSE_OBJECT_FLAGS_2	12
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -910,6 +915,7 @@ typedef struct p_object {
 #define P2_SF2_PRIMARIES_LOCKED				(1<<8)
 #define P2_SF2_SECONDARIES_LOCKED			(1<<9)
 #define P2_SF2_NO_DEATH_SCREAM				(1<<10)
+#define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<11)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

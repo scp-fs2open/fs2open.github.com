@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.12 $
- * $Date: 2006-10-28 20:54:35 $
- * $Author: karajorma $
+ * $Revision: 1.14.2.13 $
+ * $Date: 2007-02-09 04:53:27 $
+ * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.12  2006/10/28 20:54:35  karajorma
+ * Adding the network-variable option to SEXP variables. This change will revert variables to the same behaviour they displayed in retail (i.e they don't update for clients) unless a variable is set to be a network-variable.
+ *
  * Revision 1.14.2.11  2006/10/15 22:03:16  wmcoolmon
  * Fix extra jumpnode settings not saving. They still don't show up in FRED, unfortunately.
  *
@@ -1750,6 +1753,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"secondaries-locked\"");
 			if (Ships[i].flags2 & SF2_NO_DEATH_SCREAM)
 				fout(" \"no-death-scream\"");
+			if (Ships[i].flags2 & SF2_ALWAYS_DEATH_SCREAM)
+				fout(" \"always-death-scream\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

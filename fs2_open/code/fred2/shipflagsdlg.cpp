@@ -62,6 +62,7 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_DESTROY_SPIN, m_destroy_spin);	
 	DDX_Control(pDX, IDC_DISABLE_BUILTIN_SHIP, m_disable_messages);
 	DDX_Control(pDX, IDC_NO_DEATH_SCREAM, m_no_death_scream);
+	DDX_Control(pDX, IDC_ALWAYS_DEATH_SCREAM, m_always_death_scream);
 	DDX_Control(pDX, IDC_GUARDIAN, m_guardian);
 	DDX_Control(pDX, IDC_VAPORIZE, m_vaporize);
 	DDX_Control(pDX, IDC_STEALTH, m_stealth);
@@ -115,6 +116,7 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_TOGGLE_SUBSYSTEM_SCANNING, OnToggleSubsystemScanning)
 	ON_BN_CLICKED(IDC_DISABLE_BUILTIN_SHIP, OnDisableBuiltinShip)
 	ON_BN_CLICKED(IDC_NO_DEATH_SCREAM, OnNoDeathScream)
+	ON_BN_CLICKED(IDC_ALWAYS_DEATH_SCREAM, OnAlwaysDeathScream)
 	ON_BN_CLICKED(IDC_GUARDIAN, OnGuardian)
 	ON_BN_CLICKED(IDC_VAPORIZE, OnVaporize)
 	ON_BN_CLICKED(IDC_STEALTH, OnStealth)
@@ -138,7 +140,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, no_bank = 0, affected_by_gravity = 0;
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
 	int special_warp = 0, disable_messages = 0, guardian = 0, vaporize = 0, stealth = 0, friendly_stealth_invisible = 0;
-	int no_death_scream = 0;
+	int no_death_scream = 0, always_death_scream = 0;
 	object *objp;
 	ship *shipp;
 	bool ship_in_wing = false;
@@ -171,6 +173,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					no_dynamic = (Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC) ? 1 : 0;
 					disable_messages = (shipp->flags2 & SF2_NO_BUILTIN_MESSAGES) ? 1 : 0;
 					no_death_scream = (shipp->flags2 & SF2_NO_DEATH_SCREAM) ? 1 : 0;
+					always_death_scream = (shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM) ? 1 : 0;
 					guardian = (shipp->ship_guardian_threshold) ? 1 : 0;
 					vaporize = (shipp->flags & SF_VAPORIZE) ? 1 : 0;
 					stealth = (shipp->flags2 & SF2_STEALTH) ? 1 : 0;
@@ -220,6 +223,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					no_dynamic = tristate_set( Ai_info[shipp->ai_index].ai_flags & AIF_NO_DYNAMIC, no_dynamic );
 					disable_messages = tristate_set(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES, disable_messages);
 					no_death_scream = tristate_set(shipp->flags2 & SF2_NO_DEATH_SCREAM, no_death_scream);
+					always_death_scream = tristate_set(shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM, always_death_scream);
 					guardian = tristate_set(shipp->ship_guardian_threshold, guardian);
 					vaporize = tristate_set(shipp->flags & SF_VAPORIZE, vaporize);
 					stealth = tristate_set(shipp->flags2 & SF2_STEALTH, stealth);
@@ -283,6 +287,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_special_warp.SetCheck(special_warp);
 	m_disable_messages.SetCheck(disable_messages);
 	m_no_death_scream.SetCheck(no_death_scream);
+	m_always_death_scream.SetCheck(always_death_scream);
 	m_guardian.SetCheck(guardian);
 	m_vaporize.SetCheck(vaporize);
 	m_stealth.SetCheck(stealth);
@@ -731,6 +736,22 @@ void ship_flags_dlg::update_ship(int shipnum)
 			break;
 	}
 
+	switch (m_always_death_scream.GetCheck()) {
+		case 1:
+			if ( !(shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM) )
+				set_modified();
+
+			shipp->flags2 |= SF2_ALWAYS_DEATH_SCREAM;
+			break;
+
+		case 0:
+			if ( shipp->flags2 & SF2_ALWAYS_DEATH_SCREAM )
+				set_modified();
+
+			shipp->flags2 &= ~SF2_ALWAYS_DEATH_SCREAM;
+			break;
+	}
+
 	switch (m_guardian.GetCheck()) {
 		case 1:
 			if ( !(shipp->ship_guardian_threshold) )
@@ -1027,6 +1048,15 @@ void ship_flags_dlg::OnNoDeathScream()
  		m_no_death_scream.SetCheck(0);
 	} else {
 		m_no_death_scream.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnAlwaysDeathScream()
+{
+	if (m_always_death_scream.GetCheck() == 1) {
+		m_always_death_scream.SetCheck(0);
+	} else {
+		m_always_death_scream.SetCheck(1);
 	}
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.15 $
- * $Date: 2007-02-06 01:27:33 $
+ * $Revision: 2.150.2.16 $
+ * $Date: 2007-02-09 04:53:28 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.15  2007/02/06 01:27:33  Goober5000
+ * remove obsolete and unused shield flag
+ *
  * Revision 2.150.2.14  2006/12/07 18:23:38  taylor
  * fix secondary thruster length stuff
  *  - change thruster_glow_len_factor to thruster02_glow_len_factor so it's a bit more obvious
@@ -1204,6 +1207,7 @@ typedef struct ship_subsys_info {
 #define SF2_SECONDARIES_LOCKED				(1<<13)		// Karajorma - This ship can't fire secondary weapons
 #define SF2_GLOWMAPS_DISABLED				(1<<14)		// taylor - to disable glow maps
 #define SF2_NO_DEATH_SCREAM					(1<<15)		// Goober5000 - for WCS
+#define SF2_ALWAYS_DEATH_SCREAM				(1<<16)		// Goober5000 - for WCS
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;

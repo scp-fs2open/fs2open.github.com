@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.63.2.4 $
- * $Date: 2006-12-07 18:30:20 $
- * $Author: taylor $
+ * $Revision: 2.63.2.5 $
+ * $Date: 2007-02-09 04:53:28 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.4  2006/12/07 18:30:20  taylor
+ * cleanup shockwave code a bit
+ * make Shockwave_info dynamic
+ * lot of fixage to allow 2D and 3D shockwaves to work better
+ * fix for Mantis bug #1148
+ * properly handle both "none" and "<none>" for 2D and 3D shockwave names
+ * better handling, preloading wise, of 3D shockwaves and their textures
+ *
  * Revision 2.63.2.3  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -2057,7 +2065,6 @@ void ship_vaporize(ship *shipp)
 }
 
 //	*ship_obj was hit and we've determined he's been killed!  By *other_obj!
-extern int Cmdline_wcsaga;
 void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, int self_destruct)
 {
 	Assert(ship_obj);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
@@ -2178,14 +2185,13 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 		send_ship_kill_packet( ship_obj, other_obj, percent_killed, self_destruct );
 	}
 
-	// If ship from a player wing ship has died, then maybe play a scream
-	// (WCSaga wants this for all ships)
-	if ( !(ship_obj->flags & OF_PLAYER_SHIP) && (Cmdline_wcsaga || (sp->flags & SF_FROM_PLAYER_WING)) ) {
+	// if a non-player is dying, play a scream
+	if ( !(ship_obj->flags & OF_PLAYER_SHIP) ) {
 		ship_maybe_scream(sp);
 	}
 
-	// If player is dying, have wingman lament (only in single player)
-	if ( (Game_mode & GM_NORMAL) && (ship_obj == Player_obj) ) {
+	// if the player is dying, have wingman lament
+	if ( (ship_obj == Player_obj) ) {
 		ship_maybe_lament();
 	}
 }
