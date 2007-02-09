@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.71 $
- * $Date: 2007-02-09 04:45:23 $
+ * $Revision: 2.72 $
+ * $Date: 2007-02-09 05:04:56 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2007/02/09 04:45:23  Goober5000
+ * bah, change this so it's mostly diff-compatible with 3.6.9
+ *
  * Revision 2.70  2007/01/07 21:28:11  Goober5000
  * yet more tweaks to the WCS death scream stuff
  * added a ship flag to force screaming
@@ -2076,7 +2079,6 @@ void ship_vaporize(ship *shipp)
 }
 
 //	*ship_obj was hit and we've determined he's been killed!  By *other_obj!
-extern int Cmdline_wcsaga;
 void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, int self_destruct)
 {
 	Assert(ship_obj);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct

@@ -267,7 +267,6 @@ BEGIN
         MENUITEM "Command Briefing\tShift+C",   ID_EDITORS_CMD_BRIEF
         MENUITEM "Shield System",               ID_EDITORS_SHIELD_SYS
         MENUITEM "Set Global Ship Flags",       ID_EDITORS_SET_GLOBAL_SHIP_FLAGS
-
         MENUITEM "Voice Acting Manager\tShift+V", ID_EDITORS_VOICE
         MENUITEM SEPARATOR
         MENUITEM "Campaign",                    ID_EDITOR_CAMPAIGN
