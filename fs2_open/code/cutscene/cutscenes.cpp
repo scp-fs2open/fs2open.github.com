@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.18.2.1 $
- * $Date: 2006-09-11 01:15:04 $
+ * $Revision: 2.18.2.2 $
+ * $Date: 2007-02-09 23:58:28 $
  * $Author: taylor $
- * $Revision: 2.18.2.1 $
- * $Date: 2006-09-11 01:15:04 $
+ * $Revision: 2.18.2.2 $
+ * $Date: 2007-02-09 23:58:28 $
  * $Author: taylor $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18.2.1  2006/09/11 01:15:04  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.18  2006/05/09 09:21:15  taylor
  * fix incorrect button locations, it matches the correct layout of the other techroom screens now
  *    (thought Backslash was going to fix this, but I got tired of waiting. :))
@@ -768,6 +771,18 @@ void cutscenes_screen_do_frame()
 		case KEY_F2:  // goto options screen
 			gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 			break;
+
+		// the "show-all" hotkey
+		case KEY_CTRLED | KEY_SHIFTED | KEY_S:
+		{
+			Num_files = 0;
+			for (i = 0; i < Num_cutscenes; i++) {
+				Cutscene_list[Num_files] = i;
+				Num_files++;
+			}
+
+			break;
+		}
 	}	// end switch
 
 	for (i=0; i<NUM_BUTTONS; i++){
