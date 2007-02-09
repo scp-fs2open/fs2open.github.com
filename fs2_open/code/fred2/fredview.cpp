@@ -9,9 +9,9 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.6.2.5 $
- * $Date: 2006-10-27 06:33:38 $
- * $Author: taylor $
+ * $Revision: 1.6.2.6 $
+ * $Date: 2007-02-09 05:40:40 $
+ * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6.2.5  2006/10/27 06:33:38  taylor
+ * add a "Render full detail" view option to render models at their full detail for the LOD (for render/detail boxes, Mantis bug #1121)
+ *
  * Revision 1.6.2.4  2006/10/09 05:25:07  Goober5000
  * make sexp nodes dynamic
  *
@@ -892,10 +895,10 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_EDIT_DELETE, OnEditDelete)
 	ON_COMMAND(ID_AA_GRIDLINES, OnAaGridlines)
 	ON_UPDATE_COMMAND_UI(ID_AA_GRIDLINES, OnUpdateAaGridlines)
-	ON_COMMAND(ID_CMD_BRIEF, OnCmdBrief)
+	ON_COMMAND(ID_EDITORS_CMD_BRIEF, OnCmdBrief)
 	ON_COMMAND(ID_DISABLE_UNDO, OnDisableUndo)
 	ON_UPDATE_COMMAND_UI(ID_DISABLE_UNDO, OnUpdateDisableUndo)
-	ON_UPDATE_COMMAND_UI(ID_CMD_BRIEF, OnUpdateCmdBrief)
+	ON_UPDATE_COMMAND_UI(ID_EDITORS_CMD_BRIEF, OnUpdateCmdBrief)
 	ON_COMMAND(ID_NEXT_SUBSYS, OnNextSubsys)
 	ON_COMMAND(ID_PREV_SUBSYS, OnPrevSubsys)
 	ON_COMMAND(ID_CANCEL_SUBSYS, OnCancelSubsys)
@@ -911,7 +914,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_FORMAT_FS1_RETAIL, OnFormatFs1Retail)
 	ON_UPDATE_COMMAND_UI(ID_FORMAT_FS1_RETAIL, OnUpdateFormatFs1Retail)
 	ON_COMMAND(ID_EDITORS_SET_GLOBAL_SHIP_FLAGS, OnEditorsSetGlobalShipFlags)
-	ON_COMMAND(ID_EDITORS_VOICE_MANAGER, OnEditorsVoiceManager)
+	ON_COMMAND(ID_EDITORS_VOICE, OnEditorsVoiceManager)
 	ON_WM_DESTROY()
 	ON_WM_CREATE()
 	ON_WM_ERASEBKGND()

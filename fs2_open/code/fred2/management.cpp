@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.11 $
- * $Date: 2007-02-08 07:39:34 $
+ * $Revision: 1.12.2.12 $
+ * $Date: 2007-02-09 05:40:40 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,11 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.11  2007/02/08 07:39:34  Goober5000
+ * fix two bugs:
+ * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
+ * --ships were created with default allowed comm orders regardless of which team they were on
+ *
  * Revision 1.12.2.10  2006/12/08 19:18:54  Goober5000
  * fix Mantis #1163
  *
@@ -880,6 +885,17 @@ bool fred_init()
 	// Goober5000
 	for (i = 0; i < MAX_IFFS; i++)
 		Show_iff[i] = true;
+
+	// Goober5000
+	strcpy(Voice_abbrev_briefing, "");
+	strcpy(Voice_abbrev_campaign, "");
+	strcpy(Voice_abbrev_command_briefing, "");
+	strcpy(Voice_abbrev_debriefing, "");
+	strcpy(Voice_abbrev_message, "");
+	strcpy(Voice_abbrev_mission, "");
+	Voice_no_replace_filenames = false;
+	strcpy(Voice_script_entry_format, "Sender: $sender\r\nPersona: $persona\r\nFile: $filename\r\nMessage: $message");
+	Voice_export_selection = 0;
 
 	hud_init_comm_orders();		// Goober5000
 	
