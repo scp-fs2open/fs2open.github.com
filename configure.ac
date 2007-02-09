@@ -1,6 +1,6 @@
 dnl configure.ac for fs2_open
 dnl
-dnl $Id: configure.ac,v 1.33 2007-01-07 12:31:16 taylor Exp $
+dnl $Id: configure.ac,v 1.34 2007-02-09 23:54:00 taylor Exp $
 
 AC_INIT(fs2_open, 3.6.9)
 AC_CONFIG_SRCDIR(code/freespace2/freespace.cpp)
@@ -103,7 +103,7 @@ AC_ARG_ENABLE(gprof,
 
 AC_ARG_WITH(static-ogg,
 	AC_HELP_STRING([--with-static-ogg=DIR],
-		[Link staticly with OGG Vorbis libs from this directory]),
+		[Link staticly with OGG, Vorbis and Theora libs from this directory]),
 		[fs2_static_ogg="$withval"],
 		[fs2_static_ogg=""],
 )
@@ -139,7 +139,7 @@ case "$target" in
         # linux
         echo "Using 64-bit Unix defines (for $host_os)"
         fs2_os_unix="yes"
-		D_CFLAGS="$D_CFLAGS -m64 -march=athlon64"
+		D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi -pedantic"
         ;;
 	*-*-linux*)
 		# linux
@@ -319,6 +319,22 @@ dnl add SDL settings to our flags, only CFLAGS are default, libs are game specif
 D_CFLAGS=$D_CFLAGS" $SDL_CFLAGS"
 FS2_LDFLAGS=$FS2_LDFLAGS" $SDL_LIBS"
 
+dnl OGG/Vorbis/Theora check
+if test "$fs2_os_unix" = "yes" ; then
+	dnl Check that we have libogg, libvorbis, libvorbisfile, & libtheora
+	XIPH_PATH_OGG(:,AC_MSG_ERROR([*** OGG installation not found!]))
+	XIPH_PATH_VORBIS(:,AC_MSG_ERROR([*** Vorbis installation not found!]))
+	XIPH_PATH_THEORA(:,AC_MSG_ERROR([*** Theora installation not found!]))
+fi
+
+dnl add OGG settings to our flags, only CFLAGS are default, libs are game specific
+D_CFLAGS=$D_CFLAGS" $VORBIS_CFLAGS $VORBISFILE_CFLAGS"
+FS2_LDFLAGS=$FS2_LDFLAGS" $VORBIS_LIBS $VORBISFILE_LIBS"
+D_CFLAGS=$D_CFLAGS" $THEORA_CFLAGS"
+FS2_LDFLAGS=$FS2_LDFLAGS" $THEORA_LIBS"
+D_CFLAGS=$D_CFLAGS" $OGG_CFLAGS"
+FS2_LDFLAGS=$FS2_LDFLAGS" $OGG_LIBS"
+
 dnl DirectX - Win32 only
 if test "$fs2_os_win32" = "yes" ; then
 	FS2_CXXFLAGS=$FS2_CXXFLAGS" -I/c:/dxsdk/include"
@@ -374,8 +390,6 @@ if test "$fs2_os_unix" = "yes" ; then
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libvorbisfile.a"
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libvorbis.a"
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libogg.a"
-	else
-		FS2_LDFLAGS="$FS2_LDFLAGS -logg -lvorbis -lvorbisfile -ltheora"
 	fi
 elif test "$fs2_os_osx" = "yes" ; then
 	if test "x$fs2_static_ogg" != "x" ; then
@@ -383,10 +397,7 @@ elif test "$fs2_os_osx" = "yes" ; then
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libvorbisfile.a"
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libvorbis.a"
 		FS2_LIBS="$FS2_LIBS $fs2_static_ogg/libogg.a"
-	else
-		FS2_LDFLAGS="$FS2_LDFLAGS -L/sw/lib -logg -lvorbis -lvorbisfile -ltheora"
 	fi
-	FS2_CXXFLAGS="$FS2_CXXFLAGS -I/sw/include"
 fi
 
 
@@ -435,7 +446,7 @@ if test "x$fs2_static_jpeg" != "x" ; then
 	echo Using libjpeg.a from ... : $fs2_static_jpeg
 fi
 if test "x$fs2_static_ogg" != "x" ; then
-	echo Static OGG Vorbis from . : $fs2_static_ogg
+	echo Static OGG libs from ... : $fs2_static_ogg
 fi
 echo
 echo Sound enabled .......... : $fs2_sound
