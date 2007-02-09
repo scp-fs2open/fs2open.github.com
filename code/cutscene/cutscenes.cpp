@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-12-28 00:59:19 $
- * $Author: wmcoolmon $
- * $Revision: 2.20 $
- * $Date: 2006-12-28 00:59:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21 $
+ * $Date: 2007-02-09 23:58:52 $
+ * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2007-02-09 23:58:52 $
+ * $Author: taylor $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/12/28 00:59:19  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.19  2006/09/11 06:49:38  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -778,6 +781,18 @@ void cutscenes_screen_do_frame()
 		case KEY_F2:  // goto options screen
 			gameseq_post_event(GS_EVENT_OPTIONS_MENU);
 			break;
+
+		// the "show-all" hotkey
+		case KEY_CTRLED | KEY_SHIFTED | KEY_S:
+		{
+			Num_files = 0;
+			for (i = 0; i < Num_cutscenes; i++) {
+				Cutscene_list[Num_files] = i;
+				Num_files++;
+			}
+
+			break;
+		}
 	}	// end switch
 
 	for (i=0; i<NUM_BUTTONS; i++){
