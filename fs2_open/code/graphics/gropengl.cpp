@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.196 $
- * $Date: 2007-01-22 04:02:23 $
- * $Author: wmcoolmon $
+ * $Revision: 2.197 $
+ * $Date: 2007-02-10 20:23:51 $
+ * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.196  2007/01/22 04:02:23  wmcoolmon
+ * Fix non-opaque circles.
+ *
  * Revision 2.195  2007/01/14 19:35:53  Goober5000
  * operator precedence FTW! :D
  *
@@ -2733,7 +2736,6 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 	bool use_spec = false;
 	int alpha,tmap_type, r, g, b;
 
-	gr_opengl_set_2d_matrix();
 
 	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags, is_scaler);
 
@@ -2807,6 +2809,8 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 
 	if (gr_screen.current_bitmap == CLOAKMAP)
 		glBlendFunc(GL_ONE, GL_ONE);
+
+	gr_opengl_set_2d_matrix();
 
 	opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, alpha);
 

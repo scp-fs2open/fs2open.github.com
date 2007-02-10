@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.56 $
- * $Date: 2007-01-15 01:37:38 $
- * $Author: wmcoolmon $
+ * $Revision: 2.57 $
+ * $Date: 2007-02-10 20:23:51 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.56  2007/01/15 01:37:38  wmcoolmon
+ * Fix CVS & correct various warnings under MSVC 2003
+ *
  * Revision 2.55  2007/01/14 10:26:38  wmcoolmon
  * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
  *
@@ -692,18 +695,17 @@ void neb2_post_level_init()
 	int idx;		
 
 	// standalone servers can bail here
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER)
 		return;
-	}
 
 	// if the mission is not a fullneb mission, skip
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB) && !Nebula_sexp_used){
+	if ( !((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) ) {
 		Neb2_render_mode = NEB2_RENDER_NONE;
 		Neb2_awacs = -1.0f;
 		return;
 	}
 
-	if(Cmdline_nohtl || Fred_running && (The_mission.flags & MISSION_FLAG_FULLNEB)) {
+	if ( (Cmdline_nohtl || Fred_running) && (The_mission.flags & MISSION_FLAG_FULLNEB) ) {
 		// by default we'll use pof rendering
 		Neb2_render_mode = NEB2_RENDER_POF;
 		stars_set_background_model(BACKGROUND_MODEL_FILENAME, Neb2_texture_name);
@@ -774,6 +776,12 @@ void neb2_post_level_init()
 
 	// regen the nebula
 	neb2_eye_changed();
+
+	// if we are going to use fullneb, but aren't fullneb yet, then be sure to reset our mode
+	if ( !(The_mission.flags & MISSION_FLAG_FULLNEB) ) {
+		Neb2_render_mode = NEB2_RENDER_NONE;
+		Neb2_awacs = -1.0f;
+	}
 }
 
 // shutdown nebula stuff
@@ -782,14 +790,12 @@ void neb2_level_close()
 	int idx;
 	
 	// standalone servers can bail here
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER)
 		return;
-	}
 
 	// if the mission is not a fullneb mission, skip
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB) && !Nebula_sexp_used){
+	if ( !((The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used) )
 		return;
-	}
 
 	// unload all nebula bitmaps
 	for(idx=0; idx<Neb2_poof_count; idx++){
@@ -812,14 +818,13 @@ void neb2_level_close()
 void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient)
 {
 	// standalone servers can bail here
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER)
 		return;
-	}
 
 	// if the mission is not a fullneb mission, skip
-	if(!(The_mission.flags & MISSION_FLAG_FULLNEB) && !Nebula_sexp_used){		
+	if ( !(The_mission.flags & MISSION_FLAG_FULLNEB) )
 		return;
-	}
+
 
 	if (Neb2_render_mode == NEB2_RENDER_HTL) {
 		// RT The background needs to be the same colour as the fog and this seems
@@ -853,11 +858,10 @@ void neb2_page_in()
 	int idx;
 
 	// load in all nebula bitmaps
-	if (The_mission.flags & MISSION_FLAG_FULLNEB || Nebula_sexp_used) {
-		for(idx=0; idx<Neb2_poof_count; idx++){
-			if((Neb2_poofs[idx] >= 0) && (Neb2_poof_flags & (1<<idx))){
+	if ( (The_mission.flags & MISSION_FLAG_FULLNEB) || Nebula_sexp_used ) {
+		for (idx = 0; idx < Neb2_poof_count; idx++) {
+			if ( (Neb2_poofs[idx] >= 0) && (Neb2_poof_flags & (1<<idx)) )
 				bm_page_in_texture(Neb2_poofs[idx]);
-			}
 		}
 	}
 }
