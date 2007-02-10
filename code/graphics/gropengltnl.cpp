@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.52 $
- * $Date: 2007-01-10 01:44:39 $
+ * $Revision: 1.53 $
+ * $Date: 2007-02-10 00:05:48 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.52  2007/01/10 01:44:39  taylor
+ * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
+ *
  * Revision 1.51  2007/01/07 13:02:19  taylor
  * some general cleanup
  * add emissive light falloff support for asteroids
@@ -1011,8 +1014,7 @@ void gr_opengl_end_projection_matrix()
 
 
 static GLdouble eyex, eyey, eyez;
-static GLdouble centerx, centery, centerz;
-static GLdouble upx, upy, upz;
+static GLdouble vmatrix[16];
 
 static vec3d last_view_pos;
 static matrix last_view_orient;
@@ -1029,7 +1031,6 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient)
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
-	glLoadIdentity();
 
 	// right now it depends on your settings as to whether this has any effect in-mission
 	// not much good now, but should be a bit more useful later on
@@ -1043,22 +1044,60 @@ void gr_opengl_set_view_matrix(vec3d *pos, matrix *orient)
 	}
 
 	if ( !use_last_view ) {
-		eyex = (GLdouble)pos->xyz.x;
-		eyey = (GLdouble)pos->xyz.y;
-		eyez = (GLdouble)pos->xyz.z;
+		// should already be normalized
+		eyex =  (GLdouble)pos->xyz.x;
+		eyey =  (GLdouble)pos->xyz.y;
+		eyez = -(GLdouble)pos->xyz.z;
 
-		centerx = eyex + (GLdouble)orient->vec.fvec.xyz.x;
-		centery = eyey + (GLdouble)orient->vec.fvec.xyz.y;
-		centerz = eyez + (GLdouble)orient->vec.fvec.xyz.z;
+		// should already be normalized
+		GLdouble fwdx =  (GLdouble)orient->vec.fvec.xyz.x;
+		GLdouble fwdy =  (GLdouble)orient->vec.fvec.xyz.y;
+		GLdouble fwdz = -(GLdouble)orient->vec.fvec.xyz.z;
 
-		upx = (GLdouble)orient->vec.uvec.xyz.x;
-		upy = (GLdouble)orient->vec.uvec.xyz.y;
-		upz = (GLdouble)orient->vec.uvec.xyz.z;
+		// should already be normalized
+		GLdouble upx =  (GLdouble)orient->vec.uvec.xyz.x;
+		GLdouble upy =  (GLdouble)orient->vec.uvec.xyz.y;
+		GLdouble upz = -(GLdouble)orient->vec.uvec.xyz.z;
+
+		GLdouble mag;
+
+		// setup Side vector (crossprod of forward and up vectors)
+		GLdouble Sx = (fwdy * upz) - (fwdz * upy);
+		GLdouble Sy = (fwdz * upx) - (fwdx * upz);
+		GLdouble Sz = (fwdx * upy) - (fwdy * upx);
+
+		// normalize Side
+		mag = 1.0 / sqrt( (Sx*Sx) + (Sy*Sy) + (Sz*Sz) );
+
+		Sx *= mag;
+		Sy *= mag;
+		Sz *= mag;
+
+		// setup Up vector (crossprod of Side and forward vectors)
+		GLdouble Ux = (Sy * fwdz) - (Sz * fwdy);
+		GLdouble Uy = (Sz * fwdx) - (Sx * fwdz);
+		GLdouble Uz = (Sx * fwdy) - (Sy * fwdx);
+
+		// normalize Up
+		mag = 1.0 / sqrt( (Ux*Ux) + (Uy*Uy) + (Uz*Uz) );
+
+		Ux *= mag;
+		Uy *= mag;
+		Uz *= mag;
+
+		// store the result in our matrix
+		memset( vmatrix, 0, sizeof(vmatrix) );
+		vmatrix[0]  = Sx;   vmatrix[1]  = Ux;   vmatrix[2]  = -fwdx;
+		vmatrix[4]  = Sy;   vmatrix[5]  = Uy;   vmatrix[6]  = -fwdy;
+		vmatrix[8]  = Sz;   vmatrix[9]  = Uz;   vmatrix[10] = -fwdz;
+		vmatrix[15] = 1.0;
 	}
 
-	gluLookAt(eyex, eyey, -eyez, centerx, centery, -centerz, upx, upy, -upz);
-
+	glLoadMatrixd(vmatrix);
+	
+	glTranslated(-eyex, -eyey, -eyez);
 	glScalef(1.0f, 1.0f, -1.0f);
+
 
 	if ( Cmdline_env ) {
 		GL_env_texture_matrix_set = true;
