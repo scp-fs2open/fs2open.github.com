@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.63.2.5 $
- * $Date: 2007-02-09 04:53:28 $
- * $Author: Goober5000 $
+ * $Revision: 2.63.2.6 $
+ * $Date: 2007-02-10 00:17:40 $
+ * $Author: taylor $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.5  2007/02/09 04:53:28  Goober5000
+ * merge the WCS screaming feature into the 3.6.9 (3.6.10?) branch
+ *
  * Revision 2.63.2.4  2006/12/07 18:30:20  taylor
  * cleanup shockwave code a bit
  * make Shockwave_info dynamic
@@ -2862,11 +2865,9 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 	}
 #endif
 
-	#ifndef NO_SOUND
 	if ( Event_Music_battle_started == 0 )	{
 		ship_hit_music(ship_obj, other_obj);
 	}
-	#endif
 	
 
 	if (damage < 0.0f){
