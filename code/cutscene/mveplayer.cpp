@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/mveplayer.cpp $
- * $Revision: 2.4 $
- * $Date: 2007-01-15 01:37:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.5 $
+ * $Date: 2007-02-10 00:02:18 $
+ * $Author: taylor $
  *
  * MVE movie playing routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2007/01/15 01:37:37  wmcoolmon
+ * Fix CVS & correct various warnings under MSVC 2003
+ *
  * Revision 2.3  2007/01/07 12:29:43  taylor
  * add Theora player
  * remove DirectShow support from movie player
@@ -720,6 +723,9 @@ int mve_video_init(ubyte *data)
 
 		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
 		glTexImage2D(GL_texture_target, 0, GL_RGB5_A1, wp2, hp2, 0, GL_BGRA_EXT, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+
+		// set our color so that we can make sure that it's correct
+		glColor3f(1.0f, 1.0f, 1.0f);
 	}
 #ifndef NO_DIRECT3D
 	else if (gr_screen.mode == GR_DIRECT3D) {

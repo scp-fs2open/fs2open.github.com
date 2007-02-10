@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/oggplayer.cpp $
- * $Revision: 2.2 $
- * $Date: 2007-01-14 10:26:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.3 $
+ * $Date: 2007-02-10 00:02:18 $
+ * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2007/01/14 10:26:37  wmcoolmon
+ * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ *
  * Revision 2.1  2007/01/07 12:29:43  taylor
  * add Theora player
  * remove DirectShow support from movie player
@@ -415,6 +418,9 @@ static void OGG_video_init(theora_info *tinfo)
 
 		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
 		glTexImage2D(GL_texture_target, 0, GL_RGB8, wp2, hp2, 0, GL_BGR, GL_UNSIGNED_BYTE, NULL);
+
+		// set our color so that we can make sure that it's correct
+		glColor3f(1.0f, 1.0f, 1.0f);
 	}
 #ifndef NO_DIRECT3D
 	else if (gr_screen.mode == GR_DIRECT3D) {
@@ -494,6 +500,7 @@ static void convert_YUV_to_RGB(yuv_buffer *yuv)
 {
 	int Y1, Y2, U, V;
 	int R = 0, G = 0, B = 0;
+	int r1 = 0, g1 = 0, b1 = 0;
 	int C, D, E;
 	uint x, y;
 	uint width_2 = g_screenWidth/2;
@@ -517,12 +524,16 @@ static void convert_YUV_to_RGB(yuv_buffer *yuv)
 			D = (U - 128);
 			E = (V - 128);
 
+			r1 = 409 * E + 128;
+			g1 = 100 * D - 208 * E + 128;
+			b1 = 516 * D + 128;
+
 			// first pixel
 			C = (Y1 - 16) * 298;
 
-			R = ((C           + 409 * E + 128) >> 8);
-			G = ((C - 100 * D - 208 * E + 128) >> 8);
-			B = ((C + 516 * D           + 128) >> 8);
+			R = ((C + r1) >> 8);
+			G = ((C - g1) >> 8);
+			B = ((C + b1) >> 8);
 
 			CLAMP(R, 0, 255);
 			CLAMP(G, 0, 255);
@@ -535,9 +546,9 @@ static void convert_YUV_to_RGB(yuv_buffer *yuv)
 			// second pixel (U and V values are resused)
 			C = (Y2 - 16) * 298;
 
-			R = ((C           + 409 * E + 128) >> 8);
-			G = ((C - 100 * D - 208 * E + 128) >> 8);
-			B = ((C + 516 * D           + 128) >> 8);
+			R = ((C + r1) >> 8);
+			G = ((C - g1) >> 8);
+			B = ((C + b1) >> 8);
 
 			CLAMP(R, 0, 255);
 			CLAMP(G, 0, 255);
