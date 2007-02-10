@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.398 $
- * $Date: 2007-02-05 08:26:49 $
- * $Author: wmcoolmon $
+ * $Revision: 2.399 $
+ * $Date: 2007-02-10 03:20:25 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.398  2007/02/05 08:26:49  wmcoolmon
+ * Make an error message prettier
+ *
  * Revision 2.397  2007/01/29 03:39:26  Goober5000
  * --fix the empty ship name / U.R.A. Moron bug caused by WMC's commit
  * --properly update a ship score when its class changes (in FRED or via change-ship-class or via ship loadout)
@@ -15448,7 +15451,7 @@ int valid_cap_subsys_cargo_list(char *subsys)
 {
 	if (strstr(subsys, "nav")
 		|| strstr(subsys, "comm")
-		|| strstr(subsys, "engines")
+		|| strstr(subsys, "engine")
 		|| strstr(subsys, "fighter")	// fighter bays
 		|| strstr(subsys, "sensors")
 		|| strstr(subsys, "weapons")) {
