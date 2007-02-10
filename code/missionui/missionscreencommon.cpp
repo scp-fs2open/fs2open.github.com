@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.37 $
- * $Date: 2007-01-14 14:03:33 $
- * $Author: bobboau $
+ * $Revision: 2.38 $
+ * $Date: 2007-02-10 00:18:22 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2007/01/14 14:03:33  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.36  2006/12/28 00:59:32  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -687,7 +692,6 @@ void set_active_ui(UI_WINDOW *ui_window)
 
 void common_music_init(int score_index)
 {
-#ifndef NO_SOUND
 	if ( Cmdline_freespace_no_music ) {
 		return;
 	}
@@ -709,12 +713,10 @@ void common_music_init(int score_index)
 	briefing_load_music( Spooled_music[Mission_music[score_index]].filename );
 	// Use this id to trigger the start of music playing on the briefing screen
 	Briefing_music_begin_timestamp = timestamp(BRIEFING_MUSIC_DELAY);
-#endif
 }
 
 void common_music_do()
 {
-#ifndef NO_SOUND
 	if ( Cmdline_freespace_no_music ) {
 		return;
 	}
@@ -724,12 +726,10 @@ void common_music_do()
 		Briefing_music_begin_timestamp = 0;
 		briefing_start_music();
 	}
-#endif
 }
 
 void common_music_close()
 {
-#ifndef NO_SOUND
 	if ( Cmdline_freespace_no_music ) {
 		return;
 	}
@@ -738,7 +738,6 @@ void common_music_close()
 		return;
 
 	briefing_stop_music();
-#endif
 }
 
 // function that sets the current palette to the interface palette.  This function

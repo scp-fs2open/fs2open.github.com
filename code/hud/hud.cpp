@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.67 $
- * $Date: 2006-05-13 07:09:24 $
+ * $Revision: 2.68 $
+ * $Date: 2007-02-10 00:18:22 $
  * $Author: taylor $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/05/13 07:09:24  taylor
+ * minor cleanup and a couple extra error checks
+ * get rid of some wasteful math from the gr_set_proj_matrix() calls
+ *
  * Revision 2.66  2006/02/25 21:47:00  Goober5000
  * spelling
  *
@@ -1418,7 +1422,6 @@ void hud_update_frame()
 		}
 	}
 
-	#ifndef NO_SOUND
 	// Switch to battle track when a targeted ship is hostile (it attacks you) and within BATTLE_START_MIN_TARGET_DIST
 	if (targetp->type == OBJ_SHIP && Event_Music_battle_started == 0 ) {
 		Assert( target_shipp != NULL );
@@ -1438,7 +1441,6 @@ void hud_update_frame()
 			}
 		}
 	}
-	#endif
 
 	// Since we need to reference the player's target integrity in several places this upcoming 
 	// frame, only calculate once here

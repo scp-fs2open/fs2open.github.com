@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-06-27 05:07:49 $
+ * $Revision: 2.22 $
+ * $Date: 2007-02-10 00:18:22 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/06/27 05:07:49  taylor
+ * fix various compiler warnings and things that Valgrind complained about
+ *
  * Revision 2.20  2006/05/27 16:59:05  taylor
  * comment out some code which used only if neither D3D nor OGL
  *
@@ -529,11 +532,9 @@ static UI_WINDOW Ui_window;
 UI_GADGET Options_bogus;
 
 static int Backup_skill_level;
-#ifndef NO_SOUND
 static float Backup_sound_volume;
 static float Backup_music_volume;
 static float Backup_voice_volume;
-#endif
 
 static int Backup_briefing_voice_enabled;
 static int Backup_use_mouse_to_fly;
@@ -967,28 +968,22 @@ void set_sound_volume()
 
 void set_music_volume()
 {
-#ifndef NO_SOUND
 	event_music_set_volume_all(Master_event_music_volume);
-#endif
 }
 
 void set_voice_volume()
 {
-#ifndef NO_SOUND
 	audiostream_set_volume_all(Master_voice_volume, ASF_VOICE);
-#endif
 }
 
 void options_cancel_exit()
 {
-#ifndef NO_SOUND
 	Master_sound_volume = Backup_sound_volume;
 	set_sound_volume();
 	Master_event_music_volume = Backup_music_volume;
 	set_music_volume();
 	Master_voice_volume = Backup_voice_volume;
 	set_voice_volume();
-#endif
 
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		Game_skill_level = Backup_skill_level;
@@ -1167,7 +1162,6 @@ void options_button_pressed(int n)
 
 void options_sliders_update()
 {
-#ifndef NO_SOUND
 	// sound slider
 	if (Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos != Sound_volume_int) {
 		Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos;
@@ -1195,7 +1189,6 @@ void options_sliders_update()
 		set_voice_volume();
 		options_play_voice_clip();
 	}
-#endif
 
 	if (Mouse_sensitivity != Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos) {
 		Mouse_sensitivity = Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos;
@@ -1227,13 +1220,11 @@ void options_accept()
 		#endif
 	}
 
-#ifndef NO_SOUND
 	// If music is zero volume, disable
 	if ( Master_event_music_volume <= 0.0f ) {
 //		event_music_disable();
 		event_music_level_close();
 	}
-#endif
 
 	// apply other options (display options, etc)
 	// note: return in here (and play failed sound) if they can't accept yet for some reason
@@ -1321,11 +1312,9 @@ void options_menu_init()
 	options_tab_setup(0);
 
 	Backup_skill_level = Game_skill_level;
-#ifndef NO_SOUND
 	Backup_sound_volume = Master_sound_volume;
 	Backup_music_volume = Master_event_music_volume;
 	Backup_voice_volume = Master_voice_volume;
-#endif
 	Backup_briefing_voice_enabled = Briefing_voice_enabled;
 	Backup_use_mouse_to_fly = Use_mouse_to_fly;
 	
@@ -1346,15 +1335,9 @@ void options_menu_init()
 	
 	// setup slider values 
 	// note slider scale is 0-9, while Master_ values calc with 1-10 scale (hence the -1)
-#ifndef NO_SOUND
 	Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos = (int) (Master_sound_volume * 9.0f + 0.5f);
 	Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos = (int) (Master_event_music_volume * 9.0f + 0.5f);	
 	Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos = (int) (Master_voice_volume * 9.0f + 0.5f);
-#else
-	Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos = 0;
-	Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos = 0;
-	Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos = 0;
-#endif
 
 	Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos = Joy_sensitivity;	
 	Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos = Dead_zone_size / 5;	
@@ -1861,5 +1844,3 @@ void options_detail_set_level(int level)
 //
 // DETAIL LEVEL tab definitions END
 // ---------------------------------------------------------------------------------------------------------
-
-

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.17 $
- * $Date: 2006-12-28 00:59:26 $
- * $Author: wmcoolmon $
+ * $Revision: 2.18 $
+ * $Date: 2007-02-10 00:18:22 $
+ * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/12/28 00:59:26  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.16  2006/08/18 04:34:54  Goober5000
  * better handling of ballistic rearm sounds
  * --Goober5000
@@ -387,7 +390,6 @@
 #include "sound/sound.h"
 #include "mission/missionparse.h"
 
-#ifndef NO_SOUND
 
 void gamesnd_parse_soundstbl();	// Loads in general game sounds from sounds.tbl
 void gamesnd_init_sounds();		// initializes the Snds[] and Snds_iface[] array
@@ -400,21 +402,6 @@ void gamesnd_preload_common_sounds();
 void gamesnd_play_iface(int n);
 void gamesnd_play_error_beep();
 int gamesnd_get_by_name(char* name);
-
-#else
-
-#define gamesnd_parse_soundstbl()
-#define gamesnd_init_sounds()
-#define gamesnd_load_gameplay_sounds()
-#define gamesnd_unload_gameplay_sounds()
-#define gamesnd_load_interface_sounds()
-#define gamesnd_unload_interface_sounds()
-#define gamesnd_preload_common_sounds()
-#define gamesnd_play_iface(n)							((void)(n))
-#define gamesnd_play_error_beep()
-#define gamesnd_get_by_name(n)							(-1)
-
-#endif  // ifndef NO_SOUND
 
 //This should handle NO_SOUND just fine since it doesn't directly access lowlevel code
 //Does all parsing for a sound

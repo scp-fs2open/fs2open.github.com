@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.30 $
- * $Date: 2006-09-11 06:50:42 $
+ * $Revision: 2.31 $
+ * $Date: 2007-02-10 00:18:22 $
  * $Author: taylor $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2006/09/11 06:50:42  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.29  2006/06/23 16:16:59  karajorma
  * Should be here too
  *
@@ -481,17 +484,14 @@ float Credit_start_pos, Credit_stop_pos, Credit_position = 0.0f;
 
 void credits_stop_music()
 {
-#ifndef NO_SOUND
 	if ( Credits_music_handle != -1 ) {
 		audiostream_close_file(Credits_music_handle, 1);
 		Credits_music_handle = -1;
 	}
-#endif
 }
 
 void credits_load_music(char* fname)
 {
-#ifndef NO_SOUND
 	if ( Credits_music_handle != -1 ){
 		return;
 	}
@@ -499,12 +499,10 @@ void credits_load_music(char* fname)
 	if ( fname ){
 		Credits_music_handle = audiostream_open( fname, ASF_EVENTMUSIC );
 	}
-#endif
 }
 
 void credits_start_music()
 {
-#ifndef NO_SOUND
 	if (Credits_music_handle != -1) {
 		if ( !audiostream_is_playing(Credits_music_handle) ){
 			audiostream_play(Credits_music_handle, Master_event_music_volume, 1);
@@ -512,7 +510,6 @@ void credits_start_music()
 	} else {
 		nprintf(("Warning", "Cannot play credits music\n"));
 	}
-#endif
 }
 
 int credits_screen_button_pressed(int n)
@@ -550,7 +547,6 @@ void credits_init()
 	char line[512] = "";	
 	char *linep1, *linep2;	
 
-#ifndef NO_SOUND
 	int credits_spooled_music_index = event_music_get_spooled_music_index("Cinema");	
 	if(credits_spooled_music_index != -1){
 		char *credits_wavfile_name = Spooled_music[credits_spooled_music_index].filename;		
@@ -558,7 +554,6 @@ void credits_init()
 			credits_load_music(credits_wavfile_name);
 		}
 	}
-#endif
 
 	// Use this id to trigger the start of music playing on the briefing screen
 	Credits_music_begin_timestamp = timestamp(CREDITS_MUSIC_DELAY);
