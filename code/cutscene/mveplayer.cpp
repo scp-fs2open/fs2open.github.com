@@ -1,12 +1,17 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/mveplayer.cpp $
- * $Revision: 2.1.2.3 $
- * $Date: 2006-12-26 05:14:52 $
+ * $Revision: 2.1.2.4 $
+ * $Date: 2007-02-10 00:01:53 $
  * $Author: taylor $
  *
  * MVE movie playing routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1.2.3  2006/12/26 05:14:52  taylor
+ * get rid of some stale vars that we don't use any longer
+ * a little at-exit cleanup
+ * handle rounding error on X/Y placement locations under Windows
+ *
  * Revision 2.1.2.2  2006/12/07 17:55:51  taylor
  * port over some Theora player stuff:
  *  - support for GL_ARB_texture_rectangle
@@ -723,6 +728,9 @@ int mve_video_init(ubyte *data)
 
 		// NOTE: using NULL instead of pixelbuf crashes some drivers, but then so does pixelbuf
 		glTexImage2D(GL_texture_target, 0, GL_RGB5_A1, wp2, hp2, 0, GL_BGRA_EXT, GL_UNSIGNED_SHORT_1_5_5_5_REV, NULL);
+
+		// set our color so that we can make sure that it's correct
+		glColor3f(1.0f, 1.0f, 1.0f);
 	}
 #ifndef NO_DIRECT3D
 	else if (gr_screen.mode == GR_DIRECT3D) {
