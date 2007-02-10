@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Fvi.cpp $
- * $Revision: 2.7 $
- * $Date: 2006-02-25 21:47:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.8 $
+ * $Date: 2007-02-10 00:08:59 $
+ * $Author: taylor $
  *
  * Routines to find intersections of various 3d things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2006/02/25 21:47:00  Goober5000
+ * spelling
+ *
  * Revision 2.6  2005/04/16 03:36:13  wmcoolmon
  * Minor changes; made even more fields in ships.tbl optional.
  *
@@ -488,64 +491,61 @@ int fvi_ray_sphere(vec3d *intp,vec3d *p0,vec3d *p1,vec3d *sphere_pos,float spher
 // Fast ray-box intersection taken from Graphics Gems I, pages 395,736.
 int fvi_ray_boundingbox( vec3d *min, vec3d *max, vec3d * p0, vec3d *pdir, vec3d *hitpt )
 {
-	float *origin = (float *)&p0->xyz.x;
-	float *dir = (float *)&pdir->xyz.x;
-	float *minB = (float *)min;
-	float *maxB = (float *)max;
-	float *coord = (float *)&hitpt->xyz.x;
-	int inside = 1;
-	int middle[3];
+	bool inside = true;
+	bool middle[3] = { true, true, true };
 	int i;
 	int which_plane;
 	float maxt[3];
 	float candidate_plane[3];
 
-	for (i=0; i<3; i++ )	{
-		if ( origin[i] < minB[i] )	{
-			middle[i] = 0;
-			candidate_plane[i] = minB[i];
-			inside = 0;
-		} else if (origin[i] > maxB[i] )	{
-			middle[i] = 0;
-			candidate_plane[i] = maxB[i];
-			inside = 0;
-		} else {
-			middle[i] = 1;
+	for (i = 0; i < 3; i++) {
+		if (p0->a1d[i] < min->a1d[i]) {
+			candidate_plane[i] = min->a1d[i];
+			middle[i] = false;
+			inside = false;
+		} else if (p0->a1d[i] > max->a1d[i]) {
+			candidate_plane[i] = max->a1d[i];
+			middle[i] = false;
+			inside = false;
 		}
 	}
 
 	// ray origin inside bounding box			
-	if ( inside )	{
+	if ( inside ) {
 		*hitpt = *p0;
 		return 1;
 	}
 
 	// calculate T distances to canditate plane
-	for (i=0; i<3; i++ )	{
-		if ( (!middle[i]) && (dir[i] != 0.0f ))	
-			maxt[i] = (candidate_plane[i]-origin[i]) / dir[i];
+	for (i = 0; i < 3; i++) {
+		if ( !middle[i] && (pdir->a1d[i] != 0.0f) )
+			maxt[i] = (candidate_plane[i] - p0->a1d[i]) / pdir->a1d[i];
 		else
 			maxt[i] = -1.0f;
 	}
 
 	// Get largest of the maxt's for final choice of intersection
 	which_plane = 0;
-	for (i=1; i<3; i++ )
-		if (maxt[which_plane] < maxt[i] )
+	for (i = 1; i < 3; i++) {
+		if (maxt[which_plane] < maxt[i])
 			which_plane = i;
+	}
 
 	// check final candidate actually inside box
-	if ( maxt[which_plane] < 0.0f ) return 0;
+	if (maxt[which_plane] < 0.0f)
+		return 0;
 
-	for (i=0; i<3; i++ )	{
-		if (which_plane != i )	{
-			coord[i] = origin[i] + maxt[which_plane]*dir[i];
-			if ( coord[i] < minB[i] || coord[i] > maxB[i] )
+	for (i = 0; i < 3; i++) {
+		if (which_plane != i) {
+			hitpt->a1d[i] = p0->a1d[i] + maxt[which_plane] * pdir->a1d[i];
+
+			if ( (hitpt->a1d[i] < min->a1d[i]) || (hitpt->a1d[i] > max->a1d[i]) )
 				return 0;
 		} else {
-			coord[i] = candidate_plane[i];
+			hitpt->a1d[i] = candidate_plane[i];
 		}
 	}
+
 	return 1;
 }
 
@@ -608,23 +608,22 @@ int fvi_point_face(vec3d *checkp, int nv, vec3d **verts, vec3d * norm1, float *u
 
 	// Have i0, i1, i2
 	P = (float *)checkp;
-	vectora **V = (vectora **)verts;
 	
 	float u0, u1, u2, v0, v1, v2, alpha = UNINITIALIZED_VALUE, gamma;
 	float beta;
 
 	int inter=0, i = 2;	
 
-	u0 = P[i1] - V[0]->xyz[i1];
-	v0 = P[i2] - V[0]->xyz[i2];
+	u0 = P[i1] - verts[0]->a1d[i1];
+	v0 = P[i2] - verts[0]->a1d[i2];
 
 	do {
 
-		u1 = V[i-1]->xyz[i1] - V[0]->xyz[i1]; 
-		u2 = V[i  ]->xyz[i1] - V[0]->xyz[i1];
+		u1 = verts[i-1]->a1d[i1] - verts[0]->a1d[i1]; 
+		u2 = verts[i  ]->a1d[i1] - verts[0]->a1d[i1];
 
-		v1 = V[i-1]->xyz[i2] - V[0]->xyz[i2];
-		v2 = V[i  ]->xyz[i2] - V[0]->xyz[i2];
+		v1 = verts[i-1]->a1d[i2] - verts[0]->a1d[i2];
+		v2 = verts[i  ]->a1d[i2] - verts[0]->a1d[i2];
 
 
 		if ( (u1 >-delta) && (u1<delta) )	{
