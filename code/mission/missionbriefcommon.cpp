@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.49.2.3 $
- * $Date: 2006-09-20 04:53:53 $
+ * $Revision: 2.49.2.4 $
+ * $Date: 2007-02-10 00:10:13 $
  * $Author: taylor $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49.2.3  2006/09/20 04:53:53  taylor
+ * properly fix the new_recommendation_text FRED problem, plus some real cleanup for that code in general, and some memory leak fixes
+ *
  * Revision 2.49.2.2  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -1185,6 +1188,10 @@ void brief_render_icon_line(int stage_num, int line_num)
 	float			icon_x[2], icon_y[2];
 
 	bl = &Briefing->stages[stage_num].lines[line_num];
+
+	Assert( (bl->start_icon > 0) && (bl->start_icon < Briefing->stages[stage_num].num_icons) );
+	Assert( (bl->end_icon > 0) && (bl->end_icon < Briefing->stages[stage_num].num_icons) );
+
 	icon[0] = &Briefing->stages[stage_num].icons[bl->start_icon];
 	icon[1] = &Briefing->stages[stage_num].icons[bl->end_icon];
 
