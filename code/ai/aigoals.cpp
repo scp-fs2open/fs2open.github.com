@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.32 $
- * $Date: 2006-12-28 00:59:18 $
- * $Author: wmcoolmon $
+ * $Revision: 1.33 $
+ * $Date: 2007-02-10 04:49:22 $
+ * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2006/12/28 00:59:18  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.31  2006/11/16 00:52:28  taylor
  * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)
  *
@@ -2027,6 +2030,14 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			Int3();		// get ALLENDER
 			status = SHIP_STATUS_UNKNOWN;
 		}
+	}
+
+	// Goober5000 - before doing anything else, check if this is a disarm goal for an arrived ship...
+	if ((status == SHIP_STATUS_ARRIVED) && (aigp->ai_mode == AI_GOAL_DISARM_SHIP))
+	{
+		// if the ship has no turrets, we can't disarm it!
+		if (Ships[ship_name_lookup(aigp->ship_name)].subsys_info[SUBSYSTEM_TURRET].num == 0)
+			return AI_GOAL_NOT_ACHIEVABLE;
 	}
 
 	// if the goal is an ignore/disable/disarm goal, then 

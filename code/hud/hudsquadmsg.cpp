@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.35 $
- * $Date: 2007-01-15 13:43:43 $
- * $Author: karajorma $
+ * $Revision: 2.36 $
+ * $Date: 2007-02-10 04:49:23 $
+ * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2007/01/15 13:43:43  karajorma
+ * Fix bug where orders you gave last mission are sill accessible to the Order SEXP.
+ *
  * Revision 2.34  2006/11/16 00:52:28  taylor
  * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)
  *
@@ -1370,7 +1373,7 @@ int hud_squadmsg_is_target_order_valid(int order, int find_order, ai_info *aip )
 	}
 
 	// same as above except for disabled.
-	if ( (Comm_orders[order].item == DISARM_TARGET_ITEM) && ((shipp->subsys_info[SUBSYSTEM_TURRET].num > 0) && (shipp->subsys_info[SUBSYSTEM_TURRET].current_hits == 0.0f)) ){
+	if ( (Comm_orders[order].item == DISARM_TARGET_ITEM) && ((shipp->subsys_info[SUBSYSTEM_TURRET].num == 0) || (shipp->subsys_info[SUBSYSTEM_TURRET].current_hits == 0.0f)) ){
 		return 0;
 	}
 
