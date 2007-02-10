@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.14 $
+ * $Date: 2007-02-10 00:08:59 $
+ * $Author: taylor $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.12  2006/09/11 06:45:40  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -718,28 +721,40 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 MONITOR(NumPairs)
 MONITOR(NumPairsChecked)
 
+//#define PAIR_STATS
+
 extern int Cmdline_dis_collisions;
 void obj_check_all_collisions()
 {
-	if( Cmdline_dis_collisions) return;
-	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )	return;
-
 	obj_pair *parent, *tmp;	
+
+#ifdef PAIR_STATS
 	// debug info
 	float avg_time_to_next_check = 0.0f;
-							
+#endif
+
+	if (Cmdline_dis_collisions)
+		return;
+
+	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )
+		return;
+
+
 	parent = &pair_used_list;
 	tmp = parent->next;
 
 	Num_pairs_checked = 0;
 
-	while( tmp != NULL )	{
-
+	while (tmp != NULL) {
 		int removed = 0;
-		if ( (tmp->a != NULL) && (tmp->b != NULL) && timestamp_elapsed(tmp->next_check_time) )	{
+
+		if ( !timestamp_elapsed(tmp->next_check_time) )
+			goto NextPair;
+
+		if ( (tmp->a) && (tmp->b) ) {
 			Num_pairs_checked++;
 
-			if ((*tmp->check_collision)(tmp))	{
+			if ( (*tmp->check_collision)(tmp) ) {
 				// We never need to check this pair again.
 				#if 0	//def DONT_REMOVE_PAIRS
 					// Never check it again, but keep the pair around
@@ -763,23 +778,26 @@ void obj_check_all_collisions()
 			}
 		} 
 
-		if (!removed)	{
+NextPair:
+		if ( !removed ) {
 			parent = tmp;
 			tmp = tmp->next;
+
+#ifdef PAIR_STATS
 			// debug info
 			if (tmp) {
 				int add_time = timestamp_until( tmp->next_check_time );
 				if (add_time > 0)
 					avg_time_to_next_check += (float) add_time;
 			}
+#endif
 		}
 	}
 
-	MONITOR_INC(NumPairs,Num_pairs);
-	MONITOR_INC(NumPairsChecked,Num_pairs_checked);
+	MONITOR_INC(NumPairs, Num_pairs);
+	MONITOR_INC(NumPairsChecked, Num_pairs_checked);
 
-	// #define PAIR_STATS
-	#ifdef PAIR_STATS
+#ifdef PAIR_STATS
 	avg_time_to_next_check = avg_time_to_next_check / Num_pairs;
 	extern int Num_hull_pieces;
 	extern int Weapons_created;
@@ -789,7 +807,7 @@ void obj_check_all_collisions()
 	pairs_not_created = 0;
 	Weapons_created = 0;
 	Pairs_created = 0;
-	#endif
+#endif
 
 	// What percent of the pairs did we check?
 	// FYI: (n*(n-1))/2 is the total number of checks required for comparing n objects.
