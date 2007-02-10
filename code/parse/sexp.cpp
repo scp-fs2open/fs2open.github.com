@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.39 $
- * $Date: 2007-02-08 07:39:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.259.2.40 $
+ * $Date: 2007-02-10 00:14:40 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.39  2007/02/08 07:39:35  Goober5000
+ * fix two bugs:
+ * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
+ * --ships were created with default allowed comm orders regardless of which team they were on
+ *
  * Revision 2.259.2.38  2007/01/27 18:39:09  karajorma
  * Fix add-remove-escort to actually use a priority.
  *
@@ -3146,7 +3151,6 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				break;
 
 			case OPF_SOUNDTRACK_NAME:
-#ifndef NO_SOUND
 				if (type2 != SEXP_ATOM_STRING){
 					return SEXP_CHECK_TYPE_MISMATCH;
 				}
@@ -3167,7 +3171,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				if (i == Num_soundtracks)
 					return SEXP_CHECK_INVALID_SOUNDTRACK_NAME;
-#endif
+
 				break;
 
 			case OPF_SHIP_WITH_BAY:
@@ -8495,20 +8499,16 @@ void sexp_player_use_ai(int flag)
 // Goober5000
 void sexp_change_soundtrack(int n)
 {
-#ifndef NO_SOUND
 	event_sexp_change_soundtrack(CTEXT(n));
-#endif
 }
 
 // Goober5000
 void sexp_stop_music(int fade)
 {
-#ifndef NO_SOUND
 	if ( Sexp_music_handle != -1 ) {
 		audiostream_close_file(Sexp_music_handle, fade);
 		Sexp_music_handle = -1;
 	}
-#endif
 }
 
 // Goober5000
@@ -8524,7 +8524,6 @@ void sexp_music_close()
 // Goober5000
 void sexp_load_music(char* fname)
 {
-#ifndef NO_SOUND
 	if ( Cmdline_freespace_no_music ) {
 		return;
 	}
@@ -8538,13 +8537,11 @@ void sexp_load_music(char* fname)
 	{
 		Sexp_music_handle = audiostream_open( fname, ASF_EVENTMUSIC );
 	}
-#endif
 }
 
 // Goober5000
 void sexp_start_music(int node)
 {
-#ifndef NO_SOUND
 	int n=CDR(node);
 	int loop=0;
 
@@ -8563,7 +8560,6 @@ void sexp_start_music(int node)
 	else {
 		nprintf(("Warning", "No file exists to play sound via sexp-play-sound-from-file!\n"));
 	}
-#endif
 }
 
 // Goober5000
@@ -12376,10 +12372,13 @@ void sexp_activate_deactivate_glow_point_bank(int n, bool activate)
 	sindex = ship_name_lookup(CTEXT(n), 1);
 	if (sindex >= 0)
 	{
-		num = eval_num(n);
-		if (num >= 0 && num < (int)Ships[sindex].glow_point_bank_active.size())
+		for ( ; n != -1; n = CDR(n))
 		{
-			Ships[sindex].glow_point_bank_active[num] = activate;
+			num = eval_num(n);
+			if (num >= 0 && num < (int)Ships[sindex].glow_point_bank_active.size())
+			{
+				Ships[sindex].glow_point_bank_active[num] = activate;
+			}
 		}
 	}
 }
