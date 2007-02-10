@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.31 $
- * $Date: 2007-01-07 13:07:22 $
+ * $Revision: 1.32 $
+ * $Date: 2007-02-10 00:05:48 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2007/01/07 13:07:22  taylor
+ * slight change to emission light settings
+ * change default ambient light settings back to proper values
+ * add support for lighting falloff with directional lights
+ * some minor performance improvements
+ *
  * Revision 1.30  2006/07/24 07:36:49  taylor
  * minor cleanup/optimization to beam warmup glow rendering function
  * various lighting code cleanups
@@ -376,8 +382,7 @@ void opengl_pre_render_init_lights()
 }
 
 static GLdouble eyex, eyey, eyez;
-static GLdouble centerx, centery, centerz;
-static GLdouble upx, upy, upz;
+static GLdouble vmatrix[16];
 
 static vec3d last_view_pos;
 static matrix last_view_orient;
@@ -394,7 +399,6 @@ void opengl_change_active_lights(int pos)
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
-	glLoadIdentity();
 
 	if ( !memcmp(&Eye_position, &last_view_pos, sizeof(vec3d)) && !memcmp(&Eye_matrix, &last_view_orient, sizeof(matrix)) ) {
 		use_last_view = true;
@@ -406,22 +410,60 @@ void opengl_change_active_lights(int pos)
 	}
 
 	if ( !use_last_view ) {
-		eyex = (GLdouble)Eye_position.xyz.x;
-		eyey = (GLdouble)Eye_position.xyz.y;
-		eyez = (GLdouble)Eye_position.xyz.z;
+		// should already be normalized
+		eyex =  (GLdouble)Eye_position.xyz.x;
+		eyey =  (GLdouble)Eye_position.xyz.y;
+		eyez = -(GLdouble)Eye_position.xyz.z;
 
-		centerx = eyex + (GLdouble)Eye_matrix.vec.fvec.xyz.x;
-		centery = eyey + (GLdouble)Eye_matrix.vec.fvec.xyz.y;
-		centerz = eyez + (GLdouble)Eye_matrix.vec.fvec.xyz.z;
+		// should already be normalized
+		GLdouble fwdx =  (GLdouble)Eye_matrix.vec.fvec.xyz.x;
+		GLdouble fwdy =  (GLdouble)Eye_matrix.vec.fvec.xyz.y;
+		GLdouble fwdz = -(GLdouble)Eye_matrix.vec.fvec.xyz.z;
 
-		upx = (GLdouble)Eye_matrix.vec.uvec.xyz.x;
-		upy = (GLdouble)Eye_matrix.vec.uvec.xyz.y;
-		upz = (GLdouble)Eye_matrix.vec.uvec.xyz.z;
+		// should already be normalized
+		GLdouble upx =  (GLdouble)Eye_matrix.vec.uvec.xyz.x;
+		GLdouble upy =  (GLdouble)Eye_matrix.vec.uvec.xyz.y;
+		GLdouble upz = -(GLdouble)Eye_matrix.vec.uvec.xyz.z;
+
+		GLdouble mag;
+
+		// setup Side vector (crossprod of forward and up vectors)
+		GLdouble Sx = (fwdy * upz) - (fwdz * upy);
+		GLdouble Sy = (fwdz * upx) - (fwdx * upz);
+		GLdouble Sz = (fwdx * upy) - (fwdy * upx);
+
+		// normalize Side
+		mag = 1.0 / sqrt( (Sx*Sx) + (Sy*Sy) + (Sz*Sz) );
+
+		Sx *= mag;
+		Sy *= mag;
+		Sz *= mag;
+
+		// setup Up vector (crossprod of s and forward vectors)
+		GLdouble Ux = (Sy * fwdz) - (Sz * fwdy);
+		GLdouble Uy = (Sz * fwdx) - (Sx * fwdz);
+		GLdouble Uz = (Sx * fwdy) - (Sy * fwdx);
+
+		// normalize Up
+		mag = 1.0 / sqrt( (Ux*Ux) + (Uy*Uy) + (Uz*Uz) );
+
+		Ux *= mag;
+		Uy *= mag;
+		Uz *= mag;
+
+		// store the result in our matrix
+		memset( vmatrix, 0, sizeof(GLdouble) * 16 );
+		vmatrix[0]  = Sx;   vmatrix[1]  = Ux;   vmatrix[2]  = -fwdx;
+		vmatrix[4]  = Sy;   vmatrix[5]  = Uy;   vmatrix[6]  = -fwdy;
+		vmatrix[8]  = Sz;   vmatrix[9]  = Uz;   vmatrix[10] = -fwdz;
+		vmatrix[15] = 1.0;
 	}
 
-	gluLookAt(eyex, eyey, -eyez, centerx, centery, -centerz, upx, upy, -upz);
+	glLoadMatrixd(vmatrix);
 
+	glTranslated(-eyex, -eyey, -eyez);
 	glScalef(1.0f, 1.0f, -1.0f);
+
 
 	for (i = 0; i < GL_max_lights; i++) {
 		if (currently_enabled_lights[i]) {
