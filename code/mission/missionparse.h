@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.96 $
+ * $Revision: 2.97 $
  * $Author: Goober5000 $
- * $Date: 2007-02-08 07:39:32 $
+ * $Date: 2007-02-10 03:17:31 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2007/02/08 07:39:32  Goober5000
+ * fix two bugs:
+ * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
+ * --ships were created with default allowed comm orders regardless of which team they were on
+ *
  * Revision 2.95  2007/01/14 14:03:33  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -648,6 +653,8 @@ struct p_dock_instance;
 #define IS_MISSION_MULTI_DOGFIGHT	(The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)
 
 
+#define SSIF_NO_SHIELDS		(1<<0)
+
 // Goober5000
 typedef struct support_ship_info {
 	int		arrival_location;				// arrival location
@@ -660,6 +667,7 @@ typedef struct support_ship_info {
 	int		ship_class;						// ship class of support ship
 	int		tally;							// number of support ships so far
 	int		support_available_for_species;	// whether support is available for a given species (this is a bitfield)
+	int		ssi_flags;						// yarr
 } support_ship_info;
 
 typedef struct mission {
