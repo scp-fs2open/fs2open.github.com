@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.399 $
- * $Date: 2007-02-10 03:20:25 $
+ * $Revision: 2.400 $
+ * $Date: 2007-02-10 06:39:43 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.399  2007/02/10 03:20:25  Goober5000
+ * small tweak
+ *
  * Revision 2.398  2007/02/05 08:26:49  wmcoolmon
  * Make an error message prettier
  *
@@ -5791,6 +5794,14 @@ void ship_recalc_subsys_strength( ship *shipp )
 		shipp->flags |= SF_DISARMED;
 	}
 	*/
+
+	if (shipp->subsys_info[SUBSYSTEM_SHIELD_GENERATOR].num > 0)
+	{
+		if (shipp->subsys_info[SUBSYSTEM_SHIELD_GENERATOR].current_hits == 0.0f)
+			Objects[shipp->objnum].flags |= OF_NO_SHIELDS;
+		else
+			Objects[shipp->objnum].flags &= ~OF_NO_SHIELDS;
+	}
 }
 
 // routine to possibly fixup the model subsystem information for this ship pointer.  Needed when
@@ -11633,6 +11644,7 @@ void ship_model_start(object *objp)
 			case SUBSYSTEM_SOLAR:
 			case SUBSYSTEM_GAS_COLLECT:
 			case SUBSYSTEM_ACTIVATION:
+			case SUBSYSTEM_SHIELD_GENERATOR:
 				break;
 			case SUBSYSTEM_TURRET:
 				Assert( !(psub->flags & MSS_FLAG_ROTATES) ); // Turrets can't rotate!!! See John!
@@ -11695,6 +11707,7 @@ int ship_find_num_crewpoints(object *objp)
 		case SUBSYSTEM_ENGINE:
 		case SUBSYSTEM_GAS_COLLECT:
 		case SUBSYSTEM_ACTIVATION:
+		case SUBSYSTEM_SHIELD_GENERATOR:
 			break;
 		default:
 			Error(LOCATION, "Illegal subsystem type.\n");
@@ -11729,6 +11742,7 @@ int ship_find_num_turrets(object *objp)
 		case SUBSYSTEM_ENGINE:
 		case SUBSYSTEM_GAS_COLLECT:
 		case SUBSYSTEM_ACTIVATION:
+		case SUBSYSTEM_SHIELD_GENERATOR:
 			break;
 		default:
 			Error(LOCATION, "Illegal subsystem type.\n");
@@ -12303,7 +12317,12 @@ int ship_do_rearm_frame( object *objp, float frametime )
 			if ( (ssp->system_info->type == SUBSYSTEM_ENGINE) && (shipp->flags & SF_DISABLED) ) {
 				shipp->flags &= ~SF_DISABLED;
 				ship_reset_disabled_physics(objp, shipp->ship_info_index);
+//			} else if ( (ssp->system_info->type == SUBSYSTEM_TURRET) && (shipp->flags & SF_DISARMED) ) {
+//				shipp->flags &= ~SF_DISARMED;
+			} else if ( (ssp->system_info->type == SUBSYSTEM_SHIELD_GENERATOR) && (objp->flags & OF_NO_SHIELDS) ) {
+				objp->flags &= ~OF_NO_SHIELDS;
 			}
+
 			break;
 		}
 		ssp = GET_NEXT( ssp );
@@ -12901,6 +12920,11 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 				Dc_help = 1;
 			} else {
 				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_WEAPONS, Dc_arg_float );
+				if ( Dc_arg_float < 0.01f )	{
+//					Player_ship->flags |= SF_DISARMED;
+				} else {
+//					Player_ship->flags &= ~SF_DISARMED;
+				}
 			} 
 		} else if ( !stricmp( Dc_arg, "engine" ))	{
 			dc_get_arg(ARG_FLOAT);
@@ -12908,10 +12932,10 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 				Dc_help = 1;
 			} else {
 				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_ENGINE, Dc_arg_float );
-				if ( Dc_arg_float < ENGINE_MIN_STR )	{
-					Player_ship->flags |= SF_DISABLED;				// add the disabled flag
+				if ( Dc_arg_float < 0.01f )	{
+					Player_ship->flags |= SF_DISABLED;
 				} else {
-					Player_ship->flags &= (~SF_DISABLED);				// add the disabled flag
+					Player_ship->flags &= ~SF_DISABLED;
 				}
 			} 
 		} else if ( !stricmp( Dc_arg, "sensors" ))	{
@@ -12942,6 +12966,18 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 			} else {
 				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_RADAR, Dc_arg_float );
 			} 
+		} else if ( !stricmp( Dc_arg, "shield" ))	{
+			dc_get_arg(ARG_FLOAT);
+			if ( (Dc_arg_float < 0.0f) || (Dc_arg_float > 1.0f) )	{
+				Dc_help = 1;
+			} else {
+				ship_set_subsystem_strength( Player_ship, SUBSYSTEM_SHIELD_GENERATOR, Dc_arg_float );
+				if ( Dc_arg_float < 0.01f )	{
+					Player_obj->flags |= OF_NO_SHIELDS;
+				} else {
+					Player_obj->flags &= ~OF_NO_SHIELDS;
+				}
+			}
 		} else {
 			// print usage
 			Dc_help = 1;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.99 $
- * $Date: 2007-02-02 22:49:07 $
+ * $Revision: 2.100 $
+ * $Date: 2007-02-10 06:39:43 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2007/02/02 22:49:07  Goober5000
+ * fixed two of Bobboau's bizarre bugs
+ *
  * Revision 2.98  2007/01/14 14:03:33  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -735,15 +738,16 @@ extern int model_render_flags_size;
 #define SUBSYSTEM_TURRET			2
 #define SUBSYSTEM_RADAR				3
 #define SUBSYSTEM_NAVIGATION		4
-#define SUBSYSTEM_COMMUNICATION	5
+#define SUBSYSTEM_COMMUNICATION		5
 #define SUBSYSTEM_WEAPONS			6
 #define SUBSYSTEM_SENSORS			7
 #define SUBSYSTEM_SOLAR				8
 #define SUBSYSTEM_GAS_COLLECT		9
 #define SUBSYSTEM_ACTIVATION		10
-#define SUBSYSTEM_UNKNOWN			11
+#define SUBSYSTEM_SHIELD_GENERATOR	11
+#define SUBSYSTEM_UNKNOWN			12
 
-#define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
+#define SUBSYSTEM_MAX				13				//	maximum value for subsystem_xxx, for error checking
 
 #define MAX_TFP						10				// maximum number of turret firing points
 

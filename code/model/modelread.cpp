@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.126 $
- * $Date: 2007-02-02 22:49:07 $
+ * $Revision: 2.127 $
+ * $Date: 2007-02-10 06:39:43 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.126  2007/02/02 22:49:07  Goober5000
+ * fixed two of Bobboau's bizarre bugs
+ *
  * Revision 2.125  2007/02/01 22:15:58  karajorma
  * Well that's going to cause a few crashes (Thanks to ni1s for spotting it)
  *
@@ -1663,7 +1666,9 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		subsystemp->type = SUBSYSTEM_GAS_COLLECT;
 	} else if ( strstr(lcdname, "activator") ) {
 		subsystemp->type = SUBSYSTEM_ACTIVATION;
-	}  else { // If unrecognized type, set to unknown so artist can continue working...
+	} else if ( strstr(lcdname, "shield") ) {
+		subsystemp->type = SUBSYSTEM_SHIELD_GENERATOR;
+	} else { // If unrecognized type, set to unknown so artist can continue working...
 		subsystemp->type = SUBSYSTEM_UNKNOWN;
 		mprintf(("Warning: Ignoring unrecognized subsystem %s, believed to be in ship %s\n", dname, Global_filename));
 	}

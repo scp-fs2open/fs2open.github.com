@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.96 $
- * $Date: 2007-01-15 01:37:37 $
- * $Author: wmcoolmon $
+ * $Revision: 1.97 $
+ * $Date: 2007-02-10 06:39:43 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.96  2007/01/15 01:37:37  wmcoolmon
+ * Fix CVS & correct various warnings under MSVC 2003
+ *
  * Revision 1.95  2007/01/14 14:03:31  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -11908,6 +11911,7 @@ void process_subobjects(int objnum)
 		case SUBSYSTEM_COMMUNICATION:
 		case SUBSYSTEM_WEAPONS:
 		case SUBSYSTEM_SENSORS:
+		case SUBSYSTEM_SHIELD_GENERATOR:
 		case SUBSYSTEM_UNKNOWN:
 			break;
 
@@ -13897,7 +13901,7 @@ int maybe_request_support(object *objp)
 
 	//	Set desire based on hull strength.
 	//	Note: We no longer repair hull, so this would cause repeated repair requests.
-	// Added back in upon mission flag condition - Goober5000
+	// Goober5000 - Added back in upon mission flag condition
 	if (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
 	{
 		desire += 6 - (int) (get_hull_pct(objp) * 6.0f);
@@ -13908,6 +13912,10 @@ int maybe_request_support(object *objp)
 	desire += mrs_subsystem(shipp, SUBSYSTEM_COMMUNICATION);
 	desire += mrs_subsystem(shipp, SUBSYSTEM_WEAPONS);
 	desire += mrs_subsystem(shipp, SUBSYSTEM_SENSORS);
+
+	// Goober5000 - shields are key I would think
+	if (shipp->subsys_info[SUBSYSTEM_SHIELD_GENERATOR].num > 0)
+		desire += mrs_subsystem(shipp, SUBSYSTEM_SHIELD_GENERATOR);
 
 
 	//	Set desire based on percentage of secondary weapons.
