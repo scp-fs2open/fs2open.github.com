@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.h $
- * $Revision: 2.5 $
- * $Date: 2005-07-13 03:35:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.6 $
+ * $Date: 2007-02-10 00:18:22 $
+ * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/07/13 03:35:29  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.4  2005/06/19 04:59:04  taylor
  * woorps!
  *
@@ -118,8 +122,6 @@
 
 
 
-#ifndef NO_SOUND
-
 #ifdef NEED_STRHDL
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -193,29 +195,5 @@ void audiostream_pause_all();	// pause all audio streams
 
 void audiostream_unpause(int i);	// unpause a particular stream
 void audiostream_unpause_all();	// unpause all audio streams
-
-#else
-
-#define audiostream_init()
-#define audiostream_close()
-#define audiostream_open(filename, type)          ((filename), (type), 0)
-#define audiostream_close_file(i, fade)           ((void)((i), (fade)))
-#define audiostream_close_all(fade)               ((void)(fade))
-#define audiostream_play(i, volume, looping)      ((void)((i), (volume), (looping)))
-#define audiostream_is_playing(i)                 ((i), 0)
-#define audiostream_stop(i, rewind, paused)       ((void)((i), (rewind), (paused)))
-#define audiostream_set_volume_all(volume, type)  ((void)((volume), (type)))
-#define audiostream_set_volume(i, volume)         ((void)((i), (volume)))
-#define audiostream_is_paused(i)                  ((i), 0)
-#define audiostream_set_sample_cutoff(i, cutoff)    ((void)((i), (cutoff)))
-#define audiostream_get_samples_committed(i)        ((i), 0)
-#define audiostream_done_reading(i)               ((i), 1)
-#define audiostream_is_inited()                   (1)
-#define audiostream_pause(i)                      ((void)(i))
-#define audiostream_pause_all()
-#define audiostream_unpause(i)                    ((void)(i))
-#define audiostream_unpause_all()
-
-#endif // ifndef NO_SOUND
 
 #endif // _AUDIOSTR_H
