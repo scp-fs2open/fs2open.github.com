@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.44.2.5 $
- * $Date: 2006-11-05 18:41:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.44.2.6 $
+ * $Date: 2007-02-10 00:17:40 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44.2.5  2006/11/05 18:41:40  Goober5000
+ * improve error message
+ *
  * Revision 2.44.2.4  2006/10/01 08:34:43  karajorma
  * Fixing some ugliness when the popup appears
  *
@@ -1685,7 +1688,6 @@ void main_hall_close()
 // start the main hall music playing
 void main_hall_start_music()
 {
-#ifndef NO_SOUND
 	int index;
 
 	// start a looping ambient sound
@@ -1727,19 +1729,15 @@ main_hall_got_music_index:
 	// meh
 	nprintf(("Warning", "No music file exists to play music at the main menu!\n"));
 	return;
-
-#endif  // ifndef NO_SOUND
 }
 
 // stop the main hall music
 void main_hall_stop_music()
 {
-#ifndef NO_SOUND
 	if ( Main_hall_music_handle != -1 ) {
 		audiostream_close_file(Main_hall_music_handle, 1);
 		Main_hall_music_handle = -1;
 	}
-#endif
 }
 
 // do any necessary instantiation of misc animations

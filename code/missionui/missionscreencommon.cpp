@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.32.2.3 $
- * $Date: 2006-10-24 13:31:32 $
+ * $Revision: 2.32.2.4 $
+ * $Date: 2007-02-10 00:17:40 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32.2.3  2006/10/24 13:31:32  taylor
+ * fix a memory leak that Valgrind was complaining about (happens mainly when you have a mission without a briefing)
+ *
  * Revision 2.32.2.2  2006/08/19 04:38:46  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -681,7 +684,6 @@ void set_active_ui(UI_WINDOW *ui_window)
 
 void common_music_init(int score_index)
 {
-#ifndef NO_SOUND
 	if ( Cmdline_freespace_no_music ) {
 		return;
 	}
@@ -703,12 +705,10 @@ void common_music_init(int score_index)
 	briefing_load_music( Spooled_music[Mission_music[score_index]].filename );
 	// Use this id to trigger the start of music playing on the briefing screen
 	Briefing_music_begin_timestamp = timestamp(BRIEFING_MUSIC_DELAY);
-#endif
 }
 
 void common_music_do()
 {
-#ifndef NO_SOUND
 	if ( Cmdline_freespace_no_music ) {
 		return;
 	}
@@ -718,12 +718,10 @@ void common_music_do()
 		Briefing_music_begin_timestamp = 0;
 		briefing_start_music();
 	}
-#endif
 }
 
 void common_music_close()
 {
-#ifndef NO_SOUND
 	if ( Cmdline_freespace_no_music ) {
 		return;
 	}
@@ -732,7 +730,6 @@ void common_music_close()
 		return;
 
 	briefing_stop_music();
-#endif
 }
 
 // function that sets the current palette to the interface palette.  This function

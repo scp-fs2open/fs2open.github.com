@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.31 $
- * $Date: 2007-02-06 01:27:33 $
- * $Author: Goober5000 $
+ * $Revision: 2.243.2.32 $
+ * $Date: 2007-02-10 00:17:39 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.31  2007/02/06 01:27:33  Goober5000
+ * remove obsolete and unused shield flag
+ *
  * Revision 2.243.2.30  2006/12/27 09:26:20  taylor
  * fix OpenGL envmap "issues" (ie, stupid taylor stuff)
  * get rid of that RCS_Name thing, CVS kept changing it automatically and it was getting /really/ annoying
@@ -1816,18 +1819,6 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 //		1.00		5/28/98	AL.	First release to Interplay QA.
 
 
-#ifdef NO_SOUND
-// defined here to avoid link errors
-game_snd Snds[MIN_GAME_SOUNDS];
-game_snd Snds_iface[MIN_INTERFACE_SOUNDS];
-int Snds_iface_handle[MIN_INTERFACE_SOUNDS];
-
-// dummy callback -- real one is in gamesnd.cpp
-void common_play_highlight_sound()
-{
-}
-#endif
-
 //  This function is defined in code\network\multiutil.cpp so will be linked from multiutil.obj
 //  it's required fro the -missioncrcs command line option - Kazan
 void multi_spew_pxo_checksums(int max_files, char *outfile);
@@ -2246,12 +2237,10 @@ int Game_shudder_time = -1;
 int Game_shudder_total = 0;
 float Game_shudder_intensity = 0.0f;			// should be between 0.0 and 100.0
 
-#ifndef NO_SOUND
 // EAX stuff
 sound_env Game_sound_env;
 sound_env Game_default_sound_env = {SND_ENV_BATHROOM, 0.2F,0.2F,1.0F};
 int Game_sound_env_update_timestamp;
-#endif
 
 
 // WARPIN CRAP BEGIN --------------------------------------------------------------------------------------------
@@ -2621,9 +2610,7 @@ void game_level_close()
 	event_music_level_close();
 	game_stop_looped_sounds();
 	snd_stop_all();
-#ifndef NO_SOUND
 	obj_snd_level_close();					// uninit object-linked persistant sounds
-#endif
 	gamesnd_unload_gameplay_sounds();	// unload gameplay sounds from memory
 	anim_level_close();						// stop and clean up any anim instances
 	message_mission_shutdown();			// called after anim_level_close() to make sure instances are clear
@@ -2739,9 +2726,7 @@ void game_level_init(int seed)
 	mission_init_goals();
 	mission_log_init();
 	messages_init();
-#ifndef NO_SOUND
 	obj_snd_level_init();					// init object-linked persistant sounds
-#endif
 	anim_level_init();
 	shockwave_level_init();
 	afterburner_level_init();
@@ -3089,10 +3074,9 @@ void game_assign_sound_environment()
 		Game_sound_env = Game_default_sound_env;
 	}
 	*/
-#ifndef NO_SOUND
+
 	Game_sound_env = Game_default_sound_env;
 	Game_sound_env_update_timestamp = timestamp(1);
-#endif
 }
 
 // function which gets called before actually entering the mission.  It is broken down into a funciton
@@ -3279,9 +3263,7 @@ DCF_BOOL( show_framerate, Show_framerate )
 DCF_BOOL( show_target_debug_info, Show_target_debug_info )
 DCF_BOOL( show_target_weapons, Show_target_weapons )
 DCF_BOOL( lead_target_cheat, Players[Player_num].lead_target_cheat )
-#ifndef NO_SOUND
 DCF_BOOL( sound, Sound_enabled )
-#endif
 DCF_BOOL( zbuffer, game_zbuffer )
 DCF_BOOL( show_shield_mesh, Show_shield_mesh)
 DCF_BOOL( player_attacking, Player_attacking_enabled )
@@ -4280,13 +4262,11 @@ void game_show_framerate()
 		gr_printf( sx, sy, NOX("%s: %d KB\n"), (Cmdline_cache_bitmaps) ? NOX("C-BMP") : NOX("BMP"), bm_texture_ram/1024 );
 		sy += dy;
 
-#ifndef NO_SOUND
 		gr_printf( sx, sy, NOX("S-SRAM: %d KB\n"), Snd_sram/1024 );		// mem used to store game sound
 		sy += dy;
 #ifndef USE_OPENAL
 		gr_printf( sx, sy, NOX("S-HRAM: %d KB\n"), Snd_hram/1024 );		// mem used to store game sound
 		sy += dy;
-#endif
 #endif
 
 #ifndef NO_DIRECT3D
@@ -5565,10 +5545,8 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 #endif
 
 #ifndef NDEBUG
-#ifndef NO_SOUND
 	extern void snd_spew_debug_info();
 	snd_spew_debug_info();
-#endif
 #endif
 
 	if(!Cmdline_nohtl)
@@ -5935,9 +5913,8 @@ void game_simulation_frame()
 		// subspace missile strikes
 		ssm_process();
 
-#ifndef NO_SOUND
 		obj_snd_do_frame();						// update the object-linked persistant sounds
-#endif
+
 		game_maybe_update_sound_environment();
 		snd_update_listener(&View_position, &Player_obj->phys_info.vel, &Player_obj->orient);
 
@@ -7727,9 +7704,7 @@ void game_leave_state( int old_state, int new_state )
 				game_stop_looped_sounds();
 			}
 
-#ifndef NO_SOUND
 			sound_env_disable();
-#endif
 			joy_ff_stop_effects();
 
 			// stop game time under certain conditions
@@ -8228,9 +8203,7 @@ void mouse_force_pos(int x, int y);
 				}
 			}
 
-#ifndef NO_SOUND
 			sound_env_set(&Game_sound_env);
-#endif
 			joy_ff_mission_init(Ship_info[Player_ship->ship_info_index].rotation_time);
 
 			// clear multiplayer button info			i
@@ -9378,9 +9351,7 @@ void game_stop_looped_sounds()
 	hud_stop_looped_engine_sounds();
 	afterburner_stop_sounds();
 	player_stop_looped_sounds();
-#ifndef NO_SOUND
 	obj_snd_stop_all();		// stop all object-linked persistant sounds
-#endif
 	game_stop_subspace_ambient_sound();
 	snd_stop(Radar_static_looping);
 	Radar_static_looping = -1;

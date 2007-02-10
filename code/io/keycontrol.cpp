@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68.2.4 $
- * $Date: 2006-12-25 18:54:13 $
- * $Author: Goober5000 $
+ * $Revision: 2.68.2.5 $
+ * $Date: 2007-02-10 00:17:40 $
+ * $Author: taylor $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68.2.4  2006/12/25 18:54:13  Goober5000
+ * make chase view and external view toggles independent (Mantis #1087)
+ *
  * Revision 2.68.2.3  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -1048,7 +1051,6 @@ void debug_max_primary_weapons(object *objp)	// Goober5000
 
 void debug_change_song(int delta)
 {
-#ifndef NO_SOUND
 	char buf[256];
 	if ( event_music_next_soundtrack(delta) != -1 ) {
 		event_music_get_soundtrack_name(buf);
@@ -1057,7 +1059,6 @@ void debug_change_song(int delta)
 	} else {
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Event music is not playing", 3));
 	}
-#endif
 }
 
 //extern void set_global_ignore_object(int objnum);
@@ -1500,7 +1501,6 @@ void process_debug_keys(int k)
 			break;
 		}
 
-#ifndef NO_SOUND
 		case KEY_DEBUGGED + KEY_J: {
 			int new_pattern = event_music_return_current_pattern();
 
@@ -1524,7 +1524,6 @@ void process_debug_keys(int k)
 
 			break;
 		}
-#endif
 
 		case KEY_DEBUGGED + KEY_R: {
 		case KEY_DEBUGGED1 + KEY_R:
@@ -1672,7 +1671,6 @@ void process_debug_keys(int k)
 			beam_test_new(3);
 			break;*/
 					
-#ifndef NO_SOUND
 		case KEY_DEBUGGED + KEY_T: {
 			char buf[256];
 			event_music_get_info(buf);
@@ -1689,7 +1687,6 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED1 + KEY_DOWN:
 			debug_change_song(-1);
 			break;
-#endif
 
 		case KEY_PADMINUS: {
 			int init_flag = 0;
@@ -1937,10 +1934,8 @@ void game_do_end_mission_popup()
 		// single player version....
 		// do housekeeping things.
 		game_stop_time();
-#ifndef NO_SOUND
 		game_stop_looped_sounds();
 		snd_stop_all();
-#endif
 
 		pf_flags = PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON;
 		choice = popup(pf_flags, 3, POPUP_NO, XSTR( "&Yes, Quit", 28), XSTR( "Yes, &Restart", 29), XSTR( "Do you really want to end the mission?", 30));
