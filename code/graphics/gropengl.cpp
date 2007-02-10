@@ -2,13 +2,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.22 $
- * $Date: 2006-12-26 05:25:18 $
+ * $Revision: 2.174.2.23 $
+ * $Date: 2007-02-10 20:23:23 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.22  2006/12/26 05:25:18  taylor
+ * lots of little cleanup, stale code removal, and small performance adjustments
+ * get rid of the default combine texture state, we don't need it in general, and it can screw up fonts
+ * get rid of the secondary color support, it doesn't do much in non-HTL mode, screws up various things, and has long since been obsolete but material setup
+ * get rid of the old gamma setup, it actually conflicts with newer gamma support
+ * default texture wrapping to edge clamp
+ * do second gr_clear() on init to be sure and catch double-buffer
+ * make sure that our active texture will always get reset to 0, rather than leaving it at whatever was used last
+ * fixed that damn FBO bug from it hanging on textures and causing some rendering errors for various people
+ * only lock verts once in HTL model rendering
+ *
  * Revision 2.174.2.21  2006/12/07 18:07:51  taylor
  * get rid of GL_activate and GL_deactivate, it was just Glide ported stuff that we never used and never needed
  * handle window/fullscreen/minimize changes better, fixes cursor handling mostly (Mantis bug #1146)
@@ -2713,7 +2724,6 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 	bool use_spec = false;
 	int alpha,tmap_type, r, g, b;
 
-	gr_opengl_set_2d_matrix();
 
 	opengl_setup_render_states(r, g, b, alpha, tmap_type, flags, is_scaler);
 
@@ -2787,6 +2797,8 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 
 	if (gr_screen.current_bitmap == CLOAKMAP)
 		glBlendFunc(GL_ONE, GL_ONE);
+
+	gr_opengl_set_2d_matrix();
 
 	opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, alpha);
 
