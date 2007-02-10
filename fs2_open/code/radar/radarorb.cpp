@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.23 $
- * $Date: 2006-04-12 22:23:41 $
+ * $Revision: 1.23.2.1 $
+ * $Date: 2007-02-10 00:16:57 $
  * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23  2006/04/12 22:23:41  taylor
+ * compiler warning fixes to make GCC 4.1 shut the hell up
+ *
  * Revision 1.22  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -195,9 +198,9 @@ void radar_init_orb()
 		}
 	}
 
-	memset(orb_ring_xy,25*sizeof(vec3d),0);
-	memset(orb_ring_yz,25*sizeof(vec3d),0);
-	memset(orb_ring_xz,25*sizeof(vec3d),0);
+	memset(orb_ring_xy, 0, sizeof(orb_ring_xy));
+	memset(orb_ring_yz, 0, sizeof(orb_ring_yz));
+	memset(orb_ring_xz, 0, sizeof(orb_ring_yz));
 	
 	for (i=0; i < 25; i++)
 	{
