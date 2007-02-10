@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.211 $
- * $Date: 2007-02-08 07:39:32 $
+ * $Revision: 2.212 $
+ * $Date: 2007-02-10 03:17:31 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.211  2007/02/08 07:39:32  Goober5000
+ * fix two bugs:
+ * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
+ * --ships were created with default allowed comm orders regardless of which team they were on
+ *
  * Revision 2.210  2007/02/03 23:16:33  Goober5000
  * fix an old subtle bug
  *
@@ -1484,7 +1489,7 @@ extern fix game_get_overall_frametime();	// for texture animation
 
 // local prototypes
 void parse_player_info2(mission *pm);
-void post_process_mission();
+void post_process_mission(mission *pm);
 int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
@@ -1672,6 +1677,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	pm->support_ships.ship_class = -1;
 	pm->support_ships.tally = 0;
 	pm->support_ships.support_available_for_species = 0;
+	pm->support_ships.ssi_flags = 0;
 
 	// for each species, store whether support is available
 	for (int species = 0; species < (int)Species_info.size(); species++)
@@ -6108,10 +6114,10 @@ void parse_mission(mission *pm, int flags)
 	parse_asteroid_fields(pm);
 	parse_music(pm, flags);
 
-	post_process_mission();
+	post_process_mission(pm);
 }
 
-void post_process_mission()
+void post_process_mission(mission *pm)
 {
 	int			i;
 	int			indices[MAX_SHIPS], objnum;
@@ -6144,6 +6150,10 @@ void post_process_mission()
 	if ( Player_obj->phys_info.vel.xyz.z > 0.0f )
 		Player->ci.forward_cruise_percent = Player_obj->phys_info.vel.xyz.z / Player_ship->current_max_speed * 100.0f;
 
+	// now that we have the player ship...
+	// if the player doesn't have shields, support shouldn't either
+	if (Player_obj->flags & OF_NO_SHIELDS)
+		pm->support_ships.ssi_flags |= SSIF_NO_SHIELDS;
 
 	// set up wing indexes
 	for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
@@ -7209,12 +7219,6 @@ void mission_parse_support_arrived( int objnum )
 		}
 	}
 
-	/* Goober5000 - this is taken care of in mission_bring_in_support_ship
-	//	MK: A bit of a hack.  If on player's team and player isn't allowed shields, don't give this ship shields.
-	if ((Player_obj->flags & OF_NO_SHIELDS) && (Player_ship->team == Ships[Objects[objnum].instance].team))
-		Objects[objnum].flags |= OF_NO_SHIELDS;
-	*/
-
 	Ships[Objects[objnum].instance].flags |= SF_WARPED_SUPPORT;
 
 	Arriving_support_ship = NULL;
@@ -8029,8 +8033,8 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->flags = 0;
 	pobj->flags2 = 0;
 
-	if ( Player_obj->flags & OF_NO_SHIELDS )
-		pobj->flags |= P_OF_NO_SHIELDS;	// support ships have no shields when player has not shields
+	if (The_mission.support_ships.ssi_flags & SSIF_NO_SHIELDS)
+		pobj->flags |= P_OF_NO_SHIELDS;
 
 	if ( Ships[Player_obj->instance].flags2 & SF2_NO_SUBSPACE_DRIVE )
 		pobj->flags2 |= P2_SF2_NO_SUBSPACE_DRIVE;	// support ships have no subspace drive when player has not subspace drive
