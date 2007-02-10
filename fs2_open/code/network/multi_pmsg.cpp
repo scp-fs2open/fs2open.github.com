@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pmsg.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-11-06 05:40:57 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2007-02-10 06:39:43 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/11/06 05:40:57  taylor
+ * fix for Mantis bug #1104 (can't use a ":" in chat)
+ *
  * Revision 2.11  2006/03/30 04:15:20  Goober5000
  * hehe, grammar
  * --Goober5000
@@ -604,6 +607,7 @@ char *Multi_msg_subsys_name[SUBSYSTEM_MAX] = {
 	"Weapons",
 	"Sensors",
 	"Solar Array",
+	"Shield Generator",
 	"Unknown"
 };
 

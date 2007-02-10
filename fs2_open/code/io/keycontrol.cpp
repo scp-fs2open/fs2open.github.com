@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.75 $
- * $Date: 2007-02-10 00:18:22 $
- * $Author: taylor $
+ * $Revision: 2.76 $
+ * $Date: 2007-02-10 06:39:43 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2007/02/10 00:18:22  taylor
+ * remove NO_SOUND
+ *
  * Revision 2.74  2006/12/25 18:54:15  Goober5000
  * make chase view and external view toggles independent (Mantis #1087)
  *
@@ -1336,6 +1339,10 @@ void process_debug_keys(int k)
 					if ( sp->subsys_info[SUBSYSTEM_TURRET].current_hits <= 0.0f ) {
 						mission_log_add_entry(LOG_SHIP_DISARMED, sp->ship_name, NULL );
 						// sp->flags |= SF_DISARMED;				// add the disarmed flag
+					}
+
+					if ( sp->subsys_info[SUBSYSTEM_SHIELD_GENERATOR].current_hits <= 0.0f ) {
+						objp->flags |= OF_NO_SHIELDS;			// add the no-shields flag
 					}
 				}
 			}
