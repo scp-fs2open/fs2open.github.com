@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.53 $
- * $Date: 2007-02-09 04:53:27 $
+ * $Revision: 2.336.2.54 $
+ * $Date: 2007-02-10 03:20:43 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.53  2007/02/09 04:53:27  Goober5000
+ * merge the WCS screaming feature into the 3.6.9 (3.6.10?) branch
+ *
  * Revision 2.336.2.52  2007/01/07 03:10:05  Goober5000
  * fix bug where built-in lament messages were never played
  *
@@ -15243,7 +15246,7 @@ int valid_cap_subsys_cargo_list(char *subsys)
 {
 	if (strstr(subsys, "nav")
 		|| strstr(subsys, "comm")
-		|| strstr(subsys, "engines")
+		|| strstr(subsys, "engine")
 		|| strstr(subsys, "fighter")	// fighter bays
 		|| strstr(subsys, "sensors")
 		|| strstr(subsys, "weapons")) {
