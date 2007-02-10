@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.12 $
- * $Date: 2005-10-27 16:23:03 $
+ * $Revision: 2.13 $
+ * $Date: 2007-02-10 00:12:35 $
  * $Author: taylor $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2005/10/27 16:23:03  taylor
+ * go back to using abort() over exit() for Assert's and Int3's but close out SDL first this time, makes debugging much easier
+ *
  * Revision 2.11  2005/09/06 05:32:12  taylor
  * use exit(EXIT_FAILURE) rather than abort() so that all atexit() calls will actually get executed
  *
@@ -323,9 +326,13 @@ DWORD unix_process(DWORD lparam)
 
 			case SDL_MOUSEBUTTONDOWN:
 			case SDL_MOUSEBUTTONUP:
-				if (event.button.button <= HIGHEST_MOUSE_BUTTON) {
-					mouse_mark_button( event.button.button, event.button.state );
-				}
+				if (event.button.button == SDL_BUTTON_LEFT)
+					mouse_mark_button( MOUSE_LEFT_BUTTON, event.button.state );
+				else if (event.button.button == SDL_BUTTON_MIDDLE)
+					mouse_mark_button( MOUSE_MIDDLE_BUTTON, event.button.state );
+				else if (event.button.button == SDL_BUTTON_RIGHT)
+					mouse_mark_button( MOUSE_RIGHT_BUTTON, event.button.state );
+
 				break;
 
 			case SDL_JOYHATMOTION:
