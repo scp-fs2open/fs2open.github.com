@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.40.2.7 $
- * $Date: 2006-10-01 19:27:28 $
- * $Author: taylor $
+ * $Revision: 2.40.2.8 $
+ * $Date: 2007-02-10 06:55:49 $
+ * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40.2.7  2006/10/01 19:27:28  taylor
+ * fix for the "branch" bug (still a minor usability issue however, see Mantis bug for details)
+ * add a popup to the loopbrief screen when you press ESC, so that we can either accept or decline the loop offer
+ *
  * Revision 2.40.2.6  2006/09/14 18:47:39  taylor
  * prevent FRED from hitting an Assert() that it shouldn't have had to hit in the first place
  *
@@ -705,7 +709,7 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 				j = i - incr;
 	
 				while (j >= 0) {
-					if (stricmp(Campaign_file_names[j], Campaign_file_names[j + incr]) > 0) {
+					if (stricmp(Campaign_names[j], Campaign_names[j + incr]) > 0) {
 						// first, do filenames
 						t = Campaign_file_names[j];
 						Campaign_file_names[j] = Campaign_file_names[j + incr];
