@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.33 $
- * $Date: 2007-02-10 04:49:22 $
+ * $Revision: 1.34 $
+ * $Date: 2007-02-10 06:39:43 $
  * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2007/02/10 04:49:22  Goober5000
+ * prevent the AI from falling into the black hole of disarming a turretless ship
+ *
  * Revision 1.32  2006/12/28 00:59:18  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1090,6 +1093,8 @@ int ai_get_subsystem_type( char *subsystem )
 		return SUBSYSTEM_GAS_COLLECT;
 	} else if ( !strnicmp(subsystem, NOX("activator"), 9) )  {
 		return SUBSYSTEM_ACTIVATION;
+	} else if ( !strnicmp(subsystem, NOX("shield"), 6) ) {
+		return SUBSYSTEM_SHIELD_GENERATOR;
 	} else {									// If unrecognized type, set to engine so artist can continue working...
 		if (!Fred_running) {
 //			Int3();							// illegal subsystem type -- find allender
