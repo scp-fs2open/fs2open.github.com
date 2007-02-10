@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.82 $
- * $Date: 2007-01-10 01:44:39 $
+ * $Revision: 2.83 $
+ * $Date: 2007-02-10 00:04:03 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2007/01/10 01:44:39  taylor
+ * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
+ *
  * Revision 2.81  2007/01/07 13:13:38  taylor
  * cleanup various bits of obsolete or unused code
  *
@@ -899,6 +902,11 @@ const float Default_max_draw_distance = 1e10;
 float Min_draw_distance = Default_min_draw_distance;
 float Max_draw_distance = Default_max_draw_distance;
 
+// pre-computed screen resize vars
+static float Gr_resize_X = 1.0f, Gr_resize_Y = 1.0f;
+static float Gr_unsize_X = 1.0f, Gr_unsize_Y = 1.0f;
+
+
 /**
  * This function is to be called if you wish to scale GR_1024 or GR_640 x and y positions or
  * lengths in order to keep the correctly scaled to nonstandard resolutions
@@ -912,30 +920,16 @@ bool gr_resize_screen_pos(int *x, int *y)
 	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
 		return false;
 
-	// it's possible for x/y to be larger than INT_MAX/INT_MIN when *'d by mult_by_x/y so use a tmp longlong (64 bit)
-	longlong xy_tmp = 0;
+	float xy_tmp = 0.0f;
 
-	int div_by_x = (gr_screen.custom_size == GR_1024) ? 1024 : 640;
-	int div_by_y = (gr_screen.custom_size == GR_1024) ?  768 : 480;
-			
-	if (x && (*x != 0)) {
-		xy_tmp = (*x);
-		xy_tmp *= gr_screen.max_w;
-		xy_tmp /= div_by_x;
-
-		Assert( (xy_tmp <= INT_MAX) && (xy_tmp >= INT_MIN) );
-
-		(*x) = (int)xy_tmp;
+	if ( x && (*x != 0) ) {
+		xy_tmp = (*x) * Gr_resize_X;
+		(*x) = fl2i(xy_tmp);
 	}
 
-	if (y && (*y != 0)) {
-		xy_tmp = (*y);
-		xy_tmp *= gr_screen.max_h;
-		xy_tmp /= div_by_y;
-
-		Assert( (xy_tmp <= INT_MAX) && (xy_tmp >= INT_MIN) );
-
-		(*y) = (int)xy_tmp;
+	if ( y && (*y != 0) ) {
+		xy_tmp = (*y) * Gr_resize_Y;
+		(*y) = fl2i(xy_tmp);
 	}
 
 	return true;
@@ -952,30 +946,16 @@ bool gr_unsize_screen_pos(int *x, int *y)
 	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
 		return false;
 
-	// it's possible for x/y to be larger than INT_MAX/INT_MIN when *'d by mult_by_x/y so use a tmp longlong (64 bit)
-	longlong xy_tmp = 0;
-	
-	int mult_by_x = (gr_screen.custom_size == GR_1024) ? 1024 : 640;
-	int mult_by_y = (gr_screen.custom_size == GR_1024) ?  768 : 480;
-			
-	if (x && (*x != 0)) {
-		xy_tmp = (*x);
-		xy_tmp *= mult_by_x;
-		xy_tmp /= gr_screen.max_w;
+	float xy_tmp = 0.0f;
 
-		Assert( (xy_tmp <= INT_MAX) && (xy_tmp >= INT_MIN) );
-
-		(*x) = (int)xy_tmp;
+	if ( x && (*x != 0) ) {
+		xy_tmp = (*x) * Gr_unsize_X;
+		(*x) = fl2i(xy_tmp);
 	}
 
-	if (y && (*y != 0)) {
-		xy_tmp = (*y);
-		xy_tmp *= mult_by_y;
-		xy_tmp /= gr_screen.max_h;
-
-		Assert( (xy_tmp <= INT_MAX) && (xy_tmp >= INT_MIN) );
-
-		(*y) = (int)xy_tmp;
+	if ( y && (*y != 0) ) {
+		xy_tmp = (*y) * Gr_unsize_Y;
+		(*y) = fl2i(xy_tmp);
 	}
 
 	return true;
@@ -994,18 +974,11 @@ bool gr_resize_screen_posf(float *x, float *y)
 	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
 		return false;
 
-	float div_by_x = (gr_screen.custom_size == GR_1024) ? 1024.0f : 640.0f;
-	float div_by_y = (gr_screen.custom_size == GR_1024) ?  768.0f : 480.0f;
-			
-	if (x && (*x != 0.0f)) {
-		(*x) *= (float)gr_screen.max_w;
-		(*x) /= div_by_x;
-	}
+	if ( x && (*x != 0) )
+		(*x) *= Gr_resize_X;
 
-	if (y && (*y != 0.0f)) {
-		(*y) *= (float)gr_screen.max_h;
-		(*y) /= div_by_y;
-	}
+	if ( y && (*y != 0) )
+		(*y) *= Gr_resize_Y;
 
 	return true;
 }
@@ -1021,18 +994,11 @@ bool gr_unsize_screen_posf(float *x, float *y)
 	if ( (gr_screen.custom_size < 0) && (gr_screen.rendering_to_texture == -1) )
 		return false;
 
-	float mult_by_x = (gr_screen.custom_size == GR_1024) ? 1024.0f : 640.0f;
-	float mult_by_y = (gr_screen.custom_size == GR_1024) ?  768.0f : 480.0f;
-			
-	if (x && (*x != 0.0f)) {
-		(*x) *= mult_by_x;
-		(*x) /= (float) gr_screen.max_w;
-	}
+	if ( x && (*x != 0) )
+		(*x) *= Gr_unsize_X;
 
-	if (y && (*y != 0.0f)) {
-		(*y) *= mult_by_y;
-		(*y) /= (float) gr_screen.max_h;
-	}
+	if ( y && (*y != 0) )
+		(*y) *= Gr_unsize_Y;
 
 	return true;
 }
@@ -1392,28 +1358,28 @@ done_checking_cpuid:
 // Everything but D3D calls this before device initialisation
 void gr_init_res(int res, int mode, int max_w, int max_h)
 {
-	if(Fred_running || Pofview_running)
-	{		   
+	if (Fred_running ) {		   
 		gr_screen.custom_size = -1;
-	} 
-	else if(max_w == 640 && max_h == 480) 
-	{
+	} else if (max_w == 640 && max_h == 480) {
 		gr_screen.custom_size = -1;
 		res = GR_640;
-	} 
-	else if(max_w == 1024 && max_h == 768) 
-	{
+	} else if(max_w == 1024 && max_h == 768) {
 		gr_screen.custom_size = -1;
    
 		// Hi res vp is not present, use 640x480 art in 1024x768!
 		if(res != GR_1024)
 			gr_screen.custom_size = res;
-	} 
-	else 
-	{
+	} else {
 		// Will fall back to 640x480 if sparky hi res isnt there
 		gr_screen.custom_size = res;
 	}
+
+	Gr_resize_X = (float)max_w / ((res == GR_1024) ? 1024.0f : 640.0f);
+	Gr_resize_Y = (float)max_h / ((res == GR_1024) ?  768.0f : 480.0f);
+
+	Gr_unsize_X = ((res == GR_1024) ? 1024.0f : 640.0f) / (float)max_w;
+	Gr_unsize_Y = ((res == GR_1024) ?  768.0f : 480.0f) / (float)max_h;
+
 
 	gr_screen.signature = Gr_signature++;
 	gr_screen.mode = mode;
