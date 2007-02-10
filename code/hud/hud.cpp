@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.68 $
- * $Date: 2007-02-10 00:18:22 $
- * $Author: taylor $
+ * $Revision: 2.69 $
+ * $Date: 2007-02-10 05:01:03 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2007/02/10 00:18:22  taylor
+ * remove NO_SOUND
+ *
  * Revision 2.67  2006/05/13 07:09:24  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -2246,8 +2249,8 @@ void hud_show_damage_popup()
 			}
 			Pl_hud_subsys_info[psub->type].last_str = strength;
 
-			//Don't display more than 12 damaged subsystems.
-			if(num >= SUBSYSTEM_MAX)
+			//Don't display more than the max number of damaged subsystems.
+			if (num >= SUBSYSTEM_MAX)
 			{
 				break;
 			}
@@ -2842,14 +2845,24 @@ void hud_support_view_blit()
 		
 		if (!Cmdline_rearm_timer)
 		{
-			if (  (ship_get_subsystem_strength(Player_ship, SUBSYSTEM_ENGINE) < 1.0 ) ||
-					(ship_get_subsystem_strength(Player_ship, SUBSYSTEM_SENSORS) < 1.0 ) ||
-					(ship_get_subsystem_strength(Player_ship, SUBSYSTEM_WEAPONS) < 1.0 ) ||
-					(ship_get_subsystem_strength(Player_ship, SUBSYSTEM_COMMUNICATION) < 1.0 ) ) {
-				sprintf(outstr, XSTR( "repairing", 227));
-			} else {
-				sprintf(outstr, XSTR( "rearming", 228));
+			int i;
+			bool repairing = false;
+			for (i = 0; i < SUBSYSTEM_MAX; i++)
+			{
+				if (Player_ship->subsys_info[i].num > 0) 
+				{
+					if (ship_get_subsystem_strength(Player_ship, i) < 1.0f)
+					{
+						repairing = true;
+						break;
+					}
+				}
 			}
+
+			if (repairing)
+				sprintf(outstr, XSTR("repairing", 227));
+			else
+				sprintf(outstr, XSTR("rearming", 228));
 		}
 		else
 		{
