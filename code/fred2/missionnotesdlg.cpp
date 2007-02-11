@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.7.2.1 $
- * $Date: 2006-07-30 20:00:47 $
- * $Author: Kazan $
+ * $Revision: 1.7.2.2 $
+ * $Date: 2007-02-11 09:25:42 $
+ * $Author: taylor $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7.2.1  2006/07/30 20:00:47  Kazan
+ * resolve 1018 and an interface problem in fred2's ship editor
+ *
  * Revision 1.7  2006/05/30 02:13:22  Goober5000
  * add substitute music boxes to FRED, and reset music properly when mission is cleared
  * --Goober5000
@@ -769,7 +772,7 @@ void CMissionNotesDlg::OnSquadLogo()
 	UpdateData(TRUE);
 
 	// get list of squad images
-	z = cfile_push_chdir(CF_TYPE_SQUAD_IMAGES_MAIN);
+	z = cfile_push_chdir(CF_TYPE_SQUAD_IMAGES);
 	CFileDialog dlg(TRUE, "pcx", pcx_filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Pcx Files (*.pcx)|*.pcx");
 
 	// if we have a result
