@@ -2,13 +2,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.197 $
- * $Date: 2007-02-10 20:23:51 $
+ * $Revision: 2.198 $
+ * $Date: 2007-02-11 18:26:59 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.197  2007/02/10 20:23:51  taylor
+ * make sure that we don't set the 2d view matrix and then not reset it (Mantis #1269)
+ * clean up some of the fullneb mess that was causing some initial setup issues (colors wrong, etc.)
+ *
  * Revision 2.196  2007/01/22 04:02:23  wmcoolmon
  * Fix non-opaque circles.
  *
@@ -1236,10 +1240,7 @@ extern matrix *Interp_orient;
 
 extern char *Osreg_title;
 
-extern int Interp_multitex_cloakmap;
-extern int CLOAKMAP;
 extern int SPECMAP;
-extern int Interp_cloakmap_alpha;
 
 extern GLfloat GL_anisotropy;
 
@@ -1645,15 +1646,7 @@ void gr_opengl_flip()
 	TIMERBAR_START_FRAME();
 
 #ifdef _WIN32
-	int swap_error=0;
-
-	if(!SwapBuffers(dev_context))
-	{
-		opengl_minimize();
-		swap_error=GetLastError();
-		Error(LOCATION,"Unable to swap buffers\nError code: %d",swap_error);
-		exit(2);
-	}
+	SwapBuffers(dev_context);
 #else
 	SDL_GL_SwapBuffers();
 #endif
@@ -1731,6 +1724,10 @@ void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 
 	gr_screen.clip_aspect = i2fl(w) / i2fl(h);
 
+	// just return early if we aren't actually going to need the scissor test
+	if ( (x == 0) && (y == 0) && (w == max_w) && (h == max_h) )
+		return;
+	
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(x, gr_screen.max_h-y-h, w, h);
 }
@@ -1794,11 +1791,11 @@ void opengl_aabitmap_ex_internal(int x, int y, int w, int h, int sx, int sy, boo
 
 	bm_get_info( gr_screen.current_bitmap, &bw, &bh );
 
-	u0 = u_scale*i2fl(sx)/i2fl(bw);
-	v0 = v_scale*i2fl(sy)/i2fl(bh);
+	u0 = u_scale * (i2fl(sx) / i2fl(bw));
+	v0 = v_scale * (i2fl(sy) / i2fl(bh));
 
-	u1 = u_scale*i2fl(sx+w)/i2fl(bw);
-	v1 = v_scale*i2fl(sy+h)/i2fl(bh);
+	u1 = u_scale * (i2fl(sx+w) / i2fl(bw));
+	v1 = v_scale * (i2fl(sy+h) / i2fl(bh));
 
 	x1 = i2fl(x + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x));
 	y1 = i2fl(y + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y));
@@ -1946,17 +1943,39 @@ void gr_opengl_aabitmap(int x, int y, bool resize, bool mirror)
 	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
 	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
 
-	if ( (dx1 > clip_right) || (dx2 < clip_left) ) return;
-	if ( (dy1 > clip_bottom) || (dy2 < clip_top) ) return;
-	if ( dx1 < clip_left ) { sx = clip_left-dx1; dx1 = clip_left; }
-	if ( dy1 < clip_top ) { sy = clip_top-dy1; dy1 = clip_top; }
-	if ( dx2 > clip_right )	{ dx2 = clip_right; }
-	if ( dy2 > clip_bottom ) { dy2 = clip_bottom; }
+	if ( (dx1 > clip_right) || (dx2 < clip_left) )
+		return;
 
-	if ( sx < 0 ) return;
-	if ( sy < 0 ) return;
-	if ( sx >= w ) return;
-	if ( sy >= h ) return;
+	if ( (dy1 > clip_bottom) || (dy2 < clip_top) )
+		return;
+
+	if ( dx1 < clip_left ) {
+		sx = clip_left-dx1;
+		dx1 = clip_left;
+	}
+
+	if ( dy1 < clip_top ) {
+		sy = clip_top-dy1;
+		dy1 = clip_top;
+	}
+
+	if ( dx2 > clip_right )
+		dx2 = clip_right;
+
+	if ( dy2 > clip_bottom )
+		dy2 = clip_bottom;
+
+	if ( sx < 0 )
+		return;
+
+	if ( sy < 0 )
+		return;
+
+	if ( sx >= w )
+		return;
+
+	if ( sy >= h )
+		return;
 
 	// Draw bitmap bm[sx,sy] into (dx1,dy1)-(dx2,dy2)
 	gr_opengl_aabitmap_ex(dx1, dy1, dx2-dx1+1, dy2-dy1+1, sx, sy, resize, mirror);
@@ -2578,11 +2597,6 @@ void opengl_draw_primitive(int nv, vertex **verts, uint flags, float u_scale, fl
 			// use constant RGB values...
 		}
 
-		if (gr_screen.current_bitmap == CLOAKMAP) {
-			r = g = b = Interp_cloakmap_alpha;
-			a = 255;
-		}
-
 		if (!override_primary) {
 			glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
 		} else {
@@ -2696,34 +2710,27 @@ void opengl_setup_render_states(int &r,int &g,int &b,int &alpha, int &tmap_type,
 			alpha = 255;
 
 			if ( factor < 1.0f ) {
-				int tmp_alpha = fl2i(gr_screen.current_alpha*255.0f);
-				r = (r*tmp_alpha)/255;
-				g = (g*tmp_alpha)/255;
-				b = (b*tmp_alpha)/255;
+				r = fl2i(r * gr_screen.current_alpha);
+				g = fl2i(g * gr_screen.current_alpha);
+				b = fl2i(b * gr_screen.current_alpha);
 			}
 		}
 	} else {
-		if(Bm_pixel_format == BM_PIXEL_FORMAT_ARGB) {
-			alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
-		} else {
-			alpha_blend = ALPHA_BLEND_NONE;
-		}
-		alpha = 255;
+		alpha_blend = ALPHA_BLEND_ALPHA_BLEND_ALPHA;
+		alpha = fl2i(gr_screen.current_alpha * 255.0f);
 	}
 
-	if (flags & TMAP_FLAG_INTERFACE) {
-		tmap_type = TCACHE_TYPE_INTERFACE;
-	}
-
-	texture_source = TEXTURE_SOURCE_NONE;
 	
 	if ( flags & TMAP_FLAG_TEXTURED ) {
 		// use nonfiltered textures for interface graphics
 		if (flags & TMAP_FLAG_INTERFACE) {
+			tmap_type = TCACHE_TYPE_INTERFACE;
 			texture_source = TEXTURE_SOURCE_NO_FILTERING;
 		} else {
 			texture_source = TEXTURE_SOURCE_DECAL;
 		}
+	} else {
+		texture_source = TEXTURE_SOURCE_NONE;
 	}
 
 	opengl_set_state( texture_source, alpha_blend, zbuffer_type );
@@ -2744,18 +2751,6 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 			return;
 		}
 		stage++; // bump!
-
-		// cloakmap
-		if ( Interp_multitex_cloakmap > 0 ) {
-			SPECMAP = -1;	// don't add a spec map if we are cloaked
-			GLOWMAP = -1;	// don't use a glowmap either, shouldn't see them
-
-			if ( !gr_opengl_tcache_set(Interp_multitex_cloakmap, tmap_type, &u_scale, &v_scale, 0, 0, stage) ) {
-				return;
-			}
-			opengl_set_additive_tex_env();
-			stage++; // bump
-		}
 
 		// glowmap
 		if ( (GLOWMAP > -1) && !Cmdline_noglow ) {
@@ -2807,9 +2802,6 @@ void opengl_tmapper_internal( int nv, vertex **verts, uint flags, int is_scaler 
 		gr_fog_set(GR_FOGMODE_FOG, ra, ga, ba);
 	}
 
-	if (gr_screen.current_bitmap == CLOAKMAP)
-		glBlendFunc(GL_ONE, GL_ONE);
-
 	gr_opengl_set_2d_matrix();
 
 	opengl_draw_primitive(nv, verts, flags, u_scale, v_scale, r, g, b, alpha);
@@ -2851,12 +2843,13 @@ void opengl_tmapper_internal3d( int nv, vertex **verts, uint flags )
 	}
 
 	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
-	glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
-	
-	if (flags & TMAP_FLAG_TRISTRIP)
-		gl_mode = GL_TRIANGLE_STRIP;
-	else if (flags & TMAP_FLAG_TRILIST)
+	if ( !(flags & (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD)) )
+		glColor4ub( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)alpha );
+
+	if (flags & TMAP_FLAG_TRILIST)
 		gl_mode = GL_TRIANGLES;
+	else if (flags & TMAP_FLAG_TRISTRIP)
+		gl_mode = GL_TRIANGLE_STRIP;
 
 
 	glBegin(gl_mode);
@@ -2865,7 +2858,7 @@ void opengl_tmapper_internal3d( int nv, vertex **verts, uint flags )
 		va = verts[i];
 
 		if ( flags & (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD) )
-			glColor3ub(va->r, va->g, va->b);
+			glColor4ub(va->r, va->g, va->b, (ubyte)alpha);
 
 		glTexCoord2f(va->u, va->v);
 		glVertex3f(va->x, va->y, va->z);
@@ -3263,28 +3256,39 @@ void gr_opengl_set_clear_color(int r, int g, int b)
 	gr_init_color (&gr_screen.current_clear_color, r, g, b);
 }
 
-void opengl_flash(ubyte red, ubyte green, ubyte blue, ubyte alpha = 255)
+void gr_opengl_shade(int x, int y, int w, int h, bool resize)
 {
-	int x1, x2, y1, y2;
+	if (resize) {
+		gr_resize_screen_pos(&x, &y);
+		gr_resize_screen_pos(&w, &h);
+	}
 
-	if ( !(red || green || blue) || !alpha )
+	int x1 = (gr_screen.offset_x + x);
+	int y1 = (gr_screen.offset_y + y);
+	int x2 = (gr_screen.offset_x + w);
+	int y2 = (gr_screen.offset_y + h);
+
+	if ( (x1 >= gr_screen.max_w) || (y1 >= gr_screen.max_h) )
 		return;
 
-	opengl_set_state( TEXTURE_SOURCE_NONE, (alpha == 255) ? ALPHA_BLEND_ALPHA_ADDITIVE : ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+	CLAMP(x2, x1+1, gr_screen.max_w);
+	CLAMP(y2, y1+1, gr_screen.max_h);
 
-	x1 = (gr_screen.clip_left+gr_screen.offset_x);
-	y1 = (gr_screen.clip_top+gr_screen.offset_y);
-	x2 = (gr_screen.clip_right+gr_screen.offset_x);
-	y2 = (gr_screen.clip_bottom+gr_screen.offset_y);
+	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
 
-	glColor4ub(red, green, blue, alpha);
+	gr_opengl_set_2d_matrix();
 
-	glBegin (GL_QUADS);
+	glColor4ub( (GLubyte)gr_screen.current_shader.r, (GLubyte)gr_screen.current_shader.g,
+				(GLubyte)gr_screen.current_shader.b, (GLubyte)gr_screen.current_shader.c );
+
+	glBegin(GL_QUADS);
 		glVertex2i(x1, y2);
 		glVertex2i(x2, y2);
 		glVertex2i(x2, y1);
 		glVertex2i(x1, y1);
-	glEnd ();
+	glEnd();
+
+	gr_opengl_end_2d_matrix();
 }
 
 void gr_opengl_flash(int r, int g, int b)
@@ -3296,12 +3300,26 @@ void gr_opengl_flash(int r, int g, int b)
 	CLAMP(g, 0, 255);
 	CLAMP(b, 0, 255);
 
-	opengl_flash( (ubyte)r, (ubyte)g, (ubyte)b );
+	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_NONE );
+
+	int x1 = (gr_screen.clip_left+gr_screen.offset_x);
+	int y1 = (gr_screen.clip_top+gr_screen.offset_y);
+	int x2 = (gr_screen.clip_right+gr_screen.offset_x);
+	int y2 = (gr_screen.clip_bottom+gr_screen.offset_y);
+
+	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, 255 );
+
+	glBegin(GL_QUADS);
+		glVertex2i(x1, y2);
+		glVertex2i(x2, y2);
+		glVertex2i(x2, y1);
+		glVertex2i(x1, y1);
+	glEnd();
 }
 
 void gr_opengl_flash_alpha(int r, int g, int b, int a)
 {
-	if ( !(r || g || b) || !a )
+	if ( !(r || g || b || a) )
 		return;
 
 	CLAMP(r, 0, 255);
@@ -3309,7 +3327,21 @@ void gr_opengl_flash_alpha(int r, int g, int b, int a)
 	CLAMP(b, 0, 255);
 	CLAMP(a, 0, 255);
 
-	opengl_flash( (ubyte)r, (ubyte)g, (ubyte)b, (ubyte)a );
+	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
+
+	int x1 = (gr_screen.clip_left+gr_screen.offset_x);
+	int y1 = (gr_screen.clip_top+gr_screen.offset_y);
+	int x2 = (gr_screen.clip_right+gr_screen.offset_x);
+	int y2 = (gr_screen.clip_bottom+gr_screen.offset_y);
+
+	glColor4ub( (GLubyte)r, (GLubyte)g, (GLubyte)b, (GLubyte)a );
+
+	glBegin(GL_QUADS);
+		glVertex2i(x1, y2);
+		glVertex2i(x2, y2);
+		glVertex2i(x2, y1);
+		glVertex2i(x1, y1);
+	glEnd();
 }
 
 int gr_opengl_zbuffer_get()
@@ -3550,8 +3582,7 @@ int gr_opengl_save_screen()
 	ubyte *opengl_screen_tmp = NULL;
 	int width_times_pixel, mouse_times_pixel;
 
-
-	gr_reset_clip();
+	gr_opengl_reset_clip();
 
 	if (GL_saved_screen || GL_screen_pbo) {
 		// already have a screen saved so just bail...
@@ -3564,6 +3595,9 @@ int gr_opengl_save_screen()
 		mprintf(( "Couldn't get memory for saved screen!\n" ));
  		return -1;
 	}
+
+	glDisable(GL_DEPTH_TEST);
+	glReadBuffer(GL_FRONT_LEFT);
 
 	if ( Use_PBOs ) {
 		vglGenBuffersARB(1, &GL_screen_pbo);
@@ -3633,12 +3667,6 @@ int gr_opengl_save_screen()
 			mprintf(( "Couldn't get memory for temporary saved screen!\n" ));
 	 		return -1;
 	 	}
-
-/*#ifdef _WIN32
-	glReadBuffer(GL_FRONT);
-#else
-	glReadBuffer(GL_BACK);
-#endif*/
 
 		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, opengl_screen_tmp);
 
