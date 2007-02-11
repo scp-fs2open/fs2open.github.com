@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.22 $
- * $Date: 2007-01-10 01:48:32 $
+ * $Revision: 1.23 $
+ * $Date: 2007-02-11 18:18:52 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.22  2007/01/10 01:48:32  taylor
+ * fixup texture addressing stuff so that it works better
+ * bits of cleanup
+ * remove non-dark support
+ * support for releasing bitmap system memory when transfered to API memory
+ *
  * Revision 1.21  2006/09/11 05:55:18  taylor
  * forgot an extension check (was this the background corruption bug???)
  *
@@ -172,14 +178,14 @@ int get_num_mipmap_levels(int w, int h)
 }
 
 // anything API specific to freeing bm data
-void gr_opengl_bm_free_data(int n)
+void gr_opengl_bm_free_data(int n, bool release)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
 	// might as well free up the on card texture data too in order to get rid
-	// of old interface stuff but don't free USER types since we can reuse
-	// ANI slots for faster and less resource intensive rendering - taylor
-	if (bm_bitmaps[n].type != BM_TYPE_USER)
+	// of old interface stuff but don't free USER types, unless it's a total release,
+	// since we can reuse ANI slots for faster and less resource intensive rendering
+	if ( release || (bm_bitmaps[n].type != BM_TYPE_USER) )
 		opengl_free_texture_slot( n );
 
 	if ( (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC) || (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_DYNAMIC) )
@@ -249,7 +255,7 @@ int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w,
 				break;
 
 			default:
-				Error(LOCATION, "bad DDS file compression.  Not using DXT1,3,5 %s", filename);
+				Error(LOCATION, "Bad DDS file compression! Not using DXT1,3,5: %s", filename);
 				return -1;
 		}
 	}
@@ -388,7 +394,7 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 			frame_data = anim_get_next_raw_buffer(the_anim_instance, 0, 0, bm->bpp);
 		}
 
-		//mprintf(( "Checksum = %d\n", be->palette_checksum ));
+		compressed_data = NULL;
 	}
 
 	if (num_mipmaps > 1) {
@@ -474,12 +480,12 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 	// now for the attempt to compress the data
 	out_size = opengl_compress_image(&compressed_data, data, bmp->w, bmp->h, alpha, num_mipmaps);
 
-	if (out_size == 0) {
-		if (data != NULL) {
-			vm_free(data);
-			data = NULL;
-		}
+	if (data != NULL) {
+		vm_free(data);
+		data = NULL;
+	}
 
+	if (out_size == 0) {
 		if (compressed_data != NULL) {
 			vm_free(compressed_data);
 			compressed_data = NULL;
@@ -506,8 +512,6 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 	be->num_mipmaps = num_mipmaps;
 
 	bm_update_memory_used( bitmapnum, out_size );
-
-	vm_free(data);
 
 	return 0;
 }

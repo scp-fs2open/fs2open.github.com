@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.84 $
- * $Date: 2007-01-10 01:44:39 $
+ * $Revision: 2.85 $
+ * $Date: 2007-02-11 18:18:52 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2007/01/10 01:44:39  taylor
+ * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
+ *
  * Revision 2.83  2007/01/07 13:13:38  taylor
  * cleanup various bits of obsolete or unused code
  *
@@ -1054,7 +1057,7 @@ typedef struct screen {
 	void (*gf_set_clear_color)(int r, int g, int b);
 
 	// Here be the bitmap functions
-	void (*gf_bm_free_data)(int n);
+	void (*gf_bm_free_data)(int n, bool release);
 	void (*gf_bm_create)(int n);
 	int (*gf_bm_load)(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size);
 	void (*gf_bm_init)(int n);
