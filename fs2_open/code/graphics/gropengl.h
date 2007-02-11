@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.20 $
- * $Date: 2006-08-09 14:42:24 $
+ * $Revision: 2.21 $
+ * $Date: 2007-02-11 09:37:18 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/08/09 14:42:24  taylor
+ * fix for setting of texture lod bias
+ *
  * Revision 2.19  2006/06/27 05:00:57  taylor
  * be sure to properly reset fullscreen/minimized state vars as we switch between them
  * remove the temporary -alpha_alpha_blend option
@@ -335,9 +338,6 @@ typedef void (APIENTRYP PFNGLGENERATEMIPMAPEXTPROC) (GLenum target);
 #endif	// GL_EXT_framebuffer_object
 
 const ubyte GL_zero_3ub[3] = { 0, 0, 0 };
-
-#define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(0)
-
 
 void gr_opengl_init(int reinit=0);
 void gr_opengl_cleanup(int minimize=1);

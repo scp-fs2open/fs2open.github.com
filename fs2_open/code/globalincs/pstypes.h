@@ -9,16 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.50 $
- * $Date: 2007-01-14 14:03:32 $
- * $Author: bobboau $
- * $Revision: 2.50 $
- * $Date: 2007-01-14 14:03:32 $
- * $Author: bobboau $
+ * $Revision: 2.51 $
+ * $Date: 2007-02-11 09:37:18 $
+ * $Author: taylor $
+ * $Revision: 2.51 $
+ * $Date: 2007-02-11 09:37:18 $
+ * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2007/01/14 14:03:32  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.49  2006/12/28 22:47:02  Goober5000
  * fix spelling... *twitch*
  *
@@ -516,12 +521,13 @@ typedef struct vec3d {
 	inline void set_screen_vert(vertex&vert);
 } vec3d;
 
+/*
 // A vector referenced as an array
 typedef struct vectora {
 	float	xyz[3];
 } vectora;
 
-/*
+
 typedef struct vec2d {
 	float i,j;
 } vec2d;
@@ -579,9 +585,8 @@ inline void vec3d::set_screen_vert(vertex&vert){
 typedef struct flag_def_list {
 	char *name;
 	int def;
+	ubyte var;
 } def_list;
-
-extern int spec;
 
 //This are defined in MainWin.c
 extern void _cdecl WinAssert(char * text,char *filename, int line);
@@ -673,9 +678,7 @@ const int RAND_MAX_2	= (RAND_MAX/2);
 #define ANG_TO_RAD(x)	((x)*PI/180)
 
 
-extern int	Fred_running;  // Is Fred running, or FreeSpace?
-extern int Pofview_running;
-extern int Nebedit_running;
+extern int Fred_running;  // Is Fred running, or FreeSpace?
 
 
 //======================================================================================
@@ -887,6 +890,12 @@ typedef struct lod_checker {
 	}	\
 }
 
+// check to see that a passed sting is valid, ie:
+//  - has >0 length
+//  - is not "none"
+//  - is not "<none>"
+#define VALID_FNAME(x) ( strlen((x)) && stricmp((x), "none") && stricmp((x), "<none>") )
+
 
 // Callback Loading function. 
 // If you pass a function to this, that function will get called
@@ -954,6 +963,9 @@ template <class T> void CAP( T& v, T mn, T mx )
 		v = mx;
 	}
 }
+
+// faster version of CAP()
+#define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(0)
 
 // ========================================================
 // stamp checksum stuff

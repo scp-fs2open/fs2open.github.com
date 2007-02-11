@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-10-09 05:25:18 $
- * $Author: Goober5000 $
+ * $Revision: 1.4 $
+ * $Date: 2007-02-11 09:37:18 $
+ * $Author: taylor $
  *
  * Event editor dialog box class and event tree class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/10/09 05:25:18  Goober5000
+ * make sexp nodes dynamic
+ *
  * Revision 1.2  2006/04/30 16:39:43  phreak
  * You can now preview sounds again in the event editor.
  *
@@ -1250,7 +1253,7 @@ int event_editor::save_message(int num)
 		}
 
 		ptr = (char *) (LPCTSTR) m_avi_filename;
-		if (!ptr || !strlen(ptr) || !stricmp(ptr, "none") || !stricmp(ptr, "<none>")){
+		if ( !ptr || !VALID_FNAME(ptr) ) {
 			m_messages[num].avi_info.name = NULL;
 		} else {
 			m_messages[num].avi_info.name = strdup(ptr);
@@ -1261,7 +1264,7 @@ int event_editor::save_message(int num)
 		}
 
 		ptr = (char *) (LPCTSTR) m_wave_filename;
-		if (!ptr || !strlen(ptr) || !stricmp(ptr, "none") || !stricmp(ptr, "<none>")){
+		if ( !ptr || !VALID_FNAME(ptr) ) {
 			m_messages[num].wave_info.name = NULL;
 		} else {
 			m_messages[num].wave_info.name = strdup(ptr);
