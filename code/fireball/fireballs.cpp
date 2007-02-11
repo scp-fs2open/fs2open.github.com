@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.35 $
- * $Date: 2006-12-28 00:59:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.36 $
+ * $Date: 2007-02-11 18:19:41 $
+ * $Author: taylor $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2006/12/28 00:59:19  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.34  2006/09/11 06:48:40  taylor
  * fixes for stuff_string() bounds checking
  * stict compiler build fixes
@@ -491,6 +494,8 @@
 // make use of the LOD checker for tbl/tbm parsing (from weapons.cpp)
 extern std::vector<lod_checker> LOD_checker;
 
+static std::vector<color> LOD_color;
+
 int Warp_model;
 int Knossos_warp_ani_used;
 
@@ -570,11 +575,49 @@ void fireball_play_warphole_close_sound(fireball *fb)
 	snd_play_3d(&Snds[sound_index], &fireball_objp->pos, &Eye_position, fireball_objp->radius); // play warp sound effect
 }
 
+// set default colors for each explosion type (original values from object.cpp)
+static void fireball_set_default_color(int idx)
+{
+	Assert( (idx >= 0) && (idx < MAX_FIREBALL_TYPES) );
+
+	switch (idx)
+	{
+		case FIREBALL_EXPLOSION_LARGE1:
+		case FIREBALL_EXPLOSION_LARGE2:
+		case FIREBALL_EXPLOSION_MEDIUM:
+		case FIREBALL_ASTEROID:
+			Fireball_info[idx].exp_color[0] = 1.0f;
+			Fireball_info[idx].exp_color[1] = 0.5f;
+			Fireball_info[idx].exp_color[2] = 0.125f;
+			break;
+
+		case FIREBALL_WARP_EFFECT:
+			Fireball_info[idx].exp_color[0] = 0.75f;
+			Fireball_info[idx].exp_color[1] = 0.75f;
+			Fireball_info[idx].exp_color[2] = 1.0f;
+			break;
+
+
+		case FIREBALL_KNOSSOS_EFFECT:
+			Fireball_info[idx].exp_color[0] = 0.75f;
+			Fireball_info[idx].exp_color[1] = 1.0f;
+			Fireball_info[idx].exp_color[2] = 0.75f;
+			break;
+
+		default:
+			Fireball_info[idx].exp_color[0] = 1.0f;
+			Fireball_info[idx].exp_color[1] = 1.0f;
+			Fireball_info[idx].exp_color[2] = 1.0f;
+			break;
+	}
+}
+
 // NOTE: we can't be too trusting here so a tbm will only modify the LOD count, not add an entry
 void parse_fireball_tbl(char *longname)
 {
 	int rval;
 	lod_checker lod_check;
+	color fb_color;
 
 	// open localization
 	lcl_ext_open();
@@ -627,8 +670,27 @@ void parse_fireball_tbl(char *longname)
 			lod_check.num_lods = MAX_FIREBALL_LOD;
 		}
 
+		// check for particular lighting color
+		if ( optional_string("$Light color:") ) {
+			int r, g, b;
+
+			stuff_int(&r);
+			stuff_int(&g);
+			stuff_int(&b);
+
+			CLAMP(r, 0, 255);
+			CLAMP(g, 0, 255);
+			CLAMP(b, 0, 255);
+
+			gr_init_color(&fb_color, r, g, b);
+		} else {
+			// to keep things simple, we just use 0 alpha to indicate that a default value should be used
+			memset( &fb_color, 0, sizeof(color) );
+		}
+
 		// we may use one filename for multiple entries so we'll have to handle dupes post parse
 		LOD_checker.push_back(lod_check);
+		LOD_color.push_back(fb_color);
 	}
 
 	required_string("#End");
@@ -655,6 +717,14 @@ void fireball_parse_tbl()
 		if ( (i < MAX_FIREBALL_TYPES) && (LOD_checker[i].override < 0) ) {
 			strcpy( Fireball_info[i].lod[0].filename, LOD_checker[i].filename );
 			Fireball_info[i].lod_count = LOD_checker[i].num_lods;
+
+			if (LOD_color[i].alpha == 255) {
+				Fireball_info[i].exp_color[0] = (LOD_color[i].red / 255.0f);
+				Fireball_info[i].exp_color[1] = (LOD_color[i].green / 255.0f);
+				Fireball_info[i].exp_color[2] = (LOD_color[i].blue / 255.0f);
+			} else {
+				fireball_set_default_color(i);
+			}
 		}
 	}
 
@@ -665,6 +735,14 @@ void fireball_parse_tbl()
 		if ( (LOD_checker[i].override >= 0) && (LOD_checker[i].override < MAX_FIREBALL_TYPES) ) {
 			strcpy( Fireball_info[LOD_checker[i].override].lod[0].filename, LOD_checker[i].filename );
 			Fireball_info[LOD_checker[i].override].lod_count = LOD_checker[i].num_lods;
+
+			if (LOD_color[i].alpha == 255) {
+				Fireball_info[LOD_checker[i].override].exp_color[0] = (LOD_color[i].red / 255.0f);
+				Fireball_info[LOD_checker[i].override].exp_color[1] = (LOD_color[i].green / 255.0f);
+				Fireball_info[LOD_checker[i].override].exp_color[2] = (LOD_color[i].blue / 255.0f);
+			} else {
+				fireball_set_default_color(LOD_checker[i].override);
+			}
 		}
 	}
 
@@ -1415,7 +1493,26 @@ void fireballs_page_in()
 	}
 
 	bm_page_in_texture( Warp_glow_bitmap );
-
 	bm_page_in_texture( Warp_ball_bitmap );
+}
 
+void fireball_get_color(int idx, float *red, float *green, float *blue)
+{
+	Assert( red && blue && green );
+
+	if ( (idx < 0) || (idx >= MAX_FIREBALL_TYPES) ) {
+		Int3();
+		
+		*red = 1.0f;
+		*green = 1.0f;
+		*blue = 1.0f;
+
+		return;
+	}
+
+	fireball_info *fbi = &Fireball_info[idx];
+
+	*red = fbi->exp_color[0];
+	*green = fbi->exp_color[1];
+	*blue = fbi->exp_color[2];
 }
