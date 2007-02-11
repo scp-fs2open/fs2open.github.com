@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.40.2.9 $
- * $Date: 2007-02-11 06:38:56 $
- * $Author: Goober5000 $
+ * $Revision: 2.40.2.10 $
+ * $Date: 2007-02-11 09:09:55 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40.2.9  2007/02/11 06:38:56  Goober5000
+ * when alphabetizing campaigns, ignore "the" at the beginning of a title
+ *
  * Revision 2.40.2.8  2007/02/10 06:55:49  Goober5000
  * sort campaigns by title, not by file name
  *
@@ -715,9 +718,16 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 					char *name1 = Campaign_names[j];
 					char *name2 = Campaign_names[j + incr];
 
-					if (!strnicmp(name1, "the ", 4))
+					// if we hit this then a coder probably did something dumb (like not needing to sort)
+					if ( (name1 == NULL) || (name2 == NULL) ) {
+						Int3();
+						break;
+					}
+
+					if ( !strnicmp(name1, "the ", 4) )
 						name1 += 4;
-					if (!strnicmp(name2, "the ", 4))
+
+					if ( !strnicmp(name2, "the ", 4) )
 						name2 += 4;
 
 					if (stricmp(name1, name2) > 0) {
