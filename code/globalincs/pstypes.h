@@ -9,16 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.51 $
- * $Date: 2007-02-11 09:37:18 $
- * $Author: taylor $
- * $Revision: 2.51 $
- * $Date: 2007-02-11 09:37:18 $
- * $Author: taylor $
+ * $Revision: 2.52 $
+ * $Date: 2007-02-11 20:25:58 $
+ * $Author: Goober5000 $
+ * $Revision: 2.52 $
+ * $Date: 2007-02-11 20:25:58 $
+ * $Author: Goober5000 $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2007/02/11 09:37:18  taylor
+ * dd VALID_FNAME() macro and put it around a few places (more to come)
+ * clean out some old variables
+ * move CLAMP() macro from opengl header to global header
+ * update COUNT_ESTIMATE to match new bmpman changes
+ *
  * Revision 2.50  2007/01/14 14:03:32  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -585,7 +591,6 @@ inline void vec3d::set_screen_vert(vertex&vert){
 typedef struct flag_def_list {
 	char *name;
 	int def;
-	ubyte var;
 } def_list;
 
 //This are defined in MainWin.c
