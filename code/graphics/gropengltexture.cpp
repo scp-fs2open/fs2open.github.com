@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.48.2.13 $
- * $Date: 2006-12-27 09:24:31 $
+ * $Revision: 1.48.2.14 $
+ * $Date: 2007-02-11 10:03:29 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48.2.13  2006/12/27 09:24:31  taylor
+ * wurrps, someone besides me might actually want to use that ;)
+ *
  * Revision 1.48.2.12  2006/12/26 05:25:18  taylor
  * lots of little cleanup, stale code removal, and small performance adjustments
  * get rid of the default combine texture state, we don't need it in general, and it can screw up fonts
@@ -336,8 +339,7 @@
 
 
 static tcache_slot_opengl *Textures = NULL;
-
-ubyte Tex_used_this_frame[MAX_BITMAPS];
+static ubyte *Tex_used_this_frame = NULL;
 
 int GL_texture_ram = 0;
 int GL_frame_count = 0;
@@ -360,6 +362,7 @@ int GL_mipmap_filter = 0;
 GLenum GL_texture_target = GL_TEXTURE_2D;
 GLenum GL_previous_texture_target = GL_TEXTURE_2D;
 GLenum GL_texture_face = GL_TEXTURE_2D;
+GLenum GL_texture_addressing = GL_REPEAT;
 int GL_rendering_to_framebuffer = 0;
 GLint GL_max_renderbuffer_size = 0;
 
@@ -551,19 +554,7 @@ void opengl_tcache_init()
 {
 	int i;
 
-	// DDOI - FIXME skipped a lot of stuff here
 	GL_should_preload = 1;
-
-	/*uint tmp_pl = os_config_read_uint( NULL, NOX("D3DPreloadTextures"), 255 );
-	uint tmp_pl = 1;
-
-	if ( tmp_pl == 0 )
-		GL_should_preload = 0;
-	else if ( tmp_pl == 1 )
-		GL_should_preload = 1;
-	else
-		GL_should_preload = 1;
-	*/
 
 	GL_min_texture_width = 16;
 	GL_min_texture_height = 16;
@@ -579,15 +570,17 @@ void opengl_tcache_init()
 
 	GL_square_textures = 0;
 
-	if ( Textures == NULL )
-		Textures = (tcache_slot_opengl *)vm_malloc(MAX_BITMAPS*sizeof(tcache_slot_opengl));
+	if (Textures == NULL)
+		Textures = (tcache_slot_opengl *) vm_malloc_q(MAX_BITMAPS * sizeof(tcache_slot_opengl));
 
-	if ( !Textures )
+	if (Tex_used_this_frame == NULL)
+		Tex_used_this_frame = (ubyte *) vm_malloc_q(MAX_BITMAPS * sizeof(ubyte));
+
+	if ( !Textures || !Tex_used_this_frame )
 		Error(LOCATION, "Unable to allocate memory for OpenGL texture slots!");
 
 
 	memset( Textures, 0, MAX_BITMAPS * sizeof(tcache_slot_opengl) );
-
 	memset( Tex_used_this_frame, 0, MAX_BITMAPS * sizeof(ubyte) );
 
 	// Init the texture structures
@@ -680,9 +673,14 @@ void opengl_tcache_cleanup ()
 	GL_textures_in = 0;
 	GL_textures_in_frame = 0;
 
-	if ( Textures ) {
+	if (Textures) {
 		vm_free(Textures);
 		Textures = NULL;
+	}
+
+	if (Tex_used_this_frame) {
+		vm_free(Tex_used_this_frame);
+		Tex_used_this_frame = NULL;
 	}
 }
 
@@ -704,11 +702,22 @@ void opengl_free_texture_slot( int n )
 	opengl_free_texture( &Textures[n] );
 }
 
-bool opengl_texture_slot_valid(int n)
+// determine if a bitmap is in API memory, so that we can just reuse it rather
+// that having to load it from disk again
+bool opengl_texture_slot_valid(int n, int handle)
 {
 	tcache_slot_opengl *t = &Textures[n];
 
-	return ( (t->bitmap_handle >= 0) && glIsTexture(t->texture_id) );
+	if (t->bitmap_handle < 0)
+		return false;
+
+	if (t->bitmap_handle != handle)
+		return false;
+
+	if ( !glIsTexture(t->texture_id) )
+		return false;
+
+	return true;
 }
 
 int opengl_free_texture ( tcache_slot_opengl *t )
@@ -924,32 +933,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 
 
 	glBindTexture (GL_texture_target, t->texture_id);
-/*
-#ifdef __APPLE__
-	if ( Is_Extension_Enabled(OGL_APPLE_CLIENT_STORAGE) && !resize && (byte_mult != 1)) {
-		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, 1);
-	}
-#endif
-*/
-	if ( (bitmap_type == TCACHE_TYPE_AABITMAP) || (bitmap_type == TCACHE_TYPE_INTERFACE) ) {
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	} else {
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	}
-
-	glTexParameteri (GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	mipmap_levels = bm_get_num_mipmaps(bitmap_handle);
-
-	if ( (bitmap_type != TCACHE_TYPE_INTERFACE) && (mipmap_levels > 1) && (base_level+1 < mipmap_levels) ) {
-		// bifilter  = GL_LINEAR_MIPMAP_NEAREST
-		// trifilter = GL_LINEAR_MIPMAP_LINEAR
-		glTexParameteri (GL_texture_target, GL_TEXTURE_MIN_FILTER, (GL_mipmap_filter) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST);
-	} else {
-		glTexParameteri (GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	}
 
 
 	switch (bitmap_type)
@@ -964,8 +949,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 				for (i = 0; i < base_level; i++) {
 					doffset += dsize;
 
-					mipmap_w /= 2;
-					mipmap_h /= 2;
+					mipmap_w >>= 1;
+					mipmap_h >>= 1;
 
 					if (mipmap_w <= 0)
 						mipmap_w = 1;
@@ -989,8 +974,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 					doffset += dsize;
 
 					// reduce size by half for the next pass
-					mipmap_w /= 2;
-					mipmap_h /= 2;
+					mipmap_w >>= 1;
+					mipmap_h >>= 1;
 
 					if (mipmap_w <= 0)
 						mipmap_w = 1;
@@ -1037,7 +1022,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 				glTexSubImage2D (GL_texture_target, 0, 0, 0, tex_w, tex_h, GL_ALPHA, GL_UNSIGNED_BYTE, texmem);
 
 			if (texmem != NULL)
-				vm_free (texmem);
+				vm_free(texmem);
 
 			break;
 		}
@@ -1101,8 +1086,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 						doffset += dsize;
 
 						// reduce size by half for the next pass
-						mipmap_w /= 2;
-						mipmap_h /= 2;
+						mipmap_w >>= 1;
+						mipmap_h >>= 1;
 
 						if (mipmap_w <= 0)
 							mipmap_w = 1;
@@ -1131,8 +1116,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 					// base image is done so now take care of any mipmap levels
 					for (j = 1; j < mipmap_levels; j++) {
 						doffset += dsize;
-						mipmap_w /= 2;
-						mipmap_h /= 2;
+						mipmap_w >>= 1;
+						mipmap_h >>= 1;
 
 						if (mipmap_w <= 0)
 							mipmap_w = 1;
@@ -1197,8 +1182,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 			for (i = 0; i < base_level; i++) {
 				doffset += dsize;
 
-				mipmap_w /= 2;
-				mipmap_h /= 2;
+				mipmap_w >>= 1;
+				mipmap_h >>= 1;
 
 				if (mipmap_w <= 0)
 					mipmap_w = 1;
@@ -1220,8 +1205,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 			// base image is done so now take care of any mipmap levels
 			for (i = 1; i < (mipmap_levels - base_level); i++) {
 				doffset += dsize;
-				mipmap_w /= 2;
-				mipmap_h /= 2;
+				mipmap_w >>= 1;
+				mipmap_h >>= 1;
 
 				if (mipmap_w <= 0)
 					mipmap_w = 1;
@@ -1247,21 +1232,17 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 
 	t->bitmap_handle = bitmap_handle;
 	t->time_created = GL_frame_count;
-	Tex_used_this_frame[idx] = 0;
 	t->size = (dsize) ? ((doffset + dsize) - skip_size) : (tex_w * tex_h * byte_mult);
 	t->w = (ushort)tex_w;
 	t->h = (ushort)tex_h;
+
 	GL_textures_in_frame += t->size;
-	if (!reload) {
+
+	if ( !reload )
 		GL_textures_in += t->size;
-	}
-/*
-#ifdef __APPLE__
-	if ( Is_Extension_Enabled(OGL_APPLE_CLIENT_STORAGE) && !resize && (byte_mult != 1)) {
-		glPixelStorei(GL_UNPACK_CLIENT_STORAGE_APPLE, 0);
-	}
-#endif
-*/
+
+	Tex_used_this_frame[idx] = 0;
+
 	return ret_val;
 }
 
@@ -1274,9 +1255,8 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	int reload = 0, resize = 0, base_level = 0;
 	int max_levels = 0;
 
-	if (tslot == NULL) {
+	if (tslot == NULL)
 		return 0;
-	}
 
 	// setup texture/bitmap flags
 	flags = 0;
@@ -1292,10 +1272,6 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 		case TCACHE_TYPE_INTERFACE:
 		case TCACHE_TYPE_XPARENT:
 			flags |= BMP_TEX_XPARENT;
-			break;
-		case TCACHE_TYPE_NONDARKENING:
-			Int3();
-			flags |= BMP_TEX_NONDARK;
 			break;
 		case TCACHE_TYPE_COMPRESSED:
 			switch (bm_is_compressed(bitmap_handle)) {
@@ -1329,6 +1305,7 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 
 	// lock the bitmap into the proper format
 	bmp = bm_lock(bitmap_handle, bpp, flags);
+
 	if ( bmp == NULL ) {
 		mprintf(("Couldn't lock bitmap %d.\n", bitmap_handle ));
 		return 0;
@@ -1340,10 +1317,8 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	max_levels = bm_get_num_mipmaps(bitmap_handle);
 
 	// there should only ever be one mipmap level for interface graphics!!!
-	if ( (bitmap_type == TCACHE_TYPE_INTERFACE) && (max_levels > 1) ) {
-	//	Int3();
+	if ( (bitmap_type == TCACHE_TYPE_INTERFACE) && (max_levels > 1) )
 		max_levels = 1;
-	}
 
 	// if we ended up locking a texture that wasn't originally compressed then this should catch it
 	if ( !(bitmap_type == TCACHE_TYPE_CUBEMAP) && bm_is_compressed(bitmap_handle) ) {
@@ -1414,6 +1389,12 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	// unlock the bitmap
 	bm_unlock(bitmap_handle);
 
+	// if we successfully sent the texture to API memory then go ahead and dump
+	// the rest of the bitmap data in system memory.
+	// NOTE: this doesn't do anything for user bitmaps (like screen grabs or streamed animations)
+	if (ret_val)
+		bm_unload_fast(bitmap_handle);
+
 	return ret_val;
 }
 
@@ -1421,18 +1402,13 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 {
 	int ret_val = 1;
 
-	if ( GL_last_detail != Detail.hardware_textures )      {
+	if (GL_last_detail != Detail.hardware_textures) {
 		GL_last_detail = Detail.hardware_textures;
 		opengl_tcache_flush();
 	}
 
 	int n = bm_get_cache_slot (bitmap_handle, 1);
 	tcache_slot_opengl *t = &Textures[n];
-
-	// this is a little sloppy (should have been done before now), but it is actually easier and faster here
-	if (t->texture_target > 0) {
-		opengl_set_texture_target( t->texture_target );
-	}
 
 	if ( (GL_last_bitmap_id == bitmap_handle) && (GL_last_bitmap_type == bitmap_type) && (t->bitmap_handle == bitmap_handle) )       {
 		Tex_used_this_frame[n]++;
@@ -1442,13 +1418,16 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 		return 1;
 	}
 
+	// this is a little sloppy (should have been done before now), but it is actually easier and faster here
+	if (t->texture_target > 0)
+		opengl_set_texture_target( t->texture_target );
+
 	vglActiveTextureARB(GL_TEXTURE0_ARB+tex_unit);
 
 	opengl_set_anisotropy();
 
-	if ( !bm_is_render_target(bitmap_handle) && ((t->bitmap_handle < 0) || (bitmap_handle != t->bitmap_handle)) ) {
+	if ( !bm_is_render_target(bitmap_handle) && ((t->bitmap_handle < 0) || (bitmap_handle != t->bitmap_handle)) )
 		ret_val = opengl_create_texture( bitmap_handle, bitmap_type, t );
-	}
 
 	// everything went ok
 	if (ret_val && t->texture_id) {
@@ -1456,6 +1435,8 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 		*v_scale = t->v_scale;
 
 		glBindTexture (GL_texture_target, t->texture_id );
+
+		glTexParameteri (GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		// OGL expects mipmap levels all the way down to 1x1 but I think this will avoid white texture
 		// issues when we have fewer levels than that, it caps the total number of levels available with 0 as min value
@@ -1467,6 +1448,14 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 			glTexParameteri (GL_texture_target, GL_TEXTURE_MIN_FILTER, (GL_mipmap_filter) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST);
 		} else {
 			glTexParameteri (GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		}
+
+		if ( (bitmap_type == TCACHE_TYPE_AABITMAP) || (bitmap_type == TCACHE_TYPE_INTERFACE) || (bitmap_type == TCACHE_TYPE_CUBEMAP) ) {
+			glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		} else {
+			glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_texture_addressing);
+			glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_texture_addressing);
 		}
 
 		GL_last_bitmap_id = t->bitmap_handle;
@@ -1520,11 +1509,10 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 
 void gr_opengl_preload_init()
 {
-	if (gr_screen.mode != GR_OPENGL) {
+	if (gr_screen.mode != GR_OPENGL)
 		return;
-	}
 
-	opengl_tcache_flush ();
+//	opengl_tcache_flush ();
 }
 
 int gr_opengl_preload(int bitmap_num, int is_aabitmap)
@@ -1579,21 +1567,29 @@ void gr_opengl_set_texture_panning(float u, float v, bool enable)
 
 void gr_opengl_set_texture_addressing(int mode)
 {
-	if (mode == TMAP_ADDRESS_WRAP) {
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	} else if (mode == TMAP_ADDRESS_MIRROR) {
-		if ( Is_Extension_Enabled(OGL_ARB_TEXTURE_MIRRORED_REPEAT) ) {
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT_ARB);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT_ARB);
-		} else {
-			// just use a standard repeat if the mirror extension isn't supported
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-			glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	switch (mode)
+	{
+		case TMAP_ADDRESS_CLAMP:
+			GL_texture_addressing = GL_CLAMP_TO_EDGE;
+			break;
+
+		case TMAP_ADDRESS_WRAP:
+			GL_texture_addressing = GL_REPEAT;
+			break;
+
+		case TMAP_ADDRESS_MIRROR:
+		{
+			if ( Is_Extension_Enabled(OGL_ARB_TEXTURE_MIRRORED_REPEAT) )
+				GL_texture_addressing = GL_MIRRORED_REPEAT_ARB;
+			else
+				GL_texture_addressing = GL_REPEAT;
+
+			break;
 		}
-	} else if (mode == TMAP_ADDRESS_CLAMP) {
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		default:
+			Int3();
+			break;
 	}
 }
 
@@ -1634,6 +1630,7 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 	}
 
 	if ( (compressed == GL_FALSE) || (compressed != intFormat) || (testing == 0) ) {
+		glBindTexture(GL_TEXTURE_2D, 0);
 		glDeleteTextures(1, &tex);
 		return 0;
 	}
@@ -1750,8 +1747,8 @@ int opengl_export_image( int slot, int width, int height, int alpha, int num_mip
 			m_offset += (m_width * m_height * m_bpp);
 
 			// reduce by half for next mipmap level
-			m_width /= 2;
-			m_height /= 2;
+			m_width >>= 1;
+			m_height >>= 1;
 
 			if (m_width < 1)
 				m_width = 1;
@@ -1852,7 +1849,8 @@ int opengl_check_framebuffer()
 
 static fbo_t *opengl_get_fbo(int width, int height)
 {
-	for (uint i = 0; i < RenderTarget.size(); i++) {
+	uint rt_size = RenderTarget.size();
+	for (uint i = 0; i < rt_size; i++) {
 		if ( (RenderTarget[i].width == width) && (RenderTarget[i].height == height) )
 			return &RenderTarget[i];
 	}
