@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.39.2.6 $
- * $Date: 2006-12-07 17:51:39 $
- * $Author: taylor $
+ * $Revision: 1.39.2.7 $
+ * $Date: 2007-02-11 06:19:07 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39.2.6  2006/12/07 17:51:39  taylor
+ * make fire-on-normal return value a little more obvious
+ * fix the "infinite genius" move I made by breaking turret movements ;)
+ *
  * Revision 1.39.2.5  2006/10/27 21:33:06  taylor
  * updated/fixed modelanim code
  * add ships.tbl subsystem flag ("+fire-down-normals") which will force a turret to fire down it's barrel line (Mantis bug #591)
@@ -443,7 +447,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		}
 
 		// don't shoot at ships without collision check
-		if ( !(sip->flags & SIF_DO_COLLISION_CHECK)) {
+		if (sip->flags & SIF_NO_COLLIDE) {
 			return 0;
 		}
 

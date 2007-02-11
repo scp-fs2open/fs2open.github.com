@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.54 $
- * $Date: 2007-02-10 03:20:43 $
+ * $Revision: 2.336.2.55 $
+ * $Date: 2007-02-11 06:19:08 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.54  2007/02/10 03:20:43  Goober5000
+ * small tweak
+ *
  * Revision 2.336.2.53  2007/02/09 04:53:27  Goober5000
  * merge the WCS screaming feature into the 3.6.9 (3.6.10?) branch
  *
@@ -3609,7 +3612,7 @@ strcpy(parse_error_text, temp_error);
 
 			// check various ship flags
 			if (!stricmp(NOX("no_collide"), ship_strings[i]))
-				sip->flags &= ~SIF_DO_COLLISION_CHECK;
+				sip->flags |= SIF_NO_COLLIDE;
 			else if (!stricmp(NOX("player_ship"), ship_strings[i]))
 				sip->flags |= SIF_PLAYER_SHIP;
 			else if (!stricmp(NOX("default_player_ship"), ship_strings[i]))
