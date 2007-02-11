@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.39 $
- * $Date: 2007-02-11 06:19:05 $
+ * $Revision: 2.40 $
+ * $Date: 2007-02-11 21:26:35 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2007/02/11 06:19:05  Goober5000
+ * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
+ *
  * Revision 2.38  2007/02/07 07:59:48  Goober5000
  * hm, didn't notice this new feature
  *
@@ -490,7 +493,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	//
 	//	Note: This code is obviously stupid. We want to add the shield point if there is shield to hit, but:
 	//		1. We want the size/color of the hit effect to indicate shield damage done.  (i.e., for already-weak shield, smaller effect)
-	//		2. Currently (8/9/97), apply_damage_to_shield() passes lefer damage to hull, which might not make sense.  If
+	//		2. Currently (8/9/97), shield_apply_damage() passes leftover damage to hull, which might not make sense.  If
 	//			wouldn't have collided with hull, shouldn't do damage.  Once this is fixed, the code below needs to cast the
 	//			vector through to the hull if there is leftover damage.
 	//
@@ -518,12 +521,12 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	{
 		// pick out the shield quadrant
 		if (shield_collision)
-			quadrant_num = get_quadrant(&mc_shield.hit_point);
+			quadrant_num = shield_get_quadrant(&mc_shield.hit_point);
 		else if (hull_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS))
-			quadrant_num = get_quadrant(&mc_hull.hit_point);
+			quadrant_num = shield_get_quadrant(&mc_hull.hit_point);
 
 		// make sure that the shield is active in that quadrant
-		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !ship_is_shield_up(ship_objp, quadrant_num)))
+		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !shield_is_up(ship_objp, quadrant_num)))
 			quadrant_num = -1;
 
 		// see if we hit the shield

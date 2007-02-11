@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.h $
- * $Revision: 2.5 $
- * $Date: 2005-10-17 05:48:18 $
- * $Author: taylor $
+ * $Revision: 2.6 $
+ * $Date: 2007-02-11 21:26:35 $
+ * $Author: Goober5000 $
  *
  * Header file for all the Collide????.cpp modules
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/10/17 05:48:18  taylor
+ * dynamically allocate object collision pairs
+ *
  * Revision 2.4  2005/07/13 03:35:31  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -244,7 +247,5 @@ int collide_remove_weapons(void);
 
 void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int player_involved);
 void collide_ship_ship_sounds_init();
-
-int get_ship_quadrant_from_global(vec3d *global_pos, object *objp);
 
 #endif

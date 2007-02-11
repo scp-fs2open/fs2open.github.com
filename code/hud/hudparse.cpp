@@ -6,13 +6,18 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.47 $
- * $Date: 2007-01-07 12:53:35 $
- * $Author: taylor $
+ * $Revision: 2.48 $
+ * $Date: 2007-02-11 21:26:34 $
+ * $Author: Goober5000 $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2007/01/07 12:53:35  taylor
+ * add position info for weapon energy text
+ * make sure that we can't target a hidden jumpnode
+ * rest of the weapon switch fix
+ *
  * Revision 2.46  2006/12/28 00:59:27  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -286,7 +291,7 @@ int hud_player_shield(gauge_data* cg, ship* gauge_owner)
 	}
 
 	object* targetp = Objects[Ai_info[gauge_owner->ai_index].target_objnum];
-	float max_shield = get_max_shield_quad(targetp);
+	float max_shield = shield_get_max_quad(targetp);
 	if(targetp->flags & OF_NO_SHIELDS)
 	{
 		return HG_RETURNLASTUPDATE;
@@ -442,7 +447,7 @@ int hud_shield_mini(gauge_data* cg, ship* gauge_owner)
 	float max_shield;
 	object* objp = &Objects[gauge_info->target_objnum];
 
-	max_shield = get_max_shield_quad(objp);
+	max_shield = shield_get_max_quad(objp);
 
 	for ( int i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 
@@ -450,12 +455,12 @@ int hud_shield_mini(gauge_data* cg, ship* gauge_owner)
 			break;
 		}
 
-		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
+		if ( shield_get_quad(objp, Quadrant_xlate[i]) < 0.1f ) {
 			continue;
 		}
 				
 		range = HUD_color_alpha;
-		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
+		hud_color_index = fl2i( (shield_get_quad(objp, Quadrant_xlate[i]) / max_shield) * range + 0.5 );
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 	
 		if ( hud_color_index < 0 ) {

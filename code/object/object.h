@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.23 $
- * $Date: 2006-09-08 06:20:14 $
- * $Author: taylor $
+ * $Revision: 2.24 $
+ * $Date: 2007-02-11 21:26:35 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/09/08 06:20:14  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.22  2006/06/27 04:06:18  Goober5000
  * handle docked objects during death roll
  * --Goober5000
@@ -630,14 +633,30 @@ int objects_will_collide(object *A, object *B, float duration, float radius_scal
 // so I moved it into the object lib.  -John
 void obj_init_all_ships_physics();
 
-float get_shield_strength(object *objp);
-void set_shield_strength(object *objp, float strength);
-void add_shield_strength(object *objp, float delta);
+#define	FRONT_QUAD	1
+#define	REAR_QUAD	2
+#define	LEFT_QUAD	3
+#define	RIGHT_QUAD	0
+
+float shield_get_strength(object *objp);
+void shield_set_strength(object *objp, float strength);
+void shield_add_strength(object *objp, float delta);
+float shield_get_quad(object *objp, int quadrant_num);
+void shield_set_quad(object *objp, int quadrant_num, float strength);
+void shield_add_quad(object *objp, int quadrant_num, float strength);
+
+float shield_get_max_strength(object *objp);
+float shield_get_max_quad(object *objp);
+
+float shield_apply_damage(object *objp, int quadrant, float damage);
+int shield_is_up(object *objp, int quadrant_num);
+int shield_get_quadrant(vec3d *hit_pnt);
+int shield_get_quadrant_global(object *objp, vec3d *global_pos);
+
 
 // Goober5000
 float get_hull_pct(object *objp);
 float get_shield_pct(object *objp);
-float get_max_shield_quad(object *objp);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
 void obj_get_average_ship_pos(vec3d *pos);

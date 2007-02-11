@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.178 $
- * $Date: 2007-02-11 06:19:05 $
+ * $Revision: 2.179 $
+ * $Date: 2007-02-11 21:26:39 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178  2007/02/11 06:19:05  Goober5000
+ * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
+ *
  * Revision 2.177  2007/02/06 01:27:34  Goober5000
  * remove obsolete and unused shield flag
  *
@@ -2209,15 +2212,6 @@ extern void shield_hit_close();
 
 void ship_draw_shield( object *objp);
 
-float apply_damage_to_shield(object *objp, int quadrant, float damage);
-float compute_shield_strength(object *objp);
-
-// Returns true if the shield presents any opposition to something 
-// trying to force through it.
-// If quadrant is -1, looks at entire shield, otherwise
-// just one quadrant
-int ship_is_shield_up( object *obj, int quadrant );
-
 //=================================================
 // These two functions transfer instance specific angle
 // data into and out of the model structure, which contains
@@ -2263,7 +2257,6 @@ extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);
 extern int ship_docking_valid(int docker, int dockee);
-extern int get_quadrant(vec3d *hit_pnt);						//	Return quadrant num of last hit ponit.
 
 extern void ship_obj_list_rebuild();	// only called by save/restore code
 extern int ship_query_state(char *name);
@@ -2305,7 +2298,6 @@ extern int Ship_auto_repair;	// flag to indicate auto-repair of subsystem should
 
 void ship_subsystem_delete(ship *shipp);
 void ship_set_default_weapons(ship *shipp, ship_info *sip);
-float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos);
 
 int ship_dumbfire_threat(ship *sp);
 int ship_lock_threat(ship *sp);

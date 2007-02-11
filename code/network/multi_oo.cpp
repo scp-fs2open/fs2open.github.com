@@ -809,28 +809,18 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 	// shield info
 	if( oo_flags & OO_SHIELD_NEW ){
-		// pack 2 shield values into each byte
+		float temp_pct;
 
-		float quad = get_max_shield_quad(objp);
+		// pack the quadrants
+		float max_quad = shield_get_max_quad(objp);
+		for (int i = 0; i < MAX_SHIELD_SECTIONS; i++)
+		{
+			temp_pct = (shield_get_quad(objp, i) / max_quad);
+			PACK_PERCENT(temp_pct);
+		}
 
-		// pack quadrant 1
-		temp = (objp->shield_quadrant[0] / quad);
-		PACK_PERCENT(temp);
-				
-		// pack quadrant 2
-		temp = (objp->shield_quadrant[1] / quad);
-		PACK_PERCENT(temp);				
-
-		// pack quadrant 3
-		temp = (objp->shield_quadrant[2] / quad);
-		PACK_PERCENT(temp);
-				
-		// pack quadrant 2
-		temp = (objp->shield_quadrant[3] / quad);
-		PACK_PERCENT(temp);				
-
-		OO_shield_total += 4;
-		R_SHIELD_ADD(pl, 4);
+		OO_shield_total += MAX_SHIELD_SECTIONS;
+		R_SHIELD_ADD(pl, MAX_SHIELD_SECTIONS);
 	}	
 
 	// subsystem info
@@ -1132,25 +1122,20 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data, ushort packet_sequence_num
 
 	// shield info
 	if ( oo_flags & OO_SHIELD_NEW ){
-		float shield_0, shield_1, shield_2, shield_3;
-		
-		// unpack the 4 quadrants
-		UNPACK_PERCENT(shield_0);
-		UNPACK_PERCENT(shield_1);
-		UNPACK_PERCENT(shield_2);
-		UNPACK_PERCENT(shield_3);
+		float quad_pct;
 
-		float quad = get_max_shield_quad(pobjp);
-
-		pobjp->shield_quadrant[0] = (shield_0 * quad);
-		pobjp->shield_quadrant[1] = (shield_1 * quad);
-		pobjp->shield_quadrant[2] = (shield_2 * quad);
-		pobjp->shield_quadrant[3] = (shield_3 * quad);
+		// unpack the quadrants
+		float max_quad = shield_get_max_quad(pobjp);
+		for (int i = 0; i < MAX_SHIELD_SECTIONS; i++)
+		{
+			UNPACK_PERCENT(quad_pct);
+			shield_set_quad(pobjp, i, quad_pct * max_quad);
+		}
 
 		// TEST code
 #ifndef NDEBUG
 		if(OO_debug_info && (Player_ai != NULL) && (pobjp != NULL) && (pobjp->instance >= 0) && (Player_ai->target_objnum == OBJ_INDEX(pobjp))){
-			nprintf(("Network", "SHIELD UPDATE %f %f %f %f: %s\n", pobjp->shield_quadrant[0], pobjp->shield_quadrant[1], pobjp->shield_quadrant[2], pobjp->shield_quadrant[3], Ships[pobjp->instance].ship_name));
+			nprintf(("Network", "SHIELD UPDATE %f %f %f %f: %s\n", shield_get_quad(pobjp, 0), shield_get_quad(pobjp, 1), shield_get_quad(pobjp, 2), shield_get_quad(pobjp, 3), Ships[pobjp->instance].ship_name));
 		}
 #endif
 	}	

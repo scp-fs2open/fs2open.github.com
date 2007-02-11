@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.30 $
- * $Date: 2007-02-08 07:39:32 $
+ * $Revision: 1.31 $
+ * $Date: 2007-02-11 21:26:34 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,11 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.30  2007/02/08 07:39:32  Goober5000
+ * fix two bugs:
+ * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
+ * --ships were created with default allowed comm orders regardless of which team they were on
+ *
  * Revision 1.29  2007/01/14 14:03:32  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -1178,7 +1183,7 @@ int dup_object(object *objp)
 		objp1->phys_info.speed = objp2->phys_info.speed;
 		objp1->phys_info.fspeed = objp2->phys_info.fspeed;
 		objp1->hull_strength = objp2->hull_strength;
-		objp1->shield_quadrant[0] = objp2->shield_quadrant[0];
+		shield_set_quad(objp1, 0, shield_get_quad(objp2, 0));
 
 		subp1 = GET_FIRST(&Ships[n].subsys_list);
 		subp2 = GET_FIRST(&Ships[inst].subsys_list);

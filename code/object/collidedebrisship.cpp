@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.12 $
- * $Date: 2007-02-11 09:06:30 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2007-02-11 21:26:35 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2007/02/11 09:06:30  taylor
+ * if we are a dying ship then don't do collision detection against our own debris (slight performance boost to exploding ships)
+ *
  * Revision 2.11  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -309,8 +312,8 @@ int collide_debris_ship( obj_pair * pair )
 				apply_ship_damage = !(pship->signature == pdebris->parent_sig);
 
 				if ( debris_hit_info.heavy == pship ) {
-					quadrant_num = get_ship_quadrant_from_global(&hitpos, pship);
-					if ((pship->flags & OF_NO_SHIELDS) || !ship_is_shield_up(pship, quadrant_num) ) {
+					quadrant_num = shield_get_quadrant_global(pship, &hitpos);
+					if ((pship->flags & OF_NO_SHIELDS) || !shield_is_up(pship, quadrant_num) ) {
 						quadrant_num = -1;
 					}
 					if (apply_ship_damage) {
@@ -472,8 +475,8 @@ int collide_asteroid_ship( obj_pair * pair )
 
 				int quadrant_num;
 				if ( asteroid_hit_info.heavy == pship ) {
-					quadrant_num = get_ship_quadrant_from_global(&hitpos, pship);
-					if ((pship->flags & OF_NO_SHIELDS) || !ship_is_shield_up(pship, quadrant_num) ) {
+					quadrant_num = shield_get_quadrant_global(pship, &hitpos);
+					if ((pship->flags & OF_NO_SHIELDS) || !shield_is_up(pship, quadrant_num) ) {
 						quadrant_num = -1;
 					}
 					ship_apply_local_damage(asteroid_hit_info.heavy, asteroid_hit_info.light, &hitpos, ship_damage, quadrant_num, CREATE_SPARKS, asteroid_hit_info.submodel_num);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.80 $
- * $Date: 2007-02-07 07:59:48 $
+ * $Revision: 2.81 $
+ * $Date: 2007-02-11 21:26:39 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2007/02/07 07:59:48  Goober5000
+ * hm, didn't notice this new feature
+ *
  * Revision 2.79  2007/02/07 07:35:22  Goober5000
  * Cleaned up the ship-weapon collision code for both conventional weapons and beams.  Improved readability and clarity; untangled program flow; cleaned up sloppy enhancements.  Fixed a few bugs too.
  *
@@ -2852,12 +2855,12 @@ int beam_collide_ship(obj_pair *pair)
 	{
 		// pick out the shield quadrant
 		if (shield_collision)
-			quadrant_num = get_quadrant(&mc_shield.hit_point);
+			quadrant_num = shield_get_quadrant(&mc_shield.hit_point);
 		else if (hull_enter_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS))
-			quadrant_num = get_quadrant(&mc_hull_enter.hit_point);
+			quadrant_num = shield_get_quadrant(&mc_hull_enter.hit_point);
 
 		// make sure that the shield is active in that quadrant
-		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !ship_is_shield_up(ship_objp, quadrant_num)))
+		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !shield_is_up(ship_objp, quadrant_num)))
 			quadrant_num = -1;
 
 		// see if we hit the shield
@@ -3658,7 +3661,7 @@ int beam_will_tool_target(beam *b, object *objp)
 	// calculate total strength, factoring in shield
 	total_strength = objp->hull_strength;
 	if (!(wip->wi_flags2 & WIF2_PIERCE_SHIELDS))
-		total_strength += get_shield_strength(objp);
+		total_strength += shield_get_strength(objp);
 
 	// if the beam is going to apply more damage in about 1 and a half than the ship can take
 	damage_in_a_few_seconds = (TOOLTIME / (float)BEAM_DAMAGE_TIME) * wip->damage;

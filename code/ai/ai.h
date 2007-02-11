@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.16 $
- * $Date: 2007-01-14 14:03:31 $
- * $Author: bobboau $
+ * $Revision: 1.17 $
+ * $Date: 2007-02-11 21:26:34 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2007/01/14 14:03:31  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 1.15  2007/01/07 01:00:18  Goober5000
  * convert a mission variable to a mission flag
  *
@@ -794,7 +799,7 @@ extern void ai_stay_still(object *still_objp, vec3d *view_pos);
 extern void ai_set_default_behavior(object *obj, int classnum);
 extern void ai_do_default_behavior(object *obj);
 extern void ai_start_waypoints(object *objp, int waypoint_list_index, int wp_flags);
-extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_quadrant, vec3d *hit_normal);
+extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int quadrant_num, vec3d *hit_normal);
 extern void ai_ship_destroy(int shipnum, int method);
 extern void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float turn_time, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec = NULL, int sexp_flags = 0);
 extern void init_ai_object(int objnum);

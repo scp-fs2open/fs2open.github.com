@@ -268,7 +268,7 @@ static PyObject* py_lib_gr_set_color(PyObject *self, PyObject *args)
 	PyArg_ParseTuple(args, "iii|i", &rgba[0], &rgba[1], &rgba[2], &rgba[3]);
 
 	//Check
-	for(int i = 0; i < 4; i++)
+	for(int i = 0; i < MAX_SHIELD_SECTIONS; i++)
 	{
 		if(rgba[i] > 255)
 			rgba[i] = 255;

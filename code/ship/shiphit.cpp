@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.74 $
- * $Date: 2007-02-10 06:39:43 $
+ * $Revision: 2.75 $
+ * $Date: 2007-02-11 21:26:39 $
  * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2007/02/10 06:39:43  Goober5000
+ * new feature: shield generators that control whether the shield is up
+ *
  * Revision 2.73  2007/02/10 00:18:22  taylor
  * remove NO_SOUND
  *
@@ -1499,27 +1502,6 @@ void show_dead_message(object *ship_obj, object *other_obj)
 	*/
 }
 
-/* JAS: THIS DOESN'T SEEM TO BE USED, SO I COMMENTED IT OUT
-//	Apply damage to a ship, destroying if necessary, etc.
-//	Returns portion of damage that exceeds ship shields, ie the "unused" portion of the damage.
-//	Note: This system does not use the mesh shield.  It applies damage to the overall ship shield.
-float apply_damage_to_ship(object *objp, float damage)
-{
-	float	_ss;
-
-	add_shield_strength(objp, -damage);
-
-	// check if shields are below 0%, if so take leftover damage and apply to ship integrity
-	if ((_ss = get_shield_strength(objp)) < 0.0f ) {
-		damage = -_ss;
-		set_shield_strength(objp, 0.0f);
-	} else
-		damage = 0.0f;
-
-	return damage;
-}
-*/
-
 //	Do music processing for a ship hit.
 void ship_hit_music(object *ship_obj, object *other_obj)
 {
@@ -2578,7 +2560,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		if ( damage > 0 ) {
 			float pre_shield = damage;
 
-			damage = apply_damage_to_shield(ship_obj, quadrant, damage);
+			damage = shield_apply_damage(ship_obj, quadrant, damage);
 
 			if(damage > 0.0f){
 				subsystem_damage *= (damage / pre_shield);
@@ -2951,7 +2933,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_
 		vm_vec_rotate( &local_hitpos, &tmp, &ship_obj->orient );
 
 		// shield_quad = quadrant facing the force_center
-		shield_quad = get_quadrant(&local_hitpos);
+		shield_quad = shield_get_quadrant(&local_hitpos);
 
 		// world_hitpos use force_center for shockwave
 		// Goober5000 check for NULL

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.212 $
- * $Date: 2007-02-10 03:17:31 $
+ * $Revision: 2.213 $
+ * $Date: 2007-02-11 21:26:34 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.212  2007/02/10 03:17:31  Goober5000
+ * made support ship shield control a bit less of a hack
+ *
  * Revision 2.211  2007/02/08 07:39:32  Goober5000
  * fix two bugs:
  * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
@@ -2777,8 +2780,8 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// Goober5000
 	shipp->special_hitpoint_index = p_objp->special_hitpoint_index;
-	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
-	shipp->ship_max_hull_strength = p_objp->ship_max_hull_strength;
+	shipp->ship_max_shield_strength = p_objp->parse_max_shield_strength;
+	shipp->ship_max_hull_strength = p_objp->parse_max_hull_strength;
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
@@ -2938,7 +2941,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// other flag checks
 ////////////////////////
-	if (p_objp->ship_max_shield_strength == 0.0f)
+	if (p_objp->parse_max_shield_strength == 0.0f)
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 
 	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
@@ -3202,7 +3205,7 @@ int parse_create_object_sub(p_object *p_objp)
 		Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity;
 		// shipp->hull_hit_points_taken = (float) p_objp->initial_hull;
 		Objects[objnum].hull_strength = (float) p_objp->initial_hull;
-		Objects[objnum].shield_quadrant[0] = (float) p_objp->initial_shields;
+		shield_set_quad(&Objects[objnum], 0, (float) p_objp->initial_shields);
 
 	}
 	else
@@ -3210,10 +3213,9 @@ int parse_create_object_sub(p_object *p_objp)
 		int max_allowed_sparks, num_sparks, i;
 		polymodel *pm;
 
-		// shipp->hull_hit_points_taken = (float) p_objp->initial_hull * sip->max_hull_hit_points / 100.0f;
-		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
+		Objects[objnum].hull_strength = shipp->ship_max_hull_strength * ((float) p_objp->initial_hull / 100.0f);
 		for (i = 0; i<MAX_SHIELD_SECTIONS; i++)
-			Objects[objnum].shield_quadrant[i] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
+			shield_set_quad(&Objects[objnum], i, shield_get_max_quad(&Objects[objnum]) * ((float) p_objp->initial_shields / 100.0f));
 
 		// initial velocities now do not apply to ships which warp in after mission starts
 		if (!(Game_mode & GM_IN_MISSION))
@@ -3766,15 +3768,15 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	// get hitpoint values
 	if (p_objp->special_hitpoint_index != -1)
 	{
-		p_objp->ship_max_shield_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].text);
-		p_objp->ship_max_hull_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].text);
+		p_objp->parse_max_shield_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].text);
+		p_objp->parse_max_hull_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].text);
 	}
 	else
 	{
-		p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
-		p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
+		p_objp->parse_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
+		p_objp->parse_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
 	}
-	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	Assert(p_objp->parse_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
 
 	// if the kamikaze flag is set, we should have the next flag
 	if (optional_string("+Kamikaze Damage:"))
@@ -4413,30 +4415,30 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 	// Hitpoints
 	// We need to take into account that the ship might have been assigned special hitpoints so we can't 
 	// simply swap old for new. 
-	Assert (p_obj->ship_max_hull_strength > 0);
+	Assert (p_obj->parse_max_hull_strength > 0);
 	Assert (old_ship_info->max_hull_strength > 0);
 	
 	//WMC - there was some oddness going on with fl2i and i2fl, even though
 	//all of these are floats
-	float hp_multiplier = p_obj->ship_max_hull_strength / old_ship_info->max_hull_strength;
-	p_obj->ship_max_hull_strength = new_ship_info->max_hull_strength * hp_multiplier;
+	float hp_multiplier = p_obj->parse_max_hull_strength / old_ship_info->max_hull_strength;
+	p_obj->parse_max_hull_strength = new_ship_info->max_hull_strength * hp_multiplier;
 
 
 	// Shields
 	// Again we have to watch out for special hitpoints but this time we can't assume that there will be a 
 	// shield. So first lets see if there is one. 
-	if ((p_obj->ship_max_shield_strength != old_ship_info->max_shield_strength) && 
-		(p_obj->ship_max_shield_strength > 0) &&
+	if ((p_obj->parse_max_shield_strength != old_ship_info->max_shield_strength) && 
+		(p_obj->parse_max_shield_strength > 0) &&
 		(new_ship_info->max_shield_strength > 0))
 	{
 		// This ship is using special hitpoints to alter the shield strength
-		float shield_multiplier = p_obj->ship_max_shield_strength / i2fl(old_ship_info->max_shield_strength);
-		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength * shield_multiplier;
+		float shield_multiplier = p_obj->parse_max_shield_strength / i2fl(old_ship_info->max_shield_strength);
+		p_obj->parse_max_shield_strength = new_ship_info->max_shield_strength * shield_multiplier;
 	}
 	// Not using special hitpoints or a class which has a shield strength of zero
 	else
 	{
-		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength;
+		p_obj->parse_max_shield_strength = new_ship_info->max_shield_strength;
 	}
 	
 	// Primary weapons
@@ -7975,8 +7977,8 @@ void mission_bring_in_support_ship( object *requester_objp )
 	}
 
 	// set support ship hitpoints
-	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;
-	pobj->ship_max_shield_strength = Ship_info[i].max_shield_strength;
+	pobj->parse_max_hull_strength = Ship_info[i].max_hull_strength;
+	pobj->parse_max_shield_strength = Ship_info[i].max_shield_strength;
 
 	pobj->team = requester_shipp->team;
 

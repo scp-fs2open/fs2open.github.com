@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.65 $
- * $Date: 2007-01-15 13:40:38 $
- * $Author: karajorma $
+ * $Revision: 2.66 $
+ * $Date: 2007-02-11 21:26:35 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65  2007/01/15 13:40:38  karajorma
+ * Hmmm. Forgot to commit changes to support network variables and setting ammo/weapons to HEAD as well as 3.6.9.
+ * Also add Juke's bug fix for streaming weapons.
+ *
  * Revision 2.64  2007/01/14 14:03:33  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -7580,8 +7584,10 @@ void send_client_update_packet(net_player *pl)
 		percent = (ubyte) (get_hull_pct(objp) * 100.0f);
 		ADD_DATA( percent );
 
+		// add the quadrants
+		float max_quad = shield_get_max_quad(objp);
 		for (i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-			percent = (ubyte)(objp->shield_quadrant[i] / get_max_shield_quad(objp) * 100.0f);
+			percent = (ubyte)(shield_get_quad(objp, i) / max_quad * 100.0f);
 			ADD_DATA( percent );
 		}
 
@@ -7699,9 +7705,10 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			fl_val = hull_percent * shipp->ship_max_hull_strength / 100.0f;
 			objp->hull_strength = fl_val;
 
+			float max_quad = shield_get_max_quad(objp);
 			for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
-				fl_val = (shield_percent[i] * get_max_shield_quad(objp) / 100.0f);
-				objp->shield_quadrant[i] = fl_val;
+				fl_val = (shield_percent[i] * max_quad / 100.0f);
+				shield_set_quad(objp, i, fl_val);
 			}
 
 			// for sanity, be sure that the number of susbystems that I read in matches the player.  If not,

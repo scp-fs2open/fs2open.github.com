@@ -1987,17 +1987,17 @@ ADE_INDEXER(l_Shields, "SHIELD_* enumeration, NONE, or 1-4", "number", "Gets or 
 	//Set/get all quadrants
 	if(qdx == -1) {
 		if(ADE_SETTING_VAR && nval >= 0.0f)
-			set_shield_strength(objp, nval);
+			shield_set_strength(objp, nval);
 
-		return ade_set_args(L, "f", get_shield_strength(objp));
+		return ade_set_args(L, "f", shield_get_strength(objp));
 	}
 
 	//Set one quadrant?
 	if(ADE_SETTING_VAR && nval >= 0.0f)
-		objp->shield_quadrant[qdx] = nval;
+		shield_set_quad(objp, qdx, nval);
 
 	//Get one quadrant
-	return ade_set_args(L, "f", objp->shield_quadrant[qdx]);
+	return ade_set_args(L, "f", shield_get_quad(objp, qdx));
 }
 /*
 //WMC - Not sure if I want this to be a variable. It'd make more sense
@@ -2013,10 +2013,10 @@ ADE_VIRTVAR(TotalLeft, l_Shields, "number", "Total shield hitpoints left (for al
 		return ADE_RETURN_NIL;
 
 	if(ADE_SETTING_VAR && nval >= 0.0f) {
-		set_shield_strength(objh->objp, nval);
+		shield_set_strength(objh->objp, nval);
 	}
 
-	return ade_set_args(L, "f", get_shield_strength(objh->objp));
+	return ade_set_args(L, "f", shield_get_strength(objh->objp));
 }
 */
 ADE_FUNC(isValid, l_Shields, NULL, "True if valid, false or nil if not",  "Detects whether handle is valid")
@@ -2966,10 +2966,8 @@ ADE_VIRTVAR(Shields, l_Object, "shields", "Shields")
 	//WMC - copy shields
 	if(ADE_SETTING_VAR && sobjh != NULL && sobjh->IsValid())
 	{
-		for(int i = 0; i < 4; i++)
-		{
-			objh->objp->shield_quadrant[i] = sobjh->objp->shield_quadrant[i];
-		}
+		for(int i = 0; i < MAX_SHIELD_SECTIONS; i++)
+			shield_set_quad(objh->objp, i, shield_get_quad(sobjh->objp, i));
 	}
 
 	return ade_set_args(L, "o", l_Shields.Set(object_h(objh->objp)));

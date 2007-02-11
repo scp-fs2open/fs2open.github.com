@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.11 $
- * $Date: 2007-01-29 03:39:25 $
+ * $Revision: 1.12 $
+ * $Date: 2007-02-11 21:26:34 $
  * $Author: Goober5000 $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2007/01/29 03:39:25  Goober5000
+ * --fix the empty ship name / U.R.A. Moron bug caused by WMC's commit
+ * --properly update a ship score when its class changes (in FRED or via change-ship-class or via ship loadout)
+ *
  * Revision 1.10  2006/12/28 00:59:20  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1891,7 +1895,7 @@ void CShipEditorDlg::OnShipReset()
 			}
 
 			objp->phys_info.speed = 0.0f;
-			objp->shield_quadrant[0] = 100.0f;
+			shield_set_quad(objp, 0, 100.0f);
 			objp->hull_strength = 100.0f;
 
 			sip = &Ship_info[Ships[ship].ship_info_index];

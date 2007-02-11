@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.69 $
- * $Date: 2007-02-11 18:35:45 $
- * $Author: taylor $
+ * $Revision: 2.70 $
+ * $Date: 2007-02-11 21:26:35 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2007/02/11 18:35:45  taylor
+ * cleanup and minor performance improvements
+ * add support for new fireball specific lighting values from tbl
+ * remove NO_SOUND
+ *
  * Revision 2.68  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -641,7 +646,7 @@
  * control their own afterburners
  * 
  * 174   12/22/97 1:42a Lawrance
- * Change in set_shield_strength() avoid weird rounding error
+ * Change in shield_set_strength() avoid weird rounding error
  * 
  * 173   12/12/97 1:43p John
  * took out old debug light code
@@ -874,17 +879,6 @@ int free_object_slots(int num_used)
 }
 
 // Goober5000
-float get_max_shield_quad(object *objp)
-{
-	Assert(objp);
-	if(objp->type != OBJ_SHIP) {
-		return 0.0f;
-	}
-
-	return Ships[objp->instance].ship_max_shield_strength / MAX_SHIELD_SECTIONS;
-}
-
-// Goober5000
 float get_hull_pct(object *objp)
 {
 	Assert(objp);
@@ -912,108 +906,12 @@ float get_shield_pct(object *objp)
 	if (objp->type != OBJ_SHIP)
 		return 0.0f;
 
-	float total_strength = Ships[objp->instance].ship_max_shield_strength;
+	float total_strength = shield_get_max_strength(objp);
 
 	if (total_strength == 0.0f)
 		return 0.0f;
 
-	return get_shield_strength(objp) / total_strength;
-}
-
-float get_shield_strength(object *objp)
-{
-	int	i;
-	float	strength;
-
-	strength = 0.0f;
-
-	// no shield system, no strength!
-	if ( objp->flags & OF_NO_SHIELDS ){
-		return strength;
-	}
-
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++){
-		strength += objp->shield_quadrant[i];
-	}
-
-	return strength;
-}
-
-void set_shield_strength(object *objp, float strength)
-{
-	int	i;
-
-	if ( (strength - Ships[objp->instance].ship_max_shield_strength) > 0.1 ){
-		Int3();
-	}
-
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++){
-		objp->shield_quadrant[i] = strength/MAX_SHIELD_SECTIONS;
-	}
-}
-
-//	Recharge whole shield.
-//	Apply delta/MAX_SHIELD_SECTIONS to each shield section.
-void add_shield_strength(object *objp, float delta)
-{
-	int	i;
-	float	section_max;
-
-	section_max = get_max_shield_quad(objp);
-
-	if (!(The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT))
-	{
-		// if we aren't going to change anything anyway then just bail
-		if (delta == 0.0f)
-			return;
-
-		for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
-			objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
-			if (objp->shield_quadrant[i] > section_max)
-				objp->shield_quadrant[i] = section_max;
-			else if (objp->shield_quadrant[i] < 0.0f)
-				objp->shield_quadrant[i] = 0.0f;
-		}
-	}
-	else
-	{
-		//smart shield repair
-		float weakest=0;
-		int weakest_idx;
-		while ((delta > 0) && (weakest < section_max))
-		{
-			//find weakest shield quadrant
-			weakest=objp->shield_quadrant[0];
-			weakest_idx=0;
-			for (i=1; i < MAX_SHIELD_SECTIONS; i++)
-			{
-				if (objp->shield_quadrant[i] < weakest)
-				{
-					weakest=objp->shield_quadrant[i];
-					weakest_idx=i;
-				}
-			}
-		
-			//throw all possible shield power at this quadrant
-			//if there's any leftover then apply it to the next weakest on the next pass
-			if ((delta+weakest > section_max) && (weakest < section_max))
-			{
-				objp->shield_quadrant[weakest_idx]=section_max;
-				delta-=(section_max-delta);
-			}	
-			else
-			{
-				objp->shield_quadrant[weakest_idx]+=delta;
-				delta=0;
-
-				if (objp->shield_quadrant[weakest_idx] > section_max) {
-					objp->shield_quadrant[weakest_idx] = section_max;
-				} else if (objp->shield_quadrant[weakest_idx] < 0.0f) {
-					objp->shield_quadrant[weakest_idx] = 0.0f;
-				}
-			}
-		}
-	}
+	return shield_get_strength(objp) / total_strength;
 }
 
 //sets up the free list & init player & whatever else
