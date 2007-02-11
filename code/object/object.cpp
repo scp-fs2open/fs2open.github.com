@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.68 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.69 $
+ * $Date: 2007-02-11 18:35:45 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.67  2006/09/11 06:45:40  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -1245,9 +1248,7 @@ void obj_delete(int objnum)
 			}
 
 			physics_init(&objp->phys_info);
-#ifndef NO_SOUND			
 			obj_snd_delete_type(OBJ_INDEX(objp));
-#endif
 			return;
 		} else
 			ship_delete( objp );
@@ -1296,10 +1297,8 @@ void obj_delete(int objnum)
 		Error( LOCATION, "Unhandled object type %d in obj_delete_all_that_should_be_dead", objp->type );
 	}
 
-#ifndef NO_SOUND			
 	// if a persistant sound has been created, delete it
 	obj_snd_delete_type(OBJ_INDEX(objp));		
-#endif
 
 	objp->type = OBJ_NONE;		//unused!
 	objp->signature = 0;		
@@ -1856,184 +1855,187 @@ extern fireball Fireballs[];
 
 void obj_move_all_post(object *objp, float frametime)
 {
-	switch( objp->type )	{
-	case OBJ_WEAPON:
-		if (!physics_paused)	{
-			weapon_process_post( objp, frametime );
-		}
-		// Cast light
-		if ( Detail.lighting > 2 ) {
-			// Weapons cast light
+	switch (objp->type)
+	{
+		case OBJ_WEAPON:
+		{
+			if ( !physics_paused )
+				weapon_process_post( objp, frametime );
 
-			int group_id = Weapons[objp->instance].group_id;
-			int cast_light = 1;
+			// Cast light
+			if ( Detail.lighting > 2 ) {
+				// Weapons cast light
 
-			if ( (group_id >= 0) && (Obj_weapon_group_id_used[group_id]==0) )	{
-				// Mark this group as done
-				Obj_weapon_group_id_used[group_id]++;
-			} else {
-				// This group has already done its light casting
-				cast_light = 0;
-			}
+				int group_id = Weapons[objp->instance].group_id;
+				int cast_light = 1;
 
-			if ( cast_light )	{
-				weapon_info * wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
-
-				if ( wi->render_type == WRT_LASER )	{
-					color c;
-					float r,g,b;
-
-					// get the laser color
-					weapon_get_laser_color(&c, objp);
-
-					r = i2fl(c.red)/255.0f;
-					g = i2fl(c.green)/255.0f;
-					b = i2fl(c.blue)/255.0f;
-
-					light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
-					//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 0.0f, 0.0f, 1.0f, objp->parent );
+				if ( (group_id >= 0) && (Obj_weapon_group_id_used[group_id]==0) )	{
+					// Mark this group as done
+					Obj_weapon_group_id_used[group_id]++;
 				} else {
-					light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
-				} 
+					// This group has already done its light casting
+					cast_light = 0;
+				}
+
+				if ( cast_light )	{
+					weapon_info * wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+
+					if ( wi->render_type == WRT_LASER )	{
+						color c;
+						float r,g,b;
+
+						// get the laser color
+						weapon_get_laser_color(&c, objp);
+
+						r = i2fl(c.red)/255.0f;
+						g = i2fl(c.green)/255.0f;
+						b = i2fl(c.blue)/255.0f;
+
+						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, r, g, b, objp->parent );
+						//light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 0.0f, 0.0f, 1.0f, objp->parent );
+					} else {
+						light_add_point( &objp->pos, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, objp->parent );
+					} 
+				}
 			}
+
+			break;
 		}
-		break;	
-	case OBJ_SHIP:
-		if (!physics_paused || (objp==Player_obj ))
-			ship_process_post( objp, frametime );
 
-		// Make any electrical arcs on ships cast light
-		if (Arc_light)	{
-			if ( Detail.lighting > 2 ) {
-				int i;
-				ship		*shipp;
-				shipp = &Ships[objp->instance];
+		case OBJ_SHIP:
+		{
+			if ( !physics_paused || (objp==Player_obj) )
+				ship_process_post( objp, frametime );
 
-				for (i=0; i<MAX_SHIP_ARCS; i++ )	{
-					if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
-						// Move arc endpoints into world coordinates	
-						vec3d tmp1, tmp2;
-						vm_vec_unrotate(&tmp1,&shipp->arc_pts[i][0],&objp->orient);
-						vm_vec_add2(&tmp1,&objp->pos);
+			// Make any electrical arcs on ships cast light
+			if (Arc_light)	{
+				if ( (Detail.lighting > 2) && (objp != Viewer_obj) ) {
+					int i;
+					ship		*shipp;
+					shipp = &Ships[objp->instance];
 
-						vm_vec_unrotate(&tmp2,&shipp->arc_pts[i][1],&objp->orient);
-						vm_vec_add2(&tmp2,&objp->pos);
+					for (i=0; i<MAX_SHIP_ARCS; i++ )	{
+						if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
+							// Move arc endpoints into world coordinates	
+							vec3d tmp1, tmp2;
+							vm_vec_unrotate(&tmp1,&shipp->arc_pts[i][0],&objp->orient);
+							vm_vec_add2(&tmp1,&objp->pos);
 
-						light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
-						light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+							vm_vec_unrotate(&tmp2,&shipp->arc_pts[i][1],&objp->orient);
+							vm_vec_add2(&tmp2,&objp->pos);
+
+							light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+							light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+						}
+					}
+				}
+			}		
+
+			break;
+		}
+
+		case OBJ_FIREBALL:
+		{
+			if ( !physics_paused )
+				fireball_process_post(objp,frametime);
+
+			if (Detail.lighting > 3) {
+				float r = 0.0f, g = 0.0f, b = 0.0f;
+
+				fireball_get_color(Fireballs[objp->instance].fireball_info_index, &r, &g, &b);
+
+				// we don't cast black light, so just bail in that case
+				if ( (r == 0.0f) && (g == 0.0f) && (b == 0.0f) )
+					break;
+
+				// Make explosions cast light
+				float p = fireball_lifeleft_percent(objp);
+				if (p > 0.0f) {
+					if (p > 0.5f)
+						p = 1.0f - p;
+
+					p *= 2.0f;
+
+					// P goes from 0 to 1 to 0 over the life of the explosion
+					float rad = p * (1.0f + frand() * 0.05f) * objp->radius;
+
+					light_add_point( &objp->pos, rad * 2.0f, rad * 5.0f, 1.0f, r, g, b, -1 );
+				}
+			}
+
+			break;
+		}
+
+		case OBJ_SHOCKWAVE:
+			// all shockwaves are moved via shockwave_move_all()
+			break;
+
+		case OBJ_DEBRIS:
+		{
+			if ( !physics_paused )
+				debris_process_post(objp, frametime);
+
+			// Make any electrical arcs on debris cast light
+			if (Arc_light)	{
+				if ( Detail.lighting > 2 ) {
+					int i;
+					debris		*db;
+					db = &Debris[objp->instance];
+
+					if (db->arc_frequency > 0) {
+						for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
+							if ( timestamp_valid( db->arc_timestamp[i] ) )	{
+								// Move arc endpoints into world coordinates	
+								vec3d tmp1, tmp2;
+								vm_vec_unrotate(&tmp1,&db->arc_pts[i][0],&objp->orient);
+								vm_vec_add2(&tmp1,&objp->pos);
+
+								vm_vec_unrotate(&tmp2,&db->arc_pts[i][1],&objp->orient);
+								vm_vec_add2(&tmp2,&objp->pos);
+
+								light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+								light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
+							}
+						}
 					}
 				}
 			}
-		}		
 
-		break;
-	case OBJ_FIREBALL:
-		if (!physics_paused)	{
-			fireball_process_post(objp,frametime);
+			break;
 		}
-		if ( Detail.lighting > 3 ) {
-			float r,g,b;
 
-			switch(Fireballs[objp->instance].fireball_info_index)
-			{
-				case FIREBALL_EXPLOSION_LARGE1:
-				case FIREBALL_EXPLOSION_LARGE2:
-				case FIREBALL_EXPLOSION_MEDIUM:
-				case FIREBALL_ASTEROID:
-					r=1.0f;
-					g=.5f;
-					b=.125f;
-					break;
+		case OBJ_ASTEROID:
+		{
+			if ( !physics_paused )
+				asteroid_process_post(objp, frametime);
 
-				case FIREBALL_WARP_EFFECT:
-					r=.75f;
-					g=.75f;
-					b=1.0f;
-					break;
-
-
-				case FIREBALL_KNOSSOS_EFFECT:
-					r=.75f;
-					g=1.0f;
-					b=.75f;
-					break;
-
-				default:
-					r=g=b=1.0f;
-					break;
-			}
-			// Make explosions cast light
-			float p = fireball_lifeleft_percent(objp);
-			if(p>0.0f){
-				if ( p > 0.5f )	{
-					p = 1.0f - p;
-				}
-				p *= 2.0f;
-				// P goes from 0 to 1 to 0 over the life of the explosion
-				float rad = p*(1.0f+frand()*0.05f)*objp->radius;
-
-				light_add_point( &objp->pos, rad*2.0f, rad*5.0f, 1.0f, r, g, b, -1 );
-			}
+			break;
 		}
-		break;
 
-	case OBJ_SHOCKWAVE:
-		// all shockwaves are moved via shockwave_move_all()
-		break;
-	case OBJ_DEBRIS:
-		if (!physics_paused)
-			debris_process_post(objp,frametime);
+		case OBJ_WAYPOINT:
+			break;  // waypoints don't move..
 
-		// Make any electrical arcs on debris cast light
-		if (Arc_light)	{
-			if ( Detail.lighting > 2 ) {
-				int i;
-				debris		*db;
-				db = &Debris[objp->instance];
+		case OBJ_GHOST:
+			break;
 
-				for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-					if ( timestamp_valid( db->arc_timestamp[i] ) )	{
-						// Move arc endpoints into world coordinates	
-						vec3d tmp1, tmp2;
-						vm_vec_unrotate(&tmp1,&db->arc_pts[i][0],&objp->orient);
-						vm_vec_add2(&tmp1,&objp->pos);
+		case OBJ_OBSERVER:
+			void observer_process_post(object *objp);
+			observer_process_post(objp);
+			break;
 
-						vm_vec_unrotate(&tmp2,&db->arc_pts[i][1],&objp->orient);
-						vm_vec_add2(&tmp2,&objp->pos);
+		case OBJ_JUMP_NODE:
+			radar_plot_object(objp);
+			break;	
 
-						light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
-						light_add_point( &tmp2, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f, -1 );
-					}
-				}
-			}
-		}		
-		break;
-	case OBJ_ASTEROID:
-		if (!physics_paused)
-			asteroid_process_post(objp, frametime);
-		break;
-/*	case OBJ_CMEASURE:
-		if (!physics_paused)
-			cmeasure_process_post(objp, frametime);
-		break;*/
-	case OBJ_WAYPOINT:
-		break;  // waypoints don't move..
-	case OBJ_GHOST:
-		break;
-	case OBJ_OBSERVER:
-		void observer_process_post(object *objp);
-		observer_process_post(objp);
-		break;
-	case OBJ_JUMP_NODE:
-		radar_plot_object(objp);
-		break;	
-	case OBJ_BEAM:		
-		break;
-	case OBJ_NONE:
-		Int3();
-		break;
-	default:
-		Error( LOCATION, "Unhandled object type %d in obj_move_one\n", objp->type );
+		case OBJ_BEAM:		
+			break;
+
+		case OBJ_NONE:
+			Int3();
+			break;
+
+		default:
+			Error( LOCATION, "Unhandled object type %d in obj_move_one\n", objp->type );
 	}	
 }
 
