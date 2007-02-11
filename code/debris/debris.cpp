@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.23.2.5 $
- * $Date: 2006-09-11 01:00:27 $
+ * $Revision: 2.23.2.6 $
+ * $Date: 2007-02-11 09:21:12 $
  * $Author: taylor $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23.2.5  2006/09/11 01:00:27  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.23.2.4  2006/08/27 18:12:40  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -610,9 +613,7 @@ void debris_process_post(object * obj, float frame_time)
 		radar_plot_object( obj );
 
 		if ( timestamp_elapsed(db->sound_delay) ) {
-#ifndef NO_SOUND
 			obj_snd_assign(objnum, SND_DEBRIS, &vmd_zero_vector, 0);
-#endif
 			db->sound_delay = 0;
 		}
 	} else {
@@ -810,7 +811,12 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 			break;
 	}
 
-	if ( n == MAX_DEBRIS_PIECES ) {
+	if (n == MAX_DEBRIS_PIECES) {
+		n = debris_find_oldest();
+
+		if (n >= 0)
+			debris_start_death_roll(&Objects[Debris[n].objnum], &Debris[n]);
+
 		nprintf(("Warning","Frame %i: Could not create debris, no more slots left\n", Framecount));
 		return NULL;
 	}
@@ -823,7 +829,7 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 			db->lifeleft = 2.0f * ((float) myrand()/(float) RAND_MAX) + 0.5f;
 		else
 			db->lifeleft = -1.0f;		// large hull pieces stay around forever
-	}	else {
+	} else {
 		db->lifeleft = (i2fl(myrand())/i2fl(RAND_MAX))*2.0f+0.1f;
 	}
 
