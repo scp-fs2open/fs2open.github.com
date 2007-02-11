@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.98 $
- * $Date: 2007-02-11 18:45:38 $
- * $Author: taylor $
+ * $Revision: 2.99 $
+ * $Date: 2007-02-11 20:25:58 $
+ * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2007/02/11 18:45:38  taylor
+ * fix a couple of breaks from my commits
+ *
  * Revision 2.97  2007/02/11 18:18:51  taylor
  * remove some dead code
  * better texture memory handling (a work in-progress)
@@ -921,6 +924,12 @@
  */
 
 #include <ctype.h>
+
+#include "globalincs/pstypes.h"
+
+#ifdef _WIN32
+#include <windows.h>	// for MAX_PATH
+#endif
 
 #include "bmpman/bmpman.h"
 #include "pcxutils/pcxutils.h"
