@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.73.2.7 $
- * $Author: Goober5000 $
- * $Date: 2006-12-26 18:14:37 $
+ * $Revision: 2.73.2.8 $
+ * $Author: taylor $
+ * $Date: 2007-02-11 09:05:02 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73.2.7  2006/12/26 18:14:37  Goober5000
+ * allow parsing of similar ship copy names properly (Mantis #1178)
+ *
  * Revision 2.73.2.6  2006/11/13 23:23:26  phreak
  * Don't copy parentheses to parse buffers if outside of quotation marks.  Otherwise
  *  the parsing syntax will be copied to said buffer and some warnings/errors would occur.
@@ -3162,6 +3165,38 @@ int replace_all(char *str, char *oldstr, char *newstr, uint max_len, int range)
 	}
 
 	return (val < 0) ? val : tally;
+}
+
+// WMC
+// Compares two strings, ignoring (last) extension
+// Returns 0 if equal, nonzero if not
+int strextcmp(char *s1, char* s2)
+{
+	// sanity check
+	Assert( (s1 != NULL) && (s2 != NULL) );
+
+	// find last '.' in both strings
+	char *s1_end = strrchr(s1, '.');
+	char *s2_end = strrchr(s2, '.');
+
+	// get length
+	size_t s1_len, s2_len;
+
+	if (s1_end != NULL)
+		s1_len = (s1_end - s1);
+	else
+		s1_len = strlen(s1);
+
+	if (s2_end != NULL)
+		s2_len = (s2_end - s2);
+	else
+		s2_len = strlen(s2);
+
+	// if the lengths aren't the same then it's deffinitely not the same name
+	if (s2_len != s1_len)
+		return 1;
+
+	return strnicmp(s1, s2, s1_len);
 }
 
 //WMC

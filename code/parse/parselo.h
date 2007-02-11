@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.42.2.2 $
+ * $Revision: 2.42.2.3 $
  * $Author: taylor $
- * $Date: 2006-09-11 01:16:31 $
+ * $Date: 2007-02-11 09:05:02 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.42.2.2  2006/09/11 01:16:31  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.42.2.1  2006/08/03 01:33:25  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
@@ -578,6 +581,9 @@ extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_l
 
 // Goober5000 (why is this not in the C library?)
 extern char *stristr(const char *str, const char *substr);
+
+//WMC - compares two strings, ignoring the last extension
+extern int strextcmp(char *s1, char* s2);
 
 //WMC - backspaces the first character of given char pointer
 void backspace(char *src);
