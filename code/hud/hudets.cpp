@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.20 $
- * $Date: 2006-02-25 21:47:00 $
+ * $Revision: 2.20.2.1 $
+ * $Date: 2007-02-11 21:42:39 $
  * $Author: Goober5000 $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/02/25 21:47:00  Goober5000
+ * spelling
+ *
  * Revision 2.19  2006/01/09 04:54:51  phreak
  * Remove tertiary weapons in their current form, I want something more flexable instead of what I had there.
  *
@@ -441,7 +444,7 @@ void update_ets(object* objp, float fl_frametime)
 
 	// don't let engine strength affect max speed when playing on lowest skill level
 	if ( (objp != Player_obj) || (Game_skill_level > 0) ) {
-		if ( strength < 0.5 ) {
+		if ( strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED ) {
 			ship_p->current_max_speed *= fl_sqrt(strength);
 		}
 	}
