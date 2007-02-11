@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FredStubs.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-07-14 03:50:31 $
+ * $Revision: 1.6 $
+ * $Date: 2007-02-11 09:37:18 $
  * $Author: taylor $
  *
  * Bogus C file for functions and variable stubs that Fred needs because it
@@ -20,6 +20,9 @@
  * to each other.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/07/14 03:50:31  taylor
+ * add missing stub for game_get_overall_frametime()
+ *
  * Revision 1.4  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -643,7 +646,6 @@ int game_cd_changed(void) {return 0;}
 int Interface_framerate;
 void game_set_view_clip(){}
 float Viewer_zoom;
-int Pofview_running = 0;
 
 int Warpout_forced = 0;
 float Warpout_time;
@@ -690,7 +692,6 @@ int Player_multi_died_check;
 int Show_framerate = 0;
 
 void game_feature_not_in_demo_popup() {}
-int Nebedit_running = 0;
 void alt_tab_pause(){}
 
 void game_feature_disabled_popup() {}
