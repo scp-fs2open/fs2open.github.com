@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.14 $
- * $Date: 2005-07-13 02:50:52 $
- * $Author: Goober5000 $
+ * $Revision: 2.15 $
+ * $Date: 2007-02-11 18:19:41 $
+ * $Author: taylor $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2005/07/13 02:50:52  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.13  2005/04/05 05:53:15  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -237,7 +241,8 @@ typedef struct fireball_lod {
 } fireball_lod;
 
 typedef struct fireball_info	{
-	int					lod_count;	
+	int					lod_count;
+	float				exp_color[3];
 	fireball_lod		lod[4];
 } fireball_info;
 
@@ -288,6 +293,9 @@ float fireball_lifeleft( object *obj );
 
 // Returns life left of a fireball in percent
 float fireball_lifeleft_percent( object *obj );
+
+// returns the lighting color (in [0...1] range) to use for explosion
+void fireball_get_color(int idx, float *red, float *green, float *blue);
 
 // internal function to draw warp grid.
 extern void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d = 0 );
