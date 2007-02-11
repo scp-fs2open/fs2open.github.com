@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.40.2.3 $
- * $Date: 2007-02-11 09:25:42 $
+ * $Revision: 2.40.2.4 $
+ * $Date: 2007-02-11 09:32:19 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40.2.3  2007/02/11 09:25:42  taylor
+ * some CFILE cleanup and slight directory order reorg
+ * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
+ * remove NO_SOUND
+ *
  * Revision 2.40.2.2  2006/12/26 05:11:57  taylor
  * add .ogg files to movie locations
  *
@@ -376,7 +381,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	// What type this is          Path																			Extensions        					Parent type
 	{ CF_TYPE_INVALID,				NULL,																		NULL,								CF_TYPE_INVALID },
 	// Root must be index 1!!	
-	{ CF_TYPE_ROOT,					"",																			".mve .avi .mpg .ogg",				CF_TYPE_ROOT	},
+	{ CF_TYPE_ROOT,					"",																			".mve .ogg",						CF_TYPE_ROOT	},
 	{ CF_TYPE_DATA,					"data",																		".cfg .log .txt",					CF_TYPE_ROOT	},
 	{ CF_TYPE_MAPS,					"data" DIR_SEPARATOR_STR "maps",											".pcx .ani .eff .tga .jpg .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_TEXT,					"data" DIR_SEPARATOR_STR "text",											".txt .net",						CF_TYPE_DATA	},
