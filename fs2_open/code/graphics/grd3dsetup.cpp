@@ -9,6 +9,9 @@
 
 /*
  * $Log: not supported by cvs2svn $
+ * Revision 2.59.2.2  2006/11/15 00:47:57  taylor
+ * properly support the updated window create code (all told: should take of of Mantis bugs #542, #624, #1140, and possibly #962 and #1124)
+ *
  * Revision 2.59.2.1  2006/08/22 05:41:35  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
@@ -776,9 +779,6 @@ void d3d_determine_texture_formats(int adapter, D3DDISPLAYMODE *mode)
 		// Um hack here, forget about non alpha formats!
 		d3d_fill_pixel_format(&NonAlphaTextureFormat, default_non_alpha_tformat);
 	}
-
-	if(	d3d_get_mode_bit(mode->Format) < 32)
-		Cmdline_pcx32 = 0;
 
 	// Check compressed textures here
 	Use_compressed_textures = ( d3d_texture_format_is_supported(D3DFMT_DXT1, adapter, mode) &&

@@ -34,7 +34,7 @@ typedef struct {
 #define DXT_STATIC				(1<<2)
 #define DXT_CUBEMAP				(1<<3)
 
-void gr_d3d_bm_free_data(int n);
+void gr_d3d_bm_free_data(int n, bool release);
 void gr_d3d_bm_create(int n);
 int gr_d3d_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp = NULL, int *w = 0, int *h = 0, int *bpp = 0, ubyte *c_type = 0, int *mm_lvl = 0, int *size = 0);
 void gr_d3d_bm_init(int n);
