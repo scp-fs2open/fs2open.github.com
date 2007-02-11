@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/StaticRand.h $
- * $Revision: 2.5 $
- * $Date: 2005-08-31 06:25:27 $
+ * $Revision: 2.6 $
+ * $Date: 2007-02-11 22:46:39 $
  * $Author: Goober5000 $
  *
  * header for Static Random functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/08/31 06:25:27  Goober5000
+ * fix a function prototype to match its counterpart in vecmat.h
+ * --Goober5000
+ *
  * Revision 2.4  2005/07/13 03:15:50  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -55,6 +59,8 @@
 */
 
 #ifndef _STATIC_RAND_H
+
+#include "globalincs/pstypes.h"
 
 #define	SEMIRAND_MAX_LOG	4
 #define	SEMIRAND_MAX		(2 << SEMIRAND_MAX_LOG)	//	Do not change this!  Change SEMIRAND_MAX_LOG!
