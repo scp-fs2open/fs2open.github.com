@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/SubsysDamage.h $
- * $Revision: 2.3 $
- * $Date: 2005-11-24 08:46:10 $
+ * $Revision: 2.4 $
+ * $Date: 2007-02-11 21:42:41 $
  * $Author: Goober5000 $
  *
  * Header file for various subystem damage defines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/11/24 08:46:10  Goober5000
+ * * cleaned up mission_do_departure
+ *   * fixed a hidden crash (array index being -1; would only
+ * be triggered for ships w/o subspace drives under certain conditions)
+ *   * removed finding a new fighterbay target because it might screw up missions
+ *   * improved clarity, code flow, and readability :)
+ * * added custom AI flag for disabling warpouts if navigation subsystem fails
+ * --Goober5000
+ *
  * Revision 2.2  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -56,6 +65,7 @@
 /////////////////////////////////////////
 // engines
 /////////////////////////////////////////
+#define SHIP_MIN_ENGINES_FOR_FULL_SPEED	0.5f	// % engine strength below which ships start slowing down
 #define SHIP_MIN_ENGINES_TO_WARP		0.3f	// % engine strength required to engage warp
 #define ENGINE_MIN_STR					0.15f	// if engines are below this level, still contribute this percent to total
 												// (unless destroyed, then contribute none).

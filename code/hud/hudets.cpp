@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.22 $
- * $Date: 2007-02-11 21:26:34 $
+ * $Revision: 2.23 $
+ * $Date: 2007-02-11 21:42:41 $
  * $Author: Goober5000 $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2007/02/11 21:26:34  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.21  2007/01/14 14:03:32  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -442,7 +445,7 @@ void update_ets(object* objp, float fl_frametime)
 
 	// don't let engine strength affect max speed when playing on lowest skill level
 	if ( (objp != Player_obj) || (Game_skill_level > 0) ) {
-		if ( strength < 0.5 ) {
+		if ( strength < SHIP_MIN_ENGINES_FOR_FULL_SPEED ) {
 			ship_p->current_max_speed *= fl_sqrt(strength);
 		}
 	}
