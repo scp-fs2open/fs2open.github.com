@@ -612,7 +612,9 @@ static std::vector<batch_item> geometry_map;
 
 uint find_good_batch_item(int texture, int flags, int alpha)
 {
-	for (uint i = 0; i < geometry_map.size(); i++) {
+	uint max_size = geometry_map.size();
+
+	for (uint i = 0; i < max_size; i++) {
 		if (geometry_map[i].texture == texture && geometry_map[i].tmap_flags == flags && geometry_map[i].alpha_mode == alpha)
 			return i;
 	}
@@ -701,8 +703,9 @@ void batch_render_bitmaps()
 
 void batch_render_all()
 {
-	for (uint i = 0; i < geometry_map.size(); i++) {
+	uint map_size = geometry_map.size();
 
+	for (uint i = 0; i < map_size; i++) {
 		if ( !geometry_map[i].need_to_render() )
 			continue;
 
