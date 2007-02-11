@@ -10,13 +10,21 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.86.2.8 $
- * $Date: 2007-02-11 09:51:21 $
- * $Author: taylor $
+ * $Revision: 2.86.2.9 $
+ * $Date: 2007-02-11 20:26:00 $
+ * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86.2.8  2007/02/11 09:51:21  taylor
+ * remove some dead code
+ * better texture memory handling (a work in-progress)
+ * new image finding/loading
+ * get rid of -pcx32 and -jpgtga
+ * change the game_busy() reporting during bitmap page-in to only catch one frame of an animation
+ * fix numerous little bugs in gropenglbmpman relating to -img2dds
+ *
  * Revision 2.86.2.7  2007/01/07 12:07:40  taylor
  * fix bm_page_in_texture() so that it will load all frames of an animation (caused slowdowns in-game with it)
  *
@@ -899,6 +907,12 @@
  */
 
 #include <ctype.h>
+
+#include "globalincs/pstypes.h"
+
+#ifdef _WIN32
+#include <windows.h>	// for MAX_PATH
+#endif
 
 #include "bmpman/bmpman.h"
 #include "pcxutils/pcxutils.h"
