@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.400 $
- * $Date: 2007-02-10 06:39:43 $
+ * $Revision: 2.401 $
+ * $Date: 2007-02-11 06:19:05 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.400  2007/02/10 06:39:43  Goober5000
+ * new feature: shield generators that control whether the shield is up
+ *
  * Revision 2.399  2007/02/10 03:20:25  Goober5000
  * small tweak
  *
@@ -3743,7 +3746,7 @@ strcpy(parse_error_text, temp_error);
 
 			// check various ship flags
 			if (!stricmp(NOX("no_collide"), ship_strings[i]))
-				sip->flags &= ~SIF_DO_COLLISION_CHECK;
+				sip->flags |= SIF_NO_COLLIDE;
 			else if (!stricmp(NOX("player_ship"), ship_strings[i]))
 				sip->flags |= SIF_PLAYER_SHIP;
 			else if (!stricmp(NOX("default_player_ship"), ship_strings[i]))

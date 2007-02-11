@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.33 $
- * $Date: 2006-11-06 05:59:36 $
- * $Author: taylor $
+ * $Revision: 1.34 $
+ * $Date: 2007-02-11 06:19:05 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2006/11/06 05:59:36  taylor
+ * add "Render full detail" support to the lab as well
+ *
  * Revision 1.32  2006/09/11 06:08:09  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -134,13 +137,13 @@ void set_ship_flags_ship(ship_info *sip)
 	soc[i++]->SetFlag(&sip->flags, SIF_BIG_DAMAGE);
 	soc[i++]->SetFlag(&sip->flags, SIF_HAS_AWACS);
 	soc[i++]->SetFlag(&sip->flags, SIF_SHIP_CLASS_DONT_COLLIDE_INVIS);
-	soc[i++]->SetFlag(&sip->flags, SIF_DO_COLLISION_CHECK);
+	soc[i++]->SetFlag(&sip->flags, SIF_NO_COLLIDE);
 	soc[i++]->SetFlag(&sip->flags, SIF_PLAYER_SHIP);
 	soc[i++]->SetFlag(&sip->flags, SIF_DEFAULT_PLAYER_SHIP);
 	soc[i++]->SetFlag(&sip->flags, SIF_BALLISTIC_PRIMARIES);
-	soc[i++]->SetFlag(&sip->flags, SIF2_FLASH);
-	soc[i++]->SetFlag(&sip->flags, SIF2_SURFACE_SHIELDS);
-	soc[i++]->SetFlag(&sip->flags, SIF2_SHOW_SHIP_MODEL);
+	soc[i++]->SetFlag(&sip->flags2, SIF2_FLASH);
+	soc[i++]->SetFlag(&sip->flags2, SIF2_SURFACE_SHIELDS);
+	soc[i++]->SetFlag(&sip->flags2, SIF2_SHOW_SHIP_MODEL);
 	soc[i++]->SetFlag(&sip->flags, SIF_IN_TECH_DATABASE);
 	soc[i++]->SetFlag(&sip->flags, SIF_IN_TECH_DATABASE_M);
 
@@ -206,7 +209,7 @@ void ship_flags_window(Button *caller)
 	y += soc[i++]->GetHeight() + 10;
 	soc[i] = (Checkbox*) cwp->AddChild(new Checkbox("NO COLLIDE INVISIBLE", 0, y));
 	y += soc[i++]->GetHeight() + 10;
-	soc[i] = (Checkbox*) cwp->AddChild(new Checkbox("DO COLLISION CHECK", 0, y));
+	soc[i] = (Checkbox*) cwp->AddChild(new Checkbox("NO COLLIDE", 0, y));
 	y += soc[i++]->GetHeight() + 10;
 	soc[i] = (Checkbox*) cwp->AddChild(new Checkbox("PLAYER SHIP", 0, y));
 	y += soc[i++]->GetHeight() + 10;
