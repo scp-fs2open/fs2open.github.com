@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.157.2.20 $
- * $Date: 2007-01-07 12:13:57 $
+ * $Revision: 2.157.2.21 $
+ * $Date: 2007-02-11 18:46:30 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157.2.20  2007/01/07 12:13:57  taylor
+ * fix model vertex normal data that was being read/written incorrectly under OS X (still don't know why this was a problem, but this fixes it)
+ *
  * Revision 2.157.2.19  2006/12/26 05:27:54  taylor
  * remove unneeded header
  *
@@ -2113,10 +2116,10 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			gr_set_color( 0, 255, 0 );
 			g3_draw_poly( nv, Interp_list, 0 );		
 		} else if (Interp_thrust_scale_subobj)	{
-			if ((Interp_thrust_bitmap >= 0)	&& (Interp_thrust_scale > 0.0f) && !Pofview_running) {
+			if ( (Interp_thrust_bitmap >= 0) && (Interp_thrust_scale > 0.0f) ) {
 				gr_set_bitmap( Interp_thrust_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );
 				g3_draw_poly( nv, Interp_list, TMAP_FLAG_TEXTURED );		
-			} else if(!Pofview_running){
+			} else {
 				if ( !(Interp_flags & MR_SHOW_OUTLINE_PRESET) )	{
 					gr_set_color( 128, 128, 255 );
 				}
