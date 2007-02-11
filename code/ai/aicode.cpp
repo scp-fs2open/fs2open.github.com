@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.97 $
- * $Date: 2007-02-10 06:39:43 $
- * $Author: Goober5000 $
+ * $Revision: 1.98 $
+ * $Date: 2007-02-11 09:47:35 $
+ * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.97  2007/02/10 06:39:43  Goober5000
+ * new feature: shield generators that control whether the shield is up
+ *
  * Revision 1.96  2007/01/15 01:37:37  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -9002,7 +9005,8 @@ void ai_chase()
 		if (esip->class_type > -1)
 		{
 			ship_type_info *stp = &Ship_types[sip->class_type];
-			for(uint i = 0; i < stp->ai_actively_pursues.size(); i++)
+			uint ap_size = stp->ai_actively_pursues.size();
+			for(uint i = 0; i < ap_size; i++)
 			{
 				if(stp->ai_actively_pursues[i] == esip->class_type) {
 					go_after_it = true;

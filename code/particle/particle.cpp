@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.24 $
- * $Date: 2007-02-03 20:10:17 $
- * $Author: phreak $
+ * $Revision: 2.25 $
+ * $Date: 2007-02-11 09:47:35 $
+ * $Author: taylor $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2007/02/03 20:10:17  phreak
+ * the particle batcher needs to work with static (non-animated) textures as well
+ *
  * Revision 2.23  2006/12/28 00:59:48  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -551,12 +554,13 @@ void particle_create( particle_info *pinfo )
 		return;
 #endif
 
-
+#ifndef NDEBUG
 	if (Particles.size() > (uint)Num_particles_hwm) {
 		Num_particles_hwm = (int)Particles.size();
 
 		nprintf(("Particles", "Num_particles high water mark = %i\n", Num_particles_hwm));
 	}
+#endif
 
 	// Init the particle data
 	memset( &new_particle, 0, sizeof(particle) );
@@ -647,12 +651,15 @@ void particle_move_all(float frametime)
 
 	MONITOR_INC(NumParticles, Particles.size());
 
-	for (uint i = 0; i < Particles.size(); i++) {
+	uint part_size = Particles.size();
+
+	for (uint i = 0; i < part_size; i++) {
 		p = &Particles[i];
 
 		// bogus attached objnum
 		if (p->attached_objnum >= MAX_OBJECTS) {
 			Particles.erase( Particles.begin() + i );
+			part_size--;
 			continue;
 		}
 
@@ -661,6 +668,7 @@ void particle_move_all(float frametime)
 		if ( p->age > p->max_life )	{
 			// If it's time expired remove it
 			Particles.erase( Particles.begin() + i );
+			part_size--;
 			continue;
 		}
 
@@ -669,6 +677,7 @@ void particle_move_all(float frametime)
 			// if the signature has changed, kill it
 			if (p->attached_sig != Objects[p->attached_objnum].signature) {
 				Particles.erase( Particles.begin() + i );
+				part_size--;
 				continue;
 			}
 		}
@@ -716,7 +725,9 @@ void particle_render_all()
 	int nclipped = 0;
 
 
-	for (i = 0; i < Particles.size(); i++) {
+	uint part_size = Particles.size();
+
+	for (i = 0; i < part_size; i++) {
 		p = &Particles[i];
 
 	//	n++;
