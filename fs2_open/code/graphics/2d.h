@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.79.2.4 $
- * $Date: 2006-12-26 05:26:12 $
+ * $Revision: 2.79.2.5 $
+ * $Date: 2007-02-11 09:51:21 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79.2.4  2006/12/26 05:26:12  taylor
+ * remove some old stuff that we either don't use or don't need any longer
+ *
  * Revision 2.79.2.3  2006/10/24 13:24:12  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
@@ -1051,7 +1054,7 @@ typedef struct screen {
 	void (*gf_set_clear_color)(int r, int g, int b);
 
 	// Here be the bitmap functions
-	void (*gf_bm_free_data)(int n);
+	void (*gf_bm_free_data)(int n, bool release);
 	void (*gf_bm_create)(int n);
 	int (*gf_bm_load)(ubyte type, int n, char *filename, CFILE *img_cfp, int *w, int *h, int *bpp, ubyte *c_type, int *mm_lvl, int *size);
 	void (*gf_bm_init)(int n);
