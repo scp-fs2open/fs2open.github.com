@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.9 $
- * $Date: 2006-11-16 01:09:00 $
+ * $Revision: 2.66.2.10 $
+ * $Date: 2007-02-11 09:39:09 $
  * $Author: taylor $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.9  2006/11/16 01:09:00  taylor
+ * handle knossos warp effect flip in a slightly better, slighter safer way (Mantis bug #1048, plus a couple that weren't filed)
+ *
  * Revision 2.66.2.8  2006/11/01 18:46:22  taylor
  * Ooopps!  ;)
  *
@@ -2294,7 +2297,8 @@ static int get_split_ship()
 	split_ship addition;
 
 	// check for an existing free slot
-	for (i = 0; i < (int)Split_ships.size(); i++) {
+	int max_size = (int)Split_ships.size();
+	for (i = 0; i < max_size; i++) {
 		if (!Split_ships[i].used)
 			return i;
 	}
@@ -2615,7 +2619,6 @@ int get_sound_time_played(int snd_id, int handle)
 // when sound has played >= 750, sound is stopped and new instance is started 
 void do_sub_expl_sound(float radius, vec3d* sound_pos, int* sound_handle)
 {
-	#ifndef NO_SOUND
 	int sound_index, handle;
 	// multiplier for range (near and far distances) to apply attenuation
 	float sound_range = 1.0f + 0.0043f*radius;
@@ -2645,7 +2648,6 @@ void do_sub_expl_sound(float radius, vec3d* sound_pos, int* sound_handle)
 		//mprintf(("time %f, cur sound %d time_played %d num sounds %d\n", f2fl(Missiontime), handle_index, get_sound_time_played(Snds[sound_index].id, handle), snd_num_playing() ));
 		sound_handle[handle_index] = snd_play_3d( &Snds[sound_index], sound_pos, &View_position, 0.0f, NULL, 0, 0.6f, SND_PRIORITY_MUST_PLAY, NULL, sound_range );
 	}
-	#endif  // ifndef NO_SOUND
 }
 
 // maybe create a fireball along model clip plane
@@ -3455,9 +3457,7 @@ void engine_wash_ship_process(ship *shipp)
 		// if we had no wash before now, add the wash object sound
 		if(started_with_no_wash){
 			if(shipp != Player_ship){
-#ifndef NO_SOUND			
 				obj_snd_assign(shipp->objnum, SND_ENGINE_WASH, &vmd_zero_vector, 1);
-#endif
 			} else {				
 				Player_engine_wash_loop = snd_play_looping( &Snds[SND_ENGINE_WASH], 0.0f , -1, -1, 1.0f);
 			}
@@ -3466,9 +3466,7 @@ void engine_wash_ship_process(ship *shipp)
 	// if we've got no wash, kill any wash object sounds from this guy
 	else {
 		if(shipp != Player_ship){
-#ifndef NO_SOUND			
 			obj_snd_delete_type(shipp->objnum, SND_ENGINE_WASH);
-#endif
 		} else {
 			snd_stop(Player_engine_wash_loop);
 			Player_engine_wash_loop = -1;
