@@ -1,10 +1,13 @@
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.cpp $
- * $Revision: 2.3 $
- * $Date: 2007-01-10 01:44:39 $
+ * $Revision: 2.4 $
+ * $Date: 2007-02-11 18:25:16 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2007/01/10 01:44:39  taylor
+ * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
+ *
  * Revision 2.2  2006/09/24 22:55:17  taylor
  * more standalone server fixes:
  *  - add some basic bmpman functionality to grstub, since it needs to do something at least
@@ -618,7 +621,7 @@ void gr_stub_bm_create(int n)
 {
 }
 
-void gr_stub_bm_free_data(int n)
+void gr_stub_bm_free_data(int n, bool release)
 {
 }
 
