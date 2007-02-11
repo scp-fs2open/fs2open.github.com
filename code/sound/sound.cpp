@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.37 $
- * $Date: 2006-10-06 04:56:05 $
- * $Author: wmcoolmon $
+ * $Revision: 2.38 $
+ * $Date: 2007-02-11 18:20:19 $
+ * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.37  2006/10/06 04:56:05  wmcoolmon
+ * Fix OGG bug where sound files were always allocated 16 seconds of wavedata
+ *
  * Revision 2.36  2006/09/11 06:45:40  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -703,37 +706,40 @@ void snd_spew_debug_info()
 //int snd_load( char *filename, int hardware, int use_ds3d, int *sig)
 int snd_load( game_snd *gs, int allow_hardware_load )
 {
-	int				n, rc, type;
+	int				n, type;
 	sound_info		*si;
-	sound				*snd;
+	sound			*snd;
 	WAVEFORMATEX	*header = NULL;
+	int				rc, FileSize, FileOffset;
+	char			fullpath[MAX_PATH];
+	char			filename[MAX_FILENAME_LEN];
+	const int		NUM_EXT = 2;
+	const char		*audio_ext[NUM_EXT] = { ".ogg", ".wav" };
 
-	if ( gs->filename == NULL || gs->filename[0] == 0 )
+
+	if ( !ds_initialized )
 		return -1;
 
-	for (n=0; n<Num_sounds; n++ )	{
-		if (!(Sounds[n].flags & SND_F_USED))
+	if ( !VALID_FNAME(gs->filename) )
+		return -1;
+
+	for (n = 0; n < Num_sounds; n++) {
+		if ( !(Sounds[n].flags & SND_F_USED) ) {
 			break;
-		else if ( !stricmp( Sounds[n].filename, gs->filename )) {
+		} else if ( !stricmp( Sounds[n].filename, gs->filename) ) {
 			gs->sig = Sounds[n].sig;
 			return n;
 		}
 	}
 
-	if ( !ds_initialized )
-		return -1;
-
-	if(n==Num_sounds)
-	{
+	if (n == Num_sounds) {
 		Sounds.resize(n + 1);
 		Num_sounds++;	//Yeah, this would be a good idea
 		snd = &Sounds[n];
 		snd->sid = -1;
 		snd->hid = -1;
 		snd->flags &=  ~SND_F_USED;
-	}
-	else
-	{
+	} else {
 		snd = &Sounds[n];
 	}
 
@@ -742,11 +748,26 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	si->data = NULL;
 	si->size = 0;
 
-	CFILE * fp = cfopen(gs->filename, "rb");
+	// strip the extension from the filename and try to open any extension
+	strcpy( filename, gs->filename );
+	char *p = strchr(filename, '.');
+	if ( p ) *p = 0;
+
+	rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+
+	if (rc < 0)
+		return -1;
+
+	// open the file
+	CFILE *fp = cfopen_special(fullpath, "rb", FileSize, FileOffset);
+
+	// ok, we got it, so set the proper filename for logging purposes
+	SAFE_STRCAT(filename, audio_ext[rc], sizeof(filename));
+
 
 	// ds_parse_sound() will do a NULL check on fp for us
-	if ( ds_parse_sound(fp, &si->data, &si->size, &header, &si->ogg_info) == -1 ) {
-		nprintf(("Sound", "Could not read sound file %s\n", gs->filename));
+	if ( ds_parse_sound(fp, &si->data, &si->size, &header, (rc == 0), &si->ogg_info) == -1 ) {
+		nprintf(("Sound", "Could not read sound file %s\n", filename));
  		return -1;
 	}		
 
@@ -798,7 +819,8 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	gs->id_sig = snd->sig;
 	gs->id = n;
 
-	nprintf(("Sound", "Loaded %s\n", gs->filename));
+	nprintf(("Sound", "Loaded %s\n", filename));
+
 	return n;
 }
 
@@ -1788,4 +1810,42 @@ int sound_env_supported()
 void snd_do_frame()
 {
 	ds_do_frame();
+}
+
+// return the number of samples per pre-defined measure in a piece of audio
+int snd_get_samples_per_measure(char *filename, float num_measures)
+{
+	sound_info si;
+	uint total_bytes = 0;
+	int bytes_per_measure = 0;
+
+	// although this function doesn't require sound to work, if sound is disabled then this is useless
+	if ( !Sound_enabled )
+		return -1;
+
+	if ( !VALID_FNAME(filename) )
+		return -1;
+
+	if (num_measures <= 0.0f)
+		return -1;
+
+
+	if ( ds_parse_sound_info(filename, &si) ) {
+		nprintf(("Sound", "Could not read sould file '%s' for SPM check!\n", filename));
+		return -1;
+	}
+
+	total_bytes = (uint)si.size;
+
+	// if it's ADPCM then we have to account for the uncompressed size
+	if (si.format == WAVE_FORMAT_ADPCM) {
+		total_bytes *= 16;	// we always decode APDCM to 16-bit (for OpenAL at least)
+		total_bytes /= si.bits;
+		total_bytes *= 2;	// this part isn't at all accurate though
+	}
+
+	bytes_per_measure = fl2i(total_bytes / num_measures);
+
+	// ok, now return the samples per measure (which is half of bytes_per_measure)
+	return (bytes_per_measure / 2);
 }

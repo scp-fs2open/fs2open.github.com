@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.44 $
- * $Date: 2007-01-15 01:37:37 $
- * $Author: wmcoolmon $
+ * $Revision: 2.45 $
+ * $Date: 2007-02-11 18:20:18 $
+ * $Author: taylor $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2007/01/15 01:37:37  wmcoolmon
+ * Fix CVS & correct various warnings under MSVC 2003
+ *
  * Revision 2.43  2006/12/28 00:59:26  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -570,6 +573,15 @@ void event_music_init()
 
 	// look for any modular tables
 	parse_modular_table(NOX("*-mus.tbm"), event_music_parse_musictbl);
+
+	for (i = 0; i < Num_soundtracks; i++) {
+		for (j = 0; j < Soundtracks[i].num_patterns; j++) {
+			int spm = snd_get_samples_per_measure(Soundtracks[i].pattern_fnames[j], Pattern_num_measures[i][j]);
+
+			if (spm > 0)
+				Pattern_samples_per_measure[i][j] = spm;
+		}
+	}
 
 	Event_music_inited = TRUE;
 	Event_music_begun = FALSE;
@@ -1400,7 +1412,7 @@ bool parse_soundtrack_line(int strack_idx, int pattern_idx)
 			break;
 		}
 
-		
+
 		if ( count == 0 ) {
 			Pattern_num_measures[strack_idx][pattern_idx] = (float)atof(token);	//Num_measures
 		} else if(count == 1) {
