@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/wing_editor.cpp $
- * $Revision: 1.5 $
- * $Date: 2006-06-04 01:01:52 $
- * $Author: Goober5000 $
+ * $Revision: 1.6 $
+ * $Date: 2007-02-11 09:31:11 $
+ * $Author: taylor $
  *
  * Wing editor dialog box handler code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/06/04 01:01:52  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 1.4  2006/05/30 05:37:29  Goober5000
  * add capability to restrict arrival/departure paths
  * (FRED only; FS2 implementation to follow)
@@ -1513,7 +1517,7 @@ void wing_editor::OnSquadLogo()
 	UpdateData(TRUE);
 
 	// get list of squad images
-	z = cfile_push_chdir(CF_TYPE_SQUAD_IMAGES_MAIN);
+	z = cfile_push_chdir(CF_TYPE_SQUAD_IMAGES);
 	CFileDialog dlg(TRUE, "pcx", pcx_filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Pcx Files (*.pcx)|*.pcx");
 
 	// if we have a result

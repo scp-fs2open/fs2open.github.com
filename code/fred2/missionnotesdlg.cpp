@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.10 $
- * $Date: 2007-01-07 01:00:18 $
- * $Author: Goober5000 $
+ * $Revision: 1.11 $
+ * $Date: 2007-02-11 09:31:11 $
+ * $Author: taylor $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2007/01/07 01:00:18  Goober5000
+ * convert a mission variable to a mission flag
+ *
  * Revision 1.9  2007/01/07 00:01:28  Goober5000
  * add a feature for specifying the source of Command messages
  *
@@ -808,7 +811,7 @@ void CMissionNotesDlg::OnSquadLogo()
 	UpdateData(TRUE);
 
 	// get list of squad images
-	z = cfile_push_chdir(CF_TYPE_SQUAD_IMAGES_MAIN);
+	z = cfile_push_chdir(CF_TYPE_SQUAD_IMAGES);
 	CFileDialog dlg(TRUE, "pcx", pcx_filename, OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Pcx Files (*.pcx)|*.pcx");
 
 	// if we have a result
