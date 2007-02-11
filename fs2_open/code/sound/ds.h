@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.20 $
- * $Date: 2006-07-06 22:02:11 $
+ * $Revision: 2.21 $
+ * $Date: 2007-02-11 18:20:19 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2006/07/06 22:02:11  taylor
+ * some better handling of OpenAL errors during init
+ *
  * Revision 2.19  2006/06/27 04:58:58  taylor
  * sync up current OpenAL changes
  *  - "SoundDeviceOAL" reg option for user specified sound device (used instead of "Soundcard" for OpenAL)
@@ -322,7 +325,8 @@ extern int							ds_initialized;
 int	ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits);
 void	ds_close();
 void	ds_get_primary_format(WAVEFORMATEX *wfx, DWORD sample_rate, WORD sample_bits);
-int	ds_parse_sound(CFILE *fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, OggVorbis_File *ovf);
+int	ds_parse_sound(CFILE *fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, bool ogg = false, OggVorbis_File *ovf = NULL);
+int	ds_parse_sound_info(char *real_filename, sound_info *s_info);
 int	ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info *si, int flags);
 void	ds_unload_buffer(int sid, int hid);
 int	ds_play(int sid, int hid, int snd_id, int priority, int volume, int pan, int looping, bool is_voice_msg = false);
