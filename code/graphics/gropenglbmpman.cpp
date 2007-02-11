@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.18.2.6 $
- * $Date: 2006-08-27 18:03:29 $
+ * $Revision: 1.18.2.7 $
+ * $Date: 2007-02-11 09:51:21 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18.2.6  2006/08/27 18:03:29  taylor
+ * forgot an extension check (was this the background corruption bug???)
+ *
  * Revision 1.18.2.5  2006/06/18 23:38:06  taylor
  * yeah, I'm not at the top of my game today  ;)
  *
@@ -177,14 +180,14 @@ int get_num_mipmap_levels(int w, int h)
 }
 
 // anything API specific to freeing bm data
-void gr_opengl_bm_free_data(int n)
+void gr_opengl_bm_free_data(int n, bool release)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
 	// might as well free up the on card texture data too in order to get rid
-	// of old interface stuff but don't free USER types since we can reuse
-	// ANI slots for faster and less resource intensive rendering - taylor
-	if (bm_bitmaps[n].type != BM_TYPE_USER)
+	// of old interface stuff but don't free USER types, unless it's a total release,
+	// since we can reuse ANI slots for faster and less resource intensive rendering
+	if ( release || (bm_bitmaps[n].type != BM_TYPE_USER) )
 		opengl_free_texture_slot( n );
 
 	if ( (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_STATIC) || (bm_bitmaps[n].type == BM_TYPE_RENDER_TARGET_DYNAMIC) )
@@ -254,7 +257,7 @@ int gr_opengl_bm_load(ubyte type, int n, char *filename, CFILE *img_cfp, int *w,
 				break;
 
 			default:
-				Error(LOCATION, "bad DDS file compression.  Not using DXT1,3,5 %s", filename);
+				Error(LOCATION, "Bad DDS file compression! Not using DXT1,3,5: %s", filename);
 				return -1;
 		}
 	}
@@ -393,7 +396,7 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 			frame_data = anim_get_next_raw_buffer(the_anim_instance, 0, 0, bm->bpp);
 		}
 
-		//mprintf(( "Checksum = %d\n", be->palette_checksum ));
+		compressed_data = NULL;
 	}
 
 	if (num_mipmaps > 1) {
@@ -479,12 +482,12 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 	// now for the attempt to compress the data
 	out_size = opengl_compress_image(&compressed_data, data, bmp->w, bmp->h, alpha, num_mipmaps);
 
-	if (out_size == 0) {
-		if (data != NULL) {
-			vm_free(data);
-			data = NULL;
-		}
+	if (data != NULL) {
+		vm_free(data);
+		data = NULL;
+	}
 
+	if (out_size == 0) {
 		if (compressed_data != NULL) {
 			vm_free(compressed_data);
 			compressed_data = NULL;
@@ -512,10 +515,10 @@ static int opengl_bm_lock_compress( int handle, int bitmapnum, bitmap_entry *be,
 
 	bm_update_memory_used( bitmapnum, out_size );
 
-	vm_free(data);
-
 	return 0;
 }
+
+extern bool opengl_texture_slot_valid(int n, int handle);
 
 // Lock an image files data into memory
 int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, ubyte flags )
@@ -527,40 +530,34 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 	bitmap_entry *be = &bm_bitmaps[bitmapnum];
 	bitmap *bmp = &be->bm;
 
-	if (Is_standalone) {
-		true_bpp = 8;
-	}
-	// not really sure how well this is going to work out in every case but...
-	else if ( Cmdline_jpgtga && (bmp->true_bpp > bpp) ) {
+	Assert( !Is_standalone );
+
+	if (bmp->true_bpp > bpp)
 		true_bpp = bmp->true_bpp;
-	} else {
+	else
 		true_bpp = bpp;
-	}
 
 	// don't do a bpp check here since it could be different in OGL - taylor
-	if ( (bmp->data == 0) ) {
+	if ( (bmp->data == 0) && !opengl_texture_slot_valid(bitmapnum, handle) ) {
 		Assert(be->ref_count == 1);
 
-		if ( be->type != BM_TYPE_USER ) {
-			if ( bmp->data == 0 ) {
-				nprintf (("BmpMan","Loading %s for the first time.\n", be->filename));
-			}
+		if (be->type != BM_TYPE_USER) {
+			if (bmp->data == 0)
+				nprintf (("BmpMan", "Loading %s for the first time.\n", be->filename));
 		}
 
 		if ( !Bm_paging )	{
-			if ( be->type != BM_TYPE_USER ) {							
-				nprintf(( "Paging", "Loading %s (%dx%dx%d)\n", be->filename, bmp->w, bmp->h, true_bpp ));
-			}
+			if (be->type != BM_TYPE_USER)						
+				nprintf(("Paging", "Loading %s (%dx%dx%d)\n", be->filename, bmp->w, bmp->h, true_bpp));
 		}
 
 		// select proper format
-		if(flags & BMP_AABITMAP){
+		if (flags & BMP_AABITMAP)
 			BM_SELECT_ALPHA_TEX_FORMAT();
-		} else if(flags & BMP_TEX_ANY){
+		else if (flags & BMP_TEX_ANY)
 			BM_SELECT_TEX_FORMAT();					
-		} else {
+		else
 			BM_SELECT_SCREEN_FORMAT();
-		}
 
 		// make sure we use the real graphic type for EFFs
 		if ( be->type == BM_TYPE_EFF ) {
@@ -571,7 +568,8 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 
 		try_compress = (Cmdline_img2dds && Texture_compression_available && is_power_of_two(bmp->w, bmp->h) && !(flags & BMP_AABITMAP) && !Is_standalone);
 
-		switch ( c_type ) {
+		switch ( c_type )
+		{
 			case BM_TYPE_PCX:
 				if (try_compress && (true_bpp >= 16)) {
 					if ( !opengl_bm_lock_compress(handle, bitmapnum, be, bmp, true_bpp, flags) ) {
@@ -634,12 +632,10 @@ int gr_opengl_bm_lock( char *filename, int handle, int bitmapnum, ubyte bpp, uby
 
 		// always go back to screen format
 		BM_SELECT_SCREEN_FORMAT();
-	}
 
-	// make sure we actually did something
-	if ( !(bmp->data) ) {
-		// crap, bail...
-		return -1;
+		// make sure we actually did something
+		if ( !(bmp->data) )
+			return -1;
 	}
 
 	return 0;
