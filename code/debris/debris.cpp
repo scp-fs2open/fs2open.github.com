@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.29 $
- * $Date: 2006-12-28 00:59:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.30 $
+ * $Date: 2007-02-11 09:22:29 $
+ * $Author: taylor $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2006/12/28 00:59:19  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.28  2006/09/11 06:45:39  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -620,9 +623,7 @@ void debris_process_post(object * obj, float frame_time)
 		radar_plot_object( obj );
 
 		if ( timestamp_elapsed(db->sound_delay) ) {
-#ifndef NO_SOUND
 			obj_snd_assign(objnum, SND_DEBRIS, &vmd_zero_vector, 0);
-#endif
 			db->sound_delay = 0;
 		}
 	} else {
@@ -823,7 +824,12 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, vec3d
 			break;
 	}
 
-	if ( n == MAX_DEBRIS_PIECES ) {
+	if (n == MAX_DEBRIS_PIECES) {
+		n = debris_find_oldest();
+
+		if (n >= 0)
+			debris_start_death_roll(&Objects[Debris[n].objnum], &Debris[n]);
+
 		nprintf(("Warning","Frame %i: Could not create debris, no more slots left\n", Framecount));
 		return NULL;
 	}
