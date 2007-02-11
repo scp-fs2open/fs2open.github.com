@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.17 $
- * $Date: 2005-12-29 08:08:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.17.2.1 $
+ * $Date: 2007-02-11 06:19:08 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2005/12/29 08:08:39  wmcoolmon
+ * Codebase commit, most notably including objecttypes.tbl
+ *
  * Revision 2.16  2005/10/09 09:13:29  wmcoolmon
  * Added warpin/warpout speed override values to ships.tbl
  *
@@ -743,11 +746,11 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	}
 
 	//	If either of these objects doesn't get collision checks, abort.
-	if (!(Ship_info[Ships[num].ship_info_index].flags & SIF_DO_COLLISION_CHECK)) {
+	if (Ship_info[Ships[num].ship_info_index].flags & SIF_NO_COLLIDE) {
 		return 0;
 	}
 
-	if (!(Ship_info[Ships[light_obj->instance].ship_info_index].flags & SIF_DO_COLLISION_CHECK)) {
+	if (Ship_info[Ships[light_obj->instance].ship_info_index].flags & SIF_NO_COLLIDE) {
 		return 0;
 	}
 
