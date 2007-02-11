@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.32 $
- * $Date: 2007-02-10 00:17:39 $
+ * $Revision: 2.243.2.33 $
+ * $Date: 2007-02-11 09:35:11 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.32  2007/02/10 00:17:39  taylor
+ * remove NO_SOUND
+ *
  * Revision 2.243.2.31  2007/02/06 01:27:33  Goober5000
  * remove obsolete and unused shield flag
  *
@@ -1838,9 +1841,6 @@ void game_show_framerate();			// draws framerate in lower right corner
 
 int Game_no_clear = 0;
 
-int Pofview_running = 0;
-int Nebedit_running = 0;
-
 typedef struct big_expl_flash {
 	float max_flash_intensity;	// max intensity
 	float cur_flash_intensity;	// cur intensity
@@ -2846,7 +2846,8 @@ void game_load_palette()
 //#define COUNT_ESTIMATE 3706
 //#define COUNT_ESTIMATE 1111
 //#define COUNT_ESTIMATE 2311
-#define COUNT_ESTIMATE 1250
+//#define COUNT_ESTIMATE 1250
+#define COUNT_ESTIMATE 425
 
 int Game_loading_callback_inited = 0;
 

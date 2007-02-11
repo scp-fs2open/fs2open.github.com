@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.35.2.7 $
- * $Date: 2006-12-07 17:53:08 $
+ * $Revision: 2.35.2.8 $
+ * $Date: 2007-02-11 09:35:11 $
  * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35.2.7  2006/12/07 17:53:08  taylor
+ * a little clean up for bits of code that isn't used
+ *
  * Revision 2.35.2.6  2006/11/15 00:36:08  taylor
  * various bits of little cleanup
  * get rid of some more compiler warnings
@@ -855,9 +858,8 @@ void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 //		pof_index = 0;
 //	}
 
-	if ( !strlen(asip->pof_files[asteroid_subtype]) || !stricmp(asip->pof_files[asteroid_subtype], NOX("none")) ) {
+	if ( !VALID_FNAME(asip->pof_files[asteroid_subtype]) )
 		return;
-	}
 
 	asip->model_num[asteroid_subtype] = model_load( asip->pof_files[asteroid_subtype], 0, NULL );
 
@@ -2176,8 +2178,8 @@ void asteroid_parse_tbl()
 	Asteroid_impact_explosion_ani = -1;
 	required_string("$Impact Explosion:");
 	stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
-	if ( stricmp(impact_ani_file,NOX("none")))
-	{
+
+	if ( VALID_FNAME(impact_ani_file) ) {
 		int num_frames;
 		Asteroid_impact_explosion_ani = bm_load_animation( impact_ani_file, &num_frames, NULL, 1);
 	}
