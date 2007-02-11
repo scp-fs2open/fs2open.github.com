@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.186 $
- * $Date: 2007-02-03 08:13:36 $
- * $Author: Goober5000 $
+ * $Revision: 2.187 $
+ * $Date: 2007-02-11 18:45:38 $
+ * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.186  2007/02/03 08:13:36  Goober5000
+ * d'oh... thanks phreak
+ *
  * Revision 2.185  2007/02/02 22:49:07  Goober5000
  * fixed two of Bobboau's bizarre bugs
  *
@@ -2144,10 +2147,10 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			gr_set_color( 0, 255, 0 );
 			g3_draw_poly( nv, Interp_list, 0 );		
 		} else if (Interp_thrust_scale_subobj)	{
-			if ((Interp_thrust_bitmap >= 0)	&& (Interp_thrust_scale > 0.0f) && !Pofview_running) {
+			if ( (Interp_thrust_bitmap >= 0) && (Interp_thrust_scale > 0.0f) ) {
 				gr_set_bitmap( Interp_thrust_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );
 				g3_draw_poly( nv, Interp_list, TMAP_FLAG_TEXTURED );		
-			} else if(!Pofview_running){
+			} else {
 				if ( !(Interp_flags & MR_SHOW_OUTLINE_PRESET) )	{
 					gr_set_color( 128, 128, 255 );
 				}

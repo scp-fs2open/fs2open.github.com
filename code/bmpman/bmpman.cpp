@@ -10,13 +10,20 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.97 $
- * $Date: 2007-02-11 18:18:51 $
+ * $Revision: 2.98 $
+ * $Date: 2007-02-11 18:45:38 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2007/02/11 18:18:51  taylor
+ * remove some dead code
+ * better texture memory handling (a work in-progress)
+ * new image finding/loading
+ * change the game_busy() reporting during bitmap page-in to only catch one frame of an animation
+ * fix numerous little bugs in gropenglbmpman relating to -img2dds
+ *
  * Revision 2.96  2007/01/15 01:37:37  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -993,7 +1000,7 @@ int bm_get_next_handle()
 
 // Frees a bitmaps data if it should, and
 // Returns true if bitmap n can free it's data.
-static void bm_free_data(int n, bool release)
+static void bm_free_data(int n, bool release = false)
 {
 	bitmap_entry	*be;
 	bitmap			*bmp;
