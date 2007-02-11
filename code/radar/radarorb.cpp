@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.23.2.1 $
- * $Date: 2007-02-10 00:16:57 $
+ * $Revision: 1.23.2.2 $
+ * $Date: 2007-02-11 09:12:12 $
  * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.1  2007/02/10 00:16:57  taylor
+ * phreak missed fixing this here when he fixed it in unstable
+ *
  * Revision 1.23  2006/04/12 22:23:41  taylor
  * compiler warning fixes to make GCC 4.1 shut the hell up
  *
@@ -133,6 +136,7 @@
 #include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "iff_defs/iff_defs.h"
+#include "jumpnode/jumpnode.h"
 
 extern float radx, rady;
 
@@ -318,36 +322,43 @@ void radar_plot_object_orb( object *objp )
 	}
 
 	// Apply object type filters	
-	switch ( objp->type ) {
-	case OBJ_SHIP:
-		// Place to cull ships, such as NavBuoys		
-		break;
+	switch (objp->type)
+	{
+		case OBJ_SHIP:
+			// Place to cull ships, such as NavBuoys		
+			break;
 		
-	case OBJ_JUMP_NODE:
-		// filter jump nodes here if required
-		break;
+		case OBJ_JUMP_NODE:
+		{
+			// don't plot hidden jump nodes
+			if ( objp->jnp->is_hidden() )
+				return;
 
-	case OBJ_WEAPON: {
-		// if not a bomb, return
-		if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
-			return;
+			// filter jump nodes here if required
+			break;
 		}
 
-		// if we don't attack the bomb, return
-		if ( !iff_x_attacks_y(Player_ship->team, obj_team(objp)) ) {
-			return;
+		case OBJ_WEAPON:
+		{
+			// if not a bomb, return
+			if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
+				return;
+
+			// if we don't attack the bomb, return
+			if ( !iff_x_attacks_y(Player_ship->team, obj_team(objp)) )
+				return;
+
+			// if a local ssm is in subspace, return
+			if (Weapons[objp->instance].lssm_stage == 3)
+				return;
+
+			break;
 		}
 
-		//if a local ssm is in subspace, return
-		if (Weapons[objp->instance].lssm_stage==3)
+		// if any other kind of object, don't show it on radar
+		default:
 			return;
-		break;
 	}
-
-	default:
-		return;			// if any other kind of object, don't want to show on radar
-		break;
-	} // end switch
 
 
 	// JAS -- new way of getting the rotated point that doesn't require this to be
