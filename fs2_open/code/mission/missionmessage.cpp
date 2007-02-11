@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.52.2.5 $
- * $Date: 2006-10-24 13:36:05 $
+ * $Revision: 2.52.2.6 $
+ * $Date: 2007-02-11 09:07:33 $
  * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52.2.5  2006/10/24 13:36:05  taylor
+ * fix Personas memory leak (not really an issue, I just got tired of seeing it in the Valgrind reports)
+ *
  * Revision 2.52.2.4  2006/09/30 21:58:05  Goober5000
  * more flexible checking of generic messages
  *
@@ -1394,13 +1397,18 @@ void message_load_wave(int index, const char *filename)
 		return;
 	}
 
+	if ( !Sound_enabled ) {
+		Message_waves[index].num = -1;
+		return;
+	}
+
 	game_snd tmp_gs;
 	memset(&tmp_gs, 0, sizeof(game_snd));
 	strcpy( tmp_gs.filename, filename );
 	Message_waves[index].num = snd_load( &tmp_gs, 0 );
-	if ( Message_waves[index].num == -1 ) {
-		nprintf (("messaging", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name ));
-	}
+
+	if (Message_waves[index].num == -1)
+		nprintf(("messaging", "Cannot load message wave: %s.  Will not play\n", Message_waves[index].name));
 }
 
 // Goober5000
