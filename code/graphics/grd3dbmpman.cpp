@@ -49,7 +49,7 @@ static inline int is_power_of_two(int w, int h)
 }
 
 // anything API specific to freeing bm data
-void gr_d3d_bm_free_data(int n)
+void gr_d3d_bm_free_data(int n, bool release)
 {
 	Assert( (n >= 0) && (n < MAX_BITMAPS) );
 
