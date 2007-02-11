@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.21 $
- * $Date: 2007-01-08 00:50:58 $
+ * $Revision: 2.22 $
+ * $Date: 2007-02-11 06:19:05 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2007/01/08 00:50:58  Goober5000
+ * remove WMC's limbo code, per our discussion a few months ago
+ * this will later be handled by copying ship stats using sexps or scripts
+ *
  * Revision 2.20  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -757,11 +761,11 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	}
 
 	//	If either of these objects doesn't get collision checks, abort.
-	if (!(Ship_info[Ships[num].ship_info_index].flags & SIF_DO_COLLISION_CHECK)) {
+	if (Ship_info[Ships[num].ship_info_index].flags & SIF_NO_COLLIDE) {
 		return 0;
 	}
 
-	if (!(Ship_info[Ships[light_obj->instance].ship_info_index].flags & SIF_DO_COLLISION_CHECK)) {
+	if (Ship_info[Ships[light_obj->instance].ship_info_index].flags & SIF_NO_COLLIDE) {
 		return 0;
 	}
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.38 $
- * $Date: 2007-02-07 07:59:48 $
+ * $Revision: 2.39 $
+ * $Date: 2007-02-11 06:19:05 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2007/02/07 07:59:48  Goober5000
+ * hm, didn't notice this new feature
+ *
  * Revision 2.37  2007/02/07 07:35:21  Goober5000
  * Cleaned up the ship-weapon collision code for both conventional weapons and beams.  Improved readability and clarity; untangled program flow; cleaned up sloppy enhancements.  Fixed a few bugs too.
  *
@@ -440,7 +443,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 //		return 0;
 
 	//	If either of these objects doesn't get collision checks, abort.
-	if (!(Ship_info[shipp->ship_info_index].flags & SIF_DO_COLLISION_CHECK))
+	if (Ship_info[shipp->ship_info_index].flags & SIF_NO_COLLIDE)
 		return 0;
 
 	//	Return information for AI to detect incoming fire.

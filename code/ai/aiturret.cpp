@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.55 $
- * $Date: 2007-02-05 08:27:13 $
- * $Author: wmcoolmon $
+ * $Revision: 1.56 $
+ * $Date: 2007-02-11 06:19:05 $
+ * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.55  2007/02/05 08:27:13  wmcoolmon
+ * Couple of commented-out features.
+ *
  * Revision 1.54  2007/01/22 21:45:10  Goober5000
  * removed code that isn't used (see Mantis 1219)
  *
@@ -522,7 +525,7 @@ int valid_turret_enemy(object *objp, object *turret_parent)
 		}
 
 		// don't shoot at ships without collision check
-		if ( !(sip->flags & SIF_DO_COLLISION_CHECK)) {
+		if (sip->flags & SIF_NO_COLLIDE) {
 			return 0;
 		}
 
