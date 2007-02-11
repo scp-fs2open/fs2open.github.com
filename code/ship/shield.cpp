@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.48 $
- * $Date: 2007-02-06 01:27:34 $
+ * $Revision: 2.49 $
+ * $Date: 2007-02-11 06:02:38 $
  * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2007/02/06 01:27:34  Goober5000
+ * remove obsolete and unused shield flag
+ *
  * Revision 2.47  2007/01/15 01:52:47  bobboau
  * fixing a thruster bug, a geometry batcher bug, and trying to fix a shield bug
  *
@@ -1190,10 +1193,10 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 
 	if(Ships[Objects[objnum].instance].flags2 & SIF2_PROJECTED_SHIELDS){
 //	if(1){
-	//new style sheilds
+	//new style shields
 		create_projected_shield_from_triangle(tr0, tcp, &tom, shieldp, &shieldp->tris[tr0].norm, rad);
 	}else{
-	//old styl sheilds
+	//old styl shields
 		//	Create the shield from the current triangle, as well as its neighbors.
 		create_shield_from_triangle(tr0, orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
 		//nprintf(("AI", "\n"));

@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.193  2007/02/03 03:28:48  phreak
+ * spawn weapons now have the option of passing a target lock onto their children.
+ *
+ * http://www.hard-light.net/forums/index.php/topic,45166.0.html
+ *
  * Revision 2.192  2007/01/15 00:55:13  wmcoolmon
  * Fix HEAD
  *
@@ -3284,7 +3289,7 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 
-	if(optional_string("$Sheild Hit Radius:")){
+	if(optional_string("$Shield Hit Radius:")){
 		stuff_float(&wip->shield_hit_radius);
 	}else{
 		wip->shield_hit_radius = (wip->render_type == WRT_LASER)?wip->laser_head_radius*4.0f:wip->shockwave.outer_rad;
