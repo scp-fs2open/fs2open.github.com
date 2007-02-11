@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.56 $
- * $Date: 2007-01-10 01:48:32 $
+ * $Revision: 1.57 $
+ * $Date: 2007-02-11 18:34:56 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.56  2007/01/10 01:48:32  taylor
+ * fixup texture addressing stuff so that it works better
+ * bits of cleanup
+ * remove non-dark support
+ * support for releasing bitmap system memory when transfered to API memory
+ *
  * Revision 1.55  2007/01/07 13:05:21  taylor
  * various bits of cleanup
  * fix for anistotropic filtering messing up with lod bias
@@ -917,8 +923,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 				for (i = 0; i < base_level; i++) {
 					doffset += dsize;
 
-					mipmap_w /= 2;
-					mipmap_h /= 2;
+					mipmap_w >>= 1;
+					mipmap_h >>= 1;
 
 					if (mipmap_w <= 0)
 						mipmap_w = 1;
@@ -942,8 +948,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 					doffset += dsize;
 
 					// reduce size by half for the next pass
-					mipmap_w /= 2;
-					mipmap_h /= 2;
+					mipmap_w >>= 1;
+					mipmap_h >>= 1;
 
 					if (mipmap_w <= 0)
 						mipmap_w = 1;
@@ -1054,8 +1060,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 						doffset += dsize;
 
 						// reduce size by half for the next pass
-						mipmap_w /= 2;
-						mipmap_h /= 2;
+						mipmap_w >>= 1;
+						mipmap_h >>= 1;
 
 						if (mipmap_w <= 0)
 							mipmap_w = 1;
@@ -1084,8 +1090,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 					// base image is done so now take care of any mipmap levels
 					for (j = 1; j < mipmap_levels; j++) {
 						doffset += dsize;
-						mipmap_w /= 2;
-						mipmap_h /= 2;
+						mipmap_w >>= 1;
+						mipmap_h >>= 1;
 
 						if (mipmap_w <= 0)
 							mipmap_w = 1;
@@ -1150,8 +1156,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 			for (i = 0; i < base_level; i++) {
 				doffset += dsize;
 
-				mipmap_w /= 2;
-				mipmap_h /= 2;
+				mipmap_w >>= 1;
+				mipmap_h >>= 1;
 
 				if (mipmap_w <= 0)
 					mipmap_w = 1;
@@ -1173,8 +1179,8 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 			// base image is done so now take care of any mipmap levels
 			for (i = 1; i < (mipmap_levels - base_level); i++) {
 				doffset += dsize;
-				mipmap_w /= 2;
-				mipmap_h /= 2;
+				mipmap_w >>= 1;
+				mipmap_h >>= 1;
 
 				if (mipmap_w <= 0)
 					mipmap_w = 1;
@@ -1357,6 +1363,12 @@ int opengl_create_texture (int bitmap_handle, int bitmap_type, tcache_slot_openg
 	// unlock the bitmap
 	bm_unlock(bitmap_handle);
 
+	// if we successfully sent the texture to API memory then go ahead and dump
+	// the rest of the bitmap data in system memory.
+	// NOTE: this doesn't do anything for user bitmaps (like screen grabs or streamed animations)
+	if (ret_val)
+		bm_unload_fast(bitmap_handle);
+
 	return ret_val;
 }
 
@@ -1471,11 +1483,10 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 
 void gr_opengl_preload_init()
 {
-	if (gr_screen.mode != GR_OPENGL) {
+	if (gr_screen.mode != GR_OPENGL)
 		return;
-	}
 
-	opengl_tcache_flush ();
+//	opengl_tcache_flush ();
 }
 
 int gr_opengl_preload(int bitmap_num, int is_aabitmap)
@@ -1593,6 +1604,7 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 	}
 
 	if ( (compressed == GL_FALSE) || (compressed != intFormat) || (testing == 0) ) {
+		glBindTexture(GL_TEXTURE_2D, 0);
 		glDeleteTextures(1, &tex);
 		return 0;
 	}
@@ -1709,8 +1721,8 @@ int opengl_export_image( int slot, int width, int height, int alpha, int num_mip
 			m_offset += (m_width * m_height * m_bpp);
 
 			// reduce by half for next mipmap level
-			m_width /= 2;
-			m_height /= 2;
+			m_width >>= 1;
+			m_height >>= 1;
 
 			if (m_width < 1)
 				m_width = 1;
@@ -1811,7 +1823,8 @@ int opengl_check_framebuffer()
 
 static fbo_t *opengl_get_fbo(int width, int height)
 {
-	for (uint i = 0; i < RenderTarget.size(); i++) {
+	uint rt_size = RenderTarget.size();
+	for (uint i = 0; i < rt_size; i++) {
 		if ( (RenderTarget[i].width == width) && (RenderTarget[i].height == height) )
 			return &RenderTarget[i];
 	}
