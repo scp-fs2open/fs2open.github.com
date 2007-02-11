@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.40.2.8 $
- * $Date: 2007-02-10 06:55:49 $
+ * $Revision: 2.40.2.9 $
+ * $Date: 2007-02-11 06:38:56 $
  * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40.2.8  2007/02/10 06:55:49  Goober5000
+ * sort campaigns by title, not by file name
+ *
  * Revision 2.40.2.7  2006/10/01 19:27:28  taylor
  * fix for the "branch" bug (still a minor usability issue however, see Mantis bug for details)
  * add a popup to the loopbrief screen when you press ESC, so that we can either accept or decline the loop offer
@@ -709,7 +712,15 @@ void mission_campaign_build_list(bool desc, bool sort, bool multiplayer)
 				j = i - incr;
 	
 				while (j >= 0) {
-					if (stricmp(Campaign_names[j], Campaign_names[j + incr]) > 0) {
+					char *name1 = Campaign_names[j];
+					char *name2 = Campaign_names[j + incr];
+
+					if (!strnicmp(name1, "the ", 4))
+						name1 += 4;
+					if (!strnicmp(name2, "the ", 4))
+						name2 += 4;
+
+					if (stricmp(name1, name2) > 0) {
 						// first, do filenames
 						t = Campaign_file_names[j];
 						Campaign_file_names[j] = Campaign_file_names[j + incr];
