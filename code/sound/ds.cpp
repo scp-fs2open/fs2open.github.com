@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.52 $
- * $Date: 2007-01-07 12:48:18 $
+ * $Revision: 2.53 $
+ * $Date: 2007-02-11 18:20:18 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2007/01/07 12:48:18  taylor
+ * crazy-freaky-cool OS X sound crash fixage
+ * fix sound resource exhaustion from using too many buffers
+ * allow loading of ogg or wav based on which is found first rather than tbl filename (fixes crash when Theora movies end up in wav code by mistake)
+ *
  * Revision 2.51  2006/10/06 04:56:05  wmcoolmon
  * Fix OGG bug where sound files were always allocated 16 seconds of wavedata
  *
@@ -836,7 +841,7 @@ float ds_get_percentage_vol(int ds_vol)
 //	NOTE: memory is malloced for the header and dest (if not OGG) in this function.  It is the responsibility
 //			of the caller to free this memory later.
 //
-int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, OggVorbis_File *ovf)
+int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, bool ogg, OggVorbis_File *ovf)
 {
 	PCMWAVEFORMAT	PCM_header;
 	ushort			cbExtra = 0;
@@ -847,113 +852,267 @@ int ds_parse_sound(CFILE* fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **head
 	*dest = NULL;
 	*dest_size = 0;
 
-	if ( fp == NULL )	{
+	if (fp == NULL)
 		return -1;
-	}
 
-	// Check for OGG Vorbis first
-	if ( !ov_open_callbacks(fp, ovf, NULL, 0, cfile_callbacks) ) {
-		// got one, now read all of the needed header info
-		ov_info(ovf, -1);
 
-		// we only support one logical bitstream
-		if ( ov_streams(ovf) != 1 ) {
-			nprintf(( "Sound", "SOUND ==> OGG reading error: We don't support bitstream changes!\n" ));
+	// if we should have a Vorbis file then try for it
+	if (ogg) {
+		if (ovf == NULL) {
+			Int3();
 			return -1;
 		}
 
-		if ( (*header = (WAVEFORMATEX *) vm_malloc ( sizeof(WAVEFORMATEX) )) != NULL ) {
-			(*header)->wFormatTag = OGG_FORMAT_VORBIS;
-			(*header)->nChannels = (ushort)ovf->vi->channels;
-			(*header)->nSamplesPerSec = ovf->vi->rate;
-			(*header)->wBitsPerSample = 16;								//OGGs always decoded at 16 bits here
-			(*header)->nBlockAlign = (ushort)(ovf->vi->channels * 2);
-			(*header)->nAvgBytesPerSec =  ovf->vi->rate * ovf->vi->channels * 2;
+		// Check for OGG Vorbis first
+		if ( !ov_open_callbacks(fp, ovf, NULL, 0, cfile_callbacks) ) {
+			// got one, now read all of the needed header info
+			ov_info(ovf, -1);
 
-			//WMC - Total samples * channels * bits/sample
-			*dest_size = (uint)(ov_pcm_total(ovf, -1) * ovf->vi->channels * 2);
-		} else {
-			Assert( 0 );
-			return -1;
+			// we only support one logical bitstream
+			if ( ov_streams(ovf) != 1 ) {
+				nprintf(( "Sound", "SOUND ==> OGG reading error: We don't support bitstream changes!\n" ));
+				return -1;
+			}
+
+			if ( (*header = (WAVEFORMATEX *) vm_malloc ( sizeof(WAVEFORMATEX) )) != NULL ) {
+				(*header)->wFormatTag = OGG_FORMAT_VORBIS;
+				(*header)->nChannels = (ushort)ovf->vi->channels;
+				(*header)->nSamplesPerSec = ovf->vi->rate;
+				(*header)->wBitsPerSample = 16;								//OGGs always decoded at 16 bits here
+				(*header)->nBlockAlign = (ushort)(ovf->vi->channels * 2);
+				(*header)->nAvgBytesPerSec =  ovf->vi->rate * ovf->vi->channels * 2;
+
+				//WMC - Total samples * channels * bits/sample
+				*dest_size = (uint)(ov_pcm_total(ovf, -1) * ovf->vi->channels * 2);
+			} else {
+				Assert( 0 );
+				return -1;
+			}
+
+			// we're all good, can leave now
+			return 0;
+		}
+	}
+	// otherwise we assime Wave format
+	else {
+		// Skip the "RIFF" tag and file size (8 bytes)
+		// Skip the "WAVE" tag (4 bytes)
+		// IMPORTANT!! Look at snd_load before even THINKING about changing this.
+		cfseek( fp, 12, CF_SEEK_SET );
+
+		// Now read RIFF tags until the end of file
+
+		while (1) {
+			if ( cfread( &tag, sizeof(uint), 1, fp ) != 1 )
+				break;
+
+			tag = INTEL_INT( tag );
+
+			if ( cfread( &size, sizeof(uint), 1, fp ) != 1 )
+				break;
+
+			size = INTEL_INT( size );
+
+			next_chunk = cftell(fp) + size;
+
+			switch (tag)
+			{
+				case 0x20746d66:		// The 'fmt ' tag
+				{
+					//nprintf(("Sound", "SOUND => size of fmt block: %d\n", size));
+					PCM_header.wf.wFormatTag		= cfread_ushort(fp);
+					PCM_header.wf.nChannels			= cfread_ushort(fp);
+					PCM_header.wf.nSamplesPerSec	= cfread_uint(fp);
+					PCM_header.wf.nAvgBytesPerSec	= cfread_uint(fp);
+					PCM_header.wf.nBlockAlign		= cfread_ushort(fp);
+					PCM_header.wBitsPerSample		= cfread_ushort(fp);
+
+					if (PCM_header.wf.wFormatTag != WAVE_FORMAT_PCM)
+						cbExtra = cfread_ushort(fp);
+
+					// Allocate memory for WAVEFORMATEX structure + extra bytes
+					if ( (*header = (WAVEFORMATEX *) vm_malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ) {
+						// Copy bytes from temporary format structure
+						memcpy (*header, &PCM_header, sizeof(PCM_header));
+						(*header)->cbSize = cbExtra;
+
+						// Read those extra bytes, append to WAVEFORMATEX structure
+						if (cbExtra != 0)
+							cfread( ((ubyte *)(*header) + sizeof(WAVEFORMATEX)), cbExtra, 1, fp);
+					} else {
+						Assert(0);		// malloc failed
+					}
+
+					got_fmt = true;
+	
+					break;
+				}
+
+				case 0x61746164:		// the 'data' tag
+				{
+					*dest_size = size;
+
+					(*dest) = (ubyte *)vm_malloc(size);
+					Assert( *dest != NULL );
+
+					cfread( *dest, size, 1, fp );
+
+					got_data = true;
+
+					break;
+				}
+
+				default:	// unknown, skip it
+					break;
+			}
+
+			// This is here so that we can avoid reading data that we don't understand or properly handle.
+			// We could do this just as well by checking the RIFF size, but this is easier - taylor
+			if (got_fmt && got_data)
+				break;
+
+			cfseek( fp, next_chunk, CF_SEEK_SET );
 		}
 
 		// we're all good, can leave now
 		return 0;
 	}
 
-	// Skip the "RIFF" tag and file size (8 bytes)
-	// Skip the "WAVE" tag (4 bytes)
-	// IMPORTANT!! Look at snd_load before even THINKING about changing this.
-	cfseek( fp, 12, CF_SEEK_SET );
-
-	// Now read RIFF tags until the end of file
-
-	while(1)	{
-		if ( cfread( &tag, sizeof(uint), 1, fp ) != 1 )
-			break;
-
-		tag = INTEL_INT( tag );
-
-		if ( cfread( &size, sizeof(uint), 1, fp ) != 1 )
-			break;
-
-		size = INTEL_INT( size );
-
-		next_chunk = cftell(fp) + size;
-
-		switch( tag )	{
-		case 0x20746d66:		// The 'fmt ' tag
-			//nprintf(("Sound", "SOUND => size of fmt block: %d\n", size));
-			PCM_header.wf.wFormatTag		= cfread_ushort(fp);
-			PCM_header.wf.nChannels			= cfread_ushort(fp);
-			PCM_header.wf.nSamplesPerSec	= cfread_uint(fp);
-			PCM_header.wf.nAvgBytesPerSec	= cfread_uint(fp);
-			PCM_header.wf.nBlockAlign		= cfread_ushort(fp);
-			PCM_header.wBitsPerSample		= cfread_ushort(fp);
-
-			if ( PCM_header.wf.wFormatTag != WAVE_FORMAT_PCM ) {
-				cbExtra = cfread_ushort(fp);
-			}
-
-			// Allocate memory for WAVEFORMATEX structure + extra bytes
-			if ( (*header = (WAVEFORMATEX *) vm_malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ){
-				// Copy bytes from temporary format structure
-				memcpy (*header, &PCM_header, sizeof(PCM_header));
-				(*header)->cbSize = cbExtra;
-
-				// Read those extra bytes, append to WAVEFORMATEX structure
-				if (cbExtra != 0) {
-					cfread( ((ubyte *)(*header) + sizeof(WAVEFORMATEX)), cbExtra, 1, fp);
-				}
-			}
-			else {
-				Assert(0);		// malloc failed
-			}
-			got_fmt = true;
-	
-			break;
-		case 0x61746164:		// the 'data' tag
-			*dest_size = size;
-			(*dest) = (ubyte *)vm_malloc(size);
-			Assert( *dest != NULL );
-			cfread( *dest, size, 1, fp );
-			got_data = true;
-			break;
-		default:	// unknown, skip it
-			break;
-		}
-
-		// This is here so that we can avoid reading data that we don't understand or properly handle.
-		// We could do this just as well by checking the RIFF size, but this is easier - taylor
-		if (got_fmt && got_data)
-			break;
-
-		cfseek( fp, next_chunk, CF_SEEK_SET );
-	}
-
-	return 0;
+	return -1;
 }
 
+// ---------------------------------------------------------------------------------------
+// ds_parse_sound_info() 
+//
+// Parse a a sound file, any format, and store the info in "s_info".
+//
+int ds_parse_sound_info(char *real_filename, sound_info *s_info)
+{
+	PCMWAVEFORMAT	PCM_header;
+	uint			tag, size, next_chunk;
+	bool			got_fmt = false, got_data = false;
+	OggVorbis_File	ovf;
+	int				rc, FileSize, FileOffset;
+	char			fullpath[MAX_PATH];
+	char			filename[MAX_FILENAME_LEN];
+	const int		NUM_EXT = 2;
+	const char		*audio_ext[NUM_EXT] = { ".ogg", ".wav" };
+
+
+	if ( (real_filename == NULL) || (s_info == NULL) )
+		return -1;
+
+
+	// remove extension
+	strcpy( filename, real_filename );
+	char *p = strchr(filename, '.');
+	if ( p ) *p = 0;
+
+	rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+
+	if (rc < 0)
+		return -1;
+
+	// open the file
+	CFILE *fp = cfopen_special(fullpath, "rb", FileSize, FileOffset);
+
+	if (fp == NULL)
+		return -1;
+
+
+	// Ogg Vorbis
+	if (rc == 0) {
+		if ( !ov_open_callbacks(fp, &ovf, NULL, 0, cfile_callbacks) ) {
+			// got one, now read all of the needed header info
+			ov_info(&ovf, -1);
+
+			// we only support one logical bitstream
+			if ( ov_streams(&ovf) != 1 ) {
+				nprintf(( "Sound", "SOUND ==> OGG reading error: We don't support bitstream changes!\n" ));
+				return -1;
+			}
+
+			s_info->format = OGG_FORMAT_VORBIS;
+			s_info->n_channels = (ushort)ovf.vi->channels;
+			s_info->sample_rate = ovf.vi->rate;
+			s_info->bits = 16;								//OGGs always decoded at 16 bits here
+			s_info->n_block_align = (ushort)(ovf.vi->channels * 2);
+			s_info->avg_bytes_per_sec = ovf.vi->rate * ovf.vi->channels * 2;
+
+			s_info->size = (uint)(ov_pcm_total(&ovf, -1) * ovf.vi->channels * 2);
+
+			ov_clear(&ovf);
+	
+			// we're all good, can leave now
+			goto Done;
+		}
+	}
+	// PCM Wave
+	else if (rc == 1) {
+		// Skip the "RIFF" tag and file size (8 bytes)
+		// Skip the "WAVE" tag (4 bytes)
+		// IMPORTANT!! Look at snd_load before even THINKING about changing this.
+		cfseek( fp, 12, CF_SEEK_SET );
+
+		// Now read RIFF tags until the end of file
+
+		while (1) {
+			if ( cfread( &tag, sizeof(uint), 1, fp ) != 1 )
+				break;
+
+			tag = INTEL_INT( tag );
+
+			if ( cfread( &size, sizeof(uint), 1, fp ) != 1 )
+				break;
+
+			size = INTEL_INT( size );
+
+			next_chunk = cftell(fp) + size;
+
+			switch (tag)
+			{
+				case 0x20746d66:		// The 'fmt ' tag
+					PCM_header.wf.wFormatTag		= cfread_ushort(fp);
+					PCM_header.wf.nChannels			= cfread_ushort(fp);
+					PCM_header.wf.nSamplesPerSec	= cfread_uint(fp);
+					PCM_header.wf.nAvgBytesPerSec	= cfread_uint(fp);
+					PCM_header.wf.nBlockAlign		= cfread_ushort(fp);
+					PCM_header.wBitsPerSample		= cfread_ushort(fp);
+
+					s_info->format = PCM_header.wf.wFormatTag;
+					s_info->n_channels = PCM_header.wf.nChannels;
+					s_info->sample_rate = PCM_header.wf.nSamplesPerSec;
+					s_info->bits = PCM_header.wBitsPerSample;
+					s_info->n_block_align = PCM_header.wf.nBlockAlign;
+					s_info->avg_bytes_per_sec =  PCM_header.wf.nAvgBytesPerSec;
+
+					got_fmt = true;
+	
+					break;
+
+				case 0x61746164:		// the 'data' tag
+					s_info->size = size;
+					got_data = true;
+
+					break;
+
+				default:
+					break;
+			}
+
+			if (got_fmt && got_data)
+				goto Done;
+
+			cfseek( fp, next_chunk, CF_SEEK_SET );
+		}
+	}
+
+	return -1;
+
+Done:
+	cfclose(fp);
+	return 0;
+}
 
 // ---------------------------------------------------------------------------------------
 // ds_get_sid()
