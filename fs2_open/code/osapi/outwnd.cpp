@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.19 $
- * $Date: 2007-01-14 14:03:36 $
- * $Author: bobboau $
+ * $Revision: 2.20 $
+ * $Date: 2007-02-11 09:47:35 $
+ * $Author: taylor $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2007/01/14 14:03:36  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.18  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -606,13 +611,15 @@ void outwnd_print(char *id, char *tmp)
 	if ( !id )
 		id = "General";
 
+	uint outwnd_size = OutwndFilter.size();
+
 	for (i = 0; i < OutwndFilter.size(); i++) {
 		if ( !stricmp(id, OutwndFilter[i].name) )
 			break;
 	}
 
 	// id found that isn't in the filter list yet
-	if ( i == OutwndFilter.size() ) {
+	if ( i == outwnd_size ) {
 		// Only create new filters if there was a filter file
 		if (Outwnd_no_filter_file)
 			return;
