@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72.2.16 $
- * $Date: 2006-11-15 00:19:33 $
+ * $Revision: 1.72.2.17 $
+ * $Date: 2007-02-11 09:39:08 $
  * $Author: taylor $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72.2.16  2006/11/15 00:19:33  taylor
+ * fix stupid bay depart object animation bug (Mantis bug #1133, part 2)
+ *
  * Revision 1.72.2.15  2006/11/06 05:19:59  taylor
  * if a submodel anim fails to start then move directly to ready position flag (set it up to do this, just forgot to do it ;))  (fix for Mantis bug #1133)
  *
@@ -8965,7 +8968,8 @@ void ai_chase()
 		if (esip->class_type > -1)
 		{
 			ship_type_info *stp = &Ship_types[sip->class_type];
-			for(uint i = 0; i < stp->ai_actively_pursues.size(); i++)
+			uint ap_size = stp->ai_actively_pursues.size();
+			for(uint i = 0; i < ap_size; i++)
 			{
 				if(stp->ai_actively_pursues[i] == esip->class_type) {
 					go_after_it = true;

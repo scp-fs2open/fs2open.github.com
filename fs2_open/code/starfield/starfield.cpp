@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.72.2.17 $
- * $Date: 2007-01-07 12:16:01 $
+ * $Revision: 2.72.2.18 $
+ * $Date: 2007-02-11 09:39:09 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72.2.17  2007/01/07 12:16:01  taylor
+ * be sure to page in skybox textures properly
+ *
  * Revision 2.72.2.16  2007/01/07 03:44:47  Goober5000
  * don't display any error messages when there are no background bitmaps to load
  *
@@ -1004,7 +1007,9 @@ static void starfield_generate_bitmap_instance_buffers()
 
 	int idx, vert_count = 0;
 
-	for (idx = 0; idx < (int)Starfield_bitmap_instances.size(); idx++) {
+	const int sb_instances = (int)Starfield_bitmap_instances.size();
+
+	for (idx = 0; idx < sb_instances; idx++) {
 		// make sure it's usable
 		if (Starfield_bitmap_instances[idx].star_bitmap_index < 0)
 			continue;
@@ -1018,7 +1023,7 @@ static void starfield_generate_bitmap_instance_buffers()
 	perspective_bitmap_list.allocate(vert_count);
 	perspective_bitmap_list.n_verts = 0;
 
-	for (idx = 0; idx < (int)Starfield_bitmap_instances.size(); idx++) {
+	for (idx = 0; idx < sb_instances; idx++) {
 		// make sure it's usable
 		if (Starfield_bitmap_instances[idx].star_bitmap_index < 0)
 			continue;
@@ -1705,7 +1710,9 @@ void stars_draw_sun(int show_sun)
 	Sun_drew = 0;
 
 	// draw all suns
-	for (idx = 0; idx < (int)Suns.size(); idx++) {
+	int num_suns = (int)Suns.size();
+
+	for (idx = 0; idx < num_suns; idx++) {
 		// get the instance
 		if (Suns[idx].star_bitmap_index < 0)
 			return;
@@ -1886,7 +1893,9 @@ void stars_draw_bitmaps(int show_bitmaps)
 	// render all bitmaps
 	gr_set_buffer(perspective_bitmap_buffer);
 
-	for (idx = 0; idx < (int)Starfield_bitmap_instances.size(); idx++) {
+	int sb_instances = (int)Starfield_bitmap_instances.size();
+
+	for (idx = 0; idx < sb_instances; idx++) {
 		// lookup the info index
 		star_index = Starfield_bitmap_instances[idx].star_bitmap_index;
 
@@ -2390,39 +2399,33 @@ void new_stars_draw_stars()//don't use me yet, I'm still haveing my API interfac
 
 void stars_draw_stars()
 {
-	//Num_stars = 1;
 	int i;
 	star *sp;
 	float dist = 0.0f;
 	float ratio;
-	int color;
 	vDist vDst;
-	float colorf;
 	vertex p1, p2;			
 	int can_draw = 1;
 
-	if ( !last_stars_filled )	{
-		for (sp=Stars,i=0; i<Num_stars; i++, sp++ ) {
-			vertex p2;
-			g3_rotate_faraway_vertex(&p2, &sp->pos);
-			sp->last_star_pos.xyz.x = p2.x;
-			sp->last_star_pos.xyz.y = p2.y;
-			sp->last_star_pos.xyz.z = p2.z;
+	if ( !last_stars_filled ) {
+		for (i = 0; i < Num_stars; i++) {
+			g3_rotate_faraway_vertex(&p2, &Stars[i].pos);
+			Stars[i].last_star_pos.xyz.x = p2.x;
+			Stars[i].last_star_pos.xyz.y = p2.y;
+			Stars[i].last_star_pos.xyz.z = p2.z;
 		}
 	}
 
-	int tmp_num_stars;
+	int tmp_num_stars = 0;
 
-	tmp_num_stars = (Detail.num_stars*Num_stars)/MAX_DETAIL_LEVEL;
-	if (tmp_num_stars < 0 )	{
-		tmp_num_stars = 0;
-	} else if ( tmp_num_stars > Num_stars )	{
-		tmp_num_stars = Num_stars;
-	}
+	tmp_num_stars = (Detail.num_stars * Num_stars) / MAX_DETAIL_LEVEL;
+	CLAMP(tmp_num_stars, 0, Num_stars);
 
-	for (sp=Stars,i=0; i<tmp_num_stars; i++, sp++ ) {			
 
-		can_draw=1;
+	for (i = 0; i < tmp_num_stars; i++) {			
+		sp = &Stars[i];
+
+		can_draw = 1;
 		memset(&p1, 0, sizeof(vertex));
 		memset(&p2, 0, sizeof(vertex));
 
@@ -2440,10 +2443,7 @@ void stars_draw_stars()
 			}
 		}
 
-		
-
 		if ( can_draw && (Star_flags & (STAR_FLAG_TAIL|STAR_FLAG_DIM)) )	{
-
 			dist = vm_vec_dist_quick( &sp->last_star_pos, (vec3d *)&p2.x );
 
 			if ( dist > Star_max_length )	{
@@ -2476,47 +2476,20 @@ void stars_draw_stars()
 		sp->last_star_pos.xyz.y = p2.y;
 		sp->last_star_pos.xyz.z = p2.z;
 
-		if ( !can_draw )	continue;
+		if ( !can_draw )
+			continue;
 
-		if ( Star_flags & STAR_FLAG_DIM )	{
-			colorf = 255.0f - dist*Star_dim;
-			if ( colorf < Star_cap )
-				colorf = Star_cap;
-			color = (fl2i(colorf)*(i&7))/256;
-		} else {
-			color = i & 7;
+		gr_set_color_fast( &sp->col );
+
+		vDst.x = fl2i(p1.sx) - fl2i(p2.sx);
+		vDst.y = fl2i(p1.sy) - fl2i(p2.sy);
+
+		if ( ((vDst.x * vDst.x) + (vDst.y * vDst.y)) <= 4 ) {
+			p1.sx = p2.sx + 1.0f;
+			p1.sy = p2.sy;
 		}
 
-		if ( (Star_flags & STAR_FLAG_ANTIALIAS) || (D3D_enabled) || (OGL_enabled) ) {
-			gr_set_color_fast( &sp->col );
-
-//			if the two points are the same, fudge it, since some D3D cards (G200 and G400) are lame.				
-			if( (fl2i(p1.sx) == fl2i(p2.sx)) && (fl2i(p1.sy) == fl2i(p2.sy)) ){					
-				p1.sx += 1.0f;
-			}
-			
-			vDst.x = fl2i(p1.sx) - fl2i(p2.sx);
-			vDst.y = fl2i(p1.sy) - fl2i(p2.sy);
-				
-
-			if( ((vDst.x * vDst.x) + (vDst.y * vDst.y)) <= 4 )
-			{
-				p1.sx = p2.sx;
-				p1.sy = p2.sy;
-
-				p1.sx += 1.0f;
-			}
-				gr_aaline(&p1,&p2);
-			
-		} else {
-			gr_set_color_fast( &sp->col );
-
-			if ( Star_flags & STAR_FLAG_TAIL )	{
-				gr_line(fl2i(p1.sx), fl2i(p1.sy), fl2i(p2.sx), fl2i(p2.sy), false);
-			} else {
-				gr_pixel( fl2i(p2.sx), fl2i(p2.sy), false );
-			}
-		}
+		gr_aaline(&p1, &p2);
 	}
 }
 
@@ -2942,7 +2915,7 @@ void stars_draw_background()
 	}
 
 	// draw the model at the player's eye with no z-buffering
-	model_set_alpha(1.0f);	
+	model_set_alpha(1.0f);
 
 	model_render(Nmodel_num, &vmd_identity_matrix, &Eye_position, flags);	
 
@@ -3396,7 +3369,7 @@ void stars_load_first_valid_background()
 	{
 		int i;
 		bool at_least_one_bitmap = false;
-		for (i = 0; i < (uint)Num_backgrounds; i++)
+		for (i = 0; i < Num_backgrounds; i++)
 		{
 			if (Backgrounds[i].bitmaps.size() > 0)
 				at_least_one_bitmap = true;

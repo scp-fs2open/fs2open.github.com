@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Particle/Particle.cpp $
- * $Revision: 2.18.2.2 $
- * $Date: 2006-09-11 01:00:28 $
+ * $Revision: 2.18.2.3 $
+ * $Date: 2007-02-11 09:39:09 $
  * $Author: taylor $
  *
  * Code for particle system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18.2.2  2006/09/11 01:00:28  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.18.2.1  2006/09/08 06:11:06  taylor
  * small optimization
  *
@@ -399,12 +402,13 @@ void particle_create( particle_info *pinfo )
 	if ( !Particles_enabled )
 		return;
 
-
+#ifndef NDEBUG
 	if (Particles.size() > (uint)Num_particles_hwm) {
 		Num_particles_hwm = (int)Particles.size();
 
 		nprintf(("Particles", "Num_particles high water mark = %i\n", Num_particles_hwm));
 	}
+#endif
 
 	// Init the particle data
 	memset( &new_particle, 0, sizeof(particle) );
@@ -482,12 +486,15 @@ void particle_move_all(float frametime)
 		return;
 
 
-	for (uint i = 0; i < Particles.size(); i++) {
+	uint part_size = Particles.size();
+
+	for (uint i = 0; i < part_size; i++) {
 		p = &Particles[i];
 
 		// bogus attached objnum
 		if (p->attached_objnum >= MAX_OBJECTS) {
 			Particles.erase( Particles.begin() + i );
+			part_size--;
 			continue;
 		}
 
@@ -496,6 +503,7 @@ void particle_move_all(float frametime)
 		if ( p->age > p->max_life )	{
 			// If it's time expired remove it
 			Particles.erase( Particles.begin() + i );
+			part_size--;
 			continue;
 		}
 
@@ -504,6 +512,7 @@ void particle_move_all(float frametime)
 			// if the signature has changed, kill it
 			if (p->attached_sig != Objects[p->attached_objnum].signature) {
 				Particles.erase( Particles.begin() + i );
+				part_size--;
 				continue;
 			}
 		}
@@ -551,7 +560,9 @@ void particle_render_all()
 	int nclipped = 0;
 
 
-	for (i = 0; i < (int)Particles.size(); i++) {
+	int part_size = (int)Particles.size();
+
+	for (i = 0; i < part_size; i++) {
 		p = &Particles[i];
 
 	//	n++;

@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.16.2.1 $
- * $Date: 2006-11-15 00:54:33 $
+ * $Revision: 2.16.2.2 $
+ * $Date: 2007-02-11 09:39:09 $
  * $Author: taylor $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16.2.1  2006/11/15 00:54:33  taylor
+ * updated outwnd code for both Windows and non-Windows:
+ *  - make print filters dynamic
+ *  - fix various little bugs and issues
+ *  - cleanup some non-used variables (non-Windows)
+ *  - put everything under NDEBUG like it was, or should be
+ *  - change to using data/fs2_open.log for log file (Windows)
+ *  - change to using data/debug_filter.cfg (Windows)
+ *  - make the extra debug window optional, and disabled by default (Windows)
+ *  - fix some possible NULL references
+ *  - clean up the SAFEPOINT() crap
+ *
  * Revision 2.16  2006/04/20 06:32:23  Goober5000
  * proper capitalization according to Volition
  *
@@ -591,13 +603,15 @@ void outwnd_print(char *id, char *tmp)
 	if ( !id )
 		id = "General";
 
+	uint outwnd_size = OutwndFilter.size();
+
 	for (i = 0; i < OutwndFilter.size(); i++) {
 		if ( !stricmp(id, OutwndFilter[i].name) )
 			break;
 	}
 
 	// id found that isn't in the filter list yet
-	if ( i == OutwndFilter.size() ) {
+	if ( i == outwnd_size ) {
 		// Only create new filters if there was a filter file
 		if (Outwnd_no_filter_file)
 			return;

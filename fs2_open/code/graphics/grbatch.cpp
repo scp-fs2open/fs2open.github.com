@@ -574,9 +574,11 @@ static std::vector<batch_item> geometry_map;
 
 static int find_good_batch_item(int texture)
 {
-	for (uint i = 0; i < geometry_map.size(); i++) {
+	uint max_size = geometry_map.size();
+
+	for (uint i = 0; i < max_size; i++) {
 		if (geometry_map[i].texture == texture)
-			return i;
+			return (int)i;
 	}
 
 	// don't have an existing match so add a new entry
@@ -635,31 +637,41 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 
 void batch_render_lasers()
 {
-	for (uint i = 0; i < geometry_map.size(); i++) {
-		if ( !geometry_map[i].laser )
+	uint map_size = geometry_map.size();
+	batch_item *bi;
+
+	for (uint i = 0; i < map_size; i++) {
+		bi = &geometry_map[i];
+
+		if ( !bi->laser )
 			continue;
 
-		if ( !geometry_map[i].batch.need_to_render() )
+		if ( !bi->batch.need_to_render() )
 			continue;
 
-		Assert( geometry_map[i].texture >= 0 );
-		gr_set_bitmap(geometry_map[i].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
-		geometry_map[i].batch.render(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
+		Assert( bi->texture >= 0 );
+		gr_set_bitmap(bi->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
+		bi->batch.render(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
 	}
 }
 
 void batch_render_bitmaps()
 {
-	for (uint i = 0; i < geometry_map.size(); i++) {
-		if ( geometry_map[i].laser )
+	uint map_size = geometry_map.size();
+	batch_item *bi;
+
+	for (uint i = 0; i < map_size; i++) {
+		bi = &geometry_map[i];
+
+		if ( bi->laser )
 			continue;
 
-		if ( !geometry_map[i].batch.need_to_render() )
+		if ( !bi->batch.need_to_render() )
 			continue;
 
-		Assert( geometry_map[i].texture >= 0 );
-		gr_set_bitmap(geometry_map[i].texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, geometry_map[i].alpha);
-		geometry_map[i].batch.render( geometry_map[i].tmap_flags );
+		Assert( bi->texture >= 0 );
+		gr_set_bitmap(bi->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, bi->alpha);
+		bi->batch.render( bi->tmap_flags );
 	}
 }
 
@@ -673,4 +685,3 @@ void batch_reset()
 {
 	geometry_map.clear();
 }
-
