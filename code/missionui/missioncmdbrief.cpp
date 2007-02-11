@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-02-19 00:32:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.20 $
+ * $Date: 2007-02-11 09:08:45 $
+ * $Author: taylor $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/02/19 00:32:47  Goober5000
+ * additional error checking
+ * --Goober5000
+ *
  * Revision 2.18  2006/02/19 00:29:39  Goober5000
  * center cbanis
  * --Goober5000
@@ -508,7 +512,7 @@ void cmd_brief_init_voice()
 		if (stricmp(Cur_cmd_brief->stage[i].wave_filename, NOX("none")) && Cur_cmd_brief->stage[i].wave_filename[0]) {
 			Cur_cmd_brief->stage[i].wave = audiostream_open(Cur_cmd_brief->stage[i].wave_filename, ASF_VOICE);
 			if (Cur_cmd_brief->stage[i].wave < 0) {
-				nprintf(("General", "Failed to load \"%s\"", Cur_cmd_brief->stage[i].wave_filename));
+				nprintf(("General", "Failed to load \"%s\"\n", Cur_cmd_brief->stage[i].wave_filename));
 			}
 		}
 	}
