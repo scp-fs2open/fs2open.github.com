@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.43 $
- * $Date: 2007-01-15 08:05:47 $
- * $Author: wmcoolmon $
+ * $Revision: 2.44 $
+ * $Date: 2007-02-11 09:37:18 $
+ * $Author: taylor $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2007/01/15 08:05:47  wmcoolmon
+ * Maintain "fileless fs2" capability; change ScriptingVariables library to HookVariables(hv)
+ *
  * Revision 2.42  2006/12/28 00:59:19  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -859,9 +862,8 @@ void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 //		pof_index = 0;
 //	}
 
-	if ( !strlen(asip->pof_files[asteroid_subtype]) || !stricmp(asip->pof_files[asteroid_subtype], NOX("none")) ) {
+	if ( !VALID_FNAME(asip->pof_files[asteroid_subtype]) )
 		return;
-	}
 
 	asip->model_num[asteroid_subtype] = model_load( asip->pof_files[asteroid_subtype], 0, NULL );
 
@@ -2191,8 +2193,8 @@ void asteroid_parse_tbl()
 		Asteroid_impact_explosion_ani = -1;
 		required_string("$Impact Explosion:");
 		stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
-		if ( stricmp(impact_ani_file,NOX("none")))
-		{
+
+		if ( VALID_FNAME(impact_ani_file) ) {
 			int num_frames;
 			Asteroid_impact_explosion_ani = bm_load_animation( impact_ani_file, &num_frames, NULL, 1);
 		}

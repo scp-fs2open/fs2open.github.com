@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.33 $
- * $Date: 2007-01-07 12:57:36 $
+ * $Revision: 2.34 $
+ * $Date: 2007-02-11 09:37:18 $
  * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2007/01/07 12:57:36  taylor
+ * cleanup shockwave code a bit
+ * make Shockwave_info dynamic
+ * lot of fixage to allow 2D and 3D shockwaves to work better
+ * fix for Mantis bug #1148
+ * properly handle both "none" and "<none>" for 2D and 3D shockwave names
+ * better handling, preloading wise, of 3D shockwaves and their textures
+ *
  * Revision 2.32  2006/11/06 06:33:48  taylor
  * more cleanup of warp_global crap
  * scale render/detail box limits with detail level setting
@@ -811,7 +819,7 @@ int shockwave_load(char *s_name, bool shock_3D)
 	Assert( s_name );
 
 	// make sure that this is, or should be, valid
-	if ( !strlen(s_name) || !stricmp(s_name, "none") || !stricmp(s_name, "<none>") )
+	if ( !VALID_FNAME(s_name) )
 		return -1;
 
 	for (i = 0; i < Shockwave_info.size(); i++) {
