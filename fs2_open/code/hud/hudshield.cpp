@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.40 $
- * $Date: 2007-01-14 14:03:32 $
- * $Author: bobboau $
+ * $Revision: 2.41 $
+ * $Date: 2007-02-11 07:36:38 $
+ * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2007/01/14 14:03:32  bobboau
+ * ok, something aparently went wrong, last time, so I'm commiting again
+ * hopefully it should work this time
+ * damnit WORK!!!
+ *
  * Revision 2.39  2006/05/18 14:56:02  taylor
  * fix bool compiler warning for MSVC
  *
@@ -874,57 +879,55 @@ void hud_ship_icon_page_in(ship_info *sip)
 //
 void hud_shield_equalize(object *objp, player *pl)
 {
-	float	strength;
+	float strength;
 	int idx;
-	int all_equal = 1;
+	int all_equal;
 
 	Assert(objp != NULL);
-	if(objp == NULL){
+	if (objp == NULL)
 		return;
-	}
+
 	Assert(pl != NULL);
-	if(pl == NULL){
+	if (pl == NULL)
 		return;
-	}
+
 	Assert(objp->type == OBJ_SHIP);
-	if(objp->type != OBJ_SHIP){
+	if (objp->type != OBJ_SHIP)
 		return;
-	}
 
 	// Goober5000 - quick out if we have no shields
-	// (mainly to prevent the sound if player presses Q)
 	if (objp->flags & OF_NO_SHIELDS)
-	{
 		return;
-	}
 
 	// are all quadrants equal?
-	for(idx=0; idx<MAX_SHIELD_SECTIONS-1; idx++){
-		if(objp->shield_quadrant[idx] != objp->shield_quadrant[idx+1]){
+	all_equal = 1;
+	for (idx = 0; idx < MAX_SHIELD_SECTIONS - 1; idx++) {
+		if (objp->shield_quadrant[idx] != objp->shield_quadrant[idx + 1]) {
 			all_equal = 0;
 			break;
 		}
 	}
 
-	// not all equal
-	if(!all_equal){
-		strength = get_shield_strength(objp);
-		if ( strength != 0 ) {
-			// maybe impose a 2% penalty - server side and single player only
-			if(!MULTIPLAYER_CLIENT &&  (pl->shield_penalty_stamp < 0) || timestamp_elapsed_safe(pl->shield_penalty_stamp, 1000) ){
-				strength *= 0.98f;
+	if (all_equal)
+		return;
 
-				// reset the penalty timestamp
-				pl->shield_penalty_stamp = timestamp(1000);
-			}
-			
-			set_shield_strength(objp, strength);					
-		}
+	strength = get_shield_strength(objp);
+	if (strength == 0.0f)
+		return;
+
+	// maybe impose a 2% penalty - server side and single player only
+	if (!MULTIPLAYER_CLIENT && (pl->shield_penalty_stamp < 0) || timestamp_elapsed_safe(pl->shield_penalty_stamp, 1000)) {
+		strength *= 0.98f;
+
+		// reset the penalty timestamp
+		pl->shield_penalty_stamp = timestamp(1000);
 	}
+			
+	set_shield_strength(objp, strength);					
 
 	// beep
-	if ( objp == Player_obj ){
-		snd_play( &Snds[SND_SHIELD_XFER_OK] );
+	if (objp == Player_obj) {
+		snd_play(&Snds[SND_SHIELD_XFER_OK]);
 	}
 }
 
