@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.177 $
- * $Date: 2007-02-06 01:27:34 $
+ * $Revision: 2.178 $
+ * $Date: 2007-02-11 06:19:05 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.177  2007/02/06 01:27:34  Goober5000
+ * remove obsolete and unused shield flag
+ *
  * Revision 2.176  2007/01/15 01:37:38  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -1582,13 +1585,13 @@ extern void ship_add_exited_ship( ship *shipp, int reason );
 extern int ship_find_exited_ship_by_name( char *name );
 extern int ship_find_exited_ship_by_signature( int signature);
 
-#define	SIF_DO_COLLISION_CHECK	(1 << 0)
-#define	SIF_PLAYER_SHIP			(1 << 1)
-#define	SIF_DEFAULT_PLAYER_SHIP	(1 << 2)
+#define	SIF_NO_COLLIDE				(1 << 0)
+#define	SIF_PLAYER_SHIP				(1 << 1)
+#define	SIF_DEFAULT_PLAYER_SHIP		(1 << 2)
 #define	SIF_PATH_FIXUP				(1 << 3)		// when set, path verts have been set for this ship's model
 #define	SIF_SUPPORT					(1 << 4)		// this ship can perform repair/rearm functions
-#define	SIF_AFTERBURNER			(1 << 5)		// this ship has afterburners
-#define SIF_BALLISTIC_PRIMARIES (1 << 6)		// this ship can equip ballistic primaries - Goober5000
+#define	SIF_AFTERBURNER				(1 << 5)		// this ship has afterburners
+#define SIF_BALLISTIC_PRIMARIES		(1 << 6)		// this ship can equip ballistic primaries - Goober5000
 
 // If you add a new ship type, then please add the appriopriate type in the ship_count
 // structure later in this file!!! and let MWA know!!
@@ -1599,14 +1602,14 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define	SIF_FREIGHTER				(1 << 11)	// this ship is a freighter
 #define	SIF_CAPITAL					(1 << 12)	// this ship is a capital/installation ship
 #define	SIF_TRANSPORT				(1 << 13)	// this ship is a transport
-#define	SIF_NAVBUOY					(1	<< 14)	// AL 11-24-97: this is a navbuoy
-#define	SIF_SENTRYGUN				(1	<< 15)	// AL 11-24-97: this is a navbuoy with turrets
+#define	SIF_NAVBUOY					(1 << 14)	// AL 11-24-97: this is a navbuoy
+#define	SIF_SENTRYGUN				(1 << 15)	// AL 11-24-97: this is a navbuoy with turrets
 #define	SIF_ESCAPEPOD				(1 << 16)	// AL 12-09-97: escape pods that fire from big ships
 #define	SIF_NO_SHIP_TYPE			(1 << 17)	// made distinct to help trap errors
 
 #define	SIF_SHIP_COPY				(1 << 18)	// this ship is a copy of another ship in the table -- meaningful for scoring and possible other things
 #define	SIF_IN_TECH_DATABASE		(1 << 19)	// is ship type to be listed in the tech database?
-#define	SIF_IN_TECH_DATABASE_M	(1 << 20)	// is ship type to be listed in the tech database for multiplayer?
+#define	SIF_IN_TECH_DATABASE_M		(1 << 20)	// is ship type to be listed in the tech database for multiplayer?
 
 #define	SIF_STEALTH					(1 << 21)	// the ship has stealth capabilities
 #define	SIF_SUPERCAP				(1 << 22)	// the ship is a supercap
@@ -1620,7 +1623,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define	SIF_GAS_MINER				(1 << 28)	// also just for briefing icons
 #define	SIF_AWACS					(1 << 29)	// ditto
 
-#define	SIF_KNOSSOS_DEVICE		(1 << 30)	// this is the knossos device
+#define	SIF_KNOSSOS_DEVICE			(1 << 30)	// this is the knossos device
 
 #define	SIF_NO_FRED					(1 << 31)	// not available in fred
 
@@ -1636,7 +1639,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_PROJECTED_SHIELDS				(1 << 8)	// Bobboau - new projected shield rendering
 
 #define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
-#define	SIF_DEFAULT_VALUE			(SIF_DO_COLLISION_CHECK)
+#define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 
 #define	SIF_ALL_SHIP_TYPES		(SIF_CARGO | SIF_FIGHTER | SIF_BOMBER | SIF_CRUISER | SIF_FREIGHTER | SIF_CAPITAL | SIF_TRANSPORT | SIF_SUPPORT | SIF_NO_SHIP_TYPE | SIF_NAVBUOY | SIF_SENTRYGUN | SIF_ESCAPEPOD | SIF_SUPERCAP | SIF_CORVETTE | SIF_GAS_MINER | SIF_AWACS | SIF_KNOSSOS_DEVICE)
