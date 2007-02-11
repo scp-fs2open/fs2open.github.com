@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.18.2.2 $
- * $Date: 2006-07-06 21:56:18 $
+ * $Revision: 2.18.2.3 $
+ * $Date: 2007-02-11 09:56:25 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18.2.2  2006/07/06 21:56:18  taylor
+ * some better handling of OpenAL errors during init
+ *
  * Revision 2.18.2.1  2006/06/18 16:52:04  taylor
  * make sure we can report both AL and ALC errors
  * fix for ds_get_free_channel(), it shouldn't return -1 on an AL error
@@ -317,7 +320,8 @@ extern int							ds_initialized;
 int	ds_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short sample_bits);
 void	ds_close();
 void	ds_get_primary_format(WAVEFORMATEX *wfx, DWORD sample_rate, WORD sample_bits);
-int	ds_parse_sound(CFILE *fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, OggVorbis_File *ovf);
+int	ds_parse_sound(CFILE *fp, ubyte **dest, uint *dest_size, WAVEFORMATEX **header, bool ogg = false, OggVorbis_File *ovf = NULL);
+int	ds_parse_sound_info(char *real_filename, sound_info *s_info);
 int	ds_load_buffer(int *sid, int *hid, int *final_size, void *header, sound_info *si, int flags);
 void	ds_unload_buffer(int sid, int hid);
 int	ds_play(int sid, int hid, int snd_id, int priority, int volume, int pan, int looping, bool is_voice_msg = false);
