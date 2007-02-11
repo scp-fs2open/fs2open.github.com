@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.12 $
+ * $Date: 2007-02-11 09:06:30 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.10  2005/10/09 09:13:29  wmcoolmon
  * Added warpin/warpout speed override values to ships.tbl
  *
@@ -238,6 +241,10 @@ int collide_debris_ship( obj_pair * pair )
 
 	Assert( pdebris->type == OBJ_DEBRIS );
 	Assert( pship->type == OBJ_SHIP );
+
+	// don't check collision if it's our own debris and we are dying
+	if ( (pdebris->parent == OBJ_INDEX(pship)) && (Ships[pship->instance].flags & SF_DYING) )
+		return 0;
 
 /*	Debris_ship_count++;
 	if (Debris_ship_count % 100 == 0)
