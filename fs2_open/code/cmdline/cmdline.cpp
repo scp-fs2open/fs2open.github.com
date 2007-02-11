@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.9 $
- * $Date: 2006-11-15 00:21:40 $
+ * $Revision: 2.140.2.10 $
+ * $Date: 2007-02-11 09:24:08 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.9  2006/11/15 00:21:40  taylor
+ * clean up some cmdline options which were/weren't FSO only
+ * add back the "-32bit" option, for retail compatibility (doesn't do anything, it's just there to avoid the unknown option message)
+ * add "-debug_window" to turn on the Windows-only extra debug output window (it's off by default now, only logging to file instead)
+ *
  * Revision 2.140.2.8  2006/09/08 06:14:43  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -1079,14 +1084,12 @@ cmdline_parm ambient_factor_arg("-ambient_factor", NULL);	// Cmdline_ambient_fac
 cmdline_parm cell_arg("-cell", NULL);				// Cmdline_cell
 cmdline_parm decals("-decals", NULL);				// Cmdline_decals
 cmdline_parm env("-env", NULL);						// Cmdline_env
-cmdline_parm jpgtga_arg("-jpgtga", NULL);			// Cmdline_jpgtga
 cmdline_parm mipmap_arg("-mipmap", NULL);			// Cmdline_mipmap
 cmdline_parm missile_lighting_arg("-missile_lighting", NULL);	// Cmdline_missile_lighting
 cmdline_parm glow_arg("-glow", NULL); 				// Cmdline_noglow  -- use Bobs glow code
 cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL); // Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
 cmdline_parm noscalevid_arg("-noscalevid", NULL);	// Cmdline_noscalevid  -- disable video scaling that fits to window
 cmdline_parm spec_arg("-spec", NULL);				// Cmdline_nospec  -- use specular highlighting -Sticks
-cmdline_parm pcx32_arg("-pcx32", NULL);				// Cmdline_pcx32
 cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive  -- don't use emissive light in OGL
 
 float Cmdline_clip_dist = Default_min_draw_distance;
@@ -1098,14 +1101,12 @@ int Cmdline_ambient_factor = 128;
 int Cmdline_cell = 0;
 int Cmdline_decals = 0;
 int Cmdline_env = 0;
-int Cmdline_jpgtga = 0;
 int Cmdline_mipmap = 0;
 int Cmdline_missile_lighting = 0;
 int Cmdline_noglow = 1;
 int Cmdline_nomotiondebris = 0;
 int Cmdline_noscalevid = 0;
 int Cmdline_nospec = 1;
-int Cmdline_pcx32 = 0;
 int Cmdline_no_emissive = 0;
 
 // Game Speed related
@@ -2013,11 +2014,6 @@ bool SetCmdlineParams()
 		Cmdline_nohtl = 1;
 	}
 
-	if( jpgtga_arg.found() )
-	{	  
-		Cmdline_jpgtga = 1;
-	}
-
 	if( no_set_gamma_arg.found() )
 	{
 		Cmdline_no_set_gamma = 1;
@@ -2035,52 +2031,32 @@ bool SetCmdlineParams()
 	}
 #endif
 
-	if(pcx32_arg.found() )
-	{
-		Cmdline_pcx32 = 1;
-	}
-
-	if ( img2dds_arg.found() ) {
+	if ( img2dds_arg.found() )
 		Cmdline_img2dds = 1;
-		// we also can use -jpgtga without the bad memory usage
-		Cmdline_jpgtga = 1;
-	}
 
-	if(glow_arg.found() )
-	{
+	if ( glow_arg.found() )
 		Cmdline_noglow = 0;
-	}
 
-	if(query_speech_arg.found() )
-	{
+	if ( query_speech_arg.found() )
 		Cmdline_query_speech = 1;
-	}
 
-	if(ship_choice_3d_arg.found() )
-	{
+	if ( ship_choice_3d_arg.found() )
 		Cmdline_ship_choice_3d = 1;
-	}
 
-	if(show_mem_usage_arg.found()) {
+	if ( show_mem_usage_arg.found() )
 		Cmdline_show_mem_usage = 1;
-	}
 
-	if(ingamejoin_arg.found())
-	{
+	if (ingamejoin_arg.found() )
 		Cmdline_ingamejoin = 1;
-	}
 
-	if(start_mission_arg.found())
-	{
+	if ( start_mission_arg.found() ) {
 		Cmdline_start_mission = start_mission_arg.str();
 
-		if(Cmdline_start_mission != NULL && strlen(Cmdline_start_mission) > 0)
-		{
+		if ( (Cmdline_start_mission != NULL) && (strlen(Cmdline_start_mission) > 0) ) {
 			char *temp = Cmdline_start_mission;
 
-			while(*temp)
-			{
-				if(*temp == '*')
+			while (*temp) {
+				if (*temp == '*')
 					*temp = '-';
 
 				temp++;
@@ -2088,13 +2064,10 @@ bool SetCmdlineParams()
 		}
 	}
 
-	if(ambient_factor_arg.found())
-	{
+	if ( ambient_factor_arg.found() )
 		Cmdline_ambient_factor = ambient_factor_arg.get_int();
-	}
 
-	if(get_flags_arg.found())
-	{
+	if ( get_flags_arg.found() ) {
 		mprintf(("I got to get_flags_arg.found()!!\n"));
 		FILE *fp = fopen("flags.lch","w");
 
@@ -2130,13 +2103,10 @@ bool SetCmdlineParams()
 		return false; 
 	}
 
-	if(output_scripting_arg.found())
-	{
+	if ( output_scripting_arg.found() )
 		Output_scripting_meta = true;
-	}
 
-	if(output_sexp_arg.found())
-	{
+	if (output_sexp_arg.found() ) {
 		extern int Num_op_menus;
 		extern int Num_submenus;
 

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.12 $
- * $Date: 2007-02-09 05:40:40 $
- * $Author: Goober5000 $
+ * $Revision: 1.12.2.13 $
+ * $Date: 2007-02-11 09:24:08 $
+ * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.12  2007/02/09 05:40:40  Goober5000
+ * merge the voice acting manager into the 3.6.9 (3.6.10?) branch
+ *
  * Revision 1.12.2.11  2007/02/08 07:39:34  Goober5000
  * fix two bugs:
  * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
@@ -861,11 +864,8 @@ bool fred_init()
  // 	Cmdline_noglow = 1;
  	Cmdline_window = 1;
 	DBUGFILE_OUTPUT_0("About to gr_init");
-	if (Cmdline_jpgtga) {
-		gr_init(GR_640, GR_OPENGL, 32, 640, 480);
-	} else {
-		gr_init(GR_640, GR_OPENGL, 16, 640, 480);
-	}
+
+	gr_init(GR_640, GR_OPENGL, 32, 640, 480);
 	
 	DBUGFILE_OUTPUT_0("About to init everything");
 	gr_font_init();					// loads up all fonts  
