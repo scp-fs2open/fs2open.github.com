@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.27 $
- * $Date: 2007-01-31 02:00:21 $
- * $Author: phreak $
+ * $Revision: 1.28 $
+ * $Date: 2007-02-11 09:20:00 $
+ * $Author: taylor $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2007/01/31 02:00:21  phreak
+ * memset() does not go array, length, value
+ * it goes the other way around
+ *
  * Revision 1.26  2007/01/08 00:50:59  Goober5000
  * remove WMC's limbo code, per our discussion a few months ago
  * this will later be handled by copying ship stats using sexps or scripts
@@ -145,6 +149,7 @@
 #include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "iff_defs/iff_defs.h"
+#include "jumpnode/jumpnode.h"
 
 extern float radx, rady;
 
@@ -330,38 +335,42 @@ void radar_plot_object_orb( object *objp )
 	}
 
 	// Apply object type filters	
-	switch ( objp->type ) {
-	case OBJ_SHIP:
-		// Place to cull ships, such as NavBuoys		
-		break;
-		
-	case OBJ_JUMP_NODE:
-		// filter jump nodes here if required
-		break;
+	switch (objp->type)
+	{
+		case OBJ_SHIP:
+			// Place to cull ships, such as NavBuoys
+			break;
 
-	case OBJ_WEAPON: {
-		// if not a bomb, return
-		if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
-			return;
+		case OBJ_JUMP_NODE:
+		{
+			// don't plot hidden jump nodes
+			if ( objp->jnp->is_hidden() )
+				return;
+
+			break;
 		}
 
-		// if we don't attack the bomb, return
-		if ( !iff_x_attacks_y(Player_ship->team, obj_team(objp)) ) {
-			return;
+		case OBJ_WEAPON:
+		{
+			// if not a bomb, return
+			if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
+				return;
+
+			// if we don't attack the bomb, return
+			if ( !iff_x_attacks_y(Player_ship->team, obj_team(objp)) )
+				return;
+
+			//if a local ssm is in subspace, return
+			if (Weapons[objp->instance].lssm_stage == 3)
+				return;
+
+			break;
 		}
 
-		//if a local ssm is in subspace, return
-		if (Weapons[objp->instance].lssm_stage == 3) {
+		// if any other kind of object, don't show it on radar
+		default:
 			return;
-		}
-
-		break;
 	}
-
-	default:
-		return;			// if any other kind of object, don't want to show on radar
-		break;
-	} // end switch
 
 
 	// JAS -- new way of getting the rotated point that doesn't require this to be

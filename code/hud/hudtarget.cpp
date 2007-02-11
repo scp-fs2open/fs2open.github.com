@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.98 $
- * $Date: 2007-01-08 00:50:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.99 $
+ * $Date: 2007-02-11 09:20:00 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2007/01/08 00:50:58  Goober5000
+ * remove WMC's limbo code, per our discussion a few months ago
+ * this will later be handled by copying ship stats using sexps or scripts
+ *
  * Revision 2.97  2007/01/07 12:53:35  taylor
  * add position info for weapon energy text
  * make sure that we can't target a hidden jumpnode
@@ -1212,13 +1216,13 @@ void hud_stuff_reticle_list(reticle_list *rl, object *objp, float measure, int d
 //
 void hud_reticle_list_update(object *objp, float measure, int dot_flag)
 {
-	if(objp->type == OBJ_JUMP_NODE)
-	{
-		if(objp->jnp->is_hidden())
-			return;
-	}
 	reticle_list	*rl, *new_rl;
 	int				i;
+
+	if (objp->type == OBJ_JUMP_NODE) {
+		if ( objp->jnp->is_hidden() )
+			return;
+	}
 
 	for ( rl = GET_FIRST(&Reticle_cur_list); rl != END_OF_LIST(&Reticle_cur_list); rl = GET_NEXT(rl) ) {
 		if ( rl->objp == objp )
@@ -1868,40 +1872,39 @@ void hud_target_common(int team_mask, int next_flag)
 	start2 = advance_fb(start, next_flag);
 
 	for ( A = start2; A != start; A = advance_fb(A, next_flag) ) {
-		is_ship=0;
+		is_ship = 0;
 
-		if ( A == &obj_used_list ) {
+		if (A == &obj_used_list)
 			continue;
-		}
 
-		if (A == Player_obj || ( A->type != OBJ_SHIP && A->type != OBJ_WEAPON && A->type != OBJ_JUMP_NODE) ){
+		if ( (A == Player_obj) || ((A->type != OBJ_SHIP) && (A->type != OBJ_WEAPON) && (A->type != OBJ_JUMP_NODE)) )
 			continue;
-		}
 
-		if(hud_target_invalid_awacs(A)){
+		if ( hud_target_invalid_awacs(A) )
 			continue;
-		}
 
-		if ( A->type == OBJ_WEAPON ) {
-			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) ){
+		if (A->type == OBJ_WEAPON) {
+			if ( !(Weapon_info[Weapons[A->instance].weapon_info_index].wi_flags & WIF_BOMB) )
 				continue;
-			}
 
-			if (Weapons[A->instance].lssm_stage==3){
+			if (Weapons[A->instance].lssm_stage == 3)
 				continue;
-			}
 		}
 
-		if ( A->type == OBJ_SHIP ) {
-			if ( (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[A->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
+		if (A->type == OBJ_SHIP) {
+			if ( (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[A->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
 				continue;
-			}
-			is_ship=1;
+
+			is_ship = 1;
 		}
 
-		if ( vm_vec_same( &A->pos, &Eye_position ) ) {
+		if (A->type == OBJ_JUMP_NODE) {
+			if ( A->jnp->is_hidden() )
+				continue;
+		}
+
+		if ( vm_vec_same(&A->pos, &Eye_position) )
 			continue;
-		}
 
 		if ( is_ship ) {
 			shipp = &Ships[A->instance];	// get a pointer to the ship information

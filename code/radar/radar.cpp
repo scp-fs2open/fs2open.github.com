@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.26 $
- * $Date: 2007-01-08 00:50:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.27 $
+ * $Date: 2007-02-11 09:20:00 $
+ * $Author: taylor $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2007/01/08 00:50:59  Goober5000
+ * remove WMC's limbo code, per our discussion a few months ago
+ * this will later be handled by copying ship stats using sexps or scripts
+ *
  * Revision 2.25  2006/12/28 00:59:48  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -264,6 +268,7 @@
 #include "ship/awacs.h"
 #include "radar/radarsetup.h"
 #include "iff_defs/iff_defs.h"
+#include "jumpnode/jumpnode.h"
 
 extern float radx, rady;
 
@@ -418,38 +423,42 @@ void radar_plot_object_std( object *objp )
 	}
 
 	// Apply object type filters	
-	switch ( objp->type ) {
-	case OBJ_SHIP:
-		// Place to cull ships, such as NavBuoys
-		break;
-		
-	case OBJ_JUMP_NODE:
-		// filter jump nodes here if required
-		break;
+	switch (objp->type)
+	{
+		case OBJ_SHIP:
+			// Place to cull ships, such as NavBuoys
+			break;
 
-	case OBJ_WEAPON: {
-		// if not a bomb, return
-		if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
-			return;
+		case OBJ_JUMP_NODE:
+		{
+			// don't plot hidden jump nodes
+			if ( objp->jnp->is_hidden() )
+				return;
+
+			break;
 		}
 
-		// if we don't attack the bomb, return
-		if ( !iff_x_attacks_y(Player_ship->team, obj_team(objp)) ) {
-			return;
+		case OBJ_WEAPON:
+		{
+			// if not a bomb, return
+			if ( !(Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags & WIF_BOMB) )
+				return;
+
+			// if we don't attack the bomb, return
+			if ( !iff_x_attacks_y(Player_ship->team, obj_team(objp)) )
+				return;
+
+			//if a local ssm is in subspace, return
+			if (Weapons[objp->instance].lssm_stage == 3)
+				return;
+
+			break;
 		}
 
-		//if a local ssm is in subspace, return
-		if (Weapons[objp->instance].lssm_stage == 3) {
+		// if any other kind of object, don't show it on radar
+		default:
 			return;
-		}
-
-		break;
 	}
-
-	default:
-		return;			// if any other kind of object, don't want to show on radar
-		break;
-	} // end switch
 
 	
 	// JAS -- new way of getting the rotated point that doesn't require this to be
@@ -540,7 +549,7 @@ void radar_plot_object_std( object *objp )
 		blip_bright = 1;
 	}
 
-	radar_stuff_blip_info(objp, blip_bright, &b->blip_color, &blip_type);
+	radar_stuff_blip_info_std(objp, blip_bright, &b->blip_color, &blip_type);
 
 	if (blip_bright)
 		list_append(&Blip_bright_list[blip_type], b);
@@ -617,7 +626,7 @@ char Large_blip_string[2];
 
 void radar_frame_init_std()
 {
-	radar_null_nblips();
+	radar_null_nblips_std();
 	radx = i2fl(Current_radar_global->Radar_radius[gr_screen.res][0])/2.0f;
 	rady = i2fl(Current_radar_global->Radar_radius[gr_screen.res][1])/2.0f;
 
@@ -663,7 +672,7 @@ void radar_blip_draw_distorted_std(blip *b)
 		ydiff = (int)((float)ydiff * scale);
 	}
 
-	radar_draw_circle( b->x+xdiff, b->y+ydiff, b->rad ); 
+	radar_draw_circle_std( b->x+xdiff, b->y+ydiff, b->rad ); 
 }
 
 // blip is for a target immune to sensors, so cause to flicker in/out with mild distortion
@@ -691,7 +700,7 @@ void radar_blip_draw_flicker_std(blip *b)
 		ydiff = -2 + rand()%4;
 	}
 
-	radar_draw_circle( b->x+xdiff, b->y+ydiff, b->rad ); 
+	radar_draw_circle_std( b->x+xdiff, b->y+ydiff, b->rad ); 
 }
 
 // Draw all the active radar blips
@@ -732,15 +741,15 @@ void draw_radar_blips_std(int blip_type, int bright, int distort)
 		// maybe distort blip
 		if (distort)
 		{
-			radar_blip_draw_distorted(b);
+			radar_blip_draw_distorted_std(b);
 		}
 		else if (b->flags & BLIP_DRAW_DISTORTED)
 		{
-			radar_blip_draw_flicker(b);
+			radar_blip_draw_flicker_std(b);
 		}
 		else
 		{
-			radar_draw_circle(b->x, b->y, b->rad);
+			radar_draw_circle_std(b->x, b->y, b->rad);
 		}
 	}
 }
@@ -827,8 +836,8 @@ void radar_frame_render_std(float frametime)
 	}
 
 	hud_set_gauge_color(HUD_RADAR);
-	radar_blit_gauge();
-	radar_draw_range();
+	radar_blit_gauge_std();
+	radar_draw_range_std();
 
 	if ( timestamp_elapsed(Radar_static_next) ) {
 		Radar_static_playing ^= 1;
@@ -863,9 +872,6 @@ void radar_frame_render_std(float frametime)
 
 void radar_blit_gauge_std()
 {
-	SPECMAP = -1;
-	GLOWMAP = -1;
-
 	gr_set_bitmap(Radar_gauge.first_frame+1);
 	gr_aabitmap( Current_radar_global->Radar_coords[gr_screen.res][0], Current_radar_global->Radar_coords[gr_screen.res][1] );
 } 
