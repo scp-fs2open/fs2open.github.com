@@ -9,14 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.27 $
- * $Date: 2006-09-24 22:55:17 $
+ * $Revision: 2.28 $
+ * $Date: 2007-02-11 09:31:12 $
  * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/09/24 22:55:17  taylor
+ * more standalone server fixes:
+ *  - add some basic bmpman functionality to grstub, since it needs to do something at least
+ *  - add missing gr_* function ptrs to grstrub
+ *  - (re-)enable radar and hud setup functions that used to crash (problems are fixed now)
+ *  - deal with default pilot file properly (also caused a bmpman headache)
+ *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
+ *
  * Revision 2.26  2006/04/20 06:32:23  Goober5000
  * proper capitalization according to Volition
  *
@@ -1002,7 +1010,6 @@ int read_pilot_file(char *callsign, int single, player *p)
 		Cutscenes_viewable = cfread_int(file);
 	}
 
-#ifndef NO_SOUND
 	Master_sound_volume = cfread_float(file);
 	Master_event_music_volume = cfread_float(file);
 	Master_voice_volume = cfread_float(file);
@@ -1015,11 +1022,6 @@ int read_pilot_file(char *callsign, int single, player *p)
 	} else {
 		Event_music_enabled = 0;
 	}
-#else
-	(void) cfread_float(file);
-	(void) cfread_float(file);
-	(void) cfread_float(file);
-#endif
 
 	read_detail_settings(file, Player_file_version);
 
@@ -1351,18 +1353,9 @@ int write_pilot_file_core(player *p)
 		cfwrite_int(Cutscenes_viewable, file);
 
 	// store the digital sound fx volume, and music volume
-#ifndef NO_SOUND
 	cfwrite_float(Master_sound_volume, file);
 	cfwrite_float(Master_event_music_volume, file);
 	cfwrite_float(Master_voice_volume, file);
-#else
-	{
-		float dummy = 0.0f;
-		cfwrite_float(dummy, file);
-		cfwrite_float(dummy, file);
-		cfwrite_float(dummy, file);
-	}
-#endif
 
 	write_detail_settings(file);
 
@@ -1764,7 +1757,7 @@ void pilot_load_pic_list()
 	Num_pilot_images = 0;
 	
 	// load pilot images from the player images directory
-	Num_pilot_images = cf_get_file_list_preallocated(MAX_PILOT_IMAGES, Pilot_images_arr, Pilot_image_names, CF_TYPE_PLAYER_IMAGES_MAIN, NOX("*.pcx"));
+	Num_pilot_images = cf_get_file_list_preallocated(MAX_PILOT_IMAGES, Pilot_images_arr, Pilot_image_names, CF_TYPE_PLAYER_IMAGES, NOX("*.pcx"));
 
 	// sort all filenames
 	cf_sort_filenames(Num_pilot_images, Pilot_image_names, CF_SORT_NAME);
@@ -1776,7 +1769,7 @@ void pilot_load_squad_pic_list()
 	Num_pilot_squad_images = 0;
 	
 	// load pilot images from the player images directory
-	Num_pilot_squad_images = cf_get_file_list_preallocated(MAX_PILOT_IMAGES, Pilot_squad_images_arr, Pilot_squad_image_names, CF_TYPE_SQUAD_IMAGES_MAIN, NOX("*.pcx"));
+	Num_pilot_squad_images = cf_get_file_list_preallocated(MAX_PILOT_IMAGES, Pilot_squad_images_arr, Pilot_squad_image_names, CF_TYPE_SQUAD_IMAGES, NOX("*.pcx"));
 
 	// sort all filenames
 	cf_sort_filenames(Num_pilot_squad_images, Pilot_squad_image_names, CF_SORT_NAME);

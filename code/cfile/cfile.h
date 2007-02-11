@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.18 $
- * $Date: 2006-09-11 05:49:05 $
+ * $Revision: 2.19 $
+ * $Date: 2007-02-11 09:31:11 $
  * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/09/11 05:49:05  taylor
+ * various small cleanup and speedup changes
+ * add a cf_find_file_location_ext() function, which you can pass a filename and a list of extensions and it will search for all of them at once
+ *
  * Revision 2.17  2006/02/13 00:20:45  Goober5000
  * more tweaks, plus clarification of checks for the existence of files
  * --Goober5000
@@ -435,40 +439,39 @@ typedef struct {
 #define CF_TYPE_DATA				2
 #define CF_TYPE_MAPS				3
 #define CF_TYPE_TEXT				4
-#define CF_TYPE_MISSIONS			5
-#define CF_TYPE_MODELS				6
-#define CF_TYPE_TABLES				7
-#define CF_TYPE_SOUNDS				8
-#define CF_TYPE_SOUNDS_8B22K		9
-#define CF_TYPE_SOUNDS_16B11K		10
-#define CF_TYPE_VOICE				11
-#define CF_TYPE_VOICE_BRIEFINGS		12
-#define CF_TYPE_VOICE_CMD_BRIEF		13
-#define CF_TYPE_VOICE_DEBRIEFINGS	14
-#define CF_TYPE_VOICE_PERSONAS		15
-#define CF_TYPE_VOICE_SPECIAL		16
-#define CF_TYPE_VOICE_TRAINING		17
-#define CF_TYPE_MUSIC				18
-#define CF_TYPE_MOVIES				19
-#define CF_TYPE_INTERFACE			20
-#define CF_TYPE_FONT				21
-#define CF_TYPE_EFFECTS				22
-#define CF_TYPE_HUD					23
-#define CF_TYPE_PLAYER_MAIN			24
-#define CF_TYPE_PLAYER_IMAGES_MAIN	25
-#define CF_TYPE_CACHE				26
-#define CF_TYPE_PLAYERS				27
-#define CF_TYPE_SINGLE_PLAYERS		28
-#define CF_TYPE_MULTI_PLAYERS		29
-#define CF_TYPE_MULTI_CACHE			30
+#define CF_TYPE_MODELS				5
+#define CF_TYPE_TABLES				6
+#define CF_TYPE_SOUNDS				7
+#define CF_TYPE_SOUNDS_8B22K		8
+#define CF_TYPE_SOUNDS_16B11K		9
+#define CF_TYPE_VOICE				10
+#define CF_TYPE_VOICE_BRIEFINGS		11
+#define CF_TYPE_VOICE_CMD_BRIEF		12
+#define CF_TYPE_VOICE_DEBRIEFINGS	13
+#define CF_TYPE_VOICE_PERSONAS		14
+#define CF_TYPE_VOICE_SPECIAL		15
+#define CF_TYPE_VOICE_TRAINING		16
+#define CF_TYPE_MUSIC				17
+#define CF_TYPE_MOVIES				18
+#define CF_TYPE_INTERFACE			19
+#define CF_TYPE_FONT				20
+#define CF_TYPE_EFFECTS				21
+#define CF_TYPE_HUD					22
+#define CF_TYPE_PLAYERS				23
+#define CF_TYPE_PLAYER_IMAGES		24
+#define CF_TYPE_SQUAD_IMAGES		25
+#define CF_TYPE_SINGLE_PLAYERS		26
+#define CF_TYPE_MULTI_PLAYERS		27
+#define CF_TYPE_CACHE				28
+#define CF_TYPE_MULTI_CACHE			29
+#define CF_TYPE_MISSIONS			30
 #define CF_TYPE_CONFIG				31
-#define CF_TYPE_SQUAD_IMAGES_MAIN	32
-#define CF_TYPE_DEMOS				33
-#define CF_TYPE_CBANIMS				34
-#define CF_TYPE_INTEL_ANIMS			35
-#define CF_TYPE_SCRIPTS				36
+#define CF_TYPE_DEMOS				32
+#define CF_TYPE_CBANIMS				33
+#define CF_TYPE_INTEL_ANIMS			34
+#define CF_TYPE_SCRIPTS				35
 
-#define CF_MAX_PATH_TYPES				37			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
+#define CF_MAX_PATH_TYPES			36			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
 
 
 // TRUE if type is specified and valid
@@ -515,6 +518,10 @@ int cf_get_dir_type(CFILE *cfile);
 // Opens the file.  If no path is given, use the extension to look into the
 // default path.  If mode is NULL, delete the file.  
 CFILE *cfopen(char *filename, char *mode, int type = CFILE_NORMAL, int dir_type = CF_TYPE_ANY, bool localize = false);
+
+// like cfopen(), but it accepts a fully qualified path only (ie, the result of a cf_find_file_location() call)
+// NOTE: only supports reading files!!
+CFILE *cfopen_special(char *file_path, char *mode, const int size, const int offset, int dir_type = CF_TYPE_ANY);
 
 // Flush the open file buffer
 int cflush(CFILE *cfile);
