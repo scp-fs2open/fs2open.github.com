@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.98 $
- * $Date: 2007-02-11 09:47:35 $
- * $Author: taylor $
+ * $Revision: 1.99 $
+ * $Date: 2007-02-11 21:26:34 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.98  2007/02/11 09:47:35  taylor
+ * some minor performance improvements
+ * remove NO_SOUND
+ *
  * Revision 1.97  2007/02/10 06:39:43  Goober5000
  * new feature: shield generators that control whether the shield is up
  *
@@ -6244,7 +6248,7 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
 //	Returns primary_bank index.
 /**
  * Etc. Etc. This is like the 4th rewrite of the code here. Special thanks to Bobboau
- * for finding the get_shield_strength function.
+ * for finding the shield_get_strength function.
  * 
  * The AI will now intelligently choose the best weapon to use based on the overall shield
  * status of the target.
@@ -12903,28 +12907,31 @@ void ai_transfer_shield(object *objp, int quadrant_num)
 	int	i;
 	float	transfer_amount;
 	float	transfer_delta;
-	float	max_quadrant_strength;
+	float	max_quad_strength;
+	float	quad_strength;
 
-	max_quadrant_strength = get_max_shield_quad(objp);
+	max_quad_strength = shield_get_max_quad(objp);
+	quad_strength = shield_get_quad(objp, quadrant_num);
 
 	transfer_amount = 0.0f;
-	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
+	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quad_strength;
 
-	if (objp->shield_quadrant[quadrant_num] + (MAX_SHIELD_SECTIONS-1)*transfer_delta > max_quadrant_strength)
-		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(MAX_SHIELD_SECTIONS-1);
+	if (quad_strength + (MAX_SHIELD_SECTIONS-1) * transfer_delta > max_quad_strength)
+		transfer_delta = (max_quad_strength - quad_strength) / (MAX_SHIELD_SECTIONS-1);
 
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++)
-		if (i != quadrant_num) {
-			if (objp->shield_quadrant[i] >= transfer_delta) {
-				objp->shield_quadrant[i] -= transfer_delta;
-				transfer_amount += transfer_delta;
-			} else {
-				transfer_amount += objp->shield_quadrant[i];
-				objp->shield_quadrant[i] = 0.0f;
-			}
-		}
+	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+	{
+		if (i == quadrant_num)
+			continue;
 
-	objp->shield_quadrant[quadrant_num] += transfer_amount;
+		float this_quad_strength = shield_get_quad(objp, i);
+		float this_transfer_delta = (transfer_delta < this_quad_strength) ? transfer_delta : this_quad_strength;
+
+		shield_add_quad(objp, i, -this_transfer_delta);
+		transfer_amount += this_transfer_delta;
+	}
+
+	shield_add_quad(objp, quadrant_num, transfer_amount);
 }
 
 void ai_balance_shield(object *objp)
@@ -12934,34 +12941,38 @@ void ai_balance_shield(object *objp)
 	float	delta;
 
 	// if we are already at the max shield strength for all quads then just bail now
-	if ( Ships[objp->instance].ship_max_shield_strength == get_shield_strength(objp) )
+	if (shield_get_strength(objp) == shield_get_max_strength(objp))
 		return;
 
-
-	shield_strength_avg = get_shield_strength(objp)/MAX_SHIELD_SECTIONS;
-
+	shield_strength_avg = shield_get_strength(objp) / MAX_SHIELD_SECTIONS;
 	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
 
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
-		if (objp->shield_quadrant[i] < shield_strength_avg) {
+	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+	{
+		float quad_strength = shield_get_quad(objp, i);
+
+		if (quad_strength < shield_strength_avg)
+		{
+			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor		
+			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
+				shield_add_strength(objp, delta);
+			else
+				shield_add_quad(objp, i, delta / MAX_SHIELD_SECTIONS);
+
+			if (quad_strength > shield_strength_avg)
+				shield_set_quad(objp, i, shield_strength_avg);
+
+		}
+		else
+		{
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
 			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
-				add_shield_strength(objp, delta);
+				shield_add_strength(objp, -delta);
 			else
-				objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
+				shield_add_quad(objp, i, -delta / MAX_SHIELD_SECTIONS);
 
-			if (objp->shield_quadrant[i] > shield_strength_avg)
-				objp->shield_quadrant[i] = shield_strength_avg;
-
-		} else {
-			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
-			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
-				add_shield_strength(objp, -delta);
-			else
-				objp->shield_quadrant[i] -= delta/MAX_SHIELD_SECTIONS;
-
-			if (objp->shield_quadrant[i] < shield_strength_avg)
-				objp->shield_quadrant[i] = shield_strength_avg;
+			if (quad_strength < shield_strength_avg)
+				shield_set_quad(objp, i, shield_strength_avg);
 		}
 	}
 }
@@ -13001,7 +13012,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 				ai_balance_shield(objp);
 		}
 
-		// nprintf(("AI", "Time: %7.3f Next: %7.3f, Shields: %7.3f %7.3f %7.3f %7.3f\n", f2fl(Missiontime), f2fl(Missiontime) + delay, objp->shield_quadrant[0], objp->shield_quadrant[1], objp->shield_quadrant[2], objp->shield_quadrant[3]));
+		// nprintf(("AI", "Time: %7.3f Next: %7.3f, Shields: %7.3f %7.3f %7.3f %7.3f\n", f2fl(Missiontime), f2fl(Missiontime) + delay, get_shield_quad(objp, 0), get_shield_quad(objp, 1), get_shield_quad(objp, 2), get_shield_quad(objp, 3));
 	}
 }
 
@@ -15417,7 +15428,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 				mission_do_departure(objp_hit);
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
 
-				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 2*(get_shield_strength(objp_hitter) + shipp_hitter->ship_max_hull_strength) );
+				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 2*(shield_get_strength(objp_hitter) + shipp_hitter->ship_max_hull_strength) );
 				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 1.0f );
 			} else if (Missiontime - pp->last_warning_message_time > F1_0*4) {
 				// warning every 4 sec
@@ -15620,7 +15631,7 @@ void ai_update_lethality(object *ship_obj, object *other_obj, float damage)
 
 
 //	Object *objp_ship was hit by either weapon *objp_weapon or collided into by ship hit_objp at point *hitpos.
-void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_quadrant, vec3d *hit_normal)
+void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int quadrant_num, vec3d *hit_normal)
 {
 	int		hitter_objnum = -2;
 	object	*objp_hitter = NULL;

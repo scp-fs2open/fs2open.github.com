@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.194  2007/02/11 06:02:38  Goober5000
+ * fix spelling
+ *
  * Revision 2.193  2007/02/03 03:28:48  phreak
  * spawn weapons now have the option of passing a target lock onto their children.
  *
@@ -5338,7 +5341,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	vm_vec_zero(&objp->phys_info.max_vel);
 	objp->phys_info.max_vel.xyz.z = wip->max_speed;
 	vm_vec_zero(&objp->phys_info.max_rotvel);
-	objp->shield_quadrant[0] = wip->damage;
+	shield_set_quad(objp, 0, wip->damage);
 	if(wip->hit_points > 0.0){
 		objp->hull_strength = wip->hit_points;
 	}else if (wip->wi_flags & WIF_BOMB){
@@ -5583,7 +5586,6 @@ void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
 void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed)
 {
 	int	is_hull_hit;
-	float shield_str;
 
 	// If non-missiles (namely lasers) expire without hitting a ship, don't play impact sound
 	if	( wip->subtype != WP_MISSILE ) {		
@@ -5623,14 +5625,11 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 
 		is_hull_hit = 1;
 		if ( hit_obj->type == OBJ_SHIP ) {
-			shield_str = ship_quadrant_shield_strength(hit_obj, hitpos);
-		} else {
-			shield_str = 0.0f;
-		}
+			float quad = shield_get_quad(hit_obj, shield_get_quadrant_global(hit_obj, hitpos));
 
-		// play a shield hit if shields are above 10% max in this quadrant
-		if ( shield_str > 0.1f ) {
-			is_hull_hit = 0;
+			// play a shield hit if shields are above 10% max in this quadrant
+			if (quad / shield_get_max_quad(hit_obj) > 0.1f)
+				is_hull_hit = 0;
 		}
 
 		if ( !is_hull_hit ) {

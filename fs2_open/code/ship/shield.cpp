@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.49 $
- * $Date: 2007-02-11 06:02:38 $
+ * $Revision: 2.50 $
+ * $Date: 2007-02-11 21:26:39 $
  * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2007/02/11 06:02:38  Goober5000
+ * fix spelling
+ *
  * Revision 2.48  2007/02/06 01:27:34  Goober5000
  * remove obsolete and unused shield flag
  *
@@ -1055,39 +1058,6 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp )
 	}
 }
 
-//	***** This is the version that works on a quadrant basis.
-//	Return absolute amount of damage not applied.
-float apply_damage_to_shield(object *objp, int quadrant, float damage)
-{
-	ai_info	*aip;
-
-	// multiplayer clients bail here if nodamage
-	// if(MULTIPLAYER_CLIENT && (Netgame.debug_flags & NETD_FLAG_CLIENT_NODAMAGE)){
-	if(MULTIPLAYER_CLIENT){
-		return damage;
-	}
-
-	if ( (quadrant < 0)  || (quadrant >= MAX_SHIELD_SECTIONS) ) return damage;	
-	
-	Assert(objp->type == OBJ_SHIP);
-	aip = &Ai_info[Ships[objp->instance].ai_index];
-	aip->last_hit_quadrant = quadrant;
-
-	objp->shield_quadrant[quadrant] -= damage;
-
-	if (objp->shield_quadrant[quadrant] < 0.0f) {
-		float	remaining_damage;
-
-		remaining_damage = -objp->shield_quadrant[quadrant];
-		objp->shield_quadrant[quadrant] = 0.0f;
-		//nprintf(("AI", "Applied %7.3f damage to quadrant #%i, %7.3f passes through\n", damage - remaining_damage, quadrant_num, remaining_damage));
-		return remaining_damage;
-	} else {
-		//nprintf(("AI", "Applied %7.3f damage to quadrant #%i\n", damage, quadrant_num));
-		return 0.0f;
-	}
-		
-}
 /**
  * This function needs to be called by big ships which have shields. It should be able to be modified to deal with
  * the large polygons we use for their shield meshes - unknownplayer
@@ -1404,29 +1374,6 @@ void ship_draw_shield( object *objp)
 }
 #endif
 
-// Returns true if the shield presents any opposition to something 
-// trying to force through it.
-// If quadrant is -1, looks at entire shield, otherwise
-// just one quadrant
-int ship_is_shield_up( object *obj, int quadrant )
-{
-	if ( (quadrant >= 0) && (quadrant < MAX_SHIELD_SECTIONS))	{
-		// Just check one quadrant
-		if (obj->shield_quadrant[quadrant] > MAX(2.0f, 0.1f * get_max_shield_quad(obj)))	{
-			return 1;
-		}
-	} else {
-		// Check all quadrants
-		float strength = get_shield_strength(obj);
-
-		if ( strength > MAX(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_max_shield_strength ))	{
-			return 1;
-		}
-	}
-	return 0;	// no shield strength
-}
-
-
 /*
 //-- CODE TO "BOUNCE" AN ARRAY FROM A GIVEN POINT.
 //-- LIKE A MATTRESS.
@@ -1484,27 +1431,5 @@ void shield_hit_close() {}
 void ship_draw_shield( object *objp) {}
 void shield_hit_page_in() {}
 void render_shields() {}
-float apply_damage_to_shield(object *objp, int quadrant, float damage) {return damage;} 
-int ship_is_shield_up( object *obj, int quadrant ) {return 0;}
 
 #endif // DEMO
-
-
-//	return quadrant containing hit_pnt.
-//	\  1  /.
-//	3 \ / 0
-//	  / \.
-//	/  2  \.
-//	Note: This is in the object's local reference frame.  Do _not_ pass a vector in the world frame.
-int get_quadrant(vec3d *hit_pnt)
-{
-	int	result = 0;
-
-	if (hit_pnt->xyz.x < hit_pnt->xyz.z)
-		result |= 1;
-
-	if (hit_pnt->xyz.x < -hit_pnt->xyz.z)
-		result |= 2;
-
-	return result;
-}

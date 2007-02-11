@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.68 $
- * $Date: 2007-01-07 12:53:35 $
- * $Author: taylor $
+ * $Revision: 2.69 $
+ * $Date: 2007-02-11 21:26:34 $
+ * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2007/01/07 12:53:35  taylor
+ * add position info for weapon energy text
+ * make sure that we can't target a hidden jumpnode
+ * rest of the weapon switch fix
+ *
  * Revision 2.67  2006/08/03 01:33:56  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
@@ -2051,7 +2056,7 @@ void hud_show_target_data(float frametime)
 			sy += dy;
 			
 			// data can be found in target montior
-			// gr_printf(TARGET_WINDOW_X1+TARGET_WINDOW_WIDTH+3, TARGET_WINDOW_Y1+5*h, "Shields: %d", (int) Players[Player_num].current_target->ship_max_shield_strength);
+			// gr_printf(TARGET_WINDOW_X1+TARGET_WINDOW_WIDTH+3, TARGET_WINDOW_Y1+5*h, "Shields: %d", (int) shield_get_strength(&Objects[Player_ai->target_objnum]));
 			if (aip->target_objnum != -1) {
 				char	target_str[32];
 				float	dot, dist;

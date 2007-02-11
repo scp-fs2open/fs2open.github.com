@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.401 $
- * $Date: 2007-02-11 06:19:05 $
+ * $Revision: 2.402 $
+ * $Date: 2007-02-11 21:26:39 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.401  2007/02/11 06:19:05  Goober5000
+ * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
+ *
  * Revision 2.400  2007/02/10 06:39:43  Goober5000
  * new feature: shield generators that control whether the shield is up
  *
@@ -5579,11 +5582,11 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	if (Fred_running) {
 		shipp->ship_max_shield_strength = 100.0f;
 		shipp->ship_max_hull_strength = 100.0f;
-		objp->shield_quadrant[0] = 100.0f;
+		shield_set_quad(objp, 0, 100.0f);
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
 		shipp->ship_max_hull_strength = sip->max_hull_strength;
-		set_shield_strength(objp, shipp->ship_max_shield_strength);
+		shield_set_strength(objp, sip->max_shield_strength);
 	}
 
 	shipp->target_shields_delta = 0.0f;
@@ -7654,20 +7657,20 @@ void ship_chase_shield_energy_targets(ship *shipp, object *obj, float frametime)
 
 	sip = &Ship_info[shipp->ship_info_index];
 
-	delta = frametime * ETS_RECHARGE_RATE * shipp->ship_max_shield_strength / 100.0f;
+	delta = frametime * ETS_RECHARGE_RATE * shield_get_max_strength(obj) / 100.0f;
 
 	//	Chase target_shields and target_weapon_energy
 	if (shipp->target_shields_delta > 0.0f) {
 		if (delta > shipp->target_shields_delta)
 			delta = shipp->target_shields_delta;
 
-		add_shield_strength(obj, delta);
+		shield_add_strength(obj, delta);
 		shipp->target_shields_delta -= delta;
 	} else if (shipp->target_shields_delta < 0.0f) {
 		if (delta < -shipp->target_shields_delta)
 			delta = -shipp->target_shields_delta;
 
-		add_shield_strength(obj, -delta);
+		shield_add_strength(obj, -delta);
 		shipp->target_shields_delta += delta;
 	}
 
@@ -9212,21 +9215,17 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (by_sexp)
 	{
 		// hull
-		if (sp->special_hitpoint_index != -1) {
-			hull_pct = objp->hull_strength / sp->ship_max_hull_strength; 
-		} else {
-			Assert( Ship_info[sp->ship_info_index].max_hull_strength > 0.0f );
-			hull_pct = objp->hull_strength / Ship_info[sp->ship_info_index].max_hull_strength;
-		}
+		Assert(sp->ship_max_hull_strength > 0.0f);
+		hull_pct = objp->hull_strength / sp->ship_max_hull_strength;
 
 		// shield
-		if (sp->special_hitpoint_index != -1) {
-			shield_pct = get_shield_strength(objp) / sp->ship_max_shield_strength;
-		} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
-			shield_pct = get_shield_strength(objp) / Ship_info[sp->ship_info_index].max_shield_strength;
-		} else {
-			shield_pct = 0.0f;
+		if (!(objp->flags & OF_NO_SHIELDS))
+		{
+			Assert(shield_get_max_strength(objp) > 0.0f);
+			shield_pct = shield_get_strength(objp) / shield_get_max_strength(objp);
 		}
+		else
+			shield_pct = 0.0f;
 	}
 	// set to 100% otherwise
 	else
@@ -9266,9 +9265,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// set the correct shield strength
 	if (Fred_running) {
-		if (sp->ship_max_shield_strength)
-			sp->ship_max_shield_strength = 100.0f;
-		objp->shield_quadrant[0] = 100.0f;
+		sp->ship_max_shield_strength = 100.0f;
+		shield_set_quad(objp, 0, 100.0f);
 	} else {
 		if (sp->special_hitpoint_index != -1) {
 			sp->ship_max_shield_strength = (float) atoi(Sexp_variables[sp->special_hitpoint_index+SHIELD_STRENGTH].text);
@@ -9276,7 +9274,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->ship_max_shield_strength = sip->max_shield_strength;
 		}
 
-		set_shield_strength(objp, shield_pct * sp->ship_max_shield_strength);
+		shield_set_strength(objp, shield_pct * shield_get_max_strength(objp));
 	}
 
 
@@ -12101,7 +12099,7 @@ float ship_calculate_rearm_duration( object *objp )
 	sip = &Ship_info[sp->ship_info_index];
 
 	//find out time to repair shields
-	shield_rep_time = (sp->ship_max_shield_strength - get_shield_strength(objp)) / (sp->ship_max_shield_strength * SHIELD_REPAIR_RATE);
+	shield_rep_time = (shield_get_max_strength(objp) - shield_get_strength(objp)) / (shield_get_max_strength(objp) * SHIELD_REPAIR_RATE);
 	
 	max_hull_repair = sp->ship_max_hull_strength * (The_mission.support_ships.max_hull_repair_val * 0.01f);
 	//calculate hull_repair_time;
@@ -12237,16 +12235,18 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	// Do shield repair here
 	if ( !(objp->flags & OF_NO_SHIELDS) )
 	{
-		shield_str = get_shield_strength(objp);
-		if ( shield_str < shipp->ship_max_shield_strength ) {
+		float max_shields = shield_get_max_strength(objp);
+
+		shield_str = shield_get_strength(objp);
+		if ( shield_str < max_shields ) {
 			if ( objp == Player_obj ) {
 				player_maybe_start_repair_sound();
 			}
-			shield_str += shipp->ship_max_shield_strength * frametime * SHIELD_REPAIR_RATE;
-			if ( shield_str > shipp->ship_max_shield_strength ) {
-				 shield_str = shipp->ship_max_shield_strength;
+			shield_str += max_shields * frametime * SHIELD_REPAIR_RATE;
+			if ( shield_str > max_shields ) {
+				 shield_str = max_shields;
 			}
-			set_shield_strength(objp, shield_str);
+			shield_set_strength(objp, shield_str);
 		}
 	}
 
@@ -12494,7 +12494,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( (objp->flags & OF_NO_SHIELDS) ) {
 		shields_full = 1;
 	} else {
-		if ( get_shield_strength(objp) >= shipp->ship_max_shield_strength ) 
+		if ( shield_get_strength(objp) >= shield_get_max_strength(objp) ) 
 			shields_full = 1;
 	}
 
@@ -12855,8 +12855,8 @@ DCF(set_shield,"Change player ship shield strength")
 				Dc_arg_float = 0.0f;
 			if ( Dc_arg_float > 1.0 )
 				Dc_arg_float = 1.0f;
-			set_shield_strength(Player_obj, Dc_arg_float * Player_ship->ship_max_shield_strength);
-			dc_printf("Shields set to %.2f\n", get_shield_strength(Player_obj) );
+			shield_set_strength(Player_obj, Dc_arg_float * shield_get_max_strength(Player_obj));
+			dc_printf("Shields set to %.2f\n", shield_get_strength(Player_obj) );
 		}
 	}
 
@@ -12868,7 +12868,7 @@ DCF(set_shield,"Change player ship shield strength")
 	}
 
 	if ( Dc_status )	{
-		dc_printf( "Shields are currently %.2f", get_shield_strength(Player_obj) );
+		dc_printf( "Shields are currently %.2f", shield_get_strength(Player_obj) );
 	}
 }
 
@@ -13628,56 +13628,6 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 	return ssp;
 }
 
-// Return the shield strength in the quadrant hit on hit_objp, based on global hitpos
-//
-// input:	hit_objp	=>	object pointer to ship getting hit
-//				hitpos	=> global position of impact
-//
-// exit:		strength of shields in the quadrant that was hit as a percentage, between 0 and 1.0
-//
-// Assumes: that hitpos is a valid global hit position
-float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos)
-{
-	int			quadrant_num, i;
-	float			max_quadrant;
-	vec3d		tmpv1, tmpv2;
-
-	// If ship doesn't have shield mesh, then return
-	if ( hit_objp->flags & OF_NO_SHIELDS ) {
-		return 0.0f;
-	}
-
-	// Check if all the shield quadrants are all already 0, if so return 0
-	for ( i = 0; i < 4; i++ ) {
-		if ( hit_objp->shield_quadrant[i] > 0 )
-			break;
-	}
-
-	if ( i == 4 ) {
-		return 0.0f;
-	}
-
-	// convert hitpos to position in model coordinates
-	vm_vec_sub(&tmpv1, hitpos, &hit_objp->pos);
-	vm_vec_rotate(&tmpv2, &tmpv1, &hit_objp->orient);
-	quadrant_num = get_quadrant(&tmpv2);
-	//nprintf(("Alan","Quadrant hit: %d\n", quadrant_num));
-
-	if ( quadrant_num < 0 )
-		quadrant_num = 0;
-
-	max_quadrant = get_max_shield_quad(hit_objp);
-	if ( max_quadrant <= 0 ) {
-		return 0.0f;
-	}
-
-	//Assert(hit_objp->shield_quadrant[quadrant_num] <= max_quadrant);
-	if(hit_objp->shield_quadrant[quadrant_num] > max_quadrant)
-		mprintf((LOCATION, "Warning: \"%s\" has shield quadrant strength of %f out of %f\n", Ships[hit_objp->instance].ship_name, hit_objp->shield_quadrant[quadrant_num], max_quadrant));
-
-	return hit_objp->shield_quadrant[quadrant_num]/max_quadrant;
-}
-
 // Determine if a ship is threatened by any dumbfire projectiles (laser or missile)
 // input:	sp	=>	pointer to ship that might be threatened
 // exit:		0 =>	no dumbfire threats
@@ -14306,7 +14256,7 @@ void ship_maybe_ask_for_help(ship *sp)
 	if (objp->flags & OF_NO_SHIELDS)
 		return;	// no shields on ship, no don't check shield levels
 
-	if (get_shield_strength(objp) > (ASK_HELP_SHIELD_PERCENT * sp->ship_max_shield_strength))
+	if (shield_get_strength(objp) > (ASK_HELP_SHIELD_PERCENT * shield_get_max_strength(objp)))
 		return;
 
 play_ask_help:

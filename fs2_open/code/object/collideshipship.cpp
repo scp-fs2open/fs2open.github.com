@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.22 $
- * $Date: 2007-02-11 06:19:05 $
+ * $Revision: 2.23 $
+ * $Date: 2007-02-11 21:26:35 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2007/02/11 06:19:05  Goober5000
+ * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
+ *
  * Revision 2.21  2007/01/08 00:50:58  Goober5000
  * remove WMC's limbo code, per our discussion a few months ago
  * this will later be handled by copying ship stats using sexps or scripts
@@ -1518,17 +1521,6 @@ int maybe_collide_planet (object *obj1, object *obj2)
 	return 0;
 }
 
-//	Given a global point and an object, get the quadrant number the point belongs to.
-int get_ship_quadrant_from_global(vec3d *global_pos, object *objp)
-{
-	vec3d	tpos;
-	vec3d	rotpos;
-
-	vm_vec_sub(&tpos, global_pos, &objp->pos);
-	vm_vec_rotate(&rotpos, &tpos, &objp->orient);
-	return get_quadrant(&rotpos);
-}
-
 #define	MIN_REL_SPEED_FOR_LOUD_COLLISION		50		// relative speed of two colliding objects at which we play the "loud" collide sound
 
 void collide_ship_ship_sounds_init()
@@ -1565,7 +1557,7 @@ void collide_ship_ship_do_sound(vec3d *world_hit_pos, object *A, object *B, int 
 	}
 
 	// maybe play a "shield" collision sound overlay if appropriate
-	if ( (get_shield_strength(A) > 5) || (get_shield_strength(B) > 5) ) {
+	if ( (shield_get_strength(A) > 5) || (shield_get_strength(B) > 5) ) {
 		float vol_scale=1.0f;
 		if ( light_collision ) {
 			vol_scale=0.7f;
@@ -1600,12 +1592,12 @@ void do_kamikaze_crash(object *obj1, object *obj2)
 		if (aip1->ai_flags & AIF_KAMIKAZE) {
 			if (Ship_info[ship2->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
 				obj1->hull_strength = KAMIKAZE_HULL_ON_DEATH;
-				set_shield_strength(obj1, 0.0f);
+				shield_set_strength(obj1, 0.0f);
 			}
 		} if (aip2->ai_flags & AIF_KAMIKAZE) {
 			if (Ship_info[ship1->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
 				obj2->hull_strength = KAMIKAZE_HULL_ON_DEATH;
-				set_shield_strength(obj2, 0.0f);
+				shield_set_strength(obj2, 0.0f);
 			}
 		}
 	}
@@ -1848,9 +1840,9 @@ int collide_ship_ship( obj_pair * pair )
 				
 				float dam2 = (100.0f * damage/LightOne->phys_info.mass);
 
-				int	quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
+				int	quadrant_num = shield_get_quadrant_global(ship_ship_hit_info.heavy, &world_hit_pos);
 				//nprintf(("AI", "Ship %s hit in quad #%i\n", Ships[ship_ship_hit_info.heavy->instance].ship_name, quadrant_num));
-				if ((ship_ship_hit_info.heavy->flags & OF_NO_SHIELDS) || !ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num) ) {
+				if ((ship_ship_hit_info.heavy->flags & OF_NO_SHIELDS) || !shield_is_up(ship_ship_hit_info.heavy, quadrant_num) ) {
 					quadrant_num = -1;
 				}
 

@@ -358,9 +358,8 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 	ship *shipp;	
 	ship_info *sip;
 	ubyte ret;
-	float temp;	
 	int header_bytes;
-	int packet_size = 0;	
+	int packet_size = 0;
 
 	// make sure we have a valid ship
 	Assert(objp->type == OBJ_SHIP);
@@ -444,36 +443,27 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 	// hull info
 	if ( oo_flags & OO_HULL_NEW ){
+		float temp_pct;
+
 		// add the hull value for this guy		
-		temp = get_hull_pct(objp);
-		PACK_PERCENT(temp);				
+		temp_pct = get_hull_pct(objp);
+		PACK_PERCENT(temp_pct);				
 		multi_rate_add(NET_PLAYER_NUM(pl), "hul", 1);	
 
-		float quad = get_max_shield_quad(objp);
+		// pack the quadrants
+		float max_quad = shield_get_max_quad(objp);
+		for (int i = 0; i < MAX_SHIELD_SECTIONS; i++)
+		{
+			temp_pct = (shield_get_quad(objp, i) / max_quad);
+			PACK_PERCENT(temp_pct);
+		}
 
-		// pack 2 shield values into each byte
-
-		// pack quadrant 1
-		temp = (objp->shield_quadrant[0] / quad);
-		PACK_PERCENT(temp);
-				
-		// pack quadrant 2
-		temp = (objp->shield_quadrant[1] / quad);
-		PACK_PERCENT(temp);				
-
-		// pack quadrant 3
-		temp = (objp->shield_quadrant[2] / quad);
-		PACK_PERCENT(temp);
-				
-		// pack quadrant 2
-		temp = (objp->shield_quadrant[3] / quad);
-		PACK_PERCENT(temp);				
-				
-		multi_rate_add(NET_PLAYER_NUM(pl), "shl", 4);	
+		multi_rate_add(NET_PLAYER_NUM(pl), "shl", MAX_SHIELD_SECTIONS);	
 	}	
 
 	// subsystem info
 	if( oo_flags & OO_SUBSYSTEMS_AND_AI_NEW ){
+		float temp_pct;
 		ubyte ns;		
 		ship_subsys *subsysp;
 				
@@ -493,8 +483,8 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 
 			// now the subsystems.
 			for ( subsysp = GET_FIRST(&shipp->subsys_list); subsysp != END_OF_LIST(&shipp->subsys_list); subsysp = GET_NEXT(subsysp) ) {
-				temp = (float)subsysp->current_hits / (float)subsysp->max_hits;
-				PACK_PERCENT(temp);
+				temp_pct = (float)subsysp->current_hits / (float)subsysp->max_hits;
+				PACK_PERCENT(temp_pct);
 				
 				multi_rate_add(NET_PLAYER_NUM(pl), "sub", 1);
 			}
@@ -517,8 +507,8 @@ int multi_oo_pack_data(net_player *pl, object *objp, ubyte oo_flags, ubyte *data
 		multi_rate_add(NET_PLAYER_NUM(pl), "aim", 5);
 
 		// primary weapon energy
-		temp = shipp->weapon_energy / sip->max_weapon_reserve;
-		PACK_PERCENT(temp);
+		temp_pct = shipp->weapon_energy / sip->max_weapon_reserve;
+		PACK_PERCENT(temp_pct);
 	}		
 
 	// afterburner info
@@ -709,7 +699,6 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	ubyte data_size, oo_flags;
 	ubyte seq_num;
 	char percent;	
-	float fpct;
 	ship *shipp;
 	ship_info *sip;
 
@@ -864,23 +853,18 @@ int multi_oo_unpack_data(net_player *pl, ubyte *data)
 	
 	// hull info
 	if ( oo_flags & OO_HULL_NEW ){
-		UNPACK_PERCENT(fpct);
-		pobjp->hull_strength = fpct * Ships[pobjp->instance].ship_max_hull_strength;		
+		float hull_pct, quad_pct;
 
-		float shield_0, shield_1, shield_2, shield_3;
-		
-		// unpack the 4 quadrants
-		UNPACK_PERCENT(shield_0);
-		UNPACK_PERCENT(shield_1);
-		UNPACK_PERCENT(shield_2);
-		UNPACK_PERCENT(shield_3);
+		UNPACK_PERCENT(hull_pct);
+		pobjp->hull_strength = hull_pct * Ships[pobjp->instance].ship_max_hull_strength;		
 
-		float quad = get_max_shield_quad(pobjp);
-
-		pobjp->shield_quadrant[0] = (shield_0 * quad);
-		pobjp->shield_quadrant[1] = (shield_1 * quad);
-		pobjp->shield_quadrant[2] = (shield_2 * quad);
-		pobjp->shield_quadrant[3] = (shield_3 * quad);
+		// unpack the quadrants
+		float max_quad = shield_get_max_quad(pobjp);
+		for (int i = 0; i < MAX_SHIELD_SECTIONS; i++)
+		{
+			UNPACK_PERCENT(quad_pct);
+			shield_set_quad(pobjp, i, quad_pct * max_quad);
+		}
 	}	
 
 	if ( oo_flags & OO_SUBSYSTEMS_AND_AI_NEW ) {
