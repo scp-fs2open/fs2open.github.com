@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.300 $
- * $Date: 2007-02-10 00:15:32 $
- * $Author: taylor $
+ * $Revision: 2.301 $
+ * $Date: 2007-02-11 21:26:35 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.300  2007/02/10 00:15:32  taylor
+ * remove NO_SOUND
+ * fix glow bank sexp bug (Mantis #1250)
+ *
  * Revision 2.299  2007/02/08 07:39:32  Goober5000
  * fix two bugs:
  * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
@@ -5853,15 +5857,14 @@ int sexp_shields_left(int n)
 	if ( shipnum == -1 ){					// hmm.. if true, must not have arrived yet
 		return SEXP_NAN;
 	}
+	object *objp = &Objects[Ships[shipnum].objnum];
 
 	// Goober5000: in case ship has no shields
-	if (Ships[shipnum].ship_max_shield_strength == 0.0f)
-	{
+	if (objp->flags & OF_NO_SHIELDS)
 		return 0;
-	}
 
 	// now return the amount of shields left as a percentage of the whole.
-	percent = (int)(get_shield_pct(&Objects[Ships[shipnum].objnum]) * 100.0f);
+	percent = (int)(get_shield_pct(objp) * 100.0f);
 	return percent;
 }
 
@@ -11841,14 +11844,14 @@ int sexp_shield_quad_low(int node)
 	if(!(sip->flags & SIF_SMALL_SHIP)){
 		return SEXP_FALSE;
 	}
-	max_quad = get_max_shield_quad(objp);	
+	max_quad = shield_get_max_quad(objp);	
 
 	// shield pct
 	check = (float)eval_num(CDR(node));
 
 	// check his quadrants
 	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
-		if( ((objp->shield_quadrant[idx] / max_quad) * 100.0f) <= check ){
+		if( ((shield_get_quad(objp, idx) / max_quad) * 100.0f) <= check ){
 			return SEXP_TRUE;
 		}
 	}
@@ -14156,11 +14159,6 @@ int sexp_is_primary_selected(int node)
 	return SEXP_FALSE;
 }
 
-#define	RIGHT_QUAD	0
-#define	FRONT_QUAD	1
-#define	LEFT_QUAD	3
-#define	REAR_QUAD	2
-
 //	Return SEXP_TRUE if quadrant quadnum is near max.
 int shield_quad_near_max(int quadnum)
 {
@@ -14169,10 +14167,10 @@ int shield_quad_near_max(int quadnum)
 		if (i == quadnum){
 			continue;
 		}
-		remaining += Player_obj->shield_quadrant[i];
+		remaining += shield_get_quad(Player_obj, i);
 	}
 
-	if ((remaining < 2.0f) || (Player_obj->shield_quadrant[quadnum] > get_max_shield_quad(Player_obj) - 5.0f)) {
+	if ((remaining < 2.0f) || (shield_get_quad(Player_obj, quadnum) > shield_get_max_quad(Player_obj) - 5.0f)) {
 		return SEXP_TRUE;
 	} else {
 		return SEXP_FALSE;
@@ -14193,6 +14191,7 @@ int process_special_sexps(int index)
 		}
 		return SEXP_FALSE;
 		break;
+
 	case 1:	//	Fired Interceptors
 		object	*objp;
 		for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
@@ -14209,6 +14208,7 @@ int process_special_sexps(int index)
 			}
 		}
 		return SEXP_FALSE;
+
 	case 2:	//	Ship "Freighter 1", subsystem "Weapons" is aspect locked by player.
 		if (Player_ai->target_objnum != -1) {
 			if (!(stricmp(Ships[Objects[Player_ai->target_objnum].instance].ship_name, "Freighter 1"))) {
@@ -14221,41 +14221,43 @@ int process_special_sexps(int index)
 		}
 		return SEXP_FALSE;
 		break;
+
 	case 3:	//	Player ship suffering shield damage on front.
-		apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
+		shield_apply_damage(Player_obj, FRONT_QUAD, 10.0f);
 		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 		return SEXP_TRUE;
 		break;
+
 	case 4:	//	Player ship suffering much damage.
 		nprintf(("AI", "Frame %i\n", Framecount));
-		apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
+		shield_apply_damage(Player_obj, FRONT_QUAD, 10.0f);
 		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
-		if (Player_obj->shield_quadrant[FRONT_QUAD] < 2.0f)
+		if (shield_get_quad(Player_obj, FRONT_QUAD) < 2.0f)
 			return SEXP_TRUE;
 		else
 			return SEXP_FALSE;
 		break;
+
 	case 5:	//	Player's shield is quick repaired
-		nprintf(("AI", "Frame %i, recharged to %7.3f\n", Framecount, Player_obj->shield_quadrant[FRONT_QUAD]));
+		nprintf(("AI", "Frame %i, recharged to %7.3f\n", Framecount, shield_get_quad(Player_obj, FRONT_QUAD)));
 
-		apply_damage_to_shield(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
-
-		if (Player_obj->shield_quadrant[FRONT_QUAD] > get_max_shield_quad(Player_obj))
-			Player_obj->shield_quadrant[FRONT_QUAD] = get_max_shield_quad(Player_obj);
+		shield_apply_damage(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
 
 		//hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
-		if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%MAX_SHIELD_SECTIONS] - 2.0f)
+		if (shield_get_quad(Player_obj, FRONT_QUAD) > shield_get_quad(Player_obj, (FRONT_QUAD+1)%MAX_SHIELD_SECTIONS) - 2.0f)
 			return SEXP_TRUE;
 		else
 			return SEXP_FALSE;
 		break;
+
 	case 6:	//	3 of player's shield quadrants are reduced to 0.
-		Player_obj->shield_quadrant[1] = 1.0f;
-		Player_obj->shield_quadrant[2] = 1.0f;
-		Player_obj->shield_quadrant[3] = 1.0f;
-		//apply_damage_to_shield(Player_obj, FRONT_QUAD, 1.0f);
+		shield_set_quad(Player_obj, FRONT_QUAD, 1.0f);
+		shield_set_quad(Player_obj, REAR_QUAD, 1.0f);
+		shield_set_quad(Player_obj, LEFT_QUAD, 1.0f);
+		//shield_apply_damage(Player_obj, FRONT_QUAD, 1.0f);
 		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 		return SEXP_TRUE;
+
 	case 7:	//	Make sure front quadrant has been maximized, or close to it.
 		if (shield_quad_near_max(FRONT_QUAD)) return SEXP_TRUE; else return SEXP_FALSE;
 		break;
@@ -14265,8 +14267,8 @@ int process_special_sexps(int index)
 		break;
 	
 	case 9:	//	Zero left and right quadrants in preparation for maximizing rear quadrant.
-		Player_obj->shield_quadrant[LEFT_QUAD] = 0.0f;
-		Player_obj->shield_quadrant[RIGHT_QUAD] = 0.0f;
+		shield_set_quad(Player_obj, LEFT_QUAD, 1.0f);
+		shield_set_quad(Player_obj, RIGHT_QUAD, 1.0f);
 		hud_shield_quadrant_hit(Player_obj, LEFT_QUAD);
 		return SEXP_TRUE;
 		break;
@@ -14293,7 +14295,7 @@ int process_special_sexps(int index)
 		break;
 
 	case 13:	// Zero front shield quadrant.  Added for Jim Boone on August 26, 1999 by MK.
-		Player_obj->shield_quadrant[FRONT_QUAD] = 0.0f;
+		shield_set_quad(Player_obj, FRONT_QUAD, 1.0f);
 		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 		return SEXP_TRUE;
 		break;

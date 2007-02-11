@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.97 $
+ * $Revision: 2.98 $
  * $Author: Goober5000 $
- * $Date: 2007-02-10 03:17:31 $
+ * $Date: 2007-02-11 21:26:35 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2007/02/10 03:17:31  Goober5000
+ * made support ship shield control a bit less of a hack
+ *
  * Revision 2.96  2007/02/08 07:39:32  Goober5000
  * fix two bugs:
  * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
@@ -883,8 +886,8 @@ typedef struct p_object {
 
 	char	alt_type_index;					// optional alt type index
 
-	float ship_max_hull_strength;
-	float ship_max_shield_strength;
+	float parse_max_hull_strength;
+	float parse_max_shield_strength;
 
 	// Goober5000
 	int num_texture_replacements;

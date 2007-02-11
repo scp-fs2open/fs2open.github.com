@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.32 $
- * $Date: 2007-01-15 13:42:59 $
- * $Author: karajorma $
+ * $Revision: 1.33 $
+ * $Date: 2007-02-11 21:26:34 $
+ * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2007/01/15 13:42:59  karajorma
+ * Hmmm. Forgot to commit changes to support network variables and setting ammo/weapons to HEAD as well as 3.6.9.
+ *
  * Revision 1.31  2007/01/07 21:28:10  Goober5000
  * yet more tweaks to the WCS death scream stuff
  * added a ship flag to force screaming
@@ -2080,13 +2083,14 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 		fout(" %d", (int) objp->hull_strength);
 	}
 
-	if ((int) get_shield_strength(objp) != 100) {
+	int shield_strength = (int) shield_get_quad(objp, 0);
+	if (shield_strength != 100) {
 		if (optional_string_fred("+Initial Shields:", "$Name:", "+Subsystem:"))
 			parse_comments();
 		else
 			fout("\n+Initial Shields:");
 
-		fout(" %d", (int) objp->shield_quadrant[0]);
+		fout(" %d", shield_strength);
 	}
 
 	// save normal ship weapons info
