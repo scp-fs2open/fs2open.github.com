@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.26 $
- * $Date: 2006-10-06 09:33:10 $
+ * $Revision: 2.27 $
+ * $Date: 2007-02-11 09:10:14 $
  * $Author: taylor $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2006/10/06 09:33:10  taylor
+ * fix for the "branch" bug (still a minor usability issue however, see Mantis bug for details)
+ * add a popup to the loopbrief screen when you press ESC, so that we can either accept or decline the loop offer
+ *
  * Revision 2.25  2006/09/11 06:02:14  taylor
  * quite a few fixes to handle missing campaigns better
  * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
@@ -1312,7 +1316,7 @@ void sim_room_init()
 	Num_campaign_missions = 0;
 	Get_file_list_filter = sim_room_campaign_mission_filter;
 
-	mission_campaign_build_list();
+	mission_campaign_build_list(false, false);	// no descs, no sorting
 
 	Hash_table_inited = 0;
 	if (build_campaign_mission_filename_hash_table()) {
