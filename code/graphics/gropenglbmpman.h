@@ -9,13 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.h $
- * $Revision: 1.6 $
- * $Date: 2006-05-13 07:29:52 $
+ * $Revision: 1.7 $
+ * $Date: 2007-02-11 18:18:52 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2006/05/13 07:29:52  taylor
+ * OpenGL envmap support
+ * newer OpenGL extension support
+ * add GL_ARB_texture_rectangle support for non-power-of-2 textures as interface graphics
+ * add cubemap reading and writing support to DDS loader
+ * fix bug in DDS loader that made compressed images with mipmaps use more memory than they really required
+ * add support for a default envmap named "cubemap.dds"
+ * new mission flag "$Environment Map:" to use a pre-existing envmap
+ * minor cleanup of compiler warning messages
+ * get rid of wasteful math from gr_set_proj_matrix()
+ * remove extra gr_set_*_matrix() calls from starfield.cpp as there was no longer a reason for them to be there
+ * clean up bmpman flags in reguards to cubemaps and render targets
+ * disable D3D envmap code until it can be upgraded to current level of code
+ * remove bumpmap code from OpenGL stuff (sorry but it was getting in the way, if it was more than copy-paste it would be worth keeping)
+ * replace gluPerspective() call with glFrustum() call, it's a lot less math this way and saves the extra function call
+ *
  * Revision 1.5  2005/08/20 20:34:51  taylor
  * some bmpman and render_target function name changes so that they make sense
  * always use bm_set_render_target() rather than the gr_ version so that the graphics state is set properly
@@ -49,7 +65,7 @@
 
 
 // anything API specific to freeing bm data
-void gr_opengl_bm_free_data(int n);
+void gr_opengl_bm_free_data(int n, bool release);
 
 // API specifics for creating a user bitmap
 void gr_opengl_bm_create(int n);
