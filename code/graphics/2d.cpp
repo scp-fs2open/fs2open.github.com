@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.73.2.8 $
- * $Date: 2007-02-12 00:19:48 $
+ * $Revision: 2.73.2.9 $
+ * $Date: 2007-02-12 01:04:50 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73.2.8  2007/02/12 00:19:48  taylor
+ * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
+ *
  * Revision 2.73.2.7  2007/02/10 00:03:43  taylor
  * performance/accuracy optimization for the (un)size functions
  *
@@ -1642,7 +1645,7 @@ void gr_set_color_fast(color *dst)
 }
 
 // shader functions
-void gr_create_shader(shader *shade, float r, float g, float b, float c )
+void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c )
 {
 	shade->screen_sig = gr_screen.signature;
 	shade->r = r;
@@ -1659,7 +1662,7 @@ void gr_set_shader(shader *shade)
 
 		gr_screen.current_shader = *shade;
 	} else {
-		gr_create_shader( &gr_screen.current_shader, 0.0f, 0.0f, 0.0f, 0.0f );
+		gr_create_shader( &gr_screen.current_shader, 0, 0, 0, 0 );
 	}
 }
 
@@ -2135,43 +2138,22 @@ void gr_rect(int x, int y, int w, int h, bool resize)
 
 void gr_shade(int x, int y, int w, int h, bool resize)
 {
-	if(gr_screen.mode == GR_STUB)
+	int r, g, b, a;
+
+	if (gr_screen.mode == GR_STUB)
 		return;
 
-		int r,g,b,a;
-
-	if(resize)
-	{
+	if (resize) {
 		gr_resize_screen_pos(&x, &y);
 		gr_resize_screen_pos(&w, &h);
 	}
 
-	//WMC - this is the original shade code.
-	//Lots of silly unneccessary calcs.
-	/*
-	float shade1 = 1.0f;
-	float shade2 = 6.0f;
+	r = (int)gr_screen.current_shader.r;
+	g = (int)gr_screen.current_shader.g;
+	b = (int)gr_screen.current_shader.b;
+	a = (int)gr_screen.current_shader.c;
 
-	r = fl2i(gr_screen.current_shader.r*255.0f*shade1);
-	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
-	g = fl2i(gr_screen.current_shader.g*255.0f*shade1);
-	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
-	b = fl2i(gr_screen.current_shader.b*255.0f*shade1);
-	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
-	a = fl2i(gr_screen.current_shader.c*255.0f*shade2);
-	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;
-	*/
-
-	r = fl2i(gr_screen.current_shader.r);
-	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
-	g = fl2i(gr_screen.current_shader.g);
-	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
-	b = fl2i(gr_screen.current_shader.b);
-	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
-	a = fl2i(gr_screen.current_shader.c);
-	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;
-
-	g3_draw_2d_rect(x,y,w,h,r,g,b,a);
+	g3_draw_2d_rect(x, y, w, h, r, g, b, a);
 }
 
 #ifdef USE_PYTHON

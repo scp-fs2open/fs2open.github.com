@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.11 $
- * $Date: 2007-02-11 09:12:12 $
+ * $Revision: 2.87.2.12 $
+ * $Date: 2007-02-12 01:04:50 $
  * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.11  2007/02/11 09:12:12  taylor
+ * little bit of cleanup
+ * more fixage for hidden jumpnodes (Mantis #1149)
+ *
  * Revision 2.87.2.10  2007/01/07 12:11:51  taylor
  * rest of the weapon switch out-of-bounds/Assert() fix
  *
@@ -1542,18 +1546,19 @@ color HUD_color_homing_indicator;
 
 void hud_make_shader(shader *sh, int r, int g, int b, float dimmer = 1000.0f)
 {
-	float rf,gf,bf,cf;
+//	float rf,gf,bf,cf;
+	int R = 255, G = 255, B = 255, A = 255;
 
 	// The m matrix converts all colors to shades of green
 	//float tmp = 16.0f*(0.0015625f * i2fl(HUD_color_alpha+1.0f));
 	float tmp = 0.025f * i2fl(HUD_color_alpha+1.0f);
 
-	rf = tmp*r;
-	gf = tmp*r;
-	bf = tmp*r;
-	cf = 255.0f*((i2fl(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f));
+	R = fl2i(r * tmp);
+	G = fl2i(r * tmp); // fl2i(g * tmp);  WTF??
+	B = fl2i(r * tmp); // fl2i(b * tmp);  WTF??
+	A = fl2i((i2fl(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f) * 255.0f);
 
-	gr_create_shader( sh, rf, gf, bf, cf );
+	gr_create_shader( sh, R, G, B, A );
 }
 
 void hud_init_targeting_colors()
