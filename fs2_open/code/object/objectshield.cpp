@@ -8,19 +8,24 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectShield.cpp $
- * $Revision: 2.1 $
- * $Date: 2007-02-11 21:26:35 $
+ * $Revision: 2.2 $
+ * $Date: 2007-02-12 01:24:18 $
  * $Author: Goober5000 $
  *
  * Shield-specific functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.1  2007/02/11 21:26:35  Goober5000
+ * massive shield infrastructure commit
+ *
  *
  */
 
+#include "math/staticrand.h"
+#include "network/multi.h"
 #include "object/object.h"
 #include "ship/ship.h"
-#include "network/multi.h"
+#include "ship/subsysdamage.h"
 
 
 float shield_get_strength(object *objp)
@@ -98,6 +103,28 @@ void shield_add_strength(object *objp, float delta)
 	}
 }
 
+static double factor = 1.0 / (log(50.0) - log(1.0));
+
+// Goober5000
+float scale_quad(float generator_fraction, float quad_strength)
+{
+	// the following formula makes a nice logarithmic curve between 1 and 50,
+	// when x goes from 0 to 100:
+	//
+	// ln(x) * (100 - 0)
+	// -----------------
+	//  ln(50) - ln(1)
+	//
+	float effective_strength = quad_strength * (log(generator_fraction * 100.0f) * factor);
+
+	// ensure not negative, which may happen if the shield gets below 1 percent
+	// (since we're dealing with logs)
+	if (effective_strength < 0.0f)
+		return 0.0f;
+	else
+		return effective_strength;
+}
+
 // Goober5000
 float shield_get_quad(object *objp, int quadrant_num)
 {
@@ -110,7 +137,46 @@ float shield_get_quad(object *objp, int quadrant_num)
 	if (quadrant_num < 0 || quadrant_num >= MAX_SHIELD_SECTIONS)
 		return 0.0f;
 
-	return objp->shield_quadrant[quadrant_num];
+	if (objp->type != OBJ_SHIP)
+		return 0.0f;
+
+	// yarr!
+	ship_subsys_info *ssip = &Ships[objp->instance].subsys_info[SUBSYSTEM_SHIELD_GENERATOR];
+
+	// do we have a shield generator?
+	if (ssip->num > 0)
+	{
+		// rules for shield generator affecting coverage:
+		//	1. if generator above 50%, effective strength = actual strength
+		//	2. if generator below 50%, effective strength uses the scale_quad formula
+		//	3. if generator below 30%, shields only have a sqrt(generator strength)
+		//		chance of working, in addition to #2
+		float generator_fraction = ssip->current_hits / ssip->total_hits;
+
+		if (generator_fraction > MIN_SHIELDS_FOR_FULL_STRENGTH)
+		{
+			return objp->shield_quadrant[quadrant_num];
+		}
+		else if (generator_fraction > MIN_SHIELDS_FOR_FULL_COVERAGE)
+		{
+			return scale_quad(generator_fraction, objp->shield_quadrant[quadrant_num]);
+		}
+		else
+		{
+			// randomize according to this object and the current time
+			// (Missiontime >> 13 is eighths of a second) 
+			float rand_num = static_randf(OBJ_INDEX(objp) ^ (Missiontime >> 13));
+
+			// maybe flicker the shield
+			if (rand_num < sqrt(generator_fraction))
+				return scale_quad(generator_fraction, objp->shield_quadrant[quadrant_num]);
+			else
+				return 0.0f;
+		}
+	}
+	// no shield generator, so behave as normal
+	else
+		return objp->shield_quadrant[quadrant_num];
 }
 
 // Goober5000
