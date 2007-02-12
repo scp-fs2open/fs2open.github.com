@@ -1,10 +1,14 @@
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.cpp $
- * $Revision: 1.1.2.3 $
- * $Date: 2007-02-11 09:58:20 $
+ * $Revision: 1.1.2.4 $
+ * $Date: 2007-02-12 00:19:48 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1.2.3  2007/02/11 09:58:20  taylor
+ * remove -pcx32 and -jpgtga
+ * support for a couple of recent bmpman changes
+ *
  * Revision 1.1.2.2  2006/09/24 22:53:22  taylor
  * more standalone server fixes:
  *  - add some basic bmpman functionality to grstub, since it needs to do something at least
@@ -264,7 +268,7 @@ void gr_stub_rect(int x, int y, int w, int h, bool resize)
 {
 }
 
-void gr_stub_render_buffer(int start, int n_prim, ushort *index_buffer, int flags)
+void gr_stub_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
 {
 }
 

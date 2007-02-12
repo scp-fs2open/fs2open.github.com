@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.105.2.15 $
- * $Date: 2006-12-28 22:47:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.105.2.16 $
+ * $Date: 2007-02-12 00:19:48 $
+ * $Author: taylor $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105.2.15  2006/12/28 22:47:15  Goober5000
+ * fix spelling... *twitch*
+ *
  * Revision 2.105.2.14  2006/11/04 17:22:54  Goober5000
  * improve error message
  *
@@ -1267,9 +1270,9 @@ void model_set_bay_path_nums(polymodel *pm);
 //determine the order that they are tried in ai_goal_fixup_dockpoints
 flag_def_list Dock_type_names[] =
 {
-	{ "cargo",		DOCK_TYPE_CARGO },
-	{ "rearm",		DOCK_TYPE_REARM },
-	{ "generic",	DOCK_TYPE_GENERIC },
+	{ "cargo",		DOCK_TYPE_CARGO,	0 },
+	{ "rearm",		DOCK_TYPE_REARM,	0 },
+	{ "generic",	DOCK_TYPE_GENERIC,	0 }
 };
 
 int Num_dock_type_names = sizeof(Dock_type_names) / sizeof(flag_def_list);
@@ -1912,11 +1915,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		cf_chksum_long(fp, &pof_checksum);
 		cfseek(fp, 0, SEEK_SET);
 
-		// set all of the defaults
-		ibuffer_info.read = NULL;
-		ibuffer_info.write = NULL;
-		ibuffer_info.size = 0;
-		ibuffer_info.name[0] = '\0';
+		// clear struct and prepare for IBX usage
+		memset( &ibuffer_info, 0, sizeof(IBX) );
 
 		// use the same filename as the POF but with an .ibx extension
 		strcpy( ibuffer_info.name, filename );
@@ -1933,6 +1933,8 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 		}
 
 		if ( ibuffer_info.read != NULL ) {
+			bool ibx_valid = false;
+
 			// grab a checksum of the IBX, for debugging purposes
 			uint ibx_checksum = 0;
 			cfseek(ibuffer_info.read, 0, SEEK_SET);
@@ -1948,7 +1950,17 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			ibuffer_info.size -= sizeof(int); // subtract
 
 			// make sure the file is valid
-			if ( ibx != 0x58424920 ) { // "XBI " - (" IBX" in file)
+			switch (ibx)
+			{
+				// "XBI " - (" IBX" in file)
+				case 0x58424920:
+				// "XBI2" - ("2IBX" in file)
+				case 0x58424932:
+					ibx_valid = true;
+					break;
+			}
+
+			if ( !ibx_valid ) {
 				cfclose( ibuffer_info.read );
 				ibuffer_info.read = NULL;
 				ibuffer_info.size = 0;
@@ -1977,7 +1989,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 			if (ibuffer_info.write != NULL) {
 				mprintf(("IBX: Starting a new IBX for '%s'.\n", filename));
 
-				// file id
+				// file id, default to version 1
 				cfwrite_int( 0x58424920, ibuffer_info.write ); // "XBI " - (" IBX" in file)
 
 				// POF checksum
@@ -2758,7 +2770,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				{
 					char tmp_name[256];
 					cfread_string_len(tmp_name,127,fp);
-
 					model_load_texture(pm, i, tmp_name);
 					//mprintf(0,"<%s>\n",name_buf);
 				}
@@ -2964,17 +2975,19 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	// these must be reset to NULL for the tests to work correctly later
 	if ( ibuffer_info.read != NULL ) {
 		cfclose( ibuffer_info.read );
-		ibuffer_info.read = NULL;
-		ibuffer_info.size = 0;
-		ibuffer_info.name[0] = '\0';
 	}
 
 	if ( ibuffer_info.write != NULL ) {
+		// if we switched to v2 at any point during IBX creation, make sure to update the header
+		if (ibuffer_info.version == 2) {
+			cfseek( ibuffer_info.write, 0, CF_SEEK_SET );
+			cfwrite_int( 0x58424932, ibuffer_info.write ); // "XBI2" - ("2IBX" in file)
+		}
+
 		cfclose( ibuffer_info.write );
-		ibuffer_info.write = NULL;
-		ibuffer_info.size = 0;
-		ibuffer_info.name[0] = '\0';
 	}
+
+	memset( &ibuffer_info, 0, sizeof(IBX) );
 
 	// mprintf(("Done processing chunks\n"));
 	return 1;

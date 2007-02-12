@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.44.2.11 $
- * $Date: 2007-02-10 00:05:25 $
+ * $Revision: 1.44.2.12 $
+ * $Date: 2007-02-12 00:19:48 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.44.2.11  2007/02/10 00:05:25  taylor
+ * obsolete gluLookAt() in favor of doing it manually, should be slight faster and more precise
+ *
  * Revision 1.44.2.10  2006/12/27 09:26:21  taylor
  * fix OpenGL envmap "issues" (ie, stupid taylor stuff)
  * get rid of that RCS_Name thing, CVS kept changing it automatically and it was getting /really/ annoying
@@ -559,34 +562,48 @@ void gr_opengl_destroy_buffer(int idx)
 }
 
 #define DO_RENDER() {	\
-	if (index_buffer != NULL) {	\
+	if ( (ibuffer != NULL) || (sbuffer != NULL) ) {	\
 		if ( multiple_elements ) {	\
 			start_tmp = 0;	\
 			end_tmp = (GL_max_elements_indices - 1);	\
 			count_tmp = (end_tmp - start_tmp + 1);	\
 \
-			vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);	\
+			if (ibuffer) {	\
+				vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_INT, ibuffer + start_tmp);	\
+			} else {	\
+				vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, sbuffer + start_tmp);	\
+			}	\
 \
 			while (end_tmp < end) {	\
 				start_tmp += (GL_max_elements_indices - 1);	\
 				end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );	\
 				count_tmp = (end_tmp - start_tmp + 1);	\
 \
-				vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, index_buffer + start_tmp);	\
+				if (ibuffer) {	\
+					vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_INT, ibuffer + start_tmp);	\
+				} else {	\
+					vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, sbuffer + start_tmp);	\
+				}	\
 			}	\
 		} else {	\
-			vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, index_buffer + start);	\
+			if (ibuffer) {	\
+				vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_INT, ibuffer + start);	\
+			} else {	\
+				vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, sbuffer + start);	\
+			}	\
 		}	\
 	} else {	\
 		glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);	\
 	}	\
 }
 
+
+
 //#define DRAW_DEBUG_LINES
 extern void opengl_default_light_settings(int amb = 1, int emi = 1, int spec = 1);
 
 //start is the first part of the buffer to render, n_prim is the number of primitives, index_list is an index buffer, if index_list == NULL render non-indexed
-void gr_opengl_render_buffer(int start, int n_prim, ushort *index_buffer, int flags)
+void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuffer, int flags)
 {
 	if (Cmdline_nohtl)
 		return;
