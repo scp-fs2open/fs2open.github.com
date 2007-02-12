@@ -2,13 +2,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.198 $
- * $Date: 2007-02-11 18:26:59 $
+ * $Revision: 2.199 $
+ * $Date: 2007-02-12 07:35:58 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.198  2007/02/11 18:26:59  taylor
+ * remove cloakmap stuff, we'll need to redo this later on anyway
+ * deal better with a strange Windows buffer swap issue
+ * various bits of cleanup and performance improvements
+ * fix for gr_opengl_flash() that I had screwed up earlier
+ *
  * Revision 2.197  2007/02/10 20:23:51  taylor
  * make sure that we don't set the 2d view matrix and then not reset it (Mantis #1269)
  * clean up some of the fullneb mess that was causing some initial setup issues (colors wrong, etc.)
@@ -1725,8 +1731,10 @@ void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 	gr_screen.clip_aspect = i2fl(w) / i2fl(h);
 
 	// just return early if we aren't actually going to need the scissor test
-	if ( (x == 0) && (y == 0) && (w == max_w) && (h == max_h) )
+	if ( (x == 0) && (y == 0) && (w == max_w) && (h == max_h) ) {
+		glDisable(GL_SCISSOR_TEST);
 		return;
+	}
 	
 	glEnable(GL_SCISSOR_TEST);
 	glScissor(x, gr_screen.max_h-y-h, w, h);
