@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.23 $
- * $Date: 2007-02-11 21:42:41 $
+ * $Revision: 2.24 $
+ * $Date: 2007-02-12 01:23:29 $
  * $Author: Goober5000 $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2007/02/11 21:42:41  Goober5000
+ * change a number to a constant
+ *
  * Revision 2.22  2007/02/11 21:26:34  Goober5000
  * massive shield infrastructure commit
  *
@@ -229,6 +232,7 @@
 #include "weapon/weapon.h"
 #include "globalincs/systemvars.h"
 #include "object/object.h"
+#include "ship/subsysdamage.h"
 	
 
 #define ENERGY_DIVERT_DELTA				0.2f	// percentage of energy transferred in a shield->weapon or weapon->shield energy transfer
