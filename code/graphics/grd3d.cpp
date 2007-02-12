@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.95.2.3 $
- * $Date: 2006-10-27 21:37:11 $
+ * $Revision: 2.95.2.4 $
+ * $Date: 2007-02-12 00:19:48 $
  * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95.2.3  2006/10/27 21:37:11  taylor
+ * more cleanup of warp_global crap
+ * scale render/detail box limits with detail level setting
+ * make sure that we reset culling and zbuffer after each model buffer that gets rendered
+ *
  * Revision 2.95.2.2  2006/10/24 13:24:12  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
@@ -2472,23 +2477,43 @@ void gr_d3d_set_buffer(int idx)
 
 IDirect3DIndexBuffer8 *global_index_buffer = NULL;
 int index_buffer_size = 0;
+IDirect3DIndexBuffer8 *global_index_buffer32 = NULL;
+int index_buffer_size32 = 0;
 
 
-void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, int flags)
+void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, uint *ibuf32, int flags)
 {
 	if(set_buffer == NULL)return;
-	if(index_buffer != NULL){
-		if(index_buffer_size < n_prim * 3 || !global_index_buffer){
-			if(global_index_buffer)global_index_buffer->Release();
-			GlobalD3DVars::lpD3DDevice->CreateIndexBuffer(n_prim * 3 * sizeof(ushort), D3DUSAGE_DYNAMIC|D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, (IDirect3DIndexBuffer8**) &global_index_buffer);
-			index_buffer_size = n_prim * 3;
+	if(index_buffer != NULL && ibuf32 !=NULL){
+		Error(LOCATION, "gr_d3d_render_buffer was given TWO indext buffers, that's not cool man!\n only useing the 16 bit one");
+		ibuf32=NULL;
+	}
+	if(index_buffer != NULL || ibuf32 !=NULL){
+		if(index_buffer){
+			if(index_buffer_size < n_prim * 3 || !global_index_buffer){
+				if(global_index_buffer)global_index_buffer->Release();
+				GlobalD3DVars::lpD3DDevice->CreateIndexBuffer(n_prim * 3 * sizeof(ushort), D3DUSAGE_DYNAMIC|D3DUSAGE_WRITEONLY, D3DFMT_INDEX16, D3DPOOL_DEFAULT, (IDirect3DIndexBuffer8**) &global_index_buffer);
+				index_buffer_size = n_prim * 3;
+			}
+			ushort* i_buffer;
+			global_index_buffer->Lock(0, 0, (BYTE **)&i_buffer, D3DLOCK_DISCARD);
+			memcpy(i_buffer, index_buffer, n_prim*3*sizeof(ushort));
+			global_index_buffer->Unlock();
+			GlobalD3DVars::lpD3DDevice->SetIndices(global_index_buffer, 0);
 		}
-		ushort* i_buffer;
+		if(ibuf32) {
+			if(index_buffer_size32 < n_prim * 3 || !global_index_buffer32){
+				if(global_index_buffer32)global_index_buffer32->Release();
+				GlobalD3DVars::lpD3DDevice->CreateIndexBuffer(n_prim * 3 * sizeof(uint), D3DUSAGE_DYNAMIC|D3DUSAGE_WRITEONLY, D3DFMT_INDEX32, D3DPOOL_DEFAULT, (IDirect3DIndexBuffer8**) &global_index_buffer32);
+				index_buffer_size32 = n_prim * 3;
+			}
+			uint* i_buffer32;
+			global_index_buffer32->Lock(0, 0, (BYTE **)&i_buffer32, D3DLOCK_DISCARD);
+			memcpy(i_buffer32, ibuf32, n_prim*3*sizeof(uint));
+			global_index_buffer32->Unlock();
+			GlobalD3DVars::lpD3DDevice->SetIndices(global_index_buffer32, 0);
+		}
 	//	global_index_buffer->Lock(start, n_prim * 3 * sizeof(short), (BYTE **)&index_buffer, D3DLOCK_DISCARD);
-		global_index_buffer->Lock(0, 0, (BYTE **)&i_buffer, D3DLOCK_DISCARD);
-		memcpy(i_buffer, index_buffer, n_prim*3*sizeof(ushort));
-		global_index_buffer->Unlock();
-		GlobalD3DVars::lpD3DDevice->SetIndices(global_index_buffer, 0);
 	}
 //	GlobalD3DVars::d3d_caps.MaxActiveLights = 1;
 
@@ -2580,7 +2605,7 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, int flags
 
 	gr_d3d_center_alpha_int(GR_center_alpha);
 //	if(!lighting_enabled)		d3d_SetRenderState(D3DRS_LIGHTING , FALSE);
-	if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+	if(index_buffer != NULL || ibuf32 != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
 	else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 //	if(!lighting_enabled)		d3d_SetRenderState(D3DRS_LIGHTING , TRUE);
 
@@ -2615,7 +2640,7 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, int flags
 	for(int i = 1; i<passes; i++){
 		shift_active_lights(i);
 		TIMERBAR_PUSH(7);
-		if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+		if(index_buffer != NULL || ibuf32 != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
 		else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 		TIMERBAR_POP();
 	}
@@ -2641,12 +2666,12 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, int flags
 
 		if(set_stage_for_spec_mapped()){
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
-			if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+			if(index_buffer != NULL || ibuf32 != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
 			else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 			d3d_SetRenderState(D3DRS_AMBIENT, D3DCOLOR_ARGB(0,0,0,0));
 			for(int i = 1; i<passes; i++){
 				shift_active_lights(i);
-				if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+				if(index_buffer != NULL || ibuf32 != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
 				else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 			}
 			gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_NONE, ZBUFFER_TYPE_FULL );
@@ -2654,13 +2679,13 @@ void gr_d3d_render_buffer(int start, int n_prim, ushort* index_buffer, int flags
 				gr_zbias(2);
 
 				extern int Game_subspace_effect;
-				gr_screen.gf_set_bitmap((Game_subspace_effect)?gr_screen.dynamic_environment_map:gr_screen.static_environment_map, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
+				gr_screen.gf_set_bitmap(ENVMAP, gr_screen.current_alphablend_mode, gr_screen.current_bitblt_mode, 0.0);
 				d3d_tcache_set_internal(gr_screen.current_bitmap, TCACHE_TYPE_NORMAL, &u_scale, &v_scale, 0, 0, 1);
 
 				gr_d3d_set_state( TEXTURE_SOURCE_DECAL, ALPHA_BLEND_ALPHA_ADDITIVE, ZBUFFER_TYPE_READ );
 				set_stage_for_env_mapped();
 				d3d_SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_COUNT3);
-				if(index_buffer != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
+				if(index_buffer != NULL || ibuf32 != NULL)GlobalD3DVars::lpD3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST,0,set_buffer->n_verts, start, n_prim);
 				else GlobalD3DVars::lpD3DDevice->DrawPrimitive(D3DPT_TRIANGLELIST , start, n_prim);
 				d3d_SetTextureStageState(1, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
 			}
