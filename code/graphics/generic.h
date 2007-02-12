@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/graphics/generic.h $
- * $Revision: 1.1 $
- * $Date: 2005-11-21 23:55:00 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2007-02-12 00:22:05 $
  * $Author: taylor $
  *
  * Generic graphics functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2005/11/21 23:55:00  taylor
+ * add generic.cpp and generic.h
+ *
  *
  * $NoKeywords: $
  */
@@ -22,13 +25,13 @@ typedef struct generic_anim {
 	char filename[MAX_FILENAME_LEN];
 	int	first_frame;
 	int	num_frames;
-	int total_time;		// in seconds
+	float total_time;		// in seconds
 } generic_anim;
 
 // Goober5000
 typedef struct generic_bitmap {
 	char filename[MAX_FILENAME_LEN];
-	int bitmap;
+	int bitmap_id;
 } generic_bitmap;
 
 
