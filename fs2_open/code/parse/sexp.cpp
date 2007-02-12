@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.40 $
- * $Date: 2007-02-10 00:14:40 $
+ * $Revision: 2.259.2.41 $
+ * $Date: 2007-02-12 00:23:39 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.40  2007/02/10 00:14:40  taylor
+ * remove NO_SOUND
+ * fix glow bank sexp bug (Mantis #1250)
+ *
  * Revision 2.259.2.39  2007/02/08 07:39:35  Goober5000
  * fix two bugs:
  * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
@@ -8414,7 +8418,7 @@ void sexp_hud_set_text_num(int n)
 	gauge_info* cg = hud_get_gauge(gaugename);
 	if(cg)
 	{
-		itoa(eval_num(CDR(n)), HUD_CHAR(current_hud, cg->text_dest), 10);
+		sprintf( HUD_CHAR(current_hud, cg->text_dest), "%d", eval_num(CDR(n)) );
 	}
 #endif
 }

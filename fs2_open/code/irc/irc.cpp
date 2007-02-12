@@ -10,11 +10,15 @@
 
 /*
  * $Logfile: /Freespace2/code/irc/irc.cpp $
- * $Revision: 1.23.2.1 $
- * $Date: 2006-11-15 00:40:59 $
+ * $Revision: 1.23.2.2 $
+ * $Date: 2007-02-12 00:23:39 $
  * $Author: taylor $
  * *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.1  2006/11/15 00:40:59  taylor
+ * fix some "stupid-windows-coder-mistakes" (otherwise known as "putting-more-than-you-should-into-header-files")
+ *   (gets rid of some/many compiler warnings, C++ language violations, and strange little bugs/errors)
+ *
  * Revision 1.23  2006/04/16 05:28:10  taylor
  * extra safety check when creating a default path string, filename is optional be we need to available if root0 is missing (CFILE not initted yet)
  * fix that crazy compiler<->constructor<->linker<->server.txt deal caused by some bad code and a freaky link thing in freespace.cpp
@@ -636,10 +640,11 @@ void irc_client::User(std::string user, int mode, std::string realname)
 //USER Kazan * 0 :Derek
 //USER <username> <unused> <mode> :<realname>
 {
-	char modetext[4];
+	char modetext[33];
 
 	std::string command = "USER " + user + " * ";
-	command = command + itoa(mode, modetext, 10);
+	sprintf(modetext, "%d", mode);
+	command = command + modetext;
 	command = command + " :" + realname;
 	PutRaw(command);
 }
