@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.28.2.6 $
- * $Date: 2007-02-11 06:19:07 $
- * $Author: Goober5000 $
+ * $Revision: 1.28.2.7 $
+ * $Date: 2007-02-12 02:19:45 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28.2.6  2007/02/11 06:19:07  Goober5000
+ * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
+ *
  * Revision 1.28.2.5  2006/10/27 06:35:29  taylor
  * add "Render full detail" support to the lab as well
  *
@@ -544,7 +547,7 @@ void ships_make_window(Button* caller)
 		ctip = cmp->AddItem(stip, Ship_info[i].name, i, false);
 		for(j = 0; j < Ship_info[i].num_detail_levels; j++)
 		{
-			itoa(j, buf, 10);
+			sprintf(buf, "%d", j);
 			lod_name = "LOD ";
 			lod_name += buf;
 
