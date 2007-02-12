@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.13 $
- * $Date: 2007-02-11 09:24:08 $
+ * $Revision: 1.12.2.14 $
+ * $Date: 2007-02-12 00:24:33 $
  * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.13  2007/02/11 09:24:08  taylor
+ * remove -pcx32 and -jpgtga
+ *
  * Revision 1.12.2.12  2007/02/09 05:40:40  Goober5000
  * merge the voice acting manager into the 3.6.9 (3.6.10?) branch
  *
@@ -590,24 +593,24 @@ bool Show_iff[MAX_IFFS];
 CCriticalSection CS_cur_object_index;
 
 ai_goal_list Ai_goal_list[] = {
-	"Waypoints",				AI_GOAL_WAYPOINTS,
-	"Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,
-	"Warp",						AI_GOAL_WARP,
-	"Destroy subsystem",		AI_GOAL_DESTROY_SUBSYSTEM,
-	"Attack",					AI_GOAL_CHASE | AI_GOAL_CHASE_WING,
-	"Dock",						AI_GOAL_DOCK,
-	"Undock",					AI_GOAL_UNDOCK,
-	"Guard",						AI_GOAL_GUARD | AI_GOAL_GUARD_WING,
-	"Attack any ship",		AI_GOAL_CHASE_ANY,
-	"Disable ship",			AI_GOAL_DISABLE_SHIP,
-	"Disarm ship",				AI_GOAL_DISARM_SHIP,
-	"Evade ship",				AI_GOAL_EVADE_SHIP,
-	"Ignore ship",				AI_GOAL_IGNORE,
-	"Ignore ship (new)",		AI_GOAL_IGNORE_NEW,
-	"Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,
-	"Keep safe distance",	AI_GOAL_KEEP_SAFE_DISTANCE,
-	"Stay still",				AI_GOAL_STAY_STILL,
-	"Play dead",				AI_GOAL_PLAY_DEAD,
+	{ "Waypoints",				AI_GOAL_WAYPOINTS,			0 },
+	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,		0 },
+	{ "Warp",					AI_GOAL_WARP,				0 },
+	{ "Destroy subsystem",		AI_GOAL_DESTROY_SUBSYSTEM,	0 },
+	{ "Attack",					AI_GOAL_CHASE | AI_GOAL_CHASE_WING,	0 },
+	{ "Dock",					AI_GOAL_DOCK,				0 },
+	{ "Undock",					AI_GOAL_UNDOCK,				0 },
+	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING,	0 },
+	{ "Attack any ship",		AI_GOAL_CHASE_ANY,			0 },
+	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
+	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
+	{ "Evade ship",				AI_GOAL_EVADE_SHIP,			0 },
+	{ "Ignore ship",			AI_GOAL_IGNORE,				0 },
+	{ "Ignore ship (new)",		AI_GOAL_IGNORE_NEW,			0 },
+	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,		0 },
+	{ "Keep safe distance",		AI_GOAL_KEEP_SAFE_DISTANCE,	0 },
+	{ "Stay still",				AI_GOAL_STAY_STILL,			0 },
+	{ "Play dead",				AI_GOAL_PLAY_DEAD,			0 }
 };
 
 int Ai_goal_list_size = sizeof(Ai_goal_list) / sizeof(ai_goal_list);

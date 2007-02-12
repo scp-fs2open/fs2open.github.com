@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.42.2.9 $
- * $Date: 2007-02-11 20:26:00 $
- * $Author: Goober5000 $
- * $Revision: 2.42.2.9 $
- * $Date: 2007-02-11 20:26:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.42.2.10 $
+ * $Date: 2007-02-12 00:24:33 $
+ * $Author: taylor $
+ * $Revision: 2.42.2.10 $
+ * $Date: 2007-02-12 00:24:33 $
+ * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42.2.9  2007/02/11 20:26:00  Goober5000
+ * fix some breakage ;)
+ *
  * Revision 2.42.2.8  2007/02/11 09:35:11  taylor
  * add VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
@@ -589,6 +592,7 @@ inline void vec3d::set_screen_vert(vertex&vert){
 typedef struct flag_def_list {
 	char *name;
 	int def;
+	ubyte var;
 } def_list;
 
 //This are defined in MainWin.c
