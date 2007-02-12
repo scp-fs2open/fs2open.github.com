@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.27.2.1 $
- * $Date: 2007-02-12 00:45:24 $
+ * $Revision: 2.27.2.2 $
+ * $Date: 2007-02-12 00:48:43 $
  * $Author: taylor $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27.2.1  2007/02/12 00:45:24  taylor
+ * bit of cleanup and minor performance tweaks
+ * sync up with new generic_anim/bitmap and weapon delayed loading changes
+ * with generic_anim, use Goober's animation timing for beam section and glow animations
+ * make trail render list dynamic (as well as it can be)
+ *
  * Revision 2.27  2006/05/27 16:45:11  taylor
  * some minor cleanup
  * remove -nobeampierce
@@ -311,6 +317,19 @@ static vertex **Trail_vlist = NULL;
 static vertex *Trail_v_list = NULL;
 static int Trail_verts_allocated = 0;
 
+static void deallocate_trail_verts()
+{
+	if (Trail_vlist != NULL) {
+		vm_free(Trail_vlist);
+		Trail_vlist = NULL;
+	}
+
+	if (Trail_v_list != NULL) {
+		vm_free(Trail_v_list);
+		Trail_v_list = NULL;
+	}
+}
+
 static void allocate_trail_verts(int num_verts)
 {
 	if (num_verts <= 0)
@@ -335,6 +354,14 @@ static void allocate_trail_verts(int num_verts)
 	memset( Trail_v_list, 0, sizeof(vertex) * Trail_verts_allocated );
 
 	Trail_verts_allocated = num_verts;
+
+
+	static bool will_free_at_exit = false;
+
+	if ( !will_free_at_exit ) {
+		atexit(deallocate_trail_verts);
+		will_free_at_exit = true;
+	}
 }
 
 void trail_render( trail * trailp )
