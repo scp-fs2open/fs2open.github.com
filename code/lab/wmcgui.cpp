@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.28.2.3 $
- * $Date: 2006-11-15 00:40:59 $
+ * $Revision: 1.28.2.4 $
+ * $Date: 2007-02-12 00:23:39 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28.2.3  2006/11/15 00:40:59  taylor
+ * fix some "stupid-windows-coder-mistakes" (otherwise known as "putting-more-than-you-should-into-header-files")
+ *   (gets rid of some/many compiler warnings, C++ language violations, and strange little bugs/errors)
+ *
  * Revision 1.28.2.2  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -1570,6 +1574,9 @@ int Window::DoMouseDown(float frametime)
 
 int Window::DoMouseUp(float frametime)
 {
+	if (Style & WS_NONMOVEABLE)
+		return OF_TRUE;
+
 	if(CloseHighlight)
 	{
 		Delete();
@@ -2381,8 +2388,8 @@ void Text::SetText(std::string in_content)
 
 void Text::SetText(int the_int)
 {
-	char buf[32];
-	itoa(the_int, buf, 10);
+	char buf[33];
+	sprintf(buf, "%d", the_int);
 	Content = buf;
 
 	OnRefreshSize();

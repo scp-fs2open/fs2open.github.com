@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.4 $
- * $Date: 2006-11-03 18:44:11 $
- * $Author: Kazan $
+ * $Revision: 1.23.2.5 $
+ * $Date: 2007-02-12 00:23:39 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.4  2006/11/03 18:44:11  Kazan
+ * prevent autopilot initialization while player is gliding
+ *
  * Revision 1.23.2.3  2006/09/11 01:00:27  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -195,7 +198,7 @@ vec3d *NavPoint::GetPosition()
 char* NavPoint::GetInteralName()
 {
 	char *NavName;
-	char strtmp[3];
+	char strtmp[33];
 
 	if (flags & NP_WAYPOINT)
 	{
@@ -204,7 +207,8 @@ char* NavPoint::GetInteralName()
 		strcpy(NavName, ((waypoint_list*)target_obj)->name);
 
 		strcat(NavName, ":");
-		strcat(NavName, itoa(waypoint_num, strtmp, 10));
+		sprintf(strtmp, "%d", waypoint_num);
+		strcat(NavName, strtmp);
 	}
 	else
 	{		

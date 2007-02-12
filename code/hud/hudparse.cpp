@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.43.2.4 $
- * $Date: 2007-01-07 13:18:32 $
+ * $Revision: 2.43.2.5 $
+ * $Date: 2007-02-12 00:23:39 $
  * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43.2.4  2007/01/07 13:18:32  taylor
+ * fix escort positioning issue (Mantis #1179)
+ *
  * Revision 2.43.2.3  2006/12/07 18:17:19  taylor
  * add "$Weapons Energy Text:" to hud_gauges.tbl so that the low energy text can be positioned as well (Mantis bug #1166)
  *
@@ -1971,8 +1974,8 @@ int gauge_var::Evaluate(float* result)
 int gauge_var::Evaluate(char** result)
 {
 	//This should be big enough.
-	(*result) = new char[32];
-	char* temp_result = new char[32];
+	(*result) = new char[33];
+	char* temp_result = new char[33];
 
 	gauge_var* cv = this;
 
@@ -1982,7 +1985,7 @@ int gauge_var::Evaluate(char** result)
 		{
 			case GV_INTPTR:
 			case GV_INTVAR:
-				temp_result = itoa(*int_variable, temp_result, 10);
+				sprintf(temp_result, "%d", *int_variable);
 				break;
 			case GV_CHARPTR:
 				strcpy(temp_result, *char_pointer);
