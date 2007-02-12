@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.17 $
- * $Date: 2007-02-11 06:19:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.150.2.18 $
+ * $Date: 2007-02-12 00:41:38 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.17  2007/02/11 06:19:08  Goober5000
+ * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
+ *
  * Revision 2.150.2.16  2007/02/09 04:53:28  Goober5000
  * merge the WCS screaming feature into the 3.6.9 (3.6.10?) branch
  *
@@ -1595,11 +1598,8 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define REGULAR_WEAPON	(1<<0)
 #define DOGFIGHT_WEAPON (1<<1)
 
-#define	MAX_THRUSTER_PARTICLES 3
 typedef struct thruster_particles {
-	char		thruster_particle_bitmap01_name[NAME_LENGTH];
-	int			thruster_particle_bitmap01;
-	int			thruster_particle_bitmap01_nframes;
+	generic_anim thruster_bitmap;
 	float		min_rad;
 	float		max_rad;
 	int			n_high;
@@ -1795,16 +1795,6 @@ typedef struct ship_info {
 	shockwave_create_info shockwave;
 	int	explosion_propagates;				// If true, then the explosion propagates
 	int	shockwave_count;						// the # of total shockwaves
-	/*
-	float inner_rad;								// radius within which maximum damage is applied
-	float	outer_rad;								// radius at which no damage is applied
-	float damage;									// maximum damage applied from ship explosion
-	float blast;									// maximum blast impulse from ship explosion									
-	float	shockwave_speed;						// speed at which shockwave expands, 0 means no shockwave
-	char shockwave_pof_file[NAME_LENGTH];			// POF file to load/associate with ship's shockwave
-	int shockwave_model;
-	char shockwave_name[NAME_LENGTH];
-	int shockwave_info_index;*/
 
 	int ispew_max_particles;						//Temp field until someone works on particles -C
 	int dspew_max_particles;						//Temp field until someone works on particles -C
@@ -1874,17 +1864,15 @@ typedef struct ship_info {
 	// rgb shield color
 	ubyte shield_color[3];
 
-	//optional ABtrail values
-	char		ABtrail_bitmap_name[MAX_FILENAME_LEN];
-	int			ABbitmap;		//the bitmap used
-	float		ABwidth_factor;	//a number that the width (set by the thruster glow width) will be multiplyed by
-	float		ABAlpha_factor;	//allows you to set how starting trasparency value
-	float		ABlife;			//how long the trails live for
+	// optional afterburner trail values
+	generic_bitmap afterburner_trail;
+	float afterburner_trail_width_factor;
+	float afterburner_trail_alpha_factor;
+	float afterburner_trail_life;
 
-	int			n_thruster_particles;
-	int			n_ABthruster_particles;
-	thruster_particles	normal_thruster_particles[MAX_THRUSTER_PARTICLES];
-	thruster_particles	afterburner_thruster_particles[MAX_THRUSTER_PARTICLES];
+	// thruster particles
+	std::vector<thruster_particles> normal_thruster_particles;
+	std::vector<thruster_particles> afterburner_thruster_particles;
 
 	// Bobboau's extra thruster stuff
 	thrust_pair			thruster_glow_info;

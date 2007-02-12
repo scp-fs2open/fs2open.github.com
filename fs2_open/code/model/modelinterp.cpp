@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.157.2.22 $
- * $Date: 2007-02-12 00:19:48 $
+ * $Revision: 2.157.2.23 $
+ * $Date: 2007-02-12 00:41:37 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157.2.22  2007/02/12 00:19:48  taylor
+ * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
+ *
  * Revision 2.157.2.21  2007/02/11 18:46:30  taylor
  * fix a break from an earlier partial commit
  *
@@ -1122,7 +1125,7 @@ static float Interp_thrust_scale_y = 0.0f;//added -bobboau
 static int Interp_thrust_bitmap = -1;
 static int Interp_thrust_glow_bitmap = -1;
 static float Interp_thrust_glow_noise = 1.0f;
-static bool Interp_AB = false;
+static bool Interp_afterburner = false;
 
 // Bobboau's thruster stuff
 static int Interp_secondary_thrust_glow_bitmap = -1;
@@ -1447,7 +1450,7 @@ void interp_clear_instance()
 	Interp_thrust_glow_bitmap = -1;
 	Interp_thrust_glow_noise = 1.0f;
 	Interp_insignia_bitmap = -1;
-	Interp_AB=false;
+	Interp_afterburner = false;
 
 	// Bobboau's thruster stuff
 	{
@@ -1470,9 +1473,9 @@ void interp_clear_instance()
 }
 
 // Scales the engines thrusters by this much
-void model_set_thrust( int model_num, vec3d *length /*<-I did that-Bobboau*/, int bitmap, int glow_bitmap, float glow_noise, bool AB, bobboau_extra_mst_info *mst)
+void model_set_thrust( int model_num, vec3d *length, int bitmap, int glow_bitmap, float glow_noise, bool afterburner, bobboau_extra_mst_info *mst)
 {
-	Interp_AB = AB;
+	Interp_afterburner = afterburner;
 
 	Interp_thrust_scale = length->xyz.z;
 	Interp_thrust_scale_x = length->xyz.x;
@@ -3051,8 +3054,7 @@ void model_render_insignias(polymodel *pm, int detail_level)
 	x.xyz.z=0;
 
 	// set the proper texture	
-	gr_set_bitmap(Interp_insignia_bitmap);
-
+	gr_set_bitmap(Interp_insignia_bitmap, GR_ALPHABLEND_NONE, GR_BITBLT_MODE_NORMAL, 0.65f);
 
 	// otherwise render them	
 	for(idx=0; idx<pm->num_ins; idx++){	
@@ -4202,10 +4204,16 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			if (shipp) {
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
 				particle_emitter	pe;
-				thruster_particles* tp;
+				thruster_particles *tp;
+				int num_particles = 0;
 
-				for (k = 0; k < sip->n_thruster_particles; k++) {
-					if (Interp_AB)
+				if (Interp_afterburner)
+					num_particles = (int)sip->afterburner_thruster_particles.size();
+				else
+					num_particles = (int)sip->normal_thruster_particles.size();
+
+				for (k = 0; k < num_particles; k++) {
+					if (Interp_afterburner)
 						tp = &sip->afterburner_thruster_particles[k];
 					else
 						tp = &sip->normal_thruster_particles[k];
@@ -4231,7 +4239,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					pe.max_rad = gpt->radius * tp->max_rad; // * objp->radius;
 					pe.normal_variance = tp->variance;					//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
 
-					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_particle_bitmap01);
+					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
 				}
 				// end particles
 
