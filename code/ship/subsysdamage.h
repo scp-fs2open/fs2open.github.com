@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/SubsysDamage.h $
- * $Revision: 2.4 $
- * $Date: 2007-02-11 21:42:41 $
+ * $Revision: 2.5 $
+ * $Date: 2007-02-12 01:24:18 $
  * $Author: Goober5000 $
  *
  * Header file for various subystem damage defines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2007/02/11 21:42:41  Goober5000
+ * change a number to a constant
+ *
  * Revision 2.3  2005/11/24 08:46:10  Goober5000
  * * cleaned up mission_do_departure
  *   * fixed a hidden crash (array index being -1; would only
@@ -105,6 +108,13 @@
 // navigation
 /////////////////////////////////////////
 #define SHIP_MIN_NAV_TO_WARP			0.3f	// % navigation strength required to engage warp
+
+
+/////////////////////////////////////////
+// shields
+/////////////////////////////////////////
+#define MIN_SHIELDS_FOR_FULL_STRENGTH	0.5f	// % shield subsystem strength below which shield becomes less effective
+#define MIN_SHIELDS_FOR_FULL_COVERAGE	0.3f	// % shield subsystem strength below which shield starts flickering
 
 
 #endif
