@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.79.2.6 $
- * $Date: 2007-02-12 00:19:48 $
+ * $Revision: 2.79.2.7 $
+ * $Date: 2007-02-12 01:04:50 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79.2.6  2007/02/12 00:19:48  taylor
+ * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
+ *
  * Revision 2.79.2.5  2007/02/11 09:51:21  taylor
  * remove some dead code
  * better texture memory handling (a work in-progress)
@@ -769,7 +772,7 @@ extern int gr_global_zbuffering;
 // of the values you want to use in the shade primitive.
 typedef struct shader {
 	uint	screen_sig;					// current mode this is in
-	float	r,g,b,c;						// factors and constant
+	ubyte	r,g,b,c;						// factors and constant
 	ubyte	lookup[256];
 } shader;
 
@@ -1451,7 +1454,7 @@ void gr_set_color( int r, int g, int b );
 void gr_set_color_fast(color *dst);
 
 // shader functions
-void gr_create_shader(shader *shade, float r, float g, float b, float c);
+void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c);
 void gr_set_shader(shader *shade);
 
 // new bitmap functions

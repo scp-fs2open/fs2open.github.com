@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.33 $
- * $Date: 2007-02-11 09:35:11 $
+ * $Revision: 2.243.2.34 $
+ * $Date: 2007-02-12 01:04:50 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.33  2007/02/11 09:35:11  taylor
+ * add VALID_FNAME() macro and put it around a few places (more to come)
+ * clean out some old variables
+ * move CLAMP() macro from opengl header to global header
+ * update COUNT_ESTIMATE to match new bmpman changes
+ *
  * Revision 2.243.2.32  2007/02/10 00:17:39  taylor
  * remove NO_SOUND
  *
@@ -6068,37 +6074,35 @@ void game_shade_frame(float frametime)
 	if ( !game_actually_playing() )
 		return;
 
-	if ( (Viewer_shader.c == 0.0f) && (Fade_type != FI_FADEOUT) )
+	if ( (Viewer_shader.c == 0) && (Fade_type != FI_FADEOUT) )
 		return;
 
-	//Fade in or out if necessary
-	if(Fade_type == FI_FADEOUT)
-	{
-		Viewer_shader.c += frametime * (255.0f / Fade_delta_time);
-	}
-	else if(Fade_type == FI_FADEIN)
-	{
-		Viewer_shader.c -= frametime * (255.0f / Fade_delta_time);
-	}
+	float alpha = (float)Viewer_shader.c;
 
-	//Limit and set fade type if done
-	if(Viewer_shader.c < 0.0f)
-	{
-		Viewer_shader.c = 0.0f;
+	// Fade in or out if necessary
+	if (Fade_type == FI_FADEOUT)
+		alpha += frametime * (255.0f / Fade_delta_time);
+	else if (Fade_type == FI_FADEIN)
+		alpha -= frametime * (255.0f / Fade_delta_time);
+
+	// Limit and set fade type if done
+	if (alpha < 0.0f) {
+		alpha = 0.0f;
 
 		if(Fade_type == FI_FADEIN)
 			Fade_type = FI_NONE;
 	}
-	if(Viewer_shader.c > 255.0f)
-	{
-		Viewer_shader.c = 255.0f;
+
+	if (alpha > 255.0f) {
+		alpha = 255.0f;
 
 		if(Fade_type == FI_FADEOUT)
 			Fade_type = FI_NONE;
 	}
 
+	Viewer_shader.c = (ubyte)alpha;
 
-	gr_flash_alpha(fl2i(Viewer_shader.r), fl2i(Viewer_shader.g), fl2i(Viewer_shader.b), fl2i(Viewer_shader.c));
+	gr_flash_alpha(Viewer_shader.r, Viewer_shader.g, Viewer_shader.b, Viewer_shader.c);
 }
 
 //WMC - This does stuff like fading in and out and subtitles. Special FX?
