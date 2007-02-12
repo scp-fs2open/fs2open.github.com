@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.27.2.6 $
- * $Date: 2007-02-11 06:19:08 $
- * $Author: Goober5000 $
+ * $Revision: 2.27.2.7 $
+ * $Date: 2007-02-12 02:19:45 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27.2.6  2007/02/11 06:19:08  Goober5000
+ * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
+ *
  * Revision 2.27.2.5  2007/02/07 07:35:01  Goober5000
  * Clean up the ship-weapon collision code for both conventional weapons and beams.  Improved readability and clarity; untangled program flow; cleaned up sloppy enhancements.  Fixed a few bugs too.
  *
@@ -376,8 +379,9 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 		vm_fix_matrix(&dec.orient);
 		dec.pnt.xyz = hitpos->xyz;
 		dec.radius = wip->decal_rad;
-		if((dec.radius > 0) && (wip->decal_texture > -1))
-		decal_create(ship_obj, &dec, submodel_num, wip->decal_texture, wip->decal_backface_texture, wip->decal_glow_texture, wip->decal_burn_texture, wip->decal_burn_time);
+
+		if ( (dec.radius > 0) && (wip->decal_texture.bitmap_id > -1) )
+			decal_create(ship_obj, &dec, submodel_num, wip->decal_texture.bitmap_id, wip->decal_backface_texture.bitmap_id, wip->decal_glow_texture_id, wip->decal_burn_texture_id, wip->decal_burn_time);
 	}
 	
 
