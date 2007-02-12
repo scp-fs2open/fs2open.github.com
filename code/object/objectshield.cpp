@@ -8,13 +8,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectShield.cpp $
- * $Revision: 2.2 $
- * $Date: 2007-02-12 01:24:18 $
+ * $Revision: 2.3 $
+ * $Date: 2007-02-12 01:33:46 $
  * $Author: Goober5000 $
  *
  * Shield-specific functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2007/02/12 01:24:18  Goober5000
+ * scale shield strength according to generator damage
+ *
  * Revision 2.1  2007/02/11 21:26:35  Goober5000
  * massive shield infrastructure commit
  *
@@ -144,7 +147,7 @@ float shield_get_quad(object *objp, int quadrant_num)
 	ship_subsys_info *ssip = &Ships[objp->instance].subsys_info[SUBSYSTEM_SHIELD_GENERATOR];
 
 	// do we have a shield generator?
-	if (ssip->num > 0)
+	if (ssip->num > 0 && !Fred_running)
 	{
 		// rules for shield generator affecting coverage:
 		//	1. if generator above 50%, effective strength = actual strength
