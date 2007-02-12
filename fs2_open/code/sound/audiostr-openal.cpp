@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.29.2.5 $
- * $Date: 2007-01-07 12:15:09 $
+ * $Revision: 1.29.2.6 $
+ * $Date: 2007-02-12 07:31:03 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29.2.5  2007/01/07 12:15:09  taylor
+ * allow loading of ogg or wav based on which is found first rather than tbl filename (fixes crash when Theora movies end up in wav code by mistake)
+ *
  * Revision 1.29.2.4  2006/12/26 05:31:22  taylor
  * fix some sound state stuff that was leading to crashes in OS X and undefined behavior in Windows (this isn't all that pretty, but will handled properly in post-3.6.9 revised code)
  *
@@ -581,7 +584,7 @@ void WaveFile::Close(void)
 // Open
 bool WaveFile::Open (char *pszFilename)
 {
-	int done = false, rc = 0;
+	int rc = 0;
 	WORD cbExtra = 0;
 	bool fRtn = true;    // assume success
 	PCMWAVEFORMAT pcmwf;
@@ -685,6 +688,7 @@ bool WaveFile::Open (char *pszFilename)
 	}
 	// if Wave...
 	else if (rc == 1) {
+		bool done = true;
 		// Skip the "RIFF" tag and file size (8 bytes)
 		// Skip the "WAVE" tag (4 bytes)
 		mmioSeek( m_snd_info.cfp, 12+FileOffset, SEEK_SET );
@@ -692,7 +696,7 @@ bool WaveFile::Open (char *pszFilename)
 		// Now read RIFF tags until the end of file
 		uint tag, size, next_chunk;
 
-		while(done == false)	{
+		while ( !done ) {
 			if ( !audiostr_read_uint(m_snd_info.cfp, &tag) )
 				break;
 
@@ -702,55 +706,64 @@ bool WaveFile::Open (char *pszFilename)
 			next_chunk = mmioSeek(m_snd_info.cfp, 0, SEEK_CUR );
 			next_chunk += size;
 
-			switch( tag )	{
-			case 0x20746d66:		// The 'fmt ' tag
-				audiostr_read_word(m_snd_info.cfp, &pcmwf.wf.wFormatTag);
-				audiostr_read_word(m_snd_info.cfp, &pcmwf.wf.nChannels);
-				audiostr_read_dword(m_snd_info.cfp, &pcmwf.wf.nSamplesPerSec);
-				audiostr_read_dword(m_snd_info.cfp, &pcmwf.wf.nAvgBytesPerSec);
-				audiostr_read_word(m_snd_info.cfp, &pcmwf.wf.nBlockAlign);
-				audiostr_read_word(m_snd_info.cfp, &pcmwf.wBitsPerSample);
+			switch (tag)
+			{
+				case 0x20746d66:		// The 'fmt ' tag
+				{
+					audiostr_read_word(m_snd_info.cfp, &pcmwf.wf.wFormatTag);
+					audiostr_read_word(m_snd_info.cfp, &pcmwf.wf.nChannels);
+					audiostr_read_dword(m_snd_info.cfp, &pcmwf.wf.nSamplesPerSec);
+					audiostr_read_dword(m_snd_info.cfp, &pcmwf.wf.nAvgBytesPerSec);
+					audiostr_read_word(m_snd_info.cfp, &pcmwf.wf.nBlockAlign);
+					audiostr_read_word(m_snd_info.cfp, &pcmwf.wBitsPerSample);
 			
-				if ( pcmwf.wf.wFormatTag != WAVE_FORMAT_PCM ) {
-					audiostr_read_word(m_snd_info.cfp, &cbExtra);
-				}
+					if (pcmwf.wf.wFormatTag != WAVE_FORMAT_PCM)
+						audiostr_read_word(m_snd_info.cfp, &cbExtra);
 
-				// Allocate memory for WAVEFORMATEX structure + extra bytes
-				if ( (m_pwfmt_original = (WAVEFORMATEX *) vm_malloc ( sizeof(WAVEFORMATEX)+cbExtra )) != NULL ){
-					Assert(m_pwfmt_original != NULL);
-					// Copy bytes from temporary format structure
-					memcpy (m_pwfmt_original, &pcmwf, sizeof(pcmwf));
-					m_pwfmt_original->cbSize = cbExtra;
+					// Allocate memory for WAVEFORMATEX structure + extra bytes
+					if ( (m_pwfmt_original = (WAVEFORMATEX *) vm_malloc(sizeof(WAVEFORMATEX)+cbExtra)) != NULL ) {
+						Assert(m_pwfmt_original != NULL);
+						// Copy bytes from temporary format structure
+						memcpy (m_pwfmt_original, &pcmwf, sizeof(pcmwf));
+						m_pwfmt_original->cbSize = cbExtra;
 
-					// Read those extra bytes, append to WAVEFORMATEX structure
-					if (cbExtra != 0) {
-						mmioRead( m_snd_info.cfp, ((char *)(m_pwfmt_original) + sizeof(WAVEFORMATEX)), cbExtra );
+						// Read those extra bytes, append to WAVEFORMATEX structure
+						if (cbExtra != 0)
+							mmioRead( m_snd_info.cfp, ((char *)(m_pwfmt_original) + sizeof(WAVEFORMATEX)), cbExtra );
+					} else {
+						Int3();		// malloc failed
+						goto OPEN_ERROR;
 					}
+
+					break;
 				}
-				else {
-					Int3();		// malloc failed
-					goto OPEN_ERROR;
-				}	
-				break;
 
-			case 0x61746164:		// the 'data' tag
-				m_nDataSize = size;	// This is size of data chunk.  Compressed if ADPCM.
-				m_data_bytes_left = size;
-				m_data_offset = mmioSeek( m_snd_info.cfp, 0, SEEK_CUR );
-				done = true;
-				break;
+				case 0x61746164:		// the 'data' tag
+				{
+					m_nDataSize = size;	// This is size of data chunk.  Compressed if ADPCM.
+					m_data_bytes_left = size;
+					m_data_offset = mmioSeek( m_snd_info.cfp, 0, SEEK_CUR );
+					done = true;
 
-			default:	// unknown, skip it
-				break;
+					break;
+				}
+
+				default:	// unknown, skip it
+					break;
 			}	// end switch
 
 			mmioSeek( m_snd_info.cfp, next_chunk, SEEK_SET );
 		}
 
+		// make sure that we did good
+		if ( !done || (m_pwfmt_original == NULL) )
+			goto OPEN_ERROR;
+
   		// At this stage, examine source format, and set up WAVEFORATEX structure for DirectSound.
 		// Since DirectSound only supports PCM, force this structure to be PCM compliant.  We will
 		// need to convert data on the fly later if our souce is not PCM
-		switch ( m_pwfmt_original->wFormatTag ) {
+		switch (m_pwfmt_original->wFormatTag)
+		{
 			case WAVE_FORMAT_PCM:
 				m_wave_format = WAVE_FORMAT_PCM;
 				m_wfmt.wBitsPerSample = m_pwfmt_original->wBitsPerSample;
