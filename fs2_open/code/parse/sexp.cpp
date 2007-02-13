@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.41 $
- * $Date: 2007-02-12 00:23:39 $
- * $Author: taylor $
+ * $Revision: 2.259.2.42 $
+ * $Date: 2007-02-13 01:45:56 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.41  2007/02/12 00:23:39  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
  * Revision 2.259.2.40  2007/02/10 00:14:40  taylor
  * remove NO_SOUND
  * fix glow bank sexp bug (Mantis #1250)
@@ -7036,7 +7039,7 @@ int sexp_destroyed_departed_delay(int n)
 
 int sexp_special_warpout_name( int node )
 {
-	int shipnum, knossos_num;
+	int shipnum, knossos_shipnum;
 	char *ship_name, *knossos;
 
 	ship_name = CTEXT(node);
@@ -7055,13 +7058,13 @@ int sexp_special_warpout_name( int node )
 	}
 
 	// get knossos ship
-	knossos_num = ship_name_lookup(knossos);
-	if (knossos_num < 0) {
+	knossos_shipnum = ship_name_lookup(knossos);
+	if (knossos_shipnum < 0) {
 		return SEXP_NAN;
 	}
 
 	// set special warpout objnum
-	Ships[shipnum].special_warp_objnum = knossos_num;
+	Ships[shipnum].special_warp_objnum = Ships[knossos_shipnum].objnum;
 	return SEXP_FALSE;
 }
 
