@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.301 $
- * $Date: 2007-02-11 21:26:35 $
+ * $Revision: 2.302 $
+ * $Date: 2007-02-13 01:46:03 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.301  2007/02/11 21:26:35  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.300  2007/02/10 00:15:32  taylor
  * remove NO_SOUND
  * fix glow bank sexp bug (Mantis #1250)
@@ -7050,7 +7053,7 @@ int sexp_destroyed_departed_delay(int n)
 
 int sexp_special_warpout_name( int node )
 {
-	int shipnum, knossos_num;
+	int shipnum, knossos_shipnum;
 	char *ship_name, *knossos;
 
 	ship_name = CTEXT(node);
@@ -7069,13 +7072,13 @@ int sexp_special_warpout_name( int node )
 	}
 
 	// get knossos ship
-	knossos_num = ship_name_lookup(knossos);
-	if (knossos_num < 0) {
+	knossos_shipnum = ship_name_lookup(knossos);
+	if (knossos_shipnum < 0) {
 		return SEXP_NAN;
 	}
 
 	// set special warpout objnum
-	Ships[shipnum].special_warp_objnum = knossos_num;
+	Ships[shipnum].special_warp_objnum = Ships[knossos_shipnum].objnum;
 	return SEXP_FALSE;
 }
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.213 $
- * $Date: 2007-02-11 21:26:34 $
+ * $Revision: 2.214 $
+ * $Date: 2007-02-13 01:46:03 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.213  2007/02/11 21:26:34  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.212  2007/02/10 03:17:31  Goober5000
  * made support ship shield control a bit less of a hack
  *
@@ -2568,42 +2571,52 @@ void parse_debriefing_new(mission *pm)
 		Error(LOCATION, "Not enough debriefings for mission.  There are %d teams and only %d debriefings;\n", Num_teams, nt );
 }
 
-void position_ship_for_knossos_warpin(p_object *objp, int shipnum, int objnum)
+void position_ship_for_knossos_warpin(p_object *p_objp)
 {
+	object *objp = p_objp->created_object;
+	ship *shipp = &Ships[objp->instance];
+	object *knossos_objp;
+
 	// Assume no valid knossos device
-	Ships[shipnum].special_warp_objnum = -1;
+	shipp->special_warp_objnum = -1;
 
 	// find knossos device
 	int found = FALSE;
-	ship_obj *so;
-	int knossos_num = -1;
-	for (so=GET_FIRST(&Ship_obj_list); so!=END_OF_LIST(&Ship_obj_list); so=GET_NEXT(so)) {
-		knossos_num = Objects[so->objnum].instance;
-		if (Ship_info[Ships[knossos_num].ship_info_index].flags & SIF_KNOSSOS_DEVICE) {
+	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
+	{
+		knossos_objp = &Objects[so->objnum];
+
+		if (Ship_info[Ships[knossos_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE)
+		{
 			// be close to the right device (allow multiple knossoses)
-			if (vm_vec_dist_quick(&Objects[knossos_num].pos, &objp->pos) < 2.0f*(Objects[knossos_num].radius + Objects[objnum].radius) ) {
+			if ( vm_vec_dist_quick(&knossos_objp->pos, &p_objp->pos) < 2.0f*(knossos_objp->radius + objp->radius) )
+			{
 				found = TRUE;
 				break;
 			}
 		}
 	}
 
-	if (found) {
-		// set ship special_warp_objnum
-		Ships[shipnum].special_warp_objnum = knossos_num;
+	if (!found)
+		return;
 
-		// position self for warp on plane of device
-		vec3d new_point;
-		float dist = fvi_ray_plane(&new_point, &Objects[knossos_num].pos, &Objects[knossos_num].orient.vec.fvec, &objp->pos, &objp->orient.vec.fvec, 0.0f);
-		polymodel *pm = model_get(Ships[shipnum].modelnum);
-		float desired_dist = -pm->mins.xyz.z;
-		vm_vec_scale_add2(&Objects[objnum].pos, &Objects[objnum].orient.vec.fvec, (dist - desired_dist));
-		// if ship is BIG or HUGE, make it go through the center of the knossos
-		if (Ship_info[Ships[shipnum].ship_info_index].flags & SIF_HUGE_SHIP) {
-			vec3d offset;
-			vm_vec_sub(&offset, &Objects[knossos_num].pos, &new_point);
-			vm_vec_add2(&Objects[objnum].pos, &offset);
-		}
+	// set ship special_warp_objnum
+	shipp->special_warp_objnum = OBJ_INDEX(knossos_objp);
+
+	// position self for warp on plane of device
+	vec3d new_point;
+	polymodel *pm = model_get(shipp->modelnum);
+
+	float dist = fvi_ray_plane(&new_point, &knossos_objp->pos, &knossos_objp->orient.vec.fvec, &p_objp->pos, &p_objp->orient.vec.fvec, 0.0f);
+	float desired_dist = -pm->mins.xyz.z;
+	vm_vec_scale_add2(&objp->pos, &objp->orient.vec.fvec, (dist - desired_dist));
+	
+	// if ship is BIG or HUGE, make it go through the center of the knossos
+	if (Ship_info[shipp->ship_info_index].flags & SIF_HUGE_SHIP)
+	{
+		vec3d offset;
+		vm_vec_sub(&offset, &knossos_objp->pos, &new_point);
+		vm_vec_add2(&knossos_objp->pos, &offset);
 	}
 }
 
@@ -2769,7 +2782,7 @@ int parse_create_object_sub(p_object *p_objp)
 	if ((p_objp->flags & P_KNOSSOS_WARP_IN) && !(Game_mode & GM_MULTIPLAYER))
 	{
 		if (!Fred_running)
-			position_ship_for_knossos_warpin(p_objp, shipnum, objnum);
+			position_ship_for_knossos_warpin(p_objp);
 	}
 
 	shipp->group = p_objp->group;
