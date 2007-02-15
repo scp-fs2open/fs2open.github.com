@@ -278,6 +278,90 @@
 				CommandLine="copy &quot;$(TargetPath)&quot; &quot;C:\Games\Freespace2\$(TargetFileName)&quot;"
 			/>
 		</Configuration>
+		<Configuration
+			Name="ReleaseDebug|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="C:\projects\fs2_open\openal\include;C:\projects\fs2_open\oggvorbis\include;C:\projects\fs2_open\lua;C:\projects\fs2_open\libjpeg;C:\projects\fs2_open\dx8sdk\include;C:\projects\fs2_open\code"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS,USE_OPENAL"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="2"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="4"
+				DisableSpecificWarnings="4244, 4267, 4312, 4311, 4996"
+				UndefinePreprocessorDefinitions="_DEBUG"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="code.lib libjpeg.lib liblua.lib vorbis_static.lib ogg_static.lib vdsound.lib vdinput.lib strmiids.lib dxguid.lib vorbisfile_static.lib theora_static.lib d3d8.lib d3dx8.lib dxerr8.lib openal32.lib opengl32.lib glu32.lib glaux.lib winmm.lib ws2_32.lib comctl32.lib"
+				OutputFile="$(OutDir)\fs2_open_rd.exe"
+				LinkIncremental="2"
+				AdditionalLibraryDirectories="C:\projects\fs2_open\code\directx;C:\projects\fs2_open\openal\libs\win32;C:\projects\fs2_open\oggvorbis\lib;C:\projects\fs2_open\lua;C:\projects\fs2_open\libjpeg;C:\projects\fs2_open\dx8sdk\lib;C:\projects\fs2_open\projects\MSVC_2005\ReleaseDebug"
+				IgnoreDefaultLibraryNames="libcd.lib;libci.lib;libcmtd.lib"
+				GenerateDebugInformation="true"
+				SubSystem="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Copying EXE to C:\Games\Freespace2\"
+				CommandLine="copy $(TargetPath) &quot;C:\Games\Freespace2\$(TargetFileName)&quot;"
+			/>
+		</Configuration>
 	</Configurations>
 	<References>
 	</References>
