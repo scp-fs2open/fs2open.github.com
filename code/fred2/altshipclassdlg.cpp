@@ -59,6 +59,8 @@ END_MESSAGE_MAP()
 
 BOOL AltShipClassDlg::OnInitDialog() 
 {
+	int i;
+
 	CDialog::OnInitDialog();
 
 	// Set up pointers to all the controls to make things easier later
@@ -110,7 +112,7 @@ BOOL AltShipClassDlg::OnInitDialog()
 	// Set up the ship and variable combo boxes. 
 
 	// Type 1
-	for (int i=0; i < MAX_ALT_CLASS_1; i++)
+	for (i=0; i < MAX_ALT_CLASS_1; i++)
 	{
 		SetupType1ComboBoxes(type1_class_selections[i], type1_variable_selections[i], i);
 		// Setup the type 1 radio buttons
@@ -314,7 +316,8 @@ void AltShipClassDlg::SetupType2ComboBoxes(CComboBox *class_ptr, CComboBox *vari
 
 void AltShipClassDlg::DisableComponents()
 {
-	for (int i=0; i < MAX_ALT_CLASS_1; i++)
+	int i;
+	for (i=0; i < MAX_ALT_CLASS_1; i++)
 	{
 		if (type1_radio_button_selection[i])
 		{			
@@ -327,7 +330,7 @@ void AltShipClassDlg::DisableComponents()
 			type1_variable_selections[i]->EnableWindow(FALSE);
 		}
 	}
-	for ( i=0; i < MAX_ALT_CLASS_2; i++)
+	for (i=0; i < MAX_ALT_CLASS_2; i++)
 	{
 		if (type2_radio_button_selection[i])
 		{			
@@ -402,10 +405,12 @@ void AltShipClassDlg::WriteType2DataToShip(CComboBox *class_ptr, CComboBox *vari
 
 void AltShipClassDlg::OnOK() 
 {	
+	int i;
+
 	UpdateData(TRUE);
 	
 	// Read the selection from the ship and variable combo boxes. 	
-	for (int i=0; i < MAX_ALT_CLASS_1; i++)
+	for (i=0; i < MAX_ALT_CLASS_1; i++)
 	{
 		WriteType1DataToShip(type1_class_selections[i], type1_variable_selections[i], i);
 	}

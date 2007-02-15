@@ -9,9 +9,9 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.12 $
- * $Date: 2006-11-06 05:58:05 $
- * $Author: taylor $
+ * $Revision: 1.13 $
+ * $Date: 2007-02-15 02:03:56 $
+ * $Author: phreak $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2006/11/06 05:58:05  taylor
+ * add a "Render full detail" view option to render models at their full detail for the LOD (for render/detail boxes, Mantis bug #1121)
+ *
  * Revision 1.11  2006/10/09 05:25:18  Goober5000
  * make sexp nodes dynamic
  *
@@ -4639,7 +4642,7 @@ void CFREDView::OnInitialUpdate()
 
 			// not the default time -- check against the current time
 			memcpy( &expire_time, ptr, sizeof(expire_time) );
-			time( (long *)&current_time );
+			time( (time_t*)&current_time );
 			if ( current_time > expire_time )
 				expire_game = EXPIRE_BAD_TIME;
 		}
