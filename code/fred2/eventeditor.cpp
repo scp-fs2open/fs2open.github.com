@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.4 $
- * $Date: 2007-02-11 09:37:18 $
- * $Author: taylor $
+ * $Revision: 1.5 $
+ * $Date: 2007-02-15 02:03:55 $
+ * $Author: phreak $
  *
  * Event editor dialog box class and event tree class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2007/02/11 09:37:18  taylor
+ * dd VALID_FNAME() macro and put it around a few places (more to come)
+ * clean out some old variables
+ * move CLAMP() macro from opengl header to global header
+ * update COUNT_ESTIMATE to match new bmpman changes
+ *
  * Revision 1.3  2006/10/09 05:25:18  Goober5000
  * make sexp nodes dynamic
  *
@@ -1199,7 +1205,7 @@ void event_editor::OnChained()
 
 void event_editor::OnSelchangeMessageList() 
 {	
-	static flag = 0;
+	static int flag = 0;
 
 	if (flag)
 		return;

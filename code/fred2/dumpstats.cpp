@@ -310,6 +310,7 @@ void DumpStats::get_object_stats(CString &buffer)
 	int obj_type_count[MAX_OBJECT_TYPES];
 	CString temp;
 	int num_small_ships, num_big_ships, num_huge_ships;
+	int i;
 
 	memset(obj_type_count,0, sizeof(obj_type_count));
 	num_small_ships = num_big_ships = num_huge_ships= 0;
@@ -337,7 +338,7 @@ void DumpStats::get_object_stats(CString &buffer)
 	// not counting num_waves (for wings)
 	obj_type_count[OBJ_SHIP] += obj_type_count[OBJ_START];
 
-	for (int i=0; i<MAX_OBJECT_TYPES; i++) {
+	for (i=0; i<MAX_OBJECT_TYPES; i++) {
 		if (obj_type_count[i] > 0) {
 			switch(i) {
 			case OBJ_SHIP:
