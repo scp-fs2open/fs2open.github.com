@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-08-20 00:51:06 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2007-02-15 06:19:19 $
+ * $Author: Backslash $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/08/20 00:51:06  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.17  2006/08/15 00:12:40  Backslash
  * Quick fix to deal with the slide accel / decel inconsistency, Mantis 951.
  *
@@ -432,8 +435,8 @@
 #define ROTVEL_CAP		14.0			// Rotational velocity cap for live objects
 #define DEAD_ROTVEL_CAP	16.3			// Rotational velocity cap for dead objects
 
-#define MAX_SHIP_SPEED		300		// Maximum speed allowed after whack or shockwave
-#define RESET_SHIP_SPEED	240		// Speed that a ship is reset to after exceeding MAX_SHIP_SPEED
+#define MAX_SHIP_SPEED		500		// Maximum speed allowed after whack or shockwave
+#define RESET_SHIP_SPEED	440		// Speed that a ship is reset to after exceeding MAX_SHIP_SPEED
 
 #define	SW_ROT_FACTOR			5		// increase in rotational time constant in shockwave
 #define	SW_BLAST_DURATION		2000	// maximum duration of shockwave
@@ -741,7 +744,7 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 		}
 	} else {
 		// regular damping
-		vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, 0.0f );
+		vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, pi->side_slip_time_const );
 	}
 
 	// Note: CANNOT maintain a *local velocity* since a rotation can occur in this frame.
@@ -920,7 +923,9 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 //		Int3();
 //	}
 
-	ci->forward += (ci->forward_cruise_percent / 100.0f);
+	// apply throttle, unless reverse thrusters are held down
+	if (ci->forward != -1.0f)
+		ci->forward += (ci->forward_cruise_percent / 100.0f);
 
 //	mprintf(("ci->forward == %7.3f\n", ci->forward));
 
