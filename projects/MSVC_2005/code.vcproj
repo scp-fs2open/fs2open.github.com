@@ -215,6 +215,73 @@
 				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
+		<Configuration
+			Name="ReleaseDebug|Win32"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)"
+			ConfigurationType="4"
+			CharacterSet="0"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="C:\projects\fs2_open\code;C:\projects\fs2_open\openal\include;C:\projects\fs2_open\oggvorbis\include;C:\projects\fs2_open\lua;C:\projects\fs2_open\dx8sdk\include;C:\projects\fs2_open\libjpeg"
+				PreprocessorDefinitions="WIN32;NDEBUG;_LIB; USE_OPENAL"
+				MinimalRebuild="true"
+				BasicRuntimeChecks="3"
+				RuntimeLibrary="2"
+				UsePrecompiledHeader="0"
+				WarningLevel="3"
+				Detect64BitPortabilityProblems="true"
+				DebugInformationFormat="4"
+				DisableSpecificWarnings="4244, 4267, 4312, 4311, 4996"
+				UndefinePreprocessorDefinitions="_DEBUG"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLibrarianTool"
+				OutputFile="$(OutDir)\$(ProjectName).lib"
+				AdditionalLibraryDirectories="C:\projects\fs2_open\openal\libs\win32;C:\projects\fs2_open\oggvorbis\lib;C:\projects\fs2_open\lua;C:\projects\fs2_open\libjpeg;C:\projects\fs2_open\dx8sdk\lib"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
 	</Configurations>
 	<References>
 	</References>
@@ -2019,6 +2086,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\object\objectshield.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\object\objectsnd.cpp"
 				>
 			</File>
@@ -2141,6 +2212,15 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="Release SSE2|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						ObjectFile="$(IntDir)\$(InputName)1.obj"
+						XMLDocumentationFileName="$(IntDir)\$(InputName)1.xdc"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="ReleaseDebug|Win32"
 					>
 					<Tool
 						Name="VCCLCompilerTool"
