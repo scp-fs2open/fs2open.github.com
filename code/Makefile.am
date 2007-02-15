@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.39 2007-01-07 12:31:16 taylor Exp $
+## $Id: Makefile.am,v 1.40 2007-02-15 02:24:11 Goober5000 Exp $
 
 
 EXTRA_DIST =	\
@@ -552,6 +552,7 @@ FS2_SOURCES =	\
 	object/object.cpp	\
 	object/object.h	\
 	object/objectsort.cpp	\
+	object/objectshield.cpp	\
 	object/parseobjectdock.cpp	\
 	object/parseobjectdock.h	\
 	object/waypoint/waypoint.cpp	\
