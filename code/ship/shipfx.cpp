@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.83 $
- * $Date: 2007-02-11 09:47:35 $
- * $Author: taylor $
+ * $Revision: 2.84 $
+ * $Date: 2007-02-16 18:54:09 $
+ * $Author: karajorma $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2007/02/11 09:47:35  taylor
+ * some minor performance improvements
+ * remove NO_SOUND
+ *
  * Revision 2.82  2007/01/15 01:37:38  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -989,7 +993,7 @@ float shipfx_calculate_warp_time(object *objp, int warp_dir)
 		if( (warp_dir == WD_WARP_IN) && (sip->warpin_time > 0.0f)) {
 			return (float)sip->warpin_time/1000.0f;
 		//Warpout time defined
-		} else if( (warp_dir == WD_WARP_OUT) && (sip->warpin_time > 0.0f)) {
+		} else if( (warp_dir == WD_WARP_OUT) && (sip->warpout_time > 0.0f)) {
 			return (float)sip->warpout_time/1000.0f;
 		//Warpin defined
 		} else if ( (warp_dir == WD_WARP_IN) && (sip->warpin_speed != 0.0f) ) {
@@ -1311,7 +1315,7 @@ void shipfx_warpout_helper(object *objp, dock_function_info *infop)
 			ship_departed(objp->instance);
 	}
 }
-
+ 
 // This is called to actually warp this object out
 // after all the flashy fx are done, or if the flashy fx
 // don't work for some reason.  OR to skip the flashy fx.
