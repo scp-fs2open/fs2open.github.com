@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.10 $
- * $Date: 2007-02-11 09:39:09 $
- * $Author: taylor $
+ * $Revision: 2.66.2.11 $
+ * $Date: 2007-02-16 18:48:42 $
+ * $Author: karajorma $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.10  2007/02/11 09:39:09  taylor
+ * some minor performance improvements
+ * remove NO_SOUND
+ *
  * Revision 2.66.2.9  2006/11/16 01:09:00  taylor
  * handle knossos warp effect flip in a slightly better, slighter safer way (Mantis bug #1048, plus a couple that weren't filed)
  *
@@ -962,7 +966,7 @@ float shipfx_calculate_warp_time(object *objp, int warp_dir)
 		if( (warp_dir == WD_WARP_IN) && (sip->warpin_time > 0.0f)) {
 			return (float)sip->warpin_time/1000.0f;
 		//Warpout time defined
-		} else if( (warp_dir == WD_WARP_OUT) && (sip->warpin_time > 0.0f)) {
+		} else if( (warp_dir == WD_WARP_OUT) && (sip->warpout_time > 0.0f)) {
 			return (float)sip->warpout_time/1000.0f;
 		//Warpin defined
 		} else if ( (warp_dir == WD_WARP_IN) && (sip->warpin_speed != 0.0f) ) {
