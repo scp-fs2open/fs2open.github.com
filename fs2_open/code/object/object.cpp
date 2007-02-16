@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.63.2.5 $
- * $Date: 2007-02-11 10:04:46 $
- * $Author: taylor $
+ * $Revision: 2.63.2.6 $
+ * $Date: 2007-02-16 07:06:45 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.5  2007/02/11 10:04:46  taylor
+ * cleanup and minor performance improvements
+ * add support for new fireball specific lighting values from tbl
+ * remove NO_SOUND
+ *
  * Revision 2.63.2.4  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -1516,7 +1521,7 @@ void obj_move_call_physics(object *objp, float frametime)
 			vm_vec_zero(&objp->phys_info.desired_vel);
 			vm_vec_zero(&objp->phys_info.desired_rotvel);
 			objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
-			objp->phys_info.side_slip_time_const = Ship_info[Ships[objp->instance].ship_info_index].damp * 4.0f;
+			objp->phys_info.side_slip_time_const = 1.0f;	// FIXME?  originally indexed into Ship_info[], which was a bug...
 		}
 
 		if (physics_paused)	{
