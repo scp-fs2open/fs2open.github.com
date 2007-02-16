@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.402 $
- * $Date: 2007-02-11 21:26:39 $
+ * $Revision: 2.403 $
+ * $Date: 2007-02-16 23:18:15 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.402  2007/02/11 21:26:39  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.401  2007/02/11 06:19:05  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
  *
@@ -3654,11 +3657,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	// The next three fields are used for the ETS
-	if(optional_string("$Power Output:")){
-		stuff_float(&sip->power_output);//need to stuff it some were, why not there?
-		if(sip->power_output!=0.0f)sip->power_output = 1.0f;
-	}
-	if(optional_string("$Power_Output:"))
+	if(optional_string("$Power Output:"))
 		stuff_float(&sip->power_output);
 
 	if(optional_string("$Max Oclk Speed:"))

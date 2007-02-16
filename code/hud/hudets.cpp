@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.24 $
- * $Date: 2007-02-12 01:23:29 $
+ * $Revision: 2.25 $
+ * $Date: 2007-02-16 23:18:15 $
  * $Author: Goober5000 $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2007/02/12 01:23:29  Goober5000
+ * bah
+ *
  * Revision 2.23  2007/02/11 21:42:41  Goober5000
  * change a number to a constant
  *
@@ -377,6 +380,7 @@ void ets_init_ship(object* obj)
 void update_ets(object* objp, float fl_frametime)
 {
 	float max_new_shield_energy, max_new_weapon_energy;
+	float weapon_recharge_factor, shield_recharge_factor;
 
 	if ( fl_frametime <= 0 ){
 		return;
@@ -397,8 +401,19 @@ void update_ets(object* objp, float fl_frametime)
 
 //	new_energy = fl_frametime * sinfo_p->power_output;
 
+	if (false)
+	{
+		weapon_recharge_factor = sinfo_p->power_output;
+		shield_recharge_factor = sinfo_p->power_output;
+	}
+	else
+	{
+		weapon_recharge_factor = 1.0f;
+		shield_recharge_factor = 1.0f;
+	}
+
 	// update weapon energy
-	max_new_weapon_energy = sinfo_p->power_output * fl_frametime * MAX_WEAPON_REGEN_PER_SECOND * max_g;
+	max_new_weapon_energy = fl_frametime * MAX_WEAPON_REGEN_PER_SECOND * max_g * weapon_recharge_factor;
 	if ( objp->flags & OF_PLAYER_SHIP ) {
 		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * The_mission.ai_profile->weapon_energy_scale[Game_skill_level];
 	} else {
@@ -410,7 +425,7 @@ void update_ets(object* objp, float fl_frametime)
 	}
 
 	float shield_delta;
-	max_new_shield_energy = sinfo_p->power_output * fl_frametime * MAX_SHIELD_REGEN_PER_SECOND * max_s;
+	max_new_shield_energy = fl_frametime * MAX_SHIELD_REGEN_PER_SECOND * max_s * shield_recharge_factor;
 	if ( objp->flags & OF_PLAYER_SHIP ) {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile->shield_energy_scale[Game_skill_level];
 	} else {
