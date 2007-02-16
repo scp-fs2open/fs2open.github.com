@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.187 $
- * $Date: 2007-02-11 18:45:38 $
- * $Author: taylor $
+ * $Revision: 2.188 $
+ * $Date: 2007-02-16 22:09:05 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.187  2007/02/11 18:45:38  taylor
+ * fix a couple of breaks from my commits
+ *
  * Revision 2.186  2007/02/03 08:13:36  Goober5000
  * d'oh... thanks phreak
  *
@@ -4166,7 +4169,6 @@ void model_render_thrusters(bsp_info *model, ship *shipp)
 			}
 
 						
-			// the following replaces Bobboau's code, commented out below - Goober5000
 			float magnitude;
 			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
 
@@ -4188,6 +4190,7 @@ void model_render_thrusters(bsp_info *model, ship *shipp)
 				magnitude *= -1.0f;
 
 			scale = magnitude * (MAX_SCALE - MIN_SCALE) + MIN_SCALE;
+		//	scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
 			if (d > 0.0f){
 				// Make glow bitmap fade in/out quicker from sides.
@@ -4216,8 +4219,6 @@ void model_render_thrusters(bsp_info *model, ship *shipp)
 				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 			}
 
-			// this is the original scaling code - Goober5000
-		//	scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
 			float w = gpt->radius * (scale + Interp_thrust_glow_noise * NOISE_SCALE);
 
