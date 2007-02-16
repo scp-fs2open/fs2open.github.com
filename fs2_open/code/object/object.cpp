@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.70 $
- * $Date: 2007-02-11 21:26:35 $
+ * $Revision: 2.71 $
+ * $Date: 2007-02-16 07:06:46 $
  * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2007/02/11 21:26:35  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.69  2007/02/11 18:35:45  taylor
  * cleanup and minor performance improvements
  * add support for new fireball specific lighting values from tbl
@@ -1421,7 +1424,7 @@ void obj_move_call_physics(object *objp, float frametime)
 			vm_vec_zero(&objp->phys_info.desired_vel);
 			vm_vec_zero(&objp->phys_info.desired_rotvel);
 			objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
-			objp->phys_info.side_slip_time_const = Ship_info[Ships[objp->instance].ship_info_index].damp * 4.0f;
+			objp->phys_info.side_slip_time_const = 1.0f;	// FIXME?  originally indexed into Ship_info[], which was a bug...
 		}
 
 		if (physics_paused)	{
