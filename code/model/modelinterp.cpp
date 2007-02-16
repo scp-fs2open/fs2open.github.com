@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.157.2.23 $
- * $Date: 2007-02-12 00:41:37 $
- * $Author: taylor $
+ * $Revision: 2.157.2.24 $
+ * $Date: 2007-02-16 22:09:03 $
+ * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157.2.23  2007/02/12 00:41:37  taylor
+ * bit of cleanup and minor performance tweaks
+ * render ship insignia with a bit of alpha to help with blending/lighting
+ * dynamic thruster particle limits
+ * update for generic_bitmap/anim changes
+ * make use of flag_def_list for ship flags rather than a ton of if-else statements
+ * use generic_bitmap and generic_anim where possible to faciliate delayed graphics loading (after all ship related tbls are parsed)
+ * use VALID_FNAME()
+ *
  * Revision 2.157.2.22  2007/02/12 00:19:48  taylor
  * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
  *
@@ -4080,7 +4089,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			#define MAX_SCALE 4.7f
 			float scale = MIN_SCALE;
 						
-			// the following replaces Bobboau's code, commented out below - Goober5000
+
 			float magnitude;
 			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
 
@@ -4102,6 +4111,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				magnitude *= -1.0f;
 
 			scale = magnitude * (MAX_SCALE - MIN_SCALE) + MIN_SCALE;
+		//	scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
 			if (d > 0.0f){
 				// Make glow bitmap fade in/out quicker from sides.
@@ -4132,8 +4142,6 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 			}
 
-			// this is the original scaling code - Goober5000
-		//	scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
 			float w = gpt->radius * (scale + Interp_thrust_glow_noise * NOISE_SCALE);
 
