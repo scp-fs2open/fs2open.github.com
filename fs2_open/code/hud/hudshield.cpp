@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.42 $
- * $Date: 2007-02-11 21:26:34 $
+ * $Revision: 2.43 $
+ * $Date: 2007-02-16 23:49:28 $
  * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2007/02/11 21:26:34  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.41  2007/02/11 07:36:38  Goober5000
  * we probably don't need to play a sound when we equalize already-equalized shields, since we don't play one when we augment already-augmented quadrants
  *
@@ -599,10 +602,7 @@ void hud_shield_show(object *objp)
 	else
 	{
 		bool g3_yourself = !g3_in_frame();
-		angles rot_angles;
-		rot_angles.b = -1.570796327f;
-		rot_angles.p =0.0f;
-		rot_angles.h =0.0f;
+		angles rot_angles = { -1.570796327f, 0.0f, 0.0f };
 		matrix	object_orient;
 
 		vm_angles_2_matrix(&object_orient, &rot_angles);
