@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.50 $
- * $Date: 2007-02-11 21:26:39 $
+ * $Revision: 2.51 $
+ * $Date: 2007-02-16 22:25:21 $
  * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2007/02/11 21:26:39  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.49  2007/02/11 06:02:38  Goober5000
  * fix spelling
  *
@@ -1161,12 +1164,14 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 	vm_vector_2_matrix(&tom, &shieldp->tris[tr0].norm, NULL, NULL);
 	//vm_vec_sub(&v2c, tcp, &Objects[objnum].pos);
 
-	if(Ships[Objects[objnum].instance].flags2 & SIF2_PROJECTED_SHIELDS){
-//	if(1){
-	//new style shields
+	// new style shields
+	if (Ship_info[Ships[Objects[objnum].instance].ship_info_index].flags2 & SIF2_PROJECTED_SHIELDS)
+	{
 		create_projected_shield_from_triangle(tr0, tcp, &tom, shieldp, &shieldp->tris[tr0].norm, rad);
-	}else{
-	//old styl shields
+	}
+	// old style shields
+	else
+	{
 		//	Create the shield from the current triangle, as well as its neighbors.
 		create_shield_from_triangle(tr0, orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
 		//nprintf(("AI", "\n"));
