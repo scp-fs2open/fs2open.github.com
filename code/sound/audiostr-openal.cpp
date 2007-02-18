@@ -1,12 +1,16 @@
 /*
  * $Logfile: $
- * $Revision: 1.29.2.6 $
- * $Date: 2007-02-12 07:31:03 $
+ * $Revision: 1.29.2.7 $
+ * $Date: 2007-02-18 08:59:03 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29.2.6  2007/02/12 07:31:03  taylor
+ * a little cleanup
+ * handle issue where we don't deal with an error condition properly and hit a NULL ptr
+ *
  * Revision 1.29.2.5  2007/01/07 12:15:09  taylor
  * allow loading of ogg or wav based on which is found first rather than tbl filename (fixes crash when Theora movies end up in wav code by mistake)
  *
@@ -688,7 +692,8 @@ bool WaveFile::Open (char *pszFilename)
 	}
 	// if Wave...
 	else if (rc == 1) {
-		bool done = true;
+		bool done = false;
+
 		// Skip the "RIFF" tag and file size (8 bytes)
 		// Skip the "WAVE" tag (4 bytes)
 		mmioSeek( m_snd_info.cfp, 12+FileOffset, SEEK_SET );
