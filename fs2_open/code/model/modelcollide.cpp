@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelCollide.cpp $
- * $Revision: 2.18 $
- * $Date: 2007-01-14 14:03:33 $
- * $Author: bobboau $
+ * $Revision: 2.19 $
+ * $Date: 2007-02-18 06:16:47 $
+ * $Author: Goober5000 $
  *
  * Routines for detecting collisions of models.
  *
@@ -1034,14 +1034,6 @@ NoHit:
 			vm_vec_add2(&Mc_base, &saved_base );
 
 			vm_angles_2_matrix(&tm, &csm->angs);
-
-			if(!IS_MAT_NULL(&csm->orientation)){
-				matrix inv, f;
-				vm_matrix_inverse(&inv, &csm->orientation);
-				vm_matrix_x_matrix(&f, &tm, &inv);
-				vm_matrix_x_matrix(&tm, &csm->orientation, &f);
-			}
-
 			vm_matrix_x_matrix(&Mc_orient, &saved_orient, &tm);
 
 			mc_check_subobj( i );

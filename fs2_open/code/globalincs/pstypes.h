@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.52 $
- * $Date: 2007-02-11 20:25:58 $
+ * $Revision: 2.53 $
+ * $Date: 2007-02-18 06:16:46 $
  * $Author: Goober5000 $
- * $Revision: 2.52 $
- * $Date: 2007-02-11 20:25:58 $
+ * $Revision: 2.53 $
+ * $Date: 2007-02-18 06:16:46 $
  * $Author: Goober5000 $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2007/02/11 20:25:58  Goober5000
+ * fix some breakage ;)
+ *
  * Revision 2.51  2007/02/11 09:37:18  taylor
  * dd VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
@@ -545,7 +548,7 @@ typedef struct vert2df {
 */
 
 typedef struct angles {
-		float	p, b, h;
+	float	p, b, h;
 } angles_t;
 
 typedef struct matrix {

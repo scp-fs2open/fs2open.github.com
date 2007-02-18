@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Lighting/Lighting.cpp $
- * $Revision: 2.22 $
- * $Date: 2007-01-14 14:03:32 $
- * $Author: bobboau $
+ * $Revision: 2.23 $
+ * $Date: 2007-02-18 06:16:47 $
+ * $Author: Goober5000 $
  *
  * Code to calculate dynamic lighting on a vertex.
  *
@@ -759,7 +759,6 @@ int light_filter_push( int objnum, vec3d *pos, float rad )
 	Assert( Num_light_levels < MAX_LIGHT_LEVELS );
 
 	Num_relevent_lights[n2] = 0;
-	if(objnum < 0)return 0;
 
 	for (i=0; i<Num_relevent_lights[n1]; i++ )	{
 		l = Relevent_lights[i][n1];
@@ -896,8 +895,6 @@ void light_filter_pop()
 	if ( Lighting_off ) return;
 
 	Num_light_levels--;
-
-	
 	Assert( Num_light_levels > 0 );
 }
 

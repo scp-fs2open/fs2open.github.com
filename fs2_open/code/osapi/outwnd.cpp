@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.20 $
- * $Date: 2007-02-11 09:47:35 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2007-02-18 06:17:10 $
+ * $Author: Goober5000 $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2007/02/11 09:47:35  taylor
+ * some minor performance improvements
+ * remove NO_SOUND
+ *
  * Revision 2.19  2007/01/14 14:03:36  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -1355,7 +1359,7 @@ void close_mono()
 
 void outwnd_init_debug_window(int display_under_freespace_window)
 {
-	static bool debug_window_inited = false;
+	static debug_window_inited = false;
 
 	if ( !Cmdline_debug_window || !outwnd_inited || debug_window_inited )
 		return;

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.31 $
- * $Date: 2007-02-11 21:26:34 $
+ * $Revision: 1.32 $
+ * $Date: 2007-02-18 06:16:46 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2007/02/11 21:26:34  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 1.30  2007/02/08 07:39:32  Goober5000
  * fix two bugs:
  * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
@@ -1467,7 +1470,6 @@ void clear_mission()
 	for(i=0; i<MAX_NEB2_POOFS; i++){
 		Neb2_poof_flags |= (1<<i);
 	}
-	Nmodel_flags = DEFALT_NMODEL_FLAGS;	
 	Nmodel_num = -1;
 	Nmodel_bitmap = -1;
 

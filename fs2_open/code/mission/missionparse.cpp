@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.214 $
- * $Date: 2007-02-13 01:46:03 $
+ * $Revision: 2.215 $
+ * $Date: 2007-02-18 06:16:47 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.214  2007/02/13 01:46:03  Goober5000
+ * fix a hideous bug with the knossos special warp stuff
+ * (how did this ever actually work correctly?)
+ *
  * Revision 2.213  2007/02/11 21:26:34  Goober5000
  * massive shield infrastructure commit
  *
@@ -5654,8 +5658,6 @@ void parse_reinforcements(mission *pm)
 
 	while (required_string_either("#Background bitmaps", "$Name:"))
 		parse_reinforcement(pm);
-
-
 }
 
 void parse_bitmap(mission *pm)
@@ -5892,16 +5894,6 @@ void parse_bitmaps(mission *pm)
 
 	if (optional_string("$Environment Map:")) {
 		stuff_string(pm->envmap_name, F_NAME, MAX_FILENAME_LEN);
-	}
-
-	if (optional_string("+skybox_flags:")){
-		pm->skybox_flags = 0;
-		parse_string_flag_list(&pm->skybox_flags, model_render_flags, model_render_flags_size);
-	}else{
-		pm->skybox_flags = DEFALT_NMODEL_FLAGS;
-	}
-	if (optional_string("+dynamic_skybox")){
-		pm->flags |= MISSION_FLAG_DYNAMIC_ENVIRONMENT_MAP;
 	}
 
 	// bypass spurious stuff from e.g. FS1 missions

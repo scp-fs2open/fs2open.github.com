@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.99 $
- * $Date: 2007-02-11 20:25:58 $
+ * $Revision: 2.100 $
+ * $Date: 2007-02-18 06:16:46 $
  * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2007/02/11 20:25:58  Goober5000
+ * fix some breakage ;)
+ *
  * Revision 2.98  2007/02/11 18:45:38  taylor
  * fix a couple of breaks from my commits
  *
@@ -2464,8 +2467,8 @@ bitmap * bm_lock( int handle, ubyte bpp, ubyte flags )
 	// read the file data
 	if ( gr_bm_lock( be->filename, handle, bitmapnum, bpp, flags ) == -1 ) {
 		// oops, this isn't good - reset and return NULL
-		bm_unlock( handle );
-		bm_unload( handle );
+		bm_unlock( bitmapnum );
+		bm_unload( bitmapnum );
 
 		return NULL;
 	}

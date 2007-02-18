@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.40 $
- * $Date: 2007-02-11 21:26:35 $
+ * $Revision: 2.41 $
+ * $Date: 2007-02-18 06:17:10 $
  * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2007/02/11 21:26:35  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.39  2007/02/11 06:19:05  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
  *
@@ -452,16 +455,6 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	//	Return information for AI to detect incoming fire.
 	//	Could perhaps be done elsewhere at lower cost --MK, 11/7/97
 	float	dist = vm_vec_dist_quick(&ship_objp->pos, &weapon_objp->pos);
-	if (wip->wi_flags2 & WIF2_MINE) {
-		object *pobj = &Objects[weapon_objp->parent];
-		if(	!(
-				( (wip->arm_time) && ((Missiontime - wp->creation_time) < wip->arm_time) )
-			||	( (wip->arm_dist) && (pobj != NULL && pobj->type != OBJ_NONE && (vm_vec_dist(&weapon_objp->pos, &pobj->pos) < wip->arm_dist) )  )
-			||	(wip->arm_radius < dist)
-			)	)
-			//if all that this, _ugly_ if statement
-				wp->lifeleft = 0.001f;
-	}
 	if (dist < weapon_objp->phys_info.speed) {
 		update_danger_weapon(ship_objp, weapon_objp);
 	}
@@ -534,7 +527,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 		{
 			// do the hit effect
 			if (shield_collision)
-				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point, wip->shield_hit_radius);
+				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
 			else
 				/* TODO */;
 
