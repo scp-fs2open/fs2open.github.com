@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.129 $
- * $Author: karajorma $
- * $Date: 2007-01-15 13:46:55 $
+ * $Revision: 2.130 $
+ * $Author: Goober5000 $
+ * $Date: 2007-02-18 06:17:10 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.129  2007/01/15 13:46:55  karajorma
+ * Fix bug in the set ammo and weapon SEXPs
+ * Add the reset-orders SEXP
+ * Add support for network variables
+ *
  * Revision 2.128  2007/01/14 14:03:36  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -1102,7 +1107,6 @@ struct ship_subsys;
 #define OP_GET_PRIMARY_AMMO					(0x002c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_GET_SECONDARY_AMMO				(0x002d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define	OP_NUM_ASSISTS						(0x002e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_FACING_OBJ						(0x002f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Bobboau
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)

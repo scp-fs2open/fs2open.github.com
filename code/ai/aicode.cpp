@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.99 $
- * $Date: 2007-02-11 21:26:34 $
+ * $Revision: 1.100 $
+ * $Date: 2007-02-18 06:16:46 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.99  2007/02/11 21:26:34  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 1.98  2007/02/11 09:47:35  taylor
  * some minor performance improvements
  * remove NO_SOUND
@@ -11349,12 +11352,8 @@ void ai_dock()
 			dist = ai_path();
 			//nprintf(("AI", "Time = %7.3f, submode = %i\n", f2fl(Missiontime), aip->submode));
 			//nprintf(("AI", "Dock 1: Frame: %i, goal point = %i, dist = %7.3f\n", Framecount, aip->path_cur-aip->path_start, dist));
-			
-			aigp->dock_animation_done_time = Missiontime;
 
 			if (aip->path_cur-aip->path_start >= aip->path_length-1) {		//	If got this far, advance no matter what.
-				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING, dockee_index, 1);
-				aigp->dock_animation_done_time = model_anim_get_time_type(shipp, TRIGGER_TYPE_DOCKING, dockee_index);
 				aip->submode = AIS_DOCK_2;
 				aip->submode_start_time = Missiontime;
 				aip->path_cur--;
@@ -11363,8 +11362,7 @@ void ai_dock()
 				if (Pl_objp->phys_info.speed > goal_objp->phys_info.speed + 1.5f) {
 					set_accel_for_target_speed(Pl_objp, goal_objp->phys_info.speed);
 				} else {
-					model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING, dockee_index, 1);
-					aigp->dock_animation_done_time = model_anim_get_time_type(shipp, TRIGGER_TYPE_DOCKING, dockee_index);
+			//		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING, aip->dock_index, 1);
 					aip->submode = AIS_DOCK_2;
 					aip->submode_start_time = Missiontime;
 				}
@@ -11379,7 +11377,6 @@ void ai_dock()
 	{
 		float		dist;
 		int	r;
-		if(!timestamp_elapsed(aigp->dock_animation_done_time))break;//wait untill the animation is done before docking
 
 		if ((r = maybe_dock_obstructed(Pl_objp, goal_objp,0)) != -1) {
 			nprintf(("AI", "Dock 2: Obstructed by %s\n", Ships[Objects[r].instance].ship_name));
@@ -11451,7 +11448,6 @@ void ai_dock()
 				tolerance += 4*flFrametime * (rdinfo.submodel_r * rdinfo.submodel_w);
 			}
 
-			aigp->dock_animation_done_time = Missiontime;
 			if (dist < tolerance)
 			{
 				// - Removed by MK on 11/7/97, causes errors for ships docked at mission start: maybe_recreate_path(Pl_objp, aip, 1);
@@ -11463,8 +11459,7 @@ void ai_dock()
 				ai_do_objects_docked_stuff( Pl_objp, docker_index, goal_objp, dockee_index );
 
 				if (aip->submode == AIS_DOCK_3) {
-					model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, dockee_index, 1);
-					aigp->dock_animation_done_time = model_anim_get_time_type(shipp, TRIGGER_TYPE_DOCKED, dockee_index);
+				//	model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, aip->dockee_index, 1);
 				//	model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, 1);
 					snd_play_3d( &Snds[SND_DOCK_ATTACH], &Pl_objp->pos, &View_position );
 					hud_maybe_flash_docking_text(Pl_objp);
@@ -11564,8 +11559,6 @@ void ai_dock()
 
 		// Play a ship docking detach sound
 		snd_play_3d( &Snds[SND_DOCK_DETACH], &Pl_objp->pos, &View_position );
-		model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, dockee_index, -1);
-		aigp->dock_animation_done_time = model_anim_get_time_type(shipp, TRIGGER_TYPE_DOCKED, dockee_index);
 
 		aip->submode = AIS_UNDOCK_1;
 		aip->submode_start_time = Missiontime;
@@ -11581,18 +11574,16 @@ void ai_dock()
 		
 		//nprintf(("AI", "Undock 1: time in this mode = %7.3f\n", f2fl(Missiontime - aip->submode_start_time)));
 
-		if (Missiontime - aip->submode_start_time < REARM_BREAKOFF_DELAY) 
+		if (Missiontime - aip->submode_start_time < REARM_BREAKOFF_DELAY)
 		{
 			break;		//	Waiting for one second to elapse to let detach sound effect play out.
-		}
-		if(!timestamp_elapsed(aigp->dock_animation_done_time)){
-			break;
 		}
 		else if ( !(aigp->flags & AIGF_DOCK_SOUND_PLAYED))
 		{
 			snd_play_3d( &Snds[SND_DOCK_DEPART], &Pl_objp->pos, &View_position );
 			aigp->flags |= AIGF_DOCK_SOUND_PLAYED;
 
+			//	model_anim_start_type(shipp, TRIGGER_TYPE_DOCKED, aip->dockee_index, -1);
 		}
 
 		dist = dock_orient_and_approach(Pl_objp, docker_index, goal_objp, dockee_index, DOA_UNDOCK_1, &rdinfo);
@@ -11667,7 +11658,7 @@ void ai_dock()
 			Assert(dist != UNINITIALIZED_VALUE);
 
 			if (dist < Pl_objp->radius/2 + 5.0f) {
-				model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING, dockee_index, -1);
+			//	model_anim_start_type(shipp, TRIGGER_TYPE_DOCKING, aip->dockee_index, -1);
 				aip->submode = AIS_UNDOCK_4;
 				aip->submode_start_time = Missiontime;
 			}
@@ -11810,7 +11801,7 @@ void ai_debug_render_stuff()
 
 		parent_objnum = AI_debug_render_stuff[i].parent_objnum;
 
-		ship_get_global_turret_info(&Objects[parent_objnum], ss->system_info, &gpos, &gvec);
+		ship_get_global_turret_info(&Objects[parent_objnum], tp, &gpos, &gvec);
 		g3_rotate_vertex(&vert1, &gpos);
 		vm_vec_scale_add(&gpos2, &gpos, &gvec, 20.0f);
 		g3_rotate_vertex(&vert2, &gpos2);
@@ -11935,7 +11926,6 @@ void process_subobjects(int objnum)
 
 		// do solar/radar/gas/activator rotation here
 		ship_do_submodel_rotation(shipp, psub, pss);
-		submodel_scripted_rotate(objp, pss);
 	}
 
 	//	Deal with a ship with blown out engines.

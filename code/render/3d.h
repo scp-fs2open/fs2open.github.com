@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3D.H $
- * $Revision: 2.24 $
- * $Date: 2007-01-14 14:03:36 $
- * $Author: bobboau $
+ * $Revision: 2.25 $
+ * $Date: 2007-02-18 06:17:34 $
+ * $Author: Goober5000 $
  *
  * Include file for 3d rendering functions
  *
@@ -317,16 +317,6 @@ ubyte g3_project_vector(vec3d *p, float *sx, float *sy );
 
 //rotates a point.  returns codes.
 ubyte g3_rotate_vector(vec3d *dest,vec3d *src);
-//just like above, but ignores offsets
-ubyte g3_rotate_normal(vec3d *dest,vec3d *src);
-ubyte g3_unrotate_vector(vec3d *dest,vec3d *src);
-ubyte g3_unrotate_normal(vec3d *dest,vec3d *src);
-
-ubyte g3_local_2_world(vec3d *dest,vec3d *src);
-ubyte g3_local_2_world_normal(vec3d *dest,vec3d *src);
-ubyte g3_world_2_local(vec3d *dest,vec3d *src);
-ubyte g3_world_2_local_normal(vec3d *dest,vec3d *src);
-
 
 //Codes a vector.  Returns the codes of a point.
 ubyte g3_code_vector(vec3d * p);

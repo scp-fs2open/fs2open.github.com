@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.33 $
- * $Date: 2007-01-14 14:03:32 $
- * $Author: bobboau $
+ * $Revision: 2.34 $
+ * $Date: 2007-02-18 06:16:47 $
+ * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
@@ -1064,31 +1064,6 @@ float vm_vec_delta_ang_norm(vec3d *v0,vec3d *v1,vec3d *fvec)
 
 	return a;
 }
-
-matrix* vm_matrix_inverse(matrix*dest, matrix*src){
-/*	float d =	-src->a2d[0][0]*src->a2d[1][2]*src->a2d[2][1]
-				-src->a2d[0][1]*src->a2d[1][0]*src->a2d[2][2]
-				-src->a2d[0][2]*src->a2d[1][1]*src->a2d[2][0]
-				+src->a2d[0][0]*src->a2d[1][1]*src->a2d[2][2];
-				+src->a2d[0][1]*src->a2d[1][2]*src->a2d[2][1]
-				+src->a2d[0][2]*src->a2d[1][0]*src->a2d[2][1]
-				*/
-
-	dest->a2d[0][0] = (-src->a2d[1][2]*src->a2d[2][1]+src->a2d[1][1]*src->a2d[2][2]);
-	dest->a2d[0][1] = ( src->a2d[0][2]*src->a2d[2][1]-src->a2d[0][1]*src->a2d[2][2]);
-	dest->a2d[0][2] = (-src->a2d[0][2]*src->a2d[1][1]+src->a2d[0][1]*src->a2d[1][2]);
-
-	dest->a2d[1][0] = ( src->a2d[1][2]*src->a2d[2][0]-src->a2d[1][0]*src->a2d[2][2]);
-	dest->a2d[1][1] = (-src->a2d[0][2]*src->a2d[2][0]+src->a2d[0][0]*src->a2d[2][2]);
-	dest->a2d[1][2] = ( src->a2d[0][2]*src->a2d[1][0]-src->a2d[0][0]*src->a2d[1][2]);
-
-	dest->a2d[2][0] = (-src->a2d[1][1]*src->a2d[2][0]+src->a2d[1][0]*src->a2d[2][1]);
-	dest->a2d[2][1] = ( src->a2d[0][1]*src->a2d[2][0]-src->a2d[0][0]*src->a2d[2][1]);
-	dest->a2d[2][2] = (-src->a2d[0][1]*src->a2d[1][0]+src->a2d[0][0]*src->a2d[1][1]);
-
-	return dest;
-}
-
 
 matrix *sincos_2_matrix(matrix *m,float sinp,float cosp,float sinb,float cosb,float sinh,float cosh)
 {

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.98 $
+ * $Revision: 2.99 $
  * $Author: Goober5000 $
- * $Date: 2007-02-11 21:26:35 $
+ * $Date: 2007-02-18 06:16:47 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2007/02/11 21:26:35  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.97  2007/02/10 03:17:31  Goober5000
  * made support ship shield control a bit less of a hack
  *
@@ -647,8 +650,7 @@ struct p_dock_instance;
 #define MISSION_FLAG_SCRAMBLE					(1<<17)	// a scramble mission - Goober5000
 #define MISSION_FLAG_NO_BUILTIN_COMMAND			(1<<18)	// turns off Command without turning off pilots - Karajorma
 #define MISSION_FLAG_PLAYER_START_AI			(1<<19) // Player Starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
-#define MISSION_FLAG_DYNAMIC_ENVIRONMENT_MAP	(1<<20) // mission uses dynamic environment map
-#define MISSION_FLAG_ALL_ATTACK					(1<<21)	// all teams at war - Goober5000
+#define MISSION_FLAG_ALL_ATTACK					(1<<20)	// all teams at war - Goober5000
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
@@ -689,10 +691,7 @@ typedef struct mission {
 	char	squad_filename[MAX_FILENAME_LEN];		// if the player has been reassigned to a squadron, this is the filename of the logo, otherwise empty string
 	char	squad_name[NAME_LENGTH];				// if the player has been reassigned to a squadron, this is the name of the squadron, otherwise empty string
 	char	loading_screen[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN];
-
 	char	skybox_model[MAX_FILENAME_LEN];
-	int		skybox_flags;
-	
 	char	envmap_name[MAX_FILENAME_LEN];
 	int		contrail_threshold;
 	int		ambient_light_level;

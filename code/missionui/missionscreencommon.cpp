@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.38 $
- * $Date: 2007-02-10 00:18:22 $
- * $Author: taylor $
+ * $Revision: 2.39 $
+ * $Date: 2007-02-18 06:16:47 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2007/02/10 00:18:22  taylor
+ * remove NO_SOUND
+ *
  * Revision 2.37  2007/01/14 14:03:33  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -1832,10 +1835,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 		return;
 
 	matrix	object_orient	= IDENTITY_MATRIX;
-	angles rot_angles;
-	rot_angles.p =0.0f;
-	rot_angles.b =0.0f;
-	rot_angles.h =0.0f;
+	angles rot_angles = {0.0f,0.0f,0.0f};
 	float zoom = closeup_zoom * 2.5f;
 
 	if(sip == NULL)

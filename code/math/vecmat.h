@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.17 $
- * $Date: 2007-01-22 04:43:28 $
- * $Author: wmcoolmon $
+ * $Revision: 2.18 $
+ * $Date: 2007-02-18 06:16:47 $
+ * $Author: Goober5000 $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2007/01/22 04:43:28  wmcoolmon
+ * EXPERIMENTAL turret update, housekeeping for Lua
+ *
  * Revision 2.16  2007/01/14 14:03:32  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -248,8 +251,6 @@
 
 //macro to check if vector is zero
 #define IS_VEC_NULL(v) (((v)->xyz.x == 0.0f) && ((v)->xyz.y == 0.0f) && ((v)->xyz.z == 0.0f))
-
-#define IS_MAT_NULL(v) (IS_VEC_NULL(&(v)->vec.fvec) && IS_VEC_NULL(&(v)->vec.uvec) && IS_VEC_NULL(&(v)->vec.rvec))
 
 //macro to set a vector to zero.  we could do this with an in-line assembly
 //macro, but it's probably better to let the compiler optimize it.
@@ -554,9 +555,6 @@ matrix *vm_vector_2_matrix_norm(matrix *m,vec3d *fvec,vec3d *uvec=NULL,vec3d *rv
 //rotates a vector through a matrix. returns ptr to dest vector
 //dest CANNOT equal either source
 vec3d *vm_vec_rotate(vec3d *dest,vec3d *src,matrix *m);
-
-//makes an inverse of the src matrix
-matrix* vm_matrix_inverse(matrix*dest, matrix*src);
 
 //rotates a vector through the transpose of the given matrix. 
 //returns ptr to dest vector

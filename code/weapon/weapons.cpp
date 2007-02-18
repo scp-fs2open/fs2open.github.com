@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.195  2007/02/11 21:26:39  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.194  2007/02/11 06:02:38  Goober5000
  * fix spelling
  *
@@ -1618,8 +1621,6 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_SAME_TURRET_COOLDOWN;
 		else if (!stricmp(NOX("apply no light"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_MR_NO_LIGHTING;
-		else if (!stricmp(NOX("mine"), weapon_strings[i]))
-			weaponp->wi_flags2 |= WIF2_MINE;
 		else if (!stricmp(NOX("inherit parent target"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_INHERIT_PARENT_TARGET;
 		else
@@ -1739,7 +1740,7 @@ void init_weapon_entry(int weap_info_index)
 {
 	Assert(weap_info_index > -1 && weap_info_index < MAX_WEAPON_TYPES);
 	weapon_info *wip = &Weapon_info[weap_info_index];
-	int i;
+	int i, j;
 	
 	wip->wi_flags = WIF_DEFAULT_VALUE;
 	wip->wi_flags2 = WIF2_DEFAULT_VALUE;
@@ -1906,7 +1907,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->b_info.beam_loop_sound = -1;
 	wip->b_info.beam_warmup_sound = -1;
 	wip->b_info.beam_warmdown_sound = -1;
-//	wip->b_info.beam_num_sections = 0;
+	wip->b_info.beam_num_sections = 0;
 	wip->b_info.beam_glow_bitmap = -1;
 	wip->b_info.beam_glow_nframes = 1;
 	wip->b_info.beam_glow_fps = 0;
@@ -1916,9 +1917,8 @@ void init_weapon_entry(int weap_info_index)
 	wip->b_info.range = BEAM_FAR_LENGTH;
 	wip->b_info.damage_threshold = 1.0f;
 	
-	wip->b_info.sections.clear();
 	//WMC - Okay, so this is needed now
-/*	beam_weapon_section_info *bsip;
+	beam_weapon_section_info *bsip;
 	for(i = 0; i < MAX_BEAM_SECTIONS;i++)
 	{
 		bsip = &wip->b_info.sections[i];
@@ -1939,7 +1939,7 @@ void init_weapon_entry(int weap_info_index)
 		bsip->tile_type = 0;
 		bsip->tile_factor = 1.0f;
 		bsip->translation = 0.0f;
-	}*/
+	}
 
 	wip->Weapon_particle_spew_count = 1;
 	wip->Weapon_particle_spew_time = 25;
@@ -2284,12 +2284,6 @@ int parse_weapon(int subtype, bool replace)
 	if(optional_string("$Fire Wait:")) {
 		stuff_float( &(wip->fire_wait) );
 		diag_printf ("Weapon fire wait -- %7.3f\n", wip->fire_wait);
-	}
-
-	if(optional_string("$Hitpoints:")) {
-		stuff_float( &wip->hit_points);
-	}else{
-		wip->hit_points = 0.0f;
 	}
 
 	if(optional_string("$Damage:")) {
@@ -3042,9 +3036,9 @@ int parse_weapon(int subtype, bool replace)
 			if(optional_string("+Index:"))
 			{
 				stuff_int(&bsw_index_override);
-				if(bsw_index_override < 0 || bsw_index_override >= (int)wip->b_info.sections.size())
+				if(bsw_index_override < 0 || bsw_index_override >= wip->b_info.beam_num_sections)
 				{
-					Warning(LOCATION, "Invalid +Index value of %d specified for beam section on weapon '%s'; valid values at this point are %d to %d.", bsw_index_override, wip->name, 0, wip->b_info.sections.size() -1);
+					Warning(LOCATION, "Invalid +Index value of %d specified for beam section on weapon '%s'; valid values at this point are %d to %d.", bsw_index_override, wip->name, 0, wip->b_info.beam_num_sections -1);
 				}
 			}
 			if(optional_string("+nocreate")) {
@@ -3054,46 +3048,55 @@ int parse_weapon(int subtype, bool replace)
 			//Where are we saving data?
 			if(bsw_index_override >= 0)
 			{
-				if(bsw_index_override < (int)wip->b_info.sections.size())
+				if(bsw_index_override < wip->b_info.beam_num_sections)
 				{
 					ip = &wip->b_info.sections[bsw_index_override];
 				}
 				else
 				{
-					if(!nocreate)
-					{
-						//if we aren't suposed to make a new one, there does not exsist one to over ride
-						Warning(LOCATION, "Invalid index for manually-indexed beam section %d (max %d) on weapon %s.", bsw_index_override, wip->b_info.sections.size(), wip->name);
-						ip = &tbsw;
-						memset( ip, 0, sizeof(beam_weapon_section_info) );
-						ip->texture = -1;
+  					if(!nocreate)
+  					{
+						if((bsw_index_override == wip->b_info.beam_num_sections) && (bsw_index_override < MAX_BEAM_SECTIONS))
+						{
+							ip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
+						}
+						else
+						{
+							Warning(LOCATION, "Invalid index for manually-indexed beam section %d (max %d) on weapon %s.", bsw_index_override, MAX_BEAM_SECTIONS, wip->name);
+							ip = &tbsw;
+							memset( ip, 0, sizeof(beam_weapon_section_info) );
+							ip->texture = -1;
+						}
 					}
 					else
 					{
-						//here we can just make a new one
-						wip->b_info.sections.resize(wip->b_info.sections.size()+1);
-						ip = &wip->b_info.sections[wip->b_info.sections.size()-1];
+						Warning(LOCATION, "Invalid index for manually-indexed beam section %d, and +nocreate specified, on weapon %s", bsw_index_override, wip->name);
+						ip = &tbsw;
+						memset( ip, 0, sizeof(beam_weapon_section_info) );
+						ip->texture = -1;
 					}
 
 				}
 			}
 			else
 			{
-				wip->b_info.sections.resize(wip->b_info.sections.size()+1);
-				ip = &wip->b_info.sections[wip->b_info.sections.size()-1];
+				if(wip->b_info.beam_num_sections < MAX_BEAM_SECTIONS) {
+					ip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
+				}
+				else
+				{
+					Warning(LOCATION, "Too many beam sections for weapon %s - max is %d", wip->name, MAX_BEAM_SECTIONS);
+					ip = &tbsw;
+					memset( ip, 0, sizeof(beam_weapon_section_info) );
+					ip->texture = -1;
+				}
 			}
-
+  
 			char tex_name[MAX_FILENAME_LEN];
 			
 			// section width
 			if(optional_string("+Width:")) {
 				stuff_float(&ip->width);
-			}
-
-			if(optional_string("+Length:")) {
-				stuff_float(&ip->length);
-			}else{
-				ip->length = 0.0f;
 			}
 
 			// texture
@@ -3290,14 +3293,6 @@ int parse_weapon(int subtype, bool replace)
 	{
 		Warning(LOCATION, "%s is a tag missile, but the target must be tagged to shoot it", wip->name);
 	}
-
-
-	if(optional_string("$Shield Hit Radius:")){
-		stuff_float(&wip->shield_hit_radius);
-	}else{
-		wip->shield_hit_radius = (wip->render_type == WRT_LASER)?wip->laser_head_radius*4.0f:wip->shockwave.outer_rad;
-	}
-
 
 	return WEAPON_INFO_INDEX(wip);
 }
@@ -4726,7 +4721,6 @@ void weapon_process_pre( object *obj, float frame_time)
 	if(wip->det_radius > 0.0f && wp->homing_object != NULL)
 	{
 		vec3d spos;
-		if(weapon_armed(wp))
 		if((wp->homing_subsys == NULL && vm_vec_dist(&obj->pos, &wp->homing_object->pos) <= wip->det_radius)
 			|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&obj->pos, &spos) <= wip->det_radius))
 		{
@@ -5342,9 +5336,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	objp->phys_info.max_vel.xyz.z = wip->max_speed;
 	vm_vec_zero(&objp->phys_info.max_rotvel);
 	shield_set_quad(objp, 0, wip->damage);
-	if(wip->hit_points > 0.0){
-		objp->hull_strength = wip->hit_points;
-	}else if (wip->wi_flags & WIF_BOMB){
+	if (wip->wi_flags & WIF_BOMB){
 		objp->hull_strength = 50.0f;
 	} else {
 		objp->hull_strength = 0.0f;
@@ -5370,14 +5362,11 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		//	For weapons that home, set velocity to sum of forward component of parent's velocity and 1/4 weapon's max speed.
 		//	Note that it is important to extract the forward component of the parent's velocity to factor out sliding, else
 		//	the missile will not be moving forward.
-		if(wip->max_speed > 0.0f)
-			if(parent_objp != NULL){
-				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z/4 );
-			} else {
-				vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z/4 );
-			}
-		else 
-			vm_vec_zero(&objp->phys_info.desired_vel);
+		if(parent_objp != NULL){
+			vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z/4 );
+		} else {
+			vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z/4 );
+		}
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
 	}
@@ -5451,7 +5440,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		// since debug builds always have cheats enabled, we don't necessarily get the chance
 		// to enable thrusters for previously non-loaded weapons (ie, weapons_page_in_cheats())
 		// when using cheat-keys, so we need to make sure and enable thrusters here if needed
-		if (pm->submodel[pm->detail[0]].submodel_thruster.size() > 0) {
+		if (pm->n_thrusters > 0) {
 			wip->wi_flags |= WIF_THRUSTER;
 		}
 #endif
@@ -6243,7 +6232,7 @@ void weapons_page_in()
 
 					// If it has a model, and the model pof has thrusters, then set
 					// the flags
-					if ( pm->submodel[pm->detail[0]].submodel_thruster.size() > 0 )	{
+					if ( pm->n_thrusters > 0 )	{
 						//mprintf(( "Weapon %s has thrusters!\n", wip->name ));
 						wip->wi_flags |= WIF_THRUSTER;
 					}
@@ -6297,8 +6286,8 @@ void weapons_page_in()
 		// if this is a beam weapon, page in its stuff
 		if(wip->wi_flags & WIF_BEAM){
 			// all beam sections
-			for(idx=0; idx<wip->b_info.sections.size(); idx++){
-				if((idx < wip->b_info.sections.size()) && (wip->b_info.sections[idx].texture >= 0)){
+			for(idx=0; idx<wip->b_info.beam_num_sections; idx++){
+				if((idx < MAX_BEAM_SECTIONS) && (wip->b_info.sections[idx].texture >= 0)){
 					bm_page_in_texture(wip->b_info.sections[idx].texture, wip->b_info.sections[idx].nframes);
 				}
 			}
@@ -6401,7 +6390,7 @@ void weapons_page_in_cheats()
 				
 			// If it has a model, and the model pof has thrusters, then set
 			// the flags
-			if ( pm->submodel[pm->detail[0]].submodel_thruster.size() > 0 )	{
+			if ( pm->n_thrusters > 0 )	{
 				//mprintf(( "Weapon %s has thrusters!\n", wip->name ));
 				wip->wi_flags |= WIF_THRUSTER;
 			}

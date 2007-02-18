@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.66 $
- * $Date: 2007-02-11 21:26:35 $
+ * $Revision: 2.67 $
+ * $Date: 2007-02-18 06:17:09 $
  * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2007/02/11 21:26:35  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.65  2007/01/15 13:40:38  karajorma
  * Hmmm. Forgot to commit changes to support network variables and setting ammo/weapons to HEAD as well as 3.6.9.
  * Also add Juke's bug fix for streaming weapons.
@@ -6877,7 +6880,7 @@ void send_shield_explosion_packet( int objnum, int tri_num, vec3d hit_pos )
 	}
 }
 
-void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos, float rad);
+void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos);
 
 void process_shield_explosion_packet( ubyte *data, header *hinfo)
 {
@@ -6919,7 +6922,7 @@ void process_shield_explosion_packet( ubyte *data, header *hinfo)
 			vm_vec_add2( &hit_pos, &(shieldp->verts[stri.verts[i]].pos) );
 		}
 		vm_vec_scale( &hit_pos, 1.0f/3.0f );
-		add_shield_point_multi( OBJ_INDEX(objp), utri_num, &hit_pos, 10.0f );
+		add_shield_point_multi( OBJ_INDEX(objp), utri_num, &hit_pos );
 	}
 }
 

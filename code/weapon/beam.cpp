@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.81 $
- * $Date: 2007-02-11 21:26:39 $
+ * $Revision: 2.82 $
+ * $Date: 2007-02-18 06:17:48 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2007/02/11 21:26:39  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.80  2007/02/07 07:59:48  Goober5000
  * hm, didn't notice this new feature
  *
@@ -1392,12 +1395,7 @@ void beam_type_c_move(beam *b)
 	vm_vec_add2(&b->last_start, &b->objp->pos);	
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 
-	float e = Weapon_info[b->weapon_info_index].energy_consumed * flFrametime;
-	if(b->warmdown_stamp == -1)Ships[b->objp->instance].weapon_energy -= e;
-	else Ships[b->objp->instance].weapon_energy += e;
-
-	if(Ships[b->objp->instance].weapon_energy < 0) Ships[b->objp->instance].weapon_energy = 0;
-	if(Ships[b->objp->instance].weapon_energy > Ship_info[Ships[b->objp->instance].ship_info_index].max_weapon_reserve) Ships[b->objp->instance].weapon_energy = Ship_info[Ships[b->objp->instance].ship_info_index].max_weapon_reserve;
+	Ships[b->objp->instance].weapon_energy -= Weapon_info[b->weapon_info_index].energy_consumed * flFrametime;
 }
 
 // type D functions
@@ -1729,11 +1727,9 @@ void beam_move_all_post()
 #define P_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
 int poly_beam = 0;
 float U_offset =0.0f; // beam texture offset -Bobboau
-void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *beam_shot, float shrink)
+void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *shot, float shrink)
 {	
 //	mprintf(("about to render a beam\n"));
-	vec3d sh;
-	vec3d *shot = beam_shot;
 	int idx;
 	uint s_idx;
 	vertex h1[4];				// halves of a beam section	
@@ -1763,14 +1759,7 @@ void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *beam_shot, float sh
 	gr_set_cull(0);
 	
 	// draw all sections	
-	for(s_idx=0; s_idx<bwi->sections.size(); s_idx++){
-		// calculate the beam points
-		if(bwi->sections[s_idx].length > 0.0f){
-			shot = &sh;
-			vm_vec_scale_add(shot, start, &fvec, bwi->sections[s_idx].length);
-		}else{
-			shot = beam_shot;
-		}
+	for(s_idx=0; s_idx<bwi->beam_num_sections; s_idx++){
 		if ( (bwi->sections[s_idx].texture < 0) || (bwi->sections[s_idx].width <= 0.0f) )
 			continue;
 
@@ -2868,7 +2857,7 @@ int beam_collide_ship(obj_pair *pair)
 		{
 			// do the hit effect
 			if (shield_collision)
-				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point, bwi->shield_hit_radius);
+				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
 			else
 				/* TODO */;
 
@@ -3153,7 +3142,7 @@ int beam_collide_early_out(object *a, object *b)
 	}
 
 	if((vm_vec_dist(&bm->last_start, &b->pos)-b->radius) > bwi->b_info.range){
-		return 0;//it might get closer... dumbass
+		return 1;
 	}//if the object is too far away, don't bother trying to colide with it-Bobboau
 
 	// baseline bails
@@ -3497,7 +3486,7 @@ int beam_ok_to_fire(beam *b)
 	// type C beams are ok to fire all the time
 	if(b->type == BEAM_TYPE_C){
 		ship *shipp = &Ships[b->objp->instance];
-		if(shipp->weapon_energy <= 0.0){
+		if(shipp->weapon_energy < 0.0){
 //			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(Weapon_info[shipp->weapons.primary_bank_weapons[b->bank]].b_info.beam_warmdown*2);
 			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(2000);
 			int ship_maybe_play_primary_fail_sound();
@@ -3547,7 +3536,7 @@ float beam_get_widest(beam *b)
 	}
 
 	// lookup
-	for(idx=0; idx<Weapon_info[b->weapon_info_index].b_info.sections.size(); idx++){
+	for(idx=0; idx<Weapon_info[b->weapon_info_index].b_info.beam_num_sections; idx++){
 		if(Weapon_info[b->weapon_info_index].b_info.sections[idx].width > widest){
 			widest = Weapon_info[b->weapon_info_index].b_info.sections[idx].width;
 		}

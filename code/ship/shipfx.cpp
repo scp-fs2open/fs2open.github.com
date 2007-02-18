@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.84 $
- * $Date: 2007-02-16 18:54:09 $
- * $Author: karajorma $
+ * $Revision: 2.85 $
+ * $Date: 2007-02-18 06:17:34 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2007/02/16 18:54:09  karajorma
+ * Thought I'd caught all of these months ago! Thanks to Wanderer for the heads up.
+ *
  * Revision 2.83  2007/02/11 09:47:35  taylor
  * some minor performance improvements
  * remove NO_SOUND
@@ -3437,8 +3440,8 @@ void engine_wash_ship_process(ship *shipp)
 		else
 			speed_scale = ship_objp->phys_info.speed/20.0f;
 
-		for (idx = 0; idx < pm->submodel[pm->detail[0]].submodel_thruster.size(); idx++) {
-			thruster_bank *bank = &pm->submodel[pm->detail[0]].submodel_thruster[idx];
+		for (idx = 0; idx < pm->n_thrusters; idx++) {
+			thruster_bank *bank = &pm->thrusters[idx];
 
 			// make sure this engine is functional before we try to process a wash from it
 			if ( !model_should_render_engine_glow(OBJ_INDEX(ship_objp), bank->obj_num) ) {
@@ -3460,7 +3463,7 @@ void engine_wash_ship_process(ship *shipp)
 			half_angle = ewp->angle;
 			radius_mult = ewp->radius_mult;
 
-			for (j=0; j<bank->points.size(); j++) {
+			for (j=0; j<bank->num_points; j++) {
 				// get world pos of thruster
 				vm_vec_unrotate(&world_thruster_pos, &bank->points[j].pnt, &ship_objp->orient);
 				vm_vec_add2(&world_thruster_pos, &ship_objp->pos);

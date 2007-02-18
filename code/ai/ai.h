@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.17 $
- * $Date: 2007-02-11 21:26:34 $
+ * $Revision: 1.18 $
+ * $Date: 2007-02-18 06:16:46 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2007/02/11 21:26:34  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 1.16  2007/01/14 14:03:31  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -426,8 +429,6 @@ typedef struct ai_goal {
 		char	*name;
 		int	index;
 	} dockee;
-
-	int dock_animation_done_time;
 
 } ai_goal;
 

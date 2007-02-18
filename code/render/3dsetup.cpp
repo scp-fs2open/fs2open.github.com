@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.26 $
- * $Date: 2007-01-31 05:08:35 $
- * $Author: phreak $
+ * $Revision: 2.27 $
+ * $Date: 2007-02-18 06:17:34 $
+ * $Author: Goober5000 $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2007/01/31 05:08:35  phreak
+ * We don't want to modify the clip plane variables in htl
+ *  mode once we've moved them to gr_start_clip()
+ *
+ * do we even need htl mode checks anymore?  welcome to the 21st century
+ *
  * Revision 2.25  2007/01/14 14:03:36  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -460,7 +466,7 @@ void g3_start_instance_matrix(vec3d *pos,matrix *orient, bool set_api)
 	vm_matrix_x_matrix(&tempm,&tempm2,&View_matrix);
 	View_matrix = tempm;
 
-	vm_matrix_x_matrix(&Object_matrix,&instance_stack[instance_depth-1].om,orient);
+	vm_matrix_x_matrix(&Object_matrix,orient,&instance_stack[instance_depth-1].om);
 //	Object_matrix = tempm;
 
 	// Update the lighting matrix
