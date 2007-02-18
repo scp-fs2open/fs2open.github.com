@@ -12,6 +12,11 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2007/02/03 03:28:48  phreak
+ * spawn weapons now have the option of passing a target lock onto their children.
+ *
+ * http://www.hard-light.net/forums/index.php/topic,45166.0.html
+ *
  * Revision 2.74  2007/01/14 14:03:40  bobboau
  * ok, something aparently went wrong, last time, so I'm commiting again
  * hopefully it should work this time
@@ -641,8 +646,7 @@ extern int Num_weapon_subtypes;
 #define WIF2_SAME_TURRET_COOLDOWN		(1 << 7)	// the weapon has the same cooldown time on turrets
 #define WIF2_MR_NO_LIGHTING				(1 << 8)	// don't render with lighting, regardless of user options
 #define WIF2_TRANSPARENT				(1 << 9)	// render as transparent
-#define WIF2_MINE						(1 << 10)	// it's a mine, start motionless, can be shot down, by same iff if bomb
-#define WIF2_INHERIT_PARENT_TARGET		(1 << 11)	// child weapons home in on the target their parent is homing on.
+#define WIF2_INHERIT_PARENT_TARGET		(1 << 10)	// child weapons home in on the target their parent is homing on.
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
@@ -724,17 +728,7 @@ typedef struct weapon {
 // info specific to beam weapons
 #define MAX_BEAM_SECTIONS				5
 typedef struct beam_weapon_section_info {
-	beam_weapon_section_info():length(0.0f),width(1.0f),texture(-1),nframes(1),fps(1),flicker(0.1f),z_add(0.0f),tile_type(0),tile_factor(1.0f),translation(0.0f){
-		for(int j = 0; j < 4; j++)
-		{
-			rgba_inner[j] = 0;
-			rgba_outer[j] = 255;
-		}
-
-	}
-
 	float width;							// width of the section
-	float length;							// length of the section
 	int texture;							// texture bitmap
 	ubyte rgba_inner[4];					// for non-textured beams
 	ubyte rgba_outer[4];					// for non-textured beams
@@ -761,14 +755,14 @@ typedef struct beam_weapon_info {
 	int	beam_loop_sound;				// looping beam sound
 	int	beam_warmup_sound;			// warmup sound
 	int	beam_warmdown_sound;			// warmdown sound
-//	int	beam_num_sections;			// the # of visible "sections" on the beam
+	int	beam_num_sections;			// the # of visible "sections" on the beam
 	int	beam_glow_bitmap;				// muzzle glow bitmap
 	int beam_glow_nframes;				// number of frames, if animated
 	int beam_glow_fps;					// frames/sec, if animated
 	int	beam_shots;						// # of shots the beam takes
 	float	beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
 	float beam_shrink_pct;				// what percent/second the beam shrinks at
-	std::vector<beam_weapon_section_info> sections;			// info on the visible sections of the beam 	
+	beam_weapon_section_info sections[MAX_BEAM_SECTIONS];			// info on the visible sections of the beam 	
 	float			range;				//how far it will shoot-Bobboau
 	float			damage_threshold;	//point at wich damage will start being atenuated from 0.0 to 1.0
 } beam_weapon_info;
@@ -816,8 +810,6 @@ typedef struct weapon_info {
 	float	free_flight_time;
 	float mass;									// mass of the weapon
 	float fire_wait;							// fire rate -- amount of time before you can refire the weapon
-
-	float	hit_points;
 
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 
@@ -976,11 +968,6 @@ typedef struct weapon_info {
 	float alpha_max;			// maximum alpha value to use
 	float alpha_min;			// minimum alpha value to use
 	float alpha_cycle;			// cycle between max and min by this much each frame
-
-	float shield_hit_radius;
-
-	float proximity_detonate;
-
 } weapon_info;
 
 // Data structure to track the active missiles
@@ -1102,7 +1089,5 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 
 // return a scale factor for damage which should be applied for 2 collisions
 float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target);
-
-bool weapon_armed(weapon *wp);
 
 #endif

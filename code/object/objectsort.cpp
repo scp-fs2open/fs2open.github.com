@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectSort.cpp $
- * $Revision: 2.15 $
- * $Date: 2007-01-14 14:03:36 $
- * $Author: bobboau $
+ * $Revision: 2.16 $
+ * $Date: 2007-02-18 06:17:10 $
+ * $Author: Goober5000 $
  *
  * Sorting code for objects.
  *
