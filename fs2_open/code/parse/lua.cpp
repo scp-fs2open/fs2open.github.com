@@ -1267,6 +1267,7 @@ struct matrix_h {
 	matrix mtx;
 	angles ang;
 
+	matrix_h(){mtx = vmd_identity_matrix; status = MH_ANGLES_OUTOFDATE;}
 	matrix_h(matrix *in){mtx = *in; status = MH_ANGLES_OUTOFDATE;}
 	matrix_h(angles *in){ang = *in; status = MH_MATRIX_OUTOFDATE;}
 
@@ -1374,7 +1375,7 @@ ADE_FUNC(rotateVector, l_Matrix, "Vector object", "Rotated vector", "Returns rot
 	matrix_h *mh;
 	vec3d *v3;
 	if(!ade_get_args(L, "oo", l_Matrix.GetPtr(&mh), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	vec3d v3r;
 	mh->ValidateMatrix();
@@ -1388,7 +1389,7 @@ ADE_FUNC(unrotateVector, l_Matrix, "Vector object", "Unrotated vector", "Returns
 	matrix_h *mh;
 	vec3d *v3;
 	if(!ade_get_args(L, "oo", l_Matrix.GetPtr(&mh), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	vec3d v3r;
 	mh->ValidateMatrix();
@@ -1444,10 +1445,10 @@ ADE_VIRTVAR(AfterburnerVelocityMax, l_Physics, "lvector", "Afterburner max veloc
 	physics_info_h *pih;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(!pih->IsValid())
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		pih->pi->afterburner_max_vel = *v3;
@@ -1529,10 +1530,10 @@ ADE_VIRTVAR(RotationalVelocity, l_Physics, "lvector", "Rotational velocity")
 	physics_info_h *pih;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(!pih->IsValid())
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		pih->pi->rotvel = *v3;
@@ -1563,10 +1564,10 @@ ADE_VIRTVAR(RotationalVelocityDesired, l_Physics, "lvector", "Desired rotational
 	physics_info_h *pih;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(!pih->IsValid())
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		pih->pi->desired_rotvel = *v3;
@@ -1580,10 +1581,10 @@ ADE_VIRTVAR(RotationalVelocityMax, l_Physics, "lvector", "Maximum rotational vel
 	physics_info_h *pih;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(!pih->IsValid())
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		pih->pi->max_rotvel = *v3;
@@ -1665,10 +1666,10 @@ ADE_VIRTVAR(Velocity, l_Physics, "wvector", "Object world velocity")
 	physics_info_h *pih;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(!pih->IsValid())
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		pih->pi->vel = *v3;
@@ -1682,10 +1683,10 @@ ADE_VIRTVAR(VelocityDesired, l_Physics, "wvector", "Desired velocity")
 	physics_info_h *pih;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(!pih->IsValid())
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		pih->pi->desired_vel = *v3;
@@ -1699,10 +1700,10 @@ ADE_VIRTVAR(VelocityMax, l_Physics, "lvector", "Object max local velocity")
 	physics_info_h *pih;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(!pih->IsValid())
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		pih->pi->max_vel = *v3;
@@ -2330,7 +2331,7 @@ ADE_INDEXER(l_Vector, "x,y,z or 1-3", "Vector", "Vector component")
 
 ADE_FUNC(__add, l_Vector, "{Number, Vector}", "Vector", "Adds vector by another vector, or adds all axes by value")
 {
-	vec3d v3;
+	vec3d v3 = vmd_zero_vector;
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
@@ -2356,7 +2357,7 @@ ADE_FUNC(__add, l_Vector, "{Number, Vector}", "Vector", "Adds vector by another 
 
 ADE_FUNC(__sub, l_Vector, "{Number, Vector}", "Vector", "Subtracts vector from another vector, or subtracts all axes by value")
 {
-	vec3d v3;
+	vec3d v3 = vmd_zero_vector;
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
@@ -2383,7 +2384,7 @@ ADE_FUNC(__sub, l_Vector, "{Number, Vector}", "Vector", "Subtracts vector from a
 
 ADE_FUNC(__mul, l_Vector, "number", "Vector", "Scales vector object (Multiplies all axes by number)")
 {
-	vec3d v3;
+	vec3d v3 = vmd_zero_vector;
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
@@ -2399,7 +2400,7 @@ ADE_FUNC(__mul, l_Vector, "number", "Vector", "Scales vector object (Multiplies 
 
 ADE_FUNC(__div, l_Vector, "number", "Vector", "Scales vector object (Divide all axes by number)")
 {
-	vec3d v3;
+	vec3d v3 = vmd_zero_vector;
 	if(lua_isnumber(L, 1) || lua_isnumber(L, 2))
 	{
 		float f;
@@ -2432,7 +2433,7 @@ ADE_FUNC(getOrientation, l_Vector, NULL, "Orientation",
 {
 	vec3d v3;
 	if(!ade_get_args(L, "o", l_Vector.Get(&v3)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	matrix mt = vmd_identity_matrix;
 
@@ -2474,7 +2475,7 @@ ADE_FUNC(getCrossProduct, l_Vector, "vector argument", "Cross product (number)",
 {
 	vec3d *v3a, *v3b;
 	if(!ade_get_args(L, "oo", l_Vector.GetPtr(&v3a), l_Vector.GetPtr(&v3b)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	vec3d v3r;
 	vm_vec_crossprod(&v3r, v3a, v3b);
@@ -2883,10 +2884,10 @@ ADE_VIRTVAR(Position, l_Object, "wvector", "Object world position")
 	object_h *objh;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Vector.GetPtr(&v3)))
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(!objh->IsValid())
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		objh->objp->pos = *v3;
@@ -7678,51 +7679,52 @@ int ade_get_args(lua_State *L, char *fmt, ...)
 				}
 				break;
 			case 'o':
-				if(lua_isuserdata(L, nargs))
 				{
 					ade_odata od = va_arg(vl, ade_odata);
-
-					//WMC - Get metatable
-					lua_getmetatable(L, nargs);
-					int mtb_ldx = lua_gettop(L);
-					Assert(!lua_isnil(L, -1));
-
-					//Get ID
-					lua_pushstring(L, "__adeid");
-					lua_rawget(L, mtb_ldx);
-					//ade_id *paid = (ade_id*)lua_touserdata(L, -1);
-
-					if(lua_tonumber(L, -1) != od.idx)
+					if(lua_isuserdata(L, nargs))
 					{
-						lua_pushstring(L, "__adederivid");
+						//WMC - Get metatable
+						lua_getmetatable(L, nargs);
+						int mtb_ldx = lua_gettop(L);
+						Assert(!lua_isnil(L, -1));
+	
+						//Get ID
+						lua_pushstring(L, "__adeid");
 						lua_rawget(L, mtb_ldx);
-						//ade_id *paideriv = (ade_id*)lua_touserdata(L, -1);
-						if((uint)lua_tonumber(L, -1) != od.idx)
+						//ade_id *paid = (ade_id*)lua_touserdata(L, -1);
+	
+						if(lua_tonumber(L, -1) != od.idx)
 						{
-							LuaError(L, "%s: Argument %d is the wrong type of userdata; '%s' given, but '%s' expected", funcname, nargs, Ade_table_entries[(uint)lua_tonumber(L, -2)].Name, Ade_table_entries[od.idx].Name);
-							if(!optional_args) return 0;
+							lua_pushstring(L, "__adederivid");
+							lua_rawget(L, mtb_ldx);
+							//ade_id *paideriv = (ade_id*)lua_touserdata(L, -1);
+							if((uint)lua_tonumber(L, -1) != od.idx)
+							{
+								LuaError(L, "%s: Argument %d is the wrong type of userdata; '%s' given, but '%s' expected", funcname, nargs, Ade_table_entries[(uint)lua_tonumber(L, -2)].Name, Ade_table_entries[od.idx].GetName());
+								if(!optional_args) return 0;
+							}
+							lua_pop(L, 1);
 						}
-						lua_pop(L, 1);
+						lua_pop(L, 2);
+						if(od.size != ODATA_PTR_SIZE)
+						{
+							memcpy(od.buf, lua_touserdata(L, nargs), od.size);
+							if(od.sig != NULL) {
+								//WMC - char must be 1
+								Assert(sizeof(char) == 1);
+								//WMC - Yuck. Copy sig data.
+								//Maybe in the future I'll do a packet userdata thing.
+								(*od.sig) = *(ODATA_SIG_TYPE*)(*(char **)od.buf + od.size);
+							}
+						} else {
+							(*(void**)od.buf) = lua_touserdata(L, nargs);
+						}
 					}
-					lua_pop(L, 2);
-					if(od.size != ODATA_PTR_SIZE)
+					else
 					{
-						memcpy(od.buf, lua_touserdata(L, nargs), od.size);
-						if(od.sig != NULL) {
-							//WMC - char must be 1
-							Assert(sizeof(char) == 1);
-							//WMC - Yuck. Copy sig data.
-							//Maybe in the future I'll do a packet userdata thing.
-							(*od.sig) = *(ODATA_SIG_TYPE*)(*(char **)od.buf + od.size);
-						}
-					} else {
-						(*(void**)od.buf) = lua_touserdata(L, nargs);
+						LuaError(L, "%s: Argument %d is an invalid type '%s'; type '%s' expected", funcname, nargs, ade_get_type_string(L, nargs), Ade_table_entries[od.idx].GetName());
+						if(!optional_args) return 0;
 					}
-				}
-				else
-				{
-					LuaError(L, "%s: Argument %d is an invalid type '%s'; type '%s' expected", funcname, nargs, ade_get_type_string(L, nargs), Ade_table_entries[va_arg(vl,ade_odata).idx]);
-					if(!optional_args) return 0;
 				}
 				break;
 			case '|':
@@ -8454,13 +8456,13 @@ void ade_table_entry::OutputMeta(FILE *fp)
 					if(Name == NULL)
 					{
 						if(DerivatorIdx == UINT_MAX)
-							fprintf(fp, "<h2>%s</h2>\n", ShortName, ShortName);
+							fprintf(fp, "<h2>%s</h2>\n", ShortName);
 						else
-							fprintf(fp, "<h2>%s:<a href=\"#%s\">%s</a></h2>\n", Ade_table_entries[DerivatorIdx].GetName(), Ade_table_entries[DerivatorIdx].GetName());
+							fprintf(fp, "<h2>%s:<a href=\"#%s\">%s</a></h2>\n", Ade_table_entries[DerivatorIdx].GetName(), Ade_table_entries[DerivatorIdx].GetName(), Ade_table_entries[DerivatorIdx].GetName());
 					}
 					else
 					{
-						fprintf(fp, "<h2>%s", Name, Name);
+						fprintf(fp, "<h2>%s", Name);
 
 						if(ShortName != NULL)
 							fprintf(fp, " (%s)", ShortName);
@@ -8478,7 +8480,7 @@ void ade_table_entry::OutputMeta(FILE *fp)
 
 					//***Type: ReturnValues
 					if(ReturnValues != NULL) {
-						fprintf(fp, "<dd><b>Type: </b> %s<br>%nbsp;</dd>\n", ReturnValues);
+						fprintf(fp, "<dd><b>Type: </b> %s<br>&nbsp;</dd>\n", ReturnValues);
 					}
 				}
 				break;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.75 $
- * $Date: 2007-02-11 21:26:39 $
- * $Author: Goober5000 $
+ * $Revision: 2.76 $
+ * $Date: 2007-02-19 20:39:10 $
+ * $Author: wmcoolmon $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.75  2007/02/11 21:26:39  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.74  2007/02/10 06:39:43  Goober5000
  * new feature: shield generators that control whether the shield is up
  *
@@ -68,7 +71,7 @@
  * spelling
  *
  * Revision 2.60  2006/01/13 03:30:59  Goober5000
- * übercommit of custom IFF stuff :)
+ * bercommit of custom IFF stuff :)
  *
  * Revision 2.59  2005/12/08 15:17:35  taylor
  * fix several bad crash related problems from WMC's commits on the 4th
@@ -2212,6 +2215,10 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	if ( (ship_obj == Player_obj) ) {
 		ship_maybe_lament();
 	}
+	
+	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_obj);
+	Script_system.RemHookVar("Self");
+	Script_system.RemHookVar("Killer");
 }
 
 // function to simply explode a ship where it is currently at
