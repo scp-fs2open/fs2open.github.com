@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.23 $
- * $Date: 2007-02-11 21:26:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.24 $
+ * $Date: 2007-02-19 07:24:51 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2007/02/11 21:26:35  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.22  2007/02/11 06:19:05  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
  *
@@ -1717,7 +1720,15 @@ int collide_ship_ship( obj_pair * pair )
 */
 		if ( hit )
 		{
+			ade_odata ade_shipa_obj = l_Ship.Set(object_h(A));
+			ade_odata ade_shipb_obj = l_Ship.Set(object_h(B));
+
+			Script_system.SetHookVar("Ship", 'o', &ade_shipa_obj);
+			Script_system.SetHookVar("ShipB", 'o', &ade_shipb_obj);
 			bool a_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, A);
+			
+			Script_system.SetHookVar("Ship", 'o', &ade_shipb_obj);
+			Script_system.SetHookVar("ShipB", 'o', &ade_shipa_obj);
 			bool b_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, B);
 			if(!a_override && !b_override)
 			{
@@ -1857,20 +1868,18 @@ int collide_ship_ship( obj_pair * pair )
 				maybe_push_little_ship_from_fast_big_ship(ship_ship_hit_info.heavy, ship_ship_hit_info.light, ship_ship_hit_info.impulse, &ship_ship_hit_info.collision_normal);
 				//nprintf(("AI", "Damage to %s = %7.3f\n", Ships[LightOne->instance].ship_name, dam2));
 			}
-			ade_odata ade_shipa_obj = l_Ship.Set(object_h(A));
-			ade_odata ade_shipb_obj = l_Ship.Set(object_h(B));
 
 			if(!(b_override && !a_override))
 			{
 				Script_system.SetHookVar("Ship", 'o', &ade_shipa_obj);
 				Script_system.SetHookVar("ShipB", 'o', &ade_shipb_obj);
-				Script_system.RunCondition(CHA_COLLIDESHIP, NULL, NULL, A);
+				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, A);
 			}
 			if((b_override && !a_override) || (!b_override && !a_override))
 			{
 				Script_system.SetHookVar("Ship", 'o', &ade_shipb_obj);
 				Script_system.SetHookVar("ShipB", 'o', &ade_shipa_obj);
-				Script_system.RunCondition(CHA_COLLIDESHIP, NULL, NULL, B);
+				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, B);
 			}
 
 			Script_system.RemHookVar("Ship");

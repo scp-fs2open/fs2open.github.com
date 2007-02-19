@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.41 $
- * $Date: 2007-02-18 06:17:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.42 $
+ * $Date: 2007-02-19 07:24:51 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41  2007/02/18 06:17:10  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.40  2007/02/11 21:26:35  Goober5000
  * massive shield infrastructure commit
  *
@@ -567,21 +570,22 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 	if ( valid_hit_occurred )
 	{
-		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp);
-		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
-		if(!ship_override && !weapon_override) {
-			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
-		}
 		ade_odata ade_ship_obj = l_Ship.Set(object_h(ship_objp));
 		ade_odata ade_weapon_obj = l_Weapon.Set(object_h(weapon_objp));
 
 		Script_system.SetHookVar("Ship", 'o', &ade_ship_obj);
 		Script_system.SetHookVar("Weapon", 'o', &ade_weapon_obj);
 
+		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp);
+		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
+		if(!ship_override && !weapon_override) {
+			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
+		}
+
 		if(!(weapon_override && !ship_override))
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, NULL, NULL, ship_objp);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, ship_objp);
 		if((weapon_override && !ship_override) || (!weapon_override && !ship_override))
-			Script_system.RunCondition(CHA_COLLIDESHIP, NULL, NULL, weapon_objp);
+			Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, weapon_objp);
 
 		Script_system.RemHookVar("Ship");
 		Script_system.RemHookVar("Weapon");

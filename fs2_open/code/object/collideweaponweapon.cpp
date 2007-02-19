@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.15 $
- * $Date: 2007-02-18 06:17:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2007-02-19 07:24:51 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2007/02/18 06:17:10  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.13  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -176,7 +179,15 @@ int collide_weapon_weapon( obj_pair * pair )
 	//	Rats, do collision detection.
 	if (collide_subdivide(&A->last_pos, &A->pos, A_radius, &B->last_pos, &B->pos, B_radius))
 	{
+		ade_odata ade_weapona_obj = l_Weapon.Set(object_h(A));
+		ade_odata ade_weaponb_obj = l_Weapon.Set(object_h(B));
+		
+		Script_system.SetHookVar("Weapon", 'o', &ade_weapona_obj);
+		Script_system.SetHookVar("WeaponB", 'o', &ade_weaponb_obj);
 		bool a_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, A);
+		
+		Script_system.SetHookVar("Weapon", 'o', &ade_weaponb_obj);
+		Script_system.SetHookVar("WeaponB", 'o', &ade_weapona_obj);
 		bool b_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, B);
 
 		if(!a_override && !b_override)
@@ -223,20 +234,18 @@ int collide_weapon_weapon( obj_pair * pair )
 			}
 	#endif
 		}
-		ade_odata ade_weapona_obj = l_Weapon.Set(object_h(A));
-		ade_odata ade_weaponb_obj = l_Weapon.Set(object_h(B));
 
 		if(!(b_override && !a_override))
 		{
 			Script_system.SetHookVar("Weapon", 'o', &ade_weapona_obj);
 			Script_system.SetHookVar("WeaponB", 'o', &ade_weaponb_obj);
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, NULL, NULL, A);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, A);
 		}
 		if((b_override && !a_override) || (!b_override && !a_override))
 		{
 			Script_system.SetHookVar("Weapon", 'o', &ade_weaponb_obj);
 			Script_system.SetHookVar("WeaponB", 'o', &ade_weapona_obj);
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, NULL, NULL, B);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, B);
 		}
 
 		Script_system.RemHookVar("Weapon");
