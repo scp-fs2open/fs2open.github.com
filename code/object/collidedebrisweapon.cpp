@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisWeapon.cpp $
- * $Revision: 2.7 $
- * $Date: 2007-01-14 10:26:38 $
+ * $Revision: 2.8 $
+ * $Date: 2007-02-19 07:24:51 $
  * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2007/01/14 10:26:38  wmcoolmon
+ * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ *
  * Revision 2.6  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -119,6 +122,12 @@ int collide_debris_weapon( obj_pair * pair )
 		hit = debris_check_collision(pdebris, weapon, &hitpos );
 		if ( !hit )
 			return 0;
+			
+		ade_odata ade_weapon_obj = l_Weapon.Set(object_h(weapon));
+		ade_odata ade_debris_obj = l_Debris.Set(object_h(pdebris));
+
+		Script_system.SetHookVar("Weapon", 'o', &ade_weapon_obj);
+		Script_system.SetHookVar("Debris", 'o', &ade_debris_obj);
 
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, weapon);
 		bool debris_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, pdebris);
@@ -129,16 +138,10 @@ int collide_debris_weapon( obj_pair * pair )
 			debris_hit( pdebris, weapon, &hitpos, Weapon_info[Weapons[weapon->instance].weapon_info_index].damage );
 		}
 
-		ade_odata ade_weapon_obj = l_Weapon.Set(object_h(weapon));
-		ade_odata ade_debris_obj = l_Debris.Set(object_h(pdebris));
-
-		Script_system.SetHookVar("Weapon", 'o', &ade_weapon_obj);
-		Script_system.SetHookVar("Debris", 'o', &ade_debris_obj);
-
 		if(!(debris_override && !weapon_override))
-			Script_system.RunCondition(CHA_COLLIDEDEBRIS, NULL, NULL, weapon);
+			Script_system.RunCondition(CHA_COLLIDEDEBRIS, '\0', NULL, weapon);
 		if((debris_override && !weapon_override) || (!debris_override && !weapon_override))
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, NULL, NULL, pdebris);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, pdebris);
 
 		Script_system.RemHookVar("Weapon");
 		Script_system.RemHookVar("Debris");
@@ -189,9 +192,9 @@ int collide_asteroid_weapon( obj_pair * pair )
 		Script_system.SetHookVar("Asteroid", 'o', &ade_asteroid_obj);
 
 		if(!(asteroid_override && !weapon_override))
-			Script_system.RunCondition(CHA_COLLIDEASTEROID, NULL, NULL, weapon);
+			Script_system.RunCondition(CHA_COLLIDEASTEROID, '\0', NULL, weapon);
 		if((asteroid_override && !weapon_override) || (!asteroid_override && !weapon_override))
-			Script_system.RunCondition(CHA_COLLIDEWEAPON, NULL, NULL, pasteroid);
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, pasteroid);
 
 		Script_system.RemHookVar("Weapon");
 		Script_system.RemHookVar("Asteroid");
