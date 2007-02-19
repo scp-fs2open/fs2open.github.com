@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.83 $
- * $Date: 2007-02-10 00:04:03 $
- * $Author: taylor $
+ * $Revision: 2.84 $
+ * $Date: 2007-02-19 07:08:04 $
+ * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2007/02/10 00:04:03  taylor
+ * performance/accuracy optimization for the (un)size functions
+ *
  * Revision 2.82  2007/01/10 01:44:39  taylor
  * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
  *
@@ -2194,10 +2197,11 @@ void gr_flip()
 		}
 	}*/
 
-	//WMC - Do conditional hooks. Yippee!
-	Script_system.RunCondition(CHA_ONFRAME);
 	//WMC - Evaluate global hook if not override.
 	Script_system.RunBytecode(Script_globalhook);
+	//WMC - Do conditional hooks. Yippee!
+	Script_system.RunCondition(CHA_ONFRAME);
+
 	gr_screen.gf_flip();
 }
 
