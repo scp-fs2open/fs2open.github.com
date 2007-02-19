@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.85 $
- * $Date: 2007-02-18 06:17:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.86 $
+ * $Date: 2007-02-19 07:55:20 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2007/02/18 06:17:34  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.84  2007/02/16 18:54:09  karajorma
  * Thought I'd caught all of these months ago! Thanks to Wanderer for the heads up.
  *
@@ -1107,14 +1110,12 @@ void shipfx_warpin_start( object *objp )
 	}
 
 	//WMC - Check if scripting handles this.
+	Script_system.SetHookObject("Object", OBJ_INDEX(objp));
 	if(Script_system.IsConditionOverride(CHA_WARPIN, objp))
 	{
 		Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
+		Script_system.RemHookVar("Object");
 		return;
-	}
-	else
-	{
-		Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
 	}
 
 	// if there is no arrival warp, then skip the whole thing
@@ -1230,6 +1231,9 @@ void shipfx_warpin_start( object *objp )
 		shipp->final_warp_time = timestamp(fl2i(SHIPFX_WARP_DELAY*1000.0f));
 		shipp->flags |= SF_ARRIVING_STAGE_1;
 	}
+	
+	Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
+	Script_system.RemHookVar("Object");
 }
 
 void shipfx_warpin_frame( object *objp, float frametime )
@@ -1510,23 +1514,11 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
-	if(!Script_system.IsConditionOverride(CHA_WARPIN, objp))
-	{
-		// if we're dying return
-		if ( shipp->flags & SF_DYING ) {
-			return;
-		}
-
-		//return if disabled
-		if ( shipp->flags & SF_DISABLED ){
-			return;
-		}
-
-		Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
-	}
-	else
+	Script_system.SetHookObject("Object", OBJ_INDEX(objp));
+	if(Script_system.IsConditionOverride(CHA_WARPOUT, objp))
 	{
 		Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
+		Script_system.RemHookVar("Object");
 		return;
 	}
 
@@ -1648,6 +1640,9 @@ void shipfx_warpout_start( object *objp )
 //			objp->phys_info.flags |= PF_SPECIAL_WARP_OUT;
 		}
 	}
+	
+	Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
+	Script_system.RemHookVar("Object");
 
 }
 

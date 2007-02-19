@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.71 $
- * $Date: 2007-02-16 07:06:46 $
- * $Author: Goober5000 $
+ * $Revision: 2.72 $
+ * $Date: 2007-02-19 07:55:20 $
+ * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2007/02/16 07:06:46  Goober5000
+ * uhh... wrong?
+ *
  * Revision 2.70  2007/02/11 21:26:35  Goober5000
  * massive shield infrastructure commit
  *
@@ -66,7 +69,7 @@
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
  * Revision 2.55  2006/01/13 03:31:09  Goober5000
- * übercommit of custom IFF stuff :)
+ * bercommit of custom IFF stuff :)
  *
  * Revision 2.54  2006/01/12 17:42:56  wmcoolmon
  * Even more scripting stuff.
@@ -2077,63 +2080,60 @@ void obj_render(object *obj)
 	MONITOR_INC( NumObjectsRend, 1 );
 
 	//WMC - By definition, override statements are executed before the actual statement
-	bool script_return = false;
 	Script_system.SetHookObject("Object", OBJ_INDEX(obj));
-	if(Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj))
-		script_return = true;
-
+	if(!Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj))
+	{
+		switch( obj->type )	{
+		case OBJ_NONE:
+			#ifndef NDEBUG
+			mprintf(( "ERROR!!!! Bogus obj %d is rendering!\n", obj-Objects ));
+			Int3();
+			#endif
+			break;
+		case OBJ_WEAPON:
+			if(Cmdline_dis_weapons) return;
+			weapon_render(obj);
+			break;
+		case OBJ_SHIP:
+			ship_render(obj);
+			break;
+		case OBJ_FIREBALL:
+			fireball_render(obj);
+			break;
+		case OBJ_SHOCKWAVE:
+			shockwave_render(obj);
+			break;
+		case OBJ_DEBRIS:
+			debris_render(obj);
+			break;
+		case OBJ_ASTEROID:
+			asteroid_render(obj);
+			break;
+	/*	case OBJ_CMEASURE:
+			cmeasure_render(obj);
+			break;*/
+		case OBJ_JUMP_NODE:
+			obj->jnp->render(&obj->pos, &Eye_position);
+	//		jumpnode_render(obj, &obj->pos, &Eye_position);
+			break;
+		case OBJ_WAYPOINT:
+			if (Show_waypoints)	{
+				//ship_render(obj);
+				gr_set_color( 128, 128, 128 );
+				g3_draw_sphere_ez( &obj->pos, 5.0f );
+			}
+			break;
+		case OBJ_GHOST:
+			break;
+		case OBJ_BEAM:
+			break;
+		default:
+			Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
+		}
+	}
+	
 	Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
 	Script_system.RemHookVar("Object");
-	if(script_return)
-		return;
-
-	switch( obj->type )	{
-	case OBJ_NONE:
-		#ifndef NDEBUG
-		mprintf(( "ERROR!!!! Bogus obj %d is rendering!\n", obj-Objects ));
-		Int3();
-		#endif
-		break;
-	case OBJ_WEAPON:
-		if(Cmdline_dis_weapons) return;
-		weapon_render(obj);
-		break;
-	case OBJ_SHIP:
-		ship_render(obj);
-		break;
-	case OBJ_FIREBALL:
-		fireball_render(obj);
-		break;
-	case OBJ_SHOCKWAVE:
-		shockwave_render(obj);
-		break;
-	case OBJ_DEBRIS:
-		debris_render(obj);
-		break;
-	case OBJ_ASTEROID:
-		asteroid_render(obj);
-		break;
-/*	case OBJ_CMEASURE:
-		cmeasure_render(obj);
-		break;*/
-	case OBJ_JUMP_NODE:
-		obj->jnp->render(&obj->pos, &Eye_position);
-//		jumpnode_render(obj, &obj->pos, &Eye_position);
-		break;
-	case OBJ_WAYPOINT:
-		if (Show_waypoints)	{
-			//ship_render(obj);
-			gr_set_color( 128, 128, 128 );
-			g3_draw_sphere_ez( &obj->pos, 5.0f );
-		}
-		break;
-	case OBJ_GHOST:
-		break;
-	case OBJ_BEAM:
-		break;
-	default:
-		Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
-	}
 }
 
 void obj_init_all_ships_physics()
