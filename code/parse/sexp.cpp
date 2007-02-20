@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.303 $
- * $Date: 2007-02-18 06:17:10 $
+ * $Revision: 2.304 $
+ * $Date: 2007-02-20 01:40:57 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.303  2007/02/18 06:17:10  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.302  2007/02/13 01:46:03  Goober5000
  * fix a hideous bug with the knossos special warp stuff
  * (how did this ever actually work correctly?)
@@ -6573,7 +6576,6 @@ int sexp_get_object_coordinate(int n, int axis)
 	return sexp_calculate_coordinate(pos, &oswpt.objp->orient, relative_location, axis);
 }
 
-// Goober5000
 void sexp_set_object_position(int n) 
 {
 	vec3d target_vec, orig_leader_vec;
