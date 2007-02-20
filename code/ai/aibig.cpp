@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 1.12 $
- * $Date: 2006-02-25 21:46:59 $
+ * $Revision: 1.13 $
+ * $Date: 2007-02-20 04:20:10 $
  * $Author: Goober5000 $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2006/02/25 21:46:59  Goober5000
+ * spelling
+ *
  * Revision 1.11  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -491,11 +494,12 @@ void ai_bpap(object *objp, vec3d *attacker_objp_pos, vec3d *attacker_objp_fvec, 
 	model_octant	*octp;
 	polymodel	*pm;
 	int		i, q, octs[4];	
+	ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
 
 	best_point = objp->pos;
 	nearest_dist = weapon_travel_dist;
 
-	model_which_octant_distant_many(attacker_objp_pos, Ships[objp->instance].modelnum, &objp->orient, &objp->pos, &pm, octs);
+	model_which_octant_distant_many(attacker_objp_pos, sip->model_num, &objp->orient, &objp->pos, &pm, octs);
 
 	num_tries = (int) (vm_vec_dist(&objp->pos, attacker_objp_pos)/objp->radius);
 
@@ -570,7 +574,7 @@ done_1:
 	}
 	
 	mc_info mc;
-	mc.model_num = Ships[objp->instance].modelnum;
+	mc.model_num = sip->model_num;
 	mc.orient = &objp->orient;
 	mc.pos = &objp->pos;
 	mc.p0 = attacker_objp_pos;
@@ -772,7 +776,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 		int			subsys_path_num, subsys_in_sight, checked_sight;
 		float			dist;
 
-		pm = model_get( Ships[Pl_objp->instance].modelnum );
+		pm = model_get( Ship_info[Ships[Pl_objp->instance].ship_info_index].model_num );
 	
 		// If attacking a subsystem, ensure that we have an unobstructed line of sight... if not, then move
 		// towards path linked to subsystem
@@ -788,7 +792,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 
 			// get world pos of eye (stored in geye)
 			ep = &(pm->view_positions[0] );
-			model_find_world_point( &geye, &ep->pnt, Ships[Pl_objp->instance].modelnum, 0, &Pl_objp->orient, &Pl_objp->pos );
+			model_find_world_point( &geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos );
 			
 			// get world pos of subsystem
 			vm_vec_unrotate(&gsubpos, &aip->targeted_subsys->system_info->pnt, &En_objp->orient);
@@ -1284,7 +1288,7 @@ void ai_big_chase()
 	case SM_ATTACK:
 	case SM_SUPER_ATTACK:
 	case SM_ATTACK_FOREVER:
-		ai_big_chase_attack(aip, sip, &enemy_pos, dist_to_enemy, shipp->modelnum);
+		ai_big_chase_attack(aip, sip, &enemy_pos, dist_to_enemy, sip->model_num);
 		break;
 
 	case SM_EVADE:
@@ -1516,7 +1520,7 @@ void ai_big_attack_get_data(vec3d *enemy_pos, float *dist_to_enemy, float *dot_t
 		predicted_enemy_pos=*enemy_pos;
 	} else {
 		vec3d	gun_pos, pnt;
-		polymodel *po = model_get( shipp->modelnum );
+		polymodel *po = model_get( Ship_info[shipp->ship_info_index].model_num );
 		float		weapon_speed;
 
 		//	Compute position of gun in absolute space and use that as fire position.

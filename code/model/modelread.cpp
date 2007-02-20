@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.128 $
- * $Date: 2007-02-18 06:16:47 $
+ * $Revision: 2.129 $
+ * $Date: 2007-02-20 04:20:18 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.128  2007/02/18 06:16:47  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.127  2007/02/10 06:39:43  Goober5000
  * new feature: shield generators that control whether the shield is up
  *
@@ -1436,12 +1439,12 @@ void model_unload(int modelnum, int force)
 
 	// run through Ship_info[] and if the model has been loaded we'll need to reset the modelnum to -1.
 	for (i = 0; i < Num_ship_classes; i++) {
-		if ( pm->id == Ship_info[i].modelnum ) {
-			Ship_info[i].modelnum = -1;
+		if ( pm->id == Ship_info[i].model_num ) {
+			Ship_info[i].model_num = -1;
 		}
 
-		if ( pm->id == Ship_info[i].modelnum_hud ) {
-			Ship_info[i].modelnum_hud = -1;
+		if ( pm->id == Ship_info[i].model_num_hud ) {
+			Ship_info[i].model_num_hud = -1;
 		}
 	}
 
@@ -3915,7 +3918,7 @@ void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_mo
 
 	Assert(ship_obj->type == OBJ_SHIP);
 
-	polymodel *pm = model_get(Ships[ship_obj->instance].modelnum);
+	polymodel *pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
 	vec = *m_vec;
 	mn = sub_model_num;
 
@@ -4457,7 +4460,7 @@ void model_get_rotating_submodel_list(int *submodel_list, int *num_rotating_subm
 	Assert(objp->type == OBJ_SHIP);
 
 	// Check if not currently rotating - then treat as part of superstructure.
-	int modelnum = Ships[objp->instance].modelnum;
+	int modelnum = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 	polymodel *pm = model_get(modelnum);
 	bsp_info *child_submodel;
 

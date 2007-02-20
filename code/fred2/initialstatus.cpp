@@ -144,7 +144,7 @@ BOOL initial_status::OnInitDialog()
 	// initialize dockpoint stuff
 	if (!m_multi_edit)
 	{
-		num_dock_points = model_get_num_dock_points(Ships[m_ship].modelnum);
+		num_dock_points = model_get_num_dock_points(Ship_info[Ships[m_ship].ship_info_index].model_num);
 		dockpoint_array = new dockpoint_information[num_dock_points];
 		objp = &Objects[Ships[m_ship].objnum];
 		for (int i = 0; i < num_dock_points; i++)
@@ -261,7 +261,7 @@ BOOL initial_status::OnInitDialog()
 	{
 		for (int dockpoint = 0; dockpoint < num_dock_points; dockpoint++)
 		{
-			z = lstDockerPoints->AddString(model_get_dock_name(Ships[m_ship].modelnum, dockpoint));
+			z = lstDockerPoints->AddString(model_get_dock_name(Ship_info[Ships[m_ship].ship_info_index].model_num, dockpoint));
 			lstDockerPoints->SetItemData(z, dockpoint);
 		}
 
@@ -509,7 +509,7 @@ void initial_status::change_docker_point(bool store_selection)
 	else
 	{
 		// populate with all possible dockees
-		list_dockees(model_get_dock_index_type(Ships[m_ship].modelnum, cur_docker_point));
+		list_dockees(model_get_dock_index_type(Ship_info[Ships[m_ship].ship_info_index].model_num, cur_docker_point));
 
 		// see if there's a dockee here
 		if (dockpoint_array[cur_docker_point].dockee_shipnum >= 0)
@@ -571,7 +571,7 @@ void initial_status::change_dockee(bool store_selection)
 		if (dockpoint_array[cur_docker_point].dockee_point >= 0)
 		{
 			// select the dockpoint
-			cboDockeePoints->SelectString(-1, model_get_dock_name(Ships[cur_dockee].modelnum, dockpoint_array[cur_docker_point].dockee_point));
+			cboDockeePoints->SelectString(-1, model_get_dock_name(Ship_info[Ships[cur_dockee].ship_info_index].model_num, dockpoint_array[cur_docker_point].dockee_point));
 			change_dockee_point(false);
 		}
 		// there might not be any dockpoints available
@@ -676,7 +676,7 @@ void initial_status::list_dockees(int dock_types)
 				continue;
 
 			// dock types must match
-			if (!(model_get_dock_types(Ships[ship].modelnum) & dock_types))
+			if (!(model_get_dock_types(Ship_info[Ships[ship].ship_info_index].model_num) & dock_types))
 				continue;
 
 			// add to list
@@ -703,10 +703,10 @@ void initial_status::list_dockee_points(int shipnum)
 		return;
 
 	// get the required dock type(s)
-	int dock_type = model_get_dock_index_type(shipp->modelnum, cur_docker_point);
+	int dock_type = model_get_dock_index_type(Ship_info[shipp->ship_info_index].model_num, cur_docker_point);
 
 	// populate with the right kind of dockee points
-	for (int i = 0; i < model_get_num_dock_points(other_shipp->modelnum); i++)
+	for (int i = 0; i < model_get_num_dock_points(Ship_info[other_shipp->ship_info_index].model_num); i++)
 	{
 		// make sure this dockpoint is not occupied by someone else
 		object *docked_objp = dock_find_object_at_dockpoint(&Objects[other_shipp->objnum], i);
@@ -714,11 +714,11 @@ void initial_status::list_dockee_points(int shipnum)
 			continue;
 		
 		// make sure its type matches
-		if (!(model_get_dock_index_type(other_shipp->modelnum, i) & dock_type))
+		if (!(model_get_dock_index_type(Ship_info[other_shipp->ship_info_index].model_num, i) & dock_type))
 			continue;
 
 		// add to list
-		z = cboDockeePoints->AddString(model_get_dock_name(other_shipp->modelnum, i));
+		z = cboDockeePoints->AddString(model_get_dock_name(Ship_info[other_shipp->ship_info_index].model_num, i));
 		cboDockeePoints->SetItemData(z, i);
 	}
 }

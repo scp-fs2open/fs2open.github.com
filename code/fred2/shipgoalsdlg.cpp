@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipGoalsDlg.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-04-20 06:32:01 $
+ * $Revision: 1.4 $
+ * $Date: 2007-02-20 04:20:10 $
  * $Author: Goober5000 $
  *
  * Initial orders editor dialog box handling code.  This dialog is used for both
  * ship and wing initial orders, and can support more if need be without modification.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/04/20 06:32:01  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.2  2006/02/20 02:13:07  Goober5000
  * added ai-ignore-new which hopefully should fix the ignore bug
  * --Goober5000
@@ -686,7 +689,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 
 			case AI_GOAL_DOCK:
 				m_subsys[item] = -1;
-				num = get_docking_list(Ships[ship].modelnum);
+				num = get_docking_list(Ship_info[Ships[ship].ship_info_index].model_num);
 				for (i=0; i<num; i++) {
 					Assert(Docking_bay_list[i]);
 					if (!stricmp(goalp[item].docker.name, Docking_bay_list[i])) {
@@ -759,7 +762,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			case AI_GOAL_DOCK:
 				m_dock2[item] = -1;
 				if (m_data[item]) {
-					num = get_docking_list(Ships[m_data[item] & DATA_MASK].modelnum);
+					num = get_docking_list(Ship_info[Ships[m_data[item] & DATA_MASK].ship_info_index].model_num);
 					for (i=0; i<num; i++) {
 						Assert(Docking_bay_list[i]);
 						Assert(goalp[item].dockee.name);
@@ -915,7 +918,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 			set_item(item, init);
 
 	} else if (mode == AI_GOAL_DOCK) {
-		num = get_docking_list(Ships[cur_ship].modelnum);
+		num = get_docking_list(Ship_info[Ships[cur_ship].ship_info_index].model_num);
 		m_subsys_box[item] -> EnableWindow(TRUE);
 		m_subsys_box[item] -> ResetContent();
 		for (i=0; i<num; i++) {
@@ -1377,7 +1380,7 @@ void ShipGoalsDlg::set_object(int item)
 			m_data[item] = m_object_box[item] -> GetItemData(m_object[item]);
 
 		if ((mode == AI_GOAL_DOCK) && (m_data[item] >= 0)) {
-			num = get_docking_list(Ships[m_data[item] & DATA_MASK].modelnum);
+			num = get_docking_list(Ship_info[Ships[m_data[item] & DATA_MASK].ship_info_index].model_num);
 			m_dock2_box[item] -> EnableWindow(TRUE);
 			m_dock2_box[item] -> ResetContent();
 			for (i=0; i<num; i++) {
