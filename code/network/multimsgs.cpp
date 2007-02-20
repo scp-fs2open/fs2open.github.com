@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.67 $
- * $Date: 2007-02-18 06:17:09 $
+ * $Revision: 2.68 $
+ * $Date: 2007-02-20 04:20:18 $
  * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2007/02/18 06:17:09  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.66  2007/02/11 21:26:35  Goober5000
  * massive shield infrastructure commit
  *
@@ -3059,7 +3062,7 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 	}
 
 	// find out the next network signature that will be used for the debris pieces.
-	model = Ships[objp->instance].modelnum;
+	model = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 	pm = model_get(model);
 	debris_signature = 0;
 	if ( pm && !vaporized ) {
@@ -6913,7 +6916,7 @@ void process_shield_explosion_packet( ubyte *data, header *hinfo)
 			return;
 		}
 
-		pm = model_get(Ships[objp->instance].modelnum);
+		pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 		shieldp = &pm->shield;
 		Assert( utri_num < shieldp->ntris );
 		stri = shieldp->tris[utri_num];

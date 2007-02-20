@@ -9,9 +9,9 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.13 $
- * $Date: 2007-02-15 02:03:56 $
- * $Author: phreak $
+ * $Revision: 1.14 $
+ * $Date: 2007-02-20 04:20:10 $
+ * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2007/02/15 02:03:56  phreak
+ * Apparently Visual C++ 2005 follows standard syntax rules.
+ *
  * Revision 1.12  2006/11/06 05:58:05  taylor
  * add a "Render full detail" view option to render models at their full detail for the LOD (for render/detail boxes, Mantis bug #1121)
  *
@@ -3223,13 +3226,13 @@ int CFREDView::global_error_check()
 						return internal_error("Docking illegal between \"%s\" and \"%s\" (initially docked)", Ships[i].ship_name, Ships[ship].ship_name);
 					}
 
-				z = get_docking_list(Ships[i].modelnum);
+				z = get_docking_list(Ship_info[Ships[i].ship_info_index].model_num);
 				point = dock_ptr->dockpoint_used;
 				if (point < 0 || point >= z){
 					internal_error("Invalid docker point (\"%s\" initially docked with \"%s\")", Ships[i].ship_name, Ships[ship].ship_name);
 				}
 
-				z = get_docking_list(Ships[ship].modelnum);
+				z = get_docking_list(Ship_info[Ships[ship].ship_info_index].model_num);
 				point = dock_find_dockpoint_used_by_object(dock_ptr->docked_objp, &Objects[Ships[i].objnum]);
 				if (point < 0 || point >= z){
 					internal_error("Invalid dockee point (\"%s\" initially docked with \"%s\")", Ships[i].ship_name, Ships[ship].ship_name);
@@ -4083,7 +4086,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 				if (!ship_docking_valid(ship, inst))
 					return "Docking illegal between given ship types";
 
-				model1 = Ships[ship].modelnum;
+				model1 = Ship_info[Ships[ship].ship_info_index].model_num;
 				num = get_docking_list(model1);
 				for (j=0; j<num; j++) {
 					Assert(Docking_bay_list[j]);
@@ -4093,7 +4096,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 					}
 				}
 
-				model2 = Ships[inst].modelnum;
+				model2 = Ship_info[Ships[inst].ship_info_index].model_num;
 				num = get_docking_list(model2);
 				for (j=0; j<num; j++) {
 					Assert(Docking_bay_list[j]);

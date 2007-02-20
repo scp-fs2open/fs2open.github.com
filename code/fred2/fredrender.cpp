@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.8 $
- * $Date: 2006-12-28 00:59:20 $
- * $Author: wmcoolmon $
+ * $Revision: 1.9 $
+ * $Date: 2007-02-20 04:20:10 $
+ * $Author: Goober5000 $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2006/12/28 00:59:20  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.7  2006/11/06 05:58:05  taylor
  * add a "Render full detail" view option to render models at their full detail for the LOD (for render/detail boxes, Mantis bug #1121)
  *
@@ -803,7 +806,7 @@ void fredhtl_render_subsystem_bounding_box(subsys_to_render * s2r)
 {
 
 	vertex text_center;
-	polymodel *pm = model_get(Ships[s2r->ship_obj->instance].modelnum);
+	polymodel *pm = model_get(Ship_info[Ships[s2r->ship_obj->instance].ship_info_index].model_num);
 	int subobj_num = s2r->cur_subsys->system_info->subobj_num;
 	bsp_info *bsp = &pm->submodel[subobj_num];
 	char buf[256];
@@ -1063,15 +1066,15 @@ void render_one_model_nohtl(object *objp)
 
 		z = objp->instance;
 
-		model_clear_instance( Ships[z].modelnum );
+		model_clear_instance( Ship_info[Ships[z].ship_info_index].model_num );
 
 //		if (!viewpoint || OBJ_INDEX(objp) != cur_object_index)
 		{
 			if (Fred_outline)	{
 				model_set_outline_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-				model_render(Ships[z].modelnum, &objp->orient, &objp->pos, j | MR_SHOW_OUTLINE, -1, -1, Ships[z].replacement_textures);
+				model_render(Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos, j | MR_SHOW_OUTLINE, -1, -1, Ships[z].replacement_textures);
 			} else {
-				model_render(Ships[z].modelnum, &objp->orient, &objp->pos, j, -1, -1, Ships[z].replacement_textures);
+				model_render(Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos, j, -1, -1, Ships[z].replacement_textures);
 			}
 		}
 	
@@ -1193,7 +1196,7 @@ void render_one_model_htl(object *objp)
 
 		z = objp->instance;
 
-		model_clear_instance( Ships[z].modelnum );
+		model_clear_instance( Ship_info[Ships[z].ship_info_index].model_num );
 
 		if(!Lighting_on) {
 			j |= MR_NO_LIGHTING;
@@ -1210,7 +1213,7 @@ void render_one_model_htl(object *objp)
 		}
 
 		g3_done_instance(0);
-	  	model_render(Ships[z].modelnum, &objp->orient, &objp->pos, j, -1, -1, Ships[z].replacement_textures);
+	  	model_render(Ship_info[Ships[z].ship_info_index].model_num, &objp->orient, &objp->pos, j, -1, -1, Ships[z].replacement_textures);
 	} else {
 		int r = 0, g = 0, b = 0;
 
@@ -2175,10 +2178,10 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos)
 		return 0;
 
 	if ((Show_ship_models || Show_outlines) && (objp->type == OBJ_SHIP))	{
-		mc.model_num = Ships[objp->instance].modelnum;			// Fill in the model to check
+		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;			// Fill in the model to check
 
 	} else if ((Show_ship_models || Show_outlines) && (objp->type == OBJ_START))	{
-		mc.model_num = Ships[objp->instance].modelnum;			// Fill in the model to check
+		mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;			// Fill in the model to check
 
 	} else
 		return fvi_ray_sphere(hitpos, p0, p1, &objp->pos, (objp->radius > 0.1f) ? objp->radius : LOLLIPOP_SIZE);

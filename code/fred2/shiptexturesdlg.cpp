@@ -181,7 +181,7 @@ BOOL CShipTexturesDlg::OnInitDialog()
 	CComboBox *box;
 
 	// get our model
-	polymodel *pm = model_get(Ships[self_ship].modelnum);
+	polymodel *pm = model_get(Ship_info[Ships[self_ship].ship_info_index].model_num);
 
 	// empty old and new fields
 	texture_count = 0;

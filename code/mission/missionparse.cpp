@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.215 $
- * $Date: 2007-02-18 06:16:47 $
+ * $Revision: 2.216 $
+ * $Date: 2007-02-20 04:20:18 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.215  2007/02/18 06:16:47  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.214  2007/02/13 01:46:03  Goober5000
  * fix a hideous bug with the knossos special warp stuff
  * (how did this ever actually work correctly?)
@@ -2609,7 +2612,7 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 
 	// position self for warp on plane of device
 	vec3d new_point;
-	polymodel *pm = model_get(shipp->modelnum);
+	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 
 	float dist = fvi_ray_plane(&new_point, &knossos_objp->pos, &knossos_objp->orient.vec.fvec, &p_objp->pos, &p_objp->orient.vec.fvec, 0.0f);
 	float desired_dist = -pm->mins.xyz.z;
@@ -2655,8 +2658,8 @@ void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp)
 	}
 
 	// resolve names to dockpoints
-	dockpoint = model_find_dock_name_index(Ships[objp->instance].modelnum, dockpoint_name);
-	parent_dockpoint = model_find_dock_name_index(Ships[parent_objp->instance].modelnum, parent_dockpoint_name);
+	dockpoint = model_find_dock_name_index(Ship_info[Ships[objp->instance].ship_info_index].model_num, dockpoint_name);
+	parent_dockpoint = model_find_dock_name_index(Ship_info[Ships[parent_objp->instance].ship_info_index].model_num, parent_dockpoint_name);
 
 	// check valid
 	if ((dockpoint < 0) || (parent_dockpoint < 0))
@@ -2890,7 +2893,7 @@ int parse_create_object_sub(p_object *p_objp)
 	// now fill them in
 	for (i = 0; i < p_objp->num_texture_replacements; i++)
 	{
-		pm = model_get(sip->modelnum);
+		pm = model_get(sip->model_num);
 
 		// look for textures
 		for (j = 0; j < pm->n_textures; j++)
@@ -3069,7 +3072,7 @@ int parse_create_object_sub(p_object *p_objp)
 			free_sexp2(p_objp->ai_goals);	// free up sexp nodes for reuse, since they aren't needed anymore.
 	}
 
-	Assert(shipp->modelnum != -1);
+	Assert(sip->model_num != -1);
 
 	// initialize subsystem statii here.  The subsystems are given a percentage damaged.  So a percent value
 	// of 20% means that the subsystem is 20% damaged (*not* 20% of max hits).  This is opposite the way
@@ -3249,7 +3252,7 @@ int parse_create_object_sub(p_object *p_objp)
 		// create sparks on a ship whose hull is damaged.  We will create two sparks for every 20%
 		// of hull damage done.  100 means no sparks.  between 80 and 100 do two sparks.  60 and 80 is
 		// four, etc.
-		pm = model_get(shipp->modelnum);	// changed from sip to Ships[] by Goober5000
+		pm = model_get(sip->model_num);
 		max_allowed_sparks = get_max_sparks(&Objects[objnum]);
 		num_sparks = (int)((100.0f - p_objp->initial_hull) / 5.0f);
 		if (num_sparks > max_allowed_sparks)
@@ -3260,7 +3263,7 @@ int parse_create_object_sub(p_object *p_objp)
 			vec3d v1, v2;
 
 			// DA 10/20/98 - sparks must be chosen on the hull and not any submodel
-			submodel_get_two_random_points(shipp->modelnum, pm->detail[0], &v1, &v2);
+			submodel_get_two_random_points(sip->model_num, pm->detail[0], &v1, &v2);
 			ship_hit_sparks_no_rotate(&Objects[objnum], &v1);
 //			ship_hit_sparks_no_rotate(&Objects[objnum], &v2);
 		}
@@ -4068,7 +4071,7 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 			if (!Fred_running)
 			{
 				int i;
-				shipfx_blow_up_model(objp, Ships[objp->instance].modelnum, 0, 0, &objp->pos);
+				shipfx_blow_up_model(objp, Ship_info[Ships[objp->instance].ship_info_index].model_num, 0, 0, &objp->pos);
 				objp->flags |= OF_SHOULD_BE_DEAD;
 
 				// once the ship is exploded, find the debris pieces belonging to this object, mark them

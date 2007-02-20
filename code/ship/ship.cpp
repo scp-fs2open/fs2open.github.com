@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.404 $
- * $Date: 2007-02-18 06:17:34 $
+ * $Revision: 2.405 $
+ * $Date: 2007-02-20 04:20:27 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.404  2007/02/18 06:17:34  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.403  2007/02/16 23:18:15  Goober5000
  * this should be based on a flag or something, not automatically tied into the power output
  *
@@ -2678,7 +2681,7 @@ char current_ship_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
 //rather than simply replacing the previous entry
 void init_ship_entry(int ship_info_index)
 {
-	Assert(ship_info_index > -1 && ship_info_index < MAX_SHIP_CLASSES);
+	Assert(ship_info_index >= 0 && ship_info_index < MAX_SHIP_CLASSES);
 	ship_info *sip = &Ship_info[ship_info_index];
 	int i,j;
 	
@@ -2882,8 +2885,8 @@ void init_ship_entry(int ship_info_index)
 	sip->n_subsystems = 0;
 	sip->subsystems = NULL;
 
-	sip->modelnum = -1;
-	sip->modelnum_hud = -1;
+	sip->model_num = -1;
+	sip->model_num_hud = -1;
 }
 
 // function to parse the information for a specific ship type.	
@@ -3247,7 +3250,7 @@ int parse_ship(bool replace)
 	{
 		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 		j = warptype_match(buf);
-		if(j > -1) {
+		if(j >= 0) {
 			sip->warpin_type = j;
 		} else {
 			Warning(LOCATION, "Invalid warpin type '%s' specified for ship '%s'", buf, sip->name);
@@ -3290,7 +3293,7 @@ int parse_ship(bool replace)
 	{
 		stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
 		j = warptype_match(buf);
-		if(j > -1) {
+		if(j >= 0) {
 			sip->warpout_type = j;
 		} else {
 			Warning(LOCATION, "Invalid warpout type '%s' specified for ship '%s'", buf, sip->name);
@@ -4177,7 +4180,7 @@ strcpy(parse_error_text, temp_error);
 			stuff_int(&idx);
 		}
 
-		if(idx > -1 && idx < sip->num_maneuvering) {
+		if(idx >= 0 && idx < sip->num_maneuvering) {
 			mtp = &sip->maneuvering[idx];
 		} else if(idx < 0) {
 			if(sip->num_maneuvering < MAX_MAN_THRUSTERS) {
@@ -4213,9 +4216,9 @@ strcpy(parse_error_text, temp_error);
 			tex_id = bm_load_animation(name_tmp, &tex_nframes, &tex_fps, 1);
 			if(tex_id < 0)
 				tex_id = bm_load(name_tmp);
-			if(tex_id > -1)
+			if(tex_id >= 0)
 			{
-				if(mtp->tex_id > -1) {
+				if(mtp->tex_id >= 0) {
 					bm_unload(mtp->tex_id);
 				}
 
@@ -4678,7 +4681,7 @@ void parse_ship_type()
 	}
 
 	int idx = ship_type_name_lookup(name_buf);
-	if(idx > -1)
+	if(idx >= 0)
 	{
 		stp = &Ship_types[idx];
 	}
@@ -5054,7 +5057,7 @@ void ship_init()
 			for(j = 0; j < stp->ai_actively_pursues_temp.size(); j++)
 			{
 				idx = ship_type_name_lookup((char*)stp->ai_actively_pursues_temp[j].c_str());
-				if(idx > -1) {
+				if(idx >= 0) {
 					stp->ai_actively_pursues.push_back(idx);
 				}
 			}
@@ -5279,7 +5282,7 @@ void physics_ship_init(object *objp)
 {
 	ship_info	*sinfo = &Ship_info[Ships[objp->instance].ship_info_index];
 	physics_info	*pi = &objp->phys_info;
-	polymodel *pm = model_get( Ships[objp->instance].modelnum );
+	polymodel *pm = model_get(sinfo->model_num);
 
 	// use mass and I_body_inv from POF read into polymodel
 	physics_init(pi);
@@ -5350,7 +5353,7 @@ int ship_get_type(char* output, ship_info *sip)
 // by a value in the mission file.
 int ship_get_default_orders_accepted( ship_info *sip )
 {
-	if(sip->class_type > -1) {
+	if(sip->class_type >= 0) {
 		return Ship_types[sip->class_type].ai_player_orders;
 	} else {
 		return 0;
@@ -5704,7 +5707,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	for(i = 0; i < sip->n_subsystems; i++){
 		model_subsystem* ms = &sip->subsystems[i];
 		
-		if(ms->subobj_num > -1)ms->trigger.snd_pnt = get_submodel_offset(sip->modelnum, ms->subobj_num);
+		if(ms->subobj_num >= 0)ms->trigger.snd_pnt = get_submodel_offset(sip->modelnum, ms->subobj_num);
 		else ms->trigger.snd_pnt = ms->pnt;
 		ms->trigger.obj_num = objnum;
 	}
@@ -5809,7 +5812,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 {
 	int i, model_num;
 
-	model_num = sip->modelnum;
+	model_num = sip->model_num;
 
 	// since we allow a model file to be shared between several ships, we must check to be sure that our
 	// subsystems have been loaded properly
@@ -5828,7 +5831,7 @@ void ship_copy_subsystem_fixup(ship_info *sip)
 		for ( i = 0; i < Num_ship_classes; i++ ) {
 			model_subsystem *msp;
 
-			if ( (Ship_info[i].modelnum != model_num) || (&Ship_info[i] == sip) ){
+			if ( (Ship_info[i].model_num != model_num) || (&Ship_info[i] == sip) ){
 				continue;
 			}
 
@@ -5862,19 +5865,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 	for ( i = 0; i < sinfo->n_subsystems; i++ )
 	{
-		// maybe use the duplicate info
-		if (shipp->modelnum != sinfo->modelnum)
-		{
-			Assert(shipp->subsystems);
-
-			model_system = &(shipp->subsystems[i]);
-		}
-		else
-		{
-			model_system = &(sinfo->subsystems[i]);
-		}
-
-		if ( model_system->model_num == -1 ) {
+		model_system = &(sinfo->subsystems[i]);
+		if (model_system->model_num < 0) {
 			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem '%s' on ship type '%s'.\nNot linking into ship!\n\n(This warning means that a subsystem was present in %s and not present in the model\nit should probably be removed from the table or added to the model.)\n", model_system->subobj_name, sinfo->name, current_ship_table );
 			continue;
 		}
@@ -6003,12 +5995,11 @@ void subsys_set(int objnum, int ignore_subsys_info)
 //	Render docking information, NOT while in object's reference frame.
 void render_dock_bays(object *objp)
 {
-//	ship_info	*sip;
 	polymodel	*pm;
 	dock_bay		*db;
 
 //	sip = &Ship_info[Ships[objp->instance].ship_info_index];
-	pm = model_get( Ships[objp->instance].modelnum );
+	pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 
 	if (pm->docking_bays == NULL)
 		return;
@@ -6159,7 +6150,7 @@ void ship_render(object * obj)
 	Assert( num >= 0);
 	ship *shipp = &Ships[num];
 	ship *warp_shipp = NULL;
-	ship_info *si = &Ship_info[Ships[num].ship_info_index];
+	ship_info *sip = &Ship_info[Ships[num].ship_info_index];
 	bool reset_proj_when_done = false;
 	bool is_first_stage_arrival = false;
 	dock_function_info dfi;
@@ -6215,7 +6206,7 @@ void ship_render(object * obj)
 			}
 		}		
 
-		if(!(si->flags2 & SIF2_SHOW_SHIP_MODEL) && !(Viewer_mode & VM_TOPDOWN))
+		if (!(sip->flags2 & SIF2_SHOW_SHIP_MODEL) && !(Viewer_mode & VM_TOPDOWN))
 		{
 			return;
 		}
@@ -6283,14 +6274,14 @@ void ship_render(object * obj)
 			for (i=0; i<MAX_SHIP_ARCS; i++ )	{
 				if ( timestamp_valid( shipp->arc_timestamp[i] ) )	{
 				//	render_flags |= MR_ALWAYS_REDRAW;	// Turn off model caching if arcing.
-					model_add_arc( shipp->modelnum, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i] );
+					model_add_arc(sip->model_num, -1, &shipp->arc_pts[i][0], &shipp->arc_pts[i][1], shipp->arc_type[i]);
 				}
 			}
 		}
 
 	//	if((shipp->end_death_time - shipp->death_time) <= 0)shipp->end_death_time = 0;
 	//	if((timestamp() - shipp->death_time) <= 0)shipp->end_death_time = 0;
-	/*	if( !( shipp->large_ship_blowup_index > -1 ) && timestamp_elapsed(shipp->death_time) && shipp->end_death_time){
+	/*	if( !( shipp->large_ship_blowup_index >= 0 ) && timestamp_elapsed(shipp->death_time) && shipp->end_death_time){
 			splodeingtexture = si->splodeing_texture;
 			splodeing = true;
 			splode_level = ((float)timestamp() - (float)shipp->death_time) / ((float)shipp->end_death_time - (float)shipp->death_time);
@@ -6300,7 +6291,7 @@ void ship_render(object * obj)
 		}*/
 	//	if(splode_level<=0.0f)shipp->end_death_time = 0;
 
-		if ( shipp->large_ship_blowup_index > -1 )	{
+		if ( shipp->large_ship_blowup_index >= 0 )	{
 			shipfx_large_blowup_render(shipp);
 		} else {
 
@@ -6308,11 +6299,11 @@ void ship_render(object * obj)
 			//WMC - I suppose this is a bit hackish.
 			physics_info *pi = &Objects[shipp->objnum].phys_info;
 			float render_amount;
+			fx_batcher.allocate(sip->num_maneuvering);	//Act as if all thrusters are going.
 
-
-			for(int i = 0; i < si->num_maneuvering; i++)
+			for(int i = 0; i < sip->num_maneuvering; i++)
 			{
-				man_thruster *mtp = &si->maneuvering[i];
+				man_thruster *mtp = &sip->maneuvering[i];
 
 				render_amount = 0.0f;
 
@@ -6352,7 +6343,7 @@ void ship_render(object * obj)
 					if(shipp->thrusters_start[i] <= 0)
 					{
 						shipp->thrusters_start[i] = timestamp();
-						if(mtp->start_snd > -1)
+						if(mtp->start_snd >= 0)
 							snd_play_3d( &Snds[mtp->start_snd], &mtp->pos, &Eye_position, 0.0f, &obj->phys_info.vel );
 					}
 
@@ -6360,7 +6351,7 @@ void ship_render(object * obj)
 					//it is specified
 					//it isn't assigned already
 					//start sound doesn't exist or has finished
-					if(mtp->loop_snd > -1
+					if(mtp->loop_snd >= 0
 						&& shipp->thrusters_sounds[i] < 0
 						&& (mtp->start_snd < 0 || (snd_get_duration(mtp->start_snd) < timestamp() - shipp->thrusters_start[i])) 
 						)
@@ -6370,7 +6361,7 @@ void ship_render(object * obj)
 
 					//Draw graphics
 					//Skip invalid ones
-					if(mtp->tex_id > -1)
+					if(mtp->tex_id >= 0)
 					{
 						float rad = mtp->radius;
 						if(rad <= 0.0f)
@@ -6408,13 +6399,13 @@ void ship_render(object * obj)
 				else if(shipp->thrusters_start[i] > 0)
 				{
 					shipp->thrusters_start[i] = 0;
-					if(shipp->thrusters_sounds[i] > -1)
+					if(shipp->thrusters_sounds[i] >= 0)
 					{
 						obj_snd_delete(OBJ_INDEX(obj), shipp->thrusters_sounds[i]);
 						shipp->thrusters_sounds[i] = -1;
 					}
 
-					if(mtp->stop_snd > -1)
+					if(mtp->stop_snd >= 0)
 					{
 						//Get world pos
 						vec3d start;
@@ -6426,7 +6417,7 @@ void ship_render(object * obj)
 				}
 			}
 
-			if ( ((shipp->thruster_bitmap > -1) || (shipp->thruster_glow_bitmap > -1)) && (!(shipp->flags & SF_DISABLED)) && (!ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)) )
+			if ( ((shipp->thruster_bitmap >= 0) || (shipp->thruster_glow_bitmap >= 0)) && (!(shipp->flags & SF_DISABLED)) && (!ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE)) )
 			{
 				vec3d ft;
 
@@ -6472,19 +6463,19 @@ void ship_render(object * obj)
 					mst.tertiary_glow_bitmap = shipp->thruster_tertiary_glow_bitmap;
 					mst.rovel = &Objects[shipp->objnum].phys_info.rotvel;
 
-					mst.trf1 = si->thruster01_glow_rad_factor;
-					mst.trf2 = si->thruster02_glow_rad_factor;
-					mst.trf3 = si->thruster03_glow_rad_factor;
-					mst.tlf = si->thruster02_glow_len_factor;
+					mst.trf1 = sip->thruster01_glow_rad_factor;
+					mst.trf2 = sip->thruster02_glow_rad_factor;
+					mst.trf3 = sip->thruster03_glow_rad_factor;
+					mst.tlf = sip->thruster02_glow_len_factor;
 
-					model_set_thrust( shipp->modelnum, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise, use_AB, &mst );
+					model_set_thrust(sip->model_num, &ft, shipp->thruster_bitmap, shipp->thruster_glow_bitmap, shipp->thruster_glow_noise, use_AB, &mst);
 				}
 
 				render_flags |= MR_SHOW_THRUSTERS;
 			}
 
 			// fill the model flash lighting values in
-			shipfx_flash_light_model( obj, shipp );
+			shipfx_flash_light_model( obj, sip->model_num );
 
 			
 			// If the ship is going "through" the warp effect, then
@@ -6566,56 +6557,66 @@ void ship_render(object * obj)
 
 
 			//draw weapon models
-			if(si->draw_models){
+			if (sip->draw_models) {
+				int i,k;
 				ship_weapon *swp = &shipp->weapons;
 				g3_start_instance_matrix(&obj->pos, &obj->orient, true);
 			
 				int save_flags = render_flags;
 		
 				render_flags &= ~MR_SHOW_THRUSTERS;
+
 		//primary weapons
-				int i,k;
-				for(i = 0; i<swp->num_primary_banks; i++){
-					if(Weapon_info[swp->primary_bank_weapons[i]].external_model_num == -1 || !si->draw_primary_models[i])continue;
-					for(k = 0; k<model_get(shipp->modelnum)->gun_banks[i].num_slots; k++){	
+				for (i = 0; i < swp->num_primary_banks; i++) {
+					if (Weapon_info[swp->primary_bank_weapons[i]].external_model_num == -1 || !sip->draw_primary_models[i])
+						continue;
+
+					w_bank *bank = &model_get(sip->model_num)->gun_banks[i];
+					for(k = 0; k < bank->num_slots; k++) {	
 						polymodel* pm = model_get(Weapon_info[swp->primary_bank_weapons[i]].external_model_num);
 						pm->gun_submodel_rotation = shipp->primary_rotate_ang[i];
-						model_render(Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &model_get(shipp->modelnum)->gun_banks[i].pnt[k], render_flags);
+						model_render(Weapon_info[swp->primary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &bank->pnt[k], render_flags);
 						pm->gun_submodel_rotation = 0.0f;
 					}
 				}
 
 		//secondary weapons
 		
-				for(i = 0; i<swp->num_secondary_banks; i++){
-					if(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !si->draw_secondary_models[i])continue;
-					for(k = 0; k<model_get(shipp->modelnum)->missile_banks[i].num_slots; k++){
-		
-					vec3d secondary_waepon_pos = model_get(shipp->modelnum)->missile_banks[i].pnt[k];
-				//	vm_vec_add(&secondary_waepon_pos, &obj->pos, &model_get(shipp->modelnum)->missile_banks[i].pnt[k]);
-		
-				//	if(shipp->secondary_point_reload_pct[i][k] != 1.0)vm_vec_scale_add2(&secondary_waepon_pos, &obj->orient.vec.fvec, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].model_num)->rad);
-					if(shipp->secondary_point_reload_pct[i][k] <= 0.0)continue;
-		
-					vec3d dir = ZERO_VECTOR;
-					dir.xyz.z = 1.0;
-		
-					bool clipping = false;
-		
-				/*	extern int G3_user_clip;
-		
-					if(!G3_user_clip){
-						vec3d clip_pnt;
-						vm_vec_rotate(&clip_pnt, &model_get(shipp->modelnum)->missile_banks[i].pnt[k], &obj->orient);
-						vm_vec_add2(&clip_pnt, &obj->pos);
-						g3_start_user_clip_plane(&clip_pnt,&obj->orient.vec.fvec);
-						clipping = true;
-					}
-		*/
-					vm_vec_scale_add2(&secondary_waepon_pos, &dir, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+				for (i = 0; i < swp->num_secondary_banks; i++) {
+					if (Weapon_info[swp->secondary_bank_weapons[i]].external_model_num == -1 || !sip->draw_secondary_models[i])
+						continue;
 
-					model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_waepon_pos, render_flags);
-					if(clipping)g3_stop_user_clip_plane();
+					w_bank *bank = &model_get(sip->model_num)->missile_banks[i];
+					for(k = 0; k < bank->num_slots; k++) {
+						vec3d secondary_weapon_pos = bank->pnt[k];
+					//	vm_vec_add(&secondary_weapon_pos, &obj->pos, &bank->pnt[k]);
+		
+					//	if(shipp->secondary_point_reload_pct[i][k] != 1.0)
+					//		vm_vec_scale_add2(&secondary_weapon_pos, &obj->orient.vec.fvec, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].model_num)->rad);
+						if(shipp->secondary_point_reload_pct[i][k] <= 0.0)
+							continue;
+		
+						vec3d dir = ZERO_VECTOR;
+						dir.xyz.z = 1.0;
+		
+						bool clipping = false;
+		
+					/*	extern int G3_user_clip;
+		
+						if(!G3_user_clip){
+							vec3d clip_pnt;
+							vm_vec_rotate(&clip_pnt, &bank->pnt[k], &obj->orient);
+							vm_vec_add2(&clip_pnt, &obj->pos);
+							g3_start_user_clip_plane(&clip_pnt,&obj->orient.vec.fvec);
+							clipping = true;
+						}
+					*/
+
+						vm_vec_scale_add2(&secondary_weapon_pos, &dir, -(1.0f-shipp->secondary_point_reload_pct[i][k]) * model_get(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num)->rad);
+
+						model_render(Weapon_info[swp->secondary_bank_weapons[i]].external_model_num, &vmd_identity_matrix, &secondary_weapon_pos, render_flags);
+						if(clipping)
+							g3_stop_user_clip_plane();
 					}
 				}
 				g3_done_instance(true);
@@ -6623,17 +6624,17 @@ void ship_render(object * obj)
 			}
 
 			// small ships
-			if((The_mission.flags & MISSION_FLAG_FULLNEB) && (si->flags & SIF_SMALL_SHIP)){			
+			if ((The_mission.flags & MISSION_FLAG_FULLNEB) && (sip->flags & SIF_SMALL_SHIP)) {			
 				// force detail levels
  				float fog_val = neb2_get_fog_intensity(obj);
 				if(fog_val >= 0.6f){
 					model_set_detail_level(2);
-					model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags | MR_LOCK_DETAIL, OBJ_INDEX(obj), -1, shipp->replacement_textures );
+					model_render( sip->model_num, &obj->orient, &obj->pos, render_flags | MR_LOCK_DETAIL, OBJ_INDEX(obj), -1, shipp->replacement_textures );
 				} else {
-					model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->replacement_textures );
+					model_render( sip->model_num, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->replacement_textures );
 				}
 			} else {
-				model_render( shipp->modelnum, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->replacement_textures );
+				model_render( sip->model_num, &obj->orient, &obj->pos, render_flags, OBJ_INDEX(obj), -1, shipp->replacement_textures );
 			}
 
 	//		decal_render_all(obj);
@@ -6729,7 +6730,7 @@ void ship_render(object * obj)
 	//WMC - based on Bobb's secondary thruster stuff
 	//which was in turn based on the beam code.
 	//I'm gonna need some serious acid to neutralize this base.
-	if(shipp->warp_anim > -1 && shipp->final_warp_time > timestamp())
+	if(shipp->warp_anim >= 0 && shipp->final_warp_time > timestamp())
 	{
 		fx_batcher.allocate(1);
 
@@ -6742,7 +6743,7 @@ void ship_render(object * obj)
 			rad = sip->warpin_radius;
 		if(rad <= 0.0f)
 		{
-			polymodel *pm = model_get(shipp->modelnum);
+			polymodel *pm = model_get(sip->model_num);
 			rad = pm->rad;
 		}
 
@@ -6786,17 +6787,6 @@ void ship_subsystems_delete(ship *shipp)
 	}
 }
 
-// Goober5000
-void ship_model_subsystems_delete(ship *shipp)
-{
-	if (shipp->subsystems != NULL)
-	{
-		vm_free(shipp->subsystems);
-		shipp->n_subsystems = 0;
-		shipp->subsystems = NULL;
-	}
-}
-
 void ship_clear_decals(ship	*shipp)
 {
 	clear_decals(&shipp->ship_decal_system);
@@ -6835,13 +6825,10 @@ void ship_delete( object * obj )
 	// on ship back to the free list for other ships to use.
 	ship_subsystems_delete(&Ships[num]);
 
-	// Goober5000 - free model subsys info
-	ship_model_subsystems_delete(&Ships[num]);
-
 	shipp->objnum = -1;
 	// mwa 11/24/97 num_ships--;
 
-	if (model_get(shipp->modelnum)->shield.ntris) {
+	if (model_get(Ship_info[shipp->ship_info_index].model_num)->shield.ntris) {
 		vm_free(shipp->shield_integrity);
 		shipp->shield_integrity = NULL;
 	}
@@ -7312,25 +7299,24 @@ void do_dying_undock_physics(object *dying_objp, ship *dying_shipp)
 //	Do the stuff we do in a frame for a ship that's in its death throes.
 void ship_dying_frame(object *objp, int ship_num)
 {
-	ship	*sp;
-	sp = &Ships[ship_num];
-	int knossos_ship = false;
+	ship *shipp = &Ships[ship_num];
 
-	if ( sp->flags & SF_DYING )	{
-		knossos_ship = (Ship_info[sp->ship_info_index].flags & SIF_KNOSSOS_DEVICE);
+	if ( shipp->flags & SF_DYING )	{
+		ship_info *sip = &Ship_info[shipp->ship_info_index];
+		int knossos_ship = (sip->flags & SIF_KNOSSOS_DEVICE);
 
 		// bash hull value toward 0 (from self destruct)
 		if (objp->hull_strength > 0) {
-			int time_left = timestamp_until(sp->final_death_time);
+			int time_left = timestamp_until(shipp->final_death_time);
 			float hits_left = objp->hull_strength;
 
 			objp->hull_strength -= hits_left * (1000.0f * flFrametime) / time_left;
 		}
 
 		// special case of VAPORIZE
-		if (sp->flags & SF_VAPORIZE) {
-			// Assert(Ship_info[sp->ship_info_index].flags & SIF_SMALL_SHIP);
-			if (timestamp_elapsed(sp->final_death_time)) {
+		if (shipp->flags & SF_VAPORIZE) {
+			// Assert(sip->flags & SIF_SMALL_SHIP);
+			if (timestamp_elapsed(shipp->final_death_time)) {
 
 				// play death sound
 				snd_play_3d( &Snds[SND_VAPORIZED], &objp->pos, &View_position, objp->radius, NULL, 0, 1.0f, SND_PRIORITY_MUST_PLAY  );
@@ -7342,7 +7328,7 @@ void ship_dying_frame(object *objp, int ship_num)
 
 				// if dying ship is docked, do damage to docked and physics
 				if (object_is_dead_docked(objp))  {
-					do_dying_undock_physics(objp, sp);
+					do_dying_undock_physics(objp, shipp);
 				}			
 
 				// do all accounting for respawning client and server side here.
@@ -7366,34 +7352,34 @@ void ship_dying_frame(object *objp, int ship_num)
 //		}
 
 		// bash the desired rotvel
-		objp->phys_info.desired_rotvel = sp->deathroll_rotvel;
+		objp->phys_info.desired_rotvel = shipp->deathroll_rotvel;
 
 		// Do fireballs for Big ship with propagating explostion, but not Kamikaze
-		if (!(Ai_info[sp->ai_index].ai_flags & AIF_KAMIKAZE) && ship_get_exp_propagates(sp)) {
-			if ( timestamp_elapsed(Ships[ship_num].next_fireball))	{
+		if (!(Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) && ship_get_exp_propagates(shipp)) {
+			if ( timestamp_elapsed(shipp->next_fireball))	{
 				vec3d outpnt, pnt1, pnt2;
-				polymodel *pm = model_get(sp->modelnum);
+				polymodel *pm = model_get(sip->model_num);
 
 				// Gets two random points on the surface of a submodel
-				submodel_get_two_random_points(sp->modelnum, pm->detail[0], &pnt1, &pnt2 );
+				submodel_get_two_random_points(pm->id, pm->detail[0], &pnt1, &pnt2 );
 
 				//	vm_vec_avg( &tmp, &pnt1, &pnt2 ); [KNOSSOS get random in plane 1/1.414 in rad
-				model_find_world_point(&outpnt, &pnt1, sp->modelnum, pm->detail[0], &objp->orient, &objp->pos );
+				model_find_world_point(&outpnt, &pnt1, sip->model_num, pm->detail[0], &objp->orient, &objp->pos );
 
 				float rad = objp->radius*0.1f;
 				int fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
 				fireball_create( &outpnt, fireball_type, OBJ_INDEX(objp), rad, 0, &objp->phys_info.vel );
 				// start the next fireball up in the next 50 - 200 ms (2-3 per frame)
-				sp->next_fireball = timestamp_rand(333,500);
+				shipp->next_fireball = timestamp_rand(333,500);
 
 				// do sound - maybe start a random sound, if it has played far enough.
-				do_sub_expl_sound(objp->radius, &outpnt, sp->sub_expl_sound_handle);
+				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle);
 			}
 		}
 
 		// create little fireballs for knossos as it dies
 		if (knossos_ship) {
-			if ( timestamp_elapsed(Ships[ship_num].next_fireball)) {
+			if ( timestamp_elapsed(shipp->next_fireball)) {
 				vec3d rand_vec, outpnt; // [0-.7 rad] in plane
 				vm_vec_rand_vec_quick(&rand_vec);
 				float scale = -vm_vec_dotprod(&objp->orient.vec.fvec, &rand_vec) * (0.9f + 0.2f * frand());
@@ -7407,7 +7393,7 @@ void ship_dying_frame(object *objp, int ship_num)
 				int fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
 				fireball_create( &outpnt, fireball_type, OBJ_INDEX(objp), rad, 0, &objp->phys_info.vel );
 				// start the next fireball up in the next 50 - 200 ms (2-3 per frame)
-				sp->next_fireball = timestamp_rand(333,500);
+				shipp->next_fireball = timestamp_rand(333,500);
 
 				// emit particles
 				particle_emitter	pe;
@@ -7429,27 +7415,27 @@ void ship_dying_frame(object *objp, int ship_num)
 				particle_emit( &pe );
 
 				// do sound - maybe start a random sound, if it has played far enough.
-				do_sub_expl_sound(objp->radius, &outpnt, sp->sub_expl_sound_handle);
+				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle);
 			}
 		}
 
 
-		//nprintf(("AI", "Ship.cpp: Frame=%i, Time = %7.3f, Ship %s will die in %7.3f seconds.\n", Framecount, f2fl(Missiontime), Ships[ship_num].ship_name, (float) timestamp_until(sp->final_death_time)/1000.0f));
-		int time_until_minor_explosions = timestamp_until(sp->final_death_time);
+		//nprintf(("AI", "Ship.cpp: Frame=%i, Time = %7.3f, Ship %s will die in %7.3f seconds.\n", Framecount, f2fl(Missiontime), shipp->ship_name, (float) timestamp_until(sp->final_death_time)/1000.0f));
+		int time_until_minor_explosions = timestamp_until(shipp->final_death_time);
 //		if(time_until_minor_explosions < 500)
 //			sp->flare_life += flFrametime;
 		// Wait until just before death and set off some explosions
 		// If it is less than 1/2 second until large explosion, but there is
 		// at least 1/10th of a second left, then create 5 small explosions
-		if ( (time_until_minor_explosions < 500) && (time_until_minor_explosions > 100) && (!sp->pre_death_explosion_happened) ) {
+		if ( (time_until_minor_explosions < 500) && (time_until_minor_explosions > 100) && (!shipp->pre_death_explosion_happened) ) {
 			//mprintf(( "Ship almost dying!!\n" ));
-			sp->next_fireball = timestamp(-1);	// never time out again
-			sp->pre_death_explosion_happened=1;		// Mark this event as having occurred
+			shipp->next_fireball = timestamp(-1);	// never time out again
+			shipp->pre_death_explosion_happened=1;		// Mark this event as having occurred
 
-			polymodel *pm = model_get(sp->modelnum);
+			polymodel *pm = model_get(sip->model_num);
 
 			// Start shockwave for ship with propagating explosion, do now for timing
-			if ( ship_get_exp_propagates(sp) ) {
+			if ( ship_get_exp_propagates(shipp) ) {
 				ship_blow_up_area_apply_blast( objp );
 			}
 
@@ -7463,10 +7449,10 @@ void ship_dying_frame(object *objp, int ship_num)
 				vec3d tmp, outpnt, pnt1, pnt2;
 
 				// Gets two random points on the surface of a submodel [KNOSSOS]
-				submodel_get_two_random_points(sp->modelnum, pm->detail[0], &pnt1, &pnt2 );
+				submodel_get_two_random_points(pm->id, pm->detail[0], &pnt1, &pnt2 );
 
 				vm_vec_avg( &tmp, &pnt1, &pnt2 );
-				model_find_world_point(&outpnt, &tmp, sp->modelnum, pm->detail[0], &objp->orient, &objp->pos );
+				model_find_world_point(&outpnt, &tmp, pm->id, pm->detail[0], &objp->orient, &objp->pos );
 
 				float rad = frand()*0.30f;
 				rad += objp->radius*0.40f;
@@ -7474,17 +7460,17 @@ void ship_dying_frame(object *objp, int ship_num)
 			}
 		}
 
-		if ( timestamp_elapsed(sp->final_death_time))	{
+		if ( timestamp_elapsed(shipp->final_death_time))	{
 
-			sp->death_time = sp->final_death_time;
+			shipp->death_time = shipp->final_death_time;
 			
 
-			sp->final_death_time = timestamp(-1);	// never time out again
+			shipp->final_death_time = timestamp(-1);	// never time out again
 			//mprintf(( "Ship dying!!\n" ));
 			
 			// play ship explosion sound effect, pick appropriate explosion sound
 			int sound_index;
-			if ( Ship_info[sp->ship_info_index].flags & (SIF_CAPITAL | SIF_KNOSSOS_DEVICE) ) {
+			if ( sip->flags & (SIF_CAPITAL | SIF_KNOSSOS_DEVICE) ) {
 				sound_index=SND_CAPSHIP_EXPLODE;
 			} else {
 				if ( OBJ_INDEX(objp) & 1 ) {
@@ -7498,14 +7484,14 @@ void ship_dying_frame(object *objp, int ship_num)
 			if (objp == Player_obj)
 				joy_ff_explode();
 
-			if ( sp->death_roll_snd != -1 ) {
-				snd_stop(sp->death_roll_snd);
-				sp->death_roll_snd = -1;
+			if ( shipp->death_roll_snd != -1 ) {
+				snd_stop(shipp->death_roll_snd);
+				shipp->death_roll_snd = -1;
 			}
 
 			// if dying ship is docked, do damage to docked and physics
 			if (object_is_dead_docked(objp))  {
-				do_dying_undock_physics(objp, sp);
+				do_dying_undock_physics(objp, shipp);
 			}			
 
 			if (!knossos_ship) {
@@ -7529,15 +7515,15 @@ void ship_dying_frame(object *objp, int ship_num)
 			}
 
 			// If this is a large ship with a propagating explosion, set it to blow up.
-			if ( ship_get_exp_propagates(sp) )	{
-				if (Ai_info[sp->ai_index].ai_flags & AIF_KAMIKAZE) {
+			if ( ship_get_exp_propagates(shipp) )	{
+				if (Ai_info[shipp->ai_index].ai_flags & AIF_KAMIKAZE) {
 					ship_blow_up_area_apply_blast( objp );
 				}
-				shipfx_large_blowup_init(sp);
+				shipfx_large_blowup_init(shipp);
 				// need to timeout immediately to keep physics in sync
-				sp->really_final_death_time = timestamp(0);
-				polymodel *pm = model_get(sp->modelnum);
-				sp->end_death_time = timestamp((int) pm->core_radius);
+				shipp->really_final_death_time = timestamp(0);
+				polymodel *pm = model_get(sip->model_num);
+				shipp->end_death_time = timestamp((int) pm->core_radius);
 			} else {
 				// only do big fireball if not big ship
 				float big_rad;
@@ -7550,7 +7536,7 @@ void ship_dying_frame(object *objp, int ship_num)
 					fireball_type = FIREBALL_EXPLOSION_LARGE1;
 				}
 				fireball_objnum = fireball_create( &objp->pos, fireball_type, OBJ_INDEX(objp), big_rad, 0, &objp->phys_info.vel );
-				if ( fireball_objnum > -1 )	{
+				if ( fireball_objnum >= 0 )	{
 					explosion_life = fireball_lifeleft(&Objects[fireball_objnum]);
 				} else {
 					explosion_life = 0.0f;
@@ -7563,24 +7549,24 @@ void ship_dying_frame(object *objp, int ship_num)
 				// ship, so instead of just taking this code out, since we might need
 				// it in the future, I disabled it.   You can reenable it by changing
 				// the commenting on the following two lines.
-				sp->end_death_time = sp->really_final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the ship up.
-				//sp->really_final_death_time = timestamp(0);	// Make ship break apart the instant the explosion starts
+				shipp->end_death_time = shipp->really_final_death_time = timestamp( fl2i(explosion_life*1000.0f)/5 );	// Wait till 30% of vclip time before breaking the ship up.
+				//shipp->really_final_death_time = timestamp(0);	// Make ship break apart the instant the explosion starts
 			}
 
-			sp->flags |= SF_EXPLODED;
+			shipp->flags |= SF_EXPLODED;
 
-			if ( !(ship_get_exp_propagates(sp)) ) {
+			if ( !(ship_get_exp_propagates(shipp)) ) {
 				// apply area of effect blast damage from ship explosion
 				ship_blow_up_area_apply_blast( objp );
 			}
 		}
 
-		if ( timestamp_elapsed(sp->really_final_death_time))	{
+		if ( timestamp_elapsed(shipp->really_final_death_time))	{
 
 			//mprintf(( "Ship really dying!!\n" ));
 			// do large_ship_split and explosion
-			if ( sp->large_ship_blowup_index > -1 )	{
-				if ( shipfx_large_blowup_do_frame(sp, flFrametime) )	{
+			if ( shipp->large_ship_blowup_index >= 0 )	{
+				if ( shipfx_large_blowup_do_frame(shipp, flFrametime) )	{
 					// do all accounting for respawning client and server side here.
 					if(objp == Player_obj) {				
 						gameseq_post_event(GS_EVENT_DEATH_BLEW_UP);
@@ -7596,7 +7582,7 @@ void ship_dying_frame(object *objp, int ship_num)
 			//fireball_create( &objp->pos, FIREBALL_SHIP_EXPLODE1, OBJ_INDEX(objp), objp->radius/2.0f );
 			//mprintf(("Frame %i: Died!\n", Framecount));
 
-			shipfx_blow_up_model(objp, Ships[ship_num].modelnum, 0, 20, &objp->pos );
+			shipfx_blow_up_model(objp, sip->model_num, 0, 20, &objp->pos );
 
 			// do all accounting for respawning client and server side here.
 			if(objp == Player_obj) {				
@@ -7606,14 +7592,14 @@ void ship_dying_frame(object *objp, int ship_num)
 			objp->flags |= OF_SHOULD_BE_DEAD;
 								
 			ship_destroyed(ship_num);		// call ship function to clean up after the ship is destroyed.
-			sp->really_final_death_time = timestamp( -1 );	// Never time out again!
+			shipp->really_final_death_time = timestamp( -1 );	// Never time out again!
 		}
 
 		// If a ship is dying (and not a capital or big ship) then stutter the engine sound
-		if ( timestamp_elapsed(sp->next_engine_stutter) ) {
-			if ( !(Ship_info[sp->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
-				sp->flags ^= SF_ENGINES_ON;			// toggle state of engines
-				sp->next_engine_stutter = timestamp_rand(50, 250);
+		if ( timestamp_elapsed(shipp->next_engine_stutter) ) {
+			if ( !(sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
+				shipp->flags ^= SF_ENGINES_ON;			// toggle state of engines
+				shipp->next_engine_stutter = timestamp_rand(50, 250);
 			}
 		}
 	}
@@ -8506,7 +8492,7 @@ void ship_process_post(object * obj, float frametime)
 void ship_set_default_weapons(ship *shipp, ship_info *sip)
 {
 	int			i;
-	polymodel	*po;
+	polymodel	*pm;
 	ship_weapon *swp = &shipp->weapons;
 	weapon_info *wip;
 
@@ -8522,38 +8508,38 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 
 	// Copy the number of primary and secondary banks to ship, and verify that
 	// model is in synch
-	po = model_get( shipp->modelnum );
+	pm = model_get( sip->model_num );
 
 	// Primary banks
-	if ( po->n_guns > sip->num_primary_banks ) {
-		Assert(po->n_guns <= MAX_SHIP_PRIMARY_BANKS);
-		Warning(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks in %s for %s\n", po->n_guns, sip->num_primary_banks, current_ship_table, sip->name);
-		for ( i = sip->num_primary_banks; i < po->n_guns; i++ ) {
+	if ( pm->n_guns > sip->num_primary_banks ) {
+		Assert(pm->n_guns <= MAX_SHIP_PRIMARY_BANKS);
+		Warning(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks in %s for %s\n", pm->n_guns, sip->num_primary_banks, current_ship_table, sip->name);
+		for ( i = sip->num_primary_banks; i < pm->n_guns; i++ ) {
 			// Make unspecified weapon for bank be a Light Laser
 			swp->primary_bank_weapons[i] = weapon_info_lookup(NOX("Light Laser"));
 			Assert(swp->primary_bank_weapons[i] >= 0);
 		}
-		sip->num_primary_banks = po->n_guns;
+		sip->num_primary_banks = pm->n_guns;
 	}
-	else if ( po->n_guns < sip->num_primary_banks ) {
-		Warning(LOCATION, "There are %d primary banks in %s for %s\nbut only %d primary banks in the model\n", sip->num_primary_banks, sip->name, current_ship_table, po->n_guns);
-		sip->num_primary_banks = po->n_guns;
+	else if ( pm->n_guns < sip->num_primary_banks ) {
+		Warning(LOCATION, "There are %d primary banks in %s for %s\nbut only %d primary banks in the model\n", sip->num_primary_banks, sip->name, current_ship_table, pm->n_guns);
+		sip->num_primary_banks = pm->n_guns;
 	}
 
 	// Secondary banks
-	if ( po->n_missiles > sip->num_secondary_banks ) {
-		Assert(po->n_missiles <= MAX_SHIP_SECONDARY_BANKS);
-		Warning(LOCATION, "There are %d secondary banks in model,\nbut only %d secondary banks in %s for %s\n", po->n_missiles, sip->num_secondary_banks, current_ship_table, sip->name);
-		for ( i = sip->num_secondary_banks; i < po->n_missiles; i++ ) {
+	if ( pm->n_missiles > sip->num_secondary_banks ) {
+		Assert(pm->n_missiles <= MAX_SHIP_SECONDARY_BANKS);
+		Warning(LOCATION, "There are %d secondary banks in model,\nbut only %d secondary banks in %s for %s\n", pm->n_missiles, sip->num_secondary_banks, current_ship_table, sip->name);
+		for ( i = sip->num_secondary_banks; i < pm->n_missiles; i++ ) {
 			// Make unspecified weapon for bank be a Rockeye Missile
 			swp->secondary_bank_weapons[i] = weapon_info_lookup(NOX("Rockeye Missile"));
 			Assert(swp->secondary_bank_weapons[i] >= 0);
 		}
-		sip->num_secondary_banks = po->n_missiles;
+		sip->num_secondary_banks = pm->n_missiles;
 	}
-	else if ( po->n_missiles < sip->num_secondary_banks ) {
-		Warning(LOCATION, "There are %d secondary banks in %s for %s,\n but only %d secondary banks in the model.\n", sip->num_secondary_banks, current_ship_table, sip->name, po->n_missiles);
-		sip->num_secondary_banks = po->n_missiles;
+	else if ( pm->n_missiles < sip->num_secondary_banks ) {
+		Warning(LOCATION, "There are %d secondary banks in %s for %s,\n but only %d secondary banks in the model.\n", sip->num_secondary_banks, current_ship_table, sip->name, pm->n_missiles);
+		sip->num_secondary_banks = pm->n_missiles;
 	}
 
 	// added ballistic primary support - Goober5000
@@ -8619,7 +8605,7 @@ int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos)
 
 	ship_model_start(obj);	// are these needed in this fast case? probably not.
 
-	mc.model_num = Ships[num].modelnum;	// Fill in the model to check
+	mc.model_num = Ship_info[Ships[num].ship_info_index].model_num;	// Fill in the model to check
 	mc.orient = &obj->orient;					// The object's orient
 	mc.pos = &obj->pos;							// The object's position
 	mc.p0 = &other_obj->last_pos;			// Point 1 of ray to check
@@ -8750,12 +8736,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	//  get Allender or Mike if you hit this Assert
 	//WMC - I hope this isn't really needed anymore. Took it out.
 
-	sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
-	shipp->modelnum = sip->modelnum;
-
-	// model stuff
-	shipp->n_subsystems = 0;
-	shipp->subsystems = NULL;
+	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
 
 	// check for texture_replacement - Goober5000
 	if (ship_name)
@@ -8766,22 +8747,12 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 			if (!stricmp(ship_name, Texture_replace[i].ship_name))
 			{
 				// allocate space for subsystems
-				shipp->n_subsystems = sip->n_subsystems;
-				if ( shipp->n_subsystems > 0 )
-				{
-					shipp->subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * shipp->n_subsystems );
-					Assert( shipp->subsystems != NULL );
-				}
 		
 				// copy original subsys data
-				for ( i = 0; i < shipp->n_subsystems; i++ )
-				{
-					shipp->subsystems[i] = sip->subsystems[i];
-				}
 
 				// now load the duplicate model
-				shipp->modelnum = model_load(sip->pof_file, shipp->n_subsystems, &shipp->subsystems[0], 1, 1);
-				model_duplicate_reskin(shipp->modelnum, ship_name);
+
+				Int3();
 				break;
 			}
 		}
@@ -8793,59 +8764,37 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 		int idx;
 		for(idx=0; idx<Num_ship_classes; idx++){
 			if(!stricmp(Ship_info[idx].pof_file, sip->pof_file_hud)){
-				Ship_info[idx].modelnum = model_load(Ship_info[idx].pof_file, Ship_info[idx].n_subsystems, &Ship_info[idx].subsystems[0]);
+				Ship_info[idx].model_num = model_load(Ship_info[idx].pof_file, Ship_info[idx].n_subsystems, &Ship_info[idx].subsystems[0]);
 			}
 		}
 
 		// mow load it for me with no subsystems
-		sip->modelnum_hud = model_load(sip->pof_file_hud, 0, NULL);
+		sip->model_num_hud = model_load(sip->pof_file_hud, 0, NULL);
 	}
 
-	// we must do stuff for both the original and alternate models - Goober5000
-	polymodel *pm_orig = model_get(sip->modelnum);
-	polymodel *pm_alt = NULL;
-
-	if (shipp->modelnum != sip->modelnum)
-	{
-		pm_alt = model_get(shipp->modelnum);
-	}
-
+	polymodel *pm = model_get(sip->model_num);
 
 	ship_copy_subsystem_fixup(sip);
-
 	show_ship_subsys_count();
-	if (pm_alt)
-	{
-		show_ship_subsys_count();	// Goober5000 - double if two models
-	}
 
-	if ( sip->num_detail_levels < pm_orig->n_detail_levels )
+	if ( sip->num_detail_levels < pm->n_detail_levels )
 	{
-		Warning(LOCATION, "For ship '%s', detail level\nmismatch (POF needs %d)", sip->name, pm_orig->n_detail_levels );
+		Warning(LOCATION, "For ship '%s', detail level\nmismatch (POF needs %d)", sip->name, pm->n_detail_levels );
 
-		for (i=0; i<pm_orig->n_detail_levels; i++ )	{
+		for (i=0; i<pm->n_detail_levels; i++ )	{
 			sip->detail_distance[i] = 0;
 		}
 	}
 	
-	// Goober5000 - one for each model
 	for (i=0; i<sip->num_detail_levels; i++ )	{
-		pm_orig->detail_depth[i] = i2fl(sip->detail_distance[i]);
+		pm->detail_depth[i] = i2fl(sip->detail_distance[i]);
 	}
-
-	if (pm_alt)
-	{
-		for (i=0; i<sip->num_detail_levels; i++ )	{
-			pm_alt->detail_depth[i] = i2fl(sip->detail_distance[i]);
-		}
-	}
-
 
 	if ( sip->flags & SIF_NAVBUOY )	{
 		// JAS: Nav buoys don't need to do collisions!
-		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(shipp->modelnum), OF_RENDERS | OF_PHYSICS );
+		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), OF_RENDERS | OF_PHYSICS );
 	} else {
-		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(shipp->modelnum), OF_RENDERS | OF_COLLIDES | OF_PHYSICS );
+		objnum = obj_create(OBJ_SHIP, -1, n, orient, pos, model_get_radius(sip->model_num), OF_RENDERS | OF_COLLIDES | OF_PHYSICS );
 	}
 	Assert( objnum >= 0 );
 
@@ -8870,74 +8819,54 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	//ship_set_default_weapons(shipp, sip);
 
 	//	Allocate shield and initialize it.
-	if (pm_orig->shield.ntris) {
-		shipp->shield_integrity = (float *)vm_malloc(sizeof(float)*pm_orig->shield.ntris);
-		for (i=0; i<pm_orig->shield.ntris; i++)
+	if (pm->shield.ntris) {
+		shipp->shield_integrity = (float *) vm_malloc(sizeof(float) * pm->shield.ntris);
+		for (i=0; i<pm->shield.ntris; i++)
 			shipp->shield_integrity[i] = 1.0f;
-
 	} else
 		shipp->shield_integrity = NULL;
 
 	// allocate memory for keeping glow point bank status (enabled/disabled)
-	// if alt model too then be sure to use largest number of glow banks for size
 	{
-		int n_glow_banks = 0;
 		bool val = true; // default value, enabled
 
-		if (!pm_alt)
-			n_glow_banks = pm_orig->n_glow_point_banks;
-		else
-			n_glow_banks = MAX(pm_orig->n_glow_point_banks, pm_alt->n_glow_point_banks);
-
-		if (n_glow_banks)
-			shipp->glow_point_bank_active.resize( n_glow_banks, val );
+		if (pm->n_glow_point_banks)
+			shipp->glow_point_bank_active.resize( pm->n_glow_point_banks, val );
 	}
 
 	// fix up references into paths for this ship's model to point to a ship_subsys entry instead
 	// of a submodel index.  The ship_subsys entry should be the same for *all* instances of the
 	// same ship.
-
-	// evaluate for both models!
-	for (int temp = 0; temp < 2; temp++)
+	if (!(sip->flags & SIF_PATH_FIXUP))
 	{
-		polymodel *pm = NULL;
-		if (temp == 0) pm = pm_orig;
-		if (temp == 1) pm = pm_alt;
-
-		if (!pm)
-			continue;
-
-		if ( !(sip->flags & SIF_PATH_FIXUP) || (temp == 1))
+		for ( i = 0; i < pm->n_paths; i++ )
 		{
-			for ( i = 0; i < pm->n_paths; i++ )
+			for ( j = 0; j < pm->paths[i].nverts; j++ )
 			{
-				for ( j = 0; j < pm->paths[i].nverts; j++ )
+				for ( k = 0; k < pm->paths[i].verts[j].nturrets; k++ )
 				{
-					for ( k = 0; k < pm->paths[i].verts[j].nturrets; k++ )
-					{
-						int ptindex = pm->paths[i].verts[j].turret_ids[k];		// this index is a submodel number (ala bspgen)
-						int index;
-						ship_subsys *ss;
+					int ptindex = pm->paths[i].verts[j].turret_ids[k];		// this index is a submodel number (ala bspgen)
+					int index;
+					ship_subsys *ss;
 
-						// iterate through the ship_subsystems looking for an id that matches
-						index = 0;
-						ss = GET_FIRST(&Ships[n].subsys_list);
-						while ( ss != END_OF_LIST( &Ships[n].subsys_list ) ) {
-							if ( ss->system_info->subobj_num == ptindex ) {			// when these are equal, fix up the ref
-								pm->paths[i].verts[j].turret_ids[k] = index;				// in path structure to index a ship_subsys
-								break;											
-							}
-							index++;
-							ss = GET_NEXT( ss );
+					// iterate through the ship_subsystems looking for an id that matches
+					index = 0;
+					ss = GET_FIRST(&Ships[n].subsys_list);
+					while ( ss != END_OF_LIST( &Ships[n].subsys_list ) ) {
+						if ( ss->system_info->subobj_num == ptindex ) {			// when these are equal, fix up the ref
+							pm->paths[i].verts[j].turret_ids[k] = index;				// in path structure to index a ship_subsys
+							break;											
 						}
-
-						if ( ss == END_OF_LIST(&Ships[n].subsys_list) )
-							Warning(LOCATION, "Couldn't fix up turret indices in spline path\n\nModel: %s\nPath: %s\nVertex: %d\nTurret model id:%d\n\nThis probably means that the turret was not specified in the ship table(s).", sip->pof_file, pm->paths[i].name, j, ptindex );
+						index++;
+						ss = GET_NEXT( ss );
 					}
+
+					if ( ss == END_OF_LIST(&Ships[n].subsys_list) )
+						Warning(LOCATION, "Couldn't fix up turret indices in spline path\n\nModel: %s\nPath: %s\nVertex: %d\nTurret model id:%d\n\nThis probably means that the turret was not specified in the ship table(s).", sip->pof_file, pm->paths[i].name, j, ptindex );
 				}
 			}
-			sip->flags |= SIF_PATH_FIXUP;
 		}
+		sip->flags |= SIF_PATH_FIXUP;
 	}
 
 	// reset the damage record fields (for scoring purposes)
@@ -8962,36 +8891,35 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	shipp->wing_status_wing_index = -1;		// wing index (0-4) in wingman status gauge
 	shipp->wing_status_wing_pos = -1;		// wing position (0-5) in wingman status gauge
 
-	trail_info *ci;
 	//first try at ABtrails -Bobboau	
 	shipp->ab_count = 0;
-	if(sip->flags & SIF_AFTERBURNER)
+	if (sip->flags & SIF_AFTERBURNER)
 	{
-		for(i = 0; i < pm_orig->n_thrusters; i++)
+		for (i = 0; i < pm->n_thrusters; i++)
 		{
-			thruster_bank *bank = &pm_orig->thrusters[i];
+			thruster_bank *bank = &pm->thrusters[i];
 
-			for(j = 0; j < bank->num_points; j++)
+			for (j = 0; j < bank->num_points; j++)
 			{
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
 	
-				ci = &shipp->ab_info[shipp->ab_count];
+				trail_info *ci = &shipp->ab_info[shipp->ab_count];
 			//	ci = &sip->ct_info[sip->ct_count++];
 
 				if (bank->points[j].norm.xyz.z > -0.5)
 					continue;// only make ab trails for thrusters that are pointing backwards
 
 				ci->pt = bank->points[j].pnt;//offset
-				ci->w_start = bank->points[j].radius * sip->ABwidth_factor;//width * table loaded width factor
+				ci->w_start = bank->points[j].radius * sip->ABwidth_factor;	//width * table loaded width factor
 	
 				ci->w_end = 0.05f;//end width
 	
-				ci->a_start = 1.0f * sip->ABAlpha_factor;//start alpha  * table loaded alpha factor
+				ci->a_start = 1.0f * sip->ABAlpha_factor;	//start alpha  * table loaded alpha factor
 	
 				ci->a_end = 0.0f;//end alpha
 	
-				ci->max_life = sip->ABlife;// table loaded max life
+				ci->max_life = sip->ABlife;	// table loaded max life
 	
 				ci->stamp = 60;	//spew time???	
 
@@ -9029,7 +8957,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 // input:	n				=>		index of ship in Ships[] array
 //				ship_type	=>		ship class (index into Ship_info[])
 //
-void ship_model_change(int n, int ship_type, int changing_ship_class)
+void ship_model_change(int n, int ship_type)
 {
 	int			i;
 	ship_info	*sip;
@@ -9040,40 +8968,18 @@ void ship_model_change(int n, int ship_type, int changing_ship_class)
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
 
-	//No need to change model! -C
-	if(sp->modelnum == sip->modelnum) {
-		return;
-	}
-
-	// make sure we can actually change models
-	if (Ship_info[sp->ship_info_index].n_subsystems != sip->n_subsystems)
-	{
-		Warning(LOCATION, "Ship model change failed for %s.  Subsystems must match between models.\n", sp->ship_name);
-		return;
-	}
-
-	// reset model subsys stuff
-	ship_model_subsystems_delete(sp);
-
-	// unload old model if we should, helps keep refcount correct and avoid excessive memory usage
-	if (sp->modelnum >= 0) {
-		model_unload(sp->modelnum);
-	}
-
 	// get new model
-	if (sip->modelnum == -1) {
-		sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	if (sip->model_num == -1) {
+		sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 	}
-	sp->modelnum = sip->modelnum;
-	pm = model_get(sp->modelnum);
-
-	Objects[sp->objnum].radius = model_get_radius(sp->modelnum);
+	pm = model_get(sip->model_num);
+	Objects[sp->objnum].radius = model_get_radius(pm->id);
 
 	// page in nondims in game
 	if(!Fred_running){
-		model_page_in_textures(sp->modelnum, ship_type);
+		model_page_in_textures(sip->model_num, ship_type);
 		// also get anything extra (like thrusters graphics)
-		ship_page_in_model_textures(sp->modelnum, ship_type);
+		ship_page_in_model_textures(sip->model_num, ship_type);
 	}
 
 	// allocate memory for keeping glow point bank status (enabled/disabled)
@@ -9087,64 +8993,7 @@ void ship_model_change(int n, int ship_type, int changing_ship_class)
 			sp->glow_point_bank_active.resize( pm->n_glow_point_banks, val );
 	}
 
-	// this is only done when changing ship classes
-	if (changing_ship_class)
-	{
-		ship_copy_subsystem_fixup(sip);
-	}
-	// this we want to do in game if there's not a ship class change
-	else
-	{
-		ship_subsys *ss;
-
-		// different from our ship class model?
-		if (sp->modelnum != Ship_info[sp->ship_info_index].modelnum)
-		{
-			// redo the subsystems
-			sp->n_subsystems = sip->n_subsystems;
-			if ( sp->n_subsystems > 0 )
-			{
-				sp->subsystems = (model_subsystem *)vm_malloc(sizeof(model_subsystem) * sp->n_subsystems );
-				Assert( sp->subsystems != NULL );
-			}
-		
-			// recopy from ship_info
-			for ( i = 0; i < sp->n_subsystems; i++ )
-			{
-				sp->subsystems[i] = sip->subsystems[i];
-				sp->subsystems[i].model_num = sp->modelnum;
-			}
-
-			// link into the new model
-			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss))
-			{
-				for (i = 0; i < sp->n_subsystems; i++)
-				{
-					if (!subsystem_stricmp(ss->system_info->subobj_name, sp->subsystems[i].subobj_name))
-					{
-						ss->system_info = &sp->subsystems[i];
-						break;
-					}
-				}
-			}
-		}
-		else
-		{
-			// link into our original model
-			for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss))
-			{
-				for (i = 0; i < sip->n_subsystems; i++)
-				{
-					if (!subsystem_stricmp(ss->system_info->subobj_name, sip->subsystems[i].subobj_name))
-					{
-						ss->system_info = &sip->subsystems[i];
-						break;
-					}
-				}
-			}
-		}
-	}
-
+	ship_copy_subsystem_fixup(sip);
 
 	if ( sip->num_detail_levels < pm->n_detail_levels )	{
 		Warning(LOCATION, "For ship '%s', detail level\nmismatch (POF needs %d)", sip->name, pm->n_detail_levels );
@@ -9216,8 +9065,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 
 	// point to new ship data
+	ship_model_change(n, ship_type);
 	sp->ship_info_index = ship_type;
-	ship_model_change(n, ship_type, 1);
 
 
 	// set the correct hull strength
@@ -9285,26 +9134,26 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
 
 	sp->ab_count = 0;
-	if(sip->flags & SIF_AFTERBURNER)
+	if (sip->flags & SIF_AFTERBURNER)
 	{
-		polymodel * pm_orig;
-		pm_orig = model_get(sp->modelnum);
-		trail_info *ci;
-		for(int h = 0; h < pm_orig->n_thrusters; h++)
+		polymodel *pm = model_get(sip->model_num);
+
+		for (int h = 0; h < pm->n_thrusters; h++)
 		{
-			for(int j = 0; j < pm_orig->thrusters->num_points; j++)
+			for (int j = 0; j < pm->thrusters->num_points; j++)
 			{
 				// this means you've reached the max # of AB trails for a ship
 				Assert(sip->ct_count <= MAX_SHIP_CONTRAILS);
 	
-				ci = &sp->ab_info[sp->ab_count];
+				trail_info *ci = &sp->ab_info[sp->ab_count];
 			//	ci = &sip->ct_info[sip->ct_count++];
 
+				// only make ab trails for thrusters that are pointing backwards
+				if (pm->thrusters[h].points[j].norm.xyz.z > -0.5)
+					continue;
 
-			if(pm_orig->thrusters[h].points[j].norm.xyz.z > -0.5)continue;// only make ab trails for thrusters that are pointing backwards
-
-			ci->pt = pm_orig->thrusters[h].points[j].pnt;//offset
-				ci->w_start = pm_orig->thrusters[h].points[j].radius * sip->ABwidth_factor;//width * table loaded width factor
+				ci->pt = pm->thrusters[h].points[j].pnt;	//offset
+				ci->w_start = pm->thrusters[h].points[j].radius * sip->ABwidth_factor;	//width * table loaded width factor
 	
 				ci->w_end = 0.05f;//end width
 	
@@ -9464,14 +9313,14 @@ int ship_launch_countermeasure(object *objp, int rand_val)
 	// value
 	//fired = cmeasure_create( objp, &pos, shipp->current_cmeasure, rand_val );
 	cobjnum = weapon_create(&pos, &objp->orient, shipp->current_cmeasure, OBJ_INDEX(objp));
-	if(cobjnum > -1)
+	if (cobjnum >= 0)
 	{
 		cmeasure_set_ship_launch_vel(&Objects[cobjnum], objp, arand);
 		nprintf(("Network", "Cmeasure created by %s\n", shipp->ship_name));
 
 		// Play sound effect for counter measure launch
 		Assert(shipp->current_cmeasure < Num_weapon_types);
-		if ( Weapon_info[shipp->current_cmeasure].launch_snd > -1 ) {
+		if ( Weapon_info[shipp->current_cmeasure].launch_snd >= 0 ) {
 			snd_play_3d( &Snds[Weapon_info[shipp->current_cmeasure].launch_snd], &pos, &View_position );
 		}
 
@@ -9890,7 +9739,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 			}
 		}
 
-		polymodel *po = model_get( shipp->modelnum );
+		polymodel *pm = model_get( sip->model_num );
 		
 		next_fire_delay *= 1.0f + (num_primary_banks - 1) * 0.5f;		//	50% time penalty if banks linked
 
@@ -9922,8 +9771,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		}
 
 		if (winfo_p->wi_flags2 & WIF2_CYCLE){
-			Assert(po->gun_banks[bank_to_fire].num_slots != 0);
-			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay / po->gun_banks[bank_to_fire].num_slots));
+			Assert(pm->gun_banks[bank_to_fire].num_slots != 0);
+			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay / pm->gun_banks[bank_to_fire].num_slots));
 			//to maintain balence of fighters with more fire points they will fire faster that ships with fewer points
 		}else{
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
@@ -9941,8 +9790,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		}		
 		
 
-		if ( po->n_guns > 0 ) {
-			int num_slots = po->gun_banks[bank_to_fire].num_slots;
+		if ( pm->n_guns > 0 ) {
+			int num_slots = pm->gun_banks[bank_to_fire].num_slots;
 			
 			if(winfo_p->wi_flags & WIF_BEAM){		// the big change I made for fighter beams, if there beams fill out the Fire_Info for a targeting laser then fire it, for each point in the weapon bank -Bobboau
 				swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)((float) winfo_p->fire_wait * 1000.0f));//doing that time scale thing on enemy fighter is just ugly with beams, especaly ones that have careful timeing
@@ -9980,8 +9829,8 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				shipp->beam_sys_info.turret_norm.xyz.x = 0.0f;
 				shipp->beam_sys_info.turret_norm.xyz.y = 0.0f;
 				shipp->beam_sys_info.turret_norm.xyz.z = 1.0f;
-				shipp->beam_sys_info.model_num = shipp->modelnum;
-				shipp->beam_sys_info.turret_gun_sobj = po->detail[0];
+				shipp->beam_sys_info.model_num = sip->model_num;
+				shipp->beam_sys_info.turret_gun_sobj = pm->detail[0];
 				shipp->beam_sys_info.turret_num_firing_points = 1;
 				shipp->beam_sys_info.turret_fov = (float)cos((winfo_p->field_of_fire != 0.0f)?winfo_p->field_of_fire:180);
 
@@ -10010,9 +9859,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					}else{
 						j=v;
 					}
-					fbfire_info.targeting_laser_offset = po->gun_banks[bank_to_fire].pnt[j];			
-					shipp->beam_sys_info.pnt = po->gun_banks[bank_to_fire].pnt[j];
-					shipp->beam_sys_info.turret_firing_point[0] = po->gun_banks[bank_to_fire].pnt[j];
+					fbfire_info.targeting_laser_offset = pm->gun_banks[bank_to_fire].pnt[j];			
+					shipp->beam_sys_info.pnt = pm->gun_banks[bank_to_fire].pnt[j];
+					shipp->beam_sys_info.turret_firing_point[0] = pm->gun_banks[bank_to_fire].pnt[j];
 			//		winfo_p->b_info.beam_type = BEAM_TYPE_C;
 //mprintf(("I am about to fire a fighter beam4\n"));
 					beam_fire(&fbfire_info);
@@ -10144,24 +9993,24 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 				{
 					int pt; //point
 					if (winfo_p->wi_flags2 & WIF2_CYCLE){
-						//pnt = po->gun_banks[bank_to_fire].pnt[shipp->last_fired_point[bank_to_fire]+j%num_slots];
+						//pnt = pm->gun_banks[bank_to_fire].pnt[shipp->last_fired_point[bank_to_fire]+j%num_slots];
 						pt = shipp->last_fired_point[bank_to_fire]+j%num_slots;
 //mprintf(("fireing from %d\n",shipp->last_fired_point[bank_to_fire]+j%num_slots));
 					}else{
-						//pnt = po->gun_banks[bank_to_fire].pnt[j];
+						//pnt = pm->gun_banks[bank_to_fire].pnt[j];
 						pt = j;
 //mprintf(("fireing from %d\n",j));
 					}
 
 					int sub_shots = 1;
 					polymodel *weapon_model = NULL;
-					if(winfo_p->external_model_num > -1){
+					if(winfo_p->external_model_num >= 0){
 						weapon_model = model_get(winfo_p->external_model_num);
 						if(weapon_model->n_guns)sub_shots = weapon_model->gun_banks[0].num_slots;
 					}
 
 					for(int s = 0; s<sub_shots; s++){
-						pnt = po->gun_banks[bank_to_fire].pnt[pt];
+						pnt = pm->gun_banks[bank_to_fire].pnt[pt];
 						if(weapon_model && weapon_model->n_guns)vm_vec_add2(&pnt, &weapon_model->gun_banks[0].pnt[s]);
 
 						vm_vec_unrotate(&gun_point, &pnt, &obj->orient);
@@ -10175,7 +10024,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						else
 						{
 							vec3d firing_vec;
-							vm_vec_unrotate(&firing_vec, &po->gun_banks[bank_to_fire].norm[pt], &obj->orient);
+							vm_vec_unrotate(&firing_vec, &pm->gun_banks[bank_to_fire].norm[pt], &obj->orient);
 							vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
 						}
 						// create the weapon -- the network signature for multiplayer is created inside
@@ -10220,7 +10069,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							}
 						}
 						// create the muzzle flash effect
-						shipfx_flash_create( obj, shipp, &pnt, &obj->orient.vec.fvec, 1, weapon );
+						shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon );
 	
 						// maybe shudder the ship - if its me
 						if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
@@ -10400,7 +10249,7 @@ void ship_process_targeting_lasers()
 		// if we have a bank to fire - fire it
 		if((shipp->targeting_laser_bank >= 0) && (shipp->targeting_laser_bank < 2)){
 			// try and get the model
-			m = model_get(shipp->modelnum);
+			m = model_get(Ship_info[shipp->ship_info_index].model_num);
 			if(m == NULL){
 				continue;
 			}
@@ -10570,7 +10419,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 	ship_info	*sip;
 	weapon_info	*wip;
 	ai_info		*aip;
-	polymodel	*po;
+	polymodel	*pm;
 	vec3d		missile_point, pnt, firing_pos;
 
 	Assert( obj != NULL );
@@ -10778,17 +10627,17 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 		}
 	}
 
-	po = model_get( shipp->modelnum );
-	if ( po->n_missiles > 0 ) {
+	pm = model_get( sip->model_num );
+	if ( pm->n_missiles > 0 ) {
 		int check_ammo;		// used to tell if we should check ammo counts or not
 		int num_slots;
 
-		if ( bank > po->n_missiles ) {
-			nprintf(("WARNING","WARNING ==> Tried to fire bank %d, but ship has only %d banks\n", bank+1, po->n_missiles));
+		if ( bank > pm->n_missiles ) {
+			nprintf(("WARNING","WARNING ==> Tried to fire bank %d, but ship has only %d banks\n", bank+1, pm->n_missiles));
 			return 0;		// we can make a quick out here!!!
 		}
 
-		num_slots = po->missile_banks[bank].num_slots;
+		num_slots = pm->missile_banks[bank].num_slots;
 
 		// determine if there is enough ammo left to fire weapons on this bank.  As with primary
 		// weapons, we might or might not check ammo counts depending on game mode, who is firing,
@@ -10839,7 +10688,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 				pnt_index = 0;
 			}
 			shipp->secondary_point_reload_pct[bank][pnt_index] = 0.0f;
-			pnt = po->missile_banks[bank].pnt[pnt_index++];
+			pnt = pm->missile_banks[bank].pnt[pnt_index++];
 			vm_vec_unrotate(&missile_point, &pnt, &obj->orient);
 			vm_vec_add(&firing_pos, &missile_point, &obj->pos);
 
@@ -10855,7 +10704,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 			else
 			{
 				vec3d firing_vec;
-				vm_vec_unrotate(&firing_vec, &po->missile_banks[bank].norm[pnt_index-1], &obj->orient);
+				vm_vec_unrotate(&firing_vec, &pm->missile_banks[bank].norm[pnt_index-1], &obj->orient);
 				vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
 			}
 
@@ -10866,7 +10715,7 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 
 			// create the muzzle flash effect
-			shipfx_flash_create( obj, shipp, &pnt, &obj->orient.vec.fvec, 0, weapon );
+			shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
 
 /*
 			if ( weapon_num != -1 )
@@ -11596,11 +11445,13 @@ void ship_model_start(object *objp)
 	model_subsystem	*psub;
 	ship		*shipp;
 	ship_subsys	*pss;
+	int model_num;
 
 	shipp = &Ships[objp->instance];
+	model_num = Ship_info[shipp->ship_info_index].model_num;
 
 	// First clear all the angles in the model to zero
-	model_clear_instance(shipp->modelnum);
+	model_clear_instance(model_num);
 
 	// Go through all subsystems and bash the model angles for all 
 	// the subsystems that need it.
@@ -11627,11 +11478,11 @@ void ship_model_start(object *objp)
 		}
 
 		if ( psub->subobj_num >= 0 )	{
-			model_set_instance(shipp->modelnum, psub->subobj_num, &pss->submodel_info_1 );
+			model_set_instance(model_num, psub->subobj_num, &pss->submodel_info_1 );
 		}
 
 		if ( (psub->subobj_num != psub->turret_gun_sobj) && (psub->turret_gun_sobj >= 0) )		{
-			model_set_instance(shipp->modelnum, psub->turret_gun_sobj, &pss->submodel_info_2 );
+			model_set_instance(model_num, psub->turret_gun_sobj, &pss->submodel_info_2 );
 		}
 
 	}
@@ -11641,12 +11492,12 @@ void ship_model_start(object *objp)
 // Clears all the instance specific stuff out of the model info
 void ship_model_stop(object *objp)
 {
-	ship		*shipp;
-
-	shipp = &Ships[objp->instance];
+	Assert(objp != NULL);
+	Assert(objp->instance >= 0);
+	Assert(objp->type == OBJ_SHIP);
 
 	// Then, clear all the angles in the model to zero
-	model_clear_instance(shipp->modelnum);
+	model_clear_instance(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 }
 
 
@@ -11749,8 +11600,7 @@ void compute_slew_matrix(matrix *orient, angles *a)
 // eyes have no defined up vector)
 void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj )
 {
-	ship *shipp = &Ships[obj->instance];
-	polymodel *pm = model_get( shipp->modelnum );
+	polymodel *pm = model_get(Ship_info[Ships[obj->instance].ship_info_index].model_num);
 	eye *ep = &(pm->view_positions[0]);
 	// vec3d vec;
 
@@ -11764,12 +11614,12 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj )
 
 	// eye points are stored in an array -- the normal viewing position for a ship is the current_eye_index
 	// element.
-	model_find_world_point( eye_pos, &ep->pnt,shipp->modelnum, ep->parent, &obj->orient, &obj->pos );
+	model_find_world_point( eye_pos, &ep->pnt, pm->id, ep->parent, &obj->orient, &obj->pos );
 	// if ( shipp->current_eye_index == 0 ) {
 		//vm_vec_scale_add(eye_pos, &viewer_obj->pos, &tm.vec.fvec, 2.0f * viewer_obj->radius + Viewer_external_info.distance);
 		*eye_orient = obj->orient;
 	//} else {
-	// 	model_find_world_dir( &vec, &ep->norm, shipp->modelnum, ep->parent, &obj->orient, &obj->pos );
+	// 	model_find_world_dir( &vec, &ep->norm, pm->id, ep->parent, &obj->orient, &obj->pos );
 		// kind of bogus, but use the objects uvec to avoid totally stupid looking behavior.
 	//	vm_vector_2_matrix(eye_orient,&vec,&obj->orient.uvec,NULL);
 	//}
@@ -13470,14 +13320,14 @@ int ship_navigation_ok_to_warp(ship *sp)
 //	exit:		0	=>	a valid vector was placed in norm
 //				!0	=> an path normal could not be calculated
 //				
-int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vec3d *gsubpos, vec3d *norm)
+int ship_return_subsys_path_normal(ship *shipp, ship_subsys *ss, vec3d *gsubpos, vec3d *norm)
 {
 	if ( ss->system_info->path_num >= 0 ) {
 		polymodel	*pm = NULL;
 		model_path	*mp;
 		vec3d		*path_point;
 		vec3d		gpath_point;
-		pm = model_get(sp->modelnum);
+		pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 		Assert( pm != NULL );
 
 		if (ss->system_info->path_num > pm->n_paths) {
@@ -13492,8 +13342,8 @@ int ship_return_subsys_path_normal(ship *sp, ship_subsys *ss, vec3d *gsubpos, ve
 //			path_point = &mp->verts[mp->nverts-1].pos;
 			path_point = &mp->verts[0].pos;
 			// get path point in world coords
-			vm_vec_unrotate(&gpath_point, path_point, &Objects[sp->objnum].orient);
-			vm_vec_add2(&gpath_point, &Objects[sp->objnum].pos);
+			vm_vec_unrotate(&gpath_point, path_point, &Objects[shipp->objnum].orient);
+			vm_vec_add2(&gpath_point, &Objects[shipp->objnum].pos);
 			// get unit vector pointing from subsys pos to first path point
 			vm_vec_normalized_dir(norm, &gpath_point, gsubpos);
 			return 0;
@@ -13554,7 +13404,7 @@ int ship_subsystem_in_sight(object* objp, ship_subsys* subsys, vec3d *eye_pos, v
 
 	ship_model_start(objp);
 
-	mc.model_num = Ships[objp->instance].modelnum;			// Fill in the model to check
+	mc.model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;			// Fill in the model to check
 	mc.orient = &objp->orient;										// The object's orientation
 	mc.pos = &objp->pos;												// The object's position
 	mc.p0 = eye_pos;													// Point 1 of ray to check
@@ -14729,7 +14579,7 @@ void ship_page_in()
 	// Mark any ships in the mission as used
 	//
 	for (i=0; i<MAX_SHIPS; i++)	{
-		if (Ships[i].objnum > -1)	{
+		if (Ships[i].objnum >= 0)	{
 			nprintf(( "Paging","Found ship '%s'\n", Ships[i].ship_name ));
 			ship_class_used[Ships[i].ship_info_index]++;
 
@@ -14772,13 +14622,13 @@ void ship_page_in()
 		// This will go through Subsys_index[] and grab all weapons: primary, secondary, and turrets
 		for (i = p_objp->subsys_index; i < (p_objp->subsys_index + p_objp->subsys_count); i++) {
 			for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
-				if (Subsys_status[i].primary_banks[j] > -1) {
+				if (Subsys_status[i].primary_banks[j] >= 0) {
 					weapon_mark_as_used(Subsys_status[i].primary_banks[j]);
 				}
 			}
 
 			for (j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++) {
-				if (Subsys_status[i].secondary_banks[j] > -1) {
+				if (Subsys_status[i].secondary_banks[j] >= 0) {
 					weapon_mark_as_used(Subsys_status[i].secondary_banks[j]);
 				}
 			}
@@ -14810,9 +14660,9 @@ void ship_page_in()
 			int model_previously_loaded = -1;
 			int ship_previously_loaded = -1;
 			for (j=0; j<Num_ship_classes; j++ )	{
-				if ( (Ship_info[j].modelnum > -1) && !stricmp(sip->pof_file, Ship_info[j].pof_file) )	{
+				if ( (Ship_info[j].model_num >= 0) && !stricmp(sip->pof_file, Ship_info[j].pof_file) )	{
 					// Model already loaded
-					model_previously_loaded = Ship_info[j].modelnum;
+					model_previously_loaded = Ship_info[j].model_num;
 					ship_previously_loaded = j;
 
 					// the model should already be loaded so this wouldn't take long, but
@@ -14825,13 +14675,13 @@ void ship_page_in()
 			}
 
 			// If the model is previously loaded...
-			if ( model_previously_loaded > -1 )	{
+			if ( model_previously_loaded >= 0 )	{
 
 				// If previously loaded model isn't the same ship class...)
 				if ( ship_previously_loaded != i )	{
 
 					// update the model number.
-					sip->modelnum = model_previously_loaded;
+					sip->model_num = model_previously_loaded;
 
 					for ( j = 0; j < sip->n_subsystems; j++ )	{
 						sip->subsystems[j].model_num = -1;
@@ -14841,19 +14691,19 @@ void ship_page_in()
 
 					#ifndef NDEBUG
 						for ( j = 0; j < sip->n_subsystems; j++ )	{
-							Assert( sip->subsystems[j].model_num == sip->modelnum );
+							Assert( sip->subsystems[j].model_num == sip->model_num );
 						}
 					#endif
 
 				} else {
 					// Just to be safe (I mean to check that my code works...)
-					Assert( sip->modelnum > -1 );
-					Assert( sip->modelnum == model_previously_loaded );
+					Assert( sip->model_num >= 0 );
+					Assert( sip->model_num == model_previously_loaded );
 
 					#ifndef NDEBUG
 						for ( j = 0; j < sip->n_subsystems; j++ )	{
 							//Assert( sip->subsystems[j].model_num == sip->modelnum );
-							if(sip->subsystems[j].model_num != sip->modelnum) {
+							if(sip->subsystems[j].model_num != sip->model_num) {
 								Warning(LOCATION, "Ship '%s' does not have subsystem '%s' linked into the model file, '%s'.", sip->name, sip->subsystems[j].name, sip->pof_file);
 							}
 						}
@@ -14861,23 +14711,23 @@ void ship_page_in()
 				}
 			} else {
 				// Model not loaded... so load it and page in its textures
-				sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+				sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 
-				Assert( sip->modelnum > -1 );
+				Assert( sip->model_num >= 0 );
 
 				// Verify that all the subsystem model numbers are updated
 				#ifndef NDEBUG
 					for ( j = 0; j < sip->n_subsystems; j++ )	{
-						Assert( sip->subsystems[j].model_num == sip->modelnum );	// JAS
+						Assert( sip->subsystems[j].model_num == sip->model_num );	// JAS
 					}
 				#endif
 			}
 
 			// page in all of the textures if the model got loaded
-			if ( sip->modelnum > -1 ) {
+			if ( sip->model_num >= 0 ) {
 				nprintf(( "Paging", "Paging in textures for model '%s'\n", sip->pof_file ));
 
-				ship_page_in_model_textures(sip->modelnum, i);
+				ship_page_in_model_textures(sip->model_num, i);
 			} else {
 				nprintf(( "Paging", "Couldn't load model '%s'\n", sip->pof_file ));
 			}
@@ -14967,11 +14817,11 @@ void ship_page_in()
 			bm_page_in_xparent_texture(Wings[i].wing_insignia_texture);
 	}
 
-	// page in duplicate model textures - Goober5000
+	// page in replacement textures - Goober5000
 	for (i = 0; i < MAX_SHIPS; i++)
 	{
 		// is this a valid ship?
-		if ( Ships[i].objnum != -1)
+		if (Ships[i].objnum >= 0)
 		{
 			// do we have any textures?
 			if (Ships[i].replacement_textures)
@@ -14985,15 +14835,6 @@ void ship_page_in()
 					}
 				}
 			}
-
-			// do we have a replacement model?
-			if ( Ships[i].modelnum != Ship_info[Ships[i].ship_info_index].modelnum )
-			{
-				nprintf(( "Paging", "Paging in textures for model duplicate for ship '%s'\n", Ships[i].ship_name ));
-				mprintf(( "Paging in textures for model duplicate for ship '%s'\n", Ships[i].ship_name ));
-
-				ship_page_in_model_textures(Ships[i].modelnum);		
-			}
 		}
 	}
 
@@ -15004,7 +14845,7 @@ void ship_page_in()
 }
 
 // Goober5000 - called from ship_page_in()
-void ship_page_in_model_textures(int modelnum, int ship_index)
+void ship_page_in_model_textures(int modelnum, int ship_type)
 {
 	int i, j;
 	polymodel *pm;
@@ -15065,10 +14906,10 @@ void ship_page_in_model_textures(int modelnum, int ship_index)
 		}
 	}
 	
-	if (ship_index == -1)
+	if (ship_type < 0)
 		return;
 
-	sip = &Ship_info[ship_index];
+	sip = &Ship_info[ship_type];
 
 	// afterburner
 	bm_page_in_texture(sip->ABbitmap);
@@ -15176,47 +15017,47 @@ void ship_page_out_model_textures(int modelnum, int ship_index)
 	sip = &Ship_info[ship_index];
 
 	// afterburner
-	if (sip->ABbitmap > -1) {
+	if (sip->ABbitmap >= 0) {
 		bm_page_out(sip->ABbitmap);
 	}
 
 	// Bobboau's thruster bitmaps
-	if (sip->thruster_glow_info.normal.first_frame > -1) {
+	if (sip->thruster_glow_info.normal.first_frame >= 0) {
 		bm_page_out(sip->thruster_glow_info.normal.first_frame);
 	}
 
-	if (sip->thruster_glow_info.afterburn.first_frame > -1) {
+	if (sip->thruster_glow_info.afterburn.first_frame >= 0) {
 		bm_page_out(sip->thruster_glow_info.afterburn.first_frame);
 	}
 
-	if (sip->thruster_secondary_glow_info.normal.bitmap > -1) {
+	if (sip->thruster_secondary_glow_info.normal.bitmap >= 0) {
 		bm_page_out(sip->thruster_secondary_glow_info.normal.bitmap);
 	}
 
-	if (sip->thruster_secondary_glow_info.afterburn.bitmap > -1) {
+	if (sip->thruster_secondary_glow_info.afterburn.bitmap >= 0) {
 		bm_page_out(sip->thruster_secondary_glow_info.afterburn.bitmap);
 	}
 
-	if (sip->thruster_tertiary_glow_info.normal.bitmap > -1) {
+	if (sip->thruster_tertiary_glow_info.normal.bitmap >= 0) {
 		bm_page_out(sip->thruster_tertiary_glow_info.normal.bitmap);
 	}
 
-	if (sip->thruster_tertiary_glow_info.afterburn.bitmap > -1) {
+	if (sip->thruster_tertiary_glow_info.afterburn.bitmap >= 0) {
 		bm_page_out(sip->thruster_tertiary_glow_info.afterburn.bitmap);
 	}
 
 	// slodeing bitmap
-	if (sip->splodeing_texture > -1) {
+	if (sip->splodeing_texture >= 0) {
 		bm_page_out(sip->splodeing_texture);
 	}
 
 	// thruster/particle bitmaps
 	for (i = 0; i<sip->n_thruster_particles; i++) {
-		if (sip->normal_thruster_particles[i].thruster_particle_bitmap01 > -1) {
+		if (sip->normal_thruster_particles[i].thruster_particle_bitmap01 >= 0) {
 			bm_page_out(sip->normal_thruster_particles[i].thruster_particle_bitmap01);
 		}
 
-		if (sip->afterburner_thruster_particles[i].thruster_particle_bitmap01 > -1) {
+		if (sip->afterburner_thruster_particles[i].thruster_particle_bitmap01 >= 0) {
 			bm_page_out(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01);
 		}
 	}
@@ -15239,6 +15080,8 @@ int is_support_allowed(object *objp)
 		if (The_mission.support_ships.tally >= The_mission.support_ships.max_support_ships)
 			return 0;
 	}
+
+	ship *shipp = &Ships[objp->instance];
 
 	// make sure, if exiting from bay, that parent ship is in the mission!
 	if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
@@ -15267,7 +15110,7 @@ int is_support_allowed(object *objp)
 
 	if (Game_mode & GM_NORMAL)
 	{
-		if ( !(Iff_info[Ships[objp->instance].team].flags & IFFF_SUPPORT_ALLOWED) )
+		if ( !(Iff_info[shipp->team].flags & IFFF_SUPPORT_ALLOWED) )
 		{
 			return 0;
 		}
@@ -15286,7 +15129,7 @@ int is_support_allowed(object *objp)
 
 		if (IS_MISSION_MULTI_COOP)
 		{
-			if ( !(Iff_info[Ships[objp->instance].team].flags & IFFF_SUPPORT_ALLOWED) )
+			if ( !(Iff_info[shipp->team].flags & IFFF_SUPPORT_ALLOWED) )
 			{
 				return 0;
 			}
@@ -15295,15 +15138,15 @@ int is_support_allowed(object *objp)
 
 	// Goober5000 - extra check for existence of support ship
 	if ( (The_mission.support_ships.ship_class < 0) &&
-		!(The_mission.support_ships.support_available_for_species & (1 << Ship_info[Ships[objp->instance].ship_info_index].species)) )
+		!(The_mission.support_ships.support_available_for_species & (1 << Ship_info[shipp->ship_info_index].species)) )
 	{
 		return 0;
 	}
 
 	// Goober5000 - extra check to make sure this guy has a rearming dockpoint
-	if (model_find_dock_index(Ships[objp->instance].modelnum, DOCK_TYPE_REARM) < 0)
+	if (model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, DOCK_TYPE_REARM) < 0)
 	{
-		mprintf(("support not allowed for %s because its model lacks a rearming dockpoint\n", Ships[objp->instance].ship_name));
+		mprintf(("support not allowed for %s because its model lacks a rearming dockpoint\n", shipp->ship_name));
 		return 0;
 	}
 
@@ -15465,20 +15308,7 @@ int ship_get_num_subsys(ship *shipp)
 {
 	Assert(shipp != NULL);
 
-	int n_subsys = 0;
-
-	//First case, no model replace
-	//Second case, model replace has occured
-	if(shipp->n_subsystems < 1)
-	{
-		n_subsys = Ship_info[shipp->ship_info_index].n_subsystems;
-	}
-	else
-	{
-		n_subsys = shipp->n_subsystems;
-	}
-
-	return n_subsys;
+	return Ship_info[shipp->ship_info_index].n_subsystems;
 }
 
 // returns 0 if no conflict, 1 if conflict, -1 on some kind of error with wing struct
@@ -15555,7 +15385,7 @@ int ship_get_texture(int bitmap)
 
 	// check all ship types
 	for(idx=0; idx<Num_ship_classes; idx++){
-		if((Ship_info[idx].modelnum >= 0) && model_find_texture(Ship_info[idx].modelnum, bitmap) == 1){
+		if((Ship_info[idx].model_num >= 0) && model_find_texture(Ship_info[idx].model_num, bitmap) == 1){
 			return idx;
 		}
 	}
@@ -15684,7 +15514,7 @@ int check_world_pt_in_expanded_ship_bbox(vec3d *world_pt, object *objp, float de
 	vm_vec_sub(&temp, world_pt, &objp->pos);
 	vm_vec_rotate(&ship_pt, &temp, &objp->orient);
 
-	pm = model_get(Ships[objp->instance].modelnum);
+	pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 
 	return (
 			(ship_pt.xyz.x > pm->mins.xyz.x - delta_box) && (ship_pt.xyz.x < pm->maxs.xyz.x + delta_box)
@@ -15770,10 +15600,10 @@ int ship_get_species_by_type(int ship_info_index)
 }
 
 // return the length of a ship
-float ship_get_length(ship* shipp)
+float ship_class_get_length(ship_info *sip)
 {
-	Assert(shipp->modelnum > -1);
-	polymodel *pm = model_get(shipp->modelnum);
+	Assert(sip->model_num >= 0);
+	polymodel *pm = model_get(sip->model_num);
 	return (pm->maxs.xyz.z - pm->mins.xyz.z);
 }
 
@@ -15862,7 +15692,7 @@ int ship_has_dock_bay(int shipnum)
 
 	polymodel *pm;
 				
-	pm = model_get( Ships[shipnum].modelnum );
+	pm = model_get( Ship_info[Ships[shipnum].ship_info_index].model_num );
 	Assert( pm );
 
 	return ( pm->ship_bay && (pm->ship_bay->num_paths > 0) );

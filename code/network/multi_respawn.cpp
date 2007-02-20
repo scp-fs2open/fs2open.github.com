@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_respawn.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-02-06 02:06:02 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2007-02-20 04:20:18 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/02/06 02:06:02  wmcoolmon
+ * Various fixes; very beginnings of Directives scripting support
+ *
  * Revision 2.11  2006/01/13 03:31:09  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -906,10 +909,9 @@ void multi_respawn_check_ai()
 */
 
 #define WITHIN_BBOX()	do { \
-	float scale = 2.0f; \
-	polymodel *pm = model_get(s_check->modelnum); \
-	collided = 0; \
-	if(pm != NULL){ \
+	if (pm != NULL) { \
+		float scale = 2.0f; \
+		collided = 0; \
 		vec3d temp = new_obj->pos; \
 		vec3d gpos; \
 		vm_vec_sub2(&temp, &hit_check->pos); \
@@ -921,8 +923,7 @@ void multi_respawn_check_ai()
 } while(0)
 
 #define MOVE_AWAY_BBOX() do { \
-	polymodel *pm = model_get(s_check->modelnum); \
-	if(pm != NULL){ \
+	if (pm != NULL) { \
 		switch((int)frand_range(0.0f, 3.9f)){ \
 		case 0: \
 			new_obj->pos.xyz.x += 200.0f; \
@@ -970,7 +971,7 @@ void multi_respawn_place(object *new_obj, int team)
 	// if we have a relevant respawn ship
 	if((pri != NULL) && (pri_obj != NULL)){
 		// pick a point just outside his bounding box
-		polymodel *pm = model_get(pri->modelnum); 
+		polymodel *pm = model_get(Ship_info[pri->ship_info_index].model_num); 
 
 		// hmm, ugly. Pick a point 2000 meters to the y direction
 		if(pm == NULL){			
@@ -1057,6 +1058,7 @@ void multi_respawn_place(object *new_obj, int team)
 					new_obj->pos.xyz.x += 1.0f;
 				}
 				
+				polymodel *pm = model_get(Ship_info[s_check->ship_info_index].model_num);
 				WITHIN_BBOX();
 				if(collided){
 					MOVE_AWAY_BBOX();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.189 $
- * $Date: 2007-02-18 06:16:47 $
+ * $Revision: 2.190 $
+ * $Date: 2007-02-20 04:20:18 $
  * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.189  2007/02/18 06:16:47  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.188  2007/02/16 22:09:05  Goober5000
  * remove obsolete and misleading comments which should have been edited when the code was upgraded
  *
@@ -5385,7 +5388,7 @@ float get_world_closest_box_point_with_delta(vec3d *closest_box_point, object *b
 	int modelnum;
 
 	// get modelnum
-	modelnum = Ships[box_obj->instance].modelnum;
+	modelnum = Ship_info[Ships[box_obj->instance].ship_info_index].model_num;
 
 	// rotate start_point to box_obj RF
 	vm_vec_sub(&temp, start_point, &box_obj->pos);
@@ -6741,16 +6744,16 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 	if (obj->type == OBJ_SHIP) {
 		ship_subsys *ssp;
 		ship *shipp = &Ships[obj->instance];
-		ship_info *si = &Ship_info[shipp->ship_info_index];
+		ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-		if(bank_obj >= si->n_subsystems){
-			Error( LOCATION, "thruster bank is linked to subsystem #%d, wich is out of bounds, on model %s", bank_obj, model_get(shipp->modelnum)->filename);
+		if(bank_obj >= sip->n_subsystems){
+			Error( LOCATION, "thruster bank is linked to subsystem #%d, which is out of bounds, on model %s", bank_obj, sip->pof_file);
 			return 1;
 		}
 
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
-		strncpy(subname, si->subsystems[bank_obj].subobj_name, MAX_NAME_LEN);
+		strncpy(subname, sip->subsystems[bank_obj].subobj_name, MAX_NAME_LEN);
 
 		ssp = GET_FIRST(&shipp->subsys_list);
 		while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {

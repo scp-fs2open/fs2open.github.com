@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.100 $
- * $Date: 2007-02-18 06:16:46 $
+ * $Revision: 1.101 $
+ * $Date: 2007-02-20 04:20:10 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.100  2007/02/18 06:16:46  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 1.99  2007/02/11 21:26:34  Goober5000
  * massive shield infrastructure commit
  *
@@ -2930,7 +2933,7 @@ int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt)
 {
 	vec3d temp, rf_start;
 	polymodel *pm;
-	pm = model_get(Ships[ship_obj->instance].modelnum);
+	pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
 
 	// get start in ship rf
 	vm_vec_sub(&temp, start, &ship_obj->pos);
@@ -3681,7 +3684,7 @@ void copy_xlate_model_path_points(object *objp, model_path *mp, int dir, int cou
 	}
 
 	// Goober5000 - check for rotating submodels
-	modelnum = Ships[objp->instance].modelnum;
+	modelnum = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 	pm = model_get(modelnum);
 	if ((mp->parent_submodel >= 0) && (pm->submodel[mp->parent_submodel].movement_type >= 0))
 	{
@@ -3750,7 +3753,7 @@ void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 
 //	ship_info	*osip = &Ship_info[Ships[mobjp->instance].ship_info_index];
-	polymodel	*pm = model_get(Ships[mobjp->instance].modelnum);
+	polymodel	*pm = model_get(Ship_info[Ships[mobjp->instance].ship_info_index].model_num);
 	int			num_points;
 	model_path	*mp;
 	pnode			*ppfp_start = Ppfp;
@@ -3831,7 +3834,7 @@ void create_model_exit_path(object *pl_objp, object *mobjp, int path_num, int co
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 
 //	ship_info	*osip = &Ship_info[Ships[mobjp->instance].ship_info_index];
-	polymodel	*pm = model_get(Ships[mobjp->instance].modelnum);
+	polymodel	*pm = model_get(Ship_info[Ships[mobjp->instance].ship_info_index].model_num);
 	int			num_points;
 	model_path	*mp;
 	pnode			*ppfp_start = Ppfp;
@@ -3905,7 +3908,7 @@ void ai_find_path(object *pl_objp, int objnum, int path_num, int exit_flag, int 
 			polymodel *pm;
 
 			ship	*shipp = &Ships[objp->instance];
-			pm = model_get( shipp->modelnum );
+			pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 			if(pm->n_paths <= path_num)
 				Error(LOCATION,"ai_find_path tring to find a path (%d) that doesn't exist, on ship %s", path_num, shipp->ship_name);
 		//	Assert(pm->n_paths > path_num);
@@ -4187,7 +4190,7 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 #ifndef NDEBUG
 	if (dock_type == AIDO_UNDOCK)
 	{
-		polymodel	*pm = model_get(Ships[dockee->instance].modelnum);
+		polymodel	*pm = model_get(Ship_info[Ships[dockee->instance].ship_info_index].model_num);
 		Assert( pm->docking_bays[dockee_index].num_spline_paths > 0 );
 	}
 #endif
@@ -4572,7 +4575,7 @@ int get_base_path_info(int path_cur, int goal_objnum, model_path **pmp, mp_vert 
 	pnode			*pn = &Path_points[path_cur];
 	ship *shipp = &Ships[Objects[goal_objnum].instance];
 //	ship_info	*sip = &Ship_info[shipp->ship_info_index];
-	polymodel	*pm = model_get(shipp->modelnum);
+	polymodel	*pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 	//static		int	debug_last_index = -1;
 	*pmpv = NULL;
 	*pmp = NULL;
@@ -4606,7 +4609,7 @@ void modify_model_path_points(object *objp)
 	ai_info		*aip = &Ai_info[Ships[objp->instance].ai_index];
 	object		*mobjp = &Objects[aip->path_objnum];
 //	ship_info	*osip = &Ship_info[Ships[mobjp->instance].ship_info_index];
-	polymodel	*pm = model_get(Ships[mobjp->instance].modelnum);
+	polymodel	*pm = model_get(Ship_info[Ships[mobjp->instance].ship_info_index].model_num);
 	pnode			*pnp;
 	int			path_num, dir;
 
@@ -4808,7 +4811,7 @@ float ai_path()
 	gobjp = &Objects[aip->goal_objnum];
 	gshipp = &Ships[gobjp->instance];
 
-	pm = model_get( gshipp->modelnum );
+	pm = model_get(Ship_info[gshipp->ship_info_index].model_num);
 	num_paths = pm->n_paths;
 	Assert(num_paths > 0);
 
@@ -7075,11 +7078,10 @@ int might_hit_teammate(object *firing_objp)
 void render_all_ship_bay_paths(object *objp)
 {
 	int		i,j,color;
-	ship		*sp = &Ships[objp->instance];
 	polymodel	*pm;
 	model_path	*mp;
 
-	pm = model_get(sp->modelnum);
+	pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 	vec3d	global_path_point;
 	vertex	v, prev_vertex;
 
@@ -7117,11 +7119,10 @@ void render_all_ship_bay_paths(object *objp)
 void render_all_subsys_paths(object *objp)
 {
 	int		i,j,color;
-	ship		*sp = &Ships[objp->instance];
 	polymodel	*pm;
 	model_path	*mp;
 
-	pm = model_get(sp->modelnum);
+	pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 	vec3d	global_path_point;
 	vertex	v, prev_vertex;
 
@@ -7167,14 +7168,14 @@ void render_path_points(object *objp)
 		return;
 
 	dobjp = &Objects[aip->goal_objnum];
-	pm = model_get(Ships[dobjp->instance].modelnum);
+	pm = model_get(Ship_info[Ships[dobjp->instance].ship_info_index].model_num);
 	vec3d	dock_point, global_dock_point;
 	vertex	v;
 
 	ship_model_start(&Objects[aip->goal_objnum]);
 	if (pm->n_docks) {
 		dock_point = pm->docking_bays[0].pnt[0];
-		model_find_world_point(&global_dock_point, &dock_point, Ships[dobjp->instance].modelnum, 0, &dobjp->orient, &dobjp->pos );
+		model_find_world_point(&global_dock_point, &dock_point, pm->id, 0, &dobjp->orient, &dobjp->pos );
 		g3_rotate_vertex(&v, &global_dock_point);
 		gr_set_color(255, 255, 255);
 		g3_draw_sphere( &v, 1.5f);
@@ -7348,7 +7349,7 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 	// but don't bias team v. team missions
 	if ( !((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM)) )
 	{
-		if (iff_x_attacks_y(Ships[pobjp->instance].team, Player_ship->team))
+		if (iff_x_attacks_y(shipp->team, Player_ship->team))
 			range_time += The_mission.ai_profile->in_range_time[Game_skill_level];
 	}
 	//nprintf(("AI", "time enemy in range = %7.3f\n", aip->time_enemy_in_range));
@@ -7361,11 +7362,11 @@ void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, object *
 	} else {
 		float	collision_time;
 		vec3d	gun_pos, pnt;
-		polymodel *po = model_get( shipp->modelnum );
+		polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 
 		//	Compute position of gun in absolute space and use that as fire position.
-		if(po->gun_banks != NULL){
-			pnt = po->gun_banks[0].pnt[0];
+		if(pm->gun_banks != NULL){
+			pnt = pm->gun_banks[0].pnt[0];
 		} else {
 			pnt = Objects[shipp->objnum].pos;
 		}
@@ -7639,8 +7640,9 @@ int avoid_player(object *objp, vec3d *goal_pos)
 int will_collide_pp(vec3d *p0, vec3d *p1, float radius, object *big_objp, vec3d *collision_point)
 {
 	mc_info	mc;
+	polymodel *pm = model_get(Ship_info[Ships[big_objp->instance].ship_info_index].model_num);
 
-	mc.model_num = Ships[big_objp->instance].modelnum;		// Fill in the model to check
+	mc.model_num = pm->id;				// Fill in the model to check
 	mc.orient = &big_objp->orient;			// The object's orient
 	mc.pos = &big_objp->pos;					// The object's position
 	mc.p0 = p0;										// Point 1 of ray to check
@@ -7650,7 +7652,6 @@ int will_collide_pp(vec3d *p0, vec3d *p1, float radius, object *big_objp, vec3d 
 	mc.radius = radius;
 
 	// Only check the 2nd lowest hull object
-	polymodel *pm = model_get(Ships[big_objp->instance].modelnum);
 	mc.submodel_num = pm->detail[0]; //pm->submodel->num_details-2];
 	model_collide(&mc);
 
@@ -8657,18 +8658,17 @@ void ai_chase_big_get_separations(object *attack_objp, object *target_objp, vec3
 	float temp, r_target, r_attacker, h_attacker, h_target;
 	float perp_dist;
 	vec3d vec_to_target;
-	polymodel *pm;
 
 	// get parameters of ships (as cylinders - radius and height)
+	polymodel *pm = model_get(Ship_info[Ships[attack_objp->instance].ship_info_index].model_num);
+
 	// get radius of attacker (for rotations about forward)
-	pm = model_get(Ships[attack_objp->instance].modelnum);
 	temp = MAX(pm->maxs.xyz.x, pm->maxs.xyz.y);
 	r_attacker = MAX(-pm->mins.xyz.x, -pm->mins.xyz.y);
 	r_attacker = MAX(temp, r_attacker);
 	h_attacker = MAX(-pm->mins.xyz.z, pm->maxs.xyz.z);
 
 	// get radius of target (for rotations about forward)
-	pm = model_get(Ships[attack_objp->instance].modelnum);
 	temp = MAX(pm->maxs.xyz.x, pm->maxs.xyz.y);
 	r_target = MAX(-pm->mins.xyz.x, -pm->mins.xyz.y);
 	r_target = MAX(temp, r_target);
@@ -8694,18 +8694,17 @@ void ai_chase_big_parallel_set_goal(vec3d *goal_pos, object *attack_objp, object
 	float temp, r_target, r_attacker, h_attacker, h_target;
 	float separation, optimal_separation;
 	vec3d  horz_vec_to_target;
-	polymodel *pm;
 
 	// get parameters of ships (as cylinders - radius and height)
+	polymodel *pm = model_get(Ship_info[Ships[attack_objp->instance].ship_info_index].model_num);
+
 	// get radius of attacker (for rotations about forward)
-	pm = model_get(Ships[attack_objp->instance].modelnum);
 	temp = MAX(pm->maxs.xyz.x, pm->maxs.xyz.y);
 	r_attacker = MAX(-pm->mins.xyz.x, -pm->mins.xyz.y);
 	r_attacker = MAX(temp, r_attacker);
 	h_attacker = MAX(-pm->mins.xyz.z, pm->maxs.xyz.z);
 
 	// get radius of target (for rotations about forward)
-	pm = model_get(Ships[attack_objp->instance].modelnum);
 	temp = MAX(pm->maxs.xyz.x, pm->maxs.xyz.y);
 	r_target = MAX(-pm->mins.xyz.x, -pm->mins.xyz.y);
 	r_target = MAX(temp, r_target);
@@ -8990,8 +8989,8 @@ void ai_chase()
 	float			dist_to_enemy, time_to_enemy;
 	float			dot_to_enemy, dot_from_enemy, real_dot_to_enemy;
 	vec3d		player_pos, enemy_pos, predicted_enemy_pos, real_vec_to_enemy, predicted_vec_to_enemy;
-	ship_info	*sip = &Ship_info[Ships[Pl_objp->instance].ship_info_index];
-	ship			*shipp = &Ships[Pl_objp->instance];
+	ship		*shipp = &Ships[Pl_objp->instance];
+	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 	ship_weapon	*swp = &shipp->weapons;
 	ai_info		*aip = &Ai_info[shipp->ai_index];
 	int			enemy_sip_flags, enemy_shipp_flags2;
@@ -9162,7 +9161,7 @@ void ai_chase()
 				return;
 		}
 
-		ai_chase_attack(aip, sip, &predicted_enemy_pos, dist_to_enemy, shipp->modelnum);
+		ai_chase_attack(aip, sip, &predicted_enemy_pos, dist_to_enemy, sip->model_num);
 		break;
 
 	case SM_EVADE_SQUIGGLE:
@@ -9793,8 +9792,8 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 
 	sip0 = &Ship_info[Ships[docker_objp->instance].ship_info_index];
 	sip1 = &Ship_info[Ships[dockee_objp->instance].ship_info_index];
-	pm0 = model_get( sip0->modelnum );
-	pm1 = model_get( sip1->modelnum );
+	pm0 = model_get( sip0->model_num );
+	pm1 = model_get( sip1->model_num );
 
 	Assert( docker_index >= 0 );
 	Assert( dockee_index >= 0 );
@@ -9807,8 +9806,8 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 	int dockee_rotating_submodel = find_parent_rotating_submodel(pm1, dockee_index);
 
 	// Goober5000 - move docking points with submodels if necessary, for both docker and dockee
-	find_adjusted_dockpoint_info(&docker_p0, &docker_p1, &docker_p0_norm, docker_objp, pm0, sip0->modelnum, -1, docker_index);
-	find_adjusted_dockpoint_info(&dockee_p0, &dockee_p1, &dockee_p0_norm, dockee_objp, pm1, sip1->modelnum, dockee_rotating_submodel, dockee_index);
+	find_adjusted_dockpoint_info(&docker_p0, &docker_p1, &docker_p0_norm, docker_objp, pm0, sip0->model_num, -1, docker_index);
+	find_adjusted_dockpoint_info(&dockee_p0, &dockee_p1, &dockee_p0_norm, dockee_objp, pm1, sip1->model_num, dockee_rotating_submodel, dockee_index);
 
 	// Goober5000 - find average of point
 	vm_vec_avg(&docker_point, &docker_p0, &docker_p1);
@@ -9826,7 +9825,7 @@ float dock_orient_and_approach(object *docker_objp, int docker_index, object *do
 		ship_model_start(dockee_objp);
 
 		// get submodel center
-		model_find_submodel_offset(&submodel_offset, sip1->modelnum, dockee_rotating_submodel);
+		model_find_submodel_offset(&submodel_offset, sip1->model_num, dockee_rotating_submodel);
 		vm_vec_add(&submodel_pos, &dockee_objp->pos, &submodel_offset);
 
 		// get angular velocity of dockpoint
@@ -10508,7 +10507,7 @@ float get_cylinder_points(object *other_objp, object *cyl_objp, vec3d *axis_pt, 
 	Assert(cyl_objp->type == OBJ_SHIP);
 
 	// get radius of cylinder
-	polymodel *pm = model_get(Ships[cyl_objp->instance].modelnum);
+	polymodel *pm = model_get(Ship_info[Ships[cyl_objp->instance].ship_info_index].model_num);
 	float tempx, tempy;
 	tempx = MAX(-pm->mins.xyz.x, pm->maxs.xyz.x);
 	tempy = MAX(-pm->mins.xyz.y, pm->maxs.xyz.y);
@@ -10570,7 +10569,7 @@ void ai_big_guard()
 
 		// get z extents
 		float min_z, max_z, length;
-		polymodel *pm = model_get(Ships[guard_objp->instance].modelnum);
+		polymodel *pm = model_get(Ship_info[Ships[guard_objp->instance].ship_info_index].model_num);
 		min_z = pm->mins.xyz.z;
 		max_z = pm->maxs.xyz.z;
 		length = max_z - min_z;
@@ -11318,7 +11317,7 @@ void ai_dock()
 			Assert(goal_objp != NULL);
 			ship_info *goal_sip = &Ship_info[Ships[goal_objp->instance].ship_info_index];
 			char *goal_ship_class_name = goal_sip->name;
-			char *goal_dock_path_name = model_get(goal_sip->modelnum)->paths[aip->mp_index].name;
+			char *goal_dock_path_name = model_get(goal_sip->model_num)->paths[aip->mp_index].name;
 
 			Warning(LOCATION, "Ship class %s has only %i points on dock path \"%s\".  Recommended minimum number of points is 4.  "\
 				"Docking along that path will look strange.  You may wish to edit the model.", goal_ship_class_name, aip->path_length, goal_dock_path_name);
@@ -13288,26 +13287,22 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 {
 	int			path_index;
 	int			bay_path;
-	ship		*shipp = NULL, *parent_shipp = NULL;
-	polymodel	*pm;
-	ai_info		*aip;
-	ship_bay	*bay;
 	pnode		*pnp;
 	vec3d		*next_point;
 
-	shipp = &Ships[pl_objp->instance];
-	aip = &Ai_info[shipp->ai_index];
+	ship *shipp = &Ships[pl_objp->instance];
+	ai_info *aip = &Ai_info[shipp->ai_index];
 
 	if ( parent_objnum == -1 ) {
 		Int3();
 		return -1;
 	}
 
-	parent_shipp = &Ships[Objects[parent_objnum].instance];
+	object *parent_objp = &Objects[parent_objnum];
+	ship *parent_shipp = &Ships[parent_objp->instance];
 
-	Assert(parent_shipp != NULL);
-	pm = model_get( parent_shipp->modelnum );
-	bay = pm->ship_bay;
+	polymodel *pm = model_get( Ship_info[parent_shipp->ship_info_index].model_num );
+	ship_bay *bay = pm->ship_bay;
 
 	if ( bay == NULL ) 
 		return -1;
@@ -13350,13 +13345,14 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	// notify parent that I'll want to leave
 	parent_shipp->bay_doors_wanting_open++;
+
 	// keep track of my own status as well
 	shipp->bay_doors_need_open = true;
 	shipp->bay_doors_launched_from = bay_path;
-	shipp->bay_doors_parent_shipnum = Objects[parent_objnum].instance;
+	shipp->bay_doors_parent_shipnum = parent_objp->instance;
 
 	// create the path for pl_objp to follow
-	create_model_exit_path(pl_objp, &Objects[parent_objnum], path_index, pm->paths[path_index].nverts);
+	create_model_exit_path(pl_objp, parent_objp, path_index, pm->paths[path_index].nverts);
 	
 	// Set this flag, so we don't bother recreating the path... we won't need to update the path
 	// that has just been created.
@@ -13374,7 +13370,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 
 	// record the parent objnum, since we'll need it once we're done with following the path
 	aip->goal_objnum = parent_objnum;
-	aip->goal_signature = Objects[parent_objnum].signature;
+	aip->goal_signature = parent_objp->signature;
 	aip->mode = AIM_BAY_EMERGE;
 	aip->submode_start_time = Missiontime;
 
@@ -13393,6 +13389,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 	pl_objp->phys_info.prev_ramp_vel.xyz.z = speed;
 	pl_objp->phys_info.forward_thrust = 0.0f;		// How much the forward thruster is applied.  0-1.
 	*/
+
 	//due to the door animations the ship has to remain still untill the doors are open
 	vec3d vel = ZERO_VECTOR;
 	pl_objp->phys_info.vel = vel;
@@ -13552,32 +13549,29 @@ int ai_find_closest_depart_path(ai_info *aip, polymodel *pm, int allowed_path_ma
 //				0	=> found depart path
 int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_mask)
 {
-	int			objnum, path_index;
-	polymodel	*pm;
-	ai_info		*aip;
-	ship		*shipp;
-	ship_bay	*bay;
+	int path_index = -1;
+	int ship_bay_path = -1;
 
-	shipp = &Ships[pl_objp->instance];
-	aip = &Ai_info[shipp->ai_index];
+	ship *shipp = &Ships[pl_objp->instance];
+	ai_info *aip = &Ai_info[shipp->ai_index];
 
-	objnum = parent_objnum;
-	if ( objnum < 0 )
+	if ( parent_objnum < 0 )
 	{
 		// try to locate a capital ship on the same team:
 		int shipnum = ship_get_ship_with_dock_bay(shipp->team);
 
 		if (shipnum >= 0)
-			objnum = Ships[shipnum].objnum;
+			parent_objnum = Ships[shipnum].objnum;
 	}
 
 	aip->path_start = -1;
 
-	if ( objnum < 0 )
+	if ( parent_objnum < 0 )
 		return -1;
 
-	pm = model_get( Ships[Objects[objnum].instance].modelnum );
-	bay = pm->ship_bay;
+	object *parent_objp = &Objects[parent_objnum];
+	polymodel *pm = model_get(Ship_info[Ships[parent_objp->instance].ship_info_index].model_num );
+	ship_bay *bay = pm->ship_bay;
 
 	if ( bay == NULL ) 
 		return -1;
@@ -13585,8 +13579,6 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_
 		return -1;
 
 /*
-	
-	path_index = -1;
 	for ( i = 0; i < sb->num_paths; i++ ) {
 		if ( !(sb->depart_flags & (1<<i)) ) {
 			sb->depart_flags |= (1<<i);
@@ -13598,7 +13590,6 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_
 */
 
 	// take the closest path we can find
-	int ship_bay_path;
 	ship_bay_path = ai_find_closest_depart_path(aip, pm, allowed_path_mask);
 	path_index = bay->path_indexes[ship_bay_path];
 	aip->submode_parm0 = ship_bay_path;
@@ -13609,21 +13600,22 @@ int ai_acquire_depart_path(object *pl_objp, int parent_objnum, int allowed_path_
 	}
 
 	// notify parent that I'll want to enter bay
-	Ships[Objects[objnum].instance].bay_doors_wanting_open++;
+	Ships[parent_objp->instance].bay_doors_wanting_open++;
+
 	// keep track of my own status as well
 	shipp->bay_doors_need_open = true;
 	shipp->bay_doors_launched_from = ship_bay_path;
-	shipp->bay_doors_parent_shipnum = Objects[objnum].instance;
+	shipp->bay_doors_parent_shipnum = parent_objp->instance;
 
 	Assert(pm->n_paths > path_index);
-	ai_find_path(pl_objp, objnum, path_index, 0);
+	ai_find_path(pl_objp, parent_objnum, path_index, 0);
 
 	// Set this flag, so we don't bother recreating the path... we won't need to update the path
 	// that has just been created.
 	aip->ai_flags &= ~AIF_USE_STATIC_PATH;
 
-	aip->goal_objnum = objnum;
-	aip->goal_signature = Objects[objnum].signature;
+	aip->goal_objnum = parent_objnum;
+	aip->goal_signature = parent_objp->signature;
 	aip->mode = AIM_BAY_DEPART;
 
 	shipp->flags |= SF_DEPART_DOCKBAY;
@@ -13688,7 +13680,7 @@ void ai_bay_depart()
 		polymodel	*pm;
 		ship_bay	*bay;
 
-		pm = model_get( Ships[Objects[aip->goal_objnum].instance].modelnum );
+		pm = model_get(Ship_info[Ships[Objects[aip->goal_objnum].instance].ship_info_index].model_num);
 		bay = pm->ship_bay;
 		if ( bay != NULL ) {
 			bay->depart_flags &= ~(1<<aip->submode_parm0);
@@ -16251,7 +16243,7 @@ int ai_return_path_num_from_dockbay(object *dockee_objp, int dockbay_index)
 		int			path_num;
 		polymodel	*pm;
 
-		pm = model_get( Ships[dockee_objp->instance].modelnum );
+		pm = model_get(Ship_info[Ships[dockee_objp->instance].ship_info_index].model_num );
 
 		// sanity checks
 		Assert(pm->n_docks > dockbay_index);

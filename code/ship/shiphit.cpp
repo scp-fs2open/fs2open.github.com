@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.76 $
- * $Date: 2007-02-19 20:39:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.77 $
+ * $Date: 2007-02-20 04:20:27 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2007/02/19 20:39:10  wmcoolmon
+ * More minor tweaks/fixes
+ *
  * Revision 2.75  2007/02/11 21:26:39  Goober5000
  * massive shield infrastructure commit
  *
@@ -896,11 +899,6 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 	for ( i = 0; i < sip->n_subsystems; i++ ) {
 		if ( &(sip->subsystems[i]) == psub )
 			break;
-
-		// check alt stuff too - Goober5000
-		if ( ship_p->modelnum != sip->modelnum )
-			if ( &(ship_p->subsystems[i]) == psub )
-				break;
 	}
 	Assert( i < sip->n_subsystems );
 	Assert( i < 65535 );
@@ -1638,12 +1636,13 @@ int choose_next_spark(object *ship_obj, vec3d *hitpos)
 	vec3d world_hitpos[MAX_SHIP_HITS];
 	spark_pair spark_pairs[MAX_SPARK_PAIRS];
 	ship *shipp = &Ships[ship_obj->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 	// only choose next spark when all slots are full
 	Assert(get_max_sparks(ship_obj) == Ships[ship_obj->instance].num_hits);
 
 	// get num_sparks
-	num_sparks = Ships[ship_obj->instance].num_hits;
+	num_sparks = shipp->num_hits;
 	Assert(num_sparks <= MAX_SHIP_HITS);
 
 	// get num_spark_paris -- only sort these
@@ -1657,7 +1656,7 @@ int choose_next_spark(object *ship_obj, vec3d *hitpos)
 				model_started = true;
 				ship_model_start(ship_obj);
 			}
-			model_find_world_point(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, shipp->modelnum, shipp->sparks[spark_num].submodel_num, &ship_obj->orient, &ship_obj->pos);
+			model_find_world_point(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, sip->model_num, shipp->sparks[spark_num].submodel_num, &ship_obj->orient, &ship_obj->pos);
 		} else {
 			// rotate sparks correctly with current ship orient
 			vm_vec_unrotate(&world_hitpos[spark_num], &shipp->sparks[spark_num].pos, &ship_obj->orient);
@@ -1738,15 +1737,16 @@ int choose_next_spark(object *ship_obj, vec3d *hitpos)
 void ship_hit_create_sparks(object *ship_obj, vec3d *hitpos, int submodel_num)
 {
 	vec3d	tempv;
-	ship		*ship_p = &Ships[ship_obj->instance];
+	ship	*shipp = &Ships[ship_obj->instance];
+	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
 	int n, max_sparks;
 
-	n = ship_p->num_hits;
+	n = shipp->num_hits;
 	max_sparks = get_max_sparks(ship_obj);
 
 	if (n >= max_sparks)	{
-		if ( Ship_info[ship_p->ship_info_index].flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) ) {
+		if (sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) {
 			// large ship, choose intelligently
 			n = choose_next_spark(ship_obj, hitpos);
 		} else {
@@ -1754,15 +1754,13 @@ void ship_hit_create_sparks(object *ship_obj, vec3d *hitpos, int submodel_num)
 			n = rand() % max_sparks;
 		}
 	} else {
-		ship_p->num_hits++;
+		shipp->num_hits++;
 	}
-
-	ship *pship = &Ships[ship_obj->instance];
 
 	bool instancing = false;
 	// decide whether to do instancing
 	if (submodel_num != -1) {
-		polymodel *pm = model_get(pship->modelnum);
+		polymodel *pm = model_get(sip->model_num);
 		if (pm->detail[0] != submodel_num) {
 			// submodel is not hull
 			// OPTIMIZE ... check if submodel can not rotate
@@ -1774,10 +1772,10 @@ void ship_hit_create_sparks(object *ship_obj, vec3d *hitpos, int submodel_num)
 		// get the hit position in the subobject RF
 		ship_model_start(ship_obj);
 		vec3d temp_zero, temp_x, temp_y, temp_z;
-		model_find_world_point(&temp_zero, &vmd_zero_vector, pship->modelnum, submodel_num, &ship_obj->orient, &ship_obj->pos);
-		model_find_world_point(&temp_x, &vmd_x_vector, pship->modelnum, submodel_num, &ship_obj->orient, &ship_obj->pos);
-		model_find_world_point(&temp_y, &vmd_y_vector, pship->modelnum, submodel_num, &ship_obj->orient, &ship_obj->pos);
-		model_find_world_point(&temp_z, &vmd_z_vector, pship->modelnum, submodel_num, &ship_obj->orient, &ship_obj->pos);
+		model_find_world_point(&temp_zero, &vmd_zero_vector, sip->model_num, submodel_num, &ship_obj->orient, &ship_obj->pos);
+		model_find_world_point(&temp_x, &vmd_x_vector, sip->model_num, submodel_num, &ship_obj->orient, &ship_obj->pos);
+		model_find_world_point(&temp_y, &vmd_y_vector, sip->model_num, submodel_num, &ship_obj->orient, &ship_obj->pos);
+		model_find_world_point(&temp_z, &vmd_z_vector, sip->model_num, submodel_num, &ship_obj->orient, &ship_obj->pos);
 		ship_model_stop(ship_obj);
 
 		// find submodel x,y,z axes
@@ -1790,24 +1788,24 @@ void ship_hit_create_sparks(object *ship_obj, vec3d *hitpos, int submodel_num)
 		vm_vec_sub(&diff, hitpos, &temp_zero);
 
 		// find displacement from submodel origin in submodel RF
-		ship_p->sparks[n].pos.xyz.x = vm_vec_dotprod(&diff, &temp_x);
-		ship_p->sparks[n].pos.xyz.y = vm_vec_dotprod(&diff, &temp_y);
-		ship_p->sparks[n].pos.xyz.z = vm_vec_dotprod(&diff, &temp_z);
-		ship_p->sparks[n].submodel_num = submodel_num;
-		ship_p->sparks[n].end_time = timestamp(-1);
+		shipp->sparks[n].pos.xyz.x = vm_vec_dotprod(&diff, &temp_x);
+		shipp->sparks[n].pos.xyz.y = vm_vec_dotprod(&diff, &temp_y);
+		shipp->sparks[n].pos.xyz.z = vm_vec_dotprod(&diff, &temp_z);
+		shipp->sparks[n].submodel_num = submodel_num;
+		shipp->sparks[n].end_time = timestamp(-1);
 	} else {
 		// Rotate hitpos into ship_obj's frame of reference.
 		vm_vec_sub(&tempv, hitpos, &ship_obj->pos);
-		vm_vec_rotate(&ship_p->sparks[n].pos, &tempv, &ship_obj->orient);
-		ship_p->sparks[n].submodel_num = -1;
-		ship_p->sparks[n].end_time = timestamp(-1);
+		vm_vec_rotate(&shipp->sparks[n].pos, &tempv, &ship_obj->orient);
+		shipp->sparks[n].submodel_num = -1;
+		shipp->sparks[n].end_time = timestamp(-1);
 	}
 
 	// Create the first wave of sparks
 	shipfx_emit_spark(ship_obj->instance, n);
 
 	if ( n == 0 )	{
-		ship_p->next_hit_spark = timestamp(0);		// when a hit spot will spark
+		shipp->next_hit_spark = timestamp(0);		// when a hit spot will spark
 	}
 }
 

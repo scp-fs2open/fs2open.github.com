@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.72 $
- * $Date: 2007-02-19 07:55:20 $
- * $Author: wmcoolmon $
+ * $Revision: 2.73 $
+ * $Date: 2007-02-20 04:20:27 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2007/02/19 07:55:20  wmcoolmon
+ * More scripting tweaks/bugfixes.
+ *
  * Revision 2.71  2007/02/16 07:06:46  Goober5000
  * uhh... wrong?
  *
@@ -1372,9 +1375,11 @@ void obj_move_call_physics(object *objp, float frametime)
 	if ( objp->flags & OF_PHYSICS ) {
 		// only set phys info if ship is not dead
 		if ((objp->type == OBJ_SHIP) && !(Ships[objp->instance].flags & SF_DYING)) {
+			ship *shipp = &Ships[objp->instance];
 			float	engine_strength;
-			engine_strength = ship_get_subsystem_strength(&Ships[objp->instance], SUBSYSTEM_ENGINE);
-			if ( ship_subsys_disrupted(&Ships[objp->instance], SUBSYSTEM_ENGINE) ) {
+
+			engine_strength = ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE);
+			if ( ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
 				engine_strength=0.0f;
 			}
 
@@ -1382,44 +1387,47 @@ void obj_move_call_physics(object *objp, float frametime)
 				vm_vec_zero(&objp->phys_info.desired_vel);
 				vm_vec_zero(&objp->phys_info.desired_rotvel);
 				objp->phys_info.flags |= (PF_REDUCED_DAMP | PF_DEAD_DAMP);
-				objp->phys_info.side_slip_time_const = Ship_info[Ships[objp->instance].ship_info_index].damp * 4.0f;
+				objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp * 4.0f;
 			} // else {
 				// DA: comment out lines that resets PF_DEAD_DAMP after every frame.
 				// This is now reset during engine repair.
 				//	objp->phys_info.flags &= ~(PF_REDUCED_DAMP | PF_DEAD_DAMP);
-				// objp->phys_info.side_slip_time_const = Ship_info[Ships[objp->instance].ship_info_index].damp;
+				// objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp;
 			// }
-			for(int i = 0; i < Ships[objp->instance].weapons.num_secondary_banks; i++)
+
+			for (int i = 0; i < shipp->weapons.num_secondary_banks; i++)
 			{
-				if(Ships[objp->instance].weapons.secondary_bank_ammo[i] == 0)continue;
 				//if there are no missles left don't bother
-				polymodel *pm = model_get(Ships[objp->instance].modelnum); 
-				if(pm==NULL)continue;
-				int points = pm->missile_banks[i].num_slots;
-				int missles_left = Ships[objp->instance].weapons.secondary_bank_ammo[i];
-				int next_point = Ships[objp->instance].weapons.secondary_next_slot[i];
+				if (shipp->weapons.secondary_bank_ammo[i] == 0)
+					continue;
+
+				int points = model_get(Ship_info[shipp->ship_info_index].model_num)->missile_banks[i].num_slots;
+				int missles_left = shipp->weapons.secondary_bank_ammo[i];
+				int next_point = shipp->weapons.secondary_next_slot[i];
 
 				//ok so...we want to move up missles but only if there is a missle there to be moved up
 				//there is a missle behind next_point, and how ever many missles there are left after that
 
-				if(points>missles_left){
-					//there are more slots than missles left, so not all of the slots will have missles drawen on them
-					for(int K = next_point; K<next_point+missles_left; K ++){
-						int k=K%points;
-						float &s_pct = Ships[objp->instance].secondary_point_reload_pct[i][k];
-						if(s_pct < 1.0)s_pct += Ships[objp->instance].reload_time[i] * frametime;
-						if(s_pct > 1.0)s_pct = 1.0f;
+				if (points > missles_left) {
+					//there are more slots than missles left, so not all of the slots will have missles drawn on them
+					for (int k = next_point; k < next_point+missles_left; k ++) {
+						float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
+						if (s_pct < 1.0)
+							s_pct += shipp->reload_time[i] * frametime;
+						if (s_pct > 1.0)
+							s_pct = 1.0f;
 					}
-				}else{
+				} else {
 					//we don't have to worry about such things
-					for(int k = 0; k<points; k++){
-						float &s_pct = Ships[objp->instance].secondary_point_reload_pct[i][k];
-						if(s_pct < 1.0)s_pct += Ships[objp->instance].reload_time[i] * frametime;
-						if(s_pct > 1.0)s_pct = 1.0f;
+					for (int k = 0; k < points; k++) {
+						float &s_pct = shipp->secondary_point_reload_pct[i][k];
+						if (s_pct < 1.0)
+							s_pct += shipp->reload_time[i] * frametime;
+						if (s_pct > 1.0)
+							s_pct = 1.0f;
 					}
 				}
 			}
-				
 		}
 
 		// if a weapon is flagged as dead, kill its engines just like a ship

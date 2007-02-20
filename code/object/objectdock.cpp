@@ -6,13 +6,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-07-21 05:41:10 $
+ * $Revision: 2.13 $
+ * $Date: 2007-02-20 04:20:27 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/07/21 05:41:10  Goober5000
+ * add another method for calculating dimensions of docked objects, plus improve an existing one
+ * --Goober5000
+ *
  * Revision 2.11  2006/04/20 06:32:23  Goober5000
  * proper capitalization according to Volition
  *
@@ -546,7 +550,7 @@ void dock_calc_max_cross_sectional_radius_squared_perpendicular_to_line_helper(o
 
 	// grab our model
 	Assert(objp->type == OBJ_SHIP);
-	pm = model_get(Ships[objp->instance].modelnum);
+	pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 
 	// set up the points we want to check
 	memset(local_point, 0, sizeof(vec3d) * 6);
@@ -595,7 +599,7 @@ void dock_calc_max_semilatus_rectum_squared_parallel_to_directrix_helper(object 
 
 	// grab our model
 	Assert(objp->type == OBJ_SHIP);
-	pm = model_get(Ships[objp->instance].modelnum);
+	pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 
 	// set up the points we want to check
 	memset(local_point, 0, sizeof(vec3d) * 6);

@@ -1480,6 +1480,10 @@ SOURCE=..\..\code\Model\ModelCollide.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\model\modeldiff.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Model\ModelInterp.cpp
 # End Source File
 # Begin Source File

@@ -6,13 +6,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/RestrictPaths.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-06-04 01:01:52 $
+ * $Revision: 1.5 $
+ * $Date: 2007-02-20 04:20:10 $
  * $Author: Goober5000 $
  *
  * Code for restricting arrival/departure to specific bays
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/06/04 01:01:52  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 1.3  2006/05/31 03:05:42  Goober5000
  * some cosmetic changes in preparation for bay arrival/departure code
  * --Goober5000
@@ -68,7 +72,7 @@ END_MESSAGE_MAP()
 BOOL restrict_paths::OnInitDialog() 
 {
 	// get stuff from params
-	m_model = model_get(Ship_info[m_ship_class].modelnum);
+	m_model = model_get(Ship_info[m_ship_class].model_num);
 	Assert(m_model->ship_bay);
 	m_num_paths = m_model->ship_bay->num_paths;
 	Assert(m_num_paths > 0);

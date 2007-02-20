@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.24 $
- * $Date: 2007-02-19 07:24:51 $
- * $Author: wmcoolmon $
+ * $Revision: 2.25 $
+ * $Date: 2007-02-20 04:20:27 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2007/02/19 07:24:51  wmcoolmon
+ * WMCoolmon experiences a duh moment. Move scripting collision variable declarations in front of overrides, to give
+ * them access to these (somewhat useful) variables
+ *
  * Revision 2.23  2007/02/11 21:26:35  Goober5000
  * massive shield infrastructure commit
  *
@@ -702,15 +706,12 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	object *heavy_obj	= ship_ship_hit_info->heavy;
 	object *light_obj = ship_ship_hit_info->light;
 	int	player_involved;	// flag to indicate that A or B is the Player_obj
-	int	num; //, player_check=0;
 
 	Assert( heavy_obj->type == OBJ_SHIP );
 	Assert( light_obj->type == OBJ_SHIP );
 
-	num = heavy_obj->instance;
-	Assert( num >= 0 );
-
-	Assert( Ships[num].objnum == OBJ_INDEX(heavy_obj));
+	ship *heavy_shipp = &Ships[heavy_obj->instance];
+	ship *light_shipp = &Ships[light_obj->instance];
 
 	// AL 12-4-97: we use the player_involved flag to ensure collisions are always
 	//             done with the player, regardless of team.
@@ -721,8 +722,10 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	}
 
 	// Make ships that are warping in not get collision detection done
-	if ( Ships[num].flags & SF_ARRIVING )
-		return 0;
+//	if ( heavy_shipp->flags & SF_ARRIVING ) {
+	if ( heavy_shipp->flags & SF_ARRIVING_STAGE_1 ) { 
+  		return 0;
+  	}
 
 	// Don't do collision detection for docking ships, since they will always collide while trying to dock
 	if ( ships_are_docking(heavy_obj, light_obj) ) {
@@ -742,13 +745,13 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		return 0;
 	}
 
-	//nprintf(("AI", "Frame %i: Collision between %s and %s\n", Framecount, Ships[heavy_obj->instance].ship_name, Ships[light_obj->instance].ship_name));
+	//nprintf(("AI", "Frame %i: Collision between %s and %s\n", Framecount, heavy_shipp->ship_name, light_shipp->ship_name));
 
 #ifndef NDEBUG
 	//	Don't do collision detection on a pair of ships on the same team.
 	//	Change this someday, but for now, it's a problem.
 	if ( !Collide_friendly ) {		// Collide_friendly is a global value changed via debug console
-		if ( (!player_involved) && (Ships[heavy_obj->instance].team == Ships[light_obj->instance].team) ) {
+		if ( (!player_involved) && (heavy_shipp->team == light_shipp->team) ) {
 			return 0;
 		}
 	}
@@ -756,7 +759,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 	//	Apparently we're doing same team collisions.
 	//	But, if both are offscreen, ignore the collision
-	if (Ships[heavy_obj->instance].team == Ships[light_obj->instance].team) {
+	if (heavy_shipp->team == light_shipp->team) {
 //		if ((Game_mode & GM_MULTIPLAYER) || (!(heavy_obj->flags & OF_WAS_RENDERED) && !(light_obj->flags & OF_WAS_RENDERED)))
 		// mwa 4/28/98 -- don't understand why GM_MULTIPLAYER was included in this line.  All clients
 		// need to do all collisions for their own ship. removing the multiplayer part of next if statement.
@@ -767,11 +770,11 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	}
 
 	//	If either of these objects doesn't get collision checks, abort.
-	if (Ship_info[Ships[num].ship_info_index].flags & SIF_NO_COLLIDE) {
+	if (Ship_info[heavy_shipp->ship_info_index].flags & SIF_NO_COLLIDE) {
 		return 0;
 	}
 
-	if (Ship_info[Ships[light_obj->instance].ship_info_index].flags & SIF_NO_COLLIDE) {
+	if (Ship_info[light_shipp->ship_info_index].flags & SIF_NO_COLLIDE) {
 		return 0;
 	}
 
@@ -782,7 +785,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 //	vec3d submodel_hit;
 
 	// Do in heavy object RF
-	mc.model_num = Ships[num].modelnum;	// Fill in the model to check
+	mc.model_num = Ship_info[heavy_shipp->ship_info_index].model_num;	// Fill in the model to check
 	mc.orient = &heavy_obj->orient;		// The object's orient
 
 	vec3d zero, p0, p1;
@@ -814,12 +817,12 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	// Set up collision info
 	mc.pos = &zero;						// The object's position
 	mc.p1 = &p1;							// Point 2 of ray to check
-	mc.radius = model_get_core_radius( Ships[light_obj->instance].modelnum );
+	mc.radius = model_get_core_radius(Ship_info[light_shipp->ship_info_index].model_num);
 	mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);			// flags
 
 	//	Only check invisible face polygons for ship:ship of different teams.
-	if ( !(Ships[heavy_obj->instance].flags2 & SF2_DONT_COLLIDE_INVIS) ) {
-		if ((heavy_obj->flags & OF_PLAYER_SHIP) || (light_obj->flags & OF_PLAYER_SHIP) || (Ships[heavy_obj->instance].team != Ships[light_obj->instance].team) ) {
+	if ( !(heavy_shipp->flags2 & SF2_DONT_COLLIDE_INVIS) ) {
+		if ((heavy_obj->flags & OF_PLAYER_SHIP) || (light_obj->flags & OF_PLAYER_SHIP) || (heavy_shipp->team != light_shipp->team) ) {
 			mc.flags |= MC_CHECK_INVISIBLE_FACES;
 		}
 	}
@@ -850,7 +853,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 
 			model_get_rotating_submodel_list(submodel_list, &num_rotating_submodels, heavy_obj);
 
-			pm = model_get(Ships[heavy_obj->instance].modelnum);
+			pm = model_get(Ship_info[heavy_shipp->ship_info_index].model_num);
 
 			// turn off all rotating submodels and test for collision
 			int i;
@@ -1011,11 +1014,11 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 #endif
 
 		// Update ai to deal with collisions
-		if (heavy_obj-Objects == Ai_info[Ships[light_obj->instance].ai_index].target_objnum) {
-			Ai_info[Ships[light_obj->instance].ai_index].ai_flags |= AIF_TARGET_COLLISION;
+		if (heavy_obj-Objects == Ai_info[light_shipp->ai_index].target_objnum) {
+			Ai_info[light_shipp->ai_index].ai_flags |= AIF_TARGET_COLLISION;
 		}
-		if (light_obj-Objects == Ai_info[Ships[heavy_obj->instance].ai_index].target_objnum) {
-			Ai_info[Ships[heavy_obj->instance].ai_index].ai_flags |= AIF_TARGET_COLLISION;
+		if (light_obj-Objects == Ai_info[heavy_shipp->ai_index].target_objnum) {
+			Ai_info[heavy_shipp->ai_index].ai_flags |= AIF_TARGET_COLLISION;
 		}
 
 		// SET PHYSICS PARAMETERS
@@ -1043,7 +1046,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		vm_vec_sub(&diff, &temp2, &temp1);
 
 		ship_model_start( heavy_obj );
-		pm = model_get(Ships[heavy_obj->instance].modelnum);
+		pm = model_get(heavy_shipp->modelnum);
 		world_find_model_point(&temp3, hitpos, pm, ship_ship_hit_info->submodel_num, &heavy_obj->orient, &heavy_obj->pos);
 		ship_model_stop( heavy_obj );
 
@@ -1058,10 +1061,7 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 		calculate_ship_ship_collision_physics(ship_ship_hit_info);
 
 		// Provide some separation for the case of same team
-		if (Ships[heavy_obj->instance].team == Ships[light_obj->instance].team) {
-			ship	*heavy_shipp = &Ships[heavy_obj->instance];
-			ship	*light_shipp = &Ships[light_obj->instance];
-
+		if (heavy_shipp->team == light_shipp->team) {
 			//	If a couple of small ships, just move them apart.
 
 			if ((Ship_info[heavy_shipp->ship_info_index].flags & SIF_SMALL_SHIP) && (Ship_info[light_shipp->ship_info_index].flags & SIF_SMALL_SHIP)) {
@@ -1258,7 +1258,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	if (ship_ship_hit_info->submodel_rot_hit == 1) {
 		bool set_model = false;
 
-		polymodel *pm = model_get(Ships[heavy->instance].modelnum);
+		polymodel *pm = model_get(Ship_info[Ships[heavy->instance].ship_info_index].model_num);
 
 		// be sure model is set
 		if (pm->submodel[ship_ship_hit_info->submodel_num].sii == NULL) {
@@ -1268,7 +1268,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 
 		// set point on axis of rotating submodel if not already set.
 		if (!pm->submodel[ship_ship_hit_info->submodel_num].sii->axis_set) {
-			model_init_submodel_axis_pt(pm->submodel[ship_ship_hit_info->submodel_num].sii,  Ships[heavy->instance].modelnum, ship_ship_hit_info->submodel_num);
+			model_init_submodel_axis_pt(pm->submodel[ship_ship_hit_info->submodel_num].sii, pm->id, ship_ship_hit_info->submodel_num);
 		}
 
 		vec3d omega, axis, r_rot;
@@ -1958,7 +1958,7 @@ void collect_ship_ship_physics_info(object *heavy, object *light, mc_info *mc_in
 	vec3d *heavy_collide_cm_pos = &ship_ship_hit_info->heavy_collision_cm_pos;
 	vec3d *light_collide_cm_pos = &ship_ship_hit_info->light_collision_cm_pos;
 
-	float core_rad = model_get_core_radius( Ships[light->instance].modelnum );
+	float core_rad = model_get_core_radius(Ship_info[Ships[light->instance].ship_info_index].model_num);
 
 	// get info needed for ship_ship_collision_physics
 	Assert(mc_info->hit_dist > 0);

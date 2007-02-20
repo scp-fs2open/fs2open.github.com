@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.52 $
- * $Date: 2007-02-18 06:17:34 $
+ * $Revision: 2.53 $
+ * $Date: 2007-02-20 04:20:27 $
  * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2007/02/18 06:17:34  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.51  2007/02/16 22:25:21  Goober5000
  * fixed another of bobboau's stupid bugs
  *
@@ -1202,7 +1205,7 @@ void create_shield_explosion_all(object *objp)
 
 	for (i=0; i<Num_shield_points; i++) {
 		if (Shield_points[i].objnum == objnum) {
-			create_shield_explosion(objnum, shipp->modelnum, &objp->orient, &objp->pos, &Shield_points[i].hit_point, Shield_points[i].shield_tri);
+			create_shield_explosion(objnum, Ship_info[shipp->ship_info_index].model_num, &objp->orient, &objp->pos, &Shield_points[i].hit_point, Shield_points[i].shield_tri);
 			count--;
 			if (count <= 0){
 				break;
@@ -1239,7 +1242,7 @@ void ship_draw_shield( object *objp)
 
 	Assert(objp->instance >= 0);
 
-	model_num = Ships[objp->instance].modelnum;
+	model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 
 	if ( Fred_running ) return;
 

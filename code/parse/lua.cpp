@@ -3536,9 +3536,9 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	ship_info *sip = &Ship_info[idx];
 
 	//Make sure model is loaded
-	sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
 
-	if(sip->modelnum < 0)
+	if(sip->model_num < 0)
 		return ade_set_args(L, "b", false);
 
 	//Handle angles
@@ -3571,9 +3571,9 @@ ADE_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	light_rotate_all();
 
 	//Draw the ship!!
-	model_clear_instance(sip->modelnum);
+	model_clear_instance(sip->model_num);
 	model_set_detail_level(0);
-	model_render(sip->modelnum, &orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+	model_render(sip->model_num, &orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 
 	//OK we're done
 	if (!Cmdline_nohtl) 
@@ -4172,7 +4172,7 @@ ADE_VIRTVAR(Position, l_Subsystem, "lvector", "Subsystem position with regards t
 	if(!sso->IsValid())
 		return ADE_RETURN_NIL;
 
-	polymodel *pm = model_get(Ships[sso->objp->instance].modelnum);
+	polymodel *pm = model_get(Ship_info[Ships[sso->objp->instance].ship_info_index].model_num);
 	Assert(pm != NULL);
 
 	bsp_info *sm = &pm->submodel[sso->ss->system_info->subobj_num];
@@ -4193,7 +4193,7 @@ ADE_VIRTVAR(GunPosition, l_Subsystem, "lvector", "Subsystem gun position with re
 	if(!sso->IsValid())
 		return ADE_RETURN_NIL;
 
-	polymodel *pm = model_get(Ships[sso->objp->instance].modelnum);
+	polymodel *pm = model_get(Ship_info[Ships[sso->objp->instance].ship_info_index].model_num);
 	Assert(pm != NULL);
 
 	if(sso->ss->system_info->turret_gun_sobj < 0)
@@ -4358,7 +4358,7 @@ ADE_FUNC(__len, l_ShipTextures, NULL, NULL, NULL)
 	if(!objh->IsValid())
 		return ADE_RETURN_NIL;
 
-	polymodel *pm = model_get(Ships[objh->objp->instance].modelnum);
+	polymodel *pm = model_get(Ship_info[Ships[objh->objp->instance].ship_info_index].model_num);
 
 	if(pm == NULL)
 		return ADE_RETURN_FALSE;
@@ -4378,7 +4378,7 @@ ADE_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
 	ship *shipp = &Ships[oh->objp->instance];
-	polymodel *pm = model_get(shipp->modelnum);
+	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 	int idx = -1;
 	int i;
 
@@ -4626,26 +4626,6 @@ ADE_VIRTVAR(HitpointsMax, l_Ship, "number", "Total hitpoints")
 		shipp->ship_max_hull_strength = newhits;
 
 	return ade_set_args(L, "f", shipp->ship_max_hull_strength);
-}
-
-ADE_VIRTVAR(Model, l_Ship, "model", "Ship's model")
-{
-	object_h *objh;
-	int newmodel = -1;
-	if(!ade_get_args(L, "o|b", l_Ship.GetPtr(&objh), l_Model.Get(&newmodel)))
-		return ade_set_error(L, "o", l_Model.Set(-1));
-
-	if(!objh->IsValid())
-		return ade_set_error(L, "o", l_Model.Set(-1));
-
-	ship *shipp = &Ships[objh->objp->instance];
-
-	if(ADE_SETTING_VAR)
-	{
-		shipp->modelnum = newmodel;
-	}
-
-	return ade_set_args(L, "o", l_Model.Set(shipp->modelnum));
 }
 
 ADE_VIRTVAR(PrimaryBanks, l_Ship, "weaponbanktype", "Array of primary weapon banks")

@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.44 $
- * $Date: 2007-02-11 09:37:18 $
- * $Author: taylor $
+ * $Revision: 2.45 $
+ * $Date: 2007-02-20 04:20:10 $
+ * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2007/02/11 09:37:18  taylor
+ * dd VALID_FNAME() macro and put it around a few places (more to come)
+ * clean out some old variables
+ * move CLAMP() macro from opengl header to global header
+ * update COUNT_ESTIMATE to match new bmpman changes
+ *
  * Revision 2.43  2007/01/15 08:05:47  wmcoolmon
  * Maintain "fileless fs2" capability; change ScriptingVariables library to HookVariables(hv)
  *
@@ -1368,7 +1374,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 	int mc_ret_val = 0;
 
 	if ( asteroid_hit_info->heavy == ship_obj ) {	// ship is heavier, so asteroid is sphere. Check sphere collision against ship poly model
-		mc.model_num = Ships[ship_obj->instance].modelnum;		// Fill in the model to check
+		mc.model_num = Ship_info[Ships[ship_obj->instance].ship_info_index].model_num;		// Fill in the model to check
 		mc.orient = &ship_obj->orient;								// The object's orient
 		mc.radius = pasteroid->radius;
 		mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);
@@ -1399,7 +1405,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 				model_get_rotating_submodel_list(submodel_list, &num_rotating_submodels, heavy_obj);
 
 				// Get polymodel and turn off all rotating submodels, collide against only 1 at a time.
-				pm = model_get(Ships[heavy_obj->instance].modelnum);
+				pm = model_get(Ship_info[Ships[heavy_obj->instance].ship_info_index].model_num);
 
 				// turn off all rotating submodels and test for collision
 				int i;
@@ -1493,7 +1499,7 @@ int asteroid_check_collision(object *pasteroid, object *other_obj, vec3d *hitpos
 		mc.model_num = Asteroid_info[Asteroids[num].asteroid_type].model_num[asteroid_subtype];		// Fill in the model to check
 		model_clear_instance( mc.model_num );
 		mc.orient = &pasteroid->orient;				// The object's orient
-		mc.radius = model_get_core_radius( Ships[ship_obj->instance].modelnum );
+		mc.radius = model_get_core_radius(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
 
 		// check for collision between asteroid model and ship sphere
 		mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);
@@ -1928,7 +1934,7 @@ void asteroid_test_collide(object *asteroid_obj, object *ship_obj, mc_info *mc, 
 
 	ship_model_start(ship_obj);
 
-	mc->model_num = Ships[ship_obj->instance].modelnum;			// Fill in the model to check
+	mc->model_num = Ship_info[Ships[ship_obj->instance].ship_info_index].model_num;			// Fill in the model to check
 	mc->orient = &ship_obj->orient;										// The object's orientation
 	mc->pos = &ship_obj->pos;												// The object's position
 	mc->p0 = &asteroid_obj->pos;											// Point 1 of ray to check

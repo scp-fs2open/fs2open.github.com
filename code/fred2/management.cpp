@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.32 $
- * $Date: 2007-02-18 06:16:46 $
+ * $Revision: 1.33 $
+ * $Date: 2007-02-20 04:20:10 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2007/02/18 06:16:46  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 1.31  2007/02/11 21:26:34  Goober5000
  * massive shield infrastructure commit
  *
@@ -2438,7 +2441,7 @@ void set_valid_dock_points(int ship, int type, CComboBox *box)
 {
 	int i, z, num, model;
 
-	model = Ships[ship].modelnum;
+	model = Ship_info[Ships[ship].ship_info_index].model_num;
 	num = model_get_num_dock_points(model);
 	for (i=0; i<num; i++)
 		if (model_get_dock_index_type(model, i) & type) {
@@ -2974,7 +2977,7 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 				polymodel *pm;
 
 				// determine if this ship has a docking bay
-				pm = model_get( Ships[objp->instance].modelnum );
+				pm = model_get( Ship_info[Ships[objp->instance].ship_info_index].model_num );
 				Assert( pm );
 				if ( pm->ship_bay && (pm->ship_bay->num_paths > 0) ) {
 					id = box->AddString(Ships[get_ship_from_obj(objp)].ship_name);
