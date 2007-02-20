@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.16 $
- * $Date: 2007-01-15 13:42:59 $
- * $Author: karajorma $
+ * $Revision: 1.17 $
+ * $Date: 2007-02-20 04:20:10 $
+ * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2007/01/15 13:42:59  karajorma
+ * Hmmm. Forgot to commit changes to support network variables and setting ammo/weapons to HEAD as well as 3.6.9.
+ *
  * Revision 1.15  2006/12/28 00:59:20  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -5300,7 +5303,7 @@ sexp_list_item *sexp_tree::get_listing_opf_docker_point(int parent_node)
 
 	sh = ship_name_lookup(tree_nodes[z].text, 1);
 	if (sh >= 0) {
-		z = get_docking_list(Ships[sh].modelnum);
+		z = get_docking_list(Ship_info[Ships[sh].ship_info_index].model_num);
 		for (i=0; i<z; i++)
 			head.add_data(Docking_bay_list[i]);
 	}
@@ -5321,7 +5324,7 @@ sexp_list_item *sexp_tree::get_listing_opf_dockee_point(int parent_node)
 
 	sh = ship_name_lookup(tree_nodes[z].text, 1);
 	if (sh >= 0) {
-		z = get_docking_list(Ships[sh].modelnum);
+		z = get_docking_list(Ship_info[Ships[sh].ship_info_index].model_num);
 		for (i=0; i<z; i++)
 			head.add_data(Docking_bay_list[i]);
 	}

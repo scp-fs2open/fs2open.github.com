@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.196  2007/02/18 06:17:48  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.195  2007/02/11 21:26:39  Goober5000
  * massive shield infrastructure commit
  *
@@ -5874,7 +5877,7 @@ void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *bl
 
 	vm_vec_sub(&vec_ship_to_impact, blast_pos, &ship_obj->pos);
 
-	pm = model_get(Ships[ship_obj->instance].modelnum);
+	pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
 	Assert ( pm != NULL );
 
 	if (make_shockwave) {

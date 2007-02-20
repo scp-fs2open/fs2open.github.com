@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.67 $
- * $Date: 2006-12-28 00:59:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.68 $
+ * $Date: 2007-02-20 04:20:18 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2006/12/28 00:59:32  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.66  2006/11/06 05:43:36  taylor
  * fix a memory leak that Valgrind was complaining about (happens mainly when you have a mission without a briefing)
  *
@@ -2451,7 +2454,7 @@ void start_ship_animation(int ship_class, int play_sound)
 		// page in ship textures properly (takes care of nondimming pixels)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
 		
-		if (sip->modelnum < 0)
+		if (sip->model_num < 0)
 		{
 			mprintf(("Couldn't load model file in missionshipchoice.cpp - tell UnknownPlayer"));
 		}

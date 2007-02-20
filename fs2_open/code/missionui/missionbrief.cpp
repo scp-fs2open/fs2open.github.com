@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.43 $
- * $Date: 2006-12-28 00:59:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.44 $
+ * $Date: 2007-02-20 04:20:18 $
+ * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2006/12/28 00:59:32  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.42  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -1665,7 +1668,7 @@ void brief_get_closeup_ship_modelnum(brief_icon *ci)
 		sp = &Ships[objp->instance];
 		if ( sp->ship_info_index == ci->ship_class ) {
 			ci->ship_class = sp->ship_info_index;
-			ci->modelnum = sp->modelnum;
+			ci->modelnum = Ship_info[sp->ship_info_index].model_num;
 			ci->radius = objp->radius;
 			break;
 		}
@@ -1970,11 +1973,11 @@ void brief_do_frame(float frametime)
 					Closeup_icon->ship_class--;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
-					if (sip->modelnum < 0)
-						sip->modelnum = model_load(sip->pof_file, 0, NULL);
+					if (sip->model_num < 0)
+						sip->model_num = model_load(sip->pof_file, 0, NULL);
 
 					mprintf(("Shiptype = %d (%s)\n", Closeup_icon->ship_class, sip->name));
-					mprintf(("Modelnum = %d (%s)\n", sip->modelnum, sip->pof_file));
+					mprintf(("Modelnum = %d (%s)\n", sip->model_num, sip->pof_file));
 					brief_setup_closeup(Closeup_icon);
 				}
 
@@ -1986,11 +1989,11 @@ void brief_do_frame(float frametime)
 					Closeup_icon->ship_class++;
 
 					ship_info *sip = &Ship_info[Closeup_icon->ship_class];
-					if (sip->modelnum < 0)
-						sip->modelnum = model_load(sip->pof_file, 0, NULL);
+					if (sip->model_num < 0)
+						sip->model_num = model_load(sip->pof_file, 0, NULL);
 
 					mprintf(("Shiptype = %d (%s)\n", Closeup_icon->ship_class, sip->name));
-					mprintf(("Modelnum = %d (%s)\n", sip->modelnum, sip->pof_file));
+					mprintf(("Modelnum = %d (%s)\n", sip->model_num, sip->pof_file));
 					brief_setup_closeup(Closeup_icon);
 				}
 

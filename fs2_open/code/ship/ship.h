@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.180 $
- * $Date: 2007-02-18 06:17:34 $
+ * $Revision: 2.181 $
+ * $Date: 2007-02-20 04:20:27 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180  2007/02/18 06:17:34  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.179  2007/02/11 21:26:39  Goober5000
  * massive shield infrastructure commit
  *
@@ -1284,7 +1287,6 @@ typedef struct ship {
 	int	objnum;
 	int	ai_index;			// Index in Ai_info of ai_info associated with this ship.
 	int	ship_info_index;	// Index in ship_info for this ship
-	int	modelnum;
 	int	hotkey;
 	int	escort_priority;
 	int	score;
@@ -1370,10 +1372,6 @@ typedef struct ship {
 	ship_subsys	subsys_list;									//	linked list of subsystems for this ship.
 	ship_subsys	*last_targeted_subobject[MAX_PLAYERS];	// Last subobject that has been targeted.  NULL if none;(player specific)
 	ship_subsys_info	subsys_info[SUBSYSTEM_MAX];		// info on particular generic types of subsystems	
-
-	// subsystem information - Goober5000, in case of duplicate
-	int		n_subsystems;						// this number comes from ships.tbl
-	model_subsystem *subsystems;				// see model.h for structure definition
 
 	float	*shield_integrity;					//	Integrity at each triangle in shield mesh.
 
@@ -1821,8 +1819,8 @@ typedef struct ship_info {
 	char		pof_file_hud[MAX_FILENAME_LEN];		// POF file to load for the HUD target box
 	int		num_detail_levels;				// number of detail levels for this ship
 	int		detail_distance[MAX_SHIP_DETAIL_LEVELS];					// distance to change detail levels at
-	int		modelnum;							// ship model
-	int		modelnum_hud;						// model to use when rendering to the HUD (eg, mini supercap)
+	int		model_num;							// ship model
+	int		model_num_hud;						// model to use when rendering to the HUD (eg, mini supercap)
 	int		hud_target_lod;						// LOD to use for rendering to the HUD targetbox (if not already using special HUD model)
 	float		density;								// density of the ship in g/cm^3 (water  = 1)
 	float		damp;									// drag
@@ -2135,7 +2133,7 @@ extern void ship_level_init();		// called before the start of each level
 //returns -1 if failed
 extern int ship_create(matrix * orient, vec3d * pos, int ship_type, char *ship_name = NULL);
 extern void change_ship_type(int n, int ship_type, int by_sexp = 0);
-extern void ship_model_change(int n, int ship_type, int changing_ship_class = 0);
+extern void ship_model_change(int n, int ship_type);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * objp );
@@ -2416,8 +2414,8 @@ int ship_is_beginning_warpout_speedup(object *objp);
 // given a ship info type, return a species
 int ship_get_species_by_type(int ship_info_index);
 
-// return the length of the ship
-float ship_get_length(ship* shipp);
+// return the length of the ship class
+float ship_class_get_length(ship_info *sip);
 
 // Goober5000 - used by change-ai-class
 extern void ship_set_new_ai_class(int ship_num, int new_ai_class);

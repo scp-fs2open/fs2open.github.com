@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.43 $
- * $Date: 2007-02-16 23:49:28 $
+ * $Revision: 2.44 $
+ * $Date: 2007-02-20 04:20:10 $
  * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2007/02/16 23:49:28  Goober5000
+ * ugh... reverting this, because it was done wrong
+ *
  * Revision 2.42  2007/02/11 21:26:34  Goober5000
  * massive shield infrastructure commit
  *
@@ -634,7 +637,7 @@ void hud_shield_show(object *objp)
 		ship_model_start(objp);
 		//if(!digitus_improbus)
 		{
-			model_render( sp->modelnum, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->replacement_textures);
+			model_render( sip->model_num, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->replacement_textures);
 		}
 		/*else
 		{

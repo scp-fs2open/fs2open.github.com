@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-12-28 00:59:48 $
- * $Author: wmcoolmon $
+ * $Revision: 2.11 $
+ * $Date: 2007-02-20 04:20:38 $
+ * $Author: Goober5000 $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/12/28 00:59:48  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.9  2006/08/20 00:51:06  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -202,7 +205,7 @@ void supernova_do_particles()
 
 		// emit
 		for(idx=0; idx<10; idx++){			
-			submodel_get_two_random_points(Player_ship->modelnum, 0, &ta, &tb);
+			submodel_get_two_random_points(Ship_info[Player_ship->ship_info_index].model_num, 0, &ta, &tb);
 
 			// rotate into world space
 			vm_vec_unrotate(&a, &ta, &Player_obj->orient);			

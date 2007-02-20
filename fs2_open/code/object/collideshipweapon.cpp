@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.42 $
- * $Date: 2007-02-19 07:24:51 $
- * $Author: wmcoolmon $
+ * $Revision: 2.43 $
+ * $Date: 2007-02-20 04:20:27 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42  2007/02/19 07:24:51  wmcoolmon
+ * WMCoolmon experiences a duh moment. Move scripting collision variable declarations in front of overrides, to give
+ * them access to these (somewhat useful) variables
+ *
  * Revision 2.41  2007/02/18 06:17:10  Goober5000
  * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
  *
@@ -466,7 +470,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
   
 	int	valid_hit_occurred = 0;				// If this is set, then hitpos is set
   	int	quadrant_num = -1;
-	polymodel *pm = model_get( shipp->modelnum );
+	polymodel *pm = model_get(sip->model_num);
   
   	//	total time is flFrametime + time_limit (time_limit used to predict collisions into the future)
   	vec3d weapon_end_pos;
@@ -476,7 +480,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
   
 	// set up collision structs
-	mc.model_num = shipp->modelnum;
+	mc.model_num = sip->model_num;
 	mc.submodel_num = -1;
 	mc.orient = &ship_objp->orient;
 	mc.pos = &ship_objp->pos;

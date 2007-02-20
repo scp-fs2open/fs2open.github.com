@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.282 $
- * $Date: 2007-02-18 06:16:46 $
+ * $Revision: 2.283 $
+ * $Date: 2007-02-20 04:20:10 $
  * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.282  2007/02/18 06:16:46  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.281  2007/02/11 09:37:18  taylor
  * dd VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
@@ -9912,10 +9915,12 @@ void Do_model_timings_test()
 	
 	// Load them all
 	for (i=0; i<Num_ship_classes; i++ )	{
-		Ship_info[i].modelnum = model_load( Ship_info[i].pof_file, 0, NULL );
+		ship_info *sip = &Ship_info[i];
 
-		model_used[Ship_info[i].modelnum%MAX_POLYGON_MODELS]++;
-		model_id[Ship_info[i].modelnum%MAX_POLYGON_MODELS] = Ship_info[i].modelnum;
+		sip->model_num = model_load(sip->pof_file, 0, NULL);
+
+		model_used[sip->model_num % MAX_POLYGON_MODELS]++;
+		model_id[sip->model_num % MAX_POLYGON_MODELS] = sip->model_num;
 	}
 
 	Texture_fp = fopen( NOX("ShipTextures.txt"), "wt" );
