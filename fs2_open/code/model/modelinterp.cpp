@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.157.2.24 $
- * $Date: 2007-02-16 22:09:03 $
+ * $Revision: 2.157.2.25 $
+ * $Date: 2007-02-20 04:19:22 $
  * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157.2.24  2007/02/16 22:09:03  Goober5000
+ * remove obsolete and misleading comments which should have been edited when the code was upgraded
+ *
  * Revision 2.157.2.23  2007/02/12 00:41:37  taylor
  * bit of cleanup and minor performance tweaks
  * render ship insignia with a bit of alpha to help with blending/lighting
@@ -5367,7 +5370,7 @@ float get_world_closest_box_point_with_delta(vec3d *closest_box_point, object *b
 	int modelnum;
 
 	// get modelnum
-	modelnum = Ships[box_obj->instance].modelnum;
+	modelnum = Ship_info[Ships[box_obj->instance].ship_info_index].model_num;
 
 	// rotate start_point to box_obj RF
 	vm_vec_sub(&temp, start_point, &box_obj->pos);
@@ -6726,13 +6729,13 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 	if (obj->type == OBJ_SHIP) {
 		ship_subsys *ssp;
 		ship *shipp = &Ships[obj->instance];
-		ship_info *si = &Ship_info[shipp->ship_info_index];
+		ship_info *sip = &Ship_info[shipp->ship_info_index];
 
 		Assert( bank_obj < si->n_subsystems );
 
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
-		strncpy(subname, si->subsystems[bank_obj].subobj_name, MAX_NAME_LEN);
+		strncpy(subname, sip->subsystems[bank_obj].subobj_name, MAX_NAME_LEN);
 
 		ssp = GET_FIRST(&shipp->subsys_list);
 		while ( ssp != END_OF_LIST( &shipp->subsys_list ) ) {

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.43 $
- * $Date: 2007-02-20 01:41:07 $
+ * $Revision: 2.259.2.44 $
+ * $Date: 2007-02-20 04:19:34 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
@@ -3536,7 +3536,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						return SEXP_CHECK_INVALID_SHIP;  // should have already been caught earlier, but just in case..
 					}
 
-					model = Ships[ship_num].modelnum;
+					model = Ship_info[Ships[ship_num].ship_info_index].model_num;
 					z = model_get_num_dock_points(model);
 					for (i=0; i<z; i++)
 						if (!stricmp(CTEXT(node), model_get_dock_name(model, i)))
@@ -3563,7 +3563,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 						return SEXP_CHECK_INVALID_SHIP;  // should have already been caught earlier, but just in case..
 					}
 
-					model = Ships[ship_num].modelnum;
+					model = Ship_info[Ships[ship_num].ship_info_index].model_num;
 					z = model_get_num_dock_points(model);
 					for (i=0; i<z; i++)
 						if (!stricmp(CTEXT(node), model_get_dock_name(model, i)))
@@ -3849,7 +3849,7 @@ void preload_change_ship_class(char *text)
 	// preload the model, just in case there is no other ship of this class in the mission
 	// (this eliminates the slight pause during a mission when changing to a previously unloaded model)
 	sip = &Ship_info[idx];
-	sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 }
 
 // Goober5000
@@ -5724,11 +5724,11 @@ int sexp_special_warp_dist( int n)
 	// get distance
 	vec3d hit_pt;
 	float dist = fvi_ray_plane(&hit_pt, &warp_objp->pos, &warp_objp->orient.vec.fvec, &ship_objp->pos, &ship_objp->orient.vec.fvec, 0.0f);
-	polymodel *pm = model_get(Ships[shipnum].modelnum);
+	polymodel *pm = model_get(Ship_info[Ships[shipnum].ship_info_index].model_num);
 	dist += pm->mins.xyz.z;
 
 	// return as a percent of length
-	return (int) (100.0f * dist / ship_get_length(&Ships[shipnum]));
+	return (int) (100.0f * dist / ship_class_get_length(&Ship_info[Ships[shipnum].ship_info_index]));
 }
 
 

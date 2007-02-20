@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.34 $
- * $Date: 2007-02-12 01:04:50 $
- * $Author: taylor $
+ * $Revision: 2.243.2.35 $
+ * $Date: 2007-02-20 04:19:10 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.34  2007/02/12 01:04:50  taylor
+ * make gr_create_shader() use ubyte's instead of float's, saves us the more expensive conversions since we already convert to ubyte anyway
+ *
  * Revision 2.243.2.33  2007/02/11 09:35:11  taylor
  * add VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
@@ -9861,10 +9864,12 @@ void Do_model_timings_test()
 	
 	// Load them all
 	for (i=0; i<Num_ship_classes; i++ )	{
-		Ship_info[i].modelnum = model_load( Ship_info[i].pof_file, 0, NULL );
+		ship_info *sip = &Ship_info[i];
 
-		model_used[Ship_info[i].modelnum%MAX_POLYGON_MODELS]++;
-		model_id[Ship_info[i].modelnum%MAX_POLYGON_MODELS] = Ship_info[i].modelnum;
+		sip->model_num = model_load(sip->pof_file, 0, NULL);
+
+		model_used[sip->model_num % MAX_POLYGON_MODELS]++;
+		model_id[sip->model_num % MAX_POLYGON_MODELS] = sip->model_num;
 	}
 
 	Texture_fp = fopen( NOX("ShipTextures.txt"), "wt" );

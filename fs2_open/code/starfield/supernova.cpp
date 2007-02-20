@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.8.2.1 $
- * $Date: 2006-08-19 04:38:47 $
- * $Author: taylor $
+ * $Revision: 2.8.2.2 $
+ * $Date: 2007-02-20 04:19:42 $
+ * $Author: Goober5000 $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8.2.1  2006/08/19 04:38:47  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.8  2006/05/27 16:42:16  taylor
  * fix slight freakiness with debris vclips (un)loading
  * comment out some code which was only used if neither D3D or OGL
@@ -199,7 +202,7 @@ void supernova_do_particles()
 
 		// emit
 		for(idx=0; idx<10; idx++){			
-			submodel_get_two_random_points(Player_ship->modelnum, 0, &ta, &tb);
+			submodel_get_two_random_points(Ship_info[Player_ship->ship_info_index].model_num, 0, &ta, &tb);
 
 			// rotate into world space
 			vm_vec_unrotate(&a, &ta, &Player_obj->orient);			

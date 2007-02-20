@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.67.2.7 $
- * $Date: 2007-02-12 00:45:23 $
- * $Author: taylor $
+ * $Revision: 2.67.2.8 $
+ * $Date: 2007-02-20 04:19:43 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67.2.7  2007/02/12 00:45:23  taylor
+ * bit of cleanup and minor performance tweaks
+ * sync up with new generic_anim/bitmap and weapon delayed loading changes
+ * with generic_anim, use Goober's animation timing for beam section and glow animations
+ * make trail render list dynamic (as well as it can be)
+ *
  * Revision 2.67.2.6  2007/02/07 07:35:01  Goober5000
  * Clean up the ship-weapon collision code for both conventional weapons and beams.  Improved readability and clarity; untangled program flow; cleaned up sloppy enhancements.  Fixed a few bugs too.
  *
@@ -2325,7 +2331,7 @@ int beam_get_model(object *objp)
 
 	switch(objp->type){
 	case OBJ_SHIP:		
-		return Ships[objp->instance].modelnum;
+		return Ship_info[Ships[objp->instance].ship_info_index].model_num;
 
 	case OBJ_WEAPON:
 		Assert(Weapons[objp->instance].weapon_info_index >= 0);

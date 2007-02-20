@@ -12,6 +12,14 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.12  2007/02/12 00:54:31  taylor
+ * make use of generic_anim and generic_bitmap where possible
+ * bunch of cleanup and little optimizations
+ * add "+remove" tbl option to completely get rid of particular beam sections
+ * delayed loading of bitmaps, will only do it after all tbl/tbm have been parsed
+ * if we are using a POF missile which isn't loaded yet, try and load it before going crazy
+ * bug fix and optimization for laser color setting
+ *
  * Revision 2.180.2.11  2007/01/12 04:33:50  Goober5000
  * hmm... I guess when I fixed this back in 2004, I fixed it the wrong way :D
  *
@@ -5946,7 +5954,7 @@ void weapon_area_apply_blast(vec3d *force_apply_pos, object *ship_obj, vec3d *bl
 
 	vm_vec_sub(&vec_ship_to_impact, blast_pos, &ship_obj->pos);
 
-	pm = model_get(Ships[ship_obj->instance].modelnum);
+	pm = model_get(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
 	Assert ( pm != NULL );
 
 	if (make_shockwave) {

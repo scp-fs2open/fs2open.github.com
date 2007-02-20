@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68.2.5 $
- * $Date: 2007-02-10 00:17:40 $
- * $Author: taylor $
+ * $Revision: 2.68.2.6 $
+ * $Date: 2007-02-20 04:19:22 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68.2.5  2007/02/10 00:17:40  taylor
+ * remove NO_SOUND
+ *
  * Revision 2.68.2.4  2006/12/25 18:54:13  Goober5000
  * make chase view and external view toggles independent (Mantis #1087)
  *
@@ -1986,10 +1989,9 @@ void game_process_pause_key()
 }
 
 #define WITHIN_BBOX()	do { \
-	float scale = 2.0f; \
-	polymodel *pm = model_get(s_check->modelnum); \
-	collided = 0; \
-	if(pm != NULL){ \
+	if (pm != NULL) { \
+		float scale = 2.0f; \
+		collided = 0; \
 		vec3d temp = new_obj->pos; \
 		vec3d gpos; \
 		vm_vec_sub2(&temp, &hit_check->pos); \
@@ -2001,8 +2003,7 @@ void game_process_pause_key()
 } while(0)
 
 #define MOVE_AWAY_BBOX() do { \
-	polymodel *pm = model_get(s_check->modelnum); \
-	if(pm != NULL){ \
+	if (pm != NULL) { \
 		switch((int)frand_range(0.0f, 3.9f)){ \
 		case 0: \
 			new_obj->pos.xyz.x += 200.0f; \
@@ -2126,6 +2127,7 @@ void game_process_cheats(int k)
 								Objects[objnum].pos.xyz.x += 1.0f;
 							}
 							
+							polymodel *pm = model_get(Ship_info[s_check->ship_info_index].model_num);
 							WITHIN_BBOX();				
 							if(collided){						
 								MOVE_AWAY_BBOX();

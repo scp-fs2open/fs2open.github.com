@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.27.2.7 $
- * $Date: 2007-02-12 02:19:45 $
- * $Author: taylor $
+ * $Revision: 2.27.2.8 $
+ * $Date: 2007-02-20 04:19:34 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27.2.7  2007/02/12 02:19:45  taylor
+ * fix a couple of things that I missed earlier
+ *
  * Revision 2.27.2.6  2007/02/11 06:19:08  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
  *
@@ -437,7 +440,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 	int	valid_hit_occurred = 0;				// If this is set, then hitpos is set
 	int	quadrant_num = -1;
-	polymodel *pm = model_get( shipp->modelnum );
+	polymodel *pm = model_get(sip->model_num);
 
 	//	total time is flFrametime + time_limit (time_limit used to predict collisions into the future)
 	vec3d weapon_end_pos;
@@ -447,7 +450,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
 
 	// set up collision structs
-	mc.model_num = shipp->modelnum;
+	mc.model_num = sip->model_num;
 	mc.submodel_num = -1;
 	mc.orient = &ship_objp->orient;
 	mc.pos = &ship_objp->pos;

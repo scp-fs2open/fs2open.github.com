@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.57.2.6 $
- * $Date: 2006-12-01 18:53:55 $
- * $Author: karajorma $
+ * $Revision: 2.57.2.7 $
+ * $Date: 2007-02-20 04:19:22 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57.2.6  2006/12/01 18:53:55  karajorma
+ * Fix for Stream weapons not appearing for clients when fired by AI ships in multiplayer. Actual work mostly done by Juke not me
+ *
  * Revision 2.57.2.5  2006/11/21 23:06:57  karajorma
  * Fix ammo and weapon SEXP changes not being passed on to the clients
  *
@@ -3040,7 +3043,7 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 	}
 
 	// find out the next network signature that will be used for the debris pieces.
-	model = Ships[objp->instance].modelnum;
+	model = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 	pm = model_get(model);
 	debris_signature = 0;
 	if ( pm && !vaporized ) {
@@ -6894,7 +6897,7 @@ void process_shield_explosion_packet( ubyte *data, header *hinfo)
 			return;
 		}
 
-		pm = model_get(Ships[objp->instance].modelnum);
+		pm = model_get(Ship_info[Ships[objp->instance].ship_info_index].model_num);
 		shieldp = &pm->shield;
 		Assert( utri_num < shieldp->ntris );
 		stri = shieldp->tris[utri_num];

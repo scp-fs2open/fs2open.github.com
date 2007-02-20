@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.62.2.6 $
- * $Date: 2007-02-12 00:23:39 $
- * $Author: taylor $
+ * $Revision: 2.62.2.7 $
+ * $Date: 2007-02-20 04:19:22 $
+ * $Author: Goober5000 $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62.2.6  2007/02/12 00:23:39  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
  * Revision 2.62.2.5  2006/10/24 13:31:32  taylor
  * fix a memory leak that Valgrind was complaining about (happens mainly when you have a mission without a briefing)
  *
@@ -2446,7 +2449,7 @@ void start_ship_animation(int ship_class, int play_sound)
 		// page in ship textures properly (takes care of nondimming pixels)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
 		
-		if (sip->modelnum < 0)
+		if (sip->model_num < 0)
 		{
 			mprintf(("Couldn't load model file in missionshipchoice.cpp - tell UnknownPlayer"));
 		}

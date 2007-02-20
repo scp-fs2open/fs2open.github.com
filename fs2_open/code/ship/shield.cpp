@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.41.2.3 $
- * $Date: 2007-02-06 01:27:33 $
+ * $Revision: 2.41.2.4 $
+ * $Date: 2007-02-20 04:19:34 $
  * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.41.2.3  2007/02/06 01:27:33  Goober5000
+ * remove obsolete and unused shield flag
+ *
  * Revision 2.41.2.2  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -1204,7 +1207,7 @@ void create_shield_explosion_all(object *objp)
 
 	for (i=0; i<Num_shield_points; i++) {
 		if (Shield_points[i].objnum == objnum) {
-			create_shield_explosion(objnum, shipp->modelnum, &objp->orient, &objp->pos, &Shield_points[i].hit_point, Shield_points[i].shield_tri);
+			create_shield_explosion(objnum, Ship_info[shipp->ship_info_index].model_num, &objp->orient, &objp->pos, &Shield_points[i].hit_point, Shield_points[i].shield_tri);
 			count--;
 			if (count <= 0){
 				break;
@@ -1241,7 +1244,7 @@ void ship_draw_shield( object *objp)
 
 	Assert(objp->instance >= 0);
 
-	model_num = Ships[objp->instance].modelnum;
+	model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 
 	if ( Fred_running ) return;
 

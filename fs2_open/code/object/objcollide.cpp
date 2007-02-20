@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.11.2.2 $
- * $Date: 2007-02-10 00:08:40 $
- * $Author: taylor $
+ * $Revision: 2.11.2.3 $
+ * $Date: 2007-02-20 04:19:34 $
+ * $Author: Goober5000 $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11.2.2  2007/02/10 00:08:40  taylor
+ * performance optimizations:
+ *  - fvi_ray_boundingbox() is faster and should be less prone to compiler/optimization/platform specific issues
+ *  - clean up or obj_check_all_collisions() which is a good bit faster now
+ *
  * Revision 2.11.2.1  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
@@ -1105,7 +1110,7 @@ int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius)
 
 	ship_model_start(goalobjp);
 
-	mc.model_num = Ships[goalobjp->instance].modelnum;			// Fill in the model to check
+	mc.model_num = Ship_info[Ships[goalobjp->instance].ship_info_index].model_num;			// Fill in the model to check
 	mc.orient = &goalobjp->orient;	// The object's orient
 	mc.pos = &goalobjp->pos;			// The object's position
 	mc.p0 = curpos;					// Point 1 of ray to check
