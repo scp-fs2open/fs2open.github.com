@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.13 $
- * $Date: 2007-02-09 04:53:27 $
+ * $Revision: 1.14.2.14 $
+ * $Date: 2007-02-20 04:19:10 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.13  2007/02/09 04:53:27  Goober5000
+ * merge the WCS screaming feature into the 3.6.9 (3.6.10?) branch
+ *
  * Revision 1.14.2.12  2006/10/28 20:54:35  karajorma
  * Adding the network-variable option to SEXP variables. This change will revert variables to the same behaviour they displayed in retail (i.e they don't update for clients) unless a variable is set to be a network-variable.
  *
@@ -1443,12 +1446,12 @@ void CFred_mission_save::save_single_dock_instance(ship *shipp, dock_instance *d
 	// write docker (actually dockee) point
 	required_string_fred("$Docker Point:", "$Name:");
 	parse_comments();
-	fout(" %s", model_get_dock_name(other_shipp->modelnum, dock_find_dockpoint_used_by_object(other_objp, objp)));
+	fout(" %s", model_get_dock_name(Ship_info[other_shipp->ship_info_index].model_num, dock_find_dockpoint_used_by_object(other_objp, objp)));
 
 	// write dockee (actually docker) point
 	required_string_fred("$Dockee Point:", "$Name:");
 	parse_comments();
-	fout(" %s", model_get_dock_name(shipp->modelnum, dock_find_dockpoint_used_by_object(objp, other_objp)));
+	fout(" %s", model_get_dock_name(Ship_info[shipp->ship_info_index].model_num, dock_find_dockpoint_used_by_object(objp, other_objp)));
 }
 
 int CFred_mission_save::save_objects()
@@ -1590,7 +1593,7 @@ int CFred_mission_save::save_objects()
 
 				fout("\n+Arrival Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].modelnum);
+				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (j = 0; j < pm->ship_bay->num_paths; j++)
 				{
 					if (Ships[i].arrival_path_mask & (1 << j))
@@ -1646,7 +1649,7 @@ int CFred_mission_save::save_objects()
 
 				fout("\n+Departure Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].modelnum);
+				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (j = 0; j < pm->ship_bay->num_paths; j++)
 				{
 					if (Ships[i].departure_path_mask & (1 << j))
@@ -2213,7 +2216,7 @@ int CFred_mission_save::save_wings()
 
 				fout("\n+Arrival Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].modelnum);
+				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (j = 0; j < pm->ship_bay->num_paths; j++)
 				{
 					if (Wings[i].arrival_path_mask & (1 << j))
@@ -2269,7 +2272,7 @@ int CFred_mission_save::save_wings()
 
 				fout("\n+Departure Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].modelnum);
+				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (j = 0; j < pm->ship_bay->num_paths; j++)
 				{
 					if (Wings[i].departure_path_mask & (1 << j))

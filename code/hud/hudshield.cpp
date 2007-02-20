@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.39.2.1 $
- * $Date: 2007-02-11 07:36:43 $
+ * $Revision: 2.39.2.2 $
+ * $Date: 2007-02-20 04:19:10 $
  * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39.2.1  2007/02/11 07:36:43  Goober5000
+ * we probably don't need to play a sound when we equalize already-equalized shields, since we don't play one when we augment already-augmented quadrants
+ *
  * Revision 2.39  2006/05/18 14:56:02  taylor
  * fix bool compiler warning for MSVC
  *
@@ -623,7 +626,7 @@ void hud_shield_show(object *objp)
 		ship_model_start(objp);
 		//if(!digitus_improbus)
 		{
-			model_render( sp->modelnum, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->replacement_textures);
+			model_render( sip->model_num, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, sp->replacement_textures);
 		}
 		/*else
 		{

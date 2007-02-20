@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.h $
- * $Revision: 2.10 $
- * $Date: 2006-03-31 10:20:01 $
- * $Author: wmcoolmon $
+ * $Revision: 2.10.2.1 $
+ * $Date: 2007-02-20 04:19:35 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/03/31 10:20:01  wmcoolmon
+ * Prelim. BSG warpin effect stuff
+ *
  * Revision 2.9  2005/10/09 09:13:29  wmcoolmon
  * Added warpin/warpout speed override values to ships.tbl
  *
@@ -230,13 +233,13 @@ void shipfx_flash_init();
 // accordingly.
 // Set is_primary to non-zero if this is a primary weapon.
 // Gun_pos should be in object's frame of reference, not world!!!
-void shipfx_flash_create(object *objp, ship * shipp, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index);
+void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index);
 
 // Sets the flash lights in the model used by this
 // ship to the appropriate values.  There might not
 // be any flashes linked to this ship in which
 // case this function does nothing.
-void shipfx_flash_light_model(object *objp, ship * shipp );
+void shipfx_flash_light_model(object *objp, int model_num);
 
 // Does whatever processing needs to be done each frame.
 void shipfx_flash_do_frame(float frametime);

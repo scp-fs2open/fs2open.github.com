@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.65.2.3 $
- * $Date: 2006-12-26 05:27:15 $
- * $Author: taylor $
+ * $Revision: 2.65.2.4 $
+ * $Date: 2007-02-20 04:19:10 $
+ * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65.2.3  2006/12/26 05:27:15  taylor
+ * make sure that we don't target a hidden jumpnode, and if we do be sure to only detarget it rather than turning off auto-targetting
+ *
  * Revision 2.65.2.2  2006/08/03 01:33:25  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
@@ -1436,7 +1439,7 @@ int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy)
 		// get screen coords, adjusting for autocenter
 		Assert(target_objp->type == OBJ_SHIP);
 		if (target_objp->type == OBJ_SHIP) {
-			pm = model_get(Ships[target_objp->instance].modelnum);
+			pm = model_get(Ship_info[Ships[target_objp->instance].ship_info_index].model_num);
 			if (pm->flags & PM_FLAG_AUTOCEN) {
 				vec3d temp, delta;
 				vm_vec_copy_scale(&temp, &pm->autocenter, -1.0f);
@@ -1513,13 +1516,11 @@ void hud_maybe_render_cargo_scan(ship_info *target_sip)
 //			orient		=>	Orientation of object at the origin
 void hud_targetbox_get_eye(vec3d *eye_pos, matrix *orient, int ship_num)
 {
-	ship		*shipp;
 	polymodel	*pm;
 	eye			*ep;
 	vec3d		origin = ZERO_VECTOR;
 
-	shipp = &Ships[ship_num];
-	pm = model_get( shipp->modelnum );
+	pm = model_get(Ship_info[Ships[ship_num].ship_info_index].model_num);
 
 	// If there is no eye, don't do anything
 	if ( pm->n_view_positions == 0 ) {
@@ -1528,7 +1529,7 @@ void hud_targetbox_get_eye(vec3d *eye_pos, matrix *orient, int ship_num)
 
 	ep = &(pm->view_positions[0] );
 
-	model_find_world_point( eye_pos, &ep->pnt, shipp->modelnum, ep->parent, orient, &origin );
+	model_find_world_point( eye_pos, &ep->pnt, pm->id, ep->parent, orient, &origin );
 }
 
 // -------------------------------------------------------------------------------------
@@ -1597,10 +1598,10 @@ void hud_render_target_ship(object *target_objp)
 		}
 
 		// maybe render a special hud-target-only model
-		if(target_sip->modelnum_hud >= 0){
-			model_render( target_sip->modelnum_hud, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+		if(target_sip->model_num_hud >= 0){
+			model_render( target_sip->model_num_hud, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 		} else {
-			model_render( target_shipp->modelnum, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, target_shipp->replacement_textures);
+			model_render( target_sip->model_num, &target_objp->orient, &obj_pos, flags | MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1, target_shipp->replacement_textures);
 		}
 		ship_model_stop( target_objp );
 
@@ -1750,12 +1751,15 @@ void hud_render_target_weapon(object *target_objp)
 		viewed_model_num	= target_wip->model_num;
 		hud_target_lod		= target_wip->hud_target_lod;
 		if ( is_homing && is_player_missile ) {
+			ship *homing_shipp = &Ships[wp->homing_object->instance];
+			ship_info *homing_sip = &Ship_info[homing_shipp->ship_info_index];
+
 			viewer_obj			= target_objp;
 			viewed_obj			= wp->homing_object;
 			missile_view		= TRUE;
-			viewed_model_num	= Ships[wp->homing_object->instance].modelnum;
-			replacement_textures = Ships[wp->homing_object->instance].replacement_textures;
-			hud_target_lod		= Ship_info[Ships[wp->homing_object->instance].ship_info_index].hud_target_lod;
+			viewed_model_num	= homing_sip->model_num;
+			replacement_textures = homing_shipp->replacement_textures;
+			hud_target_lod		= homing_sip->hud_target_lod;
 		}
 
 		if (Targetbox_wire!=0)
@@ -2156,7 +2160,7 @@ void hud_show_target_data(float frametime)
 			gr_printf(sx, sy, "Targ size: %dx%d", Hud_target_w, Hud_target_h );
 			sy += dy;
 
-			polymodel *pm = model_get( shipp->modelnum );
+			polymodel *pm = model_get(sip->model_num);
 			gr_printf(sx, sy, "POF:%s", pm->filename );
 			sy += dy;
 

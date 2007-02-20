@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.28.2.5 $
- * $Date: 2007-02-12 00:24:33 $
- * $Author: taylor $
+ * $Revision: 1.28.2.6 $
+ * $Date: 2007-02-20 04:19:09 $
+ * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28.2.5  2007/02/12 00:24:33  taylor
+ * add back special "var" setting for flag_def_list and convert some of the lists to use it (more on the way)
+ *
  * Revision 1.28.2.4  2007/02/10 04:49:19  Goober5000
  * prevent the AI from falling into the black hole of disarming a turretless ship
  *
@@ -1203,7 +1206,7 @@ int ai_goal_find_dockpoint(int shipnum, int dock_type)
 	// only check 100 points for sanity's sake
 	while (loop_count < 100)
 	{
-		dock_index = model_find_dock_index(shipp->modelnum, dock_type, dock_index+1);
+		dock_index = model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, dock_type, dock_index+1);
 
 		// not found?
 		if (dock_index == -1)
@@ -1236,7 +1239,7 @@ int ai_goal_find_dockpoint(int shipnum, int dock_type)
 		Warning(LOCATION, "Too many iterations while looking for a dockpoint on %s.  Either there was a bug or this is an übership.\n", shipp->ship_name);
 
 	// if we're here, just return the first dockpoint
-	return model_find_dock_index(shipp->modelnum, dock_type);
+	return model_find_dock_index(Ship_info[shipp->ship_info_index].model_num, dock_type);
 }
 
 // function to fix up dock point references for objects.
@@ -2060,7 +2063,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// this goal will get removed.
 	if ( (aigp->ai_mode == AI_GOAL_DOCK) && (status == SHIP_STATUS_ARRIVED) ) {
 		if (!(aigp->flags & AIGF_DOCKER_INDEX_VALID)) {
-			modelnum = Ships[objp->instance].modelnum;
+			modelnum = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 			Assert( modelnum >= 0 );
 			index = model_find_dock_name_index(modelnum, aigp->docker.name);
 			aigp->docker.index = index;
@@ -2070,7 +2073,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		if (!(aigp->flags & AIGF_DOCKEE_INDEX_VALID)) {
 			sindex = ship_name_lookup(aigp->ship_name);
 			if ( sindex != -1 ) {
-				modelnum = Ships[sindex].modelnum;
+				modelnum = Ship_info[Ships[sindex].ship_info_index].model_num;
 				index = model_find_dock_name_index(modelnum, aigp->dockee.name);
 				aigp->dockee.index = index;
 				aigp->flags |= AIGF_DOCKEE_INDEX_VALID;

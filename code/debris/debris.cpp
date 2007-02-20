@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.23.2.7 $
- * $Date: 2007-02-12 00:22:05 $
- * $Author: taylor $
+ * $Revision: 2.23.2.8 $
+ * $Date: 2007-02-20 04:19:09 $
+ * $Author: Goober5000 $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23.2.7  2007/02/12 00:22:05  taylor
+ * some generic_bitmap fixes to go with new changes (not in CVS just yet, don't freak out)
+ * make use of VALID_FNAME() where possible
+ * fix an animation time issue (sub-second animation playback caused div-by-0)
+ *
  * Revision 2.23.2.6  2007/02/11 09:21:12  taylor
  * remove NO_SOUND
  * fix debris recycling
@@ -1192,7 +1197,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 	int mc_ret_val = 0;
 
 	if ( debris_hit_info->heavy == ship_obj ) {	// ship is heavier, so debris is sphere. Check sphere collision against ship poly model
-		mc.model_num = Ships[ship_obj->instance].modelnum;		// Fill in the model to check
+		mc.model_num = Ship_info[Ships[ship_obj->instance].ship_info_index].model_num;	// Fill in the model to check
 		mc.orient = &ship_obj->orient;								// The object's orient
 		mc.radius = pdebris->radius;
 		mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);
@@ -1223,7 +1228,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 				model_get_rotating_submodel_list(submodel_list, &num_rotating_submodels, heavy_obj);
 
 				// Get polymodel and turn off all rotating submodels, collide against only 1 at a time.
-				pm = model_get(Ships[heavy_obj->instance].modelnum);
+				pm = model_get(Ship_info[Ships[heavy_obj->instance].ship_info_index].model_num);
 
 				// turn off all rotating submodels and test for collision
 				int i;
@@ -1318,7 +1323,7 @@ int debris_check_collision(object *pdebris, object *other_obj, vec3d *hitpos, co
 		mc.submodel_num = Debris[num].submodel_num;
 		model_clear_instance( mc.model_num );
 		mc.orient = &pdebris->orient;				// The object's orient
-		mc.radius = model_get_core_radius( Ships[ship_obj->instance].modelnum );
+		mc.radius = model_get_core_radius(Ship_info[Ships[ship_obj->instance].ship_info_index].model_num);
 
 		// check for collision between debris model and ship sphere
 		mc.flags = (MC_CHECK_MODEL | MC_SUBMODEL | MC_CHECK_SPHERELINE);

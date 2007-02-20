@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.12 $
- * $Date: 2007-02-12 01:04:50 $
- * $Author: taylor $
+ * $Revision: 2.87.2.13 $
+ * $Date: 2007-02-20 04:19:10 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.12  2007/02/12 01:04:50  taylor
+ * make gr_create_shader() use ubyte's instead of float's, saves us the more expensive conversions since we already convert to ubyte anyway
+ *
  * Revision 2.87.2.11  2007/02/11 09:12:12  taylor
  * little bit of cleanup
  * more fixage for hidden jumpnodes (Mantis #1149)
@@ -2557,7 +2560,7 @@ float hud_find_target_distance( object *targetee, object *targeter )
 	// Which model is it?
 	switch( targetee->type )	{
 	case OBJ_SHIP:
-		model_num = Ships[targetee->instance].modelnum;
+		model_num = Ship_info[Ships[targetee->instance].ship_info_index].model_num;
 		break;
 	case OBJ_DEBRIS:
 //		model_num = Debris[targetee->instance].model_num;
@@ -3033,7 +3036,7 @@ void hud_target_in_reticle_new()
 
 		switch (A->type) {
 		case OBJ_SHIP:
-			mc.model_num = Ships[A->instance].modelnum;
+			mc.model_num = Ship_info[Ships[A->instance].ship_info_index].model_num;
 			break;
 		case OBJ_DEBRIS:
 			mc.model_num = Debris[A->instance].model_num;
@@ -3781,7 +3784,7 @@ void hud_show_message_sender()
 
 		switch ( targetp->type ) {
 		case OBJ_SHIP:
-			modelnum = target_shipp->modelnum;
+			modelnum = Ship_info[target_shipp->ship_info_index].model_num;
 			bound_rval = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
 
@@ -3931,7 +3934,7 @@ void hud_show_selection_set()
 
 			switch ( targetp->type ) {
 			case OBJ_SHIP:
-				modelnum = target_shipp->modelnum;
+				modelnum = Ship_info[target_shipp->ship_info_index].model_num;
 				bound_rval = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 				break;
 
@@ -3979,7 +3982,7 @@ void hud_show_brackets(object *targetp, vertex *projected_v)
 
 		switch ( targetp->type ) {
 		case OBJ_SHIP:
-			modelnum = Ships[targetp->instance].modelnum;
+			modelnum = Ship_info[Ships[targetp->instance].ship_info_index].model_num;
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			if ( bound_rc != 0 ) {
 				draw_box = FALSE;
@@ -4461,7 +4464,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 	vec3d		*rel_pos;
 	vertex		lead_target_vertex;
 	object		*targetp;
-	polymodel	*po;
+	polymodel	*pm;
 	ship_weapon	*swp;
 	weapon_info	*wip;
 	weapon_info	*tmp=NULL;
@@ -4490,7 +4493,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 		return;
 	}
 	
-	po = model_get( Player_ship->modelnum );
+	pm = model_get(Ship_info[Player_ship->ship_info_index].model_num);
 	swp = &Player_ship->weapons;
 
 	// Added to take care of situation where there are no primary banks on the player ship
@@ -4503,8 +4506,8 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 		return;
 	wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
 			
-	if (po->n_guns && bank_to_fire != -1 ) {
-		rel_pos = &po->gun_banks[bank_to_fire].pnt[0];
+	if (pm->n_guns && bank_to_fire != -1 ) {
+		rel_pos = &pm->gun_banks[bank_to_fire].pnt[0];
 	} else {
 		rel_pos = NULL;
 	}

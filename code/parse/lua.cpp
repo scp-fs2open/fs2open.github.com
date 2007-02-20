@@ -1891,9 +1891,9 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	ship_info *sip = &Ship_info[idx];
 
 	//Make sure model is loaded
-	sip->modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
 
-	if(sip->modelnum < 0)
+	if(sip->model_num < 0)
 		return lua_set_args(L, "b", false);
 
 	//Handle angles
@@ -1926,9 +1926,9 @@ LUA_FUNC(renderTechModel, l_Shipclass, "X1, Y1, X2, Y2, [Rotation %, Pitch %, Ba
 	light_rotate_all();
 
 	//Draw the ship!!
-	model_clear_instance(sip->modelnum);
+	model_clear_instance(sip->model_num);
 	model_set_detail_level(0);
-	model_render(sip->modelnum, &orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
+	model_render(sip->model_num, &orient, &vmd_zero_vector, MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING);
 
 	//OK we're done
 	if (!Cmdline_nohtl) 
@@ -2662,7 +2662,7 @@ LUA_VAR(Position, l_Subsystem, "local vector", "Subsystem position with regards 
 	if(!sso->IsValid())
 		return LUA_RETURN_NIL;
 
-	polymodel *pm = model_get(Ships[sso->objp->instance].modelnum);
+	polymodel *pm = model_get(Ship_info[Ships[sso->objp->instance].ship_info_index].model_num);
 	Assert(pm != NULL);
 
 	bsp_info *sm = &pm->submodel[sso->ss->system_info->subobj_num];
@@ -2683,7 +2683,7 @@ LUA_VAR(GunPosition, l_Subsystem, "local vector", "Subsystem gun position with r
 	if(!sso->IsValid())
 		return LUA_RETURN_NIL;
 
-	polymodel *pm = model_get(Ships[sso->objp->instance].modelnum);
+	polymodel *pm = model_get(Ship_info[Ships[sso->objp->instance].ship_info_index].model_num);
 	Assert(pm != NULL);
 
 	if(sso->ss->system_info->turret_gun_sobj < 0)
@@ -2922,7 +2922,7 @@ LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 		return LUA_RETURN_NIL;
 
 	ship *shipp = &Ships[sh->objp->instance];
-	polymodel *pm = model_get(shipp->modelnum);
+	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 	int idx = -1;
 	int i;
 
@@ -3365,7 +3365,7 @@ LUA_FUNC(getNumTextures, l_Ship, NULL, "Number of textures", "Gets number of tex
 	if(!objh->IsValid())
 		return LUA_RETURN_NIL;
 
-	polymodel *pm = model_get(Ships[objh->objp->instance].modelnum);
+	polymodel *pm = model_get(Ship_info[Ships[objh->objp->instance].ship_info_index].model_num);
 
 	if(pm == NULL)
 		return LUA_RETURN_FALSE;

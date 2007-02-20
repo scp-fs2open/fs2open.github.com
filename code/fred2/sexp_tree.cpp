@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.8.2.6 $
- * $Date: 2006-10-28 20:54:35 $
- * $Author: karajorma $
+ * $Revision: 1.8.2.7 $
+ * $Date: 2007-02-20 04:19:10 $
+ * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8.2.6  2006/10/28 20:54:35  karajorma
+ * Adding the network-variable option to SEXP variables. This change will revert variables to the same behaviour they displayed in retail (i.e they don't update for clients) unless a variable is set to be a network-variable.
+ *
  * Revision 1.8.2.5  2006/10/09 05:25:07  Goober5000
  * make sexp nodes dynamic
  *
@@ -5290,7 +5293,7 @@ sexp_list_item *sexp_tree::get_listing_opf_docker_point(int parent_node)
 
 	sh = ship_name_lookup(tree_nodes[z].text, 1);
 	if (sh >= 0) {
-		z = get_docking_list(Ships[sh].modelnum);
+		z = get_docking_list(Ship_info[Ships[sh].ship_info_index].model_num);
 		for (i=0; i<z; i++)
 			head.add_data(Docking_bay_list[i]);
 	}
@@ -5311,7 +5314,7 @@ sexp_list_item *sexp_tree::get_listing_opf_dockee_point(int parent_node)
 
 	sh = ship_name_lookup(tree_nodes[z].text, 1);
 	if (sh >= 0) {
-		z = get_docking_list(Ships[sh].modelnum);
+		z = get_docking_list(Ship_info[Ships[sh].ship_info_index].model_num);
 		for (i=0; i<z; i++)
 			head.add_data(Docking_bay_list[i]);
 	}

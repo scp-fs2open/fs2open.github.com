@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.39.2.7 $
- * $Date: 2007-02-11 06:19:07 $
+ * $Revision: 1.39.2.8 $
+ * $Date: 2007-02-20 04:19:09 $
  * $Author: Goober5000 $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39.2.7  2007/02/11 06:19:07  Goober5000
+ * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
+ *
  * Revision 1.39.2.6  2006/12/07 17:51:39  taylor
  * make fire-on-normal return value a little more obvious
  * fix the "infinite genius" move I made by breaking turret movements ;)
@@ -1023,7 +1026,8 @@ int aifft_rotate_turret(ship *shipp, int parent_objnum, ship_subsys *ss, object 
 		vm_vec_normalized_dir(&v2e, predicted_enemy_pos, &gun_pos);
 
 		if (vm_vec_dot(&v2e, gvec) > tp->turret_fov) {
-			ret_val = model_rotate_gun(shipp->modelnum, ss->system_info, &Objects[parent_objnum].orient, 
+			ret_val = model_rotate_gun(Ship_info[shipp->ship_info_index].model_num,
+										ss->system_info, &Objects[parent_objnum].orient, 
 										&ss->submodel_info_1.angs, &ss->submodel_info_2.angs,
 										&Objects[parent_objnum].pos, predicted_enemy_pos);
 		}
