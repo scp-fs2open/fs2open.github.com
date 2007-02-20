@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.157.2.25 $
- * $Date: 2007-02-20 04:19:22 $
+ * $Revision: 2.157.2.26 $
+ * $Date: 2007-02-20 04:53:11 $
  * $Author: Goober5000 $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157.2.25  2007/02/20 04:19:22  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.157.2.24  2007/02/16 22:09:03  Goober5000
  * remove obsolete and misleading comments which should have been edited when the code was upgraded
  *
@@ -6731,7 +6734,7 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 		ship *shipp = &Ships[obj->instance];
 		ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-		Assert( bank_obj < si->n_subsystems );
+		Assert( bank_obj < sip->n_subsystems );
 
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
