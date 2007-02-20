@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.42 $
- * $Date: 2007-02-13 01:45:56 $
+ * $Revision: 2.259.2.43 $
+ * $Date: 2007-02-20 01:41:07 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.42  2007/02/13 01:45:56  Goober5000
+ * fix a hideous bug with the knossos special warp stuff
+ * (how did this ever actually work correctly?)
+ *
  * Revision 2.259.2.41  2007/02/12 00:23:39  taylor
  * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
@@ -6556,7 +6560,6 @@ int sexp_get_object_coordinate(int n, int axis)
 	return sexp_calculate_coordinate(pos, &oswpt.objp->orient, relative_location, axis);
 }
 
-// Goober5000
 void sexp_set_object_position(int n) 
 {
 	vec3d target_vec, orig_leader_vec;
