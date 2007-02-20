@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.13  2007/02/20 04:19:44  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.180.2.12  2007/02/12 00:54:31  taylor
  * make use of generic_anim and generic_bitmap where possible
  * bunch of cleanup and little optimizations
@@ -6761,27 +6764,24 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 			total_scale *= FLAK_DAMAGE_SCALE;
 		}
 		
-		/* Goober5000 - commented this, since it's kinda redundant with the next thingy
 		// if the player is firing small weapons at a big ship
-		if( from_player && is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) )
-		{
+		if( from_player && is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) ){
+
 			// if its a laser weapon
 			if(wip->subtype == WP_LASER){
 				total_scale *= 0.01f;
 			} else {
 				total_scale *= 0.05f;
 			}
-		}*/
+		}
 
 		// if the weapon is a small weapon being fired at a big ship
 		if( is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) ){
-			// Goober5000 - now weapons scale universally
-			total_scale *= hull_pct * CAPITAL_DAMAGE_SCALE;
-			/*if(hull_pct > 0.1f){
+			if(hull_pct > 0.1f){
 				total_scale *= hull_pct;
 			} else {
 				return 0.0f;
-			}*/
+			}
 		}
 	}
 	
