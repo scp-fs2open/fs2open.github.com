@@ -28,7 +28,6 @@ CShipTexturesDlg::CShipTexturesDlg(CWnd* pParent /*=NULL*/)
 	self_ship = -1;
 	active_texture_index = -1;
 	modified = 0;
-	replace_type_changed = 0;
 	texture_count = 0;
 }
 
@@ -48,8 +47,6 @@ BEGIN_MESSAGE_MAP(CShipTexturesDlg, CDialog)
 	//{{AFX_MSG_MAP(CShipTexturesDlg)
 	ON_WM_CLOSE()
 	ON_CBN_SELCHANGE(IDC_OLD_TEXTURE_LIST, OnSelchangeOldTextureList)
-	ON_BN_CLICKED(IDC_REGULAR_REPLACE, OnRegularReplace)
-	ON_BN_CLICKED(IDC_DUPLICATE_REPLACE, OnDuplicateReplace)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -58,7 +55,7 @@ END_MESSAGE_MAP()
 
 void CShipTexturesDlg::OnOK() 
 {
-	int i, k, write_index, z, not_found, temp_bmp, temp_frames, temp_fps, replace_type;
+	int i, k, write_index, z, not_found, temp_bmp, temp_frames, temp_fps;
 	CString missing_files, message;
 	char buf[10];
 
@@ -119,20 +116,6 @@ void CShipTexturesDlg::OnOK()
 		// re-sort according to old
 		sort_textures();
 
-		// check replace option
-		if (((CButton *) GetDlgItem(IDC_REGULAR_REPLACE))->GetCheck())
-		{
-			replace_type = FRED_TEXTURE_REPLACE;
-		}
-		else if (((CButton *) GetDlgItem(IDC_DUPLICATE_REPLACE))->GetCheck())
-		{
-			replace_type = FRED_DUPLICATE_MODEL_TEXTURE_REPLACE;
-		}
-		else
-		{
-			Int3();
-		}
-
 		// overwrite old stuff
 		k = 0;
 		write_index = 0;
@@ -159,7 +142,6 @@ void CShipTexturesDlg::OnOK()
 			if (strlen(new_texture_name[i]))
 			{
 				// assign to global FRED array
-				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = replace_type;
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, old_texture_name[i]);
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, new_texture_name[i]);
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, Ships[self_ship].ship_name);
@@ -190,10 +172,6 @@ BOOL CShipTexturesDlg::OnInitDialog()
 		*old_texture_name[i] = 0;
 		*new_texture_name[i] = 0;
 	}
-
-	// set option button
-	((CButton *) GetDlgItem(IDC_REGULAR_REPLACE))->SetCheck(1);
-	((CButton *) GetDlgItem(IDC_DUPLICATE_REPLACE))->SetCheck(0);
 
 	// set up pointer to combo box
 	box = (CComboBox *) GetDlgItem(IDC_OLD_TEXTURE_LIST);
@@ -253,22 +231,6 @@ BOOL CShipTexturesDlg::OnInitDialog()
 	{
 		if (!stricmp(Ships[self_ship].ship_name, Fred_texture_replacements[k].ship_name))
 		{
-			// check replacement type
-			if (Fred_texture_replacements[k].new_texture_id == FRED_TEXTURE_REPLACE)
-			{
-				((CButton *) GetDlgItem(IDC_REGULAR_REPLACE))->SetCheck(1);
-				((CButton *) GetDlgItem(IDC_DUPLICATE_REPLACE))->SetCheck(0);
-			}
-			else if (Fred_texture_replacements[k].new_texture_id == FRED_DUPLICATE_MODEL_TEXTURE_REPLACE)
-			{
-				((CButton *) GetDlgItem(IDC_REGULAR_REPLACE))->SetCheck(0);
-				((CButton *) GetDlgItem(IDC_DUPLICATE_REPLACE))->SetCheck(1);
-			}
-			else
-			{
-				Int3();	// error
-			}
-
 			// look for corresponding old texture
 			for (i=0; i<texture_count; i++)
 			{
@@ -292,7 +254,6 @@ BOOL CShipTexturesDlg::OnInitDialog()
 	m_old_texture_list = 0;
 	active_texture_index = 0;
 	modified = 0;
-	replace_type_changed = 0;
 
 	// display new texture, if we have one
 	m_new_texture = CString(new_texture_name[0]);
@@ -329,7 +290,7 @@ void CShipTexturesDlg::OnClose()
 
 int CShipTexturesDlg::query_modified()
 {
-	return modified || replace_type_changed;
+	return modified;
 }
 
 void CShipTexturesDlg::OnSelchangeOldTextureList() 
@@ -366,16 +327,6 @@ void CShipTexturesDlg::OnSelchangeOldTextureList()
 	m_new_texture = CString(new_texture_name[active_texture_index]);
 
 	UpdateData(FALSE);
-}
-
-void CShipTexturesDlg::OnRegularReplace() 
-{
-	replace_type_changed = !replace_type_changed;	
-}
-
-void CShipTexturesDlg::OnDuplicateReplace() 
-{
-	replace_type_changed = !replace_type_changed;	
 }
 
 // bubble sort
