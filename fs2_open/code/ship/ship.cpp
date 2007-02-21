@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.405 $
- * $Date: 2007-02-20 04:20:27 $
+ * $Revision: 2.406 $
+ * $Date: 2007-02-21 01:44:02 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.405  2007/02/20 04:20:27  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.404  2007/02/18 06:17:34  Goober5000
  * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
  *
@@ -8737,26 +8740,6 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	//WMC - I hope this isn't really needed anymore. Took it out.
 
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
-
-	// check for texture_replacement - Goober5000
-	if (ship_name)
-	{
-		// do we have a replacement?
-		for (i=0; i<Num_texture_replacements; i++)
-		{
-			if (!stricmp(ship_name, Texture_replace[i].ship_name))
-			{
-				// allocate space for subsystems
-		
-				// copy original subsys data
-
-				// now load the duplicate model
-
-				Int3();
-				break;
-			}
-		}
-	}
 
 	// maybe load an optional hud target model
 	if(strlen(sip->pof_file_hud)){
