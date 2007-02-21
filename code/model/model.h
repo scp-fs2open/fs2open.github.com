@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.101 $
- * $Date: 2007-02-18 06:16:47 $
+ * $Revision: 2.102 $
+ * $Date: 2007-02-21 01:44:02 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2007/02/18 06:16:47  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.100  2007/02/10 06:39:43  Goober5000
  * new feature: shield generators that control whether the shield is up
  *
@@ -1271,20 +1274,6 @@ typedef struct polymodel {
 
 } polymodel;
 
-// texture replacement info - Goober5000
-#define TEXTURE_NAME_LENGTH	128
-#define MAX_TEXTURE_REPLACEMENTS	50
-
-typedef struct texture_replace {
-	char ship_name[NAME_LENGTH];
-	char old_texture[TEXTURE_NAME_LENGTH];
-	char new_texture[TEXTURE_NAME_LENGTH];
-	int new_texture_id;
-} texture_replace;
-
-extern int Num_texture_replacements;
-extern texture_replace Texture_replace[MAX_TEXTURE_REPLACEMENTS];
-
 // Call once to initialize the model system
 void model_init();
 
@@ -1302,9 +1291,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
-
-// Goober5000
-void model_duplicate_reskin(int modelnum, char *ship_name);
 
 // notify the model system that a ship has died
 void model_notify_dead_ship(int objnum);

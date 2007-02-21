@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.99 $
+ * $Revision: 2.100 $
  * $Author: Goober5000 $
- * $Date: 2007-02-18 06:16:47 $
+ * $Date: 2007-02-21 01:44:02 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.99  2007/02/18 06:16:47  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.98  2007/02/11 21:26:35  Goober5000
  * massive shield infrastructure commit
  *
@@ -810,6 +813,19 @@ typedef struct subsys_status {
 	int	subsys_cargo_name;
 } subsys_status;
 
+// Goober5000 - texture replacement info
+#define TEXTURE_NAME_LENGTH	128
+
+typedef struct texture_replace {
+	char ship_name[NAME_LENGTH];
+	char old_texture[TEXTURE_NAME_LENGTH];
+	char new_texture[TEXTURE_NAME_LENGTH];
+	int new_texture_id;
+} texture_replace;
+
+extern texture_replace Fred_texture_replacements[MAX_SHIPS * MAX_MODEL_TEXTURES];
+
+
 #define MAX_OBJECT_STATUS	10
 #define MAX_ALT_CLASS_1		3
 #define MAX_ALT_CLASS_2		1	// Karajorma - Team Loadout only needs one of these but I'm generalising the sytstem in case anyone ever needs more
@@ -978,7 +994,6 @@ typedef struct p_object {
 extern p_object Parse_objects[MAX_PARSE_OBJECTS];
 extern int Num_parse_objects;
 
-
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
 
@@ -1033,10 +1048,6 @@ extern p_object *Arriving_support_ship;
 
 extern char Neb2_texture_name[MAX_FILENAME_LEN];
 
-// Goober5000
-#define FRED_TEXTURE_REPLACE					1
-#define FRED_DUPLICATE_MODEL_TEXTURE_REPLACE	2
-extern texture_replace Fred_texture_replacements[MAX_SHIPS * MAX_MODEL_TEXTURES];
 
 int parse_main(char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);

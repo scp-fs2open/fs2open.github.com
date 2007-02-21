@@ -21,7 +21,6 @@ public:
 	int self_ship;
 	int active_texture_index;
 	int modified;
-	int replace_type_changed;
 	int texture_count;
 
 // Dialog Data
@@ -50,8 +49,6 @@ protected:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnClose();
 	afx_msg void OnSelchangeOldTextureList();
-	afx_msg void OnRegularReplace();
-	afx_msg void OnDuplicateReplace();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
