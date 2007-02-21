@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.105.2.17 $
- * $Date: 2007-02-20 04:19:22 $
+ * $Revision: 2.105.2.18 $
+ * $Date: 2007-02-21 01:43:32 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105.2.17  2007/02/20 04:19:22  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.105.2.16  2007/02/12 00:19:48  taylor
  * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
  *
@@ -1249,9 +1252,6 @@ int ss_warning_shown = 0;		// have we shown the warning dialog concerning the su
 char	Global_filename[256];
 int Model_ram = 0;			// How much RAM the models use total
 #endif
-
-int Num_texture_replacements;
-texture_replace Texture_replace[MAX_TEXTURE_REPLACEMENTS];
 
 // Anything less than this is considered incompatible.
 #define PM_COMPATIBLE_VERSION 1900
@@ -4863,47 +4863,6 @@ int model_find_bay_path(int modelnum, char *bay_path_name)
 	}
 
 	return -1;
-}
-
-// Goober5000
-void model_duplicate_reskin(int modelnum, char *ship_name)
-{
-	polymodel *pm = model_get(modelnum);
-
-	int i, j;
-	char *p = NULL;
-	char texture_file[MAX_FILENAME_LEN];
-
-	// for all textures
-	for (i=0; i<Num_texture_replacements; i++)
-	{
-		// this the right ship?
-		if (!strcmp(ship_name, Texture_replace[i].ship_name))
-		{
-			// look for textures
-			for (j=0; j<pm->n_textures; j++)
-			{
-				// get texture file name
-				bm_get_filename(pm->maps[j].base_map.texture, texture_file);
-
-				// get rid of file extension
-				p = strchr( texture_file, '.' );
-				if ( p )
-				{
-					mprintf(( "ignoring extension on file '%s'\n", texture_file ));
-					*p = 0;
-				}
-
-				// now compare the extension-less texture file names
-				if (!stricmp(texture_file, Texture_replace[i].old_texture))
-				{
-					// replace it
-					model_load_texture(pm, j, Texture_replace[i].new_texture);
-					break;	// break out of the one loop
-				}
-			}
-		}
-	}
 }
 
 #if BYTE_ORDER == BIG_ENDIAN

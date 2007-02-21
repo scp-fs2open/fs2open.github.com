@@ -193,7 +193,6 @@
 #define IDC_DOGFIGHT                    1034
 #define IDC_PASSIVE_SHIP                1034
 #define IDC_FIELD_SHIP                  1034
-#define IDC_REGULAR_REPLACE             1034
 #define IDC_SEP_UNDERSCORES             1034
 #define IDC_EXPORT_EVERYTHING           1034
 #define IDC_RADIO2                      1035
@@ -204,7 +203,6 @@
 #define IDC_TYPE_NUMBER                 1035
 #define IDC_PASSIVE_ASTEROID            1035
 #define IDC_FIELD_ASTEROID              1035
-#define IDC_DUPLICATE_REPLACE           1035
 #define IDC_SEP_NOTHING                 1035
 #define IDC_EXPORT_COMMAND_BRIEFINGS    1035
 #define IDC_RADIO3                      1036
