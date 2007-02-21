@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.80.2.15 $
- * $Date: 2007-02-12 00:19:48 $
- * $Author: taylor $
+ * $Revision: 2.80.2.16 $
+ * $Date: 2007-02-21 01:43:32 $
+ * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80.2.15  2007/02/12 00:19:48  taylor
+ * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
+ *
  * Revision 2.80.2.14  2006/12/28 22:47:15  Goober5000
  * fix spelling... *twitch*
  *
@@ -1243,20 +1246,6 @@ typedef struct polymodel {
 
 } polymodel;
 
-// texture replacement info - Goober5000
-#define TEXTURE_NAME_LENGTH	128
-#define MAX_TEXTURE_REPLACEMENTS	50
-
-typedef struct texture_replace {
-	char ship_name[NAME_LENGTH];
-	char old_texture[TEXTURE_NAME_LENGTH];
-	char new_texture[TEXTURE_NAME_LENGTH];
-	int new_texture_id;
-} texture_replace;
-
-extern int Num_texture_replacements;
-extern texture_replace Texture_replace[MAX_TEXTURE_REPLACEMENTS];
-
 // Call once to initialize the model system
 void model_init();
 
@@ -1274,9 +1263,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 
 // Goober5000
 void model_load_texture(polymodel *pm, int i, char *file);
-
-// Goober5000
-void model_duplicate_reskin(int modelnum, char *ship_name);
 
 // notify the model system that a ship has died
 void model_notify_dead_ship(int objnum);

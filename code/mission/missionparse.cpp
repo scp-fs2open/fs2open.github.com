@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.28 $
- * $Date: 2007-02-20 04:19:22 $
+ * $Revision: 2.178.2.29 $
+ * $Date: 2007-02-21 01:43:32 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.28  2007/02/20 04:19:22  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.178.2.27  2007/02/13 01:45:56  Goober5000
  * fix a hideous bug with the knossos special warp stuff
  * (how did this ever actually work correctly?)
@@ -3755,64 +3758,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, p_objp->name);
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
-				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = FRED_TEXTURE_REPLACE;
+				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = -1;
 				Fred_num_texture_replacements++;
 			}
 
 			// increment
 			p_objp->num_texture_replacements++;
-		}
-	}
-
-	// duplicate model texture replacement - Goober5000
-	else if (false) //(optional_string("$Duplicate Model Texture Replace:"))
-	{
-		if (p_objp->num_texture_replacements > 0)	// because of the else, not allowed to happen any more
-		{
-			Warning(LOCATION, "Warning: Both $Texture Replace and $Duplicate Model Texture Replace used on the same ship.\n");
-		}
-
-		char *p;
-
-		while ((Num_texture_replacements < MAX_TEXTURE_REPLACEMENTS) && (optional_string("+old:")))
-		{
-			strcpy(Texture_replace[Num_texture_replacements].ship_name, p_objp->name);
-			stuff_string(Texture_replace[Num_texture_replacements].old_texture, F_NAME, MAX_FILENAME_LEN);
-			required_string("+new:");
-			stuff_string(Texture_replace[Num_texture_replacements].new_texture, F_NAME, MAX_FILENAME_LEN);
-
-			// get rid of extensions
-			p = strchr(Texture_replace[Num_texture_replacements].old_texture, '.');
-			if (p)
-			{
-				mprintf(("Extraneous extension found on duplicate model replacement texture %s!\n", Texture_replace[Num_texture_replacements].old_texture));
-				*p = 0;
-			}
-			p = strchr(Texture_replace[Num_texture_replacements].new_texture, '.');
-			if (p)
-			{
-				mprintf(("Extraneous extension found on duplicate model replacement texture %s!\n", Texture_replace[Num_texture_replacements].new_texture));
-				*p = 0;
-			}
-
-			// *** account for FRED
-			if (Fred_running)
-			{
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, p_objp->name);
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, Texture_replace[Num_texture_replacements].old_texture);
-				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, Texture_replace[Num_texture_replacements].new_texture);
-				Fred_texture_replacements[Fred_num_texture_replacements].new_texture_id = FRED_DUPLICATE_MODEL_TEXTURE_REPLACE;
-				Fred_num_texture_replacements++;
-			}
-
-			// increment
-			Num_texture_replacements++;
-		}
-
-		// if we ran out of texture replacement slots, don't read any more
-		if (Num_texture_replacements >= MAX_TEXTURE_REPLACEMENTS)
-		{
-			skip_to_start_of_string_either("#Wings", "$Name");
 		}
 	}
 
@@ -5667,6 +5618,7 @@ void parse_mission(mission *pm, int flags)
 	Player_start_shipnum = -1;
 	*Player_start_shipname = 0;		// make the string 0 length for checking later
 	memset( &Player_start_pobject, 0, sizeof(Player_start_pobject) );
+	Fred_num_texture_replacements = 0;
 
 	// initialize the initially_docked array.
 	for ( i = 0; i < MAX_SHIPS; i++ ) {
@@ -5688,9 +5640,6 @@ void parse_mission(mission *pm, int flags)
 		vm_free( Subsys_status );
 		Subsys_status = NULL;
 	}
-
-	Num_texture_replacements = 0;
-	Fred_num_texture_replacements = 0;
 
 	parse_mission_info(pm); 
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.14 $
- * $Date: 2007-02-20 04:19:10 $
+ * $Revision: 1.14.2.15 $
+ * $Date: 2007-02-21 01:43:31 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.14  2007/02/20 04:19:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 1.14.2.13  2007/02/09 04:53:27  Goober5000
  * merge the WCS screaming feature into the 3.6.9 (3.6.10?) branch
  *
@@ -1919,23 +1922,7 @@ int CFred_mission_save::save_objects()
 				// see about writing the title
 				if (!wrote_heading)
 				{
-					// determine which one
-					if (Fred_texture_replacements[k].new_texture_id == FRED_TEXTURE_REPLACE)
-					{
-						fout_and_bypass("\n;;FSO 3.6.8;; $Texture Replace:");
-					}
-					// more determining
-					else if (Fred_texture_replacements[k].new_texture_id == FRED_DUPLICATE_MODEL_TEXTURE_REPLACE)
-					{
-						fout_and_bypass("\n;;FSO 3.6.8;; $Texture Replace:");
-					}
-					// no match? bug...
-					else
-					{
-						Int3();	// invalid flag
-					}
-
-					// set the flag
+					fout_and_bypass("\n;;FSO 3.6.8;; $Texture Replace:");
 					wrote_heading = 1;
 				}
 
