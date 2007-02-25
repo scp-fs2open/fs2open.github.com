@@ -4371,10 +4371,10 @@ ADE_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 	object_h *oh;
 	char *s;
 	int tdx=-1;
-	if(!ade_get_args(L, "os|o", l_ShipTextures.GetPtr(&oh), &s, l_Texture.Get(&tdx)))
+	if (!ade_get_args(L, "os|o", l_ShipTextures.GetPtr(&oh), &s, l_Texture.Get(&tdx)))
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
-	if(!oh->IsValid() || s==NULL)
+	if (!oh->IsValid() || s==NULL)
 		return ade_set_error(L, "o", l_Texture.Set(-1));
 
 	ship *shipp = &Ships[oh->objp->instance];
@@ -4384,29 +4384,29 @@ ADE_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 
 	char fname[MAX_FILENAME_LEN];
 	char *p;
-	for(i = 0; i < pm->n_textures; i++)
+	for (i = 0; i < pm->n_textures; i++)
 	{
-		if(pm->maps[i].base_map.texture > -1)
+		if (pm->maps[i].base_map.texture >= 0)
 		{
 			bm_get_filename(pm->maps[i].base_map.texture, fname);
 
 			//Get rid of extension
 			p = strchr( fname, '.' );
-			if ( p != NULL)
+			if (p != NULL)
 				*p = 0;
 
-			if(!stricmp(fname, s)) {
+			if (!stricmp(fname, s)) {
 				idx = i;
 				break;
 			}
 		}
 
-		if(shipp->replacement_textures != NULL && pm->maps[i].base_map.texture > -1)
+		if (shipp->replacement_textures != NULL && pm->maps[i].base_map.texture >= 0)
 		{
 			bm_get_filename(shipp->replacement_textures[i], fname);
 			//Get rid of extension
 			p = strchr( fname, '.' );
-			if ( p != NULL)
+			if (p != NULL)
 				*p = 0;
 
 			if(!stricmp(fname, s)) {
@@ -4416,25 +4416,29 @@ ADE_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 		}
 	}
 
-	if(idx < 0)
+	if (idx < 0)
 	{
-		i = atoi(s);
-		if(i < 1 || i > pm->n_textures)
-			return ade_set_error(L, "o", l_Texture.Set(-1));
+		idx = atoi(s) - 1;	//Lua->FS2
 
-		i--; //Lua->FS2
-		idx = i;
-	}
+		if (idx < 0 || idx >= pm->n_textures)
+			return ade_set_error(L, "o", l_Texture.Set(-1));
+  	}
 
 	//LuaError(L, "%d: %d", lua_type(L,lua_upvalueindex(2)), lua_toboolean(L,lua_upvalueindex(2)));
-	if(ADE_SETTING_VAR && tdx > -1) {
-		shipp->replacement_textures = shipp->replacement_textures_buf;
+	if (ADE_SETTING_VAR && tdx >= 0) {
+		if (shipp->replacement_textures == NULL) {
+			shipp->replacement_textures = (int *) vm_malloc(MAX_MODEL_TEXTURES * sizeof(int));
+
+			for (i = 0; i < MAX_MODEL_TEXTURES; i++)
+				shipp->replacement_textures[i] = -1;
+		}
+
 		shipp->replacement_textures[idx] = tdx;
 	}
 
-	if(shipp->replacement_textures != NULL && shipp->replacement_textures[idx] > -1)
+	if (shipp->replacement_textures != NULL && shipp->replacement_textures[idx] >= 0)
 		return ade_set_args(L, "o", l_Texture.Set(shipp->replacement_textures[idx]));
-	else if(pm->maps[idx].base_map.texture > -1)
+	else if(pm->maps[idx].base_map.texture >= 0)
 		return ade_set_args(L, "o", l_Texture.Set(pm->maps[idx].base_map.texture));
 	else
 		return ade_set_error(L, "o", l_Texture.Set(-1));
@@ -4783,10 +4787,13 @@ ADE_VIRTVAR(Textures, l_Ship, "shiptextures", "Gets ship textures")
 	if(ADE_SETTING_VAR && sh != NULL && sh->IsValid()) {
 		ship *src = &Ships[sh->objp->instance];
 		ship *dest = &Ships[dh->objp->instance];
-		if(src->replacement_textures != NULL)
+		
+		if (src->replacement_textures != NULL)
 		{
-			dest->replacement_textures = dest->replacement_textures_buf;
-			memcpy(dest->replacement_textures_buf, src->replacement_textures_buf, sizeof(dest->replacement_textures_buf));
+			if (dest->replacement_textures == NULL)
+				dest->replacement_textures = (int *) vm_malloc(MAX_MODEL_TEXTURES * sizeof(int));
+
+			memcpy(dest->replacement_textures, src->replacement_textures, MAX_MODEL_TEXTURES * sizeof(int));
 		}
 	}
 
