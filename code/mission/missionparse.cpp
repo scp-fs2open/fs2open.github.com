@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.217 $
- * $Date: 2007-02-21 01:44:02 $
+ * $Revision: 2.218 $
+ * $Date: 2007-02-25 03:57:58 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.217  2007/02/21 01:44:02  Goober5000
+ * remove duplicate model texture replacement
+ *
  * Revision 2.216  2007/02/20 04:20:18  Goober5000
  * the great big duplicate model removal commit
  *
@@ -2890,7 +2893,10 @@ int parse_create_object_sub(p_object *p_objp)
 	// handle the replacement textures
 	if (p_objp->num_texture_replacements > 0)
 	{
-		shipp->replacement_textures = shipp->replacement_textures_buf;
+		shipp->replacement_textures = (int *) vm_malloc(MAX_MODEL_TEXTURES * sizeof(int));
+
+		for (i = 0; i < MAX_MODEL_TEXTURES; i++)
+			shipp->replacement_textures[i] = -1;
 	}
 
 	// now fill them in
