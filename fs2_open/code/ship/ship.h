@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.181 $
- * $Date: 2007-02-20 04:20:27 $
+ * $Revision: 2.182 $
+ * $Date: 2007-02-25 03:57:59 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.181  2007/02/20 04:20:27  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.180  2007/02/18 06:17:34  Goober5000
  * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
  *
@@ -1489,7 +1492,6 @@ typedef struct ship {
 	
 	// Goober5000 - revised nameplate implementation
 	int *replacement_textures;
-	int replacement_textures_buf[MAX_MODEL_TEXTURES];	// replacement texture for this ship
 
 	trail *ABtrail_ptr[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
 	trail_info ab_info[MAX_SHIP_CONTRAILS];

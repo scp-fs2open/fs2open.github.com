@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.406 $
- * $Date: 2007-02-21 01:44:02 $
+ * $Revision: 2.407 $
+ * $Date: 2007-02-25 03:57:58 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.406  2007/02/21 01:44:02  Goober5000
+ * remove duplicate model texture replacement
+ *
  * Revision 2.405  2007/02/20 04:20:27  Goober5000
  * the great big duplicate model removal commit
  *
@@ -5652,12 +5655,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	// set awacs warning flags so awacs ship only asks for help once at each level
 	shipp->awacs_warning_flag = AWACS_WARN_NONE;
 
-	// initialize revised texture replacements - Goober5000
+	// Goober5000 - revised texture replacement
 	shipp->replacement_textures = NULL;
-	for (i=0; i<MAX_MODEL_TEXTURES; i++)
-	{
-		shipp->replacement_textures_buf[i] = -1;
-	}
 
 	shipp->glow_point_bank_active.clear();
 
@@ -6831,9 +6830,14 @@ void ship_delete( object * obj )
 	shipp->objnum = -1;
 	// mwa 11/24/97 num_ships--;
 
-	if (model_get(Ship_info[shipp->ship_info_index].model_num)->shield.ntris) {
+	if (shipp->shield_integrity != NULL) {
 		vm_free(shipp->shield_integrity);
 		shipp->shield_integrity = NULL;
+	}
+
+	if (shipp->replacement_textures != NULL) {
+		vm_free(shipp->replacement_textures);
+		shipp->replacement_textures = NULL;
 	}
 
 	// glow point banks
@@ -12435,9 +12439,16 @@ void ship_close()
 	int i, n;
 
 	for (i=0; i<MAX_SHIPS; i++ )	{
-		if ( Ships[i].shield_integrity != NULL && Ships[i].objnum != -1 ) {
-			vm_free( Ships[i].shield_integrity );
-			Ships[i].shield_integrity = NULL;
+		ship *shipp = &Ships[i];
+
+		if (shipp->shield_integrity != NULL) {
+			vm_free(shipp->shield_integrity);
+			shipp->shield_integrity = NULL;
+		}
+
+		if (shipp->replacement_textures != NULL) {
+			vm_free(shipp->replacement_textures);
+			shipp->replacement_textures = NULL;
 		}
 	}
 
