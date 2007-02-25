@@ -2915,10 +2915,10 @@ LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 	ship_textures_h *sh;
 	char *s;
 	int tdx=-1;
-	if(!lua_get_args(L, "os|o", l_ShipTextures.GetPtr(&sh), &s, l_Texture.Get(&tdx)))
+	if (!lua_get_args(L, "os|o", l_ShipTextures.GetPtr(&sh), &s, l_Texture.Get(&tdx)))
 		return LUA_RETURN_NIL;
 
-	if(!sh->IsValid() || s==NULL)
+	if (!sh->IsValid() || s==NULL)
 		return LUA_RETURN_NIL;
 
 	ship *shipp = &Ships[sh->objp->instance];
@@ -2928,29 +2928,29 @@ LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 
 	char fname[MAX_FILENAME_LEN];
 	char *p;
-	for(i = 0; i < pm->n_textures; i++)
+	for (i = 0; i < pm->n_textures; i++)
 	{
-		if(pm->maps[i].base_map.texture > -1)
+		if (pm->maps[i].base_map.texture >= 0)
 		{
 			bm_get_filename(pm->maps[i].base_map.texture, fname);
 
 			//Get rid of extension
 			p = strchr( fname, '.' );
-			if ( p != NULL)
+			if (p != NULL)
 				*p = 0;
 
-			if(!stricmp(fname, s)) {
+			if (!stricmp(fname, s)) {
 				idx = i;
 				break;
 			}
 		}
 
-		if(shipp->replacement_textures != NULL && pm->maps[i].base_map.texture > -1)
+		if (shipp->replacement_textures != NULL && pm->maps[i].base_map.texture >= 0)
 		{
 			bm_get_filename(shipp->replacement_textures[i], fname);
 			//Get rid of extension
 			p = strchr( fname, '.' );
-			if ( p != NULL)
+			if (p != NULL)
 				*p = 0;
 
 			if(!stricmp(fname, s)) {
@@ -2960,24 +2960,28 @@ LUA_INDEXER(l_ShipTextures, "Texture name or index", "Texture", "Ship textures")
 		}
 	}
 
-	if(idx < 0)
+	if (idx < 0)
 	{
-		i = atoi(s);
-		if(i < 1 || i > pm->n_textures)
-			return LUA_RETURN_FALSE;
+		idx = atoi(s) - 1;	//Lua->FS2
 
-		i--; //Lua->FS2
-		idx = i;
+		if (idx < 0 || idx >= pm->n_textures)
+			return LUA_RETURN_FALSE;
 	}
 
-	if(LUA_SETTING_VAR && tdx > -1) {
-		shipp->replacement_textures = shipp->replacement_textures_buf;
+	if (LUA_SETTING_VAR && tdx >= 0) {
+		if (shipp->replacement_textures == NULL) {
+			shipp->replacement_textures = (int *) vm_malloc(MAX_MODEL_TEXTURES * sizeof(int));
+
+			for (i = 0; i < MAX_MODEL_TEXTURES; i++)
+				shipp->replacement_textures[i] = -1;
+		}
+
 		shipp->replacement_textures[idx] = tdx;
 	}
 
-	if(shipp->replacement_textures != NULL && shipp->replacement_textures[idx] > -1)
+	if (shipp->replacement_textures != NULL && shipp->replacement_textures[idx] >= 0)
 		return lua_set_args(L, "o", l_Texture.Set(shipp->replacement_textures[idx]));
-	else if(pm->maps[idx].base_map.texture > -1)
+	else if (pm->maps[idx].base_map.texture >= 0)
 		return lua_set_args(L, "o", l_Texture.Set(pm->maps[idx].base_map.texture));
 	else
 		return LUA_RETURN_FALSE;
@@ -3311,10 +3315,13 @@ LUA_VAR(Textures, l_Ship, "shiptextures", "Gets ship textures")
 	if(LUA_SETTING_VAR && th != NULL && th->IsValid()) {
 		ship *src = &Ships[objh->objp->instance];
 		ship *dest = &Ships[th->objp->instance];
-		if(src->replacement_textures != NULL)
+
+		if (src->replacement_textures != NULL)
 		{
-			dest->replacement_textures = dest->replacement_textures_buf;
-			memcpy(dest->replacement_textures_buf, src->replacement_textures_buf, sizeof(dest->replacement_textures_buf));
+			if (dest->replacement_textures == NULL)
+				dest->replacement_textures = (int *) vm_malloc(MAX_MODEL_TEXTURES * sizeof(int));
+
+			memcpy(dest->replacement_textures, src->replacement_textures, MAX_MODEL_TEXTURES * sizeof(int));
 		}
 	}
 
