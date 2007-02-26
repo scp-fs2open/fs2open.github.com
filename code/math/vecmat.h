@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.h $
- * $Revision: 2.18 $
- * $Date: 2007-02-18 06:16:47 $
+ * $Revision: 2.19 $
+ * $Date: 2007-02-26 01:47:23 $
  * $Author: Goober5000 $
  *
  * Header file for functions that manipulate vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2007/02/18 06:16:47  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.17  2007/01/22 04:43:28  wmcoolmon
  * EXPERIMENTAL turret update, housekeeping for Lua
  *
@@ -662,6 +665,9 @@ int vm_check_matrix_for_zeros(matrix *m);
 
 // see if two vectors are identical
 int vm_vec_same(vec3d *v1, vec3d *v2);
+
+// see if two matrices are identical
+int vm_matrix_same(matrix *m1, matrix *m2);
 
 //	Interpolate from a start matrix toward a goal matrix, minimizing time between orientations.
 // Moves at maximum rotational acceleration toward the goal when far and then max deceleration when close.
