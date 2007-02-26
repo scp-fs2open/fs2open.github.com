@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.130 $
- * $Date: 2007-02-21 01:44:02 $
+ * $Revision: 2.131 $
+ * $Date: 2007-02-26 04:30:48 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.130  2007/02/21 01:44:02  Goober5000
+ * remove duplicate model texture replacement
+ *
  * Revision 2.129  2007/02/20 04:20:18  Goober5000
  * the great big duplicate model removal commit
  *
@@ -5145,4 +5148,86 @@ void swap_bsp_data( polymodel * pm, void *model_ptr )
 
 	return;
 #endif
+}
+
+
+void dc_printf_helper(char *text)
+{
+	dc_printf(text);
+}
+
+// Goober5000
+DCF(modeldiff, "Compare two models")
+{
+	if (Dc_command)
+	{
+		char name1[NAME_LENGTH];
+		char name2[NAME_LENGTH];
+		int modelnum1 = -1;
+		int modelnum2 = -1;
+		bool loaded1 = false;
+		bool loaded2 = false;
+
+		dc_get_arg(ARG_STRING);
+		strcpy(name1, Dc_arg);
+		dc_get_arg(ARG_STRING);
+		strcpy(name2, Dc_arg);
+
+		if (!stristr(name1, ".pof"))
+			strcat(name1, ".pof");
+		if (!stristr(name2, ".pof"))
+			strcat(name2, ".pof");
+
+		int i;
+		for (i = 0; i < Num_ship_classes; i++)
+		{
+			ship_info *sip = &Ship_info[i];
+
+			if (modelnum1 < 0 && !stricmp(name1, sip->pof_file))
+			{
+				if (sip->model_num < 0)
+				{
+					sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+					loaded1 = true;
+				}
+				modelnum1 = sip->model_num;
+			}
+			
+			if (modelnum2 < 0 && !stricmp(name2, sip->pof_file))
+			{
+				if (sip->model_num < 0)
+				{
+					sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+					loaded2 = true;
+				}
+				modelnum2 = sip->model_num;
+			}
+		}
+
+		if (modelnum1 < 0 && modelnum2 < 0)
+			dc_printf("Could not load %s or %s.\n", name1, name2);
+		else if (modelnum1 < 0)
+			dc_printf("Could not load %s.\n", name1);
+		else if (modelnum2 < 0)
+			dc_printf("Could not load %s.\n", name2);
+		else if (modelnum1 == modelnum2)
+			dc_printf("The models are the same.\n");
+		else
+			model_diff(modelnum1, modelnum2, dc_printf_helper);
+
+		if (loaded1)
+			model_unload(modelnum1);
+		if (loaded2)
+			model_unload(modelnum2);
+	}
+	
+	if (Dc_help)
+	{
+		dc_printf("Usage: modeldiff modelA modelB\nSearches ships.tbl for the two models, then displays the differences between\nthem.\n");
+	}
+	
+	if (Dc_status)
+	{
+		// nothing to show
+	}
 }
