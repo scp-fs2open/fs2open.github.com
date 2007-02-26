@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.30.2.2 $
- * $Date: 2006-09-13 03:12:35 $
- * $Author: taylor $
+ * $Revision: 2.30.2.3 $
+ * $Date: 2007-02-26 01:47:14 $
+ * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30.2.2  2006/09/13 03:12:35  taylor
+ * might as well add this, just to be on the safe side (I haven't hit it anywhere, but it could be made into a warning if it starts getting hit)
+ *
  * Revision 2.30.2.1  2006/08/19 04:38:46  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -1856,6 +1859,17 @@ int vm_vec_same(vec3d *v1, vec3d *v2)
 		return 1;
 
 	return 0;
+}
+
+// see if two matrices are the same
+int vm_matrix_same(matrix *m1, matrix *m2)
+{
+	int i;
+	for (i = 0; i < 9; i++)
+		if (m1->a1d[i] != m2->a1d[i])
+			return 0;
+
+	return 1;
 }
 
 
