@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.102 $
- * $Date: 2007-02-21 01:44:02 $
+ * $Revision: 2.103 $
+ * $Date: 2007-02-26 04:30:48 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2007/02/21 01:44:02  Goober5000
+ * remove duplicate model texture replacement
+ *
  * Revision 2.101  2007/02/18 06:16:47  Goober5000
  * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
  *
@@ -1273,6 +1276,9 @@ typedef struct polymodel {
 	float gun_submodel_rotation;
 
 } polymodel;
+
+// Goober5000
+void model_diff(int modelnum1, int modelnum2, void (*print_string)(char *));
 
 // Call once to initialize the model system
 void model_init();
