@@ -6,11 +6,15 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.h $
- * $Revision: 1.5 $
- * $Date: 2006-07-02 03:39:55 $
+ * $Revision: 1.6 $
+ * $Date: 2007-02-27 01:44:48 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/07/02 03:39:55  Goober5000
+ * remove associated AI flags
+ * --Goober5000
+ *
  * Revision 1.4  2006/04/20 06:32:00  Goober5000
  * proper capitalization according to Volition
  *
@@ -53,6 +57,7 @@
 #define AIPF_SHOCKWAVES_DAMAGE_SMALL_SHIP_SUBSYSTEMS				(1 << 8)
 #define AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP							(1 << 9)
 #define AIPF_NO_MIN_DOCK_SPEED_CAP									(1 << 10)
+#define AIPF_DISABLE_LINKED_FIRE_PENALTY							(1 << 11)
 
 
 #define MAX_AI_PROFILES	5

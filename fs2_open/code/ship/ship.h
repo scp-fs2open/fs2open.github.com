@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.182 $
- * $Date: 2007-02-25 03:57:59 $
+ * $Revision: 2.183 $
+ * $Date: 2007-02-27 01:44:48 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.182  2007/02/25 03:57:59  Goober5000
+ * use dynamic memory instead of a static buffer for ship-specific replacement textures
+ *
  * Revision 2.181  2007/02/20 04:20:27  Goober5000
  * the great big duplicate model removal commit
  *
@@ -1894,9 +1897,11 @@ typedef struct ship_info {
 	model_subsystem *subsystems;				// see model.h for structure definition
 
 	// Energy Transfer System fields
-	float		power_output;						// power output of ships reactor (EU/s)
+	float		power_output;					// power output of ships reactor (EU/s)
 	float		max_overclocked_speed;			// max speed when 100% power output sent to engines
 	float		max_weapon_reserve;				// maximum energy that can be stored for primary weapon usage
+	float		max_shield_regen_per_second;	// Goober5000 - max percent/100 of shield energy regenerated per second
+	float		max_weapon_regen_per_second;	// Goober5000 - max percent/100 of weapon energy regenerated per second
 
 	// Afterburner fields
 	float		afterburner_fuel_capacity;		// maximum afterburner fuel that can be stored
