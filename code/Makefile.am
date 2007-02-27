@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.40 2007-02-15 02:24:11 Goober5000 Exp $
+## $Id: Makefile.am,v 1.41 2007-02-27 22:38:27 Goober5000 Exp $
 
 
 EXTRA_DIST =	\
@@ -469,6 +469,7 @@ FS2_SOURCES =	\
 	model/modelanim.cpp	\
 	model/modelanim.h	\
 	model/modelcollide.cpp	\
+	model/modeldiff.cpp	\
 	model/modelinterp.cpp	\
 	model/modelsinc.h	\
 	model/modeloctant.cpp	\
