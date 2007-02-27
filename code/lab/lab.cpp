@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.28.2.7 $
- * $Date: 2007-02-12 02:19:45 $
- * $Author: taylor $
+ * $Revision: 1.28.2.8 $
+ * $Date: 2007-02-27 01:44:44 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28.2.7  2007/02/12 02:19:45  taylor
+ * fix a couple of things that I missed earlier
+ *
  * Revision 1.28.2.6  2007/02/11 06:19:07  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
  *
@@ -278,6 +281,8 @@ void set_ship_variables_ship(ship_info *sip)
 	SVW_SET_SI_VAR(power_output);
 	SVW_SET_SI_VAR(max_overclocked_speed);
 	SVW_SET_SI_VAR(max_weapon_reserve);
+	SVW_SET_SI_VAR(max_shield_regen_per_second);
+	SVW_SET_SI_VAR(max_weapon_regen_per_second);
 
 	SVW_SET_SI_VAR(afterburner_fuel_capacity);
 	SVW_SET_SI_VAR(afterburner_burn_rate);

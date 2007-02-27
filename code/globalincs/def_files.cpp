@@ -7,11 +7,15 @@
 
 /*
  * $Logfile: /Freespace2/code/globalincs/def_files.cpp $
- * $Revision: 2.15.2.3 $
- * $Date: 2006-07-06 21:23:28 $
+ * $Revision: 2.15.2.4 $
+ * $Date: 2007-02-27 01:44:44 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15.2.3  2006/07/06 21:23:28  Goober5000
+ * add CVS headers
+ * --Goober5000
+ *
  */
 
 
@@ -774,6 +778,9 @@ $navigation subsystem governs warpout capability: NO					\n\
 ;; if set, will not use a minimum speed limit for docked ships			\n\
 ;; (like in FS1)														\n\
 $ignore lower bound for minimum speed of docked ship: NO				\n\
+																		\n\
+;; if set, will remove the increased delay when weapons are linked		\n\
+$disable linked fire penalty: NO										\n\
 																		\n\
 																		\n\
 #End																	\n\

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDets.cpp $
- * $Revision: 2.20.2.2 $
- * $Date: 2007-02-12 00:17:07 $
- * $Author: taylor $
+ * $Revision: 2.20.2.3 $
+ * $Date: 2007-02-27 01:44:44 $
+ * $Author: Goober5000 $
  *
  * C file that contains code to manage and display the Energy Transfer System (ETS)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20.2.2  2007/02/12 00:17:07  taylor
+ * fix breakage  (hehehe ;))
+ *
  * Revision 2.20.2.1  2007/02/11 21:42:39  Goober5000
  * change a number to a constant
  *
@@ -232,8 +235,8 @@
 #define INTIAL_WEAPON_RECHARGE_INDEX	4		// default weapon charge rate (index in Energy_levels[])
 #define INTIAL_ENGINE_RECHARGE_INDEX	4		// default engine charge rate (index in Energy_levels[])
 
-#define MAX_SHIELD_REGEN_PER_SECOND		0.02f	//	max percent/100 of shield energy regenerated per second
-#define MAX_WEAPON_REGEN_PER_SECOND		0.04f	// max percent/100 of weapon energy regenerated per second
+//#define MAX_SHIELD_REGEN_PER_SECOND		0.02f	// max percent/100 of shield energy regenerated per second
+//#define MAX_WEAPON_REGEN_PER_SECOND		0.04f	// max percent/100 of weapon energy regenerated per second
 
 #define NUM_ENERGY_LEVELS	13		
 #define MAX_ENERGY_INDEX	(NUM_ENERGY_LEVELS - 1)
@@ -390,7 +393,7 @@ void update_ets(object* objp, float fl_frametime)
 //	new_energy = fl_frametime * sinfo_p->power_output;
 
 	// update weapon energy
-	max_new_weapon_energy = fl_frametime * MAX_WEAPON_REGEN_PER_SECOND * max_g;
+	max_new_weapon_energy = fl_frametime * sinfo_p->max_weapon_regen_per_second * max_g;
 	if ( objp->flags & OF_PLAYER_SHIP ) {
 		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * The_mission.ai_profile->weapon_energy_scale[Game_skill_level];
 	} else {
@@ -402,7 +405,7 @@ void update_ets(object* objp, float fl_frametime)
 	}
 
 	float shield_delta;
-	max_new_shield_energy = fl_frametime * MAX_SHIELD_REGEN_PER_SECOND * max_s;
+	max_new_shield_energy = fl_frametime * sinfo_p->max_shield_regen_per_second * max_s;
 	if ( objp->flags & OF_PLAYER_SHIP ) {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile->shield_energy_scale[Game_skill_level];
 	} else {

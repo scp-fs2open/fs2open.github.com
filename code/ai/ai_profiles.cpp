@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.13.2.4 $
- * $Date: 2006-09-11 01:15:03 $
- * $Author: taylor $
+ * $Revision: 1.13.2.5 $
+ * $Date: 2007-02-27 01:44:44 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13.2.4  2006/09/11 01:15:03  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 1.13.2.3  2006/07/12 04:57:20  taylor
  * fix the endless-loop fix ;)  (this is what broke shield recharging btw)
  *
@@ -302,6 +305,8 @@ void parse_ai_profiles_tbl(char *longname)
 			set_flag(profile, "$navigation subsystem governs warpout capability:", AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP);
 
 			set_flag(profile, "$ignore lower bound for minimum speed of docked ship:", AIPF_NO_MIN_DOCK_SPEED_CAP);
+
+			set_flag(profile, "$disable linked fire penalty:", AIPF_DISABLE_LINKED_FIRE_PENALTY);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
