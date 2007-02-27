@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.18 $
- * $Date: 2006-12-28 00:59:18 $
- * $Author: wmcoolmon $
+ * $Revision: 1.19 $
+ * $Date: 2007-02-27 01:44:48 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2006/12/28 00:59:18  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.17  2006/09/11 06:49:38  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -305,6 +308,8 @@ void parse_ai_profiles_tbl(char *longname)
 			set_flag(profile, "$navigation subsystem governs warpout capability:", AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP);
 
 			set_flag(profile, "$ignore lower bound for minimum speed of docked ship:", AIPF_NO_MIN_DOCK_SPEED_CAP);
+
+			set_flag(profile, "$disable linked fire penalty:", AIPF_DISABLE_LINKED_FIRE_PENALTY);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )

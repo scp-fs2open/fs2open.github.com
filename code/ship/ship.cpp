@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.407 $
- * $Date: 2007-02-25 03:57:58 $
+ * $Revision: 2.408 $
+ * $Date: 2007-02-27 01:44:48 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.407  2007/02/25 03:57:58  Goober5000
+ * use dynamic memory instead of a static buffer for ship-specific replacement textures
+ *
  * Revision 2.406  2007/02/21 01:44:02  Goober5000
  * remove duplicate model texture replacement
  *
@@ -2816,6 +2819,8 @@ void init_ship_entry(int ship_info_index)
 	sip->power_output = 0.0f;
 	sip->max_overclocked_speed = 0.0f;
 	sip->max_weapon_reserve = 0.0f;
+	sip->max_shield_regen_per_second = 0.0f;
+	sip->max_weapon_regen_per_second = 0.0f;
 	
 	sip->max_hull_strength = 100.0f;
 	
@@ -3667,16 +3672,28 @@ strcpy(parse_error_text, temp_error);
 		stuff_ubyte(&sip->shield_color[2]);
 	}
 
-	// The next three fields are used for the ETS
-	if(optional_string("$Power Output:"))
+	// The next five fields are used for the ETS
+	if (optional_string("$Power Output:"))
 		stuff_float(&sip->power_output);
 
-	if(optional_string("$Max Oclk Speed:"))
+	// Goober5000
+	if (optional_string("$Shield Regeneration Rate:"))
+		stuff_float(&sip->max_shield_regen_per_second);
+	else if (first_time)
+		sip->max_shield_regen_per_second = 0.02f;
+
+	// Goober5000
+	if (optional_string("$Weapon Regeneration Rate:"))
+		stuff_float(&sip->max_weapon_regen_per_second);
+	else if (first_time)
+		sip->max_weapon_regen_per_second = 0.04f;
+
+	if (optional_string("$Max Oclk Speed:") || optional_string("$Max Overclock Speed:"))
 		stuff_float(&sip->max_overclocked_speed);
-	else if(first_time)
+	else if (first_time)
 		sip->max_overclocked_speed = sip->max_vel.xyz.z * 1.5f;
 
-	if(optional_string("$Max Weapon Eng:"))
+	if (optional_string("$Max Weapon Eng:") || optional_string("$Max Weapon Energy:"))
 		stuff_float(&sip->max_weapon_reserve);
 
 	if(optional_string("$Hitpoints:"))
@@ -9728,7 +9745,11 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		polymodel *pm = model_get( sip->model_num );
 		
-		next_fire_delay *= 1.0f + (num_primary_banks - 1) * 0.5f;		//	50% time penalty if banks linked
+		// Goober5000 (thanks to _argv[-1] for the original idea)
+		if (!(The_mission.ai_profile->flags & AIPF_DISABLE_LINKED_FIRE_PENALTY))
+		{
+			next_fire_delay *= 1.0f + (num_primary_banks - 1) * 0.5f;		//	50% time penalty if banks linked
+		}
 
 		//	MK, 2/4/98: Since you probably were allowed to fire earlier, but couldn't fire until your frame interval
 		//	rolled around, subtract out up to half the previous frametime.
