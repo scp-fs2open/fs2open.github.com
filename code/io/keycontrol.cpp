@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68.2.6 $
- * $Date: 2007-02-20 04:19:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.68.2.7 $
+ * $Date: 2007-03-07 17:46:48 $
+ * $Author: karajorma $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68.2.6  2007/02/20 04:19:22  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.68.2.5  2007/02/10 00:17:40  taylor
  * remove NO_SOUND
  *
@@ -2973,7 +2976,7 @@ int button_function(int n)
 			{
 				if (Player_ai->target_objnum < 0)
 				{
-					Int3();
+					snd_play(&Snds[SND_TARGET_FAIL]);
 					break;
 				}
 
