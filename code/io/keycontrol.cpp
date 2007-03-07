@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.77 $
- * $Date: 2007-02-20 04:20:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.78 $
+ * $Date: 2007-03-07 17:51:15 $
+ * $Author: karajorma $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2007/02/20 04:20:18  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.76  2007/02/10 06:39:43  Goober5000
  * new feature: shield generators that control whether the shield is up
  *
@@ -2646,7 +2649,7 @@ int button_function_demo_valid(int n)
 		if(!Perspective_locked)
 		{
 			Viewer_mode ^= VM_EXTERNAL;
-			Viewer_mode &= ~VM_EXTERNAL_CAMERA_LOCKED;	// reset camera lock when leave/entering external view
+			Viewer_mode &= ~VM_EXTERNAL_CAMERA_LOCKED;	// reset camera lock when leaving/entering external view
 
 			// Goober5000 -- Mantis #1087
 			/*
@@ -2991,7 +2994,7 @@ int button_function(int n)
 			{
 				if (Player_ai->target_objnum < 0)
 				{
-					Int3();
+					snd_play(&Snds[SND_TARGET_FAIL]);
 					break;
 				}
 
@@ -3008,7 +3011,7 @@ int button_function(int n)
 		// target closest ship that is attacking player
 		case TARGET_CLOSEST_SHIP_ATTACKING_SELF:
 			control_used(TARGET_CLOSEST_SHIP_ATTACKING_SELF);
-			if (hud_sensors_ok(Player_ship)) {
+			if (hud_sensors_ok(Player_ship)){
 				hud_target_closest(iff_get_attacker_mask(Player_ship->team), OBJ_INDEX(Player_obj), TRUE, 0, 1);
 			}
 			break;
