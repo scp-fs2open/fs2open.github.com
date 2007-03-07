@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/DebriefingEditorDlg.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-09-20 05:02:41 $
- * $Author: taylor $
+ * $Revision: 1.5 $
+ * $Date: 2007-03-07 22:43:24 $
+ * $Author: karajorma $
  *
  * Debriefing editor dialog.  Used to edit mission debriefings of course.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/09/20 05:02:41  taylor
+ * properly fix the new_recommendation_text FRED problem, plus some real cleanup for that code in general, and some memory leak fixes
+ *
  * Revision 1.3  2006/09/14 23:29:47  taylor
  * add default recommendation text for debriefing, it's either this or making sure that it's nul
  *
@@ -358,7 +361,7 @@ void debriefing_editor_dlg::OnBrowse()
 		z = cfile_push_chdir(CF_TYPE_VOICE_DEBRIEFINGS);
 
 	CFileDialog dlg(TRUE, "wav", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
-		"Wave Files (*.wav)|*.wav||");
+		"Voice Files (*.ogg, *.wav)|*.ogg;*.wav|Ogg Vorbis Files (*.ogg)|*.ogg|Wave Files (*.wav)|*.wav||");
 
 	if (dlg.DoModal() == IDOK) {
 		m_voice = dlg.GetFileName();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/CmdBrief.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-11-06 05:49:02 $
- * $Author: taylor $
+ * $Revision: 1.3 $
+ * $Date: 2007-03-07 22:43:24 $
+ * $Author: karajorma $
  *
  * Command Briefing Editor
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/11/06 05:49:02  taylor
+ * fix the cmdbrief editor deleting the wrong stage (Mantis bug #1115)
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -333,7 +336,7 @@ void cmd_brief_dlg::OnBrowseWave()
 	UpdateData(TRUE);
 	z = cfile_push_chdir(CF_TYPE_VOICE_CMD_BRIEF);
 	CFileDialog dlg(TRUE, "wav", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
-		"Wave Files (*.wav)|*.wav||");
+		"Voice Files (*.ogg, *.wav)|*.ogg;*.wav|Ogg Vorbis Files (*.ogg)|*.ogg|Wave Files (*.wav)|*.wav||");
 
 	if (dlg.DoModal() == IDOK) {
 		m_wave_filename = dlg.GetFileName();
