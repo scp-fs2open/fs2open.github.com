@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.2.2.2 $
- * $Date: 2007-02-11 09:35:11 $
- * $Author: taylor $
+ * $Revision: 1.2.2.3 $
+ * $Date: 2007-03-07 22:36:52 $
+ * $Author: karajorma $
  *
  * Event editor dialog box class and event tree class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2.2.2  2007/02/11 09:35:11  taylor
+ * add VALID_FNAME() macro and put it around a few places (more to come)
+ * clean out some old variables
+ * move CLAMP() macro from opengl header to global header
+ * update COUNT_ESTIMATE to match new bmpman changes
+ *
  * Revision 1.2.2.1  2006/10/09 05:25:07  Goober5000
  * make sexp nodes dynamic
  *
@@ -1385,7 +1391,7 @@ void event_editor::OnBrowseWave()
 		z = cfile_push_chdir(CF_TYPE_VOICE_SPECIAL);
 
 	CFileDialog dlg(TRUE, "wav", m_wave_filename, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
-		"Wave Files (*.wav)|*.wav||");
+		"Voice Files (*.ogg, *.wav)|*.ogg;*.wav|Ogg Vorbis Files (*.ogg)|*.ogg|Wave Files (*.wav)|*.wav||");
 
 	if (dlg.DoModal() == IDOK) {
 		m_wave_filename = dlg.GetFileName();
