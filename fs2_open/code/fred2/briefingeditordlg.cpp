@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BriefingEditorDlg.cpp $
- * $Revision: 1.4 $
- * $Date: 2006-05-30 02:13:22 $
- * $Author: Goober5000 $
+ * $Revision: 1.5 $
+ * $Date: 2007-03-07 22:43:24 $
+ * $Author: karajorma $
  *
  * Briefing editor dialog box class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4  2006/05/30 02:13:22  Goober5000
+ * add substitute music boxes to FRED, and reset music properly when mission is cleared
+ * --Goober5000
+ *
  * Revision 1.3  2006/02/04 07:05:03  Goober5000
  * fixed several IFF bugs in FRED (plus one or two other bugs)
  * --Goober5000
@@ -903,7 +907,7 @@ void briefing_editor_dlg::OnBrowse()
 		z = cfile_push_chdir(CF_TYPE_VOICE_BRIEFINGS);
 
 	CFileDialog dlg(TRUE, "wav", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
-		"Wave Files (*.wav)|*.wav||");
+		"Voice Files (*.ogg, *.wav)|*.ogg;*.wav|Ogg Vorbis Files (*.ogg)|*.ogg|Wave Files (*.wav)|*.wav||");
 
 	if (dlg.DoModal() == IDOK) {
 		m_voice = dlg.GetFileName();

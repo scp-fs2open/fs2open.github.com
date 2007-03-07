@@ -838,7 +838,8 @@ void campaign_editor::OnBrowseLoopSound()
 
 	// switch directories
 	pushed_dir = cfile_push_chdir(CF_TYPE_VOICE_CMD_BRIEF);
-	CFileDialog dlg(TRUE, "wav", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "Wave Files (*.wav)|*.wav||");
+	CFileDialog dlg(TRUE, "wav", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, 
+		"Voice Files (*.ogg, *.wav)|*.ogg;*.wav|Ogg Vorbis Files (*.ogg)|*.ogg|Wave Files (*.wav)|*.wav||");
 
 	if (dlg.DoModal() == IDOK) {
 		m_loop_brief_sound = dlg.GetFileName();
