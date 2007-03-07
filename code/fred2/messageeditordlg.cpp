@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MessageEditorDlg.cpp $
- * $Revision: 1.2 $
- * $Date: 2007-02-15 02:03:56 $
- * $Author: phreak $
+ * $Revision: 1.3 $
+ * $Date: 2007-03-07 22:43:24 $
+ * $Author: karajorma $
  *
  * Old message editor dialog box handling code.  This was designed a LONG time ago
  * and because so much changed, I created a new one from scratch instead.  This is
  * only around just in case it might be useful.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2007/02/15 02:03:56  phreak
+ * Apparently Visual C++ 2005 follows standard syntax rules.
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -677,7 +680,7 @@ void CMessageEditorDlg::OnBrowseWave()
 
 	UpdateData(TRUE);
 	CFileDialog dlg(TRUE, "wav", m_wave_filename, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
-		"Wave Files (*.wav)|*.wav||");
+		"Voice Files (*.ogg, *.wav)|*.ogg;*.wav|Ogg Vorbis Files (*.ogg)|*.ogg|Wave Files (*.wav)|*.wav||");
 
 	if (dlg.DoModal() == IDOK)
 	{
