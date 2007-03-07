@@ -9,15 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MessageEditorDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2007-03-07 22:36:52 $
+ * $Author: karajorma $
  *
  * Old message editor dialog box handling code.  This was designed a LONG time ago
  * and because so much changed, I created a new one from scratch instead.  This is
  * only around just in case it might be useful.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:31  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.4  2005/01/29 05:40:27  Goober5000
  * regular docking should work again in FRED now (multiple docking still isn't done yet)
  * --Goober5000
@@ -673,7 +677,7 @@ void CMessageEditorDlg::OnBrowseWave()
 
 	UpdateData(TRUE);
 	CFileDialog dlg(TRUE, "wav", m_wave_filename, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
-		"Wave Files (*.wav)|*.wav||");
+		"Voice Files (*.ogg, *.wav)|*.ogg;*.wav|Ogg Vorbis Files (*.ogg)|*.ogg|Wave Files (*.wav)|*.wav||");
 
 	if (dlg.DoModal() == IDOK)
 	{
