@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.43.2.3 $
- * $Date: 2006-09-08 06:14:44 $
- * $Author: taylor $
+ * $Revision: 2.43.2.4 $
+ * $Date: 2007-03-11 22:54:02 $
+ * $Author: karajorma $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43.2.3  2006/09/08 06:14:44  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.43.2.2  2006/08/19 04:38:47  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -1278,7 +1281,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		}
 
 		// see if the afterburner has been started (keyboard + joystick)
-		if (check_control(AFTERBURNER)) {
+		if (check_control(AFTERBURNER) && !Player_use_ai) {
 			if (!afterburner_last) {
 				Assert(Player_ship);
 				if ( !(Ship_info[Player_ship->ship_info_index].flags & SIF_AFTERBURNER) ) {
