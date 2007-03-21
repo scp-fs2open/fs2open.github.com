@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.52.2.6 $
- * $Date: 2007-02-11 09:07:33 $
- * $Author: taylor $
+ * $Revision: 2.52.2.7 $
+ * $Date: 2007-03-21 20:54:25 $
+ * $Author: karajorma $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52.2.6  2007/02/11 09:07:33  taylor
+ * little bit of debug message cleanup
+ * don't bother dealing with message wav file if sound is disabled
+ *
  * Revision 2.52.2.5  2006/10/24 13:36:05  taylor
  * fix Personas memory leak (not really an issue, I just got tired of seeing it in the Valgrind reports)
  *
@@ -2265,9 +2269,8 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		return;
 	} 
 
-	/* Keeping this under wraps for now but once all the silencing stuff is in the game should assert
-	// if a silenced ships gets this far - Karajorma
-	Assert (!(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES))*/
+	// Karajorma - the game should assert if a silenced ship gets this far
+	Assert (!(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES));
 
 	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
 	if ( shipp ) {
