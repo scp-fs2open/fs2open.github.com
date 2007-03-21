@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.50 $
- * $Date: 2007-02-11 09:10:14 $
- * $Author: taylor $
+ * $Revision: 2.51 $
+ * $Date: 2007-03-21 21:06:54 $
+ * $Author: karajorma $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2007/02/11 09:10:14  taylor
+ * fix simroom crash bug from Goober's rencent change
+ * add NULL handling to make sure we don't crap out on sorting
+ *
  * Revision 2.49  2007/02/11 06:38:54  Goober5000
  * when alphabetizing campaigns, ignore "the" at the beginning of a title
  *
@@ -664,7 +668,7 @@ int mission_campaign_maybe_add(char *filename)
 
 	if (desc != NULL)
 		vm_free(desc);
-
+ 
 	return 0;
 }
 
@@ -2632,7 +2636,7 @@ void read_mission_goal_list(int num)
 	// first, read the mission notes for this mission.  Used in campaign editor
 	if (skip_to_string("#Mission Info")) {
 		if (skip_to_string("$Notes:")) {
-			stuff_string(notes, F_NOTES, NAME_LENGTH);
+			stuff_string(notes, F_NOTES, NOTES_LENGTH);
 			if (Campaign.missions[num].notes){
 				vm_free(Campaign.missions[num].notes);
 			}
