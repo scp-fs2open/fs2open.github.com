@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.15 $
- * $Date: 2006-09-20 05:02:41 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2007-03-21 21:06:54 $
+ * $Author: karajorma $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/09/20 05:02:41  taylor
+ * properly fix the new_recommendation_text FRED problem, plus some real cleanup for that code in general, and some memory leak fixes
+ *
  * Revision 2.14  2006/01/26 04:01:58  Goober5000
  * spelling
  *
@@ -278,7 +281,7 @@
 
 #define	MAX_STAGE_ICONS			20
 #define	MAX_BRIEF_STAGES			15
-#define	MAX_DEBRIEF_STAGES		20
+#define	MAX_DEBRIEF_STAGES		40
 #define	MAX_LABEL_LEN				64
 
 #define	MAX_RECOMMENDATION_LEN	1024
