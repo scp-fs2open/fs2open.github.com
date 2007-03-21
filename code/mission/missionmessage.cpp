@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.61 $
- * $Date: 2007-01-10 01:45:56 $
- * $Author: taylor $
+ * $Revision: 2.62 $
+ * $Date: 2007-03-21 21:06:54 $
+ * $Author: karajorma $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2007/01/10 01:45:56  taylor
+ * don't bother trying to load message WAV when sound is disabled
+ *
  * Revision 2.60  2007/01/07 00:01:28  Goober5000
  * add a feature for specifying the source of Command messages
  *
@@ -2271,9 +2274,8 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		return;
 	} 
 
-	/* Keeping this under wraps for now but once all the silencing stuff is in the game should assert
-	// if a silenced ships gets this far - Karajorma
-	Assert (!(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES))*/
+	// Karajorma - the game should assert if a silenced ship gets this far
+	Assert (!(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES));
 
 	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
 	if ( shipp ) {
