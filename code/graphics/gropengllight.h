@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 1.10 $
- * $Date: 2007-01-07 13:07:22 $
+ * $Revision: 1.11 $
+ * $Date: 2007-03-22 20:49:53 $
  * $Author: taylor $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2007/01/07 13:07:22  taylor
+ * slight change to emission light settings
+ * change default ambient light settings back to proper values
+ * add support for lighting falloff with directional lights
+ * some minor performance improvements
+ *
  * Revision 1.9  2006/04/12 01:10:35  taylor
  * some cleanup and slight reorg
  *  - remove special uv offsets for non-standard res, they were stupid anyway and don't actually fix the problem (which should actually be fixed now)
@@ -116,7 +122,7 @@ extern int Num_active_gl_lights;
 extern int GL_center_alpha;
 
 //Functions
-void FSLight2GLLight(opengl_light *GLLight, light *FSLight);
+void FSLight2GLLight(light *FSLight, opengl_light *GLLight);
 int	gr_opengl_make_light(light *fs_light, int idx, int priority);		//unused -- stub function
 void gr_opengl_modify_light(light *fs_light, int idx, int priority);	//unused -- stub function
 void gr_opengl_destroy_light(int idx);									//unused -- stub function
