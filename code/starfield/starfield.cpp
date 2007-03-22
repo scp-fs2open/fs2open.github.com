@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.95 $
- * $Date: 2007-02-18 06:17:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.96 $
+ * $Date: 2007-03-22 20:07:16 $
+ * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.95  2007/02/18 06:17:34  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.94  2007/02/11 09:47:35  taylor
  * some minor performance improvements
  * remove NO_SOUND
@@ -1241,7 +1244,9 @@ void parse_startbl(char *longname)
 			sbm.xparent = 1;
 
 			if ( (idx = stars_find_sun(sbm.filename)) >= 0 ) {
-				if ( !Parsing_modular_table )
+				if (Parsing_modular_table)
+					Sun_bitmaps[idx] = sbm;
+				else
 					Warning(LOCATION, "Sun bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
 			} else {
 				Sun_bitmaps.push_back(sbm);
@@ -1781,6 +1786,7 @@ void stars_draw_sun(int show_sun)
 			Sun_drew++;
 	}
 }
+
 // draw a star's lens-flare
 void stars_draw_lens_flare(vertex *sun_vex, int sun_n)
 {
