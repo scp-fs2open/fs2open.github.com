@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.39.2.8 $
- * $Date: 2007-02-20 04:19:09 $
- * $Author: Goober5000 $
+ * $Revision: 1.39.2.9 $
+ * $Date: 2007-03-22 20:09:05 $
+ * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39.2.8  2007/02/20 04:19:09  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 1.39.2.7  2007/02/11 06:19:07  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
  *
@@ -1498,7 +1501,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		return;
 	}
 
-	if (ss->current_hits < 0.0f) {
+	if (ss->current_hits <= 0.0f) {
 		return;
 	}
 
