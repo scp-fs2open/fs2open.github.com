@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.100 $
- * $Date: 2007-02-18 06:16:46 $
- * $Author: Goober5000 $
+ * $Revision: 2.101 $
+ * $Date: 2007-03-22 20:13:23 $
+ * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2007/02/18 06:16:46  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.99  2007/02/11 20:25:58  Goober5000
  * fix some breakage ;)
  *
@@ -972,9 +975,6 @@ bitmap_entry bm_bitmaps[MAX_BITMAPS];
 int bm_texture_ram = 0;
 int bm_inited = 0;
 int Bm_paging = 0;
-// 16 bit pixel formats
-int Bm_pixel_format = BM_PIXEL_FORMAT_ARGB;
-
 
 // locals
 static uint Bm_next_signature = 0x1234;
@@ -1106,6 +1106,12 @@ static void bm_free_data_fast(int n)
 	// If this bitmap doesn't have any data to free, skip
 	// the freeing it part of this.
 	if ( (bmp->data == 0) ) {
+#ifdef BMPMAN_NDEBUG
+		if ( be->data_size != 0 ) {
+			bm_texture_ram -= be->data_size;
+			be->data_size = 0;
+		}
+#endif
 		return;
 	}
 
@@ -1342,11 +1348,18 @@ int bm_load_sub_fast(char *real_filename, int *handle, int dir_type = CF_TYPE_AN
 	for (i = 0; i < MAX_BITMAPS; i++) {
 		if (bm_bitmaps[i].type == BM_TYPE_NONE)
 			continue;
-	
-		if ( animated_type && !((bm_bitmaps[i].type == BM_TYPE_EFF) || (bm_bitmaps[i].type == BM_TYPE_ANI)) )
+
+		if (bm_bitmaps[i].dir_type != dir_type)
 			continue;
-	
-		if ( (bm_bitmaps[i].dir_type == dir_type) && !strextcmp(real_filename, bm_bitmaps[i].filename) ) {
+
+		bool animated = ((bm_bitmaps[i].type == BM_TYPE_EFF) || (bm_bitmaps[i].type == BM_TYPE_ANI));
+
+		if ( animated_type && !animated )
+			continue;
+		else if ( !animated_type && animated )
+			continue;
+
+		if ( !strextcmp(real_filename, bm_bitmaps[i].filename) ) {
 			nprintf(("BmpFastLoad", "Found bitmap %s -- number %d\n", bm_bitmaps[i].filename, i));
 			bm_bitmaps[i].load_count++;
 			*handle = bm_bitmaps[i].handle;
@@ -1363,9 +1376,9 @@ int bm_load_sub_fast(char *real_filename, int *handle, int dir_type = CF_TYPE_AN
 // the bitmap.   On success, it returns the bitmap
 // number.  Function doesn't actually load the data, only
 // width, height, and possibly flags.
-int bm_load( char * real_filename )
+int bm_load( char *real_filename )
 {
-	int i, n, first_slot = -1;
+	int i, free_slot = -1;
 	int w, h, bpp = 8;
 	int rc = 0;
 	int bm_size = 0, mm_lvl = 0;
@@ -1373,24 +1386,23 @@ int bm_load( char * real_filename )
 	ubyte type = BM_TYPE_NONE;
 	ubyte c_type = BM_TYPE_NONE;
 	CFILE *img_cfp = NULL;
+	int handle = -1;
 
 	if ( !bm_inited )
 		bm_init();
 
 	// nice little trick for keeping standalone memory usage way low - always return a bogus bitmap 
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER)
 		strcpy(filename,"test128");
-	}
 
 	// if no file was passed then get out now
-	if ( (real_filename == NULL) || (strlen(real_filename) <= 0) ) {
+	if ( (real_filename == NULL) || (strlen(real_filename) <= 0) )
 		return -1;
-	}
 
 	// make sure no one passed an extension
 	memset( filename, 0, MAX_FILENAME_LEN );
 	strncpy( filename, real_filename, MAX_FILENAME_LEN-1 );
-	char *p = strchr( filename, '.' );
+	char *p = strrchr( filename, '.' );
 	if ( p ) {
 		mprintf(( "Someone passed an extension to bm_load for file '%s'\n", real_filename ));
 		//Int3();
@@ -1409,7 +1421,6 @@ int bm_load( char * real_filename )
 		const int NUM_TYPES	= 4;
 		const ubyte type_list[NUM_TYPES] = { BM_TYPE_DDS, BM_TYPE_TGA, BM_TYPE_JPG, BM_TYPE_PCX };
 		const char *ext_list[NUM_TYPES] = { ".dds", ".tga", ".jpg", ".pcx" };
-		int handle = -1;
 
 		// see if it's already loaded (checks for any type with filename)
 		if ( bm_load_sub_fast(filename, &handle) )
@@ -1430,73 +1441,60 @@ int bm_load( char * real_filename )
 	// Error( LOCATION, "Unknown bitmap type %s\n", filename );
 
 	// Find an open slot
-	for (i = 0; (i < MAX_BITMAPS) && (first_slot == -1); i++) {
+	for (i = 0; i < MAX_BITMAPS; i++) {
 		if (bm_bitmaps[i].type == BM_TYPE_NONE) {
-			first_slot = i;
+			free_slot = i;
+			break;
 		}
 	}
 
-	n = first_slot;
-	Assert( n != -1 );	
-
-	if ( n == -1 ) {
-		if (img_cfp != NULL)
-			cfclose(img_cfp);
-
-		return -1;
+	if (free_slot < 0) {
+		Int3();
+		goto Done;
 	}
 
+	rc = gr_bm_load( type, free_slot, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size );
 
-	rc = gr_bm_load( type, n, filename, img_cfp, &w, &h, &bpp, &c_type, &mm_lvl, &bm_size );
+	if (rc != 0)
+		goto Done;
 
-	if (rc != 0) {
-		if (img_cfp != NULL)
-			cfclose(img_cfp);
-
-		return -1;
-	}
-
-
-	if ( (bm_size <= 0) && (w) && (h) && (bpp) ) {
+	if ( (bm_size <= 0) && (w) && (h) && (bpp) )
 		bm_size = (w * h * (bpp >> 3));
-	}
+
+
+	handle = bm_get_next_handle() * MAX_BITMAPS + free_slot;
 
 	// ensure fields are cleared out from previous bitmap
-//	Assert(bm_bitmaps[n].bm.data == 0);
-//	Assert(bm_bitmaps[n].bm.palette == NULL);
-//	Assert(bm_bitmaps[n].ref_count == 0 );
-//	Assert(bm_bitmaps[n].user_data == NULL);
-	memset( &bm_bitmaps[n], 0, sizeof(bitmap_entry) );
-	
+	memset( &bm_bitmaps[free_slot], 0, sizeof(bitmap_entry) );
+
 	// Mark the slot as filled, because cf_read might load a new bitmap
 	// into this slot.
-	bm_bitmaps[n].type = type;
-	bm_bitmaps[n].comp_type = c_type;
-	bm_bitmaps[n].signature = Bm_next_signature++;
-	Assert ( strlen(filename) < MAX_FILENAME_LEN );
-	strncpy(bm_bitmaps[n].filename, filename, MAX_FILENAME_LEN-1 );
-	bm_bitmaps[n].bm.w = short(w);
-	bm_bitmaps[n].bm.rowsize = short(w);
-	bm_bitmaps[n].bm.h = short(h);
-	bm_bitmaps[n].bm.bpp = 0;
-	bm_bitmaps[n].bm.true_bpp = bpp;
-	bm_bitmaps[n].bm.flags = 0;
-	bm_bitmaps[n].bm.data = 0;
-	bm_bitmaps[n].bm.palette = NULL;
-	bm_bitmaps[n].num_mipmaps = mm_lvl;
-	bm_bitmaps[n].mem_taken = bm_size;
-	bm_bitmaps[n].dir_type = CF_TYPE_ANY;
+	strncpy(bm_bitmaps[free_slot].filename, filename, MAX_FILENAME_LEN-1);
+	bm_bitmaps[free_slot].type = type;
+	bm_bitmaps[free_slot].comp_type = c_type;
+	bm_bitmaps[free_slot].signature = Bm_next_signature++;
+	bm_bitmaps[free_slot].bm.w = short(w);
+	bm_bitmaps[free_slot].bm.rowsize = short(w);
+	bm_bitmaps[free_slot].bm.h = short(h);
+	bm_bitmaps[free_slot].bm.bpp = 0;
+	bm_bitmaps[free_slot].bm.true_bpp = bpp;
+	bm_bitmaps[free_slot].bm.flags = 0;
+	bm_bitmaps[free_slot].bm.data = 0;
+	bm_bitmaps[free_slot].bm.palette = NULL;
+	bm_bitmaps[free_slot].num_mipmaps = mm_lvl;
+	bm_bitmaps[free_slot].mem_taken = bm_size;
+	bm_bitmaps[free_slot].dir_type = CF_TYPE_ANY;
+	bm_bitmaps[free_slot].palette_checksum = 0;
+	bm_bitmaps[free_slot].handle = handle;
+	bm_bitmaps[free_slot].last_used = -1;
 
-	bm_bitmaps[n].palette_checksum = 0;
-	bm_bitmaps[n].handle = bm_get_next_handle()*MAX_BITMAPS + n;
-	bm_bitmaps[n].last_used = -1;
+	bm_bitmaps[free_slot].load_count++;
 
-	bm_bitmaps[n].load_count++;
-
+Done:
 	if (img_cfp != NULL)
 		cfclose(img_cfp);
 
-	return bm_bitmaps[n].handle;
+	return handle;
 }
 
 // special load function. basically allows you to load a bitmap which already exists (by filename). 
@@ -1561,17 +1559,25 @@ DCF(bm_frag,"Shows BmpMan fragmentation")
 
 static int find_block_of(int n)
 {
-	int i, cnt, nstart;
+	int i, cnt = 0, nstart = 0;
 
-	cnt=0;
-	nstart = 0;
-	for (i=0; i<MAX_BITMAPS; i++ )	{
-		if ( bm_bitmaps[i].type == BM_TYPE_NONE )	{
-			if (cnt==0) nstart = i;
+	if (n < 1) {
+		Int3();
+		return -1;
+	}
+
+	for (i = 0; i < MAX_BITMAPS; i++) {
+		if (bm_bitmaps[i].type == BM_TYPE_NONE) {
+			if (cnt == 0)
+				nstart = i;
+
 			cnt++;
-		} else
-			cnt=0;
-		if ( cnt == n ) return nstart;
+		} else {
+			cnt = 0;
+		}
+
+		if (cnt == n)
+			return nstart;
 	}
 
 	// Error( LOCATION, "Couldn't find block of %d frames\n", n );
@@ -1773,10 +1779,13 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	}
 
 	n = find_block_of(anim_frames);
-	if(n < 0){
+
+	if (n < 0) {
+		if (img_cfp != NULL)
+			cfclose(img_cfp);
+
 		return -1;
 	}
-	// Assert( n >= 0 );
 
 	int first_handle = bm_get_next_handle();
 
@@ -3130,30 +3139,7 @@ int bm_get_cache_slot( int bitmap_id, int separate_ani_frames )
 
 void (*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
 void (*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a) = NULL;
-/*
-void bm_set_components_argb(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
-{
-	// rgba 
-	*((ushort*)pixel) |= (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	*((ushort*)pixel) &= ~(0x8000);
-	if(*av){
-		*((ushort*)pixel) |= 0x8000;
-	}
-}
 
-void bm_set_components_d3d(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
-{
-	// rgba 
-	*((ushort*)pixel) |= (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	if(*av == 0){ 
-		*((ushort*)pixel) = (ushort)Gr_current_green->mask;
-	}
-}
-*/
 void bm_set_components_argb_16_screen(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
 {
 	if ( *av == 0 ) {
@@ -3244,80 +3230,6 @@ void BM_SELECT_ALPHA_TEX_FORMAT()
 	bm_set_components = bm_set_components_argb_16_tex;
 }
 
-// set the rgba components of a pixel, any of the parameters can be -1
-/*
-void bm_set_components(ubyte *pixel, ubyte *rv, ubyte *gv, ubyte *bv, ubyte *av)
-{
-	int bit_32 = 0;
-
-	// pick a byte size - 32 bits only if 32 bit mode d3d and screen format
-	if(D3D_32bit && (Gr_current_red == &Gr_red)){
-		bit_32 = 1;
-	}	
-	
-	if(bit_32){
-		*((uint*)pixel) |= (uint)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	} else {
-		*((ushort*)pixel) |= (ushort)(( (int)*rv / Gr_current_red->scale ) << Gr_current_red->shift);
-	}		
-	if(bit_32){
-		*((uint*)pixel) |= (uint)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	} else {
-		*((ushort*)pixel) |= (ushort)(( (int)*gv / Gr_current_green->scale ) << Gr_current_green->shift);
-	}		
-	if(bit_32){
-		*((uint*)pixel) |= (uint)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	} else {
-		*((ushort*)pixel) |= (ushort)(( (int)*bv / Gr_current_blue->scale ) << Gr_current_blue->shift);
-	}
-	
-	// NOTE - this is a semi-hack. For direct3d we don't use an alpha bit, so if *av == 0, we just set the whole pixel to be Gr_green.mask
-	//        ergo, we need to do this _last_
-	switch(Bm_pixel_format){
-	// glide has an alpha channel so we have to unset ir or set it each time
-	case BM_PIXEL_FORMAT_ARGB:
-		Assert(!bit_32);
-		*((ushort*)pixel) &= ~(0x8000);
-		if(*av){
-			*((ushort*)pixel) |= 0x8000;
-		}
-		break;
-	
-	// this d3d format has no alpha channel, so only make it "transparent", never make it "non-transparent"
-	case BM_PIXEL_FORMAT_D3D:			
-		Assert(!bit_32);
-		if(*av == 0){ 
-			*((ushort*)pixel) = (ushort)Gr_current_green->mask;
-		}
-		break;
-
-	// nice 1555 texture format
-	case BM_PIXEL_FORMAT_ARGB_D3D:						
-		// if we're writing to normal texture format
-		if(Gr_current_red == &Gr_t_red){					
-			Assert(!bit_32);
-			*((ushort*)pixel) &= ~(Gr_current_alpha->mask);
-			if(*av){
-				*((ushort*)pixel) |= (ushort)(Gr_current_alpha->mask);
-			} else {
-				*((ushort*)pixel) = 0;
-			}
-		}
-		// otherwise if we're writing to screen format, still do it the green mask way
-		else {			
-			if(*av == 0){
-				if(bit_32){
-					*((uint*)pixel) = (uint)Gr_current_green->mask;
-				} else {
-					*((ushort*)pixel) = (ushort)Gr_current_green->mask;
-				}
-			}
-		}			
-		break;
-	}	
-}
-*/
-
 // get the rgba components of a pixel, any of the parameters can be NULL
 void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 {
@@ -3353,47 +3265,11 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 	// get the alpha value
 	if(a != NULL){		
 		*a = 1;
-
-	//	switch(Bm_pixel_format){
-		// glide has an alpha channel so we have to unset ir or set it each time
-	//	case BM_PIXEL_FORMAT_ARGB:			
-			Assert(!bit_32);
-			if(!( ((ushort*)pixel)[0] & 0x8000)){
-				*a = 0;
-			} 
-	//		break;
-/*
-		// this d3d format has no alpha channel, so only make it "transparent", never make it "non-transparent"
-		case BM_PIXEL_FORMAT_D3D:
-			Assert(!bit_32);
-			if( *((ushort*)pixel) == Gr_current_green->mask){ 
-				*a = 0;
-			}
-			break;
-
-		// nice 1555 texture format mode
-		case BM_PIXEL_FORMAT_ARGB_D3D:	
-			// if we're writing to a normal texture, use nice alpha bits
-			if(Gr_current_red == &Gr_t_red){				
-				Assert(!bit_32);
-
-				if(!(*((ushort*)pixel) & Gr_current_alpha->mask)){
-					*a = 0;
-				}
-			}
-			// otherwise do it as normal
-			else {
-				if(bit_32){
-					if(*((int*)pixel) == Gr_current_green->mask){ 
-						*a = 0;
-					}
-				} else {
-					if(*((ushort*)pixel) == Gr_current_green->mask){ 
-						*a = 0;
-					}
-				}
-			}
-		}*/
+		
+		Assert(!bit_32);
+		if(!( ((ushort*)pixel)[0] & 0x8000)){
+			*a = 0;
+		} 
 	}
 }
 
