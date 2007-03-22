@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-10-06 09:55:36 $
+ * $Revision: 2.24 $
+ * $Date: 2007-03-22 20:47:33 $
  * $Author: taylor $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/10/06 09:55:36  taylor
+ * For redalert stored data be sure that dead ships don't come back, and departed ships come back just as they left (Mantis bug #810)
+ *
  * Revision 2.22  2006/09/13 03:17:59  taylor
  * be sure to setup/reset ship team data too when moving to a red-alert mission (Mantis bug 1042)
  *   (this will hopefully fix Mantis bug 860 as well, which is a separate but related issue)
@@ -689,46 +692,42 @@ void red_alert_store_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 	weapon_info *wip;
 
 	if (swp == NULL) {
+		// just set defaults
+		for (i = 0; i < MAX_SHIP_WEAPONS; i++) {
+			ras->wep[i] = -1;
+			ras->wep_count[i] = 0;
+		}
+
 		return;
 	}
 
 	// edited to accommodate ballistics - Goober5000
-	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ )
-	{
+	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
 		wip = &Weapon_info[swp->primary_bank_weapons[i]];
-
 		ras->wep[i] = swp->primary_bank_weapons[i];
-		if ( ras->wep[i] >= 0 )
-		{
-			if (wip->wi_flags2 & WIF2_BALLISTIC)
-			{
+
+		if (ras->wep[i] >= 0) {
+			if (wip->wi_flags2 & WIF2_BALLISTIC) {
 				// to avoid triggering the below condition: this way, minimum ammo will be 2...
 				// since the red-alert representation of a conventional primary is 0 -> not used,
 				// 1 -> used, I added the representation 2 and above -> ballistic primary
 				ras->wep_count[i] = swp->primary_bank_ammo[i] + 2;
-			}
-			else
-			{
+			} else {
 				ras->wep_count[i] = 1;
 			}
-		}
-		else
-		{
+		} else {
 			ras->wep_count[i] = -1;
 		}
 	}
 
-	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ ) {
+	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
 		sidx = i+MAX_SHIP_PRIMARY_BANKS;
 		ras->wep[sidx] = swp->secondary_bank_weapons[i];
-		if ( ras->wep[sidx] >= 0 )
-		{
+
+		if (ras->wep[sidx] >= 0)
 			ras->wep_count[sidx] = swp->secondary_bank_ammo[i];
-		}
 		else
-		{
 			ras->wep_count[sidx] = -1;
-		}
 	}
 }
 
@@ -738,26 +737,19 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 	int i, j, sidx;
 
 	// restore from ship_exited
-	if (ras->ship_class == RED_ALERT_EXITED_SHIP_CLASS) {
+	if (ras->ship_class == RED_ALERT_EXITED_SHIP_CLASS)
 		return;
-	}
 
 	// modified to accommodate ballistics - Goober5000
 	j = 0;
-	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ )
-	{
-		if ( (ras->wep_count[i] > 0) && (ras->wep[i] >= 0) )
-		{
+	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		if ( (ras->wep_count[i] > 0) && (ras->wep[i] >= 0) ) {
 			swp->primary_bank_weapons[j] = ras->wep[i];
 			
 			if (ras->wep_count[i] > 1)	// this is a ballistic primary (!!!)
-			{
 				swp->primary_bank_ammo[j] = ras->wep_count[i] - 2;	// to compensate for storage
-			}
 			else
-			{
-				swp->primary_bank_ammo[i] = 0;
-			}				
+				swp->primary_bank_ammo[i] = 0;			
 
 			j++;
 		}
@@ -766,11 +758,10 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 
 
 	j = 0;
-	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ )
-	{
+	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
 		sidx = i+MAX_SHIP_PRIMARY_BANKS;
-		if ( ras->wep[sidx] >= 0 )
-		{
+
+		if (ras->wep[sidx] >= 0) {
 			swp->secondary_bank_weapons[j] = ras->wep[sidx];
 			swp->secondary_bank_ammo[j] = ras->wep_count[sidx];
 			j++;
@@ -782,12 +773,11 @@ void red_alert_bash_weapons(red_alert_ship_status *ras, ship_weapon *swp)
 void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 {
 	ship_subsys *ss;
-	int			count = 0;
+	int i, count = 0;
 
 	// restore from ship_exited
-	if (ras->ship_class == RED_ALERT_EXITED_SHIP_CLASS) {
+	if (ras->ship_class == RED_ALERT_EXITED_SHIP_CLASS)
 		return;
-	}
 
 	ss = GET_FIRST(&shipp->subsys_list);
 	while ( ss != END_OF_LIST( &shipp->subsys_list ) ) {
@@ -797,18 +787,23 @@ void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 			break;
 		}
 
-		ss->current_hits = ras->subsys_current_hits[count];
-		if (ss->current_hits <= 0) {
-			ss->submodel_info_1.blown_off = 1;
+		// NOTE: we cast to int here in order to get rid of float precision issues with the comparison
+		if ((int)ras->subsys_current_hits[count] != -1) {
+			ss->current_hits = ras->subsys_current_hits[count];
+
+			if (ss->current_hits <= 0)
+				ss->submodel_info_1.blown_off = 1;
 		}
 
 		ss = GET_NEXT( ss );
 		count++;
 	}
 
-	int i;
+	for (i = 0; i < SUBSYSTEM_MAX; i++) {
+		// NOTE: we cast to int here in order to get rid of float precision issues with the comparison
+		if ((int)ras->subsys_aggregate_current_hits[i] == -1)
+			continue;
 
-	for ( i = 0; i < SUBSYSTEM_MAX; i++ ) {
 		shipp->subsys_info[i].current_hits = ras->subsys_aggregate_current_hits[i];
 	}
 }
@@ -817,9 +812,17 @@ void red_alert_bash_subsys_status(red_alert_ship_status *ras, ship *shipp)
 void red_alert_store_subsys_status(red_alert_ship_status *ras, ship *shipp)
 {
 	ship_subsys *ss;
-	int			count = 0;
+	int i, count = 0;
 
 	if (shipp == NULL) {
+		// just set defaults and bail
+		// this assumes that current hits will never equal -1.0f (which it shouldn't)
+		for (i = 0; i < MAX_RED_ALERT_SUBSYSTEMS; i++)
+			ras->subsys_current_hits[i] = -1.0f;
+
+		for (i = 0; i < SUBSYSTEM_MAX; i++)
+			ras->subsys_aggregate_current_hits[i] = -1.0f;
+
 		return;
 	}
 
@@ -837,11 +840,8 @@ void red_alert_store_subsys_status(red_alert_ship_status *ras, ship *shipp)
 		count++;
 	}
 
-	int i;
-
-	for ( i = 0; i < SUBSYSTEM_MAX; i++ ) {
+	for (i = 0; i < SUBSYSTEM_MAX; i++)
 		ras->subsys_aggregate_current_hits[i] = shipp->subsys_info[i].current_hits;
-	}
 }
 
 
