@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.67.2.8 $
- * $Date: 2007-02-20 04:19:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.67.2.9 $
+ * $Date: 2007-03-22 19:30:00 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67.2.8  2007/02/20 04:19:43  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.67.2.7  2007/02/12 00:45:23  taylor
  * bit of cleanup and minor performance tweaks
  * sync up with new generic_anim/bitmap and weapon delayed loading changes
@@ -1482,44 +1485,55 @@ void beam_move_all_pre()
 
 	// traverse through all active beams
 	moveup = GET_FIRST(&Beam_used_list);
-	while(moveup != END_OF_LIST(&Beam_used_list)){				
+	while (moveup != END_OF_LIST(&Beam_used_list)) {				
 		// get the beam
 		b = moveup;
 
+		// check if parent object has died, if so then delete beam
+		if (b->objp->type == OBJ_NONE) {
+			// set next beam
+			moveup = GET_NEXT(moveup);
+			// delete current beam
+			beam_delete(b);
+
+			continue;
+		}
+
 		// unset collision info
 		b->f_collision_count = 0;
-		
-		if(!physics_paused){
+
+		if ( !physics_paused ) {
 			// move the beam
-			switch(b->type){
-			// type A beam weapons don't move
-			case BEAM_TYPE_A :			
-				beam_type_a_move(b);
-				break;
+			switch (b->type)
+			{
+				// type A beam weapons don't move
+				case BEAM_TYPE_A :			
+					beam_type_a_move(b);
+					break;
 
-			// type B beam weapons move across the target somewhat randomly
-			case BEAM_TYPE_B :
-				beam_type_b_move(b);
-				break;				
+				// type B beam weapons move across the target somewhat randomly
+				case BEAM_TYPE_B :
+					beam_type_b_move(b);
+					break;				
 
-			// type C beam weapons are attached to a fighter - pointing forward
-			case BEAM_TYPE_C:
-				beam_type_c_move(b);
-				break;
+				// type C beam weapons are attached to a fighter - pointing forward
+				case BEAM_TYPE_C:
+					beam_type_c_move(b);
+					break;
 
-			// type D
-			case BEAM_TYPE_D:
-				beam_type_d_move(b);
-				break;
+				// type D
+				case BEAM_TYPE_D:
+					beam_type_d_move(b);
+					break;
 
-			// type E
-			case BEAM_TYPE_E:
-				beam_type_e_move(b);
-				break;
+				// type E
+				case BEAM_TYPE_E:
+					beam_type_e_move(b);
+					break;
 
-			// illegal beam type
-			default :
-				Int3();
+				// illegal beam type
+				default :
+					Int3();
 			}
 		}
 
