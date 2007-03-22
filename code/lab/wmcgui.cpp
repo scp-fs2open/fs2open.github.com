@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.32 $
- * $Date: 2007-01-15 02:19:03 $
- * $Author: wmcoolmon $
+ * $Revision: 1.33 $
+ * $Date: 2007-03-22 21:00:48 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2007/01/15 02:19:03  wmcoolmon
+ * Finish off warning fixage
+ *
  * Revision 1.31  2006/12/28 00:59:27  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1558,6 +1561,9 @@ int Window::DoMouseDown(float frametime)
 
 int Window::DoMouseUp(float frametime)
 {
+	if (Style & WS_NONMOVEABLE)
+		return OF_TRUE;
+
 	if(CloseHighlight)
 	{
 		Delete();
