@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.h $
- * $Revision: 2.6 $
- * $Date: 2007-02-10 00:18:22 $
+ * $Revision: 2.7 $
+ * $Date: 2007-03-22 20:35:21 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2007/02/10 00:18:22  taylor
+ * remove NO_SOUND
+ *
  * Revision 2.5  2005/07/13 03:35:29  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -117,9 +120,11 @@
 // type of audio stream
 #define ASF_SOUNDFX			0
 #define ASF_EVENTMUSIC		1
-#define ASF_VOICE				2
-#define ASF_NONE				3		// used to catch errors
-
+#define ASF_MENUMUSIC		2
+#define ASF_VOICE			3
+#define ASF_NONE			4		// used to catch errors
+// NOTE: the only difference between EVENTMUSIC and everything else is that EVENTMUSIC
+//       will always respect the file type, everything else will load first available type
 
 
 #ifdef NEED_STRHDL

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.31 $
- * $Date: 2007-02-10 00:18:22 $
+ * $Revision: 2.32 $
+ * $Date: 2007-03-22 20:35:19 $
  * $Author: taylor $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2007/02/10 00:18:22  taylor
+ * remove NO_SOUND
+ *
  * Revision 2.30  2006/09/11 06:50:42  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -497,7 +500,7 @@ void credits_load_music(char* fname)
 	}
 
 	if ( fname ){
-		Credits_music_handle = audiostream_open( fname, ASF_EVENTMUSIC );
+		Credits_music_handle = audiostream_open( fname, ASF_MENUMUSIC );
 	}
 }
 
