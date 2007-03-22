@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.57 $
- * $Date: 2007-02-11 18:34:56 $
+ * $Revision: 1.58 $
+ * $Date: 2007-03-22 20:49:53 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.57  2007/02/11 18:34:56  taylor
+ * general cleanup
+ * deal with -img2dds error issue
+ *
  * Revision 1.56  2007/01/10 01:48:32  taylor
  * fixup texture addressing stuff so that it works better
  * bits of cleanup
@@ -1408,28 +1412,30 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 		*u_scale = t->u_scale;
 		*v_scale = t->v_scale;
 
-		glBindTexture (GL_texture_target, t->texture_id );
+		glBindTexture(GL_texture_target, t->texture_id );
 
-		glTexParameteri (GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_texture_target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		// OGL expects mipmap levels all the way down to 1x1 but I think this will avoid white texture
-		// issues when we have fewer levels than that, it caps the total number of levels available with 0 as min value
+		// set the filter type again, just to make sure it's correct
 		if ( t->mipmap_levels > 1 ) {
 			Assert( GL_texture_target != GL_TEXTURE_RECTANGLE_ARB );
 
-			glTexParameteri (GL_texture_target, GL_TEXTURE_MAX_LEVEL, t->mipmap_levels - 1);
-			// also set the filter type again, just to make sure it's correct
-			glTexParameteri (GL_texture_target, GL_TEXTURE_MIN_FILTER, (GL_mipmap_filter) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST);
+			// OGL expects mipmap levels all the way down to 1x1 but I think this will avoid
+			// white texture issues when we have fewer levels than that, it caps the total
+			// number of levels available, with 0 as min value
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MAX_LEVEL, t->mipmap_levels - 1);
+
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, (GL_mipmap_filter) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR_MIPMAP_NEAREST);
 		} else {
-			glTexParameteri (GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		}
 
 		if ( (bitmap_type == TCACHE_TYPE_AABITMAP) || (bitmap_type == TCACHE_TYPE_INTERFACE) || (bitmap_type == TCACHE_TYPE_CUBEMAP) ) {
-			glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		} else {
-			glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_S, GL_texture_addressing);
-			glTexParameteri (GL_texture_target, GL_TEXTURE_WRAP_T, GL_texture_addressing);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_S, GL_texture_addressing);
+			glTexParameteri(GL_texture_target, GL_TEXTURE_WRAP_T, GL_texture_addressing);
 		}
 
 		GL_last_bitmap_id = t->bitmap_handle;
@@ -1438,7 +1444,7 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 	}
 	// gah
 	else {
-		glBindTexture (GL_texture_target, 0);	// test - DDOI
+		glBindTexture(GL_texture_target, 0);	// test - DDOI
 		return 0;
 	}
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.77 $
- * $Date: 2007-01-07 12:51:30 $
+ * $Revision: 2.78 $
+ * $Date: 2007-03-22 20:49:53 $
  * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2007/01/07 12:51:30  taylor
+ * fix NULL ptr reference when a weapon doesn't have a tech description
+ *
  * Revision 2.76  2006/12/28 22:47:02  Goober5000
  * fix spelling... *twitch*
  *
@@ -1938,7 +1941,7 @@ void maybe_select_new_ship_weapon(int index)
 	Selected_wl_class = wep[index];
 }
 
-// Initialize Wl_pool[] to mission deafult
+// Initialize Wl_pool[] to mission default
 void wl_init_pool(team_data *td)
 {
 	int i;
@@ -4358,43 +4361,40 @@ void wl_reset_to_defaults()
 // NOTE: Wss_slots[] is assumed to be correctly set
 void wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot)
 {
-	int		i, j, sidx;
-	
-	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ ) {
-		swp->primary_bank_weapons[i] = -1;		
-	}
-
-	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ ) {
-		swp->secondary_bank_weapons[i] = -1;		
-	}
+	int i, j, sidx;
 
 	j = 0;
-	for ( i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++ )
-	{
-		if ( (slot->wep_count[i] > 0) && (slot->wep[i] >= 0) )
-		{
+	for (i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
+		// set to default value first thing
+		swp->primary_bank_weapons[i] = -1;
+
+		// now set to true value
+		if ( (slot->wep_count[i] > 0) && (slot->wep[i] >= 0) ) {
 			swp->primary_bank_weapons[j] = slot->wep[i];
 
 			// ballistic primaries - Goober5000
-			if (Weapon_info[swp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC)
-			{
+			if (Weapon_info[swp->primary_bank_weapons[j]].wi_flags2 & WIF2_BALLISTIC) {
 				// this is a bit tricky: we must recalculate ammo for full capacity
 				// since wep_count for primaries does not store the ammo; ballistic
 				// primaries always come with a full magazine
 				swp->primary_bank_ammo[j] = wl_calc_ballistic_fit(swp->primary_bank_weapons[j], Ship_info[slot->ship_class].primary_bank_ammo_capacity[i]);
-			}
-			else
-			{
+			} else {
 				swp->primary_bank_ammo[j] = 0;
 			}
 
 			j++;
 		}
 	}
+
+	// update our # of primary banks
 	swp->num_primary_banks = j;
 
 	j = 0;
-	for ( i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++ ) {
+	for (i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
+		// set to default value first thing
+		swp->secondary_bank_weapons[i] = -1;
+
+		// now set the true value
 		sidx = i+MAX_SHIP_PRIMARY_BANKS;
 		if ( (slot->wep_count[sidx] > 0) && (slot->wep[sidx] >= 0) ) {
 			swp->secondary_bank_weapons[j] = slot->wep[sidx];
@@ -4402,6 +4402,8 @@ void wl_bash_ship_weapons(ship_weapon *swp, wss_unit *slot)
 			j++;
 		}
 	}
+
+	// update our # of secondary banks
 	swp->num_secondary_banks = j;
 }
 
