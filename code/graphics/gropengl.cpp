@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.199 $
- * $Date: 2007-02-12 07:35:58 $
+ * $Revision: 2.200 $
+ * $Date: 2007-03-22 20:13:23 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.199  2007/02/12 07:35:58  taylor
+ * fix stupid bug (Mantis #1275)
+ *
  * Revision 2.198  2007/02/11 18:26:59  taylor
  * remove cloakmap stuff, we'll need to redo this later on anyway
  * deal better with a strange Windows buffer swap issue
@@ -4776,10 +4779,6 @@ void gr_opengl_init(int reinit)
 	
 	glFlush();
 
-	gr_opengl_clear();
-
-	Bm_pixel_format = BM_PIXEL_FORMAT_ARGB;
-
 	Gr_current_red = &Gr_red;
 	Gr_current_blue = &Gr_blue;
 	Gr_current_green = &Gr_green;
@@ -4787,6 +4786,8 @@ void gr_opengl_init(int reinit)
 
 	Mouse_hidden++;
 	gr_opengl_reset_clip();
+	gr_opengl_clear();
+	gr_opengl_flip();
 	gr_opengl_clear();
 	gr_opengl_flip();
 	gr_opengl_clear();

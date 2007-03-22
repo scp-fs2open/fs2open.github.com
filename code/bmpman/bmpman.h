@@ -10,13 +10,19 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.43 $
- * $Date: 2007-01-10 01:40:07 $
+ * $Revision: 2.44 $
+ * $Date: 2007-03-22 20:13:23 $
  * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2007/01/10 01:40:07  taylor
+ * remove the non-dark stuff, it only works on PCX files and stuff to use it has already been ripped out
+ * per earlier discussions: remove -jpgtga and -pcx32, set image load order to DDS->TGA->JPG->PCX
+ * some debug log cleanup
+ * remove bitmap data from system memory once it's in API memory
+ *
  * Revision 2.42  2007/01/07 12:32:06  taylor
  * fix bm_page_in_texture() so that it will load all frames of an animation (caused slowdowns in-game with it)
  *
@@ -459,12 +465,6 @@
 //  --  Taylor
 
 
-// 16 bit pixel formats
-#define BM_PIXEL_FORMAT_ARGB				0						// for glide - can assume certain things, like 1555 LFB writes, whee!
-#define BM_PIXEL_FORMAT_D3D				1						// d3d - card dependant. booo!
-#define BM_PIXEL_FORMAT_ARGB_D3D			2						// this card has nice 1555 textures like Glide - ahhhhh!
-
-
 #define	BMP_AABITMAP						(1<<0)				// antialiased bitmap
 #define	BMP_TEX_XPARENT						(1<<1)				// transparent texture
 #define	BMP_TEX_OTHER						(1<<2)				// so we can identify all "normal" textures
@@ -499,8 +499,6 @@ typedef struct bitmap {
 } bitmap;
 
 
-extern int bm_inited;
-
 extern int Bm_paging;
 
 void bm_init();
@@ -514,11 +512,6 @@ int bm_get_next_handle();
 void *bm_malloc(int n, int size);
 
 void bm_update_memory_used(int n, int size);
-
-// 16 bit pixel formats
-extern int Bm_pixel_format;
-
-#define BYTES_PER_PIXEL(x)	((x+7)/8)
 
 // how many bytes of textures are used.
 extern int bm_texture_ram;
@@ -689,8 +682,6 @@ void BM_SELECT_ALPHA_TEX_FORMAT();
 // set the rgba components of a pixel, any of the parameters can be NULL
 extern void (*bm_set_components)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 extern void (*bm_set_components_32)(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
-void bm_set_components_argb(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
-void bm_set_components_d3d(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 void bm_set_components_argb_d3d_16_screen(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 void bm_set_components_argb_d3d_32_screen(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
 void bm_set_components_argb_d3d_16_tex(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a);
