@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.408 $
- * $Date: 2007-02-27 01:44:48 $
- * $Author: Goober5000 $
+ * $Revision: 2.409 $
+ * $Date: 2007-03-22 20:45:01 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.408  2007/02/27 01:44:48  Goober5000
+ * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
+ *
  * Revision 2.407  2007/02/25 03:57:58  Goober5000
  * use dynamic memory instead of a static buffer for ship-specific replacement textures
  *
@@ -9908,13 +9911,12 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 				int points = 0, numtimes = 1;
 
-				if (winfo_p->wi_flags2 & WIF2_CYCLE){
-					if (winfo_p->shots > num_slots){
-						points = num_slots;
-					}else{
-						points = winfo_p->shots;
-					}
-				}else{
+				// ok if this is a cycling weapon use shots as the number of points to fire from at a time
+				// otherwise shots is the number of times all points will be fired (used mostly for the 'shotgun' effect)
+				if (winfo_p->wi_flags2 & WIF2_CYCLE) {
+					numtimes = 1;
+					points = MIN(num_slots, winfo_p->shots);
+				} else {
 					numtimes = winfo_p->shots;
 					points = num_slots;
 				}
@@ -9976,23 +9978,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 				// now handle the energy as usual
 				// deplete the weapon reserve energy by the amount of energy used to fire the weapon				
-				shipp->weapon_energy -= num_slots*winfo_p->energy_consumed;
+				shipp->weapon_energy -= points * winfo_p->energy_consumed;
 				
 				// Mark all these weapons as in the same group
 				int new_group_id = weapon_create_group_id();
-
-				//ok if this is a cycleing weapon use shots as the number of points to fire from at a time
-				//otherwise shots is the number of times all points will be fired (used mostly for the 'shotgun' effect)
-				if (winfo_p->wi_flags2 & WIF2_CYCLE){
-					if (winfo_p->shots > num_slots){
-						points = num_slots;
-					}else{
-						points = winfo_p->shots;
-					}
-				}else{
-					numtimes = winfo_p->shots;
-					points = num_slots;
-				}
 
 
 //mprintf(("I am going to fire a weapon %d times, from %d points, the last point fired was %d, and that will be point %d\n",numtimes,points,shipp->last_fired_point[bank_to_fire],shipp->last_fired_point[bank_to_fire]%num_slots));
