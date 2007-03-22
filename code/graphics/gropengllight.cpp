@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.29.2.4 $
- * $Date: 2007-02-10 00:05:25 $
+ * $Revision: 1.29.2.5 $
+ * $Date: 2007-03-22 20:50:27 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29.2.4  2007/02/10 00:05:25  taylor
+ * obsolete gluLookAt() in favor of doing it manually, should be slight faster and more precise
+ *
  * Revision 1.29.2.3  2006/12/26 05:17:28  taylor
  * tweak emission light a little bit
  * various bits of cleanup that I've been meaning to do
@@ -224,7 +227,7 @@ static const float GL_light_emission[4] = { 0.09f, 0.09f, 0.09f, 1.0f };
 static const float GL_light_true_zero[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 static float GL_light_ambient[4] = { 0.47f, 0.47f, 0.47f, 1.0f };
 
-void FSLight2GLLight(opengl_light *GLLight, light *FSLight)
+void FSLight2GLLight(light *FSLight, opengl_light *GLLight)
 {
 	GLLight->Ambient.r = 0.0f;
 	GLLight->Ambient.g = 0.0f;
@@ -305,28 +308,28 @@ void FSLight2GLLight(opengl_light *GLLight, light *FSLight)
 }
 
 extern float Interp_light;
-void opengl_set_light(int light_num, opengl_light *light)
+void opengl_set_light(int light_num, opengl_light *ltp)
 {
 	Assert(light_num < GL_max_lights);
 
-	ogl_light_color diffuse = light->Diffuse;
+	ogl_light_color diffuse = ltp->Diffuse;
 
-	if ( (light->type == LT_DIRECTIONAL) && (Interp_light < 1.0f) ) {
+	if ( (ltp->type == LT_DIRECTIONAL) && (Interp_light < 1.0f) ) {
 		diffuse.r *= Interp_light;
 		diffuse.g *= Interp_light;
 		diffuse.b *= Interp_light;
 	}
 
-	glLightfv(GL_LIGHT0+light_num, GL_POSITION, &light->Position.x);
-	glLightfv(GL_LIGHT0+light_num, GL_AMBIENT, &light->Ambient.r);
+	glLightfv(GL_LIGHT0+light_num, GL_POSITION, &ltp->Position.x);
+	glLightfv(GL_LIGHT0+light_num, GL_AMBIENT, &ltp->Ambient.r);
 	glLightfv(GL_LIGHT0+light_num, GL_DIFFUSE, &diffuse.r);
-	glLightfv(GL_LIGHT0+light_num, GL_SPECULAR, &light->Specular.r);
-	glLightfv(GL_LIGHT0+light_num, GL_SPOT_DIRECTION, &light->SpotDir.x);
-	glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, light->ConstantAtten);
-	glLightf(GL_LIGHT0+light_num, GL_LINEAR_ATTENUATION, light->LinearAtten);
-	glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, light->QuadraticAtten);
-	glLightf(GL_LIGHT0+light_num, GL_SPOT_EXPONENT, light->SpotExp);
-	glLightf(GL_LIGHT0+light_num, GL_SPOT_CUTOFF, light->SpotCutOff);
+	glLightfv(GL_LIGHT0+light_num, GL_SPECULAR, &ltp->Specular.r);
+	glLightfv(GL_LIGHT0+light_num, GL_SPOT_DIRECTION, &ltp->SpotDir.x);
+	glLightf(GL_LIGHT0+light_num, GL_CONSTANT_ATTENUATION, ltp->ConstantAtten);
+	glLightf(GL_LIGHT0+light_num, GL_LINEAR_ATTENUATION, ltp->LinearAtten);
+	glLightf(GL_LIGHT0+light_num, GL_QUADRATIC_ATTENUATION, ltp->QuadraticAtten);
+	glLightf(GL_LIGHT0+light_num, GL_SPOT_EXPONENT, ltp->SpotExp);
+	glLightf(GL_LIGHT0+light_num, GL_SPOT_CUTOFF, ltp->SpotCutOff);
 }
 
 #include <globalincs/systemvars.h>
@@ -510,7 +513,7 @@ void gr_opengl_set_light(light *fs_light)
 		return;
 
 	// init the light
-	FSLight2GLLight(&opengl_lights[Num_active_gl_lights], fs_light);
+	FSLight2GLLight(fs_light, &opengl_lights[Num_active_gl_lights]);
 	opengl_lights[Num_active_gl_lights++].occupied = true;
 }
 
