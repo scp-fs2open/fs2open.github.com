@@ -7569,8 +7569,8 @@ int ade_get_args(lua_State *L, char *fmt, ...)
 			strcat(funcname, ar.name);
 		}
 		if(ar.currentline > -1) {
-			char buf[8];
-			itoa(ar.currentline, buf, 10);
+			char buf[33];
+			sprintf(buf, "%d", ar.currentline);
 			strcat(funcname, " (Line ");
 			strcat(funcname, buf);
 			strcat(funcname, ")");
