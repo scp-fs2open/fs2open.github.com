@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.76  2007/02/18 06:17:48  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.75  2007/02/03 03:28:48  phreak
  * spawn weapons now have the option of passing a target lock onto their children.
  *
@@ -575,6 +578,7 @@
 #include "globalincs/globals.h"
 #include "weapon/trails.h"
 #include "weapon/shockwave.h"
+#include "graphics/generic.h"
 
 #include <vector>
 
@@ -694,6 +698,10 @@ typedef struct weapon {
 	float		thruster_glow_frame;				// Used to keep track of which frame the engine glow animation should be on.
 	float		thruster_glow_noise;				// Noise for current frame
 
+	// laser stuff
+	float	laser_bitmap_frame;				// used to keep track of which frame the animation should be on
+	float	laser_glow_bitmap_frame;		// used to keep track of which frame the glow animation should be on
+
 	int		pick_big_attack_point_timestamp;	//	Timestamp at which to pick a new point to attack.
 	vec3d	big_attack_point;				//	Target-relative location of attack point.
 
@@ -729,7 +737,6 @@ typedef struct weapon {
 #define MAX_BEAM_SECTIONS				5
 typedef struct beam_weapon_section_info {
 	float width;							// width of the section
-	int texture;							// texture bitmap
 	ubyte rgba_inner[4];					// for non-textured beams
 	ubyte rgba_outer[4];					// for non-textured beams
 	float flicker;							// how much it flickers (0.0 to 1.0)
@@ -737,34 +744,31 @@ typedef struct beam_weapon_section_info {
 	float tile_factor;						// texture tile factor -Bobboau
 	int tile_type;							// is this beam tiled by it's length, or not
 	float translation;						// makes the beam texture move -Bobboau
-	int nframes;							// number of frames for an animation
-	int fps;								// frames per sec, if anim
+	generic_anim texture;					// texture anim/bitmap
 } beam_weapon_section_info;
 
 typedef struct beam_weapon_info {
-	int	beam_type;						// beam type
-	float	beam_life;						// how long it lasts
-	int	beam_warmup;					// how long it takes to warmup (in ms)
-	int	beam_warmdown;					// how long it takes to warmdown (in ms)
-	float	beam_muzzle_radius;			// muzzle glow radius
-	int	beam_particle_count;			// beam spew particle count
-	float	beam_particle_radius;		// radius of beam particles
-	float	beam_particle_angle;			// angle of beam particle spew cone
-	int	beam_particle_ani;			// particle ani
-	float	beam_miss_factor[NUM_SKILL_LEVELS];				// magic # which makes beams miss more. by skill level
-	int	beam_loop_sound;				// looping beam sound
-	int	beam_warmup_sound;			// warmup sound
-	int	beam_warmdown_sound;			// warmdown sound
-	int	beam_num_sections;			// the # of visible "sections" on the beam
-	int	beam_glow_bitmap;				// muzzle glow bitmap
-	int beam_glow_nframes;				// number of frames, if animated
-	int beam_glow_fps;					// frames/sec, if animated
-	int	beam_shots;						// # of shots the beam takes
-	float	beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
+	int beam_type;						// beam type
+	float beam_life;					// how long it lasts
+	int beam_warmup;					// how long it takes to warmup (in ms)
+	int beam_warmdown;					// how long it takes to warmdown (in ms)
+	float beam_muzzle_radius;			// muzzle glow radius
+	int beam_particle_count;			// beam spew particle count
+	float beam_particle_radius;			// radius of beam particles
+	float beam_particle_angle;			// angle of beam particle spew cone
+	generic_anim beam_particle_ani;		// particle_ani
+	float beam_miss_factor[NUM_SKILL_LEVELS];	// magic # which makes beams miss more. by skill level
+	int beam_loop_sound;				// looping beam sound
+	int beam_warmup_sound;				// warmup sound
+	int beam_warmdown_sound;			// warmdown sound
+	int beam_num_sections;				// the # of visible "sections" on the beam
+	generic_anim beam_glow;				// muzzle glow bitmap
+	int beam_shots;						// # of shots the beam takes
+	float beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
 	float beam_shrink_pct;				// what percent/second the beam shrinks at
-	beam_weapon_section_info sections[MAX_BEAM_SECTIONS];			// info on the visible sections of the beam 	
-	float			range;				//how far it will shoot-Bobboau
-	float			damage_threshold;	//point at wich damage will start being atenuated from 0.0 to 1.0
+	beam_weapon_section_info sections[MAX_BEAM_SECTIONS];	// info on the visible sections of the beam 	
+	float range;						// how far it will shoot-Bobboau
+	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 } beam_weapon_info;
 
 // use this to extend a beam to "infinity"
@@ -795,12 +799,9 @@ typedef struct weapon_info {
 	char hud_filename[MAX_FILENAME_LEN];			//Name of image to display on HUD in place of text
 	int hud_image_index;					//teh index of the image
 
-	int	laser_bitmap;						// Which bitmap renders for laser, -1 if none
-	int	laser_bitmap_nframes;						//number of frames, 1 if it is not an ani 
-	int	laser_bitmap_fps;					//framerate, irellivent ifnframes is < 2 
-	int	laser_glow_bitmap;				// optional bitmap for laser glow
-	int	laser_glow_bitmap_nframes;				//number of frames, 1 if it is not an ani
-	int	laser_glow_bitmap_fps;				//framerate, irellivent ifnframes is < 2
+	generic_anim laser_bitmap;				// bitmap for a laser
+	generic_anim laser_glow_bitmap;			// optional laser glow bitmap
+
 	float laser_length;
 	color	laser_color_1;						// for cycling between glow colors
 	color	laser_color_2;						// for cycling between glow colors
@@ -899,17 +900,14 @@ typedef struct weapon_info {
 	// SSM
 	int SSM_index;							// wich entry in the SSM,tbl it uses -Bobboau
 
-	int Weapon_particle_spew_count;
-	int Weapon_particle_spew_time;
-	float Weapon_particle_spew_vel;
-	float Weapon_particle_spew_radius;
-	float Weapon_particle_spew_lifetime;
-	float Weapon_particle_spew_scale;
-	int Weapon_particle_spew_bitmap;
-	char Weapon_particle_spew_bitmap_name[MAX_FILENAME_LEN];			//p_spew stuff -Bobboau
-	int Weapon_particle_spew_nframes;
-	int Weapon_particle_spew_fps;
-
+	// particle spew stuff
+	int particle_spew_count;
+	int particle_spew_time;
+	float particle_spew_vel;
+	float particle_spew_radius;
+	float particle_spew_lifetime;
+	float particle_spew_scale;
+	generic_anim particle_spew_anim;
 
 	// Corkscrew info - phreak 11/9/02
 	int cs_num_fired;
@@ -918,11 +916,11 @@ typedef struct weapon_info {
 	int cs_crotate;
 	int cs_delay;
 
-	int decal_texture;
-	int decal_glow_texture;
-	int decal_burn_texture;
+	generic_bitmap decal_texture;
+	int decal_glow_texture_id;
+	int decal_burn_texture_id;
+	generic_bitmap decal_backface_texture;
 	int decal_burn_time;
-	int decal_backface_texture;
 	float decal_rad;
 
 	//electronics info - phreak 5/3/03
