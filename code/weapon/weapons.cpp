@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.198  2007/02/20 04:27:22  Goober5000
+ * revert to retail behavior
+ *
  * Revision 2.197  2007/02/20 04:20:38  Goober5000
  * the great big duplicate model removal commit
  *
@@ -1770,15 +1773,10 @@ void init_weapon_entry(int weap_info_index)
 	wip->model_num = -1;
 	wip->hud_target_lod = -1;
 
-	wip->laser_bitmap = -1;
-	wip->laser_bitmap_nframes = 1;
-	wip->laser_bitmap_fps = 0;
+	generic_anim_init(&wip->laser_bitmap);
+	generic_anim_init(&wip->laser_glow_bitmap);
 
-	wip->laser_glow_bitmap = -1;
-	wip->laser_glow_bitmap_nframes = 0;
-	wip->laser_glow_bitmap_fps = 0;
-
-	gr_init_color( &wip->laser_color_1, 255, 255, 255 );
+	gr_init_color(&wip->laser_color_1, 255, 255, 255);
 	gr_init_color(&wip->laser_color_2, 0, 0, 0);
 	
 	wip->laser_length = 10.0f;
@@ -1841,15 +1839,15 @@ void init_weapon_entry(int weap_info_index)
 	wip->WeaponMinRange = 0.0f;
 	wip->spawn_type = -1;
 	
-	//Trails
-	trail_info *ti = &wip->tr_info;
-	memset(ti, 0, sizeof(trail_info));
-	ti->w_start = 1.0f;
-	ti->w_end = 1.0f;
-	ti->a_start = 1.0f;
-	ti->a_end = 1.0f;
-	ti->max_life = 1.0f;
-	ti->bitmap = -1;
+	// Trails
+	wip->tr_info.pt = vmd_zero_vector;
+	wip->tr_info.w_start = 1.0f;
+	wip->tr_info.w_end = 1.0f;
+	wip->tr_info.a_start = 1.0f;
+	wip->tr_info.a_end = 1.0f;
+	wip->tr_info.max_life = 1.0f;
+	wip->tr_info.stamp = 0;
+	generic_bitmap_init(&wip->tr_info.texture, NULL);
 
 	wip->icon_filename[0] = 0;
 
@@ -1905,41 +1903,35 @@ void init_weapon_entry(int weap_info_index)
 	wip->b_info.beam_particle_count = -1;
 	wip->b_info.beam_particle_radius = 0.0f;
 	wip->b_info.beam_particle_angle = 0.0f;
-	wip->b_info.beam_particle_ani = -1;
-	for(i = 0; i < NUM_SKILL_LEVELS; i++)
-	{
-		wip->b_info.beam_miss_factor[i] = 0.00001f;
-	}
 	wip->b_info.beam_loop_sound = -1;
 	wip->b_info.beam_warmup_sound = -1;
 	wip->b_info.beam_warmdown_sound = -1;
 	wip->b_info.beam_num_sections = 0;
-	wip->b_info.beam_glow_bitmap = -1;
-	wip->b_info.beam_glow_nframes = 1;
-	wip->b_info.beam_glow_fps = 0;
 	wip->b_info.beam_shots = 1;
 	wip->b_info.beam_shrink_factor = 0.0f;
 	wip->b_info.beam_shrink_pct = 0.0f;
 	wip->b_info.range = BEAM_FAR_LENGTH;
 	wip->b_info.damage_threshold = 1.0f;
+
+	generic_anim_init(&wip->b_info.beam_glow, NULL);
+	generic_anim_init(&wip->b_info.beam_particle_ani, NULL);
+
+	for (i = 0; i < NUM_SKILL_LEVELS; i++)
+		wip->b_info.beam_miss_factor[i] = 0.00001f;
 	
 	//WMC - Okay, so this is needed now
 	beam_weapon_section_info *bsip;
-	for(i = 0; i < MAX_BEAM_SECTIONS;i++)
-	{
+	for (i = 0; i < MAX_BEAM_SECTIONS; i++) {
 		bsip = &wip->b_info.sections[i];
-		bsip->width = 1.0f;
 
-		bsip->texture = -1;
-		bsip->nframes = 1;
-		bsip->fps = 1;
+		generic_anim_init(&bsip->texture, NULL);
 
-		for(j = 0; j < 4; j++)
-		{
+		for (j = 0; j < 4; j++) {
 			bsip->rgba_inner[j] = 0;
 			bsip->rgba_outer[j] = 255;
 		}
 
+		bsip->width = 1.0f;
 		bsip->flicker = 0.1f;
 		bsip->z_add = i2fl(MAX_BEAM_SECTIONS - i - 1);
 		bsip->tile_type = 0;
@@ -1947,13 +1939,13 @@ void init_weapon_entry(int weap_info_index)
 		bsip->translation = 0.0f;
 	}
 
-	wip->Weapon_particle_spew_count = 1;
-	wip->Weapon_particle_spew_time = 25;
-	wip->Weapon_particle_spew_vel = 0.4f;
-	wip->Weapon_particle_spew_radius = 2.0f;
-	wip->Weapon_particle_spew_lifetime = 0.15f;
-	wip->Weapon_particle_spew_scale = 0.8f;
-	wip->Weapon_particle_spew_bitmap = -1;
+	wip->particle_spew_count = 1;
+	wip->particle_spew_time = 25;
+	wip->particle_spew_vel = 0.4f;
+	wip->particle_spew_radius = 2.0f;
+	wip->particle_spew_lifetime = 0.15f;
+	wip->particle_spew_scale = 0.8f;
+	generic_anim_init(&wip->particle_spew_anim, NULL);
 	
 	wip->tag_level = -1;
 	wip->tag_time = -1.0f;
@@ -1963,11 +1955,11 @@ void init_weapon_entry(int weap_info_index)
 	wip->field_of_fire = 0.0f;
 	
 	wip->shots = 1;
-	
-	wip->decal_texture = -1;
-	wip->decal_glow_texture = -1;
-	wip->decal_burn_texture = -1;
-	wip->decal_backface_texture = -1;
+
+	generic_bitmap_init(&wip->decal_texture, NULL);
+	wip->decal_glow_texture_id = -1;
+	wip->decal_burn_texture_id = -1;
+	generic_bitmap_init(&wip->decal_backface_texture, NULL);
 	wip->decal_rad = -1;
 	wip->decal_burn_time = 1000;
 
@@ -2126,33 +2118,26 @@ int parse_weapon(int subtype, bool replace)
 	//	Read the model file.  It can be a POF file or none.
 	//	If there is no model file (Model file: = "none") then we use our special
 	//	laser renderer which requires inner, middle and outer information.
-	if(optional_string("$Model file:"))
-	{
+	if ( optional_string("$Model file:") ) {
 		stuff_string(wip->pofbitmap_name, F_NAME, MAX_FILENAME_LEN);
-		if(stricmp(wip->pofbitmap_name, NOX("none")) && strlen(wip->pofbitmap_name))
-		{
-			wip->render_type = WRT_POF;
-			if(wip->laser_bitmap > -1) {
-				bm_unload(wip->laser_bitmap);
-			}
 
-			wip->laser_bitmap = -1;
-		}
-		diag_printf ("Model pof file -- %s\n", wip->pofbitmap_name );
+		if ( VALID_FNAME(wip->pofbitmap_name) )
+			wip->render_type = WRT_POF;
+
+		diag_printf("Model pof file -- %s\n", wip->pofbitmap_name );
 	}
 
 	// a special LOD level to use when rendering the weapon in the hud targetbox
-	if (optional_string( "$POF target LOD:" )) {
+	if ( optional_string( "$POF target LOD:" ) )
 		stuff_int(&wip->hud_target_lod);
-	}
 
-	if (optional_string("$External Model File:")) {
+	if ( optional_string("$External Model File:") )
 		stuff_string(wip->external_model_name, F_NAME, MAX_FILENAME_LEN);	
-	}
 
-	if (optional_string("$Submodel Rotation Speed:"))
+	if ( optional_string("$Submodel Rotation Speed:") )
 		stuff_float(&wip->weapon_submodel_rotate_vel);
-	if (optional_string("$Submodel Rotation Acceleration:"))
+
+	if ( optional_string("$Submodel Rotation Acceleration:") )
 		stuff_float(&wip->weapon_submodel_rotate_accell);
 
 
@@ -2160,95 +2145,30 @@ int parse_weapon(int subtype, bool replace)
 	ubyte r,g,b;
 
 	// laser bitmap itself
-	if(optional_string("@Laser Bitmap:"))
-	{
-		int new_laser = -1;
+	if ( optional_string("@Laser Bitmap:") ) {
 		stuff_string(fname, F_NAME, NAME_LENGTH);
 
-		if(!Fred_running)
-		{
-			new_laser = bm_load( fname );
-			if(new_laser < 0)
-			{	//if it couldn't find the pcx look for an ani-Bobboau
-				nprintf(("General","couldn't find pcx for %s \n", wip->name));
-				new_laser = bm_load_animation(fname, &wip->laser_bitmap_nframes, &wip->laser_bitmap_fps, 1);				
-				if(new_laser < 0)
-				{
-					nprintf(("General","couldn't find ani for %s \n", wip->name));
-					Warning( LOCATION, "Couldn't open texture '%s'\nreferenced by weapon '%s'\n", fname, wip->name );
-				}
-				else
-				{
-					if(wip->laser_bitmap > -1) {
-						bm_unload(wip->laser_bitmap);
-					}
-					strcpy(wip->pofbitmap_name, fname);
-					wip->laser_bitmap = new_laser;
-					wip->render_type = WRT_LASER;
-					nprintf(("General","found ani %s for %s, with %d frames and %d fps \n", wip->pofbitmap_name, wip->name,wip->laser_bitmap_nframes, wip->laser_bitmap_fps));
-				}
-			}
-			else
-			{
-				if(wip->laser_bitmap > -1) {
-					bm_unload(wip->laser_bitmap);
-				}
-				strcpy(wip->pofbitmap_name, fname);
-				wip->laser_bitmap = new_laser;
-				wip->render_type = WRT_LASER;
-				wip->laser_bitmap_nframes = 1;
-				wip->laser_bitmap_fps = 0;
-			}
-
+		if (wip->render_type == WRT_POF) {
+			mprintf(("WARNING:  Weapon '%s' has both LASER and POF render types!  Will only use POF type!\n", wip->name));
+			generic_anim_init(&wip->laser_bitmap, NULL);
+		} else {
+			generic_anim_init(&wip->laser_bitmap, fname);
+			wip->render_type = WRT_LASER;
 		}
 	}
 
 	// optional laser glow
-	if(optional_string("@Laser Glow:"))
-	{
-		stuff_string(fname, F_NAME, NAME_LENGTH);		
-		if(!Fred_running)
-		{
-			int new_glow = bm_load( fname );
-			if(new_glow < 0)
-			{	//if it couldn't find the pcx look for an ani-Bobboau
-				nprintf(("General","couldn't find pcx for %s \n", wip->name));
-				new_glow = bm_load_animation(fname, &wip->laser_glow_bitmap_nframes, &wip->laser_glow_bitmap_fps, 1);				
-				if(new_glow < 0){
-					nprintf(("General","couldn't find ani for %s \n", wip->name));
-					Warning( LOCATION, "Couldn't open glow texture '%s'\nreferenced by weapon '%s'\n", fname, wip->name );
-				}else{
-					nprintf(("General","found ani %s for %s, with %d frames and %d fps \n", fname, wip->name,wip->laser_glow_bitmap_nframes, wip->laser_glow_bitmap_fps));
-					if(wip->laser_glow_bitmap > -1) {
-						bm_unload(wip->laser_glow_bitmap);
-					}
-					wip->laser_glow_bitmap = new_glow;
-				}
-			}
-			else
-			{
-				if(wip->laser_glow_bitmap > -1) {
-					bm_unload(wip->laser_glow_bitmap);
-				}
-				wip->laser_glow_bitmap = new_glow;
-				wip->laser_glow_bitmap_nframes = 0;
-				wip->laser_glow_bitmap_fps = 0;
-			}
+	if ( optional_string("@Laser Glow:") ) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
 
-			/* there's no purpose to this, it just gets unloaded before use anyway - taylor
-			// might as well lock it down as an aabitmap now
-			if(wip->laser_glow_bitmap >= 0){	//locking all frames if it is a ani-Bobboau
-				for(int i = 0; i>wip->laser_glow_bitmap_nframes; i++){
-					bm_lock((wip->laser_glow_bitmap + i), 8, BMP_AABITMAP);
-					bm_unlock((wip->laser_glow_bitmap + i));
-					nprintf(("General","locking glow for weapon %s \n", wip->name));
-				//	mprintf(("locking glow for weapon"));
-				}
-			}
-			*/
+		if (wip->render_type != WRT_LASER) {
+			mprintf(("WARNING:  Laser glow specified on non-LASER type weapon (%s)!\n", wip->name));
+			Int3();
+		} else {
+			generic_anim_init(&wip->laser_glow_bitmap, fname);
 		}
 	}
-		
+
 	if(optional_string("@Laser Color:"))
 	{
 		stuff_ubyte(&r);
@@ -2657,39 +2577,32 @@ int parse_weapon(int subtype, bool replace)
 		}
 	}
 
-	char trail_name[MAX_FILENAME_LEN];
-	trail_info *ti = &wip->tr_info;
-	if(optional_string("$Trail:")){	
+	if ( optional_string("$Trail:") ) {
+		trail_info *ti = &wip->tr_info;
 		wip->wi_flags |= WIF_TRAIL;		// missile leaves a trail
 
-		if(optional_string("+Start Width:")) {
+		if ( optional_string("+Start Width:") )
 			stuff_float(&ti->w_start);
-		}
 
-		if(optional_string("+End Width:")) {
+		if ( optional_string("+End Width:") )
 			stuff_float(&ti->w_end);
-		}
 
-		if(optional_string("+Start Alpha:")) {
+		if ( optional_string("+Start Alpha:") )
 			stuff_float(&ti->a_start);
-		}
 
-		if(optional_string("+End Alpha:")) {
+		if ( optional_string("+End Alpha:") )
 			stuff_float(&ti->a_end);
-		}
 
-		if(optional_string("+Max Life:"))
-		{
+		if ( optional_string("+Max Life:") ) {
 			stuff_float(&ti->max_life);
-
 			ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
 		}
 
-		if(optional_string("+Bitmap:")) {
-			stuff_string(trail_name, F_NAME, MAX_FILENAME_LEN);
-			//TODO: Remove this bm_load call. -WMC
-			ti->bitmap = bm_load(trail_name);
+		if ( optional_string("+Bitmap:") ) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+			generic_bitmap_init(&ti->texture, fname);
 		}
+
 		// wip->delta_time = fl2i(1000.0f*wip->max_life)/(NUM_TRAIL_SECTIONS+1);		// time between sections.  max_life / num_sections basically.
 	}
 
@@ -2703,43 +2616,36 @@ int parse_weapon(int subtype, bool replace)
 		stuff_string(wip->anim_filename, F_NAME, MAX_FILENAME_LEN);
 	}
 
-	char impact_ani_file[MAX_FILENAME_LEN];
 	if ( optional_string("$Impact Explosion:") ) {
-		stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
-		if ( stricmp(impact_ani_file,NOX("none")))	{
-			wip->impact_weapon_expl_index = Weapon_explosions.Load(impact_ani_file);
-		}
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if ( VALID_FNAME(fname) )
+			wip->impact_weapon_expl_index = Weapon_explosions.Load(fname);
 	}
 	
-	if(optional_string("$Impact Explosion Radius:")) {
+	if ( optional_string("$Impact Explosion Radius:") )
 		stuff_float(&wip->impact_explosion_radius);
-	}
 
-	if ( optional_string("$Dinky Impact Explosion:") )
-	{
-		stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
-		if ( stricmp(impact_ani_file,NOX("none")))	{
-			wip->dinky_impact_weapon_expl_index = Weapon_explosions.Load(impact_ani_file);
-		}
-	}
-	else if(first_time)
-	{
+	if ( optional_string("$Dinky Impact Explosion:") ) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+
+		if ( VALID_FNAME(fname) )
+			wip->dinky_impact_weapon_expl_index = Weapon_explosions.Load(fname);
+	} else if (first_time) {
 		wip->dinky_impact_weapon_expl_index = wip->impact_weapon_expl_index;
 	}
 
-	if(optional_string("$Dinky Impact Explosion Radius:")) {
+	if ( optional_string("$Dinky Impact Explosion Radius:") )
 		stuff_float(&wip->dinky_impact_explosion_radius);
-	} else if(first_time) {
+	else if (first_time)
 		wip->dinky_impact_explosion_radius = wip->impact_explosion_radius;
-	}
 
 	// muzzle flash
-	char mflash_string[MAX_FILENAME_LEN];
-	if( optional_string("$Muzzleflash:") ){
-		stuff_string(mflash_string, F_NAME, MAX_FILENAME_LEN);
+	if ( optional_string("$Muzzleflash:") ) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
 
 		// look it up
-		wip->muzzle_flash = mflash_lookup(mflash_string);
+		wip->muzzle_flash = mflash_lookup(fname);
 	}
 
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
@@ -2894,10 +2800,7 @@ int parse_weapon(int subtype, bool replace)
 	}
 
 	// beam weapon optional stuff
-	if( optional_string("$BeamInfo:"))
-	{
-		int new_tex=-1, new_nframes=1, new_fps=1;
-
+	if ( optional_string("$BeamInfo:") ) {
 		// beam type
 		if(optional_string("+Type:")) {
 			stuff_int(&wip->b_info.beam_type);
@@ -2939,23 +2842,9 @@ int parse_weapon(int subtype, bool replace)
 		}
 
 		// particle bitmap/ani		
-		if(optional_string("+PAni:"))
-		{
+		if ( optional_string("+PAni:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
-
-			if(!Fred_running){
-				new_nframes = 1;
-				new_fps = 1;
-				new_tex = bm_load_animation(fname, &new_nframes, &new_fps, 1);
-				if(new_tex > -1)
-				{
-					if(wip->b_info.beam_particle_ani > -1) {
-						bm_unload(wip->b_info.beam_particle_ani);
-					}
-
-					wip->b_info.beam_particle_ani = new_tex;
-				}
-			}
+			generic_anim_init(&wip->b_info.beam_particle_ani, fname);
 		}
 
 		// magic miss #
@@ -2978,28 +2867,9 @@ int parse_weapon(int subtype, bool replace)
 		parse_sound("+WarmdownSound:", &wip->b_info.beam_warmdown_sound, wip->name);
 
 		// glow bitmap
-		if(optional_string("+Muzzleglow:"))
-		{
+		if (optional_string("+Muzzleglow:") ) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
-			if(!Fred_running){
-				new_tex = bm_load_animation(fname, &new_nframes, &new_fps);
-
-				if (new_tex < 0) {
-					new_tex = bm_load(fname);
-					new_nframes = 1;
-					new_fps = 1;
-				}
-
-				if(new_tex > -1)
-				{
-					if(wip->b_info.beam_glow_bitmap > -1) {
-						bm_unload(wip->b_info.beam_glow_bitmap);
-					}
-					wip->b_info.beam_glow_bitmap = new_tex;
-					wip->b_info.beam_glow_nframes = new_nframes;
-					wip->b_info.beam_glow_fps = new_fps;
-				}
-			}
+			generic_anim_init(&wip->b_info.beam_glow, fname);
 		}
 
 		// # of shots (only used for type D beams)
@@ -3026,194 +2896,142 @@ int parse_weapon(int subtype, bool replace)
 			stuff_float(&wip->b_info.range);
 		}
 		
-		if (optional_string("+Attenuation:")) {
+		if ( optional_string("+Attenuation:") )
 			stuff_float(&wip->b_info.damage_threshold);
-		}
+
 		// beam sections
-		//beam_weapon_section_info i;
-		beam_weapon_section_info tbsw;
-		beam_weapon_section_info *ip;
-		int bsw_index_override;
-		bool nocreate;
-		while( optional_string("$Section:") )
-		{
-			nocreate = false;
-			bsw_index_override = -1;
-			if(optional_string("+Index:"))
-			{
+		while ( optional_string("$Section:") ) {
+			beam_weapon_section_info *bsip = NULL, tbsw;
+			bool nocreate = false, remove = false;
+			int bsw_index_override = -1;
+
+			if ( optional_string("+Index:") ) {
 				stuff_int(&bsw_index_override);
-				if(bsw_index_override < 0 || bsw_index_override >= wip->b_info.beam_num_sections)
-				{
+
+				if ( optional_string("+remove") ) {
+					nocreate = true;
+					remove = true;
+				}
+					
+				if ( (bsw_index_override < 0) || (!remove && (bsw_index_override >= wip->b_info.beam_num_sections)) )
 					Warning(LOCATION, "Invalid +Index value of %d specified for beam section on weapon '%s'; valid values at this point are %d to %d.", bsw_index_override, wip->name, 0, wip->b_info.beam_num_sections -1);
-				}
 			}
-			if(optional_string("+nocreate")) {
+
+			if ( optional_string("+nocreate") )
 				nocreate = true;
-			}
 
-			//Where are we saving data?
-			if(bsw_index_override >= 0)
-			{
-				if(bsw_index_override < wip->b_info.beam_num_sections)
-				{
-					ip = &wip->b_info.sections[bsw_index_override];
-				}
-				else
-				{
-  					if(!nocreate)
-  					{
-						if((bsw_index_override == wip->b_info.beam_num_sections) && (bsw_index_override < MAX_BEAM_SECTIONS))
-						{
-							ip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
+			// Where are we saving data?
+			if (bsw_index_override >= 0) {
+				if (bsw_index_override < wip->b_info.beam_num_sections) {
+					bsip = &wip->b_info.sections[bsw_index_override];
+				} else {
+					if ( !nocreate ) {
+						if ( (bsw_index_override == wip->b_info.beam_num_sections) && (bsw_index_override < MAX_BEAM_SECTIONS) ) {
+							bsip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
+						} else {
+							if ( !remove )
+								Warning(LOCATION, "Invalid index for manually-indexed beam section %d (max %d) on weapon %s.", bsw_index_override, MAX_BEAM_SECTIONS, wip->name);
+
+							bsip = &tbsw;
+							memset( bsip, 0, sizeof(beam_weapon_section_info) );
+							generic_anim_init(&bsip->texture, NULL);
 						}
-						else
-						{
-							Warning(LOCATION, "Invalid index for manually-indexed beam section %d (max %d) on weapon %s.", bsw_index_override, MAX_BEAM_SECTIONS, wip->name);
-							ip = &tbsw;
-							memset( ip, 0, sizeof(beam_weapon_section_info) );
-							ip->texture = -1;
-						}
-					}
-					else
-					{
-						Warning(LOCATION, "Invalid index for manually-indexed beam section %d, and +nocreate specified, on weapon %s", bsw_index_override, wip->name);
-						ip = &tbsw;
-						memset( ip, 0, sizeof(beam_weapon_section_info) );
-						ip->texture = -1;
+					} else {
+						if ( !remove )
+							Warning(LOCATION, "Invalid index for manually-indexed beam section %d, and +nocreate specified, on weapon %s", bsw_index_override, wip->name);
+
+						bsip = &tbsw;
+						memset( bsip, 0, sizeof(beam_weapon_section_info) );
+						generic_anim_init(&bsip->texture, NULL);
 					}
 
 				}
-			}
-			else
-			{
-				if(wip->b_info.beam_num_sections < MAX_BEAM_SECTIONS) {
-					ip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
-				}
-				else
-				{
+			} else {
+				if (wip->b_info.beam_num_sections < MAX_BEAM_SECTIONS) {
+					bsip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
+				} else {
 					Warning(LOCATION, "Too many beam sections for weapon %s - max is %d", wip->name, MAX_BEAM_SECTIONS);
-					ip = &tbsw;
-					memset( ip, 0, sizeof(beam_weapon_section_info) );
-					ip->texture = -1;
+					bsip = &tbsw;
+					memset( bsip, 0, sizeof(beam_weapon_section_info) );
+					generic_anim_init(&bsip->texture, NULL);
 				}
 			}
-  
-			char tex_name[MAX_FILENAME_LEN];
 			
 			// section width
-			if(optional_string("+Width:")) {
-				stuff_float(&ip->width);
-			}
+			if ( optional_string("+Width:") )
+				stuff_float(&bsip->width);
 
 			// texture
-			if(optional_string("+Texture:"))
-			{
-				stuff_string(tex_name, F_NAME, MAX_FILENAME_LEN);
-
-				if(!Fred_running)
-				{
-					//Don't load the file yet, in case there's an old one
-					//and the new one doesn't load
-					new_tex = bm_load_animation(tex_name, &new_nframes, &new_fps);
-
-					if (new_tex < 0) {
-						new_tex = bm_load(tex_name);
-						new_nframes = 1;
-						new_fps = 1;
-					}
-
-					//We got the file, so load the new values
-					if(new_tex > -1)
-					{
-						if(ip->texture > -1) {
-							bm_unload(ip->texture);
-						}
-						ip->texture = new_tex;
-						ip->nframes = new_nframes;
-						ip->fps = new_fps;
-					}
-				}
+			if ( optional_string("+Texture:") ) {
+				stuff_string(fname, F_NAME, NAME_LENGTH);
+				generic_anim_init(&bsip->texture, fname);
 			}
 
 			// rgba inner
-			if(optional_string("+RGBA Inner:"))
-			{
-				stuff_ubyte(&ip->rgba_inner[0]);
-				stuff_ubyte(&ip->rgba_inner[1]);
-				stuff_ubyte(&ip->rgba_inner[2]);
-				stuff_ubyte(&ip->rgba_inner[3]);
+			if ( optional_string("+RGBA Inner:") ) {
+				stuff_ubyte(&bsip->rgba_inner[0]);
+				stuff_ubyte(&bsip->rgba_inner[1]);
+				stuff_ubyte(&bsip->rgba_inner[2]);
+				stuff_ubyte(&bsip->rgba_inner[3]);
 			}
 
 			// rgba outer
-			if(optional_string("+RGBA Outer:"))
-			{
-				stuff_ubyte(&ip->rgba_outer[0]);
-				stuff_ubyte(&ip->rgba_outer[1]);
-				stuff_ubyte(&ip->rgba_outer[2]);
-				stuff_ubyte(&ip->rgba_outer[3]);
+			if ( optional_string("+RGBA Outer:") ) {
+				stuff_ubyte(&bsip->rgba_outer[0]);
+				stuff_ubyte(&bsip->rgba_outer[1]);
+				stuff_ubyte(&bsip->rgba_outer[2]);
+				stuff_ubyte(&bsip->rgba_outer[3]);
 			}
 
 			// flicker
-			if(optional_string("+Flicker:")) {
-				stuff_float(&ip->flicker); 
-			}
+			if ( optional_string("+Flicker:") )
+				stuff_float(&bsip->flicker); 
 
 			// zadd
-			if(optional_string("+Zadd:")) {
-				stuff_float(&ip->z_add);
+			if ( optional_string("+Zadd:") )
+				stuff_float(&bsip->z_add);
+
+ 			// beam texture tileing factor -Bobboau
+			if ( optional_string("+Tile Factor:") ) {
+				stuff_float(&bsip->tile_factor);
+				stuff_int(&bsip->tile_type);
 			}
 
-			if( optional_string("+Tile Factor:")){ //beam texture tileing factor -Bobboau
-				stuff_float(&(ip->tile_factor));
-				stuff_int(&(ip->tile_type));
-			}
+			// beam texture moveing stuff -Bobboau
+			if ( optional_string("+Translation:") )
+				stuff_float(&bsip->translation);
 
-			if( optional_string("+Translation:")){ //beam texture moveing stuff -Bobboau
-				stuff_float(&(ip->translation));			
-			}
-		}		
+			// if we are actually removing this index, the reset it and we'll
+			// clean up the entries later
+			if (remove)
+				memset( bsip, 0, sizeof(beam_weapon_section_info) );
+		}
 	}
 
-	if(wip->wi_flags & WIF_PARTICLE_SPEW)
-	{
-		if(optional_string("$Pspew:"))
-		{
-			required_string("+Count:");
-			stuff_int(&wip->Weapon_particle_spew_count);
-			required_string("+Time:");
-			stuff_int(&wip->Weapon_particle_spew_time);
-			required_string("+Vel:");
-			stuff_float(&wip->Weapon_particle_spew_vel);
-			required_string("+Radius:");
-			stuff_float(&wip->Weapon_particle_spew_radius);
-			required_string("+Life:");
-			stuff_float(&wip->Weapon_particle_spew_lifetime);
-			required_string("+Scale:");
-			stuff_float(&wip->Weapon_particle_spew_scale);
-			required_string("+Bitmap:");
-			stuff_string(wip->Weapon_particle_spew_bitmap_name, F_NAME, MAX_FILENAME_LEN);
-		
-			wip->Weapon_particle_spew_bitmap = bm_load( wip->Weapon_particle_spew_bitmap_name );
-			if(wip->Weapon_particle_spew_bitmap < 0)
-			{	//if it couldn't find the pcx look for an ani-Bobboau
-				nprintf(("General","couldn't find particle pcx for %s \n", wip->name));
-				wip->Weapon_particle_spew_bitmap = bm_load_animation(wip->Weapon_particle_spew_bitmap_name, &wip->Weapon_particle_spew_nframes, &wip->Weapon_particle_spew_fps, 1);				
-				if(wip->Weapon_particle_spew_bitmap < 0)
-				{
-					nprintf(("General","couldn't find ani for %s \n", wip->name));
-					Warning( LOCATION, "Couldn't open paticle texture '%s'\nreferenced by weapon '%s'\n", wip->Weapon_particle_spew_bitmap_name, wip->name );
-				}
-				else
-				{
-					nprintf(("General","found ani %s for %s, with %d frames and %d fps \n", wip->Weapon_particle_spew_bitmap_name, wip->name, wip->Weapon_particle_spew_nframes, wip->Weapon_particle_spew_fps));
-				}
-			}
-			else
-			{
-				wip->Weapon_particle_spew_nframes = 1;
-				wip->Weapon_particle_spew_fps = 0;
-			}
-		}
+	if ( optional_string("$Pspew:") ) {
+		Assert( wip->wi_flags & WIF_PARTICLE_SPEW );
+
+		required_string("+Count:");
+		stuff_int(&wip->particle_spew_count);
+
+		required_string("+Time:");
+		stuff_int(&wip->particle_spew_time);
+
+		required_string("+Vel:");
+		stuff_float(&wip->particle_spew_vel);
+
+		required_string("+Radius:");
+		stuff_float(&wip->particle_spew_radius);
+
+		required_string("+Life:");
+		stuff_float(&wip->particle_spew_lifetime);
+
+		required_string("+Scale:");
+		stuff_float(&wip->particle_spew_scale);
+
+		required_string("+Bitmap:");
+		stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
+		generic_anim_init(&wip->particle_spew_anim, fname);
 	}
 
 	// tag weapon optional stuff
@@ -3235,32 +3053,21 @@ int parse_weapon(int subtype, bool replace)
 		stuff_int(&wip->shots);
 	}
 
-	if( optional_string("$decal:")){
-		char tex_name[MAX_FILENAME_LEN], temp[MAX_FILENAME_LEN];
-
+	if ( optional_string("$decal:") ) {
 		required_string("+texture:");
-		stuff_string(tex_name, F_NAME, MAX_FILENAME_LEN);
-		wip->decal_texture = bm_load(tex_name);
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+		generic_bitmap_init(&wip->decal_texture, fname);
 
-		strcpy(temp, tex_name);
-		SAFE_STRCAT( tex_name, "-glow", sizeof(tex_name) );
-		wip->decal_glow_texture = bm_load(tex_name);
-
-		strcpy(tex_name, temp);
-		SAFE_STRCAT( tex_name, "-burn", sizeof(tex_name) );
-		wip->decal_burn_texture = bm_load(tex_name);
-
-		if( optional_string("+backface texture:")){
-			stuff_string(tex_name, F_NAME, MAX_FILENAME_LEN);
-			wip->decal_backface_texture = bm_load(tex_name);
+		if ( optional_string("+backface texture:") ) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+			generic_bitmap_init(&wip->decal_backface_texture, fname);
 		}
 
 		required_string("+radius:");
 		stuff_float(&wip->decal_rad);
 
-		if( optional_string("+burn time:")){
+		if ( optional_string("+burn time:") )
 			stuff_int(&wip->decal_burn_time);
-		}
 	}
 
 	if (optional_string("$Transparent:")) {
@@ -3427,25 +3234,20 @@ void parse_cmeasure(bool replace)
 // convert the strings in Spawn_names to indices in the Weapon_types array.
 void translate_spawn_types()
 {
-	int	i,j;
+	int	i, j;
 
-	for (i=0; i<Num_weapon_types; i++)
-	{
-		if ( (Weapon_info[i].spawn_type > -1) && (Weapon_info[i].spawn_type < Num_spawn_types) )
-		{
+	for (i = 0; i < Num_weapon_types; i++) {
+		if ( (Weapon_info[i].spawn_type > -1) && (Weapon_info[i].spawn_type < Num_spawn_types) ) {
 			int	spawn_type = Weapon_info[i].spawn_type;
 
 			Assert( spawn_type < Num_spawn_types );
 
-			for (j=0; j<Num_weapon_types; j++)
-			{
-				if (!stricmp(Spawn_names[spawn_type], Weapon_info[j].name))
-				{
+			for (j = 0; j < Num_weapon_types; j++) {
+				if ( !stricmp(Spawn_names[spawn_type], Weapon_info[j].name) ) {
 					Weapon_info[i].spawn_type = (short)j;
+
 					if (i == j)
-					{
 						Warning(LOCATION, "Weapon %s spawns itself.  Infinite recursion?\n", Weapon_info[i].name);
-					}
 
 					break;
 				}
@@ -3541,11 +3343,11 @@ void parse_weaponstbl(char* longname)
 	lcl_ext_close();
 }
 
-void create_weapon_names()
+void weapon_create_names()
 {
 	int	i;
 
-	for (i=0; i<Num_weapon_types; i++)
+	for (i = 0; i < Num_weapon_types; i++)
 		Weapon_names[i] = Weapon_info[i].name;
 }
 
@@ -3555,21 +3357,24 @@ void create_weapon_names()
 //Fighter missiles and bombs
 //Capital missiles and bombs
 //Child weapons
-void sort_weapons_by_type()
+void weapon_sort_by_type()
 {
-	weapon_info *lasers = NULL, *big_lasers=NULL, *beams = NULL, *missiles = NULL, *big_missiles = NULL, *child_weapons = NULL;
+	weapon_info *lasers = NULL, *big_lasers = NULL, *beams = NULL, *missiles = NULL, *big_missiles = NULL, *child_weapons = NULL;
 	int num_lasers = 0, num_big_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child = 0;
+	int i, weapon_index;
 
-	int i,j;
-
-	//get the initial count of each weapon type
-	for (i=0; i < MAX_WEAPON_TYPES; i++)
-	{
+	// get the initial count of each weapon type
+	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
 		switch (Weapon_info[i].subtype)
 		{
+			case WP_UNUSED:
+				continue;
+
 			case WP_LASER:
-				if (Weapon_info[i].wi_flags & WIF_BIG_ONLY) num_big_lasers++;
-				else num_lasers++;
+				if (Weapon_info[i].wi_flags & WIF_BIG_ONLY)
+					num_big_lasers++;
+				else
+					num_lasers++;
 				break;
 		
 			case WP_BEAM:
@@ -3577,82 +3382,113 @@ void sort_weapons_by_type()
 				break;
 
 			case WP_MISSILE:
-				if (Weapon_info[i].wi_flags & WIF_CHILD) num_child++;
-				else if (Weapon_info[i].wi_flags & WIF_BIG_ONLY) num_big_missiles++;
-				else	num_missiles++;
-
+				if (Weapon_info[i].wi_flags & WIF_CHILD)
+					num_child++;
+				else if (Weapon_info[i].wi_flags & WIF_BIG_ONLY)
+					num_big_missiles++;
+				else
+					num_missiles++;
 				break;
+
 			default:
 				continue;
 		}
 		
 	}
 
-	//allocate the buckets
-	lasers = new weapon_info[num_lasers]; num_lasers = 0;
-	big_lasers = new weapon_info[num_big_lasers]; num_big_lasers = 0;
-	beams = new weapon_info[num_beams]; num_beams = 0;
-	missiles = new weapon_info[num_missiles]; num_missiles = 0;
-	big_missiles = new weapon_info[num_big_missiles]; num_big_missiles = 0;
-	child_weapons = new weapon_info[num_child]; num_child = 0;
+	// allocate the buckets
+	if (num_lasers) {
+		lasers = new weapon_info[num_lasers];
+		Verify( lasers != NULL );
+		num_lasers = 0;
+	}
 
-	//fill the buckets
-	for (i=0; i < MAX_WEAPON_TYPES; i++)
-	{
+	if (num_big_lasers) {
+		big_lasers = new weapon_info[num_big_lasers];
+		Verify( big_lasers != NULL );
+		num_big_lasers = 0;
+	}
+
+	if (num_beams) {
+		beams = new weapon_info[num_beams];
+		Verify( beams != NULL );
+		num_beams = 0;
+	}
+
+	if (num_missiles) {
+		missiles = new weapon_info[num_missiles];
+		Verify( missiles != NULL );
+		num_missiles = 0;
+	}
+
+	if (num_big_missiles) {
+		big_missiles = new weapon_info[num_big_missiles];
+		Verify( big_missiles != NULL );
+		num_big_missiles = 0;
+	}
+
+	if (num_child) {
+		child_weapons = new weapon_info[num_child];
+		Verify( child_weapons != NULL );
+		num_child = 0;
+	}
+
+	// fill the buckets
+	for (i = 0; i < MAX_WEAPON_TYPES; i++) {
 		switch (Weapon_info[i].subtype)
 		{
+			case WP_UNUSED:
+				continue;
+
 			case WP_LASER:
-				if (Weapon_info[i].wi_flags & WIF_BIG_ONLY) big_lasers[num_big_lasers++]=Weapon_info[i];
-				else lasers[num_lasers++]=Weapon_info[i];
+				if (Weapon_info[i].wi_flags & WIF_BIG_ONLY)
+					big_lasers[num_big_lasers++] = Weapon_info[i];
+				else
+					lasers[num_lasers++] = Weapon_info[i];
 				break;
 		
 			case WP_BEAM:
-				beams[num_beams++]=Weapon_info[i];
+				beams[num_beams++] = Weapon_info[i];
 				break;
 
 			case WP_MISSILE:
-				if (Weapon_info[i].wi_flags & WIF_CHILD) child_weapons[num_child++]=Weapon_info[i];
-				else if (Weapon_info[i].wi_flags & WIF_BIG_ONLY) big_missiles[num_big_missiles++] = Weapon_info[i];
-				else	missiles[num_missiles++]=Weapon_info[i];
-
+				if (Weapon_info[i].wi_flags & WIF_CHILD)
+					child_weapons[num_child++] = Weapon_info[i];
+				else if (Weapon_info[i].wi_flags & WIF_BIG_ONLY)
+					big_missiles[num_big_missiles++] = Weapon_info[i];
+				else
+					missiles[num_missiles++]=Weapon_info[i];
 				break;
+
 			default:
 				continue;
 		}
 	}
 
-	//reorder the weapon_info structure according to our rules defined above
-	for (i=0, j=0; i < num_lasers; i++, j++)
-	{
-		Weapon_info[j] = lasers[i];
-	}
+	weapon_index = 0;
 
-	for (i=0; i < num_big_lasers; i++, j++)
-	{
-		Weapon_info[j] = big_lasers[i];
-	}
+	// reorder the weapon_info structure according to our rules defined above
+	for (i = 0; i < num_lasers; i++, weapon_index++)
+		Weapon_info[weapon_index] = lasers[i];
 
-	for (i=0; i < num_beams; i++, j++)
-	{
-		Weapon_info[j] = beams[i];
-	}
+	for (i = 0; i < num_big_lasers; i++, weapon_index++)
+		Weapon_info[weapon_index] = big_lasers[i];
 
-	First_secondary_index = j;
+	for (i = 0; i < num_beams; i++, weapon_index++)
+		Weapon_info[weapon_index] = beams[i];
 
-	for (i=0; i < num_missiles; i++, j++)
-	{
-		Weapon_info[j] = missiles[i];
-	}
+	// designate start of secondary weapons so that we'll have the correct offset later on
+	First_secondary_index = weapon_index;
 
-	for (i=0; i < num_big_missiles; i++, j++)
-	{
-		Weapon_info[j] = big_missiles[i];
-	}
+	for (i = 0; i < num_missiles; i++, weapon_index++)
+		Weapon_info[weapon_index] = missiles[i];
 
-	for (i=0; i < num_child; i++, j++)
-	{
-		Weapon_info[j] = child_weapons[i];
-	}
+	for (i = 0; i < num_big_missiles; i++, weapon_index++)
+		Weapon_info[weapon_index] = big_missiles[i];
+
+	for (i = 0; i < num_child; i++, weapon_index++)
+		Weapon_info[weapon_index] = child_weapons[i];
+
 
 	delete [] lasers;
 	delete [] big_lasers;
@@ -3662,17 +3498,296 @@ void sort_weapons_by_type()
 	delete [] child_weapons;
 }
 
-void reset_weapon_info()
+// do any post-parse cleaning on weapon entries
+void weapon_clean_entries()
 {
-	memset(Weapon_info, 0, sizeof(weapon_info)*MAX_WEAPON_TYPES);
+	weapon_info *wip;
+	int i;
 
-	for (int i = 0; i < MAX_WEAPON_TYPES; i++)
-	{
-		Weapon_info[i].subtype = WP_UNUSED;
+	for (i = 0; i < Num_weapon_types; i++) {
+		wip = &Weapon_info[i];
+
+		if (wip->wi_flags & WIF_BEAM) {
+			// clean up any beam sections which may have been deleted
+			int removed = 0;
+
+			for (int s_idx = 0; s_idx < wip->b_info.beam_num_sections; s_idx++) {
+				if ( !strlen(wip->b_info.sections[s_idx].texture.filename) ) {
+					int new_idx = s_idx + 1;
+
+					while (new_idx < MAX_BEAM_SECTIONS) {
+						memcpy( &wip->b_info.sections[new_idx-1], &wip->b_info.sections[new_idx], sizeof(beam_weapon_section_info) );
+						new_idx++;
+					}
+
+					removed++;
+				}
+			}
+
+			if (removed) {
+				mprintf(("NOTE: weapon-cleanup is removing %i stale beam sections, out of %i original, from '%s'.\n", removed, wip->b_info.beam_num_sections, wip->name));
+				wip->b_info.beam_num_sections -= removed;
+			}
+		}
 	}
 }
 
-void weapons_info_close();
+void weapon_release_bitmaps()
+{
+	int i;
+	weapon_info *wip;
+
+	// not for FRED...
+	if (Fred_running)
+		return;
+
+	// if we are just going to load them all again any, keep everything
+	if (Cmdline_load_all_weapons)
+		return;
+
+	for (i = 0; i < Num_weapon_types; i++) {
+		wip = &Weapon_info[i];
+
+		// go ahead and clear out models, the model paging code will actually take care of
+		// releasing this stuff if needed, but we have to keep track of current modelnums ourselves
+		if (wip->render_type == WRT_POF)
+			wip->model_num = -1;
+
+		// we are only interested in what we don't need for this mission
+		if ( used_weapons[i] )
+			continue;
+
+		if (wip->render_type == WRT_LASER) {
+			if (wip->laser_bitmap.first_frame >= 0) {
+				bm_release(wip->laser_bitmap.first_frame);
+				wip->laser_bitmap.first_frame = -1;
+			}
+	
+			// now for the glow
+			if (wip->laser_glow_bitmap.first_frame >= 0) {
+				bm_release(wip->laser_glow_bitmap.first_frame);
+				wip->laser_glow_bitmap.first_frame = -1;
+			}
+		}
+
+		if (wip->wi_flags & WIF_BEAM) {
+			// particle animation
+			if (wip->b_info.beam_particle_ani.first_frame >= 0) {
+				bm_release(wip->b_info.beam_particle_ani.first_frame);
+				wip->b_info.beam_particle_ani.first_frame = -1;
+			}
+
+			// muzzle glow
+			if (wip->b_info.beam_glow.first_frame >= 0) {
+				bm_release(wip->b_info.beam_glow.first_frame);
+				wip->b_info.beam_glow.first_frame = -1;
+			}
+
+			// section textures
+			for (int i = 0; i < wip->b_info.beam_num_sections; i++) {
+				beam_weapon_section_info *bsi = &wip->b_info.sections[i];
+
+				if (bsi->texture.first_frame >= 0) {
+					bm_release(bsi->texture.first_frame);
+					bsi->texture.first_frame = -1;
+				}
+			}
+		}
+
+		if (wip->wi_flags & WIF_TRAIL) {
+			if (wip->tr_info.texture.bitmap_id >= 0) {
+				bm_release(wip->tr_info.texture.bitmap_id);
+				wip->tr_info.texture.bitmap_id = -1;
+			}
+		}
+
+		if (wip->wi_flags & WIF_PARTICLE_SPEW) {
+			if (wip->particle_spew_anim.first_frame >= 0) {
+				bm_release(wip->particle_spew_anim.first_frame);
+				wip->particle_spew_anim.first_frame = -1;
+			}
+		}
+
+		if (wip->decal_texture.bitmap_id >= 0) {
+			bm_release(wip->decal_texture.bitmap_id);
+			wip->decal_texture.bitmap_id = -1;
+
+			if (wip->decal_glow_texture_id >= 0) {
+				bm_release(wip->decal_glow_texture_id);
+				wip->decal_glow_texture_id = -1;
+			}
+
+			if (wip->decal_burn_texture_id >= 0) {
+				bm_release(wip->decal_burn_texture_id);
+				wip->decal_burn_texture_id = -1;
+			}
+
+			if (wip->decal_backface_texture.bitmap_id >= 0) {
+				bm_release(wip->decal_backface_texture.bitmap_id);
+				wip->decal_backface_texture.bitmap_id = -1;
+			}
+		}
+	}
+}
+
+void weapon_load_bitmaps(int weapon_index)
+{
+	weapon_info *wip;
+
+	// not for FRED...
+	if (Fred_running)
+		return;
+
+	if ( (weapon_index < 0) || (weapon_index >= Num_weapon_types) ) {
+		Int3();
+		return;
+	}
+
+	wip = &Weapon_info[weapon_index];
+
+	if ( (wip->render_type == WRT_LASER) && (wip->laser_bitmap.first_frame < 0) ) {
+		wip->laser_bitmap.first_frame = bm_load(wip->laser_bitmap.filename);
+
+		if (wip->laser_bitmap.first_frame >= 0) {
+			wip->laser_bitmap.num_frames = 1;
+			wip->laser_bitmap.total_time = 1;
+		}
+		// fall back to an animated type
+		else if ( generic_anim_load(&wip->laser_bitmap) ) {
+			mprintf(("Could not find a usable bitmap for '%s'!\n", wip->name));
+			Warning(LOCATION, "Could not find a usable bitmap (%s) for weapon '%s'!\n", wip->laser_bitmap.filename, wip->name);
+		}
+
+		// now see if we also have a glow
+		if ( strlen(wip->laser_glow_bitmap.filename) ) {
+			wip->laser_glow_bitmap.first_frame = bm_load(wip->laser_glow_bitmap.filename);
+
+			if (wip->laser_glow_bitmap.first_frame >= 0) {
+				wip->laser_glow_bitmap.num_frames = 1;
+				wip->laser_glow_bitmap.total_time = 1;
+			}
+			// fall back to an animated type
+			else if ( generic_anim_load(&wip->laser_glow_bitmap) ) {
+				mprintf(("Could not find a usable glow bitmap for '%s'!\n", wip->name));
+				Warning(LOCATION, "Could not find a usable glow bitmap (%s) for weapon '%s'!\n", wip->laser_glow_bitmap.filename, wip->name);
+			}
+		}
+	}
+
+	if (wip->wi_flags & WIF_BEAM) {
+		// particle animation
+		if ( (wip->b_info.beam_particle_ani.first_frame < 0) && strlen(wip->b_info.beam_particle_ani.filename) )
+			generic_anim_load(&wip->b_info.beam_particle_ani);
+
+		// muzzle glow
+		if ( (wip->b_info.beam_glow.first_frame < 0) && strlen(wip->b_info.beam_glow.filename) ) {
+			if ( generic_anim_load(&wip->b_info.beam_glow) ) {
+				// animated version failed to load, try static instead
+				wip->b_info.beam_glow.first_frame = bm_load(wip->b_info.beam_glow.filename);
+
+				if (wip->b_info.beam_glow.first_frame >= 0) {
+					wip->b_info.beam_glow.num_frames = 1;
+					wip->b_info.beam_glow.total_time = 1;
+				} else {
+					mprintf(("Could not find a usable muzzle glow bitmap for '%s'!\n", wip->name));
+					Warning(LOCATION, "Could not find a usable muzzle glow bitmap (%s) for weapon '%s'!\n", wip->b_info.beam_glow.filename, wip->name);
+				}
+			}
+		}
+
+		// section textures
+		for (int i = 0; i < wip->b_info.beam_num_sections; i++) {
+			beam_weapon_section_info *bsi = &wip->b_info.sections[i];
+
+			if ( (bsi->texture.first_frame < 0) && strlen(bsi->texture.filename) ) {
+				if ( generic_anim_load(&bsi->texture) ) {
+					// animated version failed to load, try static instead
+					bsi->texture.first_frame = bm_load(bsi->texture.filename);
+
+					if (bsi->texture.first_frame >= 0) {
+						bsi->texture.num_frames = 1;
+						bsi->texture.total_time = 1;
+					} else {
+						mprintf(("Could not find a usable beam section (%i) bitmap for '%s'!\n", i, wip->name));
+						Warning(LOCATION, "Could not find a usable beam section (%i) bitmap (%s) for weapon '%s'!\n", i, bsi->texture.filename, wip->name);
+					}
+				}
+			}
+		}
+	}
+
+	if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.texture.bitmap_id < 0) )
+		generic_bitmap_load(&wip->tr_info.texture);
+
+	if ( (wip->wi_flags & WIF_PARTICLE_SPEW) && (wip->particle_spew_anim.first_frame < 0) ) {
+		wip->particle_spew_anim.first_frame = bm_load(wip->particle_spew_anim.filename);
+
+		if (wip->particle_spew_anim.first_frame >= 0) {
+			wip->particle_spew_anim.num_frames = 1;
+			wip->particle_spew_anim.total_time = 1;
+		}
+		// fall back to an animated type
+		else if ( generic_anim_load(&wip->particle_spew_anim) ) {
+			mprintf(("Could not find a usable particle spew bitmap for '%s'!\n", wip->name));
+			Warning(LOCATION, "Could not find a usable particle spew bitmap (%s) for weapon '%s'!\n", wip->particle_spew_anim.filename, wip->name);
+		}
+	}
+
+	if ( (wip->decal_texture.bitmap_id < 0) && strlen(wip->decal_texture.filename) ) {
+		if ( generic_bitmap_load(&wip->decal_texture) ) {
+			// base texture loaded, so try glow and burn variants now
+			char tmp_name[MAX_FILENAME_LEN] = { '\0' };
+
+			strcpy(tmp_name, wip->decal_texture.filename);
+			SAFE_STRCAT(tmp_name, "-glow", sizeof(tmp_name));
+			wip->decal_glow_texture_id = bm_load(tmp_name);
+
+			strcpy(tmp_name, wip->decal_texture.filename);
+			SAFE_STRCAT(tmp_name, "-burn", sizeof(tmp_name));
+			wip->decal_burn_texture_id = bm_load(tmp_name);
+
+			// also grab the backface texture while we're here
+			generic_bitmap_load(&wip->decal_backface_texture);
+		}
+	}
+
+	// if this weapon isn't already marked as used, then mark it as such now
+	// (this should really only happen if the player is cheating)
+	if ( !used_weapons[weapon_index] )
+		used_weapons[weapon_index]++;
+}
+
+void weapon_do_post_parse()
+{
+	int i;
+
+	weapon_sort_by_type();	// NOTE: This has to be first thing!
+	weapon_create_names();
+	weapon_clean_entries();
+
+	//Set default countermeasure index from the saved name
+	if ( strlen(Default_cmeasure_name) ) {
+		for (i = 0; i < Num_weapon_types; i++) {
+			if ( !stricmp(Weapon_info[i].name, Default_cmeasure_name) ) {
+				Default_cmeasure_index = i;
+				break;
+			}
+		}
+	}
+
+	//Oops. Emergency fallback.
+	if (Default_cmeasure_index < 0) {
+		for (i = 0; i < Num_weapon_types; i++) {
+			if (Weapon_info[i].wi_flags & WIF_CMEASURE) {
+				Default_cmeasure_index = i;
+				break;
+			}
+		}
+	}
+
+	// translate all spawn type weapons to referrence the appropriate spawned weapon entry
+	translate_spawn_types();
+}
 
 void weapon_expl_info_init()
 {
@@ -3692,23 +3807,29 @@ void weapon_expl_info_init()
 	LOD_checker.clear();
 }
 
+void weapon_reset_info()
+{
+	memset( Weapon_info, 0, sizeof(weapon_info) * MAX_WEAPON_TYPES );
+
+	for (int i = 0; i < MAX_WEAPON_TYPES; i++)
+		init_weapon_entry(i);
+}
+
 // This will get called once at game startup
 void weapon_init()
 {
-	int i, rval;
+	int rval;
 
-	if ( !Weapons_inited )
-	{
+	if ( !Weapons_inited ) {
 		//Init weapon explosion info
 		weapon_expl_info_init();
 
 		// parse weapons.tbl
 		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", current_weapon_table, rval));
-		}
-		else
-		{	
-			reset_weapon_info();
+			Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", rval, current_weapon_table);
+		} else {	
+			weapon_reset_info();
+
 			Num_weapon_types = 0;
 			Num_spawn_types = 0;
 
@@ -3716,44 +3837,15 @@ void weapon_init()
 
 			int num_files = parse_modular_table(NOX("*-wep.tbm"), parse_weaponstbl);
 
-			if ( num_files > 0 ) {
+			if (num_files > 0)
 				Module_ship_weapons_loaded = true;
-			}
 
-			create_weapon_names();
-			sort_weapons_by_type();
+			// do post-parse cleanup
+			weapon_do_post_parse();
 
-			//Set default countermeasure index from the saved name
-			if(strlen(Default_cmeasure_name))
-			{
-				for(i = 0; i < Num_weapon_types; i++)
-				{
-					if(!stricmp(Weapon_info[i].name, Default_cmeasure_name))
-					{
-						Default_cmeasure_index = i;
-						break;
-					}
-				}
-			}
-
-			//Oops. Emergency fallback.
-			if(Default_cmeasure_index < 0)
-			{
-				for(i = 0; i < Num_weapon_types; i++)
-				{
-					if(Weapon_info[i].wi_flags & WIF_CMEASURE)
-					{
-						Default_cmeasure_index = i;
-						break;
-					}
-				}
-			}
 			Weapons_inited = 1;
 		}
 	}
-
-	// translate all spawn type weapons to referrence the appropriate spawned weapon entry
-	translate_spawn_types();
 
 	weapon_level_init();
 }
@@ -3831,13 +3923,14 @@ void weapon_level_init()
 
 MONITOR( NumWeaponsRend )
 
-float weapon_glow_scale_f = 2.3f;
-float weapon_glow_scale_r = 2.3f;
-float weapon_glow_scale_l = 1.5f;
-float weapon_glow_alpha = 0.85f;
+const float weapon_glow_scale_f = 2.3f;
+const float weapon_glow_scale_r = 2.3f;
+const float weapon_glow_scale_l = 1.5f;
+const int weapon_glow_alpha = 217; // (0.85 * 255);
+
 void weapon_render(object *obj)
 {
-	int num, frame;
+	int num;
 	weapon_info *wip;
 	weapon *wp;
 	color c;
@@ -3872,39 +3965,49 @@ void weapon_render(object *obj)
 		}
 	}
 
-	switch (wip->render_type) {
-		case WRT_LASER: {
+	switch (wip->render_type)
+	{
+		case WRT_LASER:
+		{
 			// turn off fogging for good measure
 			gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 			int alpha = 255;
+			int framenum = 0;
 
-			if (wip->laser_bitmap >= 0) {					
+			if (wip->laser_bitmap.first_frame >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
-				if(wip->laser_bitmap_nframes > 1){
-					frame = (timestamp() / (int)(wip->laser_bitmap_fps)) % wip->laser_bitmap_nframes;
-		//			HUD_printf("frame %d", wp->frame);
-				} else {
-					frame = 0;
+
+				if (wip->laser_bitmap.num_frames > 1) {
+					wp->laser_bitmap_frame += flFrametime;
+
+					// Sanity checks
+					if (wp->laser_bitmap_frame < 0.0f)
+						wp->laser_bitmap_frame = 0.0f;
+					if (wp->laser_bitmap_frame > 100.0f)
+						wp->laser_bitmap_frame = 0.0f;
+
+					while (wp->laser_bitmap_frame > wip->laser_bitmap.total_time)
+						wp->laser_bitmap_frame -= wip->laser_bitmap.total_time;
+
+					framenum = fl2i( (wp->laser_bitmap_frame * wip->laser_bitmap.num_frames) / wip->laser_bitmap.total_time );
+
+					CLAMP(framenum, 0, wip->laser_bitmap.num_frames-1);
 				}
 
-				if (wip->wi_flags2 & WIF2_TRANSPARENT) {
+				if (wip->wi_flags2 & WIF2_TRANSPARENT)
 					alpha = fl2i(wp->alpha_current * 255.0f);
-				}
 
 				vec3d headp;
 				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length);
 				wp->weapon_flags &= ~WF_CONSIDER_FOR_FLYBY_SOUND;
 
-				if ( batch_add_laser(wip->laser_bitmap + frame, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha) ) {
+				if ( batch_add_laser(wip->laser_bitmap.first_frame + framenum, &headp, wip->laser_head_radius, &obj->pos, wip->laser_tail_radius, alpha, alpha, alpha) ) {
 					wp->weapon_flags |= WF_CONSIDER_FOR_FLYBY_SOUND;
 				}
 			}			
 
 			// maybe draw laser glow bitmap
-			if(wip->laser_glow_bitmap >= 0)
-            
-            {
-
+			if (wip->laser_glow_bitmap.first_frame >= 0) {
     			// get the laser color
 				weapon_get_laser_color(&c, obj);
 
@@ -3913,12 +4016,25 @@ void weapon_render(object *obj)
 				vec3d headp2, tailp;
 
 				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * weapon_glow_scale_l);
-                vm_vec_scale_add( &tailp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * ( 1 -  weapon_glow_scale_l ) );
+                vm_vec_scale_add(&tailp, &obj->pos, &obj->orient.vec.fvec, wip->laser_length * (1 -  weapon_glow_scale_l) );
 
-				if(wip->laser_glow_bitmap_nframes > 1){//set the proper bitmap
-					frame = (timestamp() / (int)(wip->laser_glow_bitmap_fps)) % wip->laser_glow_bitmap_nframes;
-				} else {
-					frame = 0;
+				framenum = 0;
+
+				if (wip->laser_glow_bitmap.num_frames > 1) {
+					wp->laser_glow_bitmap_frame += flFrametime;
+
+					// Sanity checks
+					if (wp->laser_glow_bitmap_frame < 0.0f)
+						wp->laser_glow_bitmap_frame = 0.0f;
+					if (wp->laser_glow_bitmap_frame > 100.0f)
+						wp->laser_glow_bitmap_frame = 0.0f;
+
+					while (wp->laser_glow_bitmap_frame > wip->laser_glow_bitmap.total_time)
+						wp->laser_glow_bitmap_frame -= wip->laser_glow_bitmap.total_time;
+
+					framenum = fl2i( (wp->laser_glow_bitmap_frame * wip->laser_glow_bitmap.num_frames) / wip->laser_glow_bitmap.total_time );
+
+					CLAMP(framenum, 0, wip->laser_glow_bitmap.num_frames-1);
 				}
 
 				if (wip->wi_flags2 & WIF2_TRANSPARENT) {
@@ -3928,96 +4044,95 @@ void weapon_render(object *obj)
 					if (alpha < 0)
 						alpha = 0;
 				} else {
-					alpha = fl2i(weapon_glow_alpha * 255.0f);
+					alpha = weapon_glow_alpha;
 				}
 
-				batch_add_laser(wip->laser_glow_bitmap + frame, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp /*&obj->pos*/, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
-			}					
+				batch_add_laser(wip->laser_glow_bitmap.first_frame + framenum, &headp2, wip->laser_head_radius * weapon_glow_scale_f, &tailp, wip->laser_tail_radius * weapon_glow_scale_r, (c.red*alpha)/255, (c.green*alpha)/255, (c.blue*alpha)/255);
+			}
+
 			break;
 		}
 
-		case WRT_POF:	{
-				uint render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_LIGHTING;
+		case WRT_POF:
+		{
+			uint render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_LIGHTING;
 
-				if (Cmdline_missile_lighting && !(wip->wi_flags2 & WIF2_MR_NO_LIGHTING))
-					render_flags &= ~MR_NO_LIGHTING;
+			if (Cmdline_missile_lighting && !(wip->wi_flags2 & WIF2_MR_NO_LIGHTING))
+				render_flags &= ~MR_NO_LIGHTING;
 
-				if (wip->wi_flags2 & WIF2_TRANSPARENT) {
-					model_set_alpha(wp->alpha_current);
-					render_flags |= MR_ALL_XPARENT;
-				}
-
-				model_clear_instance(wip->model_num);
-
-				if ( (wip->wi_flags & WIF_THRUSTER) && ((wp->thruster_bitmap > -1) || (wp->thruster_glow_bitmap > -1)) ) {
-					float	ft;
-
-					//	Add noise to thruster geometry.
-					//ft = obj->phys_info.forward_thrust;					
-					ft = 1.0f;		// Always use 1.0f for missiles					
-					ft *= (1.0f + frand()/5.0f - 1.0f/10.0f);
-					if (ft > 1.0f)
-						ft = 1.0f;
-
-					vec3d temp;
-					temp.xyz.x = ft;
-					temp.xyz.y = ft;
-					temp.xyz.z = ft;
-
-					model_set_thrust( wip->model_num, &temp, wp->thruster_bitmap, wp->thruster_glow_bitmap, wp->thruster_glow_noise);
-					render_flags |= MR_SHOW_THRUSTERS;
-				}
-
-
-				//don't render local ssm's when they are still in subspace
-				if (wp->lssm_stage==3)
-					break;
-
-				int clip_plane=0;
-				
-				//start a clip plane
-				if ((wp->lssm_stage==2))
-				{
-					object *wobj=&Objects[wp->lssm_warp_idx];		//warphole object
-					clip_plane=1;
-
-
-					g3_start_user_clip_plane(&wobj->pos,&wobj->orient.vec.fvec);
-				
-				}
-
-
-				model_render(wip->model_num, &obj->orient, &obj->pos, render_flags);
-
-				if (clip_plane)
-				{
-					g3_stop_user_clip_plane();
-				}
-				// render a missile plume as well
-				/*
-				static int plume = -1;	
-				extern float Interp_thrust_twist;
-				extern float Interp_thrust_twist2;
-				if(plume == -1){
-					plume = model_load("plume01.pof", -1, NULL);
-				}
-				if(plume != -1){
-					Interp_thrust_twist = tw;
-					Interp_thrust_twist2 = tw2;
-					model_set_alpha(plume_alpha);
-					model_render(plume, &obj->orient, &obj->pos, MR_ALL_XPARENT);
-					Interp_thrust_twist = -1.0f;
-					Interp_thrust_twist2 = -1.0f;
-				}
-				*/
+			if (wip->wi_flags2 & WIF2_TRANSPARENT) {
+				model_set_alpha(wp->alpha_current);
+				render_flags |= MR_ALL_XPARENT;
 			}
+
+			model_clear_instance(wip->model_num);
+
+			if ( (wip->wi_flags & WIF_THRUSTER) && ((wp->thruster_bitmap > -1) || (wp->thruster_glow_bitmap > -1)) ) {
+				float	ft;
+
+				//	Add noise to thruster geometry.
+				//ft = obj->phys_info.forward_thrust;					
+				ft = 1.0f;		// Always use 1.0f for missiles					
+				ft *= (1.0f + frand()/5.0f - 1.0f/10.0f);
+				if (ft > 1.0f)
+					ft = 1.0f;
+
+				vec3d temp;
+				temp.xyz.x = ft;
+				temp.xyz.y = ft;
+				temp.xyz.z = ft;
+
+				model_set_thrust( wip->model_num, &temp, wp->thruster_bitmap, wp->thruster_glow_bitmap, wp->thruster_glow_noise);
+				render_flags |= MR_SHOW_THRUSTERS;
+			}
+
+
+			//don't render local ssm's when they are still in subspace
+			if (wp->lssm_stage==3)
+				break;
+
+			int clip_plane=0;
+				
+			//start a clip plane
+			if ((wp->lssm_stage==2))
+			{
+				object *wobj=&Objects[wp->lssm_warp_idx];		//warphole object
+				clip_plane=1;
+
+				g3_start_user_clip_plane(&wobj->pos,&wobj->orient.vec.fvec);
+			}
+
+
+			model_render(wip->model_num, &obj->orient, &obj->pos, render_flags);
+
+			if (clip_plane)
+			{
+				g3_stop_user_clip_plane();
+			}
+			// render a missile plume as well
+			/*
+			static int plume = -1;	
+			extern float Interp_thrust_twist;
+			extern float Interp_thrust_twist2;
+			if(plume == -1){
+				plume = model_load("plume01.pof", -1, NULL);
+			}
+			if(plume != -1){
+				Interp_thrust_twist = tw;
+				Interp_thrust_twist2 = tw2;
+				model_set_alpha(plume_alpha);
+				model_render(plume, &obj->orient, &obj->pos, MR_ALL_XPARENT);
+				Interp_thrust_twist = -1.0f;
+				Interp_thrust_twist2 = -1.0f;
+			}
+			*/
+
 			break;
+		}
 
 		default:
 			Warning(LOCATION, "Unknown weapon rendering type = %i\n", wip->render_type);
 	}
-
-//	batch_render();		// why is this here? - taylor
 }
 
 void weapon_delete(object *obj)
@@ -5193,7 +5308,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	}
 
 	// make sure we are loaded and useable
-	if (wip->render_type == WRT_POF) {
+	if ( (wip->render_type == WRT_POF) && (wip->model_num < 0) ) {
 		wip->model_num = model_load(wip->pofbitmap_name, 0, NULL);
 
 		if (wip->model_num < 0) {
@@ -5201,6 +5316,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 			return -1;
 		}
 	}
+
+	// make sure that our textures are loaded as well
+	if ( !used_weapons[weapon_type] )
+		weapon_load_bitmaps(weapon_type);
 
 	//I am hopeing that this way does not alter the input orient matrix
 	//Feild of Fire code -Bobboau
@@ -5272,6 +5391,10 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->thruster_glow_bitmap = -1;
 	wp->thruster_glow_noise = 1.0f;
 	wp->thruster_glow_frame = 0.0f;
+
+	// init the laser info
+	wp->laser_bitmap_frame = 0.0f;
+	wp->laser_glow_bitmap_frame = 0.0f;
 
 	if ( wip->wi_flags & WIF_SWARM ) {
 		wp->swarm_index = (short)swarm_create();
@@ -6208,7 +6331,7 @@ void weapons_page_in()
 	// assigned directly to a ship
 	for (i = 0; i < Num_weapon_types; i++) {
 		// we only want entries that already exist
-		if (!used_weapons[i])
+		if ( !used_weapons[i] )
 			continue;
 
 		// if it's got a spawn type then grab it
@@ -6216,52 +6339,53 @@ void weapons_page_in()
 			used_weapons[(int)Weapon_info[i].spawn_type]++;
 	}
 
+	// release anything loaded that we don't have marked as used for this mission
+	if ( !Cmdline_load_all_weapons )
+		weapon_release_bitmaps();
+
 	// Page in bitmaps for all used weapons
-	for (i=0; i<Num_weapon_types; i++ )	{
-		if (!Cmdline_load_all_weapons) {
-			if (!used_weapons[i]) {
+	for (i = 0; i < Num_weapon_types; i++) {
+		if ( !Cmdline_load_all_weapons ) {
+			if ( !used_weapons[i] ) {
 				nprintf(("Weapons", "Not loading weapon id %d (%s)\n", i, Weapon_info[i].name));
 				continue;
 			}
 		}
 
+		weapon_load_bitmaps(i);
+
 		weapon_info *wip = &Weapon_info[i];
 
 		wip->wi_flags &= (~WIF_THRUSTER);		// Assume no thrusters
 		
-		switch( wip->render_type )	{
+		switch (wip->render_type)
+		{
 			case WRT_POF:
-				{
-					wip->model_num = model_load( wip->pofbitmap_name, 0, NULL );
+			{
+				wip->model_num = model_load( wip->pofbitmap_name, 0, NULL );
 
-					polymodel *pm = model_get( wip->model_num );
+				polymodel *pm = model_get( wip->model_num );
 
-					// If it has a model, and the model pof has thrusters, then set
-					// the flags
-					if ( pm->n_thrusters > 0 )	{
-						//mprintf(( "Weapon %s has thrusters!\n", wip->name ));
-						wip->wi_flags |= WIF_THRUSTER;
-					}
-		
-					for (j=0; j<pm->n_textures; j++ )	{
-						int bitmap_num = pm->maps[j].base_map.original_texture;
-
-						if ( bitmap_num > -1 )	{
-							bm_page_in_texture( bitmap_num );
-						}
-					}
+				// If it has a model, and the model pof has thrusters, then set
+				// the flags
+				if (pm->n_thrusters > 0) {
+					//mprintf(( "Weapon %s has thrusters!\n", wip->name ));
+					wip->wi_flags |= WIF_THRUSTER;
 				}
+		
+				for (j = 0; j < pm->n_textures; j++)
+					bm_page_in_texture(pm->maps[j].base_map.texture);
+
 				break;
+			}
 
 			case WRT_LASER:
-				{
-					bm_page_in_texture( wip->laser_bitmap );
+			{
+				bm_page_in_texture( wip->laser_bitmap.first_frame );
+				bm_page_in_texture( wip->laser_glow_bitmap.first_frame );
 
-					if(wip->laser_glow_bitmap >= 0){
-						bm_page_in_texture(wip->laser_glow_bitmap);
-					}
-				}
 				break;
+			}
 
 			default:
 				Int3();	// Invalid weapon rendering type.
@@ -6285,46 +6409,31 @@ void weapons_page_in()
 		Weapon_explosions.PageIn(wip->dinky_impact_weapon_expl_index);
 
 		// trail bitmaps
-		if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.bitmap > -1) )	{
-			bm_page_in_texture( wip->tr_info.bitmap );
-		}
+		if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.texture.bitmap_id > -1) )
+			bm_page_in_texture( wip->tr_info.texture.bitmap_id );
 
 		// if this is a beam weapon, page in its stuff
-		if(wip->wi_flags & WIF_BEAM){
+		if (wip->wi_flags & WIF_BEAM) {
 			// all beam sections
-			for(idx=0; idx<wip->b_info.beam_num_sections; idx++){
-				if((idx < MAX_BEAM_SECTIONS) && (wip->b_info.sections[idx].texture >= 0)){
-					bm_page_in_texture(wip->b_info.sections[idx].texture, wip->b_info.sections[idx].nframes);
-				}
-			}
+			for (idx = 0; idx < wip->b_info.beam_num_sections; idx++)
+				bm_page_in_texture(wip->b_info.sections[idx].texture.first_frame);
 
 			// muzzle glow
-			if(wip->b_info.beam_glow_bitmap >= 0){
-				bm_page_in_texture(wip->b_info.beam_glow_bitmap);
-			}
+			bm_page_in_texture(wip->b_info.beam_glow.first_frame);
 
 			// particle ani
-			if(wip->b_info.beam_particle_ani >= 0){
-				int nframes, fps;
-				bm_get_info( wip->b_info.beam_particle_ani, NULL, NULL, NULL, &nframes, &fps );
-				bm_page_in_texture( wip->b_info.beam_particle_ani, nframes );
-			}
+			bm_page_in_texture(wip->b_info.beam_particle_ani.first_frame);
 		}
 	
-		if(wip->wi_flags & WIF_PARTICLE_SPEW){
-			if(wip->Weapon_particle_spew_nframes > 1){
-				bm_page_in_texture(wip->Weapon_particle_spew_bitmap, wip->Weapon_particle_spew_nframes);//page in the bitmap-Bobboau
-			}else{
-				bm_page_in_texture(wip->Weapon_particle_spew_bitmap);//page in the bitmap-Bobboau
-			}
-		}
+		if (wip->wi_flags & WIF_PARTICLE_SPEW)
+			bm_page_in_texture(wip->particle_spew_anim.first_frame);
 
 		// page in decal textures
-		if(wip->decal_texture != -1){
-			bm_page_in_xparent_texture( wip->decal_texture, 1);
-			if(wip->decal_backface_texture != -1){
-				bm_page_in_xparent_texture( wip->decal_backface_texture);
-			}
+		if (wip->decal_texture.bitmap_id != -1) {
+			bm_page_in_xparent_texture(wip->decal_texture.bitmap_id);
+			bm_page_in_xparent_texture(wip->decal_glow_texture_id);
+			bm_page_in_xparent_texture(wip->decal_burn_texture_id);
+			bm_page_in_xparent_texture(wip->decal_backface_texture.bitmap_id);
 		}
 
 		// muzzle flashes
@@ -6372,19 +6481,19 @@ void weapons_page_in_cheats()
 	if ( Cmdline_load_all_weapons )
 		return;
 
-
 	Assert( used_weapons != NULL );
 
 	// force a page in of all muzzle flashes
 	mflash_page_in(true);
 
 	// page in models for all weapon types that aren't already loaded
-	for (i=0; i<Num_weapon_types; i++ )	{
+	for (i = 0; i < Num_weapon_types; i++) {
 		// skip over anything that's already loaded
-		if (used_weapons[i]) {
+		if (used_weapons[i])
 			continue;
-		}
-		
+
+		weapon_load_bitmaps(i);
+
 		weapon_info *wip = &Weapon_info[i];
 		
 		wip->wi_flags &= (~WIF_THRUSTER);		// Assume no thrusters
@@ -6406,7 +6515,7 @@ void weapons_page_in_cheats()
 		
 		if ( strlen(wip->external_model_name) )
 			wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
-		
+
 		if (wip->external_model_num == -1)
 			wip->external_model_num = wip->model_num;
 		
@@ -6414,6 +6523,8 @@ void weapons_page_in_cheats()
 		//Load shockwaves
 		wip->shockwave.load();
 		wip->dinky_shockwave.load();
+
+		used_weapons[i]++;
 	}
 /*
 	// Counter measures
@@ -6441,38 +6552,45 @@ void weapon_get_laser_color(color *c, object *objp)
 	float pct;
 
 	// sanity
-	if(c == NULL){
+	if (c == NULL)
 		return;
-	}
 
 	// sanity
+	Assert(objp != NULL);
 	Assert(objp->type == OBJ_WEAPON);
 	Assert(objp->instance >= 0);
 	Assert(Weapons[objp->instance].weapon_info_index >= 0);
-	if((objp->type != OBJ_WEAPON) || (objp->instance < 0) || (Weapons[objp->instance].weapon_info_index < 0)){
+
+	if ( (objp == NULL) || (objp->type != OBJ_WEAPON) || (objp->instance < 0) || (Weapons[objp->instance].weapon_info_index < 0) )
 		return;
-	}
+
 	wep = &Weapons[objp->instance];
 	winfo = &Weapon_info[wep->weapon_info_index];
 
 	// if we're a one-color laser
-	if((winfo->laser_color_2.red == 0) && (winfo->laser_color_2.green == 0) && (winfo->laser_color_2.blue == 0)){
+	if ( (winfo->laser_color_2.red == 0) && (winfo->laser_color_2.green == 0) && (winfo->laser_color_2.blue == 0) ) {
 		*c = winfo->laser_color_1;
+		return;
 	}
+
+	int r = winfo->laser_color_1.red;
+	int g = winfo->laser_color_1.green;
+	int b = winfo->laser_color_1.blue;
 
 	// lifetime pct
 	pct = 1.0f - (wep->lifeleft / winfo->lifetime);
-	if(pct > 0.5f){
-		pct = 0.5f;
-	} else if (pct < 0.0f)
-		pct = 0.0f;
+	CLAMP(pct, 0.0f, 0.5f);
 
-	pct *= 2.0f;
-	
+	if (pct > 0.0f) {
+		pct *= 2.0f;
+
+		r += fl2i((winfo->laser_color_2.red - winfo->laser_color_1.red) * pct);
+		g += fl2i((winfo->laser_color_2.green - winfo->laser_color_1.green) * pct);
+		b += fl2i((winfo->laser_color_2.blue - winfo->laser_color_1.blue) * pct);
+	}
+
 	// otherwise interpolate between the colors
-	gr_init_color( c, (int)((float)winfo->laser_color_1.red + (((float)winfo->laser_color_2.red - (float)winfo->laser_color_1.red) * pct)), 
-							(int)((float)winfo->laser_color_1.green + (((float)winfo->laser_color_2.green - (float)winfo->laser_color_1.green) * pct)), 
-							(int)((float)winfo->laser_color_1.blue + (((float)winfo->laser_color_2.blue - (float)winfo->laser_color_1.blue) * pct)) );
+	gr_init_color( c, r, g, b );
 }
 
 // default weapon particle spew data
@@ -6506,10 +6624,10 @@ void weapon_maybe_spew_particle(object *obj)
 	// if the weapon's particle timestamp has elapse`d
 	if((wp->particle_spew_time == -1) || timestamp_elapsed(wp->particle_spew_time)){
 		// reset the timestamp
-		wp->particle_spew_time = timestamp(wip->Weapon_particle_spew_time);
+		wp->particle_spew_time = timestamp(wip->particle_spew_time);
 
 		// spew some particles
-		for(idx=0; idx<wip->Weapon_particle_spew_count; idx++){
+		for (idx = 0; idx < wip->particle_spew_count; idx++) {
 			// get the backward vector of the weapon
 			direct = obj->orient.vec.fvec;
 			vm_vec_negate(&direct);
@@ -6520,32 +6638,31 @@ void weapon_maybe_spew_particle(object *obj)
 			ang = fl_radian(frand_range(-90.0f, 90.0f));
 			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.fvec);			
 			direct = direct_temp;
-			vm_vec_scale(&direct, wip->Weapon_particle_spew_scale);
+			vm_vec_scale(&direct, wip->particle_spew_scale);
 
 			// rvec
 			ang = fl_radian(frand_range(-90.0f, 90.0f));
 			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.rvec);			
 			direct = direct_temp;
-			vm_vec_scale(&direct, wip->Weapon_particle_spew_scale);
+			vm_vec_scale(&direct, wip->particle_spew_scale);
 
 			// fvec
 			ang = fl_radian(frand_range(-90.0f, 90.0f));
 			vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.uvec);			
 			direct = direct_temp;
-			vm_vec_scale(&direct, wip->Weapon_particle_spew_scale);
+			vm_vec_scale(&direct, wip->particle_spew_scale);
 
 			// get a velovity vector of some percentage of the weapon's velocity
 			vel = obj->phys_info.vel;
-			vm_vec_scale(&vel, wip->Weapon_particle_spew_vel);
+			vm_vec_scale(&vel, wip->particle_spew_vel);
 
 			// emit the particle
 			vm_vec_add(&particle_pos, &obj->pos, &direct);
 
-			if(wip->Weapon_particle_spew_bitmap < 0){
-				particle_create(&particle_pos, &vel, wip->Weapon_particle_spew_lifetime, wip->Weapon_particle_spew_radius, PARTICLE_BITMAP, particle_get_smoke_id());
-			}else{
-				particle_create(&particle_pos, &vel, wip->Weapon_particle_spew_lifetime, wip->Weapon_particle_spew_radius, PARTICLE_BITMAP, wip->Weapon_particle_spew_bitmap);
-			}
+			if (wip->particle_spew_anim.first_frame < 0)
+				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_SMOKE);
+			else
+				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_BITMAP, wip->particle_spew_anim.first_frame);
 		}
 	}
 }
