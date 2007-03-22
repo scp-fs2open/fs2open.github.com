@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.48 $
- * $Date: 2007-02-11 21:26:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.49 $
+ * $Date: 2007-03-22 22:14:56 $
+ * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2007/02/11 21:26:34  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.47  2007/01/07 12:53:35  taylor
  * add position info for weapon energy text
  * make sure that we can't target a hidden jumpnode
@@ -1976,8 +1979,8 @@ int gauge_var::Evaluate(float* result)
 int gauge_var::Evaluate(char** result)
 {
 	//This should be big enough.
-	(*result) = new char[32];
-	char* temp_result = new char[32];
+	(*result) = new char[33];
+	char* temp_result = new char[33];
 
 	gauge_var* cv = this;
 
@@ -1987,7 +1990,7 @@ int gauge_var::Evaluate(char** result)
 		{
 			case GV_INTPTR:
 			case GV_INTVAR:
-				temp_result = itoa(*int_variable, temp_result, 10);
+				sprintf(temp_result, "%d", *int_variable);
 				break;
 			case GV_CHARPTR:
 				strcpy(temp_result, *char_pointer);

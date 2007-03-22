@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.68 $
- * $Date: 2007-02-20 04:20:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.69 $
+ * $Date: 2007-03-22 22:14:56 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2007/02/20 04:20:18  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.67  2006/12/28 00:59:32  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1654,7 +1657,7 @@ void ship_select_blit_ship_info()
 	else if(ShipSelectModelNum >= 0)
 	{
 		polymodel *pm = model_get(ShipSelectModelNum);
-		itoa(fl2i(pm->maxs.xyz.z - pm->mins.xyz.z), str, 10);
+		sprintf( str, "%d", fl2i(pm->maxs.xyz.z - pm->mins.xyz.z) );
 		strcat(str, " M");
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
 	}
@@ -1769,7 +1772,7 @@ void ship_select_blit_ship_info()
 			sum += pm->gun_banks[i].num_slots;
 		}
 		if(sum != 0)
-			itoa(sum, str, 10);
+			sprintf(str, "%d", sum);
 		else
 			strcpy(str, "None");
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
@@ -1781,7 +1784,7 @@ void ship_select_blit_ship_info()
 		gr_set_color_fast(text);
 		if(sip->num_primary_banks)
 		{
-			itoa(sip->num_primary_banks, str, 10);
+			sprintf(str, "%d", sip->num_primary_banks);
 		}
 		else
 		{
@@ -1803,7 +1806,7 @@ void ship_select_blit_ship_info()
 	{
 		if(sip->num_secondary_banks)
 		{
-			itoa(sip->num_secondary_banks, str, 10);
+			sprintf(str, "%d", sip->num_secondary_banks);
 		}
 		else
 		{
@@ -1850,7 +1853,7 @@ void ship_select_blit_ship_info()
 			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Turrets",-1));
 			y_start += 10;
 			gr_set_color_fast(text);
-			itoa(num_turrets, str, 10);
+			sprintf(str, "%d", num_turrets);
 			gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str);
 			y_start += 10;
 		}

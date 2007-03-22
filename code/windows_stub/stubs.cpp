@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.34 $
- * $Date: 2007-01-07 12:39:59 $
+ * $Revision: 2.35 $
+ * $Date: 2007-03-22 22:14:57 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2007/01/07 12:39:59  taylor
+ * build for for newer GCC versions
+ *
  * Revision 2.33  2006/09/08 06:20:15  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -537,17 +540,6 @@ void strlwr(char *s)
 		s++;
 	}
 }
-
-// add value to string
-char *itoa(int value, char *str, int radix)
-{
-	Assert(radix == 10);
-
-	sprintf(str, "%d", value);
-
-	return str;
-}
-
 
 
 /* *************************************

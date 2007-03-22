@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.33 $
- * $Date: 2007-03-22 21:00:48 $
+ * $Revision: 1.34 $
+ * $Date: 2007-03-22 22:14:56 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2007/03/22 21:00:48  taylor
+ * fix issue where the lab menu bar would disappear at times when you click on it (Mantis #1063)
+ *
  * Revision 1.32  2007/01/15 02:19:03  wmcoolmon
  * Finish off warning fixage
  *
@@ -2375,8 +2378,8 @@ void Text::SetText(std::string in_content)
 
 void Text::SetText(int the_int)
 {
-	char buf[32];
-	itoa(the_int, buf, 10);
+	char buf[33];
+	sprintf(buf, "%d", the_int);
 	Content = buf;
 
 	OnRefreshSize();
