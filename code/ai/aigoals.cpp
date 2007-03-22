@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.35 $
- * $Date: 2007-02-20 04:20:10 $
- * $Author: Goober5000 $
+ * $Revision: 1.36 $
+ * $Date: 2007-03-22 22:19:30 $
+ * $Author: taylor $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2007/02/20 04:20:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 1.34  2007/02/10 06:39:43  Goober5000
  * new feature: shield generators that control whether the shield is up
  *
@@ -747,30 +750,30 @@ char	Ai_dock_names[MAX_AI_DOCK_NAMES][NAME_LENGTH];
 
 ai_goal_list Ai_goal_names[] =
 {
-	{ "Attack ship",			AI_GOAL_CHASE },
-	{ "Dock",					AI_GOAL_DOCK },
-	{ "Waypoints",				AI_GOAL_WAYPOINTS },
-	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE },
-	{ "Depart",					AI_GOAL_WARP },
-	{ "Attack subsys",			AI_GOAL_DESTROY_SUBSYSTEM },
-	{ "Form on wing",			AI_GOAL_FORM_ON_WING },
-	{ "Undock",					AI_GOAL_UNDOCK },
-	{ "Attack wing",			AI_GOAL_CHASE_WING },
-	{ "Guard ship",				AI_GOAL_GUARD },
-	{ "Disable ship",			AI_GOAL_DISABLE_SHIP },
-	{ "Disarm ship",			AI_GOAL_DISARM_SHIP },
-	{ "Attack any",				AI_GOAL_CHASE_ANY },
-	{ "Ignore ship",			AI_GOAL_IGNORE },
-	{ "Ignore ship (new)",		AI_GOAL_IGNORE_NEW },
-	{ "Guard wing",				AI_GOAL_GUARD_WING },
-	{ "Evade ship",				AI_GOAL_EVADE_SHIP },
-	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP },
-	{ "keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE },
-	{ "Rearm ship",				AI_GOAL_REARM_REPAIR },
-	{ "Stay still",				AI_GOAL_STAY_STILL },
-	{ "Play dead",				AI_GOAL_PLAY_DEAD },
-	{ "Attack weapon",			AI_GOAL_CHASE_WEAPON },
-	{ "Fly to ship",			AI_GOAL_FLY_TO_SHIP },
+	{ "Attack ship",			AI_GOAL_CHASE,			0 },
+	{ "Dock",					AI_GOAL_DOCK,			0 },
+	{ "Waypoints",				AI_GOAL_WAYPOINTS,		0 },
+	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,	0 },
+	{ "Depart",					AI_GOAL_WARP,			0 },
+	{ "Attack subsys",			AI_GOAL_DESTROY_SUBSYSTEM,	0 },
+	{ "Form on wing",			AI_GOAL_FORM_ON_WING,	0 },
+	{ "Undock",					AI_GOAL_UNDOCK,			0 },
+	{ "Attack wing",			AI_GOAL_CHASE_WING,		0 },
+	{ "Guard ship",				AI_GOAL_GUARD,			0 },
+	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,	0 },
+	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,	0 },
+	{ "Attack any",				AI_GOAL_CHASE_ANY,		0 },
+	{ "Ignore ship",			AI_GOAL_IGNORE,			0 },
+	{ "Ignore ship (new)",		AI_GOAL_IGNORE_NEW,		0 },
+	{ "Guard wing",				AI_GOAL_GUARD_WING,		0 },
+	{ "Evade ship",				AI_GOAL_EVADE_SHIP,		0 },
+	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,	0 },
+	{ "keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE,	0 },
+	{ "Rearm ship",				AI_GOAL_REARM_REPAIR,	0 },
+	{ "Stay still",				AI_GOAL_STAY_STILL,		0 },
+	{ "Play dead",				AI_GOAL_PLAY_DEAD,		0 },
+	{ "Attack weapon",			AI_GOAL_CHASE_WEAPON,	0 },
+	{ "Fly to ship",			AI_GOAL_FLY_TO_SHIP,	0 },
 };
 
 int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);

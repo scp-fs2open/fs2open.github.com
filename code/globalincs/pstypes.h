@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.53 $
- * $Date: 2007-02-18 06:16:46 $
- * $Author: Goober5000 $
- * $Revision: 2.53 $
- * $Date: 2007-02-18 06:16:46 $
- * $Author: Goober5000 $
+ * $Revision: 2.54 $
+ * $Date: 2007-03-22 22:19:31 $
+ * $Author: taylor $
+ * $Revision: 2.54 $
+ * $Date: 2007-03-22 22:19:31 $
+ * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2007/02/18 06:16:46  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.52  2007/02/11 20:25:58  Goober5000
  * fix some breakage ;)
  *
@@ -594,6 +597,7 @@ inline void vec3d::set_screen_vert(vertex&vert){
 typedef struct flag_def_list {
 	char *name;
 	int def;
+	ubyte var;
 } def_list;
 
 //This are defined in MainWin.c
