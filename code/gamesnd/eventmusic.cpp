@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.45 $
- * $Date: 2007-02-11 18:20:18 $
+ * $Revision: 2.46 $
+ * $Date: 2007-03-22 20:22:25 $
  * $Author: taylor $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2007/02/11 18:20:18  taylor
+ * support for new finding/loading of sound files
+ * add support for automatically figuring out samples-per-measure based on Goober's explanation in the Wiki (not sure if it's actually right though)
+ * remove NO_SOUND
+ *
  * Revision 2.44  2007/01/15 01:37:37  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -574,6 +579,7 @@ void event_music_init()
 	// look for any modular tables
 	parse_modular_table(NOX("*-mus.tbm"), event_music_parse_musictbl);
 
+	/* this doesn't work properly!!
 	for (i = 0; i < Num_soundtracks; i++) {
 		for (j = 0; j < Soundtracks[i].num_patterns; j++) {
 			int spm = snd_get_samples_per_measure(Soundtracks[i].pattern_fnames[j], Pattern_num_measures[i][j]);
@@ -581,7 +587,7 @@ void event_music_init()
 			if (spm > 0)
 				Pattern_samples_per_measure[i][j] = spm;
 		}
-	}
+	} */
 
 	Event_music_inited = TRUE;
 	Event_music_begun = FALSE;
@@ -1619,7 +1625,11 @@ void parse_menumusic()
 	}
 
 	// Goober5000 - check for existence of file
-	if (strlen(Spooled_music[idx].filename) && cf_exists_full(Spooled_music[idx].filename, CF_TYPE_MUSIC))
+	// taylor - check for all file types
+	const int NUM_EXT = 2;
+	const char *exts[NUM_EXT] = { ".ogg", ".wav" };
+
+	if ( cf_exists_full_ext(Spooled_music[idx].filename, CF_TYPE_MUSIC, NUM_EXT, exts) )
 		Spooled_music[idx].flags |= SMF_VALID;
 
 	Num_music_files++;	
