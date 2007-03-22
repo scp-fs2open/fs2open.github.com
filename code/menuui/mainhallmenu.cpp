@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.44.2.6 $
- * $Date: 2007-02-10 00:17:40 $
+ * $Revision: 2.44.2.7 $
+ * $Date: 2007-03-22 20:35:44 $
  * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44.2.6  2007/02/10 00:17:40  taylor
+ * remove NO_SOUND
+ *
  * Revision 2.44.2.5  2006/11/05 18:41:40  Goober5000
  * improve error message
  *
@@ -1718,7 +1721,7 @@ main_hall_got_music_index:
 		char *filename = Spooled_music[index].filename;
 		Assert(filename != NULL);
 
-		Main_hall_music_handle = audiostream_open(filename, ASF_EVENTMUSIC);
+		Main_hall_music_handle = audiostream_open(filename, ASF_MENUMUSIC);
 		if (Main_hall_music_handle >= 0)
 		{
 			audiostream_play(Main_hall_music_handle, Master_event_music_volume, 1);

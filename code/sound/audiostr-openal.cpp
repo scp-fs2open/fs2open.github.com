@@ -1,12 +1,15 @@
 /*
  * $Logfile: $
- * $Revision: 1.29.2.7 $
- * $Date: 2007-02-18 08:59:03 $
+ * $Revision: 1.29.2.8 $
+ * $Date: 2007-03-22 20:35:45 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29.2.7  2007/02/18 08:59:03  taylor
+ * fix super-stupid bug :)
+ *
  * Revision 1.29.2.6  2007/02/12 07:31:03  taylor
  * a little cleanup
  * handle issue where we don't deal with an error condition properly and hit a NULL ptr
@@ -352,7 +355,7 @@ class WaveFile
 public:
 	void Init(void);
 	void Close(void);
-	bool Open (char *pszFilename);
+	bool Open (char *pszFilename, bool keep_ext = true);
 	bool Cue (void);
 	int	Read (ubyte *pbDest, uint cbSize, int service=1);
 	uint GetNumBytesRemaining (void) { return (m_nDataSize - m_nBytesPlayed); }
@@ -584,11 +587,13 @@ void WaveFile::Close(void)
 	}
 }
 
+// -- from parselo.cpp --
+extern char *stristr(const char *str, const char *substr);
 
 // Open
-bool WaveFile::Open (char *pszFilename)
+bool WaveFile::Open(char *pszFilename, bool keep_ext)
 {
-	int rc = 0;
+	int rc = -1;
 	WORD cbExtra = 0;
 	bool fRtn = true;    // assume success
 	PCMWAVEFORMAT pcmwf;
@@ -601,19 +606,34 @@ bool WaveFile::Open (char *pszFilename)
 	m_total_uncompressed_bytes_read = 0;
 	m_max_uncompressed_bytes_to_read = AS_HIGHEST_MAX;
 
-	// remove extension
+	// NOTE: we assume that the extension has already been stripped off if it was supposed to be!!
 	strcpy( filename, pszFilename );
-	char *p = strchr(filename, '.');
-	if ( p ) *p = 0;
 
-	rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+
+	// if we are supposed to load the file as passed...
+	if (keep_ext) {
+		for (int i = 0; i < NUM_EXT; i++) {
+			if ( stristr(pszFilename, audio_ext[i]) ) {
+				rc = i;
+				break;
+			}
+		}
+
+		// not a supported extension format ... somebody screwed up their tbls :)
+		if (rc < 0)
+			goto OPEN_ERROR;
+
+		cf_find_file_location(pszFilename, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+	}
+	// ... otherwise we just find the best match
+	else {
+		rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
+	}
 
 	if (rc < 0) {
-		// reset original filename
-		strcpy( filename, pszFilename );
 		goto OPEN_ERROR;
 	} else {
-		// set proper filename for later use
+		// set proper filename for later use (assumes that it doesn't already have an extension)
 		SAFE_STRCAT( filename, audio_ext[rc], sizeof(filename) );
 	}
 
@@ -824,8 +844,9 @@ bool WaveFile::Open (char *pszFilename)
 		goto OPEN_DONE;
 	}
 	// something unkown???
-	else
+	else {
 		Int3();
+	}
 
 
 OPEN_ERROR:
@@ -849,6 +870,9 @@ OPEN_ERROR:
 
 OPEN_DONE:
 	strncpy(m_wFilename, filename, MAX_FILENAME_LEN-1);
+
+	if (fRtn)
+		nprintf(("SOUND", "AUDIOSTR => Successfully opened: %s\n", filename));
 
 	return (fRtn);
 }
@@ -1193,7 +1217,7 @@ bool AudioStream::Create (char *pszFilename)
 			// Open given file
 			m_pwavefile->m_bits_per_sample_uncompressed = m_bits_per_sample_uncompressed;
 
-			if (m_pwavefile->Open (pszFilename)) {
+			if ( m_pwavefile->Open(pszFilename, (type == ASF_EVENTMUSIC)) ) {
 				// Calculate sound buffer size in bytes
 				// Buffer size is average data rate times length of buffer
 				// No need for buffer to be larger than wave data though
@@ -1800,46 +1824,64 @@ void audiostream_close()
 // Open a digital sound file for streaming
 //
 // input:	filename	=>	disk filename of sound file
-//				type		=> what type of audio stream do we want to open:
-//									ASF_SOUNDFX
-//									ASF_EVENTMUSIC
-//									ASF_VOICE
+//				type	=>	what type of audio stream do we want to open:
+//								ASF_SOUNDFX
+//								ASF_EVENTMUSIC
+//								ASF_MENUMUSIC
+//								ASF_VOICE
 //	
 // returns:	success => handle to identify streaming sound
 //				failure => -1
 int audiostream_open( char *filename, int type )
 {
 	int i, rc;
+	char fname[MAX_FILENAME_LEN];
 
-	if (!Audiostream_inited || !snd_is_inited())
+	if ( !Audiostream_inited || !snd_is_inited() )
 		return -1;
 
-	for ( i=0; i<MAX_AUDIO_STREAMS; i++ ) {
-		if ( Audio_streams[i].status == ASF_FREE ) {
+	for (i = 0; i < MAX_AUDIO_STREAMS; i++) {
+		if (Audio_streams[i].status == ASF_FREE) {
 			Audio_streams[i].status = ASF_USED;
 			Audio_streams[i].type = type;
 			break;
 		}
 	}
 
-	if ( i == MAX_AUDIO_STREAMS ) {
+	if (i == MAX_AUDIO_STREAMS) {
 		nprintf(("Sound", "SOUND => No more audio streams available!\n"));
 		return -1;
 	}
 
-	switch(type) {
+	// copy filename, since we might modify it
+	strcpy(fname, filename);
+
+	// we always uncompress to 16 bits
+	Audio_streams[i].m_bits_per_sample_uncompressed = 16;
+
+	switch (type)
+	{
 		case ASF_VOICE:
 		case ASF_SOUNDFX:
-			Audio_streams[i].m_bits_per_sample_uncompressed = 8;
-		case ASF_EVENTMUSIC:
-			Audio_streams[i].m_bits_per_sample_uncompressed = 16;
+		case ASF_MENUMUSIC:
+		{
+			// go ahead and strip off file extension
+			char *p = strrchr(fname, '.');
+			if ( p && (strlen(p) > 2) )
+				(*p) = 0;
+
 			break;
+		}
+
+		case ASF_EVENTMUSIC:
+			break;
+
 		default:
 			Int3();
 			return -1;
 	}
 
-	rc = Audio_streams[i].Create(filename);
+	rc = Audio_streams[i].Create(fname);
 
 	if ( rc == 0 ) {
 		Audio_streams[i].status = ASF_FREE;
