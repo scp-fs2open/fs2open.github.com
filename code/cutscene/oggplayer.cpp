@@ -1,12 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/oggplayer.cpp $
- * $Revision: 2.3 $
- * $Date: 2007-02-10 00:02:18 $
+ * $Revision: 2.4 $
+ * $Date: 2007-03-22 20:23:42 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2007/02/10 00:02:18  taylor
+ * make sure that our color is getting set properly (should properly fix the red/green tint problem, Mantis #1041)
+ * slight optimization for Theora YUV->RGB converter
+ *
  * Revision 2.2  2007/01/14 10:26:37  wmcoolmon
  * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
  *
@@ -524,16 +528,12 @@ static void convert_YUV_to_RGB(yuv_buffer *yuv)
 			D = (U - 128);
 			E = (V - 128);
 
-			r1 = 409 * E + 128;
-			g1 = 100 * D - 208 * E + 128;
-			b1 = 516 * D + 128;
-
 			// first pixel
 			C = (Y1 - 16) * 298;
-
-			R = ((C + r1) >> 8);
-			G = ((C - g1) >> 8);
-			B = ((C + b1) >> 8);
+	
+			R = ((C           + 409 * E + 128) >> 8);
+			G = ((C - 100 * D - 208 * E + 128) >> 8);
+			B = ((C + 516 * D           + 128) >> 8);
 
 			CLAMP(R, 0, 255);
 			CLAMP(G, 0, 255);
@@ -546,9 +546,9 @@ static void convert_YUV_to_RGB(yuv_buffer *yuv)
 			// second pixel (U and V values are resused)
 			C = (Y2 - 16) * 298;
 
-			R = ((C + r1) >> 8);
-			G = ((C - g1) >> 8);
-			B = ((C + b1) >> 8);
+			R = ((C           + 409 * E + 128) >> 8);
+			G = ((C - 100 * D - 208 * E + 128) >> 8);
+			B = ((C + 516 * D           + 128) >> 8);
 
 			CLAMP(R, 0, 255);
 			CLAMP(G, 0, 255);
