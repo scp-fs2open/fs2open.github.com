@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.34.2.3 $
- * $Date: 2007-02-09 23:56:49 $
+ * $Revision: 2.34.2.4 $
+ * $Date: 2007-03-22 20:22:44 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,10 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34.2.3  2007/02/09 23:56:49  taylor
+ * add the number of files that CFILE is going to try and use in each root to the debug info
+ * optimizations for cf_find_file_location_ext()
+ *
  * Revision 2.34.2.2  2006/08/27 18:01:45  taylor
  * various small cleanup and speedup changes
  * add a cf_find_file_location_ext() function, which you can pass a filename and a list of extensions and it will search for all of them at once
@@ -231,10 +235,13 @@
  * $NoKeywords: $
  */
 
+#include "globalincs/pstypes.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <vector>
 
 #ifdef _WIN32
 #include <io.h>
@@ -1229,6 +1236,9 @@ int cf_find_file_location( char *filespec, int pathtype, int max_out, char *pack
 	return 0;
 }
 
+// -- from parselo.cpp --
+extern char *stristr(const char *str, const char *substr);
+
 // Searches for a file.   Follows all rules and precedence and searches
 // CD's and pack files.  Searches all locations in order for first filename using filter list.
 // Input:  filename    - Filename & extension
@@ -1312,8 +1322,11 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 
 		for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
 			// strip any extension and add the one we want to check for
-			char *p = strchr(filespec, '.');
-			if ( p ) *p = 0;
+			// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
+			//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
+			char *p = strrchr(filespec, '.');
+			if ( p && (strlen(p) > 2) )
+				(*p) = 0;
 
 			SAFE_STRCAT( filespec, ext_list[cur_ext], sizeof(filespec)-1 );
  
@@ -1362,33 +1375,79 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	// Search the pak files and CD-ROM.
 
 	// first off, make sure that we don't have an extension
-	char *p = strchr(filespec, '.');
-	if ( p ) *p = 0;
+	// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
+	//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
+	char *p = strrchr(filespec, '.');
+	if ( p && (strlen(p) > 2) )
+		(*p) = 0;
 
-	for (i = 0; i < Num_files; i++ ) {
+	// go ahead and get our length, which is used to test with later
+	int filespec_len = strlen(filespec);
+
+	// get total legnth, with extension, which is iused to test with later
+	// (FIXME: this assumes that everything in ext_list[] is the same length!)
+	uint filespec_len_big = filespec_len + strlen(ext_list[0]);
+
+	std::vector<int> file_list_index;
+	int last_root_index = -1;
+	int last_path_index = -1;
+
+	// next, run though and pick out base matches
+	for (i = 0; i < Num_files; i++) {
 		cf_file *f = cf_get_file(i);
 
-		// do some quick checks before we get into the really slow part...
-
-		// ... only search paths we're supposed to...
+		// ... only search paths that we're supposed to
 		if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index) )
 			continue;
 
 		// ... check that our names are the same length (accounting for the missing extension on our own name)
-		if ( strlen(f->name_ext) != strlen(filespec)+4 )
+		if ( strlen(f->name_ext) != filespec_len_big )
 			continue;
 
-		// ... check that we match at least the base filename
-		if ( strnicmp(f->name_ext, filespec, strlen(filespec)) )
+		// ... check that we match the base filename
+		if ( strnicmp(f->name_ext, filespec, filespec_len) )
 			continue;
 
-
-		// ok, now we can do the really slow part...
+		// ... make sure that it's one of our supported types
+		bool found_one = false;
 		for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
-			// strip extension and add the one we want to check for
-			char *p = strchr(filespec, '.');
-			if ( p ) *p = 0;
+			if ( stristr(f->name_ext, ext_list[cur_ext]) ) {
+				found_one = true;
+				break;
+			}
+		}
 
+		if ( !found_one )
+			continue;
+
+		// ... we check based on location, so if location changes after the first find then bail
+		if (last_root_index < 0) {
+			last_root_index = f->root_index;
+			last_path_index = f->pathtype_index;
+		} else {
+			if (f->root_index != last_root_index)
+				break;
+
+			if (f->pathtype_index != last_path_index)
+				break;
+		}
+
+		// ok, we have a good base match, so add it to our cache
+		file_list_index.push_back( i );
+	}
+
+	int file_list_size = (int)file_list_index.size();
+
+	// quick exit test
+	if (file_list_size < 1)
+		goto Bail;
+
+
+	// now try and find our preferred match
+	for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
+		for (i = 0; i < file_list_size; i++) {
+			cf_file *f = cf_get_file( file_list_index[i] );
+	
 			SAFE_STRCAT( filespec, ext_list[cur_ext], sizeof(filespec)-1 );
 
 			if (localize) {
@@ -1417,6 +1476,9 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 								SAFE_STRCAT( pack_filename, f->name_ext, max_out );
 							}
 						}
+
+						// found it, so cleanup and return
+						file_list_index.clear();
 
 						return cur_ext;
 					}
@@ -1449,15 +1511,23 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 					}
 				}
 
+				// found it, so cleanup and return
+				file_list_index.clear();
+
 				return cur_ext;
 			}
-		}
 
-		// ok, we're still here, so strip off the extension again in order to
-		// prepare for the next run
-		char *p = strchr(filespec, '.');
-		if ( p ) *p = 0;
+			// ok, we're still here, so strip off the extension again in order to
+			// prepare for the next run
+			char *p = strrchr(filespec, '.');
+			if ( p && (strlen(p) > 2) )
+				(*p) = 0;
+		}
 	}
+
+Bail:
+	// didn't find anything, bail...
+	file_list_index.clear();
 
 	return -1;
 }

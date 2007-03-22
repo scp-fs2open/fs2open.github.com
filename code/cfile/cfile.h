@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.17.2.2 $
- * $Date: 2007-02-11 09:25:42 $
+ * $Revision: 2.17.2.3 $
+ * $Date: 2007-03-22 20:22:44 $
  * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17.2.2  2007/02/11 09:25:42  taylor
+ * some CFILE cleanup and slight directory order reorg
+ * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
+ * remove NO_SOUND
+ *
  * Revision 2.17.2.1  2006/08/27 18:01:45  taylor
  * various small cleanup and speedup changes
  * add a cf_find_file_location_ext() function, which you can pass a filename and a list of extensions and it will search for all of them at once
@@ -544,6 +549,8 @@ int cf_exists(char *filename, int dir_type);
 // Returns 1 if the file exists, 0 if not.
 // Checks both the file system and the VPs.
 int cf_exists_full(char *filename, int dir_type);
+// check num_ext worth of ext_list extensions
+int cf_exists_full_ext(char *filename, int dir_type, const int num_ext, const char **ext_list);
 
 // ctmpfile() opens a temporary file stream.  File is deleted automatically when closed
 CFILE *ctmpfile();

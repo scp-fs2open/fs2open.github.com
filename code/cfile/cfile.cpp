@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.40.2.4 $
- * $Date: 2007-02-11 09:32:19 $
+ * $Revision: 2.40.2.5 $
+ * $Date: 2007-03-22 20:22:44 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40.2.4  2007/02/11 09:32:19  taylor
+ * forgot to remove .avi and .mpg from CF_TYPE_ROOT
+ *
  * Revision 2.40.2.3  2007/02/11 09:25:42  taylor
  * some CFILE cleanup and slight directory order reorg
  * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
@@ -840,7 +843,22 @@ int cf_exists(char *filename, int dir_type)
 // Checks both the file system and the VPs.
 int cf_exists_full(char *filename, int dir_type)
 {
+	if ( (filename == NULL) || !strlen(filename) )
+		return 0;
+
 	return cf_find_file_location(filename, dir_type, 0, NULL, NULL, NULL);
+}
+
+// same as the above, but with extension check
+int cf_exists_full_ext(char *filename, int dir_type, const int num_ext, const char **ext_list)
+{
+	if ( (filename == NULL) || !strlen(filename) )
+		return 0;
+
+	if ( (num_ext <= 0) || (ext_list == NULL) )
+		return 0;
+
+	return (cf_find_file_location_ext(filename, num_ext, ext_list, dir_type, 0, NULL, NULL, NULL) != -1);
 }
 
 #ifdef _WIN32
