@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.20.2.1 $
- * $Date: 2007-02-11 09:24:08 $
+ * $Revision: 2.20.2.2 $
+ * $Date: 2007-03-22 20:14:17 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20.2.1  2007/02/11 09:24:08  taylor
+ * remove -pcx32 and -jpgtga
+ *
  * Revision 2.20  2006/04/20 06:32:30  Goober5000
  * proper capitalization according to Volition
  *
@@ -858,7 +861,7 @@ int targa_write_bitmap(char *real_filename, ubyte *data, ubyte *palette, int w, 
 	Assert(bpp == 24);
 	char filename[MAX_FILENAME_LEN];
 	CFILE *f;
-	int bytes_per_pixel = BYTES_PER_PIXEL(bpp);		
+	int bytes_per_pixel = (bpp >> 3);
 		
 	// open the file
 	strcpy( filename, real_filename );

@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.25 $
- * $Date: 2007-02-12 07:29:51 $
+ * $Revision: 2.174.2.26 $
+ * $Date: 2007-03-22 20:14:16 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.25  2007/02/12 07:29:51  taylor
+ * fix stupid bug (Mantis #1275)
+ *
  * Revision 2.174.2.24  2007/02/11 10:01:11  taylor
  * remove cloakmap stuff, we'll need to redo this later on anyway
  * don't need the AVI movie hacks any longer, so remove it
@@ -4764,10 +4767,6 @@ void gr_opengl_init(int reinit)
 	
 	glFlush();
 
-	gr_opengl_clear();
-
-	Bm_pixel_format = BM_PIXEL_FORMAT_ARGB;
-
 	Gr_current_red = &Gr_red;
 	Gr_current_blue = &Gr_blue;
 	Gr_current_green = &Gr_green;
@@ -4775,6 +4774,8 @@ void gr_opengl_init(int reinit)
 
 	Mouse_hidden++;
 	gr_opengl_reset_clip();
+	gr_opengl_clear();
+	gr_opengl_flip();
 	gr_opengl_clear();
 	gr_opengl_flip();
 	gr_opengl_clear();
