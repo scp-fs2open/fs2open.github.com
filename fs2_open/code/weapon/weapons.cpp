@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.14  2007/02/20 04:27:23  Goober5000
+ * revert to retail behavior
+ *
  * Revision 2.180.2.13  2007/02/20 04:19:44  Goober5000
  * the great big duplicate model removal commit
  *
@@ -3748,31 +3751,41 @@ void weapon_load_bitmaps(int weapon_index)
 
 void weapon_do_post_parse()
 {
+	weapon_info *wip;
+	int first_cmeasure_index = -1;
 	int i;
 
 	weapon_sort_by_type();	// NOTE: This has to be first thing!
 	weapon_create_names();
 	weapon_clean_entries();
 
-	//Set default countermeasure index from the saved name
-	if ( strlen(Default_cmeasure_name) ) {
-		for (i = 0; i < Num_weapon_types; i++) {
-			if ( !stricmp(Weapon_info[i].name, Default_cmeasure_name) ) {
+	Default_cmeasure_index = -1;
+
+	// run through weapons list and deal with individual issues
+	for (i = 0; i < Num_weapon_types; i++) {
+		wip = &Weapon_info[i];
+
+		// set default counter-measure index from the saved name
+		if ( (Default_cmeasure_index < 0) && strlen(Default_cmeasure_name) ) {
+			if ( !stricmp(wip->name, Default_cmeasure_name) ) {
 				Default_cmeasure_index = i;
-				break;
 			}
+		}
+
+		// catch a fall back cmeasure index, just in case
+		if ( (first_cmeasure_index < 0) && (wip->wi_flags & WIF_CMEASURE) )
+			first_cmeasure_index = i;
+
+		// if we are a "#weak" weapon then popup a warning if we don't have the "player allowed" flag set
+		if ( stristr(wip->name, "#weak") && !(wip->wi_flags & WIF_PLAYER_ALLOWED) ) {
+			Warning(LOCATION, "Weapon '%s' requires the \"player allowed\" flag, but it's not listed!  Adding it by default.\n", wip->name);
+			wip->wi_flags |= WIF_PLAYER_ALLOWED;
 		}
 	}
 
-	//Oops. Emergency fallback.
-	if (Default_cmeasure_index < 0) {
-		for (i = 0; i < Num_weapon_types; i++) {
-			if (Weapon_info[i].wi_flags & WIF_CMEASURE) {
-				Default_cmeasure_index = i;
-				break;
-			}
-		}
-	}
+	// catch cmeasure fallback
+	if (Default_cmeasure_index < 0)
+		Default_cmeasure_index = first_cmeasure_index;
 
 	// translate all spawn type weapons to referrence the appropriate spawned weapon entry
 	translate_spawn_types();
