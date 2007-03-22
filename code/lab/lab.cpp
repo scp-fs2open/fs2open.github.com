@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.35 $
- * $Date: 2007-02-27 01:44:48 $
- * $Author: Goober5000 $
+ * $Revision: 1.36 $
+ * $Date: 2007-03-22 22:34:59 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2007/02/27 01:44:48  Goober5000
+ * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
+ *
  * Revision 1.34  2007/02/11 06:19:05  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
  *
@@ -549,7 +552,7 @@ void ships_make_window(Button* caller)
 		ctip = cmp->AddItem(stip, Ship_info[i].name, i, false);
 		for(j = 0; j < Ship_info[i].num_detail_levels; j++)
 		{
-			itoa(j, buf, 10);
+			sprintf(buf, "%d", j);
 			lod_name = "LOD ";
 			lod_name += buf;
 
