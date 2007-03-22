@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.305 $
- * $Date: 2007-02-20 04:20:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.306 $
+ * $Date: 2007-03-22 20:35:20 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.305  2007/02/20 04:20:27  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.304  2007/02/20 01:40:57  Goober5000
  * *** empty log message ***
  *
@@ -3870,6 +3873,9 @@ void preload_change_ship_class(char *text)
 	// (this eliminates the slight pause during a mission when changing to a previously unloaded model)
 	sip = &Ship_info[idx];
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+
+	if (sip->model_num >= 0)
+		model_page_in_textures(sip->model_num, idx);
 }
 
 // Goober5000
@@ -8606,7 +8612,7 @@ void sexp_load_music(char* fname)
 
 	if ( fname )
 	{
-		Sexp_music_handle = audiostream_open( fname, ASF_EVENTMUSIC );
+		Sexp_music_handle = audiostream_open( fname, ASF_MENUMUSIC );
 	}
 }
 

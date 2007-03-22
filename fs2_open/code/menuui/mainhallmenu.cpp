@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.51 $
- * $Date: 2007-02-10 00:18:22 $
+ * $Revision: 2.52 $
+ * $Date: 2007-03-22 20:35:19 $
  * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2007/02/10 00:18:22  taylor
+ * remove NO_SOUND
+ *
  * Revision 2.50  2006/12/28 00:59:27  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1724,7 +1727,7 @@ main_hall_got_music_index:
 		char *filename = Spooled_music[index].filename;
 		Assert(filename != NULL);
 
-		Main_hall_music_handle = audiostream_open(filename, ASF_EVENTMUSIC);
+		Main_hall_music_handle = audiostream_open(filename, ASF_MENUMUSIC);
 		if (Main_hall_music_handle >= 0)
 		{
 			audiostream_play(Main_hall_music_handle, Master_event_music_volume, 1);

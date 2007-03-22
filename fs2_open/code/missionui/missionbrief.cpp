@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.44 $
- * $Date: 2007-02-20 04:20:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.45 $
+ * $Date: 2007-03-22 20:35:20 $
+ * $Author: taylor $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2007/02/20 04:20:18  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.43  2006/12/28 00:59:32  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -2327,7 +2330,7 @@ void briefing_load_music(char* fname)
 		return;
 
 	if ( fname )
-		Briefing_music_handle = audiostream_open( fname, ASF_EVENTMUSIC );
+		Briefing_music_handle = audiostream_open( fname, ASF_MENUMUSIC );
 }
 
 void briefing_start_music()
