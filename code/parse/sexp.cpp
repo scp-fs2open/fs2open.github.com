@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.306 $
- * $Date: 2007-03-22 20:35:20 $
+ * $Revision: 2.307 $
+ * $Date: 2007-03-22 22:14:56 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.306  2007/03/22 20:35:20  taylor
+ * be sure to page in textures for change ship class sexp preload
+ * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
+ * make event music keep extension if it exists, so that the special data will be accurate
+ * bits of cleanup from old MS code that we don't need
+ *
  * Revision 2.305  2007/02/20 04:20:27  Goober5000
  * the great big duplicate model removal commit
  *
@@ -8491,7 +8497,7 @@ void sexp_hud_set_text_num(int n)
 	gauge_info* cg = hud_get_gauge(gaugename);
 	if(cg)
 	{
-		itoa(eval_num(CDR(n)), HUD_CHAR(current_hud, cg->text_dest), 10);
+		sprintf( HUD_CHAR(current_hud, cg->text_dest), "%d", eval_num(CDR(n)) );
 	}
 #endif
 }

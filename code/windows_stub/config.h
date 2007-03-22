@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.21 $
- * $Date: 2006-12-28 22:47:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2007-03-22 22:14:57 $
+ * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/12/28 22:47:03  Goober5000
+ * fix spelling... *twitch*
+ *
  * Revision 2.20  2006/09/13 03:55:50  taylor
  * bah!  stupid.
  *
@@ -366,7 +369,6 @@ char *strnset( char *string, int fill, size_t count);
 #define _hypot(x, y)  hypot(x, y)
 
 int MulDiv(int number, int numerator, int denominator);
-char *itoa(int value, char *str, int radix);
 void Sleep(int mili);
 
 struct POINT {

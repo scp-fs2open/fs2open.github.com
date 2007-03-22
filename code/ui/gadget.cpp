@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/GADGET.cpp $
- * $Revision: 2.9 $
- * $Date: 2005-07-02 19:45:02 $
+ * $Revision: 2.10 $
+ * $Date: 2007-03-22 22:14:57 $
  * $Author: taylor $
  *
  * Functions for the base gadget class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/02 19:45:02  taylor
+ * ton of non-standard resolution fixes
+ *
  * Revision 2.8  2005/02/15 02:15:04  taylor
  * fix cleanup to avoid breaking the slider when it's still needed
  *
@@ -254,7 +257,7 @@ int UI_GADGET::set_bmaps(char *ani_fname, int nframes, int start_frame)
 {
 	int first_frame, i;	
 	char full_name[MAX_FILENAME_LEN] = "";
-	char tmp[10];
+	char tmp[33];
 	int idx, s_idx;	
 	int num_digits;
 	int its_all_good = 0;
@@ -281,7 +284,8 @@ int UI_GADGET::set_bmaps(char *ani_fname, int nframes, int start_frame)
 		for(s_idx=0; s_idx<(4-num_digits); s_idx++){
 			strcat(full_name, NOX("0"));
 		}
-		strcat(full_name, itoa(idx, tmp, 10));		
+		sprintf(tmp, "%d", idx);
+		strcat(full_name, tmp);		
 
 		// try and load the bitmap				
 		bmap_ids[idx] = bm_load(full_name);	
