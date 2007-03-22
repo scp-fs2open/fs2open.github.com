@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.43 $
- * $Date: 2007-02-20 04:20:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.44 $
+ * $Date: 2007-03-22 21:55:01 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43  2007/02/20 04:20:27  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.42  2007/02/19 07:24:51  wmcoolmon
  * WMCoolmon experiences a duh moment. Move scripting collision variable declarations in front of overrides, to give
  * them access to these (somewhat useful) variables
@@ -412,8 +415,9 @@ void ship_weapon_do_hit_stuff(object *ship_obj, object *weapon_obj, vec3d *world
 		vm_fix_matrix(&dec.orient);
 		dec.pnt.xyz = hitpos->xyz;
 		dec.radius = wip->decal_rad;
-		if((dec.radius > 0) && (wip->decal_texture > -1))
-		decal_create(ship_obj, &dec, submodel_num, wip->decal_texture, wip->decal_backface_texture, wip->decal_glow_texture, wip->decal_burn_texture, wip->decal_burn_time);
+
+		if ( (dec.radius > 0) && (wip->decal_texture.bitmap_id > -1) )
+			decal_create(ship_obj, &dec, submodel_num, wip->decal_texture.bitmap_id, wip->decal_backface_texture.bitmap_id, wip->decal_glow_texture_id, wip->decal_burn_texture_id, wip->decal_burn_time);
 	}
 	
 

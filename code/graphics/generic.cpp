@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/graphics/generic.cpp $
- * $Revision: 1.3 $
- * $Date: 2007-01-07 12:54:35 $
+ * $Revision: 1.4 $
+ * $Date: 2007-03-22 21:55:01 $
  * $Author: taylor $
  *
  * Generic graphics functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2007/01/07 12:54:35  taylor
+ * be sure that we can handle both "none" and "<none>" in ignored filenames
+ *
  * Revision 1.2  2006/10/07 02:43:44  Goober5000
  * bypass annoying warnings for nonexistent bitmaps
  *
@@ -23,63 +26,61 @@
 #include "graphics/generic.h"
 
 
-// Goober5000
 void generic_anim_init(generic_anim *ga, char *filename)
 {
-	if (filename == NULL)
+	if (filename == NULL) {
 		ga->filename[0] = '\0';
-	else
-		strcpy(ga->filename, filename);
-	
+	} else {
+		strncpy(ga->filename, filename, MAX_FILENAME_LEN - 1);
+		ga->filename[strlen(ga->filename)] = '\0';
+	}
+
 	ga->first_frame = -1;
 	ga->num_frames = 0;
+	ga->total_time = 1.0f;
 }
 
-// Goober5000
 void generic_bitmap_init(generic_bitmap *gb, char *filename)
 {
-	if (filename == NULL)
+	if (filename == NULL) {
 		gb->filename[0] = '\0';
-	else
-		strcpy(gb->filename, filename);
-	
-	gb->bitmap = -1;
+	} else {
+		strncpy(gb->filename, filename, MAX_FILENAME_LEN - 1);
+		gb->filename[strlen(gb->filename)] = '\0';
+	}
+
+	gb->bitmap_id = -1;
 }
 
-// Goober5000
 // load a generic_anim
 // return 0 is successful, otherwise return -1
 int generic_anim_load(generic_anim *ga)
 {
 	int		fps;
-	
-	if ( !strlen(ga->filename) || !stricmp(ga->filename, "none") || !stricmp(ga->filename, "<none>") )
+
+	if ( !VALID_FNAME(ga->filename) )
 		return -1;
-	
+
 	ga->first_frame = bm_load_animation(ga->filename, &ga->num_frames, &fps);
-	if ( ga->first_frame < 0)
-	{
-		Warning(LOCATION, "Couldn't load animation %s", ga->filename);
+
+	if (ga->first_frame < 0)
 		return -1;
-	}
-	
+
 	Assert(fps != 0);
-	ga->total_time = (int) i2fl(ga->num_frames)/fps;
-	
+	ga->total_time = ga->num_frames / (float)fps;
+
 	return 0;
 }
 
 int generic_bitmap_load(generic_bitmap *gb)
 {
-	if ( !strlen(gb->filename) || !stricmp(gb->filename, "none") || !stricmp(gb->filename, "<none>") )
+	if ( !VALID_FNAME(gb->filename) )
 		return -1;
-	
-	gb->bitmap = bm_load(gb->filename);
-	
-	if ( gb->bitmap < 0 ) {
-		Warning(LOCATION, "Couldn't load bitmap %s", gb->filename);
+
+	gb->bitmap_id = bm_load(gb->filename);
+
+	if (gb->bitmap_id < 0)
 		return -1;
-	}
-	
+
 	return 0;
 }
