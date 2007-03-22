@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.149 $
- * $Date: 2007-01-10 01:40:43 $
+ * $Revision: 2.150 $
+ * $Date: 2007-03-22 20:55:53 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.149  2007/01/10 01:40:43  taylor
+ * little bit of cleanup
+ * per earlier discussions: remove -jpgtga and -pcx32
+ *
  * Revision 2.148  2006/11/16 00:50:00  taylor
  * clean up some cmdline options which were/weren't FSO only
  * add back the "-32bit" option, for retail compatibility (doesn't do anything, it's just there to avoid the unknown option message)
@@ -944,7 +948,6 @@ Flag exe_params[] =
 	{ "-spec",				"Enable specular",							true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-spec", },
 	{ "-glow",				"Enable glowmaps",							true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-glow", },
 	{ "-env",				"Enable environment maps",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-env", },
-	{ "-jpgtga",			"Enable jpg/tga textures",					true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-jpgtga", },
 	{ "-mipmap",			"Enable mipmapping",						true,	EASY_MEM_ALL_ON,	EASY_DEFAULT_MEM,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mipmap", },
 	{ "-nomotiondebris",	"Disable motion debris",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
 	{ "-2d_poof",			"Stops fog intersect hull",					true,	EASY_ALL_ON,		EASY_DEFAULT,		"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-2d_poof", },
@@ -978,10 +981,7 @@ Flag exe_params[] =
 	{ "-multilog",			"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-multilog", },
 	{ "-clientdamage",		"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
 	{ "-mpnoreturn",		"Disables flight deck option",				true,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
-//#ifdef WIN32
-//	{ "-fixbugs",			"Fix bugs",									true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
-//	{ "-nocrash",			"Disable crashing",							true,	0,					EASY_DEFAULT,		"Troubleshoot",	"", },
-//#endif
+
 	{ "-oldfire",			"",											false,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-oldfire", },
 	{ "-nohtl",				"Software mode (very slow)",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nohtl", },
 	{ "-no_set_gamma",		"Disable setting of gamma",					true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_set_gamma", },
@@ -1237,13 +1237,6 @@ int Cmdline_no_grab = 0;
 cmdline_parm get_flags_arg("-get_flags", NULL);
 cmdline_parm output_sexp_arg("-output_sexps", NULL); //WMC - outputs all SEXPs to sexps.html
 cmdline_parm output_scripting_arg("-output_scripting", NULL);	//WMC
-
-// Totally useless crap...
-/*#ifdef WIN32
-cmdline_parm fix_bugs("-fixbugs", NULL);
-cmdline_parm disable_crashing("-nocrash", NULL);
-#endif*/
-
 
 
 
