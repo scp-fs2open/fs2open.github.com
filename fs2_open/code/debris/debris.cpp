@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Debris/Debris.cpp $
- * $Revision: 2.31 $
- * $Date: 2007-02-20 04:20:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.32 $
+ * $Date: 2007-03-22 21:55:01 $
+ * $Author: taylor $
  *
  * Code for the pieces of exploding object debris.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.31  2007/02/20 04:20:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.30  2007/02/11 09:22:29  taylor
  * remove NO_SOUND
  * fix debris recycling
@@ -454,13 +457,13 @@ void debris_page_in()
 
 		nprintf(( "Paging", "Paging in debris texture '%s'\n", species->debris_texture.filename));
 
-		species->debris_texture.bitmap = bm_load(species->debris_texture.filename);
-		if (species->debris_texture.bitmap < 0)
+		species->debris_texture.bitmap_id = bm_load(species->debris_texture.filename);
+		if (species->debris_texture.bitmap_id < 0)
 		{
 			Warning( LOCATION, "Couldn't load species %s debris\ntexture, '%s'\n", species->species_name, species->debris_texture.filename);
 		}
 
-		bm_page_in_texture(species->debris_texture.bitmap);
+		bm_page_in_texture(species->debris_texture.bitmap_id);
 	}
 	
 }
@@ -495,7 +498,7 @@ void debris_render(object * obj)
 
 		if ( pm && (pm->n_textures == 1) ) {
 			swapped = pm->maps[0].base_map.texture;
-			pm->maps[0].base_map.texture = Species_info[db->species].debris_texture.bitmap;
+			pm->maps[0].base_map.texture = Species_info[db->species].debris_texture.bitmap_id;
 		}
 	}
 
