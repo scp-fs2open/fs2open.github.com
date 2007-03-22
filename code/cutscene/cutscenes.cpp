@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.21 $
- * $Date: 2007-02-09 23:58:52 $
+ * $Revision: 2.22 $
+ * $Date: 2007-03-22 20:53:43 $
  * $Author: taylor $
- * $Revision: 2.21 $
- * $Date: 2007-02-09 23:58:52 $
+ * $Revision: 2.22 $
+ * $Date: 2007-03-22 20:53:43 $
  * $Author: taylor $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2007/02/09 23:58:52  taylor
+ * add the "show all" hotkey to the cutscene viewer
+ *
  * Revision 2.20  2006/12/28 00:59:19  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -250,6 +253,9 @@
 #include "globalincs/alphacolors.h"
 #include "localization/localize.h"
 #include "parse/parselo.h"
+
+
+extern int Cmdline_nomovies;
 
 
 char *Cutscene_bitmap_name[GR_NUM_RESOLUTIONS] = {
@@ -565,7 +571,11 @@ void cutscenes_screen_play()
 	if ( !rval ) {
 		char str[256];
 
-		sprintf(str, XSTR( "Unable to play movie %s.", 204), Cutscenes[which_cutscene].name );
+		if (Cmdline_nomovies)
+			sprintf(str, XSTR("Movies are currently disabled.", -1));
+		else
+			sprintf(str, XSTR("Unable to play movie %s.", 204), Cutscenes[which_cutscene].name);
+
 		popup(0, 1, POPUP_OK, str );
 	}
 	
