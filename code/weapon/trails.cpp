@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.28 $
- * $Date: 2006-12-28 00:59:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.29 $
+ * $Date: 2007-03-23 01:51:57 $
+ * $Author: taylor $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.28  2006/12/28 00:59:54  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.27  2006/05/27 16:45:11  taylor
  * some minor cleanup
  * remove -nobeampierce
@@ -305,78 +308,122 @@ int trail_is_on_ship(trail *trailp, ship *shipp)
 // Render the trail behind a missile.
 // Basically a queue of points that face the viewer
 extern int Cmdline_nohtl;
-#define MAX_TRAIL_POLYS ((NUM_TRAIL_SECTIONS*2)+1)
+//#define MAX_TRAIL_POLYS ((NUM_TRAIL_SECTIONS*2)+1)
+
+static vertex **Trail_vlist = NULL;
+static vertex *Trail_v_list = NULL;
+static int Trail_verts_allocated = 0;
+
+static void deallocate_trail_verts()
+{
+	if (Trail_vlist != NULL) {
+		vm_free(Trail_vlist);
+		Trail_vlist = NULL;
+	}
+
+	if (Trail_v_list != NULL) {
+		vm_free(Trail_v_list);
+		Trail_v_list = NULL;
+	}
+}
+
+static void allocate_trail_verts(int num_verts)
+{
+	if (num_verts <= 0)
+		return;
+
+	if (num_verts <= Trail_verts_allocated)
+		return;
+
+	if (Trail_vlist != NULL) {
+		vm_free(Trail_vlist);
+		Trail_vlist = NULL;
+	}
+
+	if (Trail_v_list != NULL) {
+		vm_free(Trail_v_list);
+		Trail_v_list = NULL;
+	}
+
+	Trail_vlist = (vertex**) vm_malloc( num_verts * sizeof(vertex) );
+	Trail_v_list = (vertex*) vm_malloc( num_verts * sizeof(vertex) );
+
+	memset( Trail_v_list, 0, sizeof(vertex) * Trail_verts_allocated );
+
+	Trail_verts_allocated = num_verts;
+
+
+	static bool will_free_at_exit = false;
+
+	if ( !will_free_at_exit ) {
+		atexit(deallocate_trail_verts);
+		will_free_at_exit = true;
+	}
+}
+
 void trail_render( trail * trailp )
-{		
-//	if(!Cmdline_nohtl)gr_set_lighting(false,false);//this shouldn't need to be here but it does need to be here, WHY!!!!!!!?-Bobboau
-
-	if ( trailp->tail == trailp->head ) 
-	{
-		return;
-	}
-
-	// if this trail is on the player ship, and he's in any padlock view except rear view, don't draw	
-	if((Player_ship != NULL) && trail_is_on_ship(trailp, Player_ship) && (Viewer_mode & (VM_PADLOCK_UP | VM_PADLOCK_LEFT | VM_PADLOCK_RIGHT)) ){
-		return;
-	}
-
-	Assert(trailp->info.bitmap != -1);
-
-	trail_info *ti	= &trailp->info;	
-
+{
 	int sections[NUM_TRAIL_SECTIONS];
 	int num_sections = 0;
-
-	int n = trailp->tail;
-
-	do	{
-		n--;
-		if ( n < 0 ) n = NUM_TRAIL_SECTIONS-1;
-
-
-		if ( trailp->val[n] > 1.0f ) {
-			break;
-		}
-
-		sections[num_sections++] = n;
-
-	} while ( n != trailp->head );
-
 	int i;
-
 	vec3d topv, botv, *fvec, last_pos, tmp_fvec;
 	vertex  top, bot;
-	vertex *vlist[MAX_TRAIL_POLYS];
-	vertex v_list[MAX_TRAIL_POLYS];
 	int nv = 0;
 	float w;
 	ubyte l;
 	vec3d centerv;
 
-	memset( &v_list, 0, sizeof(vertex) * MAX_TRAIL_POLYS );
+	if (trailp->tail == trailp->head)
+		return;
 
-	for (i=0; i<num_sections; i++ )	{
+	// if this trail is on the player ship, and he's in any padlock view except rear view, don't draw	
+	if ( (Player_ship != NULL) && trail_is_on_ship(trailp, Player_ship) &&
+		(Viewer_mode & (VM_PADLOCK_UP | VM_PADLOCK_LEFT | VM_PADLOCK_RIGHT)) )
+	{
+		return;
+	}
 
-	if(nv>MAX_TRAIL_POLYS-3)Error( LOCATION, "too many verts in trail render\n" );
+	trail_info *ti	= &trailp->info;
 
+	int n = trailp->tail;
+
+	do	{
+		n--;
+
+		if (n < 0)
+			n = NUM_TRAIL_SECTIONS-1;
+
+		if (trailp->val[n] > 1.0f)
+			break;
+
+		sections[num_sections++] = n;
+	} while ( n != trailp->head );
+
+	if (num_sections <= 0)
+		return;
+
+	Assert(ti->texture.bitmap_id != -1);
+
+	memset( &top, 0, sizeof(vertex) );
+	memset( &bot, 0, sizeof(vertex) );
+
+	// it's a tristrip, so allocate for 2+1
+	allocate_trail_verts((num_sections * 2) + 1);
+
+	float w_size = (ti->w_end - ti->w_start);
+	float a_size = (ti->a_end - ti->a_start);
+
+	for (i = 0; i < num_sections; i++) {
 		n = sections[i];
 
-		w = trailp->val[n]*(ti->w_end - ti->w_start) + ti->w_start;
-		l = (ubyte)fl2i((trailp->val[n]*(ti->a_end - ti->a_start) + ti->a_start)*255.0f);
-
-		vec3d pos;
-
-		pos = trailp->pos[n];
+		w = trailp->val[n] * w_size + ti->w_start;
+		l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f);
 
 		if ( i == 0 )	{
-			//fvec = 
-			//&objp->orient.fvec;
 			if ( num_sections > 1 )	{
-	
-				vm_vec_sub(&tmp_fvec, &pos, &trailp->pos[sections[i+1]] );
+				vm_vec_sub(&tmp_fvec, &trailp->pos[n], &trailp->pos[sections[i+1]] );
 				vm_vec_normalize_safe(&tmp_fvec);
 				fvec = &tmp_fvec;
-
 			} else {
 				fvec = &tmp_fvec;
 				fvec->xyz.x = 0.0f;
@@ -384,81 +431,88 @@ void trail_render( trail * trailp )
 				fvec->xyz.z = 1.0f;
 			}
 		} else {
-			vm_vec_sub(&tmp_fvec, &last_pos, &pos );
+			vm_vec_sub(&tmp_fvec, &last_pos, &trailp->pos[n] );
 			vm_vec_normalize_safe(&tmp_fvec);
 			fvec = &tmp_fvec;
 		}
-			
-		trail_calc_facing_pts( &topv, &botv, fvec, &pos, w );
 
-		memset( &top, 0, sizeof(vertex) );
-		memset( &bot, 0, sizeof(vertex) );
+		trail_calc_facing_pts( &topv, &botv, fvec, &trailp->pos[n], w );
 
-		if(!Cmdline_nohtl){
+		if ( !Cmdline_nohtl ) {
 			g3_transfer_vertex( &top, &topv );
 			g3_transfer_vertex( &bot, &botv );
-		}else{
+		} else {
 			g3_rotate_vertex( &top, &topv );
 			g3_rotate_vertex( &bot, &botv );
 		}
+
 		top.a = bot.a = l;	
 
-		if ( i > 0 )	{
+		if (i > 0) {
+			float U = i2fl(i);
 
-			if ( i == num_sections-1 )	{
+			if (i == num_sections-1) {
 				// Last one...
 				vm_vec_avg( &centerv, &topv, &botv );
-				if(!Cmdline_nohtl){
-					g3_transfer_vertex( &v_list[nv+2], &centerv );
-				}else{
-					g3_rotate_vertex( &v_list[nv+2], &centerv );
-				}
 
-				v_list[nv].a = l;	
+				if ( !Cmdline_nohtl )
+					g3_transfer_vertex( &Trail_v_list[nv+2], &centerv );
+				else
+					g3_rotate_vertex( &Trail_v_list[nv+2], &centerv );
 
-				vlist[nv] = &v_list[nv];
-				vlist[nv]->u = float(i);  vlist[nv]->v = 1.0f; 
-				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l;
-				nv++;
-				vlist[nv] = &v_list[nv];
-				vlist[nv]->u = float(i);  vlist[nv]->v = 0.0f; 
-				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l;
-				nv++;
-				vlist[nv] = &v_list[nv];
-				vlist[nv]->u = float(i+1);  vlist[nv]->v = 0.5f; 
-				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=0;
+				Trail_v_list[nv].a = l;	
+
+				Trail_vlist[nv] = &Trail_v_list[nv];
+				Trail_vlist[nv]->u = U;
+				Trail_vlist[nv]->v = 1.0f; 
+				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
 				nv++;
 
+				Trail_vlist[nv] = &Trail_v_list[nv];
+				Trail_vlist[nv]->u = U;
+				Trail_vlist[nv]->v = 0.0f; 
+				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
+				nv++;
+
+				Trail_vlist[nv] = &Trail_v_list[nv];
+				Trail_vlist[nv]->u = U + 1.0f;
+				Trail_vlist[nv]->v = 0.5f;
+				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = 0;
+				nv++;
 			} else {
-
-				vlist[nv] = &v_list[nv];
-				vlist[nv]->u = float(i);  vlist[nv]->v = 1.0f; 
-				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l;
-				nv++;
-				vlist[nv] = &v_list[nv];
-				vlist[nv]->u = float(i);  vlist[nv]->v = 0.0f; 
-				vlist[nv]->r=vlist[nv]->g=vlist[nv]->b=l;
+				Trail_vlist[nv] = &Trail_v_list[nv];
+				Trail_vlist[nv]->u = U;
+				Trail_vlist[nv]->v = 1.0f; 
+				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
 				nv++;
 
+				Trail_vlist[nv] = &Trail_v_list[nv];
+				Trail_vlist[nv]->u = U;
+				Trail_vlist[nv]->v = 0.0f; 
+				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
+				nv++;
 			}
 		}
 
-
-		last_pos = pos;
-		v_list[nv] = top;
-		v_list[nv+1] = bot;
+		last_pos = trailp->pos[n];
+		Trail_v_list[nv] = top;
+		Trail_v_list[nv+1] = bot;
 	}
 
-	if (!nv) {
+
+	if ( !nv )
 		return;
-	}
 
-	if(nv<3)Error( LOCATION, "too few verts in trail render\n" );
-	if(nv>MAX_TRAIL_POLYS-1)Error( LOCATION, "too many verts in trail render\n" );
-	if(nv%2 != 1)Warning( LOCATION, "even number of verts in trail render\n" );//there should always be three virts in the last section and 2 everyware else, therefore there should always be an odd number of verts
+	if (nv < 3)
+		Error( LOCATION, "too few verts in trail render\n" );
 
-	gr_set_bitmap(ti->bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-	g3_draw_poly( nv, vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
+	// there should always be three verts in the last section and 2 everyware else, therefore there should always be an odd number of verts
+	if ( (nv % 2) != 1)
+		Warning( LOCATION, "even number of verts in trail render\n" );
+
+
+	gr_set_bitmap( ti->texture.bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
+	g3_draw_poly( nv, Trail_vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
 }
 
 
@@ -498,8 +552,7 @@ void trail_move_all(float frametime)
 	trail *next_trail;
 	trail *prev_trail = &Trails;
 
-	for(trail *trailp = Trails.next; trailp != &Trails; trailp = next_trail)
-	{
+	for (trail *trailp = Trails.next; trailp != &Trails; trailp = next_trail) {
 		next_trail = trailp->next;
 
 		num_alive_segments = 0;

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.h $
- * $Revision: 2.9 $
- * $Date: 2005-07-13 03:35:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.10 $
+ * $Date: 2007-03-23 01:51:57 $
+ * $Author: taylor $
  *
  * External defs for missile trail stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2005/07/13 03:35:30  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.8  2005/04/05 05:53:25  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *
@@ -77,6 +81,7 @@
 #define _TRAILS_H
 
 #include "globalincs/pstypes.h"
+#include "graphics/generic.h"
 
 #define NUM_TRAIL_SECTIONS 128
 
@@ -90,7 +95,7 @@ typedef struct trail_info {
 	float a_end;			// ending alpha
 	float max_life;		// max_life for a section
 	int stamp;				// spew timestamp
-	int bitmap;				// bitmap to use
+	generic_bitmap texture;	// texture to use for trail
 } trail_info;
 
 typedef struct trail {

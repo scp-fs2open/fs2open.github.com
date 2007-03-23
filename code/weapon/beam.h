@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.12 $
- * $Date: 2006-02-25 21:47:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.13 $
+ * $Date: 2007-03-23 01:51:56 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/02/25 21:47:19  Goober5000
+ * spelling
+ *
  * Revision 2.11  2005/12/14 08:07:33  phreak
  * Handling of exit explosions for beams when a ship is about to get destroyed, or according to the code: "tooled".
  * Bumped beam frame collisions to 10 to compensate.
@@ -214,19 +217,6 @@ typedef struct fighter_beam_fire_info {
 	float life_total;
 } fighter_beam_fire_info;
 
-// collision info
-typedef struct beam_collision {
-	mc_info			cinfo;							// collision info
-	int				c_objnum;						// objnum of the guy we recently collided with
-	int				c_sig;							// object sig
-	int				c_stamp;							// when we should next apply damage	
-	int				quadrant;						// shield quadrant this beam hits if any -Bobboau
-	int			is_exit_collision;					//does this occur when the beam is exiting the ship
-} beam_collision;
-
-// beam lighting effects
-extern int Beam_lighting;
-
 // ------------------------------------------------------------------------------------------------
 // BEAM WEAPON FUNCTIONS
 //
@@ -249,9 +239,6 @@ int beam_get_parent(object *bm);
 
 // return weapon_info_index of beam
 int beam_get_weapon_info_index(object *bm);
-
-// render the beam itself
-void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *shot, float shrink = 1.0f);
 
 // given a beam object, get the # of collisions which happened during the last collision check (typically, last frame)
 int beam_get_num_collisions(int objnum);
@@ -299,10 +286,10 @@ void beam_pause_sounds();
 // unpause looping beam sounds
 void beam_unpause_sounds();
 
+void beam_calc_facing_pts(vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add);
+
 // debug code
 void beam_test(int whee);
 void beam_test_new(int whee);
 
 #endif
-void beam_calc_facing_pts(vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, float w, float z_add);
-

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.83 $
- * $Date: 2007-02-20 04:20:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.84 $
+ * $Date: 2007-03-23 01:51:56 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2007/02/20 04:20:38  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.82  2007/02/18 06:17:48  Goober5000
  * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
  *
@@ -625,6 +628,16 @@ extern int Cmdline_nohtl;
 // max # of collisions we'll allow per frame
 #define MAX_FRAME_COLLISIONS		10
 
+// collision info
+typedef struct beam_collision {
+	mc_info			cinfo;							// collision info
+	int				c_objnum;						// objnum of the guy we recently collided with
+	int				c_sig;							// object sig
+	int				c_stamp;							// when we should next apply damage	
+	int				quadrant;						// shield quadrant this beam hits if any -Bobboau
+	int			is_exit_collision;					//does this occur when the beam is exiting the ship
+} beam_collision;
+
 // beam flag defines
 #define BF_SAFETY						(1<<0)		// if this is set, don't collide or render for this frame. lifetime still increases though
 #define BF_SHRINK						(1<<1)		// if this is set, the beam is in the warmdown phase
@@ -659,6 +672,8 @@ typedef struct beam {
 	vec3d	last_shot;				
 	vec3d	last_start;				
 	int		shot_index;				// for type D beam weapons
+	float	beam_glow_frame;		// what frame a beam glow animation is on
+	float	beam_secion_frame[MAX_BEAM_SECTIONS];	// what frame a beam secion animation is on
 
 	// recent collisions
 	beam_collision r_collisions[MAX_FRAME_COLLISIONS];					// recent collisions
@@ -997,6 +1012,10 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->fighter_beam = fire_info->fighter_beam;
 	new_item->bank = fire_info->bank;
 	new_item->Beam_muzzle_stamp = -1;
+	new_item->beam_glow_frame = 0.0f;
+
+	for (int i = 0; i < MAX_BEAM_SECTIONS; i++)
+		new_item->beam_secion_frame[i] = 0.0f;
 	
 	if(fire_info->fighter_beam){
 		new_item->type = BEAM_TYPE_C;
@@ -1728,83 +1747,83 @@ void beam_move_all_post()
 // render a beam weapon
 #define STUFF_VERTICES()	do { verts[0]->u = 0.0f; verts[0]->v = 0.0f;	verts[1]->u = 1.0f; verts[1]->v = 0.0f; verts[2]->u = 1.0f;	verts[2]->v = 1.0f; verts[3]->u = 0.0f; verts[3]->v = 1.0f; } while(0);
 #define P_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
-int poly_beam = 0;
-float U_offset =0.0f; // beam texture offset -Bobboau
-void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *shot, float shrink)
+
+void beam_render(beam *b, float u_offset)
 {	
-//	mprintf(("about to render a beam\n"));
-	int idx;
-	uint s_idx;
-	vertex h1[4];				// halves of a beam section	
-	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
+	int idx, s_idx;
+	vertex h1[4];				// halves of a beam section
+	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };
 	vec3d fvec, top1, bottom1, top2, bottom2;
-	float scale;	
+	float scale;
 	float u_scale;	// beam tileing -Bobboau
 	float length;	// beam tileing -Bobboau
+	beam_weapon_section_info *bwsi;
+	beam_weapon_info *bwi;
 
-	memset(h1,0,sizeof(vertex)*4);
+	memset( h1, 0, sizeof(vertex) * 4 );
 
 	// bogus weapon info index
-	if(bwi == NULL){
+	if ( (b == NULL) || (b->weapon_info_index < 0) )
 		return;
-	}
 
 	// if the beam start and endpoints are the same
-	if(vm_vec_same(start, shot)){
+	if ( vm_vec_same(&b->last_start, &b->last_shot) )
 		return;
-	}
 
 	// get beam direction
-	vm_vec_sub(&fvec, shot, start);
+	vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
 	vm_vec_normalize_quick(&fvec);		
 
 	// turn off backface culling
 	gr_set_cull(0);
-	
+
+	bwi = &Weapon_info[b->weapon_info_index].b_info;
+
 	// draw all sections	
-	for(s_idx=0; s_idx<bwi->beam_num_sections; s_idx++){
-		if ( (bwi->sections[s_idx].texture < 0) || (bwi->sections[s_idx].width <= 0.0f) )
+	for (s_idx = 0; s_idx < bwi->beam_num_sections; s_idx++) {
+		bwsi = &bwi->sections[s_idx];
+
+		if ( (bwsi->texture.first_frame < 0) || (bwsi->width <= 0.0f) )
 			continue;
 
 		// calculate the beam points
-		scale = frand_range(1.0f - bwi->sections[s_idx].flicker, 1.0f + bwi->sections[s_idx].flicker);
-		beam_calc_facing_pts(&top1, &bottom1, &fvec, start, bwi->sections[s_idx].width * scale * shrink, bwi->sections[s_idx].z_add);	
-		beam_calc_facing_pts(&top2, &bottom2, &fvec, shot, bwi->sections[s_idx].width * scale * scale * shrink, bwi->sections[s_idx].z_add);				
-		if(Cmdline_nohtl){
+		scale = frand_range(1.0f - bwsi->flicker, 1.0f + bwsi->flicker);
+		beam_calc_facing_pts(&top1, &bottom1, &fvec, &b->last_start, bwsi->width * scale * b->shrink, bwsi->z_add);	
+		beam_calc_facing_pts(&top2, &bottom2, &fvec, &b->last_shot, bwsi->width * scale * scale * b->shrink, bwsi->z_add);
+
+		if (Cmdline_nohtl) {
 			g3_rotate_vertex(verts[0], &bottom1); 
 			g3_rotate_vertex(verts[1], &bottom2);	
 			g3_rotate_vertex(verts[2], &top2); 
 			g3_rotate_vertex(verts[3], &top1);
-		}else{
+		} else {
 			g3_transfer_vertex(verts[0], &bottom1); 
 			g3_transfer_vertex(verts[1], &bottom2);	
 			g3_transfer_vertex(verts[2], &top2); 
 			g3_transfer_vertex(verts[3], &top1);
 		}
+
 		P_VERTICES();						
 		STUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
 
-		//U_offset = ( ( ((float)timestamp() * bwi->sections[s_idx].translation)/1000.0f) - (float)(timestamp() * (int)bwi->sections[s_idx].translation /1000));
-
-		length = vm_vec_dist(start, shot);					// beam tileing -Bobboau
+		length = vm_vec_dist(&b->last_start, &b->last_shot);					// beam tileing -Bobboau
 		
-		if (bwi->sections[s_idx].tile_type == 1){
-		u_scale = length / (bwi->sections[s_idx].width /2) / bwi->sections[s_idx].tile_factor;	// beam tileing, might make a tileing factor in beam index later -Bobboau
-		}else{
-		u_scale = bwi->sections[s_idx].tile_factor;
-		}
+		if (bwsi->tile_type == 1)
+			u_scale = length / (bwsi->width /2) / bwsi->tile_factor;	// beam tileing, might make a tileing factor in beam index later -Bobboau
+		else
+			u_scale = bwsi->tile_factor;
 
-		verts[1]->u = (u_scale + (U_offset * bwi->sections[s_idx].translation));				// beam tileing -Bobboau
-		verts[2]->u = (u_scale + (U_offset * bwi->sections[s_idx].translation));				// beam tileing -Bobboau
-		verts[3]->u = (0 + (U_offset * bwi->sections[s_idx].translation));
-		verts[0]->u = (0 + (U_offset * bwi->sections[s_idx].translation));
+		verts[1]->u = (u_scale + (u_offset * bwsi->translation));				// beam tileing -Bobboau
+		verts[2]->u = (u_scale + (u_offset * bwsi->translation));				// beam tileing -Bobboau
+		verts[3]->u = (0 + (u_offset * bwsi->translation));
+		verts[0]->u = (0 + (u_offset * bwsi->translation));
 
 		float per = 1.0f;
-		if(bwi->range)per -= length / bwi->range;
+		if (bwi->range)
+			per -= length / bwi->range;
 
 		//this should never happen but, just to be safe
-		if(per > 1.0f)per = 1.0f;
-		if(per < 0.0f)per = 0.0f;
+		CLAMP(per, 0.0f, 1.0f);
 
 		verts[1]->r = (ubyte)(255 * per);
 		verts[2]->r = (ubyte)(255 * per);
@@ -1825,22 +1844,34 @@ void beam_render(beam_weapon_info *bwi, vec3d *start, vec3d *shot, float shrink)
 		verts[3]->a = 255;
 
 		// set the right texture with additive alpha, and draw the poly
-		int cur_frame = 0;
-		if (bwi->sections[s_idx].nframes > 1) {
-			cur_frame = ((timestamp() / bwi->sections[s_idx].fps) % bwi->sections[s_idx].nframes);
+		int framenum = 0;
+
+		if (bwsi->texture.num_frames > 1) {
+			b->beam_secion_frame[s_idx] += flFrametime;
+
+			// Sanity checks
+			if (b->beam_secion_frame[s_idx] < 0.0f)
+				b->beam_secion_frame[s_idx] = 0.0f;
+			if (b->beam_secion_frame[s_idx] > 100.0f)
+				b->beam_secion_frame[s_idx] = 0.0f;
+
+			while (b->beam_secion_frame[s_idx] > bwsi->texture.total_time)
+				b->beam_secion_frame[s_idx] -= bwsi->texture.total_time;
+
+			framenum = fl2i( (b->beam_secion_frame[s_idx] * bwsi->texture.num_frames) / bwsi->texture.total_time );
+
+			CLAMP(framenum, 0, bwsi->texture.num_frames-1);
 		}
 
-		gr_set_bitmap(bwi->sections[s_idx].texture + cur_frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);
+		gr_set_bitmap(bwsi->texture.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);
 
-		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT); 
 		// added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau			
 		// added TMAP_FLAG_RGB and TMAP_FLAG_GOURAUD so the beam would apear to fade along it's length-Bobboau
-		
+		g3_draw_poly( 4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_TILED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT ); 
 	}		
 	
 	// turn backface culling back on
 	gr_set_cull(1);	
-//	mprintf(("it should have rendered\n"));
 }
 
 // generate particles for the muzzle glow
@@ -1850,6 +1881,7 @@ DCF(h_time, "")
 	dc_get_arg(ARG_INT);
 	hack_time = Dc_arg_int;
 }
+
 void beam_generate_muzzle_particles(beam *b)
 {
 	int particle_count;
@@ -1873,9 +1905,9 @@ void beam_generate_muzzle_particles(beam *b)
 	wip = &Weapon_info[b->weapon_info_index];
 
 	// no specified particle for this beam weapon
-	if(wip->b_info.beam_particle_ani < 0){
+	if (wip->b_info.beam_particle_ani.first_frame < 0)
 		return;
-	}
+
 	
 	// reset the hack stamp
 	b->Beam_muzzle_stamp = timestamp(hack_time);
@@ -1922,7 +1954,7 @@ void beam_generate_muzzle_particles(beam *b)
 		pinfo.rad = wip->b_info.beam_particle_radius;
 		pinfo.reverse = 1;
 		pinfo.type = PARTICLE_BITMAP;
-		pinfo.optional_data = wip->b_info.beam_particle_ani;
+		pinfo.optional_data = wip->b_info.beam_particle_ani.first_frame;
 		pinfo.tracer_length = -1.0f;		
 		particle_create(&pinfo);
 	}
@@ -1938,7 +1970,7 @@ void beam_render_muzzle_glow(beam *b)
 	int tmap_flags = TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT;
 
 	// if we don't have a glow bitmap
-	if (bwi->beam_glow_bitmap < 0)
+	if (bwi->beam_glow.first_frame < 0)
 		return;
 
 	// if the beam is warming up, scale the glow
@@ -1972,12 +2004,26 @@ void beam_render_muzzle_glow(beam *b)
 		g3_transfer_vertex(&pt, &b->last_start);
 
 
-	int frame = 0;
+	int framenum = 0;
 
-	if (bwi->beam_glow_nframes > 1)
-		frame = (timestamp() / bwi->beam_glow_fps) % bwi->beam_glow_nframes;
+	if (bwi->beam_glow.num_frames > 1) {
+		b->beam_glow_frame += flFrametime;
 
-	gr_set_bitmap(bwi->beam_glow_bitmap + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);
+		// Sanity checks
+		if (b->beam_glow_frame < 0.0f)
+			b->beam_glow_frame = 0.0f;
+		if (b->beam_glow_frame > 100.0f)
+			b->beam_glow_frame = 0.0f;
+
+		while (b->beam_glow_frame > bwi->beam_glow.total_time)
+			b->beam_glow_frame -= bwi->beam_glow.total_time;
+
+		framenum = fl2i( (b->beam_glow_frame * bwi->beam_glow.num_frames) / bwi->beam_glow.total_time );
+
+		CLAMP(framenum, 0, bwi->beam_glow.num_frames-1);
+	}
+
+	gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.8f * pct);
 
 	// draw 1 bitmap
 	g3_draw_bitmap(&pt, 0, rad, tmap_flags);
@@ -1997,34 +2043,37 @@ void beam_render_muzzle_glow(beam *b)
 void beam_render_all()
 {
 	beam *moveup;	
-	
-	U_offset = U_offset + flFrametime;	//moves the U value of texture coods in beams if desired-Bobboau
+
+	// moves the U value of texture coods in beams if desired-Bobboau
+	static float u_offset = 0.0f;
+	u_offset += flFrametime;
 
 	//don't wrap since it causes the beam to jump	
-//	if(U_offset > 1.0f){
-//		U_offset = U_offset - 1.0f;	//keeps it below 1.0-Bobboau
+//	if(u_offset > 1.0f){
+//		u_offset = u_offset - 1.0f;	//keeps it below 1.0-Bobboau
 //	}
 
 
 	// traverse through all active beams
 	moveup = GET_FIRST(&Beam_used_list);
-	while(moveup != END_OF_LIST(&Beam_used_list)){				
+	while ( moveup != END_OF_LIST(&Beam_used_list) ) {				
 		// each beam type renders a little bit differently
-		if((moveup->warmup_stamp == -1) && (moveup->warmdown_stamp == -1) && !(moveup->flags & BF_SAFETY)){
+		if ( (moveup->warmup_stamp == -1) && (moveup->warmdown_stamp == -1) && !(moveup->flags & BF_SAFETY) ) {
 			// HACK -  if this is the first frame the beam is firing, don't render it
-			if(moveup->life_left >= moveup->life_total - 0.0001f){
-
+			if (moveup->life_left >= (moveup->life_total - 0.0001f)) {
 				moveup = GET_NEXT(moveup);
 				continue;
 			}			
 
 			// render the beam itself
 			Assert(moveup->weapon_info_index >= 0);
-			if(moveup->weapon_info_index < 0){
+
+			if (moveup->weapon_info_index < 0) {
 				moveup = GET_NEXT(moveup);
 				continue;
 			}
-			beam_render(&Weapon_info[moveup->weapon_info_index].b_info, &moveup->last_start, &moveup->last_shot, moveup->shrink);
+
+			beam_render(moveup, u_offset);
 		}
 
 		// render the muzzle glow
