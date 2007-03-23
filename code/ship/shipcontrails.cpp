@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.26 $
- * $Date: 2006-05-27 16:49:05 $
+ * $Revision: 2.27 $
+ * $Date: 2007-03-23 01:50:59 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26  2006/05/27 16:49:05  taylor
+ * comment out some pointless checks which look for not using either D3D or OGL
+ * don't run through ships on level load setting up the sound environment if sound is disabled
+ * minor cleanup
+ *
  * Revision 2.25  2006/02/25 21:47:08  Goober5000
  * spelling
  *
@@ -217,9 +222,9 @@ void ct_ship_delete(ship *shipp)
 // call each frame for processing a ship's contrails
 void ct_ship_process(ship *shipp)
 {
-	if(shipp->ab_info->bitmap != -1){// if it has no bitmap, it has no trails -Bobboau
-		ct_ship_process_ABtrails(shipp);//seems like as good a place as any -Bobboau
-	}
+	// seems like as good a place as any -Bobboau
+	if (shipp->ab_info->texture.bitmap_id != -1)
+		ct_ship_process_ABtrails(shipp);
 
 #ifdef MULTIPLAYER_BETA_BUILD
 	return;
@@ -399,11 +404,10 @@ void ct_ship_process_ABtrails(ship *shipp)
 		return;
 	}
 
-	//if the ship has no afterburner trail bitmap, don't bother with anything
-	if (sip->ABbitmap < 0)
-	{
+	// if the ship has no afterburner trail bitmap, don't bother with anything
+	if (sip->afterburner_trail.bitmap_id < 0)
 		return;
-	}
+
 
 	Assert(objp->instance >= 0);
 	shipp = &Ships[objp->instance];
@@ -459,11 +463,9 @@ void ct_create_ABtrails(ship *shipp)
 	objp = &Objects[shipp->objnum];
 	sip = &Ship_info[shipp->ship_info_index];
 
-	//if the ship has no afterburner trail bitmap, don't bother with anything
-	if (sip->ABbitmap < 0)
-	{
+	// if the ship has no afterburner trail bitmap, don't bother with anything
+	if (sip->afterburner_trail.bitmap_id < 0)
 		return;
-	}
 
 	if(objp->phys_info.flags & PF_AFTERBURNER_ON){//AB trails-Bobboau
 
@@ -508,11 +510,9 @@ void ct_update_ABtrails(ship *shipp)
 	objp = &Objects[shipp->objnum];
 	sip = &Ship_info[shipp->ship_info_index];
 
-	//if the ship has no afterburner trail bitmap, don't bother with anything
-	if (sip->ABbitmap < 0)
-	{
+	// if the ship has no afterburner trail bitmap, don't bother with anything
+	if (sip->afterburner_trail.bitmap_id < 0)
 		return;
-	}
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
 		if(objp->phys_info.flags & PF_AFTERBURNER_ON){//ABtrails
@@ -541,11 +541,9 @@ int ct_has_ABtrails(ship *shipp)
 	int idx;
 	ship_info* sip=&Ship_info[shipp->ship_info_index];
 
-	//if the ship has no afterburner trail bitmap, don't bother with anything
-	if (sip->ABbitmap < 0)
-	{
+	// if the ship has no afterburner trail bitmap, don't bother with anything
+	if (sip->afterburner_trail.bitmap_id < 0)
 		return 0;
-	}
 
 	for(idx=0; idx<MAX_SHIP_CONTRAILS; idx++){
 		if(shipp->ABtrail_ptr[idx] != NULL){
