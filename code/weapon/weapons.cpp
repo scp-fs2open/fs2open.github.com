@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.200  2007/03/22 20:04:04  taylor
+ * little bit of cleanup
+ * set "#Weak" weapons to always get the "player allowed" flag (Mantis #1301)
+ *
  * Revision 2.199  2007/03/22 20:02:46  taylor
  * make use of generic_anim and generic_bitmap where possible
  * bunch of cleanup and little optimizations
@@ -6678,7 +6682,7 @@ void weapon_maybe_spew_particle(object *obj)
 			vm_vec_add(&particle_pos, &obj->pos, &direct);
 
 			if (wip->particle_spew_anim.first_frame < 0)
-				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_SMOKE);
+				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_BITMAP, particle_get_smoke_id());
 			else
 				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_BITMAP, wip->particle_spew_anim.first_frame);
 		}
