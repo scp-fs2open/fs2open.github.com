@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.218 $
- * $Date: 2007-02-25 03:57:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.219 $
+ * $Date: 2007-03-23 06:31:31 $
+ * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.218  2007/02/25 03:57:58  Goober5000
+ * use dynamic memory instead of a static buffer for ship-specific replacement textures
+ *
  * Revision 2.217  2007/02/21 01:44:02  Goober5000
  * remove duplicate model texture replacement
  *
@@ -1790,7 +1793,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 		}
 	}
 
-
 	// wing stuff by Goober5000 ------------------------------------------
 	// the wing name arrays are initialized in ship_level_init
 	if (optional_string("$Starting wing names:"))
@@ -1814,7 +1816,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
 	}
 	// end of wing stuff -------------------------------------------------
-
 
 	// set up the Num_teams variable accoriding to the game_type variable'
 	Num_teams = 1;				// assume 1
@@ -2994,8 +2995,9 @@ int parse_create_object_sub(p_object *p_objp)
 
 	if (p_objp->flags & P_SF_RED_ALERT_STORE_STATUS)
 	{
-		Assert(!(Game_mode & GM_MULTIPLAYER));
-		shipp->flags |= SF_RED_ALERT_STORE_STATUS;
+		if (!(Game_mode & GM_MULTIPLAYER)) {
+			shipp->flags |= SF_RED_ALERT_STORE_STATUS;
+		}
 	}
 
 	if (p_objp->flags & P_KNOSSOS_WARP_IN)
@@ -3060,7 +3062,7 @@ int parse_create_object_sub(p_object *p_objp)
 	// ditto for Kazan
 	if ((shipp->wingnum != -1) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY))
 		shipp->flags2 |= SF2_NAVPOINT_CARRY;
-	
+
 	// if the wing index and wing pos are set for this parse object, set them for the ship.  This
 	// is useful in multiplayer when ships respawn
 	shipp->wing_status_wing_index = p_objp->wing_status_wing_index;
@@ -4465,7 +4467,6 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 		}
 	}
 }
-
 
 p_object *mission_parse_get_parse_object(ushort net_signature)
 {
@@ -7579,7 +7580,7 @@ void mission_eval_departures()
 				shipp->departure_location = Wings[shipp->wingnum].departure_location;
 				shipp->departure_anchor = Wings[shipp->wingnum].departure_anchor;
 				shipp->departure_path_mask = Wings[shipp->wingnum].departure_path_mask;
-
+				
 				mission_do_departure( objp );
 				// don't add to wingp->total_departed here -- this is taken care of in ship code.
 			}
