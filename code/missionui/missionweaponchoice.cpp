@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.78 $
- * $Date: 2007-03-22 20:49:53 $
+ * $Revision: 2.79 $
+ * $Date: 2007-03-23 01:51:57 $
  * $Author: taylor $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2007/03/22 20:49:53  taylor
+ * some generic code cleanup
+ *
  * Revision 2.77  2007/01/07 12:51:30  taylor
  * fix NULL ptr reference when a weapon doesn't have a tech description
  *
@@ -1995,7 +1998,7 @@ void wl_load_icons(int weapon_class)
 		/*
 		if(icon->model_index == -1)
 		{
-			icon->laser_bmap = bm_load(wip->pofbitmap_name);
+			icon->laser_bmap = bm_load(wip->laser_bitmap.filename);
 		}
 		*/
 	}
