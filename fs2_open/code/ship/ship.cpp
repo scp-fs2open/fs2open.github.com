@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.409 $
- * $Date: 2007-03-22 20:45:01 $
+ * $Revision: 2.410 $
+ * $Date: 2007-03-23 01:50:59 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.409  2007/03/22 20:45:01  taylor
+ * cleanup and fix for weapon cycling (Mantis #1298)
+ *
  * Revision 2.408  2007/02/27 01:44:48  Goober5000
  * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
  *
@@ -2371,20 +2374,19 @@ std::vector<ship_type_info> Ship_types;
 
 std::vector<ArmorType> Armor_types;
 
-flag_def_list Man_types[] =
-{
-	{"Bank right",			MT_BANK_RIGHT},
-	{"Bank left",			MT_BANK_LEFT},
-	{"Pitch up",			MT_PITCH_UP},
-	{"Pitch down",			MT_PITCH_DOWN},
-	{"Roll right",			MT_ROLL_RIGHT},
-	{"Roll left",			MT_ROLL_LEFT},
-	{"Slide right",			MT_SLIDE_RIGHT},
-	{"Slide left",			MT_SLIDE_LEFT},
-	{"Slide up",			MT_SLIDE_UP},
-	{"Slide down",			MT_SLIDE_DOWN},
-	{"Forward",				MT_FORWARD},
-	{"Reverse",				MT_REVERSE},
+flag_def_list Man_types[] = {
+	{ "Bank right",		MT_BANK_RIGHT,	0 },
+	{ "Bank left",		MT_BANK_LEFT,	0 },
+	{ "Pitch up",		MT_PITCH_UP,	0 },
+	{ "Pitch down",		MT_PITCH_DOWN,	0 },
+	{ "Roll right",		MT_ROLL_RIGHT,	0 },
+	{ "Roll left",		MT_ROLL_LEFT,	0 },
+	{ "Slide right",	MT_SLIDE_RIGHT,	0 },
+	{ "Slide left",		MT_SLIDE_LEFT,	0 },
+	{ "Slide up",		MT_SLIDE_UP,	0 },
+	{ "Slide down",		MT_SLIDE_DOWN,	0 },
+	{ "Forward",		MT_FORWARD,		0 },
+	{ "Reverse",		MT_REVERSE,		0 }
 };
 
 int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list);
@@ -2400,44 +2402,90 @@ int Num_man_thruster_flags = sizeof(Man_thruster_flags) / sizeof(flag_def_list);
 // from Comm_orders, considering how I redid it :p
 // (and also because we may want to change either
 // the order text or the flag text in the future)
-flag_def_list Player_orders[] =
-{
+flag_def_list Player_orders[] = {
 	// common stuff
-	{ "attack ship",			ATTACK_TARGET_ITEM },
-	{ "disable ship",			DISABLE_TARGET_ITEM },
-	{ "disarm ship",			DISARM_TARGET_ITEM },
-	{ "disable subsys",			DISABLE_SUBSYSTEM_ITEM },
-	{ "guard ship",				PROTECT_TARGET_ITEM },
-	{ "ignore ship",			IGNORE_TARGET_ITEM },
-	{ "form on wing",			FORMATION_ITEM },
-	{ "cover me",				COVER_ME_ITEM },
-	{ "attack any",				ENGAGE_ENEMY_ITEM },
-	{ "depart",					DEPART_ITEM },
+	{ "attack ship",		ATTACK_TARGET_ITEM,		0 },
+	{ "disable ship",		DISABLE_TARGET_ITEM,	0 },
+	{ "disarm ship",		DISARM_TARGET_ITEM,		0 },
+	{ "disable subsys",		DISABLE_SUBSYSTEM_ITEM,	0 },
+	{ "guard ship",			PROTECT_TARGET_ITEM,	0 },
+	{ "ignore ship",		IGNORE_TARGET_ITEM,		0 },
+	{ "form on wing",		FORMATION_ITEM,			0 },
+	{ "cover me",			COVER_ME_ITEM,			0 },
+	{ "attack any",			ENGAGE_ENEMY_ITEM,		0 },
+	{ "depart",				DEPART_ITEM,			0 },
 
 	// transports mostly
-	{ "dock",					CAPTURE_TARGET_ITEM },
+	{ "dock",				CAPTURE_TARGET_ITEM,	0 },
 
 	// support
-	{ "rearm me",				REARM_REPAIR_ME_ITEM },
-	{ "abort rearm",			ABORT_REARM_REPAIR_ITEM },
+	{ "rearm me",			REARM_REPAIR_ME_ITEM,	0 },
+	{ "abort rearm",		ABORT_REARM_REPAIR_ITEM,	0 },
 
 	// extra stuff for support
-	{ "stay near me",			STAY_NEAR_ME_ITEM },
-	{ "stay near ship",			STAY_NEAR_TARGET_ITEM },
-	{ "keep safe dist",			KEEP_SAFE_DIST_ITEM },
+	{ "stay near me",		STAY_NEAR_ME_ITEM,		0 },
+	{ "stay near ship",		STAY_NEAR_TARGET_ITEM,	0 },
+	{ "keep safe dist",		KEEP_SAFE_DIST_ITEM,	0 }
 };
 
 int Num_player_orders = sizeof(Player_orders)/sizeof(flag_def_list);
 
-flag_def_list Subsystem_flags[] = 
-{
-	{ "untargetable",		MSS_FLAG_UNTARGETABLE },
-	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE },
-	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS },
-	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL }
+flag_def_list Subsystem_flags[] = {
+	{ "untargetable",		MSS_FLAG_UNTARGETABLE,		0 },
+	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE,	0 },
+	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS,	0 },
+	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL,	0 }
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
+
+
+// NOTE: a var of:
+//         "0"    means that it's a SIF_* flag
+//         "1"    means that it's a SIF2_* flag
+//         "255"  means that the option is obsolete and a warning should be generated
+flag_def_list Ship_flags[] = {
+	{ "no_collide",					SIF_NO_COLLIDE,				0 },
+	{ "player_ship",				SIF_PLAYER_SHIP,			0 },
+	{ "default_player_ship",		SIF_DEFAULT_PLAYER_SHIP,	0 },
+	{ "repair_rearm",				SIF_SUPPORT,				0 },
+	{ "cargo",						SIF_CARGO,					0 },
+	{ "fighter",					SIF_FIGHTER,				0 },
+	{ "bomber",						SIF_BOMBER,					0 },
+	{ "transport",					SIF_TRANSPORT,				0 },
+	{ "freighter",					SIF_FREIGHTER,				0 },
+	{ "capital",					SIF_CAPITAL,				0 },
+	{ "supercap",					SIF_SUPERCAP,				0 },
+	{ "drydock",					SIF_DRYDOCK,				0 },
+	{ "cruiser",					SIF_CRUISER,				0 },
+	{ "navbuoy",					SIF_NAVBUOY,				0 },
+	{ "sentrygun",					SIF_SENTRYGUN,				0 },
+	{ "escapepod",					SIF_ESCAPEPOD,				0 },
+	{ "stealth",					SIF_STEALTH,				0 },
+	{ "no type",					SIF_NO_SHIP_TYPE,			0 },
+	{ "ship copy",					SIF_SHIP_COPY,				0 },
+	{ "in tech database",			SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M,	0 },
+	{ "in tech database multi",		SIF_IN_TECH_DATABASE_M,		0 },
+	{ "dont collide invisible",		SIF_SHIP_CLASS_DONT_COLLIDE_INVIS,	0 },
+	{ "big damage",					SIF_BIG_DAMAGE,				0 },
+	{ "corvette",					SIF_CORVETTE,				0 },
+	{ "gas miner",					SIF_GAS_MINER,				0 },
+	{ "awacs",						SIF_AWACS,					0 },
+	{ "knossos",					SIF_KNOSSOS_DEVICE,			0 },
+	{ "no_fred",					SIF_NO_FRED,				0 },
+	{ "flash",						SIF2_FLASH,					1 },
+	{ "surface shields",			SIF2_SURFACE_SHIELDS,		1 },
+	{ "show ship",					SIF2_SHOW_SHIP_MODEL,		1 },
+	{ "generate icon",				SIF2_GENERATE_HUD_ICON,		1 },
+	{ "no weapon damage scaling",	SIF2_DISABLE_WEAP_DAMAGE_SCALING,	1 },
+	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
+
+	// to keep things clean, obsolete options go last
+	{ "ballistic primaries",		-1,		255 }
+};
+
+const int Num_ship_flags = sizeof(Ship_flags) / sizeof(flag_def_list);
+
 
 /*
 int Num_player_ship_precedence;				// Number of ship types in Player_ship_precedence
@@ -2687,6 +2735,7 @@ int warptype_match(char *p)
 #define SHIP_MULTITEXT_LENGTH 4096
 char current_ship_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
 
+
 //Writes default info to a ship entry
 //Result: Perfectly valid ship_info entry, just with no name
 //Called from parse_ship so that modular tables are cumulative,
@@ -2845,11 +2894,11 @@ void init_ship_entry(int ship_info_index)
 	sip->afterburner_fuel_capacity = 0.0f;
 	sip->afterburner_burn_rate = 0.0f;
 	sip->afterburner_recover_rate = 0.0f;
-	
-	sip->ABbitmap = -1;	//defalts for no ABtrails-Bobboau
-	sip->ABwidth_factor = 1.0f;
-	sip->ABAlpha_factor = 1.0f;
-	sip->ABlife = 5.0f;
+
+	generic_bitmap_init(&sip->afterburner_trail, NULL);
+	sip->afterburner_trail_width_factor = 1.0f;
+	sip->afterburner_trail_alpha_factor = 1.0f;
+	sip->afterburner_trail_life = 5.0f;
 	
 	sip->cmeasure_type = Default_cmeasure_index;
 	sip->cmeasure_max = 0;
@@ -2890,9 +2939,10 @@ void init_ship_entry(int ship_info_index)
 
 	sip->splodeing_texture = -1;
 	strcpy(sip->splodeing_texture_name, "boom");
-	
-	sip->n_thruster_particles = 0;
-	sip->n_ABthruster_particles = 0;
+
+	sip->normal_thruster_particles.clear();
+	sip->afterburner_thruster_particles.clear();
+
 	memset(&sip->ct_info, 0, sizeof(trail_info) * MAX_SHIP_CONTRAILS);
 	sip->ct_count = 0;
 	
@@ -3755,6 +3805,7 @@ strcpy(parse_error_text, temp_error);
 		{
 			// get ship type from ship flags
 			char *ship_type = ship_strings[i];
+			bool flag_found = false;
 
 			// Goober5000 - in retail FreeSpace, some ship classes were specified differently
 			// in ships.tbl and the ship type array; this patches those differences so that
@@ -3778,77 +3829,20 @@ strcpy(parse_error_text, temp_error);
 				sip->class_type = ship_type_index;
 
 			// check various ship flags
-			if (!stricmp(NOX("no_collide"), ship_strings[i]))
-				sip->flags |= SIF_NO_COLLIDE;
-			else if (!stricmp(NOX("player_ship"), ship_strings[i]))
-				sip->flags |= SIF_PLAYER_SHIP;
-			else if (!stricmp(NOX("default_player_ship"), ship_strings[i]))
-				sip->flags |= SIF_DEFAULT_PLAYER_SHIP;
-			else if ( !stricmp(NOX("repair_rearm"), ship_strings[i]))
-				sip->flags |= SIF_SUPPORT;
-			else if ( !stricmp(NOX("cargo"), ship_strings[i]))
-				sip->flags |= SIF_CARGO;
-			else if ( !stricmp( NOX("fighter"), ship_strings[i]))
-				sip->flags |= SIF_FIGHTER;
-			else if ( !stricmp( NOX("bomber"), ship_strings[i]))
-				sip->flags |= SIF_BOMBER;
-			else if ( !stricmp( NOX("transport"), ship_strings[i]))
-				sip->flags |= SIF_TRANSPORT;
-			else if ( !stricmp( NOX("freighter"), ship_strings[i]))
-				sip->flags |= SIF_FREIGHTER;
-			else if ( !stricmp( NOX("capital"), ship_strings[i]))
-				sip->flags |= SIF_CAPITAL;
-			else if (!stricmp( NOX("supercap"), ship_strings[i]))
-				sip->flags |= SIF_SUPERCAP;
-			else if (!stricmp( NOX("drydock"), ship_strings[i]))
-				sip->flags |= SIF_DRYDOCK;
-			else if ( !stricmp( NOX("cruiser"), ship_strings[i]))
-				sip->flags |= SIF_CRUISER;
-			else if ( !stricmp( NOX("navbuoy"), ship_strings[i]))
-				sip->flags |= SIF_NAVBUOY;
-			else if ( !stricmp( NOX("sentrygun"), ship_strings[i]))
-				sip->flags |= SIF_SENTRYGUN;
-			else if ( !stricmp( NOX("escapepod"), ship_strings[i]))
-				sip->flags |= SIF_ESCAPEPOD;
-			else if ( !stricmp( NOX("stealth"), ship_strings[i]))
-				sip->flags |= SIF_STEALTH;
-			else if ( !stricmp( NOX("no type"), ship_strings[i]))
-				sip->flags |= SIF_NO_SHIP_TYPE;
-			else if ( !stricmp( NOX("ship copy"), ship_strings[i]))
-				sip->flags |= SIF_SHIP_COPY;
-			else if ( !stricmp( NOX("in tech database"), ship_strings[i]))
-				sip->flags |= SIF_IN_TECH_DATABASE | SIF_IN_TECH_DATABASE_M;
-			else if ( !stricmp( NOX("in tech database multi"), ship_strings[i]))
-				sip->flags |= SIF_IN_TECH_DATABASE_M;
-			else if ( !stricmp( NOX("dont collide invisible"), ship_strings[i]))
-				sip->flags |= SIF_SHIP_CLASS_DONT_COLLIDE_INVIS;
-			else if ( !stricmp( NOX("big damage"), ship_strings[i]))
-				sip->flags |= SIF_BIG_DAMAGE;
-			else if ( !stricmp( NOX("corvette"), ship_strings[i]))
-				sip->flags |= SIF_CORVETTE;
-			else if ( !stricmp( NOX("gas miner"), ship_strings[i]))
-				sip->flags |= SIF_GAS_MINER;
-			else if ( !stricmp( NOX("awacs"), ship_strings[i]))
-				sip->flags |= SIF_AWACS;
-			else if ( !stricmp( NOX("knossos"), ship_strings[i]))
-				sip->flags |= SIF_KNOSSOS_DEVICE;
-			else if ( !stricmp( NOX("no_fred"), ship_strings[i]))
-				sip->flags |= SIF_NO_FRED;
-			else if ( !stricmp( NOX("ballistic primaries"), ship_strings[i]))
-				Warning(LOCATION, "Use of 'ballistic primaries' flag for ship '%s' - this flag is no longer needed.", sip->name);
-			else if( !stricmp( NOX("flash"), ship_strings[i]))
-				sip->flags2 |= SIF2_FLASH;
-			else if ( !stricmp( NOX("surface shields"), ship_strings[i]))
-				sip->flags2 |= SIF2_SURFACE_SHIELDS;
-			else if( !stricmp( NOX("show ship"), ship_strings[i]))
-				sip->flags2 |= SIF2_SHOW_SHIP_MODEL;
-			else if( !stricmp( NOX("generate icon"), ship_strings[i]))
-				sip->flags2 |= SIF2_GENERATE_HUD_ICON;
-			else if( !stricmp( NOX("no weapon damage scaling"), ship_strings[i]))
-				sip->flags2 |= SIF2_DISABLE_WEAP_DAMAGE_SCALING;
-			else if( !stricmp( NOX("gun convergence"), ship_strings[i]))
-				sip->flags2 |= SIF2_GUN_CONVERGENCE;
-			else if (ship_type_index < 0)
+			for (int idx = 0; idx < Num_ship_flags; idx++) {
+				if ( !stricmp(Ship_flags[idx].name, ship_strings[i]) ) {
+					flag_found = true;
+
+					if (Ship_flags[idx].var == 255)
+						Warning(LOCATION, "Use of '%s' flag for ship '%s' - this flag is no longer needed.", Ship_flags[idx].name, sip->name);
+					else if (Ship_flags[idx].var == 0)
+						sip->flags |= Ship_flags[idx].def;
+					else if (Ship_flags[idx].var == 1)
+						sip->flags2 |= Ship_flags[idx].def;
+				}
+			}
+
+			if ( !flag_found && (ship_type_index < 0) )
 				Warning(LOCATION, "Bogus string in ship flags: %s\n", ship_strings[i]);
 		}
 
@@ -3902,36 +3896,32 @@ strcpy(parse_error_text, temp_error);
 		Assert(sip->afterburner_fuel_capacity);
 	}
 	
-	if(optional_string("$Trails:"))
-	{//optional values aplyed to ABtrails -Bobboau
-//		mprintf(("ABtrails\n"));
-	//	char bitmap_name[MAX_FILENAME_LEN] = "";
+	if ( optional_string("$Trails:") ) {
 		bool trails_warning = true;
 
-		if(optional_string("+Bitmap:")) {
+		if (optional_string("+Bitmap:") ) {
 			trails_warning = false;
-			stuff_string(sip->ABtrail_bitmap_name, F_NAME, MAX_FILENAME_LEN);
-			sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
+			generic_bitmap_init(&sip->afterburner_trail, NULL);
+			stuff_string(sip->afterburner_trail.filename, F_NAME, MAX_FILENAME_LEN);
 		}
 		
-		if(optional_string("+Width:")) {
+		if ( optional_string("+Width:") ) {
 			trails_warning = false;
-			stuff_float(&sip->ABwidth_factor);
+			stuff_float(&sip->afterburner_trail_width_factor);
 		}
 			
-		if(optional_string("+Alpha:")) {
+		if ( optional_string("+Alpha:") ) {
 			trails_warning = false;
-			stuff_float(&sip->ABAlpha_factor);
+			stuff_float(&sip->afterburner_trail_alpha_factor);
 		}
 			
-		if(optional_string("+Life:")) {
+		if ( optional_string("+Life:") ) {
 			trails_warning = false;
-			stuff_float(&sip->ABlife);
+			stuff_float(&sip->afterburner_trail_life);
 		}
 		
-		if(trails_warning) {
+		if (trails_warning)
 			Warning(LOCATION, "Ship %s entry has $Trails field specified, but no properties given.", sip->name);
-		}
 	}
 
 	if(optional_string("$Countermeasure type:")) {
@@ -4023,17 +4013,15 @@ strcpy(parse_error_text, temp_error);
 	if ( optional_string("$Thruster Bitmap 1:") ) {
 		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 	
-		if ( stricmp(name_tmp, NOX("none")) ) {
+		if ( VALID_FNAME(name_tmp) )
 			generic_anim_init( &sip->thruster_glow_info.normal, name_tmp );
-		}
 	}
 
 	if ( optional_string("$Thruster Bitmap 1a:") ) {
 		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
-		if ( stricmp(name_tmp, NOX("none")) ) {
+		if ( VALID_FNAME(name_tmp) )
 			generic_anim_init( &sip->thruster_glow_info.afterburn, name_tmp );
-		}
 	}
 
 	if ( optional_string("$Thruster01 Radius factor:") ) {
@@ -4043,17 +4031,15 @@ strcpy(parse_error_text, temp_error);
 	if ( optional_string("$Thruster Bitmap 2:") ) {
 		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
-		if ( stricmp(name_tmp, NOX("none")) ) {
+		if ( VALID_FNAME(name_tmp) )
 			generic_bitmap_init( &sip->thruster_secondary_glow_info.normal, name_tmp );
-		}
 	}
 
 	if ( optional_string("$Thruster Bitmap 2a:") ) {
 		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
-		if ( stricmp(name_tmp, NOX("none")) ) {
+		if ( VALID_FNAME(name_tmp) )
 			generic_bitmap_init( &sip->thruster_secondary_glow_info.afterburn, name_tmp );
-		}
 	}
 
 	if ( optional_string("$Thruster02 Radius factor:") ) {
@@ -4072,63 +4058,54 @@ strcpy(parse_error_text, temp_error);
 	if ( optional_string("$Thruster Bitmap 3:") ) {
 		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
-		if ( stricmp(name_tmp, NOX("none")) ) {
+		if ( VALID_FNAME(name_tmp) )
 			generic_bitmap_init( &sip->thruster_tertiary_glow_info.normal, name_tmp );
-		}
 	}
 
 	if ( optional_string("$Thruster Bitmap 3a:") ) {
 		stuff_string( name_tmp, F_NAME, sizeof(name_tmp) );
 
-		if ( stricmp(name_tmp, NOX("none")) ) {
+		if ( VALID_FNAME(name_tmp) )
 			generic_bitmap_init( &sip->thruster_tertiary_glow_info.afterburn, name_tmp );
-		}
 	}
 
 	if ( optional_string("$Thruster03 Radius factor:") ) {
 		stuff_float(&sip->thruster03_glow_rad_factor);
 	}
 
-	while(optional_string("$Thruster Particles:")){
-		thruster_particles* t;
-		if ( optional_string("$Thruster Particle Bitmap:") )
-		{
-			if(sip->n_thruster_particles >= MAX_THRUSTER_PARTICLES) {
-				Warning(LOCATION, "%s has more thruster particles than the max of %d", sip->name, MAX_THRUSTER_PARTICLES);
-				continue;
-			}
-			t = &sip->normal_thruster_particles[sip->n_thruster_particles++];
-		}
-		else if ( optional_string("$Afterburner Particle Bitmap:") )
-		{
-			if(sip->n_ABthruster_particles >= MAX_THRUSTER_PARTICLES) {
-				Warning(LOCATION, "%s has more afterburner thruster particles than the max of %d", sip->name, MAX_THRUSTER_PARTICLES);
-				continue;
-			}
-			t = &sip->afterburner_thruster_particles[sip->n_ABthruster_particles++];
-		}
-		else
-		{
-			Error( LOCATION, "formatting error in the thruster's particle section for ship %s\n", sip->name );
-			break;
-		}
+	while ( optional_string("$Thruster Particles:") ) {
+		bool afterburner = false;
+		thruster_particles tpart;
 
-		stuff_string(t->thruster_particle_bitmap01_name, F_NAME, MAX_FILENAME_LEN);
+		if ( optional_string("$Thruster Particle Bitmap:") )
+			afterburner = false;
+		else if ( optional_string("$Afterburner Particle Bitmap:") )
+			afterburner = true;
+		else
+			Error( LOCATION, "formatting error in the thruster's particle section for ship %s\n", sip->name );
+
+		generic_anim_init(&tpart.thruster_bitmap, NULL);
+		stuff_string(tpart.thruster_bitmap.filename, F_NAME, MAX_FILENAME_LEN);
 
 		required_string("$Min Radius:");
-		stuff_float(&t->min_rad);
+		stuff_float(&tpart.min_rad);
 		
 		required_string("$Max Radius:");
-		stuff_float(&t->max_rad);
+		stuff_float(&tpart.max_rad);
 		
 		required_string("$Min created:");
-		stuff_int(&t->n_low);
+		stuff_int(&tpart.n_low);
 		
 		required_string("$Max created:");
-		stuff_int(&t->n_high);
+		stuff_int(&tpart.n_high);
 		
 		required_string("$Variance:");
-		stuff_float(&t->variance);
+		stuff_float(&tpart.variance);
+
+		if (afterburner)
+			sip->normal_thruster_particles.push_back( tpart );
+		else
+			sip->afterburner_thruster_particles.push_back( tpart );
 	}
 
 	// if the ship is a stealth ship
@@ -4158,18 +4135,14 @@ strcpy(parse_error_text, temp_error);
 		}
 	}
 
-	char trail_name[MAX_FILENAME_LEN];
-	trail_info *ci;
-	while(optional_string("$Trail:"))
-	{
+	while ( optional_string("$Trail:") ) {
 		// this means you've reached the max # of contrails for a ship
-		if (sip->ct_count >= MAX_SHIP_CONTRAILS)
-		{
+		if (sip->ct_count >= MAX_SHIP_CONTRAILS) {
 			Warning(LOCATION, "%s has more contrails than the max of %d", sip->name, MAX_SHIP_CONTRAILS);
 			break;
 		}
 
-		ci = &sip->ct_info[sip->ct_count++];
+		trail_info *ci = &sip->ct_info[sip->ct_count++];
 		
 		required_string("+Offset:");
 		stuff_vector(&ci->pt);
@@ -4193,8 +4166,9 @@ strcpy(parse_error_text, temp_error);
 		stuff_int(&ci->stamp);		
 
 		required_string("+Bitmap:");
-		stuff_string(trail_name, F_NAME, MAX_FILENAME_LEN );
-		ci->bitmap = bm_load(trail_name);
+		stuff_string(name_tmp, F_NAME, NAME_LENGTH);
+		generic_bitmap_init(&ci->texture, name_tmp);
+		generic_bitmap_load(&ci->texture);
 	}
 
 	man_thruster *mtp = NULL;
@@ -5129,10 +5103,10 @@ void ship_init()
 
 	//loadup the cloaking map
 //	CLOAKMAP = bm_load_animation("cloakmap",&CLOAKFRAMES, &CLOAKFPS,1);
-	if (CLOAKMAP == -1)
+/*	if (CLOAKMAP == -1)
 	{
 		CLOAKMAP = bm_load("cloakmap");
-	}
+	}*/
 
 	ship_level_init();	// needed for FRED
 }
@@ -6114,7 +6088,12 @@ std::vector<man_thruster_renderer> Man_thrusters;
 void batch_render_man_thrusters()
 {
 	man_thruster_renderer *mtr;
-	for(uint i = 0; i < Man_thrusters.size(); i++)
+	uint mant_size = Man_thrusters.size();
+
+	if (mant_size == 0)
+		return;
+
+	for(uint i = 0; i < mant_size; i++)
 	{
 		mtr = &Man_thrusters[i];
 		gr_set_bitmap(mtr->bmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
@@ -6144,13 +6123,15 @@ void batch_render_man_thrusters()
 man_thruster_renderer *man_thruster_get_slot(int bmap_frame)
 {
 	man_thruster_renderer *mtr;
-	for(uint mi = 0; mi < Man_thrusters.size(); mi++)
+	uint mant_size = Man_thrusters.size();
+
+	for(uint mi = 0; mi < mant_size; mi++)
 	{
 		mtr = &Man_thrusters[mi];
 		if(mtr->bmap_id == bmap_frame)
 			return mtr;
 	}
-	for(uint mj = 0; mj < Man_thrusters.size(); mj++)
+	for(uint mj = 0; mj < mant_size; mj++)
 	{
 		mtr = &Man_thrusters[mj];
 		if(mtr->bmap_id == -1)
@@ -7750,8 +7731,8 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	{
 		flame_anim = &species->thruster_info.flames.afterburn;		// select afterburner flame
 		glow_anim = &sinfo->thruster_glow_info.afterburn;			// select afterburner glow
-		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.afterburn.bitmap;
-		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.afterburn.bitmap;
+		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.afterburn.bitmap_id;
+		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.afterburn.bitmap_id;
 
 		rate = 1.5f;		// go at 1.5x faster when afterburners on
 	}
@@ -7759,8 +7740,8 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	{
 		flame_anim = &species->thruster_info.flames.afterburn;		// select afterburner flame
 		glow_anim = &sinfo->thruster_glow_info.afterburn;			// select afterburner glow
-		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.afterburn.bitmap;
-		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.afterburn.bitmap;
+		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.afterburn.bitmap_id;
+		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.afterburn.bitmap_id;
 
 		rate = 2.5f;		// go at 2.5x faster when boosters on
 	}
@@ -7768,8 +7749,8 @@ void ship_do_thruster_frame( ship *shipp, object *objp, float frametime )
 	{
 		flame_anim = &species->thruster_info.flames.normal;			// select normal flame
 		glow_anim = &sinfo->thruster_glow_info.normal;				// select normal glow
-		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.normal.bitmap;
-		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.normal.bitmap;
+		secondary_glow_bitmap = sinfo->thruster_secondary_glow_info.normal.bitmap_id;
+		tertiary_glow_bitmap = sinfo->thruster_tertiary_glow_info.normal.bitmap_id;
 
 		// If thrust at 0, go at half as fast, full thrust; full framerate
 		// so set rate from 0.5 to 1.0, depending on thrust from 0 to 1
@@ -8918,19 +8899,19 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 					continue;// only make ab trails for thrusters that are pointing backwards
 
 				ci->pt = bank->points[j].pnt;//offset
-				ci->w_start = bank->points[j].radius * sip->ABwidth_factor;	//width * table loaded width factor
+				ci->w_start = bank->points[j].radius * sip->afterburner_trail_width_factor;	// width * table loaded width factor
 	
 				ci->w_end = 0.05f;//end width
 	
-				ci->a_start = 1.0f * sip->ABAlpha_factor;	//start alpha  * table loaded alpha factor
+				ci->a_start = 1.0f * sip->afterburner_trail_alpha_factor;	// start alpha  * table loaded alpha factor
 	
 				ci->a_end = 0.0f;//end alpha
 	
-				ci->max_life = sip->ABlife;	// table loaded max life
+				ci->max_life = sip->afterburner_trail_life;	// table loaded max life
 	
 				ci->stamp = 60;	//spew time???	
 
-				ci->bitmap = sip->ABbitmap; //table loaded bitmap used on this ships burner trails
+				ci->texture.bitmap_id = sip->afterburner_trail.bitmap_id; // table loaded bitmap used on this ships burner trails
 				nprintf(("AB TRAIL", "AB trail point #%d made for '%s'\n", shipp->ab_count, shipp->ship_name));
 				shipp->ab_count++;
 				Assert(MAX_SHIP_CONTRAILS > shipp->ab_count);
@@ -9138,7 +9119,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	//======================================================
 
 	// Bobboau's thruster stuff again
-	sip->ABbitmap = bm_load(sip->ABtrail_bitmap_name);
+	if (sip->afterburner_trail.bitmap_id < 0)
+		generic_bitmap_load(&sip->afterburner_trail);
 
 	sp->ab_count = 0;
 	if (sip->flags & SIF_AFTERBURNER)
@@ -9160,22 +9142,22 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 					continue;
 
 				ci->pt = pm->thrusters[h].points[j].pnt;	//offset
-				ci->w_start = pm->thrusters[h].points[j].radius * sip->ABwidth_factor;	//width * table loaded width factor
+				ci->w_start = pm->thrusters[h].points[j].radius * sip->afterburner_trail_width_factor;	// width * table loaded width factor
 	
 				ci->w_end = 0.05f;//end width
 	
-				ci->a_start = 1.0f * sip->ABAlpha_factor;//start alpha  * table loaded alpha factor
+				ci->a_start = 1.0f * sip->afterburner_trail_alpha_factor;	// start alpha  * table loaded alpha factor
 	
 				ci->a_end = 0.0f;//end alpha
 	
-				ci->max_life = sip->ABlife;// table loaded max life
+				ci->max_life = sip->afterburner_trail_life;	// table loaded max life
 	
 				ci->stamp = 60;	//spew time???	
 
-			ci->bitmap = sip->ABbitmap; //table loaded bitmap used on this ships burner trails
-			nprintf(("AB TRAIL", "AB trail point #%d made for '%s'\n", sp->ab_count, sp->ship_name));
-			sp->ab_count++;
-			Assert(MAX_SHIP_CONTRAILS > sp->ab_count);
+				ci->texture.bitmap_id = sip->afterburner_trail.bitmap_id; // table loaded bitmap used on this ships burner trails
+				nprintf(("AB TRAIL", "AB trail point #%d made for '%s'\n", sp->ab_count, sp->ship_name));
+				sp->ab_count++;
+				Assert(MAX_SHIP_CONTRAILS > sp->ab_count);
 			}
 		}
 	}//end AB trails -Bobboau
@@ -9467,7 +9449,7 @@ void ship_fire_tracer(int weapon_objnum)
 	pinfo.lifetime = wip->lifetime;
 	pinfo.rad = t_rad;
 	pinfo.type = PARTICLE_BITMAP;
-	pinfo.optional_data = wip->laser_bitmap;
+	pinfo.optional_data = wip->laser_bitmap.first_frame;
 	pinfo.tracer_length = t_len;
 	pinfo.reverse = 0;
 	pinfo.attached_objnum = -1;
@@ -11357,7 +11339,8 @@ int ship_type_name_lookup(char *name)
 	}
 */
 	//Look through Ship_types array
-	for(uint idx=0; idx < Ship_types.size(); idx++){
+	uint max_size = Ship_types.size();
+	for(uint idx=0; idx < max_size; idx++){
 		if(!stricmp(name, Ship_types[idx].name)){
 			return idx;
 		}
@@ -12576,9 +12559,6 @@ void ship_close()
 //
 void ship_assign_sound(ship *sp)
 {
-#ifdef NO_SOUND
-	return;
-#endif
 	ship_info	*sip;	
 	object *objp;
 	vec3d engine_pos;
@@ -14864,7 +14844,7 @@ void ship_page_in_model_textures(int modelnum, int ship_type)
 
 	for (i = 0; i < pm->n_textures; i++ )
 	{
-		int bitmap_num = pm->maps[i].base_map.original_texture;
+		int bitmap_num = pm->maps[i].base_map.texture;
 		if (bitmap_num >= 0)
 		{
 			// transparent?
@@ -14878,20 +14858,20 @@ void ship_page_in_model_textures(int modelnum, int ship_type)
 			}
 		}
 
-		bitmap_num = pm->maps[i].glow_map.original_texture;
+		bitmap_num = pm->maps[i].glow_map.texture;
 		if (bitmap_num >= 0)
 		{
 			bm_page_in_texture(bitmap_num);
 		}
 
-		bitmap_num = pm->maps[i].spec_map.original_texture;
+		bitmap_num = pm->maps[i].spec_map.texture;
 		if (bitmap_num >= 0)
 		{
 			bm_page_in_texture(bitmap_num);
 		}
 
 #ifdef BUMPMAPPING
-		bitmap_num = pm->maps[i].bump_map.original_texture;
+		bitmap_num = pm->maps[i].bump_map.texture;
 		if (bitmap_num >= 0)
 		{
 			bm_page_in_texture(bitmap_num);
@@ -14916,7 +14896,8 @@ void ship_page_in_model_textures(int modelnum, int ship_type)
 	sip = &Ship_info[ship_type];
 
 	// afterburner
-	bm_page_in_texture(sip->ABbitmap);
+	if ( !generic_bitmap_load(&sip->afterburner_trail) )
+		bm_page_in_texture(sip->afterburner_trail.bitmap_id);
 
 	// Bobboau's thruster bitmaps
 	// the first set has to be loaded a special way
@@ -14928,35 +14909,32 @@ void ship_page_in_model_textures(int modelnum, int ship_type)
 
 	// everything else is loaded normally
 	if ( !generic_bitmap_load(&sip->thruster_secondary_glow_info.normal) )
-		bm_page_in_texture(sip->thruster_secondary_glow_info.normal.bitmap);
+		bm_page_in_texture(sip->thruster_secondary_glow_info.normal.bitmap_id);
 
 	if ( !generic_bitmap_load(&sip->thruster_secondary_glow_info.afterburn) )
-		bm_page_in_texture(sip->thruster_secondary_glow_info.afterburn.bitmap);
+		bm_page_in_texture(sip->thruster_secondary_glow_info.afterburn.bitmap_id);
 
 	if ( !generic_bitmap_load(&sip->thruster_tertiary_glow_info.normal) )
-		bm_page_in_texture(sip->thruster_tertiary_glow_info.normal.bitmap);
+		bm_page_in_texture(sip->thruster_tertiary_glow_info.normal.bitmap_id);
 
 	if ( !generic_bitmap_load(&sip->thruster_tertiary_glow_info.afterburn) )
-		bm_page_in_texture(sip->thruster_tertiary_glow_info.afterburn.bitmap);
+		bm_page_in_texture(sip->thruster_tertiary_glow_info.afterburn.bitmap_id);
  
-
 	// splodeing bitmap
-	if ( strcmp(sip->splodeing_texture_name, "none") ) {
+	if ( VALID_FNAME(sip->splodeing_texture_name) ) {
 		sip->splodeing_texture = bm_load(sip->splodeing_texture_name);
 		bm_page_in_texture(sip->splodeing_texture);
 	}
 
 	// thruster/particle bitmaps
-	for (i = 0; i<sip->n_thruster_particles; i++) {
-		if ( strcmp(sip->normal_thruster_particles[i].thruster_particle_bitmap01_name, "none") ) {
-			sip->normal_thruster_particles[i].thruster_particle_bitmap01 = bm_load_animation(sip->normal_thruster_particles[i].thruster_particle_bitmap01_name, &sip->normal_thruster_particles[i].thruster_particle_bitmap01_nframes, NULL, 1);
-			bm_page_in_texture(sip->normal_thruster_particles[i].thruster_particle_bitmap01, sip->normal_thruster_particles[i].thruster_particle_bitmap01_nframes);
-		}
+	for (i = 0; i < (int)sip->normal_thruster_particles.size(); i++) {
+		generic_anim_load(&sip->normal_thruster_particles[i].thruster_bitmap);
+		bm_page_in_texture(sip->normal_thruster_particles[i].thruster_bitmap.first_frame);
+	}
 
-		if ( strcmp(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_name, "none") ) {
-			sip->afterburner_thruster_particles[i].thruster_particle_bitmap01 = bm_load_animation(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_name, &sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_nframes, NULL, 1);
-			bm_page_in_texture(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01, sip->afterburner_thruster_particles[i].thruster_particle_bitmap01_nframes);
-		}
+	for (i = 0; i < (int)sip->afterburner_thruster_particles.size(); i++) {
+		generic_anim_load(&sip->afterburner_thruster_particles[i].thruster_bitmap);
+		bm_page_in_texture(sip->afterburner_thruster_particles[i].thruster_bitmap.first_frame);
 	}
 }
 
@@ -15021,49 +14999,41 @@ void ship_page_out_model_textures(int modelnum, int ship_index)
 	sip = &Ship_info[ship_index];
 
 	// afterburner
-	if (sip->ABbitmap >= 0) {
-		bm_page_out(sip->ABbitmap);
-	}
+	if (sip->afterburner_trail.bitmap_id >= 0)
+		bm_page_out(sip->afterburner_trail.bitmap_id);
 
 	// Bobboau's thruster bitmaps
-	if (sip->thruster_glow_info.normal.first_frame >= 0) {
+	if (sip->thruster_glow_info.normal.first_frame >= 0)
 		bm_page_out(sip->thruster_glow_info.normal.first_frame);
-	}
 
-	if (sip->thruster_glow_info.afterburn.first_frame >= 0) {
+	if (sip->thruster_glow_info.afterburn.first_frame >= 0)
 		bm_page_out(sip->thruster_glow_info.afterburn.first_frame);
-	}
 
-	if (sip->thruster_secondary_glow_info.normal.bitmap >= 0) {
-		bm_page_out(sip->thruster_secondary_glow_info.normal.bitmap);
-	}
+	if (sip->thruster_secondary_glow_info.normal.bitmap_id >= 0)
+		bm_page_out(sip->thruster_secondary_glow_info.normal.bitmap_id);
 
-	if (sip->thruster_secondary_glow_info.afterburn.bitmap >= 0) {
-		bm_page_out(sip->thruster_secondary_glow_info.afterburn.bitmap);
-	}
+	if (sip->thruster_secondary_glow_info.afterburn.bitmap_id >= 0)
+		bm_page_out(sip->thruster_secondary_glow_info.afterburn.bitmap_id);
 
-	if (sip->thruster_tertiary_glow_info.normal.bitmap >= 0) {
-		bm_page_out(sip->thruster_tertiary_glow_info.normal.bitmap);
-	}
+	if (sip->thruster_tertiary_glow_info.normal.bitmap_id >= 0)
+		bm_page_out(sip->thruster_tertiary_glow_info.normal.bitmap_id);
 
-	if (sip->thruster_tertiary_glow_info.afterburn.bitmap >= 0) {
-		bm_page_out(sip->thruster_tertiary_glow_info.afterburn.bitmap);
-	}
+	if (sip->thruster_tertiary_glow_info.afterburn.bitmap_id >= 0)
+		bm_page_out(sip->thruster_tertiary_glow_info.afterburn.bitmap_id);
 
 	// slodeing bitmap
-	if (sip->splodeing_texture >= 0) {
+	if (sip->splodeing_texture >= 0)
 		bm_page_out(sip->splodeing_texture);
-	}
 
 	// thruster/particle bitmaps
-	for (i = 0; i<sip->n_thruster_particles; i++) {
-		if (sip->normal_thruster_particles[i].thruster_particle_bitmap01 >= 0) {
-			bm_page_out(sip->normal_thruster_particles[i].thruster_particle_bitmap01);
-		}
+	for (i = 0; i < (int)sip->normal_thruster_particles.size(); i++) {
+		if (sip->normal_thruster_particles[i].thruster_bitmap.first_frame >= 0)
+			bm_page_out(sip->normal_thruster_particles[i].thruster_bitmap.first_frame);
+	}
 
-		if (sip->afterburner_thruster_particles[i].thruster_particle_bitmap01 >= 0) {
-			bm_page_out(sip->afterburner_thruster_particles[i].thruster_particle_bitmap01);
-		}
+	for (i = 0; i < (int)sip->afterburner_thruster_particles.size(); i++) {
+		if (sip->afterburner_thruster_particles[i].thruster_bitmap.first_frame >= 0)
+			bm_page_out(sip->afterburner_thruster_particles[i].thruster_bitmap.first_frame);
 	}
 }
 
