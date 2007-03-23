@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.30 $
- * $Date: 2007-02-25 03:58:06 $
- * $Author: Goober5000 $
+ * $Revision: 2.178.2.31 $
+ * $Date: 2007-03-23 06:25:31 $
+ * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.30  2007/02/25 03:58:06  Goober5000
+ * use dynamic memory instead of a static buffer for ship-specific replacement textures
+ *
  * Revision 2.178.2.29  2007/02/21 01:43:32  Goober5000
  * remove duplicate model texture replacement
  *
@@ -2902,8 +2905,9 @@ int parse_create_object_sub(p_object *p_objp)
 
 	if (p_objp->flags & P_SF_RED_ALERT_STORE_STATUS)
 	{
-		Assert(!(Game_mode & GM_MULTIPLAYER));
-		shipp->flags |= SF_RED_ALERT_STORE_STATUS;
+		if (!(Game_mode & GM_MULTIPLAYER)) {
+			shipp->flags |= SF_RED_ALERT_STORE_STATUS;
+		}
 	}
 
 	if (p_objp->flags & P_KNOSSOS_WARP_IN)
