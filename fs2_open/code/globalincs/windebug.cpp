@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.38.2.4 $
- * $Date: 2007-04-03 01:39:31 $
+ * $Revision: 2.38.2.5 $
+ * $Date: 2007-04-03 02:19:26 $
  * $Author: Goober5000 $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38.2.4  2007/04/03 01:39:31  Goober5000
+ * fixed up some error messages
+ *
  * Revision 2.38.2.3  2006/12/07 18:04:03  taylor
  * clean up warning code for Windows
  * handle messagebox popups better (until I done with even cooler code for handling that)
@@ -1063,7 +1066,7 @@ void LuaError(struct lua_State *L, char *format, ...)
 	*/
 	
 	//filename = strrchr(filename, '\\')+1;
-	//sprintf(AssertText2,"LuaError: %s\r\nFile:%s\r\nLine: %d\r\n", AssertText1, filename, line );
+	//sprintf(AssertText2,"LuaError: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line );
 
 	dumpBuffer.Clear();
 	//WMC - if format is set to NULL, assume this is acting as an
@@ -1146,7 +1149,7 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 	va_end(args);
 
 	filename = strrchr(filename, '\\')+1;
-	sprintf(AssertText2, "Error: %s\r\nFile:%s\r\nLine: %d\r\n", AssertText1, filename, line);
+	sprintf(AssertText2, "Error: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line);
 
 	Messagebox_active = true;
 
@@ -1202,7 +1205,7 @@ void _cdecl Warning( char *filename, int line, char *format, ... )
 	va_end(args);
 
 	filename = strrchr(filename, '\\')+1;
-	sprintf(AssertText2, "Warning: %s\r\nFile:%s\r\nLine: %d\r\n", AssertText1, filename, line );
+	sprintf(AssertText2, "Warning: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line );
 
 	Messagebox_active = true;
 
