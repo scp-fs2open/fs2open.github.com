@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.52 $
- * $Date: 2007-03-22 20:35:19 $
- * $Author: taylor $
+ * $Revision: 2.53 $
+ * $Date: 2007-04-03 01:39:29 $
+ * $Author: Goober5000 $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2007/03/22 20:35:19  taylor
+ * be sure to page in textures for change ship class sexp preload
+ * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
+ * make event music keep extension if it exists, so that the special data will be accurate
+ * bits of cleanup from old MS code that we don't need
+ *
  * Revision 2.51  2007/02/10 00:18:22  taylor
  * remove NO_SOUND
  *
@@ -1109,7 +1115,12 @@ void main_hall_init(int main_hall_num)
 	// load the mask
 	Main_hall_mask = bm_load(Main_hall->mask);
 	if (Main_hall_mask < 0) {
-		Error(LOCATION,"Could not load in main hall mask '%s'!\n\n(This error most likely means that you are missing required 1024x768 interface art.)", Main_hall->mask);
+		nprintf(("General","WARNING! Couldn't load main hall background mask %s\n", Main_hall->mask));
+		if (gr_screen.res == 0) {
+			Error(LOCATION,"Could not load in main hall mask '%s'!\n\n(This error most likely means that you are missing required 640x480 interface art.)", Main_hall->mask);
+		} else {
+			Error(LOCATION,"Could not load in main hall mask '%s'!\n\n(This error most likely means that you are missing required 1024x768 interface art.)", Main_hall->mask);
+		}
 	} else {
 		// get a pointer to bitmap by using bm_lock(), so we can feed it to he snazzy menu system
 		Main_hall_mask_bitmap = bm_lock(Main_hall_mask, 8, BMP_AABITMAP);
