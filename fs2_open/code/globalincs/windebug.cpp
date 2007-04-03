@@ -9,13 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.38.2.3 $
- * $Date: 2006-12-07 18:04:03 $
- * $Author: taylor $
+ * $Revision: 2.38.2.4 $
+ * $Date: 2007-04-03 01:39:31 $
+ * $Author: Goober5000 $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38.2.3  2006/12/07 18:04:03  taylor
+ * clean up warning code for Windows
+ * handle messagebox popups better (until I done with even cooler code for handling that)
+ * cleanup window state code a bit, and deal with activation and cursor handling better
+ * handle WM_ERASEBKGND msg ourselves, prevents some flickering issues and gets rid of the need to self-paint the window to clear it
+ * slightly better Win9x/WinME compatibility for the main window
+ *
  * Revision 2.38.2.2  2006/09/09 04:07:21  taylor
  * fix for vanishing FRED2 cursor (Mantis bug #997), plus a little cleanup
  *
@@ -1010,7 +1017,8 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 
 	gr_activate(0);
 
-	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", text, filename, linenum );
+	filename = strrchr(filename, '\\')+1;
+	sprintf( AssertText1, "Assert: %s\r\nFile: %s\r\nLine: %d\r\n", text, filename, linenum );
 
 #ifdef SHOW_CALL_STACK
 	dumpBuffer.Clear();
@@ -1054,7 +1062,8 @@ void LuaError(struct lua_State *L, char *format, ...)
 	va_end(args);
 	*/
 	
-	//sprintf(AssertText2,"LuaError: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line );
+	//filename = strrchr(filename, '\\')+1;
+	//sprintf(AssertText2,"LuaError: %s\r\nFile:%s\r\nLine: %d\r\n", AssertText1, filename, line );
 
 	dumpBuffer.Clear();
 	//WMC - if format is set to NULL, assume this is acting as an
@@ -1136,7 +1145,8 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 	vsprintf(AssertText1, format, args);
 	va_end(args);
 
-	sprintf(AssertText2, "Error: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line);
+	filename = strrchr(filename, '\\')+1;
+	sprintf(AssertText2, "Error: %s\r\nFile:%s\r\nLine: %d\r\n", AssertText1, filename, line);
 
 	Messagebox_active = true;
 
@@ -1191,7 +1201,8 @@ void _cdecl Warning( char *filename, int line, char *format, ... )
 	vsprintf(AssertText1, format, args);
 	va_end(args);
 
-	sprintf(AssertText2, "Warning: %s\r\nFile:%s\r\nLine: %d\r\n[This filename points to the location of a file on the computer that built this executable]", AssertText1, filename, line );
+	filename = strrchr(filename, '\\')+1;
+	sprintf(AssertText2, "Warning: %s\r\nFile:%s\r\nLine: %d\r\n", AssertText1, filename, line );
 
 	Messagebox_active = true;
 
