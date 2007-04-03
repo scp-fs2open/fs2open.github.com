@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelDiff.cpp $
- * $Revision: 2.2 $
- * $Date: 2007-02-26 04:47:52 $
+ * $Revision: 2.3 $
+ * $Date: 2007-04-03 00:59:09 $
  * $Author: Goober5000 $
  *
  * Stuff.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.2  2007/02/26 04:47:52  Goober5000
+ * small bugfix
+ *
  * Revision 2.1  2007/02/26 04:30:48  Goober5000
  * add model compare capability (currently only via debug console)
  *
@@ -869,18 +872,18 @@ void diff(char *name, T array1[], T array2[], int size1, int size2)
 		{
 			if (!equals(&array1[i], &array2[i]))
 			{
-				xprintf("%d:", i);
+				xprintf("%d:||%d:", i, i);
 				diff(NULL, &array1[i], &array2[i]);
 			}
 		}
 		else if (i < size1)
 		{
-			xprintf("%d:", i);
+			xprintf("%d:||", i);
 			diff(NULL, &array1[i], NULL);
 		}
 		else if (i < size2)
 		{
-			xprintf("%d:", i);
+			xprintf("||%d:", i);
 			diff(NULL, NULL, &array2[i]);
 		}
 	}
