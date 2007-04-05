@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68.2.7 $
- * $Date: 2007-03-07 17:46:48 $
+ * $Revision: 2.68.2.8 $
+ * $Date: 2007-04-05 16:29:25 $
  * $Author: karajorma $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68.2.7  2007/03/07 17:46:48  karajorma
+ * It's perfectly legal to press the Target Target's Attacker key with no target. We should just play a failed sound instead.
+ *
  * Revision 2.68.2.6  2007/02/20 04:19:22  Goober5000
  * the great big duplicate model removal commit
  *
@@ -3177,6 +3180,9 @@ int button_function(int n)
 			} else if (!ship_navigation_ok_to_warp(Player_ship)) {
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 				HUD_printf(XSTR("Navigation failure.  Cannot engage subspace drive.", -1));
+			} else if (Player_obj != NULL && object_get_gliding(Player_obj)) {
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+				HUD_printf(XSTR("Cannot engage subspace drive while gliding.", -1));			
 			} else {
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START );
 			}			
