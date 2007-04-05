@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.13 $
- * $Date: 2007-02-20 04:19:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.87.2.14 $
+ * $Date: 2007-04-05 16:25:58 $
+ * $Author: karajorma $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.13  2007/02/20 04:19:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.87.2.12  2007/02/12 01:04:50  taylor
  * make gr_create_shader() use ubyte's instead of float's, saves us the more expensive conversions since we already convert to ubyte anyway
  *
@@ -3762,6 +3765,11 @@ void hud_show_message_sender()
 		return;
 	}
 
+	// Karajorma - If we've gone to all the trouble to make our friendly ships stealthed they shouldn't then give away 
+	// their position cause they're feeling chatty
+	if ( Ships[Message_shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS ) {
+		return;
+	}
 	Assert ( targetp->instance >=0 && targetp->instance < MAX_SHIPS );
 	target_shipp = &Ships[Message_shipnum];
 
