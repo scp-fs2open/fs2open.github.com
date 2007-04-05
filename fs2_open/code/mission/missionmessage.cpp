@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.52.2.7 $
- * $Date: 2007-03-21 20:54:25 $
+ * $Revision: 2.52.2.8 $
+ * $Date: 2007-04-05 16:33:25 $
  * $Author: karajorma $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52.2.7  2007/03/21 20:54:25  karajorma
+ * Bump the number of debriefing stages.
+ * Fix an annoying (and erroneous) warning in the campaign editor.
+ *
  * Revision 2.52.2.6  2007/02/11 09:07:33  taylor
  * little bit of debug message cleanup
  * don't bother dealing with message wav file if sound is disabled
@@ -2269,11 +2273,13 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		return;
 	} 
 
-	// Karajorma - the game should assert if a silenced ship gets this far
-	Assert (!(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES));
+	if (shipp) {
+		// Karajorma - the game should assert if a silenced ship gets this far
+		if (shipp->flags2 & SF2_NO_BUILTIN_MESSAGES) {
+			Int3();
+		}
 
-	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
-	if ( shipp ) {
+		// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
 		if ( shipp->persona_index == -1 ){
 			shipp->persona_index = message_get_persona( shipp );
 		}
