@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72.2.18 $
- * $Date: 2007-02-20 04:19:09 $
- * $Author: Goober5000 $
+ * $Revision: 1.72.2.19 $
+ * $Date: 2007-04-05 15:58:00 $
+ * $Author: karajorma $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72.2.18  2007/02/20 04:19:09  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 1.72.2.17  2007/02/11 09:39:08  taylor
  * some minor performance improvements
  * remove NO_SOUND
@@ -15229,18 +15232,23 @@ void process_friendly_hit_message( int message, object *objp )
 		return;
 	}
 
-	// check if objp is a cargo contianer -- if so, then find a new ship to send the message
+	// check if objp is a fighter/bomber -- if not, then find a new ship to send the message
 	index = objp->instance;
 	if ( !(Ship_info[Ships[objp->instance].ship_info_index].flags & (SIF_FIGHTER|SIF_BOMBER)) ){
 		index = -1;
 	}
 
-	// if the message is "oops" (the don't hit me message), always make come from Terran command
-	if ( message == MESSAGE_OOPS ){
+	// If the ship can't send messages pick someone else
+	if (Ships[objp->instance].flags2 & SF2_NO_BUILTIN_MESSAGES) {
 		index = -1;
 	}
 
-	if (( index >= 0 ) && !(Ships[index].flags2 & SF2_NO_BUILTIN_MESSAGES))
+	// Karajorma - pick a random ship to send Command messages if command is silenced. 
+	if (index < 0 && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ) {
+		index = ship_get_random_player_wing_ship( SHIP_GET_UNSILENCED );
+	}
+
+	if ( index >= 0 ) 
 	{
 		message_send_builtin_to_player( message, &Ships[index], MESSAGE_PRIORITY_HIGH, MESSAGE_TIME_ANYTIME, 0, 0, -1, -1 );
 	} else {
