@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.100 $
- * $Date: 2007-02-20 04:20:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.101 $
+ * $Date: 2007-04-06 13:31:38 $
+ * $Author: karajorma $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2007/02/20 04:20:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.99  2007/02/11 09:20:00  taylor
  * little bit of cleanup
  * more fixage for hidden jumpnodes (Mantis #1149)
@@ -3768,6 +3771,11 @@ void hud_show_message_sender()
 		return;
 	}
 
+	// Karajorma - If we've gone to all the trouble to make our friendly ships stealthed they shouldn't then give away 
+	// their position cause they're feeling chatty
+	if ( Ships[Message_shipnum].flags2 & SF2_FRIENDLY_STEALTH_INVIS ) {
+		return;
+	}
 	Assert ( targetp->instance >=0 && targetp->instance < MAX_SHIPS );
 	target_shipp = &Ships[Message_shipnum];
 
