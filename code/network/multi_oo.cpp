@@ -1808,6 +1808,7 @@ void multi_oo_display()
 // low object update datarate limit
 #define OO_LIMIT_LOW				2000
 #define OO_LIMIT_MED				4000
+#define OO_LIMIT_HIGH				100000000
 
 // timestamp for sending control info (movement only - we'll send button info all the time)
 #define OO_CIRATE					67					// 15x a second
@@ -1979,7 +1980,7 @@ int multi_oo_rate_exceeded(net_player *pl)
 
 	// high update level - super high datarate
 	case OBJ_UPDATE_HIGH:
-		rate_compare = 100000000;
+		rate_compare = OO_LIMIT_HIGH;
 		break;
 
 	// LAN - no rate max

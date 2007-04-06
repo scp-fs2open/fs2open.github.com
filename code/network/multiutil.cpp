@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.49 $
- * $Date: 2006-09-24 22:55:17 $
- * $Author: taylor $
+ * $Revision: 2.50 $
+ * $Date: 2007-04-06 13:24:32 $
+ * $Author: karajorma $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2006/09/24 22:55:17  taylor
+ * more standalone server fixes:
+ *  - add some basic bmpman functionality to grstub, since it needs to do something at least
+ *  - add missing gr_* function ptrs to grstrub
+ *  - (re-)enable radar and hud setup functions that used to crash (problems are fixed now)
+ *  - deal with default pilot file properly (also caused a bmpman headache)
+ *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
+ *
  * Revision 2.48  2006/09/24 13:32:47  taylor
  * move FS2NetD connection checks to *after* it tries to connect ;)  (Mantis bug #1065)
  *
@@ -2530,6 +2538,12 @@ void multi_warpout_all_players()
 	else {
 		// turn off collision detection for my ship
 		obj_set_flags(Player_obj, Player_obj->flags & (~OF_COLLIDES) );
+
+		// turn off gliding too or ships can't get upt to speed
+		if(object_get_gliding(Player_obj)) {
+			object_set_gliding(Player_obj, false);
+		}
+
 		gameseq_post_event(GS_EVENT_PLAYER_WARPOUT_START_FORCED);				
 	}
 }
