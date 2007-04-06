@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.307 $
- * $Date: 2007-03-22 22:14:56 $
- * $Author: taylor $
+ * $Revision: 2.308 $
+ * $Date: 2007-04-06 13:21:18 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.307  2007/03/22 22:14:56  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
  * Revision 2.306  2007/03/22 20:35:20  taylor
  * be sure to page in textures for change ship class sexp preload
  * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
@@ -11693,6 +11696,7 @@ int sexp_order(int n)
 void sexp_reset_orders (int n)
 {
 	memset(Squadmsg_history, 0, sizeof(squadmsg_history) * SQUADMSG_HISTORY_MAX);
+	squadmsg_history_index = 0; 
 }
 
 int sexp_waypoint_missed()
@@ -19731,7 +19735,8 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_DISTANCE, "Distance (Status operator)\r\n"
 		"\tReturns the distance between two objects.  These objects can be either a ship, "
-		"a wing, or a waypoint.\r\n\r\n"
+		"a wing, or a waypoint.\r\n"
+		"When a wing or team is given (for either argument) the answer will be the shortest distance. \r\n\r\n"
 		"Returns a numeric value.  Takes 2 arguments...\r\n"
 		"\t1:\tThe name of one of the objects.\r\n"
 		"\t2:\tThe name of the other object." },
