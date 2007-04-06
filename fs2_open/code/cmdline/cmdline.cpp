@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.11 $
- * $Date: 2007-03-22 20:55:36 $
- * $Author: taylor $
+ * $Revision: 2.140.2.12 $
+ * $Date: 2007-04-06 12:55:36 $
+ * $Author: karajorma $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.11  2007/03/22 20:55:36  taylor
+ * forgot to remove -jpgtga from Launcher options previously
+ * get rid of -fixbugs and -nocrash crap
+ *
  * Revision 2.140.2.10  2007/02/11 09:24:08  taylor
  * remove -pcx32 and -jpgtga
  *
@@ -1166,12 +1170,14 @@ cmdline_parm ingamejoin_arg("-ingame_join", NULL);	// Cmdline_ingamejoin
 cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL);	// Cmdline_mpnoreturn  -- Removes 'Return to Flight Deck' in respawn dialog -C
 cmdline_parm MissionCRCs("-missioncrcs", NULL);		// Cmdline_SpewMission_CRCs
 cmdline_parm TableCRCs("-tablecrcs", NULL);			// Cmdline_SpewTable_CRCs
+cmdline_parm objupd_arg("-cap_object_update", NULL);
 
 char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
 int Cmdline_ingamejoin = 0;
 int Cmdline_mpnoreturn = 0;
 int Cmdline_SpewMission_CRCs = 0; // Kazan for making valid mission lists
 int Cmdline_SpewTable_CRCs = 0;
+int Cmdline_objupd = 3;		// client object updates on LAN by default
 
 // Troubleshooting
 cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys", NULL);	// Cmdline_d3d_lesstmem
@@ -1753,6 +1759,19 @@ bool SetCmdlineParams()
 	// is this a standalone server??
 	if (standalone_arg.found()) {
 		Is_standalone = 1;
+	}
+
+	// object update control
+	if(objupd_arg.found()){
+		Cmdline_objupd = objupd_arg.get_int();
+		if (Cmdline_objupd < 0)
+		{
+			Cmdline_objupd = 0;
+		}
+		if (Cmdline_objupd > 3)
+		{
+			Cmdline_objupd = 3;
+		}
 	}
 
 	if(mpnoreturn_arg.found()) {

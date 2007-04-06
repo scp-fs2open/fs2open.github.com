@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.89.2.5 $
- * $Date: 2007-02-11 09:24:08 $
- * $Author: taylor $
+ * $Revision: 2.89.2.6 $
+ * $Date: 2007-04-06 12:55:37 $
+ * $Author: karajorma $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89.2.5  2007/02/11 09:24:08  taylor
+ * remove -pcx32 and -jpgtga
+ *
  * Revision 2.89.2.4  2006/11/15 00:21:40  taylor
  * clean up some cmdline options which were/weren't FSO only
  * add back the "-32bit" option, for retail compatibility (doesn't do anything, it's just there to avoid the unknown option message)
@@ -682,6 +685,7 @@ extern int Cmdline_ingamejoin;
 extern int Cmdline_mpnoreturn;
 extern int Cmdline_SpewMission_CRCs;
 extern int Cmdline_SpewTable_CRCs;
+extern int Cmdline_objupd;
 
 // Troubleshooting
 extern int Cmdline_d3d_lesstmem;

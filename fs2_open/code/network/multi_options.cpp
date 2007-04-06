@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_options.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-04-20 06:32:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.10.2.1 $
+ * $Date: 2007-04-06 12:55:57 $
+ * $Author: karajorma $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/04/20 06:32:15  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.9  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -904,6 +907,13 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 			get_local_options(data, &offset, &bogus);
 		} else {
 			get_local_options(data, &offset, &Net_players[player_index].p_info.options);
+
+			//If the client has sent an object update higher than that which the server allows, reset it
+			if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
+				if (Net_players[player_index].p_info.options.obj_update_level > Cmdline_objupd) {
+					Net_players[player_index].p_info.options.obj_update_level = Cmdline_objupd;
+				}
+			}
 		}		
 		break;
 	}
