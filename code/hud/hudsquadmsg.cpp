@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.36 $
- * $Date: 2007-02-10 04:49:23 $
- * $Author: Goober5000 $
+ * $Revision: 2.37 $
+ * $Date: 2007-04-06 13:31:38 $
+ * $Author: karajorma $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2007/02/10 04:49:23  Goober5000
+ * prevent the AI from falling into the black hole of disarming a turretless ship
+ *
  * Revision 2.35  2007/01/15 13:43:43  karajorma
  * Fix bug where orders you gave last mission are sill accessible to the Order SEXP.
  *
@@ -2595,6 +2598,7 @@ void hud_init_squadmsg( void )
 
 	Msg_eat_key_timestamp = timestamp(0);
 	memset(Squadmsg_history, 0, sizeof(squadmsg_history) * SQUADMSG_HISTORY_MAX);
+	squadmsg_history_index = 0; 
 }
 
 // external entry point into code which changes the messaging mode based on the
