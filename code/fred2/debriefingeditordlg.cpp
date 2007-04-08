@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/DebriefingEditorDlg.cpp $
- * $Revision: 1.5 $
- * $Date: 2007-03-07 22:43:24 $
+ * $Revision: 1.6 $
+ * $Date: 2007-04-08 08:37:37 $
  * $Author: karajorma $
  *
  * Debriefing editor dialog.  Used to edit mission debriefings of course.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2007/03/07 22:43:24  karajorma
+ * Make .ogg voice files selectable in FRED.
+ *
  * Revision 1.4  2006/09/20 05:02:41  taylor
  * properly fix the new_recommendation_text FRED problem, plus some real cleanup for that code in general, and some memory leak fixes
  *
@@ -527,7 +530,7 @@ void debriefing_editor_dlg::OnPlay()
 	GetDlgItem(IDC_VOICE)->GetWindowText(m_voice);
 
 	int size, offset;
-	cf_find_file_location((char *) (LPCSTR) m_voice, m_voice.GetLength(), CF_TYPE_ANY, path, &size, &offset );
+	cf_find_file_location((char *) (LPCSTR) m_voice, CF_TYPE_ANY, m_voice.GetLength(), path, &size, &offset );
 
 	PlaySound(path, NULL, SND_ASYNC | SND_FILENAME);
 }
