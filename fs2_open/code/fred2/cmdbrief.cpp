@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/CmdBrief.cpp $
- * $Revision: 1.1.2.2 $
- * $Date: 2007-03-07 22:36:51 $
+ * $Revision: 1.1.2.3 $
+ * $Date: 2007-04-08 08:28:20 $
  * $Author: karajorma $
  *
  * Command Briefing Editor
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1.2.2  2007/03/07 22:36:51  karajorma
+ * Make .ogg selectable in FRED.
+ *
  * Revision 1.1.2.1  2006/10/24 13:41:54  taylor
  * fix the cmdbrief editor deleting the wrong stage (Mantis bug #1115)
  *
@@ -359,7 +362,7 @@ void cmd_brief_dlg::OnPlay()
 	GetDlgItem(IDC_WAVE_FILENAME)->GetWindowText(m_wave_filename);
 
 	int size, offset;
-	cf_find_file_location((char *) (LPCSTR) m_wave_filename, m_wave_filename.GetLength(), CF_TYPE_ANY, path, &size, &offset );
+	cf_find_file_location((char *) (LPCSTR) m_wave_filename, CF_TYPE_ANY, m_wave_filename.GetLength(), path, &size, &offset );
 
 	PlaySound(path, NULL, SND_ASYNC | SND_FILENAME);
 }
