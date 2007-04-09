@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.219 $
- * $Date: 2007-03-23 06:31:31 $
+ * $Revision: 2.220 $
+ * $Date: 2007-04-09 18:25:31 $
  * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.219  2007/03/23 06:31:31  karajorma
+ * Fix assertion on red-alert carry status in multi games
+ *
  * Revision 2.218  2007/02/25 03:57:58  Goober5000
  * use dynamic memory instead of a static buffer for ship-specific replacement textures
  *
@@ -3587,7 +3590,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (optional_string("+AI Class:")) 
 	{
 		p_objp->ai_class = match_and_stuff(F_NAME, Ai_class_names, Num_ai_classes, "AI class");
-		Assert(p_objp->ai_class > -1);
+
+		if (p_objp->ai_class < 0) 
+		{
+			Warning(LOCATION, "AI Class for ship %s does not exist in ai.tbl. Setting to first available class.\n", p_objp->name);
+			p_objp->ai_class = 0;
+		}		
 	}
 	else
 	{
