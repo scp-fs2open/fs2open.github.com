@@ -72,6 +72,9 @@
 		34595A7108C3D8CB003B1351 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		34595A7208C3D8CB003B1351 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80002 /* OpenGL.framework */; };
 		34595A7308C3D8CB003B1351 /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67F1E04C773E400A80002 /* GLUT.framework */; };
+		345A81160B4941D700282E7A /* grstub.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345A81150B4941D700282E7A /* grstub.cpp */; };
+		345A81190B4941F100282E7A /* deadobjectdock.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 345A81170B4941F100282E7A /* deadobjectdock.cpp */; };
+		345A811A0B4941F100282E7A /* deadobjectdock.h in Headers */ = {isa = PBXBuildFile; fileRef = 345A81180B4941F100282E7A /* deadobjectdock.h */; };
 		3468A8D00991BD4200123C87 /* def_files.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3468A8CE0991BD4200123C87 /* def_files.cpp */; };
 		3468A8D10991BD4200123C87 /* def_files.h in Headers */ = {isa = PBXBuildFile; fileRef = 3468A8CF0991BD4200123C87 /* def_files.h */; };
 		3468A8D40991BD5B00123C87 /* generic.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3468A8D20991BD5B00123C87 /* generic.cpp */; };
@@ -99,7 +102,20 @@
 		34A3E7CE08C4BB3900BBC609 /* codec1.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459553808C3D6A0003B1351 /* codec1.cpp */; };
 		34A3E7F908C4E15400BBC609 /* libjpeg.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C71A9108C4184200459F5B /* libjpeg.a */; };
 		34A3E7FA08C4E15500BBC609 /* libcode.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C71A8208C4147700459F5B /* libcode.a */; };
+		34A759D90B49248B00C5E7AA /* decoder8.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34A759D60B49248B00C5E7AA /* decoder8.cpp */; };
+		34A759DA0B49248B00C5E7AA /* oggplayer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 34A759D70B49248B00C5E7AA /* oggplayer.cpp */; };
+		34A759DB0B49248B00C5E7AA /* oggplayer.h in Headers */ = {isa = PBXBuildFile; fileRef = 34A759D80B49248B00C5E7AA /* oggplayer.h */; };
+		34A759DD0B4924BF00C5E7AA /* Theora.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34A759DC0B4924BF00C5E7AA /* Theora.framework */; };
+		34A75A110B49251B00C5E7AA /* Theora.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 34A759DC0B4924BF00C5E7AA /* Theora.framework */; };
 		34AE377908DE33320071A09C /* FS2_Open.icns in Resources */ = {isa = PBXBuildFile; fileRef = 34AE377808DE33320071A09C /* FS2_Open.icns */; };
+		34C52AC90BC9FCF900C88506 /* Theora.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34A759DC0B4924BF00C5E7AA /* Theora.framework */; };
+		34C52AD30BC9FD0500C88506 /* Ogg.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 346C32FB09BD4BBC0022D46E /* Ogg.framework */; };
+		34C52AF30BC9FD0B00C88506 /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C7188B08C40DEB00459F5B /* SDL.framework */; };
+		34C52AFF0BC9FD1300C88506 /* Vorbis.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 346C32FC09BD4BBC0022D46E /* Vorbis.framework */; };
+		34C52B060BC9FD9800C88506 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C7186F08C4085A00459F5B /* OpenAL.framework */; };
+		34C52B190BC9FDA000C88506 /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67ED704C74A3F00A80002 /* OpenGL.framework */; };
+		34C52B2D0BC9FDA800C88506 /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B2F67F1E04C773E400A80002 /* GLUT.framework */; };
+		34C52B320BC9FDAD00C88506 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		34C7187008C4085A00459F5B /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C7186F08C4085A00459F5B /* OpenAL.framework */; };
 		34C7188C08C40DEB00459F5B /* SDL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 34C7188B08C40DEB00459F5B /* SDL.framework */; };
 		34C71A9608C418B900459F5B /* jmemmgr.c in Sources */ = {isa = PBXBuildFile; fileRef = 3459580008C3D836003B1351 /* jmemmgr.c */; };
@@ -257,8 +273,6 @@
 		34C71B3208C41AEC00459F5B /* grbatch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459536D08C3D6A0003B1351 /* grbatch.cpp */; };
 		34C71B3308C41AF400459F5B /* tmapper.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459539208C3D6A0003B1351 /* tmapper.h */; };
 		34C71B3508C41AF600459F5B /* line.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459539108C3D6A0003B1351 /* line.h */; };
-		34C71B3608C41AF600459F5B /* grzbuffer.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459539008C3D6A0003B1351 /* grzbuffer.h */; };
-		34C71B3708C41AF700459F5B /* grzbuffer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459538F08C3D6A0003B1351 /* grzbuffer.cpp */; };
 		34C71B3808C41AF700459F5B /* grstub.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459538E08C3D6A0003B1351 /* grstub.h */; };
 		34C71B3908C41AF800459F5B /* gropengltnl.h in Headers */ = {isa = PBXBuildFile; fileRef = 3459538D08C3D6A0003B1351 /* gropengltnl.h */; };
 		34C71B3A08C41AF800459F5B /* gropengltnl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3459538C08C3D6A0003B1351 /* gropengltnl.cpp */; };
@@ -712,58 +726,6 @@
 		};
 /* End PBXBuildRule section */
 
-/* Begin PBXBuildStyle section */
-		4A9504CCFFE6A4B311CA0CBA /* Development */ = {
-			isa = PBXBuildStyle;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_FAST_MATH = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					_DEBUG,
-					SCP_UNIX,
-					USE_OPENAL,
-					NO_DIRECT3D,
-					APPLE_APP,
-				);
-				GCC_STRICT_ALIASING = YES;
-				GCC_UNROLL_LOOPS = YES;
-				OPTIMIZATION_CFLAGS = "-O0";
-				WARNING_CFLAGS = "-Wno-char-subscripts";
-				ZERO_LINK = NO;
-			};
-			name = Development;
-		};
-		4A9504CDFFE6A4B311CA0CBA /* Deployment */ = {
-			isa = PBXBuildStyle;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				CURRENT_PROJECT_VERSION = 3.6.7;
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_FAST_MATH = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					NDEBUG,
-					SCP_UNIX,
-					NO_DIRECT3D,
-					USE_OPENAL,
-					APPLE_APP,
-				);
-				GCC_STRICT_ALIASING = YES;
-				GCC_UNROLL_LOOPS = YES;
-				OTHER_CPLUSPLUSFLAGS = "";
-				WARNING_CFLAGS = "-Wno-char-subscripts";
-				ZERO_LINK = NO;
-			};
-			name = Deployment;
-		};
-/* End PBXBuildStyle section */
-
 /* Begin PBXContainerItemProxy section */
 		344BA950095A5AE600B9D97D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -795,6 +757,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				34A75A110B49251B00C5E7AA /* Theora.framework in CopyFiles */,
 				346C330309BD4C150022D46E /* Ogg.framework in CopyFiles */,
 				346C330409BD4C150022D46E /* SDL.framework in CopyFiles */,
 				346C330509BD4C150022D46E /* Vorbis.framework in CopyFiles */,
@@ -1019,8 +982,6 @@
 		3459538C08C3D6A0003B1351 /* gropengltnl.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = gropengltnl.cpp; sourceTree = "<group>"; };
 		3459538D08C3D6A0003B1351 /* gropengltnl.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = gropengltnl.h; sourceTree = "<group>"; };
 		3459538E08C3D6A0003B1351 /* grstub.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grstub.h; sourceTree = "<group>"; };
-		3459538F08C3D6A0003B1351 /* grzbuffer.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grzbuffer.cpp; sourceTree = "<group>"; };
-		3459539008C3D6A0003B1351 /* grzbuffer.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = grzbuffer.h; sourceTree = "<group>"; };
 		3459539108C3D6A0003B1351 /* line.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = line.h; sourceTree = "<group>"; };
 		3459539208C3D6A0003B1351 /* tmapper.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = tmapper.h; sourceTree = "<group>"; };
 		3459539408C3D6A0003B1351 /* hud.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = hud.cpp; sourceTree = "<group>"; };
@@ -1512,7 +1473,10 @@
 		3459580908C3D836003B1351 /* Makefile.am */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
 		3459580C08C3D836003B1351 /* transupp.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = transupp.h; sourceTree = "<group>"; };
 		34595A7408C3D8CB003B1351 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
-		34595A7508C3D8CB003B1351 /* FS2_Open-debug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "FS2_Open-debug.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		34595A7508C3D8CB003B1351 /* FS2_Open.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FS2_Open.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		345A81150B4941D700282E7A /* grstub.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = grstub.cpp; sourceTree = "<group>"; };
+		345A81170B4941F100282E7A /* deadobjectdock.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = deadobjectdock.cpp; sourceTree = "<group>"; };
+		345A81180B4941F100282E7A /* deadobjectdock.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = deadobjectdock.h; sourceTree = "<group>"; };
 		3468A8CE0991BD4200123C87 /* def_files.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = def_files.cpp; sourceTree = "<group>"; };
 		3468A8CF0991BD4200123C87 /* def_files.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = def_files.h; sourceTree = "<group>"; };
 		3468A8D20991BD5B00123C87 /* generic.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = generic.cpp; sourceTree = "<group>"; };
@@ -1532,6 +1496,10 @@
 		349807CC0A25B46F0013844A /* mvelib.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = mvelib.h; sourceTree = "<group>"; };
 		349807CD0A25B46F0013844A /* mveplayer.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = mveplayer.cpp; sourceTree = "<group>"; };
 		349807E00A25B98A0013844A /* modelanim.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = modelanim.cpp; sourceTree = "<group>"; };
+		34A759D60B49248B00C5E7AA /* decoder8.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = decoder8.cpp; sourceTree = "<group>"; };
+		34A759D70B49248B00C5E7AA /* oggplayer.cpp */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.cpp.cpp; path = oggplayer.cpp; sourceTree = "<group>"; };
+		34A759D80B49248B00C5E7AA /* oggplayer.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = oggplayer.h; sourceTree = "<group>"; };
+		34A759DC0B4924BF00C5E7AA /* Theora.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Theora.framework; path = Frameworks/Theora.framework; sourceTree = "<group>"; };
 		34AE377808DE33320071A09C /* FS2_Open.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = FS2_Open.icns; sourceTree = "<group>"; };
 		34C7186F08C4085A00459F5B /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = /System/Library/Frameworks/OpenAL.framework; sourceTree = "<absolute>"; };
 		34C7188B08C40DEB00459F5B /* SDL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SDL.framework; path = Frameworks/SDL.framework; sourceTree = "<group>"; };
@@ -1574,6 +1542,7 @@
 				344BA952095A5B3100B9D97D /* liblua.a in Frameworks */,
 				346C32FD09BD4BBC0022D46E /* Ogg.framework in Frameworks */,
 				346C32FE09BD4BBC0022D46E /* Vorbis.framework in Frameworks */,
+				34A759DD0B4924BF00C5E7AA /* Theora.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1581,6 +1550,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				34C52AC90BC9FCF900C88506 /* Theora.framework in Frameworks */,
+				34C52AD30BC9FD0500C88506 /* Ogg.framework in Frameworks */,
+				34C52AF30BC9FD0B00C88506 /* SDL.framework in Frameworks */,
+				34C52AFF0BC9FD1300C88506 /* Vorbis.framework in Frameworks */,
+				34C52B060BC9FD9800C88506 /* OpenAL.framework in Frameworks */,
+				34C52B190BC9FDA000C88506 /* OpenGL.framework in Frameworks */,
+				34C52B2D0BC9FDA800C88506 /* GLUT.framework in Frameworks */,
+				34C52B320BC9FDAD00C88506 /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1654,7 +1631,7 @@
 		19C28FACFE9D520D11CA2CBB /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				34595A7508C3D8CB003B1351 /* FS2_Open-debug.app */,
+				34595A7508C3D8CB003B1351 /* FS2_Open.app */,
 				34C71A8208C4147700459F5B /* libcode.a */,
 				34C71A9108C4184200459F5B /* libjpeg.a */,
 				34DCF83408CFA6B900A528A0 /* cfilearchiver */,
@@ -1971,6 +1948,9 @@
 		3459530408C3D69F003B1351 /* cutscene */ = {
 			isa = PBXGroup;
 			children = (
+				34A759D60B49248B00C5E7AA /* decoder8.cpp */,
+				34A759D70B49248B00C5E7AA /* oggplayer.cpp */,
+				34A759D80B49248B00C5E7AA /* oggplayer.h */,
 				349807C90A25B46F0013844A /* decoder16.cpp */,
 				349807CA0A25B46F0013844A /* mve_audio.cpp */,
 				349807CB0A25B46F0013844A /* mvelib.cpp */,
@@ -2161,6 +2141,7 @@
 		3459536208C3D6A0003B1351 /* graphics */ = {
 			isa = PBXGroup;
 			children = (
+				345A81150B4941D700282E7A /* grstub.cpp */,
 				3468A8D20991BD5B00123C87 /* generic.cpp */,
 				3468A8D30991BD5B00123C87 /* generic.h */,
 				3459536308C3D6A0003B1351 /* 2d.cpp */,
@@ -2174,8 +2155,6 @@
 				3459538108C3D6A0003B1351 /* grinternal.h */,
 				34595A7D08C3DAA2003B1351 /* OpenGL */,
 				3459538E08C3D6A0003B1351 /* grstub.h */,
-				3459538F08C3D6A0003B1351 /* grzbuffer.cpp */,
-				3459539008C3D6A0003B1351 /* grzbuffer.h */,
 				3459539108C3D6A0003B1351 /* line.h */,
 				3459539208C3D6A0003B1351 /* tmapper.h */,
 			);
@@ -2551,6 +2530,8 @@
 		3459549108C3D6A0003B1351 /* object */ = {
 			isa = PBXGroup;
 			children = (
+				345A81170B4941F100282E7A /* deadobjectdock.cpp */,
+				345A81180B4941F100282E7A /* deadobjectdock.h */,
 				3468A8D60991BD9900123C87 /* parseobjectdock.cpp */,
 				3468A8D70991BD9900123C87 /* parseobjectdock.h */,
 				3459549208C3D6A0003B1351 /* collidedebrisship.cpp */,
@@ -3041,6 +3022,7 @@
 		346C332E09BD80480022D46E /* Local Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				34A759DC0B4924BF00C5E7AA /* Theora.framework */,
 				346C32FB09BD4BBC0022D46E /* Ogg.framework */,
 				34C7188B08C40DEB00459F5B /* SDL.framework */,
 				346C32FC09BD4BBC0022D46E /* Vorbis.framework */,
@@ -3176,7 +3158,6 @@
 				34C71B3108C41AEC00459F5B /* grbatch.h in Headers */,
 				34C71B3308C41AF400459F5B /* tmapper.h in Headers */,
 				34C71B3508C41AF600459F5B /* line.h in Headers */,
-				34C71B3608C41AF600459F5B /* grzbuffer.h in Headers */,
 				34C71B3808C41AF700459F5B /* grstub.h in Headers */,
 				34C71B3908C41AF800459F5B /* gropengltnl.h in Headers */,
 				34C71B3B08C41AFA00459F5B /* gropengltexture.h in Headers */,
@@ -3367,6 +3348,8 @@
 				3468A8DF0991BDE200123C87 /* lua.h in Headers */,
 				3468A8E10991BDE200123C87 /* scripting.h in Headers */,
 				349807D10A25B46F0013844A /* mvelib.h in Headers */,
+				34A759DB0B49248B00C5E7AA /* oggplayer.h in Headers */,
+				345A811A0B4941F100282E7A /* deadobjectdock.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3404,14 +3387,6 @@
 			);
 			buildRules = (
 			);
-			buildSettings = {
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_MODEL_TUNING = G5;
-				INSTALL_PATH = /usr/local/lib;
-				PREBINDING = NO;
-				PRODUCT_NAME = lua;
-				ZERO_LINK = YES;
-			};
 			dependencies = (
 			);
 			name = lua;
@@ -3435,41 +3410,6 @@
 				34C7186908C4070F00459F5B /* PBXBuildRule */,
 				34C7186808C4070900459F5B /* PBXBuildRule */,
 			);
-			buildSettings = {
-				CURRENT_PROJECT_VERSION = 3.6.7;
-				FRAMEWORK_SEARCH_PATHS = "\"/Library/Frameworks\"";
-				GCC_FAST_MATH = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
-				GCC_OPTIMIZATION_LEVEL = s;
-				GCC_PREPROCESSOR_DEFINITIONS = "";
-				GCC_STRICT_ALIASING = YES;
-				GCC_UNROLL_LOOPS = YES;
-				GCC_USE_GCC3_PFE_SUPPORT = YES;
-				HEADER_SEARCH_PATHS = (
-					../../code,
-					../../libjpeg,
-					"$(HOME)/SDKs/oggvorbis-sdk/include",
-					/Library/Frameworks/SDL.framework/Headers,
-					/System/Library/Frameworks/OpenAL.framework/Headers,
-				);
-				INFOPLIST_FILE = "Info-FS2_Open.plist";
-				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = /Users/taylor/Working/Projects/FS2_Open/projects/Xcode/build;
-				OTHER_LDFLAGS = (
-					"-framework",
-					SDL,
-				);
-				PREBINDING = NO;
-				PRODUCT_NAME = FS2_Open;
-				SECTORDER_FLAGS = "";
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-				);
-				WRAPPER_EXTENSION = app;
-			};
 			dependencies = (
 				34C71CBC08C424E700459F5B /* PBXTargetDependency */,
 				344BA951095A5AE600B9D97D /* PBXTargetDependency */,
@@ -3478,7 +3418,7 @@
 			name = FS2_Open;
 			productInstallPath = "$(HOME)/Applications";
 			productName = FS2_Open;
-			productReference = 34595A7508C3D8CB003B1351 /* FS2_Open-debug.app */;
+			productReference = 34595A7508C3D8CB003B1351 /* FS2_Open.app */;
 			productType = "com.apple.product-type.application";
 		};
 		34C71A8108C4147700459F5B /* code */ = {
@@ -3493,36 +3433,6 @@
 				34C71A8408C414AA00459F5B /* PBXBuildRule */,
 				34C71A8308C414A500459F5B /* PBXBuildRule */,
 			);
-			buildSettings = {
-				DEAD_CODE_STRIPPING = YES;
-				GCC_DEBUGGING_SYMBOLS = full;
-				GCC_FAST_MATH = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
-				GCC_PREPROCESSOR_DEFINITIONS = "";
-				GCC_STRICT_ALIASING = YES;
-				GCC_UNROLL_LOOPS = YES;
-				GCC_USE_GCC3_PFE_SUPPORT = YES;
-				HEADER_SEARCH_PATHS = (
-					../../code,
-					/Library/Frameworks/SDL.framework/Headers,
-					/System/Library/Frameworks/OpenAL.framework/Headers,
-					"$(HOME)/SDKs/oggvorbis-sdk/include",
-				);
-				INSTALL_PATH = "$(HOME)/lib";
-				LIBRARY_STYLE = STATIC;
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PREBINDING = NO;
-				PRODUCT_NAME = code;
-				SECTORDER_FLAGS = "";
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-				);
-			};
 			dependencies = (
 			);
 			name = code;
@@ -3542,25 +3452,6 @@
 				34C71A9308C4186800459F5B /* PBXBuildRule */,
 				34C71A9208C4186300459F5B /* PBXBuildRule */,
 			);
-			buildSettings = {
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
-				GCC_PREPROCESSOR_DEFINITIONS = "";
-				INSTALL_PATH = "$(HOME)/lib";
-				LIBRARY_STYLE = STATIC;
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PREBINDING = NO;
-				PRODUCT_NAME = jpeg;
-				SECTORDER_FLAGS = "";
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-					"-Wno-main",
-				);
-			};
 			dependencies = (
 			);
 			name = jpeg;
@@ -3577,23 +3468,6 @@
 			);
 			buildRules = (
 			);
-			buildSettings = {
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
-				INSTALL_PATH = "$(HOME)/bin";
-				OPTIMIZATION_CFLAGS = "";
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PREBINDING = NO;
-				PRODUCT_NAME = cfilearchiver;
-				SECTORDER_FLAGS = "";
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-				);
-			};
 			dependencies = (
 			);
 			name = cfilearchiver;
@@ -3610,23 +3484,6 @@
 			);
 			buildRules = (
 			);
-			buildSettings = {
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
-				INSTALL_PATH = "$(HOME)/bin";
-				OPTIMIZATION_CFLAGS = "";
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PREBINDING = NO;
-				PRODUCT_NAME = cfileextractor;
-				SECTORDER_FLAGS = "";
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-				);
-			};
 			dependencies = (
 			);
 			name = cfileextractor;
@@ -3643,23 +3500,6 @@
 			);
 			buildRules = (
 			);
-			buildSettings = {
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
-				INSTALL_PATH = "$(HOME)/bin";
-				OPTIMIZATION_CFLAGS = "";
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PREBINDING = NO;
-				PRODUCT_NAME = cryptstring;
-				SECTORDER_FLAGS = "";
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-				);
-			};
 			dependencies = (
 			);
 			name = cryptstring;
@@ -3676,23 +3516,6 @@
 			);
 			buildRules = (
 			);
-			buildSettings = {
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_MODEL_TUNING = G5;
-				INSTALL_PATH = "$(HOME)/bin";
-				OPTIMIZATION_CFLAGS = "";
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PREBINDING = NO;
-				PRODUCT_NAME = scramble;
-				SECTORDER_FLAGS = "";
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-				);
-			};
 			dependencies = (
 			);
 			name = scramble;
@@ -3706,12 +3529,6 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 34BE723808C940D200673B45 /* Build configuration list for PBXProject "FS2_Open" */;
-			buildSettings = {
-			};
-			buildStyles = (
-				4A9504CCFFE6A4B311CA0CBA /* Development */,
-				4A9504CDFFE6A4B311CA0CBA /* Deployment */,
-			);
 			hasScannedForEncodings = 1;
 			mainGroup = 29B97314FDCFA39411CA2CEA /* FS2_Open */;
 			projectDirPath = "";
@@ -3838,7 +3655,6 @@
 				34C71B2F08C41AE700459F5B /* 2d.cpp in Sources */,
 				34C71B3008C41AE700459F5B /* font.cpp in Sources */,
 				34C71B3208C41AEC00459F5B /* grbatch.cpp in Sources */,
-				34C71B3708C41AF700459F5B /* grzbuffer.cpp in Sources */,
 				34C71B3A08C41AF800459F5B /* gropengltnl.cpp in Sources */,
 				34C71B3C08C41AFA00459F5B /* gropengltexture.cpp in Sources */,
 				34C71B3E08C41AFB00459F5B /* gropengllight.cpp in Sources */,
@@ -4050,6 +3866,10 @@
 				349807D00A25B46F0013844A /* mvelib.cpp in Sources */,
 				349807D20A25B46F0013844A /* mveplayer.cpp in Sources */,
 				349807E10A25B98A0013844A /* modelanim.cpp in Sources */,
+				34A759D90B49248B00C5E7AA /* decoder8.cpp in Sources */,
+				34A759DA0B49248B00C5E7AA /* oggplayer.cpp in Sources */,
+				345A81160B4941D700282E7A /* grstub.cpp in Sources */,
+				345A81190B4941F100282E7A /* deadobjectdock.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4254,6 +4074,11 @@
 				);
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_1)",
+				);
+				FRAMEWORK_SEARCH_PATHS_QUOTED_1 = "\"$(SRCROOT)/Frameworks\"";
 				GCC_MODEL_TUNING = G5;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					_DEBUG,
@@ -4289,6 +4114,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				DEAD_CODE_STRIPPING = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_1)",
+				);
+				FRAMEWORK_SEARCH_PATHS_QUOTED_1 = "\"$(SRCROOT)/Frameworks\"";
 				HEADER_SEARCH_PATHS = (
 					../../code,
 					./Frameworks/Ogg.framework/Headers,
@@ -4318,10 +4148,7 @@
 					../../code,
 					../../libjpeg,
 					../../lua,
-					./Frameworks/Ogg.framework/Headers,
-					./Frameworks/Vorbis.framework/Headers,
 					./Frameworks/SDL.framework/Headers,
-					/System/Library/Frameworks/OpenAL.framework/Headers,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(LIBRARY_SEARCH_PATHS)",
@@ -4344,10 +4171,7 @@
 					../../code,
 					../../libjpeg,
 					../../lua,
-					./Frameworks/Ogg.framework/Headers,
-					./Frameworks/Vorbis.framework/Headers,
 					./Frameworks/SDL.framework/Headers,
-					/System/Library/Frameworks/OpenAL.framework/Headers,
 				);
 				LIBRARY_SEARCH_PATHS = (
 					"$(LIBRARY_SEARCH_PATHS)",
@@ -4369,7 +4193,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.6.7-post";
+				CURRENT_PROJECT_VERSION = 3.6.9;
 				DEAD_CODE_STRIPPING = NO;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_MODEL_TUNING = G5;
@@ -4400,7 +4224,7 @@
 					i386,
 				);
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = "3.6.7-post";
+				CURRENT_PROJECT_VERSION = 3.6.9;
 				DEAD_CODE_STRIPPING = YES;
 				DEPLOYMENT_POSTPROCESSING = YES;
 				GCC_DEBUGGING_SYMBOLS = default;
@@ -4418,10 +4242,6 @@
 				GCC_UNROLL_LOOPS = YES;
 				INFOPLIST_FILE = Info.plist;
 				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				OTHER_CPLUSPLUSFLAGS = (
-					"$(OTHER_CFLAGS)",
-					"-falign-loops=16",
-				);
 				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
 				SEPARATE_STRIP = YES;
 				WARNING_CFLAGS = "-Wno-char-subscripts";
