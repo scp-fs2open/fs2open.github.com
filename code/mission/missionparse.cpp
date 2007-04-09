@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.31 $
- * $Date: 2007-03-23 06:25:31 $
+ * $Revision: 2.178.2.32 $
+ * $Date: 2007-04-09 18:23:08 $
  * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.31  2007/03/23 06:25:31  karajorma
+ * That probably shouldn't be an assertion
+ *
  * Revision 2.178.2.30  2007/02/25 03:58:06  Goober5000
  * use dynamic memory instead of a static buffer for ship-specific replacement textures
  *
@@ -3423,7 +3426,12 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (optional_string("+AI Class:")) 
 	{
 		p_objp->ai_class = match_and_stuff(F_NAME, Ai_class_names, Num_ai_classes, "AI class");
-		Assert(p_objp->ai_class > -1);
+
+		if (p_objp->ai_class < 0) 
+		{
+			Warning(LOCATION, "AI Class for ship %s does not exist in ai.tbl. Setting to first available class.\n", p_objp->name);
+			p_objp->ai_class = 0;
+		}		
 	}
 	else
 	{
