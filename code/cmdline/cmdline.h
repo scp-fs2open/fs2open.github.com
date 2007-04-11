@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.89.2.6 $
- * $Date: 2007-04-06 12:55:37 $
- * $Author: karajorma $
+ * $Revision: 2.89.2.7 $
+ * $Date: 2007-04-11 18:21:22 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89.2.6  2007/04/06 12:55:37  karajorma
+ * Add the -cap_object_update command line to force multiplayer clients to a more server friendly object update setting.
+ *
  * Revision 2.89.2.5  2007/02/11 09:24:08  taylor
  * remove -pcx32 and -jpgtga
  *
@@ -698,6 +701,7 @@ extern int Cmdline_no_set_gamma;
 extern int Cmdline_novbo;
 extern int Cmdline_safeloading;
 extern int Cmdline_no_fbo;
+extern int Cmdline_verify_vps;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;
