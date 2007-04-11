@@ -1,12 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/oggplayer.cpp $
- * $Revision: 1.1.2.4 $
- * $Date: 2007-03-22 20:23:58 $
+ * $Revision: 1.1.2.5 $
+ * $Date: 2007-04-11 14:44:32 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 1.1.2.4  2007/03/22 20:23:58  taylor
+ * fix stupidness that screwed up RGB values (Mantis #1307)
+ *
  * Revision 1.1.2.3  2007/02/10 00:01:53  taylor
  * make sure that our color is getting set properly (should properly fix the red/green tint problem, Mantis #1041)
  * slight optimization for Theora YUV->RGB converter
@@ -503,7 +506,6 @@ static void convert_YUV_to_RGB(yuv_buffer *yuv)
 {
 	int Y1, Y2, U, V;
 	int R = 0, G = 0, B = 0;
-	int r1 = 0, g1 = 0, b1 = 0;
 	int C, D, E;
 	uint x, y;
 	uint width_2 = g_screenWidth/2;
