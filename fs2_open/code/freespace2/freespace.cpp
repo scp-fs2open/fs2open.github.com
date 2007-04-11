@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.35 $
- * $Date: 2007-02-20 04:19:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.243.2.36 $
+ * $Date: 2007-04-11 18:21:22 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.35  2007/02/20 04:19:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.243.2.34  2007/02/12 01:04:50  taylor
  * make gr_create_shader() use ubyte's instead of float's, saves us the more expensive conversions since we already convert to ubyte anyway
  *
@@ -9034,6 +9037,15 @@ int game_main(char *cmdline)
 	// maybe spew pof stuff
 	if(Cmdline_spew_pof_info){
 		game_spew_pof_info();
+		game_shutdown();
+		return 0;
+	}
+
+
+	// maybe spew VP CRCs, and exit
+	if (Cmdline_verify_vps) {
+		extern void cfile_spew_pack_file_crcs();
+		cfile_spew_pack_file_crcs();
 		game_shutdown();
 		return 0;
 	}
