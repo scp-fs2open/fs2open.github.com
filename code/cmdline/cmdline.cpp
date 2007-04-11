@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.13 $
- * $Date: 2007-04-11 18:21:21 $
+ * $Revision: 2.140.2.14 $
+ * $Date: 2007-04-11 18:23:01 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.13  2007/04/11 18:21:21  taylor
+ * cleanup of chcksum stuff (works properly on 64-bit systems now)
+ * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
+ * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
+ *
  * Revision 2.140.2.12  2007/04/06 12:55:36  karajorma
  * Add the -cap_object_update command line to force multiplayer clients to a more server friendly object update setting.
  *
@@ -1193,6 +1198,7 @@ cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL);	// Cmdline_no_set_gamma
 cmdline_parm no_vbo_arg("-novbo", NULL);			// Cmdline_novbo
 cmdline_parm safeloading_arg("-safeloading", NULL);	// Cmdline_safeloading  -- Uses old loading method -C
 cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
+cmdline_parm verify_vps_arg("-verify_vps", NULL);	// Cmdline_verify_vps
 
 int Cmdline_d3d_lesstmem = 0;
 int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
