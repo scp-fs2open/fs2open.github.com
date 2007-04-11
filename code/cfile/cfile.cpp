@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.45 $
- * $Date: 2007-03-22 20:22:24 $
+ * $Revision: 2.46 $
+ * $Date: 2007-04-11 18:24:27 $
  * $Author: taylor $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2007/03/22 20:22:24  taylor
+ * a little better error handling for cf_exists_full()
+ * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
+ * use cf_exists_full_ext() for eventmusic file checks (to check for ogg and wav)
+ * get rid of SPM hack, it's wrong (just commented out for now though)
+ * fix a bunch of bugs in cf_find_file_location_ext():
+ *  - try to handle files with multiple periods a bit better (for the wav files like: blah_1.5.wav)
+ *  - load issue with finding incorrect files by mistake
+ *  - prevent finding different file types in various paths/roots
+ *
  * Revision 2.44  2007/02/11 09:31:11  taylor
  * some CFILE cleanup and slight directory order reorg
  * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
@@ -540,11 +550,11 @@ int cfile_init(char *exe_dir, char *cdrom_dir)
 			Cfile_block_list[i].type = CFILE_BLOCK_UNUSED;
 		}
 
-		Cfile_cdrom_dir = cdrom_dir;
-		cf_build_secondary_filelist(Cfile_cdrom_dir);
-
 		// 32 bit CRC table init
 		cf_chksum_long_init();
+
+		Cfile_cdrom_dir = cdrom_dir;
+		cf_build_secondary_filelist(Cfile_cdrom_dir);
 
 		atexit( cfile_close );
 	}
@@ -1825,16 +1835,16 @@ int cfputs(char *str, CFILE *cfile)
 
 // CRC code for mission validation.  given to us by Kevin Bentley on 7/20/98.   Some sort of
 // checksumming code that he wrote a while ago.  
-#define CRC32_POLYNOMIAL					0xEDB88320L
-unsigned long CRCTable[256];
+#define CRC32_POLYNOMIAL					0xEDB88320
+uint CRCTable[256];
 
 #define CF_CHKSUM_SAMPLE_SIZE				512
 
 // update cur_chksum with the chksum of the new_data of size new_data_size
-ushort cf_add_chksum_short(ushort seed, char *buffer, int size)
+ushort cf_add_chksum_short(ushort seed, ubyte *buffer, int size)
 {
-	ubyte * ptr = (ubyte *)buffer;
-	unsigned int sum1,sum2;
+	ubyte *ptr = buffer;
+	uint sum1, sum2;
 
 	sum1 = sum2 = (int)(seed);
 
@@ -1845,51 +1855,48 @@ ushort cf_add_chksum_short(ushort seed, char *buffer, int size)
 	}
 	sum2 %= 255;
 	
-	return (unsigned short)((sum1<<8)+ sum2);
+	return (ushort)((sum1 << 8) + sum2);
 }
 
 // update cur_chksum with the chksum of the new_data of size new_data_size
-unsigned long cf_add_chksum_long(unsigned long seed, char *buffer, int size)
+uint cf_add_chksum_long(uint seed, ubyte *buffer, int size)
 {
-	unsigned long crc;
-	unsigned char *p;
-	unsigned long temp1;
-	unsigned long temp2;
+	uint crc;
+	ubyte *p;
 
-	p = (unsigned char*)buffer;
+	p = buffer;
 	crc = seed;	
 
-	while (size--!=0){
-	  temp1 = (crc>>8)&0x00FFFFFFL;
-	  temp2 = CRCTable[((int)crc^*p++)&0xff];
-	  crc = temp1^temp2;
-	}	
-	
+	while (size--)
+		crc = (crc >> 8) ^ CRCTable[(crc ^ *p++) & 0xff];
+
 	return crc;
 }
 
 void cf_chksum_long_init()
 {
-	int i,j;
-	unsigned long crc;	
+	int i, j;
+	uint crc;	
 
-	for( i=0;i<=255;i++) {
-		crc=i;
-		for(j=8;j>0;j--) {
-			if(crc&1)
-				 crc=(crc>>1)^CRC32_POLYNOMIAL;
+	for (i = 0; i < 256; i++) {
+		crc = i;
+
+		for (j = 8; j > 0; j--) {
+			if (crc & 1)
+				crc = (crc >> 1) ^ CRC32_POLYNOMIAL;
 			else
-				 crc>>=1;
+				crc >>= 1;
 		}
-		CRCTable[i]=crc;
-	}	
+
+		CRCTable[i] = crc;
+	}
 }
 
 // single function convenient to use for both short and long checksums
 // NOTE : only one of chk_short or chk_long must be non-NULL (indicating which checksum to perform)
 int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
 {
-	char cf_buffer[CF_CHKSUM_SAMPLE_SIZE];
+	ubyte cf_buffer[CF_CHKSUM_SAMPLE_SIZE];
 	int is_long;
 	int cf_len = 0;
 	int cf_total;
@@ -1931,9 +1938,9 @@ int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
 		if(cf_len > 0){
 			// do the proper short or long checksum
 			if(is_long){
-				*chk_long = (uint)cf_add_chksum_long(*chk_long, cf_buffer, cf_len);
+				*chk_long = cf_add_chksum_long(*chk_long, cf_buffer, cf_len);
 			} else {
-				*chk_short = (ushort)cf_add_chksum_short(*chk_short, cf_buffer, cf_len);
+				*chk_short = cf_add_chksum_short(*chk_short, cf_buffer, cf_len);
 			}
 		}
 	} while((cf_len > 0) && (cf_total < max_size));
@@ -1941,6 +1948,74 @@ int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max_size)
 	return 1;
 }
 
+// get the chksum of a pack file (VP)
+int cf_chksum_pack(char *filename, uint *chk_long, bool full)
+{
+	const int safe_size = 2097152; // 2 Meg
+	const int header_offset = 32;  // skip 32bytes for header (header is currently smaller than this though)
+
+	ubyte cf_buffer[CF_CHKSUM_SAMPLE_SIZE];
+	int cf_len = 0;
+	int cf_total;
+	int read_size;
+	int max_size;
+
+	if (chk_long == NULL) {
+		Int3();
+		return 0;
+	}
+
+	FILE *fp = fopen(filename, "rb");
+
+	if (fp == NULL) {
+		*chk_long = 0;
+		return 0;
+	}
+
+	*chk_long = 0;
+
+	// get the max size
+	fseek(fp, 0, SEEK_END);
+	max_size = ftell(fp);
+
+	// maybe do a chksum of the entire file
+	if (full) {
+		fseek(fp, 0, SEEK_SET);
+	}
+	// othewise it's only a partial check
+	else {
+		CLAMP(max_size, 0, safe_size);
+
+		Assert( max_size > header_offset );
+		max_size -= header_offset;
+
+		fseek(fp, -(max_size), SEEK_END);
+	}
+
+	cf_total = 0;
+
+	do {
+		// determine how much we want to read
+		if ( (max_size - cf_total) >= CF_CHKSUM_SAMPLE_SIZE )
+			read_size = CF_CHKSUM_SAMPLE_SIZE;
+		else
+			read_size = max_size - cf_total;
+
+		// read in some buffer
+		cf_len = fread(cf_buffer, 1, read_size, fp);
+
+		// total we've read so far
+		cf_total += cf_len;
+
+		// add the checksum
+		if (cf_len > 0)
+			*chk_long = cf_add_chksum_long((*chk_long), cf_buffer, cf_len);
+	} while ( (cf_len > 0) && (cf_total < max_size) );
+
+	fclose(fp);
+
+	return 1;
+}
 // get the 2 byte checksum of the passed filename - return 0 if operation failed, 1 if succeeded
 int cf_chksum_short(char *filename, ushort *chksum, int max_size, int cf_type)
 {

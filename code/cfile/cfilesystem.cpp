@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.39 $
- * $Date: 2007-03-22 20:22:24 $
+ * $Revision: 2.40 $
+ * $Date: 2007-04-11 18:24:27 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,16 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2007/03/22 20:22:24  taylor
+ * a little better error handling for cf_exists_full()
+ * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
+ * use cf_exists_full_ext() for eventmusic file checks (to check for ogg and wav)
+ * get rid of SPM hack, it's wrong (just commented out for now though)
+ * fix a bunch of bugs in cf_find_file_location_ext():
+ *  - try to handle files with multiple periods a bit better (for the wav files like: blah_1.5.wav)
+ *  - load issue with finding incorrect files by mistake
+ *  - prevent finding different file types in various paths/roots
+ *
  * Revision 2.38  2007/02/09 23:57:24  taylor
  * add the number of files that CFILE is going to try and use in each root to the debug info
  * optimizations for cf_find_file_location_ext()
@@ -486,30 +496,29 @@ void cf_build_pack_list( cf_root *root )
 
 	// determine how many packfiles there are
 	temp_root_count = cf_get_packfile_count(root);
-	if(temp_root_count <= 0){
+
+	if (temp_root_count <= 0)
 		return;
-	}
 
 	// allocate a temporary array of temporary roots so we can easily sort them
 	temp_roots_sort = (cf_root_sort*)vm_malloc(sizeof(cf_root_sort) * temp_root_count);
-	if(temp_roots_sort == NULL){
+
+	if (temp_roots_sort == NULL) {
 		Int3();
 		return;
 	}
 
 	// now just setup all the root info
 	root_index = 0;
-	for (i=CF_TYPE_ROOT; i<CF_MAX_PATH_TYPES; i++ )	{
+	for (i = CF_TYPE_ROOT; i < CF_MAX_PATH_TYPES; i++) {
 		strcpy( filespec, root->path );
 		
-		if(strlen(Pathtypes[i].path)) {
+		if ( strlen(Pathtypes[i].path) ) {
 			strcat( filespec, Pathtypes[i].path );
-			if ( filespec[strlen(filespec)-1] != DIR_SEPARATOR_CHAR ) {
-				strcat( filespec, DIR_SEPARATOR_STR );
-			}
-		}
-		
 
+			if ( filespec[strlen(filespec)-1] != DIR_SEPARATOR_CHAR )
+				strcat( filespec, DIR_SEPARATOR_STR );
+		}
 
 #if defined _WIN32
 		strcat( filespec, "*.vp" );
@@ -549,15 +558,19 @@ void cf_build_pack_list( cf_root *root )
 #elif defined SCP_UNIX
 		strcat( filespec, "*.[vV][pP]" );
 		glob_t globinfo;
+
 		memset(&globinfo, 0, sizeof(globinfo));
+
 		int status = glob(filespec, 0, NULL, &globinfo);
+
 		if (status == 0) {
-			for (unsigned int j = 0;  j < globinfo.gl_pathc;  j++) {
+			for (uint j = 0;  j < globinfo.gl_pathc;  j++) {
 				// Determine if this is a regular file
 				struct stat statbuf;
 				memset(&statbuf, 0, sizeof(statbuf));
 				stat(globinfo.gl_pathv[j], &statbuf);
-				if (S_ISREG(statbuf.st_mode)) {
+
+				if ( S_ISREG(statbuf.st_mode) ) {
 					Assert(root_index < temp_root_count);
 
 					// get a temp pointer
@@ -569,22 +582,29 @@ void cf_build_pack_list( cf_root *root )
 					rptr_sort->cf_type = i;
 				}
 			}
+
 			globfree(&globinfo);
 		}
 #endif
-	}	
+	}
 
 	// these should always be the same
 	Assert(root_index == temp_root_count);
 
-	// sort tht roots
-	qsort(temp_roots_sort,  temp_root_count, sizeof(cf_root_sort), cf_packfile_sort_func);
+	// sort the roots
+	qsort(temp_roots_sort, temp_root_count, sizeof(cf_root_sort), cf_packfile_sort_func);
 
 	// now insert them all into the real root list properly
 	cf_root *new_root;
-	for(i=0; i<temp_root_count; i++){		
+	for (i = 0; i < temp_root_count; i++) {
 		new_root = cf_create_root();
 		strcpy( new_root->path, root->path );
+
+#ifndef NDEBUG
+		uint chksum = 0;
+		cf_chksum_pack(temp_roots_sort[i].path, &chksum);
+		mprintf(("Found root pack '%s' with a checksum of 0x%x\n", temp_roots_sort[i].path, chksum));
+#endif
 
 		// mwa -- 4/2/98 put in the next 2 lines because the path name needs to be there
 		// to find the files.
@@ -2036,4 +2056,52 @@ int cf_create_default_path_string( char *path, uint path_max, int pathtype, char
 	}
 
 	return 1;
+}
+
+void cfile_spew_pack_file_crcs()
+{
+	int i;
+	char out_path[CFILE_ROOT_DIRECTORY_LEN+MAX_FILENAME_LEN];
+	char datetime[45];
+	uint chksum = 0;
+	time_t my_time;
+	
+#ifdef SCP_UNIX
+	sprintf(out_path, "%s%svp_crcs.txt", Cfile_user_dir, DIR_SEPARATOR_STR);
+#else
+	sprintf(out_path, "%s%svp_crcs.txt", Cfile_root_dir, DIR_SEPARATOR_STR);
+#endif
+
+	FILE *out = fopen(out_path, "w");
+
+	if (out == NULL) {
+		Int3();
+		return;
+	}
+
+	my_time = time(NULL);
+
+	memset( datetime, 0, sizeof(datetime) );
+	snprintf(datetime, sizeof(datetime)-1, "%s", ctime(&my_time));
+	// ctime() adds a newline char, so we have to strip it off
+	datetime[strlen(datetime)-1] = '\0';
+
+	fprintf(out, "Pack file CRC log (%s) ... \n", datetime);
+	fprintf(out, "-------------------------------------------------------------------------------\n");
+
+	for (i = 0; i < Num_roots; i++) {
+		cf_root *cur_root = cf_get_root(i);
+
+		if (cur_root->roottype != CF_ROOTTYPE_PACK)
+			continue;
+
+		chksum = 0;
+		cf_chksum_pack(cur_root->path, &chksum, true);
+
+		fprintf(out, "  %s  --  0x%x\n", cur_root->path, chksum);
+	}
+
+	fprintf(out, "-------------------------------------------------------------------------------\n");
+
+	fclose(out);
 }

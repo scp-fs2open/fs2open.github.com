@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.283 $
- * $Date: 2007-02-20 04:20:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.284 $
+ * $Date: 2007-04-11 18:24:27 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.283  2007/02/20 04:20:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.282  2007/02/18 06:16:46  Goober5000
  * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
  *
@@ -9066,6 +9069,15 @@ int game_main(char *cmdline)
 	// maybe spew pof stuff
 	if(Cmdline_spew_pof_info){
 		game_spew_pof_info();
+		game_shutdown();
+		return 0;
+	}
+
+
+	// maybe spew VP CRCs, and exit
+	if (Cmdline_verify_vps) {
+		extern void cfile_spew_pack_file_crcs();
+		cfile_spew_pack_file_crcs();
 		game_shutdown();
 		return 0;
 	}
