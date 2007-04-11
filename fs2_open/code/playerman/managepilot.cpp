@@ -9,14 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.26.2.2 $
- * $Date: 2007-02-11 09:25:42 $
+ * $Revision: 2.26.2.3 $
+ * $Date: 2007-04-11 14:59:16 $
  * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26.2.2  2007/02/11 09:25:42  taylor
+ * some CFILE cleanup and slight directory order reorg
+ * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
+ * remove NO_SOUND
+ *
  * Revision 2.26.2.1  2006/09/24 22:53:22  taylor
  * more standalone server fixes:
  *  - add some basic bmpman functionality to grstub, since it needs to do something at least
@@ -1639,10 +1644,8 @@ void init_new_pilot(player *p, int reset)
 		mprintf(( "Setting detail level to %d because of new pilot\n", cur_speed ));
 		Use_mouse_to_fly = 0;
 		Mouse_sensitivity = 4;
-#ifndef NO_JOYSTICK
 		Joy_sensitivity = 9;
 		Dead_zone_size = 10;
-#endif
 	}
 
 	// unassigned squadron
