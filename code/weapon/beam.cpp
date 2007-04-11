@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.84 $
- * $Date: 2007-03-23 01:51:56 $
+ * $Revision: 2.85 $
+ * $Date: 2007-04-11 18:17:26 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2007/03/23 01:51:56  taylor
+ * bit of cleanup and minor performance tweaks
+ * sync up with new generic_anim/bitmap and weapon delayed loading changes
+ * with generic_anim, use Goober's animation timing for beam section and glow animations
+ * make trail render list dynamic (as well as it can be)
+ *
  * Revision 2.83  2007/02/20 04:20:38  Goober5000
  * the great big duplicate model removal commit
  *
@@ -2391,7 +2397,7 @@ int beam_get_model(object *objp)
 
 	default:
 		// this shouldn't happen too often
-		mprintf(("Beam couldn't find a good find a good object model/type!! (%d)", objp->type));
+		mprintf(("Beam couldn't find a good object model/type!! (%d)\n", objp->type));
 	}
 	return -1;
 }
@@ -2444,15 +2450,16 @@ int beam_start_firing(beam *b)
 		beam_start_warmdown(b);
 		return 1;
 	}				
-			
+
 	// start the beam firing sound now, if we haven't already		
 	if((b->beam_sound_loop == -1) && (Weapon_info[b->weapon_info_index].b_info.beam_loop_sound >= 0)){				
 		b->beam_sound_loop = snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].b_info.beam_loop_sound], &b->last_start, &View_position, 0.0f, NULL, 1, 1.0, SND_PRIORITY_SINGLE_INSTANCE, NULL, 1.0f, 1);
 
 		// "shot" sound
-		snd_play_3d(&Snds[SND_BEAM_SHOT], &b->last_start, &View_position); //I'm sorry this thing has always pissed me off -Bobboau
-		// GAH - Bobboau, for goodness sake don't delete things flippantly.  If you want to change this kind of thing, add
-		// command-line behavior like Phreak did for his targeting stuff.  The code is not yours to tromp all over like this. -- Goober5000
+		if (Weapon_info[b->weapon_info_index].launch_snd >= 0)
+			snd_play_3d(&Snds[Weapon_info[b->weapon_info_index].launch_snd], &b->last_start, &View_position);
+		else
+			snd_play_3d(&Snds[SND_BEAM_SHOT], &b->last_start, &View_position);
 	}	
 
 	// success
