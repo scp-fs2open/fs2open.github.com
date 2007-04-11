@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-12-28 00:59:27 $
- * $Author: wmcoolmon $
+ * $Revision: 2.24 $
+ * $Date: 2007-04-11 18:11:21 $
+ * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2006/12/28 00:59:27  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.22  2006/09/11 06:50:42  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -582,128 +585,156 @@ int lcl_get_language()
 	return Lcl_current_lang;
 }
 
-// initialize the xstr table
-void lcl_xstr_init()
+void parse_stringstbl(char *longname)
 {
 	char chr, buf[4096];
-	char language_tag[512];	
-	int i, z, index, rval;
+	char language_tag[512];
+	int i, z, index;
 	char *p_offset = NULL;
 	int offset_lo = 0, offset_hi = 0;
 
-	for (i=0; i<XSTR_SIZE; i++){
-		Xstr_table[i].str = NULL;
-	}
+	// make sure localization is NOT running
+	lcl_ext_close();
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "strings.tbl", rval));
-	} else {
-		// make sure localization is NOT running
-		lcl_ext_close();
+	read_file_text(longname);
+	reset_parse();
 
-		read_file_text("strings.tbl");
-		reset_parse();
+	// move down to the proper section		
+	memset(language_tag, 0, sizeof(language_tag));
+	strcpy(language_tag, "#");
+	strcat(language_tag, Lcl_languages[Lcl_current_lang].lang_name);
 
-		// move down to the proper section		
-		memset(language_tag, 0, 512);
-		strcpy(language_tag, "#");
-		strcat(language_tag, Lcl_languages[Lcl_current_lang].lang_name);
-		if(skip_to_string(language_tag) != 1){
-			Error(LOCATION, NOX("Strings.tbl is corrupt"));
-		}		
+	if ( skip_to_string(language_tag) != 1 )
+		Error(LOCATION, "%s is corrupt", longname);
 
-		// parse all the strings in this section of the table
-		while (!check_for_string("#")) {
-			int num_offsets_on_this_line = 0;
+	// parse all the strings in this section of the table
+	while ( !check_for_string("#") ) {
+		int num_offsets_on_this_line = 0;
 
-			stuff_int(&index);
-			stuff_string(buf, F_NAME, sizeof(buf));
+		stuff_int(&index);
+		stuff_string(buf, F_NAME, sizeof(buf));
 
-			if (Lcl_pl)
-				lcl_fix_polish(buf);
+		if (Lcl_pl)
+			lcl_fix_polish(buf);
 
-			i = strlen(buf);
-			while (i--) {
-				if (!isspace(buf[i])) {
-					break;
-				}
-			}
+		i = strlen(buf);
 
-			// trim unneccesary end of string
-			if (i >= 0) {
-				// Assert(buf[i] == '"');
-				if (buf[i] != '"') {
-					// probably an offset on this entry
-					buf[i+1] = 0;						// drop down a null terminator (prolly unnecessary)
-					while(!is_white_space(buf[i])) i--;	// back up over the potential offset
-					while(is_white_space(buf[i])) i--;	// now back up over intervening spaces
-					num_offsets_on_this_line = 1;
-					if (buf[i] != '"') {
-						// could have a 2nd offset value (one for 640, one for 1024)
-						// so back up again
-						while(!is_white_space(buf[i])) i--;	// back up over the 2nd offset
-						while(is_white_space(buf[i])) i--;	// now back up over intervening spaces
-						num_offsets_on_this_line = 2;
-					}
-
-					p_offset = &buf[i+1];			// get ptr to string section with offset in it
-					if (buf[i] != '"') {
-						Error(LOCATION, NOX("Strings.tbl is corrupt"));		// now its an error
-					}
-				}
-
-				buf[i] = 0;
-			}
-
-			// copy string into buf
-			z = 0;
-			for (i=1; buf[i]; i++) {
-				chr = buf[i];
-				if (chr == '\\') {
-					chr = buf[++i];
-					if (chr == 'n') {
-						chr = '\n';
-					} else if (chr == 'r') {
-						chr = '\r';
-					}
-
-				}
-
-				buf[z++] = chr;
-			}
-
-			// null terminator on buf
-			buf[z] = 0;
-
-			// write into Xstr_table
-			if (index >= 0 && index < XSTR_SIZE) {
-				if (Xstr_table[index].str != NULL) {
-					Warning(LOCATION, "Strings table index %d used more than once", index);
-				}
-				Xstr_table[index].str = vm_strdup(buf);
-			}
-
-			// read offset information, assume 0 if nonexistant
-			if (p_offset != NULL) {
-				if (sscanf(p_offset, "%d%d", &offset_lo, &offset_hi) < num_offsets_on_this_line) {
-					// whatever is in the file ain't a proper offset
-					Error(LOCATION, NOX("Strings.tbl is corrupt"));
-				}
-			}
-			Xstr_table[index].offset_x = offset_lo;
-			if (num_offsets_on_this_line == 2) {
-				Xstr_table[index].offset_x_hi = offset_hi;
-			} else {
-				Xstr_table[index].offset_x_hi = offset_lo;						
-			}
-
-			// clear out our vars
-			p_offset = NULL;
-			offset_lo = 0;
-			offset_hi = 0;
-			num_offsets_on_this_line = 0;
+		while (i--) {
+			if ( !isspace(buf[i]) )
+				break;
 		}
+
+		// trim unneccesary end of string
+		if (i >= 0) {
+			// Assert(buf[i] == '"');
+			if (buf[i] != '"') {
+				// probably an offset on this entry
+
+				// drop down a null terminator (prolly unnecessary)
+				buf[i+1] = 0;
+
+				// back up over the potential offset
+				while ( !is_white_space(buf[i]) )
+					i--;
+
+				// now back up over intervening spaces
+				while ( is_white_space(buf[i]) )
+					i--;
+
+				num_offsets_on_this_line = 1;
+
+				if (buf[i] != '"') {
+					// could have a 2nd offset value (one for 640, one for 1024)
+					// so back up again
+					while ( !is_white_space(buf[i]) )
+						i--;
+
+					// now back up over intervening spaces
+					while ( is_white_space(buf[i]) )
+						i--;
+
+					num_offsets_on_this_line = 2;
+				}
+
+				p_offset = &buf[i+1];			// get ptr to string section with offset in it
+
+				if (buf[i] != '"')
+					Error(LOCATION, "%s is corrupt", longname);		// now its an error
+			}
+
+			buf[i] = 0;
+		}
+
+		// copy string into buf
+		z = 0;
+		for (i = 1; buf[i]; i++) {
+			chr = buf[i];
+
+			if (chr == '\\') {
+				chr = buf[++i];
+
+				if (chr == 'n')
+					chr = '\n';
+				else if (chr == 'r')
+					chr = '\r';
+			}
+
+			buf[z++] = chr;
+		}
+
+		// null terminator on buf
+		buf[z] = 0;
+
+		// write into Xstr_table
+		if (index >= 0 && index < XSTR_SIZE) {
+			if ( Parsing_modular_table && (Xstr_table[index].str != NULL) ) {
+				vm_free(Xstr_table[index].str);
+				Xstr_table[index].str = NULL;
+			}
+
+			if (Xstr_table[index].str != NULL)
+				Warning(LOCATION, "Strings table index %d used more than once", index);
+
+			Xstr_table[index].str = vm_strdup(buf);
+		}
+
+		// read offset information, assume 0 if nonexistant
+		if (p_offset != NULL) {
+			if (sscanf(p_offset, "%d%d", &offset_lo, &offset_hi) < num_offsets_on_this_line) {
+				// whatever is in the file ain't a proper offset
+				Error(LOCATION, "%s is corrupt", longname);
+			}
+		}
+
+		Xstr_table[index].offset_x = offset_lo;
+
+		if (num_offsets_on_this_line == 2)
+			Xstr_table[index].offset_x_hi = offset_hi;
+		else
+			Xstr_table[index].offset_x_hi = offset_lo;
+
+		// clear out our vars
+		p_offset = NULL;
+		offset_lo = 0;
+		offset_hi = 0;
+		num_offsets_on_this_line = 0;
 	}
+}
+
+// initialize the xstr table
+void lcl_xstr_init()
+{
+	int i, rval;
+
+	for (i = 0; i < XSTR_SIZE; i++)
+		Xstr_table[i].str = NULL;
+
+	if ( (rval = setjmp(parse_abort)) != 0 )
+		mprintf(("Error parsing 'strings.tbl'\nError code = %i.\n", rval));
+	else
+		parse_stringstbl("strings.tbl");
+
+	parse_modular_table(NOX("*-lcl.tbm"), parse_stringstbl);
 
 	Xstr_inited = 1;
 }
