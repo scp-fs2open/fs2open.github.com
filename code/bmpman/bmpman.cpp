@@ -10,13 +10,19 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.101 $
- * $Date: 2007-03-22 20:13:23 $
+ * $Revision: 2.102 $
+ * $Date: 2007-04-11 18:05:18 $
  * $Author: taylor $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.101  2007/03/22 20:13:23  taylor
+ * various bits of bmpman cleanup
+ * be sure to clean all three possible buffers with OGL init
+ * fix a couple of bmpman loading bugs that messed up animations
+ * fix bmpman bug that didn't properly account for free'd texture ram count with unload_fast
+ *
  * Revision 2.100  2007/02/18 06:16:46  Goober5000
  * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
  *
@@ -2725,14 +2731,14 @@ int bm_unload( int handle, int clear_render_targets )
 
 	// be sure that all frames of an ani are unloaded - taylor
 	if ( (be->type == BM_TYPE_ANI) || (be->type == BM_TYPE_EFF) ) {
-		int i,first = be->info.ani.first_frame;
+		int i, first = be->info.ani.first_frame;
 
 		// for the unload all case, don't try to unload every frame of every frame
 		// all additional frames automatically get unloaded with the first one
-		if (n > be->info.ani.first_frame)
+		if ( (n > be->info.ani.first_frame) && (bm_bitmaps[first].bm.data == 0) )
 			return 1;
 
-		for ( i=0; i< bm_bitmaps[first].info.ani.num_frames; i++ )	{
+		for (i = 0; i < bm_bitmaps[first].info.ani.num_frames; i++) {
 			nprintf(("BmpMan", "Unloading %s frame %d.  %dx%dx%d\n", be->filename, i, bmp->w, bmp->h, bmp->bpp));
 			bm_free_data(first+i);		// clears flags, bbp, data, etc
 		}
@@ -2779,23 +2785,9 @@ int bm_unload_fast( int handle, int clear_render_targets )
 
 	Assert( be->handle == handle );		// INVALID BITMAP HANDLE!
 
-	// be sure that all frames of an ani are unloaded - taylor
-	if ( (be->type == BM_TYPE_ANI) || (be->type == BM_TYPE_EFF) ) {
-		int i,first = be->info.ani.first_frame;
-
-		// for the unload all case, don't try to unload every frame of every frame
-		// all additional frames automatically get unloaded with the first one
-		if (n > be->info.ani.first_frame)
-			return 1;
-
-		for ( i=0; i< bm_bitmaps[first].info.ani.num_frames; i++ )	{
-			nprintf(("BmpMan", "Fast-unloading %s frame %d.  %dx%dx%d\n", be->filename, i, bmp->w, bmp->h, bmp->bpp));
-			bm_free_data_fast(first+i);		// clears flags, bbp, data, etc
-		}
-	} else {
-		nprintf(("BmpMan", "Fast-unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
-		bm_free_data_fast(n);		// clears flags, bbp, data, etc
-	}
+	// unlike bm_unload(), we handle each frame of an animation separately, for safer use in the graphics API
+	nprintf(("BmpMan", "Fast-unloading %s.  %dx%dx%d\n", be->filename, bmp->w, bmp->h, bmp->bpp));
+	bm_free_data_fast(n);		// clears flags, bbp, data, etc
 
 	return 1;
 }
@@ -2872,7 +2864,7 @@ void bm_page_in_texture( int bitmapnum, int nframes )
 	int i;
 	int n = bitmapnum % MAX_BITMAPS;
 
-	if (n < 0)
+	if (bitmapnum < 0)
 		return;
 
 	Assert( bm_bitmaps[n].handle == bitmapnum );
