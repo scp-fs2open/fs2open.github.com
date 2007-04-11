@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.73.2.8 $
+ * $Revision: 2.73.2.9 $
  * $Author: taylor $
- * $Date: 2007-02-11 09:05:02 $
+ * $Date: 2007-04-11 14:56:37 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73.2.8  2007/02/11 09:05:02  taylor
+ * add WMC's strextcmp() from HEAD
+ *
  * Revision 2.73.2.7  2006/12/26 18:14:37  Goober5000
  * allow parsing of similar ship copy names properly (Mantis #1178)
  *
@@ -3249,7 +3252,7 @@ int parse_modular_table(char *name_check, void (*parse_callback)(char *filename)
 	char *tbl_file_names[MAX_TBL_PARTS];
 	int i, num_files = 0;
 
-	if ( (name_check == NULL) || (parse_callback == NULL) ) {
+	if ( (name_check == NULL) || (parse_callback == NULL) || ((*name_check) != '*') ) {
 		Int3();
 		return 0;
 	}
