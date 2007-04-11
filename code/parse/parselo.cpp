@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.88 $
- * $Author: wmcoolmon $
- * $Date: 2007-02-05 08:26:06 $
+ * $Revision: 2.89 $
+ * $Author: taylor $
+ * $Date: 2007-04-11 14:58:07 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.88  2007/02/05 08:26:06  wmcoolmon
+ * Fix a parse bug
+ *
  * Revision 2.87  2007/01/14 12:06:56  wmcoolmon
  * Fix +Override, attempted fix for code adjacent to [] causing crash in scripting.tbl (Unreproducable), and (Untested) fix for script-eval.
  *
@@ -3495,7 +3498,7 @@ int parse_modular_table(char *name_check, void (*parse_callback)(char *filename)
 	char *tbl_file_names[MAX_TBL_PARTS];
 	int i, num_files = 0;
 
-	if ( (name_check == NULL) || (parse_callback == NULL) ) {
+	if ( (name_check == NULL) || (parse_callback == NULL) || ((*name_check) != '*') ) {
 		Int3();
 		return 0;
 	}
