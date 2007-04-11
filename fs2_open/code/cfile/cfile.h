@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.20 $
- * $Date: 2007-03-22 20:22:24 $
+ * $Revision: 2.21 $
+ * $Date: 2007-04-11 18:24:27 $
  * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2007/03/22 20:22:24  taylor
+ * a little better error handling for cf_exists_full()
+ * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
+ * use cf_exists_full_ext() for eventmusic file checks (to check for ogg and wav)
+ * get rid of SPM hack, it's wrong (just commented out for now though)
+ * fix a bunch of bugs in cf_find_file_location_ext():
+ *  - try to handle files with multiple periods a bit better (for the wav files like: blah_1.5.wav)
+ *  - load issue with finding incorrect files by mistake
+ *  - prevent finding different file types in various paths/roots
+ *
  * Revision 2.19  2007/02/11 09:31:11  taylor
  * some CFILE cleanup and slight directory order reorg
  * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
@@ -609,13 +619,15 @@ int cf_chksum_long(char *filename, uint *chksum, int max_size = -1, int cf_type 
 // NOTE : preserves current file position
 int cf_chksum_long(CFILE *file, uint *chksum, int max_size = -1);
 
+int cf_chksum_pack(char *filename, uint *chk_long, bool full = false);
+
 // convenient for misc checksumming purposes ------------------------------------------
 
 // update cur_chksum with the chksum of the new_data of size new_data_size
-ushort cf_add_chksum_short(ushort seed, char *buffer, int size);
+ushort cf_add_chksum_short(ushort seed, ubyte *buffer, int size);
 
 // update cur_chksum with the chksum of the new_data of size new_data_size
-unsigned long cf_add_chksum_long(unsigned long seed, char *buffer, int size);
+uint cf_add_chksum_long(uint seed, ubyte *buffer, int size);
 
 // convenient for misc checksumming purposes ------------------------------------------
 

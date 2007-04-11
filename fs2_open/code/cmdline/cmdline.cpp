@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.150 $
- * $Date: 2007-03-22 20:55:53 $
+ * $Revision: 2.151 $
+ * $Date: 2007-04-11 18:24:27 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150  2007/03/22 20:55:53  taylor
+ * forgot to remove -jpgtga from Launcher options previously
+ * get rid of -fixbugs and -nocrash crap
+ *
  * Revision 2.149  2007/01/10 01:40:43  taylor
  * little bit of cleanup
  * per earlier discussions: remove -jpgtga and -pcx32
@@ -1187,6 +1191,7 @@ cmdline_parm no_set_gamma_arg("-no_set_gamma", NULL);	// Cmdline_no_set_gamma
 cmdline_parm no_vbo_arg("-novbo", NULL);			// Cmdline_novbo
 cmdline_parm safeloading_arg("-safeloading", NULL);	// Cmdline_safeloading  -- Uses old loading method -C
 cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
+cmdline_parm verify_vps_arg("-verify_vps", NULL);	// Cmdline_verify_vps
 
 int Cmdline_d3d_lesstmem = 0;
 int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
@@ -1198,6 +1203,7 @@ int Cmdline_no_set_gamma = 0;
 int Cmdline_novbo = 0; // turn off OGL VBO support, troubleshooting
 int Cmdline_safeloading = 0;
 int Cmdline_no_fbo = 0;
+int Cmdline_verify_vps = 0;
 
 // Developer/Testing related
 cmdline_parm start_mission_arg("-start_mission", NULL);	// Cmdline_start_mission
@@ -2288,67 +2294,20 @@ bool SetCmdlineParams()
 			Cmdline_ogl_spec = 128.0f;
 	}
 
-	if (rearm_timer_arg.found())
-	{
+	if ( rearm_timer_arg.found() )
 		Cmdline_rearm_timer = 1;
-	}
 
-	if (missile_lighting_arg.found())
-	{
+	if ( missile_lighting_arg.found() )
 		Cmdline_missile_lighting = 1;
-	}
 
-	if (save_render_targets_arg.found()) {
+	if ( save_render_targets_arg.found() )
 		Cmdline_save_render_targets = 1;
-	}
 
 	if ( debug_window_arg.found() )
 		Cmdline_debug_window = 1;
 
-#if 0
-//#ifdef WIN32
-	extern uint os_get_window();
-	if( fix_bugs.found() )
-	{
-		MessageBox((HWND)os_get_window(), "Could not get lock on RAID controller, driver may be too old. Auto-bugfixing is disabled", "FS2_Open Warning", MB_ICONWARNING);
-	}
-
-	if( disable_crashing.found())
-	{
-		if(IDRETRY == MessageBox((HWND)os_get_window(), "Error: A CTD bug occured before fs2_open could initialize the anti-crashing subsystem. FS2_Open will now crash. Press retry to try to initialize the subsystem again, or cancel to give up and crash", "FS2_Open Error", MB_ICONWARNING | MB_RETRYCANCEL))
-		{
-			MessageBox((HWND)os_get_window(), "Sorry, it didn't really work. FS2_Open still won't start, but it will close unexpectedly. Press OK to continue closing unexpectedly.", "FS2_Open Error", MB_ICONWARNING);
-		}
-		else
-		{
-			/*char Filepath[1024];
-			char* Filename;
-			GetModuleFileName(hInst, Filepath, sizeof(Filepath));
-			Filename = strrchr(Filepath, '\\');
-			if(Filename == NULL)
-			{
-				Filename = strrchr(Filepath, '/');
-				if(Filename == NULL)
-				{
-					Filename = strrchr(Filepath, ':');
-					if(Filename == NULL)
-					{
-						Filename = Filepath;
-					}
-				}
-			}
-			strcat(Filename, " - Application Error");*/
-			char Filename[128];
-			strcpy(Filename, "fs2_open.exe - Application Error");
-
-			if(IDCANCEL == MessageBox((HWND)os_get_window(), "The instruction at \"0x00001337\" referenced memory at \"0x00000000\". The memory could not be \"read\"\n\nClick on OK to terminate the program\nClick on CANCEL to debug the program", Filename, MB_ICONERROR | MB_OKCANCEL))
-			{
-				MessageBox((HWND)os_get_window(), "What!? Debug something yourself? No, what you want to do is send an error report to Microsoft.", "Error", MB_ICONERROR);
-			}
-		}
-		return false;
-	}
-#endif
+	if ( verify_vps_arg.found() )
+		Cmdline_verify_vps = 1;
 
 	return true; 
 }
