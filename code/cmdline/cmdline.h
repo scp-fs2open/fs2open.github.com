@@ -11,11 +11,15 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.94 $
- * $Date: 2007-01-10 01:40:43 $
+ * $Revision: 2.95 $
+ * $Date: 2007-04-11 18:24:27 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.94  2007/01/10 01:40:43  taylor
+ * little bit of cleanup
+ * per earlier discussions: remove -jpgtga and -pcx32
+ *
  * Revision 2.93  2006/11/16 00:50:00  taylor
  * clean up some cmdline options which were/weren't FSO only
  * add back the "-32bit" option, for retail compatibility (doesn't do anything, it's just there to avoid the unknown option message)
@@ -696,6 +700,7 @@ extern int Cmdline_no_set_gamma;
 extern int Cmdline_novbo;
 extern int Cmdline_safeloading;
 extern int Cmdline_no_fbo;
+extern int Cmdline_verify_vps;
 
 // Developer/Testing related
 extern char *Cmdline_start_mission;
