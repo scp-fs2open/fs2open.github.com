@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.58 $
- * $Date: 2006-10-06 09:33:10 $
- * $Author: taylor $
+ * $Revision: 2.59 $
+ * $Date: 2007-04-13 03:23:12 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.58  2006/10/06 09:33:10  taylor
+ * fix for the "branch" bug (still a minor usability issue however, see Mantis bug for details)
+ * add a popup to the loopbrief screen when you press ESC, so that we can either accept or decline the loop offer
+ *
  * Revision 2.57  2006/09/20 05:05:28  taylor
  * add some extra FS2NetD safety checks around to prevent the code from doing stupid crash-happy things
  *
@@ -2455,6 +2459,7 @@ void debrief_text_init()
 
 				if (use_sim_speech && !Recommend_active) {
 					fsspeech_stuff_buffer(src);
+					fsspeech_stuff_buffer("\n");
 				}
 			}
 
@@ -2470,6 +2475,7 @@ void debrief_text_init()
 
 					if (use_sim_speech) {
 						fsspeech_stuff_buffer(src);
+						fsspeech_stuff_buffer("\n");
 					}
 				}
 			}
