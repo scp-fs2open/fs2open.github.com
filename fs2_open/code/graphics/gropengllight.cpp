@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.33 $
- * $Date: 2007-03-22 20:49:53 $
+ * $Revision: 1.34 $
+ * $Date: 2007-04-13 00:33:41 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.33  2007/03/22 20:49:53  taylor
+ * some generic code cleanup
+ *
  * Revision 1.32  2007/02/10 00:05:48  taylor
  * obsolete gluLookAt() in favor of doing it manually, should be slight faster and more precise
  *
@@ -381,7 +384,7 @@ void opengl_pre_render_init_lights()
 	}
 
 	// sort the lights to try and get the most visible lights on the first pass
-	insertion_sort(opengl_lights, Num_active_gl_lights, sizeof(opengl_light), opengl_sort_active_lights);
+	qsort(opengl_lights, Num_active_gl_lights, sizeof(opengl_light), opengl_sort_active_lights);
 }
 
 static GLdouble eyex, eyey, eyez;
