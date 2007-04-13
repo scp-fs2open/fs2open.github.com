@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.63 $
- * $Date: 2007-04-06 13:28:49 $
- * $Author: karajorma $
+ * $Revision: 2.64 $
+ * $Date: 2007-04-13 00:36:43 $
+ * $Author: taylor $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2007/04/06 13:28:49  karajorma
+ * Changed my mind This is an Int3() not an assertion
+ *
  * Revision 2.62  2007/03/21 21:06:54  karajorma
  * Bump the number of debriefing stages.
  * Fix an annoying (and erroneous) warning in the campaign editor.
@@ -2265,34 +2268,29 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 // and use a timing to tell how long we should wait before playing this message
 void message_send_builtin_to_player( int type, ship *shipp, int priority, int timing, int group, int delay, int multi_target, int multi_team_filter )
 {
-	int i, persona_index;
+	int i, persona_index = -1;
 	int source;	
 
 	// if we aren't showing builtin msgs, bail
-	if (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS) {
+	if (The_mission.flags & MISSION_FLAG_NO_BUILTIN_MSGS)
 		return;
-	}
+
 	// Karajorma - If we aren't showing builtin msgs from command and this is not a ship, bail
-	if (!shipp && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND)) 
-	{
+	if ( (shipp == NULL) && (The_mission.flags & MISSION_FLAG_NO_BUILTIN_COMMAND) ) 
 		return;
-	} 
 
-	if (shipp) {
+	// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
+	if ( shipp ) {
 		// Karajorma - the game should assert if a silenced ship gets this far
-		if (shipp->flags2 & SF2_NO_BUILTIN_MESSAGES) {
-			Int3();
-		}
+		Assert( !(shipp->flags2 & SF2_NO_BUILTIN_MESSAGES) );
 
-		// see if there is a persona assigned to this ship.  If not, then try to assign one!!!
-		if ( shipp->persona_index == -1 ){
+		if ( shipp->persona_index == -1 )
 			shipp->persona_index = message_get_persona( shipp );
-		}
 
 		persona_index = shipp->persona_index;
-		if ( persona_index == -1 ) {
-			nprintf(("messaging", "Couldn't find persona for %s\n", shipp->ship_name ));
-		}		
+
+		if ( persona_index == -1 )
+			nprintf(("messaging", "Couldn't find persona for %s\n", shipp->ship_name ));	
 
 		// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
 		Assert( !(Ship_info[shipp->ship_info_index].flags & SIF_NOT_FLYABLE) );		// get allender or alan
