@@ -10,13 +10,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.410 $
- * $Date: 2007-03-23 01:50:59 $
+ * $Revision: 2.411 $
+ * $Date: 2007-04-13 00:28:00 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.410  2007/03/23 01:50:59  taylor
+ * bit of cleanup and minor performance tweaks
+ * render ship insignia with a bit of alpha to help with blending/lighting
+ * dynamic thruster particle limits
+ * update for generic_bitmap/anim changes
+ * make use of flag_def_list for ship flags rather than a ton of if-else statements
+ * use generic_bitmap and generic_anim where possible to faciliate delayed graphics loading (after all ship related tbls are parsed)
+ * use VALID_FNAME()
+ *
  * Revision 2.409  2007/03/22 20:45:01  taylor
  * cleanup and fix for weapon cycling (Mantis #1298)
  *
@@ -2296,11 +2305,23 @@
 
 
 
-#define MAX_SHIP_SUBOBJECTS		2100 			//Reduced from 1000 to 400 by MK on 4/1/98.  DTP; bumped from 700 to 2100
-																// Highest I saw was 164 in sm2-03a which Sandeep says has a lot of ships.
-																// JAS: sm3-01 needs 460.   You cannot know this number until *all* ships
-																// have warped in.   So I put code in the paging code which knows all ships
-																// that will warp in.
+
+#define NUM_SHIP_SUBSYSTEM_SETS			15		// number of subobject sets to use (because of the fact that it's a linked list,
+												//     we can't easily go fully dynamic)
+
+#define NUM_SHIP_SUBSYSTEMS_PER_SET		200 	// Reduced from 1000 to 400 by MK on 4/1/98.  DTP; bumped from 700 to 2100
+												// Reduced to 200 by taylor on 3/13/07  --  it's managed in dynamically allocated sets now
+												//    Highest I saw was 164 in sm2-03a which Sandeep says has a lot of ships.
+												//    JAS: sm3-01 needs 460.   You cannot know this number until *all* ships
+												//    have warped in.   So I put code in the paging code which knows all ships
+												//    that will warp in.
+
+static int Num_ship_subsystems = 0;
+static int Num_ship_subsystems_allocated = 0;
+
+static ship_subsys *Ship_subsystems[NUM_SHIP_SUBSYSTEM_SETS] = { NULL };
+ship_subsys ship_subsys_free_list;
+
 
 extern bool splodeing;
 
@@ -2364,8 +2385,6 @@ ship_obj		Ship_objs[MAX_SHIP_OBJS];		// array used to store ship object indexes
 ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs
 
 ship_info		Ship_info[MAX_SHIP_CLASSES];
-ship_subsys		Ship_subsystems[MAX_SHIP_SUBOBJECTS];
-ship_subsys		ship_subsys_free_list;
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
 
 static char **tspecies_names = NULL;
@@ -2499,7 +2518,6 @@ static int Missile_out_snd_timer;	// timer so we play out of laser sound effect 
 //WMC - This should be fixed with new system.
 
 std::vector<ship_counts>	Ship_type_counts;
-//ship_counts Ship_counts[MAX_SHIP_TYPE_COUNTS];
 
 // I don't want to do an AI cargo check every frame, so I made a global timer to limit check to
 // every SHIP_CARGO_CHECK_INTERVAL ms.  Didn't want to make a timer in each ship struct.  Ensure
@@ -5099,6 +5117,10 @@ void ship_init()
 			vm_free(tspecies_names);
 			tspecies_names = NULL;
 		}
+
+		// NULL out "dynamic" subsystem ptr's
+		for (i = 0; i < NUM_SHIP_SUBSYSTEM_SETS; i++)
+			Ship_subsystems[i] = NULL;
 	}
 
 	//loadup the cloaking map
@@ -5112,6 +5134,75 @@ void ship_init()
 }
 
 int Man_thruster_reset_timestamp = 0;
+
+static void ship_clear_subsystems()
+{
+	int i;
+
+	for (i = 0; i < NUM_SHIP_SUBSYSTEM_SETS; i++) {
+		if (Ship_subsystems[i] != NULL) {
+			vm_free(Ship_subsystems[i]);
+			Ship_subsystems[i] = NULL;
+		}
+	}
+
+	Num_ship_subsystems = 0;
+	Num_ship_subsystems_allocated = 0;
+}
+
+static void ship_allocate_subsystems(int num_so, bool page_in = false)
+{
+	int idx, i;
+	int num_subsystems_save = 0;
+
+	// "0" itself is safe
+	if (num_so < 0) {
+		Int3();
+		return;
+	}
+
+	// allow a page-in thingy, so that we can grab as much as possible before mission
+	// start, but without messing up our count for future things
+	if (page_in)
+		num_subsystems_save = Num_ship_subsystems;
+
+	Num_ship_subsystems += num_so;
+
+	// bail if we don't actually need any more
+	if ( Num_ship_subsystems < Num_ship_subsystems_allocated )
+		return;
+
+	mprintf(("Allocating space for at least %i new ship subsystems ... ", num_so));
+
+	// we might need more than one set worth of new subsystems, so make as many as required
+	do {
+		for (idx = 0; idx < NUM_SHIP_SUBSYSTEM_SETS; idx++) {
+			if (Ship_subsystems[idx] == NULL)
+				break;
+		}
+
+		// safety check, but even if we have this here it will fubar something else later, so we're screwed either way
+		if (idx == NUM_SHIP_SUBSYSTEM_SETS) {
+			Int3();
+			return;
+		}
+
+		Ship_subsystems[idx] = (ship_subsys*) vm_malloc( sizeof(ship_subsys) * NUM_SHIP_SUBSYSTEMS_PER_SET );
+		memset( Ship_subsystems[idx], 0, sizeof(ship_subsys) * NUM_SHIP_SUBSYSTEMS_PER_SET );
+
+		// append the new set to our free list
+		for (i = 0; i < NUM_SHIP_SUBSYSTEMS_PER_SET; i++)
+			list_append( &ship_subsys_free_list, &Ship_subsystems[idx][i] );
+
+		Num_ship_subsystems_allocated += NUM_SHIP_SUBSYSTEMS_PER_SET;
+	} while ( (Num_ship_subsystems - Num_ship_subsystems_allocated) > 0 );
+
+	if (page_in)
+		Num_ship_subsystems = num_subsystems_save;
+
+	mprintf((" a total of %i is now available (%i in-use).\n", Num_ship_subsystems_allocated, Num_ship_subsystems));
+}
+
 // This will get called at the start of each level.
 void ship_level_init()
 {
@@ -5172,11 +5263,8 @@ void ship_level_init()
 
 
 	// Empty the subsys list
-	memset( Ship_subsystems, 0, sizeof(ship_subsys)*MAX_SHIP_SUBOBJECTS );
-
+	ship_clear_subsystems();
 	list_init( &ship_subsys_free_list );
-	for ( i = 0; i < MAX_SHIP_SUBOBJECTS; i++ )
-		list_append( &ship_subsys_free_list, &Ship_subsystems[i] );
 
 	Laser_energy_out_snd_timer = 1;
 	Missile_out_snd_timer		= 1;
@@ -5859,11 +5947,14 @@ void subsys_set(int objnum, int ignore_subsys_info)
 	// for each subsystem, get a new ship_subsys instance and set up the pointers and other values
 	list_init ( &shipp->subsys_list );								// initialize the ship's list of subsystems
 
+	// make sure to have allocated the number of subsystems we require
+	ship_allocate_subsystems( sinfo->n_subsystems );
+
 	for ( i = 0; i < sinfo->n_subsystems; i++ )
 	{
 		model_system = &(sinfo->subsystems[i]);
 		if (model_system->model_num < 0) {
-			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem '%s' on ship type '%s'.\nNot linking into ship!\n\n(This warning means that a subsystem was present in %s and not present in the model\nit should probably be removed from the table or added to the model.)\n", model_system->subobj_name, sinfo->name, current_ship_table );
+			Warning (LOCATION, "Invalid subobj_num or model_num in subsystem '%s' on ship type '%s'.\nNot linking into ship!\n\n(This warning means that a subsystem was present in the table entry and not present in the model\nit should probably be removed from the table or added to the model.)\n", model_system->subobj_name, sinfo->name );
 			continue;
 		}
 
@@ -8521,7 +8612,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 	// Primary banks
 	if ( pm->n_guns > sip->num_primary_banks ) {
 		Assert(pm->n_guns <= MAX_SHIP_PRIMARY_BANKS);
-		Warning(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks in %s for %s\n", pm->n_guns, sip->num_primary_banks, current_ship_table, sip->name);
+		Warning(LOCATION, "There are %d primary banks in the model file,\nbut only %d primary banks specified for %s\n", pm->n_guns, sip->num_primary_banks, sip->name);
 		for ( i = sip->num_primary_banks; i < pm->n_guns; i++ ) {
 			// Make unspecified weapon for bank be a Light Laser
 			swp->primary_bank_weapons[i] = weapon_info_lookup(NOX("Light Laser"));
@@ -8530,14 +8621,14 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		sip->num_primary_banks = pm->n_guns;
 	}
 	else if ( pm->n_guns < sip->num_primary_banks ) {
-		Warning(LOCATION, "There are %d primary banks in %s for %s\nbut only %d primary banks in the model\n", sip->num_primary_banks, sip->name, current_ship_table, pm->n_guns);
+		Warning(LOCATION, "There are %d primary banks specified for %s\nbut only %d primary banks in the model\n", sip->num_primary_banks, sip->name, pm->n_guns);
 		sip->num_primary_banks = pm->n_guns;
 	}
 
 	// Secondary banks
 	if ( pm->n_missiles > sip->num_secondary_banks ) {
 		Assert(pm->n_missiles <= MAX_SHIP_SECONDARY_BANKS);
-		Warning(LOCATION, "There are %d secondary banks in model,\nbut only %d secondary banks in %s for %s\n", pm->n_missiles, sip->num_secondary_banks, current_ship_table, sip->name);
+		Warning(LOCATION, "There are %d secondary banks in model,\nbut only %d secondary banks specified for %s\n", pm->n_missiles, sip->num_secondary_banks, sip->name);
 		for ( i = sip->num_secondary_banks; i < pm->n_missiles; i++ ) {
 			// Make unspecified weapon for bank be a Rockeye Missile
 			swp->secondary_bank_weapons[i] = weapon_info_lookup(NOX("Rockeye Missile"));
@@ -8546,7 +8637,7 @@ void ship_set_default_weapons(ship *shipp, ship_info *sip)
 		sip->num_secondary_banks = pm->n_missiles;
 	}
 	else if ( pm->n_missiles < sip->num_secondary_banks ) {
-		Warning(LOCATION, "There are %d secondary banks in %s for %s,\n but only %d secondary banks in the model.\n", sip->num_secondary_banks, current_ship_table, sip->name, pm->n_missiles);
+		Warning(LOCATION, "There are %d secondary banks specified for %s,\n but only %d secondary banks in the model.\n", sip->num_secondary_banks, sip->name, pm->n_missiles);
 		sip->num_secondary_banks = pm->n_missiles;
 	}
 
@@ -11330,14 +11421,7 @@ int ship_type_name_lookup(char *name)
 	if(name == NULL || !strlen(name)){
 		return -1;
 	}
-/*
-	// look through the Ship_type_names array
-	for(idx=0; idx<MAX_SHIP_TYPE_COUNTS; idx++){
-		if(!stricmp(name, Ship_type_names[idx])){
-			return idx;
-		}
-	}
-*/
+
 	//Look through Ship_types array
 	uint max_size = Ship_types.size();
 	for(uint idx=0; idx < max_size; idx++){
@@ -11800,10 +11884,12 @@ float ship_get_subsystem_strength( ship *shipp, int type )
 	if (Objects[shipp->objnum].hull_strength <= 0.0f)
 		return 0.0f;
 
-	strength = shipp->subsys_info[type].current_hits / shipp->subsys_info[type].total_hits;
+	// short circuit 0
+	if (shipp->subsys_info[type].current_hits <= 0.0f)
+		return 0.0f;
 
-	if ( strength == 0.0f )		// short circuit 0
-		return strength;
+	strength = shipp->subsys_info[type].current_hits / shipp->subsys_info[type].total_hits;
+	Assert( strength != 0.0f );
 
 	if ( (type == SUBSYSTEM_ENGINE) && (strength < 1.0f) ) {
 		float percent;
@@ -14537,7 +14623,7 @@ int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type)
 
 void ship_page_in()
 {
-	int i,j,k;
+	int i, j, k;
 	int num_subsystems_needed = 0;
 
 	int *ship_class_used = NULL;
@@ -14550,9 +14636,8 @@ void ship_page_in()
 	memset( ship_class_used, 0, Num_ship_classes * sizeof(int) );
 
 	// Mark any support ship types as used
-	// 
-	for (i=0; i<Num_ship_classes; i++ )	{
-		if ( Ship_info[i].flags & SIF_SUPPORT )	{
+	for (i = 0; i < Num_ship_classes; i++)	{
+		if (Ship_info[i].flags & SIF_SUPPORT) {
 			nprintf(( "Paging", "Found support ship '%s'\n", Ship_info[i].name ));
 			ship_class_used[i]++;
 
@@ -14561,194 +14646,171 @@ void ship_page_in()
 	}
 	
 	// Mark any ships in the mission as used
-	//
-	for (i=0; i<MAX_SHIPS; i++)	{
-		if (Ships[i].objnum >= 0)	{
-			nprintf(( "Paging","Found ship '%s'\n", Ships[i].ship_name ));
-			ship_class_used[Ships[i].ship_info_index]++;
+	for (i = 0; i < MAX_SHIPS; i++)	{
+		if (Ships[i].objnum < 0)
+			continue;
+	
+		nprintf(( "Paging","Found ship '%s'\n", Ships[i].ship_name ));
+		ship_class_used[Ships[i].ship_info_index]++;
 
-			// check if we are going to use a Knossos device and make sure the special warp ani gets pre-loaded
-			if ( Ship_info[Ships[i].ship_info_index].flags & SIF_KNOSSOS_DEVICE )
-				Knossos_warp_ani_used = 1;
+		// check if we are going to use a Knossos device and make sure the special warp ani gets pre-loaded
+		if ( Ship_info[Ships[i].ship_info_index].flags & SIF_KNOSSOS_DEVICE )
+			Knossos_warp_ani_used = 1;
 
-			// mark any weapons as being used, saves memory and time if we don't load them all
-			ship_weapon *swp = &Ships[i].weapons;
+		// mark any weapons as being used, saves memory and time if we don't load them all
+		ship_weapon *swp = &Ships[i].weapons;
 
-			for (j = 0; j < swp->num_primary_banks; j++)
-				weapon_mark_as_used(swp->primary_bank_weapons[j]);
+		for (j = 0; j < swp->num_primary_banks; j++)
+			weapon_mark_as_used(swp->primary_bank_weapons[j]);
 
-			for (j = 0; j < swp->num_secondary_banks; j++)
-				weapon_mark_as_used(swp->secondary_bank_weapons[j]);
+		for (j = 0; j < swp->num_secondary_banks; j++)
+			weapon_mark_as_used(swp->secondary_bank_weapons[j]);
 
-			// get weapons for all capship subsystems (turrets)
-			ship_subsys *ptr = GET_FIRST(&Ships[i].subsys_list);
-			while (ptr != END_OF_LIST(&Ships[i].subsys_list)) {
-				for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
-					weapon_mark_as_used(ptr->weapons.primary_bank_weapons[j]);
+		// get weapons for all capship subsystems (turrets)
+		ship_subsys *ptr = GET_FIRST(&Ships[i].subsys_list);
 
-				for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
-					weapon_mark_as_used(ptr->weapons.secondary_bank_weapons[j]);
+		while (ptr != END_OF_LIST(&Ships[i].subsys_list)) {
+			for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
+				weapon_mark_as_used(ptr->weapons.primary_bank_weapons[j]);
 
-				ptr = GET_NEXT(ptr);
-			}
+			for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
+				weapon_mark_as_used(ptr->weapons.secondary_bank_weapons[j]);
 
-			num_subsystems_needed += Ship_info[Ships[i].ship_info_index].n_subsystems;
+			ptr = GET_NEXT(ptr);
 		}
+
+		// don't need this one anymore, it's already been accounted for
+	//	num_subsystems_needed += Ship_info[Ships[i].ship_info_index].n_subsystems;
 	}
 
 	// Mark any ships that might warp in in the future as used
-	//
-	for(p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
-	{
-		nprintf(( "Paging","Found future arrival ship '%s'\n", p_objp->name ));
+	for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp)) {
+		nprintf(( "Paging", "Found future arrival ship '%s'\n", p_objp->name ));
 		ship_class_used[p_objp->ship_class]++;
 
 		// This will go through Subsys_index[] and grab all weapons: primary, secondary, and turrets
 		for (i = p_objp->subsys_index; i < (p_objp->subsys_index + p_objp->subsys_count); i++) {
 			for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
-				if (Subsys_status[i].primary_banks[j] >= 0) {
+				if (Subsys_status[i].primary_banks[j] >= 0)
 					weapon_mark_as_used(Subsys_status[i].primary_banks[j]);
-				}
 			}
 
 			for (j = 0; j < MAX_SHIP_SECONDARY_BANKS; j++) {
-				if (Subsys_status[i].secondary_banks[j] >= 0) {
+				if (Subsys_status[i].secondary_banks[j] >= 0)
 					weapon_mark_as_used(Subsys_status[i].secondary_banks[j]);
-				}
 			}
 		}
 
 		num_subsystems_needed += Ship_info[p_objp->ship_class].n_subsystems;
 	}
 
+	// pre-allocate the subsystems, this really only needs to happen for ships
+	// which don't exist yet (ie, ships NOT in Ships[])
+	ship_allocate_subsystems(num_subsystems_needed, true);
+
 	mprintf(("About to page in ships!\n"));
 
-
 	// Page in all the ship classes that are used on this level
-	//
 	int num_ship_types_used = 0;
 	int test_id = -1;
 
-	for (i=0; i<Num_ship_classes; i++ )
-	{//Num_ship_classes not MAX_SHIPTYPES ship_class_used is dynamicly allocated to Num_ship_classes -Bobboau
-		if ( ship_class_used[i]  )
-		{
-			ship_info *sip = &Ship_info[i];
+	for (i = 0; i < Num_ship_classes; i++) {
+		if ( !ship_class_used[i] )
+			continue;
 
-			num_ship_types_used++;
+		ship_info *sip = &Ship_info[i];
+		int model_previously_loaded = -1;
+		int ship_previously_loaded = -1;
 
-			// Page in the small hud icons for each ship
-			hud_ship_icon_page_in(sip);
+		num_ship_types_used++;
 
-			// See if this model was previously loaded by another ship
-			int model_previously_loaded = -1;
-			int ship_previously_loaded = -1;
-			for (j=0; j<Num_ship_classes; j++ )	{
-				if ( (Ship_info[j].model_num >= 0) && !stricmp(sip->pof_file, Ship_info[j].pof_file) )	{
-					// Model already loaded
-					model_previously_loaded = Ship_info[j].model_num;
-					ship_previously_loaded = j;
+		// Page in the small hud icons for each ship
+		hud_ship_icon_page_in(sip);
 
-					// the model should already be loaded so this wouldn't take long, but
-					// we need to make sure that the load count for the model is correct
-					test_id = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-					Assert( test_id == model_previously_loaded );
+		// See if this model was previously loaded by another ship
+		for (j = 0; j < Num_ship_classes; j++) {
+			if ( (Ship_info[j].model_num > -1) && !stricmp(sip->pof_file, Ship_info[j].pof_file) ) {
+				// Model already loaded
+				model_previously_loaded = Ship_info[j].model_num;
+				ship_previously_loaded = j;
 
-					break;
-				}
+				// the model should already be loaded so this wouldn't take long, but
+				// we need to make sure that the load count for the model is correct
+				test_id = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+				Assert( test_id == model_previously_loaded );
+
+				break;
 			}
-
-			// If the model is previously loaded...
-			if ( model_previously_loaded >= 0 )	{
-
-				// If previously loaded model isn't the same ship class...)
-				if ( ship_previously_loaded != i )	{
-
-					// update the model number.
-					sip->model_num = model_previously_loaded;
-
-					for ( j = 0; j < sip->n_subsystems; j++ )	{
-						sip->subsystems[j].model_num = -1;
-					}
-
-					ship_copy_subsystem_fixup(sip);
-
-					#ifndef NDEBUG
-						for ( j = 0; j < sip->n_subsystems; j++ )	{
-							Assert( sip->subsystems[j].model_num == sip->model_num );
-						}
-					#endif
-
-				} else {
-					// Just to be safe (I mean to check that my code works...)
-					Assert( sip->model_num >= 0 );
-					Assert( sip->model_num == model_previously_loaded );
-
-					#ifndef NDEBUG
-						for ( j = 0; j < sip->n_subsystems; j++ )	{
-							//Assert( sip->subsystems[j].model_num == sip->modelnum );
-							if(sip->subsystems[j].model_num != sip->model_num) {
-								Warning(LOCATION, "Ship '%s' does not have subsystem '%s' linked into the model file, '%s'.", sip->name, sip->subsystems[j].name, sip->pof_file);
-							}
-						}
-					#endif
-				}
-			} else {
-				// Model not loaded... so load it and page in its textures
-				sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-
-				Assert( sip->model_num >= 0 );
-
-				// Verify that all the subsystem model numbers are updated
-				#ifndef NDEBUG
-					for ( j = 0; j < sip->n_subsystems; j++ )	{
-						Assert( sip->subsystems[j].model_num == sip->model_num );	// JAS
-					}
-				#endif
-			}
-
-			// page in all of the textures if the model got loaded
-			if ( sip->model_num >= 0 ) {
-				nprintf(( "Paging", "Paging in textures for model '%s'\n", sip->pof_file ));
-
-				ship_page_in_model_textures(sip->model_num, i);
-			} else {
-				nprintf(( "Paging", "Couldn't load model '%s'\n", sip->pof_file ));
-			}
-
-			// more weapon marking, the weapon info in Ship_info[] is the default
-			// loadout which isn't specified by missionparse unless it's different
-			for (j = 0; j < sip->num_primary_banks; j++)
-				weapon_mark_as_used(sip->primary_bank_weapons[j]);
-
-			for (j = 0; j < sip->num_secondary_banks; j++)
-				weapon_mark_as_used(sip->secondary_bank_weapons[j]);
-
-			weapon_mark_as_used(sip->cmeasure_type);
-
-			for (j = 0; j < sip->n_subsystems; j++)
-			{
-				model_subsystem *msp = &sip->subsystems[j];
-
-				for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
-					weapon_mark_as_used(msp->primary_banks[k]);
-
-				for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
-					weapon_mark_as_used(msp->secondary_banks[k]);
-			}
-
-			//Page in the shockwave stuff. -C
-			sip->shockwave.load();
 		}
+
+		// If the model is previously loaded...
+		if (model_previously_loaded >= 0) {
+			// If previously loaded model isn't the same ship class...)
+			if (ship_previously_loaded != i) {
+				// update the model number.
+				sip->model_num = model_previously_loaded;
+
+				for (j = 0; j < sip->n_subsystems; j++)
+					sip->subsystems[j].model_num = -1;
+
+				ship_copy_subsystem_fixup(sip);
+
+#ifndef NDEBUG
+				for (j = 0; j < sip->n_subsystems; j++)
+					Assert( sip->subsystems[j].model_num == sip->model_num );
+#endif
+			} else {
+				// Just to be safe (I mean to check that my code works...)
+				Assert( sip->model_num >= 0 );
+				Assert( sip->model_num == model_previously_loaded );
+
+#ifndef NDEBUG
+				for (j = 0; j < sip->n_subsystems; j++) {
+					//Assert( sip->subsystems[j].model_num == sip->modelnum );
+					if (sip->subsystems[j].model_num != sip->model_num)
+						Warning(LOCATION, "Ship '%s' does not have subsystem '%s' linked into the model file, '%s'.", sip->name, sip->subsystems[j].name, sip->pof_file);
+				}
+#endif
+			}
+		} else {
+			// Model not loaded, so load it
+			sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+
+			Assert( sip->model_num >= 0 );
+
+#ifndef NDEBUG
+			// Verify that all the subsystem model numbers are updated
+			for (j = 0; j < sip->n_subsystems; j++)
+				Assert( sip->subsystems[j].model_num == sip->model_num );	// JAS
+#endif
+		}
+
+		// more weapon marking, the weapon info in Ship_info[] is the default
+		// loadout which isn't specified by missionparse unless it's different
+		for (j = 0; j < sip->num_primary_banks; j++)
+			weapon_mark_as_used(sip->primary_bank_weapons[j]);
+
+		for (j = 0; j < sip->num_secondary_banks; j++)
+			weapon_mark_as_used(sip->secondary_bank_weapons[j]);
+
+		weapon_mark_as_used(sip->cmeasure_type);
+
+		for (j = 0; j < sip->n_subsystems; j++) {
+			model_subsystem *msp = &sip->subsystems[j];
+
+			for (k = 0; k < MAX_SHIP_PRIMARY_BANKS; k++)
+				weapon_mark_as_used(msp->primary_banks[k]);
+
+			for (k = 0; k < MAX_SHIP_SECONDARY_BANKS; k++)
+				weapon_mark_as_used(msp->secondary_banks[k]);
+		}
+
+		// Page in the shockwave stuff. -C
+		sip->shockwave.load();
 	}
 
 	nprintf(( "Paging", "There are %d ship classes used in this mission.\n", num_ship_types_used ));
-	mprintf(( "This mission requires %d Ship_subsystems. See #define MAX_SHIP_SUBOBJECTS.\n", num_subsystems_needed ));
 
-	// JAS: If you hit this, then MAX_SHIP_SUBOBJECTS is set too low.
-	// I added this code in to detect an error that wasn't getting detected any other
-	// way.
-	Assert(num_subsystems_needed < MAX_SHIP_SUBOBJECTS );	
 
 	// Page in the thruster effects
 	//
