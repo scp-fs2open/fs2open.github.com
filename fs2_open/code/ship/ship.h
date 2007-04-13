@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.21 $
- * $Date: 2007-02-27 01:44:45 $
- * $Author: Goober5000 $
+ * $Revision: 2.150.2.22 $
+ * $Date: 2007-04-13 00:26:45 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.21  2007/02/27 01:44:45  Goober5000
+ * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
+ *
  * Revision 2.150.2.20  2007/02/25 03:58:07  Goober5000
  * use dynamic memory instead of a static buffer for ship-specific replacement textures
  *
@@ -1156,10 +1159,6 @@ typedef struct ship_subsys_info {
 	float current_hits;		// current count of hits for all subsystems of this type.	
 } ship_subsys_info;
 
-	
-//#define	MAX_SHIP_SUBOBJECTS		50
-
-//extern ship_subobj	Ship_subsystems[MAX_SHIP_SUBOBJECTS];
 
 // states for the flags variable within the ship structure
 // low bits are for mission file savable flags..
@@ -1616,33 +1615,6 @@ typedef struct thruster_particles {
 	float		variance;
 } thruster_particles;
 
-// defines for ship types.  These defines are distinct from the flag values in the ship_info struct.  These
-// values are used for array lookups, etc.
-/*
-#define MAX_SHIP_TYPE_COUNTS				20
-*/
-/*
-#define SHIP_TYPE_NONE						0
-#define SHIP_TYPE_CARGO						1
-#define SHIP_TYPE_FIGHTER_BOMBER			2
-#define SHIP_TYPE_CRUISER					3
-#define SHIP_TYPE_FREIGHTER				4
-#define SHIP_TYPE_CAPITAL					5
-#define SHIP_TYPE_TRANSPORT				6
-#define SHIP_TYPE_REPAIR_REARM			7
-#define SHIP_TYPE_NAVBUOY					8
-#define SHIP_TYPE_SENTRYGUN				9
-#define SHIP_TYPE_ESCAPEPOD				10
-#define SHIP_TYPE_SUPERCAP					11
-#define SHIP_TYPE_STEALTH					12	// this is really never used, because a stealth ship must also be some other class (fighter, etc.)
-#define SHIP_TYPE_FIGHTER					13
-#define SHIP_TYPE_BOMBER					14
-#define SHIP_TYPE_DRYDOCK					15
-#define SHIP_TYPE_AWACS						16
-#define SHIP_TYPE_GAS_MINER				17
-#define SHIP_TYPE_CORVETTE					18
-#define SHIP_TYPE_KNOSSOS_DEVICE			19
-*/
 
 #define STI_MSG_COUNTS_FOR_ALONE		(1<<0)
 #define STI_MSG_PRAISE_DESTRUCTION		(1<<1)
@@ -2036,10 +2008,6 @@ typedef struct ship_counts {
 } ship_counts;
 
 extern std::vector<ship_counts> Ship_type_counts;
-
-//extern int Ship_type_flags[MAX_SHIP_TYPE_COUNTS];					// SIF_* flags for each ship type
-//extern ship_counts	Ship_counts[MAX_SHIP_TYPE_COUNTS];
-//extern int Ship_type_priorities[MAX_SHIP_TYPE_COUNTS];
 
 
 // Use the below macros when you want to find the index of an array element in the
