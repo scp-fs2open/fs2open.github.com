@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.21 $
- * $Date: 2007-02-11 09:37:18 $
+ * $Revision: 2.22 $
+ * $Date: 2007-04-13 00:31:57 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2007/02/11 09:37:18  taylor
+ * dd VALID_FNAME() macro and put it around a few places (more to come)
+ * clean out some old variables
+ * move CLAMP() macro from opengl header to global header
+ * update COUNT_ESTIMATE to match new bmpman changes
+ *
  * Revision 2.20  2006/08/09 14:42:24  taylor
  * fix for setting of texture lod bias
  *
@@ -256,6 +262,12 @@
 #define GL_CONSTANT_ARB						0x8576
 #define GL_PRIMARY_COLOR_ARB				0x8577
 #define GL_PREVIOUS_ARB						0x8578
+#endif
+
+#ifndef GL_ARB_point_sprite
+#define GL_ARB_point_sprite	1
+#define GL_POINT_SPRITE_ARB					0x8861
+#define GL_COORD_REPLACE_ARB				0x8862
 #endif
 
 #ifndef GL_EXT_framebuffer_object

@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.h $
- * $Revision: 1.16 $
- * $Date: 2007-01-07 13:08:12 $
+ * $Revision: 1.17 $
+ * $Date: 2007-04-13 00:31:58 $
  * $Author: taylor $
  *
  * header file to contain the defenitions for the OpenGL exetension
  * functions used in fs2_open
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2007/01/07 13:08:12  taylor
+ * clean up extension list and comment out the things that we don't use
+ *
  * Revision 1.15  2006/08/09 14:42:24  taylor
  * fix for setting of texture lod bias
  *
@@ -136,11 +139,11 @@
 //the structure of extensions/functions are located in gropenglextension.cpp
 
 typedef struct ogl_extension {
-	/*const*/ int required_to_run;
-	int enabled;
-	/*const*/ int num_extensions;
+	bool required_to_run;
+	bool enabled;
+	int num_extensions;
 	const char *extension_name[3];
-	/*const*/ int num_functions;
+	int num_functions;
 	const char *function_names[15];
 } ogl_extension;
 
@@ -171,13 +174,14 @@ extern ogl_function GL_EXT_Special[];
 #define OGL_ARB_TEXTURE_NON_POWER_OF_TWO	10
 #define OGL_ARB_VERTEX_BUFFER_OBJECT		11
 #define OGL_ARB_PIXEL_BUFFER_OBJECT			12
-#define OGL_APPLE_CLIENT_STORAGE			13
-#define OGL_SGIS_GENERATE_MIPMAP			14
-#define OGL_EXT_FRAMEBUFFER_OBJECT			15
-#define OGL_ARB_TEXTURE_RECTANGLE			16
-#define OGL_EXT_BGRA						17
-#define OGL_ARB_TEXTURE_CUBE_MAP			18
-#define OGL_EXT_TEXTURE_LOD_BIAS			19
+//#define OGL_APPLE_CLIENT_STORAGE			13
+#define OGL_SGIS_GENERATE_MIPMAP			13
+#define OGL_EXT_FRAMEBUFFER_OBJECT			14
+#define OGL_ARB_TEXTURE_RECTANGLE			15
+#define OGL_EXT_BGRA						16
+#define OGL_ARB_TEXTURE_CUBE_MAP			17
+#define OGL_EXT_TEXTURE_LOD_BIAS			18
+#define OGL_ARB_POINT_SPRITE				19
 
 #define NUM_OGL_EXTENSIONS					20
 
