@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.17 $
- * $Date: 2007-01-07 13:08:12 $
+ * $Revision: 1.18 $
+ * $Date: 2007-04-13 00:31:58 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2007/01/07 13:08:12  taylor
+ * clean up extension list and comment out the things that we don't use
+ *
  * Revision 1.16  2006/08/09 14:42:24  taylor
  * fix for setting of texture lod bias
  *
@@ -121,7 +124,7 @@
 
 
 
-char *OGL_extension_string;
+char *OGL_extension_string = NULL;
 
 // ogl_extension is:
 //   - required for game flag
@@ -135,73 +138,73 @@ char *OGL_extension_string;
 ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 {
 	// allows for per vertex fog coordinate
-	{ 0, 0, 1, { "GL_EXT_fog_coord" }, 2, {
+	{ false, false, 1, { "GL_EXT_fog_coord" }, 2, {
 		"glFogCoordfEXT", "glFogCoordPointerEXT" } },
 
 	// provides multiple texture units for rendering more than one texture in a single pass
 	// (NOTE: this was included in OpenGL 1.2.1 standard, but we still need to check for it or require > 1.2 OGL)
-	{ 1, 0, 1, { "GL_ARB_multitexture" } , 3, {
+	{ true,  false, 1, { "GL_ARB_multitexture" } , 3, {
 		"glMultiTexCoord2fARB", "glActiveTextureARB", "glClientActiveTextureARB" } },
 
 	// "ADD" function for texture environment
-	{ 1, 0, 2, { "GL_ARB_texture_env_add", "GL_EXT_texture_env_add" }, 0, { NULL } },
+	{ true,  false, 2, { "GL_ARB_texture_env_add", "GL_EXT_texture_env_add" }, 0, { NULL } },
 
-	// framework for using compressed textures (don't provide actual compression formats we use)
-	{ 0, 0, 1, { "GL_ARB_texture_compression" }, 3, {
+	// framework for using compressed textures (doesn't provide actual compression formats we use)
+	{ false, false, 1, { "GL_ARB_texture_compression" }, 3, {
 		"glCompressedTexImage2D", "glCompressedTexSubImage2D", "glGetCompressedTexImageARB" } },
 
 	// S3TC texture compression/decompression support (DXT? encoded DDS images)
-	{ 0, 0, 1, { "GL_EXT_texture_compression_s3tc" }, 0, { NULL } },
+	{ false, false, 1, { "GL_EXT_texture_compression_s3tc" }, 0, { NULL } },
 
 	// allows for setting of anisotropic filter (for mipmap texture filtering)
-	{ 0, 0, 1, { "GL_EXT_texture_filter_anisotropic" }, 0, { NULL } },
+	{ false, false, 1, { "GL_EXT_texture_filter_anisotropic" }, 0, { NULL } },
 
 	// provides app support to control how distance is calculated in fog computations
-//	{ 0, 0, 1, { "GL_NV_fog_distance" }, 0, { NULL } },
+//	{ false, false, 1, { "GL_NV_fog_distance" }, 0, { NULL } },
 
 	// specify RGB values for secondary color
-//	{ 0, 0, 1, { "GL_EXT_secondary_color" }, 2, {
+//	{ false, false, 1, { "GL_EXT_secondary_color" }, 2, {
 //		"glSecondaryColor3fvEXT", "glSecondaryColor3ubvEXT" } },
 
 	// "COMBINE" function for texture environment, these two are basically the same
-	{ 0, 0, 2, { "GL_ARB_texture_env_combine", "GL_EXT_texture_env_combine" }, 0, { NULL } },
+	{ false, false, 2, { "GL_ARB_texture_env_combine", "GL_EXT_texture_env_combine" }, 0, { NULL } },
 
 	// lock a vertex array buffer so that OGL can transform it just once with multiple draws
-	{ 0, 0, 1, { "GL_EXT_compiled_vertex_array" }, 2, {
+	{ false, false, 1, { "GL_EXT_compiled_vertex_array" }, 2, {
 		"glLockArraysEXT", "glUnlockArraysEXT" } },
 
 	// allows for row major order matrices rather than the standard column major order
-//	{ 1, 0, 1, { "GL_ARB_transpose_matrix" }, 2, {
+//	{ true,  false, 1, { "GL_ARB_transpose_matrix" }, 2, {
 //		"glLoadTransposeMatrixfARB", "glMultTransposeMatrixfARB" } },
 
 	// this is obsolete with OGL 1.2, which is why the function name is the standard, but we check for the orginal extension name
-	{ 1, 0, 1, { "GL_EXT_draw_range_elements" }, 1, {
+	{ true,  false, 1, { "GL_EXT_draw_range_elements" }, 1, {
 		"glDrawRangeElements" } },
 
 	// extra texture wrap repeat mode
-	{ 0, 0, 1, { "GL_ARB_texture_mirrored_repeat" }, 0, { NULL } },
+	{ false, false, 1, { "GL_ARB_texture_mirrored_repeat" }, 0, { NULL } },
 
 	// allows for non-power-of-two textures, but without any cost to normal functionality or usage
-	{ 0, 0, 1, { "GL_ARB_texture_non_power_of_two" }, 0, { NULL } },
+	{ false, false, 1, { "GL_ARB_texture_non_power_of_two" }, 0, { NULL } },
 
 	// creates buffer objects (cached in hi-speed video card memory) for vertex data
-	{ 0, 0, 1, { "GL_ARB_vertex_buffer_object" }, 6, {
+	{ false, false, 1, { "GL_ARB_vertex_buffer_object" }, 6, {
 		"glBindBufferARB", "glDeleteBuffersARB", "glGenBuffersARB", "glBufferDataARB",
 		"glMapBufferARB", "glUnmapBufferARB" } },
 
 	// allows pixel data to use buffer objects
-	{ 0, 0, 2, { "GL_ARB_pixel_buffer_object", "GL_EXT_pixel_buffer_object" }, 6, {
+	{ false, false, 2, { "GL_ARB_pixel_buffer_object", "GL_EXT_pixel_buffer_object" }, 6, {
 		"glBindBufferARB", "glDeleteBuffersARB", "glGenBuffersARB", "glBufferDataARB",
 		"glMapBufferARB", "glUnmapBufferARB" } },
 
 	// Mac-only extension that allows use of system copy of texture to avoid an additional API copy
-	{ 0, 0, 1, { "GL_APPLE_client_storage" }, 0, { NULL } },
+//	{ false, 0, 1, { "GL_APPLE_client_storage" }, 0, { NULL } },
 
 	// make me some mipmaps!
-	{ 0, 0, 1, { "GL_SGIS_generate_mipmap" }, 0, { NULL } },
+	{ false, false, 1, { "GL_SGIS_generate_mipmap" }, 0, { NULL } },
 
 	// framebuffer object gives us render-to-texture support, among other things
-	{ 0, 0, 1, { "GL_EXT_framebuffer_object" }, 15, { 
+	{ false, false, 1, { "GL_EXT_framebuffer_object" }, 15, { 
 		"glIsRenderbufferEXT", "glBindRenderbufferEXT", "glDeleteRenderbuffersEXT", "glGenRenderbuffersEXT",
 		"glRenderbufferStorageEXT", "glGetRenderbufferParameterivEXT", "glIsFramebufferEXT", "glBindFramebufferEXT",
 		"glDeleteFramebuffersEXT", "glGenFramebuffersEXT", "glCheckFramebufferStatusEXT", "glFramebufferTexture2DEXT",
@@ -210,16 +213,19 @@ ogl_extension GL_Extensions[NUM_OGL_EXTENSIONS] =
 	// these next three are almost exactly the same, just different stages of naming.
 	// allows for non-power-of-textures, but at a cost of functionality
 	// (NOTE: the EXT version is usually found only on the Mac)
-	{ 0, 0, 3, { "GL_ARB_texture_rectangle", "GL_EXT_texture_rectangle", "GL_NV_texture_rectangle" }, 0, { NULL } },
+	{ false, false, 3, { "GL_ARB_texture_rectangle", "GL_EXT_texture_rectangle", "GL_NV_texture_rectangle" }, 0, { NULL } },
 
 	// for BGRA rather than RGBA support (it's faster in most cases)
-	{ 1, 0, 1, { "GL_EXT_bgra" }, 0, { NULL } },
+	{ true,  false, 1, { "GL_EXT_bgra" }, 0, { NULL } },
 
 	// cube map support (for environment maps, normal maps, bump maps, etc.)
-	{ 0, 0, 2, { "GL_ARB_texture_cube_map", "GL_EXT_texture_cube_map" }, 0, { NULL } },
+	{ false, false, 2, { "GL_ARB_texture_cube_map", "GL_EXT_texture_cube_map" }, 0, { NULL } },
 
 	// apply bias to level-of-detail lamda
-	{ 0, 0, 1, { "GL_EXT_texture_lod_bias" }, 0, { NULL } }
+	{ false, false, 1, { "GL_EXT_texture_lod_bias" }, 0, { NULL } },
+
+	// point sprites (for particles)
+	{ false, false, 2, { "GL_ARB_point_sprite", "NV_point_sprite" }, 0, { NULL } }
 };
 
 // ogl_funcion is:
@@ -274,10 +280,18 @@ ogl_function GL_EXT_Special[NUM_OGL_EXT_SPECIAL] = {
 };
 
 
+#ifdef _WIN32
+#define GET_PROC_ADDRESS(x)		wglGetProcAddress((x))
+#else
+#define GET_PROC_ADDRESS(x)		SDL_GL_GetProcAddress((x))
+#endif
 
 //tries to find a certain extension
-static inline int opengl_find_extension(const char* ext_to_find)
+static inline int opengl_find_extension(const char *ext_to_find)
 {
+	if (OGL_extension_string == NULL)
+		return 0;
+
 	return ( strstr(OGL_extension_string, ext_to_find) != NULL );
 }
 
@@ -292,11 +306,7 @@ static int opengl_get_extensions_special()
 
 		Assert( func->function_name != NULL );
 
-#ifdef _WIN32
-		func->function_ptr = (ptr_u)wglGetProcAddress(func->function_name);
-#else
-		func->function_ptr = (ptr_u)SDL_GL_GetProcAddress(func->function_name);
-#endif
+		func->function_ptr = (ptr_u)GET_PROC_ADDRESS(func->function_name);
 
 		if (func->function_ptr) {
 			mprintf(("  Found special extension function \"%s\".\n", func->function_name));
@@ -321,15 +331,16 @@ ogl_function *get_ogl_function( const char *name )
 
 	return NULL;
 }
-	
+
 //finds OGL extension functions
 //returns number found
 int opengl_get_extensions()
 {
-	OGL_extension_string = (char*)glGetString(GL_EXTENSIONS);
 	int i, j, k, num_found = 0;
 	ogl_extension *ext = NULL;
 	ogl_function *func = NULL;
+
+	OGL_extension_string = (char*)glGetString(GL_EXTENSIONS);
 
 	for (i = 0; i < NUM_OGL_EXTENSIONS; i++) {
 		ext = &GL_Extensions[i];
@@ -352,28 +363,18 @@ int opengl_get_extensions()
 					if (func == NULL)
 						break;
 
-					if (!func->function_ptr) {
-#ifdef _WIN32
-						func->function_ptr = (ptr_u)wglGetProcAddress(func->function_name);
-#else
-						func->function_ptr = (ptr_u)SDL_GL_GetProcAddress(func->function_name);
-#endif
-					}
+					if ( !func->function_ptr )
+						func->function_ptr = (ptr_u)GET_PROC_ADDRESS(func->function_name);
 
-					if (!func->function_ptr)
+					if ( !func->function_ptr )
 						break;
 				}
 
 				if ( j != ext->num_functions ) {
 					mprintf(("  Found extension \"%s\", but can't find the required function \"%s()\".  Extension will be disabled!\n", ext->extension_name[k], ext->function_names[j]));
 
-					if (ext->required_to_run) {
-#ifdef _WIN32
-						Error( LOCATION, "The required OpenGL extension '%s' is not fully supported by your current driver version or graphics card.  You can either use the Direct3D rendering engine (non-FRED builds only) or update your video card drivers.\n\n", ext->extension_name[k] );
-#else
+					if (ext->required_to_run)
 						Error( LOCATION, "The required OpenGL extension '%s' is not fully supported by your current driver version or graphics card.\n", ext->extension_name[k] );
-#endif
-					}
 				} else {
 					mprintf(("  Using extension \"%s\".\n", ext->extension_name[k]));
 					ext->enabled = 1;
@@ -384,13 +385,8 @@ int opengl_get_extensions()
 				if ( k+1 >= ext->num_extensions ) {
 					mprintf(("  Unable to find extension \"%s\".\n", ext->extension_name[k]));
 
-					if (ext->required_to_run) {
-#ifdef _WIN32
-						Error( LOCATION, "The required OpenGL extension '%s' is not supported by your current driver version or graphics card.  You can either use the Direct3D rendering engine (non-FRED builds only) or update your video card drivers.\n\n", ext->extension_name );
-#else
-						Error( LOCATION, "The required OpenGL extension '%s' is not supported by your current driver version or graphics card.\n", ext->extension_name );
-#endif
-					}
+					if (ext->required_to_run)
+						Error( LOCATION, "The required OpenGL extension '%s' is not supported by your current driver version or graphics card.\n", ext->extension_name[k] );
 				}
 			}
 			
