@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.201  2007/03/23 01:52:28  taylor
+ * fix breakage
+ *
  * Revision 2.200  2007/03/22 20:04:04  taylor
  * little bit of cleanup
  * set "#Weak" weapons to always get the "player allowed" flag (Mantis #1301)
@@ -3797,9 +3800,18 @@ void weapon_do_post_parse()
 			first_cmeasure_index = i;
 
 		// if we are a "#weak" weapon then popup a warning if we don't have the "player allowed" flag set
-		if ( stristr(wip->name, "#weak") && !(wip->wi_flags & WIF_PLAYER_ALLOWED) ) {
-			Warning(LOCATION, "Weapon '%s' requires the \"player allowed\" flag, but it's not listed!  Adding it by default.\n", wip->name);
-			wip->wi_flags |= WIF_PLAYER_ALLOWED;
+		if ( !(wip->wi_flags & WIF_PLAYER_ALLOWED) && stristr(wip->name, "#weak") ) {
+			int idx = -1;
+			char non_weak[NAME_LENGTH];
+
+			strncpy(non_weak, wip->name, strlen(wip->name) - 5);
+			idx = weapon_info_lookup(non_weak);
+
+			// only add the flag if the non-weak version is also player-allowed
+			if ( (idx >= 0) && (Weapon_info[idx].wi_flags & WIF_PLAYER_ALLOWED) ) {
+				Warning(LOCATION, "Weapon '%s' requires the \"player allowed\" flag, but it's not listed!  Adding it by default.\n", wip->name);
+				wip->wi_flags |= WIF_PLAYER_ALLOWED;
+			}
 		}
 	}
 
