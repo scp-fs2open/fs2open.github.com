@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.27.2.2 $
- * $Date: 2007-02-12 00:48:43 $
+ * $Revision: 2.27.2.3 $
+ * $Date: 2007-04-14 23:42:02 $
  * $Author: taylor $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27.2.2  2007/02/12 00:48:43  taylor
+ * oops, forgot this bit
+ *
  * Revision 2.27.2.1  2007/02/12 00:45:24  taylor
  * bit of cleanup and minor performance tweaks
  * sync up with new generic_anim/bitmap and weapon delayed loading changes
@@ -311,7 +314,6 @@ int trail_is_on_ship(trail *trailp, ship *shipp)
 // Render the trail behind a missile.
 // Basically a queue of points that face the viewer
 extern int Cmdline_nohtl;
-//#define MAX_TRAIL_POLYS ((NUM_TRAIL_SECTIONS*2)+1)
 
 static vertex **Trail_vlist = NULL;
 static vertex *Trail_v_list = NULL;
@@ -348,7 +350,7 @@ static void allocate_trail_verts(int num_verts)
 		Trail_v_list = NULL;
 	}
 
-	Trail_vlist = (vertex**) vm_malloc( num_verts * sizeof(vertex) );
+	Trail_vlist = (vertex**) vm_malloc( num_verts * sizeof(vertex*) );
 	Trail_v_list = (vertex*) vm_malloc( num_verts * sizeof(vertex) );
 
 	memset( Trail_v_list, 0, sizeof(vertex) * Trail_verts_allocated );
@@ -510,12 +512,12 @@ void trail_render( trail * trailp )
 		Error( LOCATION, "too few verts in trail render\n" );
 
 	// there should always be three verts in the last section and 2 everyware else, therefore there should always be an odd number of verts
-	if ( (nv % 2) != 1)
+	if ( (nv % 2) != 1 )
 		Warning( LOCATION, "even number of verts in trail render\n" );
 
 
 	gr_set_bitmap( ti->texture.bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-	g3_draw_poly( nv, Trail_vlist,  TMAP_FLAG_TEXTURED|TMAP_FLAG_ALPHA|TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
+	g3_draw_poly( nv, Trail_vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_ALPHA | TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
 }
 
 
