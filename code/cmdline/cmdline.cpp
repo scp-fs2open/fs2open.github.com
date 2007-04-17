@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.151 $
- * $Date: 2007-04-11 18:24:27 $
- * $Author: taylor $
+ * $Revision: 2.152 $
+ * $Date: 2007-04-17 17:26:35 $
+ * $Author: karajorma $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.151  2007/04/11 18:24:27  taylor
+ * cleanup of chksum stuff (works properly on 64-bit systems now)
+ * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
+ * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
+ *
  * Revision 2.150  2007/03/22 20:55:53  taylor
  * forgot to remove -jpgtga from Launcher options previously
  * get rid of -fixbugs and -nocrash crap
@@ -1182,7 +1187,7 @@ int Cmdline_SpewTable_CRCs = 0;
 
 // Troubleshooting
 cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys", NULL);	// Cmdline_d3d_lesstmem
-cmdline_parm fred2_htl_arg("-fredhtl", NULL);		// Cmdline_FRED2_htl
+//cmdline_parm fred2_htl_arg("-fredhtl", NULL);		// Cmdline_FRED2_htl
 cmdline_parm loadallweapons_arg("-loadallweps", NULL);	// Cmdline_load_all_weapons
 cmdline_parm htl_arg("-nohtl", NULL);				// Cmdline_nohtl  -- don't use HT&L
 cmdline_parm noibx_arg("-noibx", NULL);				// Cmdline_noibx
@@ -1194,7 +1199,7 @@ cmdline_parm no_fbo_arg("-disable_fbo", NULL);		// Cmdline_no_fbo
 cmdline_parm verify_vps_arg("-verify_vps", NULL);	// Cmdline_verify_vps
 
 int Cmdline_d3d_lesstmem = 0;
-int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
+//int Cmdline_FRED2_htl = 0; // turn HTL on in fred - Kazan
 int Cmdline_load_all_weapons = 0;
 int Cmdline_nohtl = 0;
 int Cmdline_noibx = 0;
@@ -1741,11 +1746,11 @@ bool SetCmdlineParams()
 	{
 		Cmdline_nowarn = 1;
 	}
-
+	/* karajorma - let's just use -nohtl instead
 	if (fred2_htl_arg.found())
 	{
 		Cmdline_FRED2_htl = 1;
-	}
+	}*/
 
 	if (timerbar_arg.found()) {
 		Cmdline_timerbar = 1;
