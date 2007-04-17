@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.34 $
- * $Date: 2007-03-22 22:19:30 $
- * $Author: taylor $
+ * $Revision: 1.35 $
+ * $Date: 2007-04-17 17:26:35 $
+ * $Author: karajorma $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2007/03/22 22:19:30  taylor
+ * add back special "var" setting for flag_def_list and convert some of the lists to use it (more on the way)
+ *
  * Revision 1.33  2007/02/20 04:20:10  Goober5000
  * the great big duplicate model removal commit
  *
@@ -885,14 +888,16 @@ bool fred_init()
 	Cmdline_nohtl = result != IDYES;
 	*/
 
-	Cmdline_nohtl = Cmdline_FRED2_htl == 0;
+	Cmdline_nohtl = Cmdline_nohtl == 1;
 
+	/* - HTL is now on by default so the warning is redundant - Karajorma
 	if (Cmdline_nohtl)
 	{
 		MessageBox(NULL, "You are not running in HTL mode for FRED.  Although HTL mode isn't required, there may be some crashes"
 						 " when trying to render the new high polygon models.  To enable HTL mode, create a shortcut to FRED, right-click into properties"
 						 " and add \"-fredhtl\" to the end of the string in the \"target\" box.", "FRED2", MB_ICONWARNING | MB_OK);
 	}
+	*/
 
 
 	// Not ready for this yet
