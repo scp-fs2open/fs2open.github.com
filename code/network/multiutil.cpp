@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.45.2.6 $
- * $Date: 2007-04-24 09:52:26 $
+ * $Revision: 2.45.2.7 $
+ * $Date: 2007-04-24 12:07:33 $
  * $Author: karajorma $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45.2.6  2007/04/24 09:52:26  karajorma
+ * Add the knock feature from Tom's build.
+ *
  * Revision 2.45.2.5  2007/04/05 16:49:21  karajorma
  * Fix bug whereby clients who were gliding can't jump out at the end of the mission. Remove a couple of magic numbers that looked at me the wrong way.
  *
@@ -4819,4 +4822,18 @@ int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, ve
 		return bitbuffer_read_flush(&buf);
 	}
 }
+
+// Karajorma - sends the player to the correct debrief for this game type
+// Currently supports the dogfight kill matrix and normal debriefing stages but if new types are created they should be added here
+void send_debrief_event() {	
+	// we have a special debriefing screen for multiplayer furballs
+	if((Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_DOGFIGHT){
+		gameseq_post_event( GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
+	}
+	// do the normal debriefing for all other situations
+	else {
+		gameseq_post_event(GS_EVENT_DEBRIEF);
+	}
+}
+
 #pragma optimize("", on)

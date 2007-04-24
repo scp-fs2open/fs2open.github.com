@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.36 $
- * $Date: 2007-04-11 18:21:22 $
- * $Author: taylor $
+ * $Revision: 2.243.2.37 $
+ * $Date: 2007-04-24 12:07:32 $
+ * $Author: karajorma $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.36  2007/04/11 18:21:22  taylor
+ * cleanup of chcksum stuff (works properly on 64-bit systems now)
+ * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
+ * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
+ *
  * Revision 2.243.2.35  2007/02/20 04:19:10  Goober5000
  * the great big duplicate model removal commit
  *
@@ -6316,7 +6321,7 @@ void game_frame(int paused)
 				if(Game_mode & GM_MULTIPLAYER){
 					// catch the situation where we're supposed to be warping out on this transition
 					if(Net_player->flags & NETINFO_FLAG_WARPING_OUT){
-						gameseq_post_event(GS_EVENT_DEBRIEF);
+						send_debrief_event();
 					} else if((Player_died_popup_wait != -1) && (timestamp_elapsed(Player_died_popup_wait))){
 						Player_died_popup_wait = -1;
 						popupdead_start();
@@ -7473,14 +7478,7 @@ void game_process_event( int current_state, int event )
 			Viewer_mode = Player->saved_viewer_mode;
 			Warpout_sound = -1;
 
-			// we have a special debriefing screen for multiplayer furballs
-			if((Game_mode & GM_MULTIPLAYER) && (The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)){
-				gameseq_post_event(GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
-			}
-			// do the normal debriefing for all other situations
-			else {
-				gameseq_post_event(GS_EVENT_DEBRIEF);
-			}
+			send_debrief_event();
 			break;
 
 		case GS_EVENT_STANDALONE_POSTGAME:

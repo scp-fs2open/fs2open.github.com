@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.46 $
- * $Date: 2007-04-05 16:43:44 $
+ * $Revision: 2.259.2.47 $
+ * $Date: 2007-04-24 12:07:34 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.46  2007/04/05 16:43:44  karajorma
+ * A few minor fixes
+ *
  * Revision 2.259.2.45  2007/03/22 20:35:44  taylor
  * be sure to page in textures for change ship class sexp preload
  * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
@@ -9936,26 +9939,16 @@ void sexp_nebula_toggle_poof(int n)
 	neb2_eye_changed();
 }
 
-
-
 // sexpression to end the mission!  Fixed by EdrickV, implemented by Sesquipedalian
 void sexp_end_mission(int n)
 {
-		// we have a special debriefing screen for multiplayer furballs
-	if((Game_mode & GM_MULTIPLAYER) && (The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)){
-		gameseq_post_event( GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
-	}
-	// do the normal debriefing for all other situations
-	else {
-		gameseq_post_event(GS_EVENT_DEBRIEF);
-	}
+	send_debrief_event();
 
-	// callback all the clients here. 
-	if ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER))
+	// Karajorma - callback all the clients here. 
+	if (MULTIPLAYER_MASTER)
 	{
 		send_force_end_mission_packet();
 	}
-
 }
 
 // funciton to toggle the status bit for the AI code which tells the AI if it is a good time
