@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.308 $
- * $Date: 2007-04-06 13:21:18 $
+ * $Revision: 2.309 $
+ * $Date: 2007-04-24 13:13:04 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.308  2007/04/06 13:21:18  karajorma
+ * A couple of minor fixes
+ *
  * Revision 2.307  2007/03/22 22:14:56  taylor
  * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
@@ -10052,26 +10055,16 @@ void sexp_nebula_toggle_poof(int n)
 	neb2_eye_changed();
 }
 
-
-
 // sexpression to end the mission!  Fixed by EdrickV, implemented by Sesquipedalian
 void sexp_end_mission(int n)
 {
-		// we have a special debriefing screen for multiplayer furballs
-	if((Game_mode & GM_MULTIPLAYER) && (The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)){
-		gameseq_post_event( GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
-	}
-	// do the normal debriefing for all other situations
-	else {
-		gameseq_post_event(GS_EVENT_DEBRIEF);
-	}
+	send_debrief_event();
 
-	// callback all the clients here. 
-	if ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER))
+	// Karajorma - callback all the clients here. 
+	if (MULTIPLAYER_MASTER)
 	{
 		send_force_end_mission_packet();
 	}
-
 }
 
 // funciton to toggle the status bit for the AI code which tells the AI if it is a good time
