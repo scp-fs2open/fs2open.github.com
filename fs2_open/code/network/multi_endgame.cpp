@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_endgame.cpp $
- * $Revision: 2.10 $
- * $Date: 2005-10-10 17:21:07 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2007-04-24 13:13:04 $
+ * $Author: karajorma $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2005/10/10 17:21:07  taylor
+ * remove NO_NETWORK
+ *
  * Revision 2.9  2005/07/13 03:25:59  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -778,7 +781,7 @@ void multi_endgame_check_for_warpout()
 		multi_handle_state_special();
 
 		// begin the warpout process		
-		gameseq_post_event(GS_EVENT_DEBRIEF);
+		send_debrief_event();
 
 		// if text input mode is active, clear it
 		multi_msg_text_flush();
