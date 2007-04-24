@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.50 $
- * $Date: 2007-04-06 13:24:32 $
+ * $Revision: 2.51 $
+ * $Date: 2007-04-24 13:13:49 $
  * $Author: karajorma $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2007/04/06 13:24:32  karajorma
+ * Fix a bug where gliding ships couldn't jump out. Remove a couple of magic numbers.
+ *
  * Revision 2.49  2006/09/24 22:55:17  taylor
  * more standalone server fixes:
  *  - add some basic bmpman functionality to grstub, since it needs to do something at least
@@ -2337,15 +2340,44 @@ int multi_can_end_mission(net_player *p)
 int multi_eval_join_request(join_request *jr,net_addr *addr)
 {	
 	int team0_avail,team1_avail;
+	char knock_message[256], knock_callsign[CALLSIGN_LEN+1], jr_ip_string[16]; 
 
 	// if the server versions are incompatible
 	if(jr->version < MULTI_FS_SERVER_COMPATIBLE_VERSION){
 		return JOIN_DENY_JR_BAD_VERSION;
 	}
 
+	// Grab the joiner's callsign as we may need this later if they aren't accepted
+	strcpy (knock_callsign, jr->callsign);
+
 	// check to make sure we are otherwise in a state to accept
 	if((Netgame.game_state != NETGAME_STATE_FORMING) &&
 		((Netgame.game_state != NETGAME_STATE_IN_MISSION) || !Cmdline_ingamejoin)){
+
+		// If the game isn't password protected pass it on that someone wants to join
+		if (Netgame.mode != NG_MODE_PASSWORD ) {
+			sprintf(knock_message, "%s has tried to join!", knock_callsign);
+			switch(Netgame.game_state) {
+				case NETGAME_STATE_BRIEFING:
+				case NETGAME_STATE_PAUSED:
+				case NETGAME_STATE_DEBRIEF:
+				case NETGAME_STATE_MISSION_SYNC:
+					send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_ALL, NULL, NULL, 1);
+					multi_display_chat_msg(knock_message,0,0);
+					break;
+
+				// in game we only bother the host. 
+				case NETGAME_STATE_IN_MISSION:
+					if( MULTIPLAYER_STANDALONE ) {
+						send_game_chat_packet(&Net_players[MY_NET_PLAYER_NUM],knock_message,MULTI_MSG_TARGET, Netgame.host, NULL, 1);
+					} else {
+						snd_play(&Snds[SND_CUE_VOICE]);
+						HUD_sourced_printf(HUD_SOURCE_HIDDEN, knock_message);
+					}
+					break;
+			}
+		}
+
 		return JOIN_DENY_JR_STATE;
 	}
 	
@@ -2354,14 +2386,18 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	if(Game_mode & GM_STANDALONE_SERVER){		
 		// if this is the first connection, he will be the host so we must always accept him
 		if(multi_num_players() == 0){
+
+			// Karajorma - Since we're not actually using any of this code comment it all out
+			/*
 			// check to see if this is a tracker game, and if so make sure this is a valid MT player	
 			// we probably eventually want to make sure he's not passing us a fake tracker id#
 			if (MULTI_IS_TRACKER_GAME) {
 				if(jr->tracker_id < 0){
-					// FS2 Open PXO doesn't use this
-					//return JOIN_DENY_JR_TRACKER_INVAL; 
+					FS2 Open PXO doesn't use this
+					return JOIN_DENY_JR_TRACKER_INVAL; 
 				}			
-			}			
+			}		
+			*/
 
 			// if we're password protected		
 			if(std_is_host_passwd() && strcmp(jr->passwd, Multi_options_g.std_passwd)){
@@ -2436,12 +2472,18 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 #ifndef NO_STANDALONE
 	// if the player was banned by the standalone
 	if((Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign)){
+		// maybe we should log this
+		sprintf(knock_message, "Banned user %s with IP: %s attempted to join server", knock_callsign, psnet_addr_to_string(jr_ip_string, addr));
+		ml_string(knock_message);
 		return JOIN_DENY_JR_BANNED;
 	}
 #endif
 
 	// ----------- FS2NetD IP Banning -----------
 	if(fs2netd_player_banned(addr)){
+		// we should log this too 
+		sprintf(knock_message, "Banned user %s with IP: %s attempted to join server", knock_callsign, psnet_addr_to_string(jr_ip_string, addr));
+		ml_string(knock_message);
 		return JOIN_DENY_JR_BANNED;
 	}
 	
@@ -4777,4 +4819,18 @@ int multi_pack_unpack_desired_rotvel( int write, ubyte *data, matrix *orient, ve
 		return bitbuffer_read_flush(&buf);
 	}
 }
+
+// Karajorma - sends the player to the correct debrief for this game type
+// Currently supports the dogfight kill matrix and normal debriefing stages but if new types are created they should be added here
+void send_debrief_event() {	
+	// we have a special debriefing screen for multiplayer furballs
+	if((Game_mode & GM_MULTIPLAYER) && IS_MISSION_MULTI_DOGFIGHT){
+		gameseq_post_event( GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
+	}
+	// do the normal debriefing for all other situations
+	else {
+		gameseq_post_event(GS_EVENT_DEBRIEF);
+	}
+}
+
 #pragma optimize("", on)
