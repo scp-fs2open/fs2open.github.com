@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.12 $
- * $Date: 2007-02-20 04:19:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.66.2.13 $
+ * $Date: 2007-04-24 12:07:35 $
+ * $Author: karajorma $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.12  2007/02/20 04:19:35  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.66.2.11  2007/02/16 18:48:42  karajorma
  * Thought I'd caught all of these months ago! Thanks to Wanderer for the heads up.
  *
@@ -1266,7 +1269,9 @@ void shipfx_warpout_helper(object *objp, dock_function_info *infop)
 		// so go ahead and warp the player out.  All this does is set
 		// the event to go to debriefing, the same thing that happens
 		// after the player warp out effect ends.
-		gameseq_post_event(GS_EVENT_DEBRIEF);
+
+		// Karajorma - Seems like WMC's new warpout code reaches here regularly though
+		send_debrief_event();	
 	}
 	else
 	{
