@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.68 $
- * $Date: 2007-02-20 04:20:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.69 $
+ * $Date: 2007-04-24 13:13:04 $
+ * $Author: karajorma $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2007/02/20 04:20:18  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.67  2007/02/18 06:17:09  Goober5000
  * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
  *
@@ -4400,14 +4403,7 @@ void process_force_end_mission_packet(ubyte *data, header *hinfo)
 	// Since only the server sends out these packets it should never receive one
 	Assert (!(Net_player->flags & NETINFO_FLAG_AM_MASTER)); 
 	
-	// we have a special debriefing screen for multiplayer furballs
-	if((Game_mode & GM_MULTIPLAYER) && (The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)){
-		gameseq_post_event( GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
-	}
-	// do the normal debriefing for all other situations
-	else {
-		gameseq_post_event(GS_EVENT_DEBRIEF);
-	}
+	send_debrief_event();
 }
 
 // send a packet telling players to end the mission

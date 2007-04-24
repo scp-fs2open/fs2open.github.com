@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.284 $
- * $Date: 2007-04-11 18:24:27 $
- * $Author: taylor $
+ * $Revision: 2.285 $
+ * $Date: 2007-04-24 13:13:03 $
+ * $Author: karajorma $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.284  2007/04/11 18:24:27  taylor
+ * cleanup of chksum stuff (works properly on 64-bit systems now)
+ * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
+ * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
+ *
  * Revision 2.283  2007/02/20 04:20:10  Goober5000
  * the great big duplicate model removal commit
  *
@@ -3960,14 +3965,13 @@ VidInitError:
 	ai_profiles_init();		// Goober5000
 	ship_init();						// read in ships.tbl	
 
-
 	player_init();	
 	mission_campaign_init();		// load in the default campaign	
 	anim_init();
 	context_help_init();			
 	techroom_intel_init();			// parse species.tbl, load intel info  
 	hud_positions_init();		//Setup hud positions
-
+	
 	// initialize psnet
 	psnet_init( Multi_options_g.protocol, Multi_options_g.port );						// initialize the networking code		
 
@@ -3981,7 +3985,6 @@ VidInitError:
 	ssm_init();	
 	player_tips_init();				// helpful tips
 	beam_init();
-	
 	
 	// load the list of pilot pic filenames (for barracks and pilot select popup quick reference)
 	pilot_load_pic_list();	
@@ -6330,7 +6333,7 @@ void game_frame(int paused)
 				if(Game_mode & GM_MULTIPLAYER){
 					// catch the situation where we're supposed to be warping out on this transition
 					if(Net_player->flags & NETINFO_FLAG_WARPING_OUT){
-						gameseq_post_event(GS_EVENT_DEBRIEF);
+						send_debrief_event();
 					} else if((Player_died_popup_wait != -1) && (timestamp_elapsed(Player_died_popup_wait))){
 						Player_died_popup_wait = -1;
 						popupdead_start();
@@ -7490,14 +7493,7 @@ void game_process_event( int current_state, int event )
 			Viewer_mode = Player->saved_viewer_mode;
 			Warpout_sound = -1;
 
-			// we have a special debriefing screen for multiplayer furballs
-			if((Game_mode & GM_MULTIPLAYER) && (The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)){
-				gameseq_post_event(GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
-			}
-			// do the normal debriefing for all other situations
-			else {
-				gameseq_post_event(GS_EVENT_DEBRIEF);
-			}
+			send_debrief_event();
 			break;
 
 		case GS_EVENT_STANDALONE_POSTGAME:
