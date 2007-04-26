@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.309 $
- * $Date: 2007-04-24 13:13:04 $
+ * $Revision: 2.310 $
+ * $Date: 2007-04-26 18:59:36 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.309  2007/04/24 13:13:04  karajorma
+ * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
+ *
  * Revision 2.308  2007/04/06 13:21:18  karajorma
  * A couple of minor fixes
  *
@@ -17865,6 +17868,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
+			return OPF_SHIP;
 
 		case OP_IS_SECONDARY_SELECTED:
 		case OP_IS_PRIMARY_SELECTED:
