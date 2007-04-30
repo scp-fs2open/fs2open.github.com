@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-11-03 18:47:43 $
- * $Author: Kazan $
+ * $Revision: 2.13 $
+ * $Date: 2007-04-30 21:30:29 $
+ * $Author: Backslash $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/11/03 18:47:43  Kazan
+ * Absolute speed, not forward speed, for hud speed reticle - fixes the guage for gliding
+ *
  * Revision 2.11  2005/10/10 17:21:04  taylor
  * remove NO_NETWORK
  *
@@ -537,7 +540,17 @@ void hud_render_throttle_speed(float current_speed, int y_end)
 	sy = fl2i(y_end - h/2.0f + 1.5);
 	gr_printf(sx, sy, buf);
 
-	if ( Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
+	if ( object_get_gliding(Player_obj) ) { 
+		int offset;
+		if ( current_speed <= 9.5 ) {
+			offset = -31;
+		} else if ( current_speed <= 99.5 ) {
+			offset = -22;
+		} else {
+			offset = -13;
+		}
+		gr_string(sx+offset, sy + h, "GLIDE");
+	} else if ( Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
 		int offset;
 		if ( current_speed <= 9.5 ) {
 			offset = 0;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.69 $
- * $Date: 2007-02-10 05:01:03 $
- * $Author: Goober5000 $
+ * $Revision: 2.70 $
+ * $Date: 2007-04-30 21:30:29 $
+ * $Author: Backslash $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2007/02/10 05:01:03  Goober5000
+ * take all subsystems into account when displaying repair gauge
+ *
  * Revision 2.68  2007/02/10 00:18:22  taylor
  * remove NO_SOUND
  *
@@ -2097,6 +2100,8 @@ void update_throttle_sound()
 	
 		if ( Ships[Player_obj->instance].current_max_speed == 0 ) {
 			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
+		} else if ( object_get_gliding(Player_obj) ) {	// Backslash
+			percent_throttle = Player_obj->phys_info.prev_ramp_vel.xyz.z / Ships[Player_obj->instance].current_max_speed;
 		} else {
 			percent_throttle = Player_obj->phys_info.fspeed / Ships[Player_obj->instance].current_max_speed;
 		}

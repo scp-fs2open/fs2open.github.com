@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.411 $
- * $Date: 2007-04-13 00:28:00 $
- * $Author: taylor $
+ * $Revision: 2.412 $
+ * $Date: 2007-04-30 21:30:31 $
+ * $Author: Backslash $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.411  2007/04/13 00:28:00  taylor
+ * clean out some old code we no longer use/need
+ * change warning messages to not print out current tbl name, since at the point those messages show the tbl has long since been parsed
+ * add an extra quick-check to ship_get_subsystem_strength() to avoid div if we don't need it
+ * make Ship_subsystems[] dynamic (sort of), it's allocated in sized sets now, so we can easily change size while still working with the existing linked-list code
+ *
  * Revision 2.410  2007/03/23 01:50:59  taylor
  * bit of cleanup and minor performance tweaks
  * render ship insignia with a bit of alpha to help with blending/lighting
@@ -2799,6 +2805,7 @@ void init_ship_entry(int ship_info_index)
 	sip->slide_decel = 0.0f;
 	
 	sip->can_glide = false;
+	sip->glide_cap = 0.0f;
 
 	sip->warpin_speed = 0.0f;
 	sip->warpout_speed = 0.0f;
@@ -3326,6 +3333,12 @@ int parse_ship(bool replace)
 	if(optional_string("$Glide:"))
 	{
 		stuff_boolean(&sip->can_glide);
+	}
+
+	if(sip->can_glide == true)
+	{
+		if(optional_string("+Max Glide Speed:"))
+			stuff_float(&sip->glide_cap );
 	}
 
 	if(optional_string("$Warpin type:"))
@@ -5416,6 +5429,12 @@ void physics_ship_init(object *objp)
 	if ( (pi->max_vel.xyz.x > 0.000001f) || (pi->max_vel.xyz.y > 0.000001f) )
 		pi->flags |= PF_SLIDE_ENABLED;
 
+	if ( sinfo->glide_cap > 0.000001f )		//Backslash
+		pi->glide_cap = sinfo->glide_cap;
+	else
+		pi->glide_cap = MAX(MAX(pi->max_vel.xyz.z, sinfo->max_overclocked_speed), pi->afterburner_max_vel.xyz.z);
+	//unless there's a value for +Max Glide Speed set in the table, we want this cap to default to the fastest speed the ship can go.
+
 	vm_vec_zero(&pi->vel);
 	vm_vec_zero(&pi->rotvel);
 	pi->speed = 0.0f;
@@ -6417,18 +6436,36 @@ void ship_render(object * obj)
 					render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
 				} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags & MT_BANK_LEFT)) {
 					render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
-				} else if(des_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
-					render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
-				} else if(des_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
-					render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
-				} else if(des_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
-					render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
-				} else if(des_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
-					render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
-				} else if(des_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
-					render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
-				} else if(des_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
-					render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
+				}
+				
+				if(pi->flags & PF_GLIDING) {	//Backslash - show thrusters according to thrust amount, not speed
+					if(pi->side_thrust > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
+						render_amount = pi->side_thrust;
+					} else if(pi->side_thrust < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
+						render_amount = -pi->side_thrust;
+					} else if(pi->vert_thrust > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
+						render_amount = pi->vert_thrust;
+					} else if(pi->vert_thrust < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
+						render_amount = -pi->vert_thrust;
+					} else if(pi->forward_thrust > 0 && (mtp->use_flags & MT_FORWARD)) {
+						render_amount = pi->forward_thrust;
+					} else if(pi->forward_thrust < 0 && (mtp->use_flags & MT_REVERSE)) {
+						render_amount = -pi->forward_thrust;
+					}		// I'd almost advocate applying the above method to these all the time even without gliding,
+				} else {	// because it looks more realistic, but I don't think the AI uses side_thrust or vert_thrust
+					if(des_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
+						render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
+					} else if(des_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
+						render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
+					} else if(des_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
+						render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
+					} else if(des_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
+						render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
+					} else if(des_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
+						render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
+					} else if(des_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
+						render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
+					}
 				}
 
 				if(render_amount > 0.0f)

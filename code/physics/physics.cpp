@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.19 $
- * $Date: 2007-02-15 06:19:19 $
+ * $Revision: 2.20 $
+ * $Date: 2007-04-30 21:30:30 $
  * $Author: Backslash $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2007/02/15 06:19:19  Backslash
+ * small fix for reverse thrusters, and a speed tweak.  also a change to damp physics, discussed on the forums and reported in Mantis #1051 months ago.
+ *
  * Revision 2.18  2006/08/20 00:51:06  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -481,11 +484,11 @@ void physics_init( physics_info * pi )
 	pi->afterburner_decay = 1;
 	pi->forward_thrust = 0.0f;
 	pi->vert_thrust = 0.0f;	//added these two in order to get side and forward thrusters
-	pi->side_thrust = 0.0f;	//to glow broighter when the ship is moveing in the right direction -Bobboau
+	pi->side_thrust = 0.0f;	//to glow brighter when the ship is moving in the right direction -Bobboau
 
 	pi->flags = 0;
 
-	// default values for moment of inetaia
+	// default values for moment of inertia
 	vm_vec_make( &pi->I_body_inv.vec.rvec, 1e-5f, 0.0f, 0.0f );
 	vm_vec_make( &pi->I_body_inv.vec.uvec, 0.0f, 1e-5f, 0.0f );
 	vm_vec_make( &pi->I_body_inv.vec.fvec, 0.0f, 0.0f, 1e-5f );
@@ -823,18 +826,7 @@ void physics_sim(vec3d* position, matrix* orient, physics_info* pi, float sim_ti
 	}
 	else
 	{
-		vec3d final_pos = vmd_zero_vector;
-		if(pi->flags & PF_GLIDING) {
-			vm_vec_scale_add(&final_pos, position, &pi->glide_saved_vel, sim_time);
-		} else {
-			physics_sim_vel(position, pi, sim_time, orient);
-		}
-
-		if(pi->flags & PF_GLIDING) {
-			*position = final_pos;
-			pi->vel = pi->glide_saved_vel;
-		}
-
+		physics_sim_vel(position, pi, sim_time, orient);
 		physics_sim_rot(orient, pi, sim_time);
 
 		pi->speed = vm_vec_mag(&pi->vel);							//	Note, cannot use quick version, causes cumulative error, increasing speed.
@@ -975,7 +967,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 	pi->desired_rotvel.xyz.z = ci->bank * pi->max_rotvel.xyz.z + delta_bank;
 	pi->forward_thrust = ci->forward;
 	pi->vert_thrust = ci->vertical;	//added these two in order to get side and forward thrusters
-	pi->side_thrust = ci->sideways;	//to glow broighter when the ship is moveing in the right direction -Bobboau
+	pi->side_thrust = ci->sideways;	//to glow brighter when the ship is moving in the right direction -Bobboau
 
 	if ( pi->flags & PF_AFTERBURNER_ON ) {
 		goal_vel.xyz.x = ci->sideways*pi->afterburner_max_vel.xyz.x;
@@ -1018,7 +1010,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 //	if ( !use_descent && (Player_obj->phys_info.forward_accel_time_const < 0.1) && !(Ships[Player_obj->instance].flags & SF_DYING) && (Player_obj->type != OBJ_OBSERVER) )
 //			Int3();	// Get dave A
 
-		if (pi->flags & PF_SLIDE_ENABLED)  {
+if (pi->flags & PF_SLIDE_ENABLED)  {
 			// determine the local velocity
 			// deterimine whether accelerating or decleration toward goal for x
 			if ( goal_vel.xyz.x > 0.0f )  {
@@ -1033,6 +1025,9 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 					ramp_time_const = pi->slide_decel_time_const;
 			} else {
 				ramp_time_const = pi->slide_decel_time_const;
+				if ( pi->flags & PF_GLIDING )
+					ramp_time_const = 0.0f;
+					// This is to have the engines ramp down VERY quickly, since 'decelerating' shouldn't be factored when gliding
 			}
 			// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
 			if ( pi->flags & PF_REDUCED_DAMP ) {
@@ -1053,6 +1048,8 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 					ramp_time_const = pi->slide_decel_time_const;
 			} else {
 				ramp_time_const = pi->slide_decel_time_const;
+				if ( pi->flags & PF_GLIDING )
+					ramp_time_const = 0.0f;
 			}
 			// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
 			if ( pi->flags & PF_REDUCED_DAMP ) {
@@ -1065,16 +1062,32 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			pi->prev_ramp_vel.xyz.y = 0.0f;
 		}
 
-		// find ramp velocity in the forward direction
-		if ( goal_vel.xyz.z >= pi->prev_ramp_vel.xyz.z )  {
-			if ( pi->flags & PF_AFTERBURNER_ON )
-				ramp_time_const = pi->afterburner_forward_accel_time_const;
-			else if (pi->flags & PF_BOOSTER_ON)
-				ramp_time_const = pi->booster_forward_accel_time_const;
-			else
-				ramp_time_const = pi->forward_accel_time_const;
-		} else
+		// deterimine whether accelerating or decleration toward goal for z
+		if ( goal_vel.xyz.z > 0.0f )  {
+			if ( goal_vel.xyz.y >= pi->prev_ramp_vel.xyz.z )  {
+				if ( pi->flags & PF_AFTERBURNER_ON )
+					ramp_time_const = pi->afterburner_forward_accel_time_const;
+				else if (pi->flags & PF_BOOSTER_ON)
+					ramp_time_const = pi->booster_forward_accel_time_const;
+				else
+					ramp_time_const = pi->forward_accel_time_const;
+			} else {
+				ramp_time_const = pi->forward_decel_time_const;
+				if ( pi->flags & PF_GLIDING )
+					ramp_time_const = 0.0f;
+			}
+		} else if ( goal_vel.xyz.z < 0.0 ) {
 			ramp_time_const = pi->forward_decel_time_const;
+			// hmm, maybe a reverse_accel_time_const would be a good idea to implement in the future...
+			// or should this use slide_decel_time_const?
+			if ( pi->flags & PF_GLIDING )
+				ramp_time_const = 0.0f;
+		} else {
+			ramp_time_const = pi->slide_decel_time_const;
+			// If gliding, then only accelerate -- if goal is 0, object is not accelerating
+			if ( pi->flags & PF_GLIDING )
+				ramp_time_const = 0.0f;
+		}
 
 		// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
 		if ( pi->flags & PF_REDUCED_DAMP ) {
@@ -1085,10 +1098,31 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 		// this translates local desired velocities to world velocities
 
-		vm_vec_zero(&pi->desired_vel);
-		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x );
-		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y );
-		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z );
+		if ( pi->flags & PF_GLIDING )
+		{
+			pi->desired_vel = pi->vel;
+			//ok, if anyone has better math that would make the acceleration be more 'natural', please update this
+			float multiplier = 0.16f;
+			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x / (1.0f + pi->slide_accel_time_const) * multiplier);
+			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y / (1.0f + pi->slide_accel_time_const) * multiplier);
+			if ( pi->flags & PF_AFTERBURNER_ON )
+				vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z / (1.0f + pi->afterburner_forward_accel_time_const) * multiplier);
+			else
+				vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z / (1.0f + pi->forward_accel_time_const) * multiplier);
+
+			float currentmag = vm_vec_mag(&pi->desired_vel);
+			if ( currentmag > pi->glide_cap )
+			{
+				vm_vec_scale( &pi->desired_vel, pi->glide_cap / currentmag );
+			}
+		}
+		else
+		{
+			vm_vec_zero(&pi->desired_vel);
+			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x );
+			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y );
+			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z );
+		}
 	} else  // object does not accelerate  (PF_ACCELERATES not set)
 		pi->desired_vel = pi->vel;
 }

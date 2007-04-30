@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.79 $
- * $Date: 2007-04-06 13:26:21 $
- * $Author: karajorma $
+ * $Revision: 2.80 $
+ * $Date: 2007-04-30 21:30:29 $
+ * $Author: Backslash $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2007/04/06 13:26:21  karajorma
+ * Prevent ships from jumping out in glide mode (They'd probably never get up to speed anyway)
+ *
  * Revision 2.78  2007/03/07 17:51:15  karajorma
  * It's perfectly legal to press the Target Target's Attacker key with no target. We should just play a failed sound instead.
  *
@@ -2574,6 +2577,7 @@ int button_function_critical(int n, net_player *p = NULL)
 		case PLUS_5_PERCENT_THROTTLE:
 		case ZERO_THROTTLE:
 		case MAX_THROTTLE:
+		case TOGGLE_GLIDING:
 			return 0;
 
 		default :
@@ -3400,21 +3404,6 @@ int button_function(int n)
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 			break;
 		
-		case TOGGLE_GLIDING:
-			control_used(TOGGLE_GLIDING);
-			if(Player_obj != NULL)
-			{
-				if(object_get_gliding(Player_obj))
-				{
-					object_set_gliding(Player_obj, false);
-				}
-				else if(Ship_info[Player_ship->ship_info_index].can_glide)
-				{
-					object_set_gliding(Player_obj, true);
-				}
-			}
-			break;
-
 		// following are not handled here, but we need to bypass the Int3()
 		case LAUNCH_COUNTERMEASURE:
 		case VIEW_SLEW:
@@ -3425,6 +3414,7 @@ int button_function(int n)
 		case PLUS_5_PERCENT_THROTTLE:
 		case ZERO_THROTTLE:
 		case MAX_THROTTLE:
+		case TOGGLE_GLIDING:
 			return 0;
 
 		default:
