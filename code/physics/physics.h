@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.h $
- * $Revision: 2.13 $
- * $Date: 2006-04-03 07:48:03 $
- * $Author: wmcoolmon $
+ * $Revision: 2.14 $
+ * $Date: 2007-04-30 21:30:30 $
+ * $Author: Backslash $
  *
  * Clues to the meaning of life on Shivan planet Sphlighesphlaightseh
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/04/03 07:48:03  wmcoolmon
+ * Miscellaneous minor changes, mostly related to addition of Current_camera variable
+ *
  * Revision 2.12  2006/02/25 21:47:07  Goober5000
  * spelling
  *
@@ -251,6 +254,7 @@ typedef struct physics_info {
 	int		reduced_damp_decay;	// timestamp used to control how long ship ship has reduced damp physics	
 	
 	vec3d glide_saved_vel;	//WMC - the key variable for gliding. Saves the orientation that velocity will be applied on.
+	float	glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity (so that something can't accelerate to ridiculous speeds... unless allowed to)
 } physics_info;
 
 // All of these are numbers from -1.0 to 1.0 indicating

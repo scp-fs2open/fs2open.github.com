@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.49 $
- * $Date: 2007-03-11 22:55:32 $
- * $Author: karajorma $
+ * $Revision: 2.50 $
+ * $Date: 2007-04-30 21:30:31 $
+ * $Author: Backslash $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2007/03/11 22:55:32  karajorma
+ * Turn off afterburner controls when player isn't in control
+ *
  * Revision 2.48  2006/09/08 06:20:15  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -963,6 +966,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	static int afterburner_last = 0;
 	static float analog_throttle_last = 9e9f;
 	static int override_analog_throttle = 0; 
+	static float savedspeed = 0.0f;	//Backslash
 	int ok_to_read_ci_pitch_yaw=1;
 
 	oldspeed = ci->forward_cruise_percent;
@@ -1127,13 +1131,12 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		/*if (Player_ship->boost_pod_engaged)
 			ci->forward = 1.0f;*/
 
-
 		if ( Player->flags & PLAYER_FLAGS_MATCH_TARGET ) {
 			if ( (Player_ai->last_target == Player_ai->target_objnum) && (Player_ai->target_objnum != -1) && ( ci->forward_cruise_percent == oldspeed) ) {
 				float tspeed, pmax_speed;
 				object *targeted_objp = &Objects[Player_ai->target_objnum];
 
-				tspeed = targeted_objp->phys_info.fspeed;
+				tspeed = targeted_objp->phys_info.speed;	//changed from fspeed. If target is reversing, sliding, or gliding we still want to keep up. -- Backslash
 
 				// maybe need to get speed from docked partner
 				if ( tspeed < MATCH_SPEED_THRESHOLD ) {
@@ -1142,7 +1145,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 					// Goober5000
 					if (object_is_docked(targeted_objp))
 					{
-						tspeed = dock_calc_docked_fspeed(targeted_objp);
+						tspeed = dock_calc_docked_speed(targeted_objp);	//changed from fspeed
 					}
 				}
 
@@ -1305,27 +1308,51 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 			afterburner_last = 0;
 		}
-	}
 
-
-
-	// Kazan - gliding while keypressed
-	// commented until taylor deems this safe
-	/*if (check_control(GLIDE_WHILE_PRESSED))
-	{
-		if (Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide && !object_get_gliding(Player_obj))
-		{
-			object_set_gliding(Player_obj, true);
+		// moved here from KeyControl, in order to take advantage of override_analog_throttle,
+		// among other things.  -- Backslash		original code by WMCoolmon
+		if ( button_info_query(&Player->bi, TOGGLE_GLIDING) ) {
+			control_used(TOGGLE_GLIDING);
+			if (Player_obj != NULL)
+			{
+				if (object_get_gliding(Player_obj))
+				{
+					object_set_gliding(Player_obj, false);
+					ci->forward_cruise_percent = savedspeed;
+				}
+				else if (Ship_info[Player_ship->ship_info_index].can_glide)
+				{
+					object_set_gliding(Player_obj, true);
+					savedspeed = ci->forward_cruise_percent;
+					ci->forward_cruise_percent = 0.0f;
+					override_analog_throttle = 1;
+				}
+			}
 		}
-	}
-	else
-	{
-		if (Player_obj != NULL && object_get_gliding(Player_obj))
+
+		// Kazan - gliding while keypressed
+		// commented until taylor deems this safe
+		// modified by Backslash but not ready to commit
+		/*if (check_control(GLIDE_WHILE_PRESSED))
 		{
-			object_set_gliding(Player_obj, false);
+			if (Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide && !object_get_gliding(Player_obj))
+			{
+				object_set_gliding(Player_obj, true);
+//				savedspeed = ci->forward_cruise_percent;
+//				ci->forward_cruise_percent = 0.0f;		// somehow this stuff needs to be called only when the button is first held down?
+//				override_analog_throttle = 1;
+			}
 		}
-	}*/
-	//--------------------------------
+		else	// note by Backslash: doesn't this mean it will get called all the time, whenever the key is NOT pressed?  Thus breaking the toggle version above, not to mention checking the if every frame?
+		{		// Not sure how to fix it.  Maybe something similar to how afterburner is handled?
+			if (Player_obj != NULL && object_get_gliding(Player_obj))
+			{
+				object_set_gliding(Player_obj, false);
+//				ci->forward_cruise_percent = savedspeed;
+			}
+		}*/
+		//--------------------------------
+	}
 
 	if ( (Viewer_mode & VM_EXTERNAL) || slew_active ) {
 		if ( !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) || slew_active ) {
