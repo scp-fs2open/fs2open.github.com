@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.185 $
- * $Date: 2007-04-13 00:28:00 $
- * $Author: taylor $
+ * $Revision: 2.186 $
+ * $Date: 2007-04-30 21:30:31 $
+ * $Author: Backslash $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.185  2007/04/13 00:28:00  taylor
+ * clean out some old code we no longer use/need
+ * change warning messages to not print out current tbl name, since at the point those messages show the tbl has long since been parsed
+ * add an extra quick-check to ship_get_subsystem_strength() to avoid div if we don't need it
+ * make Ship_subsystems[] dynamic (sort of), it's allocated in sized sets now, so we can easily change size while still working with the existing linked-list code
+ *
  * Revision 2.184  2007/03/23 01:50:59  taylor
  * bit of cleanup and minor performance tweaks
  * render ship insignia with a bit of alpha to help with blending/lighting
@@ -1958,6 +1964,7 @@ typedef struct ship_info {
 	int armor_type_idx;
 	
 	bool can_glide;
+	float glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity
 	
 	bool topdown_offset_def;
 	vec3d topdown_offset;
