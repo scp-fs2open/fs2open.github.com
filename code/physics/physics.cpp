@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.20 $
- * $Date: 2007-04-30 21:30:30 $
+ * $Revision: 2.21 $
+ * $Date: 2007-05-09 04:13:14 $
  * $Author: Backslash $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2007/04/30 21:30:30  Backslash
+ * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
+ * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
+ *
  * Revision 2.19  2007/02/15 06:19:19  Backslash
  * small fix for reverse thrusters, and a speed tweak.  also a change to damp physics, discussed on the forums and reported in Mantis #1051 months ago.
  *
@@ -1083,7 +1087,7 @@ if (pi->flags & PF_SLIDE_ENABLED)  {
 			if ( pi->flags & PF_GLIDING )
 				ramp_time_const = 0.0f;
 		} else {
-			ramp_time_const = pi->slide_decel_time_const;
+			ramp_time_const = pi->forward_decel_time_const;
 			// If gliding, then only accelerate -- if goal is 0, object is not accelerating
 			if ( pi->flags & PF_GLIDING )
 				ramp_time_const = 0.0f;
@@ -1098,8 +1102,7 @@ if (pi->flags & PF_SLIDE_ENABLED)  {
 
 		// this translates local desired velocities to world velocities
 
-		if ( pi->flags & PF_GLIDING )
-		{
+		if ( pi->flags & PF_GLIDING ) {
 			pi->desired_vel = pi->vel;
 			//ok, if anyone has better math that would make the acceleration be more 'natural', please update this
 			float multiplier = 0.16f;
@@ -1110,10 +1113,11 @@ if (pi->flags & PF_SLIDE_ENABLED)  {
 			else
 				vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z / (1.0f + pi->forward_accel_time_const) * multiplier);
 
-			float currentmag = vm_vec_mag(&pi->desired_vel);
-			if ( currentmag > pi->glide_cap )
-			{
-				vm_vec_scale( &pi->desired_vel, pi->glide_cap / currentmag );
+			if ( pi->glide_cap > 0.0f ) {	// so if negative, don't bother with speed cap
+				float currentmag = vm_vec_mag(&pi->desired_vel);
+				if ( currentmag > pi->glide_cap ) {
+					vm_vec_scale( &pi->desired_vel, pi->glide_cap / currentmag );
+				}
 			}
 		}
 		else
