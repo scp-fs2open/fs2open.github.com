@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.412 $
- * $Date: 2007-04-30 21:30:31 $
+ * $Revision: 2.413 $
+ * $Date: 2007-05-09 04:16:06 $
  * $Author: Backslash $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.412  2007/04/30 21:30:31  Backslash
+ * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
+ * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
+ *
  * Revision 2.411  2007/04/13 00:28:00  taylor
  * clean out some old code we no longer use/need
  * change warning messages to not print out current tbl name, since at the point those messages show the tbl has long since been parsed
@@ -5429,11 +5433,12 @@ void physics_ship_init(object *objp)
 	if ( (pi->max_vel.xyz.x > 0.000001f) || (pi->max_vel.xyz.y > 0.000001f) )
 		pi->flags |= PF_SLIDE_ENABLED;
 
-	if ( sinfo->glide_cap > 0.000001f )		//Backslash
+	if ( sinfo->glide_cap > 0.000001f || sinfo->glide_cap < -0.000001f )		//Backslash
 		pi->glide_cap = sinfo->glide_cap;
 	else
 		pi->glide_cap = MAX(MAX(pi->max_vel.xyz.z, sinfo->max_overclocked_speed), pi->afterburner_max_vel.xyz.z);
-	//unless there's a value for +Max Glide Speed set in the table, we want this cap to default to the fastest speed the ship can go.
+	// If there's not a value for +Max Glide Speed set in the table, we want this cap to default to the fastest speed the ship can go.
+	// However, a negative value means we want no cap, thus allowing nearly infinite maximum gliding speeds.
 
 	vm_vec_zero(&pi->vel);
 	vm_vec_zero(&pi->rotvel);
@@ -9894,7 +9899,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		if (winfo_p->wi_flags2 & WIF2_CYCLE){
 			Assert(pm->gun_banks[bank_to_fire].num_slots != 0);
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay / pm->gun_banks[bank_to_fire].num_slots));
-			//to maintain balence of fighters with more fire points they will fire faster that ships with fewer points
+			//to maintain balance of fighters with more fire points they will fire faster than ships with fewer points
 		}else{
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
 		}
@@ -9993,7 +9998,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 //mprintf(("I have fired a fighter beam, type %d\n", winfo_p->b_info.beam_type));
 
 			}
-			else	//if this insn't a fighter beam, do it normaly -Bobboau
+			else	//if this isn't a fighter beam, do it normally -Bobboau
 			{
 //Assert (!(winfo_p->wi_flags & WIF_BEAM))
 
@@ -10176,7 +10181,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							}
 						}
 						// create the muzzle flash effect
-						shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon );
+						if((obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode)) {
+							// show the flash only if in not cockpit view, or if "show ship" flag is set
+							shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon );
+						}
 	
 						// maybe shudder the ship - if its me
 						if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
@@ -10822,8 +10830,10 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 
 			// create the muzzle flash effect
-			shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
-
+			if((obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode)) {
+				// show the flash only if in not cockpit view, or if "show ship" flag is set
+				shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
+			}
 /*
 			if ( weapon_num != -1 )
 				Demo_fire_secondary_requests++;	// testing for demo
