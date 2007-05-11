@@ -9,13 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.8 $
- * $Date: 2006-11-16 00:56:16 $
+ * $Revision: 2.9 $
+ * $Date: 2007-05-11 03:15:48 $
  * $Author: taylor $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2006/11/16 00:56:16  taylor
+ * updated outwnd code for both Windows and non-Windows:
+ *  - make print filters dynamic
+ *  - fix various little bugs and issues
+ *  - cleanup some non-used variables (non-Windows)
+ *  - put everything under NDEBUG like it was, or should be
+ *  - change to using data/fs2_open.log for log file (Windows)
+ *  - change to using data/debug_filter.cfg (Windows)
+ *  - make the extra debug window optional, and disabled by default (Windows)
+ *  - fix some possible NULL references
+ *  - clean up the SAFEPOINT() crap
+ *
  * Revision 2.7  2006/04/20 06:32:23  Goober5000
  * proper capitalization according to Volition
  *
@@ -406,8 +418,14 @@ void outwnd_init(int display_under_freespace_window)
 		if (Log_fp == NULL) {
 			outwnd_printf("Error", "Error opening %s\n", pathname);
 		} else {
-			outwnd_printf("General", "Opened %s OK\n", pathname);
+			time_t timedate = time(NULL);
+			char datestr[50];
+
+			memset( datestr, 0, sizeof(datestr) );
+			strftime( datestr, sizeof(datestr)-1, "%a %b %d %H:%M:%S %Y", localtime(&timedate) );
+
 			printf("Future debug output directed to: %s\n", pathname);
+			outwnd_printf("General", "Opened log '%s', %s ...\n", pathname, datestr);
 		}
 	}
 }
@@ -415,6 +433,14 @@ void outwnd_init(int display_under_freespace_window)
 void outwnd_close()
 {
 	if (Log_fp != NULL) {
+		time_t timedate = time(NULL);
+		char datestr[50];
+
+		memset( datestr, 0, sizeof(datestr) );
+		strftime( datestr, sizeof(datestr)-1, "%a %b %d %H:%M:%S %Y", localtime(&timedate) );
+
+		outwnd_printf("General", "... Log closed, %s\n", datestr);
+
 		fclose(Log_fp);
 		Log_fp = NULL;
 	}
