@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.30 $
- * $Date: 2007-04-14 23:42:20 $
+ * $Revision: 2.31 $
+ * $Date: 2007-05-11 03:12:13 $
  * $Author: taylor $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2007/04/14 23:42:20  taylor
+ * little cleanup
+ * fix memory size fubar on trail vlist ptr
+ *
  * Revision 2.29  2007/03/23 01:51:57  taylor
  * bit of cleanup and minor performance tweaks
  * sync up with new generic_anim/bitmap and weapon delayed loading changes
@@ -291,8 +295,8 @@ void trail_calc_facing_pts( vec3d *top, vec3d *bot, vec3d *fvec, vec3d *pos, flo
 	vm_vec_crossprod(&uvec,fvec,&rvec);
 	vm_vec_normalize(&uvec);
 
-	vm_vec_scale_add( top, pos, &uvec, w/2.0f );
-	vm_vec_scale_add( bot, pos, &uvec, -w/2.0f );
+	vm_vec_scale_add( top, pos, &uvec, w * 0.5f );
+	vm_vec_scale_add( bot, pos, &uvec, -w * 0.5f );
 }
 
 // trail is on ship
