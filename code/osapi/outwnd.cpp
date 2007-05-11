@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.21 $
- * $Date: 2007-02-18 06:17:10 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2007-05-11 03:15:47 $
+ * $Author: taylor $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2007/02/18 06:17:10  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.20  2007/02/11 09:47:35  taylor
  * some minor performance improvements
  * remove NO_SOUND
@@ -1410,7 +1413,13 @@ void outwnd_init(int display_under_freespace_window)
 		if (Log_fp == NULL) {
 			outwnd_printf("Error", "Error opening %s\n", pathname);
 		} else {
-			outwnd_printf("General", "Opened %s OK\n", pathname);
+			time_t timedate = time(NULL);
+			char datestr[50];
+
+			memset( datestr, 0, sizeof(datestr) );
+			strftime( datestr, sizeof(datestr)-1, "%a %b %d %H:%M:%S %Y", localtime(&timedate) );
+
+			outwnd_printf("General", "Opened log '%s', %s ...\n", pathname, datestr);
 		}
 	}
 
@@ -1518,6 +1527,14 @@ void find_text_in_outwindow(int n, int p)
 void outwnd_close()
 {
 	if ( Log_fp != NULL ) {
+		time_t timedate = time(NULL);
+		char datestr[50];
+
+		memset( datestr, 0, sizeof(datestr) );
+		strftime( datestr, sizeof(datestr)-1, "%a %b %d %H:%M:%S %Y", localtime(&timedate) );
+
+		outwnd_printf("General", "... Log closed, %s\n", datestr);
+
 		fclose(Log_fp);
 		Log_fp = NULL;
 	}
