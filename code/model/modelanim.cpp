@@ -6,11 +6,14 @@
 
 /*
  * $Logfile:  $
- * $Revision: 1.2.2.2 $
- * $Date: 2006-12-07 18:19:23 $
+ * $Revision: 1.2.2.3 $
+ * $Date: 2007-05-11 03:10:48 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2.2.2  2006/12/07 18:19:23  taylor
+ * try and keep angles within PI2 (Bobboau's advice, since he knows more than I do about this stuff :))
+ *
  * Revision 1.2.2.1  2006/10/27 21:41:22  taylor
  * updated/fixed modelanim code
  *
@@ -633,7 +636,7 @@ void model_anim_fix_reverse_times(ship_info *sip)
 						psub->triggers[j].reverse_start = ani_time - model_anim_instance_get_actual_time(&psub->triggers[j]);
 
 					if (psub->triggers[j].reverse_start < 0) {
-						mprintf(("WARNING:  Animation trigger #%i on subsystem '%s', for ship '%s', has a negative reverse_start value!  Capping it at 0!\n", j, psub->name, sip->name));
+						mprintf(("WARNING:  Animation trigger #%i on subsystem '%s', for ship '%s', has a negative reverse_start value!  Capping it at 0!\n", j, psub->subobj_name, sip->name));
 						psub->triggers[j].reverse_start = 0;
 					}
 
