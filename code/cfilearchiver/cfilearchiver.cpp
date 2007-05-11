@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Cfilearchiver/CfileArchiver.cpp $
- * $Revision: 2.4 $
- * $Date: 2005-11-13 06:38:04 $
+ * $Revision: 2.5 $
+ * $Date: 2007-05-11 03:09:09 $
  * $Author: taylor $
  *
  * Program to create an archive file for use with cfile stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/11/13 06:38:04  taylor
+ * never did port this stupid thing to PPC
+ *
  * Revision 2.3  2005/09/08 00:09:31  taylor
  * fix building/linking of command line tools under Linux/OSX
  * add tools as targets to OSX project file
@@ -133,6 +136,8 @@ int write_index(char *hf, char *df)
 
 	fclose(h);
 	fclose(d);
+
+	unlink(hf);
 
 	return 1;
 }
