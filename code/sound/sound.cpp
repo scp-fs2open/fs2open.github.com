@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.38 $
- * $Date: 2007-02-11 18:20:19 $
+ * $Revision: 2.39 $
+ * $Date: 2007-05-11 03:13:49 $
  * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2007/02/11 18:20:19  taylor
+ * support for new finding/loading of sound files
+ * add support for automatically figuring out samples-per-measure based on Goober's explanation in the Wiki (not sure if it's actually right though)
+ * remove NO_SOUND
+ *
  * Revision 2.37  2006/10/06 04:56:05  wmcoolmon
  * Fix OGG bug where sound files were always allocated 16 seconds of wavedata
  *
@@ -1709,7 +1714,10 @@ int snd_time_remaining(int handle)
 
 	sdx = snd_get_index(handle);
 
-	Assert( sdx != -1 );
+	if (sdx < 0) {
+		Int3();
+		return 0;
+	}
 
 	snd_get_format(sdx, &bits_per_sample, &frequency);
 
