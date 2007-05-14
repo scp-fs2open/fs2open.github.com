@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.285 $
- * $Date: 2007-04-24 13:13:03 $
- * $Author: karajorma $
+ * $Revision: 2.286 $
+ * $Date: 2007-05-14 23:13:48 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.285  2007/04/24 13:13:03  karajorma
+ * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
+ *
  * Revision 2.284  2007/04/11 18:24:27  taylor
  * cleanup of chksum stuff (works properly on 64-bit systems now)
  * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
@@ -4999,77 +5002,84 @@ void game_shudder_apply(int time, float intensity)
 	Game_shudder_intensity = intensity;
 }
 
-#define FF_SCALE	10000
-void apply_hud_shake(matrix *eye_orient)
+float get_shake(float intensity, int decay_time, int max_decay_time)
 {
+	int r = myrand();
+
+	float shake = intensity * (float) (r-RAND_MAX_2)/RAND_MAX;
+	
+	if (decay_time >= 0) {
+		Assert(max_decay_time > 0);
+		shake *= (0.5f - fl_abs(0.5f - (float) decay_time / (float) max_decay_time));
+	}
+
+	return shake;
+}
+
+#define FF_SCALE	10000
+extern int Wash_on;
+extern float sn_shudder;
+void apply_view_shake(matrix *eye_orient)
+{
+	angles tangles;
+	tangles.p = 0.0f;
+	tangles.h = 0.0f;
+	tangles.b = 0.0f;
+
+	// do shakes that only affect the HUD
 	if (Viewer_obj == Player_obj) {
-		physics_info	*pi = &Player_obj->phys_info;
-
-		angles	tangles;
-
-		tangles.p = 0.0f;
-		tangles.h = 0.0f;
-		tangles.b = 0.0f;
+		physics_info *pi = &Player_obj->phys_info;
 
 		//	Make eye shake due to afterburner
-		if ( !timestamp_elapsed(pi->afterburner_decay) ) {			
-			int		dtime;
-
-			dtime = timestamp_until(pi->afterburner_decay);
-			
-			int r1 = myrand();
-			int r2 = myrand();
-			tangles.p += 0.07f * (float) (r1-RAND_MAX_2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/ABURN_DECAY_TIME));
-			tangles.h += 0.07f * (float) (r2-RAND_MAX_2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/ABURN_DECAY_TIME));
+		if (!timestamp_elapsed(pi->afterburner_decay)) {
+			tangles.p += get_shake(0.07f, timestamp_until(pi->afterburner_decay), ABURN_DECAY_TIME);
+			tangles.h += get_shake(0.07f, timestamp_until(pi->afterburner_decay), ABURN_DECAY_TIME);
 		}
 
 		// Make eye shake due to engine wash
-		extern int Wash_on;
 		if (Player_obj->type == OBJ_SHIP && (Ships[Player_obj->instance].wash_intensity > 0) && Wash_on ) {
-			int r1 = myrand();
-			int r2 = myrand();
-			tangles.p += 0.07f * Ships[Player_obj->instance].wash_intensity * (float) (r1-RAND_MAX_2)/RAND_MAX;
-			tangles.h += 0.07f * Ships[Player_obj->instance].wash_intensity * (float) (r2-RAND_MAX_2)/RAND_MAX;
-
-			// get the   intensity
-			float intensity = FF_SCALE * Ships[Player_obj->instance].wash_intensity;
-
-			// vector rand_vec
+			float wash_intensity = Ships[Player_obj->instance].wash_intensity;
+	
+			tangles.p += get_shake(0.07f * wash_intensity, -1, 0);
+			tangles.h += get_shake(0.07f * wash_intensity, -1, 0);
+	
+			// play the force feedback effect
 			vec3d rand_vec;
 			vm_vec_rand_vec_quick(&rand_vec);
-
-			// play the effect
-			joy_ff_play_dir_effect(intensity*rand_vec.xyz.x, intensity*rand_vec.xyz.y);
+			joy_ff_play_dir_effect(FF_SCALE * wash_intensity * rand_vec.xyz.x, FF_SCALE * wash_intensity * rand_vec.xyz.y);
 		}
 
-	
-		// make hud shake due to shuddering
-		if(Game_shudder_time != -1){
-			// if the timestamp has elapsed
-			if(timestamp_elapsed(Game_shudder_time)){
+		// Make eye shake due to shuddering
+		if (Game_shudder_time != -1) {
+			if (timestamp_elapsed(Game_shudder_time)) {
 				Game_shudder_time = -1;
-			} 
-			// otherwise apply some shudder
-			else {
-				int dtime;
-
-				dtime = timestamp_until(Game_shudder_time);
-			
-				int r1 = myrand();
-				int r2 = myrand();
-				tangles.p += (Game_shudder_intensity / 200.0f) * (float) (r1-RAND_MAX_2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/(float)Game_shudder_total));
-				tangles.h += (Game_shudder_intensity / 200.0f) * (float) (r2-RAND_MAX_2)/RAND_MAX * (0.5f - fl_abs(0.5f - (float) dtime/(float)Game_shudder_total));
+			} else {
+				tangles.p += get_shake(Game_shudder_intensity * 0.001f, timestamp_until(Game_shudder_time), Game_shudder_total);
+				tangles.h += get_shake(Game_shudder_intensity * 0.001f, timestamp_until(Game_shudder_time), Game_shudder_total);
 			}
 		}
-
-		matrix	tm, tm2;
-		vm_angles_2_matrix(&tm, &tangles);
-		Assert(vm_vec_mag(&tm.vec.fvec) > 0.0f);
-		Assert(vm_vec_mag(&tm.vec.rvec) > 0.0f);
-		Assert(vm_vec_mag(&tm.vec.uvec) > 0.0f);
-		vm_matrix_x_matrix(&tm2, eye_orient, &tm);
-		*eye_orient = tm2;
 	}
+	// do shakes that affect external cameras
+	else {
+		// Make eye shake due to supernova
+		if (supernova_camera_cut()) {
+			float cut_pct = 1.0f - (supernova_time_left() / SUPERNOVA_CUT_TIME);
+			tangles.p += get_shake(0.07f * cut_pct * sn_shudder, -1, 0);
+			tangles.h += get_shake(0.07f * cut_pct * sn_shudder, -1, 0);
+		}
+	}
+
+	// maybe bail
+	if (tangles.p == 0.0f && tangles.h == 0.0f && tangles.b == 0.0f)
+		return;
+
+	matrix	tm, tm2;
+	vm_angles_2_matrix(&tm, &tangles);
+	Assert(vm_vec_mag(&tm.vec.fvec) > 0.0f);
+	Assert(vm_vec_mag(&tm.vec.rvec) > 0.0f);
+	Assert(vm_vec_mag(&tm.vec.uvec) > 0.0f);
+	vm_matrix_x_matrix(&tm2, eye_orient, &tm);
+	*eye_orient = tm2;
 }
 
 extern void compute_slew_matrix(matrix *orient, angles *a);	// TODO: move code to proper place and extern in header file
@@ -5485,8 +5495,7 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 		}
 	}
 
-	if(Scripting_didnt_draw_hud)
-		apply_hud_shake(eye_orient);
+	apply_view_shake(eye_orient);
 
 	// setup neb2 rendering
 	neb2_render_setup(eye_pos, eye_orient);

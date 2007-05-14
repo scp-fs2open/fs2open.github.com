@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.130 $
+ * $Revision: 2.131 $
  * $Author: Goober5000 $
- * $Date: 2007-02-18 06:17:10 $
+ * $Date: 2007-05-14 23:13:49 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.130  2007/02/18 06:17:10  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 2.129  2007/01/15 13:46:55  karajorma
  * Fix bug in the set ammo and weapon SEXPs
  * Add the reset-orders SEXP
@@ -1311,7 +1314,8 @@ struct ship_subsys;
 
 #define OP_LOCK_SECONDARY_WEAPON			(0x00b0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_UNLOCK_SECONDARY_WEAPON			(0x00b1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_DEAL_WITH_SHIP_LOADOUT			(0x00b2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_SET_CAMERA_SHUDDER				(0x00b2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+#define OP_DEAL_WITH_SHIP_LOADOUT			(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 

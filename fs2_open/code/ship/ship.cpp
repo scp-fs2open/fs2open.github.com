@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.413 $
- * $Date: 2007-05-09 04:16:06 $
- * $Author: Backslash $
+ * $Revision: 2.414 $
+ * $Date: 2007-05-14 23:13:49 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.413  2007/05/09 04:16:06  Backslash
+ * Add feature to $Max Glide Speed -- negative number means no speed cap
+ * Only show gun muzzle flash effect if in not cockpit view, or if "show ship" flag is set
+ * Fix a couple typos ;-)
+ *
  * Revision 2.412  2007/04/30 21:30:31  Backslash
  * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
  * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
@@ -10190,7 +10195,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 							// calculate some arbitrary value between 100
 							// (mass * velocity) / 10
-							game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) / 10.0f);
+							game_shudder_apply(2500, (winfo_p->mass * winfo_p->max_speed) / 10.0f);
 						}
 	
 						num_fired++;
