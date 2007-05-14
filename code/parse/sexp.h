@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122.2.7 $
- * $Author: karajorma $
- * $Date: 2007-01-15 11:57:02 $
+ * $Revision: 2.122.2.8 $
+ * $Author: Goober5000 $
+ * $Date: 2007-05-14 23:13:42 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122.2.7  2007/01/15 11:57:02  karajorma
+ * Add the reset-orders SEXP
+ * Some general houskeeping to keep 3.6.9 and HEAD throwing up lots of annoying diffs that are just spacing issues.
+ *
  * Revision 2.122.2.6  2006/11/21 23:07:27  karajorma
  * Fix ammo and weapon SEXP changes not being passed on to the clients
  *
@@ -1299,8 +1303,10 @@ struct ship_subsys;
 #define OP_LOCK_PRIMARY_WEAPON				(0x00ae | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_UNLOCK_PRIMARY_WEAPON			(0x00af | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 
-#define OP_LOCK_SECONDARY_WEAPON			(0x00b0 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_UNLOCK_SECONDARY_WEAPON			(0x00b1 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_LOCK_SECONDARY_WEAPON			(0x00b0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_UNLOCK_SECONDARY_WEAPON			(0x00b1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_SET_CAMERA_SHUDDER				(0x00b2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
+
 
 
 /* made obsolete by Goober5000
