@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.62 $
- * $Date: 2007-04-13 00:26:43 $
- * $Author: taylor $
+ * $Revision: 2.336.2.63 $
+ * $Date: 2007-05-14 23:13:42 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.62  2007/04/13 00:26:43  taylor
+ * clean out some old code we no longer use/need
+ * change warning messages to not print out current tbl name, since at the point those messages show the tbl has long since been parsed
+ * add an extra quick-check to ship_get_subsystem_strength() to avoid div if we don't need it
+ * make Ship_subsystems[] dynamic (sort of), it's allocated in sized sets now, so we can easily change size while still working with the existing linked-list code
+ *
  * Revision 2.336.2.61  2007/03/22 20:45:22  taylor
  * cleanup and fix for weapon cycling (Mantis #1298)
  *
@@ -9958,7 +9964,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 							// calculate some arbitrary value between 100
 							// (mass * velocity) / 10
-							game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) / 10.0f);
+							game_shudder_apply(2500, (winfo_p->mass * winfo_p->max_speed) / 10.0f);
 						}
 	
 						num_fired++;
