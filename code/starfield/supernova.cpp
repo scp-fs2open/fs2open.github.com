@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.11 $
- * $Date: 2007-02-20 04:20:38 $
+ * $Revision: 2.12 $
+ * $Date: 2007-05-14 23:13:51 $
  * $Author: Goober5000 $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2007/02/20 04:20:38  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.10  2006/12/28 00:59:48  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -363,30 +366,6 @@ int supernova_camera_cut()
 	return 0;
 }
 
-// apply a shake to the orient matrix
-void supernova_apply_shake(matrix *eye_orient, float intensity)
-{	
-	angles	tangles;
-
-	tangles.p = 0.0f;
-	tangles.h = 0.0f;
-	tangles.b = 0.0f;	
-
-	// Make eye shake due to engine wash		
-	int r1 = myrand();
-	int r2 = myrand();
-	tangles.p += 0.07f * intensity * (float) (r1-RAND_MAX_2)/RAND_MAX;
-	tangles.h += 0.07f * intensity * (float) (r2-RAND_MAX_2)/RAND_MAX;			
-
-	matrix	tm, tm2;
-	vm_angles_2_matrix(&tm, &tangles);
-	Assert(vm_vec_mag(&tm.vec.fvec) > 0.0f);
-	Assert(vm_vec_mag(&tm.vec.rvec) > 0.0f);
-	Assert(vm_vec_mag(&tm.vec.uvec) > 0.0f);
-	vm_matrix_x_matrix(&tm2, eye_orient, &tm);
-	*eye_orient = tm2;	
-}
-
 // get view params from supernova
 float sn_distance = 300.0f;				// shockwave moving at 1000/ms ?
 float sn_cam_distance = 25.0f;
@@ -406,7 +385,6 @@ void supernova_set_view(vec3d *eye_pos, matrix *eye_orient)
 	vec3d sun_temp, sun;
 	vec3d move;
 	vec3d view;
-	float cut_pct = 1.0f - (Supernova_time / SUPERNOVA_CUT_TIME);		
 	
 	// set the controls for the heart of the sun	
 	stars_get_sun_pos(0, &sun_temp);
@@ -425,11 +403,6 @@ void supernova_set_view(vec3d *eye_pos, matrix *eye_orient)
 	if(Supernova_time < (SUPERNOVA_CUT_TIME - SUPERNOVA_CAMERA_MOVE_TIME)){
 		// *eye_pos = Supernova_camera_pos;
 		*eye_orient = Supernova_camera_orient;		
-
-		// shake the eye		
-		supernova_apply_shake(eye_orient, cut_pct * sn_shudder);
-
-		return;
 	} 
 	// otherwise move it
 	else {
@@ -448,8 +421,5 @@ void supernova_set_view(vec3d *eye_pos, matrix *eye_orient)
 		vm_vec_normalize(&view);
 		vm_vector_2_matrix(&Supernova_camera_orient, &view, NULL, NULL);
 		*eye_orient = Supernova_camera_orient;
-	}	
-
-	// shake the eye
-	supernova_apply_shake(eye_orient, cut_pct * sn_shudder);
+	}
 }
