@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.310 $
- * $Date: 2007-04-26 18:59:36 $
- * $Author: karajorma $
+ * $Revision: 2.311 $
+ * $Date: 2007-05-14 23:13:48 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.310  2007/04/26 18:59:36  karajorma
+ * Doh! Missed the return type.
+ *
  * Revision 2.309  2007/04/24 13:13:04  karajorma
  * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
  *
@@ -1979,6 +1982,7 @@ sexp_oper Operators[] = {
 	{ "set-time-compression",		OP_CUTSCENES_SET_TIME_COMPRESSION,		1, 3, },
 	{ "reset-time-compression",		OP_CUTSCENES_RESET_TIME_COMPRESSION,	0, 0, },
 	{ "lock-perspective",			OP_CUTSCENES_FORCE_PERSPECTIVE,			1, 2, },
+	{ "set-camera-shudder",			OP_SET_CAMERA_SHUDDER,					2, 2, },
 
 	{ "set-jumpnode-color",			OP_JUMP_NODE_SET_JUMPNODE_COLOR,		5, 5, },
 	{ "set-jumpnode-model",			OP_JUMP_NODE_SET_JUMPNODE_MODEL,		3, 3, },
@@ -14734,7 +14738,8 @@ extern bool Perspective_locked;
 
 void sexp_force_perspective(int n)
 {
-	 Perspective_locked = (n == SEXP_KNOWN_TRUE);
+	int result = eval_sexp(n);
+	Perspective_locked = (result == SEXP_TRUE || result == SEXP_KNOWN_TRUE);
 
 	n=CDR(n);
 
@@ -14757,6 +14762,11 @@ void sexp_force_perspective(int n)
 				break;
 		}
 	}
+}
+
+void sexp_set_camera_shudder(int n)
+{
+	game_shudder_apply(eval_num(n), (float) eval_num(CDR(n)));
 }
 
 void sexp_set_jumpnode_color(int n)
@@ -16301,6 +16311,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_force_perspective(node);
 				break;
 
+			case OP_SET_CAMERA_SHUDDER:
+				sexp_val = SEXP_TRUE;
+				sexp_set_camera_shudder(node);
+				break;
+
 			case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 				sexp_val = SEXP_TRUE;
 				sexp_set_jumpnode_color(node);
@@ -16783,6 +16798,7 @@ int query_operator_return_type(int op)
 		case OP_CUTSCENES_SET_TIME_COMPRESSION:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
+		case OP_SET_CAMERA_SHUDDER:
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
 		case OP_JUMP_NODE_SET_JUMPNODE_MODEL:
 		case OP_JUMP_NODE_SHOW_JUMPNODE:
@@ -18014,7 +18030,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_BOOL;
 			else
 				return OPF_POSITIVE;
-			
+
+		case OP_SET_CAMERA_SHUDDER:
+			return OPF_POSITIVE;
 
 		case OP_CUTSCENES_SHOW_SUBTITLE:
 			if(argnum < 2)
@@ -19171,7 +19189,6 @@ int get_subcategory(int sexp_id)
 		case OP_SHIP_CREATE:
 		case OP_WEAPON_CREATE:
 		case OP_SHIP_VANISH:
-		case OP_SUPERNOVA_START:
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
 		case OP_SHIELDS_ON:
@@ -19222,6 +19239,8 @@ int get_subcategory(int sexp_id)
 		case OP_CUTSCENES_SET_TIME_COMPRESSION:
 		case OP_CUTSCENES_RESET_TIME_COMPRESSION:
 		case OP_CUTSCENES_FORCE_PERSPECTIVE:
+		case OP_SET_CAMERA_SHUDDER:
+		case OP_SUPERNOVA_START:
 			return CHANGE_SUBCATEGORY_CUTSCENES;
 
 		case OP_JUMP_NODE_SET_JUMPNODE_COLOR:
@@ -21472,6 +21491,13 @@ sexp_help_struct Sexp_help[] = {
 		"Takes 1 or 2 arguments...\r\n"
 		"\t1:\tTrue to lock the view mode, false to unlock it\r\n"
 		"\t2:\tWhat view mode to lock; 0 for first-person, 1 for chase, 2 for external, 3 for top-down"
+	},
+
+	{ OP_SET_CAMERA_SHUDDER, "set-camera-shudder\r\n"
+		"\tCauses the camera to shudder.  Currently this will only work if the camera is showing the player's viewpoint (i.e. the HUD).\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1: Time (in milliseconds)\r\n"
+		"\t2: Intensity (in \"millishudders\".  For comparison, the Maxim is hard-coded to an intensity of 2500."
 	},
 
 	{ OP_JUMP_NODE_SET_JUMPNODE_COLOR, "set-jumpnode-color\r\n"
