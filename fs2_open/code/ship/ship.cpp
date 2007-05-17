@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.63 $
- * $Date: 2007-05-14 23:13:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.336.2.64 $
+ * $Date: 2007-05-17 14:58:40 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.63  2007/05/14 23:13:42  Goober5000
+ * --grouped the shake/shudder code together a bit better
+ * --added a sexp to generate shudder
+ * --fixed a minor bug in lock-perspective
+ *
  * Revision 2.336.2.62  2007/04/13 00:26:43  taylor
  * clean out some old code we no longer use/need
  * change warning messages to not print out current tbl name, since at the point those messages show the tbl has long since been parsed
@@ -16122,25 +16127,28 @@ void parse_armor_type()
 
 void armor_parse_table(char* filename)
 {
-	//PREPARE TO PARSE!
 	lcl_ext_open();
-	if(setjmp(parse_abort) != 0)
-	{
+
+	if ( setjmp(parse_abort) != 0 ) {
 		mprintf(("Unable to parse %s!\n", filename));
 		lcl_ext_close();
 		return;
 	}
+
 	read_file_text(filename);
 	reset_parse();
-	
-	//3...2...1...PARSE!
-	
+
 	//Enumerate through all the armor types and add them.
-	while(optional_string("#Armor Type"))
-	{
-		parse_armor_type();
+	while ( optional_string("#Armor Type") ) {
+		while ( required_string_either("#End", "$Name:") ) {
+			parse_armor_type();
+			continue;
+		}
+
 		required_string("#End");
 	}
+
+	lcl_ext_close();
 }
 
 void armor_init()
