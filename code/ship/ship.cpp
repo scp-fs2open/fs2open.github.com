@@ -10,13 +10,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.414 $
- * $Date: 2007-05-14 23:13:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.415 $
+ * $Date: 2007-05-17 14:58:11 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.414  2007/05/14 23:13:49  Goober5000
+ * --grouped the shake/shudder code together a bit better
+ * --added a sexp to generate shudder
+ * --fixed a minor bug in lock-perspective
+ *
  * Revision 2.413  2007/05/09 04:16:06  Backslash
  * Add feature to $Max Glide Speed -- negative number means no speed cap
  * Only show gun muzzle flash effect if in not cockpit view, or if "show ship" flag is set
@@ -16311,25 +16316,28 @@ void parse_armor_type()
 
 void armor_parse_table(char* filename)
 {
-	//PREPARE TO PARSE!
 	lcl_ext_open();
-	if(setjmp(parse_abort) != 0)
-	{
-		mprintf(("TABLES: Unable to parse '%s'.\n", filename));
+
+	if ( setjmp(parse_abort) != 0 ) {
+		mprintf(("Unable to parse %s!\n", filename));
 		lcl_ext_close();
 		return;
 	}
+
 	read_file_text(filename);
 	reset_parse();
-	
-	//3...2...1...PARSE!
-	
+
 	//Enumerate through all the armor types and add them.
-	while(optional_string("#Armor Type"))
-	{
-		parse_armor_type();
+	while ( optional_string("#Armor Type") ) {
+		while ( required_string_either("#End", "$Name:") ) {
+			parse_armor_type();
+			continue;
+		}
+
 		required_string("#End");
 	}
+
+	lcl_ext_close();
 }
 
 void armor_init()
