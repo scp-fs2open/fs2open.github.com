@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.6.2.4 $
- * $Date: 2006-10-08 05:24:03 $
- * $Author: Goober5000 $
+ * $Revision: 1.6.2.5 $
+ * $Date: 2007-05-20 21:21:30 $
+ * $Author: wmcoolmon $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
  * Document class for document/view architechure, which we don't really use in
@@ -19,6 +19,9 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6.2.4  2006/10/08 05:24:03  Goober5000
+ * bah!
+ *
  * Revision 1.6.2.3  2006/10/08 05:21:35  Goober5000
  * nitpick
  *
@@ -350,6 +353,8 @@
 #include "stdafx.h"
 #include "FRED.h"
 #include <stdlib.h>
+//#include <atlbase.h>
+//#include <atlconv.h>
 
 #include "FREDDoc.h"
 #include "FREDView.h"
@@ -1215,10 +1220,37 @@ void CFREDDoc::OnFileImportFSM()
 		return;
 
 	// get location to save to    
+#if ( _MFC_VER >= 0x0700 )
+	char dest_directory[MAX_PATH];
+
+	//ITEMIDLIST fs2_mission_pidl = {0};
+
+	//SHParseDisplayName(A2CW(fs2_mission_path), NULL, fs2_mission_pidl, 0, 0);
+
+	BROWSEINFO bi;
+	bi.hwndOwner = theApp.GetMainWnd()->GetSafeHwnd();
+	//bi.pidlRoot = &fs2_mission_pidl;
+	bi.pidlRoot = NULL;
+	bi.pszDisplayName = dest_directory;
+	bi.lpszTitle = "Select a location to save in";
+	bi.ulFlags = 0;
+	bi.lpfn = NULL;
+	bi.lParam = NULL;
+	bi.iImage = NULL;
+
+	LPCITEMIDLIST ret_val = SHBrowseForFolder(&bi);
+
+	if(ret_val == NULL)
+		return;
+
+	SHGetPathFromIDList(ret_val, dest_directory);
+#else
     CFolderDialog dlgFolder(_T("Select a location to save in"), fs2_mission_path, NULL);
     if(dlgFolder.DoModal() != IDOK)
         return;
 
+	char *dest_directory = dlgFolder.GetFolderPath();
+#endif
 	// clean things up first
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);
@@ -1274,7 +1306,7 @@ void CFREDDoc::OnFileImportFSM()
 		strcpy(Mission_filename, filename);
 
 		// get new path
-		strcpy(dest_path, dlgFolder.GetFolderPath());
+		strcpy(dest_path, dest_directory);
 		strcat(dest_path, "\\");
 		strcat(dest_path, filename);
 

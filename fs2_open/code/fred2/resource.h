@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by FRED.rc
+// Microsoft Visual C++ generated include file.
+// Used by fred.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -101,6 +101,21 @@
 #define IDD_CUSTOM_WING_NAMES           267
 #define IDD_RESTRICT_PATHS              270
 #define IDD_BACKGROUND_CHOOSER          272
+#define IDB_DATA_02                     274
+#define IDB_DATA_03                     275
+#define IDB_DATA_04                     276
+#define IDB_DATA_05                     277
+#define IDB_DATA_06                     278
+#define IDB_DATA_07                     279
+#define IDB_DATA_08                     280
+#define IDB_DATA_09                     281
+#define IDB_DATA_01                     285
+#define IDB_DATA_10                     286
+#define IDB_DATA_11                     287
+#define IDB_DATA_12                     288
+#define IDB_DATA_15                     289
+#define IDB_DATA_14                     290
+#define IDB_DATA_13                     291
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -819,6 +834,8 @@
 #define IDC_DELAY                       1407
 #define IDC_DELAY_SPIN                  1408
 #define IDC_HELP_BOX                    1409
+#define IDC_HELP_BOX2                   1410
+#define IDC_MINI_HELP_BOX               1410
 #define IDC_asdf                        1412
 #define IDC_DESTROY_SPIN                1413
 #define IDC_IGNORE_ORDERS               1414
@@ -1339,7 +1356,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        273
+#define _APS_NEXT_RESOURCE_VALUE        292
 #define _APS_NEXT_COMMAND_VALUE         33091
 #define _APS_NEXT_CONTROL_VALUE         1593
 #define _APS_NEXT_SYMED_VALUE           105
