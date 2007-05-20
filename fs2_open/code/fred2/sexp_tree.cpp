@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.8.2.8 $
- * $Date: 2007-05-20 21:21:31 $
+ * $Revision: 1.8.2.9 $
+ * $Date: 2007-05-20 21:24:09 $
  * $Author: wmcoolmon $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8.2.8  2007/05/20 21:21:31  wmcoolmon
+ * FRED2 support for numbered SEXP operator arguments, minihelp box, fixed "Insert Event" when no events are present.
+ *
  * Revision 1.8.2.7  2007/02/20 04:19:10  Goober5000
  * the great big duplicate model removal commit
  *
@@ -4464,7 +4467,7 @@ void sexp_tree::update_help(HTREEITEM h)
 			//Display argument number
 			if(display_number)
 			{
-				sprintf(buffer, "%d :", sibling_place);
+				sprintf(buffer, "%d:", sibling_place);
 			}
 
 			mini_help_box->SetWindowText(buffer);
