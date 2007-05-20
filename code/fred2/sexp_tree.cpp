@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.8.2.7 $
- * $Date: 2007-02-20 04:19:10 $
- * $Author: Goober5000 $
+ * $Revision: 1.8.2.8 $
+ * $Date: 2007-05-20 21:21:31 $
+ * $Author: wmcoolmon $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8.2.7  2007/02/20 04:19:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 1.8.2.6  2006/10/28 20:54:35  karajorma
  * Adding the network-variable option to SEXP variables. This change will revert variables to the same behaviour they displayed in retail (i.e they don't update for clients) unless a variable is set to be a network-variable.
  *
@@ -818,6 +821,8 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+//********************sexp_tree********************
+
 BEGIN_MESSAGE_MAP(sexp_tree, CTreeCtrl)
 	//{{AFX_MSG_MAP(sexp_tree)
 	ON_NOTIFY_REFLECT(TVN_BEGINDRAG, OnBegindrag)
@@ -1258,7 +1263,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 			bitmap = BITMAP_VARIABLE;
 		} else {
 			tree_nodes[node].flags = EDITABLE;
-			bitmap = BITMAP_DATA;
+			bitmap = get_data_image(node);
 		}
 	}
 
@@ -1277,7 +1282,8 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_VARIABLE, BITMAP_VARIABLE, root);
 				tree_nodes[node].flags = NOT_EDITABLE;
 			} else {
-				tree_nodes[node].handle = insert(tree_nodes[node].text, BITMAP_DATA, BITMAP_DATA, root);
+				int bmap = get_data_image(node);
+				tree_nodes[node].handle = insert(tree_nodes[node].text, bmap, bmap, root);
 				tree_nodes[node].flags = EDITABLE;
 			}
 		}
@@ -1394,6 +1400,11 @@ void sexp_tree::right_clicked(int mode)
 	click_point = mouse;
 	ScreenToClient(&click_point);
 	h = HitTest(CPoint(click_point), &_flags);  // find out what they clicked on
+
+	for (i=0; i<tree_nodes.size(); i++)
+		if (tree_nodes[i].handle == h)
+			break;
+
 	if (h && menu.LoadMenu(IDR_MENU_EDIT_SEXP_TREE)) {
 		update_help(h);
 		popup_menu = menu.GetSubMenu(0);
@@ -3369,7 +3380,8 @@ void sexp_tree::expand_operator(int node)
 
 		SetItem(h, TVIF_TEXT, tree_nodes[node].text, 0, 0, 0, 0, 0);
 		tree_nodes[node].flags = OPERAND;
-		tree_nodes[data].handle = insert(tree_nodes[data].text, BITMAP_DATA, BITMAP_DATA, h);
+		int bmap = get_data_image(data);
+		tree_nodes[data].handle = insert(tree_nodes[data].text, bmap, bmap, h);
 		tree_nodes[data].flags = EDITABLE;
 		Expand(h, TVE_EXPAND);
 	}
@@ -3416,7 +3428,8 @@ int sexp_tree::add_data(char *data, int type)
 	expand_operator(item_index);
 	node = allocate_node(item_index);
 	set_node(node, type, data);
-	tree_nodes[node].handle = insert(data, BITMAP_DATA, BITMAP_DATA, tree_nodes[item_index].handle);
+	int bmap = get_data_image(node);
+	tree_nodes[node].handle = insert(data, bmap, bmap, tree_nodes[item_index].handle);
 	tree_nodes[node].flags = EDITABLE;
 	*modified = 1;
 	return node;
@@ -3871,7 +3884,8 @@ void sexp_tree::replace_data(char *data, int type)
 
 	set_node(item_index, type, data);
 	SetItemText(h, data);
-	SetItemImage(h, BITMAP_DATA, BITMAP_DATA);
+	int bmap = get_data_image(item_index);
+	SetItemImage(h, bmap, bmap);
 	tree_nodes[item_index].flags = EDITABLE;
 
 	// check remaining data beyond replaced data for validity (in case any of it is dependent on data just replaced)
@@ -4188,6 +4202,24 @@ void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point)
 	CTreeCtrl::OnLButtonUp(nFlags, point);
 }
 
+const static UINT Numbered_data_bitmaps[] = {
+	IDB_DATA_01,
+	IDB_DATA_02,
+	IDB_DATA_03,
+	IDB_DATA_04,
+	IDB_DATA_05,
+	IDB_DATA_06,
+	IDB_DATA_07,
+	IDB_DATA_08,
+	IDB_DATA_09,
+	IDB_DATA_10,
+	IDB_DATA_11,
+	IDB_DATA_12,
+	IDB_DATA_13,
+	IDB_DATA_14,
+	IDB_DATA_15,
+};
+
 void sexp_tree::setup(CEdit *ptr)
 {
 	CImageList *pimagelist;
@@ -4203,8 +4235,9 @@ void sexp_tree::setup(CEdit *ptr)
 	pimagelist = GetImageList(TVSIL_NORMAL);
 	if (!pimagelist) {
 		pimagelist = new CImageList();
-		pimagelist->Create(16, 16, TRUE/*bMask*/, 2, 9);
+		pimagelist->Create(16, 16, TRUE/*bMask*/, 2, 22);
 
+		//*****Add generic images
 		bitmap.LoadBitmap(IDB_OPERATOR);
 		pimagelist->Add(&bitmap, (COLORREF) 0xFFFFFF);
 		bitmap.DeleteObject();
@@ -4240,6 +4273,16 @@ void sexp_tree::setup(CEdit *ptr)
 		bitmap.LoadBitmap(IDB_BLACK_DOT);
 		pimagelist->Add(&bitmap, (COLORREF) 0xFFFFFF);
 		bitmap.DeleteObject();
+
+		//*****Add numbered data entries
+		int num = sizeof(Numbered_data_bitmaps)/sizeof(UINT);
+		int i = 0;
+		for(i = 0; i < num; i++)
+		{
+			bitmap.LoadBitmap(Numbered_data_bitmaps[i]);
+			pimagelist->Add(&bitmap, (COLORREF) 0xFF00FF);
+			bitmap.DeleteObject();
+		}
 
 		SetImageList(pimagelist, TVSIL_NORMAL);
 	}
@@ -4317,7 +4360,7 @@ int sexp_tree::get_type(HTREEITEM h)
 void sexp_tree::update_help(HTREEITEM h)
 {
 	char *str;
-	int i, j, z, c, code;
+	int i, j, z, c, code, index, sibling_place;
 	CString text;
 
 /* Goober5000 - this is just annoying
@@ -4329,8 +4372,11 @@ void sexp_tree::update_help(HTREEITEM h)
 			}
 */
 	help_box = (CEdit *) GetParent()->GetDlgItem(IDC_HELP_BOX);
+	mini_help_box = (CEdit *) GetParent()->GetDlgItem(IDC_MINI_HELP_BOX);
 	if (!help_box || !::IsWindow(help_box->m_hWnd))
 		return;
+
+	mini_help_box->SetWindowText("");
 
 	for (i=0; i<tree_nodes.size(); i++)
 		if (tree_nodes[i].handle == h)
@@ -4341,15 +4387,90 @@ void sexp_tree::update_help(HTREEITEM h)
 		return;
 	}
 
-	if (SEXPT_TYPE(tree_nodes[i].type) != SEXPT_OPERATOR) {
+	if (SEXPT_TYPE(tree_nodes[i].type) != SEXPT_OPERATOR)
+	{
 		z = tree_nodes[i].parent;
 		if (z < 0) {
 			Warning(LOCATION, "Sexp data \"%s\" has no parent!", tree_nodes[i].text);
 			return;
 		}
 
-		code = get_operator_index(tree_nodes[z].text);
-		if (code >= 0) {
+		code = get_operator_const(tree_nodes[z].text);
+		index = get_operator_index(tree_nodes[z].text);
+		sibling_place = get_sibling_place(i) + 1;	//We want it to start at 1
+
+		//*****Minihelp box
+		if((SEXPT_TYPE(tree_nodes[i].type) == SEXPT_NUMBER) || (SEXPT_TYPE(tree_nodes[i].type) == SEXPT_STRING) && sibling_place > 0)
+		{
+			char buffer[10240] = {""};
+
+			//Get the help for the current operator
+			char *helpstr = help(code);
+			bool display_number = true;
+
+			//If a help string exists, try to display it
+			if(helpstr != NULL)
+			{
+				char searchstr[32];
+				char *loc=NULL, *loc2=NULL;
+
+				if(loc == NULL)
+				{
+					sprintf(searchstr, "\n%d:", sibling_place);
+					loc = strstr(helpstr, searchstr);
+				}
+
+				if(loc == NULL)
+				{
+					sprintf(searchstr, "\t%d:", sibling_place);
+					loc = strstr(helpstr, searchstr);
+				}
+				if(loc == NULL)
+				{
+					sprintf(searchstr, " %d:", sibling_place);
+					loc = strstr(helpstr, searchstr);
+				}
+				if(loc == NULL)
+				{
+					sprintf(searchstr, "%d:", sibling_place);
+					loc = strstr(helpstr, searchstr);
+				}
+
+				if(loc != NULL)
+				{
+					//Skip whitespace
+					while(*loc=='\r' || *loc == '\n' || *loc == ' ' || *loc == '\t') loc++;
+
+					//Find EOL
+					loc2 = strpbrk(loc, "\r\n");
+					if(loc2 != NULL)
+					{
+						size_t size = loc2-loc;
+						strncpy(buffer, loc, size);
+						if(size < sizeof(buffer))
+						{
+							buffer[size] = '\0';
+						}
+						display_number = false;
+					}
+					else
+					{
+						strcpy(buffer, loc);
+						display_number = false;
+					}
+				}
+			}
+
+			//Display argument number
+			if(display_number)
+			{
+				sprintf(buffer, "%d :", sibling_place);
+			}
+
+			mini_help_box->SetWindowText(buffer);
+		}
+
+		if (index >= 0) {
 			c = 0;
 			j = tree_nodes[z].child;
 			while ((j >= 0) && (j != i)) {
@@ -4358,7 +4479,7 @@ void sexp_tree::update_help(HTREEITEM h)
 			}
 
 			Assert(j >= 0);
-			if (query_operator_argument_type(code, c) == OPF_MESSAGE) {
+			if (query_operator_argument_type(index, c) == OPF_MESSAGE) {
 				for (j=0; j<Num_messages; j++)
 					if (!stricmp(Messages[j].name, tree_nodes[i].text)) {
 						text.Format("Message Text:\r\n%s", Messages[j].message);
@@ -4776,6 +4897,51 @@ int sexp_tree::find_ancestral_argument_number(int parent_op, int child_node)
 
 	// not found
 	return -1;
+}
+
+/**
+* Gets the proper data image for the tree item's place
+* in its parent hierarchy.
+*/
+int sexp_tree::get_data_image(int node)
+{
+	int count = get_sibling_place(node);
+
+	if(count < 0)
+		return BITMAP_DATA;
+
+	if(count > NUM_BITMAP_NUMBERED_DATA)
+		return BITMAP_DATA;
+
+	return BITMAP_NUMBERED_DATA + count;
+}
+
+int sexp_tree::get_sibling_place(int node)
+{
+	if(tree_nodes[node].parent < 0 || tree_nodes[node].parent > (int)tree_nodes.size())
+		return -1;
+	
+	sexp_tree_item *myparent = &tree_nodes[tree_nodes[node].parent];
+
+	if(myparent->child == -1)
+		return -1;
+
+	sexp_tree_item *mysibling = &tree_nodes[myparent->child];
+
+	int count = 0;
+	while(true)
+	{
+		if(mysibling == &tree_nodes[node])
+			break;
+
+		if(mysibling->next == -1)
+			break;
+
+		count++;
+		mysibling = &tree_nodes[mysibling->next];
+	}
+
+	return count;
 }
 
 

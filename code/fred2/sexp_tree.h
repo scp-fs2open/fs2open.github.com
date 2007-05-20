@@ -54,6 +54,9 @@
 #define BITMAP_BLACK_DOT		8
 #define BITMAP_BLUE_DOT			BITMAP_ROOT
 #define BITMAP_RED_DOT			BITMAP_ROOT_DIRECTIVE
+#define BITMAP_NUMBERED_DATA		9
+#define NUM_BITMAP_NUMBERED_DATA	15
+//Therefore NEXT DEFINE should be 9+12 or 21
 
 
 
@@ -183,6 +186,10 @@ public:
 	int find_argument_number(int parent_node, int child_node);
 	int find_ancestral_argument_number(int parent_op, int child_node);
 
+	//WMC
+	int get_sibling_place(int node);
+	int get_data_image(int node);
+
 
 	sexp_list_item *get_listing_opf(int opf, int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_null();
@@ -251,6 +258,7 @@ public:
 	HTREEITEM	m_h_drop;
 	CImageList	*m_p_image_list;
 	CEdit *help_box;
+	CEdit *mini_help_box;
 	CPoint m_pt;
 
 	// ClassWizard generated virtual function overrides
