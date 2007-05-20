@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileList.cpp $
- * $Revision: 2.7 $
- * $Date: 2006-08-20 00:45:10 $
+ * $Revision: 2.8 $
+ * $Date: 2007-05-20 02:51:08 $
  * $Author: taylor $
  *
  * Code for doing directory lists and sorts
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7  2006/08/20 00:45:10  taylor
+ * "byte" was the same as "ubyte", but since "byte" has to be an extra #define on everything but Windows, lets just get rid of it
+ *
  * Revision 2.6  2005/01/31 23:27:51  taylor
  * merge with Linux/OSX tree - p0131-2
  *
@@ -164,14 +167,22 @@ void cf_sort_filenames( int n, char **list, int sort, file_list_info *info )
 	} else if (sort == CF_SORT_REVERSE) {
 		incr = n / 2;
 		char buffer[MAX_FILENAME_LEN];
+		file_list_info tt_tmp;
 
 		for (i = 0; i < incr; i++) {
 			t = list[n - 1 - i];
 
-			if ( stricmp(list[i], t) > 0 ) {
+			if (list[i] != t) {
 				strcpy(buffer, list[i]);
 				strcpy(list[i], t);
 				strcpy(t, buffer);
+
+				if (info) {
+					tt = info[n - 1 - i];
+					tt_tmp = info[i];
+					info[i] = tt;
+					tt = tt_tmp;
+				}
 			}
 		}
 
