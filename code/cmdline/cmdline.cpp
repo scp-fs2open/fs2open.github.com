@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.15 $
- * $Date: 2007-04-17 17:15:31 $
- * $Author: karajorma $
+ * $Revision: 2.140.2.16 $
+ * $Date: 2007-05-25 13:47:10 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.15  2007/04/17 17:15:31  karajorma
+ * Remove the -fredhtl command line.
+ *
  * Revision 2.140.2.14  2007/04/11 18:23:01  taylor
  * this got chopped off of the previous commit for some reason
  *
@@ -1477,11 +1480,11 @@ void os_validate_parms(char *cmdline)
 						printf("    [ %s ]%*s- %s\n", exe_params[p].name, (STR_SIZE - sp - 1), NOX(" "), exe_params[p].desc);
 						p++;
 					}
+					exit(0);
+					printf("\n");
 				} else {
-					printf("Unrecognized command line parameter \"%s\".  Exiting...\n", token);
+					printf("Unrecognized command line parameter \"%s\".  Ignoring...\n", token);
 				}
-				printf("\n");
-				exit(0);
 #endif
 			}
 		}
