@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.22 $
- * $Date: 2007-04-13 00:26:45 $
+ * $Revision: 2.150.2.23 $
+ * $Date: 2007-05-25 13:49:39 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.22  2007/04/13 00:26:45  taylor
+ * clean out some old code we no longer use/need
+ * change warning messages to not print out current tbl name, since at the point those messages show the tbl has long since been parsed
+ * add an extra quick-check to ship_get_subsystem_strength() to avoid div if we don't need it
+ * make Ship_subsystems[] dynamic (sort of), it's allocated in sized sets now, so we can easily change size while still working with the existing linked-list code
+ *
  * Revision 2.150.2.21  2007/02/27 01:44:45  Goober5000
  * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
  *
@@ -2288,10 +2294,10 @@ int ship_get_texture(int bitmap);
 void ship_page_in();
 
 // Goober5000 - helper for above
-void ship_page_in_model_textures(int modelnum, int ship_index = -1);
+void ship_page_in_textures(int ship_index = -1);
 
 // fixer for above - taylor
-void ship_page_out_model_textures(int modelnum, int ship_index = -1);
+void ship_page_out_textures(int ship_index, bool release = false);
 
 // update artillery lock info
 void ship_update_artillery_lock();
