@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.152 $
- * $Date: 2007-04-17 17:26:35 $
- * $Author: karajorma $
+ * $Revision: 2.153 $
+ * $Date: 2007-05-25 13:58:02 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.152  2007/04/17 17:26:35  karajorma
+ * Remove the -fredhtl command line.
+ *
  * Revision 2.151  2007/04/11 18:24:27  taylor
  * cleanup of chksum stuff (works properly on 64-bit systems now)
  * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
@@ -1472,11 +1475,11 @@ void os_validate_parms(char *cmdline)
 						printf("    [ %s ]%*s- %s\n", exe_params[p].name, (STR_SIZE - sp - 1), NOX(" "), exe_params[p].desc);
 						p++;
 					}
+					exit(0);
+					printf("\n");
 				} else {
-					printf("Unrecognized command line parameter \"%s\".  Exiting...\n", token);
+					printf("Unrecognized command line parameter \"%s\".  Ignoring...\n", token);
 				}
-				printf("\n");
-				exit(0);
 #endif
 			}
 		}
