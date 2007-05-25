@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.186 $
- * $Date: 2007-04-30 21:30:31 $
- * $Author: Backslash $
+ * $Revision: 2.187 $
+ * $Date: 2007-05-25 13:58:26 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.186  2007/04/30 21:30:31  Backslash
+ * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
+ * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
+ *
  * Revision 2.185  2007/04/13 00:28:00  taylor
  * clean out some old code we no longer use/need
  * change warning messages to not print out current tbl name, since at the point those messages show the tbl has long since been parsed
@@ -2364,10 +2368,10 @@ int ship_get_texture(int bitmap);
 void ship_page_in();
 
 // Goober5000 - helper for above
-void ship_page_in_model_textures(int modelnum, int ship_index = -1);
+void ship_page_in_textures(int ship_index = -1);
 
 // fixer for above - taylor
-void ship_page_out_model_textures(int modelnum, int ship_index = -1);
+void ship_page_out_textures(int ship_index, bool release = false);
 
 // update artillery lock info
 void ship_update_artillery_lock();
