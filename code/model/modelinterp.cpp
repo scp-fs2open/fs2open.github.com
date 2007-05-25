@@ -9,13 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.191 $
- * $Date: 2007-03-23 01:51:00 $
+ * $Revision: 2.192 $
+ * $Date: 2007-05-25 13:58:25 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.191  2007/03/23 01:51:00  taylor
+ * bit of cleanup and minor performance tweaks
+ * render ship insignia with a bit of alpha to help with blending/lighting
+ * dynamic thruster particle limits
+ * update for generic_bitmap/anim changes
+ * make use of flag_def_list for ship flags rather than a ton of if-else statements
+ * use generic_bitmap and generic_anim where possible to faciliate delayed graphics loading (after all ship related tbls are parsed)
+ * use VALID_FNAME()
+ *
  * Revision 2.190  2007/02/20 04:20:18  Goober5000
  * the great big duplicate model removal commit
  *
@@ -5418,84 +5427,44 @@ void model_set_fog_level(float l)
 	Interp_fog_level = l;
 }
 
-// Goober5000
-void model_page_in_texture(int texture)
-{
-	if (texture >= 0)
-	{
-		// go ahead and set it as a paged in texture so it's not unloaded during bm_page_in_stop()
-		bm_page_in_texture(texture);
-		bm_lock(texture, 16, BMP_TEX_OTHER);
-		bm_unlock(texture);
-	}
-}
-
 // given a newly loaded model, page in all textures
 void model_page_in_textures(int modelnum, int ship_info_index)
 {
 	int i, idx;
-	ship_info *sip;
-
 	polymodel *pm = model_get(modelnum);
 
 	// bogus
-	if(pm == NULL)
+	if (pm == NULL)
 		return;
 
-	if ((ship_info_index >= 0) && (ship_info_index < Num_ship_classes))
-	{
-		sip = &Ship_info[ship_info_index];
-
-		// set nondarkening pixels	
-		if(sip->num_nondark_colors)
-		{		
-			palman_set_nondarkening(sip->nondark_colors, sip->num_nondark_colors);
-		}
-		// use the colors from the default table
-		else
-		{		
-			palman_set_nondarkening(Palman_non_darkening_default, Palman_num_nondarkening_default);
-		}
-	}
-
-	for (idx = 0; idx < pm->n_textures; idx++)
-	{
+	for (idx = 0; idx < pm->n_textures; idx++) {
 		texture_map *tmap = &pm->maps[idx];
 
-		model_page_in_texture(tmap->base_map.original_texture);
-		model_page_in_texture(tmap->glow_map.original_texture);
-		model_page_in_texture(tmap->spec_map.original_texture);
-#ifdef BUMPMAPPING
-		model_page_in_texture(tmap->bump_map.original_texture);
-#endif
+		bm_page_in_texture(tmap->base_map.texture);
+		bm_page_in_texture(tmap->glow_map.texture);
+		bm_page_in_texture(tmap->spec_map.texture);
+	//	bm_page_in_texture(tmap->norm_map.texture);
 	}
 
-	for (i=0; i < pm->n_glow_point_banks; i++)
-	{
+	for (i = 0; i < pm->n_glow_point_banks; i++) {
 		glow_point_bank *bank = &pm->glow_point_banks[i];
 
-		model_page_in_texture(bank->glow_bitmap);
-		model_page_in_texture(bank->glow_neb_bitmap);
+		bm_page_in_texture(bank->glow_bitmap);
+		bm_page_in_texture(bank->glow_neb_bitmap);
 	}
+
+	if (ship_info_index >= 0)
+		ship_page_in_textures(ship_info_index);
 }
 
 void model_page_out_texture_info(texture_info *tinfo, bool release)
 {
-	if (tinfo->original_texture >= 0)
-	{
-		if (release)
-		{
-			if (bm_release(tinfo->original_texture))
-			{
-				if (tinfo->texture == tinfo->original_texture)
-					tinfo->texture = -1;
-
-				tinfo->original_texture = -1;
-			}
-		}
-		else
-		{
-			bm_unload_fast(tinfo->original_texture);
+	if (tinfo->texture >= 0) {
+		if (release) {
+			bm_release(tinfo->texture);
+			tinfo->texture = -1;
+		} else {
+			bm_unload(tinfo->texture);
 		}
 	}
 }
@@ -5517,37 +5486,36 @@ void model_page_out_textures(int model_num, bool release)
 	if (release && (pm->used_this_mission > 0))
 		return;
 
-	for (i = 0; i < pm->n_textures; i++)
-	{
+
+	for (i = 0; i < pm->n_textures; i++) {
 		texture_map *tmap = &pm->maps[i];
 
 		model_page_out_texture_info(&tmap->base_map, release);
 		model_page_out_texture_info(&tmap->glow_map, release);
 		model_page_out_texture_info(&tmap->spec_map, release);
-#ifdef BUMPMAPPING
-		model_page_out_texture_info(&tmap->bump_map, release);
-#endif
+	//	model_page_out_texture_info(&tmap->norm_map, release);
 	}
 
 	// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
-	for (j = 0; j < pm->n_glow_point_banks; j++)
-	{
+	for (j = 0; j < pm->n_glow_point_banks; j++) {
 		glow_point_bank *bank = &pm->glow_point_banks[j];
 
-		if (bank->glow_bitmap >= 0)
-		{
-		//	if (release)
+		if (bank->glow_bitmap >= 0) {
+		//	if (release) {
 		//		bm_release(bank->glow_bitmap);
-		//	else
+		//		bank->glow_bitmap = -1;
+		//	} else {
 				bm_unload(bank->glow_bitmap);
+		//	}
 		}
 
-		if (bank->glow_neb_bitmap >= 0)
-		{
-		//	if (release)
+		if (bank->glow_neb_bitmap >= 0) {
+		//	if (release) {
 		//		bm_release(bank->glow_neb_bitmap);
-		//	else
+		//		bank->glow_neb_bitmap = -1;
+		//	} else {
 				bm_unload(bank->glow_neb_bitmap);
+		//	}
 		}
 	}
 }

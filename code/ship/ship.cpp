@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.415 $
- * $Date: 2007-05-17 14:58:11 $
+ * $Revision: 2.416 $
+ * $Date: 2007-05-25 13:58:25 $
  * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.415  2007/05/17 14:58:11  taylor
+ * fix armor_parse_table() so that it will parse multiple entries properly
+ * fix bug introduced from not closing down lcl_ext after parsing armor.tbl
+ *
  * Revision 2.414  2007/05/14 23:13:49  Goober5000
  * --grouped the shake/shudder code together a bit better
  * --added a sexp to generate shudder
@@ -6999,7 +7003,7 @@ void ship_delete( object * obj )
 	ct_ship_delete(shipp);
 
 	// remove textures from memory if we are done with them - taylor
-//	ship_page_out_model_textures( shipp->modelnum, shipp->ship_info_index );
+//	ship_page_out_textures(shipp->ship_info_index);
 	
 	ship_clear_decals(shipp);
 }
@@ -9107,11 +9111,8 @@ void ship_model_change(int n, int ship_type)
 	Objects[sp->objnum].radius = model_get_radius(pm->id);
 
 	// page in nondims in game
-	if(!Fred_running){
+	if ( !Fred_running )
 		model_page_in_textures(sip->model_num, ship_type);
-		// also get anything extra (like thrusters graphics)
-		ship_page_in_model_textures(sip->model_num, ship_type);
-	}
 
 	// allocate memory for keeping glow point bank status (enabled/disabled)
 	{
@@ -14736,6 +14737,14 @@ void ship_page_in()
 			ptr = GET_NEXT(ptr);
 		}
 
+		ship_info *sip = &Ship_info[Ships[i].ship_info_index];
+
+		// page in all of the textures if the model is already loaded
+		if (sip->model_num >= 0) {
+			nprintf(( "Paging", "Paging in textures for ship '%s'\n", Ships[i].ship_name ));
+			model_page_in_textures(sip->model_num, Ships[i].ship_info_index);
+		}
+
 		// don't need this one anymore, it's already been accounted for
 	//	num_subsystems_needed += Ship_info[Ships[i].ship_info_index].n_subsystems;
 	}
@@ -14756,6 +14765,12 @@ void ship_page_in()
 				if (Subsys_status[i].secondary_banks[j] >= 0)
 					weapon_mark_as_used(Subsys_status[i].secondary_banks[j]);
 			}
+		}
+
+		// page in any replacement textures
+		if (Ship_info[p_objp->ship_class].model_num >= 0) {
+			nprintf(( "Paging", "Paging in textures for future arrival ship '%s'\n", p_objp->name ));
+			model_page_in_textures(Ship_info[p_objp->ship_class].model_num, p_objp->ship_class);
 		}
 
 		num_subsystems_needed += Ship_info[p_objp->ship_class].n_subsystems;
@@ -14948,71 +14963,16 @@ void ship_page_in()
 }
 
 // Goober5000 - called from ship_page_in()
-void ship_page_in_model_textures(int modelnum, int ship_type)
+void ship_page_in_textures(int ship_index)
 {
-	int i, j;
-	polymodel *pm;
+	int i;
 	ship_info *sip;
 
-	pm = model_get(modelnum);
-
-	Assert( pm != NULL );
-
-	if (pm == NULL)
+	if ( (ship_index < 0) || (ship_index > Num_ship_classes) )
 		return;
 
-	for (i = 0; i < pm->n_textures; i++ )
-	{
-		int bitmap_num = pm->maps[i].base_map.texture;
-		if (bitmap_num >= 0)
-		{
-			// transparent?
-			if (pm->maps[i].is_transparent)
-			{
-				bm_page_in_xparent_texture(bitmap_num);
-			}
-			else
-			{
-				bm_page_in_texture(bitmap_num);
-			}
-		}
 
-		bitmap_num = pm->maps[i].glow_map.texture;
-		if (bitmap_num >= 0)
-		{
-			bm_page_in_texture(bitmap_num);
-		}
-
-		bitmap_num = pm->maps[i].spec_map.texture;
-		if (bitmap_num >= 0)
-		{
-			bm_page_in_texture(bitmap_num);
-		}
-
-#ifdef BUMPMAPPING
-		bitmap_num = pm->maps[i].bump_map.texture;
-		if (bitmap_num >= 0)
-		{
-			bm_page_in_texture(bitmap_num);
-		}
-#endif
-
-		for(j = 0; j < pm->n_glow_point_banks; j++)
-		{
-			glow_point_bank *bank = &pm->glow_point_banks[j];
-
-			if (bank->glow_bitmap >= 0)
-				bm_page_in_texture(bank->glow_bitmap);
-
-			if (bank->glow_neb_bitmap >= 0)
-				bm_page_in_texture(bank->glow_neb_bitmap);
-		}
-	}
-	
-	if (ship_type < 0)
-		return;
-
-	sip = &Ship_info[ship_type];
+	sip = &Ship_info[ship_index];
 
 	// afterburner
 	if ( !generic_bitmap_load(&sip->afterburner_trail) )
@@ -15057,103 +15017,49 @@ void ship_page_in_model_textures(int modelnum, int ship_type)
 	}
 }
 
+#define PAGE_OUT_TEXTURE(x) {	\
+	if ( (x) >= 0 ) {	\
+		if (release) {	\
+			bm_release( (x) );	\
+			(x) = -1;	\
+		} else {	\
+			bm_unload( (x) );	\
+		}	\
+	}	\
+}
+
 // unload all textures for a given ship
-void ship_page_out_model_textures(int modelnum, int ship_index)
+void ship_page_out_textures(int ship_index, bool release)
 {
-	int i, j;
-	polymodel *pm;
+	int i;
 	ship_info *sip;
-	int bitmap_num = -1;
 
-	pm = model_get(modelnum);
-
-	Assert( pm != NULL );
-
-	if (pm == NULL)
+	if ( (ship_index < 0) || (ship_index > Num_ship_classes) )
 		return;
 
-	for (i=0; i<pm->n_textures; i++)
-	{
-		bitmap_num = pm->maps[i].base_map.texture;
-		if (bitmap_num >= 0)
-		{
-			bm_page_out(bitmap_num);
-		}
-
-		bitmap_num = pm->maps[i].glow_map.texture;
-		if (bitmap_num >= 0)
-		{
-			bm_page_out(bitmap_num);
-		}
-
-		bitmap_num = pm->maps[i].spec_map.texture;
-		if (bitmap_num >= 0)
-		{
-			bm_page_out(bitmap_num);
-		}
-
-#ifdef BUMPMAPPING
-		bitmap_num = pm->maps[i].bump_map.texture;
-		if (bitmap_num >= 0)
-		{
-			bm_page_out(bitmap_num);
-		}
-#endif
-
-		for (j = 0; j < pm->n_glow_point_banks; j++)
-		{
-			glow_point_bank *bank = &pm->glow_point_banks[j];
-
-			if (bank->glow_bitmap >= 0)
-				bm_page_out(bank->glow_bitmap);
-
-			if (bank->glow_neb_bitmap >= 0)
-				bm_page_out(bank->glow_neb_bitmap);
-		}
-	}
-
-	if (ship_index < 0)
-		return;
 
 	sip = &Ship_info[ship_index];
 
 	// afterburner
-	if (sip->afterburner_trail.bitmap_id >= 0)
-		bm_page_out(sip->afterburner_trail.bitmap_id);
+	PAGE_OUT_TEXTURE(sip->afterburner_trail.bitmap_id);
 
-	// Bobboau's thruster bitmaps
-	if (sip->thruster_glow_info.normal.first_frame >= 0)
-		bm_page_out(sip->thruster_glow_info.normal.first_frame);
-
-	if (sip->thruster_glow_info.afterburn.first_frame >= 0)
-		bm_page_out(sip->thruster_glow_info.afterburn.first_frame);
-
-	if (sip->thruster_secondary_glow_info.normal.bitmap_id >= 0)
-		bm_page_out(sip->thruster_secondary_glow_info.normal.bitmap_id);
-
-	if (sip->thruster_secondary_glow_info.afterburn.bitmap_id >= 0)
-		bm_page_out(sip->thruster_secondary_glow_info.afterburn.bitmap_id);
-
-	if (sip->thruster_tertiary_glow_info.normal.bitmap_id >= 0)
-		bm_page_out(sip->thruster_tertiary_glow_info.normal.bitmap_id);
-
-	if (sip->thruster_tertiary_glow_info.afterburn.bitmap_id >= 0)
-		bm_page_out(sip->thruster_tertiary_glow_info.afterburn.bitmap_id);
+	// thruster bitmaps
+	PAGE_OUT_TEXTURE(sip->thruster_glow_info.normal.first_frame);
+	PAGE_OUT_TEXTURE(sip->thruster_glow_info.afterburn.first_frame);
+	PAGE_OUT_TEXTURE(sip->thruster_secondary_glow_info.normal.bitmap_id);
+	PAGE_OUT_TEXTURE(sip->thruster_secondary_glow_info.afterburn.bitmap_id);
+	PAGE_OUT_TEXTURE(sip->thruster_tertiary_glow_info.normal.bitmap_id);
+	PAGE_OUT_TEXTURE(sip->thruster_tertiary_glow_info.afterburn.bitmap_id);
 
 	// slodeing bitmap
-	if (sip->splodeing_texture >= 0)
-		bm_page_out(sip->splodeing_texture);
+	PAGE_OUT_TEXTURE(sip->splodeing_texture);
 
 	// thruster/particle bitmaps
-	for (i = 0; i < (int)sip->normal_thruster_particles.size(); i++) {
-		if (sip->normal_thruster_particles[i].thruster_bitmap.first_frame >= 0)
-			bm_page_out(sip->normal_thruster_particles[i].thruster_bitmap.first_frame);
-	}
+	for (i = 0; i < (int)sip->normal_thruster_particles.size(); i++)
+		PAGE_OUT_TEXTURE(sip->normal_thruster_particles[i].thruster_bitmap.first_frame);
 
-	for (i = 0; i < (int)sip->afterburner_thruster_particles.size(); i++) {
-		if (sip->afterburner_thruster_particles[i].thruster_bitmap.first_frame >= 0)
-			bm_page_out(sip->afterburner_thruster_particles[i].thruster_bitmap.first_frame);
-	}
+	for (i = 0; i < (int)sip->afterburner_thruster_particles.size(); i++)
+		PAGE_OUT_TEXTURE(sip->afterburner_thruster_particles[i].thruster_bitmap.first_frame);
 }
 
 // function to return true if support ships are allowed in the mission for the given object.
