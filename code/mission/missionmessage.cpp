@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.52.2.9 $
- * $Date: 2007-04-13 00:36:11 $
- * $Author: taylor $
+ * $Revision: 2.52.2.10 $
+ * $Date: 2007-05-26 12:08:18 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52.2.9  2007/04/13 00:36:11  taylor
+ * cleanup and initialize persona_index properly for general safety reasons
+ * slight change to karajorma's NO_BUILTIN_MESSAGES check, now it will be properly compiled away in release builds rather than an empty function
+ *
  * Revision 2.52.2.8  2007/04/05 16:33:25  karajorma
  * What was I thinking? Fixed
  *
@@ -927,7 +931,7 @@ int add_wave( char *wave_name )
 }
 
 // parses an individual message
-void message_parse( )
+void message_parse(bool importing_from_fsm)
 {
 	MissionMessage *msgp;
 	char persona_name[NAME_LENGTH];
@@ -978,6 +982,12 @@ void message_parse( )
 		char avi_name[MAX_FILENAME_LEN];
 
 		stuff_string(avi_name, F_NAME, MAX_FILENAME_LEN);
+
+		// Goober5000 - for some reason :V: swapped Head-TP1
+		// and Head-TP4 in FS2
+		if (importing_from_fsm && !strnicmp(avi_name, "Head-TP1", 8))
+			avi_name[7] = '4';
+
 		if ( !Fred_running ) {
 			msgp->avi_info.index = add_avi(avi_name);
 		} else {
