@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.16.2.1 $
- * $Date: 2006-08-19 04:38:47 $
- * $Author: taylor $
+ * $Revision: 2.16.2.2 $
+ * $Date: 2007-05-26 15:36:38 $
+ * $Author: Backslash $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16.2.1  2006/08/19 04:38:47  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.16  2006/04/20 06:32:23  Goober5000
  * proper capitalization according to Volition
  *
@@ -429,8 +432,8 @@
 #define ROTVEL_CAP		14.0			// Rotational velocity cap for live objects
 #define DEAD_ROTVEL_CAP	16.3			// Rotational velocity cap for dead objects
 
-#define MAX_SHIP_SPEED		300		// Maximum speed allowed after whack or shockwave
-#define RESET_SHIP_SPEED	240		// Speed that a ship is reset to after exceeding MAX_SHIP_SPEED
+#define MAX_SHIP_SPEED		500		// Maximum speed allowed after whack or shockwave
+#define RESET_SHIP_SPEED	440		// Speed that a ship is reset to after exceeding MAX_SHIP_SPEED
 
 #define	SW_ROT_FACTOR			5		// increase in rotational time constant in shockwave
 #define	SW_BLAST_DURATION		2000	// maximum duration of shockwave
@@ -449,7 +452,7 @@ void physics_init( physics_info * pi )
 	memset( pi, 0, sizeof(physics_info) );
 
 	pi->mass = 10.0f;					// This ship weighs 10 units
-	pi->side_slip_time_const = 0.05f;					
+	pi->side_slip_time_const = 0.05f;
 	pi->rotdamp = 0.1f;
 
 	pi->max_vel.xyz.x = 100.0f;		//sideways
@@ -457,7 +460,7 @@ void physics_init( physics_info * pi )
 	pi->max_vel.xyz.z = 100.0f;		//forward
 	pi->max_rear_vel = 100.0f;	//backward -- controlled seperately
 
-	pi->max_rotvel.xyz.x = 2.0f;		//pitch	
+	pi->max_rotvel.xyz.x = 2.0f;		//pitch
 	pi->max_rotvel.xyz.y = 1.0f;		//heading
 	pi->max_rotvel.xyz.z = 2.0f;		//bank
 
@@ -472,14 +475,14 @@ void physics_init( physics_info * pi )
 	pi->slide_accel_time_const=pi->side_slip_time_const;	// slide using max_vel.xyz.x & .xyz.y
 	pi->slide_decel_time_const=pi->side_slip_time_const;	// slide using max_vel.xyz.x & .xyz.y
 
-	pi->afterburner_decay = 1;	
+	pi->afterburner_decay = 1;
 	pi->forward_thrust = 0.0f;
-	pi->vert_thrust = 0.0f;	//added these two in order to get side and forward thrusters 
-	pi->side_thrust = 0.0f;	//to glow broighter when the ship is moveing in the right direction -Bobboau
+	pi->vert_thrust = 0.0f;	//added these two in order to get side and forward thrusters
+	pi->side_thrust = 0.0f;	//to glow brighter when the ship is moving in the right direction -Bobboau
 
 	pi->flags = 0;
 
-	// default values for moment of inetaia
+	// default values for moment of inertia
 	vm_vec_make( &pi->I_body_inv.vec.rvec, 1e-5f, 0.0f, 0.0f );
 	vm_vec_make( &pi->I_body_inv.vec.uvec, 0.0f, 1e-5f, 0.0f );
 	vm_vec_make( &pi->I_body_inv.vec.fvec, 0.0f, 0.0f, 1e-5f );
@@ -599,7 +602,7 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	// This is used by the g3_draw_rotated_bitmap function.
 	if ( pi == Viewer_physics_info )	{
 		switch(Physics_viewer_direction){
-		case PHYSICS_VIEWER_FRONT:				
+		case PHYSICS_VIEWER_FRONT:
 			Physics_viewer_bank -= tangles.b;
 			break;
 
@@ -658,7 +661,7 @@ void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time )
 	*orient = tmp;
 
 	vm_orthogonalize_matrix(orient);
-		
+
 }
 
 //	-----------------------------------------------------------------------------------------------------------
@@ -671,15 +674,15 @@ void physics_sim_rot_editor(matrix * orient, physics_info * pi, float sim_time)
 	matrix	tmp;
 	angles	t1, t2;
 
-	apply_physics( pi->rotdamp, pi->desired_rotvel.xyz.x, pi->rotvel.xyz.x, sim_time, 
+	apply_physics( pi->rotdamp, pi->desired_rotvel.xyz.x, pi->rotvel.xyz.x, sim_time,
 								 &new_vel.xyz.x, NULL );
 
-	apply_physics( pi->rotdamp, pi->desired_rotvel.xyz.y, pi->rotvel.xyz.y, sim_time, 
+	apply_physics( pi->rotdamp, pi->desired_rotvel.xyz.y, pi->rotvel.xyz.y, sim_time,
 								 &new_vel.xyz.y, NULL );
 
-	apply_physics( pi->rotdamp, pi->desired_rotvel.xyz.z, pi->rotvel.xyz.z, sim_time, 
+	apply_physics( pi->rotdamp, pi->desired_rotvel.xyz.z, pi->rotvel.xyz.z, sim_time,
 								 &new_vel.xyz.z, NULL );
-	
+
 	pi->rotvel = new_vel;
 
 	tangles.p = pi->rotvel.xyz.x*sim_time;
@@ -693,13 +696,13 @@ void physics_sim_rot_editor(matrix * orient, physics_info * pi, float sim_time)
 	// put in p & b like normal
 	vm_angles_2_matrix(&pi->last_rotmat, &t1 );
 	vm_matrix_x_matrix( &tmp, orient, &pi->last_rotmat );
-	
+
 	// Put in heading separately
 	vm_angles_2_matrix(&pi->last_rotmat, &t2 );
 	vm_matrix_x_matrix( orient, &pi->last_rotmat, &tmp );
 
 	vm_orthogonalize_matrix(orient);
-		
+
 }
 
 // Adds velocity to position
@@ -738,10 +741,10 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 		}
 	} else {
 		// regular damping
-		vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, 0.0f );
+		vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, pi->side_slip_time_const );
 	}
 
-	// Note: CANNOT maintain a *local velocity* since a rotation can occur in this frame. 
+	// Note: CANNOT maintain a *local velocity* since a rotation can occur in this frame.
 	// thus the local velocity of in the next frame can be different (this would require rotate to change local vel
 	// and this is not desired
 
@@ -852,13 +855,13 @@ void physics_sim_editor(vec3d *position, matrix * orient, physics_info * pi, flo
 // function to predict an object's position given the delta time and an objects physics info
 void physics_predict_pos(physics_info *pi, float delta_time, vec3d *predicted_pos)
 {
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time, 
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time,
 								 NULL, &predicted_pos->xyz.x );
 
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time, 
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time,
 								 NULL, &predicted_pos->xyz.y );
 
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time, 
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time,
 								 NULL, &predicted_pos->xyz.z );
 }
 
@@ -868,13 +871,13 @@ void physics_predict_vel(physics_info *pi, float delta_time, vec3d *predicted_ve
 	if (pi->flags & PF_CONST_VEL) {
 		predicted_vel = &pi->vel;
 	} else {
-		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time, 
+		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time,
 									 &predicted_vel->xyz.x, NULL );
 
-		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time, 
+		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time,
 									 &predicted_vel->xyz.y, NULL );
 
-		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time, 
+		apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time,
 									 &predicted_vel->xyz.z, NULL );
 	}
 }
@@ -883,21 +886,21 @@ void physics_predict_vel(physics_info *pi, float delta_time, vec3d *predicted_ve
 void physics_predict_pos_and_vel(physics_info *pi, float delta_time, vec3d *predicted_vel, vec3d *predicted_pos)
 {
 
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time, 
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.x, pi->vel.xyz.x, delta_time,
 	                      &predicted_vel->xyz.x, &predicted_pos->xyz.x );
 
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time, 
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.y, pi->vel.xyz.y, delta_time,
 	                      &predicted_vel->xyz.y, &predicted_pos->xyz.y );
 
-	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time, 
+	apply_physics( pi->side_slip_time_const, pi->desired_vel.xyz.z, pi->vel.xyz.z, delta_time,
 	                      &predicted_vel->xyz.z, &predicted_pos->xyz.z );
 }
 
-// physics_read_flying_controls() 
+// physics_read_flying_controls()
 //
 // parmeters:  *orient	==>
 //					*pi		==>
-//					*ci		==> 
+//					*ci		==>
 //	Adam: Uncomment-out this define to enable banking while turning.
 #define	BANK_WHEN_TURN
 
@@ -917,11 +920,13 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 //		Int3();
 //	}
 
-	ci->forward += (ci->forward_cruise_percent / 100.0f);
+	// apply throttle, unless reverse thrusters are held down
+	if (ci->forward != -1.0f)
+		ci->forward += (ci->forward_cruise_percent / 100.0f);
 
 //	mprintf(("ci->forward == %7.3f\n", ci->forward));
 
-	// give control imput to cause rotation in engine wash
+	// give control input to cause rotation in engine wash
 	extern int Wash_on;
 	if ( wash_rot && Wash_on ) {
 		ci->pitch += wash_rot->xyz.x;
@@ -966,8 +971,8 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 	pi->desired_rotvel.xyz.z = ci->bank * pi->max_rotvel.xyz.z + delta_bank;
 	pi->forward_thrust = ci->forward;
-	pi->vert_thrust = ci->vertical;	//added these two in order to get side and forward thrusters 
-	pi->side_thrust = ci->sideways;	//to glow broighter when the ship is moveing in the right direction -Bobboau
+	pi->vert_thrust = ci->vertical;	//added these two in order to get side and forward thrusters
+	pi->side_thrust = ci->sideways;	//to glow brighter when the ship is moving in the right direction -Bobboau
 
 	if ( pi->flags & PF_AFTERBURNER_ON ) {
 		goal_vel.xyz.x = ci->sideways*pi->afterburner_max_vel.xyz.x;
@@ -985,7 +990,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		goal_vel.xyz.z = ci->forward* pi->max_vel.xyz.z;
 	}
 
-	if ( goal_vel.xyz.z < -pi->max_rear_vel ) 
+	if ( goal_vel.xyz.z < -pi->max_rear_vel )
 		goal_vel.xyz.z = -pi->max_rear_vel;
 
 
@@ -995,7 +1000,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		// Use LOCAL coordinates
 		// if slide_enabled, ramp velocity for x and y, otherwise set goal (0)
 		//    always ramp velocity for z
-		// 
+		//
 
 		// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast.
 		// Scale according to reduced_damp_time_expansion.
@@ -1014,15 +1019,20 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			// determine the local velocity
 			// deterimine whether accelerating or decleration toward goal for x
 			if ( goal_vel.xyz.x > 0.0f )  {
-				if ( goal_vel.xyz.x >= pi->prev_ramp_vel.xyz.x ) 
+				if ( goal_vel.xyz.x >= pi->prev_ramp_vel.xyz.x )
 					ramp_time_const = pi->slide_accel_time_const;
 				else
 					ramp_time_const = pi->slide_decel_time_const;
-			} else  {  // goal_vel.xyz.x <= 0.0
+			} else if ( goal_vel.xyz.x < 0.0f ) {
 				if ( goal_vel.xyz.x <= pi->prev_ramp_vel.xyz.x )
 					ramp_time_const = pi->slide_accel_time_const;
 				else
 					ramp_time_const = pi->slide_decel_time_const;
+			} else {
+				ramp_time_const = pi->slide_decel_time_const;
+				if ( pi->flags & PF_GLIDING )
+					ramp_time_const = 0.0f;
+					// This is to have the engines ramp down VERY quickly, since 'decelerating' shouldn't be factored when gliding
 			}
 			// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
 			if ( pi->flags & PF_REDUCED_DAMP ) {
@@ -1032,15 +1042,19 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 			// deterimine whether accelerating or decleration toward goal for y
 			if ( goal_vel.xyz.y > 0.0f )  {
-				if ( goal_vel.xyz.y >= pi->prev_ramp_vel.xyz.y ) 
+				if ( goal_vel.xyz.y >= pi->prev_ramp_vel.xyz.y )
 					ramp_time_const = pi->slide_accel_time_const;
 				else
 					ramp_time_const = pi->slide_decel_time_const;
-			} else  {  // goal_vel.xyz.y <= 0.0
+			} else if ( goal_vel.xyz.y < 0.0f ) {
 				if ( goal_vel.xyz.y <= pi->prev_ramp_vel.xyz.y )
 					ramp_time_const = pi->slide_accel_time_const;
 				else
 					ramp_time_const = pi->slide_decel_time_const;
+			} else {
+				ramp_time_const = pi->slide_decel_time_const;
+				if ( pi->flags & PF_GLIDING )
+					ramp_time_const = 0.0f;
 			}
 			// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
 			if ( pi->flags & PF_REDUCED_DAMP ) {
@@ -1053,16 +1067,32 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			pi->prev_ramp_vel.xyz.y = 0.0f;
 		}
 
-		// find ramp velocity in the forward direction
-		if ( goal_vel.xyz.z >= pi->prev_ramp_vel.xyz.z )  {
-			if ( pi->flags & PF_AFTERBURNER_ON )
-				ramp_time_const = pi->afterburner_forward_accel_time_const;
-			else if (pi->flags & PF_BOOSTER_ON)
-				ramp_time_const = pi->booster_forward_accel_time_const;
-			else
-				ramp_time_const = pi->forward_accel_time_const;
-		} else
+		// deterimine whether accelerating or decleration toward goal for z
+		if ( goal_vel.xyz.z > 0.0f )  {
+			if ( goal_vel.xyz.y >= pi->prev_ramp_vel.xyz.z )  {
+				if ( pi->flags & PF_AFTERBURNER_ON )
+					ramp_time_const = pi->afterburner_forward_accel_time_const;
+				else if (pi->flags & PF_BOOSTER_ON)
+					ramp_time_const = pi->booster_forward_accel_time_const;
+				else
+					ramp_time_const = pi->forward_accel_time_const;
+			} else {
+				ramp_time_const = pi->forward_decel_time_const;
+				if ( pi->flags & PF_GLIDING )
+					ramp_time_const = 0.0f;
+			}
+		} else if ( goal_vel.xyz.z < 0.0f ) {
 			ramp_time_const = pi->forward_decel_time_const;
+			// hmm, maybe a reverse_accel_time_const would be a good idea to implement in the future...
+			// or should this use slide_decel_time_const?
+			if ( pi->flags & PF_GLIDING )
+				ramp_time_const = 0.0f;
+		} else {
+			ramp_time_const = pi->forward_decel_time_const;
+			// If gliding, then only accelerate -- if goal is 0, object is not accelerating
+			if ( pi->flags & PF_GLIDING )
+				ramp_time_const = 0.0f;
+		}
 
 		// If reduced damp in effect, then adjust ramp_velocity and desired_velocity can not change as fast
 		if ( pi->flags & PF_REDUCED_DAMP ) {
@@ -1109,7 +1139,7 @@ void physics_set_rotvel_and_saturate(float *dest, float delta)
 // ----------------------------------------------------------------------------
 // physics_apply_whack applies an instaneous whack on an object changing
 // both the objects velocity and the rotational velocity based on the impulse
-// being applied.  
+// being applied.
 //
 //	input:	impulse		=>		impulse vector ( force*time = impulse = change in momentum (mv) )
 //				pos			=>		vector from center of mass to location of where the force acts
@@ -1206,7 +1236,7 @@ float velocity_ramp (float v_in, float v_goal, float ramp_time_const, float t)
 
 
 // ----------------------------------------------------------------------------
-// physics_apply_shock applies applies a shockwave to an object.  This causes a velocity impulse and 
+// physics_apply_shock applies applies a shockwave to an object.  This causes a velocity impulse and
 // and a rotational impulse.  This is different than physics_apply_whack since a shock wave is a pressure
 // wave which acts over the *surface* of the object, not a point.
 //
@@ -1250,7 +1280,7 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 
 	sin.xyz.x = fl_sqrt( fl_abs(1.0f - normal.xyz.x*normal.xyz.x) );
 	sin.xyz.y = fl_sqrt( fl_abs(1.0f - normal.xyz.y*normal.xyz.y) );
-	sin.xyz.z = fl_sqrt( fl_abs(1.0f - normal.xyz.z*normal.xyz.z) );	
+	sin.xyz.z = fl_sqrt( fl_abs(1.0f - normal.xyz.z*normal.xyz.z) );
 
 	vm_vec_make( &torque, 0.0f, 0.0f, 0.0f );
 
@@ -1337,7 +1367,7 @@ void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi,
 // ----------------------------------------------------------------------------
 // physics_collide_whack applies an instaneous whack on an object changing
 // both the objects velocity and the rotational velocity based on the impulse
-// being applied.  
+// being applied.
 //
 //	input:	impulse					=>		impulse vector ( force*time = impulse = change in momentum (mv) )
 //				world_delta_rotvel	=>		change in rotational velocity (already calculated)
@@ -1417,7 +1447,7 @@ int check_rotvel_limit( physics_info *pi )
 			pi->rotvel.xyz.z = (pi->rotvel.xyz.z / fl_abs(pi->rotvel.xyz.z)) * (pi->max_rotvel.xyz.z - (float) ROTVEL_TOL);
 			change_made = 1;
 		}
-	} else { 
+	} else {
 		// case of dead ship
 		if ( fl_abs(pi->rotvel.xyz.x) > DEAD_ROTVEL_CAP ) {
 			pi->rotvel.xyz.x = (pi->rotvel.xyz.x / fl_abs(pi->rotvel.xyz.x)) * (float) (DEAD_ROTVEL_CAP - ROTVEL_TOL);
