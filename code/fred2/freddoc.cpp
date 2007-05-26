@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.6.2.5 $
- * $Date: 2007-05-20 21:21:30 $
- * $Author: wmcoolmon $
+ * $Revision: 1.6.2.6 $
+ * $Date: 2007-05-26 15:11:15 $
+ * $Author: Goober5000 $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
  * Document class for document/view architechure, which we don't really use in
@@ -19,6 +19,9 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6.2.5  2007/05/20 21:21:30  wmcoolmon
+ * FRED2 support for numbered SEXP operator arguments, minihelp box, fixed "Insert Event" when no events are present.
+ *
  * Revision 1.6.2.4  2006/10/08 05:24:03  Goober5000
  * bah!
  *
@@ -1249,7 +1252,7 @@ void CFREDDoc::OnFileImportFSM()
     if(dlgFolder.DoModal() != IDOK)
         return;
 
-	char *dest_directory = dlgFolder.GetFolderPath();
+	const char *dest_directory = dlgFolder.GetFolderPath();
 #endif
 	// clean things up first
 	if (Briefing_dialog)
