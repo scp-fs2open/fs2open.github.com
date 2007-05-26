@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.12.2.2 $
- * $Date: 2007-01-07 03:10:05 $
+ * $Revision: 2.12.2.3 $
+ * $Date: 2007-05-26 12:08:18 $
  * $Author: Goober5000 $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12.2.2  2007/01/07 03:10:05  Goober5000
+ * fix bug where built-in lament messages were never played
+ *
  * Revision 2.12.2.1  2006/09/30 21:58:06  Goober5000
  * more flexible checking of generic messages
  *
@@ -405,7 +408,7 @@ extern int Num_personas;
 
 // function to parse a message from either messages.tbl or the mission file.  Both files have the
 // exact same format, so this function just gets reused in both instances.
-void	message_parse();
+void	message_parse(bool importing_from_fsm = false);
 void	persona_parse();
 
 void	messages_init();

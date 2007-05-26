@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.32 $
- * $Date: 2007-04-09 18:23:08 $
- * $Author: karajorma $
+ * $Revision: 2.178.2.33 $
+ * $Date: 2007-05-26 12:08:19 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.32  2007/04/09 18:23:08  karajorma
+ * Fix for Mantis 1312
+ *
  * Revision 2.178.2.31  2007/03/23 06:25:31  karajorma
  * That probably shouldn't be an assertion
  *
@@ -5145,7 +5148,7 @@ void parse_waypoints(mission *pm)
 		parse_waypoint_list(pm);
 }
 
-void parse_messages(mission *pm)
+void parse_messages(mission *pm, int flags)
 {
 	required_string("#Messages");
 
@@ -5155,7 +5158,7 @@ void parse_messages(mission *pm)
 	// mission file takes the same format as the messages in messages,tbl.  Make parsing
 	// a whole lot easier!!!
 	while ( required_string_either("#Reinforcements", "$Name")){
-		message_parse();		// call the message parsing system
+		message_parse((flags & MPF_IMPORT_FSM) >= 0);		// call the message parsing system
 	}
 
 	mprintf(("Ending mission message count : %d\n", Num_message_waves));
@@ -5678,7 +5681,7 @@ void parse_mission(mission *pm, int flags)
 	parse_events(pm);
 	parse_goals(pm);
 	parse_waypoints(pm);
-	parse_messages(pm);
+	parse_messages(pm, flags);
 	parse_reinforcements(pm);
 	parse_bitmaps(pm);
 	parse_asteroid_fields(pm);
