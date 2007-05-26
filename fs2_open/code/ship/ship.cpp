@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.416 $
- * $Date: 2007-05-25 13:58:25 $
- * $Author: taylor $
+ * $Revision: 2.417 $
+ * $Date: 2007-05-26 15:12:01 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.416  2007/05/25 13:58:25  taylor
+ * add the rest of the texture page-in code changes that I skipped before (should fix Mantis #1389)
+ *
  * Revision 2.415  2007/05/17 14:58:11  taylor
  * fix armor_parse_table() so that it will parse multiple entries properly
  * fix bug introduced from not closing down lcl_ext after parsing armor.tbl
@@ -3168,6 +3171,48 @@ int parse_ship(bool replace)
 			strcpy(sip->pof_file, temp);
 	}
 
+	// ship class texture replacement - Goober5000 and taylor
+	int PLACEHOLDER_num_texture_replacements = 0;
+	char PLACEHOLDER_old_texture[TEXTURE_NAME_LENGTH];
+	char PLACEHOLDER_new_texture[TEXTURE_NAME_LENGTH];
+	int PLACEHOLDER_new_texture_id;
+	if (optional_string("$Texture Replace:"))
+	{
+		char *p;
+
+		while ((PLACEHOLDER_num_texture_replacements < MAX_MODEL_TEXTURES) && (optional_string("+old:")))
+		{
+			stuff_string(PLACEHOLDER_old_texture, F_NAME, MAX_FILENAME_LEN);
+			required_string("+new:");
+			stuff_string(PLACEHOLDER_new_texture, F_NAME, MAX_FILENAME_LEN);
+
+			// get rid of extensions
+			p = strchr(PLACEHOLDER_old_texture, '.');
+			if (p)
+			{
+				mprintf(("Extraneous extension found on replacement texture %s!\n", PLACEHOLDER_old_texture));
+				*p = 0;
+			}
+			p = strchr(PLACEHOLDER_new_texture, '.');
+			if (p)
+			{
+				mprintf(("Extraneous extension found on replacement texture %s!\n", PLACEHOLDER_new_texture));
+				*p = 0;
+			}
+
+			// load the texture
+			PLACEHOLDER_new_texture_id = bm_load(PLACEHOLDER_new_texture);
+
+			if (PLACEHOLDER_new_texture_id < 0)
+			{
+				Warning(LOCATION, "Could not load replacement texture %s for ship %s\n", PLACEHOLDER_new_texture, sip->name);
+			}
+
+			// increment
+			PLACEHOLDER_num_texture_replacements++;
+		}
+	}
+
 	// optional hud targeting model
 	if(optional_string( "$POF target file:"))
 	{
@@ -3500,11 +3545,12 @@ int parse_ship(bool replace)
 char temp_error[64];
 strcpy(temp_error, parse_error_text);
 
-	// Goober5000 - fixed Bobboau's implementation of restricted banks
-	int bank;
 	if (optional_string("$Weapon Model Draw Distance:")) {
 		stuff_float( &sip->weapon_model_draw_distance );
 	}
+
+	// Goober5000 - fixed Bobboau's implementation of restricted banks
+	int bank;
 
 	// Set the weapons filter used in weapons loadout (for primary weapons)
 	if (optional_string("$Allowed PBanks:"))
