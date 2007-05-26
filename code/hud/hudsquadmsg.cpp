@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.32.2.5 $
- * $Date: 2007-04-05 16:20:36 $
- * $Author: karajorma $
+ * $Revision: 2.32.2.6 $
+ * $Date: 2007-05-26 00:56:01 $
+ * $Author: Goober5000 $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32.2.5  2007/04/05 16:20:36  karajorma
+ * Makes little difference but I suppose I should zero that
+ *
  * Revision 2.32.2.4  2007/02/10 04:49:19  Goober5000
  * prevent the AI from falling into the black hole of disarming a turretless ship
  *
@@ -2035,11 +2038,14 @@ int hud_squadmsg_reinforcements_available(int team)
 			continue;
 		}
 
-		//  check the arrival cue sexpression of the ship/wing of this reinforcement.  If known
-		//  false, it doesn't count either
+		//  check the arrival cue sexpression of the ship/wing of this reinforcement.
+		// Goober5000 - if it can't arrive, it doesn't count.  This should check
+		// for SEXP_FALSE as well as SEXP_KNOWN_FALSE, otherwise you end up with
+		// a reinforcement menu containing no valid selections.
 		if ( (wingnum = wing_name_lookup(Reinforcements[i].name, 1)) != -1 ) {
 			Assert ( Wings[wingnum].arrival_cue >= 0 );
-			if ( Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_KNOWN_FALSE ){
+			if ( Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_FALSE
+				|| Sexp_nodes[Wings[wingnum].arrival_cue].value == SEXP_KNOWN_FALSE ){
 				continue;
 			}
 		} else {
@@ -2047,7 +2053,8 @@ int hud_squadmsg_reinforcements_available(int team)
 
 			p_objp = mission_parse_get_arrival_ship( Reinforcements[i].name );
 			if ( p_objp != NULL ) {
-				if ( Sexp_nodes[p_objp->arrival_cue].value == SEXP_KNOWN_FALSE ){
+				if ( Sexp_nodes[p_objp->arrival_cue].value == SEXP_FALSE
+					|| Sexp_nodes[p_objp->arrival_cue].value == SEXP_KNOWN_FALSE ){
 					continue;
 				}
 			} else {
