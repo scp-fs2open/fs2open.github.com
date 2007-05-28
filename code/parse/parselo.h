@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.42.2.3 $
+ * $Revision: 2.42.2.4 $
  * $Author: taylor $
- * $Date: 2007-02-11 09:05:02 $
+ * $Date: 2007-05-28 20:04:49 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.42.2.3  2007/02/11 09:05:02  taylor
+ * add WMC's strextcmp() from HEAD
+ *
  * Revision 2.42.2.2  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -494,6 +497,7 @@ extern void skip_token();
 // required
 extern int required_string(char *pstr);
 extern int optional_string(char *pstr);
+extern int optional_string_either(char *str1, char *str2);
 extern int required_string_either(char *str1, char *str2);
 extern int required_string_3(char *str1, char *str2, char *str3);
 
@@ -540,6 +544,7 @@ extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 extern int check_for_string(char *pstr);
 extern int check_for_string_raw(char *pstr);
+extern int check_for_eof();
 
 // from aicode.cpp
 extern void parse_float_list(float *plist, int size);
