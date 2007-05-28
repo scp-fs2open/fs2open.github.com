@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.202  2007/04/14 23:44:08  taylor
+ * only add player-allowed flag on #Weak weapons when their non-weak versions also have the flag (Goober #73)
+ *
  * Revision 2.201  2007/03/23 01:52:28  taylor
  * fix breakage
  *
@@ -1981,6 +1984,9 @@ void init_weapon_entry(int weap_info_index)
 	wip->alpha_max = 1.0f;
 	wip->alpha_min = 0.0f;
 	wip->alpha_cycle = 0.0f;
+
+	// this can get reset after the constructor, so be sure it's correct
+	wip->shockwave.damage_type_idx = -1;
 }
 
 // function to parse the information for a specific weapon type.	
