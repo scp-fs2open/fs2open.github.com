@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.73.2.9 $
+ * $Revision: 2.73.2.10 $
  * $Author: taylor $
- * $Date: 2007-04-11 14:56:37 $
+ * $Date: 2007-05-28 20:04:49 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73.2.9  2007/04/11 14:56:37  taylor
+ * add extra safety check to make sure that we are going to do a wildcard search for modular tables
+ *
  * Revision 2.73.2.8  2007/02/11 09:05:02  taylor
  * add WMC's strextcmp() from HEAD
  *
@@ -819,6 +822,16 @@ int required_string(char *pstr)
 	return 1;
 }
 
+int check_for_eof()
+{
+	ignore_white_space();
+
+	if (*Mp == EOF_CHAR)
+		return 1;
+
+	return 0;
+}
+
 // similar to optional_string, but just checks if next token is a match.
 // It doesn't advance Mp except to skip past white space.
 //
@@ -858,6 +871,21 @@ int optional_string(char *pstr)
 //	mprintf((", didin't find it it\n"));
 
 	return 0;
+}
+
+int optional_string_either(char *str1, char *str2)
+{
+	ignore_white_space();
+
+	if ( !strnicmp(str1, Mp, strlen(str1)) ) {
+		Mp += strlen(str1);
+		return 0;
+	} else if ( !strnicmp(str2, Mp, strlen(str2)) ) {
+		Mp += strlen(str2);
+		return 1;
+	}
+
+	return -1;
 }
 
 int required_string_fred(char *pstr, char *end)
