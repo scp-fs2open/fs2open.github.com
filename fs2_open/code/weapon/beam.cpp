@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.67.2.11 $
- * $Date: 2007-05-28 18:27:36 $
- * $Author: wmcoolmon $
+ * $Revision: 2.67.2.12 $
+ * $Date: 2007-05-28 19:41:32 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67.2.11  2007/05/28 18:27:36  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
+ *
  * Revision 2.67.2.10  2007/04/11 18:15:01  taylor
  * cleanup error message
  * allow launch_snd from tbl to be used for beam weapon shot sound (Mantis #1263)
@@ -2929,11 +2932,11 @@ int beam_collide_ship(obj_pair *pair)
 	// if we got a hit
 	if (valid_hit_occurred) {
 		// add to the collision_list
-		beam_add_collision(b, ship_objp, &mc);
+		beam_add_collision(b, ship_objp, &mc, quadrant_num);
 
 		// if we got "tooled", add an exit hole too
 		if (hull_exit_collision)
-			beam_add_collision(b, ship_objp, &mc_hull_exit);
+			beam_add_collision(b, ship_objp, &mc_hull_exit, quadrant_num, 1);
 	}
 
 	// add this guy to the lighting list
@@ -3247,24 +3250,22 @@ void beam_add_collision(beam *b, object *hit_object, mc_info *cinfo, int quadran
 	int idx;
 
 	// if we haven't reached the limit for beam collisions, just add it
-	if (b->f_collision_count < MAX_FRAME_COLLISIONS)
-	{
+	if (b->f_collision_count < MAX_FRAME_COLLISIONS) {
 		bc = &b->f_collisions[b->f_collision_count++];
 	}
 	// otherwise, we've got to do some checking, ick. 
 	// I guess we can always just remove the farthest item
-	else
-	{
-		for(idx = 0; idx < MAX_FRAME_COLLISIONS; idx++)
-		{
+	else {
+		for (idx = 0; idx < MAX_FRAME_COLLISIONS; idx++) {
 			if ((bc == NULL) || (b->f_collisions[idx].cinfo.hit_dist > bc->cinfo.hit_dist))
 				bc = &b->f_collisions[idx];
 		}
 	}
 
-	Assert(bc != NULL);
-	if (bc == NULL)
+	if (bc == NULL) {
+		Int3();
 		return;
+	}
 
 	// copy in
 	bc->c_objnum = OBJ_INDEX(hit_object);
@@ -3375,8 +3376,8 @@ void beam_handle_collisions(beam *b)
 
 		// do damage
 		if(do_damage && !physics_paused){
-			// maybe draw an explosion
-			if(wi->impact_weapon_expl_index >= 0){
+			// maybe draw an explosion, if we aren't hitting shields
+			if ( (wi->impact_weapon_expl_index >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
 				int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
 				particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &vmd_zero_vector, 0.0f, wi->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle );
 			}
@@ -3648,12 +3649,13 @@ void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 float beam_get_ship_damage(beam *b, object *objp)
 {	
 	// if the beam is on the same team as the object
-	Assert((objp != NULL) && (b != NULL));
-	if((objp == NULL) || (b == NULL)){
+	if ( (objp == NULL) || (b == NULL) ) {
+		Int3();
 		return 0.0f;
 	}
-	Assert((objp->type == OBJ_SHIP) && (objp->instance >= 0) && (objp->instance < MAX_SHIPS));
-	if((objp->type != OBJ_SHIP) || (objp->instance < 0) || (objp->instance >= MAX_SHIPS)){
+
+	if ( (objp->type != OBJ_SHIP) || (objp->instance < 0) || (objp->instance >= MAX_SHIPS) ) {
+		Int3();
 		return 0.0f;
 	}
 
@@ -3662,13 +3664,19 @@ float beam_get_ship_damage(beam *b, object *objp)
 	float attenuation = 1.0f; // or scaled by dist
 	//-- Goober5000
 
+	float damage = 0.0f;
+
+	weapon_info *wip = &Weapon_info[b->weapon_info_index];
+
 	// same team. yikes
-	if((b->team == Ships[objp->instance].team) && (Weapon_info[b->weapon_info_index].damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level])){
-		return The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] * attenuation;
+	if ( (b->team == Ships[objp->instance].team) && (wip->damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {
+		damage = The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] * attenuation;
+	} else {
+		// normal damage
+		damage = Weapon_info[b->weapon_info_index].damage * attenuation;
 	}
 
-	// normal damage
-	return Weapon_info[b->weapon_info_index].damage * attenuation;
+	return damage;
 }
 
 // if the beam is likely to tool a given target before its lifetime expires
