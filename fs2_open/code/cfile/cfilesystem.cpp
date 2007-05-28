@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.40 $
- * $Date: 2007-04-11 18:24:27 $
+ * $Revision: 2.41 $
+ * $Date: 2007-05-28 19:45:14 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,6 +20,11 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40  2007/04/11 18:24:27  taylor
+ * cleanup of chksum stuff (works properly on 64-bit systems now)
+ * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
+ * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
+ *
  * Revision 2.39  2007/03/22 20:22:24  taylor
  * a little better error handling for cf_exists_full()
  * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
@@ -603,7 +608,7 @@ void cf_build_pack_list( cf_root *root )
 #ifndef NDEBUG
 		uint chksum = 0;
 		cf_chksum_pack(temp_roots_sort[i].path, &chksum);
-		mprintf(("Found root pack '%s' with a checksum of 0x%x\n", temp_roots_sort[i].path, chksum));
+		mprintf(("Found root pack '%s' with a checksum of 0x%08x\n", temp_roots_sort[i].path, chksum));
 #endif
 
 		// mwa -- 4/2/98 put in the next 2 lines because the path name needs to be there
@@ -1852,6 +1857,9 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 
 			if (!(find.attrib & _A_SUBDIR)) {
 
+				if ( strlen(find.name) >= MAX_FILENAME_LEN )
+					continue;
+
 				if ( !Get_file_list_filter || (*Get_file_list_filter)(find.name) ) {
 
 					strncpy(arr[num_files], find.name, MAX_FILENAME_LEN - 1 );
@@ -1899,6 +1907,10 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 			}
 
 			if (!S_ISREG(buf.st_mode)) {
+				continue;
+			}
+
+			if ( strlen(dir->d_name) >= MAX_FILENAME_LEN ) {
 				continue;
 			}
 
