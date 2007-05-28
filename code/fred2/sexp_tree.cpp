@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.8.2.9 $
- * $Date: 2007-05-20 21:24:09 $
+ * $Revision: 1.8.2.10 $
+ * $Date: 2007-05-28 18:27:33 $
  * $Author: wmcoolmon $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8.2.9  2007/05/20 21:24:09  wmcoolmon
+ * .
+ *
  * Revision 1.8.2.8  2007/05/20 21:21:31  wmcoolmon
  * FRED2 support for numbered SEXP operator arguments, minihelp box, fixed "Insert Event" when no events are present.
  *
@@ -875,7 +878,7 @@ void sexp_tree::clear_tree(char *op)
 
 void sexp_tree::reset_handles()
 {
-	int i;
+	uint i;
 
 	for (i=0; i<tree_nodes.size(); i++)
 		tree_nodes[i].handle = NULL;
@@ -1076,7 +1079,7 @@ int sexp_tree::find_free_node()
 {
 	int i;
 
-	for (i = 0; i < tree_nodes.size(); i++)
+	for (i = 0; i < (int)tree_nodes.size(); i++)
 	{
 		if (tree_nodes[i].type == SEXPT_UNUSED)
 			return i;
@@ -1316,7 +1319,7 @@ int sexp_tree::load_sub_tree(int index, bool valid, char *text)
 
 void sexp_tree::setup_selected(HTREEITEM h)
 {
-	int i;
+	uint i;
 
 	item_index = -1;
 	item_handle = h;
@@ -1404,7 +1407,7 @@ void sexp_tree::right_clicked(int mode)
 	ScreenToClient(&click_point);
 	h = HitTest(CPoint(click_point), &_flags);  // find out what they clicked on
 
-	for (i=0; i<tree_nodes.size(); i++)
+	for (i=0; i<(int)tree_nodes.size(); i++)
 		if (tree_nodes[i].handle == h)
 			break;
 
@@ -1464,7 +1467,7 @@ void sexp_tree::right_clicked(int mode)
 
 		// get item_index
 		item_index = -1;
-		for (i=0; i<tree_nodes.size(); i++) {
+		for (i=0; i<(int)tree_nodes.size(); i++) {
 			if (tree_nodes[i].handle == h) {
 				item_index = i;
 				break;
@@ -1652,7 +1655,7 @@ void sexp_tree::right_clicked(int mode)
 
 		// find local index (i) of current item (from its handle)
 		SelectItem(item_handle = h);
-		for (i=0; i<tree_nodes.size(); i++) {
+		for (i=0; i<(int)tree_nodes.size(); i++) {
 			if (tree_nodes[i].handle == h) {
 				break;
 			}
@@ -2077,7 +2080,7 @@ int sexp_tree::identify_arg_type(int node)
 // determine if an item should be editable.  This doesn't actually edit the label.
 int sexp_tree::edit_label(HTREEITEM h)
 {
-	int i;
+	uint i;
 
 	for (i=0; i<tree_nodes.size(); i++) {
 		if (tree_nodes[i].handle == h) {
@@ -2129,7 +2132,8 @@ int sexp_tree::edit_label(HTREEITEM h)
 
 int sexp_tree::end_label_edit(HTREEITEM h, char *str)
 {
-	int len, node, r = 1;
+	int len, r = 1;
+	uint node;
 
 	*modified = 1;
 	if (!str)
@@ -4030,7 +4034,8 @@ void sexp_tree::move_branch(int source, int parent)
 
 HTREEITEM sexp_tree::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 {
-	int i, image1, image2;
+	uint i;
+	int image1, image2;
 	HTREEITEM h = 0, child, next;
 
 	if (source) {
@@ -4067,7 +4072,8 @@ HTREEITEM sexp_tree::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM a
 
 void sexp_tree::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 {
-	int i, image1, image2;
+	uint i;
+	int image1, image2;
 	HTREEITEM h, child;
 
 	if (source) {
@@ -4344,7 +4350,7 @@ char *sexp_tree::help(int code)
 // get type of item clicked on
 int sexp_tree::get_type(HTREEITEM h)
 {
-	int i;
+	uint i;
 
 	// get index into sexp_tree 
 	for (i=0; i<tree_nodes.size(); i++)
@@ -4381,11 +4387,11 @@ void sexp_tree::update_help(HTREEITEM h)
 
 	mini_help_box->SetWindowText("");
 
-	for (i=0; i<tree_nodes.size(); i++)
+	for (i=0; i<(int)tree_nodes.size(); i++)
 		if (tree_nodes[i].handle == h)
 			break;
 
-	if ((i >= tree_nodes.size()) || !tree_nodes[i].type) {
+	if ((i >= (int)tree_nodes.size()) || !tree_nodes[i].type) {
 		help_box->SetWindowText("");
 		return;
 	}
@@ -4507,7 +4513,8 @@ void sexp_tree::update_help(HTREEITEM h)
 // stuff node indices into find[]
 int sexp_tree::find_text(char *text, int *find)
 {
-	int i, find_count;
+	uint i;
+	int find_count;
 
 	// initialize find
 	for (i=0; i<MAX_SEARCH_MESSAGE_DEPTH; i++) {
@@ -5963,7 +5970,7 @@ void sexp_tree::delete_sexp_tree_variable(const char *var_name)
 	// store old item index
 	int old_item_index = item_index;
 
-	for (int idx=0; idx<tree_nodes.size(); idx++) {
+	for (uint idx=0; idx<tree_nodes.size(); idx++) {
 		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
 			if ( strstr(tree_nodes[idx].text, search_str) != NULL ) {
 
@@ -6014,7 +6021,7 @@ void sexp_tree::modify_sexp_tree_variable(const char *old_name, int sexp_var_ind
 	// Search string in sexp_tree nodes
 	sprintf(search_str, "%s(", old_name);
 
-	for (int idx=0; idx<tree_nodes.size(); idx++) {
+	for (uint idx=0; idx<tree_nodes.size(); idx++) {
 		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
 			if ( strstr(tree_nodes[idx].text, search_str) != NULL ) {
 				// temp set item_index
@@ -6060,7 +6067,7 @@ int sexp_tree::get_tree_name_to_sexp_variable_index(const char *tree_name)
 
 int sexp_tree::get_variable_count(const char *var_name)
 {
-	int idx;
+	uint idx;
 	int count = 0;
 	char compare_name[64];
 

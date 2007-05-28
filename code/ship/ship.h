@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.23 $
- * $Date: 2007-05-25 13:49:39 $
- * $Author: taylor $
+ * $Revision: 2.150.2.24 $
+ * $Date: 2007-05-28 18:27:35 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.23  2007/05/25 13:49:39  taylor
+ * add the rest of the texture page-in code changes that I skipped before (should fix Mantis #1389)
+ *
  * Revision 2.150.2.22  2007/04/13 00:26:45  taylor
  * clean out some old code we no longer use/need
  * change warning messages to not print out current tbl name, since at the point those messages show the tbl has long since been parsed
@@ -1778,6 +1781,9 @@ typedef struct ship_info {
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
 	float		max_speed, min_speed, max_accel;
 
+	//Collision
+	int				collision_damage_type_idx;
+
 	// ship explosion info
 	shockwave_create_info shockwave;
 	int	explosion_propagates;				// If true, then the explosion propagates
@@ -1785,6 +1791,9 @@ typedef struct ship_info {
 
 	int ispew_max_particles;						//Temp field until someone works on particles -C
 	int dspew_max_particles;						//Temp field until someone works on particles -C
+
+	//Debris stuff
+	int				debris_damage_type_idx;
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl

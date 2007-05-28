@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.66 $
- * $Date: 2007-05-26 15:12:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.336.2.67 $
+ * $Date: 2007-05-28 18:27:33 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.66  2007/05/26 15:12:07  Goober5000
+ * add placeholder stuff for parsing ship-class texture replacements
+ *
  * Revision 2.336.2.65  2007/05/25 13:49:38  taylor
  * add the rest of the texture page-in code changes that I skipped before (should fix Mantis #1389)
  *
@@ -2792,6 +2795,9 @@ void init_ship_entry(int ship_info_index)
 	strcpy(sip->shockwave_pof_file, "");
 	sip->shockwave_info_index = -1;
 	strcpy(sip->shockwave_name,"");*/
+
+	sip->collision_damage_type_idx = -1;
+	sip->debris_damage_type_idx = -1;
 	
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
 	{
@@ -3181,6 +3187,15 @@ int parse_ship(bool replace)
 		stuff_boolean(&bogus_bool);
 	}
 
+	if(optional_string("$Impact:"))
+	{
+		if(optional_string("+Damage Type:"))
+		{
+			stuff_string(buf, F_NAME, NAME_LENGTH);
+			sip->collision_damage_type_idx = damage_type_add(buf);
+		}
+	}
+
 	//HACK -
 	//This should really be reworked so that all particle fields
 	//are settable, but erg, just not happening right now -C
@@ -3196,6 +3211,14 @@ int parse_ship(bool replace)
 		if(optional_string("+Max particles:"))
 		{
 			stuff_int(&sip->dspew_max_particles);
+		}
+	}
+
+	if(optional_string("$Debris:"))
+	{
+		if(optional_string("+Damage Type:")) {
+			stuff_string(buf, F_NAME, NAME_LENGTH);
+			sip->debris_damage_type_idx = damage_type_add(buf);
 		}
 	}
 
@@ -7642,7 +7665,7 @@ int thruster_glow_anim_load(generic_anim *ga)
 	ga->num_frames = NOISE_NUM_FRAMES;
 
 	Assert(fps != 0);
-	ga->total_time = (int) i2fl(ga->num_frames)/fps;
+	ga->total_time = i2fl(ga->num_frames)/fps;
 
 	return 0;
 }
@@ -15387,7 +15410,7 @@ float ship_get_max_speed(ship *shipp)
 	// Goober5000 - maybe we're using cap-waypoint-speed
 	ai_info *aip = &Ai_info[shipp->ai_index];
 	if ((aip->mode == AIM_WAYPOINTS || aip->mode == AIM_FLY_TO_SHIP) && aip->waypoint_speed_cap > 0)
-		return aip->waypoint_speed_cap;
+		return i2fl(aip->waypoint_speed_cap);
 
 	// max overclock
 	max_speed = sip->max_overclocked_speed;
@@ -15847,7 +15870,7 @@ void ArmorDamageType::clear()
 char *TypeNames[] = {
 	"additive",
 	"multiplicative",
-	"exponentional",
+	"exponential",
 	"exponential base",
 	"cutoff",
 	"reverse cutoff",

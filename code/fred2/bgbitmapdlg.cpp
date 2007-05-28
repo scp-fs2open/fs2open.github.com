@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.5.2.5 $
- * $Date: 2006-11-24 22:40:15 $
- * $Author: Goober5000 $
+ * $Revision: 1.5.2.6 $
+ * $Date: 2007-05-28 18:27:32 $
+ * $Author: wmcoolmon $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5.2.5  2006/11/24 22:40:15  Goober5000
+ * FRED again updates backgrounds while the user is editing them
+ *
  * Revision 1.5.2.4  2006/11/15 00:30:10  taylor
  * clean up skybox model selection and usage to work better with FRED
  * make sure to go ahead and set the skybox model when it's set/changed in FRED
@@ -783,7 +786,7 @@ void bg_bitmap_dlg::sun_data_init()
  	}
 
 	// add all suns by bitmap filename to the list
-	for (idx = 0; idx < background->suns.size(); idx++)
+	for (idx = 0; idx < (int)background->suns.size(); idx++)
 	{	
 		clb->AddString(background->suns[idx].filename);
 	}		
@@ -947,7 +950,7 @@ void bg_bitmap_dlg::bitmap_data_init()
  	}
 
 	// add all bitmaps by bitmap filename to the list
-	for (idx = 0; idx < background->bitmaps.size(); idx++)
+	for (idx = 0; idx < (int)background->bitmaps.size(); idx++)
 	{	
 		clb->AddString(background->bitmaps[idx].filename);
 	}		

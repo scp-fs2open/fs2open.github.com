@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.15 $
- * $Date: 2007-02-21 01:43:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.14.2.16 $
+ * $Date: 2007-05-28 18:27:33 $
+ * $Author: wmcoolmon $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.15  2007/02/21 01:43:31  Goober5000
+ * remove duplicate model texture replacement
+ *
  * Revision 1.14.2.14  2007/02/20 04:19:10  Goober5000
  * the great big duplicate model removal commit
  *
@@ -3128,7 +3131,8 @@ int CFred_mission_save::save_reinforcements()
 
 int CFred_mission_save::save_bitmaps()
 {	
-	int i, j;
+	int i;
+	uint j;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Background bitmaps");
