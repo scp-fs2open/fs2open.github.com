@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.153 $
- * $Date: 2007-05-25 13:58:02 $
+ * $Revision: 2.154 $
+ * $Date: 2007-05-28 19:46:30 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.153  2007/05/25 13:58:02  taylor
+ * make Linux just verbally ignore invalid cmdline options rather than it being fatal
+ *
  * Revision 2.152  2007/04/17 17:26:35  karajorma
  * Remove the -fredhtl command line.
  *
@@ -1475,8 +1478,9 @@ void os_validate_parms(char *cmdline)
 						printf("    [ %s ]%*s- %s\n", exe_params[p].name, (STR_SIZE - sp - 1), NOX(" "), exe_params[p].desc);
 						p++;
 					}
-					exit(0);
+
 					printf("\n");
+					exit(0);
 				} else {
 					printf("Unrecognized command line parameter \"%s\".  Ignoring...\n", token);
 				}
