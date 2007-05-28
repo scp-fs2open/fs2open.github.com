@@ -41,11 +41,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Quartz.lib DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib code.lib libjpeg_d.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib luabuiltind.lib openal32.lib"
-				OutputFile="C:\games\freespace2\fred2_open_ex_d.exe"
+				AdditionalDependencies="Quartz.lib DxErr8.lib d3d8.lib d3dx8.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib code.lib libjpeg_d.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static_d.lib luabuiltind.lib openal32.lib"
+				OutputFile="C:\Program Files\freespace2\fred2_open_3_6_10_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="..\MSVC_6\Debug\,Debug\,..\..\oggvorbis\lib,..\..\dx8sdk\lib"
+				AdditionalLibraryDirectories="..\MSVC_6\Debug\,Debug\,..\..\oggvorbis\lib,..\..\dx8sdk\lib,..\..\openal\libs\win32"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="TRUE"
 				ProgramDatabaseFile=".\Debug/fred2_open_d.pdb"
@@ -115,11 +115,11 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib code.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib luabuiltin.lib openal32.lib"
-				OutputFile="C:\games\freespace2\fred2_open_ex.exe"
+				AdditionalDependencies="DxErr8.lib d3d8.lib d3dx8.lib wsock32.lib winmm.lib msacm32.lib vfw32.lib comctl32.lib code.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib luabuiltin.lib openal32.lib"
+				OutputFile="C:\Program Files\freespace2\fred2_open_3_6_10.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="..\MSVC_6\Release\,Release\,..\..\oggvorbis\lib,..\..\dx8sdk\lib"
+				AdditionalLibraryDirectories="..\MSVC_6\Release\,Release\,..\..\oggvorbis\lib,..\..\dx8sdk\lib,..\..\openal\libs\win32"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				ProgramDatabaseFile=".\Release/fred2_open_r.pdb"
 				SubSystem="2"
@@ -225,6 +225,12 @@
 						PreprocessorDefinitions=""
 						BrowseInformation="1"/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\backgroundchooser.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\backgroundchooser.h">
 			</File>
 			<File
 				RelativePath="..\..\code\fred2\BgBitmapDlg.cpp">
@@ -978,6 +984,9 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\..\code\fred2\restrictpaths.cpp">
+			</File>
+			<File
 				RelativePath="..\..\code\fred2\SetGlobalShipFlags.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -1330,28 +1339,6 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\code\fred2\VoiceFileManager.cpp">
-				<FileConfiguration
-					Name="Debug|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BasicRuntimeChecks="3"
-						BrowseInformation="1"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="2"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						BrowseInformation="1"/>
-				</FileConfiguration>
-			</File>
-			<File
 				RelativePath="..\..\code\fred2\WaypointPathDlg.cpp">
 				<FileConfiguration
 					Name="Debug|Win32">
@@ -1558,6 +1545,9 @@
 				RelativePath="..\..\code\fred2\resource.h">
 			</File>
 			<File
+				RelativePath="..\..\code\fred2\restrictpaths.h">
+			</File>
+			<File
 				RelativePath="..\..\code\fred2\SetGlobalShipFlags.h">
 			</File>
 			<File
@@ -1649,6 +1639,51 @@
 				RelativePath="..\..\code\fred2\res\data.bmp">
 			</File>
 			<File
+				RelativePath="..\..\code\fred2\res\data01.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data02.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data03.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data04.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data05.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data06.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data07.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data08.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data09.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data10.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data11.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data12.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data13.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data14.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data15.bmp">
+			</File>
+			<File
 				RelativePath="..\..\code\fred2\res\FRED.ico">
 			</File>
 			<File
@@ -1672,5 +1707,8 @@
 		</Filter>
 	</Files>
 	<Globals>
+		<Global
+			Name="RESOURCE_FILE"
+			Value="\Steven\Projects\FSSCP\3.6.9\fs2_open\code\fred2\fred.rc"/>
 	</Globals>
 </VisualStudioProject>
