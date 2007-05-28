@@ -29,7 +29,7 @@
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua"
+				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
 				PreprocessorDefinitions="NDEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
@@ -82,7 +82,7 @@
 				Optimization="0"
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua"
+				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
 				PreprocessorDefinitions="_DEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -852,10 +852,34 @@
 				RelativePath="..\..\code\Cutscene\Cutscenes.h">
 			</File>
 			<File
+				RelativePath="..\..\code\cutscene\decoder16.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\decoder8.cpp">
+			</File>
+			<File
 				RelativePath="..\..\code\cutscene\movie.cpp">
 			</File>
 			<File
 				RelativePath="..\..\code\cutscene\movie.h">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mve_audio.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mvelib.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mvelib.h">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mveplayer.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\oggplayer.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\oggplayer.h">
 			</File>
 		</Filter>
 		<Filter
@@ -1083,10 +1107,10 @@
 					RelativePath="..\..\code\Graphics\Font.h">
 				</File>
 				<File
-					RelativePath="..\..\code\Graphics\GrZbuffer.cpp">
+					RelativePath="..\..\code\graphics\grstub.cpp">
 				</File>
 				<File
-					RelativePath="..\..\code\Graphics\GrZbuffer.h">
+					RelativePath="..\..\code\graphics\grstub.h">
 				</File>
 				<File
 					RelativePath="..\..\code\Graphics\Line.h">
@@ -1099,9 +1123,6 @@
 					RelativePath="..\..\code\Graphics\GrD3D.cpp">
 				</File>
 				<File
-					RelativePath="..\..\code\graphics\grd3dbatch.cpp">
-				</File>
-				<File
 					RelativePath="..\..\code\graphics\GrD3DBmpman.cpp">
 				</File>
 				<File
@@ -1109,9 +1130,6 @@
 				</File>
 				<File
 					RelativePath="..\..\code\graphics\grd3dlight.cpp">
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\GrD3DParticle.cpp">
 				</File>
 				<File
 					RelativePath="..\..\code\Graphics\GrD3DRender.cpp">
@@ -1999,6 +2017,12 @@
 				RelativePath="..\..\code\Model\MODEL.H">
 			</File>
 			<File
+				RelativePath="..\..\code\model\modelanim.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\model\modelanim.h">
+			</File>
+			<File
 				RelativePath="..\..\code\Model\ModelCollide.cpp">
 			</File>
 			<File
@@ -2031,6 +2055,12 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Object\CollideWeaponWeapon.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\object\deadobjectdock.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\object\deadobjectdock.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Object\ObjCollide.cpp">
@@ -2572,6 +2602,16 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Sound\midiseq.h">
+			</File>
+			<File
+				RelativePath="..\..\code\sound\phrases.xml">
+				<FileConfiguration
+					Name="Debug|Win32">
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;"
+						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\Sound\RBAudio.cpp">
