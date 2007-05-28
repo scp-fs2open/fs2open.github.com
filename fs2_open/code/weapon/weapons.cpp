@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.16  2007/04/14 23:43:40  taylor
+ * only add player-allowed flag on #Weak weapons when their non-weak versions also have the flag (Goober #73)
+ *
  * Revision 2.180.2.15  2007/03/22 19:31:25  taylor
  * little bit of cleanup
  * set "#Weak" weapons to always get the "player allowed" flag (Mantis #1301)
@@ -3715,7 +3718,11 @@ void weapon_load_bitmaps(int weapon_index)
 	if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.texture.bitmap_id < 0) )
 		generic_bitmap_load(&wip->tr_info.texture);
 
-	if ( (wip->wi_flags & WIF_PARTICLE_SPEW) && (wip->particle_spew_anim.first_frame < 0) ) {
+	//WMC - Don't try to load an anim if no anim is specified, Mmkay?
+	if ( (wip->wi_flags & WIF_PARTICLE_SPEW)
+		&& (wip->particle_spew_anim.first_frame < 0)
+		&& (strlen(wip->particle_spew_anim.filename) > 0) ) {
+
 		wip->particle_spew_anim.first_frame = bm_load(wip->particle_spew_anim.filename);
 
 		if (wip->particle_spew_anim.first_frame >= 0) {

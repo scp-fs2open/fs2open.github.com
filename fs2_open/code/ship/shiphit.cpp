@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.63.2.7 $
- * $Date: 2007-02-20 04:19:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.63.2.8 $
+ * $Date: 2007-05-28 18:27:35 $
+ * $Author: wmcoolmon $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.7  2007/02/20 04:19:35  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.63.2.6  2007/02/10 00:17:40  taylor
  * remove NO_SOUND
  *
@@ -728,6 +731,7 @@
 #include "network/multimsgs.h"
 #include "network/multi_respawn.h"
 #include "network/multi_pmsg.h"
+#include "asteroid/asteroid.h"
 
 
 
@@ -1167,9 +1171,16 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	int dmg_type_idx = -1;
 	if(other_obj->type == OBJ_SHOCKWAVE) {
 		dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
-	}
-	else if(other_obj->type == OBJ_WEAPON) {
+	} else if(other_obj->type == OBJ_WEAPON) {
 		dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
+	} else if(other_obj->type == OBJ_BEAM) {
+		dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
+	} else if(other_obj->type == OBJ_ASTEROID) {
+		dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
+	} else if(other_obj->type == OBJ_DEBRIS) {
+		dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
+	} else if(other_obj->type == OBJ_SHIP) {
+		dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
 	}
 
 	//This function is screwy
@@ -2420,7 +2431,11 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	ship *shipp;	
 	float subsystem_damage = damage;			// damage to be applied to subsystems
 	int other_obj_is_weapon;
+	int other_obj_is_beam;
 	int other_obj_is_shockwave;
+	int other_obj_is_asteroid;
+	int other_obj_is_debris;
+	int other_obj_is_ship;
 
 	Assert(ship_obj);	// Goober5000
 	Assert(hitpos);		// Goober5000
@@ -2438,12 +2453,20 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	if (other_obj)
 	{
 		other_obj_is_weapon = ((other_obj->type == OBJ_WEAPON) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS));
+		other_obj_is_beam = ((other_obj->type == OBJ_BEAM) && (other_obj->instance >= 0) && (other_obj->instance < MAX_BEAMS));
 		other_obj_is_shockwave = ((other_obj->type == OBJ_SHOCKWAVE) && (other_obj->instance >= 0) && (other_obj->instance < MAX_SHOCKWAVES));
+		other_obj_is_asteroid = ((other_obj->type == OBJ_ASTEROID) && (other_obj->instance >= 0) && (other_obj->instance < MAX_ASTEROIDS));
+		other_obj_is_debris = ((other_obj->type == OBJ_DEBRIS) && (other_obj->instance >= 0) && (other_obj->instance < MAX_DEBRIS_PIECES));
+		other_obj_is_ship = ((other_obj->type == OBJ_SHIP) && (other_obj->instance >= 0) && (other_obj->instance < MAX_SHIPS));
 	}
 	else
 	{
 		other_obj_is_weapon = 0;
+		other_obj_is_beam = 0;
 		other_obj_is_shockwave = 0;
+		other_obj_is_asteroid = 0;
+		other_obj_is_debris = 0;
+		other_obj_is_ship = 0;
 	}
 
 	if(other_obj_is_weapon)
@@ -2575,16 +2598,21 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		}
 
 		//Do armor stuff
-		if (apply_hull_armor && (other_obj_is_weapon || other_obj_is_shockwave))
+		if (apply_hull_armor)
 		{
 			int dmg_type_idx = -1;
-			if(other_obj_is_weapon)
-			{
+			if(other_obj_is_weapon) {
 				dmg_type_idx = wip->damage_type_idx;
-			}
-			else if(other_obj_is_shockwave)
-			{
+			} else if(other_obj_is_beam) {
+				dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
+			} else if(other_obj_is_shockwave) {
 				dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
+			} else if(other_obj_is_asteroid) {
+				dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
+			} else if(other_obj_is_debris) {
+				dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
+			} else if(other_obj_is_ship) {
+				dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
 			}
 			
 			if(sip->armor_type_idx != -1)

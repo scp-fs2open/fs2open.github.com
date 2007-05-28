@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.67.2.10 $
- * $Date: 2007-04-11 18:15:01 $
- * $Author: taylor $
+ * $Revision: 2.67.2.11 $
+ * $Date: 2007-05-28 18:27:36 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67.2.10  2007/04/11 18:15:01  taylor
+ * cleanup error message
+ * allow launch_snd from tbl to be used for beam weapon shot sound (Mantis #1263)
+ *
  * Revision 2.67.2.9  2007/03/22 19:30:00  taylor
  * fix strange bug where a beams parent will die and the object reset before the beam gets the chance to fire
  *
@@ -598,7 +602,6 @@ extern int Cmdline_nohtl;
 // randomness factor - all beam weapon aiming is adjusted by +/- some factor within this range
 #define BEAM_RANDOM_FACTOR			0.4f
 
-#define MAX_BEAMS					500
 #define BEAM_DAMAGE_TIME			170			// apply damage 
 #define MAX_SHOT_POINTS				30
 #define SHOT_POINT_TIME				200			// 5 arcs a second

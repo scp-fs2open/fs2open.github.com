@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.35.2.9 $
- * $Date: 2007-02-20 04:19:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.35.2.10 $
+ * $Date: 2007-05-28 18:27:32 $
+ * $Author: wmcoolmon $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35.2.9  2007/02/20 04:19:09  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.35.2.8  2007/02/11 09:35:11  taylor
  * add VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
@@ -2110,6 +2113,12 @@ void asteroid_parse_section(asteroid_info *asip)
 
 	required_string("$Max Speed:");
 	stuff_float(&asip->max_speed);
+
+	if(optional_string("$Damage Type:")) {
+		char buf[NAME_LENGTH];
+		stuff_string(buf, F_NAME, NAME_LENGTH);
+		asip->damage_type_idx = damage_type_add(buf);
+	}
 
 	required_string("$Expl inner rad:");
 	stuff_float(&asip->inner_rad);

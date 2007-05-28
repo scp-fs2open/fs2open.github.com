@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.16 $
- * $Date: 2007-04-17 17:15:31 $
- * $Author: karajorma $
+ * $Revision: 1.12.2.17 $
+ * $Date: 2007-05-28 18:27:33 $
+ * $Author: wmcoolmon $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.16  2007/04/17 17:15:31  karajorma
+ * Remove the -fredhtl command line.
+ *
  * Revision 1.12.2.15  2007/02/20 04:19:09  Goober5000
  * the great big duplicate model removal commit
  *
@@ -782,7 +785,7 @@ void brief_init_colors();
 
 void fred_preload_all_briefing_icons()
 {
-	int i,j;
+	uint i,j;
 	for (i = 0; i < Species_info.size(); i++)
 	{
 		for (j = 0; j < MAX_BRIEF_ICONS; j++)
