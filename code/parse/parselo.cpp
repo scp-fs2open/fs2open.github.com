@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.89 $
+ * $Revision: 2.90 $
  * $Author: taylor $
- * $Date: 2007-04-11 14:58:07 $
+ * $Date: 2007-05-28 20:05:06 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2007/04/11 14:58:07  taylor
+ * add extra safety check to make sure that we are going to do a wildcard search for modular tables
+ *
  * Revision 2.88  2007/02/05 08:26:06  wmcoolmon
  * Fix a parse bug
  *
@@ -845,6 +848,16 @@ int required_string(char *pstr)
 	return 1;
 }
 
+int check_for_eof()
+{
+	ignore_white_space();
+
+	if (*Mp == EOF_CHAR)
+		return 1;
+
+	return 0;
+}
+
 // similar to optional_string, but just checks if next token is a match.
 // It doesn't advance Mp except to skip past white space.
 //
@@ -884,6 +897,21 @@ int optional_string(char *pstr)
 //	mprintf((", didin't find it it\n"));
 
 	return 0;
+}
+
+int optional_string_either(char *str1, char *str2)
+{
+	ignore_white_space();
+
+	if ( !strnicmp(str1, Mp, strlen(str1)) ) {
+		Mp += strlen(str1);
+		return 0;
+	} else if ( !strnicmp(str2, Mp, strlen(str2)) ) {
+		Mp += strlen(str2);
+		return 1;
+	}
+
+	return -1;
 }
 
 int required_string_fred(char *pstr, char *end)

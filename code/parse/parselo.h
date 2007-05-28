@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.48 $
- * $Author: wmcoolmon $
- * $Date: 2007-01-14 12:06:56 $
+ * $Revision: 2.49 $
+ * $Author: taylor $
+ * $Date: 2007-05-28 20:05:06 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2007/01/14 12:06:56  wmcoolmon
+ * Fix +Override, attempted fix for code adjacent to [] causing crash in scripting.tbl (Unreproducable), and (Untested) fix for script-eval.
+ *
  * Revision 2.47  2006/12/28 00:59:39  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -511,6 +514,7 @@ extern void skip_token();
 // required
 extern int required_string(char *pstr);
 extern int optional_string(char *pstr);
+extern int optional_string_either(char *str1, char *str2);
 extern int required_string_either(char *str1, char *str2);
 extern int required_string_3(char *str1, char *str2, char *str3);
 
@@ -558,6 +562,7 @@ extern void stuff_boolean(bool *b, bool a_to_eol=true);
 extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 extern int check_for_string(char *pstr);
 extern int check_for_string_raw(char *pstr);
+extern int check_for_eof();
 
 // from aicode.cpp
 extern void parse_float_list(float *plist, int size);
