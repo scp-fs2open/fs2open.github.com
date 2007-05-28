@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.96 $
- * $Date: 2007-03-22 20:07:16 $
+ * $Revision: 2.97 $
+ * $Date: 2007-05-28 20:05:06 $
  * $Author: taylor $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.96  2007/03/22 20:07:16  taylor
+ * when parsing a modular tbl, allow a duplicate sun entry to overwrite an existing one
+ *
  * Revision 2.95  2007/02/18 06:17:34  Goober5000
  * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
  *
@@ -1089,13 +1092,24 @@ static void starfield_bitmap_entry_init(starfield_bitmap *sbm)
 	}
 }
 
+#define CHECK_END() {	\
+	if (in_check) {	\
+		required_string("#end");	\
+		in_check = false;	\
+		run_count = 0;	\
+	}	\
+}
+
 void parse_startbl(char *longname)
 {
 	char filename[MAX_FILENAME_LEN], tempf[16];
 	starfield_bitmap sbm;
 	int idx;
-
 	int rval;
+	bool in_check = false;
+	int rc = -1;
+	int run_count = 0;
+
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", longname, rval));
 		return;
@@ -1104,58 +1118,34 @@ void parse_startbl(char *longname)
 	read_file_text(longname);
 	reset_parse();
 
-	while(!optional_string("#end"))
-	{
-		starfield_bitmap_entry_init( &sbm );
-		
-		// intensity alpha bitmap
-		if(optional_string("$Bitmap:"))
-		{
+	// freaky! ;)
+	while ( !check_for_eof() ) {
+		while ( (rc = optional_string_either("$Bitmap:", "$BitmapX:")) != -1 ) {
+			in_check = true;
+
+			starfield_bitmap_entry_init( &sbm );
+
 			stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
-			sbm.xparent = 0;
+			sbm.xparent = rc;  // 0 == intensity alpha bitmap,  1 == green xparency bitmap
 
 			if ( (idx = stars_find_bitmap(sbm.filename)) >= 0 ) {
 				if (sbm.xparent == Starfield_bitmaps[idx].xparent) {
 					if ( !Parsing_modular_table )
 						Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
 				} else {
-					Warning(LOCATION, "Starfield bitmap '%s' already listed as a xparent bitmap!!  Only using the xparent version!", sbm.filename);
+					Warning(LOCATION, "Starfield bitmap '%s' already listed as a %sxparent bitmap!!  Only using the xparent version!",
+										(rc) ? "xparent" : "non-xparent", (rc) ? "xparent" : "non-xparent", sbm.filename);
 				}
 			} else {
 				Starfield_bitmaps.push_back(sbm);
 			}
 		}
-		// green xparency bitmap
-		else if(optional_string("$BitmapX:"))
-		{
-			stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
-			sbm.xparent = 1;
 
-			if ( (idx = stars_find_bitmap(sbm.filename)) >= 0 ) {
-				if (sbm.xparent == Starfield_bitmaps[idx].xparent) {
-					if ( !Parsing_modular_table )
-						Warning(LOCATION, "Starfield bitmap '%s' listed more than once!!  Only using the first entry!", sbm.filename);
-				} else {
-					Warning(LOCATION, "Starfield xparent bitmap '%s' already listed as a non-xparent bitmap!!  Only using the non-xparent version!", sbm.filename);
-				}
-			} else {
-				Starfield_bitmaps.push_back(sbm);
-			}
-		} else {
-			if (Parsing_modular_table) {
-				break;
-			} else {
-				Warning(LOCATION, "Unknown section in \"%s\"!  Going to skip it...\n", longname);
-				break;
-			}
-		}
-	}
+		CHECK_END();
 
-	// sun bitmaps
-	while(!optional_string("#end"))
-	{
-		if(optional_string("$Sun:"))
-		{
+		while ( optional_string("$Sun:") ) {
+			in_check = true;
+
 			starfield_bitmap_entry_init( &sbm );
 
 			stuff_string(sbm.filename, F_NAME, MAX_FILENAME_LEN);
@@ -1171,7 +1161,7 @@ void parse_startbl(char *longname)
 			stuff_float(&sbm.b);
 			stuff_float(&sbm.i);
 
-			if (optional_string("$SunSpecularRGB:")) {
+			if ( optional_string("$SunSpecularRGB:") ) {
 				stuff_float(&sbm.spec_r);
 				stuff_float(&sbm.spec_g);
 				stuff_float(&sbm.spec_b);
@@ -1182,8 +1172,7 @@ void parse_startbl(char *longname)
 			}
 
 			// lens flare stuff
-			if (optional_string("$Flare:"))
-			{
+			if ( optional_string("$Flare:") ) {
 				sbm.flare = 1;
 
 				required_string("+FlareCount:");
@@ -1251,55 +1240,47 @@ void parse_startbl(char *longname)
 			} else {
 				Sun_bitmaps.push_back(sbm);
 			}
-		} else {
-			if (Parsing_modular_table) {
-				break;
+		}
+
+		CHECK_END();
+
+		// normal debris pieces
+		while ( optional_string("$Debris:") ) {
+			in_check = true;
+
+			stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+
+			if (Num_debris_normal < MAX_DEBRIS_VCLIPS) {
+				strcpy(Debris_vclips_normal[Num_debris_normal++].name, filename);
 			} else {
-				Warning(LOCATION, "Unknown section in \"%s\"!  Going to skip it...\n", longname);
-				break;
+				Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", filename, MAX_DEBRIS_VCLIPS);
 			}
 		}
-	}
 
-	//Don't parse motion debris if we don't have to.
-	if(Cmdline_nomotiondebris)
-	{
-		return;
-	}
+		CHECK_END();
 
-	// normal debris pieces
-	while(!optional_string("#end"))
-	{
-		if (Parsing_modular_table && !optional_string("$Debris:")) {
-				break;
-		} else {
-			required_string("$Debris:");
+		// nebula debris pieces
+		while ( optional_string("$DebrisNeb:") ) {
+			in_check = true;
+
+			stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+
+			if (Num_debris_nebula < MAX_DEBRIS_VCLIPS) {
+				strcpy(Debris_vclips_nebula[Num_debris_nebula++].name, filename);
+			} else {
+				Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", filename, MAX_DEBRIS_VCLIPS);
+			}
 		}
 
-		stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+		CHECK_END();
 
-		if(Num_debris_normal < MAX_DEBRIS_VCLIPS){
-			strcpy(Debris_vclips_normal[Num_debris_normal++].name, filename);
-		} else {
-			Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", MAX_DEBRIS_VCLIPS);
-		}
-	}
-
-	// nebula debris pieces
-	while(!optional_string("#end"))
-	{
-		if (Parsing_modular_table && !optional_string("$DebrisNeb:")) {
-			break;
-		} else {
-			required_string("$DebrisNeb:");
-		}
-
-		stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
-
-		if(Num_debris_nebula < MAX_DEBRIS_VCLIPS){
-			strcpy(Debris_vclips_nebula[Num_debris_nebula++].name, filename);
-		} else {
-			Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", MAX_DEBRIS_VCLIPS);
+		// since it's possible for some idiot to have a tbl screwed up enough
+		// that this ends up in an endless loop, give an opportunity to advance
+		// through the file no matter what, because even the retail tbl has an
+		// extra "#end" line in it.
+		if ( optional_string("#end") || (run_count++ > 5) ) {
+			run_count = 0;
+			advance_to_eoln(NULL);
 		}
 	}
 }
