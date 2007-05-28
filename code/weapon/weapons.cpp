@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.17  2007/05/28 18:27:36  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
+ *
  * Revision 2.180.2.16  2007/04/14 23:43:40  taylor
  * only add player-allowed flag on #Weak weapons when their non-weak versions also have the flag (Goober #73)
  *
@@ -1957,6 +1960,9 @@ void init_weapon_entry(int weap_info_index)
 	wip->alpha_max = 1.0f;
 	wip->alpha_min = 0.0f;
 	wip->alpha_cycle = 0.0f;
+
+	// this can get reset after the constructor, so be sure it's correct
+	wip->shockwave.damage_type_idx = -1;
 }
 
 // function to parse the information for a specific weapon type.	
