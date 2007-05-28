@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.38 $
- * $Date: 2007-05-14 23:13:40 $
- * $Author: Goober5000 $
+ * $Revision: 2.243.2.39 $
+ * $Date: 2007-05-28 19:59:57 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.38  2007/05/14 23:13:40  Goober5000
+ * --grouped the shake/shudder code together a bit better
+ * --added a sexp to generate shudder
+ * --fixed a minor bug in lock-perspective
+ *
  * Revision 2.243.2.37  2007/04/24 12:07:32  karajorma
  * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
  *
@@ -3199,7 +3204,7 @@ void game_post_level_init()
 
 // tells the server to load the mission and initialize structures
 int game_start_mission()
-{	
+{
 	mprintf(( "=================== STARTING LEVEL LOAD ==================\n" ));
 
 	get_mission_info(Game_current_mission_filename, &The_mission, false);
@@ -3569,6 +3574,8 @@ void game_init()
 
 
 #ifndef NDEBUG
+	mprintf(("FreeSpace version: %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD));
+
 	extern void cmdline_debug_print_cmdline();
 	cmdline_debug_print_cmdline();
 #endif
@@ -3620,11 +3627,7 @@ void game_init()
 	// verify that he has a valid weapons.tbl
 	verify_weapons_tbl();
 
-	// commented out by penguin --
-	//   we don't want to cause problems w/ retail version...
-	//   we probably need our own registry key (and a launcher to write them)
 
-//  	// Output version numbers to registry for auto patching purposes
 	Use_joy_mouse = 0;		//os_config_read_uint( NULL, NOX("JoystickMovesCursor"), 1 );
 	//Use_palette_flash = os_config_read_uint( NULL, NOX("PaletteFlash"), 0 );
 	Use_low_mem = os_config_read_uint( NULL, NOX("LowMem"), 0 );
@@ -3633,7 +3636,7 @@ void game_init()
 	Use_fullscreen_at_startup = os_config_read_uint( NULL, NOX("ForceFullscreen"), 1 );
 #endif
 
-	// change FPS cap if told to do so (for those who can't use vsync or where vsync it's enough)
+	// change FPS cap if told to do so (for those who can't use vsync or where vsync isn't enough)
 	uint max_fps = 0;
 	if ( (max_fps = os_config_read_uint(NULL, NOX("MaxFPS"), 0)) != 0 ) {
 		if ( (max_fps > 15) && (max_fps < 120) ) {
@@ -4031,141 +4034,27 @@ uint Mem_starttime_virtual;
 
 void game_get_framerate()
 {	
-	gr_set_color_fast(&HUD_color_debug);
-#ifdef WMC
-	//WMC - this code spits out the target of all turrets
-	if(Player_ai->target_objnum != -1
-		&& Objects[Player_ai->target_objnum].type == OBJ_SHIP)
-	{
-		//Debug crap
-		int t = 0;
-		ship_subsys	*pss;
-
-		object *objp = &Objects[Player_ai->target_objnum];
-		for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) )
-		{
-			if(pss->system_info->type == SUBSYSTEM_TURRET)
-			{
-				if(pss->turret_enemy_objnum == -1)
-					gr_printf(10, t*10, "Turret %d: <None>", t);
-				else if(Objects[pss->turret_enemy_objnum].type == OBJ_SHIP)
-					gr_printf(10, t*10, "Turret %d: %s", t, Ships[Objects[pss->turret_enemy_objnum].instance].ship_name);
-				else
-					gr_printf(10, t*10, "Turret %d: <Object %d>", t, pss->turret_enemy_objnum);
-
-				t++;
-			}
-		}
-	}
-#endif
-	char text[128] = "";
-
-	//Show the viewin pos
-
-	if ( frame_int == -1 )	{
-		int i;
-		for (i=0; i<FRAME_FILTER; i++ )	{
+	if (frame_int == -1) {
+		for (int i = 0; i < FRAME_FILTER; i++)
 			frametimes[i] = 0.0f;
-		}
+
 		frametotal = 0.0f;
 		frame_int = 0;
 	}
+
 	frametotal -= frametimes[frame_int];
 	frametotal += flRealframetime;
 	frametimes[frame_int] = flRealframetime;
 	frame_int = (frame_int + 1 ) % FRAME_FILTER;
 
-	if ( frametotal != 0.0 )	{
-		if ( Framecount >= FRAME_FILTER )
+	if (frametotal != 0.0f) {
+		if (Framecount >= FRAME_FILTER)
 			Framerate = FRAME_FILTER / frametotal;
 		else
 			Framerate = Framecount / frametotal;
-		sprintf( text, NOX("FPS: %.1f"), Framerate);
-	} else {
-		sprintf( text, NOX("FPS: ?") );
 	}
+
 	Framecount++;
-
-	if (Show_framerate)	{
-		gr_string( 20, 100, text );
-	}
-
-	if(Cmdline_show_stats)
-	{
-#ifdef _WIN32
-		char mem_buffer[50];
-
-#ifndef NO_DIRECT3D
-		if(gr_screen.mode == GR_DIRECT3D)
-		{
-			extern void d3d_string_mem_use(int x, int y);
-			d3d_string_mem_use(20, 110);
-		}
-#endif
-
-		MEMORYSTATUS mem_stats;
-		GlobalMemoryStatus(&mem_stats);
-
-		// on win2k+, it should be == -1 if >4gig (indicates wrap around)
-		if ( ((int)Mem_starttime_phys == -1) || ((int)mem_stats.dwAvailPhys == -1) )
-			sprintf(mem_buffer, "Using Physical: *** (>4G)");
-		else
-			sprintf(mem_buffer,"Using Physical: %d Meg",(Mem_starttime_phys - mem_stats.dwAvailPhys)/1024/1024);
-		gr_string( 20, 120, mem_buffer);
-		sprintf(mem_buffer,"Using Pagefile: %d Meg",(Mem_starttime_pagefile - mem_stats.dwAvailPageFile)/1024/1024);
-		gr_string( 20, 130, mem_buffer);
-		sprintf(mem_buffer,"Using Virtual:  %d Meg",(Mem_starttime_virtual - mem_stats.dwAvailVirtual)/1024/1024);
-		gr_string( 20, 140, mem_buffer);
-
-		if ( ((int)mem_stats.dwAvailPhys == -1) || ((int)mem_stats.dwTotalPhys == -1) )
-			sprintf(mem_buffer, "Physical Free: *** / *** (>4G)");
-		else
-			sprintf(mem_buffer,"Physical Free: %d / %d Meg",mem_stats.dwAvailPhys/1024/1024, mem_stats.dwTotalPhys/1024/1024);
-		gr_string( 20, 160, mem_buffer);
-		sprintf(mem_buffer,"Pagefile Free: %d / %d Meg",mem_stats.dwAvailPageFile/1024/1024, mem_stats.dwTotalPageFile/1024/1024);
-		gr_string( 20, 170, mem_buffer);
-		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.dwAvailVirtual/1024/1024, mem_stats.dwTotalVirtual/1024/1024);
-		gr_string( 20, 180, mem_buffer);
-
-#elif defined(SCP_UNIX)
-		STUB_FUNCTION;
-#endif
-	}
-
-#ifndef NDEBUG
-	if(Cmdline_show_mem_usage)
-	{
-#ifdef _WIN32
-		void memblockinfo_sort();
-		void memblockinfo_sort_get_entry(int index, char *filename, int *size);
-
-		char mem_buffer[1000];
-		char filename[MAX_PATH];
-		int size;
-	  	memblockinfo_sort();
-		for(int i = 0; i < 30; i++)
-		{
-			memblockinfo_sort_get_entry(i, filename, &size);
-
-			size /= 1024;
-
-			if(size == 0)
-				break;
-
-			char *short_name = strrchr(filename, '\\');
-			if(short_name == NULL)
-				short_name = filename;
-			else
-				short_name++;
-
-			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
-			gr_string( 20, 220 + (i*10), mem_buffer);
-		}
-		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
-		gr_string( 20, 230 + (i*10), mem_buffer);
-#endif
-	}
-#endif
 }
 
 void game_show_framerate()
@@ -4185,6 +4074,41 @@ void game_show_framerate()
 	}
 */
 
+#ifdef WMC
+	//WMC - this code spits out the target of all turrets
+	if ( (Player_ai->target_objnum != -1) && (Objects[Player_ai->target_objnum].type == OBJ_SHIP) ) {
+		//Debug crap
+		int t = 0;
+		ship_subsys	*pss;
+
+		gr_set_color_fast(&HUD_color_debug);
+
+		object *objp = &Objects[Player_ai->target_objnum];
+		for ( pss = GET_FIRST(&shipp->subsys_list); pss !=END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss) ) {
+			if (pss->system_info->type == SUBSYSTEM_TURRET) {
+				if(pss->turret_enemy_objnum == -1)
+					gr_printf(10, t*10, "Turret %d: <None>", t);
+				else if (Objects[pss->turret_enemy_objnum].type == OBJ_SHIP)
+					gr_printf(10, t*10, "Turret %d: %s", t, Ships[Objects[pss->turret_enemy_objnum].instance].ship_name);
+				else
+					gr_printf(10, t*10, "Turret %d: <Object %d>", t, pss->turret_enemy_objnum);
+
+				t++;
+			}
+		}
+	}
+#endif
+
+
+	if (Show_framerate)	{
+		gr_set_color_fast(&HUD_color_debug);
+
+		if (frametotal != 0.0f)
+			gr_printf( 20, 100, "FPS: %0.1f", Framerate );
+		else
+			gr_string( 20, 100, "FPS: ?" );
+	}
+
 #ifndef NDEBUG
 	if ( Debug_dump_frames )
 		return;
@@ -4196,6 +4120,45 @@ void game_show_framerate()
 //	int bitmaps_used_this_frame, bitmaps_new_this_frame;
 //	MONITOR_INC(BmpUsed, bitmaps_used_this_frame);
 // MONITOR_INC(BmpNew, bitmaps_new_this_frame);
+
+#ifdef _WIN32
+	if (Cmdline_show_stats) {
+		char mem_buffer[50];
+
+#ifndef NO_DIRECT3D
+		if (gr_screen.mode == GR_DIRECT3D) {
+			extern void d3d_string_mem_use(int x, int y);
+			d3d_string_mem_use(20, 110);
+		}
+#endif
+
+		MEMORYSTATUS mem_stats;
+		GlobalMemoryStatus(&mem_stats);
+
+		// on win2k+, it should be == -1 if >4gig (indicates wrap around)
+		if ( ((int)Mem_starttime_phys == -1) || ((int)mem_stats.dwAvailPhys == -1) )
+			sprintf(mem_buffer, "Using Physical: *** (>4G)");
+		else
+			sprintf(mem_buffer,"Using Physical: %d Meg",(Mem_starttime_phys - mem_stats.dwAvailPhys)/1024/1024);
+
+		gr_string( 20, 120, mem_buffer);
+		sprintf(mem_buffer,"Using Pagefile: %d Meg",(Mem_starttime_pagefile - mem_stats.dwAvailPageFile)/1024/1024);
+		gr_string( 20, 130, mem_buffer);
+		sprintf(mem_buffer,"Using Virtual:  %d Meg",(Mem_starttime_virtual - mem_stats.dwAvailVirtual)/1024/1024);
+		gr_string( 20, 140, mem_buffer);
+
+		if ( ((int)mem_stats.dwAvailPhys == -1) || ((int)mem_stats.dwTotalPhys == -1) )
+			sprintf(mem_buffer, "Physical Free: *** / *** (>4G)");
+		else
+			sprintf(mem_buffer,"Physical Free: %d / %d Meg",mem_stats.dwAvailPhys/1024/1024, mem_stats.dwTotalPhys/1024/1024);
+
+		gr_string( 20, 160, mem_buffer);
+		sprintf(mem_buffer,"Pagefile Free: %d / %d Meg",mem_stats.dwAvailPageFile/1024/1024, mem_stats.dwTotalPageFile/1024/1024);
+		gr_string( 20, 170, mem_buffer);
+		sprintf(mem_buffer,"Virtual Free:  %d / %d Meg",mem_stats.dwAvailVirtual/1024/1024, mem_stats.dwTotalVirtual/1024/1024);
+		gr_string( 20, 180, mem_buffer);
+	}
+#endif
 
 #ifndef NDEBUG
 	if ( Show_cpu == 1 ) {
@@ -4312,6 +4275,42 @@ void game_show_framerate()
 		sy = 100;
 		gr_printf(sx, sy, NOX("Player Pos: (%d,%d,%d)"), fl2i(Player_obj->pos.xyz.x), fl2i(Player_obj->pos.xyz.y), fl2i(Player_obj->pos.xyz.z));
 	}
+
+#ifdef _WIN32
+	if (Cmdline_show_mem_usage) {
+		void memblockinfo_sort();
+		void memblockinfo_sort_get_entry(int index, char *filename, int *size);
+
+		char mem_buffer[1000];
+		char filename[MAX_PATH];
+		int size;
+
+	  	memblockinfo_sort();
+
+		for(int i = 0; i < 30; i++) {
+			memblockinfo_sort_get_entry(i, filename, &size);
+
+			size /= 1024;
+
+			if (size == 0)
+				break;
+
+			char *short_name = strrchr(filename, '\\');
+
+			if (short_name == NULL)
+				short_name = filename;
+			else
+				short_name++;
+
+			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
+			gr_string( 20, 220 + (i*10), mem_buffer);
+		}
+
+		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
+		gr_string( 20, 230 + (i*10), mem_buffer);
+	}
+#endif
+
 
 	MONITOR_INC(NumPolys, modelstats_num_polys);
 	MONITOR_INC(NumPolysDrawn, modelstats_num_polys_drawn );
