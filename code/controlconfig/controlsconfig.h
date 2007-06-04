@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.17 $
- * $Date: 2006-08-01 04:26:02 $
- * $Author: Kazan $
+ * $Revision: 2.18 $
+ * $Date: 2007-06-04 00:04:21 $
+ * $Author: Backslash $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2006/08/01 04:26:02  Kazan
+ * commented out glide_while_pressed changes until taylor deems them safe
+ *
  * Revision 2.16  2006/07/31 23:57:48  Kazan
  * glide while pressed
  *
@@ -332,13 +335,15 @@
 #define JOY_RY_AXIS	4
 #define JOY_RZ_AXIS	5
 
-#define NUM_JOY_AXIS_ACTIONS	5
+#define NUM_JOY_AXIS_ACTIONS	12	//5
 
 #define JOY_HEADING_AXIS		0
 #define JOY_PITCH_AXIS			1
 #define JOY_BANK_AXIS			2
 #define JOY_ABS_THROTTLE_AXIS	3
 #define JOY_REL_THROTTLE_AXIS	4
+#define JOY_SIDEWAYS_AXIS       5
+#define JOY_VERTICAL_AXIS       6
 
 // --------------------------------------------------
 // different types of controls that can be assigned 
@@ -471,7 +476,9 @@ typedef struct config_item {
 #define SHOW_DAMAGE_POPUP								83 // AL: this binding should be removing next time the controls are reorganized
 
 #define BANK_WHEN_PRESSED								84
-#define SHOW_NAVMAP										85
+#define SLIDE_WHEN_PRESSED								85
+//Backslash -- this was a convenient place for Slide When Pressed, and Show Nav Map isn't used ... you can move it when it is!
+//#define SHOW_NAVMAP										85
 #define ADD_REMOVE_ESCORT								86
 #define ESCORT_CLEAR									87
 #define TARGET_NEXT_ESCORT_SHIP							88
@@ -519,11 +526,10 @@ typedef struct config_item {
 
 //Gliding
 #define TOGGLE_GLIDING									117
-//Commented until taylor deems this safe
-//#define GLIDE_WHILE_PRESSED								118
+#define GLIDE_WHEN_PRESSED								118
 
 // this should be the total number of control action defines above (or last define + 1)
-#define CCFG_MAX 118
+#define CCFG_MAX 128	//118
 
 extern int Failed_key_index;
 extern int Invert_heading;
@@ -556,7 +562,7 @@ char *translate_key(char *key);
 char *textify_scancode(int code);
 float check_control_timef(int id);
 int check_control(int id, int key = -1);
-void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr);
+void control_get_axes_readings(int *axis);
 void control_used(int id);
 void control_config_clear();
 void clear_key_binding(short key);

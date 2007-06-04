@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-10-10 17:14:30 $
- * $Author: taylor $
+ * $Revision: 2.19 $
+ * $Date: 2007-06-04 00:04:21 $
+ * $Author: Backslash $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/10/10 17:14:30  taylor
+ * remove NO_NETWORK
+ * fix controlconfig so that axes can be set to joystick/mouse using the mouse (required when no joystick attached)
+ *
  * Revision 2.17  2005/07/22 10:18:37  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -504,8 +508,8 @@ config_item Control_config_backup[CCFG_MAX];
 int Axis_map_to[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, JOY_Z_AXIS, -1 };
 int Axis_map_to_defaults[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, JOY_Z_AXIS, -1 };
 #else
-int Axis_map_to[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
-int Axis_map_to_defaults[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1 };
+int Axis_map_to[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+int Axis_map_to_defaults[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 #endif
 
 // all this stuff is localized/externalized
@@ -1698,6 +1702,8 @@ void control_config_init()
 	Joy_axis_action_text[2] = vm_strdup(XSTR("Bank Axis", 1018));
 	Joy_axis_action_text[3] = vm_strdup(XSTR("Absolute Throttle Axis", 1019));
 	Joy_axis_action_text[4] = vm_strdup(XSTR("Relative Throttle Axis", 1020));
+	Joy_axis_action_text[5] = vm_strdup("Horizontal Lateral (Slide) Axis");
+	Joy_axis_action_text[6] = vm_strdup("Vertical Lateral (Slide) Axis");
 	Joy_axis_text[0] = vm_strdup(XSTR("Joystick/Mouse X Axis", 1021));
 	Joy_axis_text[1] = vm_strdup(XSTR("Joystick/Mouse Y Axis", 1022));
 	Joy_axis_text[2] = vm_strdup(XSTR("Joystick Z Axis", 1023));
@@ -1866,8 +1872,8 @@ void control_config_do_frame(float frametime)
 						break;
 				}
 
-				if (Cc_lines[Selected_line].cc_index == BANK_WHEN_PRESSED)  // a special hack just for Mike K.
-					if ( (Last_key >= 0) && (k <= 0) && !keyd_pressed[Last_key] )
+				if (Cc_lines[Selected_line].cc_index == BANK_WHEN_PRESSED || Cc_lines[Selected_line].cc_index == SLIDE_WHEN_PRESSED || Cc_lines[Selected_line].cc_index == GLIDE_WHEN_PRESSED)  // a special hack just for Mike K.
+					if ( (Last_key >= 0) && (k <= 0) && !keyd_pressed[Last_key] )	//Backslash - ok it's not just for Mike K. any more :-P  but seriously, this is so we can bind such controls to Shift or Alt.  Does this actually get used?
 						k = Last_key;
 
 				if ((k > 0) && !Config_allowed[k & KEY_MASK]) {
@@ -2543,43 +2549,28 @@ int check_control(int id, int key)
 }
 
 // get heading, pitch, bank, throttle abs. and throttle rel. values.
-void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr)
+void control_get_axes_readings(int *axis)
 {
 	int axes_values[JOY_NUM_AXES];
 
 	joystick_read_raw_axis(JOY_NUM_AXES, axes_values);
 
 	//	joy_get_scaled_reading will return a value represents the joystick pos from -1 to +1 (fixed point)
-	*h = 0;
-	if (Axis_map_to[0] >= 0)
-		*h = joy_get_scaled_reading(axes_values[Axis_map_to[0]], Axis_map_to[0]);
-
-	*p = 0;
-	if (Axis_map_to[1] >= 0)
-		*p = joy_get_scaled_reading(axes_values[Axis_map_to[1]], Axis_map_to[1]);
-
-	*b = 0;
-	if (Axis_map_to[2] >= 0)
-		*b = joy_get_scaled_reading(axes_values[Axis_map_to[2]], Axis_map_to[2]);
-
-	*ta = 0;
-	if (Axis_map_to[3] >= 0)
-		*ta = joy_get_unscaled_reading(axes_values[Axis_map_to[3]], Axis_map_to[3]);
-
-	*tr = 0;
-	if (Axis_map_to[4] >= 0)
-		*tr = joy_get_scaled_reading(axes_values[Axis_map_to[4]], Axis_map_to[4]);
-
-	if (Invert_axis[0])
-		*h = -(*h);
-	if (Invert_axis[1])
-		*p = -(*p);
-	if (Invert_axis[2])
-		*b = -(*b);
-	if (Invert_axis[3])
-		*ta = F1_0 - *ta;
-	if (Invert_axis[4])
-		*tr = -(*tr);
+	for (int i = 0; i < NUM_JOY_AXIS_ACTIONS; i++) {
+		if (Axis_map_to[i] >= 0) {
+			if (i == 3) {
+				//Backslash -- this is to handle the absolute throttle.
+				//I hate this hardcoding!  but what can we do but follow precedent?  Corrections welcome.
+				axis[i] = joy_get_unscaled_reading(axes_values[Axis_map_to[i]], Axis_map_to[i]);
+				if (Invert_axis[i])
+					axis[i] = F1_0 - axis[i];
+			} else {
+				axis[i] = joy_get_scaled_reading(axes_values[Axis_map_to[i]], Axis_map_to[i]);
+				if (Invert_axis[i])
+					axis[i] = -(axis[i]);
+			}
+		}
+	}
 
 	return;
 }
