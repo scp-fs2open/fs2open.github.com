@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.80 $
- * $Date: 2007-04-30 21:30:29 $
+ * $Revision: 2.81 $
+ * $Date: 2007-06-04 00:04:21 $
  * $Author: Backslash $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2007/04/30 21:30:29  Backslash
+ * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
+ * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
+ *
  * Revision 2.79  2007/04/06 13:26:21  karajorma
  * Prevent ships from jumping out in glide mode (They'd probably never get up to speed anyway)
  *
@@ -801,9 +805,8 @@ int Normal_key_set[] = {
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
 	
-	TOGGLE_GLIDING,
-	// commented until taylor deems this safe
-	//GLIDE_WHILE_PRESSED
+	TOGGLE_GLIDING
+
 };
 
 int Dead_key_set[] = {
@@ -936,10 +939,8 @@ int Non_critical_key_set[] = {
 	HUD_TARGETBOX_TOGGLE_WIREFRAME,
 	AUTO_PILOT_TOGGLE,
 	NAV_CYCLE,
-	TOGGLE_GLIDING,
+	TOGGLE_GLIDING
 	
-	// commented until taylor deems this safe
-	//GLIDE_WHILE_PRESSED
 };
 
 

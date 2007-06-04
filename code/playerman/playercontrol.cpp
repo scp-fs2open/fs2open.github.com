@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.50 $
- * $Date: 2007-04-30 21:30:31 $
+ * $Revision: 2.51 $
+ * $Date: 2007-06-04 00:04:20 $
  * $Author: Backslash $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2007/04/30 21:30:31  Backslash
+ * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
+ * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
+ *
  * Revision 2.49  2007/03/11 22:55:32  karajorma
  * Turn off afterburner controls when player isn't in control
  *
@@ -905,7 +909,7 @@ void player_control_reset_ci( control_info *ci )
 // because we only want to read it at a certain rate,
 // since it takes time.
 
-static int Joystick_saved_reading[JOY_NUM_AXES];
+static int Joystick_saved_reading[NUM_JOY_AXIS_ACTIONS];
 static int Joystick_last_reading = -1;
 
 void playercontrol_read_stick(int *axis, float frame_time)
@@ -922,7 +926,7 @@ void playercontrol_read_stick(int *axis, float frame_time)
 
 	if ( (Joystick_last_reading == -1)  || timestamp_elapsed(Joystick_last_reading) ) {
 		// Read the stick
-		control_get_axes_readings(&Joystick_saved_reading[0], &Joystick_saved_reading[1], &Joystick_saved_reading[2], &Joystick_saved_reading[3], &Joystick_saved_reading[4]);
+		control_get_axes_readings(Joystick_saved_reading);
 		Joystick_last_reading = timestamp( 1000/10 );	// Read 10x per second, like we did in Descent.
 	}
 
@@ -962,7 +966,7 @@ void playercontrol_read_stick(int *axis, float frame_time)
 void read_keyboard_controls( control_info * ci, float frame_time, physics_info *pi )
 {
 	float kh=0.0f, scaled, newspeed, delta, oldspeed;
-	int axis[JOY_NUM_AXES], ignore_pitch, slew_active=0;
+	int axis[NUM_JOY_AXIS_ACTIONS], ignore_pitch, slew_active=0;
 	static int afterburner_last = 0;
 	static float analog_throttle_last = 9e9f;
 	static int override_analog_throttle = 0; 
@@ -1001,8 +1005,12 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	
 	if ( ok_to_read_ci_pitch_yaw ) {
 		// From keyboard...
+		do_thrust_keys(ci);
 		if ( check_control(BANK_WHEN_PRESSED) ) {
 			ci->bank = check_control_timef(BANK_LEFT) + check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT) - check_control_timef(BANK_RIGHT);
+			ci->heading = 0.0f;
+		} else if ( check_control(SLIDE_WHEN_PRESSED) ) {
+			ci->sideways = check_control_timef(RIGHT_SLIDE_THRUST) + check_control_timef(YAW_RIGHT) - check_control_timef(LEFT_SLIDE_THRUST) - check_control_timef(YAW_LEFT);
 			ci->heading = 0.0f;
 
 		} else {
@@ -1024,22 +1032,24 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 		ci->heading += kh;
 
-		kh = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK)) / 8.0f;
-		if (kh == 0.0f) {
+		if ( check_control(SLIDE_WHEN_PRESSED) ) {
+			ci->vertical = check_control_timef(UP_SLIDE_THRUST) + check_control_timef(PITCH_FORWARD) - check_control_timef(DOWN_SLIDE_THRUST) - check_control_timef(PITCH_BACK);
 			ci->pitch = 0.0f;
+		} else {
+			kh = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK)) / 8.0f;
+			if (kh == 0.0f) {
+ 				ci->pitch = 0.0f;
+			} else if (kh > 0.0f) {
+				if (ci->pitch < 0.0f)
+					ci->pitch = 0.0f;
 
-		} else if (kh > 0.0f) {
-			if (ci->pitch < 0.0f)
-				ci->pitch = 0.0f;
-
-		} else {  // kh < 0
-			if (ci->pitch > 0.0f)
-				ci->pitch = 0.0f;
+			} else {  // kh < 0
+				if (ci->pitch > 0.0f)
+					ci->pitch = 0.0f;
+			}
 		}
 
 		ci->pitch += kh;
-
-		do_thrust_keys(ci);
 	}
 
 	if ( !slew_active ) {
@@ -1170,11 +1180,13 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 //			player_read_joystick();
 		// code to read joystick axis for pitch/heading.  Code to read joystick buttons
-		// fo1r bank.
+		// for bank.
 		if ( !(Game_mode & GM_DEAD) )	{
 			playercontrol_read_stick(axis, frame_time);
 		} else {
-			axis[0] = axis[1] = axis[2] = axis[3] = axis[4] = 0;
+			for(int i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
+				axis[i] = 0;
+			}
 		}
 
 		ignore_pitch = FALSE;
@@ -1187,6 +1199,11 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 					ci->bank -= delta;
 					ignore_pitch = TRUE;
 				}
+			} else if ( check_control(SLIDE_WHEN_PRESSED) ) {
+				delta = f2fl( axis[JOY_HEADING_AXIS] );
+				if ( (delta > 0.05f) || (delta < -0.05f) ) {
+					ci->sideways += delta;
+				}
 
 			} else {
 				ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
@@ -1194,11 +1211,28 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		}
 
 		// check the pitch on the y axis
-		if (Axis_map_to[JOY_PITCH_AXIS] >= 0)
-			ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
+		if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
+			if ( check_control(SLIDE_WHEN_PRESSED) ) {
+				delta = f2fl( axis[JOY_PITCH_AXIS] );
+				if ( (delta > 0.05f) || (delta < -0.05f) ) {
+					ci->vertical -= delta;
+				}
+
+			} else {
+				ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
+			}
+		}
 
 		if (Axis_map_to[JOY_BANK_AXIS] >= 0) {
 			ci->bank -= f2fl( axis[JOY_BANK_AXIS] ) * 1.5f;
+		}
+
+		if (Axis_map_to[JOY_SIDEWAYS_AXIS] >= 0) {
+			ci->sideways += f2fl( axis[JOY_SIDEWAYS_AXIS] );
+		}
+
+		if (Axis_map_to[JOY_VERTICAL_AXIS] >= 0) {
+			ci->vertical += f2fl( axis[JOY_VERTICAL_AXIS] );
 		}
 
 		// axis 2 is for throttle
