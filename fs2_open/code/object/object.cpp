@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.63.2.7 $
- * $Date: 2007-02-20 04:19:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.63.2.8 $
+ * $Date: 2007-06-04 03:09:51 $
+ * $Author: Backslash $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.7  2007/02/20 04:19:34  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.63.2.6  2007/02/16 07:06:45  Goober5000
  * uhh... wrong?
  *
@@ -2632,10 +2635,11 @@ void object_set_gliding(object *objp, bool enable)
 		objp->phys_info.glide_saved_vel = Player_obj->phys_info.vel;
 	} else {
 		objp->phys_info.flags &= ~PF_GLIDING;
+		vm_vec_rotate(&objp->phys_info.prev_ramp_vel, &objp->phys_info.vel, &objp->orient);	//Backslash
 	}
 }
 
-//Makes an object stop gliding -WMC
+//Returns whether an object is gliding -WMC
 bool object_get_gliding(object *objp)
 {
 	Assert(objp != NULL);
