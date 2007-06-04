@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-08-01 04:26:02 $
- * $Author: Kazan $
+ * $Revision: 2.19 $
+ * $Date: 2007-06-04 00:04:21 $
+ * $Author: Backslash $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/08/01 04:26:02  Kazan
+ * commented out glide_while_pressed changes until taylor deems them safe
+ *
  * Revision 2.17  2006/08/01 01:56:44  Goober5000
  * proper phrase case
  *
@@ -453,8 +456,8 @@ int Alt_is_modifier;
 
 int Axis_enabled[JOY_NUM_AXES] = { 1, 1, 1, 0, 0, 0 };
 int Axis_enabled_defaults[JOY_NUM_AXES] = { 1, 1, 1, 0, 0, 0 };
-int Invert_axis[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
-int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
+int Invert_axis[NUM_JOY_AXIS_ACTIONS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int Invert_axis_defaults[NUM_JOY_AXIS_ACTIONS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 // arrays which hold the key mappings.  The array index represents a key-independent action.
 //
@@ -565,7 +568,9 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           -1,					-1, -1,				true, "Show Damage Popup Window" },	
 
 	{                           -1,					-1, SHIP_TAB,		true, "Bank When Pressed", CC_TYPE_CONTINUOUS },
-	{									 -1,					-1, -1,				true, "Show Nav Map" },
+	{							-1,					-1, SHIP_TAB,		false, "Slide When Pressed", CC_TYPE_CONTINUOUS },
+//Backslash -- this was a convenient place for Slide When Pressed, and Show Nav Map isn't used ... you can move it when it is!
+//	{									 -1,					-1, -1,				true, "Show Nav Map" },
 	{ KEY_ALTED |	             KEY_E,				-1, COMPUTER_TAB,	true, "Add or Remove Escort" },
 	{ KEY_ALTED | KEY_SHIFTED | KEY_E,				-1, COMPUTER_TAB,	true, "Clear Escort List" },
 	{					             KEY_E,				-1, TARGET_TAB,	true, "Target Next Escort Ship" },
@@ -610,8 +615,17 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{ KEY_ALTED |					KEY_N,			-1, COMPUTER_TAB, false, "Cycle Nav Points"},
 	
 	{ KEY_ALTED |					KEY_G,			-1, SHIP_TAB, false, "Toggle Gliding"},
-	// Commented out until Taylor deems this safe
-	//{									-1,			-1, SHIP_TAB, false, "Glide While Pressed", CC_TYPE_CONTINUOUS},
+	{									-1,			-1, SHIP_TAB, false, "Glide When Pressed", CC_TYPE_CONTINUOUS},
+
+	{                           -1,					-1, -1,				false, "MultiTarget Wing" },
+	{                           -1,					-1, -1,				false, "Placeholder" },
+	{                           -1,					-1, -1,				false, "Placeholder" },
+	{                           -1,					-1, -1,				false, "Placeholder" },
+	{                           -1,					-1, -1,				false, "Placeholder" },
+	{                           -1,					-1, -1,				false, "Placeholder" },
+	{                           -1,					-1, -1,				false, "Placeholder" },
+	{                           -1,					-1, -1,				false, "Placeholder" },
+	{                           -1,					-1, -1,				false, "Placeholder" },
 
 	{                           -1,					-1, -1,			 false,	"" }
 };
