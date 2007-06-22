@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.187 $
- * $Date: 2007-05-25 13:58:26 $
- * $Author: taylor $
+ * $Revision: 2.188 $
+ * $Date: 2007-06-22 04:52:22 $
+ * $Author: turey $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.187  2007/05/25 13:58:26  taylor
+ * add the rest of the texture page-in code changes that I skipped before (should fix Mantis #1389)
+ *
  * Revision 2.186  2007/04/30 21:30:31  Backslash
  * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
  * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
@@ -2149,6 +2152,10 @@ extern void physics_ship_init(object *objp);
 //	Return true/false for subsystem found/not found.
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
+
+//Template stuff, here's as good a place as any.
+int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace);
+extern int ship_template_lookup(char *name = NULL);
 
 extern int ship_info_lookup(char *name = NULL);
 extern int ship_name_lookup(char *name, int inc_players = 0);	// returns the index into Ship array of name
