@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.287 $
- * $Date: 2007-05-28 20:00:17 $
- * $Author: taylor $
+ * $Revision: 2.288 $
+ * $Date: 2007-06-24 21:45:55 $
+ * $Author: turey $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.287  2007/05/28 20:00:17  taylor
+ * various bits of clean up
+ * make stats printing a bit more sane
+ * printf out game version info to debug log (not very helpful, but might prove some use)
+ *
  * Revision 2.286  2007/05/14 23:13:48  Goober5000
  * --grouped the shake/shudder code together a bit better
  * --added a sexp to generate shudder
@@ -4302,11 +4307,11 @@ void game_show_framerate()
 
 		char mem_buffer[1000];
 		char filename[MAX_PATH];
-		int size;
+		int size, i;
 
 	  	memblockinfo_sort();
 
-		for(int i = 0; i < 30; i++) {
+		for(i = 0; i < 30; i++) {
 			memblockinfo_sort_get_entry(i, filename, &size);
 
 			size /= 1024;
