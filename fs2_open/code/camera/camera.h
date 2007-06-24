@@ -55,7 +55,7 @@ private:
 	void clone(const subtitle &sub);
 
 	std::vector<std::string> text_lines;
-	int text_pos[2];
+	float text_pos[2];
 
 	float display_time;
 	float fade_time;
