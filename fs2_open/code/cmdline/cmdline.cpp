@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.17 $
- * $Date: 2007-05-28 19:46:15 $
- * $Author: taylor $
+ * $Revision: 2.140.2.18 $
+ * $Date: 2007-06-24 17:59:17 $
+ * $Author: karajorma $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.17  2007/05/28 19:46:15  taylor
+ * oops!  the exit() was supposed to come /after/ the last printf() :)
+ *
  * Revision 2.140.2.16  2007/05/25 13:47:10  taylor
  * make Linux just verbally ignore invalid cmdline options rather than it being fatal
  *
@@ -1319,7 +1322,7 @@ char *drop_extra_chars(char *str)
 		e--;
 	}
 
-	if (e > s){
+	if (e >= s && e !=0 ){
 		memmove(str, str + s, e - s + 1);
 	}
 
