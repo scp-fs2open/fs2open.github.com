@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.49.2.4 $
- * $Date: 2007-02-10 00:10:13 $
- * $Author: taylor $
+ * $Revision: 2.49.2.5 $
+ * $Date: 2007-06-30 23:32:21 $
+ * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49.2.4  2007/02/10 00:10:13  taylor
+ * a quick debug test to catch an error and FRED doesn't catch on it's own yet
+ *
  * Revision 2.49.2.3  2006/09/20 04:53:53  taylor
  * properly fix the new_recommendation_text FRED problem, plus some real cleanup for that code in general, and some memory leak fixes
  *
@@ -1189,8 +1192,8 @@ void brief_render_icon_line(int stage_num, int line_num)
 
 	bl = &Briefing->stages[stage_num].lines[line_num];
 
-	Assert( (bl->start_icon > 0) && (bl->start_icon < Briefing->stages[stage_num].num_icons) );
-	Assert( (bl->end_icon > 0) && (bl->end_icon < Briefing->stages[stage_num].num_icons) );
+	Assert( (bl->start_icon >= 0) && (bl->start_icon < Briefing->stages[stage_num].num_icons) );
+	Assert( (bl->end_icon >= 0) && (bl->end_icon < Briefing->stages[stage_num].num_icons) );
 
 	icon[0] = &Briefing->stages[stage_num].icons[bl->start_icon];
 	icon[1] = &Briefing->stages[stage_num].icons[bl->end_icon];
