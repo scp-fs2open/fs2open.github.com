@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.49 $
- * $Author: taylor $
- * $Date: 2007-05-28 20:05:06 $
+ * $Revision: 2.50 $
+ * $Author: turey $
+ * $Date: 2007-07-11 20:11:33 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2007/05/28 20:05:06  taylor
+ * more resilient checking of stars.tbl and it's modular versions
+ *
  * Revision 2.48  2007/01/14 12:06:56  wmcoolmon
  * Fix +Override, attempted fix for code adjacent to [] causing crash in scripting.tbl (Unreproducable), and (Untested) fix for script-eval.
  *
@@ -517,6 +520,7 @@ extern int optional_string(char *pstr);
 extern int optional_string_either(char *str1, char *str2);
 extern int required_string_either(char *str1, char *str2);
 extern int required_string_3(char *str1, char *str2, char *str3);
+extern int required_string_4(char *str1, char *str2, char *str3, char *str4);
 
 // stuff
 extern void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max);
