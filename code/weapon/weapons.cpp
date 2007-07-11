@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.203  2007/05/28 19:38:10  taylor
+ * fix armor index bug for shockwaves
+ *
  * Revision 2.202  2007/04/14 23:44:08  taylor
  * only add player-allowed flag on #Weak weapons when their non-weak versions also have the flag (Goober #73)
  *
@@ -1650,6 +1653,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_MR_NO_LIGHTING;
 		else if (!stricmp(NOX("inherit parent target"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_INHERIT_PARENT_TARGET;
+		else if (!stricmp(NOX("truefire"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_TRUEFIRE;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	
@@ -5538,6 +5543,12 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		}
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
+	}
+	
+	// TrueFire Code. Makes the initial speed of the weapon take into account the velocity of the parent.
+	// Improves aiming during gliding.
+	if ( wip->wi_flags2 & WIF2_TRUEFIRE && parent_objp != NULL ) {
+		vm_vec_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel );
 	}
 
 	// create the corkscrew
