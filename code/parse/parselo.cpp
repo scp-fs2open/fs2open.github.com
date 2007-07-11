@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.90 $
- * $Author: taylor $
- * $Date: 2007-05-28 20:05:06 $
+ * $Revision: 2.91 $
+ * $Author: turey $
+ * $Date: 2007-07-11 20:11:32 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.90  2007/05/28 20:05:06  taylor
+ * more resilient checking of stars.tbl and it's modular versions
+ *
  * Revision 2.89  2007/04/11 14:58:07  taylor
  * add extra safety check to make sure that we are going to do a wildcard search for modular tables
  *
@@ -1054,6 +1057,44 @@ int required_string_3(char *str1, char *str2, char *str3)
 	return -1;
 	// exit (1);
 }
+
+//	Return 0 or 1 for str1 match, str2 match.  Return -1 if neither matches.
+//	Does not update Mp if token found.  If not found, advances, trying to
+//	find the string.  Doesn't advance past the found string.
+int required_string_4(char *str1, char *str2, char *str3, char *str4)
+{
+	int	count = 0;
+
+	ignore_white_space();
+
+	while (count < RS_MAX_TRIES) {
+		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
+			// Mp += strlen(str1);
+			diag_printf("Found required string [%s]\n", token_found = str1);
+			return 0;
+		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
+			// Mp += strlen(str2);
+			diag_printf("Found required string [%s]\n", token_found = str2);
+			return 1;
+		} else if (strnicmp(str3, Mp, strlen(str3)) == 0) {
+			diag_printf("Found required string [%s]\n", token_found = str3);
+			return 2;
+		} else if (strnicmp(str4, Mp, strlen(str4)) == 0) {
+			diag_printf("Found required string [%s]\n", token_found = str4);
+			return 2;
+		}
+
+		error_display(1, "Required token = [%s], [%s], [%s], or [%s], found [%.32s].\n", str1, str2, str3, str4, next_tokens());
+
+		advance_to_eoln(NULL);
+		ignore_white_space();
+		count++;
+	}
+
+	return -1;
+	// exit (1);
+}
+
 
 int required_string_either_fred(char *str1, char *str2)
 {
