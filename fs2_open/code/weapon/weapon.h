@@ -12,6 +12,14 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2007/03/22 20:02:46  taylor
+ * make use of generic_anim and generic_bitmap where possible
+ * bunch of cleanup and little optimizations
+ * add "+remove" tbl option to completely get rid of particular beam sections
+ * delayed loading of bitmaps, will only do it after all tbl/tbm have been parsed
+ * if we are using a POF missile which isn't loaded yet, try and load it before going crazy
+ * bug fix and optimization for laser color setting
+ *
  * Revision 2.76  2007/02/18 06:17:48  Goober5000
  * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
  *
@@ -651,6 +659,7 @@ extern int Num_weapon_subtypes;
 #define WIF2_MR_NO_LIGHTING				(1 << 8)	// don't render with lighting, regardless of user options
 #define WIF2_TRANSPARENT				(1 << 9)	// render as transparent
 #define WIF2_INHERIT_PARENT_TARGET		(1 << 10)	// child weapons home in on the target their parent is homing on.
+#define WIF2_TRUEFIRE					(1 << 11)	// Adds firing ship's velocity vector to weapon velocity vector.
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
