@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.418 $
- * $Date: 2007-06-22 04:52:21 $
+ * $Revision: 2.419 $
+ * $Date: 2007-07-11 20:11:33 $
  * $Author: turey $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.418  2007/06/22 04:52:21  turey
+ * Added in Ship Templates code, with some syntax and warning cleanup.
+ *
  * Revision 2.417  2007/05/26 15:12:01  Goober5000
  * add placeholder stuff for parsing ship-class texture replacements
  *
@@ -3159,7 +3162,7 @@ int parse_ship_template()
 	if( template_id != -1 ) {
 		sip = &Ship_templates[template_id];
 		Warning(LOCATION, "Error:  Ship template %s already exists. All ship template names must be unique.", sip->name);
-		if ( !skip_to_start_of_string_either("$Name:", "#End")) {
+		if ( !skip_to_start_of_string_either("$Template:", "#End")) {
 			Int3();
 		}
 		return -1;
@@ -3336,7 +3339,7 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 
 			if (PLACEHOLDER_new_texture_id < 0)
 			{
-				Warning(LOCATION, "Could not load replacement texture %s for ship %s\n", PLACEHOLDER_new_texture, sip->name);
+				Warning(LOCATION, "Could not load replacement texture %s for %s %s\n", PLACEHOLDER_new_texture, info_type_name, sip->name);
 			}
 
 			// increment
@@ -4490,7 +4493,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	while (cont_flag) {
-		int r = required_string_3("#End", "$Subsystem:", "$Name" );
+		int r = required_string_4("#End", "$Subsystem:", "$Name", "$Template" );
 		switch (r) {
 		case 0:
 			cont_flag = 0;
@@ -4812,6 +4815,11 @@ strcpy(parse_error_text, temp_error);
 		case 2:
 			cont_flag = 0;
 			break;
+		case 3:
+			if (isTemplate) {
+				cont_flag = 0;
+				break;
+			}
 		default:
 			Int3();	// Impossible return value from required_string_3.
 		}
