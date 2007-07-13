@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.419 $
- * $Date: 2007-07-11 20:11:33 $
+ * $Revision: 2.420 $
+ * $Date: 2007-07-13 22:28:13 $
  * $Author: turey $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.419  2007/07/11 20:11:33  turey
+ * Ship Template fixes. It's fully working now, hopefully.
+ *
  * Revision 2.418  2007/06/22 04:52:21  turey
  * Added in Ship Templates code, with some syntax and warning cleanup.
  *
@@ -5781,7 +5784,7 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	} else {
 		shipp->ship_max_hull_strength = sip->max_hull_strength;
 	}
-	objp->hull_strength = shipp->ship_max_hull_strength;
+	objp->sim_hull_strength = objp->hull_strength = shipp->ship_max_hull_strength;
 	
 	shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
 

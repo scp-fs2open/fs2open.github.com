@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.24 $
- * $Date: 2007-02-11 21:26:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.25 $
+ * $Date: 2007-07-13 22:28:12 $
+ * $Author: turey $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2007/02/11 21:26:35  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 2.23  2006/09/08 06:20:14  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -531,6 +534,7 @@ typedef struct object {
 	physics_info	phys_info;		// a physics object
 	float				shield_quadrant[MAX_SHIELD_SECTIONS];	//	Shield is broken into components.  Quadrants on 4/24/97.
 	float				hull_strength;	//	Remaining hull strength.
+	float				sim_hull_strength;	// Simulated hull strength - used with training weapons.
 	short				objsnd_num[MAX_OBJECT_SOUNDS];		// Index of persistant sound struct.  -1 if no persistant sound assigned.
 	ushort			net_signature;
 	int				num_pairs;		// How many object pairs this is associated with.  When 0 then there are no more.
@@ -656,6 +660,7 @@ int shield_get_quadrant_global(object *objp, vec3d *global_pos);
 
 // Goober5000
 float get_hull_pct(object *objp);
+float get_sim_hull_pct(object *objp);
 float get_shield_pct(object *objp);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
