@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.74 $
- * $Date: 2007-04-30 21:30:30 $
- * $Author: Backslash $
+ * $Revision: 2.75 $
+ * $Date: 2007-07-13 22:28:12 $
+ * $Author: turey $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.74  2007/04/30 21:30:30  Backslash
+ * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
+ * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
+ *
  * Revision 2.73  2007/02/20 04:20:27  Goober5000
  * the great big duplicate model removal commit
  *
@@ -907,6 +911,24 @@ float get_hull_pct(object *objp)
 		return 0.0f;
 
 	return objp->hull_strength / total_strength;
+}
+
+float get_sim_hull_pct(object *objp)
+{
+	Assert(objp);
+	Assert(objp->type == OBJ_SHIP);
+
+	float total_strength = Ships[objp->instance].ship_max_hull_strength;
+
+	Assert(total_strength > 0.0f);	// unlike shield, no ship can have 0 hull
+
+	if (total_strength == 0.0f)
+		return 0.0f;
+
+	if (objp->sim_hull_strength < 0.0f)	// this sometimes happens when a ship is being destroyed
+		return 0.0f;
+
+	return objp->sim_hull_strength / total_strength;
 }
 
 // Goober5000

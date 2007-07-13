@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.204  2007/07/11 20:19:00  turey
+ * Truefire weapons code, adds firing ship's velocity to weapon velocity for a more realistic firing, especially during glide. Activated with the "truefire" flag on a weapon.
+ *
  * Revision 2.203  2007/05/28 19:38:10  taylor
  * fix armor index bug for shockwaves
  *
@@ -1655,6 +1658,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_INHERIT_PARENT_TARGET;
 		else if (!stricmp(NOX("truefire"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_TRUEFIRE;
+		else if (!stricmp(NOX("training"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_TRAINING;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	

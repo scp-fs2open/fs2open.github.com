@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.77 $
- * $Date: 2007-02-20 04:20:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.78 $
+ * $Date: 2007-07-13 22:28:13 $
+ * $Author: turey $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2007/02/20 04:20:27  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.76  2007/02/19 20:39:10  wmcoolmon
  * More minor tweaks/fixes
  *
@@ -1129,6 +1132,9 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	// scale subsystem damage if appropriate
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 	if ((weapon_info_index >= 0) && (other_obj->type == OBJ_WEAPON)) {
+		if ( Weapon_info[weapon_info_index].wi_flags2 & WIF2_TRAINING ) {
+			return damage_left;
+		}
 		damage_left *= Weapon_info[weapon_info_index].subsystem_factor;
 	}
 
@@ -2417,6 +2423,19 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 
 	return 1;
 }
+//	Display a diagnostic message if Verbose is set.
+//	(Verbose is set if -v command line switch is present.)
+void diag_printf2(char *format, ...)
+{
+	char	buffer[8192];
+	va_list args;
+
+	va_start(args, format);
+	vsprintf(buffer, format, args);
+	va_end(args);
+
+	nprintf(("Parse", "%s", buffer));
+}
 
 // ------------------------------------------------------------------------
 // ship_do_damage()
@@ -2637,10 +2656,20 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 					damage = MAX(0, damage);
 				}
 			}
-
+						
 			// multiplayer clients don't do damage
 			if(((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT) || (Game_mode & GM_DEMO_PLAYBACK)){
 			} else {
+				// Check if this is simulated damage.
+				weapon_info_index = shiphit_get_damage_weapon(other_obj);
+				if ( weapon_info_index >= 0 ) {
+					if (Weapon_info[weapon_info_index].wi_flags2 & WIF2_TRAINING) {
+						diag_printf2("Simulated Hull for Ship %s hit, dropping from %.32f to %d.\n", shipp->ship_name, (int) ( ship_obj->sim_hull_strength * 100 ), (int) ( ( ship_obj->sim_hull_strength - damage ) * 100 ) );
+						ship_obj->sim_hull_strength -= damage;
+						ship_obj->sim_hull_strength = MAX( 0, ship_obj->sim_hull_strength );
+						return;
+					}
+				}
 				ship_obj->hull_strength -= damage;		
 			}
 

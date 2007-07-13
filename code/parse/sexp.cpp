@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.311 $
- * $Date: 2007-05-14 23:13:48 $
- * $Author: Goober5000 $
+ * $Revision: 2.312 $
+ * $Date: 2007-07-13 22:28:12 $
+ * $Author: turey $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.311  2007/05/14 23:13:48  Goober5000
+ * --grouped the shake/shudder code together a bit better
+ * --added a sexp to generate shudder
+ * --fixed a minor bug in lock-perspective
+ *
  * Revision 2.310  2007/04/26 18:59:36  karajorma
  * Doh! Missed the return type.
  *
@@ -1680,6 +1685,7 @@ sexp_oper Operators[] = {
 	{ "shields-left",					OP_SHIELDS_LEFT,				1, 1, },
 	{ "hits-left",						OP_HITS_LEFT,					1, 1, },
 	{ "hits-left-subsystem",		OP_HITS_LEFT_SUBSYSTEM,		2, 2, },
+	{ "sim-hits-left",						OP_SIM_HITS_LEFT,					1, 1, }, // Turey
 	{ "distance",						OP_DISTANCE,					2, 2, },
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
 	{ "num-within-box",				OP_NUM_WITHIN_BOX,					7,	INT_MAX},	//WMC
@@ -3037,7 +3043,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 				// check for the special "hull" value
 				if ( (Operators[op].value == OP_SABOTAGE_SUBSYSTEM) || (Operators[op].value == OP_REPAIR_SUBSYSTEM) || (Operators[op].value == OP_SET_SUBSYSTEM_STRNGTH) ) {
-					if ( !stricmp( CTEXT(node), SEXP_HULL_STRING) ){
+					if ( !stricmp( CTEXT(node), SEXP_HULL_STRING) || !stricmp( CTEXT(node), SEXP_SIM_HULL_STRING) ){
 						break;
 					}
 				}
@@ -5929,6 +5935,31 @@ int sexp_hits_left(int n)
 	ship		*shipp = &Ships[shipnum];
 	object	*objp = &Objects[shipp->objnum];
 	percent = (int) (100.0f * get_hull_pct(objp));
+	return percent;
+}
+
+int sexp_sim_hits_left(int n)
+{
+	int shipnum, percent;
+	char *shipname;
+
+	shipname = CTEXT(n);
+	
+	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
+	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) ){
+		return SEXP_NAN_FOREVER;
+	}
+
+	shipnum = ship_name_lookup( shipname );
+	if ( shipnum == -1 ){					// hmm.. if true, must not have arrived yet
+		return SEXP_NAN;
+	}
+
+	// now return the amount of hits left as a percentage of the whole.  Subtract the percentage from 100
+	// since we are working with total hit points taken, not total remaining.
+	ship		*shipp = &Ships[shipnum];
+	object	*objp = &Objects[shipp->objnum];
+	percent = (int) (100.0f * get_sim_hull_pct(objp));
 	return percent;
 }
 
@@ -9260,6 +9291,19 @@ void sexp_sabotage_subsystem(int n)
 		return;
 	}
 
+	// see if we are dealing with the Simulated HULL
+	if ( !stricmp( subsystem, SEXP_SIM_HULL_STRING) ) {
+		float ihs;
+		object *objp;
+
+		ihs = shipp->ship_max_hull_strength;
+		sabotage_hits = ihs * ((float)percentage / 100.0f);
+		objp = &Objects[shipp->objnum];
+		objp->sim_hull_strength -= sabotage_hits;
+
+		return;
+	}
+
 	// now find the given subsystem on the ship.  The subsystem should be an actual subsystem name
 	// and not a generic type (generic type meaning SUBSYSTEM_ENGINE, etc).
 
@@ -9321,6 +9365,20 @@ void sexp_repair_subsystem(int n)
 		objp->hull_strength += repair_hits;
 		if ( objp->hull_strength > ihs )
 			objp->hull_strength = ihs;
+		return;
+	}
+
+	// see if we are dealing with the Simulated HULL
+	if ( !stricmp( subsystem, SEXP_SIM_HULL_STRING) ) {
+		float ihs;
+		object *objp;
+
+		ihs = shipp->ship_max_hull_strength;
+		repair_hits = ihs * ((float)percentage / 100.0f);
+		objp = &Objects[shipp->objnum];
+		objp->hull_strength += repair_hits;
+		if ( objp->sim_hull_strength > ihs )
+			objp->sim_hull_strength = ihs;
 		return;
 	}
 
@@ -9393,6 +9451,18 @@ void sexp_set_subsystem_strength(int n)
 			ihs = shipp->ship_max_hull_strength;
 			objp->hull_strength = ihs * ((float)percentage / 100.0f);
 		}
+
+		return;
+	}
+
+	// see if we are dealing with the Simulated HULL
+	if ( !stricmp( subsystem, SEXP_SIM_HULL_STRING) ) {
+		float ihs;
+		object *objp;
+
+		objp = &Objects[shipp->objnum];
+		ihs = shipp->ship_max_hull_strength;
+		objp->sim_hull_strength = ihs * ((float)percentage / 100.0f);
 
 		return;
 	}
@@ -15154,6 +15224,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_hits_left_subsystem(node);
 				break;
 
+			case OP_SIM_HITS_LEFT:
+				sexp_val = sexp_sim_hits_left(node);
+				break;
+
 			case OP_SPECIAL_WARP_DISTANCE:
 				sexp_val = sexp_special_warp_dist(node);
 				break;
@@ -16594,6 +16668,7 @@ int query_operator_return_type(int op)
 		case OP_SHIELDS_LEFT:
 		case OP_HITS_LEFT:
 		case OP_HITS_LEFT_SUBSYSTEM:
+		case OP_SIM_HITS_LEFT:
 		case OP_DISTANCE:
 		case OP_DISTANCE_SUBSYSTEM:
 		case OP_NUM_WITHIN_BOX:
@@ -16967,6 +17042,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_TIME_SHIP_DEPARTED:
 		case OP_SHIELDS_LEFT:
 		case OP_HITS_LEFT:
+		case OP_SIM_HITS_LEFT:
 		case OP_CLEAR_SHIP_GOALS:
 		case OP_PROTECT_SHIP:
 		case OP_UNPROTECT_SHIP:
@@ -19748,6 +19824,11 @@ sexp_help_struct Sexp_help[] = {
 		"Returns a numeric value.  Takes 1 argument...\r\n"
 		"\t1:\tName of ship to check.\r\n"
 		"\t2:\tName of subsystem on ship to check." },
+
+	{ OP_SIM_HITS_LEFT, "Simulated Hits left (Status operator)\r\n"
+		"\tReturns the current level of the specified ship's simulated hull as a percentage.\r\n\r\n"
+		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"\t1:\tName of ship to check." },
 
 	{ OP_DISTANCE, "Distance (Status operator)\r\n"
 		"\tReturns the distance between two objects.  These objects can be either a ship, "

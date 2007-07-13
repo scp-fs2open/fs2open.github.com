@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.17 $
- * $Date: 2007-02-20 04:20:10 $
- * $Author: Goober5000 $
+ * $Revision: 1.18 $
+ * $Date: 2007-07-13 22:28:11 $
+ * $Author: turey $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.17  2007/02/20 04:20:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 1.16  2007/01/15 13:42:59  karajorma
  * Hmmm. Forgot to commit changes to support network variables and setting ammo/weapons to HEAD as well as 3.6.9.
  *
@@ -5088,9 +5091,10 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		}
 	}
 	
-	// if one of the subsystem strength operators, append the Hull string
+	// if one of the subsystem strength operators, append the Hull string and the Simulated Hull string
 	if(special_subsys == OPS_STRENGTH){
 		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SIM_HULL_STRING);
 	}
 
 	return head.next;
