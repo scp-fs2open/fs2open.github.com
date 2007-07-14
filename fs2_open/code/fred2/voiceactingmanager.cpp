@@ -345,6 +345,8 @@ void VoiceActingManager::OnGenerateScript()
 		for (i = 0; i < Cmd_briefs[0].num_stages; i++)
 		{
 			CString entry = m_script_entry_format;
+			entry.Replace("\r\n", "\n");
+
 			cmd_brief_stage *stage = &Cmd_briefs[0].stage[i];
 			entry.Replace("$filename", stage->wave_filename);
 			entry.Replace("$message", stage->text);
@@ -362,6 +364,8 @@ void VoiceActingManager::OnGenerateScript()
 		for (i = 0; i < Briefings[0].num_stages; i++)
 		{
 			CString entry = m_script_entry_format;
+			entry.Replace("\r\n", "\n");
+
 			brief_stage *stage = &Briefings[0].stages[i];
 			entry.Replace("$filename", stage->voice);
 			entry.Replace("$message", stage->new_text);
@@ -379,6 +383,8 @@ void VoiceActingManager::OnGenerateScript()
 		for (i = 0; i < Debriefings[0].num_stages; i++)
 		{
 			CString entry = m_script_entry_format;
+			entry.Replace("\r\n", "\n");
+
 			debrief_stage *stage = &Debriefings[0].stages[i];
 			entry.Replace("$filename", stage->voice);
 			entry.Replace("$message", stage->new_text);
@@ -396,6 +402,8 @@ void VoiceActingManager::OnGenerateScript()
 		for (i = 0; i < Num_messages - Num_builtin_messages; i++)
 		{
 			CString entry = m_script_entry_format;
+			entry.Replace("\r\n", "\n");
+
 			MMessage *message = &Messages[i + Num_builtin_messages];
 			entry.Replace("$filename", message->wave_info.name);
 			entry.Replace("$message", message->message);
