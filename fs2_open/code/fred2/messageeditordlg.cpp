@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MessageEditorDlg.cpp $
- * $Revision: 1.1.2.1 $
- * $Date: 2007-03-07 22:36:52 $
- * $Author: karajorma $
+ * $Revision: 1.1.2.2 $
+ * $Date: 2007-07-15 04:45:29 $
+ * $Author: Goober5000 $
  *
  * Old message editor dialog box handling code.  This was designed a LONG time ago
  * and because so much changed, I created a new one from scratch instead.  This is
  * only around just in case it might be useful.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1.2.1  2007/03/07 22:36:52  karajorma
+ * Make .ogg selectable in FRED.
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -426,8 +429,8 @@ int CMessageEditorDlg::find_event()
 		if ( get_operator_const(CTEXT(node)) == OP_WHEN || get_operator_const(CTEXT(node)) == OP_EVERY_TIME
 			|| get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT || get_operator_const(CTEXT(node)) == OP_EVERY_TIME_ARGUMENT )
 		{
-			// Goober5000 - the bool part of the when-argument conditional starts at the second, not first, argument
-			if (get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT)
+			// Goober5000 - the bool part of the *-argument conditional starts at the second, not first, argument
+			if (get_operator_const(CTEXT(node)) == OP_WHEN_ARGUMENT || get_operator_const(CTEXT(node)) == OP_EVERY_TIME_ARGUMENT)
 				node = CDR(node);
 
 			node = CDR(node);
