@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.70 $
- * $Date: 2007-02-20 04:20:10 $
+ * $Revision: 2.71 $
+ * $Date: 2007-07-15 04:19:25 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2007/02/20 04:20:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.69  2007/02/11 21:26:34  Goober5000
  * massive shield infrastructure commit
  *
@@ -1532,7 +1535,7 @@ void hud_targetbox_get_eye(vec3d *eye_pos, matrix *orient, int ship_num)
 		return;
 	}
 
-	ep = &(pm->view_positions[0] );
+	ep = &(pm->view_positions[Ships[ship_num].current_viewpoint]);
 
 	model_find_world_point( eye_pos, &ep->pnt, pm->id, ep->parent, orient, &origin );
 }
