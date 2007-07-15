@@ -12,8 +12,8 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.78  2007/07/11 20:19:00  turey
- * Truefire weapons code, adds firing ship's velocity to weapon velocity for a more realistic firing, especially during glide. Activated with the "truefire" flag on a weapon.
+ * Revision 2.79  2007/07/13 22:28:13  turey
+ * Initial commit of Training Weapons / Simulated Hull code.
  *
  * Revision 2.77  2007/03/22 20:02:46  taylor
  * make use of generic_anim and generic_bitmap where possible
@@ -662,8 +662,7 @@ extern int Num_weapon_subtypes;
 #define WIF2_MR_NO_LIGHTING				(1 << 8)	// don't render with lighting, regardless of user options
 #define WIF2_TRANSPARENT				(1 << 9)	// render as transparent
 #define WIF2_INHERIT_PARENT_TARGET		(1 << 10)	// child weapons home in on the target their parent is homing on.
-#define WIF2_TRUEFIRE					(1 << 11)	// Adds firing ship's velocity vector to weapon velocity vector.
-#define WIF2_TRAINING					(1 << 12)	// Weapon does shield/hull damage, but doesn't hurt subsystems, whack you, or put marks on your ship.
+#define WIF2_TRAINING					(1 << 11)	// Weapon does shield/hull damage, but doesn't hurt subsystems, whack you, or put marks on your ship.
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.102 $
- * $Date: 2007-07-11 20:19:00 $
- * $Author: turey $
+ * $Revision: 2.103 $
+ * $Date: 2007-07-15 02:45:18 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
@@ -4412,10 +4412,10 @@ int hud_get_best_primary_bank(float *range)
 void polish_predicted_target_pos(vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps) 
 {
 	int	iteration;
-	vec3d	player_pos = Player_obj->pos;
+	vec3d	player_pos = Player_obj->pos;	
 	float		time_to_enemy;
 	vec3d	last_predicted_enemy_pos = *predicted_enemy_pos;
-	vec3d*	enemy_vel = &Objects[Player_ai->target_objnum].phys_info.vel;
+
 	ship *shipp;
 	shipp = &Ships[Player_obj->instance];
 	Assert(shipp->weapons.current_primary_bank < shipp->weapons.num_primary_banks);
@@ -4425,17 +4425,19 @@ void polish_predicted_target_pos(vec3d *enemy_pos, vec3d *predicted_enemy_pos, f
 
 	vm_vec_zero(last_delta_vec);
 
-	if (wip->wi_flags2 & WIF2_TRUEFIRE ) {
-		enemy_vel = (vec3d*)vm_malloc( sizeof(vec3d) );
-		memcpy( enemy_vel, &Objects[Player_ai->target_objnum].phys_info.vel, sizeof(vec3d) );
-		vm_vec_sub2( enemy_vel, &(Player_obj->phys_info.vel) );
+	// additive velocity stuff
+	//vec3d enemy_fvec = Objects[Player_ai->target_objnum].orient.vec.fvec;
+	vec3d enemy_vel = Objects[Player_ai->target_objnum].phys_info.vel;
+	if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
+		//vm_vec_sub2( &enemy_fvec, &Player_obj->orient.vec.fvec );
+		vm_vec_sub2( &enemy_vel, &Player_obj->phys_info.vel );
 	}
-
+	
 	for (iteration=0; iteration < num_polish_steps; iteration++) {
 		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &player_pos);
 		time_to_enemy = dist_to_enemy/weapon_speed;
-//		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &Objects[Player_ai->target_objnum].orient.vec.fvec, en_physp->speed * time_to_enemy);
-		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, enemy_vel, time_to_enemy);
+//		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &enemy_fvec, en_physp->speed * time_to_enemy);
+		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &enemy_vel, time_to_enemy);
 		vm_vec_sub(last_delta_vec, predicted_enemy_pos, &last_predicted_enemy_pos);
 		last_predicted_enemy_pos= *predicted_enemy_pos;
 	}

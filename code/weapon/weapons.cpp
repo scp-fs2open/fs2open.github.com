@@ -12,8 +12,8 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.204  2007/07/11 20:19:00  turey
- * Truefire weapons code, adds firing ship's velocity to weapon velocity for a more realistic firing, especially during glide. Activated with the "truefire" flag on a weapon.
+ * Revision 2.205  2007/07/13 22:28:13  turey
+ * Initial commit of Training Weapons / Simulated Hull code.
  *
  * Revision 2.203  2007/05/28 19:38:10  taylor
  * fix armor index bug for shockwaves
@@ -1177,14 +1177,8 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 #define ESUCK_DEFAULT_WEAPON_REDUCE				(10.0f)
 #define ESUCK_DEFAULT_AFTERBURNER_REDUCE		(10.0f)
 
-// Goober5000 - as a rule of thumb, it looks like these are just the complement of the cutoff
-// (i.e. supercap used to be cut off at 75% but now uses the existing scale of 25%)
-
 // scale factor for supercaps taking damage from weapons which are not "supercap" weapons
 #define SUPERCAP_DAMAGE_SCALE			0.25f
-
-// scale factor for capital ships - added by Goober5000 to accompany SUPERCAP_DAMAGE_SCALE
-#define CAPITAL_DAMAGE_SCALE			0.90f
 
 // scale factor for big ships getting hit by flak
 #define FLAK_DAMAGE_SCALE				0.05f
@@ -1656,8 +1650,6 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_MR_NO_LIGHTING;
 		else if (!stricmp(NOX("inherit parent target"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_INHERIT_PARENT_TARGET;
-		else if (!stricmp(NOX("truefire"), weapon_strings[i]))
-			weaponp->wi_flags2 |= WIF2_TRUEFIRE;
 		else if (!stricmp(NOX("training"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_TRAINING;
 		else
@@ -5550,9 +5542,9 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
 	}
 	
-	// TrueFire Code. Makes the initial speed of the weapon take into account the velocity of the parent.
+	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
-	if ( wip->wi_flags2 & WIF2_TRUEFIRE && parent_objp != NULL ) {
+	if ((parent_objp != NULL) && (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)) {
 		vm_vec_add2( &objp->phys_info.vel, &parent_objp->phys_info.vel );
 	}
 
@@ -6830,8 +6822,8 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 		total_scale *= 0.1f;
 	}
 	
-	// if the hit object was a ship
-	if(target->type == OBJ_SHIP){
+	// if the hit object was a ship and we're doing damage scaling
+	if ((target->type == OBJ_SHIP) && !(The_mission.ai_profile->flags & AIPF_DISABLE_WEAPON_DAMAGE_SCALING)) {
 		ship *shipp;
 		ship_info *sip;
 
@@ -6848,15 +6840,12 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 
 		// if it has hit a supercap ship and is not a supercap class weapon
 		if((sip->flags & SIF_SUPERCAP) && !(wip->wi_flags & WIF_SUPERCAP)){
-			// Goober5000 - now weapons scale universally
-			total_scale *= hull_pct * SUPERCAP_DAMAGE_SCALE;
-
-			/*// if the supercap is around 3/4 damage, apply nothing
+			// if the supercap is around 3/4 damage, apply nothing
 			if(hull_pct <= 0.75f){
 				return 0.0f;
 			} else {
 				total_scale *= SUPERCAP_DAMAGE_SCALE;
-			}*/
+			}
 		}
 
 		// determine if this is a big damage ship
@@ -6867,19 +6856,20 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 			total_scale *= FLAK_DAMAGE_SCALE;
 		}
 		
-		// if the player is firing small weapons at a big ship
-		if( from_player && is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) ){
-
-			// if its a laser weapon
-			if(wip->subtype == WP_LASER){
-				total_scale *= 0.01f;
-			} else {
-				total_scale *= 0.05f;
-			}
-		}
-
 		// if the weapon is a small weapon being fired at a big ship
 		if( is_big_damage_ship && !(wip->wi_flags & (WIF_HURTS_BIG_SHIPS)) ){
+
+			// if the player is firing it
+			if ( from_player ) {
+				// if it's a laser weapon
+				if(wip->subtype == WP_LASER){
+					total_scale *= 0.01f;
+				} else {
+					total_scale *= 0.05f;
+				}
+			}
+
+			// scale based on hull
 			if(hull_pct > 0.1f){
 				total_scale *= hull_pct;
 			} else {

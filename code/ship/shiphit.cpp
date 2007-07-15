@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.78 $
- * $Date: 2007-07-13 22:28:13 $
- * $Author: turey $
+ * $Revision: 2.79 $
+ * $Date: 2007-07-15 02:45:19 $
+ * $Author: Goober5000 $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.78  2007/07/13 22:28:13  turey
+ * Initial commit of Training Weapons / Simulated Hull code.
+ *
  * Revision 2.77  2007/02/20 04:20:27  Goober5000
  * the great big duplicate model removal commit
  *
@@ -2470,7 +2473,6 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	Assert(ship_obj->type == OBJ_SHIP);
 	shipp = &Ships[ship_obj->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
-	weapon_info *wip = NULL;
 
 	// maybe adjust damage done by shockwave for BIG|HUGE
 	maybe_shockwave_damage_adjust(ship_obj, other_obj, &damage);
@@ -2487,19 +2489,14 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		other_obj_is_shockwave = 0;
 	}
 
-	if(other_obj_is_weapon)
-	{
-		wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
-	}
-
 	// update lethality of ship doing damage - modified by Goober5000
 	if (other_obj_is_weapon || other_obj_is_shockwave) {
 		ai_update_lethality(ship_obj, other_obj, damage);
 	}
 
-	if((wip != NULL) && !(sip->flags & SIF2_DISABLE_WEAP_DAMAGE_SCALING))
-		damage *= weapon_get_damage_scale(wip, other_obj, ship_obj);
-
+	// if this is a weapon
+	if (other_obj_is_weapon)
+		damage *= weapon_get_damage_scale(&Weapon_info[Weapons[other_obj->instance].weapon_info_index], other_obj, ship_obj);
 
 	MONITOR_INC( ShipHits, 1 );
 
@@ -2621,7 +2618,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			int dmg_type_idx = -1;
 			if(other_obj_is_weapon)
 			{
-				dmg_type_idx = wip->damage_type_idx;
+				dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
 			}
 			else if(other_obj_is_shockwave)
 			{
