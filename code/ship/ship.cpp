@@ -10,13 +10,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.421 $
- * $Date: 2007-07-15 02:45:18 $
+ * $Revision: 2.422 $
+ * $Date: 2007-07-15 04:19:25 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.421  2007/07/15 02:45:18  Goober5000
+ * fixed a small bug in the lab
+ * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
+ * removed my old supercap damage scaling change
+ * moved Turey's truefire flag to ai_profiles
+ *
  * Revision 2.420  2007/07/13 22:28:13  turey
  * Initial commit of Training Weapons / Simulated Hull code.
  *
@@ -5961,6 +5967,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->primitive_sensor_range = DEFAULT_SHIP_PRIMITIVE_SENSOR_RANGE;
 
 	shipp->special_warp_objnum = -1;
+
+	shipp->current_viewpoint = 0;
 
 	// set awacs warning flags so awacs ship only asks for help once at each level
 	shipp->awacs_warning_flag = AWACS_WARN_NONE;
@@ -11919,14 +11927,14 @@ void compute_slew_matrix(matrix *orient, angles *a)
 }
 
 // calculates the eye position for this ship in the global reference frame.  Uses the
-// view_positions array in the model.  The 0th element is the noral viewing position.
+// view_positions array in the model.  The 0th element is the normal viewing position.
 // the vector of the eye is returned in the parameter 'eye'.  The orientation of the
 // eye is returned in orient.  (NOTE: this is kind of bogus for now since non 0th element
 // eyes have no defined up vector)
 void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj )
 {
 	polymodel *pm = model_get(Ship_info[Ships[obj->instance].ship_info_index].model_num);
-	eye *ep = &(pm->view_positions[0]);
+	eye *ep = &(pm->view_positions[Ships[obj->instance].current_viewpoint]);
 	// vec3d vec;
 
 	// check to be sure that we have a view eye to look at.....spit out nasty debug message
