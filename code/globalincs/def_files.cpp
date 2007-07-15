@@ -7,11 +7,14 @@
 
 /*
  * $Logfile: /Freespace2/code/globalincs/def_files.cpp $
- * $Revision: 2.21 $
- * $Date: 2007-02-27 01:44:48 $
+ * $Revision: 2.22 $
+ * $Date: 2007-07-15 02:45:17 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2007/02/27 01:44:48  Goober5000
+ * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
+ *
  * Revision 2.20  2006/12/28 00:59:26  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -802,6 +805,13 @@ $ignore lower bound for minimum speed of docked ship: NO				\n\
 																		\n\
 ;; if set, will remove the increased delay when weapons are linked		\n\
 $disable linked fire penalty: NO										\n\
+																		\n\
+;; if set, will not scale weapon damage according to capital/supercap	\n\
+;; (like in FS1)														\n\
+$disable weapon damage scaling: NO										\n\
+																		\n\
+;; if set, will add the weapon velocity to the firing ship's velocity	\n\
+$use additive weapon velocity: NO										\n\
 																		\n\
 																		\n\
 #End																	\n\

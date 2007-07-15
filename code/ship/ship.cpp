@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.420 $
- * $Date: 2007-07-13 22:28:13 $
- * $Author: turey $
+ * $Revision: 2.421 $
+ * $Date: 2007-07-15 02:45:18 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.420  2007/07/13 22:28:13  turey
+ * Initial commit of Training Weapons / Simulated Hull code.
+ *
  * Revision 2.419  2007/07/11 20:11:33  turey
  * Ship Template fixes. It's fully working now, hopefully.
  *
@@ -2533,7 +2536,6 @@ flag_def_list Ship_flags[] = {
 	{ "surface shields",			SIF2_SURFACE_SHIELDS,		1 },
 	{ "show ship",					SIF2_SHOW_SHIP_MODEL,		1 },
 	{ "generate icon",				SIF2_GENERATE_HUD_ICON,		1 },
-	{ "no weapon damage scaling",	SIF2_DISABLE_WEAP_DAMAGE_SCALING,	1 },
 	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
 
 	// to keep things clean, obsolete options go last

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.188 $
- * $Date: 2007-06-22 04:52:22 $
- * $Author: turey $
+ * $Revision: 2.189 $
+ * $Date: 2007-07-15 02:45:19 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.188  2007/06/22 04:52:22  turey
+ * Added in Ship Templates code, with some syntax and warning cleanup.
+ *
  * Revision 2.187  2007/05/25 13:58:26  taylor
  * add the rest of the texture page-in code changes that I skipped before (should fix Mantis #1389)
  *
@@ -1621,7 +1624,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define	SIF_AFTERBURNER				(1 << 5)		// this ship has afterburners
 #define SIF_BALLISTIC_PRIMARIES		(1 << 6)		// this ship can equip ballistic primaries - Goober5000
 
-// If you add a new ship type, then please add the appriopriate type in the ship_count
+// If you add a new ship type, then please add the appropriate type in the ship_count
 // structure later in this file!!! and let MWA know!!
 #define	SIF_CARGO					(1 << 7)		// is this ship a cargo type ship -- used for docking purposes
 #define	SIF_FIGHTER					(1 << 8)		// this ship is a fighter
@@ -1655,17 +1658,16 @@ extern int ship_find_exited_ship_by_signature( int signature);
 
 #define	SIF_NO_FRED					(1 << 31)	// not available in fred
 
-// flags2 -- added by Goober5000
+// flags2 list
 #define SIF2_DEFAULT_IN_TECH_DATABASE		(1 << 0)	// default in tech database - Goober5000
 #define SIF2_DEFAULT_IN_TECH_DATABASE_M		(1 << 1)	// ditto - Goober5000
 #define SIF2_FLASH							(1 << 2)	// makes a flash when it explodes
 #define SIF2_SHOW_SHIP_MODEL				(1 << 3)	// Show ship model even in first person view
 #define SIF2_SURFACE_SHIELDS                (1 << 4)    // _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
 #define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
-#define SIF2_DISABLE_WEAP_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
-#define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
+#define SIF2_GUN_CONVERGENCE				(1 << 6)	// WMC - Gun convergence based on model weapon norms.
 
-#define	MAX_SHIP_FLAGS	8		//	Number of flags for flags field in ship_info struct
+#define	MAX_SHIP_FLAGS	8		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
 #define SIF2_DEFAULT_VALUE		0
 
