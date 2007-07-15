@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.312 $
- * $Date: 2007-07-13 22:28:12 $
+ * $Revision: 2.313 $
+ * $Date: 2007-07-15 23:08:16 $
  * $Author: turey $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.312  2007/07/13 22:28:12  turey
+ * Initial commit of Training Weapons / Simulated Hull code.
+ *
  * Revision 2.311  2007/05/14 23:13:48  Goober5000
  * --grouped the shake/shudder code together a bit better
  * --added a sexp to generate shudder
@@ -5945,9 +5948,9 @@ int sexp_sim_hits_left(int n)
 
 	shipname = CTEXT(n);
 	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
+	// if ship is gone or departed, cannot ever evaluate properly.  Return 0
 	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) ){
-		return SEXP_NAN_FOREVER;
+		return 0;
 	}
 
 	shipnum = ship_name_lookup( shipname );
