@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.25 $
- * $Date: 2007-07-15 02:45:50 $
+ * $Revision: 2.150.2.26 $
+ * $Date: 2007-07-15 04:19:34 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.25  2007/07/15 02:45:50  Goober5000
+ * fixed a small bug in the lab
+ * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
+ * removed my old supercap damage scaling change
+ * moved Turey's truefire flag to ai_profiles
+ *
  * Revision 2.150.2.24  2007/05/28 18:27:35  wmcoolmon
  * Added armor support for asteroid, debris, ship, and beam damage
  *
@@ -1287,6 +1293,7 @@ typedef struct ship {
 	// corkscrew missile stuff
 	ubyte num_corkscrew_to_fire;						// # of corkscrew missiles lef to fire
 	// END PACK
+
 	// targeting laser info
 	int targeting_laser_objnum;					// -1 if invalid, beam object # otherwise
 	// corkscrew missile stuff
@@ -1467,6 +1474,11 @@ typedef struct ship {
 	
 	// Goober5000 - revised nameplate implementation
 	int *replacement_textures;
+
+	// Goober5000 - index into pm->view_positions[]
+	// apparently, early in FS1 development, there was a field called current_eye_index
+	// that had this same functionality
+	int current_viewpoint;
 
 	trail *ABtrail_ptr[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
 	trail_info ab_info[MAX_SHIP_CONTRAILS];
