@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.69 $
- * $Date: 2007-07-15 04:19:33 $
+ * $Revision: 2.336.2.70 $
+ * $Date: 2007-07-15 06:29:51 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.69  2007/07/15 04:19:33  Goober5000
+ * partial commit of aldo's eyepoint feature
+ * it will need a keystroke to be complete
+ *
  * Revision 2.336.2.68  2007/07/15 02:45:49  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
@@ -2479,6 +2483,7 @@ flag_def_list Ship_flags[] = {
 	{ "surface shields",			SIF2_SURFACE_SHIELDS,		1 },
 	{ "show ship",					SIF2_SHOW_SHIP_MODEL,		1 },
 	{ "generate icon",				SIF2_GENERATE_HUD_ICON,		1 },
+	{ "no weapon damage scaling",	SIF2_DISABLE_WEAPON_DAMAGE_SCALING,	1 },
 	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
 
 	// to keep things clean, obsolete options go last
@@ -3828,7 +3833,7 @@ strcpy(parse_error_text, temp_error);
 	// Goober5000 - ensure number of banks checks out
 	if (sip->num_primary_banks > MAX_SHIP_PRIMARY_BANKS)
 	{
-		Error(LOCATION, "Sship %s has too many primary banks (%d).  Maximum for ships is currently %d.\n", sip->name, sip->num_primary_banks, MAX_SHIP_PRIMARY_BANKS);
+		Error(LOCATION, "Ship Class %s has too many primary banks (%d).  Maximum for ships is currently %d.\n", sip->name, sip->num_primary_banks, MAX_SHIP_PRIMARY_BANKS);
 	}
 
 	find_and_stuff_optional("$AI Class:", &sip->ai_class, F_NAME, Ai_class_names, Num_ai_classes, "AI class names");
