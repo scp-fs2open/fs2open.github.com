@@ -12,6 +12,12 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.206  2007/07/15 02:45:20  Goober5000
+ * fixed a small bug in the lab
+ * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
+ * removed my old supercap damage scaling change
+ * moved Turey's truefire flag to ai_profiles
+ *
  * Revision 2.205  2007/07/13 22:28:13  turey
  * Initial commit of Training Weapons / Simulated Hull code.
  *
@@ -6823,7 +6829,10 @@ float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
 	}
 	
 	// if the hit object was a ship and we're doing damage scaling
-	if ((target->type == OBJ_SHIP) && !(The_mission.ai_profile->flags & AIPF_DISABLE_WEAPON_DAMAGE_SCALING)) {
+	if ( (target->type == OBJ_SHIP) &&
+		!(The_mission.ai_profile->flags & AIPF_DISABLE_WEAPON_DAMAGE_SCALING) &&
+		!(Ship_info[Ships[target->instance].ship_info_index].flags2 & SIF2_DISABLE_WEAPON_DAMAGE_SCALING)
+	) {
 		ship *shipp;
 		ship_info *sip;
 

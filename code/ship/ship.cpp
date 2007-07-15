@@ -10,13 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.422 $
- * $Date: 2007-07-15 04:19:25 $
+ * $Revision: 2.423 $
+ * $Date: 2007-07-15 06:29:56 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.422  2007/07/15 04:19:25  Goober5000
+ * partial commit of aldo's eyepoint feature
+ * it will need a keystroke to be complete
+ *
  * Revision 2.421  2007/07/15 02:45:18  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
@@ -2542,6 +2546,7 @@ flag_def_list Ship_flags[] = {
 	{ "surface shields",			SIF2_SURFACE_SHIELDS,		1 },
 	{ "show ship",					SIF2_SHOW_SHIP_MODEL,		1 },
 	{ "generate icon",				SIF2_GENERATE_HUD_ICON,		1 },
+	{ "no weapon damage scaling",	SIF2_DISABLE_WEAPON_DAMAGE_SCALING,	1 },
 	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
 
 	// to keep things clean, obsolete options go last

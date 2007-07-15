@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.190 $
- * $Date: 2007-07-15 04:19:26 $
+ * $Revision: 2.191 $
+ * $Date: 2007-07-15 06:29:56 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.190  2007/07/15 04:19:26  Goober5000
+ * partial commit of aldo's eyepoint feature
+ * it will need a keystroke to be complete
+ *
  * Revision 2.189  2007/07/15 02:45:19  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
@@ -1677,7 +1681,8 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_SHOW_SHIP_MODEL				(1 << 3)	// Show ship model even in first person view
 #define SIF2_SURFACE_SHIELDS                (1 << 4)    // _argv[-1], 16 Jan 2005: Enable surface shields for this ship.
 #define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
-#define SIF2_GUN_CONVERGENCE				(1 << 6)	// WMC - Gun convergence based on model weapon norms.
+#define SIF2_DISABLE_WEAPON_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
+#define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
 
 #define	MAX_SHIP_FLAGS	8		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
