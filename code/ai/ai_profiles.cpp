@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.13.2.5 $
- * $Date: 2007-02-27 01:44:44 $
+ * $Revision: 1.13.2.6 $
+ * $Date: 2007-07-15 02:45:48 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13.2.5  2007/02/27 01:44:44  Goober5000
+ * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
+ *
  * Revision 1.13.2.4  2006/09/11 01:15:03  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -307,6 +310,10 @@ void parse_ai_profiles_tbl(char *longname)
 			set_flag(profile, "$ignore lower bound for minimum speed of docked ship:", AIPF_NO_MIN_DOCK_SPEED_CAP);
 
 			set_flag(profile, "$disable linked fire penalty:", AIPF_DISABLE_LINKED_FIRE_PENALTY);
+
+			set_flag(profile, "$disable weapon damage scaling:", AIPF_DISABLE_WEAPON_DAMAGE_SCALING);
+
+			set_flag(profile, "$use additive weapon velocity:", AIPF_USE_ADDITIVE_WEAPON_VELOCITY);
 
 			// if we've been through once already and are at the same place, force a move
 			if ( saved_Mp && (saved_Mp == Mp) )
