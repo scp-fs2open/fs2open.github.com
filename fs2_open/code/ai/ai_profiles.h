@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.h $
- * $Revision: 1.4.2.3 $
- * $Date: 2007-02-27 01:44:44 $
+ * $Revision: 1.4.2.4 $
+ * $Date: 2007-07-15 02:45:48 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4.2.3  2007/02/27 01:44:44  Goober5000
+ * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
+ *
  * Revision 1.4.2.2  2006/07/02 04:13:43  Goober5000
  * bah
  *
@@ -61,6 +64,8 @@
 #define AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP							(1 << 9)
 #define AIPF_NO_MIN_DOCK_SPEED_CAP									(1 << 10)
 #define AIPF_DISABLE_LINKED_FIRE_PENALTY							(1 << 11)
+#define AIPF_DISABLE_WEAPON_DAMAGE_SCALING							(1 << 12)
+#define AIPF_USE_ADDITIVE_WEAPON_VELOCITY							(1 << 13)
 
 
 #define MAX_AI_PROFILES	5

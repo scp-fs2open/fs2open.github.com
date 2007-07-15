@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.14 $
- * $Date: 2007-04-05 16:25:58 $
- * $Author: karajorma $
+ * $Revision: 2.87.2.15 $
+ * $Date: 2007-07-15 02:45:49 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.14  2007/04/05 16:25:58  karajorma
+ * Remove message source boxes on friendly stealthed ships
+ *
  * Revision 2.87.2.13  2007/02/20 04:19:10  Goober5000
  * the great big duplicate model removal commit
  *
@@ -4416,11 +4419,19 @@ void polish_predicted_target_pos(vec3d *enemy_pos, vec3d *predicted_enemy_pos, f
 
 	vm_vec_zero(last_delta_vec);
 
+	// additive velocity stuff
+	//vec3d enemy_fvec = Objects[Player_ai->target_objnum].orient.vec.fvec;
+	vec3d enemy_vel = Objects[Player_ai->target_objnum].phys_info.vel;
+	if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
+		//vm_vec_sub2( &enemy_fvec, &Player_obj->orient.vec.fvec );
+		vm_vec_sub2( &enemy_vel, &Player_obj->phys_info.vel );
+	}
+	
 	for (iteration=0; iteration < num_polish_steps; iteration++) {
 		dist_to_enemy = vm_vec_dist_quick(predicted_enemy_pos, &player_pos);
 		time_to_enemy = dist_to_enemy/weapon_speed;
-//		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &Objects[Player_ai->target_objnum].orient.vec.fvec, en_physp->speed * time_to_enemy);
-		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &Objects[Player_ai->target_objnum].phys_info.vel, time_to_enemy);
+//		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &enemy_fvec, en_physp->speed * time_to_enemy);
+		vm_vec_scale_add(predicted_enemy_pos, enemy_pos, &enemy_vel, time_to_enemy);
 		vm_vec_sub(last_delta_vec, predicted_enemy_pos, &last_predicted_enemy_pos);
 		last_predicted_enemy_pos= *predicted_enemy_pos;
 	}

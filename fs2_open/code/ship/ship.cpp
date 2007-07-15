@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.67 $
- * $Date: 2007-05-28 18:27:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.336.2.68 $
+ * $Date: 2007-07-15 02:45:49 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.67  2007/05/28 18:27:33  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
+ *
  * Revision 2.336.2.66  2007/05/26 15:12:07  Goober5000
  * add placeholder stuff for parsing ship-class texture replacements
  *
@@ -2470,7 +2473,6 @@ flag_def_list Ship_flags[] = {
 	{ "surface shields",			SIF2_SURFACE_SHIELDS,		1 },
 	{ "show ship",					SIF2_SHOW_SHIP_MODEL,		1 },
 	{ "generate icon",				SIF2_GENERATE_HUD_ICON,		1 },
-	{ "no weapon damage scaling",	SIF2_DISABLE_WEAP_DAMAGE_SCALING,	1 },
 	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
 
 	// to keep things clean, obsolete options go last

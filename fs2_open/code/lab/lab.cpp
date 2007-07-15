@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.28.2.8 $
- * $Date: 2007-02-27 01:44:44 $
+ * $Revision: 1.28.2.9 $
+ * $Date: 2007-07-15 02:45:49 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28.2.8  2007/02/27 01:44:44  Goober5000
+ * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
+ *
  * Revision 1.28.2.7  2007/02/12 02:19:45  taylor
  * fix a couple of things that I missed earlier
  *
@@ -366,6 +369,8 @@ void ship_variables_window(Button *caller)
 	SVW_ADD_TEXT("Power output");
 	SVW_ADD_TEXT("Max oclk speed");
 	SVW_ADD_TEXT("Max weapon reserve");
+	SVW_ADD_TEXT("Shield regeneration rate");
+	SVW_ADD_TEXT("Weapon regeneration rate");
 
 	SVW_ADD_TEXT_HEADER("Afterburner");
 	SVW_ADD_TEXT("Fuel");
