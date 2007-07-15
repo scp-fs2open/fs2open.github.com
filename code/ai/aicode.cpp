@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.103 $
- * $Date: 2007-07-15 08:19:59 $
+ * $Revision: 1.104 $
+ * $Date: 2007-07-15 18:00:55 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.103  2007/07/15 08:19:59  Goober5000
+ * fix and clean up the warpout conditions
+ *
  * Revision 1.102  2007/04/05 15:59:44  karajorma
  * I could have sworn I committed this! Anyway, make the wingman complain when you shoot them instead of command. Send traitor messages from wingmen if command is silenced.
  *
@@ -5184,12 +5187,13 @@ void ai_fly_to_ship()
 
 	// ----------------------------------------------
 	// if in autopilot mode make sure to not collide
-	// and "keep reasonable distance" if a capship
+	// and "keep reasonable distance" 
+	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
-	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) 
-		&& (shipp->flags2 & SF2_NAVPOINT_CARRY ||
-			(shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
+	if (AutoPilotEngaged && 
+		//sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) && 
+		(shipp->flags2 & SF2_NAVPOINT_CARRY || (shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
 		)) // capital ship and AutoPilotEngaged
 	{
 		/*
@@ -5425,10 +5429,12 @@ void ai_waypoints()
 
 	// ----------------------------------------------
 	// if in autopilot mode make sure to not collide
-	// and "keep reasonable distance" if a capship
+	// and "keep reasonable distance" 
+	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
-	if (AutoPilotEngaged && sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) 
+	if (AutoPilotEngaged 
+		//&& sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) 
 		&& (shipp->flags2 & SF2_NAVPOINT_CARRY ||
 			(shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
 		)) // capital ship and AutoPilotEngaged
