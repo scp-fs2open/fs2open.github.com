@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.65.2.4 $
- * $Date: 2007-02-20 04:19:10 $
+ * $Revision: 2.65.2.5 $
+ * $Date: 2007-07-15 04:19:33 $
  * $Author: Goober5000 $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.65.2.4  2007/02/20 04:19:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.65.2.3  2006/12/26 05:27:15  taylor
  * make sure that we don't target a hidden jumpnode, and if we do be sure to only detarget it rather than turning off auto-targetting
  *
@@ -1527,7 +1530,7 @@ void hud_targetbox_get_eye(vec3d *eye_pos, matrix *orient, int ship_num)
 		return;
 	}
 
-	ep = &(pm->view_positions[0] );
+	ep = &(pm->view_positions[Ships[ship_num].current_viewpoint]);
 
 	model_find_world_point( eye_pos, &ep->pnt, pm->id, ep->parent, orient, &origin );
 }
