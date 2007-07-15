@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.102 $
- * $Date: 2007-04-05 15:59:44 $
- * $Author: karajorma $
+ * $Revision: 1.103 $
+ * $Date: 2007-07-15 08:19:59 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.102  2007/04/05 15:59:44  karajorma
+ * I could have sworn I committed this! Anyway, make the wingman complain when you shoot them instead of command. Send traitor messages from wingmen if command is silenced.
+ *
  * Revision 1.101  2007/02/20 04:20:10  Goober5000
  * the great big duplicate model removal commit
  *
@@ -14046,29 +14049,24 @@ void ai_warp_out(object *objp)
 	if (shipp->flags & SF_DYING)
 		return;
 
-	// Goober5000 - I seriously don't think this needs a custom AI flag,
-	// but if it turns out it does, this is where to add it
-	// if (whatever)
+	// Goober5000 - check for engine or navigation failure
+	if (!ship_engine_ok_to_warp(shipp) || !ship_navigation_ok_to_warp(shipp))
 	{
-		// Goober5000 - check for engine or navigation failure
-		if (!ship_engine_ok_to_warp(shipp) || !ship_navigation_ok_to_warp(shipp))
-		{
-			// you shouldn't hit this... if you do, then I need to add a check for it
-			// in whatever function initiates a warpout
-			Assert (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE));
+		// you shouldn't hit this... if you do, then I need to add a check for it
+		// in whatever function initiates a warpout
+		Assert (!(shipp->flags2 & SF2_NO_SUBSPACE_DRIVE));
 
-			// flag us as trying to warp so that this function keeps getting called
-			// (in other words, if we can't warp just yet, we want to warp at the first
-			// opportunity)
-			aip->submode = AIS_WARP_1;
-			aip->ai_flags |= AIF_TRYING_UNSUCCESSFULLY_TO_WARP;
+		// flag us as trying to warp so that this function keeps getting called
+		// (in other words, if we can't warp just yet, we want to warp at the first
+		// opportunity)
+		aip->submode = AIS_WARP_1;
+		aip->ai_flags |= AIF_TRYING_UNSUCCESSFULLY_TO_WARP;
 
-			return;
-		}
-
-		// Goober5000 - make sure the flag is clear (if it was previously set)
-		aip->ai_flags &= ~AIF_TRYING_UNSUCCESSFULLY_TO_WARP;
+		return;
 	}
+
+	// Goober5000 - make sure the flag is clear (if it was previously set)
+	aip->ai_flags &= ~AIF_TRYING_UNSUCCESSFULLY_TO_WARP;
 
 
 	switch (aip->submode) {

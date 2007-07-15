@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.423 $
- * $Date: 2007-07-15 06:29:56 $
+ * $Revision: 2.424 $
+ * $Date: 2007-07-15 08:19:59 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.423  2007/07/15 06:29:56  Goober5000
+ * restore WMC's ship flag
+ *
  * Revision 2.422  2007/07/15 04:19:25  Goober5000
  * partial commit of aldo's eyepoint feature
  * it will need a keystroke to be complete
@@ -13625,15 +13628,22 @@ int ship_primary_bank_has_ammo(int shipnum)
 // returns 1 if ship is able to warp, otherwise return 0
 int ship_engine_ok_to_warp(ship *sp)
 {
-	float	engine_strength;
-
-	engine_strength = ship_get_subsystem_strength( sp, SUBSYSTEM_ENGINE );
-	// Note that ship can always warp at lowest skill level
-	if ( (Game_skill_level == 0) ||  (engine_strength >= SHIP_MIN_ENGINES_TO_WARP) ){
-		return 1;
-	} else {
+	// disabled ships can't warp
+	if (sp->flags & SF_DISABLED)
 		return 0;
-	}
+
+	float engine_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_ENGINE);
+
+	// if at 0% strength, can't warp
+	if (engine_strength <= 0.0f)
+		return 0;
+
+	// player ships playing above Very Easy can't warp when below a threshold
+	if ((sp == Player_ship) && (Game_skill_level > 0) && (engine_strength < SHIP_MIN_ENGINES_TO_WARP))
+		return 0;
+
+	// otherwise, warp is allowed
+	return 1;
 }
 
 // Goober5000
@@ -13641,19 +13651,22 @@ int ship_engine_ok_to_warp(ship *sp)
 // returns 1 if ship is able to warp, otherwise return 0
 int ship_navigation_ok_to_warp(ship *sp)
 {
-	float	navigation_strength;
-
-	// if not using the special flag, always okay
+	// if not using the special flag, warp is always allowed
 	if (!(The_mission.ai_profile->flags & AIPF_NAVIGATION_SUBSYS_GOVERNS_WARP))
 		return 1;
 
-	navigation_strength = ship_get_subsystem_strength( sp, SUBSYSTEM_NAVIGATION );
-	// Note that ship can always warp at lowest skill level
-	if ( (Game_skill_level == 0) ||  (navigation_strength >= SHIP_MIN_NAV_TO_WARP) ){
-		return 1;
-	} else {
+	float navigation_strength = ship_get_subsystem_strength(sp, SUBSYSTEM_NAVIGATION);
+
+	// if at 0% strength, can't warp
+	if (navigation_strength <= 0.0f)
 		return 0;
-	}
+
+	// player ships playing above Very Easy can't warp when below a threshold
+	if ((sp == Player_ship) && (Game_skill_level > 0) && (navigation_strength < SHIP_MIN_NAV_TO_WARP))
+		return 0;
+
+	// otherwise, warp is allowed
+	return 1;
 }
 
 // Calculate the normal vector from a subsystem position and its first path point
