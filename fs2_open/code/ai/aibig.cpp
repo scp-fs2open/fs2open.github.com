@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 1.13 $
- * $Date: 2007-02-20 04:20:10 $
+ * $Revision: 1.14 $
+ * $Date: 2007-07-15 04:19:24 $
  * $Author: Goober5000 $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2007/02/20 04:20:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 1.12  2006/02/25 21:46:59  Goober5000
  * spelling
  *
@@ -791,7 +794,7 @@ int ai_big_maybe_follow_subsys_path(int do_dot_check)
 			aip->path_subsystem_next_check = timestamp(1500);
 
 			// get world pos of eye (stored in geye)
-			ep = &(pm->view_positions[0] );
+			ep = &(pm->view_positions[Ships[Pl_objp->instance].current_viewpoint]);
 			model_find_world_point( &geye, &ep->pnt, pm->id, 0, &Pl_objp->orient, &Pl_objp->pos );
 			
 			// get world pos of subsystem
