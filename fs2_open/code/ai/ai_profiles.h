@@ -6,11 +6,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.h $
- * $Revision: 1.7 $
- * $Date: 2007-07-15 02:45:17 $
- * $Author: Goober5000 $
+ * $Revision: 1.8 $
+ * $Date: 2007-07-19 03:19:32 $
+ * $Author: turey $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2007/07/15 02:45:17  Goober5000
+ * fixed a small bug in the lab
+ * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
+ * removed my old supercap damage scaling change
+ * moved Turey's truefire flag to ai_profiles
+ *
  * Revision 1.6  2007/02/27 01:44:48  Goober5000
  * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
  *
@@ -63,7 +69,7 @@
 #define AIPF_DISABLE_LINKED_FIRE_PENALTY							(1 << 11)
 #define AIPF_DISABLE_WEAPON_DAMAGE_SCALING							(1 << 12)
 #define AIPF_USE_ADDITIVE_WEAPON_VELOCITY							(1 << 13)
-
+#define AIPF_USE_NEWTONIAN_DAMPENING								(1 << 14)
 
 #define MAX_AI_PROFILES	5
 
