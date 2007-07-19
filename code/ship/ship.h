@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.191 $
- * $Date: 2007-07-15 06:29:56 $
- * $Author: Goober5000 $
+ * $Revision: 2.192 $
+ * $Date: 2007-07-19 05:44:00 $
+ * $Author: turey $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.191  2007/07/15 06:29:56  Goober5000
+ * restore WMC's ship flag
+ *
  * Revision 2.190  2007/07/15 04:19:26  Goober5000
  * partial commit of aldo's eyepoint feature
  * it will need a keystroke to be complete
@@ -2471,5 +2474,8 @@ void ship_vanished(object *objp);
 int armor_type_get_idx(char* name);
 
 void armor_init();
+
+// Don't know where else to put this...
+void ship_reset_disabled_physics(object *objp, int ship_class);
 
 #endif

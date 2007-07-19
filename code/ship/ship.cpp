@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.424 $
- * $Date: 2007-07-15 08:19:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.425 $
+ * $Date: 2007-07-19 05:43:59 $
+ * $Author: turey $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.424  2007/07/15 08:19:59  Goober5000
+ * fix and clean up the warpout conditions
+ *
  * Revision 2.423  2007/07/15 06:29:56  Goober5000
  * restore WMC's ship flag
  *
@@ -6116,6 +6119,8 @@ void ship_recalc_subsys_strength( ship *shipp )
 	shipp->flags &= ~SF_DISABLED;
 	if ( (shipp->subsys_info[SUBSYSTEM_ENGINE].num > 0) && (shipp->subsys_info[SUBSYSTEM_ENGINE].current_hits == 0.0f) ){
 		shipp->flags |= SF_DISABLED;
+	} else {
+		ship_reset_disabled_physics( &Objects[shipp->objnum], shipp->ship_info_index );
 	}
 
 	/*
