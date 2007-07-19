@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.21 $
- * $Date: 2007-05-09 04:13:14 $
- * $Author: Backslash $
+ * $Revision: 2.22 $
+ * $Date: 2007-07-19 03:19:32 $
+ * $Author: turey $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2007/05/09 04:13:14  Backslash
+ * Fix tiny bug I introduced -- should use forward_decel_time_const, not slide_decel_time_const, for z
+ * Add feature to $Max Glide Speed -- negative number means no speed cap
+ *
  * Revision 2.20  2007/04/30 21:30:30  Backslash
  * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
  * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
@@ -431,8 +435,9 @@
 #include "physics/physics.h"
 #include "freespace2/freespace.h"
 #include "io/timer.h"
-
-
+// There's gotta be a better way to include these.
+#include "ai/ai_profiles.h"
+#include "mission/missionparse.h"
 
 // defines for physics functions
 #define	MAX_TURN_LIMIT	0.2618f		// about 15 degrees
@@ -751,7 +756,11 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 		}
 	} else {
 		// regular damping
-		vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, pi->side_slip_time_const );
+		if ( The_mission.ai_profile->flags & AIPF_USE_NEWTONIAN_DAMPENING ) {
+			vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, pi->side_slip_time_const );
+		} else {
+			vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, 0.0f );
+		}
 	}
 
 	// Note: CANNOT maintain a *local velocity* since a rotation can occur in this frame.
@@ -1068,7 +1077,7 @@ if (pi->flags & PF_SLIDE_ENABLED)  {
 
 		// deterimine whether accelerating or decleration toward goal for z
 		if ( goal_vel.xyz.z > 0.0f )  {
-			if ( goal_vel.xyz.y >= pi->prev_ramp_vel.xyz.z )  {
+			if ( goal_vel.xyz.z >= pi->prev_ramp_vel.xyz.z )  {
 				if ( pi->flags & PF_AFTERBURNER_ON )
 					ramp_time_const = pi->afterburner_forward_accel_time_const;
 				else if (pi->flags & PF_BOOSTER_ON)
