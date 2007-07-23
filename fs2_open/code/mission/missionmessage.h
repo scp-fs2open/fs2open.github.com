@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.17 $
- * $Date: 2007-07-23 15:16:50 $
+ * $Revision: 2.18 $
+ * $Date: 2007-07-23 15:56:42 $
  * $Author: Kazan $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2007/07/23 15:16:50  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 2.16  2007/05/26 12:08:26  Goober5000
  * when importing FS1 missions, account for the shuffled Head-TP4
  *
@@ -453,9 +456,5 @@ bool message_filename_is_generic(char *filename);
 // if change_message fails to find the message it'll fall through to add_message
 bool add_message(char *name, char *message, int persona_index, int multi_team);
 bool change_message(char *name, char *message, int persona_index, int multi_team);
-
-
-// dangerous function - use with EXTREME caution
-bool remove_message(char *name);
 
 #endif
