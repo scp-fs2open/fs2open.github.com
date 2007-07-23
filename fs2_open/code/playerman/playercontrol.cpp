@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.51 $
- * $Date: 2007-06-04 00:04:20 $
- * $Author: Backslash $
+ * $Revision: 2.52 $
+ * $Date: 2007-07-23 22:45:00 $
+ * $Author: Kazan $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2007/06/04 00:04:20  Backslash
+ * Backslash's HEAD-only controls commit:
+ * -Lateral thruster axes
+ * -Slide_when_pressed
+ * -Placeholders for glide_when_pressed and more controls, to give us a little breathing room while we wait for the real pilot file code
+ *
  * Revision 2.50  2007/04/30 21:30:31  Backslash
  * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
  * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
@@ -733,7 +739,7 @@ angles	Viewer_external_angles_delta;
 
 void view_modify(angles *ma, angles *da, float minv, float maxv, int slew, float frame_time)
 {
-	int axis[JOY_NUM_AXES];
+	int axis[NUM_JOY_AXIS_ACTIONS];
 	float	t;
 
 	if ( (!slew) && (Viewer_mode & VM_EXTERNAL) && (Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
