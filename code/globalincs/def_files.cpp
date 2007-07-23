@@ -7,11 +7,14 @@
 
 /*
  * $Logfile: /Freespace2/code/globalincs/def_files.cpp $
- * $Revision: 2.23 $
- * $Date: 2007-07-23 15:16:49 $
+ * $Revision: 2.24 $
+ * $Date: 2007-07-23 15:35:40 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23  2007/07/23 15:16:49  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 2.22  2007/07/15 02:45:17  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
@@ -98,7 +101,7 @@ $No Nav Selected:														\n\
 $Gliding:																\n\
 	+Msg: Cannot engage autopilot while gliding.						\n\
 	+Snd File: none														\n\
-$To Close:																\n\
+$Too Close:																\n\
 	+Msg: Cannot engage autopilot: waypoint too close.					\n\
 	+Snd File: none														\n\
 $Hostiles:																\n\
