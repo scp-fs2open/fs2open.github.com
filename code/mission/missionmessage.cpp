@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.66 $
- * $Date: 2007-07-23 15:16:50 $
+ * $Revision: 2.67 $
+ * $Date: 2007-07-23 15:56:42 $
  * $Author: Kazan $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66  2007/07/23 15:16:50  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 2.65  2007/05/26 12:08:26  Goober5000
  * when importing FS1 missions, account for the shuffled Head-TP4
  *
@@ -2602,16 +2605,3 @@ bool change_message(char *name, char *message, int persona_index, int multi_team
 	return add_message(name, message, persona_index, multi_team);
 }
 
-bool remove_message(char *name)
-{
-	for (int i = Num_builtin_messages; i < Num_messages; i++) 
-	{
-		if (!strcmp(Messages[i].name, name)) 
-		{
-			memcpy((char*)(Messages + i), (char*)(Messages + (i + 1)), sizeof(MMessage)*Num_messages-i);
-			Num_messages--;
-			return true;
-		}
-	}
-	return false;
-}
