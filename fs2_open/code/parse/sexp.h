@@ -9,13 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122.2.8 $
- * $Author: Goober5000 $
- * $Date: 2007-05-14 23:13:42 $
+ * $Revision: 2.122.2.9 $
+ * $Author: Kazan $
+ * $Date: 2007-07-23 16:08:31 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122.2.8  2007/05/14 23:13:42  Goober5000
+ * --grouped the shake/shudder code together a bit better
+ * --added a sexp to generate shudder
+ * --fixed a minor bug in lock-perspective
+ *
  * Revision 2.122.2.7  2007/01/15 11:57:02  karajorma
  * Add the reset-orders SEXP
  * Some general houskeeping to keep 3.6.9 and HEAD throwing up lots of annoying diffs that are just spacing issues.
@@ -1374,6 +1379,9 @@ struct ship_subsys;
 #define OP_NAV_SET_CARRY					(0x000a | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 #define OP_NAV_UNSET_CARRY					(0x000b | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 #define OP_NAV_UNSET_VISITED				(0x000c | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+#define OP_NAV_SET_NEEDSLINK				(0x000d | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+#define OP_NAV_UNSET_NEEDSLINK				(0x000e | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+#define OP_NAV_ISLINKED						(0x000f | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 
 // training sexps
 #define OP_KEY_PRESSED						(0x0000 | OP_CATEGORY_TRAINING)

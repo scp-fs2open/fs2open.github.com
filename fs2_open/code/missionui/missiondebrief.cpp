@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.53.2.6 $
- * $Date: 2007-04-13 03:23:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.53.2.7 $
+ * $Date: 2007-07-23 16:08:28 $
+ * $Author: Kazan $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53.2.6  2007/04/13 03:23:12  Goober5000
+ * fixed a silly speech bug (Mantis #1238)
+ *
  * Revision 2.53.2.5  2006/10/01 19:27:28  taylor
  * fix for the "branch" bug (still a minor usability issue however, see Mantis bug for details)
  * add a popup to the loopbrief screen when you press ESC, so that we can either accept or decline the loop offer
@@ -2630,7 +2633,8 @@ void debrief_init()
 			}
 
 			// refetch to try and resolve the display bug
-			GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
+			// commented by kazan 4-1-2007 because it was causing problems
+			//GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
 
 		}
 		else

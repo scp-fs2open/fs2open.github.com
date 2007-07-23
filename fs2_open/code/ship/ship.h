@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.27 $
- * $Date: 2007-07-15 06:29:53 $
- * $Author: Goober5000 $
+ * $Revision: 2.150.2.28 $
+ * $Date: 2007-07-23 16:08:32 $
+ * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.27  2007/07/15 06:29:53  Goober5000
+ * restore WMC's ship flag
+ *
  * Revision 2.150.2.26  2007/07/15 04:19:34  Goober5000
  * partial commit of aldo's eyepoint feature
  * it will need a keystroke to be complete
@@ -1250,6 +1253,7 @@ typedef struct ship_subsys_info {
 #define SF2_GLOWMAPS_DISABLED				(1<<14)		// taylor - to disable glow maps
 #define SF2_NO_DEATH_SCREAM					(1<<15)		// Goober5000 - for WCS
 #define SF2_ALWAYS_DEATH_SCREAM				(1<<16)		// Goober5000 - for WCS
+#define SF2_NAVPOINT_NEEDSLINK				(1<<17)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;

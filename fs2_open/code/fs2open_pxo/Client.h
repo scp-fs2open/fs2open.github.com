@@ -10,12 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/Client.h $
- * $Revision: 1.20 $
- * $Date: 2006-01-26 03:23:29 $
- * $Author: Goober5000 $
+ * $Revision: 1.20.2.1 $
+ * $Date: 2007-07-23 16:08:26 $
+ * $Author: Kazan $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.20  2006/01/26 03:23:29  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 1.19  2005/07/13 02:50:49  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -86,7 +90,7 @@
 #define MAX_SERVERS 512
 #include "fs2open_pxo/protocol.h"
 
-#if !defined(PXO_TCP)
+	#if !defined(PXO_TCP)
 #include "fs2open_pxo/udpsocket.h"
 typedef UDP_Socket PXO_Socket;
 #else

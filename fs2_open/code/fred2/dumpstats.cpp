@@ -309,6 +309,7 @@ void DumpStats::get_object_stats(CString &buffer)
 	int obj_type_count[MAX_OBJECT_TYPES];
 	CString temp;
 	int num_small_ships, num_big_ships, num_huge_ships;
+	int i;
 
 	memset(obj_type_count,0, sizeof(obj_type_count));
 	num_small_ships = num_big_ships = num_huge_ships= 0;

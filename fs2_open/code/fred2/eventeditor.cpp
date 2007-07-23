@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.2.2.4 $
- * $Date: 2007-05-20 21:21:30 $
- * $Author: wmcoolmon $
+ * $Revision: 1.2.2.5 $
+ * $Date: 2007-07-23 16:08:23 $
+ * $Author: Kazan $
  *
  * Event editor dialog box class and event tree class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2.2.4  2007/05/20 21:21:30  wmcoolmon
+ * FRED2 support for numbered SEXP operator arguments, minihelp box, fixed "Insert Event" when no events are present.
+ *
  * Revision 1.2.2.3  2007/03/07 22:36:52  karajorma
  * Make .ogg selectable in FRED.
  *
@@ -1216,7 +1219,7 @@ void event_editor::OnChained()
 
 void event_editor::OnSelchangeMessageList() 
 {	
-	static flag = 0;
+	static int flag = 0;
 
 	if (flag)
 		return;

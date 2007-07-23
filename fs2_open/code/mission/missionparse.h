@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.85.2.8 $
- * $Author: Goober5000 $
- * $Date: 2007-02-21 01:43:32 $
+ * $Revision: 2.85.2.9 $
+ * $Author: Kazan $
+ * $Date: 2007-07-23 16:08:28 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85.2.8  2007/02/21 01:43:32  Goober5000
+ * remove duplicate model texture replacement
+ *
  * Revision 2.85.2.7  2007/02/09 04:53:27  Goober5000
  * merge the WCS screaming feature into the 3.6.9 (3.6.10?) branch
  *
@@ -627,6 +630,8 @@ struct p_dock_instance;
 #define MISSION_FLAG_SCRAMBLE					(1<<17)	// a scramble mission - Goober5000
 #define MISSION_FLAG_NO_BUILTIN_COMMAND			(1<<18)	// turns off Command without turning off pilots - Karajorma
 #define MISSION_FLAG_PLAYER_START_AI			(1<<19) // Player Starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
+#define MISSION_FLAG_ALL_ATTACK					(1<<20)	// all teams at war - Goober5000
+#define MISSION_FLAG_USE_AP_CINEMATICS			(1<<21) // Kazan - use autopilot cinematics
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
@@ -918,7 +923,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	12
+#define MAX_PARSE_OBJECT_FLAGS_2	13
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -932,6 +937,7 @@ typedef struct p_object {
 #define P2_SF2_SECONDARIES_LOCKED			(1<<9)
 #define P2_SF2_NO_DEATH_SCREAM				(1<<10)
 #define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<11)
+#define P2_SF2_NAV_NEEDSLINK				(1<<12)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

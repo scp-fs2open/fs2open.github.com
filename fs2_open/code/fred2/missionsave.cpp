@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.16 $
- * $Date: 2007-05-28 18:27:33 $
- * $Author: wmcoolmon $
+ * $Revision: 1.14.2.17 $
+ * $Date: 2007-07-23 16:08:24 $
+ * $Author: Kazan $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.16  2007/05/28 18:27:33  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
+ *
  * Revision 1.14.2.15  2007/02/21 01:43:31  Goober5000
  * remove duplicate model texture replacement
  *
@@ -1764,6 +1767,10 @@ int CFred_mission_save::save_objects()
 				fout(" \"no-death-scream\"");
 			if (Ships[i].flags2 & SF2_ALWAYS_DEATH_SCREAM)
 				fout(" \"always-death-scream\"");
+			if (Ships[i].flags2 & SF2_NAVPOINT_CARRY)
+				fout(" \"nav-carry-status\"");
+			if (Ships[i].flags2 & SF2_NAVPOINT_NEEDSLINK)
+				fout(" \"nav-needslink\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

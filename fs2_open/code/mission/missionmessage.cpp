@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.52.2.10 $
- * $Date: 2007-05-26 12:08:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.52.2.11 $
+ * $Date: 2007-07-23 16:08:26 $
+ * $Author: Kazan $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52.2.10  2007/05/26 12:08:18  Goober5000
+ * when importing FS1 missions, account for the shuffled Head-TP4
+ *
  * Revision 2.52.2.9  2007/04/13 00:36:11  taylor
  * cleanup and initialize persona_index properly for general safety reasons
  * slight change to karajorma's NO_BUILTIN_MESSAGES check, now it will be properly compiled away in release builds rather than an empty function
@@ -2548,4 +2551,42 @@ void message_pagein_mission_messages()
 			message_load_wave(Messages[i].wave_info.index, sound_filename);
 		}
 	}
+}
+
+// ---------------------------------------------------
+// Add and remove messages - used by autopilot code now, but useful elswhere
+
+bool add_message(char *name, char *message, int persona_index, int multi_team)
+{
+	if (MAX_MISSION_MESSAGES == Num_messages)
+		return false;
+	strcpy(Messages[Num_messages].name, name);
+	strcpy(Messages[Num_messages].message, message);
+	Messages[Num_messages].persona_index = persona_index;
+	Messages[Num_messages].multi_team = multi_team;
+	Messages[Num_messages].avi_info.index = -1;
+	Messages[Num_messages].wave_info.index = -1;
+	Num_messages++;
+
+	return true;
+}
+
+bool change_message(char *name, char *message, int persona_index, int multi_team)
+{
+	for (int i = Num_builtin_messages; i < Num_messages; i++) 
+	{
+		if (!strcmp(Messages[i].name, name)) 
+		{
+			strcpy(Messages[i].message, message);
+			Messages[i].persona_index = persona_index;
+			Messages[i].multi_team = multi_team;
+
+			Messages[i].avi_info.index = -1;
+			Messages[i].wave_info.index = -1;
+			return true;
+		}
+	}
+
+	// not found.. fall through
+	return add_message(name, message, persona_index, multi_team);
 }

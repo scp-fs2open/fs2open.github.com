@@ -15,11 +15,12 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="Debug"
-			IntermediateDirectory="Debug\Profile"
+			OutputDirectory=".\Debug\"
+			IntermediateDirectory=".\Debug\codelib\"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
+			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -39,19 +40,21 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\code,c:\mssdk\include\,c:\dxsdk\include,c:\speech_api\include,..\..\..\oggvorbis-sdk\include,..\..\..\libjpeg-sdk\include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS"
-				MinimalRebuild="TRUE"
+				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../dx8sdk/include,../../lua,../../openal/include"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;NO_DIRECT3D;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="Debug\Profile/code.pch"
-				AssemblerListingLocation="Debug\Profile/"
-				ObjectFile="Debug\Profile/"
-				ProgramDataBaseFileName="Debug\Profile/"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="true"
+				PrecompiledHeaderFile=".\Debug\Profile/code.pch"
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\"
+				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
+				BrowseInformationFile="$(IntDir)\"
 				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
 				UndefinePreprocessorDefinitions="NDEBUG"
 			/>
@@ -68,8 +71,10 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="Debug\code.lib"
-				SuppressStartupBanner="TRUE"
+				LinkLibraryDependencies="true"
+				OutputFile=".\Debug\code.lib"
+				SuppressStartupBanner="true"
+				IgnoreDefaultLibraryNames=""
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -79,12 +84,12 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="Debug\Profile\*.sbr"
-				SuppressStartupBanner="TRUE"
-				OutputFile="Debug\Profile\code.bsc"
+				AdditionalOptions="&#x0D;&#x0A;"
+				SuppressStartupBanner="true"
+				OutputFile=""
 			/>
 			<Tool
-				Name="VCAppVerifierTool"
+				Name="VCFxCopTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -92,11 +97,12 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory="Release"
-			IntermediateDirectory="Release\Profile"
+			OutputDirectory=".\Release\"
+			IntermediateDirectory=".\Release\codelib\"
 			ConfigurationType="4"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
+			ATLMinimizesCRunTimeLibraryUsage="false"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -115,23 +121,22 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				GlobalOptimizations="FALSE"
+				Optimization="2"
 				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="TRUE"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="TRUE"
-				AdditionalIncludeDirectories="..\..\code,c:\mssdk\include\,c:\dxsdk\include,c:\speech_api\include,..\..\..\oggvorbis-sdk\include,..\..\..\libjpeg-sdk\include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS"
+				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../dx8sdk/include,../../lua,../../openal/include"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;_CRT_SECURE_NO_DEPRECATE;NO_DIRECT3D;_SECURE_SCL=0;_HAS_ITERATOR_DEBUGGING=0;"
+				StringPooling="true"
 				RuntimeLibrary="0"
-				UsePrecompiledHeader="0"
-				PrecompiledHeaderFile="Release\Profile/code.pch"
-				AssemblerListingLocation="Release\Profile/"
-				ObjectFile="Release\Profile/"
-				ProgramDataBaseFileName="Release\Profile/"
+				BufferSecurityCheck="false"
+				EnableFunctionLevelLinking="true"
+				PrecompiledHeaderFile=".\Release\Profile/code.pch"
+				AssemblerListingLocation="$(IntDir)\"
+				ObjectFile="$(IntDir)\"
+				ProgramDataBaseFileName="$(IntDir)\"
 				BrowseInformation="1"
-				WarningLevel="4"
-				SuppressStartupBanner="TRUE"
-				Detect64BitPortabilityProblems="FALSE"
+				BrowseInformationFile="$(IntDir)\"
+				WarningLevel="3"
+				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
 				UndefinePreprocessorDefinitions="_DEBUG"
 			/>
@@ -148,8 +153,8 @@
 			/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile="Release\code.lib"
-				SuppressStartupBanner="TRUE"
+				OutputFile=".\Release\code.lib"
+				SuppressStartupBanner="true"
 			/>
 			<Tool
 				Name="VCALinkTool"
@@ -159,12 +164,11 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="Release\Profile\*.sbr"
-				SuppressStartupBanner="TRUE"
+				SuppressStartupBanner="true"
 				OutputFile="Release\Profile\code.bsc"
 			/>
 			<Tool
-				Name="VCAppVerifierTool"
+				Name="VCFxCopTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -174,6 +178,182 @@
 	<References>
 	</References>
 	<Files>
+		<Filter
+			Name="AI"
+			>
+			<File
+				RelativePath="..\..\code\ai\ai.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\ai.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\ai_profiles.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\ai_profiles.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiBig.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiBig.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiCode.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiGoals.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiGoals.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiInternal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiLocal.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiTurret.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+		</Filter>
 		<Filter
 			Name="Anim"
 			>
@@ -187,8 +367,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -197,11 +375,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -220,8 +395,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -230,11 +403,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -257,8 +427,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -267,11 +435,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -298,8 +463,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -308,17 +471,46 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\Bmpman\BmpMan.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Camera"
+			>
+			<File
+				RelativePath="..\..\code\camera\camera.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\camera\camera.h"
 				>
 			</File>
 		</Filter>
@@ -335,8 +527,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -345,11 +535,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -368,8 +555,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -378,11 +563,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -401,8 +583,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -411,11 +591,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -430,8 +607,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -440,11 +615,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -467,8 +639,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -477,11 +647,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -504,8 +671,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -514,11 +679,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -537,8 +699,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -547,11 +707,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -570,8 +727,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -580,11 +735,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -592,6 +744,54 @@
 			<File
 				RelativePath="..\..\code\Cutscene\Cutscenes.h"
 				>
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\decoder16.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\decoder8.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\cutscene\movie.cpp"
@@ -603,8 +803,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -613,17 +811,118 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\cutscene\movie.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mve_audio.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mvelib.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mvelib.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\mveplayer.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\oggplayer.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\cutscene\oggplayer.h"
 				>
 			</File>
 		</Filter>
@@ -640,8 +939,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -650,11 +947,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -677,8 +971,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -687,11 +979,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -706,8 +995,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -716,11 +1003,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -739,8 +1023,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -749,11 +1031,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -766,39 +1045,6 @@
 		<Filter
 			Name="DirectX"
 			>
-			<File
-				RelativePath="..\..\code\directx\dx8show.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="4"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\directx\dx8show.h"
-				>
-			</File>
 			<File
 				RelativePath="..\..\code\directx\dxguid.lib"
 				>
@@ -877,8 +1123,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -887,11 +1131,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -910,8 +1151,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -920,11 +1159,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -943,8 +1179,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -953,11 +1187,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -976,8 +1207,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -986,11 +1215,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1013,8 +1239,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1023,11 +1247,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1050,8 +1271,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1060,11 +1279,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1083,8 +1299,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1093,11 +1307,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1120,8 +1331,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1130,11 +1339,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1153,8 +1359,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1163,17 +1367,42 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\GlobalIncs\crypt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\def_files.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\globalincs\def_files.h"
 				>
 			</File>
 			<File
@@ -1198,8 +1427,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1208,11 +1435,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1231,8 +1455,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1241,11 +1463,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1264,8 +1483,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1274,11 +1491,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1297,8 +1511,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1307,50 +1519,14 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\Graphics\2d.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\graphics\generic.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="4"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\graphics\generic.h"
 				>
 			</File>
 			<File
@@ -1363,8 +1539,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1373,11 +1547,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1407,8 +1578,6 @@
 							Name="VCCLCompilerTool"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1417,11 +1586,8 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="4"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1431,7 +1597,7 @@
 					>
 				</File>
 				<File
-					RelativePath="..\..\code\Graphics\GrZbuffer.cpp"
+					RelativePath="..\..\code\graphics\generic.cpp"
 					>
 					<FileConfiguration
 						Name="Debug|Win32"
@@ -1440,8 +1606,6 @@
 							Name="VCCLCompilerTool"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1450,17 +1614,42 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="4"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
 				</File>
 				<File
-					RelativePath="..\..\code\Graphics\GrZbuffer.h"
+					RelativePath="..\..\code\graphics\generic.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\code\graphics\grstub.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+							UndefinePreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+							UndefinePreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\code\graphics\grstub.h"
 					>
 				</File>
 				<File
@@ -1481,8 +1670,6 @@
 							Name="VCCLCompilerTool"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1491,40 +1678,8 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="4"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
-							UndefinePreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\grd3dbatch.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
-							UndefinePreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="4"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1539,8 +1694,6 @@
 							Name="VCCLCompilerTool"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1549,11 +1702,8 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="4"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1568,8 +1718,6 @@
 							Name="VCCLCompilerTool"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1578,11 +1726,8 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="4"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1597,8 +1742,6 @@
 							Name="VCCLCompilerTool"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1607,40 +1750,8 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="4"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
-							UndefinePreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\code\graphics\GrD3DParticle.cpp"
-					>
-					<FileConfiguration
-						Name="Debug|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
-							UndefinePreprocessorDefinitions=""
-						/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="Release|Win32"
-						>
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="4"
-							AdditionalIncludeDirectories=""
-							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1655,8 +1766,6 @@
 							Name="VCCLCompilerTool"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1665,11 +1774,8 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="4"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1684,8 +1790,6 @@
 							Name="VCCLCompilerTool"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1694,11 +1798,32 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="4"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
+							UndefinePreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+				</File>
+				<File
+					RelativePath="..\..\code\graphics\GrD3DStateBlock.cpp"
+					>
+					<FileConfiguration
+						Name="Debug|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
+							UndefinePreprocessorDefinitions=""
+						/>
+					</FileConfiguration>
+					<FileConfiguration
+						Name="Release|Win32"
+						>
+						<Tool
+							Name="VCCLCompilerTool"
+							AdditionalIncludeDirectories=""
+							PreprocessorDefinitions=""
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1713,8 +1838,6 @@
 							Name="VCCLCompilerTool"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1723,11 +1846,8 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="4"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -1737,10 +1857,6 @@
 					>
 					<File
 						RelativePath="..\..\code\Graphics\GrD3D.h"
-						>
-					</File>
-					<File
-						RelativePath="..\..\code\graphics\grd3dbatch.h"
 						>
 					</File>
 					<File
@@ -1756,11 +1872,11 @@
 						>
 					</File>
 					<File
-						RelativePath="..\..\code\graphics\GrD3DParticle.h"
+						RelativePath="..\..\code\graphics\grd3dsetup.h"
 						>
 					</File>
 					<File
-						RelativePath="..\..\code\graphics\grd3dsetup.h"
+						RelativePath="..\..\code\graphics\GrD3DStateBlock.h"
 						>
 					</File>
 				</Filter>
@@ -1809,8 +1925,6 @@
 								Name="VCCLCompilerTool"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1819,11 +1933,8 @@
 							>
 							<Tool
 								Name="VCCLCompilerTool"
-								Optimization="4"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1838,8 +1949,6 @@
 								Name="VCCLCompilerTool"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1848,11 +1957,8 @@
 							>
 							<Tool
 								Name="VCCLCompilerTool"
-								Optimization="4"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1867,8 +1973,6 @@
 								Name="VCCLCompilerTool"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1877,11 +1981,8 @@
 							>
 							<Tool
 								Name="VCCLCompilerTool"
-								Optimization="4"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1896,8 +1997,6 @@
 								Name="VCCLCompilerTool"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1906,11 +2005,8 @@
 							>
 							<Tool
 								Name="VCCLCompilerTool"
-								Optimization="4"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1925,8 +2021,6 @@
 								Name="VCCLCompilerTool"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1935,11 +2029,8 @@
 							>
 							<Tool
 								Name="VCCLCompilerTool"
-								Optimization="4"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1954,8 +2045,6 @@
 								Name="VCCLCompilerTool"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1964,11 +2053,8 @@
 							>
 							<Tool
 								Name="VCCLCompilerTool"
-								Optimization="4"
 								AdditionalIncludeDirectories=""
 								PreprocessorDefinitions=""
-								UsePrecompiledHeader="0"
-								BrowseInformation="1"
 								UndefinePreprocessorDefinitions=""
 							/>
 						</FileConfiguration>
@@ -1989,8 +2075,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -1999,11 +2083,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2022,8 +2103,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2032,11 +2111,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2055,8 +2131,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2065,11 +2139,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2088,8 +2159,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2098,11 +2167,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2121,8 +2187,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2131,11 +2195,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2154,8 +2215,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2164,11 +2223,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2191,8 +2247,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2201,11 +2255,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2224,8 +2275,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2234,11 +2283,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2257,8 +2303,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2267,11 +2311,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2290,8 +2331,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2300,11 +2339,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2323,8 +2359,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2333,14 +2367,15 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\hud\hudparse.h"
+				>
 			</File>
 			<File
 				RelativePath="..\..\code\Hud\HUDreticle.cpp"
@@ -2352,8 +2387,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2362,11 +2395,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2385,8 +2415,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2395,11 +2423,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2418,8 +2443,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2428,11 +2451,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2451,8 +2471,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2461,11 +2479,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2484,8 +2499,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2494,11 +2507,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2517,8 +2527,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2527,11 +2535,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2554,8 +2559,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2564,11 +2567,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2587,8 +2587,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2597,11 +2595,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2620,8 +2615,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2630,11 +2623,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2653,8 +2643,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2663,11 +2651,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2686,8 +2671,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2696,11 +2679,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2731,8 +2711,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2741,11 +2719,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2760,8 +2735,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2770,11 +2743,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2797,8 +2767,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2807,17 +2775,74 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\JumpNode\JumpNode.h"
+				>
+			</File>
+		</Filter>
+		<Filter
+			Name="Lab"
+			>
+			<File
+				RelativePath="..\..\code\lab\lab.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\lab\lab.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\lab\wmcgui.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\lab\wmcgui.h"
 				>
 			</File>
 		</Filter>
@@ -2834,8 +2859,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2844,11 +2867,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2875,8 +2895,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2885,11 +2903,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2908,8 +2923,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2918,11 +2931,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2941,8 +2951,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2951,11 +2959,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2974,8 +2979,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -2984,11 +2987,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3007,8 +3007,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3017,11 +3015,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3040,8 +3035,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3050,11 +3043,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3077,8 +3067,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3087,11 +3075,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3110,8 +3095,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3120,11 +3103,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3143,8 +3123,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3153,11 +3131,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3176,8 +3151,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3186,11 +3159,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3209,8 +3179,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3219,11 +3187,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3242,8 +3207,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3252,11 +3215,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3275,8 +3235,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3285,11 +3243,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3308,8 +3263,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3318,11 +3271,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3341,8 +3291,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3351,11 +3299,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3374,8 +3319,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3384,17 +3327,42 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\MenuUI\SnazzyUI.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\menuui\storybook.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\menuui\storybook.h"
 				>
 			</File>
 			<File
@@ -3407,8 +3375,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3417,11 +3383,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3440,8 +3403,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3450,11 +3411,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3477,8 +3435,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3490,8 +3446,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3510,8 +3464,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3520,11 +3472,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3543,8 +3492,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3553,11 +3500,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3576,8 +3520,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3586,11 +3528,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3609,8 +3548,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3619,11 +3556,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3642,8 +3576,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3652,11 +3584,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3675,8 +3604,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3685,11 +3612,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3708,8 +3632,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3718,11 +3640,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3741,8 +3660,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3751,11 +3668,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3774,8 +3688,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3784,11 +3696,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3811,8 +3720,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3824,8 +3731,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3844,8 +3749,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3857,8 +3760,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3877,8 +3778,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3890,8 +3789,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3910,8 +3807,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3923,8 +3818,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3943,8 +3836,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3953,11 +3844,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3976,8 +3864,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -3989,8 +3875,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4009,8 +3893,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4022,8 +3904,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4042,8 +3922,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4055,8 +3933,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4075,8 +3951,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4088,8 +3962,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4108,8 +3980,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4118,11 +3988,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4141,8 +4008,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4154,8 +4019,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4174,8 +4037,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4187,8 +4048,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4206,6 +4065,34 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\model\ModelAnim.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\model\modelanim.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\Model\ModelCollide.cpp"
 				>
 				<FileConfiguration
@@ -4215,8 +4102,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4225,11 +4110,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4244,8 +4126,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4254,11 +4134,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4273,8 +4150,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4283,11 +4158,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4302,8 +4174,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4312,11 +4182,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4339,8 +4206,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4349,11 +4214,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4368,8 +4230,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4378,11 +4238,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4397,8 +4254,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4407,11 +4262,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4426,8 +4278,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4436,11 +4286,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4455,8 +4302,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4465,14 +4310,39 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\object\deadobjectdock.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\object\deadobjectdock.h"
+				>
 			</File>
 			<File
 				RelativePath="..\..\code\Object\ObjCollide.cpp"
@@ -4484,8 +4354,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4494,11 +4362,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4517,8 +4382,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4527,11 +4390,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4550,8 +4410,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4560,11 +4418,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4583,8 +4438,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4593,11 +4446,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4616,8 +4466,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4626,14 +4474,39 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\object\parseobjectdock.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\object\parseobjectdock.h"
+				>
 			</File>
 		</Filter>
 		<Filter
@@ -4649,8 +4522,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4659,11 +4530,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4690,8 +4558,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4700,11 +4566,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4723,8 +4586,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4733,11 +4594,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4756,8 +4614,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4766,11 +4622,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4793,8 +4646,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4803,11 +4654,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4830,8 +4678,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4840,17 +4686,42 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\Parse\Encrypt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\parse\lua.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\parse\lua.h"
 				>
 			</File>
 			<File
@@ -4863,8 +4734,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4873,17 +4742,70 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\Parse\parselo.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\parse\python.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\parse\python.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\parse\scripting.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\parse\scripting.h"
 				>
 			</File>
 			<File
@@ -4896,8 +4818,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4906,11 +4826,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4933,8 +4850,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4943,11 +4858,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4970,8 +4882,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -4980,11 +4890,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5007,8 +4914,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5017,11 +4922,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5044,8 +4946,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5054,11 +4954,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5081,8 +4978,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5091,11 +4986,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5114,8 +5006,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5124,11 +5014,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5147,8 +5034,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5157,11 +5042,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5184,8 +5066,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5194,11 +5074,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5217,8 +5094,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5227,11 +5102,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5250,8 +5122,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5260,11 +5130,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5291,8 +5158,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5301,11 +5166,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5320,8 +5182,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5330,11 +5190,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5353,8 +5210,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5363,11 +5218,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5382,8 +5234,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5392,11 +5242,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5411,8 +5258,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5421,11 +5266,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5435,7 +5277,7 @@
 			Name="Ship"
 			>
 			<File
-				RelativePath="..\..\code\Ship\Afterburner.cpp"
+				RelativePath="..\..\code\ship\Afterburner.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -5444,8 +5286,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5457,18 +5297,16 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\Afterburner.h"
+				RelativePath="..\..\code\ship\Afterburner.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\ai.cpp"
+				RelativePath="..\..\code\ship\AWACS.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -5477,8 +5315,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5490,18 +5326,16 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\ai.h"
+				RelativePath="..\..\code\ship\AWACS.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\AiBig.cpp"
+				RelativePath="..\..\code\ship\Shield.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -5510,8 +5344,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5523,18 +5355,12 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\AiBig.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\Ship\AiCode.cpp"
+				RelativePath="..\..\code\ship\Ship.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -5543,8 +5369,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5556,14 +5380,16 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\AiGoals.cpp"
+				RelativePath="..\..\code\ship\Ship.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\ship\ShipContrails.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -5572,8 +5398,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5585,22 +5409,16 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\AiGoals.h"
+				RelativePath="..\..\code\ship\ShipContrails.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\AiLocal.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\Ship\AWACS.cpp"
+				RelativePath="..\..\code\ship\ShipFX.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -5609,8 +5427,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5622,18 +5438,16 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\AWACS.h"
+				RelativePath="..\..\code\ship\ShipFX.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\Shield.cpp"
+				RelativePath="..\..\code\ship\ShipHit.cpp"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -5642,8 +5456,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5655,152 +5467,46 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\Ship.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\Ship\Ship.h"
+				RelativePath="..\..\code\ship\ShipHit.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\Ship\ShipContrails.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\Ship\ShipContrails.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\Ship\ShipFX.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\Ship\ShipFX.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\Ship\ShipHit.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\Ship\ShipHit.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\Ship\SubsysDamage.h"
+				RelativePath="..\..\code\ship\SubsysDamage.h"
 				>
 			</File>
 		</Filter>
 		<Filter
 			Name="Sound"
 			>
+			<File
+				RelativePath="..\..\code\sound\acm-openal.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
 			<File
 				RelativePath="..\..\code\Sound\acm.cpp"
 				>
@@ -5811,8 +5517,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5821,11 +5525,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5833,6 +5534,30 @@
 			<File
 				RelativePath="..\..\code\Sound\acm.h"
 				>
+			</File>
+			<File
+				RelativePath="..\..\code\sound\audiostr-openal.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\Sound\AudioStr.cpp"
@@ -5844,8 +5569,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5854,11 +5577,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5881,8 +5601,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5891,11 +5609,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5914,8 +5629,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5924,11 +5637,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5947,8 +5657,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5957,11 +5665,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5980,8 +5685,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -5990,11 +5693,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6013,8 +5713,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6023,11 +5721,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6041,6 +5736,28 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\sound\phrases.xml"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)gc&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;&quot;$(InputDir)gc&quot; /h &quot;$(InputDir)grammar.h&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;"
+						Outputs="$(InputDir)phrases.cfg;$(InputDir)grammar.h"
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCustomBuildTool"
+						CommandLine="&quot;$(InputDir)gc&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;&quot;$(InputDir)gc&quot; /h &quot;$(InputDir)grammar.h&quot; &quot;$(InputDir)$(InputName)&quot;&#x0D;&#x0A;"
+						Outputs="$(InputDir)phrases.cfg;$(InputDir)grammar.h"
+					/>
+				</FileConfiguration>
+			</File>
+			<File
 				RelativePath="..\..\code\Sound\RBAudio.cpp"
 				>
 				<FileConfiguration
@@ -6050,8 +5767,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6060,11 +5775,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6083,8 +5795,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6093,11 +5803,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6116,8 +5823,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6126,11 +5831,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6149,8 +5851,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6159,17 +5859,42 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\sound\speech.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\sound\voicerec.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\sound\voicerec.h"
 				>
 			</File>
 			<File
@@ -6182,8 +5907,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6192,11 +5915,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6215,8 +5935,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6225,11 +5943,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6247,8 +5962,6 @@
 							Name="VCCLCompilerTool"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -6257,11 +5970,8 @@
 						>
 						<Tool
 							Name="VCCLCompilerTool"
-							Optimization="4"
 							AdditionalIncludeDirectories=""
 							PreprocessorDefinitions=""
-							UsePrecompiledHeader="0"
-							BrowseInformation="1"
 							UndefinePreprocessorDefinitions=""
 						/>
 					</FileConfiguration>
@@ -6285,8 +5995,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6295,11 +6003,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6318,8 +6023,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6328,11 +6031,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6351,8 +6051,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6361,11 +6059,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6388,8 +6083,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6398,11 +6091,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6421,8 +6111,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6431,11 +6119,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6454,8 +6139,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6464,11 +6147,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6491,8 +6171,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6501,11 +6179,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6520,8 +6195,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6530,11 +6203,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6549,8 +6219,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6559,11 +6227,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6578,8 +6243,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6588,11 +6251,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6607,8 +6267,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6617,11 +6275,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6636,8 +6291,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6646,11 +6299,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6665,8 +6315,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6675,11 +6323,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6694,8 +6339,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6704,11 +6347,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6723,8 +6363,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6733,11 +6371,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6752,8 +6387,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6762,11 +6395,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6781,8 +6411,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6791,11 +6419,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6818,8 +6443,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6828,11 +6451,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6847,8 +6467,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6857,11 +6475,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6876,8 +6491,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6886,11 +6499,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6909,8 +6519,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6919,11 +6527,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6946,8 +6551,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6956,11 +6559,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6979,8 +6579,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -6989,11 +6587,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7012,8 +6607,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7022,11 +6615,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7045,8 +6635,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7055,11 +6643,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7078,8 +6663,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7088,11 +6671,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7111,8 +6691,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7121,11 +6699,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7144,8 +6719,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7154,11 +6727,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7177,8 +6747,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7187,11 +6755,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7214,8 +6779,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7224,11 +6787,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7247,8 +6807,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7257,11 +6815,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7280,8 +6835,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7293,8 +6846,6 @@
 						Optimization="0"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7317,8 +6868,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7327,11 +6876,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7350,8 +6896,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7360,11 +6904,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7387,8 +6928,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7397,11 +6936,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7424,8 +6960,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7434,11 +6968,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7461,8 +6992,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7471,11 +7000,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7494,8 +7020,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7504,11 +7028,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7527,8 +7048,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7537,11 +7056,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7564,8 +7080,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7574,11 +7088,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7601,8 +7112,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7611,11 +7120,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7634,8 +7140,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7644,11 +7148,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7667,8 +7168,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7677,11 +7176,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7700,8 +7196,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7710,11 +7204,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7733,8 +7224,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7743,11 +7232,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7766,8 +7252,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7776,11 +7260,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7799,8 +7280,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7809,11 +7288,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7832,8 +7308,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7842,11 +7316,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7865,8 +7336,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7875,11 +7344,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7898,8 +7364,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7908,11 +7372,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7931,8 +7392,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7941,11 +7400,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7964,8 +7420,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7974,11 +7428,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -7997,8 +7448,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8007,11 +7456,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8030,8 +7476,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8040,11 +7484,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8063,8 +7504,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8073,11 +7512,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8096,8 +7532,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8106,11 +7540,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8129,8 +7560,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8139,11 +7568,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8162,8 +7588,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8172,11 +7596,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8195,8 +7616,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8205,11 +7624,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8228,8 +7644,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8238,11 +7652,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8261,8 +7672,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8271,11 +7680,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8294,8 +7700,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8304,11 +7708,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8327,8 +7728,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8337,11 +7736,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8360,8 +7756,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8370,11 +7764,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8393,8 +7784,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8403,11 +7792,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8426,8 +7812,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8436,11 +7820,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8459,8 +7840,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8469,11 +7848,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8492,8 +7868,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8502,11 +7876,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8525,8 +7896,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8535,11 +7904,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8558,8 +7924,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8568,11 +7932,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8591,8 +7952,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8601,11 +7960,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8628,8 +7984,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8638,11 +7992,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8665,8 +8016,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8675,11 +8024,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8702,8 +8048,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8712,11 +8056,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8739,8 +8080,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8749,11 +8088,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8776,8 +8112,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8786,11 +8120,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8805,8 +8136,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8815,11 +8144,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8838,8 +8164,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8848,11 +8172,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8875,8 +8196,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8885,11 +8204,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8912,8 +8228,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8922,11 +8236,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8949,8 +8260,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8959,11 +8268,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8986,8 +8292,6 @@
 						Name="VCCLCompilerTool"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -8996,11 +8300,8 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="4"
 						AdditionalIncludeDirectories=""
 						PreprocessorDefinitions=""
-						UsePrecompiledHeader="0"
-						BrowseInformation="1"
 						UndefinePreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
@@ -9010,10 +8311,38 @@
 				>
 			</File>
 		</Filter>
-		<File
-			RelativePath="..\..\code\PreProcDefines.h"
+		<Filter
+			Name="iff_defs"
 			>
-		</File>
+			<File
+				RelativePath="..\..\code\iff_defs\iff_defs.cpp"
+				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AdditionalIncludeDirectories=""
+						PreprocessorDefinitions=""
+						UndefinePreprocessorDefinitions=""
+					/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\iff_defs\iff_defs.h"
+				>
+			</File>
+		</Filter>
 	</Files>
 	<Globals>
 	</Globals>

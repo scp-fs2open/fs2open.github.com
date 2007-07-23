@@ -11,11 +11,15 @@
 
 /*
  * $Logfile: /Freespace2/code/fs2open_pxo/TCP_Client.cpp $
- * $Revision: 1.35 $
- * $Date: 2006-01-26 03:23:29 $
- * $Author: Goober5000 $
+ * $Revision: 1.35.2.1 $
+ * $Date: 2007-07-23 16:08:26 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2006/01/26 03:23:29  Goober5000
+ * pare down the pragmas some more
+ * --Goober5000
+ *
  * Revision 1.34  2006/01/20 07:10:33  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -785,6 +789,7 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_So
 	Socket.IgnorePackets();
 
 	numServersFound = 0;
+	int recved = 0;
 
 
 	// ---------- Prepair and send request packet ------------	
@@ -806,20 +811,29 @@ net_server* GetServerList(const char* masterserver, int &numServersFound, TCP_So
 
 	while ( timer_get_fixed_seconds() <= end_time )
 	{
-		if (Socket.DataReady() && Socket.GetData((char *)&NewServer, sizeof(serverlist_reply_packet)) == sizeof(serverlist_reply_packet))
+		if (Socket.DataReady())
 		{
-			if (!strcmp(NewServer.name, "TERM") && NewServer.flags == 0 && NewServer.players == 0)
+			recved = Socket.GetData((char *)(&NewServer)+recved, sizeof(serverlist_reply_packet)-recved);
+			
+			if (recved == sizeof(serverlist_reply_packet))
 			{
-				break;
-			}
 
-			memcpy((char *)&templist[numServersFound], (char *)&NewServer, sizeof(serverlist_reply_packet));
+				if (!strcmp(NewServer.name, "TERM") && 
+					NewServer.flags == 0 && NewServer.players == 0)
+				{
+					break;
+				}
 
-			numServersFound++;
+				memcpy((char *)&templist[numServersFound], 
+					(char *)&NewServer, sizeof(serverlist_reply_packet));
 
-			if (numServersFound >= MAX_SERVERS) {
-				numServersFound = MAX_SERVERS;
-				break;
+				numServersFound++;
+
+				if (numServersFound >= MAX_SERVERS) {
+					numServersFound = MAX_SERVERS;
+					break;
+				}
+				recved = 0;
 			}
 		}
 	}
