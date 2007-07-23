@@ -15,8 +15,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug\fs2_open"
-			IntermediateDirectory=".\Debug\fs2_open\Profile"
+			OutputDirectory=".\Debug\"
+			IntermediateDirectory=".\Debug\fs2_open\"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
@@ -29,7 +29,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fs2_open_d.exe&quot;&#x0D;&#x0A;"
+				CommandLine="copy /y &quot;$(OutDir)\fs2_open_d.exe&quot; &quot;$(FS2PATH)/fs2_open_d.exe&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/fs2_open_d.exe"
 			/>
 			<Tool
@@ -51,7 +51,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\dx8sdk\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL"
+				PreprocessorDefinitions="_WINDOWS;WIN32;_DEBUG;USE_OPENAL;NO_DIRECT3D"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -84,7 +84,7 @@
 				UseLibraryDependencyInputs="false"
 				AdditionalDependencies="code.lib liblua_d.lib libjpeg_d.lib d3d8.lib d3dx8.lib DxErr8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib ole32.lib advapi32.lib gdi32.lib user32.lib"
 				ShowProgress="0"
-				OutputFile="Debug\fs2_open_d.exe"
+				OutputFile="$(OutDir)\fs2_open_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
@@ -125,8 +125,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Release"
-			IntermediateDirectory=".\Release\Profile"
+			OutputDirectory=".\Release\"
+			IntermediateDirectory=".\Release\fs2_open\"
 			ConfigurationType="1"
 			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
 			UseOfMFC="0"
@@ -139,7 +139,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y $(InputPath) &quot;$(FS2PATH)/fs2_open_r.exe&quot;&#x0D;&#x0A;"
+				CommandLine="copy /y &quot;$(OutDir)\fs2_open_r.exe&quot; &quot;$(FS2PATH)/fs2_open_r.exe&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)/fs2_open_r.exe"
 			/>
 			<Tool
@@ -162,7 +162,7 @@
 				Optimization="2"
 				InlineFunctionExpansion="1"
 				AdditionalIncludeDirectories="../../code,../../oggvorbis/include,../../dx8sdk/include,../../lua,../../openal/include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL"
+				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;NO_DIRECT3D"
 				StringPooling="true"
 				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
@@ -191,7 +191,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalDependencies="Dxerr8.lib d3d8.lib d3dx8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib openal32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib"
-				OutputFile="Release/fs2_open_r.exe"
+				OutputFile="$(OutDir)\fs2_open_r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
@@ -214,9 +214,8 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				AdditionalOptions="&quot;Release\Profile\*.sbr&quot;"
 				SuppressStartupBanner="true"
-				OutputFile="Release\Profile\Freespace2.bsc"
+				OutputFile=""
 			/>
 			<Tool
 				Name="VCFxCopTool"

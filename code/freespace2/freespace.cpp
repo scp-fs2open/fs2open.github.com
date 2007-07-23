@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.288 $
- * $Date: 2007-06-24 21:45:55 $
- * $Author: turey $
+ * $Revision: 2.289 $
+ * $Date: 2007-07-23 15:16:49 $
+ * $Author: Kazan $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.288  2007/06/24 21:45:55  turey
+ * Fixed some silly little bugs that somehow slipped through the cracks.
+ *
  * Revision 2.287  2007/05/28 20:00:17  taylor
  * various bits of clean up
  * make stats printing a bit more sane
@@ -4311,8 +4314,9 @@ void game_show_framerate()
 
 	  	memblockinfo_sort();
 
-		for(i = 0; i < 30; i++) {
-			memblockinfo_sort_get_entry(i, filename, &size);
+		int mi = 0;
+		for(mi = 0; mi < 30; mi++) {
+			memblockinfo_sort_get_entry(mi, filename, &size);
 
 			size /= 1024;
 
@@ -4327,11 +4331,11 @@ void game_show_framerate()
 				short_name++;
 
 			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
-			gr_string( 20, 220 + (i*10), mem_buffer);
+			gr_string( 20, 220 + (mi*10), mem_buffer);
 		}
 
 		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
-		gr_string( 20, 230 + (i*10), mem_buffer);
+		gr_string( 20, 230 + (mi*10), mem_buffer);
 	}
 #endif
 
@@ -6375,8 +6379,9 @@ void game_frame(int paused)
 			gr_reset_clip();
 			game_get_framerate();
 			game_show_framerate();
+#ifndef NDEBUG
 			game_show_eye_pos(&eye_pos, &eye_orient);
-
+#endif
 			game_show_time_left();
 
 #ifdef NEW_HUD

@@ -7,11 +7,17 @@
 
 /*
  * $Logfile: /Freespace2/code/globalincs/def_files.cpp $
- * $Revision: 2.22 $
- * $Date: 2007-07-15 02:45:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2007-07-23 15:16:49 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2007/07/15 02:45:17  Goober5000
+ * fixed a small bug in the lab
+ * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
+ * removed my old supercap damage scaling change
+ * moved Turey's truefire flag to ai_profiles
+ *
  * Revision 2.21  2007/02/27 01:44:48  Goober5000
  * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
  *
@@ -41,6 +47,7 @@ extern char *Default_species_table;
 extern char *Default_iff_table;
 extern char *Default_shiptypes_table;
 extern char *Default_ai_profiles_table;
+extern char *Defailt_autopilot_table;
 //**********
 
 //:PART 2:
@@ -51,6 +58,7 @@ def_file Default_files[] =
 	{ "iff_defs.tbl",			Default_iff_table },
 	{ "objecttypes.tbl",		Default_shiptypes_table },
 	{ "ai_profiles.tbl",		Default_ai_profiles_table },
+	{ "autopilot.tbl",			Defailt_autopilot_table },
 };
 
 static int Num_default_files = sizeof(Default_files) / sizeof(def_file);
@@ -78,6 +86,30 @@ char *defaults_get_file(char *filename)
 // This is the default table.
 // Please note that the {\n\}s should be removed from the end of each line
 // if you intend to use this to format your own table.
+
+char *Defailt_autopilot_table = "\
+#Autopilot																\n\
+																		\n\
+$Link Distance: 1000													\n\
+																		\n\
+$No Nav Selected:														\n\
+	+Msg: Cannot engage autopilot, no navpoint selected.				\n\
+	+Snd File: none														\n\
+$Gliding:																\n\
+	+Msg: Cannot engage autopilot while gliding.						\n\
+	+Snd File: none														\n\
+$To Close:																\n\
+	+Msg: Cannot engage autopilot: waypoint too close.					\n\
+	+Snd File: none														\n\
+$Hostiles:																\n\
+	+Msg: Cannot engage autopilot: hostile craft near.					\n\
+	+Snd File: none														\n\
+$Linked:																\n\
+	+Msg: Autopilot Linked												\n\
+	+Snd File: none														\n\
+																		\n\
+#END";
+
 
 char *Default_species_table = "\
 																		\n\

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.221 $
- * $Date: 2007-05-26 12:08:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.222 $
+ * $Date: 2007-07-23 15:16:50 $
+ * $Author: Kazan $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.221  2007/05/26 12:08:26  Goober5000
+ * when importing FS1 missions, account for the shuffled Head-TP4
+ *
  * Revision 2.220  2007/04/09 18:25:31  karajorma
  * Fix for Mantis 1312
  *
@@ -1472,6 +1475,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"team-loadout-store",
 	"no-death-scream",
 	"always-death-scream",
+	"nav-needslink",
 };
 
 
@@ -3492,6 +3496,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	
 	if (parse_flags2 & P2_SF2_ALWAYS_DEATH_SCREAM)
 		shipp->flags2 |= SF2_ALWAYS_DEATH_SCREAM;
+	
+	if (parse_flags2 & P2_SF2_NAV_NEEDSLINK)
+		shipp->flags2 |= SF2_NAVPOINT_NEEDSLINK;
 }
 
 //	Mp points at the text of an object, which begins with the "$Name:" field.

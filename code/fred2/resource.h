@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by FRED.rc
+// Microsoft Visual C++ generated include file.
+// Used by fred.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -108,6 +108,7 @@
 #define IDC_WEAPON_ARTCLIP_OR_OBJECT    1008
 #define IDC_ALLY_ARRIVAL_TRACK          1009
 #define IDC_SCLASS_DEBRIS_MODEL         1009
+#define IDC_USE_AUTOPILOT_CINEMATICS    1009
 #define IDC_WEAPON_FLASH_ARTCLIP        1010
 #define IDC_SCLASS_AI_CLASS             1011
 #define IDC_SHIP_APPEAR_SKILL           1011
@@ -1007,6 +1008,7 @@
 #define IDC_MISSION_OPTIONS             1546
 #define IDC_PLAYER_START_AI             1546
 #define IDC_CUSTOM_TECH_DB              1547
+#define IDC_ALLOW_DOCK_TREES2           1547
 #define IDC_LABEL1                      1549
 #define IDC_LABEL2                      1550
 #define IDC_NEW_TEXTURE                 1551
@@ -1075,7 +1077,9 @@
 #define IDC_BACKGROUND                  1586
 #define IDC_TEAM_LOADOUT_STORE_STATUS   1587
 #define IDC_SUBSTITUTE_BRIEFING_MUSIC   1588
+#define IDC_NAV_CARRY                   1588
 #define IDC_RESTRICT_PATHS_LABEL        1589
+#define IDC_NAV_NEEDSLINK               1589
 #define IDC_PATH_LIST                   1590
 #define IDC_ENTRY_FORMAT                1590
 #define IDC_NO_REPLACE                  1591

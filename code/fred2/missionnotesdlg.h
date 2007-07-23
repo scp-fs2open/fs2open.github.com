@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.h $
- * $Revision: 1.6 $
- * $Date: 2007-01-07 00:01:28 $
- * $Author: Goober5000 $
+ * $Revision: 1.7 $
+ * $Date: 2007-07-23 15:16:48 $
+ * $Author: Kazan $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2007/01/07 00:01:28  Goober5000
+ * add a feature for specifying the source of Command messages
+ *
  * Revision 1.5  2006/07/30 20:01:56  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
@@ -223,6 +226,7 @@ public:
 	BOOL		m_player_start_using_ai;
 	BOOL		m_no_briefing;
 	BOOL		m_no_debriefing;
+	BOOL		m_autpilot_cinematics;
 	float		m_max_hull_repair_val;
 	float		m_max_subsys_repair_val;
 	BOOL		m_contrail_threshold_flag;

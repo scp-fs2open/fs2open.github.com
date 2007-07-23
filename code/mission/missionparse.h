@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.100 $
- * $Author: Goober5000 $
- * $Date: 2007-02-21 01:44:02 $
+ * $Revision: 2.101 $
+ * $Author: Kazan $
+ * $Date: 2007-07-23 15:16:50 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.100  2007/02/21 01:44:02  Goober5000
+ * remove duplicate model texture replacement
+ *
  * Revision 2.99  2007/02/18 06:16:47  Goober5000
  * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
  *
@@ -654,6 +657,7 @@ struct p_dock_instance;
 #define MISSION_FLAG_NO_BUILTIN_COMMAND			(1<<18)	// turns off Command without turning off pilots - Karajorma
 #define MISSION_FLAG_PLAYER_START_AI			(1<<19) // Player Starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
 #define MISSION_FLAG_ALL_ATTACK					(1<<20)	// all teams at war - Goober5000
+#define MISSION_FLAG_USE_AP_CINEMATICS			(1<<21) // Kazan - use autopilot cinematics
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)
@@ -966,7 +970,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	13
+#define MAX_PARSE_OBJECT_FLAGS_2	14
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -981,6 +985,7 @@ typedef struct p_object {
 #define P2_SF2_TEAM_LOADOUT_STORE_STATUS	(1<<10)
 #define P2_SF2_NO_DEATH_SCREAM				(1<<11)
 #define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<12)
+#define P2_SF2_NAV_NEEDSLINK				(1<<13)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

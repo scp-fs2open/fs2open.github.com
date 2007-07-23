@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.104 $
- * $Date: 2007-07-15 18:00:55 $
- * $Author: Goober5000 $
+ * $Revision: 1.105 $
+ * $Date: 2007-07-23 15:16:47 $
+ * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.104  2007/07/15 18:00:55  Goober5000
+ * Kazan's autopilot fix
+ *
  * Revision 1.103  2007/07/15 08:19:59  Goober5000
  * fix and clean up the warpout conditions
  *
@@ -4236,8 +4239,16 @@ void ai_start_fly_to_ship(object *objp, int shipnum)
 	//nprintf(("AI", "Frame %i: Ship %s instructed to fly waypoint list #%i\n", AI_FrameCount, Ships[objp->instance].ship_name, waypoint_list_index));
 	aip = &Ai_info[Ships[objp->instance].ai_index];
 
-	aip->ai_flags |= AIF_FORMATION_WING;
-	aip->ai_flags &= ~AIF_FORMATION_OBJECT;
+	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS && AutoPilotEngaged)
+	{
+		aip->ai_flags &= ~AIF_FORMATION_WING;
+		aip->ai_flags &= ~AIF_FORMATION_OBJECT;
+	}
+	else
+	{
+		aip->ai_flags |= AIF_FORMATION_WING;
+		aip->ai_flags &= ~AIF_FORMATION_OBJECT;
+	}
 
 	aip->mode = AIM_FLY_TO_SHIP;
 	aip->submode_start_time = Missiontime;
@@ -4263,8 +4274,17 @@ void ai_start_waypoints(object *objp, int waypoint_list_index, int wp_flags)
 	if ( (aip->mode == AIM_WAYPOINTS) && (aip->wp_index == waypoint_list_index) )
 		return;
 
-	aip->ai_flags |= AIF_FORMATION_WING;
-	aip->ai_flags &= ~AIF_FORMATION_OBJECT;
+	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS && AutoPilotEngaged)
+	{
+		aip->ai_flags &= ~AIF_FORMATION_WING;
+		aip->ai_flags &= ~AIF_FORMATION_OBJECT;
+	}
+	else
+	{
+		aip->ai_flags |= AIF_FORMATION_WING;
+		aip->ai_flags &= ~AIF_FORMATION_OBJECT;
+	}
+
 	aip->wp_list = waypoint_list_index;
 	aip->wp_index = 0;
 	aip->wp_flags = wp_flags;
@@ -5191,25 +5211,12 @@ void ai_fly_to_ship()
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
-	if (AutoPilotEngaged && 
+	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
+		Player_ship->objnum != shipp->objnum &&
 		//sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) && 
 		(shipp->flags2 & SF2_NAVPOINT_CARRY || (shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
 		)) // capital ship and AutoPilotEngaged
 	{
-		/*
-		int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, target_pos, // current point, destination point
-											model_get_core_radius( sip->modelnum ) * 1.5f, // radius w/ buffer
-											Pl_objp, NULL, 0);
-		// fly parrel to collider - so figure out vector between collider and radius
-		if (collide_objnum != -1)
-		{*/
-			/*
-			vec3d col_vec, col_direct;
-			vm_vec_copy_normalize(&col_vec, &Objects[collide_objnum].phys_info.vel);
-			vm_vec_sub(&col_direct, &col_vec, &Objects[collide_objnum].orient.vec.fvec);
-			*/
-
-			
 			vec3d tmp, proj_pos;
 			
 			//vm_vec_scale
@@ -5433,9 +5440,10 @@ void ai_waypoints()
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
-	if (AutoPilotEngaged 
+	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
+		Player_ship->objnum != shipp->objnum &&
 		//&& sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) 
-		&& (shipp->flags2 & SF2_NAVPOINT_CARRY ||
+		(shipp->flags2 & SF2_NAVPOINT_CARRY ||
 			(shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
 		)) // capital ship and AutoPilotEngaged
 	{
@@ -5579,7 +5587,7 @@ void ai_waypoints()
 						//	Clean up from above Assert, just in case we ship without fixing it.  (Encountered by JimB on 2/9/98)
 						if ( (aip->active_goal == AI_GOAL_NONE) || (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC) ) {
 							aip->mode = AIM_NONE;
-							Int3();	//	Look at the ship, find out of it's supposed to be flying waypoints. -- MK.
+							//Int3();	//	Look at the ship, find out of it's supposed to be flying waypoints. -- MK.
 						}
 
 						type = aip->goals[aip->active_goal].type;

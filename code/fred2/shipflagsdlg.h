@@ -58,6 +58,8 @@ public:
 	CButton m_vaporize;
 	CButton m_stealth;
 	CButton m_friendly_stealth_invisible;
+	CButton m_nav_carry;
+	CButton m_nav_needslink;
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
 	numeric_edit_control m_destroy_value;
@@ -107,6 +109,10 @@ protected:
 	afx_msg void OnVaporize();
 	afx_msg void OnStealth();
 	afx_msg void OnFriendlyStealthInvisible();
+	afx_msg void OnNavCarry();
+	afx_msg void OnNavNeedslink();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnBnClickedNavCarry2();
 };

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/stdafx.h $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:32 $
- * $Author: Goober5000 $
+ * $Revision: 1.2 $
+ * $Date: 2007-07-23 15:16:49 $
+ * $Author: Kazan $
  *
 // stdafx.h : include file for standard system include files,
 //  or project specific include files that are used frequently, but
@@ -21,6 +21,10 @@
  * do touch anything here.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:32  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.1.1.1  2002/07/15 03:11:03  inquisitor
  * Initial FRED2 Checking
  *
@@ -42,7 +46,7 @@
  */
 
 // #define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
-
+#define WINVER 0x0500		// windows 2000
 #include <afxwin.h>         // MFC core and standard components
 #include <afxext.h>         // MFC extensions
 #ifndef _AFX_NO_AFXCMN_SUPPORT

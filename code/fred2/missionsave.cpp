@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.35 $
- * $Date: 2007-02-21 01:44:02 $
- * $Author: Goober5000 $
+ * $Revision: 1.36 $
+ * $Date: 2007-07-23 15:16:48 $
+ * $Author: Kazan $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2007/02/21 01:44:02  Goober5000
+ * remove duplicate model texture replacement
+ *
  * Revision 1.34  2007/02/20 04:20:10  Goober5000
  * the great big duplicate model removal commit
  *
@@ -1855,6 +1858,10 @@ int CFred_mission_save::save_objects()
 				fout(" \"no-death-scream\"");
 			if (Ships[i].flags2 & SF2_ALWAYS_DEATH_SCREAM)
 				fout(" \"always-death-scream\"");
+			if (Ships[i].flags2 & SF2_NAVPOINT_CARRY)
+				fout(" \"nav-carry-status\"");
+			if (Ships[i].flags2 & SF2_NAVPOINT_NEEDSLINK)
+				fout(" \"nav-needslink\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------

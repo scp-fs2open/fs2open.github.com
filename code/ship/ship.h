@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.192 $
- * $Date: 2007-07-19 05:44:00 $
- * $Author: turey $
+ * $Revision: 2.193 $
+ * $Date: 2007-07-23 15:16:52 $
+ * $Author: Kazan $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.192  2007/07/19 05:44:00  turey
+ * Small bugfix relating to restoring engines from disabled via the set-subsystem-strength SEXP.
+ *
  * Revision 2.191  2007/07/15 06:29:56  Goober5000
  * restore WMC's ship flag
  *
@@ -1304,6 +1307,7 @@ typedef struct ship_subsys_info {
 #define SF2_NO_DEATH_SCREAM					(1<<15)		// Goober5000 - for WCS
 #define SF2_ALWAYS_DEATH_SCREAM				(1<<16)		// Goober5000 - for WCS
 #define SF2_GLOWMAPS_DISABLED				(1<<17)		// taylor - to disable glow maps
+#define SF2_NAVPOINT_NEEDSLINK				(1<<18)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
