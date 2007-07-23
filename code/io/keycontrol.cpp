@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.81 $
- * $Date: 2007-06-04 00:04:21 $
- * $Author: Backslash $
+ * $Revision: 2.82 $
+ * $Date: 2007-07-23 15:16:50 $
+ * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.81  2007/06/04 00:04:21  Backslash
+ * Backslash's HEAD-only controls commit:
+ * -Lateral thruster axes
+ * -Slide_when_pressed
+ * -Placeholders for glide_when_pressed and more controls, to give us a little breathing room while we wait for the real pilot file code
+ *
  * Revision 2.80  2007/04/30 21:30:29  Backslash
  * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
  * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
@@ -3384,19 +3390,12 @@ int button_function(int n)
 			}
 			else
 			{
-				if (CurrentNav == -1)
+				if (CanAutopilot(true))
 				{
-					gamesnd_play_iface(SND_GENERAL_FAIL);
+					StartAutopilot();
 				}
 				else
-				{
-					if (CanAutopilot())
-					{
-						StartAutopilot();
-					}
-					else
-						gamesnd_play_iface(SND_GENERAL_FAIL);
-				}
+					gamesnd_play_iface(SND_GENERAL_FAIL);
 			}
 			break;
 

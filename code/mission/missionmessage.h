@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.16 $
- * $Date: 2007-05-26 12:08:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2007-07-23 15:16:50 $
+ * $Author: Kazan $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2007/05/26 12:08:26  Goober5000
+ * when importing FS1 missions, account for the shuffled Head-TP4
+ *
  * Revision 2.15  2007/01/07 03:08:12  Goober5000
  * fix bug where built-in lament messages were never played
  *
@@ -441,5 +444,18 @@ int message_filter_multi(int id);
 
 // Goober5000
 bool message_filename_is_generic(char *filename);
+
+// Kazan
+// Use these functions with caution as everything else uses indexes... so make sure if you're going to
+// use these there will be no remove_messages called before your message is displayed.
+
+// these two are probably safe
+// if change_message fails to find the message it'll fall through to add_message
+bool add_message(char *name, char *message, int persona_index, int multi_team);
+bool change_message(char *name, char *message, int persona_index, int multi_team);
+
+
+// dangerous function - use with EXTREME caution
+bool remove_message(char *name);
 
 #endif
