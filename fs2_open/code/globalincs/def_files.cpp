@@ -7,11 +7,14 @@
 
 /*
  * $Logfile: /Freespace2/code/globalincs/def_files.cpp $
- * $Revision: 2.24 $
- * $Date: 2007-07-23 15:35:40 $
+ * $Revision: 2.25 $
+ * $Date: 2007-07-23 15:49:07 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2007/07/23 15:35:40  Kazan
+ * typo correction in autopilot.tbl
+ *
  * Revision 2.23  2007/07/23 15:16:49  Kazan
  * Autopilot upgrades as described, MSVC2005 project fixes
  *
@@ -50,7 +53,7 @@ extern char *Default_species_table;
 extern char *Default_iff_table;
 extern char *Default_shiptypes_table;
 extern char *Default_ai_profiles_table;
-extern char *Defailt_autopilot_table;
+extern char *Default_autopilot_table;
 //**********
 
 //:PART 2:
@@ -61,7 +64,7 @@ def_file Default_files[] =
 	{ "iff_defs.tbl",			Default_iff_table },
 	{ "objecttypes.tbl",		Default_shiptypes_table },
 	{ "ai_profiles.tbl",		Default_ai_profiles_table },
-	{ "autopilot.tbl",			Defailt_autopilot_table },
+	{ "autopilot.tbl",			Default_autopilot_table },
 };
 
 static int Num_default_files = sizeof(Default_files) / sizeof(def_file);
@@ -90,7 +93,7 @@ char *defaults_get_file(char *filename)
 // Please note that the {\n\}s should be removed from the end of each line
 // if you intend to use this to format your own table.
 
-char *Defailt_autopilot_table = "\
+char *Default_autopilot_table = "\
 #Autopilot																\n\
 																		\n\
 $Link Distance: 1000													\n\
