@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.31 $
- * $Date: 2007-07-23 15:16:47 $
+ * $Revision: 1.32 $
+ * $Date: 2007-07-23 15:35:40 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.31  2007/07/23 15:16:47  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 1.30  2007/03/22 22:14:55  taylor
  * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
@@ -982,7 +985,7 @@ void parse_autopilot_table(char *longname)
 	stuff_int(&NavLinkDistance);
 
 	// No Nav selected message
-	char *msg_tags[] = { "$No Nav Selected:", "$Gliding:", "$To Close:", "$Hostiles:", "$Linked:" };
+	char *msg_tags[] = { "$No Nav Selected:", "$Gliding:", "$Too Close:", "$Hostiles:", "$Linked:" };
 	for (int i = 0; i < NP_NUM_MESSAGES; i++)
 	{
 		required_string(msg_tags[i]);
