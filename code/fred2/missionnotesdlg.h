@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.h $
- * $Revision: 1.4.2.1 $
- * $Date: 2006-07-30 20:00:47 $
+ * $Revision: 1.4.2.2 $
+ * $Date: 2007-07-23 16:08:24 $
  * $Author: Kazan $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4.2.1  2006/07/30 20:00:47  Kazan
+ * resolve 1018 and an interface problem in fred2's ship editor
+ *
  * Revision 1.4  2006/05/30 02:13:22  Goober5000
  * add substitute music boxes to FRED, and reset music properly when mission is cleared
  * --Goober5000
@@ -218,6 +221,7 @@ public:
 	BOOL		m_player_start_using_ai;
 	BOOL		m_no_briefing;
 	BOOL		m_no_debriefing;
+	BOOL		m_autpilot_cinematics;
 	float		m_max_hull_repair_val;
 	float		m_max_subsys_repair_val;
 	BOOL		m_contrail_threshold_flag;

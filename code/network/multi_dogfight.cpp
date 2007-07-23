@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.14.2.1 $
- * $Date: 2006-09-20 05:01:36 $
- * $Author: taylor $
+ * $Revision: 2.14.2.2 $
+ * $Date: 2007-07-23 16:08:29 $
+ * $Author: Kazan $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.14.2.1  2006/09/20 05:01:36  taylor
+ * add some extra FS2NetD safety checks around to prevent the code from doing stupid crash-happy things
+ *
  * Revision 2.14  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
@@ -406,7 +409,8 @@ void multi_df_debrief_init()
 		}
 
 		// refetch to try and resolve the display bug
-		GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
+		// commented by kazan 4-1-2007 because it was causing problems
+		//GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
 
 	}
 	else

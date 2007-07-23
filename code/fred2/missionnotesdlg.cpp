@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.7.2.2 $
- * $Date: 2007-02-11 09:25:42 $
- * $Author: taylor $
+ * $Revision: 1.7.2.3 $
+ * $Date: 2007-07-23 16:08:24 $
+ * $Author: Kazan $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7.2.2  2007/02/11 09:25:42  taylor
+ * some CFILE cleanup and slight directory order reorg
+ * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
+ * remove NO_SOUND
+ *
  * Revision 1.7.2.1  2006/07/30 20:00:47  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
@@ -302,6 +307,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_player_start_using_ai = FALSE;
 	m_no_briefing = FALSE;
 	m_no_debriefing = FALSE;
+	m_autpilot_cinematics = FALSE;
 	m_max_hull_repair_val = 0.0f;
 	m_max_subsys_repair_val = 100.0f;
 	m_contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
@@ -344,6 +350,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_PLAYER_START_AI, m_player_start_using_ai);
 	DDX_Check(pDX, IDC_NO_BRIEFING, m_no_briefing);
 	DDX_Check(pDX, IDC_NO_DEBRIEFING, m_no_debriefing);
+	DDX_Check(pDX, IDC_USE_AUTOPILOT_CINEMATICS, m_autpilot_cinematics);
 	DDX_Text(pDX, IDC_MAX_HULL_REPAIR_VAL, m_max_hull_repair_val);
 	DDV_MinMaxFloat(pDX, m_max_hull_repair_val, 0, 100);
 	DDX_Text(pDX, IDC_MAX_SUBSYS_REPAIR_VAL, m_max_subsys_repair_val);
@@ -546,6 +553,13 @@ void CMissionNotesDlg::OnOK()
 		The_mission.flags &= ~MISSION_FLAG_NO_DEBRIEFING;
 	}
 
+	// set autopilot cinematics
+	if ( m_autpilot_cinematics ) {
+		The_mission.flags |= MISSION_FLAG_USE_AP_CINEMATICS;
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_USE_AP_CINEMATICS;
+	}
+
 	if ( flags != The_mission.flags ){
 		set_modified();
 	}
@@ -624,6 +638,8 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_player_start_using_ai = (The_mission.flags & MISSION_FLAG_PLAYER_START_AI) ? 1 : 0;
 	m_no_briefing = (The_mission.flags & MISSION_FLAG_NO_BRIEFING) ? 1 : 0;
 	m_no_debriefing = (The_mission.flags & MISSION_FLAG_NO_DEBRIEFING) ? 1 : 0;
+	m_autpilot_cinematics = (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) ? 1 : 0;
+	
 
 	m_loading_640=_T(The_mission.loading_screen[GR_640]);
 	m_loading_1024=_T(The_mission.loading_screen[GR_1024]);

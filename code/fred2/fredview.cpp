@@ -9,9 +9,9 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.6.2.7 $
- * $Date: 2007-02-20 04:19:09 $
- * $Author: Goober5000 $
+ * $Revision: 1.6.2.8 $
+ * $Date: 2007-07-23 16:08:24 $
+ * $Author: Kazan $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6.2.7  2007/02/20 04:19:09  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 1.6.2.6  2007/02/09 05:40:40  Goober5000
  * merge the voice acting manager into the 3.6.9 (3.6.10?) branch
  *
@@ -4642,7 +4645,7 @@ void CFREDView::OnInitialUpdate()
 
 			// not the default time -- check against the current time
 			memcpy( &expire_time, ptr, sizeof(expire_time) );
-			time( (long *)&current_time );
+			time( (time_t*)&current_time );
 			if ( current_time > expire_time )
 				expire_game = EXPIRE_BAD_TIME;
 		}

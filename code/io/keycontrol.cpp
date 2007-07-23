@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68.2.8 $
- * $Date: 2007-04-05 16:29:25 $
- * $Author: karajorma $
+ * $Revision: 2.68.2.9 $
+ * $Date: 2007-07-23 16:08:26 $
+ * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68.2.8  2007/04/05 16:29:25  karajorma
+ * Fail warpout if the player is in glide mode (They'd never get up to warp speed anyway half the time)
+ *
  * Revision 2.68.2.7  2007/03/07 17:46:48  karajorma
  * It's perfectly legal to press the Target Target's Attacker key with no target. We should just play a failed sound instead.
  *
@@ -3361,19 +3364,12 @@ int button_function(int n)
 			}
 			else
 			{
-				if (CurrentNav == -1)
+				if (CanAutopilot(true))
 				{
-					gamesnd_play_iface(SND_GENERAL_FAIL);
+					StartAutopilot();
 				}
 				else
-				{
-					if (CanAutopilot())
-					{
-						StartAutopilot();
-					}
-					else
-						gamesnd_play_iface(SND_GENERAL_FAIL);
-				}
+					gamesnd_play_iface(SND_GENERAL_FAIL);
 			}
 			break;
 

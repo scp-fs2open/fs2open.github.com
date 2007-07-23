@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by fred.rc
+// Microsoft Developer Studio generated include file.
+// Used by FRED.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -921,6 +921,8 @@
 #define IDC_RESPAWN_SPIN                1485
 #define IDC_STEALTH                     1485
 #define IDC_ALWAYS_DEATH_SCREAM         1486
+#define IDC_NAV_CARRY                   1487
+#define IDC_NAV_NEEDSLINK               1488
 #define IDC_OBJ_TEAM                    1489
 #define IDC_CAMPAIGN_TYPE               1491
 #define IDC_SUPPORT_ALLOWED             1492
@@ -1002,6 +1004,7 @@
 #define IDC_MISSION_OPTIONS             1546
 #define IDC_PLAYER_START_AI             1546
 #define IDC_CUSTOM_TECH_DB              1547
+#define IDC_USE_AUTOPILOT_CINEMATICS    1547
 #define IDC_LABEL1                      1549
 #define IDC_LABEL2                      1550
 #define IDC_NEW_TEXTURE                 1551

@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.39 $
- * $Date: 2007-05-28 19:59:57 $
- * $Author: taylor $
+ * $Revision: 2.243.2.40 $
+ * $Date: 2007-07-23 16:08:25 $
+ * $Author: Kazan $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.39  2007/05/28 19:59:57  taylor
+ * various bits of clean up
+ * make stats printing a bit more sane
+ * printf out game version info to debug log (not very helpful, but might prove some use)
+ *
  * Revision 2.243.2.38  2007/05/14 23:13:40  Goober5000
  * --grouped the shake/shudder code together a bit better
  * --added a sexp to generate shudder
@@ -3503,6 +3508,7 @@ void run_launcher()
 	return;
 
 	// fire up the UpdateLauncher executable
+	/*  ------------ This code was reported unreachable by the compiler for obvious reasons ------------
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
 
@@ -3534,6 +3540,7 @@ void run_launcher()
 			WinExec(launcher_link, SW_SHOW);
 		}
 	}
+	*/
 #endif
 }
 
@@ -4287,8 +4294,9 @@ void game_show_framerate()
 
 	  	memblockinfo_sort();
 
-		for(int i = 0; i < 30; i++) {
-			memblockinfo_sort_get_entry(i, filename, &size);
+		int mi = 0;
+		for(int mi = 0; mi < 30; mi++) {
+			memblockinfo_sort_get_entry(mi, filename, &size);
 
 			size /= 1024;
 
@@ -4303,11 +4311,11 @@ void game_show_framerate()
 				short_name++;
 
 			sprintf(mem_buffer,"%s:\t%d K", short_name, size);
-			gr_string( 20, 220 + (i*10), mem_buffer);
+			gr_string( 20, 220 + (mi*10), mem_buffer);
 		}
 
 		sprintf(mem_buffer,"Total RAM:\t%d K", TotalRam / 1024);
-		gr_string( 20, 230 + (i*10), mem_buffer);
+		gr_string( 20, 230 + (mi*10), mem_buffer);
 	}
 #endif
 
@@ -6359,7 +6367,9 @@ void game_frame(int paused)
 			gr_reset_clip();
 			game_get_framerate();
 			game_show_framerate();
+#ifndef NDEBUG
 			game_show_eye_pos(&eye_pos, &eye_orient);
+#endif
 
 			game_show_time_left();
 

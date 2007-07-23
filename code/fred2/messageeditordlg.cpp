@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MessageEditorDlg.cpp $
- * $Revision: 1.1.2.2 $
- * $Date: 2007-07-15 04:45:29 $
- * $Author: Goober5000 $
+ * $Revision: 1.1.2.3 $
+ * $Date: 2007-07-23 16:08:24 $
+ * $Author: Kazan $
  *
  * Old message editor dialog box handling code.  This was designed a LONG time ago
  * and because so much changed, I created a new one from scratch instead.  This is
  * only around just in case it might be useful.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1.2.2  2007/07/15 04:45:29  Goober5000
+ * fix extremely minor bug
+ *
  * Revision 1.1.2.1  2007/03/07 22:36:52  karajorma
  * Make .ogg selectable in FRED.
  *
@@ -463,7 +466,7 @@ int CMessageEditorDlg::find_event()
 void CMessageEditorDlg::OnSelchangeMessageList() 
 {
 	int old = m_cur_msg;
-	static flag = 0;
+	static int flag = 0;
 
 	if (flag)
 		return;
