@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.132 $
- * $Author: turey $
- * $Date: 2007-07-13 22:28:12 $
+ * $Revision: 2.133 $
+ * $Author: Kazan $
+ * $Date: 2007-07-23 15:16:52 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.132  2007/07/13 22:28:12  turey
+ * Initial commit of Training Weapons / Simulated Hull code.
+ *
  * Revision 2.131  2007/05/14 23:13:49  Goober5000
  * --grouped the shake/shudder code together a bit better
  * --added a sexp to generate shudder
@@ -1390,6 +1393,9 @@ struct ship_subsys;
 #define OP_NAV_SET_CARRY					(0x000a | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 #define OP_NAV_UNSET_CARRY					(0x000b | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 #define OP_NAV_UNSET_VISITED				(0x000c | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+#define OP_NAV_SET_NEEDSLINK				(0x000d | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+#define OP_NAV_UNSET_NEEDSLINK				(0x000e | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+#define OP_NAV_ISLINKED						(0x000f | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 
 // training sexps
 #define OP_KEY_PRESSED						(0x0000 | OP_CATEGORY_TRAINING)

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.313 $
- * $Date: 2007-07-15 23:08:16 $
- * $Author: turey $
+ * $Revision: 2.314 $
+ * $Date: 2007-07-23 15:16:51 $
+ * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.313  2007/07/15 23:08:16  turey
+ * Small change to how Simulated Hull works. If ship is gone, it now has 0 Simulated
+ *  Hull.
+ *
  * Revision 2.312  2007/07/13 22:28:12  turey
  * Initial commit of Training Weapons / Simulated Hull code.
  *
@@ -1853,9 +1857,12 @@ sexp_oper Operators[] = {
 	{ "unhide-nav",						OP_NAV_UNHIDE,					1, 1 }, //kazan
 	{ "unrestrict-nav",					OP_NAV_UNRESTRICT,				1, 1 }, //kazan
 	{ "set-nav-visited",				OP_NAV_SET_VISITED,				1, 1 }, //kazan
-	{ "unset-nav-visited",				OP_NAV_UNSET_VISITED,				1, 1 }, //kazan
+	{ "unset-nav-visited",				OP_NAV_UNSET_VISITED,			1, 1 }, //kazan
 	{ "set-nav-carry",					OP_NAV_SET_CARRY,				1, INT_MAX }, //kazan
 	{ "unset-nav-carry",				OP_NAV_UNSET_CARRY,				1, INT_MAX }, //kazan
+	{ "set-nav-needslink",				OP_NAV_SET_NEEDSLINK,			1, INT_MAX }, //kazan
+	{ "unset-nav-needslink",			OP_NAV_UNSET_NEEDSLINK,			1, INT_MAX }, //kazan
+	{ "is-nav-linked",					OP_NAV_ISLINKED,				1, 1 }, //kazan
 
 	{ "grant-promotion",				OP_GRANT_PROMOTION,				0, 0,			},
 	{ "grant-medal",					OP_GRANT_MEDAL,					1, 1,			},
@@ -13770,6 +13777,61 @@ void unset_nav_carry_status(int node)
 	}
 }
 
+
+//text: set-nav-needslink
+//args: 1+, Ship/Wing name
+void set_nav_needslink(int node)
+{
+	int n=node, i;
+	char *name;
+	bool skip;
+
+	while (n != -1)
+	{
+		name = CTEXT(n);
+		skip = false;
+
+		for (i = 0; i < MAX_SHIPS; i++)
+		{
+			if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
+			{
+				Ships[i].flags2 |= SF2_NAVPOINT_NEEDSLINK;
+				break;
+			}
+		}
+		// move to next ship/wing in list
+		n = CDR(n);
+	}
+}
+
+//text: unset-nav-needslink
+//args: 1+, Ship/Wing name
+void unset_nav_needslink(int node)
+{
+	int n=node, i;
+	char *name;
+
+	while (n != -1)
+	{
+		name = CTEXT(n);
+
+
+		for (i = 0; i < MAX_SHIPS; i++)
+		{
+			if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
+			{
+				Ships[i].flags2 &= ~SF2_NAVPOINT_NEEDSLINK;
+				break;
+			}
+		}
+
+		
+		// move to next ship/wing in list
+		n = CDR(n);
+	}
+}
+
+
 //text: add-nav-waypoint
 //args: 3, Nav Name, Waypoint Path Name, Waypoint Path point
 void add_nav_waypoint(int node)
@@ -13857,6 +13919,23 @@ int is_nav_visited(int node)
 {
 	char *nav_name = CTEXT(node);
 	return IsVisited(nav_name);
+}
+
+
+//text: is-nav_linked
+//args: 1, Ship name
+//rets: true/false
+int is_nav_linked(int node)
+{
+	char *ship_name = CTEXT(node);
+	for (int i = 0; i < MAX_SHIPS; i++)
+	{
+		if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, ship_name))
+		{
+			return (Ships[i].flags2 & SF2_NAVPOINT_CARRY) != 0;
+		}
+	}
+	return false;
 }
 
 //text: distance-to-nav
@@ -16321,6 +16400,20 @@ int eval_sexp(int cur_node, int referenced_node)
 				unset_nav_carry_status(node);
 				break;
 
+			case OP_NAV_SET_NEEDSLINK:
+				sexp_val = SEXP_TRUE;
+				set_nav_needslink(node);
+				break;
+
+			case OP_NAV_UNSET_NEEDSLINK:
+				sexp_val = SEXP_TRUE;
+				unset_nav_needslink(node);
+				break;
+
+			case OP_NAV_ISLINKED:
+				sexp_val = is_nav_linked(node);
+				break;
+
 			case OP_SCRAMBLE_MESSAGES:
 			case OP_UNSCRAMBLE_MESSAGES:
 				sexp_scramble_messages(op_num == OP_SCRAMBLE_MESSAGES );
@@ -16638,6 +16731,7 @@ int query_operator_return_type(int op)
 		case OP_IS_CARGO:
 		case OP_MISSILE_LOCKED:
 		case OP_NAV_IS_VISITED:
+		case OP_NAV_ISLINKED:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -16851,6 +16945,8 @@ int query_operator_return_type(int op)
 		case OP_NAV_UNSET_VISITED:
 		case OP_NAV_SET_CARRY:
 		case OP_NAV_UNSET_CARRY:
+		case OP_NAV_SET_NEEDSLINK:
+		case OP_NAV_UNSET_NEEDSLINK:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_COORDS:
@@ -18049,16 +18145,23 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NAV_UNRESTRICT:		//kazan
 		case OP_NAV_SET_VISITED:	//kazan
 		case OP_NAV_UNSET_VISITED:	//kazan
-			return OPF_NAV_POINT;
+			return OPF_STRING;
+//			return OPF_NAV_POINT;
 			
 		
 		case OP_NAV_SET_CARRY:		//kazan
 		case OP_NAV_UNSET_CARRY:	//kazan
 			return OPF_SHIP_WING;
 
+		case OP_NAV_SET_NEEDSLINK: // kazan
+		case OP_NAV_UNSET_NEEDSLINK:
+		case OP_NAV_ISLINKED:
+				return OPF_SHIP;
+
 		case OP_NAV_ADD_WAYPOINT:	//kazan
 			if (argnum==0)
-				return OPF_NAV_POINT;
+//				return OPF_NAV_POINT;
+				return OPF_STRING;
 			else if (argnum==1)
 				return OPF_WAYPOINT_PATH;
 			else
@@ -18066,7 +18169,8 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_NAV_ADD_SHIP:		//kazan
 			if (argnum==0)
-				return OPF_NAV_POINT;
+//				return OPF_NAV_POINT;
+				return OPF_STRING;
 			else
 				return OPF_SHIP;
 
@@ -19410,6 +19514,15 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_NAV_UNSET_CARRY, "Takes atleast 1 argument, but can take as many as you give it.\r\n"
 		"It takes ship and/or wing names and unsets their Nav Carry flag\r\n" },
+
+	{ OP_NAV_SET_NEEDSLINK, "Takes atleast 1 argument, but can take as many as you give it.\r\n" 
+		"It takes ships and marks them as needing AutoNav linkup (approach within link distance)"},
+
+	{ OP_NAV_UNSET_NEEDSLINK, "Takes atleast 1 argument, but can take as many as you give it.\r\n" 
+	    "It takes ships and unmarks them as needing AutoNav linkup"},
+
+	{ OP_NAV_ISLINKED, "Takes 1 argument.\r\n"
+		"Determins if a ship is linked for autopilot (\"set-nav-carry\" or \"set-nav-needslink\" + linked)"},
 
 	// -------------------------- -------------------------- -------------------------- 
 

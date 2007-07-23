@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.h $
- * $Revision: 1.9 $
- * $Date: 2006-02-25 21:42:31 $
- * $Author: Goober5000 $
+ * $Revision: 1.10 $
+ * $Date: 2007-07-23 15:16:48 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2006/02/25 21:42:31  Goober5000
+ * fixes from last commit
+ *
  * Revision 1.8  2005/07/13 02:50:49  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -45,7 +48,7 @@
 #include "globalincs/pstypes.h"
 
 // milliseconds between updates
-#define NPS_TICKRATE	250
+#define NPS_TICKRATE	125
 
 #define MAX_NAVPOINTS	8
 
@@ -70,9 +73,25 @@ struct NavPoint
 	char* GetInteralName();
 };
 
+
+#define NP_NUM_MESSAGES 5
+#define NP_MSG_FAIL_NOSEL		0
+#define NP_MSG_FAIL_GLIDING		1
+#define NP_MSG_FAIL_TOCLOSE		2
+#define NP_MSG_FAIL_HOSTILES	3
+#define NP_MSG_MISC_LINKED		4
+
+struct NavMessage
+{
+	char message[256];
+	char filename[256]; // can be ""
+};
+
 extern bool AutoPilotEngaged;
 extern int CurrentNav;
 extern NavPoint Navs[MAX_NAVPOINTS];
+extern NavMessage NavMsgs[NP_NUM_MESSAGES];
+extern int LockAPConv;
 
 // Cycles through the NavPoint List
 bool Sel_NextNav();
@@ -83,7 +102,8 @@ bool Sel_NextNav();
 //        * Nav point selected
 //        * No enemies within 5,000 meters
 //        * Destination > 1,000 meters away
-bool CanAutopilot();
+bool CanAutopilot(bool send_msg=false);
+bool CanAutopilotPos(vec3d targetPos);
 
 // Engages autopilot
 // This does:
@@ -116,6 +136,9 @@ void NavSystem_Do();
 
 // Inits the Nav System
 void NavSystem_Init();
+
+// parse autopilot.tbl
+void parse_autopilot_table(char *longname);
 
 // Finds a Nav point by name
 int FindNav(char *Nav);
@@ -152,5 +175,8 @@ unsigned int DistanceTo(int nav);
 
 bool IsVisited(char *nav);
 bool IsVisited(int nav);
+
+void send_autopilot_msg(char *msg, char *snd=NULL);
+void send_autopilot_msgID(int msgid);
 #endif
 
