@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.314 $
- * $Date: 2007-07-23 15:16:51 $
+ * $Revision: 2.315 $
+ * $Date: 2007-07-24 13:04:11 $
  * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.314  2007/07/23 15:16:51  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 2.313  2007/07/15 23:08:16  turey
  * Small change to how Simulated Hull works. If ship is gone, it now has 0 Simulated
  *  Hull.
@@ -1584,6 +1587,7 @@
 #include "parse/lua.h"
 #include "parse/scripting.h"
 #include "object/waypoint/waypoint.h"
+#include "object/ObjCollide.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -6659,6 +6663,9 @@ void sexp_set_object_position(int n)
 	n = CDR(n);
 	target_vec.xyz.z = i2fl(eval_num(n));
 	n = CDR(n);
+
+	// retime all collision checks so they're performed
+	obj_all_collisions_retime();
 
 	switch (oswpt.type)
 	{
