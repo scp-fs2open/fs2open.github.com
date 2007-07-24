@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.15 $
- * $Date: 2007-02-20 04:20:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.16 $
+ * $Date: 2007-07-24 13:04:10 $
+ * $Author: Kazan $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2007/02/20 04:20:27  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.14  2007/02/10 00:08:59  taylor
  * performance optimizations:
  *  - fvi_ray_boundingbox() is faster and should be less prone to compiler/optimization/platform specific issues
@@ -328,6 +331,24 @@ void obj_pairs_close()
 
 	Num_pairs_allocated = 0;
 }
+
+void obj_all_collisions_retime(int checkdly)
+// sets all collisions to be checked (in 25ms by default)
+// this is for when we warp objects
+{
+	obj_pair *parent, *tmp;	
+
+	parent = &pair_used_list;
+	tmp = parent->next;
+
+
+	while (tmp != NULL) 
+	{
+		tmp->next_check_time = timestamp(checkdly);
+		tmp = tmp->next;
+	}
+}
+
 
 void obj_reset_pairs()
 {
