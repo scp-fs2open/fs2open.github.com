@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.32 $
- * $Date: 2007-07-23 15:35:40 $
+ * $Revision: 1.33 $
+ * $Date: 2007-07-24 13:04:10 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32  2007/07/23 15:35:40  Kazan
+ * typo correction in autopilot.tbl
+ *
  * Revision 1.31  2007/07/23 15:16:47  Kazan
  * Autopilot upgrades as described, MSVC2005 project fixes
  *
@@ -122,6 +125,7 @@
 #include "ai/aigoals.h"
 #include "ship/ship.h"
 #include "object/object.h"
+#include "object/ObjCollide.h"
 #include "parse/sexp.h"
 #include "freespace2/freespace.h"
 #include "globalincs/linklist.h"
@@ -762,6 +766,9 @@ void nav_warp()
 				vm_vec_add(&Objects[Ships[i].objnum].pos, &Objects[Ships[i].objnum].pos, &targetPos);
 		}
 	}
+
+	// retime all collision pairs
+	obj_all_collisions_retime();
 
 }
 
