@@ -7,11 +7,14 @@
 
 /*
  * $Logfile: /Freespace2/code/globalincs/def_files.cpp $
- * $Revision: 2.15.2.6 $
- * $Date: 2007-07-23 16:08:26 $
+ * $Revision: 2.15.2.7 $
+ * $Date: 2007-07-24 20:08:29 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15.2.6  2007/07/23 16:08:26  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 2.15.2.5  2007/07/15 02:45:48  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
@@ -103,6 +106,9 @@ $Hostiles:																\n\
 	+Snd File: none														\n\
 $Linked:																\n\
 	+Msg: Autopilot Linked												\n\
+	+Snd File: none														\n\
+$Hazard:																\n\
+	+Msg: Cannot engage autopilot: Hazard Near							\n\
 	+Snd File: none														\n\
 																		\n\
 #END";

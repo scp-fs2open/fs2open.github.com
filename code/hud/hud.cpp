@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.67.2.2 $
- * $Date: 2007-02-10 05:01:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.67.2.3 $
+ * $Date: 2007-07-24 20:08:29 $
+ * $Author: Kazan $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67.2.2  2007/02/10 05:01:11  Goober5000
+ * take all subsystems into account when displaying repair gauge
+ *
  * Revision 2.67.2.1  2007/02/10 00:17:39  taylor
  * remove NO_SOUND
  *
@@ -1325,6 +1328,7 @@ void hud_update_frame()
 		}
 	}
 
+
 	// if there is no target, check if auto-targeting is enabled, and select new target
 	int retarget = 0;
 	int retarget_turret = 0;
@@ -1370,6 +1374,13 @@ void hud_update_frame()
 		// hud_target_closest(OBJ_INDEX(Player_obj), FALSE, FALSE);
 		void hud_update_closest_turret();
 		hud_update_closest_turret();
+	}
+
+	// purge target if beyond max radar range -- Kazan
+	if (Player_ai->target_objnum != -1)
+	{
+		if (vm_vec_dist(&Player_obj->pos, &Objects[Player_ai->target_objnum].pos) > Radar_ranges[RR_MAX_RANGES-1])
+			Player_ai->target_objnum = -1;
 	}
 
 	hud_target_change_check();
