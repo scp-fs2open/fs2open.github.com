@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.52.2.11 $
- * $Date: 2007-07-23 16:08:26 $
- * $Author: Kazan $
+ * $Revision: 2.52.2.12 $
+ * $Date: 2007-07-24 05:08:08 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52.2.11  2007/07/23 16:08:26  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 2.52.2.10  2007/05/26 12:08:18  Goober5000
  * when importing FS1 missions, account for the shuffled Head-TP4
  *
@@ -2006,7 +2009,8 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	}
 
 	// if player is a traitor, no messages for him!!!
-	if ( Player_ship->team == Iff_traitor ) {
+	// Goober5000 - allow messages during multiplayer dogfight (Mantis #1436)
+	if ( (Player_ship->team == Iff_traitor) && ( !(Game_mode & GM_MULTIPLAYER) || !(Netgame.type_flags & NG_TYPE_DOGFIGHT) ) ) {
 		return;
 	}
 
