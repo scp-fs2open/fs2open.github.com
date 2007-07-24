@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.34 $
- * $Date: 2007-07-24 20:17:36 $
+ * $Revision: 1.35 $
+ * $Date: 2007-07-24 20:30:36 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2007/07/24 20:17:36  Kazan
+ * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
+ *
  * Revision 1.33  2007/07/24 13:04:10  Kazan
  * Resolve Mantis 1281
  *
@@ -342,18 +345,24 @@ bool CanAutopilotPos(vec3d targetPos)
 		object *other_objp = &Objects[so->objnum];
 		// attacks player?
 		if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)))
+		{
 			// Cannot autopilot if enemy within 5,000 meters
 			if (vm_vec_dist_quick(&targetPos, &other_objp->pos) < 5000)
 				return false;
+		}
 	}
 	
 	//check for asteroids	
 	for (int n=0; n<MAX_ASTEROIDS; n++) 
+	{
 		// asteroid
 		if (Asteroids[n].flags & AF_USED)
+		{
 			// Cannot autopilot if asteroid within 1,000 meters
-			if (vm_vec_dist_quick(&Player_obj->pos, &Objects[Asteroids[n].objnum].pos) < 1000)
+			if (vm_vec_dist_quick(&targetPos, &Objects[Asteroids[n].objnum].pos) < 1000)
 				return false;
+		}
+	}
 
 	return true;
 }
