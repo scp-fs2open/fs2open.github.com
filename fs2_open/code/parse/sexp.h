@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122.2.9 $
+ * $Revision: 2.122.2.10 $
  * $Author: Kazan $
- * $Date: 2007-07-23 16:08:31 $
+ * $Date: 2007-07-24 20:08:31 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122.2.9  2007/07/23 16:08:31  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 2.122.2.8  2007/05/14 23:13:42  Goober5000
  * --grouped the shake/shudder code together a bit better
  * --added a sexp to generate shudder
@@ -1382,6 +1385,7 @@ struct ship_subsys;
 #define OP_NAV_SET_NEEDSLINK				(0x000d | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 #define OP_NAV_UNSET_NEEDSLINK				(0x000e | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 #define OP_NAV_ISLINKED						(0x000f | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+#define OP_NAV_USECINEMATICS				(0x0010 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 
 // training sexps
 #define OP_KEY_PRESSED						(0x0000 | OP_CATEGORY_TRAINING)

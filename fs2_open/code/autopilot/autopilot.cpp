@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.7 $
- * $Date: 2007-07-24 13:03:14 $
+ * $Revision: 1.23.2.8 $
+ * $Date: 2007-07-24 20:08:28 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.7  2007/07/24 13:03:14  Kazan
+ * Resolve Mantis 1281
+ *
  * Revision 1.23.2.6  2007/07/23 16:08:23  Kazan
  * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
@@ -131,7 +134,7 @@
 #include "globalincs/def_files.h"
 #include "localization/localize.h"
 #include "camera/camera.h"
-
+#include "asteroid/asteroid.h"
 
 // Extern functions/variables
 extern int		Player_use_ai;
@@ -275,6 +278,7 @@ bool CanAutopilot(bool send_msg)
 					send_autopilot_msgID(NP_MSG_FAIL_TOCLOSE);
 		return false;
 	}
+
 	// see if any hostiles are nearby
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
@@ -288,6 +292,22 @@ bool CanAutopilot(bool send_msg)
 			{
 				if (send_msg)
 					send_autopilot_msgID(NP_MSG_FAIL_HOSTILES);
+				return false;
+			}
+		}
+	}
+
+	//check for asteroids	
+	for (int n=0; n<MAX_ASTEROIDS; n++) 
+	{
+		// asteroid
+		if (Asteroids[n].flags & AF_USED)
+		{
+			// Cannot autopilot if asteroid within 1,000 meters
+			if (vm_vec_dist_quick(&Player_obj->pos, &Objects[Asteroids[n].objnum].pos) < 1000)
+			{
+				if (send_msg)
+					send_autopilot_msgID(NP_MSG_FAIL_HAZARD);
 				return false;
 			}
 		}
@@ -311,15 +331,20 @@ bool CanAutopilotPos(vec3d targetPos)
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
 		object *other_objp = &Objects[so->objnum];
-
 		// attacks player?
 		if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)))
-		{
 			// Cannot autopilot if enemy within 5,000 meters
 			if (vm_vec_dist_quick(&targetPos, &other_objp->pos) < 5000)
 				return false;
-		}
 	}
+	
+	//check for asteroids	
+	for (int n=0; n<MAX_ASTEROIDS; n++) 
+		// asteroid
+		if (Asteroids[n].flags & AF_USED)
+			// Cannot autopilot if asteroid within 1,000 meters
+			if (vm_vec_dist_quick(&Player_obj->pos, &Objects[Asteroids[n].objnum].pos) < 1000)
+				return false;
 
 	return true;
 }
@@ -372,8 +397,8 @@ void StartAutopilot()
 				)
 			)
 		{
-			if (speed_cap > Ship_info[Ships[i].ship_info_index].max_vel.xyz.z)
-				speed_cap = Ship_info[Ships[i].ship_info_index].max_vel.xyz.z;
+			if (speed_cap > vm_vec_mag(&Ship_info[Ships[i].ship_info_index].max_vel))
+				speed_cap = vm_vec_mag(&Ship_info[Ships[i].ship_info_index].max_vel);
 		}
 	}
 
@@ -467,8 +492,7 @@ void StartAutopilot()
 			
 			// if they're not part of a wing set their goal
 			if (Ships[i].wingnum == -1 || The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
-			{
-				ai_clear_ship_goals(&Ai_info[Ships[i].ai_index]);
+			{ 
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
 					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Ai_info[Ships[i].ai_index] );
@@ -665,25 +689,10 @@ void EndAutoPilot()
 			Ships[i].flags2 &= ~(SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
 			Ai_info[Ships[i].ai_index].waypoint_speed_cap = -1; // uncap their speed
 			
-			if (!(The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS))
-			{
-				for (j = 0; j < MAX_AI_GOALS; j++)
-				{
-					if (Ai_info[Ships[i].ai_index].goals[j].ai_mode == AI_GOAL_WAYPOINTS_ONCE ||
-						Ai_info[Ships[i].ai_index].goals[j].ai_mode == AI_GOAL_FLY_TO_SHIP ||
-						Ai_info[Ships[i].ai_index].goals[j].ai_mode == AIM_WAYPOINTS ||
-						Ai_info[Ships[i].ai_index].goals[j].ai_mode == AIM_FLY_TO_SHIP)
-					{
-						ai_remove_ship_goal( &(Ai_info[Ships[i].ai_index]), j );
-					}
-				}
-			}
-			else
-			{
-				ai_clear_ship_goals( &(Ai_info[Ships[i].ai_index]) );
-				if (Ships[i].wingnum != -1)
-					ai_clear_wing_goals( Ships[i].wingnum );
-			}
+			ai_clear_ship_goals( &(Ai_info[Ships[i].ai_index]) );
+			if (Ships[i].wingnum != -1)
+				ai_clear_wing_goals( Ships[i].wingnum );
+
 		}
 	}
 
@@ -734,7 +743,7 @@ void nav_warp()
 	
 	vm_vec_sub(&pos, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
 	vm_vec_normalize(&pos);
-	vm_vec_scale(&pos, 500.0f); // we move by increments of 500
+	vm_vec_scale(&pos, 250.0f); // we move by increments of 250
 	
 	while (CanAutopilotPos(tpos))
 	{
@@ -979,7 +988,7 @@ void parse_autopilot_table(char *longname)
 	stuff_int(&NavLinkDistance);
 
 	// No Nav selected message
-	char *msg_tags[] = { "$No Nav Selected:", "$Gliding:", "$Too Close:", "$Hostiles:", "$Linked:" };
+	char *msg_tags[] = { "$No Nav Selected:", "$Gliding:", "$Too Close:", "$Hostiles:", "$Linked:", "$Hazard:" };
 	for (int i = 0; i < NP_NUM_MESSAGES; i++)
 	{
 		required_string(msg_tags[i]);
