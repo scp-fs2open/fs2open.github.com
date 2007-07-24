@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.70 $
- * $Date: 2007-04-30 21:30:29 $
- * $Author: Backslash $
+ * $Revision: 2.71 $
+ * $Date: 2007-07-24 20:17:36 $
+ * $Author: Kazan $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2007/04/30 21:30:29  Backslash
+ * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
+ * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
+ *
  * Revision 2.69  2007/02/10 05:01:03  Goober5000
  * take all subsystems into account when displaying repair gauge
  *
@@ -1328,6 +1332,7 @@ void hud_update_frame()
 		}
 	}
 
+
 	// if there is no target, check if auto-targeting is enabled, and select new target
 	int retarget = 0;
 	int retarget_turret = 0;
@@ -1373,6 +1378,13 @@ void hud_update_frame()
 		// hud_target_closest(OBJ_INDEX(Player_obj), FALSE, FALSE);
 		void hud_update_closest_turret();
 		hud_update_closest_turret();
+	}
+
+	// purge target if beyond max radar range -- Kazan
+	if (Player_ai->target_objnum != -1)
+	{
+		if (vm_vec_dist(&Player_obj->pos, &Objects[Player_ai->target_objnum].pos) > Radar_ranges[RR_MAX_RANGES-1])
+			Player_ai->target_objnum = -1;
 	}
 
 	hud_target_change_check();
