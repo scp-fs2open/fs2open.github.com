@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.67 $
- * $Date: 2007-07-23 15:56:42 $
- * $Author: Kazan $
+ * $Revision: 2.68 $
+ * $Date: 2007-07-24 05:08:13 $
+ * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67  2007/07/23 15:56:42  Kazan
+ * remove unused function... unused function that should probably never be used
+ *
  * Revision 2.66  2007/07/23 15:16:50  Kazan
  * Autopilot upgrades as described, MSVC2005 project fixes
  *
@@ -2014,7 +2017,8 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	}
 
 	// if player is a traitor, no messages for him!!!
-	if ( Player_ship->team == Iff_traitor ) {
+	// Goober5000 - allow messages during multiplayer dogfight (Mantis #1436)
+	if ( (Player_ship->team == Iff_traitor) && ( !(Game_mode & GM_MULTIPLAYER) || !(Netgame.type_flags & NG_TYPE_DOGFIGHT) ) ) {
 		return;
 	}
 
