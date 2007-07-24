@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.6 $
- * $Date: 2007-07-23 16:08:23 $
+ * $Revision: 1.23.2.7 $
+ * $Date: 2007-07-24 13:03:14 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.6  2007/07/23 16:08:23  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 1.23.2.5  2007/02/12 00:23:39  taylor
  * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
@@ -113,6 +116,7 @@
 #include "ai/aigoals.h"
 #include "ship/ship.h"
 #include "object/object.h"
+#include "object/ObjCollide.h"
 #include "parse/sexp.h"
 #include "freespace2/freespace.h"
 #include "globalincs/linklist.h"
@@ -749,6 +753,9 @@ void nav_warp()
 				vm_vec_add(&Objects[Ships[i].objnum].pos, &Objects[Ships[i].objnum].pos, &targetPos);
 		}
 	}
+
+	// retime all collision pairs
+	obj_all_collisions_retime();
 
 }
 
