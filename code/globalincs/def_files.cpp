@@ -7,11 +7,14 @@
 
 /*
  * $Logfile: /Freespace2/code/globalincs/def_files.cpp $
- * $Revision: 2.25 $
- * $Date: 2007-07-23 15:49:07 $
+ * $Revision: 2.26 $
+ * $Date: 2007-07-24 20:17:36 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2007/07/23 15:49:07  Kazan
+ * copy+pasted typo, now with extra hotsauce
+ *
  * Revision 2.24  2007/07/23 15:35:40  Kazan
  * typo correction in autopilot.tbl
  *
@@ -112,6 +115,9 @@ $Hostiles:																\n\
 	+Snd File: none														\n\
 $Linked:																\n\
 	+Msg: Autopilot Linked												\n\
+	+Snd File: none														\n\
+$Hazard:																\n\
+	+Msg: Cannot engage autopilot: Hazard Near							\n\
 	+Snd File: none														\n\
 																		\n\
 #END";
