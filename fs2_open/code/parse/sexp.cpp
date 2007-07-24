@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.50 $
- * $Date: 2007-07-23 16:08:29 $
+ * $Revision: 2.259.2.51 $
+ * $Date: 2007-07-24 13:03:15 $
  * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.50  2007/07/23 16:08:29  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 2.259.2.49  2007/05/14 23:13:41  Goober5000
  * --grouped the shake/shudder code together a bit better
  * --added a sexp to generate shudder
@@ -1556,6 +1559,7 @@
 #include "network/multi_team.h"
 #include "parse/lua.h"
 #include "parse/scripting.h"
+#include "object/ObjCollide.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -6604,6 +6608,9 @@ void sexp_set_object_position(int n)
 	n = CDR(n);
 	target_vec.xyz.z = i2fl(eval_num(n));
 	n = CDR(n);
+
+	// retime all collision checks so they're performed
+	obj_all_collisions_retime();
 
 	switch (oswpt.type)
 	{

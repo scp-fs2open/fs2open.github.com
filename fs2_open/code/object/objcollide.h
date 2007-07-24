@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.h $
- * $Revision: 2.5 $
- * $Date: 2005-10-17 05:48:18 $
- * $Author: taylor $
+ * $Revision: 2.5.2.1 $
+ * $Date: 2007-07-24 13:03:15 $
+ * $Author: Kazan $
  *
  * Header file for all the Collide????.cpp modules
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.5  2005/10/17 05:48:18  taylor
+ * dynamically allocate object collision pairs
+ *
  * Revision 2.4  2005/07/13 03:35:31  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -185,6 +188,9 @@ void obj_reset_pairs();
 void obj_add_pair( object *A, object *B, int check_time = -1, int add_to_end = 0 );
 
 void obj_check_all_collisions();
+
+// retimes all collision pairs to be checked (in 25ms by default)
+void obj_all_collisions_retime(int checkdly=25);
 
 // Returns TRUE if the weapon will never hit the other object.
 // If it can it predicts how long until these two objects need
