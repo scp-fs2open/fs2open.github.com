@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.h $
- * $Revision: 1.10 $
- * $Date: 2007-07-23 15:16:48 $
+ * $Revision: 1.11 $
+ * $Date: 2007-07-24 20:17:36 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2007/07/23 15:16:48  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 1.9  2006/02/25 21:42:31  Goober5000
  * fixes from last commit
  *
@@ -74,12 +77,13 @@ struct NavPoint
 };
 
 
-#define NP_NUM_MESSAGES 5
+#define NP_NUM_MESSAGES 6
 #define NP_MSG_FAIL_NOSEL		0
 #define NP_MSG_FAIL_GLIDING		1
 #define NP_MSG_FAIL_TOCLOSE		2
 #define NP_MSG_FAIL_HOSTILES	3
 #define NP_MSG_MISC_LINKED		4
+#define NP_MSG_FAIL_HAZARD		5
 
 struct NavMessage
 {

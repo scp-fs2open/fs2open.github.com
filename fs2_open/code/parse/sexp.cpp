@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.315 $
- * $Date: 2007-07-24 13:04:11 $
+ * $Revision: 2.316 $
+ * $Date: 2007-07-24 20:17:36 $
  * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.315  2007/07/24 13:04:11  Kazan
+ * Resolve Mantis 1281
+ *
  * Revision 2.314  2007/07/23 15:16:51  Kazan
  * Autopilot upgrades as described, MSVC2005 project fixes
  *
@@ -1867,6 +1870,7 @@ sexp_oper Operators[] = {
 	{ "set-nav-needslink",				OP_NAV_SET_NEEDSLINK,			1, INT_MAX }, //kazan
 	{ "unset-nav-needslink",			OP_NAV_UNSET_NEEDSLINK,			1, INT_MAX }, //kazan
 	{ "is-nav-linked",					OP_NAV_ISLINKED,				1, 1 }, //kazan
+	{ "use-nav-cinematics",				OP_NAV_USECINEMATICS,				1, 1 }, //kazan
 
 	{ "grant-promotion",				OP_GRANT_PROMOTION,				0, 0,			},
 	{ "grant-medal",					OP_GRANT_MEDAL,					1, 1,			},
@@ -13869,6 +13873,22 @@ void del_nav(int node)
 	DelNavPoint(nav_name);
 }
 
+//text: use-nav-cinematics
+//args: 1, boolean enable/disable
+void set_use_ap_cinematics(int node)
+{
+	//bool enable = atoi(CTEXT(node));
+	int enable = eval_sexp(node);
+	if (enable)
+	{
+		The_mission.flags |= MISSION_FLAG_USE_AP_CINEMATICS;
+	}
+	else
+	{
+		The_mission.flags &= ~MISSION_FLAG_USE_AP_CINEMATICS;
+	}
+}
+
 //text: hide-nav
 //args: 1, Nav Name
 void hide_nav(int node)
@@ -16421,6 +16441,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = is_nav_linked(node);
 				break;
 
+			case OP_NAV_USECINEMATICS:
+				sexp_val = SEXP_TRUE;
+				set_use_ap_cinematics(node);
+				break;
+
 			case OP_SCRAMBLE_MESSAGES:
 			case OP_UNSCRAMBLE_MESSAGES:
 				sexp_scramble_messages(op_num == OP_SCRAMBLE_MESSAGES );
@@ -16954,6 +16979,7 @@ int query_operator_return_type(int op)
 		case OP_NAV_UNSET_CARRY:
 		case OP_NAV_SET_NEEDSLINK:
 		case OP_NAV_UNSET_NEEDSLINK:
+		case OP_NAV_USECINEMATICS:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_COORDS:
@@ -18164,6 +18190,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NAV_UNSET_NEEDSLINK:
 		case OP_NAV_ISLINKED:
 				return OPF_SHIP;
+
+		case OP_NAV_USECINEMATICS:
+			return OPF_BOOL;
 
 		case OP_NAV_ADD_WAYPOINT:	//kazan
 			if (argnum==0)
@@ -19529,7 +19558,10 @@ sexp_help_struct Sexp_help[] = {
 	    "It takes ships and unmarks them as needing AutoNav linkup"},
 
 	{ OP_NAV_ISLINKED, "Takes 1 argument.\r\n"
-		"Determins if a ship is linked for autopilot (\"set-nav-carry\" or \"set-nav-needslink\" + linked)"},
+		"Determines if a ship is linked for autopilot (\"set-nav-carry\" or \"set-nav-needslink\" + linked)"},
+
+	{ OP_NAV_USECINEMATICS, "Takes 1 boolean argument.\r\n"
+		"Set to true to enable automatic cinematics, set to false to disable automatic cinematics." },
 
 	// -------------------------- -------------------------- -------------------------- 
 

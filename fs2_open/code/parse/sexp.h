@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.133 $
+ * $Revision: 2.134 $
  * $Author: Kazan $
- * $Date: 2007-07-23 15:16:52 $
+ * $Date: 2007-07-24 20:17:36 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.133  2007/07/23 15:16:52  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 2.132  2007/07/13 22:28:12  turey
  * Initial commit of Training Weapons / Simulated Hull code.
  *
@@ -1396,6 +1399,7 @@ struct ship_subsys;
 #define OP_NAV_SET_NEEDSLINK				(0x000d | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 #define OP_NAV_UNSET_NEEDSLINK				(0x000e | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 #define OP_NAV_ISLINKED						(0x000f | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+#define OP_NAV_USECINEMATICS				(0x0010 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 
 // training sexps
 #define OP_KEY_PRESSED						(0x0000 | OP_CATEGORY_TRAINING)
