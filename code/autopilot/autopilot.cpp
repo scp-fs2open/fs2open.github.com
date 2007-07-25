@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.35 $
- * $Date: 2007-07-24 20:30:36 $
+ * $Revision: 1.36 $
+ * $Date: 2007-07-25 14:50:44 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2007/07/24 20:30:36  Kazan
+ * oops
+ *
  * Revision 1.34  2007/07/24 20:17:36  Kazan
  * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
  *
@@ -156,6 +159,7 @@ extern object * get_wing_leader(int wingnum);
 
 // Module variables
 bool AutoPilotEngaged;
+bool UseCutsceneBars;
 int CurrentNav;
 float ramp_bias;
 NavPoint Navs[MAX_NAVPOINTS];
@@ -687,8 +691,11 @@ void EndAutoPilot()
 
 	if (CinematicStarted) // clear cinematic if we need to
 	{
-		Cutscene_bar_flags &= ~CUB_CUTSCENE;
-		Viewer_mode &= ~VM_FREECAMERA;
+		if (UseCutsceneBars)
+		{
+			Cutscene_bar_flags &= ~CUB_CUTSCENE;
+			Viewer_mode &= ~VM_FREECAMERA;
+		}
 		hud_set_draw(1);
 		CinematicStarted = false;
 	}
@@ -759,7 +766,7 @@ void camera_face(vec3d &loc)
 	Free_camera->set_rotation(&cam_orient, 0.0f, 0.0f);
 }
 
-void nav_warp()
+void nav_warp(bool prewarp=false)
 {
 	// ok... find our end distance - norm1 is still a unit vector in the direction from the player to the navpoint
 	vec3d targetPos, tpos=Player_obj->pos, pos;
@@ -773,6 +780,12 @@ void nav_warp()
 		vm_vec_add(&tpos, &tpos, &pos);
 	}
 	vm_vec_sub(&targetPos, &tpos, &Player_obj->pos); //targetPos is actually a projection in a the direction toward the nav
+
+	if (prewarp)
+	{
+		vm_vec_scale(&targetPos, 0.5);
+		vm_vec_add(&cameraPos, &cameraPos, &targetPos);
+	}
 
 	for (int i = 0; i < MAX_SHIPS; i++)
 	{
@@ -819,10 +832,14 @@ void NavSystem_Do()
 				else
 				{
 					// start cinematic
-					Cutscene_bar_flags |= CUB_CUTSCENE;
-					Cutscene_bar_flags &= ~CUB_GRADUAL;
+					if (UseCutsceneBars)
+					{
+						Cutscene_bar_flags |= CUB_CUTSCENE;
+						Cutscene_bar_flags &= ~CUB_GRADUAL;
+					}
 					Viewer_mode |= VM_FREECAMERA;
 					hud_set_draw(0);
+					nav_warp(true);
 
 					Free_camera->set_position(&cameraPos);
 					camera_face(Player_obj->pos);
@@ -967,6 +984,7 @@ void NavSystem_Init()
 	CurrentNav = -1;
 	audio_handle = -1;
 	CinematicStarted = false;
+	UseCutsceneBars = true;
 
 	// defaults... can be tabled or bound to mission later
 	if (cf_exists_full("autopilot.tbl", CF_TYPE_TABLES))
@@ -1009,6 +1027,10 @@ void parse_autopilot_table(char *longname)
 	// autopilot link distance
 	required_string("$Link Distance:");
 	stuff_int(&NavLinkDistance);
+
+	// optional no cutscene bars
+	if (optional_string("+No_Cutscene_Bars"))
+		UseCutsceneBars = false;
 
 	// No Nav selected message
 	char *msg_tags[] = { "$No Nav Selected:", "$Gliding:", "$Too Close:", "$Hostiles:", "$Linked:", "$Hazard:" };
