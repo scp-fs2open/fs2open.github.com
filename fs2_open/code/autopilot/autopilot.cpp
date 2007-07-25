@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.10 $
- * $Date: 2007-07-25 14:51:14 $
+ * $Revision: 1.23.2.11 $
+ * $Date: 2007-07-25 20:45:16 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.10  2007/07/25 14:51:14  Kazan
+ * two-part autopilot warp, add +No_Cutscene_Bars optional flag to autopilot.tbl
+ *
  * Revision 1.23.2.9  2007/07/24 20:31:00  Kazan
  * oops
  *
@@ -680,8 +683,8 @@ void EndAutoPilot()
 		if (UseCutsceneBars)
 		{
 			Cutscene_bar_flags &= ~CUB_CUTSCENE;
-			Viewer_mode &= ~VM_FREECAMERA;
 		}
+		Viewer_mode &= ~VM_FREECAMERA;
 		hud_set_draw(1);
 		CinematicStarted = false;
 	}
