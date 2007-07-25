@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.52 $
- * $Date: 2007-07-24 20:08:30 $
+ * $Revision: 2.259.2.53 $
+ * $Date: 2007-07-25 00:32:39 $
  * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.52  2007/07/24 20:08:30  Kazan
+ * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
+ *
  * Revision 2.259.2.51  2007/07/24 13:03:15  Kazan
  * Resolve Mantis 1281
  *
@@ -13618,6 +13621,7 @@ void set_nav_needslink(int node)
 		{
 			if (Ships[i].objnum != -1 && !stricmp(Ships[i].ship_name, name))
 			{
+				Ships[i].flags2 &= ~SF2_NAVPOINT_CARRY;
 				Ships[i].flags2 |= SF2_NAVPOINT_NEEDSLINK;
 				break;
 			}
