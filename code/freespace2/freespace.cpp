@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.40 $
- * $Date: 2007-07-23 16:08:25 $
- * $Author: Kazan $
+ * $Revision: 2.243.2.41 $
+ * $Date: 2007-07-27 21:55:10 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.40  2007/07/23 16:08:25  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 2.243.2.39  2007/05/28 19:59:57  taylor
  * various bits of clean up
  * make stats printing a bit more sane
@@ -4295,7 +4298,7 @@ void game_show_framerate()
 	  	memblockinfo_sort();
 
 		int mi = 0;
-		for(int mi = 0; mi < 30; mi++) {
+		for( ; mi < 30; mi++) {
 			memblockinfo_sort_get_entry(mi, filename, &size);
 
 			size /= 1024;

@@ -337,7 +337,7 @@ void DumpStats::get_object_stats(CString &buffer)
 	// not counting num_waves (for wings)
 	obj_type_count[OBJ_SHIP] += obj_type_count[OBJ_START];
 
-	for (int i=0; i<MAX_OBJECT_TYPES; i++) {
+	for (i=0; i<MAX_OBJECT_TYPES; i++) {
 		if (obj_type_count[i] > 0) {
 			switch(i) {
 			case OBJ_SHIP:
