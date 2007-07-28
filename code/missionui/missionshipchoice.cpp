@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.69 $
- * $Date: 2007-03-22 22:14:56 $
- * $Author: taylor $
+ * $Revision: 2.70 $
+ * $Date: 2007-07-28 22:10:46 $
+ * $Author: karajorma $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2007/03/22 22:14:56  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
  * Revision 2.68  2007/02/20 04:20:18  Goober5000
  * the great big duplicate model removal commit
  *
@@ -2614,9 +2617,6 @@ void commit_pressed()
 	else {
 		gameseq_post_event(GS_EVENT_ENTER_GAME);
 	}
-
-	// close out mission briefing before mission
-	common_select_close();
 }
 
 // ------------------------------------------------------------------------
