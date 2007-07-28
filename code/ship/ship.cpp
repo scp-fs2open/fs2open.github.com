@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.425 $
- * $Date: 2007-07-19 05:43:59 $
- * $Author: turey $
+ * $Revision: 2.426 $
+ * $Date: 2007-07-28 22:04:46 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.425  2007/07/19 05:43:59  turey
+ * Small bugfix relating to restoring engines from disabled via the set-subsystem-strength SEXP.
+ *
  * Revision 2.424  2007/07/15 08:19:59  Goober5000
  * fix and clean up the warpout conditions
  *
@@ -2423,6 +2426,9 @@ char TVT_wing_names[MAX_TVT_WINGS][NAME_LENGTH];
 std::vector<engine_wash_info> Engine_wash_info;
 //char get_engine_wash_index(char *engine_wash_name);
 engine_wash_info *get_engine_wash_pointer(char* engine_wash_name);
+
+void ship_reset_disabled_physics(object *objp, int ship_class);
+
 
 // information for ships which have exited the game
 exited_ship Ships_exited[MAX_EXITED_SHIPS];
@@ -6116,17 +6122,18 @@ void ship_recalc_subsys_strength( ship *shipp )
 
 	// set any ship flags which should be set.  unset the flags since we might be repairing a subsystem
 	// through sexpressions.
-	shipp->flags &= ~SF_DISABLED;
 	if ( (shipp->subsys_info[SUBSYSTEM_ENGINE].num > 0) && (shipp->subsys_info[SUBSYSTEM_ENGINE].current_hits == 0.0f) ){
 		shipp->flags |= SF_DISABLED;
 	} else {
+		shipp->flags &= ~SF_DISABLED;
 		ship_reset_disabled_physics( &Objects[shipp->objnum], shipp->ship_info_index );
 	}
 
 	/*
-	shipp->flags &= ~SF_DISARMED;
 	if ( (shipp->subsys_info[SUBSYSTEM_TURRET].num > 0) && (shipp->subsys_info[SUBSYSTEM_TURRET].current_hits == 0.0f) ){
 		shipp->flags |= SF_DISARMED;
+	} else {
+		shipp->flags &= ~SF_DISARMED;
 	}
 	*/
 
