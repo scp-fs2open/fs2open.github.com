@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.25 $
- * $Date: 2007-07-13 22:28:12 $
- * $Author: turey $
+ * $Revision: 2.26 $
+ * $Date: 2007-07-28 21:31:11 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2007/07/13 22:28:12  turey
+ * Initial commit of Training Weapons / Simulated Hull code.
+ *
  * Revision 2.24  2007/02/11 21:26:35  Goober5000
  * massive shield infrastructure commit
  *
@@ -564,7 +567,7 @@ extern int Show_waypoints;
 #define OBJECT_SIG_SHIP_START					300000				// ships start at this signature
 extern int Object_next_ship_signature;
 extern int Object_next_signature;		
-extern int num_objects;
+extern int Num_objects;
 
 extern object Objects[];
 extern int Highest_object_index;		//highest objnum

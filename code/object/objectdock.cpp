@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.14 $
- * $Date: 2007-07-28 21:17:56 $
+ * $Revision: 2.15 $
+ * $Date: 2007-07-28 21:31:11 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2007/07/28 21:17:56  Goober5000
+ * make the parse object array dynamic; also made the docking bitstrings dynamic
+ *
  * Revision 2.13  2007/02/20 04:20:27  Goober5000
  * the great big duplicate model removal commit
  *
@@ -389,10 +392,10 @@ void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, v
 	else
 	{
 		// create a bit array to mark the objects we check
-		ubyte *visited_bitstring = (ubyte *) malloc(calculate_num_bytes(num_objects));
+		ubyte *visited_bitstring = (ubyte *) malloc(calculate_num_bytes(Num_objects));
 
 		// clear it
-		memset(visited_bitstring, 0, calculate_num_bytes(num_objects));
+		memset(visited_bitstring, 0, calculate_num_bytes(Num_objects));
 
 		// start evaluating the tree
 		dock_evaluate_tree(objp, infop, function, visited_bitstring);

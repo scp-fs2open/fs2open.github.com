@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.16 $
- * $Date: 2007-07-24 13:04:10 $
- * $Author: Kazan $
+ * $Revision: 2.17 $
+ * $Date: 2007-07-28 21:31:11 $
+ * $Author: Goober5000 $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2007/07/24 13:04:10  Kazan
+ * Resolve Mantis 1281
+ *
  * Revision 2.15  2007/02/20 04:20:27  Goober5000
  * the great big duplicate model removal commit
  *
@@ -827,7 +830,7 @@ NextPair:
 	avg_time_to_next_check = avg_time_to_next_check / Num_pairs;
 	extern int Num_hull_pieces;
 	extern int Weapons_created;
-	// mprintf(( "[pairs checked: %d, start_pairs: %d, num obj: %d, avg next time: %f]\n", n, org_pairs, num_objects, avg_time_to_next_check ));
+	// mprintf(( "[pairs checked: %d, start_pairs: %d, num obj: %d, avg next time: %f]\n", n, org_pairs, Num_objects, avg_time_to_next_check ));
 	// mprintf(( "[Num_hull_pieces: %3d, Num_weapons_created: %3d, pairs_not_created: %3d, pairs_created: %3d, percent new saved: %9.5f]\n", Num_hull_pieces, Weapons_created, pairs_not_created, Pairs_created, 100.0f*(float)pairs_not_created/(float)(pairs_not_created + Pairs_created) ));
 	 mprintf(( "[pairs_created: %3d, pairs_not_created: %3d, percent saved %6.3f]\n", Pairs_created, pairs_not_created, 100.0f*pairs_not_created/(Pairs_created+pairs_not_created) ));
 	pairs_not_created = 0;
