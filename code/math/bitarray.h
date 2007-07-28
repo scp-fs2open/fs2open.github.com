@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/BitArray.h $
- * $Revision: 1.3 $
- * $Date: 2006-04-20 06:32:07 $
+ * $Revision: 1.4 $
+ * $Date: 2007-07-28 21:17:55 $
  * $Author: Goober5000 $
  *
  * Cool stuff with bit arrays
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.2  2005/07/13 03:15:50  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -50,16 +53,20 @@
  */
 
 // returns bit state (0 or 1)
-#define get_bit(array, bitnum)			((((char *) array)[(bitnum) >> 3] >> ((bitnum) & 7)) & 1)
+#define get_bit(array, bitnum)			((((ubyte *) array)[(bitnum) >> 3] >> ((bitnum) & 7)) & 1)
 
 // sets bit to 1
-#define set_bit(array, bitnum)			(((char *) array)[(bitnum) >> 3] |= (1 << ((bitnum) & 7)))
+#define set_bit(array, bitnum)			(((ubyte *) array)[(bitnum) >> 3] |= (1 << ((bitnum) & 7)))
 
 // clears bit to 0
-#define clear_bit(array, bitnum)		(((char *) array)[(bitnum) >> 3] &= ~(1 << ((bitnum) & 7)))
+#define clear_bit(array, bitnum)		(((ubyte *) array)[(bitnum) >> 3] &= ~(1 << ((bitnum) & 7)))
 
 // toggles bit (xor)
-#define toggle_bit(array, bitnum)		(((char *) array)[(bitnum) >> 3] ^= (1 << ((bitnum) & 7)))
+#define toggle_bit(array, bitnum)		(((ubyte *) array)[(bitnum) >> 3] ^= (1 << ((bitnum) & 7)))
+
+
+// calculate number of bytes from number of bits
+#define calculate_num_bytes(num_bits)	((num_bits >> 3) + 1)
 
 
 #endif	// _BIT_ARRAY_H

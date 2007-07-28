@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.222 $
- * $Date: 2007-07-23 15:16:50 $
- * $Author: Kazan $
+ * $Revision: 2.223 $
+ * $Date: 2007-07-28 21:17:55 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.222  2007/07/23 15:16:50  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 2.221  2007/05/26 12:08:26  Goober5000
  * when importing FS1 missions, account for the shuffled Head-TP4
  *
@@ -1296,9 +1299,11 @@ int Mission_alt_type_count = 0;
 
 // the ship arrival list will contain a list of ships that are yet to arrive.  This
 // list could also include ships that are part of wings!
+p_object Ship_arrival_list;	// for linked list of ships to arrive later
 
-p_object Parse_objects[MAX_PARSE_OBJECTS], Ship_arrival_list;	// for linked list of ships to arrive later
-int	Num_parse_objects;
+// all the ships that we parse
+std::vector<p_object> Parse_objects;
+
 
 // list for arriving support ship
 p_object	Support_ship_pobj;
@@ -4151,25 +4156,20 @@ void parse_objects(mission *pm, int flag)
 	required_string("#Objects");	
 
 	// parse in objects
-	Num_parse_objects = 0;
+	Parse_objects.clear();
 	while (required_string_either("#Wings", "$Name:"))
 	{
-		// make sure we're not overflowing
-		if (Num_parse_objects >= MAX_PARSE_OBJECTS)
-		{
-			skip_to_start_of_string("#Wings");
-			break;
-		}
+		p_object pobj;
 
 		// parse a single object
-		int valid = parse_object(pm, flag, &Parse_objects[Num_parse_objects]);
+		int valid = parse_object(pm, flag, &pobj);
 
 		// not all objects are always valid or legal
 		if (!valid)
 			continue;
 
-		// increment objects parsed
-		Num_parse_objects++;
+		// add it
+		Parse_objects.push_back(pobj);
 
 		// send out a ping if we are multi so that psnet2 doesn't kill us off for a long load
 		// NOTE that we can't use the timestamp*() functions here since they won't increment
@@ -4491,7 +4491,7 @@ p_object *mission_parse_get_parse_object(ushort net_signature)
 	int i;
 
 	// look for original ships
-	for (i = 0; i < Num_parse_objects; i++)
+	for (i = 0; i < Parse_objects.size(); i++)
 		if(Parse_objects[i].net_signature == net_signature)
 			return &Parse_objects[i];
 
@@ -4505,7 +4505,7 @@ p_object *mission_parse_get_parse_object(char *name)
 	int i;
 
 	// look for original ships
-	for (i = 0; i < Num_parse_objects; i++)
+	for (i = 0; i < Parse_objects.size(); i++)
 		if(!stricmp(Parse_objects[i].name, name))
 			return &Parse_objects[i];
 
@@ -4669,7 +4669,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 
 	// Goober5000 - we have to do this via the array because we have no guarantee we'll be able to iterate along the list
 	// (since created objects plus anything they're docked to will be removed from it)
-	for (i = 0; i < Num_parse_objects; i++)
+	for (i = 0; i < Parse_objects.size(); i++)
 	{
 		int index;
 		ai_info *aip;
@@ -5149,7 +5149,7 @@ void parse_wing(mission *pm)
 		// everything is still only in the parse array at this point (in both FRED and FS2)
 
 		// find the parse object and assign it the wing number
-		for (j = 0; j < Num_parse_objects; j++)
+		for (j = 0; j < Parse_objects.size(); j++)
 		{
 			p_object *p_objp = &Parse_objects[j];
 
@@ -5249,7 +5249,7 @@ void post_process_path_stuff()
 	wing *wingp;
 
 	// take care of parse objects (ships)
-	for (i = 0; i < Num_parse_objects; i++)
+	for (i = 0; i < Parse_objects.size(); i++)
 	{
 		pobjp = &Parse_objects[i];
 
@@ -5284,7 +5284,7 @@ void post_process_ships_wings()
 	// Goober5000 - now create all objects that we can.  This must be done before any ship stuff
 	// but can't be done until the dock references are resolved.  This was originally done
 	// in parse_object().
-	for (i = 0; i < Num_parse_objects; i++)
+	for (i = 0; i < Parse_objects.size(); i++)
 	{
 		mission_parse_maybe_create_parse_object(&Parse_objects[i]);
 	}
@@ -5299,7 +5299,7 @@ void post_process_ships_wings()
 	if (Fred_running)
 	{
 		// even though the ships are already created, only the parse objects know the wing info
-		for (i = 0; i < Num_parse_objects; i++)
+		for (i = 0; i < Parse_objects.size(); i++)
 		{
 			p_object *p_objp = &Parse_objects[i];
 
@@ -6493,7 +6493,7 @@ void mission_parse_close()
 	}
 
 	// free parse object dock lists
-	for (int i = 0; i < Num_parse_objects; i++)
+	for (int i = 0; i < Parse_objects.size(); i++)
 	{
 		dock_free_instances(&Parse_objects[i]);
 	}
@@ -6669,7 +6669,7 @@ void parse_object_clear_handled_flag_helper(p_object *pobjp, p_dock_function_inf
 void parse_object_clear_all_handled_flags()
 {
 	// clear flag for all ships
-	for (int i = 0; i < Num_parse_objects; i++)
+	for (int i = 0; i < Parse_objects.size(); i++)
 	{
 		p_object *pobjp = &Parse_objects[i];
 		p_dock_function_info dfi;
@@ -6717,7 +6717,7 @@ void mission_parse_set_up_initial_docks()
 	}
 
 	// now resolve the leader of each tree
-	for (i = 0; i < Num_parse_objects; i++)
+	for (i = 0; i < Parse_objects.size(); i++)
 	{
 		p_object *pobjp = &Parse_objects[i];
 		p_dock_function_info dfi;
@@ -7248,7 +7248,7 @@ void mission_eval_arrivals()
 	// check the arrival list
 	// Goober5000 - we can't run through the list the usual way because we might
 	// remove a bunch of objects and completely screw up the list linkage
-	for (i = 0; i < Num_parse_objects; i++)
+	for (i = 0; i < Parse_objects.size(); i++)
 	{
 		p_object *pobjp = &Parse_objects[i];
 
