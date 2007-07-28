@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.32.2.2 $
- * $Date: 2006-09-11 01:17:07 $
- * $Author: taylor $
+ * $Revision: 1.32.2.3 $
+ * $Date: 2007-07-28 04:43:43 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32.2.2  2006/09/11 01:17:07  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 1.32.2.1  2006/08/27 18:12:42  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
@@ -481,6 +484,8 @@ void species_init()
 {
 	if (Species_initted)
 		return;
+
+	Species_info.clear();
 
 
 	if (cf_exists_full("species_defs.tbl", CF_TYPE_TABLES))

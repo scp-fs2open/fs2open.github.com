@@ -9,9 +9,9 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.6.2.8 $
- * $Date: 2007-07-23 16:08:24 $
- * $Author: Kazan $
+ * $Revision: 1.6.2.9 $
+ * $Date: 2007-07-28 04:43:43 $
+ * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6.2.8  2007/07/23 16:08:24  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 1.6.2.7  2007/02/20 04:19:09  Goober5000
  * the great big duplicate model removal commit
  *
@@ -1877,7 +1880,7 @@ void select_objects()
 				break;
 
 			case OBJ_START:
-				if (!Show_starts)
+				if (!Show_starts || !Show_ships)
 					valid = 0;
 				break;
 

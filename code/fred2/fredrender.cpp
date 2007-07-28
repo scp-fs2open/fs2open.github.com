@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.5.2.3 $
- * $Date: 2007-02-20 04:19:09 $
+ * $Revision: 1.5.2.4 $
+ * $Date: 2007-07-28 04:43:43 $
  * $Author: Goober5000 $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5.2.3  2007/02/20 04:19:09  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 1.5.2.2  2006/10/27 06:33:38  taylor
  * add a "Render full detail" view option to render models at their full detail for the LOD (for render/detail boxes, Mantis bug #1121)
  *
@@ -1015,7 +1018,7 @@ void render_one_model_nohtl(object *objp)
 	if ((objp->type == OBJ_START) && !Show_starts)
 		return;
 
-	if (objp->type == OBJ_SHIP) {
+	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 		if (!Show_ships)
 			return;
 
@@ -1144,7 +1147,7 @@ void render_one_model_htl(object *objp)
 	if ((objp->type == OBJ_START) && !Show_starts)
 		return;
 
-	if (objp->type == OBJ_SHIP) {
+	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 		if (!Show_ships)
 			return;
 
@@ -1342,7 +1345,7 @@ void display_ship_info()
 		if ((objp->type == OBJ_START) && !Show_starts)
 			render = 0;
 		
-		if (objp->type == OBJ_SHIP) {
+		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 			if (!Show_ships)
 				render = 0;
 
@@ -2163,7 +2166,7 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos)
 	if ((objp->type == OBJ_START) && !Show_starts)
 		return 0;
 
-	if (objp->type == OBJ_SHIP) {
+	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 		if (!Show_ships)
 			return 0;
 

@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.17 $
- * $Date: 2007-05-28 18:27:33 $
- * $Author: wmcoolmon $
+ * $Revision: 1.12.2.18 $
+ * $Date: 2007-07-28 04:43:43 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.17  2007/05/28 18:27:33  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
+ *
  * Revision 1.12.2.16  2007/04/17 17:15:31  karajorma
  * Remove the -fredhtl command line.
  *
@@ -2469,7 +2472,7 @@ void correct_marking()
 					break;
 
 				case OBJ_START:
-					if (!Show_starts)
+					if (!Show_starts || !Show_ships)
 						unmark_object(OBJ_INDEX(ptr));
 					break;
 
