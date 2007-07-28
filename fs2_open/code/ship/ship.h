@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.193 $
- * $Date: 2007-07-23 15:16:52 $
- * $Author: Kazan $
+ * $Revision: 2.194 $
+ * $Date: 2007-07-28 22:04:47 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.193  2007/07/23 15:16:52  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 2.192  2007/07/19 05:44:00  turey
  * Small bugfix relating to restoring engines from disabled via the set-subsystem-strength SEXP.
  *
@@ -2478,8 +2481,5 @@ void ship_vanished(object *objp);
 int armor_type_get_idx(char* name);
 
 void armor_init();
-
-// Don't know where else to put this...
-void ship_reset_disabled_physics(object *objp, int ship_class);
 
 #endif
