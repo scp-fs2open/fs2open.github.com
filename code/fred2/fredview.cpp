@@ -9,8 +9,8 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.14 $
- * $Date: 2007-02-20 04:20:10 $
+ * $Revision: 1.15 $
+ * $Date: 2007-07-28 04:43:40 $
  * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2007/02/20 04:20:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 1.13  2007/02/15 02:03:56  phreak
  * Apparently Visual C++ 2005 follows standard syntax rules.
  *
@@ -1877,7 +1880,7 @@ void select_objects()
 				break;
 
 			case OBJ_START:
-				if (!Show_starts)
+				if (!Show_starts || !Show_ships)
 					valid = 0;
 				break;
 

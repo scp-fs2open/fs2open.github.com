@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.36 $
- * $Date: 2006-12-28 00:59:48 $
- * $Author: wmcoolmon $
+ * $Revision: 1.37 $
+ * $Date: 2007-07-28 04:43:40 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2006/12/28 00:59:48  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.35  2006/09/11 06:51:17  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -491,6 +494,8 @@ void species_init()
 {
 	if (Species_initted)
 		return;
+
+	Species_info.clear();
 
 
 	if (cf_exists_full("species_defs.tbl", CF_TYPE_TABLES))

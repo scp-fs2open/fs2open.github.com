@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.35 $
- * $Date: 2007-04-17 17:26:35 $
- * $Author: karajorma $
+ * $Revision: 1.36 $
+ * $Date: 2007-07-28 04:43:40 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.35  2007/04/17 17:26:35  karajorma
+ * Remove the -fredhtl command line.
+ *
  * Revision 1.34  2007/03/22 22:19:30  taylor
  * add back special "var" setting for flag_def_list and convert some of the lists to use it (more on the way)
  *
@@ -2424,7 +2427,7 @@ void correct_marking()
 					break;
 
 				case OBJ_START:
-					if (!Show_starts)
+					if (!Show_starts || !Show_ships)
 						unmark_object(OBJ_INDEX(ptr));
 					break;
 
