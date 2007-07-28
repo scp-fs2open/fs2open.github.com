@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.289 $
- * $Date: 2007-07-23 15:16:49 $
- * $Author: Kazan $
+ * $Revision: 2.290 $
+ * $Date: 2007-07-28 22:10:23 $
+ * $Author: karajorma $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.289  2007/07/23 15:16:49  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 2.288  2007/06/24 21:45:55  turey
  * Fixed some silly little bugs that somehow slipped through the cracks.
  *
@@ -7621,7 +7624,7 @@ void game_leave_state( int old_state, int new_state )
 			brief_stop_voices();
 			if ( (new_state != GS_STATE_OPTIONS_MENU) && (new_state != GS_STATE_WEAPON_SELECT)
 				  && (new_state != GS_STATE_SHIP_SELECT) && (new_state != GS_STATE_HOTKEY_SCREEN)
-				  && (new_state != GS_STATE_TEAM_SELECT) ){
+				  && (new_state != GS_STATE_TEAM_SELECT) && (new_state != GS_STATE_MULTI_MISSION_SYNC) ){
 				common_select_close();
 				if ( new_state == GS_STATE_MAIN_MENU ) {
 					freespace_stop_mission();	
@@ -7671,7 +7674,8 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_RED_ALERT:
-			red_alert_close();
+			red_alert_close(); 
+			common_select_close();
 			if (new_state == GS_STATE_MAIN_MENU) {
 				freespace_stop_mission();
 			}
@@ -7684,7 +7688,8 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_SHIP_SELECT:
 			if ( new_state != GS_STATE_OPTIONS_MENU && new_state != GS_STATE_WEAPON_SELECT &&
 				  new_state != GS_STATE_HOTKEY_SCREEN &&
-				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_TEAM_SELECT) {
+				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_TEAM_SELECT && 
+				  new_state != GS_STATE_MULTI_MISSION_SYNC ) {
 				common_select_close();
 				if ( new_state == GS_STATE_MAIN_MENU ) {
 					freespace_stop_mission();	
@@ -7695,7 +7700,8 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_WEAPON_SELECT:
 			if ( new_state != GS_STATE_OPTIONS_MENU && new_state != GS_STATE_SHIP_SELECT &&
 				  new_state != GS_STATE_HOTKEY_SCREEN &&
-				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_TEAM_SELECT) {
+				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_TEAM_SELECT &&
+				  new_state != GS_STATE_MULTI_MISSION_SYNC) {
 				common_select_close();
 				if ( new_state == GS_STATE_MAIN_MENU ) {
 					freespace_stop_mission();	
@@ -7706,7 +7712,8 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_TEAM_SELECT:
 			if ( new_state != GS_STATE_OPTIONS_MENU && new_state != GS_STATE_SHIP_SELECT &&
 				  new_state != GS_STATE_HOTKEY_SCREEN &&
-				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_WEAPON_SELECT) {
+				  new_state != GS_STATE_BRIEFING && new_state != GS_STATE_WEAPON_SELECT &&
+				  new_state != GS_STATE_MULTI_MISSION_SYNC ) {
 				common_select_close();
 				if ( new_state == GS_STATE_MAIN_MENU ) {
 					freespace_stop_mission();	
@@ -7889,6 +7896,8 @@ void game_leave_state( int old_state, int new_state )
 			break;
 
 		case GS_STATE_MULTI_MISSION_SYNC:
+			common_select_close();
+
 			// if we're moving into the options menu, don't do anything
 			if(new_state == GS_STATE_OPTIONS_MENU){
 				break;
