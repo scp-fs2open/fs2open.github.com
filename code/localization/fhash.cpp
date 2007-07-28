@@ -9,12 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/localization/fhash.cpp $
- * $Revision: 2.4 $
- * $Date: 2005-05-12 17:49:13 $
- * $Author: taylor $
+ * $Revision: 2.5 $
+ * $Date: 2007-07-28 00:37:38 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/05/12 17:49:13  taylor
+ * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
+ *   fixes various problems and is past time to make the switch
+ *
  * Revision 2.3  2004/07/26 20:47:36  Kazan
  * remove MCD complete
  *
@@ -85,7 +89,7 @@ void fhash_insert(char *str, int id, int n);
 // initialize the hash table
 void fhash_init()
 {
-	memset(Hash_table_fred, 0, sizeof(fhash_node) * HASH_TABLE_SIZE);
+	memset(Hash_table_fred, 0, sizeof(fhash_node *) * HASH_TABLE_SIZE);
 }
 
 // set the hash table to be active for parsing
