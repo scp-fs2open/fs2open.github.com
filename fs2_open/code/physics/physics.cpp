@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.16.2.2 $
- * $Date: 2007-05-26 15:36:38 $
- * $Author: Backslash $
+ * $Revision: 2.16.2.3 $
+ * $Date: 2007-07-28 22:04:14 $
+ * $Author: Goober5000 $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16.2.2  2007/05/26 15:36:38  Backslash
+ * Now that I've figured out how to commit to the 3_6_9 branch, here's a cleanup and update to bring physics as close to HEAD as possible without breaking anything or adding my uberglide changes yet. This fixes:
+ * -the reverse-thusters-not-working-at-full-throttle bug
+ * -the fishtail-way-too-fast-sideslip at high Damp values problem
+ * -the slide accel/decel damp inconsistency
+ * Some of these fixes will be particularly noticable to the BtRL people, hopefully all in good ways.
+ * Also fixed a bunch of typos and whitespace just to get it consistent with HEAD.
+ *
  * Revision 2.16.2.1  2006/08/19 04:38:47  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
@@ -421,6 +429,9 @@
 #include "physics/physics.h"
 #include "freespace2/freespace.h"
 #include "io/timer.h"
+// for the damping issue
+#include "ai/ai_profiles.h"
+#include "mission/missionparse.h"
 
 
 
@@ -741,7 +752,11 @@ void physics_sim_vel(vec3d * position, physics_info * pi, float sim_time, matrix
 		}
 	} else {
 		// regular damping
-		vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, pi->side_slip_time_const );
+		if ( The_mission.ai_profile->flags & AIPF_USE_NEWTONIAN_DAMPENING ) {
+			vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, pi->side_slip_time_const );
+		} else {
+			vm_vec_make( &damp, pi->side_slip_time_const, pi->side_slip_time_const, 0.0f );
+		}
 	}
 
 	// Note: CANNOT maintain a *local velocity* since a rotation can occur in this frame.
@@ -1069,7 +1084,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 		// deterimine whether accelerating or decleration toward goal for z
 		if ( goal_vel.xyz.z > 0.0f )  {
-			if ( goal_vel.xyz.y >= pi->prev_ramp_vel.xyz.z )  {
+			if ( goal_vel.xyz.z >= pi->prev_ramp_vel.xyz.z )  {
 				if ( pi->flags & PF_AFTERBURNER_ON )
 					ramp_time_const = pi->afterburner_forward_accel_time_const;
 				else if (pi->flags & PF_BOOSTER_ON)
