@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.85.2.9 $
- * $Author: Kazan $
- * $Date: 2007-07-23 16:08:28 $
+ * $Revision: 2.85.2.10 $
+ * $Author: Goober5000 $
+ * $Date: 2007-07-28 21:17:54 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85.2.9  2007/07/23 16:08:28  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 2.85.2.8  2007/02/21 01:43:32  Goober5000
  * remove duplicate model texture replacement
  *
@@ -945,11 +948,9 @@ typedef struct p_object {
 #define P2_ALREADY_HANDLED				(1<<31)	// Goober5000 - used for docking currently, but could be used generically
 
 
-// Goober5000
-#define MAX_PARSE_OBJECTS		100				// this shall also be the maximum number of ships on the arrival list
-#define POBJ_INDEX(pobjp) (pobjp-Parse_objects)
-extern p_object Parse_objects[MAX_PARSE_OBJECTS];
-extern int Num_parse_objects;
+// Goober5000 - this is now dynamic
+extern std::vector<p_object> Parse_objects;
+#define POBJ_INDEX(pobjp) (pobjp - Parse_objects.begin())	// yes, this arithmetic is valid :D
 
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
