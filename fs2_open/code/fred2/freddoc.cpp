@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.6.2.7 $
- * $Date: 2007-05-28 19:47:46 $
- * $Author: taylor $
+ * $Revision: 1.6.2.8 $
+ * $Date: 2007-07-28 21:31:04 $
+ * $Author: Goober5000 $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
  * Document class for document/view architechure, which we don't really use in
@@ -19,6 +19,9 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6.2.7  2007/05/28 19:47:46  taylor
+ * this is a bit cleaner way to do it :)
+ *
  * Revision 1.6.2.6  2007/05/26 15:11:15  Goober5000
  * that was weird
  *
@@ -391,7 +394,7 @@
 #include "cmdline/cmdline.h"
 #include "starfield/starfield.h"
 
-extern int num_objects;
+extern int Num_objects;
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1014,7 +1017,7 @@ void fred_notify_unknown_ship_during_parse()
 //
  //////////////////////////////////////////////////////////////////////////
 
-#if 0
+/*
 #define SerializeFloat(fp, mode, f) if (mode == 1) fp->Write(&f, sizeof(float)); else fp->Read(&f, sizeof(float))
 #define SerializeInt(fp, mode, f) if (mode == 1) fp->Write(&f, sizeof(int)); else fp->Read(&f, sizeof(int))
 
@@ -1121,7 +1124,7 @@ void cfile_serialize(XFILE *fp, int flag)
 
 	if (flag == 0) {
 		num_ships = 0;
-		num_objects = 0;
+		Num_objects = 0;
 	}
 
 	SerializeInt(fp, flag, highest_object_index);
@@ -1130,7 +1133,7 @@ void cfile_serialize(XFILE *fp, int flag)
 		SerializeObject(fp, flag, &Objects[i]);
 		if (flag == 0)
 			if (Objects[i].type != OBJ_NONE)
-				num_objects++;
+				Num_objects++;
 	}
 
 	//	Read/write ships
@@ -1179,7 +1182,7 @@ void cfile_serialize_editor(XFILE *fp, int flag)
 	SerializeGrid(fp, flag, The_grid);
 
 }
-#endif
+*/
 
 // Goober5000
 void CFREDDoc::OnFileImportFSM() 

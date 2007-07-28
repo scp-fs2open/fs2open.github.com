@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.21.2.2 $
- * $Date: 2006-09-08 06:14:44 $
- * $Author: taylor $
+ * $Revision: 2.21.2.3 $
+ * $Date: 2007-07-28 21:31:05 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21.2.2  2006/09/08 06:14:44  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.21.2.1  2006/06/27 04:06:17  Goober5000
  * handle docked objects during death roll
  * --Goober5000
@@ -557,7 +560,7 @@ extern int Show_waypoints;
 #define OBJECT_SIG_SHIP_START					300000				// ships start at this signature
 extern int Object_next_ship_signature;
 extern int Object_next_signature;		
-extern int num_objects;
+extern int Num_objects;
 
 extern object Objects[];
 extern int Highest_object_index;		//highest objnum

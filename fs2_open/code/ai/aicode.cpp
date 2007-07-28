@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72.2.22 $
- * $Date: 2007-07-23 16:08:22 $
- * $Author: Kazan $
+ * $Revision: 1.72.2.23 $
+ * $Date: 2007-07-28 21:31:03 $
+ * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72.2.22  2007/07/23 16:08:22  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 1.72.2.21  2007/07/15 18:00:50  Goober5000
  * Kazan's autopilot fix
  *
@@ -15147,7 +15150,7 @@ void init_ai_objects()
 {
 	int	i;
 
-	for (i=0; i<num_objects; i++){
+	for (i=0; i<Num_objects; i++){
 		if (Objects[i].type == OBJ_SHIP){
 			init_ai_object(i);
 		}
