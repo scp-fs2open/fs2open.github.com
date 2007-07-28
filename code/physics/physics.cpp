@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.22 $
- * $Date: 2007-07-19 03:19:32 $
- * $Author: turey $
+ * $Revision: 2.23 $
+ * $Date: 2007-07-28 22:04:46 $
+ * $Author: Goober5000 $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2007/07/19 03:19:32  turey
+ * Made Backslash's change to dampening tied to an ai_profiles flag, as it does affect
+ *  retail behavior, and significantly affects gameplay in the BtRL Demo.
+ * Also, fixed a typo.
+ *
  * Revision 2.21  2007/05/09 04:13:14  Backslash
  * Fix tiny bug I introduced -- should use forward_decel_time_const, not slide_decel_time_const, for z
  * Add feature to $Max Glide Speed -- negative number means no speed cap
@@ -435,9 +440,11 @@
 #include "physics/physics.h"
 #include "freespace2/freespace.h"
 #include "io/timer.h"
-// There's gotta be a better way to include these.
+// for the damping issue
 #include "ai/ai_profiles.h"
 #include "mission/missionparse.h"
+
+
 
 // defines for physics functions
 #define	MAX_TURN_LIMIT	0.2618f		// about 15 degrees
