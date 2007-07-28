@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.9 $
- * $Date: 2007-02-20 04:20:10 $
+ * $Revision: 1.10 $
+ * $Date: 2007-07-28 04:43:39 $
  * $Author: Goober5000 $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2007/02/20 04:20:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 1.8  2006/12/28 00:59:20  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1018,7 +1021,7 @@ void render_one_model_nohtl(object *objp)
 	if ((objp->type == OBJ_START) && !Show_starts)
 		return;
 
-	if (objp->type == OBJ_SHIP) {
+	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 		if (!Show_ships)
 			return;
 
@@ -1147,7 +1150,7 @@ void render_one_model_htl(object *objp)
 	if ((objp->type == OBJ_START) && !Show_starts)
 		return;
 
-	if (objp->type == OBJ_SHIP) {
+	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 		if (!Show_ships)
 			return;
 
@@ -1345,7 +1348,7 @@ void display_ship_info()
 		if ((objp->type == OBJ_START) && !Show_starts)
 			render = 0;
 		
-		if (objp->type == OBJ_SHIP) {
+		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 			if (!Show_ships)
 				render = 0;
 
@@ -2166,7 +2169,7 @@ int object_check_collision(object *objp, vec3d *p0, vec3d *p1, vec3d *hitpos)
 	if ((objp->type == OBJ_START) && !Show_starts)
 		return 0;
 
-	if (objp->type == OBJ_SHIP) {
+	if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 		if (!Show_ships)
 			return 0;
 

@@ -416,7 +416,7 @@ void DumpStats::get_object_stats(CString &buffer)
 	buffer += "\r\nWINGS\r\n";
 	for (i=0; i<MAX_WINGS; i++) {
 		if (Wings[i].wave_count > 0) {
-			temp.Format("\tWing Name: %s,  num_ships: %d,  num_waves: %d\r\n", Wings[i].name, Wings[i].wave_count, Wings[i].num_waves);
+			temp.Format("\tWing Name: %s,  wave_count: %d,  num_waves: %d\r\n", Wings[i].name, Wings[i].wave_count, Wings[i].num_waves);
 			buffer += temp;
 
 			num_counted_wings++;
