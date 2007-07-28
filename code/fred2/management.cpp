@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.18 $
- * $Date: 2007-07-28 04:43:43 $
+ * $Revision: 1.12.2.19 $
+ * $Date: 2007-07-28 21:31:05 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.18  2007/07/28 04:43:43  Goober5000
+ * a couple of tweaks
+ *
  * Revision 1.12.2.17  2007/05/28 18:27:33  wmcoolmon
  * Added armor support for asteroid, debris, ship, and beam damage
  *
@@ -1686,7 +1689,7 @@ void set_cur_indices(int obj)
 		return;
 	}
 
-	if (obj == -1 || !num_objects) {
+	if (obj == -1 || !Num_objects) {
 		cur_object_index = cur_ship = cur_wing = cur_waypoint_list = cur_waypoint = -1;
 		return;
 	}

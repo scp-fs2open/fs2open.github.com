@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.63.2.8 $
- * $Date: 2007-06-04 03:09:51 $
- * $Author: Backslash $
+ * $Revision: 2.63.2.9 $
+ * $Date: 2007-07-28 21:31:05 $
+ * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.8  2007/06/04 03:09:51  Backslash
+ * Another Gliding fix for 3_6_9: Makes it so switching gliding back off doesn't make your ship instantly switch direction.
+ *
  * Revision 2.63.2.7  2007/02/20 04:19:34  Goober5000
  * the great big duplicate model removal commit
  *
@@ -730,7 +733,7 @@ typedef struct checkobject
 checkobject CheckObjects[MAX_OBJECTS];
 #endif
 
-int num_objects=-1;
+int Num_objects=-1;
 int Highest_object_index=-1;
 int Highest_ever_object_index=0;
 int Object_next_signature = 1;	//0 is bogus, start at 1
@@ -1054,13 +1057,13 @@ void obj_init()
 
 	Object_next_signature = 1;	//0 is invalid, others start at 1
 	Object_next_ship_signature = OBJECT_SIG_SHIP_START;
-	num_objects = 0;			
+	Num_objects = 0;			
 	Highest_object_index = 0;
 
 	obj_reset_pairs();
 }
 
-int	num_objects_hwm = 0;
+static int num_objects_hwm = 0;
 
 //returns the number of a free object, updating Highest_object_index.
 //Generally, obj_create() should be called to get an object, since it
@@ -1073,14 +1076,14 @@ int obj_allocate(void)
 
 	if (!Object_inited) obj_init();
 
-	if ( num_objects >= MAX_OBJECTS-10 ) {
+	if ( Num_objects >= MAX_OBJECTS-10 ) {
 		int	num_freed;
 
 		num_freed = free_object_slots(MAX_OBJECTS-10);
 		nprintf(("warning", " *** Freed %i objects\n", num_freed));
 	}
 
-	if (num_objects >= MAX_OBJECTS) {
+	if (Num_objects >= MAX_OBJECTS) {
 		#ifndef NDEBUG
 		mprintf(("Object creation failed - too many objects!\n" ));
 		#endif
@@ -1098,11 +1101,11 @@ int obj_allocate(void)
 	list_append( &obj_create_list, objp );
 
 	// increment counter
-	num_objects++;
+	Num_objects++;
 
-	if (num_objects > num_objects_hwm) {
-		//nprintf(("AI", "*** MAX Num Objects = %i\n", num_objects));
-		num_objects_hwm = num_objects;
+	if (Num_objects > num_objects_hwm) {
+		//nprintf(("AI", "*** MAX Num Objects = %i\n", Num_objects));
+		num_objects_hwm = Num_objects;
 	}
 
 	// get objnum
@@ -1138,11 +1141,11 @@ void obj_free(int objnum)
 	list_append( &obj_free_list, objp );
 
 	// decrement counter
-	num_objects--;
+	Num_objects--;
 
 	Objects[objnum].type = OBJ_NONE;
 
-	Assert(num_objects >= 0);
+	Assert(Num_objects >= 0);
 
 	if (objnum == Highest_object_index)
 		while (Objects[--Highest_object_index].type == OBJ_NONE);
@@ -2076,7 +2079,7 @@ void obj_move_all(float frametime)
 		obj_clear_weapon_group_id_list();
 	}
 
-	MONITOR_INC( NumObjects, num_objects );	
+	MONITOR_INC( NumObjects, Num_objects );	
 
 	objp = GET_FIRST(&obj_used_list);
 	while( objp !=END_OF_LIST(&obj_used_list) )	{
