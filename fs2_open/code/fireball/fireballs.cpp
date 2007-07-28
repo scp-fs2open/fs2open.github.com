@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.36 $
- * $Date: 2007-02-11 18:19:41 $
- * $Author: taylor $
+ * $Revision: 2.37 $
+ * $Date: 2007-07-28 21:31:10 $
+ * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2007/02/11 18:19:41  taylor
+ * support for tbl specified fireball explosion color ("$Light color:")
+ *
  * Revision 2.35  2006/12/28 00:59:19  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1303,7 +1306,7 @@ int fireball_create( vec3d * pos, int fireball_type, int parent_obj, float size,
 		}
 	}
 
-	if ( (Num_fireballs >= MAX_FIREBALLS) || (num_objects >= MAX_OBJECTS) )	{
+	if ( (Num_fireballs >= MAX_FIREBALLS) || (Num_objects >= MAX_OBJECTS) )	{
 		// who cares if we don't create a spark.
 		// JAS - Should this code be in?  Is it better to remove an old spark
 		// and start a new one, or just not start the new one?
