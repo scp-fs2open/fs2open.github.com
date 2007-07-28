@@ -9,8 +9,8 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.15 $
- * $Date: 2007-07-28 04:43:40 $
+ * $Revision: 1.16 $
+ * $Date: 2007-07-28 21:31:10 $
  * $Author: Goober5000 $
  *
  * View class for a document/view architechure design program, which we don't
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.15  2007/07/28 04:43:40  Goober5000
+ * a couple of tweaks
+ *
  * Revision 1.14  2007/02/20 04:20:10  Goober5000
  * the great big duplicate model removal commit
  *
@@ -2223,7 +2226,7 @@ void CFREDView::OnMiscStatistics()
 		"Number of Objects: %d\n"
 		"Number of Ships:   %d\n"
 		"Number of Wings:   %d\n",
-		num_objects, ship_get_num_ships(), Num_wings);
+		Num_objects, ship_get_num_ships(), Num_wings);
 
 	MessageBox(buf, "FRED Statistics");
 }
@@ -3152,8 +3155,8 @@ int CFREDView::global_error_check()
 		return internal_error("Total number of player ships is incorrect");
 	}
 
-	if (obj_count != num_objects){
-		return internal_error("num_objects is incorrect");
+	if (obj_count != Num_objects){
+		return internal_error("Num_objects is incorrect");
 	}
 
 	count = 0;

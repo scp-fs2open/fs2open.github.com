@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.36 $
- * $Date: 2007-07-28 04:43:40 $
+ * $Revision: 1.37 $
+ * $Date: 2007-07-28 21:31:11 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2007/07/28 04:43:40  Goober5000
+ * a couple of tweaks
+ *
  * Revision 1.35  2007/04/17 17:26:35  karajorma
  * Remove the -fredhtl command line.
  *
@@ -1641,7 +1644,7 @@ void set_cur_indices(int obj)
 		return;
 	}
 
-	if (obj == -1 || !num_objects) {
+	if (obj == -1 || !Num_objects) {
 		cur_object_index = cur_ship = cur_wing = cur_waypoint_list = cur_waypoint = -1;
 		return;
 	}
