@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ParseObjectDock.cpp $
- * $Revision: 1.3 $
- * $Date: 2006-04-20 06:32:23 $
+ * $Revision: 1.4 $
+ * $Date: 2007-07-28 21:17:56 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system for parse objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2006/04/20 06:32:23  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 1.2  2005/10/31 09:12:16  Goober5000
  * remove unused commented stuff
  * --Goober5000
@@ -33,7 +36,7 @@
 
 // helper prototypes
 
-void dock_evaluate_tree(p_object *objp, p_dock_function_info *infop, void (*function)(p_object *, p_dock_function_info *), char *visited_bitstring);
+void dock_evaluate_tree(p_object *objp, p_dock_function_info *infop, void (*function)(p_object *, p_dock_function_info *), ubyte *visited_bitstring);
 void dock_dock_docked_children_tree(p_object *objp, p_object *parent_objp);
 
 
@@ -131,18 +134,22 @@ void dock_evaluate_all_docked_objects(p_object *objp, p_dock_function_info *info
 	// we have multiple objects docked and we must treat them as a tree
 	else
 	{
-		// create a bit array to mark the objects we checked
-		char visited_bitstring[(MAX_PARSE_OBJECTS >> 3) + 1];
+		// create a bit array to mark the objects we check
+		ubyte *visited_bitstring = (ubyte *) malloc(calculate_num_bytes(Parse_objects.size()));
 
 		// clear it
-		memset(visited_bitstring, 0, (MAX_PARSE_OBJECTS >> 3) + 1);
+		memset(visited_bitstring, 0, calculate_num_bytes(Parse_objects.size()));
 
 		// start evaluating the tree
 		dock_evaluate_tree(objp, infop, function, visited_bitstring);
+
+		// destroy the bit array
+		free(visited_bitstring);
+		visited_bitstring = NULL;
 	}
 }
 
-void dock_evaluate_tree(p_object *objp, p_dock_function_info *infop, void (*function)(p_object *, p_dock_function_info *), char *visited_bitstring)
+void dock_evaluate_tree(p_object *objp, p_dock_function_info *infop, void (*function)(p_object *, p_dock_function_info *), ubyte *visited_bitstring)
 {
 	// make sure we haven't visited this object already
 	if (get_bit(visited_bitstring, POBJ_INDEX(objp)))

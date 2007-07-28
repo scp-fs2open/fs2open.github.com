@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.13 $
- * $Date: 2007-02-20 04:20:27 $
+ * $Revision: 2.14 $
+ * $Date: 2007-07-28 21:17:56 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2007/02/20 04:20:27  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.12  2006/07/21 05:41:10  Goober5000
  * add another method for calculating dimensions of docked objects, plus improve an existing one
  * --Goober5000
@@ -75,7 +78,7 @@
 
 // helper prototypes
 
-void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *), char *visited_bitstring);
+void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *), ubyte *visited_bitstring);
 void dock_move_docked_children_tree(object *objp, object *parent_objp);
 void dock_count_total_docked_objects_helper(object *objp, dock_function_info *infop);
 void dock_check_find_docked_object_helper(object *objp, dock_function_info *infop);
@@ -385,18 +388,22 @@ void dock_evaluate_all_docked_objects(object *objp, dock_function_info *infop, v
 	// we have multiple objects docked and we must treat them as a tree
 	else
 	{
-		// create a bit array to mark the objects we checked
-		char visited_bitstring[(MAX_OBJECTS >> 3) + 1];
+		// create a bit array to mark the objects we check
+		ubyte *visited_bitstring = (ubyte *) malloc(calculate_num_bytes(num_objects));
 
 		// clear it
-		memset(visited_bitstring, 0, (MAX_OBJECTS >> 3) + 1);
+		memset(visited_bitstring, 0, calculate_num_bytes(num_objects));
 
 		// start evaluating the tree
 		dock_evaluate_tree(objp, infop, function, visited_bitstring);
+
+		// destroy the bit array
+		free(visited_bitstring);
+		visited_bitstring = NULL;
 	}
 }
 
-void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *), char *visited_bitstring)
+void dock_evaluate_tree(object *objp, dock_function_info *infop, void (*function)(object *, dock_function_info *), ubyte *visited_bitstring)
 {
 	// make sure we haven't visited this object already
 	if (get_bit(visited_bitstring, OBJ_INDEX(objp)))
