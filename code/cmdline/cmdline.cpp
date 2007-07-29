@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.155 $
- * $Date: 2007-06-24 18:04:23 $
- * $Author: karajorma $
+ * $Revision: 2.156 $
+ * $Date: 2007-07-29 03:11:01 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.155  2007/06/24 18:04:23  karajorma
+ * Fix an issue with single character command line arguments
+ *
  * Revision 2.154  2007/05/28 19:46:30  taylor
  * oops!  the exit() was supposed to come /after/ the last printf() :)
  *
@@ -401,10 +404,6 @@
  * fixed a Z buffer error in HTL submodel rendering,
  * and glow points,
  * and other stuff
- *
- * Revision 2.56  2004/02/20 21:58:07  randomtiger
- * Added * to - conversion for start mission code to allow launcher missions with '-' in them.
- * Currently the parsing code counts that as a flag and messes it up.
  *
  * Revision 2.55  2004/02/20 21:45:40  randomtiger
  * Removed some uneeded code between NO_DIRECT3D and added gr_zbias call, ogl is set to a stub func.
@@ -1336,7 +1335,7 @@ void parm_stuff_args(cmdline_parm *parm, char *cmdline)
 
 	cmdline += strlen(parm->name);
 
-	while ((*cmdline != 0) && (*cmdline != '-')) {
+	while ((*cmdline != '\0') && strncmp(cmdline, " -", 2)) {
 		*dest++ = *cmdline++;
 	}
 
@@ -1466,11 +1465,11 @@ void os_validate_parms(char *cmdline)
 				if (result != kCFUserNotificationDefaultResponse)
 					exit(0);
 #else
-				// if we got a -help, --help, or -h then show the help text, otherwise show unknown option
-				if ( !stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") ) {
+				// if we got a -help, --help, -h, or -? then show the help text, otherwise show unknown option
+				if ( !stricmp(token, "-help") || !stricmp(token, "--help") || !stricmp(token, "-h") || !stricmp(token, "-?") ) {
 					printf("FS2 Open: The Source Code Project, version %i.%i.%i\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
 					printf("Website: http://scp.indiegames.us\n");
-					printf("Mantis (bug reporting): http://lore.maxgaming.net/~scp/mantis/\n\n");
+					printf("Mantis (bug reporting): http://scp.indiegames.us/mantis/\n\n");
 					printf("Usage: fs2_open [options]\n");
 
 					// not the prettiest thing but the job gets done
@@ -2099,17 +2098,6 @@ bool SetCmdlineParams()
 
 	if ( start_mission_arg.found() ) {
 		Cmdline_start_mission = start_mission_arg.str();
-
-		if ( (Cmdline_start_mission != NULL) && (strlen(Cmdline_start_mission) > 0) ) {
-			char *temp = Cmdline_start_mission;
-
-			while (*temp) {
-				if (*temp == '*')
-					*temp = '-';
-
-				temp++;
-			}
-		}
 	}
 
 	if ( ambient_factor_arg.found() )
