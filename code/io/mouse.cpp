@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.15 $
- * $Date: 2006-03-15 17:35:24 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2007-08-01 12:25:51 $
+ * $Author: turey $
  *
  * Routines to read the mouse.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/03/15 17:35:24  taylor
+ * make sure our event state doesn't get filled with things we should poll for (was waiting for the new input code, but really needed to get at least this in)
+ *
  * Revision 2.14  2006/01/12 04:18:10  wmcoolmon
  * Finished committing codebase
  *
@@ -574,6 +577,12 @@ void mouse_eval_deltas()
 	Mouse_dy = tmp_y - old_y;
 	Mouse_dz = 0;
 
+	// Speeds up the menu mouse on higher resolutions. The check for a
+	// visible mouse should eliminate any possible gameplay changes.
+	if ( mouse_is_visible() ) {
+		gr_resize_screen_pos( &Mouse_dx, &Mouse_dy );
+	}
+
 	if (Keep_mouse_centered && Mouse_hidden) {
 		if (Mouse_dx || Mouse_dy)
 			mouse_force_pos(cx, cy);
@@ -631,6 +640,12 @@ void mouse_eval_deltas_di()
 
 	} else {
 		Mouse_dx = Mouse_dy = Mouse_dz = 0;
+	}
+
+	// Speeds up the menu mouse on higher resolutions. The check for a
+	// visible mouse should eliminate any possible gameplay changes.
+	if ( mouse_is_visible() ) {
+		gr_resize_screen_pos( &Mouse_dx, &Mouse_dy );
 	}
 
 	Mouse_x += Mouse_dx;
