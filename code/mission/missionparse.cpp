@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.223 $
- * $Date: 2007-07-28 21:17:55 $
+ * $Revision: 2.224 $
+ * $Date: 2007-08-03 01:37:05 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.223  2007/07/28 21:17:55  Goober5000
+ * make the parse object array dynamic; also made the docking bitstrings dynamic
+ *
  * Revision 2.222  2007/07/23 15:16:50  Kazan
  * Autopilot upgrades as described, MSVC2005 project fixes
  *
@@ -4200,11 +4203,10 @@ void parse_objects(mission *pm, int flag)
 // number of ships of that class that were present in the loadout. 
 void process_loadout_objects()
 {
-	int reassignments[MAX_PARSE_OBJECTS];
-	int count = 0;
+	std::vector<int> reassignments;
 	
 	// Loop through all the Parse_objects looking for ships that should be affected by the loadout code.
-	for (int i=0; i < Num_parse_objects; i++)
+	for (int i=0; i < Parse_objects.size(); i++)
 	{
 		p_object *pobj = &Parse_objects[i];
 		if (pobj->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY)
@@ -4215,15 +4217,14 @@ void process_loadout_objects()
 			{
 				// We've cycled through all the alt classes and we still haven't found one that matches
 				// So we store the ship so we can come back to it later.
-				Assert (count < Num_parse_objects);
-				reassignments[count++] = i;
+				reassignments.push_back(i);
 			}
 		}
 	}
 	
 	// Now we go though the ships we were unable to assign earlier and reassign them on a first come first 
 	// served basis.
-	for (int m=0; m < count; m++)
+	for (int m=0; m < reassignments.size(); m++)
 	{
 		// What is the ship class of the object and what team is it on? 
 		p_object *p_obj = &Parse_objects[reassignments[m]];
