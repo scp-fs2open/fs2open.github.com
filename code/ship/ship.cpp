@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.426 $
- * $Date: 2007-07-28 22:04:46 $
- * $Author: Goober5000 $
+ * $Revision: 2.427 $
+ * $Date: 2007-08-03 19:50:43 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.426  2007/07/28 22:04:46  Goober5000
+ * tweaks
+ *
  * Revision 2.425  2007/07/19 05:43:59  turey
  * Small bugfix relating to restoring engines from disabled via the set-subsystem-strength SEXP.
  *
@@ -15557,8 +15560,8 @@ int wing_has_conflicting_teams(int wing_index)
 	int first_team, idx;
 
 	// sanity checks
-	Assert((wing_index >= 0) && (wing_index < Num_wings) && (Wings[wing_index].current_count > 0));
-	if((wing_index < 0) || (wing_index >= Num_wings) || (Wings[wing_index].current_count <= 0)){
+	Assert((wing_index >= 0) && (wing_index < Num_wings) && (Wings[wing_index].wave_count > 0));
+	if((wing_index < 0) || (wing_index >= Num_wings) || (Wings[wing_index].wave_count <= 0)){
 		return -1;
 	}
 
@@ -15568,7 +15571,7 @@ int wing_has_conflicting_teams(int wing_index)
 		return -1;
 	}
 	first_team = Ships[Wings[wing_index].ship_index[0]].team;
-	for(idx=1; idx<Wings[wing_index].current_count; idx++){
+	for(idx=1; idx<Wings[wing_index].wave_count; idx++){
 		// more sanity checks
 		Assert(Wings[wing_index].ship_index[idx] >= 0);
 		if(Wings[wing_index].ship_index[idx] < 0){
