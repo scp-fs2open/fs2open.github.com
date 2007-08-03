@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.11 $
- * $Date: 2007-07-25 20:45:16 $
- * $Author: Kazan $
+ * $Revision: 1.23.2.12 $
+ * $Date: 2007-08-03 01:35:35 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.11  2007/07/25 20:45:16  Kazan
+ * I <3 making stupid bugs (return camera to normal when not using cutscene bars)
+ *
  * Revision 1.23.2.10  2007/07/25 14:51:14  Kazan
  * two-part autopilot warp, add +No_Cutscene_Bars optional flag to autopilot.tbl
  *
@@ -394,7 +397,7 @@ void StartAutopilot()
 	float radius = Player_obj->radius;
 	
 	// vars for usage w/ cinematic
-	vec3d pos, norm1, norm2, perp, tpos, rpos = Player_obj->pos, zero;
+	vec3d pos, norm1, perp, tpos, rpos = Player_obj->pos, zero;
 	memset(&zero, 0, sizeof(vec3d));
 
 
