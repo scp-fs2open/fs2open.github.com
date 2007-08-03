@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.72 $
- * $Date: 2007-07-28 22:04:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.336.2.73 $
+ * $Date: 2007-08-03 19:10:06 $
+ * $Author: karajorma $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.72  2007/07/28 22:04:14  Goober5000
+ * apply some of Turey's changes to stable branch
+ *
  * Revision 2.336.2.71  2007/07/15 08:20:05  Goober5000
  * fix and clean up the warpout conditions
  *
@@ -15217,8 +15220,8 @@ int wing_has_conflicting_teams(int wing_index)
 	int first_team, idx;
 
 	// sanity checks
-	Assert((wing_index >= 0) && (wing_index < Num_wings) && (Wings[wing_index].current_count > 0));
-	if((wing_index < 0) || (wing_index >= Num_wings) || (Wings[wing_index].current_count <= 0)){
+	Assert((wing_index >= 0) && (wing_index < Num_wings) && (Wings[wing_index].wave_count > 0));
+	if((wing_index < 0) || (wing_index >= Num_wings) || (Wings[wing_index].wave_count <= 0)){
 		return -1;
 	}
 
@@ -15228,7 +15231,7 @@ int wing_has_conflicting_teams(int wing_index)
 		return -1;
 	}
 	first_team = Ships[Wings[wing_index].ship_index[0]].team;
-	for(idx=1; idx<Wings[wing_index].current_count; idx++){
+	for(idx=1; idx<Wings[wing_index].wave_count; idx++){
 		// more sanity checks
 		Assert(Wings[wing_index].ship_index[idx] >= 0);
 		if(Wings[wing_index].ship_index[idx] < 0){
