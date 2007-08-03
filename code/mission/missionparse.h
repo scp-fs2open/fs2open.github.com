@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.102 $
+ * $Revision: 2.103 $
  * $Author: Goober5000 $
- * $Date: 2007-07-28 21:17:56 $
+ * $Date: 2007-08-03 01:17:01 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2007/07/28 21:17:56  Goober5000
+ * make the parse object array dynamic; also made the docking bitstrings dynamic
+ *
  * Revision 2.101  2007/07/23 15:16:50  Kazan
  * Autopilot upgrades as described, MSVC2005 project fixes
  *
@@ -998,7 +1001,7 @@ typedef struct p_object {
 
 // Goober5000 - this is now dynamic
 extern std::vector<p_object> Parse_objects;
-#define POBJ_INDEX(pobjp) (pobjp - Parse_objects.begin())	// yes, this arithmetic is valid :D
+#define POBJ_INDEX(pobjp) (pobjp - &Parse_objects[0])	// yes, this arithmetic is valid :D
 
 extern p_object Support_ship_pobj, *Arriving_support_ship;
 extern p_object Ship_arrival_list;
