@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.12 $
- * $Date: 2007-08-03 01:35:35 $
+ * $Revision: 1.23.2.13 $
+ * $Date: 2007-08-04 22:29:58 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.12  2007/08/03 01:35:35  Goober5000
+ * fix warning
+ *
  * Revision 1.23.2.11  2007/07/25 20:45:16  Kazan
  * I <3 making stupid bugs (return camera to normal when not using cutscene bars)
  *
@@ -131,7 +134,7 @@
 #include "ai/aigoals.h"
 #include "ship/ship.h"
 #include "object/object.h"
-#include "object/ObjCollide.h"
+#include "object/objcollide.h"
 #include "parse/sexp.h"
 #include "freespace2/freespace.h"
 #include "globalincs/linklist.h"

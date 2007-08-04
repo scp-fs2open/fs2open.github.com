@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.53 $
- * $Date: 2007-07-25 00:32:39 $
- * $Author: Kazan $
+ * $Revision: 2.259.2.54 $
+ * $Date: 2007-08-04 22:29:59 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.53  2007/07/25 00:32:39  Kazan
+ * small tweak
+ *
  * Revision 2.259.2.52  2007/07/24 20:08:30  Kazan
  * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
  *
@@ -1565,7 +1568,7 @@
 #include "network/multi_team.h"
 #include "parse/lua.h"
 #include "parse/scripting.h"
-#include "object/ObjCollide.h"
+#include "object/objcollide.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
