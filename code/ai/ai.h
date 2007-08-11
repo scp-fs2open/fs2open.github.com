@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.12.2.1 $
- * $Date: 2006-06-04 01:03:12 $
+ * $Revision: 1.12.2.2 $
+ * $Date: 2007-08-11 16:51:55 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.1  2006/06/04 01:03:12  Goober5000
+ * add fighterbay restriction code
+ * --Goober5000
+ *
  * Revision 1.12  2006/02/25 21:46:59  Goober5000
  * spelling
  *
@@ -554,7 +558,7 @@ typedef struct ai_info {
 	int		type;						//	
 	int		wing;						//	Member of what wing? -1 means none. 
 
-	int		behavior;				//	AI Class.  Doesn't change after initial setting.
+	int		behavior;				//	AI behavior; vestigial field from early development of FS1
 	int		mode;
 	int		previous_mode;
 	int		mode_time;				//	timestamp at which current mode elapses.
