@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.427 $
- * $Date: 2007-08-03 19:50:43 $
- * $Author: karajorma $
+ * $Revision: 2.428 $
+ * $Date: 2007-08-11 16:52:02 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.427  2007/08/03 19:50:43  karajorma
+ * Reinforcements Editor bug fixed Sucka!
+ *
  * Revision 2.426  2007/07/28 22:04:46  Goober5000
  * tweaks
  *
@@ -15860,7 +15863,7 @@ void ship_set_new_ai_class(int ship_num, int new_ai_class)
 
 	// we hafta change a bunch of stuff here...
 	aip->ai_class = new_ai_class;
-	aip->behavior = new_ai_class;
+	aip->behavior = AIM_NONE;
 	aip->ai_courage = Ai_classes[new_ai_class].ai_courage[Game_skill_level];
 	aip->ai_patience = Ai_classes[new_ai_class].ai_patience[Game_skill_level];
 	aip->ai_evasion = Ai_classes[new_ai_class].ai_evasion[Game_skill_level];

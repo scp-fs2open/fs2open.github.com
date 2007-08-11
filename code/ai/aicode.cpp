@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.106 $
- * $Date: 2007-07-28 21:31:10 $
+ * $Revision: 1.107 $
+ * $Date: 2007-08-11 16:52:02 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.106  2007/07/28 21:31:10  Goober5000
+ * this should really be capitalized
+ *
  * Revision 1.105  2007/07/23 15:16:47  Kazan
  * Autopilot upgrades as described, MSVC2005 project fixes
  *
@@ -11516,7 +11519,7 @@ void ai_dock()
 			mission_log_add_entry(LOG_SHIP_DOCKED, Ships[Pl_objp->instance].ship_name, Ships[goal_objp->instance].ship_name);
 
 			if (aigp->ai_mode == AI_GOAL_DOCK) {
-				ai_mission_goal_complete( aip );					// Note, this calls ai_set_default_behavior().
+				ai_mission_goal_complete( aip );					// Note, this calls ai_do_default_behavior().
 			} 
 		}
 		
@@ -15243,7 +15246,7 @@ void ai_set_default_behavior(object *obj, int classnum)
 
 	aip = &Ai_info[Ships[obj->instance].ai_index];
 
-	aip->behavior = classnum;
+	aip->behavior = AIM_NONE;
 
 }
 

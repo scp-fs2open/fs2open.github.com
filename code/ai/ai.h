@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.18 $
- * $Date: 2007-02-18 06:16:46 $
+ * $Revision: 1.19 $
+ * $Date: 2007-08-11 16:52:02 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.18  2007/02/18 06:16:46  Goober5000
+ * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ *
  * Revision 1.17  2007/02/11 21:26:34  Goober5000
  * massive shield infrastructure commit
  *
@@ -560,7 +563,7 @@ typedef struct ai_info {
 	int		type;						//	
 	int		wing;						//	Member of what wing? -1 means none. 
 
-	int		behavior;				//	AI Class.  Doesn't change after initial setting.
+	int		behavior;				//	AI behavior; vestigial field from early development of FS1
 	int		mode;
 	int		previous_mode;
 	int		mode_time;				//	timestamp at which current mode elapses.
