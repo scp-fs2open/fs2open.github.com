@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.82 $
- * $Date: 2007-07-23 15:16:50 $
- * $Author: Kazan $
+ * $Revision: 2.83 $
+ * $Date: 2007-08-13 04:54:41 $
+ * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.82  2007/07/23 15:16:50  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 2.81  2007/06/04 00:04:21  Backslash
  * Backslash's HEAD-only controls commit:
  * -Lateral thruster axes
@@ -2022,42 +2025,6 @@ void game_process_pause_key()
 	}
 }
 
-#define WITHIN_BBOX()	do { \
-	if (pm != NULL) { \
-		float scale = 2.0f; \
-		collided = 0; \
-		vec3d temp = new_obj->pos; \
-		vec3d gpos; \
-		vm_vec_sub2(&temp, &hit_check->pos); \
-		vm_vec_rotate(&gpos, &temp, &hit_check->orient); \
-		if((gpos.xyz.x >= pm->mins.xyz.x * scale) && (gpos.xyz.y >= pm->mins.xyz.y * scale) && (gpos.xyz.z >= pm->mins.xyz.z * scale) && (gpos.xyz.x <= pm->maxs.xyz.x * scale) && (gpos.xyz.y <= pm->maxs.xyz.y * scale) && (gpos.xyz.z <= pm->maxs.xyz.z * scale)) { \
-			collided = 1; \
-		} \
-	} \
-} while(0)
-
-#define MOVE_AWAY_BBOX() do { \
-	if (pm != NULL) { \
-		switch((int)frand_range(0.0f, 3.9f)){ \
-		case 0: \
-			new_obj->pos.xyz.x += 200.0f; \
-			break; \
-		case 1: \
-			new_obj->pos.xyz.x -= 200.0f; \
-			break; \
-		case 2: \
-			new_obj->pos.xyz.y += 200.0f; \
-			break; \
-		case 3: \
-			new_obj->pos.xyz.y -= 200.0f; \
-			break; \
-		default : \
-			new_obj->pos.xyz.z -= 200.0f; \
-			break; \
-		} \
-	} \
-} while(0)
-
 // process cheat codes
 void game_process_cheats(int k)
 {
@@ -2123,62 +2090,70 @@ void game_process_cheats(int k)
 		HUD_printf("Prepare to be taken to school");
 	}
 	if( !strcmp(Cheat_code_pirate, cryptstring) && (Game_mode & GM_IN_MISSION) && (Player_obj != NULL)){
+		extern void prevent_spawning_collision(object *new_obj);
+		ship_subsys *ptr;
+		char name[NAME_LENGTH];
+		int i, ship_idx, ship_class, num_ships = 1;
+
+		// if not found, then don't create it :(
+		ship_class = ship_info_lookup("Volition Bravos");
+		if (ship_class < 0)
+			return;
+
 		HUD_printf(NOX("Walk the plank"));
-		
-		for(int idx=0; idx<1; idx++){
-			vec3d add = Player_obj->pos;
-			add.xyz.x += frand_range(-700.0f, 700.0f);
-			add.xyz.y += frand_range(-700.0f, 700.0f);
-			add.xyz.z += frand_range(-700.0f, 700.0f);
 
-			int objnum = ship_create(&vmd_identity_matrix, &add, Num_ship_classes - 1);
+		for (i = 0; i < num_ships; i++)
+		{
+			vec3d pos = Player_obj->pos;
+			matrix orient = Player_obj->orient;
+			pos.xyz.x += frand_range(-700.0f, 700.0f);
+			pos.xyz.y += frand_range(-700.0f, 700.0f);
+			pos.xyz.z += frand_range(-700.0f, 700.0f);
 
-			if(objnum >= 0){
-				int collided;
-				ship_obj *moveup;
-				object *hit_check;
-				ship *s_check;
-				object *new_obj = &Objects[objnum];
+			int objnum = ship_create(&orient, &pos, ship_class);
+			if (objnum < 0)
+				return;
 
-				// place him
-				// now make sure we're not colliding with anyone		
-				do {
-					collided = 0;
-					moveup = GET_FIRST(&Ship_obj_list);
-					while(moveup!=END_OF_LIST(&Ship_obj_list)){
-						// don't check the new_obj itself!!
-						if(moveup->objnum != objnum){
-							hit_check = &Objects[moveup->objnum];
-							Assert(hit_check->type == OBJ_SHIP);
-							Assert(hit_check->instance >= 0);
-							if((hit_check->type != OBJ_SHIP) || (hit_check->instance < 0)){
-								continue;
-							}
-							s_check = &Ships[hit_check->instance];
-							
-							// just to make sure we don't get any strange magnitude errors
-							if(vm_vec_same(&hit_check->pos, &Objects[objnum].pos)){
-								Objects[objnum].pos.xyz.x += 1.0f;
-							}
-							
-							polymodel *pm = model_get(Ship_info[s_check->ship_info_index].model_num);
-							WITHIN_BBOX();				
-							if(collided){						
-								MOVE_AWAY_BBOX();
-								break;
-							} 
-							collided = 0;
-						}
-						moveup = GET_NEXT(moveup);
-					}
-				} while(collided);   					
-			
-				// warpin
-				shipfx_warpin_start(&Objects[objnum]);
+			ship *shipp = &Ships[Objects[objnum].instance];
+			shipp->ship_name[0] = '\0';
+			shipp->orders_accepted = (1<<NUM_COMM_ORDER_ITEMS)-1;
 
-				// tell him to attack				
-				// ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_CHASE_ANY, SM_ATTACK, NULL, &Ai_info[Ships[Objects[objnum].instance].ai_index] );
+			// Goober5000 - stolen from support ship creation
+			// create a name for the ship.  use "Volition Bravos #".  look for collisions until one isn't found anymore
+			ship_idx = 1;
+			do {
+				sprintf(name, NOX("Volition Bravos %d"), ship_idx);
+				if ( (ship_name_lookup(name) == -1) && (ship_find_exited_ship_by_name(name) == -1) )
+				{
+					strcpy(shipp->ship_name, name);
+					break;
+				}
+
+				ship_idx++;
+			} while(1);
+
+			shipp->flags |= SF_ESCORT;
+			shipp->escort_priority = 1000 - ship_idx;
+
+			// now make sure we're not colliding with anyone
+			prevent_spawning_collision(&Objects[objnum]);
+				
+			// Goober5000 - beam free
+			for (ptr = GET_FIRST(&shipp->subsys_list); ptr != END_OF_LIST(&shipp->subsys_list); ptr = GET_NEXT(ptr))
+			{
+				// mark all turrets as beam free
+				if (ptr->system_info->type == SUBSYSTEM_TURRET)
+				{
+					ptr->weapons.flags |= SW_FLAG_BEAM_FREE;
+					ptr->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+				}
 			}
+				
+			// warpin
+			shipfx_warpin_start(&Objects[objnum]);
+
+			// tell him to attack				
+			// ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_CHASE_ANY, SM_ATTACK, NULL, &Ai_info[shipp->ai_index] );
 		}
 	}
 #endif
