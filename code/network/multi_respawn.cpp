@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_respawn.cpp $
- * $Revision: 2.13 $
- * $Date: 2007-02-20 04:20:18 $
+ * $Revision: 2.14 $
+ * $Date: 2007-08-13 04:54:41 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2007/02/20 04:20:18  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.12  2006/02/06 02:06:02  wmcoolmon
  * Various fixes; very beginnings of Directives scripting support
  *
@@ -241,6 +244,7 @@ void multi_respawn_place(object *new_obj, int team);
 // respawn the server immediately
 void multi_respawn_server();
 
+void prevent_spawning_collision(object *new_obj);
 
 // ---------------------------------------------------------------------------------------
 // MULTI RESPAWN FUNCTIONS
@@ -899,59 +903,12 @@ void multi_respawn_check_ai()
 // 2. Check to make sure we aren't within the radius of any of the ships in the game
 //    a.) If we are, move away along the vector between the two ships (by the radius of the ship it collided with)
 //    b.) repeat step 2
-/*
-#define MOVE_AWAY() { vec3d away; vm_vec_sub(&away,&new_obj->pos,&hit_check->pos); \
-	                   vm_vec_normalize_quick(&away); vm_vec_scale(&away,hit_check->radius+hit_check->radius); \
-							 vm_vec_add2(&new_obj->pos,&away); }
-
-#define WITHIN_RADIUS() { float dist; dist=vm_vec_dist(&new_obj->pos,&hit_check->pos); \
-	                       if(dist <= hit_check->radius) collided = 1; }
-*/
-
-#define WITHIN_BBOX()	do { \
-	if (pm != NULL) { \
-		float scale = 2.0f; \
-		collided = 0; \
-		vec3d temp = new_obj->pos; \
-		vec3d gpos; \
-		vm_vec_sub2(&temp, &hit_check->pos); \
-		vm_vec_rotate(&gpos, &temp, &hit_check->orient); \
-		if((gpos.xyz.x >= pm->mins.xyz.x * scale) && (gpos.xyz.y >= pm->mins.xyz.y * scale) && (gpos.xyz.z >= pm->mins.xyz.z * scale) && (gpos.xyz.x <= pm->maxs.xyz.x * scale) && (gpos.xyz.y <= pm->maxs.xyz.y * scale) && (gpos.xyz.z <= pm->maxs.xyz.z * scale)) { \
-			collided = 1; \
-		} \
-	} \
-} while(0)
-
-#define MOVE_AWAY_BBOX() do { \
-	if (pm != NULL) { \
-		switch((int)frand_range(0.0f, 3.9f)){ \
-		case 0: \
-			new_obj->pos.xyz.x += 200.0f; \
-			break; \
-		case 1: \
-			new_obj->pos.xyz.x -= 200.0f; \
-			break; \
-		case 2: \
-			new_obj->pos.xyz.y += 200.0f; \
-			break; \
-		case 3: \
-			new_obj->pos.xyz.y -= 200.0f; \
-			break; \
-		default : \
-			new_obj->pos.xyz.z -= 200.0f; \
-			break; \
-		} \
-	} \
-} while(0)
 
 void multi_respawn_place(object *new_obj, int team)
 {
-	ship_obj *moveup;
-	ship *s_check;
 	ship *pri = NULL;
 	object *pri_obj = NULL;
-	object *hit_check;
-	int collided, idx, lookup;
+	int idx, lookup;
 
 	// first determine if there are any appropriate priority ships to use
 	pri = NULL;
@@ -1038,35 +995,93 @@ void multi_respawn_place(object *new_obj, int team)
 		new_obj->pos = Multi_respawn_points[Multi_next_respawn_point].pos;		
 	}
 
-	// now make sure we're not colliding with anyone		
+	// now make sure we're not colliding with anyone
+	prevent_spawning_collision(new_obj);
+}
+
+
+/*
+#define MOVE_AWAY() { vec3d away; vm_vec_sub(&away,&new_obj->pos,&hit_check->pos); \
+	                   vm_vec_normalize_quick(&away); vm_vec_scale(&away,hit_check->radius+hit_check->radius); \
+							 vm_vec_add2(&new_obj->pos,&away); }
+
+#define WITHIN_RADIUS() { float dist; dist=vm_vec_dist(&new_obj->pos,&hit_check->pos); \
+	                       if(dist <= hit_check->radius) collided = 1; }
+*/
+
+#define WITHIN_BBOX()	do { \
+	if (pm != NULL) { \
+		float scale = 2.0f; \
+		collided = 0; \
+		vec3d temp = new_obj->pos; \
+		vec3d gpos; \
+		vm_vec_sub2(&temp, &hit_check->pos); \
+		vm_vec_rotate(&gpos, &temp, &hit_check->orient); \
+		if((gpos.xyz.x >= pm->mins.xyz.x * scale) && (gpos.xyz.y >= pm->mins.xyz.y * scale) && (gpos.xyz.z >= pm->mins.xyz.z * scale) && (gpos.xyz.x <= pm->maxs.xyz.x * scale) && (gpos.xyz.y <= pm->maxs.xyz.y * scale) && (gpos.xyz.z <= pm->maxs.xyz.z * scale)) { \
+			collided = 1; \
+		} \
+	} \
+} while(0)
+
+#define MOVE_AWAY_BBOX() do { \
+	if (pm != NULL) { \
+		switch((int)frand_range(0.0f, 3.9f)){ \
+		case 0: \
+			new_obj->pos.xyz.x += 200.0f; \
+			break; \
+		case 1: \
+			new_obj->pos.xyz.x -= 200.0f; \
+			break; \
+		case 2: \
+			new_obj->pos.xyz.y += 200.0f; \
+			break; \
+		case 3: \
+			new_obj->pos.xyz.y -= 200.0f; \
+			break; \
+		default : \
+			new_obj->pos.xyz.z -= 200.0f; \
+			break; \
+		} \
+	} \
+} while(0)
+
+
+void prevent_spawning_collision(object *new_obj)
+{
+	int collided;
+	ship_obj *moveup;
+	object *hit_check;
+	ship *s_check;
+
 	do {
 		collided = 0;
-		moveup = GET_FIRST(&Ship_obj_list);
-		while(moveup!=END_OF_LIST(&Ship_obj_list)){
-			// don't check the new_obj itself!!
-			if(Objects[moveup->objnum].net_signature != new_obj->net_signature){
-				hit_check = &Objects[moveup->objnum];
-				Assert(hit_check->type == OBJ_SHIP);
-				Assert(hit_check->instance >= 0);
-				if((hit_check->type != OBJ_SHIP) || (hit_check->instance < 0)){
-					continue;
-				}
-				s_check = &Ships[hit_check->instance];
-				
-				// just to make sure we don't get any strange magnitude errors
-				if(vm_vec_same(&hit_check->pos, &new_obj->pos)){
-					new_obj->pos.xyz.x += 1.0f;
-				}
-				
-				polymodel *pm = model_get(Ship_info[s_check->ship_info_index].model_num);
-				WITHIN_BBOX();
-				if(collided){
-					MOVE_AWAY_BBOX();
-					break;
-				} 
-				collided = 0;
+
+		for (moveup = GET_FIRST(&Ship_obj_list); moveup != END_OF_LIST(&Ship_obj_list); moveup = GET_NEXT(moveup))
+		{
+			// don't check the new object itself!!
+			if (moveup->objnum == OBJ_INDEX(new_obj))
+				continue;
+
+			hit_check = &Objects[moveup->objnum];
+
+			Assert(hit_check->type == OBJ_SHIP);
+			Assert(hit_check->instance >= 0);
+			if ((hit_check->type != OBJ_SHIP) || (hit_check->instance < 0))
+				continue;
+
+			s_check = &Ships[hit_check->instance];
+							
+			// just to make sure we don't get any strange magnitude errors
+			if (vm_vec_same(&hit_check->pos, &new_obj->pos))
+				new_obj->pos.xyz.x += 1.0f;
+							
+			polymodel *pm = model_get(Ship_info[s_check->ship_info_index].model_num);
+			WITHIN_BBOX();				
+			if (collided)
+			{
+				MOVE_AWAY_BBOX();
+				break;
 			}
-			moveup = GET_NEXT(moveup);
 		}
-	} while(collided);   		
+	} while (collided);
 }
