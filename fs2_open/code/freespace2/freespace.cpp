@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.41 $
- * $Date: 2007-07-27 21:55:10 $
+ * $Revision: 2.243.2.42 $
+ * $Date: 2007-08-13 23:07:35 $
  * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.41  2007/07/27 21:55:10  Goober5000
+ * dork
+ *
  * Revision 2.243.2.40  2007/07/23 16:08:25  Kazan
  * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
@@ -1685,14 +1688,15 @@
 
 
 #ifdef _WIN32
- #include <direct.h>
- #include <io.h>
-#ifndef _MINGW
- #include <crtdbg.h>
-#endif // !_MINGW
+  #include <direct.h>
+  #include <io.h>
+
+  #ifndef _MINGW
+    #include <crtdbg.h>
+  #endif // !_MINGW
 #else
- #include <unistd.h>
- #include <sys/stat.h>
+  #include <unistd.h>
+  #include <sys/stat.h>
 #endif
 
 #include "anim/animplay.h"
@@ -9110,11 +9114,47 @@ int game_main(char *cmdline)
 // TODO: this should end up in a separate file in the not too distant future.
 //
 
-#ifdef _WIN32
-// Windows Specific
+#ifdef _WIN32	// Windows Specific
+
+static HHOOK g_hKeyboardHook;
+
+// ugh
+#ifndef WH_KEYBOARD_LL
+  #define WH_KEYBOARD_LL	13
+#endif
+
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	if (nCode < 0 || nCode != HC_ACTION)  // do not process message 
+		return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam); 
+
+	// hack!
+	// this is because the KBDLLHOOKSTRUCT type requires a mess of #includes,
+	// but all we need from it is the first field
+	DWORD vkCode = *( (DWORD *) lParam );
+
+	// determine key event
+	switch (wParam) 
+	{
+		case WM_KEYDOWN:  
+		case WM_KEYUP:    
+			if (/*GL_fullscreen && fAppActive &&*/ ((vkCode == VK_LWIN) || (vkCode == VK_RWIN)))
+				return 1;
+	}
+
+	return CallNextHookEx( g_hKeyboardHook, nCode, wParam, lParam );
+}
+
 int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdShow)
 {
 	int result = -1;
+
+	// Don't let more than one instance of FreeSpace run.
+	HWND hwnd = FindWindow( NOX( "FreeSpaceClass" ), NULL );
+	if ( hwnd )	{
+		SetForegroundWindow(hwnd);
+		return 0;
+	}
 
 	::CoInitialize(NULL);
 
@@ -9125,12 +9165,8 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 
 	DBUGFILE_INIT();
 
-	// Don't let more than one instance of FreeSpace run.
-	HWND hwnd = FindWindow( NOX( "FreeSpaceClass" ), NULL );
-	if ( hwnd )	{
-		SetForegroundWindow(hwnd);
-		return 0;
-	}
+	// disable the Windows key
+	g_hKeyboardHook = SetWindowsHookEx( WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0 );
 
 	//=====================================================
 	// Make sure we're running in the right directory.
@@ -9165,6 +9201,9 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 	}
 #endif // _MSC_VER
 
+	// re-enable the Windows key
+	UnhookWindowsHookEx( g_hKeyboardHook );
+
 	DBUGFILE_DEINIT();
 
 	::CoUninitialize();
@@ -9176,9 +9215,8 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 	return result;
 }
 
-#else
+#else			// *NIX specific
 
-// *NIX specific
 int main(int argc, char *argv[])
 {
 	int result = EXIT_FAILURE;
