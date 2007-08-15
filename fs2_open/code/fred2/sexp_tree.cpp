@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.8.2.10 $
- * $Date: 2007-05-28 18:27:33 $
- * $Author: wmcoolmon $
+ * $Revision: 1.8.2.11 $
+ * $Date: 2007-08-15 06:57:00 $
+ * $Author: Goober5000 $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8.2.10  2007/05/28 18:27:33  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
+ *
  * Revision 1.8.2.9  2007/05/20 21:24:09  wmcoolmon
  * .
  *
@@ -1406,10 +1409,6 @@ void sexp_tree::right_clicked(int mode)
 	click_point = mouse;
 	ScreenToClient(&click_point);
 	h = HitTest(CPoint(click_point), &_flags);  // find out what they clicked on
-
-	for (i=0; i<(int)tree_nodes.size(); i++)
-		if (tree_nodes[i].handle == h)
-			break;
 
 	if (h && menu.LoadMenu(IDR_MENU_EDIT_SEXP_TREE)) {
 		update_help(h);
@@ -4381,11 +4380,12 @@ void sexp_tree::update_help(HTREEITEM h)
 			}
 */
 	help_box = (CEdit *) GetParent()->GetDlgItem(IDC_HELP_BOX);
-	mini_help_box = (CEdit *) GetParent()->GetDlgItem(IDC_MINI_HELP_BOX);
 	if (!help_box || !::IsWindow(help_box->m_hWnd))
 		return;
 
-	mini_help_box->SetWindowText("");
+	mini_help_box = (CEdit *) GetParent()->GetDlgItem(IDC_MINI_HELP_BOX);
+	if (!mini_help_box || !::IsWindow(mini_help_box->m_hWnd))
+		return;
 
 	for (i=0; i<(int)tree_nodes.size(); i++)
 		if (tree_nodes[i].handle == h)
@@ -4393,6 +4393,7 @@ void sexp_tree::update_help(HTREEITEM h)
 
 	if ((i >= (int)tree_nodes.size()) || !tree_nodes[i].type) {
 		help_box->SetWindowText("");
+		mini_help_box->SetWindowText("");
 		return;
 	}
 
