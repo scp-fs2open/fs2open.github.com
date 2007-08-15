@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/stdafx.h $
- * $Revision: 1.2 $
- * $Date: 2007-07-23 15:16:49 $
- * $Author: Kazan $
+ * $Revision: 1.3 $
+ * $Date: 2007-08-15 07:16:35 $
+ * $Author: Goober5000 $
  *
 // stdafx.h : include file for standard system include files,
 //  or project specific include files that are used frequently, but
@@ -28,7 +28,6 @@
  * Revision 1.1.1.1  2002/07/15 03:11:03  inquisitor
  * Initial FRED2 Checking
  *
- * 
  * 2     10/07/98 6:28p Dave
  * Initial checkin. Renamed all relevant stuff to be Fred2 instead of
  * Fred. Globalized mission and campaign file extensions. Removed Silent
@@ -46,7 +45,7 @@
  */
 
 // #define VC_EXTRALEAN		// Exclude rarely-used stuff from Windows headers
-#define WINVER 0x0500		// windows 2000
+
 #include <afxwin.h>         // MFC core and standard components
 #include <afxext.h>         // MFC extensions
 #ifndef _AFX_NO_AFXCMN_SUPPORT
