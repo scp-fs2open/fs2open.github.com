@@ -1361,14 +1361,14 @@ void multi_oo_process_update(ubyte *data, header *hinfo)
 
 	// if this is processed on the server, its a client object update packet
 	player_index = -1;
-	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
+//	if(Net_player->flags & NETINFO_FLAG_AM_MASTER){
 		// determine what player this came from 
 		player_index = find_player_id(hinfo->id);
 		if(player_index != -1){						
 			pl = &Net_players[player_index];
-		} else {			
-			pl = NULL;
-		}
+//		} else {			
+//			pl = NULL;
+//		}
 	}
 	// otherwise its a "regular" object update packet on a client from the server. use "myself" as the reference player
 	else {						
@@ -1483,6 +1483,63 @@ void multi_oo_send_control_info()
 		multi_io_send(Net_player, data, packet_size);
 	}
 }
+
+// Sends a packet from the server to the client, syncing the player's position/orientation to the
+// Server's. Allows for use of certain SEXPs in multiplayer.
+void multi_oo_send_changed_object(object *changedobj)
+{
+	ubyte data[MAX_PACKET_SIZE], stop;
+	ubyte data_add[MAX_PACKET_SIZE];
+	ubyte oo_flags;	
+	int add_size;
+	int packet_size = 0;
+	int idx = 0;
+#ifndef NDEBUG
+	nprintf(("Network","Attempting to affect player object.\n"));
+#endif
+	for (; idx < 12; idx++)
+	{
+		if( movedobj == &(Objects[Net_players[idx].m_player->objnum]) ) {
+			break;
+		}
+	}
+#ifndef NDEBUG
+	nprintf(("Network","Index for changed object found: [%d].\n",idx));
+#endif
+	if( idx >= 12 ) {
+		return;
+	}
+	// build the header
+	BUILD_HEADER(OBJECT_UPDATE);		
+
+	// pos and orient always
+	oo_flags = (OO_POS_NEW | OO_ORIENT_NEW);
+
+	// pack the appropriate info into the data
+	add_size = multi_oo_pack_data(&Net_players[idx], movedobj, oo_flags, data_add);
+
+	// copy in any relevant data
+	if(add_size){
+		stop = 0xff;		
+		multi_rate_add(idx, "stp", 1);
+		
+		ADD_DATA(stop);
+
+		memcpy(data + packet_size, data_add, add_size);
+		packet_size += add_size;		
+	}
+
+	// add the final stop byte
+	stop = 0x0;	
+	multi_rate_add(idx, "stp", 1);
+	ADD_DATA(stop);
+
+	// increment sequence #
+//	Player_ship->np_updates[idx].seq++;
+
+	multi_io_send(&Net_players[idx], data, packet_size);
+}
+
 
 // display any oo info on the hud
 void multi_oo_display()

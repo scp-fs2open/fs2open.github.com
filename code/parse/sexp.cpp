@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.318 $
- * $Date: 2007-08-04 22:30:02 $
- * $Author: Goober5000 $
+ * $Revision: 2.319 $
+ * $Date: 2007-08-15 17:10:25 $
+ * $Author: turey $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.318  2007/08/04 22:30:02  Goober5000
+ * fix case-sensitive #include (Linux)
+ *
  * Revision 2.317  2007/07/25 00:33:31  Kazan
  * small tweak
  *
@@ -1593,6 +1596,7 @@
 #include "network/multimsgs.h"
 #include "network/multiutil.h"
 #include "network/multi_team.h"
+#include "network/multi_obj.h"
 #include "parse/lua.h"
 #include "parse/scripting.h"
 #include "object/waypoint/waypoint.h"
@@ -6704,6 +6708,10 @@ void sexp_set_object_position(int n)
 		case OSWPT_TYPE_WAYPOINT:
 		{
 			oswpt.objp->pos = target_vec;
+			// Tell the player that they've moved.
+			if( Game_mode & GM_MULTIPLAYER ) {
+				multi_oo_send_changed_object(oswpt.objp);
+			}
 			return;
 		}
 
@@ -6769,6 +6777,10 @@ void sexp_set_object_orient(object *objp, vec3d *location, int turn_time, int ba
 
 	// set orientation -----------------------------
 	objp->orient = m_orient;
+	// Tell the player that they've moved.
+	if( Game_mode & GM_MULTIPLAYER ) {
+		multi_oo_send_changed_object(objp);
+	}
 }
 
 // Goober5000

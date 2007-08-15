@@ -57,6 +57,7 @@ void multi_oo_gameplay_init();
 
 // send control info for a client (which is basically a "reverse" object update)
 void multi_oo_send_control_info();
+void multi_oo_send_changed_object(object *changedobj);
 
 // reset all sequencing info
 void multi_oo_reset_sequencing();
