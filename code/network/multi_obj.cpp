@@ -1499,7 +1499,7 @@ void multi_oo_send_changed_object(object *changedobj)
 #endif
 	for (; idx < 12; idx++)
 	{
-		if( movedobj == &(Objects[Net_players[idx].m_player->objnum]) ) {
+		if( changedobj == &(Objects[Net_players[idx].m_player->objnum]) ) {
 			break;
 		}
 	}
@@ -1516,7 +1516,7 @@ void multi_oo_send_changed_object(object *changedobj)
 	oo_flags = (OO_POS_NEW | OO_ORIENT_NEW);
 
 	// pack the appropriate info into the data
-	add_size = multi_oo_pack_data(&Net_players[idx], movedobj, oo_flags, data_add);
+	add_size = multi_oo_pack_data(&Net_players[idx], changedobj, oo_flags, data_add);
 
 	// copy in any relevant data
 	if(add_size){
