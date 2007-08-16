@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.207  2007/07/15 06:29:56  Goober5000
+ * restore WMC's ship flag
+ *
  * Revision 2.206  2007/07/15 02:45:20  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
@@ -5135,7 +5138,7 @@ void weapon_process_post(object * obj, float frame_time)
 		if ((wp->lssm_stage==1) && (timestamp_elapsed(wp->lssm_warpout_time)))
 		{
 			//if we don't have a lock at this point, just stay in normal space
-			if (wp->target_num == -1)
+			if (wp->homing_object == &obj_used_list)
 			{
 				wp->lssm_stage=0;
 				return;
