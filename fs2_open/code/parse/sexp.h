@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122.2.10 $
- * $Author: Kazan $
- * $Date: 2007-07-24 20:08:31 $
+ * $Revision: 2.122.2.11 $
+ * $Author: Goober5000 $
+ * $Date: 2007-08-17 03:29:51 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122.2.10  2007/07/24 20:08:31  Kazan
+ * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
+ *
  * Revision 2.122.2.9  2007/07/23 16:08:31  Kazan
  * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
@@ -1250,7 +1253,7 @@ struct ship_subsys;
 #define OP_HUD_SET_COORDS					(0x0074 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_HUD_SET_FRAME					(0x0075 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_HUD_SET_COLOR					(0x0076 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_RADAR_SET_MAXRANGE				(0x0077 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //Kazan
+#define OP_RADAR_SET_MAX_RANGE				(0x0077 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //Kazan
 #define OP_SHIP_TAG							(0x0078 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SHIP_UNTAG						(0x0079 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SHIP_CHANGE_ALT_NAME				(0x007a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
