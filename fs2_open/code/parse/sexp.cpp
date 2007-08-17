@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.319 $
- * $Date: 2007-08-15 17:10:25 $
- * $Author: turey $
+ * $Revision: 2.320 $
+ * $Date: 2007-08-17 03:29:45 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.319  2007/08/15 17:10:25  turey
+ * set-object-position and set-object-orient now work in multi.
+ *
  * Revision 2.318  2007/08/04 22:30:02  Goober5000
  * fix case-sensitive #include (Linux)
  *
@@ -1947,7 +1950,7 @@ sexp_oper Operators[] = {
 	{ "hud-set-coords",				OP_HUD_SET_COORDS,				3, 3 },	//WMCoolmon
 	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
 	{ "hud-set-color",				OP_HUD_SET_COLOR,				4, 4 }, //WMCoolmon
-	{ "radar-set-max-range",		OP_RADAR_SET_MAXRANGE,			1, 1 }, //Kazan
+	{ "radar-set-max-range",		OP_RADAR_SET_MAX_RANGE,			1, 1 }, //Kazan
 
 /*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
@@ -8648,11 +8651,9 @@ void sexp_hud_set_color(int n)
 #endif
 }
 
-
-// Kazan
-void sexp_radar_set_maxrange(int n)
+void sexp_radar_set_max_range(int n)
 {
-	Radar_ranges[RR_MAX_RANGES-1] = (float)atof(CTEXT(n));
+	hud_set_radar_max_range(atof(CTEXT(n)));
 }
 
 // Goober5000
@@ -15718,8 +15719,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-			case OP_RADAR_SET_MAXRANGE: //Kazan
-				sexp_radar_set_maxrange(node);
+			case OP_RADAR_SET_MAX_RANGE: //Kazan
+				sexp_radar_set_max_range(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -17004,7 +17005,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
-		case OP_RADAR_SET_MAXRANGE:
+		case OP_RADAR_SET_MAX_RANGE:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SET_DEATH_MESSAGE:
 		case OP_SCRAMBLE_MESSAGES:
@@ -17168,7 +17169,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SPECIAL_CHECK:
 		case OP_AI_WARP_OUT:
 		case OP_TEAM_SCORE:
-		case OP_RADAR_SET_MAXRANGE: //Kazan
+		case OP_RADAR_SET_MAX_RANGE: //Kazan
 		case OP_MISSION_SET_NEBULA:	//WMC
 			return OPF_POSITIVE;
 
@@ -19459,7 +19460,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
-		case OP_RADAR_SET_MAXRANGE: //Kazan
+		case OP_RADAR_SET_MAX_RANGE: //Kazan
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -19586,10 +19587,10 @@ sexp_help_struct Sexp_help[] = {
 
 
 	// For the mission designer to enforce a -radar_reduce
-	{ OP_RADAR_SET_MAXRANGE, "Takes 1 arguement: The Radar Range\r\n"
-		"It sets the 'infinite' radar range value to the argument\r\n"
-		"This has the same effect as the -radar_reduce command line option: except the player cannot skip it\r\n"
-		"Useful for enforcing game balance" },
+	{ OP_RADAR_SET_MAX_RANGE, "Radar-set-max-range (Action operator)\r\n"
+		"\tSets the maximum radar range to the value of the argument.\r\n"
+		"\tEntering -1 will reset maximum radar range to infinity.\r\n"
+		"\tTakes 1 numeric argument: The maximum radar range.\r\n"},
 
 	// Goober5000
 	{ OP_ABS, "Absolute value (Arithmetic operator)\r\n"
