@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.83 $
- * $Date: 2007-08-13 04:54:41 $
+ * $Revision: 2.84 $
+ * $Date: 2007-08-17 03:29:45 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.83  2007/08/13 04:54:41  Goober5000
+ * some improvements to the pirate ship
+ *
  * Revision 2.82  2007/07/23 15:16:50  Kazan
  * Autopilot upgrades as described, MSVC2005 project fixes
  *
@@ -3150,7 +3153,9 @@ int button_function(int n)
 			if ( HUD_config.rp_dist >= RR_MAX_RANGES )
 				HUD_config.rp_dist = 0;
 
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Radar range set to %s", 38), Radar_range_text(HUD_config.rp_dist));
+			char buf[32];
+			Radar_range_stuff_text(buf, HUD_config.rp_dist);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Radar range set to %s", 38), buf);
 			break;
 
 		// toggle the squadmate messaging menu

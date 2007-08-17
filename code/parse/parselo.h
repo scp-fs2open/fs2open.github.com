@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.50 $
- * $Author: turey $
- * $Date: 2007-07-11 20:11:33 $
+ * $Revision: 2.51 $
+ * $Author: Goober5000 $
+ * $Date: 2007-08-17 03:29:45 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.50  2007/07/11 20:11:33  turey
+ * Ship Template fixes. It's fully working now, hopefully.
+ *
  * Revision 2.49  2007/05/28 20:05:06  taylor
  * more resilient checking of stars.tbl and it's modular versions
  *
@@ -485,11 +488,8 @@ extern bool Modular_tables_loaded;
 #define SEXP_ERROR_CHECK_MODE		2
 
 // Goober5000 - this seems to be a pretty universal function
-bool end_string_at_first_hash_symbol(char *src);
-char *get_pointer_to_first_hash_symbol(char *src);
-
-// Goober5000
-int subsystem_stricmp(const char *str1, const char *str2);
+extern bool end_string_at_first_hash_symbol(char *src);
+extern char *get_pointer_to_first_hash_symbol(char *src);
 
 // white space
 extern int is_white_space(char ch);
@@ -610,11 +610,17 @@ extern int replace_all(char *str, char *oldstr, char *newstr, unsigned int max_l
 // Goober5000 (why is this not in the C library?)
 extern char *stristr(const char *str, const char *substr);
 
+// Goober5000
+extern int subsystem_stricmp(const char *str1, const char *str2);
+
 //WMC - compares two strings, ignoring the last extension
-extern int strextcmp(char *s1, char* s2);
+extern int strextcmp(const char *s1, const char *s2);
 
 //WMC - backspaces the first character of given char pointer
-void backspace(char *src);
+extern void backspace(char *src);
+
+// Goober5000 - prints a properly comma-separated integer to a string
+extern void format_integer_with_commas(char *buf, int integer, bool use_comma_with_four_digits);
 
 inline void parse_advance(int s){Mp+=s;}
 
