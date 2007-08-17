@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.19 $
- * $Date: 2007-07-29 03:10:59 $
+ * $Revision: 2.140.2.20 $
+ * $Date: 2007-08-17 03:29:48 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.19  2007/07/29 03:10:59  Goober5000
+ * allow embedded dashes in command-line options
+ *
  * Revision 2.140.2.18  2007/06/24 17:59:17  karajorma
  * Fix an issue with single character command line arguments
  *
@@ -1752,8 +1755,8 @@ bool SetCmdlineParams()
 
 	if (Radar_Range_Clamp.found())
 	{
-		if (Radar_Range_Clamp.get_float() > 0.0f)
-			Radar_ranges[RR_MAX_RANGES-1] = Radar_Range_Clamp.get_float();
+		float f = Radar_Range_Clamp.get_float();
+		hud_set_radar_max_range(f);
 	}
 
 	if (nowarn_arg.found())

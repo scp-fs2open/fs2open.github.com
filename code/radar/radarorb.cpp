@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.23.2.2 $
- * $Date: 2007-02-11 09:12:12 $
- * $Author: taylor $
+ * $Revision: 1.23.2.3 $
+ * $Date: 2007-08-17 03:29:51 $
+ * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.2  2007/02/11 09:12:12  taylor
+ * little bit of cleanup
+ * more fixage for hidden jumpnodes (Mantis #1149)
+ *
  * Revision 1.23.2.1  2007/02/10 00:16:57  taylor
  * phreak missed fixing this here when he fixed it in unstable
  *
@@ -137,6 +141,7 @@
 #include "render/3d.h"
 #include "iff_defs/iff_defs.h"
 #include "jumpnode/jumpnode.h"
+#include "hud/hudconfig.h"
 
 extern float radx, rady;
 
@@ -686,29 +691,23 @@ void radar_draw_blips_sorted_orb(int distort)
 
 void radar_draw_range_orb()
 {
-	char buf[32];
-
 	// hud_set_bright_color();
 	hud_set_gauge_color(HUD_RADAR, HUD_C_BRIGHT);
 
-	switch ( HUD_config.rp_dist ) {
+	char buf[8];
+	int range = (int) Radar_ranges[HUD_config.rp_dist];
 
-	case RR_SHORT:
-		gr_printf(Current_radar_global->Radar_dist_coords[gr_screen.res][RR_SHORT][0], Current_radar_global->Radar_dist_coords[gr_screen.res][RR_SHORT][1], XSTR( "2k", 467));
-		break;
-
-	case RR_LONG:
-		gr_printf(Current_radar_global->Radar_dist_coords[gr_screen.res][RR_LONG][0], Current_radar_global->Radar_dist_coords[gr_screen.res][RR_LONG][1], XSTR( "10k", 468));
-		break;
-
-	case RR_INFINITY:
+	if (range >= RR_INFINITY_THRESHOLD)
+	{
 		sprintf(buf, NOX("%c"), Lcl_special_chars);
 		gr_printf(Current_radar_global->Radar_dist_coords[gr_screen.res][RR_INFINITY][0], Current_radar_global->Radar_dist_coords[gr_screen.res][RR_INFINITY][1], buf);
-		break;
+	}
+	else
+	{
+		sprintf(buf, "%d", range / 1000);
+		strcat(buf, "k");
 
-	default:
-		Int3();	// can't happen (get Alan if it does)
-		break;
+		gr_printf(Current_radar_global->Radar_dist_coords[gr_screen.res][HUD_config.rp_dist][0], Current_radar_global->Radar_dist_coords[gr_screen.res][HUD_config.rp_dist][1], buf);
 	}
 
 	hud_set_default_color();

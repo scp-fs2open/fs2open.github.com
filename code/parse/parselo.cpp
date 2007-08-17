@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.73.2.10 $
- * $Author: taylor $
- * $Date: 2007-05-28 20:04:49 $
+ * $Revision: 2.73.2.11 $
+ * $Author: Goober5000 $
+ * $Date: 2007-08-17 03:29:49 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73.2.10  2007/05/28 20:04:49  taylor
+ * more resilient checking of stars.tbl and it's modular versions
+ *
  * Revision 2.73.2.9  2007/04/11 14:56:37  taylor
  * add extra safety check to make sure that we are going to do a wildcard search for modular tables
  *
@@ -3013,25 +3016,6 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 }
 
 // Goober5000
-bool end_string_at_first_hash_symbol(char *src)
-{
-	char *p;
-	Assert(src);
-
-	p = get_pointer_to_first_hash_symbol(src);
-	if (p)
-	{
-		while (*(p-1) == ' ')
-			p--;
-
-		*p = '\0';
-		return true;
-	}
-
-	return false;
-}
-
-// Goober5000
 // accounts for the dumb communications != communication, etc.
 int subsystem_stricmp(const char *str1, const char *str2)
 {
@@ -3111,6 +3095,25 @@ stristr_continue_outer_loop:
 
 	// no match
 	return NULL;
+}
+
+// Goober5000
+bool end_string_at_first_hash_symbol(char *src)
+{
+	char *p;
+	Assert(src);
+
+	p = get_pointer_to_first_hash_symbol(src);
+	if (p)
+	{
+		while (*(p-1) == ' ')
+			p--;
+
+		*p = '\0';
+		return true;
+	}
+
+	return false;
 }
 
 // Goober5000
@@ -3201,7 +3204,7 @@ int replace_all(char *str, char *oldstr, char *newstr, uint max_len, int range)
 // WMC
 // Compares two strings, ignoring (last) extension
 // Returns 0 if equal, nonzero if not
-int strextcmp(char *s1, char* s2)
+int strextcmp(const char *s1, const char *s2)
 {
 	// sanity check
 	Assert( (s1 != NULL) && (s2 != NULL) );
@@ -3245,6 +3248,46 @@ void backspace(char* src)
 	*dest = '\0';
 }
 
+// Goober5000
+void format_integer_with_commas(char *buf, int integer, bool use_comma_with_four_digits)
+{
+	int old_pos, new_pos, triad_count;
+	char backward_buf[32];
+
+	// print an initial string of just the digits
+	sprintf(buf, "%d", integer);
+
+	// no commas needed?
+	if ((integer < 1000) || (integer < 10000 && !use_comma_with_four_digits))
+		return;
+
+	// scan the string backwards, writing commas after every third digit
+	new_pos = 0;
+	triad_count = 0;
+	for (old_pos = strlen(buf) - 1; old_pos >= 0; old_pos--)
+	{
+		backward_buf[new_pos] = buf[old_pos];
+		new_pos++;
+		triad_count++;
+
+		if (triad_count == 3 && old_pos > 0)
+		{
+			backward_buf[new_pos] = ',';
+			new_pos++;
+			triad_count = 0;
+		}
+	}
+	backward_buf[new_pos] = '\0';
+
+	// now reverse the string
+	new_pos = 0;
+	for (old_pos = strlen(backward_buf) - 1; old_pos >= 0; old_pos--)
+	{
+		buf[new_pos] = backward_buf[old_pos];
+		new_pos++;
+	}
+	buf[new_pos] = '\0';
+}
 
 // Goober5000 - ugh, I can't see why they didn't just use stuff_*_list for these;
 // the only differece is the lack of parentheses
