@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.320 $
- * $Date: 2007-08-17 03:29:45 $
+ * $Revision: 2.321 $
+ * $Date: 2007-08-18 01:59:14 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.320  2007/08/17 03:29:45  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
+ *
  * Revision 2.319  2007/08/15 17:10:25  turey
  * set-object-position and set-object-orient now work in multi.
  *
@@ -33,10 +36,6 @@
  *
  * Revision 2.314  2007/07/23 15:16:51  Kazan
  * Autopilot upgrades as described, MSVC2005 project fixes
- *
- * Revision 2.313  2007/07/15 23:08:16  turey
- * Small change to how Simulated Hull works. If ship is gone, it now has 0 Simulated
- *  Hull.
  *
  * Revision 2.312  2007/07/13 22:28:12  turey
  * Initial commit of Training Weapons / Simulated Hull code.
@@ -5976,9 +5975,9 @@ int sexp_sim_hits_left(int n)
 
 	shipname = CTEXT(n);
 	
-	// if ship is gone or departed, cannot ever evaluate properly.  Return 0
+	// if ship is gone or departed, cannot ever evaluate properly.  Return NAN_FOREVER
 	if ( mission_log_get_time(LOG_SHIP_DESTROYED, shipname, NULL, NULL) || mission_log_get_time( LOG_SHIP_DEPARTED, shipname, NULL, NULL) ){
-		return 0;
+		return SEXP_NAN_FOREVER;
 	}
 
 	shipnum = ship_name_lookup( shipname );
