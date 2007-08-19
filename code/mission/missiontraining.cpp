@@ -9,14 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.25 $
- * $Date: 2006-03-19 05:05:59 $
- * $Author: taylor $
+ * $Revision: 2.26 $
+ * $Date: 2007-08-19 22:15:41 $
+ * $Author: karajorma $
  *
  * Special code for training missions.  Stuff like displaying training messages in
  * the special training window, listing the training objectives, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2006/03/19 05:05:59  taylor
+ * make sure the mission log doesn't modify stuff in Cargo_names[], since it shouldn't
+ * have split_str_once() be sure to not split a word in half, it should end up on the second line instead
+ *
  * Revision 2.24  2006/01/30 06:58:10  taylor
  * try and handle things like $$ and ## a bit better (this worked for what I threw at it but please double-check me here Goober)
  *
@@ -719,6 +723,13 @@ void sort_training_objectives()
 	int num_offset_events = 0;
 	for (i=0; i<offset; i++) {
 		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
+		
+		// if this is a multiplayer tvt game, and this is event is for another team, don't touch it
+		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
+				continue ;
+			}
+		}
 
 		if (event_status == EVENT_CURRENT)  {
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
@@ -749,6 +760,14 @@ void sort_training_objectives()
 	for (i=offset; i<Training_obj_num_lines; i++) {
 		event_status = mission_get_event_status(TRAINING_OBJ_LINES_MASK(i));
 
+		// if this is a multiplayer tvt game, and this is event is for another team, it can be bumped
+		if((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_TEAM) && (Net_player != NULL)){
+			if((Mission_events[TRAINING_OBJ_LINES_MASK(i)].team != -1) &&  (Net_player->p_info.team != Mission_events[TRAINING_OBJ_LINES_MASK(i)].team)){
+				Training_obj_lines[i] |= TRAINING_OBJ_STATUS_KNOWN;
+				continue ;
+			}
+		}
+
 		if (event_status == EVENT_CURRENT)  {
 			Training_obj_lines[i] |= TRAINING_OBJ_STATUS_UNKNOWN;
 		} else if (event_status ==	EVENT_SATISFIED) {
@@ -767,7 +786,7 @@ void sort_training_objectives()
 	}
 
 
-	int slot_idx, unkn_vis;
+	int slot_idx, unkn_vis, last_directive;
 	// go through list and bump as needed
 	for (i=0; i<num_offset_events; i++) {
 
@@ -787,10 +806,14 @@ void sort_training_objectives()
 		}
 
 		// shift and replace (mark old one as STATUS_KNOWN)
+		// store the directive that won't be shown
+		last_directive = Training_obj_lines[Training_obj_num_lines-1];
+
 		for (int j=slot_idx; j>0; j--) {
 			Training_obj_lines[j+offset-1] = Training_obj_lines[j+offset-2];
 		}
 		Training_obj_lines[offset] = Training_obj_lines[unkn_vis];
+		Training_obj_lines[unkn_vis] = last_directive;
 		Training_obj_lines[unkn_vis] &= ~TRAINING_OBJ_LINES_EVENT_STATUS_MASK;
 		Training_obj_lines[unkn_vis] |= TRAINING_OBJ_STATUS_KNOWN;
 	}
