@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.42 $
- * $Date: 2007-08-13 23:07:35 $
+ * $Revision: 2.243.2.43 $
+ * $Date: 2007-08-20 02:55:12 $
  * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.42  2007/08/13 23:07:35  Goober5000
+ * disable the Windows key while FreeSpace is running (thanks to jr2)
+ * c.f. http://www.hard-light.net/forums/index.php/topic,48838.0.html
+ *
  * Revision 2.243.2.41  2007/07/27 21:55:10  Goober5000
  * dork
  *
@@ -7178,8 +7182,12 @@ void game_process_event( int current_state, int event )
 
 		case GS_EVENT_START_GAME:
 			Select_default_ship = 0;			
-			Player_multi_died_check = -1;
 			gameseq_set_state(GS_STATE_CMD_BRIEF);
+			break;
+
+		case GS_EVENT_START_GAME_QUICK:
+			Select_default_ship = 1;
+			gameseq_post_event(GS_EVENT_ENTER_GAME);
 			break;
 
 		case GS_EVENT_START_BRIEFING:
@@ -7234,13 +7242,6 @@ void game_process_event( int current_state, int event )
 			//Framecount = 0;
 			mprintf(("Entering game at time = %7.3f\n", Start_time));
 			break;
-
-
-		case GS_EVENT_START_GAME_QUICK:
-			Select_default_ship = 1;
-			gameseq_post_event(GS_EVENT_ENTER_GAME);
-			break;
-
 
 		case GS_EVENT_END_GAME:
 			if ( (current_state == GS_STATE_GAME_PLAY) || (current_state == GS_STATE_DEATH_DIED) ||
