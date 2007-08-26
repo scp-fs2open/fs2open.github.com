@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.321 $
- * $Date: 2007-08-18 01:59:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.322 $
+ * $Date: 2007-08-26 16:01:59 $
+ * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.321  2007/08/18 01:59:14  Goober5000
+ * bring sexp into conformance with other sexps
+ *
  * Revision 2.320  2007/08/17 03:29:45  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
@@ -7139,6 +7142,8 @@ int sexp_destroyed_departed_delay(int n)
 		} else if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, &time_gone) ) {
 			count++;
 		} else if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time_gone) ) {
+			count++;
+		} else if ( mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, &time_gone) ) {
 			count++;
 		}
 
