@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.55 $
- * $Date: 2007-08-17 03:29:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.259.2.56 $
+ * $Date: 2007-08-26 16:00:11 $
+ * $Author: phreak $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.55  2007/08/17 03:29:50  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
+ *
  * Revision 2.259.2.54  2007/08/04 22:29:59  Goober5000
  * fix case-sensitive #include (Linux)
  *
@@ -7073,6 +7076,8 @@ int sexp_destroyed_departed_delay(int n)
 		} else if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, &time_gone) ) {
 			count++;
 		} else if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, &time_gone) ) {
+			count++;
+		} else if ( mission_log_get_time(LOG_SELF_DESTRUCTED, name, NULL, &time_gone) ) {
 			count++;
 		}
 
