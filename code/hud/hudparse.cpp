@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.43.2.5 $
- * $Date: 2007-02-12 00:23:39 $
- * $Author: taylor $
+ * $Revision: 2.43.2.6 $
+ * $Date: 2007-08-30 04:52:30 $
+ * $Author: Backslash $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43.2.5  2007/02/12 00:23:39  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
  * Revision 2.43.2.4  2007/01/07 13:18:32  taylor
  * fix escort positioning issue (Mantis #1179)
  *
@@ -203,6 +206,8 @@ hud_info default_hud;
 hud_info ship_huds[MAX_SHIP_CLASSES];
 #endif
 extern int ships_inited; //Need this
+
+float Hud_unit_multiplier = 0.0f;	//Backslash
 
 #ifndef NEW_HUD
 //Set coord_x or coord_y to -1 to not change that value
@@ -930,7 +935,12 @@ void parse_hud_gauges_tbl(char* longname)
 	{
 		stuff_int(&Max_escort_ships);
 	}
-	
+
+	if(optional_string("$Length Unit Multiplier:"))
+	{
+		stuff_float(&Hud_unit_multiplier);
+	}
+
 	if(optional_string("#Custom Gauges"))
 	{
 		while(required_string_either("#End", "$Name:"))

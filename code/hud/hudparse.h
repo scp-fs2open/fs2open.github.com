@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.h $
- * $Revision: 2.19.2.1 $
- * $Date: 2006-12-07 18:17:19 $
- * $Author: taylor $
+ * $Revision: 2.19.2.2 $
+ * $Date: 2007-08-30 04:52:30 $
+ * $Author: Backslash $
  *
  * Header file for HUD tbl parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19.2.1  2006/12/07 18:17:19  taylor
+ * add "$Weapons Energy Text:" to hud_gauges.tbl so that the low energy text can be positioned as well (Mantis bug #1166)
+ *
  * Revision 2.19  2005/07/13 03:15:52  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -327,6 +330,7 @@ typedef struct gauge_info
 
 //Variables
 extern int Num_custom_gauges;
+extern float Hud_unit_multiplier;
 
 //Functions
 int hud_get_gauge_index(char* name);
