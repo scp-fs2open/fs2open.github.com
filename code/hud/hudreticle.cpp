@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.13 $
- * $Date: 2007-04-30 21:30:29 $
+ * $Revision: 2.14 $
+ * $Date: 2007-08-30 04:51:07 $
  * $Author: Backslash $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2007/04/30 21:30:29  Backslash
+ * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
+ * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
+ *
  * Revision 2.12  2006/11/03 18:47:43  Kazan
  * Absolute speed, not forward speed, for hud speed reticle - fixes the guage for gliding
  *
@@ -580,7 +584,7 @@ void hud_render_throttle_line(int y)
 // Draw the throttle gauge along the left arc of the reticle
 void hud_show_throttle()
 {
-	float	desired_speed, max_speed, current_speed, percent_max, percent_aburn_max;
+	float	desired_speed, max_speed, current_speed, absolute_speed, absolute_displayed_speed, max_displayed_speed, percent_max, percent_aburn_max;
 	int	desired_y_pos, y_end;
 
 	ship_info	*sip;
@@ -594,6 +598,15 @@ void hud_show_throttle()
 	max_speed = Ships[Player_obj->instance].current_max_speed;
 	if ( max_speed <= 0 ) {
 		max_speed = sip->max_vel.xyz.z;
+	}
+
+	absolute_speed = Player_obj->phys_info.speed;
+	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed speed scale
+		absolute_displayed_speed = absolute_speed * Hud_unit_multiplier;
+		max_displayed_speed = max_speed * Hud_unit_multiplier;
+	} else {
+		absolute_displayed_speed = absolute_speed;
+		max_displayed_speed = max_speed;
 	}
 
 	desired_speed = Player->ci.forward * max_speed;
@@ -633,7 +646,7 @@ void hud_show_throttle()
 	// draw throttle speed number
 	//hud_render_throttle_speed(current_speed, y_end);
 	// Absolute speed, not forward speed, for hud speed reticle - fixes the guage for sliding -- kazan
-	hud_render_throttle_speed(Player_obj->phys_info.speed, y_end);
+	hud_render_throttle_speed(absolute_displayed_speed, y_end);
 
 	// draw the "desired speed" bar on the throttle
 	hud_render_throttle_line(desired_y_pos);
@@ -641,7 +654,7 @@ void hud_show_throttle()
 	// draw left arc (the bright portion of the throttle gauge)
 	hud_render_throttle_foreground(y_end);
 
-	gr_printf(Max_speed_coords[gr_screen.res][0], Max_speed_coords[gr_screen.res][1], "%d",fl2i(max_speed));
+	gr_printf(Max_speed_coords[gr_screen.res][0], Max_speed_coords[gr_screen.res][1], "%d",fl2i(max_displayed_speed+0.5f));
 	gr_printf(Zero_speed_coords[gr_screen.res][0], Zero_speed_coords[gr_screen.res][1], XSTR( "0", 292));
 }
 

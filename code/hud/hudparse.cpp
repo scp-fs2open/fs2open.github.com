@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.49 $
- * $Date: 2007-03-22 22:14:56 $
- * $Author: taylor $
+ * $Revision: 2.50 $
+ * $Date: 2007-08-30 04:51:07 $
+ * $Author: Backslash $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49  2007/03/22 22:14:56  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
  * Revision 2.48  2007/02/11 21:26:34  Goober5000
  * massive shield infrastructure commit
  *
@@ -209,6 +212,8 @@ hud_info ship_huds[MAX_SHIP_CLASSES];
 #endif
 extern int ships_inited; //Need this
 
+float Hud_unit_multiplier = 0.0f;	//Backslash
+
 #ifndef NEW_HUD
 //Set coord_x or coord_y to -1 to not change that value
 //void resize_coords(int* values, float* factors);
@@ -234,6 +239,7 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 	{ &gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			316, 298, 511, 477,	0, 0, 0, 0, 0, -1, -1 },
 //	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			213, 298, 346, 477,	0, 0, 0, 0, 0, -1, -1 },
 	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			313, 298, 506, 477,	0, 0, 0, 0, 0, -1, -1 },
+//	{ &gauges[4],	HUD_VAR(Wenergy_text_coords),	"$Text:",					439, 318, 708, 509, 0, 0, 0, 0, 0, -1, -1 },
 	{ &gauges[5],	HUD_VAR(Escort_htext_coords),	"$Header Text:",			489, 208, 869, 331,			0, 0, 0, 0, 0, -1, -1 },
 	{ &gauges[5],	HUD_VAR(Escort_list),			"$List:",					0, 12, 0, 13,		0, 0, 0, 0, 0, HG_NOADD, -1 },
 	{ &gauges[5],	HUD_VAR(Escort_entry),			"$Ship:",					0, 11, 0, 11,		0, HUD_VAR(Escort_filename[1]), 0, 0, 0, HG_NOADD, -1 },
@@ -935,7 +941,12 @@ void parse_hud_gauges_tbl(char* longname)
 	{
 		stuff_int(&Max_escort_ships);
 	}
-	
+
+	if(optional_string("$Length Unit Multiplier:"))
+	{
+		stuff_float(&Hud_unit_multiplier);
+	}
+
 	if(optional_string("#Custom Gauges"))
 	{
 		while(required_string_either("#End", "$Name:"))
