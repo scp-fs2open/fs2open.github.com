@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.103 $
- * $Date: 2007-07-15 02:45:18 $
- * $Author: Goober5000 $
+ * $Revision: 2.104 $
+ * $Date: 2007-08-30 04:51:07 $
+ * $Author: Backslash $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2007/07/15 02:45:18  Goober5000
+ * fixed a small bug in the lab
+ * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
+ * removed my old supercap damage scaling change
+ * moved Turey's truefire flag to ai_profiles
+ *
  * Revision 2.101  2007/04/06 13:31:38  karajorma
  * Friendly stealth ships shouldn't give away their position just cause they send a message.
  *
@@ -4914,6 +4920,13 @@ void hud_target_change_check()
 //
 void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float distance)
 {
+	float displayed_distance;
+	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
+		displayed_distance = distance * Hud_unit_multiplier;
+	} else { 
+		displayed_distance = distance; 
+	}
+
 	char buf[32];
 	int w = 0, h = 0;
 	int on_top, on_right, on_left, on_bottom;
@@ -4956,7 +4969,7 @@ void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float dista
 			triangle_sep = ( dist_behind ) * Max_front_seperation[gr_screen.res];
 		} else {
 			triangle_sep = 0.0f;
-		}		
+		}
 	}
 	else {
 		triangle_sep = dist_behind * Max_offscreen_tri_seperation[gr_screen.res] + Max_offscreen_tri_seperation[gr_screen.res];

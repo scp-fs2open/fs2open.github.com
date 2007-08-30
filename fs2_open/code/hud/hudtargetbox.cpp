@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.71 $
- * $Date: 2007-07-15 04:19:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.72 $
+ * $Date: 2007-08-30 04:51:07 $
+ * $Author: Backslash $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2007/07/15 04:19:25  Goober5000
+ * partial commit of aldo's eyepoint feature
+ * it will need a keystroke to be complete
+ *
  * Revision 2.70  2007/02/20 04:20:10  Goober5000
  * the great big duplicate model removal commit
  *
@@ -1943,10 +1947,19 @@ void hud_show_target_data(float frametime)
 	debris		*debrisp = NULL;
 	ship_info	*sip = NULL;
 	int is_ship = 0;
+	float		displayed_target_distance, displayed_target_speed, current_target_distance, current_target_speed;
 
 	hud_set_gauge_color(HUD_TARGET_MONITOR);
 
 	target_objp = &Objects[Player_ai->target_objnum];
+
+	current_target_distance = Player_ai->current_target_distance;
+
+	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
+		displayed_target_distance = current_target_distance * Hud_unit_multiplier;
+	} else {
+		displayed_target_distance = current_target_distance;
+	}
 
 	switch( Objects[Player_ai->target_objnum].type ) {
 		case OBJ_SHIP:
@@ -1983,36 +1996,41 @@ void hud_show_target_data(float frametime)
 	hy = fl2i(HUD_offset_y);
 
 	// print out the target distance and speed
-	sprintf(outstr,XSTR( "d: %.0f%s", 350), Player_ai->current_target_distance, modifiers[Player_ai->current_target_dist_trend]);
+	sprintf(outstr,XSTR( "d: %.0f%s", 350), displayed_target_distance, modifiers[Player_ai->current_target_dist_trend]);
 
 	hud_num_make_mono(outstr);
 	gr_get_string_size(&w,&h,outstr);
 
 	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_DIST][0]+hx, Targetbox_coords[gr_screen.res][TBOX_DIST][1]+hy, EG_TBOX_DIST, outstr);	
 
-	float spd;
 #if 0
-	spd = vm_vec_dist(&target_objp->pos, &target_objp->last_pos) / frametime;
+	current_target_speed = vm_vec_dist(&target_objp->pos, &target_objp->last_pos) / frametime;
 #endif
 	// 7/28/99 DKA: Do not use vec_mag_quick -- the error is too big
-	spd = vm_vec_mag(&target_objp->phys_info.vel);
-//	spd = target_objp->phys_info.fspeed;
-	if ( spd < 0.1f ) {
-		spd = 0.0f;
+	current_target_speed = vm_vec_mag(&target_objp->phys_info.vel);
+//	current_target_speed = target_objp->phys_info.fspeed;
+	if ( current_target_speed < 0.1f ) {
+		current_target_speed = 0.0f;
 	}
 	// if the speed is 0, determine if we are docked with something -- if so, get the docked velocity
-	if ( (spd == 0.0f) && is_ship ) {
-		spd = dock_calc_docked_fspeed(&Objects[shipp->objnum]);
+	if ( (current_target_speed == 0.0f) && is_ship ) {
+		current_target_speed = dock_calc_docked_fspeed(&Objects[shipp->objnum]);
 
-		if ( spd < 0.1f ) {
-			spd = 0.0f;
+		if ( current_target_speed < 0.1f ) {
+			current_target_speed = 0.0f;
 		}
 	}
 
-	sprintf(outstr, XSTR( "s: %.0f%s", 351), spd, (spd>1)?modifiers[Player_ai->current_target_speed_trend]:"");
+	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed speed scale
+		displayed_target_speed = current_target_speed * Hud_unit_multiplier;
+	} else {
+		displayed_target_speed = current_target_speed;
+	}
+
+	sprintf(outstr, XSTR( "s: %.0f%s", 351), displayed_target_speed, (displayed_target_speed>1)?modifiers[Player_ai->current_target_speed_trend]:"");
 	hud_num_make_mono(outstr);
 
-	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_SPEED][0]+hx, Targetbox_coords[gr_screen.res][TBOX_SPEED][1]+hy, EG_TBOX_SPEED, outstr);	
+	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_SPEED][0]+hx, Targetbox_coords[gr_screen.res][TBOX_SPEED][1]+hy, EG_TBOX_SPEED, outstr);
 
 	//
 	// output target info for debug purposes only, this will be removed later

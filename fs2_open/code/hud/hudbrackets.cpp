@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.27 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.28 $
+ * $Date: 2007-08-30 04:51:08 $
+ * $Author: Backslash $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.26  2005/09/25 08:25:15  Goober5000
  * Okay, everything should now work again. :p Still have to do a little more with the asteroids.
  * --Goober5000
@@ -702,6 +705,7 @@ void hud_target_show_dist_on_bracket(int x, int y, float distance)
 {
 	char	text_dist[64];
 	int	w,h;
+	float displayed_distance;
 
 	if ( y < 0 || y > gr_screen.clip_height ) {
 		return;
@@ -711,7 +715,13 @@ void hud_target_show_dist_on_bracket(int x, int y, float distance)
 		return;
 	}
 
-	sprintf(text_dist, "%d", fl2i(distance+0.5f));
+	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
+		displayed_distance = distance * Hud_unit_multiplier;
+	} else {
+		displayed_distance = distance;
+	}
+
+	sprintf(text_dist, "%d", fl2i(displayed_distance+0.5f));
 	hud_num_make_mono(text_dist);
 	gr_get_string_size(&w,&h,text_dist);
 
