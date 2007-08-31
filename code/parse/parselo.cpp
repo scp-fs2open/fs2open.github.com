@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.92 $
- * $Author: Goober5000 $
- * $Date: 2007-08-17 03:29:45 $
+ * $Revision: 2.93 $
+ * $Author: turey $
+ * $Date: 2007-08-31 20:37:20 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.92  2007/08/17 03:29:45  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
+ *
  * Revision 2.91  2007/07/11 20:11:32  turey
  * Ship Template fixes. It's fully working now, hopefully.
  *
@@ -3499,8 +3502,8 @@ int strextcmp(const char *s1, const char* s2)
 	Assert(s1 != NULL && s2 != NULL);
 
 	//Find last '.' in both strings
-	char *s1_end = strrchr(s1, '.');
-	char *s2_end = strrchr(s2, '.');
+	char *s1_end = (char*) strrchr(s1, '.');
+	char *s2_end = (char*) strrchr(s2, '.');
 
 	//Get length
 	size_t s1_len, s2_len;
