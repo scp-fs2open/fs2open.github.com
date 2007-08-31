@@ -3603,12 +3603,50 @@ struct waypointlist_h
 		if(n_wlp != NULL)
 			strcpy(name, wlp->name);
 	}
+	waypointlist_h(char wlname[NAME_LENGTH]) {
+		if ( wlname != NULL ) {
+			strcpy(name, wlname);
+			for ( int i = 0; i < Num_waypoint_lists; i++ ) {
+				if ( !stricmp( Waypoint_lists[i].name, wlname ) ) {
+					wlp = &Waypoint_lists[i];
+					return;
+				}
+			}
+		}
+	}
 	bool IsValid() {
 		return (this != NULL && wlp != NULL && !strcmp(wlp->name, name));
 	}
 };
 
 ade_obj<waypointlist_h> l_WaypointList("waypointlist", "waypointlist handle");
+
+ADE_INDEXER(l_WaypointList, "index of waypoint", "waypoint", "Gets waypoint")
+{
+	int idx = -1;
+	waypointlist_h* wlh;
+	char wpname[128];
+	if( !ade_get_args(L, "i", &idx) ) {
+		return ade_set_error( L, "o", l_Waypoint.Set( object_h() ) );
+	}
+	l_WaypointList.GetPtr( &wlh );
+	sprintf(wpname, "%s:%d", wlh->wlp->name, (idx & 0xffff) + 1);
+	if( idx > -1 && idx < wlh->wlp->count && waypoint_lookup( wpname ) != -1 ) {
+		return ade_set_args( L, "o", l_Waypoint.Set( object_h( &Objects[ waypoint_lookup(wpname) ] ), Objects[ waypoint_lookup(wpname) ].signature ) );
+	}
+
+	return ade_set_error(L, "o", l_Waypoint.Set( object_h() ) );
+}
+
+ADE_FUNC(__len, l_WaypointList, NULL, "number", 
+		 "Number of waypoints in the list. "
+		 "Note that the value returned cannot be relied on for more than one frame." )
+{
+	waypointlist_h* wlh;
+	l_WaypointList.GetPtr( &wlh );
+	return ade_set_args(L, "i", wlh->wlp->count);
+}
+
 
 //WMC - Waypoints are messed. Gonna leave this for later.
 /*
@@ -6392,6 +6430,53 @@ ADE_FUNC(renameFile, l_CFile, "string CurrentFilename, string NewFilename, [stri
 
 //**********LIBRARY: Mission
 ade_lib l_Mission("Mission", NULL, "mn", "Mission library");
+
+ade_lib l_Mission_Asteroids("Asteroids", &l_Mission, NULL, "Asteroids in the mission");
+
+ADE_INDEXER(l_Mission_Asteroids, "index of asteroid", "asteroid", "Gets asteroid")
+{
+	int idx = -1;
+	if( !ade_get_args(L, "i", &idx) ) {
+		return ade_set_error( L, "o", l_Asteroid.Set( object_h() ) );
+	}
+	if( idx > -1 && idx < asteroid_count() ) {
+		return ade_set_args( L, "o", l_Asteroid.Set( object_h( &Objects[Asteroids[idx].objnum] ), Objects[Asteroids[idx].objnum].signature ) );
+	}
+
+	return ade_set_error(L, "o", l_Asteroid.Set( object_h() ) );
+}
+
+ADE_FUNC(__len, l_Mission_Asteroids, NULL, "number", 
+		 "Number of asteroids in the mission. "
+		 "Note that the value returned is only good until an asteroid is destroyed, and so cannot be relied on for more than one frame." )
+{
+	if(Asteroids_enabled) {
+		return ade_set_args(L, "i", asteroid_count());
+	}
+	return ade_set_args(L, "i", 0);
+}
+
+ade_lib l_Mission_Debris("Debris", &l_Mission, NULL, "debris in the mission");
+
+ADE_INDEXER(l_Mission_Debris, "index of debris", "debris", "Gets debris")
+{
+	int idx = -1;
+	if( !ade_get_args( L, "i", &idx ) ) {
+		return ade_set_error(L, "o", l_Debris.Set(object_h()));
+	}
+	if( idx > -1 && idx < Num_debris_pieces ) {
+		return ade_set_args(L, "o", l_Debris.Set(object_h(&Objects[Debris[idx].objnum]), Objects[Debris[idx].objnum].signature));
+	}
+
+	return ade_set_error(L, "o", l_Debris.Set(object_h()));
+}
+
+ADE_FUNC(__len, l_Mission_Debris, NULL, "number", 
+		 "Number of debris pieces in the mission. "
+		 "Note that the value returned is only good until a piece of debris is destroyed, and so cannot be relied on for more than one frame." )
+{
+	return ade_set_args(L, "i", Num_debris_pieces);
+}
 
 ade_lib l_Mission_EscortShips("EscortShips", &l_Mission, NULL, NULL);
 
