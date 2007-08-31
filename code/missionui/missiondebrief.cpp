@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.59 $
- * $Date: 2007-04-13 03:23:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.60 $
+ * $Date: 2007-08-31 20:37:20 $
+ * $Author: turey $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.59  2007/04/13 03:23:12  Goober5000
+ * fixed a silly speech bug (Mantis #1238)
+ *
  * Revision 2.58  2006/10/06 09:33:10  taylor
  * fix for the "branch" bug (still a minor usability issue however, see Mantis bug for details)
  * add a popup to the loopbrief screen when you press ESC, so that we can either accept or decline the loop offer
@@ -2903,6 +2906,10 @@ void debrief_do_keys(int new_k)
 					if (choice == 1) {  // accept and continue on
 						debrief_accept(0);
 						gameseq_post_event(GS_EVENT_MAIN_MENU);
+					}
+					if (choice == 2) { // Retry later
+						Campaign.next_mission = Campaign.current_mission;
+						scoring_backout_accept( &Player->stats );
 					}
 
 					if (choice < 1)
