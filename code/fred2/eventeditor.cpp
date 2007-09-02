@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.7 $
- * $Date: 2007-09-02 02:10:24 $
+ * $Revision: 1.8 $
+ * $Date: 2007-09-02 20:07:43 $
  * $Author: Goober5000 $
  *
  * Event editor dialog box class and event tree class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2007/09/02 02:10:24  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 1.6  2007/03/07 22:43:24  karajorma
  * Make .ogg voice files selectable in FRED.
  *
@@ -754,7 +757,7 @@ void event_editor::update_cur_message()
 
 int event_editor::handler(int code, int node, char *str)
 {
-	int i;
+	int i, index;
 
 	switch (code) {
 		case ROOT_DELETED:
@@ -763,6 +766,7 @@ int event_editor::handler(int code, int node, char *str)
 					break;
 
 			Assert(i < m_num_events);
+			index = i;
 			while (i < m_num_events - 1) {
 				m_events[i] = m_events[i + 1];
 				m_sig[i] = m_sig[i + 1];
@@ -771,6 +775,10 @@ int event_editor::handler(int code, int node, char *str)
 
 			m_num_events--;
 			GetDlgItem(IDC_BUTTON_NEW_EVENT)->EnableWindow(TRUE);
+
+			cur_event = index;
+			update_cur_event();
+
 			return node;
 
 		case ROOT_RENAMED:
