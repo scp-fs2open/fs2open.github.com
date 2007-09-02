@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.429 $
- * $Date: 2007-09-02 02:10:28 $
+ * $Revision: 2.430 $
+ * $Date: 2007-09-02 18:53:23 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.429  2007/09/02 02:10:28  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.428  2007/08/11 16:52:02  Goober5000
  * some tweaks for a field that's mostly unused anyway
  *
@@ -7242,9 +7245,9 @@ void ship_delete( object * obj )
 	ship_clear_decals(shipp);
 }
 
-// function used by ship_destroyed and ship_departed which is called if the ship
-// is in a wing.  This function updates the ship_index list (i.e. removes its
-// entry in the list), and packs the array accordingly.
+// function used by ship_cleanup which is called if the ship is in a wing.
+// This function updates the ship_index list (i.e. removes its entry in the list)
+// and packs the array accordingly.
 void ship_wing_cleanup( int shipnum, wing *wingp )
 {
 	int i, index = -1, team = Ships[shipnum].team;
@@ -7261,6 +7264,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 
 	// Assert(index != -1);
 	// this can happen in multiplayer (dogfight, ingame join specifically)
+	Assert(index != -1);	// Goober5000 - until ingame join is fixed, let's Assert
 	if (index == -1)
 		return;
 
@@ -7286,7 +7290,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 
 		// Goober5000 - some changes for clarity and closing holes
 		// make sure to flag the wing as gone if all of its member ships are gone and no more can arrive
-		if ((wingp->current_wave == wingp->num_waves) && (wingp->total_destroyed + wingp->total_departed == wingp->total_arrived_count))
+		if ((wingp->current_wave == wingp->num_waves) && (wingp->total_destroyed + wingp->total_departed + wingp->total_vanished == wingp->total_arrived_count))
 		{
 			// mark the wing as gone
 			wingp->flags |= WF_WING_GONE;
@@ -7301,14 +7305,17 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 				mission_log_add_entry(LOG_WING_DESTROYED, wingp->name, NULL, team);
 			}
 			// if some ships escaped, log it as departed
-			else
+			else if (wingp->total_vanished != wingp->total_arrived_count)
 			{
 				// if the wing wasn't destroyed, and it is departing, then mark it as departed -- in this
 				// case, there had better be ships in this wing with departure entries in the log file.  The
 				// logfile code checks for this case.  
 				mission_log_add_entry(LOG_WING_DEPARTED, wingp->name, NULL, team);
+			}
 
 #ifndef NDEBUG
+			if (wingp->total_destroyed != wingp->total_arrived_count)
+			{
 				// apparently, there have been reports of ships still present in the mission when this log
 				// entry if written.  Do a sanity check here to find out for sure.
 				for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
@@ -7320,7 +7327,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 					if ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_INGAME_JOIN))
 						continue;
 	
-					if ((Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(Ships[Objects[so->objnum].instance].flags & (SF_DEPARTING|SF_DYING)) && !(Ships[Objects[so->objnum].instance].flags2 & (SF2_VANISHED)))
+					if ((Ships[Objects[so->objnum].instance].wingnum == WING_INDEX(wingp)) && !(Ships[Objects[so->objnum].instance].flags & (SF_DEPARTING|SF_DYING)))
 					{
 						// TODO: I think this Int3() is triggered when a wing whose ships are all docked to ships of another
 						// wing departs.  It can be reliably seen in TVWP chapter 1 mission 7, when Torino and Iota wing depart.
@@ -7328,141 +7335,123 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 						Int3();
 					}
 				}
-#endif
 			}
+#endif
 		}
 	}
 }
 
-// function to do management, like log entries and wing cleanup after a ship has been destroyed
+// functions to do management, like log entries and wing cleanup after a ship has been destroyed
 
-void ship_destroyed( int num )
+// Goober5000
+void ship_actually_depart_helper(object *objp, dock_function_info *infop)
 {
-	ship		*shipp;
-	object	*objp;
+	// do standard departure stuff first
+	objp->flags |= OF_SHOULD_BE_DEAD;	
+	if (objp->type == OBJ_SHIP)
+		ship_cleanup(objp->instance, infop->parameter_variables.bool_value ? SHIP_VANISHED : SHIP_DEPARTED);
 
-	shipp = &Ships[num];
-	objp = &Objects[shipp->objnum];
+	// do the end-mission stuff if it's the player ship
+	if (objp == Player_obj)
+		gameseq_post_event(GS_EVENT_PLAYER_WARPOUT_DONE);
+}
+
+// Goober5000 - function used to actually remove a ship, plus all the ships it's docked to, from the mission
+void ship_actually_depart(int shipnum, bool vanish)
+{
+	dock_function_info dfi;
+	dfi.parameter_variables.bool_value = vanish;
+	dock_evaluate_all_docked_objects(&Objects[Ships[shipnum].objnum], &dfi, ship_actually_depart_helper);
+}
+
+// Goober5000 - merge ship_destroyed and ship_departed and ship_vanished
+void ship_cleanup(int shipnum, int cleanup_mode)
+{
+	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
+	Assert(cleanup_mode == SHIP_DESTROYED || cleanup_mode == SHIP_DEPARTED || cleanup_mode == SHIP_VANISHED);
+	Assert(Objects[Ships[shipnum].objnum].type == OBJ_SHIP);
+	Assert(Objects[Ships[shipnum].objnum].flags & OF_SHOULD_BE_DEAD);
+
+	ship *shipp = &Ships[shipnum];
 
 	// add the information to the exited ship list
-	ship_add_exited_ship( shipp, SEF_DESTROYED );
-
-	// determine if we need to count this ship as a kill in counting number of kills per ship type
-	// look at the ignore flag for the ship (if not in a wing), or the ignore flag for the wing
-	// (if the ship is in a wing), and add to the kill count if the flags are not set
-	if ( !(shipp->flags & SF_IGNORE_COUNT) ||  ((shipp->wingnum != -1) && !(Wings[shipp->wingnum].flags & WF_IGNORE_COUNT)) )
-		ship_add_ship_type_kill_count( shipp->ship_info_index );
-
-	// if ship belongs to a wing -- increment the total number of ships in the wing destroyed
-	if ( shipp->wingnum != -1 ) {
-		wing *wingp;
-
-		wingp = &Wings[shipp->wingnum];
-		wingp->total_destroyed++;
-		ship_wing_cleanup( num, wingp );
+	if (cleanup_mode == SHIP_DESTROYED) {
+		ship_add_exited_ship(shipp, SEF_DESTROYED);
+	} else {
+		ship_add_exited_ship(shipp, SEF_DEPARTED);
 	}
 
-	//	Note, this call to ai_ship_destroy must come after ship_wing_cleanup for guarded wings to
-	//	properly note the destruction of a ship in their wing.
-	if ( shipp->ai_index != -1 ) {
-		ai_ship_destroy(num, SEF_DESTROYED);		//	Do AI stuff for destruction of ship.
-	}
+	// record kill?
+	if (cleanup_mode == SHIP_DESTROYED) {
+		// determine if we need to count this ship as a kill in counting number of kills per ship type
+		// look at the ignore flag for the ship (if not in a wing), or the ignore flag for the wing
+		// (if the ship is in a wing), and add to the kill count if the flags are not set
+		if ( !(shipp->flags & SF_IGNORE_COUNT) || ((shipp->wingnum != -1) && !(Wings[shipp->wingnum].flags & WF_IGNORE_COUNT)) )
+			ship_add_ship_type_kill_count( shipp->ship_info_index );
 
-	nprintf(("Alan","SHIP DESTROYED: %s\n", shipp->ship_name));
-
-	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
-		nprintf(("Alan","STATUS UPDATED: %s\n", shipp->ship_name));
-		hud_set_wingman_status_dead(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
-	}
-
-	// let the event music system know an enemy was destoyed (important for deciding when to transition from battle to normal music)
-	if (Player_ship != NULL) {
-		if (iff_x_attacks_y(Player_ship->team, shipp->team)) {
+		// let the event music system know an enemy was destroyed (important for deciding when to transition from battle to normal music)
+		if (Player_ship != NULL && iff_x_attacks_y(Player_ship->team, shipp->team))
 			event_music_hostile_ship_destroyed();
+	}
+
+	// add mission log entry?
+	// (vanished ships have no log, and destroyed ships are logged in ship_hit_kill)
+	if (cleanup_mode == SHIP_DEPARTED) {
+		// see if this ship departed within the radius of a jump node -- if so, put the node name into
+		// the secondary mission log field
+		jump_node *jnp = jumpnode_get_which_in(&Objects[shipp->objnum]);
+		if(jnp)
+			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, jnp->get_name_ptr(), shipp->wingnum);
+		else
+			mission_log_add_entry(LOG_SHIP_DEPARTED, shipp->ship_name, NULL, shipp->wingnum);
+	}
+
+#ifndef NDEBUG
+	// add a debug log entry
+	if (cleanup_mode == SHIP_DESTROYED) {
+		nprintf(("Alan", "SHIP DESTROYED: %s\n", shipp->ship_name));
+	} else if (cleanup_mode == SHIP_DEPARTED) {
+		nprintf(("Alan", "SHIP DEPARTED: %s\n", shipp->ship_name));
+	} else {
+		nprintf(("Alan", "SHIP VANISHED: %s\n", shipp->ship_name));
+	}
+#endif
+
+	// update wingman status gauge
+	if ( (shipp->wing_status_wing_index >= 0) && (shipp->wing_status_wing_pos >= 0) ) {
+		if (cleanup_mode == SHIP_DESTROYED) {
+			hud_set_wingman_status_dead(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
+		} else if (cleanup_mode == SHIP_DEPARTED) {
+			hud_set_wingman_status_departed(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
+		} else {
+			hud_set_wingman_status_none(shipp->wing_status_wing_index, shipp->wing_status_wing_pos);
 		}
+	}
+
+	// if ship belongs to a wing, do the wing cleanup
+	if ( shipp->wingnum != -1 ) {
+		wing *wingp = &Wings[shipp->wingnum];
+
+		if (cleanup_mode == SHIP_DESTROYED) {
+			wingp->total_destroyed++;
+		} else if (cleanup_mode == SHIP_DEPARTED) {
+			wingp->total_departed++;
+		} else {
+			wingp->total_vanished++;
+		}
+
+		ship_wing_cleanup(shipnum, wingp);
+	}
+
+	// Note, this call to ai_ship_destroy must come after ship_wing_cleanup for guarded wings to
+	// properly note the destruction of a ship in their wing.
+	if (cleanup_mode == SHIP_DESTROYED) {
+		ai_ship_destroy(shipnum, SEF_DESTROYED);	// Do AI stuff for destruction of ship.
+	} else {
+		ai_ship_destroy(shipnum, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
 	}
 
 	ship_clear_decals(shipp);
-}
-
-void ship_vanished(object *objp)
-{
-	// Goober5000 - moved here from sexp_ship_vanish()
-	objp->flags |= OF_SHOULD_BE_DEAD;
-
-	// Goober5000
-	if (objp->type == OBJ_SHIP)
-	{
-		ship *sp = &Ships[objp->instance];
-		sp->flags2 |= SF2_VANISHED;	//WMC - to fix ship_wing_cleanup
-
-		// demo recording
-		if(Game_mode & GM_DEMO_RECORD){
-			demo_POST_departed(objp->signature, sp->flags);
-		}
-
-		// add the information to the exited ship list
-		ship_add_exited_ship( sp, SEF_DEPARTED );
-
-		// update wingman status gauge
-		if ( (sp->wing_status_wing_index >= 0) && (sp->wing_status_wing_pos >= 0) ) {
-			hud_set_wingman_status_departed(sp->wing_status_wing_index, sp->wing_status_wing_pos);
-		}
-
-		// if ship belongs to a wing -- increment the total number of ships in the wing vanished
-		if ( sp->wingnum != -1 ) {
-			wing *wingp;
-
-			wingp = &Wings[sp->wingnum];
-			// don't increment as a destroyed ship since that would make it logged
-			ship_wing_cleanup( objp->instance, wingp );
-		}
-
-		ai_ship_destroy(objp->instance, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
-		ship_clear_decals(sp);
-	}
-}
-
-void ship_departed( int num )
-{
-	ship *sp;
-
-	sp = &Ships[num];
-
-	// demo recording
-	if(Game_mode & GM_DEMO_RECORD) {
-		demo_POST_departed(Objects[Ships[num].objnum].signature, Ships[num].flags);
-	}
-
-	// add the information to the exited ship list
-	ship_add_exited_ship( sp, SEF_DEPARTED );
-
-	// update wingman status gauge
-	if ( (sp->wing_status_wing_index >= 0) && (sp->wing_status_wing_pos >= 0) ) {
-		hud_set_wingman_status_departed(sp->wing_status_wing_index, sp->wing_status_wing_pos);
-	}
-
-	// see if this ship departed within the radius of a jump node -- if so, put the node name into
-	// the secondary mission log field
-	jump_node *jnp = jumpnode_get_which_in(&Objects[sp->objnum]);
-	if (jnp)
-		mission_log_add_entry(LOG_SHIP_DEPARTED, sp->ship_name, jnp->get_name_ptr(), sp->wingnum);
-	else
-		mission_log_add_entry(LOG_SHIP_DEPARTED, sp->ship_name, NULL, sp->wingnum);
-
-	ai_ship_destroy(num, SEF_DEPARTED);		// should still do AI cleanup after ship has departed
-
-	// don't bother doing this for demo playback - we don't keep track of wing info
-	if(!(Game_mode & GM_DEMO_PLAYBACK)){
-		if ( sp->wingnum != -1 ) {
-			wing *wingp;
-
-			wingp = &Wings[sp->wingnum];
-			wingp->total_departed++;
-			ship_wing_cleanup( num, wingp );
-		}
-	}
-	ship_clear_decals(sp);
 }
 
 // --------------------------------------------------------------------------------------------------------------------
@@ -7730,7 +7719,7 @@ void ship_dying_frame(object *objp, int ship_num)
 
 				// Don't blow up model.  Only use debris shards.
 				// call ship function to clean up after the ship is destroyed.
-				ship_destroyed(ship_num);
+				ship_cleanup(ship_num, SHIP_DESTROYED);
 				return;
 			} else {
 				return;
@@ -7963,7 +7952,7 @@ void ship_dying_frame(object *objp, int ship_num)
 
 					objp->flags |= OF_SHOULD_BE_DEAD;									
 					
-					ship_destroyed(ship_num);		// call ship function to clean up after the ship is destroyed.
+					ship_cleanup(ship_num, SHIP_DESTROYED);		// call ship function to clean up after the ship is destroyed.
 				}
 				return;
 			} 
@@ -7980,7 +7969,7 @@ void ship_dying_frame(object *objp, int ship_num)
 
 			objp->flags |= OF_SHOULD_BE_DEAD;
 								
-			ship_destroyed(ship_num);		// call ship function to clean up after the ship is destroyed.
+			ship_cleanup(ship_num, SHIP_DESTROYED);		// call ship function to clean up after the ship is destroyed.
 			shipp->really_final_death_time = timestamp( -1 );	// Never time out again!
 		}
 
