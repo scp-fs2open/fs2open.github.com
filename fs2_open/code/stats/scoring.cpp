@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.16.2.2 $
- * $Date: 2006-09-11 01:17:07 $
- * $Author: taylor $
+ * $Revision: 2.16.2.3 $
+ * $Date: 2007-09-02 02:07:47 $
+ * $Author: Goober5000 $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16.2.2  2006/09/11 01:17:07  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.16.2.1  2006/08/03 01:33:26  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
@@ -299,12 +302,14 @@ void parse_rank_tbl()
 	char buf[MULTITEXT_LENGTH];
 	int rval, idx;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Error parsing 'rank.tbl'\r\nError code = %i.\r\n", rval);
-	} 
-
 	// open localization
 	lcl_ext_open();
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "rank.tbl", rval));
+		lcl_ext_close();
+		return;
+	} 
 
 	read_file_text("rank.tbl");
 	reset_parse();

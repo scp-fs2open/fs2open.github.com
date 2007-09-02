@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.13.2.1 $
- * $Date: 2006-09-11 01:16:31 $
- * $Author: taylor $
+ * $Revision: 2.13.2.2 $
+ * $Date: 2007-09-02 02:07:45 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13.2.1  2006/09/11 01:16:31  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.13  2006/04/12 22:23:41  taylor
  * compiler warning fixes to make GCC 4.1 shut the hell up
  *
@@ -388,7 +391,12 @@ void nebl_init()
 	char name[MAX_FILENAME_LEN];
 	bolt_type bogus_lightning, *l;
 	storm_type bogus_storm, *s;
-	int temp;
+	int temp, rval;
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "lightning.tbl", rval));
+		return;
+	}
 
 	// parse the lightning table
 	read_file_text("lightning.tbl");

@@ -507,20 +507,19 @@ static char* Test_file = "python.tbl";
 int python_test()
 {
 	int rval;
+
+	// open localization
 	lcl_ext_open();
+
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		nprintf(("Warning", "Unable to parse %s!  Code = %i.\n", Test_file, rval));
+		mprintf(("PYTHON: Unable to parse '%s'!  Error code = %i.\n", Test_file, rval));
 		lcl_ext_close();
 		return 0;
 	}
-	else
-	{	
-		read_file_text(Test_file);
-		reset_parse();
-	}
 
 	read_file_text(Test_file);
+	reset_parse();
 
 	Temp_session = py_session_create();
 	//py_session_import_module(&my_session, "gr");
@@ -536,7 +535,9 @@ int python_test()
 		}
 	}
 
+	// close localization
 	lcl_ext_close();
+
 	return 1;
 }
 void python_do_frame()

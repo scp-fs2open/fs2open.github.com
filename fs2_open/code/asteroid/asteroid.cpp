@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.35.2.10 $
- * $Date: 2007-05-28 18:27:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.35.2.11 $
+ * $Date: 2007-09-02 02:07:38 $
+ * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35.2.10  2007/05/28 18:27:32  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
+ *
  * Revision 2.35.2.9  2007/02/20 04:19:09  Goober5000
  * the great big duplicate model removal commit
  *
@@ -2141,10 +2144,16 @@ void asteroid_parse_tbl()
 {
 	char impact_ani_file[MAX_FILENAME_LEN];
 	int *asteroid_tally = NULL;
-	int i;
+	int i, rval;
 
 	// open localization
 	lcl_ext_open();
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "asteroid.tbl", rval));
+		lcl_ext_close();
+		return;
+	}
 
 	read_file_text("asteroid.tbl");
 	reset_parse();

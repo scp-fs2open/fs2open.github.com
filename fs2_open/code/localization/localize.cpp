@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.20.2.3 $
- * $Date: 2007-04-11 18:09:12 $
- * $Author: taylor $
+ * $Revision: 2.20.2.4 $
+ * $Date: 2007-09-02 02:07:42 $
+ * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20.2.3  2007/04/11 18:09:12  taylor
+ * add modular version of strings.tbl (*-lcl.tbm) (provides for Mantis #924)
+ *
  * Revision 2.20.2.2  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -582,7 +585,7 @@ int lcl_get_language()
 	return Lcl_current_lang;
 }
 
-void parse_stringstbl(char *longname)
+void parse_stringstbl(char *filename)
 {
 	char chr, buf[4096];
 	char language_tag[512];
@@ -593,7 +596,7 @@ void parse_stringstbl(char *longname)
 	// make sure localization is NOT running
 	lcl_ext_close();
 
-	read_file_text(longname);
+	read_file_text(filename);
 	reset_parse();
 
 	// move down to the proper section		
@@ -602,7 +605,7 @@ void parse_stringstbl(char *longname)
 	strcat(language_tag, Lcl_languages[Lcl_current_lang].lang_name);
 
 	if ( skip_to_string(language_tag) != 1 )
-		Error(LOCATION, "%s is corrupt", longname);
+		Error(LOCATION, "%s is corrupt", filename);
 
 	// parse all the strings in this section of the table
 	while ( !check_for_string("#") ) {
@@ -656,7 +659,7 @@ void parse_stringstbl(char *longname)
 				p_offset = &buf[i+1];			// get ptr to string section with offset in it
 
 				if (buf[i] != '"')
-					Error(LOCATION, "%s is corrupt", longname);		// now its an error
+					Error(LOCATION, "%s is corrupt", filename);		// now its an error
 			}
 
 			buf[i] = 0;
@@ -699,7 +702,7 @@ void parse_stringstbl(char *longname)
 		if (p_offset != NULL) {
 			if (sscanf(p_offset, "%d%d", &offset_lo, &offset_hi) < num_offsets_on_this_line) {
 				// whatever is in the file ain't a proper offset
-				Error(LOCATION, "%s is corrupt", longname);
+				Error(LOCATION, "%s is corrupt", filename);
 			}
 		}
 
@@ -727,7 +730,7 @@ void lcl_xstr_init()
 		Xstr_table[i].str = NULL;
 
 	if ( (rval = setjmp(parse_abort)) != 0 )
-		mprintf(("Error parsing 'strings.tbl'\nError code = %i.\n", rval));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "strings.tbl", rval));
 	else
 		parse_stringstbl("strings.tbl");
 

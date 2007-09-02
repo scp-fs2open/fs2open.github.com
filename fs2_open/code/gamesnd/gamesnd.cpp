@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.30.2.3 $
- * $Date: 2007-01-07 12:11:05 $
- * $Author: taylor $
+ * $Revision: 2.30.2.4 $
+ * $Date: 2007-09-02 02:07:41 $
+ * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30.2.3  2007/01/07 12:11:05  taylor
+ * we are only supposed to init 5 slots here, not 6 ;)  (Mantis bug #1195)
+ *
  * Revision 2.30.2.2  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -517,18 +520,19 @@ void gamesnd_parse_soundstbl()
 	ubyte	*missing_species = NULL;
 	int		sanity_check = 0;
 
+	gamesnd_init_sounds();
+
 	// open localization
 	lcl_ext_open();
 
-	gamesnd_init_sounds();
-
 	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Unable to parse sounds.tbl!  Code = %i.\n", rval);
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "sounds.tbl", rval));
+		lcl_ext_close();
+		return;
 	}
-	else {
-		read_file_text("sounds.tbl");
-		reset_parse();		
-	}
+
+	read_file_text("sounds.tbl");
+	reset_parse();		
 
 	// Parse the gameplay sounds section
 	required_string("#Game Sounds Start");

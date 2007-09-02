@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.11.2.1 $
- * $Date: 2006-09-11 01:15:04 $
- * $Author: taylor $
+ * $Revision: 2.11.2.2 $
+ * $Date: 2007-09-02 02:07:40 $
+ * $Author: Goober5000 $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11.2.1  2006/09/11 01:15:04  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.11  2005/07/18 03:44:00  taylor
  * cleanup hudtargetbox rendering from that total hack job that had been done on it (fixes wireframe view as well)
  * more non-standard res fixing
@@ -531,11 +534,17 @@ void parse_helptbl()
 {
 	int overlay_id, currcount;
 	char buf[HELP_MAX_STRING_LENGTH + 1];
-	int i;
+	int i, rval;
 
 	// open localization
 	lcl_ext_open();
 	
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", HELP_OVERLAY_FILENAME, rval));
+		lcl_ext_close();
+		return;
+	} 
+
 	read_file_text(HELP_OVERLAY_FILENAME);
 
 	// for each overlay...

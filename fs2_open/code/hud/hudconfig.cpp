@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.23.2.3 $
- * $Date: 2007-08-17 03:29:48 $
+ * $Revision: 2.23.2.4 $
+ * $Date: 2007-09-02 02:07:41 $
  * $Author: Goober5000 $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23.2.3  2007/08/17 03:29:48  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
+ *
  * Revision 2.23.2.2  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -1957,12 +1960,12 @@ void hud_config_color_load(char *name)
 	fname = cf_add_ext(name, ".hcf");
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("Error opening hud config file!\n"));
+		mprintf(("HUDCONFIG: Unable to parse '%s'!  Error code = %i.\n", fname, rval));
 		return;
-	} else {
-		read_file_text(fname);
-		reset_parse();
 	}
+
+	read_file_text(fname);
+	reset_parse();
 
 	// write out all gauges
 	for(idx=0; idx<NUM_HUD_GAUGES; idx++){		

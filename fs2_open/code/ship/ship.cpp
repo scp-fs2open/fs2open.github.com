@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.74 $
- * $Date: 2007-08-11 16:51:56 $
+ * $Revision: 2.336.2.75 $
+ * $Date: 2007-09-02 02:07:46 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.74  2007/08/11 16:51:56  Goober5000
+ * some tweaks for a field that's mostly unused anyway
+ *
  * Revision 2.336.2.73  2007/08/03 19:10:06  karajorma
  * Reinforcements Editor bug fixed Sucka!
  *
@@ -2753,7 +2756,6 @@ int warptype_match(char *p)
 // Kazan -- Volition had this set to 1500, Set it to 4K for WC Saga
 //#define SHIP_MULTITEXT_LENGTH 1500
 #define SHIP_MULTITEXT_LENGTH 4096
-char current_ship_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
 
 
 //Writes default info to a ship entry
@@ -2954,7 +2956,7 @@ void init_ship_entry(int ship_info_index)
 }
 
 // function to parse the information for a specific ship type.	
-int parse_ship(bool replace)
+int parse_ship(char *filename, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip;
@@ -3001,7 +3003,7 @@ int parse_ship(bool replace)
 		sip = &Ship_info[ship_id];
 		if(!replace)
 		{
-			Warning(LOCATION, "Error:  Ship name %s already exists in %s.  All ship class names must be unique.", sip->name, current_ship_table);
+			Warning(LOCATION, "Error:  Ship name %s already exists in %s.  All ship class names must be unique.", sip->name, filename);
 			if ( !skip_to_start_of_string_either("$Name:", "#End")) {
 				Int3();
 			}
@@ -4832,12 +4834,21 @@ void init_shiptype_defs()
 
 }*/
 
-void parse_shiptype_tbl(char *longname)
+void parse_shiptype_tbl(char *filename)
 {
+	int rval;
+
+	// open localization
 	lcl_ext_open();
 
-	if (longname != NULL)
-		read_file_text(longname);
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		lcl_ext_close();
+		return;
+	}
+
+	if (filename != NULL)
+		read_file_text(filename);
 	else
 		read_file_text_from_array(defaults_get_file("objecttypes.tbl"));
 
@@ -4846,13 +4857,12 @@ void parse_shiptype_tbl(char *longname)
 	if (optional_string("#Ship Types"))
 	{
 		while (required_string_either("#End", "$Name:"))
-		{
 			parse_ship_type();
-		}
 
 		required_string("#End");
 	}
 
+	// close localization
 	lcl_ext_close();
 }
 
@@ -4892,15 +4902,21 @@ void ship_set_default_player_ship()
 	}
 }
 
-void parse_shiptbl(char* longname)
+void parse_shiptbl(char *filename)
 {
-	int i, j;
+	int i, j, rval;
 
-	strcpy(current_ship_table, longname);
 	// open localization
 	lcl_ext_open();
 	
-	read_file_text(longname);
+	if ((rval = setjmp(parse_abort)) != 0)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		lcl_ext_close();
+		return;
+	}
+
+	read_file_text(filename);
 	reset_parse();
 
 	// parse default ship
@@ -4929,7 +4945,7 @@ void parse_shiptbl(char* longname)
 
 		while (required_string_either("#End","$Name:"))
 		{
-			if ( parse_ship(Parsing_modular_table) ) {
+			if ( parse_ship(filename, Parsing_modular_table) ) {
 				continue;
 			}
 		}
@@ -5017,8 +5033,6 @@ DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
 // structure
 void ship_init()
 {
-	int rval;
-
 	if ( !ships_inited )
 	{
 		int num_files;
@@ -5057,10 +5071,6 @@ void ship_init()
 		}
 
 		//ships.tbl
-		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", current_ship_table, rval);
-		} 
-		else
 		{			
 			Num_engine_wash_types = 0;
 			Num_ship_classes = 0;
@@ -16135,12 +16145,15 @@ void parse_armor_type()
 	Armor_types.push_back(tat);
 }
 
-void armor_parse_table(char* filename)
+void armor_parse_table(char *filename)
 {
+	int rval;
+
+	// open localization
 	lcl_ext_open();
 
-	if ( setjmp(parse_abort) != 0 ) {
-		mprintf(("Unable to parse %s!\n", filename));
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		lcl_ext_close();
 		return;
 	}
@@ -16158,6 +16171,7 @@ void armor_parse_table(char* filename)
 		required_string("#End");
 	}
 
+	// close localization
 	lcl_ext_close();
 }
 

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.50.2.3 $
- * $Date: 2007-02-10 20:23:24 $
- * $Author: taylor $
+ * $Revision: 2.50.2.4 $
+ * $Date: 2007-09-02 02:07:45 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.50.2.3  2007/02/10 20:23:24  taylor
+ * make sure that we don't set the 2d view matrix and then not reset it (Mantis #1269)
+ * clean up some of the fullneb mess that was causing some initial setup issues (colors wrong, etc.)
+ *
  * Revision 2.50.2.2  2006/11/06 05:26:38  taylor
  * fix some of the envmap issues
  *  - use proper hand-ness for OGL
@@ -580,8 +584,14 @@ void neb2_regen();
 
 // initialize neb2 stuff at game startup
 void neb2_init()
-{	
+{
+	int rval;
 	char name[MAX_FILENAME_LEN];
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "nebula.tbl", rval));
+		return;
+	}
 
 	// read in the nebula.tbl
 	read_file_text("nebula.tbl");

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.33.2.3 $
- * $Date: 2007-07-28 21:31:04 $
+ * $Revision: 2.33.2.4 $
+ * $Date: 2007-09-02 02:07:39 $
  * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33.2.3  2007/07/28 21:31:04  Goober5000
+ * this should really be capitalized
+ *
  * Revision 2.33.2.2  2007/02/11 09:53:33  taylor
  * support for tbl specified fireball explosion color ("$Light color:")
  *
@@ -613,7 +616,7 @@ static void fireball_set_default_color(int idx)
 }
 
 // NOTE: we can't be too trusting here so a tbm will only modify the LOD count, not add an entry
-void parse_fireball_tbl(char *longname)
+void parse_fireball_tbl(char *filename)
 {
 	int rval;
 	lod_checker lod_check;
@@ -623,11 +626,13 @@ void parse_fireball_tbl(char *longname)
 	lcl_ext_open();
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("Unable to parse %s!  Code = %i.\n", rval, longname));
-	} else {
-		read_file_text(longname);
-		reset_parse();		
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		lcl_ext_close();
+		return;
 	}
+
+	read_file_text(filename);
+	reset_parse();
 
 	required_string("#Start");
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.7.2.2 $
- * $Date: 2006-09-11 01:17:07 $
- * $Author: taylor $
+ * $Revision: 2.7.2.3 $
+ * $Date: 2007-09-02 02:07:48 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.7.2.2  2006/09/11 01:17:07  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.7.2.1  2006/08/22 05:50:12  taylor
  * make muzzle flash info dynamic
  * add support for modular mflash tables (*-mfl.tbm)
@@ -153,11 +156,12 @@ void parse_mflash_tbl(char *filename)
 	uint i;
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("Unable to parse %s!  Code = %i.\n", rval, filename));
-	} else {
-		read_file_text(filename);
-		reset_parse();		
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		return;
 	}
+
+	read_file_text(filename);
+	reset_parse();		
 
 	// header
 	required_string("#Muzzle flash types");

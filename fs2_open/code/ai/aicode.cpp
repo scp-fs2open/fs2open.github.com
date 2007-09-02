@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72.2.24 $
- * $Date: 2007-08-11 16:51:55 $
+ * $Revision: 1.72.2.25 $
+ * $Date: 2007-09-02 02:07:37 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72.2.24  2007/08/11 16:51:55  Goober5000
+ * some tweaks for a field that's mostly unused anyway
+ *
  * Revision 1.72.2.23  2007/07/28 21:31:03  Goober5000
  * this should really be capitalized
  *
@@ -1706,7 +1709,6 @@ void parse_aitbl()
 	lcl_ext_open();
 
 	read_file_text("ai.tbl");
-
 	reset_parse();
 
 	//Just in case parse_aitbl is called twice
@@ -1756,7 +1758,8 @@ void ai_init()
 		int	rval;
 
 		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Error parsing 'ai.tbl'\r\nError code = %i.\r\n", rval);
+			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "ai.tbl", rval));
+			lcl_ext_close();
 		} else {			
 			parse_aitbl();			
 		}

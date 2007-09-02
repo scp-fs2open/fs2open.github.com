@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.16.2.1 $
- * $Date: 2006-09-11 01:17:07 $
- * $Author: taylor $
+ * $Revision: 2.16.2.2 $
+ * $Date: 2007-09-02 02:07:47 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.16.2.1  2006/09/11 01:17:07  taylor
+ * fixes for stuff_string() bounds checking
+ *
  * Revision 2.16  2005/09/14 20:03:40  taylor
  * fix ace badges not getting displayed in debriefing
  *
@@ -407,15 +410,16 @@ void parse_medal_tbl()
 	int rval, i;
 	int num_badges = 0;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Error parsing 'medals.tbl'\r\nError code = %i.\r\n", rval);
-	} 
-
 	// open localization
 	lcl_ext_open();
 
-	read_file_text("medals.tbl");
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "medals.tbl", rval));
+		lcl_ext_close();
+		return;
+	}
 
+	read_file_text("medals.tbl");
 	reset_parse();
 
 	// parse in all the rank names

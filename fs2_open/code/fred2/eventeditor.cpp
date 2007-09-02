@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.2.2.5 $
- * $Date: 2007-07-23 16:08:23 $
- * $Author: Kazan $
+ * $Revision: 1.2.2.6 $
+ * $Date: 2007-09-02 02:07:40 $
+ * $Author: Goober5000 $
  *
  * Event editor dialog box class and event tree class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2.2.5  2007/07/23 16:08:23  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 1.2.2.4  2007/05/20 21:21:30  wmcoolmon
  * FRED2 support for numbered SEXP operator arguments, minihelp box, fixed "Insert Event" when no events are present.
  *
@@ -1079,6 +1082,8 @@ void event_editor::update_cur_event()
 		GetDlgItem(IDC_OBJ_TEXT) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_OBJ_KEY_TEXT) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_EVENT_TEAM)->EnableWindow(FALSE);
+
+		UpdateData(FALSE);
 		return;
 	}
 
@@ -1126,6 +1131,7 @@ void event_editor::update_cur_event()
 	if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ){
 		GetDlgItem(IDC_EVENT_TEAM)->EnableWindow(TRUE);
 	}
+
 	UpdateData(FALSE);
 }
 

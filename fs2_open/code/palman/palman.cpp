@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Palman/PalMan.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-04-28 01:36:09 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8.2.1 $
+ * $Date: 2007-09-02 02:07:45 $
+ * $Author: Goober5000 $
  *
  * Palette manager routines
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/04/28 01:36:09  wmcoolmon
+ * stuff_byte to stuff_ubyte; does the same thing, but with a better name.
+ *
  * Revision 2.7  2005/02/04 10:12:32  taylor
  * merge with Linux/OSX tree - p0204
  *
@@ -278,6 +281,12 @@ int palman_is_nondarkening(int r,int g, int b)
 
 void palman_load_pixels()
 {
+	int rval;
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "pixels.tbl", rval));
+		return;
+	}
+
 	// open pixels.tbl
 	read_file_text("pixels.tbl");
 	reset_parse();

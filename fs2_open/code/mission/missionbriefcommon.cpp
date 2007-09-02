@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.49.2.5 $
- * $Date: 2007-06-30 23:32:21 $
+ * $Revision: 2.49.2.6 $
+ * $Date: 2007-09-02 02:07:43 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.49.2.5  2007/06/30 23:32:21  Goober5000
+ * fix an off-by-one error
+ *
  * Revision 2.49.2.4  2007/02/10 00:10:13  taylor
  * a quick debug test to catch an error and FRED doesn't catch on it's own yet
  *
@@ -662,19 +665,24 @@ void brief_parse_icon_tbl()
 	lcl_ext_open();
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Unable to parse icons.tbl!  Code = %i.\n", rval);
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "icons.tbl", rval));
+		lcl_ext_close();
+		return;
 	}
-	else {
-		read_file_text("icons.tbl");
-		reset_parse();		
-	}
+
+	read_file_text("icons.tbl");
+	reset_parse();		
 
 	required_string("#Start");
 
 	num_icons = 0;
 	while (required_string_either("#End","$Name:"))
 	{
-		Verify( num_icons < max_icons );
+		if(num_icons >= max_icons) {
+			Warning(LOCATION, "Too many icons in icons.tbl; only the first %d will be used", max_icons);
+			skip_to_start_of_string("#End");
+			break;
+		}
 
 		// parse regular frames
 		required_string("$Name:");

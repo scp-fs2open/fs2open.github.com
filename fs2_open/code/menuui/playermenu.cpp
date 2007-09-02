@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.30.2.2 $
- * $Date: 2006-10-01 19:22:15 $
- * $Author: taylor $
+ * $Revision: 2.30.2.3 $
+ * $Date: 2007-09-02 02:07:43 $
+ * $Author: Goober5000 $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30.2.2  2006/10/01 19:22:15  taylor
+ * re-fix this crap that I managed to break last time (was Mantis bug 1066 I think)
+ *
  * Revision 2.30.2.1  2006/09/24 13:27:22  taylor
  * fix for deletion of multiplayer pilots (Mantis bug #1066)
  *
@@ -1694,10 +1697,18 @@ int Player_tips_shown = 0;
 // tooltips
 void player_tips_init()
 {
+	int rval;
+
 	Num_player_tips = 0;
 
 	// begin external localization stuff
 	lcl_ext_open();
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "tips.tbl", rval));
+		lcl_ext_close();
+		return;
+	}
 
 	read_file_text("tips.tbl");
 	reset_parse();
