@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.69 $
- * $Date: 2007-09-02 02:10:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.70 $
+ * $Date: 2007-09-02 03:07:55 $
+ * $Author: Backslash $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69  2007/09/02 02:10:27  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.68  2007/07/24 05:08:13  Goober5000
  * allow mission messages in dogfights (Mantis #1436)
  *
@@ -1980,7 +1983,12 @@ void message_queue_process()
 	}
 #endif
 
-	HUD_sourced_printf( q->source, NOX("%s: %s"), q->who_from, buf );
+	// Modified to actually use HUD_ship_sent_printf if the sender is a ship
+	if ( Message_shipnum >= 0 ) {
+		HUD_ship_sent_printf(Message_shipnum, NOX("%s"), buf);
+	} else {
+		HUD_sourced_printf(q->source, NOX("%s: %s"), q->who_from, buf);
+	}
 
 	if ( Message_shipnum >= 0 ) {
 		hud_target_last_transmit_add(Message_shipnum);
