@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.225 $
- * $Date: 2007-09-02 02:10:27 $
+ * $Revision: 2.226 $
+ * $Date: 2007-09-02 18:53:22 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.225  2007/09/02 02:10:27  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.224  2007/08/03 01:37:05  Goober5000
  * fix compile error
  *
@@ -4602,8 +4605,10 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 				//if (Ships_exited[index].flags & SEF_DESTROYED ) {
 				if ( mission_log_get_time(LOG_SHIP_DESTROYED, name, NULL, NULL) ) {
 					wingp->total_destroyed += num_remaining;
-				} else {
+				} else if ( mission_log_get_time(LOG_SHIP_DEPARTED, name, NULL, NULL) ) {
 					wingp->total_departed += num_remaining;
+				} else {
+					wingp->total_vanished += num_remaining;
 				}
 
 				mission_parse_mark_non_arrival(wingp);	// Goober5000
@@ -4883,6 +4888,7 @@ void parse_wing(mission *pm)
 	wingp->total_arrived_count = 0;
 	wingp->total_destroyed = 0;
 	wingp->total_departed = 0;	// Goober5000
+	wingp->total_vanished = 0;	// Goober5000
 	wingp->flags = 0;
 
 	// squad logo - Goober5000
@@ -7449,7 +7455,7 @@ int mission_do_departure(object *objp)
 		// make sure ship not dying or departing
 		if (Ships[anchor_shipnum].flags & (SF_DYING | SF_DEPARTING))
 		{
-			goto try_to_warp;
+			return 0;
 		}
 
 		// make sure fighterbays aren't destroyed
