@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.53 $
- * $Date: 2007-04-03 01:39:29 $
+ * $Revision: 2.54 $
+ * $Date: 2007-09-02 02:10:26 $
  * $Author: Goober5000 $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2007/04/03 01:39:29  Goober5000
+ * fixed up some error messages
+ *
  * Revision 2.52  2007/03/22 20:35:19  taylor
  * be sure to page in textures for change ship class sexp preload
  * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
@@ -2298,7 +2301,12 @@ int main_hall_id()
 void main_hall_read_table()
 {
 	main_hall_defines *m, temp;
-	int count, idx, s_idx, m_idx;
+	int count, idx, s_idx, m_idx, rval;
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "mainhall.tbl", rval));
+		return;
+	}
 
 	// read the file in
 	read_file_text("mainhall.tbl");

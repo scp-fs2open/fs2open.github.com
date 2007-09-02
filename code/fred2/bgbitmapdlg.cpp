@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.11 $
- * $Date: 2006-12-28 00:59:20 $
- * $Author: wmcoolmon $
+ * $Revision: 1.12 $
+ * $Date: 2007-09-02 02:10:24 $
+ * $Author: Goober5000 $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2006/12/28 00:59:20  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.10  2006/11/24 22:46:25  Goober5000
  * FRED again updates backgrounds while the user is editing them
  *
@@ -1341,81 +1344,69 @@ void bg_bitmap_dlg::OnImportBackground()
 {
 	CFileDialog cfd(TRUE, ".fs2", NULL, 0, "FreeSpace2 Missions (*.fs2)|*.fs2||\0");
 	char filename[256], error_str[1024];
-	int rval;
-	
+	int rval, temp, count;
+	char *saved_mp;
 
 	//warn on pressing the button
 	if (MessageBox("This action will erase any nebulae and suns already placed.  Continue?", "Fred2", MB_ICONWARNING | MB_YESNO) == IDNO)
-	{
 		return;
-	}
 
 	//check if cancel was pressed
 	if (cfd.DoModal() == IDCANCEL)
-	{
 		return;
-	}
 
 	strcpy(filename, cfd.GetPathName());
 
-	if (rval = setjmp(parse_abort))
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("BGBITMAPDLG: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		sprintf(error_str, "Could not parse file: %s", filename);
+
+		MessageBox(error_str, "Unable to import mission background!", MB_ICONERROR | MB_OK);
+		return;
+	}
+
+	// parse in the new file
+	read_file_text(filename);
+	reset_parse();
+
+	if (!skip_to_start_of_string("#Background bitmaps"))
+		return;
+
+	// skip beginning stuff
+	required_string("#Background bitmaps");
+	required_string("$Num stars:");
+	stuff_int(&temp);
+	required_string("$Ambient light level:");
+	stuff_int(&temp);
+
+	saved_mp = Mp;
+
+	// see if we have more than one background in this mission
+	count = 0;
+	while(skip_to_string("$Bitmap List:"))
+		count++;
+
+	Mp = saved_mp;
+
+	// pick one (if count is 0, it's retail with just one background)
+	if (count > 1)
 	{
-		nprintf(("Error", "Error abort!  Code = %i.", rval));
-		sprintf(error_str, "Could not open file: %s", filename);
-		MessageBox(error_str, "Unable to import mission background", MB_ICONERROR | MB_OK);
-		return;	
-	} 
-	else
-	{
-		// parse in the new file
-		read_file_text(filename);
-		reset_parse();
+		int i, which;
 
-		if (skip_to_start_of_string("#Background bitmaps"))
-		{
-			int temp;
-			int count;
-			char *saved_mp;
-
-			// skip beginning stuff
-			required_string("#Background bitmaps");
-			required_string("$Num stars:");
-			stuff_int(&temp);
-			required_string("$Ambient light level:");
-			stuff_int(&temp);
-
-			saved_mp = Mp;
-
-			// see if we have more than one background in this mission
-			count = 0;
-			while(skip_to_string("$Bitmap List:"))
-				count++;
-
-			Mp = saved_mp;
-
-			// pick one (if count is 0, it's retail with just one background)
-			if (count > 1)
-			{
-				int i, which;
-
-				BackgroundChooser dlg(count);
-				if (dlg.DoModal() == IDCANCEL)
-					return;
-
-				which = dlg.GetChosenBackground();
-
-				for (i = 0; i < which + 1; i++)
-					skip_to_string("$Bitmap List:");
-			}
-
-			// now parse the background we've selected
-			parse_one_background(&Backgrounds[get_active_background()]);
-		}
-		else
+		BackgroundChooser dlg(count);
+		if (dlg.DoModal() == IDCANCEL)
 			return;
 
-		reinitialize_lists();
+		which = dlg.GetChosenBackground();
+
+		for (i = 0; i < which + 1; i++)
+			skip_to_string("$Bitmap List:");
 	}
+
+	// now parse the background we've selected
+	parse_one_background(&Backgrounds[get_active_background()]);
+
+	reinitialize_lists();
 }
 
 void bg_bitmap_dlg::reinitialize_lists()

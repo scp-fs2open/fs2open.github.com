@@ -10,13 +10,16 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.102 $
- * $Date: 2007-04-11 18:05:18 $
- * $Author: taylor $
+ * $Revision: 2.103 $
+ * $Date: 2007-09-02 02:10:24 $
+ * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.102  2007/04/11 18:05:18  taylor
+ * bm_unload_fast() should only unload the bitmap passed for animations, not the entire animation (fixes several issues)
+ *
  * Revision 2.101  2007/03/22 20:13:23  taylor
  * various bits of bmpman cleanup
  * be sure to clean all three possible buffers with OGL init
@@ -1592,7 +1595,7 @@ static int find_block_of(int n)
 
 int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps, ubyte *type)
 {
-	int frames = 0, fps = 30;
+	int frames = 0, fps = 30, rval;
 	char ext[8];
 	ubyte c_type = BM_TYPE_NONE;
 	char file_text[50];
@@ -1605,9 +1608,14 @@ int bm_load_and_parse_eff(char *filename, int dir_type, int *nframes, int *nfps,
 	// pause anything that may happen to be parsing right now
 	pause_parse();
 
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("BMPMAN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		unpause_parse();
+		return -1;
+	}
+
 	// now start parsing the EFF
 	read_file_text(filename, dir_type, file_text, file_text_raw);
-
 	reset_parse(file_text);
 
 	required_string("$Type:");

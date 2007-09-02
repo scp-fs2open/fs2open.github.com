@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.18 $
- * $Date: 2006-12-28 00:59:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.19 $
+ * $Date: 2007-09-02 02:10:29 $
+ * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2006/12/28 00:59:53  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.17  2006/09/11 06:51:17  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -410,22 +413,20 @@ void parse_medal_tbl()
 	int rval, i;
 	int num_badges = 0;
 
-	//Init stuff
-	Num_medals = 0;
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "medals.tbl", rval));
-		return;
-	} 
-
 	// open localization
 	lcl_ext_open();
 
-	read_file_text("medals.tbl");
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "medals.tbl", rval));
+		lcl_ext_close();
+		return;
+	}
 
+	read_file_text("medals.tbl");
 	reset_parse();
 
 	// parse in all the rank names
+	Num_medals = 0;
 	required_string("#Medals");
 	while ( required_string_either("#End", "$Name:") )
 	{

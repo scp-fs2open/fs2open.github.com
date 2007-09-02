@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.37 $
- * $Date: 2007-07-28 04:43:40 $
+ * $Revision: 1.38 $
+ * $Date: 2007-09-02 02:10:28 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.37  2007/07/28 04:43:40  Goober5000
+ * a couple of tweaks
+ *
  * Revision 1.36  2006/12/28 00:59:48  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -288,7 +291,7 @@ void parse_thrust_glows(species_info *species, bool no_create)
 		species->thruster_info.glow.afterburn.filename[0] = '\0';
 }
 
-void parse_species_tbl(char *longname)
+void parse_species_tbl(char *filename)
 {
 	int i, rval;
 	char species_name[NAME_LENGTH];
@@ -298,23 +301,20 @@ void parse_species_tbl(char *longname)
 
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", rval, (longname) ? longname : NOX("<default>")));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : NOX("<default species_defs.tbl>")));
+		lcl_ext_close();
 		return;
 	}
+
+	if (filename == NULL)
+		read_file_text_from_array(defaults_get_file("species_defs.tbl"));
 	else
-	{
-		if (longname == NULL)
-		{
-			read_file_text_from_array(defaults_get_file("species_defs.tbl"));
-		}
-		else
-		{
-			read_file_text(longname);
-		}
+		read_file_text(filename);
 
-		reset_parse();		
-	}
+	reset_parse();		
 
+
+	// start parsing
 	required_string("#SPECIES DEFS");
 
 	// no longer required: counted automatically

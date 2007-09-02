@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.33 $
- * $Date: 2006-12-28 00:59:27 $
- * $Author: wmcoolmon $
+ * $Revision: 2.34 $
+ * $Date: 2007-09-02 02:10:26 $
+ * $Author: Goober5000 $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2006/12/28 00:59:27  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.32  2006/10/06 09:31:27  taylor
  * re-fix this crap that I managed to break last time (was Mantis bug 1066 I think)
  *
@@ -1700,17 +1703,18 @@ int Player_tips_shown = 0;
 // tooltips
 void player_tips_init()
 {
-	Num_player_tips = 0;
-
 	int rval;
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "ssm.tbl", rval));
-		lcl_ext_close();
-		return;
-	}
+
+	Num_player_tips = 0;
 
 	// begin external localization stuff
 	lcl_ext_open();
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "tips.tbl", rval));
+		lcl_ext_close();
+		return;
+	}
 
 	read_file_text("tips.tbl");
 	reset_parse();

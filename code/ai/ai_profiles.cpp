@@ -6,11 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.21 $
- * $Date: 2007-07-19 03:19:32 $
- * $Author: turey $
+ * $Revision: 1.22 $
+ * $Date: 2007-09-02 02:10:23 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.21  2007/07/19 03:19:32  turey
+ * Made Backslash's change to dampening tied to an ai_profiles flag, as it does affect
+ *  retail behavior, and significantly affects gameplay in the BtRL Demo.
+ * Also, fixed a typo.
+ *
  * Revision 1.20  2007/07/15 02:45:17  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
@@ -125,7 +130,7 @@ void set_flag(ai_profile_t *profile, char *name, int flag)
 	}
 }
 
-void parse_ai_profiles_tbl(char *longname)
+void parse_ai_profiles_tbl(char *filename)
 {
 	int i, rval;
 	bool no_create = false;
@@ -138,21 +143,17 @@ void parse_ai_profiles_tbl(char *longname)
 
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", rval, (longname) ? longname : NOX("<default>")));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : "<default ai_profiles.tbl>", rval));
+		lcl_ext_close();
+		return;
 	}
-	else
-	{
-		if (longname == NULL)
-		{
-			read_file_text_from_array(defaults_get_file("ai_profiles.tbl"));
-		}
-		else
-		{
-			read_file_text(longname);
-		}
 
-		reset_parse();		
-	}
+	if (filename == NULL)
+		read_file_text_from_array(defaults_get_file("ai_profiles.tbl"));
+	else
+		read_file_text(filename);
+
+	reset_parse();		
 
 
 	// start parsing
@@ -166,44 +167,59 @@ void parse_ai_profiles_tbl(char *longname)
 	while (required_string_either("#End","$Profile Name:"))
 	{
 		ai_profile_t *profile = &dummy_profile;
+		ai_profile_t *previous_profile = NULL;
 		
-		// make sure we're under the limit
-		if (Num_ai_profiles >= MAX_AI_PROFILES)
-		{
-			Warning(LOCATION, "Too many profiles in ai_profiles.tbl!  Max is %d.\n", MAX_AI_PROFILES-1);
-			skip_to_string("#End", NULL);
-			break;
-		}
-
 		// get the name
 		required_string("$Profile Name:");
 		stuff_string(profile_name, F_NAME, NAME_LENGTH);
+
+		// see if it exists
+		for (i = 0; i < Num_ai_profiles; i++)
+		{
+			if (!stricmp(Ai_profiles[i].profile_name, profile_name))
+			{
+				previous_profile = &Ai_profiles[i];
+				break;
+			}
+		}
 
 		// modular table stuff
 		if (optional_string("+nocreate"))
 		{
 			no_create = true;
 
-			for (i = 0; i < Num_ai_profiles; i++)
-			{
-				if (!stricmp(Ai_profiles[i].profile_name, profile_name))
-				{
-					profile = &Ai_profiles[i];
-					break;
-				}
-			}
+			// use the previous one if possible,
+			// otherwise continue to use the dummy one
+			if (previous_profile != NULL)
+				profile = previous_profile;
 		}
 		else
 		{
-			profile = &Ai_profiles[Num_ai_profiles];
-			Num_ai_profiles++;
+			// don't create multiple profiles with the same name
+			if (previous_profile != NULL)
+			{
+				Warning(LOCATION, "An ai profile named '%s' already exists!  The new one will not be created.\n", profile_name);
+			}
+			else
+			{
+				// make sure we're under the limit
+				if (Num_ai_profiles >= MAX_AI_PROFILES)
+				{
+					Warning(LOCATION, "Too many profiles in ai_profiles.tbl!  Max is %d.\n", MAX_AI_PROFILES-1);	// -1 because one is built-in
+					skip_to_string("#End", NULL);
+					break;
+				}
+
+				profile = &Ai_profiles[Num_ai_profiles];
+				Num_ai_profiles++;
+			}
 		}
 
 		// initialize profile if we're not building from a previously parsed one
 		if (!no_create)
 		{
 			// base profile, so zero it out
-			if (Num_ai_profiles == 1)
+			if (profile == &Ai_profiles[0])
 			{
 				memset(profile, 0, sizeof(ai_profile_t));
 			}

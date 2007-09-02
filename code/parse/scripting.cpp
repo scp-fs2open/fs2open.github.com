@@ -64,14 +64,12 @@ void script_parse_table(char *filename)
 	int rval;
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", filename, rval));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		return;
 	}
-	else
-	{	
-		read_file_text(filename);
-		reset_parse();
-	}
+
+	read_file_text(filename);
+	reset_parse();
 
 	if(optional_string("#Global Hooks"))
 	{

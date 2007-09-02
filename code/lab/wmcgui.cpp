@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.34 $
- * $Date: 2007-03-22 22:14:56 $
- * $Author: taylor $
+ * $Revision: 1.35 $
+ * $Date: 2007-09-02 02:10:26 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.34  2007/03/22 22:14:56  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
  * Revision 1.33  2007/03/22 21:00:48  taylor
  * fix issue where the lab menu bar would disappear at times when you click on it (Mantis #1063)
  *
@@ -215,34 +218,41 @@ bool ScreenClassInfoEntry::Parse()
 
 void GUISystem::ParseClassInfo(char* filename)
 {
+	int rval;
+
 	if(ClassInfoParsed)
 	{
 		Warning(LOCATION, "Class info is being parsed twice");
 		DestroyClassInfo();
 	}
 
+	// open localization
 	lcl_ext_open();
-	if(setjmp(parse_abort) != 0)
+
+	if((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("TABLES: Unable to parse '%s'.\n", filename));
+		mprintf(("WMCGUI: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		lcl_ext_close();
 		return;
 	}
+
 	read_file_text(filename);
 	reset_parse();
 	ScreenClassInfo.Parse();
 	
-	bool rval;
+	bool flag;
 	do
 	{
 		ScreenClassInfoEntry* sciep = new ScreenClassInfoEntry;
-		rval = sciep->Parse();
-		if(rval)
+		flag = sciep->Parse();
+		if(flag)
 			list_append(&ScreenClassInfo, sciep);
 
-	} while(rval);
+	} while(flag);
 
+	// close localization
 	lcl_ext_close();
+
 	ClassInfoParsed = true;
 }
 

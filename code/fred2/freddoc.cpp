@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.11 $
- * $Date: 2007-07-28 21:31:10 $
+ * $Revision: 1.12 $
+ * $Date: 2007-09-02 02:10:24 $
  * $Author: Goober5000 $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
@@ -19,6 +19,9 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2007/07/28 21:31:10  Goober5000
+ * this should really be capitalized
+ *
  * Revision 1.10  2006/10/08 08:04:52  Goober5000
  * bah
  *
@@ -382,6 +385,7 @@
 #include "localization/fhash.h"
 #include "cmdline/cmdline.h"
 #include "starfield/starfield.h"
+#include "localization/localize.h"
 
 extern int Num_objects;
 
@@ -1307,12 +1311,14 @@ void restore_default_weapons(char *ships_tbl);
 
 void CFREDDoc::OnFileImportWeapons() 
 {
+	int rval;
 	CString ships_tbl_mfc;
 	char ships_tbl[MAX_PATH_LEN];
 	char *ships_tbl_text;
 	char *ships_tbl_text_raw;
 	char *ch;
 	char temp[MAX_PATH_LEN];
+	char error_str[1024];
 
 	// set up import dialog
 	CFileDialog dlg(TRUE, "tbl", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR, "FreeSpace Tables (*.tbl)|*.tbl|All files (*.*)|*.*||");
@@ -1339,9 +1345,7 @@ void CFREDDoc::OnFileImportWeapons()
 	}
 
 	if (!strlen(ships_tbl_mfc))
-	{
 		return;
-	}
 
 	strcpy(ships_tbl, ships_tbl_mfc);
 
@@ -1357,18 +1361,31 @@ void CFREDDoc::OnFileImportWeapons()
 		return;
 	}
 
+	// open localization
+	lcl_ext_open();
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("FREDDOC: Unable to parse '%s'!  Error code = %i.\n", ships_tbl, rval));
+		sprintf(error_str, "Could not parse file: %s", ships_tbl);
+
+		MessageBox(NULL, error_str, "Unable to import weapon loadouts!", MB_ICONERROR | MB_OK);
+		lcl_ext_close();
+		return;
+	}
+
 	// load the other table and convert, freeing memory after use
 	read_file_text(ships_tbl, CF_TYPE_ANY, ships_tbl_text, ships_tbl_text_raw);
 	free(ships_tbl_text_raw);
 	restore_default_weapons(ships_tbl_text);
 	free(ships_tbl_text);
 
+	// close localization
+	lcl_ext_close();
+
 	// we haven't saved it yet
 	set_modified(TRUE);
 
 	// error check and notify
 	if (!Fred_view_wnd->global_error_check())
-	{
 		Fred_view_wnd->MessageBox("Weapon loadouts successfully imported with no errors.", "Woohoo!");
-	}
 }

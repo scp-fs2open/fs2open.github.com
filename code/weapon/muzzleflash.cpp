@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-12-28 00:59:54 $
- * $Author: wmcoolmon $
+ * $Revision: 2.13 $
+ * $Date: 2007-09-02 02:10:29 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/12/28 00:59:54  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.11  2006/09/13 03:56:29  taylor
  * forgot to check that error message to match the new struct format
  *
@@ -161,16 +164,13 @@ void parse_mflash_tbl(char *filename)
 	int rval;
 	uint i;
 
-	if ((rval = setjmp(parse_abort)) != 0)
-	{
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", filename, rval));
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		return;
 	}
-	else
-	{
-		read_file_text(filename);
-		reset_parse();		
-	}
+
+	read_file_text(filename);
+	reset_parse();		
 
 	// header
 	required_string("#Muzzle flash types");

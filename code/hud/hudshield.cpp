@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.44 $
- * $Date: 2007-02-20 04:20:10 $
+ * $Revision: 2.45 $
+ * $Date: 2007-09-02 02:10:25 $
  * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2007/02/20 04:20:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.43  2007/02/16 23:49:28  Goober5000
  * ugh... reverting this, because it was done wrong
  *
@@ -448,7 +451,13 @@ ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS] = {1,0,2,3};
 
 /*void hud_shield_game_init()
 {
+	int rval;
 	char name[MAX_FILENAME_LEN+1] = "";
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "hud.tbl", rval));
+		return;
+	}
 
 	// read in hud.tbl
 	read_file_text("hud.tbl");

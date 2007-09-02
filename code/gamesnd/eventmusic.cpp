@@ -9,13 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.46 $
- * $Date: 2007-03-22 20:22:25 $
- * $Author: taylor $
+ * $Revision: 2.47 $
+ * $Date: 2007-09-02 02:10:25 $
+ * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2007/03/22 20:22:25  taylor
+ * a little better error handling for cf_exists_full()
+ * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
+ * use cf_exists_full_ext() for eventmusic file checks (to check for ogg and wav)
+ * get rid of SPM hack, it's wrong (just commented out for now though)
+ * fix a bunch of bugs in cf_find_file_location_ext():
+ *  - try to handle files with multiple periods a bit better (for the wav files like: blah_1.5.wav)
+ *  - load issue with finding incorrect files by mistake
+ *  - prevent finding different file types in various paths/roots
+ *
  * Revision 2.45  2007/02/11 18:20:18  taylor
  * support for new finding/loading of sound files
  * add support for automatically figuring out samples-per-measure based on Goober's explanation in the Wiki (not sure if it's actually right though)
@@ -1639,19 +1649,19 @@ void parse_menumusic()
 // event_music_parse_musictbl() will parse the music.tbl file, and set up the Mission_songs[]
 // array
 //
-void event_music_parse_musictbl(char* longname)
+void event_music_parse_musictbl(char *filename)
 {
 	int rval;
 
-
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", longname, rval));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		lcl_ext_close();
 
 	} else {
 		// open localization
 		lcl_ext_open();
 
-		read_file_text(longname);
+		read_file_text(filename);
 		reset_parse();		
 
 		// Loop through all the sound-tracks
