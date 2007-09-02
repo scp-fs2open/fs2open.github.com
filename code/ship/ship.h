@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.28 $
- * $Date: 2007-07-23 16:08:32 $
- * $Author: Kazan $
+ * $Revision: 2.150.2.29 $
+ * $Date: 2007-09-02 18:52:54 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.28  2007/07/23 16:08:32  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 2.150.2.27  2007/07/15 06:29:53  Goober5000
  * restore WMC's ship flag
  *
@@ -1246,14 +1249,13 @@ typedef struct ship_subsys_info {
 #define SF2_NO_BANK							(1<<7)		// Goober5000 - ship doesn't bank when turning
 #define SF2_AFFECTED_BY_GRAVITY				(1<<8)		// Goober5000 - ship affected by gravity points
 #define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<9)		// Goober5000 - switch whether subsystems are scanned
-#define SF2_VANISHED						(1<<10)		//WMC - ship has vanished, used mostly for ship_wing_cleanup
-#define SF2_NO_BUILTIN_MESSAGES				(1<<11)		// Karajorma - ship should not send built-in messages
-#define SF2_PRIMARIES_LOCKED				(1<<12)		// Karajorma - This ship can't fire primary weapons
-#define SF2_SECONDARIES_LOCKED				(1<<13)		// Karajorma - This ship can't fire secondary weapons
-#define SF2_GLOWMAPS_DISABLED				(1<<14)		// taylor - to disable glow maps
-#define SF2_NO_DEATH_SCREAM					(1<<15)		// Goober5000 - for WCS
-#define SF2_ALWAYS_DEATH_SCREAM				(1<<16)		// Goober5000 - for WCS
-#define SF2_NAVPOINT_NEEDSLINK				(1<<17)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
+#define SF2_NO_BUILTIN_MESSAGES				(1<<10)		// Karajorma - ship should not send built-in messages
+#define SF2_PRIMARIES_LOCKED				(1<<11)		// Karajorma - This ship can't fire primary weapons
+#define SF2_SECONDARIES_LOCKED				(1<<12)		// Karajorma - This ship can't fire secondary weapons
+#define SF2_GLOWMAPS_DISABLED				(1<<13)		// taylor - to disable glow maps
+#define SF2_NO_DEATH_SCREAM					(1<<14)		// Goober5000 - for WCS
+#define SF2_ALWAYS_DEATH_SCREAM				(1<<15)		// Goober5000 - for WCS
+#define SF2_NAVPOINT_NEEDSLINK				(1<<16)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -1984,6 +1986,7 @@ typedef struct wing {
 
 	int	total_destroyed;						// total number of ships destroyed in the wing (including all waves)
 	int	total_departed;						// total number of ships departed in this wing (including all waves)
+	int total_vanished;						// total number of ships vanished in this wing (including all waves)
 
 	int	special_ship;							// the leader of the wing.  An index into ship_index[].
 
@@ -2067,6 +2070,13 @@ extern void ship_render( object * objp );
 extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
 extern int ship_get_num_ships();
+
+// Goober5000
+#define SHIP_DESTROYED	1
+#define SHIP_DEPARTED	2
+#define SHIP_VANISHED	3
+extern void ship_cleanup(int shipnum, int cleanup_mode);
+extern void ship_actually_depart(int shipnum, bool vanish = false);
 
 extern int ship_fire_primary_debug(object *objp);	//	Fire the debug laser.
 extern int ship_stop_fire_primary(object * obj);
@@ -2200,7 +2210,6 @@ extern int ship_query_state(char *name);
 int ship_primary_bank_has_ammo(int shipnum);	// check if current primary bank has ammo
 int ship_secondary_bank_has_ammo(int shipnum);	// check if current secondary bank has ammo
 
-void ship_departed( int num );
 int ship_engine_ok_to_warp(ship *sp);		// check if ship has engine power to warp
 int ship_navigation_ok_to_warp(ship *sp);	// check if ship has navigation power to warp
 
@@ -2397,8 +2406,6 @@ int ship_tvt_wing_lookup(char *wing_name);
 
 // Goober5000
 int ship_class_compare(int ship_class_1, int ship_class_2);
-
-void ship_vanished(object *objp);
 
 int armor_type_get_idx(char* name);
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.56 $
- * $Date: 2007-08-26 16:00:11 $
- * $Author: phreak $
+ * $Revision: 2.259.2.57 $
+ * $Date: 2007-09-02 18:52:52 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.56  2007/08/26 16:00:11  phreak
+ * destroyed-or-departed-delay needs to check for ships that have self destructed
+ *
  * Revision 2.259.2.55  2007/08/17 03:29:50  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
@@ -11145,11 +11148,6 @@ void sexp_weapon_create(int n)
 		weapon_set_tracking_info(weapon_objnum, parent_objnum, target_objnum, is_locked, targeted_ss);
 }
 
-void sexp_ship_vanish_helper(object *objp, dock_function_info *infop)
-{
-	ship_vanished(objp);
-}
-
 // make ship vanish without a trace (and what its docked to)
 void sexp_ship_vanish(int n)
 {
@@ -11171,10 +11169,7 @@ void sexp_ship_vanish(int n)
 		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive
 		num = ship_name_lookup(ship_name);
 		if ( num != -1 )
-		{
-			dock_function_info dfi;
-			dock_evaluate_all_docked_objects(&Objects[Ships[num].objnum], &dfi, sexp_ship_vanish_helper);
-		}
+			ship_actually_depart(num, true);
 	}
 }
 
