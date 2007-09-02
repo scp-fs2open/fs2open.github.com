@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.12 $
- * $Date: 2007-05-14 23:13:51 $
+ * $Revision: 2.13 $
+ * $Date: 2007-09-02 19:06:02 $
  * $Author: Goober5000 $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2007/05/14 23:13:51  Goober5000
+ * --grouped the shake/shudder code together a bit better
+ * --added a sexp to generate shudder
+ * --fixed a minor bug in lock-perspective
+ *
  * Revision 2.11  2007/02/20 04:20:38  Goober5000
  * the great big duplicate model removal commit
  *
@@ -150,11 +155,6 @@ void supernova_start(int seconds)
 
 	// no supernova in multiplayer
 	if(Game_mode & GM_MULTIPLAYER){
-		return;
-	}
-
-	// only good if we have one sun
-	if (stars_get_num_suns() != 1) {
 		return;
 	}
 
