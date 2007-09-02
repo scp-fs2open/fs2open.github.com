@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.57.2.8 $
- * $Date: 2007-04-24 12:07:33 $
- * $Author: karajorma $
+ * $Revision: 2.57.2.9 $
+ * $Date: 2007-09-02 18:52:51 $
+ * $Author: Goober5000 $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57.2.8  2007/04/24 12:07:33  karajorma
+ * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
+ *
  * Revision 2.57.2.7  2007/02/20 04:19:22  Goober5000
  * the great big duplicate model removal commit
  *
@@ -3194,9 +3197,8 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	if ( !(Net_player->flags & NETINFO_FLAG_INGAME_JOIN) ) {
 		ship_hit_kill( sobjp, oobjp, percent_killed, sd );
 	} else {
-		extern void ship_destroyed( int shipnum );
-		ship_destroyed( sobjp->instance );
 		sobjp->flags |= OF_SHOULD_BE_DEAD;
+		ship_cleanup(sobjp->instance, SHIP_DESTROYED);
 		obj_delete( OBJ_INDEX(sobjp) );
 	}
 }

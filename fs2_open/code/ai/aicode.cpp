@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72.2.25 $
- * $Date: 2007-09-02 02:07:37 $
+ * $Revision: 1.72.2.26 $
+ * $Date: 2007-09-02 18:52:50 $
  * $Author: Goober5000 $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72.2.25  2007/09/02 02:07:37  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 1.72.2.24  2007/08/11 16:51:55  Goober5000
  * some tweaks for a field that's mostly unused anyway
  *
@@ -13664,8 +13667,7 @@ void ai_bay_depart()
 		}
 
 		// make ship disappear
-		Pl_objp->flags |= OF_SHOULD_BE_DEAD;
-		ship_departed( Pl_objp->instance );
+		ship_actually_depart(Pl_objp->instance);
 
 		// clean up path stuff
 		aip->path_start = -1;
@@ -15867,6 +15869,7 @@ void ai_ship_destroy(int shipnum, int method)
 	ai_info	*dead_aip;
 
 	Assert((shipnum >= 0) && (shipnum < MAX_SHIPS));
+	Assert((Ships[shipnum].ai_index >= 0) && (Ships[shipnum].ai_index < MAX_AI_INFO));
 	objnum = Ships[shipnum].objnum;
 	dead_aip = &Ai_info[Ships[shipnum].ai_index];
 

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.13 $
- * $Date: 2007-04-24 12:07:35 $
- * $Author: karajorma $
+ * $Revision: 2.66.2.14 $
+ * $Date: 2007-09-02 18:52:55 $
+ * $Author: Goober5000 $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.13  2007/04/24 12:07:35  karajorma
+ * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
+ *
  * Revision 2.66.2.12  2007/02/20 04:19:35  Goober5000
  * the great big duplicate model removal commit
  *
@@ -1258,38 +1261,14 @@ void shipfx_warpin_frame( object *objp, float frametime )
 		}
 	}
 }
-
-void shipfx_warpout_helper(object *objp, dock_function_info *infop)
-{
-	if (objp == Player_obj)
-	{
-		// Normally, this will never get called for the player.  If it
-		// does, it is because of some error (like the warpout effect
-		// couldn't start) or because the player was docked to something,
-		// so go ahead and warp the player out.  All this does is set
-		// the event to go to debriefing, the same thing that happens
-		// after the player warp out effect ends.
-
-		// Karajorma - Seems like WMC's new warpout code reaches here regularly though
-		send_debrief_event();	
-	}
-	else
-	{
-		objp->flags |= OF_SHOULD_BE_DEAD;
-
-		if (objp->type == OBJ_SHIP)
-			ship_departed(objp->instance);
-	}
-}
  
 // This is called to actually warp this object out
 // after all the flashy fx are done, or if the flashy fx
 // don't work for some reason.  OR to skip the flashy fx.
-void shipfx_actually_warpout(ship *shipp, object *objp)
+void shipfx_actually_warpout(int shipnum)
 {
 	// Once we get through effect, make the ship go away
-	dock_function_info dfi;
-	dock_evaluate_all_docked_objects(objp, &dfi, shipfx_warpout_helper);
+	ship_actually_depart(shipnum);
 }
 
 // compute_special_warpout_stuff();
@@ -1506,7 +1485,7 @@ void shipfx_warpout_start( object *objp )
 		// Next line fixes assert in wing cleanup code when no warp effect.
 		shipp->flags |= SF_DEPART_WARP;
 
-		shipfx_actually_warpout(shipp, objp);
+		shipfx_actually_warpout(objp->instance);
 		return;
 	}
 
@@ -1557,8 +1536,8 @@ void shipfx_warpout_start( object *objp )
             warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
         }
 	}
-	if (warp_objnum < 0 )	{	// JAS: This must always be created, if not, just warp the ship in
-		shipfx_actually_warpout(shipp,objp);
+	if (warp_objnum < 0 )	{	// JAS: This must always be created, if not, just warp the ship out
+		shipfx_actually_warpout(objp->instance);
 		return;
 	}
 
@@ -1627,7 +1606,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 
 		//WMC - ship appears after warpout_time milliseconds
 		if ( timestamp_elapsed(shipp->start_warp_time + sip->warpout_time )) {
-			shipfx_actually_warpout(shipp,objp);
+			shipfx_actually_warpout(objp->instance);
 		}
 
 		return;
@@ -1663,8 +1642,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 				mprintf(( "Hmmm... player ship warpout time elapsed, but he wasn't in warp stage 3.\n" ));
 			}
 
-			gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_DONE );
-			ship_departed( objp->instance );								// mark log entry for the player
+			shipfx_actually_warpout(objp->instance);
 		}
 
 	} else {
@@ -1682,7 +1660,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 		// MWA 10/21/97 -- added shipp->flags & SF_NO_DEPARTURE_WARP part of next if statement.  For ships
 		// that don't get a wormhole effect, I wanted to drop into this code immediately.
 		if ( (warp_pos > objp->radius)  || (shipp->flags & SF_NO_DEPARTURE_WARP) || timed_out )	{
-			shipfx_actually_warpout( shipp, objp );
+			shipfx_actually_warpout(objp->instance);
 		} 
 	}
 }
