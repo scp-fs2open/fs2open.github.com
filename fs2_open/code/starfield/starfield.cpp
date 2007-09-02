@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.98 $
- * $Date: 2007-09-02 02:10:28 $
+ * $Revision: 2.99 $
+ * $Date: 2007-09-02 19:06:01 $
  * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.98  2007/09/02 02:10:28  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.97  2007/05/28 20:05:06  taylor
  * more resilient checking of stars.tbl and it's modular versions
  *
@@ -1714,7 +1717,7 @@ void stars_draw_sun(int show_sun)
 	vec3d sun_dir;
 	vertex sun_vex;	
 	starfield_bitmap *bm;
-	float local_scale = 1.0f;
+	float local_scale;
 
 	// should we even be here?
 	if (!show_sun)
@@ -1753,8 +1756,10 @@ void stars_draw_sun(int show_sun)
 			light_add_directional(&sun_dir, bm->i, bm->r, bm->g, bm->b, bm->spec_r, bm->spec_g, bm->spec_b, true);
 
 		// if supernova
-		if ( supernova_active() )
+		if ( supernova_active() && (idx == 0) )
 			local_scale = 1.0f + (SUPERNOVA_SUN_SCALE * supernova_pct_complete());
+		else
+			local_scale = 1.0f;
 
 		// draw the sun itself, keep track of how many we drew
 		if (bm->fps) {
@@ -1823,7 +1828,7 @@ void stars_draw_sun_glow(int sun_n)
 	starfield_bitmap *bm;		
 	vec3d sun_pos, sun_dir;
 	vertex sun_vex;	
-	float local_scale = 1.0f;
+	float local_scale;
 
 	// sanity
 	Assert( sun_n < (int)Suns.size() );
@@ -1854,8 +1859,10 @@ void stars_draw_sun_glow(int sun_n)
 	vm_vec_normalize(&sun_dir);	
 
 	// if supernova
-	if ( supernova_active() )
+	if ( supernova_active() && (sun_n == 0) )
 		local_scale = 1.0f + (SUPERNOVA_SUN_SCALE * supernova_pct_complete());
+	else
+		local_scale = 1.0f;
 
 	// draw the sun itself, keep track of how many we drew
 	if (bm->glow_fps) {
