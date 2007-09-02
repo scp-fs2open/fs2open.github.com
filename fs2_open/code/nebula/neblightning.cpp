@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.15 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.16 $
+ * $Date: 2007-09-02 02:10:27 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/12/28 00:59:39  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.14  2006/09/11 06:50:42  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -391,23 +394,21 @@ void nebl_init()
 	char name[MAX_FILENAME_LEN];
 	bolt_type bogus_lightning, *l;
 	storm_type bogus_storm, *s;
-	int temp;
+	int temp, rval;
 
-	//Init data!
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "lightning.tbl", rval));
+		return;
+	}
+
+	// parse the lightning table
+	read_file_text("lightning.tbl");
+	reset_parse();
+
 	Num_bolt_types = 0;
 	Num_storm_types = 0;
 
 	memset(Bolt_types, 0, sizeof(bolt_type) * MAX_BOLT_TYPES_INTERNAL);
-
-	// parse the lightning table
-	int rval;
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "lightning.tbl", rval));
-		return;
-	}
-
-	read_file_text("lightning.tbl");
-	reset_parse();
 
 	// parse the individual lightning bolt types
 	required_string("#Bolts begin");

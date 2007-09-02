@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.208  2007/08/16 00:45:54  phreak
+ * Local SSMs shouldn't jump into subspace if they're not homing.
+ *
  * Revision 2.207  2007/07/15 06:29:56  Goober5000
  * restore WMC's ship flag
  *
@@ -1384,7 +1387,7 @@ int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
 }
 
 
-void parse_weapon_expl_tbl(char* longname)
+void parse_weapon_expl_tbl(char *filename)
 {
 	int rval;
 	uint i;
@@ -1394,13 +1397,13 @@ void parse_weapon_expl_tbl(char* longname)
 	lcl_ext_open();
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", longname, rval));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		lcl_ext_close();
 		return;
 	}
-	else {
-		read_file_text(NOX(longname));
-		reset_parse();		
-	}
+
+	read_file_text(filename);
+	reset_parse();
 
 	required_string("#Start");
 	while (required_string_either("#End","$Name:"))
@@ -3290,14 +3293,21 @@ void translate_spawn_types()
 
 static char Default_cmeasure_name[NAME_LENGTH] = "";
 
-char current_weapon_table[MAX_PATH_LEN + MAX_FILENAME_LEN];
-void parse_weaponstbl(char* longname)
+void parse_weaponstbl(char *filename)
 {
-	strcpy(current_weapon_table, longname);
+	int rval;
+
 	// open localization
 	lcl_ext_open();
 
-	read_file_text(longname);
+	if ((rval = setjmp(parse_abort)) != 0)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		lcl_ext_close();
+		return;
+	}
+
+	read_file_text(filename);
 	reset_parse();
 
 	if(optional_string("#Primary Weapons"))
@@ -3869,33 +3879,26 @@ void weapon_reset_info()
 // This will get called once at game startup
 void weapon_init()
 {
-	int rval;
-
 	if ( !Weapons_inited ) {
 		//Init weapon explosion info
 		weapon_expl_info_init();
 
 		// parse weapons.tbl
-		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", rval, current_weapon_table);
-		} else {	
-			weapon_reset_info();
+		weapon_reset_info();
 
-			Num_weapon_types = 0;
-			Num_spawn_types = 0;
+		Num_weapon_types = 0;
+		Num_spawn_types = 0;
 
-			parse_weaponstbl("weapons.tbl");
+		parse_weaponstbl("weapons.tbl");
 
-			int num_files = parse_modular_table(NOX("*-wep.tbm"), parse_weaponstbl);
+		int num_files = parse_modular_table(NOX("*-wep.tbm"), parse_weaponstbl);
+		if (num_files > 0)
+			Module_ship_weapons_loaded = true;
 
-			if (num_files > 0)
-				Module_ship_weapons_loaded = true;
+		// do post-parse cleanup
+		weapon_do_post_parse();
 
-			// do post-parse cleanup
-			weapon_do_post_parse();
-
-			Weapons_inited = 1;
-		}
+		Weapons_inited = 1;
 	}
 
 	weapon_level_init();

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.224 $
- * $Date: 2007-08-03 01:37:05 $
+ * $Revision: 2.225 $
+ * $Date: 2007-09-02 02:10:27 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.224  2007/08/03 01:37:05  Goober5000
+ * fix compile error
+ *
  * Revision 2.223  2007/07/28 21:17:55  Goober5000
  * make the parse object array dynamic; also made the docking bitstrings dynamic
  *
@@ -6342,60 +6345,53 @@ void post_process_mission(mission *pm)
 
 int get_mission_info(char *filename, mission *mission_p, bool basic)
 {
-
 	char real_fname[MAX_FILENAME_LEN];
 	strcpy(real_fname, filename);
 	char *p = strchr(real_fname, '.');
 	if (p) *p = 0; // remove any extension
 	strcat(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
 
-	int rval;
+	int rval, filelength;
 
 	// if mission_p is NULL, make it point to The_mission
 	if ( mission_p == NULL )
 		mission_p = &The_mission;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		nprintf(("Error", "Error abort!  Code = %d", rval));
-		return rval;
-	
-	} else {
-		int filelength;
+	// open localization
+	lcl_ext_open();
 
-		// open localization
-		lcl_ext_open();
-
+	do {
 		CFILE *ftemp = cfopen(real_fname, "rt");
-		if (!ftemp){
-			// close localization
-			lcl_ext_close();
-
-			return -1;
+		if (!ftemp) {
+			rval = -1;
+			break;
 		}
 
 		// 7/9/98 -- MWA -- check for 0 length file.
 		filelength = cfilelength(ftemp);
 		cfclose(ftemp);
-		if ( filelength == 0 ){
-			// close localization
-			lcl_ext_close();	
+		if (filelength == 0) {
+			rval = -1;
+			break;
+		}
 
-			return -1;
+		if ((rval = setjmp(parse_abort)) != 0) {
+			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", real_fname, rval));
+			break;
 		}
 
 		read_file_text(real_fname, CF_TYPE_MISSIONS);
 		memset( mission_p, 0, sizeof(mission) );
 		parse_init(basic);
 		parse_mission_info(mission_p, basic);
+	} while (0);
 
-		// close localization
-		lcl_ext_close();
-	}
+	// close localization
+	lcl_ext_close();
 
-	return 0;
+	return rval;
 }
 
-// Goober5000 - changed and moved from parselo.cpp
 // Initialize the mission parse process.
 void parse_init(bool basic)
 {
@@ -6415,7 +6411,6 @@ void parse_init(bool basic)
 // mai parse routine for parsing a mission.  The default parameter flags tells us which information
 // to get when parsing the mission.  0 means get everything (default).  Other flags just gets us basic
 // info such as game type, number of players etc.
-// Goober5000 - allow for import
 int parse_main(char *mission_name, int flags)
 {
 	int rval, i;
@@ -6423,22 +6418,17 @@ int parse_main(char *mission_name, int flags)
 	// fill in Ship_class_names array with the names from the ship_info struct;
 	Num_parse_names = 0;
 	Num_path_restrictions = 0;
-	Assert(Num_ship_classes <= MAX_SHIP_CLASSES);	// Goober5000 - should be <=
+	Assert(Num_ship_classes <= MAX_SHIP_CLASSES);
 
 	for (i = 0; i < Num_ship_classes; i++)
 		Ship_class_names[i] = Ship_info[i].name;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		nprintf(("Error", "Error abort!  Code = %i.", rval));
-		return rval;
+	// open localization
+	lcl_ext_open();
 	
-	} else {
-		// open localization
-		lcl_ext_open();
-
+	do {
 		// don't do this for imports
-		if (!(flags & MPF_IMPORT_FSM))
-		{
+		if (!(flags & MPF_IMPORT_FSM)) {
 			CFILE *ftemp = cfopen(mission_name, "rt", CFILE_NORMAL, CF_TYPE_MISSIONS);
 
 			// fail situation.
@@ -6449,39 +6439,39 @@ int parse_main(char *mission_name, int flags)
 				Current_file_length = -1;
 				Current_file_checksum = 0;
 	
-				// close localization
-				lcl_ext_close();
-
-				return -1;
+				rval = -1;
+				break;
 			}
 
 			Current_file_length = cfilelength(ftemp);
 			cfclose(ftemp);
 		}
 
+		if ((rval = setjmp(parse_abort)) != 0) {
+			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", mission_name, rval));
+			break;
+		}
+
 		// import?
-		if (flags & MPF_IMPORT_FSM)
-		{
+		if (flags & MPF_IMPORT_FSM) {
 			read_file_text(mission_name, CF_TYPE_ANY);
 			convertFSMtoFS2();
-		}
-		else
-		{
+		} else {
 			read_file_text(mission_name, CF_TYPE_MISSIONS);
 		}
 
 		memset(&The_mission, 0, sizeof(The_mission));
 		parse_mission(&The_mission, flags);
 		display_parse_diagnostics();
+	} while (0);
 
-		// close localization
-		lcl_ext_close();
-	}
+	// close localization
+	lcl_ext_close();
 
 	if (!Fred_running)
 		strcpy(Mission_filename, mission_name);
 
-	return 0;
+	return rval;
 }
 
 void mission_parse_close()
@@ -6766,8 +6756,6 @@ int mission_parse_is_multi(char *filename, char *mission_name)
 	// new way of getting information.  Open the file, and just get the name and the game_type flags.
 	// return the flags if a multiplayer mission
 
-	game_type = 0;
-
 	ftemp = cfopen(filename, "rt");
 	if (!ftemp)
 		return 0;
@@ -6781,41 +6769,33 @@ int mission_parse_is_multi(char *filename, char *mission_name)
 	// open localization
 	lcl_ext_open();
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Bogus!  Trying to get multi game type on mission %s returned as a mission from cf_get_filelist\n");
-	} else	{
+	game_type = 0;
+	do {
+		if ((rval = setjmp(parse_abort)) != 0) {
+			mprintf(("MISSIONS: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+			break;
+		}
+
 		read_file_text(filename, CF_TYPE_MISSIONS);
 		reset_parse();
+
 		if ( skip_to_string("$Name:") != 1 ) {
 			nprintf(("Network", "Unable to process %s because we couldn't find $Name:", filename));
-
-			// close localization
-			lcl_ext_close();
-
-			return 0;
+			break;
 		}
 		stuff_string( mission_name, F_NAME, NAME_LENGTH );
+
 		if ( skip_to_string("+Game Type Flags:") != 1 ) {
 			nprintf(("Network", "Unable to process %s because we couldn't find +Game Type Flags:\n", filename));
-
-			// close localization
-			lcl_ext_close();
-
-			return 0;
+			break;
 		}
 		stuff_int(&game_type);
-	}
-	if ( game_type & MISSION_TYPE_MULTI ){
-		// close localization
-		lcl_ext_close();
-
-		return game_type;
-	}
+	} while (0);
 
 	// close localization
 	lcl_ext_close();
-	
-	return 0;
+
+	return (game_type & MISSION_TYPE_MULTI) ? game_type : 0;
 }
 
 // function which gets called to retrieve useful information about a mission.  We will get the

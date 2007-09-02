@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.60 $
- * $Date: 2007-08-31 20:37:20 $
- * $Author: turey $
+ * $Revision: 2.61 $
+ * $Date: 2007-09-02 02:10:27 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.60  2007/08/31 20:37:20  turey
+ * Fix for Mantis bug: http://scp.indiegames.us/mantis/view.php?id=1482
+ * Also, fixed an implicit cast that MSVC2005 choked on.
+ *
  * Revision 2.59  2007/04/13 03:23:12  Goober5000
  * fixed a silly speech bug (Mantis #1238)
  *
@@ -1590,16 +1594,17 @@ void debrief_traitor_init()
 		int rval;
 		int stage_num;
 
-		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Unable to parse traitor.tbl!  Code = %i.\n", rval);
-		}
-		else {
-			read_file_text("traitor.tbl");
-			reset_parse();		
-		}
-
 		// open localization
 		lcl_ext_open();
+
+		if ((rval = setjmp(parse_abort)) != 0) {
+			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "traitor.tbl", rval));
+			lcl_ext_close();
+			return;
+		}
+
+		read_file_text("traitor.tbl");
+		reset_parse();		
 
 		// simplied form of the debriefing stuff.
 		debrief = &Traitor_debriefing;

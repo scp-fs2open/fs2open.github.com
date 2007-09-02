@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/WINDOW.cpp $
- * $Revision: 2.8 $
- * $Date: 2005-07-22 03:53:32 $
- * $Author: taylor $
+ * $Revision: 2.9 $
+ * $Date: 2007-09-02 02:10:29 $
+ * $Author: Goober5000 $
  *
  * Routines to handle UI windows.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.8  2005/07/22 03:53:32  taylor
+ * fix crash on commit in the multi ship selection screen
+ * mask_data in the UI code is always cast to ubyte so why it was a ushort type I'll never know
+ * fix unsized text in input boxes (fixed the real problem earlier but forgot to remove this old fix)
+ *
  * Revision 2.7  2005/07/18 03:45:10  taylor
  * more non-standard res fixing
  *  - I think everything should default to resize now (much easier than having to figure that crap out)
@@ -912,10 +917,16 @@ void parse_weapon_tooltip(int n)
 
 void parse_tooltips()
 {
-	int n;
+	int n, rval;
 
 	// open localization
 	lcl_ext_open();
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "tooltips.tbl", rval));
+		lcl_ext_close();
+		return;
+	}
 
 	read_file_text("tooltips.tbl");
 
@@ -951,15 +962,9 @@ void init_tooltips()
 	static int inited = 0;
 
 	if (!inited) {
-		int rval;
-
-		if ((rval = setjmp(parse_abort)) != 0) {
-
-		} else {			
 #ifndef DEMO
-			parse_tooltips();
+		parse_tooltips();
 #endif
-		}
 
 		inited = 1;
 	}

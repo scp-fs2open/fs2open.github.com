@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.68 $
- * $Date: 2007-07-24 05:08:13 $
+ * $Revision: 2.69 $
+ * $Date: 2007-09-02 02:10:27 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68  2007/07/24 05:08:13  Goober5000
+ * allow mission messages in dogfights (Mantis #1436)
+ *
  * Revision 2.67  2007/07/23 15:56:42  Kazan
  * remove unused function... unused function that should probably never be used
  *
@@ -1073,7 +1076,7 @@ void parse_msgtbl()
 
 	required_string("#End");
 
-	// save the number of builting message things -- make initing between missions easier
+	// save the number of builtin message things -- make initing between missions easier
 	Num_builtin_messages = Num_messages;
 	Num_builtin_avis = Num_message_avis;
 	Num_builtin_waves = Num_message_waves;
@@ -1099,13 +1102,14 @@ void messages_init()
 	if ( !table_read ) {
 		Num_builtin_messages = Num_builtin_avis = Num_builtin_waves = 0;
 		Default_command_persona = -1;
+
 		if ((rval = setjmp(parse_abort)) != 0) {
-			mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "messages.tbl", rval));
+			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "messages.tbl", rval));
 			return;
-		} else {			
-			parse_msgtbl();
-			table_read = 1;
 		}
+
+		parse_msgtbl();
+		table_read = 1;
 	}
 
 	// reset the number of messages that we have for this mission

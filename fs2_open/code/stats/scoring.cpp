@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-12-28 00:59:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.20 $
+ * $Date: 2007-09-02 02:10:29 $
+ * $Author: Goober5000 $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2006/12/28 00:59:53  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.18  2006/09/11 06:51:17  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -302,13 +305,14 @@ void parse_rank_tbl()
 	char buf[MULTITEXT_LENGTH];
 	int rval, idx;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "rank.tbl", rval));
-		return;
-	} 
-
 	// open localization
 	lcl_ext_open();
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "rank.tbl", rval));
+		lcl_ext_close();
+		return;
+	} 
 
 	read_file_text("rank.tbl");
 	reset_parse();

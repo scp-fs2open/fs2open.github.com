@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.97 $
- * $Date: 2007-05-28 20:05:06 $
- * $Author: taylor $
+ * $Revision: 2.98 $
+ * $Date: 2007-09-02 02:10:28 $
+ * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.97  2007/05/28 20:05:06  taylor
+ * more resilient checking of stars.tbl and it's modular versions
+ *
  * Revision 2.96  2007/03/22 20:07:16  taylor
  * when parsing a modular tbl, allow a duplicate sun entry to overwrite an existing one
  *
@@ -1100,22 +1103,21 @@ static void starfield_bitmap_entry_init(starfield_bitmap *sbm)
 	}	\
 }
 
-void parse_startbl(char *longname)
+void parse_startbl(char *filename)
 {
-	char filename[MAX_FILENAME_LEN], tempf[16];
+	char name[MAX_FILENAME_LEN], tempf[16];
 	starfield_bitmap sbm;
-	int idx;
-	int rval;
+	int idx, rval;
 	bool in_check = false;
 	int rc = -1;
 	int run_count = 0;
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", longname, rval));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		return;
 	} 
 
-	read_file_text(longname);
+	read_file_text(filename);
 	reset_parse();
 
 	// freaky! ;)
@@ -1248,12 +1250,12 @@ void parse_startbl(char *longname)
 		while ( optional_string("$Debris:") ) {
 			in_check = true;
 
-			stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
 			if (Num_debris_normal < MAX_DEBRIS_VCLIPS) {
-				strcpy(Debris_vclips_normal[Num_debris_normal++].name, filename);
+				strcpy(Debris_vclips_normal[Num_debris_normal++].name, name);
 			} else {
-				Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", filename, MAX_DEBRIS_VCLIPS);
+				Warning(LOCATION, "Could not load normal motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
 			}
 		}
 
@@ -1263,12 +1265,12 @@ void parse_startbl(char *longname)
 		while ( optional_string("$DebrisNeb:") ) {
 			in_check = true;
 
-			stuff_string(filename, F_NAME, MAX_FILENAME_LEN);
+			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
 
 			if (Num_debris_nebula < MAX_DEBRIS_VCLIPS) {
-				strcpy(Debris_vclips_nebula[Num_debris_nebula++].name, filename);
+				strcpy(Debris_vclips_nebula[Num_debris_nebula++].name, name);
 			} else {
-				Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", filename, MAX_DEBRIS_VCLIPS);
+				Warning(LOCATION, "Could not load nebula motion debris '%s'; maximum of %d exceeded.", name, MAX_DEBRIS_VCLIPS);
 			}
 		}
 
