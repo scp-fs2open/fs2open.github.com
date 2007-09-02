@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="Freespace2"
 	ProjectGUID="{1CA6A9E0-C542-4F07-B458-CA65A14F57B9}"
+	RootNamespace="Freespace2"
 	>
 	<Platforms>
 		<Platform
@@ -15,10 +16,10 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug\"
-			IntermediateDirectory=".\Debug\fs2_open\"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\CoreWin.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="0"
@@ -29,8 +30,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(OutDir)\fs2_open_d.exe&quot; &quot;$(FS2PATH)/fs2_open_d.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fs2_open_d.exe"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;"
+				Outputs="$(FS2PATH)\$(TargetFileName)"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -44,7 +45,7 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName=".\Debug/Freespace2.tlb"
+				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -55,12 +56,13 @@
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
+				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
 				PrecompiledHeaderFile=""
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(IntDir)\"
-				BrowseInformation="2"
+				BrowseInformation="1"
 				BrowseInformationFile="$(IntDir)\"
 				WarningLevel="4"
 				SuppressStartupBanner="true"
@@ -87,12 +89,12 @@
 				OutputFile="$(OutDir)\fs2_open_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="Debug,../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
+				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libcmt.lib,libci.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Debug/fs2_open_d.pdb"
+				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Debug\Profile/fs2_open_d.map"
+				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -125,10 +127,10 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Release\"
-			IntermediateDirectory=".\Release\fs2_open\"
+			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
+			IntermediateDirectory="$(ConfigurationName)\$(ProjectName)"
 			ConfigurationType="1"
-			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\UpgradeFromVC60.vsprops"
+			InheritedPropertySheets="$(VCInstallDir)VCProjectDefaults\CoreWin.vsprops"
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="0"
@@ -139,8 +141,8 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(OutDir)\fs2_open_r.exe&quot; &quot;$(FS2PATH)/fs2_open_r.exe&quot;&#x0D;&#x0A;"
-				Outputs="$(FS2PATH)/fs2_open_r.exe"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;"
+				Outputs="$(FS2PATH)\$(TargetFileName)"
 			/>
 			<Tool
 				Name="VCXMLDataGeneratorTool"
@@ -154,7 +156,7 @@
 				MkTypLibCompatible="true"
 				SuppressStartupBanner="true"
 				TargetEnvironment="1"
-				TypeLibraryName=".\Release/Freespace2.tlb"
+				TypeLibraryName="$(OutDir)\$(ProjectName).tlb"
 				HeaderFileName=""
 			/>
 			<Tool
@@ -165,8 +167,9 @@
 				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;USE_OPENAL;NO_DIRECT3D"
 				StringPooling="true"
 				RuntimeLibrary="0"
+				BufferSecurityCheck="false"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile=".\Release\Profile/Freespace2.pch"
+				PrecompiledHeaderFile="$(OutDir)\$(ProjectName).pch"
 				AssemblerListingLocation="$(IntDir)\"
 				ObjectFile="$(IntDir)\"
 				ProgramDataBaseFileName="$(IntDir)\"
@@ -194,12 +197,12 @@
 				OutputFile="$(OutDir)\fs2_open_r.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="Release,../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
+				AdditionalLibraryDirectories="$(ConfigurationName),../../oggvorbis/lib,../../dx8sdk/lib,../../openal/libs/win32,../../openal/libs/win64"
 				IgnoreDefaultLibraryNames="libc.lib,libcd.lib,libci.lib"
 				GenerateDebugInformation="true"
-				ProgramDatabaseFile=".\Release/fs2_open_r.pdb"
+				ProgramDatabaseFile="$(TargetDir)$(TargetName).pdb"
 				GenerateMapFile="true"
-				MapFileName=".\Release\Profile/fs2_open_r.map"
+				MapFileName="$(TargetDir)$(TargetName).map"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -214,8 +217,9 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
+				AdditionalOptions="&quot;$(IntDir)\*.sbr&quot;"
 				SuppressStartupBanner="true"
-				OutputFile=""
+				OutputFile="$(IntDir)\$(ProjectName).bsc"
 			/>
 			<Tool
 				Name="VCFxCopTool"
@@ -235,11 +239,11 @@
 	</References>
 	<Files>
 		<File
-			RelativePath="..\..\code\FREESPACE2\app_icon.ico"
+			RelativePath="..\..\code\freespace2\app_icon.ico"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\FREESPACE2\FreeSpace.cpp"
+			RelativePath="..\..\code\freespace2\FreeSpace.cpp"
 			>
 			<FileConfiguration
 				Name="Debug|Win32"
@@ -263,11 +267,11 @@
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="..\..\code\FREESPACE2\FreeSpace.h"
+			RelativePath="..\..\code\freespace2\FreeSpace.h"
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\FREESPACE2\FreeSpace.rc"
+			RelativePath="..\..\code\freespace2\FreeSpace.rc"
 			>
 			<FileConfiguration
 				Name="Debug|Win32"
@@ -275,7 +279,7 @@
 				<Tool
 					Name="VCResourceCompilerTool"
 					PreprocessorDefinitions=""
-					AdditionalIncludeDirectories="\Code\fs2_open\code\FREESPACE2"
+					AdditionalIncludeDirectories="../../code/freespace2"
 				/>
 			</FileConfiguration>
 			<FileConfiguration
@@ -284,12 +288,12 @@
 				<Tool
 					Name="VCResourceCompilerTool"
 					PreprocessorDefinitions=""
-					AdditionalIncludeDirectories="\Code\fs2_open\code\FREESPACE2"
+					AdditionalIncludeDirectories="../../code/freespace2"
 				/>
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="..\..\code\FREESPACE2\FreespaceResource.h"
+			RelativePath="..\..\code\freespace2\FreespaceResource.h"
 			>
 		</File>
 		<File
@@ -317,7 +321,7 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\code\FREESPACE2\LevelPaging.cpp"
+			RelativePath="..\..\code\freespace2\LevelPaging.cpp"
 			>
 			<FileConfiguration
 				Name="Debug|Win32"
@@ -341,15 +345,15 @@
 			</FileConfiguration>
 		</File>
 		<File
-			RelativePath="..\..\code\FREESPACE2\LevelPaging.h"
-			>
-		</File>
-		<File
-			RelativePath="..\..\code\sound\phrases.cfg"
+			RelativePath="..\..\code\freespace2\LevelPaging.h"
 			>
 		</File>
 		<File
 			RelativePath="..\..\code\freespace2\phrases.cfg"
+			>
+		</File>
+		<File
+			RelativePath="..\..\code\sound\phrases.cfg"
 			>
 		</File>
 	</Files>
