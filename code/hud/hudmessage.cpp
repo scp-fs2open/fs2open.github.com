@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDmessage.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-04-20 06:32:07 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2007-09-02 03:07:55 $
+ * $Author: Backslash $
  *
  * C module that controls and manages the message window on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/04/20 06:32:07  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.20  2006/03/19 05:05:58  taylor
  * make sure the mission log doesn't modify stuff in Cargo_names[], since it shouldn't
  * have split_str_once() be sure to not split a word in half, it should end up on the second line instead
@@ -500,7 +503,7 @@
 #include "mission/missionmessage.h"		// for MAX_MISSION_MESSAGES
 #include "iff_defs/iff_defs.h"
 #include "network/multi.h"
-
+#include "cmdline/cmdline.h"
 
 
 
@@ -1001,7 +1004,24 @@ void HUD_ship_sent_printf(int sh, char *format, ...)
 	char tmp[HUD_MSG_LENGTH_MAX];
 	int len;
 
-	sprintf(tmp, NOX("%s: "), Ships[sh].ship_name);
+	// Display ship's class instead of name for ships in wings (for WC Saga)
+	if (Cmdline_wcsaga && 
+		(Ships[sh].wingnum != -1) && 
+		(Ships[sh].team != Player_ship->team)) {
+		// print out ship class
+		char temp_name[NAME_LENGTH+2] = "";
+		// if this ship has an alternate type name
+		if(Ships[sh].alt_type_index >= 0) {
+			mission_parse_lookup_alt_index(Ships[sh].alt_type_index, temp_name);
+		} else {
+			strcpy(temp_name, Ship_info[Ships[sh].ship_info_index].name);
+			end_string_at_first_hash_symbol(temp_name);
+		}
+		sprintf(tmp, NOX("%s: "), temp_name);
+	} else {
+		sprintf(tmp, NOX("%s: "), Ships[sh].ship_name);
+	}
+
 	len = strlen(tmp);
 	Assert(len < HUD_MSG_LENGTH_MAX);
 
