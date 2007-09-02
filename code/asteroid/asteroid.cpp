@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.45 $
- * $Date: 2007-02-20 04:20:10 $
+ * $Revision: 2.46 $
+ * $Date: 2007-09-02 02:10:24 $
  * $Author: Goober5000 $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2007/02/20 04:20:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.44  2007/02/11 09:37:18  taylor
  * dd VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
@@ -2141,104 +2144,101 @@ void asteroid_parse_tbl()
 {
 	char impact_ani_file[MAX_FILENAME_LEN];
 	int *asteroid_tally = NULL;
-	int i;
-	int rval;
+	int i, rval;
 
 	// open localization
 	lcl_ext_open();
 
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse asteroid.tbl!  Code = %i.\n", rval));
-	}
-	else
-	{
-		read_file_text("asteroid.tbl");
-		reset_parse();
-
-		required_string("#Asteroid Types");
-
-		asteroid_tally = new int[Species_info.size() + 1];
-
-		memset(asteroid_tally, 0, sizeof(int) * (Species_info.size()+1));
-
-
-		while (required_string_either("#End","$Name:"))
-		{
-			asteroid_info new_asteroid;
-
-			for (i = 0; i < NUM_DEBRIS_POFS; i++)
-				new_asteroid.model_num[i] = -1;
-
-			asteroid_parse_section( &new_asteroid );
-
-			Assert( Species_info.size() );
-			// sanity check for debris type sizes
-			for (i = Species_info.size(); i >= 0; i--) {
-				// must remain in proper order
-				//   0 - generic debris types
-				// > 0 - species specific debris types
-				if ( (i == 0) || stristr(new_asteroid.name, Species_info[i-1].species_name) ) {
-					Assert( asteroid_tally[i] < NUM_DEBRIS_SIZES );
-
-					if ( asteroid_tally[i] >= NUM_DEBRIS_SIZES ) {
-						// too many sizes specified, don't increment Num_debris_types and we'll overwrite
-						// the current entry with the next
-						break;
-					}
-
-					// we're safe to continue
-					asteroid_tally[i]++;
-					Asteroid_info.push_back( new_asteroid );
-					break;
-				}
-			}
-		}
-
-		required_string("#End");
-
-		Asteroid_impact_explosion_ani = -1;
-		required_string("$Impact Explosion:");
-		stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
-
-		if ( VALID_FNAME(impact_ani_file) ) {
-			int num_frames;
-			Asteroid_impact_explosion_ani = bm_load_animation( impact_ani_file, &num_frames, NULL, 1);
-		}
-
-		required_string("$Impact Explosion Radius:");
-		stuff_float(&Asteroid_impact_explosion_radius);
-
-		// close localization
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "asteroid.tbl", rval));
 		lcl_ext_close();
-
-
-		// check for any missing info
-		char *errormsg = new char[75 + (Species_info.size() * (NAME_LENGTH))];
-		bool species_missing = false;
-		strcpy(errormsg, "The following species are missing debris types in asteroids.tbl:\n");
-		for (i = 0; i < (int)Species_info.size(); i++)
-		{
-			int idx = (i+1);	// offset from generic asteroids at 0..NUM_DEBRIS_SIZES
-
-			if (asteroid_tally[idx] < NUM_DEBRIS_SIZES)
-			{
-				strcat(errormsg, Species_info[i].species_name);
-				strcat(errormsg, "\n");
-				species_missing = true;
-			}
-		}
-		strcat(errormsg, "\0");
-
-		if (species_missing)
-		{
-			Error(LOCATION, errormsg);
-		}
-
-		delete[] asteroid_tally;
-		delete[] errormsg;
+		return;
 	}
 	
+	read_file_text("asteroid.tbl");
+	reset_parse();
+
+	required_string("#Asteroid Types");
+
+	asteroid_tally = new int[Species_info.size() + 1];
+
+	memset(asteroid_tally, 0, sizeof(int) * (Species_info.size()+1));
+
+
+	while (required_string_either("#End","$Name:"))
+	{
+		asteroid_info new_asteroid;
+
+		for (i = 0; i < NUM_DEBRIS_POFS; i++)
+			new_asteroid.model_num[i] = -1;
+
+		asteroid_parse_section( &new_asteroid );
+
+		Assert( Species_info.size() );
+		// sanity check for debris type sizes
+		for (i = Species_info.size(); i >= 0; i--) {
+			// must remain in proper order
+			//   0 - generic debris types
+			// > 0 - species specific debris types
+			if ( (i == 0) || stristr(new_asteroid.name, Species_info[i-1].species_name) ) {
+				Assert( asteroid_tally[i] < NUM_DEBRIS_SIZES );
+
+				if ( asteroid_tally[i] >= NUM_DEBRIS_SIZES ) {
+					// too many sizes specified, don't increment Num_debris_types and we'll overwrite
+					// the current entry with the next
+					break;
+				}
+
+				// we're safe to continue
+				asteroid_tally[i]++;
+				Asteroid_info.push_back( new_asteroid );
+				break;
+			}
+		}
+	}
+
+	required_string("#End");
+
+	Asteroid_impact_explosion_ani = -1;
+	required_string("$Impact Explosion:");
+	stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
+
+	if ( VALID_FNAME(impact_ani_file) ) {
+		int num_frames;
+		Asteroid_impact_explosion_ani = bm_load_animation( impact_ani_file, &num_frames, NULL, 1);
+	}
+
+	required_string("$Impact Explosion Radius:");
+	stuff_float(&Asteroid_impact_explosion_radius);
+
+	// close localization
 	lcl_ext_close();
+
+
+	// check for any missing info
+	char *errormsg = new char[75 + (Species_info.size() * (NAME_LENGTH))];
+	bool species_missing = false;
+	strcpy(errormsg, "The following species are missing debris types in asteroids.tbl:\n");
+	for (i = 0; i < (int)Species_info.size(); i++)
+	{
+		int idx = (i+1);	// offset from generic asteroids at 0..NUM_DEBRIS_SIZES
+
+		if (asteroid_tally[idx] < NUM_DEBRIS_SIZES)
+		{
+			strcat(errormsg, Species_info[i].species_name);
+			strcat(errormsg, "\n");
+			species_missing = true;
+		}
+	}
+	strcat(errormsg, "\0");
+
+	if (species_missing)
+	{
+		Error(LOCATION, errormsg);
+	}
+
+	delete[] asteroid_tally;
+	delete[] errormsg;
 }
 
 //	Return number of asteroids expected to collide with a ship.

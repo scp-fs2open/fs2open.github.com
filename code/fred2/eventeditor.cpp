@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.6 $
- * $Date: 2007-03-07 22:43:24 $
- * $Author: karajorma $
+ * $Revision: 1.7 $
+ * $Date: 2007-09-02 02:10:24 $
+ * $Author: Goober5000 $
  *
  * Event editor dialog box class and event tree class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6  2007/03/07 22:43:24  karajorma
+ * Make .ogg voice files selectable in FRED.
+ *
  * Revision 1.5  2007/02/15 02:03:55  phreak
  * Apparently Visual C++ 2005 follows standard syntax rules.
  *
@@ -1068,6 +1071,8 @@ void event_editor::update_cur_event()
 		GetDlgItem(IDC_OBJ_TEXT) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_OBJ_KEY_TEXT) -> EnableWindow(FALSE);
 		GetDlgItem(IDC_EVENT_TEAM)->EnableWindow(FALSE);
+
+		UpdateData(FALSE);
 		return;
 	}
 
@@ -1115,6 +1120,7 @@ void event_editor::update_cur_event()
 	if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ){
 		GetDlgItem(IDC_EVENT_TEAM)->EnableWindow(TRUE);
 	}
+
 	UpdateData(FALSE);
 }
 

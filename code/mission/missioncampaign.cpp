@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.51 $
- * $Date: 2007-03-21 21:06:54 $
- * $Author: karajorma $
+ * $Revision: 2.52 $
+ * $Date: 2007-09-02 02:10:27 $
+ * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2007/03/21 21:06:54  karajorma
+ * Bump the number of debriefing stages.
+ * Fix an annoying (and erroneous) warning in the campaign editor.
+ *
  * Revision 2.50  2007/02/11 09:10:14  taylor
  * fix simroom crash bug from Goober's rencent change
  * add NULL handling to make sure we don't crap out on sorting
@@ -489,52 +493,41 @@ campaign Campaign;
 // player or multiplayer campaign.  The type field will only be valid if the name returned is non-NULL
 int mission_campaign_get_info(char *filename, char *name, int *type, int *max_players, char **desc)
 {
-	int rval, i;
+	int rval, i, success = 0;
 	char campaign_type[NAME_LENGTH], fname[MAX_FILENAME_LEN];
 
 	Assert( name != NULL );
 	Assert( type != NULL );
 
-	// open localization
-	lcl_ext_open();
-
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
 	if ((strlen(fname) < 4) || stricmp(fname + strlen(fname) - 4, FS_CAMPAIGN_FILE_EXT)){
 		strcat(fname, FS_CAMPAIGN_FILE_EXT);
 	}
-
 	Assert(strlen(fname) < MAX_FILENAME_LEN);
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		if (rval == 5){
-			// close localization
-			lcl_ext_close();
+	// open localization
+	lcl_ext_open();
 
-			return 0;
+	*type = -1;
+	do {
+		if ((rval = setjmp(parse_abort)) != 0) {
+			mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", fname, rval));
+			break;
 		}
 
-		Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", fname, rval);
-
-	} else {
-		read_file_text( fname );
+		read_file_text(fname);
 		reset_parse();
+
 		required_string("$Name:");
-
 		stuff_string( name, F_NAME, NAME_LENGTH );
-		if ( name == NULL ) {
-			Int3();
+		if (name == NULL) {
 			nprintf(("Warning", "No name found for campaign file %s\n", filename));
-
-			// close localization
-			lcl_ext_close();
-
-			return 0;
+			break;
 		}
 
-		required_string( "$Type:" );
+		required_string("$Type:");
 		stuff_string( campaign_type, F_NAME, NAME_LENGTH );
 
-		*type = -1;
 		for (i=0; i<MAX_CAMPAIGN_TYPES; i++) {
 			if ( !stricmp(campaign_type, campaign_types[i]) ) {
 				*type = i;
@@ -542,33 +535,30 @@ int mission_campaign_get_info(char *filename, char *name, int *type, int *max_pl
 		}
 
 		if (desc) {
-			*desc = NULL;
 			if (optional_string("+Description:")) {
 				*desc = stuff_and_malloc_string(F_MULTITEXT, NULL, MISSION_DESC_LENGTH);
+			} else {
+				*desc = NULL;
 			}
 		}
 
 		// if this is a multiplayer campaign, get the max players
-		if ((*type) > 0) {
+		if ((*type) != CAMPAIGN_TYPE_SINGLE) {
 			skip_to_string("+Num Players:");
 			stuff_int(max_players);
-		}		
+		}
 
 		// if we found a valid campaign type
 		if ((*type) >= 0) {
-			// close localization
-			lcl_ext_close();
-
-			return 1;
+			success = 1;
 		}
-	}
-
-	Int3();		// get Allender -- incorrect type found
+	} while (0);
 
 	// close localization
 	lcl_ext_close();
 
-	return 0;
+	Assert(success);
+	return success;
 }
 
 // parses campaign and returns a list of missions in it.  Returns number of missions added to
@@ -581,13 +571,15 @@ int mission_campaign_get_mission_list(char *filename, char **list, int max)
 
 	filename = cf_add_ext(filename, FS_CAMPAIGN_FILE_EXT);
 
-	// read the mission file and get the list of mission filenames
+	// read the campaign file and get the list of mission filenames
 	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+
 		// since we can't return count of allocated elements, free them instead
 		for (i=0; i<num; i++)
 			vm_free(list[i]);
 
-		return -1;
+		num = -1;
 
 	} else {
 		read_file_text(filename);
@@ -2588,13 +2580,14 @@ int mission_campaign_get_filenames(char *filename, char dest[][NAME_LENGTH], int
 
 	// read the mission file and get the list of mission filenames
 	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		return rval;
 
 	} else {
-		read_file_text(filename);
 		Assert( strlen(filename) < MAX_FILENAME_LEN );  // make sure no overflow
-
+		read_file_text(filename);
 		reset_parse();
+
 		required_string("$Name:");
 		advance_to_eoln(NULL);
 
@@ -2618,17 +2611,19 @@ void read_mission_goal_list(int num)
 {
 	char *filename, notes[NOTES_LENGTH], goals[MAX_GOALS][NAME_LENGTH];
 	char events[MAX_MISSION_EVENTS][NAME_LENGTH];
-	int i, z, r, event_count, count = 0;
+	int i, z, rval, event_count, count = 0;
 
 	filename = Campaign.missions[num].name;
-	if ((r = setjmp(parse_abort))>0) {
-		Warning(LOCATION, "Error reading \"%s\" (code = %d)", filename, r);
-		return;
-	}
 
 	// open localization
 	lcl_ext_open();	
 	
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		lcl_ext_close();
+		return;
+	}
+
 	read_file_text(filename);
 	reset_parse();
 	init_sexp();
@@ -2784,12 +2779,17 @@ void mission_campaign_maybe_play_movie(int type)
 	cutscene_mark_viewable( filename );
 }
 
-// return nonzero if the passed filename is a multiplayer campaign, 0 otherwise
+// return the type of campaign of the passed filename
 int mission_campaign_parse_is_multi(char *filename, char *name)
 {	
-	int i;
+	int i, rval;
 	char temp[NAME_LENGTH];
 	
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("MISSIONCAMPAIGN: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
+		return -1;
+	}
+
 	read_file_text( filename );
 	reset_parse();
 	

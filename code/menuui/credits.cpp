@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.32 $
- * $Date: 2007-03-22 20:35:19 $
- * $Author: taylor $
+ * $Revision: 2.33 $
+ * $Date: 2007-09-02 02:10:26 $
+ * $Author: Goober5000 $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2007/03/22 20:35:19  taylor
+ * be sure to page in textures for change ship class sexp preload
+ * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
+ * make event music keep extension if it exists, so that the special data will be accurate
+ * bits of cleanup from old MS code that we don't need
+ *
  * Revision 2.31  2007/02/10 00:18:22  taylor
  * remove NO_SOUND
  *
@@ -570,7 +576,7 @@ void credits_init()
 	// allocate enough space for credits text
 	CFILE *fp = cfopen( NOX("credits.tbl"), "rb" );
 	if(fp != NULL){
-		int size;
+		int rval, size;
 		size = cfilelength(fp);
 		Credit_text = (char *) vm_malloc(size + 200 + strlen(fs2_open_credit_text) + strlen(unmodified_credits));
 		if (Credit_text == NULL) {
@@ -580,13 +586,20 @@ void credits_init()
 		}
 		cfclose(fp);
 
-		// open localization and parse
+		// open localization
 		lcl_ext_open();
+
+		if ((rval = setjmp(parse_abort)) != 0) {
+			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "credits.tbl", rval));
+			lcl_ext_close();
+			return;
+		}
+		
 		read_file_text("credits.tbl");
 		reset_parse();
 
 		// keep reading everything in
-		strcpy(Credit_text,fs2_open_credit_text); 
+		strcpy(Credit_text, fs2_open_credit_text); 
 	   
 		bool first_run = true;
 		while(!check_for_string_raw("#end")){ 

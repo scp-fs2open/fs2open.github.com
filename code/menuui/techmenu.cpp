@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.39 $
- * $Date: 2006-09-11 06:46:04 $
- * $Author: taylor $
+ * $Revision: 2.40 $
+ * $Date: 2007-09-02 02:10:26 $
+ * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39  2006/09/11 06:46:04  taylor
+ * fixes for stuff_string() bounds checking
+ * make sure that default entries always get used in techroom if they don't otherwise have the techroom visibility flag
+ * fix crash bug where the first entry in the various lists wasn't ever initialized if there is no ship/weapon/intel info to show
+ *
  * Revision 2.38  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -1503,47 +1508,52 @@ void techroom_intel_init()
 	int rval, temp;
 	static int inited = 0;
 
+	if (inited)
+		return;
+
 	// open localization
 	lcl_ext_open();
 
-	if (!inited) {
-		if ((rval = setjmp(parse_abort)) != 0) {
-			// close localization
-			lcl_ext_close();
-
-			return;
-		} else {
-			read_file_text("species.tbl");
-			reset_parse();
-
-			Intel_info_size = 0;
-
-			while (optional_string("$Entry:")) {
-				Assert(Intel_info_size < MAX_INTEL_ENTRIES);
-				if (Intel_info_size >= MAX_INTEL_ENTRIES) break;
-
-				Intel_info[Intel_info_size].flags = IIF_DEFAULT_VALUE;
-
-				required_string("$Name:");
-				stuff_string(Intel_info[Intel_info_size].name, F_NAME, NAME_LENGTH);
-				required_string("$Anim:");
-				stuff_string(Intel_info[Intel_info_size].anim_filename, F_NAME, NAME_LENGTH);
-				required_string("$AlwaysInTechRoom:");
-				stuff_int(&temp);
-				if (temp)
-				{
-					// set default to align with what we read - Goober5000
-					Intel_info[Intel_info_size].flags |= IIF_IN_TECH_DATABASE;
-					Intel_info[Intel_info_size].flags |= IIF_DEFAULT_IN_TECH_DATABASE;
-				}
-				required_string("$Description:");
-				stuff_string(Intel_info[Intel_info_size].desc, F_MULTITEXT, TECH_INTEL_DESC_LEN);
-
-				Intel_info_size++;
-			}
-			inited = 1;
-		}
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "species.tbl", rval));
+		lcl_ext_close();
+		return;
 	}
+	
+	read_file_text("species.tbl");
+	reset_parse();
+
+	Intel_info_size = 0;
+	while (optional_string("$Entry:")) {
+		Assert(Intel_info_size < MAX_INTEL_ENTRIES);
+		if (Intel_info_size >= MAX_INTEL_ENTRIES) {
+			mprintf(("TECHMENU: Too many intel entries!"));
+			break;
+		}
+
+		Intel_info[Intel_info_size].flags = IIF_DEFAULT_VALUE;
+
+		required_string("$Name:");
+		stuff_string(Intel_info[Intel_info_size].name, F_NAME, NAME_LENGTH);
+
+		required_string("$Anim:");
+		stuff_string(Intel_info[Intel_info_size].anim_filename, F_NAME, NAME_LENGTH);
+
+		required_string("$AlwaysInTechRoom:");
+		stuff_int(&temp);
+		if (temp) {
+			// set default to align with what we read - Goober5000
+			Intel_info[Intel_info_size].flags |= IIF_IN_TECH_DATABASE;
+			Intel_info[Intel_info_size].flags |= IIF_DEFAULT_IN_TECH_DATABASE;
+		}
+
+		required_string("$Description:");
+		stuff_string(Intel_info[Intel_info_size].desc, F_MULTITEXT, TECH_INTEL_DESC_LEN);
+
+		Intel_info_size++;
+	}
+
+	inited = 1;
 
 	// close localization
 	lcl_ext_close();

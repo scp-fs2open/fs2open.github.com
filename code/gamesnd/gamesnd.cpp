@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.34 $
- * $Date: 2007-01-07 12:33:59 $
- * $Author: taylor $
+ * $Revision: 2.35 $
+ * $Date: 2007-09-02 02:10:25 $
+ * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.34  2007/01/07 12:33:59  taylor
+ * fix for Mantis bug #1195
+ *
  * Revision 2.33  2006/12/28 00:59:26  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -513,84 +516,84 @@ void gamesnd_parse_soundstbl()
 	ubyte	*missing_species = NULL;
 	int		sanity_check = 0;
 
+	gamesnd_init_sounds();
+
 	// open localization
 	lcl_ext_open();
 
-	gamesnd_init_sounds();
-
 	//WMC - Made sounds.tbl optional, October 5, 2006
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse sounds.tbl!  Code = %i.\n", rval));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "sounds.tbl", rval));
+		lcl_ext_close();
+		return;
 	}
-	else
+
+	read_file_text("sounds.tbl");
+	reset_parse();		
+
+	// Parse the gameplay sounds section
+	required_string("#Game Sounds Start");
+	while (required_string_either("#Game Sounds End","$Name:")) {
+		Assert( num_game_sounds < Num_game_sounds);
+		gamesnd_parse_line( &Snds[num_game_sounds], "$Name:" );
+		num_game_sounds++;
+		gamesnd_add_sound_slot( GS_GAME_SND, num_game_sounds );
+	}
+	required_string("#Game Sounds End");
+
+	// Parse the interface sounds section
+	required_string("#Interface Sounds Start");
+	while (required_string_either("#Interface Sounds End","$Name:")) {
+		Assert( num_iface_sounds < Num_iface_sounds);
+		gamesnd_parse_line(&Snds_iface[num_iface_sounds], "$Name:");
+		num_iface_sounds++;
+		gamesnd_add_sound_slot( GS_IFACE_SND, num_iface_sounds );
+	}
+	required_string("#Interface Sounds End");
+
+	// parse flyby sound section	
+	required_string("#Flyby Sounds Start");
+
+	missing_species_names = new char[Species_info.size() * (NAME_LENGTH+2)];
+	missing_species = new ubyte[Species_info.size()];
+
+	memset( missing_species_names, 0, Species_info.size() * (NAME_LENGTH+2) );
+	memset( missing_species, 1, Species_info.size() );	// assume they are all missing
+
+	while ( !check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()) )
 	{
-		read_file_text("sounds.tbl");
-		reset_parse();		
-
-		// Parse the gameplay sounds section
-		required_string("#Game Sounds Start");
-		while (required_string_either("#Game Sounds End","$Name:")) {
-			Assert( num_game_sounds < Num_game_sounds);
-			gamesnd_parse_line( &Snds[num_game_sounds], "$Name:" );
-			num_game_sounds++;
-			gamesnd_add_sound_slot( GS_GAME_SND, num_game_sounds );
-		}
-		required_string("#Game Sounds End");
-
-		// Parse the interface sounds section
-		required_string("#Interface Sounds Start");
-		while (required_string_either("#Interface Sounds End","$Name:")) {
-			Assert( num_iface_sounds < Num_iface_sounds);
-			gamesnd_parse_line(&Snds_iface[num_iface_sounds], "$Name:");
-			num_iface_sounds++;
-			gamesnd_add_sound_slot( GS_IFACE_SND, num_iface_sounds );
-		}
-		required_string("#Interface Sounds End");
-
-		// parse flyby sound section	
-		required_string("#Flyby Sounds Start");
-
-		missing_species_names = new char[Species_info.size() * (NAME_LENGTH+2)];
-		missing_species = new ubyte[Species_info.size()];
-
-		memset( missing_species_names, 0, Species_info.size() * (NAME_LENGTH+2) );
-		memset( missing_species, 1, Species_info.size() );	// assume they are all missing
-
-		while ( !check_for_string("#Flyby Sounds End") && (sanity_check <= (int)Species_info.size()) )
-		{
-			for (i = 0; i < (int)Species_info.size(); i++) {
-				species_info *species = &Species_info[i];
-
-				sprintf(cstrtemp, "$%s:", species->species_name);
-
-				if ( check_for_string(cstrtemp) ) {
-					gamesnd_parse_line(&species->snd_flyby_fighter, cstrtemp);
-					gamesnd_parse_line(&species->snd_flyby_bomber, cstrtemp);
-					missing_species[i] = 0;
-					sanity_check--;
-				} else {
-					sanity_check++;
-				}
-			}
-		}
-
-		// if we are missing any species then report it
 		for (i = 0; i < (int)Species_info.size(); i++) {
-			if ( missing_species[i] ) {
-				strcat(missing_species_names, Species_info[i].species_name);
-				strcat(missing_species_names, "\n");
+			species_info *species = &Species_info[i];
+
+			sprintf(cstrtemp, "$%s:", species->species_name);
+
+			if ( check_for_string(cstrtemp) ) {
+				gamesnd_parse_line(&species->snd_flyby_fighter, cstrtemp);
+				gamesnd_parse_line(&species->snd_flyby_bomber, cstrtemp);
+				missing_species[i] = 0;
+				sanity_check--;
+			} else {
+				sanity_check++;
 			}
 		}
-
-		if ( strlen(missing_species_names) ) {
-			Error( LOCATION, "The following species are missing flyby sounds in sounds.tbl:\n%s", missing_species_names );
-		}
-
-		delete[] missing_species_names;
-		delete[] missing_species;
-
-		required_string("#Flyby Sounds End");
 	}
+
+	// if we are missing any species then report it
+	for (i = 0; i < (int)Species_info.size(); i++) {
+		if ( missing_species[i] ) {
+			strcat(missing_species_names, Species_info[i].species_name);
+			strcat(missing_species_names, "\n");
+		}
+	}
+
+	if ( strlen(missing_species_names) ) {
+		Error( LOCATION, "The following species are missing flyby sounds in sounds.tbl:\n%s", missing_species_names );
+	}
+
+	delete[] missing_species_names;
+	delete[] missing_species;
+
+	required_string("#Flyby Sounds End");
 
 	// close localization
 	lcl_ext_close();

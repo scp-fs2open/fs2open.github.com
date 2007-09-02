@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.39 $
- * $Date: 2007-08-04 22:30:01 $
+ * $Revision: 1.40 $
+ * $Date: 2007-09-02 02:10:24 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39  2007/08/04 22:30:01  Goober5000
+ * fix case-sensitive #include (Linux)
+ *
  * Revision 1.38  2007/08/03 01:35:48  Goober5000
  * fix warning
  *
@@ -1004,32 +1007,28 @@ void NavSystem_Init()
 
 // ********************************************************************************************
 
-void parse_autopilot_table(char *longname)
+void parse_autopilot_table(char *filename)
 {
 	int rval;
+	std::vector<std::string> lines;
 
 	// open localization
 	lcl_ext_open();
 
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", rval, (longname) ? longname : NOX("<default>")));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : "<default autopilot.tbl>"));
+		lcl_ext_close();
 		return;
 	}
-	else
-	{
-		if (longname == NULL)
-		{
-			read_file_text_from_array(defaults_get_file("autopilot.tbl"));
-		}
-		else
-		{
-			read_file_text(longname);
-		}
 
-		reset_parse();		
-	}
-	std::vector<std::string> lines;
+	if (filename == NULL)
+		read_file_text_from_array(defaults_get_file("autopilot.tbl"));
+	else
+		read_file_text(filename);
+
+	reset_parse();		
+
 	
 	required_string("#Autopilot");
 
@@ -1056,6 +1055,9 @@ void parse_autopilot_table(char *longname)
 
 
 	required_string("#END");
+
+	// close localization
+	lcl_ext_close();
 }
 
 

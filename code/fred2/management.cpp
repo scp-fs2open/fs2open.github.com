@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.37 $
- * $Date: 2007-07-28 21:31:11 $
+ * $Revision: 1.38 $
+ * $Date: 2007-09-02 02:10:25 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.37  2007/07/28 21:31:11  Goober5000
+ * this should really be capitalized
+ *
  * Revision 1.36  2007/07/28 04:43:40  Goober5000
  * a couple of tweaks
  *
@@ -755,15 +758,16 @@ void parse_medal_tbl()
 {
 	int rval, num_medals;
 
-	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", "medals.tbl", rval);
-	} 
-
 	// open localization
 	lcl_ext_open();
 
-	read_file_text("medals.tbl");
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "medals.tbl", rval));
+		lcl_ext_close();
+		return;
+	} 
 
+	read_file_text("medals.tbl");
 	reset_parse();
 
 	// parse in all the rank names

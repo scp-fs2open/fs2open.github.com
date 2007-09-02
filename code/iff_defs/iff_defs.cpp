@@ -6,11 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.13 $
- * $Date: 2007-02-08 07:39:32 $
+ * $Revision: 1.14 $
+ * $Date: 2007-09-02 02:10:26 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2007/02/08 07:39:32  Goober5000
+ * fix two bugs:
+ * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
+ * --ships were created with default allowed comm orders regardless of which team they were on
+ *
  * Revision 1.12  2007/01/07 01:00:18  Goober5000
  * convert a mission variable to a mission flag
  *
@@ -153,6 +158,13 @@ void iff_init()
 
 	int num_attack_names[MAX_IFFS];
 	int num_observed_colors[MAX_IFFS];
+
+	int rval;
+	if ((rval = setjmp(parse_abort)) != 0)
+	{
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "iff_defs.tbl", rval));
+		return;
+	}
 
 	// Goober5000 - if table doesn't exist, use the default table
 	if (cf_exists_full("iff_defs.tbl", CF_TYPE_TABLES))

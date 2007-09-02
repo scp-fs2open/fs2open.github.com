@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.22 $
- * $Date: 2007-03-22 20:53:43 $
- * $Author: taylor $
- * $Revision: 2.22 $
- * $Date: 2007-03-22 20:53:43 $
- * $Author: taylor $
+ * $Revision: 2.23 $
+ * $Date: 2007-09-02 02:10:24 $
+ * $Author: Goober5000 $
+ * $Revision: 2.23 $
+ * $Date: 2007-09-02 02:10:24 $
+ * $Author: Goober5000 $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2007/03/22 20:53:43  taylor
+ * give a better msg when movies can't play because they are user-disabled with the cmdline option
+ *
  * Revision 2.21  2007/02/09 23:58:52  taylor
  * add the "show all" hotkey to the cutscene viewer
  *
@@ -289,21 +292,20 @@ void cutscene_init()
 	char buf[MULTITEXT_LENGTH];
 	int rval;
 
-	//Init stuff
-	Num_cutscenes = 0;
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "cutscenes.tbl", rval));
-		return;
-	} 
-
 	// open localization
 	lcl_ext_open();
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "cutscenes.tbl", rval));
+		lcl_ext_close();
+		return;
+	}
 
 	read_file_text("cutscenes.tbl");
 	reset_parse();
 
-	// parse in all the rank names
+	// parse in all the cutscenes
+	Num_cutscenes = 0;
 	skip_to_string("#Cutscenes");
 	ignore_white_space();
 	while ( required_string_either("#End", "$Filename:") ) {

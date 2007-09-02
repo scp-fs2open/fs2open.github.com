@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/MissionGoalsDlg.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-10-09 05:25:18 $
+ * $Revision: 1.3 $
+ * $Date: 2007-09-02 02:10:25 $
  * $Author: Goober5000 $
  *
  * Mission goals editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/10/09 05:25:18  Goober5000
+ * make sexp nodes dynamic
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -369,6 +372,8 @@ void CMissionGoalsDlg::update_cur_goal()
 		GetDlgItem(IDC_GOAL_SCORE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_NO_MUSIC)->EnableWindow(FALSE);
 		GetDlgItem(IDC_OBJ_TEAM)->EnableWindow(FALSE);
+
+		UpdateData(FALSE);
 		return;
 	}
 
@@ -403,6 +408,8 @@ void CMissionGoalsDlg::update_cur_goal()
 	if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ){
 		GetDlgItem(IDC_OBJ_TEAM)->EnableWindow(TRUE);
 	}
+
+	UpdateData(FALSE);
 }
 
 // handler for context menu (i.e. a right mouse button click).

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.57 $
- * $Date: 2007-02-10 20:23:51 $
- * $Author: taylor $
+ * $Revision: 2.58 $
+ * $Date: 2007-09-02 02:10:27 $
+ * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57  2007/02/10 20:23:51  taylor
+ * make sure that we don't set the 2d view matrix and then not reset it (Mantis #1269)
+ * clean up some of the fullneb mess that was causing some initial setup issues (colors wrong, etc.)
+ *
  * Revision 2.56  2007/01/15 01:37:38  wmcoolmon
  * Fix CVS & correct various warnings under MSVC 2003
  *
@@ -593,15 +597,12 @@ void neb2_regen();
 
 // initialize neb2 stuff at game startup
 void neb2_init()
-{	
+{
+	int rval;
 	char name[MAX_FILENAME_LEN];
 
-	Neb2_bitmap_count = 0;
-	Neb2_poof_count = 0;
-
-	int rval;
 	if ((rval = setjmp(parse_abort)) != 0) {
-		mprintf(("TABLES: Unable to parse '%s'.  Code = %i.\n", "nebula.tbl", rval));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "nebula.tbl", rval));
 		return;
 	} 
 
@@ -610,6 +611,7 @@ void neb2_init()
 	reset_parse();
 
 	// background bitmaps
+	Neb2_bitmap_count = 0;
 	while(!optional_string("#end")){
 		// nebula
 		required_string("+Nebula:");
@@ -621,6 +623,7 @@ void neb2_init()
 	}
 
 	// poofs
+	Neb2_poof_count = 0;
 	while(!optional_string("#end")){
 		// nebula
 		required_string("+Poof:");
