@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.39.2.2 $
- * $Date: 2007-02-20 04:19:10 $
+ * $Revision: 2.39.2.3 $
+ * $Date: 2007-09-02 02:07:42 $
  * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.39.2.2  2007/02/20 04:19:10  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.39.2.1  2007/02/11 07:36:43  Goober5000
  * we probably don't need to play a sound when we equalize already-equalized shields, since we don't play one when we augment already-augmented quadrants
  *
@@ -437,7 +440,13 @@ ubyte Quadrant_xlate[MAX_SHIELD_SECTIONS] = {1,0,2,3};
 
 /*void hud_shield_game_init()
 {
+	int rval;
 	char name[MAX_FILENAME_LEN+1] = "";
+
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "hud.tbl", rval));
+		return;
+	}
 
 	// read in hud.tbl
 	read_file_text("hud.tbl");

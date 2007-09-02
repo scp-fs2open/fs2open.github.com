@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.28.2.4 $
- * $Date: 2007-02-12 00:23:39 $
- * $Author: taylor $
+ * $Revision: 1.28.2.5 $
+ * $Date: 2007-09-02 02:07:42 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.28.2.4  2007/02/12 00:23:39  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
  * Revision 1.28.2.3  2006/11/15 00:40:59  taylor
  * fix some "stupid-windows-coder-mistakes" (otherwise known as "putting-more-than-you-should-into-header-files")
  *   (gets rid of some/many compiler warnings, C++ language violations, and strange little bugs/errors)
@@ -210,34 +213,41 @@ bool ScreenClassInfoEntry::Parse()
 
 void GUISystem::ParseClassInfo(char* filename)
 {
+	int rval;
+
 	if(ClassInfoParsed)
 	{
 		Warning(LOCATION, "Class info is being parsed twice");
 		DestroyClassInfo();
 	}
 
+	// open localization
 	lcl_ext_open();
-	if(setjmp(parse_abort) != 0)
+
+	if((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("Unable to parse %s!\n", filename));
+		mprintf(("WMCGUI: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		lcl_ext_close();
 		return;
 	}
+
 	read_file_text(filename);
 	reset_parse();
 	ScreenClassInfo.Parse();
 	
-	bool rval;
+	bool flag;
 	do
 	{
 		ScreenClassInfoEntry* sciep = new ScreenClassInfoEntry;
-		rval = sciep->Parse();
-		if(rval)
+		flag = sciep->Parse();
+		if(flag)
 			list_append(&ScreenClassInfo, sciep);
 
-	} while(rval);
+	} while(flag);
 
+	// close localization
 	lcl_ext_close();
+
 	ClassInfoParsed = true;
 }
 

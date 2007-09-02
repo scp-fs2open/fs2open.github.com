@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.h $
- * $Revision: 1.9.2.2 $
- * $Date: 2007-07-24 20:08:29 $
- * $Author: Kazan $
+ * $Revision: 1.9.2.3 $
+ * $Date: 2007-09-02 02:07:38 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9.2.2  2007/07/24 20:08:29  Kazan
+ * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
+ *
  * Revision 1.9.2.1  2007/07/23 16:08:23  Kazan
  * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
@@ -142,7 +145,7 @@ void NavSystem_Do();
 void NavSystem_Init();
 
 // parse autopilot.tbl
-void parse_autopilot_table(char *longname);
+void parse_autopilot_table(char *filename);
 
 // Finds a Nav point by name
 int FindNav(char *Nav);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.52.2.12 $
- * $Date: 2007-07-24 05:08:08 $
+ * $Revision: 2.52.2.13 $
+ * $Date: 2007-09-02 02:07:44 $
  * $Author: Goober5000 $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52.2.12  2007/07/24 05:08:08  Goober5000
+ * allow mission messages in dogfights (Mantis #1436)
+ *
  * Revision 2.52.2.11  2007/07/23 16:08:26  Kazan
  * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
@@ -1069,7 +1072,7 @@ void parse_msgtbl()
 
 	required_string("#End");
 
-	// save the number of builting message things -- make initing between missions easier
+	// save the number of builtin message things -- make initing between missions easier
 	Num_builtin_messages = Num_messages;
 	Num_builtin_avis = Num_message_avis;
 	Num_builtin_waves = Num_message_waves;
@@ -1086,20 +1089,21 @@ void messages_init()
 
 	if ( !table_read ) {
 		Command_persona = -1;
-		if ((rval = setjmp(parse_abort)) != 0) {
-			Error(LOCATION, "Error parsing '%s'\r\nError code = %i.\r\n", "messages.tbl", rval);
 
-		} else {			
-			parse_msgtbl();
-			table_read = 1;
+		if ((rval = setjmp(parse_abort)) != 0) {
+			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "messages.tbl", rval));
+			return;
 		}
+
+		parse_msgtbl();
+		table_read = 1;
 	}
 
 	// reset the number of messages that we have for this mission
 	Num_messages = Num_builtin_messages;
-	Message_debug_index = Num_builtin_messages - 1;
 	Num_message_avis = Num_builtin_avis;
 	Num_message_waves = Num_builtin_waves;
+	Message_debug_index = Num_builtin_messages - 1;
 
 	// initialize the stuff for the linked lists of messages
 	MessageQ_num = 0;

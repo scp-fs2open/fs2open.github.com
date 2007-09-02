@@ -6,13 +6,18 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.43.2.6 $
- * $Date: 2007-08-30 04:52:30 $
- * $Author: Backslash $
+ * $Revision: 2.43.2.7 $
+ * $Date: 2007-09-02 02:07:41 $
+ * $Author: Goober5000 $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43.2.6  2007/08/30 04:52:30  Backslash
+ * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
+ * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
+ * $Length Unit Multiplier: 5
+ *
  * Revision 2.43.2.5  2007/02/12 00:23:39  taylor
  * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
@@ -913,23 +918,22 @@ void parse_custom_gauge()
 	}
 }
 
-void parse_hud_gauges_tbl(char* longname)
+void parse_hud_gauges_tbl(char *filename)
 {
 	int rval;
+
+	// open localization
 	lcl_ext_open();
+
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("Unable to parse %s!  Code = %i.\n", longname, rval));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		lcl_ext_close();
 		return;
 	}
-	else
-	{	
-		read_file_text(longname);
-		reset_parse();
-	}
 
-	read_file_text(longname);
+	read_file_text(filename);
+	reset_parse();
 
 	if(optional_string("$Max Escort Ships:"))
 	{
@@ -1043,6 +1047,8 @@ void parse_hud_gauges_tbl(char* longname)
 			}
 		}
 	}
+
+	// close localization
 	lcl_ext_close();
 }
 #endif

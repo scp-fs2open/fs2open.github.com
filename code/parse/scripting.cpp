@@ -27,14 +27,12 @@ int script_test(script_state *st)
 	int rval;
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("Unable to parse scripting.tbl!  Code = %i.\n", rval));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "scripting.tbl", rval));
 		return 0;
 	}
-	else
-	{	
-		read_file_text("scripting.tbl");
-		reset_parse();
-	}
+
+	read_file_text("scripting.tbl");
+	reset_parse();
 
 	if(optional_string("#Global Hooks"))
 	{

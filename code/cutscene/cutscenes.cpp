@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.18.2.3 $
- * $Date: 2007-03-22 20:54:00 $
- * $Author: taylor $
- * $Revision: 2.18.2.3 $
- * $Date: 2007-03-22 20:54:00 $
- * $Author: taylor $
+ * $Revision: 2.18.2.4 $
+ * $Date: 2007-09-02 02:07:39 $
+ * $Author: Goober5000 $
+ * $Revision: 2.18.2.4 $
+ * $Date: 2007-09-02 02:07:39 $
+ * $Author: Goober5000 $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18.2.3  2007/03/22 20:54:00  taylor
+ * give a better msg when movies can't play because they are user-disabled with the cmdline option
+ *
  * Revision 2.18.2.2  2007/02/09 23:58:28  taylor
  * add the "show all" hotkey to the cutscene viewer
  *
@@ -270,7 +273,7 @@ int Description_index;
 cutscene_info Cutscenes[MAX_CUTSCENES];
 
 //extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
-void cutsceen_close(){
+void cutscene_close(){
 	for(int i = 0; i<MAX_CUTSCENES; i++)
 	if(Cutscenes[i].description)vm_free(Cutscenes[i].description);
 }
@@ -278,21 +281,23 @@ void cutsceen_close(){
 // initialization stuff for cutscenes
 void cutscene_init()
 {
-	atexit(cutsceen_close);
+	atexit(cutscene_close);
 	char buf[MULTITEXT_LENGTH];
 	int rval;
-
-	if ((rval = setjmp(parse_abort)) != 0) {
-		Error(LOCATION, "Error parsing 'rank.tbl'\r\nError code = %i.\r\n", rval);
-	} 
 
 	// open localization
 	lcl_ext_open();
 
+	if ((rval = setjmp(parse_abort)) != 0) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "cutscenes.tbl", rval));
+		lcl_ext_close();
+		return;
+	}
+
 	read_file_text("cutscenes.tbl");
 	reset_parse();
 
-	// parse in all the rank names
+	// parse in all the cutscenes
 	Num_cutscenes = 0;
 	skip_to_string("#Cutscenes");
 	ignore_white_space();
