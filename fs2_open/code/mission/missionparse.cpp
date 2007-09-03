@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.226 $
- * $Date: 2007-09-02 18:53:22 $
+ * $Revision: 2.227 $
+ * $Date: 2007-09-03 01:02:49 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.226  2007/09/02 18:53:22  Goober5000
+ * fix for #1455 plus a bit of cleanup
+ *
  * Revision 2.225  2007/09/02 02:10:27  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -3258,10 +3261,8 @@ int parse_create_object_sub(p_object *p_objp)
 	if (Fred_running)
 	{
 		Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity;
-		// shipp->hull_hit_points_taken = (float) p_objp->initial_hull;
 		Objects[objnum].hull_strength = (float) p_objp->initial_hull;
-		shield_set_quad(&Objects[objnum], 0, (float) p_objp->initial_shields);
-
+		shield_set_strength(&Objects[objnum], (float) p_objp->initial_shields);
 	}
 	else
 	{
