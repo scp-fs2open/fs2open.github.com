@@ -165,7 +165,7 @@ BOOL initial_status::OnInitDialog()
 
 	vflag = sflag = hflag = 0;
 	m_velocity = (int) Objects[cur_object_index].phys_info.speed;
-	m_shields = (int) shield_get_quad(&Objects[cur_object_index], 0);
+	m_shields = (int) shield_get_strength(&Objects[cur_object_index]);
 	m_hull = (int) Objects[cur_object_index].hull_strength;
 	if (Objects[cur_object_index].flags & OF_NO_SHIELDS)
 		m_has_shields = 0;
@@ -203,7 +203,7 @@ BOOL initial_status::OnInitDialog()
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags & OF_MARKED)) {
 				if (objp->phys_info.speed != m_velocity)
 					vflag = 1;
-				if ((int) shield_get_quad(objp, 0) != m_shields)
+				if ((int) shield_get_strength(objp) != m_shields)
 					sflag = 1;
 				if ((int) objp->hull_strength != m_hull)
 					hflag = 1;
@@ -315,7 +315,7 @@ void initial_status::OnOK()
 					MODIFY(objp->phys_info.speed, (float) m_velocity);
 
 				if (sflag)
-					MODIFY_SHIELDS(objp, 0, m_shields);
+					MODIFY_SHIELDS(objp, m_shields);
 
 				if (hflag)
 					MODIFY(objp->hull_strength, (float) m_hull);
@@ -355,7 +355,7 @@ void initial_status::OnOK()
 
 	} else {
 		MODIFY(Objects[cur_object_index].phys_info.speed, (float) m_velocity);
-		MODIFY_SHIELDS(&Objects[cur_object_index], 0, m_shields);
+		MODIFY_SHIELDS(&Objects[cur_object_index], m_shields);
 		MODIFY(Objects[cur_object_index].hull_strength, (float) m_hull);
 		if (m_has_shields)
 			Objects[cur_object_index].flags &= ~OF_NO_SHIELDS;

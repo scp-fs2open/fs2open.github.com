@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.38 $
- * $Date: 2007-09-02 02:10:25 $
+ * $Revision: 1.39 $
+ * $Date: 2007-09-03 01:02:49 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.38  2007/09/02 02:10:25  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 1.37  2007/07/28 21:31:11  Goober5000
  * this should really be capitalized
  *
@@ -1207,7 +1210,7 @@ int dup_object(object *objp)
 		objp1->phys_info.speed = objp2->phys_info.speed;
 		objp1->phys_info.fspeed = objp2->phys_info.fspeed;
 		objp1->hull_strength = objp2->hull_strength;
-		shield_set_quad(objp1, 0, shield_get_quad(objp2, 0));
+		shield_set_strength(objp1, shield_get_strength(objp2));
 
 		subp1 = GET_FIRST(&Ships[n].subsys_list);
 		subp2 = GET_FIRST(&Ships[inst].subsys_list);

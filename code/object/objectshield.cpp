@@ -8,13 +8,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectShield.cpp $
- * $Revision: 2.3 $
- * $Date: 2007-02-12 01:33:46 $
+ * $Revision: 2.4 $
+ * $Date: 2007-09-03 01:02:50 $
  * $Author: Goober5000 $
  *
  * Shield-specific functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2007/02/12 01:33:46  Goober5000
+ * ack
+ *
  * Revision 2.2  2007/02/12 01:24:18  Goober5000
  * scale shield strength according to generator damage
  *
@@ -140,7 +143,7 @@ float shield_get_quad(object *objp, int quadrant_num)
 	if (quadrant_num < 0 || quadrant_num >= MAX_SHIELD_SECTIONS)
 		return 0.0f;
 
-	if (objp->type != OBJ_SHIP)
+	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
 		return 0.0f;
 
 	// yarr!
@@ -228,7 +231,7 @@ void shield_add_quad(object *objp, int quadrant_num, float delta)
 // Goober5000
 float shield_get_max_strength(object *objp)
 {
-	if (objp->type != OBJ_SHIP)
+	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
 		return 0.0f;
 
 	return Ships[objp->instance].ship_max_shield_strength;
@@ -256,7 +259,7 @@ float shield_apply_damage(object *objp, int quadrant_num, float damage)
 	if ((quadrant_num < 0) || (quadrant_num >= MAX_SHIELD_SECTIONS))
 		return damage;	
 	
-	if (objp->type != OBJ_SHIP)
+	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
 		return damage;
 
 	Ai_info[Ships[objp->instance].ai_index].last_hit_quadrant = quadrant_num;

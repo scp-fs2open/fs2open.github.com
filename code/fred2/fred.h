@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/FRED.h $
- * $Revision: 1.2 $
- * $Date: 2007-02-11 21:26:34 $
+ * $Revision: 1.3 $
+ * $Date: 2007-09-03 01:02:49 $
  * $Author: Goober5000 $
  *
  * FRED.h : main header file for the FRED application
@@ -18,6 +18,9 @@
  * application (MFC level at least), processes the INI file.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2007/02/11 21:26:34  Goober5000
+ * massive shield infrastructure commit
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -150,9 +153,9 @@
 	}							\
 } while(0)
 
-#define MODIFY_SHIELDS(objp, quad, strength) do {				\
-	if ((int) shield_get_quad(objp, quad) != (int) strength) {	\
-		shield_set_quad(objp, quad, strength);					\
+#define MODIFY_SHIELDS(objp, strength) do {				\
+	if ((int) shield_get_strength(objp) != (int) strength) {	\
+		shield_set_strength(objp, strength);					\
 		set_modified();											\
 	}															\
 } while(0)

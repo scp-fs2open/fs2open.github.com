@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.430 $
- * $Date: 2007-09-02 18:53:23 $
+ * $Revision: 2.431 $
+ * $Date: 2007-09-03 01:02:50 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.430  2007/09/02 18:53:23  Goober5000
+ * fix for #1455 plus a bit of cleanup
+ *
  * Revision 2.429  2007/09/02 02:10:28  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -5825,10 +5828,17 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	if (Fred_running){
 		shipp->ship_max_hull_strength = 100.0f;
+		shipp->ship_max_shield_strength = 100.0f;
 	} else {
 		shipp->ship_max_hull_strength = sip->max_hull_strength;
+		shipp->ship_max_shield_strength = sip->max_shield_strength;
 	}
-	objp->sim_hull_strength = objp->hull_strength = shipp->ship_max_hull_strength;
+	objp->hull_strength = shipp->ship_max_hull_strength;
+	shield_set_strength(objp, shield_get_max_strength(objp));
+
+	// ehh...
+	objp->sim_hull_strength = objp->hull_strength;
+
 	
 	shipp->afterburner_fuel = sip->afterburner_fuel_capacity;
 
@@ -5933,15 +5943,6 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	ets_init_ship(objp);	// init ship fields that are used for the ETS
 
 	physics_ship_init(objp);
-	if (Fred_running) {
-		shipp->ship_max_shield_strength = 100.0f;
-		shipp->ship_max_hull_strength = 100.0f;
-		shield_set_quad(objp, 0, 100.0f);
-	} else {
-		shipp->ship_max_shield_strength = sip->max_shield_strength;
-		shipp->ship_max_hull_strength = sip->max_hull_strength;
-		shield_set_strength(objp, sip->max_shield_strength);
-	}
 
 	shipp->target_shields_delta = 0.0f;
 	shipp->target_weapon_energy_delta = 0.0f;
@@ -9442,16 +9443,14 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// set the correct shield strength
 	if (Fred_running) {
 		sp->ship_max_shield_strength = 100.0f;
-		shield_set_quad(objp, 0, 100.0f);
 	} else {
 		if (sp->special_hitpoint_index != -1) {
 			sp->ship_max_shield_strength = (float) atoi(Sexp_variables[sp->special_hitpoint_index+SHIELD_STRENGTH].text);
 		} else {
 			sp->ship_max_shield_strength = sip->max_shield_strength;
 		}
-
-		shield_set_strength(objp, shield_pct * shield_get_max_strength(objp));
 	}
+	shield_set_strength(objp, shield_pct * shield_get_max_strength(objp));
 
 
 	// Goober5000: div-0 checks
