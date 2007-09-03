@@ -80,6 +80,7 @@ uint os_get_window();
 
 void os_set_window(uint new_handle);	 
 
+
 // process management --------------------------------------------------------------
 
 // call to process windows messages. only does something in non THREADED mode
@@ -95,3 +96,11 @@ void os_suspend();
 void os_resume();
 
 #endif // _OSAPI_H
+
+
+// Goober5000
+
+#ifdef _WIN32
+void disableWindowsKey();
+void enableWindowsKey();
+#endif // _WIN32
