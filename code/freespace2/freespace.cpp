@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.44 $
- * $Date: 2007-09-03 21:00:17 $
+ * $Revision: 2.243.2.45 $
+ * $Date: 2007-09-03 22:19:55 $
  * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.44  2007/09/03 21:00:17  Goober5000
+ * roll back the windows key hook for now
+ *
  * Revision 2.243.2.43  2007/08/20 02:55:12  Goober5000
  * tweaky move
  *
@@ -9119,6 +9122,13 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 {
 	int result = -1;
 
+	// Don't let more than one instance of FreeSpace run.
+	HWND hwnd = FindWindow( NOX( "FreeSpaceClass" ), NULL );
+	if ( hwnd )	{
+		SetForegroundWindow(hwnd);
+		return 0;
+	}
+
 	::CoInitialize(NULL);
 
 #ifdef _DEBUG
@@ -9128,12 +9138,7 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 
 	DBUGFILE_INIT();
 
-	// Don't let more than one instance of FreeSpace run.
-	HWND hwnd = FindWindow( NOX( "FreeSpaceClass" ), NULL );
-	if ( hwnd )	{
-		SetForegroundWindow(hwnd);
-		return 0;
-	}
+	disableWindowsKey();
 
 	//=====================================================
 	// Make sure we're running in the right directory.
@@ -9167,6 +9172,8 @@ int PASCAL WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR szCmdLine, int nCmdSh
 		// the __except clause.
 	}
 #endif // _MSC_VER
+
+	enableWindowsKey();
 
 	DBUGFILE_DEINIT();
 
