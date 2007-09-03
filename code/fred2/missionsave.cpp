@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.36 $
- * $Date: 2007-07-23 15:16:48 $
- * $Author: Kazan $
+ * $Revision: 1.37 $
+ * $Date: 2007-09-03 01:02:49 $
+ * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.36  2007/07/23 15:16:48  Kazan
+ * Autopilot upgrades as described, MSVC2005 project fixes
+ *
  * Revision 1.35  2007/02/21 01:44:02  Goober5000
  * remove duplicate model texture replacement
  *
@@ -2080,7 +2083,7 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 		fout(" %d", (int) objp->hull_strength);
 	}
 
-	int shield_strength = (int) shield_get_quad(objp, 0);
+	int shield_strength = (int) shield_get_strength(objp);
 	if (shield_strength != 100) {
 		if (optional_string_fred("+Initial Shields:", "$Name:", "+Subsystem:"))
 			parse_comments();
