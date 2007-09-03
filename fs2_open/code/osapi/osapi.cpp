@@ -9,13 +9,20 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.33.2.4 $
- * $Date: 2006-12-07 18:04:03 $
- * $Author: taylor $
+ * $Revision: 2.33.2.5 $
+ * $Date: 2007-09-03 22:19:56 $
+ * $Author: Goober5000 $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33.2.4  2006/12/07 18:04:03  taylor
+ * clean up warning code for Windows
+ * handle messagebox popups better (until I done with even cooler code for handling that)
+ * cleanup window state code a bit, and deal with activation and cursor handling better
+ * handle WM_ERASEBKGND msg ourselves, prevents some flickering issues and gets rid of the need to self-paint the window to clear it
+ * slightly better Win9x/WinME compatibility for the main window
+ *
  * Revision 2.33.2.3  2006/11/15 00:44:44  taylor
  * new window creation code for Windows (gets rid of some stupid :V: voodoo for the software/glide stuff)
  * use detect_home() on Windows too (needed for now outwnd code)
@@ -569,6 +576,8 @@ void change_window_active_state()
 #ifdef THREADED_PROCESS
 			SetThreadPriority( hThread, THREAD_PRIORITY_HIGHEST );
 #endif
+
+			disableWindowsKey();
 		} else {
 			joy_unacquire_ff();
 
@@ -581,6 +590,8 @@ void change_window_active_state()
 #ifdef THREADED_PROCESS
 			SetThreadPriority( hThread, THREAD_PRIORITY_NORMAL );
 #endif
+
+			enableWindowsKey();
 		}
 
 		gr_activate(fAppActive);
@@ -933,3 +944,56 @@ void debug_int3(char *file, int line)
 	gr_activate(1);
 
 }
+
+
+// Goober5000 - code provided by jr2 to disable windows key when FSO is in the foreground
+
+#ifdef _WIN32
+
+static HHOOK g_hKeyboardHook = NULL;
+
+// ugh
+#ifndef WH_KEYBOARD_LL
+  #define WH_KEYBOARD_LL	13
+#endif
+
+LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	if (nCode < 0 || nCode != HC_ACTION)  // do not process message 
+		return CallNextHookEx(g_hKeyboardHook, nCode, wParam, lParam); 
+
+	// hack!
+	// this is because the KBDLLHOOKSTRUCT type requires a mess of #includes,
+	// but all we need from it is the first field
+	DWORD vkCode = *( (DWORD *) lParam );
+
+	// determine key event
+	switch (wParam) 
+	{
+		case WM_KEYDOWN:  
+		case WM_KEYUP:    
+			if ( (vkCode == VK_LWIN) || (vkCode == VK_RWIN) )
+				return 1;
+	}
+
+	return CallNextHookEx( g_hKeyboardHook, nCode, wParam, lParam );
+}
+
+void disableWindowsKey()
+{
+	if (g_hKeyboardHook != NULL)
+		return;
+
+	g_hKeyboardHook = SetWindowsHookEx( WH_KEYBOARD_LL,  LowLevelKeyboardProc, GetModuleHandle(NULL), 0 );
+}
+
+void enableWindowsKey()
+{
+	if (g_hKeyboardHook == NULL)
+		return;
+
+	UnhookWindowsHookEx( g_hKeyboardHook );
+	g_hKeyboardHook = NULL;
+}
+
+#endif // _WIN32
