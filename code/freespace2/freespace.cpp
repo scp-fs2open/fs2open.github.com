@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.45 $
- * $Date: 2007-09-03 22:19:55 $
+ * $Revision: 2.243.2.46 $
+ * $Date: 2007-09-04 00:08:50 $
  * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.45  2007/09/03 22:19:55  Goober5000
+ * re-add the code to disable the Windows key... this time, without slowing the system to a crawl when FSO is in the background
+ *
  * Revision 2.243.2.44  2007/09/03 21:00:17  Goober5000
  * roll back the windows key hook for now
  *
@@ -5029,7 +5032,7 @@ void apply_view_shake(matrix *eye_orient)
 	if (Viewer_obj == Player_obj) {
 		physics_info *pi = &Player_obj->phys_info;
 
-		//	Make eye shake due to afterburner
+		// Make eye shake due to afterburner
 		if (!timestamp_elapsed(pi->afterburner_decay)) {
 			tangles.p += get_shake(0.07f, timestamp_until(pi->afterburner_decay), ABURN_DECAY_TIME);
 			tangles.h += get_shake(0.07f, timestamp_until(pi->afterburner_decay), ABURN_DECAY_TIME);
@@ -5053,8 +5056,8 @@ void apply_view_shake(matrix *eye_orient)
 			if (timestamp_elapsed(Game_shudder_time)) {
 				Game_shudder_time = -1;
 			} else {
-				tangles.p += get_shake(Game_shudder_intensity * 0.001f, timestamp_until(Game_shudder_time), Game_shudder_total);
-				tangles.h += get_shake(Game_shudder_intensity * 0.001f, timestamp_until(Game_shudder_time), Game_shudder_total);
+				tangles.p += get_shake(Game_shudder_intensity * 0.005f, timestamp_until(Game_shudder_time), Game_shudder_total);
+				tangles.h += get_shake(Game_shudder_intensity * 0.005f, timestamp_until(Game_shudder_time), Game_shudder_total);
 			}
 		}
 	}
