@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.323 $
- * $Date: 2007-09-02 18:53:23 $
+ * $Revision: 2.324 $
+ * $Date: 2007-09-04 00:08:48 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.323  2007/09/02 18:53:23  Goober5000
+ * fix for #1455 plus a bit of cleanup
+ *
  * Revision 2.322  2007/08/26 16:01:59  phreak
  * destroyed-or-departed-delay needs to check for ships that have self destructed
  *
@@ -14964,7 +14967,7 @@ void sexp_force_perspective(int n)
 
 void sexp_set_camera_shudder(int n)
 {
-	game_shudder_apply(eval_num(n), (float) eval_num(CDR(n)));
+	game_shudder_apply(eval_num(n), (float) eval_num(CDR(n)) * 0.01f);
 }
 
 void sexp_set_jumpnode_color(int n)
@@ -21752,7 +21755,7 @@ sexp_help_struct Sexp_help[] = {
 		"\tCauses the camera to shudder.  Currently this will only work if the camera is showing the player's viewpoint (i.e. the HUD).\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1: Time (in milliseconds)\r\n"
-		"\t2: Intensity (in \"millishudders\".  For comparison, the Maxim is hard-coded to an intensity of 2500."
+		"\t2: Intensity.  For comparison, the Maxim has an intensity of 1440."
 	},
 
 	{ OP_JUMP_NODE_SET_JUMPNODE_COLOR, "set-jumpnode-color\r\n"
