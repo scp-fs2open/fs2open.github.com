@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.431 $
- * $Date: 2007-09-03 01:02:50 $
+ * $Revision: 2.432 $
+ * $Date: 2007-09-04 00:08:49 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.431  2007/09/03 01:02:50  Goober5000
+ * fix for 1376
+ *
  * Revision 2.430  2007/09/02 18:53:23  Goober5000
  * fix for #1455 plus a bit of cleanup
  *
@@ -10423,7 +10426,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 							// calculate some arbitrary value between 100
 							// (mass * velocity) / 10
-							game_shudder_apply(2500, (winfo_p->mass * winfo_p->max_speed) / 10.0f);
+							game_shudder_apply(500, (winfo_p->mass * winfo_p->max_speed) * 0.1f);
 						}
 	
 						num_fired++;
