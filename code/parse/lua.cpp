@@ -3604,6 +3604,7 @@ struct waypointlist_h
 			strcpy(name, wlp->name);
 	}
 	waypointlist_h(char wlname[NAME_LENGTH]) {
+		wlp = NULL;
 		if ( wlname != NULL ) {
 			strcpy(name, wlname);
 			for ( int i = 0; i < Num_waypoint_lists; i++ ) {
@@ -3624,15 +3625,16 @@ ade_obj<waypointlist_h> l_WaypointList("waypointlist", "waypointlist handle");
 ADE_INDEXER(l_WaypointList, "index of waypoint", "waypoint", "Gets waypoint")
 {
 	int idx = -1;
-	waypointlist_h* wlh;
+	waypointlist_h* wlh = NULL;
+	l_WaypointList.Get( wlh );
 	char wpname[128];
-	if( !ade_get_args(L, "i", &idx) ) {
+	if( !ade_get_args(L, "*i", &idx) || !wlh->IsValid()) {
 		return ade_set_error( L, "o", l_Waypoint.Set( object_h() ) );
 	}
-	l_WaypointList.GetPtr( &wlh );
 	sprintf(wpname, "%s:%d", wlh->wlp->name, (idx & 0xffff) + 1);
-	if( idx > -1 && idx < wlh->wlp->count && waypoint_lookup( wpname ) != -1 ) {
-		return ade_set_args( L, "o", l_Waypoint.Set( object_h( &Objects[ waypoint_lookup(wpname) ] ), Objects[ waypoint_lookup(wpname) ].signature ) );
+	int i = waypoint_lookup( wpname );
+	if( idx > -1 && idx < wlh->wlp->count && i != -1 ) {
+		return ade_set_args( L, "o", l_Waypoint.Set( object_h( &Objects[i] ), Objects[i].signature ) );
 	}
 
 	return ade_set_error(L, "o", l_Waypoint.Set( object_h() ) );
@@ -6436,7 +6438,7 @@ ade_lib l_Mission_Asteroids("Asteroids", &l_Mission, NULL, "Asteroids in the mis
 ADE_INDEXER(l_Mission_Asteroids, "index of asteroid", "asteroid", "Gets asteroid")
 {
 	int idx = -1;
-	if( !ade_get_args(L, "i", &idx) ) {
+	if( !ade_get_args(L, "*i", &idx) ) {
 		return ade_set_error( L, "o", l_Asteroid.Set( object_h() ) );
 	}
 	if( idx > -1 && idx < asteroid_count() ) {
@@ -6461,7 +6463,7 @@ ade_lib l_Mission_Debris("Debris", &l_Mission, NULL, "debris in the mission");
 ADE_INDEXER(l_Mission_Debris, "index of debris", "debris", "Gets debris")
 {
 	int idx = -1;
-	if( !ade_get_args( L, "i", &idx ) ) {
+	if( !ade_get_args( L, "*i", &idx ) ) {
 		return ade_set_error(L, "o", l_Debris.Set(object_h()));
 	}
 	if( idx > -1 && idx < Num_debris_pieces ) {
@@ -6675,36 +6677,24 @@ ADE_FUNC(__len, l_Mission_Waypoints, NULL, "Number of waypoints in the mission",
 
 ade_lib l_Mission_WaypointLists("WaypointLists", &l_Mission, NULL, NULL);
 
-ADE_INDEXER(l_Mission_WaypointLists, "waypointlist index", "waypointlist", "Gets waypointlist handle")
+ADE_INDEXER(l_Mission_WaypointLists, "waypointlist index or name", "waypointlist", "Gets waypointlist handle")
 {
+	waypointlist_h wpl;
 	char *name;
 	if(!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
 
-	int idx = waypoint_lookup(name);
+	wpl = waypointlist_h(name);
 
-	if(idx > -1)
-	{
-		return ade_set_args(L, "o", l_WaypointList.Set(waypointlist_h(&Waypoint_lists[Objects[idx].instance / 65536])));
-	}
-	else
-	{
-		idx = atoi(name);
-		if(idx > 0)
-		{
-			//int count=1;
-
-			object *ptr = GET_FIRST(&obj_used_list);
-			while (ptr != END_OF_LIST(&obj_used_list))
-			{
-				if (ptr->type == OBJ_WAYPOINT)
-				{
-					if(idx == (ptr->instance / 65536))
-						return ade_set_args(L, "o", l_WaypointList.Set(waypointlist_h(&Waypoint_lists[ptr->instance / 65536])));
-				}
-				ptr = GET_NEXT(ptr);
-			}
+	if (!wpl.IsValid()) {
+		int idx = atoi(name);
+		if(idx > -1 && idx < Num_waypoint_lists) {
+			wpl = waypointlist_h(&Waypoint_lists[idx]);
 		}
+	}
+
+	if (wpl.IsValid()) {
+		return ade_set_args(L, "o", l_WaypointList.Set(wpl));
 	}
 
 	return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
