@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.61 $
- * $Date: 2007-09-02 02:10:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.62 $
+ * $Date: 2007-09-05 23:42:18 $
+ * $Author: turey $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.61  2007/09/02 02:10:27  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.60  2007/08/31 20:37:20  turey
  * Fix for Mantis bug: http://scp.indiegames.us/mantis/view.php?id=1482
  * Also, fixed an implicit cast that MSVC2005 choked on.
@@ -2914,17 +2917,18 @@ void debrief_do_keys(int new_k)
 					}
 					if (choice == 2) { // Retry later
 						Campaign.next_mission = Campaign.current_mission;
-						scoring_backout_accept( &Player->stats );
 					}
 
 					if (choice < 1)
 						break;
 
-				} else if (Must_replay_mission && (Game_mode & GM_CAMPAIGN_MODE)) {
+				} else if ( ( Turned_traitor || Must_replay_mission ) && (Game_mode & GM_CAMPAIGN_MODE)) {
 					// need to popup saying that mission was a failure and must be replayed
 					choice = popup(0, 2, POPUP_NO, POPUP_YES, XSTR( "Because this mission was a failure, you must replay this mission when you continue your campaign.\n\nReturn to the Flight Deck?", 457));
-					if (choice <= 0)
+					if (choice <= 0) {
 						break;
+					}
+					Campaign.next_mission = Campaign.current_mission;
 				}
 
 				// Return to Main Hall
