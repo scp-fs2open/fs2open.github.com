@@ -3622,6 +3622,15 @@ struct waypointlist_h
 
 ade_obj<waypointlist_h> l_WaypointList("waypointlist", "waypointlist handle");
 
+ADE_VIRTVAR(Name, l_WaypointList, "string", "Name of WaypointList")
+{
+	waypointlist_h* wlh = NULL;
+	if ( !ade_get_args(L, "o", l_WaypointList.GetPtr(&wlh)) ) {
+		return ade_set_error( L, "o", l_Waypoint.Set( object_h() ) );
+	}
+	return ade_set_args( L, "s", wlh->name);
+}
+
 ADE_INDEXER(l_WaypointList, "index of waypoint", "waypoint", "Gets waypoint")
 {
 	int idx = -1;
@@ -3631,6 +3640,7 @@ ADE_INDEXER(l_WaypointList, "index of waypoint", "waypoint", "Gets waypoint")
 	if( !ade_get_args(L, "*i", &idx) || !wlh->IsValid()) {
 		return ade_set_error( L, "o", l_Waypoint.Set( object_h() ) );
 	}
+	idx--;
 	sprintf(wpname, "%s:%d", wlh->wlp->name, (idx & 0xffff) + 1);
 	int i = waypoint_lookup( wpname );
 	if( idx > -1 && idx < wlh->wlp->count && i != -1 ) {
@@ -3644,8 +3654,10 @@ ADE_FUNC(__len, l_WaypointList, NULL, "number",
 		 "Number of waypoints in the list. "
 		 "Note that the value returned cannot be relied on for more than one frame." )
 {
-	waypointlist_h* wlh;
-	l_WaypointList.GetPtr( &wlh );
+	waypointlist_h* wlh = NULL;
+	if ( !ade_get_args(L, "o", l_WaypointList.GetPtr(&wlh)) ) {
+		return ade_set_error( L, "o", l_Waypoint.Set( object_h() ) );
+	}
 	return ade_set_args(L, "i", wlh->wlp->count);
 }
 
@@ -6687,7 +6699,7 @@ ADE_INDEXER(l_Mission_WaypointLists, "waypointlist index or name", "waypointlist
 	wpl = waypointlist_h(name);
 
 	if (!wpl.IsValid()) {
-		int idx = atoi(name);
+		int idx = atoi(name) - 1;
 		if(idx > -1 && idx < Num_waypoint_lists) {
 			wpl = waypointlist_h(&Waypoint_lists[idx]);
 		}
