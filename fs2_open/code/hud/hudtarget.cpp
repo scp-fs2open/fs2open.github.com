@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.104 $
- * $Date: 2007-08-30 04:51:07 $
+ * $Revision: 2.105 $
+ * $Date: 2007-09-16 21:01:48 $
  * $Author: Backslash $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2007/08/30 04:51:07  Backslash
+ * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
+ * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
+ * $Length Unit Multiplier: 5
+ *
  * Revision 2.103  2007/07/15 02:45:18  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
@@ -5104,8 +5109,8 @@ void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float dista
 	xpos = (float)floor(xpos);
 	ypos = (float)floor(ypos);
 
-	if ( hud_gauge_active(HUD_OFFSCREEN_RANGE) && (distance > 0) ) {
-		sprintf(buf,"%d",fl2i(distance+0.5f));
+	if ( hud_gauge_active(HUD_OFFSCREEN_RANGE) && (displayed_distance > 0) ) {
+		sprintf(buf,"%d",fl2i(displayed_distance+0.5f));
 		hud_num_make_mono(buf);
 		gr_get_string_size(&w, &h, buf);	
 	} else {
