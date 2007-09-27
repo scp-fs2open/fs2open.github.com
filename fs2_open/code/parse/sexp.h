@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.135 $
- * $Author: Goober5000 $
- * $Date: 2007-08-17 03:29:45 $
+ * $Revision: 2.136 $
+ * $Author: turey $
+ * $Date: 2007-09-27 06:55:38 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.135  2007/08/17 03:29:45  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
+ *
  * Revision 2.134  2007/07/24 20:17:36  Kazan
  * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
  *
@@ -1331,6 +1334,8 @@ struct ship_subsys;
 #define OP_UNLOCK_SECONDARY_WEAPON			(0x00b1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SET_CAMERA_SHUDDER				(0x00b2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_DEAL_WITH_SHIP_LOADOUT			(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_DISABLE_PRIMARY_LINKING			(0x00b4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Turey
+#define OP_ENABLE_PRIMARY_LINKING			(0x00b5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Turey
 
 
 
