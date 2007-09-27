@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.432 $
- * $Date: 2007-09-04 00:08:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.433 $
+ * $Date: 2007-09-27 06:55:38 $
+ * $Author: turey $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.432  2007/09/04 00:08:49  Goober5000
+ * fix the factoring on the shudder parameters (Mantis #1419)
+ *
  * Revision 2.431  2007/09/03 01:02:50  Goober5000
  * fix for 1376
  *
@@ -2578,6 +2581,7 @@ flag_def_list Ship_flags[] = {
 	{ "generate icon",				SIF2_GENERATE_HUD_ICON,		1 },
 	{ "no weapon damage scaling",	SIF2_DISABLE_WEAPON_DAMAGE_SCALING,	1 },
 	{ "gun convergence",			SIF2_GUN_CONVERGENCE,		1 },
+	{ "no primary linking",			SIF2_DISABLE_PRIMARY_LINKING,		1 },
 
 	// to keep things clean, obsolete options go last
 	{ "ballistic primaries",		-1,		255 }
@@ -9297,6 +9301,9 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	ct_ship_create(shipp);
 
 	model_anim_set_initial_states(shipp);
+	if ( sip->flags2 & SIF2_DISABLE_PRIMARY_LINKING ) {
+		shipp->flags2 |= SF2_DISABLE_PRIMARY_LINKING;
+	}
 /*
 	polymodel *pm = model_get(shipp->modelnum);
 	if(shipp->debris_flare)vm_free(shipp->debris_flare);
@@ -9530,6 +9537,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			}
 		}
 	}//end AB trails -Bobboau
+
+	if ( sip->flags2 & SIF2_DISABLE_PRIMARY_LINKING ) {
+		sp->flags2 |= SF2_DISABLE_PRIMARY_LINKING;
+	}
 
 /*
 	Goober5000 (4/17/2005) - I'm commenting this out for the time being; it looks like a whole bunch of unneeded
@@ -11288,7 +11299,11 @@ int ship_select_next_primary(object *objp, int direction)
 				}
 				else
 				{
-					shipp->flags |= SF_PRIMARY_LINKED;
+					if ( shipp->flags2 & SF2_DISABLE_PRIMARY_LINKING ) {
+						swp->current_primary_bank = 0;
+					} else {
+						shipp->flags |= SF_PRIMARY_LINKED;
+					}
 				}
 			}
 			else
@@ -11299,7 +11314,11 @@ int ship_select_next_primary(object *objp, int direction)
 				}
 				else
 				{
-					shipp->flags |= SF_PRIMARY_LINKED;
+					if ( shipp->flags2 & SF2_DISABLE_PRIMARY_LINKING ) {
+						swp->current_primary_bank = swp->num_primary_banks - 1;
+					} else {
+						shipp->flags |= SF_PRIMARY_LINKED;
+					}
 				}
 			}
 		}
