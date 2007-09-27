@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.195 $
- * $Date: 2007-09-02 18:53:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.196 $
+ * $Date: 2007-09-27 06:55:39 $
+ * $Author: turey $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.195  2007/09/02 18:53:24  Goober5000
+ * fix for #1455 plus a bit of cleanup
+ *
  * Revision 2.194  2007/07/28 22:04:47  Goober5000
  * tweaks
  *
@@ -1313,6 +1316,7 @@ typedef struct ship_subsys_info {
 #define SF2_ALWAYS_DEATH_SCREAM				(1<<15)		// Goober5000 - for WCS
 #define SF2_GLOWMAPS_DISABLED				(1<<16)		// taylor - to disable glow maps
 #define SF2_NAVPOINT_NEEDSLINK				(1<<17)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
+#define SF2_DISABLE_PRIMARY_LINKING			(1<<18)		// Turey - Ship cannot link primaries
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -1695,6 +1699,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
 #define SIF2_DISABLE_WEAPON_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
 #define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
+#define SIF2_DISABLE_PRIMARY_LINKING		(1 << 8)	// Turey - Disables Primary Linking.
 
 #define	MAX_SHIP_FLAGS	8		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0

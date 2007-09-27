@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.324 $
- * $Date: 2007-09-04 00:08:48 $
- * $Author: Goober5000 $
+ * $Revision: 2.325 $
+ * $Date: 2007-09-27 06:55:38 $
+ * $Author: turey $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.324  2007/09/04 00:08:48  Goober5000
+ * fix the factoring on the shudder parameters (Mantis #1419)
+ *
  * Revision 2.323  2007/09/02 18:53:23  Goober5000
  * fix for #1455 plus a bit of cleanup
  *
@@ -1827,6 +1830,8 @@ sexp_oper Operators[] = {
 	{ "unlock-primary-weapon",		OP_UNLOCK_PRIMARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "lock-secondary-weapon",		OP_LOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "unlock-secondary-weapon",	OP_UNLOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
+	{ "disable-primary-linking",	OP_DISABLE_PRIMARY_LINKING,		1, INT_MAX },		// Karajorma
+	{ "enable-primary-linking",		OP_ENABLE_PRIMARY_LINKING,		1, INT_MAX },		// Karajorma
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
@@ -12537,6 +12542,48 @@ void sexp_deal_with_weapons_lock (int node, bool primary, bool lock)
 	} while (node != -1);
 }
 
+void sexp_primary_link (int node, bool disable)
+{
+	ship *shipp;
+	int ship_index;
+
+	Assert (node != -1);
+
+	do 
+	{
+		ship_index = ship_name_lookup(CTEXT(node));
+
+		// Check that a ship has been supplied
+		ship_index = ship_name_lookup(CTEXT(node));
+		if (ship_index < 0) 
+		{
+			node = CDR (node);
+			continue ;
+		}
+
+		// Check that it's valid
+		if((Ships[ship_index].objnum < 0) || (Ships[ship_index].objnum >= MAX_OBJECTS))
+		{
+			node = CDR (node);
+			continue ;
+		}
+		shipp = &Ships[ship_index];
+
+		// Set the flag
+		if (disable)
+		{
+			 shipp->flags2 |= SF2_DISABLE_PRIMARY_LINKING;
+		}
+		else 
+		{
+			 shipp->flags2 &= ~SF2_DISABLE_PRIMARY_LINKING;
+		}
+
+		// Go to the next ship.
+		node = CDR (node);
+	} while (node != -1);
+}
+
 // Goober5000
 void sexp_change_ship_class(int n)
 {
@@ -16373,6 +16420,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_DISABLE_PRIMARY_LINKING:
+			case OP_ENABLE_PRIMARY_LINKING:
+				sexp_primary_link(node, op_num == OP_DISABLE_PRIMARY_LINKING);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_NUM_SHIPS_IN_BATTLE:	// phreak
 				sexp_val=sexp_num_ships_in_battle(node);
 				break;
@@ -17055,6 +17108,8 @@ int query_operator_return_type(int op)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
+		case OP_DISABLE_PRIMARY_LINKING:
+		case OP_ENABLE_PRIMARY_LINKING:
 		case OP_RESET_ORDERS:
 			return OPR_NULL;
 
@@ -18114,6 +18169,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
+		case OP_DISABLE_PRIMARY_LINKING:
+		case OP_ENABLE_PRIMARY_LINKING:
 			return OPF_SHIP;
 
 		case OP_IS_SECONDARY_SELECTED:
@@ -19339,6 +19396,8 @@ int get_subcategory(int sexp_id)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
+		case OP_DISABLE_PRIMARY_LINKING:
+		case OP_ENABLE_PRIMARY_LINKING:
 
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
@@ -21550,6 +21609,19 @@ sexp_help_struct Sexp_help[] = {
 		"\t(all): Name(s) of ship(s) to lock"
 	},
 
+	// Turey
+	{ OP_DISABLE_PRIMARY_LINKING, "disable-primary-linking\r\n"
+		"\tDisables primary linking for the specified ship(s)\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\t(all): Name(s) of ship(s) to affect"
+	},
+
+	// Turey
+	{ OP_ENABLE_PRIMARY_LINKING, "enable-primary-linking\r\n"
+		"\tEnables primary linking for the specified ship(s)\r\n"
+		"\tTakes 1 or more arguments\r\n"
+		"\t(all): Name(s) of ship(s) to affect"
+	},
 
 	//phreak
 	{ OP_NUM_SHIPS_IN_BATTLE, "num-ships-in-battle\r\n"
