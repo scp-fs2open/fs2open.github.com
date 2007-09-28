@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.62 $
- * $Date: 2007-09-05 23:42:18 $
+ * $Revision: 2.63 $
+ * $Date: 2007-09-28 23:46:31 $
  * $Author: turey $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.62  2007/09/05 23:42:18  turey
+ * More work on Mantis bug: http://scp.indiegames.us/mantis/view.php?id=1482
+ *
  * Revision 2.61  2007/09/02 02:10:27  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -2804,6 +2807,10 @@ void debrief_close()
 	} else {
 		// single player
 		if( !Debrief_accepted || !(Game_mode & GM_CAMPAIGN_MODE) ){
+			// Make sure we don't skip any missions in a campaign.
+			if ( Game_mode & GM_CAMPAIGN_MODE ) {
+				Campaign.next_mission = Campaign.current_mission;
+			}
 			scoring_backout_accept( &Player->stats );
 		}
 	}
@@ -2915,9 +2922,6 @@ void debrief_do_keys(int new_k)
 						debrief_accept(0);
 						gameseq_post_event(GS_EVENT_MAIN_MENU);
 					}
-					if (choice == 2) { // Retry later
-						Campaign.next_mission = Campaign.current_mission;
-					}
 
 					if (choice < 1)
 						break;
@@ -2928,7 +2932,6 @@ void debrief_do_keys(int new_k)
 					if (choice <= 0) {
 						break;
 					}
-					Campaign.next_mission = Campaign.current_mission;
 				}
 
 				// Return to Main Hall
