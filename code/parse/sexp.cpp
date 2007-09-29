@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.325 $
- * $Date: 2007-09-27 06:55:38 $
- * $Author: turey $
+ * $Revision: 2.326 $
+ * $Date: 2007-09-29 15:27:52 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.325  2007/09/27 06:55:38  turey
+ * "no primary linking" ship flag and related SEXPs - prevent a ship from linking primaries.
+ *
  * Revision 2.324  2007/09/04 00:08:48  Goober5000
  * fix the factoring on the shudder parameters (Mantis #1419)
  *
@@ -1805,6 +1808,7 @@ sexp_oper Operators[] = {
 	{ "not-kamikaze",					OP_NOT_KAMIKAZE,			1, INT_MAX }, //-Sesquipedalian
 	{ "player-use-ai",				OP_PLAYER_USE_AI,				0, 0 },			// Goober5000
 	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
+	{ "allow-treason",				OP_ALLOW_TREASON,				1, 1 },			// Karajorma
 
 	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
 	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,			3, 4,			},
@@ -1858,13 +1862,13 @@ sexp_oper Operators[] = {
 
 	{ "fire-beam",						OP_BEAM_FIRE,					3, 4		},
 	{ "beam-free",						OP_BEAM_FREE,					2, INT_MAX	},
-	{ "beam-free-all",					OP_BEAM_FREE_ALL,				1, 1		},
+	{ "beam-free-all",					OP_BEAM_FREE_ALL,				1, INT_MAX	},
 	{ "beam-lock",						OP_BEAM_LOCK,					2, INT_MAX	},
-	{ "beam-lock-all",					OP_BEAM_LOCK_ALL,				1, 1		},
+	{ "beam-lock-all",					OP_BEAM_LOCK_ALL,				1, INT_MAX	},
 	{ "turret-free",					OP_TURRET_FREE,					2, INT_MAX	},
-	{ "turret-free-all",				OP_TURRET_FREE_ALL,				1, 1		},
+	{ "turret-free-all",				OP_TURRET_FREE_ALL,				1, INT_MAX	},
 	{ "turret-lock",					OP_TURRET_LOCK,					2, INT_MAX	},
-	{ "turret-lock-all",				OP_TURRET_LOCK_ALL,				1, 1		},
+	{ "turret-lock-all",				OP_TURRET_LOCK_ALL,				1, INT_MAX	},
 	{ "turret-tagged-only",				OP_TURRET_TAGGED_ONLY_ALL,		1,	1		},
 	{ "turret-tagged-clear",			OP_TURRET_TAGGED_CLEAR_ALL,		1,	1		},
 	{ "turret-tagged-specific",			OP_TURRET_TAGGED_SPECIFIC,		2, INT_MAX }, //phreak
@@ -8678,6 +8682,19 @@ void sexp_player_use_ai(int flag)
 	Player_use_ai = flag ? 1 : 0;
 }
 
+// Karajorma
+void sexp_allow_treason (int n) {
+	n = CDR(n);
+	if (n != -1) {
+		if ( is_sexp_true(n) ) {
+			The_mission.flags |= MISSION_FLAG_NO_TRAITOR;
+		} 
+		else {
+			The_mission.flags &= ~MISSION_FLAG_NO_TRAITOR;
+		}
+	}
+}
+
 // Goober5000
 void sexp_change_soundtrack(int n)
 {
@@ -12843,26 +12860,29 @@ void sexp_beam_free_all(int node)
 	ship_subsys *subsys;
 	int sindex;
 
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
-	// free all beam weapons
-	subsys = GET_FIRST(&Ships[sindex].subsys_list);
-	while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
-		// just mark all turrets as beam free
-		if(subsys->system_info->type == SUBSYSTEM_TURRET){
-			subsys->weapons.flags |= SW_FLAG_BEAM_FREE;
-			subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+	while (true) {
+		// get the firing ship
+		sindex = ship_name_lookup(CTEXT(node));
+		if(sindex < 0){
+			return;
+		}
+		if(Ships[sindex].objnum < 0){
+			return;
 		}
 
-		// next item
-		subsys = GET_NEXT(subsys);
+		// free all beam weapons
+		subsys = GET_FIRST(&Ships[sindex].subsys_list);
+		while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
+			// just mark all turrets as beam free
+			if(subsys->system_info->type == SUBSYSTEM_TURRET){
+				subsys->weapons.flags |= SW_FLAG_BEAM_FREE;
+				subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+			}
+
+			// next item
+			subsys = GET_NEXT(subsys);
+		}
+		node = CDR(node);
 	}
 }
 
@@ -12901,25 +12921,28 @@ void sexp_beam_lock_all(int node)
 	ship_subsys *subsys;
 	int sindex;
 
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
-	// free all beam weapons
-	subsys = GET_FIRST(&Ships[sindex].subsys_list);
-	while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
-		// just mark all turrets as not beam free
-		if(subsys->system_info->type == SUBSYSTEM_TURRET){
-			subsys->weapons.flags &= ~(SW_FLAG_BEAM_FREE);
+	while (true) {
+		// get the firing ship
+		sindex = ship_name_lookup(CTEXT(node));
+		if(sindex < 0){
+			return;
+		}
+		if(Ships[sindex].objnum < 0){
+			return;
 		}
 
-		// next item
-		subsys = GET_NEXT(subsys);
+		// free all beam weapons
+		subsys = GET_FIRST(&Ships[sindex].subsys_list);
+		while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
+			// just mark all turrets as not beam free
+			if(subsys->system_info->type == SUBSYSTEM_TURRET){
+				subsys->weapons.flags &= ~(SW_FLAG_BEAM_FREE);
+			}
+
+			// next item
+			subsys = GET_NEXT(subsys);
+		}		
+		node = CDR(node);
 	}
 }
 
@@ -12959,26 +12982,29 @@ void sexp_turret_free_all(int node)
 	ship_subsys *subsys;
 	int sindex;
 
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
-	// free all turrets
-	subsys = GET_FIRST(&Ships[sindex].subsys_list);
-	while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
-		// just mark all turrets as free
-		if(subsys->system_info->type == SUBSYSTEM_TURRET){
-			subsys->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
-			subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+	while (true) {
+		// get the firing ship
+		sindex = ship_name_lookup(CTEXT(node));
+		if(sindex < 0){
+			return;
+		}
+		if(Ships[sindex].objnum < 0){
+			return;
 		}
 
-		// next item
-		subsys = GET_NEXT(subsys);
+		// free all turrets
+		subsys = GET_FIRST(&Ships[sindex].subsys_list);
+		while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
+			// just mark all turrets as free
+			if(subsys->system_info->type == SUBSYSTEM_TURRET){
+				subsys->weapons.flags &= (~SW_FLAG_TURRET_LOCK);
+				subsys->turret_next_fire_stamp = timestamp((int) frand_range(50.0f, 4000.0f));
+			}
+
+			// next item
+			subsys = GET_NEXT(subsys);
+		}
+		node = CDR(node);
 	}
 }
 
@@ -13017,25 +13043,28 @@ void sexp_turret_lock_all(int node)
 	ship_subsys *subsys;
 	int sindex;
 
-	// get the firing ship
-	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return;
-	}
-	if(Ships[sindex].objnum < 0){
-		return;
-	}
-
-	// lcck all turrets
-	subsys = GET_FIRST(&Ships[sindex].subsys_list);
-	while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
-		// just mark all turrets as locked
-		if(subsys->system_info->type == SUBSYSTEM_TURRET){
-			subsys->weapons.flags |= SW_FLAG_TURRET_LOCK;
+	while (true) {
+		// get the firing ship
+		sindex = ship_name_lookup(CTEXT(node));
+		if(sindex < 0){
+			return;
+		}
+		if(Ships[sindex].objnum < 0){
+			return;
 		}
 
-		// next item
-		subsys = GET_NEXT(subsys);
+		// lcck all turrets
+		subsys = GET_FIRST(&Ships[sindex].subsys_list);
+		while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
+			// just mark all turrets as locked
+			if(subsys->system_info->type == SUBSYSTEM_TURRET){
+				subsys->weapons.flags |= SW_FLAG_TURRET_LOCK;
+			}
+
+			// next item
+			subsys = GET_NEXT(subsys);
+		}
+		node = CDR(node);
 	}
 }
 
@@ -15780,6 +15809,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			//Karajorma
+			case OP_ALLOW_TREASON:
+				sexp_allow_treason(node);
+				sexp_val = SEXP_TRUE;
+				break; 
+
 			// Goober5000
 			case OP_EXPLOSION_EFFECT:
 				sexp_explosion_effect(node);
@@ -17041,6 +17076,7 @@ int query_operator_return_type(int op)
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
+		case OP_ALLOW_TREASON :
 		case OP_NAV_ADD_WAYPOINT:
 		case OP_NAV_ADD_SHIP:
 		case OP_NAV_DEL:
@@ -17681,6 +17717,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
 			return OPF_NONE;
+
+		case OP_ALLOW_TREASON:
+			return OPF_BOOL; 
 
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
@@ -19370,6 +19409,7 @@ int get_subcategory(int sexp_id)
 		case OP_NOT_KAMIKAZE:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
+		case OP_ALLOW_TREASON: 
 			return CHANGE_SUBCATEGORY_AI_AND_IFF;
 			
 		case OP_SABOTAGE_SUBSYSTEM:
@@ -21655,6 +21695,12 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_PLAYER_NOT_USE_AI, "player-not-use-ai\r\n"
 		"\tCauses the player's ship to not be controlled by the FreeSpace AI.  Takes 0 arguments.\r\n"
+	},
+
+	// Karajorma
+	{ OP_ALLOW_TREASON, "allow-treason\r\n"
+		"\tTurns the Allow Traitor switch on or off in mission. Takes 0 arguments.\r\n"
+		"\t1:\tTrue/False."
 	},
 
 	//WMC

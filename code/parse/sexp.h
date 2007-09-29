@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.136 $
- * $Author: turey $
- * $Date: 2007-09-27 06:55:38 $
+ * $Revision: 2.137 $
+ * $Author: karajorma $
+ * $Date: 2007-09-29 15:27:53 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.136  2007/09/27 06:55:38  turey
+ * "no primary linking" ship flag and related SEXPs - prevent a ship from linking primaries.
+ *
  * Revision 2.135  2007/08/17 03:29:45  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
@@ -1336,6 +1339,7 @@ struct ship_subsys;
 #define OP_DEAL_WITH_SHIP_LOADOUT			(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_DISABLE_PRIMARY_LINKING			(0x00b4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Turey
 #define OP_ENABLE_PRIMARY_LINKING			(0x00b5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Turey
+#define OP_ALLOW_TREASON					(0x00b6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 
