@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.46 $
- * $Date: 2007-09-04 00:08:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.243.2.47 $
+ * $Date: 2007-09-29 13:58:39 $
+ * $Author: karajorma $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.46  2007/09/04 00:08:50  Goober5000
+ * fix the factoring on the shudder parameters (Mantis #1419)
+ *
  * Revision 2.243.2.45  2007/09/03 22:19:55  Goober5000
  * re-add the code to disable the Windows key... this time, without slowing the system to a crawl when FSO is in the background
  *
@@ -2024,7 +2027,7 @@ int Debug_dump_frame_num = 0;
 // amount of time to wait after the player has died before we display the death died popup
 #define PLAYER_DIED_POPUP_WAIT		2500
 int Player_died_popup_wait = -1;
-int Player_multi_died_check = -1;
+//int Player_multi_died_check = -1;
 
 int Multi_ping_timestamp = -1;
 
@@ -6363,8 +6366,8 @@ void game_frame(int paused)
 						popupdead_start();
 					}
 				}
-			}
-
+			}	
+			/* Karajorma - Suspect this is the cause of the double respawn bug.
 			// hack - sometimes this seems to slip by in multiplayer. this should guarantee that we catch it
 			if((Game_mode & GM_MULTIPLAYER) && (Player_multi_died_check != -1) && (Game_mode & GM_DEAD_BLEW_UP) ){
 				if(fl_abs((float)time(NULL) - (float)Player_multi_died_check) > 4.0f){
@@ -6375,6 +6378,7 @@ void game_frame(int paused)
 					Player_multi_died_check = -1;
 				}
 			}
+			*/
 
 			DEBUG_GET_TIME( render3_time2 )
 			DEBUG_GET_TIME( render2_time1 )
@@ -7206,7 +7210,7 @@ void game_process_event( int current_state, int event )
 				gameseq_set_state(GS_STATE_DEBRIEF);		
 			}
 
-			Player_multi_died_check = -1;
+			//Player_multi_died_check = -1;
 			break;
 
 		case GS_EVENT_SHIP_SELECTION:
@@ -7236,7 +7240,7 @@ void game_process_event( int current_state, int event )
 				gameseq_set_state(GS_STATE_GAME_PLAY, 1);
 			}
 
-			Player_multi_died_check = -1;
+			//Player_multi_died_check = -1;
 
 			// clear multiplayer button info			
 			extern button_info Multi_ship_status_bi;
@@ -7255,7 +7259,7 @@ void game_process_event( int current_state, int event )
 			} else
 				Int3();
 
-			Player_multi_died_check = -1;
+			//Player_multi_died_check = -1;
 			break;
 
 		case GS_EVENT_QUIT_GAME:
@@ -7263,7 +7267,7 @@ void game_process_event( int current_state, int event )
 			main_hall_stop_ambient();
 			gameseq_set_state(GS_STATE_QUIT_GAME);
 
-			Player_multi_died_check = -1;
+			//Player_multi_died_check = -1;
 			break;
 
 		case GS_EVENT_GAMEPLAY_HELP:
@@ -7310,12 +7314,12 @@ void game_process_event( int current_state, int event )
 			if (  current_state == GS_STATE_DEATH_DIED )	{
 				gameseq_set_state( GS_STATE_DEATH_BLEW_UP );
 				event_music_player_death();
-
-				// multiplayer clients set their extra check here
+				
+				/* multiplayer clients set their extra check here
 				if(Game_mode & GM_MULTIPLAYER){
 					// set the multi died absolute last chance check					
 					Player_multi_died_check = time(NULL);
-				}					
+				}*/	
 			} else {
 				mprintf(( "Ignoring GS_EVENT_DEATH_BLEW_UP because we're in state %d\n", current_state ));
 			}
@@ -7326,7 +7330,7 @@ void game_process_event( int current_state, int event )
 				readyroom_continue_campaign();
 			}
 
-			Player_multi_died_check = -1;
+			//Player_multi_died_check = -1;
 			break;
 
 		case GS_EVENT_CAMPAIGN_CHEAT:
@@ -7350,7 +7354,7 @@ void game_process_event( int current_state, int event )
 				readyroom_continue_campaign();
 			}
 
-			Player_multi_died_check = -1;
+			//Player_multi_died_check = -1;
 			break;
 
 		case GS_EVENT_CAMPAIGN_ROOM:
