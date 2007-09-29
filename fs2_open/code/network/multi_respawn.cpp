@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_respawn.cpp $
- * $Revision: 2.12.2.2 $
- * $Date: 2007-08-13 04:54:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.12.2.3 $
+ * $Date: 2007-09-29 13:58:45 $
+ * $Author: karajorma $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12.2.2  2007/08/13 04:54:30  Goober5000
+ * some improvements to the pirate ship
+ *
  * Revision 2.12.2.1  2007/02/20 04:19:22  Goober5000
  * the great big duplicate model removal commit
  *
@@ -802,8 +805,8 @@ void multi_respawn_process_packet(ubyte *data, header *hinfo)
 
 		// if this is for me, I should jump back into gameplay
 		if(&Net_players[player_index] == Net_player){
-			extern int Player_multi_died_check;
-			Player_multi_died_check = -1;
+			//extern int Player_multi_died_check;
+			//Player_multi_died_check = -1;
 
 			gameseq_post_event(GS_EVENT_ENTER_GAME);
 		}
