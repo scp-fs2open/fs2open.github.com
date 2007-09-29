@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.51 $
- * $Date: 2006-10-06 09:33:33 $
- * $Author: taylor $
+ * $Revision: 2.52 $
+ * $Date: 2007-09-29 14:31:17 $
+ * $Author: karajorma $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.51  2006/10/06 09:33:33  taylor
+ * make sure Multi_create_bitmap is initialized properly since it might not be otherwise in standalone
+ *
  * Revision 2.50  2006/09/24 22:55:17  taylor
  * more standalone server fixes:
  *  - add some basic bmpman functionality to grstub, since it needs to do something at least
@@ -8304,9 +8307,6 @@ void multi_sync_init()
 	// reset all timestamp
 	multi_reset_timestamps();
 
-	extern int Player_multi_died_check;
-	Player_multi_died_check = -1;
-
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
 		multi_sync_common_init();
 	}
@@ -8532,9 +8532,6 @@ void multi_sync_common_close()
 	if(!bm_unload(Multi_sync_bitmap)){
 		nprintf(("General","WARNING : could not unload background bitmap %s\n",Multi_sync_bitmap_fname[gr_screen.res]));
 	}	
-
-	extern int Player_multi_died_check;
-	Player_multi_died_check = -1;
 	
 	// destroy the UI_WINDOW
 	Multi_sync_window.destroy();
