@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.326 $
- * $Date: 2007-09-29 15:27:52 $
+ * $Revision: 2.327 $
+ * $Date: 2007-09-29 21:47:51 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.326  2007/09/29 15:27:52  karajorma
+ * Upgrade the beam-x-all and turret-x-all SEXPs to accept more than one ship.
+ * Add the allow-treason SEXP
+ *
  * Revision 2.325  2007/09/27 06:55:38  turey
  * "no primary linking" ship flag and related SEXPs - prevent a ship from linking primaries.
  *
@@ -9114,7 +9118,7 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 		// this will be an invalid case soon
 		// Int3();
 		// choose wing leader to speak for wing (hence "1" at end of ship_get_random_ship_in_wing)
-		ship_index = ship_get_random_ship_in_wing( num, SHIP_GET_NO_PLAYERS, 1 );
+		ship_index = ship_get_random_ship_in_wing( num, SHIP_GET_UNSILENCED, 1 );
 		if ( ship_index == -1 ) {
 			if ( ipriority != MESSAGE_PRIORITY_HIGH )
 				return;
@@ -10458,6 +10462,7 @@ void sexp_deal_with_ship_flag(int node, int object_flag, int object_flag2, int s
 					Ships[ship_index].flags2 |= ship_flag2;
 				else
 					Ships[ship_index].flags2 &= ~ship_flag2;
+	int wingnum, shipnum, ship_index ;
 			}
 		}
 		// if it's not in-mission
@@ -10587,8 +10592,21 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 		}
 		else if (!stricmp(ship_name, "<Any Wingman>"))
 		{
-			/*It should be possible to handle Any Wingman but for now we'll ignore it*/
-			continue;
+			// Since trying to determine whose wingman in a stand alone multiplayer game opens a can of worms
+			// Any Wingman silences all ships in wings regardless of whose side they're on. 
+			for (wingnum = 0; wingnum < Num_wings; wingnum++ ) {
+				for ( shipnum = 0; shipnum < Wings[wingnum].current_count; shipnum++ ) {
+					ship_index = Wings[wingnum].ship_index[shipnum];
+					Assert( ship_index != -1 );
+
+					if (enable_messages) {
+						Ships[ship_index].flags2 &= ~SF2_NO_BUILTIN_MESSAGES;
+					}
+					else {
+						Ships[ship_index].flags2 |= SF2_NO_BUILTIN_MESSAGES;
+					}
+				}
+			}
 		}
 		// If it isn't command then assume that we're dealing with a ship 
 		else 
@@ -12498,7 +12516,7 @@ void sexp_set_weapon (int node, bool primary)
 		}
 	}
 }
-
+// Karajorma - Locks or unlocks the primary or secondary banks on the requested ship
 void sexp_deal_with_weapons_lock (int node, bool primary, bool lock)
 {
 	ship *shipp;
@@ -12508,8 +12526,6 @@ void sexp_deal_with_weapons_lock (int node, bool primary, bool lock)
 
 	do 
 	{
-		ship_index = ship_name_lookup(CTEXT(node));
-
 		// Check that a ship has been supplied
 		ship_index = ship_name_lookup(CTEXT(node));
 		if (ship_index < 0) 
@@ -13053,7 +13069,7 @@ void sexp_turret_lock_all(int node)
 			return;
 		}
 
-		// lcck all turrets
+		// lock all turrets
 		subsys = GET_FIRST(&Ships[sindex].subsys_list);
 		while(subsys != END_OF_LIST(&Ships[sindex].subsys_list)){
 			// just mark all turrets as locked
@@ -17076,7 +17092,7 @@ int query_operator_return_type(int op)
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
-		case OP_ALLOW_TREASON :
+		case OP_ALLOW_TREASON:
 		case OP_NAV_ADD_WAYPOINT:
 		case OP_NAV_ADD_SHIP:
 		case OP_NAV_DEL:
@@ -20286,14 +20302,16 @@ sexp_help_struct Sexp_help[] = {
 		"\tTurns the built in messages sent by command or pilots on\r\n"
 		"Takes 0 or more arguments...\r\n"
 		"If no arguments are supplied any ships not given individual silence orders will be able\r\n"
-		"to send buiilt in messages. Command will also be unsilenced\r\n"
+		"to send built in messages. Command will also be unsilenced\r\n"
+		"Using the Any Wingman option cancels radio silence for all ships in wings.\r\n"
 		"\tAll:\tName of ship to allow to talk." },
 		
 	// Karajorma
 	{ OP_DISABLE_BUILTIN_MESSAGES, "Enable builtin messages (Action operator)\r\n"
 		"\tTurns the built in messages sent by command or pilots off\r\n"
 		"Takes 0 or more arguments....\r\n"
-		"If no arguments are supplied all built in messages are disabled\r\n"
+		"If no arguments are supplied all built in messages are disabled.\r\n"
+		"Using the Any Wingman option silences for all ships in wings.\r\n"
 		"\tAll:\tName of ship to allow to talk." },
 
 	{ OP_SELF_DESTRUCT, "Self destruct (Action operator)\r\n"
