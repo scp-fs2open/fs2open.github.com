@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.59 $
- * $Date: 2007-09-29 15:21:33 $
+ * $Revision: 2.259.2.60 $
+ * $Date: 2007-09-29 21:51:30 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.59  2007/09/29 15:21:33  karajorma
+ * Upgrade the beam-x-all and turret-x-all SEXPs to accept more than one ship.
+ *
  * Revision 2.259.2.58  2007/09/04 00:08:51  Goober5000
  * fix the factoring on the shudder parameters (Mantis #1419)
  *
@@ -1772,6 +1775,7 @@ sexp_oper Operators[] = {
 	{ "not-kamikaze",					OP_NOT_KAMIKAZE,			1, INT_MAX }, //-Sesquipedalian
 	{ "player-use-ai",				OP_PLAYER_USE_AI,				0, 0 },			// Goober5000
 	{ "player-not-use-ai",			OP_PLAYER_NOT_USE_AI,			0, 0 },			// Goober5000
+	{ "allow-treason",				OP_ALLOW_TREASON,				1, 1 },			// Karajorma
 
 	{ "sabotage-subsystem",			OP_SABOTAGE_SUBSYSTEM,			3, 3,			},
 	{ "repair-subsystem",			OP_REPAIR_SUBSYSTEM,			3, 4,			},
@@ -8568,6 +8572,19 @@ void sexp_player_use_ai(int flag)
 	Player_use_ai = flag ? 1 : 0;
 }
 
+// Karajorma
+void sexp_allow_treason (int n) {
+	n = CDR(n);
+	if (n != -1) {
+		if ( is_sexp_true(n) ) {
+			The_mission.flags |= MISSION_FLAG_NO_TRAITOR;
+		} 
+		else {
+			The_mission.flags &= ~MISSION_FLAG_NO_TRAITOR;
+		}
+	}
+}
+
 // Goober5000
 void sexp_change_soundtrack(int n)
 {
@@ -8987,7 +9004,7 @@ void sexp_send_one_message( char *name, char *who_from, char *priority, int grou
 		// this will be an invalid case soon
 		// Int3();
 		// choose wing leader to speak for wing (hence "1" at end of ship_get_random_ship_in_wing)
-		ship_index = ship_get_random_ship_in_wing( num, SHIP_GET_NO_PLAYERS, 1 );
+		ship_index = ship_get_random_ship_in_wing( num, SHIP_GET_UNSILENCED, 1 );
 		if ( ship_index == -1 ) {
 			if ( ipriority != MESSAGE_PRIORITY_HIGH )
 				return;
@@ -10331,6 +10348,7 @@ void sexp_good_secondary_time(int n)
 void sexp_toggle_builtin_messages (int node, bool enable_messages)
 {
 	char *ship_name;
+	int wingnum, shipnum, ship_index ;
 
 	// If no arguments were supplied then turn off all messages then bail
 	if (node < 0)
@@ -10369,8 +10387,21 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 		}
 		else if (!stricmp(ship_name, "<Any Wingman>"))
 		{
-			/*It should be possible to handle Any Wingman but for now we'll ignore it*/
-			continue;
+			// Since trying to determine whose wingman in a stand alone multiplayer game opens a can of worms
+			// Any Wingman silences all ships in wings regardless of whose side they're on. 
+			for (wingnum = 0; wingnum < Num_wings; wingnum++ ) {
+				for ( shipnum = 0; shipnum < Wings[wingnum].current_count; shipnum++ ) {
+					ship_index = Wings[wingnum].ship_index[shipnum];
+					Assert( ship_index != -1 );
+
+					if (enable_messages) {
+						Ships[ship_index].flags2 &= ~SF2_NO_BUILTIN_MESSAGES;
+					}
+					else {
+						Ships[ship_index].flags2 |= SF2_NO_BUILTIN_MESSAGES;
+					}
+				}
+			}
 		}
 		// If it isn't command then assume that we're dealing with a ship 
 		else 
@@ -15536,6 +15567,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			//Karajorma
+			case OP_ALLOW_TREASON:
+				sexp_allow_treason(node);
+				sexp_val = SEXP_TRUE;
+				break; 
+
 			// Goober5000
 			case OP_EXPLOSION_EFFECT:
 				sexp_explosion_effect(node);
@@ -16781,6 +16818,7 @@ int query_operator_return_type(int op)
 		case OP_ROTATING_SUBSYS_SET_TURN_TIME:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
+		case OP_ALLOW_TREASON:
 		case OP_NAV_ADD_WAYPOINT:
 		case OP_NAV_ADD_SHIP:
 		case OP_NAV_DEL:
@@ -17417,6 +17455,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
 			return OPF_NONE;
+
+		case OP_ALLOW_TREASON:
+			return OPF_BOOL; 
 
 		case OP_EXPLOSION_EFFECT:
 			if (argnum <= 2)
@@ -19094,6 +19135,7 @@ int get_subcategory(int sexp_id)
 		case OP_NOT_KAMIKAZE:
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
+		case OP_ALLOW_TREASON: 
 			return CHANGE_SUBCATEGORY_AI_AND_IFF;
 			
 		case OP_SABOTAGE_SUBSYSTEM:
@@ -19960,14 +20002,16 @@ sexp_help_struct Sexp_help[] = {
 		"\tTurns the built in messages sent by command or pilots on\r\n"
 		"Takes 0 or more arguments...\r\n"
 		"If no arguments are supplied any ships not given individual silence orders will be able\r\n"
-		"to send buiilt in messages. Command will also be unsilenced\r\n"
+		"to send built in messages. Command will also be unsilenced\r\n"
+		"Using the Any Wingman option cancels radio silence for all ships in wings.\r\n"
 		"\tAll:\tName of ship to allow to talk." },
 		
 	// Karajorma
 	{ OP_DISABLE_BUILTIN_MESSAGES, "Enable builtin messages (Action operator)\r\n"
 		"\tTurns the built in messages sent by command or pilots off\r\n"
 		"Takes 0 or more arguments....\r\n"
-		"If no arguments are supplied all built in messages are disabled\r\n"
+		"If no arguments are supplied all built in messages are disabled.\r\n"
+		"Using the Any Wingman option silences for all ships in wings.\r\n"
 		"\tAll:\tName of ship to allow to talk." },
 
 	{ OP_SELF_DESTRUCT, "Self destruct (Action operator)\r\n"
@@ -21346,6 +21390,12 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_PLAYER_NOT_USE_AI, "player-not-use-ai\r\n"
 		"\tCauses the player's ship to not be controlled by the FreeSpace AI.  Takes 0 arguments.\r\n"
+	},
+
+	// Karajorma
+	{ OP_ALLOW_TREASON, "allow-treason\r\n"
+		"\tTurns the Allow Traitor switch on or off in mission. Takes 0 arguments.\r\n"
+		"\t1:\tTrue/False."
 	},
 
 	//WMC
