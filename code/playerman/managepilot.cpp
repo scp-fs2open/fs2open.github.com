@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.29 $
- * $Date: 2007-04-11 14:59:35 $
- * $Author: taylor $
+ * $Revision: 2.30 $
+ * $Date: 2007-09-29 00:24:51 $
+ * $Author: turey $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.29  2007/04/11 14:59:35  taylor
+ * get rid of stale NO_JOYSTICK define
+ *
  * Revision 2.28  2007/02/11 09:31:12  taylor
  * some CFILE cleanup and slight directory order reorg
  * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
@@ -1642,7 +1645,7 @@ void init_new_pilot(player *p, int reset)
 		Game_skill_level = game_get_default_skill_level();
 
 		mprintf(( "Setting detail level to %d because of new pilot\n", cur_speed ));
-		Use_mouse_to_fly = 0;
+		Use_mouse_to_fly = 1;
 		Mouse_sensitivity = 4;
 		Joy_sensitivity = 9;
 		Dead_zone_size = 10;
