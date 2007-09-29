@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.70 $
- * $Date: 2007-09-02 18:53:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.71 $
+ * $Date: 2007-09-29 14:31:17 $
+ * $Author: karajorma $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2007/09/02 18:53:22  Goober5000
+ * fix for #1455 plus a bit of cleanup
+ *
  * Revision 2.69  2007/04/24 13:13:04  karajorma
  * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
  *
@@ -5360,9 +5363,6 @@ void process_jump_into_mission_packet(ubyte *data, header *hinfo)
 			send_netplayer_update_packet();
 		}		
 	}
-
-	extern int Player_multi_died_check;
-	Player_multi_died_check = -1;
 
 	// recalc all object pairs now	
 	extern void obj_reset_all_collisions();
