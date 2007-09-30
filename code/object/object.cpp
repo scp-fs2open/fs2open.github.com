@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.63.2.9 $
- * $Date: 2007-07-28 21:31:05 $
+ * $Revision: 2.63.2.10 $
+ * $Date: 2007-09-30 22:28:25 $
  * $Author: Goober5000 $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.9  2007/07/28 21:31:05  Goober5000
+ * this should really be capitalized
+ *
  * Revision 2.63.2.8  2007/06/04 03:09:51  Backslash
  * Another Gliding fix for 3_6_9: Makes it so switching gliding back off doesn't make your ship instantly switch direction.
  *
@@ -737,7 +740,6 @@ int Num_objects=-1;
 int Highest_object_index=-1;
 int Highest_ever_object_index=0;
 int Object_next_signature = 1;	//0 is bogus, start at 1
-int Object_next_ship_signature = OBJECT_SIG_SHIP_START;
 int Object_inited = 0;
 int Show_waypoints = 0;
 
@@ -1056,7 +1058,6 @@ void obj_init()
 	}
 
 	Object_next_signature = 1;	//0 is invalid, others start at 1
-	Object_next_ship_signature = OBJECT_SIG_SHIP_START;
 	Num_objects = 0;			
 	Highest_object_index = 0;
 
@@ -1174,20 +1175,9 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	// in uninitialized fields.
 //	memset( obj, 0, sizeof(object) );
 
-	if(obj->type == OBJ_SHIP){
-		obj->signature				= Object_next_ship_signature++;
+	Assert(Object_next_signature > 0);	// 0 is bogus!
+	obj->signature = Object_next_signature++;
 
-		if (!Object_next_ship_signature){
-			Object_next_ship_signature = OBJECT_SIG_SHIP_START;		// 0 is bogus!
-		}
-	} else {
-		obj->signature				= Object_next_signature++;
-
-		if (!Object_next_signature){
-			Object_next_signature = 1;		// 0 is bogus!
-		}
-	}	
-	
 	obj->type 					= type;
 	obj->instance				= instance;
 	obj->parent					= parent_obj;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.21.2.3 $
- * $Date: 2007-07-28 21:31:05 $
+ * $Revision: 2.21.2.4 $
+ * $Date: 2007-09-30 22:28:26 $
  * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21.2.3  2007/07/28 21:31:05  Goober5000
+ * this should really be capitalized
+ *
  * Revision 2.21.2.2  2006/09/08 06:14:44  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -557,8 +560,6 @@ extern int Object_inited;
 extern int Show_waypoints;
 
 // The next signature for the next newly created object. Zero is bogus
-#define OBJECT_SIG_SHIP_START					300000				// ships start at this signature
-extern int Object_next_ship_signature;
 extern int Object_next_signature;		
 extern int Num_objects;
 
