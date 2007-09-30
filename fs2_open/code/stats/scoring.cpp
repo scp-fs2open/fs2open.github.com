@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.16.2.3 $
- * $Date: 2007-09-02 02:07:47 $
+ * $Revision: 2.16.2.4 $
+ * $Date: 2007-09-30 19:01:18 $
  * $Author: Goober5000 $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16.2.3  2007/09/02 02:07:47  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.16.2.2  2006/09/11 01:17:07  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -1122,7 +1125,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 		if(other_obj->parent < 0){
 			return;
 		}
-		if(other_obj->parent >= MAX_SHIPS){
+		if(other_obj->parent >= MAX_OBJECTS){
 			return;
 		}
 		if(Objects[other_obj->parent].type != OBJ_SHIP){
