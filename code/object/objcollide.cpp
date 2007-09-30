@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.17 $
- * $Date: 2007-07-28 21:31:11 $
+ * $Revision: 2.18 $
+ * $Date: 2007-09-30 22:37:08 $
  * $Author: Goober5000 $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17  2007/07/28 21:31:11  Goober5000
+ * this should really be capitalized
+ *
  * Revision 2.16  2007/07/24 13:04:10  Kazan
  * Resolve Mantis 1281
  *
@@ -617,7 +620,7 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 			}
 
 			// for nonplayer ships, only create collision pair if close enough
-			if ( !(Objects[B->parent].flags & OF_PLAYER_SHIP) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) )
+			if ( (B->parent >= 0) && !(Objects[B->parent].flags & OF_PLAYER_SHIP) && (vm_vec_dist(&B->pos, &A->pos) < (4.0f*A->radius + 200.0f)) )
 				return;
 		}
 	}
@@ -625,7 +628,8 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 	// don't check same team laser:ship collisions on small ships if not player
 	if (check_collision == collide_ship_weapon) {
 		// weapon is B
-		if ( !(Objects[B->parent].flags & OF_PLAYER_SHIP)
+		if ( (B->parent >= 0)
+			&& !(Objects[B->parent].flags & OF_PLAYER_SHIP)
 			&& (Ships[Objects[B->parent].instance].team == Ships[A->instance].team) 
 			&& (Ship_info[Ships[A->instance].ship_info_index].flags & SIF_SMALL_SHIP) 
 			&& (Weapon_info[Weapons[B->instance].weapon_info_index].subtype == WP_LASER) ) {
