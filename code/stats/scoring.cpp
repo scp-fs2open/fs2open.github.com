@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.20 $
- * $Date: 2007-09-02 02:10:29 $
+ * $Revision: 2.21 $
+ * $Date: 2007-09-30 19:01:17 $
  * $Author: Goober5000 $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2007/09/02 02:10:29  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.19  2006/12/28 00:59:53  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -1125,7 +1128,7 @@ void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
 		if(other_obj->parent < 0){
 			return;
 		}
-		if(other_obj->parent >= MAX_SHIPS){
+		if(other_obj->parent >= MAX_OBJECTS){
 			return;
 		}
 		if(Objects[other_obj->parent].type != OBJ_SHIP){
