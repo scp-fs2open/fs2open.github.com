@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.18.2.4 $
- * $Date: 2007-04-13 00:31:23 $
+ * $Revision: 2.18.2.5 $
+ * $Date: 2007-10-04 16:18:19 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18.2.4  2007/04/13 00:31:23  taylor
+ * some basic cleanup for the extension code
+ * fix the old bug that didn't report a missing extension name properly
+ * get rid of the message that says to use D3D, that's not normally going to be an option anyway
+ * add ARB_point_sprite support, mostly for fun since no code will actually use it until after 3.6.10
+ *
  * Revision 2.18.2.3  2007/02/11 09:35:11  taylor
  * add VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
@@ -281,7 +287,6 @@
 #define GL_FRAMEBUFFER_COMPLETE_EXT							0x8CD5
 #define GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT			0x8CD6
 #define GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT	0x8CD7
-#define GL_FRAMEBUFFER_INCOMPLETE_DUPLICATE_ATTACHMENT_EXT	0x8CD8
 #define GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT			0x8CD9
 #define GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT				0x8CDA
 #define GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT			0x8CDB
