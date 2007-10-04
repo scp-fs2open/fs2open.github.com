@@ -2,13 +2,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.26 $
- * $Date: 2007-03-22 20:14:16 $
+ * $Revision: 2.174.2.27 $
+ * $Date: 2007-10-04 16:18:18 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.26  2007/03/22 20:14:16  taylor
+ * various bits of bmpman cleanup
+ * be sure to clean all three possible buffers with OGL init
+ * fix a couple of bmpman loading bugs that messed up animations
+ * fix bmpman bug that didn't properly account for free'd texture ram count with unload_fast
+ *
  * Revision 2.174.2.25  2007/02/12 07:29:51  taylor
  * fix stupid bug (Mantis #1275)
  *
@@ -1169,7 +1175,6 @@ typedef int ( * PFNGLXSWAPINTERVALSGIPROC) (int interval);
 #if defined(_WIN32) && !defined(__GNUC__)
 #pragma comment (lib, "opengl32")
 #pragma comment (lib, "glu32")
-#pragma comment (lib, "glaux")
 #endif
 
 

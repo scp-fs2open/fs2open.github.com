@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.48.2.15 $
- * $Date: 2007-03-22 20:50:27 $
+ * $Revision: 1.48.2.16 $
+ * $Date: 2007-10-04 16:18:19 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.48.2.15  2007/03/22 20:50:27  taylor
+ * some generic code cleanup
+ *
  * Revision 1.48.2.14  2007/02/11 10:03:29  taylor
  * remove some dead code
  * general cleanup
@@ -1818,11 +1821,7 @@ int opengl_check_framebuffer()
 			case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT:
 				strcpy(err_txt, "Missing one or more image attachments!\n");
 				break;
-#ifndef __APPLE__ // for some reason, Apple doesn't include this define in their headers
-			case GL_FRAMEBUFFER_INCOMPLETE_DUPLICATE_ATTACHMENT_EXT:
-				strcpy(err_txt, "Image attached to more than one FBO!\n");
-				break;
-#endif
+
 			case GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT:
 				strcpy(err_txt, "Attached images do not have the same width and height!\n");
 				break;
