@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.20 $
- * $Date: 2007-09-02 02:07:40 $
- * $Author: Goober5000 $
+ * $Revision: 1.12.2.21 $
+ * $Date: 2007-10-12 18:57:16 $
+ * $Author: karajorma $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.20  2007/09/02 02:07:40  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 1.12.2.19  2007/07/28 21:31:05  Goober5000
  * this should really be capitalized
  *
@@ -870,8 +873,6 @@ bool fred_init()
 
 	Cmdline_nohtl = result != IDYES;
 	*/
-
-	Cmdline_nohtl = Cmdline_nohtl == 1;
 
 	/* - HTL is now on by default so the warning is redundant - Karajorma
 	if (Cmdline_nohtl)
