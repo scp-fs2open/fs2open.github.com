@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.328 $
- * $Date: 2007-10-04 16:26:43 $
- * $Author: taylor $
+ * $Revision: 2.329 $
+ * $Date: 2007-10-12 14:53:40 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.328  2007/10/04 16:26:43  taylor
+ * fix bugs in beam-*-all and turret-*-all that made them always trigger an Int3()
+ *
  * Revision 2.327  2007/09/29 21:47:51  karajorma
  * Fix x-builtin-messages so that the Any Wingman option works
  *
@@ -10557,6 +10560,7 @@ void sexp_good_secondary_time(int n)
 void sexp_toggle_builtin_messages (int node, bool enable_messages)
 {
 	char *ship_name;
+	int wingnum, shipnum, ship_index ;
 
 	// If no arguments were supplied then turn off all messages then bail
 	if (node < 0)
