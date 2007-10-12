@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.227 $
- * $Date: 2007-09-03 01:02:49 $
- * $Author: Goober5000 $
+ * $Revision: 2.228 $
+ * $Date: 2007-10-12 20:30:02 $
+ * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.227  2007/09/03 01:02:49  Goober5000
+ * fix for 1376
+ *
  * Revision 2.226  2007/09/02 18:53:22  Goober5000
  * fix for #1455 plus a bit of cleanup
  *
@@ -4279,7 +4282,7 @@ void process_loadout_objects()
 	}
 }
 
-// Karajorma - There are three places the game looks when attemptsing to determine the ship class for team loadout. 
+// Karajorma - There are three places the game looks when attempting to determine the ship class for team loadout. 
 // The class specified in the mission file and the two alt ship classes. This function checks all three
 // and reports false if it can't set the ship class from the values held in any of them. 
 bool attempt_assignation_from_alt_classes(p_object *pobj)
