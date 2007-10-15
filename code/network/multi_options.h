@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_options.h $
- * $Revision: 2.4 $
- * $Date: 2005-07-13 03:35:32 $
- * $Author: Goober5000 $
+ * $Revision: 2.4.2.1 $
+ * $Date: 2007-10-15 06:43:17 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/07/13 03:35:32  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.3  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -128,7 +132,9 @@ typedef struct multi_global_options {
 	int		datarate_cap;												// datarate cap for OBJ_UPDATE_HIGH
 
 	char		user_tracker_ip[MULTI_OPTIONS_STRING_LEN];		// ip address of user tracker
-	char		game_tracker_ip[MULTI_OPTIONS_STRING_LEN];		// ip address of game tracker	
+	char		game_tracker_ip[MULTI_OPTIONS_STRING_LEN];		// ip address of game tracker
+	char		tracker_port[STD_NAME_LEN];						// ip address to use for user/game tracker (used for FS2NetD only)
+	int			pxo;
 	char		pxo_ip[MULTI_OPTIONS_STRING_LEN];					// ip address of pxo chat server
 	char		pxo_rank_url[MULTI_OPTIONS_STRING_LEN];			// URL of pxo rankings page
 	char		pxo_create_url[MULTI_OPTIONS_STRING_LEN];			// URL of pxo create account page

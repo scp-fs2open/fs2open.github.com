@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_options.cpp $
- * $Revision: 2.10.2.1 $
- * $Date: 2007-04-06 12:55:57 $
- * $Author: karajorma $
+ * $Revision: 2.10.2.2 $
+ * $Date: 2007-10-15 06:43:17 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10.2.1  2007/04/06 12:55:57  karajorma
+ * Add the -cap_object_update command line to force multiplayer clients to a more server friendly object update setting.
+ *
  * Revision 2.10  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -238,6 +241,7 @@
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "cfile/cfile.h"
+#include "fs2netd/fs2netd_client.h"
 
 
 
@@ -282,7 +286,8 @@ void multi_options_read_config()
 	Multi_options_g.log = (Cmdline_multi_log) ? 1 : 0;
 	Multi_options_g.datarate_cap = OO_HIGH_RATE_DEFAULT;
 	strcpy(Multi_options_g.user_tracker_ip, "");	
-	strcpy(Multi_options_g.game_tracker_ip, "");	
+	strcpy(Multi_options_g.game_tracker_ip, "");
+	strcpy(Multi_options_g.tracker_port, "");
 	strcpy(Multi_options_g.pxo_ip, "");	
 	strcpy(Multi_options_g.pxo_rank_url, "");	
 	strcpy(Multi_options_g.pxo_create_url, "");	
@@ -296,185 +301,196 @@ void multi_options_read_config()
 	memset(Multi_options_g.std_passwd, 0, STD_PASSWD_LEN);
 	memset(Multi_options_g.std_pname, 0, STD_NAME_LEN);
 	Multi_options_g.std_framecap = 30;
-	
+
 	// read in the config file
 	in = cfopen(MULTI_CFG_FILE, "rt", CFILE_NORMAL, CF_TYPE_DATA);
 	
 	// if we failed to open the config file, user default settings
-	if(in == NULL){
+	if (in == NULL) {
 		nprintf(("Network","Failed to open network config file, using default settings\n"));		
-		return;
-	}
+	} else {
+		while ( !cfeof(in) ) {
+			// read in the game info
+			memset(str, 0, 512);
+			cfgets(str, 512, in);
 
-	while(!cfeof(in)){
-		// read in the game info
-		memset(str,0,512);
-		cfgets(str,512,in);
+			// parse the first line
+			tok = strtok(str, " \t");
 
-		// parse the first line
-		tok = strtok(str," \t");
+			// check the token
+			if (tok != NULL) {
+				drop_leading_white_space(tok);
+				drop_trailing_white_space(tok);			
+			} else {
+				continue;
+			}		
 
-		// check the token
-		if(tok != NULL){
-			drop_leading_white_space(tok);
-			drop_trailing_white_space(tok);			
-		} else {
-			continue;
-		}		
+			// all possible options
 
-#ifndef NO_STANDALONE
-		// all possible options
-		// only standalone cares about the following options
-		if(Is_standalone){
-			if(SETTING("+pxo")){			
+			// only standalone cares about the following options
+			if (Is_standalone) {
 				// setup PXO mode
-				NEXT_TOKEN();
-				if(tok != NULL){
-					// whee!
-				}
-			} else 
-			if(SETTING("+name")){
+				if ( SETTING("+pxo") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						// whee!
+					}
+				} else
 				// set the standalone server's permanent name
-				NEXT_TOKEN();
-				if(tok != NULL){
-					strncpy(Multi_options_g.std_pname, tok, STD_NAME_LEN);
-				}
-			} else 
-			if(SETTING("+no_voice")){
+				if	( SETTING("+name") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						strncpy(Multi_options_g.std_pname, tok, STD_NAME_LEN);
+					}
+				} else
 				// standalone won't allow voice transmission
-				Multi_options_g.std_voice = 0;
-			} else
-			if(SETTING("+max_players")){
+				if ( SETTING("+no_voice") ) {
+					Multi_options_g.std_voice = 0;
+				} else
 				// set the max # of players on the standalone
+				if ( SETTING("+max_players") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						if ( !((atoi(tok) < 1) || (atoi(tok) > MAX_PLAYERS)) ) {
+							Multi_options_g.std_max_players = atoi(tok);
+						}
+					}
+				} else
+				// ban a player
+				if ( SETTING("+ban") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						std_add_ban(tok);
+					}
+				} else
+				// set the standalone host password
+				if ( SETTING("+passwd") ) {
+					NEXT_TOKEN();
+					if (tok != NULL) {
+						strncpy(Multi_options_g.std_passwd, tok, STD_PASSWD_LEN);
+#ifdef _WIN32
+						// yuck
+						extern HWND Multi_std_host_passwd;
+						SetWindowText(Multi_std_host_passwd, Multi_options_g.std_passwd);
+#else
+						// TODO: get password ?
+						// argh, gonna have to figure out how to do this - mharris 07/07/2002
+#endif
+					}
+				} else
+				// set standalone to low updates
+				if ( SETTING("+low_update") ) {
+					Multi_options_g.std_datarate = OBJ_UPDATE_LOW;
+				} else
+				// set standalone to medium updates
+				if ( SETTING("+med_update") ) {
+					Multi_options_g.std_datarate = OBJ_UPDATE_MEDIUM;
+				} else
+				// set standalone to high updates
+				if ( SETTING("+high_update") ) {
+					Multi_options_g.std_datarate = OBJ_UPDATE_HIGH;
+				} else
+				// set standalone to high updates
+				if ( SETTING("+lan_update") ) {
+					Multi_options_g.std_datarate = OBJ_UPDATE_LAN;
+				} 
+			}
+
+			// ... common to all modes ...
+
+			// ip addr of user tracker
+			if ( SETTING("+user_server") ) {
 				NEXT_TOKEN();
-				if(tok != NULL){
-					if(!((atoi(tok) < 1) || (atoi(tok) > MAX_PLAYERS))){
-						Multi_options_g.std_max_players = atoi(tok);
+				if (tok != NULL) {
+					strcpy(Multi_options_g.user_tracker_ip, tok);
+				}
+			} else
+			// ip addr of game tracker
+			if ( SETTING("+game_server") ) {
+				NEXT_TOKEN();
+				if (tok != NULL) {
+					strcpy(Multi_options_g.game_tracker_ip, tok);
+				}
+			} else
+			// port to use for the game/user tracker (FS2NetD)
+			if ( SETTING("+server_port") ) {
+				NEXT_TOKEN();
+				if (tok != NULL) {
+					strncpy(Multi_options_g.tracker_port, tok, STD_NAME_LEN);
+				}
+			} else
+			// ip addr of pxo chat server
+			if ( SETTING("+chat_server") ) {
+				NEXT_TOKEN();
+				if (tok != NULL) {
+					strcpy(Multi_options_g.pxo_ip, tok);
+				}
+			} else
+			// url of pilot rankings page
+			if ( SETTING("+rank_url") ) {
+				NEXT_TOKEN();
+				if (tok != NULL) {
+					strcpy(Multi_options_g.pxo_rank_url, tok);
+				}
+			} else
+			// url of pxo account create page
+			if ( SETTING("+create_url") ) {
+				NEXT_TOKEN();
+				if (tok != NULL) {
+					strcpy(Multi_options_g.pxo_create_url, tok);
+				}
+			} else
+			// url of pxo account verify page
+			if ( SETTING("+verify_url") ) {
+				NEXT_TOKEN();
+				if (tok != NULL) {
+					strcpy(Multi_options_g.pxo_verify_url, tok);
+				}
+			} else
+			// url of pxo banners
+			if ( SETTING("+banner_url") ) {
+				NEXT_TOKEN();
+				if (tok != NULL) {
+					strcpy(Multi_options_g.pxo_banner_url, tok);
+				}
+			} else
+			// set the max datarate for high updates
+			if ( SETTING("+datarate") ) {
+				NEXT_TOKEN();
+				if (tok != NULL) {
+					if ( atoi(tok) >= 4000 ) {
+						Multi_options_g.datarate_cap = atoi(tok);
+					}
+				}			
+			} else
+			// get the proxy server
+			if ( SETTING("+http_proxy") ) {
+				NEXT_TOKEN();
+				if (tok != NULL) {
+					char *ip = strtok(tok, ":");
+
+					if (ip != NULL) {
+						strcpy(Multi_options_proxy, ip);
+					}
+
+					ip = strtok(NULL, "");
+
+					if (ip != NULL) {
+						Multi_options_proxy_port = (ushort)atoi(ip);
+					} else {
+						strcpy(Multi_options_proxy, "");
 					}
 				}
-			} else 
-			if(SETTING("+ban")){
-				// ban a player
-				NEXT_TOKEN();
-				if(tok != NULL){
-					std_add_ban(tok);
-				}
-			} else 
-			if(SETTING("+passwd")){
-				// set the standalone host password
-				NEXT_TOKEN();
-				if(tok != NULL){
-					strncpy(Multi_options_g.std_passwd, tok, STD_PASSWD_LEN);
+			}
+		}
 
-#ifdef _WIN32
-					// yuck
-					extern HWND Multi_std_host_passwd;
-					SetWindowText(Multi_std_host_passwd, Multi_options_g.std_passwd);
-#else
-					// TODO: get password ?
-					// argh, gonna have to figure out how to do this - mharris 07/07/2002
-#endif
-				}
-			} else 
-			if(SETTING("+low_update")){
-				// set standalone to low updates
-				Multi_options_g.std_datarate = OBJ_UPDATE_LOW;
-			} else
-			if(SETTING("+med_update")){
-				// set standalone to medium updates
-				Multi_options_g.std_datarate = OBJ_UPDATE_MEDIUM;
-			} else 
-			if(SETTING("+high_update")){
-				// set standalone to high updates
-				Multi_options_g.std_datarate = OBJ_UPDATE_HIGH;
-			} else 
-			if(SETTING("+lan_update")){
-				// set standalone to high updates
-				Multi_options_g.std_datarate = OBJ_UPDATE_LAN;
-			} 
-		}
-#endif
-
-		// common to all modes
-		if(SETTING("+user_server")){
-			// ip addr of user tracker
-			NEXT_TOKEN();
-			if(tok != NULL){
-				strcpy(Multi_options_g.user_tracker_ip, tok);
-			}
-		} else
-		if(SETTING("+game_server")){
-			// ip addr of game tracker
-			NEXT_TOKEN();
-			if(tok != NULL){
-				strcpy(Multi_options_g.game_tracker_ip, tok);
-			}
-		} else
-		if(SETTING("+chat_server")){
-			// ip addr of pxo chat server
-			NEXT_TOKEN();
-			if(tok != NULL){
-				strcpy(Multi_options_g.pxo_ip, tok);
-			}
-		} else
-		if(SETTING("+rank_url")){
-			// url of pilot rankings page
-			NEXT_TOKEN();
-			if(tok != NULL){
-				strcpy(Multi_options_g.pxo_rank_url, tok);
-			}
-		} else
-		if(SETTING("+create_url")){
-			// url of pxo account create page
-			NEXT_TOKEN();
-			if(tok != NULL){
-				strcpy(Multi_options_g.pxo_create_url, tok);
-			}
-		} else
-		if(SETTING("+verify_url")){
-			// url of pxo account verify page
-			NEXT_TOKEN();
-			if(tok != NULL){
-				strcpy(Multi_options_g.pxo_verify_url, tok);
-			}
-		} else
-		if(SETTING("+banner_url")){
-			// url of pxo account verify page
-			NEXT_TOKEN();
-			if(tok != NULL){
-				strcpy(Multi_options_g.pxo_banner_url, tok);
-			}
-		} else
-		if(SETTING("+datarate")){
-			// set the max datarate for high updates
-			NEXT_TOKEN();
-			if(tok != NULL){
-				if(atoi(tok) >= 4000){
-					Multi_options_g.datarate_cap = atoi(tok);
-				}
-			}			
-		}
-		if(SETTING("+http_proxy")){
-			// get the proxy server
-			NEXT_TOKEN();
-			if(tok != NULL){				
-				char *ip = strtok(tok, ":");
-				if(ip != NULL){
-					strcpy(Multi_options_proxy, ip);
-				}
-				ip = strtok(NULL, "");
-				if(ip != NULL){
-					Multi_options_proxy_port = (ushort)atoi(ip);
-				} else {
-					strcpy(Multi_options_proxy, "");
-				}
-			}
-		}
+		// close the config file
+		cfclose(in);
+		in = NULL;
 	}
 
-	// close the config file
-	cfclose(in);
-	in = NULL;
+	// if any basically required options weren't specified then 
+	fs2netd_options_config_init();
 }
 
 // set netgame defaults 
@@ -773,11 +789,9 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 			break;
 		}
 
-#ifndef NO_STANDALONE
 		// update standalone stuff
 		std_connect_set_gamename(Netgame.name);
 		std_multi_update_netgame_info_controls();
-#endif
 		break;
 
 	// get mission choice options
@@ -826,7 +840,6 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 
 			Netgame.campaign_mode = 1;
 
-#ifndef NO_STANDALONE
 			// put brackets around the campaign name
 			if(Game_mode & GM_STANDALONE_SERVER){
 				strcpy(str,"(");
@@ -834,7 +847,6 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 				strcat(str,")");
 				std_multi_set_standalone_mission_name(str);
 			}
-#endif
 		}
 		// non-campaign mode
 		else {
@@ -853,12 +865,10 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 
 			Netgame.campaign_mode = 0;
 
-#ifndef NO_STANDALONE
 			// set the mission name
 			if(Game_mode & GM_STANDALONE_SERVER){
 				std_multi_set_standalone_mission_name(Netgame.mission_name);			
 			}
-#endif
 		}
 		
 		send_netgame_update_packet();	   

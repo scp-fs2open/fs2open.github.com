@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiMsgs.cpp $
- * $Revision: 2.57.2.10 $
- * $Date: 2007-09-29 13:58:45 $
- * $Author: karajorma $
+ * $Revision: 2.57.2.11 $
+ * $Date: 2007-10-15 06:43:18 $
+ * $Author: taylor $
  *
  * C file that holds functions for the building and processing of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.57.2.10  2007/09/29 13:58:45  karajorma
+ * Fix the double respawn bug (Mantis 788) and hopefully the corresponding server Int3 (Mantis 1213)
+ *
  * Revision 2.57.2.9  2007/09/02 18:52:51  Goober5000
  * fix for #1455 plus a bit of cleanup
  *
@@ -636,14 +639,7 @@
 #include "network/multi_log.h"
 #include "object/objectdock.h"
 #include "cmeasure/cmeasure.h"
-#include "fs2open_pxo/Client.h"
 #include "parse/sexp.h"
-
-
-extern int PXO_SID; // FS2 Open PXO Session ID
-extern char PXO_Server[];
-extern int PXO_port;
-
 
 
 // #define _MULTI_SUPER_WACKY_COMPRESSION
@@ -2371,7 +2367,6 @@ void process_leave_game_packet(ubyte* data, header* hinfo)
 		*/
 	delete_player(player_num);	
 
-#ifndef NO_STANDALONE
 	// OSAPI GUI stuff (if standalone)
 	if (Game_mode & GM_STANDALONE_SERVER) {
       // returns true if we should reset the standalone
@@ -2384,7 +2379,6 @@ void process_leave_game_packet(ubyte* data, header* hinfo)
 		std_connect_set_host_connect_status();
 		std_connect_set_connect_count();
 	}
-#endif
 }
 
 //*********************************************************************************************************
@@ -2430,11 +2424,7 @@ void send_game_active_packet(net_addr* addr)
 	
 	// add the proper flags
 	flags = 0;
-#ifndef NO_STANDALONE
-	if((Netgame.mode == NG_MODE_PASSWORD) || ((Game_mode & GM_STANDALONE_SERVER) && (multi_num_players() == 0) && (std_is_host_passwd()))){
-#else
-	if(Netgame.mode == NG_MODE_PASSWORD){
-#endif
+	if ( (Netgame.mode == NG_MODE_PASSWORD) || ((Game_mode & GM_STANDALONE_SERVER) && (multi_num_players() == 0) && (std_is_host_passwd())) ) {
 		flags |= AG_FLAG_PASSWD;
 	}
 
@@ -2499,7 +2489,7 @@ void process_game_active_packet(ubyte* data, header* hinfo)
 	int offset;	
 	ubyte val;
 	active_game ag;
-	int modes_compatible;
+	int modes_compatible = 1;
 	
 	fill_net_addr(&ag.server_addr, hinfo->addr, hinfo->net_id, hinfo->port);
 
@@ -2519,18 +2509,14 @@ void process_game_active_packet(ubyte* data, header* hinfo)
 
 	PACKET_SET_SIZE();	
 
-	modes_compatible = 1;
-	/*
-	if((ag.flags & AG_FLAG_TRACKER) && !Multi_options_g.pxo){
+	if ( (ag.flags & AG_FLAG_TRACKER) && !Multi_options_g.pxo )
 		modes_compatible = 0;
-	}
-	if(!(ag.flags & AG_FLAG_TRACKER) && Multi_options_g.pxo){
+
+	if ( !(ag.flags & AG_FLAG_TRACKER) && Multi_options_g.pxo )
 		modes_compatible = 0;
-	}
-	*/
 
 	// if this is a compatible version, and our modes are compatible, register it
-	if( (ag.version == MULTI_FS_SERVER_VERSION) && modes_compatible ){
+	if ( (ag.version == MULTI_FS_SERVER_VERSION) && modes_compatible ) {
 		multi_update_active_games(&ag);
 	}
 }
@@ -4040,13 +4026,11 @@ void process_pong_packet(ubyte *data, header *hinfo)
 		// evaluate the ping
 		multi_ping_eval_pong(&Net_players[lookup].s_info.ping);
 			
-#ifndef NO_STANDALONE
 		// put in calls to any functions which may want to know about the ping times from 
 		// this guy
-		if(Game_mode & GM_STANDALONE_SERVER){
+		if (Game_mode & GM_STANDALONE_SERVER) {
 		   std_update_player_ping(p);	
 		}
-#endif
 
 		// mark his socket as still alive (extra precaution)
 		psnet_mark_received(Net_players[lookup].reliable_socket);

@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.77 $
- * $Date: 2007-09-04 00:08:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.336.2.78 $
+ * $Date: 2007-10-15 06:43:20 $
+ * $Author: taylor $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.77  2007/09/04 00:08:51  Goober5000
+ * fix the factoring on the shudder parameters (Mantis #1419)
+ *
  * Revision 2.336.2.76  2007/09/02 18:52:53  Goober5000
  * fix for #1455 plus a bit of cleanup
  *
@@ -2340,12 +2343,13 @@ ship_subsys ship_subsys_free_list;
 
 extern bool splodeing;
 
-extern bool Module_ship_weapons_loaded;
 extern float splode_level;
 
 extern int splodeingtexture;
 
 extern int Cmdline_nohtl;
+
+extern void fs2netd_add_table_validation(char *tblname);
 
 //#define MIN_COLLISION_MOVE_DIST		5.0
 //#define COLLISION_VEL_CONST			0.1
@@ -4868,6 +4872,9 @@ void parse_shiptype_tbl(char *filename)
 		required_string("#End");
 	}
 
+	// add tbl/tbm to multiplayer validation list
+	fs2netd_add_table_validation(filename);
+
 	// close localization
 	lcl_ext_close();
 }
@@ -5004,6 +5011,8 @@ void parse_shiptbl(char *filename)
 		}
 	}
 
+	// add tbl/tbm to multiplayer validation list
+	fs2netd_add_table_validation(filename);
 
 	// Read in a list of ship_info indicies that are an ordering of the player ship precedence.
 	// This list is used to select an alternate ship when a particular ship is not available
@@ -5041,8 +5050,6 @@ void ship_init()
 {
 	if ( !ships_inited )
 	{
-		int num_files;
-
 		//Parse main TBL first
 		if (cf_exists_full("objecttypes.tbl", CF_TYPE_TABLES))
 			parse_shiptype_tbl("objecttypes.tbl");
@@ -5050,11 +5057,7 @@ void ship_init()
 			parse_shiptype_tbl(NULL);
 
 		//Then other ones
-		num_files = parse_modular_table(NOX("*-obt.tbm"), parse_shiptype_tbl);
-
-		if ( num_files > 0 ) {
-			Module_ship_weapons_loaded = true;
-		}
+		parse_modular_table(NOX("*-obt.tbm"), parse_shiptype_tbl);
 
 		// DO ALL THE STUFF WE NEED TO DO AFTER LOADING Ship_types
 		ship_type_info *stp;
@@ -5091,11 +5094,7 @@ void ship_init()
 			parse_shiptbl("ships.tbl");
 
 			//Then other ones
-			num_files = parse_modular_table(NOX("*-shp.tbm"), parse_shiptbl);
-
-			if ( num_files > 0 ) {
-				Module_ship_weapons_loaded = true;
-			}
+			parse_modular_table(NOX("*-shp.tbm"), parse_shiptbl);
 
 			ships_inited = 1;
 
@@ -16162,6 +16161,9 @@ void armor_parse_table(char *filename)
 
 		required_string("#End");
 	}
+
+	// add tbl/tbm to multiplayer validation list
+	fs2netd_add_table_validation(filename);
 
 	// close localization
 	lcl_ext_close();

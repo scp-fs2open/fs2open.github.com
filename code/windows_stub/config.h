@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.17.2.5 $
- * $Date: 2007-02-12 00:23:40 $
+ * $Revision: 2.17.2.6 $
+ * $Date: 2007-10-15 06:43:23 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17.2.5  2007/02/12 00:23:40  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
  * Revision 2.17.2.4  2006/12/28 22:47:16  Goober5000
  * fix spelling... *twitch*
  *
@@ -226,6 +229,7 @@ typedef struct _LARGE_INTEGER {
 #define WSAECONNABORTED ECONNABORTED
 #define WSAESHUTDOWN    ESHUTDOWN
 #define SOCKET_ERROR	(-1)
+#define ioctlsocket(x, y, z)	ioctl(x, y, z)
 
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET ((SOCKET) -1)

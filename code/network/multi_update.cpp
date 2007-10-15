@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_update.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-04-20 06:32:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.10.2.1 $
+ * $Date: 2007-10-15 06:43:18 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/04/20 06:32:15  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.9  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -273,6 +276,12 @@ int multi_update_gobaby()
 	int ret_code;
 	int my_code = MULTI_UPDATE_MAIN_MENU;
 
+
+	// we just assume that everything is up to date
+	return MULTI_UPDATE_CONTINUE;
+
+
+/*
 	// maybe skip
 	if(os_config_read_uint(NULL, "SkipVerify", 0)){
 		return MULTI_UPDATE_CONTINUE;
@@ -346,5 +355,6 @@ int multi_update_gobaby()
 	// close down
 	multi_update_http_close();
 	
-	return my_code;		
+	return my_code;
+*/
 }

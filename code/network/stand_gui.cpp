@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.cpp $
- * $Revision: 2.19.2.3 $
- * $Date: 2006-11-15 00:36:07 $
+ * $Revision: 2.19.2.4 $
+ * $Date: 2007-10-15 06:43:19 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19.2.3  2006/11/15 00:36:07  taylor
+ * various bits of little cleanup
+ * get rid of some more compiler warnings
+ *
  * Revision 2.19.2.2  2006/10/27 06:44:35  taylor
  * grrr ... fix dos EOL chars
  *
@@ -422,7 +426,6 @@
 #include "globalincs/version.h"
 #include "ship/ship.h"
 #include "cfile/cfile.h"
-#include "fs2open_pxo/Client.h"
 
 
 HANDLE Standalone_thread;

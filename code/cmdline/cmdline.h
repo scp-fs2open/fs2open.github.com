@@ -11,11 +11,16 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.89.2.7 $
- * $Date: 2007-04-11 18:21:22 $
+ * $Revision: 2.89.2.8 $
+ * $Date: 2007-10-15 06:43:08 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89.2.7  2007/04/11 18:21:22  taylor
+ * cleanup of chcksum stuff (works properly on 64-bit systems now)
+ * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
+ * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
+ *
  * Revision 2.89.2.6  2007/04/06 12:55:37  karajorma
  * Add the -cap_object_update command line to force multiplayer clients to a more server friendly object update setting.
  *
@@ -686,8 +691,8 @@ extern int Cmdline_wcsaga;
 extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)
 extern int Cmdline_ingamejoin;
 extern int Cmdline_mpnoreturn;
-extern int Cmdline_SpewMission_CRCs;
-extern int Cmdline_SpewTable_CRCs;
+extern char *Cmdline_spew_mission_crcs;
+extern char *Cmdline_spew_table_crcs;
 extern int Cmdline_objupd;
 
 // Troubleshooting

@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.9.2.4 $
- * $Date: 2007-09-02 02:07:42 $
- * $Author: Goober5000 $
+ * $Revision: 1.9.2.5 $
+ * $Date: 2007-10-15 06:43:13 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9.2.4  2007/09/02 02:07:42  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 1.9.2.3  2007/02/08 07:39:34  Goober5000
  * fix two bugs:
  * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
@@ -397,6 +400,10 @@ void iff_init()
 			}
 		}
 	}
+
+	// add tbl/tbm to multiplayer validation list
+	extern void fs2netd_add_table_validation(char *tblname);
+	fs2netd_add_table_validation("iff_defs.tbl");
 }
 
 // find the iff name

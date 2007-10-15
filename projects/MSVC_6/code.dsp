@@ -2044,7 +2044,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=\src\cvs\fs2_open_3_6_9.0\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2063,7 +2063,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=..\..\code\sound
+InputDir=\src\cvs\fs2_open_3_6_9.0\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2465,11 +2465,11 @@ SOURCE=..\..\code\ExceptionHandler\ExceptionHandler.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\network\fs2ox.cpp
+SOURCE=..\..\code\network\chat_api.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\network\fs2ox.h
+SOURCE=..\..\code\network\chat_api.h
 # End Source File
 # Begin Source File
 
@@ -2598,6 +2598,14 @@ SOURCE=..\..\code\Network\multi_pmsg.cpp
 # Begin Source File
 
 SOURCE=..\..\code\Network\multi_pmsg.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\network\multi_pxo.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\network\multi_pxo.h
 # End Source File
 # Begin Source File
 
@@ -2748,42 +2756,6 @@ SOURCE=..\..\code\Cmdline\cmdline.cpp
 SOURCE=..\..\code\Cmdline\cmdline.h
 # End Source File
 # End Group
-# Begin Group "fs2open_pxo"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\Client.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\Client.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\protocol.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\TCP_Client.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\TCP_Socket.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\TCP_Socket.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\udpsocket.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\udpsocket.h
-# End Source File
-# End Group
 # Begin Group "Species_Defs"
 
 # PROP Default_Filter ""
@@ -2794,18 +2766,6 @@ SOURCE=..\..\code\species_defs\species_defs.cpp
 # Begin Source File
 
 SOURCE=..\..\code\species_defs\species_defs.h
-# End Source File
-# End Group
-# Begin Group "irc"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\irc\irc.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\irc\irc.h
 # End Source File
 # End Group
 # Begin Group "jpgutils"
@@ -2842,6 +2802,38 @@ SOURCE=..\..\code\iff_defs\iff_defs.cpp
 # Begin Source File
 
 SOURCE=..\..\code\iff_defs\iff_defs.h
+# End Source File
+# End Group
+# Begin Group "fs2netd"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\fs2netd_client.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\fs2netd_client.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\protocol.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_client.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_client.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_socket.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_socket.h
 # End Source File
 # End Group
 # End Target

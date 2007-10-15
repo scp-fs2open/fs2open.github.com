@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.47 $
- * $Date: 2007-09-29 13:58:39 $
- * $Author: karajorma $
+ * $Revision: 2.243.2.48 $
+ * $Date: 2007-10-15 06:43:09 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.47  2007/09/29 13:58:39  karajorma
+ * Fix the double respawn bug (Mantis 788) and hopefully the corresponding server Int3 (Mantis 1213)
+ *
  * Revision 2.243.2.46  2007/09/04 00:08:50  Goober5000
  * fix the factoring on the shudder parameters (Mantis #1419)
  *
@@ -1788,14 +1791,13 @@
 #include "missionui/redalert.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
-extern int Om_tracker_flag; // needed for FS2OpenPXO config
-#include "network/fs2ox.h"
 #include "network/multi.h"
 #include "network/multi_dogfight.h"
 #include "network/multi_endgame.h"
 #include "network/multi_ingame.h"
 #include "network/multi_log.h"
 #include "network/multi_pause.h"
+#include "network/multi_pxo.h"
 #include "network/multi_rate.h"
 #include "network/multi_respawn.h"
 #include "network/multi_voice.h"
@@ -1841,8 +1843,12 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 #include "weapon/muzzleflash.h"
 #include "weapon/shockwave.h"
 #include "weapon/weapon.h"
+#include "fs2netd/fs2netd_client.h"
 
 #include "globalincs/pstypes.h"
+
+extern int Om_tracker_flag; // needed for FS2OpenPXO config
+
 
 
 #ifdef NDEBUG
@@ -4372,7 +4378,6 @@ void game_show_eye_pos(vec3d *eye_pos, matrix* eye_orient)
 	gr_printf(20, 100 - font_height, "Xr:%f Yr:%f Zr:%f", rot_angles.p, rot_angles.b, rot_angles.h);
 }
 
-#if !defined(NO_STANDALONE)
 void game_show_standalone_framerate()
 {
 	float frame_rate=30.0f;
@@ -4399,7 +4404,6 @@ void game_show_standalone_framerate()
 	std_set_standalone_fps(frame_rate);
 	Framecount++;
 }
-#endif
 
 // function to show the time remaining in a mission.  Used only when the end-mission sexpression is used
 void game_show_time_left()
@@ -6439,10 +6443,7 @@ void game_frame(int paused)
 			game_maybe_dump_frame();			// used to dump pcx files for building trailers
 #endif		
 		} else {
-
-#if !defined(NO_STANDALONE)
 			game_show_standalone_framerate();
-#endif
 		}
 	}
 
@@ -6644,7 +6645,6 @@ void game_set_frametime(int state)
 		}
 	}
 
-#if !defined(NO_STANDALONE)
 	if((Game_mode & GM_STANDALONE_SERVER) && 
 		(f2fl(Frametime) < ((float)1.0/(float)Multi_options_g.std_framecap))){
 
@@ -6655,7 +6655,6 @@ void game_set_frametime(int state)
 
 		Frametime = thistime - Last_time;
    }
-#endif
 
 	// If framerate is too low, cap it.
 	if (Frametime > MAX_FRAMETIME)	{
@@ -6721,11 +6720,9 @@ void game_do_frame()
 //	if (Player_ship->flags & SF_DYING)
 //		flFrametime /= 15.0;
 
-#if !defined(NO_STANDALONE)
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_multi_set_standalone_missiontime(f2fl(Missiontime));
 	}
-#endif
 
 	if ( game_single_step && (last_single_step == game_single_step) ) {
 		os_set_title( NOX("SINGLE STEP MODE (Pause exits, any other key steps)") );
@@ -7390,8 +7387,12 @@ void game_process_event( int current_state, int event )
 			break;
 		
 	// multiplayer stuff follow these comments
-		case GS_EVENT_NET_CHAT:
-			gameseq_set_state( GS_STATE_NET_CHAT );
+		case GS_EVENT_PXO:
+			gameseq_set_state( GS_STATE_PXO );
+			break;
+
+		case GS_EVENT_PXO_HELP:
+			gameseq_set_state( GS_STATE_PXO_HELP );
 			break;
 
 		case GS_EVENT_MULTI_JOIN_GAME:
@@ -7799,8 +7800,14 @@ void game_leave_state( int old_state, int new_state )
 			hud_config_close();
 			break;
 
-		case GS_STATE_NET_CHAT:
-			fs2ox_close();
+		case GS_STATE_PXO:
+			if (new_state != GS_STATE_PXO_HELP) {
+				multi_pxo_close();
+			}
+			break;
+
+		case GS_STATE_PXO_HELP:
+			multi_pxo_help_close();
 			break;
 
 		// join/start a game
@@ -7911,7 +7918,6 @@ void game_leave_state( int old_state, int new_state )
 			cutscenes_screen_close();
 			break;
 
-#if !defined(NO_STANDALONE)
 		case GS_STATE_MULTI_STD_WAIT:
 			multi_standalone_wait_close();
 	  		break;
@@ -7926,7 +7932,6 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_STANDALONE_POSTGAME:
 			multi_standalone_postgame_close();
 			break;
-#endif
 
 		case GS_STATE_MULTI_PAUSED:
 			multi_pause_close(end_mission);
@@ -8258,8 +8263,14 @@ void mouse_force_pos(int x, int y);
 			hud_config_init();
 			break;
 
-		case GS_STATE_NET_CHAT:
-			fs2ox_init();
+		case GS_STATE_PXO:
+			if (old_state != GS_STATE_PXO_HELP) {
+				multi_pxo_init( 0 );
+			}
+			break;
+
+		case GS_STATE_PXO_HELP:
+			multi_pxo_help_init();
 			break;
 
 		case GS_STATE_MULTI_JOIN_GAME:
@@ -8389,7 +8400,6 @@ void mouse_force_pos(int x, int y);
 			cutscenes_screen_init();
 			break;
 
-#if !defined(NO_STANDALONE)
 		case GS_STATE_MULTI_STD_WAIT:
 			multi_standalone_wait_init();
 			break;
@@ -8405,12 +8415,11 @@ void mouse_force_pos(int x, int y);
 		case GS_STATE_STANDALONE_POSTGAME:
 			multi_standalone_postgame_init();
 			break;
-#endif  // ifndef NO_STANDALONE
 
 		case GS_STATE_MULTI_PAUSED:
 			multi_pause_init();
 			break;
-		
+
 		case GS_STATE_INGAME_PRE_JOIN:
 			multi_ingame_select_init();
 			break;
@@ -8602,11 +8611,15 @@ void game_do_state(int state)
 			hud_config_do_frame(flFrametime);
 			break;
 
-		case GS_STATE_NET_CHAT:
-			game_set_frametime(GS_STATE_NET_CHAT);
-			fs2ox_do_frame();
+		case GS_STATE_PXO:
+			game_set_frametime(GS_STATE_PXO);
+			multi_pxo_do();
 			break;
 
+		case GS_STATE_PXO_HELP:
+			game_set_frametime(GS_STATE_PXO_HELP);
+			multi_pxo_help_do();
+			break;
 
 		case GS_STATE_MULTI_JOIN_GAME:
 			game_set_frametime(GS_STATE_MULTI_JOIN_GAME);
@@ -8686,7 +8699,6 @@ void game_do_state(int state)
 			cutscenes_screen_do_frame();
 			break;
 
-#if !defined(NO_STANDALONE)
 		case GS_STATE_MULTI_STD_WAIT:
 			game_set_frametime(GS_STATE_STANDALONE_MAIN);
 			multi_standalone_wait_do();
@@ -8696,7 +8708,6 @@ void game_do_state(int state)
 			game_set_frametime(GS_STATE_STANDALONE_MAIN);
 			standalone_main_do();
 			break;	
-#endif  // ifndef NO_STANDALONE
 
 		case GS_STATE_MULTI_PAUSED:
 			game_set_frametime(GS_STATE_MULTI_PAUSED);
@@ -8720,12 +8731,10 @@ void game_do_state(int state)
 	#endif
 			break;
 
-#if !defined(NO_STANDALONE)
 		case GS_STATE_STANDALONE_POSTGAME:
 			game_set_frametime(GS_STATE_STANDALONE_POSTGAME);
 			multi_standalone_postgame_do();
 			break;
-#endif  // ifndef NO_STANDALONE
 
 		case GS_STATE_INITIAL_PLAYER_SELECT:
 			game_set_frametime(GS_STATE_INITIAL_PLAYER_SELECT);
@@ -9051,17 +9060,20 @@ int game_main(char *cmdline)
 
 	game_stop_time();
 
-	if (Cmdline_SpewMission_CRCs) // -missioncrcs
-	{
-		multi_spew_pxo_checksums(1024, "FS2MissionsCRCs.txt");
+	if (Cmdline_spew_mission_crcs) {
+		multi_spew_pxo_checksums(1024, "mission_crcs.txt");
+
+		if (Cmdline_spew_table_crcs) {
+			multi_spew_table_checksums(50, "table_crcs.txt");
+		}
+
 		game_shutdown();
 		return 0;
 	}
 
 
-	if (Cmdline_SpewTable_CRCs)
-	{
-		multi_spew_table_checksums(50, "FS2TablesCRCs.txt");
+	if (Cmdline_spew_table_crcs) {
+		multi_spew_table_checksums(50, "table_crcs.txt");
 		game_shutdown();
 		return 0;
 	}
@@ -9351,6 +9363,7 @@ void game_shutdown(void)
 #ifdef MULTI_USE_LAG
 	multi_lag_close();
 #endif
+	fs2netd_close();
 	obj_pairs_close();		// free memory from object collision pairs
 	stars_close();			// clean out anything used by stars code
 
@@ -11037,42 +11050,39 @@ int Game_ships_tbl_checksums[NUM_SHIPS_TBL_CHECKSUMS] = {
 
 void verify_ships_tbl()
 {	
-#if defined(NDEBUG)
+	/*
+#ifdef NDEBUG
 	Game_ships_tbl_valid = 1;
 #else
-	// this is still needed for LAN play but skip it if we are using FS2NetD
-	if (!Om_tracker_flag) {
-		Game_ships_tbl_valid = 1;
-	} else {
-		uint file_checksum;		
-		int idx;
+	*/
+	uint file_checksum;		
+	int idx;
 
-		// detect if the packfile exists
-		CFILE *detect = cfopen("ships.tbl", "rb");
-		Game_ships_tbl_valid = 0;	 
+	// detect if the packfile exists
+	CFILE *detect = cfopen("ships.tbl", "rb");
+	Game_ships_tbl_valid = 0;	 
 	
-		// not mission-disk
-		if(!detect){
-			Game_ships_tbl_valid = 0;
+	// not mission-disk
+	if(!detect){
+		Game_ships_tbl_valid = 0;
+		return;
+	}	
+
+	// get the long checksum of the file
+	file_checksum = 0;
+	cfseek(detect, 0, SEEK_SET);	
+	cf_chksum_long(detect, &file_checksum);
+	cfclose(detect);
+	detect = NULL;	
+
+	// now compare the checksum/filesize against known #'s
+	for(idx=0; idx<NUM_SHIPS_TBL_CHECKSUMS; idx++){
+		if(Game_ships_tbl_checksums[idx] == (int)file_checksum){
+			Game_ships_tbl_valid = 1;
 			return;
-		}	
-
-		// get the long checksum of the file
-		file_checksum = 0;
-		cfseek(detect, 0, SEEK_SET);	
-		cf_chksum_long(detect, &file_checksum);
-		cfclose(detect);
-		detect = NULL;	
-
-		// now compare the checksum/filesize against known #'s
-		for(idx=0; idx<NUM_SHIPS_TBL_CHECKSUMS; idx++){
-			if(Game_ships_tbl_checksums[idx] == (int)file_checksum){
-				Game_ships_tbl_valid = 1;
-				return;
-			}
 		}
 	}
-#endif
+// #endif
 }
 
 DCF(shipspew, "display the checksum for the current ships.tbl")
@@ -11109,39 +11119,39 @@ int Game_weapons_tbl_checksums[NUM_WEAPONS_TBL_CHECKSUMS] = {
 
 void verify_weapons_tbl()
 {
-	// detect if the packfile exists
-	CFILE *detect = cfopen("weapons.tbl", "rb");
-
-	// not mission-disk
-	if (!detect) {
-		// TODO: some error message
-		Weapon_tbl_checksum = 0;
-		return;
-	}
-
-	cfseek(detect, 0, SEEK_SET);
-	cf_chksum_long(detect, &Weapon_tbl_checksum);
-	cfclose(detect);
-	detect = NULL;
-
-#if defined(NDEBUG)
+	/*
+#ifdef NDEBUG
 	Game_weapons_tbl_valid = 1;
 #else
-	// this is still needed for LAN play but skip it if we are using FS2NetD
-	if (!Om_tracker_flag) { //!Om_tracker_flag means we're not playing on PXO
-		Game_weapons_tbl_valid = 1;
-	} else {
-		int idx;
+	*/
+	uint file_checksum;
+	int idx;
 
-		// now compare the checksum/filesize against known #'s
-		for(idx=0; idx<NUM_WEAPONS_TBL_CHECKSUMS; idx++){
-			if(Game_weapons_tbl_checksums[idx] == (int)Weapon_tbl_checksum){
-				Game_weapons_tbl_valid = 1;
-				return;
-			}
+	// detect if the packfile exists
+	CFILE *detect = cfopen("weapons.tbl", "rb");
+	Game_weapons_tbl_valid = 0;	 
+	
+	// not mission-disk
+	if(!detect){
+		Game_weapons_tbl_valid = 0;
+		return;
+	}	
+
+	// get the long checksum of the file
+	file_checksum = 0;
+	cfseek(detect, 0, SEEK_SET);	
+	cf_chksum_long(detect, &file_checksum);
+	cfclose(detect);
+	detect = NULL;	
+
+	// now compare the checksum/filesize against known #'s
+	for(idx=0; idx<NUM_WEAPONS_TBL_CHECKSUMS; idx++){
+		if(Game_weapons_tbl_checksums[idx] == (int)file_checksum){
+			Game_weapons_tbl_valid = 1;
+			return;
 		}
 	}
-#endif
+// #endif
 }
 
 DCF(wepspew, "display the checksum for the current weapons.tbl")
@@ -11158,57 +11168,34 @@ DCF(wepspew, "display the checksum for the current weapons.tbl")
 }
 
 // if the game is running using hacked data
-void multi_update_valid_tables(); // in multiutil.obj
-extern bool Modular_tables_loaded;
-extern bool Module_ship_weapons_loaded;
+static bool Hacked_data_check_ready = false;
+static bool Hacked_data = false;
 
 int game_hacked_data()
 {
-	int retval = 0;
+	int rc = 0;
 
-	//omfg modular tables
-	if(Module_ship_weapons_loaded)
-	{
+	if (Hacked_data) {
 		return 1;
 	}
 
+
+	if ( Om_tracker_flag && !(Hacked_data_check_ready) ) {
+		// this may fail the first time or two
+		if ( (rc = fs2netd_update_valid_tables()) != -1 ) {
+			Hacked_data = (bool)rc;
+			Hacked_data_check_ready = true;
+		}
+	}
+
 	// LAN game, only check if weapon and ship are valid since we can't or don't
-	// won't to validate against PXO server
-	if (!Om_tracker_flag) {
-		if (!Game_weapons_tbl_valid || !Game_ships_tbl_valid)
-			retval = 1;
-		
-		return retval;
+	// want to validate against PXO server
+	if ( !Om_tracker_flag && !(Game_weapons_tbl_valid && Game_ships_tbl_valid) ) {
+		Hacked_data = true;
 	}
 
-	if (!cf_exists("tvalid.cfg", CF_TYPE_DATA))
-	{
-		// create the tvalid.cfg
-		multi_update_valid_tables();
-	}
 
-	CFILE *tvalid_cfg = cfopen("tvalid.cfg", "rt", CFILE_NORMAL, CF_TYPE_DATA);
-
-	// if it's null then multi_update_valid_tables() didn't do it's job correctly
-	if (tvalid_cfg == NULL) {
-		ml_printf("Can't open tvalid.cfg for crc verification, assuming HACKED!\n");
-		return 1; // assume hacked
-	}
-
-	char *buffer = new char[cfilelength(tvalid_cfg)];
-	cfread(buffer, 1, cfilelength(tvalid_cfg), tvalid_cfg);	
-	
-	if (strstr(buffer, "invalid")) // got hacked data
-		retval = 1;
-
-	if (buffer != NULL)
-		delete[] buffer;
-
-	if (tvalid_cfg != NULL)
-		cfclose(tvalid_cfg);
-
-	// not hacked
-	return retval;
+	return (int)Hacked_data;
 }
 
 

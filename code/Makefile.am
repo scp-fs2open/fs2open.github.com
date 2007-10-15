@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.31.2.8 2006-12-26 05:11:30 taylor Exp $
+## $Id: Makefile.am,v 1.31.2.9 2007-10-15 06:43:08 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -268,14 +268,13 @@ FS2_SOURCES =	\
 	fireball/fireballs.cpp	\
 	fireball/fireballs.h	\
 	fireball/warpineffect.cpp	\
-	fs2open_pxo/Client.cpp	\
-	fs2open_pxo/Client.h	\
-	fs2open_pxo/TCP_Client.cpp	\
-	fs2open_pxo/TCP_Socket.cpp	\
-	fs2open_pxo/TCP_Socket.h	\
-	fs2open_pxo/protocol.h	\
-	fs2open_pxo/udpsocket.cpp	\
-	fs2open_pxo/udpsocket.h	\
+	fs2netd/fs2netd_client.cpp	\
+	fs2netd/fs2netd_client.h	\
+	fs2netd/tcp_client.cpp	\
+	fs2netd/tcp_client.h	\
+	fs2netd/tcp_socket.cpp	\
+	fs2netd/tcp_socket.h	\
+	fs2netd/protocol.h	\
 	gamehelp/contexthelp.cpp	\
 	gamehelp/contexthelp.h	\
 	gamehelp/gameplayhelp.cpp	\
@@ -358,6 +357,12 @@ FS2_SOURCES =	\
 	hud/hudwingmanstatus.h	\
 	iff_defs/iff_defs.cpp	\
 	iff_defs/iff_defs.h	\
+	inetfile/cftp.cpp	\
+	inetfile/cftp.h	\
+	inetfile/chttpget.cpp	\
+	inetfile/chttpget.h	\
+	inetfile/inetgetfile.cpp	\
+	inetfile/inetgetfile.h	\
 	io/key.cpp	\
 	io/key.h	\
 	io/keycontrol.cpp	\
@@ -366,8 +371,6 @@ FS2_SOURCES =	\
 	io/mouse.h	\
 	io/timer.cpp	\
 	io/timer.h	\
-	irc/irc.cpp	\
-	irc/irc.h	\
 	jpgutils/jpgutils.cpp	\
 	jpgutils/jpgutils.h	\
 	jumpnode/jumpnode.cpp	\
@@ -477,8 +480,8 @@ FS2_SOURCES =	\
 	nebula/neb.h	\
 	nebula/neblightning.cpp	\
 	nebula/neblightning.h	\
-	network/fs2ox.cpp	\
-	network/fs2ox.h	\
+	network/chat_api.cpp	\
+	network/chat_api.h	\
 	network/multi.cpp	\
 	network/multi.h	\
 	network/multilag.cpp	\
@@ -520,6 +523,8 @@ FS2_SOURCES =	\
 	network/multi_ping.h	\
 	network/multi_pmsg.cpp	\
 	network/multi_pmsg.h	\
+	network/multi_pxo.cpp	\
+	network/multi_pxo.h	\
 	network/multi_rate.cpp	\
 	network/multi_rate.h	\
 	network/multi_respawn.cpp	\

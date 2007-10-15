@@ -6,11 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.13.2.8 $
- * $Date: 2007-09-02 02:07:37 $
- * $Author: Goober5000 $
+ * $Revision: 1.13.2.9 $
+ * $Date: 2007-10-15 06:43:08 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13.2.8  2007/09/02 02:07:37  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 1.13.2.7  2007/07/28 22:04:13  Goober5000
  * apply some of Turey's changes to stable branch
  *
@@ -348,6 +351,10 @@ void parse_ai_profiles_tbl(char *filename)
 	}
 	
 	required_string("#End");
+
+	// add tbl/tbm to multiplayer validation list
+	extern void fs2netd_add_table_validation(char *tblname);
+	fs2netd_add_table_validation(filename);
 
 	// close localization
 	lcl_ext_close();

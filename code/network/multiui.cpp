@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.cpp $
- * $Revision: 2.47.2.5 $
- * $Date: 2007-09-29 13:58:45 $
- * $Author: karajorma $
+ * $Revision: 2.47.2.6 $
+ * $Date: 2007-10-15 06:43:18 $
+ * $Author: taylor $
  *
  * C file for all the UI controls of the mulitiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47.2.5  2007/09/29 13:58:45  karajorma
+ * Fix the double respawn bug (Mantis 788) and hopefully the corresponding server Int3 (Mantis 1213)
+ *
  * Revision 2.47.2.4  2006/10/01 19:28:28  taylor
  * make sure Multi_create_bitmap is initialized properly since it might not be otherwise in standalone
  *
@@ -635,7 +638,6 @@
 #endif
 
 #include "network/multiui.h"
-#include "fs2open_pxo/Client.h"
 #include "freespace2/freespace.h"
 #include "network/multi.h"
 #include "network/multiutil.h"
@@ -679,17 +681,9 @@
 #include "mission/missionbriefcommon.h"
 #include "parse/parselo.h"
 #include "cfile/cfile.h"
+#include "fs2netd/fs2netd_client.h"
 
 
-
-extern int Om_tracker_flag; // needed to know whether or not to use FS2OpenPXO
-
-int PXO_SID = -1; // FS2 Open PXO Session ID
-
-char PXO_Server[64];
-int PXO_port = -1;
-void multi_update_valid_tables(); // from multiutil
-void Kaz_NoBackGround_DrawString(char *str); //ditto
 // -------------------------------------------------------------------------------------------------------------
 // 
 // MULTIPLAYER COMMON interface controls
@@ -721,8 +715,6 @@ char Multi_common_text[MULTI_COMMON_TEXT_MAX_LINES][MULTI_COMMON_TEXT_MAX_LINE_L
 
 int Multi_common_top_text_line = -1;		// where to start displaying from
 int Multi_common_num_text_lines = 0;		// how many lines we have
-
-int Multi_force_heartbeat = 0;			// to force a master heardbeat packet be sent (rather than waiting for timeout)
 
 void multi_common_scroll_text_up();
 void multi_common_scroll_text_down();
@@ -1424,50 +1416,6 @@ int multi_join_autojoin_do()
 	return -1;
 }
 
-void fs2netd_maybe_init()
-{
-	if (!Om_tracker_flag)
-		return;
-
-	if (PXO_port == -1)
-	{
-		CFILE *file = cfopen("fs2open_pxo.cfg","rt",CFILE_NORMAL,CF_TYPE_DATA);	
-		if(file == NULL){
-			ml_printf("Network","Error loading fs2open_pxo.cfg file!\n");
-			return;
-		}
-				
-
-		char Port[32];
-		if (cfgets(PXO_Server, 32, file) == NULL)
-		{
-			ml_printf("Network", "No Masterserver definition!\n");
-			return;
-		}
-
-		if (strstr(PXO_Server, "\n"))
-			*strstr(PXO_Server, "\n") = '\0';
-
-		if (cfgets(Port, 32, file) != NULL)
-			PXO_port = atoi(Port);
-		else
-			PXO_port = 12000;
-	}
-
-	// FS2OpenPXO code
-	if (!FS2OpenPXO_Socket.isInitialized())
-	{
-#if !defined(PXO_TCP)
-		if (!FS2OpenPXO_Socket.InitSocket())
-#else
-		if (!FS2OpenPXO_Socket.InitSocket(PXO_Server, PXO_port))
-#endif
-		{
-			ml_printf("Network (FS2OpenPXO): Could not initialize Socket!!\n");
-		}
-	}
-}
-
 void multi_join_game_init()
 {
 	int idx;
@@ -1543,117 +1491,12 @@ void multi_join_game_init()
 	help_overlay_load(MULTI_JOIN_OVERLAY);
 	help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
 	
-	if (Om_tracker_flag)
-	{
-		if (!os_config_read_uint( "PXO", "Supress_TO_Warning" , 0 ))
-		{
-			switch (popup(0,2,"&Ok","&Don't Show This again", "FS2NetD Enabled - Each network operation has a timeout of 15 seconds, your system will appear to hang if the server cannot be reached or a packet is dropped"))
-			{
-				case 1:
-					os_config_write_uint( "PXO", "Supress_TO_Warning" , 1);
-					break;
-
-				default:
-					break;
-			}
-
-		}
-
-		
-		Kaz_NoBackGround_DrawString("Connecting to Fs2NetD");
-		fs2netd_maybe_init();
-
-		if (!FS2OpenPXO_Socket.isInitialized())
-		{	
-			gamesnd_play_iface(SND_GENERAL_FAIL);
-			popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Connection Failed");
-			
-			//gameseq_post_event(GS_EVENT_NET_CHAT);
-
-			//return;
-		}
-		else
-		{
-			// ---------------------- validate tables ----------------------------------
-
-			
-			Kaz_NoBackGround_DrawString("Validating Tables");
-
-
-			multi_update_valid_tables();
-
-			if (game_hacked_data())
-					popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"You are playing with hacked table files - this will prevent stats from storing.");
-			// ---------------------- login ---------------------- 
-			
-			
-			Kaz_NoBackGround_DrawString("Logging In");
-			PXO_SID  = Fs2OpenPXO_Login(Multi_tracker_login, Multi_tracker_passwd, FS2OpenPXO_Socket, PXO_Server, PXO_port);
-
-			if (PXO_SID == -1)
-			{
-				ml_printf("FS2OpenPXO Critical: Login %s/%s is invalid!\n", Multi_tracker_login, Multi_tracker_passwd);
-				popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Login Failed");
-			}
-			else
-				ml_printf("FS2OpenPXO: Login %s/%s is valid, Session ID is %u!\n", Multi_tracker_login, Multi_tracker_passwd, PXO_SID);
-
-		
-			// ---------------------- load stats ---------------------- 
-			
-			if (PXO_SID  != -1)
-			{
-				
-				Kaz_NoBackGround_DrawString("Getting Pilot Stats\n(30 sec timeout)");
-				// Load the Current Pilots data
-				// Players[Player_num] == ME!
-				
-				// hack first time to put my pilot into the DB! -- Kazan
-				//SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port);
-
-				// load our players data -- allow creation of the player
-				int rescode = GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
-
-				switch (rescode)
-				{ // 0 = pilot retrieved, 1 = pilot created, 2 = invalid pilot, 3 = invalid (expired?) sid, 4 = pilot already exists
-					case -1:
-						ml_printf("Network (FS2OpenPXO): UNKNOWN ERROR when fetching pilot data\n");
-						popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"An Unknown Error (probably a timeout) occured when trying to get your pilot data.");
-						break;
-
-					case 0:
-						ml_printf("Network (FS2OpenPXO): Got Pilot data\n");
-						break;
-						
-					case 1:
-						ml_printf("Network (FS2OpenPXO): Created New Pilot\n");
-						popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"New Pilot has been created.");
-						break;
-
-					case 2:
-						ml_printf("Network (FS2OpenPXO): Invalid Pilot\n");
-						popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Invalid Pilot name - A serious error has occured, Contact Kazan!");
-						break;
-
-					case 3:
-						ml_printf("Network (FS2OpenPXO): Invalid SID\n");
-						popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Invalid SID - A serious error has occured, Contact Kazan!");
-						break;
-
-
-					default:
-						ml_printf("Network (FS2OpenPXO): Unknown return case for GetPlayerData(int, char *, player *, TCP_Socket &, int, bool, int)\n");
-						popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,"Unkown return case from GetPlayerData() - Contact Kazan!");
-						break;
-				}
-
-			}
-		
-			
-			Kaz_NoBackGround_DrawString("Requesting Server List");
-		} // isInitialized()
-
-	} // Om_Tracker_Flag
+	// try to login to fs2netd
+	if ( Om_tracker_flag && !fs2netd_login() ) {
+		// failed!  go back to the main hall
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+		return;
+	}
 
 	// do TCP and VMT specific initialization
 	if(Multi_options_g.protocol == NET_TCP){		
@@ -1661,9 +1504,6 @@ void multi_join_game_init()
 		multi_join_load_tcp_addrs();		
 	}	
 
-	// this isn't fs2open PXO explicitly -- i've just cleaned it up a bit and it's _compatable_ with fs2openPXO
-	multi_servers_query();
-	
 	// initialize any and all timestamps	
 	Multi_join_glr_stamp = -1;
 	Multi_join_ping_stamp = -1;
@@ -1810,15 +1650,10 @@ void multi_join_game_do_frame()
 		if(help_overlay_active(MULTI_JOIN_OVERLAY)){
 			help_overlay_set_state(MULTI_JOIN_OVERLAY,0);
 		} else {		
-			// #kazan# changed for chat
-#if defined(PXO_LOBBY)
-			if (Om_tracker_flag)
-				gameseq_post_event(GS_EVENT_NET_CHAT);
-			else
+		//	if (Om_tracker_flag)
+		//		gameseq_post_event(GS_EVENT_PXO);
+		//	else
 				gameseq_post_event(GS_EVENT_MAIN_MENU);
-#else
-			gameseq_post_event(GS_EVENT_MAIN_MENU);
-#endif
 			gamesnd_play_iface(SND_USER_SELECT);
 		}
 		break;
@@ -2025,10 +1860,10 @@ void multi_join_button_pressed(int n)
 
 	// refresh the game/server list
 	case MJ_REFRESH:	
-		multi_join_load_tcp_addrs();
-		multi_servers_query();
-
+	//	multi_join_load_tcp_addrs();
+	//	multi_servers_query();
 		gamesnd_play_iface(SND_USER_SELECT);
+		broadcast_game_query();
 		break;
 
 	// join a game as an observer
@@ -2228,44 +2063,6 @@ void multi_join_blit_game_status(active_game *game, int y)
 	gr_string(Mj_status_coords[gr_screen.res][MJ_X_COORD] + ((Mj_status_coords[gr_screen.res][MJ_W_COORD] - str_w)/2),y,status_text);
 }
 
-
-// load in a list of active games from our tcp.cfg file
-
-void multi_servers_query()
-{
-	broadcast_game_query();
-
-	if (!Om_tracker_flag)
-		return;
-
-	/*
-	active_game *Cur = Active_game_head;
-	if (Cur != NULL)
-	{
-		do {
-			ml_printf("Network (FS2OpenPXO): send_server_query(%s)\n",  psnet_addr_to_string(textbuffer, &Cur->server_addr));
-			send_server_query(&Cur->server_addr);
-			Cur = Cur->next;
-		} while (Cur != Active_game_head);
-	}*/
-
-	server_item *cur = Game_server_head;
-	
-	char textbuffer[17];
-	memset(textbuffer, 0, 17);
-
-	ml_printf("Network (FS2OpenPXO): Attempting to send_server_query()'s\n");
-
-	if (cur != NULL)
-		do
-		{
-			ml_printf("Network (FS2OpenPXO): send_server_query(%s)\n", psnet_addr_to_string(textbuffer, &cur->server_addr));
-			send_server_query(&cur->server_addr);
-			cur = cur->next;
-		}
-		while (cur != Game_server_head);
-}
-
 void multi_join_load_tcp_addrs()
 {
 	char line[MAX_IP_STRING];
@@ -2274,116 +2071,9 @@ void multi_join_load_tcp_addrs()
 //	active_game *aitem;
 	CFILE *file = NULL;
 	
-	//if (On_FS2Open_PXO)
-	if (Om_tracker_flag) // official straight from the config! ooh.. coolness :D
-	{
-		if (!FS2OpenPXO_Socket.isInitialized())
-			return;
-
-		// should never have to init here
-		//fs2netd_maybe_init();
-
-		// free up any existing server list
-		multi_free_server_list();
-
-		net_server *servers = NULL;
-		int numServersFound = 0;
-
-		//ml_printf("Network (FS2OpenPXO): Requesting server list\n");
-		servers = GetServerList(PXO_Server, numServersFound, FS2OpenPXO_Socket, PXO_port);
-
-		if (servers == NULL)
-			return;
-
-		ml_printf("Network (FS2OpenPXO): Got %d servers.\n", numServersFound);
-
-		//active_game ag;
-		for (int i = 0; i < numServersFound; i++)
-		{
-
-				// *************** New Way 3/6/04 ********************
-				/*
-				memset(&ag, 0, sizeof(active_game));
-
-				ag.heard_from_timer = time(NULL);
-				strncpy(ag.name, servers[i].name, MAX_GAMENAME_LEN);
-				
-				// ack - i don't know this tidbit if information.. if this doesn't create a crash i won't bother
-				// otherwise i'll have to modify the protocol, yada yada
-				strncpy(ag.mission_name, servers[i].mission_name, MAX_GAMENAME_LEN);
-
-				strncpy(ag.title, servers[i].title, MAX_GAMENAME_LEN);
-				
-				ag.num_players = servers[i].players;
-				ag.flags = servers[i].flags;
-				ag.comp_version = ag.version = MULTI_FS_SERVER_VERSION;*/
-
-				if ( !psnet_is_valid_ip_string(servers[i].ip) ) {
-					nprintf(("Network","Invalid ip string (%s)\n", servers[i].ip));
-				} else {	
-					memset(&addr,0,sizeof(net_addr));
-					addr.type = NET_TCP;
-					psnet_string_to_addr(&addr,servers[i].ip);
-					addr.port = (short) servers[i].port;
-
-					if ( addr.port == 0 ){
-						addr.port = DEFAULT_GAME_PORT;
-					}
-
-					// create a new server item on the list
-					item = multi_new_server_item();
-					if(item != NULL){
-						memcpy(&item->server_addr,&addr,sizeof(net_addr));
-					}
-				}
-
-				//ag.server_addr = addr;
-				
-			
-				//multi_update_active_games(&ag);
-
-				// ############### Old way of doing it ###############
-				// copy the server ip address
-
-				/*
-				memset(&addr,0,sizeof(net_addr));
-				addr.type = NET_TCP;
-				
-				ml_printf("Network (FS2OpenPXO): Server %d ip is %s\n", i, servers[i].ip);
-				psnet_string_to_addr(&addr,servers[i].ip);
-				addr.port = (short) servers[i].port;
-
-				if ( addr.port == 0 ){
-					addr.port = DEFAULT_GAME_PORT;
-				}
-
-
-				// this is probably safer than what i did below
-				send_server_query(&addr);*/
-
-				// create a new server item on the list
-				//item = multi_new_server_item();
-				/*aitem = multi_new_active_game();
-
-				if(aitem != NULL){
-					
-					ml_printf("Network (FS2OpenPXO): Memcpy'ing Server %d into position\n", i);
-					memcpy(&aitem->server_addr,&addr,sizeof(net_addr));
-					memcpy(&aitem->name, servers[i].servername, MAX_GAMENAME_LEN);
-					aitem->num_players = servers[i].players;
-					
-				}*/
-		}
-		delete[] servers;
-
-		//Multi_join_list_start_item = Active_game_head;
-		
-		//ml_printf("Network (FS2OpenPXO): Finished adding servers - exiting multi_join_load_tcp_addrs()\n", i);
-	}
-	else
-	{
-	// --------------- Origional Code Provided by Volition -----------------
-	// attempt to open the ip list file
+	// check fs2netd first, then move to standard method if that fails
+	if ( !fs2netd_load_servers() ) {
+		// attempt to open the ip list file
 		file = cfopen(IP_CONFIG_FNAME,"rt",CFILE_NORMAL,CF_TYPE_DATA);	
 		if(file == NULL){
 			nprintf(("Network","Error loading tcp.cfg file!\n"));
@@ -2428,7 +2118,6 @@ void multi_join_load_tcp_addrs()
 		}
 
 		cfclose(file);	
-	// --------------- end Origional Code Provided by Volition -----------------
 	}
 }
 
@@ -2437,7 +2126,7 @@ void multi_join_do_netstuff()
 {
 	//char textbuffer[17];
 	//active_game *Cur;
-
+/*
 	static fix next_pxo_refresh = -1;
 
 
@@ -2448,10 +2137,10 @@ void multi_join_do_netstuff()
 		next_pxo_refresh = timer_get_fixed_seconds() + (15 * F1_0);
 		multi_servers_query();
 	}
-
+*/
 
 	// handle game query stuff
-	if(Multi_join_glr_stamp == -1){
+	if (Multi_join_glr_stamp == -1) {
 		broadcast_game_query();
 
 		if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
@@ -2461,7 +2150,7 @@ void multi_join_do_netstuff()
 		}
 	} 
 	// otherwise send out game query and restamp
-	else if(timestamp_elapsed(Multi_join_glr_stamp)){			
+	else if ( timestamp_elapsed(Multi_join_glr_stamp) ) {			
 		broadcast_game_query();
 
 		if(Net_player->p_info.options.flags & MLO_FLAG_LOCAL_BROADCAST){
@@ -4328,6 +4017,7 @@ int multi_create_select_to_index(int select_index);
 
 int Multi_create_should_show_popup = 0;
 
+int Multi_create_force_heartbeat = 0;			// to force a master heardbeat packet be sent (rather than waiting for timeout)
 
 // sorting function to sort mission lists.. Basic sorting on mission name
 int multi_create_sort_func(const void *a, const void *b)
@@ -4566,17 +4256,12 @@ void multi_create_game_do()
 		flags = mission_parse_is_multi(filename, mission_name); //DTP flags will set if mission is multi
 
 		if (flags) { //only continue if mission is multiplayer mission
-
-			
-			
 			netgame_info *ng; 
 			ng = &Netgame;
-						
-			
+
 			char almissionname[256]; // needed, for the strncpy below
 			strncpy(almissionname, Cmdline_almission,MAX_FILENAME_LEN); //DTP; copying name from cmd_almission line
 
-			
 			Netgame.options.respawn = 99; //override anything //for debugging, i often forget this.
 			ng->respawn = Netgame.options.respawn;
 
@@ -4638,18 +4323,14 @@ void multi_create_game_do()
 
 			gr_flip();
 
-			// I tried moving this before load_missions to see if it helps make it work right -- Kazan
-			// if this is a tracker game, validate missions
-			if(MULTI_IS_TRACKER_GAME){
-				multi_update_ban_list();
-				multi_update_valid_missions();
-			}
-			
-			
 			multi_create_list_load_missions();
 			multi_create_list_load_campaigns();
 
-
+			// if this is a tracker game, validate missions
+			if (MULTI_IS_TRACKER_GAME) {
+				multi_update_valid_missions();
+				fs2netd_update_ban_list();
+			}
 
 			// update the file list
 			multi_create_setup_list_data(MULTI_CREATE_SHOW_MISSIONS);						
@@ -5331,37 +5012,25 @@ void multi_create_list_scroll_down()
 // gets a list of multiplayer misisons
 void multi_create_list_load_missions()
 {
-	if (!cf_exists("mvalid.cfg", CF_TYPE_DATA))
-	{
-		// create the mvalid.cfg
-		multi_update_valid_missions();
-	}
-
-
 	char *fname, mission_name[NAME_LENGTH+1];
-	char wild_card[256];
+	char wild_card[10];
 	int file_count,idx;
 
-	memset(wild_card, 0, 256);
-	strcpy(wild_card, NOX("*"));
-	strcat(wild_card, FS_MISSION_FILE_EXT);
+	memset( wild_card, 0, sizeof(wild_card) );
+	snprintf(wild_card, sizeof(wild_card) - 1, "*%s", FS_MISSION_FILE_EXT);
 	file_count = cf_get_file_list_preallocated(MULTI_CREATE_MAX_LIST_ITEMS, Multi_create_files_array, NULL, CF_TYPE_MISSIONS, wild_card);
 	Multi_create_mission_count = 0;
 
-#ifndef NO_STANDALONE
 	// maybe create a standalone dialog
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_create_gen_dialog("Loading missions");
 		std_gen_set_text("Mission:", 1);
 	}
-#endif
 
-	for(idx = 0; idx < file_count; idx++){
+	for (idx = 0; idx < file_count; idx++) {
 		int flags,max_players;
 		char *filename;
-		uint m_respawn;		
-		char *mvalid_cfg_buffer = NULL;
-		CFILE *mvalid_cfg = NULL;
+		uint m_respawn;
 
 		fname = Multi_create_files_array[idx];
 		
@@ -5379,23 +5048,11 @@ void multi_create_list_load_missions()
 		}
 #endif
 
-#ifndef NO_STANDALONE
-		if(Game_mode & GM_STANDALONE_SERVER){			
+		if (Game_mode & GM_STANDALONE_SERVER) {			
 			std_gen_set_text(filename, 2);
 		}
-#endif
 
 		flags = mission_parse_is_multi(filename, mission_name);		
-
-		if (Om_tracker_flag) {
-			mvalid_cfg = cfopen("mvalid.cfg", "rt", CFILE_NORMAL, CF_TYPE_DATA);
-			if (mvalid_cfg != NULL) {
-				mvalid_cfg_buffer = new char[cfilelength(mvalid_cfg)];
-				cfread(mvalid_cfg_buffer, 1, cfilelength(mvalid_cfg), mvalid_cfg);			
-			}
-		}
-		
-		std::string v_string;
 
 		// if the mission is a multiplayer mission, then add it to the mission list
 		if ( flags ) {
@@ -5411,23 +5068,6 @@ void multi_create_list_load_missions()
 				mcip->flags = flags;
 				mcip->respawn = m_respawn;
 				mcip->max_players = (ubyte)max_players;
-				
-				v_string = "'";
-				v_string = v_string + mcip->filename;
-				
-				if (!strstr(mcip->filename, ".fs2"))
-					v_string = v_string + ".fs2";
-					
-				v_string = v_string + "' ... valid";
-
-				// valid status appears to be the OPPOSITE of what you would expect.....
-				if (mvalid_cfg_buffer != NULL)
-				{
-					!strstr(mvalid_cfg_buffer, v_string.c_str()) ? mcip->valid_status = 1: mcip->valid_status = 0;
-					ml_printf("Searching for: \"%s\" in mvalid.cfg ... %s", v_string.c_str(), (!mcip->valid_status) ? NOX("found it") : NOX("didn't find it"));
-				}
-				else
-					mcip->valid_status = 1; 
 
 				// get any additional information for possibly builtin missions
 				fs_builtin_mission *fb = game_find_builtin_mission(filename);
@@ -5437,24 +5077,14 @@ void multi_create_list_load_missions()
 				Multi_create_mission_count++;
 			}
 		}
-
-		if (Om_tracker_flag) {
-			if (mvalid_cfg_buffer != NULL)
-				delete[] mvalid_cfg_buffer;
-
-			if (mvalid_cfg != NULL)
-				cfclose(mvalid_cfg);
-		}
 	}
 
 	Multi_create_slider.set_numberItems(Multi_create_mission_count > Multi_create_list_max_display[gr_screen.res] ? Multi_create_mission_count-Multi_create_list_max_display[gr_screen.res] : 0);
 
-#ifndef NO_STANDALONE
 	// maybe create a standalone dialog
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_destroy_gen_dialog();		
 	}
-#endif
 }
 
 void multi_create_list_load_campaigns()
@@ -5463,22 +5093,20 @@ void multi_create_list_load_campaigns()
 	int idx, file_count;
 	int campaign_type,max_players;
 	char title[255];
-	char wild_card[256];
+	char wild_card[10];
 
-#ifndef NO_STANDALONE
 	// maybe create a standalone dialog
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_create_gen_dialog("Loading campaigns");
 		std_gen_set_text("Campaign:", 1);
 	}
-#endif
 
 	Multi_create_campaign_count = 0;
-	memset(wild_card, 0, 256);
-	strcpy(wild_card, NOX("*"));
-	strcat(wild_card, FS_CAMPAIGN_FILE_EXT);
+	memset( wild_card, 0, sizeof(wild_card) );
+	snprintf(wild_card, sizeof(wild_card) - 1, "*%s", FS_CAMPAIGN_FILE_EXT);
 	file_count = cf_get_file_list_preallocated(MULTI_CREATE_MAX_LIST_ITEMS, Multi_create_files_array, NULL, CF_TYPE_MISSIONS, wild_card);
-	for(idx = 0; idx < file_count; idx++){
+
+	for (idx = 0; idx < file_count; idx++) {
 		int flags;
 		char *filename, name[NAME_LENGTH];
 
@@ -5498,11 +5126,9 @@ void multi_create_list_load_campaigns()
 		}
 #endif
 
-#ifndef NO_STANDALONE
-		if(Game_mode & GM_STANDALONE_SERVER){			
+		if (Game_mode & GM_STANDALONE_SERVER) {			
 			std_gen_set_text(filename, 2);
 		}
-#endif
 
 		// if the campaign is a multiplayer campaign, then add the data to the campaign list items
 		flags = mission_campaign_parse_is_multi( filename, name );
@@ -5539,12 +5165,10 @@ void multi_create_list_load_campaigns()
 		}
 	}	
 	
-#ifndef NO_STANDALONE
 	// maybe create a standalone dialog
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_destroy_gen_dialog();		
 	}
-#endif
 }
 
 void multi_create_list_do()
@@ -5656,7 +5280,7 @@ void multi_create_list_select_item(int n)
 
 		Multi_create_list_select = n;
 
-		Multi_force_heartbeat = 1;
+		Multi_create_force_heartbeat = 1;
 
 		// set the mission name
 		if(Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS){
@@ -5697,7 +5321,7 @@ void multi_create_list_select_item(int n)
 		case MULTI_CREATE_SHOW_MISSIONS:		
 			// don't forget to update the info box window thingie
 			if(Net_player->flags & NETINFO_FLAG_AM_MASTER){			
-				ship_init();		// mwa -- 10/15/97.  Call this function to reset number of ships in mission
+				ship_level_init();		// mwa -- 10/15/97.  Call this function to reset number of ships in mission
 				ng->max_players = mission_parse_get_multi_mission_info( ng->mission_name );				
 				
 				Assert(ng->max_players > 0);
@@ -8330,29 +7954,6 @@ void multi_sync_init()
 // perform the correct do frame functions
 void multi_sync_do()
 {
-
-	// This function doesn't get called too often - but it does get called every time the data send to the master server has a significant change :D
-	/* FS2NetD Heartbeat Continue */
-
-	/*if (Net_player->flags & NETINFO_FLAG_AM_MASTER)
-	{
-		static int LastSend = -1;
-		if (Om_tracker_flag) //FS2OpenPXO [externed from optionsmulti above]
-		{
-
-			if ((clock() - LastSend) >= 60000 || LastSend == -1)
-			{
-				LastSend = clock();
-
-				// finish implementation!
-				//void SendHeartBeat(const char* masterserver, int targetport, const char* myName, int myNetspeed, int myStatus, int myType, int numPlayers);
-
-				SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, multi_get_connection_speed(), Netgame.game_state, Netgame.type_flags, Netgame.max_players);
-			}
-		}
-	}*/
-
-
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
 		multi_sync_common_do();
 	}
@@ -8810,12 +8411,10 @@ void multi_sync_pre_init()
 		// setup some of my own data
 		Net_player->flags |= NETINFO_FLAG_MISSION_OK;		
 
-#ifndef NO_STANDALONE
 		// do any output stuff
-		if(Game_mode & GM_STANDALONE_SERVER){
+		if (Game_mode & GM_STANDALONE_SERVER) {
 			std_debug_set_standalone_state_string("Mission Sync");			
 		}		
-#endif
 
 		// do this here to insure we have the most up to date file checksum info
 		multi_get_mission_checksum(Game_current_mission_filename);
@@ -9590,6 +9189,9 @@ void multi_debrief_init()
 	Multi_debrief_reported_tvt = 0;
 
 	Multi_debrief_server_framecount = 0;
+
+	// setup FS2NetD debriefing stuff
+	fs2netd_debrief_init();
 }
 
 void multi_debrief_do_frame()

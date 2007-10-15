@@ -61,6 +61,11 @@ void std_gen_set_text(char *str, int field_num)
 	STUB_FUNCTION;
 }
 
+int std_gen_is_active()
+{
+	return 0;
+}
+
 void std_init_standalone()
 {
 	STUB_FUNCTION;

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.44.2.9 $
- * $Date: 2007-09-02 02:07:42 $
- * $Author: Goober5000 $
+ * $Revision: 2.44.2.10 $
+ * $Date: 2007-10-15 06:43:15 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44.2.9  2007/09/02 02:07:42  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.44.2.8  2007/04/03 01:39:31  Goober5000
  * fixed up some error messages
  *
@@ -985,29 +988,14 @@ void main_hall_do_multi_ready()
 	Multi_options_g.protocol = NET_TCP;	
 	gameseq_post_event( GS_EVENT_PXO );
 #else
-	
-
-#if defined(PXO_LOBBY)
-	if (Om_tracker_flag)
-	{
+	extern int Cmdline_chatterbox;
+	if (Om_tracker_flag) {
 		Multi_options_g.protocol = NET_TCP;
-		gameseq_post_event( GS_EVENT_NET_CHAT );
-
-	}
-	else
-	{
+		gameseq_post_event( (Cmdline_chatterbox) ? GS_EVENT_PXO : GS_EVENT_MULTI_JOIN_GAME );
+	} else {
 		// go to the regular join game screen 	
 		gameseq_post_event( GS_EVENT_MULTI_JOIN_GAME );	
 	}
-#else
-	if (Om_tracker_flag)
-	{
-		Multi_options_g.protocol = NET_TCP;
-	}
-	gameseq_post_event( GS_EVENT_MULTI_JOIN_GAME );	
-#endif //PXO_LOBBY
-
-
 #endif	//MULTIPLAYER_BETA_BUILD
 
 	// select protocol

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.53.2.8 $
- * $Date: 2007-09-02 02:07:44 $
- * $Author: Goober5000 $
+ * $Revision: 2.53.2.9 $
+ * $Date: 2007-10-15 06:43:15 $
+ * $Author: taylor $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53.2.8  2007/09/02 02:07:44  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.53.2.7  2007/07/23 16:08:28  Kazan
  * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
@@ -584,11 +587,7 @@
 #include "network/multi_endgame.h"
 #include "missionui/chatbox.h"
 
-#include "fs2open_pxo/Client.h"
-
-extern int PXO_SID; // FS2 Open PXO Session ID
-extern char PXO_Server[];
-extern int PXO_port;
+#include "fs2netd/fs2netd_client.h"
 
 
 #define MAX_TOTAL_DEBRIEF_LINES	200
@@ -2567,90 +2566,6 @@ void debrief_init()
 	debrief_award_init();
 	show_stats_init();
 	debrief_voice_init();
-
-
-	if (Game_mode & GM_MULTIPLAYER) {
-		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-		// ***** FS2NetD Debrief ****
-		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-
-		unsigned int CurrentMissionChsum;
-
-		
-		cf_chksum_long(Netgame.mission_name, &CurrentMissionChsum);
-
-		int mValidStatus = 0;
-
-		if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized())
-			mValidStatus = CheckSingleMission(Netgame.mission_name, CurrentMissionChsum, FS2OpenPXO_Socket, PXO_Server, PXO_port);
-
-		//
-		// Netgame.mission_name
-		
-			
-		if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized() && (multi_num_players() > 1) && !game_hacked_data() && mValidStatus)
-		{
-			// --------------------- STICK STATS STORAGE CODE IN HERE ---------------------
-			int spd_ret = SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port);
-			
-			switch (spd_ret) // 0 = pilot updated, 1  = invalid pilot, 2 = invalid (expired?) sid
-			{
-				case -1:
-					multi_display_chat_msg("<Did not receive response from server within timeout period>",0,0);
-					multi_display_chat_msg("<Your stats may not have been stored>",0,0);
-					multi_display_chat_msg("<This is not a critical error>",0,0);
-					Multi_debrief_stats_accept_code = 1;
-					break;
-
-				case 0:
-					multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
-					Multi_debrief_stats_accept_code=1;
-					break;
-			
-				case 1:
-					multi_display_chat_msg(XSTR("<stats have been tossed>",850),0,0);
-					multi_display_chat_msg("WARNING: Your pilot was invalid, this is a serious error, possible data corruption",0,0);
-					Multi_debrief_stats_accept_code=0;
-					break;
-
-				case 2:
-					PXO_SID  = Fs2OpenPXO_Login(Multi_tracker_login, Multi_tracker_passwd, FS2OpenPXO_Socket, PXO_Server, PXO_port);
-					if (PXO_SID != -1)
-					{
-						 if (!SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port))
-						 {	 // succeed!
-							multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
-							Multi_debrief_stats_accept_code=1;
-							break;
-						 }
-					}
-
-					multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
-					Multi_debrief_stats_accept_code=0;
-					
-
-					break;
-
-				default:
-					multi_display_chat_msg("Unknown Stats Store Request Reply",0,0);
-					break;
-			}
-
-			// refetch to try and resolve the display bug
-			// commented by kazan 4-1-2007 because it was causing problems
-			//GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
-
-		}
-		else
-		{
-			multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
-			Multi_debrief_stats_accept_code = 0;
-		}
-
-		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-		// ***** End FS2NetD Debrief ****
-		// +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
-	}
 
 	debrief_multi_list_init();
 

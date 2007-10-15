@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_endgame.cpp $
- * $Revision: 2.10.2.2 $
- * $Date: 2007-10-12 19:10:07 $
- * $Author: karajorma $
+ * $Revision: 2.10.2.3 $
+ * $Date: 2007-10-15 06:43:17 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10.2.2  2007/10/12 19:10:07  karajorma
+ * Partial (?) fix for Mantis 1084. At least it shouldn't Int3() when the server exits any more.
+ *
  * Revision 2.10.2.1  2007/04/24 12:07:33  karajorma
  * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
  *
@@ -602,13 +605,10 @@ void multi_endgame_cleanup()
 		gameseq_pop_state();
 	}
 
-#ifndef NO_STANDALONE
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		// multi_standalone_quit_game();		
 		multi_standalone_reset_all();
-	} else 
-#endif
-        {		
+	} else {		
 		Player->flags |= PLAYER_FLAGS_IS_MULTI;		
 
 		// if we're in Parallax Online mode, log back in there	

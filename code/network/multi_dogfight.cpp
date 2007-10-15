@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_dogfight.cpp $
- * $Revision: 2.14.2.2 $
- * $Date: 2007-07-23 16:08:29 $
- * $Author: Kazan $
+ * $Revision: 2.14.2.3 $
+ * $Date: 2007-10-15 06:43:16 $
+ * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.14.2.2  2007/07/23 16:08:29  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 2.14.2.1  2006/09/20 05:01:36  taylor
  * add some extra FS2NetD safety checks around to prevent the code from doing stupid crash-happy things
  *
@@ -134,15 +137,9 @@
 #include "mission/missionparse.h"
 #include "iff_defs/iff_defs.h"
 
-#include "fs2open_pxo/Client.h"
+#include "fs2netd/fs2netd_client.h"
 #include "cfile/cfile.h"
 
-
-
-
-extern int PXO_SID; // FS2 Open PXO Session ID
-extern char PXO_Server[32];
-extern int PXO_port;
 
 // ----------------------------------------------------------------------------------------------------
 // MULTI DOGFIGHT DEFINES/VARS
@@ -348,75 +345,6 @@ void multi_df_debrief_init()
 	// add some text
 	w = &Multi_df_window;	
 	w->add_XSTR("Accept", 1035, Multi_df_buttons[gr_screen.res][ACCEPT_BUTTON].xt, Multi_df_buttons[gr_screen.res][ACCEPT_BUTTON].yt, &Multi_df_buttons[gr_screen.res][ACCEPT_BUTTON].button, UI_XSTR_COLOR_PINK);
-
-	// ***** FS2NetD Debrief ****
-	unsigned int CurrentMissionChsum;
-
-
-	cf_chksum_long(Netgame.mission_name, &CurrentMissionChsum);
-
-	int mValidStatus = 0;
-
-	if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized())
-		mValidStatus = CheckSingleMission(Netgame.mission_name, CurrentMissionChsum, FS2OpenPXO_Socket, PXO_Server, PXO_port);
-
-	//
-	// Netgame.mission_name
-
-		
-	if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized() && (multi_num_players() > 1) && !game_hacked_data() && mValidStatus)
-	{
-		// --------------------- STICK STATS STORAGE CODE IN HERE ---------------------
-		int spd_ret = SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port);
-		
-		switch (spd_ret) // 0 = pilot updated, 1  = invalid pilot, 2 = invalid (expired?) sid
-		{
-			case -1:
-				multi_display_chat_msg("<Did not receive response from server within timeout period>",0,0);
-				multi_display_chat_msg("<Your stats may not have been stored>",0,0);
-				multi_display_chat_msg("<This is not a critical error>",0,0);
-
-				break;
-
-			case 0:
-				multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
-				break;
-		
-			case 1:
-				multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
-				multi_display_chat_msg("WARNING: Your pilot was invalid, this is a serious error, possible data corruption",0,0);
-				break;
-
-			case 2:
-				PXO_SID  = Fs2OpenPXO_Login(Multi_tracker_login, Multi_tracker_passwd, FS2OpenPXO_Socket, PXO_Server, PXO_port);
-				if (PXO_SID != -1)
-				{
-					 if (!SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num], PXO_Server,   FS2OpenPXO_Socket, PXO_port))
-					 {	 // succeed!
-						multi_display_chat_msg(XSTR("<stats have been accepted>",850),0,0);
-						break;
-					 }
-				}
-
-				multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
-				
-
-				break;
-
-			default:
-				multi_display_chat_msg("Unknown Stats Store Request Reply",0,0);
-				break;
-		}
-
-		// refetch to try and resolve the display bug
-		// commented by kazan 4-1-2007 because it was causing problems
-		//GetPlayerData(PXO_SID, Players[Player_num].callsign, &Players[Player_num], PXO_Server, FS2OpenPXO_Socket, PXO_port, true, 30);
-
-	}
-	else
-	{
-		multi_display_chat_msg(XSTR("<stats have been tossed>",851),0,0);
-	}
 }
 
 // do frame

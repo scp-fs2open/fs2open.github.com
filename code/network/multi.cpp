@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.cpp $
- * $Revision: 2.35.2.5 $
- * $Date: 2006-11-21 23:06:57 $
- * $Author: karajorma $
+ * $Revision: 2.35.2.6 $
+ * $Date: 2007-10-15 06:43:16 $
+ * $Author: taylor $
  *
  * C file that contains high-level multiplayer functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35.2.5  2006/11/21 23:06:57  karajorma
+ * Fix ammo and weapon SEXP changes not being passed on to the clients
+ *
  * Revision 2.35.2.4  2006/09/24 22:53:22  taylor
  * more standalone server fixes:
  *  - add some basic bmpman functionality to grstub, since it needs to do something at least
@@ -372,12 +375,8 @@
 #include "globalincs/alphacolors.h"
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
-#include "fs2open_pxo/Client.h"
+#include "fs2netd/fs2netd_client.h"
 
-
-extern int PXO_SID; // FS2 Open PXO Session ID
-extern char PXO_Server[];
-extern int PXO_port;
 
 
 // ----------------------------------------------------------------------------------------
@@ -1450,124 +1449,8 @@ DCF(eye_tog, "")
 	}
 }
 
-extern int Multi_force_heartbeat;
-
 void multi_do_frame()
 {	
-	/* FS2NetD Heartbeat Continue */
-
-
-	char packetbuffer[1024], long_str[512];
-	int *pid = (int *)packetbuffer;
-	int bytes_read, bytes_processed, itemp;
-	static fix NextPing = -1, NextHeartBeat = -1;
-
-	if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized())
-	{
-		// should never have to init here
-		//fs2netd_maybe_init();
-
-		// send out ping every 30 seconds
-		if ( (NextPing== -1) || (timer_get_fixed_seconds() >= NextPing) ) {
-			NextPing = timer_get_fixed_seconds() + (30 * F1_0);
-
-			Ping(PXO_Server, FS2OpenPXO_Socket);
-			ml_printf("FS2netD sent PING");
-		}
-
-		// send out server heartbeat every 2 minutes, unless forced to by an update
-		if ( (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Multi_force_heartbeat || (NextHeartBeat == -1) || (timer_get_fixed_seconds() >= NextHeartBeat)) )
-		{
-			Multi_force_heartbeat = 0;
-			NextHeartBeat = timer_get_fixed_seconds() + (120 * F1_0);
-
-			SendHeartBeat(PXO_Server, PXO_port, FS2OpenPXO_Socket, Netgame.name, Netgame.mission_name, Netgame.title, Netgame.type_flags, Netgame.server_addr.port, multi_num_players());
-			ml_printf("FS2NetD sent HeartBeat");
-		}
-
-		
-		// stuff that should be checked every frame!
-		if (FS2OpenPXO_Socket.DataReady())
-		{
-			
-			// Check for GWall messages - ping replies, etc
-			//ml_printf("Network FS2netD received PONG: Time diff %d ms\n", GetPingReply(FS2OpenPXO_Socket));
-			bytes_read = bytes_processed = 0;
-
-			bytes_read = FS2OpenPXO_Socket.GetData(packetbuffer, 256);
-
-			while (bytes_read > bytes_processed)
-			{
-				switch (*pid)
-				{
-					case PCKT_PING:
-						// 8 bytes should never be segmented
-						itemp = ((fs2open_ping*)(packetbuffer+bytes_processed))->time;
-						ml_printf("FS2NetD received PING: %d", itemp);
-						SendPingReply(FS2OpenPXO_Socket, itemp);
-						bytes_processed += 8;
-						break;
-
-
-
-					case PCKT_PINGREPLY:
-						// 8 bytes should never be segmented
-						itemp = (clock() - ((fs2open_pingreply *)(packetbuffer + bytes_processed))->time) / 2;
-						ml_printf("FS2NetD received PONG: %d ms", itemp);
-
-						bytes_processed += 8;
-						break;
-
-					case PCKT_NETOWRK_WALL:
-						// 256 bytes _may_ be segmented
-						while (bytes_read-bytes_processed < 256)
-						{
-							bytes_read += FS2OpenPXO_Socket.GetData(packetbuffer+bytes_read, 256-bytes_read);
-						}
-						ml_printf("FS2NetD WALL received MSG: %s", ((fs2open_network_wall*)(packetbuffer+bytes_processed))->message);
-
-						sprintf(long_str, "FS2NETD SYSTEM MESSAGE: %s", ((fs2open_network_wall*)(packetbuffer+bytes_processed))->message);
-						switch (Netgame.game_state)
-						{
-							case NETGAME_STATE_FORMING:
-							case NETGAME_STATE_BRIEFING:
-							case NETGAME_STATE_MISSION_SYNC:
-							case NETGAME_STATE_DEBRIEF:
-								multi_display_chat_msg(long_str,0,0);
-								break;
-
-							/* -- Won't Happen - multi_do_frame() is not called during paused state 
-								  so the game will not even receive the data during it
-							case NETGAME_STATE_PAUSED: // EASY!
-								send_game_chat_packet(Net_player, long_str, MULTI_MSG_ALL,NULL);
-								break;
-							*/
-
-							case NETGAME_STATE_IN_MISSION: // gotta make it paused
-								//multi_pause_request(1); 
-								//send_game_chat_packet(Net_player, long_str, MULTI_MSG_ALL,NULL);
-								HUD_printf(long_str);
-								break;
-
-							default:
-								// do-nothing
-								break;
-						}
-						bytes_processed += 256;
-						break;
-
-
-					default:
-						ml_printf("Unexpected FS2NetD Packet - PID=%d", *pid);
-						bytes_processed=bytes_read;
-						break;
-				} // switch
-
-			} //while
-
-		} // (if FS2OpenPXO_Socket.DataReady())
-	} //if (Om_tracker_flag && FS2OpenPXO_Socket.isInitialized())
-
 	PSNET_TOP_LAYER_PROCESS();
 
 	// always set the local player eye position/orientation here so we know its valid throughout all multiplayer
@@ -1748,19 +1631,18 @@ void multi_do_frame()
 	// process any player messaging details
 	multi_msg_process();		
 	
-#ifndef NO_STANDALONE
 	// if on the standalone, do any gui stuff
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_do_gui_frame();
 	}	
-#endif
 
 	// dogfight nonstandalone players should recalc the escort list every frame
 	if(!(Game_mode & GM_STANDALONE_SERVER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT) && MULTI_IN_MISSION){
 		hud_setup_escort_list(0);
 	}
 
-
+	// do fs2netd stuff
+	fs2netd_do_frame();
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1852,18 +1734,14 @@ void multi_pause_do_frame()
 		multi_oo_process();
 	}
 
-#ifndef NO_STANDALONE
 	// if on the standalone, do any gui stuff
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_do_gui_frame();
 	}
-#endif
 }
 
 
 
-
-#ifndef NO_STANDALONE
 
 // --------------------------------------------------------------------------------
 // standalone_main_init()  the standalone equivalent of the main menu
@@ -2190,9 +2068,6 @@ void multi_standalone_postgame_close()
 {
 }
 
-#endif // ifndef NO_STANDALONE
-
-
 
 void multi_reset_timestamps()
 {
@@ -2217,10 +2092,8 @@ void multi_reset_timestamps()
 		Net_players[i].s_info.voice_token_timestamp = -1;
 	}
 
-#ifndef NO_STANDALONE
 	// reset standalone gui timestamps (these are not game critical, so there is not much danger)
 	std_reset_timestamps();
-#endif
 
 	// initialize all object update timestamps
 	multi_oo_gameplay_init();
