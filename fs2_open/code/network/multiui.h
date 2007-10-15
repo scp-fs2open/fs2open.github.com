@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUI.h $
- * $Revision: 2.6 $
- * $Date: 2006-04-20 06:32:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.6.2.1 $
+ * $Date: 2007-10-15 06:43:19 $
+ * $Author: taylor $
  *
  * Header file for the UI of the various multiplayer screens
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2006/04/20 06:32:15  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.5  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -477,8 +480,5 @@ void multi_common_add_notify(char *str);
 // bring up the password string popup, fill in passwd (return 1 if accept was pressed, 0 if cancel was pressed)
 int multi_passwd_popup(char *passwd);
 
-// #Kazan#
-void multi_servers_query();
-void fs2netd_maybe_init();
 
 #endif

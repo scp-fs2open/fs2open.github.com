@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.32.2.4 $
- * $Date: 2007-09-02 02:07:47 $
- * $Author: Goober5000 $
+ * $Revision: 1.32.2.5 $
+ * $Date: 2007-10-15 06:43:22 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32.2.4  2007/09/02 02:07:47  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 1.32.2.3  2007/07/28 04:43:43  Goober5000
  * a couple of tweaks
  *
@@ -474,6 +477,10 @@ void parse_species_tbl(char *filename)
 	}
 	
 	required_string("#END");
+
+	// add tbl/tbm to multiplayer validation list
+	extern void fs2netd_add_table_validation(char *tblname);
+	fs2netd_add_table_validation(filename);
 
 	// close localization
 	lcl_ext_close();

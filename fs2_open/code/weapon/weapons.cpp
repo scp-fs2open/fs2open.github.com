@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.22  2007/09/02 02:07:48  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.180.2.21  2007/08/16 00:45:37  phreak
  * Local SSMs shouldn't jump into subspace if they're not homing.
  *
@@ -1114,7 +1117,6 @@ DCF_BOOL( weapon_flyby, Weapon_flyby_sound_enabled )
 #endif
 
 static int Weapon_flyby_sound_timer;	
-extern bool Module_ship_weapons_loaded;
 
 weapon Weapons[MAX_WEAPONS];
 weapon_info Weapon_info[MAX_WEAPON_TYPES];
@@ -1184,6 +1186,7 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 
 extern int compute_num_homing_objects(object *target_objp);
 
+extern void fs2netd_add_table_validation(char *tblname);
 
 
 weapon_explosions::weapon_explosions()
@@ -3361,6 +3364,9 @@ void parse_weaponstbl(char *filename)
 		strcpy(parse_error_text, "");
 	}
 
+	// add tbl/tbm to multiplayer validation list
+	fs2netd_add_table_validation(filename);
+
 	// close localization
 	lcl_ext_close();
 }
@@ -3875,9 +3881,7 @@ void weapon_init()
 
 		parse_weaponstbl("weapons.tbl");
 
-		int num_files = parse_modular_table(NOX("*-wep.tbm"), parse_weaponstbl);
-		if (num_files > 0)
-			Module_ship_weapons_loaded = true;
+		parse_modular_table(NOX("*-wep.tbm"), parse_weaponstbl);
 
 		// do post-parse cleanup
 		weapon_do_post_parse();

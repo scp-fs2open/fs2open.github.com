@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.13.2.5 $
- * $Date: 2006-11-21 23:06:57 $
- * $Author: karajorma $
+ * $Revision: 2.13.2.6 $
+ * $Date: 2007-10-15 06:43:16 $
+ * $Author: taylor $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13.2.5  2006/11/21 23:06:57  karajorma
+ * Fix ammo and weapon SEXP changes not being passed on to the clients
+ *
  * Revision 2.13.2.4  2006/09/08 06:09:05  taylor
  * lower client/server version back to retail level, there was no reason to bump it in the first place
  *
@@ -854,6 +857,7 @@ typedef struct netgame_info {
 #define AG_FLAG_PASSWD							(1<<8)			// is a password protected game
 #define AG_FLAG_STANDALONE						(1<<9)			// this is a standalone server
 #define AG_FLAG_CAMPAIGN						(1<<10)			// the server is playing in campaign mode
+#define AG_FLAG_TRACKER							(1<<11)
 
 // flags for defining the connection speed
 #define AG_FLAG_CONNECTION_SPEED_MASK		((1<<12)|(1<<13)|(1<<14))	// mask for the connection speed
@@ -1148,7 +1152,6 @@ void multi_pause_do_frame();
 void multi_process_reliable_details();
 
 
-#ifndef NO_STANDALONE
 // standalone handling functions ---------------
 
 // initialize the standalone
@@ -1180,8 +1183,6 @@ void multi_standalone_postgame_do();
 
 // close for the standalone postgame state (when players are in the debriefing_
 void multi_standalone_postgame_close();
-
-#endif  // ifndef NO_STANDALONE
 
 
 #endif

@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.20 $
- * $Date: 2007-08-17 03:29:48 $
- * $Author: Goober5000 $
+ * $Revision: 2.140.2.21 $
+ * $Date: 2007-10-15 06:43:08 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.20  2007/08/17 03:29:48  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
+ *
  * Revision 2.140.2.19  2007/07/29 03:10:59  Goober5000
  * allow embedded dashes in command-line options
  *
@@ -1001,13 +1004,13 @@ Flag exe_params[] =
 	{ "-nosound",			"Disable sound and music",					false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
 	{ "-nomusic",			"Disable music",							false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
 
-	{ "-standalone",		"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
-	{ "-startgame",			"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
-	{ "-closed",			"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-closed", },
-	{ "-restricted",		"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-restricted", },
-	{ "-multilog",			"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-multilog", },
-	{ "-clientdamage",		"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
-	{ "-mpnoreturn",		"Disables flight deck option",				true,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
+	{ "-standalone",		"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
+	{ "-startgame",			"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
+	{ "-closed",			"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-closed", },
+	{ "-restricted",		"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-restricted", },
+	{ "-multilog",			"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-multilog", },
+	{ "-clientdamage",		"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
+	{ "-mpnoreturn",		"Disables flight deck option",				true,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
 
 	{ "-oldfire",			"",											false,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-oldfire", },
 	{ "-nohtl",				"Software mode (very slow)",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nohtl", },
@@ -1190,15 +1193,17 @@ int Cmdline_wcsaga = 0;
 cmdline_parm almission_arg("-almission", NULL);		// Cmdline_almission  -- DTP for autoload Multi mission
 cmdline_parm ingamejoin_arg("-ingame_join", NULL);	// Cmdline_ingamejoin
 cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL);	// Cmdline_mpnoreturn  -- Removes 'Return to Flight Deck' in respawn dialog -C
-cmdline_parm MissionCRCs("-missioncrcs", NULL);		// Cmdline_SpewMission_CRCs
-cmdline_parm TableCRCs("-tablecrcs", NULL);			// Cmdline_SpewTable_CRCs
+cmdline_parm missioncrcspew_arg("-missioncrcs", NULL);		// Cmdline_spew_mission_crcs
+cmdline_parm tablecrcspew_arg("-tablecrcs", NULL);			// Cmdline_spew_table_crcs
+cmdline_parm chatterbox_arg("-chatterbox", NULL);	// Cmdline_chatterbox  ****  REMOVEME  ****
 cmdline_parm objupd_arg("-cap_object_update", NULL);
 
 char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
 int Cmdline_ingamejoin = 0;
 int Cmdline_mpnoreturn = 0;
-int Cmdline_SpewMission_CRCs = 0; // Kazan for making valid mission lists
-int Cmdline_SpewTable_CRCs = 0;
+char *Cmdline_spew_mission_crcs = NULL;
+char *Cmdline_spew_table_crcs = NULL;
+int Cmdline_chatterbox = 0;	// ****  REMOVEME  ****
 int Cmdline_objupd = 3;		// client object updates on LAN by default
 
 // Troubleshooting
@@ -1773,13 +1778,27 @@ bool SetCmdlineParams()
 		Cmdline_timerbar = 1;
 	}
 
-	if (MissionCRCs.found()) {
-		Cmdline_SpewMission_CRCs = 1;
+	if ( chatterbox_arg.found() ) {
+		Cmdline_chatterbox = 1;
 	}
 
-	if (TableCRCs.found()) {
-		Cmdline_SpewTable_CRCs = 1;
-	}
+	if ( missioncrcspew_arg.found() ) {
+		Cmdline_spew_mission_crcs = missioncrcspew_arg.str();
+
+		// strip off blank space at end if it's there
+		if ( Cmdline_spew_mission_crcs[strlen(Cmdline_spew_mission_crcs)-1] == ' ' ) {
+			Cmdline_spew_mission_crcs[strlen(Cmdline_spew_mission_crcs)-1] = '\0';
+		}
+ 	}
+ 
+	if ( tablecrcspew_arg.found() ) {
+		Cmdline_spew_table_crcs = tablecrcspew_arg.str();
+
+		// strip off blank space at end if it's there
+		if ( Cmdline_spew_table_crcs[strlen(Cmdline_spew_table_crcs)-1] == ' ' ) {
+			Cmdline_spew_table_crcs[strlen(Cmdline_spew_table_crcs)-1] = '\0';
+		}
+ 	}
 
 	// is this a standalone server??
 	if (standalone_arg.found()) {

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.73.2.11 $
- * $Author: Goober5000 $
- * $Date: 2007-08-17 03:29:49 $
+ * $Revision: 2.73.2.12 $
+ * $Author: taylor $
+ * $Date: 2007-10-15 06:43:20 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73.2.11  2007/08/17 03:29:49  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
+ *
  * Revision 2.73.2.10  2007/05/28 20:04:49  taylor
  * more resilient checking of stars.tbl and it's modular versions
  *
@@ -432,10 +435,6 @@
 
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5
-
-//To keep people from bypassing table checksums with modular tables -C
-bool	Modular_tables_loaded = false;
-bool	Module_ship_weapons_loaded = false;
 
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
@@ -3339,10 +3338,6 @@ int parse_modular_table(char *name_check, void (*parse_callback)(char *filename)
 	}
 
 	Parsing_modular_table = false;
-
-	if (num_files > 0) {
-		Modular_tables_loaded = true;
-	}
 
 	return num_files;
 }

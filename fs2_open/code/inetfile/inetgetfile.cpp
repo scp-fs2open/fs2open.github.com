@@ -9,13 +9,16 @@
 
  /*
  * $Logfile: /Freespace2/code/Inetfile/inetgetfile.cpp $
- * $Revision: 2.3 $
- * $Date: 2004-07-26 20:47:33 $
- * $Author: Kazan $
+ * $Revision: 2.3.2.1 $
+ * $Date: 2007-10-15 06:43:14 $
+ * $Author: taylor $
  *
  * InternetGetFile Class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2004/07/26 20:47:33  Kazan
+ * remove MCD complete
+ *
  * Revision 2.2  2004/07/12 16:32:51  Kazan
  * MCD - define _MCD_CHECK to use memory tracking
  *
@@ -50,12 +53,15 @@
  * $NoKeywords: $
  */
 
+#include "globalincs/pstypes.h"
+
+#ifdef _WIN32
 #include <windows.h>
-#include <stdio.h>
 #include <direct.h>
+#endif
+#include <stdio.h>
 #include <string.h>
 
-#include "globalincs/pstypes.h"
 #include "inetfile/cftp.h"
 #include "inetfile/chttpget.h"
 
@@ -66,242 +72,234 @@
 #define INET_STATE_CONNECTING		1
 #define INET_STATE_ERROR			2
 #define INET_STATE_RECEIVING		3
-#define INET_STATE_GOT_FILE		4
+#define INET_STATE_GOT_FILE			4
+
 
 void InetGetFile::AbortGet()
 {
-	if(m_bUseHTTP)
-	{
+	if (m_bUseHTTP) {
 		http->AbortGet();
-	}
-	else
-	{
+	} else {
 		ftp->AbortGet();
 	}
 }
 
-InetGetFile::InetGetFile(char *URL,char *localfile)
+InetGetFile::InetGetFile(char *URL, char *localfile)
 {
 	m_HardError = 0;
-	http=NULL;
-	ftp=NULL;
-	if ((URL==NULL)||(localfile==NULL)) {
+	http = NULL;
+	ftp = NULL;
+
+	if ( (URL == NULL) || (localfile == NULL) )
 		m_HardError = INET_ERROR_BADPARMS;
-	}
 
 	// create directory if not already there.
 	char dir_name[256], *end;
 
 	// make sure localfile has \ in it or we'll be here a long time.
-	if (strstr(localfile, "\\")) {
+	if ( strstr(localfile, DIR_SEPARATOR_STR) ) {
 		strcpy(dir_name, localfile);
 		int len = strlen(localfile);
 		end = dir_name + len;
 
 		// start from end of localfile and go to first \ to get dirname
-		while ( *end != '\\' ) {
+		while ( *end != DIR_SEPARATOR_CHAR ) {
 			end--;
 		}
+
 		*end = '\0';
 
-		if ( _mkdir(dir_name)==0 )	{
+		if ( _mkdir(dir_name) == 0 )	{
 			mprintf(( "CFILE: Created new directory '%s'\n", dir_name ));
 		}
 	}
-
-	if (strstr(URL,"http:")) {
-		m_bUseHTTP = TRUE;
-
+printf("URL: %s\n", URL);
+	if ( strstr(URL, "http:") ) {
+		m_bUseHTTP = true;
+printf("using http!\n");
 		// using http proxy?
 		extern char Multi_options_proxy[512];
 		extern ushort Multi_options_proxy_port;
-		if(strlen(Multi_options_proxy) > 0){
+
+		if ( strlen(Multi_options_proxy) > 0 ) {
 			http = new ChttpGet(URL, localfile, Multi_options_proxy, Multi_options_proxy_port);
 		} else {
 			http = new ChttpGet(URL, localfile);
 		}
 
-		if (http==NULL) {
+		if (http == NULL) {
 			m_HardError = INET_ERROR_NO_MEMORY;
 		}
-	} else if (strstr(URL,"ftp:")) {
+	} else if ( strstr(URL, "ftp:") ) {
 		m_bUseHTTP = FALSE;
+printf("using ftp! (%s)\n", URL);
 		ftp = new CFtpGet(URL,localfile);
-		if (ftp==NULL) {
+
+		if (ftp == NULL) {
 			m_HardError = INET_ERROR_NO_MEMORY;
 		}
 	} else {
 		m_HardError = INET_ERROR_CANT_PARSE_URL;
 	}
+
 	Sleep(1000);
 }
 
 InetGetFile::~InetGetFile()
 {
-	if(http!=NULL) delete http;
-	if(ftp!=NULL) delete ftp;
+	if (http != NULL)
+		delete http;
+
+	if (ftp != NULL)
+		delete ftp;
 }
 
-BOOL InetGetFile::IsConnecting()
+bool InetGetFile::IsConnecting()
 {
 	int state;
-	if(m_bUseHTTP)
-	{
+
+	if (m_bUseHTTP) {
 		state = http->GetStatus();
-	}
-	else
-	{
+	} else {
 		state = ftp->GetStatus();
 	}
-	if(state == FTP_STATE_CONNECTING)
-	{
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
-	}
 
-}
-
-BOOL InetGetFile::IsReceiving()
-{
-	int state;
-	if(m_bUseHTTP)
-	{
-		state = http->GetStatus();
-	}
-	else
-	{
-		state = ftp->GetStatus();
-	}
-	if(state == FTP_STATE_RECEIVING)
-	{
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
+	if (state == FTP_STATE_CONNECTING) {
+		return true;
+	} else {
+		return false;
 	}
 }
 
-BOOL InetGetFile::IsFileReceived()
+bool InetGetFile::IsReceiving()
 {
 	int state;
-	if(m_bUseHTTP)
-	{
+
+	if (m_bUseHTTP) {
 		state = http->GetStatus();
-	}
-	else
-	{
+	} else {
 		state = ftp->GetStatus();
 	}
-	if(state == FTP_STATE_FILE_RECEIVED)
-	{
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
+
+	if (state == FTP_STATE_RECEIVING) {
+		return true;
+	} else {
+		return false;
 	}
 }
 
-BOOL InetGetFile::IsFileError()
+bool InetGetFile::IsFileReceived()
 {
 	int state;
-	if(m_HardError) return TRUE;
-	if(m_bUseHTTP)
-	{
+
+	if (m_bUseHTTP) {
 		state = http->GetStatus();
-	}
-	else
-	{
+	} else {
 		state = ftp->GetStatus();
 	}
-	switch(state)
-	{
 
-	case FTP_STATE_URL_PARSING_ERROR:
-	case FTP_STATE_HOST_NOT_FOUND:
-	case FTP_STATE_DIRECTORY_INVALID:
-	case FTP_STATE_FILE_NOT_FOUND:
-	case FTP_STATE_CANT_CONNECT:
-	case FTP_STATE_LOGIN_ERROR:
-	case FTP_STATE_INTERNAL_ERROR:
-	case FTP_STATE_SOCKET_ERROR:
-	case FTP_STATE_UNKNOWN_ERROR:
-	case FTP_STATE_RECV_FAILED:
-	case FTP_STATE_CANT_WRITE_FILE:
-		return TRUE;
-	case FTP_STATE_CONNECTING:
-		return FALSE;
-	default:
-		return FALSE;
+	if (state == FTP_STATE_FILE_RECEIVED) {
+		return true;
+	} else {
+		return false;
 	}
+}
+
+bool InetGetFile::IsFileError()
+{
+	int state;
+
+	if (m_HardError)
+		return true;
+
+	if (m_bUseHTTP) {
+		state = http->GetStatus();
+	} else {
+		state = ftp->GetStatus();
+	}
+printf("state: %i\n", state);
+	switch (state)
+	{
+		case FTP_STATE_URL_PARSING_ERROR:
+		case FTP_STATE_HOST_NOT_FOUND:
+		case FTP_STATE_DIRECTORY_INVALID:
+		case FTP_STATE_FILE_NOT_FOUND:
+		case FTP_STATE_CANT_CONNECT:
+		case FTP_STATE_LOGIN_ERROR:
+		case FTP_STATE_INTERNAL_ERROR:
+		case FTP_STATE_SOCKET_ERROR:
+		case FTP_STATE_UNKNOWN_ERROR:
+		case FTP_STATE_RECV_FAILED:
+		case FTP_STATE_CANT_WRITE_FILE:
+			return true;
+
+		case FTP_STATE_CONNECTING:
+			return false;
+
+		default:
+			return false;
+	}
+
+	return false;
 }
 
 int InetGetFile::GetErrorCode()
 {
 	int state;
-	if(m_HardError) return m_HardError;
-	if(m_bUseHTTP)
-	{
+
+	if (m_HardError)
+		return m_HardError;
+
+	if (m_bUseHTTP) {
 		state = http->GetStatus();
-	}
-	else
-	{
+	} else {
 		state = ftp->GetStatus();
 	}
-	switch(state)
+
+	switch (state)
 	{
+		case FTP_STATE_URL_PARSING_ERROR:
+			return INET_ERROR_CANT_PARSE_URL;
 
-	case FTP_STATE_URL_PARSING_ERROR:
-		return INET_ERROR_CANT_PARSE_URL;
+		case FTP_STATE_HOST_NOT_FOUND:
+			return INET_ERROR_HOST_NOT_FOUND;
 
-	case FTP_STATE_HOST_NOT_FOUND:
-		return INET_ERROR_HOST_NOT_FOUND;
+		case FTP_STATE_DIRECTORY_INVALID:
+		case FTP_STATE_FILE_NOT_FOUND:
+			return INET_ERROR_BAD_FILE_OR_DIR;
 
+		case FTP_STATE_CANT_CONNECT:
+		case FTP_STATE_LOGIN_ERROR:
+		case FTP_STATE_INTERNAL_ERROR:
+		case FTP_STATE_SOCKET_ERROR:
+		case FTP_STATE_UNKNOWN_ERROR:
+		case FTP_STATE_RECV_FAILED:
+			return INET_ERROR_UNKNOWN_ERROR;
 
-	case FTP_STATE_DIRECTORY_INVALID:
-	case FTP_STATE_FILE_NOT_FOUND:
-		return INET_ERROR_BAD_FILE_OR_DIR;
+		case FTP_STATE_CANT_WRITE_FILE:
+			return INET_ERROR_CANT_WRITE_FILE;
 
-	case FTP_STATE_CANT_CONNECT:
-	case FTP_STATE_LOGIN_ERROR:
-	case FTP_STATE_INTERNAL_ERROR:
-	case FTP_STATE_SOCKET_ERROR:
-	case FTP_STATE_UNKNOWN_ERROR:
-	case FTP_STATE_RECV_FAILED:
-
-		return INET_ERROR_UNKNOWN_ERROR;
-
-	case FTP_STATE_CANT_WRITE_FILE:
-		return INET_ERROR_CANT_WRITE_FILE;
-	default:
-		return INET_ERROR_NO_ERROR;
+		default:
+			return INET_ERROR_NO_ERROR;
 	}
+
+	return INET_ERROR_NO_ERROR;
 }
 
 int InetGetFile::GetTotalBytes()
 {
-	if(m_bUseHTTP)
-	{
+	if (m_bUseHTTP) {
 		return http->GetTotalBytes();
-	}
-	else
-	{
+	} else {
 		return ftp->GetTotalBytes();
 	}
 }
 
 int InetGetFile::GetBytesIn()
 {
-	if(m_bUseHTTP)
-	{
+	if (m_bUseHTTP) {
 		return http->GetBytesIn();
-	}
-	else
-	{
+	} else {
 		return ftp->GetBytesIn();
 	}
 }

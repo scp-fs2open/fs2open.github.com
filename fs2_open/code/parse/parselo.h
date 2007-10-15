@@ -9,15 +9,18 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.42.2.5 $
- * $Author: Goober5000 $
- * $Date: 2007-08-17 03:29:49 $
+ * $Revision: 2.42.2.6 $
+ * $Author: taylor $
+ * $Date: 2007-10-15 06:43:20 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
+ * Revision 2.42.2.5  2007/08/17 03:29:49  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
+ *
  * Revision 2.42.2.4  2007/05/28 20:04:49  taylor
  * more resilient checking of stars.tbl and it's modular versions
  *
@@ -451,7 +454,6 @@ extern jmp_buf parse_abort;
 
 //For modular TBL files -C
 #define MAX_TBL_PARTS 32
-extern bool Modular_tables_loaded;
 
 // 1K on the stack? seems to work...
 // JH: 1k isn't enough!  Command briefs can be 16k max, so changed this.

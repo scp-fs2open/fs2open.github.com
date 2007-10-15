@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.h $
- * $Revision: 2.6.2.1 $
- * $Date: 2007-04-24 12:07:34 $
- * $Author: karajorma $
+ * $Revision: 2.6.2.2 $
+ * $Date: 2007-10-15 06:43:19 $
+ * $Author: taylor $
  *
  * Header file to support misc. multiplayer support functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6.2.1  2007/04/24 12:07:34  karajorma
+ * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
+ *
  * Revision 2.6  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -374,12 +377,6 @@ int multi_get_connection_speed();
 
 // if we're in tracker mode, do a validation update on all known missions
 void multi_update_valid_missions();
-
-// if we're in tracker mode, get the ip banmask list
-void multi_update_ban_list();
-
-// if we're in tracker mode, check if this addr matches a banmask
-bool fs2netd_player_banned(net_addr *addr);
 
 // get a new id# for a player
 short multi_get_new_id();

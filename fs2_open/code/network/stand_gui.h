@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/stand_gui.h $
- * $Revision: 2.3 $
- * $Date: 2005-07-13 03:35:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.3.2.1 $
+ * $Date: 2007-10-15 06:43:20 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/07/13 03:35:34  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.2  2004/08/11 05:06:29  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -138,8 +142,6 @@
 // ----------------------------------------------------------------------------------------
 // external variables
 //
-
-#ifndef NO_STANDALONE
 
 struct net_player;
 
@@ -337,8 +339,6 @@ int std_player_is_banned(char *name);
 
 // add a callsign to the ban list
 void std_add_ban(char *name);
-
-#endif  // ifndef NO_STANDALONE
 
 
 #endif

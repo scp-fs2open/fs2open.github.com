@@ -80,6 +80,10 @@ int script_test(script_state *st)
 		required_string("#End");
 	}
 
+	// add tbl/tbm to multiplayer validation list
+	extern void fs2netd_add_table_validation(char *tblname);
+	fs2netd_add_table_validation("scripting.tbl");
+
 	return 1;
 }
 

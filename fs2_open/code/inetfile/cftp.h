@@ -9,13 +9,17 @@
 
  /*
  * $Logfile: /Freespace2/code/Inetfile/CFtp.h $
- * $Revision: 2.3 $
- * $Date: 2005-07-13 03:15:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.3.2.1 $
+ * $Date: 2007-10-15 06:43:13 $
+ * $Author: taylor $
  *
  * FTP Client class (get only)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.3  2005/07/13 03:15:50  Goober5000
+ * remove PreProcDefine #includes in FS2
+ * --Goober5000
+ *
  * Revision 2.2  2004/08/11 05:06:25  Kazan
  * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
  *
@@ -44,8 +48,13 @@
 #ifndef _CFTP_HEADER_
 #define _CFTP_HEADER_
 
+#include "globalincs/pstypes.h"
+
 #include <stdio.h>
+
+#ifdef WIN32
 #include <winsock.h>
+#endif
  
 #define FTP_STATE_INTERNAL_ERROR		0
 #define FTP_STATE_SOCKET_ERROR		1
@@ -66,17 +75,21 @@
 #define FTP_STATE_STARTUP				16
 
 
-extern void FTPObjThread( void * obj );
+#ifdef WIN32
+extern void FTPObjThread( void *obj );
+#else
+extern int FTPObjThread( void *obj );
+#endif
 
 class CFtpGet
 {
 
 public:
-	CFtpGet(char *URL,char *localfile,char *Username = NULL,char *Password = NULL);
+	CFtpGet(char *URL, char *localfile, char *Username = NULL, char *Password = NULL);
 	~CFtpGet();
 	int GetStatus();
-	unsigned int GetBytesIn();
-	unsigned int GetTotalBytes();
+	uint GetBytesIn();
+	uint GetTotalBytes();
 	void AbortGet();
 
 	void WorkerThread();
@@ -85,16 +98,16 @@ protected:
 	
 	int ConnectControlSocket();
 	int LoginHost();	
-	unsigned int SendFTPCommand(char *command);
-	unsigned int ReadFTPServerReply();
-	unsigned int GetFile();
-	unsigned int IssuePort();
-	unsigned int ReadDataChannel();
+	uint SendFTPCommand(char *command);
+	uint ReadFTPServerReply();
+	uint GetFile();
+	uint IssuePort();
+	uint ReadDataChannel();
 	void FlushControlChannel();
 
-	unsigned int m_iBytesIn;
-	unsigned int m_iBytesTotal;
-	unsigned int m_State;
+	uint m_iBytesIn;
+	uint m_iBytesTotal;
+	uint m_State;
 
 	bool m_Aborting;
 	bool m_Aborted;
@@ -112,8 +125,11 @@ protected:
 	SOCKET m_ControlSock;
 
 	FILE *LOCALFILE;
-};
 
+#ifdef SCP_UNIX
+	SDL_Thread *thread_id;
+#endif
+};
 
 
 #endif

@@ -9,13 +9,17 @@
 
 /*
 * $Logfile: /Freespace2/code/Inetfile/inetgetfile.h $
-* $Revision: 2.3 $
-* $Date: 2005-07-13 03:15:50 $
-* $Author: Goober5000 $
+* $Revision: 2.3.2.1 $
+* $Date: 2007-10-15 06:43:14 $
+* $Author: taylor $
 *
 * InternetGetFile Class header
 *
 * $Log: not supported by cvs2svn $
+* Revision 2.3  2005/07/13 03:15:50  Goober5000
+* remove PreProcDefine #includes in FS2
+* --Goober5000
+*
 * Revision 2.2  2004/08/11 05:06:25  Kazan
 * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
 *
@@ -39,6 +43,7 @@
 *
 * $NoKeywords: $
 */
+
 #ifndef _INET_GETFILE_HEADER_
 #define _INET_GETFILE_HEADER_
 
@@ -61,10 +66,10 @@ class InetGetFile
 public:
 	InetGetFile(char *URL,char *localfile);
 	~InetGetFile();
-	BOOL IsFileReceived();
-	BOOL IsFileError();
-	BOOL IsConnecting();
-	BOOL IsReceiving();
+	bool IsFileReceived();
+	bool IsFileError();
+	bool IsConnecting();
+	bool IsReceiving();
 	int GetErrorCode();
 	int GetBytesIn();
 	int GetTotalBytes();
@@ -73,7 +78,7 @@ public:
 protected:
 	CFtpGet *ftp;
 	ChttpGet *http;
-	BOOL m_bUseHTTP;
+	bool m_bUseHTTP;
 	int m_ErrorCode;
 	int m_State;
 	int m_HardError;
