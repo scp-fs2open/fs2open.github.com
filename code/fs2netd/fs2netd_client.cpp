@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /freespace2/code/fs2netd/fs2netd_client.cpp $
- * $Revision: 1.1.2.1 $
- * $Date: 2007-10-15 06:43:09 $
+ * $Revision: 1.1.2.2 $
+ * $Date: 2007-10-15 08:18:33 $
  * $Author: taylor $
  *
  * FS2NetD client handler
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1.2.1  2007/10/15 06:43:09  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  *
  * $NoKeywords: $
  */
@@ -54,7 +57,7 @@
 
 
 #define FS2NETD_DEFAULT_PORT			"12000"
-#define FS2NETD_DEFAULT_SERVER			"fs2netd.game-warden.com"
+#define FS2NETD_DEFAULT_SERVER			"64.92.160.252" // "fs2netd.game-warden.com"
 #define FS2NETD_DEFAULT_CHAT_SERVER		"fs2netd.game-warden.com"
 #define FS2NETD_DEFAULT_BANNER_URL		"http://fs2netd.game-warden.com/files/banners"
 
