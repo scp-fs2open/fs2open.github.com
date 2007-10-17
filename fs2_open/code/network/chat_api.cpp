@@ -230,7 +230,7 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 #ifdef WIN32
 			if ( select(0, NULL, &write_fds, NULL, &timeout) )
 #else
-			if ( select(Chatsock+1, NULL, &write_fds, NULL, &timeout) != SOCKET_ERROR )
+			if ( select(Chatsock+1, NULL, &write_fds, NULL, &timeout) > 0 )
 #endif
 			{
 				Socket_connected = 1;
