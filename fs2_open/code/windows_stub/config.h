@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.17.2.6 $
- * $Date: 2007-10-15 06:43:23 $
+ * $Revision: 2.17.2.7 $
+ * $Date: 2007-10-17 20:59:30 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.17.2.6  2007/10/15 06:43:23  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 2.17.2.5  2007/02/12 00:23:40  taylor
  * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
@@ -155,6 +158,7 @@
 
 #include <unistd.h>
 #include "SDL.h"
+#include "SDL_thread.h"
 
 
 // don't verbose stub funtions unless we're debugging
