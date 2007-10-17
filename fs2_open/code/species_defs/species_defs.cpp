@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.32.2.5 $
- * $Date: 2007-10-15 06:43:22 $
+ * $Revision: 1.32.2.6 $
+ * $Date: 2007-10-17 20:58:25 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.32.2.5  2007/10/15 06:43:22  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 1.32.2.4  2007/09/02 02:07:47  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -298,7 +301,7 @@ void parse_species_tbl(char *filename)
 
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : NOX("<default species_defs.tbl>")));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : NOX("<default species_defs.tbl>"), rval));
 		lcl_ext_close();
 		return;
 	}

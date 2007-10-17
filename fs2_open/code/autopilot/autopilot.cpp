@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.14 $
- * $Date: 2007-09-02 02:07:38 $
- * $Author: Goober5000 $
+ * $Revision: 1.23.2.15 $
+ * $Date: 2007-10-17 20:58:25 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.14  2007/09/02 02:07:38  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 1.23.2.13  2007/08/04 22:29:58  Goober5000
  * fix case-sensitive #include (Linux)
  *
@@ -1003,7 +1006,7 @@ void parse_autopilot_table(char *filename)
 
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : "<default autopilot.tbl>"));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : "<default autopilot.tbl>", rval));
 		lcl_ext_close();
 		return;
 	}
