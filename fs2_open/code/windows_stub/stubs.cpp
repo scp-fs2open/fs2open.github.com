@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.32.2.3 $
- * $Date: 2007-02-12 00:23:40 $
+ * $Revision: 2.32.2.4 $
+ * $Date: 2007-10-17 21:03:06 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32.2.3  2007/02/12 00:23:40  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
  * Revision 2.32.2.2  2006/12/07 18:26:48  taylor
  * fix for new GCC versions (Fedora Core 6)
  *
@@ -205,15 +208,15 @@ void WinAssert(char * text, char *filename, int line)
 }
 
 // standard warning message
-void Warning( char * filename, int line, char * format, ... )
+void Warning( char * filename, int line, const char * format, ... )
 {
 #ifndef NDEBUG
 	va_list args;
 	int i;
 	int slen = 0;
 
-	memset( &buffer, 0, sizeof(buffer) );
-	memset( &buffer_tmp, 0, sizeof(buffer_tmp) );
+	memset( buffer, 0, sizeof(buffer) );
+	memset( buffer_tmp, 0, sizeof(buffer_tmp) );
 
 	va_start(args, format);
 	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
@@ -244,14 +247,14 @@ void Warning( char * filename, int line, char * format, ... )
 }
 
 // fatal error message
-void Error( char * filename, int line, char * format, ... )
+void Error( char * filename, int line, const char * format, ... )
 {
 	va_list args;
 	int i;
 	int slen = 0;
 
-	memset( &buffer, 0, sizeof(buffer) );
-	memset( &buffer_tmp, 0, sizeof(buffer_tmp) );
+	memset( buffer, 0, sizeof(buffer) );
+	memset( buffer_tmp, 0, sizeof(buffer_tmp) );
 
 	va_start(args, format);
 	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);

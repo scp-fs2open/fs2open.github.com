@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.38.2.5 $
- * $Date: 2007-04-03 02:19:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.38.2.6 $
+ * $Date: 2007-10-17 21:03:05 $
+ * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38.2.5  2007/04/03 02:19:26  Goober5000
+ * meh, space
+ *
  * Revision 2.38.2.4  2007/04/03 01:39:31  Goober5000
  * fixed up some error messages
  *
@@ -1139,7 +1142,7 @@ void LuaError(struct lua_State *L, char *format, ...)
 	Messagebox_active = false;
 }
 
-void _cdecl Error( char * filename, int line, char * format, ... )
+void _cdecl Error( char * filename, int line, const char * format, ... )
 {
 	int val;
 	va_list args;
@@ -1191,7 +1194,7 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 	Messagebox_active = false;
 }
 
-void _cdecl Warning( char *filename, int line, char *format, ... )
+void _cdecl Warning( char *filename, int line, const char *format, ... )
 {
 #ifndef NDEBUG
 	va_list args;
