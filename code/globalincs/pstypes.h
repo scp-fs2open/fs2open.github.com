@@ -9,16 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.42.2.10 $
- * $Date: 2007-02-12 00:24:33 $
+ * $Revision: 2.42.2.11 $
+ * $Date: 2007-10-17 21:03:05 $
  * $Author: taylor $
- * $Revision: 2.42.2.10 $
- * $Date: 2007-02-12 00:24:33 $
+ * $Revision: 2.42.2.11 $
+ * $Date: 2007-10-17 21:03:05 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.42.2.10  2007/02/12 00:24:33  taylor
+ * add back special "var" setting for flag_def_list and convert some of the lists to use it (more on the way)
+ *
  * Revision 2.42.2.9  2007/02/11 20:26:00  Goober5000
  * fix some breakage ;)
  *
@@ -598,8 +601,8 @@ typedef struct flag_def_list {
 //This are defined in MainWin.c
 extern void _cdecl WinAssert(char * text,char *filename, int line);
 extern void LuaError(struct lua_State *L, char *format=NULL, ...);
-extern void _cdecl Error( char * filename, int line, char * format, ... );
-extern void _cdecl Warning( char * filename, int line, char * format, ... );
+extern void _cdecl Error( char * filename, int line, const char * format, ... );
+extern void _cdecl Warning( char * filename, int line, const char * format, ... );
 
 #include "osapi/outwnd.h"
 
