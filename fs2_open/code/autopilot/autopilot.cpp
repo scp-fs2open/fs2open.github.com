@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.15 $
- * $Date: 2007-10-17 20:58:25 $
- * $Author: taylor $
+ * $Revision: 1.23.2.16 $
+ * $Date: 2007-10-20 23:28:48 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.15  2007/10/17 20:58:25  taylor
+ * fix mismatched parameters (Mantis #1470)
+ *
  * Revision 1.23.2.14  2007/09/02 02:07:38  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -307,7 +310,8 @@ bool CanAutopilot(bool send_msg)
 		object *other_objp = &Objects[so->objnum];
 
 		// attacks player?
-		if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)))
+		if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)) 
+			&& !(Ship_info[Ships[other_objp->instance].ship_info_index].flags & SIF_CARGO))
 		{
 			// Cannot autopilot if enemy within 5,000 meters
 			if (vm_vec_dist_quick(&Player_obj->pos, &other_objp->pos) < 5000)
@@ -354,7 +358,8 @@ bool CanAutopilotPos(vec3d targetPos)
 	{
 		object *other_objp = &Objects[so->objnum];
 		// attacks player?
-		if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)))
+		if (iff_x_attacks_y(obj_team(other_objp), obj_team(Player_obj)) 
+			&& !(Ship_info[Ships[other_objp->instance].ship_info_index].flags & SIF_CARGO)) // ignore cargo
 		{
 			// Cannot autopilot if enemy within 5,000 meters
 			if (vm_vec_dist_quick(&targetPos, &other_objp->pos) < 5000)
