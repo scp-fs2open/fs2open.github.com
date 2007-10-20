@@ -7101,34 +7101,6 @@
 			Name="Network"
 			>
 			<File
-				RelativePath="..\..\code\network\fs2ox.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\network\fs2ox.h"
-				>
-			</File>
-			<File
 				RelativePath="..\..\code\Network\Multi.cpp"
 				>
 				<FileConfiguration
@@ -8066,118 +8038,34 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="fs2open_pxo"
+			Name="fs2netd"
 			>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\Client.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\fs2open_pxo\Client.h"
+				RelativePath="..\..\code\fs2netd\fs2netd_client.cpp"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\protocol.h"
+				RelativePath="..\..\code\fs2netd\fs2netd_client.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\TCP_Client.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\fs2open_pxo\TCP_Socket.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\fs2open_pxo\TCP_Socket.h"
+				RelativePath="..\..\code\fs2netd\protocol.h"
 				>
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\udpsocket.cpp"
+				RelativePath="..\..\code\fs2netd\tcp_client.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\udpsocket.h"
+				RelativePath="..\..\code\fs2netd\tcp_client.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fs2netd\tcp_socket.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fs2netd\tcp_socket.h"
 				>
 			</File>
 		</Filter>
@@ -8210,38 +8098,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\species_defs\species_defs.h"
-				>
-			</File>
-		</Filter>
-		<Filter
-			Name="irc"
-			>
-			<File
-				RelativePath="..\..\code\irc\irc.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\irc\irc.h"
 				>
 			</File>
 		</Filter>
