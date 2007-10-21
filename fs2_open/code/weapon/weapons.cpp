@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.23  2007/10/15 06:43:22  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 2.180.2.22  2007/09/02 02:07:48  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -2967,6 +2970,7 @@ int parse_weapon(int subtype, bool replace)
 			} else {
 				if (wip->b_info.beam_num_sections < MAX_BEAM_SECTIONS) {
 					bsip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
+					generic_anim_init(&bsip->texture, NULL);
 				} else {
 					Warning(LOCATION, "Too many beam sections for weapon %s - max is %d", wip->name, MAX_BEAM_SECTIONS);
 					bsip = &tbsw;
@@ -3019,10 +3023,12 @@ int parse_weapon(int subtype, bool replace)
 			if ( optional_string("+Translation:") )
 				stuff_float(&bsip->translation);
 
-			// if we are actually removing this index, the reset it and we'll
+			// if we are actually removing this index then reset it and we'll
 			// clean up the entries later
-			if (remove)
+			if (remove) {
 				memset( bsip, 0, sizeof(beam_weapon_section_info) );
+				generic_anim_init(&bsip->texture, NULL);
+			}
 		}
 	}
 
@@ -3562,7 +3568,7 @@ void weapon_clean_entries()
 
 void weapon_release_bitmaps()
 {
-	int i;
+	int i, j;
 	weapon_info *wip;
 
 	// not for FRED...
@@ -3612,8 +3618,8 @@ void weapon_release_bitmaps()
 			}
 
 			// section textures
-			for (int i = 0; i < wip->b_info.beam_num_sections; i++) {
-				beam_weapon_section_info *bsi = &wip->b_info.sections[i];
+			for (j = 0; j < wip->b_info.beam_num_sections; j++) {
+				beam_weapon_section_info *bsi = &wip->b_info.sections[j];
 
 				if (bsi->texture.first_frame >= 0) {
 					bm_release(bsi->texture.first_frame);
