@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.131 $
- * $Date: 2007-02-26 04:30:48 $
+ * $Revision: 2.132 $
+ * $Date: 2007-10-21 22:11:14 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.131  2007/02/26 04:30:48  Goober5000
+ * add model compare capability (currently only via debug console)
+ *
  * Revision 2.130  2007/02/21 01:44:02  Goober5000
  * remove duplicate model texture replacement
  *
@@ -4831,6 +4834,15 @@ int model_find_dock_name_index( int modelnum, char *name )
 	{
 		if ( !stricmp(pm->docking_bays[i].name, name) )
 			return i;
+	}
+
+	// if the bay does not have a name in the model, the model loading code
+	// will assign it a default name... check for that here
+	if (!strnicmp(name, "<unnamed bay ", 13))
+	{
+		int index = (name[13] - 'A');
+		if (index >= 0 && index < pm->n_docks)
+			return index;
 	}
 
 	// if we get here, name wasn't found -- return -1 and hope for the best
