@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.105.2.18 $
- * $Date: 2007-02-21 01:43:32 $
+ * $Revision: 2.105.2.19 $
+ * $Date: 2007-10-21 22:11:17 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105.2.18  2007/02/21 01:43:32  Goober5000
+ * remove duplicate model texture replacement
+ *
  * Revision 2.105.2.17  2007/02/20 04:19:22  Goober5000
  * the great big duplicate model removal commit
  *
@@ -4765,7 +4768,7 @@ int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 }
 
 // function to return an index into the docking_bays array which matches the string passed
-// Fred uses strings to identify docking positions.  This functin also accepts generic strings
+// Fred uses strings to identify docking positions.  This function also accepts generic strings
 // so that a desginer doesn't have to know exact names if building a mission from hand.
 int model_find_dock_name_index( int modelnum, char *name )
 {
@@ -4799,6 +4802,15 @@ int model_find_dock_name_index( int modelnum, char *name )
 	{
 		if ( !stricmp(pm->docking_bays[i].name, name) )
 			return i;
+	}
+
+	// if the bay does not have a name in the model, the model loading code
+	// will assign it a default name... check for that here
+	if (!strnicmp(name, "<unnamed bay ", 13))
+	{
+		int index = (name[13] - 'A');
+		if (index >= 0 && index < pm->n_docks)
+			return index;
 	}
 
 	// if we get here, name wasn't found -- return -1 and hope for the best
