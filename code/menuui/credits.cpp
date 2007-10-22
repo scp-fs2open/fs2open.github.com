@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.33 $
- * $Date: 2007-09-02 02:10:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.34 $
+ * $Date: 2007-10-22 22:23:22 $
+ * $Author: phreak $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.33  2007/09/02 02:10:26  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.32  2007/03/22 20:35:19  taylor
  * be sure to page in textures for change ship class sexp preload
  * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
@@ -332,7 +335,7 @@ char *fs2_open_credit_text =
 	"Jon \"Sesquipedalian\" Stovell\n"
 	"Matt \"Sticks\" Nischan\n"
 	"Mike \"penguin\" Harris\n"
-	"Nick \"PhReAk\" Iannetta\n"
+	"Nick \"phreak\" Iannetta\n"
 	"Thomas \"RandomTiger\" Whittaker\n"
 	"Taylor Richards\n"
 	"Will \"##Unknown Player##\" Rousnel\n"
