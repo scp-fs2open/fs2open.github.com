@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.296 $
- * $Date: 2007-09-29 14:31:11 $
- * $Author: karajorma $
+ * $Revision: 2.297 $
+ * $Date: 2007-10-23 20:07:25 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.296  2007/09/29 14:31:11  karajorma
+ * Fix the double respawn bug (Mantis 788) and hopefully the corresponding server Int3 (Mantis 1213)
+ *
  * Revision 2.295  2007/09/04 00:08:47  Goober5000
  * fix the factoring on the shudder parameters (Mantis #1419)
  *
@@ -2749,6 +2752,8 @@ void game_level_init(int seed)
 	Cheats_enabled = 0;
 
 	Game_shudder_time = -1;
+
+	Perspective_locked = false;
 
 	// reset the geometry batcher, this should to be done pretty soon in this mission load process (though it's not required)
 	batch_reset();
