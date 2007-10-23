@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.h $
- * $Revision: 2.10 $
- * $Date: 2007-03-23 01:51:57 $
- * $Author: taylor $
+ * $Revision: 2.11 $
+ * $Date: 2007-10-23 02:07:27 $
+ * $Author: phreak $
  *
  * External defs for missile trail stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2007/03/23 01:51:57  taylor
+ * bit of cleanup and minor performance tweaks
+ * sync up with new generic_anim/bitmap and weapon delayed loading changes
+ * with generic_anim, use Goober's animation timing for beam section and glow animations
+ * make trail render list dynamic (as well as it can be)
+ *
  * Revision 2.9  2005/07/13 03:35:30  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -101,7 +107,7 @@ typedef struct trail_info {
 typedef struct trail {
 	int		head, tail;						// pointers into the queue for the trail points
 	vec3d	pos[NUM_TRAIL_SECTIONS];	// positions of trail points
-	float	val[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
+	float	alpha[NUM_TRAIL_SECTIONS];	// for each point, a value that tells how much to fade out	
 	bool	object_died;					// set to zero as long as object	
 	int		trail_stamp;					// trail timestamp	
 
