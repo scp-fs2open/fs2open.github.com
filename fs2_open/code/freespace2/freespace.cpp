@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.48 $
- * $Date: 2007-10-15 06:43:09 $
+ * $Revision: 2.243.2.49 $
+ * $Date: 2007-10-23 20:07:42 $
  * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.48  2007/10/15 06:43:09  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 2.243.2.47  2007/09/29 13:58:39  karajorma
  * Fix the double respawn bug (Mantis 788) and hopefully the corresponding server Int3 (Mantis 1213)
  *
@@ -2735,6 +2738,8 @@ void game_level_init(int seed)
 	Cheats_enabled = 0;
 
 	Game_shudder_time = -1;
+
+	Perspective_locked = false;
 
 	// reset the geometry batcher, this should to be done pretty soon in this mission load process (though it's not required)
 	batch_reset();
