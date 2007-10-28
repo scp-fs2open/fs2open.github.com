@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/PlayerMenu.cpp $
- * $Revision: 2.30.2.3 $
- * $Date: 2007-09-02 02:07:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.30.2.4 $
+ * $Date: 2007-10-28 16:38:13 $
+ * $Author: taylor $
  *
  * Code to drive the Player Select initial screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30.2.3  2007/09/02 02:07:43  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.30.2.2  2006/10/01 19:22:15  taylor
  * re-fix this crap that I managed to break last time (was Mantis bug 1066 I think)
  *
@@ -725,40 +728,53 @@ void player_select_do()
 
 	// process any ui window stuff
 	k = Player_select_window.process();
-	if(k){
+
+	if (k) {
 		extern void game_process_cheats(int k);
 		game_process_cheats(k);
 	}
-	switch(k){
-	// switch between single and multiplayer modes
-	case KEY_TAB : 
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-		break;
-#else
 
-		if(Player_select_input_mode){
-			gamesnd_play_iface(SND_GENERAL_FAIL);
+	switch (k) {
+		// switch between single and multiplayer modes
+		case KEY_TAB: {
+#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
 			break;
-		}
-		// play a little sound
-		gamesnd_play_iface(SND_USER_SELECT);
-		if(Player_select_mode == PLAYER_SELECT_MODE_MULTI){					
-			player_select_set_bottom_text(XSTR( "Single-Player Mode", 376));
-				
-			// reinitialize as single player mode
-			player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
-		} else if(Player_select_mode == PLAYER_SELECT_MODE_SINGLE){										
-			player_select_set_bottom_text(XSTR( "Multiplayer Mode", 377));
-				
-			// reinitialize as multiplayer mode
-			player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
-		}
-		break;	
+#else
+			if (Player_select_input_mode) {
+				gamesnd_play_iface(SND_GENERAL_FAIL);
+				break;
+			}
+
+			// play a little sound
+			gamesnd_play_iface(SND_USER_SELECT);
+
+			if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {					
+				player_select_set_bottom_text(XSTR( "Single-Player Mode", 376));
+					
+				// reinitialize as single player mode
+				player_select_init_player_stuff(PLAYER_SELECT_MODE_SINGLE);
+			} else if (Player_select_mode == PLAYER_SELECT_MODE_SINGLE) {										
+				player_select_set_bottom_text(XSTR( "Multiplayer Mode", 377));
+					
+				// reinitialize as multiplayer mode
+				player_select_init_player_stuff(PLAYER_SELECT_MODE_MULTI);
+			}
+	
+			break;
 #endif
-		case KEY_ESC:
-			Player_select_no_save_pilot = 1;
+		}
+
+		case KEY_ESC: {
+			// we can hit ESC to get out of text input mode, and we don't want
+			// to set this var in that case since it will crash on a NULL Player
+			// ptr when going to the mainhall
+			if ( !Player_select_input_mode ) {
+				Player_select_no_save_pilot = 1;
+			}
+
 			break;
-	}	
+		}
+	}
 
 	// draw the player select pseudo-dialog over it
 	gr_set_bitmap(Player_select_background_bitmap);
