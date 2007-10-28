@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.38.2.6 $
- * $Date: 2007-10-17 21:03:05 $
+ * $Revision: 2.38.2.7 $
+ * $Date: 2007-10-28 16:36:34 $
  * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38.2.6  2007/10/17 21:03:05  taylor
+ * change Warning() and Error() to use const format variables (can't remember who said to do this)
+ * fix memory error when zero'ing buffers for error messages on non-Windows platforms
+ *
  * Revision 2.38.2.5  2007/04/03 02:19:26  Goober5000
  * meh, space
  *
@@ -1199,13 +1203,44 @@ void _cdecl Warning( char *filename, int line, const char *format, ... )
 #ifndef NDEBUG
 	va_list args;
 	int result;
+	int i;
+	int slen = 0;
 
-	if (Cmdline_nowarn)
-		return;
+	// output to the debug log before anything else (so that we have a complete record)
+
+	memset( AssertText1, 0, sizeof(AssertText1) );
+	memset( AssertText2, 0, sizeof(AssertText2) );
 
 	va_start(args, format);
 	vsprintf(AssertText1, format, args);
 	va_end(args);
+
+	slen = strlen(AssertText1);
+
+	// strip out the newline char so the output looks better
+	for (i = 0; i < slen; i++){
+		if (AssertText1[i] == (char)0x0a) {
+			AssertText2[i] = ' ';
+		} else {
+			AssertText2[i] = AssertText1[i];
+		}
+	}
+
+	// kill off extra white space at end
+	if (AssertText2[slen-1] == (char)0x20) {
+		AssertText2[slen-1] = '\0';
+	} else {
+		// just being careful
+		AssertText2[slen] = '\0';
+	}
+
+	mprintf(("WARNING: \"%s\" at %s:%d\n", AssertText2, strrchr(filename, '\\')+1, line));
+
+	// now go for the additional popup window, if we want it ...
+
+	if (Cmdline_nowarn) {
+		return;
+	}
 
 	filename = strrchr(filename, '\\')+1;
 	sprintf(AssertText2, "Warning: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line );
