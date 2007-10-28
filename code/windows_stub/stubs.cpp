@@ -1,13 +1,17 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.32.2.4 $
- * $Date: 2007-10-17 21:03:06 $
+ * $Revision: 2.32.2.5 $
+ * $Date: 2007-10-28 16:46:36 $
  * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32.2.4  2007/10/17 21:03:06  taylor
+ * change Warning() and Error() to use const format variables (can't remember who said to do this)
+ * fix memory error when zero'ing buffers for error messages on non-Windows platforms
+ *
  * Revision 2.32.2.3  2007/02/12 00:23:40  taylor
  * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
@@ -149,7 +153,7 @@
 bool env_enabled = false;
 bool cell_enabled = false;
 
-#define MAX_BUF_SIZE	240
+#define MAX_BUF_SIZE	512
 static char buffer[MAX_BUF_SIZE], buffer_tmp[MAX_BUF_SIZE];
 
 
