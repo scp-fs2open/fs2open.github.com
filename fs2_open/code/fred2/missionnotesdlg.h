@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.h $
- * $Revision: 1.4.2.2 $
- * $Date: 2007-07-23 16:08:24 $
- * $Author: Kazan $
+ * $Revision: 1.4.2.3 $
+ * $Date: 2007-10-28 16:35:13 $
+ * $Author: taylor $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4.2.2  2007/07/23 16:08:24  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 1.4.2.1  2006/07/30 20:00:47  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
@@ -222,6 +225,7 @@ public:
 	BOOL		m_no_briefing;
 	BOOL		m_no_debriefing;
 	BOOL		m_autpilot_cinematics;
+	BOOL		m_2d_mission;
 	float		m_max_hull_repair_val;
 	float		m_max_subsys_repair_val;
 	BOOL		m_contrail_threshold_flag;

@@ -1005,6 +1005,7 @@
 #define IDC_PLAYER_START_AI             1546
 #define IDC_CUSTOM_TECH_DB              1547
 #define IDC_USE_AUTOPILOT_CINEMATICS    1547
+#define IDC_2D_MISSION                  1548
 #define IDC_LABEL1                      1549
 #define IDC_LABEL2                      1550
 #define IDC_NEW_TEXTURE                 1551
