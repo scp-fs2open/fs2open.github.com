@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.62 $
- * $Date: 2007-10-28 16:44:33 $
- * $Author: taylor $
+ * $Revision: 2.259.2.63 $
+ * $Date: 2007-10-28 18:10:45 $
+ * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.62  2007/10/28 16:44:33  taylor
+ * cleanup and bug fixes for ship-guardian-threshold and ship-subsys-guardian-threshold (Mantis #1473)
+ *
  * Revision 2.259.2.61  2007/10/04 16:26:17  taylor
  * fix bugs in beam-*-all and turret-*-all that made them always trigger an Int3()
  *
@@ -1700,7 +1703,8 @@ sexp_oper Operators[] = {
 	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
 	{ "shields-left",					OP_SHIELDS_LEFT,				1, 1, },
 	{ "hits-left",						OP_HITS_LEFT,					1, 1, },
-	{ "hits-left-subsystem",		OP_HITS_LEFT_SUBSYSTEM,		2, 2, },
+	{ "hits-left-subsystem",			OP_HITS_LEFT_SUBSYSTEM,				2, 2, },
+	{ "hits-left-single-subsystem",		OP_HITS_LEFT_SINGLE_SUBSYSTEM,		2, 2, },
 	{ "distance",						OP_DISTANCE,					2, 2, },
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
 	{ "num-within-box",				OP_NUM_WITHIN_BOX,					7,	INT_MAX},	//WMC
@@ -6082,7 +6086,7 @@ int sexp_team_score(int node)
 
 
 // function to return the remaining hits left on a subsystem as a percentage of thw whole.
-int sexp_hits_left_subsystem(int n)
+int sexp_hits_left_subsystem(int n, bool single_subsystem)
 {
 	int shipnum, percent, type;
 	char *shipname;
@@ -6105,7 +6109,7 @@ int sexp_hits_left_subsystem(int n)
 	if ( (type >= 0) && (type < SUBSYSTEM_MAX) ) {
 		// return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
 		// we are returning the sum of the hits on the 3 engines)
-		if (type == SUBSYSTEM_UNKNOWN) {
+		if (single_subsystem || (type == SUBSYSTEM_UNKNOWN)) {
 			// find the ship subsystem by searching ship's subsys_list
 			ship_subsys *ss;
 			ss = GET_FIRST( &Ships[shipnum].subsys_list );
@@ -6119,7 +6123,7 @@ int sexp_hits_left_subsystem(int n)
 				ss = GET_NEXT( ss );
 			}
 			// we reached end of ship subsys list without finding subsys_name
-			Error(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
+			Error(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem or hits-left-single-subsystem", subsys_name);
 
 		} else {
 			percent = (int)(ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f);
@@ -14261,6 +14265,7 @@ int process_special_sexps(int index)
 		}
 		return SEXP_FALSE;
 		break;
+
 	case 1:	//	Fired Interceptors
 		object	*objp;
 		for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
@@ -14277,6 +14282,7 @@ int process_special_sexps(int index)
 			}
 		}
 		return SEXP_FALSE;
+
 	case 2:	//	Ship "Freighter 1", subsystem "Weapons" is aspect locked by player.
 		if (Player_ai->target_objnum != -1) {
 			if (!(stricmp(Ships[Objects[Player_ai->target_objnum].instance].ship_name, "Freighter 1"))) {
@@ -14289,11 +14295,13 @@ int process_special_sexps(int index)
 		}
 		return SEXP_FALSE;
 		break;
+
 	case 3:	//	Player ship suffering shield damage on front.
 		apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
 		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 		return SEXP_TRUE;
 		break;
+
 	case 4:	//	Player ship suffering much damage.
 		nprintf(("AI", "Frame %i\n", Framecount));
 		apply_damage_to_shield(Player_obj, FRONT_QUAD, 10.0f);
@@ -14303,6 +14311,7 @@ int process_special_sexps(int index)
 		else
 			return SEXP_FALSE;
 		break;
+
 	case 5:	//	Player's shield is quick repaired
 		nprintf(("AI", "Frame %i, recharged to %7.3f\n", Framecount, Player_obj->shield_quadrant[FRONT_QUAD]));
 
@@ -14317,6 +14326,7 @@ int process_special_sexps(int index)
 		else
 			return SEXP_FALSE;
 		break;
+
 	case 6:	//	3 of player's shield quadrants are reduced to 0.
 		Player_obj->shield_quadrant[1] = 1.0f;
 		Player_obj->shield_quadrant[2] = 1.0f;
@@ -14324,6 +14334,7 @@ int process_special_sexps(int index)
 		//apply_damage_to_shield(Player_obj, FRONT_QUAD, 1.0f);
 		hud_shield_quadrant_hit(Player_obj, FRONT_QUAD);
 		return SEXP_TRUE;
+
 	case 7:	//	Make sure front quadrant has been maximized, or close to it.
 		if (shield_quad_near_max(FRONT_QUAD)) return SEXP_TRUE; else return SEXP_FALSE;
 		break;
@@ -15226,7 +15237,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_HITS_LEFT_SUBSYSTEM:
-				sexp_val = sexp_hits_left_subsystem(node);
+			case OP_HITS_LEFT_SINGLE_SUBSYSTEM:
+				sexp_val = sexp_hits_left_subsystem(node, (op_num==OP_HITS_LEFT_SINGLE_SUBSYSTEM)?true:false);
 				break;
 
 			case OP_SPECIAL_WARP_DISTANCE:
@@ -16688,6 +16700,7 @@ int query_operator_return_type(int op)
 		case OP_SHIELDS_LEFT:
 		case OP_HITS_LEFT:
 		case OP_HITS_LEFT_SUBSYSTEM:
+		case OP_HITS_LEFT_SINGLE_SUBSYSTEM:
 		case OP_DISTANCE:
 		case OP_DISTANCE_SUBSYSTEM:
 		case OP_NUM_WITHIN_BOX:
@@ -17265,6 +17278,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_UNSCANNED:
 		case OP_IS_SUBSYSTEM_DESTROYED:
 		case OP_HITS_LEFT_SUBSYSTEM:
+		case OP_HITS_LEFT_SINGLE_SUBSYSTEM:
 			if (!argnum)
 				return OPF_SHIP;
 			else
@@ -19853,8 +19867,15 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of ship to check." },
 
 	{ OP_HITS_LEFT_SUBSYSTEM, "Hits left subsystem (Status operator)\r\n"
+		"\tReturns the current level of the specified ship's subsystem integrity as a percentage\r\n"
+		"of the damage done to all subsystems of the same type.\r\n\r\n"
+		"Returns a numeric value.  Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to check.\r\n"
+		"\t2:\tName of subsystem on ship to check." },
+
+	{ OP_HITS_LEFT_SINGLE_SUBSYSTEM, "Hits left single subsystem (Status operator)\r\n"
 		"\tReturns the current level of the specified ship's subsystem integrity as a percentage.\r\n\r\n"
-		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"Returns a numeric value.  Takes 2 arguments...\r\n"
 		"\t1:\tName of ship to check.\r\n"
 		"\t2:\tName of subsystem on ship to check." },
 
