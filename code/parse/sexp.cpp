@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.61 $
- * $Date: 2007-10-04 16:26:17 $
+ * $Revision: 2.259.2.62 $
+ * $Date: 2007-10-28 16:44:33 $
  * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.61  2007/10/04 16:26:17  taylor
+ * fix bugs in beam-*-all and turret-*-all that made them always trigger an Int3()
+ *
  * Revision 2.259.2.60  2007/09/29 21:51:30  karajorma
  * Fix x-builtin-messages so that the Any Wingman option works
  *
@@ -10926,65 +10929,75 @@ void sexp_ships_bomb_targetable(int n, int targetable)
 }
 
 // Goober5000
-void sexp_ship_guardian_threshold(int n)
+void sexp_ship_guardian_threshold(int num)
 {
 	char *ship_name;
 	int ship_num, threshold;
+	int n = -1;
 
-	threshold = eval_num(n);
-	n = CDR(n);
+	threshold = eval_num(num);
+
+	n = CDR(num);
 
 	// for all ships
-	for ( ; n != -1; n = CDR(n) )
-	{
+	for ( ; n != -1; n = CDR(n) ) {
 		// check to see if ship destroyed or departed.  In either case, do nothing.
 		ship_name = CTEXT(n);
-		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+
+		if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) ) {
 			continue;
+		}
 
 		// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.
 		ship_num = ship_name_lookup(ship_name);
-		if ( ship_num != -1 )
-		{
+
+		if (ship_num != -1) {
 			Ships[ship_num].ship_guardian_threshold = threshold;
 		}
 	}
 }
 
 // Goober5000
-void sexp_ship_subsys_guardian_threshold(int n)
+void sexp_ship_subsys_guardian_threshold(int num)
 {
-	char *ship_name;
+	char *ship_name, *hull_name;
 	int ship_num, threshold;
 	ship_subsys *ss;
+	int n = -1;
 
-	threshold = eval_num(n);
-	n = CDR(n);
+	threshold = eval_num(num);
+
+	n = CDR(num);
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
 	ship_name = CTEXT(n);
-	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) )
+
+	if ( mission_log_get_time(LOG_SHIP_DEPARTED, ship_name, NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, ship_name, NULL, NULL) ) {
 		return;
+	}
 
 	// get the ship num.  If we get a -1 for the number here, ship has yet to arrive.
 	ship_num = ship_name_lookup(ship_name);
-	if ( ship_num == -1 )
+
+	if (ship_num == -1) {
 		return;
+	}
 
 	n = CDR(n);
 
 	// for all subsystems
-	for ( ; n != -1; n = CDR(n) )
-	{
+	for ( ; n != -1; n = CDR(n) ) {
 		// check for HULL
-		if (!strcmp(CTEXT(n), SEXP_HULL_STRING))
-		{
-			Ships[ship_num].ship_guardian_threshold = threshold;
-		}
-		else
-		{
-			ss = ship_get_subsys(&Ships[ship_num], CTEXT(n));
-			ss->subsys_guardian_threshold = threshold;
+		hull_name = CTEXT(n);
+
+		if (hull_name != NULL) {
+			if ( !strcmp(hull_name, SEXP_HULL_STRING) ) {
+				Ships[ship_num].ship_guardian_threshold = threshold;
+			} else {
+				ss = ship_get_subsys(&Ships[ship_num], hull_name);
+				Assert( ss != NULL );
+				ss->subsys_guardian_threshold = threshold;
+			}
 		}
 	}
 }
