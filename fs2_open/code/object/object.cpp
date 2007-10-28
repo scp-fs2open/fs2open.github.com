@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.63.2.10 $
- * $Date: 2007-09-30 22:28:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.63.2.11 $
+ * $Date: 2007-10-28 16:42:16 $
+ * $Author: taylor $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.10  2007/09/30 22:28:25  Goober5000
+ * another patch by razorjack -- remove something that never worked
+ *
  * Revision 2.63.2.9  2007/07/28 21:31:05  Goober5000
  * this should really be capitalized
  *
@@ -1488,36 +1491,41 @@ void obj_move_call_physics(object *objp, float frametime)
 				// objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp;
 			// }
 
-			for (int i = 0; i < shipp->weapons.num_secondary_banks; i++)
-			{
-				//if there are no missles left don't bother
-				if (shipp->weapons.secondary_bank_ammo[i] == 0)
-					continue;
+			if (shipp->weapons.num_secondary_banks > 0) {
+				polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+				Assert( pm != NULL );
+				Assert( pm->missile_banks != NULL );
 
-				int points = model_get(Ship_info[shipp->ship_info_index].model_num)->missile_banks[i].num_slots;
-				int missles_left = shipp->weapons.secondary_bank_ammo[i];
-				int next_point = shipp->weapons.secondary_next_slot[i];
+				for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
+					//if there are no missles left don't bother
+					if (shipp->weapons.secondary_bank_ammo[i] == 0)
+						continue;
 
-				//ok so...we want to move up missles but only if there is a missle there to be moved up
-				//there is a missle behind next_point, and how ever many missles there are left after that
+					int points = pm->missile_banks[i].num_slots;
+					int missles_left = shipp->weapons.secondary_bank_ammo[i];
+					int next_point = shipp->weapons.secondary_next_slot[i];
 
-				if (points > missles_left) {
-					//there are more slots than missles left, so not all of the slots will have missles drawn on them
-					for (int k = next_point; k < next_point+missles_left; k ++) {
-						float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
-						if (s_pct < 1.0)
-							s_pct += shipp->reload_time[i] * frametime;
-						if (s_pct > 1.0)
-							s_pct = 1.0f;
-					}
-				} else {
-					//we don't have to worry about such things
-					for (int k = 0; k < points; k++) {
-						float &s_pct = shipp->secondary_point_reload_pct[i][k];
-						if (s_pct < 1.0)
-							s_pct += shipp->reload_time[i] * frametime;
-						if (s_pct > 1.0)
-							s_pct = 1.0f;
+					//ok so...we want to move up missles but only if there is a missle there to be moved up
+					//there is a missle behind next_point, and how ever many missles there are left after that
+
+					if (points > missles_left) {
+						//there are more slots than missles left, so not all of the slots will have missles drawn on them
+						for (int k = next_point; k < next_point+missles_left; k ++) {
+							float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
+							if (s_pct < 1.0)
+								s_pct += shipp->reload_time[i] * frametime;
+							if (s_pct > 1.0)
+								s_pct = 1.0f;
+						}
+					} else {
+						//we don't have to worry about such things
+						for (int k = 0; k < points; k++) {
+							float &s_pct = shipp->secondary_point_reload_pct[i][k];
+							if (s_pct < 1.0)
+								s_pct += shipp->reload_time[i] * frametime;
+							if (s_pct > 1.0)
+								s_pct = 1.0f;
+						}
 					}
 				}
 			}
