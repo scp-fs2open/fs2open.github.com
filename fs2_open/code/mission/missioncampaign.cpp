@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.40.2.12 $
- * $Date: 2007-09-02 02:07:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.40.2.13 $
+ * $Date: 2007-10-28 16:39:17 $
+ * $Author: taylor $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.40.2.12  2007/09/02 02:07:43  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.40.2.11  2007/03/21 20:54:24  karajorma
  * Bump the number of debriefing stages.
  * Fix an annoying (and erroneous) warning in the campaign editor.
@@ -1809,11 +1812,17 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		// end techroom data ---------------------------------------------------
 
 		// begin player loadout ------------------------------------------------
+		char trash[MAX_FILENAME_LEN+DATE_TIME_LENGTH];
 		int pool_count;
 		wss_unit *slot;
-		
-		cfread_string_len(Player_loadout.filename, MAX_FILENAME_LEN, fp);
-		cfread_string_len(Player_loadout.last_modified, DATE_TIME_LENGTH, fp);	
+
+		if (set_defaults) {
+			cfread_string_len(Player_loadout.filename, MAX_FILENAME_LEN, fp);
+			cfread_string_len(Player_loadout.last_modified, DATE_TIME_LENGTH, fp);
+		} else {
+			cfread_string_len(trash, MAX_FILENAME_LEN, fp);
+			cfread_string_len(trash + MAX_FILENAME_LEN, DATE_TIME_LENGTH, fp);
+		}
 
 		// read in ship pool
 		for ( i = 0; i < ship_count; i++ ) {
