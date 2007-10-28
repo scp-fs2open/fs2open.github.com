@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.24 $
- * $Date: 2007-03-22 20:47:33 $
- * $Author: taylor $
+ * $Revision: 2.25 $
+ * $Date: 2007-10-28 15:38:16 $
+ * $Author: karajorma $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2007/03/22 20:47:33  taylor
+ * make sure that we set/reset the red alert data properly (Mantis #1255)
+ *
  * Revision 2.23  2006/10/06 09:55:36  taylor
  * For redalert stored data be sure that dead ships don't come back, and departed ships come back just as they left (Mantis bug #810)
  *
@@ -888,7 +891,7 @@ void red_alert_store_wingman_status()
 	}
 
 	// store exited ships that did not die
-	for (int idx=0; idx<MAX_EXITED_SHIPS; idx++) {
+	for (int idx=0; idx<Ships_exited.size(); idx++) {
 
 		if ( Red_alert_num_slots_used >= MAX_RED_ALERT_SLOTS ) {
 			Int3();	// ran out of red alert slots

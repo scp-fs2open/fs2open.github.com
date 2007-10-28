@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.h $
- * $Revision: 2.10 $
- * $Date: 2006-12-28 00:59:53 $
- * $Author: wmcoolmon $
+ * $Revision: 2.11 $
+ * $Date: 2007-10-28 15:38:18 $
+ * $Author: karajorma $
  *
  * Scoring system structures, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/12/28 00:59:53  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.9  2006/09/11 06:51:17  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -332,7 +335,7 @@ void scoring_do_accept( scoring_struct *score );
 void scoring_check_medal(scoring_struct *sc);
 
 void scoring_add_damage(object *ship_obj,object *other_obj,float damage);
-void scoring_eval_kill(object *ship_obj);
+int scoring_eval_kill(object *ship_obj);
 void scoring_eval_assists(ship *sp,int killer_sig);
 
 // bash the passed player to the specified rank

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Scoring.cpp $
- * $Revision: 2.21 $
- * $Date: 2007-09-30 19:01:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.22 $
+ * $Date: 2007-10-28 15:38:18 $
+ * $Author: karajorma $
  *
  * Scoring system code, medals, rank, etc.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2007/09/30 19:01:17  Goober5000
+ * a bugfix by razorjack
+ *
  * Revision 2.20  2007/09/02 02:10:29  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -794,7 +797,7 @@ void scoring_add_damage(object *ship_obj,object *other_obj,float damage)
 char Scoring_debug_text[4096];
 
 // evaluate a kill on a ship
-void scoring_eval_kill(object *ship_obj)
+int scoring_eval_kill(object *ship_obj)
 {		
 	float max_damage_pct;		// the pct% of total damage the max damage object did
 	int max_damage_index;		// the index into the dying ship's damage_ship[] array corresponding the greatest amount of damage
@@ -807,15 +810,15 @@ void scoring_eval_kill(object *ship_obj)
 
 	// multiplayer clients bail here
 	if(MULTIPLAYER_CLIENT){
-		return;
+		return -1;
 	}
 
 	// we don't evaluate kills on anything except ships
 	if(ship_obj->type != OBJ_SHIP){
-		return;	
+		return -1;	
 	}
 	if((ship_obj->instance < 0) || (ship_obj->instance >= MAX_SHIPS)){
-		return;
+		return -1;
 	}
 
 	// assign the dead ship
@@ -837,10 +840,7 @@ void scoring_eval_kill(object *ship_obj)
 
 	// if this ship doesn't show up on player sensors, then don't eval a kill
 	if ( dead_ship->flags & SF_HIDDEN_FROM_SENSORS ){
-		// make sure to set invalid killer id numbers
-		dead_ship->damage_ship_id[0] = -1;
-		dead_ship->damage_ship[0] = -1.0f;
-		return;
+		return -1;
 	}
 
 #ifndef NDEBUG
@@ -873,7 +873,7 @@ void scoring_eval_kill(object *ship_obj)
 	
 	// doh
 	if((max_damage_index < 0) || (max_damage_index >= MAX_DAMAGE_SLOTS)){
-		return;
+		return -1;
 	}
 
 	// the pct of total damage applied to this ship
@@ -915,7 +915,7 @@ void scoring_eval_kill(object *ship_obj)
 
 			// bogus
 			if((plr->objnum < 0) || (plr->objnum >= MAX_OBJECTS)){
-				return;
+				return -1;
 			}			
 
 			// get the ship info index of the ship type of this kill.  we need to take ship
@@ -1017,11 +1017,11 @@ void scoring_eval_kill(object *ship_obj)
 	// get credit for an assist
 	scoring_eval_assists(dead_ship,killer_sig);	
 
-	// bash damage_ship_id[0] with the signature of the guy who is getting credit for the kill
+	/* bash damage_ship_id[0] with the signature of the guy who is getting credit for the kill
 	dead_ship->damage_ship_id[0] = killer_sig;
 	dead_ship->damage_ship[0] = max_damage_pct;
 
-/*
+
 	// debug code
 #if !defined(RELEASE_REAL)
 	if (Game_mode & GM_MULTIPLAYER) {
@@ -1048,6 +1048,7 @@ void scoring_eval_kill(object *ship_obj)
 	}
 #endif
 */
+	return max_damage_index; 
 }
 
 // kill_id is the object signature of the guy who got the credit for the kill (may be -1, if no one got it)
