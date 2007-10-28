@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.137 $
+ * $Revision: 2.138 $
  * $Author: karajorma $
- * $Date: 2007-09-29 15:27:53 $
+ * $Date: 2007-10-28 15:38:17 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.137  2007/09/29 15:27:53  karajorma
+ * Upgrade the beam-x-all and turret-x-all SEXPs to accept more than one ship.
+ * Add the allow-treason SEXP
+ *
  * Revision 2.136  2007/09/27 06:55:38  turey
  * "no primary linking" ship flag and related SEXPs - prevent a ship from linking primaries.
  *
@@ -1131,6 +1135,8 @@ struct ship_subsys;
 #define OP_GET_PRIMARY_AMMO					(0x002d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_GET_SECONDARY_AMMO				(0x002e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define	OP_NUM_ASSISTS						(0x002f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_GET_DAMAGE_CAUSED				(0x0030 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define	OP_HITS_LEFT_SINGLE_SUBSYSTEM		(0x0031 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
@@ -1336,10 +1342,10 @@ struct ship_subsys;
 #define OP_LOCK_SECONDARY_WEAPON			(0x00b0 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_UNLOCK_SECONDARY_WEAPON			(0x00b1 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SET_CAMERA_SHUDDER				(0x00b2 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
-#define OP_DEAL_WITH_SHIP_LOADOUT			(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_DISABLE_PRIMARY_LINKING			(0x00b4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Turey
-#define OP_ENABLE_PRIMARY_LINKING			(0x00b5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Turey
-#define OP_ALLOW_TREASON					(0x00b6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_ALLOW_TREASON					(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_DEAL_WITH_SHIP_LOADOUT			(0x00b4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_DISABLE_PRIMARY_LINKING			(0x00b5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Turey
+#define OP_ENABLE_PRIMARY_LINKING			(0x00b6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Turey
 
 
 

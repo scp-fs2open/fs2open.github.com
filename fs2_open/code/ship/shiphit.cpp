@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.79 $
- * $Date: 2007-07-15 02:45:19 $
- * $Author: Goober5000 $
+ * $Revision: 2.80 $
+ * $Date: 2007-10-28 15:38:18 $
+ * $Author: karajorma $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2007/07/15 02:45:19  Goober5000
+ * fixed a small bug in the lab
+ * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
+ * removed my old supercap damage scaling change
+ * moved Turey's truefire flag to ai_profiles
+ *
  * Revision 2.78  2007/07/13 22:28:13  turey
  * Initial commit of Training Weapons / Simulated Hull code.
  *
@@ -2100,6 +2106,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	ship *sp;
 	char *killer_ship_name;
 	int killer_damage_percent = 0;
+	int killer_index = -1;
 	object *killer_objp = NULL;
 
 	sp = &Ships[ship_obj->instance];
@@ -2120,18 +2127,18 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 
 	// single player and multiplayer masters evaluate the scoring and kill stuff
 	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
-		scoring_eval_kill( ship_obj );
+		killer_index = scoring_eval_kill( ship_obj );
 
 		// ship is destroyed -- send this event to the mission log stuff to record this event.  Try to find who
 		// killed this ship.  scoring_eval_kill above should leave the obj signature of the ship who killed
 		// this guy (or a -1 if no one got the kill).
 		killer_ship_name = NULL;
 		killer_damage_percent = -1;
-		if ( sp->damage_ship_id[0] != -1 ) {
+		if ( killer_index >= 0 ) {
 			object *objp;
 			int sig;
 
-			sig = sp->damage_ship_id[0];
+			sig = sp->damage_ship_id[killer_index];
 			for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 				if ( objp->signature == sig ){
 					break;
@@ -2151,7 +2158,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 					killer_ship_name = Ships_exited[ei].ship_name;
 				}
 			}
-			killer_damage_percent = (int)(sp->damage_ship[0] * 100.0f);
+			killer_damage_percent = (int)(sp->damage_ship[killer_index] * 100.0f);
 		}		
 
 		if(!self_destruct){
