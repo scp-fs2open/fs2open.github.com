@@ -4,11 +4,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.16 $
- * $Date: 2007-10-20 23:28:48 $
- * $Author: Kazan $
+ * $Revision: 1.23.2.17 $
+ * $Date: 2007-10-28 16:33:05 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.16  2007/10/20 23:28:48  Kazan
+ * Enemy cargo containers should not prevent autopilot.
+ * Fix build problem in parselo (strrchr returns const char* not char*, need to explicitly cast - raises error in MSVC2005)
+ * Update MSVC2005 "code" project to reflect removal/addition of fs2netd related files
+ *
  * Revision 1.23.2.15  2007/10/17 20:58:25  taylor
  * fix mismatched parameters (Mantis #1470)
  *
@@ -478,7 +483,7 @@ void StartAutopilot()
 				(Ships[i].wingnum != -1 && Wings[Ships[i].wingnum].flags & WF_NAV_CARRY) // only if in a wing
 				&& Player_obj != &Objects[Ships[i].objnum]) //only if not player object
 			{	
-				ai_info	*aip = aip = &Ai_info[Ships[i].ai_index];
+				ai_info	*aip = &Ai_info[Ships[i].ai_index];
 				int wingnum = aip->wing, wing_index = get_wing_index(&Objects[Ships[i].objnum], wingnum);
 				vec3d goal_point;
 				object *leader_objp = get_wing_leader(wingnum);
