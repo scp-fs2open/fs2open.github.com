@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.329 $
- * $Date: 2007-10-12 14:53:40 $
+ * $Revision: 2.330 $
+ * $Date: 2007-10-28 15:38:17 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.329  2007/10/12 14:53:40  karajorma
+ * Doh!
+ *
  * Revision 2.328  2007/10/04 16:26:43  taylor
  * fix bugs in beam-*-all and turret-*-all that made them always trigger an Int3()
  *
@@ -1735,12 +1738,14 @@ sexp_oper Operators[] = {
 	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
 	{ "shields-left",					OP_SHIELDS_LEFT,				1, 1, },
 	{ "hits-left",						OP_HITS_LEFT,					1, 1, },
-	{ "hits-left-subsystem",		OP_HITS_LEFT_SUBSYSTEM,		2, 2, },
+	{ "hits-left-subsystem",			OP_HITS_LEFT_SUBSYSTEM,				2, 2, },
+	{ "hits-left-single-subsystem",		OP_HITS_LEFT_SINGLE_SUBSYSTEM,		2, 2, },
 	{ "sim-hits-left",						OP_SIM_HITS_LEFT,					1, 1, }, // Turey
 	{ "distance",						OP_DISTANCE,					2, 2, },
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
 	{ "num-within-box",				OP_NUM_WITHIN_BOX,					7,	INT_MAX},	//WMC
 	{ "special-warp-dist",			OP_SPECIAL_WARP_DISTANCE,	1, 1,	},
+	{ "get-damage-caused",			OP_GET_DAMAGE_CAUSED,		2, INT_MAX	},
 
 	{ "set-object-speed-x",				OP_SET_OBJECT_SPEED_X,				2,	3	},	// WMC
 	{ "set-object-speed-y",				OP_SET_OBJECT_SPEED_Y,				2,	3	},	// WMC
@@ -6146,7 +6151,7 @@ int sexp_team_score(int node)
 
 
 // function to return the remaining hits left on a subsystem as a percentage of thw whole.
-int sexp_hits_left_subsystem(int n)
+int sexp_hits_left_subsystem(int n, bool single_subsystem)
 {
 	int shipnum, percent, type;
 	char *shipname;
@@ -6169,7 +6174,7 @@ int sexp_hits_left_subsystem(int n)
 	if ( (type >= 0) && (type < SUBSYSTEM_MAX) ) {
 		// return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
 		// we are returning the sum of the hits on the 3 engines)
-		if (type == SUBSYSTEM_UNKNOWN) {
+		if (single_subsystem || (type == SUBSYSTEM_UNKNOWN)) {
 			// find the ship subsystem by searching ship's subsys_list
 			ship_subsys *ss;
 			ss = GET_FIRST( &Ships[shipnum].subsys_list );
@@ -6183,7 +6188,7 @@ int sexp_hits_left_subsystem(int n)
 				ss = GET_NEXT( ss );
 			}
 			// we reached end of ship subsys list without finding subsys_name
-			Error(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
+			Error(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem or hits-left-single-subsystem", subsys_name);
 
 		} else {
 			percent = (int)(ship_get_subsystem_strength(&Ships[shipnum],type) * 100.0f);
@@ -7025,6 +7030,91 @@ int sexp_was_medal_granted(int n)
 		return SEXP_TRUE;
 
 	return SEXP_FALSE;
+}
+
+float get_damage_caused(int damaged_ship, int attacker ) 
+{
+	int sindex, idx;
+	float damage_total = 0.0f; 
+
+
+	// is the ship that took damage in the mission still?
+	sindex = ship_get_by_signature(damaged_ship);
+
+	if (sindex >= 0 ) {
+		for(idx=0; idx<MAX_DAMAGE_SLOTS; idx++){
+			if (Ships[sindex].damage_ship_id[idx] == attacker) {
+				damage_total += Ships[sindex].damage_ship[idx];
+				break;
+			}
+		}
+	}
+	else {
+		sindex = ship_find_exited_ship_by_signature(damaged_ship);
+		for(idx=0; idx<MAX_DAMAGE_SLOTS; idx++){
+			if (Ships_exited[sindex].damage_ship_id[idx] == attacker) {
+				damage_total += Ships_exited[sindex].damage_ship[idx];
+				break;
+			}
+		}
+
+	
+	}
+	return damage_total; 
+}
+
+// Karajorma
+int sexp_get_damage_caused(int node) 
+{
+	int sindex, damaged_sig, attacker_sig; 
+	float damage_caused = 0.0f;
+	char	*name;
+	int ship_class;
+
+	name = CTEXT(node);
+	sindex = ship_name_lookup(name); 
+	if (sindex < 0) {
+		// this ship may have exited already.
+		sindex = ship_find_exited_ship_by_name(CTEXT(node));
+		if (sindex < 0) {
+			// this is probably a ship which hasn't arrived and thus can't have taken any damage yet
+			return damage_caused;
+		}
+		else {
+			damaged_sig = Ships_exited[sindex].obj_signature;
+			ship_class = Ships_exited[sindex].ship_class;
+		}
+	}
+	else {
+		damaged_sig = Objects[Ships[sindex].objnum].signature ;
+		ship_class = Ships[sindex].ship_info_index;
+	}
+
+
+	node = CDR(node);
+	Assert (node != -1);
+
+	// go through the list of ships who we think may have attacked the ship
+	for ( ; node != -1; node = CDR(node) ) {
+		name = CTEXT(node);
+		sindex = ship_name_lookup(name); 
+		if (sindex < 0) {
+			sindex = ship_find_exited_ship_by_name(name);
+			attacker_sig = Ships_exited[sindex].obj_signature; 
+		}
+		else {
+			attacker_sig = Objects[Ships[sindex].objnum].signature ;
+		}
+
+		if (attacker_sig < 0) {
+			continue;
+		}
+
+		damage_caused += get_damage_caused (damaged_sig, attacker_sig);
+	}
+	
+	Assert ((ship_class > -1) && (ship_class < MAX_SHIP_CLASSES));
+	return (int) ((damage_caused/Ship_info[ship_class].max_hull_strength) * 100.0f);
 }
 
 // function which returns true if the percentage of ships (and ships in wings) departed is at
@@ -9603,7 +9693,7 @@ void sexp_change_goal_validity( int n, int flag )
 void sexp_deal_with_ship_loadout()
 {
 	// cycle through Ships_exited and find ships which require attention
-	for (int i=0; i < Num_exited_ships ; i++) 
+	for (int i=0; i < Ships_exited.size() ; i++) 
 	{
 		// Need go no further for this ship unless we marked it to say we were interested in it earlier
 		if (!(Ships_exited[i].flags & SEF_SHIP_EXITED_STORE))
@@ -15471,7 +15561,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_HITS_LEFT_SUBSYSTEM:
-				sexp_val = sexp_hits_left_subsystem(node);
+			case OP_HITS_LEFT_SINGLE_SUBSYSTEM:
+				sexp_val = sexp_hits_left_subsystem(node, (op_num==OP_HITS_LEFT_SINGLE_SUBSYSTEM)?true:false);
 				break;
 
 			case OP_SIM_HITS_LEFT:
@@ -15541,6 +15632,10 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_WAS_MEDAL_GRANTED:
 				sexp_val = sexp_was_medal_granted(node);
+				break;
+
+			case OP_GET_DAMAGE_CAUSED:
+				sexp_val = sexp_get_damage_caused(node);
 				break;
 
 			case OP_PERCENT_SHIPS_DEPARTED:
@@ -16950,6 +17045,7 @@ int query_operator_return_type(int op)
 		case OP_SHIELDS_LEFT:
 		case OP_HITS_LEFT:
 		case OP_HITS_LEFT_SUBSYSTEM:
+		case OP_HITS_LEFT_SINGLE_SUBSYSTEM:
 		case OP_SIM_HITS_LEFT:
 		case OP_DISTANCE:
 		case OP_DISTANCE_SUBSYSTEM:
@@ -16973,6 +17069,7 @@ int query_operator_return_type(int op)
 		case OP_NUM_SHIPS_IN_WING:
 		case OP_CURRENT_SPEED:
 		case OP_NAV_DISTANCE:
+		case OP_GET_DAMAGE_CAUSED:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -17267,8 +17364,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_RED_ALERT:
 		case OP_END_MISSION:
 		case OP_FORCE_JUMP:
+		case OP_RESET_ORDERS:
 		case OP_DEAL_WITH_SHIP_LOADOUT:
-		case OP_RESET_ORDERS:		
 			return OPF_NONE;
 
 		case OP_AND:
@@ -17360,6 +17457,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_IS_SHIP_VISIBLE:
 		case OP_IS_SHIP_STEALTHY:
 		case OP_IS_FRIENDLY_STEALTH_VISIBLE:
+		case OP_GET_DAMAGE_CAUSED:
 			return OPF_SHIP;
 		
 		case OP_SHIP_CREATE:
@@ -17534,6 +17632,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_UNSCANNED:
 		case OP_IS_SUBSYSTEM_DESTROYED:
 		case OP_HITS_LEFT_SUBSYSTEM:
+		case OP_HITS_LEFT_SINGLE_SUBSYSTEM:
 			if (!argnum)
 				return OPF_SHIP;
 			else
@@ -20139,8 +20238,15 @@ sexp_help_struct Sexp_help[] = {
 		"\t1:\tName of ship to check." },
 
 	{ OP_HITS_LEFT_SUBSYSTEM, "Hits left subsystem (Status operator)\r\n"
+		"\tReturns the current level of the specified ship's subsystem integrity as a percentage\r\n"
+		"of the damage done to all subsystems of the same type.\r\n\r\n"
+		"Returns a numeric value.  Takes 2 arguments...\r\n"
+		"\t1:\tName of ship to check.\r\n"
+		"\t2:\tName of subsystem on ship to check." },
+
+	{ OP_HITS_LEFT_SINGLE_SUBSYSTEM, "Hits left single subsystem (Status operator)\r\n"
 		"\tReturns the current level of the specified ship's subsystem integrity as a percentage.\r\n\r\n"
-		"Returns a numeric value.  Takes 1 argument...\r\n"
+		"Returns a numeric value.  Takes 2 arguments...\r\n"
 		"\t1:\tName of ship to check.\r\n"
 		"\t2:\tName of subsystem on ship to check." },
 
@@ -20173,6 +20279,12 @@ sexp_help_struct Sexp_help[] = {
 		"\t5: Box height\r\n"
 		"\t6: Box depth\r\n"
 		"\tRest:\tShips or wings to check" },
+
+	{ OP_GET_DAMAGE_CAUSED, "Get damage caused (Status operator)\r\n"
+		"\tReturns the amount of damage one or more ships or wings have done to a ship.\r\n\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tShip that has been damaged.\r\n"
+		"\t2:\tName of ships or wings that may have damaged it." },
 
 	{ OP_LAST_ORDER_TIME, "Last order time (Status operator)\r\n"
 		"\tReturns true if <count> seconds have elapsed since one or more ships have received "

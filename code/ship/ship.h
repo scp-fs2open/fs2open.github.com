@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.196 $
- * $Date: 2007-09-27 06:55:39 $
- * $Author: turey $
+ * $Revision: 2.197 $
+ * $Date: 2007-10-28 15:38:18 $
+ * $Author: karajorma $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.196  2007/09/27 06:55:39  turey
+ * "no primary linking" ship flag and related SEXPs - prevent a ship from linking primaries.
+ *
  * Revision 2.195  2007/09/02 18:53:24  Goober5000
  * fix for #1455 plus a bit of cleanup
  *
@@ -1623,25 +1626,23 @@ typedef struct ship {
 #define SEF_SHIP_EXITED_STORE		(1<<6)		// Karajorma - Don't bump from Ships_exited even if full. 
 
 
-#define MAX_EXITED_SHIPS	(2*MAX_SHIPS) //DTP changed for MAX_SHIPS sake. double of max_ships.
-
-extern int Num_exited_ships;	// Karajorma - Added here so that Team Loadout SEXPs can get at it
-
 typedef struct exited_ship {
-	char		ship_name[NAME_LENGTH];
-	int		ship_class;						// The ships index in Ship_info
+	char	ship_name[NAME_LENGTH];
 	int		obj_signature;
+	int		ship_class;						// The ships index in Ship_info
 	int		team;
 	int		flags;
 	fix		time;
 	int		hull_strength;
 	fix		time_cargo_revealed;
 	char	cargo1;
+	float damage_ship[MAX_DAMAGE_SLOTS];		// A copy of the arrays from the ship so that we can figure out what damaged it
+	int   damage_ship_id[MAX_DAMAGE_SLOTS];
 
 	exited_ship() { memset(this, 0, sizeof(exited_ship)); obj_signature = ship_class = -1; }
 } exited_ship;
 
-extern exited_ship Ships_exited[MAX_EXITED_SHIPS];
+extern std::vector<exited_ship> Ships_exited;
 
 // a couple of functions to get at the data
 extern void ship_add_exited_ship( ship *shipp, int reason );
