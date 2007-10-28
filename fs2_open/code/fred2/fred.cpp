@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FRED.cpp $
- * $Revision: 1.2.2.2 $
- * $Date: 2006-11-15 00:36:07 $
+ * $Revision: 1.2.2.3 $
+ * $Date: 2007-10-28 16:34:11 $
  * $Author: taylor $
  *
  * FRED.cpp : Defines the class behaviors for the application.
@@ -18,6 +18,10 @@
  * application (MFC level at least), processes the INI file.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2.2.2  2006/11/15 00:36:07  taylor
+ * various bits of little cleanup
+ * get rid of some more compiler warnings
+ *
  * Revision 1.2.2.1  2006/10/08 02:05:33  Goober5000
  * fix forum links
  *
@@ -470,7 +474,20 @@ BOOL CFREDApp::InitInstance()
 	// Fred_exe_dir = strdup(c);		
 	strcpy(Fred_exe_dir, tok);
 	*/
-	strcpy(Fred_exe_dir, __argv[0]);
+
+	// we need a full path, and if run from a shell that may not happen, so work that case out...
+
+	Assert( strlen(__argv[0]) > 2 );
+
+	// see if we have a ':', and if not then assume that we don't have a full path
+	if (__argv[0][1] != ':') {
+		GetCurrentDirectory( sizeof(Fred_exe_dir)-1, Fred_exe_dir );
+		strcat(Fred_exe_dir, "\\");
+		strcat(Fred_exe_dir, __argv[0]);
+	} else {
+		strcpy(Fred_exe_dir, __argv[0]);
+	}
+
 	strcpy(Fred_base_dir, Fred_exe_dir);
 
 	char *str_end = Fred_base_dir + strlen(Fred_base_dir) - 1; // last char
