@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.26.2.3 $
- * $Date: 2007-04-11 14:59:16 $
+ * $Revision: 2.26.2.4 $
+ * $Date: 2007-10-28 16:45:05 $
  * $Author: taylor $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26.2.3  2007/04/11 14:59:16  taylor
+ * get rid of stale NO_JOYSTICK define
+ *
  * Revision 2.26.2.2  2007/02/11 09:25:42  taylor
  * some CFILE cleanup and slight directory order reorg
  * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
@@ -1787,19 +1790,22 @@ void player_set_squad_bitmap(player *p, char *fname)
 	}
 
 	// if he has another bitmap already - unload it
-	if(p->insignia_texture >= 0){
+	if (p->insignia_texture >= 0) {
 		bm_release(p->insignia_texture);
 	}
 
 	p->insignia_texture = -1;
 
 	// try and set the new one
-	strncpy(p->squad_filename, fname, MAX_FILENAME_LEN);
-	if(strlen(p->squad_filename) > 0){
+	if (fname != p->squad_filename) {
+		strncpy(p->squad_filename, fname, MAX_FILENAME_LEN);
+	}
+
+	if (strlen(p->squad_filename) > 0) {
 		p->insignia_texture = bm_load_duplicate(fname);
 		
 		// lock is as a transparent texture
-		if(p->insignia_texture != -1){
+		if (p->insignia_texture != -1) {
 			bm_lock(p->insignia_texture, 16, BMP_TEX_XPARENT);
 			bm_unlock(p->insignia_texture);
 		}
