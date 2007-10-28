@@ -1,12 +1,18 @@
 /*
  * $Logfile: $
- * $Revision: 1.29.2.8 $
- * $Date: 2007-03-22 20:35:45 $
+ * $Revision: 1.29.2.9 $
+ * $Date: 2007-10-28 16:45:56 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.29.2.8  2007/03/22 20:35:45  taylor
+ * be sure to page in textures for change ship class sexp preload
+ * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
+ * make event music keep extension if it exists, so that the special data will be accurate
+ * bits of cleanup from old MS code that we don't need
+ *
  * Revision 1.29.2.7  2007/02/18 08:59:03  taylor
  * fix super-stupid bug :)
  *
@@ -1987,7 +1993,7 @@ void audiostream_set_volume_all(float volume, int type)
 		if ( Audio_streams[i].status == ASF_FREE )
 			continue;
 
-		if ( Audio_streams[i].type == type ) {
+		if ( (Audio_streams[i].type == type) || ((Audio_streams[i].type == ASF_MENUMUSIC) && (type == ASF_EVENTMUSIC)) ) {
 			int converted_volume;
 			converted_volume = ds_convert_volume(volume);
 			Audio_streams[i].Set_Volume(converted_volume);
