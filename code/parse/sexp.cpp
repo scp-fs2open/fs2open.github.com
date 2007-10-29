@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.330 $
- * $Date: 2007-10-28 15:38:17 $
+ * $Revision: 2.331 $
+ * $Date: 2007-10-29 18:45:44 $
  * $Author: karajorma $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.330  2007/10/28 15:38:17  karajorma
+ * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
+ *
  * Revision 2.329  2007/10/12 14:53:40  karajorma
  * Doh!
  *
@@ -1738,8 +1741,7 @@ sexp_oper Operators[] = {
 	{ "is-secondary-selected",				OP_IS_SECONDARY_SELECTED,			2,	2			},
 	{ "shields-left",					OP_SHIELDS_LEFT,				1, 1, },
 	{ "hits-left",						OP_HITS_LEFT,					1, 1, },
-	{ "hits-left-subsystem",			OP_HITS_LEFT_SUBSYSTEM,				2, 2, },
-	{ "hits-left-single-subsystem",		OP_HITS_LEFT_SINGLE_SUBSYSTEM,		2, 2, },
+	{ "hits-left-subsystem",			OP_HITS_LEFT_SUBSYSTEM,				2, 3, },
 	{ "sim-hits-left",						OP_SIM_HITS_LEFT,					1, 1, }, // Turey
 	{ "distance",						OP_DISTANCE,					2, 2, },
 	{ "distance-ship-subsystem",	OP_DISTANCE_SUBSYSTEM,	3, 3 },					// Goober5000
@@ -6151,9 +6153,9 @@ int sexp_team_score(int node)
 
 
 // function to return the remaining hits left on a subsystem as a percentage of thw whole.
-int sexp_hits_left_subsystem(int n, bool single_subsystem)
+int sexp_hits_left_subsystem(int n)
 {
-	int shipnum, percent, type;
+	int shipnum, percent, type, single_subsystem = 0;
 	char *shipname;
 	char *subsys_name;
 
@@ -6172,6 +6174,12 @@ int sexp_hits_left_subsystem(int n, bool single_subsystem)
 	subsys_name = CTEXT(CDR(n));
 	type = ai_get_subsystem_type( subsys_name );
 	if ( (type >= 0) && (type < SUBSYSTEM_MAX) ) {
+		// check for the optional argument
+		n = CDDR(n); 
+		if (n >= 0) {
+			single_subsystem = is_sexp_true(n);
+		}
+
 		// return as a percentage the hits remaining on the subsystem as a whole (i.e. for 3 engines,
 		// we are returning the sum of the hits on the 3 engines)
 		if (single_subsystem || (type == SUBSYSTEM_UNKNOWN)) {
@@ -15561,12 +15569,7 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_HITS_LEFT_SUBSYSTEM:
-			case OP_HITS_LEFT_SINGLE_SUBSYSTEM:
-				sexp_val = sexp_hits_left_subsystem(node, (op_num==OP_HITS_LEFT_SINGLE_SUBSYSTEM)?true:false);
-				break;
-
-			case OP_SIM_HITS_LEFT:
-				sexp_val = sexp_sim_hits_left(node);
+				sexp_val = sexp_hits_left_subsystem(node);
 				break;
 
 			case OP_SPECIAL_WARP_DISTANCE:
@@ -17045,7 +17048,6 @@ int query_operator_return_type(int op)
 		case OP_SHIELDS_LEFT:
 		case OP_HITS_LEFT:
 		case OP_HITS_LEFT_SUBSYSTEM:
-		case OP_HITS_LEFT_SINGLE_SUBSYSTEM:
 		case OP_SIM_HITS_LEFT:
 		case OP_DISTANCE:
 		case OP_DISTANCE_SUBSYSTEM:
@@ -17631,12 +17633,18 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SET_SCANNED:
 		case OP_SET_UNSCANNED:
 		case OP_IS_SUBSYSTEM_DESTROYED:
-		case OP_HITS_LEFT_SUBSYSTEM:
-		case OP_HITS_LEFT_SINGLE_SUBSYSTEM:
 			if (!argnum)
 				return OPF_SHIP;
 			else
 				return OPF_SUBSYSTEM;
+			
+		case OP_HITS_LEFT_SUBSYSTEM:
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1) 
+				return OPF_SUBSYSTEM;
+			else 
+				return OPF_BOOL;
 
 		case OP_DISTANCE_SUBSYSTEM:
 			if (argnum == 0)
@@ -20242,13 +20250,8 @@ sexp_help_struct Sexp_help[] = {
 		"of the damage done to all subsystems of the same type.\r\n\r\n"
 		"Returns a numeric value.  Takes 2 arguments...\r\n"
 		"\t1:\tName of ship to check.\r\n"
-		"\t2:\tName of subsystem on ship to check." },
-
-	{ OP_HITS_LEFT_SINGLE_SUBSYSTEM, "Hits left single subsystem (Status operator)\r\n"
-		"\tReturns the current level of the specified ship's subsystem integrity as a percentage.\r\n\r\n"
-		"Returns a numeric value.  Takes 2 arguments...\r\n"
-		"\t1:\tName of ship to check.\r\n"
-		"\t2:\tName of subsystem on ship to check." },
+		"\t2:\tName of subsystem on ship to check.\r\n"
+		"\t3:\t(Optional) True/False. When set to true only the subsystem supplied will be tested." },
 
 	{ OP_SIM_HITS_LEFT, "Simulated Hits left (Status operator)\r\n"
 		"\tReturns the current level of the specified ship's simulated hull as a percentage.\r\n\r\n"

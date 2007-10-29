@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.138 $
+ * $Revision: 2.139 $
  * $Author: karajorma $
- * $Date: 2007-10-28 15:38:17 $
+ * $Date: 2007-10-29 18:45:45 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.138  2007/10/28 15:38:17  karajorma
+ * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
+ *
  * Revision 2.137  2007/09/29 15:27:53  karajorma
  * Upgrade the beam-x-all and turret-x-all SEXPs to accept more than one ship.
  * Add the allow-treason SEXP
@@ -1136,7 +1139,6 @@ struct ship_subsys;
 #define OP_GET_SECONDARY_AMMO				(0x002e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define	OP_NUM_ASSISTS						(0x002f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_GET_DAMAGE_CAUSED				(0x0030 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define	OP_HITS_LEFT_SINGLE_SUBSYSTEM		(0x0031 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
