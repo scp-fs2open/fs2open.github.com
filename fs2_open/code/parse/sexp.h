@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122.2.13 $
+ * $Revision: 2.122.2.14 $
  * $Author: karajorma $
- * $Date: 2007-10-28 18:10:45 $
+ * $Date: 2007-10-29 11:32:22 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122.2.13  2007/10/28 18:10:45  karajorma
+ * Add the hits-left-singe-subsystem SEXP
+ *
  * Revision 2.122.2.12  2007/09/29 21:51:31  karajorma
  * Fix x-builtin-messages so that the Any Wingman option works
  *
@@ -1118,7 +1121,6 @@ struct ship_subsys;
 #define OP_NUM_SHIPS_IN_WING				(0x002b | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)	// Karajorma
 #define OP_GET_PRIMARY_AMMO					(0x002c | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_GET_SECONDARY_AMMO				(0x002d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define	OP_HITS_LEFT_SINGLE_SUBSYSTEM		(0x002e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG)
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
