@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.15 $
- * $Date: 2006-11-16 00:52:28 $
+ * $Revision: 2.16 $
+ * $Date: 2007-11-09 01:32:54 $
  * $Author: taylor $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/11/16 00:52:28  taylor
+ * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)
+ *
  * Revision 2.14  2006/01/26 03:23:30  Goober5000
  * pare down the pragmas some more
  * --Goober5000
@@ -307,7 +310,7 @@ static char *Hotkey_mask_fname[GR_NUM_RESOLUTIONS] = {
 
 #define MAX_LINES					200
 #define NUM_BUTTONS				10
-#define LIST_BUTTONS_MAX		42
+#define LIST_BUTTONS_MAX		50
 
 #define SCROLL_UP_BUTTON		0
 #define SCROLL_DOWN_BUTTON		1
@@ -1413,6 +1416,7 @@ void mission_hotkey_do_frame(float frametime)
 		}
 
 		if (Hotkey_lines[line].type != HOTKEY_LINE_HEADING) {
+			Assert( (line - Scroll_offset) < LIST_BUTTONS_MAX );
 			List_buttons[line - Scroll_offset].update_dimensions(Hotkey_list_coords[gr_screen.res][0], y, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - Hotkey_list_coords[gr_screen.res][0], font_height);
 			List_buttons[line - Scroll_offset].enable();
 			if (hotkeys & (1 << Cur_hotkey)) {
@@ -1431,6 +1435,7 @@ void mission_hotkey_do_frame(float frametime)
 			}
 
 		} else {
+			Assert( (line - Scroll_offset) < LIST_BUTTONS_MAX );
 			List_buttons[line - Scroll_offset].disable();
 		}
 
