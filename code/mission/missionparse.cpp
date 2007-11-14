@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.228 $
- * $Date: 2007-10-12 20:30:02 $
+ * $Revision: 2.229 $
+ * $Date: 2007-11-14 14:14:25 $
  * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.228  2007/10/12 20:30:02  karajorma
+ * Typo
+ *
  * Revision 2.227  2007/09/03 01:02:49  Goober5000
  * fix for 1376
  *
@@ -6007,7 +6010,8 @@ void parse_variables()
 	}
 
 	// yeesh - none of this should be done in FRED :)
-	if (!Fred_running)
+	// It shouldn't be done for missions in the tecroom either. They should default to whatever FRED set them to
+	if (!Fred_running && (Game_mode & GM_CAMPAIGN_MODE))
 	{
 		// Goober5000 - now set the default value, if it's a campaign-persistent variable
 		// look through all previous missions (by doing it this way, we will continually
