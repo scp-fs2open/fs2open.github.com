@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.79 $
- * $Date: 2007-03-23 01:51:57 $
- * $Author: taylor $
+ * $Revision: 2.80 $
+ * $Date: 2007-11-18 07:43:12 $
+ * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.79  2007/03/23 01:51:57  taylor
+ * bit of cleanup and minor performance tweaks
+ * sync up with new generic_anim/bitmap and weapon delayed loading changes
+ * with generic_anim, use Goober's animation timing for beam section and glow animations
+ * make trail render list dynamic (as well as it can be)
+ *
  * Revision 2.78  2007/03/22 20:49:53  taylor
  * some generic code cleanup
  *
@@ -4929,7 +4935,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	int weapon_type_to_add, result;
 	int i;
 
-	ship_info *sip;
+	ship_info *sip, *source_sip;
 	weapon_info *wip;
 
 	char ship_name[NAME_LENGTH];
@@ -4940,9 +4946,7 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	// clear error stuff
 	error_flag = false;
 	for (i = 0; i < MAX_WING_SLOTS * MAX_SHIP_WEAPONS; i++)
-	{
 		*error_messages[i] = '\0';
-	}
 
 	// make sure we're not holding anything
 	wl_dump_carried_icon();
@@ -4951,6 +4955,9 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 	source_wss_slot = Selected_wl_slot;
 	if (source_wss_slot == -1)
 		source_wss_slot = 0;
+
+	// get its class
+	source_sip = &Ship_info[Wss_slots[source_wss_slot].ship_class];
 
 	// find which wing this ship is part of
 	cur_wing_block = source_wss_slot / MAX_WING_SLOTS;
@@ -4979,13 +4986,23 @@ void wl_apply_current_loadout_to_all_ships_in_current_wing()
 		for (cur_bank = 0; cur_bank < MAX_SHIP_WEAPONS; cur_bank++)
 		{
 			// this bank must exist on both the source ship and the destination ship
-			if ((Wss_slots[source_wss_slot].wep_count[cur_bank] < 0) || (Wss_slots[cur_wss_slot].wep_count[cur_bank] < 0))
+			if (cur_bank < MAX_SHIP_PRIMARY_BANKS)
 			{
-				continue;
+				if (cur_bank >= source_sip->num_primary_banks || cur_bank >= sip->num_primary_banks)
+					continue;
+			}
+			else
+			{
+				if (cur_bank-MAX_SHIP_PRIMARY_BANKS >= source_sip->num_secondary_banks || cur_bank-MAX_SHIP_PRIMARY_BANKS >= sip->num_secondary_banks)
+					continue;
 			}
 
 			// dump the destination ship's weapons
 			wl_drop(cur_bank, -1, -1, Wss_slots[cur_wss_slot].wep[cur_bank], cur_wss_slot, -1, true);
+
+			// weapons must be present on the source ship
+			if (Wss_slots[source_wss_slot].wep[cur_bank] < 0)
+				continue;
 
 			// determine the weapon we need
 			weapon_type_to_add = Wss_slots[source_wss_slot].wep[cur_bank];
