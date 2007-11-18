@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.38 $
- * $Date: 2007-11-14 13:49:31 $
- * $Author: karajorma $
+ * $Revision: 2.178.2.39 $
+ * $Date: 2007-11-18 06:57:06 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.38  2007/11/14 13:49:31  karajorma
+ * Fix peristent variables in missions played from the techroom
+ *
  * Revision 2.178.2.37  2007/09/02 18:52:51  Goober5000
  * fix for #1455 plus a bit of cleanup
  *
@@ -5177,7 +5180,7 @@ void parse_messages(mission *pm, int flags)
 	// mission file takes the same format as the messages in messages,tbl.  Make parsing
 	// a whole lot easier!!!
 	while ( required_string_either("#Reinforcements", "$Name")){
-		message_parse((flags & MPF_IMPORT_FSM) >= 0);		// call the message parsing system
+		message_parse(flags & MPF_IMPORT_FSM);		// call the message parsing system
 	}
 
 	mprintf(("Ending mission message count : %d\n", Num_message_waves));
