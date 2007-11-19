@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.20 $
- * $Date: 2007-02-11 09:08:45 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2007-11-19 20:24:40 $
+ * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2007/02/11 09:08:45  taylor
+ * slight debug message fixage
+ *
  * Revision 2.19  2006/02/19 00:32:47  Goober5000
  * additional error checking
  * --Goober5000
@@ -594,7 +597,12 @@ void cmd_brief_voice_play(int stage_num)
 // called to leave the command briefing screen
 void cmd_brief_exit()
 {
-	gameseq_post_event(GS_EVENT_START_BRIEFING);
+	// I know, going to red alert from cmd brief is stupid, but we have stupid fredders
+	if (red_alert_mission()) {
+		gameseq_post_event(GS_EVENT_RED_ALERT);
+	} else {
+		gameseq_post_event(GS_EVENT_START_BRIEFING);
+	}
 }
 
 void cmd_brief_stop_anim(int id)
@@ -874,11 +882,6 @@ void cmd_brief_init(int team)
 			sexp_replace_variable_names_with_values(Cur_cmd_brief->stage[i].text, CMD_BRIEF_TEXT_MAX);
 	}
 
-	if ( red_alert_mission() ) {
-		gameseq_post_event(GS_EVENT_RED_ALERT);
-		return;
-	}
-
 	if (Cur_cmd_brief->num_stages <= 0)
 		return;
 
@@ -1097,4 +1100,9 @@ void cmd_brief_do_frame(float frametime)
 	help_overlay_maybe_blit(CMD_BRIEF_OVERLAY);
 
 	gr_flip();
+}
+
+int mission_has_cmd_brief()
+{
+	return (Cur_cmd_brief->num_stages > 0);
 }

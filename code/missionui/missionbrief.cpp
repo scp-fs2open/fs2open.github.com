@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.45 $
- * $Date: 2007-03-22 20:35:20 $
- * $Author: taylor $
+ * $Revision: 2.46 $
+ * $Date: 2007-11-19 20:24:39 $
+ * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.45  2007/03/22 20:35:20  taylor
+ * be sure to page in textures for change ship class sexp preload
+ * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
+ * make event music keep extension if it exists, so that the special data will be accurate
+ * bits of cleanup from old MS code that we don't need
+ *
  * Revision 2.44  2007/02/20 04:20:18  Goober5000
  * the great big duplicate model removal commit
  *
@@ -1311,6 +1317,7 @@ void brief_init()
 
 	// Non standard briefing in red alert mission
 	if ( red_alert_mission() ) {
+		Int3();	// since we shouldn't be here
 		gameseq_post_event(GS_EVENT_RED_ALERT);
 		return;
 	}
