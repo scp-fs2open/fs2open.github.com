@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.h $
- * $Revision: 2.6 $
- * $Date: 2005-09-27 02:36:57 $
+ * $Revision: 2.7 $
+ * $Date: 2007-11-19 20:24:40 $
  * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/09/27 02:36:57  Goober5000
+ * clarification
+ * --Goober5000
+ *
  * Revision 2.5  2005/07/13 03:25:58  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -113,5 +117,7 @@ void cmd_brief_unhold();
 
 void cmd_brief_pause();
 void cmd_brief_unpause();
+
+int mission_has_cmd_brief();
 
 #endif // __MISSIONCMDBRIEF_H__
