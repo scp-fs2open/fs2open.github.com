@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.cpp $
- * $Revision: 2.9.2.1 $
- * $Date: 2007-10-15 06:43:12 $
- * $Author: taylor $
+ * $Revision: 2.9.2.2 $
+ * $Date: 2007-11-19 20:24:37 $
+ * $Author: Goober5000 $
  *
  * File to control Game Sequencing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9.2.1  2007/10/15 06:43:12  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 2.9  2006/01/12 17:42:56  wmcoolmon
  * Even more scripting stuff.
  *
@@ -432,7 +435,8 @@ char *GS_state_text[] =
 	"GS_STATE_PXO",							// 50
 	"GS_STATE_LAB",
 	"GS_STATE_STORYBOOK",
-	"GS_STATE_PXO_HELP"
+	"GS_STATE_PXO_HELP",
+	"GS_STATE_START_GAME"
 };
 //XSTR:ON
 
