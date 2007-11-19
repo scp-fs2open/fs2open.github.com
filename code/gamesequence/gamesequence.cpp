@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-01-12 17:42:56 $
- * $Author: wmcoolmon $
+ * $Revision: 2.10 $
+ * $Date: 2007-11-19 20:24:39 $
+ * $Author: Goober5000 $
  *
  * File to control Game Sequencing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/01/12 17:42:56  wmcoolmon
+ * Even more scripting stuff.
+ *
  * Revision 2.8  2005/12/28 22:22:34  taylor
  * clean up the EVENT and STATE names so we don't have to manually backtrack the number during debugging
  *
@@ -427,7 +430,9 @@ char *GS_state_text[] =
 	"GS_STATE_LOOP_BRIEF",
 	"GS_STATE_NET_CHAT",							// 50
 	"GS_STATE_LAB",
-	"GS_STATE_STORYBOOK"
+	"GS_STATE_STORYBOOK",
+	"GS_STATE_PXO_HELP",
+	"GS_STATE_START_GAME"
 };
 //XSTR:ON
 
