@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.52 $
- * $Date: 2007-09-02 02:10:27 $
+ * $Revision: 2.53 $
+ * $Date: 2007-11-19 19:50:15 $
  * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2007/09/02 02:10:27  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.51  2007/03/21 21:06:54  karajorma
  * Bump the number of debriefing stages.
  * Fix an annoying (and erroneous) warning in the campaign editor.
@@ -2959,35 +2962,50 @@ void mission_campaign_exit_loop()
 // this relies on correct mission ordering in the campaign file
 void mission_campaign_jump_to_mission(char *name)
 {
-	int i = 0;
-	char dest_name[64];
+	int i = 0, mission_num = -1;
+	char dest_name[64], *p;
 
 	// load in the campaign junk
 	mission_load_up_campaign();
 
 	// tack the .fs2 onto the input name
 	strcpy(dest_name, name);
-	strcat(name, ".fs2");
+	p = strchr(dest_name, '.');
+	if (p != NULL)
+		*p = '\0';
+	strcat(dest_name, ".fs2");
 
 	// search for our mission
-	for (i=0; i<Campaign.num_missions; i++) {
-		if ((Campaign.missions[i].name != NULL) && !stricmp(Campaign.missions[i].name, name) ) {
-			Campaign.next_mission = i;
-			Campaign.prev_mission = i-1;
-			mission_campaign_next_mission();
-			Game_mode |= GM_CAMPAIGN_MODE;
-			gameseq_post_event(GS_EVENT_START_GAME);
-			return;
+	for (i = 0; i < Campaign.num_missions; i++) {
+		if ((Campaign.missions[i].name != NULL) && !stricmp(Campaign.missions[i].name, dest_name)) {
+			mission_num = i;
+			break;
 		} else {
 			Campaign.missions[i].flags |= CMISSION_FLAG_SKIPPED;
 			Campaign.num_missions_completed = i;
 		}
 	}
 
-	// if we got here, no match was found
-	// restart the campaign
-	mission_campaign_savefile_delete(Campaign.filename);
-	mission_campaign_load(Campaign.filename);
+	if (mission_num < 0) {
+		// if we got here, no match was found
+		// restart the campaign
+		mission_campaign_savefile_delete(Campaign.filename);
+		mission_campaign_load(Campaign.filename);
+	} else {
+		for (i = 0; i < MAX_SHIP_CLASSES; i++) {
+			Campaign.ships_allowed[i] = 1;
+		}
+		for (i = 0; i < MAX_WEAPON_TYPES; i++) {
+			Campaign.weapons_allowed[i] = 1;
+		}
+
+		Campaign.next_mission = mission_num;
+		Campaign.prev_mission = mission_num - 1;
+		mission_campaign_next_mission();
+		Game_mode |= GM_CAMPAIGN_MODE;
+
+		gameseq_post_event(GS_EVENT_START_GAME);
+	}
 }
 
 // Goober5000
