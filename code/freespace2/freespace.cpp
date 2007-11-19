@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.49 $
- * $Date: 2007-10-23 20:07:42 $
- * $Author: taylor $
+ * $Revision: 2.243.2.50 $
+ * $Date: 2007-11-19 20:24:36 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.49  2007/10/23 20:07:42  taylor
+ * reset Perspective_locked at the start of each mission so that view controls don't get locked until exit
+ *
  * Revision 2.243.2.48  2007/10/15 06:43:09  taylor
  * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *
@@ -7192,12 +7195,20 @@ void game_process_event( int current_state, int event )
 
 		case GS_EVENT_START_GAME:
 			Select_default_ship = 0;			
-			gameseq_set_state(GS_STATE_CMD_BRIEF);
+			gameseq_set_state(GS_STATE_START_GAME);
 			break;
 
 		case GS_EVENT_START_GAME_QUICK:
 			Select_default_ship = 1;
 			gameseq_post_event(GS_EVENT_ENTER_GAME);
+			break;
+
+		case GS_EVENT_CMD_BRIEF:
+			gameseq_set_state(GS_STATE_CMD_BRIEF);
+			break;
+
+		case GS_EVENT_RED_ALERT:
+			gameseq_set_state(GS_STATE_RED_ALERT);
 			break;
 
 		case GS_EVENT_START_BRIEFING:
@@ -7361,14 +7372,6 @@ void game_process_event( int current_state, int event )
 
 		case GS_EVENT_CAMPAIGN_ROOM:
 			gameseq_set_state(GS_STATE_CAMPAIGN_ROOM);
-			break;
-
-		case GS_EVENT_CMD_BRIEF:
-			gameseq_set_state(GS_STATE_CMD_BRIEF);
-			break;
-
-		case GS_EVENT_RED_ALERT:
-			gameseq_set_state(GS_STATE_RED_ALERT);
 			break;
 
 		case GS_EVENT_STORYBOOK:
@@ -8004,35 +8007,47 @@ void game_enter_state( int old_state, int new_state )
 #endif
 			break;
 
-		case GS_STATE_BRIEFING:
+		case GS_STATE_START_GAME:
 			main_hall_stop_music();
 			main_hall_stop_ambient();
 			
 			if (Game_mode & GM_NORMAL) {
-				// AL: Don't call freespace_start_mission() if re-entering from ship or weapon select
-				// MWA: or from options or hotkey screens
-				// JH: or if the command brief state already did this
-				if ( (old_state != GS_STATE_OPTIONS_MENU) && (old_state != GS_STATE_HOTKEY_SCREEN)
-					&& (old_state != GS_STATE_SHIP_SELECT) && (old_state != GS_STATE_WEAPON_SELECT)
-					&& (old_state != GS_STATE_CMD_BRIEF) ) {
-					if ( !game_start_mission() )			// this should put us into a new state on failure!
-						break;
-				}
+				// this should put us into a new state on failure!
+				if (!game_start_mission())
+					break;
 			}
 
-			// red alert gamestate has own movie playing so check for it and skip all of this if needed.
-			if ( red_alert_mission() ) {
+			set_time_compression(1.0f);
+
+			// maybe play a movie before the mission
+			mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
+
+			// determine where to go next
+			if (mission_has_cmd_brief()) {
+				gameseq_post_event(GS_EVENT_CMD_BRIEF);
+			} else if (red_alert_mission()) {
 				gameseq_post_event(GS_EVENT_RED_ALERT);
 			} else {
-				// maybe play a movie before the briefing.  don't play if entering briefing screen from ship or weapon select.
-				if ( (old_state == GS_STATE_DEBRIEF) || (old_state == GS_STATE_SIMULATOR_ROOM) || (old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_GAME_PLAY) )
-					mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
-
-				set_time_compression(1.0f);
-
-				brief_init();
+				gameseq_post_event(GS_EVENT_START_BRIEFING);
 			}
+			break;
 
+		case GS_STATE_CMD_BRIEF: {
+			if (old_state == GS_STATE_OPTIONS_MENU) {
+				cmd_brief_unhold();
+			} else {
+				int team_num = 0;  // team number used as index for which cmd brief to use.
+				cmd_brief_init(team_num);
+			}
+			break;
+		}
+
+		case GS_STATE_RED_ALERT:
+			red_alert_init();
+			break;
+
+		case GS_STATE_BRIEFING:
+			brief_init();
 			break;
 
 		case GS_STATE_DEBRIEF:
@@ -8059,52 +8074,9 @@ void game_enter_state( int old_state, int new_state )
 			campaign_room_init();
 			break;
 
-		case GS_STATE_RED_ALERT:
-			set_time_compression(1.0f);
-			mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
-			red_alert_init();
-			break;
-
 		case GS_STATE_STORYBOOK:
 			storybook_init();
 			break;
-
-		case GS_STATE_CMD_BRIEF: {
-			int team_num = 0;  // team number used as index for which cmd brief to use.
-
-			if (old_state == GS_STATE_OPTIONS_MENU) {
-				cmd_brief_unhold();
-
-			} else {
-				main_hall_stop_music();
-				main_hall_stop_ambient();
-
-				if (Game_mode & GM_NORMAL) {
-					// AL: Don't call freespace_start_mission() if re-entering from ship or weapon select
-					// MWA: or from options or hotkey screens
-					// JH: or if the command brief state already did this
-					if ( (old_state != GS_STATE_OPTIONS_MENU) && (old_state != GS_STATE_HOTKEY_SCREEN)
-						&& (old_state != GS_STATE_SHIP_SELECT) && (old_state != GS_STATE_WEAPON_SELECT) ) {
-						if ( !game_start_mission() )			// this should put us into a new state on failure!
-							break;
-					}
-				}
-
-				if ( red_alert_mission() ) {
-					gameseq_post_event(GS_EVENT_RED_ALERT);
-				} else {
-					// maybe play a movie before the briefing.  don't play if entering briefing screen from ship or weapon select.
-					if ( (old_state == GS_STATE_DEBRIEF) || (old_state == GS_STATE_SIMULATOR_ROOM) || (old_state == GS_STATE_MAIN_MENU) || (old_state == GS_STATE_GAME_PLAY) )
-						mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
-
-					set_time_compression(1.0f);
-
-					cmd_brief_init(team_num);
-				}
-			}
-
-			break;
-		}
 
 		case GS_STATE_SHIP_SELECT:
 			ship_select_init();

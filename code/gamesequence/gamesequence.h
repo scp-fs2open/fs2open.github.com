@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.h $
- * $Revision: 2.10.2.1 $
- * $Date: 2007-10-15 06:43:12 $
- * $Author: taylor $
+ * $Revision: 2.10.2.2 $
+ * $Date: 2007-11-19 20:24:37 $
+ * $Author: Goober5000 $
  *
  * Header file for Game Sequencing items
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10.2.1  2007/10/15 06:43:12  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 2.10  2006/01/14 01:51:49  wmcoolmon
  * Grr...fix out-of-sync game states
  *
@@ -501,8 +504,9 @@ extern char *GS_event_text[];		// text description for the GS_EVENT_* #defines a
 #define GS_STATE_LAB								50
 #define GS_STATE_STORYBOOK							51
 #define GS_STATE_PXO_HELP							52
+#define GS_STATE_START_GAME							53
 
-#define GS_NUM_STATES							53			//Last one++
+#define GS_NUM_STATES							54			//Last one++
 
 // IMPORTANT:  When you add a new state, update the initialization for GS_state_text[]
 //             which is done in GameSequence.cpp
