@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.297 $
- * $Date: 2007-10-23 20:07:25 $
- * $Author: taylor $
+ * $Revision: 2.298 $
+ * $Date: 2007-11-19 02:39:47 $
+ * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.297  2007/10/23 20:07:25  taylor
+ * reset Perspective_locked at the start of each mission so that view controls don't get locked until exit
+ *
  * Revision 2.296  2007/09/29 14:31:11  karajorma
  * Fix the double respawn bug (Mantis 788) and hopefully the corresponding server Int3 (Mantis 1213)
  *
@@ -11183,6 +11186,85 @@ DCF(wepspew, "display the checksum for the current weapons.tbl")
 	cfclose(detect);
 
 	dc_printf("%d", file_checksum);
+}
+
+DCF(merge_stats, "merge a pilot's stats into this pilot")
+{
+	if (Dc_command)
+	{
+		int i;
+		player other_player;
+		int is_single = (Player->flags & PLAYER_FLAGS_IS_MULTI) == 0;
+		char *other_callsign;
+		char filename[MAX_PATH_LEN + 1];
+
+		dc_get_arg(ARG_STRING);
+		other_callsign = Dc_arg_org;
+
+		if (verify_pilot_file(other_callsign, is_single, NULL) != 0)
+		{
+			dc_printf("Could not open the pilot \"%s\".\n", other_callsign);
+			return;
+		}
+
+		if (read_pilot_file(other_callsign, is_single, &other_player) != 0)
+		{
+			dc_printf("Could not read the pilot \"%s\".\n", other_callsign);
+			return;
+		}
+
+		Player->stats.assists += other_player.stats.assists;
+		Player->stats.bonehead_kills += other_player.stats.bonehead_kills;
+		//don't merge flags
+		Player->stats.flight_time += other_player.stats.flight_time;
+		Player->stats.kill_count += other_player.stats.kill_count;
+		Player->stats.kill_count_ok += other_player.stats.kill_count_ok;
+
+		for (i = 0; i < MAX_SHIP_TYPES; i++)
+			Player->stats.kills[i] += other_player.stats.kills[i];
+
+		// don't merge last_backup
+		// don't merge last_flown
+		// don't merge mission-specific stuff
+
+		for (i = 0; i < NUM_MEDALS; i++)
+			Player->stats.medals[i] += other_player.stats.medals[i];
+
+		Player->stats.missions_flown += other_player.stats.missions_flown;
+
+		// don't merge mission-specific mp and ms stuff
+
+		Player->stats.p_bonehead_hits += other_player.stats.p_bonehead_hits;
+		Player->stats.p_shots_fired += other_player.stats.p_shots_fired;
+		Player->stats.p_shots_hit += other_player.stats.p_shots_hit;
+
+		// don't merge rank; it will be recalculated
+
+		Player->stats.s_bonehead_hits += other_player.stats.s_bonehead_hits;
+		Player->stats.s_shots_fired += other_player.stats.s_shots_fired;
+		Player->stats.s_shots_hit += other_player.stats.s_shots_hit;
+
+		Player->stats.score += other_player.stats.score;
+
+		dc_printf("Merge complete.  Deleting %s...\n", other_callsign);
+
+		// get the file name...
+		strcpy(filename, other_callsign);
+		strcat(filename, NOX(".plr"));
+
+		// attempt to delete the pilot
+		cf_delete(filename, is_single ? CF_TYPE_SINGLE_PLAYERS : CF_TYPE_MULTI_PLAYERS);
+
+		// attempt to delete all the campaign save files
+		mission_campaign_delete_all_savefiles(other_callsign, !is_single);
+
+		dc_printf("Deletion complete.\n");
+	}
+
+	if (Dc_help)
+	{
+		dc_printf("Usage: merge_stats <callsign>\nMerges another pilot's stats into this pilot, and deletes the other pilot.\n");
+	}
 }
 
 // if the game is running using hacked data
