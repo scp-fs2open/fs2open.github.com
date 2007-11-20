@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.40 $
- * $Date: 2007-11-19 18:11:01 $
+ * $Revision: 2.178.2.41 $
+ * $Date: 2007-11-20 04:58:22 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.40  2007/11/19 18:11:01  Goober5000
+ * remove warning... properly this time
+ *
  * Revision 2.178.2.39  2007/11/18 06:57:06  Goober5000
  * gak -- stupid mistake
  *
@@ -5844,6 +5847,9 @@ void post_process_mission()
 
 	ai_post_process_mission();
 
+
+	// first we need to clear out the counts for this mission
+	ship_clear_ship_type_counts();
 
 	// we must also count all of the ships of particular types.  We count all of the ships that do not have
 	// their SF_IGNORE_COUNT flag set.  We don't count ships in wings when the equivalent wing flag is set.

@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.78 $
- * $Date: 2007-10-15 06:43:20 $
- * $Author: taylor $
+ * $Revision: 2.336.2.79 $
+ * $Date: 2007-11-20 04:58:23 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.78  2007/10/15 06:43:20  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 2.336.2.77  2007/09/04 00:08:51  Goober5000
  * fix the factoring on the shudder parameters (Mantis #1419)
  *
@@ -4675,7 +4678,7 @@ void parse_ship_type()
 {
 	char name_buf[NAME_LENGTH];
 	bool nocreate = false;
-	ship_type_info stp_tmp, *stp = NULL;
+	ship_type_info stp_buf, *stp = NULL;
 
 	required_string("$Name:");
 	stuff_string(name_buf, F_NAME, NAME_LENGTH);
@@ -4685,21 +4688,13 @@ void parse_ship_type()
 	}
 
 	int idx = ship_type_name_lookup(name_buf);
-	if(idx >= 0)
+	if (idx >= 0)
 	{
 		stp = &Ship_types[idx];
 	}
 	else
 	{
-		if(!nocreate)
-		{
-			Ship_types.resize(Ship_types.size()+1);
-			stp = &Ship_types[Ship_types.size()-1];
-		} else {
-			stp = &stp_tmp;
-		}
-
-		Assert( stp != NULL );
+		stp = &stp_buf;
 		memset( stp, 0, sizeof(ship_type_info) );
 		strcpy(stp->name, name_buf);
 	}
@@ -4813,6 +4808,9 @@ void parse_ship_type()
 			parse_string_flag_list(&stp->ai_passive_dock, Dock_type_names, Num_dock_type_names);
 		}
 	}
+
+	if (!nocreate)
+		Ship_types.push_back(stp_buf);
 }
 /*
 void init_shiptype_defs()
@@ -12800,10 +12798,27 @@ DCF_BOOL( auto_repair, Ship_auto_repair )
 // count of ships of that type (called from MissionParse.cpp).  The second function adds to the kill total
 // of ships of a particular type.  Note that we use the ship_info flags structure member to determine
 // what is happening.
+
 //WMC - ALERT!!!!!!!!!!!
 //These two functions did something weird with fighters/bombers. I don't
 //think that not doing this will break anything, but it might.
 //If it does, get me. OR someone smart.
+//G5K - Someone smart to the rescue!  Fixed the functions so they don't
+//accidentally overwrite all the information.
+
+void ship_clear_ship_type_counts()
+{
+	// resize if we need to
+	Ship_type_counts.resize(Ship_types.size());
+
+	// clear all the stats
+	for (uint i = 0; i < Ship_type_counts.size(); i++)
+	{
+		Ship_type_counts[i].killed = 0;
+		Ship_type_counts[i].total = 0;
+	}
+}
+
 void ship_add_ship_type_count( int ship_info_index, int num )
 {
 	int type = ship_class_query_general_type(ship_info_index);
@@ -12811,18 +12826,6 @@ void ship_add_ship_type_count( int ship_info_index, int num )
 	//Ship has no type or something
 	if(type < 0) {
 		return;
-	}
-
-	//Resize if we need to
-	uint oldsize = Ship_type_counts.size();
-	if(type >= (int) oldsize) {
-		Ship_type_counts.resize(type+1);
-
-		//WMC - Set everything to 0
-		for(uint i = oldsize; i < Ship_type_counts.size(); i++) {
-			Ship_type_counts[i].killed = 0;
-			Ship_type_counts[i].total = 0;
-		}
 	}
 
 	//Add it
@@ -12836,18 +12839,6 @@ void ship_add_ship_type_kill_count( int ship_info_index )
 	//Ship has no type or something
 	if(type < 0) {
 		return;
-	}
-
-	//Resize if we need to
-	uint oldsize = Ship_type_counts.size();
-	if(type >= (int) oldsize) {
-		Ship_type_counts.resize(type+1);
-
-		//WMC - Set everything to 0
-		for(uint i = oldsize; i < Ship_type_counts.size(); i++) {
-			Ship_type_counts[i].killed = 0;
-			Ship_type_counts[i].total = 0;
-		}
 	}
 
 	//Add it
