@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.27 $
- * $Date: 2007-02-11 09:10:14 $
- * $Author: taylor $
+ * $Revision: 2.28 $
+ * $Date: 2007-11-20 01:11:13 $
+ * $Author: Goober5000 $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2007/02/11 09:10:14  taylor
+ * fix simroom crash bug from Goober's rencent change
+ * add NULL handling to make sure we don't crap out on sorting
+ *
  * Revision 2.26  2006/10/06 09:33:10  taylor
  * fix for the "branch" bug (still a minor usability issue however, see Mantis bug for details)
  * add a popup to the loopbrief screen when you press ESC, so that we can either accept or decline the loop offer
@@ -223,6 +227,7 @@
 #include "menuui/techmenu.h"	// for tech menu reset stuff
 #include "cfile/cfile.h"
 #include "parse/parselo.h"
+#include "menuui/mainhallmenu.h"
 
 
 
@@ -410,6 +415,7 @@ static int list_w1;
 static int list_w2;
 static int list_h;
 static int Background_bitmap;
+static int Old_main_hall = 0;
 static UI_WINDOW Ui_window;
 static UI_BUTTON List_buttons[LIST_BUTTONS_MAX];  // buttons for each line of text in list
 
@@ -1939,8 +1945,10 @@ void campaign_room_init()
 	help_overlay_set_state(CAMPAIGN_ROOM_OVERLAY,0);
 
 	Num_desc_lines = 0;
-
 	Desc_scroll_offset = Scroll_offset = 0;
+
+	// Goober5000 - dumb hack, since main hall can be set in multiple places
+	Old_main_hall = Player->main_hall;
 
 	// this stuff needs to happen before the mission_campaign_build_list() call
 	load_failed = mission_load_up_campaign();
@@ -1983,6 +1991,10 @@ void campaign_room_close()
 	// be sure that we are going to use the correct mainhall
 	if ( (Player != NULL) && (Campaign.current_mission >= 0) ) {
 		Player->main_hall = Campaign.missions[Campaign.current_mission].main_hall;
+
+		// we might need to switch the music
+		if (main_hall_get_music_index(Player->main_hall) != main_hall_get_music_index(Old_main_hall))
+			main_hall_stop_music();
 	}
 
 	Ui_window.destroy();
