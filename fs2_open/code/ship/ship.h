@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.29 $
- * $Date: 2007-09-02 18:52:54 $
+ * $Revision: 2.150.2.30 $
+ * $Date: 2007-11-20 04:58:25 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.29  2007/09/02 18:52:54  Goober5000
+ * fix for #1455 plus a bit of cleanup
+ *
  * Revision 2.150.2.28  2007/07/23 16:08:32  Kazan
  * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
@@ -2192,6 +2195,7 @@ extern void ship_close();	// called in game_shutdown() to free malloced memory
 extern void ship_assign_sound_all();
 extern void ship_assign_sound(ship *sp);
 
+extern void ship_clear_ship_type_counts();
 extern void ship_add_ship_type_count( int ship_info_index, int num );
 extern void ship_add_ship_type_kill_count( int ship_info_index );
 
