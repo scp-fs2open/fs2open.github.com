@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.84 $
- * $Date: 2007-08-17 03:29:45 $
+ * $Revision: 2.85 $
+ * $Date: 2007-11-20 01:11:12 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.84  2007/08/17 03:29:45  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
+ *
  * Revision 2.83  2007/08/13 04:54:41  Goober5000
  * some improvements to the pirate ship
  *
@@ -2075,14 +2078,17 @@ void game_process_cheats(int k)
 		HUD_printf("Cheats enabled");
 	}
 	if( !strcmp(Cheat_code_fish, cryptstring) ){
-		// only enable in the main hall
-		if((gameseq_get_state() == GS_STATE_MAIN_MENU) && (main_hall_id() == 1)){
+		// only enable in the Vasudan main hall
+		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_is_vasudan()) {
 			extern void fishtank_start();
 			fishtank_start();
 		}
 	}
 	if( !strcmp(Cheat_code_headz, cryptstring) ){
-		main_hall_vasudan_funny();
+		// only enable in the Vasudan main hall
+		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_is_vasudan()) {
+			main_hall_vasudan_funny();
+		}
 	}
 	if( !strcmp(Cheat_code_skip, cryptstring) && (gameseq_get_state() == GS_STATE_MAIN_MENU)){
 		extern void main_hall_campaign_cheat();

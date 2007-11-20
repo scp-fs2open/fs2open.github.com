@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.h $
- * $Revision: 2.6 $
- * $Date: 2005-12-04 19:06:01 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2007-11-20 01:11:12 $
+ * $Author: Goober5000 $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2005/12/04 19:06:01  wmcoolmon
+ * Slightly better main hall error handling
+ *
  * Revision 2.5  2005/07/13 03:15:50  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -101,8 +104,14 @@ void main_hall_start_music();
 // stop the main hall music
 void main_hall_stop_music();
 
-// what main hall we're on (should be 0 or 1)
+// get the music index
+int main_hall_get_music_index(int main_hall_num);
+
+// what main hall we're on
 int main_hall_id();
+
+// Vasudan?
+int main_hall_is_vasudan();
 
 // start the ambient sounds playing in the main hall
 void main_hall_start_ambient();

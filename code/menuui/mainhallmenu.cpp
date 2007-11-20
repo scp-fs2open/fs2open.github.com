@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.54 $
- * $Date: 2007-09-02 02:10:26 $
+ * $Revision: 2.55 $
+ * $Date: 2007-11-20 01:11:12 $
  * $Author: Goober5000 $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.54  2007/09/02 02:10:26  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.53  2007/04/03 01:39:29  Goober5000
  * fixed up some error messages
  *
@@ -1708,10 +1711,34 @@ void main_hall_close()
 	Main_hall_inited = 0;
 }
 
+int main_hall_get_music_index(int main_hall_num)
+{
+	int index;
+	main_hall_defines *hall;
+
+	if (main_hall_num < 0)
+		return -1;
+
+	hall = &Main_hall_defines[gr_screen.res][main_hall_num];
+
+	// Goober5000 - try substitute first
+	index = event_music_get_spooled_music_index(hall->substitute_music_name);
+	if ((index >= 0) && (Spooled_music[index].flags & SMF_VALID))
+		return index;
+
+	// now try regular
+	index = event_music_get_spooled_music_index(hall->music_name);
+	if ((index >= 0) && (Spooled_music[index].flags & SMF_VALID))
+		return index;
+
+	return -1;
+}
+
 // start the main hall music playing
 void main_hall_start_music()
 {
 	int index;
+	char *filename;
 
 	// start a looping ambient sound
 	main_hall_start_ambient();
@@ -1720,38 +1747,30 @@ void main_hall_start_music()
 	if (Cmdline_freespace_no_music)
 		return;
 
-	// Goober5000 - try substitute first
-	index = event_music_get_spooled_music_index(Main_hall->substitute_music_name);
-	if ((index >= 0) && (Spooled_music[index].flags & SMF_VALID))
-		goto main_hall_got_music_index;
+	// already playing?
+	if (Main_hall_music_handle >= 0)
+		return;
 
-	// now try regular
-	index = event_music_get_spooled_music_index(Main_hall->music_name);
-	if ((index >= 0) && (Spooled_music[index].flags & SMF_VALID))
-		goto main_hall_got_music_index;
-
-	// meh
-	nprintf(("Warning", "No music file exists to play music at the main menu!\n"));
-	return;
-
-
-main_hall_got_music_index:
-	if (Main_hall_music_handle < 0)
+	// get music
+	index = main_hall_get_music_index(Main_hall-Main_hall_defines[gr_screen.res]);
+	if (index < 0)
 	{
-		char *filename = Spooled_music[index].filename;
-		Assert(filename != NULL);
-
-		Main_hall_music_handle = audiostream_open(filename, ASF_MENUMUSIC);
-		if (Main_hall_music_handle >= 0)
-		{
-			audiostream_play(Main_hall_music_handle, Master_event_music_volume, 1);
-			return;
-		}
+		nprintf(("Warning", "No music file exists to play music at the main menu!\n"));
+		return;
 	}
 
-	// meh
-	nprintf(("Warning", "No music file exists to play music at the main menu!\n"));
-	return;
+	filename = Spooled_music[index].filename;
+	Assert(filename != NULL);
+
+	// get handle
+	Main_hall_music_handle = audiostream_open(filename, ASF_MENUMUSIC);
+	if (Main_hall_music_handle < 0)
+	{
+		nprintf(("Warning", "No music file exists to play music at the main menu!\n"));
+		return;
+	}
+
+	audiostream_play(Main_hall_music_handle, Master_event_music_volume, 1);
 }
 
 // stop the main hall music
@@ -2286,15 +2305,10 @@ void main_hall_process_help_stuff()
 	gr_string((gr_screen.max_w_unscaled - w)/2, Main_hall_tooltip_padding[gr_screen.res] /*- y_anim_offset*/, str);
 }
 
-// what main hall we're on (should be 0 or 1)
+// what main hall we're on
 int main_hall_id()
-{	
-	// only 1 of 2 main halls
-	if(Main_hall == &Main_hall_defines[gr_screen.res][0]){
-		return 0;
-	}
-
-	return 1;
+{
+	return (Main_hall - &Main_hall_defines[gr_screen.res][0]);
 } 
 
 // read in main hall table
@@ -2471,18 +2485,20 @@ void main_hall_read_table()
 
 	// are we funny?
 	if(Vasudan_funny){
-		Main_hall_defines[GR_640][1].door_sounds[OPTIONS_REGION][0] = SND_VASUDAN_BUP;
-		Main_hall_defines[GR_640][1].door_sounds[OPTIONS_REGION][1] = SND_VASUDAN_BUP;
-		Main_hall_defines[GR_1024][1].door_sounds[OPTIONS_REGION][0] = SND_VASUDAN_BUP;
-		Main_hall_defines[GR_1024][1].door_sounds[OPTIONS_REGION][1] = SND_VASUDAN_BUP;
+		int hall = main_hall_id();
+
+		Main_hall_defines[GR_640][hall].door_sounds[OPTIONS_REGION][0] = SND_VASUDAN_BUP;
+		Main_hall_defines[GR_640][hall].door_sounds[OPTIONS_REGION][1] = SND_VASUDAN_BUP;
+		Main_hall_defines[GR_1024][hall].door_sounds[OPTIONS_REGION][0] = SND_VASUDAN_BUP;
+		Main_hall_defines[GR_1024][hall].door_sounds[OPTIONS_REGION][1] = SND_VASUDAN_BUP;
 
 		// set head anim. hehe
-		strcpy(Main_hall_defines[GR_640][1].door_anim_name[OPTIONS_REGION], "vhallheads");
-		strcpy(Main_hall_defines[GR_1024][1].door_anim_name[OPTIONS_REGION], "2_vhallheads");
+		strcpy(Main_hall_defines[GR_640][hall].door_anim_name[OPTIONS_REGION], "vhallheads");
+		strcpy(Main_hall_defines[GR_1024][hall].door_anim_name[OPTIONS_REGION], "2_vhallheads");
 
 		// set the background
-		strcpy(Main_hall_defines[GR_640][1].bitmap, "vhallhead");
-		strcpy(Main_hall_defines[GR_1024][1].bitmap, "2_vhallhead");		
+		strcpy(Main_hall_defines[GR_640][hall].bitmap, "vhallhead");
+		strcpy(Main_hall_defines[GR_1024][hall].bitmap, "2_vhallhead");		
 	}
 
 	// free up memory from parsing the mainhall tbl
@@ -2493,6 +2509,12 @@ void main_hall_read_table()
 void main_hall_vasudan_funny()
 {
 	Vasudan_funny = 1;
+}
+
+int main_hall_is_vasudan()
+{
+	// kind of a hack for now
+	return (!stricmp(Main_hall->music_name, "Psampik") || !stricmp(Main_hall->music_name, "Psamtik"));
 }
 
 // silence sounds on mainhall if we hit a pause mode (ie. lost window focus, minimized, etc);
