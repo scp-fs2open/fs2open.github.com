@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.197 $
- * $Date: 2007-10-28 15:38:18 $
- * $Author: karajorma $
+ * $Revision: 2.198 $
+ * $Date: 2007-11-20 04:58:17 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.197  2007/10/28 15:38:18  karajorma
+ * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
+ *
  * Revision 2.196  2007/09/27 06:55:39  turey
  * "no primary linking" ship flag and related SEXPs - prevent a ship from linking primaries.
  *
@@ -2278,6 +2281,7 @@ extern void ship_close();	// called in game_shutdown() to free malloced memory
 extern void ship_assign_sound_all();
 extern void ship_assign_sound(ship *sp);
 
+extern void ship_clear_ship_type_counts();
 extern void ship_add_ship_type_count( int ship_info_index, int num );
 extern void ship_add_ship_type_kill_count( int ship_info_index );
 
