@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.47 $
- * $Date: 2007-09-02 02:10:25 $
+ * $Revision: 2.48 $
+ * $Date: 2007-11-21 07:28:38 $
  * $Author: Goober5000 $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.47  2007/09/02 02:10:25  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.46  2007/03/22 20:22:25  taylor
  * a little better error handling for cf_exists_full()
  * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
@@ -2082,11 +2085,10 @@ void event_music_reset_choices()
 	Current_soundtrack_num = -1;
 	//mprintf(("Current soundtrack set to -1 in event_music_reset_choices\n"));
 	Mission_music[SCORE_BRIEFING] = -1;
+	Mission_music[SCORE_FICTION_VIEWER] = -1;
 	event_music_set_score(SCORE_DEBRIEF_SUCCESS, "Success");
 	event_music_set_score(SCORE_DEBRIEF_AVERAGE, "Average");
 	event_music_set_score(SCORE_DEBRIEF_FAIL, "Failure");
-	//Mission_music[SCORE_DEBRIEF_SUCCESS] = MUSIC_DEBRIEF_SUCCESS_1;
-	//Mission_music[SCORE_DEBRIEF_FAIL] = MUSIC_DEBRIEF_FAIL_1;
 
 	// Goober5000
 	strcpy(The_mission.substitute_briefing_music_name, "None");

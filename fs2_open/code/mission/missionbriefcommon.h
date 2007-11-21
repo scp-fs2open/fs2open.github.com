@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.16 $
- * $Date: 2007-03-21 21:06:54 $
- * $Author: karajorma $
+ * $Revision: 2.17 $
+ * $Date: 2007-11-21 07:28:38 $
+ * $Author: Goober5000 $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2007/03/21 21:06:54  karajorma
+ * Bump the number of debriefing stages.
+ * Fix an annoying (and erroneous) warning in the campaign editor.
+ *
  * Revision 2.15  2006/09/20 05:02:41  taylor
  * properly fix the new_recommendation_text FRED problem, plus some real cleanup for that code in general, and some memory leak fixes
  *
@@ -264,7 +268,7 @@
 // ------------------------------------------------------------------------
 
 #define	MAX_BRIEF_LEN			4096		// size of char array which holds briefing text
-#define	MAX_BRIEF_LINES		50
+#define	MAX_BRIEF_LINES		70
 #define	MAX_BRIEF_LINE_LEN	256		// max number of chars in a briefing line
 #define	MAX_BRIEF_LINE_W_640		375		// max width of line in pixels in 640x480 mode
 #define	MAX_BRIEF_LINE_W_1024	600		// max width of line in pixels in 1024x768 mode

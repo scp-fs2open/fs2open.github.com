@@ -1291,6 +1291,14 @@ SOURCE=..\..\code\MissionUI\Chatbox.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\missionui\fictionviewer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\missionui\fictionviewer.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\MissionUI\MissionBrief.cpp
 
 !IF  "$(CFG)" == "code - Win32 Release"
