@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.299 $
- * $Date: 2007-11-19 20:24:39 $
+ * $Revision: 2.300 $
+ * $Date: 2007-11-21 07:28:37 $
  * $Author: Goober5000 $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.299  2007/11/19 20:24:39  Goober5000
+ * clean up the state machine logic for starting games
+ *
  * Revision 2.298  2007/11/19 02:39:47  Goober5000
  * add the merge_stats debug function (use with caution)
  *
@@ -1806,6 +1809,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missionparse.h"
 #include "mission/missiontraining.h"
+#include "missionui/fictionviewer.h"
 #include "missionui/missionbrief.h"
 #include "missionui/missioncmdbrief.h"
 #include "missionui/missiondebrief.h"
@@ -7564,6 +7568,10 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state(GS_STATE_LOOP_BRIEF);
 			break;
 
+		case GS_EVENT_FICTION_VIEWER:
+			gameseq_set_state(GS_STATE_FICTION_VIEWER);
+			break;
+
 		default:
 			Int3();
 			break;
@@ -7959,6 +7967,10 @@ void game_leave_state( int old_state, int new_state )
 			loop_brief_close();
 			break;
 
+		case GS_STATE_FICTION_VIEWER:
+			fiction_viewer_close();
+			break;
+
 		case GS_STATE_LAB:
 			lab_close();
 			break;
@@ -8018,13 +8030,19 @@ void game_enter_state( int old_state, int new_state )
 			mission_campaign_maybe_play_movie(CAMPAIGN_MOVIE_PRE_MISSION);
 
 			// determine where to go next
-			if (mission_has_cmd_brief()) {
+			if (mission_has_fiction()) {
+				gameseq_post_event(GS_EVENT_FICTION_VIEWER);
+			} else if (mission_has_cmd_brief()) {
 				gameseq_post_event(GS_EVENT_CMD_BRIEF);
 			} else if (red_alert_mission()) {
 				gameseq_post_event(GS_EVENT_RED_ALERT);
 			} else {
 				gameseq_post_event(GS_EVENT_START_BRIEFING);
 			}
+			break;
+
+		case GS_STATE_FICTION_VIEWER:
+			fiction_viewer_init();
 			break;
 
 		case GS_STATE_CMD_BRIEF: {
@@ -8743,6 +8761,11 @@ void game_do_state(int state)
 		case GS_STATE_LOOP_BRIEF:
 			game_set_frametime(GS_STATE_LOOP_BRIEF);
 			loop_brief_do();
+			break;
+
+		case GS_STATE_FICTION_VIEWER:
+			game_set_frametime(GS_STATE_FICTION_VIEWER);
+			fiction_viewer_do_frame(flFrametime);
 			break;
 
 		case GS_STATE_LAB:

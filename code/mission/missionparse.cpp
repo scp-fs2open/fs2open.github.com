@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.232 $
- * $Date: 2007-11-20 04:58:16 $
+ * $Revision: 2.233 $
+ * $Date: 2007-11-21 07:28:38 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.232  2007/11/20 04:58:16  Goober5000
+ * fix ship-type-destroyed
+ *
  * Revision 2.231  2007/11/19 18:11:03  Goober5000
  * remove warning... properly this time
  *
@@ -1287,6 +1290,7 @@
 #include "network/multi_endgame.h"
 #include "object/parseobjectdock.h"
 #include "object/waypoint/waypoint.h"
+#include "missionui/fictionviewer.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -2161,11 +2165,25 @@ void parse_music(mission *pm, int flags)
 		event_music_set_score(SCORE_DEBRIEF_SUCCESS, temp);
 	}
 
-	// ditto
+	// not old, just added since it makes sense
+	if (optional_string("$Debriefing Average Music:"))
+	{
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+		event_music_set_score(SCORE_DEBRIEF_AVERAGE, temp);
+	}
+
+	// old stuff
 	if (optional_string("$Debriefing Fail Music:"))
 	{
 		stuff_string(temp, F_NAME, NAME_LENGTH);
 		event_music_set_score(SCORE_DEBRIEF_FAIL, temp);
+	}
+
+	// new stuff
+	if (optional_string("$Fiction Viewer Music:"))
+	{
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+		event_music_set_score(SCORE_FICTION_VIEWER, temp);
 	}
 
 
@@ -2277,6 +2295,21 @@ done_briefing_music:
 	{
 		event_music_set_score(SCORE_BRIEFING, pm->briefing_music_name);
 	}
+}
+
+void parse_fiction(mission *pm)
+{
+	char filename[MAX_FILENAME_LEN];
+
+	fiction_viewer_reset();
+
+	if (!optional_string("#Fiction Viewer"))
+		return;
+
+	required_string("$File:");
+	stuff_string(filename, F_FILESPEC, MAX_FILENAME_LEN);
+
+	fiction_viewer_load(filename);
 }
 
 void parse_cmd_brief(mission *pm)
@@ -6110,6 +6143,7 @@ void parse_mission(mission *pm, int flags)
 	parse_plot_info(pm);
 	parse_variables();
 	parse_briefing_info(pm);	// TODO: obsolete code, keeping so we don't obsolete existing mission files
+	parse_fiction(pm);
 	parse_cmd_briefs(pm);
 	parse_briefing(pm, flags);
 	parse_debriefing_new(pm);
