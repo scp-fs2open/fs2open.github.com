@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_OPENAL" /D "NO_DIRECT3D" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "USE_OPENAL" /D "NO_DIRECT3D" /D "FS2_SPEECH" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "USE_OPENAL" /D "NO_DIRECT3D" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -1296,6 +1296,14 @@ SOURCE=..\..\code\MissionUI\Chatbox.cpp
 # Begin Source File
 
 SOURCE=..\..\code\MissionUI\Chatbox.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\missionui\fictionviewer.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\missionui\fictionviewer.h
 # End Source File
 # Begin Source File
 

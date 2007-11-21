@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MissionSave.h $
- * $Revision: 1.3.2.1 $
- * $Date: 2006-07-13 06:11:48 $
+ * $Revision: 1.3.2.2 $
+ * $Date: 2007-11-21 07:27:46 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3.2.1  2006/07/13 06:11:48  Goober5000
+ * * better formatting for substitute music options
+ * * better handling of all special FSO comment tags
+ * --Goober5000
+ *
  * Revision 1.3  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -147,6 +152,7 @@ private:
 	int save_plot_info();
 	int save_variables();
 //	int save_briefing_info();
+	int save_fiction();
 	int save_cmd_brief();
 	int save_cmd_briefs();
 	int save_briefing();
