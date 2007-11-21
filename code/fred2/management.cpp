@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.39 $
- * $Date: 2007-09-03 01:02:49 $
+ * $Revision: 1.40 $
+ * $Date: 2007-11-21 07:28:37 $
  * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.39  2007/09/03 01:02:49  Goober5000
+ * fix for 1376
+ *
  * Revision 1.38  2007/09/02 02:10:25  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -598,6 +601,7 @@
 #include "parse/scripting.h"
 #include "object/waypoint/waypoint.h"
 #include "menuui/techmenu.h"
+#include "missionui/fictionviewer.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -981,6 +985,7 @@ bool fred_init()
 	brief_parse_icon_tbl();
 	fred_preload_all_briefing_icons(); //phreak.  This needs to be done or else the briefing icons won't show up
 	event_music_init();
+	fiction_viewer_reset();
 	cmd_brief_reset();
 	Show_waypoints = TRUE;
 	Campaign.filename[0] = 0;  // indicate initialized state
@@ -1350,6 +1355,7 @@ void clear_mission()
 	extern void allocate_mission_text(int size);
 	allocate_mission_text( MISSION_TEXT_SIZE );
 
+	fiction_viewer_reset();
 	cmd_brief_reset();
 	mission_event_shutdown();
 

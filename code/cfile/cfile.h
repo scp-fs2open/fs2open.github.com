@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.21 $
- * $Date: 2007-04-11 18:24:27 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2007-11-21 07:28:37 $
+ * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2007/04/11 18:24:27  taylor
+ * cleanup of chksum stuff (works properly on 64-bit systems now)
+ * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
+ * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
+ *
  * Revision 2.20  2007/03/22 20:22:24  taylor
  * a little better error handling for cf_exists_full()
  * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
@@ -485,8 +490,9 @@ typedef struct {
 #define CF_TYPE_CBANIMS				33
 #define CF_TYPE_INTEL_ANIMS			34
 #define CF_TYPE_SCRIPTS				35
+#define CF_TYPE_FICTION				36
 
-#define CF_MAX_PATH_TYPES			36			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
+#define CF_MAX_PATH_TYPES			37			// Can be as high as you'd like //DTP; yeah but beware alot of things uses CF_MAX_PATH_TYPES
 
 
 // TRUE if type is specified and valid

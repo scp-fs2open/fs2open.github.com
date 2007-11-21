@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MissionSave.h $
- * $Revision: 1.5 $
- * $Date: 2006-12-28 00:59:20 $
- * $Author: wmcoolmon $
+ * $Revision: 1.6 $
+ * $Date: 2007-11-21 07:28:37 $
+ * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5  2006/12/28 00:59:20  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 1.4  2006/07/13 06:11:52  Goober5000
  * * better formatting for substitute music options
  * * better handling of all special FSO comment tags
@@ -153,6 +156,7 @@ private:
 	int save_plot_info();
 	int save_variables();
 //	int save_briefing_info();
+	int save_fiction();
 	int save_cmd_brief();
 	int save_cmd_briefs();
 	int save_briefing();

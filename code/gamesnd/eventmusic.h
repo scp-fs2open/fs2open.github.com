@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.19 $
- * $Date: 2007-09-02 02:10:25 $
+ * $Revision: 2.20 $
+ * $Date: 2007-11-21 07:28:38 $
  * $Author: Goober5000 $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2007/09/02 02:10:25  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.18  2007/02/10 00:18:22  taylor
  * remove NO_SOUND
  *
@@ -229,11 +232,12 @@ extern float Master_event_music_volume;			// range is 0->1
 /////////////////////////////////////////////////////////////////////////////
 // Used to track what briefing and debriefing music is played for the mission
 /////////////////////////////////////////////////////////////////////////////
-#define NUM_SCORES						4
+#define NUM_SCORES						5
 #define SCORE_BRIEFING					0
 #define SCORE_DEBRIEF_SUCCESS			1
 #define SCORE_DEBRIEF_AVERAGE			2
 #define SCORE_DEBRIEF_FAIL				3
+#define SCORE_FICTION_VIEWER			4
 extern int Mission_music[NUM_SCORES];		// indicies into Spooled_music[]
 /////////////////////////////////////////////////////////////////////////////
 
