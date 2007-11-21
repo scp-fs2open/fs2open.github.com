@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.14.2.17 $
- * $Date: 2007-07-23 16:08:24 $
- * $Author: Kazan $
+ * $Revision: 1.14.2.18 $
+ * $Date: 2007-11-21 07:27:45 $
+ * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14.2.17  2007/07/23 16:08:24  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 1.14.2.16  2007/05/28 18:27:33  wmcoolmon
  * Added armor support for asteroid, debris, ship, and beam damage
  *
@@ -494,6 +497,7 @@
 #include "cfile/cfile.h"
 #include "object/objectdock.h"
 #include "iff_defs/iff_defs.h"
+#include "missionui/fictionviewer.h"
 
 void CFred_mission_save::convert_special_tags_to_retail(char *text, int max_len)
 {
@@ -1037,6 +1041,34 @@ int CFred_mission_save::save_plot_info()
 			fout("$Next Mission Failure: Blah\n");
 
 			fout("\n");
+		}
+	}
+
+	return err;
+}
+
+int CFred_mission_save::save_fiction()
+{
+	if (mission_has_fiction())
+	{
+		if (Format_fs2_open)
+		{
+			if (optional_string_fred("#Fiction Viewer"))
+			{
+				required_string_fred("$File:");
+				parse_comments();
+				fout(" %s", fiction_file());
+			}
+			else
+			{
+				fout("\n\n");
+				fout("#Fiction Viewer\n\n");
+				fout("$File: %s\n\n", fiction_file());
+			}
+		}
+		else
+		{
+			MessageBox(NULL, "Warning: This mission contains fiction viewer data, but you are saving in the retail mission format.", "Incompatibility with retail mission format", MB_OK);
 		}
 	}
 
