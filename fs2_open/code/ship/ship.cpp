@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.435 $
- * $Date: 2007-11-20 04:58:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.436 $
+ * $Date: 2007-11-21 04:53:31 $
+ * $Author: turey $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.435  2007/11/20 04:58:17  Goober5000
+ * fix ship-type-destroyed
+ *
  * Revision 2.434  2007/10/28 15:38:17  karajorma
  * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
  *
@@ -10027,7 +10030,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		
 		weapon = swp->primary_bank_weapons[bank_to_fire];
-		Assert( weapon >= 0 && weapon < MAX_WEAPONS );		
+		Assert( weapon >= 0 && weapon < MAX_WEAPON_TYPES );		
 		if ( (weapon < 0) || (weapon >= MAX_WEAPON_TYPES) ) {
 			Int3();		// why would a ship try to fire a weapon that doesn't exist?
 			continue;
