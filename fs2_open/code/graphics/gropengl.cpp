@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.28 $
- * $Date: 2007-11-22 05:11:38 $
- * $Author: taylor $
+ * $Revision: 2.174.2.29 $
+ * $Date: 2007-11-22 17:51:35 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.28  2007/11/22 05:11:38  taylor
+ * try to deal better with gamma setting/resetting when minimizing/restoring the game (Mantis #1210)
+ *
  * Revision 2.174.2.27  2007/10/04 16:18:18  taylor
  * get rid of some old/obsolete items (Mantis #1489 and #1497)
  *
@@ -1198,7 +1201,7 @@ static int GL_initted = 0;
 static int OGL_fogmode=0;
 
 #ifdef _WIN32
-static HDC dev_context = NULL;
+static HDC GL_device_context = NULL;
 static HGLRC rend_context = NULL;
 static PIXELFORMATDESCRIPTOR pfd;
 #endif
@@ -1674,7 +1677,7 @@ void gr_opengl_flip()
 	TIMERBAR_START_FRAME();
 
 #ifdef _WIN32
-	SwapBuffers(dev_context);
+	SwapBuffers(GL_device_context);
 #else
 	SDL_GL_SwapBuffers();
 #endif
@@ -3487,7 +3490,7 @@ void gr_opengl_set_gamma(float gamma)
 		opengl_make_gamma_ramp(gamma, gamma_ramp);
 
 #ifdef _WIN32
-		SetDeviceGammaRamp( dev_context, gamma_ramp );
+		SetDeviceGammaRamp( GL_device_context, gamma_ramp );
 #else
 		SDL_SetGammaRamp( gamma_ramp, (gamma_ramp+256), (gamma_ramp+512) );
 #endif
@@ -4235,7 +4238,7 @@ void gr_opengl_shutdown()
 #ifdef _WIN32
 	// restore original gamma settings
 	if (GL_original_gamma_ramp != NULL)
-		SetDeviceGammaRamp( dev_context, GL_original_gamma_ramp );
+		SetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
 
 	// swap out our window mode and un-jail the cursor
 	ShowWindow((HWND)os_get_window(), SW_HIDE);
@@ -4430,20 +4433,20 @@ int opengl_init_display_device()
 
 	Assert( wnd != NULL );
 
-	dev_context = GetDC(wnd);
+	GL_device_context = GetDC(wnd);
 
-	if (!dev_context) {
+	if (!GL_device_context) {
 		MessageBox(wnd, "Unable to get Device context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
-	PixelFormat = ChoosePixelFormat(dev_context, &pfd);
+	PixelFormat = ChoosePixelFormat(GL_device_context, &pfd);
 
 	if (!PixelFormat) {
 		MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
 		return 1;
 	} else {
-		DescribePixelFormat(dev_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
+		DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
 
 		// make sure that we are hardware accelerated and not using the generic implementation
 		if ( !Fred_running && (pfd_test.dwFlags & PFD_GENERIC_FORMAT) && !(pfd_test.dwFlags & PFD_GENERIC_ACCELERATED) ) {
@@ -4454,7 +4457,7 @@ int opengl_init_display_device()
 			pfd.cDepthBits = 16;
 			// NOTE: the bit values for colors should get updated automatically by ChoosePixelFormat()
 
-			PixelFormat = ChoosePixelFormat(dev_context, &pfd);
+			PixelFormat = ChoosePixelFormat(GL_device_context, &pfd);
 
 			if (!PixelFormat) {
 				MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
@@ -4462,7 +4465,7 @@ int opengl_init_display_device()
 			}
 
 			// double-check that we are correct now
-			DescribePixelFormat(dev_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
+			DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
 
 			if ( (pfd_test.dwFlags & PFD_GENERIC_FORMAT) && !(pfd_test.dwFlags & PFD_GENERIC_ACCELERATED) ) {
 				MessageBox(wnd, "Unable to get proper pixel format for OpenGL W32!", "Error", MB_ICONERROR | MB_OK);
@@ -4471,19 +4474,19 @@ int opengl_init_display_device()
 		}
 	}
 
-	if (!SetPixelFormat(dev_context, PixelFormat, &pfd)) {
+	if (!SetPixelFormat(GL_device_context, PixelFormat, &pfd)) {
 		MessageBox(wnd, "Unable to set pixel format for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
-	rend_context = wglCreateContext(dev_context);
+	rend_context = wglCreateContext(GL_device_context);
 
 	if (!rend_context) {
 		MessageBox(wnd, "Unable to create rendering context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
-	if (!wglMakeCurrent(dev_context, rend_context)) {
+	if (!wglMakeCurrent(GL_device_context, rend_context)) {
 		MessageBox(wnd, "Unable to make current thread for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
@@ -4493,7 +4496,7 @@ int opengl_init_display_device()
 	// now report back as to what we ended up getting
 	int r = 0, g = 0, b = 0, depth = 0, db = 1;
 
-	DescribePixelFormat(dev_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
+	DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
 
 	r = pfd.cRedBits;
 	g = pfd.cGreenBits;
@@ -4505,7 +4508,7 @@ int opengl_init_display_device()
 
 	// get the default gamma ramp so that we can restore it on close
 	if (GL_original_gamma_ramp != NULL)
-		GetDeviceGammaRamp( dev_context, GL_original_gamma_ramp );
+		GetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
 
 #else
 
