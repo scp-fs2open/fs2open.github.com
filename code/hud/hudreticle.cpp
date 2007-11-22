@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.14 $
- * $Date: 2007-08-30 04:51:07 $
- * $Author: Backslash $
+ * $Revision: 2.15 $
+ * $Date: 2007-11-22 05:19:09 $
+ * $Author: taylor $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2007/08/30 04:51:07  Backslash
+ * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
+ * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
+ * $Length Unit Multiplier: 5
+ *
  * Revision 2.13  2007/04/30 21:30:29  Backslash
  * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
  * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
@@ -601,13 +606,10 @@ void hud_show_throttle()
 	}
 
 	absolute_speed = Player_obj->phys_info.speed;
-	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed speed scale
-		absolute_displayed_speed = absolute_speed * Hud_unit_multiplier;
-		max_displayed_speed = max_speed * Hud_unit_multiplier;
-	} else {
-		absolute_displayed_speed = absolute_speed;
-		max_displayed_speed = max_speed;
-	}
+
+	// scale by distance modifier from hud_guages.tbl for display purposes
+	absolute_displayed_speed = absolute_speed * Hud_unit_multiplier;
+	max_displayed_speed = max_speed * Hud_unit_multiplier;
 
 	desired_speed = Player->ci.forward * max_speed;
 	if ( desired_speed < 0.0f ){		// so ships that go backwards don't force the indicators below where they can go
