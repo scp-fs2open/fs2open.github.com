@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.300 $
- * $Date: 2007-11-21 07:28:37 $
- * $Author: Goober5000 $
+ * $Revision: 2.301 $
+ * $Date: 2007-11-22 04:43:30 $
+ * $Author: taylor $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.300  2007/11/21 07:28:37  Goober5000
+ * add Wing Commander Saga's fiction viewer
+ *
  * Revision 2.299  2007/11/19 20:24:39  Goober5000
  * clean up the state machine logic for starting games
  *
@@ -6157,41 +6160,51 @@ void game_reset_shade_frame()
 
 void game_shade_frame(float frametime)
 {
+	int alpha = 0;
+
 	// only do frame shade if we are actually in a game play state
-	if ( !game_actually_playing() )
+	if ( !game_actually_playing() ) {
 		return;
+	}
 
-	if ( (Viewer_shader.c == 0.0f) && (Fade_type != FI_FADEOUT) )
+	if (Fade_type == FI_NONE) {
+		goto Done;
+	}
+
+	if ( (Viewer_shader.c == 0) && (Fade_type != FI_FADEOUT) ) {
 		return;
-
-	//Fade in or out if necessary
-	if(Fade_type == FI_FADEOUT)
-	{
-		Viewer_shader.c += frametime * (255.0f / Fade_delta_time);
-	}
-	else if(Fade_type == FI_FADEIN)
-	{
-		Viewer_shader.c -= frametime * (255.0f / Fade_delta_time);
 	}
 
-	//Limit and set fade type if done
-	if(Viewer_shader.c < 0.0f)
-	{
-		Viewer_shader.c = 0.0f;
+	alpha = Viewer_shader.c;
 
-		if(Fade_type == FI_FADEIN)
+	// Fade in or out if necessary
+	if (Fade_type == FI_FADEOUT) {
+		alpha += fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
+	} else if (Fade_type == FI_FADEIN) {
+		alpha -= fl2i(frametime * (255.0f / Fade_delta_time) + 0.5f);
+	}
+
+	// Limit and set fade type if done
+	if (alpha < 0) {
+		alpha = 0;
+
+		if (Fade_type == FI_FADEIN) {
 			Fade_type = FI_NONE;
+		}
 	}
-	if(Viewer_shader.c > 255.0f)
-	{
-		Viewer_shader.c = 255.0f;
 
-		if(Fade_type == FI_FADEOUT)
+	if (alpha > 255) {
+		alpha = 255;
+
+		if (Fade_type == FI_FADEOUT) {
 			Fade_type = FI_NONE;
+		}
 	}
 
+	Viewer_shader.c = (ubyte)alpha;
 
-	gr_flash_alpha(fl2i(Viewer_shader.r), fl2i(Viewer_shader.g), fl2i(Viewer_shader.b), fl2i(Viewer_shader.c));
+Done:
+	gr_flash_alpha(Viewer_shader.r, Viewer_shader.g, Viewer_shader.b, Viewer_shader.c);
 }
 
 //WMC - This does stuff like fading in and out and subtitles. Special FX?
