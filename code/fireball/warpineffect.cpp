@@ -9,13 +9,16 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.36 $
- * $Date: 2006-11-16 01:10:47 $
+ * $Revision: 2.37 $
+ * $Date: 2007-11-22 05:02:44 $
  * $Author: taylor $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.36  2006/11/16 01:10:47  taylor
+ * do no culling on the warp effect model_render call properly (doesn't appear to break anything now that it actually set to not cull)
+ *
  * Revision 2.35  2006/11/06 06:33:48  taylor
  * more cleanup of warp_global crap
  * scale render/detail box limits with detail level setting
@@ -273,29 +276,21 @@
 #include "globalincs/pstypes.h"
 #include "model/model.h"
 #include "ship/ship.h"
+#include "cmdline/cmdline.h"
 
 
 extern int Warp_model;
-extern int Cmdline_nohtl;
-extern int Cmdline_3dwarp;
-extern int Cmdline_warp_flash;
+extern int Warp_glow_bitmap;
+extern int Warp_ball_bitmap;
 
-
-DCF(norm,"normalize a zero length vector")
-{
-	if ( Dc_command )	{
-		vec3d tmp = vmd_zero_vector;
-		vm_vec_normalize(&tmp);
-	}
-}
 
 void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 {
 	vec3d norm;
 	vertex *vertlist[3];
 
-	vm_vec_perp(&norm,(vec3d *)&v1->x,(vec3d *)&v2->x,(vec3d *)&v3->x);
-	if ( vm_vec_dot(&norm,(vec3d *)&v1->x ) >= 0.0 )	{
+	vm_vec_perp(&norm,(vec3d *)&v1->x, (vec3d *)&v2->x, (vec3d *)&v3->x);
+	if ( vm_vec_dot(&norm, (vec3d *)&v1->x ) >= 0.0 ) {
 		vertlist[0] = v3;
 		vertlist[1] = v2;
 		vertlist[2] = v1;
@@ -309,144 +304,76 @@ void draw_face( vertex *v1, vertex *v2, vertex *v3 )
 
 }
 
-//#define wSTUFF_VERTICES()	do { verts[0]->u = 0.5f; verts[0]->v = 0.0f;	verts[1]->u = 1.0f; verts[1]->v = 0.0f; verts[2]->u = 1.0f;	verts[2]->v = 1.0f; verts[3]->u = 0.5f; verts[3]->v = 1.0f; } while(0);
-//#define wR_VERTICES()		do { g3_rotate_vertex(verts[0], &bottom1); g3_rotate_vertex(verts[1], &bottom2);	g3_rotate_vertex(verts[2], &top2); g3_rotate_vertex(verts[3], &top1); } while(0);
-//#define wP_VERTICES()		do { for(idx=0; idx<4; idx++){ g3_project_vertex(verts[idx]); } } while(0);
-
 void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d)
 {
-	static flash_ball warp_ball(20, .1f,.25f, &vmd_z_vector, &vmd_zero_vector, 4.0f, 0.5f);
-
-	int i;
-
+	vec3d center;
+	vec3d vecs[5];
+	vertex verts[5];
 	int saved_gr_zbuffering = gr_zbuffer_get();
 
-//	gr_zbuffering = 0;
-
-
-	float Grid_depth = radius/2.5f;
-
-	vec3d center;
+	gr_zbuffer_set(GR_ZBUFF_READ);
 
 	vm_vec_scale_add( &center, pos, &orient->vec.fvec, -(max_radius/2.5f)/3.0f );
 
-	vec3d vecs[5];
-	vertex verts[5];
 
-	vecs[4] = center;		//this is for the warp glow-Bobboau
-	verts[4].u = 0.5f; verts[4].v = 0.5f; 
-
-	if (Cmdline_nohtl) {
-		g3_rotate_vertex( &verts[4], &vecs[4] );
-	} else {
-		g3_transfer_vertex( &verts[4], &vecs[4] );
-	}
-
-	if ( Warp_glow_bitmap != -1 )	{
-		gr_set_bitmap( Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (The_mission.flags & MISSION_FLAG_FULLNEB)?(1.0f - neb2_get_fog_intensity(obj)):1.0f );
-
+	if (Warp_glow_bitmap >= 0) {
 		float r = radius;
+		bool render_it = (Cmdline_warp_flash == 1);
 
-		int render_it;
-		
 		#define OUT_PERCENT1 0.80f
 		#define OUT_PERCENT2 0.90f
 
 		#define IN_PERCENT1 0.10f
 		#define IN_PERCENT2 0.20f
 
-		if ( life_percent < IN_PERCENT1 )	{
-			// do nothing
-			render_it = 1;
-		} else if ( life_percent < IN_PERCENT2 )	{
-			r *= ( life_percent-IN_PERCENT1 ) / (IN_PERCENT2-IN_PERCENT1); 
-			render_it = 1;
-		} else if ( life_percent < OUT_PERCENT1 )	{
-			// do nothing
-			render_it = 1;
-		} else if ( life_percent < OUT_PERCENT2 )	{
-			r *= (OUT_PERCENT2 - life_percent) / (OUT_PERCENT2-OUT_PERCENT1);
-			render_it = 1;
-		} else {
-			// do nothing
-			render_it = 1;
+		if ( (life_percent >= IN_PERCENT1) && (life_percent < IN_PERCENT2) ) {
+			r *= (life_percent - IN_PERCENT1) / (IN_PERCENT2 - IN_PERCENT1);
+			render_it = true;
+		} else if ( (life_percent >= OUT_PERCENT1) && (life_percent < OUT_PERCENT2) ) {
+			r *= (OUT_PERCENT2 - life_percent) / (OUT_PERCENT2 - OUT_PERCENT1);
+			render_it = true;
 		}
 
-		if (render_it)	{
-			int saved_gr_zbuffering = gr_zbuffer_get();
-			gr_zbuffer_set(GR_ZBUFF_READ);
-
+		if (render_it) {
 			// Add in noise 
-			//float Noise[NOISE_NUM_FRAMES] = { 
 			int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
 
-			r *= (0.40f + Noise[noise_frame]*0.30f);
+			r *= (0.40f + Noise[noise_frame] * 0.30f);
 
 			// Bobboau's warp thingie, toggled by cmdline
-			if (Cmdline_warp_flash)
-			{
-				r += (float)pow((2.0f*life_percent) - 1.0f, 24.0f) * max_radius * 1.5f;
+			if (Cmdline_warp_flash) {
+				r += powf((2.0f * life_percent) - 1.0f, 24.0f) * max_radius * 1.5f;
 			}
-			
+
+			vecs[4] = center;
+			verts[4].u = 0.5f; verts[4].v = 0.5f; 
+
+			if (Cmdline_nohtl) {
+				g3_rotate_vertex( &verts[4], &vecs[4] );
+			} else {
+				g3_transfer_vertex( &verts[4], &vecs[4] );
+			}
+
+			float alpha = (The_mission.flags & MISSION_FLAG_FULLNEB) ? (1.0f - neb2_get_fog_intensity(obj)) : 1.0f;
+			gr_set_bitmap( Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha );
+
 			g3_draw_bitmap( &verts[4], 0, r, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
-			gr_zbuffer_set(saved_gr_zbuffering);
 		}
 	}
 
-	if((Warp_model >= 0) && (warp_3d || Cmdline_3dwarp))
-	{
-		float model_Interp_scale_xyz = radius / 20.0f;
+	if ( (Warp_model >= 0) && (warp_3d || Cmdline_3dwarp) ) {
+		float scale = radius / 25.0f;
+		model_set_warp_globals(scale, scale, scale, texture_bitmap_num, (radius/max_radius) );
 
-		model_set_warp_globals(model_Interp_scale_xyz, model_Interp_scale_xyz, model_Interp_scale_xyz, texture_bitmap_num, (radius/max_radius) );
-		
 		float dist = vm_vec_dist_quick( pos, &Eye_position );
-
 		model_set_detail_level((int)(dist / (radius * 10.0f)));
-		model_render( Warp_model, orient, pos, MR_NO_LIGHTING | MR_NORMAL | MR_NO_FOGGING | MR_NO_CULL );
+
+		model_render( Warp_model, orient, pos, MR_LOCK_DETAIL | MR_NO_LIGHTING | MR_NORMAL | MR_NO_FOGGING | MR_NO_CULL );
 
 		model_set_warp_globals();
+	} else {
+		float Grid_depth = radius/2.5f;
 
-/*
-//this is that half done effect that was pissing people off-Bobboau
-
-		gr_set_cull(0);
-
-		matrix m;
-		vec3d ray_dir;
-		vm_vector_2_matrix(&m, &orient->vec.fvec, NULL, NULL);//this is the beam things that will come outof the point-Bobboau
-		float angle = ANG_TO_RAD(135.0f);
-		if(life_percent < 0.2f){
-			angle = ANG_TO_RAD(135.0f * (life_percent * 5.0f));
-		}
-		for(int idx=0; idx<1; idx++){
-			vm_vec_random_cone(&ray_dir, &orient->vec.fvec, angle, &m);
-			mprintf(( "ray direction %f %f %f, orentation %f %f %f, angle %f\n",ray_dir.xyz.x, ray_dir.xyz.y, ray_dir.xyz.z, orient->vec.fvec.xyz.x, orient->vec.fvec.xyz.y, orient->vec.fvec.xyz.z, angle));
-			vec3d p_temp = *pos;
-			vm_vec_scale_add(&p_temp, pos, &ray_dir, (max_radius * 10 * frand_range(0.75f, 0.9f)));
-			mprintf(( "end %f %f %f",p_temp.xyz.x, p_temp.xyz.y, p_temp.xyz.z));
-			
-			vertex h1[4];				// halves of a beam section	
-			vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };	
-			vec3d top1, bottom1, top2, bottom2;
-
-			beam_calc_facing_pts(&top1, &bottom1, &ray_dir, pos, 1.0f, 1.0f);	
-			beam_calc_facing_pts(&top2, &bottom2, &ray_dir, &p_temp, 1.0f, 1.0f);	
-			
-			mprintf(( "top1 %f %f %f, botom1 %f %f %f, \n",top1.xyz.x, top1.xyz.y, top1.xyz.z, bottom1.xyz.x, bottom1.xyz.y, bottom1.xyz.z));
-			mprintf(( "top2 %f %f %f, botom2 %f %f %f, \n",top2.xyz.x, top2.xyz.y, top2.xyz.z, bottom2.xyz.x, bottom2.xyz.y, bottom2.xyz.z));
-			wR_VERTICES();																// rotate and project the vertices
-			wP_VERTICES();						
-			wSTUFF_VERTICES();		// stuff the beam with creamy goodness (texture coords)
-
-			gr_set_bitmap(Warp_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
-			g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
-		}
-
-		gr_set_cull(1);
-*/
-
-
-	}else{
 		gr_set_bitmap( texture_bitmap_num, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );	
 
 		vm_vec_scale_add( &vecs[0], &center, &orient->vec.uvec, radius );
@@ -465,22 +392,28 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 		vm_vec_scale_add2( &vecs[3], &orient->vec.rvec, -radius );
 		vm_vec_scale_add2( &vecs[3], &orient->vec.fvec, Grid_depth );
 
-//	vm_vec_scale_add( &vecs[4], ¢er, &orient->vec.fvec, -Grid_depth );
+	//	vm_vec_scale_add( &vecs[4], ¢er, &orient->vec.fvec, -Grid_depth );
 		vecs[4] = center;
-			
+
 		verts[0].u = 0.01f; verts[0].v = 0.01f; 
 		verts[1].u = 0.99f; verts[1].v = 0.01f; 
 		verts[2].u = 0.99f; verts[2].v = 0.99f; 
 		verts[3].u = 0.01f; verts[3].v = 0.99f; 
 		verts[4].u = 0.5f; verts[4].v = 0.5f; 
 
-		for (i=0; i<5; i++ )	{
-			if (Cmdline_nohtl) {
-				g3_rotate_vertex( &verts[i], &vecs[i] );
-			} else {
-				g3_transfer_vertex( &verts[i], &vecs[i] );
-			}
-		}
+		if (Cmdline_nohtl) {
+			g3_rotate_vertex( &verts[0], &vecs[0] );
+			g3_rotate_vertex( &verts[1], &vecs[1] );
+			g3_rotate_vertex( &verts[2], &vecs[2] );
+			g3_rotate_vertex( &verts[3], &vecs[3] );
+			g3_rotate_vertex( &verts[4], &vecs[4] );
+		} else {
+			g3_transfer_vertex( &verts[0], &vecs[0] );
+			g3_transfer_vertex( &verts[1], &vecs[1] );
+			g3_transfer_vertex( &verts[2], &vecs[2] );
+			g3_transfer_vertex( &verts[3], &vecs[3] );
+			g3_transfer_vertex( &verts[4], &vecs[4] );
+ 		}
 
 		gr_set_cull(0); // fixes rendering problem in D3D - taylor
 		draw_face( &verts[0], &verts[4], &verts[1] );
@@ -490,14 +423,21 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 		gr_set_cull(1);
 	}
 
-	if ( Warp_ball_bitmap > -1 ){
-			g3_start_instance_matrix(pos,orient, true);
-		gr_set_bitmap(Warp_ball_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
-		float adg = (2.0f*life_percent) - 1.0f;
-		float pct= (float)(pow(adg,4.0f)-pow(adg,128.0f))*4.0f;
-		if(pct > 0.00001f)
-		warp_ball.render(max_radius*pct/2.0f,adg*adg,adg*adg*6.0f);
+	if (Warp_ball_bitmap > -1) {
+		flash_ball warp_ball(20, .1f,.25f, &vmd_z_vector, &vmd_zero_vector, 4.0f, 0.5f);
+		float adg = (2.0f * life_percent) - 1.0f;
+		float pct = (powf(adg, 4.0f) - powf(adg, 128.0f)) * 4.0f;
+
+		if (pct > 0.00001f) {
+			g3_start_instance_matrix(pos, orient, true);
+
+			gr_set_bitmap(Warp_ball_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.9999f);		
+
+			warp_ball.render(max_radius * pct * 0.5f, adg * adg, adg * adg * 6.0f);
+
 			g3_done_instance(true);
+		}
 	}
+
 	gr_zbuffer_set( saved_gr_zbuffering );
 }
