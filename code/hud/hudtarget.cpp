@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.105 $
- * $Date: 2007-09-16 21:01:48 $
- * $Author: Backslash $
+ * $Revision: 2.106 $
+ * $Date: 2007-11-22 05:19:09 $
+ * $Author: taylor $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105  2007/09/16 21:01:48  Backslash
+ * Whoops, missed a couple lines for Length Unit Multiplier
+ *
  * Revision 2.104  2007/08/30 04:51:07  Backslash
  * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
  * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
@@ -4925,13 +4928,6 @@ void hud_target_change_check()
 //
 void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float distance)
 {
-	float displayed_distance;
-	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
-		displayed_distance = distance * Hud_unit_multiplier;
-	} else { 
-		displayed_distance = distance; 
-	}
-
 	char buf[32];
 	int w = 0, h = 0;
 	int on_top, on_right, on_left, on_bottom;
@@ -4957,6 +4953,10 @@ void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float dista
 	float triangle_sep;
 	float half_gauge_length, half_triangle_sep;
 	int in_front;
+	float displayed_distance;
+
+	// scale by distance modifier from hud_guages.tbl for display purposes
+	displayed_distance = distance * Hud_unit_multiplier;
 
 	// calculate the dot product between the players forward vector and the vector connecting
 	// the player to the target. Normalize targ_to_player since we want the dot product
@@ -5109,7 +5109,7 @@ void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float dista
 	xpos = (float)floor(xpos);
 	ypos = (float)floor(ypos);
 
-	if ( hud_gauge_active(HUD_OFFSCREEN_RANGE) && (displayed_distance > 0) ) {
+	if ( hud_gauge_active(HUD_OFFSCREEN_RANGE) && (displayed_distance > 0.0f) ) {
 		sprintf(buf,"%d",fl2i(displayed_distance+0.5f));
 		hud_num_make_mono(buf);
 		gr_get_string_size(&w, &h, buf);	
