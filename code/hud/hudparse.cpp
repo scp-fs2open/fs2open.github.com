@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.43.2.7 $
- * $Date: 2007-09-02 02:07:41 $
- * $Author: Goober5000 $
+ * $Revision: 2.43.2.8 $
+ * $Date: 2007-11-22 05:19:47 $
+ * $Author: taylor $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43.2.7  2007/09/02 02:07:41  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.43.2.6  2007/08/30 04:52:30  Backslash
  * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
  * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
@@ -212,7 +215,7 @@ hud_info ship_huds[MAX_SHIP_CLASSES];
 #endif
 extern int ships_inited; //Need this
 
-float Hud_unit_multiplier = 0.0f;	//Backslash
+float Hud_unit_multiplier = 1.0f;	//Backslash
 
 #ifndef NEW_HUD
 //Set coord_x or coord_y to -1 to not change that value
@@ -943,6 +946,12 @@ void parse_hud_gauges_tbl(char *filename)
 	if(optional_string("$Length Unit Multiplier:"))
 	{
 		stuff_float(&Hud_unit_multiplier);
+
+		if (Hud_unit_multiplier <= 0.0f)
+		{
+			Warning(LOCATION, "\"$Length Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_unit_multiplier);
+			Hud_unit_multiplier = 1.0f;
+		}
 	}
 
 	if(optional_string("#Custom Gauges"))
