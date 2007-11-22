@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.64 $
- * $Date: 2007-10-29 11:32:21 $
- * $Author: karajorma $
+ * $Revision: 2.259.2.65 $
+ * $Date: 2007-11-22 05:36:06 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.64  2007/10/29 11:32:21  karajorma
+ * This is better than the other way.
+ *
  * Revision 2.259.2.63  2007/10/28 18:10:45  karajorma
  * Add the hits-left-singe-subsystem SEXP
  *
@@ -2118,7 +2121,7 @@ char	*Sexp_string; //[1024] = {0};
 // Goober5000 - it's dynamic now
 //sexp_node Sexp_nodes[MAX_SEXP_NODES];
 
-#define SEXP_NODE_INCREMENT	100
+#define SEXP_NODE_INCREMENT	250
 int Num_sexp_nodes = 0;
 sexp_node *Sexp_nodes = NULL;
 
