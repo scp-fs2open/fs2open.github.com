@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.55 $
- * $Date: 2007-11-20 01:11:12 $
- * $Author: Goober5000 $
+ * $Revision: 2.56 $
+ * $Date: 2007-11-22 05:23:20 $
+ * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.55  2007/11/20 01:11:12  Goober5000
+ * recognize a Vasudan main hall even when it isn't the second one; play the appropriate music as soon as the main hall switches
+ *
  * Revision 2.54  2007/09/02 02:10:26  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -1592,14 +1595,28 @@ void main_hall_do(float frametime)
 	gr_flip();
 
 	// see if we have a missing campaign and force the player to select a new campaign if so
-	//WMC - no forcing.
-	/*
 	extern bool Campaign_room_no_campaigns;
 	if ( !(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns ) {
-		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another...", -1));
-		gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
+		int rc = popup(0, 3, XSTR("Go to Campaign Room", -1), XSTR("Select another pilot", -1), XSTR("Exit Game", -1), XSTR("The currently active campaign cannot be found.  Please select another...", -1));
+
+		switch (rc) {
+			case 0:
+				gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
+				break;
+
+			case 1:
+				gameseq_post_event(GS_EVENT_INITIAL_PLAYER_SELECT);
+				break;
+
+			case 2:
+				main_hall_exit_game();
+				break;
+
+			default:
+				gameseq_post_event(GS_EVENT_CAMPAIGN_ROOM);
+				break;
+		}
 	}
-	*/
 
 	// maybe run the player tips popup
 // #if defined(FS2_DEMO) && defined(NDEBUG)
