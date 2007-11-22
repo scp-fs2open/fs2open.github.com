@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.73.2.9 $
- * $Date: 2007-02-12 01:04:50 $
+ * $Revision: 2.73.2.10 $
+ * $Date: 2007-11-22 04:49:39 $
  * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73.2.9  2007/02/12 01:04:50  taylor
+ * make gr_create_shader() use ubyte's instead of float's, saves us the more expensive conversions since we already convert to ubyte anyway
+ *
  * Revision 2.73.2.8  2007/02/12 00:19:48  taylor
  * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
  *
@@ -876,6 +879,7 @@ char Gr_current_palette_name[128] = NOX("none");
 // cursor stuff
 int Gr_cursor = -1;
 int Web_cursor_bitmap = -1;
+int Gr_cursor_size = 32;	// default w/h
 
 int Gr_inited = 0;
 
@@ -1677,16 +1681,34 @@ void gr_set_shader(shader *shade)
 // unexpected results. You have been warned.
 //
 // TODO: investigate memory leak of original Gr_cursor bitmap when this is called
+static int GL_cursor_nframes = 0;
 void gr_set_cursor_bitmap(int n, int lock)
 {
-	static int locked = 0;			
-	Assert(n >= 0);
+	int w, h;
+	static int locked = 0;
 
-	if (!locked || (lock == GR_CURSOR_UNLOCK)) {
+	if ( !locked || (lock == GR_CURSOR_UNLOCK) ) {
 		// if we are changing the cursor to something different
 		// then unload the previous cursor's data - taylor
 		if ( (Gr_cursor >= 0) && (Gr_cursor != n) ) {
-			gr_unset_cursor_bitmap(Gr_cursor);
+			// be sure to avoid changing a cursor which is simply another frame
+			if ( (GL_cursor_nframes < 2) || ((n - Gr_cursor) >= GL_cursor_nframes) ) {
+				gr_unset_cursor_bitmap(Gr_cursor);
+			}
+		}
+
+		if (n != Gr_cursor) {
+			// get cursor size, so that we can be sure to account for the full thing
+			// in later cursor hiding code
+			bm_get_info(n, &w, &h, NULL, &GL_cursor_nframes);
+			Assert( GL_cursor_nframes > 0 );
+
+			Gr_cursor_size = MAX(w, h);
+
+			if (Gr_cursor_size <= 0) {
+				Int3();
+				Gr_cursor_size = 32;
+			}
 		}
 
 		Gr_cursor = n;
@@ -1701,11 +1723,11 @@ void gr_set_cursor_bitmap(int n, int lock)
 
 void gr_unset_cursor_bitmap(int n)
 {
-	if (n < 0)
+	if (n < 0) {
 		return;
+	}
 
-	if (Gr_cursor == n)
-	{
+	if (Gr_cursor == n) {
 		bm_unload(Gr_cursor);
 		Gr_cursor = -1;
 	}
