@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.174.2.27 $
- * $Date: 2007-10-04 16:18:18 $
+ * $Revision: 2.174.2.28 $
+ * $Date: 2007-11-22 05:11:38 $
  * $Author: taylor $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.174.2.27  2007/10/04 16:18:18  taylor
+ * get rid of some old/obsolete items (Mantis #1489 and #1497)
+ *
  * Revision 2.174.2.26  2007/03/22 20:14:16  taylor
  * various bits of bmpman cleanup
  * be sure to clean all three possible buffers with OGL init
@@ -1267,6 +1270,9 @@ extern void opengl_tcache_frame();
 extern void opengl_tcache_flush();
 extern void opengl_tcache_cleanup();
 
+extern float FreeSpace_gamma;
+void gr_opengl_set_gamma(float gamma);
+
 static int GL_fullscreen = 0;
 static int GL_windowed = 0;
 static int GL_minimized = 0;
@@ -1338,6 +1344,8 @@ void opengl_go_fullscreen()
 		os_resume();
 	}
 #endif
+
+	gr_opengl_set_gamma(FreeSpace_gamma);
 
 	GL_fullscreen = 1;
 	GL_minimized = 0;
@@ -1415,6 +1423,11 @@ void opengl_minimize()
 
 	os_suspend();
 
+	// restore original gamma settings
+	if (GL_original_gamma_ramp != NULL) {
+		SetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
+	}
+
 	ShowWindow(wnd, SW_MINIMIZE);
 	ChangeDisplaySettings(NULL, 0);
 
@@ -1428,6 +1441,11 @@ void opengl_minimize()
 		return;
 
 	os_suspend();
+
+	if (GL_original_gamma_ramp != NULL) {
+		SDL_SetGammaRamp( GL_original_gamma_ramp, (GL_original_gamma_ramp+256), (GL_original_gamma_ramp+512) );
+	}
+
 	SDL_WM_IconifyWindow();
 	os_resume();
 #endif
