@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.71 $
- * $Date: 2007-11-22 05:31:18 $
+ * $Revision: 2.72 $
+ * $Date: 2007-11-22 05:48:42 $
  * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2007/11/22 05:31:18  taylor
+ * better case for making sure that a missing ship anim doesn't lead us to a horrible death
+ * minor cleanup
+ *
  * Revision 2.70  2007/07/28 22:10:46  karajorma
  * Apparently I forgot to commit this to HEAD. Fixes Mantis 1437
  *
@@ -2454,7 +2458,7 @@ void start_ship_animation(int ship_class, int play_sound)
 		}
 
 		// Load the necessary model file
-		ShipSelectModelNum = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0]);
+		ShipSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
 		
 		// page in ship textures properly (takes care of nondimming pixels)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
