@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.12.2.22 $
- * $Date: 2007-11-21 07:27:45 $
- * $Author: Goober5000 $
+ * $Revision: 1.12.2.23 $
+ * $Date: 2007-11-22 04:31:12 $
+ * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12.2.22  2007/11/21 07:27:45  Goober5000
+ * add Wing Commander Saga's fiction viewer
+ *
  * Revision 1.12.2.21  2007/10/12 18:57:16  karajorma
  * I meant to remove this ages ago!
  *
@@ -895,7 +898,9 @@ bool fred_init()
 	DBUGFILE_OUTPUT_0("About to gr_init");
 
 	gr_init(GR_640, GR_OPENGL, 32, 640, 480);
-	
+
+	Mouse_hidden = 1;
+
 	DBUGFILE_OUTPUT_0("About to init everything");
 	gr_font_init();					// loads up all fonts  
 //	Fred_font = gr_init_font("font01.vf");
