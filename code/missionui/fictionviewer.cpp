@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/FictionViewer.cpp $
- * $Revision: 1.2 $
- * $Date: 2007-11-21 07:28:38 $
- * $Author: Goober5000 $
+ * $Revision: 1.3 $
+ * $Date: 2007-11-22 05:25:10 $
+ * $Author: taylor $
  *
  * Fiction Viewer briefing screen
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2007/11/21 07:28:38  Goober5000
+ * add Wing Commander Saga's fiction viewer
+ *
  *
  * $NoKeywords: $
  */
@@ -351,6 +354,8 @@ void fiction_viewer_reset()
 	if (Fiction_viewer_text != NULL)
 		vm_free(Fiction_viewer_text);
 	Fiction_viewer_text = NULL;
+
+	Top_fiction_viewer_text_line = 0;
 }
 
 void fiction_viewer_load(char *filename)
@@ -382,4 +387,7 @@ void fiction_viewer_load(char *filename)
 
 	// copy all the text
 	cfread(Fiction_viewer_text, file_length, 1, fp);
+
+	// we're done, close it out
+	cfclose(fp);
 }
