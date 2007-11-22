@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.11.2.3 $
- * $Date: 2007-08-30 04:52:30 $
- * $Author: Backslash $
+ * $Revision: 2.11.2.4 $
+ * $Date: 2007-11-22 05:19:47 $
+ * $Author: taylor $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11.2.3  2007/08/30 04:52:30  Backslash
+ * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
+ * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
+ * $Length Unit Multiplier: 5
+ *
  * Revision 2.11.2.2  2007/06/02 21:40:59  Backslash
  * Here's the Gliding gauge for 3_6_9 as well.  Simple but useful especially for mods that use it, like BtRL
  *
@@ -600,13 +605,10 @@ void hud_show_throttle()
 	}
 
 	absolute_speed = Player_obj->phys_info.speed;
-	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed speed scale
-		absolute_displayed_speed = absolute_speed * Hud_unit_multiplier;
-		max_displayed_speed = max_speed * Hud_unit_multiplier;
-	} else {
-		absolute_displayed_speed = absolute_speed;
-		max_displayed_speed = max_speed;
-	}
+
+	// scale by distance modifier from hud_guages.tbl for display purposes
+	absolute_displayed_speed = absolute_speed * Hud_unit_multiplier;
+	max_displayed_speed = max_speed * Hud_unit_multiplier;
 
 	desired_speed = Player->ci.forward * max_speed;
 	if ( desired_speed < 0.0f ){		// so ships that go backwards don't force the indicators below where they can go
