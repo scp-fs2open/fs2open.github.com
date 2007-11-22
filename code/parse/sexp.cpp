@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.331 $
- * $Date: 2007-10-29 18:45:44 $
- * $Author: karajorma $
+ * $Revision: 2.332 $
+ * $Date: 2007-11-22 05:35:47 $
+ * $Author: taylor $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.331  2007/10/29 18:45:44  karajorma
+ * This is better than the other way.
+ *
  * Revision 2.330  2007/10/28 15:38:17  karajorma
  * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
  *
@@ -2159,7 +2162,7 @@ char	*Sexp_string; //[1024] = {0};
 // Goober5000 - it's dynamic now
 //sexp_node Sexp_nodes[MAX_SEXP_NODES];
 
-#define SEXP_NODE_INCREMENT	100
+#define SEXP_NODE_INCREMENT	250
 int Num_sexp_nodes = 0;
 sexp_node *Sexp_nodes = NULL;
 
