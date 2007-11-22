@@ -1,6 +1,6 @@
 ## code/Makefile.am for fs2_open
 ##
-## $Id: Makefile.am,v 1.41 2007-02-27 22:38:27 Goober5000 Exp $
+## $Id: Makefile.am,v 1.42 2007-11-22 04:52:30 taylor Exp $
 
 
 EXTRA_DIST =	\
@@ -124,8 +124,6 @@ EXTRA_DIST =	\
 	fred2/textviewdlg.h	\
 	fred2/voiceactingmanager.cpp	\
 	fred2/voiceactingmanager.h	\
-	fred2/voicefilemanager.cpp	\
-	fred2/voicefilemanager.h	\
 	fred2/waypointpathdlg.cpp	\
 	fred2/waypointpathdlg.h	\
 	fred2/weaponeditordlg.cpp	\
@@ -251,6 +249,7 @@ FS2_SOURCES =	\
 	cutscene/mvelib.h	\
 	cutscene/mveplayer.cpp	\
 	cutscene/oggplayer.cpp	\
+	cutscene/oggplayer.h	\
 	ddsutils/ddsutils.cpp	\
 	ddsutils/ddsutils.h	\
 	debris/debris.cpp	\
@@ -443,6 +442,8 @@ FS2_SOURCES =	\
 	mission/missiontraining.h	\
 	missionui/chatbox.cpp	\
 	missionui/chatbox.h	\
+	missionui/fictionviewer.cpp	\
+	missionui/fictionviewer.h	\
 	missionui/missionbrief.cpp	\
 	missionui/missionbrief.h	\
 	missionui/missioncmdbrief.cpp	\
