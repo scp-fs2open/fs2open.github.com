@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.70 $
- * $Date: 2007-07-28 22:10:46 $
- * $Author: karajorma $
+ * $Revision: 2.71 $
+ * $Date: 2007-11-22 05:31:18 $
+ * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2007/07/28 22:10:46  karajorma
+ * Apparently I forgot to commit this to HEAD. Fixes Mantis 1437
+ *
  * Revision 2.69  2007/03/22 22:14:56  taylor
  * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
@@ -2441,53 +2444,54 @@ anim* ss_load_individual_animation(int ship_class)
 // in the tech room - UnknownPlayer
 void start_ship_animation(int ship_class, int play_sound)
 {
-	ship_info* sip = &Ship_info[ship_class];
+	ship_info *sip = &Ship_info[ship_class];
 
-	if(Cmdline_ship_choice_3d || !strlen(sip->anim_filename))
-	{
-		if (ship_class < 0)
-		{
+	if ( Cmdline_ship_choice_3d || !strlen(sip->anim_filename) ) {
+		if (ship_class < 0) {
 			mprintf(("No ship class passed in to start_ship_animation - why?"));
 			ShipSelectModelNum = -1;
 			return;
 		}
-		
-		
-		
+
 		// Load the necessary model file
-		ShipSelectModelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		ShipSelectModelNum = model_load(sip->pof_file, sip->subsystems.size(), &sip->subsystems[0]);
 		
 		// page in ship textures properly (takes care of nondimming pixels)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
 		
-		if (sip->model_num < 0)
-		{
+		if (sip->model_num < 0) {
 			mprintf(("Couldn't load model file in missionshipchoice.cpp - tell UnknownPlayer"));
 		}
-	}
-	else
-	{
-
-		ss_icon_info	*ss_icon;
+	} else {
+		ss_icon_info *ss_icon;
 		Assert( ship_class >= 0 );
 		Assert( Ss_icons != NULL );
 		
-		if ( Ship_anim_class == ship_class ) 
+		if (Ship_anim_class == ship_class) {
 			return;
-		
-		if ( Ship_anim_class >= 0) {
+		}
+
+		if (Ship_anim_class >= 0) {
 			stop_ship_animation();
 		}
-		
+
 		ss_icon = &Ss_icons[ship_class];
-		
+
 		// see if we need to load in the animation from disk
-		if ( ss_icon->ss_anim == NULL ) {
+		if (ss_icon->ss_anim == NULL) {
 			ss_icon->ss_anim = ss_load_individual_animation(ship_class);
+
+			if (ss_icon->ss_anim == NULL) {
+				// set Ship_anim_class so that we don't keep running through here
+				// for the same ship, then bail
+				Ship_anim_class = ship_class;
+
+				return;
+			}
 		}
-		
+
 		// see if we need to get an instance
-		if ( ss_icon->ss_anim_instance == NULL && ss_icon->ss_anim != NULL ) {
+		if (ss_icon->ss_anim_instance == NULL) {
 			anim_play_struct aps;
 		
 			anim_play_init(&aps, ss_icon->ss_anim, Ship_anim_coords[gr_screen.res][0], Ship_anim_coords[gr_screen.res][1]);
