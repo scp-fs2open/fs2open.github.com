@@ -102,6 +102,21 @@
 #define IDD_ALT_SHIP_CLASS              268
 #define IDD_RESTRICT_PATHS              269
 #define IDD_BACKGROUND_CHOOSER          272
+#define IDB_DATA_01                     273
+#define IDB_DATA_02                     274
+#define IDB_DATA_03                     275
+#define IDB_DATA_04                     276
+#define IDB_DATA_05                     277
+#define IDB_DATA_06                     278
+#define IDB_DATA_07                     279
+#define IDB_DATA_08                     280
+#define IDB_DATA_09                     281
+#define IDB_DATA_10                     282
+#define IDB_DATA_11                     283
+#define IDB_DATA_12                     284
+#define IDB_DATA_15                     285
+#define IDB_DATA_14                     286
+#define IDB_DATA_13                     287
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -842,6 +857,7 @@
 #define IDC_DELAY                       1407
 #define IDC_DELAY_SPIN                  1408
 #define IDC_HELP_BOX                    1409
+#define IDC_HELP_BOX2                   1410
 #define IDC_asdf                        1412
 #define IDC_DESTROY_SPIN                1413
 #define IDC_IGNORE_ORDERS               1414
@@ -1085,6 +1101,7 @@
 #define IDC_NO_REPLACE                  1591
 #define IDC_ENVMAP_BROWSE               1593
 #define IDC_SKYBOX_MODEL                1594
+#define IDC_MINI_HELP_BOX               1595
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1372,9 +1389,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        274
+#define _APS_NEXT_RESOURCE_VALUE        288
 #define _APS_NEXT_COMMAND_VALUE         33091
-#define _APS_NEXT_CONTROL_VALUE         1595
+#define _APS_NEXT_CONTROL_VALUE         1596
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
