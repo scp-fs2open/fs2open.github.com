@@ -12,6 +12,9 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.209  2007/09/02 02:10:29  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.208  2007/08/16 00:45:54  phreak
  * Local SSMs shouldn't jump into subspace if they're not homing.
  *
@@ -2259,7 +2262,7 @@ int parse_weapon(int subtype, bool replace)
 	if(optional_string("$Damage Type:")) {
 		//This is checked for validity on every armor type
 		//If it's invalid (or -1), then armor has no effect
-		stuff_string(buf, F_NAME, WEAPONS_MULTITEXT_LENGTH);
+		stuff_string(buf, F_NAME, NAME_LENGTH);
 		wip->damage_type_idx = damage_type_add(buf);
 	}
 
@@ -4893,13 +4896,22 @@ void weapon_process_pre( object *obj, float frame_time)
 	}
 
 	//WMC - Maybe detonate weapon anyway!
-	if(wip->det_radius > 0.0f && wp->homing_object != NULL)
+	if(wip->det_radius > 0.0f)
 	{
-		vec3d spos;
-		if((wp->homing_subsys == NULL && vm_vec_dist(&obj->pos, &wp->homing_object->pos) <= wip->det_radius)
-			|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&obj->pos, &spos) <= wip->det_radius))
+		if(wp->homing_object != NULL)
 		{
-			weapon_detonate(obj);
+			vec3d spos;
+			if((wp->homing_subsys == NULL && vm_vec_dist(&obj->pos, &wp->homing_object->pos) <= wip->det_radius)
+				|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&obj->pos, &spos) <= wip->det_radius))
+			{
+				weapon_detonate(obj);
+			}
+		} else if(wp->target_num > -1)
+		{
+			if(vm_vec_dist(&obj->pos, &Objects[wp->target_num].pos) <= wip->det_radius)
+			{
+				weapon_detonate(obj);
+			}
 		}
 	}
 }
@@ -6144,9 +6156,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 //
 //	Call to figure out if a weapon is armed or not
 //
-//Weapon is armed when...
-//1: Weapon is shot down by weapon
-//OR
+//Weapon is not armed when...
 //1: weapon is destroyed before arm time
 //2: weapon is destroyed before arm distance from ship
 //3: weapon is outside arm radius from target ship
@@ -6177,9 +6187,12 @@ bool weapon_armed(weapon *wp)
 
 		if(		((wip->arm_time) && ((Missiontime - wp->creation_time) < wip->arm_time))
 			|| ((wip->arm_dist) && (pobj != NULL && pobj->type != OBJ_NONE && (vm_vec_dist(&wobj->pos, &pobj->pos) < wip->arm_dist)))
-			|| ((wip->arm_radius) && (wp->homing_object == NULL
-				|| (wp->homing_subsys == NULL && vm_vec_dist(&wobj->pos, &wp->homing_object->pos) > wip->arm_radius)
-				|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&wobj->pos, &spos) > wip->arm_radius))))
+			|| ((wip->arm_radius) && (
+				(wp->homing_object == NULL && wp->target_num < 0)
+				|| (wp->homing_object != NULL && wp->homing_subsys == NULL && vm_vec_dist(&wobj->pos, &wp->homing_object->pos) > wip->arm_radius)
+				|| (wp->homing_object != NULL && wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&wobj->pos, &spos) > wip->arm_radius)
+				|| (wp->target_num > -1 && vm_vec_dist(&wobj->pos, &Objects[wp->target_num].pos) > wip->arm_radius)
+				)))
 		{
 			return false;
 		}
@@ -6376,7 +6389,7 @@ void weapon_mark_as_used(int weapon_type)
 void weapons_page_in()
 {
 	int i, j;
-	uint idx;
+	int idx;
 
 	Assert( used_weapons != NULL );
 
