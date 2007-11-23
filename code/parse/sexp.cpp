@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.332 $
- * $Date: 2007-11-22 05:35:47 $
- * $Author: taylor $
+ * $Revision: 2.333 $
+ * $Date: 2007-11-23 23:22:34 $
+ * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.332  2007/11/22 05:35:47  taylor
+ * bump node allocation increment (when you are regularly realloc'ing 20-30 times, the increment is too low :))
+ *
  * Revision 2.331  2007/10/29 18:45:44  karajorma
  * This is better than the other way.
  *
@@ -7089,7 +7092,7 @@ int sexp_get_damage_caused(int node)
 		sindex = ship_find_exited_ship_by_name(CTEXT(node));
 		if (sindex < 0) {
 			// this is probably a ship which hasn't arrived and thus can't have taken any damage yet
-			return damage_caused;
+			return fl2i(damage_caused);
 		}
 		else {
 			damaged_sig = Ships_exited[sindex].obj_signature;
@@ -9704,7 +9707,7 @@ void sexp_change_goal_validity( int n, int flag )
 void sexp_deal_with_ship_loadout()
 {
 	// cycle through Ships_exited and find ships which require attention
-	for (int i=0; i < Ships_exited.size() ; i++) 
+	for (int i=0; i < (int)Ships_exited.size() ; i++) 
 	{
 		// Need go no further for this ship unless we marked it to say we were interested in it earlier
 		if (!(Ships_exited[i].flags & SEF_SHIP_EXITED_STORE))
@@ -10569,7 +10572,6 @@ void sexp_deal_with_ship_flag(int node, int object_flag, int object_flag2, int s
 					Ships[ship_index].flags2 |= ship_flag2;
 				else
 					Ships[ship_index].flags2 &= ~ship_flag2;
-	int wingnum, shipnum, ship_index ;
 			}
 		}
 		// if it's not in-mission
