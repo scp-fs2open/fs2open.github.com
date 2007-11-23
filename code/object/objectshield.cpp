@@ -8,13 +8,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectShield.cpp $
- * $Revision: 2.4 $
- * $Date: 2007-09-03 01:02:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.5 $
+ * $Date: 2007-11-23 23:49:34 $
+ * $Author: wmcoolmon $
  *
  * Shield-specific functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2007/09/03 01:02:50  Goober5000
+ * fix for 1376
+ *
  * Revision 2.3  2007/02/12 01:33:46  Goober5000
  * ack
  *
@@ -77,7 +80,8 @@ void shield_add_strength(object *objp, float delta)
 		// smart shield repair
 		while (delta > 0.0f)
 		{
-			float weakest;
+			//WMC - Set to INT_MAX so that this is set to something
+			float weakest = INT_MAX;
 			int weakest_idx = -1;
 
 			// find weakest shield quadrant
@@ -121,7 +125,7 @@ float scale_quad(float generator_fraction, float quad_strength)
 	// -----------------
 	//  ln(50) - ln(1)
 	//
-	float effective_strength = quad_strength * (log(generator_fraction * 100.0f) * factor);
+	float effective_strength = quad_strength * ((float)log(generator_fraction * 100.0f) * (float)factor);
 
 	// ensure not negative, which may happen if the shield gets below 1 percent
 	// (since we're dealing with logs)
@@ -235,6 +239,14 @@ float shield_get_max_strength(object *objp)
 		return 0.0f;
 
 	return Ships[objp->instance].ship_max_shield_strength;
+}
+
+void shield_set_max_strength(object *objp, float newmax)
+{
+	if(objp->type != OBJ_SHIP)
+		return;
+
+	Ships[objp->instance].ship_max_shield_strength = newmax;
 }
 
 // Goober5000
