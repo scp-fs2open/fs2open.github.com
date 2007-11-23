@@ -31,7 +31,7 @@
 				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\fred2_open.pch"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
+				ProgramDataBaseFileName="$(IntDir)/fred2_open.pdb"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -2297,6 +2297,51 @@
 				RelativePath="..\..\code\fred2\res\data.bmp">
 			</File>
 			<File
+				RelativePath="..\..\code\fred2\res\data01.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data02.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data03.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data04.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data05.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data06.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data07.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data08.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data09.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data10.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data11.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data12.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data13.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data14.bmp">
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data15.bmp">
+			</File>
+			<File
 				RelativePath="..\..\code\fred2\res\FRED.ico">
 			</File>
 			<File
@@ -2322,6 +2367,6 @@
 	<Globals>
 		<Global
 			Name="RESOURCE_FILE"
-			Value="\Documents and Settings\Administrator\My Documents\My Source Code\fs2_open\code\fred2\fred.rc"/>
+			Value="\Steven\Projects\FSSCP\Unstable\fs2_open\code\fred2\fred.rc"/>
 	</Globals>
 </VisualStudioProject>
