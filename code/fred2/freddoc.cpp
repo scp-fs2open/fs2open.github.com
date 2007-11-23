@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.12 $
- * $Date: 2007-09-02 02:10:24 $
- * $Author: Goober5000 $
+ * $Revision: 1.13 $
+ * $Date: 2007-11-23 23:05:40 $
+ * $Author: wmcoolmon $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
  * Document class for document/view architechure, which we don't really use in
@@ -19,6 +19,9 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.12  2007/09/02 02:10:24  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 1.11  2007/07/28 21:31:10  Goober5000
  * this should really be capitalized
  *
@@ -356,6 +359,8 @@
 #include "stdafx.h"
 #include "FRED.h"
 #include <stdlib.h>
+//#include <atlbase.h>
+//#include <atlconv.h>
 
 #include "FREDDoc.h"
 #include "FREDView.h"
@@ -1222,10 +1227,37 @@ void CFREDDoc::OnFileImportFSM()
 		return;
 
 	// get location to save to    
+#if ( _MFC_VER >= 0x0700 )
+	char dest_directory[MAX_PATH];
+
+	//ITEMIDLIST fs2_mission_pidl = {0};
+
+	//SHParseDisplayName(A2CW(fs2_mission_path), NULL, fs2_mission_pidl, 0, 0);
+
+	BROWSEINFO bi;
+	bi.hwndOwner = theApp.GetMainWnd()->GetSafeHwnd();
+	//bi.pidlRoot = &fs2_mission_pidl;
+	bi.pidlRoot = NULL;
+	bi.pszDisplayName = dest_directory;
+	bi.lpszTitle = "Select a location to save in";
+	bi.ulFlags = 0;
+	bi.lpfn = NULL;
+	bi.lParam = NULL;
+	bi.iImage = NULL;
+
+	LPCITEMIDLIST ret_val = SHBrowseForFolder(&bi);
+
+	if(ret_val == NULL)
+		return;
+
+	SHGetPathFromIDList(ret_val, dest_directory);
+#else
     CFolderDialog dlgFolder(_T("Select a location to save in"), fs2_mission_path, NULL);
     if(dlgFolder.DoModal() != IDOK)
         return;
 
+	char *dest_directory = dlgFolder.GetFolderPath();
+#endif
 	// clean things up first
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);
@@ -1281,7 +1313,7 @@ void CFREDDoc::OnFileImportFSM()
 		strcpy(Mission_filename, filename);
 
 		// get new path
-		strcpy(dest_path, dlgFolder.GetFolderPath());
+		strcpy(dest_path, dest_directory);
 		strcat(dest_path, "\\");
 		strcat(dest_path, filename);
 

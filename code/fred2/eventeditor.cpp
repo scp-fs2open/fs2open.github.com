@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.8 $
- * $Date: 2007-09-02 20:07:43 $
- * $Author: Goober5000 $
+ * $Revision: 1.9 $
+ * $Date: 2007-11-23 23:05:39 $
+ * $Author: wmcoolmon $
  *
  * Event editor dialog box class and event tree class
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2007/09/02 20:07:43  Goober5000
+ * fix for 1471
+ *
  * Revision 1.7  2007/09/02 02:10:24  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -819,18 +822,26 @@ void event_editor::OnInsert()
 		return;
 	}
 
-	for (i=m_num_events; i>cur_event; i--) {
-		m_events[i] = m_events[i - 1];
-		m_sig[i] = m_sig[i - 1];
+	if(cur_event < 0 || m_num_events == 0)
+	{
+		//There are no events yet, so just create one
+		reset_event(m_num_events++, TVI_LAST);
 	}
+	else
+	{
+		for (i=m_num_events; i>cur_event; i--) {
+			m_events[i] = m_events[i - 1];
+			m_sig[i] = m_sig[i - 1];
+		}
 
-	if (cur_event){
-		reset_event(cur_event, get_event_handle(cur_event - 1));
-	} else {
-		reset_event(cur_event, TVI_FIRST);
+		if (cur_event){
+			reset_event(cur_event, get_event_handle(cur_event - 1));
+		} else {
+			reset_event(cur_event, TVI_FIRST);
+		}
+
+		m_num_events++;
 	}
-
-	m_num_events++;
 }
 
 HTREEITEM event_editor::get_event_handle(int num)
