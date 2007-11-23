@@ -54,8 +54,9 @@
 #define BITMAP_BLACK_DOT		8
 #define BITMAP_BLUE_DOT			BITMAP_ROOT
 #define BITMAP_RED_DOT			BITMAP_ROOT_DIRECTIVE
-
-
+#define BITMAP_NUMBERED_DATA		9
+#define NUM_BITMAP_NUMBERED_DATA	15
+//Therefore NEXT DEFINE should be 9+12 or 21
 
 // tree behavior modes (or tree subtype)
 #define ST_LABELED_ROOT		0x10000
@@ -185,7 +186,11 @@ public:
 
 	// Karajorma
 	void FixupLoadoutNameChange(const char *old_name, const char *new_name);
-	int get_loadout_variable_count(const char *var_name); 
+	int get_loadout_variable_count(const char *var_name);
+	
+	//WMC
+	int get_sibling_place(int node);
+	int get_data_image(int node); 
 
 	sexp_list_item *get_listing_opf(int opf, int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_null();
@@ -254,6 +259,7 @@ public:
 	HTREEITEM	m_h_drop;
 	CImageList	*m_p_image_list;
 	CEdit *help_box;
+	CEdit *mini_help_box;
 	CPoint m_pt;
 
 	// ClassWizard generated virtual function overrides
