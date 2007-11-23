@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.19 $
- * $Date: 2007-06-04 00:04:21 $
- * $Author: Backslash $
+ * $Revision: 2.20 $
+ * $Date: 2007-11-23 23:08:32 $
+ * $Author: wmcoolmon $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2007/06/04 00:04:21  Backslash
+ * Backslash's HEAD-only controls commit:
+ * -Lateral thruster axes
+ * -Slide_when_pressed
+ * -Placeholders for glide_when_pressed and more controls, to give us a little breathing room while we wait for the real pilot file code
+ *
  * Revision 2.18  2005/10/10 17:14:30  taylor
  * remove NO_NETWORK
  * fix controlconfig so that axes can be set to joystick/mouse using the mouse (required when no joystick attached)
@@ -508,8 +514,8 @@ config_item Control_config_backup[CCFG_MAX];
 int Axis_map_to[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, JOY_Z_AXIS, -1 };
 int Axis_map_to_defaults[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, JOY_Z_AXIS, -1 };
 #else
-int Axis_map_to[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
-int Axis_map_to_defaults[] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+int Axis_map_to[NUM_JOY_AXIS_ACTIONS] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
+int Axis_map_to_defaults[NUM_JOY_AXIS_ACTIONS] = { JOY_X_AXIS, JOY_Y_AXIS, JOY_RX_AXIS, -1, -1, -1, -1, -1, -1, -1, -1, -1 };
 #endif
 
 // all this stuff is localized/externalized
