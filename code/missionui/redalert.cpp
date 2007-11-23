@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.25 $
- * $Date: 2007-10-28 15:38:16 $
- * $Author: karajorma $
+ * $Revision: 2.26 $
+ * $Date: 2007-11-23 23:16:44 $
+ * $Author: wmcoolmon $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2007/10/28 15:38:16  karajorma
+ * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
+ *
  * Revision 2.24  2007/03/22 20:47:33  taylor
  * make sure that we set/reset the red alert data properly (Mantis #1255)
  *
@@ -891,7 +894,7 @@ void red_alert_store_wingman_status()
 	}
 
 	// store exited ships that did not die
-	for (int idx=0; idx<Ships_exited.size(); idx++) {
+	for (int idx=0; idx<(int)Ships_exited.size(); idx++) {
 
 		if ( Red_alert_num_slots_used >= MAX_RED_ALERT_SLOTS ) {
 			Int3();	// ran out of red alert slots
