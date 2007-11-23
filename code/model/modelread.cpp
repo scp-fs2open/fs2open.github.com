@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.132 $
- * $Date: 2007-10-21 22:11:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.133 $
+ * $Date: 2007-11-23 23:17:45 $
+ * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.132  2007/10/21 22:11:14  Goober5000
+ * fix a minor bug in the dockpoint system (affects sm2-07a in the Port)
+ *
  * Revision 2.131  2007/02/26 04:30:48  Goober5000
  * add model compare capability (currently only via debug console)
  *
@@ -1302,9 +1305,9 @@ void model_set_bay_path_nums(polymodel *pm);
 //determine the order that they are tried in ai_goal_fixup_dockpoints
 flag_def_list Dock_type_names[] =
 {
-	{ "cargo",		DOCK_TYPE_CARGO },
-	{ "rearm",		DOCK_TYPE_REARM },
-	{ "generic",	DOCK_TYPE_GENERIC },
+	{ "cargo",		DOCK_TYPE_CARGO,	0},
+	{ "rearm",		DOCK_TYPE_REARM,	0},
+	{ "generic",	DOCK_TYPE_GENERIC,	0},
 };
 
 int Num_dock_type_names = sizeof(Dock_type_names) / sizeof(flag_def_list);
