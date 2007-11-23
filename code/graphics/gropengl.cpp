@@ -2,13 +2,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.202 $
- * $Date: 2007-11-22 05:11:22 $
- * $Author: taylor $
+ * $Revision: 2.203 $
+ * $Date: 2007-11-23 21:58:10 $
+ * $Author: wmcoolmon $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.202  2007/11/22 05:11:22  taylor
+ * try to deal better with gamma setting/resetting when minimizing/restoring the game (Mantis #1210)
+ *
  * Revision 2.201  2007/10/04 16:18:46  taylor
  * get rid of some old/obsolete items (Mantis #1489 and #1497)
  *
@@ -1421,7 +1424,7 @@ void opengl_minimize()
 
 	// restore original gamma settings
 	if (GL_original_gamma_ramp != NULL) {
-		SetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
+		SetDeviceGammaRamp( dev_context, GL_original_gamma_ramp );
 	}
 
 	ShowWindow(wnd, SW_MINIMIZE);
