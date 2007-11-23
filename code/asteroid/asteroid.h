@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.15 $
- * $Date: 2006-11-16 00:53:12 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2007-11-23 23:49:32 $
+ * $Author: wmcoolmon $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/11/16 00:53:12  taylor
+ * various bits of little cleanup
+ * get rid of some more compiler warnings
+ *
  * Revision 2.14  2006/09/11 06:49:38  taylor
  * fixes for stuff_string() bounds checking
  *
@@ -215,6 +219,7 @@ typedef struct asteroid_info {
 	int			num_detail_levels;									// number of detail levels for this ship
 	int			detail_distance[MAX_ASTEROID_DETAIL_LEVELS];		// distance to change detail levels at
 	float			max_speed;												// cap on speed for asteroid
+	int				damage_type_idx;								//Damage type of the asteroid
 	float			inner_rad;												// radius within which maximum area effect damage is applied
 	float			outer_rad;												// radius at which no area effect damage is applied
 	float			damage;													// maximum damage applied from area effect explosion
@@ -223,7 +228,7 @@ typedef struct asteroid_info {
 	polymodel	*modelp[NUM_DEBRIS_POFS];
 	int			model_num[NUM_DEBRIS_POFS];
 
-	asteroid_info() { memset(this, 0, sizeof(asteroid_info)); };
+	asteroid_info() { memset(this, 0, sizeof(asteroid_info)); damage_type_idx = -1; };
 } asteroid_info;
 
 

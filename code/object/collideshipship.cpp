@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.25 $
- * $Date: 2007-02-20 04:20:27 $
- * $Author: Goober5000 $
+ * $Revision: 2.26 $
+ * $Date: 2007-11-23 23:49:33 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2007/02/20 04:20:27  Goober5000
+ * the great big duplicate model removal commit
+ *
  * Revision 2.24  2007/02/19 07:24:51  wmcoolmon
  * WMCoolmon experiences a duh moment. Move scripting collision variable declarations in front of overrides, to give
  * them access to these (somewhat useful) variables
@@ -1720,15 +1723,11 @@ int collide_ship_ship( obj_pair * pair )
 */
 		if ( hit )
 		{
-			ade_odata ade_shipa_obj = l_Ship.Set(object_h(A));
-			ade_odata ade_shipb_obj = l_Ship.Set(object_h(B));
-
-			Script_system.SetHookVar("Ship", 'o', &ade_shipa_obj);
-			Script_system.SetHookVar("ShipB", 'o', &ade_shipb_obj);
+			Script_system.SetHookObjects(4, "Ship", A, "ShipB", B, "Self", A, "Object", B);
 			bool a_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, A);
 			
-			Script_system.SetHookVar("Ship", 'o', &ade_shipb_obj);
-			Script_system.SetHookVar("ShipB", 'o', &ade_shipa_obj);
+			//Yes this should be reversed.
+			Script_system.SetHookObjects(4, "Ship", B, "ShipB", A, "Self", B, "Object", A);
 			bool b_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, B);
 			if(!a_override && !b_override)
 			{
@@ -1871,19 +1870,17 @@ int collide_ship_ship( obj_pair * pair )
 
 			if(!(b_override && !a_override))
 			{
-				Script_system.SetHookVar("Ship", 'o', &ade_shipa_obj);
-				Script_system.SetHookVar("ShipB", 'o', &ade_shipb_obj);
+				Script_system.SetHookObjects(4, "Ship", A, "ShipB", B, "Self", A, "Object", B);
 				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, A);
 			}
 			if((b_override && !a_override) || (!b_override && !a_override))
 			{
-				Script_system.SetHookVar("Ship", 'o', &ade_shipb_obj);
-				Script_system.SetHookVar("ShipB", 'o', &ade_shipa_obj);
+				//Yes this should be reversed.
+				Script_system.SetHookObjects(4, "Ship", B, "ShipB", A, "Self", B, "Object", A);
 				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, B);
 			}
 
-			Script_system.RemHookVar("Ship");
-			Script_system.RemHookVar("ShipB");
+			Script_system.RemHookVars(4, "Ship", "ShipB", "Self", "Object");
 
 			return 0;
 		}		

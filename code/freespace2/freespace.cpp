@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.301 $
- * $Date: 2007-11-22 04:43:30 $
- * $Author: taylor $
+ * $Revision: 2.302 $
+ * $Date: 2007-11-23 23:49:32 $
+ * $Author: wmcoolmon $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.301  2007/11/22 04:43:30  taylor
+ * cleanup/fixage for fade in/out function (Mantis #1186)
+ *
  * Revision 2.300  2007/11/21 07:28:37  Goober5000
  * add Wing Commander Saga's fiction viewer
  *
@@ -4056,6 +4059,9 @@ VidInitError:
 //	Game_music_paused = 0;
 	Game_paused = 0;
 
+	Script_system.RunBytecode(Script_gameinithook);
+	Script_system.RunCondition(CHA_GAMEINIT);
+
 	game_title_screen_close();
 
 #ifdef _WIN32
@@ -4067,7 +4073,6 @@ VidInitError:
 
 	//mprintf(("cfile_init() took %d\n", e1 - s1));
 	// mprintf(("1000 cfopens() took %d\n", e2 - s2));	
-	Script_system.RunBytecode(Script_gameinithook);
 }
 
 char transfer_text[128];
@@ -5416,7 +5421,7 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 			}
 
 			if(Viewer_obj)
-				Script_system.SetHookObject("Viewer", OBJ_INDEX(Viewer_obj));
+				Script_system.SetHookObject("Viewer", Viewer_obj);
 			else
 				Script_system.RemHookVar("Viewer");
 
@@ -6353,7 +6358,7 @@ void game_frame(int paused)
 			}
 
 			if(Player_obj)
-				Script_system.SetHookObject("Player", OBJ_INDEX(Player_obj));
+				Script_system.SetHookObject("Player", Player_obj);
 			else
 				Script_system.RemHookVar("Player");
 
@@ -6370,8 +6375,10 @@ void game_frame(int paused)
 			}
 
 			Scripting_didnt_draw_hud = 1;
-			if(Script_system.IsOverride(Script_hudhook) || Script_system.IsConditionOverride(CHA_HUDDRAW,Viewer_obj))
+			Script_system.SetHookObject("Self", Viewer_obj);
+			if(Script_system.IsOverride(Script_hudhook) || Script_system.IsConditionOverride(CHA_HUDDRAW, Viewer_obj))
 				Scripting_didnt_draw_hud = 0;
+			Script_system.RemHookVar("Self");
 
 			if(Scripting_didnt_draw_hud)
 			{
@@ -6440,8 +6447,10 @@ void game_frame(int paused)
 				game_render_hud_3d(&eye_pos, &eye_orient);
 			}
 
+			Script_system.SetHookObject("Self", Viewer_obj);
 			Script_system.RunBytecode(Script_hudhook);
 			Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
+			Script_system.RemHookVar("Self");
 
 			gr_reset_clip();
 			game_render_post_frame();
@@ -11228,14 +11237,14 @@ DCF(merge_stats, "merge a pilot's stats into this pilot")
 		Player->stats.kill_count += other_player.stats.kill_count;
 		Player->stats.kill_count_ok += other_player.stats.kill_count_ok;
 
-		for (i = 0; i < MAX_SHIP_TYPES; i++)
+		for (i = 0; i < MAX_SHIP_CLASSES; i++)
 			Player->stats.kills[i] += other_player.stats.kills[i];
 
 		// don't merge last_backup
 		// don't merge last_flown
 		// don't merge mission-specific stuff
 
-		for (i = 0; i < NUM_MEDALS; i++)
+		for (i = 0; i < MAX_MEDALS; i++)
 			Player->stats.medals[i] += other_player.stats.medals[i];
 
 		Player->stats.missions_flown += other_player.stats.missions_flown;
@@ -11393,7 +11402,12 @@ void game_title_screen_display()
 	}
 #endif
 
-	if(!Script_system.IsOverride(Script_splashhook))
+	//Script_system.SetHookVar("SplashScreenImage", 's', Game_title_screen_fname[gr_screen.res]);
+	//Script_system.SetHookVar("SplashScreenLogo", 's', Game_logo_screen_fname[gr_screen.res]);
+	bool globalhook_override = Script_system.IsOverride(Script_splashhook);
+	bool condhook_override = Script_system.IsConditionOverride(CHA_SPLASHSCREEN);
+	mprintf(("SCRIPTING: Splash screen overrides checked"));
+	if(!globalhook_override && !condhook_override)
 	{
 		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
 		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
@@ -11420,7 +11434,17 @@ void game_title_screen_display()
 		}
 	}
 
-	Script_system.RunBytecode(Script_splashhook);
+	if(!condhook_override)
+		Script_system.RunBytecode(Script_splashhook);
+	
+	mprintf(("SCRIPTING: Splash hook has been run"));
+
+	if(!globalhook_override || condhook_override)
+		Script_system.RunCondition(CHA_SPLASHSCREEN);
+		
+	mprintf(("SCRIPTING: Splash screen conditional hook has been run"));
+		
+	Script_system.RemHookVars(2, "SplashScreenImage", "SplashScreenLogo");
 
 #ifndef NO_DIRECT3D
 	// d3d	

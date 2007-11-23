@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.86 $
- * $Date: 2007-05-28 19:41:47 $
- * $Author: taylor $
+ * $Revision: 2.87 $
+ * $Date: 2007-11-23 23:49:41 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.86  2007/05/28 19:41:47  taylor
+ * various bits of cleanup
+ * don't draw beam impact effect if we are hitting a shield
+ * updated hit shield quadrant properly for player when a beam hits
+ * set shield quadrant and exit_flag properly for collision info so that we don't count damage twice and handle no_pierce_shields properly
+ *
  * Revision 2.85  2007/04/11 18:17:26  taylor
  * cleanup error message
  * allow launch_snd from tbl to be used for beam weapon shot sound (Mantis #1263)
@@ -628,7 +634,6 @@ extern int Cmdline_nohtl;
 // randomness factor - all beam weapon aiming is adjusted by +/- some factor within this range
 #define BEAM_RANDOM_FACTOR			0.4f
 
-#define MAX_BEAMS					500
 #define BEAM_DAMAGE_TIME			170			// apply damage 
 #define MAX_SHOT_POINTS				30
 #define SHOT_POINT_TIME				200			// 5 arcs a second
@@ -1760,7 +1765,9 @@ void beam_move_all_post()
 
 void beam_render(beam *b, float u_offset)
 {	
-	int idx, s_idx;
+//	mprintf(("about to render a beam\n"));
+	int idx;
+	int s_idx;
 	vertex h1[4];				// halves of a beam section
 	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };
 	vec3d fvec, top1, bottom1, top2, bottom2;
@@ -3587,7 +3594,7 @@ int beam_ok_to_fire(beam *b)
 // get the width of the widest section of the beam
 float beam_get_widest(beam *b)
 {
-	uint idx;
+	int idx;
 	float widest = -1.0f;
 
 	// sanity

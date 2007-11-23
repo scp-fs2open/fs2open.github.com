@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.89 $
- * $Date: 2007-09-02 18:53:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.90 $
+ * $Date: 2007-11-23 23:49:35 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89  2007/09/02 18:53:24  Goober5000
+ * fix for #1455 plus a bit of cleanup
+ *
  * Revision 2.88  2007/04/24 13:13:05  karajorma
  * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
  *
@@ -1120,11 +1123,11 @@ void shipfx_warpin_start( object *objp )
 	}
 
 	//WMC - Check if scripting handles this.
-	Script_system.SetHookObject("Object", OBJ_INDEX(objp));
+	Script_system.SetHookObject("Self", objp);
 	if(Script_system.IsConditionOverride(CHA_WARPIN, objp))
 	{
 		Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
-		Script_system.RemHookVar("Object");
+		Script_system.RemHookVar("Self");
 		return;
 	}
 
@@ -1243,7 +1246,7 @@ void shipfx_warpin_start( object *objp )
 	}
 	
 	Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
-	Script_system.RemHookVar("Object");
+	Script_system.RemHookVar("Self");
 }
 
 void shipfx_warpin_frame( object *objp, float frametime )
@@ -1504,11 +1507,11 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
-	Script_system.SetHookObject("Object", OBJ_INDEX(objp));
+	Script_system.SetHookObject("Self", objp);
 	if(Script_system.IsConditionOverride(CHA_WARPOUT, objp))
 	{
 		Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
-		Script_system.RemHookVar("Object");
+		Script_system.RemHookVar("Self");
 		return;
 	}
 
@@ -1632,7 +1635,7 @@ void shipfx_warpout_start( object *objp )
 	}
 	
 	Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
-	Script_system.RemHookVar("Object");
+	Script_system.RemHookVar("Self");
 
 }
 
@@ -3337,7 +3340,7 @@ DCF_BOOL(engine_wash, Wash_on)
 // Assumes length of engine wash is greater than radius of engine wash hemisphere
 void engine_wash_ship_process(ship *shipp)
 {
-	uint idx, j;		
+	int idx, j;		
 	object *objp, *max_ship_intensity_objp;
 	int started_with_no_wash = shipp->wash_intensity <= 0 ? 1 : 0;
 

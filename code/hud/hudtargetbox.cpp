@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.72 $
- * $Date: 2007-08-30 04:51:07 $
- * $Author: Backslash $
+ * $Revision: 2.73 $
+ * $Date: 2007-11-23 23:49:33 $
+ * $Author: wmcoolmon $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2007/08/30 04:51:07  Backslash
+ * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
+ * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
+ * $Length Unit Multiplier: 5
+ *
  * Revision 2.71  2007/07/15 04:19:25  Goober5000
  * partial commit of aldo's eyepoint feature
  * it will need a keystroke to be complete
@@ -1322,10 +1327,12 @@ void hud_render_target_ship_info(object *target_objp)
 		// PRINT SUBSYS NAME
 		// hud_set_default_color();
 		// get turret subsys name
-		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET) {
+		//WMC - If the turret does not have a custom name, get the proper turret name
+		//    - If it does have a custom name (sub_name), use that one instead
+		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET && !ship_subsys_has_instance_name(Player_ai->targeted_subsys)) {
 			get_turret_subsys_name(&Player_ai->targeted_subsys->weapons, outstr);
 		} else {
-			sprintf(outstr, "%s", Player_ai->targeted_subsys->system_info->name);
+			sprintf(outstr, "%s", ship_subsys_get_name(Player_ai->targeted_subsys));
 		}
 		hud_targetbox_truncate_subsys_name(outstr);
 		gr_printf(Target_window_coords[gr_screen.res][0]+2, Target_window_coords[gr_screen.res][1]+Target_window_coords[gr_screen.res][3]-h, outstr);
@@ -2111,7 +2118,7 @@ void hud_show_target_data(float frametime)
 				sy += dy;
 
 				if ( aip->targeted_subsys != NULL ) {
-					sprintf(outstr, "Subsys: %s", aip->targeted_subsys->system_info->name);
+					sprintf(outstr, "Subsys: %s", ship_subsys_get_name(aip->targeted_subsys));
 					gr_printf(sx, sy, outstr);
 				}
 				sy += dy;

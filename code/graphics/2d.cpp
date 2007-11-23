@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.85 $
- * $Date: 2007-11-22 04:49:58 $
- * $Author: taylor $
+ * $Revision: 2.86 $
+ * $Date: 2007-11-23 23:49:33 $
+ * $Author: wmcoolmon $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2007/11/22 04:49:58  taylor
+ * initial support for cursors that are larger than 32x32
+ * fix bug where animated cursors would be constantly loaded/unloaded
+ *
  * Revision 2.84  2007/02/19 07:08:04  wmcoolmon
  * Fixed minor precedence issue.
  *
@@ -1520,6 +1524,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	// NOTE: Don't clear the render target faces at the start, only when they are actually updated in freespace.cpp.
 
 	if (Cmdline_env) {
+		mprintf(("GRAPHICS: Initializing environment map templates...\n"));
 		// get a render target for static environment maps
 		gr_screen.static_environment_map = bm_make_render_target(512, 512, BMP_FLAG_RENDER_TARGET_STATIC|BMP_FLAG_CUBEMAP);
 
@@ -2224,6 +2229,8 @@ void gr_flip()
 	Script_system.RunBytecode(Script_globalhook);
 	//WMC - Do conditional hooks. Yippee!
 	Script_system.RunCondition(CHA_ONFRAME);
+	//WMC - Do scripting reset stuff
+	Script_system.EndFrame();
 
 	gr_screen.gf_flip();
 }

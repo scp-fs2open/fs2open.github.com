@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.106 $
- * $Date: 2007-11-22 05:19:09 $
- * $Author: taylor $
+ * $Revision: 2.107 $
+ * $Date: 2007-11-23 23:49:33 $
+ * $Author: wmcoolmon $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.106  2007/11/22 05:19:09  taylor
+ * no reason to if-else the hud multiplier if it simply defaults to 1.0
+ * add a little sanity checking for hud mutiplier tbl value
+ *
  * Revision 2.105  2007/09/16 21:01:48  Backslash
  * Whoops, missed a couple lines for Length Unit Multiplier
  *
@@ -3239,7 +3243,7 @@ void hud_target_subsystem_in_reticle()
 
 	if ( nearest_subsys != NULL ) {
 		set_targeted_subsys(Player_ai, nearest_subsys, Player_ai->target_objnum);
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Targeting subsystem %s.", 323), Player_ai->targeted_subsys->system_info->name);
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Targeting subsystem %s.", 323), ship_subsys_get_name(Player_ai->targeted_subsys));
 		Ships[shipnum].last_targeted_subobject[Player_num] =  Player_ai->targeted_subsys;
 	}	
 	else {

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.77 $
- * $Date: 2007-09-30 22:28:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.78 $
+ * $Date: 2007-11-23 23:49:34 $
+ * $Author: wmcoolmon $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.77  2007/09/30 22:28:29  Goober5000
+ * another patch by razorjack -- remove something that never worked
+ *
  * Revision 2.76  2007/07/28 21:31:11  Goober5000
  * this should really be capitalized
  *
@@ -2106,7 +2109,7 @@ void obj_render(object *obj)
 	MONITOR_INC( NumObjectsRend, 1 );
 
 	//WMC - By definition, override statements are executed before the actual statement
-	Script_system.SetHookObject("Object", OBJ_INDEX(obj));
+	Script_system.SetHookObject("Self", obj);
 	if(!Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj))
 	{
 		switch( obj->type )	{
@@ -2159,7 +2162,7 @@ void obj_render(object *obj)
 	}
 	
 	Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
-	Script_system.RemHookVar("Object");
+	Script_system.RemHookVar("Self");
 }
 
 void obj_init_all_ships_physics()

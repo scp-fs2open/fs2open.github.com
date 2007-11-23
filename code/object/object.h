@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.27 $
- * $Date: 2007-09-30 22:28:29 $
- * $Author: Goober5000 $
+ * $Revision: 2.28 $
+ * $Date: 2007-11-23 23:49:34 $
+ * $Author: wmcoolmon $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2007/09/30 22:28:29  Goober5000
+ * another patch by razorjack -- remove something that never worked
+ *
  * Revision 2.26  2007/07/28 21:31:11  Goober5000
  * this should really be capitalized
  *
@@ -654,6 +657,7 @@ void shield_set_quad(object *objp, int quadrant_num, float strength);
 void shield_add_quad(object *objp, int quadrant_num, float strength);
 
 float shield_get_max_strength(object *objp);
+void shield_set_max_strength(object *objp, float newmax);
 float shield_get_max_quad(object *objp);
 
 float shield_apply_damage(object *objp, int quadrant, float damage);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.52 $
- * $Date: 2007-07-23 22:45:00 $
- * $Author: Kazan $
+ * $Revision: 2.53 $
+ * $Date: 2007-11-23 23:49:35 $
+ * $Author: wmcoolmon $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2007/07/23 22:45:00  Kazan
+ * Resolve Mantis #1440
+ *
  * Revision 2.51  2007/06/04 00:04:20  Backslash
  * Backslash's HEAD-only controls commit:
  * -Lateral thruster axes
@@ -2075,7 +2078,7 @@ int player_inspect_cap_subsys_cargo(float frametime, char *outstr)
 	}
 
 	// dont scan cargo on turrets, radar, etc.  only the majors: fighterbay, sensor, engines, weapons, nav, comm
-	if (!valid_cap_subsys_cargo_list(subsys->system_info->name)) {
+	if (!valid_cap_subsys_cargo_list(ship_subsys_get_name(subsys))) {
 		return 0;
 	}
 

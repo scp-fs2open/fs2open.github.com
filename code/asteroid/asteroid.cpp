@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.46 $
- * $Date: 2007-09-02 02:10:24 $
- * $Author: Goober5000 $
+ * $Revision: 2.47 $
+ * $Date: 2007-11-23 23:49:32 $
+ * $Author: wmcoolmon $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.46  2007/09/02 02:10:24  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.45  2007/02/20 04:20:10  Goober5000
  * the great big duplicate model removal commit
  *
@@ -1845,7 +1848,7 @@ void asteroid_maybe_break_up(object *asteroid_obj)
 	if ( timestamp_elapsed(asp->final_death_time) ) {
 		vec3d	relvec, vfh, tvec;
 
-		Script_system.SetHookObject("Self", OBJ_INDEX(asteroid_obj));
+		Script_system.SetHookObject("Self", asteroid_obj);
 		if(!Script_system.IsConditionOverride(CHA_DEATH, asteroid_obj))
 		{
 			asteroid_obj->flags |= OF_SHOULD_BE_DEAD;
@@ -2122,6 +2125,12 @@ void asteroid_parse_section(asteroid_info *asip)
 
 	required_string("$Max Speed:");
 	stuff_float(&asip->max_speed);
+
+	if(optional_string("$Damage Type:")) {
+		char buf[NAME_LENGTH];
+		stuff_string(buf, F_NAME, NAME_LENGTH);
+		asip->damage_type_idx = damage_type_add(buf);
+	}
 
 	required_string("$Expl inner rad:");
 	stuff_float(&asip->inner_rad);

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Emp.cpp $
- * $Revision: 2.16 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.17 $
+ * $Date: 2007-11-23 23:49:42 $
+ * $Author: wmcoolmon $
  *
  * Header file for managing corkscrew missiles
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.15  2005/10/10 17:21:11  taylor
  * remove NO_NETWORK
  *
@@ -309,7 +312,7 @@ void emp_apply(vec3d *pos, float inner_radius, float outer_radius, float emp_int
 					// disrupt the turret
 					ship_subsys_set_disrupted(moveup, (int)(MAX_TURRET_DISRUPT_TIME * scale_factor));
 
-					mprintf(("EMP disrupting subsys %s on ship %s (%f, %f)\n", moveup->system_info->name, Ships[Objects[so->objnum].instance].ship_name, scale_factor, MAX_TURRET_DISRUPT_TIME * scale_factor));
+					mprintf(("EMP disrupting subsys %s on ship %s (%f, %f)\n", ship_subsys_get_name(moveup), Ships[Objects[so->objnum].instance].ship_name, scale_factor, MAX_TURRET_DISRUPT_TIME * scale_factor));
 				}
 				
 				// next item

@@ -27,31 +27,34 @@ script_hook Script_gameinithook;
 
 flag_def_list Script_conditions[] = 
 {
-	{"State",		CHC_STATE},
-	{"Campaign",	CHC_CAMPAIGN},
-	{"Mission",		CHC_MISSION},
-	{"Object Type", CHC_OBJECTTYPE},
-	{"Ship",		CHC_SHIP},
-	{"Ship class",	CHC_SHIPCLASS},
-	{"Ship type",	CHC_SHIPTYPE},
-	{"Weapon class",CHC_WEAPONCLASS},
-	{"KeyPress",	CHC_KEYPRESS},
+	{"State",		CHC_STATE,			0},
+	{"Campaign",	CHC_CAMPAIGN,		0},
+	{"Mission",		CHC_MISSION,		0},
+	{"Object Type", CHC_OBJECTTYPE,		0},
+	{"Ship",		CHC_SHIP,			0},
+	{"Ship class",	CHC_SHIPCLASS,		0},
+	{"Ship type",	CHC_SHIPTYPE,		0},
+	{"Weapon class",CHC_WEAPONCLASS,	0},
+	{"KeyPress",	CHC_KEYPRESS,		0},
+	{"Version",		CHC_VERSION,		0},
 };
 
 int Num_script_conditions = sizeof(Script_conditions)/sizeof(flag_def_list);
 
 flag_def_list Script_actions[] = 
 {
-	{"On Frame",				CHA_ONFRAME},
-	{"On HUD Draw",				CHA_HUDDRAW},
-	{"On Ship Collision",		CHA_COLLIDESHIP},
-	{"On Weapon Collision",		CHA_COLLIDEWEAPON},
-	{"On Debris Collision",		CHA_COLLIDEDEBRIS},
-	{"On Asteroid Collision",	CHA_COLLIDEASTEROID},
-	{"On Object Render",		CHA_OBJECTRENDER},
-	{"On Warpin",				CHA_WARPIN},
-	{"On Warpout",				CHA_WARPOUT},
-	{"On Death",				CHA_DEATH},
+	{"On Game Init",			CHA_GAMEINIT,		0},
+	{"On Splash Screen",		CHA_SPLASHSCREEN,	0},
+	{"On Frame",				CHA_ONFRAME,		0},
+	{"On HUD Draw",				CHA_HUDDRAW,		0},
+	{"On Ship Collision",		CHA_COLLIDESHIP,	0},
+	{"On Weapon Collision",		CHA_COLLIDEWEAPON,	0},
+	{"On Debris Collision",		CHA_COLLIDEDEBRIS,	0},
+	{"On Asteroid Collision",	CHA_COLLIDEASTEROID,0},
+	{"On Object Render",		CHA_OBJECTRENDER,	0},
+	{"On Warpin",				CHA_WARPIN,			0},
+	{"On Warpout",				CHA_WARPOUT,		0},
+	{"On Death",				CHA_DEATH,			0},
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
@@ -73,8 +76,8 @@ void script_parse_table(char *filename)
 
 	if(optional_string("#Global Hooks"))
 	{
-		int num = 42;
-		Script_system.SetHookVar("Version", 'i', &num);
+		//int num = 42;
+		//Script_system.SetHookVar("Version", 'i', &num);
 		if(optional_string("$Global:")) {
 			Script_globalhook = st->ParseChunk("Global");
 		}
@@ -257,6 +260,27 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 					//WMC - could be more efficient, but whatever.
 					if(Current_key_down == translate_key_to_index(scp->data.name))
 						return false;
+					break;
+				}
+			case CHC_VERSION:
+				{
+					char buf[32];
+					sprintf(buf, "%d.%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+					if(stricmp(buf, scp->data.name))
+					{
+						//In case some people are lazy and say "3.7" instead of "3.7.0" or something
+						if(FS_VERSION_BUILD == 0)
+						{
+							sprintf(buf, "%d.%d", FS_VERSION_MAJOR, FS_VERSION_MINOR);
+							if(stricmp(buf, scp->data.name))
+								return false;
+						}
+						else
+						{
+							return false;
+						}
+					}
+					break;
 				}
 			default:
 				break;
@@ -310,10 +334,100 @@ bool ConditionedHook::IsOverride(script_state *sys, int action)
 
 //WMC - defined in parse/lua.h
 int ade_set_object_with_breed(lua_State *L, int obj_idx);
-void script_state::SetHookObject(char *name, int obj_idx)
+void script_state::SetHookObject(char *name, object *objp)
 {
-	ade_set_object_with_breed(LuaState, obj_idx);
-	SetHookVar(name, 'o');
+	SetHookObjects(1, name, objp);
+}
+
+void script_state::SetHookObjects(int num, ...)
+{
+	va_list vl;
+	va_start(vl, num);
+	if(this->OpenHookVarTable())
+	{
+		int amt_ldx = lua_gettop(LuaState);
+		for(int i = 0; i < num; i++)
+		{
+			char *name = va_arg(vl, char*);
+			object *objp = va_arg(vl, object*);
+			
+			ade_set_object_with_breed(LuaState, OBJ_INDEX(objp));
+			int data_ldx = lua_gettop(LuaState);
+
+			lua_pushstring(LuaState, name);
+			lua_pushvalue(LuaState, data_ldx);
+			lua_rawset(LuaState, amt_ldx);
+
+			lua_pop(LuaState, 1);	//data_ldx
+		}
+		this->CloseHookVarTable();
+	}
+	else
+	{
+		LuaError(LuaState, "Could not get HookVariable library to add hook variables - get a coder");
+	}
+}
+
+//This pair of abstraction functions handles
+//getting the table of ade member functions
+//for the hook library.
+//Call CloseHookVarTable() only if OpenHookVarTable()
+//returns true. (see below)
+static int ohvt_isopen = 0;
+bool script_state::OpenHookVarTable()
+{
+	if(ohvt_isopen)
+		Error(LOCATION, "OpenHookVarTable was called twice with no call to CloseHookVarTable - missing call ahoy!");
+
+	lua_pushstring(LuaState, "hv");
+	lua_gettable(LuaState, LUA_GLOBALSINDEX);
+	int sv_ldx = lua_gettop(LuaState);
+	if(lua_isuserdata(LuaState, sv_ldx))
+	{
+		//Get ScriptVar metatable
+		lua_getmetatable(LuaState, sv_ldx);
+		int mtb_ldx = lua_gettop(LuaState);
+		if(lua_istable(LuaState, mtb_ldx))
+		{
+			//Get ScriptVar/metatable/__ademembers
+			lua_pushstring(LuaState, "__ademembers");
+			lua_rawget(LuaState, mtb_ldx);
+			int amt_ldx = lua_gettop(LuaState);
+			if(lua_istable(LuaState, amt_ldx))
+			{
+				ohvt_isopen = 3;
+				return true;
+			}
+			lua_pop(LuaState, 1);	//amt
+		}
+		lua_pop(LuaState, 1);	//metatable
+	}
+	lua_pop(LuaState, 1);	//Library
+	
+	return false;
+}
+
+//Call when you are done with CloseHookVarTable,
+//and you have removed all other objects 'above'
+//the stack objects generated by the call to OpenHookVarTable.
+bool script_state::CloseHookVarTable()
+{
+	if(!ohvt_isopen)
+	{
+		Error(LOCATION, "CloseHookVarTable was called with no associated call to OpenHookVarTable");
+	}
+	int top_ldx = lua_gettop(LuaState);
+	if(top_ldx > ohvt_isopen)
+	{
+		lua_pop(LuaState, ohvt_isopen);
+		ohvt_isopen = 0;
+		return true;
+	}
+	else
+	{
+		Error(LOCATION, "CloseHookVarTable() was called with too few objects on the stack; get a coder.");
+		return false;
+	}
 }
 
 void script_state::SetHookVar(char *name, char format, void *data)
@@ -332,53 +446,39 @@ void script_state::SetHookVar(char *name, char format, void *data)
 			return;
 
 		//Get ScriptVar table
-		lua_pushliteral(LuaState, "hv");
-		lua_gettable(LuaState, LUA_GLOBALSINDEX);
-		int sv_ldx = lua_gettop(LuaState);
-		if(lua_isuserdata(LuaState, sv_ldx))
+		if(this->OpenHookVarTable())
 		{
-			//Get ScriptVar metatable
-			lua_getmetatable(LuaState, sv_ldx);
-			int mtb_ldx = lua_gettop(LuaState);
-			if(lua_istable(LuaState, mtb_ldx))
-			{
-				//Get ScriptVar/metatable/__ademembers
-				lua_pushstring(LuaState, "__ademembers");
-				lua_rawget(LuaState, mtb_ldx);
-				int amt_ldx = lua_gettop(LuaState);
-				if(lua_istable(LuaState, amt_ldx))
-				{
-					lua_pushstring(LuaState, name);
-					//ERRORS? LOOK HERE!!!
-					//--------------------
-					//WMC - Now THIS has to be the nastiest hack I've made
-					//Basically, I tell it to copy over enough stack
-					//for a ade_odata object. If you pass
-					//_anything_ larger as a stack object, this will not work.
-					//You'll get memory corruption
-					if(data == NULL)
-						lua_pushvalue(LuaState, data_ldx);
-					else
-						ade_set_args(LuaState, fmt, *(ade_odata*)data);
-					//--------------------
-					//WMC - This was a separate function
-					//lua_set_arg(LuaState, format, data);
-					//WMC - switch to the lua library
-					//lua_setglobal(LuaState, name);
-					lua_rawset(LuaState, amt_ldx);
-				}
-				lua_pop(LuaState, 1); //amt
-			}
-			lua_pop(LuaState, 1);	//Metatable
+			int amt_ldx = lua_gettop(LuaState);
+			lua_pushstring(LuaState, name);
+			//ERRORS? LOOK HERE!!!
+			//--------------------
+			//WMC - Now THIS has to be the nastiest hack I've made
+			//Basically, I tell it to copy over enough stack
+			//for a ade_odata object. If you pass
+			//_anything_ larger as a stack object, this will not work.
+			//You'll get memory corruption
+			if(data == NULL)
+				lua_pushvalue(LuaState, data_ldx);
+			else
+				ade_set_args(LuaState, fmt, *(ade_odata*)data);
+			//--------------------
+			//WMC - This was a separate function
+			//lua_set_arg(LuaState, format, data);
+			//WMC - switch to the lua library
+			//lua_setglobal(LuaState, name);
+			lua_rawset(LuaState, amt_ldx);
+			
+			if(data_ldx)
+				lua_pop(LuaState, 1);
+			//Close hook var table
+			this->CloseHookVarTable();
 		}
 		else
 		{
 			LuaError(LuaState, "Could not get HookVariable library to set hook variable '%s' - get a coder", name);
+			if(data_ldx)
+				lua_pop(LuaState, 1);
 		}
-		lua_pop(LuaState, 1);	//Library
-
-		if(data_ldx)
-			lua_pop(LuaState, 1);
 	}
 }
 
@@ -394,42 +494,27 @@ bool script_state::GetHookVar(char *name, char format, void *data)
 		//WMC - Quick and clean. :)
 		//WMC - *sigh* nostalgia
 		//Get ScriptVar table
-		lua_pushliteral(LuaState, "hv");
-		lua_gettable(LuaState, LUA_GLOBALSINDEX);
-		int sv_ldx = lua_gettop(LuaState);
-		if(lua_isuserdata(LuaState, sv_ldx))
+		if(this->OpenHookVarTable())
 		{
-			//Get ScriptVar metatable
-			lua_getmetatable(LuaState, sv_ldx);
-			int mtb_ldx = lua_gettop(LuaState);
-			if(lua_istable(LuaState, mtb_ldx))
+			int amt_ldx = lua_gettop(LuaState);
+
+			lua_pushstring(LuaState, name);
+			lua_rawget(LuaState, amt_ldx);
+			if(!lua_isnil(LuaState, -1))
 			{
-				//Get ScriptVar/metatable/__ademembers
-				lua_pushstring(LuaState, "__ademembers");
-				lua_rawget(LuaState, mtb_ldx);
-				int amt_ldx = lua_gettop(LuaState);
-				if(lua_istable(LuaState, amt_ldx))
-				{
-					lua_pushstring(LuaState, name);
-					lua_rawget(LuaState, amt_ldx);
-					if(!lua_isnil(LuaState, -1))
-					{
-						if(data != NULL) {
-							ade_get_args(LuaState, fmt, data);
-						}
-						got_global = true;
-					}
-					lua_pushstring(LuaState, name);
+				if(data != NULL) {
+					ade_get_args(LuaState, fmt, data);
 				}
-				lua_pop(LuaState, 1); //amt
+				got_global = true;
 			}
-			lua_pop(LuaState, 1);	//Metatable
+			lua_pop(LuaState, 1);	//Remove data
+
+			this->CloseHookVarTable();
 		}
 		else
 		{
 			LuaError(LuaState, "Could not get HookVariable library to get hook variable '%' - get a coder", name);
 		}
-		lua_pop(LuaState, 1);	//Library
 	}
 
 	return got_global;
@@ -437,40 +522,35 @@ bool script_state::GetHookVar(char *name, char format, void *data)
 
 void script_state::RemHookVar(char *name)
 {
+	this->RemHookVars(1, name);
+}
+
+void script_state::RemHookVars(unsigned int num, ...)
+{
 	if(LuaState != NULL)
 	{
 		//WMC - Quick and clean. :)
 		//WMC - *sigh* nostalgia
 		//Get ScriptVar table
-		lua_pushliteral(LuaState, "hv");
-		lua_gettable(LuaState, LUA_GLOBALSINDEX);
-		int sv_ldx = lua_gettop(LuaState);
-		if(lua_isuserdata(LuaState, sv_ldx))
+		if(this->OpenHookVarTable())
 		{
-			//Get ScriptVar metatable
-			lua_getmetatable(LuaState, sv_ldx);
-			int mtb_ldx = lua_gettop(LuaState);
-			if(lua_istable(LuaState, mtb_ldx))
+			int amt_ldx = lua_gettop(LuaState);
+			va_list vl;
+			va_start(vl, num);
+			for(unsigned int i = 0; i < num; i++)
 			{
-				//Get ScriptVar/metatable/__ademembers
-				lua_pushstring(LuaState, "__ademembers");
-				lua_rawget(LuaState, mtb_ldx);
-				int amt_ldx = lua_gettop(LuaState);
-				if(lua_istable(LuaState, amt_ldx))
-				{
-					lua_pushstring(LuaState, name);
-					lua_pushnil(LuaState);
-					lua_rawset(LuaState, amt_ldx);
-				}
-				lua_pop(LuaState, 1); //amt
+				char *name = va_arg(vl, char*);
+				lua_pushstring(LuaState, name);
+				lua_pushnil(LuaState);
+				lua_rawset(LuaState, amt_ldx);
 			}
-			lua_pop(LuaState, 1);	//Metatable
+
+			this->CloseHookVarTable();
 		}
 		else
 		{
-			LuaError(LuaState, "Could not get HookVariable library to remove hook variable '%s' - get a coder", name);
+			LuaError(LuaState, "Could not get HookVariable library to remove hook variables - get a coder");
 		}
-		lua_pop(LuaState, 1);	//Library
 	}
 }
 
@@ -492,6 +572,7 @@ bool script_state::GetGlobal(char *name, char format, void *data)
 			}
 			got_global = true;
 		}
+		lua_pop(LuaState, 1);	//Remove data
 	}
 
 	return got_global;
@@ -553,16 +634,28 @@ int script_state::RunBytecodeSub(int in_lang, int in_idx, char format, void *dat
 
 		if(in_lang == SC_LUA)
 		{
-			int args_start=0;
-			if(data != NULL) {
-				args_start = lua_gettop(LuaState);
-			}
 			lua_pushcfunction(GetLuaSession(), ade_friendly_error);
-			lua_getref(GetLuaSession(), in_idx);
-			if(lua_isfunction(GetLuaSession(), -1))
+			int err_ldx = lua_gettop(GetLuaSession());
+			if(!lua_iscfunction(GetLuaSession(), err_ldx))
 			{
-				if(lua_pcall(GetLuaSession(), 0, format!='\0' ? 1 : 0, -2) != 0)
+				lua_pop(GetLuaSession(), 1);
+				return 0;
+			}
+			
+			int args_start = lua_gettop(LuaState);
+			
+			lua_getref(GetLuaSession(), in_idx);
+			int hook_ldx = lua_gettop(GetLuaSession());
+
+			if(lua_isfunction(GetLuaSession(), hook_ldx))
+			{
+				if(lua_pcall(GetLuaSession(), 0, format!='\0' ? 1 : 0, err_ldx) != 0)
 				{
+					//WMC - Pop all extra stuff from ze stack.
+					args_start = lua_gettop(GetLuaSession()) - args_start;
+					for(; args_start > 0; args_start--) lua_pop(GetLuaSession(), 1);
+
+					lua_pop(GetLuaSession(), 1);
 					return 0;
 				}
 
@@ -578,13 +671,16 @@ int script_state::RunBytecodeSub(int in_lang, int in_idx, char format, void *dat
 				}
 
 				//WMC - Pop anything leftover from the function from the stack
-				args_start = lua_gettop(LuaState) - args_start;
-				for(; args_start > 0; args_start--) lua_pop(LuaState, 1);
+				args_start = lua_gettop(GetLuaSession()) - args_start;
+				for(; args_start > 0; args_start--) lua_pop(GetLuaSession(), 1);
 			}
 			else
 			{
-				Warning(LOCATION, "RunBytecodeSub tried to call a non-function value!");
+				lua_pop(GetLuaSession(), 1);	//"hook"
+				LuaError(GetLuaSession(),"RunBytecodeSub tried to call a non-function value!");
 			}
+			lua_pop(GetLuaSession(), 1);	//err
+			
 		}
 		else if(in_lang == SC_PYTHON)
 		{
@@ -639,6 +735,11 @@ bool script_state::IsConditionOverride(int action, object *objp)
 		}
 	}
 	return false;
+}
+
+void script_state::EndFrame()
+{
+	EndLuaFrame();
 }
 
 void script_state::Clear()
@@ -935,7 +1036,7 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		}
 		//dealloc
 		//WMC - For some reason these cause crashes
-		//vm_free(filename);
+		vm_free(filename);
 	}
 	else if(check_for_string("["))
 	{
@@ -950,10 +1051,12 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 		//executed properly. In testing, I couldn't reproduce Nuke's
 		//crash, so this is here just to be on the safe side.
 		strcat(raw_lua, "\n");
+
+		char *tmp_ptr = raw_lua;
 		
 		//Load it into a buffer & parse it
 		//WMC - This is causing an access violation error. Sigh.
-		if(!luaL_loadbuffer(GetLuaSession(), raw_lua, strlen(raw_lua), debug_str))
+		if(!luaL_loadbuffer(GetLuaSession(), tmp_ptr, strlen(tmp_ptr), debug_str))
 		{
 			//Stick it in the registry
 			*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
@@ -969,7 +1072,7 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 
 		//free the mem
 		//WMC - This makes debug go wonky.
-		//vm_free(raw_lua);
+		vm_free(raw_lua);
 	}
 	else if(check_for_string("{"))
 	{
@@ -1094,6 +1197,7 @@ bool script_state::ParseCondition(char *filename)
 			case CHC_CAMPAIGN:
 			case CHC_WEAPONCLASS:
 			case CHC_OBJECTTYPE:
+			case CHC_VERSION:
 			default:
 				stuff_string(sct.data.name, F_NAME, NAME_LENGTH);
 				break;

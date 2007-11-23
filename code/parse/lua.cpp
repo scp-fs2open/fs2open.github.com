@@ -534,85 +534,85 @@ ADE_FUNC(getVariableValue, l_Cmission, "Variable number (Zero-based)", "Variable
 //^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 static flag_def_list Enumerations[] = {
 	#define LE_ALPHABLEND_FILTER			14
-	{		"ALPHABLEND_FILTER",			LE_ALPHABLEND_FILTER			},
+	{		"ALPHABLEND_FILTER",			LE_ALPHABLEND_FILTER,			0},
 
 	#define LE_ALPHABLEND_NONE				27
-	{		"ALPHABLEND_NONE",				LE_ALPHABLEND_NONE		},
+	{		"ALPHABLEND_NONE",				LE_ALPHABLEND_NONE,				0},
 
 	#define LE_CFILE_TYPE_NORMAL			20
-	{		"CFILE_TYPE_NORMAL",			LE_CFILE_TYPE_NORMAL	},
+	{		"CFILE_TYPE_NORMAL",			LE_CFILE_TYPE_NORMAL,			0},
 
 	#define LE_CFILE_TYPE_MEMORY_MAPPED		21
-	{		"CFILE_TYPE_MEMORY_MAPPED",		LE_CFILE_TYPE_MEMORY_MAPPED },
+	{		"CFILE_TYPE_MEMORY_MAPPED",		LE_CFILE_TYPE_MEMORY_MAPPED,	0},
 
 	#define LE_MOUSE_LEFT_BUTTON			1
-	{		"MOUSE_LEFT_BUTTON",			LE_MOUSE_LEFT_BUTTON	},
+	{		"MOUSE_LEFT_BUTTON",			LE_MOUSE_LEFT_BUTTON,			0},
 
 	#define LE_MOUSE_RIGHT_BUTTON			2
-	{		"MOUSE_RIGHT_BUTTON",			LE_MOUSE_RIGHT_BUTTON	},
+	{		"MOUSE_RIGHT_BUTTON",			LE_MOUSE_RIGHT_BUTTON,			0},
 
 	#define LE_MOUSE_MIDDLE_BUTTON			3
-	{		"MOUSE_MIDDLE_BUTTON",			LE_MOUSE_MIDDLE_BUTTON	},
+	{		"MOUSE_MIDDLE_BUTTON",			LE_MOUSE_MIDDLE_BUTTON,			0},
 
 	#define LE_PARTICLE_DEBUG				4
-	{		"PARTICLE_DEBUG",				LE_PARTICLE_DEBUG		},
+	{		"PARTICLE_DEBUG",				LE_PARTICLE_DEBUG,				0},
 
 	#define LE_PARTICLE_BITMAP				5
-	{		"PARTICLE_BITMAP",				LE_PARTICLE_BITMAP		},
+	{		"PARTICLE_BITMAP",				LE_PARTICLE_BITMAP,				0},
 
 	#define LE_PARTICLE_FIRE				6
-	{		"PARTICLE_FIRE",				LE_PARTICLE_FIRE		},
+	{		"PARTICLE_FIRE",				LE_PARTICLE_FIRE,				0},
 
 	#define LE_PARTICLE_SMOKE				7
-	{		"PARTICLE_SMOKE",				LE_PARTICLE_SMOKE		},
+	{		"PARTICLE_SMOKE",				LE_PARTICLE_SMOKE,				0},
 
 	#define LE_PARTICLE_SMOKE2				8
-	{		"PARTICLE_SMOKE2",				LE_PARTICLE_SMOKE2		},
+	{		"PARTICLE_SMOKE2",				LE_PARTICLE_SMOKE2,				0},
 
 	#define LE_PARTICLE_PERSISTENT_BITMAP	9
-	{		"PARTICLE_PERSISTENT_BITMAP",	LE_PARTICLE_PERSISTENT_BITMAP		},
+	{		"PARTICLE_PERSISTENT_BITMAP",	LE_PARTICLE_PERSISTENT_BITMAP,	0},
 
 	#define LE_SEXPVAR_CAMPAIGN_PERSISTENT	22
-	{		"SEXPVAR_CAMPAIGN_PERSISTENT",	LE_SEXPVAR_CAMPAIGN_PERSISTENT	},
+	{		"SEXPVAR_CAMPAIGN_PERSISTENT",	LE_SEXPVAR_CAMPAIGN_PERSISTENT,	0},
 
 	#define LE_SEXPVAR_NOT_PERSISTENT		23
-	{		"SEXPVAR_NOT_PERSISTENT",		LE_SEXPVAR_NOT_PERSISTENT	},
+	{		"SEXPVAR_NOT_PERSISTENT",		LE_SEXPVAR_NOT_PERSISTENT,		0},
 
 	#define LE_SEXPVAR_PLAYER_PERSISTENT	24
-	{		"SEXPVAR_PLAYER_PERSISTENT",	LE_SEXPVAR_PLAYER_PERSISTENT	},
+	{		"SEXPVAR_PLAYER_PERSISTENT",	LE_SEXPVAR_PLAYER_PERSISTENT,	0},
 
 	#define LE_SEXPVAR_TYPE_NUMBER			25
-	{		"SEXPVAR_TYPE_NUMBER",			LE_SEXPVAR_TYPE_NUMBER	},
+	{		"SEXPVAR_TYPE_NUMBER",			LE_SEXPVAR_TYPE_NUMBER,			0},
 
 	#define LE_SEXPVAR_TYPE_STRING			26
-	{		"SEXPVAR_TYPE_STRING",			LE_SEXPVAR_TYPE_STRING	},
+	{		"SEXPVAR_TYPE_STRING",			LE_SEXPVAR_TYPE_STRING,			0},
 
 	#define LE_TEXTURE_STATIC				10
-	{		"TEXTURE_STATIC",				LE_TEXTURE_STATIC		},
+	{		"TEXTURE_STATIC",				LE_TEXTURE_STATIC,				0},
 
 	#define LE_TEXTURE_DYNAMIC				11
-	{		"TEXTURE_DYNAMIC",				LE_TEXTURE_DYNAMIC		},
+	{		"TEXTURE_DYNAMIC",				LE_TEXTURE_DYNAMIC,				0},
 
 	#define LE_LOCK							12
-	{		"LOCK",							LE_LOCK					},
+	{		"LOCK",							LE_LOCK,						0},
 
 	#define LE_UNLOCK						13
-	{		"UNLOCK",						LE_UNLOCK				},
+	{		"UNLOCK",						LE_UNLOCK,						0},
 
 	#define	LE_NONE							15
-	{		"NONE",							LE_NONE					},
+	{		"NONE",							LE_NONE,						0},
 
 	#define	LE_SHIELD_FRONT					16
-	{		"SHIELD_FRONT",					LE_SHIELD_FRONT			},
+	{		"SHIELD_FRONT",					LE_SHIELD_FRONT,				0},
 
 	#define	LE_SHIELD_LEFT					17
-	{		"SHIELD_LEFT",					LE_SHIELD_LEFT			},
+	{		"SHIELD_LEFT",					LE_SHIELD_LEFT,					0},
 
 	#define	LE_SHIELD_RIGHT					18
-	{		"SHIELD_RIGHT",					LE_SHIELD_RIGHT			},
+	{		"SHIELD_RIGHT",					LE_SHIELD_RIGHT,				0},
 
 	#define	LE_SHIELD_BACK					19
-	{		"SHIELD_BACK",					LE_SHIELD_BACK			},
+	{		"SHIELD_BACK",					LE_SHIELD_BACK,					0},
 };
 
 //DO NOT FORGET to increment NEXT INDEX: !!!!!!!!!!!!!
@@ -1182,6 +1182,36 @@ ADE_FUNC(isValid, l_Font, NULL, "True if valid, false or nil if not",  "Detects 
 
 //**********HANDLE: model
 ade_obj<int> l_Model("model", "3D Model (POF) handle");
+
+class modeltextures_h
+{
+public:
+	int model_idx;
+
+	bool IsValid(){return (model_get(model_idx) != NULL);}
+	modeltextures_h(int n_modelnum){model_idx=n_modelnum;}
+	modeltextures_h(){model_idx=-1;}
+};
+
+ade_obj<modeltextures_h> l_ModelTextures("modeltextures", "Model textures handle");
+
+ADE_VIRTVAR(Textures, l_Model, "modeltextures", "Model textures")
+{
+	int midx = -1;
+	modeltextures_h *oth = NULL;
+	if(!ade_get_args(L, "o|o", l_Model.Get(&midx), l_ModelTextures.GetPtr(&oth)))
+		return ADE_RETURN_NIL;
+
+	if(model_get(midx) == NULL)
+		return ade_set_error(L, "o", l_ModelTextures.Set(modeltextures_h()));
+
+	if(ADE_SETTING_VAR && oth->IsValid()) {
+		//WMC TODO: Copy code
+		LuaError(L, "Attempt to use Incomplete Feature: Modeltextures copy");
+	}
+
+	return ade_set_args(L, "o", l_ModelTextures.Set(midx));
+}
 
 ADE_VIRTVAR(Filename, l_Model, "string", "Model filename")
 {
@@ -1997,10 +2027,11 @@ ADE_INDEXER(l_Shields, "SHIELD_* enumeration, NONE, or 1-4", "number", "Gets or 
 	//Get one quadrant
 	return ade_set_args(L, "f", shield_get_quad(objp, qdx));
 }
-/*
+
 //WMC - Not sure if I want this to be a variable. It'd make more sense
 //as a function, since it modifies all quadrant variables
-ADE_VIRTVAR(TotalLeft, l_Shields, "number", "Total shield hitpoints left (for all quadrants)")
+//WMC - Ehh, screw it.
+ADE_VIRTVAR(CombinedLeft, l_Shields, "number", "Total shield hitpoints left (for all quadrants combined)")
 {
 	object_h *objh;
 	float nval = -1.0f;
@@ -2016,7 +2047,24 @@ ADE_VIRTVAR(TotalLeft, l_Shields, "number", "Total shield hitpoints left (for al
 
 	return ade_set_args(L, "f", shield_get_strength(objh->objp));
 }
-*/
+
+ADE_VIRTVAR(CombinedMax, l_Shields, "number", "Maximum shield hitpoints (for all quadrants combined)")
+{
+	object_h *objh;
+	float nval = -1.0f;
+	if(!ade_get_args(L, "o|f", l_Shields.GetPtr(&objh), &nval))
+			return 0;
+
+	if(!objh->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR && nval >= 0.0f) {
+		shield_set_max_strength(objh->objp, nval);
+	}
+
+	return ade_set_args(L, "f", shield_get_max_strength(objh->objp));
+}
+
 ADE_FUNC(isValid, l_Shields, NULL, "True if valid, false or nil if not",  "Detects whether handle is valid")
 {
 	object_h *oh;
@@ -2230,6 +2278,18 @@ ADE_FUNC(unload, l_Texture, NULL, NULL, "Unloads a texture from memory")
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(getFilename, l_Texture, NULL, "string", "Returns filename for texture")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Texture.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if(!bm_is_valid(idx))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "s", bm_get_filename(idx));
+}
+
 ADE_FUNC(getWidth, l_Texture, NULL, "Texture width, or false if invalid handle", "Gets texture width")
 {
 	int idx;
@@ -2421,7 +2481,7 @@ ADE_FUNC(__tostring, l_Vector, NULL, "string", "Converts a vector to string with
 	if(!ade_get_args(L, "o", l_Vector.GetPtr(&v3)))
 		return ADE_RETURN_NIL;
 
-	char buf[32];
+	char buf[128];
 	sprintf(buf, "(%f,%f,%f)", v3->xyz.x, v3->xyz.y, v3->xyz.z);
 
 	return ade_set_args(L, "s", buf);
@@ -2861,6 +2921,93 @@ ADE_VIRTVAR(Position, l_Eyepoint, "vector", "Eyepoint location")
 	return ade_set_args(L, "o", l_Vector.Set(pm->view_positions[eh->eye_idx].pnt));
 }
 
+//**********HANDLE: modeltextures
+ADE_FUNC(__len, l_ModelTextures, NULL, NULL, NULL)
+{
+	modeltextures_h *mth;
+	if(!ade_get_args(L, "o", l_ModelTextures.GetPtr(&mth)))
+		return ADE_RETURN_NIL;
+
+	if(!mth->IsValid())
+		return ADE_RETURN_NIL;
+
+	polymodel *pm = model_get(mth->model_idx);
+
+	if(pm == NULL)
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "i", pm->n_textures);
+}
+
+ADE_INDEXER(l_ModelTextures, "Texture name or index", "texture", "Model textures")
+{
+	modeltextures_h *mth;
+	char *s;
+	int tdx=-1;
+	if (!ade_get_args(L, "os|o", l_ModelTextures.GetPtr(&mth), &s, l_Texture.Get(&tdx)))
+		return ade_set_error(L, "o", l_Texture.Set(-1));
+
+	if (!mth->IsValid() || s==NULL)
+		return ade_set_error(L, "o", l_Texture.Set(-1));
+
+	polymodel *pm = model_get(mth->model_idx);
+	int idx = -1;
+	int i;
+
+	char fname[MAX_FILENAME_LEN];
+	char *p;
+	for (i = 0; i < pm->n_textures; i++)
+	{
+		if (pm->maps[i].base_map.texture >= 0)
+		{
+			bm_get_filename(pm->maps[i].base_map.texture, fname);
+
+			//Get rid of extension
+			p = strchr( fname, '.' );
+			if (p != NULL)
+				*p = 0;
+
+			if (!stricmp(fname, s)) {
+				idx = i;
+				break;
+			}
+		}
+	}
+
+	if (idx < 0)
+	{
+		idx = atoi(s) - 1;	//Lua->FS2
+
+		if (idx < 0 || idx >= pm->n_textures)
+			return ade_set_error(L, "o", l_Texture.Set(-1));
+  	}
+
+	//LuaError(L, "%d: %d", lua_type(L,lua_upvalueindex(2)), lua_toboolean(L,lua_upvalueindex(2)));
+	if (ADE_SETTING_VAR && tdx >= 0) {
+		texture_info *ti = &pm->maps[idx].base_map;
+
+		ti->texture = tdx;
+		int fps = 1;
+
+		bm_get_info(tdx, NULL, NULL, NULL, &fps, &ti->num_frames);
+		ti->anim_total_time = (float)fps * (float)ti->num_frames;
+	}
+
+	if(pm->maps[idx].base_map.texture >= 0)
+		return ade_set_args(L, "o", l_Texture.Set(pm->maps[idx].base_map.texture));
+	else
+		return ade_set_error(L, "o", l_Texture.Set(-1));
+}
+
+ADE_FUNC(isValid, l_ModelTextures, NULL, "True if valid, false or nil if not",  "Detects whether handle is valid")
+{
+	modeltextures_h *mth;
+	if(!ade_get_args(L, "o", l_ModelTextures.GetPtr(&mth)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", mth->IsValid());
+}
+
 //**********HANDLE: Object
 ade_obj<object_h> l_Object("object", "Object handle");
 //Helper function
@@ -2877,6 +3024,67 @@ ADE_FUNC(__eq, l_Object, "object, object", "true if equal", "Checks whether two 
 		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", o1->sig == o2->sig);
+}
+
+ADE_FUNC(__tostring, l_Object, NULL, "string", "Returns name of object (if any)")
+{
+	object_h *objh;
+	if(!ade_get_args(L, "o", l_Object.GetPtr(&objh)))
+		return ade_set_error(L, "s", "");
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "s", "");
+
+	char buf[512];
+
+	switch(objh->objp->type)
+	{
+		case OBJ_SHIP:
+			sprintf(buf, "%s", Ships[objh->objp->instance].ship_name);
+			break;
+		case OBJ_WEAPON:
+			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp->instance].weapon_info_index].name);
+			break;
+	//	case OBJ_JUMP_NODE:
+	//		sprintf(buf, "%s", objh->objp->jnp->get_name_ptr());
+	//		break;
+		default:
+			sprintf(buf, "Object %d [%d]", OBJ_INDEX(objh->objp), objh->sig);
+	}
+
+	return ade_set_args(L, "s", buf);
+}
+
+ADE_VIRTVAR(Parent, l_Object, "object", "Parent of the object. Value may also be a deriviative of the 'object' class, such as 'ship'.")
+{
+	object_h *objh;
+	object_h *newparenth = NULL;
+	if(!ade_get_args(L, "o|o", l_Object.GetPtr(&objh), l_Object.GetPtr(&newparenth)))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newparenth != NULL && newparenth->IsValid())
+		{
+			objh->objp->parent = OBJ_INDEX(newparenth->objp);
+			objh->objp->parent_sig = newparenth->sig;
+			objh->objp->parent_type = newparenth->objp->type;
+		}
+		else
+		{
+			objh->objp->parent = -1;
+			objh->objp->parent_sig = 0;
+			objh->objp->parent_type = OBJ_NONE;
+		}
+	}
+
+	if(objh->objp->parent > -1)
+		return ade_set_object_with_breed(L, objh->objp->parent);
+	else
+		return ade_set_args(L, "o", l_Object.Set(object_h()));
 }
 
 ADE_VIRTVAR(Position, l_Object, "wvector", "Object world position")
@@ -3422,6 +3630,25 @@ ADE_VIRTVAR(CountermeasuresMax, l_Shipclass, "number", "Ship class countermeasur
 	return ade_set_args(L, "i", Ship_info[idx].cmeasure_max);
 }
 
+ADE_VIRTVAR(Model, l_Shipclass, "model", "Model")
+{
+	int ship_info_idx=-1;
+	int nm_idx=-1;
+	if(!ade_get_args(L, "o|o", l_Shipclass.Get(&ship_info_idx), l_Model.Get(&nm_idx)))
+		return ADE_RETURN_NIL;
+
+	if(ship_info_idx < 0 || ship_info_idx > Num_ship_classes)
+		return ADE_RETURN_NIL;
+
+	ship_info *sip = &Ship_info[ship_info_idx];
+
+	if(ADE_SETTING_VAR && model_get(nm_idx) != NULL) {
+		sip->model_num = nm_idx;
+	}
+
+	return ade_set_args(L, "o", l_Model.Set(sip->model_num));
+}
+
 ADE_VIRTVAR(HitpointsMax, l_Shipclass, "number", "Ship class hitpoints")
 {
 	int idx;
@@ -3704,91 +3931,6 @@ ADE_FUNC(__len, l_WaypointList_Waypoints, NULL, "Number of waypoints in the miss
 
 	return ade_set_args(L, "i", count);
 }*/
-
-//**********HANDLE: Weapon
-ade_obj<object_h> l_Weapon("weapon", "Weapon handle", &l_Object);
-
-ADE_VIRTVAR(Class, l_Weapon, "weaponclass", "Weapon's class")
-{
-	object_h *oh=NULL;
-	int nc=-1;
-	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&oh), l_Weaponclass.Get(&nc)))
-		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
-
-	if(!oh->IsValid())
-		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
-
-	weapon *wp = &Weapons[oh->objp->instance];
-
-	if(ADE_SETTING_VAR && nc > -1) {
-		wp->weapon_info_index = nc;
-	}
-
-	return ade_set_args(L, "o", l_Weaponclass.Set(wp->weapon_info_index));
-}
-
-ADE_VIRTVAR(DestroyedByWeapon, l_Weapon, "boolean", "Whether weapon was destroyed by another weapon")
-{
-	object_h *oh=NULL;
-	bool b = false;
-
-	int numargs = ade_get_args(L, "o|b", l_Weapon.GetPtr(&oh), &b);
-	
-	if(!numargs)
-		return ADE_RETURN_NIL;
-
-	if(!oh->IsValid())
-		return ADE_RETURN_NIL;
-
-	weapon *wp = &Weapons[oh->objp->instance];
-
-	if(ADE_SETTING_VAR && numargs > 1) {
-		if(b)
-			wp->weapon_flags |= WF_DESTROYED_BY_WEAPON;
-		else
-			wp->weapon_flags &= ~WF_DESTROYED_BY_WEAPON;
-	}
-
-	return ade_set_args(L, "b", (wp->weapon_flags & WF_DESTROYED_BY_WEAPON) > 0);
-}
-
-ADE_VIRTVAR(LifeLeft, l_Weapon, "number", "Weapon life left (in seconds)")
-{
-	object_h *oh=NULL;
-	float nll = -1.0f;
-	if(!ade_get_args(L, "o|f", l_Weapon.GetPtr(&oh), &nll))
-		return ADE_RETURN_NIL;
-
-	if(!oh->IsValid())
-		return ADE_RETURN_NIL;
-
-	weapon *wp = &Weapons[oh->objp->instance];
-
-	if(ADE_SETTING_VAR && nll >= 0.0f) {
-		wp->lifeleft = nll;
-	}
-
-	return ade_set_args(L, "f", wp->lifeleft);
-}
-
-ADE_VIRTVAR(Team, l_Weapon, "team", "Weapon's team")
-{
-	object_h *oh=NULL;
-	int nt=-1;
-	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&oh), l_Team.Get(&nt)))
-		return ade_set_error(L, "o", l_Team.Set(-1));
-
-	if(!oh->IsValid())
-		return ade_set_error(L, "o", l_Team.Set(-1));
-
-	weapon *wp = &Weapons[oh->objp->instance];
-
-	if(ADE_SETTING_VAR && nt > -1) {
-		wp->team = nt;
-	}
-
-	return ade_set_args(L, "o", l_Team.Set(wp->team));
-}
 
 //**********HANDLE: Weaponbank
 #define SWH_NONE		0
@@ -4102,7 +4244,7 @@ struct ship_subsys_h : public object_h
 {
 	ship_subsys *ss;	//Pointer to subsystem, or NULL for the hull
 
-	bool IsValid(){return objp->signature == sig;}
+	bool IsValid(){return objp->signature == sig && ss != NULL;}
 	ship_subsys_h() : object_h() {
 		ss = NULL;
 	}
@@ -4111,6 +4253,18 @@ struct ship_subsys_h : public object_h
 	}
 };
 ade_obj<ship_subsys_h> l_Subsystem("subsystem", "Ship subsystem handle");
+
+ADE_FUNC(__tostring, l_Subsystem, NULL, "string", "Returns name of subsystem (or blank)")
+{
+	ship_subsys_h *sso;
+	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "s", "");
+
+	if(!sso->IsValid())
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", ship_subsys_get_name(sso->ss));
+}
 
 ADE_VIRTVAR(AWACSIntensity, l_Subsystem, "number", "Subsystem AWACS intensity")
 {
@@ -4259,6 +4413,25 @@ ADE_VIRTVAR(GunPosition, l_Subsystem, "lvector", "Subsystem gun position with re
 	return ade_set_args(L, "o", l_Vector.Set(sm->offset));
 }
 
+ADE_VIRTVAR(Name, l_Subsystem, "string", "Subsystem name")
+{
+	ship_subsys_h *sso;
+	char *s = NULL;
+	if(!ade_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
+		return ADE_RETURN_NIL;
+
+	if(!sso->IsValid())
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR && s != NULL && strlen(s))
+	{
+		ship_subsys_set_name(sso->ss, s);
+	}
+
+	return ade_set_args(L, "s", ship_subsys_get_name(sso->ss));
+}
+
+
 ADE_VIRTVAR(PrimaryBanks, l_Subsystem, "weaponbanktype", "Array of primary weapon banks")
 {
 	ship_subsys_h *sso, *sso2;
@@ -4383,20 +4556,6 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 
 	return ade_set_args(L, "b", rtn);
 }
-
-ADE_FUNC(getName, l_Subsystem, NULL, "Subsystem name", "Subsystem name")\
-{
-	ship_subsys_h *sso;
-	char *s = NULL;
-	if(!ade_get_args(L, "o|s", l_Subsystem.GetPtr(&sso), &s))
-		return ADE_RETURN_NIL;
-
-	if(!sso->IsValid())
-		return ADE_RETURN_NIL;
-
-	return ade_set_args(L, "s", sso->ss->system_info->name);
-}
-
 
 //**********HANDLE: shiptextures
 ade_obj<object_h> l_ShipTextures("shiptextures", "Ship textures handle");
@@ -4807,6 +4966,37 @@ ADE_VIRTVAR(Target, l_Ship, "object", "Target of ship. Value may also be a deriv
 	return ade_set_object_with_breed(L, aip->target_objnum);
 }
 
+ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.")
+{
+	object_h *oh;
+	ship_subsys_h *newh;
+	//WMC - Maybe use two argument return capabilities of Lua to set/return subsystem?
+	if(!ade_get_args(L, "o|o", l_Ship.GetPtr(&oh), l_Subsystem.GetPtr(&newh)))
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	ai_info *aip = NULL;
+	if(Ships[oh->objp->instance].ai_index > -1)
+		aip = &Ai_info[Ships[oh->objp->instance].ai_index];
+	else
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(ADE_SETTING_VAR && newh != NULL && newh->IsValid())
+	{
+		if(aip->target_signature != newh->sig)
+		{
+			aip->target_objnum = OBJ_INDEX(newh->objp);
+			aip->target_signature = newh->sig;
+			aip->target_time = 0.0f;
+			set_targeted_subsys(aip, newh->ss, -1);
+		}
+	}
+
+	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(&Objects[aip->target_objnum], aip->targeted_subsys)));
+}
+
 ADE_VIRTVAR(Team, l_Ship, "team", "Ship's team")
 {
 	object_h *oh=NULL;
@@ -4984,6 +5174,242 @@ ADE_FUNC(warpOut, l_Ship, "[boolean Departing]", "True", "Warps ship out")
 
 	return ADE_RETURN_TRUE;
 }
+
+//**********HANDLE: Weapon
+ade_obj<object_h> l_Weapon("weapon", "Weapon handle", &l_Object);
+
+ADE_VIRTVAR(Class, l_Weapon, "weaponclass", "Weapon's class")
+{
+	object_h *oh=NULL;
+	int nc=-1;
+	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&oh), l_Weaponclass.Get(&nc)))
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "o", l_Weaponclass.Set(-1));
+
+	weapon *wp = &Weapons[oh->objp->instance];
+
+	if(ADE_SETTING_VAR && nc > -1) {
+		wp->weapon_info_index = nc;
+	}
+
+	return ade_set_args(L, "o", l_Weaponclass.Set(wp->weapon_info_index));
+}
+
+ADE_VIRTVAR(DestroyedByWeapon, l_Weapon, "boolean", "Whether weapon was destroyed by another weapon")
+{
+	object_h *oh=NULL;
+	bool b = false;
+
+	int numargs = ade_get_args(L, "o|b", l_Weapon.GetPtr(&oh), &b);
+	
+	if(!numargs)
+		return ADE_RETURN_NIL;
+
+	if(!oh->IsValid())
+		return ADE_RETURN_NIL;
+
+	weapon *wp = &Weapons[oh->objp->instance];
+
+	if(ADE_SETTING_VAR && numargs > 1) {
+		if(b)
+			wp->weapon_flags |= WF_DESTROYED_BY_WEAPON;
+		else
+			wp->weapon_flags &= ~WF_DESTROYED_BY_WEAPON;
+	}
+
+	return ade_set_args(L, "b", (wp->weapon_flags & WF_DESTROYED_BY_WEAPON) > 0);
+}
+
+ADE_VIRTVAR(LifeLeft, l_Weapon, "number", "Weapon life left (in seconds)")
+{
+	object_h *oh=NULL;
+	float nll = -1.0f;
+	if(!ade_get_args(L, "o|f", l_Weapon.GetPtr(&oh), &nll))
+		return ADE_RETURN_NIL;
+
+	if(!oh->IsValid())
+		return ADE_RETURN_NIL;
+
+	weapon *wp = &Weapons[oh->objp->instance];
+
+	if(ADE_SETTING_VAR && nll >= 0.0f) {
+		wp->lifeleft = nll;
+	}
+
+	return ade_set_args(L, "f", wp->lifeleft);
+}
+
+ADE_VIRTVAR(Target, l_Weapon, "object", "Target of weapon. Value may also be a deriviative of the 'object' class, such as 'ship'.")
+{
+	object_h *objh;
+	object_h *newh;
+	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Object.GetPtr(&newh)))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	weapon *wp = NULL;
+	if(objh->objp->instance > -1)
+		wp = &Weapons[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newh != NULL && newh->IsValid())
+		{
+			if(wp->target_sig != newh->sig)
+			{
+				wp->target_num = OBJ_INDEX(newh->objp);
+				wp->target_sig = newh->sig;
+			}
+		}
+		else
+		{
+			wp->target_num = -1;
+			wp->target_sig = 0;
+		}
+	}
+
+	return ade_set_object_with_breed(L, wp->target_num);
+}
+
+ADE_VIRTVAR(HomingObject, l_Weapon, "object", "Object that weapon will home in on. Value may also be a deriviative of the 'object' class, such as 'ship'.")
+{
+	object_h *objh;
+	object_h *newh;
+	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Object.GetPtr(&newh)))
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	weapon *wp = NULL;
+	if(objh->objp->instance > -1)
+		wp = &Weapons[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newh != NULL && newh->IsValid())
+		{
+			if(wp->target_sig != newh->sig)
+			{
+				wp->homing_object = newh->objp;
+				wp->homing_pos = newh->objp->pos;
+				wp->homing_subsys = NULL;
+			}
+		}
+		else
+		{
+			wp->homing_object = NULL;
+			wp->homing_pos = vmd_zero_vector;
+			wp->homing_subsys = NULL;
+		}
+	}
+
+	if(wp->homing_object == NULL)
+		return ade_set_args(L, "o", l_Object.Set(object_h()));
+	else
+		return ade_set_object_with_breed(L, OBJ_INDEX(wp->homing_object));
+}
+
+ADE_VIRTVAR(HomingPosition, l_Weapon, "vector", "Position that weapon will home in on.")
+{
+	object_h *objh;
+	vec3d *v3;
+	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Vector.GetPtr(&v3)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	weapon *wp = NULL;
+	if(objh->objp->instance > -1)
+		wp = &Weapons[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	if(ADE_SETTING_VAR)
+	{
+		if(v3 != NULL)
+		{
+			wp->homing_object = NULL;
+			wp->homing_subsys = NULL;
+			wp->homing_pos = *v3;
+		}
+		else
+		{
+			wp->homing_object = NULL;
+			wp->homing_subsys = NULL;
+			wp->homing_pos = vmd_zero_vector;
+		}
+	}
+
+	return ade_set_args(L, "o", l_Vector.Set(wp->homing_pos));
+}
+
+ADE_VIRTVAR(HomingSubsystem, l_Weapon, "subsystem", "Subsystem that weapon will home in on.")
+{
+	object_h *objh;
+	ship_subsys_h *newh;
+	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&objh), l_Subsystem.GetPtr(&newh)))
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(!objh->IsValid())
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	weapon *wp = NULL;
+	if(objh->objp->instance > -1)
+		wp = &Weapons[objh->objp->instance];
+	else
+		return ade_set_error(L, "o", l_Subsystem.Set(ship_subsys_h()));
+
+	if(ADE_SETTING_VAR)
+	{
+		if(newh != NULL && newh->IsValid())
+		{
+			if(wp->target_sig != newh->sig)
+			{
+				wp->homing_object = newh->objp;
+				wp->homing_subsys = newh->ss;
+				get_subsystem_pos(&wp->homing_pos, wp->homing_object, wp->homing_subsys);
+			}
+		}
+		else
+		{
+			wp->homing_object = NULL;
+			wp->homing_pos = vmd_zero_vector;
+			wp->homing_subsys = NULL;
+		}
+	}
+
+	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(wp->homing_object, wp->homing_subsys)));
+}
+
+ADE_VIRTVAR(Team, l_Weapon, "team", "Weapon's team")
+{
+	object_h *oh=NULL;
+	int nt=-1;
+	if(!ade_get_args(L, "o|o", l_Weapon.GetPtr(&oh), l_Team.Get(&nt)))
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	if(!oh->IsValid())
+		return ade_set_error(L, "o", l_Team.Set(-1));
+
+	weapon *wp = &Weapons[oh->objp->instance];
+
+	if(ADE_SETTING_VAR && nt > -1) {
+		wp->team = nt;
+	}
+
+	return ade_set_args(L, "o", l_Team.Set(wp->team));
+}
+
 
 //**********HANDLE: Wing
 ade_obj<int> l_Wing("wing", "Wing handle");
@@ -5646,6 +6072,27 @@ ADE_VIRTVAR(CurrentColor, l_Graphics, "color", "Current color")
 	
 }*/
 
+//WMC - This is a cubemap, unfortunately...
+/*
+ADE_VIRTVAR(CurrentEnvironmentMap, l_Graphics, "texture", "Current environment map")
+{
+	int newtx = -1;
+
+	if(!ade_get_args(L, "*|o", l_Texture.Get(&newtx)))
+		return ade_set_error(L, "o", l_Texture.Set(-1));
+
+	if(ADE_SETTING_VAR && bm_is_valid(newtx)) {
+		ENVMAP = newtx;
+	}
+
+	int tx = ENVMAP;
+	if(!bm_is_valid(tx))
+		return ade_set_error(L, "o", l_Texture.Set(-1));
+
+	return ade_set_args(L, "o", l_Texture.Set(tx));
+}
+*/
+
 ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font")
 {
 	int newfn = -1;
@@ -5709,23 +6156,32 @@ ADE_VIRTVAR(CurrentOpacity, l_Graphics, "number", "0.0 - 1.0, affects images")
 
 	return ade_set_args(L, "f", lua_Opacity);
 }
-/*
-ADE_VIRTVAR(CurrentTarget, l_Graphics, "texture", "Current target")
+
+ADE_VIRTVAR(CurrentRenderTarget, l_Graphics, "texture", "Current rendering target")
 {
 	int newtx = -1;
 
-	if(!ade_get_args(L, "*|o", l_Texture.Get(&newtx)))
-		return ade_set_error(L, "o", l_Texture.Set(-1));
-
-	if(ADE_SETTING_VAR) {
-		if(newtx > -1 && bm_is_valid(newtx))
-			bm_set_render_target(newtx, 0);
-		else
-			bm_set_render_target(-1);
+	if(ADE_SETTING_VAR && lua_isnil(L, 2))
+	{
+		bm_set_render_target(-1);
+		return ade_set_args(L, "o", l_Texture.Set(gr_screen.rendering_to_texture));
 	}
+	else
+	{
 
-	return ade_set_args(L, "o", l_Texture.Set(gr_screen.rendering_to_texture));
-}*/
+		if(!ade_get_args(L, "*|o", l_Texture.Get(&newtx)))
+			return ade_set_error(L, "o", l_Texture.Set(-1));
+
+		if(ADE_SETTING_VAR) {
+			if(newtx > -1 && bm_is_valid(newtx))
+				bm_set_render_target(newtx, 0);
+			else
+				bm_set_render_target(-1);
+		}
+
+		return ade_set_args(L, "o", l_Texture.Set(gr_screen.rendering_to_texture));
+	}
+}
 
 ADE_FUNC(clearScreen, l_Graphics, "[Red, green, blue]", NULL, "Clears the screen to black, or the color specified.")
 {
@@ -6020,19 +6476,29 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, wvector Position]", "Tru
 
 #define MAX_TEXT_LINES		256
 static char *BooleanValues[] = {"False", "True"};
-ADE_FUNC(drawString, l_Graphics, "String, x1, y1, [x2, y2]", NULL, "Draws a string")
+static const int LastDrawStringPosInitial[] = {0, -1};
+static int LastDrawStringPos[] = {LastDrawStringPosInitial[0], LastDrawStringPosInitial[1]};
+ADE_FUNC(drawString, l_Graphics, "String, [x1, y1, x2, y2]", NULL,
+		 "Draws a string. Use x1/y1 to control position, x2/y2 to limit textbox size."
+		 "Text will automatically move onto new lines, if x2/y2 is specified."
+		 "Additionally, calling drawString with only a string argument will automatically"
+		 "draw that string below the previously drawn string (or 0,0 if no strings"
+		 "have been drawn yet")
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
 
-	int x=0,y=0;
-	char *s;
+	int x=LastDrawStringPos[0];
+	int y=0;
+	if(LastDrawStringPos[1] > -1) y = LastDrawStringPos[1] + gr_get_font_height();
+
+	char *s = "(null)";
 	int x2=-1,y2=-1;
 
 	if(lua_isboolean(L, 1))
 	{
 		bool b = false;
-		if(!ade_get_args(L, "bii|ii", &b, &x, &y, &x2, &y2))
+		if(!ade_get_args(L, "b|iiii", &b, &x, &y, &x2, &y2))
 			return ADE_RETURN_NIL;
 
 		if(b)
@@ -6040,9 +6506,14 @@ ADE_FUNC(drawString, l_Graphics, "String, x1, y1, [x2, y2]", NULL, "Draws a stri
 		else
 			s = BooleanValues[0];
 	}
-	else if(!ade_get_args(L, "sii|ii", &s, &x, &y, &x2, &y2))
+	else if(lua_isstring(L, 1))
 	{
-		return ADE_RETURN_NIL;
+		if(!ade_get_args(L, "s|iiii", &s, &x, &y, &x2, &y2))
+			return ADE_RETURN_NIL;
+	}
+	else
+	{
+		ade_get_args(L, "|*iiii", &x, &y, &x2, &y2);
 	}
 
 	if(x2 < 0) {
@@ -6084,6 +6555,12 @@ ADE_FUNC(drawString, l_Graphics, "String, x1, y1, [x2, y2]", NULL, "Draws a stri
 		delete[] linelengths;
 		delete[] linestarts;
 	}
+	
+	LastDrawStringPos[0] = x;
+	if(y2 > -1)
+		LastDrawStringPos[1] = y2;
+	else
+		LastDrawStringPos[1] = y;
 
 	return ADE_RETURN_NIL;
 }
@@ -6104,23 +6581,30 @@ ADE_FUNC(getStringWidth, l_Graphics, "String to get width of", "String width", "
 	return ade_set_args(L, "i", w);
 }
 
-ADE_FUNC(createTexture, l_Graphics, "Width, Height, Type", "Handle to new texture", "Creates a texture for rendering to. Types are static - for infrequent rendering - and dynamic - for frequent rendering.")
+ADE_FUNC(createTexture, l_Graphics, "[Width=512, Height=512, Type=TEXTURE_DYNAMIC]", "Handle to new texture",
+		 "Creates a texture for rendering to."
+		 "Types are TEXTURE_STATIC - for infrequent rendering - and TEXTURE_DYNAMIC - for frequent rendering.")
 {
-	int w,h;
-	enum_h *e;
-	if(!ade_get_args(L, "iio", &w, &h, l_Enum.GetPtr(&e)))
-		return ADE_RETURN_NIL;
+	int w=512;
+	int h=512;
+	enum_h *e = NULL;
 
-	int t = 0;
-	if(e->index == LE_TEXTURE_STATIC)
-		t = BMP_FLAG_RENDER_TARGET_STATIC;
-	else if(e->index == LE_TEXTURE_DYNAMIC)
-		t = BMP_FLAG_RENDER_TARGET_DYNAMIC;
+	//GET ARGS
+	ade_get_args(L, "|iio", &w, &h, l_Enum.GetPtr(&e));
+
+	int t = BMP_FLAG_RENDER_TARGET_DYNAMIC;
+	if(e != NULL)
+	{
+		if(e->index == LE_TEXTURE_STATIC)
+			t = BMP_FLAG_RENDER_TARGET_STATIC;
+		else if(e->index == LE_TEXTURE_DYNAMIC)
+			t = BMP_FLAG_RENDER_TARGET_DYNAMIC;
+	}
 
 	int idx = bm_make_render_target(w, h, t);
 
 	if(idx < 0)
-		return ADE_RETURN_NIL;
+		return ade_set_error(L, "o", l_Texture.Set(-1));
 
 	return ade_set_args(L, "o", l_Texture.Set(idx));
 }
@@ -6150,7 +6634,7 @@ ADE_FUNC(loadTexture, l_Graphics, "Texture filename, [Load if Animation, No drop
 	return ade_set_args(L, "o", l_Texture.Set(idx));
 }
 
-ADE_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, uv x1, uv y1, uv x2, uv y2]", "Whether image or texture was drawn",
+ADE_FUNC(drawImage, l_Graphics, "Image name/Texture handle, [x1=0, y1=0, x2, y2, uv x1, uv y1, uv x2, uv y2]", "Whether image or texture was drawn",
 		 "Draws an image or texture. Any image extension passed will be ignored."
 		 "The UV variables specify the UV value for each corner of the image. "
 		 "In UV coordinates, (0,0) is the top left of the image; (1,1) is the lower right."
@@ -6160,7 +6644,8 @@ ADE_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, uv 
 		return ADE_RETURN_NIL;
 
 	int idx;
-	int x1,y1;
+	int x1 = 0;
+	int y1 = 0;
 	int x2=INT_MAX;
 	int y2=INT_MAX;
 	float uv_x1=0.0f;
@@ -6171,7 +6656,7 @@ ADE_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, uv 
 	if(lua_isstring(L, 1))
 	{
 		char *s = NULL;
-		if(!ade_get_args(L, "sii|iiffff", &s,&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2))
+		if(!ade_get_args(L, "s|iiiiffff", &s,&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2))
 			return ADE_RETURN_NIL;
 
 		idx = Script_system.LoadBm(s);
@@ -6181,9 +6666,12 @@ ADE_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, uv 
 	}
 	else
 	{
-		if(!ade_get_args(L, "oii|biiffff", l_Texture.Get(&idx),&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2))
+		if(!ade_get_args(L, "o|iibiiffff", l_Texture.Get(&idx),&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2))
 			return ADE_RETURN_NIL;
 	}
+
+	if(!bm_is_valid(idx))
+		return ADE_RETURN_NIL;
 
 	int w, h;
 	if(bm_get_info(idx, &w, &h) < 0)
@@ -6198,7 +6686,8 @@ ADE_FUNC(drawImage, l_Graphics, "Image name/Texture handle, x1, y1, [x2, y2, uv 
 	gr_set_bitmap(idx, lua_Opacity_type, GR_BITBLT_MODE_NORMAL, lua_Opacity);
 	bitmap_rect_list brl = bitmap_rect_list(x1, y1, w, h, uv_x1, uv_y1, uv_x2, uv_y2);
 	gr_bitmap_list(&brl, 1, false);
-	//gr_bitmap_ex(x, y, w, h, sx, sy, false);
+	//gr_bitmap_ex(x1, y1, w, h, sx, sy, false);
+	//gr_bitmap(x1, y1, false);
 
 	return ADE_RETURN_TRUE;
 }
@@ -7330,6 +7819,13 @@ ADE_FUNC(setCamera, l_Testing, "[camera handle Camera]", "True", "Sets current c
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(getStack, l_Testing, NULL, "string", "Returns current Lua stack")
+{
+	char buf[10240] = {'\0'};
+	ade_stackdump(L, buf);
+	return ade_set_args(L, "s", buf);
+}
+
 // *************************Helper functions*********************
 //WMC - This should be used anywhere that an 'object' is set, so
 //that scripters can get access to as much relevant data to that
@@ -7475,6 +7971,11 @@ int script_state::CreateLuaState()
 	return 1;
 }
 
+void script_state::EndLuaFrame()
+{
+	memcpy(LastDrawStringPos, LastDrawStringPosInitial, sizeof(LastDrawStringPos));
+}
+
 //*************************Lua functions*************************
 //WMC - Spits out the current Lua stack to "stackdump"
 //This includes variable values, but not names
@@ -7549,6 +8050,16 @@ void ade_stackdump(lua_State *L, char *stackdump)
 				break;
 			case LUA_TFUNCTION:
 				strcat(stackdump, "Function");
+				{
+					char *upname = (char*)lua_getupvalue(L, argnum, ADE_FUNCNAME_UPVALUE_INDEX);
+					if(upname != NULL)
+					{
+						strcat(stackdump, " ");
+						strcat(stackdump, lua_tostring(L, -1));
+						strcat(stackdump, "()");
+						lua_pop(L, 1);
+					}
+				}
 				break;
 			case LUA_TUSERDATA:
 				if(lua_getmetatable(L, argnum))
@@ -8675,218 +9186,6 @@ void ade_table_entry::OutputMeta(FILE *fp)
 	if(!skip_this)
 		fputs("<br></dl></dd>\n", fp);
 }
-
-#if 0
-void output_lib_meta(FILE *fp, lua_lib_h *main_lib, lua_lib_h *lib_deriv)
-{
-	lua_func_hh *func, *func_end;
-	lua_var_hh *var, *var_end;
-	int i,j;
-	bool draw_header;
-	fputs("<dd><dl>", fp);
-	lua_lib_h *lib = main_lib;
-
-	//Operators
-	draw_header = false;
-	if(main_lib->Functions.size() || (lib_deriv != NULL && lib_deriv->Functions.size()))
-	{
-		for(i = 0; i < 2; i++)
-		{
-			if(lib->Indexer != NULL) {
-				draw_header = true;
-				break;
-			}
-
-			func = &lib->Functions[0];
-			func_end = &lib->Functions[lib->Functions.size()];
-			for(; func < func_end; func++)
-			{
-				if(!strncmp(func->Name, "__", 2)) {
-					draw_header = true;
-					break;
-				}
-			}
-
-			if(lib_deriv == NULL || draw_header)
-				break;
-
-			lib = lib_deriv;
-		}
-	}
-
-	lib = main_lib;
-	if(draw_header) {
-		fputs("<dt><h3>Operators</h3></dt><dd><dl>", fp);
-	}
-	for(i = 0; i < 2; i++)
-	{
-		func = &lib->Functions[0];
-		func_end = &lib->Functions[lib->Functions.size()];
-
-		for(; func < func_end; func++)
-		{
-			if(strncmp(func->Name, "__", 2)) {
-				continue;
-			}
-
-			char *draw_name = func->Name;
-			for(j = 0; j < ade_Num_operators; j++)
-			{
-				if(!stricmp(draw_name, ade_Operators[j].src)) {
-					draw_name = ade_Operators[j].dest;
-					break;
-				}
-			}
-
-			//WMC - factor in 'invisible' operators.
-			if(draw_name == NULL && !strlen(draw_name))
-				continue;
-
-			if(func->Arguments != NULL) {
-				fprintf(fp, "<dt><b>%s</b> <i>%s</i></dt>", draw_name, func->Arguments);
-			} else {
-				fprintf(fp, "<dt><b>%s</b></dt>", draw_name);
-			}
-
-			if(func->Description != NULL) {
-				fprintf(fp, "<dd>%s</dd>", func->Description);
-			} else {
-				fputs("<dd>No description</dd>", fp);
-			}
-
-			if(func->ReturnValues != NULL) {
-				fprintf(fp, "<dd><b>Result:</b> %s<br>&nbsp;</dd>", func->ReturnValues);
-			} else {
-				fputs("<dd><b>Result:</b> None<br>&nbsp;</dd>", fp);
-			}
-		}
-
-		if(lib_deriv == NULL)
-			break;
-
-		lib = lib_deriv;
-	}
-	if(draw_header) {
-		fputs("</dl></dd>", fp);
-	}
-
-	//Variables
-	if(main_lib->Variables.size() || (lib_deriv != NULL && lib_deriv->Variables.size()))
-		draw_header = true;
-	else draw_header = false;
-	lib = main_lib;
-	if(draw_header) {
-		fputs("<dt><h3>Variables</h3></dt><dd><dl>", fp);
-	}
-	for(i = 0; i < 2; i++)
-	{
-		var = &lib->Variables[0];
-		var_end = &lib->Variables[lib->Variables.size()];
-
-		for(; var < var_end; var++)
-		{
-			if(var->Type != NULL)
-			{
-				uint idx;
-				for(idx = 0; idx < lua_Objects.size(); idx++)
-				{
-					if(!stricmp(lua_Objects[idx].Name, var->Type))
-						break;
-				}
-				if(idx < lua_Objects.size())
-					fprintf(fp, "<dt><a href=\"#%s\"><i>%s</i></a> <b>%s</b></dt>", var->Type, var->Type, var->Name);
-				else
-					fprintf(fp, "<dt><i>%s</i> <b>%s</b></dt>", var->Type, var->Name);
-			}
-			else
-			{
-				fprintf(fp, "<dt><b>%s</b></dt>", var->Name);
-			}
-
-			if(var->Description != NULL) {
-				fprintf(fp, "<dd>%s</dd>", var->Description);
-			} else {
-				fputs("<dd>No description</dd>", fp);
-			}
-		}
-
-		if(lib_deriv == NULL)
-			break;
-
-		lib = lib_deriv;
-	}
-	if(draw_header) {
-		fputs("</dl></dd>", fp);
-	}
-
-	//Functions
-	lib = main_lib;
-	draw_header = false;
-	if(main_lib->Functions.size() || (lib_deriv != NULL && lib_deriv->Functions.size()))
-	{
-		for(i = 0; i < 2; i++)
-		{
-			func = &lib->Functions[0];
-			func_end = &lib->Functions[lib->Functions.size()];
-			for(; func < func_end; func++)
-			{
-				if(strncmp(func->Name, "__", 2)) {
-					draw_header = true;
-					break;
-				}
-			}
-
-			if(lib_deriv == NULL || draw_header)
-				break;
-
-			lib = lib_deriv;
-		}
-	}
-	if(draw_header) {
-		fputs("<dt><h3>Functions</h3></dt><dd><dl>", fp);
-	}
-	for(i = 0; i < 2; i++)
-	{
-		func = &lib->Functions[0];
-		func_end = &lib->Functions[lib->Functions.size()];
-
-		for(; func < func_end; func++)
-		{
-			if(!strncmp(func->Name, "__", 2)) {
-				continue;
-			}
-
-			if(func->Arguments != NULL) {
-				fprintf(fp, "<dt><b>%s(</b><i>%s</i><b>)</b></dt>", func->Name, func->Arguments);
-			} else {
-				fprintf(fp, "<dt><b>%s()</b></dt>", func->Name);
-			}
-
-			if(func->Description != NULL) {
-				fprintf(fp, "<dd>%s</dd>", func->Description);
-			} else {
-				fputs("<dd>No description</dd>", fp);
-			}
-
-			if(func->ReturnValues != NULL) {
-				fprintf(fp, "<dd><b>Return values:</b> %s<br>&nbsp;</dd>", func->ReturnValues);
-			} else {
-				fputs("<dd><b>Return values:</b> None<br>&nbsp;</dd>", fp);
-			}
-		}
-
-		if(lib_deriv == NULL)
-			break;
-
-		lib = lib_deriv;
-	}
-
-	if(draw_header) {
-		fputs("</dl></dd>", fp);
-	}
-	fputs("<br></dl></dd>", fp);
-}
-#endif
 
 void ade_output_toc(FILE *fp, ade_table_entry *ate)
 {

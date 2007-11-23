@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.20 $
- * $Date: 2007-01-07 13:13:38 $
- * $Author: taylor $
+ * $Revision: 2.21 $
+ * $Date: 2007-11-23 23:49:33 $
+ * $Author: wmcoolmon $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20  2007/01/07 13:13:38  taylor
+ * cleanup various bits of obsolete or unused code
+ *
  * Revision 2.19  2006/12/28 00:59:26  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -996,6 +999,7 @@ void gr_set_font(int fontnum)
 
 void gr_font_init()
 {
+	mprintf(("GRAPHICS: Initializing default fonts...\n"));
 	gr_init_font( NOX("font01.vf") );
 	gr_init_font( NOX("font02.vf") );
 	gr_init_font( NOX("font03.vf") );
