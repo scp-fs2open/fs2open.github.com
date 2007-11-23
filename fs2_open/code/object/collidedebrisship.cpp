@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.14 $
- * $Date: 2007-02-19 07:24:51 $
+ * $Revision: 2.15 $
+ * $Date: 2007-11-23 23:49:33 $
  * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14  2007/02/19 07:24:51  wmcoolmon
+ * WMCoolmon experiences a duh moment. Move scripting collision variable declarations in front of overrides, to give
+ * them access to these (somewhat useful) variables
+ *
  * Revision 2.13  2007/02/11 21:26:35  Goober5000
  * massive shield infrastructure commit
  *
@@ -275,13 +279,12 @@ int collide_debris_ship( obj_pair * pair )
 		hit = debris_check_collision(pdebris, pship, &hitpos, &debris_hit_info );
 		if ( hit )
 		{
-			ade_odata ade_ship_obj = l_Ship.Set(object_h(pship));
-			ade_odata ade_debris_obj = l_Debris.Set(object_h(pdebris));
+			Script_system.SetHookObjects(2, "Ship", pship, "Debris", pdebris);
 
-			Script_system.SetHookVar("Ship", 'o', &ade_ship_obj);
-			Script_system.SetHookVar("Debris", 'o', &ade_debris_obj);
-
+			Script_system.SetHookObjects(2, "Self",pship, "Object", pdebris);
 			bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEDEBRIS, pship);
+
+			Script_system.SetHookObjects(2, "Self",pdebris, "Object", pship);
 			bool debris_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, pdebris);
 			if(!ship_override && !debris_override)
 			{
@@ -342,13 +345,16 @@ int collide_debris_ship( obj_pair * pair )
 
 				collide_ship_ship_do_sound(&hitpos, pship, pdebris, pship==Player_obj);
 			}
+
+			Script_system.SetHookObjects(2, "Self",pship, "Object", pdebris);
 			if(!(debris_override && !ship_override))
 				Script_system.RunCondition(CHA_COLLIDEDEBRIS, '\0', NULL, pship);
+
+			Script_system.SetHookObjects(2, "Self",pdebris, "Object", pship);
 			if((debris_override && !ship_override) || (!debris_override && !ship_override))
 				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, pdebris);
 
-			Script_system.RemHookVar("Ship");
-			Script_system.RemHookVar("Debris");
+			Script_system.RemHookVars(4, "Ship", "Debris", "Self","ObjectB");
 
 			return 0;
 		}
@@ -425,8 +431,13 @@ int collide_asteroid_ship( obj_pair * pair )
 		hit = asteroid_check_collision(pasteroid, pship, &hitpos, &asteroid_hit_info );
 		if ( hit )
 		{
+			//Scripting support (WMC)
+			Script_system.SetHookObjects(4, "Ship", pship, "Asteroid", pasteroid, "Self",pship, "Object", pasteroid);
 			bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, pship);
+
+			Script_system.SetHookObjects(2, "Self",pasteroid, "Object", pship);
 			bool asteroid_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, pasteroid);
+
 			if(!ship_override && !asteroid_override)
 			{
 				float		ship_damage;
@@ -502,19 +513,15 @@ int collide_asteroid_ship( obj_pair * pair )
 				collide_ship_ship_do_sound(&hitpos, pship, pasteroid, pship==Player_obj);
 			}
 
-			ade_odata ade_ship_obj = l_Ship.Set(object_h(pship));
-			ade_odata ade_asteroid_obj = l_Asteroid.Set(object_h(pasteroid));
-
-			Script_system.SetHookVar("Ship", 'o', &ade_ship_obj);
-			Script_system.SetHookVar("Asteroid", 'o', &ade_asteroid_obj);
-
+			Script_system.SetHookObjects(2, "Self",pship, "Object", pasteroid);
 			if(!(asteroid_override && !ship_override))
 				Script_system.RunCondition(CHA_COLLIDEASTEROID, '\0', NULL, pship);
+
+			Script_system.SetHookObjects(2, "Self",pasteroid, "Object", pship);
 			if((asteroid_override && !ship_override) || (!asteroid_override && !ship_override))
 				Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, pasteroid);
 
-			Script_system.RemHookVar("Ship");
-			Script_system.RemHookVar("Asteroid");
+			Script_system.RemHookVars(4, "Ship", "Asteroid", "Self","ObjectB");
 
 			return 0;
 		}

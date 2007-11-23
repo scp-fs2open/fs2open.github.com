@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.436 $
- * $Date: 2007-11-21 04:53:31 $
- * $Author: turey $
+ * $Revision: 2.437 $
+ * $Date: 2007-11-23 23:49:35 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.436  2007/11/21 04:53:31  turey
+ * minor bugfix.
+ *
  * Revision 2.435  2007/11/20 04:58:17  Goober5000
  * fix ship-type-destroyed
  *
@@ -2503,7 +2506,7 @@ int Num_man_types = sizeof(Man_types)/sizeof(flag_def_list);
 
 flag_def_list Man_thruster_flags[] = 
 {
-	{ "no scale",	MTF_NO_SCALE},
+	{ "no scale",	MTF_NO_SCALE,	0},
 };
 
 int Num_man_thruster_flags = sizeof(Man_thruster_flags) / sizeof(flag_def_list);
@@ -2932,12 +2935,15 @@ void init_ship_entry(ship_info *sip)
 	pe->min_life = 0.05f;			// How long the particles live
 	pe->max_life = 0.55f;			// How long the particles live
 
+	sip->collision_damage_type_idx = -1;
+
 	sip->debris_min_lifetime = -1.0f;
 	sip->debris_max_lifetime = -1.0f;
 	sip->debris_min_speed = -1.0f;
 	sip->debris_max_speed = -1.0f;
 	sip->debris_min_rotspeed = -1.0f;
 	sip->debris_max_rotspeed = -1.0f;
+	sip->debris_damage_type_idx = -1;
 	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
 	{
 		sip->allowed_weapons[i] = 0;
@@ -3454,6 +3460,15 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 		stuff_boolean(&bogus_bool);
 	}
 
+	if(optional_string("$Impact:"))
+	{
+		if(optional_string("+Damage Type:"))
+		{
+			stuff_string(buf, F_NAME, NAME_LENGTH);
+			sip->collision_damage_type_idx = damage_type_add(buf);
+		}
+	}
+
 	//HACK -
 	//This should really be reworked so that all particle fields
 	//are settable, but erg, just not happening right now -C
@@ -3503,6 +3518,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 			stuff_float(&sip->debris_max_rotspeed);
 			if(sip->debris_max_rotspeed < 0.0f)
 				Warning(LOCATION, "Debris max speed on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
+		if(optional_string("+Damage Type:")) {
+			stuff_string(buf, F_NAME, NAME_LENGTH);
+			sip->debris_damage_type_idx = damage_type_add(buf);
 		}
 		/*
 		if(optional_string("+Initial Velocity:")) {
@@ -5603,7 +5622,7 @@ int ship_find_exited_ship_by_name( char *name )
 {
 	int i;
 
-	for (i = 0; i < Ships_exited.size(); i++) {
+	for (i = 0; i < (int) Ships_exited.size(); i++) {
 		if ( !stricmp(name, Ships_exited[i].ship_name) )
 			return i;
 	}
@@ -5616,7 +5635,7 @@ int ship_find_exited_ship_by_signature( int signature )
 {
 	int i;
 
-	for (i = 0; i < Ships_exited.size(); i++) {
+	for (i = 0; i < (int) Ships_exited.size(); i++) {
 		if ( signature == Ships_exited[i].obj_signature )
 			return i;
 	}
@@ -6234,6 +6253,8 @@ void subsys_set(int objnum, int ignore_subsys_info)
 		list_append( &shipp->subsys_list, ship_system );		// link the element into the ship
 
 		ship_system->system_info = model_system;				// set the system_info pointer to point to the data read in from the model
+
+		memset(ship_system->sub_name, '\0', sizeof(ship_system->sub_name));
 
 		// zero flags
 		ship_system->flags = 0;
@@ -11579,7 +11600,7 @@ int ship_template_lookup(char *token)
 {
 	int	i;
 
-	for ( i = 0; i < Ship_templates.size(); i++ ) {
+	for ( i = 0; i < (int)Ship_templates.size(); i++ ) {
 		if ( !stricmp(token, Ship_templates[i].name) ) {
 			return i;
 		}
@@ -13706,7 +13727,7 @@ int ship_return_subsys_path_normal(ship *shipp, ship_subsys *ss, vec3d *gsubpos,
 
 		if (ss->system_info->path_num > pm->n_paths) {
 			// possibly a bad model?
-			mprintf(("WARNING: Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths, ss->system_info->path_num, ss->system_info->name));
+			mprintf(("WARNING: Too many paths in '%s'!  Max is %i and the requested path was %i for subsystem '%s'!\n", pm->filename, pm->n_paths, ss->system_info->path_num, ship_subsys_get_name(ss)));
 		//	Int3();
 			return 1;
 		}
@@ -14002,7 +14023,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_DESTROY_SUBSYSTEM: {
 			char name[NAME_LENGTH];
 			if ( aip->targeted_subsys != NULL ) {
-				sprintf(outbuf, XSTR( "atk %s %s", 496), aigp->ship_name, hud_targetbox_truncate_subsys_name(aip->targeted_subsys->system_info->name));
+				sprintf(outbuf, XSTR( "atk %s %s", 496), aigp->ship_name, hud_targetbox_truncate_subsys_name(ship_subsys_get_name(aip->targeted_subsys)));
 				strcat(outbuf, name);
 			} else {
 				strcpy(outbuf, XSTR( "no orders", 495) );
@@ -15556,6 +15577,27 @@ int ship_get_num_subsys(ship *shipp)
 	return Ship_info[shipp->ship_info_index].n_subsystems;
 }
 
+char *ship_subsys_get_name(ship_subsys *ss)
+{
+	if(strlen(ss->sub_name) > 0)
+		return ss->sub_name;
+	else
+		return ss->system_info->name;
+}
+
+bool ship_subsys_has_instance_name(ship_subsys *ss)
+{
+	if(strlen(ss->sub_name) > 0)
+		return true;
+	else
+		return false;
+}
+
+void ship_subsys_set_name(ship_subsys *ss, char* n_name)
+{
+	strncpy(ss->sub_name, n_name, NAME_LENGTH-1);
+}
+
 // returns 0 if no conflict, 1 if conflict, -1 on some kind of error with wing struct
 int wing_has_conflicting_teams(int wing_index)
 {
@@ -16244,7 +16286,7 @@ int damage_type_add(char *name)
 char *TypeNames[] = {
 	"additive",
 	"multiplicative",
-	"exponentional",
+	"exponential",
 	"exponential base",
 	"cutoff",
 	"reverse cutoff",

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.198 $
- * $Date: 2007-11-20 04:58:17 $
- * $Author: Goober5000 $
+ * $Revision: 2.199 $
+ * $Date: 2007-11-23 23:49:35 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.198  2007/11/20 04:58:17  Goober5000
+ * fix ship-type-destroyed
+ *
  * Revision 2.197  2007/10/28 15:38:18  karajorma
  * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
  *
@@ -1186,6 +1189,8 @@ extern int Num_player_orders;
 typedef	struct ship_subsys {
 	struct ship_subsys *next, *prev;				//	Index of next and previous objects in list.
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
+
+	char		sub_name[NAME_LENGTH];					//WMC - Name that overrides name of original
 	float		current_hits;							// current number of hits this subsystem has left.
 	float		max_hits;
 
@@ -1898,13 +1903,17 @@ typedef struct ship_info {
 	particle_emitter	ispew;
 	particle_emitter	dspew;
 
-	//Debris crap
+	//Collisions
+	int				collision_damage_type_idx;
+
+	//Debris stuff
 	float			debris_min_lifetime;
 	float			debris_max_lifetime;
 	float			debris_min_speed;
 	float			debris_max_speed;
 	float			debris_min_rotspeed;
 	float			debris_max_rotspeed;
+	int				debris_damage_type_idx;
 	/*
 	int				debris_flags;
 	vec3d			debris_initial_vel;
@@ -2264,6 +2273,10 @@ extern int ship_get_subsys_index(ship *sp, char *ss_name, int error_bypass = 0);
 extern float ship_get_subsystem_strength( ship *shipp, int type );
 extern ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
+
+char *ship_subsys_get_name(ship_subsys *ss);
+bool ship_subsys_has_instance_name(ship_subsys *ss);
+void ship_subsys_set_name(ship_subsys *ss, char *n_name);
 
 // subsys disruption
 extern int ship_subsys_disrupted(ship_subsys *ss);

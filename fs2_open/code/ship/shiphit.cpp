@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.80 $
- * $Date: 2007-10-28 15:38:18 $
- * $Author: karajorma $
+ * $Revision: 2.81 $
+ * $Date: 2007-11-23 23:49:35 $
+ * $Author: wmcoolmon $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.80  2007/10/28 15:38:18  karajorma
+ * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
+ *
  * Revision 2.79  2007/07/15 02:45:19  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
@@ -763,6 +766,7 @@
 #include "network/multi_respawn.h"
 #include "network/multi_pmsg.h"
 #include "parse/scripting.h"
+#include "asteroid/asteroid.h"
 
 
 
@@ -1209,9 +1213,16 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	int dmg_type_idx = -1;
 	if(other_obj->type == OBJ_SHOCKWAVE) {
 		dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
-	}
-	else if(other_obj->type == OBJ_WEAPON) {
+	} else if(other_obj->type == OBJ_WEAPON) {
 		dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
+	} else if(other_obj->type == OBJ_BEAM) {
+		dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
+	} else if(other_obj->type == OBJ_ASTEROID) {
+		dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
+	} else if(other_obj->type == OBJ_DEBRIS) {
+		dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
+	} else if(other_obj->type == OBJ_SHIP) {
+		dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
 	}
 
 	//This function is screwy
@@ -1330,7 +1341,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 				break;
 			}
 		}
-//nprintf(("AI", "j=%i, sys = %s, dam = %6.1f, dam left = %6.1f, subhits = %5.0f\n", j, subsys->system_info->name, damage_to_apply, damage_left, subsys->current_hits));
+//nprintf(("AI", "j=%i, sys = %s, dam = %6.1f, dam left = %6.1f, subhits = %5.0f\n", j, ship_subsys_get_name(subsys), damage_to_apply, damage_left, subsys->current_hits));
 	}
 
 	//	Note: I changed this to return damage_left and it completely screwed up balance.
@@ -2091,8 +2102,8 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 {
 	Assert(ship_obj);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
-	Script_system.SetHookObject("Self", OBJ_INDEX(ship_obj));
-	if(other_obj != NULL) Script_system.SetHookObject("Killer", OBJ_INDEX(other_obj));
+	Script_system.SetHookObject("Self", ship_obj);
+	if(other_obj != NULL) Script_system.SetHookObject("Killer", other_obj);
 
 	if(Script_system.IsConditionOverride(CHA_DEATH, ship_obj))
 	{
@@ -2471,7 +2482,11 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	ship *shipp;	
 	float subsystem_damage = damage;			// damage to be applied to subsystems
 	int other_obj_is_weapon;
+	int other_obj_is_beam;
 	int other_obj_is_shockwave;
+	int other_obj_is_asteroid;
+	int other_obj_is_debris;
+	int other_obj_is_ship;
 
 	Assert(ship_obj);	// Goober5000
 	Assert(hitpos);		// Goober5000
@@ -2488,12 +2503,20 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	if (other_obj)
 	{
 		other_obj_is_weapon = ((other_obj->type == OBJ_WEAPON) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS));
+		other_obj_is_beam = ((other_obj->type == OBJ_WEAPON) && (other_obj->instance >= 0) && (other_obj->instance < MAX_BEAMS));
 		other_obj_is_shockwave = ((other_obj->type == OBJ_SHOCKWAVE) && (other_obj->instance >= 0) && (other_obj->instance < MAX_SHOCKWAVES));
+		other_obj_is_asteroid = ((other_obj->type == OBJ_ASTEROID) && (other_obj->instance >= 0) && (other_obj->instance < MAX_ASTEROIDS));
+		other_obj_is_debris = ((other_obj->type == OBJ_DEBRIS) && (other_obj->instance >= 0) && (other_obj->instance < MAX_DEBRIS_PIECES));
+		other_obj_is_ship = ((other_obj->type == OBJ_SHIP) && (other_obj->instance >= 0) && (other_obj->instance < MAX_SHIPS));
 	}
 	else
 	{
 		other_obj_is_weapon = 0;
+		other_obj_is_beam = 0;
 		other_obj_is_shockwave = 0;
+		other_obj_is_asteroid = 0;
+		other_obj_is_debris = 0;
+		other_obj_is_ship = 0;
 	}
 
 	// update lethality of ship doing damage - modified by Goober5000
@@ -2620,16 +2643,21 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		}
 
 		//Do armor stuff
-		if (apply_hull_armor && (other_obj_is_weapon || other_obj_is_shockwave))
+		if (apply_hull_armor)
 		{
 			int dmg_type_idx = -1;
-			if(other_obj_is_weapon)
-			{
+			if(other_obj_is_weapon) {
 				dmg_type_idx = Weapon_info[Weapons[other_obj->instance].weapon_info_index].damage_type_idx;
-			}
-			else if(other_obj_is_shockwave)
-			{
+			} else if(other_obj_is_beam) {
+				dmg_type_idx = Weapon_info[beam_get_weapon_info_index(other_obj)].damage_type_idx;
+			} else if(other_obj_is_shockwave) {
 				dmg_type_idx = shockwave_get_damage_type_idx(other_obj->instance);
+			} else if(other_obj_is_asteroid) {
+				dmg_type_idx = Asteroid_info[Asteroids[other_obj->instance].asteroid_type].damage_type_idx;
+			} else if(other_obj_is_debris) {
+				dmg_type_idx = Ship_info[Debris[other_obj->instance].ship_info_index].debris_damage_type_idx;
+			} else if(other_obj_is_ship) {
+				dmg_type_idx = Ship_info[Ships[other_obj->instance].ship_info_index].collision_damage_type_idx;
 			}
 			
 			if(sip->armor_type_idx != -1)

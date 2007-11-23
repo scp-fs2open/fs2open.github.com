@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.13 $
- * $Date: 2007-03-23 01:51:56 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2007-11-23 23:49:42 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2007/03/23 01:51:56  taylor
+ * bit of cleanup and minor performance tweaks
+ * sync up with new generic_anim/bitmap and weapon delayed loading changes
+ * with generic_anim, use Goober's animation timing for beam section and glow animations
+ * make trail render list dynamic (as well as it can be)
+ *
  * Revision 2.12  2006/02/25 21:47:19  Goober5000
  * spelling
  *
@@ -176,6 +182,7 @@ struct vec3d;
 
 // max # of "shots" an individual beam will take
 #define MAX_BEAM_SHOTS				5
+#define MAX_BEAMS					500
 
 // uses to define beam behavior ahead of time - needed for multiplayer
 typedef struct beam_info {

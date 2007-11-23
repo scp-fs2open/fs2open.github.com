@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.44 $
- * $Date: 2007-03-22 21:55:01 $
- * $Author: taylor $
+ * $Revision: 2.45 $
+ * $Date: 2007-11-23 23:49:34 $
+ * $Author: wmcoolmon $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.44  2007/03/22 21:55:01  taylor
+ * some generic_bitmap fixes to go with new changes (not in CVS just yet, don't freak out)
+ * make use of VALID_FNAME() where possible
+ * fix an animation time issue (sub-second animation playback caused div-by-0)
+ *
  * Revision 2.43  2007/02/20 04:20:27  Goober5000
  * the great big duplicate model removal commit
  *
@@ -578,25 +583,25 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 	if ( valid_hit_occurred )
 	{
-		ade_odata ade_ship_obj = l_Ship.Set(object_h(ship_objp));
-		ade_odata ade_weapon_obj = l_Weapon.Set(object_h(weapon_objp));
-
-		Script_system.SetHookVar("Ship", 'o', &ade_ship_obj);
-		Script_system.SetHookVar("Weapon", 'o', &ade_weapon_obj);
-
+		Script_system.SetHookObjects(4, "Ship", ship_objp, "Weapon", weapon_objp, "Self",ship_objp, "Object", weapon_objp);
 		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp);
+
+		Script_system.SetHookObjects(2, "Self",weapon_objp, "Object", ship_objp);
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
+
 		if(!ship_override && !weapon_override) {
 			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 		}
 
+		Script_system.SetHookObjects(2, "Self",ship_objp, "Object", weapon_objp);
 		if(!(weapon_override && !ship_override))
 			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, ship_objp);
+
+		Script_system.SetHookObjects(2, "Self",weapon_objp, "Object", ship_objp);
 		if((weapon_override && !ship_override) || (!weapon_override && !ship_override))
 			Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, weapon_objp);
 
-		Script_system.RemHookVar("Ship");
-		Script_system.RemHookVar("Weapon");
+		Script_system.RemHookVars(4, "Ship", "Weapon", "Self","Object");
 		/*
 		if(!Script_system.IsOverride(wip->sc_collide_ship)) {
 			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);

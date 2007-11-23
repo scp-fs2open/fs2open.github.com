@@ -36,6 +36,7 @@ struct image_desc
 #define CHC_WEAPONCLASS		6
 #define CHC_OBJECTTYPE		7
 #define CHC_KEYPRESS		8
+#define CHC_VERSION		9
 
 //Actions
 #define CHA_NONE			-1
@@ -49,6 +50,8 @@ struct image_desc
 #define CHA_COLLIDEASTEROID	7
 #define CHA_HUDDRAW			8
 #define CHA_OBJECTRENDER	9
+#define CHA_SPLASHSCREEN	10
+#define CHA_GAMEINIT		11
 
 
 struct script_condition
@@ -111,7 +114,15 @@ private:
 	void SetPySession(struct PyObject *loc, struct PyObject *glb);
 
 	void OutputLuaMeta(FILE *fp);
+	
+	//Lua private helper functions
+	bool OpenHookVarTable();
+	bool CloseHookVarTable();
 
+	//Internal Lua helper functions
+	void EndLuaFrame();
+
+	//Destroy everything
 	void Clear();
 
 public:
@@ -141,9 +152,11 @@ public:
 	void RemGlobal(char *name);
 
 	void SetHookVar(char *name, char format, void *data=NULL);
-	void SetHookObject(char *name, int obj_idx);
+	void SetHookObject(char *name, object *objp);
+	void SetHookObjects(int num, ...);
 	bool GetHookVar(char *name, char format='\0', void *data=NULL);
 	void RemHookVar(char *name);
+	void RemHookVars(unsigned int num, ...);
 
 	//***Hook creation functions
 	bool EvalString(char* string, char *format=NULL, void *rtn=NULL, char *debug_str=NULL);
@@ -155,6 +168,9 @@ public:
 	bool IsOverride(script_hook &hd);
 	int RunCondition(int condition, char format='\0', void *data=NULL, struct object *objp = NULL);
 	bool IsConditionOverride(int action, object *objp=NULL);
+
+	//*****Other functions
+	void EndFrame();
 };
 
 

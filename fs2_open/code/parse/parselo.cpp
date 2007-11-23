@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.93 $
- * $Author: turey $
- * $Date: 2007-08-31 20:37:20 $
+ * $Revision: 2.94 $
+ * $Author: wmcoolmon $
+ * $Date: 2007-11-23 23:49:34 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.93  2007/08/31 20:37:20  turey
+ * Fix for Mantis bug: http://scp.indiegames.us/mantis/view.php?id=1482
+ * Also, fixed an implicit cast that MSVC2005 choked on.
+ *
  * Revision 2.92  2007/08/17 03:29:45  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
@@ -1321,7 +1325,8 @@ char* alloc_block(char* startstr, char* endstr, int extra_chars)
 		flen = pos-Mp;
 
 		//Allocate the memory
-		rval = (char*) vm_malloc((flen + extra_chars)*sizeof(char));
+		//WMC - Don't forget the null character that's added later on.
+		rval = (char*) vm_malloc((flen + extra_chars + 1)*sizeof(char));
 
 		//Copy the text (if memory was allocated)
 		if(rval != NULL) {
