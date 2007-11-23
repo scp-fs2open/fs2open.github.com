@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.30 $
- * $Date: 2007-09-29 00:24:51 $
- * $Author: turey $
+ * $Revision: 2.31 $
+ * $Date: 2007-11-23 23:25:15 $
+ * $Author: wmcoolmon $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.30  2007/09/29 00:24:51  turey
+ * Mouse defaults to enabled as suggested in Mantis bug: http://scp.indiegames.us/mantis/view.php?id=1498
+ *
  * Revision 2.29  2007/04/11 14:59:35  taylor
  * get rid of stale NO_JOYSTICK define
  *
@@ -1051,8 +1054,21 @@ int read_pilot_file(char *callsign, int single, player *p)
 
 	Game_skill_level = cfread_int(file);
 
+	bool axis_warning_shown = false;
 	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
-		Axis_map_to[i] = cfread_int(file);
+		int newaxis = cfread_int(file);
+		if(newaxis > NUM_JOY_AXIS_ACTIONS)
+		{
+			if(!axis_warning_shown)
+			{
+				axis_warning_shown = true;
+				Warning(LOCATION, "Bad axis reading for pilot file - pilot file may be corrupt. Axis: %d, reading: %d", i, newaxis);
+			}
+		}
+		else
+		{
+			Axis_map_to[i] = newaxis;
+		}
 		Invert_axis[i] = cfread_int(file);
 	}
 
