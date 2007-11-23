@@ -93,7 +93,7 @@
 				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\code.pch"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
+				ProgramDataBaseFileName="$(IntDir)/code.pdb"
 				BrowseInformation="1"
 				WarningLevel="4"
 				SuppressStartupBanner="TRUE"
@@ -1666,6 +1666,12 @@
 				RelativePath="..\..\code\MissionUI\Chatbox.h">
 			</File>
 			<File
+				RelativePath="..\..\code\missionui\fictionviewer.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\missionui\fictionviewer.h">
+			</File>
+			<File
 				RelativePath="..\..\code\MissionUI\MissionBrief.cpp">
 				<FileConfiguration
 					Name="Release|Win32">
@@ -2015,6 +2021,9 @@
 				RelativePath="..\..\code\Model\ModelCollide.cpp">
 			</File>
 			<File
+				RelativePath="..\..\code\model\modeldiff.cpp">
+			</File>
+			<File
 				RelativePath="..\..\code\Model\ModelInterp.cpp">
 			</File>
 			<File
@@ -2068,6 +2077,9 @@
 			</File>
 			<File
 				RelativePath="..\..\code\object\objectdock.h">
+			</File>
+			<File
+				RelativePath="..\..\code\object\objectshield.cpp">
 			</File>
 			<File
 				RelativePath="..\..\code\Object\ObjectSnd.cpp">
