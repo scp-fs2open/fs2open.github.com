@@ -1,13 +1,16 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.35 $
- * $Date: 2007-03-22 22:14:57 $
- * $Author: taylor $
+ * $Revision: 2.36 $
+ * $Date: 2007-11-23 23:48:21 $
+ * $Author: wmcoolmon $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35  2007/03/22 22:14:57  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
  * Revision 2.34  2007/01/07 12:39:59  taylor
  * build for for newer GCC versions
  *
@@ -293,6 +296,20 @@ void Error( char * filename, int line, char * format, ... )
 	exit(EXIT_FAILURE);
 }
 
+void LuaDebugPrint(lua_Debug &ar)
+{
+	fprintf(stderr, "Name:\t\t%s\n",  ar.name);
+	fprintf(stderr, "Name of:\t%s\n",  ar.namewhat);
+	fprintf(stderr, "Function type:\t%s\n",  ar.what);
+	fprintf(stderr, "Defined on:\t%d\n",  ar.linedefined);
+	fprintf(stderr, "Upvalues:\t%d\n",  ar.nups);
+	fprintf(stderr, "\n" );
+	fprintf(stderr, "Source:\t\t%s\n",  ar.source);
+	fprintf(stderr, "Short source:\t%s\n",  ar.short_src);
+	fprintf(stderr, "Current line:\t%d\n",  ar.currentline);
+}
+
+extern lua_Debug Ade_debug_info;
 void LuaError(struct lua_State *L, char *format, ...)
 {
 	va_list args;
@@ -308,8 +325,17 @@ void LuaError(struct lua_State *L, char *format, ...)
 		va_end(args);
 	}
 
-	// Order UP!!
-	fprintf(stderr, "LUA ERROR: \"%s\"\n", buffer);
+	fprintf(stderr, "=====LUA ERROR=====\n");
+	fprintf(stderr, "===ADE Debug===\n" );
+	LuaDebugPrint(Ade_debug_info);
+	fprintf(stderr, "\n" );
+	fprintf(stderr, "===Stack dump===\n");
+	char out_string[10240];
+	ade_stackdump(L, out_string);
+	fprintf(stderr, "%s\n\n", out_string);
+	fprintf(stderr, "===ERROR TEXT===\n");
+	fprintf(stderr, "\"%s\"\n", buffer);
+	fprintf(stderr, "===================\n");
 
 	exit(EXIT_FAILURE);
 }
