@@ -35,7 +35,7 @@
 				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\freespace2.pch"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
+				ProgramDataBaseFileName="$(IntDir)/freespace2.pdb"
 				BrowseInformation="1"
 				WarningLevel="4"
 				SuppressStartupBanner="TRUE"
