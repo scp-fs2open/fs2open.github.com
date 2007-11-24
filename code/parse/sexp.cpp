@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.333 $
- * $Date: 2007-11-23 23:22:34 $
+ * $Revision: 2.334 $
+ * $Date: 2007-11-24 10:14:58 $
  * $Author: wmcoolmon $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.333  2007/11/23 23:22:34  wmcoolmon
+ * Misc. fixes
+ *
  * Revision 2.332  2007/11/22 05:35:47  taylor
  * bump node allocation increment (when you are regularly realloc'ing 20-30 times, the increment is too low :))
  *
@@ -2067,7 +2070,7 @@ sexp_oper Operators[] = {
 	{ "hide-jumpnode",				OP_JUMP_NODE_HIDE_JUMPNODE,				1, 1, },
 
 	{ "script-eval-num",			OP_SCRIPT_EVAL_NUM,						1, 1, },
-	{ "script-eval-string",			OP_SCRIPT_EVAL_STRING,					1, 1, },
+	//{ "script-eval-string",			OP_SCRIPT_EVAL_STRING,					1, 1, },	//WMC - SEXP system doesn't support string returns
 	{ "script-eval",				OP_SCRIPT_EVAL,							1, INT_MAX},
 
 	{ "do-nothing",	OP_NOP,	0, 0,			},
@@ -15234,8 +15237,9 @@ void sexp_hide_jumpnode(int n)
 
 //WMC - This is a bit of a hack, however, it's easier than
 //coding in a whole new SCript_system function.
-int sexp_script_eval(int n, int return_type)
+int sexp_script_eval(int node, int return_type)
 {
+	int n = node;
 	char *s = CTEXT(n);
 	bool success = false;
 
@@ -15250,7 +15254,11 @@ int sexp_script_eval(int n, int return_type)
 			Error(LOCATION, "SEXP system does not support string return type; Goober must fix this before script-eval-string will work");
 			break;
 		case OPR_NULL:
-			success = Script_system.EvalString(s, NULL, NULL, s);
+			while(n != -1)
+			{
+				success = Script_system.EvalString(s, NULL, NULL, CTEXT(n));
+				n = CDR(n);
+			}
 			break;
 		default:
 			Error(LOCATION, "Bad type passed to sexp_script_eval - get a coder");
