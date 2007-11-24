@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.16.2.4 $
- * $Date: 2007-07-23 16:08:29 $
- * $Author: Kazan $
+ * $Revision: 2.16.2.5 $
+ * $Date: 2007-11-24 04:33:50 $
+ * $Author: wmcoolmon $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16.2.4  2007/07/23 16:08:29  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
  * Revision 2.16.2.3  2007/05/11 03:16:01  taylor
  * add session open/close times to debug log
  *
@@ -760,7 +763,7 @@ LRESULT CALLBACK outwnd_handler(HWND hwnd,UINT msg,WPARAM wParam, LPARAM lParam)
 		int z;
 
 		z = LOWORD(wParam);
-		if (z >= ID_FILTER && z < ID_FILTER + OutwndFilter.size())
+		if (z >= ID_FILTER && z < ID_FILTER + (int)OutwndFilter.size())
 		{
 			z -= ID_FILTER;
 			OutwndFilter[z].enabled = !OutwndFilter[z].enabled;

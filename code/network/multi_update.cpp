@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_update.cpp $
- * $Revision: 2.10.2.1 $
- * $Date: 2007-10-15 06:43:18 $
- * $Author: taylor $
+ * $Revision: 2.10.2.2 $
+ * $Date: 2007-11-24 04:33:49 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10.2.1  2007/10/15 06:43:18  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 2.10  2006/04/20 06:32:15  Goober5000
  * proper capitalization according to Volition
  *
@@ -273,7 +276,7 @@ int multi_update_error_verifying()
 int multi_update_gobaby()
 {			
 	char msg[512] = "";
-	int ret_code;
+	//int ret_code;
 	int my_code = MULTI_UPDATE_MAIN_MENU;
 
 
