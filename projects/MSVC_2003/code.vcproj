@@ -1674,6 +1674,12 @@
 				RelativePath="..\..\code\MissionUI\Chatbox.h">
 			</File>
 			<File
+				RelativePath="..\..\code\missionui\fictionviewer.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\missionui\fictionviewer.h">
+			</File>
+			<File
 				RelativePath="..\..\code\MissionUI\MissionBrief.cpp">
 				<FileConfiguration
 					Name="Release|Win32">
@@ -2609,7 +2615,8 @@
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;"
+						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
+"
 						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
 				</FileConfiguration>
 			</File>
@@ -2945,10 +2952,10 @@
 			Name="Network"
 			Filter="">
 			<File
-				RelativePath="..\..\code\network\fs2ox.cpp">
+				RelativePath="..\..\code\network\chat_api.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\network\fs2ox.h">
+				RelativePath="..\..\code\network\chat_api.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Network\Multi.cpp">
@@ -3045,6 +3052,12 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Network\multi_pmsg.h">
+			</File>
+			<File
+				RelativePath="..\..\code\network\multi_pxo.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\network\multi_pxo.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Network\multi_rate.cpp">
@@ -3162,31 +3175,28 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="fs2open_pxo"
+			Name="fs2netd"
 			Filter="">
 			<File
-				RelativePath="..\..\code\fs2open_pxo\Client.cpp">
+				RelativePath="..\..\code\fs2netd\fs2netd_client.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\Client.h">
+				RelativePath="..\..\code\fs2netd\fs2netd_client.h">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\protocol.h">
+				RelativePath="..\..\code\fs2netd\protocol.h">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\TCP_Client.cpp">
+				RelativePath="..\..\code\fs2netd\tcp_client.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\TCP_Socket.cpp">
+				RelativePath="..\..\code\fs2netd\tcp_client.h">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\TCP_Socket.h">
+				RelativePath="..\..\code\fs2netd\tcp_socket.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\udpsocket.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\fs2open_pxo\udpsocket.h">
+				RelativePath="..\..\code\fs2netd\tcp_socket.h">
 			</File>
 		</Filter>
 		<Filter
@@ -3197,16 +3207,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\species_defs\species_defs.h">
-			</File>
-		</Filter>
-		<Filter
-			Name="irc"
-			Filter="">
-			<File
-				RelativePath="..\..\code\irc\irc.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\irc\irc.h">
 			</File>
 		</Filter>
 		<Filter
