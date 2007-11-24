@@ -7803,8 +7803,8 @@ ADE_FUNC(createCamera, l_Testing, "string Name, [wvector Position, world orienta
 
 ADE_FUNC(setCamera, l_Testing, "[camera handle Camera]", "True", "Sets current camera, or resets camera if none specified")
 {
-	int idx;
-	if(!ade_get_args(L, "o", l_Camera.Get(&idx)))
+	int idx = -1;
+	if(!ade_get_args(L, "|o", l_Camera.Get(&idx)))
 	{
 		Viewer_mode &= ~VM_FREECAMERA;
 		return ADE_RETURN_NIL;
@@ -8176,11 +8176,12 @@ int ade_get_args(lua_State *L, char *fmt, ...)
 	}
 #endif
 	if(!strlen(funcname)) {
+		//WMC - This was causing crashes with user-defined functions.
 		//WMC - Try and get at function name from upvalue
-		if(!Ade_get_args_lfunction)
+		if(!Ade_get_args_lfunction && !lua_isnone(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)))
 		{
-			if(lua_type(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)) == LUA_TSTRING)
-				strcpy(funcname, lua_tostring(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)));
+				if(lua_type(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)) == LUA_TSTRING)
+					strcpy(funcname, lua_tostring(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)));
 		}
 
 		//WMC - Totally unknown function
