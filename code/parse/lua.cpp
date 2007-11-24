@@ -16,6 +16,7 @@
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionload.h"
+#include "model/model.h"
 #include "freespace2/freespace.h"
 #include "weapon/weapon.h"
 #include "parse/parselo.h"
@@ -256,6 +257,180 @@ ade_obj<int> l_Weaponclass("weaponclass", "Weapon class handle");
 //###########################################################
 //########################</IMPORTANT>#######################
 //###########################################################
+
+//**********OBJECT: orientation matrix
+//WMC - So matrix can use vector, I define it up here.
+ade_obj<vec3d> l_Vector("vector", "Vector object");
+//WMC - Due to the exorbitant times required to store matrix data,
+//I initially store the matrix in this struct.
+#define MH_FINE					0
+#define MH_MATRIX_OUTOFDATE		1
+#define MH_ANGLES_OUTOFDATE		2
+struct matrix_h {
+	int status;
+
+	matrix mtx;
+	angles ang;
+
+	matrix_h(){mtx = vmd_identity_matrix; status = MH_ANGLES_OUTOFDATE;}
+	matrix_h(matrix *in){mtx = *in; status = MH_ANGLES_OUTOFDATE;}
+	matrix_h(angles *in){ang = *in; status = MH_MATRIX_OUTOFDATE;}
+
+	//WMC - Call these to make sure what you want
+	//is up to date
+	void ValidateAngles() {
+		if(status == MH_ANGLES_OUTOFDATE) {
+			vm_extract_angles_matrix(&ang, &mtx);
+			status = MH_FINE;
+		}
+	}
+
+	void ValidateMatrix() {
+		if(status == MH_MATRIX_OUTOFDATE) {
+			vm_angles_2_matrix(&mtx, &ang);
+			status = MH_FINE;
+		}
+	}
+
+	//LOOK LOOK LOOK LOOK LOOK LOOK 
+	//IMPORTANT!!!:
+	//LOOK LOOK LOOK LOOK LOOK LOOK 
+	//Don't forget to set status appropriately when you change ang or mtx.
+};
+ade_obj<matrix_h> l_Matrix("orientation", "Orientation matrix object");
+
+ADE_INDEXER(l_Matrix, "p,b,h or 0-9", "number", "Orientation component - pitch, bank, heading, or index into 3x3 matrix (1-9)")
+{
+	matrix_h *mh;
+	char *s = NULL;
+	float newval = 0.0f;
+	int numargs = ade_get_args(L, "os|f", l_Matrix.GetPtr(&mh), &s, &newval);
+
+	if(!numargs || s[1] != '\0')
+		return ADE_RETURN_NIL;
+
+	int idx=0;
+	if(s[0]=='p')
+		idx = -1;
+	else if(s[0]=='b')
+		idx = -2;
+	else if(s[0]=='h')
+		idx = -3;
+	else if(atoi(s))
+		idx = atoi(s);
+
+	if(idx < -3 || idx==0 || idx > 9)
+		return ADE_RETURN_NIL;
+
+	//Handle out of date stuff.
+	float *val = NULL;
+	if(idx < 0)
+	{
+		mh->ValidateAngles();
+
+		if(idx == -1)
+			val = &mh->ang.p;
+		if(idx == -2)
+			val = &mh->ang.b;
+		if(idx == -3)
+			val = &mh->ang.h;
+	}
+	else
+	{
+		mh->ValidateMatrix();
+
+		idx--;	//Lua->FS2
+		val = &mh->mtx.a1d[idx];
+	}
+
+	if(ADE_SETTING_VAR && *val != newval)
+	{
+		//WMC - I figure this is quicker
+		//than just assuming matrix or angles is diff
+		//and recalculating every time.
+
+		if(idx < 0)
+			mh->status = MH_MATRIX_OUTOFDATE;
+		else
+			mh->status = MH_ANGLES_OUTOFDATE;
+
+		//Might as well put this here
+		*val = newval;
+	}
+
+	return ade_set_args(L, "f", *val);
+}
+
+ADE_FUNC(__mul, l_Matrix, "orientation", "orientation", "Multiplies two matrix objects)")
+{
+	matrix_h *mha=NULL, *mhb=NULL;
+	if(!ade_get_args(L, "oo", l_Matrix.GetPtr(&mha), l_Matrix.GetPtr(&mhb)))
+		return ADE_RETURN_NIL;
+
+	mha->ValidateMatrix();
+	mhb->ValidateMatrix();
+
+	matrix mr;
+
+	vm_matrix_x_matrix(&mr, &mha->mtx, &mhb->mtx);
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&mr)));
+}
+
+ADE_FUNC(__tostring, l_Matrix, NULL, "string", "Converts a matrix to a string with format \"[r1c1 r2c1 r3c1 | r1c2 r2c2 r3c2| r1c3 r2c3 r3c3]\"")
+{
+	matrix_h *mh;
+	if(!ade_get_args(L, "o", l_Matrix.GetPtr(&mh)))
+		return ADE_RETURN_NIL;
+
+	char buf[128];
+	float *a = &mh->mtx.a1d[0];
+	sprintf(buf, "[%f %f %f | %f %f %f | %f %f %f]", a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8]);
+
+	return ade_set_args(L, "s", buf);
+}
+
+ADE_FUNC(transpose, l_Matrix, NULL, NULL, "Transposes matrix")
+{
+	matrix_h *mh;
+	if(!ade_get_args(L, "o", l_Matrix.GetPtr(&mh)))
+		return ADE_RETURN_NIL;
+
+	mh->ValidateMatrix();
+	vm_transpose_matrix(&mh->mtx);
+	mh->status = MH_ANGLES_OUTOFDATE;
+
+	return ADE_RETURN_NIL;
+}
+
+
+ADE_FUNC(rotateVector, l_Matrix, "Vector object", "Rotated vector", "Returns rotated version of given vector")
+{
+	matrix_h *mh;
+	vec3d *v3;
+	if(!ade_get_args(L, "oo", l_Matrix.GetPtr(&mh), l_Vector.GetPtr(&v3)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	vec3d v3r;
+	mh->ValidateMatrix();
+	vm_vec_rotate(&v3r, v3, &mh->mtx);
+
+	return ade_set_args(L, "o", l_Vector.Set(v3r));
+}
+
+ADE_FUNC(unrotateVector, l_Matrix, "Vector object", "Unrotated vector", "Returns unrotated version of given vector")
+{
+	matrix_h *mh;
+	vec3d *v3;
+	if(!ade_get_args(L, "oo", l_Matrix.GetPtr(&mh), l_Vector.GetPtr(&v3)))
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
+
+	vec3d v3r;
+	mh->ValidateMatrix();
+	vm_vec_unrotate(&v3r, v3, &mh->mtx);
+
+	return ade_set_args(L, "o", l_Vector.Set(v3r));
+}
 
 //**********HANDLE: cmission
 ade_obj<int> l_Cmission("cmission", "Campaign mission handle");
@@ -1251,6 +1426,26 @@ ADE_VIRTVAR(Mass, l_Model, "number", "Model radius (Used for collision & culling
 	return ade_set_args(L, "f", pm->mass);
 }
 
+ADE_VIRTVAR(MomentOfInertia, l_Model, "orientation", "Model moment of inertia")
+{
+	int idx;
+	matrix_h *mh;
+	if(!ade_get_args(L, "o|s", l_Model.Get(&idx), l_Matrix.GetPtr(&mh)))
+		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+
+	polymodel *pm = model_get(idx);
+
+	if(pm == NULL)
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR) {
+		mh->ValidateMatrix();
+		memcpy(&pm->moment_of_inertia, &mh->mtx, sizeof(mh->mtx));
+	}
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&pm->moment_of_inertia)));
+}
+
 ADE_VIRTVAR(Radius, l_Model, "number", "Model radius (Used for collision & culling detection)")
 {
 	int idx;
@@ -1276,186 +1471,15 @@ ADE_FUNC(isValid, l_Model, NULL, "True if valid, false or nil if not",  "Detects
 	if(!ade_get_args(L, "o", l_Model.Get(&idx)))
 		return ADE_RETURN_NIL;
 
+	if(idx < 0)
+		return ADE_RETURN_FALSE;
+
 	polymodel *pm = model_get(idx);
 	
 	if(pm == NULL)
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
-}
-
-//**********OBJECT: orientation matrix
-//WMC - So matrix can use vector, I define it up here.
-ade_obj<vec3d> l_Vector("vector", "Vector object");
-//WMC - Due to the exorbitant times required to store matrix data,
-//I initially store the matrix in this struct.
-#define MH_FINE					0
-#define MH_MATRIX_OUTOFDATE		1
-#define MH_ANGLES_OUTOFDATE		2
-struct matrix_h {
-	int status;
-
-	matrix mtx;
-	angles ang;
-
-	matrix_h(){mtx = vmd_identity_matrix; status = MH_ANGLES_OUTOFDATE;}
-	matrix_h(matrix *in){mtx = *in; status = MH_ANGLES_OUTOFDATE;}
-	matrix_h(angles *in){ang = *in; status = MH_MATRIX_OUTOFDATE;}
-
-	//WMC - Call these to make sure what you want
-	//is up to date
-	void ValidateAngles() {
-		if(status == MH_ANGLES_OUTOFDATE) {
-			vm_extract_angles_matrix(&ang, &mtx);
-			status = MH_FINE;
-		}
-	}
-
-	void ValidateMatrix() {
-		if(status == MH_MATRIX_OUTOFDATE) {
-			vm_angles_2_matrix(&mtx, &ang);
-			status = MH_FINE;
-		}
-	}
-
-	//LOOK LOOK LOOK LOOK LOOK LOOK 
-	//IMPORTANT!!!:
-	//LOOK LOOK LOOK LOOK LOOK LOOK 
-	//Don't forget to set status appropriately when you change ang or mtx.
-};
-ade_obj<matrix_h> l_Matrix("orientation", "Orientation matrix object");
-
-ADE_INDEXER(l_Matrix, "p,b,h or 0-9", "number", "Orientation component - pitch, bank, heading, or index into 3x3 matrix (1-9)")
-{
-	matrix_h *mh;
-	char *s = NULL;
-	float newval = 0.0f;
-	int numargs = ade_get_args(L, "os|f", l_Matrix.GetPtr(&mh), &s, &newval);
-
-	if(!numargs || s[1] != '\0')
-		return ADE_RETURN_NIL;
-
-	int idx=0;
-	if(s[0]=='p')
-		idx = -1;
-	else if(s[0]=='b')
-		idx = -2;
-	else if(s[0]=='h')
-		idx = -3;
-	else if(atoi(s))
-		idx = atoi(s);
-
-	if(idx < -3 || idx==0 || idx > 9)
-		return ADE_RETURN_NIL;
-
-	//Handle out of date stuff.
-	float *val = NULL;
-	if(idx < 0)
-	{
-		mh->ValidateAngles();
-
-		if(idx == -1)
-			val = &mh->ang.p;
-		if(idx == -2)
-			val = &mh->ang.b;
-		if(idx == -3)
-			val = &mh->ang.h;
-	}
-	else
-	{
-		mh->ValidateMatrix();
-
-		idx--;	//Lua->FS2
-		val = &mh->mtx.a1d[idx];
-	}
-
-	if(ADE_SETTING_VAR && *val != newval)
-	{
-		//WMC - I figure this is quicker
-		//than just assuming matrix or angles is diff
-		//and recalculating every time.
-
-		if(idx < 0)
-			mh->status = MH_MATRIX_OUTOFDATE;
-		else
-			mh->status = MH_ANGLES_OUTOFDATE;
-
-		//Might as well put this here
-		*val = newval;
-	}
-
-	return ade_set_args(L, "f", *val);
-}
-
-ADE_FUNC(__mul, l_Matrix, "orientation", "orientation", "Multiplies two matrix objects)")
-{
-	matrix_h *mha=NULL, *mhb=NULL;
-	if(!ade_get_args(L, "oo", l_Matrix.GetPtr(&mha), l_Matrix.GetPtr(&mhb)))
-		return ADE_RETURN_NIL;
-
-	mha->ValidateMatrix();
-	mhb->ValidateMatrix();
-
-	matrix mr;
-
-	vm_matrix_x_matrix(&mr, &mha->mtx, &mhb->mtx);
-
-	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&mr)));
-}
-
-ADE_FUNC(__tostring, l_Matrix, NULL, "string", "Converts a matrix to a string with format \"[r1c1 r2c1 r3c1 | r1c2 r2c2 r3c2| r1c3 r2c3 r3c3]\"")
-{
-	matrix_h *mh;
-	if(!ade_get_args(L, "o", l_Matrix.GetPtr(&mh)))
-		return ADE_RETURN_NIL;
-
-	char buf[128];
-	float *a = &mh->mtx.a1d[0];
-	sprintf(buf, "[%f %f %f | %f %f %f | %f %f %f]", a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8]);
-
-	return ade_set_args(L, "s", buf);
-}
-
-ADE_FUNC(transpose, l_Matrix, NULL, NULL, "Transposes matrix")
-{
-	matrix_h *mh;
-	if(!ade_get_args(L, "o", l_Matrix.GetPtr(&mh)))
-		return ADE_RETURN_NIL;
-
-	mh->ValidateMatrix();
-	vm_transpose_matrix(&mh->mtx);
-	mh->status = MH_ANGLES_OUTOFDATE;
-
-	return ADE_RETURN_NIL;
-}
-
-
-ADE_FUNC(rotateVector, l_Matrix, "Vector object", "Rotated vector", "Returns rotated version of given vector")
-{
-	matrix_h *mh;
-	vec3d *v3;
-	if(!ade_get_args(L, "oo", l_Matrix.GetPtr(&mh), l_Vector.GetPtr(&v3)))
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
-
-	vec3d v3r;
-	mh->ValidateMatrix();
-	vm_vec_rotate(&v3r, v3, &mh->mtx);
-
-	return ade_set_args(L, "o", l_Vector.Set(v3r));
-}
-
-ADE_FUNC(unrotateVector, l_Matrix, "Vector object", "Unrotated vector", "Returns unrotated version of given vector")
-{
-	matrix_h *mh;
-	vec3d *v3;
-	if(!ade_get_args(L, "oo", l_Matrix.GetPtr(&mh), l_Vector.GetPtr(&v3)))
-		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
-
-	vec3d v3r;
-	mh->ValidateMatrix();
-	vm_vec_unrotate(&v3r, v3, &mh->mtx);
-
-	return ade_set_args(L, "o", l_Vector.Set(v3r));
 }
 
 //**********HANDLE: physics
@@ -7693,6 +7717,8 @@ ADE_INDEXER(l_Tables_ShipClasses, "Shipclass name or index", "ship", "Gets ship 
 		idx = atoi(name);
 		if(idx < 1 || idx > Num_ship_classes)
 			return ade_set_error(L, "o", l_Shipclass.Set(-1));
+
+		idx--;	//Lua->FS2
 	}
 
 	return ade_set_args(L, "o", l_Shipclass.Set(idx));
