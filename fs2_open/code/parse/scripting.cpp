@@ -373,7 +373,8 @@ void script_state::SetHookObjects(int num, ...)
 //for the hook library.
 //Call CloseHookVarTable() only if OpenHookVarTable()
 //returns true. (see below)
-static int ohvt_isopen = 0;
+static int ohvt_poststack = 0;		//Items on the stack prior to OHVT
+static int ohvt_isopen = 0;			//Items OHVT puts on the stack
 bool script_state::OpenHookVarTable()
 {
 	if(ohvt_isopen)
@@ -396,6 +397,7 @@ bool script_state::OpenHookVarTable()
 			if(lua_istable(LuaState, amt_ldx))
 			{
 				ohvt_isopen = 3;
+				ohvt_poststack = amt_ldx;
 				return true;
 			}
 			lua_pop(LuaState, 1);	//amt
@@ -417,7 +419,7 @@ bool script_state::CloseHookVarTable()
 		Error(LOCATION, "CloseHookVarTable was called with no associated call to OpenHookVarTable");
 	}
 	int top_ldx = lua_gettop(LuaState);
-	if(top_ldx > ohvt_isopen)
+	if(top_ldx >= ohvt_poststack)
 	{
 		lua_pop(LuaState, ohvt_isopen);
 		ohvt_isopen = 0;
@@ -425,7 +427,7 @@ bool script_state::CloseHookVarTable()
 	}
 	else
 	{
-		Error(LOCATION, "CloseHookVarTable() was called with too few objects on the stack; get a coder.");
+		Error(LOCATION, "CloseHookVarTable() was called with too few objects on the stack; get a coder. (Stack: %d OHVT post: %d OHVT num: %d", top_ldx, ohvt_poststack, ohvt_isopen);
 		return false;
 	}
 }
@@ -899,8 +901,7 @@ int script_state::OutputMeta(char *filename)
 
 bool script_state::EvalString(char* string, char *format, void *rtn, char *debug_str)
 {
-	char *lcp = &string[strlen(string)-1];
-	char lastchar = *lcp;
+	char lastchar = string[strlen(string)-1];
 
 	if(string[0] == '{')
 	{
@@ -930,24 +931,28 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 	}
 
 	char *s = new char[strlen(string) + 8];
-	if(string[0] != '[' && rtn != NULL)
+	if(string[0] != '[')
 	{
-		strcpy(s, "return ");
-		strcat(s, string);
+		if(rtn != NULL)
+		{
+			strcpy(s, "return ");
+			strcat(s, string);
+		}
+		else
+		{
+			strcpy(s, string);
+			s[strlen(s)] = '\0';
+		}
+		s[strlen(s)] = '\0';
 	}
-	else if(string[0] != '[')
-	{
-		strcpy(s, string);
-	}
-	else if(string[0] == '[')
+	else
 	{
 		strcpy(s, string+1);
+		s[strlen(s)-1] = '\0';
 	}
 
-	s[strlen(s)-1] = '\0';
-
-	//WMC - So we can pop extra return values
-	int args_start = lua_gettop(LuaState);
+	//WMC - So we can pop everything we put on the stack
+	int stack_start = lua_gettop(LuaState);
 
 	//WMC - Push error handling function
 	lua_pushcfunction(LuaState, ade_friendly_error);
@@ -962,19 +967,25 @@ bool script_state::EvalString(char* string, char *format, void *rtn, char *debug
 		{
 			return false;
 		}
+		int stack_curr = lua_gettop(LuaState);
 
 		//Only get args if we can put them someplace
-		if(rtn != NULL)
+		//WMC - We must have more than one more arg on the stack than stack_start:
+		//(stack_start)
+		//ade_friendly_error
+		//(additional return values)
+		if(rtn != NULL && stack_curr > (stack_start+1))
 		{
-			ade_get_args(LuaState, format, *(ade_odata*)rtn);
+			Ade_get_args_skip = stack_start+1;
+			Ade_get_args_lfunction = true;
+			ade_get_args(LuaState, format, rtn);
+			Ade_get_args_skip = 0;
+			Ade_get_args_lfunction = false;
 		}
 
 		//WMC - Pop anything leftover from the function from the stack
-		args_start = lua_gettop(LuaState) - args_start;
-		for(; args_start > 0; args_start--) lua_pop(LuaState, 1);
-
-		if(lastchar == ']')
-			*lcp = lastchar;
+		stack_curr = lua_gettop(LuaState) - stack_start;
+		for(; stack_curr > 0; stack_curr--) lua_pop(LuaState, 1);
 	}
 	else
 	{
