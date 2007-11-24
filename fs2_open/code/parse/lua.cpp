@@ -1294,6 +1294,7 @@ ade_obj<vec3d> l_Vector("vector", "Vector object");
 #define MH_ANGLES_OUTOFDATE		2
 struct matrix_h {
 	int status;
+
 	matrix mtx;
 	angles ang;
 
@@ -1384,6 +1385,35 @@ ADE_INDEXER(l_Matrix, "p,b,h or 0-9", "number", "Orientation component - pitch, 
 	}
 
 	return ade_set_args(L, "f", *val);
+}
+
+ADE_FUNC(__mul, l_Matrix, "orientation", "orientation", "Multiplies two matrix objects)")
+{
+	matrix_h *mha=NULL, *mhb=NULL;
+	if(!ade_get_args(L, "oo", l_Matrix.GetPtr(&mha), l_Matrix.GetPtr(&mhb)))
+		return ADE_RETURN_NIL;
+
+	mha->ValidateMatrix();
+	mhb->ValidateMatrix();
+
+	matrix mr;
+
+	vm_matrix_x_matrix(&mr, &mha->mtx, &mhb->mtx);
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&mr)));
+}
+
+ADE_FUNC(__tostring, l_Matrix, NULL, "string", "Converts a matrix to a string with format \"[r1c1 r2c1 r3c1 | r1c2 r2c2 r3c2| r1c3 r2c3 r3c3]\"")
+{
+	matrix_h *mh;
+	if(!ade_get_args(L, "o", l_Matrix.GetPtr(&mh)))
+		return ADE_RETURN_NIL;
+
+	char buf[128];
+	float *a = &mh->mtx.a1d[0];
+	sprintf(buf, "[%f %f %f | %f %f %f | %f %f %f]", a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8]);
+
+	return ade_set_args(L, "s", buf);
 }
 
 ADE_FUNC(transpose, l_Matrix, NULL, NULL, "Transposes matrix")
@@ -3115,9 +3145,7 @@ ADE_VIRTVAR(Orientation, l_Object, "World orientation", "Object world orientatio
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h(&vmd_identity_matrix)));
 
 	if(ADE_SETTING_VAR && mh != NULL) {
-		if(mh->status == MH_MATRIX_OUTOFDATE) {
-			vm_angles_2_matrix(&mh->mtx, &mh->ang);
-		}
+		mh->ValidateMatrix();
 		objh->objp->orient = mh->mtx;
 	}
 
@@ -5726,6 +5754,27 @@ ADE_FUNC(error, l_Base, "string", NULL, "Displays a FreeSpace error message with
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(createOrientation, l_Base, "orientation", "[p/r1c1, b/r1c2, h/r1c3, r2c1, r2c2, r2c3, r3c1, r3c2, r3c3]", "Given 0, 3, or 9 arguments, creates an orientation object with that orientation.")
+{
+	matrix m = {0};
+	int numargs = ade_get_args(L, "|fffffffff", &m.a1d[0], &m.a1d[1], &m.a1d[2], &m.a1d[3], &m.a1d[4], &m.a1d[5], &m.a1d[6], &m.a1d[7], &m.a1d[8]);
+	if(!numargs)
+	{
+		return ade_set_args(L, "o", l_Matrix.Set( matrix_h(&vmd_identity_matrix) ));
+	}
+	else if(numargs == 3)
+	{
+		angles a = {m.a1d[0], m.a1d[1], m.a1d[2]};
+		return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&a)));
+	}
+	else if(numargs == 9)
+	{
+		return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
+	}
+
+	return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
+}
+
 ADE_FUNC(createVector, l_Base, "[x, y, z]", "Vector object", "Creates a vector object")
 {
 	vec3d v3;
@@ -8315,6 +8364,7 @@ int ade_get_args(lua_State *L, char *fmt, ...)
 				break;
 			case '|':
 				nargs--;	//cancel out the nargs++ at the end
+				counted_args--;
 				optional_args = true;
 				break;
 			case '*':
