@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipFX.cpp $
- * $Revision: 2.66.2.14 $
- * $Date: 2007-09-02 18:52:55 $
- * $Author: Goober5000 $
+ * $Revision: 2.66.2.15 $
+ * $Date: 2007-11-24 04:33:50 $
+ * $Author: wmcoolmon $
  *
  * Routines for ship effects (as in special)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.66.2.14  2007/09/02 18:52:55  Goober5000
+ * fix for #1455 plus a bit of cleanup
+ *
  * Revision 2.66.2.13  2007/04/24 12:07:35  karajorma
  * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
  *
@@ -3259,7 +3262,7 @@ DCF_BOOL(engine_wash, Wash_on)
 // Assumes length of engine wash is greater than radius of engine wash hemisphere
 void engine_wash_ship_process(ship *shipp)
 {
-	uint idx, j;		
+	int idx, j;		
 	object *objp, *max_ship_intensity_objp;
 	int started_with_no_wash = shipp->wash_intensity <= 0 ? 1 : 0;
 
