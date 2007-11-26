@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.8.2.11 $
- * $Date: 2007-08-15 06:57:00 $
- * $Author: Goober5000 $
+ * $Revision: 1.8.2.12 $
+ * $Date: 2007-11-26 18:43:52 $
+ * $Author: karajorma $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8.2.11  2007/08/15 06:57:00  Goober5000
+ * fix problems with the mini help box
+ * (interestingly this feature was committed to stable but not HEAD)
+ *
  * Revision 1.8.2.10  2007/05/28 18:27:33  wmcoolmon
  * Added armor support for asteroid, debris, ship, and beam damage
  *
@@ -3770,6 +3774,7 @@ void sexp_tree::verify_and_fix_arguments(int node)
 	int op, arg_num, type, tmp;
 	static int flag = 0;
 	sexp_list_item *list, *ptr;
+	bool is_variable_arg = false; 
 
 	if (flag)
 		return;
@@ -3789,6 +3794,7 @@ void sexp_tree::verify_and_fix_arguments(int node)
 		type = query_operator_argument_type(op, arg_num);
 		// special case for modify-variable
 		if (type == OPF_AMBIGUOUS) {
+			is_variable_arg = true;
 			type = get_modify_variable_type(node);
 		}
 		if (query_restricted_opf_range(type)) {
@@ -3864,6 +3870,27 @@ void sexp_tree::verify_and_fix_arguments(int node)
 
 			if (tree_nodes[item_index].type & SEXPT_OPERATOR)
 				verify_and_fix_arguments(item_index);
+			
+		}
+		
+		//fix the node if it is the argument for modify-variable
+		if (is_variable_arg //&& 
+		//	!(tree_nodes[item_index].type & SEXPT_OPERATOR || tree_nodes[item_index].type & SEXPT_VARIABLE ) 
+			) {
+			switch (type) {
+				case OPF_AMBIGUOUS:
+					tree_nodes[item_index].type |= SEXPT_STRING;
+					tree_nodes[item_index].type &= ~SEXPT_NUMBER;
+					break; 
+
+				case OPF_NUMBER:
+					tree_nodes[item_index].type |= SEXPT_NUMBER; 
+					tree_nodes[item_index].type &= ~SEXPT_STRING;
+					break;
+
+				default:
+					Int3();
+			}
 		}
 
 		item_index = tree_nodes[item_index].next;
