@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.43 $
- * $Date: 2007-11-24 04:33:49 $
- * $Author: wmcoolmon $
+ * $Revision: 2.178.2.44 $
+ * $Date: 2007-11-28 21:00:34 $
+ * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.43  2007/11/24 04:33:49  wmcoolmon
+ * Various minor sign/casting fixes
+ *
  * Revision 2.178.2.42  2007/11/21 07:27:47  Goober5000
  * add Wing Commander Saga's fiction viewer
  *
@@ -3796,9 +3799,10 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (optional_string("+Group:"))
 		stuff_int(&p_objp->group);
 
-	p_objp->score = 0;
 	if (optional_string("+Score:"))
 		stuff_int(&p_objp->score);
+	else 
+		p_objp->score = Ship_info[p_objp->ship_class].score;
 
 	// parse the persona index if present
 	p_objp->persona_index = -1;
