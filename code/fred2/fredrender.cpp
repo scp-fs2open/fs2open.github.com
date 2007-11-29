@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.5.2.4 $
- * $Date: 2007-07-28 04:43:43 $
- * $Author: Goober5000 $
+ * $Revision: 1.5.2.5 $
+ * $Date: 2007-11-29 11:29:14 $
+ * $Author: karajorma $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.5.2.4  2007/07/28 04:43:43  Goober5000
+ * a couple of tweaks
+ *
  * Revision 1.5.2.3  2007/02/20 04:19:09  Goober5000
  * the great big duplicate model removal commit
  *
@@ -390,8 +393,8 @@ int	Editing_mode = 1;
 int	Control_mode = 0;
 int	last_x=0, last_y=0;
 int	Show_grid = 1;
-int	Show_outlines = 0;
-int	Show_stars = 0;
+int	Show_outlines = 1;
+int	Show_stars = 1;
 int	Show_grid_positions = 1;
 int	Show_coordinates = 0;
 int	Show_distances = 0;
