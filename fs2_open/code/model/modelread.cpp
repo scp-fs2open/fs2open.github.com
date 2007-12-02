@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.105.2.19 $
- * $Date: 2007-10-21 22:11:17 $
+ * $Revision: 2.105.2.20 $
+ * $Date: 2007-12-02 08:21:46 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.105.2.19  2007/10/21 22:11:17  Goober5000
+ * fix a minor bug in the dockpoint system (affects sm2-07a in the Port)
+ *
  * Revision 2.105.2.18  2007/02/21 01:43:32  Goober5000
  * remove duplicate model texture replacement
  *
@@ -2135,7 +2138,16 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						vm_vec_scale( &pm->moment_of_inertia.vec.rvec, mass_ratio );
 						vm_vec_scale( &pm->moment_of_inertia.vec.uvec, mass_ratio );
 						vm_vec_scale( &pm->moment_of_inertia.vec.fvec, mass_ratio );
-					}	
+					}
+
+					// a custom MOI is only used for ships, but we should probably log it anyway
+					if ( IS_VEC_NULL(&pm->moment_of_inertia.vec.rvec)
+						&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
+						&& IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
+					{
+						mprintf(("Model %s has a null moment of inertia!  (This is only a problem if the model is a ship.)", filename));
+					}
+
 				} else {
 #ifndef NDEBUG
 					if (stricmp("fighter04.pof", filename)) {
