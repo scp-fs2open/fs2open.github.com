@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.79 $
- * $Date: 2007-11-20 04:58:23 $
+ * $Revision: 2.336.2.80 $
+ * $Date: 2007-12-02 08:21:47 $
  * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.79  2007/11/20 04:58:23  Goober5000
+ * fix ship-type-destroyed
+ *
  * Revision 2.336.2.78  2007/10/15 06:43:20  taylor
  * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *
@@ -5344,8 +5347,8 @@ void physics_ship_init(object *objp)
 
 	// use mass and I_body_inv from POF read into polymodel
 	physics_init(pi);
-	pi->mass = pm->mass * sinfo->density;
 
+	pi->mass = pm->mass * sinfo->density;
 	if (pi->mass==0.0f)
 	{
 		vec3d size;
@@ -5359,13 +5362,25 @@ void physics_ship_init(object *objp)
 		pi->mass=amass*sinfo->density;
 	}
 
-	pi->center_of_mass = pm->center_of_mass;
-	pi->I_body_inv = pm->moment_of_inertia;
+	// ack!
+	// if pm's MOI is invalid, use the default from physics_init
+	if ( IS_VEC_NULL(&pm->moment_of_inertia.vec.rvec)
+		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
+		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
+	{
+		nprintf(("Physics", "pm->moment_of_inertia is invalid. ignoring"));
+		Warning(LOCATION, "%s (%s) has a null moment of inertia!  Falling back to physics default, but this is not guaranteed to work.", sinfo->name, sinfo->pof_file);
+	}
+	// it's valid, so we can use it
+	else
+		pi->I_body_inv = pm->moment_of_inertia;
+
 	// scale pm->I_body_inv value by density
 	vm_vec_scale( &pi->I_body_inv.vec.rvec, sinfo->density );
 	vm_vec_scale( &pi->I_body_inv.vec.uvec, sinfo->density );
 	vm_vec_scale( &pi->I_body_inv.vec.fvec, sinfo->density );
 
+	pi->center_of_mass = pm->center_of_mass;
 	pi->side_slip_time_const = sinfo->damp;
 	pi->rotdamp = sinfo->rotdamp;
 	pi->max_vel = sinfo->max_vel;
