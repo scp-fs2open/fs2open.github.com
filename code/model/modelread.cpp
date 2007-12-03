@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.134 $
- * $Date: 2007-12-02 08:21:49 $
+ * $Revision: 2.135 $
+ * $Date: 2007-12-03 04:46:59 $
  * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.134  2007/12/02 08:21:49  Goober5000
+ * watch out for bad MOI values
+ *
  * Revision 2.133  2007/11/23 23:17:45  wmcoolmon
  * Fix array malfup due to flag_def_list change
  *
@@ -1895,6 +1898,83 @@ void create_family_tree(polymodel *obj)
 	}
 }
 
+// Goober5000
+bool maybe_swap_mins_maxs(vec3d *mins, vec3d *maxs)
+{
+	float temp;
+	bool swap_was_necessary = false;
+
+	if (mins->xyz.x > maxs->xyz.x)
+	{
+		temp = mins->xyz.x;
+		mins->xyz.x = maxs->xyz.x;
+		maxs->xyz.x = temp;
+		swap_was_necessary = true;
+	}
+	if (mins->xyz.y > maxs->xyz.y)
+	{
+		temp = mins->xyz.y;
+		mins->xyz.y = maxs->xyz.y;
+		maxs->xyz.y = temp;
+		swap_was_necessary = true;
+	}
+	if (mins->xyz.z > maxs->xyz.z)
+	{
+		temp = mins->xyz.z;
+		mins->xyz.z = maxs->xyz.z;
+		maxs->xyz.z = temp;
+		swap_was_necessary = true;
+	}
+
+// This is a mini utility that prints out the proper hex string for the
+// mins and maxs so that the POF file can be modified in a hex editor.
+// Currently none of the major POF editors allow editing of bounding boxes.
+#if 0
+	if (swap_was_necessary)
+	{
+		// use C hackery to convert float values to raw bytes
+		const int NUM_BYTES = 24;
+		typedef struct converter
+		{
+			union
+			{
+				struct
+				{
+					float min_x, min_y, min_z, max_x, max_y, max_z;
+				} _float;
+				ubyte _byte[NUM_BYTES];
+			};
+		} converter;
+
+		// fill in the values
+		converter z;
+		z._float.min_x = mins->xyz.x;
+		z._float.min_y = mins->xyz.y;
+		z._float.min_z = mins->xyz.z;
+		z._float.max_x = maxs->xyz.x;
+		z._float.max_y = maxs->xyz.y;
+		z._float.max_z = maxs->xyz.z;
+
+		// prep string
+		char hex_str[5];
+		char text[100 + (5 * NUM_BYTES)];
+		strcpy(text, "The following is the correct hex string for the minima and maxima:\n");
+
+		// append hex values to the string
+		for (int i = 0; i < NUM_BYTES; i++)
+		{
+			sprintf(hex_str, "%02X ", z._byte[i]);
+			strcat(text, hex_str);
+		}
+
+		// notify the user
+		Warning(LOCATION, text);
+	}
+#endif
+
+	return swap_was_necessary;
+}
+
 void model_calc_bound_box( vec3d *box, vec3d *big_mn, vec3d *big_mx)
 {
 	box[0].xyz.x = big_mn->xyz.x; box[0].xyz.y = big_mn->xyz.y; box[0].xyz.z = big_mn->xyz.z;
@@ -2122,7 +2202,12 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				cfread_vector(&pm->mins,fp);
 				cfread_vector(&pm->maxs,fp);
-				model_calc_bound_box(pm->bounding_box,&pm->mins,&pm->maxs);
+
+				// sanity first!
+				if (maybe_swap_mins_maxs(&pm->mins, &pm->maxs)) {
+					Warning(LOCATION, "Inverted bounding box on model '%s'!  Swapping values to compensate.", pm->filename);
+				}
+				model_calc_bound_box(pm->bounding_box, &pm->mins, &pm->maxs);
 				
 				pm->n_detail_levels = cfread_int(fp);
 			//	mprintf(( "There are %d detail levels\n", pm->n_detail_levels ));
@@ -2268,12 +2353,16 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				cfread_vector(&pm->submodel[n].min,fp);
 				cfread_vector(&pm->submodel[n].max,fp);
 
-				model_calc_bound_box(pm->submodel[n].bounding_box,&pm->submodel[n].min,&pm->submodel[n].max);
-
 				pm->submodel[n].name[0] = '\0';
 
-				cfread_string_len( pm->submodel[n].name, MAX_NAME_LEN, fp);		// get the name
-				cfread_string_len(props, MAX_PROP_LEN, fp);			// and the user properites
+				cfread_string_len(pm->submodel[n].name, MAX_NAME_LEN, fp);		// get the name
+				cfread_string_len(props, MAX_PROP_LEN, fp);			// and the user properties
+
+				// sanity first!
+				if (maybe_swap_mins_maxs(&pm->submodel[n].min, &pm->submodel[n].max)) {
+					Warning(LOCATION, "Inverted bounding box on submodel '%s' of model '%s'!  Swapping values to compensate.", pm->submodel[n].name, pm->filename);
+				}
+				model_calc_bound_box(pm->submodel[n].bounding_box, &pm->submodel[n].min, &pm->submodel[n].max);
 
 				pm->submodel[n].movement_type = cfread_int(fp);
 				pm->submodel[n].movement_axis = cfread_int(fp);
