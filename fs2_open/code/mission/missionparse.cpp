@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.44 $
- * $Date: 2007-11-28 21:00:34 $
+ * $Revision: 2.178.2.45 $
+ * $Date: 2007-12-08 20:07:54 $
  * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.44  2007/11/28 21:00:34  karajorma
+ * Change the way that score is parsed from mission files to make it easier on developers.
+ *
  * Revision 2.178.2.43  2007/11/24 04:33:49  wmcoolmon
  * Various minor sign/casting fixes
  *
@@ -1472,6 +1475,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"no-death-scream",
 	"always-death-scream",
 	"nav-needslink",
+	"use-alt-name-as-callsign",
 };
 
 
@@ -3415,6 +3419,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	
 	if (parse_flags2 & P2_SF2_NAV_NEEDSLINK)
 		shipp->flags2 |= SF2_NAVPOINT_NEEDSLINK;
+	
+	if (parse_flags2 & P2_SF2_USE_ALT_NAME_AS_CALLSIGN)
+		shipp->flags2 |= SF2_USE_ALT_NAME_AS_CALLSIGN;
 }
 
 //	Mp points at the text of an object, which begins with the "$Name:" field.
