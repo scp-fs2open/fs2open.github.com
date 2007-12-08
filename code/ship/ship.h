@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.30 $
- * $Date: 2007-11-20 04:58:25 $
- * $Author: Goober5000 $
+ * $Revision: 2.150.2.31 $
+ * $Date: 2007-12-08 20:07:55 $
+ * $Author: karajorma $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.30  2007/11/20 04:58:25  Goober5000
+ * fix ship-type-destroyed
+ *
  * Revision 2.150.2.29  2007/09/02 18:52:54  Goober5000
  * fix for #1455 plus a bit of cleanup
  *
@@ -1259,6 +1262,7 @@ typedef struct ship_subsys_info {
 #define SF2_NO_DEATH_SCREAM					(1<<14)		// Goober5000 - for WCS
 #define SF2_ALWAYS_DEATH_SCREAM				(1<<15)		// Goober5000 - for WCS
 #define SF2_NAVPOINT_NEEDSLINK				(1<<16)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
+#define SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<17)		// Karajorma - When sending messages from this ship use the alt name instead of name
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
@@ -1599,7 +1603,7 @@ extern int ship_find_exited_ship_by_signature( int signature);
 
 #define	SIF_SHIP_COPY				(1 << 18)	// this ship is a copy of another ship in the table -- meaningful for scoring and possible other things
 #define	SIF_IN_TECH_DATABASE		(1 << 19)	// is ship type to be listed in the tech database?
-#define	SIF_IN_TECH_DATABASE_M	(1 << 20)	// is ship type to be listed in the tech database for multiplayer?
+#define	SIF_IN_TECH_DATABASE_M		(1 << 20)	// is ship type to be listed in the tech database for multiplayer?
 
 #define	SIF_STEALTH					(1 << 21)	// the ship has stealth capabilities
 #define	SIF_SUPERCAP				(1 << 22)	// the ship is a supercap
