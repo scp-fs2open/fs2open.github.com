@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.63 $
- * $Date: 2007-09-28 23:46:31 $
- * $Author: turey $
+ * $Revision: 2.64 $
+ * $Date: 2007-12-08 04:06:58 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63  2007/09/28 23:46:31  turey
+ * Final fix for mantis bug: http://scp.indiegames.us/mantis/view.php?id=1482
+ * There should be no more occurrences of campaign missions being skipped.
+ *
  * Revision 2.62  2007/09/05 23:42:18  turey
  * More work on Mantis bug: http://scp.indiegames.us/mantis/view.php?id=1482
  *
@@ -1876,7 +1880,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 
 		z = popup(0, 3, XSTR( "Return to &Debriefing", 442), XSTR( "Go to &Flight Deck", 443), XSTR( "&Replay Mission", 444), str);
 		if (z == 2){
-			gameseq_post_event(GS_EVENT_START_BRIEFING);  // cycle back to briefing
+			gameseq_post_event(GS_EVENT_START_GAME);  // restart mission
 		} else if ( z == 1 ) {
 			gameseq_post_event(GS_EVENT_END_GAME);  // return to main hall, tossing stats
 		}
@@ -2185,7 +2189,7 @@ void debrief_replay_pressed()
 		}
 	}
 
-	gameseq_post_event(GS_EVENT_START_BRIEFING);		// take us to the briefing
+	gameseq_post_event(GS_EVENT_START_GAME);	// restart mission
 	gamesnd_play_iface(SND_COMMIT_PRESSED);
 }
 
