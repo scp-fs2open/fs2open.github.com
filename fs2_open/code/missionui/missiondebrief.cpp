@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.53.2.9 $
- * $Date: 2007-10-15 06:43:15 $
- * $Author: taylor $
+ * $Revision: 2.53.2.10 $
+ * $Date: 2007-12-08 04:07:00 $
+ * $Author: Goober5000 $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53.2.9  2007/10/15 06:43:15  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 2.53.2.8  2007/09/02 02:07:44  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -1868,7 +1871,7 @@ void debrief_accept(int ok_to_post_start_game_event)
 
 		z = popup(0, 3, XSTR( "Return to &Debriefing", 442), XSTR( "Go to &Flight Deck", 443), XSTR( "&Replay Mission", 444), str);
 		if (z == 2){
-			gameseq_post_event(GS_EVENT_START_BRIEFING);  // cycle back to briefing
+			gameseq_post_event(GS_EVENT_START_GAME);  // restart mission
 		} else if ( z == 1 ) {
 			gameseq_post_event(GS_EVENT_END_GAME);  // return to main hall, tossing stats
 		}
@@ -2177,7 +2180,7 @@ void debrief_replay_pressed()
 		}
 	}
 
-	gameseq_post_event(GS_EVENT_START_BRIEFING);		// take us to the briefing
+	gameseq_post_event(GS_EVENT_START_GAME);	// restart mission
 	gamesnd_play_iface(SND_COMMIT_PRESSED);
 }
 
