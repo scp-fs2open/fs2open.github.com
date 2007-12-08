@@ -9,9 +9,9 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.16 $
- * $Date: 2007-07-28 21:31:10 $
- * $Author: Goober5000 $
+ * $Revision: 1.17 $
+ * $Date: 2007-12-08 20:02:16 $
+ * $Author: karajorma $
  *
  * View class for a document/view architechure design program, which we don't
  * want or need, but MFC forces us to use.  This is the main place we handle
@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.16  2007/07/28 21:31:10  Goober5000
+ * this should really be capitalized
+ *
  * Revision 1.15  2007/07/28 04:43:40  Goober5000
  * a couple of tweaks
  *
@@ -4321,14 +4324,14 @@ void CFREDView::OnRunFreeSpace()
 	si.cbReserved2 = 0;
 	si.lpReserved2 = NULL;
 
-	r = CreateProcess("..\\..\\start_fs2.bat", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+	r = CreateProcess("start_fs2.bat", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
 
 	if (!r) {
-		r = CreateProcess("..\\..\\fs2_open.exe", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+		r = CreateProcess("fs2_open.exe", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
 	}
 
 	if (!r) {
-		r = CreateProcess("..\\..\\fs2_open_r.exe", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
+		r = CreateProcess("fs2_open_r.exe", NULL, NULL, NULL, FALSE, 0, NULL, "./", &si, &pi);
 	}
 
 	if (!r) {
