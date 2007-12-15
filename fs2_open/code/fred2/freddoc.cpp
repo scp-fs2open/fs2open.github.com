@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.13 $
- * $Date: 2007-11-23 23:05:40 $
- * $Author: wmcoolmon $
+ * $Revision: 1.14 $
+ * $Date: 2007-12-15 07:41:13 $
+ * $Author: karajorma $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
  * Document class for document/view architechure, which we don't really use in
@@ -19,6 +19,9 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.13  2007/11/23 23:05:40  wmcoolmon
+ * Updated event editor with minihelp box and numbered icons
+ *
  * Revision 1.12  2007/09/02 02:10:24  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -1256,7 +1259,7 @@ void CFREDDoc::OnFileImportFSM()
     if(dlgFolder.DoModal() != IDOK)
         return;
 
-	char *dest_directory = dlgFolder.GetFolderPath();
+	const char *dest_directory = dlgFolder.GetFolderPath();
 #endif
 	// clean things up first
 	if (Briefing_dialog)
