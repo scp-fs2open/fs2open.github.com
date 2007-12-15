@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.234 $
- * $Date: 2007-11-23 23:17:16 $
+ * $Revision: 2.235 $
+ * $Date: 2007-12-15 09:41:43 $
  * $Author: wmcoolmon $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.234  2007/11/23 23:17:16  wmcoolmon
+ * Fix un/signed warnings related to size(), optimize Knossos-finding
+ *
  * Revision 2.233  2007/11/21 07:28:38  Goober5000
  * add Wing Commander Saga's fiction viewer
  *
@@ -1421,7 +1424,7 @@ char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 	"Warp Out",
 };
 
-char *Cargo_names[MAX_CARGO];
+char *Cargo_names[MAX_CARGO] = {0};
 char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
 
 char *Ship_class_names[MAX_SHIP_CLASSES];		// to be filled in from Ship_info array
