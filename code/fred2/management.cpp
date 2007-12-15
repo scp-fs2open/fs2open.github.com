@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.42 $
- * $Date: 2007-12-15 09:12:56 $
+ * $Revision: 1.43 $
+ * $Date: 2007-12-15 09:41:43 $
  * $Author: wmcoolmon $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.42  2007/12/15 09:12:56  wmcoolmon
+ * Handle missing ship model files more gracefully
+ *
  * Revision 1.41  2007/11/22 04:30:55  taylor
  * be sure that we hide the game's mouse cursor (Mantis #1401)
  *
@@ -1491,7 +1494,11 @@ void clear_mission()
 	// alternate ship type names
 	mission_parse_reset_alt();
 
-	strcpy(Cargo_names[0], "Nothing");
+	if(Cargo_names[0] != NULL)
+	{
+		//WMC - Is this really needed?
+		strcpy(Cargo_names[0], "Nothing");
+	}
 	Num_cargo = 1;
 	set_physics_controls();
 
