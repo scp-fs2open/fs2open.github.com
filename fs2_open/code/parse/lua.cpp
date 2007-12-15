@@ -1072,7 +1072,7 @@ ADE_FUNC(flush, l_File, NULL, "True for success, false on failure", "Flushes fil
 	if(!ade_get_args(L, "o", l_File.Get(&cfp)))
 		return ADE_RETURN_FALSE;
 
-	if(cfp == NULL)
+	if(cfp != Lua_file_current)
 		return ADE_RETURN_FALSE;
 
 	//WMC - this looks reversed, yes, it's right. Look at cflush.
@@ -1089,7 +1089,7 @@ ADE_FUNC(getPath, l_File, NULL, "Path string of the file handle, or false if it 
 	if(!ade_get_args(L, "o", l_File.Get(&cfp)))
 		return ADE_RETURN_NIL;
 
-	if(cfp == NULL)
+	if(cfp != Lua_file_current)
 		return ADE_RETURN_NIL;
 
 	int id = cf_get_dir_type(cfp);
@@ -1116,7 +1116,7 @@ ADE_FUNC(read, l_File, "number or string, ...", "number or string, ...",
 	if(!ade_get_args(L, "o", l_File.Get(&cfp)))
 		return ADE_RETURN_NIL;
 
-	if(cfp == NULL)
+	if(cfp != Lua_file_current)
 		return ADE_RETURN_NIL;
 
 	int i;
@@ -1227,7 +1227,7 @@ ADE_FUNC(seek, l_File, "[string Whence=\"cur\", number Offset=0]", "new offset, 
 	if(!ade_get_args(L, "o|si", l_File.Get(&cfp), &w, &o))
 		return ADE_RETURN_NIL;
 
-	if(cfp == NULL)
+	if(cfp != Lua_file_current)
 		return ADE_RETURN_NIL;
 
 	if(!(w == NULL || (!stricmp(w, "cur") && o != 0)))
@@ -1264,7 +1264,7 @@ ADE_FUNC(write, l_File, "string or number, ...", "Number of items successfully w
 	if(!ade_get_args(L, "o", l_File.Get(&cfp)))
 		return ade_set_error(L, "i", 0);
 
-	if(cfp == NULL)
+	if(cfp != Lua_file_current)
 		return ade_set_error(L, "i", 0);
 
 	int l_pos = 2;

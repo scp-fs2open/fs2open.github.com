@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.438 $
- * $Date: 2007-12-02 08:21:50 $
- * $Author: Goober5000 $
+ * $Revision: 2.439 $
+ * $Date: 2007-12-15 09:12:57 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.438  2007/12/02 08:21:50  Goober5000
+ * watch out for bad MOI values
+ *
  * Revision 2.437  2007/11/23 23:49:35  wmcoolmon
  * - Asteroid, debris, and ship collision damage type support
  * - Scripting system variable-setting optimizations
@@ -9155,6 +9158,13 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	//WMC - I hope this isn't really needed anymore. Took it out.
 
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
+
+	//WMC - We can't make a ship with no model, I suppose.
+	if(sip->model_num < 0)
+	{
+		Warning(LOCATION, "Could not create ship '%s' - failed to load model '%s'", ship_name, sip->pof_file);
+		return -1;
+	}
 
 	// maybe load an optional hud target model
 	if(strlen(sip->pof_file_hud)){
