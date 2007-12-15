@@ -7032,6 +7032,33 @@ ADE_FUNC(__len, l_Mission_Asteroids, NULL, "number",
 	return ade_set_args(L, "i", 0);
 }
 
+ade_lib l_Mission_Cameras("Cameras", &l_Mission, NULL, "Cameras");
+
+ADE_INDEXER(l_Mission_Cameras, "Camera name or index", "camera", "Indexes cameras")
+{
+	char *s = NULL;
+	if(!ade_get_args(L, "*s", &s))
+		return ade_set_error(L, "o", l_Camera.Set(-1));
+
+	int cn = cameras_lookup(s);
+	if(cn < 0)
+	{
+		cn = atoi(s);
+		if(cn < 1 || cn > (int)Cameras.size())
+			return ade_set_error(L, "o", l_Camera.Set(-1));
+
+		//Lua-->FS2
+		cn--;
+	}
+
+	return ade_set_args(L, "o", l_Camera.Set(cn));
+}
+
+ADE_FUNC(__len, l_Mission_Cameras, NULL, "number", "Gets number of cameras")
+{
+	return ade_set_args(L, "i", (int)Cameras.size());
+}
+
 ade_lib l_Mission_Debris("Debris", &l_Mission, NULL, "debris in the mission");
 
 ADE_INDEXER(l_Mission_Debris, "index of debris", "debris", "Gets debris")
@@ -7337,6 +7364,35 @@ ADE_FUNC(__len, l_Mission_Wings, NULL, "number", "Number of wings in mission")
 	return ade_set_args(L, "i", Num_wings);
 }
 
+ADE_FUNC(createCamera, l_Mission, "string Name, [wvector Position, world orientation Orientation]", "camera Handle", "Creates a new camera")
+{
+	char *s = NULL;
+	vec3d *v = NULL;
+	matrix_h *mh = NULL;
+	if(!ade_get_args(L, "s|oo", &s, l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
+		return ADE_RETURN_NIL;
+
+	int idx;
+
+	//Add camera
+	Cameras.push_back(camera(s));
+
+	//Get idx
+	idx = Cameras.size() - 1;
+
+	//Set pos/orient
+	if(v != NULL)
+		Cameras[idx].set_position(v);
+	if(mh != NULL)
+	{
+		mh->ValidateMatrix();
+		Cameras[idx].set_rotation(&mh->mtx);
+	}
+
+	//Set position
+	return ade_set_args(L, "o", l_Camera.Set(idx));
+}
+
 ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class, orientation Orientation, world vector Position", "ship handle", "Creates a ship and returns a handle to it.")
 {
 	char *name = NULL;
@@ -7408,6 +7464,23 @@ ADE_FUNC(createWeapon, l_Mission, "[weaponclass Class, orientation Orientation, 
 		return ade_set_error(L, "o", l_Weapon.Set(object_h()));
 }
 
+ADE_FUNC(setCamera, l_Mission, "[camera handle Camera]", "True", "Sets current camera, or resets camera if none specified")
+{
+	int idx = -1;
+	if(!ade_get_args(L, "|o", l_Camera.Get(&idx)))
+	{
+		Viewer_mode &= ~VM_FREECAMERA;
+		return ADE_RETURN_NIL;
+	}
+
+	if(idx < 1 || (uint)idx > Cameras.size())
+		return ADE_RETURN_NIL;
+
+	Viewer_mode |= VM_FREECAMERA;
+	Current_camera = &Cameras[idx];
+
+	return ADE_RETURN_TRUE;
+}
 
 ADE_FUNC(getMissionFilename, l_Mission, NULL, "string", "Gets mission filename")
 {
@@ -7818,80 +7891,6 @@ ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Li
 	particle_create(&pi);
 
 	return ADE_RETURN_NIL;
-}
-
-ade_lib l_Testing_Cameras("Cameras", &l_Testing, NULL, "Cameras");
-
-ADE_INDEXER(l_Testing_Cameras, "Camera name or index", "camera", "Indexes cameras")
-{
-	char *s = NULL;
-	if(!ade_get_args(L, "*s", &s))
-		return ade_set_error(L, "o", l_Camera.Set(-1));
-
-	int cn = cameras_lookup(s);
-	if(cn < 0)
-	{
-		cn = atoi(s);
-		if(cn < 1 || cn > (int)Cameras.size())
-			return ade_set_error(L, "o", l_Camera.Set(-1));
-
-		//Lua-->FS2
-		cn--;
-	}
-
-	return ade_set_args(L, "o", l_Camera.Set(cn));
-}
-
-ADE_FUNC(__len, l_Testing_Cameras, NULL, "number", "Gets number of cameras")
-{
-	return ade_set_args(L, "i", (int)Cameras.size());
-}
-
-ADE_FUNC(createCamera, l_Testing, "string Name, [wvector Position, world orientation Orientation]", "camera Handle", "Creates a new camera")
-{
-	char *s = NULL;
-	vec3d *v = NULL;
-	matrix_h *mh = NULL;
-	if(!ade_get_args(L, "s|oo", &s, l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
-		return ADE_RETURN_NIL;
-
-	int idx;
-
-	//Add camera
-	Cameras.push_back(camera(s));
-
-	//Get idx
-	idx = Cameras.size() - 1;
-
-	//Set pos/orient
-	if(v != NULL)
-		Cameras[idx].set_position(v);
-	if(mh != NULL)
-	{
-		mh->ValidateMatrix();
-		Cameras[idx].set_rotation(&mh->mtx);
-	}
-
-	//Set position
-	return ade_set_args(L, "o", l_Camera.Set(idx));
-}
-
-ADE_FUNC(setCamera, l_Testing, "[camera handle Camera]", "True", "Sets current camera, or resets camera if none specified")
-{
-	int idx = -1;
-	if(!ade_get_args(L, "|o", l_Camera.Get(&idx)))
-	{
-		Viewer_mode &= ~VM_FREECAMERA;
-		return ADE_RETURN_NIL;
-	}
-
-	if(idx < 1 || (uint)idx > Cameras.size())
-		return ADE_RETURN_NIL;
-
-	Viewer_mode |= VM_FREECAMERA;
-	Current_camera = &Cameras[idx];
-
-	return ADE_RETURN_TRUE;
 }
 
 ADE_FUNC(getStack, l_Testing, NULL, "string", "Returns current Lua stack")
