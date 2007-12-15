@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.135 $
- * $Date: 2007-12-03 04:46:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.136 $
+ * $Date: 2007-12-15 09:12:56 $
+ * $Author: wmcoolmon $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.135  2007/12/03 04:46:59  Goober5000
+ * catch invalid bounding boxes caused by buggy POF editors ;)
+ *
  * Revision 2.134  2007/12/02 08:21:49  Goober5000
  * watch out for bad MOI values
  *
@@ -3312,6 +3315,9 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 {
 	int i, num, arc_idx;
 	polymodel *pm = NULL;
+
+	if ( filename == NULL || strlen(filename) < 1)
+		return -1;
 
 	if ( !model_initted )
 		model_init();

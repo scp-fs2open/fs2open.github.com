@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.41 $
- * $Date: 2007-11-22 04:30:55 $
- * $Author: taylor $
+ * $Revision: 1.42 $
+ * $Date: 2007-12-15 09:12:56 $
+ * $Author: wmcoolmon $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.41  2007/11/22 04:30:55  taylor
+ * be sure that we hide the game's mouse cursor (Mantis #1401)
+ *
  * Revision 1.40  2007/11/21 07:28:37  Goober5000
  * add Wing Commander Saga's fiction viewer
  *
@@ -1049,7 +1052,7 @@ int create_object_on_grid(int list)
 			mark_object(obj);
 			FREDDoc_ptr->autosave("object create");
 
-		} else if (obj == -1)
+		} else if (obj == -1 && ship_get_num_ships() >= MAX_SHIPS)
 			Fred_main_wnd->MessageBox("Maximum ship limit reached.  Can't add any more ships.");
 	}
 
