@@ -6,13 +6,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.27 $
- * $Date: 2007-01-07 12:33:27 $
- * $Author: taylor $
+ * $Revision: 1.28 $
+ * $Date: 2007-12-19 10:54:26 $
+ * $Author: karajorma $
  *
  * Header for common global #defines, to cut down on #includes
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.27  2007/01/07 12:33:27  taylor
+ * clean up defines a bit
+ *
  * Revision 1.26  2006/12/28 01:22:04  Goober5000
  * removed obsolete limits
  *
@@ -177,9 +180,9 @@
 
 #define MAX_STARTING_WINGS			3	// number of wings player can start a mission with
 #define MAX_SQUADRON_WINGS			5	// number of wings in squadron (displayed on HUD)
-#define MAX_TVT_WINGS				2	// number of wings in a TVT game
-
-#define MAX_TVT_TEAMS		MAX_TVT_WINGS
+#define MAX_TVT_TEAMS				2	// number of teams in a TVT game
+#define	MAX_TVT_WINGS_PER_TEAM		1 	// number of wings per team in a TVT game
+#define MAX_TVT_WINGS		MAX_TVT_TEAMS * MAX_TVT_WINGS_PER_TEAM	// number of wings in a TVT game
 
 
 // from model.h

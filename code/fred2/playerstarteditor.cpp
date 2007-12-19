@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/PlayerStartEditor.cpp $
- * $Revision: 1.3 $
- * $Date: 2007-01-07 12:55:57 $
- * $Author: taylor $
+ * $Revision: 1.4 $
+ * $Date: 2007-12-19 10:54:26 $
+ * $Author: karajorma $
  *
  * Player starting point editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.3  2007/01/07 12:55:57  taylor
+ * safety check to make sure that we don't end up with non-player-usable weapons in the weaponselect pool (Mantis bug #1196)
+ *
  * Revision 1.2  2006/06/02 09:52:42  karajorma
  * Complete overhaul of how ship loadout is handled to support the use of variables for setting the class and quantity of ships present in loadout.
  *
@@ -86,7 +89,9 @@ void player_start_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_SHIP_VARIABLES_LIST, m_ship_variable_list);
 	DDX_Control(pDX, IDC_WEAPON_VARIABLES_LIST, m_weapon_variable_list);
 	DDX_Control(pDX, IDC_SHIP_VARIABLES_COMBO, m_ship_quantity_variable);	
-	DDX_Control(pDX, IDC_WEAPON_VARIABLES_COMBO, m_weapon_quantity_variable);		
+	DDX_Control(pDX, IDC_WEAPON_VARIABLES_COMBO, m_weapon_quantity_variable);
+	DDX_Control(pDX, IDC_WINGS_SHP_COUNT, m_ships_used_in_wings);
+	DDX_Control(pDX, IDC_WINGS_WPN_COUNT, m_weapons_used_in_wings);				
 	DDX_Text(pDX, IDC_DELAY, m_delay);	
 	DDX_Text(pDX, IDC_SHIP_POOL, m_ship_pool);
 	DDX_Text(pDX, IDC_WEAPON_POOL, m_weapon_pool);
@@ -135,7 +140,7 @@ BOOL player_start_editor::OnInitDialog()
 
 void player_start_editor::SetupShipAndWeaponPools()
 {
-	int i;
+	int i, j;
 	int idx;	
 
 	// initialize ship pool data
@@ -172,6 +177,25 @@ void player_start_editor::SetupShipAndWeaponPools()
 			weapon_pool[i][idx] = Team_data[i].weaponry_pool[idx];
 		}
 	}
+
+	// initialise the ship and weapon usage list
+	memset(ship_usage, 0, sizeof(int) * MAX_TVT_TEAMS * MAX_SHIP_CLASSES);
+	memset(weapon_usage, 0, sizeof(int) * MAX_TVT_TEAMS * MAX_WEAPON_TYPES);
+
+	if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) { 
+		for (i=0; i<MAX_TVT_TEAMS; i++) {
+			for (j=0; j<MAX_TVT_WINGS_PER_TEAM; j++) {
+				generate_ship_usage_list(ship_usage[i], TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j]);
+				generate_weaponry_usage_list(weapon_usage[i], TVT_wings[(i*MAX_TVT_WINGS_PER_TEAM) + j]);
+			}			
+		}
+	}
+	else {
+		for (i=0; i<MAX_STARTING_WINGS; i++) {
+			generate_ship_usage_list(ship_usage[0], Starting_wings[i]);
+			generate_weaponry_usage_list(weapon_usage[0], Starting_wings[i]);
+		}
+	}
 }
 
 // regenerate all controls
@@ -181,8 +205,9 @@ void player_start_editor::reset_controls()
 	int ct;
 	
 	m_ship_variable_list.ResetContent();
-	m_weapon_variable_list.ResetContent();
 	m_ship_quantity_variable.ResetContent();
+
+	m_weapon_variable_list.ResetContent();
 	m_weapon_quantity_variable.ResetContent();
 
 	// Add the default entry to both variable quantity ComboBoxes
@@ -281,9 +306,9 @@ void player_start_editor::reset_controls()
 	// be sure that nothing is selected	
 	m_ship_list.SetCurSel(-1);
 	m_ship_variable_list.SetCurSel(-1);
+	m_ship_quantity_variable.SetCurSel(-1);
 	m_weapon_list.SetCurSel(-1);
 	m_weapon_variable_list.SetCurSel(-1);
-	m_ship_quantity_variable.SetCurSel(-1);
 	m_weapon_quantity_variable.SetCurSel(-1);
 
 	UpdateData(FALSE);	
@@ -341,6 +366,7 @@ void player_start_editor::OnSelchangeShipList()
 	int selected;
 	int ship_index;
 	char ship_name[255] = "";
+	char ship_usage_buff[10];
 
 	// If the ShipList is selected the variable ship list should be deselected
 	m_ship_variable_list.SetCurSel(-1);
@@ -385,7 +411,12 @@ void player_start_editor::OnSelchangeShipList()
 				static_ship_pool[selected_team][ship_index] = 0;
 				m_ship_pool = 0;
 				m_ship_quantity_variable.SetCurSel(0); 	
-			}		
+			}
+			
+			// set the number used in wings
+			sprintf(ship_usage_buff, "%d", ship_usage[selected_team][ship_index]); 
+			m_ships_used_in_wings.SetWindowText(ship_usage_buff); 
+	
 		} else {
 			Int3();
 		}
@@ -397,7 +428,7 @@ void player_start_editor::OnSelchangeShipList()
 
 void player_start_editor::OnSelchangeShipVariablesList() 
 {
-	// If the ShipList is selected the variable ship list should be deselected
+	// If the variable list is selected the ship list should be deselected
 	m_ship_list.SetCurSel(-1);
 
 	//Have we selected something?
@@ -441,6 +472,11 @@ void player_start_editor::OnSelchangeShipVariablesList()
 				m_ship_pool = 0;
 				m_ship_quantity_variable.SetCurSel(0); 	
 			}
+
+			// It might be nice to have FRED work out if any ships of the class represented by the variable are in the wings
+			// but for now just set it to zero
+			m_ships_used_in_wings.SetWindowText("0"); 
+		
 		}
 		else
 		{
@@ -507,10 +543,10 @@ void player_start_editor::OnSelchangeShipVariablesCombo()
 // weapon list changed
 void player_start_editor::OnSelchangeWeaponList() 
 {
-	
 	int selected;
 	int wi_index;
 	char weapon_name[255] = "";
+	char weapon_usage_buff[10];
 
 	// Deselect the variables list when this one is selected	
 	m_weapon_quantity_variable.SetCurSel(-1);
@@ -537,7 +573,11 @@ void player_start_editor::OnSelchangeWeaponList()
 			else {
 				weapon_pool[selected_team][wi_index] = 0;
 				m_weapon_pool = 0;
-			}		
+			}
+			
+			// set the number used in wings
+			sprintf(weapon_usage_buff, "%d", weapon_usage[selected_team][wi_index]); 
+			m_weapons_used_in_wings.SetWindowText(weapon_usage_buff); 
 		} else {
 			Int3();
 		}
@@ -561,7 +601,6 @@ void player_start_editor::OnOK()
 
 	// store player entry time delay
 	Entry_delay_time = i2f(m_delay);	
-
 
 	// store ship pools	
 	for(i=0; i<MAX_TVT_TEAMS; i++)
@@ -784,7 +823,6 @@ int player_start_editor::GetTypedVariableIndex(int sexp_variables_index, bool st
 	}
 	return -1;
 }
-
 
 void player_start_editor::OnSelchangeWeaponVariablesList() 
 {
