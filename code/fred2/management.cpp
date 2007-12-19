@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.43 $
- * $Date: 2007-12-15 09:41:43 $
- * $Author: wmcoolmon $
+ * $Revision: 1.44 $
+ * $Date: 2007-12-19 10:54:26 $
+ * $Author: karajorma $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,6 +19,9 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.43  2007/12/15 09:41:43  wmcoolmon
+ * Maybe-catch an interesting crash upon attempting to revert a mission with no cargo.
+ *
  * Revision 1.42  2007/12/15 09:12:56  wmcoolmon
  * Handle missing ship model files more gracefully
  *
@@ -913,8 +916,6 @@ bool fred_init()
 
 	Cmdline_nohtl = result != IDYES;
 	*/
-
-	Cmdline_nohtl = Cmdline_nohtl == 1;
 
 	/* - HTL is now on by default so the warning is redundant - Karajorma
 	if (Cmdline_nohtl)
@@ -2937,6 +2938,20 @@ int query_whole_wing_marked(int wing)
 	return 0;
 }
 
+void generate_ship_usage_list(int *arr, int wing) 
+{
+	int i; 
+
+	if (wing < 0) {
+		return;
+	}
+	
+	i = Wings[wing].wave_count;
+	while (i--) {
+		arr[Ships[Wings[wing].ship_index[i]].ship_info_index]++; 
+	}
+}
+
 void generate_weaponry_usage_list(int *arr, int wing)
 {
 	int i, j;
@@ -2964,11 +2979,18 @@ void generate_weaponry_usage_list(int *arr)
 
 	for (i=0; i<MAX_WEAPON_TYPES; i++)
 		arr[i] = 0;
+	 
+    if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
+		for (i=0; i<MAX_TVT_WINGS; i++) {
+			generate_weaponry_usage_list(arr, TVT_wings[i]);
+		}
+	}
 
-	// Goober5000 - I have no idea why :V: did things this way (or even what exactly they're doing);
-	// I'm guessing Zeta needs to be accounted for somewhere but I'm not sure how to do that
-	for (i=0; i<MAX_STARTING_WINGS; i++)
-		generate_weaponry_usage_list(arr, Starting_wings[i]);
+	else {
+		for (i=0; i<MAX_STARTING_WINGS; i++) {
+			generate_weaponry_usage_list(arr, Starting_wings[i]);
+		}
+	}
 }
 
 jump_node *jumpnode_get_by_name(CString& name)
