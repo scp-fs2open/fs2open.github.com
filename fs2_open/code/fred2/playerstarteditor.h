@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/PlayerStartEditor.h $
- * $Revision: 1.2 $
- * $Date: 2006-06-02 09:52:42 $
+ * $Revision: 1.3 $
+ * $Date: 2007-12-19 10:54:26 $
  * $Author: karajorma $
  *
  * Player starting point editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.2  2006/06/02 09:52:42  karajorma
+ * Complete overhaul of how ship loadout is handled to support the use of variables for setting the class and quantity of ships present in loadout.
+ *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -128,6 +131,8 @@ public:
 	int					m_ship_pool;
 	CComboBox			m_ship_quantity_variable;
 	CComboBox			m_weapon_quantity_variable;
+	CStatic				m_ships_used_in_wings;
+	CStatic				m_weapons_used_in_wings;
 	//}}AFX_DATA
 
 
@@ -174,6 +179,10 @@ private:
 
 	// weapon pool info
 	int weapon_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
+
+	// ship and weapon usage pools
+	int ship_usage[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
+	int weapon_usage[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
 
 	// regenerate all controls
 	void reset_controls();
