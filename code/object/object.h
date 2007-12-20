@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.21.2.4 $
- * $Date: 2007-09-30 22:28:26 $
- * $Author: Goober5000 $
+ * $Revision: 2.21.2.5 $
+ * $Date: 2007-12-20 01:57:41 $
+ * $Author: turey $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21.2.4  2007/09/30 22:28:26  Goober5000
+ * another patch by razorjack -- remove something that never worked
+ *
  * Revision 2.21.2.3  2007/07/28 21:31:05  Goober5000
  * this should really be capitalized
  *
@@ -534,6 +537,7 @@ typedef struct object {
 	physics_info	phys_info;		// a physics object
 	float				shield_quadrant[MAX_SHIELD_SECTIONS];	//	Shield is broken into components.  Quadrants on 4/24/97.
 	float				hull_strength;	//	Remaining hull strength.
+	float				sim_hull_strength;	// Simulated hull strength - used with training weapons.
 	short				objsnd_num[MAX_OBJECT_SOUNDS];		// Index of persistant sound struct.  -1 if no persistant sound assigned.
 	ushort			net_signature;
 	int				num_pairs;		// How many object pairs this is associated with.  When 0 then there are no more.
@@ -640,6 +644,7 @@ void add_shield_strength(object *objp, float delta);
 
 // Goober5000
 float get_hull_pct(object *objp);
+float get_sim_hull_pct(object *objp);
 float get_shield_pct(object *objp);
 float get_max_shield_quad(object *objp);
 

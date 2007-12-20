@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionDebrief.cpp $
- * $Revision: 2.53.2.10 $
- * $Date: 2007-12-08 04:07:00 $
- * $Author: Goober5000 $
+ * $Revision: 2.53.2.11 $
+ * $Date: 2007-12-20 01:57:40 $
+ * $Author: turey $
  *
  * C module for running the debriefing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53.2.10  2007/12/08 04:07:00  Goober5000
+ * patch hole in the state machine fix
+ *
  * Revision 2.53.2.9  2007/10/15 06:43:15  taylor
  * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *
@@ -2719,6 +2722,10 @@ void debrief_close()
 	} else {
 		// single player
 		if( !Debrief_accepted || !(Game_mode & GM_CAMPAIGN_MODE) ){
+			// Make sure we don't skip any missions in a campaign.
+			if ( Game_mode & GM_CAMPAIGN_MODE ) {
+				Campaign.next_mission = Campaign.current_mission;
+			}
 			scoring_backout_accept( &Player->stats );
 		}
 	}
@@ -2834,11 +2841,12 @@ void debrief_do_keys(int new_k)
 					if (choice < 1)
 						break;
 
-				} else if (Must_replay_mission && (Game_mode & GM_CAMPAIGN_MODE)) {
+				} else if ( ( Turned_traitor || Must_replay_mission ) && (Game_mode & GM_CAMPAIGN_MODE)) {
 					// need to popup saying that mission was a failure and must be replayed
 					choice = popup(0, 2, POPUP_NO, POPUP_YES, XSTR( "Because this mission was a failure, you must replay this mission when you continue your campaign.\n\nReturn to the Flight Deck?", 457));
-					if (choice <= 0)
+					if (choice <= 0) {
 						break;
+					}
 				}
 
 				// Return to Main Hall

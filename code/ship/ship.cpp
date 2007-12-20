@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.80 $
- * $Date: 2007-12-02 08:21:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.336.2.81 $
+ * $Date: 2007-12-20 01:57:44 $
+ * $Author: turey $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.80  2007/12/02 08:21:47  Goober5000
+ * watch out for bad MOI values
+ *
  * Revision 2.336.2.79  2007/11/20 04:58:23  Goober5000
  * fix ship-type-destroyed
  *
@@ -9696,7 +9699,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 		
 		weapon = swp->primary_bank_weapons[bank_to_fire];
-		Assert( weapon >= 0 && weapon < MAX_WEAPONS );		
+		Assert( weapon >= 0 && weapon < MAX_WEAPON_TYPES );		
 		if ( (weapon < 0) || (weapon >= MAX_WEAPON_TYPES) ) {
 			Int3();		// why would a ship try to fire a weapon that doesn't exist?
 			continue;

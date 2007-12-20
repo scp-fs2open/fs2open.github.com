@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.63.2.11 $
- * $Date: 2007-10-28 16:42:16 $
- * $Author: taylor $
+ * $Revision: 2.63.2.12 $
+ * $Date: 2007-12-20 01:57:41 $
+ * $Author: turey $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.11  2007/10/28 16:42:16  taylor
+ * slighly cleaner/faster version of object secondary fire control
+ *
  * Revision 2.63.2.10  2007/09/30 22:28:25  Goober5000
  * another patch by razorjack -- remove something that never worked
  *
@@ -916,6 +919,24 @@ float get_hull_pct(object *objp)
 		return 0.0f;
 
 	return objp->hull_strength / total_strength;
+}
+
+float get_sim_hull_pct(object *objp)
+{
+	Assert(objp);
+	Assert(objp->type == OBJ_SHIP);
+
+	float total_strength = Ships[objp->instance].ship_max_hull_strength;
+
+	Assert(total_strength > 0.0f);	// unlike shield, no ship can have 0 hull
+
+	if (total_strength == 0.0f)
+		return 0.0f;
+
+	if (objp->sim_hull_strength < 0.0f)	// this sometimes happens when a ship is being destroyed
+		return 0.0f;
+
+	return objp->sim_hull_strength / total_strength;
 }
 
 // Goober5000

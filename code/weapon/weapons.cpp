@@ -12,6 +12,10 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.180.2.24  2007/10/21 03:40:41  taylor
+ * fix bug with +remove that made a beam section still appear partially valid
+ * fix temp-var snaffu that hendered debugging
+ *
  * Revision 2.180.2.23  2007/10/15 06:43:22  taylor
  * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *
@@ -1647,6 +1651,8 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_SAME_TURRET_COOLDOWN;
 		else if (!stricmp(NOX("apply no light"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_MR_NO_LIGHTING;
+		else if (!stricmp(NOX("training"), weapon_strings[i]))
+			weaponp->wi_flags2 |= WIF2_TRAINING;
 		else
 			Warning(LOCATION, "Bogus string in weapon flags: %s\n", weapon_strings[i]);
 	}	

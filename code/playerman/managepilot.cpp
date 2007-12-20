@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.26.2.4 $
- * $Date: 2007-10-28 16:45:05 $
- * $Author: taylor $
+ * $Revision: 2.26.2.5 $
+ * $Date: 2007-12-20 01:57:43 $
+ * $Author: turey $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.26.2.4  2007/10/28 16:45:05  taylor
+ * fix anothing something that Valgrind complained about
+ *
  * Revision 2.26.2.3  2007/04/11 14:59:16  taylor
  * get rid of stale NO_JOYSTICK define
  *
@@ -1645,7 +1648,7 @@ void init_new_pilot(player *p, int reset)
 		Game_skill_level = game_get_default_skill_level();
 
 		mprintf(( "Setting detail level to %d because of new pilot\n", cur_speed ));
-		Use_mouse_to_fly = 0;
+		Use_mouse_to_fly = 1;
 		Mouse_sensitivity = 4;
 		Joy_sensitivity = 9;
 		Dead_zone_size = 10;
