@@ -12,6 +12,14 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.69.2.3  2007/02/12 00:54:31  taylor
+ * make use of generic_anim and generic_bitmap where possible
+ * bunch of cleanup and little optimizations
+ * add "+remove" tbl option to completely get rid of particular beam sections
+ * delayed loading of bitmaps, will only do it after all tbl/tbm have been parsed
+ * if we are using a POF missile which isn't loaded yet, try and load it before going crazy
+ * bug fix and optimization for laser color setting
+ *
  * Revision 2.69.2.2  2006/12/26 05:32:59  taylor
  * make weapon_expl info dynamic
  *
@@ -629,6 +637,7 @@ extern int Num_weapon_subtypes;
 #define WIF2_SAME_TURRET_COOLDOWN		(1 << 7)	// the weapon has the same cooldown time on turrets
 #define WIF2_MR_NO_LIGHTING				(1 << 8)	// don't render with lighting, regardless of user options
 #define WIF2_TRANSPARENT				(1 << 9)	// render as transparent
+#define WIF2_TRAINING					(1 << 10)	// Weapon does shield/hull damage, but doesn't hurt subsystems, whack you, or put marks on your ship.
 
 #define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)

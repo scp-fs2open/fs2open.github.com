@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.8.2.12 $
- * $Date: 2007-11-26 18:43:52 $
- * $Author: karajorma $
+ * $Revision: 1.8.2.13 $
+ * $Date: 2007-12-20 01:57:39 $
+ * $Author: turey $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8.2.12  2007/11/26 18:43:52  karajorma
+ * Fix Mantis 0397
+ *
  * Revision 1.8.2.11  2007/08/15 06:57:00  Goober5000
  * fix problems with the mini help box
  * (interestingly this feature was committed to stable but not HEAD)
@@ -5282,9 +5285,10 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem(int parent_node, int arg_in
 		}
 	}
 	
-	// if one of the subsystem strength operators, append the Hull string
+	// if one of the subsystem strength operators, append the Hull string and the Simulated Hull string
 	if(special_subsys == OPS_STRENGTH){
 		head.add_data(SEXP_HULL_STRING);
+		head.add_data(SEXP_SIM_HULL_STRING);
 	}
 
 	return head.next;

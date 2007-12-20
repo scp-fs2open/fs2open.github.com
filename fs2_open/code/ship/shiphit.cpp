@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.63.2.9 $
- * $Date: 2007-07-15 02:45:51 $
- * $Author: Goober5000 $
+ * $Revision: 2.63.2.10 $
+ * $Date: 2007-12-20 01:57:45 $
+ * $Author: turey $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.63.2.9  2007/07/15 02:45:51  Goober5000
+ * fixed a small bug in the lab
+ * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
+ * removed my old supercap damage scaling change
+ * moved Turey's truefire flag to ai_profiles
+ *
  * Revision 2.63.2.8  2007/05/28 18:27:35  wmcoolmon
  * Added armor support for asteroid, debris, ship, and beam damage
  *
@@ -1109,6 +1115,9 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 	// scale subsystem damage if appropriate
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 	if ((weapon_info_index >= 0) && (other_obj->type == OBJ_WEAPON)) {
+		if ( Weapon_info[weapon_info_index].wi_flags2 & WIF2_TRAINING ) {
+			return damage_left;
+		}
 		damage_left *= Weapon_info[weapon_info_index].subsystem_factor;
 	}
 
@@ -2644,6 +2653,16 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 			// multiplayer clients don't do damage
 			if(((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT) || (Game_mode & GM_DEMO_PLAYBACK)){
 			} else {
+				// Check if this is simulated damage.
+				weapon_info_index = shiphit_get_damage_weapon(other_obj);
+				if ( weapon_info_index >= 0 ) {
+					if (Weapon_info[weapon_info_index].wi_flags2 & WIF2_TRAINING) {
+//						diag_printf2("Simulated Hull for Ship %s hit, dropping from %.32f to %d.\n", shipp->ship_name, (int) ( ship_obj->sim_hull_strength * 100 ), (int) ( ( ship_obj->sim_hull_strength - damage ) * 100 ) );
+						ship_obj->sim_hull_strength -= damage;
+						ship_obj->sim_hull_strength = MAX( 0, ship_obj->sim_hull_strength );
+						return;
+					}
+				}
 				ship_obj->hull_strength -= damage;		
 			}
 
