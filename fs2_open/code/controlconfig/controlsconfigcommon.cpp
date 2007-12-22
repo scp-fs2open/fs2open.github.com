@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.19 $
- * $Date: 2007-06-04 00:04:21 $
+ * $Revision: 2.20 $
+ * $Date: 2007-12-22 09:36:16 $
  * $Author: Backslash $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.19  2007/06/04 00:04:21  Backslash
+ * Backslash's HEAD-only controls commit:
+ * -Lateral thruster axes
+ * -Slide_when_pressed
+ * -Placeholders for glide_when_pressed and more controls, to give us a little breathing room while we wait for the real pilot file code
+ *
  * Revision 2.18  2006/08/01 04:26:02  Kazan
  * commented out glide_while_pressed changes until taylor deems them safe
  *
@@ -565,12 +571,12 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           KEY_RIGHT,			-1, COMPUTER_TAB,	true, "Augment Right Shield" },
 	{                           KEY_SCROLLOCK,	-1, COMPUTER_TAB,	true, "Transfer Energy Laser->Shield" },
 	{             KEY_SHIFTED | KEY_SCROLLOCK,	-1, COMPUTER_TAB,	true, "Transfer Energy Shield->Laser" },
-	{                           -1,					-1, -1,				true, "Show Damage Popup Window" },	
+//	{                           -1,					-1, -1,				true, "Show Damage Popup Window" },	
 
-	{                           -1,					-1, SHIP_TAB,		true, "Bank When Pressed", CC_TYPE_CONTINUOUS },
 	{							-1,					-1, SHIP_TAB,		false, "Slide When Pressed", CC_TYPE_CONTINUOUS },
-//Backslash -- this was a convenient place for Slide When Pressed, and Show Nav Map isn't used ... you can move it when it is!
-//	{									 -1,					-1, -1,				true, "Show Nav Map" },
+//Backslash -- this was a convenient place for Slide When Pressed, as Show Damage Popup isn't used
+	{                           -1,					-1, SHIP_TAB,		true, "Bank When Pressed", CC_TYPE_CONTINUOUS },
+	{									 -1,					-1, -1,				true, "Show Nav Map" },
 	{ KEY_ALTED |	             KEY_E,				-1, COMPUTER_TAB,	true, "Add or Remove Escort" },
 	{ KEY_ALTED | KEY_SHIFTED | KEY_E,				-1, COMPUTER_TAB,	true, "Clear Escort List" },
 	{					             KEY_E,				-1, TARGET_TAB,	true, "Target Next Escort Ship" },

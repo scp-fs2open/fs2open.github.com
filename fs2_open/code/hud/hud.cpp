@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.71 $
- * $Date: 2007-07-24 20:17:36 $
- * $Author: Kazan $
+ * $Revision: 2.72 $
+ * $Date: 2007-12-22 09:36:17 $
+ * $Author: Backslash $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.71  2007/07/24 20:17:36  Kazan
+ * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
+ *
  * Revision 2.70  2007/04/30 21:30:29  Backslash
  * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
  * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
@@ -2110,10 +2113,10 @@ void update_throttle_sound()
 
 		throttle_sound_check_id = timestamp(THROTTLE_SOUND_CHECK_INTERVAL);
 	
-		if ( Ships[Player_obj->instance].current_max_speed == 0 ) {
+		if ( object_get_gliding(Player_obj) ) {	// Backslash
+			percent_throttle = Player_obj->phys_info.forward_thrust;
+		} else if ( Ships[Player_obj->instance].current_max_speed == 0 ) {
 			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
-		} else if ( object_get_gliding(Player_obj) ) {	// Backslash
-			percent_throttle = Player_obj->phys_info.prev_ramp_vel.xyz.z / Ships[Player_obj->instance].current_max_speed;
 		} else {
 			percent_throttle = Player_obj->phys_info.fspeed / Ships[Player_obj->instance].current_max_speed;
 		}
@@ -2124,6 +2127,7 @@ void update_throttle_sound()
 			if ( percent_throttle < ZERO_PERCENT ) {
 				if ( Player_engine_snd_loop > -1 )	{
 					snd_chg_loop_status(Player_engine_snd_loop, 0);
+					snd_stop(Player_engine_snd_loop); // Backslash - otherwise, long engine loops keep playing
 					Player_engine_snd_loop = -1;
 				}
 			}

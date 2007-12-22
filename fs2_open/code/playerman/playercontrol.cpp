@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.53 $
- * $Date: 2007-11-23 23:49:35 $
- * $Author: wmcoolmon $
+ * $Revision: 2.54 $
+ * $Date: 2007-12-22 09:36:17 $
+ * $Author: Backslash $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.53  2007/11/23 23:49:35  wmcoolmon
+ * - Asteroid, debris, and ship collision damage type support
+ * - Scripting system variable-setting optimizations
+ * - Standardize override style
+ * - Reinstate "Self" variable for HUD
+ * - Automatic drawString moving-to-next-line
+ * - Visible subsystem name can be changed through scripting; will not be changed in the log
+ * - Fix many for-loop signed/unsigned warnings related to size()
+ * - Asteroid, debris scripting collision handling
+ * - Many, many additional Lua functions and variables
+ * - Fix the dreaded random-Lua-parse-crash bug
+ * - Fix struct array malf-ups due to flag_def_list change
+ *
  * Revision 2.52  2007/07/23 22:45:00  Kazan
  * Resolve Mantis #1440
  *
@@ -979,7 +992,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	static int afterburner_last = 0;
 	static float analog_throttle_last = 9e9f;
 	static int override_analog_throttle = 0; 
-	static float savedspeed = 0.0f;	//Backslash
+	static float savedspeed = ci->forward_cruise_percent;	//Backslash
 	int ok_to_read_ci_pitch_yaw=1;
 
 	oldspeed = ci->forward_cruise_percent;
@@ -1352,49 +1365,62 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 			afterburner_last = 0;
 		}
 
-		// moved here from KeyControl, in order to take advantage of override_analog_throttle,
-		// among other things.  -- Backslash		original code by WMCoolmon
+		// new gliding systems combining code by Backslash, Turey, Kazan, and WMCoolmon
+
+		// Make these static so that we keep them from frame to frame.
+		static int toggle_glide = 0;
+		static int press_glide = 0;
+		// Check for toggle button pressed.
 		if ( button_info_query(&Player->bi, TOGGLE_GLIDING) ) {
 			control_used(TOGGLE_GLIDING);
-			if (Player_obj != NULL)
-			{
-				if (object_get_gliding(Player_obj))
-				{
-					object_set_gliding(Player_obj, false);
-					ci->forward_cruise_percent = savedspeed;
-				}
-				else if (Ship_info[Player_ship->ship_info_index].can_glide)
-				{
+			if ( Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide ) {
+				toggle_glide = !toggle_glide;
+			}
+		}
+		// This logic is a bit tricky. It checks to see if the glide_when_pressed button is in a different state
+		// than press_glide. Since it sets press_glide equal to glide_when_pressed inside of this if statement,
+		//  this only evaluates to true when the state of the button is different than it was last time. 
+		if ( check_control(GLIDE_WHEN_PRESSED) != press_glide ) {
+//			control_used(GLIDE_WHEN_PRESSED);
+			if ( Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide ) {
+				// This only works if check_control returns only 1 or 0. Shouldn't be a problem,
+				// but this comment's here just in case it is.
+				press_glide = !press_glide;
+			}
+		}
+		// Do we want to be gliding?
+		if ( toggle_glide || press_glide ) {
+			// Probably don't need to do this check, but just in case...
+			if ( Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide ) {
+				// Only bother doing this if we need to.
+				if ( toggle_glide && press_glide ) {
+					// Overkill -- if gliding is toggled on and glide_when_pressed is pressed, turn glide off
+					if ( object_get_gliding(Player_obj) ) {
+						object_set_gliding(Player_obj, false);
+						ci->forward_cruise_percent = savedspeed;
+						press_glide = !press_glide;
+						snd_play( &Snds[SND_THROTTLE_UP], 0.0f );
+					}
+				} else if ( !object_get_gliding(Player_obj) ) {
 					object_set_gliding(Player_obj, true);
 					savedspeed = ci->forward_cruise_percent;
 					ci->forward_cruise_percent = 0.0f;
 					override_analog_throttle = 1;
+					snd_play( &Snds[SND_THROTTLE_DOWN], 0.0f );
+				}
+			}
+		} else {
+			// Probably don't need to do the second half of this check, but just in case...
+			if ( Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide ) {
+				// Only bother doing this if we need to.
+				if ( object_get_gliding(Player_obj) ) {
+					object_set_gliding(Player_obj, false);
+					ci->forward_cruise_percent = savedspeed;
+					snd_play( &Snds[SND_THROTTLE_UP], 0.0f );
 				}
 			}
 		}
 
-		// Kazan - gliding while keypressed
-		// commented until taylor deems this safe
-		// modified by Backslash but not ready to commit
-		/*if (check_control(GLIDE_WHILE_PRESSED))
-		{
-			if (Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide && !object_get_gliding(Player_obj))
-			{
-				object_set_gliding(Player_obj, true);
-//				savedspeed = ci->forward_cruise_percent;
-//				ci->forward_cruise_percent = 0.0f;		// somehow this stuff needs to be called only when the button is first held down?
-//				override_analog_throttle = 1;
-			}
-		}
-		else	// note by Backslash: doesn't this mean it will get called all the time, whenever the key is NOT pressed?  Thus breaking the toggle version above, not to mention checking the if every frame?
-		{		// Not sure how to fix it.  Maybe something similar to how afterburner is handled?
-			if (Player_obj != NULL && object_get_gliding(Player_obj))
-			{
-				object_set_gliding(Player_obj, false);
-//				ci->forward_cruise_percent = savedspeed;
-			}
-		}*/
-		//--------------------------------
 	}
 
 	if ( (Viewer_mode & VM_EXTERNAL) || slew_active ) {
