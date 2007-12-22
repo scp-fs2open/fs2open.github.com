@@ -9,13 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.18 $
- * $Date: 2007-06-04 00:04:21 $
+ * $Revision: 2.19 $
+ * $Date: 2007-12-22 09:36:17 $
  * $Author: Backslash $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2007/06/04 00:04:21  Backslash
+ * Backslash's HEAD-only controls commit:
+ * -Lateral thruster axes
+ * -Slide_when_pressed
+ * -Placeholders for glide_when_pressed and more controls, to give us a little breathing room while we wait for the real pilot file code
+ *
  * Revision 2.17  2006/08/01 04:26:02  Kazan
  * commented out glide_while_pressed changes until taylor deems them safe
  *
@@ -473,12 +479,12 @@ typedef struct config_item {
 
 #define XFER_SHIELD										81
 #define XFER_LASER										82
-#define SHOW_DAMAGE_POPUP								83 // AL: this binding should be removing next time the controls are reorganized
+//#define SHOW_DAMAGE_POPUP								83 // AL: this binding should be removing next time the controls are reorganized
 
+#define SLIDE_WHEN_PRESSED								83
+//Backslash -- this was a convenient place for Slide When Pressed, since Show Damage Popup isn't used
 #define BANK_WHEN_PRESSED								84
-#define SLIDE_WHEN_PRESSED								85
-//Backslash -- this was a convenient place for Slide When Pressed, and Show Nav Map isn't used ... you can move it when it is!
-//#define SHOW_NAVMAP										85
+#define SHOW_NAVMAP										85
 #define ADD_REMOVE_ESCORT								86
 #define ESCORT_CLEAR									87
 #define TARGET_NEXT_ESCORT_SHIP							88
