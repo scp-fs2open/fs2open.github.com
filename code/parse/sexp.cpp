@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.334 $
- * $Date: 2007-11-24 10:14:58 $
- * $Author: wmcoolmon $
+ * $Revision: 2.335 $
+ * $Date: 2007-12-24 19:48:14 $
+ * $Author: turey $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.334  2007/11/24 10:14:58  wmcoolmon
+ * More script-eval functionality; additional matrix functions
+ *
  * Revision 2.333  2007/11/23 23:22:34  wmcoolmon
  * Misc. fixes
  *
@@ -15583,6 +15586,10 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_HITS_LEFT_SUBSYSTEM:
 				sexp_val = sexp_hits_left_subsystem(node);
+				break;
+
+			case OP_SIM_HITS_LEFT:
+				sexp_val = sexp_sim_hits_left(node);
 				break;
 
 			case OP_SPECIAL_WARP_DISTANCE:
