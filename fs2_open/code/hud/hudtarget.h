@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.h $
- * $Revision: 2.9 $
- * $Date: 2006-01-13 03:30:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.9.2.1 $
+ * $Date: 2007-12-28 02:10:37 $
+ * $Author: Backslash $
  *
  * Header file for HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.9  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.8  2005/10/25 01:21:52  wmcoolmon
  * Bumped MAX_HOTKEY_TARGET_ITEMS
  *
@@ -411,6 +414,7 @@ void	hud_target_change_check();
 
 void hud_show_target_triangle_indicator(vertex *projected_v);
 void hud_show_lead_indicator(vec3d *target_world_pos);
+void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp);
 void hud_show_orientation_tee();
 void hud_show_hostile_triangle();
 void hud_show_target_data();

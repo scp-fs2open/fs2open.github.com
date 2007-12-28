@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.14.2.1 $
- * $Date: 2006-07-20 01:51:20 $
- * $Author: Goober5000 $
+ * $Revision: 2.14.2.2 $
+ * $Date: 2007-12-28 02:10:35 $
+ * $Author: Backslash $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.14.2.1  2006/07/20 01:51:20  Goober5000
+ * tweak control text
+ * --Goober5000
+ *
  * Revision 2.14  2006/02/25 21:46:59  Goober5000
  * spelling
  *
@@ -552,8 +556,10 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           KEY_RIGHT,			-1, COMPUTER_TAB,	true, "Augment Right Shield" },
 	{                           KEY_SCROLLOCK,	-1, COMPUTER_TAB,	true, "Transfer Energy Laser->Shield" },
 	{             KEY_SHIFTED | KEY_SCROLLOCK,	-1, COMPUTER_TAB,	true, "Transfer Energy Shield->Laser" },
-	{                           -1,					-1, -1,				true, "Show Damage Popup Window" },	
+//	{                           -1,					-1, -1,				true, "Show Damage Popup Window" },	
 
+	{							-1,					-1, SHIP_TAB,		false, "Glide When Pressed", CC_TYPE_CONTINUOUS },
+//Backslash -- this was a convenient place for Glide When Pressed, as Show Damage Popup isn't used
 	{                           -1,					-1, SHIP_TAB,		true, "Bank When Pressed", CC_TYPE_CONTINUOUS },
 	{									 -1,					-1, -1,				true, "Show Nav Map" },
 	{ KEY_ALTED |	             KEY_E,				-1, COMPUTER_TAB,	true, "Add or Remove Escort" },

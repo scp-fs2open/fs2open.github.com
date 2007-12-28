@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.31 $
- * $Date: 2007-12-08 20:07:55 $
- * $Author: karajorma $
+ * $Revision: 2.150.2.32 $
+ * $Date: 2007-12-28 02:10:35 $
+ * $Author: Backslash $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.31  2007/12/08 20:07:55  karajorma
+ * Add the use alt as callsign option.
+ * Add a few typo and comment fixes while I'm at it
+ *
  * Revision 2.150.2.30  2007/11/20 04:58:25  Goober5000
  * fix ship-type-destroyed
  *
@@ -1925,6 +1929,8 @@ typedef struct ship_info {
 	int armor_type_idx;
 	
 	bool can_glide;
+	float glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity
+	float glide_multiplier;	//Backslash - for gliding with thruster adjustments, the multiplier for how quickly the thrusters change glide vector
 	
 	bool topdown_offset_def;
 	vec3d topdown_offset;

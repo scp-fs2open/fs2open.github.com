@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.67.2.3 $
- * $Date: 2007-07-24 20:08:29 $
- * $Author: Kazan $
+ * $Revision: 2.67.2.4 $
+ * $Date: 2007-12-28 02:10:37 $
+ * $Author: Backslash $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67.2.3  2007/07/24 20:08:29  Kazan
+ * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
+ *
  * Revision 2.67.2.2  2007/02/10 05:01:11  Goober5000
  * take all subsystems into account when displaying repair gauge
  *
@@ -2106,7 +2109,9 @@ void update_throttle_sound()
 
 		throttle_sound_check_id = timestamp(THROTTLE_SOUND_CHECK_INTERVAL);
 	
-		if ( Ships[Player_obj->instance].current_max_speed == 0 ) {
+		if ( object_get_gliding(Player_obj) ) {	// Backslash
+			percent_throttle = Player_obj->phys_info.forward_thrust;
+		} else if ( Ships[Player_obj->instance].current_max_speed == 0 ) {
 			percent_throttle = Player_obj->phys_info.fspeed / Ship_info[Ships[Player_obj->instance].ship_info_index].max_speed;
 		} else {
 			percent_throttle = Player_obj->phys_info.fspeed / Ships[Player_obj->instance].current_max_speed;
@@ -2118,6 +2123,7 @@ void update_throttle_sound()
 			if ( percent_throttle < ZERO_PERCENT ) {
 				if ( Player_engine_snd_loop > -1 )	{
 					snd_chg_loop_status(Player_engine_snd_loop, 0);
+					snd_stop(Player_engine_snd_loop); // Backslash - otherwise, long engine loops keep playing
 					Player_engine_snd_loop = -1;
 				}
 			}

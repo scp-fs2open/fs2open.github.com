@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.15 $
- * $Date: 2006-02-25 21:46:59 $
- * $Author: Goober5000 $
+ * $Revision: 2.15.2.1 $
+ * $Date: 2007-12-28 02:10:34 $
+ * $Author: Backslash $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2006/02/25 21:46:59  Goober5000
+ * spelling
+ *
  * Revision 2.14  2005/10/11 05:24:33  wmcoolmon
  * Gliding
  *
@@ -462,8 +465,10 @@ typedef struct config_item {
 
 #define XFER_SHIELD										81
 #define XFER_LASER										82
-#define SHOW_DAMAGE_POPUP								83 // AL: this binding should be removing next time the controls are reorganized
+//#define SHOW_DAMAGE_POPUP								83 // AL: this binding should be removing next time the controls are reorganized
 
+#define GLIDE_WHEN_PRESSED								83
+//Backslash -- this was a convenient place for Glide When Pressed, since Show Damage Popup isn't used
 #define BANK_WHEN_PRESSED								84
 #define SHOW_NAVMAP										85
 #define ADD_REMOVE_ESCORT								86
