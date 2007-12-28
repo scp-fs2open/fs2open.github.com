@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/PlayerControl.cpp $
- * $Revision: 2.43.2.4 $
- * $Date: 2007-03-11 22:54:02 $
- * $Author: karajorma $
+ * $Revision: 2.43.2.5 $
+ * $Date: 2007-12-28 02:10:37 $
+ * $Author: Backslash $
  *
  * Routines to deal with player ship movement
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.43.2.4  2007/03/11 22:54:02  karajorma
+ * Turn off afterburner controls when player isn't in control
+ *
  * Revision 2.43.2.3  2006/09/08 06:14:44  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
@@ -957,6 +960,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	static int afterburner_last = 0;
 	static float analog_throttle_last = 9e9f;
 	static int override_analog_throttle = 0; 
+	static float savedspeed = ci->forward_cruise_percent;	//Backslash
 	int ok_to_read_ci_pitch_yaw=1;
 
 	oldspeed = ci->forward_cruise_percent;
@@ -991,10 +995,14 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	
 	if ( ok_to_read_ci_pitch_yaw ) {
 		// From keyboard...
+		do_thrust_keys(ci);
 		if ( check_control(BANK_WHEN_PRESSED) ) {
 			ci->bank = check_control_timef(BANK_LEFT) + check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT) - check_control_timef(BANK_RIGHT);
 			ci->heading = 0.0f;
-
+/*		} else if ( check_control(SLIDE_WHEN_PRESSED) ) {
+			ci->sideways = check_control_timef(RIGHT_SLIDE_THRUST) + check_control_timef(YAW_RIGHT) - check_control_timef(LEFT_SLIDE_THRUST) - check_control_timef(YAW_LEFT);
+			ci->heading = 0.0f;
+*/
 		} else {
 			kh = (check_control_timef(YAW_RIGHT) - check_control_timef(YAW_LEFT)) / 8.0f;
 			if (kh == 0.0f) {
@@ -1014,22 +1022,24 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 		ci->heading += kh;
 
-		kh = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK)) / 8.0f;
-		if (kh == 0.0f) {
+/*		if ( check_control(SLIDE_WHEN_PRESSED) ) {
+			ci->vertical = check_control_timef(UP_SLIDE_THRUST) + check_control_timef(PITCH_FORWARD) - check_control_timef(DOWN_SLIDE_THRUST) - check_control_timef(PITCH_BACK);
 			ci->pitch = 0.0f;
+		} else {*/
+			kh = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK)) / 8.0f;
+			if (kh == 0.0f) {
+ 				ci->pitch = 0.0f;
+			} else if (kh > 0.0f) {
+				if (ci->pitch < 0.0f)
+					ci->pitch = 0.0f;
 
-		} else if (kh > 0.0f) {
-			if (ci->pitch < 0.0f)
-				ci->pitch = 0.0f;
-
-		} else {  // kh < 0
-			if (ci->pitch > 0.0f)
-				ci->pitch = 0.0f;
-		}
+			} else {  // kh < 0
+				if (ci->pitch > 0.0f)
+					ci->pitch = 0.0f;
+			}
+//		}
 
 		ci->pitch += kh;
-
-		do_thrust_keys(ci);
 	}
 
 	if ( !slew_active ) {
@@ -1121,13 +1131,12 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		/*if (Player_ship->boost_pod_engaged)
 			ci->forward = 1.0f;*/
 
-
 		if ( Player->flags & PLAYER_FLAGS_MATCH_TARGET ) {
 			if ( (Player_ai->last_target == Player_ai->target_objnum) && (Player_ai->target_objnum != -1) && ( ci->forward_cruise_percent == oldspeed) ) {
 				float tspeed, pmax_speed;
 				object *targeted_objp = &Objects[Player_ai->target_objnum];
 
-				tspeed = targeted_objp->phys_info.fspeed;
+				tspeed = targeted_objp->phys_info.speed;	//changed from fspeed. If target is reversing, sliding, or gliding we still want to keep up. -- Backslash
 
 				// maybe need to get speed from docked partner
 				if ( tspeed < MATCH_SPEED_THRESHOLD ) {
@@ -1136,7 +1145,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 					// Goober5000
 					if (object_is_docked(targeted_objp))
 					{
-						tspeed = dock_calc_docked_fspeed(targeted_objp);
+						tspeed = dock_calc_docked_speed(targeted_objp);	//changed from fspeed
 					}
 				}
 
@@ -1161,7 +1170,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 //			player_read_joystick();
 		// code to read joystick axis for pitch/heading.  Code to read joystick buttons
-		// fo1r bank.
+		// for bank.
 		if ( !(Game_mode & GM_DEAD) )	{
 			playercontrol_read_stick(axis, frame_time);
 		} else {
@@ -1178,15 +1187,29 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 					ci->bank -= delta;
 					ignore_pitch = TRUE;
 				}
-
+/*			} else if ( check_control(SLIDE_WHEN_PRESSED) ) {
+				delta = f2fl( axis[JOY_HEADING_AXIS] );
+				if ( (delta > 0.05f) || (delta < -0.05f) ) {
+					ci->sideways += delta;
+				}
+*/
 			} else {
 				ci->heading += f2fl( axis[JOY_HEADING_AXIS] );
 			}
 		}
 
 		// check the pitch on the y axis
-		if (Axis_map_to[JOY_PITCH_AXIS] >= 0)
-			ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
+		if (Axis_map_to[JOY_PITCH_AXIS] >= 0) {
+/*			if ( check_control(SLIDE_WHEN_PRESSED) ) {
+				delta = f2fl( axis[JOY_PITCH_AXIS] );
+				if ( (delta > 0.05f) || (delta < -0.05f) ) {
+					ci->vertical -= delta;
+				}
+
+			} else {*/
+				ci->pitch -= f2fl( axis[JOY_PITCH_AXIS] );
+//			}
+		}
 
 		if (Axis_map_to[JOY_BANK_AXIS] >= 0) {
 			ci->bank -= f2fl( axis[JOY_BANK_AXIS] ) * 1.5f;
@@ -1299,6 +1322,63 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 			afterburner_last = 0;
 		}
+
+		// new gliding systems combining code by Backslash, Turey, Kazan, and WMCoolmon
+
+		// Make these static so that we keep them from frame to frame.
+		static int toggle_glide = 0;
+		static int press_glide = 0;
+		// Check for toggle button pressed.
+		if ( button_info_query(&Player->bi, TOGGLE_GLIDING) ) {
+			control_used(TOGGLE_GLIDING);
+			if ( Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide ) {
+				toggle_glide = !toggle_glide;
+			}
+		}
+		// This logic is a bit tricky. It checks to see if the glide_when_pressed button is in a different state
+		// than press_glide. Since it sets press_glide equal to glide_when_pressed inside of this if statement,
+		//  this only evaluates to true when the state of the button is different than it was last time. 
+		if ( check_control(GLIDE_WHEN_PRESSED) != press_glide ) {
+//			control_used(GLIDE_WHEN_PRESSED);
+			if ( Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide ) {
+				// This only works if check_control returns only 1 or 0. Shouldn't be a problem,
+				// but this comment's here just in case it is.
+				press_glide = !press_glide;
+			}
+		}
+		// Do we want to be gliding?
+		if ( toggle_glide || press_glide ) {
+			// Probably don't need to do this check, but just in case...
+			if ( Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide ) {
+				// Only bother doing this if we need to.
+				if ( toggle_glide && press_glide ) {
+					// Overkill -- if gliding is toggled on and glide_when_pressed is pressed, turn glide off
+					if ( object_get_gliding(Player_obj) ) {
+						object_set_gliding(Player_obj, false);
+						ci->forward_cruise_percent = savedspeed;
+						press_glide = !press_glide;
+						snd_play( &Snds[SND_THROTTLE_UP], 0.0f );
+					}
+				} else if ( !object_get_gliding(Player_obj) ) {
+					object_set_gliding(Player_obj, true);
+					savedspeed = ci->forward_cruise_percent;
+					ci->forward_cruise_percent = 0.0f;
+					override_analog_throttle = 1;
+					snd_play( &Snds[SND_THROTTLE_DOWN], 0.0f );
+				}
+			}
+		} else {
+			// Probably don't need to do the second half of this check, but just in case...
+			if ( Player_obj != NULL && Ship_info[Player_ship->ship_info_index].can_glide ) {
+				// Only bother doing this if we need to.
+				if ( object_get_gliding(Player_obj) ) {
+					object_set_gliding(Player_obj, false);
+					ci->forward_cruise_percent = savedspeed;
+					snd_play( &Snds[SND_THROTTLE_UP], 0.0f );
+				}
+			}
+		}
+
 	}
 
 	if ( (Viewer_mode & VM_EXTERNAL) || slew_active ) {

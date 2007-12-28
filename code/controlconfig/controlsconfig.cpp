@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.cpp $
- * $Revision: 2.18 $
- * $Date: 2005-10-10 17:14:30 $
- * $Author: taylor $
+ * $Revision: 2.18.2.1 $
+ * $Date: 2007-12-28 02:10:35 $
+ * $Author: Backslash $
  *
  * C module for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.18  2005/10/10 17:14:30  taylor
+ * remove NO_NETWORK
+ * fix controlconfig so that axes can be set to joystick/mouse using the mouse (required when no joystick attached)
+ *
  * Revision 2.17  2005/07/22 10:18:37  Goober5000
  * CVS header tweaks
  * --Goober5000
@@ -1866,8 +1870,8 @@ void control_config_do_frame(float frametime)
 						break;
 				}
 
-				if (Cc_lines[Selected_line].cc_index == BANK_WHEN_PRESSED)  // a special hack just for Mike K.
-					if ( (Last_key >= 0) && (k <= 0) && !keyd_pressed[Last_key] )
+				if (Cc_lines[Selected_line].cc_index == BANK_WHEN_PRESSED || /*Cc_lines[Selected_line].cc_index == SLIDE_WHEN_PRESSED ||*/ Cc_lines[Selected_line].cc_index == GLIDE_WHEN_PRESSED)  // a special hack just for Mike K.
+					if ( (Last_key >= 0) && (k <= 0) && !keyd_pressed[Last_key] )	//Backslash - ok it's not just for Mike K. any more :-P  but seriously, this is so we can bind such controls to Shift or Alt.  Does this actually get used?
 						k = Last_key;
 
 				if ((k > 0) && !Config_allowed[k & KEY_MASK]) {

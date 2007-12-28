@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.17 $
- * $Date: 2007-11-22 05:19:47 $
- * $Author: taylor $
+ * $Revision: 2.87.2.18 $
+ * $Date: 2007-12-28 02:10:38 $
+ * $Author: Backslash $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.17  2007/11/22 05:19:47  taylor
+ * no reason to if-else the hud multiplier if it simply defaults to 1.0
+ * add a little sanity checking for hud mutiplier tbl value
+ * add missing multiplier for off-screen indicator
+ *
  * Revision 2.87.2.16  2007/08/30 04:52:29  Backslash
  * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
  * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
@@ -1917,7 +1922,7 @@ void hud_target_common(int team_mask, int next_flag)
 			if ( A->jnp->is_hidden() )
 				continue;
 		}
-	
+
 		if ( vm_vec_same(&A->pos, &Eye_position) )
 			continue;
 
@@ -2542,18 +2547,25 @@ void hud_target_auto_target_next()
 	if (Game_mode & (GM_DEAD | GM_DEAD_BLEW_UP))
 		return;
 
+	// try target next ship in hotkey set, if any -- Backslash
+	if ( Player->current_hotkey_set != -1 ) {
+		hud_target_hotkey_select(Player->current_hotkey_set);
+	}
+
 	int	valid_team_mask = iff_get_attackee_mask(Player_ship->team);
 
 	// try target closest ship attacking player
-	hud_target_closest(valid_team_mask, OBJ_INDEX(Player_obj), FALSE, TRUE );
+	if ( Player_ai->target_objnum == -1 ) {
+		hud_target_closest(valid_team_mask, OBJ_INDEX(Player_obj), FALSE, TRUE );
+	}
 
 	// if none, try targeting closest hostile fighter/bomber
-	if ( Player_ai->target_objnum == -1 ){
+	if ( Player_ai->target_objnum == -1 ) {
 		hud_target_closest(valid_team_mask, -1, FALSE, TRUE);
 	}
 
 	// No fighter/bombers exists, so go ahead an target the closest hostile
-	if ( Player_ai->target_objnum == -1 ){
+	if ( Player_ai->target_objnum == -1 ) {
 		hud_target_closest(valid_team_mask, -1, FALSE);
 	}
 
@@ -2784,7 +2796,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 
 	if ( (attacked_objnum >= 0) && (attacked_objnum != player_obj_index) ) {
 		// bail if player does not have target
-		if ( Player_ai->target_objnum == -1) {
+		if ( Player_ai->target_objnum == -1 ) {
 			goto Target_closest_done;
 		}
 
@@ -3967,9 +3979,17 @@ void hud_show_selection_set()
 
 			if ( bound_rval == 0 ) {
 				gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
-				draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,5,5);
+				float dist = hud_find_target_distance(targetp, Player_obj);
 				if ( OBJ_INDEX(targetp) == Player_ai->target_objnum ) {
+					draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,5,5);
 					HUD_drew_selection_bracket_on_target = 1;
+				}
+				else if ( Cmdline_targetinfo ) {		//Backslash -- show the distance and a lead indicator
+					draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,5,5,dist);
+					hud_show_lead_indicator_quick(&targetp->pos, targetp); //&Objects[Player_ai->target_objnum]
+				}
+				else {
+					draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,5,5);
 				}
 			}
 		}
@@ -4414,7 +4434,7 @@ int hud_get_best_primary_bank(float *range)
 // 
 // Called by the draw lead indicator code to predict where the enemy is going to be
 //
-void polish_predicted_target_pos(vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps) 
+void polish_predicted_target_pos(object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps) 
 {
 	int	iteration;
 	vec3d	player_pos = Player_obj->pos;	
@@ -4432,7 +4452,8 @@ void polish_predicted_target_pos(vec3d *enemy_pos, vec3d *predicted_enemy_pos, f
 
 	// additive velocity stuff
 	//vec3d enemy_fvec = Objects[Player_ai->target_objnum].orient.vec.fvec;
-	vec3d enemy_vel = Objects[Player_ai->target_objnum].phys_info.vel;
+	// not just the player's main target
+	vec3d enemy_vel = targetp->phys_info.vel;
 	if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
 		//vm_vec_sub2( &enemy_fvec, &Player_obj->orient.vec.fvec );
 		vm_vec_sub2( &enemy_vel, &Player_obj->phys_info.vel );
@@ -4631,7 +4652,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 		vm_vec_normalize(&target_moving_direction);
 		vm_vec_scale(&target_moving_direction,target_moved_dist);
 		vm_vec_add(&Players[Player_num].lead_target_pos, target_world_pos, &target_moving_direction );
-		polish_predicted_target_pos(target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
+		polish_predicted_target_pos(targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
 	}
 
 	g3_rotate_vertex(&lead_target_vertex,&Players[Player_num].lead_target_pos);
@@ -4700,7 +4721,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 		vm_vec_normalize(&target_moving_direction);
 		vm_vec_scale(&target_moving_direction,target_moved_dist);
 		vm_vec_add(&Players[Player_num].lead_target_pos, target_world_pos, &target_moving_direction );
-		polish_predicted_target_pos(target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
+		polish_predicted_target_pos(targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
 	}
 
 	g3_rotate_vertex(&lead_target_vertex,&Players[Player_num].lead_target_pos);
@@ -4715,6 +4736,132 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 			} else {
 				hud_set_iff_color(targetp, 1);
 			}
+
+			if ( indicator_frame >= 0 ) {
+				sx = lead_target_vertex.sx;
+				sy = lead_target_vertex.sy;
+
+				gr_unsize_screen_posf(&sx, &sy);
+				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[gr_screen.res][1]));				
+			}
+		}
+	}
+}
+
+//Backslash
+// A stripped-down version of the lead indicator, only shows primary weapons
+// and works for a specified target (not just the current selected target).
+// Ideally I'd like to later turn this into something (or make a new function) that would actually WORK with gun convergence/normals
+// instead of the existing code (copied from above) that does some calculations and then is ignored ;-)
+// (Go look, what's it actually DO with source_pos?)
+// And also, something that could be called for multiple weapons, ITTS style.
+void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp)
+{
+	vec3d		target_moving_direction, last_delta_vector, source_pos;
+	vec3d		*rel_pos;
+	vertex		lead_target_vertex;
+	polymodel	*pm;
+	ship_weapon	*swp;
+	weapon_info	*wip;
+	weapon_info	*tmp=NULL;
+	float			dist_to_target, time_to_target, target_moved_dist, prange;
+	int			bank_to_fire, indicator_frame, frame_offset;
+	float		sx, sy;
+
+	if ( (targetp->type != OBJ_SHIP) && (targetp->type != OBJ_WEAPON) && (targetp->type != OBJ_ASTEROID) ) {
+		return;
+	}
+
+	// only allow bombs to have lead indicator displayed
+	if ( targetp->type == OBJ_WEAPON ) {
+		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
+			return;
+		}
+	}
+
+	// If the target is out of range, then draw the correct frame for the lead indicator
+	if ( Lead_indicator_gauge.first_frame == -1 ) {
+		Int3();
+		return;
+	}
+	
+	pm = model_get(Ship_info[Player_ship->ship_info_index].model_num);
+	swp = &Player_ship->weapons;
+
+	// Added to take care of situation where there are no primary banks on the player ship
+	// (this may not be possible, depending on what we decide for the weapons loadout rules)
+	if ( swp->num_primary_banks == 0 )
+		return;
+
+	bank_to_fire = hud_get_best_primary_bank(&prange);	//Backslash note: this!
+	if ( bank_to_fire < 0 )
+		return;
+	wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
+			
+	if (pm->n_guns && bank_to_fire != -1 ) {
+		rel_pos = &pm->gun_banks[bank_to_fire].pnt[0];
+	} else {
+		rel_pos = NULL;
+	}
+//							vec3d firing_vec;
+//							vm_vec_unrotate(&firing_vec, &po->gun_banks[bank_to_fire].norm[pt], &obj->orient);
+//							vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+
+	// source_pos will contain the world coordinate of where to base the lead indicator prediction
+	// from.  Normally, this will be the world pos of the gun turret of the currently selected primary
+	// weapon.
+	source_pos = Player_obj->pos;
+	if (rel_pos != NULL) {
+		vec3d	gun_point;
+		vm_vec_unrotate(&gun_point, rel_pos, &Player_obj->orient);
+		vm_vec_add2(&source_pos, &gun_point);
+	} 
+	
+	// Determine "accurate" distance to target.  This is the distance from the player ship
+	// to the closest point on the bounding box of the target
+	dist_to_target = hud_find_target_distance(targetp, Player_obj);
+
+	frame_offset = hudtarget_lead_indicator_pick_frame(prange, -1.0f, dist_to_target);
+
+	if ( frame_offset < 0 ) {
+		return;
+	}
+
+	indicator_frame = Lead_indicator_gauge.first_frame + frame_offset;
+
+	if(wip->max_speed != 0)
+	{
+		time_to_target = dist_to_target / wip->max_speed;
+	}
+	else
+	{
+		time_to_target = 0;
+	}
+
+	target_moved_dist = targetp->phys_info.speed * time_to_target;
+
+	target_moving_direction = targetp->phys_info.vel;
+
+	// if we've reached here, the lead target indicator will be displayed
+	Players[Player_num].lead_indicator_active = 1;
+
+	// test if the target is moving at all
+	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f)		// Find distance!
+		Players[Player_num].lead_target_pos =  *target_world_pos;
+	else {
+		vm_vec_normalize(&target_moving_direction);
+		vm_vec_scale(&target_moving_direction,target_moved_dist);
+		vm_vec_add(&Players[Player_num].lead_target_pos, target_world_pos, &target_moving_direction );
+		polish_predicted_target_pos(targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
+		vm_vec_add2(&Players[Player_num].lead_target_pos, rel_pos );
+	}
+
+	g3_rotate_vertex(&lead_target_vertex,&Players[Player_num].lead_target_pos);
+
+	if (lead_target_vertex.codes == 0) { // on screen
+
+		g3_project_vertex(&lead_target_vertex);
+		if (!(lead_target_vertex.flags & PF_OVERFLOW)) {
 
 			if ( indicator_frame >= 0 ) {
 				sx = lead_target_vertex.sx;
@@ -5100,7 +5247,7 @@ void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float dista
 	xpos = (float)floor(xpos);
 	ypos = (float)floor(ypos);
 
-	if ( hud_gauge_active(HUD_OFFSCREEN_RANGE) && (distance > 0.0f) ) {
+	if ( hud_gauge_active(HUD_OFFSCREEN_RANGE) && (displayed_distance > 0.0f) ) {
 		sprintf(buf, "%d", fl2i(displayed_distance + 0.5f));
 		hud_num_make_mono(buf);
 		gr_get_string_size(&w, &h, buf);	

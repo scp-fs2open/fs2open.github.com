@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68.2.12 $
- * $Date: 2007-11-20 01:11:09 $
- * $Author: Goober5000 $
+ * $Revision: 2.68.2.13 $
+ * $Date: 2007-12-28 02:10:38 $
+ * $Author: Backslash $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68.2.12  2007/11/20 01:11:09  Goober5000
+ * recognize a Vasudan main hall even when it isn't the second one; play the appropriate music as soon as the main hall switches
+ *
  * Revision 2.68.2.11  2007/08/17 03:29:49  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
@@ -901,7 +904,7 @@ int Non_critical_key_set[] = {
 	ATTACK_SUBSYSTEM_MESSAGE,
 	CAPTURE_MESSAGE,
 	ENGAGE_MESSAGE,
-   FORM_MESSAGE,
+	FORM_MESSAGE,
 	PROTECT_MESSAGE,
 	COVER_MESSAGE,
 	WARP_MESSAGE,
@@ -918,12 +921,12 @@ int Non_critical_key_set[] = {
 	END_MISSION,
 	ADD_REMOVE_ESCORT,
 	ESCORT_CLEAR,
-	TARGET_NEXT_ESCORT_SHIP,	
+	TARGET_NEXT_ESCORT_SHIP,
 	MULTI_MESSAGE_ALL,
 	MULTI_MESSAGE_FRIENDLY,
 	MULTI_MESSAGE_HOSTILE,
 	MULTI_MESSAGE_TARGET,
-	MULTI_OBSERVER_ZOOM_TO,			
+	MULTI_OBSERVER_ZOOM_TO,
 	TOGGLE_HUD_CONTRAST,
 
 	MULTI_TOGGLE_NETINFO,
@@ -2543,6 +2546,7 @@ int button_function_critical(int n, net_player *p = NULL)
 		case PLUS_5_PERCENT_THROTTLE:
 		case ZERO_THROTTLE:
 		case MAX_THROTTLE:
+		case TOGGLE_GLIDING:
 			return 0;
 
 		default :
@@ -3364,21 +3368,6 @@ int button_function(int n)
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 			break;
 		
-		case TOGGLE_GLIDING:
-			control_used(TOGGLE_GLIDING);
-			if(Player_obj != NULL)
-			{
-				if(object_get_gliding(Player_obj))
-				{
-					object_set_gliding(Player_obj, false);
-				}
-				else if(Ship_info[Player_ship->ship_info_index].can_glide)
-				{
-					object_set_gliding(Player_obj, true);
-				}
-			}
-			break;
-
 		// following are not handled here, but we need to bypass the Int3()
 		case LAUNCH_COUNTERMEASURE:
 		case VIEW_SLEW:
@@ -3389,6 +3378,8 @@ int button_function(int n)
 		case PLUS_5_PERCENT_THROTTLE:
 		case ZERO_THROTTLE:
 		case MAX_THROTTLE:
+		case TOGGLE_GLIDING:
+		case GLIDE_WHEN_PRESSED:
 			return 0;
 
 		default:

@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.35.2.11 $
- * $Date: 2007-09-02 02:07:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.35.2.12 $
+ * $Date: 2007-12-28 02:10:34 $
+ * $Author: Backslash $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.35.2.11  2007/09/02 02:07:38  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.35.2.10  2007/05/28 18:27:32  wmcoolmon
  * Added armor support for asteroid, debris, ship, and beam damage
  *
@@ -2312,6 +2315,8 @@ void asteroid_init()
 	asteroid_parse_tbl();
 }
 
+extern int Cmdline_targetinfo;
+
 // Draw brackets around on-screen asteroids that are about to collide, otherwise draw an offscreen indicator
 void asteroid_show_brackets()
 {
@@ -2347,6 +2352,9 @@ void asteroid_show_brackets()
 		if (!(asteroid_vertex.flags & PF_OVERFLOW)) {
 			gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
 			hud_show_brackets(asteroid_objp, &asteroid_vertex);
+			if ( Cmdline_targetinfo ) {
+				hud_show_lead_indicator_quick(&asteroid_objp->pos, asteroid_objp);
+			}
 		}
 
 		// if asteroid is not on screen, draw an offscreen indicator

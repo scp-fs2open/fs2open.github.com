@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.81 $
- * $Date: 2007-12-20 01:57:44 $
- * $Author: turey $
+ * $Revision: 2.336.2.82 $
+ * $Date: 2007-12-28 02:10:35 $
+ * $Author: Backslash $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.81  2007/12/20 01:57:44  turey
+ * Bunch of stuff already in HEAD. Shouldn't break anything.
+ *
  * Revision 2.336.2.80  2007/12/02 08:21:47  Goober5000
  * watch out for bad MOI values
  *
@@ -2822,6 +2825,7 @@ void init_ship_entry(int ship_info_index)
 	sip->slide_decel = 0.0f;
 	
 	sip->can_glide = false;
+	sip->glide_cap = 0.0f;
 
 	sip->warpin_speed = 0.0f;
 	sip->warpout_speed = 0.0f;
@@ -3320,6 +3324,12 @@ int parse_ship(char *filename, bool replace)
 	if(optional_string("$Glide:"))
 	{
 		stuff_boolean(&sip->can_glide);
+	}
+
+	if(sip->can_glide == true)
+	{
+		if(optional_string("+Max Glide Speed:"))
+			stuff_float(&sip->glide_cap );
 	}
 
 	if(optional_string("$Warpin type:"))
@@ -5404,6 +5414,13 @@ void physics_ship_init(object *objp)
 	if ( (pi->max_vel.xyz.x > 0.000001f) || (pi->max_vel.xyz.y > 0.000001f) )
 		pi->flags |= PF_SLIDE_ENABLED;
 
+	if ( sinfo->glide_cap > 0.000001f || sinfo->glide_cap < -0.000001f )		//Backslash
+		pi->glide_cap = sinfo->glide_cap;
+	else
+		pi->glide_cap = MAX(MAX(pi->max_vel.xyz.z, sinfo->max_overclocked_speed), pi->afterburner_max_vel.xyz.z);
+	// If there's not a value for +Max Glide Speed set in the table, we want this cap to default to the fastest speed the ship can go.
+	// However, a negative value means we want no cap, thus allowing nearly infinite maximum gliding speeds.
+
 	vm_vec_zero(&pi->vel);
 	vm_vec_zero(&pi->rotvel);
 	pi->speed = 0.0f;
@@ -6387,18 +6404,36 @@ void ship_render(object * obj)
 					render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
 				} else if(pi->desired_rotvel.xyz.z > 0 && (mtp->use_flags & MT_BANK_LEFT)) {
 					render_amount = fl_abs(pi->desired_rotvel.xyz.z) / pi->max_rotvel.xyz.z;
-				} else if(des_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
-					render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
-				} else if(des_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
-					render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
-				} else if(des_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
-					render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
-				} else if(des_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
-					render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
-				} else if(des_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
-					render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
-				} else if(des_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
-					render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
+				}
+				
+				if(pi->flags & PF_GLIDING) {	//Backslash - show thrusters according to thrust amount, not speed
+					if(pi->side_thrust > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
+						render_amount = pi->side_thrust;
+					} else if(pi->side_thrust < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
+						render_amount = -pi->side_thrust;
+					} else if(pi->vert_thrust > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
+						render_amount = pi->vert_thrust;
+					} else if(pi->vert_thrust < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
+						render_amount = -pi->vert_thrust;
+					} else if(pi->forward_thrust > 0 && (mtp->use_flags & MT_FORWARD)) {
+						render_amount = pi->forward_thrust;
+					} else if(pi->forward_thrust < 0 && (mtp->use_flags & MT_REVERSE)) {
+						render_amount = -pi->forward_thrust;
+					}		// I'd almost advocate applying the above method to these all the time even without gliding,
+				} else {	// because it looks more realistic, but I don't think the AI uses side_thrust or vert_thrust
+					if(des_vel.xyz.x > 0 && (mtp->use_flags & MT_SLIDE_RIGHT)) {
+						render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
+					} else if(des_vel.xyz.x < 0 && (mtp->use_flags & MT_SLIDE_LEFT)) {
+						render_amount = fl_abs(des_vel.xyz.x) / pi->max_vel.xyz.x;
+					} else if(des_vel.xyz.y > 0 && (mtp->use_flags & MT_SLIDE_UP)) {
+						render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
+					} else if(des_vel.xyz.y < 0 && (mtp->use_flags & MT_SLIDE_DOWN)) {
+						render_amount = fl_abs(des_vel.xyz.y) / pi->max_vel.xyz.y;
+					} else if(des_vel.xyz.z > 0 && (mtp->use_flags & MT_FORWARD)) {
+						render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
+					} else if(des_vel.xyz.z < 0 && (mtp->use_flags & MT_REVERSE)) {
+						render_amount = fl_abs(des_vel.xyz.z) / pi->max_vel.xyz.z;
+					}
 				}
 
 				if(render_amount > 0.0f)
@@ -9801,7 +9836,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 		if (winfo_p->wi_flags2 & WIF2_CYCLE){
 			Assert(pm->gun_banks[bank_to_fire].num_slots != 0);
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay / pm->gun_banks[bank_to_fire].num_slots));
-			//to maintain balence of fighters with more fire points they will fire faster that ships with fewer points
+			//to maintain balance of fighters with more fire points they will fire faster than ships with fewer points
 		}else{
 			swp->next_primary_fire_stamp[bank_to_fire] = timestamp((int)(next_fire_delay));
 		}
@@ -9900,7 +9935,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 //mprintf(("I have fired a fighter beam, type %d\n", winfo_p->b_info.beam_type));
 
 			}
-			else	//if this insn't a fighter beam, do it normaly -Bobboau
+			else	//if this isn't a fighter beam, do it normally -Bobboau
 			{
 //Assert (!(winfo_p->wi_flags & WIF_BEAM))
 
@@ -10083,7 +10118,10 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 							}
 						}
 						// create the muzzle flash effect
-						shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon );
+						if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
+							// show the flash only if in not cockpit view, or if "show ship" flag is set
+							shipfx_flash_create( obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 1, weapon );
+						}
 	
 						// maybe shudder the ship - if its me
 						if((winfo_p->wi_flags & WIF_SHUDDER) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
@@ -10729,8 +10767,10 @@ int ship_fire_secondary( object *obj, int allow_swarm )
 
 
 			// create the muzzle flash effect
-			shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
-
+			if ( (obj != Player_obj) || (sip->flags2 & SIF2_SHOW_SHIP_MODEL) || (Viewer_mode) ) {
+				// show the flash only if in not cockpit view, or if "show ship" flag is set
+				shipfx_flash_create(obj, sip->model_num, &pnt, &obj->orient.vec.fvec, 0, weapon);
+			}
 /*
 			if ( weapon_num != -1 )
 				Demo_fire_secondary_requests++;	// testing for demo

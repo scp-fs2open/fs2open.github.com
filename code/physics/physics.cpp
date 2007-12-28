@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Physics/Physics.cpp $
- * $Revision: 2.16.2.3 $
- * $Date: 2007-07-28 22:04:14 $
- * $Author: Goober5000 $
+ * $Revision: 2.16.2.4 $
+ * $Date: 2007-12-28 02:10:34 $
+ * $Author: Backslash $
  *
  * Physics stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16.2.3  2007/07/28 22:04:14  Goober5000
+ * apply some of Turey's changes to stable branch
+ *
  * Revision 2.16.2.2  2007/05/26 15:36:38  Backslash
  * Now that I've figured out how to commit to the 3_6_9 branch, here's a cleanup and update to bring physics as close to HEAD as possible without breaking anything or adding my uberglide changes yet. This fixes:
  * -the reverse-thusters-not-working-at-full-throttle bug
@@ -835,18 +838,7 @@ void physics_sim(vec3d* position, matrix* orient, physics_info* pi, float sim_ti
 	}
 	else
 	{
-		vec3d final_pos = vmd_zero_vector;
-		if(pi->flags & PF_GLIDING) {
-			vm_vec_scale_add(&final_pos, position, &pi->glide_saved_vel, sim_time);
-		} else {
-			physics_sim_vel(position, pi, sim_time, orient);
-		}
-
-		if(pi->flags & PF_GLIDING) {
-			*position = final_pos;
-			pi->vel = pi->glide_saved_vel;
-		}
-
+		physics_sim_vel(position, pi, sim_time, orient);
 		physics_sim_rot(orient, pi, sim_time);
 
 		pi->speed = vm_vec_mag(&pi->vel);							//	Note, cannot use quick version, causes cumulative error, increasing speed.
@@ -1099,7 +1091,6 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 		} else if ( goal_vel.xyz.z < 0.0f ) {
 			ramp_time_const = pi->forward_decel_time_const;
 			// hmm, maybe a reverse_accel_time_const would be a good idea to implement in the future...
-			// or should this use slide_decel_time_const?
 			if ( pi->flags & PF_GLIDING )
 				ramp_time_const = 0.0f;
 		} else {
@@ -1118,10 +1109,31 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 		// this translates local desired velocities to world velocities
 
-		vm_vec_zero(&pi->desired_vel);
-		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x );
-		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y );
-		vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z );
+		if ( pi->flags & PF_GLIDING ) {
+			pi->desired_vel = pi->vel;
+			//ok, if anyone has better math that would make the acceleration be more 'natural', please update this
+			float multiplier = 0.15f;
+			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x / (1.0f + pi->slide_accel_time_const) * multiplier);
+			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y / (1.0f + pi->slide_accel_time_const) * multiplier);
+			if ( pi->flags & PF_AFTERBURNER_ON )
+				vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z / (1.0f + pi->afterburner_forward_accel_time_const) * multiplier);
+			else
+				vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z / (1.0f + pi->forward_accel_time_const) * multiplier);
+
+			if ( pi->glide_cap > 0.0f ) {	// so if negative, don't bother with speed cap
+				float currentmag = vm_vec_mag(&pi->desired_vel);
+				if ( currentmag > pi->glide_cap ) {
+					vm_vec_scale( &pi->desired_vel, pi->glide_cap / currentmag );
+				}
+			}
+		}
+		else
+		{
+			vm_vec_zero(&pi->desired_vel);
+			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.rvec, pi->prev_ramp_vel.xyz.x );
+			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.uvec, pi->prev_ramp_vel.xyz.y );
+			vm_vec_scale_add2( &pi->desired_vel, &orient->vec.fvec, pi->prev_ramp_vel.xyz.z );
+		}
 	} else  // object does not accelerate  (PF_ACCELERATES not set)
 		pi->desired_vel = pi->vel;
 }
@@ -1264,13 +1276,13 @@ float velocity_ramp (float v_in, float v_goal, float ramp_time_const, float t)
 //				radius				=>		bounding box radius of the object, used for scaling rotation
 //
 // outputs:	makes changes to physics_info structure rotvel and vel variables
-//				
+//
 #define	STD_PRESSURE		1000		// amplitude of standard shockwave blasts
 #define	MIN_RADIUS			10			// radius within which full rotvel and shake applied
 #define	MAX_RADIUS			50			// radius at which no rotvel or shake applied
 #define	MAX_ROTVEL			0.4		// max rotational velocity
 #define	MAX_SHAKE			0.1		// max rotational amplitude of shake
-#define	MAX_VEL				8			// max vel from shockwave 
+#define	MAX_VEL				8			// max vel from shockwave
 void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi, matrix *orient, vec3d *min, vec3d *max, float radius)
 {
 	vec3d normal;
