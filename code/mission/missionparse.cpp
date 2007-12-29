@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.45 $
- * $Date: 2007-12-08 20:07:54 $
+ * $Revision: 2.178.2.46 $
+ * $Date: 2007-12-29 21:03:46 $
  * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.45  2007/12/08 20:07:54  karajorma
+ * Add the use alt as callsign option.
+ * Add a few typo and comment fixes while I'm at it
+ *
  * Revision 2.178.2.44  2007/11/28 21:00:34  karajorma
  * Change the way that score is parsed from mission files to make it easier on developers.
  *
@@ -1977,27 +1981,26 @@ void parse_player_info2(mission *pm)
 		for (i=0; i<MAX_WEAPON_TYPES; i++)
 			ptr->weaponry_pool[i] = 0;
 
-		if (optional_string("+Weaponry Pool:")) {
-			total = stuff_int_list(list2, MAX_WEAPON_TYPES * 2, WEAPON_POOL_TYPE);
+		required_string("+Weaponry Pool:");
+		total = stuff_int_list(list2, MAX_WEAPON_TYPES * 2, WEAPON_POOL_TYPE);
 
-			Assert( !(total & 0x01) );  // make sure we have an even count
+		Assert( !(total & 0x01) );  // make sure we have an even count
 
-			for (i = 0; i < total; i += 2) {
-				// in a campaign, see if the player is allowed the weapons or not.  Remove them from the
-				// pool if they are not allowed
-				if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
-					if ( !Campaign.weapons_allowed[list2[i]] )
-						continue;
-				}
+		for (i = 0; i < total; i += 2) {
+			// in a campaign, see if the player is allowed the weapons or not.  Remove them from the
+			// pool if they are not allowed
+			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+				if ( !Campaign.weapons_allowed[list2[i]] )
+					continue;
+			}
 
 				if ( (list2[i] >= 0) && (list2[i] < MAX_WEAPON_TYPES) ) {
-					// always allow the pool to be added in FRED, it is a verbal warning
-					// to let the mission dev know about the problem
-					if ( (Weapon_info[list2[i]].wi_flags & WIF_PLAYER_ALLOWED) || Fred_running )
-						ptr->weaponry_pool[list2[i]] = list2[i+1];
-					else
-						mprintf(("WARNING:  Weapon '%s' in weapon pool isn't allowed on player loadout! Ignoring it ...\n", Weapon_info[i].name));
-				}
+				// always allow the pool to be added in FRED, it is a verbal warning
+				// to let the mission dev know about the problem
+				if ( (Weapon_info[list2[i]].wi_flags & WIF_PLAYER_ALLOWED) || Fred_running )
+					ptr->weaponry_pool[list2[i]] = list2[i+1];
+				else
+					mprintf(("WARNING:  Weapon '%s' in weapon pool isn't allowed on player loadout! Ignoring it ...\n", Weapon_info[i].name));
 			}
 		}
 	}
