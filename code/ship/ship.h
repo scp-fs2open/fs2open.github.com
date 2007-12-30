@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.32 $
- * $Date: 2007-12-28 02:10:35 $
- * $Author: Backslash $
+ * $Revision: 2.150.2.33 $
+ * $Date: 2007-12-30 15:29:24 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.32  2007/12/28 02:10:35  Backslash
+ * Backslash's "let's get this stuff into 3_6_9 as well" commit.
+ * -gliding with thruster adjustments and speed cap
+ * -glide_when_pressed control (right above bank_when_pressed)
+ * -fixes to the thrusters sound and visuals while gliding
+ * -don't show muzzle flashes in 1st person
+ * -quick reticle for multitarget and asteroids
+ *
  * Revision 2.150.2.31  2007/12/08 20:07:55  karajorma
  * Add the use alt as callsign option.
  * Add a few typo and comment fixes while I'm at it
@@ -1778,10 +1786,13 @@ typedef struct ship_info {
 	char     *gun_mounts;			         // string used by multiplayer ship desc
 	char     *missile_banks;					// string used by multiplayer ship desc
 
+	char		cockpit_pof_file[MAX_FILENAME_LEN];	// POF file for cockpit view
+	vec3d		cockpit_offset;
 	char		pof_file[MAX_FILENAME_LEN];			// POF file to load/associate with ship
 	char		pof_file_hud[MAX_FILENAME_LEN];		// POF file to load for the HUD target box
 	int		num_detail_levels;				// number of detail levels for this ship
 	int		detail_distance[MAX_SHIP_DETAIL_LEVELS];					// distance to change detail levels at
+	int		cockpit_model_num;					// cockpit model
 	int		model_num;							// ship model
 	int		model_num_hud;						// model to use when rendering to the HUD (eg, mini supercap)
 	int		hud_target_lod;						// LOD to use for rendering to the HUD targetbox (if not already using special HUD model)
@@ -2080,6 +2091,7 @@ extern void ship_model_change(int n, int ship_type);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * objp );
+extern void ship_render_cockpit( object * objp);
 extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
 extern int ship_get_num_ships();

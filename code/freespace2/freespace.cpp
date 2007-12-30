@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.52 $
- * $Date: 2007-11-22 04:43:47 $
- * $Author: taylor $
+ * $Revision: 2.243.2.53 $
+ * $Date: 2007-12-30 15:29:21 $
+ * $Author: wmcoolmon $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.52  2007/11/22 04:43:47  taylor
+ * cleanup/fixage for fade in/out function (Mantis #1186)
+ *
  * Revision 2.243.2.51  2007/11/21 07:27:46  Goober5000
  * add Wing Commander Saga's fiction viewer
  *
@@ -5604,6 +5607,12 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	{
 		gr_zbuffer_clear(TRUE);
 		ship_render(Viewer_obj);
+	}
+
+	//Draw viewer cockpit
+	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
+	{
+		ship_render_cockpit(Viewer_obj);
 	}
 
 

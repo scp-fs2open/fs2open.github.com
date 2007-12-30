@@ -10,13 +10,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.82 $
- * $Date: 2007-12-28 02:10:35 $
- * $Author: Backslash $
+ * $Revision: 2.336.2.83 $
+ * $Date: 2007-12-30 15:29:22 $
+ * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.82  2007/12/28 02:10:35  Backslash
+ * Backslash's "let's get this stuff into 3_6_9 as well" commit.
+ * -gliding with thruster adjustments and speed cap
+ * -glide_when_pressed control (right above bank_when_pressed)
+ * -fixes to the thrusters sound and visuals while gliding
+ * -don't show muzzle flashes in 1st person
+ * -quick reticle for multitarget and asteroids
+ *
  * Revision 2.336.2.81  2007/12/20 01:57:44  turey
  * Bunch of stuff already in HEAD. Shouldn't break anything.
  *
@@ -2805,6 +2813,8 @@ void init_ship_entry(int ship_info_index)
 	sip->num_detail_levels = 1;
 	sip->detail_distance[0] = 0;
 	sip->hud_target_lod = -1;
+	strcpy(sip->cockpit_pof_file, "");
+	sip->cockpit_offset = vmd_zero_vector;
 	strcpy(sip->pof_file, "");
 	strcpy(sip->pof_file_hud, "");
 	
@@ -2974,6 +2984,7 @@ void init_ship_entry(int ship_info_index)
 	sip->ispew_max_particles = -1;
 	sip->dspew_max_particles = -1;
 
+	sip->cockpit_model_num = -1;
 	sip->model_num = -1;
 	sip->model_num_hud = -1;
 }
@@ -3131,6 +3142,28 @@ int parse_ship(char *filename, bool replace)
 	}
 
 	// End code by SS
+
+	if(optional_string( "$Cockpit POF file:" ))
+	{
+		char temp[MAX_FILENAME_LEN];
+		stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
+
+		// assume we're using this file name
+		bool valid = true;
+
+		// Goober5000 - if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
+		if (replace)
+			if (strlen(sip->cockpit_pof_file) > 0)
+				if (!cf_exists_full(temp, CF_TYPE_MODELS))
+					valid = false;
+
+		if (valid)
+			strcpy(sip->cockpit_pof_file, temp);
+	}
+	if(optional_string( "+Cockpit offset:" ))
+	{
+		stuff_vector(&sip->cockpit_offset);
+	}
 
 	if(optional_string( "$POF file:" ))
 	{
@@ -6062,6 +6095,27 @@ void subsys_set(int objnum, int ignore_subsys_info)
 	}
 }
 
+//	Modify the matrix orient by the slew angles a.
+void compute_slew_matrix(matrix *orient, angles *a)
+{
+	matrix	tmp, tmp2;
+	angles	t1, t2;
+
+	t1 = t2 = *a;
+	t1.h = 0.0f;	t1.b = 0.0f;
+	t2.p = 0.0f;	t2.b = 0.0f;
+
+	// put in p & b like normal
+	vm_angles_2_matrix(&tmp, &t1 );
+	vm_matrix_x_matrix( &tmp2, orient, &tmp);
+
+	// Put in heading separately
+	vm_angles_2_matrix(&tmp, &t2 );
+	vm_matrix_x_matrix( orient, &tmp2, &tmp );
+
+	vm_orthogonalize_matrix(orient);
+}
+
 
 #ifndef NDEBUG
 
@@ -6867,6 +6921,85 @@ void ship_render(object * obj)
 		// restore zbuffer mode
 		gr_zbuffer_set(saved_zbuffer_mode);
 	}
+}
+
+extern float Viewer_zoom;
+void ship_render_cockpit(object *objp)
+{
+	if(objp->type != OBJ_SHIP || objp->instance < 0)
+		return;
+
+	ship *shipp = &Ships[objp->instance];
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+
+	if(sip->cockpit_model_num < 0)
+		return;
+
+	polymodel *pm = model_get(sip->cockpit_model_num);
+	Assert(pm != NULL);
+
+	//Setup
+	gr_reset_clip();
+	//g3_start_frame(1);
+	hud_save_restore_camera_data(1);
+
+	matrix ori = vmd_identity_matrix;
+
+	if ( Viewer_obj == objp ) {
+		if ( Viewer_mode & VM_PADLOCK_ANY ) {
+			player_get_padlock_orient(&ori);
+		} else {
+			compute_slew_matrix(&ori, &Viewer_slew_angles);
+		}
+	}
+
+	g3_set_view_matrix( &vmd_zero_vector, &ori, Viewer_zoom);
+	if (!Cmdline_nohtl)
+	{
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, 10.0f*pm->rad);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
+
+	//Zbuffer
+	int saved_zbuffer_mode = gr_zbuffer_get();
+	gr_zbuffer_set(GR_ZBUFF_NONE);
+
+	//Deal with the model
+	model_set_detail_level(0);
+	model_clear_instance(sip->cockpit_model_num);
+	model_render(sip->cockpit_model_num, &vmd_identity_matrix, &sip->cockpit_offset, MR_LOCK_DETAIL | MR_NO_FOGGING /*| MR_NO_LIGHTING*/, -1, -1);
+
+	//Zbuffer
+	gr_zbuffer_set(saved_zbuffer_mode);
+
+	if (!Cmdline_nohtl) 
+	{
+		gr_end_view_matrix();
+		gr_end_proj_matrix();
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	}
+
+	//g3_end_frame();
+	hud_save_restore_camera_data(0);
+
+	//Maybe 2
+	/*
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	gr_end_view_matrix();
+	gr_end_proj_matrix();
+
+	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+	gr_set_view_matrix(&Eye_position, &Eye_matrix);
+	*/
 }
 
 void ship_subsystems_delete(ship *shipp)
@@ -8817,6 +8950,10 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 	//WMC - I hope this isn't really needed anymore. Took it out.
 
 	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
+	if(strlen(sip->cockpit_pof_file))
+	{
+		sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
+	}
 
 	// maybe load an optional hud target model
 	if(strlen(sip->pof_file_hud)){
@@ -11615,27 +11752,6 @@ int ship_find_num_turrets(object *objp)
 		}
 	}
 	return n;
-}
-
-//	Modify the matrix orient by the slew angles a.
-void compute_slew_matrix(matrix *orient, angles *a)
-{
-	matrix	tmp, tmp2;
-	angles	t1, t2;
-
-	t1 = t2 = *a;
-	t1.h = 0.0f;	t1.b = 0.0f;
-	t2.p = 0.0f;	t2.b = 0.0f;
-
-	// put in p & b like normal
-	vm_angles_2_matrix(&tmp, &t1 );
-	vm_matrix_x_matrix( &tmp2, orient, &tmp);
-
-	// Put in heading separately
-	vm_angles_2_matrix(&tmp, &t2 );
-	vm_matrix_x_matrix( orient, &tmp2, &tmp );
-
-	vm_orthogonalize_matrix(orient);
 }
 
 // calculates the eye position for this ship in the global reference frame.  Uses the
