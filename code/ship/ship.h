@@ -9,13 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.199 $
- * $Date: 2007-11-23 23:49:35 $
- * $Author: wmcoolmon $
+ * $Revision: 2.200 $
+ * $Date: 2007-12-30 18:30:29 $
+ * $Author: karajorma $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.199  2007/11/23 23:49:35  wmcoolmon
+ * - Asteroid, debris, and ship collision damage type support
+ * - Scripting system variable-setting optimizations
+ * - Standardize override style
+ * - Reinstate "Self" variable for HUD
+ * - Automatic drawString moving-to-next-line
+ * - Visible subsystem name can be changed through scripting; will not be changed in the log
+ * - Fix many for-loop signed/unsigned warnings related to size()
+ * - Asteroid, debris scripting collision handling
+ * - Many, many additional Lua functions and variables
+ * - Fix the dreaded random-Lua-parse-crash bug
+ * - Fix struct array malf-ups due to flag_def_list change
+ *
  * Revision 2.198  2007/11/20 04:58:17  Goober5000
  * fix ship-type-destroyed
  *
@@ -1328,6 +1341,7 @@ typedef struct ship_subsys_info {
 #define SF2_GLOWMAPS_DISABLED				(1<<16)		// taylor - to disable glow maps
 #define SF2_NAVPOINT_NEEDSLINK				(1<<17)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
 #define SF2_DISABLE_PRIMARY_LINKING			(1<<18)		// Turey - Ship cannot link primaries
+#define SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<19)		// Karajorma - When sending messages from this ship use the alt name instead of name
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;

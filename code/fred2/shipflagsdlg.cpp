@@ -70,6 +70,7 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_FRIENDLY_STEALTH_INVISIBLE, m_friendly_stealth_invisible);
 	DDX_Control(pDX, IDC_NAV_CARRY, m_nav_carry);
 	DDX_Control(pDX, IDC_NAV_NEEDSLINK, m_nav_needslink);
+	DDX_Control(pDX, IDC_ALT_AS_CALLSIGN, m_alt_as_callsign);
 	//}}AFX_DATA_MAP
 
 	if (pDX->m_bSaveAndValidate) {  // get dialog control values
@@ -127,6 +128,7 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_FRIENDLY_STEALTH_INVISIBLE, OnFriendlyStealthInvisible)
 	ON_BN_CLICKED(IDC_NAV_CARRY, OnNavCarry)
 	ON_BN_CLICKED(IDC_NAV_NEEDSLINK, OnNavNeedslink)
+	ON_BN_CLICKED(IDC_ALT_AS_CALLSIGN, OnAltAsCallsign)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -147,7 +149,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
 	int special_warp = 0, disable_messages = 0, guardian = 0, vaporize = 0, stealth = 0, friendly_stealth_invisible = 0;
 	int no_death_scream = 0, always_death_scream = 0, set_class_dynamically = 0, team_loadout_store_status = 0;
-	int nav_carry = 0, nav_needslink = 0;
+	int nav_carry = 0, nav_needslink = 0, alt_as_callsign = 0;
 	object *objp;
 	ship *shipp;
 	bool ship_in_wing = false;
@@ -188,6 +190,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					friendly_stealth_invisible = (shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS) ? 1 : 0;
 					nav_carry = (shipp->flags2 & SF2_NAVPOINT_CARRY) ? 1 : 0; 
 					nav_needslink = (shipp->flags2 & SF2_NAVPOINT_NEEDSLINK) ? 1 : 0;
+					alt_as_callsign = (shipp->flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN) ? 1 : 0;
 
 					destroy_before_mission = (shipp->flags & SF_KILL_BEFORE_MISSION) ? 1 : 0;
 					m_destroy_value.init(shipp->final_death_time);
@@ -241,6 +244,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					friendly_stealth_invisible = tristate_set(shipp->flags2 & SF2_FRIENDLY_STEALTH_INVIS, friendly_stealth_invisible);
 					nav_carry = tristate_set(shipp->flags2 & SF2_NAVPOINT_CARRY, nav_carry);
 					nav_needslink = tristate_set(shipp->flags2 & SF2_NAVPOINT_NEEDSLINK, nav_needslink);
+					alt_as_callsign = tristate_set(shipp->flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN, alt_as_callsign);
 
 					// check the final death time and set the internal variable according to whether or not
 					// the final_death_time is set.  Also, the value in the edit box must be set if all the
@@ -308,6 +312,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_friendly_stealth_invisible.SetCheck(friendly_stealth_invisible);
 	m_nav_carry.SetCheck(nav_carry);
 	m_nav_needslink.SetCheck(nav_needslink);
+	m_alt_as_callsign.SetCheck(alt_as_callsign);
 		
 	m_kdamage.setup(IDC_KDAMAGE, this);
 	m_destroy_value.setup(IDC_DESTROY_VALUE, this);
@@ -816,6 +821,22 @@ void ship_flags_dlg::update_ship(int shipnum)
 			break;
 	}
 
+	switch (m_alt_as_callsign.GetCheck()) {
+		case 1:
+			if ( !(shipp->flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN) )
+				set_modified();
+
+			shipp->flags2 |= SF2_USE_ALT_NAME_AS_CALLSIGN;
+			break;
+
+		case 0:
+			if ( shipp->flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN )
+				set_modified();
+
+			shipp->flags2 &= ~SF2_USE_ALT_NAME_AS_CALLSIGN;
+			break;
+	}
+
 	switch (m_guardian.GetCheck()) {
 		case 1:
 			if ( !(shipp->ship_guardian_threshold) )
@@ -1117,7 +1138,7 @@ void ship_flags_dlg::OnTeamLoadoutStoreStatus()
 void ship_flags_dlg::OnNoDeathScream()
 {
 	if (m_no_death_scream.GetCheck() == 1) {
-		m_no_death_scream.SetCheck(0);
+ 		m_no_death_scream.SetCheck(0);
 	} else {
 		m_no_death_scream.SetCheck(1);
 	}
@@ -1183,5 +1204,14 @@ void ship_flags_dlg::OnNavNeedslink()
  		m_nav_needslink.SetCheck(0);
 	} else {
 		m_nav_needslink.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnAltAsCallsign()
+{
+	if (m_alt_as_callsign.GetCheck() == 1) {
+ 		m_alt_as_callsign.SetCheck(0);
+	} else {
+		m_alt_as_callsign.SetCheck(1);
 	}
 }

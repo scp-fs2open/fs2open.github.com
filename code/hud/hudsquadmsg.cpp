@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.cpp $
- * $Revision: 2.38 $
- * $Date: 2007-05-26 00:56:11 $
- * $Author: Goober5000 $
+ * $Revision: 2.39 $
+ * $Date: 2007-12-30 18:30:29 $
+ * $Author: karajorma $
  *
  * File to control sqaudmate messaging
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.38  2007/05/26 00:56:11  Goober5000
+ * the reinforcement comm menu will now correctly display according to whether or not reinforcements are available
+ *
  * Revision 2.37  2007/04/06 13:31:38  karajorma
  * Friendly stealth ships shouldn't give away their position just cause they send a message.
  *
@@ -23,7 +26,7 @@
  * prevent the AI from falling into the black hole of disarming a turretless ship
  *
  * Revision 2.35  2007/01/15 13:43:43  karajorma
- * Fix bug where orders you gave last mission are sill accessible to the Order SEXP.
+ * Fix bug where orders you gave last mission are still accessible to the Order SEXP.
  *
  * Revision 2.34  2006/11/16 00:52:28  taylor
  * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)

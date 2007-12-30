@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.103 $
- * $Author: Goober5000 $
- * $Date: 2007-08-03 01:17:01 $
+ * $Revision: 2.104 $
+ * $Author: karajorma $
+ * $Date: 2007-12-30 18:30:29 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.103  2007/08/03 01:17:01  Goober5000
+ * fix compilation issue
+ *
  * Revision 2.102  2007/07/28 21:17:56  Goober5000
  * make the parse object array dynamic; also made the docking bitstrings dynamic
  *
@@ -976,7 +979,7 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	14
+#define MAX_PARSE_OBJECT_FLAGS_2	15
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
@@ -992,6 +995,7 @@ typedef struct p_object {
 #define P2_SF2_NO_DEATH_SCREAM				(1<<11)
 #define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<12)
 #define P2_SF2_NAV_NEEDSLINK				(1<<13)
+#define P2_SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<14)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

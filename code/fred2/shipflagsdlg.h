@@ -60,6 +60,7 @@ public:
 	CButton m_friendly_stealth_invisible;
 	CButton m_nav_carry;
 	CButton m_nav_needslink;
+	CButton m_alt_as_callsign;
 	CSpinButtonCtrl	m_destroy_spin;
 	numeric_edit_control m_kdamage;
 	numeric_edit_control m_destroy_value;
@@ -111,6 +112,7 @@ protected:
 	afx_msg void OnFriendlyStealthInvisible();
 	afx_msg void OnNavCarry();
 	afx_msg void OnNavNeedslink();
+	afx_msg void OnAltAsCallsign();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 public:

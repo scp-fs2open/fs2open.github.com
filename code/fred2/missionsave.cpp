@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.38 $
- * $Date: 2007-11-21 07:28:37 $
- * $Author: Goober5000 $
+ * $Revision: 1.39 $
+ * $Date: 2007-12-30 18:30:28 $
+ * $Author: karajorma $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.38  2007/11/21 07:28:37  Goober5000
+ * add Wing Commander Saga's fiction viewer
+ *
  * Revision 1.37  2007/09/03 01:02:49  Goober5000
  * fix for 1376
  *
@@ -2029,7 +2032,9 @@ int CFred_mission_save::save_objects()
 			fout(" %d", Ships[i].group);
 		}
 
-		if (Ships[i].score) {
+		// Only bother with the ships score if it is not the default value with FSO missions
+		// Always write it out for retail missions though
+		if (!Format_fs2_open || Ship_info[Ships[i].ship_info_index].score != Ships[i].score ) {
 			if (optional_string_fred("+Score:", "$Name:"))
 				parse_comments();
 			else
