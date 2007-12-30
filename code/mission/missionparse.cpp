@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.235 $
- * $Date: 2007-12-15 09:41:43 $
- * $Author: wmcoolmon $
+ * $Revision: 2.236 $
+ * $Date: 2007-12-30 18:30:29 $
+ * $Author: karajorma $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.235  2007/12/15 09:41:43  wmcoolmon
+ * Maybe-catch an interesting crash upon attempting to revert a mission with no cargo.
+ *
  * Revision 2.234  2007/11/23 23:17:16  wmcoolmon
  * Fix un/signed warnings related to size(), optimize Knossos-finding
  *
@@ -1518,6 +1521,7 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"no-death-scream",
 	"always-death-scream",
 	"nav-needslink",
+	"use-alt-name-as-callsign",
 };
 
 
@@ -2037,27 +2041,26 @@ void parse_player_info2(mission *pm)
 		for (i=0; i<MAX_WEAPON_TYPES; i++)
 			ptr->weaponry_pool[i] = 0;
 
-		if (optional_string("+Weaponry Pool:")) {
-			total = stuff_int_list(list2, MAX_WEAPON_TYPES * 2, WEAPON_POOL_TYPE);
+		required_string("+Weaponry Pool:"); 
+		total = stuff_int_list(list2, MAX_WEAPON_TYPES * 2, WEAPON_POOL_TYPE);
 
-			Assert( !(total & 0x01) );  // make sure we have an even count
+		Assert( !(total & 0x01) );  // make sure we have an even count
 
-			for (i = 0; i < total; i += 2) {
-				// in a campaign, see if the player is allowed the weapons or not.  Remove them from the
-				// pool if they are not allowed
-				if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
-					if ( !Campaign.weapons_allowed[list2[i]] )
-						continue;
-				}
+		for (i = 0; i < total; i += 2) {
+			// in a campaign, see if the player is allowed the weapons or not.  Remove them from the
+			// pool if they are not allowed
+			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
+				if ( !Campaign.weapons_allowed[list2[i]] )
+					continue;
+			}
 
-				if ( (list2[i] >= 0) && (list2[i] < MAX_WEAPON_TYPES) ) {
-					// always allow the pool to be added in FRED, it is a verbal warning
-					// to let the mission dev know about the problem
-					if ( (Weapon_info[list2[i]].wi_flags & WIF_PLAYER_ALLOWED) || Fred_running )
-						ptr->weaponry_pool[list2[i]] = list2[i+1];
-					else
-						mprintf(("WARNING:  Weapon '%s' in weapon pool isn't allowed on player loadout! Ignoring it ...\n", Weapon_info[i].name));
-				}
+			if ( (list2[i] >= 0) && (list2[i] < MAX_WEAPON_TYPES) ) {
+				// always allow the pool to be added in FRED, it is a verbal warning
+				// to let the mission dev know about the problem
+				if ( (Weapon_info[list2[i]].wi_flags & WIF_PLAYER_ALLOWED) || Fred_running )
+					ptr->weaponry_pool[list2[i]] = list2[i+1];
+				else
+					mprintf(("WARNING:  Weapon '%s' in weapon pool isn't allowed on player loadout! Ignoring it ...\n", Weapon_info[i].name));
 			}
 		}
 	}
@@ -3565,6 +3568,9 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	
 	if (parse_flags2 & P2_SF2_NAV_NEEDSLINK)
 		shipp->flags2 |= SF2_NAVPOINT_NEEDSLINK;
+	
+	if (parse_flags2 & P2_SF2_USE_ALT_NAME_AS_CALLSIGN)
+		shipp->flags2 |= SF2_USE_ALT_NAME_AS_CALLSIGN;
 }
 
 //	Mp points at the text of an object, which begins with the "$Name:" field.
@@ -3967,9 +3973,10 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (optional_string("+Group:"))
 		stuff_int(&p_objp->group);
 
-	p_objp->score = 0;
 	if (optional_string("+Score:"))
 		stuff_int(&p_objp->score);
+	else 
+		p_objp->score = Ship_info[p_objp->ship_class].score;
 
 	// parse the persona index if present
 	p_objp->persona_index = -1;

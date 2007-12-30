@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_endgame.cpp $
- * $Revision: 2.11 $
- * $Date: 2007-04-24 13:13:04 $
+ * $Revision: 2.12 $
+ * $Date: 2007-12-30 18:30:29 $
  * $Author: karajorma $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.11  2007/04/24 13:13:04  karajorma
+ * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
+ *
  * Revision 2.10  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -558,12 +561,6 @@ void multi_endgame_cleanup()
 		Net_player->flags &= ~(NETINFO_FLAG_CONNECTED|NETINFO_FLAG_DO_NETWORKING);
 	}
 		
-	// this is a semi-hack so that if we're the master and we're quitting, we don't get an assert
-	if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Player_obj != NULL)){
-		Player_obj->flags &= ~(OF_PLAYER_SHIP);
-		obj_set_flags( Player_obj, Player_obj->flags | OF_COULD_BE_PLAYER );
-	}
-	
 	// shut my socket down (will also let the server know i've received any notifications/error from him)
 	// psnet_rel_close_socket( &(Net_player->reliable_socket) );
 

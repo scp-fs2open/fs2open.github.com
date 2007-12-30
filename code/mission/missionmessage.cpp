@@ -9,13 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.70 $
- * $Date: 2007-09-02 03:07:55 $
- * $Author: Backslash $
+ * $Revision: 2.71 $
+ * $Date: 2007-12-30 18:30:29 $
+ * $Author: karajorma $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.70  2007/09/02 03:07:55  Backslash
+ * (code by KeldorKatarn)
+ * Reactivated HUD_ship_sent_printf to enable more flexible handling of ship names in displayed messages.
+ * Added functionality for WCSaga to use class name instead of ship name for enemy wings.
+ *
  * Revision 2.69  2007/09/02 02:10:27  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -965,7 +970,7 @@ void message_parse(bool importing_from_fsm)
 		stuff_int(&mt);
 
 		// keep it real
-		if((mt < 0) || (mt >= 2)){
+		if((mt < 0) || (mt >= MAX_TVT_TEAMS)){
 			mt = -1;
 		}
 
@@ -1708,6 +1713,7 @@ void message_play_anim( message_q *q )
 void message_queue_process()
 {	
 	char	buf[MESSAGE_LENGTH];
+	char who_from[NAME_LENGTH];	
 	message_q *q;
 	int i;
 	MissionMessage *m;
@@ -1904,7 +1910,7 @@ void message_queue_process()
 	}
 
 	// if we are playing the maximum number of voices, then return.  Make the check here since the above
-	// code might kill of currently playing messages
+	// code might kill off currently playing messages
 	if ( Num_messages_playing == MAX_PLAYING_MESSAGES )
 		return;
 
@@ -1982,13 +1988,15 @@ void message_queue_process()
 		snd_play(&Snds[SND_CUE_VOICE]);
 	}
 #endif
+	
+	strncpy (who_from, q->who_from, NAME_LENGTH);
 
-	// Modified to actually use HUD_ship_sent_printf if the sender is a ship
-	if ( Message_shipnum >= 0 ) {
-		HUD_ship_sent_printf(Message_shipnum, NOX("%s"), buf);
-	} else {
-		HUD_sourced_printf(q->source, NOX("%s: %s"), q->who_from, buf);
-	}
+	// if this is a ship do we use name or alt name?
+	if ( Message_shipnum != -1 && (Ships[Message_shipnum].flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN) ) {
+		mission_parse_lookup_alt_index(Ships[Message_shipnum].alt_type_index, who_from); 
+	}		
+
+	HUD_sourced_printf( q->source, NOX("%s: %s"), who_from, buf );
 
 	if ( Message_shipnum >= 0 ) {
 		hud_target_last_transmit_add(Message_shipnum);
@@ -2015,7 +2023,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 			return;
 
 		for ( i = 0; i < MessageQ_num; i++ ) {
-			// if one of these messages is already queued, the don't play
+			// if one of these messages is already queued, then don't play
 			if ( (MessageQ[i].message_num == message_num) && (MessageQ[i].builtin_type == builtin_type) )
 				return;
 
@@ -2247,7 +2255,8 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 					mprintf(("Warning:  Message %d has no persona assigned.\n", i));
 				}
 
-				// get a ship						
+				// get a ship. we allow silenced ships since this is a unique messange and therefore the mission designer 
+				// should have taken into account that the ship may have been silenced.
 				ship_index = ship_get_random_player_wing_ship( SHIP_GET_NO_PLAYERS, 0.0f, m_persona, 1, Messages[i].multi_team);
 
 				// if the ship_index is -1, then make the message come from Terran command
@@ -2620,4 +2629,3 @@ bool change_message(char *name, char *message, int persona_index, int multi_team
 	// not found.. fall through
 	return add_message(name, message, persona_index, multi_team);
 }
-
