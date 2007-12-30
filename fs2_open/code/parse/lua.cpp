@@ -3531,6 +3531,29 @@ LUA_FUNC(getSquadronName, l_Player, NULL, "Squad name (string)", "Gets current p
 	return lua_set_args(L, "s", Players[idx].squad_name);
 }
 
+LUA_VAR(IsMulti, l_Player, "String", "Whether player is a multiplayer pilot or not")
+{
+	int idx = -1;
+	bool b = false;
+	if(!lua_get_args(L, "o|b", l_Player.Get(&idx), &b))
+		return LUA_RETURN_NIL;
+
+	if(idx < 0 || idx > Player_num)
+		return LUA_RETURN_NIL;
+
+	player *plr = &Players[idx];
+
+	if(LUA_SETTING_VAR)
+	{
+		if(b)
+			plr->flags |= PLAYER_FLAGS_IS_MULTI;
+		else
+			plr->flags &= ~PLAYER_FLAGS_IS_MULTI;
+	}
+
+	return lua_set_args(L, "b", ((plr->flags & PLAYER_FLAGS_IS_MULTI) != 0));
+}
+
 //WMC - This isn't working
 /*
 LUA_FUNC(getSquadronImage, l_Player, NULL, "Squad image (string)", "Gets current player squad image")
