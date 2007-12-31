@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.150.2.33 $
- * $Date: 2007-12-30 15:29:24 $
+ * $Revision: 2.150.2.34 $
+ * $Date: 2007-12-31 06:44:23 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.150.2.33  2007/12/30 15:29:24  wmcoolmon
+ * Separate cockpit model support
+ *
  * Revision 2.150.2.32  2007/12/28 02:10:35  Backslash
  * Backslash's "let's get this stuff into 3_6_9 as well" commit.
  * -gliding with thruster adjustments and speed cap
@@ -2193,7 +2196,7 @@ extern void ship_model_stop(object *objp);
 extern int ship_find_num_crewpoints(object *objp);
 extern int ship_find_num_turrets(object *objp);
 
-extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj );		// returns in eye the correct viewing position for the given object
+extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true );		// returns in eye the correct viewing position for the given object
 extern ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos = NULL );	// returns index'th subsystem of this ship
 extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_bypass = 0);
 extern int ship_get_subsys_index(ship *sp, char *ss_name, int error_bypass = 0);		// returns numerical index in linked list of subsystems

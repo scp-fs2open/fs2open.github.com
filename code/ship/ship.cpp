@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.84 $
- * $Date: 2007-12-31 01:29:40 $
+ * $Revision: 2.336.2.85 $
+ * $Date: 2007-12-31 06:44:21 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.84  2007/12/31 01:29:40  wmcoolmon
+ * Move cockpit model rendering to prevent unneeded projection matrix switching
+ *
  * Revision 2.336.2.83  2007/12/30 15:29:22  wmcoolmon
  * Separate cockpit model support
  *
@@ -6946,8 +6949,13 @@ void ship_render_cockpit(object *objp)
 	//g3_start_frame(1);
 	hud_save_restore_camera_data(1);
 
-	matrix ori = vmd_identity_matrix;
+	matrix eye_ori = vmd_identity_matrix;
+	vec3d eye_pos = vmd_zero_vector;
+	ship_get_eye(&eye_pos, &eye_ori, objp, false);
 
+	vec3d pos = vmd_zero_vector;
+
+	/*
 	if ( Viewer_obj == objp ) {
 		if ( Viewer_mode & VM_PADLOCK_ANY ) {
 			player_get_padlock_orient(&ori);
@@ -6957,9 +6965,15 @@ void ship_render_cockpit(object *objp)
 	}
 
 	g3_set_view_matrix( &vmd_zero_vector, &ori, Viewer_zoom);
+	*/
+	vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
+	vm_vec_add2(&pos, &eye_pos);
 	if (!Cmdline_nohtl)
 	{
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, 10.0f*pm->rad);
+		//gr_end_proj_matrix();
+		//gr_end_view_matrix();
+
+		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.02f, 10.0f*pm->rad);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 
@@ -6970,7 +6984,8 @@ void ship_render_cockpit(object *objp)
 	//Deal with the model
 	model_set_detail_level(0);
 	model_clear_instance(sip->cockpit_model_num);
-	model_render(sip->cockpit_model_num, &vmd_identity_matrix, &sip->cockpit_offset, MR_LOCK_DETAIL | MR_NO_FOGGING /*| MR_NO_LIGHTING*/, -1, -1);
+	//model_render(sip->cockpit_model_num, &vmd_identity_matrix, &sip->cockpit_offset, MR_LOCK_DETAIL | MR_NO_FOGGING /*| MR_NO_LIGHTING*/, -1, -1);
+	model_render(sip->cockpit_model_num, &eye_ori, &pos, MR_LOCK_DETAIL | MR_NO_FOGGING /*| MR_NO_LIGHTING*/, -1, -1);
 
 	//Zbuffer
 	gr_zbuffer_set(saved_zbuffer_mode);
@@ -6979,6 +6994,9 @@ void ship_render_cockpit(object *objp)
 	{
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
+
+		//gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
+		//gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 
 	//g3_end_frame();
@@ -11756,7 +11774,7 @@ int ship_find_num_turrets(object *objp)
 // the vector of the eye is returned in the parameter 'eye'.  The orientation of the
 // eye is returned in orient.  (NOTE: this is kind of bogus for now since non 0th element
 // eyes have no defined up vector)
-void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj )
+void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew )
 {
 	polymodel *pm = model_get(Ship_info[Ships[obj->instance].ship_info_index].model_num);
 	eye *ep = &(pm->view_positions[Ships[obj->instance].current_viewpoint]);
@@ -11783,7 +11801,7 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj )
 	//}
 
 	//	Modify the orientation based on head orientation.
-	if ( Viewer_obj == obj ) {
+	if ( Viewer_obj == obj && do_slew) {
 		if ( Viewer_mode & VM_PADLOCK_ANY ) {
 			player_get_padlock_orient(eye_orient);
 		} else {
