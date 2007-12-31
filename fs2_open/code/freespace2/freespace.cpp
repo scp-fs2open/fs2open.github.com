@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/FreeSpace.cpp $
- * $Revision: 2.243.2.53 $
- * $Date: 2007-12-30 15:29:21 $
+ * $Revision: 2.243.2.54 $
+ * $Date: 2007-12-31 01:29:39 $
  * $Author: wmcoolmon $
  *
  * FreeSpace main body
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.243.2.53  2007/12/30 15:29:21  wmcoolmon
+ * Separate cockpit model support
+ *
  * Revision 2.243.2.52  2007/11/22 04:43:47  taylor
  * cleanup/fixage for fade in/out function (Mantis #1186)
  *
@@ -5609,12 +5612,6 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 		ship_render(Viewer_obj);
 	}
 
-	//Draw viewer cockpit
-	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
-	{
-		ship_render_cockpit(Viewer_obj);
-	}
-
 
 #ifndef NDEBUG
 	ai_debug_render_stuff();
@@ -5633,6 +5630,12 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	{
 		gr_end_proj_matrix();
 		gr_end_view_matrix();
+	}
+
+	//Draw viewer cockpit
+	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
+	{
+		ship_render_cockpit(Viewer_obj);
 	}
 	//================ END OF 3D RENDERING STUFF ====================
 

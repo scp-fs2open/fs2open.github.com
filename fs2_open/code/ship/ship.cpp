@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.83 $
- * $Date: 2007-12-30 15:29:22 $
+ * $Revision: 2.336.2.84 $
+ * $Date: 2007-12-31 01:29:40 $
  * $Author: wmcoolmon $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.83  2007/12/30 15:29:22  wmcoolmon
+ * Separate cockpit model support
+ *
  * Revision 2.336.2.82  2007/12/28 02:10:35  Backslash
  * Backslash's "let's get this stuff into 3_6_9 as well" commit.
  * -gliding with thruster adjustments and speed cap
@@ -6956,9 +6959,6 @@ void ship_render_cockpit(object *objp)
 	g3_set_view_matrix( &vmd_zero_vector, &ori, Viewer_zoom);
 	if (!Cmdline_nohtl)
 	{
-		gr_end_view_matrix();
-		gr_end_proj_matrix();
-
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, 0.05f, 10.0f*pm->rad);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
@@ -6979,9 +6979,6 @@ void ship_render_cockpit(object *objp)
 	{
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
-
-		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
-		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 	}
 
 	//g3_end_frame();
