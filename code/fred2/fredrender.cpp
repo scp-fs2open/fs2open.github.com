@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.11 $
- * $Date: 2007-12-30 18:30:28 $
- * $Author: karajorma $
+ * $Revision: 1.12 $
+ * $Date: 2008-01-05 02:33:41 $
+ * $Author: wmcoolmon $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.11  2007/12/30 18:30:28  karajorma
+ * Catch-up update. This stuff is all in 3.6.9 but somehow missed being added to HEAD.
+ *
  * Revision 1.10  2007/07/28 04:43:39  Goober5000
  * a couple of tweaks
  *
@@ -417,7 +420,7 @@ int	Fixed_briefing_size = 1;
 
 fix		lasttime = 0;
 vec3d	my_pos = {0.0f, 0.0f, -5.0f};
-vec3d	view_pos, eye_pos, Viewer_pos, Last_eye_pos = { 0.0f };
+vec3d	view_pos, eye_pos, Last_eye_pos = { 0.0f };
 vec3d	Last_control_pos = { 0.0f };
 vec3d	Grid_center;
 vec3d	Constraint = { 1.0f, 0.0f, 1.0f };
@@ -1801,7 +1804,7 @@ void render_frame()
 	light_reset();
 
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
-	Viewer_pos = eye_pos;  // for starfield code
+	//Viewer_pos = eye_pos;  // for starfield code
 	
 	fred_enable_htl();
 	if ( Bg_bitmap_dialog ) {
