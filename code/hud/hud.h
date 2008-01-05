@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.24 $
- * $Date: 2006-12-28 00:59:27 $
+ * $Revision: 2.25 $
+ * $Date: 2008-01-05 02:39:42 $
  * $Author: wmcoolmon $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.24  2006/12/28 00:59:27  wmcoolmon
+ * WMC codebase commit. See pre-commit build thread for details on changes.
+ *
  * Revision 2.23  2006/09/04 09:25:56  Backslash
  * Make hud toggle apply to hud framerate, statistics, and camera position
  *
@@ -487,6 +490,7 @@ void	hud_subspace_notify_abort();
 // render multiplayer text message currently being entered if any
 void hud_maybe_render_multi_text();
 
+int hud_get_draw();
 void hud_toggle_draw();
 int	hud_disabled();
 int hud_support_find_closest( int objnum );

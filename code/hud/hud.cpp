@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.72 $
- * $Date: 2007-12-22 09:36:17 $
- * $Author: Backslash $
+ * $Revision: 2.73 $
+ * $Date: 2008-01-05 02:39:42 $
+ * $Author: wmcoolmon $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.72  2007/12/22 09:36:17  Backslash
+ * Glide When Pressed key works now!
+ * Also, a fix to the engine sound so that it stops playing when the throttle is at 0.  (It used to just stop looping -- but in BtRL for example the sound is 20 seconds long.)
+ *
  * Revision 2.71  2007/07/24 20:17:36  Kazan
  * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
  *
@@ -1249,6 +1253,12 @@ void HUD_init()
 void hud_toggle_draw()
 {
 	HUD_draw = !HUD_draw;
+}
+
+//WMC
+int hud_get_draw()
+{
+	return HUD_draw;
 }
 
 // Goober5000
