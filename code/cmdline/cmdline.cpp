@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.21 $
- * $Date: 2007-10-15 06:43:08 $
- * $Author: taylor $
+ * $Revision: 2.140.2.22 $
+ * $Date: 2008-01-08 01:41:13 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.21  2007/10/15 06:43:08  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 2.140.2.20  2007/08/17 03:29:48  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
@@ -997,6 +1000,7 @@ Flag exe_params[] =
 	{ "-ship_choice_3d",	"Use models for ship selection",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ship_choice_3d", },
 	{ "-3dwarp",			"Enable 3d warp",							true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
+	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
 	{ "-tbp",				"Toggle features for The Babylon Project",	true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-tbp", }, // TBP warp effects -Et1
 	{ "-wcsaga",			"Toggle features for Wing Commander Saga",	true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-wcsaga", },
 
@@ -1166,10 +1170,12 @@ int Cmdline_targetinfo = 0;
 cmdline_parm use_3dwarp("-3dwarp", NULL);			// Cmdline_3dwarp
 cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);	// Cmdline_ship_choice_3d
 cmdline_parm use_warp_flash("-warp_flash", NULL);	// Cmdline_warp_flash
+cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL);	// Cmdline_warp_flash
 
 int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_warp_flash = 0;
+int Cmdline_autopilot_interruptable = 1;
 
 // Audio related
 cmdline_parm query_speech_arg("-query_speech", NULL);	// Cmdline_query_speech
@@ -2038,6 +2044,9 @@ bool SetCmdlineParams()
 		Cmdline_warp_flash = 1;
 	}
 
+	if ( allow_autpilot_interrupt.found() )	{
+		Cmdline_autopilot_interruptable = 0;
+	}
 	// specular comand lines
 	if ( spec_exp_arg.found() ) {
 		specular_exponent_value = spec_exp_arg.get_float();

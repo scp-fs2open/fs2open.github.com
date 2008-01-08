@@ -3738,6 +3738,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\missionui\fictionviewer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\missionui\fictionviewer.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\MissionUI\MissionBrief.cpp"
 				>
 				<FileConfiguration
@@ -7101,6 +7109,14 @@
 			Name="Network"
 			>
 			<File
+				RelativePath="..\..\code\network\chat_api.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\network\chat_api.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\Network\Multi.cpp"
 				>
 				<FileConfiguration
@@ -7546,6 +7562,14 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Network\multi_pmsg.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\network\multi_pxo.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\network\multi_pxo.h"
 				>
 			</File>
 			<File
@@ -8196,6 +8220,10 @@
 				RelativePath="..\..\code\iff_defs\iff_defs.h"
 				>
 			</File>
+		</Filter>
+		<Filter
+			Name="irc"
+			>
 		</Filter>
 	</Files>
 	<Globals>
