@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68.2.14 $
- * $Date: 2008-01-08 01:41:13 $
+ * $Revision: 2.68.2.15 $
+ * $Date: 2008-01-08 16:43:37 $
  * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68.2.14  2008/01/08 01:41:13  Kazan
+ * add chat/pxo files to MSVC 2005 project
+ * Fix the autopilot cinematic wiggle, hopefully once and for all (every tick force all nav carry ship orientation and wing'ed-ship positions)
+ *
  * Revision 2.68.2.13  2007/12/28 02:10:38  Backslash
  * Backslash's "let's get this stuff into 3_6_9 as well" commit.
  * -gliding with thruster adjustments and speed cap
@@ -3359,7 +3363,7 @@ int button_function(int n)
 		case AUTO_PILOT_TOGGLE:
 			if (AutoPilotEngaged)
 			{
-				if (Cmdline_autopilot_interruptable == 0) //allow WCS to disable autopilot interrupt via commandline
+				if (Cmdline_autopilot_interruptable == 1) //allow WCS to disable autopilot interrupt via commandline
 					EndAutoPilot();
 			}
 			else
