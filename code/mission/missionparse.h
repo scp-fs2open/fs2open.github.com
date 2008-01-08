@@ -9,13 +9,17 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.85.2.12 $
- * $Author: karajorma $
- * $Date: 2007-12-08 20:07:54 $
+ * $Revision: 2.85.2.13 $
+ * $Author: Kazan $
+ * $Date: 2008-01-08 17:24:22 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85.2.12  2007/12/08 20:07:54  karajorma
+ * Add the use alt as callsign option.
+ * Add a few typo and comment fixes while I'm at it
+ *
  * Revision 2.85.2.11  2007/08/03 01:17:10  Goober5000
  * fix compilation issue
  *
@@ -641,6 +645,7 @@ struct p_dock_instance;
 #define MISSION_FLAG_PLAYER_START_AI			(1<<19) // Player Starts mission under AI Control (NOT MULTI COMPATABLE) - Kazan
 #define MISSION_FLAG_ALL_ATTACK					(1<<20)	// all teams at war - Goober5000
 #define MISSION_FLAG_USE_AP_CINEMATICS			(1<<21) // Kazan - use autopilot cinematics
+#define MISSION_FLAG_DEACTIVATE_AP         	    (1<<22) // KeldorKatarn - deactivate autopilot (patch approved by Kazan)
 
 // some mice macros for mission type
 #define IS_MISSION_MULTI_COOP			(The_mission.game_type & MISSION_TYPE_MULTI_COOP)

@@ -30,7 +30,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)\$(TargetFileName)"
 			/>
 			<Tool
@@ -137,7 +137,7 @@
 			<Tool
 				Name="VCCustomBuildTool"
 				Description="Copying build..."
-				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;"
+				CommandLine="copy /y &quot;$(TargetPath)&quot; &quot;$(FS2PATH)\$(TargetFileName)&quot;&#x0D;&#x0A;"
 				Outputs="$(FS2PATH)\$(TargetFileName)"
 			/>
 			<Tool
@@ -1868,6 +1868,66 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\fred2\res\data01.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data02.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data03.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data04.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data05.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data06.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data07.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data08.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data09.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data10.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data11.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data12.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data13.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data14.bmp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\fred2\res\data15.bmp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\fred2\res\FRED.ico"
 				>
 			</File>
@@ -1898,5 +1958,9 @@
 		</Filter>
 	</Files>
 	<Globals>
+		<Global
+			Name="RESOURCE_FILE"
+			Value="\Projects\fs2_open_3_6_9\code\fred2\fred.rc"
+		/>
 	</Globals>
 </VisualStudioProject>

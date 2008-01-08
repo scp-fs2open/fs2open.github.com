@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68.2.15 $
- * $Date: 2008-01-08 16:43:37 $
+ * $Revision: 2.68.2.16 $
+ * $Date: 2008-01-08 17:24:22 $
  * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68.2.15  2008/01/08 16:43:37  Kazan
+ * helps to check the right value for the flag
+ *
  * Revision 2.68.2.14  2008/01/08 01:41:13  Kazan
  * add chat/pxo files to MSVC 2005 project
  * Fix the autopilot cinematic wiggle, hopefully once and for all (every tick force all nav carry ship orientation and wing'ed-ship positions)
@@ -3361,19 +3364,21 @@ int button_function(int n)
 
 		// Autopilot key control
 		case AUTO_PILOT_TOGGLE:
-			if (AutoPilotEngaged)
-			{
-				if (Cmdline_autopilot_interruptable == 1) //allow WCS to disable autopilot interrupt via commandline
-					EndAutoPilot();
-			}
-			else
-			{
-				if (CanAutopilot(true))
+			if (!(The_mission.flags & MISSION_FLAG_DEACTIVATE_AP)) {
+				if (AutoPilotEngaged)
 				{
-					StartAutopilot();
+					if (Cmdline_autopilot_interruptable == 1) //allow WCS to disable autopilot interrupt via commandline
+						EndAutoPilot();
 				}
 				else
-					gamesnd_play_iface(SND_GENERAL_FAIL);
+				{
+					if (CanAutopilot(true))
+					{
+						StartAutopilot();
+					}
+					else
+						gamesnd_play_iface(SND_GENERAL_FAIL);
+				}
 			}
 			break;
 
