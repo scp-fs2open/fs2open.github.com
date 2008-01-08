@@ -11,11 +11,14 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.89.2.8 $
- * $Date: 2007-10-15 06:43:08 $
- * $Author: taylor $
+ * $Revision: 2.89.2.9 $
+ * $Date: 2008-01-08 01:41:13 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.89.2.8  2007/10/15 06:43:08  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
  * Revision 2.89.2.7  2007/04/11 18:21:22  taylor
  * cleanup of chcksum stuff (works properly on 64-bit systems now)
  * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
@@ -676,6 +679,7 @@ extern int Cmdline_targetinfo;
 extern int Cmdline_3dwarp;
 extern int Cmdline_ship_choice_3d;
 extern int Cmdline_warp_flash;
+extern int Cmdline_autopilot_interruptable;
 
 // Audio related
 extern int Cmdline_query_speech;

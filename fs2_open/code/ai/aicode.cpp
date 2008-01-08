@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.72.2.26 $
- * $Date: 2007-09-02 18:52:50 $
- * $Author: Goober5000 $
+ * $Revision: 1.72.2.27 $
+ * $Date: 2008-01-08 01:41:11 $
+ * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.72.2.26  2007/09/02 18:52:50  Goober5000
+ * fix for #1455 plus a bit of cleanup
+ *
  * Revision 1.72.2.25  2007/09/02 02:07:37  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -1294,6 +1297,9 @@ typedef struct {
 ignore_object	Ignore_objects[MAX_IGNORE_OBJECTS];
 */
 
+// few forward decs i needed - kazan
+object * get_wing_leader(int wingnum);
+int get_wing_index(object *objp, int wingnum);
 
 control_info	AI_ci;
 
@@ -5187,30 +5193,71 @@ void ai_fly_to_ship()
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
+	int wcount=1;
+	vec3d perp, zero, goal_point;
+	memset(&zero, 0, sizeof(vec3d));
 	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
 		Player_ship->objnum != shipp->objnum &&
 		//sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) && 
 		(shipp->flags2 & SF2_NAVPOINT_CARRY || (shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
 		)) // capital ship and AutoPilotEngaged
 	{
-			vec3d tmp, proj_pos;
-			
-			//vm_vec_scale
-			memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vec3d));
-			vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
-									  // this makes tmp a displacement
-			vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
-			
+			// snap wings into formation them into formation
+			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) 
+			{
+				if (aip->wing != -1)
+				{
+					int wing_index = get_wing_index(Pl_objp, aip->wing);
+					object *leader_objp = get_wing_leader(aip->wing);
+					
+					if (leader_objp != Pl_objp)
+					{
+						// not leader.. get our position relative to leader
+						get_absolute_wing_pos(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+					}
+					else
+					{
+						switch (wcount % 2)
+						{
+							case 1: // back-left
+								vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.rvec);
+								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_normalize(&perp);
+								vm_vec_scale(&perp, 166.0f*float((wcount+1)/2)); // 166m is supposedly the optimal range according to tolwyn
+								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+								break;
 
-			ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
-		/*
-		}
-		else
-		{
-			if (dist_to_goal > 0.1f) {
-				ai_turn_towards_vector(target_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+							default: //back-right
+							case 0:
+								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
+								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_normalize(&perp);
+								vm_vec_scale(&perp, 166.0f*float(wcount/2));
+								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+								break;
+						}
+						wcount++;
+
+					}
+					Pl_objp->pos = goal_point;
+				}
+				vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
+				vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
 			}
-		}*/
+			else
+			{
+				vec3d tmp, proj_pos;
+				
+				//vm_vec_scale
+				memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vec3d));
+				vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
+										  // this makes tmp a displacement
+				vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
+				
+
+				ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+			}
+
 	}
 	else
 	{
@@ -5415,7 +5462,9 @@ void ai_waypoints()
 	// and "keep reasonable distance" 
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
-
+	int wcount=1;
+	vec3d perp, zero, goal_point;
+	memset(&zero, 0, sizeof(vec3d));
 	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
 		Player_ship->objnum != shipp->objnum &&
 		//&& sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) 
@@ -5436,18 +5485,61 @@ void ai_waypoints()
 			vm_vec_copy_normalize(&col_vec, &Objects[collide_objnum].phys_info.vel);
 			vm_vec_sub(&col_direct, &col_vec, &Objects[collide_objnum].orient.vec.fvec);
 			*/
+// snap wings into formation them into formation
+			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) 
+			{
+				if (aip->wing != -1)
+				{
+					int wing_index = get_wing_index(Pl_objp, aip->wing);
+					object *leader_objp = get_wing_leader(aip->wing);
+					
+					if (leader_objp != Pl_objp)
+					{
+						// not leader.. get our position relative to leader
+						get_absolute_wing_pos(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+					}
+					else
+					{
+						switch (wcount % 2)
+						{
+							case 1: // back-left
+								vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.rvec);
+								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_normalize(&perp);
+								vm_vec_scale(&perp, 166.0f*float((wcount+1)/2)); // 166m is supposedly the optimal range according to tolwyn
+								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+								break;
 
-			
-			vec3d tmp, proj_pos;
-			
-			//vm_vec_scale
-			memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vec3d));
-			vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
-									  // this makes tmp a displacement
-			vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
+							default: //back-right
+							case 0:
+								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
+								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_normalize(&perp);
+								vm_vec_scale(&perp, 166.0f*float(wcount/2));
+								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+								break;
+						}
+						wcount++;
 
-			ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+					}
+					Pl_objp->pos = goal_point;
+				}
+				vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
+				vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
+			}
+			else
+			{
+				vec3d tmp, proj_pos;
+				
+				//vm_vec_scale
+				memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vec3d));
+				vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
+										  // this makes tmp a displacement
+				vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
+				
 
+				ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+			}
 		/*}
 		else
 		{

@@ -4,11 +4,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.cpp $
- * $Revision: 1.23.2.17 $
- * $Date: 2007-10-28 16:33:05 $
- * $Author: taylor $
+ * $Revision: 1.23.2.18 $
+ * $Date: 2008-01-08 01:41:12 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.23.2.17  2007/10/28 16:33:05  taylor
+ * tisk tisk
+ *
  * Revision 1.23.2.16  2007/10/20 23:28:48  Kazan
  * Enemy cargo containers should not prevent autopilot.
  * Fix build problem in parselo (strrchr returns const char* not char*, need to explicitly cast - raises error in MSVC2005)
@@ -487,7 +490,7 @@ void StartAutopilot()
 				int wingnum = aip->wing, wing_index = get_wing_index(&Objects[Ships[i].objnum], wingnum);
 				vec3d goal_point;
 				object *leader_objp = get_wing_leader(wingnum);
-
+				
 				if (leader_objp != &Objects[Ships[i].objnum])
 				{
 					// not leader.. get our position relative to leader

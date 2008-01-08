@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.68.2.13 $
- * $Date: 2007-12-28 02:10:38 $
- * $Author: Backslash $
+ * $Revision: 2.68.2.14 $
+ * $Date: 2008-01-08 01:41:13 $
+ * $Author: Kazan $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.68.2.13  2007/12/28 02:10:38  Backslash
+ * Backslash's "let's get this stuff into 3_6_9 as well" commit.
+ * -gliding with thruster adjustments and speed cap
+ * -glide_when_pressed control (right above bank_when_pressed)
+ * -fixes to the thrusters sound and visuals while gliding
+ * -don't show muzzle flashes in 1st person
+ * -quick reticle for multitarget and asteroids
+ *
  * Revision 2.68.2.12  2007/11/20 01:11:09  Goober5000
  * recognize a Vasudan main hall even when it isn't the second one; play the appropriate music as soon as the main hall switches
  *
@@ -638,6 +646,7 @@
 #include "network/multi_observer.h"
 #include "network/multi_endgame.h"
 #include "autopilot/autopilot.h"
+#include "cmdline/cmdline.h"
 
 // --------------------------------------------------------------
 // Global to file 
@@ -3350,7 +3359,8 @@ int button_function(int n)
 		case AUTO_PILOT_TOGGLE:
 			if (AutoPilotEngaged)
 			{
-				EndAutoPilot();
+				if (Cmdline_autopilot_interruptable == 0) //allow WCS to disable autopilot interrupt via commandline
+					EndAutoPilot();
 			}
 			else
 			{
