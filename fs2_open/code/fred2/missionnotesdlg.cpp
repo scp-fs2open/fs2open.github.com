@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.7.2.4 $
- * $Date: 2007-10-28 16:35:12 $
- * $Author: taylor $
+ * $Revision: 1.7.2.5 $
+ * $Date: 2008-01-08 17:24:22 $
+ * $Author: Kazan $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7.2.4  2007/10/28 16:35:12  taylor
+ * add "2D Mission" checkbox to mission specs window (Mantis #1387)
+ *
  * Revision 1.7.2.3  2007/07/23 16:08:24  Kazan
  * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
@@ -311,6 +314,7 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_no_briefing = FALSE;
 	m_no_debriefing = FALSE;
 	m_autpilot_cinematics = FALSE;
+	m_no_autpilot = FALSE;
 	m_2d_mission = FALSE;
 	m_max_hull_repair_val = 0.0f;
 	m_max_subsys_repair_val = 100.0f;
@@ -356,6 +360,7 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_NO_DEBRIEFING, m_no_debriefing);
 	DDX_Check(pDX, IDC_USE_AUTOPILOT_CINEMATICS, m_autpilot_cinematics);
 	DDX_Check(pDX, IDC_2D_MISSION, m_2d_mission);
+	DDX_Check(pDX, IDC_DEACTIVATE_AUTOPILOT, m_no_autpilot);
 	DDX_Text(pDX, IDC_MAX_HULL_REPAIR_VAL, m_max_hull_repair_val);
 	DDV_MinMaxFloat(pDX, m_max_hull_repair_val, 0, 100);
 	DDX_Text(pDX, IDC_MAX_SUBSYS_REPAIR_VAL, m_max_subsys_repair_val);
@@ -571,6 +576,13 @@ void CMissionNotesDlg::OnOK()
 	} else {
 		The_mission.flags &= ~MISSION_FLAG_2D_MISSION;
 	}
+	
+	// set autopilot disabled
+	if ( m_no_autpilot ) {
+		The_mission.flags |= MISSION_FLAG_DEACTIVATE_AP;
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_DEACTIVATE_AP;
+	}
 
 	if ( flags != The_mission.flags ){
 		set_modified();
@@ -652,7 +664,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_no_debriefing = (The_mission.flags & MISSION_FLAG_NO_DEBRIEFING) ? 1 : 0;
 	m_autpilot_cinematics = (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) ? 1 : 0;
 	m_2d_mission = (The_mission.flags & MISSION_FLAG_2D_MISSION) ? 1 : 0;
-	
+	m_no_autpilot =  (The_mission.flags & MISSION_FLAG_DEACTIVATE_AP) ? 1 : 0;
 
 	m_loading_640=_T(The_mission.loading_screen[GR_640]);
 	m_loading_1024=_T(The_mission.loading_screen[GR_1024]);
@@ -916,3 +928,4 @@ void CMissionNotesDlg::OnCustomWingNames()
 
 	UpdateData(FALSE);	
 }
+

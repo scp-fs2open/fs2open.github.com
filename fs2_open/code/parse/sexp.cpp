@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.259.2.66 $
- * $Date: 2007-12-20 01:57:42 $
- * $Author: turey $
+ * $Revision: 2.259.2.67 $
+ * $Date: 2008-01-08 17:24:23 $
+ * $Author: Kazan $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.259.2.66  2007/12/20 01:57:42  turey
+ * Bunch of stuff already in HEAD. Shouldn't break anything.
+ *
  * Revision 2.259.2.65  2007/11/22 05:36:06  taylor
  * bump node allocation increment (when you are regularly realloc'ing 20-30 times, the increment is too low :))
  *
@@ -1885,7 +1888,8 @@ sexp_oper Operators[] = {
 	{ "set-nav-needslink",				OP_NAV_SET_NEEDSLINK,			1, INT_MAX }, //kazan
 	{ "unset-nav-needslink",			OP_NAV_UNSET_NEEDSLINK,			1, INT_MAX }, //kazan
 	{ "is-nav-linked",					OP_NAV_ISLINKED,				1, 1 }, //kazan
-	{ "use-nav-cinematics",				OP_NAV_USECINEMATICS,				1, 1 }, //kazan
+	{ "use-nav-cinematics",				OP_NAV_USECINEMATICS,			1, 1 }, //kazan
+	{ "use-autopilot",					OP_NAV_USEAP,					1, 1 }, //kazan
 
 	{ "grant-promotion",				OP_GRANT_PROMOTION,				0, 0,			},
 	{ "grant-medal",					OP_GRANT_MEDAL,					1, 1,			},
@@ -13884,6 +13888,22 @@ void set_use_ap_cinematics(int node)
 	}
 }
 
+//text: use-autopilot
+//args: 1, boolean enable/disable
+void set_use_ap(int node)
+{
+	//bool enable = atoi(CTEXT(node));
+	int enable = eval_sexp(node);
+	if (enable)
+	{
+		The_mission.flags |= MISSION_FLAG_DEACTIVATE_AP;
+	}
+	else
+	{
+		The_mission.flags &= ~MISSION_FLAG_DEACTIVATE_AP;
+	}
+}
+
 //text: hide-nav
 //args: 1, Nav Name
 void hide_nav(int node)
@@ -16434,6 +16454,11 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_NAV_ISLINKED:
 				sexp_val = is_nav_linked(node);
 				break;
+			
+			case OP_NAV_USEAP:
+				sexp_val = SEXP_TRUE;
+				set_use_ap(node);
+				break;
 
 			case OP_NAV_USECINEMATICS:
 				sexp_val = SEXP_TRUE;
@@ -16973,6 +16998,7 @@ int query_operator_return_type(int op)
 		case OP_NAV_SET_NEEDSLINK:
 		case OP_NAV_UNSET_NEEDSLINK:
 		case OP_NAV_USECINEMATICS:
+		case OP_NAV_USEAP:
 		case OP_HUD_SET_TEXT:
 		case OP_HUD_SET_TEXT_NUM:
 		case OP_HUD_SET_COORDS:
@@ -18193,6 +18219,7 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP;
 
 		case OP_NAV_USECINEMATICS:
+		case OP_NAV_USEAP:
 			return OPF_BOOL;
 
 		case OP_NAV_ADD_WAYPOINT:	//kazan
@@ -19552,6 +19579,9 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_NAV_USECINEMATICS, "Takes 1 boolean argument.\r\n"
 		"Set to true to enable automatic cinematics, set to false to disable automatic cinematics." },
+
+	{ OP_NAV_USEAP, "Takes 1 boolean argument.\r\n"
+		"Set to true to enable autopilot, set to false to disable autopilot." },
 
 	// -------------------------- -------------------------- -------------------------- 
 

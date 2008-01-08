@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.h $
- * $Revision: 1.4.2.3 $
- * $Date: 2007-10-28 16:35:13 $
- * $Author: taylor $
+ * $Revision: 1.4.2.4 $
+ * $Date: 2008-01-08 17:24:22 $
+ * $Author: Kazan $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.4.2.3  2007/10/28 16:35:13  taylor
+ * add "2D Mission" checkbox to mission specs window (Mantis #1387)
+ *
  * Revision 1.4.2.2  2007/07/23 16:08:24  Kazan
  * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
@@ -225,6 +228,7 @@ public:
 	BOOL		m_no_briefing;
 	BOOL		m_no_debriefing;
 	BOOL		m_autpilot_cinematics;
+	BOOL		m_no_autpilot;
 	BOOL		m_2d_mission;
 	float		m_max_hull_repair_val;
 	float		m_max_subsys_repair_val;

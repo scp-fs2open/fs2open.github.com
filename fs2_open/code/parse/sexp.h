@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.122.2.15 $
- * $Author: turey $
- * $Date: 2007-12-20 01:57:43 $
+ * $Revision: 2.122.2.16 $
+ * $Author: Kazan $
+ * $Date: 2008-01-08 17:24:24 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.122.2.15  2007/12/20 01:57:43  turey
+ * Bunch of stuff already in HEAD. Shouldn't break anything.
+ *
  * Revision 2.122.2.14  2007/10/29 11:32:22  karajorma
  * This is better than the other way.
  *
@@ -1404,6 +1407,7 @@ struct ship_subsys;
 #define OP_NAV_UNSET_NEEDSLINK				(0x000e | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 #define OP_NAV_ISLINKED						(0x000f | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 #define OP_NAV_USECINEMATICS				(0x0010 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
+#define OP_NAV_USEAP						(0x0011 | OP_CATEGORY_NAVPOINTS | OP_NONCAMPAIGN_FLAG)	// Kazan
 
 // training sexps
 #define OP_KEY_PRESSED						(0x0000 | OP_CATEGORY_TRAINING)

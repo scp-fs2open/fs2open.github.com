@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by FRED.rc
+// Microsoft Visual C++ generated include file.
+// Used by fred.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -1074,6 +1074,7 @@
 #define IDC_NO_REPLACE                  1591
 #define IDC_SKYBOX_MODEL                1592
 #define IDC_ALT_AS_CALLSIGN             1593
+#define IDC_DEACTIVATE_AUTOPILOT        1594
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1363,7 +1364,7 @@
 #define _APS_3D_CONTROLS                     1
 #define _APS_NEXT_RESOURCE_VALUE        292
 #define _APS_NEXT_COMMAND_VALUE         33091
-#define _APS_NEXT_CONTROL_VALUE         1594
+#define _APS_NEXT_CONTROL_VALUE         1595
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
