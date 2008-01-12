@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.139 $
+ * $Revision: 2.140 $
  * $Author: karajorma $
- * $Date: 2007-10-29 18:45:45 $
+ * $Date: 2008-01-12 08:42:34 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.139  2007/10/29 18:45:45  karajorma
+ * This is better than the other way.
+ *
  * Revision 2.138  2007/10/28 15:38:17  karajorma
  * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
  *
@@ -1138,7 +1141,11 @@ struct ship_subsys;
 #define OP_GET_PRIMARY_AMMO					(0x002d | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_GET_SECONDARY_AMMO				(0x002e | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define	OP_NUM_ASSISTS						(0x002f | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
-#define OP_GET_DAMAGE_CAUSED				(0x0030 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define	OP_SHIP_SCORE						(0x0030 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define	OP_PLAYER_DEATHS					(0x0031 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define	OP_RESPAWNS_LEFT					(0x0032 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+#define OP_GET_DAMAGE_CAUSED				(0x0033 | OP_CATEGORY_STATUS | OP_NONCAMPAIGN_FLAG) // Karajorma
+
 
 // conditional sexpressions
 #define OP_WHEN								(0x0000 | OP_CATEGORY_CONDITIONAL)
