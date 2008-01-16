@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.336 $
- * $Date: 2008-01-12 08:42:34 $
- * $Author: karajorma $
+ * $Revision: 2.337 $
+ * $Date: 2008-01-16 10:15:21 $
+ * $Author: Backslash $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336  2008/01/12 08:42:34  karajorma
+ * Add SEXPs for determining the players score and how many respawns they've used.
+ *
  * Revision 2.335  2007/12/24 19:48:14  turey
  * Small fix for sim hull stuff.
  *
@@ -6598,13 +6601,13 @@ void sexp_set_object_speed(object *objp, int speed, int axis, int subjective)
 		vec3d subjective_vel;
 
 		// translate objective into subjective velocity
-		vm_vec_unrotate(&subjective_vel, &objp->phys_info.vel, &objp->orient);
+		vm_vec_rotate(&subjective_vel, &objp->phys_info.vel, &objp->orient);
 
 		// set it
 		subjective_vel.a1d[axis] = i2fl(speed);
 
 		// translate it back to objective
-		vm_vec_rotate(&objp->phys_info.vel, &subjective_vel, &objp->orient);
+		vm_vec_unrotate(&objp->phys_info.vel, &subjective_vel, &objp->orient);
 	}
 	else
 	{
