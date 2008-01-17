@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.14 $
- * $Date: 2007-12-15 07:41:13 $
- * $Author: karajorma $
+ * $Revision: 1.15 $
+ * $Date: 2008-01-17 07:44:42 $
+ * $Author: Goober5000 $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
  * Document class for document/view architechure, which we don't really use in
@@ -19,6 +19,9 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.14  2007/12/15 07:41:13  karajorma
+ * Unbreak FRED compiling
+ *
  * Revision 1.13  2007/11/23 23:05:40  wmcoolmon
  * Updated event editor with minihelp box and numbered icons
  *
@@ -443,7 +446,8 @@ int Local_modified = 0;
 int Undo_available = 0;
 int Undo_count = 0;
 
-extern int Fred_found_unknown_ship_during_parsing;
+extern int Num_unknown_ship_classes;
+extern int Num_unknown_weapon_classes;
 
 CFREDDoc::CFREDDoc()
 {
@@ -699,7 +703,6 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 
 	clear_mission();
 
-	Fred_found_unknown_ship_during_parsing = 0;
 	if (parse_main(pathname, flags))
 	{
 		if (flags & MPF_IMPORT_FSM)
@@ -716,7 +719,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 		return -1;
 	}
 
-	if(Fred_found_unknown_ship_during_parsing)
+	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0))
 	{
 		if (flags & MPF_IMPORT_FSM)
 		{
@@ -729,7 +732,6 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 			Fred_view_wnd->MessageBox("Fred encountered unknown ship/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.");
 		}
 	}
-	Fred_found_unknown_ship_during_parsing = 0;
 
 	for (i=0; i<Num_waypoint_lists; i++) {
 		wptr = &Waypoint_lists[i];
@@ -1003,12 +1005,6 @@ void set_modified(BOOL arg)
 {
 	Local_modified = arg;
 	FREDDoc_ptr->SetModifiedFlag(arg);
-}
-
-// call this if an unknown ship class was discovered during parsing. Sets up a warning message for players
-void fred_notify_unknown_ship_during_parse()
-{
-	Fred_found_unknown_ship_during_parsing = 1;
 }
 
  //////////////////////////////////////////////////////////////////////////

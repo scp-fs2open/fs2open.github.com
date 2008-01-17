@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/mission/missionparse.h,v $
- * $Revision: 2.104 $
- * $Author: karajorma $
- * $Date: 2007-12-30 18:30:29 $
+ * $Revision: 2.105 $
+ * $Author: Goober5000 $
+ * $Date: 2008-01-17 07:44:43 $
  *
  * main header file for parsing code  
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.104  2007/12/30 18:30:29  karajorma
+ * Catch-up update. This stuff is all in 3.6.9 but somehow missed being added to HEAD.
+ *
  * Revision 2.103  2007/08/03 01:17:01  Goober5000
  * fix compilation issue
  *
@@ -809,6 +812,9 @@ extern int	Player_starts;
 extern fix	Entry_delay_time;
 extern int	Fred_num_texture_replacements;	// Goober5000
 extern int	Loading_screen_bm_index;
+
+extern int Num_unknown_ship_classes;
+extern int Num_unknown_weapon_classes;
 
 extern ushort Current_file_checksum;
 extern int    Current_file_length;

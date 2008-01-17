@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-09-11 06:45:39 $
- * $Author: taylor $
+ * $Revision: 2.13 $
+ * $Date: 2008-01-17 07:44:43 $
+ * $Author: Goober5000 $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.12  2006/09/11 06:45:39  taylor
+ * various small compiler warning and strict compiling fixes
+ *
  * Revision 2.11  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -285,9 +288,6 @@ int Interface_last_tick = -1;			// last timer tick on flip
 // for debugging, used to print the currently processing filename on the loading screen
 char Processing_filename[MAX_PATH_LEN];
 #endif
-
-// for notifying players of unknown ship types
-int Fred_found_unknown_ship_during_parsing = 0;
 
 // If true, then we are using Direct3D hardware.  This is used for game type stuff
 // that changes when you're using hardware.
