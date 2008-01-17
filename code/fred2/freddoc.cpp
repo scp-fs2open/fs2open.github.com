@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.6.2.9 $
- * $Date: 2007-09-02 02:07:40 $
+ * $Revision: 1.6.2.10 $
+ * $Date: 2008-01-17 07:43:23 $
  * $Author: Goober5000 $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
@@ -19,6 +19,9 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6.2.9  2007/09/02 02:07:40  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 1.6.2.8  2007/07/28 21:31:04  Goober5000
  * this should really be capitalized
  *
@@ -446,7 +449,8 @@ int Local_modified = 0;
 int Undo_available = 0;
 int Undo_count = 0;
 
-extern int Fred_found_unknown_ship_during_parsing;
+extern int Num_unknown_ship_classes;
+extern int Num_unknown_weapon_classes;
 
 CFREDDoc::CFREDDoc()
 {
@@ -702,7 +706,6 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 
 	clear_mission();
 
-	Fred_found_unknown_ship_during_parsing = 0;
 	if (parse_main(pathname, flags))
 	{
 		if (flags & MPF_IMPORT_FSM)
@@ -719,7 +722,7 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 		return -1;
 	}
 
-	if(Fred_found_unknown_ship_during_parsing)
+	if ((Num_unknown_ship_classes > 0) || (Num_unknown_weapon_classes > 0))
 	{
 		if (flags & MPF_IMPORT_FSM)
 		{
@@ -732,7 +735,6 @@ int CFREDDoc::load_mission(char *pathname, int flags)
 			Fred_view_wnd->MessageBox("Fred encountered unknown ship/weapon classes when parsing the mission file. This may be due to mission disk data you do not have.");
 		}
 	}
-	Fred_found_unknown_ship_during_parsing = 0;
 
 	for (i=0; i<Num_waypoint_lists; i++) {
 		wptr = &Waypoint_lists[i];
@@ -1006,12 +1008,6 @@ void set_modified(BOOL arg)
 {
 	Local_modified = arg;
 	FREDDoc_ptr->SetModifiedFlag(arg);
-}
-
-// call this if an unknown ship class was discovered during parsing. Sets up a warning message for players
-void fred_notify_unknown_ship_during_parse()
-{
-	Fred_found_unknown_ship_during_parsing = 1;
 }
 
  //////////////////////////////////////////////////////////////////////////

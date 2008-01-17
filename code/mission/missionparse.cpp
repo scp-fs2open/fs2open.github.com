@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.178.2.46 $
- * $Date: 2007-12-29 21:03:46 $
- * $Author: karajorma $
+ * $Revision: 2.178.2.47 $
+ * $Date: 2008-01-17 07:43:23 $
+ * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.178.2.46  2007/12/29 21:03:46  karajorma
+ * Since you can't actually save a mission without this entry and FS2 crashes without it this probably shouldn't be optional.
+ *
  * Revision 2.178.2.45  2007/12/08 20:07:54  karajorma
  * Add the use alt as callsign option.
  * Add a few typo and comment fixes while I'm at it
@@ -1259,6 +1262,8 @@
 #include "network/multi_endgame.h"
 #include "object/parseobjectdock.h"
 #include "missionui/fictionviewer.h"
+#include "cmdline/cmdline.h"
+#include "popup/popup.h"
 
 LOCAL struct {
 	char docker[NAME_LENGTH];
@@ -1285,6 +1290,9 @@ int Player_starts = 1;
 int Num_teams;
 fix Entry_delay_time = 0;
 int Fred_num_texture_replacements = 0;
+
+int Num_unknown_ship_classes;
+int Num_unknown_weapon_classes;
 
 ushort Current_file_checksum = 0;
 ushort Last_file_checksum = 0;
@@ -3454,13 +3462,10 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
 	if (p_objp->ship_class < 0)
 	{
-		Warning(LOCATION, "Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0", p_objp->name);
-
-		// if fred is running, maybe notify the user that the mission contains MD content
-		if (Fred_running)
-			Fred_found_unknown_ship_during_parsing = 1;
+		mprintf(("MISSIONS: Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0", p_objp->name));
 
 		p_objp->ship_class = 0;
+		Num_unknown_ship_classes++;
 	}
 
 	// if this is a multiplayer dogfight mission, skip support ships
@@ -5710,7 +5715,7 @@ void parse_variables()
 	}
 }
 
-void parse_mission(mission *pm, int flags)
+int parse_mission(mission *pm, int flags)
 {
 	int i;
 
@@ -5746,7 +5751,7 @@ void parse_mission(mission *pm, int flags)
 	Current_file_checksum = netmisc_calc_checksum(pm,MISSION_CHECKSUM_SIZE);
 
 	if (flags & MPF_ONLY_MISSION_INFO)
-		return;
+		return 0;
 
 	parse_plot_info(pm);
 	parse_variables();
@@ -5767,7 +5772,51 @@ void parse_mission(mission *pm, int flags)
 	parse_asteroid_fields(pm);
 	parse_music(pm, flags);
 
+	// if we couldn't load some mod data
+	if ((Num_unknown_ship_classes > 0) /*|| (Num_unknown_weapon_classes > 0)*/) {
+		// don't do this in FRED; we will display a separate popup
+		if (!Fred_running) {
+			// build up the prompt...
+			char text[1024];
+
+			sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play something that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "");
+
+			if (Game_mode & GM_CAMPAIGN_MODE) {
+				strcat(text, "(The current campaign is \"");
+				strcat(text, Campaign.name);
+			} else {
+				strcat(text, "(The current mission is \"");
+				strcat(text, pm->name);
+			}
+
+			strcat(text, "\", and the current mod is \"");
+
+			if (Cmdline_mod == NULL || *Cmdline_mod == 0) {
+				strcat(text, "<retail default> ");
+			} else {
+				for (char *mod_token = Cmdline_mod; strlen(mod_token) != 0; mod_token += strlen(mod_token) + 1) {
+					strcat(text, mod_token);
+					strcat(text, " ");
+				}
+			}
+
+			strcpy(text + strlen(text) - 1, "\".)\n\n  You can continue to load the mission, but it is quite likely that you will encounter a large number of mysterious errors.  It is recommended that you either select a campaign that is compatible with your current mod, or else exit FreeSpace and select a different mod.\n\n");
+
+			strcat(text, "Do you want to continue to load the mission?");
+
+
+			// now display the popup
+			int popup_rval = popup(PF_TITLE_BIG | PF_TITLE_RED, 2, POPUP_YES, POPUP_NO, text);
+			if (popup_rval != 0) {
+				return -2;
+			}
+		}
+	}
+
 	post_process_mission();
+
+	// success
+	return 0;
 }
 
 void post_process_mission()
@@ -6079,6 +6128,10 @@ int parse_main(char *mission_name, int flags)
 {
 	int rval, i;
 
+	// reset parse error stuff
+	Num_unknown_ship_classes = 0;
+	Num_unknown_weapon_classes = 0;
+
 	// fill in Ship_class_names array with the names from the ship_info struct;
 	Num_parse_names = 0;
 	Num_path_restrictions = 0;
@@ -6125,7 +6178,7 @@ int parse_main(char *mission_name, int flags)
 		}
 
 		memset(&The_mission, 0, sizeof(The_mission));
-		parse_mission(&The_mission, flags);
+		rval = parse_mission(&The_mission, flags);
 		display_parse_diagnostics();
 	} while (0);
 
