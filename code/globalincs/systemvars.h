@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.h $
- * $Revision: 2.13 $
- * $Date: 2006-09-08 06:20:14 $
- * $Author: taylor $
+ * $Revision: 2.14 $
+ * $Date: 2008-01-17 07:44:43 $
+ * $Author: Goober5000 $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13  2006/09/08 06:20:14  taylor
+ * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
+ *
  * Revision 2.12  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -356,9 +359,6 @@ extern vci		Viewer_chase_info;
 extern int Is_standalone;
 extern int Interface_framerate;				// show interface framerate during flips
 extern int Interface_last_tick;				// last timer tick on flip
-
-// for notifying players of unknown ship types
-extern int Fred_found_unknown_ship_during_parsing;
 
 #define NOISE_NUM_FRAMES 15
 
