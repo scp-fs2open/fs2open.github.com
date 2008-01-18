@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/WaypointPathDlg.cpp $
- * $Revision: 1.1 $
- * $Date: 2006-01-19 02:27:32 $
- * $Author: Goober5000 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2008-01-18 23:00:16 $
+ * $Author: karajorma $
  *
  * Waypoint editor
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.1  2006/01/19 02:27:32  Goober5000
+ * import FRED2 back into fs2_open module
+ * --Goober5000
+ *
  * Revision 1.7  2005/07/12 23:49:13  Goober5000
  * remove restriction on names starting with "player"
  * --Goober5000
@@ -158,20 +162,25 @@ void waypoint_path_dlg::OnInitMenu(CMenu* pMenu)
 
 	m = pMenu->GetSubMenu(0);
 	clear_menu(m);
-	for (i=0; i<Num_waypoint_lists; i++)
-		if (Waypoint_lists[i].count)
+	for (i=0; i<Num_waypoint_lists; i++) {
+		if (Waypoint_lists[i].count) {
 			m->AppendMenu(MF_ENABLED | MF_STRING, ID_WAYPOINT_MENU + i, Waypoint_lists[i].name);
+		}
+	}
 
-	for ( jump_node *jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() )
+	i = 0; 
+	for ( jump_node *jnp = (jump_node *)Jump_nodes.get_first(); !Jump_nodes.is_end(jnp); jnp = (jump_node *)jnp->get_next() ) {
 		m->AppendMenu(MF_ENABLED | MF_STRING, ID_JUMP_NODE_MENU + i, jnp->get_name_ptr());
+		if (jnp->get_objnum() == cur_object_index) {
+			m->CheckMenuItem(ID_JUMP_NODE_MENU + i,  MF_BYCOMMAND | MF_CHECKED);
+		}
+		i++;
+
+	}
 
 	m->DeleteMenu(ID_PLACEHOLDER, MF_BYCOMMAND);
 	if (cur_waypoint_list != -1)
 		m->CheckMenuItem(ID_WAYPOINT_MENU + cur_waypoint_list, MF_BYCOMMAND | MF_CHECKED);
-
-	if (cur_object_index >= 0)
-		if (Objects[cur_object_index].type == OBJ_JUMP_NODE)
-			m->CheckMenuItem(ID_JUMP_NODE_MENU + Objects[cur_object_index].instance, MF_BYCOMMAND | MF_CHECKED);
 
 	CDialog::OnInitMenu(pMenu);
 }
@@ -442,10 +451,13 @@ BOOL waypoint_path_dlg::OnCommand(WPARAM wParam, LPARAM lParam)
 			point = id - ID_JUMP_NODE_MENU;
 			unmark_all();
 			ptr = GET_FIRST(&obj_used_list);
-			while (ptr != END_OF_LIST(&obj_used_list)) {
-				if (ptr->type == OBJ_JUMP_NODE)
-					if (ptr->instance == point)
+			while ((ptr != END_OF_LIST(&obj_used_list)) && (point > -1)) {
+				if (ptr->type == OBJ_JUMP_NODE) {
+					if (point == 0) {
 						mark_object(OBJ_INDEX(ptr));
+					}
+					point--; 
+				}
 
 				ptr = GET_NEXT(ptr);
 			}
