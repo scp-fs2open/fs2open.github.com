@@ -10,13 +10,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.cpp $
- * $Revision: 2.336.2.85 $
- * $Date: 2007-12-31 06:44:21 $
- * $Author: wmcoolmon $
+ * $Revision: 2.336.2.86 $
+ * $Date: 2008-01-18 17:59:49 $
+ * $Author: Goober5000 $
  *
  * Ship (and other object) handling functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.336.2.85  2007/12/31 06:44:21  wmcoolmon
+ * Fix lighting and possibly clipping issues with separate-model cockpits
+ *
  * Revision 2.336.2.84  2007/12/31 01:29:40  wmcoolmon
  * Move cockpit model rendering to prevent unneeded projection matrix switching
  *
@@ -5415,13 +5418,16 @@ void physics_ship_init(object *objp)
 	}
 
 	// ack!
-	// if pm's MOI is invalid, use the default from physics_init
+	// if pm's MOI is invalid, compensate
 	if ( IS_VEC_NULL(&pm->moment_of_inertia.vec.rvec)
 		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
 		&& IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
 	{
-		nprintf(("Physics", "pm->moment_of_inertia is invalid. ignoring"));
-		Warning(LOCATION, "%s (%s) has a null moment of inertia!  Falling back to physics default, but this is not guaranteed to work.", sinfo->name, sinfo->pof_file);
+		nprintf(("Physics", "pm->moment_of_inertia is invalid for %s!", pm->filename));
+		Warning(LOCATION, "%s (%s) has a null moment of inertia!", sinfo->name, sinfo->pof_file);
+
+		// TODO: generate MOI properly
+		pi->I_body_inv = pm->moment_of_inertia;
 	}
 	// it's valid, so we can use it
 	else
