@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.h $
- * $Revision: 2.6 $
- * $Date: 2007-08-17 03:29:44 $
+ * $Revision: 2.7 $
+ * $Date: 2008-01-19 00:27:41 $
  * $Author: Goober5000 $
  *
  * Header file for HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2007/08/17 03:29:44  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
+ *
  * Revision 2.5  2005/07/13 03:15:51  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -167,17 +170,11 @@ struct ai_info;
 // Index in Radar_ranges[] array to get values
 
 #define RR_MAX_RANGES		3				// keep up to date
-
 #define RR_SHORT			0
 #define RR_LONG				1	
 #define RR_INFINITY			2
-
-#define RR_INFINITY_THRESHOLD	100000
-
 extern float Radar_ranges[RR_MAX_RANGES];
-extern float Radar_ranges_default[RR_MAX_RANGES];
-extern void Radar_range_stuff_text(char *buf, int range_num);
-
+extern char *Radar_range_text(int range_num);
 
 #define RP_SHOW_DEBRIS						(1<<0)
 #define RP_SHOW_FRIENDLY_MISSILES		(1<<1)
@@ -244,8 +241,6 @@ void hud_config_record_color(int color);
 
 // load up the given hcf file
 void hud_config_color_load(char *name);
-
-void hud_set_radar_max_range(float range);
 
 #endif
 

@@ -9,13 +9,16 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/sexp.h,v $
- * $Revision: 2.140 $
- * $Author: karajorma $
- * $Date: 2008-01-12 08:42:34 $
+ * $Revision: 2.141 $
+ * $Author: Goober5000 $
+ * $Date: 2008-01-19 00:27:42 $
  *
  * header for sexpression parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140  2008/01/12 08:42:34  karajorma
+ * Add SEXPs for determining the players score and how many respawns they've used.
+ *
  * Revision 2.139  2007/10/29 18:45:45  karajorma
  * This is better than the other way.
  *
@@ -1287,7 +1290,7 @@ struct ship_subsys;
 #define OP_HUD_SET_COORDS					(0x0074 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_HUD_SET_FRAME					(0x0075 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
 #define OP_HUD_SET_COLOR					(0x0076 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //WMC
-#define OP_RADAR_SET_MAX_RANGE				(0x0077 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) //Kazan
+#define OP_HUD_SET_MAX_TARGETING_RANGE		(0x0077 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SHIP_TAG							(0x0078 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SHIP_UNTAG						(0x0079 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Goober5000
 #define OP_SHIP_CHANGE_ALT_NAME				(0x007a | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000

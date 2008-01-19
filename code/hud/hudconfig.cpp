@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.27 $
- * $Date: 2007-09-02 02:10:25 $
+ * $Revision: 2.28 $
+ * $Date: 2008-01-19 00:27:41 $
  * $Author: Goober5000 $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.27  2007/09/02 02:10:25  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
  * Revision 2.26  2007/08/17 03:29:44  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
@@ -394,38 +397,21 @@ float Radar_ranges[RR_MAX_RANGES] = {
 	10000000.0f,	// infinity
 };
 
-float Radar_ranges_default[RR_MAX_RANGES] = {
-	2000.0f,		// short
-	10000.0f,		// med
-	10000000.0f,	// infinity
-};
-
-
-void Radar_range_stuff_text(char *buf, int n)
+char *Radar_range_text(int n)
 {
-	int range = (int) Radar_ranges[n];
+	#if RR_MAX_RANGES != 3
+	#error Number of ranges is wrong!
+	#endif
 
-	if (range >= RR_INFINITY_THRESHOLD)
-	{
-		strcpy(buf, XSTR("infinity", 248));
+	switch(n)	{
+	case 0:
+		return XSTR( "2000 M", 246);
+	case 1:
+		return XSTR( "10,000 M", 247);
+	case 2:
+		return XSTR( "infinity", 248);
 	}
-	else
-	{
-		format_integer_with_commas(buf, range, false);
-		strcat(buf, " M");
-	}
-}
-
-
-void hud_set_radar_max_range(float range)
-{
-	for (int i = 0; i < RR_MAX_RANGES; i++)
-	{
-		if (range > 0 && range < Radar_ranges_default[i])
-			Radar_ranges[i] = range;
-		else
-			Radar_ranges[i] = Radar_ranges_default[i];
-	}
+	return NULL;
 }
 
 // default flags for observer HUD
@@ -1884,7 +1870,7 @@ void hud_set_default_hud_config(player *p)
 	HUD_config.popup_flags2 = HUD_default_popup_mask2;
 	HUD_config.num_msg_window_lines			= 4;	// one more than is actually visible
 	HUD_config.rp_flags = RP_DEFAULT;
-	HUD_config.rp_dist = RR_MAX_RANGES-1;
+	HUD_config.rp_dist = RR_INFINITY;
 	HUD_config.is_observer = 0;
 }
 
