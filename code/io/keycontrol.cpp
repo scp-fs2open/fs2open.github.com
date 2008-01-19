@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/KeyControl.cpp $
- * $Revision: 2.85 $
- * $Date: 2007-11-20 01:11:12 $
+ * $Revision: 2.86 $
+ * $Date: 2008-01-19 00:27:42 $
  * $Author: Goober5000 $
  *
  * Routines to read and deal with keyboard input.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.85  2007/11/20 01:11:12  Goober5000
+ * recognize a Vasudan main hall even when it isn't the second one; play the appropriate music as soon as the main hall switches
+ *
  * Revision 2.84  2007/08/17 03:29:45  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
@@ -3159,9 +3162,7 @@ int button_function(int n)
 			if ( HUD_config.rp_dist >= RR_MAX_RANGES )
 				HUD_config.rp_dist = 0;
 
-			char buf[32];
-			Radar_range_stuff_text(buf, HUD_config.rp_dist);
-			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Radar range set to %s", 38), buf);
+			HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Radar range set to %s", 38), Radar_range_text(HUD_config.rp_dist));
 			break;
 
 		// toggle the squadmate messaging menu

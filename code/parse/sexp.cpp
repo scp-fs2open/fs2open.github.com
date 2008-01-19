@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.337 $
- * $Date: 2008-01-16 10:15:21 $
- * $Author: Backslash $
+ * $Revision: 2.338 $
+ * $Date: 2008-01-19 00:27:42 $
+ * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.337  2008/01/16 10:15:21  Backslash
+ * Fixed set-object-speed sexps.  Thanks for the inspiration, Keldor!
+ *
  * Revision 2.336  2008/01/12 08:42:34  karajorma
  * Add SEXPs for determining the players score and how many respawns they've used.
  *
@@ -2005,7 +2008,7 @@ sexp_oper Operators[] = {
 	{ "hud-set-coords",				OP_HUD_SET_COORDS,				3, 3 },	//WMCoolmon
 	{ "hud-set-frame",				OP_HUD_SET_FRAME,				2, 2 },	//WMCoolmon
 	{ "hud-set-color",				OP_HUD_SET_COLOR,				4, 4 }, //WMCoolmon
-	{ "radar-set-max-range",		OP_RADAR_SET_MAX_RANGE,			1, 1 }, //Kazan
+	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,		1, 1 }, // Goober5000
 
 /*	made obsolete by Goober5000
 	{ "error",	OP_INT3,	0, 0 },
@@ -4081,6 +4084,8 @@ int get_sexp(char *token)
 				strcpy(token, "ai-chase-any");
 			else if (!stricmp(token, "change-ship-model"))
 				strcpy(token, "change-ship-class");
+			else if (!stricmp(token, "radar-set-max-range"))
+				strcpy(token, "hud-set-max-targeting-range");
 
 			op = get_operator_index(token);
 			if (op != -1) {
@@ -8799,9 +8804,11 @@ void sexp_hud_set_color(int n)
 #endif
 }
 
-void sexp_radar_set_max_range(int n)
+
+// Goober5000
+void sexp_hud_set_max_targeting_range(int n)
 {
-	hud_set_radar_max_range(atof(CTEXT(n)));
+	// TODO
 }
 
 // Goober5000
@@ -15980,8 +15987,8 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
-			case OP_RADAR_SET_MAX_RANGE: //Kazan
-				sexp_radar_set_max_range(node);
+			case OP_HUD_SET_MAX_TARGETING_RANGE:
+				sexp_hud_set_max_targeting_range(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -17286,7 +17293,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
-		case OP_RADAR_SET_MAX_RANGE:
+		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SET_DEATH_MESSAGE:
 		case OP_SCRAMBLE_MESSAGES:
@@ -17452,7 +17459,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SPECIAL_CHECK:
 		case OP_AI_WARP_OUT:
 		case OP_TEAM_SCORE:
-		case OP_RADAR_SET_MAX_RANGE: //Kazan
+		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_MISSION_SET_NEBULA:	//WMC
 			return OPF_POSITIVE;
 
@@ -19762,7 +19769,7 @@ int get_subcategory(int sexp_id)
 		case OP_HUD_SET_COORDS:
 		case OP_HUD_SET_FRAME:
 		case OP_HUD_SET_COLOR:
-		case OP_RADAR_SET_MAX_RANGE: //Kazan
+		case OP_HUD_SET_MAX_TARGETING_RANGE:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -19886,13 +19893,6 @@ sexp_help_struct Sexp_help[] = {
 		"Set to true to enable automatic cinematics, set to false to disable automatic cinematics." },
 
 	// -------------------------- -------------------------- -------------------------- 
-
-
-	// For the mission designer to enforce a -radar_reduce
-	{ OP_RADAR_SET_MAX_RANGE, "Radar-set-max-range (Action operator)\r\n"
-		"\tSets the maximum radar range to the value of the argument.\r\n"
-		"\tEntering -1 will reset maximum radar range to infinity.\r\n"
-		"\tTakes 1 numeric argument: The maximum radar range.\r\n"},
 
 	// Goober5000
 	{ OP_ABS, "Absolute value (Arithmetic operator)\r\n"
@@ -21911,6 +21911,12 @@ sexp_help_struct Sexp_help[] = {
 	{ OP_HUD_DISABLE_EXCEPT_MESSAGES, "hud-disable-except-messages\r\n"
 		"\tSets whether the hud (except for messages) is disabled.  Takes 1 argument...\r\n"
 		"\t1: Flag (1 to disable, 0 to re-enable)"
+	},
+
+	// Goober5000
+	{ OP_HUD_SET_MAX_TARGETING_RANGE, "hud-set-max-targeting-range\r\n"
+		"\tSets the farthest distance at which an object can be targeted.  Takes 1 argument...\r\n"
+		"\1: Maximum targeting distance (-1 for infinite)\r\n"
 	},
 
 	// Goober5000

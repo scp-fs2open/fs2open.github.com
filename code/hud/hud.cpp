@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.73 $
- * $Date: 2008-01-05 02:39:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.74 $
+ * $Date: 2008-01-19 00:27:41 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.73  2008/01/05 02:39:42  wmcoolmon
+ * hud_get_draw()
+ *
  * Revision 2.72  2007/12/22 09:36:17  Backslash
  * Glide When Pressed key works now!
  * Also, a fix to the engine sound so that it stops playing when the throttle is at 0.  (It used to just stop looping -- but in BtRL for example the sound is 20 seconds long.)
@@ -1345,7 +1348,6 @@ void hud_update_frame()
 		}
 	}
 
-
 	// if there is no target, check if auto-targeting is enabled, and select new target
 	int retarget = 0;
 	int retarget_turret = 0;
@@ -1391,13 +1393,6 @@ void hud_update_frame()
 		// hud_target_closest(OBJ_INDEX(Player_obj), FALSE, FALSE);
 		void hud_update_closest_turret();
 		hud_update_closest_turret();
-	}
-
-	// purge target if beyond max radar range -- Kazan
-	if (Player_ai->target_objnum != -1)
-	{
-		if (vm_vec_dist(&Player_obj->pos, &Objects[Player_ai->target_objnum].pos) > Radar_ranges[RR_MAX_RANGES-1])
-			Player_ai->target_objnum = -1;
 	}
 
 	hud_target_change_check();
