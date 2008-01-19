@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.67.2.5 $
- * $Date: 2008-01-19 00:27:07 $
+ * $Revision: 2.67.2.6 $
+ * $Date: 2008-01-19 01:23:17 $
  * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67.2.5  2008/01/19 00:27:07  Goober5000
+ * we all got led down the garden path there!  revert all radar range modifications
+ *
  * Revision 2.67.2.4  2007/12/28 02:10:37  Backslash
  * Backslash's "let's get this stuff into 3_6_9 as well" commit.
  * -gliding with thruster adjustments and speed cap
@@ -679,6 +682,8 @@ float HUD_offset_y = 0.0f;
 // Global: integrity of player's target
 float Pl_target_integrity;
 
+int Hud_max_targeting_range;
+
 static int Hud_last_can_target;	// whether Player is able to target in the last frame
 static int Hud_can_target_timer;	// timestamp to allow target gauge to draw static once targeting functions are not allowed
 
@@ -1247,7 +1252,10 @@ void HUD_init()
 
 	if(The_mission.flags & MISSION_FLAG_FULLNEB){
 		HUD_contrast = 1;
-	} 
+	}
+
+	// reset to infinite
+	Hud_max_targeting_range = 0;
 }
 
 void hud_toggle_draw()

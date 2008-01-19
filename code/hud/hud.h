@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.22 $
- * $Date: 2006-01-13 03:30:59 $
+ * $Revision: 2.22.2.1 $
+ * $Date: 2008-01-19 01:23:17 $
  * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.22  2006/01/13 03:30:59  Goober5000
+ * übercommit of custom IFF stuff :)
+ *
  * Revision 2.21  2005/12/29 00:54:08  phreak
  * mirror parameter in hud_anim_render().  only used when briefing icons are fading in.
  *
@@ -398,6 +401,8 @@ extern float HUD_offset_y;
 // Global: integrity of player's target
 extern float Pl_target_integrity;
 extern float Player_rearm_eta;
+
+extern int Hud_max_targeting_range;
 
 void HUD_init_colors();
 void HUD_init();
