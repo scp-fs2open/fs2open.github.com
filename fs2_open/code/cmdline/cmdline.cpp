@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.157 $
- * $Date: 2007-08-17 03:29:44 $
+ * $Revision: 2.158 $
+ * $Date: 2008-01-19 00:27:41 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.157  2007/08/17 03:29:44  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
+ *
  * Revision 2.156  2007/07/29 03:11:01  Goober5000
  * allow embedded dashes in command-line options
  *
@@ -1148,7 +1151,6 @@ cmdline_parm dualscanlines_arg("-dualscanlines", NULL); // Cmdline_dualscanlines
 cmdline_parm orb_radar("-orbradar", NULL);			// Cmdline_orb_radar
 cmdline_parm rearm_timer_arg("-rearm_timer", NULL);	// Cmdline_rearm_timer
 cmdline_parm targetinfo_arg("-targetinfo", NULL);	// Cmdline_targetinfo  -- Adds ship name/class to right of target box -C
-cmdline_parm Radar_Range_Clamp("-radar_reduce", NULL);
 
 int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
 int Cmdline_dualscanlines = 0;
@@ -1746,12 +1748,6 @@ bool SetCmdlineParams()
 	if(voice_recognition_arg.found())
 	{
 		Cmdline_voice_recognition = 1;
-	}
-
-	if (Radar_Range_Clamp.found())
-	{
-		float f = Radar_Range_Clamp.get_float();
-		hud_set_radar_max_range(f);
 	}
 
 	if (nowarn_arg.found())
