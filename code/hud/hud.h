@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.h $
- * $Revision: 2.25 $
- * $Date: 2008-01-05 02:39:42 $
- * $Author: wmcoolmon $
+ * $Revision: 2.26 $
+ * $Date: 2008-01-19 01:23:40 $
+ * $Author: Goober5000 $
  *
  * Header file for functions that contain HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.25  2008/01/05 02:39:42  wmcoolmon
+ * hud_get_draw()
+ *
  * Revision 2.24  2006/12/28 00:59:27  wmcoolmon
  * WMC codebase commit. See pre-commit build thread for details on changes.
  *
@@ -410,6 +413,8 @@ extern float HUD_offset_y;
 // Global: integrity of player's target
 extern float Pl_target_integrity;
 extern float Player_rearm_eta;
+
+extern int Hud_max_targeting_range;
 
 void HUD_init_colors();
 void HUD_init();

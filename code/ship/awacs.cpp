@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.32 $
- * $Date: 2007-01-14 10:26:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.33 $
+ * $Date: 2008-01-19 01:23:41 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.32  2007/01/14 10:26:39  wmcoolmon
+ * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ *
  * Revision 2.31  2007/01/08 00:50:59  Goober5000
  * remove WMC's limbo code, per our discussion a few months ago
  * this will later be handled by copying ship stats using sexps or scripts
@@ -392,10 +395,14 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 #define UNTARGETABLE			-1.0f
 #define FULLY_TARGETABLE		(viewer_has_primitive_sensors ? ((distance < viewer->primitive_sensor_range) ? MARGINALLY_TARGETABLE : UNTARGETABLE) : ALWAYS_TARGETABLE)
 
-
 	// if the viewer is me, and I'm a multiplayer observer, its always viewable
 	if ((viewer == Player_ship) && (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM]))
 		return ALWAYS_TARGETABLE;
+
+	// check the targeting threshold
+	if ((Hud_max_targeting_range > 0) && (distance > Hud_max_targeting_range)) {
+		return UNTARGETABLE;
+	}
 
 	if (target->type == OBJ_SHIP) {
 		// if no valid target then bail as never viewable
@@ -639,6 +646,10 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 
 	// not visible if viewer has primitive sensors
 	if (viewer->flags2 & SF2_PRIMITIVE_SENSORS)
+		return 0;
+
+	// not visible if out of range
+	if ((Hud_max_targeting_range > 0) && (vm_vec_dist_quick(&target->pos, &Objects[viewer->objnum].pos) > Hud_max_targeting_range))
 		return 0;
 
 	// friendly stealthed ships are not visible if they have the friendly-stealth-invisible flag set
