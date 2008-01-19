@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.23.2.5 $
- * $Date: 2006-09-11 01:10:00 $
- * $Author: taylor $
+ * $Revision: 2.23.2.6 $
+ * $Date: 2008-01-19 01:23:19 $
+ * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.23.2.5  2006/09/11 01:10:00  taylor
+ * compiler warning fixes
+ *
  * Revision 2.23.2.4  2006/07/06 21:53:59  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
@@ -377,10 +380,14 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 #define UNTARGETABLE			-1.0f
 #define FULLY_TARGETABLE		(viewer_has_primitive_sensors ? ((distance < viewer->primitive_sensor_range) ? MARGINALLY_TARGETABLE : UNTARGETABLE) : ALWAYS_TARGETABLE)
 
-
 	// if the viewer is me, and I'm a multiplayer observer, its always viewable
 	if ((viewer == Player_ship) && (Game_mode & GM_MULTIPLAYER) && (Net_player != NULL) && MULTI_OBSERVER(Net_players[MY_NET_PLAYER_NUM]))
 		return ALWAYS_TARGETABLE;
+
+	// check the targeting threshold
+	if ((Hud_max_targeting_range > 0) && (distance > Hud_max_targeting_range)) {
+		return UNTARGETABLE;
+	}
 
 	if (target->type == OBJ_SHIP) {
 		// if no valid target then bail as never viewable
@@ -626,6 +633,10 @@ int ship_is_visible_by_team(object *target, ship *viewer)
 
 	// not visible if viewer has primitive sensors
 	if (viewer->flags2 & SF2_PRIMITIVE_SENSORS)
+		return 0;
+
+	// not visible if out of range
+	if ((Hud_max_targeting_range > 0) && (vm_vec_dist_quick(&target->pos, &Objects[viewer->objnum].pos) > Hud_max_targeting_range))
 		return 0;
 
 	// friendly stealthed ships are not visible if they have the friendly-stealth-invisible flag set
