@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/parse/SEXP.CPP $
- * $Revision: 2.338 $
- * $Date: 2008-01-19 00:27:42 $
+ * $Revision: 2.339 $
+ * $Date: 2008-01-19 01:23:40 $
  * $Author: Goober5000 $
  *
  * main sexpression generator
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.338  2008/01/19 00:27:42  Goober5000
+ * we all got led down the garden path there!  revert all radar range modifications
+ *
  * Revision 2.337  2008/01/16 10:15:21  Backslash
  * Fixed set-object-speed sexps.  Thanks for the inspiration, Keldor!
  *
@@ -8808,7 +8811,10 @@ void sexp_hud_set_color(int n)
 // Goober5000
 void sexp_hud_set_max_targeting_range(int n)
 {
-	// TODO
+	Hud_max_targeting_range = eval_num(n);
+
+	if (Hud_max_targeting_range < 0)
+		Hud_max_targeting_range = 0;
 }
 
 // Goober5000
@@ -21916,7 +21922,7 @@ sexp_help_struct Sexp_help[] = {
 	// Goober5000
 	{ OP_HUD_SET_MAX_TARGETING_RANGE, "hud-set-max-targeting-range\r\n"
 		"\tSets the farthest distance at which an object can be targeted.  Takes 1 argument...\r\n"
-		"\1: Maximum targeting distance (-1 for infinite)\r\n"
+		"\1: Maximum targeting distance (0 for infinite)\r\n"
 	},
 
 	// Goober5000
