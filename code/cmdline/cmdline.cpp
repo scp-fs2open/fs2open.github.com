@@ -9,11 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.140.2.22 $
- * $Date: 2008-01-08 01:41:13 $
- * $Author: Kazan $
+ * $Revision: 2.140.2.23 $
+ * $Date: 2008-01-19 00:27:06 $
+ * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.140.2.22  2008/01/08 01:41:13  Kazan
+ * add chat/pxo files to MSVC 2005 project
+ * Fix the autopilot cinematic wiggle, hopefully once and for all (every tick force all nav carry ship orientation and wing'ed-ship positions)
+ *
  * Revision 2.140.2.21  2007/10/15 06:43:08  taylor
  * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *
@@ -1158,7 +1162,6 @@ cmdline_parm dualscanlines_arg("-dualscanlines", NULL); // Cmdline_dualscanlines
 cmdline_parm orb_radar("-orbradar", NULL);			// Cmdline_orb_radar
 cmdline_parm rearm_timer_arg("-rearm_timer", NULL);	// Cmdline_rearm_timer
 cmdline_parm targetinfo_arg("-targetinfo", NULL);	// Cmdline_targetinfo  -- Adds ship name/class to right of target box -C
-cmdline_parm Radar_Range_Clamp("-radar_reduce", NULL);
 
 int Cmdline_ballistic_gauge = 0;	// WMCoolmon's gauge thingy
 int Cmdline_dualscanlines = 0;
@@ -1762,12 +1765,6 @@ bool SetCmdlineParams()
 	if(voice_recognition_arg.found())
 	{
 		Cmdline_voice_recognition = 1;
-	}
-
-	if (Radar_Range_Clamp.found())
-	{
-		float f = Radar_Range_Clamp.get_float();
-		hud_set_radar_max_range(f);
 	}
 
 	if (nowarn_arg.found())

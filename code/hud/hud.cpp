@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUD.cpp $
- * $Revision: 2.67.2.4 $
- * $Date: 2007-12-28 02:10:37 $
- * $Author: Backslash $
+ * $Revision: 2.67.2.5 $
+ * $Date: 2008-01-19 00:27:07 $
+ * $Author: Goober5000 $
  *
  * C module that contains all the HUD functions at a high level
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.67.2.4  2007/12/28 02:10:37  Backslash
+ * Backslash's "let's get this stuff into 3_6_9 as well" commit.
+ * -gliding with thruster adjustments and speed cap
+ * -glide_when_pressed control (right above bank_when_pressed)
+ * -fixes to the thrusters sound and visuals while gliding
+ * -don't show muzzle flashes in 1st person
+ * -quick reticle for multitarget and asteroids
+ *
  * Revision 2.67.2.3  2007/07/24 20:08:29  Kazan
  * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
  *
@@ -1331,7 +1339,6 @@ void hud_update_frame()
 		}
 	}
 
-
 	// if there is no target, check if auto-targeting is enabled, and select new target
 	int retarget = 0;
 	int retarget_turret = 0;
@@ -1377,13 +1384,6 @@ void hud_update_frame()
 		// hud_target_closest(OBJ_INDEX(Player_obj), FALSE, FALSE);
 		void hud_update_closest_turret();
 		hud_update_closest_turret();
-	}
-
-	// purge target if beyond max radar range -- Kazan
-	if (Player_ai->target_objnum != -1)
-	{
-		if (vm_vec_dist(&Player_obj->pos, &Objects[Player_ai->target_objnum].pos) > Radar_ranges[RR_MAX_RANGES-1])
-			Player_ai->target_objnum = -1;
 	}
 
 	hud_target_change_check();
