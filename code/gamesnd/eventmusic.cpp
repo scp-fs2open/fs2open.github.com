@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.48 $
- * $Date: 2007-11-21 07:28:38 $
- * $Author: Goober5000 $
+ * $Revision: 2.49 $
+ * $Date: 2008-01-20 17:18:06 $
+ * $Author: karajorma $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.48  2007/11/21 07:28:38  Goober5000
+ * add Wing Commander Saga's fiction viewer
+ *
  * Revision 2.47  2007/09/02 02:10:25  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -2012,6 +2015,7 @@ void event_sexp_change_soundtrack(char *name)
 	}
 
 	event_music_level_close();
+	Current_soundtrack_num = -1; 
 	event_music_level_init(new_soundtrack);
 }
 
