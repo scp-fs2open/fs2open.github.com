@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.15 $
- * $Date: 2007-11-22 05:19:09 $
- * $Author: taylor $
+ * $Revision: 2.16 $
+ * $Date: 2008-01-24 03:52:07 $
+ * $Author: Goober5000 $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.15  2007/11/22 05:19:09  taylor
+ * no reason to if-else the hud multiplier if it simply defaults to 1.0
+ * add a little sanity checking for hud mutiplier tbl value
+ *
  * Revision 2.14  2007/08/30 04:51:07  Backslash
  * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
  * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
@@ -259,40 +263,31 @@
 
 static int Reticle_inited = 0;
 
-#define NUM_RETICLE_ANIS			6		// keep up to date when modifying the number of reticle ani files
+#define NUM_RETICLE_ANIS			11		// keep up to date when modifying the number of reticle ani files
 
 #define RETICLE_TOP_ARC				0
 #define RETICLE_LASER_WARN			1
 #define RETICLE_LOCK_WARN			2
 #define RETICLE_LEFT_ARC			3
 #define RETICLE_RIGHT_ARC			4
-//#define RETICLE_ONE_PRIMARY		5
-//#define RETICLE_TWO_PRIMARY		6
-//#define RETICLE_ONE_SECONDARY		7
-//#define RETICLE_TWO_SECONDARY		8
-//#define RETICLE_THREE_SECONDARY	9
-// #define RETICLE_LAUNCH_LABEL		5
-#define RETICLE_CENTER				5
+#define RETICLE_ONE_PRIMARY			5
+#define RETICLE_TWO_PRIMARY			6
+#define RETICLE_ONE_SECONDARY		7
+#define RETICLE_TWO_SECONDARY		8
+#define RETICLE_THREE_SECONDARY		9
+//#define RETICLE_LAUNCH_LABEL		5
+#define RETICLE_CENTER				10
 
-int Hud_throttle_frame_h[GR_NUM_RESOLUTIONS] = {
-	85,
-	136
-};
 int Hud_throttle_frame_w[GR_NUM_RESOLUTIONS] = {
 	49, 
 	78
 };
-int Hud_throttle_frame_bottom_y[GR_NUM_RESOLUTIONS] = {
-	325,
-	520
-};
 int Hud_throttle_h[GR_NUM_RESOLUTIONS] = {
-	50,
-	80
+	50, 80
 };
-int Hud_throttle_bottom_y[GR_NUM_RESOLUTIONS] = {
-	307,
-	491
+int Hud_throttle_bottom_y[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS] = {
+	{ 309, 494 },
+	{ 307, 491 }
 };
 int Hud_throttle_aburn_h[GR_NUM_RESOLUTIONS] = {
 	17,
@@ -308,78 +303,144 @@ int Outer_circle_radius[GR_NUM_RESOLUTIONS] = {
 	166
 };
 
-int Hud_reticle_center[GR_NUM_RESOLUTIONS][2] = {
+int Hud_reticle_center[GR_NUM_RESOLUTIONS][2] =
+{
 	{ // GR_640
 		320, 242
 	},
 	{ // GR_1024
-		512, 385
+		512, 387
 	}
 };
 
-char Reticle_frame_names[GR_NUM_RESOLUTIONS][NUM_RETICLE_ANIS][MAX_FILENAME_LEN] = 
+char Reticle_frame_names[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][NUM_RETICLE_ANIS][MAX_FILENAME_LEN] = 
 {
 //XSTR:OFF
-	{ // GR_640
-		"toparc1",
-		"toparc2",
-		"toparc3",
-		"leftarc",
-		"rightarc1",
-/*		"rightarc2",
-		"rightarc3",
-		"rightarc4",
-		"rightarc5",
-		"rightarc6",	
-		"toparc4",	*/
-		"reticle1",	
-	}, 
-	{ // GR_1024
-		"2_toparc1",
-		"2_toparc2",
-		"2_toparc3",
-		"2_leftarc",
-		"2_rightarc1",
-/*		"2_rightarc2",
-		"2_rightarc3",
-		"2_rightarc4",
-		"2_rightarc5",
-		"2_rightarc6",	
-		"2_toparc4",	*/
-		"2_reticle1",	
+	{
+		{ // GR_640
+			"toparc1_fs1",
+			"toparc2_fs1",
+			"toparc3_fs1",
+			"leftarc_fs1",
+			"rightarc1_fs1",
+			"rightarc2_fs1",
+			"rightarc3_fs1",
+			"rightarc4_fs1",
+			"rightarc5_fs1",
+			"rightarc6_fs1",
+//			"toparc4_fs1",
+			"reticle1_fs1",	
+		}, 
+		{ // GR_1024
+			"2_toparc1_fs1",
+			"2_toparc2_fs1",
+			"2_toparc3_fs1",
+			"2_leftarc_fs1",
+			"2_rightarc1_fs1",
+			"2_rightarc2_fs1",
+			"2_rightarc3_fs1",
+			"2_rightarc4_fs1",
+			"2_rightarc5_fs1",
+			"2_rightarc6_fs1",
+//			"2_toparc4_fs1",
+			"2_reticle1_fs1",	
+		}
+	},
+	{
+		{ // GR_640
+			"toparc1",
+			"toparc2",
+			"toparc3",
+			"leftarc",
+			"rightarc1",
+			"<none>",
+			"<none>",
+			"<none>",
+			"<none>",
+			"<none>",
+//			"<none>",
+			"reticle1",	
+		}, 
+		{ // GR_1024
+			"2_toparc1",
+			"2_toparc2",
+			"2_toparc3",
+			"2_leftarc",
+			"2_rightarc1",
+			"<none>",
+			"<none>",
+			"<none>",
+			"<none>",
+			"<none>",
+//			"<none>",
+			"2_reticle1",	
+		}
 	}
 //XSTR:ON
 };
 
 // reticle frame coords
-int Reticle_frame_coords[GR_NUM_RESOLUTIONS][NUM_RETICLE_ANIS][2] = {
-	{ // GR_640
-		{241, 137},
-		{400, 245},
-		{394, 261},
-		{216, 168},
-		{359, 168},
-//		{406, 253},
-//		{406, 253},
-//		{391, 276},
-//		{391, 276},
-//		{391, 276},
-//		{297, 161},
-		{308, 235}
-	}, 
-	{ // GR_1024
-		{386, 219},
-		{640, 393},
-		{631, 419},
-		{346, 269},
-		{574, 269},
-//		{649, 401},
-//		{649, 401},
-//		{625, 438},
-//		{625, 438},
-//		{625, 438},
-//		{475, 258},
-		{493, 370}
+int Reticle_frame_coords[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][NUM_RETICLE_ANIS][2] =
+{
+	{
+		{ // GR_640
+			{241, 137},
+			{300, 137},
+			{320, 137},
+			{217, 244},
+			{374, 242},
+			{406, 253},
+			{406, 253},
+			{391, 276},
+			{391, 276},
+			{391, 276},
+//			{297, 162},
+			{308, 235}
+		}, 
+		{ // GR_1024
+			{386, 219},
+			{480, 219},
+			{512, 219},
+			{347, 390},
+			{598, 387},
+			{650, 405},
+			{650, 405},
+			{626, 442},
+			{626, 442},
+			{626, 442},
+//			{475, 259},
+			{493, 376}
+		},
+	},
+	{
+		{ // GR_640
+			{241, 137},
+			{400, 245},
+			{394, 261},
+			{216, 168},
+			{359, 168},
+			{406, 253},
+			{406, 253},
+			{391, 276},
+			{391, 276},
+			{391, 276},
+//			{297, 161},
+			{308, 235}
+		}, 
+		{ // GR_1024
+			{386, 219},
+			{640, 393},
+			{631, 419},
+			{346, 269},
+			{574, 269},
+			{649, 401},
+			{649, 401},
+			{625, 438},
+			{625, 438},
+			{625, 438},
+//			{475, 258},
+			{493, 370}
+		}
 	}
 };
 
@@ -396,7 +457,7 @@ int Reticle_launch_coords[GR_NUM_RESOLUTIONS][2] = {
 hud_frames Reticle_gauges[NUM_RETICLE_ANIS];
 
 #define THREAT_DUMBFIRE				(1<<0)
-#define THREAT_ATTEMPT_LOCK		(1<<1)
+#define THREAT_ATTEMPT_LOCK			(1<<1)
 #define THREAT_LOCK					(1<<2)
 
 #define THREAT_UPDATE_DUMBFIRE_TIME		1000		// time between checking for dumbfire threats
@@ -449,9 +510,16 @@ void hud_init_reticle()
 
 	for ( i = 0; i < NUM_RETICLE_ANIS; i++ ) {
 		hfp = &Reticle_gauges[i];
-		hfp->first_frame = bm_load_animation(Reticle_frame_names[gr_screen.res][i], &hfp->num_frames);
-		if ( hfp->first_frame < 0 ) {
-			Warning(LOCATION,"Cannot load hud ani: %s\n", Reticle_frame_names[gr_screen.res][i]);
+
+		char *fname = Reticle_frame_names[Hud_reticle_style][gr_screen.res][i];
+		if (!stricmp(fname, "<none>")) {
+			hfp->first_frame = -1;
+			hfp->num_frames = 0;
+		} else {
+			hfp->first_frame = bm_load_animation(fname, &hfp->num_frames);
+			if (hfp->first_frame < 0) {
+				mprintf(("Cannot load hud ani: %s\n", Reticle_frame_names[gr_screen.res][i]));
+			}
 		}
 	}
 
@@ -500,8 +568,8 @@ void hud_render_throttle_background(int y_end)
 
 	hud_set_gauge_color(HUD_THROTTLE_GAUGE);
 
-	x = Reticle_frame_coords[gr_screen.res][RETICLE_LEFT_ARC][0];
-	y = Reticle_frame_coords[gr_screen.res][RETICLE_LEFT_ARC][1];
+	x = Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][0];
+	y = Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][1];
 
 	bm_get_info( Reticle_gauges[RETICLE_LEFT_ARC].first_frame+1,&w,&h);	
 
@@ -517,12 +585,12 @@ void hud_render_throttle_foreground(int y_end)
 
 	hud_set_gauge_color(HUD_THROTTLE_GAUGE);
 
-	x = Reticle_frame_coords[gr_screen.res][RETICLE_LEFT_ARC][0];
-	y = Reticle_frame_coords[gr_screen.res][RETICLE_LEFT_ARC][1];
+	x = Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][0];
+	y = Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][1];
 
 	bm_get_info( Reticle_gauges[RETICLE_LEFT_ARC].first_frame+1,&w,&h);
 
-	if ( y_end < Hud_throttle_frame_bottom_y[gr_screen.res] ) {		
+	if ( y_end < (y + h - 1) ) {		
 		GR_AABITMAP_EX(Reticle_gauges[RETICLE_LEFT_ARC].first_frame+2, x, y_end, w, h-(y_end-y), 0, y_end-y);		
 	}
 }
@@ -583,7 +651,7 @@ void hud_render_throttle_line(int y)
 	// hud_set_bright_color();
 	hud_set_gauge_color(HUD_THROTTLE_GAUGE, HUD_C_BRIGHT);
 
-	GR_AABITMAP_EX(Reticle_gauges[RETICLE_LEFT_ARC].first_frame+3, Reticle_frame_coords[gr_screen.res][RETICLE_LEFT_ARC][0], y, Hud_throttle_frame_w[gr_screen.res], 1, 0, y-Reticle_frame_coords[gr_screen.res][RETICLE_LEFT_ARC][1]);	
+	GR_AABITMAP_EX(Reticle_gauges[RETICLE_LEFT_ARC].first_frame+3, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][0], y, Hud_throttle_frame_w[gr_screen.res], 1, 0, y-Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][1]);	
 }
 
 // Draw the throttle gauge along the left arc of the reticle
@@ -616,7 +684,7 @@ void hud_show_throttle()
 		desired_speed = 0.0f;
 	}
 
-	desired_y_pos = Hud_throttle_bottom_y[gr_screen.res] - fl2i(Hud_throttle_h[gr_screen.res]*desired_speed/max_speed+0.5f) - 1;
+	desired_y_pos = Hud_throttle_bottom_y[Hud_reticle_style][gr_screen.res] - fl2i(Hud_throttle_h[gr_screen.res]*desired_speed/max_speed+0.5f) - 1;
 
 	Assert(max_speed != 0);
 	percent_max = current_speed / max_speed;
@@ -633,7 +701,7 @@ void hud_show_throttle()
 		}
 	}
 
-	y_end = Hud_throttle_bottom_y[gr_screen.res] - fl2i(Hud_throttle_h[gr_screen.res]*percent_max+0.5f);
+	y_end = Hud_throttle_bottom_y[Hud_reticle_style][gr_screen.res] - fl2i(Hud_throttle_h[gr_screen.res]*percent_max+0.5f);
 	if ( percent_aburn_max > 0 ) {
 		y_end -= fl2i(percent_aburn_max * Hud_throttle_aburn_h[gr_screen.res] + 0.5f);
 	}
@@ -643,7 +711,9 @@ void hud_show_throttle()
 	}
 
 	// draw left arc (the dark portion of the throttle gauge)
-	// hud_render_throttle_background(y_end);
+	if (Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
+		hud_render_throttle_background(y_end);
+	}
 
 	// draw throttle speed number
 	//hud_render_throttle_speed(current_speed, y_end);
@@ -660,7 +730,6 @@ void hud_show_throttle()
 	gr_printf(Zero_speed_coords[gr_screen.res][0], Zero_speed_coords[gr_screen.res][1], XSTR( "0", 292));
 }
 
-/*
 // Draw the primary and secondary weapon indicators along the right arc of the reticle
 void hud_show_reticle_weapons()
 {
@@ -707,7 +776,7 @@ void hud_show_reticle_weapons()
 	}
 	
 	if ( gauge_index != -1 ) {
-		GR_AABITMAP(Reticle_gauges[gauge_index].first_frame+frame_offset, Reticle_frame_coords[gr_screen.res][gauge_index][0], Reticle_frame_coords[gr_screen.res][gauge_index][1]);		
+		GR_AABITMAP(Reticle_gauges[gauge_index].first_frame+frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][1]);		
 	}
 
 	int num_banks = swp->num_secondary_banks;
@@ -746,10 +815,9 @@ void hud_show_reticle_weapons()
 			frame_offset = swp->current_secondary_bank+1;
 		}
 
-		GR_AABITMAP(Reticle_gauges[gauge_index].first_frame+frame_offset, Reticle_frame_coords[gr_screen.res][gauge_index][0], Reticle_frame_coords[gr_screen.res][gauge_index][1]);		
+		GR_AABITMAP(Reticle_gauges[gauge_index].first_frame+frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][gauge_index][1]);		
 	}
 }
-*/
 
 // Draw the lock threat gauge on the HUD.  Use Threat_flags to determine if a 
 // threat exists, and draw flashing frames.
@@ -779,7 +847,7 @@ void hud_show_lock_threat()
 
 	hud_set_gauge_color(HUD_THREAT_GAUGE);
 
-	GR_AABITMAP(Reticle_gauges[RETICLE_LOCK_WARN].first_frame+frame_offset, Reticle_frame_coords[gr_screen.res][RETICLE_LOCK_WARN][0], Reticle_frame_coords[gr_screen.res][RETICLE_LOCK_WARN][1]);
+	GR_AABITMAP(Reticle_gauges[RETICLE_LOCK_WARN].first_frame+frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LOCK_WARN][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LOCK_WARN][1]);
 
 	// "launch" flash
 	if ( (frame_offset > 0) && (Player->threat_flags & THREAT_LOCK) ) {
@@ -791,7 +859,7 @@ void hud_show_lock_threat()
 			} else {
 				bright = 0;
 			}
-			// GR_AABITMAP(Reticle_gauges[RETICLE_LAUNCH_LABEL].first_frame+frame_offset%2, Reticle_frame_coords[gr_screen.res][RETICLE_LAUNCH_LABEL][0], Reticle_frame_coords[gr_screen.res][RETICLE_LAUNCH_LABEL][1]);
+			// GR_AABITMAP(Reticle_gauges[RETICLE_LAUNCH_LABEL].first_frame+frame_offset%2, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LAUNCH_LABEL][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LAUNCH_LABEL][1]);
 
 			// use hud text flash gauge code
 			hud_show_text_flash_icon(XSTR("Launch", 1507), Reticle_launch_coords[gr_screen.res][1], bright);
@@ -820,7 +888,7 @@ void hud_show_dumbfire_threat()
 
 	hud_set_gauge_color(HUD_THREAT_GAUGE);
 
-	GR_AABITMAP(Reticle_gauges[RETICLE_LASER_WARN].first_frame + frame_offset, Reticle_frame_coords[gr_screen.res][RETICLE_LASER_WARN][0], Reticle_frame_coords[gr_screen.res][RETICLE_LASER_WARN][1]);	
+	GR_AABITMAP(Reticle_gauges[RETICLE_LASER_WARN].first_frame + frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LASER_WARN][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LASER_WARN][1]);	
 }
 
 // Draw the center of the reticle
@@ -832,7 +900,7 @@ void hud_show_center_reticle()
 	// hud_set_bright_color();
 	hud_set_gauge_color(HUD_CENTER_RETICLE, HUD_C_BRIGHT);
 
-	GR_AABITMAP(Reticle_gauges[RETICLE_CENTER].first_frame, Reticle_frame_coords[gr_screen.res][RETICLE_CENTER][0], Reticle_frame_coords[gr_screen.res][RETICLE_CENTER][1]);
+	GR_AABITMAP(Reticle_gauges[RETICLE_CENTER].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_CENTER][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_CENTER][1]);
 }
 
 // Draw top portion of reticle
@@ -843,16 +911,16 @@ void hud_show_top_arc()
 	// hud_set_default_color();
 	if ( hud_gauge_active(HUD_THREAT_GAUGE) ) {	
 		// draw top arc
-		GR_AABITMAP(Reticle_gauges[RETICLE_TOP_ARC].first_frame+1, Reticle_frame_coords[gr_screen.res][RETICLE_TOP_ARC][0], Reticle_frame_coords[gr_screen.res][RETICLE_TOP_ARC][1]);		
+		GR_AABITMAP(Reticle_gauges[RETICLE_TOP_ARC].first_frame+1, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][1]);		
 
 		// draw dumbfire threat
 		hud_show_dumbfire_threat();
 
 		// draw lock threat
 		hud_show_lock_threat();
-	} else {		
+	} else {
 		// draw top arc without any holes
-		GR_AABITMAP(Reticle_gauges[RETICLE_TOP_ARC].first_frame, Reticle_frame_coords[gr_screen.res][RETICLE_TOP_ARC][0], Reticle_frame_coords[gr_screen.res][RETICLE_TOP_ARC][1]);
+		GR_AABITMAP(Reticle_gauges[RETICLE_TOP_ARC].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][1]);
 	}
 }
 
@@ -861,31 +929,35 @@ void hud_show_right_arc()
 {	
 	hud_set_gauge_color(HUD_CENTER_RETICLE);
 
-	GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame+1, Reticle_frame_coords[gr_screen.res][RETICLE_RIGHT_ARC][0], Reticle_frame_coords[gr_screen.res][RETICLE_RIGHT_ARC][1]);		
-		
-	// draw the weapons indicators in the holes along the right arc
-	/*
-	if ( hud_gauge_active(HUD_WEAPON_LINKING_GAUGE) ) {		
-		// draw right arc with holes in it
-		GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame+1, Reticle_frame_coords[gr_screen.res][RETICLE_RIGHT_ARC][0], Reticle_frame_coords[gr_screen.res][RETICLE_RIGHT_ARC][1]);		
+	if (Hud_reticle_style != HUD_RETICLE_STYLE_FS1) {
+		GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame+1, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][1]);		
+	} else {
+		// draw the weapons indicators in the holes along the right arc
+		if ( hud_gauge_active(HUD_WEAPON_LINKING_GAUGE) ) {		
+			// draw right arc with holes in it
+			GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame+1, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][1]);		
 
-//		the following line was removed by Jasen to get rid of "undeclared identifier"
-//		hehe - DB
-//		hud_show_reticle_weapons();
-	} else {		
-		// draw right arc without any holes
-		GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame, Reticle_frame_coords[gr_screen.res][RETICLE_RIGHT_ARC][0], Reticle_frame_coords[gr_screen.res][RETICLE_RIGHT_ARC][1]);
+//			the following line was removed by Jasen to get rid of "undeclared identifier"
+//			hehe - DB
+//			restored for FS1 HUD - Goober5000
+			hud_show_reticle_weapons();
+		} else {		
+			// draw right arc without any holes
+			GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][1]);
+		}
 	}
-	*/
 }
 
 // Draw the left portion of the reticle
 void hud_show_left_arc()
-{			
-	// draw left arc (the dark portion of the throttle gauge)
-	hud_set_gauge_color(HUD_CENTER_RETICLE);	
-	GR_AABITMAP(Reticle_gauges[RETICLE_LEFT_ARC].first_frame, Reticle_frame_coords[gr_screen.res][RETICLE_LEFT_ARC][0], Reticle_frame_coords[gr_screen.res][RETICLE_LEFT_ARC][1]);			
-	
+{
+	// FS1 is drawn another way
+	if (Hud_reticle_style != HUD_RETICLE_STYLE_FS1) {
+		// draw left arc (the dark portion of the throttle gauge)
+		hud_set_gauge_color(HUD_CENTER_RETICLE);	
+		GR_AABITMAP(Reticle_gauges[RETICLE_LEFT_ARC].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][1]);			
+	}
+
 	// draw the throttle
 	if ( hud_gauge_active(HUD_THROTTLE_GAUGE) ) {
 		hud_set_gauge_color(HUD_THROTTLE_GAUGE);
@@ -915,7 +987,8 @@ void hudreticle_page_in()
 	int i;
 	for ( i = 0; i < NUM_RETICLE_ANIS; i++ ) {
 		hfp = &Reticle_gauges[i];
-		bm_page_in_aabitmap( hfp->first_frame, hfp->num_frames);
+		if (hfp->first_frame >= 0) {
+			bm_page_in_aabitmap( hfp->first_frame, hfp->num_frames);
+		}
 	}
-
 }

@@ -1,13 +1,18 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.h $
- * $Revision: 2.21 $
- * $Date: 2007-08-30 04:51:07 $
- * $Author: Backslash $
+ * $Revision: 2.22 $
+ * $Date: 2008-01-24 03:52:07 $
+ * $Author: Goober5000 $
  *
  * Header file for HUD tbl parsing
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2007/08/30 04:51:07  Backslash
+ * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
+ * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
+ * $Length Unit Multiplier: 5
+ *
  * Revision 2.20  2007/01/07 12:53:35  taylor
  * add position info for weapon energy text
  * make sure that we can't target a hidden jumpnode
@@ -333,6 +338,15 @@ typedef struct gauge_info
 //Variables
 extern int Num_custom_gauges;
 extern float Hud_unit_multiplier;
+
+
+#define NUM_HUD_RETICLE_STYLES	2
+
+#define HUD_RETICLE_STYLE_FS1	0
+#define HUD_RETICLE_STYLE_FS2	1
+
+extern int Hud_reticle_style;
+
 
 //Functions
 int hud_get_gauge_index(char* name);

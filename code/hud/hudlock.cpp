@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-08-20 00:51:05 $
- * $Author: taylor $
+ * $Revision: 2.22 $
+ * $Date: 2008-01-24 03:52:07 $
+ * $Author: Goober5000 $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.21  2006/08/20 00:51:05  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.20  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -389,9 +392,9 @@ float Lock_triangle_height[GR_NUM_RESOLUTIONS] = {
 	6.5f
 };
 
-int Lock_gauge_half_w[GR_NUM_RESOLUTIONS] = {
-	17,
-	28
+int Lock_gauge_half_w[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS] = {
+	{ 15, 24 },
+	{ 17, 28 }
 };
 int Lock_gauge_half_h[GR_NUM_RESOLUTIONS] = {
 	15, 
@@ -405,24 +408,26 @@ int Lock_gauge_draw = 0;
 int Lock_gauge_draw_stamp = -1;
 #define LOCK_GAUGE_BLINK_RATE			5			// blinks/sec
 
-int Lockspin_half_w[GR_NUM_RESOLUTIONS] = {
-	31,
-	50
+int Lockspin_half_w[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS] = {
+	{ 16, 26 },
+	{ 31, 50 }
 };
-int Lockspin_half_h[GR_NUM_RESOLUTIONS] = {
-	32, 
-	52
+int Lockspin_half_h[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS] = {
+	{ 16, 26 },
+	{ 32, 52 }
 };
 hud_anim	Lock_anim;
 
-char Lock_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
-	"lock1",
-	"2_lock1"
+char Lock_fname[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] =
+{
+	{ "lock1_fs1", "2_lock1_fs1" },
+	{ "lock1", "2_lock1" }
 };
 
-char Lockspin_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
-	"lockspin",
-	"2_lockspin"
+char Lockspin_fname[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] =
+{
+	{ "lockspin_fs1", "2_lockspin_fs1" },
+	{ "lockspin", "2_lockspin" }
 };
 
 void hud_lock_determine_lock_point(vec3d *lock_world_pos_out);
@@ -443,15 +448,15 @@ void hud_init_missile_lock()
 	// Load in the frames need for the lead indicator
 	if (!Lock_gauge_loaded) {
 		/*
-		Lock_gauge.first_frame = bm_load_animation(Lock_fname[gr_screen.res], &Lock_gauge.num_frames);
+		Lock_gauge.first_frame = bm_load_animation(Lock_fname[Hud_reticle_style][gr_screen.res], &Lock_gauge.num_frames);
 		if ( Lock_gauge.first_frame < 0 ) {
-			Warning(LOCATION,"Cannot load hud ani: Lock_fname[gr_screen.res]\n");
+			Warning(LOCATION,"Cannot load hud ani: Lock_fname[Hud_reticle_style][gr_screen.res]\n");
 		}
 		*/
-		hud_anim_init(&Lock_gauge, 0, 0, Lock_fname[gr_screen.res]);
+		hud_anim_init(&Lock_gauge, 0, 0, Lock_fname[Hud_reticle_style][gr_screen.res]);
 		hud_anim_load(&Lock_gauge);
 
-		hud_anim_init(&Lock_anim, 0, 0, Lockspin_fname[gr_screen.res]);
+		hud_anim_init(&Lock_anim, 0, 0, Lockspin_fname[Hud_reticle_style][gr_screen.res]);
 		hud_anim_load(&Lock_anim);
 
 		Lock_gauge_loaded = 1;
@@ -531,7 +536,7 @@ void hud_show_lock_indicator(float frametime)
 		hud_draw_diamond(sx, sy, Lock_target_box_width[gr_screen.res], Lock_target_box_height[gr_screen.res]);
 	}
 	*/
-	Lock_gauge.sx = sx - Lock_gauge_half_w[gr_screen.res];
+	Lock_gauge.sx = sx - Lock_gauge_half_w[Hud_reticle_style][gr_screen.res];
 	Lock_gauge.sy = sy - Lock_gauge_half_h[gr_screen.res];
 	if(Player_ai->current_target_is_locked){
 		Lock_gauge.time_elapsed = 0.0f;			
@@ -904,12 +909,16 @@ void hud_draw_lock_triangles(int center_x, int center_y, float frametime)
 		hud_draw_lock_triangles_old(center_x, center_y, Lock_target_box_width[gr_screen.res]/2);
 	} else {
 		// render the anim
-		Lock_anim.sx = center_x - Lockspin_half_w[gr_screen.res];
-		Lock_anim.sy = center_y - Lockspin_half_h[gr_screen.res];
+		Lock_anim.sx = center_x - Lockspin_half_w[Hud_reticle_style][gr_screen.res];
+		Lock_anim.sy = center_y - Lockspin_half_h[Hud_reticle_style][gr_screen.res];
 
-		// if its still animating
+		// if it's still animating
 		if(Lock_anim.time_elapsed < Lock_anim.total_time){
-			hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+			if (Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
+				hud_anim_render(&Lock_anim, frametime, 1, 1, 0);
+			} else {
+				hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+			}
 		} else {
 			// if the timestamp is unset or expired
 			if((Lock_gauge_draw_stamp < 0) || timestamp_elapsed(Lock_gauge_draw_stamp)){
@@ -923,7 +932,11 @@ void hud_draw_lock_triangles(int center_x, int center_y, float frametime)
 			// maybe draw the anim
 			Lock_gauge.time_elapsed = 0.0f;			
 			if(Lock_gauge_draw){
-				hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+				if (Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
+					hud_anim_render(&Lock_anim, frametime, 1, 1, 0);
+				} else {
+					hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+				}
 			}			
 		}		
 	}

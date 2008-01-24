@@ -6,13 +6,17 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.52 $
- * $Date: 2007-11-22 05:19:09 $
- * $Author: taylor $
+ * $Revision: 2.53 $
+ * $Date: 2008-01-24 03:52:07 $
+ * $Author: Goober5000 $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.52  2007/11/22 05:19:09  taylor
+ * no reason to if-else the hud multiplier if it simply defaults to 1.0
+ * add a little sanity checking for hud mutiplier tbl value
+ *
  * Revision 2.51  2007/09/02 02:10:25  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
@@ -221,6 +225,9 @@ hud_info ship_huds[MAX_SHIP_CLASSES];
 extern int ships_inited; //Need this
 
 float Hud_unit_multiplier = 1.0f;	//Backslash
+
+// Goober5000
+int Hud_reticle_style = HUD_RETICLE_STYLE_FS2;
 
 #ifndef NEW_HUD
 //Set coord_x or coord_y to -1 to not change that value
@@ -609,6 +616,24 @@ static void calculate_gauges(hud_info* dest_hud)
 {
 	//Put any post-loading calculation code after the beep. *BEEP*
 
+	// ok -- G5K
+	if (Hud_reticle_style == HUD_RETICLE_STYLE_FS1)
+	{
+		if(gr_screen.res == GR_640)
+		{
+			//Image defaults
+			strcpy(dest_hud->Aburn_fname, "energy2_fs1");
+			strcpy(dest_hud->Wenergy_fname, "energy2_fs1");
+		}
+		else
+		{
+			//Image defaults
+			strcpy(dest_hud->Aburn_fname, "2_energy2_fs1");
+			strcpy(dest_hud->Wenergy_fname, "2_energy2_fs1");
+		}
+	}
+
+
 	/**************************************************/
 	//DO NOT MODIFY this stuff, unless you're changing the loading system.
 	//Calculate parent gauge info
@@ -958,6 +983,16 @@ void parse_hud_gauges_tbl(char *filename)
 			Warning(LOCATION, "\"$Length Unit Multiplier:\" value of \"%f\" is invalid!  Resetting to default.", Hud_unit_multiplier);
 			Hud_unit_multiplier = 1.0f;
 		}
+	}
+
+	if(optional_string("$Reticle Style:"))
+	{
+		int temp = required_string_either("FS1", "FS2");
+
+		if (temp < 0)
+			Warning(LOCATION, "Undefined reticle style in hud_gauges.tbl!");
+		else
+			Hud_reticle_style = temp;
 	}
 
 	if(optional_string("#Custom Gauges"))
