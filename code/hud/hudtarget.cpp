@@ -9,13 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.87.2.18 $
- * $Date: 2007-12-28 02:10:38 $
- * $Author: Backslash $
+ * $Revision: 2.87.2.19 $
+ * $Date: 2008-01-24 03:53:36 $
+ * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.87.2.18  2007/12/28 02:10:38  Backslash
+ * Backslash's "let's get this stuff into 3_6_9 as well" commit.
+ * -gliding with thruster adjustments and speed cap
+ * -glide_when_pressed control (right above bank_when_pressed)
+ * -fixes to the thrusters sound and visuals while gliding
+ * -don't show muzzle flashes in 1st person
+ * -quick reticle for multitarget and asteroids
+ *
  * Revision 2.87.2.17  2007/11/22 05:19:47  taylor
  * no reason to if-else the hud multiplier if it simply defaults to 1.0
  * add a little sanity checking for hud mutiplier tbl value
@@ -731,21 +739,35 @@ static int Target_next_turret_timestamp;
 // animation frames for the hud targeting gauges
 // frames:	0	=>		out of range lead
 //				1	=>		in range lead
-float Lead_indicator_half[GR_NUM_RESOLUTIONS][2] = {
-	{ // GR_640
-		8.0f,		// half-width
-		8.0f			// half-height
+float Lead_indicator_half[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][2] =
+{
+	{
+		{ // GR_640
+			12.5f,		// half-width
+			12.5f			// half-height
+		},
+		{ // GR_1024
+			20.0f,		// half-width
+			20.0f			// half-height
+		}
 	},
-	{ // GR_1024
-		13.0f,		// half-width
-		13.0f			// half-height
+	{
+		{ // GR_640
+			8.0f,		// half-width
+			8.0f			// half-height
+		},
+		{ // GR_1024
+			13.0f,		// half-width
+			13.0f			// half-height
+		}
 	}
 };
 hud_frames Lead_indicator_gauge;
 int Lead_indicator_gauge_loaded = 0;
-char Lead_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
-	"lead1",
-	"2_lead1"
+char Lead_fname[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] =
+{
+	{ "lead1_fs1", "2_lead1_fs1" },
+	{ "lead1", "2_lead1" }
 };
 
 // animation frames for the afterburner gauge and the weapon energy gauge
@@ -1737,9 +1759,9 @@ void hud_init_targeting()
 
 	// Load in the frames need for the lead indicator
 	if (!Lead_indicator_gauge_loaded) {
-		Lead_indicator_gauge.first_frame = bm_load_animation(Lead_fname[gr_screen.res], &Lead_indicator_gauge.num_frames);
+		Lead_indicator_gauge.first_frame = bm_load_animation(Lead_fname[Hud_reticle_style][gr_screen.res], &Lead_indicator_gauge.num_frames);
 		if ( Lead_indicator_gauge.first_frame < 0 ) {
-			Warning(LOCATION,"Cannot load hud ani: %s\n", Lead_fname[gr_screen.res]);
+			Warning(LOCATION,"Cannot load hud ani: %s\n", Lead_fname[Hud_reticle_style][gr_screen.res]);
 		}
 		Lead_indicator_gauge_loaded = 1;
 	}
@@ -4673,7 +4695,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 				sy = lead_target_vertex.sy;
 
 				gr_unsize_screen_posf(&sx, &sy);
-				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[gr_screen.res][1]));				
+				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1]));				
 			}
 		}
 	}
@@ -4742,7 +4764,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 				sy = lead_target_vertex.sy;
 
 				gr_unsize_screen_posf(&sx, &sy);
-				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[gr_screen.res][1]));				
+				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1]));				
 			}
 		}
 	}
@@ -4868,7 +4890,7 @@ void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp)
 				sy = lead_target_vertex.sy;
 
 				gr_unsize_screen_posf(&sx, &sy);
-				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[gr_screen.res][1]));				
+				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1]));				
 			}
 		}
 	}
