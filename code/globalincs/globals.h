@@ -174,7 +174,7 @@
 
 
 
-#define MAX_WINGS				25
+#define MAX_WINGS				75
 
 #define MAX_SHIPS_PER_WING			6
 

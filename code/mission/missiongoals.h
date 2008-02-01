@@ -183,7 +183,7 @@ extern int	Num_goals;									// number of goals for this mission
 
 // structures and defines for mission events
 
-#define MAX_MISSION_EVENTS		150
+#define MAX_MISSION_EVENTS		512
 #define MISSION_EVENTS_WARN	100
 
 // defined for event states.  We will also use the satisfied/failed for saving event information
