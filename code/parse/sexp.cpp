@@ -13920,11 +13920,11 @@ void set_use_ap(int node)
 	int enable = eval_sexp(node);
 	if (enable)
 	{
-		The_mission.flags |= MISSION_FLAG_DEACTIVATE_AP;
+		The_mission.flags &= ~MISSION_FLAG_DEACTIVATE_AP;
 	}
 	else
 	{
-		The_mission.flags &= ~MISSION_FLAG_DEACTIVATE_AP;
+		The_mission.flags |= MISSION_FLAG_DEACTIVATE_AP;
 	}
 }
 
