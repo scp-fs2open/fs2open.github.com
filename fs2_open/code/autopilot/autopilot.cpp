@@ -416,7 +416,7 @@ void StartAutopilot()
 	// determine speed cap
 	int i,j, wcount=1;
 	float speed_cap = 1000000.0; // 1m is a safe starting point
-	float radius = Player_obj->radius;
+	float radius = Player_obj->radius, distance = 0.0f;
 	
 	// vars for usage w/ cinematic
 	vec3d pos, norm1, perp, tpos, rpos = Player_obj->pos, zero;
@@ -494,7 +494,7 @@ void StartAutopilot()
 				if (leader_objp != &Objects[Ships[i].objnum])
 				{
 					// not leader.. get our position relative to leader
-					get_absolute_wing_pos(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+					get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
 				}
 				else
 				{
@@ -524,7 +524,7 @@ void StartAutopilot()
 				Objects[Ships[i].objnum].pos = goal_point;
 			}
 			// lock primary and secondary weapons
-			Ships[i].flags2 |= (SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
+			//Ships[i].flags2 |= (SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
 
 			// clear the ship goals and cap the waypoint speed
 			ai_clear_ship_goals(&Ai_info[Ships[i].ai_index]);
@@ -544,6 +544,12 @@ void StartAutopilot()
 					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
 				}
 
+			}
+
+							
+			if (vm_vec_dist_quick(&Player_obj->pos, &Objects[Ships[i].objnum].pos) > distance)
+			{
+				distance = vm_vec_dist_quick(&Player_obj->pos, &Objects[Ships[i].objnum].pos);
 			}
 		}
 	}
@@ -616,10 +622,10 @@ void StartAutopilot()
 		tpos = *Navs[CurrentNav].GetPosition();
 		// determine distance toward nav at which camera will be
 		vm_vec_sub(&pos, &tpos, &Player_obj->pos);
-		vm_vec_normalize(&pos);
+		vm_vec_normalize(&pos); // pos is now a unit vector in the direction we will be moving the camera
 		norm1 = pos;
-		vm_vec_scale(&pos, 5*speed_cap);
-		vm_vec_add(&pos, &pos, &Player_obj->pos);
+		vm_vec_scale(&pos, 5*speed_cap); // pos is now scaled by 5 times the speed (5 seconds ahead)
+		vm_vec_add(&pos, &pos, &Player_obj->pos); // pos is now 5*speed cap in front of player ship
 
 		switch (myrand()%16) 
 		// 8 different ways of getting perp points
@@ -672,7 +678,8 @@ void StartAutopilot()
 
 		}
 		vm_vec_normalize(&perp);
-		vm_vec_scale(&perp, 2*radius);
+		//vm_vec_scale(&perp, 2*radius+distance);
+		vm_vec_scale(&perp, radius+(distance/2.0f));
 		vm_vec_add(&cameraPos, &pos, &perp);
 
 	}
@@ -730,7 +737,7 @@ void EndAutoPilot()
 		   )
 		{
 			//unlock their weaponry
-			Ships[i].flags2 &= ~(SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
+			//Ships[i].flags2 &= ~(SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
 			Ai_info[Ships[i].ai_index].waypoint_speed_cap = -1; // uncap their speed
 			
 			ai_clear_ship_goals( &(Ai_info[Ships[i].ai_index]) );
