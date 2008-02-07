@@ -13684,7 +13684,7 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 // Returns null if all subsystems of that type are destroyed or none is in sight.
 ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos)
 {
-	Assert ( subsys_type >= 0 && type < SUBSYSTEM_MAX );
+	Assert ( subsys_type >= 0 && subsys_type < SUBSYSTEM_MAX );
 
 	// If aggregate total is 0, that means no subsystem is alive of that type
 	if ( sp->subsys_info[subsys_type].total_hits <= 0.0f )
