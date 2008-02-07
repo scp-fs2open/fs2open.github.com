@@ -623,7 +623,12 @@ int HUD_msg_inited = FALSE;
 // There is a maximum number of lines that will be stored in the message scrollback.  Oldest
 // messages are deleted to make way for newest messages.
 // Goober5000 - I think it'd be nice to see *all* the messages
-#define MAX_MSG_SCROLLBACK_LINES	MAX_MISSION_MESSAGES
+// KeldorKatarn - Parsable message limit does not exist anymore since it was made
+//                dynamic. And parsed messages can be sent twice, so using the same
+//                limit here did not guarantee *all* messages could be archived
+//                anyway
+#define MAX_MSG_SCROLLBACK_LINES	512
+//#define MAX_MSG_SCROLLBACK_LINES	MAX_MISSION_MESSAGES
 //#define MAX_MSG_SCROLLBACK_LINES	100
 line_node Msg_scrollback_lines[MAX_MSG_SCROLLBACK_LINES];
 

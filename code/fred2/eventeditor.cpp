@@ -337,6 +337,9 @@ BOOL event_editor::OnInitDialog()
 	}
 
 	m_num_messages = Num_messages - Num_builtin_messages;
+	m_messages.resize(m_num_messages);
+	m_msg_sig.resize(m_num_messages);
+
 	for (i=0; i<m_num_messages; i++) {
 		m_messages[i] = Messages[i + Num_builtin_messages];
 		if (m_messages[i].avi_info.name){
@@ -429,9 +432,9 @@ BOOL event_editor::OnInitDialog()
 		m_cur_msg = -1;
 	}
 
-	if (Num_messages >= MAX_MISSION_MESSAGES){
+	/*if (Num_messages >= MAX_MISSION_MESSAGES){
 		GetDlgItem(IDC_NEW_MSG)->EnableWindow(FALSE);
-	}
+	}*/
 
 	update_cur_message();
 	return r;
@@ -687,6 +690,8 @@ void event_editor::OnOk()
 	}
 
 	Num_messages = m_num_messages + Num_builtin_messages;
+	Messages.resize(Num_messages);
+
 	for (i=0; i<m_num_messages; i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
@@ -1327,7 +1332,11 @@ void event_editor::OnNewMsg()
 //		return;
 
 	save();
-	Assert(m_num_messages + Num_builtin_messages < MAX_MISSION_MESSAGES);
+	Assert(m_messages.size() == m_num_messages);
+
+	m_messages.resize(m_num_messages + 1);
+	m_msg_sig.resize(m_num_messages + 1);
+
 	strcpy(m_messages[m_num_messages].name, "<new message>");
 	((CListBox *) GetDlgItem(IDC_MESSAGE_LIST))->AddString("<new message>");
 
@@ -1337,9 +1346,9 @@ void event_editor::OnNewMsg()
 	m_messages[m_num_messages].persona_index = -1;
 	m_messages[m_num_messages].multi_team = -1;
 	m_cur_msg = m_num_messages++;
-	if (m_num_messages + Num_builtin_messages >= MAX_MISSION_MESSAGES){
+	/*if (m_num_messages + Num_builtin_messages >= MAX_MISSION_MESSAGES){
 		GetDlgItem(IDC_NEW_MSG)->EnableWindow(FALSE);
-	}
+	}*/
 
 	modified = 1;
 	update_cur_message();
@@ -1372,6 +1381,9 @@ void event_editor::OnDeleteMsg()
 	}
 
 	m_num_messages--;
+	m_messages.resize(m_num_messages);
+	m_msg_sig.resize(m_num_messages);
+
 	if (m_cur_msg >= m_num_messages){
 		m_cur_msg = m_num_messages - 1;
 	}
