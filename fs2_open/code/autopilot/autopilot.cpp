@@ -679,7 +679,11 @@ void StartAutopilot()
 		}
 		vm_vec_normalize(&perp);
 		//vm_vec_scale(&perp, 2*radius+distance);
-		vm_vec_scale(&perp, radius+(distance/2.0f));
+
+		// randomly scale up/down by up to 20%
+		j = 20-myrand()%40; // [-20,20]
+		vm_vec_scale(&perp, (radius+(distance/2.0f))*(1+(float(j)/100)));
+
 		vm_vec_add(&cameraPos, &pos, &perp);
 
 	}

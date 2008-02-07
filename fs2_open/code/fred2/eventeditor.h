@@ -145,6 +145,8 @@
 #ifndef _EVENTEDITOR_H
 #define _EVENTEDITOR_H
 
+#include <vector>
+
 #include "Sexp_tree.h"
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
@@ -255,8 +257,10 @@ private:
 	int m_sig[MAX_MISSION_EVENTS];
 	mission_event m_events[MAX_MISSION_EVENTS];
 	int m_num_messages;
-	MMessage m_messages[MAX_MISSION_MESSAGES];
-	int m_msg_sig[MAX_MISSION_MESSAGES];
+	//MMessage m_messages[MAX_MISSION_MESSAGES];
+	//int m_msg_sig[MAX_MISSION_MESSAGES];
+	std::vector<MMessage> m_messages;
+	std::vector<int> m_msg_sig;
 };
 
 extern event_editor *Event_editor_dlg; // global reference needed by event tree class
