@@ -2350,7 +2350,10 @@ int parse_weapon(int subtype, bool replace)
 				if(wip->wi_flags & WIF_HOMING_ASPECT) {
 					wip->wi_flags &= ~WIF_HOMING_ASPECT;
 				}
-				
+				if(wip->wi_flags & WIF_HOMING_JAVELIN) {
+					wip->wi_flags &= ~WIF_HOMING_JAVELIN;
+				}
+
 				wip->wi_flags |= WIF_HOMING_HEAT | WIF_TURNS;
 			}
 			else if (!stricmp(temp_type, NOX("ASPECT")))
@@ -2358,8 +2361,22 @@ int parse_weapon(int subtype, bool replace)
 				if(wip->wi_flags & WIF_HOMING_HEAT) {
 					wip->wi_flags &= ~WIF_HOMING_HEAT;
 				}
-				
+				if(wip->wi_flags & WIF_HOMING_JAVELIN) {
+					wip->wi_flags &= ~WIF_HOMING_JAVELIN;
+				}
+
 				wip->wi_flags |= WIF_HOMING_ASPECT | WIF_TURNS;
+			}
+			else if (!stricmp(temp_type, NOX("JAVELIN")))
+			{
+				if(wip->wi_flags & WIF_HOMING_HEAT) {
+					wip->wi_flags &= ~WIF_HOMING_HEAT;
+				}
+				if(wip->wi_flags & WIF_HOMING_ASPECT) {
+					wip->wi_flags &= ~WIF_HOMING_ASPECT;
+				}
+
+				wip->wi_flags |= WIF_HOMING_JAVELIN | WIF_TURNS;
 			}
 			//If you want to add another weapon, remember you need to reset
 			//ALL homing flags.
@@ -2389,7 +2406,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 			}
 		}
-		else if (wip->wi_flags & WIF_HOMING_ASPECT)
+		else if (wip->wi_flags & WIF_HOMING_ASPECT || wip->wi_flags & WIF_HOMING_JAVELIN)
 		{
 			if(optional_string("+Turn Time:")) {
 				stuff_float(&wip->turn_time);
@@ -2431,7 +2448,7 @@ int parse_weapon(int subtype, bool replace)
 		}
 		else
 		{
-			Error(LOCATION, "Illegal homing type = %s.\nMust be HEAT or ASPECT.\n", temp_type);
+			Error(LOCATION, "Illegal homing type = %s.\nMust be HEAT, ASPECT or JAVELIN.\n", temp_type);
 		}
 
 	}
@@ -4237,7 +4254,10 @@ void weapon_maybe_play_warning(weapon *wp)
 	if ( wp->homing_object == Player_obj ) {
 		if ( !(wp->weapon_flags & WF_LOCK_WARNING_PLAYED) ) {
 			wp->weapon_flags |= WF_LOCK_WARNING_PLAYED;
-			if ( Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_HEAT ) {
+			// Use heatlock-warning sound for Heat and Javelin for now
+			// Possibly add an additional third sound later
+			if ( Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_HEAT ||
+				 Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_JAVELIN ) {
 				snd_play(&Snds[SND_HEATLOCK_WARN]);
 			} else {
 				Assert(Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_ASPECT);
@@ -4364,11 +4384,20 @@ void find_homing_object(object *weapon_objp, int num)
 
 				dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
 
+				ship_subsys *target_engines = NULL;
+				if (wip->wi_flags & WIF_HOMING_JAVELIN && objp->type == OBJ_SHIP) {
+					ship *target_ship = &Ships[ship_get_by_signature(objp->signature)];
+					target_engines = ship_get_closest_subsys_in_sight(target_ship, SUBSYSTEM_ENGINE, &objp->pos);
+					if (target_engines == NULL)
+						continue;
+				}
+
 				if (dot > wip->fov) {
 					if (dist < best_dist) {
 						best_dist = dist;
-						wp->homing_object = objp;
-						wp->target_sig = objp->signature;
+						wp->homing_object	= objp;
+						wp->target_sig		= objp->signature;
+						wp->homing_subsys	= target_engines;
 
 						cmeasure_maybe_alert_success(objp);
 					}
@@ -4427,9 +4456,11 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 				{
 					float	chance;
 					if (wip->wi_flags & WIF_HOMING_ASPECT) {
-						chance = cm_wip->cm_aspect_effectiveness/wip->seeker_strength;	//	aspect seeker this likely to chase a countermeasure
+						// aspect seeker this likely to chase a countermeasure
+						chance = cm_wip->cm_aspect_effectiveness/wip->seeker_strength;
 					} else {
-						chance = cm_wip->cm_heat_effectiveness/wip->seeker_strength;	//	heat seeker this likely to chase a countermeasure
+						// heat seeker and javelin HS this likely to chase a countermeasure
+						chance = cm_wip->cm_heat_effectiveness/wip->seeker_strength;
 					}
 					if ((objp->signature != wp->cmeasure_ignore_objnum) && (objp->signature != wp->cmeasure_chase_objnum))
 					{
@@ -4573,8 +4604,8 @@ void weapon_home(object *obj, int num, float frame_time)
 		return;
 	}
 
-	// AL 4-8-98: If orgiginal target for aspect lock missile is lost, stop homing
-	if (wip->wi_flags & WIF_HOMING_ASPECT) {
+	// AL 4-8-98: If orgiginal target for aspect or javelin HS lock missile is lost, stop homing
+	if (wip->wi_flags & WIF_LOCKED_HOMING) {
 		if ( wp->target_sig > 0 ) {
 			if ( wp->homing_object->signature != wp->target_sig ) {
 				wp->homing_object = &obj_used_list;
@@ -4592,6 +4623,27 @@ void weapon_home(object *obj, int num, float frame_time)
 		}
 	}
 
+	// Make sure Javelin HS missiles always home on engine subsystems if ships
+	if (wip->wi_flags & WIF_HOMING_JAVELIN &&
+		hobjp->type == OBJ_SHIP &&
+		wp->target_sig > 0 &&
+		wp->homing_subsys != NULL &&
+		wp->homing_subsys->system_info->type != SUBSYSTEM_ENGINE) {
+			ship *enemy = &Ships[ship_get_by_signature(wp->target_sig)];
+			wp->homing_subsys = ship_get_closest_subsys_in_sight(enemy, SUBSYSTEM_ENGINE, &Objects[wp->objnum].pos);
+	}
+
+	// If Javelin HS missile doesn't home in on a subsystem but homing in on a
+	// ship, lose lock alltogether
+	// Javelins can only home in one Engines or bombs.
+	if (wip->wi_flags & WIF_HOMING_JAVELIN &&
+		hobjp->type == OBJ_SHIP &&
+		wp->target_sig > 0 &&
+		wp->homing_subsys == NULL) {
+			wp->homing_object = &obj_used_list;
+			return;
+	}
+
 /*
 	if (hobjp->type == OBJ_NONE) {
 		find_homing_object(obj, num);
@@ -4601,18 +4653,20 @@ void weapon_home(object *obj, int num, float frame_time)
 
 	switch (hobjp->type) {
 	case OBJ_NONE:
-		if (wip->wi_flags & WIF_HOMING_ASPECT)
+		if (wip->wi_flags & WIF_LOCKED_HOMING) {
 			find_homing_object_by_sig(obj, wp->target_sig);
-		else
+		} else {
 			find_homing_object(obj, num);
+		}
 		return;
 		break;
 	case OBJ_SHIP:
 		if (hobjp->signature != wp->target_sig) {
-			if (wip->wi_flags & WIF_HOMING_ASPECT)
+			if (wip->wi_flags & WIF_LOCKED_HOMING) {
 				find_homing_object_by_sig(obj, wp->target_sig);
-			else
+			} else {
 				find_homing_object(obj, num);
+			}
 			return;
 		}
 		break;
@@ -4623,10 +4677,11 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		// only allowed to home on bombs
 		Assert(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB);
-		if (wip->wi_flags & WIF_HOMING_ASPECT)
+		if (wip->wi_flags & WIF_LOCKED_HOMING) {
 			find_homing_object_by_sig(obj, wp->target_sig);
-		else
+		} else {
 			find_homing_object(obj, num);
+		}
 		break;
 	default:
 		return;
@@ -4726,7 +4781,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 							// If player has apect lock, we don't want to find a homing point on the closest
 							// octant... setting the timestamp to 0 ensures this.
-							if (wip->wi_flags & WIF_HOMING_ASPECT) {
+							if (wip->wi_flags & WIF_LOCKED_HOMING) {
 								wp->pick_big_attack_point_timestamp = 0;
 							} else {
 								wp->pick_big_attack_point_timestamp = 1;
@@ -4792,7 +4847,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		//	Only lead target if more than one second away.  Otherwise can miss target.  I think this
 		//	is what's causing Harbingers to miss the super destroyer. -- MK, 4/15/98
-		if ((wip->wi_flags & WIF_HOMING_ASPECT) && (old_dot > 0.1f) && (time_to_target > 0.1f))
+		if ((wip->wi_flags & WIF_LOCKED_HOMING) && (old_dot > 0.1f) && (time_to_target > 0.1f))
 			vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, MIN(time_to_target, 2.0f));
 
 		//nprintf(("AI", "Dot = %7.3f, dist = %7.3f, time_to = %6.3f, deg/sec = %7.3f\n", old_dot, dist_to_target, time_to_target, angles/flFrametime));
@@ -4811,11 +4866,11 @@ void weapon_home(object *obj, int num, float frame_time)
 					//if (flFrametime * (1.0f - old_dot) > 1.0f)
 					//	Int3();
 				}
-		} else if (wip->wi_flags & WIF_HOMING_ASPECT) {	//	subtract life as if max turn is 90 degrees.
+		} else if (wip->wi_flags & WIF_LOCKED_HOMING) {	//	subtract life as if max turn is 90 degrees.
 			if (wip->fov < 0.95f)
 				wp->lifeleft -= flFrametime * (0.95f - old_dot);
 		} else {
-			Warning(LOCATION, "Tried to make weapon '%s' home, but found it wasn't aspect-seeking or heat-seeking!", wip->name);
+			Warning(LOCATION, "Tried to make weapon '%s' home, but found it wasn't aspect-seeking or heat-seeking or a Javelin!", wip->name);
 		}
 
 
@@ -5246,6 +5301,23 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 				wp->homing_object = &Objects[target_objnum];
 				wp->homing_subsys = target_subsys;
 				weapon_maybe_play_warning(wp);
+			} else if ( (wip->wi_flags & WIF_HOMING_JAVELIN) && target_is_locked) {
+				if (Objects[target_objnum].type == OBJ_SHIP &&
+					(wp->homing_subsys == NULL ||
+					wp->homing_subsys->system_info->type != SUBSYSTEM_ENGINE)) {
+						ship *target_ship = &Ships[Objects[target_objnum].instance];
+						wp->homing_subsys = ship_get_closest_subsys_in_sight(target_ship, SUBSYSTEM_ENGINE, &Objects[weapon_objnum].pos);
+						if (wp->homing_subsys == NULL) {
+							wp->homing_object = &obj_used_list;
+						} else {
+							wp->homing_object = &Objects[target_objnum];
+							weapon_maybe_play_warning(wp);
+						}
+				} else {
+					wp->homing_object = &Objects[target_objnum];
+					wp->homing_subsys = target_subsys;
+					weapon_maybe_play_warning(wp);
+				}
 			} else if ( wip->wi_flags & WIF_HOMING_HEAT ) {
 				//	Make a heat seeking missile try to home.  If the target is outside the view cone, it will
 				//	immediately drop it and try to find one in its view cone.
@@ -5268,7 +5340,8 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		// DB - removed 7:14 pm 9/6/99. was totally messing up lifetimes for all weapons.
 		//	MK, 7:11 am, 9/7/99.  Put it back in, but with a proper check here to make sure it's an aspect seeker and
 		//	put a sanity check in the color changing laser code that was broken by this code.
-		if (target_is_locked && (wp->target_num != -1) && (wip->wi_flags & WIF_HOMING_ASPECT) ) {
+		if (target_is_locked && (wp->target_num != -1) &&
+			(wip->wi_flags & WIF_LOCKED_HOMING) ) {
 			wp->lifeleft *= 1.2f;
 		}
 

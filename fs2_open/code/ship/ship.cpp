@@ -13680,6 +13680,46 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 	return ssp;
 }
 
+// Returns the closest subsystem of specified type that is in line of sight.
+// Returns null if all subsystems of that type are destroyed or none is in sight.
+ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos)
+{
+	Assert ( subsys_type >= 0 && type < SUBSYSTEM_MAX );
+
+	// If aggregate total is 0, that means no subsystem is alive of that type
+	if ( sp->subsys_info[subsys_type].total_hits <= 0.0f )
+		return NULL;
+
+	ship_subsys	*closest_in_sight_subsys;
+	ship_subsys	*ss;
+	vec3d		gsubpos;
+	float		closest_dist;
+	float		ss_dist;
+
+	closest_in_sight_subsys = NULL;
+	closest_dist = FLT_MAX;
+
+	for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
+		if ( (ss->system_info->type == subsys_type) && (ss->current_hits > 0) ) {
+
+			// get world pos of subsystem
+			vm_vec_unrotate(&gsubpos, &ss->system_info->pnt, &Objects[sp->objnum].orient);
+			vm_vec_add2(&gsubpos, &Objects[sp->objnum].pos);
+			
+			if ( ship_subsystem_in_sight(&Objects[sp->objnum], ss, attacker_pos, &gsubpos) ) {
+				ss_dist = vm_vec_dist_squared(attacker_pos, &gsubpos);
+
+				if ( ss_dist < closest_dist ) {
+					closest_dist = ss_dist;
+					closest_in_sight_subsys = ss;
+				}
+			}
+		}
+	}
+
+	return closest_in_sight_subsys;
+}
+
 // Return the shield strength in the quadrant hit on hit_objp, based on global hitpos
 //
 // input:	hit_objp	=>	object pointer to ship getting hit
@@ -13776,7 +13816,7 @@ int ship_has_homing_missile_locked(ship *shipp)
 		if ( wip->subtype != WP_MISSILE )
 			continue;
 
-		if ( !(wip->wi_flags & (WIF_HOMING_ASPECT|WIF_HOMING_HEAT) ) )
+		if ( !(wip->wi_flags & WIF_HOMING ) )
 			continue;
 
 		if (wp->homing_object == locked_objp) {

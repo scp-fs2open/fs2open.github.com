@@ -805,7 +805,12 @@ void hud_update_lock_indicator(float frametime)
 		
 	Player_ai->last_secondary_index = swp->current_secondary_bank;
 
-	if ( !(wip->wi_flags & WIF_HOMING_ASPECT) ) {
+	object *tobjp = &Objects[Player_ai->target_objnum];
+	vec3d dir_to_target;
+	vm_vec_normalized_dir(&dir_to_target, &tobjp->pos, &Player_obj->pos);
+	float dot_target_orient = vm_vec_dot(&tobjp->orient.vec.fvec, &dir_to_target);
+
+	if ( !(wip->wi_flags & WIF_LOCKED_HOMING) ) {
 		hud_lock_reset();
 		return;		
 	}
@@ -814,6 +819,33 @@ void hud_update_lock_indicator(float frametime)
 	if ( (Objects[Player_ai->target_objnum].type != OBJ_SHIP) && (Objects[Player_ai->target_objnum].type != OBJ_WEAPON) ) {	
 		hud_lock_reset();
 		return;
+	}
+
+	// Javelins must lock on engines if locking on a ship and those must be in sight
+	if (wip->wi_flags & WIF_HOMING_JAVELIN && 
+		tobjp->type == OBJ_SHIP &&
+		Player->locking_subsys != NULL) {
+			vec3d subobj_pos;
+			vm_vec_unrotate(&subobj_pos, &Player->locking_subsys->system_info->pnt, &tobjp->orient);
+			vm_vec_add2(&subobj_pos, &tobjp->pos);
+			int target_subsys_in_sight = ship_subsystem_in_sight(tobjp, Player->locking_subsys, &Player_obj->pos, &subobj_pos);
+
+			if (!target_subsys_in_sight || Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE) {
+				Player->locking_subsys =
+					ship_get_closest_subsys_in_sight(&Ships[tobjp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
+			}
+	}
+
+	if (wip->wi_flags & WIF_HOMING_JAVELIN && 
+		tobjp->type == OBJ_SHIP &&
+		Player->locking_subsys == NULL) {
+			Player->locking_subsys =
+				ship_get_closest_subsys_in_sight(&Ships[tobjp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
+
+			if (Player->locking_subsys == NULL) {
+				hud_lock_reset();
+				return;
+			}
 	}
 
 	hud_lock_determine_lock_point(&lock_world_pos);
@@ -1226,12 +1258,15 @@ void hud_stop_looped_locking_sounds()
 // Get a new world pos for the locking point
 void hud_lock_update_lock_pos(object *target_objp, vec3d *lock_world_pos)
 {
-	if ( Player_ai->targeted_subsys ) {
+	ship_weapon *swp = &Player_ship->weapons;
+	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+
+	if ( Player_ai->targeted_subsys && !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
 		get_subsystem_world_pos(target_objp, Player_ai->targeted_subsys, lock_world_pos);
 		return;
 	}
 
-	if ( Player->locking_on_center ) {
+	if ( Player->locking_on_center) {
 		*lock_world_pos = target_objp->pos;
 	} else {
 		Assert(Player->locking_subsys);
@@ -1247,13 +1282,19 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 	float			best_lock_dot=-1.0f, lock_dot=-1.0f;
 	ship_subsys	*ss;
 	vec3d		subsys_world_pos, vec_to_lock;
+	ship_weapon *swp;
+	weapon_info *wip;
 
 	if ( target_objp->type == OBJ_SHIP ) {
 		target_shipp = &Ships[target_objp->instance];
 	}
 
+	swp = &Player_ship->weapons;
+	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+
 	// if a large ship, lock to pos closest to center and within range
-	if ( (target_shipp) && (Ship_info[target_shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) ) {
+	if ( (target_shipp) && (Ship_info[target_shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) &&
+		 !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
 		// check all the subsystems and the center of the ship
 		
 		// assume best lock pos is the center of the ship
@@ -1291,6 +1332,16 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 			}
 			ss = GET_NEXT( ss );
 		}
+	} else if ((target_shipp) && wip->wi_flags & WIF_HOMING_JAVELIN) {
+		Player->locking_subsys = ship_get_closest_subsys_in_sight(target_shipp, SUBSYSTEM_ENGINE, &Player_obj->pos);
+		if (Player->locking_subsys != NULL) {
+			get_subsystem_world_pos(target_objp, Player->locking_subsys, lock_world_pos);
+			Player->locking_on_center=0;
+			Player->locking_subsys_parent=Player_ai->target_objnum;
+		} else {
+			hud_lock_reset();
+			return;
+		}
 	} else {
 		// if small ship (or weapon), just go for the center
 		*lock_world_pos = target_objp->pos;
@@ -1303,9 +1354,11 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 // Decide which point lock should be homing on
 void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 {
-	vec3d	lock_world_pos;
-	vertex	lock_point;
-	object	*target_objp;
+	vec3d		lock_world_pos;
+	vertex		lock_point;
+	object		*target_objp;
+	ship_weapon	*swp;
+	weapon_info	*wip;
 
 	Assert(Player_ai->target_objnum >= 0);
 	target_objp = &Objects[Player_ai->target_objnum];
@@ -1313,12 +1366,28 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	Player->current_target_sx = -1;
 	Player->current_target_sx = -1;
 
+	swp = &Player_ship->weapons;
+	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+
 	// If subsystem is targeted, we must try to lock on that
-	if ( Player_ai->targeted_subsys ) {
+	if ( Player_ai->targeted_subsys && !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
 		hud_lock_update_lock_pos(target_objp, &lock_world_pos);
 		Player->locking_on_center=0;
-		Player->locking_subsys=NULL;
-		Player->locking_subsys_parent=-1;
+		Player->locking_subsys=Player_ai->targeted_subsys;
+		Player->locking_subsys_parent=Player_ai->target_objnum;
+	} else if ( wip->wi_flags & WIF_HOMING_JAVELIN && target_objp->type == OBJ_SHIP) {
+		if (!Player->locking_subsys ||
+			Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE) {
+				Player->locking_subsys = ship_get_closest_subsys_in_sight(&Ships[target_objp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
+		}
+		if (Player->locking_subsys != NULL) {
+			get_subsystem_world_pos(target_objp, Player->locking_subsys, &lock_world_pos);
+			Player->locking_on_center=0;
+			Player->locking_subsys_parent=Player_ai->target_objnum;
+		} else {
+			hud_lock_reset();
+			return;
+		}
 	} else {
 		// See if we already have a successful locked point
 		if ( hud_lock_has_homing_point() ) {
