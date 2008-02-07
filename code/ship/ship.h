@@ -1945,7 +1945,10 @@ typedef struct ship_info {
 	bool can_glide;
 	float glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity
 	float glide_multiplier;	//Backslash - for gliding with thruster adjustments, the multiplier for how quickly the thrusters change glide vector
-	
+
+	bool has_autoaim;
+	float autoaim_fov;
+
 	bool topdown_offset_def;
 	vec3d topdown_offset;
 
