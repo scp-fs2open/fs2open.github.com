@@ -922,6 +922,12 @@ typedef struct screen {
 	// resets the clipping region to entire screen
 	void (*gf_reset_clip)();
 
+	// sets the scissor region
+	void (*gf_set_scissor)(int x, int y, int w, int h);
+
+	// resets the scissor region to entire screen
+	void (*gf_unset_scissor)();
+
 	//void (*gf_set_color)( int r, int g, int b );
 	//void (*gf_get_color)( int * r, int * g, int * b );
 	//void (*gf_init_color)( color * dst, int r, int g, int b );
@@ -1237,6 +1243,12 @@ __inline void gr_set_clip(int x, int y, int w, int h, bool resize=true)
 	(*gr_screen.gf_set_clip)(x,y,w,h,resize);
 }
 #define gr_reset_clip		GR_CALL(gr_screen.gf_reset_clip)
+
+__inline void gr_set_scissor(int x, int y, int w, int h)
+{
+	(*gr_screen.gf_set_scissor)(x,y,w,h);
+}
+#define gr_unset_scissor		GR_CALL(gr_screen.gf_unset_scissor)
 //#define gr_set_font			GR_CALL(gr_screen.gf_set_font)
 
 //#define gr_init_color		GR_CALL(gr_screen.gf_init_color)

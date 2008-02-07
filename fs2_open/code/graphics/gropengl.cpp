@@ -1698,6 +1698,47 @@ void gr_opengl_flip_window(uint _hdc, int x, int y, int w, int h )
 	// Not used.
 }
 
+void gr_opengl_set_scissor(int x, int y, int w, int h)
+{
+	// check for sanity of parameters
+	if (x < 0)
+		x = 0;
+	if (y < 0)
+		y = 0;
+
+	int max_w = gr_screen.max_w;
+	int max_h = gr_screen.max_h;
+
+	if (x >= max_w)
+		x = max_w - 1;
+	if (y >= max_h)
+		y = max_h - 1;
+
+	if (x + w > max_w)
+		w = max_w - x;
+	if (y + h > max_h)
+		h = max_h - y;
+
+	if (w > max_w)
+		w = max_w;
+	if (h > max_h)
+		h = max_h;
+
+	// just return early if we aren't actually going to need the scissor test
+	if ( (x == 0) && (y == 0) && (w == max_w) && (h == max_h) ) {
+		glDisable(GL_SCISSOR_TEST);
+		return;
+	}
+
+	glEnable(GL_SCISSOR_TEST);
+	glScissor(x, gr_screen.max_h - y - h, w, h);
+}
+
+void gr_opengl_unset_scissor()
+{
+	glDisable(GL_SCISSOR_TEST);
+}
+
 void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 {
 	// check for sanity of parameters
@@ -4569,6 +4610,8 @@ void opengl_setup_function_pointers()
 
 	gr_screen.gf_flip				= gr_opengl_flip;
 	gr_screen.gf_flip_window		= gr_opengl_flip_window;
+	gr_screen.gf_set_scissor        = gr_opengl_set_scissor;
+	gr_screen.gf_unset_scissor      = gr_opengl_unset_scissor;
 	gr_screen.gf_set_clip			= gr_opengl_set_clip;
 	gr_screen.gf_reset_clip			= gr_opengl_reset_clip;
 	
