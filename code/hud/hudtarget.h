@@ -454,6 +454,4 @@ void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3);
 
 float hud_find_target_distance( object *targetee, object *targeter );
 
-extern void polish_predicted_target_pos(object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps);
-
 #endif

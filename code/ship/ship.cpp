@@ -2846,9 +2846,6 @@ void init_ship_entry(int ship_info_index)
 	sip->can_glide = false;
 	sip->glide_cap = 0.0f;
 
-	sip->has_autoaim = false;
-	sip->autoaim_fov = 0.0f;
-
 	sip->warpin_speed = 0.0f;
 	sip->warpout_speed = 0.0f;
 	sip->warpin_radius = 0.0f;
@@ -3375,18 +3372,6 @@ int parse_ship(char *filename, bool replace)
 	{
 		if(optional_string("+Max Glide Speed:"))
 			stuff_float(&sip->glide_cap );
-	}
-
-	if(optional_string("$Autoaim FOV:"))
-	{
-		int fov_temp;
-		stuff_int(&fov_temp);
-
-		// Make sure it is a reasonable value
-		fov_temp = (((fov_temp % 360) + 360) % 360) / 2;
-
-		sip->has_autoaim = true;
-		sip->autoaim_fov = (float)fov_temp * PI / 180.0f;
 	}
 
 	if(optional_string("$Warpin type:"))
@@ -10239,59 +10224,9 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						vm_vec_add(&firing_pos, &gun_point, &obj->pos);
 
 						matrix firing_orient;
-						if (!(sip->flags2 & SIF2_GUN_CONVERGENCE))
+						if(!(sip->flags2 & SIF2_GUN_CONVERGENCE))
 						{
-							if (sip->has_autoaim &&
-								aip->target_objnum != -1 &&
-								Players[Player_num].lead_indicator_active == 1)
-							{
-								// Fire weapon in target direction
-								vec3d target_position, target_velocity_vec, predicted_target_pos;
-								vec3d firing_vec, last_delta_vec, player_forward_vec;
-								float dist_to_target, time_to_target, angle_to_target;
-
-								aip->targeted_subsys->system_info->subobj_num;
-
-								// If a subsystem is targeted, fire in that direction instead
-								if (aip->targeted_subsys != NULL)
-								{
-									get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
-								}
-								else
-								{
-									target_position = Objects[aip->target_objnum].pos;
-								}
-
-								target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
-								dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
-								time_to_target = 0.0f;
-
-								if (winfo_p->max_speed != 0)
-								{
-									time_to_target = dist_to_target / winfo_p->max_speed;
-								}
-
-								vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
-								polish_predicted_target_pos(&Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
-								vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
-
-								// Deactivate autoaiming if the target leaves the autoaim-FOV cone
-								player_forward_vec = obj->orient.vec.fvec;
-								angle_to_target = vm_vec_delta_ang(&player_forward_vec, &firing_vec, NULL);
-
-								if (angle_to_target < sip->autoaim_fov)
-								{
-									vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
-								}
-								else
-								{
-									firing_orient = obj->orient;
-								}
-							}
-							else
-							{
-								firing_orient = obj->orient;
-							}
+							firing_orient = obj->orient;
 						}
 						else
 						{
@@ -10301,7 +10236,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						}
 						// create the weapon -- the network signature for multiplayer is created inside
 						// of weapon_create
-
 						weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id );
 	
 						weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
@@ -13680,46 +13614,6 @@ ship_subsys *ship_return_next_subsys(ship *shipp, int type, vec3d *attacker_pos)
 	return ssp;
 }
 
-// Returns the closest subsystem of specified type that is in line of sight.
-// Returns null if all subsystems of that type are destroyed or none is in sight.
-ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos)
-{
-	Assert ( subsys_type >= 0 && subsys_type < SUBSYSTEM_MAX );
-
-	// If aggregate total is 0, that means no subsystem is alive of that type
-	if ( sp->subsys_info[subsys_type].total_hits <= 0.0f )
-		return NULL;
-
-	ship_subsys	*closest_in_sight_subsys;
-	ship_subsys	*ss;
-	vec3d		gsubpos;
-	float		closest_dist;
-	float		ss_dist;
-
-	closest_in_sight_subsys = NULL;
-	closest_dist = FLT_MAX;
-
-	for (ss = GET_FIRST(&sp->subsys_list); ss != END_OF_LIST(&sp->subsys_list); ss = GET_NEXT(ss) ) {
-		if ( (ss->system_info->type == subsys_type) && (ss->current_hits > 0) ) {
-
-			// get world pos of subsystem
-			vm_vec_unrotate(&gsubpos, &ss->system_info->pnt, &Objects[sp->objnum].orient);
-			vm_vec_add2(&gsubpos, &Objects[sp->objnum].pos);
-			
-			if ( ship_subsystem_in_sight(&Objects[sp->objnum], ss, attacker_pos, &gsubpos) ) {
-				ss_dist = vm_vec_dist_squared(attacker_pos, &gsubpos);
-
-				if ( ss_dist < closest_dist ) {
-					closest_dist = ss_dist;
-					closest_in_sight_subsys = ss;
-				}
-			}
-		}
-	}
-
-	return closest_in_sight_subsys;
-}
-
 // Return the shield strength in the quadrant hit on hit_objp, based on global hitpos
 //
 // input:	hit_objp	=>	object pointer to ship getting hit
@@ -13816,7 +13710,7 @@ int ship_has_homing_missile_locked(ship *shipp)
 		if ( wip->subtype != WP_MISSILE )
 			continue;
 
-		if ( !(wip->wi_flags & WIF_HOMING ) )
+		if ( !(wip->wi_flags & (WIF_HOMING_ASPECT|WIF_HOMING_HEAT) ) )
 			continue;
 
 		if (wp->homing_object == locked_objp) {

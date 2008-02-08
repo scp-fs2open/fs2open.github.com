@@ -172,7 +172,6 @@
 extern int		Player_use_ai;
 extern int get_wing_index(object *objp, int wingnum);
 extern object * get_wing_leader(int wingnum);
-extern int Cmdline_autopilot_interruptable;
 
 
 // Module variables
@@ -184,6 +183,7 @@ NavPoint Navs[MAX_NAVPOINTS];
 NavMessage NavMsgs[NP_NUM_MESSAGES];
 int audio_handle;
 int NavLinkDistance;
+
 // time offsets for autonav events
 int LockAPConv;
 int EndAPCinematic;
@@ -679,11 +679,7 @@ void StartAutopilot()
 		}
 		vm_vec_normalize(&perp);
 		//vm_vec_scale(&perp, 2*radius+distance);
-
-		// randomly scale up/down by up to 20%
-		j = 20-myrand()%40; // [-20,20]
-		vm_vec_scale(&perp, (radius+(distance/2.0f))*(1+(float(j)/100)));
-
+		vm_vec_scale(&perp, radius+(distance/2.0f));
 		vm_vec_add(&cameraPos, &pos, &perp);
 
 	}
@@ -888,11 +884,7 @@ void NavSystem_Do()
 			if ((Navs[i].flags & NP_SHIP) && (Navs[i].target_obj != NULL))
 			{
 				if (((ship*)Navs[i].target_obj)->objnum == -1)
-				{
-					if (CurrentNav == i)
-						CurrentNav = -1;
 					DelNavPoint(i);
-				}
 			}
 		}
 		
@@ -1056,9 +1048,6 @@ void parse_autopilot_table(char *filename)
 	// optional no cutscene bars
 	if (optional_string("+No_Cutscene_Bars"))
 		UseCutsceneBars = false;
-	// optional no cutscene bars
-	if (optional_string("+No_Autopilot_Interrupt"))
-		Cmdline_autopilot_interruptable = 0;
 
 	// No Nav selected message
 	char *msg_tags[] = { "$No Nav Selected:", "$Gliding:", "$Too Close:", "$Hostiles:", "$Linked:", "$Hazard:" };
