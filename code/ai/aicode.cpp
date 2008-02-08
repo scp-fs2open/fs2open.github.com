@@ -1198,6 +1198,7 @@
 #include "ai/ai_profiles.h"
 
 #include "autopilot/autopilot.h"
+#include <map>
 
 
 #pragma optimize("", off)
@@ -5193,7 +5194,6 @@ void ai_fly_to_ship()
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
-	int wcount=1;
 	vec3d perp, zero, goal_point;
 	memset(&zero, 0, sizeof(vec3d));
 	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
@@ -5217,26 +5217,26 @@ void ai_fly_to_ship()
 					}
 					else
 					{
-						switch (wcount % 2)
+						j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
+						switch (autopilot_wings[aip->wing] % 2)
 						{
 							case 1: // back-left
-								vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.rvec);
-								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
 								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, 166.0f*float((wcount+1)/2)); // 166m is supposedly the optimal range according to tolwyn
+								vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
 								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
 								break;
 
 							default: //back-right
 							case 0:
 								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
-								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
 								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, 166.0f*float(wcount/2));
+								vm_vec_scale(&perp, 166.0f*j);
 								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
 								break;
 						}
-						wcount++;
 
 					}
 					Pl_objp->pos = goal_point;
@@ -5399,6 +5399,7 @@ void ai_waypoints()
 	float		prev_dot_to_goal;
 	vec3d	temp_vec;
 	vec3d	*slop_vec;
+	int j;
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
@@ -5462,7 +5463,6 @@ void ai_waypoints()
 	// and "keep reasonable distance" 
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
-	int wcount=1;
 	vec3d perp, zero, goal_point;
 	memset(&zero, 0, sizeof(vec3d));
 	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
@@ -5500,26 +5500,26 @@ void ai_waypoints()
 					}
 					else
 					{
-						switch (wcount % 2)
+						j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
+						switch (autopilot_wings[aip->wing] % 2)
 						{
 							case 1: // back-left
-								vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.rvec);
-								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
 								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, 166.0f*float((wcount+1)/2)); // 166m is supposedly the optimal range according to tolwyn
+								vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
 								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
 								break;
 
 							default: //back-right
 							case 0:
 								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
-								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
 								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, 166.0f*float(wcount/2));
+								vm_vec_scale(&perp, 166.0f*j);
 								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
 								break;
 						}
-						wcount++;
 
 					}
 					Pl_objp->pos = goal_point;
@@ -12240,7 +12240,7 @@ void get_absolute_wing_pos_autopilot(vec3d *result_pos, object *leader_objp, int
 	get_wing_delta(&wing_delta, wing_index);		//	Desired location in leader's reference frame
 	wing_spread_size = MAX(50.0f, 3.0f * get_wing_largest_radius(leader_objp, formation_object_flag) + 15.0f);
 
-	vm_vec_scale(&wing_delta, wing_spread_size * 1.5);
+	vm_vec_scale(&wing_delta, wing_spread_size * 1.5f);
 	vm_vec_unrotate(&rotated_wing_delta, &wing_delta, &leader_objp->orient);	//	Rotate into leader's reference.
 	vm_vec_add(result_pos, &leader_objp->pos, &rotated_wing_delta);	//	goal_point is absolute 3-space point.
 }

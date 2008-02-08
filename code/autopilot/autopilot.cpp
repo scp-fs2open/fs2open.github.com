@@ -167,11 +167,13 @@
 #include "localization/localize.h"
 #include "camera/camera.h"
 #include "asteroid/asteroid.h"
+#include <map>
 
 // Extern functions/variables
 extern int		Player_use_ai;
 extern int get_wing_index(object *objp, int wingnum);
 extern object * get_wing_leader(int wingnum);
+extern int Cmdline_autopilot_interruptable;
 
 
 // Module variables
@@ -183,12 +185,15 @@ NavPoint Navs[MAX_NAVPOINTS];
 NavMessage NavMsgs[NP_NUM_MESSAGES];
 int audio_handle;
 int NavLinkDistance;
-
 // time offsets for autonav events
 int LockAPConv;
 int EndAPCinematic;
-bool CinematicStarted;
+int MoveCamera;
+int camMovingTime;
+float CameraSpeed;
+bool CinematicStarted, CameraMoving;
 vec3d cameraPos;
+std::map<int,int> autopilot_wings;
 
 // used for ramping time compression;
 int start_dist;
@@ -414,10 +419,30 @@ void StartAutopilot()
 	lock_time_compression(true);
 
 	// determine speed cap
-	int i,j, wcount=1;
+	int i,j, wcount=1, tc_factor=1;
 	float speed_cap = 1000000.0; // 1m is a safe starting point
-	float radius = Player_obj->radius, distance = 0.0f;
-	
+	float radius = Player_obj->radius, distance = 0.0f, ftemp;
+	bool capshipPresent = false;
+	int capship_counts[3]; // three size classes
+	capship_counts[0] = 0;
+	capship_counts[1] = 0;
+	capship_counts[2] = 0;
+
+	int capship_placed[3]; // three size classes
+	capship_placed[0] = 0;
+	capship_placed[1] = 0;
+	capship_placed[2] = 0;
+
+	float capship_spreads[3];
+	capship_spreads[0] = 0.0f;
+	capship_spreads[1] = 0.0f;
+	capship_spreads[2] = 0.0f;
+
+	std::vector<int> capIndexes;
+
+	// empty the autopilot wings map
+	autopilot_wings.clear();
+
 	// vars for usage w/ cinematic
 	vec3d pos, norm1, perp, tpos, rpos = Player_obj->pos, zero;
 	memset(&zero, 0, sizeof(vec3d));
@@ -461,6 +486,37 @@ void StartAutopilot()
 				)
 			)
 		{
+			// do we have capital ships in the area?
+			if (Ship_info[Ships[i].ship_info_index].flags 
+				& ( SIF_CRUISER | SIF_CAPITAL | SIF_SUPERCAP | SIF_CORVETTE | SIF_AWACS | SIF_GAS_MINER | SIF_FREIGHTER | SIF_TRANSPORT))
+			{
+				capshipPresent = true;
+
+				capIndexes.resize(capIndexes.size()+1);
+				capIndexes[capIndexes.size()-1] = i;
+				// ok.. what size class
+
+				if (Ship_info[Ships[i].ship_info_index].flags & (SIF_CAPITAL | SIF_SUPERCAP))
+				{
+					capship_counts[0]++;
+					if (capship_spreads[0] < Objects[Ships[i].objnum].radius)
+						capship_spreads[0] = Objects[Ships[i].objnum].radius;
+				}
+				else if (Ship_info[Ships[i].ship_info_index].flags & (SIF_CORVETTE))
+				{
+					capship_counts[1]++;
+					if (capship_spreads[1] < Objects[Ships[i].objnum].radius)
+						capship_spreads[1] = Objects[Ships[i].objnum].radius;
+				}
+				else
+				{
+					capship_counts[2]++;
+					if (capship_spreads[2] < Objects[Ships[i].objnum].radius)
+						capship_spreads[2] = Objects[Ships[i].objnum].radius;
+				}
+			}
+
+
 
 			// check for bigger radius for usage later
 			/*if (!vm_vec_cmp(&rpos, &Player_obj->pos)) 
@@ -499,27 +555,28 @@ void StartAutopilot()
 				else
 				{
 					ai_clear_wing_goals(wingnum);
+					j = 1+int( (float)floor(double(wcount-1)/2.0) );
 					switch (wcount % 2)
 					{
 						case 1: // back-left
-							vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.rvec);
-							vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+							vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
+							//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
 							vm_vec_normalize(&perp);
-							vm_vec_scale(&perp, 166.0f*float((wcount+1)/2)); // 166m is supposedly the optimal range according to tolwyn
+							vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
 							vm_vec_add(&goal_point, &Player_obj->pos, &perp);
 							break;
 
 						default: //back-right
 						case 0:
 							vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
-							vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+							//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
 							vm_vec_normalize(&perp);
-							vm_vec_scale(&perp, 166.0f*float(wcount/2));
+							vm_vec_scale(&perp, 166.0f*j);
 							vm_vec_add(&goal_point, &Player_obj->pos, &perp);
 							break;
 					}
+					autopilot_wings[wingnum] = wcount;
 					wcount++;
-
 				}
 				Objects[Ships[i].objnum].pos = goal_point;
 			}
@@ -617,14 +674,181 @@ void StartAutopilot()
 
 	// ----------------------------- setup cinematic -----------------------------
 	if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS)
-	{
+	{	
+		if (capshipPresent)
+		{
+			// position capships
+
+			vec3d right, front, up, offset;
+			for (i = 0; i < capIndexes.size(); i++)
+			{
+				vm_vec_add(&right, &Player_obj->orient.vec.rvec, &zero);
+				vm_vec_add(&front, &Player_obj->orient.vec.fvec, &zero);
+				vm_vec_add(&up, &Player_obj->orient.vec.uvec, &zero);
+				vm_vec_add(&offset, &zero, &zero);
+				if (Ship_info[Ships[capIndexes[i]].ship_info_index].flags & (SIF_CAPITAL | SIF_SUPERCAP))
+				{
+					//0 - below - three lines of position
+
+					// front/back to zero
+					vm_vec_add(&front, &zero, &zero);
+
+					// position below
+					vm_vec_scale(&up, capship_spreads[0]); // scale the up vector by the radius of the largest ship in this formation part
+
+
+					switch (capship_placed[0] % 3)
+					{
+						case 1: // right
+							vm_vec_scale(&right, capship_spreads[0]);
+							break;
+							
+						case 2: // left
+							vm_vec_scale(&right, -capship_spreads[0]);
+							break;
+
+						default: // straight
+						case 0:
+							vm_vec_add(&right, &zero, &zero);
+							vm_vec_scale(&up, 1.5); // add an extra half-radius
+							break;
+					}
 		
+					// scale by  row
+					vm_vec_scale(&right, (1+((float)floor((float)capship_placed[0]/3)))); 
+					vm_vec_scale(&up, -(1+((float)floor((float)capship_placed[0]/3))));
+
+					capship_placed[0]++;
+				}
+				else if (Ship_info[Ships[capIndexes[i]].ship_info_index].flags & SIF_CORVETTE)
+				{
+					//1 above - 3 lines of position
+					// front/back to zero
+					vm_vec_add(&front, &zero, &zero);
+
+					// position below
+					vm_vec_scale(&up, capship_spreads[1]); // scale the up vector by the radius of the largest ship in this formation part
+
+
+					switch (capship_placed[1] % 3)
+					{
+						case 1: // right
+							vm_vec_scale(&right, capship_spreads[1]); 
+							break;
+							
+						case 2: // left
+							vm_vec_scale(&right, -capship_spreads[1]); 
+							break;
+
+						default: // straight
+						case 0:
+							vm_vec_add(&right, &zero, &zero);
+							vm_vec_scale(&up, 1.5); // add an extra half-radius
+							break;
+					}
+		
+					// scale by  row
+					vm_vec_scale(&right, (1+((float)floor((float)capship_placed[1]/3)))); 
+					vm_vec_scale(&up, (1+((float)floor((float)capship_placed[1]/3))));
+
+					// move ourselves up and out of the way of the smaller ships
+					vm_vec_add(&perp, &Player_obj->orient.vec.uvec, &zero);
+					vm_vec_scale(&perp, capship_spreads[2]);
+					vm_vec_add(&up, &up, &perp);
+
+					capship_placed[1]++;
+				}
+				else
+				{
+					//2 either side - 6 lines of position (right (dir, front, back), left (dir, front, back) )
+					// placing pattern: right, left, front right, front left, rear right, rear left
+
+					// up/down to zero
+					vm_vec_add(&up, &zero, &zero);
+
+
+					switch (capship_placed[2] % 6)
+					{
+						case 5:  // rear left
+							vm_vec_scale(&right, -capship_spreads[2]);
+							vm_vec_scale(&front, -capship_spreads[2]); 
+							break;
+
+						case 4:  // rear right
+							vm_vec_scale(&right, capship_spreads[2]); 
+							vm_vec_scale(&front, -capship_spreads[2]); 
+							break;
+
+						case 3:  // front left
+							vm_vec_scale(&right, -capship_spreads[2]); 
+							vm_vec_scale(&front, capship_spreads[2]); 
+							break;
+
+						case 2:  // front right
+							vm_vec_scale(&right, capship_spreads[2]); 
+							vm_vec_scale(&front, capship_spreads[2]);
+							break;
+
+						case 1:  // straight left
+							vm_vec_scale(&right, 1.5);
+							vm_vec_scale(&right, -capship_spreads[2]);
+							vm_vec_add(&front, &zero, &zero);
+							break;
+
+						default: // straight right
+						case 0:
+							vm_vec_scale(&right, 1.5);
+							vm_vec_scale(&right, capship_spreads[2]);
+							vm_vec_add(&front, &zero, &zero);
+							break;
+					}
+					// these ships seem to pack a little too tightly
+					vm_vec_scale(&right, 2*(1+((float)floor((float)capship_placed[2]/3)))); 
+					vm_vec_scale(&front, 2*(1+((float)floor((float)capship_placed[2]/3))));
+
+					// move "out" by 166*(wcount-1) so we don't bump into fighters
+					vm_vec_add(&perp, &Player_obj->orient.vec.rvec, &zero);
+					vm_vec_scale(&perp, 166.0f*float(wcount-1));
+					if ( (capship_placed[2] % 2) == 0)
+						vm_vec_add(&right, &right, &perp);
+					else
+						vm_vec_sub(&right, &right, &perp);
+
+					capship_placed[2]++;
+				}
+
+				// integrate the up/down componant
+				vm_vec_add(&offset, &offset, &up);
+
+				//integrate the left/right componant
+				vm_vec_add(&offset, &offset, &right);
+
+				//integrate the left/right componant
+				vm_vec_add(&offset, &offset, &front);
+
+				// global scale the position by 50%
+				//vm_vec_scale(&offset, 1.5);
+
+				vm_vec_add(&Objects[Ships[capIndexes[i]].objnum].pos, &Player_obj->pos, &offset);
+			}
+		}
+
+		ftemp = floor(Player_obj->phys_info.max_vel.xyz.z/speed_cap);
+		if (ftemp >= 2.0f && ftemp < 4.0f)
+			tc_factor = 2;
+		else if (ftemp >= 4.0f && ftemp < 8.0f)
+			tc_factor = 4;
+		else if (ftemp >= 8.0f)
+			tc_factor = 8;
+
+
+
 		tpos = *Navs[CurrentNav].GetPosition();
 		// determine distance toward nav at which camera will be
 		vm_vec_sub(&pos, &tpos, &Player_obj->pos);
 		vm_vec_normalize(&pos); // pos is now a unit vector in the direction we will be moving the camera
 		norm1 = pos;
-		vm_vec_scale(&pos, 5*speed_cap); // pos is now scaled by 5 times the speed (5 seconds ahead)
+		vm_vec_scale(&pos, 5*speed_cap*tc_factor); // pos is now scaled by 5 times the speed (5 seconds ahead)
 		vm_vec_add(&pos, &pos, &Player_obj->pos); // pos is now 5*speed cap in front of player ship
 
 		switch (myrand()%16) 
@@ -679,9 +903,39 @@ void StartAutopilot()
 		}
 		vm_vec_normalize(&perp);
 		//vm_vec_scale(&perp, 2*radius+distance);
-		vm_vec_scale(&perp, radius+(distance/2.0f));
+
+		vm_vec_scale(&perp,  Player_obj->radius*2);
+
+		// randomly scale up/down by up to 20%
+		j = 20-myrand()%40; // [-20,20]
+
+		vm_vec_scale(&perp, 1.0f+(float(j)/100));
 		vm_vec_add(&cameraPos, &pos, &perp);
 
+		if (capshipPresent)
+		{
+			/*vm_vec_add(&cameraTarget, &zero, &perp);
+			cameraTarget.xyz.z = -cameraTarget.xyz.z;
+			vm_vec_scale(&cameraTarget, (radius+distance)/50);
+			vm_vec_add(&cameraTarget, &pos, &cameraTarget);*/
+			CameraSpeed = (radius+distance)/25;
+
+			//vm_vec_add(&CameraVelocity, &zero, &perp);
+			//vm_vec_scale(&CameraVelocity, (radius+distance/100.f));
+			//vm_vec_scale(&CameraVelocity, 1.0f/float(NPS_TICKRATE*tc_factor));
+		}
+		else
+		{
+			//vm_vec_add(&cameraTarget, &zero, &zero);
+			CameraSpeed = 0;
+		}
+		CameraMoving = false;
+
+
+		EndAPCinematic = timestamp((10000*tc_factor)+NPS_TICKRATE); // 10 objective seconds before end of cinematic 
+		MoveCamera = timestamp((5500*tc_factor)+NPS_TICKRATE);
+		camMovingTime = int(4.5*float(tc_factor));
+		set_time_compression((float)tc_factor);
 	}
 }
 
@@ -833,6 +1087,7 @@ void nav_warp(bool prewarp=false)
 void NavSystem_Do()
 {
 	static unsigned int last_update = 0;
+	vec3d cameraTarget;
 	if (clock () - last_update > NPS_TICKRATE)
 	{
 		if (AutoPilotEngaged)
@@ -842,7 +1097,19 @@ void NavSystem_Do()
 				if (CinematicStarted)
 				{
 					// update our cinematic and possibly perform warp
-					camera_face(Player_obj->pos);
+					//if (!CameraMoving)
+						camera_face(Player_obj->pos);
+
+					/*if (timestamp() >= MoveCamera && !CameraMoving && CameraSpeed > 1.0f)
+					{
+						vm_vec_sub(&cameraTarget, &Player_obj->pos, Free_camera->get_position());
+						vm_vec_scale(&cameraTarget, CameraSpeed);
+						vm_vec_add(&cameraTarget, &cameraTarget, Free_camera->get_position());
+
+						Free_camera->set_position(&cameraTarget, float(camMovingTime), float(camMovingTime)/2.0f);
+						CameraMoving = true;
+					}*/
+
 
 					if (timestamp() >= EndAPCinematic || Autopilot_AutoDiable())
 					{
@@ -864,7 +1131,6 @@ void NavSystem_Do()
 
 					Free_camera->set_position(&cameraPos);
 					camera_face(Player_obj->pos);
-					EndAPCinematic = timestamp(10000); // 10 seconds before end of cinematic
 					CinematicStarted = true;
 				}
 			}
@@ -1052,9 +1318,10 @@ void parse_autopilot_table(char *filename)
 	// optional no cutscene bars
 	if (optional_string("+No_Cutscene_Bars"))
 		UseCutsceneBars = false;
+	// optional no cutscene bars
 	if (optional_string("+No_Autopilot_Interrupt"))
 		Cmdline_autopilot_interruptable = 0;
-	
+
 	// No Nav selected message
 	char *msg_tags[] = { "$No Nav Selected:", "$Gliding:", "$Too Close:", "$Hostiles:", "$Linked:", "$Hazard:" };
 	for (int i = 0; i < NP_NUM_MESSAGES; i++)
