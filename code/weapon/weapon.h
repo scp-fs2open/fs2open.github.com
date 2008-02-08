@@ -600,6 +600,7 @@ extern int Num_weapon_subtypes;
 //#define	WIF_AREA_EFFECT	(1 << 7)				//	Explosion has an area effect
 //#define	WIF_SHOCKWAVE		(1 << 8)				//	Explosion has a shockwave
 //WMC - These are no longer needed so these spots are free
+#define	WIF_HOMING_JAVELIN	(1 << 8)				// WC Saga Javelin HS style heatseeker, locks only on target's engines
 #define  WIF_TURNS			(1 << 9)				// Set this if the weapon ever changes heading.  If you
 															// don't set this and the weapon turns, collision detection
 															// won't work, I promise!
@@ -639,7 +640,8 @@ extern int Num_weapon_subtypes;
 #define WIF2_TRANSPARENT				(1 << 9)	// render as transparent
 #define WIF2_TRAINING					(1 << 10)	// Weapon does shield/hull damage, but doesn't hurt subsystems, whack you, or put marks on your ship.
 
-#define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
+#define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
+#define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
 
 #define	WEAPON_EXHAUST_DELTA_TIME	75		//	Delay in milliseconds between exhaust blobs
