@@ -2524,7 +2524,7 @@ void hud_target_closest_locked_missile(object *locked_obj)
 			continue;
 		}
 
-		if ( !(wip->wi_flags & WIF_HOMING ) ){
+		if ( !(wip->wi_flags & (WIF_HOMING_ASPECT|WIF_HOMING_HEAT) ) ){
 			continue;
 		}
 
@@ -3671,12 +3671,12 @@ void hud_show_homing_missiles()
 		wp = &Weapons[A->instance];
 
 		if (wp->homing_object == Player_obj) {
-			hud_render_triangle(&A->pos, Weapon_info[wp->weapon_info_index].wi_flags & WIF_LOCKED_HOMING, 1, 1);
+			hud_render_triangle(&A->pos, Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_ASPECT, 1, 1);
 			dist = vm_vec_dist_quick(&A->pos, &Player_obj->pos);
 
 			if (dist < nearest_dist) {
 				nearest_dist = dist;
-				if ( Weapon_info[wp->weapon_info_index].wi_flags & WIF_LOCKED_HOMING ) {
+				if ( Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_ASPECT ) {
 					closest_is_aspect=1;
 				} else {
 					closest_is_aspect=0;
@@ -4605,7 +4605,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 	{
 		int bank = swp->current_secondary_bank;
 		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
-		if ( tmp->wi_flags & WIF_LOCKED_HOMING )
+		if ( tmp->wi_flags & WIF_HOMING_ASPECT )
 		{
 			if ( !Player->target_in_lock_cone )
 			{
@@ -4708,7 +4708,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
 
 		//get out of here if the secondary weapon is a homer or if its out of range
-		if ( wip->wi_flags & WIF_HOMING )
+		if ( (wip->wi_flags & WIF_HOMING_HEAT) || (wip->wi_flags & WIF_HOMING_ASPECT))
 			return;
 
 		double max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);

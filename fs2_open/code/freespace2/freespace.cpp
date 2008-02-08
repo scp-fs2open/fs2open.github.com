@@ -4567,7 +4567,7 @@ void game_set_view_clip(float frametime)
 
 		//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
 		// J.S. I've changed my ways!! See the new "no constants" code!!!
-		gr_set_scissor(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2);
+		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
 	}
 	else if((Cutscene_bar_flags & CUB_GRADUAL) && Cutscene_bars_progress < 1.0f)
 	{
@@ -4590,18 +4590,18 @@ void game_set_view_clip(float frametime)
 			yborder = gr_screen.max_h/6 - fl2i(Cutscene_bars_progress*(gr_screen.max_h/8));
 
 		//Set teh clipping
-		gr_set_scissor(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2);
+		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
 	}
 	else if(Cutscene_bar_flags & CUB_CUTSCENE)
 	{
 		int yborder = gr_screen.max_h/6;
 
-		gr_set_scissor(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2);
+		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
 	}
 	else {
 		// Set the clip region for normal view
 		if ( View_percent >= 100 )	{
-			gr_unset_scissor();
+			gr_reset_clip();
 		} else {
 			int xborder, yborder;
 
@@ -4616,7 +4616,7 @@ void game_set_view_clip(float frametime)
 			xborder = ( gr_screen.max_w*(100-fi) )/200;
 			yborder = ( gr_screen.max_h*(100-fi) )/200;
 
-			gr_set_scissor(xborder, yborder, gr_screen.max_w-xborder*2,gr_screen.max_h-yborder*2);
+			gr_set_clip(xborder, yborder, gr_screen.max_w-xborder*2,gr_screen.max_h-yborder*2, false );
 		}
 	}
 }

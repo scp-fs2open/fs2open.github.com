@@ -7084,7 +7084,7 @@ int ai_fire_secondary_weapon(object *objp, int priority1, int priority2)
 
 	weapon_info	*wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[current_bank]];
 
-	if ((wip->wi_flags & WIF_LOCKED_HOMING) && (!Ai_info[shipp->ai_index].current_target_is_locked)) {
+	if ((wip->wi_flags & WIF_HOMING_ASPECT) && (!Ai_info[shipp->ai_index].current_target_is_locked)) {
 		//nprintf(("AI", "Not firing secondary weapon because not aspect locked.\n"));
 		swp->next_secondary_fire_stamp[current_bank] = timestamp(250);
 	} else if ((wip->wi_flags & WIF_BOMB) || (vm_vec_dist_quick(&objp->pos, &En_objp->pos) > 50.0f)) {
@@ -8501,31 +8501,22 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 	int	num_weapon_types;
 	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
 	ship	*shipp;
-	ship	*tshpp;
 	ship_weapon	*swp;
 	weapon_info	*wip;
-	object *tobjp = &Objects[aip->target_objnum];
-	
-	shipp = &Ships[aip->shipnum];
-	tshpp = NULL;
-	swp = &shipp->weapons;
 
-	object *aiobjp = &Objects[shipp->objnum];
+	shipp = &Ships[aip->shipnum];
+	swp = &shipp->weapons;
 
 	// AL 3-7-98: This probably should never happen, but check to ensure that current_secondary_bank is valid
 	if ( (swp->current_secondary_bank < 0) || (swp->current_secondary_bank > swp->num_secondary_banks) ) {
 		return;
 	}
 
-	if (tobjp->type == OBJ_SHIP) {
-		tshpp = &Ships[tobjp->instance];
-	}
-
 	num_weapon_types = get_available_secondary_weapons(Pl_objp, weapon_id_list, weapon_bank_list);
 
 	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
-	if (num_weapon_types && (wip->wi_flags & WIF_LOCKED_HOMING)) {
+	if (num_weapon_types && (wip->wi_flags & WIF_HOMING_ASPECT)) {
 		if (dist_to_enemy > 300.0f - MIN(enemy_radius, 100.0f))
 			aip->ai_flags |= AIF_SEEK_LOCK;
 		else
@@ -8533,20 +8524,16 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 
 		//	Update locking information for aspect seeking missiles.
 		aip->current_target_is_locked = 0;
-		dot_to_enemy = vm_vec_dot(vec_to_enemy, &aiobjp->orient.vec.fvec);
+		dot_to_enemy = vm_vec_dot(vec_to_enemy, &Pl_objp->orient.vec.fvec);
 
 		float	needed_dot = 0.9f - 0.5f * enemy_radius/(dist_to_enemy + enemy_radius);	//	Replaced MIN_TRACKABLE_DOT with 0.9f
-		if (dot_to_enemy > needed_dot &&
-			(wip->wi_flags & WIF_HOMING_ASPECT ||
-			wip->wi_flags & WIF_HOMING_JAVELIN &&
-			(tshpp == NULL ||
-			ship_get_closest_subsys_in_sight(tshpp, SUBSYSTEM_ENGINE, &aiobjp->pos)))) {
-				aip->aspect_locked_time += flFrametime;
-				// nprintf(("AI", "+ Lock time = %7.3f\n", aip->aspect_locked_time));
-				if (aip->aspect_locked_time >= wip->min_lock_time) {
-					aip->aspect_locked_time = wip->min_lock_time;
-					aip->current_target_is_locked = 1;
-				}
+		if (dot_to_enemy > needed_dot) {
+			aip->aspect_locked_time += flFrametime;
+			// nprintf(("AI", "+ Lock time = %7.3f\n", aip->aspect_locked_time));
+			if (aip->aspect_locked_time >= wip->min_lock_time) {
+				aip->aspect_locked_time = wip->min_lock_time;
+				aip->current_target_is_locked = 1;
+			}
 		} else {
 			aip->aspect_locked_time -= flFrametime*2;
 			// nprintf(("AI", "- Lock time = %7.3f\n", aip->aspect_locked_time));
@@ -12240,7 +12227,12 @@ void get_absolute_wing_pos_autopilot(vec3d *result_pos, object *leader_objp, int
 	get_wing_delta(&wing_delta, wing_index);		//	Desired location in leader's reference frame
 	wing_spread_size = MAX(50.0f, 3.0f * get_wing_largest_radius(leader_objp, formation_object_flag) + 15.0f);
 
-	vm_vec_scale(&wing_delta, wing_spread_size * 1.5);
+	// for player obj (1) move ships up 20% (2) scale formation up 20%
+	if (leader_objp->flags & OF_PLAYER_SHIP) {
+		wing_delta.xyz.y *= Wing_y_scale;
+		wing_spread_size *= Wing_scale;
+	}
+	vm_vec_scale(&wing_delta, wing_spread_size);
 	vm_vec_unrotate(&rotated_wing_delta, &wing_delta, &leader_objp->orient);	//	Rotate into leader's reference.
 	vm_vec_add(result_pos, &leader_objp->pos, &rotated_wing_delta);	//	goal_point is absolute 3-space point.
 }
@@ -14368,7 +14360,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		//	If an aspect locked missile, assume it will detonate at the homing position.
 		//	If not, which is not possible in a default FreeSpace weapon, then predict it will detonate at some
 		//	time in the future, this time based on max lifetime and life left.
-		if (wip->wi_flags & WIF_LOCKED_HOMING) {
+		if (wip->wi_flags & WIF_HOMING_ASPECT) {
 			expected_pos = weaponp->homing_pos;
 			if (weaponp->homing_object && weaponp->homing_object->type == OBJ_SHIP) {
 				target_ship_obj = weaponp->homing_object;

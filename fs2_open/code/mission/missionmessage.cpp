@@ -708,22 +708,16 @@ char *Builtin_message_types[MAX_BUILTIN_MESSAGE_TYPES] =
 //XSTR:ON
 };
 
-//MMessage Messages[MAX_MISSION_MESSAGES];
-//int Message_times[MAX_MISSION_MESSAGES];
-
-std::vector<MMessage> Messages;
-std::vector<int> Message_times;
+MMessage Messages[MAX_MISSION_MESSAGES];
+int Message_times[MAX_MISSION_MESSAGES];
 
 int Num_messages, Num_message_avis, Num_message_waves;
 int Num_builtin_messages, Num_builtin_avis, Num_builtin_waves;
 
 int Message_debug_index = -1;
 
-//message_extra Message_avis[MAX_MESSAGE_AVIS];
-//message_extra Message_waves[MAX_MESSAGE_WAVES];
-
-std::vector<message_extra> Message_avis;
-std::vector<message_extra> Message_waves;
+message_extra Message_avis[MAX_MESSAGE_AVIS];
+message_extra Message_waves[MAX_MESSAGE_WAVES];
 
 #define MAX_PLAYING_MESSAGES		2
 
@@ -913,7 +907,7 @@ int add_avi( char *avi_name )
 {
 	int i;
 
-	Assert (Message_avis.size() == Num_message_avis);
+	Assert ( Num_message_avis < MAX_MESSAGE_AVIS );
 	Assert (strlen(avi_name) < MAX_FILENAME_LEN );
 
 	// check to see if there is an existing avi being used here
@@ -923,7 +917,6 @@ int add_avi( char *avi_name )
 	}
 
 	// would have returned if a slot existed.
-	Message_avis.resize(Num_message_avis + 1);
 	strcpy( Message_avis[Num_message_avis].name, avi_name );
 	Message_avis[Num_message_avis].num = -1;
 	Num_message_avis++;
@@ -934,7 +927,7 @@ int add_wave( char *wave_name )
 {
 	int i;
 
-	Assert (Message_waves.size() == Num_message_waves);
+	Assert ( Num_message_waves < MAX_MESSAGE_WAVES );
 	Assert (strlen(wave_name) < MAX_FILENAME_LEN );
 
 	// check to see if there is an existing wave being used here
@@ -943,8 +936,6 @@ int add_wave( char *wave_name )
 			return i;
 	}
 
-	// would have returned if a slot existed.
-	Message_waves.resize(Num_message_waves + 1);
 	strcpy( Message_waves[Num_message_waves].name, wave_name );
 	Message_waves[Num_message_waves].num = -1;
 	Num_message_waves++;
@@ -957,9 +948,7 @@ void message_parse(bool importing_from_fsm)
 	MissionMessage *msgp;
 	char persona_name[NAME_LENGTH];
 
-	Assert (Messages.size() == Num_messages);
-	Messages.resize(Num_messages + 1);
-	Message_times.resize(Num_messages + 1);
+	Assert ( Num_messages < MAX_MISSION_MESSAGES );
 	msgp = &Messages[Num_messages];
 
 	required_string("$Name:");
@@ -1047,8 +1036,6 @@ void parse_msgtbl()
 	read_file_text("messages.tbl");
 	reset_parse();
 	Num_messages = 0;
-	Messages.resize(Num_messages);
-	Message_times.resize(Num_messages);
 	Num_personas = 0;
 
 	// Goober5000 - ugh, nasty nasty hack to fix the FS2 retail tables
@@ -1121,11 +1108,6 @@ void messages_init()
 	Num_message_waves = Num_builtin_waves;
 	Message_debug_index = Num_builtin_messages - 1;
 
-	Messages.resize(Num_messages);
-	Message_times.resize(Num_messages);
-	Message_avis.resize(Num_message_avis);
-	Message_waves.resize(Num_message_waves);
-
 	// initialize the stuff for the linked lists of messages
 	MessageQ_num = 0;
 	for (i = 0; i < MAX_MESSAGE_Q; i++) {
@@ -1168,6 +1150,9 @@ void messages_init()
 
 	Message_wave_muted = 0;
 	Next_mute_time = 1;
+
+	memset(Message_times, 0, sizeof(int)*MAX_MISSION_MESSAGES);
+
 }
 
 // free a loaded avi
@@ -2593,10 +2578,8 @@ void message_pagein_mission_messages()
 
 bool add_message(char *name, char *message, int persona_index, int multi_team)
 {
-	Assert (Messages.size() == Num_messages);
-
-	Messages.resize(Num_messages + 1);
-	Message_times.resize(Num_messages + 1);
+	if (MAX_MISSION_MESSAGES == Num_messages)
+		return false;
 	strcpy(Messages[Num_messages].name, name);
 	strcpy(Messages[Num_messages].message, message);
 	Messages[Num_messages].persona_index = persona_index;

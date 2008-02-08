@@ -263,8 +263,6 @@
 #ifndef _MISSIONMESSAGE_H
 #define _MISSIONMESSAGE_H
 
-#include <vector>
-
 #include "globalincs/globals.h"		// include so that we can gets defs for lengths of tokens
 #include "anim/packunpack.h"
 
@@ -285,13 +283,11 @@ typedef struct message_avi {
 
 #define MAX_MESSAGE_AVIS		MAX_MISSION_MESSAGES
 extern int		Num_message_avis;
-//extern message_extra	Message_avis[MAX_MESSAGE_AVIS];
-extern std::vector<message_extra> Message_avis;
+extern message_extra	Message_avis[MAX_MESSAGE_AVIS];
 
 #define MAX_MESSAGE_WAVES		MAX_MISSION_MESSAGES
 extern int		Num_message_waves;
-//extern message_extra		Message_waves[MAX_MESSAGE_WAVES];
-extern std::vector<message_extra> Message_waves;
+extern message_extra		Message_waves[MAX_MESSAGE_WAVES];
 
 // defines for message priorities
 #define MESSAGE_PRIORITY_LOW		1
@@ -384,8 +380,7 @@ typedef struct MissionMessage {
 
 } MMessage;
 
-//extern MMessage Messages[MAX_MISSION_MESSAGES];
-extern std::vector<MMessage> Messages;
+extern MMessage Messages[MAX_MISSION_MESSAGES];
 
 extern int Num_messages;
 extern int Num_builtin_messages;				// from messages.tbl -- index of message location to load mission specific messages into
