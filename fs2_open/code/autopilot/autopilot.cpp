@@ -1052,7 +1052,7 @@ void parse_autopilot_table(char *filename)
 	// optional no cutscene bars
 	if (optional_string("+No_Cutscene_Bars"))
 		UseCutsceneBars = false;
-	if (optiona_string("+No_Autopilot_Interrupt"))
+	if (optional_string("+No_Autopilot_Interrupt"))
 		Cmdline_autopilot_interruptable = 0;
 	
 	// No Nav selected message
