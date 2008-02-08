@@ -12227,12 +12227,7 @@ void get_absolute_wing_pos_autopilot(vec3d *result_pos, object *leader_objp, int
 	get_wing_delta(&wing_delta, wing_index);		//	Desired location in leader's reference frame
 	wing_spread_size = MAX(50.0f, 3.0f * get_wing_largest_radius(leader_objp, formation_object_flag) + 15.0f);
 
-	// for player obj (1) move ships up 20% (2) scale formation up 20%
-	if (leader_objp->flags & OF_PLAYER_SHIP) {
-		wing_delta.xyz.y *= Wing_y_scale;
-		wing_spread_size *= Wing_scale;
-	}
-	vm_vec_scale(&wing_delta, wing_spread_size);
+	vm_vec_scale(&wing_delta, wing_spread_size * 1.5);
 	vm_vec_unrotate(&rotated_wing_delta, &wing_delta, &leader_objp->orient);	//	Rotate into leader's reference.
 	vm_vec_add(result_pos, &leader_objp->pos, &rotated_wing_delta);	//	goal_point is absolute 3-space point.
 }

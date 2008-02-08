@@ -884,7 +884,11 @@ void NavSystem_Do()
 			if ((Navs[i].flags & NP_SHIP) && (Navs[i].target_obj != NULL))
 			{
 				if (((ship*)Navs[i].target_obj)->objnum == -1)
+				{
+					if (CurrentNav == i)
+						CurrentNav = -1;
 					DelNavPoint(i);
+				}
 			}
 		}
 		
@@ -1048,7 +1052,9 @@ void parse_autopilot_table(char *filename)
 	// optional no cutscene bars
 	if (optional_string("+No_Cutscene_Bars"))
 		UseCutsceneBars = false;
-
+	if (optiona_string("+No_Autopilot_Interrupt"))
+		Cmdline_autopilot_interruptable = 0;
+	
 	// No Nav selected message
 	char *msg_tags[] = { "$No Nav Selected:", "$Gliding:", "$Too Close:", "$Hostiles:", "$Linked:", "$Hazard:" };
 	for (int i = 0; i < NP_NUM_MESSAGES; i++)
