@@ -2846,6 +2846,9 @@ void init_ship_entry(int ship_info_index)
 	sip->can_glide = false;
 	sip->glide_cap = 0.0f;
 
+	sip->has_autoaim = false;
+	sip->autoaim_fov = 0.0f;
+
 	sip->warpin_speed = 0.0f;
 	sip->warpout_speed = 0.0f;
 	sip->warpin_radius = 0.0f;
@@ -3372,6 +3375,18 @@ int parse_ship(char *filename, bool replace)
 	{
 		if(optional_string("+Max Glide Speed:"))
 			stuff_float(&sip->glide_cap );
+	}
+
+	if(optional_string("$Autoaim FOV:"))
+	{
+		int fov_temp;
+		stuff_int(&fov_temp);
+
+		// Make sure it is a reasonable value
+		fov_temp = (((fov_temp % 360) + 360) % 360) / 2;
+
+		sip->has_autoaim = true;
+		sip->autoaim_fov = (float)fov_temp * PI / 180.0f;
 	}
 
 	if(optional_string("$Warpin type:"))
@@ -10224,9 +10239,59 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						vm_vec_add(&firing_pos, &gun_point, &obj->pos);
 
 						matrix firing_orient;
-						if(!(sip->flags2 & SIF2_GUN_CONVERGENCE))
+						if (!(sip->flags2 & SIF2_GUN_CONVERGENCE))
 						{
-							firing_orient = obj->orient;
+							if (sip->has_autoaim &&
+								aip->target_objnum != -1 &&
+								Players[Player_num].lead_indicator_active == 1)
+							{
+								// Fire weapon in target direction
+								vec3d target_position, target_velocity_vec, predicted_target_pos;
+								vec3d firing_vec, last_delta_vec, player_forward_vec;
+								float dist_to_target, time_to_target, angle_to_target;
+
+								aip->targeted_subsys->system_info->subobj_num;
+
+								// If a subsystem is targeted, fire in that direction instead
+								if (aip->targeted_subsys != NULL)
+								{
+									get_subsystem_world_pos(&Objects[aip->target_objnum], aip->targeted_subsys, &target_position);
+								}
+								else
+								{
+									target_position = Objects[aip->target_objnum].pos;
+								}
+
+								target_velocity_vec = Objects[aip->target_objnum].phys_info.vel;
+								dist_to_target = vm_vec_dist_quick(&target_position, &firing_pos);
+								time_to_target = 0.0f;
+
+								if (winfo_p->max_speed != 0)
+								{
+									time_to_target = dist_to_target / winfo_p->max_speed;
+								}
+
+								vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
+								polish_predicted_target_pos(&Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
+								vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
+
+								// Deactivate autoaiming if the target leaves the autoaim-FOV cone
+								player_forward_vec = obj->orient.vec.fvec;
+								angle_to_target = vm_vec_delta_ang(&player_forward_vec, &firing_vec, NULL);
+
+								if (angle_to_target < sip->autoaim_fov)
+								{
+									vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+								}
+								else
+								{
+									firing_orient = obj->orient;
+								}
+							}
+							else
+							{
+								firing_orient = obj->orient;
+							}
 						}
 						else
 						{
@@ -10236,6 +10301,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 						}
 						// create the weapon -- the network signature for multiplayer is created inside
 						// of weapon_create
+
 						weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon, OBJ_INDEX(obj), new_group_id );
 	
 						weapon_set_tracking_info(weapon_objnum, OBJ_INDEX(obj), aip->target_objnum, aip->current_target_is_locked, aip->targeted_subsys);				
