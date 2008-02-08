@@ -1860,6 +1860,20 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					ok_to_fire = true;
 				}
 			}
+			else if ( wip->wi_flags & WIF_HOMING_JAVELIN )
+			{	// if javelin heat seeker
+				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE ))
+				{
+					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
+				}
+				// Check if turret should fire and enemy's engines are
+				// in line of sight
+				if (turret_should_fire_aspect(ss, dot, wip) &&
+					ship_get_closest_subsys_in_sight(&Ships[lep->signature], SUBSYSTEM_ENGINE, &gpos))
+				{
+					ok_to_fire = true;
+				}
+			}
 
 			if ( ok_to_fire )
 			{

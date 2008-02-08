@@ -2206,6 +2206,7 @@ extern int ship_get_subsys_index(ship *sp, char *ss_name, int error_bypass = 0);
 extern float ship_get_subsystem_strength( ship *shipp, int type );
 extern ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
+extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
 
 // subsys disruption
 extern int ship_subsys_disrupted(ship_subsys *ss);
