@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.20.2.1 $
- * $Date: 2006-08-19 04:38:46 $
- * $Author: taylor $
+ * $Revision: 2.20.2.2 $
+ * $Date: 2008-01-24 03:53:35 $
+ * $Author: Goober5000 $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.20.2.1  2006/08/19 04:38:46  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
  * Revision 2.20  2006/01/13 03:30:59  Goober5000
  * übercommit of custom IFF stuff :)
  *
@@ -389,9 +392,9 @@ float Lock_triangle_height[GR_NUM_RESOLUTIONS] = {
 	6.5f
 };
 
-int Lock_gauge_half_w[GR_NUM_RESOLUTIONS] = {
-	17,
-	28
+int Lock_gauge_half_w[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS] = {
+	{ 15, 24 },
+	{ 17, 28 }
 };
 int Lock_gauge_half_h[GR_NUM_RESOLUTIONS] = {
 	15, 
@@ -405,24 +408,26 @@ int Lock_gauge_draw = 0;
 int Lock_gauge_draw_stamp = -1;
 #define LOCK_GAUGE_BLINK_RATE			5			// blinks/sec
 
-int Lockspin_half_w[GR_NUM_RESOLUTIONS] = {
-	31,
-	50
+int Lockspin_half_w[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS] = {
+	{ 16, 26 },
+	{ 31, 50 }
 };
-int Lockspin_half_h[GR_NUM_RESOLUTIONS] = {
-	32, 
-	52
+int Lockspin_half_h[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS] = {
+	{ 16, 26 },
+	{ 32, 52 }
 };
 hud_anim	Lock_anim;
 
-char Lock_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
-	"lock1",
-	"2_lock1"
+char Lock_fname[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] =
+{
+	{ "lock1_fs1", "2_lock1_fs1" },
+	{ "lock1", "2_lock1" }
 };
 
-char Lockspin_fname[GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] = {
-	"lockspin",
-	"2_lockspin"
+char Lockspin_fname[NUM_HUD_RETICLE_STYLES][GR_NUM_RESOLUTIONS][MAX_FILENAME_LEN] =
+{
+	{ "lockspin_fs1", "2_lockspin_fs1" },
+	{ "lockspin", "2_lockspin" }
 };
 
 void hud_lock_determine_lock_point(vec3d *lock_world_pos_out);
@@ -443,15 +448,15 @@ void hud_init_missile_lock()
 	// Load in the frames need for the lead indicator
 	if (!Lock_gauge_loaded) {
 		/*
-		Lock_gauge.first_frame = bm_load_animation(Lock_fname[gr_screen.res], &Lock_gauge.num_frames);
+		Lock_gauge.first_frame = bm_load_animation(Lock_fname[Hud_reticle_style][gr_screen.res], &Lock_gauge.num_frames);
 		if ( Lock_gauge.first_frame < 0 ) {
-			Warning(LOCATION,"Cannot load hud ani: Lock_fname[gr_screen.res]\n");
+			Warning(LOCATION,"Cannot load hud ani: Lock_fname[Hud_reticle_style][gr_screen.res]\n");
 		}
 		*/
-		hud_anim_init(&Lock_gauge, 0, 0, Lock_fname[gr_screen.res]);
+		hud_anim_init(&Lock_gauge, 0, 0, Lock_fname[Hud_reticle_style][gr_screen.res]);
 		hud_anim_load(&Lock_gauge);
 
-		hud_anim_init(&Lock_anim, 0, 0, Lockspin_fname[gr_screen.res]);
+		hud_anim_init(&Lock_anim, 0, 0, Lockspin_fname[Hud_reticle_style][gr_screen.res]);
 		hud_anim_load(&Lock_anim);
 
 		Lock_gauge_loaded = 1;
@@ -531,7 +536,7 @@ void hud_show_lock_indicator(float frametime)
 		hud_draw_diamond(sx, sy, Lock_target_box_width[gr_screen.res], Lock_target_box_height[gr_screen.res]);
 	}
 	*/
-	Lock_gauge.sx = sx - Lock_gauge_half_w[gr_screen.res];
+	Lock_gauge.sx = sx - Lock_gauge_half_w[Hud_reticle_style][gr_screen.res];
 	Lock_gauge.sy = sy - Lock_gauge_half_h[gr_screen.res];
 	if(Player_ai->current_target_is_locked){
 		Lock_gauge.time_elapsed = 0.0f;			
@@ -800,7 +805,12 @@ void hud_update_lock_indicator(float frametime)
 		
 	Player_ai->last_secondary_index = swp->current_secondary_bank;
 
-	if ( !(wip->wi_flags & WIF_HOMING_ASPECT) ) {
+	object *tobjp = &Objects[Player_ai->target_objnum];
+	vec3d dir_to_target;
+	vm_vec_normalized_dir(&dir_to_target, &tobjp->pos, &Player_obj->pos);
+	float dot_target_orient = vm_vec_dot(&tobjp->orient.vec.fvec, &dir_to_target);
+
+	if ( !(wip->wi_flags & WIF_LOCKED_HOMING) ) {
 		hud_lock_reset();
 		return;		
 	}
@@ -809,6 +819,33 @@ void hud_update_lock_indicator(float frametime)
 	if ( (Objects[Player_ai->target_objnum].type != OBJ_SHIP) && (Objects[Player_ai->target_objnum].type != OBJ_WEAPON) ) {	
 		hud_lock_reset();
 		return;
+	}
+
+	// Javelins must lock on engines if locking on a ship and those must be in sight
+	if (wip->wi_flags & WIF_HOMING_JAVELIN && 
+		tobjp->type == OBJ_SHIP &&
+		Player->locking_subsys != NULL) {
+			vec3d subobj_pos;
+			vm_vec_unrotate(&subobj_pos, &Player->locking_subsys->system_info->pnt, &tobjp->orient);
+			vm_vec_add2(&subobj_pos, &tobjp->pos);
+			int target_subsys_in_sight = ship_subsystem_in_sight(tobjp, Player->locking_subsys, &Player_obj->pos, &subobj_pos);
+
+			if (!target_subsys_in_sight || Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE) {
+				Player->locking_subsys =
+					ship_get_closest_subsys_in_sight(&Ships[tobjp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
+			}
+	}
+
+	if (wip->wi_flags & WIF_HOMING_JAVELIN && 
+		tobjp->type == OBJ_SHIP &&
+		Player->locking_subsys == NULL) {
+			Player->locking_subsys =
+				ship_get_closest_subsys_in_sight(&Ships[tobjp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
+
+			if (Player->locking_subsys == NULL) {
+				hud_lock_reset();
+				return;
+			}
 	}
 
 	hud_lock_determine_lock_point(&lock_world_pos);
@@ -904,12 +941,16 @@ void hud_draw_lock_triangles(int center_x, int center_y, float frametime)
 		hud_draw_lock_triangles_old(center_x, center_y, Lock_target_box_width[gr_screen.res]/2);
 	} else {
 		// render the anim
-		Lock_anim.sx = center_x - Lockspin_half_w[gr_screen.res];
-		Lock_anim.sy = center_y - Lockspin_half_h[gr_screen.res];
+		Lock_anim.sx = center_x - Lockspin_half_w[Hud_reticle_style][gr_screen.res];
+		Lock_anim.sy = center_y - Lockspin_half_h[Hud_reticle_style][gr_screen.res];
 
-		// if its still animating
+		// if it's still animating
 		if(Lock_anim.time_elapsed < Lock_anim.total_time){
-			hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+			if (Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
+				hud_anim_render(&Lock_anim, frametime, 1, 1, 0);
+			} else {
+				hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+			}
 		} else {
 			// if the timestamp is unset or expired
 			if((Lock_gauge_draw_stamp < 0) || timestamp_elapsed(Lock_gauge_draw_stamp)){
@@ -923,7 +964,11 @@ void hud_draw_lock_triangles(int center_x, int center_y, float frametime)
 			// maybe draw the anim
 			Lock_gauge.time_elapsed = 0.0f;			
 			if(Lock_gauge_draw){
-				hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+				if (Hud_reticle_style == HUD_RETICLE_STYLE_FS1) {
+					hud_anim_render(&Lock_anim, frametime, 1, 1, 0);
+				} else {
+					hud_anim_render(&Lock_anim, frametime, 1, 0, 1);
+				}
 			}			
 		}		
 	}
@@ -1213,12 +1258,15 @@ void hud_stop_looped_locking_sounds()
 // Get a new world pos for the locking point
 void hud_lock_update_lock_pos(object *target_objp, vec3d *lock_world_pos)
 {
-	if ( Player_ai->targeted_subsys ) {
+	ship_weapon *swp = &Player_ship->weapons;
+	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+
+	if ( Player_ai->targeted_subsys && !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
 		get_subsystem_world_pos(target_objp, Player_ai->targeted_subsys, lock_world_pos);
 		return;
 	}
 
-	if ( Player->locking_on_center ) {
+	if ( Player->locking_on_center) {
 		*lock_world_pos = target_objp->pos;
 	} else {
 		Assert(Player->locking_subsys);
@@ -1234,13 +1282,19 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 	float			best_lock_dot=-1.0f, lock_dot=-1.0f;
 	ship_subsys	*ss;
 	vec3d		subsys_world_pos, vec_to_lock;
+	ship_weapon *swp;
+	weapon_info *wip;
 
 	if ( target_objp->type == OBJ_SHIP ) {
 		target_shipp = &Ships[target_objp->instance];
 	}
 
+	swp = &Player_ship->weapons;
+	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+
 	// if a large ship, lock to pos closest to center and within range
-	if ( (target_shipp) && (Ship_info[target_shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) ) {
+	if ( (target_shipp) && (Ship_info[target_shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) &&
+		 !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
 		// check all the subsystems and the center of the ship
 		
 		// assume best lock pos is the center of the ship
@@ -1278,6 +1332,16 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 			}
 			ss = GET_NEXT( ss );
 		}
+	} else if ((target_shipp) && wip->wi_flags & WIF_HOMING_JAVELIN) {
+		Player->locking_subsys = ship_get_closest_subsys_in_sight(target_shipp, SUBSYSTEM_ENGINE, &Player_obj->pos);
+		if (Player->locking_subsys != NULL) {
+			get_subsystem_world_pos(target_objp, Player->locking_subsys, lock_world_pos);
+			Player->locking_on_center=0;
+			Player->locking_subsys_parent=Player_ai->target_objnum;
+		} else {
+			hud_lock_reset();
+			return;
+		}
 	} else {
 		// if small ship (or weapon), just go for the center
 		*lock_world_pos = target_objp->pos;
@@ -1290,9 +1354,11 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 // Decide which point lock should be homing on
 void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 {
-	vec3d	lock_world_pos;
-	vertex	lock_point;
-	object	*target_objp;
+	vec3d		lock_world_pos;
+	vertex		lock_point;
+	object		*target_objp;
+	ship_weapon	*swp;
+	weapon_info	*wip;
 
 	Assert(Player_ai->target_objnum >= 0);
 	target_objp = &Objects[Player_ai->target_objnum];
@@ -1300,12 +1366,28 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	Player->current_target_sx = -1;
 	Player->current_target_sx = -1;
 
+	swp = &Player_ship->weapons;
+	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+
 	// If subsystem is targeted, we must try to lock on that
-	if ( Player_ai->targeted_subsys ) {
+	if ( Player_ai->targeted_subsys && !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
 		hud_lock_update_lock_pos(target_objp, &lock_world_pos);
 		Player->locking_on_center=0;
-		Player->locking_subsys=NULL;
-		Player->locking_subsys_parent=-1;
+		Player->locking_subsys=Player_ai->targeted_subsys;
+		Player->locking_subsys_parent=Player_ai->target_objnum;
+	} else if ( wip->wi_flags & WIF_HOMING_JAVELIN && target_objp->type == OBJ_SHIP) {
+		if (!Player->locking_subsys ||
+			Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE) {
+				Player->locking_subsys = ship_get_closest_subsys_in_sight(&Ships[target_objp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
+		}
+		if (Player->locking_subsys != NULL) {
+			get_subsystem_world_pos(target_objp, Player->locking_subsys, &lock_world_pos);
+			Player->locking_on_center=0;
+			Player->locking_subsys_parent=Player_ai->target_objnum;
+		} else {
+			hud_lock_reset();
+			return;
+		}
 	} else {
 		// See if we already have a successful locked point
 		if ( hud_lock_has_homing_point() ) {

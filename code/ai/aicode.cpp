@@ -1198,6 +1198,7 @@
 #include "ai/ai_profiles.h"
 
 #include "autopilot/autopilot.h"
+#include <map>
 
 
 #pragma optimize("", off)
@@ -5193,7 +5194,6 @@ void ai_fly_to_ship()
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
-	int wcount=1;
 	vec3d perp, zero, goal_point;
 	memset(&zero, 0, sizeof(vec3d));
 	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
@@ -5213,30 +5213,30 @@ void ai_fly_to_ship()
 					if (leader_objp != Pl_objp)
 					{
 						// not leader.. get our position relative to leader
-						get_absolute_wing_pos(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+						get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
 					}
 					else
 					{
-						switch (wcount % 2)
+						j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
+						switch (autopilot_wings[aip->wing] % 2)
 						{
 							case 1: // back-left
-								vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.rvec);
-								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
 								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, 166.0f*float((wcount+1)/2)); // 166m is supposedly the optimal range according to tolwyn
+								vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
 								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
 								break;
 
 							default: //back-right
 							case 0:
 								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
-								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
 								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, 166.0f*float(wcount/2));
+								vm_vec_scale(&perp, 166.0f*j);
 								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
 								break;
 						}
-						wcount++;
 
 					}
 					Pl_objp->pos = goal_point;
@@ -5399,6 +5399,7 @@ void ai_waypoints()
 	float		prev_dot_to_goal;
 	vec3d	temp_vec;
 	vec3d	*slop_vec;
+	int j;
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
@@ -5462,7 +5463,6 @@ void ai_waypoints()
 	// and "keep reasonable distance" 
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
-	int wcount=1;
 	vec3d perp, zero, goal_point;
 	memset(&zero, 0, sizeof(vec3d));
 	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
@@ -5496,30 +5496,30 @@ void ai_waypoints()
 					if (leader_objp != Pl_objp)
 					{
 						// not leader.. get our position relative to leader
-						get_absolute_wing_pos(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+						get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
 					}
 					else
 					{
-						switch (wcount % 2)
+						j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
+						switch (autopilot_wings[aip->wing] % 2)
 						{
 							case 1: // back-left
-								vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.rvec);
-								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
 								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, 166.0f*float((wcount+1)/2)); // 166m is supposedly the optimal range according to tolwyn
+								vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
 								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
 								break;
 
 							default: //back-right
 							case 0:
 								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
-								vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
 								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, 166.0f*float(wcount/2));
+								vm_vec_scale(&perp, 166.0f*j);
 								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
 								break;
 						}
-						wcount++;
 
 					}
 					Pl_objp->pos = goal_point;
@@ -7084,7 +7084,7 @@ int ai_fire_secondary_weapon(object *objp, int priority1, int priority2)
 
 	weapon_info	*wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[current_bank]];
 
-	if ((wip->wi_flags & WIF_HOMING_ASPECT) && (!Ai_info[shipp->ai_index].current_target_is_locked)) {
+	if ((wip->wi_flags & WIF_LOCKED_HOMING) && (!Ai_info[shipp->ai_index].current_target_is_locked)) {
 		//nprintf(("AI", "Not firing secondary weapon because not aspect locked.\n"));
 		swp->next_secondary_fire_stamp[current_bank] = timestamp(250);
 	} else if ((wip->wi_flags & WIF_BOMB) || (vm_vec_dist_quick(&objp->pos, &En_objp->pos) > 50.0f)) {
@@ -8501,22 +8501,31 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 	int	num_weapon_types;
 	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
 	ship	*shipp;
+	ship	*tshpp;
 	ship_weapon	*swp;
 	weapon_info	*wip;
-
+	object *tobjp = &Objects[aip->target_objnum];
+	
 	shipp = &Ships[aip->shipnum];
+	tshpp = NULL;
 	swp = &shipp->weapons;
+
+	object *aiobjp = &Objects[shipp->objnum];
 
 	// AL 3-7-98: This probably should never happen, but check to ensure that current_secondary_bank is valid
 	if ( (swp->current_secondary_bank < 0) || (swp->current_secondary_bank > swp->num_secondary_banks) ) {
 		return;
 	}
 
+	if (tobjp->type == OBJ_SHIP) {
+		tshpp = &Ships[tobjp->instance];
+	}
+
 	num_weapon_types = get_available_secondary_weapons(Pl_objp, weapon_id_list, weapon_bank_list);
 
 	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
-	if (num_weapon_types && (wip->wi_flags & WIF_HOMING_ASPECT)) {
+	if (num_weapon_types && (wip->wi_flags & WIF_LOCKED_HOMING)) {
 		if (dist_to_enemy > 300.0f - MIN(enemy_radius, 100.0f))
 			aip->ai_flags |= AIF_SEEK_LOCK;
 		else
@@ -8524,16 +8533,20 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 
 		//	Update locking information for aspect seeking missiles.
 		aip->current_target_is_locked = 0;
-		dot_to_enemy = vm_vec_dot(vec_to_enemy, &Pl_objp->orient.vec.fvec);
+		dot_to_enemy = vm_vec_dot(vec_to_enemy, &aiobjp->orient.vec.fvec);
 
 		float	needed_dot = 0.9f - 0.5f * enemy_radius/(dist_to_enemy + enemy_radius);	//	Replaced MIN_TRACKABLE_DOT with 0.9f
-		if (dot_to_enemy > needed_dot) {
-			aip->aspect_locked_time += flFrametime;
-			// nprintf(("AI", "+ Lock time = %7.3f\n", aip->aspect_locked_time));
-			if (aip->aspect_locked_time >= wip->min_lock_time) {
-				aip->aspect_locked_time = wip->min_lock_time;
-				aip->current_target_is_locked = 1;
-			}
+		if (dot_to_enemy > needed_dot &&
+			(wip->wi_flags & WIF_HOMING_ASPECT ||
+			wip->wi_flags & WIF_HOMING_JAVELIN &&
+			(tshpp == NULL ||
+			ship_get_closest_subsys_in_sight(tshpp, SUBSYSTEM_ENGINE, &aiobjp->pos)))) {
+				aip->aspect_locked_time += flFrametime;
+				// nprintf(("AI", "+ Lock time = %7.3f\n", aip->aspect_locked_time));
+				if (aip->aspect_locked_time >= wip->min_lock_time) {
+					aip->aspect_locked_time = wip->min_lock_time;
+					aip->current_target_is_locked = 1;
+				}
 		} else {
 			aip->aspect_locked_time -= flFrametime*2;
 			// nprintf(("AI", "- Lock time = %7.3f\n", aip->aspect_locked_time));
@@ -12217,6 +12230,21 @@ void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wing_inde
 	vm_vec_add(result_pos, &leader_objp->pos, &rotated_wing_delta);	//	goal_point is absolute 3-space point.
 }
 
+
+// autopilot variant.. removes some scaling crap
+void get_absolute_wing_pos_autopilot(vec3d *result_pos, object *leader_objp, int wing_index, int formation_object_flag)
+{
+	vec3d	wing_delta, rotated_wing_delta;
+	float		wing_spread_size;
+
+	get_wing_delta(&wing_delta, wing_index);		//	Desired location in leader's reference frame
+	wing_spread_size = MAX(50.0f, 3.0f * get_wing_largest_radius(leader_objp, formation_object_flag) + 15.0f);
+
+	vm_vec_scale(&wing_delta, wing_spread_size * 1.5f);
+	vm_vec_unrotate(&rotated_wing_delta, &wing_delta, &leader_objp->orient);	//	Rotate into leader's reference.
+	vm_vec_add(result_pos, &leader_objp->pos, &rotated_wing_delta);	//	goal_point is absolute 3-space point.
+}
+
 #ifndef NDEBUG
 int Debug_render_wing_phantoms;
 
@@ -14340,7 +14368,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		//	If an aspect locked missile, assume it will detonate at the homing position.
 		//	If not, which is not possible in a default FreeSpace weapon, then predict it will detonate at some
 		//	time in the future, this time based on max lifetime and life left.
-		if (wip->wi_flags & WIF_HOMING_ASPECT) {
+		if (wip->wi_flags & WIF_LOCKED_HOMING) {
 			expected_pos = weaponp->homing_pos;
 			if (weaponp->homing_object && weaponp->homing_object->type == OBJ_SHIP) {
 				target_ship_obj = weaponp->homing_object;

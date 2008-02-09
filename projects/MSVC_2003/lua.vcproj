@@ -12,8 +12,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory=".\Debug"
-			IntermediateDirectory=".\Debug\Profile"
+			OutputDirectory=".\$(ConfigurationName)"
+			IntermediateDirectory=".\$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
 			CharacterSet="2">
 			<Tool
@@ -26,7 +26,11 @@
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
+				BufferSecurityCheck="TRUE"
+				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="0"
+				AssemblerListingLocation="$(IntDir)/"
+				ProgramDataBaseFileName="$(IntDir)/lua.pdb"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="4"/>
@@ -34,7 +38,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile=".\Debug\luabuiltind.lib"/>
+				OutputFile="$(ConfigurationName)\lua.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool
@@ -56,8 +60,8 @@
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
-			OutputDirectory=".\Release"
-			IntermediateDirectory=".\Release\Profile"
+			OutputDirectory=".\$(ConfigurationName)"
+			IntermediateDirectory=".\$(ConfigurationName)\Intermediate"
 			ConfigurationType="4"
 			CharacterSet="2">
 			<Tool
@@ -68,6 +72,8 @@
 				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="0"
+				AssemblerListingLocation="$(IntDir)/"
+				ProgramDataBaseFileName="$(IntDir)/lua.pdb"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="TRUE"
 				DebugInformationFormat="3"/>
@@ -75,347 +81,7 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLibrarianTool"
-				OutputFile=".\Release\luabuiltin.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="INFDebug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Profile"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="2"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="4"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile=".\INFDebug\luabuiltind.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="INFRelease|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Profile"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/O2 /Ob2"
-				OptimizeForProcessor="2"
-				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
-				RuntimeLibrary="0"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile=".\INFRelease\luabuiltin.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4Release|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Profile"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/O2 /Ob2"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
-				RuntimeLibrary="0"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile=".\P4Release\luabuiltin.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4Debug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Profile"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="4"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile=".\P4Debug\luabuiltind.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="INFDSRelease|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/O2 /Ob2"
-				OptimizeForProcessor="2"
-				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
-				RuntimeLibrary="0"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile=".\INFRelease\luabuiltin.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="INFDSDebug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="2"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="4"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile=".\INFDebug\luabuiltind.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4InfRelease|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/O2 /Ob2"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				PreprocessorDefinitions="WIN32;NDEBUG;_LIB"
-				RuntimeLibrary="0"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="3"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile=".\P4INFRelease\luabuiltin.lib"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4InfDebug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="4"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories=""
-				PreprocessorDefinitions="WIN32;_DEBUG;_LIB"
-				MinimalRebuild="TRUE"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				Detect64BitPortabilityProblems="TRUE"
-				DebugInformationFormat="4"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile=".\P4INFDebug\luabuiltind.lib"/>
+				OutputFile="$(ConfigurationName)\lua.lib"/>
 			<Tool
 				Name="VCMIDLTool"/>
 			<Tool

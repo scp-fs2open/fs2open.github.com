@@ -3787,6 +3787,12 @@ void game_init()
 			ptr = &Default_video_settings[0];
 		}
 
+		if(Cmdline_res != NULL) {
+			char Cmdline_video_settings[128];
+			sprintf(Cmdline_video_settings, "OGL -(%s)x16 bit", Cmdline_res);
+			ptr = &Cmdline_video_settings[0];
+		}
+
 		Assert( ptr != NULL );
 
 		// OpenGL should be default
@@ -4567,7 +4573,7 @@ void game_set_view_clip(float frametime)
 
 		//	Numeric constants encouraged by J "pig farmer" S, who shall remain semi-anonymous.
 		// J.S. I've changed my ways!! See the new "no constants" code!!!
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		gr_set_scissor(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2);
 	}
 	else if((Cutscene_bar_flags & CUB_GRADUAL) && Cutscene_bars_progress < 1.0f)
 	{
@@ -4590,18 +4596,18 @@ void game_set_view_clip(float frametime)
 			yborder = gr_screen.max_h/6 - fl2i(Cutscene_bars_progress*(gr_screen.max_h/8));
 
 		//Set teh clipping
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		gr_set_scissor(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2);
 	}
 	else if(Cutscene_bar_flags & CUB_CUTSCENE)
 	{
 		int yborder = gr_screen.max_h/6;
 
-		gr_set_clip(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2, false );	
+		gr_set_scissor(0, yborder, gr_screen.max_w, gr_screen.max_h - yborder*2);
 	}
 	else {
 		// Set the clip region for normal view
 		if ( View_percent >= 100 )	{
-			gr_reset_clip();
+			gr_unset_scissor();
 		} else {
 			int xborder, yborder;
 
@@ -4616,7 +4622,7 @@ void game_set_view_clip(float frametime)
 			xborder = ( gr_screen.max_w*(100-fi) )/200;
 			yborder = ( gr_screen.max_h*(100-fi) )/200;
 
-			gr_set_clip(xborder, yborder, gr_screen.max_w-xborder*2,gr_screen.max_h-yborder*2, false );
+			gr_set_scissor(xborder, yborder, gr_screen.max_w-xborder*2,gr_screen.max_h-yborder*2);
 		}
 	}
 }
@@ -11210,7 +11216,7 @@ int game_hacked_data()
 	if ( Om_tracker_flag && !(Hacked_data_check_ready) ) {
 		// this may fail the first time or two
 		if ( (rc = fs2netd_update_valid_tables()) != -1 ) {
-			Hacked_data = (bool)rc;
+			Hacked_data = (rc != 0);
 			Hacked_data_check_ready = true;
 		}
 	}

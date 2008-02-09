@@ -818,7 +818,7 @@ extern void ai_update_danger_weapon(int objnum, int weapon_objnum);
 // called externally from MissionParse.cpp to position ships in wings upon arrival into the
 // mission.
 extern void get_absolute_wing_pos( vec3d *result_pos, object *leader_objp, int wing_index, int formation_object_flag);
-
+extern void get_absolute_wing_pos_autopilot( vec3d *result_pos, object *leader_objp, int wing_index, int formation_object_flag);
 
 //	Interface from goals code to AI.  Set ship to guard.  *objp guards *other_objp
 extern void ai_set_guard_object(object *objp, object *other_objp);
