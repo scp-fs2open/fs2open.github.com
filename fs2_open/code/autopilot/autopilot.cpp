@@ -190,9 +190,9 @@ int LockAPConv;
 int EndAPCinematic;
 int MoveCamera;
 int camMovingTime;
-float CameraSpeed;
+//float CameraSpeed;
 bool CinematicStarted, CameraMoving;
-vec3d cameraPos;
+vec3d cameraPos, cameraTarget;
 std::map<int,int> autopilot_wings;
 
 // used for ramping time compression;
@@ -851,52 +851,75 @@ void StartAutopilot()
 		vm_vec_scale(&pos, 5*speed_cap*tc_factor); // pos is now scaled by 5 times the speed (5 seconds ahead)
 		vm_vec_add(&pos, &pos, &Player_obj->pos); // pos is now 5*speed cap in front of player ship
 
-		switch (myrand()%16) 
+		switch (myrand()%24) 
 		// 8 different ways of getting perp points
+		// 4 of which will not be used when capships are present (anything below, or straight above)
 		{
 
 			case 1: // down
 			case 9:
-				vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.uvec);
+			case 16:
+				if (capship_placed[0] == 0)
+					vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.uvec);
+				else
+				{	// become up-left
+					vm_vec_add(&perp, &zero, &Player_obj->orient.vec.uvec);
+					vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.rvec);
+				}
 				break;
 
 			case 2: // up
 			case 10:
-				perp = Player_obj->orient.vec.uvec;
+			case 23:
+				vm_vec_add(&perp, &perp, &Player_obj->orient.vec.uvec);
+				if (capshipPresent) // become up-right
+					vm_vec_add(&perp, &perp, &Player_obj->orient.vec.rvec);
 				break;
 
 			case 3: // left
 			case 11:
+			case 22:
 				vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.rvec);
 				break;
 
 			case 4: // up-left
 			case 12:
+			case 21:
 				vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.rvec);
 				vm_vec_add(&perp, &perp, &Player_obj->orient.vec.uvec);
 				break;
 
 			case 5: // up-right
 			case 13:
+			case 20:
 				vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
 				vm_vec_add(&perp, &perp, &Player_obj->orient.vec.uvec);
 				break;
 
 			case 6: // down-left
 			case 14:
+			case 19:
 				vm_vec_sub(&perp, &zero, &Player_obj->orient.vec.rvec);
-				vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.uvec);
+				if (capship_placed[0] < 2)
+					vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.uvec);
+				else
+					vm_vec_add(&perp, &perp, &Player_obj->orient.vec.uvec);
 				break;
 
 			case 7: // down-right
 			case 15:
+			case 18:
 				vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
-				vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.uvec);
+				if (capship_placed[0] < 1)
+					vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.uvec);
+				else
+					vm_vec_add(&perp, &perp, &Player_obj->orient.vec.uvec);
 				break;
 
 			default:
 			case 0: // right
 			case 8:
+			case 17:
 				perp = Player_obj->orient.vec.rvec;
 				break;
 
@@ -904,7 +927,7 @@ void StartAutopilot()
 		vm_vec_normalize(&perp);
 		//vm_vec_scale(&perp, 2*radius+distance);
 
-		vm_vec_scale(&perp,  Player_obj->radius*2);
+		vm_vec_scale(&perp,  Player_obj->radius+radius);
 
 		// randomly scale up/down by up to 20%
 		j = 20-myrand()%40; // [-20,20]
@@ -912,13 +935,11 @@ void StartAutopilot()
 		vm_vec_scale(&perp, 1.0f+(float(j)/100));
 		vm_vec_add(&cameraPos, &pos, &perp);
 
-		if (capshipPresent)
+		/*if (capshipPresent)
 		{
-			/*vm_vec_add(&cameraTarget, &zero, &perp);
-			cameraTarget.xyz.z = -cameraTarget.xyz.z;
-			vm_vec_scale(&cameraTarget, (radius+distance)/50);
-			vm_vec_add(&cameraTarget, &pos, &cameraTarget);*/
-			CameraSpeed = (radius+distance)/25;
+			vm_vec_copy_scale(&cameraTarget, &perp, 5);
+			vm_vec_add(&cameraTarget, &pos, &cameraTarget);
+			//CameraSpeed = (radius+distance)/25;
 
 			//vm_vec_add(&CameraVelocity, &zero, &perp);
 			//vm_vec_scale(&CameraVelocity, (radius+distance/100.f));
@@ -926,15 +947,15 @@ void StartAutopilot()
 		}
 		else
 		{
-			//vm_vec_add(&cameraTarget, &zero, &zero);
-			CameraSpeed = 0;
-		}
-		CameraMoving = false;
+			vm_vec_add(&cameraTarget, &zero, &zero);
+			//CameraSpeed = 0;
+		}*/
+		//CameraMoving = false;
 
 
 		EndAPCinematic = timestamp((10000*tc_factor)+NPS_TICKRATE); // 10 objective seconds before end of cinematic 
-		MoveCamera = timestamp((5500*tc_factor)+NPS_TICKRATE);
-		camMovingTime = int(4.5*float(tc_factor));
+		//MoveCamera = timestamp((5500*tc_factor)+NPS_TICKRATE);
+		//camMovingTime = int(4.5*float(tc_factor));
 		set_time_compression((float)tc_factor);
 	}
 }
@@ -1087,7 +1108,7 @@ void nav_warp(bool prewarp=false)
 void NavSystem_Do()
 {
 	static unsigned int last_update = 0;
-	vec3d cameraTarget;
+	//vec3d cameraTarget;
 	if (clock () - last_update > NPS_TICKRATE)
 	{
 		if (AutoPilotEngaged)
@@ -1098,15 +1119,16 @@ void NavSystem_Do()
 				{
 					// update our cinematic and possibly perform warp
 					//if (!CameraMoving)
-						camera_face(Player_obj->pos);
+					camera_face(Player_obj->pos);
 
-					/*if (timestamp() >= MoveCamera && !CameraMoving && CameraSpeed > 1.0f)
+					/*if (timestamp() >= MoveCamera && !CameraMoving && vm_vec_mag(&cameraTarget) > 1.0f)
 					{
-						vm_vec_sub(&cameraTarget, &Player_obj->pos, Free_camera->get_position());
-						vm_vec_scale(&cameraTarget, CameraSpeed);
-						vm_vec_add(&cameraTarget, &cameraTarget, Free_camera->get_position());
+						//vm_vec_sub(&cameraTarget, &Player_obj->pos, Free_camera->get_position());
+						//vm_vec_scale(&cameraTarget, CameraSpeed);
+						//vm_vec_add(&cameraTarget, &cameraTarget, Free_camera->get_position());
 
-						Free_camera->set_position(&cameraTarget, float(camMovingTime), float(camMovingTime)/2.0f);
+						//Free_camera->set_position(&cameraTarget, float(camMovingTime), float(camMovingTime)/2.0f);
+						Free_camera->set_position(&cameraTarget, 0.0, 0.0);
 						CameraMoving = true;
 					}*/
 
