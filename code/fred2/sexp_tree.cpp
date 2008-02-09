@@ -1116,7 +1116,7 @@ int sexp_tree::allocate_node()
 		mprintf(("Bumping dynamic tree node limit from %d to %d...\n", old_size, tree_nodes.size()));
 
 #ifndef NDEBUG
-		for (int i = old_size; i < tree_nodes.size(); i++)
+		for (int i = old_size; i < (int)tree_nodes.size(); i++)
 		{
 			sexp_tree_item *item = &tree_nodes[i];
 			Assert(item->type == SEXPT_UNUSED);
@@ -1255,7 +1255,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 //	char str[80];
 	int node2;
 
-	Assert(node >= 0 && node < tree_nodes.size());
+	Assert(node >= 0 && node < (int)tree_nodes.size());
 	node2 = tree_nodes[node].child;
 
 	// check for single argument operator case (prints as one line)
@@ -1287,7 +1287,7 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 
 	node = node2;
 	while (node != -1) {
-		Assert(node >= 0 && node < tree_nodes.size());
+		Assert(node >= 0 && node < (int)tree_nodes.size());
 		Assert(tree_nodes[node].type & SEXPT_VALID);
 		if (tree_nodes[node].type & SEXPT_OPERATOR)	{
 			add_sub_tree(node, root);
