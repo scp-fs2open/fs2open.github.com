@@ -1040,6 +1040,7 @@ Flag exe_params[] =
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
 	{ "-window",			"Run in window",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-window", },
+	{ "-res",			"Run at specified resolution",						true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-res", },
 	{ "-timerbar",			"",											true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-timerbar", },
 	{ "-stats",				"Show statistics",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stats", },
 	{ "-coords",			"Show coordinates",							false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-coords", },
@@ -1253,7 +1254,8 @@ cmdline_parm stats_arg("-stats", NULL);				// Cmdline_show_stats
 cmdline_parm timerbar_arg("-timerbar", NULL);		// Cmdline_timerbar
 cmdline_parm save_render_targets_arg("-save_render_target", NULL);	// Cmdline_save_render_targets
 cmdline_parm debug_window_arg("-debug_window", NULL);	// Cmdline_debug_window
-cmdline_parm window("-window", NULL);				// Cmdline_window
+cmdline_parm window_arg("-window", NULL);				// Cmdline_window
+cmdline_parm res_arg("-res", NULL);					// Cmdline_lores
 #ifdef SCP_UNIX
 cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 #endif
@@ -1270,6 +1272,7 @@ int Cmdline_timerbar = 0;
 int Cmdline_save_render_targets = 0;
 int Cmdline_debug_window = 0;
 int Cmdline_window = 0;
+char *Cmdline_res = 0;
 #ifdef SCP_UNIX
 int Cmdline_no_grab = 0;
 #endif
@@ -1923,8 +1926,11 @@ bool SetCmdlineParams()
 	}
 
 	// d3d windowed
-	if(window.found()){
+	if(window_arg.found()){
 		Cmdline_window = 1;
+	}
+	if(res_arg.found()){
+		Cmdline_res = res_arg.str();
 	}
 	if(almission_arg.found()){//DTP for autoload mission // developer oritentated
 		Cmdline_almission = almission_arg.str();

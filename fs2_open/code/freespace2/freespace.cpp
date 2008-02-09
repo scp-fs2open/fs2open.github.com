@@ -3787,6 +3787,12 @@ void game_init()
 			ptr = &Default_video_settings[0];
 		}
 
+		if(Cmdline_res != NULL) {
+			char Cmdline_video_settings[128];
+			sprintf(Cmdline_video_settings, "OGL -(%s)x16 bit", Cmdline_res);
+			ptr = &Cmdline_video_settings[0];
+		}
+
 		Assert( ptr != NULL );
 
 		// OpenGL should be default
@@ -11210,7 +11216,7 @@ int game_hacked_data()
 	if ( Om_tracker_flag && !(Hacked_data_check_ready) ) {
 		// this may fail the first time or two
 		if ( (rc = fs2netd_update_valid_tables()) != -1 ) {
-			Hacked_data = (bool)rc;
+			Hacked_data = (rc != 0);
 			Hacked_data_check_ready = true;
 		}
 	}

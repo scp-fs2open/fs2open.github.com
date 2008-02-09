@@ -680,7 +680,7 @@ void StartAutopilot()
 			// position capships
 
 			vec3d right, front, up, offset;
-			for (i = 0; i < capIndexes.size(); i++)
+			for (i = 0; i < (int)capIndexes.size(); i++)
 			{
 				vm_vec_add(&right, &Player_obj->orient.vec.rvec, &zero);
 				vm_vec_add(&front, &Player_obj->orient.vec.fvec, &zero);
