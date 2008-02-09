@@ -19,6 +19,9 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.6.2.11  2007/11/29 11:26:51  karajorma
+ * Make the Run Freespace menu option work again
+ *
  * Revision 1.6.2.10  2007/07/28 21:31:04  Goober5000
  * this should really be capitalized
  *
@@ -3734,14 +3737,14 @@ int CFREDView::global_error_check_player_wings(int multi)
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list))
 	{
-		i = ptr->instance;
+		int ship_instance = ptr->instance;
 		err = 0;
 
 		// this ship is a player?
 		if (ptr->type == OBJ_START)
 		{
 			// check if this ship is in a wing
-			z = Ships[i].wingnum;
+			z = Ships[ship_instance].wingnum;
 			if (z < 0)
 			{
 				err = 1;
@@ -3790,12 +3793,12 @@ int CFREDView::global_error_check_player_wings(int multi)
 			{
 				if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) 
 				{
-					if (error("Player %s should be part of %s wing", Ships[i].ship_name, tvt_wing_list))
+					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, tvt_wing_list))
 						return 1;
 				}
 				else
 				{
-					if (error("Player %s should be part of %s wing", Ships[i].ship_name, starting_wing_list))
+					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, starting_wing_list))
 						return 1;
 				}
 			}
