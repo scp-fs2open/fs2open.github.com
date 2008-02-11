@@ -578,7 +578,11 @@ void StartAutopilot()
 					autopilot_wings[wingnum] = wcount;
 					wcount++;
 				}
-				Objects[Ships[i].objnum].pos = goal_point;
+				Objects[Ships[i].objnum].pos = goal_point;			
+				if (vm_vec_dist_quick(&Player_obj->pos, &Objects[Ships[i].objnum].pos) > distance)
+				{
+					distance = vm_vec_dist_quick(&Player_obj->pos, &Objects[Ships[i].objnum].pos);
+				}
 			}
 			// lock primary and secondary weapons
 			//Ships[i].flags2 |= (SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
@@ -601,12 +605,6 @@ void StartAutopilot()
 					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
 				}
 
-			}
-
-							
-			if (vm_vec_dist_quick(&Player_obj->pos, &Objects[Ships[i].objnum].pos) > distance)
-			{
-				distance = vm_vec_dist_quick(&Player_obj->pos, &Objects[Ships[i].objnum].pos);
 			}
 		}
 	}
@@ -830,6 +828,11 @@ void StartAutopilot()
 				//vm_vec_scale(&offset, 1.5);
 
 				vm_vec_add(&Objects[Ships[capIndexes[i]].objnum].pos, &Player_obj->pos, &offset);
+
+				if (vm_vec_dist_quick(&Player_obj->pos, &Objects[Ships[i].objnum].pos) > distance)
+				{
+					distance = vm_vec_dist_quick(&Player_obj->pos, &Objects[Ships[i].objnum].pos);
+				}
 			}
 		}
 
@@ -847,7 +850,7 @@ void StartAutopilot()
 		// determine distance toward nav at which camera will be
 		vm_vec_sub(&pos, &tpos, &Player_obj->pos);
 		vm_vec_normalize(&pos); // pos is now a unit vector in the direction we will be moving the camera
-		norm1 = pos;
+		//norm1 = pos;
 		vm_vec_scale(&pos, 5*speed_cap*tc_factor); // pos is now scaled by 5 times the speed (5 seconds ahead)
 		vm_vec_add(&pos, &pos, &Player_obj->pos); // pos is now 5*speed cap in front of player ship
 
@@ -932,16 +935,25 @@ void StartAutopilot()
 		// randomly scale up/down by up to 20%
 		j = 20-myrand()%40; // [-20,20]
 
-		vm_vec_scale(&perp, 1.0f+(float(j)/100));
+		vm_vec_scale(&perp, 1.0f+(float(j)/100.0f));
 		vm_vec_add(&cameraPos, &pos, &perp);
 
-		/*if (capshipPresent)
+		if (capshipPresent)
 		{
-			vm_vec_copy_scale(&cameraTarget, &perp, 5);
-			vm_vec_add(&cameraTarget, &pos, &cameraTarget);
+			vm_vec_normalize(&perp);
+
+			// place it behind
+			//vm_vec_copy_scale(&norm1, &Player_obj->orient.vec.fvec, -2*(Player_obj->radius+radius*(1.0f+(float(j)/100.0f))));
+			//vm_vec_add(&cameraTarget, &cameraTarget, &norm1);
+
+			vm_vec_copy_scale(&cameraTarget,&perp, radius/5.0f);
+
+			//vm_vec_scale(&cameraTarget, Player_obj->radius+radius*(1.0f+(float(j)/100.0f)));
+
+			//vm_vec_add(&cameraTarget, &pos, &cameraTarget);
 			//CameraSpeed = (radius+distance)/25;
 
-			//vm_vec_add(&CameraVelocity, &zero, &perp);
+			//vm_vec_add(&cameraTarget, &zero, &perp);
 			//vm_vec_scale(&CameraVelocity, (radius+distance/100.f));
 			//vm_vec_scale(&CameraVelocity, 1.0f/float(NPS_TICKRATE*tc_factor));
 		}
@@ -949,13 +961,13 @@ void StartAutopilot()
 		{
 			vm_vec_add(&cameraTarget, &zero, &zero);
 			//CameraSpeed = 0;
-		}*/
+		}
 		//CameraMoving = false;
 
 
 		EndAPCinematic = timestamp((10000*tc_factor)+NPS_TICKRATE); // 10 objective seconds before end of cinematic 
-		//MoveCamera = timestamp((5500*tc_factor)+NPS_TICKRATE);
-		//camMovingTime = int(4.5*float(tc_factor));
+		MoveCamera = timestamp((5500*tc_factor)+NPS_TICKRATE);
+		camMovingTime = int(4.5*float(tc_factor));
 		set_time_compression((float)tc_factor);
 	}
 }
@@ -1058,7 +1070,7 @@ void camera_face(vec3d &loc)
 	vec3d destvec;
 	matrix cam_orient;
 	vm_vec_sub(&destvec, &loc, Free_camera->get_position());
-	vm_vector_2_matrix(&cam_orient, &destvec, NULL, NULL);
+	vm_vector_2_matrix(&cam_orient, &destvec, &Player_obj->orient.vec.uvec, &Player_obj->orient.vec.rvec);
 	Free_camera->set_rotation(&cam_orient, 0.0f, 0.0f);
 }
 
@@ -1108,7 +1120,6 @@ void nav_warp(bool prewarp=false)
 void NavSystem_Do()
 {
 	static unsigned int last_update = 0;
-	//vec3d cameraTarget;
 	if (clock () - last_update > NPS_TICKRATE)
 	{
 		if (AutoPilotEngaged)
@@ -1119,18 +1130,14 @@ void NavSystem_Do()
 				{
 					// update our cinematic and possibly perform warp
 					//if (!CameraMoving)
-					camera_face(Player_obj->pos);
+						camera_face(Player_obj->pos);
 
-					/*if (timestamp() >= MoveCamera && !CameraMoving && vm_vec_mag(&cameraTarget) > 1.0f)
+					if (timestamp() >= MoveCamera && !CameraMoving && vm_vec_mag(&cameraTarget) > 0.0f)
 					{
-						//vm_vec_sub(&cameraTarget, &Player_obj->pos, Free_camera->get_position());
-						//vm_vec_scale(&cameraTarget, CameraSpeed);
-						//vm_vec_add(&cameraTarget, &cameraTarget, Free_camera->get_position());
-
 						//Free_camera->set_position(&cameraTarget, float(camMovingTime), float(camMovingTime)/2.0f);
-						Free_camera->set_position(&cameraTarget, 0.0, 0.0);
+						//Free_camera->set_translation_velocity(&cameraTarget);
 						CameraMoving = true;
-					}*/
+					}
 
 
 					if (timestamp() >= EndAPCinematic || Autopilot_AutoDiable())

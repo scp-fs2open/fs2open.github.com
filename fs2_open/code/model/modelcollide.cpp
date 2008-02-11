@@ -842,82 +842,139 @@ int model_collide_sub(void *model_ptr )
 	return 1;
 }
 
+bool mc_shield_check_common(shield_tri	*tri)
+{
+	vec3d * points[3];
+	vec3d hitpoint;
+	 
+	float dist;
+	float sphere_check_closest_shield_dist = FLT_MAX;
 
+	// Check to see if Mc_pmly is facing away from ray.  If so, don't bother
+	// checking it.
+	if (vm_vec_dot(&Mc_direction,&tri->norm) > 0.0f)	{
+		return false;
+	}
+	// get the vertices in the form the next function wants them
+	for (int j = 0; j < 3; j++ )
+		points[j] = &Mc_pm->shield.verts[tri->verts[j]].pos;
+
+	if (!(Mc->flags & MC_CHECK_SPHERELINE) ) {	// Don't do this test for sphere colliding against shields
+		// Find the intersection of this ray with the plane that the Mc_pmly
+		// lies in
+		dist = fvi_ray_plane(NULL, points[0],&tri->norm,&Mc_p0,&Mc_direction,0.0f);
+
+		if ( dist < 0.0f ) return false; // If the ray is behind the plane there is no collision
+		if ( !(Mc->flags & MC_CHECK_RAY) && (dist > 1.0f) ) return false; // The ray isn't long enough to intersect the plane
+
+		// Find the hit Mc_pmint
+		vm_vec_scale_add( &hitpoint, &Mc_p0, &Mc_direction, dist );
+	
+		// Check to see if the Mc_pmint of intersection is on the plane.  If so, this
+		// also finds the uv's where the ray hit.
+		if ( fvi_point_face(&hitpoint, 3, points, &tri->norm, NULL,NULL,NULL ) )	{
+			Mc->hit_dist = dist;
+			Mc->shield_hit_tri = tri - Mc_pm->shield.tris;
+			Mc->hit_point = hitpoint;
+			Mc->hit_normal = tri->norm;
+			Mc->hit_submodel = -1;
+			Mc->num_hits++;
+			return true;		// We hit, so we're done
+		}
+	} else {		// Sphere check against shield
+					// This needs to look at *all* shield tris and not just return after the first hit
+
+		// HACK HACK!! The 10000.0 is the face radius, I didn't know this,
+		// so I'm assume 10000 would be as big as ever.
+		mc_check_sphereline_face(3, points, points[0], 10000.0f, &tri->norm, NULL, 0, NULL);
+		if (Mc->num_hits && Mc->hit_dist < sphere_check_closest_shield_dist) {
+
+			// same behavior whether face or edge
+			// normal, edge_hit, hit_point all updated thru sphereline_face
+			sphere_check_closest_shield_dist = Mc->hit_dist;
+			Mc->shield_hit_tri = tri - Mc_pm->shield.tris;
+			Mc->hit_submodel = -1;
+			Mc->num_hits++;
+			return true;		// We hit, so we're done
+		}
+	} // Mc->flags & MC_CHECK_SPHERELINE else
+
+	return false;
+}
+
+bool mc_check_sldc(int offset)
+{
+	if (offset > Mc_pm->sldc_size-5) //no way is this big enough
+		return false;
+
+	char *type = (char *)(Mc_pm->shield_collision_tree+offset);
+	int *size = (int *)(Mc_pm->shield_collision_tree+offset+1);
+	// split and polygons
+	vec3d *minbox = (vec3d*)(Mc_pm->shield_collision_tree+offset+5);
+	vec3d *maxbox = (vec3d*)(Mc_pm->shield_collision_tree+offset+17);
+
+	// split
+	unsigned int *front_offset = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
+	unsigned int *back_offset = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
+
+	// polygons
+	unsigned int *num_polygons = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
+	unsigned int *shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
+
+	// see if it fits inside our bbox
+	if (!mc_ray_boundingbox( minbox, maxbox, &Mc_p0, &Mc_direction, NULL ))	{
+		return false;
+	}
+
+	if (*type == 0) // SPLIT
+	{
+			return mc_check_sldc(offset+*front_offset) || mc_check_sldc(offset+*back_offset);
+	}
+	else
+	{
+		// poly list
+		shield_tri	* tri;
+		for (unsigned int i = 0; i < *num_polygons; i++)
+		{
+			tri = &Mc_pm->shield.tris[shld_polys[i]];
+						
+			mc_shield_check_common(tri);
+
+		} // for (unsigned int i = 0; i < leaf->num_polygons; i++)
+	}
+
+	// shouldn't be reached
+	return false;
+}
 
 // checks a vector collision against a ships shield (if it has shield points defined).
 void mc_check_shield()
 {
-	int i, j;
-	vec3d * points[3];
-	float dist;
-	float sphere_check_closest_shield_dist = FLT_MAX;
+	int i;
+
 
 	if ( Mc_pm->shield.ntris < 1 )
 		return;
+	if (Mc_pm->shield_collision_tree)
+	{
+		mc_check_sldc(0); // see if we hit the SLDC
+	}
+	else
+	{
+		int o;
+		for (o=0; o<8; o++ )	{
+			model_octant * poct1 = &Mc_pm->octants[o];
 
-	int o;
-	for (o=0; o<8; o++ )	{
-		model_octant * poct1 = &Mc_pm->octants[o];
-
-		if (!mc_ray_boundingbox( &poct1->min, &poct1->max, &Mc_p0, &Mc_direction, NULL ))	{
-			continue;
-		}
-		
-		for (i = 0; i < poct1->nshield_tris; i++) {
-			vec3d hitpoint;
-			shield_tri	* tri;
-			tri = poct1->shield_tris[i];
-
-			// Check to see if Mc_pmly is facing away from ray.  If so, don't bother
-			// checking it.
-			if (vm_vec_dot(&Mc_direction,&tri->norm) > 0.0f)	{
+			if (!mc_ray_boundingbox( &poct1->min, &poct1->max, &Mc_p0, &Mc_direction, NULL ))	{
 				continue;
 			}
-
-			// get the vertices in the form the next function wants them
-			for (j = 0; j < 3; j++ )
-				points[j] = &Mc_pm->shield.verts[tri->verts[j]].pos;
-
-			if (!(Mc->flags & MC_CHECK_SPHERELINE) ) {	// Don't do this test for sphere colliding against shields
-				// Find the intersection of this ray with the plane that the Mc_pmly
-				// lies in
-				dist = fvi_ray_plane(NULL, points[0],&tri->norm,&Mc_p0,&Mc_direction,0.0f);
-
-				if ( dist < 0.0f ) continue; // If the ray is behind the plane there is no collision
-				if ( !(Mc->flags & MC_CHECK_RAY) && (dist > 1.0f) ) continue; // The ray isn't long enough to intersect the plane
-
-				// Find the hit Mc_pmint
-				vm_vec_scale_add( &hitpoint, &Mc_p0, &Mc_direction, dist );
 			
-				// Check to see if the Mc_pmint of intersection is on the plane.  If so, this
-				// also finds the uv's where the ray hit.
-				if ( fvi_point_face(&hitpoint, 3, points, &tri->norm, NULL,NULL,NULL ) )	{
-					Mc->hit_dist = dist;
-					Mc->shield_hit_tri = tri - Mc_pm->shield.tris;
-					Mc->hit_point = hitpoint;
-					Mc->hit_normal = tri->norm;
-					Mc->hit_submodel = -1;
-					Mc->num_hits++;
-					return;		// We hit, so we're done
-				}
-			} else {		// Sphere check against shield
-							// This needs to look at *all* shield tris and not just return after the first hit
-
-				// HACK HACK!! The 10000.0 is the face radius, I didn't know this,
-				// so I'm assume 10000 would be as big as ever.
-				mc_check_sphereline_face(3, points, points[0], 10000.0f, &tri->norm, NULL, 0, NULL);
-				if (Mc->num_hits && Mc->hit_dist < sphere_check_closest_shield_dist) {
-
-					// same behavior whether face or edge
-					// normal, edge_hit, hit_point all updated thru sphereline_face
-					sphere_check_closest_shield_dist = Mc->hit_dist;
-					Mc->shield_hit_tri = tri - Mc_pm->shield.tris;
-					Mc->hit_submodel = -1;
-					Mc->num_hits++;
-				}
+			for (i = 0; i < poct1->nshield_tris; i++) {
+				shield_tri	* tri = poct1->shield_tris[i];
+				mc_shield_check_common(tri);
 			}
 		}
-	}
+	}//model has shield_collsion_tree
 }
 
 

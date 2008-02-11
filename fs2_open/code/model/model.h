@@ -1211,6 +1211,8 @@ typedef struct polymodel {
 	ship_bay_t		*ship_bay;							// contains path indexes for ship bay approach/depart paths
 
 	shield_info	shield;								// new shield information
+	ubyte	*shield_collision_tree;
+	int		sldc_size;
 
 	int			n_paths;
 	model_path	*paths;
