@@ -1423,6 +1423,10 @@ void model_unload(int modelnum, int force)
 		vm_free(pm->gun_banks);
 	}
 
+	if ( pm->shield_collision_tree ) {
+		vm_free(pm->shield_collision_tree);
+	}
+
 	// run through Ship_info[] and if the model has been loaded we'll need to reset the modelnum to -1.
 	for (i = 0; i < Num_ship_classes; i++) {
 		if ( pm->id == Ship_info[i].model_num ) {
@@ -2135,6 +2139,10 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	// reset glow points!! - Goober5000
 	pm->n_glow_point_banks = 0;
 
+	// reset SLDC
+	pm->shield_collision_tree = NULL;
+	pm->sldc_size = 0;
+
 	id = cfread_int(fp);
 	len = cfread_int(fp);
 	next_chunk = cftell(fp) + len;
@@ -2465,6 +2473,15 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				break;
 
 			}
+
+			case ID_SLDC: // kazan - Shield Collision tree
+				{
+					pm->sldc_size = cfread_int(fp);
+					pm->shield_collision_tree = (ubyte *)vm_malloc(pm->sldc_size);
+					cfread(pm->shield_collision_tree,1,pm->sldc_size,fp);
+					//mprintf(( "Shield Collision Tree, %d bytes in size\n", pm->sldc_size));
+				}
+				break;
 
 			case ID_SHLD:
 				{

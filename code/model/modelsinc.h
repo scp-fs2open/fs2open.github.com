@@ -62,7 +62,7 @@ struct polymodel;
 #define ID_ACEN 0x4e454341				// NECA (ACEN): autocentering information
 #define ID_GLOW 0x574f4c47				// WOLG (GLOW): glow points -Bobboau
 #define ID_GLOX 0x584f4c47				// experimental glow points will be gone as soon as we get a proper pof editor -Bobboau
-
+#define ID_SLDC 0x43444c53				// CDLS (SLDC): Shield Collision Tree
 
 #define uw(p)	(*((uint *) (p)))
 #define w(p)	(*((int *) (p)))
