@@ -569,6 +569,9 @@ extern uint bm_get_signature( int bitmapnum);
 // Unlocks a bitmap
 extern void bm_unlock( int bitmapnum );
 
+//WMC - Returns 0 if invalid, nonzero if valid
+extern int bm_is_valid(int handle);
+
 // Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.
 //WMC - Returns -1 on failure, handle or first frame handle on success.
 int bm_get_info( int bitmapnum, int *w=NULL, int * h=NULL, ubyte * flags=NULL, int *nframes=NULL, int *fps=NULL );

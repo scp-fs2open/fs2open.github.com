@@ -1869,6 +1869,12 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	return bm_bitmaps[n].handle;
 }
 
+int bm_is_valid(int handle)
+{
+	if(!bm_inited) return 0;
+	return (bm_bitmaps[handle % MAX_BITMAPS].handle == handle);
+}
+
 // Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.
 int bm_get_info( int handle, int *w, int * h, ubyte * flags, int *nframes, int *fps)
 {
