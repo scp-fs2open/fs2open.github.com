@@ -2484,6 +2484,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					pm->sldc_size = cfread_int(fp);
 					pm->shield_collision_tree = (ubyte *)vm_malloc(pm->sldc_size);
 					cfread(pm->shield_collision_tree,1,pm->sldc_size,fp);
+					swap_sldc_data(pm->shield_collision_tree);
 					//mprintf(( "Shield Collision Tree, %d bytes in size\n", pm->sldc_size));
 				}
 				break;
@@ -5250,5 +5251,52 @@ void swap_bsp_data( polymodel * pm, void *model_ptr )
 	}
 
 	return;
+#endif
+}
+
+void swap_sldc_data(ubyte *buffer)
+{
+#if BYTE_ORDER == BIG_ENDIAN
+	char *type_p = (char *)(Mc_pm->shield_collision_tree+offset);
+	int *size_p = (int *)(Mc_pm->shield_collision_tree+offset+1);
+	*size_p = INTEL_INT(*size_p);
+
+	// split and polygons
+	vec3d *minbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+5);
+	vec3d *maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+17);
+
+	minbox_p->xyz.x = INTEL_FLOAT(&minbox_p->xyz.x);
+	minbox_p->xyz.y = INTEL_FLOAT(&minbox_p->xyz.y);
+	minbox_p->xyz.z = INTEL_FLOAT(&minbox_p->xyz.z);
+
+	maxbox_p->xyz.x = INTEL_FLOAT(&maxbox_p->xyz.x);
+	maxbox_p->xyz.y = INTEL_FLOAT(&maxbox_p->xyz.y);
+	maxbox_p->xyz.z = INTEL_FLOAT(&maxbox_p->xyz.z);
+
+
+	// split
+	unsigned int *front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
+	unsigned int *back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
+
+	// polygons
+	unsigned int *num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
+
+	unsigned int *shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
+
+	if (*type_p == 0) // SPLIT
+	{
+			*front_offset_p = INTEL_INT(*front_offset_p);
+			*back_offset_p = INTEL_INT(*back_offset_p);
+			mc_check_sldc(buffer+*front_offset_p);
+			mc_check_sldc(buffer+*back_offset_p);
+	}
+	else
+	{
+		*num_polygons_p = INTEL_INT(*num_polygons_p);
+		for (unsigned int i = 0; i < *num_polygons_p; i++)
+		{
+			shld_polys[i] = INTEL_INT(shld_polys[i]);
+		}			
+	}
 #endif
 }
