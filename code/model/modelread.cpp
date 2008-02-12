@@ -2390,6 +2390,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				//parse_triggers(pm->submodel[n].n_triggers, &pm->submodel[n].triggers, &props[0]);
 
+				if (strstr(props, "$no_collisions") != NULL )
+					pm->submodel[n].no_collisions = true;
+				else
+					pm->submodel[n].no_collisions = false;
+
 				if ( (p = strstr(props, "$gun_rotation:")) == NULL )
 					pm->submodel[n].gun_rotation = true;
 				else

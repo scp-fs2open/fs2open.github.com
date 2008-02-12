@@ -946,6 +946,7 @@ typedef struct bsp_info {
 	vec3d	render_box_max;
 	int		use_render_box;	//0==do nothing, 1==only render this object if you are inside the box, -1==only if your out
 	bool	gun_rotation;//for animated weapon models
+	bool	no_collisions; // for $no_collisions property - kazan
 
 } bsp_info;
 
