@@ -906,37 +906,52 @@ bool mc_check_sldc(int offset)
 {
 	if (offset > Mc_pm->sldc_size-5) //no way is this big enough
 		return false;
-
-	char *type = (char *)(Mc_pm->shield_collision_tree+offset);
-	int *size = (int *)(Mc_pm->shield_collision_tree+offset+1);
+	char *type_p = (char *)(Mc_pm->shield_collision_tree+offset);
+	
+	// not used
+	//int *size_p = (int *)(Mc_pm->shield_collision_tree+offset+1);
 	// split and polygons
-	vec3d *minbox = (vec3d*)(Mc_pm->shield_collision_tree+offset+5);
-	vec3d *maxbox = (vec3d*)(Mc_pm->shield_collision_tree+offset+17);
+	vec3d *minbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+5);
+	vec3d *maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+17);
+	vec3d temp, minbox, maxbox;
+
+	temp = *minbox_p;
+	minbox.xyz.x = INTEL_FLOAT(&temp.xyz.x);
+	minbox.xyz.y = INTEL_FLOAT(&temp.xyz.y);
+	minbox.xyz.z = INTEL_FLOAT(&temp.xyz.z);
+
+	temp = *maxbox_p;
+	maxbox.xyz.x = INTEL_FLOAT(&temp.xyz.x);
+	maxbox.xyz.y = INTEL_FLOAT(&temp.xyz.y);
+	maxbox.xyz.z = INTEL_FLOAT(&temp.xyz.z);
 
 	// split
-	unsigned int *front_offset = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
-	unsigned int *back_offset = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
+	unsigned int *front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
+	unsigned int *back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
 
 	// polygons
-	unsigned int *num_polygons = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
+	unsigned int *num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
+
 	unsigned int *shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
 
+
+
 	// see if it fits inside our bbox
-	if (!mc_ray_boundingbox( minbox, maxbox, &Mc_p0, &Mc_direction, NULL ))	{
+	if (!mc_ray_boundingbox( &minbox, &maxbox, &Mc_p0, &Mc_direction, NULL ))	{
 		return false;
 	}
 
-	if (*type == 0) // SPLIT
+	if (*type_p == 0) // SPLIT
 	{
-			return mc_check_sldc(offset+*front_offset) || mc_check_sldc(offset+*back_offset);
+			return mc_check_sldc(offset+INTEL_INT(*front_offset_p)) || mc_check_sldc(offset+INTEL_INT(*back_offset_p));
 	}
 	else
 	{
 		// poly list
 		shield_tri	* tri;
-		for (unsigned int i = 0; i < *num_polygons; i++)
+		for (unsigned int i = 0; i < INTEL_INT(*num_polygons_p); i++)
 		{
-			tri = &Mc_pm->shield.tris[shld_polys[i]];
+			tri = &Mc_pm->shield.tris[INTEL_INT(shld_polys[i])];
 						
 			mc_shield_check_common(tri);
 
@@ -993,6 +1008,7 @@ void mc_check_subobj( int mn )
 	if ( (mn < 0) || (mn>=Mc_pm->n_models) ) return;
 	
 	sm = &Mc_pm->submodel[mn];
+	if (sm->no_collisions) return; // don't do collisions
 
 	// Rotate the world check points into the current subobject's 
 	// frame of reference.
@@ -1080,7 +1096,8 @@ NoHit:
 		bsp_info * csm = &Mc_pm->submodel[i];
 
 		// Don't check it or its children if it is destroyed
-		if (!csm->blown_off)	{	
+		// or if it's set to no collision
+		if (!csm->blown_off && !csm->no_collisions)	{	
 			//instance for this subobject
 			matrix tm;
 
