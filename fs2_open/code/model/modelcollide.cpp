@@ -913,17 +913,6 @@ bool mc_check_sldc(int offset)
 	// split and polygons
 	vec3d *minbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+5);
 	vec3d *maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+17);
-	vec3d temp, minbox, maxbox;
-
-	temp = *minbox_p;
-	minbox.xyz.x = INTEL_FLOAT(&temp.xyz.x);
-	minbox.xyz.y = INTEL_FLOAT(&temp.xyz.y);
-	minbox.xyz.z = INTEL_FLOAT(&temp.xyz.z);
-
-	temp = *maxbox_p;
-	maxbox.xyz.x = INTEL_FLOAT(&temp.xyz.x);
-	maxbox.xyz.y = INTEL_FLOAT(&temp.xyz.y);
-	maxbox.xyz.z = INTEL_FLOAT(&temp.xyz.z);
 
 	// split
 	unsigned int *front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
@@ -937,21 +926,21 @@ bool mc_check_sldc(int offset)
 
 
 	// see if it fits inside our bbox
-	if (!mc_ray_boundingbox( &minbox, &maxbox, &Mc_p0, &Mc_direction, NULL ))	{
+	if (!mc_ray_boundingbox( minbox_p, maxbox_p, &Mc_p0, &Mc_direction, NULL ))	{
 		return false;
 	}
 
 	if (*type_p == 0) // SPLIT
 	{
-			return mc_check_sldc(offset+INTEL_INT(*front_offset_p)) || mc_check_sldc(offset+INTEL_INT(*back_offset_p));
+			return mc_check_sldc(offset+*front_offset_p) || mc_check_sldc(offset+*back_offset_p);
 	}
 	else
 	{
 		// poly list
 		shield_tri	* tri;
-		for (unsigned int i = 0; i < INTEL_INT(*num_polygons_p); i++)
+		for (unsigned int i = 0; i < *num_polygons_p; i++)
 		{
-			tri = &Mc_pm->shield.tris[INTEL_INT(shld_polys[i])];
+			tri = &Mc_pm->shield.tris[shld_polys[i]];
 						
 			mc_shield_check_common(tri);
 
