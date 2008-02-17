@@ -2242,8 +2242,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	}
 	
 	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_obj);
-	Script_system.RemHookVar("Self");
-	Script_system.RemHookVar("Killer");
+	Script_system.RemHookVars(2, "Self", "Killer");
 }
 
 // function to simply explode a ship where it is currently at
