@@ -1469,7 +1469,7 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 	"special-warp",
 	"vaporize",
 	"stealth",
-	"friendly-stealth-invisible"
+	"friendly-stealth-invisible",
 	"don't-collide-invisible",
 };
 
@@ -1477,7 +1477,6 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"primitive-sensors",
 	"no-subspace-drive",
 	"nav-carry-status",
-	"no-bank",
 	"affected-by-gravity",
 	"toggle-subsystem-scanning",
 	"targetable-as-bomb",
@@ -3400,9 +3399,6 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 
 	if (parse_flags2 & P2_SF2_NAV_CARRY_STATUS)
 		shipp->flags2 |= SF2_NAVPOINT_CARRY;
-
-	if (parse_flags2 & P2_SF2_NO_BANK)
-		shipp->flags2 |= SF2_NO_BANK;
 
 	if (parse_flags2 & P2_SF2_AFFECTED_BY_GRAVITY)
 		shipp->flags2 |= SF2_AFFECTED_BY_GRAVITY;
