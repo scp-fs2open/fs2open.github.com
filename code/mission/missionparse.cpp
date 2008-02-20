@@ -1510,7 +1510,7 @@ char *Parse_object_flags[MAX_PARSE_OBJECT_FLAGS] = {
 	"special-warp",
 	"vaporize",
 	"stealth",
-	"friendly-stealth-invisible"
+	"friendly-stealth-invisible",
 	"don't-collide-invisible",
 };
 
@@ -1524,12 +1524,12 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"no-builtin-messages",
 	"primaries-locked", 
 	"secondaries-locked",
-	"set-class-dynamically",
-	"team-loadout-store",
 	"no-death-scream",
 	"always-death-scream",
 	"nav-needslink",
 	"use-alt-name-as-callsign",
+	"set-class-dynamically",
+	"team-loadout-store",
 };
 
 

@@ -996,12 +996,12 @@ typedef struct p_object {
 #define P2_SF2_NO_BUILTIN_MESSAGES			(1<<6)
 #define P2_SF2_PRIMARIES_LOCKED				(1<<7)
 #define P2_SF2_SECONDARIES_LOCKED			(1<<8)
-#define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<9)
-#define P2_SF2_TEAM_LOADOUT_STORE_STATUS	(1<<10)
-#define P2_SF2_NO_DEATH_SCREAM				(1<<11)
-#define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<12)
-#define P2_SF2_NAV_NEEDSLINK				(1<<13)
-#define P2_SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<14)
+#define P2_SF2_NO_DEATH_SCREAM				(1<<9)
+#define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<10)
+#define P2_SF2_NAV_NEEDSLINK				(1<<11)
+#define P2_SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<12)
+#define P2_SF2_SET_CLASS_DYNAMICALLY		(1<<13)
+#define P2_SF2_TEAM_LOADOUT_STORE_STATUS	(1<<14)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)

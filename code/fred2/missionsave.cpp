@@ -1829,8 +1829,6 @@ int CFred_mission_save::save_objects()
 			fout(" \"ignore-count\"");
 		if (objp->flags & OF_PROTECTED)
 			fout(" \"protect-ship\"");
-		if (objp->flags & OF_BEAM_PROTECTED)
-			fout(" \"beam-protect-ship\"");
 		if (Ships[i].flags & SF_REINFORCEMENT)
 			fout(" \"reinforcement\"");
 		if (objp->flags & OF_NO_SHIELDS)
@@ -1851,16 +1849,28 @@ int CFred_mission_save::save_objects()
 			fout(" \"invulnerable\"");
 		if (Ships[i].flags & SF_HIDDEN_FROM_SENSORS)
 			fout(" \"hidden-from-sensors\"");
-		if ( Ships[i].flags & SF_SCANNABLE )
+		if (Ships[i].flags & SF_SCANNABLE)
 			fout(" \"scannable\"");
-		if ( Ai_info[Ships[i].ai_index].ai_flags & AIF_KAMIKAZE )
+		if (Ai_info[Ships[i].ai_index].ai_flags & AIF_KAMIKAZE)
 			fout(" \"kamikaze\"");
-		if ( Ai_info[Ships[i].ai_index].ai_flags & AIF_NO_DYNAMIC )
+		if (Ai_info[Ships[i].ai_index].ai_flags & AIF_NO_DYNAMIC)
 			fout(" \"no-dynamic\"");
-		if ( Ships[i].flags & SF_RED_ALERT_STORE_STATUS )
+		if (Ships[i].flags & SF_RED_ALERT_STORE_STATUS)
 			fout(" \"red-alert-carry\"");
-		if ( objp->flags & OF_SPECIAL_WARP )
+		if (objp->flags & OF_BEAM_PROTECTED)
+			fout(" \"beam-protect-ship\"");
+		if (Ships[i].ship_guardian_threshold != 0)
+			fout(" \"guardian\"");
+		if (objp->flags & OF_SPECIAL_WARP)
 			fout(" \"special-warp\"");
+		if (Ships[i].flags & SF_VAPORIZE)
+			fout(" \"vaporize\"");
+		if (Ships[i].flags2 & SF2_STEALTH)
+			fout(" \"stealth\"");
+		if (Ships[i].flags2 & SF2_FRIENDLY_STEALTH_INVIS)
+			fout(" \"friendly-stealth-invisible\"");
+		if (Ships[i].flags2 & SF2_DONT_COLLIDE_INVIS)
+			fout(" \"don't-collide-invisible\"");
 		fout(" )");
 
 		// flags2 added by Goober5000 --------------------------------
@@ -1876,6 +1886,8 @@ int CFred_mission_save::save_objects()
 				fout(" \"primitive-sensors\"");
 			if (Ships[i].flags2 & SF2_NO_SUBSPACE_DRIVE)
 				fout(" \"no-subspace-drive\"");
+			if (Ships[i].flags2 & SF2_NAVPOINT_CARRY)
+				fout(" \"nav-carry-status\"");
 			if (Ships[i].flags2 & SF2_AFFECTED_BY_GRAVITY)
 				fout(" \"affected-by-gravity\"");
 			if (Ships[i].flags2 & SF2_TOGGLE_SUBSYSTEM_SCANNING)
@@ -1888,18 +1900,18 @@ int CFred_mission_save::save_objects()
 				fout(" \"primaries-locked\"");
 			if (Ships[i].flags2 & SF2_SECONDARIES_LOCKED)
 				fout(" \"secondaries-locked\"");
-			if (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY)
-				fout(" \"set-class-dynamically\"");
-			if (Ships[i].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS)
-				fout(" \"secondaries-locked\"");
 			if (Ships[i].flags2 & SF2_NO_DEATH_SCREAM)
 				fout(" \"no-death-scream\"");
 			if (Ships[i].flags2 & SF2_ALWAYS_DEATH_SCREAM)
 				fout(" \"always-death-scream\"");
-			if (Ships[i].flags2 & SF2_NAVPOINT_CARRY)
-				fout(" \"nav-carry-status\"");
 			if (Ships[i].flags2 & SF2_NAVPOINT_NEEDSLINK)
 				fout(" \"nav-needslink\"");
+			if (Ships[i].flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN)
+				fout(" \"use-alt-name-as-callsign\"");
+			if (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY)
+				fout(" \"set-class-dynamically\"");
+			if (Ships[i].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS)
+				fout(" \"team-loadout-store\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
