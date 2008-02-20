@@ -113,7 +113,7 @@ void shield_add_strength(object *objp, float delta)
 	}
 }
 
-static double factor = 1.0 / (log(50.0) - log(1.0));
+static double factor = 100.0 / (log(50.0) - log(1.0));
 
 // Goober5000
 float scale_quad(float generator_fraction, float quad_strength)
@@ -125,7 +125,7 @@ float scale_quad(float generator_fraction, float quad_strength)
 	// -----------------
 	//  ln(50) - ln(1)
 	//
-	float effective_strength = quad_strength * ((float)log(generator_fraction * 100.0f) * (float)factor);
+	float effective_strength = quad_strength * ((float)log(generator_fraction) * (float)factor);
 
 	// ensure not negative, which may happen if the shield gets below 1 percent
 	// (since we're dealing with logs)
