@@ -1334,14 +1334,14 @@ typedef struct ship_subsys_info {
 #define SF2_NO_BUILTIN_MESSAGES				(1<<9)		// Karajorma - ship should not send built-in messages
 #define SF2_PRIMARIES_LOCKED				(1<<10)		// Karajorma - This ship can't fire primary weapons
 #define SF2_SECONDARIES_LOCKED				(1<<11)		// Karajorma - This ship can't fire secondary weapons
-#define SF2_SET_CLASS_DYNAMICALLY			(1<<12)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
-#define SF2_TEAM_LOADOUT_STORE_STATUS		(1<<13)		// Karajorma - This ship has been flagged for cleanup at the end of the mission
-#define SF2_NO_DEATH_SCREAM					(1<<14)		// Goober5000 - for WCS
-#define SF2_ALWAYS_DEATH_SCREAM				(1<<15)		// Goober5000 - for WCS
-#define SF2_GLOWMAPS_DISABLED				(1<<16)		// taylor - to disable glow maps
-#define SF2_NAVPOINT_NEEDSLINK				(1<<17)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
-#define SF2_DISABLE_PRIMARY_LINKING			(1<<18)		// Turey - Ship cannot link primaries
-#define SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<19)		// Karajorma - When sending messages from this ship use the alt name instead of name
+#define SF2_GLOWMAPS_DISABLED				(1<<12)		// taylor - to disable glow maps
+#define SF2_NO_DEATH_SCREAM					(1<<13)		// Goober5000 - for WCS
+#define SF2_ALWAYS_DEATH_SCREAM				(1<<14)		// Goober5000 - for WCS
+#define SF2_NAVPOINT_NEEDSLINK				(1<<15)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
+#define SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<16)		// Karajorma - When sending messages from this ship use the alt name instead of name
+#define SF2_DISABLE_PRIMARY_LINKING			(1<<17)		// Turey - Ship cannot link primaries
+#define SF2_SET_CLASS_DYNAMICALLY			(1<<18)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
+#define SF2_TEAM_LOADOUT_STORE_STATUS		(1<<19)		// Karajorma - This ship has been flagged for cleanup at the end of the mission
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
