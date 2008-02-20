@@ -2190,8 +2190,7 @@ void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float tu
 
 	//	Should be more general case here.  Currently, anything that is not a weapon will bank when it turns.
 	// Goober5000 - don't bank if sexp says not to
-	// Goober5000 - also don't bank if ship doesn't bank
-	if ( (objp->type == OBJ_WEAPON) || (sexp_flags & AITTV_IGNORE_BANK ) || (Ships[objp->instance].flags2 & SF2_NO_BANK) )
+	if ( (objp->type == OBJ_WEAPON) || (sexp_flags & AITTV_IGNORE_BANK ) )
 		delta_bank = 0.0f;
 	else if ((bank_override) && (iff_x_attacks_y(Ships[objp->instance].team, Player_ship->team))) {	//	Theoretically, this will only happen for Shivans.
 		delta_bank = bank_override;

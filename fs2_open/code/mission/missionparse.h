@@ -944,22 +944,21 @@ typedef struct p_object {
 // same caveat: This list of bitfield indicators MUST correspond EXACTLY
 // (i.e., order and position must be the same) to its counterpart in MissionParse.cpp!!!!
 
-#define MAX_PARSE_OBJECT_FLAGS_2	14
+#define MAX_PARSE_OBJECT_FLAGS_2	13
 
 #define P2_SF2_PRIMITIVE_SENSORS			(1<<0)
 #define P2_SF2_NO_SUBSPACE_DRIVE			(1<<1)
 #define P2_SF2_NAV_CARRY_STATUS				(1<<2)
-#define P2_SF2_NO_BANK						(1<<3)
-#define P2_SF2_AFFECTED_BY_GRAVITY			(1<<4)
-#define P2_SF2_TOGGLE_SUBSYSTEM_SCANNING	(1<<5)
-#define P2_OF_TARGETABLE_AS_BOMB			(1<<6)
-#define P2_SF2_NO_BUILTIN_MESSAGES			(1<<7)
-#define P2_SF2_PRIMARIES_LOCKED				(1<<8)
-#define P2_SF2_SECONDARIES_LOCKED			(1<<9)
-#define P2_SF2_NO_DEATH_SCREAM				(1<<10)
-#define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<11)
-#define P2_SF2_NAV_NEEDSLINK				(1<<12)
-#define P2_SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<13)
+#define P2_SF2_AFFECTED_BY_GRAVITY			(1<<3)
+#define P2_SF2_TOGGLE_SUBSYSTEM_SCANNING	(1<<4)
+#define P2_OF_TARGETABLE_AS_BOMB			(1<<5)
+#define P2_SF2_NO_BUILTIN_MESSAGES			(1<<6)
+#define P2_SF2_PRIMARIES_LOCKED				(1<<7)
+#define P2_SF2_SECONDARIES_LOCKED			(1<<8)
+#define P2_SF2_NO_DEATH_SCREAM				(1<<9)
+#define P2_SF2_ALWAYS_DEATH_SCREAM			(1<<10)
+#define P2_SF2_NAV_NEEDSLINK				(1<<11)
+#define P2_SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<12)
 
 // and again: these flags do not appear in the array
 //#define blah							(1<<29)
