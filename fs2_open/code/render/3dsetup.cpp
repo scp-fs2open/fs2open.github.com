@@ -281,7 +281,7 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 
 	s = aspect*(float)Canvas_height/(float)Canvas_width;
 
-	if (s <= 0) {		//scale x
+	if ( !Cmdline_nohtl || (s <= 0.0f) ) {		//scale x
 		Window_scale.xyz.x = s;
 		Window_scale.xyz.y = 1.0f;
 	}
@@ -368,16 +368,22 @@ void scale_matrix(void)
 
 	Matrix_scale = Window_scale;
 
-	if (View_zoom <= 1.0) 		//zoom in by scaling z
+	float s = 1.0f;
 
-		Matrix_scale.xyz.z =  Matrix_scale.xyz.z*View_zoom;
+	if (Cmdline_nohtl) {
+		if (View_zoom <= 1.0f) { 		//zoom in by scaling z
+			Matrix_scale.xyz.z =  Matrix_scale.xyz.z*View_zoom;
+		} else {			//zoom out by scaling x&y
+			s = 1.0f / View_zoom;
 
-	else {			//zoom out by scaling x&y
+			Matrix_scale.xyz.x *= s;
+			Matrix_scale.xyz.y *= s;
+		}
+	} else {
+		s = 1.0f / tanf(Proj_fov * 0.5f);
 
-		float s = (float)1.0 / View_zoom;
-
-		Matrix_scale.xyz.x = Matrix_scale.xyz.x*s;
-		Matrix_scale.xyz.y = Matrix_scale.xyz.y*s;
+		Matrix_scale.xyz.x *= s;
+		Matrix_scale.xyz.y *= s;
 	}
 
 	//now scale matrix elements
