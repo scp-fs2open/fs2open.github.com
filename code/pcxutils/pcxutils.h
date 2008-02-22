@@ -91,8 +91,8 @@
 #define _PCXUTILS_H
 
 #include "globalincs/pstypes.h"
+#include "cfile/cfile.h"
 
-struct CFILE;
 
 /*
 #ifdef __cplusplus
@@ -115,7 +115,7 @@ extern int pcx_read_header(char *filename, CFILE *img_cfp = NULL, int *w = 0, in
 //extern int pcx_read_bitmap_16bpp_aabitmap( char *filename, ubyte *org_data );
 //extern int pcx_read_bitmap_16bpp_nondark( char *filename, ubyte *org_data );
 //extern int pcx_read_bitmap_32(char *real_filename, ubyte *data );
-extern int pcx_read_bitmap(char *filename, ubyte *org_data, ubyte *pal, int byte_size, int aabitmap = 0, int nondark = 0);
+extern int pcx_read_bitmap(char *filename, ubyte *org_data, ubyte *pal, int byte_size, int aabitmap = 0, int nondark = 0, int cf_type = CF_TYPE_ANY);
 
 // Dumps a 8bpp bitmap to a file.
 // Set rowoff to -w for upside down bitmaps.

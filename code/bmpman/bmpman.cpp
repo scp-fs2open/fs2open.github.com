@@ -2021,7 +2021,7 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	pcx_error = pcx_read_bitmap( filename, data, NULL, (bpp >> 3), (flags & BMP_AABITMAP), 0 );
+	pcx_error = pcx_read_bitmap( filename, data, NULL, (bpp >> 3), (flags & BMP_AABITMAP), 0, be->dir_type );
 
 	if ( pcx_error != PCX_ERROR_NONE ) {
 		mprintf(("Couldn't load PCX!!! (%s)\n", filename));
@@ -2049,7 +2049,7 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	first_frame = be->info.ani.first_frame;
 	nframes = bm_bitmaps[first_frame].info.ani.num_frames;
 
-	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename)) == NULL ) {
+	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename, bm_bitmaps[first_frame].dir_type)) == NULL ) {
 		// Error(LOCATION, "Error opening %s in bm_lock\n", be->filename);
 	}
 
@@ -2277,7 +2277,7 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	tga_error = targa_read_bitmap( filename, data, NULL, d_size);
+	tga_error = targa_read_bitmap( filename, data, NULL, d_size, be->dir_type);
 
 	if ( tga_error != TARGA_ERROR_NONE )	{
 		bm_free_data( bitmapnum );
@@ -2314,7 +2314,7 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	error = dds_read_bitmap( filename, data, &dds_bpp );
+	error = dds_read_bitmap( filename, data, &dds_bpp, be->dir_type );
 
 #if BYTE_ORDER == BIG_ENDIAN
 	// same as with TGA, we need to byte swap 16 & 32-bit, uncompressed, DDS images
@@ -2388,7 +2388,7 @@ void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	jpg_error = jpeg_read_bitmap( filename, data, NULL, d_size);
+	jpg_error = jpeg_read_bitmap( filename, data, NULL, d_size, be->dir_type );
 
 	if ( jpg_error != JPEG_ERROR_NONE )	{
 		bm_free_data( bitmapnum );

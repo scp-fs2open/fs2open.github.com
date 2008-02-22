@@ -329,7 +329,7 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 
 	alpha = (bpp == 32);
 
-	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename)) == NULL ) {
+	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename, bm_bitmaps[first_frame].dir_type)) == NULL ) {
 		// Error(LOCATION, "Error opening %s in bm_lock\n", be->filename);
 	}
 

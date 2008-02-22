@@ -232,7 +232,7 @@ int jpeg_read_header(char *real_filename, CFILE *img_cfp, int *w, int *h, int *b
 //
 // returns - true if succesful, false otherwise
 //
-int jpeg_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int dest_size)
+int jpeg_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int dest_size, int cf_type)
 {
 	char filename[MAX_FILENAME_LEN];
 	CFILE *img_cfp = NULL;
@@ -245,7 +245,7 @@ int jpeg_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int
 	strcat( filename, ".jpg" );
 
 
-	img_cfp = cfopen(filename, "rb");
+	img_cfp = cfopen(filename, "rb", CFILE_NORMAL, cf_type);
 
 	if (img_cfp == NULL)
 		return JPEG_ERROR_READING;
