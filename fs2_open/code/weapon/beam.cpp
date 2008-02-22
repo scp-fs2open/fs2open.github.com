@@ -1390,9 +1390,11 @@ void beam_type_b_move(beam *b)
 void beam_type_c_move(beam *b)
 {	
 	vec3d temp;
+	ship *shipp;
+	int num_fire_points = 1;
 
 	// ugh
-	if(b->objp == NULL){
+	if ( (b->objp == NULL) || (b->objp->instance < 0) ) {
 		Int3();
 		return;
 	}
@@ -1403,7 +1405,17 @@ void beam_type_c_move(beam *b)
 	vm_vec_add2(&b->last_start, &b->objp->pos);	
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 
-	Ships[b->objp->instance].weapon_energy -= Weapon_info[b->weapon_info_index].energy_consumed * flFrametime;
+	shipp = &Ships[b->objp->instance];
+
+	if (shipp->beam_sys_info.turret_num_firing_points > 1) {
+		num_fire_points = shipp->beam_sys_info.turret_num_firing_points;
+	}
+
+	shipp->weapon_energy -= num_fire_points * Weapon_info[b->weapon_info_index].energy_consumed * flFrametime;
+
+	if (shipp->weapon_energy < 0.0f) {
+		shipp->weapon_energy = 0.0f;
+	}
 }
 
 // type D functions
@@ -3528,16 +3540,25 @@ int beam_ok_to_fire(beam *b)
 	}	
 
 	// type C beams are ok to fire all the time
-	if(b->type == BEAM_TYPE_C){
+	if (b->type == BEAM_TYPE_C) {
 		ship *shipp = &Ships[b->objp->instance];
-		if(shipp->weapon_energy < 0.0){
-//			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(Weapon_info[shipp->weapons.primary_bank_weapons[b->bank]].b_info.beam_warmdown*2);
-			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(2000);
-			int ship_maybe_play_primary_fail_sound();
-			if ( &Objects[shipp->objnum] == Player_obj )ship_maybe_play_primary_fail_sound();
+
+		if (shipp->weapon_energy <= 0.0f) {
+		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(Weapon_info[shipp->weapons.primary_bank_weapons[b->bank]].b_info.beam_warmdown*2);
+		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(2000);
+			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(shipp->weapons.next_primary_fire_stamp[b->bank] * 2);
+
+			if ( OBJ_INDEX(Player_obj) == shipp->objnum ) {
+				extern int ship_maybe_play_primary_fail_sound();
+				ship_maybe_play_primary_fail_sound();
+			}
+
 			mprintf(("killing fighter beam becase it ran out of energy\n"));
+
 			return 0;
-		}else return 1;
+		} else {
+			return 1;
+		}
 	}
 
 	// if the shooting turret is destroyed	
