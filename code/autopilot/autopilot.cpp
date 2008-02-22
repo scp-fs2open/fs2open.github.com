@@ -597,12 +597,12 @@ void StartAutopilot()
 			{ 
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->name, &Ai_info[Ships[i].ai_index] );
 					//fixup has to wait until after wing goals
 				}
 				else
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
 				}
 
 			}
@@ -1008,10 +1008,26 @@ void EndAutoPilot()
 		CinematicStarted = false;
 	}
 
+	Assert( CurrentNav >= 0 );
+
+	int goal = 0;
+	char *goal_name = NULL;
+
+	if (Navs[CurrentNav].flags & NP_WAYPOINT)
+	{
+		goal = AI_GOAL_WAYPOINTS_ONCE;
+		goal_name = ((waypoint_list*)Navs[CurrentNav].target_obj)->name;
+	}
+	else
+	{
+		goal = AI_GOAL_FLY_TO_SHIP;
+		goal_name = ((ship*)Navs[CurrentNav].target_obj)->ship_name;
+	}
+
 	// assign ship goals
 	// when assigning goals to individual ships only do so if Ships[shipnum].wingnum != -1 
 	// we will assign wing goals below
-	int i,j;
+	int i, j;
 
 	for (i = 0; i < MAX_SHIPS; i++)
 
@@ -1026,35 +1042,55 @@ void EndAutoPilot()
 			//unlock their weaponry
 			//Ships[i].flags2 &= ~(SF2_PRIMARIES_LOCKED | SF2_SECONDARIES_LOCKED);
 			Ai_info[Ships[i].ai_index].waypoint_speed_cap = -1; // uncap their speed
-			
-			ai_clear_ship_goals( &(Ai_info[Ships[i].ai_index]) );
-			if (Ships[i].wingnum != -1)
-				ai_clear_wing_goals( Ships[i].wingnum );
 
+			for (j = 0; j < MAX_AI_GOALS; j++)
+			{
+				ai_goal *aigp = &Ai_info[Ships[i].ai_index].goals[j];
+	
+				if ( ((aigp->ship_name != NULL) && !stricmp(aigp->ship_name, goal_name))
+							&& (aigp->ai_mode == goal) )
+				{
+					ai_remove_ship_goal(&Ai_info[Ships[i].ai_index], j);
+				}
+			}
+
+			if (Ships[i].wingnum != -1)
+			{
+				for (j = 0; j < MAX_AI_GOALS; j++)
+				{
+					ai_goal *aigp = &Wings[i].ai_goals[j];
+
+					if ( ((aigp->ship_name != NULL) && !stricmp(aigp->ship_name, goal_name))
+							&& (aigp->ai_mode == goal) )
+					{
+						aigp->ai_mode = AI_GOAL_NONE;
+						aigp->signature = -1;
+						aigp->priority = -1;
+						aigp->flags = 0;
+					}
+				}
+			}
 		}
 	}
 
-	// assign wing goals
-	
-	if (!(The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS))
+	// un-assign wing goals
+	if ( !(The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) )
 	{
 		for (i = 0; i < MAX_WINGS; i++)
 		{
 			if (Wings[i].flags & WF_NAV_CARRY )
 			{
-				// old "dumb" routine
-				//ai_clear_wing_goals( i );
 				for (j = 0; j < MAX_AI_GOALS; j++)
 				{
-					if (Wings[i].ai_goals[j].ai_mode == AI_GOAL_WAYPOINTS_ONCE ||
-						Wings[i].ai_goals[j].ai_mode == AI_GOAL_FLY_TO_SHIP ||
-						Wings[i].ai_goals[j].ai_mode == AIM_WAYPOINTS ||
-						Wings[i].ai_goals[j].ai_mode == AIM_FLY_TO_SHIP)
+					ai_goal *aigp = &Wings[i].ai_goals[j];
+
+					if ( ((aigp->ship_name != NULL) && !stricmp(aigp->ship_name, goal_name))
+							&& (aigp->ai_mode == goal) )
 					{
-						Wings[i].ai_goals[j].ai_mode = AI_GOAL_NONE;
-						Wings[i].ai_goals[j].signature = -1;
-						Wings[i].ai_goals[j].priority = -1;
-						Wings[i].ai_goals[j].flags = 0;
+						aigp->ai_mode = AI_GOAL_NONE;
+						aigp->signature = -1;
+						aigp->priority = -1;
+						aigp->flags = 0;
 					}
 				}
 			}
