@@ -824,11 +824,6 @@ THEORAFILE *theora_open(char *filename)
 		goto Error;
 	}
 
-	if ( (movie->tinfo.frame_width > 640) || (movie->tinfo.frame_height > 480) ) {
-		mprintf(("Theora ERROR:  Movies must be no larger than 640x480!\n"));
-		goto Error;
-	}
-
 	// initialize audio decoder, if there is audio
 	if (movie->vorbis_p) {
 		vorbis_synthesis_init(&movie->vstate, &movie->vinfo);
