@@ -3281,6 +3281,12 @@ int game_start_mission()
 			multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_LOAD_FAIL);
 		}
 
+		if ( !(Game_mode & GM_STANDALONE_SERVER) ) {
+			game_loading_callback_close();
+		}
+
+		game_level_close();
+
 		return 0;
 	}
 	load_mission_load = time(NULL) - load_mission_load;
