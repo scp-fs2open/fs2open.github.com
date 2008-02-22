@@ -632,7 +632,7 @@ int targa_uncompress( ubyte *dst, ubyte *src, int bitmap_width, int bytes_per_pi
 //
 // returns - true if succesful, false otherwise
 //
-int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int dest_size)
+int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int dest_size, int cf_type)
 {
 	Assert(real_filename);
 	targa_header header;
@@ -648,7 +648,7 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 	if ( p ) *p = 0;
 	strcat( filename, ".tga" );
 
-	targa_file = cfopen( filename , "rb" );
+	targa_file = cfopen( filename , "rb", CFILE_NORMAL, cf_type );
 	if ( !targa_file ){
 		return TARGA_ERROR_READING;
 	}		

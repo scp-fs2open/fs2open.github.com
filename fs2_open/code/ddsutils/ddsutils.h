@@ -5,9 +5,8 @@
 #define __DDS_H
 
 #include "globalincs/pstypes.h"
+#include "cfile/cfile.h"
 
-
-struct CFILE;
 
 #define DDS_ERROR_NONE					0		// everything went fine
 #define DDS_ERROR_INVALID_FILENAME		1		// bad or missing file
@@ -143,7 +142,7 @@ int dds_read_header(char *filename, CFILE *img_cfp = NULL, int *width = 0, int *
 
 //reads bitmap
 //size of the data it stored in size
-int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp = NULL);
+int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp = NULL, int cf_type = CF_TYPE_ANY);
 
 // writes a DDS file using given data
 void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data = NULL, int cubemap = 0, char *filename = NULL);
