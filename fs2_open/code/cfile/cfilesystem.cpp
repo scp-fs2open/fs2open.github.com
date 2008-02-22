@@ -909,7 +909,11 @@ void cf_search_root_pack(int root_index)
 		return;
 	}
 
-	mprintf(( "Searching root pack '%s' ... ", root->path ));
+	if ( filelength(fileno(fp)) < (int)(sizeof(VP_FILE_HEADER) + (sizeof(int) * 3)) ) {
+		mprintf(( "Skipping VP file ('%s') of invalid size...\n", root->path ));
+		fclose(fp);
+		return;
+	}
 
 	VP_FILE_HEADER VP_header;
 
