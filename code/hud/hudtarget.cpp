@@ -6647,6 +6647,11 @@ void hud_target_last_transmit_add(int ship_num)
 	ship_objp = &Objects[ship_objnum];
 	Assert(ship_objp->type == OBJ_SHIP);
 
+	// don't add ourselves to the list
+	if (Player_obj == ship_objp) {
+		return;
+	}
+
 	Transmit_target_list[Transmit_target_next_slot].objnum = ship_objnum;
 	Transmit_target_list[Transmit_target_next_slot].objsig = ship_objp->signature;
 	Transmit_target_next_slot++;
