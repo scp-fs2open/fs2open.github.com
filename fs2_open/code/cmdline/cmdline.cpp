@@ -1205,7 +1205,6 @@ cmdline_parm ingamejoin_arg("-ingame_join", NULL);	// Cmdline_ingamejoin
 cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL);	// Cmdline_mpnoreturn  -- Removes 'Return to Flight Deck' in respawn dialog -C
 cmdline_parm missioncrcspew_arg("-missioncrcs", NULL);		// Cmdline_spew_mission_crcs
 cmdline_parm tablecrcspew_arg("-tablecrcs", NULL);			// Cmdline_spew_table_crcs
-cmdline_parm chatterbox_arg("-chatterbox", NULL);	// Cmdline_chatterbox  ****  REMOVEME  ****
 cmdline_parm objupd_arg("-cap_object_update", NULL);
 
 char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
@@ -1213,7 +1212,6 @@ int Cmdline_ingamejoin = 0;
 int Cmdline_mpnoreturn = 0;
 char *Cmdline_spew_mission_crcs = NULL;
 char *Cmdline_spew_table_crcs = NULL;
-int Cmdline_chatterbox = 0;	// ****  REMOVEME  ****
 int Cmdline_objupd = 3;		// client object updates on LAN by default
 
 // Troubleshooting
@@ -1782,10 +1780,6 @@ bool SetCmdlineParams()
 
 	if (timerbar_arg.found()) {
 		Cmdline_timerbar = 1;
-	}
-
-	if ( chatterbox_arg.found() ) {
-		Cmdline_chatterbox = 1;
 	}
 
 	if ( missioncrcspew_arg.found() ) {

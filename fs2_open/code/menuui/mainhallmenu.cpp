@@ -994,10 +994,9 @@ void main_hall_do_multi_ready()
 	Multi_options_g.protocol = NET_TCP;	
 	gameseq_post_event( GS_EVENT_PXO );
 #else
-	extern int Cmdline_chatterbox;
 	if (Om_tracker_flag) {
 		Multi_options_g.protocol = NET_TCP;
-		gameseq_post_event( (Cmdline_chatterbox) ? GS_EVENT_PXO : GS_EVENT_MULTI_JOIN_GAME );
+		gameseq_post_event(GS_EVENT_PXO);
 	} else {
 		// go to the regular join game screen 	
 		gameseq_post_event( GS_EVENT_MULTI_JOIN_GAME );	
