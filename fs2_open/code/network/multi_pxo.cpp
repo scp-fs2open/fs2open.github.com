@@ -2534,7 +2534,7 @@ void multi_pxo_clear_channels()
 				moveup = moveup->next;			
 		
 				// free the struct itself
-				free(backup);
+				vm_free(backup);
 				backup = NULL;
 			} while(moveup != Multi_pxo_channels);
 			Multi_pxo_channels = NULL;
@@ -2645,7 +2645,7 @@ pxo_channel *multi_pxo_add_channel(char *name,pxo_channel **list)
 	pxo_channel *new_channel;
 
 	// try and allocate a new pxo_channel struct
-	new_channel = (pxo_channel *)malloc(sizeof(pxo_channel));
+	new_channel = (pxo_channel *)vm_malloc(sizeof(pxo_channel));
 	if ( new_channel == NULL ) {
 		nprintf(("Network", "Cannot allocate space for new pxo_channel structure\n"));
 		return NULL;
@@ -3043,7 +3043,7 @@ void multi_pxo_clear_players()
 				moveup = moveup->next;			
 		
 				// free the struct itself
-				free(backup);
+				vm_free(backup);
 				backup = NULL;
 			} while(moveup != Multi_pxo_players);
 			Multi_pxo_players = NULL;
@@ -3073,7 +3073,7 @@ player_list *multi_pxo_add_player(char *name)
 	player_list *new_player;
 
 	// try and allocate a new player_list struct
-	new_player = (player_list *)malloc(sizeof(player_list));
+	new_player = (player_list *)vm_malloc(sizeof(player_list));
 	if ( new_player == NULL ) {
 		nprintf(("Network", "Cannot allocate space for new player_list structure\n"));
 		return NULL;
@@ -3122,7 +3122,7 @@ void multi_pxo_del_player(char *name)
 			// if this is the only item on the list, free stuff up
 			if(lookup->next == lookup){
 				Assert(lookup == Multi_pxo_players);
-				free(lookup);
+				vm_free(lookup);
 				Multi_pxo_players = NULL;
 				multi_pxo_clear_players();
 			}
@@ -3158,7 +3158,7 @@ void multi_pxo_del_player(char *name)
 				// free the item up
 				lookup->next = NULL;
 				lookup->prev = NULL;
-				free(lookup);
+				vm_free(lookup);
 			}	
 
 			// new player
@@ -3355,7 +3355,7 @@ void multi_pxo_chat_init()
 
 	// create the lines in a non-circular doubly linked list
 	for(idx=0;idx<MAX_CHAT_LINES;idx++){
-		new_line = (chat_line*)malloc(sizeof(chat_line));	
+		new_line = (chat_line*)vm_malloc(sizeof(chat_line));	
 		
 		// clear the line out
 		Assert(new_line != NULL);		
@@ -3393,7 +3393,7 @@ void multi_pxo_chat_free()
 		backup = moveup;		
 		moveup = moveup->next;
 
-		free(backup);
+		vm_free(backup);
 	}
 
 	// no chat lines
@@ -4821,24 +4821,24 @@ void multi_pxo_pinfo_init()
 	}
 
 	// set up the stats labels
-	Multi_pxo_pinfo_stats_labels[0] = strdup(XSTR("Name", 1532));
-	Multi_pxo_pinfo_stats_labels[1] = strdup(XSTR("Rank", 1533));
-	Multi_pxo_pinfo_stats_labels[2] = strdup(XSTR("Kills", 1534));
-	Multi_pxo_pinfo_stats_labels[3] = strdup(XSTR("Assists", 1535));
-	Multi_pxo_pinfo_stats_labels[4] = strdup(XSTR("Friendly kills", 1536));
-	Multi_pxo_pinfo_stats_labels[5] = strdup(XSTR("Missions flown", 1537));
-	Multi_pxo_pinfo_stats_labels[6] = strdup(XSTR("Flight time", 1538));
-	Multi_pxo_pinfo_stats_labels[7] = strdup(XSTR("Last flown", 1539));
-	Multi_pxo_pinfo_stats_labels[8] = strdup(XSTR("Primary shots fired", 1540));
-	Multi_pxo_pinfo_stats_labels[9] = strdup(XSTR("Primary shots hit", 1541));
-	Multi_pxo_pinfo_stats_labels[10] = strdup(XSTR("Primary hit %", 1542));
-	Multi_pxo_pinfo_stats_labels[11] = strdup(XSTR("Secondary shots fired", 1543));
-	Multi_pxo_pinfo_stats_labels[12] = strdup(XSTR("Secondary shots hit", 1544));
-	Multi_pxo_pinfo_stats_labels[13] = strdup(XSTR("Secondary hit %", 1545));
-	Multi_pxo_pinfo_stats_labels[14] = strdup(XSTR("Primary friendly hits", 1546));
-	Multi_pxo_pinfo_stats_labels[15] = strdup(XSTR("Primary friendly hit %", 1547));
-	Multi_pxo_pinfo_stats_labels[16] = strdup(XSTR("Secondary friendly hits", 1548));
-	Multi_pxo_pinfo_stats_labels[17] = strdup(XSTR("Secondary friendly hit %", 1549));
+	Multi_pxo_pinfo_stats_labels[0] = vm_strdup(XSTR("Name", 1532));
+	Multi_pxo_pinfo_stats_labels[1] = vm_strdup(XSTR("Rank", 1533));
+	Multi_pxo_pinfo_stats_labels[2] = vm_strdup(XSTR("Kills", 1534));
+	Multi_pxo_pinfo_stats_labels[3] = vm_strdup(XSTR("Assists", 1535));
+	Multi_pxo_pinfo_stats_labels[4] = vm_strdup(XSTR("Friendly kills", 1536));
+	Multi_pxo_pinfo_stats_labels[5] = vm_strdup(XSTR("Missions flown", 1537));
+	Multi_pxo_pinfo_stats_labels[6] = vm_strdup(XSTR("Flight time", 1538));
+	Multi_pxo_pinfo_stats_labels[7] = vm_strdup(XSTR("Last flown", 1539));
+	Multi_pxo_pinfo_stats_labels[8] = vm_strdup(XSTR("Primary shots fired", 1540));
+	Multi_pxo_pinfo_stats_labels[9] = vm_strdup(XSTR("Primary shots hit", 1541));
+	Multi_pxo_pinfo_stats_labels[10] = vm_strdup(XSTR("Primary hit %", 1542));
+	Multi_pxo_pinfo_stats_labels[11] = vm_strdup(XSTR("Secondary shots fired", 1543));
+	Multi_pxo_pinfo_stats_labels[12] = vm_strdup(XSTR("Secondary shots hit", 1544));
+	Multi_pxo_pinfo_stats_labels[13] = vm_strdup(XSTR("Secondary hit %", 1545));
+	Multi_pxo_pinfo_stats_labels[14] = vm_strdup(XSTR("Primary friendly hits", 1546));
+	Multi_pxo_pinfo_stats_labels[15] = vm_strdup(XSTR("Primary friendly hit %", 1547));
+	Multi_pxo_pinfo_stats_labels[16] = vm_strdup(XSTR("Secondary friendly hits", 1548));
+	Multi_pxo_pinfo_stats_labels[17] = vm_strdup(XSTR("Secondary friendly hit %", 1549));
 
 	// build the stats labels values
 	multi_pxo_pinfo_build_vals();
@@ -4910,7 +4910,7 @@ void multi_pxo_pinfo_close()
 
 	// free the stats labels strings
 	for (i=0; i<MULTI_PXO_PINFO_NUM_LABELS; i++) {
-		free(Multi_pxo_pinfo_stats_labels[i]);
+		vm_free(Multi_pxo_pinfo_stats_labels[i]);
 	}
 }
 
@@ -5102,7 +5102,7 @@ void multi_pxo_help_close()
 		for(idx2=0; idx2<Multi_pxo_help_pages[idx].num_lines; idx2++){
 			// maybe free
 			if(Multi_pxo_help_pages[idx].text[idx2] != NULL){
-				free(Multi_pxo_help_pages[idx].text[idx2]);
+				vm_free(Multi_pxo_help_pages[idx].text[idx2]);
 				Multi_pxo_help_pages[idx].text[idx2] = NULL;
 			}
 		}
@@ -5137,7 +5137,7 @@ void multi_pxo_help_load()
 
 	while(!cfeof(in)){
 		// malloc the line
-		cp->text[cp->num_lines] = (char*)malloc(Multi_pxo_chars_per_line[gr_screen.res]);
+		cp->text[cp->num_lines] = (char*)vm_malloc(Multi_pxo_chars_per_line[gr_screen.res]);
 		if(cp->text[cp->num_lines] == NULL){
 			break;
 		}

@@ -272,12 +272,12 @@ void DisconnectFromChatServer()
 	Input_chat_buffer[0] = '\0';
 	if(User_list)
 	{
-		free(User_list);
+		vm_free(User_list);
 		User_list = NULL;
 	}
 	if(Chan_list)
 	{
-		free(Chan_list);
+		vm_free(Chan_list);
 		Chan_list = NULL;
 	}
 	
@@ -399,7 +399,7 @@ char *GetChatUserList()
 	int iuser_list_length = 0;;
 	if(User_list)
 	{
-		free(User_list);
+		vm_free(User_list);
 		User_list = NULL;
 	}
 	if(!Socket_connected) return NULL;
@@ -411,7 +411,7 @@ char *GetChatUserList()
 		Curruser = Curruser->next;
 	}
 	Curruser = Firstuser;
-	User_list = (char *)malloc(iuser_list_length+1);
+	User_list = (char *)vm_malloc(iuser_list_length+1);
 	User_list[0] = '\0';
 	while(Curruser) 
 	{
@@ -573,7 +573,7 @@ int AddChatUser(char *nickname)
 	Curruser = Firstuser;
 	if(Firstuser==NULL)
 	{
-		Firstuser = (Chat_user *)malloc(sizeof(Chat_user));
+		Firstuser = (Chat_user *)vm_malloc(sizeof(Chat_user));
 		Assert(Firstuser);
 		strcpy(Firstuser->nick_name,nickname);
 		Firstuser->next = NULL;
@@ -586,7 +586,7 @@ int AddChatUser(char *nickname)
 		{
 			Curruser = Curruser->next;
 		}
-		Curruser->next = (Chat_user *)malloc(sizeof(Chat_user));
+		Curruser->next = (Chat_user *)vm_malloc(sizeof(Chat_user));
 		Curruser = Curruser->next;
 		Assert(Curruser);
 		strcpy(Curruser->nick_name,nickname);
@@ -616,7 +616,7 @@ int RemoveChatUser(char *nickname)
 				Firstuser = Curruser->next;
 			}
 			AddChatCommandToQueue(CC_USER_LEAVING,Curruser->nick_name,strlen(Curruser->nick_name)+1);
-			free(Curruser);
+			vm_free(Curruser);
 			return 1;
 		}		
 		prv_user = Curruser;
@@ -634,7 +634,7 @@ void RemoveAllChatUsers(void)
 	{
 		tmp_user = Curruser->next;
 		AddChatCommandToQueue(CC_USER_LEAVING,Curruser->nick_name,strlen(Curruser->nick_name)+1);
-		free(Curruser);
+		vm_free(Curruser);
 		Curruser = tmp_user;
 	}
 	Firstuser = NULL;
@@ -1163,7 +1163,7 @@ void AddChatCommandToQueue(int command,void *data,int len)
 	Currcommand = Firstcommand;
 	if(Firstcommand==NULL)
 	{
-		Firstcommand = (Chat_command *)malloc(sizeof(Chat_command));
+		Firstcommand = (Chat_command *)vm_malloc(sizeof(Chat_command));
 		Assert(Firstcommand);
 		Firstcommand->next = NULL;
 		Currcommand = Firstcommand;
@@ -1174,7 +1174,7 @@ void AddChatCommandToQueue(int command,void *data,int len)
 		{
 			Currcommand = Currcommand->next;
 		}
-		Currcommand->next = (Chat_command *)malloc(sizeof(Chat_command));
+		Currcommand->next = (Chat_command *)vm_malloc(sizeof(Chat_command));
 		Assert(Currcommand->next);
 		Currcommand = Currcommand->next;
 	}
@@ -1192,7 +1192,7 @@ Chat_command *GetChatCommandFromQueue(void)
 	Currcommand = Firstcommand;
 	memcpy(&response_cmd,Currcommand,sizeof(Chat_command));
 	tmp_cmd = Currcommand->next;
-	free(Firstcommand);
+	vm_free(Firstcommand);
 	Firstcommand = tmp_cmd;
 	return &response_cmd;
 }
@@ -1205,7 +1205,7 @@ void FlushChatCommandQueue(void)
 	while(Currcommand) 
 	{
 		tmp_cmd = Currcommand->next;
-		free(Currcommand);
+		vm_free(Currcommand);
 		Currcommand = tmp_cmd;
 	}
 	Firstcommand = NULL;
@@ -1220,7 +1220,7 @@ void FlushChannelList(void)
 	while(Currchannel) 
 	{
 		tmp_chan = Currchannel->next;
-		free(Currchannel);
+		vm_free(Currchannel);
 		Currchannel = tmp_chan;
 	}
 	Firstchannel = NULL;
@@ -1237,7 +1237,7 @@ char *GetChannelList(void)
 
 	if(Chan_list)
 	{
-		free(Chan_list);
+		vm_free(Chan_list);
 		Chan_list = NULL;
 	}
 	
@@ -1249,7 +1249,7 @@ char *GetChannelList(void)
 		Currchannel = Currchannel->next;
 	}
 	Currchannel = Firstchannel;
-	Chan_list = (char *)malloc(ichan_list_length+1);
+	Chan_list = (char *)vm_malloc(ichan_list_length+1);
 	Chan_list[0] = '\0';
 	while(Currchannel) 
 	{
@@ -1272,7 +1272,7 @@ void AddChannel(char *channel,unsigned short numusers,char *topic)
 	Currchannel = Firstchannel;
 	if(Firstchannel==NULL)
 	{
-		Firstchannel = (Chat_channel *)malloc(sizeof(Chat_channel));
+		Firstchannel = (Chat_channel *)vm_malloc(sizeof(Chat_channel));
 		Assert(Firstchannel);
 		strcpy(Firstchannel->channel_name,channel);
 		strcpy(Firstchannel->topic,topic);
@@ -1286,7 +1286,7 @@ void AddChannel(char *channel,unsigned short numusers,char *topic)
 		{
 			Currchannel = Currchannel->next;
 		}
-		Currchannel->next = (Chat_channel *)malloc(sizeof(Chat_channel));
+		Currchannel->next = (Chat_channel *)vm_malloc(sizeof(Chat_channel));
 		Assert(Currchannel->next);
 		Currchannel = Currchannel->next;
 		strcpy(Currchannel->channel_name,channel);
