@@ -119,14 +119,14 @@ file_record *FS2NetD_GetMissionsList(int *numMissions, int timeout = 30);
 #define PXO_ADD_USHORT(d) do { Assert(buffer_size+sizeof(ushort) <= sizeof(buffer)); ushort swap = INTEL_SHORT(d); memcpy(buffer+buffer_size, &swap, sizeof(ushort)); buffer_size += sizeof(ushort); } while (0)
 #define PXO_ADD_INT(d) do { Assert(buffer_size+sizeof(int) <= sizeof(buffer)); int swap = INTEL_INT(d); memcpy(buffer+buffer_size, &swap, sizeof(int)); buffer_size += sizeof(int); } while (0)
 #define PXO_ADD_UINT(d) do { Assert(buffer_size+sizeof(uint) <= sizeof(buffer)); uint swap = INTEL_INT(d); memcpy(buffer+buffer_size, &swap, sizeof(uint)); buffer_size += sizeof(uint); } while (0)
-#define PXO_ADD_STRING(s) do { Assert(buffer_size+strlen(s)+sizeof(int) <= sizeof(buffer)); int len = strlen(s); int len_tmp = INTEL_INT(len); PXO_ADD_DATA(len_tmp); memcpy(buffer+buffer_size, s, len ); buffer_size += len; } while(0)
+#define PXO_ADD_STRING(s) do { Assert(buffer_size+strlen(s)+sizeof(int) <= sizeof(buffer)); int len = strlen(s); PXO_ADD_INT(len); if (len > 0) { memcpy(buffer+buffer_size, s, len ); buffer_size += len; } } while(0)
 
 #define PXO_GET_DATA(d) do { Assert(buffer_offset+sizeof(d) <= sizeof(buffer)); memcpy(&d, buffer+buffer_offset, sizeof(d) ); buffer_offset += sizeof(d); } while(0)
 #define PXO_GET_SHORT(d) do { Assert(buffer_offset+sizeof(short) <= sizeof(buffer)); short swap; memcpy(&swap, buffer+buffer_offset, sizeof(short) ); d = INTEL_SHORT(swap); buffer_offset += sizeof(short); } while(0)
 #define PXO_GET_USHORT(d) do { Assert(buffer_offset+sizeof(ushort) <= sizeof(buffer)); ushort swap; memcpy(&swap, buffer+buffer_offset, sizeof(ushort) ); d = INTEL_SHORT(swap); buffer_offset += sizeof(ushort); } while(0)
 #define PXO_GET_INT(d) do { Assert(buffer_offset+sizeof(int) <= sizeof(buffer)); int swap; memcpy(&swap, buffer+buffer_offset, sizeof(int) ); d = INTEL_INT(swap); buffer_offset += sizeof(int); } while(0)
 #define PXO_GET_UINT(d) do { Assert(buffer_offset+sizeof(uint) <= sizeof(buffer)); uint swap; memcpy(&swap, buffer+buffer_offset, sizeof(uint) ); d = INTEL_INT(swap); buffer_offset += sizeof(uint); } while(0)
-#define PXO_GET_STRING(s) do { Assert(buffer_offset+sizeof(int) <= sizeof(buffer)); int len;  memcpy(&len, buffer+buffer_offset, sizeof(int)); len = INTEL_INT(len); buffer_offset += sizeof(int); memcpy(s, buffer+buffer_offset, len); buffer_offset += len; s[len] = '\0'; } while(0)
+#define PXO_GET_STRING(s) do { Assert(buffer_offset+sizeof(int) <= sizeof(buffer)); s[0] = '\0'; int len; memcpy(&len, buffer+buffer_offset, sizeof(int)); len = INTEL_INT(len); buffer_offset += sizeof(int); if (len > 0) { memcpy(s, buffer+buffer_offset, len); buffer_offset += len; s[len] = '\0'; } } while(0)
 
 // initialize a packet
 #define INIT_PACKET(x) { memset(buffer, 0, sizeof(buffer)); buffer_size = 0; ubyte pckt = (x); PXO_ADD_DATA(pckt); PXO_ADD_INT(buffer_size); }
