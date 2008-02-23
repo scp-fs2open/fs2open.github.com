@@ -92,30 +92,30 @@ std::vector<crc_valid_status> Table_valid_status;
 
 void fs2netd_options_config_init()
 {
-//	if ( !strlen(Multi_options_g.game_tracker_ip) ) {
+	if ( !strlen(Multi_options_g.game_tracker_ip) ) {
 		ml_printf("FS2NetD MSG:  Address for game tracker not specified, using default instead (%s).", FS2NETD_DEFAULT_SERVER);
 		strncpy( Multi_options_g.game_tracker_ip, FS2NETD_DEFAULT_SERVER, MULTI_OPTIONS_STRING_LEN );
-//	}
+	}
 
-//	if ( !strlen(Multi_options_g.user_tracker_ip) ) {
+	if ( !strlen(Multi_options_g.user_tracker_ip) ) {
 		ml_printf("FS2NetD MSG:  Address for user tracker not specified, using default instead (%s).", FS2NETD_DEFAULT_SERVER);
 		strncpy( Multi_options_g.user_tracker_ip, FS2NETD_DEFAULT_SERVER, MULTI_OPTIONS_STRING_LEN );
-//	}
+	}
 
-//	if ( !strlen(Multi_options_g.tracker_port) ) {
+	if ( !strlen(Multi_options_g.tracker_port) ) {
 		ml_printf("FS2NetD MSG:  Port for game/user trackers not specified, using default instead (%u).", FS2NETD_DEFAULT_PORT);
 		strncpy( Multi_options_g.tracker_port, FS2NETD_DEFAULT_PORT, STD_NAME_LEN );
-//	}
+	}
 
-//	if ( !strlen(Multi_options_g.pxo_ip) ) {
+	if ( !strlen(Multi_options_g.pxo_ip) ) {
 		ml_printf("FS2NetD MSG:  Address for chat server not specified, using default instead (%s).", FS2NETD_DEFAULT_CHAT_SERVER);
 		strncpy( Multi_options_g.pxo_ip, FS2NETD_DEFAULT_CHAT_SERVER, MULTI_OPTIONS_STRING_LEN );
-//	}
+	}
 
-//	if ( !strlen(Multi_options_g.pxo_banner_url) ) {
+	if ( !strlen(Multi_options_g.pxo_banner_url) ) {
 		ml_printf("FS2NetD MSG:  URL for banners not specified, using default instead (%s).", FS2NETD_DEFAULT_BANNER_URL);
 		strncpy( Multi_options_g.pxo_banner_url, FS2NETD_DEFAULT_BANNER_URL, MULTI_OPTIONS_STRING_LEN );
-//	}
+	}
 }
 
 static int fs2netd_connect_do()
@@ -414,6 +414,10 @@ void fs2netd_do_frame()
 		Is_connected = false;
 		Logged_in = false;
 		PXO_SID = -1;
+
+		NextHeartBeat = -1;
+		NextPing = -1;
+		GotPong = -1;
 
 		// try to reinit the server connection
 		fs2netd_login();
