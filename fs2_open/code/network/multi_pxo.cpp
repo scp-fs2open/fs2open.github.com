@@ -5252,7 +5252,7 @@ void multi_pxo_ban_init()
 			Multi_pxo_ban_mode = PXO_BAN_MODE_CHOOSE_RANDOM;		
 			return;
 		}
-printf("her9999\n");
+
 		// set ourselves to startup mode	
 		Multi_pxo_ban_mode = PXO_BAN_MODE_LIST_STARTUP;
 		Multi_pxo_ban_get = NULL;
@@ -5261,7 +5261,7 @@ printf("her9999\n");
 		Multi_pxo_ban_mode = PXO_BAN_MODE_IDLE;
 		Multi_pxo_ban_get = NULL;
 	}
-printf("here!!!!\n");
+
 	// zero the active banner bitmap
 	Multi_pxo_banner.ban_bitmap = -1;	
 	strcpy(Multi_pxo_banner.ban_file, "");
@@ -5286,7 +5286,7 @@ void multi_pxo_ban_process()
 		cf_create_default_path_string(local_file, sizeof(local_file) - 1, CF_TYPE_MULTI_CACHE, PXO_BANNERS_CONFIG_FILE);
 
 		// try creating the file get object
-		Multi_pxo_ban_get = new InetGetFile(url_string, local_file);
+		Multi_pxo_ban_get = NULL;//new InetGetFile(url_string, local_file);
 
 		// bad
 		if (Multi_pxo_ban_get == NULL) {
@@ -5324,7 +5324,7 @@ void multi_pxo_ban_process()
 	case PXO_BAN_MODE_IMAGES_STARTUP:
 		// first thing - parse the banners file and pick a file
 		multi_pxo_ban_parse_banner_file(0);
-printf("herlkjerlkrjlkr!\n");
+
 		// if we have no active file, we're done
 		if ( (strlen(Multi_pxo_banner.ban_file) <= 0) || (strlen(Multi_pxo_banner.ban_file_url) <= 0) ) {
 			Multi_pxo_ban_mode = PXO_BAN_MODE_IDLE;
@@ -5341,11 +5341,10 @@ printf("herlkjerlkrjlkr!\n");
 		cf_create_default_path_string(local_file, sizeof(local_file) - 1, CF_TYPE_MULTI_CACHE, Multi_pxo_banner.ban_file);
 
 		// try creating the file get object
-		Multi_pxo_ban_get = new InetGetFile(Multi_pxo_banner.ban_file_url, local_file);
+		Multi_pxo_ban_get = NULL;//new InetGetFile(Multi_pxo_banner.ban_file_url, local_file);
 
 		// bad
 		if (Multi_pxo_ban_get == NULL) {
-printf("HEREHRE!\n");
 			Multi_pxo_ban_mode = PXO_BAN_MODE_IDLE;
 			break;
 		}
@@ -5398,7 +5397,6 @@ printf("HEREHRE!\n");
 	case PXO_BAN_MODE_CHOOSE_RANDOM:
 		// first thing - parse the banners file and pick a file
 		multi_pxo_ban_parse_banner_file(1);
-printf("rlwpre32493429342329\n");
 		Multi_pxo_ban_mode = PXO_BAN_MODE_IMAGES_DONE;
 		break;
 	}
@@ -5436,12 +5434,12 @@ void multi_pxo_ban_parse_banner_file(int choose_existing)
 	strcpy(Multi_pxo_banner.ban_file, "");
 	strcpy(Multi_pxo_banner.ban_file_url, "");
 	strcpy(Multi_pxo_banner.ban_url, "");		
-printf("hereer!!!!\n");
+
 	// bad
 	if(in == NULL){
 		return;
 	}
-printf("stilflkjwWW!\n");
+
 	// clear all strings
 	for(idx=0; idx<10; idx++){
 		strcpy(banners[idx], "");
@@ -5584,7 +5582,6 @@ void multi_pxo_ban_draw()
 // called when the URL button is clicked
 void multi_pxo_ban_clicked()
 {
-printf("herlekjer!!!\n");
 	// if we have a valid bitmap and URL, launch the URL
 	if((Multi_pxo_banner.ban_bitmap >= 0) && (strlen(Multi_pxo_banner.ban_url) > 0)){
 		multi_pxo_url(Multi_pxo_banner.ban_url);

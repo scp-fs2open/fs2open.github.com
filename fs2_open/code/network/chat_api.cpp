@@ -220,10 +220,10 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 			//Do a few select to check for an error, or to see if we are writeable (connected)
 			fd_set write_fds,error_fds;	           
 			TIMEVAL timeout;   
-			
+
 			timeout.tv_sec=0;            
 			timeout.tv_usec=0;
-			
+
 			FD_ZERO(&write_fds);
 			FD_SET(Chatsock, &write_fds);    
 			//Writable -- that means it's connected
@@ -480,7 +480,7 @@ char *ChatGetString(void)
 	static char return_string[MAXCHATBUFFER];
 	
 	timeout.tv_sec=0;            
-	timeout.tv_usec=0;
+	timeout.tv_usec=1;
 	
 	FD_ZERO(&read_fds);
 	FD_SET(Chatsock,&read_fds);    
