@@ -10143,8 +10143,14 @@ void sexp_cargo_no_deplete(int n)
 // Goober5000
 void sexp_force_jump()
 {
-	// forced warp, taken from training failure code
-	gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
+	if (Game_mode & GM_MULTIPLAYER) {
+		multi_handle_end_mission_request(); 
+	}
+	else {
+		// forced warp, taken from training failure code
+		gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
+	}
+
 }
 
 void sexp_mission_set_nebula(int n)
