@@ -3105,6 +3105,7 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 	if ( objp->flags & OF_PLAYER_SHIP ) {
 		int pnum;
 		char temp;
+		short temp2;
 
 		pnum = multi_find_player_by_object( objp );
 		if ( pnum != -1 ) {
@@ -3119,9 +3120,9 @@ void send_ship_kill_packet( object *objp, object *other_objp, float percent_kill
 			temp = (char)Net_players[pnum].m_player->killer_species;
 			ADD_DATA( temp );
 
-			Assert(Net_players[pnum].m_player->killer_weapon_index < CHAR_MAX); 
-			temp = (char)Net_players[pnum].m_player->killer_weapon_index;
-			ADD_DATA( temp );
+			Assert(Net_players[pnum].m_player->killer_weapon_index < SHRT_MAX); 
+			temp2 = (short)Net_players[pnum].m_player->killer_weapon_index;
+			ADD_SHORT( temp );
 
 			ADD_STRING( Net_players[pnum].m_player->killer_parent_name );
 		} else {
@@ -3143,7 +3144,8 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	object *sobjp, *oobjp;
 	float percent_killed;	
 	ubyte was_player, extra_death_info, sd;
-	char killer_name[NAME_LENGTH], killer_objtype = OBJ_NONE, killer_species = 0, killer_weapon_index = -1;
+	char killer_name[NAME_LENGTH], killer_objtype = OBJ_NONE, killer_species = 0;
+	short killer_weapon_index = -1;
 
 	offset = HEADER_LENGTH;
 	GET_USHORT(ship_sig);
@@ -3160,7 +3162,7 @@ void process_ship_kill_packet( ubyte *data, header *hinfo )
 	if ( was_player != 0 ) {
 		GET_DATA( killer_objtype );
 		GET_DATA( killer_species );
-		GET_DATA( killer_weapon_index );
+		GET_SHORT( killer_weapon_index );
 		GET_STRING( killer_name );
 	}
 
@@ -6422,22 +6424,22 @@ void send_post_sync_data_packet(net_player *p, int std_request)
 		ADD_DATA(bval);
 						
 		// primary weapon info
-		bval = (char)(shipp->weapons.primary_bank_weapons[0]);
-		ADD_DATA(bval);
-		bval = (char)(shipp->weapons.primary_bank_weapons[1]);
-		ADD_DATA(bval);
+		val_short = (short)(shipp->weapons.primary_bank_weapons[0]);
+		ADD_SHORT(val_short);
+		val_short = (short)(shipp->weapons.primary_bank_weapons[1]);
+		ADD_SHORT(val_short);
 
 		// secondary weapon info
-		bval = (char)(shipp->weapons.secondary_bank_weapons[0]);
-		ADD_DATA(bval);
+		val_short = (short)(shipp->weapons.secondary_bank_weapons[0]);
+		ADD_SHORT(val_short);
 		val_short = (short)(shipp->weapons.secondary_bank_ammo[0]);
 		ADD_SHORT(val_short);
-		bval = (char)(shipp->weapons.secondary_bank_weapons[1]);
-		ADD_DATA(bval);
+		val_short = (short)(shipp->weapons.secondary_bank_weapons[1]);
+		ADD_SHORT(val_short);
 		val_short = (short)(shipp->weapons.secondary_bank_ammo[1]);
 		ADD_SHORT(val_short);
-		bval = (char)(shipp->weapons.secondary_bank_weapons[2]);
-		ADD_DATA(bval);
+		val_short = (short)(shipp->weapons.secondary_bank_weapons[2]);
+		ADD_SHORT(val_short);
 		val_short = (short)(shipp->weapons.secondary_bank_ammo[2]);
 		ADD_SHORT(val_short);		
 		
@@ -6615,25 +6617,25 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 		shipp->weapons.current_secondary_bank = (int)b;		
 
 			// primary weapon info
-		GET_DATA(b);
-		shipp->weapons.primary_bank_weapons[0] = (int)b;
+		GET_SHORT(val_short);
+		shipp->weapons.primary_bank_weapons[0] = (int)val_short;
 
-		GET_DATA(b);
-		shipp->weapons.primary_bank_weapons[1] = (int)b;
+		GET_SHORT(val_short);
+		shipp->weapons.primary_bank_weapons[1] = (int)val_short;
 
 		// secondary weapon info
-		GET_DATA(b);
-		shipp->weapons.secondary_bank_weapons[0] = (int)b;
+		GET_SHORT(val_short);
+		shipp->weapons.secondary_bank_weapons[0] = (int)val_short;
 		GET_SHORT(val_short);
 		shipp->weapons.secondary_bank_ammo[0] = (int)val_short;
 
-		GET_DATA(b);
-		shipp->weapons.secondary_bank_weapons[1] = (int)b;
+		GET_SHORT(val_short);
+		shipp->weapons.secondary_bank_weapons[1] = (int)val_short;
 		GET_SHORT(val_short);
 		shipp->weapons.secondary_bank_ammo[1] = (int)val_short;
 
-		GET_DATA(b);
-		shipp->weapons.secondary_bank_weapons[2] = (int)b;
+		GET_SHORT(val_short);
+		shipp->weapons.secondary_bank_weapons[2] = (int)val_short;
 		GET_SHORT(val_short);
 		shipp->weapons.secondary_bank_ammo[2] = (int)val_short;
 
