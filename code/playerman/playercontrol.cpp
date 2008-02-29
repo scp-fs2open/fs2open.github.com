@@ -646,6 +646,7 @@
 #include "io/joy_ff.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "io/trackir.h"
 #include "object/object.h"
 #include "hud/hud.h"
 #include "hud/hudtargetbox.h"
@@ -685,6 +686,9 @@ int		Player_use_ai = 0;
 
 physics_info Descent_physics;			// used when we want to control the player like the descent ship
 
+angles chase_slew_angles;
+int view_centering = 0;
+
 ////////////////////////////////////////////////////////////
 // Module data
 ////////////////////////////////////////////////////////////
@@ -698,74 +702,58 @@ static int Player_all_alone_msg_inited=0;	// flag used for initializing a player
 void playercontrol_read_stick(int *axis, float frame_time);
 void player_set_padlock_state();
 
-//	Slew angles chase towards zero like they're on a spring.
+//	Slew angles chase towards a value like they're on a spring.
 //	When furthest away, move fastest.
 //	Minimum speed set so that doesn't take too long.
-//	When gets close, clamps to zero.
-void chase_angles_to_zero(angles *ap)
+//	When gets close, clamps to the value.
+void chase_angles_to_value(angles *ap, angles *bp, int scale)
 {
-	float	k1, k2;
-	float	sk;
+ 	float sk;
+ 	angles delta;
 
 	//	Make sure we actually need to do all this math.
-	if ((ap->p == 0.0f) && (ap->h == 0.0f))
+ 	if ((ap->p == bp->p) && (ap->h == bp->h))
 		return;
 
-	//	This is what we'll scale each value by.
-	sk = 1.0f - 2*flFrametime;
+ 	sk = 1.0f - scale*flFrametime;
 
-	//	These are the amounts that will be subtracted from pitch and heading.
-	//	They are only needed to make sure we aren't moving too slowly.
-	k1 = fl_abs(ap->p * (1.0f - sk));
-	k2 = fl_abs(ap->h * (1.0f - sk));
+ 	delta.p = ap->p - bp->p;
+ 	delta.h = ap->h - bp->h;
+  
+ 	ap->p = ap->p - delta.p * (1.0f - sk);
+ 	ap->h = ap->h - delta.h * (1.0f - sk);
 
-	//	See if the larger dimension of movement is too small.
-	// If so, boost amount of movement in both dimensions.
-	if (k1 >= k2) {
-		if (k1 < flFrametime)
-			sk = 1.0f - (1.0f - sk) * flFrametime/k1;
-	} else if (k2 > k1) {
-		if (k2 < flFrametime)
-			sk = 1.0f - (1.0f - sk) * flFrametime/k2;
+  	//	If we're very close, put ourselves at goal.
+ 	if ( (fl_abs(delta.p) < 0.005f) && (fl_abs(delta.h) < 0.005f) ) {
+ 		ap->p = bp->p;
+ 		ap->h = bp->h;
 	}
-
-	//	It's possible we made the scale factor negative above.
-	if (sk < 0.0f)
-		sk = 0.0f;
-
-	ap->p *= sk;
-	ap->h *= sk;
-
-	//	If we're very close, put ourselves at goal.
-	if ((fl_abs(ap->p) < 0.005f) && (fl_abs(ap->h) < 0.005f)) {
-		ap->p = 0.0f;
-		ap->h = 0.0f;
-	}
-
-	//	Update Viewer_mode based on whether we're looking dead ahead.	
-	if ((ap->p == 0.0f) && (ap->b == 0.0f) && (ap->h == 0.0f))
-		Viewer_mode &= ~VM_SLEWED;
-	else
-		Viewer_mode |= VM_SLEWED;
-
 }
 
 angles	Viewer_slew_angles_delta;
 angles	Viewer_external_angles_delta;
 
-void view_modify(angles *ma, angles *da, float minv, float maxv, int slew, float frame_time)
+void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_time)
 {
 	int axis[NUM_JOY_AXIS_ACTIONS];
-	float	t;
-
-	if ( (!slew) && (Viewer_mode & VM_EXTERNAL) && (Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
-		return;
-	}
+	float	t = 0;
+	float   u = 0;
 
 	if ( Viewer_mode & VM_EXTERNAL ) {
-		t = (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT)) / 16.0f;
+		t = (check_control_timef(VIEW_LEFT) - check_control_timef(VIEW_RIGHT)) / 1.0f;
+		u = (check_control_timef(VIEW_DOWN) - check_control_timef(VIEW_UP)) / 16.0f;
+ 
+		if ( !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
+			t = t + (check_control_timef(YAW_LEFT) - check_control_timef(YAW_RIGHT));
+			u = u + (check_control_timef(PITCH_BACK) - check_control_timef(PITCH_FORWARD));
+		}
+	} else if ( trackir_enabled ) {
+		TrackIR_Query();
+		ma->h = -2*PI*(TrackIR_GetYaw());
+		ma->p = 2*PI*(TrackIR_GetPitch());
 	} else {
-		t = (check_control_timef(YAW_RIGHT) - check_control_timef(YAW_LEFT)) / 16.0f;
+		t = (check_control_timef(VIEW_RIGHT) - check_control_timef(VIEW_LEFT)) / 1.0f;
+		u = (check_control_timef(VIEW_DOWN) - check_control_timef(VIEW_UP)) / 16.0f;
 	}
 
 	if (t != 0.0f)
@@ -773,9 +761,8 @@ void view_modify(angles *ma, angles *da, float minv, float maxv, int slew, float
 	else
 		da->h = 0.0f;
 
-	t = (check_control_timef(PITCH_FORWARD) - check_control_timef(PITCH_BACK)) / 16.0f;
-	if (t != 0.0f)
-		da->p += t;
+	if (u != 0.0f)
+		da->p += u;
 	else
 		da->p = 0.0f;
 			
@@ -783,17 +770,11 @@ void view_modify(angles *ma, angles *da, float minv, float maxv, int slew, float
 
 	playercontrol_read_stick(axis, frame_time);
 
-	if ( Viewer_mode & VM_EXTERNAL ) {
-		// check the heading on the x axis
+	if (( Viewer_mode & VM_EXTERNAL ) && !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED)) {
+		// check the heading on the x and y axes
 		da->h -= f2fl( axis[0] );
-
-	} else {
-		// check the heading on the x axis
-		da->h += f2fl( axis[0] );
-	}
-
-	// check the pitch on the y axis
-	da->p -= f2fl( axis[1] );
+		da->p -= f2fl( axis[1] );
+	} 
 
 	if (da->h > 1.0f)
 		da->h = 1.0f;
@@ -807,9 +788,9 @@ void view_modify(angles *ma, angles *da, float minv, float maxv, int slew, float
 
 	if ( (Game_time_compression >= F1_0) && !(Viewer_mode & VM_EXTERNAL) )
 	{
-		ma->p += da->p * flFrametime;
-		ma->b += da->b * flFrametime;
-		ma->h += da->h * flFrametime;
+		ma->p += 2*da->p * flFrametime;
+		ma->b += 2*da->b * flFrametime;
+		ma->h += 2*da->h * flFrametime;
 	}
 	else
 	{
@@ -820,33 +801,77 @@ void view_modify(angles *ma, angles *da, float minv, float maxv, int slew, float
 		ma->h += da->h * flRealframetime;
 	}
 
-	if (ma->p > maxv)
-		ma->p = maxv;
-	else if (ma->p < minv)
-		ma->p = minv;
+	if (ma->p > max_p)
+		ma->p = max_p;
+	else if (ma->p < -max_p)
+		ma->p = -max_p;
 
-	if (ma->h > maxv)
-		ma->h = maxv;
-	else if (ma->h < minv)
-		ma->h = minv;
+	if (ma->h > max_h)
+		ma->h = max_h;
+	else if (ma->h < -max_h)
+		ma->h = -max_h;
 }
 
 void do_view_track_target(float frame_time)
 {
-	//vm_vec_delta_ang(
+	vec3d view_vector;
+	vec3d targetpos_rotated;
+	vec3d playerpos_rotated;
+	vec3d forwardvec_rotated;
+	angles view_angles;
+	angles forward_angles;
+	//angles slew_angles;
 
-	Viewer_mode &= ~VM_SLEWED;
+	if ((Player_ai->target_objnum == -1) || (Viewer_mode & VM_OTHER_SHIP)) 
+	{ // If the object isn't targeted or we're viewing from the target's perspective, center the view and turn off target padlock
+	  // because the target won't be at the angle we've calculated from the player's perspective.
+		Viewer_mode ^= VM_TRACK;
+		chase_slew_angles.p = 0.0f;
+		chase_slew_angles.h = 0.0f;
+		return;
+	}
+
+	object * targetp = &Objects[Player_ai->target_objnum];
+
+	// check to see if there is even a current target
+	if ( targetp == &obj_used_list ) {
+		Viewer_mode ^= VM_TRACK;
+		chase_slew_angles.p = 0.0f;
+		chase_slew_angles.h = 0.0f;
+		return;
+	}
+
+	vm_vec_rotate(&targetpos_rotated, &targetp->pos, &Player_obj->orient);
+	vm_vec_rotate(&playerpos_rotated, &Player_obj->pos, &Player_obj->orient);
+	vm_vec_rotate(&forwardvec_rotated, &Player_obj->orient.vec.fvec, &Player_obj->orient);
+
+	vm_vec_normalized_dir(&view_vector,&targetpos_rotated,&playerpos_rotated);
+	vm_extract_angles_vector(&view_angles,&view_vector);
+	vm_extract_angles_vector(&forward_angles,&forwardvec_rotated);
+	chase_slew_angles.h = forward_angles.h - view_angles.h;
+	chase_slew_angles.p = -(forward_angles.p - view_angles.p);
+
+	if (chase_slew_angles.p > PI/2)
+		chase_slew_angles.p = PI/2;
+	else if (chase_slew_angles.p < -PI/2)
+		chase_slew_angles.p = -PI/2;
+
+	if (chase_slew_angles.h > (2*PI)/3)
+		chase_slew_angles.h = (2*PI)/3;
+	else if (chase_slew_angles.h < -(2*PI)/3)
+		chase_slew_angles.h = -(2*PI)/3;
+
+	//chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, 7);
+	
 }
+
 
 //	When PAD0 is pressed, keypad controls viewer direction slewing.
 void do_view_slew(float frame_time)
 {
-	view_modify(&Viewer_slew_angles, &Viewer_slew_angles_delta, -PI/3, PI/3, 1, frame_time);
-
-	if ((Viewer_slew_angles.p == 0.0f) && (Viewer_slew_angles.b == 0.0f) && (Viewer_slew_angles.h == 0.0f))
-		Viewer_mode &= ~VM_SLEWED;
-	else
-		Viewer_mode |= VM_SLEWED;
+	//angles view_slew_angles;
+	view_modify(&chase_slew_angles, &Viewer_slew_angles_delta, PI/2, (2*PI)/3, frame_time);
+	//chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, 15);
 }
 
 void do_view_chase(float frame_time)
@@ -876,7 +901,7 @@ void do_view_external(float frame_time)
 {
 	float	t;
 
-	view_modify(&Viewer_external_info.angles, &Viewer_external_angles_delta, -PI2, PI2, 0, frame_time);
+	view_modify(&Viewer_external_info.angles, &Viewer_external_angles_delta, PI2, PI2, frame_time);
 
 	//	Process centering key.
 	if (check_control_timef(VIEW_CENTER)) {
@@ -997,16 +1022,6 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 	oldspeed = ci->forward_cruise_percent;
 	player_control_reset_ci( ci );
-	
-	if ( check_control(VIEW_TRACK_TARGET) ) {
-		do_view_track_target(frame_time);
-		slew_active = 1;
-	}
-
-	if ( check_control(VIEW_SLEW) ) {
-		do_view_slew(frame_time);
-		slew_active=1;
-	}
 
 	if ( Viewer_mode & VM_EXTERNAL ) {
 		control_used(VIEW_EXTERNAL);
@@ -1018,10 +1033,27 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		do_view_external(frame_time);
 		do_thrust_keys(ci);
 	}
-
-	if ( !slew_active ) {
-		if ( Viewer_mode & VM_CHASE ) {
-			do_view_chase(frame_time);
+	else if ( Viewer_mode & VM_CHASE ) {
+		do_view_chase(frame_time);
+	}
+	else
+	{
+		if(view_centering) {
+			if((Viewer_slew_angles.h == 0.0f) && (Viewer_slew_angles.p == 0.0f))
+				view_centering = 0;
+		}
+		else {
+			slew_active=1;
+			if ( Viewer_mode & VM_TRACK) {
+				do_view_track_target(frame_time);
+			}
+			else {
+				if (check_control_timef(VIEW_CENTER) && !view_centering) {
+					view_centering = 1;
+					slew_active = 0;
+				}
+				do_view_slew(frame_time);
+			}
 		}
 	}
 	
@@ -1075,8 +1107,12 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 	}
 
 	if ( !slew_active ) {
-		chase_angles_to_zero(&Viewer_slew_angles);
+		//chase_angles_to_zero(&Viewer_slew_angles);
+		chase_slew_angles.h = 0.0f;
+		chase_slew_angles.p = 0.0f;
 	}
+
+	chase_angles_to_value(&Viewer_slew_angles, &chase_slew_angles, 7);
 
 	player_set_padlock_state();
 
@@ -1423,8 +1459,8 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 
 	}
 
-	if ( (Viewer_mode & VM_EXTERNAL) || slew_active ) {
-		if ( !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) || slew_active ) {
+	if ( (Viewer_mode & VM_EXTERNAL) /*|| slew_active*/ ) {
+		if ( !(Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) /*|| slew_active */) {
 			ci->heading=0.0f;
 			ci->pitch=0.0f;
 			ci->bank=0.0f;
@@ -2520,7 +2556,7 @@ void player_display_packlock_view()
 
 	char	str[128];
 
-	if ( !(Viewer_mode & (VM_CHASE|VM_EXTERNAL|VM_SLEWED)) ) {
+	if ( !(Viewer_mode & (VM_CHASE|VM_EXTERNAL)) ) {
 		switch (padlock_view_index) {
 		case 0:
 			strcpy(str, XSTR( "top view", 101));	break;

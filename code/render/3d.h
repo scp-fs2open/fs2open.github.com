@@ -247,6 +247,7 @@ extern vec3d		Light_base;			// Used to rotate world points into current local co
 
 extern matrix		Eye_matrix;			// Where the viewer's eye is pointing in World coordinates
 extern vec3d		Eye_position;		// Where the viewer's eye is at in World coordinates
+extern matrix		Eye_no_jitter;		// Eye_matrix before view shake
 
 extern vec3d Object_position;
 extern matrix	Object_matrix;			// Where the opject is pointing in World coordinates

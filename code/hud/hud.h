@@ -410,6 +410,9 @@ extern hud_anim Radar_static;
 extern float HUD_offset_x;
 extern float HUD_offset_y;
 
+// the offset of the player's view vector and the ship forward vector in pixels (Swifty)
+extern int HUD_nose_x;
+extern int HUD_nose_y;
 // Global: integrity of player's target
 extern float Pl_target_integrity;
 extern float Player_rearm_eta;
@@ -427,6 +430,9 @@ void hud_damage_popup_toggle();
 
 // set the offset values for this render frame
 void HUD_set_offsets(object *viewer_obj, int wiggedy_wack);
+// returns the offset between the player's view vector and the forward vector of the ship in pixels
+// (Swifty)
+void HUD_get_nose_coordinates(int *x, int *y);
 
 // Basically like gr_reset_clip only it accounts for hud jittering
 void HUD_reset_clip();
