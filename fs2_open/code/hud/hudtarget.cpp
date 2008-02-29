@@ -3315,8 +3315,8 @@ void hud_render_orientation_tee(object *from_objp, object *to_objp, matrix *from
 	y1 = (float)sin(dot_product) * (Outer_circle_radius[gr_screen.res] - T_OFFSET_FROM_CIRCLE);
 	x1 = (float)cos(dot_product) * (Outer_circle_radius[gr_screen.res] - T_OFFSET_FROM_CIRCLE);
 
-	y1 += Hud_reticle_center[gr_screen.res][1];
-	x1 += Hud_reticle_center[gr_screen.res][0];
+	y1 += Hud_reticle_center[gr_screen.res][1] + HUD_nose_y;
+	x1 += Hud_reticle_center[gr_screen.res][0] + HUD_nose_x;
 
 	x1 += HUD_offset_x;
 	y1 += HUD_offset_y;
@@ -3324,8 +3324,8 @@ void hud_render_orientation_tee(object *from_objp, object *to_objp, matrix *from
 	y2 = (float)sin(dot_product) * (Outer_circle_radius[gr_screen.res] - T_OFFSET_FROM_CIRCLE - T_LENGTH);
 	x2 = (float)cos(dot_product) * (Outer_circle_radius[gr_screen.res] - T_OFFSET_FROM_CIRCLE - T_LENGTH);
 
-	y2 += Hud_reticle_center[gr_screen.res][1];
-	x2 += Hud_reticle_center[gr_screen.res][0];
+	y2 += Hud_reticle_center[gr_screen.res][1] + HUD_nose_y;
+	x2 += Hud_reticle_center[gr_screen.res][0] + HUD_nose_x;
 
 	x2 += HUD_offset_x;
 	y2 += HUD_offset_y;
@@ -3618,8 +3618,8 @@ void hud_render_triangle(vec3d *hostile_pos, int aspect_flag, int show_interior,
 		ypos = Hud_reticle_center[gr_screen.res][1] - sin_ang*(Outer_circle_radius[gr_screen.res]+4);
 	}
 
-	xpos += HUD_offset_x;
-	ypos += HUD_offset_y;
+	xpos += HUD_offset_x + HUD_nose_x;
+	ypos += HUD_offset_y + HUD_nose_y;
 	
 	if ( split_tri ) {
 //		hud_render_split_missile_triangle(ang, xpos, ypos, cur_dist, aspect_flag, draw_inside);
@@ -5246,11 +5246,11 @@ void hud_show_afterburner_gauge()
 	bm_get_info(Aburn_bar_gauge.first_frame,&w,&h);
 	
 	if ( clip_h > 0) {
-		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame, current_hud->Aburn_coords[0], current_hud->Aburn_coords[1],w,clip_h,0,0);		
+		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame, current_hud->Aburn_coords[0] + HUD_nose_x, current_hud->Aburn_coords[1] + HUD_nose_y,w,clip_h,0,0);		
 	}
 
 	if ( clip_h <= current_hud->Aburn_size[0] ) {		
-		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame+1, current_hud->Aburn_coords[0], current_hud->Aburn_coords[1]+clip_h,w,h-clip_h,0,clip_h);
+		GR_AABITMAP_EX(Aburn_bar_gauge.first_frame+1, current_hud->Aburn_coords[0] + HUD_nose_x, current_hud->Aburn_coords[1]+clip_h + HUD_nose_y,w,h-clip_h,0,clip_h);
 	} 	
 #endif
 }
@@ -5384,7 +5384,7 @@ void hud_show_weapon_energy_gauge()
 			sprintf(buf,XSTR( "%d%%", 326), fl2i(percent_left*100+0.5f));
 			hud_num_make_mono(buf);
 		//	gr_string(Weapon_energy_text_coords[gr_screen.res][0], Weapon_energy_text_coords[gr_screen.res][1], buf);
-			gr_string(current_hud->Wenergy_text_coords[0], current_hud->Wenergy_text_coords[1], buf);
+			gr_string(current_hud->Wenergy_text_coords[0] + HUD_nose_x, current_hud->Wenergy_text_coords[1] + HUD_nose_y, buf);
 		}
 
 		hud_set_gauge_color(HUD_WEAPONS_ENERGY);
@@ -5406,11 +5406,11 @@ void hud_show_weapon_energy_gauge()
 		bm_get_info(Wenergy_bar_gauge.first_frame+2,&w,&h);
 		
 		if ( clip_h > 0 ) {
-			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+2, current_hud->Wenergy_coords[0], current_hud->Wenergy_coords[1], w,clip_h,0,0);		
+			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+2, current_hud->Wenergy_coords[0] + HUD_nose_x, current_hud->Wenergy_coords[1] + HUD_nose_y, w,clip_h,0,0);		
 		}
 
 		if ( clip_h <= current_hud->Wenergy_size[0] ) {
-			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+3, current_hud->Wenergy_coords[0], current_hud->Wenergy_coords[1] + clip_h, w,h-clip_h,0,clip_h);		
+			GR_AABITMAP_EX(Wenergy_bar_gauge.first_frame+3, current_hud->Wenergy_coords[0] + HUD_nose_x, current_hud->Wenergy_coords[1] + clip_h + HUD_nose_y, w,h-clip_h,0,clip_h);		
 		}
 
 		// hud_set_default_color();
@@ -5451,8 +5451,8 @@ void hud_show_target_triangle_indicator(vertex *projected_v)
 		xpos = Hud_reticle_center[gr_screen.res][0] + (float)cos(ang)*(Outer_circle_radius[gr_screen.res]+4);
 		ypos = Hud_reticle_center[gr_screen.res][1] - (float)sin(ang)*(Outer_circle_radius[gr_screen.res]+4);
 
-		xpos += HUD_offset_x;
-		ypos += HUD_offset_y;
+		xpos += HUD_offset_x + HUD_nose_x;
+		ypos += HUD_offset_y + HUD_nose_y;
 			
 		x3 = xpos - Target_triangle_base[gr_screen.res] * (float)sin(-ang);
 		y3 = ypos + Target_triangle_base[gr_screen.res] * (float)cos(-ang);

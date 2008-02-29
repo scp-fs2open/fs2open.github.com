@@ -1789,6 +1789,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "io/trackir.h" // header file for the TrackIR routines (Swifty)
 #include "jumpnode/jumpnode.h"
 #include "lab/lab.h"
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized
@@ -5542,6 +5543,10 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 		}
 	}
 
+	// Not exactly the best way to do it, but we need to save the view info before
+	// applying the afterburner shakes to prevent the HUD from doing bizzare shifting when slewing
+	// (Swifty)
+	Eye_no_jitter = *eye_orient; 
 	apply_view_shake(eye_orient);
 
 	// setup neb2 rendering
@@ -5571,6 +5576,17 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	// maybe offset the HUD (jitter stuff)
 	dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
 	HUD_set_offsets(Viewer_obj, !dont_offset);
+	
+	// Since the player's view vector may be different from the ship's forward vector, 
+	// we calculate the offset of those two in pixels and store the x and y offsets in 
+	// variables HUD_nose_x and HUD_nose_y (Swifty)
+	if(Viewer_mode & VM_TOPDOWN){
+		HUD_nose_x = 0;
+		HUD_nose_y = 0;
+	}
+	else{
+		HUD_get_nose_coordinates(&HUD_nose_x, &HUD_nose_y);
+	}
 	
 	// for multiplayer clients, call code in Shield.cpp to set up the Shield_hit array.  Have to
 	// do this becaues of the disjointed nature of this system (in terms of setup and execution).
@@ -9077,7 +9093,8 @@ int game_main(char *cmdline)
 	init_cdrom();
 
 	game_init();
-
+	// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
+	initialize_trackir(); 
 	game_stop_time();
 
 	if (Cmdline_SpewMission_CRCs) // -missioncrcs
@@ -9335,6 +9352,8 @@ void game_shutdown(void)
 {
 #ifdef _WIN32
 	timeEndPeriod(1);
+	if(trackir_enabled) // Safely shutdown the user's TrackIR unit if he has one (Swifty)
+		TrackIR_ShutDown();
 #endif
 
 

@@ -224,6 +224,7 @@ matrix		Light_matrix;		// Used to rotate world points into current local coordin
 vec3d		Light_base;			// Used to rotate world points into current local coordinates
 
 matrix		Eye_matrix;			// Where the viewer's eye is pointing in World coordinates
+matrix		Eye_no_jitter;		// Eye_matrix before view shake 
 vec3d		Eye_position;		// Where the viewer's eye is at in World coordinates
 
 float			View_zoom;			// The zoom factor

@@ -270,7 +270,7 @@
 #define	GM_DEMO							(GM_DEMO_RECORD | GM_DEMO_PLAYBACK)			// true whenever a demo is being recorded or played back
 
 #define	VM_EXTERNAL						(1 << 0)				//	Set if not viewing from player position.
-#define	VM_SLEWED						(1 << 1)				//	Set if viewer orientation is slewed.
+#define	VM_TRACK						(1 << 1)				//	Set if viewer is tracking target.
 #define	VM_DEAD_VIEW					(1 << 2)				//	Set if viewer is watching from dead view.
 #define	VM_CHASE							(1 << 3)				//	Chase view.
 #define	VM_OTHER_SHIP					(1 << 4)				//	View from another ship.
