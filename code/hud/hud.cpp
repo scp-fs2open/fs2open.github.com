@@ -682,6 +682,9 @@ hud_anim	Radar_static;
 float HUD_offset_x = 0.0f;
 float HUD_offset_y = 0.0f;
 
+// the offset of the player's view vector and the ship forward vector in pixels (Swifty)
+int HUD_nose_x;
+int HUD_nose_y;
 // Global: integrity of player's target
 float Pl_target_integrity;
 
@@ -1486,7 +1489,7 @@ void hud_update_frame()
 
 }
 
-void HUD_render_forward_icon(object *objp)
+void render_offscreen_crosshair(object *objp)
 {
 	vertex	v0;
 	vec3d	p0;
@@ -1495,9 +1498,8 @@ void HUD_render_forward_icon(object *objp)
 	g3_rotate_vertex(&v0, &p0);
 
 	gr_set_color(255, 0, 0);
-	if ((!(v0.flags & PF_OVERFLOW)) && (v0.codes == 0)) // make sure point projected
-		g3_draw_sphere(&v0, 1.25f);
-	else if (v0.codes != 0) { // target center is not on screen
+
+	if (v0.codes != 0) { // target center is not on screen
 		// draw the offscreen indicator at the edge of the screen where the target is closest to
 		hud_draw_offscreen_indicator(&v0, &p0);
 	}
@@ -1527,7 +1529,7 @@ void hud_show_radar()
 	if(g3_yourself)
 		g3_start_frame(1);
 
-	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | /*VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
+	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
 		if ( Game_detail_flags & DETAIL_FLAG_HUD )	{
 			if ( hud_gauge_active(HUD_RADAR) ) {
 				HUD_reset_clip();
@@ -1553,7 +1555,7 @@ void hud_show_target_model()
 	// display the miniature model of the target in the target box and shade
 	// RT Might be faster to use full detail model
 	if ( Game_detail_flags & DETAIL_FLAG_HUD )	{
-		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED | /*VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
+		if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)))
 			hud_render_target_model();
 	}
 }
@@ -1596,7 +1598,7 @@ void HUD_render_3d(float frametime)
 		return;
 	}
 
-	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) {
+	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY))) {
 
 		hud_show_common_3d_gauges(frametime, 1);
 
@@ -1605,6 +1607,8 @@ void HUD_render_3d(float frametime)
 		if ( hud_gauge_active(HUD_MISSILE_WARNING_ARROW) && !hud_disabled_except_messages() ) {
 			hud_show_homing_missiles();
 		}
+		if(!(Viewer_mode & VM_OTHER_SHIP)) // Added to prevent the offscreen crosshair indicator from drawing when viewing other ships (Swifty)
+			render_offscreen_crosshair(Player_obj); // If the gun sight is not on screen, draw offscreen indicator
 
 	} else if ( Viewer_mode & (/*VM_CHASE |*/ VM_EXTERNAL | VM_WARP_CHASE | VM_PADLOCK_ANY ) ) {
 		// If the player is warping out, don't draw the targeting gauges
@@ -1615,11 +1619,6 @@ void HUD_render_3d(float frametime)
 
 		hud_show_common_3d_gauges(frametime, 0);
 	}
-
-	if (Viewer_mode & VM_SLEWED) {
-		HUD_render_forward_icon(Player_obj);
-	}
-
 }
 
 
@@ -1830,7 +1829,7 @@ void HUD_render_2d(float frametime)
 	// Goober5000 - special case... hud is off, but we're still displaying messages
 	if ( hud_disabled_except_messages() )
 	{
-		if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
+		if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY ))) {
 			// draw a border around a talking head if it is playing
 			hud_maybe_blit_head_border();
 
@@ -1913,7 +1912,7 @@ void HUD_render_2d(float frametime)
 	}
 #endif
 
-	if (!(Viewer_mode & (VM_EXTERNAL | VM_SLEWED |/* VM_CHASE |*/ VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY )))
+	if (!(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY )))
 	{
 		// display Energy Transfer System gauges
 		if ( hud_gauge_active(HUD_ETS_GAUGE) ) {
@@ -2538,11 +2537,11 @@ void hud_show_text_flash_icon(char *txt, int y, int bright)
 	gr_get_string_size(&w, &h, txt);
 
 	// draw the box	
-	gr_rect( (int)((((float)gr_screen.max_w_unscaled / 2.0f) - ((float)w / 2.0f)) - 1.0f), (int)((float)y - 1.0f), w + 2, h + 1);
+	gr_rect( (int)((((float)gr_screen.max_w_unscaled / 2.0f) - ((float)w / 2.0f)) - 1.0f)+ HUD_nose_x, (int)((float)y - 1.0f)+HUD_nose_y, w + 2, h + 1);
 
 	// string
 	hud_set_gauge_color(HUD_TEXT_FLASH, HUD_C_BRIGHT);	
-	gr_string(fl2i((gr_screen.max_w_unscaled - w) / 2.0f), y, txt);
+	gr_string(fl2i((gr_screen.max_w_unscaled - w) / 2.0f) + HUD_nose_x, y + HUD_nose_y, txt);
 
 	// go back to normal font
 	gr_set_font(FONT1);
@@ -3502,20 +3501,15 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack)
 		HUD_offset_x = 0.0f;
 		HUD_offset_y = 0.0f;
 
-		vm_vec_scale_add( &tmp, &Eye_position, &Viewer_obj->orient.vec.fvec, 100.0f );
+		vm_vec_scale_add( &tmp, &Eye_position, /*&Viewer_obj->orient.vec.fvec*/ &Eye_no_jitter.vec.fvec, 100.0f );
 		
 		flags = g3_rotate_vertex(&pt,&tmp);
 
-		if (flags == 0) {
+		g3_project_vertex(&pt); 
 
-			g3_project_vertex(&pt);
-
-			if (!(pt.flags & PF_OVERFLOW))	{
-				gr_unsize_screen_posf( &pt.sx, &pt.sy );
-				HUD_offset_x -= 0.45f * (i2fl(gr_screen.clip_width_unscaled)*0.5f - pt.sx);
-				HUD_offset_y -= 0.45f * (i2fl(gr_screen.clip_height_unscaled)*0.5f - pt.sy);
-			}
-		}
+		gr_unsize_screen_posf( &pt.sx, &pt.sy );
+		HUD_offset_x -= 0.45f * (i2fl(gr_screen.clip_width_unscaled)*0.5f - pt.sx);
+		HUD_offset_y -= 0.45f * (i2fl(gr_screen.clip_height_unscaled)*0.5f - pt.sy);
 
 		if ( HUD_offset_x > 100.0f )	{
 			HUD_offset_x = 100.0f;
@@ -3533,6 +3527,60 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack)
 		HUD_offset_x = 0.0f;
 		HUD_offset_y = 0.0f;
 	}
+}
+// Function returns the offset between the player's view vector and the forward vector of the ship in pixels
+// (Swifty)
+void HUD_get_nose_coordinates(int *x, int *y)
+{
+	vertex	v0;
+	vec3d	p0;
+
+	int x_nose;
+	int y_nose;
+
+	int x_eye;
+	int y_eye;
+	
+	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 100.0f);
+	g3_rotate_vertex(&v0, &p0);
+
+	if ((!(v0.flags & PF_OVERFLOW)) && (v0.codes == 0)) 
+	{
+		if (! (v0.codes & CC_BEHIND)) {
+
+			if (! (v0.flags & PF_PROJECTED))
+				g3_project_vertex(&v0);
+
+			if (! (v0.codes & PF_OVERFLOW)) {
+				x_nose = fl2i(v0.sx);
+				y_nose = fl2i(v0.sy);
+			}
+		}
+	}
+
+	//&Eye_position, &Eye_no_jitter.vec.fvec
+
+	vm_vec_scale_add(&p0, &Player_obj->pos, &Eye_no_jitter.vec.fvec, 100.0f);
+	g3_rotate_vertex(&v0, &p0);
+
+	if ((!(v0.flags & PF_OVERFLOW)) && (v0.codes == 0)) 
+	{
+		if (! (v0.codes & CC_BEHIND)) {
+
+			if (! (v0.flags & PF_PROJECTED))
+				g3_project_vertex(&v0);
+
+			if (! (v0.codes & PF_OVERFLOW)) {
+				x_eye = fl2i(v0.sx);
+				y_eye = fl2i(v0.sy);
+			}
+		}
+	}
+
+	*x = x_nose - x_eye;
+	*y = y_nose - y_eye;
+
+	return;
 }
 
 // Basically like gr_reset_clip only it accounts for hud jittering

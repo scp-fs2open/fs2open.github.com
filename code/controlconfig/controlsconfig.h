@@ -533,6 +533,10 @@ typedef struct config_item {
 //Gliding
 #define TOGGLE_GLIDING									117
 #define GLIDE_WHEN_PRESSED								118
+#define VIEW_UP											119
+#define VIEW_DOWN										120
+#define VIEW_LEFT										121
+#define VIEW_RIGHT										122
 
 // this should be the total number of control action defines above (or last define + 1)
 #define CCFG_MAX 128	//118

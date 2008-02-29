@@ -12010,11 +12010,11 @@ void compute_slew_matrix(matrix *orient, angles *a)
 	t2.p = 0.0f;	t2.b = 0.0f;
 
 	// put in p & b like normal
-	vm_angles_2_matrix(&tmp, &t1 );
+	vm_angles_2_matrix(&tmp, &t2 ); // Changed the order of axis rotations. First pitch, then yaw (Swifty)
 	vm_matrix_x_matrix( &tmp2, orient, &tmp);
 
 	// Put in heading separately
-	vm_angles_2_matrix(&tmp, &t2 );
+	vm_angles_2_matrix(&tmp, &t1 );
 	vm_matrix_x_matrix( orient, &tmp2, &tmp );
 
 	vm_orthogonalize_matrix(orient);
