@@ -1226,6 +1226,7 @@ void multi_make_player_ai( object *pobj )
 
 	pobj->flags &= ~(OF_PLAYER_SHIP);
 	obj_set_flags( pobj, pobj->flags | OF_COULD_BE_PLAYER );
+	obj_set_flags( pobj, pobj->flags & ~(OF_INVULNERABLE));		// Newly respawned players will still be invulnerable
 
 	// target_objnum must be -1 or else new AI ship will fire on whatever this player
 	// had targeted.
