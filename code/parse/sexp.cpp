@@ -10920,6 +10920,11 @@ void sexp_ships_visible(int n, int visible)
 				hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
 		}
 	}
+	else {
+		if (Player_ai->target_objnum == Ships[n].objnum) {
+			hud_cease_targeting(); 
+		}
+	}
 }
 
 // Goober5000
