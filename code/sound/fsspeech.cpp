@@ -71,7 +71,8 @@ char *FSSpeech_play_id[FSSPEECH_FROM_MAX] =
 {
 	"SpeechTechroom",
 	"SpeechBriefings",
-	"SpeechIngame"
+	"SpeechIngame",
+	"SpeechMulti"
 };
 
 char Speech_buffer[MAX_SPEECH_BUFFER_LEN] = "";
