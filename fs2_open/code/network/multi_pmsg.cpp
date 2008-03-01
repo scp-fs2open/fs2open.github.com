@@ -178,6 +178,7 @@
 #include "ship/ship.h"
 #include "object/object.h"
 #include "parse/parselo.h"
+#include "sound/fsspeech.h"
 
 
 
@@ -452,8 +453,11 @@ int multi_msg_message_text(char *txt)
 // display ingame,inmission message text
 void multi_msg_display_mission_text(char *msg,int player_index)
 {
-	// play a cue voice sound
-	snd_play(&Snds[MULTI_MSG_TEXT_SOUND]);
+	// play a cue voice sound and text to speech if not from this player
+	if(Net_players[player_index].player_id != MY_NET_PLAYER_NUM) {
+		snd_play(&Snds[MULTI_MSG_TEXT_SOUND]);
+		fsspeech_play(FSSPEECH_FROM_MULTI, msg);
+	}
 
 	if(MULTI_STANDALONE(Net_players[player_index])){
 		HUD_sourced_printf(HUD_SOURCE_NETPLAYER,"%s %s",XSTR("<SERVER>", 698), msg);			
