@@ -229,7 +229,7 @@ int fs2netd_login_do()
 		}
 
 		if (PXO_SID >= 0) {
-			ml_printf("FS2NetD MSG: Login %s/%s is valid, session ID is %i!", Multi_tracker_login, Multi_tracker_passwd, PXO_SID);
+			ml_printf("FS2NetD MSG: Login %s is valid, session ID is %i!", Multi_tracker_login, PXO_SID);
 			do_full_packet = 1;
 			timeout = -1;
 		}
