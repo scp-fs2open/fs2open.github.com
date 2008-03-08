@@ -7966,7 +7966,10 @@ void game_leave_state( int old_state, int new_state )
 
 				// set the game mode
 				Game_mode |= GM_IN_MISSION;
-			}			
+			}
+
+			main_hall_stop_music();
+			main_hall_stop_ambient();		
 			break;		
    
 		case GS_STATE_VIEW_CUTSCENES:
