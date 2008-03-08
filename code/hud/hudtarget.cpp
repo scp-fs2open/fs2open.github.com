@@ -1952,10 +1952,7 @@ void hud_target_common(int team_mask, int next_flag)
 			shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 			if (!iff_matches_mask(shipp->team, team_mask)) {
-				// if we're in multiplayer dogfight, ignore this
-				if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
-					continue;
-				}
+				continue;
 			}
 
 			if ( A == Player_obj || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) ){
@@ -2706,10 +2703,7 @@ void evaluate_ship_as_closest_target(esct *esct)
 
 	// filter on team, except in multiplayer
 	if ( !iff_matches_mask(esct->shipp->team, esct->team_mask) ) {
-		// if we're in multiplayer dogfight, ignore this
-		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
-			return;
-		}
+		return;
 	}
 
 	// check if player or ignore ship
@@ -6094,6 +6088,12 @@ void hud_target_next_list(int hostile, int next_flag)
 		Tl_hostile_reset_timestamp = timestamp(TL_RESET);
 		valid_team_mask = iff_get_attackee_mask(Player_ship->team);
 	} else {
+		// everyone hates a traitor including other traitors so the friendly target option shouldn't work for them
+		if (Player_ship->team == Iff_traitor) {
+			snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+			return;
+		}
+
 		timestamp_val = Tl_friendly_reset_timestamp;
 		Tl_friendly_reset_timestamp = timestamp(TL_RESET);
 		valid_team_mask = iff_get_mask(Player_ship->team);
@@ -6125,10 +6125,7 @@ void hud_target_next_list(int hostile, int next_flag)
 
 		// choose from the correct team
 		if ( !iff_matches_mask(shipp->team, valid_team_mask) ) {
-			// if we're in multiplayer dogfight, ignore this
-			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
-				continue;
-			}
+			continue;
 		}
 
 		// always ignore navbuoys and cargo
@@ -6323,10 +6320,7 @@ int hud_target_closest_repair_ship(int goal_objnum)
 
 		// only consider friendly ships
 		if ( !(Player_ship->team == shipp->team)) {
-			// if we're in multiplayer dogfight, ignore this
-			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
-				continue;
-			}
+			continue;
 		}
 
 		if(hud_target_invalid_awacs(A)){
