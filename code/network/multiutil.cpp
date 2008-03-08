@@ -952,6 +952,23 @@ int multi_find_player_by_net_signature(ushort net_signature)
 	return -1;
 }
 
+// returns a player num based upon it's parse_object unlike the above functions it can be used on respawning players
+int multi_find_player_by_parse_object( p_object *p_objp )
+{
+	int idx;
+
+	for(idx=0;idx<MAX_PLAYERS;idx++){
+		// compare against each player's object signature
+		if(MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].p_info.p_objp == p_objp) ){
+			// found the player
+			return idx;
+		}
+	}
+
+	// didn't find the player
+	return -1;
+}
+
 int multi_find_player_by_ship_name(char *ship_name)
 {
 	int idx;
