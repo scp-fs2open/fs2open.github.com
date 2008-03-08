@@ -1754,7 +1754,7 @@ sexp_oper Operators[] = {
 	{ "num_kills",					OP_NUM_KILLS,				1, 1			},
 	{ "num_assists",				OP_NUM_ASSISTS,				1, 1			},
 	{ "ship_score",					OP_SHIP_SCORE,				1, 1			},
-	{ "player-deaths",				OP_PLAYER_DEATHS,				1, 1			},
+	{ "ship-deaths",				OP_SHIP_DEATHS,				1, 1			},
 	{ "respawns-left",				OP_RESPAWNS_LEFT,				1, 1			},	
 	{ "num_type_kills",				OP_NUM_TYPE_KILLS,			2,	2			},
 	{ "num_class_kills",			OP_NUM_CLASS_KILLS,			2,	2			},
@@ -14101,31 +14101,39 @@ int sexp_missile_locked(int node)
 
 int sexp_return_player_data(int node, int type)
 {
-	int sindex;
+	int sindex, np_index = -1;
 	player *p = NULL;
+	p_object *p_objp;
 
-	// get the ship we're interested in
 	sindex = ship_name_lookup(CTEXT(node));
-	if(sindex < 0){
-		return 0;
-	}
-	if(Ships[sindex].objnum < 0){
-		return 0;
-	}
-	
-	int np_index;
 
-	// in multiplayer, search through all players
-	if(Game_mode & GM_MULTIPLAYER){
-		// try and find the player
-		np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
+	if(Game_mode & GM_MULTIPLAYER){			
+		if(sindex >= 0){
+			if(Ships[sindex].objnum >= 0) {
+				// try and find the player
+				np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
+			}
+		}
+		
+		if (np_index < 0) {
+			// Respawning ships don't have an objnum so we need to take a different approach 
+			p_objp = mission_parse_get_arrival_ship(CTEXT(node));
+			np_index = multi_find_player_by_parse_object(p_objp);
+		}
+		
 		if((np_index >= 0) && (np_index < MAX_PLAYERS)){
 			p = Net_players[np_index].m_player;
 		}
 	}
 	// if we're in single player, we're only concerned with ourself
 	else {
-		// me
+		if(sindex < 0){
+			return 0;
+		}
+		if(Ships[sindex].objnum < 0){
+			return 0;
+		}
+		
 		if(Player_obj == &Objects[Ships[sindex].objnum]){
 			p = Player;
 		}
@@ -14143,21 +14151,45 @@ int sexp_return_player_data(int node, int type)
 			case OP_SHIP_SCORE: 
 				return p->stats.m_score;
 
-			case OP_PLAYER_DEATHS: 
+			case OP_SHIP_DEATHS: 
 				return p->stats.m_player_deaths;
 
 			case OP_RESPAWNS_LEFT:
-				if (Game_mode & GM_MULTIPLAYER) {
-					return Netgame.respawn - p->stats.m_player_deaths;
+				// Dogfight missions have no respawn limit
+				if ((Game_mode & GM_MULTIPLAYER) && !(Netgame.type_flags & NG_TYPE_DOGFIGHT)) {
+					if ( Net_players[np_index].flags & NETINFO_FLAG_RESPAWNING) {						
+						// since the player hasn't actually respawned yet he hasn't used up a number or spawns equal to his deaths
+						// so add an extra life back. 
+						return Netgame.respawn - p->stats.m_player_deaths + 1;
+					}
+					else {
+						return Netgame.respawn - p->stats.m_player_deaths;
+					}
 				}
-				return 0;
+				break;
 
 			default:
 				Int3();
 		}
+	}	
+	// AI ships also have a respawn count so we can return valid data for that at least
+	else if ( (Game_mode & GM_MULTIPLAYER) && (type == OP_SHIP_DEATHS || type == OP_RESPAWNS_LEFT ) ) {
+		p_objp = mission_parse_get_arrival_ship(CTEXT(node));
+		if (p_objp->flags & P_OF_PLAYER_START) { 
+			switch (type) {				
+				case OP_SHIP_DEATHS: 
+					return p_objp->respawn_count;
+
+				case OP_RESPAWNS_LEFT:
+					return Netgame.respawn - p_objp->respawn_count; 
+
+				default: 
+					Int3();
+			}
+		}
 	}
 
-	// bad
+	// AI ships 
 	return 0;
 }
 
@@ -16167,7 +16199,7 @@ int eval_sexp(int cur_node, int referenced_node)
 			case OP_NUM_KILLS:
 			case OP_NUM_ASSISTS:
 			case OP_SHIP_SCORE: 
-			case OP_PLAYER_DEATHS: 
+			case OP_SHIP_DEATHS: 
 			case OP_RESPAWNS_LEFT:
 				sexp_val = sexp_return_player_data(node, op_num);
 				break;
@@ -16883,7 +16915,7 @@ int query_operator_return_type(int op)
 		case OP_NUM_PLAYERS:
 		case OP_NUM_KILLS:
 		case OP_NUM_ASSISTS:
-		case OP_PLAYER_DEATHS: 
+		case OP_SHIP_DEATHS: 
 		case OP_RESPAWNS_LEFT:
 		case OP_SHIP_SCORE:
 		case OP_NUM_TYPE_KILLS:
@@ -18010,7 +18042,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_NUM_KILLS:
 		case OP_NUM_ASSISTS:
 		case OP_SHIP_SCORE:
-		case OP_PLAYER_DEATHS: 
+		case OP_SHIP_DEATHS: 
 		case OP_RESPAWNS_LEFT:
 			return OPF_SHIP;
 
@@ -21155,15 +21187,15 @@ sexp_help_struct Sexp_help[] = {
 		"\tSo, for single player, this would be Alpha 1. For multiplayer, it can be any ship with a player in it. If, at any\r\n"
 		"\ttime there is no player in a given ship, this sexpression will return 0"},
 
-	{ OP_PLAYER_DEATHS, "player-deaths\r\n"
-		"\tReturns the # times a player has died. The ship specified in the first field should be the ship the player is in.\r\n"
-		"\tOnly really useful for multiplayer, it can be any ship with a player in it. If, at any\r\n"
-		"\ttime there is no player in a given ship, this sexpression will return 0"},
+	{ OP_SHIP_DEATHS, "ship-deaths\r\n"
+		"\tReturns the # times a ship that is a player start has died.\r\n"
+		"\tThe ship specified in the first field should be the ship that could have a player in.it\r\n"
+		"\tOnly really useful for multiplayer."},
 
-	{ OP_RESPAWNS_LEFT, "player-deaths\r\n"
-		"\tReturns the # respawns a player has remaining. The ship specified in the first field should be the ship the player is in.\r\n"
-		"\tOnly really useful for multiplayer, it can be any ship with a player in it. If, at any\r\n"
-		"\ttime there is no player in a given ship, this sexpression will return 0"},
+	{ OP_RESPAWNS_LEFT, "respawns-left\r\n"
+		"\tReturns the # respawns a player (or AI that could have been a player) has remaining.\r\n"
+		"\tThe ship specified in the first field should be the player start.\r\n"
+		"\tOnly really useful for multiplayer."},
 
 	{ OP_NUM_TYPE_KILLS, "num-type-kills\r\n"
 		"\tReturns the # of kills a player has on a given ship type (fighter, bomber, cruiser, etc).\r\n"
