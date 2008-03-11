@@ -1074,5 +1074,8 @@ extern int Knossos_warp_ani_used;
 // Karajorma
 void swap_parse_object(p_object *p_obj, int ship_class);
 
+// Goober5000
+subsys_status *parse_get_subsys_status(p_object *pobjp, char *subsys_name);
+
 #endif
 
