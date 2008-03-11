@@ -7372,6 +7372,42 @@ int allocate_subsys_status()
 	return Subsys_index++;
 }
 
+// Goober5000
+int insert_subsys_status(p_object *pobjp)
+{
+	int i;
+
+	// this is not good; we have to allocate another slot, but then bump all the
+	// slots upward so that this particular parse object's subsystems are contiguous
+	allocate_subsys_status();
+
+	// shift elements upward
+	for (i = Subsys_index - 1; i > (pobjp->subsys_index + pobjp->subsys_count); i--)
+	{
+		memcpy(&Subsys_status[i], &Subsys_status[i-1], sizeof(subsys_status));
+	}
+
+	// return index for new element
+	return pobjp->subsys_index + pobjp->subsys_count;
+}
+
+// Goober5000
+subsys_status *parse_get_subsys_status(p_object *pobjp, char *subsys_name)
+{
+	int i;
+	subsys_status *sssp;
+
+	for (i = 0; i < pobjp->subsys_count; i++)
+	{
+		sssp = &Subsys_status[pobjp->subsys_index + i];
+
+		if (!subsystem_stricmp(sssp->name, subsys_name))
+			return sssp;
+	}
+
+	return NULL;
+}
+
 // find (or add) the name in the list and return an index to it.
 int get_parse_name_index(char *name)
 {

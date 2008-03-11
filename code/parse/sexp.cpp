@@ -1952,6 +1952,7 @@ sexp_oper Operators[] = {
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",			OP_WARP_EFFECT,					12, 12 },		// Goober5000
 	{ "ship-change-alt-name",		OP_SHIP_CHANGE_ALT_NAME,	2, INT_MAX	},	// Goober5000
+	{ "ship-copy-damage",			OP_SHIP_COPY_DAMAGE,			2, INT_MAX },	// Goober5000
 	{ "set-death-message",		OP_SET_DEATH_MESSAGE,			1, 1 },			// Goober5000
 	
 	//background and nebula sexps
@@ -12577,6 +12578,128 @@ void sexp_change_ship_class(int n)
 	}
 }
 
+// Goober5000
+void ship_copy_damage(ship *target_shipp, ship *source_shipp)
+{
+	int i;
+	object *target_objp = &Objects[target_shipp->objnum];
+	object *source_objp = &Objects[source_shipp->objnum];
+	ship_subsys *source_ss;
+	ship_subsys *target_ss;
+
+	if (target_shipp->ship_info_index != source_shipp->ship_info_index)
+	{
+		nprintf(("SEXP", "Copying damage of ship %s to ship %s which has a different ship class.  Strange results might occur.\n", source_shipp->ship_name, target_shipp->ship_name));
+	}
+
+
+	// copy hull...
+	target_shipp->special_hitpoint_index = source_shipp->special_hitpoint_index;
+	target_shipp->ship_max_hull_strength = source_shipp->ship_max_hull_strength;
+	target_objp->hull_strength = source_objp->hull_strength;
+
+	// ...and shields
+	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
+	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
+		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
+
+
+	// search through all subsystems on source ship and map them onto target ship
+	for (source_ss = GET_FIRST(&source_shipp->subsys_list); source_ss != GET_LAST(&source_shipp->subsys_list); source_ss = GET_NEXT(source_ss))
+	{
+		// find subsystem to configure
+		target_ss = ship_get_subsys(target_shipp, source_ss->system_info->subobj_name);
+		if (target_ss == NULL)
+			continue;
+
+		// copy
+		target_ss->max_hits = source_ss->max_hits;
+		target_ss->current_hits = source_ss->current_hits;
+		target_ss->submodel_info_1.blown_off = source_ss->submodel_info_1.blown_off;
+		target_ss->submodel_info_2.blown_off = source_ss->submodel_info_2.blown_off;
+	}
+}
+
+int insert_subsys_status(p_object *pobjp);
+
+// Goober5000
+void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
+{
+	object *source_objp = &Objects[source_shipp->objnum];
+	ship_subsys *source_ss;
+	subsys_status *target_sssp;
+
+	if (target_pobjp->ship_class != source_shipp->ship_info_index)
+	{
+		nprintf(("SEXP", "Copying damage of ship %s to ship %s which has a different ship class.  Strange results might occur.\n", source_shipp->ship_name, target_pobjp->name));
+	}
+
+	// copy hull...
+	target_pobjp->special_hitpoint_index = source_shipp->special_hitpoint_index;
+	target_pobjp->ship_max_hull_strength = source_shipp->ship_max_hull_strength;
+	target_pobjp->initial_hull = get_hull_pct(source_objp) * 100.0f;
+
+	// ...and shields
+	target_pobjp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
+	target_pobjp->initial_shields = get_shield_pct(source_objp) * 100.0f;
+
+
+	// search through all subsystems on source ship and map them onto target ship
+	for (source_ss = GET_FIRST(&source_shipp->subsys_list); source_ss != GET_LAST(&source_shipp->subsys_list); source_ss = GET_NEXT(source_ss))
+	{
+		// find subsystem to configure
+		target_sssp = parse_get_subsys_status(target_pobjp, source_ss->system_info->subobj_name);
+
+		// gak... none allocated; we need to allocate one!
+		if (target_sssp == NULL)
+		{
+			// jam in the new subsystem at the end of the existing list
+			int new_idx = insert_subsys_status(target_pobjp);
+			target_sssp = &Subsys_status[new_idx];
+			target_pobjp->subsys_count++;
+
+			strcpy(target_sssp->name, source_ss->system_info->subobj_name);
+		}
+
+		// copy
+		target_sssp->percent = 100.0f - (source_ss->current_hits / source_ss->max_hits) * 100.0f;
+	}
+}
+
+// Goober5000
+void sexp_ship_copy_damage(int node)
+{
+	int n, source_shipnum, target_shipnum;
+	p_object *target_pobjp;
+
+	// source ship must be present
+	source_shipnum = ship_name_lookup(CTEXT(node));
+	if (source_shipnum < 0)
+		return;
+
+	// loop through all subsequent arguments
+	for (n = CDR(node); n != -1; n = CDR(n))
+	{
+		// maybe it's present in-mission
+		target_shipnum = ship_name_lookup(CTEXT(n));
+		if (target_shipnum >= 0)
+		{
+			ship_copy_damage(&Ships[target_shipnum], &Ships[source_shipnum]);
+			continue;
+		}
+
+		// maybe it's on the arrival list
+		target_pobjp = mission_parse_get_arrival_ship(CTEXT(n));
+		if (target_pobjp != NULL)
+		{
+			parse_copy_damage(target_pobjp, &Ships[source_shipnum]);
+			continue;
+		}
+
+		// must have departed or not even existed... do nothing
+	}
+}
+
 
 //-Bobboau
 void sexp_activate_deactivate_glow_points(int n, bool activate)
@@ -16371,6 +16494,12 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			// Goober5000
+			case OP_SHIP_COPY_DAMAGE:
+				sexp_ship_copy_damage(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			//-Bobboau
 			case OP_ACTIVATE_GLOW_POINTS:
 			case OP_DEACTIVATE_GLOW_POINTS:
@@ -17050,6 +17179,7 @@ int query_operator_return_type(int op)
 		case OP_DONT_COLLIDE_INVISIBLE:
 		case OP_COLLIDE_INVISIBLE:
 		case OP_CHANGE_SHIP_CLASS:
+		case OP_SHIP_COPY_DAMAGE:
 		case OP_DEACTIVATE_GLOW_POINTS:
 		case OP_ACTIVATE_GLOW_POINTS:
 		case OP_DEACTIVATE_GLOW_MAPS:
@@ -18247,6 +18377,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_SHIP_CLASS_NAME;
 			else
 				return OPF_SHIP;
+
+		case OP_SHIP_COPY_DAMAGE:
+			return OPF_SHIP;
 
 		case OP_DEACTIVATE_GLOW_POINTS:	//-Bobboau
 		case OP_ACTIVATE_GLOW_POINTS:	//-Bobboau
@@ -19541,6 +19674,7 @@ int get_subcategory(int sexp_id)
 		case OP_SET_DEATH_MESSAGE:
 		case OP_EXPLOSION_EFFECT:
 		case OP_WARP_EFFECT:
+		case OP_SHIP_COPY_DAMAGE:
 			return CHANGE_SUBCATEGORY_SPECIAL;
 
 		case OP_SET_SKYBOX_MODEL:
@@ -21470,6 +21604,14 @@ sexp_help_struct Sexp_help[] = {
 		"\tCauses the listed ships' classes to be changed to the specified ship class.  Takes 2 or more arguments...\r\n"
 		"\t1: The name of the new ship class\r\n"
 		"\tRest: The list of ships to change the classes of"
+	},
+
+	// Goober5000
+	{ OP_SHIP_COPY_DAMAGE, "ship-copy-damage\r\n"
+		"\tCopies the damage (hull, shields, and subsystems) from the first ship in the list to the rest.  The initial ship must be currently "
+		"present in the mission, but the target ships may be either in-mission or on the arrival list.  Takes 2 or more arguments...\r\n"
+		"\t1: The name of the ship that supplies the damage stats\r\n"
+		"\tRest: The list of ships to be modified"
 	},
 
 	// Goober5000
