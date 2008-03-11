@@ -3946,8 +3946,6 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 	{
 		int	real_objnum = parse_create_object(pobjp);	// this object may later get destroyed depending on wing status!!!!
 
-		Subsys_index = pobjp->subsys_index;  // free elements that are no longer needed.
-
 		// if the ship is supposed to be destroyed before the mission, then blow up the ship and mark the pieces
 		// as last forever.  Only call this stuff when you are blowing up the ship
 		if (pobjp->destroy_before_mission_time >= 0)
