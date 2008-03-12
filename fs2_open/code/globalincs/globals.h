@@ -7,12 +7,15 @@
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
  * $Revision: 1.23.2.4 $
- * $Date: 2006-12-28 01:19:13 $
+ * $Date: 2006/12/28 01:19:13 $
  * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
- * $Log: not supported by cvs2svn $
+ * $Log: globals.h,v $
+ * Revision 1.23.2.4  2006/12/28 01:19:13  Goober5000
+ * removed obsolete limits
+ *
  * Revision 1.23.2.3  2006/12/07 17:59:37  taylor
  * these defines are all the same value, so it's safer to just have one set
  *
@@ -177,10 +180,10 @@
 
 #define MAX_STARTING_WINGS			3	// number of wings player can start a mission with
 #define MAX_SQUADRON_WINGS			5	// number of wings in squadron (displayed on HUD)
-#define MAX_TVT_WINGS				2	// number of wings in a TVT game
 
-#define MAX_TVT_TEAMS		MAX_TVT_WINGS
-
+#define MAX_TVT_TEAMS				2	// number of teams in a TVT game
+#define	MAX_TVT_WINGS_PER_TEAM		1 	// number of wings per team in a TVT game
+#define MAX_TVT_WINGS		MAX_TVT_TEAMS * MAX_TVT_WINGS_PER_TEAM	// number of wings in a TVT game
 
 // from model.h
 #define MAX_SHIP_PRIMARY_BANKS		3
