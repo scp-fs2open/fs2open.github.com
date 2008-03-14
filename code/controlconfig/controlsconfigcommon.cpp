@@ -524,7 +524,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           KEY_PADMULTIPLY,	-1, COMPUTER_TAB,	true, "Chase View" },
 	{                           KEY_PADPERIOD,		-1, COMPUTER_TAB,	true, "External View"},
 	{                           KEY_PADENTER,		-1, COMPUTER_TAB,	true, "Toggle External Camera Lock"},
-	{                           KEY_PAD0,			-1, COMPUTER_TAB,	true, "Free Look View", CC_TYPE_CONTINUOUS },
+	{                           KEY_PAD0,			-1, COMPUTER_TAB,	true, "Free Look View", CC_TYPE_CONTINUOUS }, // Not in use anymore (Swifty)
 	{                           KEY_PADDIVIDE,		-1, COMPUTER_TAB,	true, "Current Target View" },
 	{                           KEY_PADPLUS,		-1, COMPUTER_TAB,	true, "Increase View Distance", CC_TYPE_CONTINUOUS },
 	{                           KEY_PADMINUS,		-1, COMPUTER_TAB,	true, "Decrease View Distance", CC_TYPE_CONTINUOUS },
@@ -582,12 +582,9 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{									 KEY_3,				-1, COMPUTER_TAB, true, "(Multiplayer) Message Hostile", CC_TYPE_CONTINUOUS },
 	{									 KEY_4,				-1, COMPUTER_TAB, true, "(Multiplayer) Message Target", CC_TYPE_CONTINUOUS },
 	{ KEY_ALTED	|					 KEY_X,				-1, COMPUTER_TAB, true, "(Multiplayer) Observer Zoom to Target"},	
-
 	{             KEY_SHIFTED | KEY_PERIOD,		-1, COMPUTER_TAB,	true, "Increase Time Compression" },
 	{             KEY_SHIFTED | KEY_COMMA,			-1, COMPUTER_TAB,	true, "Decrease Time Compression" },
-
 	{									 KEY_L,				-1, COMPUTER_TAB, true, "Toggle High HUD Contrast" },	
-
 	{				  KEY_SHIFTED | KEY_N,				-1, COMPUTER_TAB, true, "(Multiplayer) Toggle Network Info"},
 	{				  KEY_SHIFTED | KEY_END,			-1, COMPUTER_TAB, true, "(Multiplayer) Self Destruct"},
 
@@ -599,14 +596,11 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{				  KEY_SHIFTED | KEY_PADENTER,	-1, SHIP_TAB, true, "Down Thrust", CC_TYPE_CONTINUOUS},
 	{ KEY_ALTED |     KEY_SHIFTED | KEY_Q,			-1, COMPUTER_TAB, true, "Toggle HUD Wireframe Target View"},
 	{							-1,					-1,	COMPUTER_TAB, false, "Top-Down View"},
-	{							-1,					-1, COMPUTER_TAB, false, "Track Targeted Object", CC_TYPE_CONTINUOUS},
-
+	{							-1,					-1, COMPUTER_TAB, false, "Target Padlock View"}, // (Swifty) Toggle for VM_TRACK
 	// Auto Navigation Systen
 	{ KEY_ALTED |					KEY_A,			-1, COMPUTER_TAB, false, "Toggle Auto Pilot"},
 	{ KEY_ALTED |					KEY_N,			-1, COMPUTER_TAB, false, "Cycle Nav Points"},
-	
 	{ KEY_ALTED |					KEY_G,			-1, SHIP_TAB, false, "Toggle Gliding"},
-
 	{                           -1,					-1, -1,			 false,	"" }
 };
 

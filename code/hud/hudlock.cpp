@@ -491,12 +491,15 @@ void hud_draw_diamond(int x, int y, int width, int height)
 	gr_line(x4,y4,x1,y1);
 }
 
-
-// hud_show_lock_indicator() will display the lock indicator for homing missiles
-void hud_show_lock_indicator(float frametime)
+// hud_show_lock_indicator() will display the lock indicator for homing missiles.
+// lock_point_pos should be the world coordinates of the target being locked. Assuming all the 
+// necessary locking calculations are done for this frame, this function will compute 
+// where the indicator should be relative to the player's viewpoint and will render accordingly.
+void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos)
 {
 	int			target_objnum, sx, sy;
 	object		*targetp;
+	vertex lock_point;
 
 	if (!Players[Player_num].lock_indicator_visible){
 		return;
@@ -511,19 +514,29 @@ void hud_show_lock_indicator(float frametime)
 	if ( !ship_secondary_bank_has_ammo(Player_obj->instance) ) {
 		return;
 	}
-	
+
+	// Get the target's current position on the screen. If he's not on there,
+	// we're not going to draw the lock indicator even if he's in front 
+	// of our ship, so bail out. 
+	g3_rotate_vertex(&lock_point, lock_point_pos); 
+	g3_project_vertex(&lock_point);
+	if (lock_point.codes & PF_OVERFLOW)
+		return;
+
 	hud_set_iff_color(targetp);
 //	nprintf(("Alan","lockx: %d, locky: %d TargetX: %d, TargetY: %d\n", Players[Player_num].lock_indicator_x, Players[Player_num].lock_indicator_y, Player->current_target_sx, Player->current_target_sy));
 
+	// We have the coordinates of the lock indicator relative to the target in our "virtual frame" 
+	// so, we calculate where it should be drawn based on the player's viewpoint.
 	if (Player_ai->current_target_is_locked) {
-		sx = Player->current_target_sx;
-		sy = Player->current_target_sy;
+		sx = fl2i(lock_point.sx); 
+		sy = fl2i(lock_point.sy);
 		gr_unsize_screen_pos(&sx, &sy);
 		// show the rotating triangles if target is locked
 		hud_draw_lock_triangles(sx, sy, frametime);
 	} else {
-		sx = Players[Player_num].lock_indicator_x;
-		sy = Players[Player_num].lock_indicator_y;
+		sx = fl2i(lock_point.sx) - (Player->current_target_sx - Players[Player_num].lock_indicator_x); 
+		sy = fl2i(lock_point.sy) - (Player->current_target_sy - Players[Player_num].lock_indicator_y);
 		gr_unsize_screen_pos(&sx, &sy);
 	}
 
@@ -763,9 +776,8 @@ int hud_lock_secondary_weapon_changed(ship_weapon *swp)
 
 }
 
-// hud_update_lock_indicator() will manage the non-rendering dependant part of
-// missle locking
-void hud_update_lock_indicator(float frametime)
+// hud_do_lock_indicator() manages missle locking, both the non-rendering calculations and the 2D HUD rendering
+void hud_do_lock_indicator(float frametime)
 {
 	ship_weapon *swp;
 	weapon_info	*wip;
@@ -897,6 +909,8 @@ void hud_update_lock_indicator(float frametime)
 			Missile_lock_loop = -1;
 		}
 	}
+
+	hud_show_lock_indicator(frametime, &lock_world_pos);
 }
 
 // hud_draw_lock_triangles() will draw the 4 rotating triangles around a lock indicator
@@ -1355,10 +1369,12 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 {
 	vec3d		lock_world_pos;
-	vertex		lock_point;
 	object		*target_objp;
 	ship_weapon	*swp;
 	weapon_info	*wip;
+
+	vec3d vec_to_lock_pos;
+	vec3d lock_local_pos;
 
 	Assert(Player_ai->target_objnum >= 0);
 	target_objp = &Objects[Player_ai->target_objnum];
@@ -1399,12 +1415,17 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 
 	*lock_world_pos_out=lock_world_pos;
 
-	g3_rotate_vertex(&lock_point,&lock_world_pos);
-	g3_project_vertex(&lock_point);
+	vm_vec_sub(&vec_to_lock_pos,&lock_world_pos,&Player_obj->pos);
+	vm_vec_rotate(&lock_local_pos,&vec_to_lock_pos,&Player_obj->orient);
 
-	if (!(lock_point.flags & PF_OVERFLOW)) {  // make sure point projected
-		Player->current_target_sx = (int)lock_point.sx;
-		Player->current_target_sy = (int)lock_point.sy;
+	if ( lock_local_pos.xyz.z > 0.0f ) {
+		// Get the location of our target in the "virtual frame" where the locking computation will be done
+		float w = 1.0f / lock_local_pos.xyz.z;
+		float sx = ((SCREEN_CENTER_X*2) + (lock_local_pos.xyz.x*(SCREEN_CENTER_X*2)*w))*0.5f;
+		float sy = ((SCREEN_CENTER_Y*2) - (lock_local_pos.xyz.y*(SCREEN_CENTER_Y*2)*w))*0.5f;
+
+		Player->current_target_sx = (int)sx;
+		Player->current_target_sy = (int)sy;
 	}
 }
 

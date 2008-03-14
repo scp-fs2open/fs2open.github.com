@@ -278,6 +278,7 @@ uint Game_detail_flags = DETAIL_DEFAULT;	// see systemvars.h for explanation
 angles	Viewer_slew_angles;			//	Angles of viewer relative to forward.
 vei		Viewer_external_info;		//	Viewer angles to ship in external view.
 vci		Viewer_chase_info;			// View chase camera information
+vec3d leaning_position;
 
 int Is_standalone;
 int Rand_count;

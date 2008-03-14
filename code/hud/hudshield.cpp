@@ -1062,7 +1062,7 @@ void hud_show_mini_ship_integrity(object *objp, int x_force, int y_force)
 		hud_num_make_mono(text_integrity);
 	}	
 
-	gr_string(final_pos[0], final_pos[1], text_integrity);
+	gr_string(final_pos[0] + HUD_nose_x, final_pos[1] + HUD_nose_y, text_integrity);
 #endif
 }
 
@@ -1132,7 +1132,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 			hud_set_gauge_color(HUD_TARGET_MINI_ICON, hud_color_index);
 		}					 
 
-		GR_AABITMAP(Shield_mini_gauge.first_frame + frame_offset, sx, sy);		
+		GR_AABITMAP(Shield_mini_gauge.first_frame + frame_offset, sx + HUD_nose_x, sy + HUD_nose_y);		
 	}
 	
 	// hud_set_default_color();
