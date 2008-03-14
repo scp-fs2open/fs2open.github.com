@@ -591,7 +591,7 @@ void hud_render_throttle_foreground(int y_end)
 	bm_get_info( Reticle_gauges[RETICLE_LEFT_ARC].first_frame+1,&w,&h);
 
 	if ( y_end < (y + h - 1) ) {		
-		GR_AABITMAP_EX(Reticle_gauges[RETICLE_LEFT_ARC].first_frame+2, x, y_end, w, h-(y_end-y), 0, y_end-y);		
+		GR_AABITMAP_EX(Reticle_gauges[RETICLE_LEFT_ARC].first_frame+2, x+ HUD_nose_x, y_end+ HUD_nose_y, w, h-(y_end-y), 0, y_end-y);		
 	}
 }
 
@@ -615,7 +615,7 @@ void hud_render_throttle_speed(float current_speed, int y_end)
 	gr_get_string_size(&w, &h, buf);
 	sx = x_pos - w - 2;
 	sy = fl2i(y_end - h/2.0f + 1.5);
-	gr_printf(sx, sy, buf);
+	gr_printf(sx + HUD_nose_x, sy + HUD_nose_y, buf);
 
 	if ( object_get_gliding(Player_obj) ) { 
 		int offset;
@@ -626,7 +626,7 @@ void hud_render_throttle_speed(float current_speed, int y_end)
 		} else {
 			offset = -13;
 		}
-		gr_string(sx+offset, sy + h, "GLIDE");
+		gr_string(sx+offset+HUD_nose_x, sy + h + HUD_nose_y, "GLIDE");
 	} else if ( Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
 		int offset;
 		if ( current_speed <= 9.5 ) {
@@ -638,9 +638,9 @@ void hud_render_throttle_speed(float current_speed, int y_end)
 		if (Lcl_gr) {
 			// print an m, cuz the voice says its an m.  
 			// its a normal m cuz the german font has no special m (its an a)
-			gr_string(sx+offset, sy + h, "m");
+			gr_string(sx+offset+HUD_nose_x, sy + h + HUD_nose_y, "m");
 		} else {
-			gr_printf(sx+offset, sy + h, "%c", Lcl_special_chars + 3);
+			gr_printf(sx+offset+HUD_nose_x, sy + h + HUD_nose_y, "%c", Lcl_special_chars + 3);
 		}
 	}
 }
@@ -651,7 +651,7 @@ void hud_render_throttle_line(int y)
 	// hud_set_bright_color();
 	hud_set_gauge_color(HUD_THROTTLE_GAUGE, HUD_C_BRIGHT);
 
-	GR_AABITMAP_EX(Reticle_gauges[RETICLE_LEFT_ARC].first_frame+3, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][0], y, Hud_throttle_frame_w[gr_screen.res], 1, 0, y-Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][1]);	
+	GR_AABITMAP_EX(Reticle_gauges[RETICLE_LEFT_ARC].first_frame+3, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][0] + HUD_nose_x, y + HUD_nose_y, Hud_throttle_frame_w[gr_screen.res], 1, 0, y-Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][1]);	
 }
 
 // Draw the throttle gauge along the left arc of the reticle
@@ -726,8 +726,8 @@ void hud_show_throttle()
 	// draw left arc (the bright portion of the throttle gauge)
 	hud_render_throttle_foreground(y_end);
 
-	gr_printf(Max_speed_coords[gr_screen.res][0], Max_speed_coords[gr_screen.res][1], "%d",fl2i(max_displayed_speed+0.5f));
-	gr_printf(Zero_speed_coords[gr_screen.res][0], Zero_speed_coords[gr_screen.res][1], XSTR( "0", 292));
+	gr_printf(Max_speed_coords[gr_screen.res][0] + HUD_nose_x, Max_speed_coords[gr_screen.res][1] + HUD_nose_y, "%d",fl2i(max_displayed_speed+0.5f));
+	gr_printf(Zero_speed_coords[gr_screen.res][0] + HUD_nose_x, Zero_speed_coords[gr_screen.res][1] + HUD_nose_y, XSTR( "0", 292));
 }
 
 // Draw the primary and secondary weapon indicators along the right arc of the reticle
@@ -847,7 +847,7 @@ void hud_show_lock_threat()
 
 	hud_set_gauge_color(HUD_THREAT_GAUGE);
 
-	GR_AABITMAP(Reticle_gauges[RETICLE_LOCK_WARN].first_frame+frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LOCK_WARN][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LOCK_WARN][1]);
+	GR_AABITMAP(Reticle_gauges[RETICLE_LOCK_WARN].first_frame+frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LOCK_WARN][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LOCK_WARN][1] + HUD_nose_y);
 
 	// "launch" flash
 	if ( (frame_offset > 0) && (Player->threat_flags & THREAT_LOCK) ) {
@@ -888,7 +888,7 @@ void hud_show_dumbfire_threat()
 
 	hud_set_gauge_color(HUD_THREAT_GAUGE);
 
-	GR_AABITMAP(Reticle_gauges[RETICLE_LASER_WARN].first_frame + frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LASER_WARN][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LASER_WARN][1]);	
+	GR_AABITMAP(Reticle_gauges[RETICLE_LASER_WARN].first_frame + frame_offset, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LASER_WARN][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LASER_WARN][1] + HUD_nose_y);	
 }
 
 // Draw the center of the reticle
@@ -900,7 +900,7 @@ void hud_show_center_reticle()
 	// hud_set_bright_color();
 	hud_set_gauge_color(HUD_CENTER_RETICLE, HUD_C_BRIGHT);
 
-	GR_AABITMAP(Reticle_gauges[RETICLE_CENTER].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_CENTER][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_CENTER][1]);
+	GR_AABITMAP(Reticle_gauges[RETICLE_CENTER].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_CENTER][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_CENTER][1] + HUD_nose_y);
 }
 
 // Draw top portion of reticle
@@ -920,7 +920,7 @@ void hud_show_top_arc()
 		hud_show_lock_threat();
 	} else {
 		// draw top arc without any holes
-		GR_AABITMAP(Reticle_gauges[RETICLE_TOP_ARC].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][1]);
+		GR_AABITMAP(Reticle_gauges[RETICLE_TOP_ARC].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_TOP_ARC][1] + HUD_nose_y);
 	}
 }
 
@@ -930,7 +930,7 @@ void hud_show_right_arc()
 	hud_set_gauge_color(HUD_CENTER_RETICLE);
 
 	if (Hud_reticle_style != HUD_RETICLE_STYLE_FS1) {
-		GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame+1, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][1]);		
+		GR_AABITMAP(Reticle_gauges[RETICLE_RIGHT_ARC].first_frame+1, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_RIGHT_ARC][1] + HUD_nose_y);		
 	} else {
 		// draw the weapons indicators in the holes along the right arc
 		if ( hud_gauge_active(HUD_WEAPON_LINKING_GAUGE) ) {		
@@ -955,7 +955,7 @@ void hud_show_left_arc()
 	if (Hud_reticle_style != HUD_RETICLE_STYLE_FS1) {
 		// draw left arc (the dark portion of the throttle gauge)
 		hud_set_gauge_color(HUD_CENTER_RETICLE);	
-		GR_AABITMAP(Reticle_gauges[RETICLE_LEFT_ARC].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][0], Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][1]);			
+		GR_AABITMAP(Reticle_gauges[RETICLE_LEFT_ARC].first_frame, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][0] + HUD_nose_x, Reticle_frame_coords[Hud_reticle_style][gr_screen.res][RETICLE_LEFT_ARC][1] + HUD_nose_y);			
 	}
 
 	// draw the throttle

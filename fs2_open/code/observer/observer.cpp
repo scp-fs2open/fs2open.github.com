@@ -112,9 +112,4 @@ void observer_get_eye(vec3d *eye_pos, matrix *eye_orient, object *obj)
 	// copy in the observer position and orientation
 	memcpy(eye_pos,&obj->pos,sizeof(vec3d));
 	memcpy(eye_orient,&obj->orient,sizeof(matrix));
-
-	// if we're in a weird padlock view
-	if ( Viewer_mode & VM_PADLOCK_ANY ){
-		player_get_padlock_orient(eye_orient);
-	}
 }

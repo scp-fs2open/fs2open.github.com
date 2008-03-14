@@ -1772,6 +1772,7 @@
 #include "io/key.h"
 #include "io/mouse.h"
 #include "io/timer.h"
+#include "io/trackir.h" // header file for the TrackIR routines (Swifty)
 #include "jumpnode/jumpnode.h"
 #include "lab/lab.h"
 #include "lab/wmcgui.h"	//So that GUI_System can be initialized
@@ -5551,13 +5552,19 @@ DCF_BOOL( subspace, Game_subspace_effect )
 void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 {
 	int dont_offset;
+	matrix eye_no_jitter;
+
+	// HUD_set_offsets needs the viewing matrix without the jitter to correctly
+	// offset the HUD bitmaps for the afterburner/EMP effect.
+	eye_no_jitter = *eye_orient;
+	apply_view_shake(eye_orient);
 
 	g3_start_frame(game_zbuffer);
 	g3_set_view_matrix( eye_pos, eye_orient, Viewer_zoom );
 
-	// maybe offset the HUD (jitter stuff)
+	// maybe offset the HUD (jitter stuff) and measure the 2D displacement between the player's view and ship vector
 	dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
-	HUD_set_offsets(Viewer_obj, !dont_offset);
+	HUD_set_offsets(Viewer_obj, !dont_offset, &eye_no_jitter);
 	
 	// for multiplayer clients, call code in Shield.cpp to set up the Shield_hit array.  Have to
 	// do this becaues of the disjointed nature of this system (in terms of setup and execution).
@@ -9099,7 +9106,8 @@ int game_main(char *cmdline)
 	init_cdrom();
 
 	game_init();
-
+	// calling the function that will init all the function pointers for TrackIR stuff (Swifty)
+	initialize_trackir(); 
 	game_stop_time();
 
 	if (Cmdline_spew_mission_crcs) {
@@ -9360,6 +9368,8 @@ void game_shutdown(void)
 {
 #ifdef _WIN32
 	timeEndPeriod(1);
+	if(trackir_enabled) // Safely shutdown the user's TrackIR unit if he has one (Swifty)
+		TrackIR_ShutDown();
 #endif
 
 

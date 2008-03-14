@@ -760,6 +760,7 @@ int Normal_key_set[] = {
 	VIEW_CHASE,
 	VIEW_OTHER_SHIP,
 	VIEW_TOPDOWN,
+	VIEW_TRACK_TARGET,
 
 	SHOW_GOALS,
 	END_MISSION,
@@ -935,6 +936,7 @@ int Non_critical_key_set[] = {
 	VIEW_EXTERNAL_TOGGLE_CAMERA_LOCK,
 	VIEW_OTHER_SHIP,
 	VIEW_TOPDOWN,
+	VIEW_TRACK_TARGET,
 	RADAR_RANGE_CYCLE,
 	SQUADMSG_MENU,
 	SHOW_GOALS,
@@ -2635,6 +2637,20 @@ int button_function_demo_valid(int n)
 		}
 		else
 		{
+			snd_play( &Snds[SND_TARGET_FAIL] );
+		}
+		ret = 1;
+		break;
+
+	case VIEW_TRACK_TARGET: // Target padlock mode toggle (Swifty)
+		control_used(VIEW_TRACK_TARGET);
+		if (!Perspective_locked) {
+			if(Viewer_mode & VM_TRACK) {
+				chase_slew_angles.h = 0;
+				chase_slew_angles.p = 0;
+			}
+			Viewer_mode ^= VM_TRACK;
+		} else {
 			snd_play( &Snds[SND_TARGET_FAIL] );
 		}
 		ret = 1;

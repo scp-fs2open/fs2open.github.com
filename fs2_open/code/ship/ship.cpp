@@ -6133,11 +6133,11 @@ void compute_slew_matrix(matrix *orient, angles *a)
 	t2.p = 0.0f;	t2.b = 0.0f;
 
 	// put in p & b like normal
-	vm_angles_2_matrix(&tmp, &t1 );
+	vm_angles_2_matrix(&tmp, &t2 ); // Changed the order of axis rotations. First pitch, then yaw (Swifty)
 	vm_matrix_x_matrix( &tmp2, orient, &tmp);
 
 	// Put in heading separately
-	vm_angles_2_matrix(&tmp, &t2 );
+	vm_angles_2_matrix(&tmp, &t1 );
 	vm_matrix_x_matrix( orient, &tmp2, &tmp );
 
 	vm_orthogonalize_matrix(orient);
@@ -11874,11 +11874,9 @@ void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew
 
 	//	Modify the orientation based on head orientation.
 	if ( Viewer_obj == obj && do_slew) {
-		if ( Viewer_mode & VM_PADLOCK_ANY ) {
-			player_get_padlock_orient(eye_orient);
-		} else {
-			compute_slew_matrix(eye_orient, &Viewer_slew_angles);
-		}
+		// Add the cockpit leaning translation offset
+		vm_vec_add2(eye_pos,&leaning_position);
+		compute_slew_matrix(eye_orient, &Viewer_slew_angles);
 	}
 }
 
