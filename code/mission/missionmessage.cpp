@@ -1740,6 +1740,15 @@ void message_queue_process()
 				}
 			}
 
+			//if player is a traitor remove all messages that aren't traitor related
+			if ((Playing_messages[i].builtin_type != MESSAGE_OOPS) && (Playing_messages[i].builtin_type != MESSAGE_HAMMER_SWINE)) {
+				if ( (Player_ship->team == Iff_traitor) && ( !(Game_mode & GM_MULTIPLAYER) || !(Netgame.type_flags & NG_TYPE_DOGFIGHT) ) ) {
+					message_kill_playing(i);
+					i++;
+					continue;
+				}
+			}
+
 			// see if the ship sending this message is dying.  If do, kill wave and anim
 			if ( Playing_messages[i].shipnum != -1 ) {
 				if ( (Ships[Playing_messages[i].shipnum].flags & SF_DYING) && (Playing_messages[i].builtin_type != MESSAGE_WINGMAN_SCREAM) ) {
@@ -2024,9 +2033,12 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	}
 
 	// if player is a traitor, no messages for him!!!
+	// unless those messages are traitor related
 	// Goober5000 - allow messages during multiplayer dogfight (Mantis #1436)
 	if ( (Player_ship->team == Iff_traitor) && ( !(Game_mode & GM_MULTIPLAYER) || !(Netgame.type_flags & NG_TYPE_DOGFIGHT) ) ) {
-		return;
+		if ((builtin_type != MESSAGE_OOPS) && (builtin_type != MESSAGE_HAMMER_SWINE)) {
+			return;
+		}
 	}
 
 	m_persona = Messages[message_num].persona_index;
