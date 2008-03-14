@@ -6417,6 +6417,7 @@ void game_frame(int paused)
 				if(Game_mode & GM_MULTIPLAYER){
 					// catch the situation where we're supposed to be warping out on this transition
 					if(Net_player->flags & NETINFO_FLAG_WARPING_OUT){
+						multi_handle_sudden_mission_end();
 						send_debrief_event();
 					} else if((Player_died_popup_wait != -1) && (timestamp_elapsed(Player_died_popup_wait))){
 						Player_died_popup_wait = -1;
@@ -6429,18 +6430,6 @@ void game_frame(int paused)
 					}
 				}
 			}	
-			/* Karajorma - Suspect this is the cause of the double respawn bug.
-			// hack - sometimes this seems to slip by in multiplayer. this should guarantee that we catch it
-			if((Game_mode & GM_MULTIPLAYER) && (Player_multi_died_check != -1) && (Game_mode & GM_DEAD_BLEW_UP) ){
-				if(fl_abs((float)time(NULL) - (float)Player_multi_died_check) > 4.0f){
-					if(!popupdead_is_active()){
-						popupdead_start();
-					}
-
-					Player_multi_died_check = -1;
-				}
-			}
-			*/
 
 			DEBUG_GET_TIME( render3_time2 )
 			DEBUG_GET_TIME( render2_time1 )

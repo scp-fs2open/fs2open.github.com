@@ -386,6 +386,9 @@ short multi_get_new_id();
 // Karajorma - sends the player to the correct debrief for this game type
 void send_debrief_event();
 
+// Karajorma - Performs any cleanup needed by missions which don't end with a warpout.
+void multi_handle_sudden_mission_end();
+
 // make a bunch of fake players - don't rely on this to be very safe - its mostly used for interface testing
 #ifndef NDEBUG
 void multi_make_fake_players(int count);
