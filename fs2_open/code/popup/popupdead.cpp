@@ -524,63 +524,6 @@ void popupdead_draw_button_text()
 	}
 }
 
-// reinits the death popup
-// used for skip popup to death popup transition
-void popupdead_restart() {
-	Popupdead_skip_already_shown = 1;
-	Popupdead_skip_active = 0;
-	Popupdead_active = 0;
-	Player->failures_this_session--;		// hacky correction for a double count when calling popupdead_start() twice
-	popupdead_start();
-}
-
-// do the "skip mission" version of the death popup
-int popupdead_skip_do_frame()
-{
-	int k = Popupdead_window.process();
-
-	// check for input
-	int choice = popupdead_process_keys(k);
-	if (choice < 0) {
-		choice = popupdead_check_buttons();
-	}
-
-	// take appropriate options
-	switch (choice) {
-	case 0:
-		// try this mission again, so proceed to normal death popup
-		gamesnd_play_iface(SND_USER_SELECT);
-		popupdead_restart();
-		break;
-	case 1:
-		// skip this mission
-		mission_campaign_skip_to_next();
-
-		gamesnd_play_iface(SND_USER_SELECT);
-		break;
-	case 2:
-		// dont show this again
-		Player->show_skip_popup = 0;
-		
-		gamesnd_play_iface(SND_USER_SELECT);
-		popupdead_restart();
-		break;
-	}
-
-	// render
-	Popupdead_window.draw();
-	popupdead_force_draw_buttons();
-	popupdead_draw_button_text();
-
-	// render skip mission message
-	gr_set_color_fast(&Color_bright_white);
-	gr_string(0x8000, Popupdead_skip_message_y[gr_screen.res], XSTR("You have failed this mission five times.", 1470));
-	gr_string(0x8000, Popupdead_skip_message_y[gr_screen.res] + gr_get_font_height(), XSTR("If you like, you may advance to the next mission.", 1471));
-
-	return choice;
-}
-
-
 // Called once per frame to run the dead popup
 int popupdead_do_frame(float frametime)
 {

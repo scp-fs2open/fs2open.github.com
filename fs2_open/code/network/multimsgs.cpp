@@ -4374,6 +4374,7 @@ void process_force_end_mission_packet(ubyte *data, header *hinfo)
 	// Since only the server sends out these packets it should never receive one
 	Assert (!(Net_player->flags & NETINFO_FLAG_AM_MASTER)); 
 	
+	multi_handle_sudden_mission_end();
 	send_debrief_event();
 }
 

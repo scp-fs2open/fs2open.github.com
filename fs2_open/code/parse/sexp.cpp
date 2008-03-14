@@ -10144,6 +10144,7 @@ void sexp_end_mission(int n)
 	// Karajorma - callback all the clients here. 
 	if (MULTIPLAYER_MASTER)
 	{
+		multi_handle_sudden_mission_end();
 		send_force_end_mission_packet();
 	}
 }

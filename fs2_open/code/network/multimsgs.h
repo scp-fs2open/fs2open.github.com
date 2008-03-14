@@ -344,8 +344,6 @@ void process_game_chat_packet( ubyte *data, header *hinfo );
 // process a game information update
 void process_game_info_packet( ubyte *data, header *hinfo );
 
-void process_team_update_packet(ubyte *data, header *hinfo);
-
 // process a packet indicating a secondary weapon was fired
 void process_secondary_fired_packet(ubyte* data, header* hinfo, int flag);
 
