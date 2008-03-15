@@ -1,8 +1,8 @@
-#include "globalincs/globals.h"
-#include "globalincs/pstypes.h"
-
 #ifndef _WAYPOINT_H
 #define _WAYPOINT_H
+
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 
 //********************DEFINES********************
 #define	MAX_WAYPOINTS_PER_LIST	20
