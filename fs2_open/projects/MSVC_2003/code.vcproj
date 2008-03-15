@@ -1370,6 +1370,12 @@
 			<File
 				RelativePath="..\..\code\Io\Timer.h">
 			</File>
+			<File
+				RelativePath="..\..\code\io\trackir.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\io\trackir.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="JumpNode"
