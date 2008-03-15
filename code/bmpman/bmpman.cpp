@@ -1869,6 +1869,23 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 	return bm_bitmaps[n].handle;
 }
 
+int bm_load_either(char *filename, int *nframes, int *fps, int can_drop_frames, int dir_type)
+{
+	if(nframes != NULL)
+		*nframes = 0;
+	if(fps != NULL)
+		*fps = 0;
+	int tidx = bm_load_animation(filename, nframes, fps, can_drop_frames, dir_type);
+	if(tidx == -1)
+	{
+		tidx = bm_load(filename);
+		if(tidx != -1 && nframes != NULL)
+			*nframes = 1;
+	}
+
+	return tidx;
+}
+
 int bm_is_valid(int handle)
 {
 	if(!bm_inited) return 0;
