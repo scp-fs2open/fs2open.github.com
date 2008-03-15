@@ -2082,6 +2082,9 @@
 				RelativePath="..\..\code\object\objectshield.cpp">
 			</File>
 			<File
+				RelativePath="..\..\code\object\objectshield.h">
+			</File>
+			<File
 				RelativePath="..\..\code\Object\ObjectSnd.cpp">
 			</File>
 			<File
