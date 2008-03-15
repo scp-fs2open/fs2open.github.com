@@ -341,6 +341,9 @@ ubyte g3_add_delta_vec(vertex *dest,vertex *src,vec3d *deltav);
 //returns 1 if off screen, 0 if drew
 int g3_draw_poly(int nv,vertex **pointlist,uint tmap_flags);
 
+int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap_flags = TMAP_FLAG_TEXTURED);
+int g3_draw_polygon(vec3d *pos, vec3d *norm, float width, float height, int tmap_flags = TMAP_FLAG_TEXTURED);
+
 // Draw a polygon.  Same as g3_draw_poly, but it bashes sw to a constant value
 // for all vertexes.  Needs to be done after clipping to get them all.
 //Set TMAP_FLAG_TEXTURED in the tmap_flags to texture map it with current texture.
