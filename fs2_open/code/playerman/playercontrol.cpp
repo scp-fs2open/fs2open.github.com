@@ -619,6 +619,7 @@
 #include "hud/hud.h"
 #include "hud/hudtargetbox.h"
 #include "ship/ship.h"
+#include "ship/shipfx.h"
 #include "freespace2/freespace.h"
 #include "gamesnd/gamesnd.h"
 #include "gamesequence/gamesequence.h"
@@ -2709,7 +2710,10 @@ void player_get_eye(vec3d *eye_pos, matrix *eye_orient)
 
 			ship * shipp = &Ships[Player_obj->instance];
 
-			vm_vec_sub(&eye_dir, &shipp->warp_effect_pos, eye_pos);
+
+			vec3d warp_pos = Player_obj->pos;
+			shipp->warpout_effect->getWarpPosition(&warp_pos);
+			vm_vec_sub(&eye_dir, &warp_pos, eye_pos);
 			vm_vec_normalize(&eye_dir);
 			vm_vector_2_matrix(eye_orient, &eye_dir, &Player_obj->orient.vec.uvec, NULL);
 			viewer_obj = NULL;
