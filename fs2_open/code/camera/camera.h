@@ -12,9 +12,9 @@
 #include <string>
 #include <vector>
 
-#define CAM_DESIRED_FOV				(1<<0)
-#define CAM_DESIRED_POSITION		(1<<1)
-#define CAM_DESIRED_ORIENTATION		(1<<2)
+#define CAM_STATIONARY_FOV			(1<<0)
+#define CAM_STATIONARY_ORI			(1<<1)
+#define CAM_STATIONARY_POS			(1<<2)
 #define CAM_DEFAULT_FLAGS			0
 
 class camera
@@ -23,6 +23,7 @@ class camera
 protected:
 	char name[NAME_LENGTH];
 	int sig;
+	int flags;
 
 	object_h object_self;
 	int object_self_submodel;
