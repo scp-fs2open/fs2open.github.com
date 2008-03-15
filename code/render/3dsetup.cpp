@@ -339,6 +339,14 @@ void g3_end_frame_func(char *filename, int lineno)
 
 void scale_matrix(void);
 
+void g3_set_view(camera *cam)
+{
+	vec3d pos;
+	matrix ori;
+	cam->get_info(&pos, &ori);
+	g3_set_view_matrix(&pos, &ori, cam->get_fov());
+}
+
 //set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
 void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
 {

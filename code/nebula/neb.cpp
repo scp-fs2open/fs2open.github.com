@@ -576,7 +576,7 @@ float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_
 float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha);
 
 // do a pre-render of the background nebula
-void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient);
+void neb2_pre_render(camid cid);
 
 // fill in the position of the eye for this frame
 void neb2_get_eye_pos(vec3d *eye);
@@ -818,7 +818,7 @@ void neb2_level_close()
 }
 
 // call before beginning all rendering
-void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient)
+void neb2_render_setup(camid cid)
 {
 	// standalone servers can bail here
 	if (Game_mode & GM_STANDALONE_SERVER)
@@ -852,7 +852,7 @@ void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient)
 
 
 	// pre-render the real background nebula
-	neb2_pre_render(eye_pos, eye_orient);		
+	neb2_pre_render(cid);		
 }
 
 // level paging code
@@ -1633,7 +1633,7 @@ int tbmap = -1;
 // It doesn't use much, but it APPEARS to be fairly useless unless someone wants
 // to enlighten me.
 //
-void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient)
+void neb2_pre_render(camid cid)
 {
 	// if the mission is not a fullneb mission, skip
 	if (!(The_mission.flags & MISSION_FLAG_FULLNEB))
@@ -1643,12 +1643,11 @@ void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient)
 	if (Neb2_render_mode != NEB2_RENDER_POF)
 		return;
 
-
 	// set the view clip
 	gr_screen.clip_width = this_esize;
 	gr_screen.clip_height = this_esize;
 	g3_start_frame(1);							// Turn on zbuffering
-	g3_set_view_matrix(eye_pos, eye_orient, Viewer_zoom);
+	g3_set_view(cid.getCamera());
 	gr_set_clip(0, 0, this_esize, this_esize);		
 
 	// render the background properly

@@ -876,6 +876,7 @@
 #include "parse/sexp.h"
 #include "globalincs/version.h"
 #include "globalincs/pstypes.h"
+#include "camera/camera.h"	//VIEWER_ZOOM_DEFAULT
 
 #ifdef _WIN32
 #include <direct.h>
@@ -915,7 +916,6 @@ static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
 
 
-extern float VIEWER_ZOOM_DEFAULT;
 extern float Viewer_zoom;
 extern int Show_framerate;	// from freespace.cpp
 

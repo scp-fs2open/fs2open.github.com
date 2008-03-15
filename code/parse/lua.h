@@ -255,14 +255,7 @@ public:
 };
 
 //*************************Lua global structs*************************
-struct object_h {
-	object *objp;
-	int sig;
 
-	bool IsValid(){return (this != NULL && objp != NULL && objp->signature == sig);}
-	object_h(object *in){objp=in; Assert(in!=NULL); sig=in->signature;}
-	object_h(){objp=NULL;sig=-1;}
-};
 
 //*************************Lua globals*************************
 extern ade_obj<object_h> l_Object;
