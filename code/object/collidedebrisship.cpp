@@ -216,6 +216,7 @@
 
 
 #include "object/objcollide.h"
+#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "debris/debris.h"
 #include "playerman/player.h"
