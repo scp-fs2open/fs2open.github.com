@@ -140,6 +140,9 @@
 				RelativePath="..\..\lua\lgc.c">
 			</File>
 			<File
+				RelativePath="..\..\lua\linit.c">
+			</File>
+			<File
 				RelativePath="..\..\lua\liolib.c">
 			</File>
 			<File
@@ -159,6 +162,9 @@
 			</File>
 			<File
 				RelativePath="..\..\lua\lopcodes.c">
+			</File>
+			<File
+				RelativePath="..\..\lua\loslib.c">
 			</File>
 			<File
 				RelativePath="..\..\lua\lparser.c">
@@ -185,6 +191,12 @@
 				RelativePath="..\..\lua\ltm.c">
 			</File>
 			<File
+				RelativePath="..\..\lua\lua.c">
+			</File>
+			<File
+				RelativePath="..\..\lua\luac.c">
+			</File>
+			<File
 				RelativePath="..\..\lua\lundump.c">
 			</File>
 			<File
@@ -193,11 +205,13 @@
 			<File
 				RelativePath="..\..\lua\lzio.c">
 			</File>
+			<File
+				RelativePath="..\..\lua\print.c">
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
-			Filter="h;hpp;hxx;hm;inl;inc;xsd"
-			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}">
+			Filter="">
 			<File
 				RelativePath="..\..\lua\lapi.h">
 			</File>
@@ -253,6 +267,9 @@
 				RelativePath="..\..\lua\lua.h">
 			</File>
 			<File
+				RelativePath="..\..\lua\luaconf.h">
+			</File>
+			<File
 				RelativePath="..\..\lua\lualib.h">
 			</File>
 			<File
@@ -265,14 +282,6 @@
 				RelativePath="..\..\lua\lzio.h">
 			</File>
 		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}">
-		</Filter>
-		<File
-			RelativePath=".\ReadMe.txt">
-		</File>
 	</Files>
 	<Globals>
 	</Globals>

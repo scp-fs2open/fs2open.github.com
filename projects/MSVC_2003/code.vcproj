@@ -911,6 +911,12 @@
 			<File
 				RelativePath="..\..\code\Io\Timer.h">
 			</File>
+			<File
+				RelativePath="..\..\code\io\trackir.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\io\trackir.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="JumpNode"
@@ -1422,6 +1428,12 @@
 				RelativePath="..\..\code\object\objectdock.h">
 			</File>
 			<File
+				RelativePath="..\..\code\object\objectshield.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\object\objectshield.h">
+			</File>
+			<File
 				RelativePath="..\..\code\Object\ObjectSnd.cpp">
 			</File>
 			<File
@@ -1435,6 +1447,12 @@
 			</File>
 			<File
 				RelativePath="..\..\code\object\parseobjectdock.h">
+			</File>
+			<File
+				RelativePath="..\..\code\object\waypoint.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\object\waypoint.h">
 			</File>
 		</Filter>
 		<Filter
