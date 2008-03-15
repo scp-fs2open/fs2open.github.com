@@ -699,8 +699,10 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "object/objcollide.h"
+#include "object/objectshield.h"
 #include "lighting/lighting.h"
 #include "observer/observer.h"
+#include "parse/scripting.h"
 #include "asteroid/asteroid.h"
 #include "radar/radar.h"
 #include "jumpnode/jumpnode.h"
@@ -953,103 +955,7 @@ float get_shield_pct(object *objp)
 	if (total_strength == 0.0f)
 		return 0.0f;
 
-	return get_shield_strength(objp) / total_strength;
-}
-
-float get_shield_strength(object *objp)
-{
-	int	i;
-	float	strength;
-
-	strength = 0.0f;
-
-	// no shield system, no strength!
-	if ( objp->flags & OF_NO_SHIELDS ){
-		return strength;
-	}
-
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++){
-		strength += objp->shield_quadrant[i];
-	}
-
-	return strength;
-}
-
-void set_shield_strength(object *objp, float strength)
-{
-	int	i;
-
-	if ( (strength - Ships[objp->instance].ship_max_shield_strength) > 0.1 ){
-		Int3();
-	}
-
-	for (i=0; i<MAX_SHIELD_SECTIONS; i++){
-		objp->shield_quadrant[i] = strength/MAX_SHIELD_SECTIONS;
-	}
-}
-
-//	Recharge whole shield.
-//	Apply delta/MAX_SHIELD_SECTIONS to each shield section.
-void add_shield_strength(object *objp, float delta)
-{
-	int	i;
-	float	section_max;
-
-	section_max = get_max_shield_quad(objp);
-
-	if (!(The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT))
-	{
-		// if we aren't going to change anything anyway then just bail
-		if (delta == 0.0f)
-			return;
-
-		for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
-			objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
-			if (objp->shield_quadrant[i] > section_max)
-				objp->shield_quadrant[i] = section_max;
-			else if (objp->shield_quadrant[i] < 0.0f)
-				objp->shield_quadrant[i] = 0.0f;
-		}
-	}
-	else
-	{
-		//smart shield repair
-		float weakest=0;
-		int weakest_idx;
-		while ((delta > 0) && (weakest < section_max))
-		{
-			//find weakest shield quadrant
-			weakest=objp->shield_quadrant[0];
-			weakest_idx=0;
-			for (i=1; i < MAX_SHIELD_SECTIONS; i++)
-			{
-				if (objp->shield_quadrant[i] < weakest)
-				{
-					weakest=objp->shield_quadrant[i];
-					weakest_idx=i;
-				}
-			}
-		
-			//throw all possible shield power at this quadrant
-			//if there's any leftover then apply it to the next weakest on the next pass
-			if ((delta+weakest > section_max) && (weakest < section_max))
-			{
-				objp->shield_quadrant[weakest_idx]=section_max;
-				delta-=(section_max-delta);
-			}	
-			else
-			{
-				objp->shield_quadrant[weakest_idx]+=delta;
-				delta=0;
-
-				if (objp->shield_quadrant[weakest_idx] > section_max) {
-					objp->shield_quadrant[weakest_idx] = section_max;
-				} else if (objp->shield_quadrant[weakest_idx] < 0.0f) {
-					objp->shield_quadrant[weakest_idx] = 0.0f;
-				}
-			}
-		}
-	}
+	return shield_get_strength(objp) / total_strength;
 }
 
 //sets up the free list & init player & whatever else
@@ -2209,53 +2115,61 @@ void obj_render(object *obj)
 
 	MONITOR_INC( NumObjectsRend, 1 );	
 
-	switch( obj->type )	{
-	case OBJ_NONE:
-		#ifndef NDEBUG
-		mprintf(( "ERROR!!!! Bogus obj %d is rendering!\n", obj-Objects ));
-		Int3();
-		#endif
-		break;
-	case OBJ_WEAPON:
-		if(Cmdline_dis_weapons) return;
-		weapon_render(obj);
-		break;
-	case OBJ_SHIP:
-		ship_render(obj);
-		break;
-	case OBJ_FIREBALL:
-		fireball_render(obj);
-		break;
-	case OBJ_SHOCKWAVE:
-		shockwave_render(obj);
-		break;
-	case OBJ_DEBRIS:
-		debris_render(obj);
-		break;
-	case OBJ_ASTEROID:
-		asteroid_render(obj);
-		break;
-/*	case OBJ_CMEASURE:
-		cmeasure_render(obj);
-		break;*/
-	case OBJ_JUMP_NODE:
-		obj->jnp->render(&obj->pos, &Eye_position);
-//		jumpnode_render(obj, &obj->pos, &Eye_position);
-		break;
-	case OBJ_WAYPOINT:
-		if (Show_waypoints)	{
-			//ship_render(obj);
-			gr_set_color( 128, 128, 128 );
-			g3_draw_sphere_ez( &obj->pos, 5.0f );
+	//WMC - By definition, override statements are executed before the actual statement
+	Script_system.SetHookObject("Self", obj);
+	if(!Script_system.IsConditionOverride(CHA_OBJECTRENDER, obj))
+	{
+		switch( obj->type )	{
+		case OBJ_NONE:
+			#ifndef NDEBUG
+			mprintf(( "ERROR!!!! Bogus obj %d is rendering!\n", obj-Objects ));
+			Int3();
+			#endif
+			break;
+		case OBJ_WEAPON:
+			if(Cmdline_dis_weapons) return;
+			weapon_render(obj);
+			break;
+		case OBJ_SHIP:
+			ship_render(obj);
+			break;
+		case OBJ_FIREBALL:
+			fireball_render(obj);
+			break;
+		case OBJ_SHOCKWAVE:
+			shockwave_render(obj);
+			break;
+		case OBJ_DEBRIS:
+			debris_render(obj);
+			break;
+		case OBJ_ASTEROID:
+			asteroid_render(obj);
+			break;
+	/*	case OBJ_CMEASURE:
+			cmeasure_render(obj);
+			break;*/
+		case OBJ_JUMP_NODE:
+			obj->jnp->render(&obj->pos, &Eye_position);
+	//		jumpnode_render(obj, &obj->pos, &Eye_position);
+			break;
+		case OBJ_WAYPOINT:
+			if (Show_waypoints)	{
+				//ship_render(obj);
+				gr_set_color( 128, 128, 128 );
+				g3_draw_sphere_ez( &obj->pos, 5.0f );
+			}
+			break;
+		case OBJ_GHOST:
+			break;
+		case OBJ_BEAM:
+			break;
+		default:
+			Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
 		}
-		break;
-	case OBJ_GHOST:
-		break;
-	case OBJ_BEAM:
-		break;
-	default:
-		Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
 	}
+
+	Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
+	Script_system.RemHookVar("Self");
 }
 
 void obj_init_all_ships_physics()

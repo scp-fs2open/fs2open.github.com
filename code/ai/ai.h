@@ -446,18 +446,7 @@ typedef struct ai_goal {
 #define	MAX_AI_BEHAVIORS		22	//	Number of AIM_xxxx types
 
 #define	MAX_WAYPOINTS_PER_LIST	20
-#define	MAX_WAYPOINT_LISTS		32
 #define	MAX_ENEMY_DISTANCE	2500.0f			//	maximum distance from which a ship will pursue an enemy.
-
-// waypoint list flags bitmasks.
-#define WL_MARKED	0x01
-
-typedef struct waypoint_list {
-	char		name[NAME_LENGTH];
-	int		count;
-	char		flags[MAX_WAYPOINTS_PER_LIST];
-	vec3d	waypoints[MAX_WAYPOINTS_PER_LIST];
-} waypoint_list;
 
 #define AI_GOAL_NONE				-1
 
@@ -788,9 +777,6 @@ int get_wingnum(int objnum);
 
 void set_wingnum(int objnum, int wingnum);
 char *ai_get_goal_ship_name(char *name, int *index);
-
-extern waypoint_list Waypoint_lists[MAX_WAYPOINT_LISTS];
-extern int	Num_waypoint_lists;
 
 extern void init_ai_system(void);
 extern void ai_attack_object(object *attacker, object *attacked, int priority, ship_subsys *ssp);

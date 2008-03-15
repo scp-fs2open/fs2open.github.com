@@ -102,6 +102,7 @@
 #include "Management.h"
 #include "MainFrm.h"
 #include "object/object.h"
+#include "object/waypoint.h"
 #include "globalincs/linklist.h"
 #include "ship/ship.h"
 #include "ai/aigoals.h"

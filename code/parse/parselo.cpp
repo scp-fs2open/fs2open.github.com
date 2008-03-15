@@ -1204,7 +1204,8 @@ void stuff_string_until(char *pstr, char *endstr, int len)
 //Returns a null-terminated string allocated with malloc(),
 //or NULL on failure
 //Does depth checks for the start and end strings
-char* alloc_block(char* startstr, char* endstr)
+//extra_chars indicates extra malloc space that should be allocated.
+char* alloc_block(char* startstr, char* endstr, int extra_chars)
 {
 	Assert(startstr != NULL && endstr != NULL);
 	Assert(stricmp(startstr, endstr));
@@ -1252,7 +1253,8 @@ char* alloc_block(char* startstr, char* endstr)
 		flen = pos-Mp;
 
 		//Allocate the memory
-		rval = (char*) vm_malloc((flen)*sizeof(char));
+		//WMC - Don't forget the null character that's added later on.
+		rval = (char*) vm_malloc((flen + extra_chars + 1)*sizeof(char));
 
 		//Copy the text (if memory was allocated)
 		if(rval != NULL) {

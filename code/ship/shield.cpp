@@ -333,9 +333,9 @@
 #include "freespace2/freespace.h"
 #include "mission/missionparse.h"
 #include "network/multi.h"
+#include "object/objectshield.h"
 #include "species_defs/species_defs.h"
 #include "ship/ship.h"
-
 
 int	Show_shield_mesh = 0;
 
@@ -1326,7 +1326,7 @@ int ship_is_shield_up( object *obj, int quadrant )
 		}
 	} else {
 		// Check all quadrants
-		float strength = get_shield_strength(obj);
+		float strength = shield_get_strength(obj);
 
 		if ( strength > MAX(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_max_shield_strength ))	{
 			return 1;

@@ -106,5 +106,10 @@
 /////////////////////////////////////////
 #define SHIP_MIN_NAV_TO_WARP			0.3f	// % navigation strength required to engage warp
 
+/////////////////////////////////////////
+// shields
+/////////////////////////////////////////
+#define MIN_SHIELDS_FOR_FULL_STRENGTH	0.5f	// % shield subsystem strength below which shield becomes less effective
+#define MIN_SHIELDS_FOR_FULL_COVERAGE	0.3f	// % shield subsystem strength below which shield starts flickering
 
 #endif

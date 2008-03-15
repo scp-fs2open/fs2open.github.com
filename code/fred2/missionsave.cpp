@@ -499,6 +499,7 @@
 #include "FredView.h"
 #include "cfile/cfile.h"
 #include "object/objectdock.h"
+#include "object/objectshield.h"
 #include "iff_defs/iff_defs.h"
 #include "missionui/fictionviewer.h"
 
@@ -2036,7 +2037,7 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 		fout(" %d", (int) objp->hull_strength);
 	}
 
-	if ((int) get_shield_strength(objp) != 100) {
+	if ((int) shield_get_strength(objp) != 100) {
 		if (optional_string_fred("+Initial Shields:", "$Name:", "+Subsystem:"))
 			parse_comments();
 		else

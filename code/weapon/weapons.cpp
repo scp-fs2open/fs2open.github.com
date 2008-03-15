@@ -1818,6 +1818,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->arm_dist = 0.0f;
 	wip->arm_radius = 0.0f;
 	wip->det_range = 0.0f;
+	wip->det_radius = 0.0f;
 	
 	wip->armor_factor = 1.0f;
 	wip->shield_factor = 1.0f;
@@ -2263,6 +2264,10 @@ int parse_weapon(int subtype, bool replace)
 
 	if(optional_string("$Detonation Range:")) {
 		stuff_float(&wip->det_range);
+	}
+
+	if(optional_string("$Detonation Radius:")) {
+		stuff_float(&wip->det_radius);
 	}
 
 	parse_shockwave_info(&wip->shockwave, "$");
@@ -4233,10 +4238,12 @@ void weapon_delete(object *obj)
 		wp->missile_list_index = -1;
 	}
 
+/*
 	if (wp->flak_index >= 0){
 		flak_delete(wp->flak_index);
 		wp->flak_index = -1;
 	}
+*/
 
 	if (wp->trail_ptr != NULL) {
 		trail_object_died(wp->trail_ptr);
@@ -4920,14 +4927,51 @@ void weapon_home(object *obj, int num, float frame_time)
 
 void weapon_process_pre( object *obj, float frame_time)
 {
+	if(obj->type != OBJ_WEAPON)
+		return;
+
+	weapon *wp = &Weapons[obj->instance];
+	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
+
 	// if the object is a corkscrew style weapon, process it now
 	if((obj->type == OBJ_WEAPON) && (Weapons[obj->instance].cscrew_index >= 0)){
 		cscrew_process_pre(obj);
 	}
 
 	// if the weapon is a flak weapon, maybe detonate it early
-	if((obj->type == OBJ_WEAPON) && (Weapon_info[Weapons[obj->instance].weapon_info_index].wi_flags & WIF_FLAK) && (Weapons[obj->instance].flak_index >= 0)){
+	/*
+	if((wip->wi_flags & WIF_FLAK) && (wp->flak_index >= 0)){
 		flak_maybe_detonate(obj);		
+	}*/
+
+	//WMC - Originally flak_maybe_detonate, moved here.
+	if(wip->det_range > 0.0f)
+	{
+		vec3d temp;
+		vm_vec_sub(&temp, &obj->pos, &wp->start_pos);
+		if(vm_vec_mag(&temp) >= wp->det_range){
+			weapon_detonate(obj);		
+		}
+	}
+
+	//WMC - Maybe detonate weapon anyway!
+	if(wip->det_radius > 0.0f)
+	{
+		if(wp->homing_object != NULL)
+		{
+			vec3d spos;
+			if((wp->homing_subsys == NULL && vm_vec_dist(&obj->pos, &wp->homing_object->pos) <= wip->det_radius)
+				|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&obj->pos, &spos) <= wip->det_radius))
+			{
+				weapon_detonate(obj);
+			}
+		} else if(wp->target_num > -1)
+		{
+			if(vm_vec_dist(&obj->pos, &Objects[wp->target_num].pos) <= wip->det_radius)
+			{
+				weapon_detonate(obj);
+			}
+		}
 	}
 }
 
@@ -5455,6 +5499,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->phys_info.flags |= PF_CONST_VEL;
 	}
 
+	wp->start_pos = *pos;
 	wp->objnum = objnum;
 	wp->homing_object = &obj_used_list;		//	Assume not homing on anything.
 	wp->homing_subsys = NULL;
@@ -5477,6 +5522,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	wp->target_sig = -1;
 	wp->cmeasure_ignore_objnum = -1;
 	wp->cmeasure_chase_objnum = -1;
+	wp->det_range = wip->det_range;
 
 	// Init the thruster info
 	wp->thruster_bitmap = -1;
@@ -5623,10 +5669,8 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	// if this is a flak weapon shell, make it so
 	// NOTE : this function will change some fundamental things about the weapon object
 	if ( wip->wi_flags & WIF_FLAK ){
-		flak_create(wp);
-	} else {
-		wp->flak_index = -1;
-	}	
+		obj_set_flags(&Objects[wp->objnum], Objects[wp->objnum].flags & ~(OF_RENDERS));
+	}
 
 	wp->missile_list_index = -1;
 	// If this is a missile, then add it to the Missile_obj_list

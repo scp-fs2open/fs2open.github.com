@@ -509,6 +509,9 @@ int key_checkch()
 //	Return key scancode if a key has been pressed,
 //	else return 0.
 //	Reads keys out of the key buffer and updates keyhead.
+
+//WMC - Added so scripting can get at keys.
+int Current_key_down = 0;
 int key_inkey()
 {
 	int key = 0;
@@ -523,6 +526,8 @@ int key_inkey()
 	}
 
 	LEAVE_CRITICAL_SECTION( key_lock );	
+
+	Current_key_down = key;
 
 	return key;
 }

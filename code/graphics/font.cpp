@@ -309,6 +309,7 @@
 #include "io/key.h"
 #include "bmpman/bmpman.h"
 #include "localization/localize.h"
+#include "parse/parselo.h"
 #include "globalincs/systemvars.h"
 
 
@@ -964,6 +965,18 @@ int gr_create_font(char * typeface)
 	fnt->bitmap_id = bm_create( 8, fnt->bm_w, fnt->bm_h, fnt->bm_data, BMP_AABITMAP );
 
 	return fontnum;
+}
+
+int gr_get_fontnum(char *filename)
+{
+	int i;
+	for(i = 0; i < Num_fonts; i++)
+	{
+		if(!strextcmp(Fonts[i].filename, filename))
+			return i;
+	}
+
+	return -1;
 }
 
 void gr_set_font(int fontnum)

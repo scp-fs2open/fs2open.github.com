@@ -542,7 +542,7 @@ matrix *vm_vector_2_matrix(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec);
 
 //this version of vector_2_matrix requires that the vectors be more-or-less
 //normalized and close to perpendicular
-matrix *vm_vector_2_matrix_norm(matrix *m,vec3d *fvec,vec3d *uvec,vec3d *rvec);
+matrix *vm_vector_2_matrix_norm(matrix *m,vec3d *fvec,vec3d *uvec = NULL,vec3d *rvec = NULL);
 
 //rotates a vector through a matrix. returns ptr to dest vector
 //dest CANNOT equal either source

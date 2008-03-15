@@ -2185,16 +2185,22 @@ void python_do_frame();
 void gr_flip()
 {
 	//WMC - Evaluate state script hook if not override
+	/*
 	if(gameseq_get_depth() > -1)	//WMC - Make sure we're _in_ a state
 	{
 		int state = gameseq_get_state();
 		if(!Script_system.IsOverride(GS_state_hooks[state])) {
 			Script_system.RunBytecode(GS_state_hooks[state]);
 		}
-	}
+	}*/
 
 	//WMC - Evaluate global hook if not override.
 	Script_system.RunBytecode(Script_globalhook);
+	//WMC - Do conditional hooks. Yippee!
+	Script_system.RunCondition(CHA_ONFRAME);
+	//WMC - Do scripting reset stuff
+	Script_system.EndFrame();
+
 	gr_screen.gf_flip();
 }
 

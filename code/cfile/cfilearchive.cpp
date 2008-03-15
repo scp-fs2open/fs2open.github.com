@@ -112,7 +112,7 @@
 
 #include "cfile/cfile.h"
 #include "cfile/cfilearchive.h"
-
+#include "luaconf.h"
 
 
 #define CHECK_POSITION
@@ -305,6 +305,33 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 	#endif
 
 	return bytes_read / elsize;
+
+}
+
+int cfread_lua_number(double *buf, CFILE *cfile)
+{
+	Assert(cfile != NULL);
+	Assert(buf != NULL);
+	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
+
+	Cfile_block *cb;
+	cb = &Cfile_block_list[cfile->id];	
+
+	// cfread() not supported for memory-mapped files
+	Assert( !cb->data );
+	Assert(cb->fp != NULL);
+
+	long orig_pos = ftell(cb->fp);
+	int items_read = fscanf(cb->fp, LUA_NUMBER_SCAN, buf);
+	cb->raw_position += ftell(cb->fp)-orig_pos;		
+
+	#if defined(CHECK_POSITION) && !defined(NDEBUG)
+		int tmp_offset;
+		tmp_offset = ftell(cb->fp) - cb->lib_offset;
+		Assert(tmp_offset==cb->raw_position);
+	#endif
+
+	return items_read;
 
 }
 

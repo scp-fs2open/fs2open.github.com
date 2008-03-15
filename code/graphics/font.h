@@ -156,11 +156,14 @@ extern int Num_fonts;
 extern font Fonts[MAX_FONTS];
 extern font *Current_font;
 
+#define FONT_INDEX(font) (font - &Fonts[0])
+
 #define FONT1				0				// font01.vf
 #define FONT2				1				// font02.vf
 #define FONT3				2				// font03.vf
 
 // extern definitions for basic font functions
+extern int gr_get_fontnum(char *filename);
 extern void gr_set_font(int fontnum);
 extern void gr8_string(int x,int y,char * text);
 

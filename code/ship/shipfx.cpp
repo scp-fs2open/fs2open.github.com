@@ -564,6 +564,7 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "network/multimsgs.h"
+#include "parse/scripting.h"
 
 
 
@@ -1089,6 +1090,15 @@ void shipfx_warpin_start( object *objp )
 		return;
 	}
 
+	//WMC - Check if scripting handles this.
+	Script_system.SetHookObject("Self", objp);
+	if(Script_system.IsConditionOverride(CHA_WARPIN, objp))
+	{
+		Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
+		Script_system.RemHookVar("Self");
+		return;
+	}
+
 	// if there is no arrival warp, then skip the whole thing
 	if (shipp->flags & SF_NO_ARRIVAL_WARP)
 	{
@@ -1202,6 +1212,9 @@ void shipfx_warpin_start( object *objp )
 		shipp->final_warp_time = timestamp(fl2i(SHIPFX_WARP_DELAY*1000.0f));
 		shipp->flags |= SF_ARRIVING_STAGE_1;
 	}
+
+	Script_system.RunCondition(CHA_WARPIN, 0, NULL, objp);
+	Script_system.RemHookVar("Self");
 }
 
 void shipfx_warpin_frame( object *objp, float frametime )
@@ -1457,6 +1470,14 @@ void shipfx_warpout_start( object *objp )
 		return;
 	}
 
+	Script_system.SetHookObject("Self", objp);
+	if(Script_system.IsConditionOverride(CHA_WARPOUT, objp))
+	{
+		Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
+		Script_system.RemHookVar("Self");
+		return;
+	}
+
 	// if we're dying return
 	if ( shipp->flags & SF_DYING ) {
 		return;
@@ -1586,6 +1607,8 @@ void shipfx_warpout_start( object *objp )
 		}
 	}
 
+	Script_system.RunCondition(CHA_WARPOUT, 0, NULL, objp);
+	Script_system.RemHookVar("Self");
 }
 
 void shipfx_warpout_frame( object *objp, float frametime )

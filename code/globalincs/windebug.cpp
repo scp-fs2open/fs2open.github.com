@@ -1056,8 +1056,22 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 	gr_activate(1);
 
 	Messagebox_active = false;
-} 
+}
 
+void LuaDebugPrint(lua_Debug &ar)
+{
+	dumpBuffer.Printf( "Name:\t\t%s\r\n",  ar.name);
+	dumpBuffer.Printf( "Name of:\t%s\r\n",  ar.namewhat);
+	dumpBuffer.Printf( "Function type:\t%s\r\n",  ar.what);
+	dumpBuffer.Printf( "Defined on:\t%d\r\n",  ar.linedefined);
+	dumpBuffer.Printf( "Upvalues:\t%d\r\n",  ar.nups);
+	dumpBuffer.Printf( "\r\n" );
+	dumpBuffer.Printf( "Source:\t\t%s\r\n",  ar.source);
+	dumpBuffer.Printf( "Short source:\t%s\r\n",  ar.short_src);
+	dumpBuffer.Printf( "Current line:\t%d\r\n",  ar.currentline);
+}
+
+extern lua_Debug Ade_debug_info;
 void LuaError(struct lua_State *L, char *format, ...)
 {
 	int val;
@@ -1094,6 +1108,10 @@ void LuaError(struct lua_State *L, char *format, ...)
 
 	dumpBuffer.Printf( "\r\n" );
 	dumpBuffer.Printf( "\r\n" );
+
+	//WMC - This is virtually worthless.
+/*
+	dumpBuffer.Printf(Separator);
 	dumpBuffer.Printf( "LUA Debug:" );
 	dumpBuffer.Printf( "\r\n" );
 	dumpBuffer.Printf(Separator);
@@ -1102,28 +1120,29 @@ void LuaError(struct lua_State *L, char *format, ...)
 	if(lua_getstack(L, 0, &ar))
 	{
 		lua_getinfo(L, "nSlu", &ar);
-		dumpBuffer.Printf( "Name:\t\t%s\r\n",  ar.name);
-		dumpBuffer.Printf( "Name of:\t%s\r\n",  ar.namewhat);
-		dumpBuffer.Printf( "Function type:\t%s\r\n",  ar.what);
-		dumpBuffer.Printf( "Defined on:\t%d\r\n",  ar.linedefined);
-		dumpBuffer.Printf( "Upvalues:\t%d\r\n",  ar.nups);
-		dumpBuffer.Printf( "\r\n" );
-		dumpBuffer.Printf( "Source:\t\t%s\r\n",  ar.source);
-		dumpBuffer.Printf( "Short source:\t%s\r\n",  ar.short_src);
-		dumpBuffer.Printf( "Current line:\t%d\r\n",  ar.currentline);
+		LuaDebugPrint(ar);
 	}
 	else
 	{
 		dumpBuffer.Printf("(No stack debug info)\r\n");
 	}
-
+*/
 	dumpBuffer.Printf(Separator);
-
-	AssertText2[0] = '\0';
-	dumpBuffer.Printf("\r\nLUA Stack:");
+	dumpBuffer.Printf( "ADE Debug:" );
 	dumpBuffer.Printf( "\r\n" );
 	dumpBuffer.Printf(Separator);
-	lua_stackdump(L, AssertText2);
+	LuaDebugPrint(Ade_debug_info);
+	dumpBuffer.Printf(Separator);
+
+	dumpBuffer.Printf( "\r\n" );
+	dumpBuffer.Printf( "\r\n" );
+
+	AssertText2[0] = '\0';
+	dumpBuffer.Printf(Separator);
+	dumpBuffer.Printf("LUA Stack:");
+	dumpBuffer.Printf( "\r\n" );
+	dumpBuffer.Printf(Separator);
+	ade_stackdump(L, AssertText2);
 	dumpBuffer.Printf( AssertText2 );
 	dumpBuffer.Printf( "\r\n" );
 	dumpBuffer.Printf(Separator);

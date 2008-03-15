@@ -1142,6 +1142,8 @@ extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
 typedef	struct ship_subsys {
 	struct ship_subsys *next, *prev;				//	Index of next and previous objects in list.
 	model_subsystem *system_info;					// pointer to static data for this subsystem -- see model.h for definition
+
+	char		sub_name[NAME_LENGTH];					//WMC - Name that overrides name of original
 	float		current_hits;							// current number of hits this subsystem has left.
 	float		max_hits;
 
@@ -2206,6 +2208,11 @@ extern float ship_get_subsystem_strength( ship *shipp, int type );
 extern ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
+
+//WMC
+char *ship_subsys_get_name(ship_subsys *ss);
+bool ship_subsys_has_instance_name(ship_subsys *ss);
+void ship_subsys_set_name(ship_subsys *ss, char *n_name);
 
 // subsys disruption
 extern int ship_subsys_disrupted(ship_subsys *ss);

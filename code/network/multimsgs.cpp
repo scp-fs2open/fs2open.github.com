@@ -8741,7 +8741,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 		flak_muzzle_flash(&pos, &dir, &objp->phys_info, wid);
 
 		// set its range explicitly - make it long enough so that it's guaranteed to still exist when the server tells us it blew up
-		flak_set_range(&Objects[weapon_objnum], &pos, (float)flak_range);
+		flak_set_range(&Objects[weapon_objnum], (float)flak_range);
 	}
 }
 

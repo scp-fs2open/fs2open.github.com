@@ -1622,6 +1622,7 @@
 #include "parse/lua.h"
 #include "parse/scripting.h"
 #include "object/objcollide.h"
+#include "object/waypoint.h"
 
 #ifndef NDEBUG
 #include "hud/hudmessage.h"
@@ -7608,31 +7609,6 @@ int sexp_has_been_tagged_delay(int n)
 		return SEXP_KNOWN_TRUE;
 	else
 		return SEXP_FALSE;
-}
-
-// return object index of waypoint or -1 if no such waypoint
-int waypoint_lookup(char *name)
-{
-	char buf[128];
-	int i;
-	object *ptr;
-
-	if (name == NULL)
-		return -1;
-
-	ptr = GET_FIRST(&obj_used_list);
-	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if (ptr->type == OBJ_WAYPOINT) {
-			i = ptr->instance;
-			sprintf(buf, "%s:%d", Waypoint_lists[i / 65536].name, (i & 0xffff) + 1);
-			if ( !stricmp(buf, name) )
-				return OBJ_INDEX(ptr);
-		}
-
-		ptr = GET_NEXT(ptr);
-	}
-
-	return -1;
 }
 
 // Goober5000
@@ -15217,8 +15193,9 @@ void sexp_hide_jumpnode(int n)
 
 //WMC - This is a bit of a hack, however, it's easier than
 //coding in a whole new SCript_system function.
-int sexp_script_eval(int n, int return_type)
+int sexp_script_eval(int node, int return_type)
 {
+	int n = node;
 	char *s = CTEXT(n);
 	bool success = false;
 
@@ -15227,13 +15204,17 @@ int sexp_script_eval(int n, int return_type)
 	switch(return_type)
 	{
 		case OPR_NUMBER:
-			success = Script_system.EvalString(s, "|i", &r, "SEXP-OPR_NUMBER");
+			success = Script_system.EvalString(s, "|i", &r, s);
 			break;
 		case OPR_STRING:
 			Error(LOCATION, "SEXP system does not support string return type; Goober must fix this before script-eval-string will work");
 			break;
 		case OPR_NULL:
-			success = Script_system.EvalString(s, NULL, NULL, "SEXP-OPR_NULL");
+			while(n != -1)
+			{
+				success = Script_system.EvalString(s, NULL, NULL, CTEXT(n));
+				n = CDR(n);
+			}
 			break;
 		default:
 			Error(LOCATION, "Bad type passed to sexp_script_eval - get a coder");

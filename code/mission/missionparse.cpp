@@ -1261,6 +1261,7 @@
 #include "network/multi_respawn.h"
 #include "network/multi_endgame.h"
 #include "object/parseobjectdock.h"
+#include "object/waypoint.h"
 #include "missionui/fictionviewer.h"
 #include "cmdline/cmdline.h"
 #include "popup/popup.h"

@@ -638,10 +638,6 @@ int objects_will_collide(object *A, object *B, float duration, float radius_scal
 // so I moved it into the object lib.  -John
 void obj_init_all_ships_physics();
 
-float get_shield_strength(object *objp);
-void set_shield_strength(object *objp, float strength);
-void add_shield_strength(object *objp, float delta);
-
 // Goober5000
 float get_hull_pct(object *objp);
 float get_sim_hull_pct(object *objp);

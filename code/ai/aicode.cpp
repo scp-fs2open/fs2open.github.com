@@ -1174,6 +1174,7 @@
 #include "ai/aibig.h"
 #include "hud/hud.h"
 #include "object/objcollide.h"
+#include "object/objectshield.h"
 #include "asteroid/asteroid.h"
 #include "hud/hudlock.h"
 #include "mission/missiontraining.h"
@@ -1189,6 +1190,7 @@
 #include "parse/parselo.h"
 #include "object/objectdock.h"
 #include "object/deadobjectdock.h"
+#include "object/waypoint.h"
 #include "ai/aiinternal.h"
 #include "iff_defs/iff_defs.h"
 #include "network/multimsgs.h"
@@ -1307,8 +1309,6 @@ control_info	AI_ci;
 object *Pl_objp;
 object *En_objp;
 
-waypoint_list Waypoint_lists[MAX_WAYPOINT_LISTS];
-
 #define	REARM_SOUND_DELAY		(3*F1_0)		//	Amount of time to delay rearm/repair after mode start
 #define	REARM_BREAKOFF_DELAY	(3*F1_0)		//	Amount of time to wait after fully rearmed to breakoff.
 
@@ -1338,7 +1338,6 @@ int Num_alloced_ai_classes;
 int	AI_FrameCount = 0;
 int	Ship_info_inited = 0;
 int	AI_watch_object = 0; // Debugging, object to spew debug info for.
-int	Num_waypoint_lists = 0;
 int	Mission_all_attack = 0;					//	!0 means all teams attack all teams.
 
 char *Skill_level_names(int level, int translate)
@@ -13036,11 +13035,11 @@ void ai_balance_shield(object *objp)
 	float	delta;
 
 	// if we are already at the max shield strength for all quads then just bail now
-	if ( Ships[objp->instance].ship_max_shield_strength == get_shield_strength(objp) )
+	if ( Ships[objp->instance].ship_max_shield_strength == shield_get_strength(objp) )
 		return;
 
 
-	shield_strength_avg = get_shield_strength(objp)/MAX_SHIELD_SECTIONS;
+	shield_strength_avg = shield_get_strength(objp)/MAX_SHIELD_SECTIONS;
 
 	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
 
@@ -13048,7 +13047,7 @@ void ai_balance_shield(object *objp)
 		if (objp->shield_quadrant[i] < shield_strength_avg) {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
 			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
-				add_shield_strength(objp, delta);
+				shield_add_strength(objp, delta);
 			else
 				objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
 
@@ -13058,7 +13057,7 @@ void ai_balance_shield(object *objp)
 		} else {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
 			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
-				add_shield_strength(objp, -delta);
+				shield_add_strength(objp, -delta);
 			else
 				objp->shield_quadrant[i] -= delta/MAX_SHIELD_SECTIONS;
 

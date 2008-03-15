@@ -1828,6 +1828,7 @@
 #include "network/stand_gui.h"
 #include "object/objcollide.h"
 #include "object/objectsnd.h"
+#include "object/waypoint.h"
 #include "observer/observer.h"
 #include "osapi/osapi.h"
 #include "osapi/osregistry.h"
@@ -4058,6 +4059,9 @@ VidInitError:
 //	Game_music_paused = 0;
 	Game_paused = 0;
 
+	Script_system.RunBytecode(Script_gameinithook);
+	Script_system.RunCondition(CHA_GAMEINIT);
+
 	game_title_screen_close();
 
 #ifdef _WIN32
@@ -5341,6 +5345,11 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 				last_Viewer_objnum = -1;
 			}
 
+			if(Viewer_obj)
+				Script_system.SetHookObject("Viewer", Viewer_obj);
+			else
+				Script_system.RemHookVar("Viewer");
+
 			if ( view_from_player ) {
 				//	View target from player ship.
 				Viewer_obj = NULL;
@@ -6237,26 +6246,6 @@ void game_render_post_frame()
 	}
 }
 
-//WMC - Used to set an object global, where the Lua type
-//is determined according to object type
-void obj_script_set_global(char *global_name, object *objp)
-{
-	if(objp == NULL) {
-		Script_system.RemGlobal(global_name);
-		return;
-	}
-
-	script_lua_odata luaobj;
-
-	if(objp->type == OBJ_SHIP) {
-		luaobj = l_Ship.Set(object_h(objp));
-	} else {
-		luaobj = l_Object.Set(object_h(objp));
-	}
-
-	Script_system.SetGlobal(global_name, 'o', &luaobj);
-}
-
 #ifndef NDEBUG
 #define DEBUG_GET_TIME(x)	{ x = timer_get_fixed_seconds(); }
 #else
@@ -6377,12 +6366,14 @@ void game_frame(int paused)
 				gr_clear();
 			}
 
-			obj_script_set_global("plr", Player_obj);
+			if(Player_obj)
+				Script_system.SetHookObject("Player", Player_obj);
+			else
+				Script_system.RemHookVar("Player");
 
 			DEBUG_GET_TIME( clear_time2 )
 			DEBUG_GET_TIME( render3_time1 )
 			game_render_frame_setup(&eye_pos, &eye_orient);
-			obj_script_set_global("slf", Viewer_obj);
 
 			game_render_frame( &eye_pos, &eye_orient );
 
@@ -6393,8 +6384,10 @@ void game_frame(int paused)
 			}
 
 			Scripting_didnt_draw_hud = 1;
-			if(Script_system.RunBytecode(Script_hudhook) && Script_system.IsOverride(Script_hudhook))
+			Script_system.SetHookObject("Self", Viewer_obj);
+			if(Script_system.IsOverride(Script_hudhook) || Script_system.IsConditionOverride(CHA_HUDDRAW, Viewer_obj))
 				Scripting_didnt_draw_hud = 0;
+			Script_system.RemHookVar("Self");
 
 			if(Scripting_didnt_draw_hud)
 			{
@@ -6464,6 +6457,11 @@ void game_frame(int paused)
 				// Draw 3D HUD gauges			
 				game_render_hud_3d(&eye_pos, &eye_orient);
 			}
+
+			Script_system.SetHookObject("Self", Viewer_obj);
+			Script_system.RunBytecode(Script_hudhook);
+			Script_system.RunCondition(CHA_HUDDRAW, '\0', NULL, Viewer_obj);
+			Script_system.RemHookVar("Self");
 
 			gr_reset_clip();
 			game_render_post_frame();
@@ -7657,7 +7655,13 @@ void game_leave_state( int old_state, int new_state )
 	}
 
 	//WMC - Scripting override
+	/*
 	if(GS_state_hooks[old_state].IsValid() && Script_system.IsOverride(GS_state_hooks[old_state])) {
+		return;
+	}
+	*/
+
+	if(Script_system.IsConditionOverride(CHA_ONFRAME)) {
 		return;
 	}
 
@@ -8035,7 +8039,12 @@ void game_leave_state( int old_state, int new_state )
 void game_enter_state( int old_state, int new_state )
 {
 	//WMC - Scripting override
+	/*
 	if(GS_state_hooks[new_state].IsValid() && Script_system.IsOverride(GS_state_hooks[new_state])) {
+		return;
+	}
+	*/
+	if(Script_system.IsConditionOverride(CHA_ONFRAME)) {
 		return;
 	}
 
@@ -8533,6 +8542,13 @@ void game_do_state(int state)
 		return;
 	}
 
+	if(Script_system.IsConditionOverride(CHA_ONFRAME)) {
+		game_set_frametime(state);
+		gr_clear();
+		gr_flip();	//Does state hook automagically
+		return;
+	}
+	/*
 	if(Script_system.IsOverride(GS_state_hooks[state]))
 	{
 		game_set_frametime(state);
@@ -8541,6 +8557,7 @@ void game_do_state(int state)
 		gr_flip();
 		return;
 	}
+	*/
 	
 	switch (state) {
 		case GS_STATE_MAIN_MENU:
@@ -11303,7 +11320,12 @@ void game_title_screen_display()
 	}
 #endif
 
-	if(!Script_system.IsOverride(Script_splashhook))
+	//Script_system.SetHookVar("SplashScreenImage", 's', Game_title_screen_fname[gr_screen.res]);
+	//Script_system.SetHookVar("SplashScreenLogo", 's', Game_logo_screen_fname[gr_screen.res]);
+	bool globalhook_override = Script_system.IsOverride(Script_splashhook);
+	bool condhook_override = Script_system.IsConditionOverride(CHA_SPLASHSCREEN);
+	mprintf(("SCRIPTING: Splash screen overrides checked"));
+	if(!globalhook_override && !condhook_override)
 	{
 		Game_title_logo = bm_load(Game_logo_screen_fname[gr_screen.res]);
 		Game_title_bitmap = bm_load(Game_title_screen_fname[gr_screen.res]);
@@ -11330,7 +11352,17 @@ void game_title_screen_display()
 		}
 	}
 
-	Script_system.RunBytecode(Script_splashhook);
+	if(!condhook_override)
+		Script_system.RunBytecode(Script_splashhook);
+	
+	mprintf(("SCRIPTING: Splash hook has been run"));
+
+	if(!globalhook_override || condhook_override)
+		Script_system.RunCondition(CHA_SPLASHSCREEN);
+		
+	mprintf(("SCRIPTING: Splash screen conditional hook has been run"));
+		
+	Script_system.RemHookVars(2, "SplashScreenImage", "SplashScreenLogo");
 
 #ifndef NO_DIRECT3D
 	// d3d	

@@ -707,6 +707,7 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "object/objectdock.h"
+#include "object/waypoint.h"
 
 
 // all ai goals dealt with in this code are goals that are specified through
