@@ -4829,7 +4829,8 @@ ADE_VIRTVAR(Class, l_Ship, "shipclass", "Ship class")
 	ship *shipp = &Ships[objh->objp->instance];
 
 	if(ADE_SETTING_VAR && idx > -1)
-		shipp->ship_info_index = idx;
+		change_ship_type(objh->objp->instance, idx, 1);
+		//shipp->ship_info_index = idx;
 
 	if(shipp->ship_info_index < 0)
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
