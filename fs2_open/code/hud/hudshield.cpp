@@ -333,6 +333,7 @@
 #include "hud/hudshield.h"
 #include "graphics/2d.h"
 #include "object/object.h"
+#include "object/objectshield.h"
 #include "hud/hud.h"
 #include "hud/hudparse.h"
 #include "hud/hudtargetbox.h"
@@ -915,7 +916,7 @@ void hud_shield_equalize(object *objp, player *pl)
 	if (all_equal)
 		return;
 
-	strength = get_shield_strength(objp);
+	strength = shield_get_strength(objp);
 	if (strength == 0.0f)
 		return;
 
@@ -927,7 +928,7 @@ void hud_shield_equalize(object *objp, player *pl)
 		pl->shield_penalty_stamp = timestamp(1000);
 	}
 			
-	set_shield_strength(objp, strength);					
+	shield_set_strength(objp, strength);					
 
 	// beep
 	if (objp == Player_obj) {

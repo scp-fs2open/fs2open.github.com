@@ -18,6 +18,7 @@
 #include "cfile/cfile.h"
 #include "globalincs/linklist.h"
 #include "object/object.h"
+#include "object/waypoint.h"
 #include "jumpnode/jumpnode.h"
 #include "mission/missiongoals.h"
 #include "gamesnd/eventmusic.h"

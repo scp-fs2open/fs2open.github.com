@@ -227,6 +227,7 @@
 #include "weapon/weapon.h"
 #include "globalincs/systemvars.h"
 #include "object/object.h"
+#include "object/objectshield.h"
 #include "ship/subsysdamage.h"
 	
 
@@ -412,9 +413,9 @@ void update_ets(object* objp, float fl_frametime)
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy;
 	}
 
-	add_shield_strength(objp, shield_delta);
+	shield_add_strength(objp, shield_delta);
 
-	if ( (_ss = get_shield_strength(objp)) > ship_p->ship_max_shield_strength ){
+	if ( (_ss = shield_get_strength(objp)) > ship_p->ship_max_shield_strength ){
 		for (int i=0; i<MAX_SHIELD_SECTIONS; i++){
 			objp->shield_quadrant[i] *= ship_p->ship_max_shield_strength / _ss;
 		}
@@ -1046,7 +1047,7 @@ void transfer_energy_to_shields(object* obj)
 		return;
 	}
 
-	transfer_energy_weapon_common(obj, ship_p->weapon_energy, get_shield_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, ship_p->ship_max_shield_strength, 0.5f);
+	transfer_energy_weapon_common(obj, ship_p->weapon_energy, shield_get_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, ship_p->ship_max_shield_strength, 0.5f);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1065,7 +1066,7 @@ void transfer_energy_to_weapons(object* obj)
 		return;
 	}
 
-	transfer_energy_weapon_common(obj, get_shield_strength(obj), ship_p->weapon_energy, &ship_p->target_shields_delta, &ship_p->target_weapon_energy_delta, sinfo_p->max_weapon_reserve, 1.0f);
+	transfer_energy_weapon_common(obj, shield_get_strength(obj), ship_p->weapon_energy, &ship_p->target_shields_delta, &ship_p->target_weapon_energy_delta, sinfo_p->max_weapon_reserve, 1.0f);
 }
 
 void hudets_page_in()

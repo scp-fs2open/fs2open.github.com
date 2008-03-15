@@ -139,6 +139,7 @@
 #include "ai/ai.h"
 #include "cfile/cfile.h"
 #include "ship/ship.h"
+#include "object/waypoint.h"
 
 #define BACKUP_DEPTH	9
 

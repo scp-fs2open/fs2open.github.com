@@ -663,6 +663,8 @@ typedef struct weapon {
 	int		team;								// The team of the ship that fired this
 	int		species;							// The species of the ship that fired this
 	float		lifeleft;						// life left on this weapon	
+	vec3d	start_pos;
+
 	int		target_num;						//	Object index of target
 	int		target_sig;						//	So we know if the target is the same one we've been tracking
 	float		nearest_dist;					//	nearest distance yet attained to target
@@ -676,6 +678,7 @@ typedef struct weapon {
 	trail		*trail_ptr;						// NULL if no trail, otherwise a pointer to its trail
 	ship_subsys *turret_subsys;			// points to turret that fired weapon, otherwise NULL
 	int		group_id;						// Which group this is in.
+	float	det_range;					//How far from start_pos it blows up
 
 	// Stuff for thruster glows
 	int		thruster_bitmap;					// What frame the current thruster bitmap is at for this weapon
@@ -806,6 +809,7 @@ typedef struct weapon_info {
 	float arm_dist;
 	float arm_radius;
 	float det_range;
+	float	det_radius;					//How far from target or target subsystem it blows up
 	/*float	blast_force;						// force this weapon exhibits when hitting an object
 	float	inner_radius, outer_radius;	// damage radii for missiles (0 means impact only)
 	float	shockwave_speed;					// speed of shockwave ( 0 means none )*/

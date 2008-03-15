@@ -1317,10 +1317,10 @@ void hud_render_target_ship_info(object *target_objp)
 		// PRINT SUBSYS NAME
 		// hud_set_default_color();
 		// get turret subsys name
-		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET) {
+		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET && !ship_subsys_has_instance_name(Player_ai->targeted_subsys)) {
 			get_turret_subsys_name(&Player_ai->targeted_subsys->weapons, outstr);
 		} else {
-			sprintf(outstr, "%s", Player_ai->targeted_subsys->system_info->name);
+			sprintf(outstr, "%s", ship_subsys_get_name(Player_ai->targeted_subsys));
 		}
 		hud_targetbox_truncate_subsys_name(outstr);
 		gr_printf(Target_window_coords[gr_screen.res][0]+2, Target_window_coords[gr_screen.res][1]+Target_window_coords[gr_screen.res][3]-h, outstr);

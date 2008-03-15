@@ -176,6 +176,7 @@
 #include "object/objectdock.h"
 #include "ai/aiinternal.h"	//Included last, so less includes are needed
 #include "iff_defs/iff_defs.h"
+#include "weapon/muzzleflash.h"
 
 // How close a turret has to be point at its target before it
 // can fire.  If the dot of the gun normal and the vector from gun
@@ -390,6 +391,16 @@ weapon_info *get_turret_weapon_wip(ship_weapon *swp, int weapon_num)
 		return &Weapon_info[swp->primary_bank_weapons[weapon_num]];
 }
 
+int get_turret_weapon_next_fire_stamp(ship_weapon *swp, int weapon_num)
+{
+	Assert(weapon_num < MAX_SHIP_WEAPONS);
+	Assert(weapon_num >= 0);
+
+	if(weapon_num >= MAX_SHIP_PRIMARY_BANKS)
+		return swp->next_secondary_fire_stamp[weapon_num - MAX_SHIP_PRIMARY_BANKS];
+	else
+		return swp->next_primary_fire_stamp[weapon_num];
+}
 
 //This function is kinda slow
 //Returns the longest-ranged weapon on a turret
@@ -1289,7 +1300,7 @@ void turret_update_enemy_in_range(ship_subsys *turret, float seconds)
 }
 
 // Fire a weapon from a turret
-void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL)
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, vec3d *turret_pos, vec3d *turret_fvec, vec3d *predicted_pos = NULL, float flak_range_override = 100.0f)
 {
 	matrix	turret_orient;
 	int weapon_objnum;
@@ -1299,6 +1310,10 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	weapon_info *wip;
 	weapon *wp;
 	object *objp;
+
+	//WMC - Limit firing to firestamp
+	if(!timestamp_elapsed(get_turret_weapon_next_fire_stamp(&turret->weapons, weapon_num)))
+		return false;
 
 	parent_aip = &Ai_info[Ships[Objects[parent_objnum].instance].ai_index];
 	parent_ship = &Ships[Objects[parent_objnum].instance];
@@ -1316,8 +1331,9 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		if (wip->wi_flags & WIF_BEAM) {
 			// if this beam isn't free to fire
 			if (!(turret->weapons.flags & SW_FLAG_BEAM_FREE)) {
-				Int3();	// should never get this far
-				return;
+				//WMC - remove this
+				//Int3();	// should never get this far
+				return false;
 			}
 			beam_fire_info fire_info;
 
@@ -1340,13 +1356,13 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				shipfx_start_cloak(parent_ship,bip->beam_warmup + bip->beam_warmdown + (int)(bip->beam_life*1000.0f) + 1000);
 			}
 
-			return;
+			return true;
 		}
 		// don't fire swam, but set up swarm info instead
 		else if (wip->wi_flags & WIF_SWARM) {
 			turret_swarm_set_up_info(parent_objnum, turret, wip);
 
-			return;
+			return true;
 		}
 		// now do anything else
 		else {
@@ -1370,11 +1386,20 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 						// show a muzzle flash
 						flak_muzzle_flash(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, turret_weapon_class);
 
-						// pick a firing range so that it detonates properly			
-						flak_pick_range(objp, turret_pos, predicted_pos, ship_get_subsystem_strength(parent_ship, SUBSYSTEM_WEAPONS));
+						if(predicted_pos != NULL)
+						{
+							// pick a firing range so that it detonates properly			
+							flak_pick_range(objp, turret_pos, predicted_pos, ship_get_subsystem_strength(parent_ship, SUBSYSTEM_WEAPONS));
 
-						// determine what that range was
-						flak_range = flak_get_range(objp);
+							// determine what that range was
+							flak_range = flak_get_range(objp);
+						}
+						else
+						{
+							flak_set_range(objp, flak_range_override);
+						}
+					} else if(wip->muzzle_flash > -1) {	
+						mflash_create(turret_pos, turret_fvec, &Objects[parent_ship->objnum].phys_info, Weapon_info[turret_weapon_class].muzzle_flash);		
 					}
 
 					// in multiplayer (and the master), then send a turret fired packet.
@@ -1416,6 +1441,8 @@ void turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		float wait = 1000.0f * frand_range(0.9f, 1.1f);
 		turret->turret_next_fire_stamp = timestamp((int) wait);
 	}
+
+	return true;
 }
 
 //void turret_swarm_fire_from_turret(ship_subsys *turret, int parent_objnum, int target_objnum, ship_subsys *target_subsys)
@@ -1465,7 +1492,8 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 				snd_play_3d( &Snds[Weapon_info[tsi->weapon_class].launch_snd], &turret_pos, &View_position );
 			}
 		}
-		
+		if(Weapon_info[tsi->weapon_class].muzzle_flash > -1)
+			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
 		// in multiplayer (and the master), then send a turret fired packet.
 		if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
 			int subsys_index;

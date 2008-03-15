@@ -152,6 +152,7 @@
 #include "ship/ship.h"
 #include "object/object.h"
 #include "object/objcollide.h"
+#include "object/waypoint.h"
 #include "parse/sexp.h"
 #include "freespace2/freespace.h"
 #include "globalincs/linklist.h"

@@ -573,6 +573,7 @@
 #include "globalincs/linklist.h"
 #include "object/object.h"
 #include "object/objcollide.h"
+#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "freespace2/freespace.h"
 #include "render/3d.h"
@@ -3722,7 +3723,7 @@ int beam_will_tool_target(beam *b, object *objp)
 	// calculate total strength, factoring in shield
 	total_strength = objp->hull_strength;
 	if (!(wip->wi_flags2 & WIF2_PIERCE_SHIELDS))
-		total_strength += get_shield_strength(objp);
+		total_strength += shield_get_strength(objp);
 
 	// if the beam is going to apply more damage in about 1 and a half than the ship can take
 	damage_in_a_few_seconds = (TOOLTIME / (float)BEAM_DAMAGE_TIME) * wip->damage;

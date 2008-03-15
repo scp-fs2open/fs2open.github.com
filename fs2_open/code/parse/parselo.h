@@ -512,7 +512,7 @@ extern void stuff_string(char *pstr, int type, int len, char *terminators = NULL
 extern void stuff_string_line(char *pstr, int len);
 
 //alloc
-extern char* alloc_block(char* startstr, char* endstr);
+extern char* alloc_block(char* startstr, char* endstr, int extra_chars = 0);
 
 // Exactly the same as stuff string only Malloc's the buffer. 
 //	Supports various FreeSpace primitive types.  If 'len' is supplied, it will override

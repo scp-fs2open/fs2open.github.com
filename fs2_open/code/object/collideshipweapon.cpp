@@ -544,22 +544,42 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 
 	if ( valid_hit_occurred )
 	{
+		Script_system.SetHookObjects(4, "Ship", ship_objp, "Weapon", weapon_objp, "Self",ship_objp, "Object", weapon_objp);
+		bool ship_override = Script_system.IsConditionOverride(CHA_COLLIDEWEAPON, ship_objp);
+
+		Script_system.SetHookObjects(2, "Self",weapon_objp, "Object", ship_objp);
+		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDESHIP, weapon_objp);
+
+		if(!ship_override && !weapon_override) {
+			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
+		}
+
+		Script_system.SetHookObjects(2, "Self",ship_objp, "Object", weapon_objp);
+		if(!(weapon_override && !ship_override))
+			Script_system.RunCondition(CHA_COLLIDEWEAPON, '\0', NULL, ship_objp);
+
+		Script_system.SetHookObjects(2, "Self",weapon_objp, "Object", ship_objp);
+		if((weapon_override && !ship_override) || (!weapon_override && !ship_override))
+			Script_system.RunCondition(CHA_COLLIDESHIP, '\0', NULL, weapon_objp);
+
+		Script_system.RemHookVars(4, "Ship", "Weapon", "Self","Object");
+		/*
 		if(!Script_system.IsOverride(wip->sc_collide_ship)) {
 			ship_weapon_do_hit_stuff(ship_objp, weapon_objp, &mc.hit_point_world, &mc.hit_point, quadrant_num, mc.hit_submodel, mc.hit_normal);
 		}
 
 		if(wip->sc_collide_ship.IsValid()) {
-			script_lua_odata lua_self_objp = l_Weapon.Set(object_h(weapon_objp));
-			script_lua_odata lua_ship_objp = l_Ship.Set(object_h(ship_objp));
+			ade_odata lua_self_obj = l_Weapon.Set(object_h(weapon_objp));
+			ade_odata lua_ship_obj = l_Ship.Set(object_h(ship_objp));
 			
-			Script_system.SetGlobal("Self", 'o', &lua_self_objp);
-			Script_system.SetGlobal("Ship", 'o', &lua_ship_objp);
+			Script_system.SetHookVar("Self", 'o', &lua_self_obj);
+			Script_system.SetHookVar("Ship", 'o', &lua_ship_obj);
 
 			Script_system.RunBytecode(wip->sc_collide_ship);
 
-			Script_system.RemGlobal("Self");
-			Script_system.RemGlobal("Ship");
-		}
+			Script_system.RemHookVar("Self");
+			Script_system.RemHookVar("Ship");
+		}*/
 	}
 	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->wi_flags & WIF_HOMING) && (wp->homing_object == ship_objp)) {
 		if (dist < wip->shockwave.inner_rad) {

@@ -741,8 +741,7 @@
 #include "network/multi_respawn.h"
 #include "network/multi_pmsg.h"
 #include "asteroid/asteroid.h"
-
-
+#include "parse/scripting.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
@@ -2093,6 +2092,18 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 {
 	Assert(ship_obj);	// Goober5000 - but not other_obj, not only for sexp but also for self-destruct
 
+	Script_system.SetHookObject("Self", ship_obj);
+	if(other_obj != NULL) Script_system.SetHookObject("Killer", other_obj);
+
+	if(Script_system.IsConditionOverride(CHA_DEATH, ship_obj))
+	{
+		//WMC - Do scripting stuff
+		Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_obj);
+		Script_system.RemHookVar("Self");
+		Script_system.RemHookVar("Killer");
+		return;
+	}
+
 	ship *sp;
 	char *killer_ship_name;
 	int killer_damage_percent = 0;
@@ -2218,6 +2229,9 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	if ( (ship_obj == Player_obj) ) {
 		ship_maybe_lament();
 	}
+
+	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_obj);
+	Script_system.RemHookVars(2, "Self", "Killer");
 }
 
 // function to simply explode a ship where it is currently at
