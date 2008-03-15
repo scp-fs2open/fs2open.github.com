@@ -2866,6 +2866,7 @@ int warptype_match(char *p)
 //#define SHIP_MULTITEXT_LENGTH 1500
 #define SHIP_MULTITEXT_LENGTH 4096
 
+#define DEFAULT_DELTA_BANK_CONST	0.5f
 
 //Writes default info to a ship entry
 //Result: Perfectly valid ship_info entry, just with no name
@@ -2898,6 +2899,7 @@ void init_ship_entry(ship_info *sip)
 	sip->density = 1.0f;
 	sip->damp = 0.0f;
 	sip->rotdamp = 0.0f;
+	sip->delta_bank_const = DEFAULT_DELTA_BANK_CONST;
 	vm_vec_zero(&sip->max_vel);
 	sip->max_speed = 0.0f;
 	vm_vec_zero(&sip->rotation_time);
@@ -3589,6 +3591,10 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	if(optional_string("$Rotdamp:"))
 		stuff_float( &(sip->rotdamp) );
 	diag_printf ("%s '%s' rotdamp -- %7.3f\n", info_type_name, sip->name, sip->rotdamp);
+
+	if(optional_string("$Banking Constant:"))
+		stuff_float( &(sip->delta_bank_const) );
+	diag_printf ("%s '%s' delta_bank_const -- %7.3f\n", info_type_name, sip->name, sip->delta_bank_const);
 
 	if(optional_string("$Max Velocity:"))
 		stuff_vector(&sip->max_vel);
@@ -5709,6 +5715,7 @@ void physics_ship_init(object *objp)
 
 	pi->center_of_mass = pm->center_of_mass;
 	pi->side_slip_time_const = sinfo->damp;
+	pi->delta_bank_const = sinfo->delta_bank_const;
 	pi->rotdamp = sinfo->rotdamp;
 	pi->max_vel = sinfo->max_vel;
 	pi->afterburner_max_vel = sinfo->afterburner_max_vel;
@@ -5777,6 +5784,63 @@ vec3d get_submodel_offset(int model, int submodel){
 	return ret;
 
 }
+
+/*
+void ship_cam_chase_custom_position(camera *cam, vec3d *c_pos)
+{
+	Assert(cam == NULL);
+	if(cam == NULL)
+		return;
+
+	object *objp = cam->get_object_self();
+	vec3d	move_dir;
+
+	if ( objp->phys_info.speed < 0.1 )
+		move_dir = objp->orient.vec.fvec;
+	else {
+		move_dir = objp->phys_info.vel;
+		vm_vec_normalize(&move_dir);
+	}
+
+	//create a better 3rd person view if this is the player ship
+	if (objp==Player_obj)
+	{
+		vm_vec_scale_add(eye_pos, &objp->pos, &move_dir, -2.25f * objp->radius - Viewer_chase_info.distance);
+		vm_vec_scale_add2(eye_pos, &objp->orient.vec.uvec, .625f * objp->radius);
+
+		//get a point 1000m forward of ship
+		vec3d aim_pt;
+		vm_vec_copy_scale(&aim_pt,&objp->orient.vec.fvec,1000.0f);
+		vm_vec_add2(&aim_pt,&objp->pos);
+		//Calculate orient
+		vm_vec_sub(&eye_dir, &aim_pt, eye_pos);
+		vm_vec_normalize(&eye_dir);
+	}
+	else
+	{
+		vm_vec_scale_add(eye_pos, &objp->pos, &move_dir, -3.0f * objp->radius - Viewer_chase_info.distance);
+		vm_vec_scale_add2(eye_pos, &objp->orient.vec.uvec, 0.75f * objp->radius);
+
+		//Calculate orient
+		vm_vec_sub(&eye_dir, &Viewer_obj->pos, eye_pos);
+		vm_vec_normalize(&eye_dir);
+	}
+		
+	// JAS: I added the following code because if you slew up using
+	// Descent-style physics, eye_dir and Viewer_obj->orient.vec.uvec are
+	// equal, which causes a zero-length vector in the vm_vector_2_matrix
+	// call because the up and the forward vector are the same.   I fixed
+	// it by adding in a fraction of the right vector all the time to the
+	// up vector.
+	vec3d tmp_up = objp->orient.vec.uvec;
+	vm_vec_scale_add2( &tmp_up, &objp->orient.vec.rvec, 0.00001f );
+
+	vm_vector_2_matrix(eye_orient, &eye_dir, &tmp_up, NULL);
+
+	//	Modify the orientation based on head orientation.
+	compute_slew_matrix(eye_orient, &Viewer_slew_angles);
+}
+*/
 
 void ship_set(int ship_index, int objnum, int ship_type)
 {
@@ -6051,7 +6115,12 @@ void ship_set(int ship_index, int objnum, int ship_type)
 
 	shipp->special_warp_objnum = -1;
 
-	shipp->current_viewpoint = 0;
+	polymodel *pm = model_get(sip->model_num);
+
+	if(pm != NULL && pm->n_view_positions > 0)
+		ship_set_eye(objp, 0);
+	else
+		ship_set_eye(objp, -1);
 
 	// set awacs warning flags so awacs ship only asks for help once at each level
 	shipp->awacs_warning_flag = AWACS_WARN_NONE;
@@ -12020,6 +12089,75 @@ void compute_slew_matrix(matrix *orient, angles *a)
 	vm_orthogonalize_matrix(orient);
 }
 
+//WMC
+void ship_set_eye( object *obj, int eye_index)
+{
+	if(obj->type != OBJ_SHIP)
+		return;
+
+	ship *shipp = &Ships[obj->instance];
+
+	if(eye_index < 0)
+	{
+		shipp->current_viewpoint = -1;
+		return;
+	}
+
+	ship_info *sip = &Ship_info[shipp->ship_info_index];
+	if(sip->model_num < 0)
+		return;
+
+	polymodel *pm = model_get(sip->model_num);
+
+	if(pm == NULL || eye_index > pm->n_view_positions)
+		return;
+
+	shipp->current_viewpoint = eye_index;
+}
+/*
+camid ship_set_eye( object *obj, int eye_index)
+{
+	if(obj->type != OBJ_SHIP)
+		return camid();
+
+	ship *shipp = &Ships[obj->instance];
+
+	vec3d *pos = &vmd_zero_vector;
+	vec3d *norm = &vmd_zero_vector;
+	int subobject = -1;
+	if(eye_index > 0)
+	{
+		ship_info *sip = &Ship_info[shipp->ship_info_index];
+		if(sip->model_num < 0)
+			return camid();
+
+		polymodel *pm = model_get(sip->model_num);
+
+		if(pm == NULL || eye_index > pm->n_view_positions)
+			return camid();
+
+		eye *ep = &pm->view_positions[eye_index];
+		pos = &ep->pnt;
+		norm = &ep->norm;
+		subobject = ep->parent;
+	}
+
+	if(shipp->ship_camera.isValid())
+	{
+		camera *cam = shipp->ship_camera.getCamera();
+		cam->set_position(pos);
+		cam->set_rotation_facing(norm);
+		cam->set_object_self(obj, subobject);
+	}
+	else
+	{
+		shipp->ship_camera = cam_create(shipp->ship_name, pos, norm, obj, subobject);
+	}
+
+	return shipp->ship_camera;
+}
+*/
+
 // calculates the eye position for this ship in the global reference frame.  Uses the
 // view_positions array in the model.  The 0th element is the normal viewing position.
 // the vector of the eye is returned in the parameter 'eye'.  The orientation of the
@@ -12027,20 +12165,24 @@ void compute_slew_matrix(matrix *orient, angles *a)
 // eyes have no defined up vector)
 void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj )
 {
-	polymodel *pm = model_get(Ship_info[Ships[obj->instance].ship_info_index].model_num);
-	eye *ep = &(pm->view_positions[Ships[obj->instance].current_viewpoint]);
+	//return Ships[obj->instance].ship_camera;
+
+	ship *shipp = &Ships[obj->instance];
+	polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
 	// vec3d vec;
 
 	// check to be sure that we have a view eye to look at.....spit out nasty debug message
-	if ( pm->n_view_positions == 0 ) {
+	if ( shipp->current_viewpoint < 0 || pm->n_view_positions == 0 || shipp->current_viewpoint > pm->n_view_positions) {
 //		nprintf (("Warning", "No eye position found for model %s.  Find artist to get fixed.\n", pm->filename ));
 		*eye_pos = obj->pos;
 		*eye_orient = obj->orient;
-		return;
 	}
+
+	//return shipp->viewpoints[shipp->current_viewpoint];
 
 	// eye points are stored in an array -- the normal viewing position for a ship is the current_eye_index
 	// element.
+	eye *ep = &(pm->view_positions[Ships[obj->instance].current_viewpoint]);
 	model_find_world_point( eye_pos, &ep->pnt, pm->id, ep->parent, &obj->orient, &obj->pos );
 	// if ( shipp->current_eye_index == 0 ) {
 		//vm_vec_scale_add(eye_pos, &viewer_obj->pos, &tm.vec.fvec, 2.0f * viewer_obj->radius + Viewer_external_info.distance);

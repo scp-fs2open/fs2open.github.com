@@ -198,6 +198,7 @@
 #include "graphics/tmapper.h"
 #include "graphics/2d.h"
 #include "graphics/grbatch.h"
+#include "camera/camera.h"
 
 //flags for point structure
 #define PF_PROJECTED 	 1	//has been projected, so sx,sy valid
@@ -234,6 +235,9 @@ extern bool g3_in_frame();
 
 //set view from x,y,z & p,b,h, zoom.  Must call one of g3_set_view_*()
 void g3_set_view_angles(vec3d *view_pos,angles *view_orient,float zoom);
+
+//Set view from camera
+void g3_set_view(camera *cam);
 
 //set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
 void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom);

@@ -212,6 +212,7 @@ typedef struct physics_info {
 	float		rotdamp;			//rotational velocity damping
 	float		side_slip_time_const;	// time const for achieving desired velocity in the local sideways direction
 												//   value should be zero for no sideslip and increase depending on desired slip
+	float		delta_bank_const;	//const that heading is divided by. 0 means no delta bank.
 
 	vec3d	max_vel;			//maximum foward velocity in x,y,z
 	vec3d	afterburner_max_vel;	// maximum foward velocity in x,y,z while afterburner engaged
@@ -322,6 +323,43 @@ void physics_set_viewer( physics_info * p, int dir );
 
 //WMC - apply_physics
 void apply_physics( float damping, float desired_vel, float initial_vel, float t, float * new_vel, float * delta_pos );
+
+//WMC - camera code type stuff
+//Acceleration, constant Velocity, Deceleration (to another speed, so maybe not deceleration)
+class avd_movement
+{
+private:
+	//Current
+	float Pc;		//Current position
+	float Vc;		//Current velocity
+	
+	//Initial
+	int Ti;			//Initial timestamp
+	float Pi;		//Initial position
+	float Vi;		//Initial velocity
+
+	//Given
+	float Pf;		//Final position
+	float Tf;		//Final duration
+	float Tai;		//Starting acceleration duration
+	float Taf;		//Ending acceleration duration
+	float Vf;		//Final velocity
+
+	//Calculated
+	float Vm;		//Middle velocity
+	float Ai;		//Starting acceleration
+	float Af;		//Ending acceleration
+public:
+	avd_movement();
+	void clear();
+
+	void get(float Time, float *Position, float *Velocity);
+	void get(float *Position, float *Velocity);
+
+	void set(float position);
+	void setAVD(float final_position, float total_movement_time, float starting_accleration_time, float ending_acceleration_time, float final_velocity);
+	void setVD(float total_movement_time, float ending_acceleration_time, float final_velocity);
+};
 
 /*
 #ifdef __cplusplus

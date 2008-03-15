@@ -96,6 +96,7 @@
 //
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
+#include "camera/camera.h"
 
 struct ship;
 struct object;
@@ -175,7 +176,7 @@ int neb2_create(vec3d *offset, int num_poofs, float inner_radius, float outer_ra
 void neb2_delete(object *objp);
 
 // call before beginning all rendering
-void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient);
+void neb2_render_setup(camid cid);
 
 // renders a nebula object
 void neb2_render(object *objp);

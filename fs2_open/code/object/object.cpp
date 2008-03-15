@@ -1136,6 +1136,36 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	obj->num_pairs = 0;
 	obj->net_signature = 0;			// be sure to reset this value so new objects don't take on old signatures.	
 
+	//WMC
+	/*
+	char buf[NAME_LENGTH];
+	sprintf(buf, "Object %d", objnum);
+	obj->core_camera = cam_create(buf, &vmd_zero_vector, &vmd_identity_matrix, obj);
+
+	//Top-down camera
+	sprintf(buf, "Object %d topdown", objnum);
+	vec3d tdv = vmd_zero_vector;
+	matrix tdm = vmd_identity_matrix;
+	angles rot_angles = { PI_2, 0.0f, 0.0f };
+	bool position_override = false;
+	if(obj->type == OBJ_SHIP)
+	{
+		ship_info *sip = &Ship_info[Ships[Viewer_obj->instance].ship_info_index];
+		if(sip->topdown_offset_def) {
+			tdv.xyz.x = sip->topdown_offset.xyz.x;
+			tdv.xyz.y = sip->topdown_offset.xyz.y;
+			tdv.xyz.z = sip->topdown_offset.xyz.z;
+			position_override = true;
+		}
+	}
+	if(!position_override)
+	{
+		tdv.xyz.y = radius * 25.0f;
+	}
+	vm_angles_2_matrix(&tdm, &rot_angles);
+	obj->topdown_camera = cam_create(buf, &tdv, &tdm, obj);
+	*/
+
 	// Goober5000
 	obj->dock_list = NULL;
 	obj->dead_dock_list = NULL;
@@ -2587,5 +2617,37 @@ int obj_get_by_signature(int sig)
 
 		objp = GET_NEXT(objp);
 	}
+	return -1;
+}
+
+//Gets object model
+int object_get_model(object *objp)
+{
+	switch(objp->type)
+	{
+		case OBJ_ASTEROID:
+		{
+			asteroid *asp = &Asteroids[objp->instance];
+			return Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype];
+		}
+		case OBJ_DEBRIS:
+		{
+			debris *debrisp = &Debris[objp->instance];
+			return debrisp->model_num;
+		}
+		case OBJ_SHIP:
+		{
+			ship *shipp = &Ships[objp->instance];
+			return Ship_info[shipp->ship_info_index].model_num;
+		}
+		case OBJ_WEAPON:
+		{
+			weapon *wp = &Weapons[objp->instance];
+			return Weapon_info[wp->weapon_info_index].model_num;
+		}
+		default:
+			break;
+	}
+
 	return -1;
 }

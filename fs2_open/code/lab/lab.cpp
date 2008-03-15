@@ -1124,17 +1124,13 @@ void lab_init()
 	cbp = cwp->AddChild(new Button("Weapon variables", x, 0, weap_variables_window));
 }
 
-extern void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient);
-extern void game_render_frame(vec3d *eye_pos, matrix *eye_orient);
 void lab_do_frame(float frametime)
 {
 	gr_clear();
 	if(Lab_in_mission)
 	{
-		vec3d eye_pos;
-		matrix eye_orient;
-		game_render_frame_setup(&eye_pos, &eye_orient);
-		game_render_frame( &eye_pos, &eye_orient );
+		camid cid = game_render_frame_setup();
+		game_render_frame( cid );
 	}
 	else
 	{
