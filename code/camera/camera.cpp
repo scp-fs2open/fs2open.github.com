@@ -53,6 +53,8 @@ void camera::clear()
 
 void camera::reset()
 {
+	flags = CAM_DEFAULT_FLAGS;
+
 	object_self = object_target = object_h();
 	object_self_submodel = object_target_submodel = -1;
 
@@ -94,6 +96,14 @@ void camera::set_name(char *in_name)
 
 void camera::set_fov(float in_fov, float in_fov_time, float in_fov_acceleration_time)
 {
+	if(in_fov_time == 0.0f && in_fov_acceleration_time == 0.0f)
+	{
+		flags |= CAM_STATIONARY_FOV;
+		c_fov = in_fov;
+		return;
+	}
+
+	flags &= ~CAM_STATIONARY_FOV;
 	if(in_fov <= 0.0f)
 	{
 		fov.setVD(in_fov_time, in_fov_acceleration_time, 0.0f);
@@ -136,6 +146,14 @@ void camera::set_custom_orientation_function(void (*n_func_custom_orientation)(c
 
 void camera::set_position(vec3d *in_position, float in_translation_time, float in_translation_acceleration_time)
 {
+	if(in_translation_time == 0.0f && in_translation_acceleration_time == 0.0f)
+	{
+		c_pos = *in_position;
+		flags |= CAM_STATIONARY_POS;
+		return;
+	}
+
+	flags &= ~CAM_STATIONARY_POS;
 	if(in_position == NULL)
 	{
 		pos_x.setVD(in_translation_time, in_translation_acceleration_time, 0.0f);
@@ -158,6 +176,13 @@ void camera::set_translation_velocity(vec3d *in_velocity, float in_acceleration_
 
 void camera::set_rotation(matrix *in_orientation, float in_rotation_time, float in_rotation_acceleration_time)
 {
+	if(in_rotation_time == 0.0f && in_rotation_acceleration_time == 0.0f)
+	{
+		c_ori = *in_orientation;
+		flags |= CAM_STATIONARY_ORI;
+		return;
+	}
+
 	angles a;
 	vm_extract_angles_matrix(&a, in_orientation);
 	this->set_rotation(&a, in_rotation_time, in_rotation_acceleration_time);
@@ -248,7 +273,11 @@ object *camera::get_object_target()
 
 float camera::get_fov()
 {
-	fov.get(&c_fov, NULL);
+	if(!(flags & CAM_STATIONARY_FOV))
+	{
+		fov.get(&c_fov, NULL);
+	}
+
 	return c_fov;
 }
 
@@ -259,41 +288,44 @@ void camera::get_info(vec3d *position, matrix *orientation)
 		return;
 
 	//POSITION
-	c_pos = vmd_zero_vector;
-
-	if(object_self.IsValid())
+	if(!(flags & CAM_STATIONARY_POS))
 	{
-		object *objp = object_self.objp;
-		int model_num = object_get_model(objp);
-		polymodel *pm = NULL;
-		
-		if(model_num > -1)
+		c_pos = vmd_zero_vector;
+
+		if(object_self.IsValid())
 		{
-			pm = model_get(model_num);
+			object *objp = object_self.objp;
+			int model_num = object_get_model(objp);
+			polymodel *pm = NULL;
+			
+			if(model_num > -1)
+			{
+				pm = model_get(model_num);
+			}
+
+			if(object_self_submodel < 0 || pm == NULL)
+			{
+				c_pos = objp->pos;
+			}
+			else
+			{
+				model_find_world_point( &c_pos, &vmd_zero_vector, pm->id, object_self_submodel, &objp->orient, &objp->pos );
+			}
 		}
 
-		if(object_self_submodel < 0 || pm == NULL)
+		//Do custom position stuff, if needed
+		if(func_custom_position != NULL)
 		{
-			c_pos = objp->pos;
+			func_custom_position(this, &c_pos);
 		}
-		else
-		{
-			model_find_world_point( &c_pos, &vmd_zero_vector, pm->id, object_self_submodel, &objp->orient, &objp->pos );
-		}
+
+		vec3d pt;
+		pos_x.get(&pt.xyz.x, NULL);
+		pos_y.get(&pt.xyz.y, NULL);
+		pos_z.get(&pt.xyz.z, NULL);
+
+		vm_vec_add2(&c_pos, &pt);
 	}
-
-	//Do custom position stuff, if needed
-	if(func_custom_position != NULL)
-	{
-		func_custom_position(this, &c_pos);
-	}
-
-	vec3d pt;
-	pos_x.get(&pt.xyz.x, NULL);
-	pos_y.get(&pt.xyz.y, NULL);
-	pos_z.get(&pt.xyz.z, NULL);
-
-	vm_vec_add2(&c_pos, &pt);
 
 	if(position != NULL)
 		*position = c_pos;
@@ -301,68 +333,70 @@ void camera::get_info(vec3d *position, matrix *orientation)
 	//ORIENTATION
 	if(orientation != NULL)
 	{
-		if(object_target.IsValid())
+		if(!(flags & CAM_STATIONARY_ORI))
 		{
-			object *objp = object_target.objp;
-			int model_num = object_get_model(objp);
-			polymodel *pm = NULL;
-			vec3d target_pos = vmd_zero_vector;
-			
-			//See if we can get the model
-			if(model_num > -1)
+			if(object_target.IsValid())
 			{
-				pm = model_get(model_num);
-			}
+				object *objp = object_target.objp;
+				int model_num = object_get_model(objp);
+				polymodel *pm = NULL;
+				vec3d target_pos = vmd_zero_vector;
+				
+				//See if we can get the model
+				if(model_num > -1)
+				{
+					pm = model_get(model_num);
+				}
 
-			//If we don't have a submodel or don't have the model use object pos
-			//Otherwise, find the submodel pos as it is rotated
-			if(object_self_submodel < 0 || pm == NULL)
+				//If we don't have a submodel or don't have the model use object pos
+				//Otherwise, find the submodel pos as it is rotated
+				if(object_self_submodel < 0 || pm == NULL)
+				{
+					target_pos = objp->pos;
+				}
+				else
+				{
+					model_find_world_point( &target_pos, &vmd_zero_vector, pm->id, object_target_submodel, &objp->orient, &objp->pos );
+				}
+
+				vec3d targetvec;
+				vm_vec_normalized_dir(&targetvec, &target_pos, &c_pos);
+				vm_vector_2_matrix(&c_ori, &targetvec, NULL, NULL);
+			}
+			else if(object_self.IsValid())
 			{
-				target_pos = objp->pos;
+				c_ori = object_self.objp->orient;
 			}
 			else
 			{
-				model_find_world_point( &target_pos, &vmd_zero_vector, pm->id, object_target_submodel, &objp->orient, &objp->pos );
+				c_ori = vmd_identity_matrix;
 			}
 
-			vec3d targetvec;
-			vm_vec_normalized_dir(&targetvec, &target_pos, &c_pos);
-			vm_vector_2_matrix(&c_ori, &targetvec, NULL, NULL);
-		}
-		else if(object_self.IsValid())
-		{
-			c_ori = object_self.objp->orient;
-		}
-		else
-		{
-			c_ori = vmd_identity_matrix;
-		}
+			//Do human interaction
+			//WMC - Nevermind for now, maybe toggleable later.
+			/*
+			if ( Viewer_obj == object_self.objp || Viewer_mode & VM_CHASE ) {
+				if ( Viewer_mode & VM_PADLOCK_ANY ) {
+					player_get_padlock_orient(&c_ori);
+				} else {
+					compute_slew_matrix(&c_ori, &Viewer_slew_angles);
+				}
+			}*/
 
-		//Do human interaction
-		//WMC - Nevermind for now, maybe toggleable later.
-		/*
-		if ( Viewer_obj == object_self.objp || Viewer_mode & VM_CHASE ) {
-			if ( Viewer_mode & VM_PADLOCK_ANY ) {
-				player_get_padlock_orient(&c_ori);
-			} else {
-				compute_slew_matrix(&c_ori, &Viewer_slew_angles);
+			//Do custom orientation stuff, if needed
+			if(func_custom_orientation != NULL)
+			{
+				func_custom_orientation(this, &c_ori);
 			}
-		}*/
 
-		//Do custom orientation stuff, if needed
-		if(func_custom_orientation != NULL)
-		{
-			func_custom_orientation(this, &c_ori);
+			angles a;
+			ori_p.get(&a.p, NULL);
+			ori_b.get(&a.b, NULL);
+			ori_h.get(&a.h, NULL);
+
+			//vm_rotate_matrix_by_angles(&c_ori, &a);
+			vm_angles_2_matrix(&c_ori, &a);
 		}
-
-		angles a;
-		ori_p.get(&a.p, NULL);
-		ori_b.get(&a.b, NULL);
-		ori_h.get(&a.h, NULL);
-
-		//vm_rotate_matrix_by_angles(&c_ori, &a);
-		vm_angles_2_matrix(&c_ori, &a);
-
 		*orientation = c_ori;
 	}
 }
