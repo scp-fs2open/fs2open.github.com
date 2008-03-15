@@ -4,65 +4,86 @@
 #include "globalincs/alphacolors.h"
 #include "parse/parselo.h"
 #include "physics/physics.h" //apply_physics
+#include "globalincs/systemvars.h" //VM_FREECAMERA etc
+#include "hud/hud.h" //hud_get_draw
+#include "model/model.h" //polymodel, model_get
+#include "playerman/player.h" //player_get_padlock_orient
+#include "ship/ship.h" //compute_slew_matrix
 
+//*************************IMPORTANT GLOBALS*************************
+float VIEWER_ZOOM_DEFAULT = 0.75f;			//	Default viewer zoom, 0.625 as per multi-lateral agreement on 3/24/97
+warp_camera Warp_camera;
+
+//*************************OTHER STUFF*************************
 //Some global vars
 std::vector<subtitle> Subtitles;
-std::vector<camera> Cameras;
+std::vector<camera*> Cameras;
 //Preset cameras
-camera* Free_camera = NULL;
-camera* Current_camera = NULL;
+camid Current_camera;
 
+//*************************INTERNAL FUNCS*************************
+//static avd_camera *cam_upgrade_to_avd(camera *cam);
+
+//*************************CLASS: camera*************************
 //This is where the camera class beings! :D
-camera::camera(char *in_name)
+camera::camera(char *in_name, int in_signature)
 {
 	set_name(in_name);
-
-	//These are our two pointers, new'd and delete'd only by this class
-	desired_position = NULL;
-	desired_orientation = NULL;
+	sig = in_signature;
+//	flags = CAM_DEFAULT_FLAGS;
 
 	reset();
 }
 
 camera::~camera()
 {
-	//Cleanup
-	if(desired_position != NULL)
-		delete desired_position;
-
-	if(desired_orientation != NULL)
-		delete desired_orientation;
-
 	//Check if this is in use
-	if(Current_camera == this)
+	if(Current_camera.getSignature() == this->sig)
 	{
-		if(Cameras.size() > 0)
-			Current_camera = &Cameras[0];
-		else
-			Current_camera = NULL;
+		Current_camera = camid();
 	}
+}
+
+void camera::clear()
+{
+	strcpy(name, "");
+	sig = -1;
+	reset();
 }
 
 void camera::reset()
 {
-	position = vmd_zero_vector;
-	
-	if(desired_position != NULL)
-	{
-		delete desired_position;
-		desired_position = NULL;
-	}
+	object_self = object_target = object_h();
+	object_self_submodel = object_target_submodel = -1;
+
+	c_fov = VIEWER_ZOOM_DEFAULT;
+	c_pos = vmd_zero_vector;
+	c_ori = vmd_identity_matrix;
+
+	func_custom_position = NULL;
+	func_custom_orientation = NULL;
+
+	fov.clear();
+	fov.set(VIEWER_ZOOM_DEFAULT);
+
+	pos_x.clear();
+	pos_y.clear();
+	pos_z.clear();
+
+	ori_p.clear();
+	ori_b.clear();
+	ori_h.clear();
+	/*
+	flags = CAM_DEFAULT_FLAGS;
+
+	desired_position = position = vmd_zero_vector;
 	
 	translation_velocity = translation_vel_limit = translation_acc_limit = vmd_zero_vector;
 
 	vm_set_identity(&orientation);
-	
-	if(desired_orientation != NULL)
-	{
-		delete desired_orientation;
-		desired_orientation = NULL;
-	}
+	vm_set_identity(&desired_orientation);
 	rotation_rate = rotation_vel_limit = rotation_acc_limit = vmd_zero_vector;
+	*/
 }
 
 void camera::set_name(char *in_name)
@@ -71,152 +92,91 @@ void camera::set_name(char *in_name)
 		strncpy(name, in_name, NAME_LENGTH-1);
 }
 
-#define square(a) (a*a)
-void camera::set_position(vec3d *in_position, float in_translation_time, float in_translation_acceleration_time)
+void camera::set_fov(float in_fov, float in_fov_time, float in_fov_acceleration_time)
 {
-	//*****Instantly change to new position (or stop if no position given)
-	if(in_translation_time <= 0.0f || in_position == NULL)
+	if(in_fov <= 0.0f)
 	{
-		if(in_position != NULL)
-			position = *in_position;
-
-		if(desired_position != NULL)
-		{
-			delete desired_position;
-			desired_position = NULL;
-		}
-
-		translation_velocity = vmd_zero_vector;
-		translation_acc_limit = vmd_zero_vector;
-		translation_vel_limit = vmd_zero_vector;
-
-		return;
+		fov.setVD(in_fov_time, in_fov_acceleration_time, 0.0f);
 	}
 
-	//*****Perform intermediate calculations
-
-	//Create desired orientation if necessary
-	if(desired_position == NULL)
-		desired_position = new vec3d;
-
-	//Set desired orientation
-	*desired_position = *in_position;
-
-	//Find the distance
-	vec3d d;
-	vm_vec_sub(&d, in_position, &position);
-
-	//*****Instantly accelerate to velocity
-	if(in_translation_acceleration_time <= 0.0f)
-	{
-		vm_vec_copy_scale(&translation_velocity, &d, 1.0f/in_translation_time);
-
-		translation_vel_limit = rotation_rate;
-		translation_acc_limit = vmd_zero_vector;
-
-		return;
-	}
-
-	//*****Set variables for graduated movement
-	//Safety
-	if(in_translation_acceleration_time*2.0f > in_translation_time)
-		in_translation_acceleration_time = in_translation_time/2.0f;
-
-	//Calculate the maximum acceleration speed
-	translation_acc_limit.xyz.x = fabsf(d.xyz.x / ((in_translation_time * in_translation_acceleration_time) - square(in_translation_acceleration_time)));
-	translation_acc_limit.xyz.y = fabsf(d.xyz.y / ((in_translation_time * in_translation_acceleration_time) - square(in_translation_acceleration_time)));
-	translation_acc_limit.xyz.z = fabsf(d.xyz.z / ((in_translation_time * in_translation_acceleration_time) - square(in_translation_acceleration_time)));
-
-	//Calculate the maximum velocity
-	translation_vel_limit.xyz.x = fabsf(translation_acc_limit.xyz.x * in_translation_acceleration_time);
-	translation_vel_limit.xyz.y = fabsf(translation_acc_limit.xyz.y * in_translation_acceleration_time);
-	translation_vel_limit.xyz.z = fabsf(translation_acc_limit.xyz.z * in_translation_acceleration_time);
+	fov.setAVD(in_fov, in_fov_time, in_fov_acceleration_time, in_fov_acceleration_time, 0.0f);
 }
 
-void camera::set_translation_velocity(vec3d *in_velocity)
+void camera::set_object_self(object *objp, int n_object_self_submodel)
 {
-	if(in_velocity == NULL)
-		translation_velocity = *in_velocity;
-	else
-		vm_vec_zero(&translation_velocity);
+	if(objp == NULL)
+		object_self = object_h();
+
+	object_self = object_h(objp);
+	object_self_submodel = n_object_self_submodel;
+}
+
+void camera::set_object_target(object *objp, int n_object_target_submodel)
+{
+	if(objp == NULL)
+		object_target = object_h();
+
+	object_target = object_h(objp);
+	object_target_submodel = n_object_target_submodel;
+}
+
+//Custom function receives the already-modified current position value.
+//It should be replaced or added to as the custom function modifier sees fit.
+void camera::set_custom_position_function(void (*n_func_custom_position)(camera *cam, vec3d *camera_pos))
+{
+	func_custom_position = n_func_custom_position;
+}
+
+//Custom function receives the already-modified current orientation value.
+//It should be replaced or added to as the custom function modifier sees fit.
+void camera::set_custom_orientation_function(void (*n_func_custom_orientation)(camera *cam, matrix *camera_ori))
+{
+	func_custom_orientation = n_func_custom_orientation;
+}
+
+void camera::set_position(vec3d *in_position, float in_translation_time, float in_translation_acceleration_time)
+{
+	if(in_position == NULL)
+	{
+		pos_x.setVD(in_translation_time, in_translation_acceleration_time, 0.0f);
+		pos_y.setVD(in_translation_time, in_translation_acceleration_time, 0.0f);
+		pos_z.setVD(in_translation_time, in_translation_acceleration_time, 0.0f);
+		return;
+	}
+
+	pos_x.setAVD(in_position->xyz.x, in_translation_time, in_translation_acceleration_time, in_translation_acceleration_time, 0.0f);
+	pos_y.setAVD(in_position->xyz.y, in_translation_time, in_translation_acceleration_time, in_translation_acceleration_time, 0.0f);
+	pos_z.setAVD(in_position->xyz.z, in_translation_time, in_translation_acceleration_time, in_translation_acceleration_time, 0.0f);
+}
+
+void camera::set_translation_velocity(vec3d *in_velocity, float in_acceleration_time)
+{
+	pos_x.setVD(in_acceleration_time, in_acceleration_time, in_velocity->xyz.x);
+	pos_y.setVD(in_acceleration_time, in_acceleration_time, in_velocity->xyz.y);
+	pos_z.setVD(in_acceleration_time, in_acceleration_time, in_velocity->xyz.z);
 }
 
 void camera::set_rotation(matrix *in_orientation, float in_rotation_time, float in_rotation_acceleration_time)
 {
-	//*****Instantly rotate to new position (or stop if no position given)
-	if(in_rotation_time <= 0.0f || in_orientation == NULL)
-	{
-		if(in_orientation != NULL)
-			orientation = *in_orientation;
-
-		if(desired_orientation != NULL)
-		{
-			delete desired_orientation;
-			desired_orientation = NULL;
-		}
-
-		rotation_rate = vmd_zero_vector;
-		rotation_acc_limit = vmd_zero_vector;
-		rotation_vel_limit = vmd_zero_vector;
-
-		return;
-	}
-
-	//*****Perform intermediate calculations
-
-	//Create desired orientation if necessary
-	if(desired_orientation == NULL)
-		desired_orientation = new matrix;
-
-	//Set desired orientation
-	*desired_orientation = *in_orientation;
-
-	//Get the angles in radians
-	angles curr_orientation, new_orientation;
-	vm_extract_angles_matrix(&curr_orientation, &orientation);
-	vm_extract_angles_matrix(&new_orientation, in_orientation);
-
-	//Find the distance
-	angles d;
-	d.p = new_orientation.p - curr_orientation.p;
-	d.b = new_orientation.b - curr_orientation.b;
-	d.h = new_orientation.h - curr_orientation.h;
-
-	//*****Instantly accelerate to velocity
-	if(in_rotation_acceleration_time <= 0.0f)
-	{
-		rotation_rate.xyz.z = d.p / in_rotation_time;
-		rotation_rate.xyz.x = d.b / in_rotation_time;
-		rotation_rate.xyz.y = d.h / in_rotation_time;
-
-		rotation_vel_limit = rotation_rate;
-		rotation_acc_limit = vmd_zero_vector;
-
-		return;
-	}
-	//*****Set variables for graduated movement
-	//Safety
-	if(in_rotation_acceleration_time*2.0f > in_rotation_time)
-		in_rotation_acceleration_time = in_rotation_time/2.0f;
-	//Calculate the maximum acceleration speed
-	rotation_acc_limit.xyz.z = fabsf(d.p / ((in_rotation_time * in_rotation_acceleration_time) - square(in_rotation_acceleration_time)));
-	rotation_acc_limit.xyz.x = fabsf(d.b / ((in_rotation_time * in_rotation_acceleration_time) - square(in_rotation_acceleration_time)));
-	rotation_acc_limit.xyz.y = fabsf(d.h / ((in_rotation_time * in_rotation_acceleration_time) - square(in_rotation_acceleration_time)));
-
-	//Calculate the maximum velocity
-	rotation_vel_limit.xyz.x = fabsf(rotation_acc_limit.xyz.x * in_rotation_acceleration_time);
-	rotation_vel_limit.xyz.y = fabsf(rotation_acc_limit.xyz.y * in_rotation_acceleration_time);
-	rotation_vel_limit.xyz.z = fabsf(rotation_acc_limit.xyz.z * in_rotation_acceleration_time);
+	angles a;
+	vm_extract_angles_matrix(&a, in_orientation);
+	this->set_rotation(&a, in_rotation_time, in_rotation_acceleration_time);
+	//c_ori = *in_orientation;
 }
 
 void camera::set_rotation(angles *in_angles, float in_rotation_time, float in_rotation_acceleration_time)
 {
-	matrix temp_matrix = IDENTITY_MATRIX;
+	if(in_angles == NULL)
+	{
+		ori_p.setVD(in_rotation_time, in_rotation_acceleration_time, 0.0f);
+		ori_b.setVD(in_rotation_time, in_rotation_acceleration_time, 0.0f);
+		ori_h.setVD(in_rotation_time, in_rotation_acceleration_time, 0.0f);
+		return;
+	}
 
-	if(in_angles != NULL)
-		vm_angles_2_matrix(&temp_matrix, in_angles);
-
-	set_rotation(&temp_matrix, in_rotation_time, in_rotation_acceleration_time);
+	ori_p.setAVD(in_angles->p, in_rotation_time, in_rotation_acceleration_time, in_rotation_acceleration_time, 0.0f);
+	ori_b.setAVD(in_angles->b, in_rotation_time, in_rotation_acceleration_time, in_rotation_acceleration_time, 0.0f);
+	ori_h.setAVD(in_angles->h, in_rotation_time, in_rotation_acceleration_time, in_rotation_acceleration_time, 0.0f);
 }
 
 void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float in_rotation_acceleration_time)
@@ -225,6 +185,15 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 
 	if(in_target != NULL)
 	{
+		vec3d position = vmd_zero_vector;
+		this->get_info(&position, NULL);
+
+		if(in_target->xyz.x == position.xyz.x && in_target->xyz.y == position.xyz.y && in_target->xyz.z == position.xyz.z)
+		{
+			Warning(LOCATION, "Camera tried to point to self");
+			return;
+		}
+
 		vec3d targetvec;
 		vm_vec_normalized_dir(&targetvec, in_target, &position);
 		vm_vector_2_matrix(&temp_matrix, &targetvec, NULL, NULL);
@@ -233,12 +202,11 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 	set_rotation(&temp_matrix, in_rotation_time, in_rotation_acceleration_time);
 }
 
-void camera::set_rotation_velocity(vec3d *in_rotation_rate)
+void camera::set_rotation_velocity(angles *in_rotation_rate, float in_acceleration_time)
 {
-	if(in_rotation_rate != NULL)
-		rotation_rate = *in_rotation_rate;
-	else
-		vm_vec_zero(&rotation_rate);
+	ori_p.setVD(in_acceleration_time, in_acceleration_time, in_rotation_rate->p);
+	ori_b.setVD(in_acceleration_time, in_acceleration_time, in_rotation_rate->b);
+	ori_h.setVD(in_acceleration_time, in_acceleration_time, in_rotation_rate->h);
 
 	/*if(in_rotation_rate == NULL)
 	{
@@ -259,76 +227,267 @@ void camera::set_rotation_velocity(vec3d *in_rotation_rate)
 
 void camera::do_frame(float in_frametime)
 {
-	//float frametime, rot_frametime, trans_frametime;
-	//DO ROTATION STUFF
-	if(desired_orientation != NULL)
+
+}
+
+object *camera::get_object_self()
+{
+	if(object_self.IsValid())
+		return object_self.objp;
+	else
+		return NULL;
+}
+
+object *camera::get_object_target()
+{
+	if(object_target.IsValid())
+		return object_target.objp;
+	else
+		return NULL;
+}
+
+float camera::get_fov()
+{
+	fov.get(&c_fov, NULL);
+	return c_fov;
+}
+
+void camera::get_info(vec3d *position, matrix *orientation)
+{
+	//WTF?
+	if(position == NULL && orientation == NULL)
+		return;
+
+	//POSITION
+	c_pos = vmd_zero_vector;
+
+	if(object_self.IsValid())
 	{
-		matrix ori_out;
-		vec3d vel_out;
-
-		vm_matrix_interpolate(desired_orientation, &orientation, &rotation_rate, in_frametime, &ori_out, &vel_out, &rotation_vel_limit, &rotation_acc_limit, 1);
-		orientation = ori_out;
-		rotation_rate = vel_out;
-
-		//TODO: Make this "if(*desired_orienation == orientation)"
-		//Note that this means we are finished rotating
-		if(vel_out.xyz.x == 0.0f && vel_out.xyz.y == 0.0f && vel_out.xyz.z == 0.0f)
+		object *objp = object_self.objp;
+		int model_num = object_get_model(objp);
+		polymodel *pm = NULL;
+		
+		if(model_num > -1)
 		{
-			delete desired_orientation;
-			desired_orientation = NULL;
-			rotation_rate = rotation_vel_limit = rotation_acc_limit = vmd_zero_vector;
+			pm = model_get(model_num);
+		}
+
+		if(object_self_submodel < 0 || pm == NULL)
+		{
+			c_pos = objp->pos;
+		}
+		else
+		{
+			model_find_world_point( &c_pos, &vmd_zero_vector, pm->id, object_self_submodel, &objp->orient, &objp->pos );
 		}
 	}
-	else if(rotation_rate.xyz.x || rotation_rate.xyz.y || rotation_rate.xyz.z)
+
+	//Do custom position stuff, if needed
+	if(func_custom_position != NULL)
 	{
-		//TODO: Make this right.
-		angles new_orientation;
-
-		vm_extract_angles_matrix(&new_orientation, &orientation);
-
-		new_orientation.p += rotation_rate.xyz.z;
-		new_orientation.b += rotation_rate.xyz.x;
-		new_orientation.h += rotation_rate.xyz.y;
-
-		vm_angles_2_matrix(&orientation, &new_orientation);
+		func_custom_position(this, &c_pos);
 	}
-	
-	if(desired_position != NULL)
+
+	vec3d pt;
+	pos_x.get(&pt.xyz.x, NULL);
+	pos_y.get(&pt.xyz.y, NULL);
+	pos_z.get(&pt.xyz.z, NULL);
+
+	vm_vec_add2(&c_pos, &pt);
+
+	if(position != NULL)
+		*position = c_pos;
+
+	//ORIENTATION
+	if(orientation != NULL)
 	{
-		vec3d d_p;
-
-		apply_physics(translation_vel_limit.xyz.x/translation_acc_limit.xyz.x, translation_vel_limit.xyz.x, translation_velocity.xyz.x, in_frametime, &translation_velocity.xyz.x, &d_p.xyz.x);
-		apply_physics(translation_vel_limit.xyz.y/translation_acc_limit.xyz.y, translation_vel_limit.xyz.y, translation_velocity.xyz.y, in_frametime, &translation_velocity.xyz.y, &d_p.xyz.y);
-		apply_physics(translation_vel_limit.xyz.z/translation_acc_limit.xyz.z, translation_vel_limit.xyz.z, translation_velocity.xyz.z, in_frametime, &translation_velocity.xyz.z, &d_p.xyz.z);
-
-		vm_vec_add2(&position, &d_p);
-		//WMC - This is your past self talking. You were attempting to use vm_matrix_interpolate
-		//to move the camera, but never got around to actually getting it completed + tested
-		/*
-		matrix ori_out;
-		vec3d vel_out;
-		matrix vec_ori;
-		matrix temp_ori;
-
-		//vm_vector_2_matrix(&vec_ori, &desired_position);
-		vm_matrix_interpolate(&vec_ori, &temp_ori, &translation_velocity, in_frametime, &ori_out, &vel_out, &translation_vel_limit, &translation_acc_limit, 1);
-		//vm_vec_rotate(&position, &vmd_identity_matrix, &ori_out);
-		translation_velocity = vel_out;
-
-		//TODO: Make this "if(*desired_orienation == orientation)"
-		//Note that this means we are finished rotating
-		if(vel_out.xyz.x == 0.0f && vel_out.xyz.y == 0.0f && vel_out.xyz.z == 0.0f)
+		if(object_target.IsValid())
 		{
-			delete desired_position;
-			desired_position = NULL;
-			translation_velocity = translation_vel_limit = translation_acc_limit = vmd_zero_vector;
+			object *objp = object_target.objp;
+			int model_num = object_get_model(objp);
+			polymodel *pm = NULL;
+			vec3d target_pos = vmd_zero_vector;
+			
+			//See if we can get the model
+			if(model_num > -1)
+			{
+				pm = model_get(model_num);
+			}
+
+			//If we don't have a submodel or don't have the model use object pos
+			//Otherwise, find the submodel pos as it is rotated
+			if(object_self_submodel < 0 || pm == NULL)
+			{
+				target_pos = objp->pos;
+			}
+			else
+			{
+				model_find_world_point( &target_pos, &vmd_zero_vector, pm->id, object_target_submodel, &objp->orient, &objp->pos );
+			}
+
+			vec3d targetvec;
+			vm_vec_normalized_dir(&targetvec, &target_pos, &c_pos);
+			vm_vector_2_matrix(&c_ori, &targetvec, NULL, NULL);
+		}
+		else if(object_self.IsValid())
+		{
+			c_ori = object_self.objp->orient;
+		}
+		else
+		{
+			c_ori = vmd_identity_matrix;
+		}
+
+		//Do human interaction
+		//WMC - Nevermind for now, maybe toggleable later.
+		/*
+		if ( Viewer_obj == object_self.objp || Viewer_mode & VM_CHASE ) {
+			if ( Viewer_mode & VM_PADLOCK_ANY ) {
+				player_get_padlock_orient(&c_ori);
+			} else {
+				compute_slew_matrix(&c_ori, &Viewer_slew_angles);
+			}
 		}*/
-	}
-	else
-	{
-		vm_vec_scale_add2(&position, &translation_velocity, in_frametime);
+
+		//Do custom orientation stuff, if needed
+		if(func_custom_orientation != NULL)
+		{
+			func_custom_orientation(this, &c_ori);
+		}
+
+		angles a;
+		ori_p.get(&a.p, NULL);
+		ori_b.get(&a.b, NULL);
+		ori_h.get(&a.h, NULL);
+
+		//vm_rotate_matrix_by_angles(&c_ori, &a);
+		vm_angles_2_matrix(&c_ori, &a);
+
+		*orientation = c_ori;
 	}
 }
+//*************************warp_camera*************************
+warp_camera::warp_camera()
+{
+	this->reset();
+}
+warp_camera::warp_camera(object *objp)
+{
+	this->reset();
+
+	vec3d object_pos = objp->pos;
+	matrix tmp;
+	ship_get_eye(&object_pos, &tmp, objp);
+	/*
+	//matrix tmp_m = vmd_identity_matrix;
+	camid cid = ship_get_eye( objp );
+	if(cid.isValid())
+	{
+		camera *cam = cid.getCamera();
+		cam->get_info(&player_pos, NULL);
+		//tmp_m = *cam->get_orientation();
+	}
+	*/
+	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.rvec, 0.0f );
+	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.uvec, 0.952f );
+	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.fvec, -1.782f );
+
+	vec3d tmp_vel = { { { 0.0f, 5.1919f, 14.7f } } };
+
+	this->set_position( &object_pos );
+	this->set_rotation( &objp->orient );
+	this->set_velocity( &tmp_vel, true);
+}
+
+void warp_camera::reset()
+{
+	c_pos = c_vel = c_desired_vel = vmd_zero_vector;
+	c_ori = vmd_identity_matrix;
+	c_damping = 1.0f;
+	c_time = 0.0f;
+}
+
+void warp_camera::set_position( vec3d *in_pos )
+{
+	c_pos = *in_pos;
+}
+
+void warp_camera::set_rotation( matrix *in_ori )
+{
+	c_ori = *in_ori;
+}
+
+void warp_camera::set_velocity( vec3d *in_vel, bool instantaneous )
+{
+	c_desired_vel.xyz.x = 0.0f;
+	c_desired_vel.xyz.y = 0.0f;
+	c_desired_vel.xyz.z = 0.0f;
+
+	vm_vec_scale_add2( &c_desired_vel, &c_ori.vec.rvec, in_vel->xyz.x );
+	vm_vec_scale_add2( &c_desired_vel, &c_ori.vec.uvec, in_vel->xyz.y );
+	vm_vec_scale_add2( &c_desired_vel, &c_ori.vec.fvec, in_vel->xyz.z );
+
+	if ( instantaneous )	{
+		c_vel = c_desired_vel;
+	}
+
+}
+
+//
+void warp_camera::do_frame(float in_frametime)
+{
+	vec3d new_vel, delta_pos;
+
+	apply_physics( c_damping, c_desired_vel.xyz.x, c_vel.xyz.x, in_frametime, &new_vel.xyz.x, &delta_pos.xyz.x );
+	apply_physics( c_damping, c_desired_vel.xyz.y, c_vel.xyz.y, in_frametime, &new_vel.xyz.y, &delta_pos.xyz.y );
+	apply_physics( c_damping, c_desired_vel.xyz.z, c_vel.xyz.z, in_frametime, &new_vel.xyz.z, &delta_pos.xyz.z );
+
+	c_vel = new_vel;
+
+//	mprintf(( "Camera velocity = %.1f,%.1f, %.1f\n", Camera_velocity.xyz.x, Camera_velocity.xyz.y, Camera_velocity.xyz.z ));
+
+	vm_vec_add2( &c_pos, &delta_pos );
+
+	float ot = c_time+0.0f;
+
+	c_time += in_frametime;
+
+	if ( (ot < 0.667f) && ( c_time >= 0.667f ) )	{
+		vec3d tmp;
+		
+		tmp.xyz.z = 4.739f;		// always go this fast forward.
+
+		// pick x and y velocities so they are always on a 
+		// circle with a 25 m radius.
+
+		float tmp_angle = frand()*PI2;
+	
+		tmp.xyz.x = 22.0f * (float)sin(tmp_angle);
+		tmp.xyz.y = -22.0f * (float)cos(tmp_angle);
+
+		//mprintf(( "Angle = %.1f, vx=%.1f, vy=%.1f\n", tmp_angle, tmp.xyz.x, tmp.xyz.y ));
+
+		//mprintf(( "Changing velocity!\n" ));
+		this->set_velocity( &tmp, 0 );
+	}
+
+	if ( (ot < 3.0f ) && ( c_time >= 3.0f ) )	{
+		vec3d tmp = ZERO_VECTOR;
+		this->set_velocity( &tmp, 0 );
+	}
+	
+}
+
+void warp_camera::get_info(vec3d *position, matrix *orientation)
+{
+	if(position != NULL)
+		*position = c_pos;
+
+	if(orientation != NULL)
+		*orientation = c_ori;
+}
+
+//*************************subtitle*************************
 
 #define MAX_SUBTITLE_LINES		64
 subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_time, char* in_imageanim, float in_fade_time, color *in_text_color, bool center_x, bool center_y, int in_width)
@@ -534,44 +693,229 @@ const subtitle &subtitle::operator=(const subtitle &sub)
 	return *this;
 }
 
-void cameras_init()
+camid::camid()
 {
-	//Preset cameras
-	Cameras.push_back(camera("Free"));
-	Free_camera = &Cameras[Cameras.size()-1];
-	Current_camera = Free_camera;
+	idx = 0;
+	sig = -1;
 }
 
-void cameras_close()
+camid::camid(int n_idx, int n_sig)
 {
+	idx = n_idx;
+	sig = n_sig;
+}
+
+camera* camid::getCamera()
+{
+	if(!isValid())
+		return NULL;
+
+	return Cameras[idx];
+}
+
+uint camid::getIndex()
+{
+	return idx;
+}
+
+int camid::getSignature()
+{
+	return sig;
+}
+
+bool camid::isValid()
+{
+	if(idx < 0 || idx >= Cameras.size())
+		return false;
+
+	if(Cameras[idx] == NULL)
+		return false;
+	
+	if(Cameras[idx]->get_signature() != this->sig)
+		return false;
+
+	return true;
+}
+
+void cam_init()
+{
+	//Nothing now
+}
+
+void cam_close()
+{
+	//Set Current_camera to nothing
+	Current_camera = camid();
+	for(unsigned int i = 0; i < Cameras.size(); i++)
+	{
+		if(Cameras[i] != NULL)
+		{
+			delete Cameras[i];
+			Cameras[i] = NULL;
+		}
+	}
 	Cameras.clear();
-
-	//Preset cameras
-	Free_camera = NULL;
-	Current_camera = NULL;
 }
 
-void cameras_do_frame(float frametime)
+int cam_get_next_sig()
+{
+	static int next_sig = 0;
+	return next_sig++;
+}
+
+camid cam_create(char *n_name, vec3d *n_pos, vec3d *n_norm, object *n_object, int n_object_self_submodel)
+{
+	matrix ori;
+	vm_vector_2_matrix_norm(&ori, n_norm);
+	return cam_create(n_name, n_pos, &ori, n_object, n_object_self_submodel);
+}
+
+camid cam_create(char *n_name, vec3d *n_pos, matrix *n_ori, object *n_object, int n_object_self_submodel)
+{
+	camera *cam = NULL;
+	camid cid;
+
+	//Get signature
+	int sig = cam_get_next_sig();
+
+	//Get name
+	char buf[NAME_LENGTH] = {'\0'};
+	if(n_name == NULL)
+		sprintf(buf, "Camera %d", cid.getSignature());
+	else
+		strncpy(buf, n_name, NAME_LENGTH-1);
+
+	//Find a free slot
+	for(uint i = 0; i < Cameras.size(); i++)
+	{
+		if(Cameras[i] == NULL)
+		{
+			cam = new camera(buf, sig);
+			cid = camid(i, sig);
+			Cameras[i] = cam;
+			break;
+		}
+		else if(Cameras[i]->is_empty())
+		{
+			delete Cameras[i];
+			cam = new camera(buf, sig);
+			cid = camid(i, sig);
+			Cameras[i] = cam;
+		}
+	}
+	if(cam == NULL)
+	{
+		cam = new camera(buf, sig);
+		cid = camid(Cameras.size(), sig);
+		Cameras.push_back(cam);
+	}
+
+	//Set attributes
+	if(n_pos != NULL)
+		cam->set_position(n_pos);
+	if(n_ori != NULL)
+		cam->set_rotation(n_ori);
+	if(n_object != NULL)
+		cam->set_object_self(n_object, n_object_self_submodel);
+
+	return cid;
+}
+
+void cam_delete(camid cid)
+{
+	if(cid.isValid())
+	{
+		cid.getCamera()->clear();
+	}
+}
+
+void cam_do_frame(float frametime)
 {
 	unsigned int i,size=Cameras.size();
 	for(i = 0; i < size; i++)
 	{
-		Cameras[i].do_frame(frametime);
+		if(Cameras[i] != NULL)
+			Cameras[i]->do_frame(frametime);
 	}
+}
+
+camid cam_get_camera(uint idx)
+{
+	if(idx < 0 || idx >= Cameras.size())
+		return camid();
+
+	return camid(idx, Cameras[idx]->get_signature());
+}
+
+camid cam_get_current()
+{
+	return Current_camera;
+}
+
+uint cam_get_num()
+{
+	return Cameras.size();
 }
 
 //Looks up camera by name, returns -1 on failure
-int cameras_lookup(char *name)
+camid cam_lookup(char *name)
 {
 	unsigned int i,size=Cameras.size();
 	for(i = 0; i < size; i++)
 	{
-		if(!stricmp(Cameras[i].get_name(), name))
-			return i;
+		if(Cameras[i] != NULL && !stricmp(Cameras[i]->get_name(), name))
+			return camid(i, Cameras[i]->get_signature());
 	}
 
-	return -1;
+	return camid();
 }
+
+static int Camera_hud_draw_saved = 0;
+
+bool cam_set_camera(camid cid)
+{
+	if(!cid.isValid())
+	{
+		return false;
+	}
+
+	Viewer_mode |= VM_FREECAMERA;
+	Current_camera = cid;
+
+	Camera_hud_draw_saved = hud_get_draw();
+	hud_set_draw(0);
+	return true;
+}
+
+void cam_reset_camera()
+{
+	Viewer_mode &= ~VM_FREECAMERA;
+	hud_set_draw(Camera_hud_draw_saved);
+}
+
+//Functions must delete the original camera after calling this function.
+//Note that due to the esoteric nature of this function, it should not
+//be used outside camera.cpp
+/*
+static avd_camera *cam_upgrade_to_avd(camera *cam)
+{
+	for(uint i = 0; i < Cameras.size(); i++)
+	{
+		if(Cameras[i] == cam)
+			break;
+	}
+
+	if(i == Cameras.size())
+		return NULL;
+
+	avd_camera *avdcam = new avd_camera(cam);
+
+	//Make the switch
+	Cameras[i] = avdcam;
+
+	return avdcam;
+}
+*/
 
 void subtitles_init()
 {

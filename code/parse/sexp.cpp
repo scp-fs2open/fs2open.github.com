@@ -14952,30 +14952,54 @@ void sexp_fade_out(int n)
 	}
 }
 
+camera* sexp_get_set_camera()
+{
+	static camid sexp_camera;
+	if(!sexp_camera.isValid())
+	{
+		sexp_camera = cam_create("SEXP camera");
+	}
+
+	cam_set_camera(sexp_camera);
+
+	return sexp_camera.getCamera();
+}
+
 
 void sexp_set_camera_position(int n)
 {
-	Viewer_mode |= VM_FREECAMERA;
-	Current_camera = Free_camera;
-	hud_set_draw(0);
+	camera *cam = sexp_get_set_camera();
+	
+	if(cam == NULL)
+		return;
 
 	vec3d camera_vec;
-	//float camera_time = 0.0f;
+	float camera_time = 0.0f;
+	float camera_acc_time = 0.0f;
 
 	camera_vec.xyz.x = i2fl(eval_num(n));
 	n = CDR(n);
 	camera_vec.xyz.y = i2fl(eval_num(n));
 	n = CDR(n);
 	camera_vec.xyz.z = i2fl(eval_num(n));
+	n = CDR(n);
 
-	Free_camera->set_position(&camera_vec);
+	if(n != -1)
+	{
+		camera_time = eval_num(n) / 1000.0f;
+		n = CDR(n);
+		if(n != -1)
+			camera_acc_time = eval_num(n) / 1000.0f;
+	}
+
+	cam->set_position(&camera_vec, camera_time, camera_acc_time);
 }
 
 void sexp_set_camera_rotation(int n)
 {
-	Viewer_mode |= VM_FREECAMERA;
-	Current_camera = Free_camera;
-	hud_set_draw(0);
+	camera *cam = sexp_get_set_camera();
+	if(cam == NULL)
+		return;
 
 	angles rot_angles;
 	float rot_time = 0.0f;
@@ -14996,17 +15020,16 @@ void sexp_set_camera_rotation(int n)
 			rot_acc_time = eval_num(n) / 1000.0f;
 	}
 
-	Free_camera->set_rotation(&rot_angles, rot_time, rot_acc_time);
+	cam->set_rotation(&rot_angles, rot_time, rot_acc_time);
 }
 
 void sexp_set_camera_facing(int n)
 {
-	Viewer_mode |= VM_FREECAMERA;
-	Current_camera = Free_camera;
-	hud_set_draw(0);
+	camera *cam = sexp_get_set_camera();
+	if(cam == NULL)
+		return;
 
 	vec3d location;
-	matrix cam_orient;
 	float rot_time = 0.0f;
 	float rot_acc_time = 0.0f;
 
@@ -15024,18 +15047,7 @@ void sexp_set_camera_facing(int n)
 			rot_acc_time = eval_num(n) / 1000.0f;
 	}
 
-	//Calc to matrix
-	vec3d destvec;
-	vm_vec_sub(&destvec, &location, Free_camera->get_position());
-
-	if (IS_VEC_NULL(&destvec))
-	{
-		Warning(LOCATION, "Camera tried to point to self");
-		return;
-	}
-
-	vm_vector_2_matrix(&cam_orient, &destvec, NULL, NULL);
-	Free_camera->set_rotation(&cam_orient, rot_time, rot_acc_time);
+	cam->set_rotation_facing(&location, rot_time, rot_acc_time);
 }
 
 void sexp_set_camera_facing_object(int n)
@@ -15070,9 +15082,10 @@ void sexp_set_camera_facing_object(int n)
 		case OSWPT_TYPE_WING:
 		case OSWPT_TYPE_WAYPOINT:
 		{
-			Viewer_mode |= VM_FREECAMERA;
-			Current_camera = Free_camera;
-			Free_camera->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time);
+			camera *cam = sexp_get_set_camera();
+			if(cam == NULL)
+				return;
+			cam->set_rotation_facing(&oswpt.objp->pos, rot_time, rot_acc_time);
 			return;
 		}
 	}
@@ -15096,8 +15109,7 @@ void sexp_reset_fov()
 
 void sexp_reset_camera()
 {
-	Viewer_mode &= ~VM_FREECAMERA;
-	hud_set_draw(1);
+	cam_reset_camera();
 }
 
 void sexp_show_subtitle(int node)

@@ -1572,7 +1572,12 @@ void multi_do_frame()
 	// always set the local player eye position/orientation here so we know its valid throughout all multiplayer
 	// function calls
 	if((Net_player != NULL) && eye_tog){
-		player_get_eye(&Net_player->s_info.eye_pos, &Net_player->s_info.eye_orient);
+		camid cid = player_get_cam();
+		if(cid.isValid())
+		{
+			camera *cam = cid.getCamera();
+			cam->get_info(&Net_player->s_info.eye_pos, &Net_player->s_info.eye_orient);
+		}
 	}
 
 	// send all buffered packets from the previous frame

@@ -1094,5 +1094,20 @@ typedef struct script_hook
 	bool IsValid(){return (h_index > -1);}
 }script_hook;
 
+class camid
+{
+private:
+	int sig;
+	uint idx;
+public:
+	camid();
+	camid(int n_idx, int n_sig);
+
+	class camera *getCamera();
+	uint getIndex();
+	int getSignature();
+	bool isValid();
+};
+
 
 #endif		// PS_TYPES_H

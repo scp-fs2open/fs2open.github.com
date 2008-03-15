@@ -206,6 +206,7 @@
 #include "network/multi_options.h"
 #include "parse/sexp.h"
 #include "globalincs/globals.h"
+#include "camera/camera.h"
 
 struct campaign_info;
 
@@ -433,7 +434,7 @@ void player_get_padlock_orient(matrix *eye_orient);
 void player_display_packlock_view();
 
 // get the player's eye position and orient
-void player_get_eye(vec3d *eye_pos, matrix *eye_orient);
+camid player_get_cam();
 
 //=============================================================
 //===================== PLAYER WARPOUT STUFF ==================
