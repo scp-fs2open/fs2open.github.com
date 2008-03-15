@@ -981,6 +981,7 @@
 #include <string>
 
 struct object;
+class WarpEffect;
 
 //	Part of the player died system.
 extern vec3d	Dead_camera_pos, Original_vec_to_deader;
@@ -1338,6 +1339,9 @@ typedef struct ship {
 	int	really_final_death_time;	// Time until ship breaks up and disappears
 	vec3d	deathroll_rotvel;			// Desired death rotational velocity
 
+	WarpEffect *warpin_effect;
+	WarpEffect *warpout_effect;
+/*
 	int start_warp_time;
 	int	final_warp_time;	// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 	int warp_anim;
@@ -1345,6 +1349,11 @@ typedef struct ship {
 	int warp_anim_fps;
 	vec3d	warp_effect_pos;		// where the warp in effect comes in at
 	vec3d	warp_effect_fvec;		// The warp in effect's forward vector
+	float warp_radius;
+	int warp_stage;			//WMC - stage for warp, used by WT_SWEEPER
+	float warp_width;
+	float warp_height;
+*/
 	int	next_fireball;
 
 	int	next_hit_spark;
@@ -1771,6 +1780,8 @@ typedef struct man_thruster {
 //Warp type defines
 #define WT_DEFAULT			0
 #define WT_IN_PLACE_ANIM	1
+#define WT_SWEEPER			2
+#define WT_HYPERSPACE		3
 
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {

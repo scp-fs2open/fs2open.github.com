@@ -165,8 +165,12 @@
 #ifndef _SHIPFX_H
 #define _SHIPFX_H
 
+#include "globalincs/pstypes.h"
+#include "graphics/grbatch.h"
+
 struct object;
 struct ship;
+struct ship_info;
 struct ship_subsys;
 struct shockwave_create_info;
 struct vec3d;
@@ -294,12 +298,169 @@ void shipfx_start_cloak(ship *shipp, int warmup = 5000, int recalc_transform = 0
 void shipfx_stop_cloak(ship *shipp, int warpdown = 5000);
 float shipfx_calc_visibility(object *obj, vec3d *view_pt);
 
-#define WD_WARP_IN	0
-#define WD_WARP_OUT	1
+#define WD_NONE		0
+#define WD_WARP_IN	1
+#define WD_WARP_OUT	2
 float shipfx_calculate_warp_time(object *objp, int warp_dir);
 float shipfx_calculate_warp_dist(object *objp);
 
+//********************-----CLASS: WarpEffect-----********************//
+class WarpEffect
+{
+protected:
+	//core variables
+	object	*objp;
+	int		direction;
 
+	//variables provided for expediency
+	ship *shipp;
+	ship_info *sip;
+public:
+	WarpEffect();
+	WarpEffect(object *n_objp, int n_direction);
+
+	void clear();
+	bool isValid();
+
+	virtual int warpStart();
+	virtual int warpFrame(float frametime);
+	virtual int warpShipClip();
+	virtual int warpShipRender();
+	int warpEnd();
+
+	//For VM_WARP_CHASE
+	virtual int getWarpPosition(vec3d *output);
+};
+
+//********************-----CLASS: WE_Default-----********************//
+class WE_Default : public WarpEffect
+{
+private:
+	static const int NUM_STAGES = 2;
+
+	//portal object
+	object *portal_objp;
+
+	//Total data
+	int total_time_start;
+	int total_time_end;
+	//Stage data
+	int stage;
+	int stage_time_start;
+	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
+
+	//Data "storage"
+	int stage_duration[NUM_STAGES+1];
+
+	//sweeper polygon and clip effect
+	vec3d	pos;
+	vec3d	fvec;
+	float	radius;
+public:
+	WE_Default(object *n_objp, int n_direction);
+
+	int warpStart();
+	int warpFrame(float frametime);
+	int warpShipClip();
+	int warpShipRender();
+
+	int getWarpPosition(vec3d *output);
+};
+
+//********************-----CLASS: WE_BTRL-----********************//
+class WE_BTRL : public WarpEffect
+{
+private:
+	static const int NUM_STAGES = 2;
+
+	//Total data
+	int total_time_start;
+	int total_time_end;
+	//Stage data
+	int stage;
+	int stage_time_start;
+	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
+
+	//Data "storage"
+	int stage_duration[NUM_STAGES+1];
+
+	//anim
+	int anim;
+	int anim_nframes;
+	int anim_fps;
+
+	geometry_batcher batcher;
+	float	radius_full;
+public:
+	WE_BTRL(object *n_objp, int n_direction);
+	~WE_BTRL();
+
+	int warpStart();
+	int warpFrame(float frametime);
+	int warpShipClip();
+	int warpShipRender();
+};
+
+//********************-----CLASS: WE_Homeworld-----********************//
+class WE_Homeworld : public WarpEffect
+{
+private:
+	static const int NUM_STAGES = 5;
+
+	//Total data
+	int total_time_start;
+	int total_time_end;
+	//Stage data
+	int stage;
+	int stage_time_start;
+	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
+
+	//Data "storage"
+	int stage_duration[NUM_STAGES+1];
+
+	//anim
+	int anim;
+	int anim_nframes;
+	int anim_fps;
+
+	//sweeper polygon and clip effect
+	vec3d	pos;
+	vec3d	fvec;
+	float	radius_full;
+	float	width;
+	float	width_full;
+	float	height;
+	float	height_full;
+public:
+	WE_Homeworld(object *n_objp, int n_direction);
+	~WE_Homeworld();
+
+	virtual int warpStart();
+	virtual int warpFrame(float frametime);
+	virtual int warpShipClip();
+	virtual int warpShipRender();
+
+	int getWarpPosition(vec3d *output);
+};
+
+//********************-----CLASS: WE_Hyperspace----********************//
+class WE_Hyperspace : public WarpEffect
+{
+private:
+	//Total data
+	int total_time_start;
+	int total_duration;
+	int total_time_end;
+
+	//sweeper polygon and clip effect
+	vec3d	pos_final;
+	float	scale_factor;
+public:
+	WE_Hyperspace(object *n_objp, int n_direction);
+
+	virtual int warpStart();
+	virtual int warpFrame(float frametime);
+};
 
 
 #endif

@@ -2776,7 +2776,9 @@ void parse_engine_wash(bool replace)
 
 char *Warp_types[] = {
 	"Default",
-	"BTRL"
+	"BTRL",
+	"Homeworld",
+	"Hyperspace",
 };
 
 int Num_warp_types = sizeof(Warp_types)/sizeof(char*);
@@ -3406,9 +3408,11 @@ int parse_ship(char *filename, bool replace)
 	if(optional_string("$Warpin speed:"))
 	{
 		stuff_float(&sip->warpin_speed);
+		/*
 		if(sip->warpin_speed == 0.0f) {
 			Warning(LOCATION, "Warp-in speed specified as 0 on ship '%s'; value ignored", sip->name);
 		}
+		*/
 	}
 
 	if(optional_string("$Warpin time:"))
@@ -3449,9 +3453,11 @@ int parse_ship(char *filename, bool replace)
 	if(optional_string("$Warpout speed:"))
 	{
 		stuff_float(&sip->warpout_speed);
+		/*
 		if(sip->warpout_speed == 0.0f) {
 			Warning(LOCATION, "Warp-out speed specified as 0 on ship '%s'; value ignored", sip->name);
 		}
+		*/
 	}
 
 	if(optional_string("$Warpout time:"))
@@ -5530,6 +5536,54 @@ vec3d get_submodel_offset(int model, int submodel){
 
 }
 
+void ship_set_warp_effects(object *objp, ship_info *sip)
+{
+	ship *shipp = &Ships[objp->instance];
+
+	
+	if(shipp->warpin_effect != NULL)
+		delete shipp->warpin_effect;
+
+	switch(sip->warpin_type)
+	{
+		case WT_DEFAULT:
+			shipp->warpin_effect = new WE_Default(objp, WD_WARP_IN);
+			break;
+		case WT_IN_PLACE_ANIM:
+			shipp->warpin_effect = new WE_BTRL(objp, WD_WARP_IN);
+			break;
+		case WT_SWEEPER:
+			shipp->warpin_effect = new WE_Homeworld(objp, WD_WARP_IN);
+			break;
+		case WT_HYPERSPACE:
+			shipp->warpin_effect = new WE_Hyperspace(objp, WD_WARP_IN);
+			break;
+		default:
+			shipp->warpin_effect = new WarpEffect();
+	}
+
+	if(shipp->warpout_effect != NULL)
+		delete shipp->warpout_effect;
+
+	switch(sip->warpout_type)
+	{
+		case WT_DEFAULT:
+			shipp->warpout_effect = new WE_Default(objp, WD_WARP_OUT);
+			break;
+		case WT_IN_PLACE_ANIM:
+			shipp->warpout_effect = new WE_BTRL(objp, WD_WARP_OUT);
+			break;
+		case WT_SWEEPER:
+			shipp->warpout_effect = new WE_Homeworld(objp, WD_WARP_OUT);
+			break;
+		case WT_HYPERSPACE:
+			shipp->warpout_effect = new WE_Hyperspace(objp, WD_WARP_OUT);
+			break;
+		default:
+			shipp->warpout_effect = new WarpEffect();
+	}
+}
+
 void ship_set(int ship_index, int objnum, int ship_type)
 {
 	int i;
@@ -5561,16 +5615,19 @@ void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->wash_timestamp = timestamp(0);
 	shipp->large_ship_blowup_index = -1;
 	shipp->respawn_priority = 0;
-	shipp->warp_anim = -1;
-	shipp->warp_anim_fps = 0;
-	shipp->warp_anim_nframes = 0;
+	//shipp->warp_anim = -1;
+	//shipp->warp_anim_fps = 0;
+	//shipp->warp_anim_nframes = 0;
 	for (i=0; i<NUM_SUB_EXPL_HANDLES; i++) {
 		shipp->sub_expl_sound_handle[i] = -1;
 	}
 
 	if ( !Fred_running ) {
-		shipp->start_warp_time = timestamp(-1);
-		shipp->final_warp_time = timestamp(-1);
+		//shipp->start_warp_time = timestamp(-1);
+		//shipp->final_warp_time = timestamp(-1);
+		shipp->warpin_effect = NULL;
+		shipp->warpout_effect = NULL;
+		ship_set_warp_effects(objp, sip);
 		shipp->final_death_time = timestamp(-1);	// There death sequence ain't start et.
 		shipp->end_death_time = 0;
 		shipp->death_time = -1;
@@ -5582,8 +5639,8 @@ void ship_set(int ship_index, int objnum, int ship_type)
 		}
 		shipp->arc_next_time = timestamp(-1);		// No electrical arcs yet.
 	} else {		// the values should be different for Fred
-		shipp->start_warp_time = -1;
-		shipp->final_warp_time = -1;
+		//shipp->start_warp_time = -1;
+		//shipp->final_warp_time = -1;
 		shipp->final_death_time = 0;
 		shipp->end_death_time = 0;
 		shipp->death_time = -1;
@@ -6674,14 +6731,29 @@ void ship_render(object * obj)
 			// warp... either this ship or the ship it is docked with.
 			if ( warp_shipp != NULL )
 			{
-				if (Ship_info[warp_shipp->ship_info_index].warpout_type == WT_DEFAULT)
+				if(warp_shipp->flags & SF_ARRIVING)
+					clip_started = warp_shipp->warpin_effect->warpShipClip();
+				else if(warp_shipp->flags & SF_DEPART_WARP)
+					clip_started = warp_shipp->warpout_effect->warpShipClip();
+				/*
+				else
 				{
-					clip_started = 1;
-					g3_start_user_clip_plane( &warp_shipp->warp_effect_pos, &warp_shipp->warp_effect_fvec );
+					switch(Ship_info[warp_shipp->ship_info_index].warpout_type)
+					{
+						case WT_DEFAULT:
+						{
+							clip_started = 1;
+							g3_start_user_clip_plane( &warp_shipp->warp_effect_pos, &warp_shipp->warp_effect_fvec );
+							break;
+						}
+						default:
+							break;
+					}
 
-					// Turn off model caching while going thru warp effect.
-				//	render_flags |= MR_ALWAYS_REDRAW;
+						// Turn off model caching while going thru warp effect.
+					//	render_flags |= MR_ALWAYS_REDRAW;
 				}
+				*/
 			}
 
 			// maybe set squad logo bitmap
@@ -6917,45 +6989,52 @@ void ship_render(object * obj)
 	//WMC - based on Bobb's secondary thruster stuff
 	//which was in turn based on the beam code.
 	//I'm gonna need some serious acid to neutralize this base.
+	if(shipp->flags & SF_ARRIVING)
+		shipp->warpin_effect->warpShipRender();
+	else if(shipp->flags & SF_DEPART_WARP)
+		shipp->warpout_effect->warpShipRender();
+	/*
 	if(shipp->warp_anim >= 0 && shipp->final_warp_time > timestamp())
 	{
-		fx_batcher.allocate(1);
-
-		float rad = 0.0f;
 		ship_info *sip = &Ship_info[shipp->ship_info_index];
-
-		if(shipp->flags & SF_DEPART_WARP)
-			rad = sip->warpout_radius;
-		else
-			rad = sip->warpin_radius;
-		if(rad <= 0.0f)
-		{
-			polymodel *pm = model_get(sip->model_num);
-			rad = pm->rad;
-		}
-
-		//Do warpout geometry
-		vec3d start, end;
-		vm_vec_scale_add(&start, &obj->pos, &obj->orient.vec.fvec, rad);
-		vm_vec_scale_add(&end, &obj->pos, &obj->orient.vec.fvec, -rad);
-		fx_batcher.draw_beam(&start, &end, rad*2.0f, 1.0f);
 
 		//Figure out which frame we're on
 		int frame = fl2i((float)((float)(timestamp() - (float)shipp->start_warp_time) / (float)(shipp->final_warp_time - (float)shipp->start_warp_time)) * (float)shipp->warp_anim_nframes);
 
-		//Set the correct frame
+			//Set the correct frame
 		gr_set_bitmap(shipp->warp_anim + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
-		
-		// turn off zbuffering	
-		int saved_zbuffer_mode = gr_zbuffer_get();
-		gr_zbuffer_set(GR_ZBUFF_NONE);	
 
-		//Render the warpout effect
-		fx_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
+		if((shipp->flags & SF_ARRIVING && sip->warpin_type == WT_IN_PLACE_ANIM) || (shipp->flags & SF_DEPARTING && sip->warpout_type == WT_IN_PLACE_ANIM))
+		{
+			fx_batcher.allocate(1);
 
-		// restore zbuffer mode
-		gr_zbuffer_set(saved_zbuffer_mode);
+			//Do warpout geometry
+			vec3d start, end;
+			vm_vec_scale_add(&start, &obj->pos, &obj->orient.vec.fvec, shipp->warp_radius);
+			vm_vec_scale_add(&end, &obj->pos, &obj->orient.vec.fvec, -shipp->warp_radius);
+			fx_batcher.draw_beam(&start, &end, shipp->warp_radius*2.0f, 1.0f);
+			
+			// turn off zbuffering	
+			int saved_zbuffer_mode = gr_zbuffer_get();
+			gr_zbuffer_set(GR_ZBUFF_NONE);	
+
+			//Render the warpout effect
+			fx_batcher.render(TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
+
+			// restore zbuffer mode
+			gr_zbuffer_set(saved_zbuffer_mode);
+		}
+		else if((shipp->flags & SF_ARRIVING && sip->warpin_type == WT_SWEEPER) || (shipp->flags & SF_DEPARTING && sip->warpout_type == WT_SWEEPER))
+		{
+			//vec3d pos;
+			//float progress = (float)(timestamp() - shipp->start_warp_time)/(float)(shipp->final_warp_time - shipp->start_warp_time);
+			//vm_vec_scale_add(&pos, &obj->pos, &obj->orient.vec.fvec, rad*(progress-0.5f));
+			//gr_set_bitmap(shipp->warp_anim, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
+
+			g3_draw_polygon(&shipp->warp_effect_pos, &obj->orient, shipp->warp_width, shipp->warp_height, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
+		}
 	}
+	*/
 }
 
 extern float Viewer_zoom;
@@ -9308,6 +9387,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// point to new ship data
 	ship_model_change(n, ship_type);
 	sp->ship_info_index = ship_type;
+
+	//WMC - set warp effects
+	ship_set_warp_effects(objp, sip);
 
 
 	// set the correct hull strength
@@ -15791,6 +15873,12 @@ float ship_get_max_speed(ship *shipp)
 float ship_get_warpout_speed(object *objp)
 {
 	Assert(objp->type == OBJ_SHIP);
+
+	ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
+	if(sip->warpout_type == WT_SWEEPER)
+	{
+		return sip->warpout_speed;
+	}
 
 	return shipfx_calculate_warp_dist(objp) / shipfx_calculate_warp_time(objp, WD_WARP_OUT);
 }
