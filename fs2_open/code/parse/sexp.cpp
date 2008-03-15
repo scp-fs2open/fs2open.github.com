@@ -1644,6 +1644,7 @@
 #include "starfield/starfield.h"
 #include "hud/hudartillery.h"
 #include "object/objectdock.h"
+#include "object/objectshield.h"
 #include "globalincs/systemvars.h"
 #include "camera/camera.h"
 #include "iff_defs/iff_defs.h"

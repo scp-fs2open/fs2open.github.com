@@ -608,6 +608,7 @@
 #include "graphics/font.h"
 #include "debugconsole/dbugfile.h"
 #include "object/objectdock.h"
+#include "object/objectshield.h"
 #include "gamesnd/gamesnd.h"
 #include "iff_defs/iff_defs.h"
 #include "parse/scripting.h"

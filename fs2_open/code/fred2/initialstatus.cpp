@@ -17,6 +17,7 @@
 #include "Management.h"
 #include "globalincs/linklist.h"
 #include "object/objectdock.h"
+#include "object/objectshield.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

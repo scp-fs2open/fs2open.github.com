@@ -29,6 +29,7 @@
 #include "asteroid/asteroid.h"
 #include "sound/ds.h"
 #include "cfile/cfilesystem.h"
+#include "object/objectshield.h"
 #include "object/waypoint/waypoint.h"
 #include "globalincs/linklist.h"
 #include "io/timer.h"

@@ -709,6 +709,7 @@
 #include "network/multi.h"
 #include "network/multiutil.h"
 #include "object/objcollide.h"
+#include "object/objectshield.h"
 #include "lighting/lighting.h"
 #include "observer/observer.h"
 #include "asteroid/asteroid.h"
