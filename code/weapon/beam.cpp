@@ -602,6 +602,7 @@
 #include "globalincs/linklist.h"
 #include "object/object.h"
 #include "object/objcollide.h"
+#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "freespace2/freespace.h"
 #include "render/3d.h"

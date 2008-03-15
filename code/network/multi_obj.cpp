@@ -18,6 +18,7 @@
 #include "network/multi_rate.h"
 #include "network/multi.h"
 #include "object/object.h"
+#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "playerman/player.h"
 #include "math/spline.h"

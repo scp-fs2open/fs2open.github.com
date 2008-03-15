@@ -366,6 +366,7 @@
 #include "globalincs/linklist.h"
 #include "InitialStatus.h"
 #include "WeaponEditorDlg.h"
+#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "TextViewDlg.h"
 #include "playerman/player.h"				// used for the max_keyed_target stuff

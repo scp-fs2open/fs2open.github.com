@@ -1095,6 +1095,7 @@
 #include "weapon/weapon.h"
 #include "render/3d.h"
 #include "object/object.h"
+#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "fireball/fireballs.h"
 #include "playerman/player.h"

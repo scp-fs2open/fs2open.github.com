@@ -314,6 +314,7 @@
 
 #include "object/objcollide.h"
 #include "object/object.h"
+#include "object/objectshield.h"
 #include "weapon/weapon.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"

@@ -519,6 +519,7 @@
 #include "FredView.h"
 #include "cfile/cfile.h"
 #include "object/objectdock.h"
+#include "object/objectshield.h"
 #include "iff_defs/iff_defs.h"
 #include "missionui/fictionviewer.h"
 

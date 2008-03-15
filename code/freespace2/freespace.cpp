@@ -5572,7 +5572,7 @@ camid game_render_frame_setup()
 	// Not exactly the best way to do it, but we need to save the view info before
 	// applying the afterburner shakes to prevent the HUD from doing bizzare shifting when slewing
 	// (Swifty)
-	Eye_no_jitter = *eye_orient; 
+	Eye_no_jitter = eye_orient; 
 	apply_view_shake(&eye_orient);
 	
 	main_camera.getCamera()->set_position(&eye_pos);

@@ -238,6 +238,7 @@
 #include "weapon/weapon.h"
 #include "globalincs/systemvars.h"
 #include "object/object.h"
+#include "object/objectshield.h"
 #include "ship/subsysdamage.h"
 	
 

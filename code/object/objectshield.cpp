@@ -33,6 +33,7 @@
 #include "math/staticrand.h"
 #include "network/multi.h"
 #include "object/object.h"
+#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
 

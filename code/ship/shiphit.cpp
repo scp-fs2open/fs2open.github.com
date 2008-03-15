@@ -765,6 +765,7 @@
 #include "network/multimsgs.h"
 #include "network/multi_respawn.h"
 #include "network/multi_pmsg.h"
+#include "object/objectshield.h"
 #include "parse/scripting.h"
 #include "asteroid/asteroid.h"
 

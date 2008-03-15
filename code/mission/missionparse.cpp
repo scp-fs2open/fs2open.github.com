@@ -1300,6 +1300,7 @@
 #include "network/multimsgs.h"
 #include "network/multi_respawn.h"
 #include "network/multi_endgame.h"
+#include "object/objectshield.h"
 #include "object/parseobjectdock.h"
 #include "object/waypoint/waypoint.h"
 #include "missionui/fictionviewer.h"

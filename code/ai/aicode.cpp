@@ -1190,6 +1190,7 @@
 #include "ai/ai.h"
 #include "globalincs/linklist.h"
 #include "object/object.h"
+#include "object/objectshield.h"
 #include "physics/physics.h"
 #include "ship/ship.h"
 #include "model/model.h"

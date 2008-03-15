@@ -2376,6 +2376,7 @@
 #include "gamesnd/eventmusic.h"
 #include "ship/shipfx.h"
 #include "gamesequence/gamesequence.h"
+#include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "cmeasure/cmeasure.h"
 #include "ship/afterburner.h"

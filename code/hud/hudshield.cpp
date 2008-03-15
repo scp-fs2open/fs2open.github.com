@@ -340,13 +340,13 @@
  * $NoKeywords: $
  */
 
-
 #include "hud/hudshield.h"
 #include "graphics/2d.h"
 #include "object/object.h"
 #include "hud/hud.h"
 #include "hud/hudparse.h"
 #include "hud/hudtargetbox.h"
+#include "object/objectshield.h"
 #include "playerman/player.h"
 #include "gamesnd/gamesnd.h"
 #include "io/timer.h"
