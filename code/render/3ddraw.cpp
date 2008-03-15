@@ -709,7 +709,74 @@ free_points:
 	return 0;	//say it drew
 }
 
+int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap_flags)
+{
+	//idiot-proof
+	if(width == 0 || height == 0)
+			return 0;
 
+	Assert(pos != NULL);
+	Assert(ori != NULL);
+	
+	//Let's begin.
+	
+	const int NUM_VERTICES = 4;
+	vec3d p[NUM_VERTICES] = {0};
+	vertex v[NUM_VERTICES];
+	//float h = sqrt(2*(radius*radius));
+
+	p[0].xyz.x = width;
+	p[0].xyz.y = height;
+
+	p[1].xyz.x = -width;
+	p[1].xyz.y = height;
+
+	p[2].xyz.x = -width;
+	p[2].xyz.y = -height;
+
+	p[3].xyz.x = width;
+	p[3].xyz.y = -height;
+
+	for(int i = 0; i < NUM_VERTICES; i++)
+	{
+		vec3d tmp = vmd_zero_vector;
+
+		//Set spacing correctly
+		//vm_vec_scale2(&p[i], radius, 1.0f);
+		//Rotate correctly
+		vm_vec_unrotate(&tmp, &p[i], ori);
+		//Move to point in space
+		vm_vec_add2(&tmp, pos);
+
+		//Convert to vertex
+		g3_transfer_vertex(&v[i], &tmp);
+	}
+
+	v[0].u = 1.0f;
+	v[0].v = 0.0f;
+
+	v[1].u = 0.0f;
+	v[1].v = 0.0f;
+	
+	v[2].u = 0.0f;
+	v[2].v = 1.0f;
+
+	v[3].u = 1.0f;
+	v[3].v = 1.0f;
+
+	vertex *ptlist[4] = { &v[3], &v[2], &v[1], &v[0] };	
+	g3_draw_poly(NUM_VERTICES, ptlist, tmap_flags);
+
+	return 0;
+}
+
+int g3_draw_polygon(vec3d *pos, vec3d *norm, float width, float height, int tmap_flags)
+{
+	matrix m;
+	vm_vector_2_matrix(&m, norm, NULL, NULL);
+
+	return g3_draw_polygon(pos, &m, width, height, tmap_flags);
+}
 
 // Draw a polygon.  Same as g3_draw_poly, but it bashes sw to a constant value
 // for all vertexes.  Needs to be done after clipping to get them all.
