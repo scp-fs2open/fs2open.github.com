@@ -1,0 +1,29 @@
+This is still in pretty rough form.
+
+
+=== for people building fs2_open:
+
+Win32-MSVC:
+Use the Freespace2.dsw workspace and build within the IDE.
+
+
+Win32-MinGW:
+  make
+
+
+Linux and other unix variants (NOT YET COMPLETE)
+  ./configure [options]
+  make
+
+
+
+=== for the project maintainers (people who need to 
+=== keep the makefiles up to date) and those building
+=== from CVS:
+
+./autogen.sh (should only has to be done once)
+./configure [options]
+make
+
+automake v1.6.1+ and
+autoconf v2.54+ are required

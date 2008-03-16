@@ -1,0 +1,14 @@
+In order for Anjuta 1 to function properly with this project file
+it must exist in the root of the code tree.  To do this simply copy
+or hard link the FS2_Open.prj file down two directories.
+
+
+Hard link example:
+cd ../../
+ln projects/anjuta1/FS2_Open.prj
+
+Use the project file from the root of the code tree and changes will
+automatically get made to the file in the projects directory.  Do not
+link symbolically or Anjuta will use the wrong directory for accessing
+files.
+

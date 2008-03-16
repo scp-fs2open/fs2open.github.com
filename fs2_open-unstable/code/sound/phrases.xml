@@ -1,0 +1,153 @@
+<GRAMMAR LANGID="409">
+    <DEFINE>
+        <ID NAME="VID_Counter"         VAL="80"/>
+ 
+		<ID NAME="VID_DestoryTarget"   VAL="10"/>
+		<ID NAME="VID_DisableTarget"   VAL="11"/>
+		<ID NAME="VID_DisarmTarget"    VAL="12"/>
+
+		<ID NAME="VID_DestroySubsys"   VAL="13"/>
+
+		<ID NAME="VID_ProtectTarget"   VAL="14"/>
+		<ID NAME="VID_IgnoreTarget"    VAL="15"/>
+		<ID NAME="VID_FormWing"	       VAL="16"/>
+		<ID NAME="VID_CoverMe"         VAL="17"/>
+		<ID NAME="VID_EngageEnemy"     VAL="18"/>
+		<ID NAME="VID_Depart"          VAL="19"/>
+
+		<ID NAME="VID_Action"          VAL="250"/>
+
+		<ID NAME="VID_WingName"        VAL="251"/>
+		<ID NAME="VID_TopMenu"         VAL="252"/>
+		<ID NAME="VID_ShipName"        VAL="253"/>
+		<ID NAME="VID_Number"          VAL="254"/>
+
+		<ID NAME="VID_Ships"       VAL="50"/>
+		<ID NAME="VID_Wings"       VAL="51"/>
+		<ID NAME="VID_AllFighters" VAL="52"/>
+		<ID NAME="VID_AllWings"    VAL="53"/>
+
+		<ID NAME="VID_Reinforcements" VAL="54"/>
+
+		<ID NAME="VID_SupportShip"  VAL="55"/>
+		<ID NAME="VID_AbortSupport" VAL="56"/>
+
+		<ID NAME="VID_Cancel"  VAL="57"/>
+		<ID NAME="VID_Command" VAL="58"/>
+		<ID NAME="VID_More"    VAL="59"/>
+        
+
+    </DEFINE>
+
+
+	<RULE ID="VID_WingName" TOPLEVEL="ACTIVE">
+	<L PROPID="VID_WingName">
+		<P VAL="0">Alpha</P>
+		<P VAL="1">Beta</P>	
+		<P VAL="2">Gamma</P>	
+		<P VAL="3">Delta</P>
+		<P VAL="4">Epsilon</P>
+		<P VAL="5">Zeta</P>
+		<P VAL="6">Eta</P>
+		<P VAL="7">Theta</P>
+		<P VAL="8">Iota</P>
+		<P VAL="9">Kappa</P>
+		<P VAL="10">Lambda</P>
+		<P VAL="11">Mu</P>
+		<P VAL="12">Nu</P>
+		<P VAL="13">Xi</P>
+		<P VAL="14">Omicron</P>
+		<P VAL="15">Pi</P>
+		<P VAL="16">Rho</P>
+		<P VAL="17">Sigma</P>
+		<P VAL="18">Tau</P>
+		<P VAL="19">Upsilon</P>
+		<P VAL="20">Phi</P>
+		<P VAL="21">Chi</P>
+		<P VAL="22">Psi</P>
+		<P VAL="23">Omega</P>		
+		</L>
+		<O>wing</O>
+	</RULE>
+
+	<RULE ID="VID_ShipName" TOPLEVEL="ACTIVE">
+	<L PROPID="VID_ShipName">
+		<P VAL="0">Alpha</P>
+		<P VAL="1">Beta</P>	
+		<P VAL="2">Gamma</P>	
+		<P VAL="3">Delta</P>
+		<P VAL="4">Epsilon</P>
+		<P VAL="5">Zeta</P>
+		<P VAL="6">Eta</P>
+		<P VAL="7">Theta</P>
+		<P VAL="8">Iota</P>
+		<P VAL="9">Kappa</P>
+		<P VAL="10">Lambda</P>
+		<P VAL="11">Mu</P>
+		<P VAL="12">Nu</P>
+		<P VAL="13">Xi</P>
+		<P VAL="14">Omicron</P>
+		<P VAL="15">Pi</P>
+		<P VAL="16">Rho</P>
+		<P VAL="17">Sigma</P>
+		<P VAL="18">Tau</P>
+		<P VAL="19">Upsilon</P>
+		<P VAL="20">Phi</P>
+		<P VAL="21">Chi</P>
+		<P VAL="22">Psi</P>
+		<P VAL="23">Omega</P>
+		</L>
+		<L PROPID="VID_Number">
+		<P VAL = "1">one</P>
+		<P VAL = "2">two</P>
+		<P VAL = "3">three</P>
+		<P VAL = "4">four</P>
+		<P VAL = "5">five</P>
+		<P VAL = "6">six</P>
+		<P VAL = "7">seven</P>
+		<P VAL = "8">eight</P>
+		<P VAL = "9">nine</P>
+		</L>
+		
+	</RULE>
+
+	<RULE ID="VID_TopMenu" TOPLEVEL="ACTIVE">
+        <L PROPID="VID_TopMenu">
+			<P VAL="VID_Ships"      >Ships</P>
+			<P VAL="VID_Wings"      >Wings</P>
+			<P VAL="VID_AllFighters">All Fighters</P>
+			<P VAL="VID_AllWings"   >All Wings</P>
+
+			<P VAL="VID_Reinforcements">Reinforcements</P>
+
+			<P VAL="VID_SupportShip">Support ship</P>
+			<P VAL="VID_SupportShip">Rearm</P>
+			<P VAL="VID_SupportShip">Repair</P>
+			<P VAL="VID_AbortSupport">Abort</P>
+
+			<P VAL="VID_Cancel">Cancel</P>
+			<P VAL="VID_Command">Command</P>
+			<P VAL="VID_More">More</P>        
+		</L>
+		</RULE>
+
+		<RULE ID="VID_Action" TOPLEVEL="ACTIVE">
+		<L PROPID="VID_Action">
+
+			<P VAL="VID_DestoryTarget">Destroy my target</P>
+			<P VAL="VID_DisableTarget">Disable my target</P>
+			<P VAL="VID_DisarmTarget" >Disarm my target</P>
+
+			<P VAL="VID_DestroySubsys">Destroy subsystem</P>
+
+			<P VAL="VID_ProtectTarget">Protect my target</P>
+			<P VAL="VID_IgnoreTarget" >Ignore my target</P>
+			<P VAL="VID_FormWing"	  >Form on my wing</P>
+			<P VAL="VID_CoverMe"      >Cover me</P>
+			<P VAL="VID_EngageEnemy"  >Engage Enemy</P>
+			<P VAL="VID_EngageEnemy"  >Attack</P>
+			<P VAL="VID_Depart"       >Depart</P>
+        </L>
+    </RULE>
+
+</GRAMMAR>
