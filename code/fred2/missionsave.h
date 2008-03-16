@@ -9,17 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MissionSave.h $
- * $Revision: 1.6 $
- * $Date: 2007-11-21 07:28:37 $
+ * $Revision: 1.3.2.2 $
+ * $Date: 2007-11-21 07:27:46 $
  * $Author: Goober5000 $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.5  2006/12/28 00:59:20  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.4  2006/07/13 06:11:52  Goober5000
+ * Revision 1.3.2.1  2006/07/13 06:11:48  Goober5000
  * * better formatting for substitute music options
  * * better handling of all special FSO comment tags
  * --Goober5000
@@ -142,7 +139,7 @@
 #include "ai/ai.h"
 #include "cfile/cfile.h"
 #include "ship/ship.h"
-#include "object/waypoint/waypoint.h"
+#include "object/waypoint.h"
 
 #define BACKUP_DEPTH	9
 

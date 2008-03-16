@@ -9,32 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/Credits.cpp $
- * $Revision: 2.34 $
- * $Date: 2007-10-22 22:23:22 $
- * $Author: phreak $
+ * $Revision: 2.27.2.6 $
+ * $Date: 2007-09-02 02:07:42 $
+ * $Author: Goober5000 $
  *
  * C source file for displaying game credits
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.33  2007/09/02 02:10:26  Goober5000
- * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
- *
- * Revision 2.32  2007/03/22 20:35:19  taylor
+ * Revision 2.27.2.5  2007/03/22 20:35:44  taylor
  * be sure to page in textures for change ship class sexp preload
  * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
  * make event music keep extension if it exists, so that the special data will be accurate
  * bits of cleanup from old MS code that we don't need
  *
- * Revision 2.31  2007/02/10 00:18:22  taylor
+ * Revision 2.27.2.4  2007/02/10 00:17:40  taylor
  * remove NO_SOUND
  *
- * Revision 2.30  2006/09/11 06:50:42  taylor
+ * Revision 2.27.2.3  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.29  2006/06/23 16:16:59  karajorma
- * Should be here too
+ * Revision 2.27.2.2  2006/06/23 16:08:55  karajorma
+ * Was feeling left out :)
  *
- * Revision 2.28  2006/06/08 06:48:01  Goober5000
+ * Revision 2.27.2.1  2006/06/08 06:48:13  Goober5000
  * update credits
  *
  * Revision 2.27  2006/04/20 06:32:07  Goober5000
@@ -335,7 +332,7 @@ char *fs2_open_credit_text =
 	"Jon \"Sesquipedalian\" Stovell\n"
 	"Matt \"Sticks\" Nischan\n"
 	"Mike \"penguin\" Harris\n"
-	"Nick \"phreak\" Iannetta\n"
+	"Nick \"PhReAk\" Iannetta\n"
 	"Thomas \"RandomTiger\" Whittaker\n"
 	"Taylor Richards\n"
 	"Will \"##Unknown Player##\" Rousnel\n"

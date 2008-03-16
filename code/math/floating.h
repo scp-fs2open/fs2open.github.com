@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.h $
- * $Revision: 2.6 $
- * $Date: 2006-06-27 05:07:49 $
+ * $Revision: 2.5.2.1 $
+ * $Date: 2006-06-18 16:54:36 $
  * $Author: taylor $
  *
  * Low-level floating point math macros and routines

@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/SystemVars.cpp $
- * $Revision: 2.13 $
- * $Date: 2008-01-17 07:44:43 $
+ * $Revision: 2.11.2.2 $
+ * $Date: 2008-01-17 07:43:23 $
  * $Author: Goober5000 $
  *
  * Variables and constants common to FreeSpace and Fred.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.12  2006/09/11 06:45:39  taylor
+ * Revision 2.11.2.1  2006/09/11 01:00:27  taylor
  * various small compiler warning and strict compiling fixes
  *
  * Revision 2.11  2006/04/20 06:32:01  Goober5000
@@ -278,6 +278,7 @@ uint Game_detail_flags = DETAIL_DEFAULT;	// see systemvars.h for explanation
 angles	Viewer_slew_angles;			//	Angles of viewer relative to forward.
 vei		Viewer_external_info;		//	Viewer angles to ship in external view.
 vci		Viewer_chase_info;			// View chase camera information
+vec3d leaning_position;
 
 int Is_standalone;
 int Rand_count;

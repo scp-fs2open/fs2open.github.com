@@ -9,26 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Cutscene/Cutscenes.cpp $
- * $Revision: 2.23 $
- * $Date: 2007-09-02 02:10:24 $
+ * $Revision: 2.18.2.4 $
+ * $Date: 2007-09-02 02:07:39 $
  * $Author: Goober5000 $
- * $Revision: 2.23 $
- * $Date: 2007-09-02 02:10:24 $
+ * $Revision: 2.18.2.4 $
+ * $Date: 2007-09-02 02:07:39 $
  * $Author: Goober5000 $
  *
  * Code for the cutscenes viewer screen
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.22  2007/03/22 20:53:43  taylor
+ * Revision 2.18.2.3  2007/03/22 20:54:00  taylor
  * give a better msg when movies can't play because they are user-disabled with the cmdline option
  *
- * Revision 2.21  2007/02/09 23:58:52  taylor
+ * Revision 2.18.2.2  2007/02/09 23:58:28  taylor
  * add the "show all" hotkey to the cutscene viewer
  *
- * Revision 2.20  2006/12/28 00:59:19  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.19  2006/09/11 06:49:38  taylor
+ * Revision 2.18.2.1  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
  * Revision 2.18  2006/05/09 09:21:15  taylor
@@ -270,7 +267,7 @@ char *Cutscene_mask_name[GR_NUM_RESOLUTIONS] = {
 	"2_ViewFootage-m"
 };
 
-int Num_cutscenes = 0;
+int Num_cutscenes;
 int Cutscenes_viewable;
 int Description_index;
 cutscene_info Cutscenes[MAX_CUTSCENES];
@@ -278,11 +275,7 @@ cutscene_info Cutscenes[MAX_CUTSCENES];
 //extern int All_movies_enabled;		//	If set, all movies may be viewed.  Keyed off cheat code.
 void cutscene_close(){
 	for(int i = 0; i<MAX_CUTSCENES; i++)
-	{
-		if(Cutscenes[i].description != NULL) {
-			vm_free(Cutscenes[i].description);
-		}
-	}
+	if(Cutscenes[i].description)vm_free(Cutscenes[i].description);
 }
 
 // initialization stuff for cutscenes

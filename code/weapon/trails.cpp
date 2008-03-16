@@ -9,28 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Trails.cpp $
- * $Revision: 2.32 $
- * $Date: 2007-10-23 02:07:27 $
- * $Author: phreak $
+ * $Revision: 2.27.2.4 $
+ * $Date: 2007-05-11 03:12:28 $
+ * $Author: taylor $
  *
  * Code for missile trails
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.31  2007/05/11 03:12:13  taylor
- * very minor optimization (mul is much faster than div)
- *
- * Revision 2.30  2007/04/14 23:42:20  taylor
+ * Revision 2.27.2.3  2007/04/14 23:42:02  taylor
  * little cleanup
  * fix memory size fubar on trail vlist ptr
  *
- * Revision 2.29  2007/03/23 01:51:57  taylor
+ * Revision 2.27.2.2  2007/02/12 00:48:43  taylor
+ * oops, forgot this bit
+ *
+ * Revision 2.27.2.1  2007/02/12 00:45:24  taylor
  * bit of cleanup and minor performance tweaks
  * sync up with new generic_anim/bitmap and weapon delayed loading changes
  * with generic_anim, use Goober's animation timing for beam section and glow animations
  * make trail render list dynamic (as well as it can be)
- *
- * Revision 2.28  2006/12/28 00:59:54  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
  *
  * Revision 2.27  2006/05/27 16:45:11  taylor
  * some minor cleanup
@@ -380,13 +377,12 @@ void trail_render( trail * trailp )
 	int i;
 	vec3d topv, botv, *fvec, last_pos, tmp_fvec;
 	vertex  top, bot;
-	int vert_idx = 0;
-	float width;
-	ubyte alpha;
+	int nv = 0;
+	float w;
+	ubyte l;
 	vec3d centerv;
-	int section_idx;
 
-	if ((!trailp) || (trailp->tail == trailp->head))
+	if (trailp->tail == trailp->head)
 		return;
 
 	// if this trail is on the player ship, and he's in any padlock view except rear view, don't draw	
@@ -396,21 +392,21 @@ void trail_render( trail * trailp )
 		return;
 	}
 
-	section_idx = trailp->tail;
 	trail_info *ti	= &trailp->info;
 
-	do
-	{
-		section_idx--;
+	int n = trailp->tail;
 
-		if (section_idx < 0)
-			section_idx = NUM_TRAIL_SECTIONS-1;
+	do	{
+		n--;
 
-		if (trailp->alpha[section_idx] > 1.0f)
+		if (n < 0)
+			n = NUM_TRAIL_SECTIONS-1;
+
+		if (trailp->val[n] > 1.0f)
 			break;
 
-		sections[num_sections++] = section_idx;
-	} while ( section_idx != trailp->head );
+		sections[num_sections++] = n;
+	} while ( n != trailp->head );
 
 	if (num_sections <= 0)
 		return;
@@ -426,120 +422,106 @@ void trail_render( trail * trailp )
 	float w_size = (ti->w_end - ti->w_start);
 	float a_size = (ti->a_end - ti->a_start);
 
-	for (i = 0; i < num_sections; i++) 
-	{
-		section_idx = sections[i];
+	for (i = 0; i < num_sections; i++) {
+		n = sections[i];
 
-		width = trailp->alpha[section_idx] * w_size + ti->w_start;
-		alpha = (ubyte)fl2i((trailp->alpha[section_idx] * a_size + ti->a_start) * 255.0f);
+		w = trailp->val[n] * w_size + ti->w_start;
+		l = (ubyte)fl2i((trailp->val[n] * a_size + ti->a_start) * 255.0f);
 
-		if ( i == 0 )
-		{
-			if ( num_sections > 1 )
-			{
-				vm_vec_sub(&tmp_fvec, &trailp->pos[section_idx], &trailp->pos[sections[i+1]] );
+		if ( i == 0 )	{
+			if ( num_sections > 1 )	{
+				vm_vec_sub(&tmp_fvec, &trailp->pos[n], &trailp->pos[sections[i+1]] );
 				vm_vec_normalize_safe(&tmp_fvec);
 				fvec = &tmp_fvec;
-			} 
-			else 
-			{
+			} else {
 				fvec = &tmp_fvec;
 				fvec->xyz.x = 0.0f;
 				fvec->xyz.y = 0.0f;
 				fvec->xyz.z = 1.0f;
 			}
-		} 
-		else 
-		{
-			vm_vec_sub(&tmp_fvec, &last_pos, &trailp->pos[section_idx] );
+		} else {
+			vm_vec_sub(&tmp_fvec, &last_pos, &trailp->pos[n] );
 			vm_vec_normalize_safe(&tmp_fvec);
 			fvec = &tmp_fvec;
 		}
 
-		trail_calc_facing_pts( &topv, &botv, fvec, &trailp->pos[section_idx], width);
+		trail_calc_facing_pts( &topv, &botv, fvec, &trailp->pos[n], w );
 
-		if ( !Cmdline_nohtl )
-		{
+		if ( !Cmdline_nohtl ) {
 			g3_transfer_vertex( &top, &topv );
 			g3_transfer_vertex( &bot, &botv );
-		} 
-		else 
-		{
+		} else {
 			g3_rotate_vertex( &top, &topv );
 			g3_rotate_vertex( &bot, &botv );
 		}
 
-		top.a = bot.a = alpha;	
+		top.a = bot.a = l;	
 
-		if (i > 0) 
-		{
+		if (i > 0) {
 			float U = i2fl(i);
 
-			if (i == num_sections-1)
-			{
+			if (i == num_sections-1) {
 				// Last one...
 				vm_vec_avg( &centerv, &topv, &botv );
 
 				if ( !Cmdline_nohtl )
-					g3_transfer_vertex( &Trail_v_list[vert_idx+2], &centerv );
+					g3_transfer_vertex( &Trail_v_list[nv+2], &centerv );
 				else
-					g3_rotate_vertex( &Trail_v_list[vert_idx+2], &centerv );
+					g3_rotate_vertex( &Trail_v_list[nv+2], &centerv );
 
-				Trail_v_list[vert_idx].a = alpha;	
+				Trail_v_list[nv].a = l;	
 
-				Trail_vlist[vert_idx] = &Trail_v_list[vert_idx];
-				Trail_vlist[vert_idx]->u = U;
-				Trail_vlist[vert_idx]->v = 1.0f; 
-				Trail_vlist[vert_idx]->r = Trail_vlist[vert_idx]->g = Trail_vlist[vert_idx]->b = alpha;
-				vert_idx++;
+				Trail_vlist[nv] = &Trail_v_list[nv];
+				Trail_vlist[nv]->u = U;
+				Trail_vlist[nv]->v = 1.0f; 
+				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
+				nv++;
 
-				Trail_vlist[vert_idx] = &Trail_v_list[vert_idx];
-				Trail_vlist[vert_idx]->u = U;
-				Trail_vlist[vert_idx]->v = 0.0f; 
-				Trail_vlist[vert_idx]->r = Trail_vlist[vert_idx]->g = Trail_vlist[vert_idx]->b = alpha;
-				vert_idx++;
+				Trail_vlist[nv] = &Trail_v_list[nv];
+				Trail_vlist[nv]->u = U;
+				Trail_vlist[nv]->v = 0.0f; 
+				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
+				nv++;
 
-				Trail_vlist[vert_idx] = &Trail_v_list[vert_idx];
-				Trail_vlist[vert_idx]->u = U + 1.0f;
-				Trail_vlist[vert_idx]->v = 0.5f;
-				Trail_vlist[vert_idx]->r = Trail_vlist[vert_idx]->g = Trail_vlist[vert_idx]->b = 0;
-				vert_idx++;
-			} 
-			else 
-			{
-				Trail_vlist[vert_idx] = &Trail_v_list[vert_idx];
-				Trail_vlist[vert_idx]->u = U;
-				Trail_vlist[vert_idx]->v = 1.0f; 
-				Trail_vlist[vert_idx]->r = Trail_vlist[vert_idx]->g = Trail_vlist[vert_idx]->b = alpha;
-				vert_idx++;
+				Trail_vlist[nv] = &Trail_v_list[nv];
+				Trail_vlist[nv]->u = U + 1.0f;
+				Trail_vlist[nv]->v = 0.5f;
+				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = 0;
+				nv++;
+			} else {
+				Trail_vlist[nv] = &Trail_v_list[nv];
+				Trail_vlist[nv]->u = U;
+				Trail_vlist[nv]->v = 1.0f; 
+				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
+				nv++;
 
-				Trail_vlist[vert_idx] = &Trail_v_list[vert_idx];
-				Trail_vlist[vert_idx]->u = U;
-				Trail_vlist[vert_idx]->v = 0.0f; 
-				Trail_vlist[vert_idx]->r = Trail_vlist[vert_idx]->g = Trail_vlist[vert_idx]->b = alpha;
-				vert_idx++;
+				Trail_vlist[nv] = &Trail_v_list[nv];
+				Trail_vlist[nv]->u = U;
+				Trail_vlist[nv]->v = 0.0f; 
+				Trail_vlist[nv]->r = Trail_vlist[nv]->g = Trail_vlist[nv]->b = l;
+				nv++;
 			}
 		}
 
-		last_pos = trailp->pos[section_idx];
-		Trail_v_list[vert_idx] = top;
-		Trail_v_list[vert_idx+1] = bot;
+		last_pos = trailp->pos[n];
+		Trail_v_list[nv] = top;
+		Trail_v_list[nv+1] = bot;
 	}
 
 
-	if ( !vert_idx )
+	if ( !nv )
 		return;
 
-	if (vert_idx < 3)
+	if (nv < 3)
 		Error( LOCATION, "too few verts in trail render\n" );
 
 	// there should always be three verts in the last section and 2 everyware else, therefore there should always be an odd number of verts
-	if ( (vert_idx % 2) != 1 )
+	if ( (nv % 2) != 1 )
 		Warning( LOCATION, "even number of verts in trail render\n" );
 
 
 	gr_set_bitmap( ti->texture.bitmap_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f );
-	g3_draw_poly( vert_idx, Trail_vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_ALPHA | TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
+	g3_draw_poly( nv, Trail_vlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_ALPHA | TMAP_FLAG_GOURAUD | TMAP_FLAG_RGB | TMAP_HTL_3D_UNLIT | TMAP_FLAG_TRISTRIP );
 }
 
 
@@ -559,7 +541,7 @@ void trail_add_segment( trail *trailp, vec3d *pos )
 	}
 	
 	trailp->pos[next] = *pos;
-	trailp->alpha[next] = 0.0f;
+	trailp->val[next] = 0.0f;
 }		
 
 void trail_set_segment( trail *trailp, vec3d *pos )
@@ -591,9 +573,9 @@ void trail_move_all(float frametime)
 				n--;
 				if ( n < 0 ) n = NUM_TRAIL_SECTIONS-1;
 
-				trailp->alpha[n] += time_delta;
+				trailp->val[n] += time_delta;
 
-				if ( trailp->alpha[n] <= 1.0f ) {
+				if ( trailp->val[n] <= 1.0f ) {
 					num_alive_segments++;	// Record how many still alive.
 				}
 
@@ -617,8 +599,7 @@ void trail_move_all(float frametime)
 
 void trail_object_died( trail *trailp )
 {
-	if(trailp != NULL)
-		trailp->object_died = true;
+	trailp->object_died = true;
 }
 
 void trail_render_all()

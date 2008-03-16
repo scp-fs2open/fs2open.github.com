@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionTraining.cpp $
- * $Revision: 2.26 $
- * $Date: 2007-08-19 22:15:41 $
+ * $Revision: 2.25.2.1 $
+ * $Date: 2007-08-19 22:15:06 $
  * $Author: karajorma $
  *
  * Special code for training missions.  Stuff like displaying training messages in

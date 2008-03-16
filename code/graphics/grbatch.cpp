@@ -122,7 +122,6 @@ void geometry_batcher::clone(const geometry_batcher &geo)
 {
 	n_to_render = geo.n_to_render;
 	n_allocated = geo.n_allocated;
-	space = geo.space;
 
 	if (n_allocated > 0) {
 		vert = (vertex *) vm_malloc( sizeof(vertex) * n_allocated );
@@ -156,18 +155,6 @@ const geometry_batcher &geometry_batcher::operator=(const geometry_batcher &geo)
 */
 void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float depth)
 {
-
-	Assert(n_allocated > n_to_render + 2);
-	vec3d*cam_position;
-	matrix*cam_matrix;
-	if(space == LOCAL_SPACE){
-		cam_position = &View_position; 
-		cam_matrix = &View_matrix;
-	}else{
-		cam_position = &Eye_position; 
-		cam_matrix = &Eye_matrix;
-	}
-
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and height rad
 
 	vec3d PNT, p[4];
@@ -178,11 +165,11 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float dep
 
 
 	// get the direction from the point to the eye
-	vm_vec_sub(&fvec, cam_position, &PNT);
+	vm_vec_sub(&fvec, &View_position, &PNT);
 	vm_vec_normalize_safe(&fvec);
 
 	// get an up vector in the general direction of what we want
-	uvec = cam_matrix->vec.uvec;
+	uvec = View_matrix.vec.uvec;
 
 	// make a right vector from the f and up vector, this r vec is exactly what we want, so...
 	vm_vec_crossprod(&rvec, &fvec, &uvec);
@@ -272,18 +259,6 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float dep
 
 void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float angle, float depth)
 {
-	Assert(n_allocated > n_to_render + 2);
-
-	vec3d*cam_position;
-	matrix*cam_matrix;
-	if(space == LOCAL_SPACE){
-		cam_position = &View_position; 
-		cam_matrix = &View_matrix;
-	}else{
-		cam_position = &Eye_position; 
-		cam_matrix = &Eye_matrix;
-	}
-
 	rad *= 1.41421356f;//1/0.707, becase these are the points of a square or width and height rad
 
 	extern float Physics_viewer_bank;
@@ -300,11 +275,11 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float ang
 
 	vm_vert2vec(pnt, &PNT);
 
-	vm_vec_sub(&fvec, cam_position, &PNT);
+	vm_vec_sub(&fvec, &View_position, &PNT);
 	vm_vec_normalize_safe(&fvec);
 
-	vm_rot_point_around_line(&uvec, &cam_matrix->vec.uvec, angle, &vmd_zero_vector, &fvec);
-//	uvec = cam_matrix.vec.uvec;
+	vm_rot_point_around_line(&uvec, &View_matrix.vec.uvec, angle, &vmd_zero_vector, &fvec);
+//	uvec = View_matrix.vec.uvec;
 
 	vm_vec_crossprod(&rvec, &fvec, &uvec);
 	vm_vec_normalize_safe(&rvec);
@@ -394,7 +369,6 @@ void geometry_batcher::draw_bitmap(vertex *pnt, int orient, float rad, float ang
 
 void geometry_batcher::draw_tri(vertex* verts)
 {
-	Assert(n_allocated > n_to_render + 1);
 	vertex *P = &vert[n_to_render *3 ];
 
 	for (int i = 0; i < 3; i++)
@@ -405,7 +379,6 @@ void geometry_batcher::draw_tri(vertex* verts)
 
 void geometry_batcher::draw_quad(vertex* verts)
 {
-	Assert(n_allocated > n_to_render + 2);
 	vertex *P = &vert[n_to_render * 3];
 
 	P[0] = verts[0];
@@ -422,18 +395,6 @@ void geometry_batcher::draw_quad(vertex* verts)
 
 void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float intensity)
 {
-	Assert(n_allocated > n_to_render + 2);
-
-	vec3d*cam_position;
-	matrix*cam_matrix;
-	if(space == LOCAL_SPACE){
-		cam_position = &View_position; 
-		cam_matrix = &View_matrix;
-	}else{
-		cam_position = &Eye_position; 
-		cam_matrix = &Eye_matrix;
-	}
-
 	vec3d p[4];
 	vertex *P = &vert[n_to_render * 3];
 
@@ -442,13 +403,13 @@ void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float in
 	vm_vec_sub(&fvec, start, end);
 	vm_vec_normalize_safe(&fvec);
 
-	vm_vec_sub(&evec, cam_position, start);
+	vm_vec_sub(&evec, &View_position, start);
 	vm_vec_normalize_safe(&evec);
 
 	vm_vec_crossprod(&uvecs, &fvec, &evec);
 	vm_vec_normalize_safe(&uvecs);
 
-	vm_vec_sub(&evec, cam_position, end);
+	vm_vec_sub(&evec, &View_position, end);
 	vm_vec_normalize_safe(&evec);
 
 	vm_vec_crossprod(&uvece, &fvec, &evec);
@@ -494,7 +455,6 @@ void geometry_batcher::draw_beam(vec3d *start, vec3d *end, float width, float in
 
 float geometry_batcher::draw_laser(vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
 {
-	Assert(n_allocated > n_to_render + 2);
 	width1 *= 0.5f;
 	width2 *= 0.5f;
 
@@ -598,38 +558,37 @@ void geometry_batcher::render(int flags)
 
 // laser batcher
 
-struct batch_item : public geometry_batcher {
-	batch_item(): texture(-1), tmap_flags(0), alpha_mode(GR_ALPHABLEND_FILTER) {};
-    batch_item(const batch_item &geo) { clone(geo); texture = geo.texture; tmap_flags = geo.tmap_flags; alpha_mode = geo.alpha_mode;}
-    const batch_item &operator=(const batch_item &geo){clone(geo); texture = geo.texture; tmap_flags = geo.tmap_flags; alpha_mode = geo.alpha_mode; return *this;}
+struct batch_item {
+	batch_item(): texture(-1), tmap_flags(0), alpha(1.0f), laser(false) {};
+
+	geometry_batcher batch;
 
 	int texture;
 	int tmap_flags;
-	int alpha_mode;
+	float alpha;
+
+	bool laser;
 };
 
 static std::vector<batch_item> geometry_map;
 
-uint find_good_batch_item(int texture, int flags, int alpha)
+static int find_good_batch_item(int texture)
 {
 	uint max_size = geometry_map.size();
 
 	for (uint i = 0; i < max_size; i++) {
-		if (geometry_map[i].texture == texture && geometry_map[i].tmap_flags == flags && geometry_map[i].alpha_mode == alpha)
-			return i;
+		if (geometry_map[i].texture == texture)
+			return (int)i;
 	}
 
 	// don't have an existing match so add a new entry
 	batch_item new_item;
 
 	new_item.texture = texture;
-	new_item.tmap_flags = flags;
-	new_item.alpha_mode = alpha;
-	new_item.space = LOCAL_SPACE;
 
 	geometry_map.push_back(new_item);
 
-	return geometry_map.size() - 1;
+	return (int)(geometry_map.size() - 1);
 }
 
 float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
@@ -640,16 +599,18 @@ float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float wid
 	}
 
 	geometry_batcher *item = NULL;
-	uint index = find_good_batch_item(texture, TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT, GR_ALPHABLEND_FILTER);
+	int index = find_good_batch_item(texture);
+	Assert( index >= 0 );
 
-	item = &geometry_map[index];
+	geometry_map[index].laser = true;
+	item = &geometry_map[index].batch;
 
 	item->add_allocate(1);
 
 	return item->draw_laser(p0, width1, p1, width2, r, g, b);
 }
 
-int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, int alpha, float depth)
+int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, float alpha, float depth)
 {
 	if (texture < 0) {
 		Int3();
@@ -657,9 +618,15 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 	}
 
 	geometry_batcher *item = NULL;
-	uint index = find_good_batch_item(texture, tmap_flags, alpha);
+	int index = find_good_batch_item(texture);
+	Assert( index >= 0 );
 
-	item = &geometry_map[index];
+	Assert( geometry_map[index].laser == false );
+
+	geometry_map[index].tmap_flags = tmap_flags;
+	geometry_map[index].alpha = alpha;
+
+	item = &geometry_map[index].batch;
 
 	item->add_allocate(1);
 
@@ -668,51 +635,50 @@ int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float
 	return 0;
 }
 
-geometry_batcher* batch_get_geometry(uint geo){
-	if(geometry_map.size()<=geo)return NULL;
-	if(0>geo)return NULL;
-	geometry_map[geo].space=LOCAL_SPACE;
-	return &geometry_map[geo];
-}
-
-void batch_add_flag(uint geo, int flag){
-	if(geometry_map.size()<=geo)return;
-	if(0>geo)return;
-	geometry_map[geo].tmap_flags |= flag;
-}
-
-void batch_remove_flag(uint geo, int flag){
-	if(geometry_map.size()<=geo)return;
-	if(0>geo)return;
-	geometry_map[geo].tmap_flags &= ~flag;
-}
-
-void batch_set_flag(uint geo, int flag){
-	if(geometry_map.size()<=geo)return;
-	if(0>geo)return;
-	geometry_map[geo].tmap_flags = flag;
-}
-
 void batch_render_lasers()
 {
+	uint map_size = geometry_map.size();
+	batch_item *bi;
+
+	for (uint i = 0; i < map_size; i++) {
+		bi = &geometry_map[i];
+
+		if ( !bi->laser )
+			continue;
+
+		if ( !bi->batch.need_to_render() )
+			continue;
+
+		Assert( bi->texture >= 0 );
+		gr_set_bitmap(bi->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 0.99999f);
+		bi->batch.render(TMAP_FLAG_TEXTURED | TMAP_FLAG_XPARENT | TMAP_HTL_3D_UNLIT | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD | TMAP_FLAG_CORRECT);
+	}
 }
 
 void batch_render_bitmaps()
 {
+	uint map_size = geometry_map.size();
+	batch_item *bi;
+
+	for (uint i = 0; i < map_size; i++) {
+		bi = &geometry_map[i];
+
+		if ( bi->laser )
+			continue;
+
+		if ( !bi->batch.need_to_render() )
+			continue;
+
+		Assert( bi->texture >= 0 );
+		gr_set_bitmap(bi->texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, bi->alpha);
+		bi->batch.render( bi->tmap_flags );
+	}
 }
 
 void batch_render_all()
 {
-	uint map_size = geometry_map.size();
-
-	for (uint i = 0; i < map_size; i++) {
-		if ( !geometry_map[i].need_to_render() )
-			continue;
-
-		Assert( geometry_map[i].texture >= 0 );
-		gr_set_bitmap(geometry_map[i].texture, geometry_map[i].alpha_mode, GR_BITBLT_MODE_NORMAL, 1.0f);
-		geometry_map[i].render( geometry_map[i].tmap_flags );
-	}
+	batch_render_lasers();
+	batch_render_bitmaps();
 }
 
 void batch_reset()

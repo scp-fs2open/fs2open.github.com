@@ -2,119 +2,123 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.cpp $
- * $Revision: 2.203 $
- * $Date: 2007-11-23 21:58:10 $
- * $Author: wmcoolmon $
+ * $Revision: 2.174.2.29 $
+ * $Date: 2007-11-22 17:51:35 $
+ * $Author: phreak $
  *
  * Code that uses the OpenGL graphics library
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.202  2007/11/22 05:11:22  taylor
+ * Revision 2.174.2.28  2007/11/22 05:11:38  taylor
  * try to deal better with gamma setting/resetting when minimizing/restoring the game (Mantis #1210)
  *
- * Revision 2.201  2007/10/04 16:18:46  taylor
+ * Revision 2.174.2.27  2007/10/04 16:18:18  taylor
  * get rid of some old/obsolete items (Mantis #1489 and #1497)
  *
- * Revision 2.200  2007/03/22 20:13:23  taylor
+ * Revision 2.174.2.26  2007/03/22 20:14:16  taylor
  * various bits of bmpman cleanup
  * be sure to clean all three possible buffers with OGL init
  * fix a couple of bmpman loading bugs that messed up animations
  * fix bmpman bug that didn't properly account for free'd texture ram count with unload_fast
  *
- * Revision 2.199  2007/02/12 07:35:58  taylor
+ * Revision 2.174.2.25  2007/02/12 07:29:51  taylor
  * fix stupid bug (Mantis #1275)
  *
- * Revision 2.198  2007/02/11 18:26:59  taylor
+ * Revision 2.174.2.24  2007/02/11 10:01:11  taylor
  * remove cloakmap stuff, we'll need to redo this later on anyway
+ * don't need the AVI movie hacks any longer, so remove it
  * deal better with a strange Windows buffer swap issue
  * various bits of cleanup and performance improvements
  * fix for gr_opengl_flash() that I had screwed up earlier
  *
- * Revision 2.197  2007/02/10 20:23:51  taylor
+ * Revision 2.174.2.23  2007/02/10 20:23:23  taylor
  * make sure that we don't set the 2d view matrix and then not reset it (Mantis #1269)
  * clean up some of the fullneb mess that was causing some initial setup issues (colors wrong, etc.)
  *
- * Revision 2.196  2007/01/22 04:02:23  wmcoolmon
- * Fix non-opaque circles.
+ * Revision 2.174.2.22  2006/12/26 05:25:18  taylor
+ * lots of little cleanup, stale code removal, and small performance adjustments
+ * get rid of the default combine texture state, we don't need it in general, and it can screw up fonts
+ * get rid of the secondary color support, it doesn't do much in non-HTL mode, screws up various things, and has long since been obsolete but material setup
+ * get rid of the old gamma setup, it actually conflicts with newer gamma support
+ * default texture wrapping to edge clamp
+ * do second gr_clear() on init to be sure and catch double-buffer
+ * make sure that our active texture will always get reset to 0, rather than leaving it at whatever was used last
+ * fixed that damn FBO bug from it hanging on textures and causing some rendering errors for various people
+ * only lock verts once in HTL model rendering
  *
- * Revision 2.195  2007/01/14 19:35:53  Goober5000
- * operator precedence FTW! :D
+ * Revision 2.174.2.21  2006/12/07 18:07:51  taylor
+ * get rid of GL_activate and GL_deactivate, it was just Glide ported stuff that we never used and never needed
+ * handle window/fullscreen/minimize changes better, fixes cursor handling mostly (Mantis bug #1146)
+ * don't flush on gamma change, we don't really need to any more
  *
- * Revision 2.194  2007/01/14 10:26:37  wmcoolmon
- * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
- *
- * Revision 2.193  2007/01/07 13:12:41  taylor
- * bunch of cleanup and minor little fixes
- * get rid of GL_activate and GL_deactivate hold-overs
- * various fixes for platform window/cursor handling
- * we don't need texture combine support most of the time, so don't bother with it (fixes fonts not displaying properly)
- * disable depth testing if we aren't using a zbuffer
- * get rid of secondary color crap that was just messing things up, there are better ways to do it if we need the basic functionality back later
- * dump old gamma ramp support, we don't really need it at this point
- * do edge clamping by default instead of repeat
- *
- * Revision 2.192  2006/12/28 00:59:27  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.191  2006/11/16 00:54:41  taylor
+ * Revision 2.174.2.20  2006/11/15 00:47:57  taylor
  * properly support the updated window create code (all told: should take of of Mantis bugs #542, #624, #1140, and possibly #962 and #1124)
  *
- * Revision 2.190  2006/11/06 06:44:43  taylor
+ * Revision 2.174.2.19  2006/11/06 05:21:32  taylor
  * enable/disable alpha test based on blend mode (found this hidden in an old tree, may help with blending the newer alphablend mode)
  *
- * Revision 2.189  2006/11/06 06:23:27  taylor
+ * Revision 2.174.2.18  2006/10/27 06:44:35  taylor
  * grrr ... fix dos EOL chars
  *
- * Revision 2.188  2006/11/06 05:47:37  taylor
+ * Revision 2.174.2.17  2006/10/24 13:39:26  taylor
  * don't require hardware GL if running FRED (this is mainly for my benefit since I always forget to add that locally)
  *
- * Revision 2.187  2006/10/06 09:32:16  taylor
+ * Revision 2.174.2.16  2006/10/01 19:24:45  taylor
  * bit of cleanup (technically the vertex buffer stuff is part of a much larger change slated for post-3.6.9, but this should be a little faster)
  *
- * Revision 2.186  2006/09/24 22:54:24  taylor
+ * Revision 2.174.2.15  2006/09/24 22:50:03  taylor
  * clean up the function ptrs so that it's a bit easier to read
  *
- * Revision 2.185  2006/09/24 13:31:52  taylor
+ * Revision 2.174.2.14  2006/09/24 13:26:01  taylor
  * minor clean and code optimizations
  * clean up view/proj matrix fubar that made us need far more matrix levels that actually needed (partial fix for Mantis #563)
  * add debug safety check to make sure that we don't use more than 2 proj matrices (all that GL is required to support)
  * set up a texture matrix for the env map to that it doesn't move/look funky
  *
- * Revision 2.184  2006/09/20 05:04:22  taylor
+ * Revision 2.174.2.13  2006/09/20 04:58:13  taylor
  * some gamma ramp fixage, still hasn't gotten a steller review from DaBrain but it does work much better than before, so I'll tweak it later if need be
  *
- * Revision 2.183  2006/09/11 06:36:38  taylor
+ * Revision 2.174.2.12  2006/08/29 07:27:43  taylor
+ * allow W32 init fallback if desktop depth is less than requested game depth (it may look like crap, but at least it will work)
+ *
+ * Revision 2.174.2.11  2006/08/22 05:41:35  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
  * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
  *
- * Revision 2.182  2006/09/11 06:09:30  taylor
- * allow W32 init fallback if desktop depth is less than requested game depth (it may look like crap, but at least it will work)
- *
- * Revision 2.181  2006/08/20 00:46:42  taylor
+ * Revision 2.174.2.10  2006/08/19 04:23:56  taylor
  * OMG!  MEMLEAK!!!!  (maybe no one will notice that it was my fault ;))
  *
- * Revision 2.180  2006/08/09 14:41:44  taylor
+ * Revision 2.174.2.9  2006/08/09 14:40:10  taylor
  * very small math optimization
  *
- * Revision 2.179  2006/07/17 01:10:45  taylor
+ * Revision 2.174.2.8  2006/07/17 01:05:49  taylor
  * only do i2fl() on the font bitmap once per string rather than doing it per-letter (basically unnoticable performance boost)
  * before doing alpha channel check, make sure the bitmap is valid, since it doesn't actually catch that until later in the texture code
  *
- * Revision 2.178  2006/07/13 22:15:02  taylor
+ * Revision 2.174.2.7  2006/07/13 22:06:38  taylor
  * handle non-MVE movies a bit better in OpenGL (don't get freaky with the window, don't lose input, etc.)
  * some cleanup to OpenGL window handling, to fix min/max/full issues, and try to make shutdown a little nicer
  *
- * Revision 2.177  2006/07/05 23:35:42  Goober5000
+ * Revision 2.174.2.6  2006/07/05 23:36:55  Goober5000
  * cvs comment tweaks
  *
- * Revision 2.176  2006/06/27 05:00:57  taylor
+ * Revision 2.174.2.5  2006/06/23 09:01:07  taylor
  * be sure to properly reset fullscreen/minimized state vars as we switch between them
- * remove the temporary -alpha_alpha_blend option
- * fix screenshots on big endian
- * fix various things that Valgrind complained about
  *
- * Revision 2.175  2006/06/05 23:55:51  taylor
+ * Revision 2.174.2.4  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
+ *
+ * Revision 2.174.2.3  2006/06/18 20:09:03  taylor
+ * fix screenshots on big endian
+ *
+ * Revision 2.174.2.2  2006/06/12 03:37:24  taylor
+ * sync current OGL changes:
+ *  - go back to using minimize mode which non-active, but doin't minimize when Fred_running
+ *  - remove temporary cmdline options (-spec_scale, -env_scale, -alpha_alpha_blend)
+ *  - change FBO renderbuffer link around a little to maybe avoid freaky drivers (or freaky code)
+ *
+ * Revision 2.174.2.1  2006/06/05 23:59:11  taylor
  * this should hopefully fix cursor drift on multi-display configs
  *
  * Revision 2.174  2006/06/01 07:33:59  taylor
@@ -1197,7 +1201,7 @@ static int GL_initted = 0;
 static int OGL_fogmode=0;
 
 #ifdef _WIN32
-static HDC dev_context = NULL;
+static HDC GL_device_context = NULL;
 static HGLRC rend_context = NULL;
 static PIXELFORMATDESCRIPTOR pfd;
 #endif
@@ -1424,7 +1428,7 @@ void opengl_minimize()
 
 	// restore original gamma settings
 	if (GL_original_gamma_ramp != NULL) {
-		SetDeviceGammaRamp( dev_context, GL_original_gamma_ramp );
+		SetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
 	}
 
 	ShowWindow(wnd, SW_MINIMIZE);
@@ -1667,21 +1671,13 @@ void gr_opengl_flip()
 			gr_set_bitmap(Gr_cursor);
 			gr_bitmap( mx, my, false);
 		}
-		else
-		{
-			//WMC - Backup cheapo cursor
-			gr_set_color(0, 255, 0);
-			gr_line(mx, my, mx+8, my+8);
-			gr_line(mx, my, mx, my+16);
-			gr_line(mx, my+16, mx+8, my+8);
-		}
 	}
 
 	TIMERBAR_END_FRAME();
 	TIMERBAR_START_FRAME();
 
 #ifdef _WIN32
-	SwapBuffers(dev_context);
+	SwapBuffers(GL_device_context);
 #else
 	SDL_GL_SwapBuffers();
 #endif
@@ -2198,10 +2194,6 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize)
 	}
 
 	opengl_set_state( TEXTURE_SOURCE_NONE, ALPHA_BLEND_ALPHA_BLEND_ALPHA, ZBUFFER_TYPE_NONE );
-	//WMC - Stuff for AA lines.
-	//glEnable( GL_LINE_SMOOTH );
-	//glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
-	//glLineWidth( 1.0 );
 
 	if ( x1 == x2 && y1 == y2 ) {
 		gr_opengl_set_2d_matrix();
@@ -2241,7 +2233,6 @@ void gr_opengl_line(int x1,int y1,int x2,int y2, bool resize)
 	glEnd ();
 
 	gr_opengl_end_2d_matrix();
-	//glDisable(GL_LINE_SMOOTH);
 }
 
 void gr_opengl_aaline(vertex *v1, vertex *v2)
@@ -2399,10 +2390,7 @@ void gr_opengl_circle( int xc, int yc, int d, bool resize )
 	while(x<y)	{
 		// Draw the first octant
 		gr_opengl_line( xc-y, yc-x, xc+y, yc-x, false );
-		//WMC - without this, a line would appear through
-		//circles if they weren't 100% opaque
-		if(x > 0)
-			gr_opengl_line( xc-y, yc+x, xc+y, yc+x, false );
+		gr_opengl_line( xc-y, yc+x, xc+y, yc+x, false );
                                 
 		if (p<0) 
 			p=p+(x<<2)+6;
@@ -3447,9 +3435,9 @@ static void opengl_make_gamma_ramp(float gamma, ushort *ramp)
 		// set identity if no original ramp
 		else {
 			for (x = 0; x < 256; x++) {
-				ramp[x]	= (ushort) ((x << 8) | x);
-				ramp[x + 256] = (ushort) ((x << 8) | x);
-				ramp[x + 512] = (ushort) ((x << 8) | x);
+				ramp[x]	= (x << 8) | x;
+				ramp[x + 256] = (x << 8) | x;
+				ramp[x + 512] = (x << 8) | x;
 			}
 		}
 
@@ -3502,7 +3490,7 @@ void gr_opengl_set_gamma(float gamma)
 		opengl_make_gamma_ramp(gamma, gamma_ramp);
 
 #ifdef _WIN32
-		SetDeviceGammaRamp( dev_context, gamma_ramp );
+		SetDeviceGammaRamp( GL_device_context, gamma_ramp );
 #else
 		SDL_SetGammaRamp( gamma_ramp, (gamma_ramp+256), (gamma_ramp+512) );
 #endif
@@ -3758,7 +3746,7 @@ void gr_opengl_restore_screen(int bmp_id)
 
 void gr_opengl_free_screen(int bmp_id)
 {
-	if (GL_saved_screen == NULL)
+	if (!GL_saved_screen)
 		return;
 
 	vm_free(GL_saved_screen);
@@ -4250,7 +4238,7 @@ void gr_opengl_shutdown()
 #ifdef _WIN32
 	// restore original gamma settings
 	if (GL_original_gamma_ramp != NULL)
-		SetDeviceGammaRamp( dev_context, GL_original_gamma_ramp );
+		SetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
 
 	// swap out our window mode and un-jail the cursor
 	ShowWindow((HWND)os_get_window(), SW_HIDE);
@@ -4413,7 +4401,7 @@ int opengl_init_display_device()
 		} else {
 			// assume identity ramp by default, to be overwritten by true ramp later
 			for (int x = 0; x < 256; x++) {
-				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (ushort) ((x << 8) | x);
+				GL_original_gamma_ramp[x] = GL_original_gamma_ramp[x + 256] = GL_original_gamma_ramp[x + 512] = (x << 8) | x;
 			}
 		}
 	}
@@ -4445,20 +4433,20 @@ int opengl_init_display_device()
 
 	Assert( wnd != NULL );
 
-	dev_context = GetDC(wnd);
+	GL_device_context = GetDC(wnd);
 
-	if (!dev_context) {
+	if (!GL_device_context) {
 		MessageBox(wnd, "Unable to get Device context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
-	PixelFormat = ChoosePixelFormat(dev_context, &pfd);
+	PixelFormat = ChoosePixelFormat(GL_device_context, &pfd);
 
 	if (!PixelFormat) {
 		MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
 		return 1;
 	} else {
-		DescribePixelFormat(dev_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
+		DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
 
 		// make sure that we are hardware accelerated and not using the generic implementation
 		if ( !Fred_running && (pfd_test.dwFlags & PFD_GENERIC_FORMAT) && !(pfd_test.dwFlags & PFD_GENERIC_ACCELERATED) ) {
@@ -4469,7 +4457,7 @@ int opengl_init_display_device()
 			pfd.cDepthBits = 16;
 			// NOTE: the bit values for colors should get updated automatically by ChoosePixelFormat()
 
-			PixelFormat = ChoosePixelFormat(dev_context, &pfd);
+			PixelFormat = ChoosePixelFormat(GL_device_context, &pfd);
 
 			if (!PixelFormat) {
 				MessageBox(wnd, "Unable to choose pixel format for OpenGL W32!","error", MB_ICONERROR | MB_OK);
@@ -4477,7 +4465,7 @@ int opengl_init_display_device()
 			}
 
 			// double-check that we are correct now
-			DescribePixelFormat(dev_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
+			DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd_test);
 
 			if ( (pfd_test.dwFlags & PFD_GENERIC_FORMAT) && !(pfd_test.dwFlags & PFD_GENERIC_ACCELERATED) ) {
 				MessageBox(wnd, "Unable to get proper pixel format for OpenGL W32!", "Error", MB_ICONERROR | MB_OK);
@@ -4486,19 +4474,19 @@ int opengl_init_display_device()
 		}
 	}
 
-	if (!SetPixelFormat(dev_context, PixelFormat, &pfd)) {
+	if (!SetPixelFormat(GL_device_context, PixelFormat, &pfd)) {
 		MessageBox(wnd, "Unable to set pixel format for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
-	rend_context = wglCreateContext(dev_context);
+	rend_context = wglCreateContext(GL_device_context);
 
 	if (!rend_context) {
 		MessageBox(wnd, "Unable to create rendering context for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
 
-	if (!wglMakeCurrent(dev_context, rend_context)) {
+	if (!wglMakeCurrent(GL_device_context, rend_context)) {
 		MessageBox(wnd, "Unable to make current thread for OpenGL W32!", "error", MB_ICONERROR | MB_OK);
 		return 1;
 	}
@@ -4508,7 +4496,7 @@ int opengl_init_display_device()
 	// now report back as to what we ended up getting
 	int r = 0, g = 0, b = 0, depth = 0, db = 1;
 
-	DescribePixelFormat(dev_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
+	DescribePixelFormat(GL_device_context, PixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
 
 	r = pfd.cRedBits;
 	g = pfd.cGreenBits;
@@ -4520,7 +4508,7 @@ int opengl_init_display_device()
 
 	// get the default gamma ramp so that we can restore it on close
 	if (GL_original_gamma_ramp != NULL)
-		GetDeviceGammaRamp( dev_context, GL_original_gamma_ramp );
+		GetDeviceGammaRamp( GL_device_context, GL_original_gamma_ramp );
 
 #else
 

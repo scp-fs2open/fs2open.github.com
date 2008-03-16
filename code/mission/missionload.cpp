@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLoad.cpp $
- * $Revision: 2.12 $
- * $Date: 2006-06-27 05:07:49 $
+ * $Revision: 2.11.2.1 $
+ * $Date: 2006-06-22 14:59:45 $
  * $Author: taylor $
  *
  * C source module for mission loading

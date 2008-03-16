@@ -1,20 +1,24 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.36 $
- * $Date: 2007-11-23 23:48:21 $
- * $Author: wmcoolmon $
+ * $Revision: 2.32.2.5 $
+ * $Date: 2007-10-28 16:46:36 $
+ * $Author: taylor $
  *
  * OS-dependent functions.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.35  2007/03/22 22:14:57  taylor
+ * Revision 2.32.2.4  2007/10/17 21:03:06  taylor
+ * change Warning() and Error() to use const format variables (can't remember who said to do this)
+ * fix memory error when zero'ing buffers for error messages on non-Windows platforms
+ *
+ * Revision 2.32.2.3  2007/02/12 00:23:40  taylor
  * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
- * Revision 2.34  2007/01/07 12:39:59  taylor
- * build for for newer GCC versions
+ * Revision 2.32.2.2  2006/12/07 18:26:48  taylor
+ * fix for new GCC versions (Fedora Core 6)
  *
- * Revision 2.33  2006/09/08 06:20:15  taylor
+ * Revision 2.32.2.1  2006/09/08 06:14:44  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
  * Revision 2.32  2006/05/27 16:39:40  taylor
@@ -149,7 +153,7 @@
 bool env_enabled = false;
 bool cell_enabled = false;
 
-#define MAX_BUF_SIZE	240
+#define MAX_BUF_SIZE	512
 static char buffer[MAX_BUF_SIZE], buffer_tmp[MAX_BUF_SIZE];
 
 
@@ -208,15 +212,15 @@ void WinAssert(char * text, char *filename, int line)
 }
 
 // standard warning message
-void Warning( char * filename, int line, char * format, ... )
+void Warning( char * filename, int line, const char * format, ... )
 {
 #ifndef NDEBUG
 	va_list args;
 	int i;
 	int slen = 0;
 
-	memset( &buffer, 0, sizeof(buffer) );
-	memset( &buffer_tmp, 0, sizeof(buffer_tmp) );
+	memset( buffer, 0, sizeof(buffer) );
+	memset( buffer_tmp, 0, sizeof(buffer_tmp) );
 
 	va_start(args, format);
 	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
@@ -247,14 +251,14 @@ void Warning( char * filename, int line, char * format, ... )
 }
 
 // fatal error message
-void Error( char * filename, int line, char * format, ... )
+void Error( char * filename, int line, const char * format, ... )
 {
 	va_list args;
 	int i;
 	int slen = 0;
 
-	memset( &buffer, 0, sizeof(buffer) );
-	memset( &buffer_tmp, 0, sizeof(buffer_tmp) );
+	memset( buffer, 0, sizeof(buffer) );
+	memset( buffer_tmp, 0, sizeof(buffer_tmp) );
 
 	va_start(args, format);
 	vsnprintf(buffer_tmp, sizeof(buffer_tmp) - 1, format, args);
@@ -296,20 +300,6 @@ void Error( char * filename, int line, char * format, ... )
 	exit(EXIT_FAILURE);
 }
 
-void LuaDebugPrint(lua_Debug &ar)
-{
-	fprintf(stderr, "Name:\t\t%s\n",  ar.name);
-	fprintf(stderr, "Name of:\t%s\n",  ar.namewhat);
-	fprintf(stderr, "Function type:\t%s\n",  ar.what);
-	fprintf(stderr, "Defined on:\t%d\n",  ar.linedefined);
-	fprintf(stderr, "Upvalues:\t%d\n",  ar.nups);
-	fprintf(stderr, "\n" );
-	fprintf(stderr, "Source:\t\t%s\n",  ar.source);
-	fprintf(stderr, "Short source:\t%s\n",  ar.short_src);
-	fprintf(stderr, "Current line:\t%d\n",  ar.currentline);
-}
-
-extern lua_Debug Ade_debug_info;
 void LuaError(struct lua_State *L, char *format, ...)
 {
 	va_list args;
@@ -325,17 +315,8 @@ void LuaError(struct lua_State *L, char *format, ...)
 		va_end(args);
 	}
 
-	fprintf(stderr, "=====LUA ERROR=====\n");
-	fprintf(stderr, "===ADE Debug===\n" );
-	LuaDebugPrint(Ade_debug_info);
-	fprintf(stderr, "\n" );
-	fprintf(stderr, "===Stack dump===\n");
-	char out_string[10240];
-	ade_stackdump(L, out_string);
-	fprintf(stderr, "%s\n\n", out_string);
-	fprintf(stderr, "===ERROR TEXT===\n");
-	fprintf(stderr, "\"%s\"\n", buffer);
-	fprintf(stderr, "===================\n");
+	// Order UP!!
+	fprintf(stderr, "LUA ERROR: \"%s\"\n", buffer);
 
 	exit(EXIT_FAILURE);
 }

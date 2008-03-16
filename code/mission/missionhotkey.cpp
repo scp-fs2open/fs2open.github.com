@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionHotKey.cpp $
- * $Revision: 2.16 $
- * $Date: 2007-11-09 01:32:54 $
+ * $Revision: 2.14.2.2 $
+ * $Date: 2007-11-09 01:28:36 $
  * $Author: taylor $
  *
  * C module for the Hotkey selection screen
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.15  2006/11/16 00:52:28  taylor
+ * Revision 2.14.2.1  2006/11/15 00:33:16  taylor
  * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)
  *
  * Revision 2.14  2006/01/26 03:23:30  Goober5000

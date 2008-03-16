@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.h $
- * $Revision: 1.17 $
- * $Date: 2006-09-11 06:08:09 $
+ * $Revision: 1.16.2.1 $
+ * $Date: 2006-08-27 18:12:42 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $

@@ -9,20 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/PlayerStartEditor.h $
- * $Revision: 1.3 $
- * $Date: 2007-12-19 10:54:26 $
- * $Author: karajorma $
+ * $Revision: 1.1 $
+ * $Date: 2006-01-19 02:27:31 $
+ * $Author: Goober5000 $
  *
  * Player starting point editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.2  2006/06/02 09:52:42  karajorma
- * Complete overhaul of how ship loadout is handled to support the use of variables for setting the class and quantity of ships present in loadout.
- *
- * Revision 1.1  2006/01/19 02:27:31  Goober5000
- * import FRED2 back into fs2_open module
- * --Goober5000
- *
  * Revision 1.5  2005/12/29 08:21:00  wmcoolmon
  * No my widdle FRED, I didn't forget about you ^_^ (codebase commit)
  *
@@ -105,8 +98,6 @@
 
 #include "ShipCheckListBox.h"
 
-#define VARIABLES_COMBO_OFFSET		1
-
 /////////////////////////////////////////////////////////////////////////////
 // player_start_editor dialog
 
@@ -124,15 +115,9 @@ public:
 	CSpinButtonCtrl	m_spin1;
 	CCheckListBox		m_ship_list;
 	CCheckListBox		m_weapon_list;	
-	CCheckListBox		m_ship_variable_list;
-	CCheckListBox		m_weapon_variable_list;	
 	int					m_delay;	
 	int					m_weapon_pool;
 	int					m_ship_pool;
-	CComboBox			m_ship_quantity_variable;
-	CComboBox			m_weapon_quantity_variable;
-	CStatic				m_ships_used_in_wings;
-	CStatic				m_weapons_used_in_wings;
 	//}}AFX_DATA
 
 
@@ -155,12 +140,8 @@ protected:
 	afx_msg void OnSelchangeWeaponList();	
 	afx_msg void OnUpdateShipPool();
 	afx_msg void OnUpdateWeaponPool();
-	virtual void OnCancel();	
-	virtual void OnOK();
-	afx_msg void OnSelchangeShipVariablesList();
-	afx_msg void OnSelchangeWeaponVariablesList();
-	afx_msg void OnSelchangeShipVariablesCombo();
-	afx_msg void OnSelchangeWeaponVariablesCombo();
+	void OnCancel();	
+	void OnOK();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 
@@ -172,23 +153,11 @@ private:
 	int selected_team;
 
 	// ship pool info
-	int static_ship_pool[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];	// Holds the number of ships of a class that was set by the team loadout
-	int dynamic_ship_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];	 
-	int static_ship_variable_pool[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
-	int dynamic_ship_variable_pool[MAX_TVT_TEAMS][MAX_SEXP_VARIABLES];
+	int ship_pool[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
 
 	// weapon pool info
 	int weapon_pool[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
 
-	// ship and weapon usage pools
-	int ship_usage[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
-	int weapon_usage[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
-
 	// regenerate all controls
 	void reset_controls();
-	int GetTypedVariableIndex(int sexp_variables_index, bool string_variable);
-	int GetSelectedShipListIndex();
-	int GetSelectedShipVariableListIndex();
-	void UpdateQuantityVariable(CComboBox *variable_list, int pool_value);
-	void SetupShipAndWeaponPools();
 };

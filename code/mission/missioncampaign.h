@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.h $
- * $Revision: 2.14 $
- * $Date: 2006-10-06 09:33:10 $
+ * $Revision: 2.11.2.3 $
+ * $Date: 2006-10-01 19:27:28 $
  * $Author: taylor $
  *
  * header file for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.13  2006/09/11 06:02:14  taylor
+ * Revision 2.11.2.2  2006/08/27 18:11:37  taylor
  * quite a few fixes to handle missing campaigns better
  * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
  * clean up the getting of a list of available campaigns
@@ -24,7 +24,7 @@
  * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
  * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
  *
- * Revision 2.12  2006/06/10 18:34:08  Goober5000
+ * Revision 2.11.2.1  2006/06/10 18:35:05  Goober5000
  * fix parsing/handling of debriefing persona indexes
  * --Goober5000
  *

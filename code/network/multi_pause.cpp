@@ -9,11 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pause.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-03-26 08:23:06 $
+ * $Revision: 2.10.2.1 $
+ * $Date: 2007-10-15 06:43:17 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.10  2006/03/26 08:23:06  taylor
+ * split pause_*() and multi_pause_*() functions into individual single and multi versions (why it was hacked up like that I'll never know)
+ * fix screen save in multi pause mode
+ * address some bmpman issues from interface graphics getting released and then still used by something else
+ *
  * Revision 2.9  2005/10/10 17:21:07  taylor
  * remove NO_NETWORK
  *
@@ -462,15 +467,12 @@ void multi_pause_init()
 	// pause all beam weapon sounds
 	beam_pause_sounds();
 
-#ifndef NO_STANDALONE
 	// standalone shouldn't be doing any freespace interface stuff
-	if (Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_debug_set_standalone_state_string("Multi paused do");
 	} 
 	// everyone else should be doing UI stuff
-	else 
-#endif
-	{
+	else {
 		// pause all game music
 		audiostream_pause_all();
 
@@ -588,9 +590,7 @@ void multi_pause_close(int end_mission)
 
 	// set the standalonest
 	if (Game_mode & GM_STANDALONE_SERVER) {
-#ifndef NO_STANDALONE
 		std_debug_set_standalone_state_string("Game play");
-#endif
 	} else {
 		// free the screen up
 		if ( end_mission && (Multi_paused_screen_id >= 0) ) {

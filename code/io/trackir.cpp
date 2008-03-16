@@ -10,6 +10,9 @@ TRACKIR_INIT_FUNC TrackIR_Init_Proc = NULL; // Returns 0 if TrackIR has successf
 TRACKIR_QUERY_FUNC TrackIR_Query_Proc = NULL;  // Must be called each frame before GetYaw and GetPitch 
 TRACKIR_GETYAW_FUNC TrackIR_GetYaw_Proc = NULL; // Returns a float between -1.0 and 1.0
 TRACKIR_GETPITCH_FUNC TrackIR_GetPitch_Proc = NULL; // Returns a float between -1.0 and 1.0
+TRACKIR_GETX_FUNC TrackIR_GetX_Proc = NULL;
+TRACKIR_GETY_FUNC TrackIR_GetY_Proc = NULL;
+TRACKIR_GETZ_FUNC TrackIR_GetZ_Proc = NULL;
 TRACKIR_SHUTDOWN_FUNC TrackIR_ShutDown_Proc = NULL; // Must be called before the application closes
 
 #ifdef WIN32
@@ -38,6 +41,9 @@ void initialize_trackir()
 		TrackIR_Query_Proc = (TRACKIR_QUERY_FUNC)GetProcAddress(trackIR_dll, "FS2_TrackIR_Query");
 		TrackIR_GetPitch_Proc = (TRACKIR_GETPITCH_FUNC)GetProcAddress(trackIR_dll, "FS2_TrackIR_GetPitch");
 		TrackIR_GetYaw_Proc = (TRACKIR_GETYAW_FUNC)GetProcAddress(trackIR_dll, "FS2_TrackIR_GetYaw");
+		TrackIR_GetX_Proc = (TRACKIR_GETX_FUNC)GetProcAddress(trackIR_dll, "FS2_TrackIR_GetX");
+		TrackIR_GetY_Proc = (TRACKIR_GETY_FUNC)GetProcAddress(trackIR_dll, "FS2_TrackIR_GetY");
+		TrackIR_GetZ_Proc = (TRACKIR_GETZ_FUNC)GetProcAddress(trackIR_dll, "FS2_TrackIR_GetZ");
 		TrackIR_ShutDown_Proc = (TRACKIR_SHUTDOWN_FUNC)GetProcAddress(trackIR_dll, "FS2_TrackIR_ShutDown");
 
 		if(TrackIR_Init_Proc == NULL)
@@ -104,6 +110,39 @@ float TrackIR_GetPitch()
 	else
 	{
 		return TrackIR_GetPitch_Proc();
+	}
+}
+float TrackIR_GetX()
+{
+	if(TrackIR_GetX_Proc == NULL)
+	{
+		return 0;
+	}
+	else
+	{
+		return TrackIR_GetX_Proc();
+	}
+}
+float TrackIR_GetY()
+{
+	if(TrackIR_GetY_Proc == NULL)
+	{
+		return 0;
+	}
+	else
+	{
+		return TrackIR_GetY_Proc();
+	}
+}
+float TrackIR_GetZ()
+{
+	if(TrackIR_GetZ_Proc == NULL)
+	{
+		return 0;
+	}
+	else
+	{
+		return TrackIR_GetZ_Proc();
 	}
 }
 int TrackIR_ShutDown()

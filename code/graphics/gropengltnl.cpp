@@ -10,23 +10,36 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.cpp $
- * $Revision: 1.53 $
- * $Date: 2007-02-10 00:05:48 $
+ * $Revision: 1.44.2.12 $
+ * $Date: 2007-02-12 00:19:48 $
  * $Author: taylor $
  *
  * source for doing the fun TNL stuff
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.52  2007/01/10 01:44:39  taylor
- * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
+ * Revision 1.44.2.11  2007/02/10 00:05:25  taylor
+ * obsolete gluLookAt() in favor of doing it manually, should be slight faster and more precise
  *
- * Revision 1.51  2007/01/07 13:02:19  taylor
- * some general cleanup
- * add emissive light falloff support for asteroids
- * properly setup env texture matrix
- * get rid of secondary color crap, there are better ways to do it anyway
+ * Revision 1.44.2.10  2006/12/27 09:26:21  taylor
+ * fix OpenGL envmap "issues" (ie, stupid taylor stuff)
+ * get rid of that RCS_Name thing, CVS kept changing it automatically and it was getting /really/ annoying
  *
- * Revision 1.50  2006/11/06 06:19:17  taylor
+ * Revision 1.44.2.9  2006/12/26 05:25:18  taylor
+ * lots of little cleanup, stale code removal, and small performance adjustments
+ * get rid of the default combine texture state, we don't need it in general, and it can screw up fonts
+ * get rid of the secondary color support, it doesn't do much in non-HTL mode, screws up various things, and has long since been obsolete but material setup
+ * get rid of the old gamma setup, it actually conflicts with newer gamma support
+ * default texture wrapping to edge clamp
+ * do second gr_clear() on init to be sure and catch double-buffer
+ * make sure that our active texture will always get reset to 0, rather than leaving it at whatever was used last
+ * fixed that damn FBO bug from it hanging on textures and causing some rendering errors for various people
+ * only lock verts once in HTL model rendering
+ *
+ * Revision 1.44.2.8  2006/12/07 18:16:11  taylor
+ * minor cleanups and speedups
+ * when using lighting falloff, be sure to drop emissive light when falloff gets low enough (otherwise we still se everything fine)
+ *
+ * Revision 1.44.2.7  2006/10/27 06:42:29  taylor
  * rename set_warp_globals() to model_set_warp_globals()
  * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
  * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
@@ -34,24 +47,24 @@
  * minor bits of cleanup
  * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
  *
- * Revision 1.49  2006/11/06 05:46:54  taylor
+ * Revision 1.44.2.6  2006/10/24 13:38:23  taylor
  * fix the envmap-getting-rotated-by-turrets bug (though it did make me chuckle a bit when I first saw it ;))
  * try to reuse old view setup info, if we are using the same settings again (for speed up purposes, will be a bigger deal when bumpmapping gets here)
  *
- * Revision 1.48  2006/10/06 09:32:16  taylor
+ * Revision 1.44.2.5  2006/10/01 19:24:46  taylor
  * bit of cleanup (technically the vertex buffer stuff is part of a much larger change slated for post-3.6.9, but this should be a little faster)
  *
- * Revision 1.47  2006/09/24 13:31:52  taylor
+ * Revision 1.44.2.4  2006/09/24 13:26:01  taylor
  * minor clean and code optimizations
  * clean up view/proj matrix fubar that made us need far more matrix levels that actually needed (partial fix for Mantis #563)
  * add debug safety check to make sure that we don't use more than 2 proj matrices (all that GL is required to support)
  * set up a texture matrix for the env map to that it doesn't move/look funky
  *
- * Revision 1.46  2006/07/28 02:38:35  taylor
+ * Revision 1.44.2.3  2006/07/28 02:45:10  taylor
  * don't render extra lighting passes when fog is enabled, prevents fog fragment from getting added for each pass
  * wobble wobble no more!!
  *
- * Revision 1.45  2006/07/24 07:36:50  taylor
+ * Revision 1.44.2.2  2006/07/24 07:38:00  taylor
  * minor cleanup/optimization to beam warmup glow rendering function
  * various lighting code cleanups
  *  - try to always make sure beam origin lights occur outside of model
@@ -59,6 +72,12 @@
  *  - be sure to reset to first 8 lights when moving on to render spec related texture passes
  *  - add ambient color to point lights (helps warp effects)
  *  - sort lights to try and get more important and/or visible lights to always happen in initial render pass
+ *
+ * Revision 1.44.2.1  2006/06/12 03:37:24  taylor
+ * sync current OGL changes:
+ *  - go back to using minimize mode which non-active, but doin't minimize when Fred_running
+ *  - remove temporary cmdline options (-spec_scale, -env_scale, -alpha_alpha_blend)
+ *  - change FBO renderbuffer link around a little to maybe avoid freaky drivers (or freaky code)
  *
  * Revision 1.44  2006/05/30 03:53:52  taylor
  * z-range for 2D ortho is -1.0 to 1.0, may help avoid some strangeness if we actually get that right. :)
@@ -767,17 +786,14 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuff
 
 		opengl_switch_arb(render_pass, 1);
 
-		extern float Cmdline_spec_scale;
-		extern float Cmdline_env_scale;
-
 		// as a crazy and sometimes useless hack, avoid using alpha when specmap has none
 		if ( Cmdline_alpha_env && bm_has_alpha_channel(SPECMAP) ) {
 			glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE_ARB );
 			glTexEnvf( GL_TEXTURE_ENV, GL_SOURCE0_RGB_ARB, GL_TEXTURE );
 			glTexEnvf( GL_TEXTURE_ENV, GL_OPERAND0_RGB_ARB, GL_SRC_ALPHA );
-			glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, Cmdline_spec_scale);
+			glTexEnvf(GL_TEXTURE_ENV, GL_ALPHA_SCALE, 1.0f);
 		} else {
-			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, Cmdline_spec_scale);
+			glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 1.0f);
 		}
 
 		render_pass++; // bump!
@@ -800,7 +816,7 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuff
 
 		opengl_set_modulate_tex_env();
 
-		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, Cmdline_env_scale);
+		glTexEnvf(GL_TEXTURE_ENV, GL_RGB_SCALE_ARB, 2.0f);
 
 		opengl_set_state( GL_current_tex_src, ALPHA_BLEND_ADDITIVE, GL_current_ztype);
 

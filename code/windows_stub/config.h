@@ -2,23 +2,29 @@
 
 /*
  * $Logfile: $
- * $Revision: 2.22 $
- * $Date: 2007-03-22 22:14:57 $
+ * $Revision: 2.17.2.7 $
+ * $Date: 2007-10-17 20:59:30 $
  * $Author: taylor $
  *
  * OS-dependent definitions.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.21  2006/12/28 22:47:03  Goober5000
+ * Revision 2.17.2.6  2007/10/15 06:43:23  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
+ * Revision 2.17.2.5  2007/02/12 00:23:40  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
+ *
+ * Revision 2.17.2.4  2006/12/28 22:47:16  Goober5000
  * fix spelling... *twitch*
  *
- * Revision 2.20  2006/09/13 03:55:50  taylor
+ * Revision 2.17.2.3  2006/09/13 03:50:07  taylor
  * bah!  stupid.
  *
- * Revision 2.19  2006/09/08 06:20:15  taylor
+ * Revision 2.17.2.2  2006/09/08 06:14:44  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
- * Revision 2.18  2006/08/20 00:48:47  taylor
+ * Revision 2.17.2.1  2006/08/19 04:32:11  taylor
  * clean out some crap that we don't really need
  *
  * Revision 2.17  2006/05/27 16:39:40  taylor
@@ -152,6 +158,7 @@
 
 #include <unistd.h>
 #include "SDL.h"
+#include "SDL_thread.h"
 
 
 // don't verbose stub funtions unless we're debugging
@@ -226,6 +233,7 @@ typedef struct _LARGE_INTEGER {
 #define WSAECONNABORTED ECONNABORTED
 #define WSAESHUTDOWN    ESHUTDOWN
 #define SOCKET_ERROR	(-1)
+#define ioctlsocket(x, y, z)	ioctl(x, y, z)
 
 #ifndef INVALID_SOCKET
 #define INVALID_SOCKET ((SOCKET) -1)

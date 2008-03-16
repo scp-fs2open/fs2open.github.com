@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.h $
- * $Revision: 2.7 $
- * $Date: 2006-09-08 06:20:14 $
+ * $Revision: 2.6.2.1 $
+ * $Date: 2006-09-08 06:14:43 $
  * $Author: taylor $
  *
  * Header file for playing back anim files
@@ -126,11 +126,11 @@
 #define __ANIMPLAY_H__
 
 #include "globalincs/pstypes.h"
+#include "cfile/cfile.h"
 
 struct anim;
 struct anim_info;
 struct anim_instance;
-struct CFILE;
 
 // structure passed in when playing an anim.  Talk about overkill..
 typedef struct {
@@ -170,7 +170,7 @@ int				anim_stop_playing(anim_instance* anim_instance);
 int				anim_show_next_frame(anim_instance *instance, float frametime);
 void				anim_release_all_instances(int screen_id = 0);
 void				anim_release_render_instance(anim_instance* instance);
-anim			  *anim_load(char *name, int file_mapped = PAGE_FROM_MEM);
+anim			  *anim_load(char *name, int cf_dir_type = CF_TYPE_ANY, int file_mapped = PAGE_FROM_MEM);
 int				anim_free(anim *ptr);
 int				anim_playing(anim_instance *ai);
 int				anim_write_frames_out(char *filename);

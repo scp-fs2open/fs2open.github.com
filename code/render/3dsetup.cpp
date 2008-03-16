@@ -9,30 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dSetup.cpp $
- * $Revision: 2.27 $
- * $Date: 2007-02-18 06:17:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.22.2.1 $
+ * $Date: 2006-10-01 19:31:19 $
+ * $Author: taylor $
  *
  * Code to setup matrix instancing and viewers
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.26  2007/01/31 05:08:35  phreak
- * We don't want to modify the clip plane variables in htl
- *  mode once we've moved them to gr_start_clip()
- *
- * do we even need htl mode checks anymore?  welcome to the 21st century
- *
- * Revision 2.25  2007/01/14 14:03:36  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.24  2006/12/28 00:59:48  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.23  2006/10/06 09:34:19  taylor
- * meant to do this before but forgot about it (just replaced "(4.0/9.0) * PI" with it's result)
- *
  * Revision 2.22  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
  * get rid of some wasteful math from the gr_set_proj_matrix() calls
@@ -224,7 +207,6 @@ matrix		Light_matrix;		// Used to rotate world points into current local coordin
 vec3d		Light_base;			// Used to rotate world points into current local coordinates
 
 matrix		Eye_matrix;			// Where the viewer's eye is pointing in World coordinates
-matrix		Eye_no_jitter;		// Eye_matrix before view shake 
 vec3d		Eye_position;		// Where the viewer's eye is at in World coordinates
 
 float			View_zoom;			// The zoom factor
@@ -261,9 +243,9 @@ int G3_frame_count = 0;
 extern int Cmdline_nohtl;
 
 // check if in frame
-bool g3_in_frame()
+int g3_in_frame()
 {
-	return (G3_count > 0);
+	return G3_count;
 }
 
 //start the frame
@@ -299,7 +281,7 @@ void g3_start_frame_func(int zbuffer_flag, char * filename, int lineno)
 
 	s = aspect*(float)Canvas_height/(float)Canvas_width;
 
-	if (s <= 0) {		//scale x
+	if ( !Cmdline_nohtl || (s <= 0.0f) ) {		//scale x
 		Window_scale.xyz.x = s;
 		Window_scale.xyz.y = 1.0f;
 	}
@@ -338,14 +320,6 @@ void g3_end_frame_func(char *filename, int lineno)
 
 
 void scale_matrix(void);
-
-void g3_set_view(camera *cam)
-{
-	vec3d pos;
-	matrix ori;
-	cam->get_info(&pos, &ori);
-	g3_set_view_matrix(&pos, &ori, cam->get_fov());
-}
 
 //set view from x,y,z, viewer matrix, and zoom.  Must call one of g3_set_view_*()
 void g3_set_view_matrix(vec3d *view_pos,matrix *view_matrix,float zoom)
@@ -394,16 +368,22 @@ void scale_matrix(void)
 
 	Matrix_scale = Window_scale;
 
-	if (View_zoom <= 1.0) 		//zoom in by scaling z
+	float s = 1.0f;
 
-		Matrix_scale.xyz.z =  Matrix_scale.xyz.z*View_zoom;
+	if (Cmdline_nohtl) {
+		if (View_zoom <= 1.0f) { 		//zoom in by scaling z
+			Matrix_scale.xyz.z =  Matrix_scale.xyz.z*View_zoom;
+		} else {			//zoom out by scaling x&y
+			s = 1.0f / View_zoom;
 
-	else {			//zoom out by scaling x&y
+			Matrix_scale.xyz.x *= s;
+			Matrix_scale.xyz.y *= s;
+		}
+	} else {
+		s = 1.0f / tanf(Proj_fov * 0.5f);
 
-		float s = (float)1.0 / View_zoom;
-
-		Matrix_scale.xyz.x = Matrix_scale.xyz.x*s;
-		Matrix_scale.xyz.y = Matrix_scale.xyz.y*s;
+		Matrix_scale.xyz.x *= s;
+		Matrix_scale.xyz.y *= s;
 	}
 
 	//now scale matrix elements
@@ -572,10 +552,11 @@ void g3_start_user_clip_plane( vec3d *plane_point, vec3d *plane_normal )
 	if(!Cmdline_nohtl) {
 		G3_user_clip_normal = *plane_normal;
 		G3_user_clip_point = *plane_point;
-		gr_start_clip();
-		return;
-	}
+//	return;
 
+
+		gr_start_clip();
+	}
 	vm_vec_rotate(&G3_user_clip_normal, plane_normal, &View_matrix );
 	vm_vec_normalize(&G3_user_clip_normal);
 

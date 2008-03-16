@@ -1,38 +1,37 @@
-#include "parse/scripting.h"
-#include "parse/lua.h"
+#include "asteroid/asteroid.h"
+#include "camera/camera.h"
+#include "cfile/cfilesystem.h"
+#include "debris/debris.h"
+#include "cmdline/cmdline.h"
+#include "freespace2/freespace.h"
+#include "gamesequence/gamesequence.h"
 #include "graphics/2d.h"
-#include "ship/ship.h"
-#include "ship/shipfx.h"
-#include "ship/shiphit.h"
+#include "graphics/font.h"
+#include "globalincs/linklist.h"
+#include "globalincs/pstypes.h"
+#include "iff_defs/iff_defs.h"
 #include "io/key.h"
 #include "io/mouse.h"
-#include "gamesequence/gamesequence.h"
-#include "globalincs/pstypes.h"
-#include "freespace2/freespace.h"
+#include "io/timer.h"
 #include "lighting/lighting.h"
-#include "render/3dinternal.h"
-#include "cmdline/cmdline.h"
-#include "playerman/player.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
 #include "mission/missionload.h"
 #include "model/model.h"
-#include "freespace2/freespace.h"
-#include "weapon/weapon.h"
-#include "parse/parselo.h"
-#include "render/3d.h"
-#include "particle/particle.h"
-#include "iff_defs/iff_defs.h"
-#include "camera/camera.h"
-#include "graphics/font.h"
-#include "debris/debris.h"
-#include "asteroid/asteroid.h"
-#include "sound/ds.h"
-#include "cfile/cfilesystem.h"
 #include "object/objectshield.h"
-#include "object/waypoint/waypoint.h"
-#include "globalincs/linklist.h"
-#include "io/timer.h"
+#include "object/waypoint.h"
+#include "parse/lua.h"
+#include "parse/parselo.h"
+#include "parse/scripting.h"
+#include "particle/particle.h"
+#include "playerman/player.h"
+#include "render/3d.h"
+#include "render/3dinternal.h"
+#include "ship/ship.h"
+#include "ship/shipfx.h"
+#include "ship/shiphit.h"
+#include "sound/ds.h"
+#include "weapon/weapon.h"
 
 //*************************Lua globals*************************
 std::vector<ade_table_entry> Ade_table_entries;
@@ -1542,23 +1541,6 @@ ADE_VIRTVAR(AfterburnerVelocityMax, l_Physics, "lvector", "Afterburner max veloc
 	return ade_set_args(L, "o", l_Vector.Set(pih->pi->afterburner_max_vel));
 }
 
-ADE_VIRTVAR(BankingConstant, l_Physics, "number", "Banking constant")
-{
-	physics_info_h *pih;
-	float f = 0.0f;
-	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
-		return ADE_RETURN_NIL;
-
-	if(!pih->IsValid())
-		return ADE_RETURN_NIL;
-
-	if(ADE_SETTING_VAR) {
-		pih->pi->delta_bank_const = f;
-	}
-
-	return ade_set_args(L, "f", pih->pi->delta_bank_const);
-}
-
 ADE_VIRTVAR(ForwardAccelerationTime, l_Physics, "number", "Forward acceleration time")
 {
 	physics_info_h *pih;
@@ -3061,8 +3043,8 @@ ADE_INDEXER(l_ModelTextures, "Texture name or index", "texture", "Model textures
 		ti->texture = tdx;
 		int fps = 1;
 
-		bm_get_info(tdx, NULL, NULL, NULL, &fps, &ti->num_frames);
-		ti->anim_total_time = (float)fps * (float)ti->num_frames;
+		bm_get_info(tdx, NULL, NULL, NULL, &fps, &ti->anim.num_frames);
+		ti->anim.total_time = (float)fps * (float)ti->anim.num_frames;
 	}
 
 	if(pm->maps[idx].base_map.texture >= 0)
@@ -3373,15 +3355,15 @@ ADE_VIRTVAR(Target, l_Asteroid, "Boolean", "Whether or not debris is a piece of 
 }
 
 //**********HANDLE: Camera
-ade_obj<camid> l_Camera("camera", "Camera handle");
+ade_obj<int> l_Camera("camera", "Camera handle");
 
 ADE_FUNC(isValid, l_Camera, NULL, "True if valid, false or nil if not",  "Detects whether handle is valid")
 {
-	camid cid;
-	if(!ade_get_args(L, "o", l_Camera.Get(&cid)))
+	int idx;
+	if(!ade_get_args(L, "o", l_Camera.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(!cid.isValid())
+	if(idx < 0 || idx >= (int)Cameras.size())
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
@@ -3393,17 +3375,17 @@ ADE_FUNC(setPosition, l_Camera, "[wvector Position, number Translation Time, num
 		"Translation time is how long total, including acceleration, the camera should take to move. If it is not specified, the camera will jump to the specified position."
 		"Acceleration time is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving.")
 {
-	camid cid;
+	int idx=-1;
 	vec3d *pos=NULL;
 	float time=0.0f;
 	float acc_time=0.0f;
-	if(!ade_get_args(L, "o|off", l_Camera.Get(&cid), l_Vector.GetPtr(&pos), &time, &acc_time))
+	if(!ade_get_args(L, "o|off", l_Camera.Get(&idx), l_Vector.GetPtr(&pos), &time, &acc_time))
 		return ADE_RETURN_NIL;
 	
-	if(!cid.isValid())
+	if(idx < 0 || (uint)idx > Cameras.size())
 		return ADE_RETURN_NIL;
 
-	cid.getCamera()->set_position(pos, time, acc_time);
+	Cameras[idx].set_position(pos, time, acc_time);
 
 	return ADE_RETURN_TRUE;
 }
@@ -3414,26 +3396,24 @@ ADE_FUNC(setOrientation, l_Camera, "[world orientation Orientation, number Rotat
 		"<br>Rotation time is how long total, including acceleration, the camera should take to rotate. If it is not specified, the camera will jump to the specified orientation."
 		"<br>Acceleration time is how long it should take the camera to get 'up to speed'. If not specified, the camera will instantly start moving.")
 {
-	camid cid;
+	int idx=-1;
 	matrix_h *mh=NULL;
 	float time=0.0f;
 	float acc_time=0.0f;
-	if(!ade_get_args(L, "o|off", l_Camera.Get(&cid), l_Matrix.GetPtr(&mh), &time, &acc_time))
+	if(!ade_get_args(L, "o|off", l_Camera.Get(&idx), l_Matrix.GetPtr(&mh), &time, &acc_time))
 		return ADE_RETURN_NIL;
 	
-	if(!cid.isValid())
+	if(idx < 0 || (uint)idx > Cameras.size())
 		return ADE_RETURN_NIL;
-
-	camera *cam = cid.getCamera();
 
 	if(mh != NULL)
 	{
 		mh->ValidateMatrix();
-		cam->set_rotation(&mh->mtx, time, acc_time);
+		Cameras[idx].set_rotation(&mh->mtx, time, acc_time);
 	}
 	else
 	{
-		cam->set_rotation();
+		Cameras[idx].set_rotation();
 	}
 
 	return ADE_RETURN_TRUE;
@@ -4849,7 +4829,8 @@ ADE_VIRTVAR(Class, l_Ship, "shipclass", "Ship class")
 	ship *shipp = &Ships[objh->objp->instance];
 
 	if(ADE_SETTING_VAR && idx > -1)
-		shipp->ship_info_index = idx;
+		change_ship_type(objh->objp->instance, idx, 1);
+		//shipp->ship_info_index = idx;
 
 	if(shipp->ship_info_index < 0)
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
@@ -5591,6 +5572,9 @@ struct sound_entry_h
 	sound_entry_h(int n_type, int n_idx){type=n_type;idx=n_idx;}
 	bool IsValid()
 	{
+		//WMC - sound stuff is under construction
+		return false;
+		/*
 		if((type < 0 || type > GS_NUM_SND_TYPES || idx < 0)
 			|| (type == GS_GAME_SND && idx >= Num_game_sounds)
 			|| (type == GS_IFACE_SND && idx >= Num_iface_sounds))
@@ -5599,6 +5583,7 @@ struct sound_entry_h
 		}
 
 		return true;
+		*/
 	}
 };
 
@@ -6551,7 +6536,7 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, wvector Position]", "Tru
 	vec3d pos = vmd_zero_vector;
 	ade_get_args(L, "|fo", &rad, l_Vector.Get(&pos));
 
-	bool in_frame = g3_in_frame();
+	bool in_frame = g3_in_frame() > 0;
 	if(!in_frame)
 		g3_start_frame(0);
 
@@ -6759,7 +6744,7 @@ ADE_FUNC(drawImage, l_Graphics, "Image name/Texture handle, [x1=0, y1=0, x2, y2,
 	}
 	else
 	{
-		if(!ade_get_args(L, "o|iibiiffff", l_Texture.Get(&idx),&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2))
+		if(!ade_get_args(L, "o|iiiiffff", l_Texture.Get(&idx),&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2))
 			return ADE_RETURN_NIL;
 	}
 
@@ -6811,7 +6796,7 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "Image name/Texture handle, x1, y1, [x
 	}
 	else
 	{
-		if(!ade_get_args(L, "oii|biiiib", l_Texture.Get(&idx),&x,&y,&x2,&y2,&sx,&sy,&m))
+		if(!ade_get_args(L, "oii|iiiib", l_Texture.Get(&idx),&x,&y,&x2,&y2,&sx,&sy,&m))
 			return ADE_RETURN_NIL;
 	}
 
@@ -7058,26 +7043,25 @@ ADE_INDEXER(l_Mission_Cameras, "Camera name or index", "camera", "Indexes camera
 {
 	char *s = NULL;
 	if(!ade_get_args(L, "*s", &s))
-		return ade_set_error(L, "o", l_Camera.Set(camid()));
+		return ade_set_error(L, "o", l_Camera.Set(-1));
 
-	camid cid = cam_lookup(s);
-	if(!cid.isValid())
+	int cn = cameras_lookup(s);
+	if(cn < 0)
 	{
-		int cn = atoi(s);
-		if(cn > 0)
-		{
-			//Lua-->FS2
-			cn--;
-			cid = cam_get_camera(cn);
-		}
+		cn = atoi(s);
+		if(cn < 1 || cn > (int)Cameras.size())
+			return ade_set_error(L, "o", l_Camera.Set(-1));
+
+		//Lua-->FS2
+		cn--;
 	}
 
-	return ade_set_args(L, "o", l_Camera.Set(cid));
+	return ade_set_args(L, "o", l_Camera.Set(cn));
 }
 
 ADE_FUNC(__len, l_Mission_Cameras, NULL, "number", "Gets number of cameras")
 {
-	return ade_set_args(L, "i", (int)cam_get_num());
+	return ade_set_args(L, "i", (int)Cameras.size());
 }
 
 ade_lib l_Mission_Debris("Debris", &l_Mission, NULL, "debris in the mission");
@@ -7393,15 +7377,25 @@ ADE_FUNC(createCamera, l_Mission, "string Name, [wvector Position, world orienta
 	if(!ade_get_args(L, "s|oo", &s, l_Vector.GetPtr(&v), l_Matrix.GetPtr(&mh)))
 		return ADE_RETURN_NIL;
 
+	int idx;
+
+	//Add camera
+	Cameras.push_back(camera(s));
+
+	//Get idx
+	idx = Cameras.size() - 1;
+
+	//Set pos/orient
+	if(v != NULL)
+		Cameras[idx].set_position(v);
 	if(mh != NULL)
 	{
 		mh->ValidateMatrix();
+		Cameras[idx].set_rotation(&mh->mtx);
 	}
 
-	camid cid = cam_create(s, v, &mh->mtx);
-
 	//Set position
-	return ade_set_args(L, "o", l_Camera.Set(cid));
+	return ade_set_args(L, "o", l_Camera.Set(idx));
 }
 
 ADE_FUNC(createShip, l_Mission, "[string Name, shipclass Class, orientation Orientation, world vector Position", "ship handle", "Creates a ship and returns a handle to it.")
@@ -7477,17 +7471,18 @@ ADE_FUNC(createWeapon, l_Mission, "[weaponclass Class, orientation Orientation, 
 
 ADE_FUNC(setCamera, l_Mission, "[camera handle Camera]", "True", "Sets current camera, or resets camera if none specified")
 {
-	camid cid;
-	if(!ade_get_args(L, "|o", l_Camera.Get(&cid)))
+	int idx = -1;
+	if(!ade_get_args(L, "|o", l_Camera.Get(&idx)))
 	{
-		cam_reset_camera();
+		Viewer_mode &= ~VM_FREECAMERA;
 		return ADE_RETURN_NIL;
 	}
 
-	if(!cid.isValid())
+	if(idx < 1 || (uint)idx > Cameras.size())
 		return ADE_RETURN_NIL;
 
-	cam_set_camera(cid);
+	Viewer_mode |= VM_FREECAMERA;
+	Current_camera = &Cameras[idx];
 
 	return ADE_RETURN_TRUE;
 }
@@ -7560,8 +7555,10 @@ ADE_FUNC(simulateFrame, l_Mission, NULL, NULL, "Simulates mission frame")
 
 ADE_FUNC(renderFrame, l_Mission, NULL, NULL, "Renders mission frame, but does not move anything")
 {
-	camid cid = game_render_frame_setup();
-	game_render_frame( cid );
+	vec3d eye_pos;
+	matrix eye_orient;
+	game_render_frame_setup(&eye_pos, &eye_orient);
+	game_render_frame( &eye_pos, &eye_orient );
 	game_render_post_frame();
 
 	return ADE_RETURN_TRUE;
@@ -7846,34 +7843,6 @@ ADE_FUNC(__len, l_Tables_WeaponClasses, NULL, "number", "Gets number of weapon c
 //This section is for stuff that's considered experimental.
 ade_lib l_Testing("Testing", NULL, "ts", "Experimental or testing stuff");
 
-ADE_FUNC(avdTest, l_Testing, NULL, NULL, NULL)
-{
-	static bool initialized = false;
-	static avd_movement avd;
-
-	if(!initialized)
-	{
-		avd.setAVD(10.0f, 3.0f, 1.0f, 1.0f, 0.0f);
-		initialized = true;
-	}
-	for(int i = 0; i < 3000; i++)
-	{
-		float Pc, Vc;
-		avd.get((float)i/1000.0f, &Pc, &Vc);
-		gr_set_color(0, 255, 0);
-		gr_pixel(i/10, gr_screen.clip_bottom - (int)(Pc*10.0f), false);
-		gr_set_color(255, 0, 0);
-		gr_pixel(i/10, gr_screen.clip_bottom - (int)(Vc*10.0f), false);
-
-		avd.get(&Pc, &Vc);
-		gr_set_color(255, 255, 255);
-		gr_pixel((timestamp()%3000)/10, gr_screen.clip_bottom - (int)(Pc*10.0f), false);
-		gr_pixel((timestamp()%3000)/10, gr_screen.clip_bottom - (int)(Vc*10.0f), false);
-	}
-
-	return ADE_RETURN_NIL;
-}
-
 ADE_FUNC(createParticle, l_Testing, "vector Position, vector Velocity, number Lifetime, number Radius, enumeration Type, [number Tracer length=-1, boolean Reverse=false, texture Texture=Nil, object Attached Object=Nil]", NULL,
 		 "Creates a particle. Use PARTICLE_* enumerations for type."
 		 "Reverse reverse animation, if one is specified"
@@ -7934,6 +7903,17 @@ ADE_FUNC(getStack, l_Testing, NULL, "string", "Returns current Lua stack")
 	char buf[10240] = {'\0'};
 	ade_stackdump(L, buf);
 	return ade_set_args(L, "s", buf);
+}
+
+ADE_FUNC(isCurrentPlayerMulti, l_Testing, NULL, "boolean", "Returns whether current player is a multiplayer pilot or not.")
+{
+	if(Player == NULL)
+		return ADE_RETURN_NIL;
+
+	if(!(Player->flags & PLAYER_FLAGS_IS_MULTI))
+		return ADE_RETURN_FALSE;
+
+	return ADE_RETURN_TRUE;
 }
 
 // *************************Helper functions*********************
@@ -8486,15 +8466,22 @@ int ade_set_args(lua_State *L, char *fmt, ...)
 				//WMC - Isn't working with HookVar for some strange reason
 				lua_pushstring(L, va_arg(vl, char*));
 				break;
+			/*
 			case 'u':
 			case 'v':
 				//WMC - Default upvalues, to reserve space for real ones
 				//* Function name
 				//* Whether function is in set mode (for virtvars), default is 0
+				//WMC - WARNING!!!
+				//WARNING!!! Making changes to any 'u' or 'v' functions must also
+				//WARNING!!! be changed in ade_table_entry::SetTable()
+				//Note that function pointers do not pass through va_args properly
+				//under 64-bit.
 				lua_pushstring(L, "<UNNAMED FUNCTION>");
 				lua_pushboolean(L, 0);
 				lua_pushcclosure(L, va_arg(vl, lua_CFunction), 2);
 				break;
+			*/
 			case 'x':
 				lua_pushnumber(L, f2fl(va_arg(vl, fix)));
 				break;
@@ -8930,8 +8917,27 @@ int ade_table_entry::SetTable(lua_State *L, int p_amt_ldx, int p_mtb_ldx)
 	if(Instanced)
 	{
 		//Set any actual data
-		char typestr[2] = {Type, '\0'};
-		if(ade_set_args(L, typestr, Value))
+		int nset = 0;
+		switch (Type)
+		{
+			//WMC - This hack by taylor is a necessary evil.
+			//64-bit function pointers do not get passed properly
+			//when using va_args for some reason.
+			case 'u':
+			case 'v':
+				lua_pushstring(L, "<UNNAMED FUNCTION>");
+				lua_pushboolean(L, 0);
+				lua_pushcclosure(L, Value.Function, 2);
+				nset++;
+				break;
+
+			default:
+				char typestr[2] = {Type, '\0'};
+				nset = ade_set_args(L, typestr, Value);
+				break;
+		}
+				
+		if (nset)
 		{
 			data_ldx = lua_gettop(L);
 		}

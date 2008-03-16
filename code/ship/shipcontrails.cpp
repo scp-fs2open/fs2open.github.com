@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipContrails.cpp $
- * $Revision: 2.27 $
- * $Date: 2007-03-23 01:50:59 $
+ * $Revision: 2.26.2.1 $
+ * $Date: 2007-02-12 00:41:38 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/LISTBOX.cpp $
- * $Revision: 2.8 $
- * $Date: 2006-09-08 06:20:15 $
+ * $Revision: 2.7.2.1 $
+ * $Date: 2006-09-08 06:14:44 $
  * $Author: taylor $
  *
  * Code to implement a listbox gadget.

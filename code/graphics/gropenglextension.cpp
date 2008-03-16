@@ -10,17 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLExtension.cpp $
- * $Revision: 1.18 $
- * $Date: 2007-04-13 00:31:58 $
+ * $Revision: 1.15.2.3 $
+ * $Date: 2007-04-13 00:31:24 $
  * $Author: taylor $
  *
  * source for extension implementation in OpenGL
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.17  2007/01/07 13:08:12  taylor
- * clean up extension list and comment out the things that we don't use
+ * Revision 1.15.2.2  2006/12/26 05:18:14  taylor
+ * comment out some extensions that we either don't use or don't need to use
  *
- * Revision 1.16  2006/08/09 14:42:24  taylor
+ * Revision 1.15.2.1  2006/08/09 14:40:43  taylor
  * fix for setting of texture lod bias
  *
  * Revision 1.15  2006/05/13 07:29:52  taylor

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/EventEditor.h $
- * $Revision: 1.2 $
- * $Date: 2006-10-09 05:25:18 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2006-10-09 05:25:07 $
  * $Author: Goober5000 $
  *
  * Event editor dialog box class and event tree class (used for dialog)

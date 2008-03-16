@@ -9,23 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/RedAlert.cpp $
- * $Revision: 2.26 $
- * $Date: 2007-11-23 23:16:44 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21.2.3 $
+ * $Date: 2007-03-22 20:47:49 $
+ * $Author: taylor $
  *
  * Module for Red Alert mission interface and code
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.25  2007/10/28 15:38:16  karajorma
- * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
- *
- * Revision 2.24  2007/03/22 20:47:33  taylor
- * make sure that we set/reset the red alert data properly (Mantis #1255)
- *
- * Revision 2.23  2006/10/06 09:55:36  taylor
+ * Revision 2.21.2.2  2006/10/06 09:47:10  taylor
  * For redalert stored data be sure that dead ships don't come back, and departed ships come back just as they left (Mantis bug #810)
  *
- * Revision 2.22  2006/09/13 03:17:59  taylor
+ * Revision 2.21.2.1  2006/09/13 03:11:09  taylor
  * be sure to setup/reset ship team data too when moving to a red-alert mission (Mantis bug 1042)
  *   (this will hopefully fix Mantis bug 860 as well, which is a separate but related issue)
  *
@@ -894,7 +888,7 @@ void red_alert_store_wingman_status()
 	}
 
 	// store exited ships that did not die
-	for (int idx=0; idx<(int)Ships_exited.size(); idx++) {
+	for (int idx=0; idx<MAX_EXITED_SHIPS; idx++) {
 
 		if ( Red_alert_num_slots_used >= MAX_RED_ALERT_SLOTS ) {
 			Int3();	// ran out of red alert slots

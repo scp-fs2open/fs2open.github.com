@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDsquadmsg.h $
- * $Revision: 2.18 $
- * $Date: 2006-09-11 05:56:23 $
+ * $Revision: 2.17.2.1 $
+ * $Date: 2006-08-27 18:04:24 $
  * $Author: taylor $
  *
  * header file for squadmate messaging

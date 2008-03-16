@@ -9,14 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelInterp.cpp $
- * $Revision: 2.192 $
- * $Date: 2007-05-25 13:58:25 $
+ * $Revision: 2.157.2.27 $
+ * $Date: 2007-05-25 13:49:37 $
  * $Author: taylor $
  *
  *	Rendering models, I think.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.191  2007/03/23 01:51:00  taylor
+ * Revision 2.157.2.26  2007/02/20 04:53:11  Goober5000
+ * wups
+ *
+ * Revision 2.157.2.25  2007/02/20 04:19:22  Goober5000
+ * the great big duplicate model removal commit
+ *
+ * Revision 2.157.2.24  2007/02/16 22:09:03  Goober5000
+ * remove obsolete and misleading comments which should have been edited when the code was upgraded
+ *
+ * Revision 2.157.2.23  2007/02/12 00:41:37  taylor
  * bit of cleanup and minor performance tweaks
  * render ship insignia with a bit of alpha to help with blending/lighting
  * dynamic thruster particle limits
@@ -25,73 +34,38 @@
  * use generic_bitmap and generic_anim where possible to faciliate delayed graphics loading (after all ship related tbls are parsed)
  * use VALID_FNAME()
  *
- * Revision 2.190  2007/02/20 04:20:18  Goober5000
- * the great big duplicate model removal commit
+ * Revision 2.157.2.22  2007/02/12 00:19:48  taylor
+ * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
  *
- * Revision 2.189  2007/02/18 06:16:47  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ * Revision 2.157.2.21  2007/02/11 18:46:30  taylor
+ * fix a break from an earlier partial commit
  *
- * Revision 2.188  2007/02/16 22:09:05  Goober5000
- * remove obsolete and misleading comments which should have been edited when the code was upgraded
- *
- * Revision 2.187  2007/02/11 18:45:38  taylor
- * fix a couple of breaks from my commits
- *
- * Revision 2.186  2007/02/03 08:13:36  Goober5000
- * d'oh... thanks phreak
- *
- * Revision 2.185  2007/02/02 22:49:07  Goober5000
- * fixed two of Bobboau's bizarre bugs
- *
- * Revision 2.184  2007/01/31 05:04:24  phreak
- * Do clip plane testing on thruster glows and thruster particles
- *
- * Revision 2.183  2007/01/15 02:19:03  wmcoolmon
- * Finish off warning fixage
- *
- * Revision 2.182  2007/01/15 01:52:47  bobboau
- * fixing a thruster bug, a geometry batcher bug, and trying to fix a shield bug
- *
- * Revision 2.181  2007/01/15 01:37:38  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
- *
- * Revision 2.180  2007/01/14 14:03:33  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.179  2007/01/14 10:26:38  wmcoolmon
- * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
- *
- * Revision 2.178  2007/01/13 16:38:22  bobboau
- * made a last second change of mind on something, made it a bit safer
- *
- * Revision 2.177  2007/01/10 01:44:39  taylor
- * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
- *
- * Revision 2.176  2007/01/07 12:49:51  taylor
- * fix tertiary glow sizes
+ * Revision 2.157.2.20  2007/01/07 12:13:57  taylor
  * fix model vertex normal data that was being read/written incorrectly under OS X (still don't know why this was a problem, but this fixes it)
  *
- * Revision 2.175  2006/12/28 00:59:32  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
+ * Revision 2.157.2.19  2006/12/26 05:27:54  taylor
+ * remove unneeded header
  *
- * Revision 2.174  2006/11/06 06:42:22  taylor
+ * Revision 2.157.2.18  2006/12/07 18:21:25  taylor
+ * unbreak the breakage that I broke when I tried to fix breakage that wasn't broken the second time but initialy broke instead
+ *  (yeah, this one confused me ;))  (Mantis bug #1165)
+ *
+ * Revision 2.157.2.17  2006/11/01 18:35:57  taylor
  * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
  *
- * Revision 2.173  2006/11/06 06:39:11  taylor
+ * Revision 2.157.2.16  2006/10/28 17:58:42  taylor
  * forgot to reset default value for Interp_warp_alpha when it was changed earlier
  * be sure that we are using the proper zbuffer setting when rendering thruster glows
  *
- * Revision 2.172  2006/11/06 06:37:59  taylor
- * ok, so apparently that did actually do something  ;)
+ * Revision 2.157.2.15  2006/10/28 04:00:09  taylor
+ * ok, so apparently that did actually do something ;)
  *
- * Revision 2.171  2006/11/06 06:33:48  taylor
+ * Revision 2.157.2.14  2006/10/27 21:37:11  taylor
  * more cleanup of warp_global crap
  * scale render/detail box limits with detail level setting
  * make sure that we reset culling and zbuffer after each model buffer that gets rendered
  *
- * Revision 2.170  2006/11/06 06:19:17  taylor
+ * Revision 2.157.2.13  2006/10/27 06:42:29  taylor
  * rename set_warp_globals() to model_set_warp_globals()
  * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
  * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
@@ -99,7 +73,7 @@
  * minor bits of cleanup
  * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
  *
- * Revision 2.169  2006/11/06 06:15:01  taylor
+ * Revision 2.157.2.12  2006/10/24 13:29:16  taylor
  * a LOT of cleanup:
  *  * remove a bunch of old/dead code
  *  * some reformatting to help with readability
@@ -108,28 +82,28 @@
  * make HTL model buffers dynamic
  * fix detail boxes so that they actually work for the first time
  *
- * Revision 2.168  2006/09/11 06:45:40  taylor
+ * Revision 2.157.2.11  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
- * Revision 2.167  2006/09/08 06:20:14  taylor
+ * Revision 2.157.2.10  2006/09/08 06:14:44  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
- * Revision 2.166  2006/07/17 01:12:19  taylor
+ * Revision 2.157.2.9  2006/07/17 01:09:03  taylor
  * fix some missile autocentering issues
  *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
  *  - don't try to autocenter loadout icons when rendered 3d
  *
- * Revision 2.165  2006/07/17 00:10:00  Goober5000
+ * Revision 2.157.2.8  2006/07/17 00:10:05  Goober5000
  * stage 2 of animation fix (add base frame time to each ship)
  * --Goober5000
  *
- * Revision 2.164  2006/07/13 22:16:38  taylor
+ * Revision 2.157.2.7  2006/07/13 22:11:37  taylor
  * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
  *
- * Revision 2.163  2006/07/07 16:26:44  taylor
+ * Revision 2.157.2.6  2006/07/07 16:25:58  taylor
  * make sure to reset the optional maps after each buffer render (little scary that this wasn't noticed a long time ago)
  *
- * Revision 2.162  2006/07/06 22:00:39  taylor
+ * Revision 2.157.2.5  2006/07/06 21:53:58  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
  *  - same for glowpoints, back on a per-ship basis
@@ -138,20 +112,20 @@
  *  - add support for animated specmaps (mainly for TBP and Starfox mods)
  * some minor code cleanup and compiler warning fixes
  *
- * Revision 2.161  2006/07/06 04:06:04  Goober5000
+ * Revision 2.157.2.4  2006/07/06 04:06:01  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
  * --Goober5000
  *
- * Revision 2.160  2006/07/05 23:35:42  Goober5000
+ * Revision 2.157.2.3  2006/07/05 23:36:56  Goober5000
  * cvs comment tweaks
  *
- * Revision 2.159  2006/07/04 07:42:48  Goober5000
+ * Revision 2.157.2.2  2006/07/04 07:42:09  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
  * --Goober5000
  *
- * Revision 2.158  2006/06/02 09:40:32  taylor
+ * Revision 2.157.2.1  2006/06/03 05:06:38  taylor
  * be sure that we properly apply light to submodels (mainly for debris), looks *really* bad otherwise
  *
  * Revision 2.157  2006/05/27 16:57:13  taylor
@@ -1825,7 +1799,6 @@ vec3d Interp_offset;
 void interp_compute_environment_mapping( vec3d *nrm, vertex * pnt)
 {
 	return;
-/*
 	vec3d R;
 	float a;
 //	matrix * m = &View_matrix;
@@ -1842,7 +1815,6 @@ void interp_compute_environment_mapping( vec3d *nrm, vertex * pnt)
 	pnt->u2 = (float)atan2( R.xyz.x, -R.xyz.z) / (2.0f * 3.14159f);
 	if (pnt->u2 < 0.0) pnt->u2 += 1.0f;
 	pnt->v2 = 1.0f - (float)atan2( a, R.xyz.y) / 3.14159f;
-*/
 }
 
 
@@ -2209,8 +2181,8 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						// doing glow maps?
 						if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.texture >= 0) ) {
 							// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
-							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.num_frames > 1) ) {
-								GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.num_frames);
+							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.is_anim) ) {
+								GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.anim.num_frames);
 							} else {
 								GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map, base_frametime);
 							}
@@ -4126,7 +4098,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 			#define MAX_SCALE 4.7f
 			float scale = MIN_SCALE;
 						
-			// the following replaces Bobboau's code, commented out below - Goober5000
+
 			float magnitude;
 			vec3d scale_vec = { { { 1.0f, 0.0f, 0.0f } } };
 
@@ -4148,6 +4120,7 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				magnitude *= -1.0f;
 
 			scale = magnitude * (MAX_SCALE - MIN_SCALE) + MIN_SCALE;
+		//	scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
 			if (d > 0.0f){
 				// Make glow bitmap fade in/out quicker from sides.
@@ -4178,8 +4151,6 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 				gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 			}
 
-			// this is the original scaling code - Goober5000
-		//	scale = (Interp_thrust_scale-0.1f)*(MAX_SCALE-MIN_SCALE)+MIN_SCALE;
 
 			float w = gpt->radius * (scale + Interp_thrust_glow_noise * NOISE_SCALE);
 
@@ -4284,9 +4255,8 @@ void model_render_thrusters(polymodel *pm, int objnum, ship *shipp, matrix *orie
 					pe.min_rad = gpt->radius * tp->min_rad; // * objp->radius;
 					pe.max_rad = gpt->radius * tp->max_rad; // * objp->radius;
 					pe.normal_variance = tp->variance;					//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-					pe.texture_id = tp->thruster_bitmap.first_frame;
 
-					particle_emit( &pe );
+					particle_emit( &pe, PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
 				}
 				// end particles
 
@@ -4954,6 +4924,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 	memset(&Interp_offset,0,sizeof(vec3d));
 
 }
+
 
 void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * pos, uint flags, int objnum, int *replacement_textures)
 {
@@ -6153,6 +6124,7 @@ inline int in_box(vec3d *min, vec3d *max, vec3d *pos)
 	return -1;
 }
 
+
 void model_render_children_buffers(bsp_info *model, polymodel *pm, int mn, int detail_level)
 {
 	int i;
@@ -6293,7 +6265,9 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 
 	gr_set_buffer(model->indexed_vertex_buffer);
 
-	for (uint i = 0; i < model->buffer.size(); i++) {
+	uint buffer_size = model->buffer.size();
+
+	for (uint i = 0; i < buffer_size; i++) {
 		int texture = -1;
 		int tmap_num = model->buffer[i].texture;
 
@@ -6316,8 +6290,8 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 			// doing glow maps?
 			if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.texture >= 0) ) {
 				// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
-				if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.num_frames > 1) ) {
-					GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.num_frames);
+				if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.is_anim) ) {
+					GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.anim.num_frames);
 				} else {
 					GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map, base_frametime);
 				}
@@ -6722,10 +6696,7 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 		ship *shipp = &Ships[obj->instance];
 		ship_info *sip = &Ship_info[shipp->ship_info_index];
 
-		if(bank_obj >= sip->n_subsystems){
-			Error( LOCATION, "thruster bank is linked to subsystem #%d, which is out of bounds, on model %s", bank_obj, sip->pof_file);
-			return 1;
-		}
+		Assert( bank_obj < sip->n_subsystems );
 
 		char subname[MAX_NAME_LEN];
 		// shipp->subsystems isn't always valid here so don't use it
@@ -6760,23 +6731,26 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 {
 	int texture, frame;
+	texture_anim_info *anim;
 	float cur_time;
 
 	// get texture
 	texture = tinfo->texture;
 
 	// maybe animate it
-	if (texture >= 0 && tinfo->num_frames > 1)
+	if (texture >= 0 && tinfo->is_anim)
 	{
-		// sanity check total_time first thing
-		Assert(tinfo->anim_total_time > 0.0f);
+		anim = &tinfo->anim;
 
-		cur_time = f2fl((game_get_overall_frametime() - base_frametime) % fl2f(tinfo->anim_total_time));
+		// sanity check total_time first thing
+		Assert(anim->total_time > 0.0f);
+
+		cur_time = f2fl((game_get_overall_frametime() - base_frametime) % fl2f(anim->total_time));
 
 		// get animation frame
-		frame = fl2i((cur_time * tinfo->num_frames) / tinfo->anim_total_time);
+		frame = fl2i((cur_time * anim->num_frames) / anim->total_time);
 		if (frame < 0) frame = 0;
-		if (frame >= tinfo->num_frames) frame = tinfo->num_frames - 1;
+		if (frame >= anim->num_frames) frame = anim->num_frames - 1;
 
 		// advance to the correct frame
 		texture += frame;

@@ -9,50 +9,48 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/PsTypes.h $
- * $Revision: 2.54 $
- * $Date: 2007-03-22 22:19:31 $
+ * $Revision: 2.42.2.11 $
+ * $Date: 2007-10-17 21:03:05 $
  * $Author: taylor $
- * $Revision: 2.54 $
- * $Date: 2007-03-22 22:19:31 $
+ * $Revision: 2.42.2.11 $
+ * $Date: 2007-10-17 21:03:05 $
  * $Author: taylor $
  *
  * Header file containg global typedefs, constants and macros
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.53  2007/02/18 06:16:46  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ * Revision 2.42.2.10  2007/02/12 00:24:33  taylor
+ * add back special "var" setting for flag_def_list and convert some of the lists to use it (more on the way)
  *
- * Revision 2.52  2007/02/11 20:25:58  Goober5000
+ * Revision 2.42.2.9  2007/02/11 20:26:00  Goober5000
  * fix some breakage ;)
  *
- * Revision 2.51  2007/02/11 09:37:18  taylor
- * dd VALID_FNAME() macro and put it around a few places (more to come)
+ * Revision 2.42.2.8  2007/02/11 09:35:11  taylor
+ * add VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
  * move CLAMP() macro from opengl header to global header
  * update COUNT_ESTIMATE to match new bmpman changes
  *
- * Revision 2.50  2007/01/14 14:03:32  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.49  2006/12/28 22:47:02  Goober5000
+ * Revision 2.42.2.7  2006/12/28 22:47:15  Goober5000
  * fix spelling... *twitch*
  *
- * Revision 2.48  2006/10/06 09:31:27  taylor
+ * Revision 2.42.2.6  2006/10/01 19:22:15  taylor
  * re-fix this crap that I managed to break last time (was Mantis bug 1066 I think)
  *
- * Revision 2.47  2006/09/24 13:31:08  taylor
+ * Revision 2.42.2.5  2006/09/24 13:22:38  taylor
  * fix SAFE_STRCAT() so that it can work in an if() statement that doesn't have braces
  *
- * Revision 2.46  2006/09/20 05:04:01  taylor
+ * Revision 2.42.2.4  2006/09/20 04:56:36  taylor
  * neither of these two structs appear to be used anywhere, so lets just comment them out
  *
- * Revision 2.45  2006/09/11 06:45:39  taylor
+ * Revision 2.42.2.3  2006/09/11 01:00:27  taylor
  * various small compiler warning and strict compiling fixes
  *
- * Revision 2.44  2006/08/20 00:51:05  taylor
+ * Revision 2.42.2.2  2006/08/19 04:38:46  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
+ * Revision 2.42.2.1  2006/06/07 03:19:20  wmcoolmon
+ * Scripting system prep for 3.6.9
  *
  * Revision 2.43  2006/06/07 03:17:55  wmcoolmon
  * Scripting system prep for 3.6.9
@@ -603,8 +601,8 @@ typedef struct flag_def_list {
 //This are defined in MainWin.c
 extern void _cdecl WinAssert(char * text,char *filename, int line);
 extern void LuaError(struct lua_State *L, char *format=NULL, ...);
-extern void _cdecl Error( char * filename, int line, char * format, ... );
-extern void _cdecl Warning( char * filename, int line, char * format, ... );
+extern void _cdecl Error( char * filename, int line, const char * format, ... );
+extern void _cdecl Warning( char * filename, int line, const char * format, ... );
 
 #include "osapi/outwnd.h"
 
@@ -1093,21 +1091,6 @@ typedef struct script_hook
 	script_hook(){o_language=h_language=0;o_index=h_index=-1;}
 	bool IsValid(){return (h_index > -1);}
 }script_hook;
-
-class camid
-{
-private:
-	int sig;
-	uint idx;
-public:
-	camid();
-	camid(int n_idx, int n_sig);
-
-	class camera *getCamera();
-	uint getIndex();
-	int getSignature();
-	bool isValid();
-};
 
 
 #endif		// PS_TYPES_H

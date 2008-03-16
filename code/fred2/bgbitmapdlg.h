@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.h $
- * $Revision: 1.4 $
- * $Date: 2006-11-06 05:54:13 $
+ * $Revision: 1.2.2.2 $
+ * $Date: 2006-10-24 13:44:54 $
  * $Author: taylor $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.3  2006/08/06 18:47:29  Goober5000
+ * Revision 1.2.2.1  2006/08/06 18:47:12  Goober5000
  * add the multiple background feature
  * --Goober5000
  *

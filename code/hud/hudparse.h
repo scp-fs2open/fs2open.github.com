@@ -1,22 +1,20 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.h $
- * $Revision: 2.22 $
- * $Date: 2008-01-24 03:52:07 $
+ * $Revision: 2.19.2.3 $
+ * $Date: 2008-01-24 03:53:36 $
  * $Author: Goober5000 $
  *
  * Header file for HUD tbl parsing
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.21  2007/08/30 04:51:07  Backslash
+ * Revision 2.19.2.2  2007/08/30 04:52:30  Backslash
  * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
  * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
  * $Length Unit Multiplier: 5
  *
- * Revision 2.20  2007/01/07 12:53:35  taylor
- * add position info for weapon energy text
- * make sure that we can't target a hidden jumpnode
- * rest of the weapon switch fix
+ * Revision 2.19.2.1  2006/12/07 18:17:19  taylor
+ * add "$Weapons Energy Text:" to hud_gauges.tbl so that the low energy text can be positioned as well (Mantis bug #1166)
  *
  * Revision 2.19  2005/07/13 03:15:52  Goober5000
  * remove PreProcDefine #includes in FS2

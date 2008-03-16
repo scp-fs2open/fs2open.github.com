@@ -9,40 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipShip.cpp $
- * $Revision: 2.26 $
- * $Date: 2007-11-23 23:49:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.17.2.2 $
+ * $Date: 2007-02-20 04:19:34 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and ships
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.25  2007/02/20 04:20:27  Goober5000
- * the great big duplicate model removal commit
- *
- * Revision 2.24  2007/02/19 07:24:51  wmcoolmon
- * WMCoolmon experiences a duh moment. Move scripting collision variable declarations in front of overrides, to give
- * them access to these (somewhat useful) variables
- *
- * Revision 2.23  2007/02/11 21:26:35  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 2.22  2007/02/11 06:19:05  Goober5000
+ * Revision 2.17.2.1  2007/02/11 06:19:08  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
- *
- * Revision 2.21  2007/01/08 00:50:58  Goober5000
- * remove WMC's limbo code, per our discussion a few months ago
- * this will later be handled by copying ship stats using sexps or scripts
- *
- * Revision 2.20  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.19  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
- * Revision 2.18  2006/06/07 04:42:22  wmcoolmon
- * Limbo flag support; further scripting 3.6.9 update
  *
  * Revision 2.17  2005/12/29 08:08:39  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
@@ -603,7 +578,6 @@
 
 #include "object/objcollide.h"
 #include "object/object.h"
-#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "freespace2/freespace.h"
 #include "ship/shiphit.h"
@@ -617,7 +591,7 @@
 #include "asteroid/asteroid.h"
 #include "playerman/player.h"
 #include "object/objectdock.h"
-#include "parse/lua.h"
+#include "object/objectshield.h"
 #include "parse/scripting.h"
 
 
@@ -728,8 +702,8 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info, vec3d *
 	// Make ships that are warping in not get collision detection done
 //	if ( heavy_shipp->flags & SF_ARRIVING ) {
 	if ( heavy_shipp->flags & SF_ARRIVING_STAGE_1 ) { 
-  		return 0;
-  	}
+		return 0;
+	}
 
 	// Don't do collision detection for docking ships, since they will always collide while trying to dock
 	if ( ships_are_docking(heavy_obj, light_obj) ) {
@@ -1528,6 +1502,17 @@ int maybe_collide_planet (object *obj1, object *obj2)
 	return 0;
 }
 
+//	Given a global point and an object, get the quadrant number the point belongs to.
+int get_ship_quadrant_from_global(vec3d *global_pos, object *objp)
+{
+	vec3d	tpos;
+	vec3d	rotpos;
+
+	vm_vec_sub(&tpos, global_pos, &objp->pos);
+	vm_vec_rotate(&rotpos, &tpos, &objp->orient);
+	return get_quadrant(&rotpos);
+}
+
 #define	MIN_REL_SPEED_FOR_LOUD_COLLISION		50		// relative speed of two colliding objects at which we play the "loud" collide sound
 
 void collide_ship_ship_sounds_init()
@@ -1734,8 +1719,7 @@ int collide_ship_ship( obj_pair * pair )
 			{
 				float		damage;
 
-				if ( player_involved && (Player->control_mode == PCM_WARPOUT_STAGE1) )
-				{
+				if ( player_involved && (Player->control_mode == PCM_WARPOUT_STAGE1) )	{
 					gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_STOP );
 					HUD_printf(XSTR( "Warpout sequence aborted.", 466));
 				}
@@ -1851,9 +1835,9 @@ int collide_ship_ship( obj_pair * pair )
 				
 				float dam2 = (100.0f * damage/LightOne->phys_info.mass);
 
-				int	quadrant_num = shield_get_quadrant_global(ship_ship_hit_info.heavy, &world_hit_pos);
+				int	quadrant_num = get_ship_quadrant_from_global(&world_hit_pos, ship_ship_hit_info.heavy);
 				//nprintf(("AI", "Ship %s hit in quad #%i\n", Ships[ship_ship_hit_info.heavy->instance].ship_name, quadrant_num));
-				if ((ship_ship_hit_info.heavy->flags & OF_NO_SHIELDS) || !shield_is_up(ship_ship_hit_info.heavy, quadrant_num) ) {
+				if ((ship_ship_hit_info.heavy->flags & OF_NO_SHIELDS) || !ship_is_shield_up(ship_ship_hit_info.heavy, quadrant_num) ) {
 					quadrant_num = -1;
 				}
 
@@ -1882,12 +1866,9 @@ int collide_ship_ship( obj_pair * pair )
 			}
 
 			Script_system.RemHookVars(4, "Ship", "ShipB", "Self", "Object");
-
 			return 0;
-		}		
-	}
-	else
-	{
+		}					
+	} else {
 		// estimate earliest time at which pair can hit
 
 		// cap ships warping in/out can exceed ship's expected velocity
@@ -1896,9 +1877,9 @@ int collide_ship_ship( obj_pair * pair )
 		sif_a_flags = Ship_info[Ships[A->instance].ship_info_index].flags;
 		sif_b_flags = Ship_info[Ships[B->instance].ship_info_index].flags;
 
-		// if ship is huge and warping in
-		if ( ((Ships[A->instance].flags & SF_ARRIVING_STAGE_1) && (sif_a_flags & SIF_HUGE_SHIP))
-			|| ((Ships[B->instance].flags & SF_ARRIVING_STAGE_1) && (sif_b_flags & SIF_HUGE_SHIP)) ) {
+		// if ship is huge and warping in or out
+		if ( (Ships[A->instance].flags & SF_ARRIVING_STAGE_1) && (sif_a_flags & (SIF_HUGE_SHIP))
+			||(Ships[B->instance].flags & SF_ARRIVING_STAGE_1) && (sif_b_flags & (SIF_HUGE_SHIP)) ) {
 			pair->next_check_time = timestamp(0);	// check next time
 			return 0;
 		}

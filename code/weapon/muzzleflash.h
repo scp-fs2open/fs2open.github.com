@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/MuzzleFlash.h $
- * $Revision: 2.6 $
- * $Date: 2006-09-11 05:44:23 $
+ * $Revision: 2.5.2.1 $
+ * $Date: 2006-08-22 05:50:12 $
  * $Author: taylor $
  *
  * all sorts of cool stuff about ships

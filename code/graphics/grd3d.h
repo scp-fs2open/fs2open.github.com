@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.h $
- * $Revision: 2.24 $
- * $Date: 2007-01-11 07:08:45 $
- * $Author: bobboau $
+ * $Revision: 2.23.2.1 $
+ * $Date: 2007-02-18 21:57:30 $
+ * $Author: taylor $
  *
  * Include file for our Direct3D renderer
  *

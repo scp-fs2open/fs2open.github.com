@@ -9,45 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Shield.cpp $
- * $Revision: 2.53 $
- * $Date: 2007-02-20 04:20:27 $
+ * $Revision: 2.41.2.4 $
+ * $Date: 2007-02-20 04:19:34 $
  * $Author: Goober5000 $
  *
  *	Stuff pertaining to shield graphical effects, etc.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.52  2007/02/18 06:17:34  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.51  2007/02/16 22:25:21  Goober5000
- * fixed another of bobboau's stupid bugs
- *
- * Revision 2.50  2007/02/11 21:26:39  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 2.49  2007/02/11 06:02:38  Goober5000
- * fix spelling
- *
- * Revision 2.48  2007/02/06 01:27:34  Goober5000
+ * Revision 2.41.2.3  2007/02/06 01:27:33  Goober5000
  * remove obsolete and unused shield flag
  *
- * Revision 2.47  2007/01/15 01:52:47  bobboau
- * fixing a thruster bug, a geometry batcher bug, and trying to fix a shield bug
- *
- * Revision 2.46  2007/01/15 01:37:38  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
- *
- * Revision 2.45  2007/01/13 16:20:39  bobboau
- * left some test code on super sorry
- *
- * Revision 2.44  2006/09/11 06:45:40  taylor
+ * Revision 2.41.2.2  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
- * Revision 2.43  2006/09/11 06:08:09  taylor
+ * Revision 2.41.2.1  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
- *
- * Revision 2.42  2006/09/04 05:59:47  wmcoolmon
- * Changes to allow for a species with no shield anim
  *
  * Revision 2.41  2006/05/27 16:49:05  taylor
  * comment out some pointless checks which look for not using either D3D or OGL
@@ -357,9 +333,9 @@
 #include "freespace2/freespace.h"
 #include "mission/missionparse.h"
 #include "network/multi.h"
+#include "object/objectshield.h"
 #include "species_defs/species_defs.h"
 #include "ship/ship.h"
-
 
 int	Show_shield_mesh = 0;
 
@@ -436,21 +412,16 @@ void load_shield_hit_bitmap()
 
 	for (i = 0; i < Species_info.size(); i++ )	
     {
-		if(strlen(Species_info[i].shield_anim.filename))
-		{
-			Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, 1);
+		Species_info[i].shield_anim.first_frame = bm_load_animation(Species_info[i].shield_anim.filename, &Species_info[i].shield_anim.num_frames, NULL, 1);
 
-			// *This is disabled for TBP    -Et1
-			// Changed to an assert by kazan
-			// Changed to check if we even want a shield anim and give a warning, by WMC.
+        // *This is disabled for TBP    -Et1
+		// Changed to an assert by kazan
 
-			/*
-			if ( Shield_ani[i].first_frame < 0 )
-				Int3();
-			*/
-			if(Species_info[i].shield_anim.first_frame < 0)
-				Warning(LOCATION, "Could not load shield anim for species %s", Species_info[i].species_name);
-		}
+        /*
+		if ( Shield_ani[i].first_frame < 0 )
+			Int3();
+        */
+		Assert(Species_info[i].shield_anim.first_frame >= 0);
 	}
 
 	#endif
@@ -704,11 +675,17 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 		Assert((trip->verts[j].u >= 0.0f) && (trip->verts[j].u <= UV_MAX));
 		Assert((trip->verts[j].v >= 0.0f) && (trip->verts[j].v <= UV_MAX));
 		verts[j] = &points[j];
-
-		verts[j]->r = r;
-		verts[j]->g = g;
-		verts[j]->b = b;
 	}
+
+	verts[0]->r = r;
+	verts[0]->g = g;
+	verts[0]->b = b;
+	verts[1]->r = r;
+	verts[1]->g = g;
+	verts[1]->b = b;
+	verts[2]->r = r;
+	verts[2]->g = g;
+	verts[2]->b = b;
 
 	vec3d	norm;
 	Poly_count++;
@@ -724,7 +701,7 @@ void render_shield_triangle(gshield_tri *trip, matrix *orient, vec3d *pos, ubyte
 		vertlist[2] = verts[0]; 
 		g3_draw_poly( 3, vertlist, flags);
 	} else {
-	g3_draw_poly( 3, verts, flags);
+		g3_draw_poly( 3, verts, flags);
 	}
 }
 
@@ -846,10 +823,6 @@ void render_shield(int shield_num) //, matrix *orient, vec3d *centerp)
 // occur with the ship, perhaps even internal to the ship.
 void render_shields()
 {
-	gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
-	gr_zbuffer_set(GR_ZBUFF_READ);
-	gr_set_cull(0);
-
 	int	i;
 
 	if (Detail.shield_effects == 0){
@@ -861,14 +834,10 @@ void render_shields()
 			render_shield(i);
 		}
 	}
-
-	gr_set_cull(1);
-	gr_set_texture_addressing(TMAP_ADDRESS_WRAP);
-	gr_zbuffer_set(GR_ZBUFF_FULL);
 }
 
-// -----------------------------------------------------------------------------------------------------
 
+// -----------------------------------------------------------------------------------------------------
 void create_tris_containing(vec3d *vp, matrix *orient, shield_info *shieldp, vec3d *tcp, vec3d *centerp, float radius, vec3d *rvec, vec3d *uvec)
 {
 	int	i, j;
@@ -1008,6 +977,39 @@ void copy_shield_to_globals( int objnum, shield_info *shieldp )
 	}
 }
 
+//	***** This is the version that works on a quadrant basis.
+//	Return absolute amount of damage not applied.
+float apply_damage_to_shield(object *objp, int quadrant, float damage)
+{
+	ai_info	*aip;
+
+	// multiplayer clients bail here if nodamage
+	// if(MULTIPLAYER_CLIENT && (Netgame.debug_flags & NETD_FLAG_CLIENT_NODAMAGE)){
+	if(MULTIPLAYER_CLIENT){
+		return damage;
+	}
+
+	if ( (quadrant < 0)  || (quadrant >= MAX_SHIELD_SECTIONS) ) return damage;	
+	
+	Assert(objp->type == OBJ_SHIP);
+	aip = &Ai_info[Ships[objp->instance].ai_index];
+	aip->last_hit_quadrant = quadrant;
+
+	objp->shield_quadrant[quadrant] -= damage;
+
+	if (objp->shield_quadrant[quadrant] < 0.0f) {
+		float	remaining_damage;
+
+		remaining_damage = -objp->shield_quadrant[quadrant];
+		objp->shield_quadrant[quadrant] = 0.0f;
+		//nprintf(("AI", "Applied %7.3f damage to quadrant #%i, %7.3f passes through\n", damage - remaining_damage, quadrant_num, remaining_damage));
+		return remaining_damage;
+	} else {
+		//nprintf(("AI", "Applied %7.3f damage to quadrant #%i\n", damage, quadrant_num));
+		return 0.0f;
+	}
+		
+}
 /**
  * This function needs to be called by big ships which have shields. It should be able to be modified to deal with
  * the large polygons we use for their shield meshes - unknownplayer
@@ -1111,11 +1113,11 @@ void create_shield_explosion(int objnum, int model_num, matrix *orient, vec3d *c
 	vm_vector_2_matrix(&tom, &shieldp->tris[tr0].norm, NULL, NULL);
 	//vm_vec_sub(&v2c, tcp, &Objects[objnum].pos);
 
-		//	Create the shield from the current triangle, as well as its neighbors.
-		create_shield_from_triangle(tr0, orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
-		//nprintf(("AI", "\n"));
-		for (i=0; i<3; i++)
-			create_shield_from_triangle(shieldp->tris[tr0].neighbors[i], orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
+	//	Create the shield from the current triangle, as well as its neighbors.
+	create_shield_from_triangle(tr0, orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
+	//nprintf(("AI", "\n"));
+	for (i=0; i<3; i++)
+		create_shield_from_triangle(shieldp->tris[tr0].neighbors[i], orient, shieldp, tcp, centerp, Objects[objnum].radius, &tom.vec.rvec, &tom.vec.uvec);
 	
 	copy_shield_to_globals(objnum, shieldp);
 	// render_shield(orient, centerp);
@@ -1311,6 +1313,29 @@ void ship_draw_shield( object *objp)
 }
 #endif
 
+// Returns true if the shield presents any opposition to something 
+// trying to force through it.
+// If quadrant is -1, looks at entire shield, otherwise
+// just one quadrant
+int ship_is_shield_up( object *obj, int quadrant )
+{
+	if ( (quadrant >= 0) && (quadrant < MAX_SHIELD_SECTIONS))	{
+		// Just check one quadrant
+		if (obj->shield_quadrant[quadrant] > MAX(2.0f, 0.1f * get_max_shield_quad(obj)))	{
+			return 1;
+		}
+	} else {
+		// Check all quadrants
+		float strength = shield_get_strength(obj);
+
+		if ( strength > MAX(2.0f*4.0f, 0.1f * Ships[obj->instance].ship_max_shield_strength ))	{
+			return 1;
+		}
+	}
+	return 0;	// no shield strength
+}
+
+
 /*
 //-- CODE TO "BOUNCE" AN ARRAY FROM A GIVEN POINT.
 //-- LIKE A MATTRESS.
@@ -1368,5 +1393,27 @@ void shield_hit_close() {}
 void ship_draw_shield( object *objp) {}
 void shield_hit_page_in() {}
 void render_shields() {}
+float apply_damage_to_shield(object *objp, int quadrant, float damage) {return damage;} 
+int ship_is_shield_up( object *obj, int quadrant ) {return 0;}
 
 #endif // DEMO
+
+
+//	return quadrant containing hit_pnt.
+//	\  1  /.
+//	3 \ / 0
+//	  / \.
+//	/  2  \.
+//	Note: This is in the object's local reference frame.  Do _not_ pass a vector in the world frame.
+int get_quadrant(vec3d *hit_pnt)
+{
+	int	result = 0;
+
+	if (hit_pnt->xyz.x < hit_pnt->xyz.z)
+		result |= 1;
+
+	if (hit_pnt->xyz.x < -hit_pnt->xyz.z)
+		result |= 2;
+
+	return result;
+}

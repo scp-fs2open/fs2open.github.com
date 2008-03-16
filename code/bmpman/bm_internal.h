@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/bmpman/bm_internal.h $
- * $Revision: 2.7 $
- * $Date: 2007-01-10 01:40:06 $
+ * $Revision: 2.6.2.1 $
+ * $Date: 2007-02-11 09:51:21 $
  * $Author: taylor $
  *
  * bmpman info that's internal to bmpman related files only

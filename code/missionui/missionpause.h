@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionPause.h $
- * $Revision: 2.6 $
- * $Date: 2006-09-08 06:20:14 $
+ * $Revision: 2.5.2.1 $
+ * $Date: 2006-09-08 06:14:44 $
  * $Author: taylor $
  * 
  *

@@ -9,51 +9,32 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ShipHit.cpp $
- * $Revision: 2.81 $
- * $Date: 2007-11-23 23:49:35 $
- * $Author: wmcoolmon $
+ * $Revision: 2.63.2.10 $
+ * $Date: 2007-12-20 01:57:45 $
+ * $Author: turey $
  *
  * Code to deal with a ship getting hit by something, be it a missile, dog, or ship.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.80  2007/10/28 15:38:18  karajorma
- * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
- *
- * Revision 2.79  2007/07/15 02:45:19  Goober5000
+ * Revision 2.63.2.9  2007/07/15 02:45:51  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
  * removed my old supercap damage scaling change
  * moved Turey's truefire flag to ai_profiles
  *
- * Revision 2.78  2007/07/13 22:28:13  turey
- * Initial commit of Training Weapons / Simulated Hull code.
+ * Revision 2.63.2.8  2007/05/28 18:27:35  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
  *
- * Revision 2.77  2007/02/20 04:20:27  Goober5000
+ * Revision 2.63.2.7  2007/02/20 04:19:35  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.76  2007/02/19 20:39:10  wmcoolmon
- * More minor tweaks/fixes
- *
- * Revision 2.75  2007/02/11 21:26:39  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 2.74  2007/02/10 06:39:43  Goober5000
- * new feature: shield generators that control whether the shield is up
- *
- * Revision 2.73  2007/02/10 00:18:22  taylor
+ * Revision 2.63.2.6  2007/02/10 00:17:40  taylor
  * remove NO_SOUND
  *
- * Revision 2.72  2007/02/09 05:04:56  Goober5000
- * miniscule tweaks
+ * Revision 2.63.2.5  2007/02/09 04:53:28  Goober5000
+ * merge the WCS screaming feature into the 3.6.9 (3.6.10?) branch
  *
- * Revision 2.71  2007/02/09 04:45:23  Goober5000
- * bah, change this so it's mostly diff-compatible with 3.6.9
- *
- * Revision 2.70  2007/01/07 21:28:11  Goober5000
- * yet more tweaks to the WCS death scream stuff
- * added a ship flag to force screaming
- *
- * Revision 2.69  2007/01/07 12:57:36  taylor
+ * Revision 2.63.2.4  2006/12/07 18:30:20  taylor
  * cleanup shockwave code a bit
  * make Shockwave_info dynamic
  * lot of fixage to allow 2D and 3D shockwaves to work better
@@ -61,19 +42,13 @@
  * properly handle both "none" and "<none>" for 2D and 3D shockwave names
  * better handling, preloading wise, of 3D shockwaves and their textures
  *
- * Revision 2.68  2006/12/28 00:59:48  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.67  2006/09/11 06:45:40  taylor
+ * Revision 2.63.2.3  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
- * Revision 2.66  2006/09/04 06:12:16  wmcoolmon
- * Conditional hook
- *
- * Revision 2.65  2006/07/05 23:35:43  Goober5000
+ * Revision 2.63.2.2  2006/07/05 23:36:56  Goober5000
  * cvs comment tweaks
  *
- * Revision 2.64  2006/06/27 04:06:18  Goober5000
+ * Revision 2.63.2.1  2006/06/27 04:06:17  Goober5000
  * handle docked objects during death roll
  * --Goober5000
  *
@@ -89,7 +64,7 @@
  * spelling
  *
  * Revision 2.60  2006/01/13 03:30:59  Goober5000
- * bercommit of custom IFF stuff :)
+ * übercommit of custom IFF stuff :)
  *
  * Revision 2.59  2005/12/08 15:17:35  taylor
  * fix several bad crash related problems from WMC's commits on the 4th
@@ -765,11 +740,8 @@
 #include "network/multimsgs.h"
 #include "network/multi_respawn.h"
 #include "network/multi_pmsg.h"
-#include "object/objectshield.h"
-#include "parse/scripting.h"
 #include "asteroid/asteroid.h"
-
-
+#include "parse/scripting.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
@@ -788,17 +760,6 @@ typedef struct spark_pair {
 
 vec3d	Dead_camera_pos;
 vec3d	Original_vec_to_deader;
-
-/*
-camid dead_get_camera()
-{
-	static camid dead_camera;
-	if(!dead_camera.isValid())
-		dead_camera = cam_create("Dead camera");
-
-	return dead_camera;
-}
-*/
 
 bool is_subsys_destroyed(ship *shipp, int submodel)
 {
@@ -942,7 +903,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 		}
 	}
 
-	if (psub->type == SUBSYSTEM_TURRET) {
+	if ( psub->type == SUBSYSTEM_TURRET ) {
 		if ( ship_p->subsys_info[type].current_hits == 0.0f ) {
 			//	Don't create "disarmed" event for small ships.
 			if (!(Ship_info[ship_p->ship_info_index].flags & SIF_SMALL_SHIP)) {
@@ -950,17 +911,13 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 				// ship_p->flags |= SF_DISARMED;
 			}
 		}
-	} else if (psub->type == SUBSYSTEM_ENGINE) {
+	} else if (psub->type == SUBSYSTEM_ENGINE ) {
 		// when an engine is destroyed, we must change the max velocity of the ship
 		// to be some fraction of its normal maximum value
 
 		if ( ship_p->subsys_info[type].current_hits == 0.0f ) {
 			mission_log_add_entry(LOG_SHIP_DISABLED, ship_p->ship_name, NULL );
-			ship_p->flags |= SF_DISABLED;
-		}
-	} else if (psub->type == SUBSYSTEM_SHIELD_GENERATOR) {
-		if ( ship_p->subsys_info[type].current_hits == 0.0f ) {
-			ship_obj->flags |= OF_NO_SHIELDS;
+			ship_p->flags |= SF_DISABLED;				// add the disabled flag
 		}
 	}
 
@@ -1353,7 +1310,7 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 				break;
 			}
 		}
-//nprintf(("AI", "j=%i, sys = %s, dam = %6.1f, dam left = %6.1f, subhits = %5.0f\n", j, ship_subsys_get_name(subsys), damage_to_apply, damage_left, subsys->current_hits));
+//nprintf(("AI", "j=%i, sys = %s, dam = %6.1f, dam left = %6.1f, subhits = %5.0f\n", j, subsys->system_info->name, damage_to_apply, damage_left, subsys->current_hits));
 	}
 
 	//	Note: I changed this to return damage_left and it completely screwed up balance.
@@ -1540,6 +1497,27 @@ void show_dead_message(object *ship_obj, object *other_obj)
 	}
 	*/
 }
+
+/* JAS: THIS DOESN'T SEEM TO BE USED, SO I COMMENTED IT OUT
+//	Apply damage to a ship, destroying if necessary, etc.
+//	Returns portion of damage that exceeds ship shields, ie the "unused" portion of the damage.
+//	Note: This system does not use the mesh shield.  It applies damage to the overall ship shield.
+float apply_damage_to_ship(object *objp, float damage)
+{
+	float	_ss;
+
+	add_shield_strength(objp, -damage);
+
+	// check if shields are below 0%, if so take leftover damage and apply to ship integrity
+	if ((_ss = get_shield_strength(objp)) < 0.0f ) {
+		damage = -_ss;
+		set_shield_strength(objp, 0.0f);
+	} else
+		damage = 0.0f;
+
+	return damage;
+}
+*/
 
 //	Do music processing for a ship hit.
 void ship_hit_music(object *ship_obj, object *other_obj)
@@ -2129,7 +2107,6 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	ship *sp;
 	char *killer_ship_name;
 	int killer_damage_percent = 0;
-	int killer_index = -1;
 	object *killer_objp = NULL;
 
 	sp = &Ships[ship_obj->instance];
@@ -2150,18 +2127,18 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 
 	// single player and multiplayer masters evaluate the scoring and kill stuff
 	if ( !MULTIPLAYER_CLIENT && !(Game_mode & GM_DEMO_PLAYBACK)) {
-		killer_index = scoring_eval_kill( ship_obj );
+		scoring_eval_kill( ship_obj );
 
 		// ship is destroyed -- send this event to the mission log stuff to record this event.  Try to find who
 		// killed this ship.  scoring_eval_kill above should leave the obj signature of the ship who killed
 		// this guy (or a -1 if no one got the kill).
 		killer_ship_name = NULL;
 		killer_damage_percent = -1;
-		if ( killer_index >= 0 ) {
+		if ( sp->damage_ship_id[0] != -1 ) {
 			object *objp;
 			int sig;
 
-			sig = sp->damage_ship_id[killer_index];
+			sig = sp->damage_ship_id[0];
 			for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 				if ( objp->signature == sig ){
 					break;
@@ -2181,7 +2158,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 					killer_ship_name = Ships_exited[ei].ship_name;
 				}
 			}
-			killer_damage_percent = (int)(sp->damage_ship[killer_index] * 100.0f);
+			killer_damage_percent = (int)(sp->damage_ship[0] * 100.0f);
 		}		
 
 		if(!self_destruct){
@@ -2225,7 +2202,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 		}
 
 		// maybe praise the player for this kill
-		if ( (killer_damage_percent > 10) && (other_obj != NULL) && (other_obj->parent_sig == Player_obj->signature) ) {
+ 		if ( (killer_damage_percent > 10) && (other_obj != NULL) && (other_obj->parent_sig == Player_obj->signature) ) {
 			ship_maybe_praise_player(sp);
 		}
 	}
@@ -2237,7 +2214,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	if ( MULTIPLAYER_MASTER ) {
 		// check to see if this ship needs to be respawned
 		multi_respawn_check(ship_obj);		
-				
+			
 		// send the kill packet to all players
 		// maybe send vaporize packet to all players
 		send_ship_kill_packet( ship_obj, other_obj, percent_killed, self_destruct );
@@ -2252,7 +2229,7 @@ void ship_hit_kill(object *ship_obj, object *other_obj, float percent_killed, in
 	if ( (ship_obj == Player_obj) ) {
 		ship_maybe_lament();
 	}
-	
+
 	Script_system.RunCondition(CHA_DEATH, 0, NULL, ship_obj);
 	Script_system.RemHookVars(2, "Self", "Killer");
 }
@@ -2455,19 +2432,6 @@ int maybe_shockwave_damage_adjust(object *ship_obj, object *other_obj, float *da
 
 	return 1;
 }
-//	Display a diagnostic message if Verbose is set.
-//	(Verbose is set if -v command line switch is present.)
-void diag_printf2(char *format, ...)
-{
-	char	buffer[8192];
-	va_list args;
-
-	va_start(args, format);
-	vsprintf(buffer, format, args);
-	va_end(args);
-
-	nprintf(("Parse", "%s", buffer));
-}
 
 // ------------------------------------------------------------------------
 // ship_do_damage()
@@ -2514,7 +2478,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 	if (other_obj)
 	{
 		other_obj_is_weapon = ((other_obj->type == OBJ_WEAPON) && (other_obj->instance >= 0) && (other_obj->instance < MAX_WEAPONS));
-		other_obj_is_beam = ((other_obj->type == OBJ_WEAPON) && (other_obj->instance >= 0) && (other_obj->instance < MAX_BEAMS));
+		other_obj_is_beam = ((other_obj->type == OBJ_BEAM) && (other_obj->instance >= 0) && (other_obj->instance < MAX_BEAMS));
 		other_obj_is_shockwave = ((other_obj->type == OBJ_SHOCKWAVE) && (other_obj->instance >= 0) && (other_obj->instance < MAX_SHOCKWAVES));
 		other_obj_is_asteroid = ((other_obj->type == OBJ_ASTEROID) && (other_obj->instance >= 0) && (other_obj->instance < MAX_ASTEROIDS));
 		other_obj_is_debris = ((other_obj->type == OBJ_DEBRIS) && (other_obj->instance >= 0) && (other_obj->instance < MAX_DEBRIS_PIECES));
@@ -2622,7 +2586,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 		if ( damage > 0 ) {
 			float pre_shield = damage;
 
-			damage = shield_apply_damage(ship_obj, quadrant, damage);
+			damage = apply_damage_to_shield(ship_obj, quadrant, damage);
 
 			if(damage > 0.0f){
 				subsystem_damage *= (damage / pre_shield);
@@ -2699,7 +2663,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 					damage = MAX(0, damage);
 				}
 			}
-						
+
 			// multiplayer clients don't do damage
 			if(((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT) || (Game_mode & GM_DEMO_PLAYBACK)){
 			} else {
@@ -2707,7 +2671,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 				weapon_info_index = shiphit_get_damage_weapon(other_obj);
 				if ( weapon_info_index >= 0 ) {
 					if (Weapon_info[weapon_info_index].wi_flags2 & WIF2_TRAINING) {
-						diag_printf2("Simulated Hull for Ship %s hit, dropping from %.32f to %d.\n", shipp->ship_name, (int) ( ship_obj->sim_hull_strength * 100 ), (int) ( ( ship_obj->sim_hull_strength - damage ) * 100 ) );
+//						diag_printf2("Simulated Hull for Ship %s hit, dropping from %.32f to %d.\n", shipp->ship_name, (int) ( ship_obj->sim_hull_strength * 100 ), (int) ( ( ship_obj->sim_hull_strength - damage ) * 100 ) );
 						ship_obj->sim_hull_strength -= damage;
 						ship_obj->sim_hull_strength = MAX( 0, ship_obj->sim_hull_strength );
 						return;
@@ -3010,7 +2974,7 @@ void ship_apply_global_damage(object *ship_obj, object *other_obj, vec3d *force_
 		vm_vec_rotate( &local_hitpos, &tmp, &ship_obj->orient );
 
 		// shield_quad = quadrant facing the force_center
-		shield_quad = shield_get_quadrant(&local_hitpos);
+		shield_quad = get_quadrant(&local_hitpos);
 
 		// world_hitpos use force_center for shockwave
 		// Goober5000 check for NULL

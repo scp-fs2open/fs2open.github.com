@@ -82,7 +82,7 @@ void shield_add_strength(object *objp, float delta)
 		while (delta > 0.0f)
 		{
 			//WMC - Set to INT_MAX so that this is set to something
-			float weakest = INT_MAX;
+			float weakest = i2fl(INT_MAX);
 			int weakest_idx = -1;
 
 			// find weakest shield quadrant
@@ -114,7 +114,7 @@ void shield_add_strength(object *objp, float delta)
 	}
 }
 
-static double factor = 100.0 / (log(50.0) - log(1.0));
+static double factor = 1.0 / (log(50.0) - log(1.0));
 
 // Goober5000
 float scale_quad(float generator_fraction, float quad_strength)
@@ -151,6 +151,9 @@ float shield_get_quad(object *objp, int quadrant_num)
 	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
 		return 0.0f;
 
+	//WMC -	I removed SUBSYSTEM_SHIELD_GENERATOR to prevent pilot file
+	//		corruption, so comment all this out...
+	/*
 	// yarr!
 	ship_subsys_info *ssip = &Ships[objp->instance].subsys_info[SUBSYSTEM_SHIELD_GENERATOR];
 
@@ -187,6 +190,7 @@ float shield_get_quad(object *objp, int quadrant_num)
 	}
 	// no shield generator, so behave as normal
 	else
+	*/
 		return objp->shield_quadrant[quadrant_num];
 }
 

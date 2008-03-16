@@ -9,32 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OutWnd.cpp $
- * $Revision: 2.23 $
- * $Date: 2007-06-24 21:45:56 $
- * $Author: turey $
+ * $Revision: 2.16.2.5 $
+ * $Date: 2007-11-24 04:33:50 $
+ * $Author: wmcoolmon $
  *
  * Routines for debugging output
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.22  2007/05/11 03:15:47  taylor
+ * Revision 2.16.2.4  2007/07/23 16:08:29  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
+ * Revision 2.16.2.3  2007/05/11 03:16:01  taylor
  * add session open/close times to debug log
  *
- * Revision 2.21  2007/02/18 06:17:10  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.20  2007/02/11 09:47:35  taylor
+ * Revision 2.16.2.2  2007/02/11 09:39:09  taylor
  * some minor performance improvements
  * remove NO_SOUND
  *
- * Revision 2.19  2007/01/14 14:03:36  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.18  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.17  2006/11/16 00:56:16  taylor
+ * Revision 2.16.2.1  2006/11/15 00:54:33  taylor
  * updated outwnd code for both Windows and non-Windows:
  *  - make print filters dynamic
  *  - fix various little bugs and issues

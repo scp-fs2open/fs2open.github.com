@@ -9,29 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AWACS.cpp $
- * $Revision: 2.33 $
- * $Date: 2008-01-19 01:23:41 $
+ * $Revision: 2.23.2.6 $
+ * $Date: 2008-01-19 01:23:19 $
  * $Author: Goober5000 $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.32  2007/01/14 10:26:39  wmcoolmon
- * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
- *
- * Revision 2.31  2007/01/08 00:50:59  Goober5000
- * remove WMC's limbo code, per our discussion a few months ago
- * this will later be handled by copying ship stats using sexps or scripts
- *
- * Revision 2.30  2006/09/11 06:47:59  taylor
+ * Revision 2.23.2.5  2006/09/11 01:10:00  taylor
  * compiler warning fixes
  *
- * Revision 2.29  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
- * Revision 2.28  2006/07/06 22:00:39  taylor
+ * Revision 2.23.2.4  2006/07/06 21:53:59  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
  *  - same for glowpoints, back on a per-ship basis
@@ -40,18 +28,15 @@
  *  - add support for animated specmaps (mainly for TBP and Starfox mods)
  * some minor code cleanup and compiler warning fixes
  *
- * Revision 2.27  2006/06/27 05:05:18  taylor
- * make sure we only do ship related setup on actual ships
- *
- * Revision 2.26  2006/06/27 02:52:36  Goober5000
+ * Revision 2.23.2.3  2006/06/26 17:31:49  Goober5000
  * change back to ubyte
  * --Goober5000
  *
- * Revision 2.25  2006/06/24 04:48:02  Goober5000
+ * Revision 2.23.2.2  2006/06/24 04:48:08  Goober5000
  * cosmetics, plus revert an unnecessary if
  *
- * Revision 2.24  2006/06/07 04:47:43  wmcoolmon
- * Limbo flag support; removed unneeded muzzle flash flag
+ * Revision 2.23.2.1  2006/06/20 20:04:42  taylor
+ * make sure we only do ship related setup on actual ships
  *
  * Revision 2.23  2006/03/18 10:28:25  taylor
  * fix out-of-bounds problem in awacs checking (full neb missions may have been a bit freaky from this)
@@ -501,49 +486,51 @@ float awacs_get_level(object *target, ship *viewer, int use_awacs)
 		}
 	}
 	// all other ships
-	// if this is not a nebula mission, its always targetable
-	if (!nebula_enabled)
-		return FULLY_TARGETABLE;
-
-	// if the ship is within range of an awacs, its fully targetable
-	if (closest_index >= 0)
-		return FULLY_TARGETABLE;
-
-
-	// fully targetable at half the nebula value
-
-	// modify distance by species
-	float scan_nebula_range = Neb2_awacs * Species_info[Ship_info[viewer->ship_info_index].species].awacs_multiplier;
-
-	// special case for huge ship - check inside expanded bounding boxes
-	if (check_huge_ship)
-	{
-		if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, scan_nebula_range))
-		{
-			if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, MARGINALLY_TARGETABLE * scan_nebula_range))
-				return FULLY_TARGETABLE;
-
-			return MARGINALLY_TARGETABLE;
-		}
-	} 
-	// otherwise check straight up nebula numbers
 	else
 	{
-		vm_vec_sub(&dist_vec, &target->pos, &Objects[viewer->objnum].pos);
-		test = vm_vec_mag_quick(&dist_vec);
-
-		if (test < (MARGINALLY_TARGETABLE * scan_nebula_range))
+		// if this is not a nebula mission, its always targetable
+		if (!nebula_enabled)
 			return FULLY_TARGETABLE;
-		else if (test < scan_nebula_range)
-			return MARGINALLY_TARGETABLE;
-	}
 
-	// untargetable at longer range
-	return UNTARGETABLE;	
+		// if the ship is within range of an awacs, its fully targetable
+		if (closest_index >= 0)
+			return FULLY_TARGETABLE;
 
-	//WMC - wasn't ever possible to get to anyway
-	//Int3();
-	//return FULLY_TARGETABLE;
+
+		// fully targetable at half the nebula value
+
+		// modify distance by species
+		float scan_nebula_range = Neb2_awacs * Species_info[Ship_info[viewer->ship_info_index].species].awacs_multiplier;
+
+		// special case for huge ship - check inside expanded bounding boxes
+		if (check_huge_ship)
+		{
+			if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, scan_nebula_range))
+			{
+				if (check_world_pt_in_expanded_ship_bbox(&Objects[viewer->objnum].pos, target, MARGINALLY_TARGETABLE * scan_nebula_range))
+					return FULLY_TARGETABLE;
+
+				return MARGINALLY_TARGETABLE;
+			}
+		} 
+		// otherwise check straight up nebula numbers
+		else
+		{
+			vm_vec_sub(&dist_vec, &target->pos, &Objects[viewer->objnum].pos);
+			test = vm_vec_mag_quick(&dist_vec);
+
+			if (test < (MARGINALLY_TARGETABLE * scan_nebula_range))
+				return FULLY_TARGETABLE;
+			else if (test < scan_nebula_range)
+				return MARGINALLY_TARGETABLE;
+		}
+
+		// untargetable at longer range
+		return UNTARGETABLE;	
+	}		
+
+	Int3();
+	return FULLY_TARGETABLE;
 }
 
 

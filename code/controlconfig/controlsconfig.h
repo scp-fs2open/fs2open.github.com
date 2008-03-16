@@ -9,25 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfig.h $
- * $Revision: 2.19 $
- * $Date: 2007-12-22 09:36:17 $
+ * $Revision: 2.15.2.1 $
+ * $Date: 2007-12-28 02:10:34 $
  * $Author: Backslash $
  *
  * Header file for keyboard, joystick and mouse configuration
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.18  2007/06/04 00:04:21  Backslash
- * Backslash's HEAD-only controls commit:
- * -Lateral thruster axes
- * -Slide_when_pressed
- * -Placeholders for glide_when_pressed and more controls, to give us a little breathing room while we wait for the real pilot file code
- *
- * Revision 2.17  2006/08/01 04:26:02  Kazan
- * commented out glide_while_pressed changes until taylor deems them safe
- *
- * Revision 2.16  2006/07/31 23:57:48  Kazan
- * glide while pressed
- *
  * Revision 2.15  2006/02/25 21:46:59  Goober5000
  * spelling
  *
@@ -341,15 +329,13 @@
 #define JOY_RY_AXIS	4
 #define JOY_RZ_AXIS	5
 
-#define NUM_JOY_AXIS_ACTIONS	12	//5
+#define NUM_JOY_AXIS_ACTIONS	5
 
 #define JOY_HEADING_AXIS		0
 #define JOY_PITCH_AXIS			1
 #define JOY_BANK_AXIS			2
 #define JOY_ABS_THROTTLE_AXIS	3
 #define JOY_REL_THROTTLE_AXIS	4
-#define JOY_SIDEWAYS_AXIS       5
-#define JOY_VERTICAL_AXIS       6
 
 // --------------------------------------------------
 // different types of controls that can be assigned 
@@ -481,8 +467,8 @@ typedef struct config_item {
 #define XFER_LASER										82
 //#define SHOW_DAMAGE_POPUP								83 // AL: this binding should be removing next time the controls are reorganized
 
-#define SLIDE_WHEN_PRESSED								83
-//Backslash -- this was a convenient place for Slide When Pressed, since Show Damage Popup isn't used
+#define GLIDE_WHEN_PRESSED								83
+//Backslash -- this was a convenient place for Glide When Pressed, since Show Damage Popup isn't used
 #define BANK_WHEN_PRESSED								84
 #define SHOW_NAVMAP										85
 #define ADD_REMOVE_ESCORT								86
@@ -532,14 +518,9 @@ typedef struct config_item {
 
 //Gliding
 #define TOGGLE_GLIDING									117
-#define GLIDE_WHEN_PRESSED								118
-#define VIEW_UP											119
-#define VIEW_DOWN										120
-#define VIEW_LEFT										121
-#define VIEW_RIGHT										122
 
 // this should be the total number of control action defines above (or last define + 1)
-#define CCFG_MAX 128	//118
+#define CCFG_MAX 118
 
 extern int Failed_key_index;
 extern int Invert_heading;
@@ -572,7 +553,7 @@ char *translate_key(char *key);
 char *textify_scancode(int code);
 float check_control_timef(int id);
 int check_control(int id, int key = -1);
-void control_get_axes_readings(int *axis);
+void control_get_axes_readings(int *h, int *p, int *b, int *ta, int *tr);
 void control_used(int id);
 void control_config_clear();
 void clear_key_binding(short key);

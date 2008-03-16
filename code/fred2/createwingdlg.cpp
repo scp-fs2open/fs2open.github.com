@@ -14,9 +14,9 @@
 #include "FRED.h"
 #include "CreateWingDlg.h"
 #include "object/object.h"
+#include "object/waypoint.h"
 #include "globalincs/linklist.h"
 #include "parse/parselo.h"
-#include "object/waypoint/waypoint.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

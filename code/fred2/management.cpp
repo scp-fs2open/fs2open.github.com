@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.cpp $
- * $Revision: 1.44 $
- * $Date: 2007-12-19 10:54:26 $
- * $Author: karajorma $
+ * $Revision: 1.12.2.23 $
+ * $Date: 2007-11-22 04:31:12 $
+ * $Author: taylor $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,110 +19,81 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.43  2007/12/15 09:41:43  wmcoolmon
- * Maybe-catch an interesting crash upon attempting to revert a mission with no cargo.
- *
- * Revision 1.42  2007/12/15 09:12:56  wmcoolmon
- * Handle missing ship model files more gracefully
- *
- * Revision 1.41  2007/11/22 04:30:55  taylor
- * be sure that we hide the game's mouse cursor (Mantis #1401)
- *
- * Revision 1.40  2007/11/21 07:28:37  Goober5000
+ * Revision 1.12.2.22  2007/11/21 07:27:45  Goober5000
  * add Wing Commander Saga's fiction viewer
  *
- * Revision 1.39  2007/09/03 01:02:49  Goober5000
- * fix for 1376
+ * Revision 1.12.2.21  2007/10/12 18:57:16  karajorma
+ * I meant to remove this ages ago!
  *
- * Revision 1.38  2007/09/02 02:10:25  Goober5000
+ * Revision 1.12.2.20  2007/09/02 02:07:40  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 1.37  2007/07/28 21:31:11  Goober5000
+ * Revision 1.12.2.19  2007/07/28 21:31:05  Goober5000
  * this should really be capitalized
  *
- * Revision 1.36  2007/07/28 04:43:40  Goober5000
+ * Revision 1.12.2.18  2007/07/28 04:43:43  Goober5000
  * a couple of tweaks
  *
- * Revision 1.35  2007/04/17 17:26:35  karajorma
+ * Revision 1.12.2.17  2007/05/28 18:27:33  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
+ *
+ * Revision 1.12.2.16  2007/04/17 17:15:31  karajorma
  * Remove the -fredhtl command line.
  *
- * Revision 1.34  2007/03/22 22:19:30  taylor
- * add back special "var" setting for flag_def_list and convert some of the lists to use it (more on the way)
- *
- * Revision 1.33  2007/02/20 04:20:10  Goober5000
+ * Revision 1.12.2.15  2007/02/20 04:19:09  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 1.32  2007/02/18 06:16:46  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ * Revision 1.12.2.14  2007/02/12 00:24:33  taylor
+ * add back special "var" setting for flag_def_list and convert some of the lists to use it (more on the way)
  *
- * Revision 1.31  2007/02/11 21:26:34  Goober5000
- * massive shield infrastructure commit
+ * Revision 1.12.2.13  2007/02/11 09:24:08  taylor
+ * remove -pcx32 and -jpgtga
  *
- * Revision 1.30  2007/02/08 07:39:32  Goober5000
+ * Revision 1.12.2.12  2007/02/09 05:40:40  Goober5000
+ * merge the voice acting manager into the 3.6.9 (3.6.10?) branch
+ *
+ * Revision 1.12.2.11  2007/02/08 07:39:34  Goober5000
  * fix two bugs:
  * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
  * --ships were created with default allowed comm orders regardless of which team they were on
  *
- * Revision 1.29  2007/01/14 14:03:32  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 1.28  2007/01/10 01:41:27  taylor
- * remove -jpgtga, set 32-bit mode as default (the OGL code will automatically fallback to 16-bit is needed)
- *
- * Revision 1.27  2007/01/07 00:01:28  Goober5000
- * add a feature for specifying the source of Command messages
- *
- * Revision 1.26  2006/12/28 00:59:20  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.25  2006/12/08 19:18:52  Goober5000
+ * Revision 1.12.2.10  2006/12/08 19:18:54  Goober5000
  * fix Mantis #1163
  *
- * Revision 1.24  2006/11/16 00:53:31  taylor
+ * Revision 1.12.2.9  2006/11/15 00:38:02  taylor
  * various bits of little cleanup
  * add the debug cmdline printer to FRED, so that we can make use of that info in the FRED-debug case too
  *
- * Revision 1.23  2006/11/06 05:58:57  taylor
+ * Revision 1.12.2.8  2006/10/27 06:34:40  taylor
  * fix compiler problem due to change in parse_init() function
  * fix dos EOL chars
  *
- * Revision 1.22  2006/11/06 05:54:13  taylor
+ * Revision 1.12.2.7  2006/10/24 13:44:54  taylor
  * add envmap selection to background editor
  * change skybox selection to be a text entry or browse instead of only text entry
  * allow envmap selected in background editor to be used by FRED
  * make texture replacement work in FRED for ships (Mantis bug #1068)
  *
- * Revision 1.21  2006/10/06 13:41:35  Goober5000
+ * Revision 1.12.2.6  2006/10/06 13:41:41  Goober5000
  * <nelson> Ha, ha! </nelson>
  *
- * Revision 1.20  2006/10/06 09:54:57  taylor
+ * Revision 1.12.2.5  2006/10/06 09:44:32  taylor
  * make sure that the armor stuff gets initted (should fix Mantis bug #1080)
  *
- * Revision 1.19  2006/10/01 03:22:58  Goober5000
- * find message sender too
- *
- * Revision 1.18  2006/10/01 01:12:32  Goober5000
- * enhanced voice acting manager, now with script generator :)
- *
- * Revision 1.17  2006/09/11 06:08:08  taylor
+ * Revision 1.12.2.4  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
- * Revision 1.16  2006/08/06 18:47:29  Goober5000
+ * Revision 1.12.2.3  2006/08/06 18:47:12  Goober5000
  * add the multiple background feature
  * --Goober5000
  *
- * Revision 1.15  2006/07/10 21:48:33  taylor
+ * Revision 1.12.2.2  2006/07/10 21:47:17  taylor
  * fix undo system
  * restore the two autosave points that got removed for some reason (yes, these are needed for things to work properly)
  *
- * Revision 1.14  2006/07/08 19:35:52  Goober5000
+ * Revision 1.12.2.1  2006/07/08 19:36:03  Goober5000
  * iff defs should allow specification of both flag fields
  * --Goober5000
- *
- * Revision 1.13  2006/06/02 09:39:11  karajorma
- * Added Team Loadout from variables and alt ship classes changes
  *
  * Revision 1.12  2006/05/30 02:13:22  Goober5000
  * add substitute music boxes to FRED, and reset music properly when mission is cleared
@@ -608,11 +579,8 @@
 #include "graphics/font.h"
 #include "debugconsole/dbugfile.h"
 #include "object/objectdock.h"
-#include "object/objectshield.h"
 #include "gamesnd/gamesnd.h"
 #include "iff_defs/iff_defs.h"
-#include "parse/scripting.h"
-#include "object/waypoint/waypoint.h"
 #include "menuui/techmenu.h"
 #include "missionui/fictionviewer.h"
 
@@ -678,6 +646,7 @@ int Ai_goal_list_size = sizeof(Ai_goal_list) / sizeof(ai_goal_list);
 // internal function prototypes
 void set_cur_indices(int obj);
 int common_object_delete(int obj);
+int create_waypoint(vec3d *pos, int list);
 int create_ship(matrix *orient, vec3d *pos, int ship_type);
 int query_ship_name_duplicate(int ship);
 char *reg_read_string( char *section, char *name, char *default_value );
@@ -836,20 +805,14 @@ void brief_init_colors();
 
 void fred_preload_all_briefing_icons()
 {
-	uint i;
-	int j;
+	uint i,j;
 	for (i = 0; i < Species_info.size(); i++)
 	{
 		for (j = 0; j < MAX_BRIEF_ICONS; j++)
 		{
-			if(strlen(Species_info[i].icon_bitmaps[j].filename))
-				generic_anim_load(&Species_info[i].icon_bitmaps[j]);
-
-			if(strlen(Species_info[i].icon_fade_anims[j].filename))
-				hud_anim_load(&Species_info[i].icon_fade_anims[j]);
-
-			if(strlen(Species_info[i].icon_highlight_anims[j].filename))
-				hud_anim_load(&Species_info[i].icon_highlight_anims[j]);
+			generic_anim_load(&Species_info[i].icon_bitmaps[j]);
+			hud_anim_load(&Species_info[i].icon_fade_anims[j]);
+			hud_anim_load(&Species_info[i].icon_highlight_anims[j]);
 		}
 	}
 }
@@ -939,16 +902,13 @@ bool fred_init()
 	Mouse_hidden = 1;
 
 	DBUGFILE_OUTPUT_0("About to init everything");
-	//WMC - init scripting
-	script_init();
 	gr_font_init();					// loads up all fonts  
 //	Fred_font = gr_init_font("font01.vf");
 	gr_set_gamma(3.0f);
 
 	sprintf(palette_filename, "gamepalette%d-%02d", 1, 1);
 	mprintf(("Loading palette %s\n", palette_filename));
-	//WMC - I dunnit. It doesn't look like this was even used.
-	//palette_load_table(palette_filename);
+	palette_load_table(palette_filename);
 
 	key_init();
 	mouse_init();
@@ -1057,7 +1017,7 @@ int create_object_on_grid(int list)
 			mark_object(obj);
 			FREDDoc_ptr->autosave("object create");
 
-		} else if (obj == -1 && ship_get_num_ships() >= MAX_SHIPS)
+		} else if (obj == -1)
 			Fred_main_wnd->MessageBox("Maximum ship limit reached.  Can't add any more ships.");
 	}
 
@@ -1228,7 +1188,7 @@ int dup_object(object *objp)
 		objp1->phys_info.speed = objp2->phys_info.speed;
 		objp1->phys_info.fspeed = objp2->phys_info.fspeed;
 		objp1->hull_strength = objp2->hull_strength;
-		shield_set_strength(objp1, shield_get_strength(objp2));
+		objp1->shield_quadrant[0] = objp2->shield_quadrant[0];
 
 		subp1 = GET_FIRST(&Ships[n].subsys_list);
 		subp2 = GET_FIRST(&Ships[inst].subsys_list);
@@ -1252,12 +1212,8 @@ int dup_object(object *objp)
 			}
 
 	} else if (objp->type == OBJ_WAYPOINT) {
-		obj = waypoint_create(&objp->pos, list);
-		if(obj > -1)
-		{
-			list = Objects[obj].instance;
-			set_modified();
-		}
+		obj = create_waypoint(&objp->pos, list);
+		list = Objects[obj].instance;
 	}
 
 	if (obj == -1)
@@ -1274,7 +1230,8 @@ int create_object(vec3d *pos, int list)
 	int obj, n;
 
 	if (cur_model_index == Id_select_type_waypoint)
-		obj = waypoint_create(pos, list);
+		obj = create_waypoint(pos, list);
+
 	else if (cur_model_index == Id_select_type_start) {
 		if (Player_starts >= MAX_PLAYERS) {
 			Fred_main_wnd->MessageBox("Unable to create new player start point.\n"
@@ -1336,6 +1293,92 @@ int create_player(int num, vec3d *pos, matrix *orient, int type, int init)
 	Ships[Objects[obj].instance].arrival_cue = Locked_sexp_true;
 	Ships[Objects[obj].instance].departure_cue = Locked_sexp_false;
 	obj_merge_created_list();
+	set_modified();
+	return obj;
+}
+
+int query_waypoint_path_name_duplicate(int list)
+{
+	int i;
+
+	for (i=0; i<Num_waypoint_lists; i++)
+		if (i != list)
+			if (!stricmp(Waypoint_lists[i].name, Waypoint_lists[list].name))
+				return 1;
+
+	return 0;
+}
+
+void get_unique_waypoint_path_name(int list)
+{
+	int i = 1;
+
+	sprintf(Waypoint_lists[list].name, "Waypoint path %d", list + 1);
+	while (query_waypoint_path_name_duplicate(list)) {
+		sprintf(Waypoint_lists[list].name, "Waypoint path U%d", i++);
+	}
+}
+
+int create_waypoint(vec3d *pos, int list)
+{
+	int i, obj, index = 0;
+	object *ptr;
+
+	if (list == -1) {  // find a new list to start.
+		for (list=0; list<MAX_WAYPOINT_LISTS; list++){
+			if (!Waypoint_lists[list].count) {
+				get_unique_waypoint_path_name(list);
+				break;
+			}
+		}
+	} else {
+		index = (list & 0xffff) + 1;
+		list /= 65536;
+	}
+
+	if (list == MAX_WAYPOINT_LISTS) {
+		Fred_main_wnd->MessageBox("Unable to create new waypoint path.  You\n"
+			"have reached the maximum limit.", NULL, MB_OK | MB_ICONEXCLAMATION);
+		return -1;
+	}
+
+	Assert((list >= 0) && (list < MAX_WAYPOINT_LISTS));  // illegal index or out of lists.
+	if (Waypoint_lists[list].count >= MAX_WAYPOINTS_PER_LIST) {
+		Fred_main_wnd->MessageBox("Unable to create new waypoint.  You have\n"
+			"reached the maximum limit on waypoints per list.", NULL, MB_OK | MB_ICONEXCLAMATION);
+		return -1;
+	}
+
+	if (Waypoint_lists[list].count > index) {
+		i = Waypoint_lists[list].count;
+		while (i > index) {
+			Waypoint_lists[list].waypoints[i] = Waypoint_lists[list].waypoints[i - 1];
+			Waypoint_lists[list].flags[i] = Waypoint_lists[list].flags[i - 1];
+			i--;
+		}
+	}
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		Assert(ptr->type != OBJ_NONE);
+		if (ptr->type == OBJ_WAYPOINT) {
+			i = ptr->instance;
+			if ((i / 65536 == list) && ((i & 0xffff) >= index)){
+				ptr->instance++;
+			}
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	Waypoint_lists[list].count++;
+	Waypoint_lists[list].flags[index] = 0;
+	Waypoint_lists[list].waypoints[index] = *pos;
+	if (list >= Num_waypoint_lists){
+		Num_waypoint_lists = list + 1;
+	}
+
+	obj = obj_create(OBJ_WAYPOINT, -1, list * 65536 + index, NULL, pos, 0.0f, OF_RENDERS);
 	set_modified();
 	return obj;
 }
@@ -1452,13 +1495,10 @@ void clear_mission()
 	// of ships for all teams
 	for (i=0; i<MAX_TVT_TEAMS; i++) {
 		count = 0;
-		char empty[TOKEN_LENGTH] = ""; 
 		for ( j = 0; j < MAX_SHIP_CLASSES; j++ ) {
 			if (Ship_info[j].flags & SIF_DEFAULT_PLAYER_SHIP) {
 				Team_data[i].ship_list[count] = j;
-				strcpy(Team_data[i].ship_list_variables[count], empty);
-				Team_data[i].ship_count[count] = 5;
-				strcpy(Team_data[i].ship_count_variables[count++], empty);
+				Team_data[i].ship_count[count++] = 5;
 			}
 		}
 		Team_data[i].number_choices = count;
@@ -1496,11 +1536,7 @@ void clear_mission()
 	// alternate ship type names
 	mission_parse_reset_alt();
 
-	if(Cargo_names[0] != NULL)
-	{
-		//WMC - Is this really needed?
-		strcpy(Cargo_names[0], "Nothing");
-	}
+	strcpy(Cargo_names[0], "Nothing");
 	Num_cargo = 1;
 	set_physics_controls();
 
@@ -1522,10 +1558,6 @@ void clear_mission()
 
 	The_mission.contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
 
-	// Goober5000
-	The_mission.command_persona = Default_command_persona;
-	strcpy(The_mission.command_sender, DEFAULT_COMMAND); 
-
 	// Goober5000: reset ALL mission flags, not just nebula!
 	The_mission.flags = 0;
 	The_mission.support_ships.max_support_ships = -1;	// negative means infinite
@@ -1539,8 +1571,7 @@ void clear_mission()
 	strcpy(palette_filename, "gamepalette1-01");
 //	sprintf( palette_filename, "gamepalette%d-%02d", 1, Mission_palette+1 );
 	mprintf(( "Loading palette %s\n", palette_filename ));
-	//WMC - I dunnit. It doesn't look like this is really used?
-	//palette_load_table(palette_filename);
+	palette_load_table(palette_filename);
 
 	strcpy(The_mission.loading_screen[GR_640],"");
 	strcpy(The_mission.loading_screen[GR_1024],"");
@@ -2939,20 +2970,6 @@ int query_whole_wing_marked(int wing)
 	return 0;
 }
 
-void generate_ship_usage_list(int *arr, int wing) 
-{
-	int i; 
-
-	if (wing < 0) {
-		return;
-	}
-	
-	i = Wings[wing].wave_count;
-	while (i--) {
-		arr[Ships[Wings[wing].ship_index[i]].ship_info_index]++; 
-	}
-}
-
 void generate_weaponry_usage_list(int *arr, int wing)
 {
 	int i, j;
@@ -2980,18 +2997,11 @@ void generate_weaponry_usage_list(int *arr)
 
 	for (i=0; i<MAX_WEAPON_TYPES; i++)
 		arr[i] = 0;
-	 
-    if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-		for (i=0; i<MAX_TVT_WINGS; i++) {
-			generate_weaponry_usage_list(arr, TVT_wings[i]);
-		}
-	}
 
-	else {
-		for (i=0; i<MAX_STARTING_WINGS; i++) {
-			generate_weaponry_usage_list(arr, Starting_wings[i]);
-		}
-	}
+	// Goober5000 - I have no idea why :V: did things this way (or even what exactly they're doing);
+	// I'm guessing Zeta needs to be accounted for somewhere but I'm not sure how to do that
+	for (i=0; i<MAX_STARTING_WINGS; i++)
+		generate_weaponry_usage_list(arr, Starting_wings[i]);
 }
 
 jump_node *jumpnode_get_by_name(CString& name)

@@ -9,29 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDescort.cpp $
- * $Revision: 2.32 $
- * $Date: 2007-01-08 00:50:58 $
- * $Author: Goober5000 $
+ * $Revision: 2.29 $
+ * $Date: 2006-02-16 05:00:01 $
+ * $Author: taylor $
  *
  * C module for managing and displaying ships that are in an escort
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.31  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
- * Revision 2.30  2006/06/07 04:39:30  wmcoolmon
- * Limbo flag support
- *
- * Revision 2.29  2006/02/16 05:00:01  taylor
- * various bmpman related fixes
- *  - some new error checking (and fixes related to that) and cleanup
- *  - fix EFFs not getting released/unloaded properly (was in a local tree but apparently missed CVS)
- *  - minor fixes for bm_release() to produce a more properly cleaned slot
- *  - use fast unloading for page_in stuff since we don't actually want really want the load count changing for texture maps
- *    and to make sure that we free the memory usage regardless of load count
- *
  * Revision 2.28  2006/01/27 06:21:10  Goober5000
  * replace quick sort with insertion sort in many places
  * --Goober5000
@@ -696,9 +680,7 @@ void hud_escort_cull_list()
 		for ( i = 0; i < Num_escort_ships; i++ ) {
 			objnum = Escort_ships[i].objnum;
 			Assert( objnum >=0 && objnum < MAX_OBJECTS );
-			object *objp = &Objects[objnum];
-
-			if ((objp->flags & OF_SHOULD_BE_DEAD) || (Ships[objp->instance].flags & SF_HIDDEN_FROM_SENSORS)) {
+			if ( Objects[objnum].flags & OF_SHOULD_BE_DEAD || Ships[Objects[objnum].instance].flags & SF_HIDDEN_FROM_SENSORS ) {
 				hud_remove_ship_from_escort_index(i, objnum);
 				i--;
 			}

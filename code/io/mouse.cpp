@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Mouse.cpp $
- * $Revision: 2.16 $
- * $Date: 2007-08-01 12:25:51 $
+ * $Revision: 2.15.2.1 $
+ * $Date: 2007-12-20 01:57:40 $
  * $Author: turey $
  *
  * Routines to read the mouse.

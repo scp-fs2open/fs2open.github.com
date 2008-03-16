@@ -6,14 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/FictionViewer.cpp $
- * $Revision: 1.3 $
- * $Date: 2007-11-22 05:25:10 $
+ * $Revision: 1.1.2.2 $
+ * $Date: 2007-11-22 05:25:22 $
  * $Author: taylor $
  *
  * Fiction Viewer briefing screen
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.2  2007/11/21 07:28:38  Goober5000
+ * Revision 1.1.2.1  2007/11/21 07:27:48  Goober5000
  * add Wing Commander Saga's fiction viewer
  *
  *

@@ -9,50 +9,50 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.cpp $
- * $Revision: 2.47 $
- * $Date: 2007-11-23 23:49:32 $
- * $Author: wmcoolmon $
+ * $Revision: 2.35.2.12 $
+ * $Date: 2007-12-28 02:10:34 $
+ * $Author: Backslash $
  *
  * C module for asteroid code
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.46  2007/09/02 02:10:24  Goober5000
+ * Revision 2.35.2.11  2007/09/02 02:07:38  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 2.45  2007/02/20 04:20:10  Goober5000
+ * Revision 2.35.2.10  2007/05/28 18:27:32  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
+ *
+ * Revision 2.35.2.9  2007/02/20 04:19:09  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.44  2007/02/11 09:37:18  taylor
- * dd VALID_FNAME() macro and put it around a few places (more to come)
+ * Revision 2.35.2.8  2007/02/11 09:35:11  taylor
+ * add VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
  * move CLAMP() macro from opengl header to global header
  * update COUNT_ESTIMATE to match new bmpman changes
  *
- * Revision 2.43  2007/01/15 08:05:47  wmcoolmon
- * Maintain "fileless fs2" capability; change ScriptingVariables library to HookVariables(hv)
+ * Revision 2.35.2.7  2006/12/07 17:53:08  taylor
+ * a little clean up for bits of code that isn't used
  *
- * Revision 2.42  2006/12/28 00:59:19  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.41  2006/11/16 00:53:12  taylor
+ * Revision 2.35.2.6  2006/11/15 00:36:08  taylor
  * various bits of little cleanup
  * get rid of some more compiler warnings
  *
- * Revision 2.40  2006/09/11 06:49:38  taylor
+ * Revision 2.35.2.5  2006/09/11 01:15:03  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.39  2006/09/11 06:08:08  taylor
+ * Revision 2.35.2.4  2006/08/27 18:12:38  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
- * Revision 2.38  2006/08/20 00:51:05  taylor
+ * Revision 2.35.2.3  2006/08/19 04:38:46  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
- * Revision 2.37  2006/07/06 04:06:03  Goober5000
+ * Revision 2.35.2.2  2006/07/06 04:06:00  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
  * --Goober5000
  *
- * Revision 2.36  2006/07/04 07:42:48  Goober5000
+ * Revision 2.35.2.1  2006/07/04 07:42:09  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
  * --Goober5000
@@ -1286,10 +1286,10 @@ void lerp(float *goal, float f1, float f2, float scale)
 void asteroid_process_pre( object *objp, float frame_time)
 {
 	if (Asteroids_enabled) {
-		vec3d	*v, *vv;
+	//	vec3d	*v, *vv;
 
-		v = &objp->phys_info.vel;
-		vv = &objp->phys_info.desired_vel;
+	//	v = &objp->phys_info.vel;
+	//	vv = &objp->phys_info.desired_vel;
 
 		//nprintf(("AI", "Frm %i: Obj #%2i: Hull: %5.1f Vel: %5.1f %5.1f %5.1f Des: %5.1f %5.1f %5.1f\n", Framecount, objp-Objects, objp->hull_strength, v->xyz.x, v->xyz.y, v->xyz.z, vv->xyz.x, vv->xyz.y, vv->xyz.z));
 
@@ -2163,7 +2163,7 @@ void asteroid_parse_tbl()
 		lcl_ext_close();
 		return;
 	}
-	
+
 	read_file_text("asteroid.tbl");
 	reset_parse();
 
@@ -2321,6 +2321,8 @@ void asteroid_init()
 	asteroid_parse_tbl();
 }
 
+extern int Cmdline_targetinfo;
+
 // Draw brackets around on-screen asteroids that are about to collide, otherwise draw an offscreen indicator
 void asteroid_show_brackets()
 {
@@ -2356,6 +2358,9 @@ void asteroid_show_brackets()
 		if (!(asteroid_vertex.flags & PF_OVERFLOW)) {
 			gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
 			hud_show_brackets(asteroid_objp, &asteroid_vertex);
+			if ( Cmdline_targetinfo ) {
+				hud_show_lead_indicator_quick(&asteroid_objp->pos, asteroid_objp);
+			}
 		}
 
 		// if asteroid is not on screen, draw an offscreen indicator

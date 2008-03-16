@@ -9,25 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.cpp $
- * $Revision: 2.39 $
- * $Date: 2007-05-11 03:13:49 $
+ * $Revision: 2.34.2.5 $
+ * $Date: 2007-05-11 03:14:02 $
  * $Author: taylor $
  *
  * Low-level sound code
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.38  2007/02/11 18:20:19  taylor
+ * Revision 2.34.2.4  2007/02/11 09:56:25  taylor
  * support for new finding/loading of sound files
  * add support for automatically figuring out samples-per-measure based on Goober's explanation in the Wiki (not sure if it's actually right though)
  * remove NO_SOUND
  *
- * Revision 2.37  2006/10/06 04:56:05  wmcoolmon
+ * Revision 2.34.2.3  2006/10/06 04:58:25  wmcoolmon
  * Fix OGG bug where sound files were always allocated 16 seconds of wavedata
  *
- * Revision 2.36  2006/09/11 06:45:40  taylor
+ * Revision 2.34.2.2  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
- * Revision 2.35  2006/07/08 18:10:59  taylor
+ * Revision 2.34.2.1  2006/07/08 18:07:32  taylor
  * require OpenAL 1.1 under Windows, I think it's causing problems for us to mix users with 1.0 and builds for 1.1
  *   (having 1.0 is fatal to sound, but the game should still work, a corresponding Launcher change goes with this too)
  * clean up some of the error messages to not say "DirectSound" is doing this or that, just say "Audio" instead
@@ -783,7 +783,7 @@ int snd_load( game_snd *gs, int allow_hardware_load )
 	si->avg_bytes_per_sec	= header->nAvgBytesPerSec;	// 32-bit average bytes per second (nAvgBytesPerSec)
 	si->n_block_align		= header->nBlockAlign;		// 16-bit block alignment (nBlockAlign)
 	si->bits				= header->wBitsPerSample;	// Read 16-bit bits per sample	
-	snd->duration = fl2i(1000.0f * ((si->size / (si->bits/8.0f)) / si->sample_rate / si->n_channels));	
+	snd->duration = fl2i(1000.0f * ((si->size / (si->bits/8.0f)) / si->sample_rate / si->n_channels));
 
 	type = 0;
 

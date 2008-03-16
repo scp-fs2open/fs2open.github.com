@@ -9,26 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.cpp $
- * $Revision: 1.34 $
- * $Date: 2007-04-13 00:33:41 $
+ * $Revision: 1.29.2.6 $
+ * $Date: 2007-04-13 00:33:18 $
  * $Author: taylor $
  *
  * code to implement lighting in HT&L opengl
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.33  2007/03/22 20:49:53  taylor
+ * Revision 1.29.2.5  2007/03/22 20:50:27  taylor
  * some generic code cleanup
  *
- * Revision 1.32  2007/02/10 00:05:48  taylor
+ * Revision 1.29.2.4  2007/02/10 00:05:25  taylor
  * obsolete gluLookAt() in favor of doing it manually, should be slight faster and more precise
  *
- * Revision 1.31  2007/01/07 13:07:22  taylor
- * slight change to emission light settings
- * change default ambient light settings back to proper values
- * add support for lighting falloff with directional lights
- * some minor performance improvements
+ * Revision 1.29.2.3  2006/12/26 05:17:28  taylor
+ * tweak emission light a little bit
+ * various bits of cleanup that I've been meaning to do
  *
- * Revision 1.30  2006/07/24 07:36:49  taylor
+ * Revision 1.29.2.2  2006/12/07 18:10:16  taylor
+ * restore default ambient light values to retail-like settings (I based the previous values on default D3D, which was rather dumb of me)
+ * restore lighting falloff capability from retail and non-HTL modes (only used for asteroids as far as I know)
+ * various cleanups and speedups for dealing with lights
+ *
+ * Revision 1.29.2.1  2006/07/24 07:38:00  taylor
  * minor cleanup/optimization to beam warmup glow rendering function
  * various lighting code cleanups
  *  - try to always make sure beam origin lights occur outside of model

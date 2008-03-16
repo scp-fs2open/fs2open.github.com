@@ -6,15 +6,15 @@
 
 /*
  * $Logfile:  $
- * $Revision: 1.5 $
- * $Date: 2007-05-11 03:10:35 $
+ * $Revision: 1.2.2.3 $
+ * $Date: 2007-05-11 03:10:48 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.4  2007/01/07 12:50:51  taylor
- * taking Bobboau's advice: make sure that anim angles are kept in sane values
+ * Revision 1.2.2.2  2006/12/07 18:19:23  taylor
+ * try and keep angles within PI2 (Bobboau's advice, since he knows more than I do about this stuff :))
  *
- * Revision 1.3  2006/11/06 06:50:59  taylor
+ * Revision 1.2.2.1  2006/10/27 21:41:22  taylor
  * updated/fixed modelanim code
  *
  * Revision 1.2  2006/04/20 06:32:15  Goober5000

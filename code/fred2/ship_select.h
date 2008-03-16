@@ -9,17 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/ship_select.h $
- * $Revision: 1.2 $
- * $Date: 2006-12-28 00:59:20 $
- * $Author: wmcoolmon $
+ * $Revision: 1.1 $
+ * $Date: 2006-01-19 02:27:31 $
+ * $Author: Goober5000 $
  *
  * Object selection (marking) dialog box handling code
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.1  2006/01/19 02:27:31  Goober5000
- * import FRED2 back into fs2_open module
- * --Goober5000
- *
  * Revision 1.5  2006/01/14 23:49:01  Goober5000
  * second pass; all the errors are fixed now; one more thing to take care of
  * --Goober5000
@@ -76,8 +72,8 @@
 
 #include "ShipCheckListBox.h"
 #include "object/object.h"
+#include "object/waypoint.h"
 #include "iff_defs/iff_defs.h"
-#include "object/waypoint/waypoint.h"
 
 class ship_select : public CDialog
 {

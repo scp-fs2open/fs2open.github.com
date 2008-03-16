@@ -9,22 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Multi.h $
- * $Revision: 2.17 $
- * $Date: 2007-01-15 13:40:38 $
- * $Author: karajorma $
+ * $Revision: 2.13.2.6 $
+ * $Date: 2007-10-15 06:43:16 $
+ * $Author: taylor $
  *
  * Header file which contains type definitions for multiplayer, and support for high-level
  * multiplayer functions.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.16  2006/09/08 06:17:32  taylor
+ * Revision 2.13.2.5  2006/11/21 23:06:57  karajorma
+ * Fix ammo and weapon SEXP changes not being passed on to the clients
+ *
+ * Revision 2.13.2.4  2006/09/08 06:09:05  taylor
  * lower client/server version back to retail level, there was no reason to bump it in the first place
  *
- * Revision 2.15  2006/08/04 11:45:21  karajorma
- * Fix bug where end-mission SEXP only resulting in the mission ending for the server
- *
- * Revision 2.14  2006/06/07 18:47:51  karajorma
- * Fix 130 ships limit for Inferno builds
+ * Revision 2.13.2.3  2006/08/25 21:15:31  karajorma
+ * Fix TvT problem with scores appearing incorrectly.
+ * Fix a CVS issue
  *
  * Revision 2.13  2006/06/02 09:10:01  karajorma
  * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
@@ -689,14 +690,11 @@ extern int Om_tracker_flag;
 #define SW_STD_BAD					0x3		// from standalone to host - "everything is bad"
 
 // stats block packet
-#define STATS_MISSION				0			// all stats for the mission (except kills), for one player
+#define STATS_MISSION				0			// all stats for the mission, for one player
 #define STATS_ALLTIME				1			// alltime stats, for one player
-#define STATS_MISSION_KILLS			2			// mission kills and assists
+#define STATS_MISSION_KILLS		2			// mission kills and assists
 #define STATS_DOGFIGHT_KILLS		3			// same as mission kills, but also sends per-player kills
-#define STATS_MISSION_CLASS_KILLS		4			// kills for the mission, for one player
-#define STATS_ALLTIME_KILLS			5			// alltime kills, for one player
 
-#define MAX_SHIPS_PER_PACKET		130			// Number of ships in a STATS_MISSION_KILLS or STATS_ALLTIME_KILLS packet
 
 // ----------------------------------------------------------------------------------------
 
@@ -859,6 +857,7 @@ typedef struct netgame_info {
 #define AG_FLAG_PASSWD							(1<<8)			// is a password protected game
 #define AG_FLAG_STANDALONE						(1<<9)			// this is a standalone server
 #define AG_FLAG_CAMPAIGN						(1<<10)			// the server is playing in campaign mode
+#define AG_FLAG_TRACKER							(1<<11)
 
 // flags for defining the connection speed
 #define AG_FLAG_CONNECTION_SPEED_MASK		((1<<12)|(1<<13)|(1<<14))	// mask for the connection speed
@@ -1153,7 +1152,6 @@ void multi_pause_do_frame();
 void multi_process_reliable_details();
 
 
-#ifndef NO_STANDALONE
 // standalone handling functions ---------------
 
 // initialize the standalone
@@ -1185,8 +1183,6 @@ void multi_standalone_postgame_do();
 
 // close for the standalone postgame state (when players are in the debriefing_
 void multi_standalone_postgame_close();
-
-#endif  // ifndef NO_STANDALONE
 
 
 #endif

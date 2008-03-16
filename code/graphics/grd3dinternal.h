@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DInternal.h $
- * $Revision: 2.55 $
- * $Date: 2006-09-11 06:36:38 $
+ * $Revision: 2.54.2.1 $
+ * $Date: 2006-08-22 05:41:35 $
  * $Author: taylor $
  *
  * Prototypes for the variables used internally by the Direct3D renderer

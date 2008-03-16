@@ -9,17 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/NebLightning.cpp $
- * $Revision: 2.16 $
- * $Date: 2007-09-02 02:10:27 $
+ * $Revision: 2.13.2.2 $
+ * $Date: 2007-09-02 02:07:45 $
  * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.15  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.14  2006/09/11 06:50:42  taylor
+ * Revision 2.13.2.1  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
  * Revision 2.13  2006/04/12 22:23:41  taylor

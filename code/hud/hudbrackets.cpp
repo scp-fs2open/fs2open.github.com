@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDbrackets.cpp $
- * $Revision: 2.29 $
- * $Date: 2007-11-22 05:19:09 $
+ * $Revision: 2.27.2.2 $
+ * $Date: 2007-11-22 05:19:47 $
  * $Author: taylor $
  *
  * C file that contains functions for drawing target brackets on the HUD
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.28  2007/08/30 04:51:08  Backslash
+ * Revision 2.27.2.1  2007/08/30 04:52:30  Backslash
  * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
  * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
  * $Length Unit Multiplier: 5

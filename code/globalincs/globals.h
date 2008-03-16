@@ -6,27 +6,27 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/globals.h $
- * $Revision: 1.28 $
- * $Date: 2007-12-19 10:54:26 $
- * $Author: karajorma $
+ * $Revision: 1.23.2.4 $
+ * $Date: 2006/12/28 01:19:13 $
+ * $Author: Goober5000 $
  *
  * Header for common global #defines, to cut down on #includes
  *
- * $Log: not supported by cvs2svn $
- * Revision 1.27  2007/01/07 12:33:27  taylor
- * clean up defines a bit
- *
- * Revision 1.26  2006/12/28 01:22:04  Goober5000
+ * $Log: globals.h,v $
+ * Revision 1.23.2.4  2006/12/28 01:19:13  Goober5000
  * removed obsolete limits
  *
- * Revision 1.25  2006/11/06 05:42:44  taylor
+ * Revision 1.23.2.3  2006/12/07 17:59:37  taylor
+ * these defines are all the same value, so it's safer to just have one set
+ *
+ * Revision 1.23.2.2  2006/10/24 13:24:12  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
  * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
  * get rid of MAX_BUFFERS
  * make D3D vertex buffers dynamic, like OGL has already done
  *
- * Revision 1.24  2006/09/11 06:08:08  taylor
+ * Revision 1.23.2.1  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
  * Revision 1.23  2006/04/20 06:32:01  Goober5000
@@ -180,10 +180,10 @@
 
 #define MAX_STARTING_WINGS			3	// number of wings player can start a mission with
 #define MAX_SQUADRON_WINGS			5	// number of wings in squadron (displayed on HUD)
+
 #define MAX_TVT_TEAMS				2	// number of teams in a TVT game
 #define	MAX_TVT_WINGS_PER_TEAM		1 	// number of wings per team in a TVT game
 #define MAX_TVT_WINGS		MAX_TVT_TEAMS * MAX_TVT_WINGS_PER_TEAM	// number of wings in a TVT game
-
 
 // from model.h
 #define MAX_SHIP_PRIMARY_BANKS		3

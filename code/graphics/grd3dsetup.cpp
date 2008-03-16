@@ -9,10 +9,10 @@
 
 /*
  * $Log: not supported by cvs2svn $
- * Revision 2.61  2006/11/16 00:54:41  taylor
+ * Revision 2.59.2.2  2006/11/15 00:47:57  taylor
  * properly support the updated window create code (all told: should take of of Mantis bugs #542, #624, #1140, and possibly #962 and #1124)
  *
- * Revision 2.60  2006/09/11 06:36:38  taylor
+ * Revision 2.59.2.1  2006/08/22 05:41:35  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
  * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway

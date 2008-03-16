@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/JumpNode/JumpNode.cpp $
- * $Revision: 2.21 $
- * $Date: 2006-10-20 20:34:34 $
+ * $Revision: 2.20.2.1 $
+ * $Date: 2006-10-20 20:37:42 $
  * $Author: wmcoolmon $
  *
  * Module for everything to do with jump nodes

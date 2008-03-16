@@ -9,19 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.h $
- * $Revision: 2.22 $
- * $Date: 2007-11-21 07:28:37 $
+ * $Revision: 2.17.2.5 $
+ * $Date: 2007-11-21 07:27:45 $
  * $Author: Goober5000 $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.21  2007/04/11 18:24:27  taylor
- * cleanup of chksum stuff (works properly on 64-bit systems now)
+ * Revision 2.17.2.4  2007/04/11 18:21:20  taylor
+ * cleanup of chcksum stuff (works properly on 64-bit systems now)
  * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
  * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
  *
- * Revision 2.20  2007/03/22 20:22:24  taylor
+ * Revision 2.17.2.3  2007/03/22 20:22:44  taylor
  * a little better error handling for cf_exists_full()
  * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
  * use cf_exists_full_ext() for eventmusic file checks (to check for ogg and wav)
@@ -31,12 +31,12 @@
  *  - load issue with finding incorrect files by mistake
  *  - prevent finding different file types in various paths/roots
  *
- * Revision 2.19  2007/02/11 09:31:11  taylor
+ * Revision 2.17.2.2  2007/02/11 09:25:42  taylor
  * some CFILE cleanup and slight directory order reorg
  * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
  * remove NO_SOUND
  *
- * Revision 2.18  2006/09/11 05:49:05  taylor
+ * Revision 2.17.2.1  2006/08/27 18:01:45  taylor
  * various small cleanup and speedup changes
  * add a cf_find_file_location_ext() function, which you can pass a filename and a list of extensions and it will search for all of them at once
  *

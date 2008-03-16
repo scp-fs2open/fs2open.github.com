@@ -9,16 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.h $
- * $Revision: 2.7 $
- * $Date: 2006-12-28 00:59:54 $
+ * $Revision: 2.6 $
+ * $Date: 2005-12-29 08:08:42 $
  * $Author: wmcoolmon $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.6  2005/12/29 08:08:42  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
  * Revision 2.5  2005/10/30 06:44:59  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
  *
@@ -100,5 +97,6 @@ void flak_set_range(object *objp, float range);
 
 // get the current range for the flak object
 float flak_get_range(object *objp);
+
 
 #endif

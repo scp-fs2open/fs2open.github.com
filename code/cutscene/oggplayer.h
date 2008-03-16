@@ -1,15 +1,12 @@
 /*
  * $Logfile: /Freespace2/src/cutscene/oggplayer.h $
- * $Revision: 2.1 $
- * $Date: 2007-01-07 12:29:43 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2006-12-25 21:44:11 $
  * $Author: taylor $
  *
  * main lib for using Theora movies
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.1.2.1  2006/12/25 21:44:11  taylor
- * initial OGG Theora movie support (likely to be rewritten at least in large part)
- *
  *
  * $NoKeywords: $
  *

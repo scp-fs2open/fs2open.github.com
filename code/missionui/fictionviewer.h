@@ -6,8 +6,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/FictionViewer.h $
- * $Revision: 1.2 $
- * $Date: 2007-11-21 07:28:38 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2007-11-21 07:27:48 $
  * $Author: Goober5000 $
  *
  * Fiction Viewer briefing screen

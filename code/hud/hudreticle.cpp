@@ -9,27 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDreticle.cpp $
- * $Revision: 2.16 $
- * $Date: 2008-01-24 03:52:07 $
+ * $Revision: 2.11.2.5 $
+ * $Date: 2008-01-24 03:53:36 $
  * $Author: Goober5000 $
  *
  * C module to draw and manage the recticle
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.15  2007/11/22 05:19:09  taylor
+ * Revision 2.11.2.4  2007/11/22 05:19:47  taylor
  * no reason to if-else the hud multiplier if it simply defaults to 1.0
  * add a little sanity checking for hud mutiplier tbl value
+ * add missing multiplier for off-screen indicator
  *
- * Revision 2.14  2007/08/30 04:51:07  Backslash
+ * Revision 2.11.2.3  2007/08/30 04:52:30  Backslash
  * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
  * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
  * $Length Unit Multiplier: 5
  *
- * Revision 2.13  2007/04/30 21:30:29  Backslash
- * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
- * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
+ * Revision 2.11.2.2  2007/06/02 21:40:59  Backslash
+ * Here's the Gliding gauge for 3_6_9 as well.  Simple but useful especially for mods that use it, like BtRL
  *
- * Revision 2.12  2006/11/03 18:47:43  Kazan
+ * Revision 2.11.2.1  2006/11/03 18:47:14  Kazan
  * Absolute speed, not forward speed, for hud speed reticle - fixes the guage for gliding
  *
  * Revision 2.11  2005/10/10 17:21:04  taylor

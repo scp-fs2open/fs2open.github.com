@@ -9,39 +9,30 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.h,v $
- * $Revision: 2.51 $
- * $Author: Goober5000 $
- * $Date: 2007-08-17 03:29:45 $
+ * $Revision: 2.42.2.6 $
+ * $Author: taylor $
+ * $Date: 2007-10-15 06:43:20 $
  * 
  * Header for parselo.c
  * 20-07-02 21:20 DTP
  * Bumped MISSION_TEXT_SIZE from 390000 to 1000000
  * 
  * $Log: not supported by cvs2svn $
- * Revision 2.50  2007/07/11 20:11:33  turey
- * Ship Template fixes. It's fully working now, hopefully.
+ * Revision 2.42.2.5  2007/08/17 03:29:49  Goober5000
+ * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
- * Revision 2.49  2007/05/28 20:05:06  taylor
+ * Revision 2.42.2.4  2007/05/28 20:04:49  taylor
  * more resilient checking of stars.tbl and it's modular versions
  *
- * Revision 2.48  2007/01/14 12:06:56  wmcoolmon
- * Fix +Override, attempted fix for code adjacent to [] causing crash in scripting.tbl (Unreproducable), and (Untested) fix for script-eval.
+ * Revision 2.42.2.3  2007/02/11 09:05:02  taylor
+ * add WMC's strextcmp() from HEAD
  *
- * Revision 2.47  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.46  2006/09/11 06:50:42  taylor
+ * Revision 2.42.2.2  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.45  2006/09/04 05:50:58  wmcoolmon
- * Added flag-to-string function for error messages
- *
- * Revision 2.44  2006/08/03 01:33:56  Goober5000
+ * Revision 2.42.2.1  2006/08/03 01:33:25  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
- *
- * Revision 2.43  2006/06/02 08:55:47  karajorma
- * Added stuff_ship_list to act as a typesafe replacement for stuff_int_list and handle variables as legitimate values for both ship type and availability when parsing Team Loadout lists
  *
  * Revision 2.42  2006/04/14 18:44:16  taylor
  * remove all of the *_ex() parsing functions added for use by EFFs
@@ -463,7 +454,6 @@ extern jmp_buf parse_abort;
 
 //For modular TBL files -C
 #define MAX_TBL_PARTS 32
-extern bool Modular_tables_loaded;
 
 // 1K on the stack? seems to work...
 // JH: 1k isn't enough!  Command briefs can be 16k max, so changed this.
@@ -475,14 +465,6 @@ extern bool Modular_tables_loaded;
 #define	WEAPON_LIST_TYPE	2	//	to parse an int_list of weapons
 #define	RAW_INTEGER_TYPE	3	//	to parse a list of integers
 #define	WEAPON_POOL_TYPE	4
-
-// Karajorma - Used by the stuff_ship_list and stuff_weapon_list SEXPs
-#define NOT_SET_BY_SEXP_VARIABLE	-1
-
-#define MISSION_LOADOUT_SHIP_LIST		0
-#define MISSION_LOADOUT_WEAPON_LIST		1
-#define CAMPAIGN_LOADOUT_SHIP_LIST		2
-#define CAMPAIGN_LOADOUT_WEAPON_LIST	3
 
 #define SEXP_SAVE_MODE				1
 #define SEXP_ERROR_CHECK_MODE		2
@@ -520,7 +502,6 @@ extern int optional_string(char *pstr);
 extern int optional_string_either(char *str1, char *str2);
 extern int required_string_either(char *str1, char *str2);
 extern int required_string_3(char *str1, char *str2, char *str3);
-extern int required_string_4(char *str1, char *str2, char *str3, char *str4);
 
 // stuff
 extern void copy_to_eoln(char *outstr, char *more_terminators, char *instr, int max);
@@ -547,7 +528,6 @@ extern int stuff_string_list(std::vector<std::string> *slp);
 extern int stuff_string_list(char slp[][NAME_LENGTH], int max_strings);
 extern int parse_string_flag_list(int *dest, flag_def_list defs[], int defs_size);
 extern int stuff_int_list(int *ilp, int max_ints, int lookup_type = RAW_INTEGER_TYPE);
-extern int stuff_ship_list(int *ilp, int max_ints, int lookup_type); // Karajorma
 extern int stuff_float_list(float* flp, int max_floats);
 extern int stuff_vector_list(vec3d *vlp, int max_vecs);
 extern int stuff_bool_list(bool *blp, int max_bools);
@@ -592,7 +572,6 @@ extern void debug_show_mission_text();
 extern void convert_sexp_to_string(int cur_node, char *outstr, int mode);
 char *split_str_once(char *src, int max_pixel_w);
 int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_lines, char ignore_char = -1);
-extern int flags_to_string(char *dest, int flags, flag_def_list defs[], int defs_size);
 
 // fred
 extern int required_string_fred(char *pstr, char *end = NULL);
@@ -629,10 +608,5 @@ extern int parse_modular_table(char *name_check, void (*parse_callback)(char *fi
 // to know that we are parsing a modular table
 extern bool Parsing_modular_table;
 
-// Karajorma
-int get_string_or_variable (char *str);
-#define FOUND_STRING		0
-#define FOUND_VARIABLE		1
-#define FOUND_BAD_DATA		2
 
 #endif

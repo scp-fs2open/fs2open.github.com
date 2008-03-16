@@ -39,7 +39,6 @@ protected:
 	afx_msg void OnNoSubspaceDrive();
 	afx_msg void OnPrimitiveSensors();
 	afx_msg void OnAffectedByGravity();
-	afx_msg void OnResetScores();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

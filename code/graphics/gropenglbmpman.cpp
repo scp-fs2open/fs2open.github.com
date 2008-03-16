@@ -9,27 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.cpp $
- * $Revision: 1.23 $
- * $Date: 2007-02-11 18:18:52 $
+ * $Revision: 1.18.2.7 $
+ * $Date: 2007-02-11 09:51:21 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.22  2007/01/10 01:48:32  taylor
- * fixup texture addressing stuff so that it works better
- * bits of cleanup
- * remove non-dark support
- * support for releasing bitmap system memory when transfered to API memory
- *
- * Revision 1.21  2006/09/11 05:55:18  taylor
+ * Revision 1.18.2.6  2006/08/27 18:03:29  taylor
  * forgot an extension check (was this the background corruption bug???)
  *
- * Revision 1.20  2006/06/27 05:02:22  taylor
- * add -disable_fbo option to help troubleshoot crappy ATI drivers
+ * Revision 1.18.2.5  2006/06/18 23:38:06  taylor
+ * yeah, I'm not at the top of my game today  ;)
+ *
+ * Revision 1.18.2.4  2006/06/18 23:34:55  taylor
  * address a strange resize error that triggers an Assert() in the texture code with mipmaps
  *
- * Revision 1.19  2006/06/15 00:36:33  taylor
+ * Revision 1.18.2.3  2006/06/18 17:21:49  taylor
+ * add a -disable_fbo troubleshooting option for those ATI users having trouble with FBOs, but can still use envmapping otherwise
+ *
+ * Revision 1.18.2.2  2006/06/18 16:49:40  taylor
+ * fix so that multiple FBOs can be used with different sizes (plus a few other minor adjustments)
+ *
+ * Revision 1.18.2.1  2006/06/15 00:15:17  taylor
  * fix Assert() on value of face variable, it should be able to be -1 for non-cubemap images
  *
  * Revision 1.18  2006/05/27 17:07:48  taylor
@@ -327,7 +329,7 @@ static int opengl_bm_lock_ani_compress( int handle, int bitmapnum, bitmap_entry 
 
 	alpha = (bpp == 32);
 
-	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename)) == NULL ) {
+	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename, bm_bitmaps[first_frame].dir_type)) == NULL ) {
 		// Error(LOCATION, "Error opening %s in bm_lock\n", be->filename);
 	}
 

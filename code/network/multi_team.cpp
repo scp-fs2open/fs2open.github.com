@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_team.cpp $
- * $Revision: 2.13 $
- * $Date: 2006-08-25 21:21:17 $
+ * $Revision: 2.12.2.1 $
+ * $Date: 2006-08-25 21:15:31 $
  * $Author: karajorma $
  *
  * $Log: not supported by cvs2svn $

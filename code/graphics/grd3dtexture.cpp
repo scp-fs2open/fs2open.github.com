@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DTexture.cpp $
- * $Revision: 2.58 $
- * $Date: 2007-01-10 01:49:16 $
+ * $Revision: 2.56.2.2 $
+ * $Date: 2007-02-11 09:58:20 $
  * $Author: taylor $
  *
  * Code to manage loading textures into VRAM for Direct3D
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.57  2006/07/05 23:35:42  Goober5000
+ * Revision 2.56.2.1  2006/07/05 23:36:55  Goober5000
  * cvs comment tweaks
  *
  * Revision 2.56  2006/05/27 17:07:48  taylor

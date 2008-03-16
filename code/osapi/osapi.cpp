@@ -9,30 +9,29 @@
 
 /* 
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.39 $
- * $Date: 2007-09-03 22:19:29 $
+ * $Revision: 2.33.2.5 $
+ * $Date: 2007-09-03 22:19:56 $
  * $Author: Goober5000 $
  *
  * Low level Windows code
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.38  2007/01/07 13:15:42  taylor
- * fix up Windows window/cursor handling so that it's up-to-date and more compatible
- * make sure that we handle background clearing ourselves, fixes several little issues
- * fix popup warnings to work a bit better and not screw up the game so much or make it difficult to interact with them
+ * Revision 2.33.2.4  2006/12/07 18:04:03  taylor
+ * clean up warning code for Windows
+ * handle messagebox popups better (until I done with even cooler code for handling that)
+ * cleanup window state code a bit, and deal with activation and cursor handling better
+ * handle WM_ERASEBKGND msg ourselves, prevents some flickering issues and gets rid of the need to self-paint the window to clear it
+ * slightly better Win9x/WinME compatibility for the main window
  *
- * Revision 2.37  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.36  2006/11/16 00:54:15  taylor
+ * Revision 2.33.2.3  2006/11/15 00:44:44  taylor
  * new window creation code for Windows (gets rid of some stupid :V: voodoo for the software/glide stuff)
  * use detect_home() on Windows too (needed for now outwnd code)
  * some bits of minor cleanup
  *
- * Revision 2.35  2006/11/06 06:23:27  taylor
+ * Revision 2.33.2.2  2006/10/27 06:44:35  taylor
  * grrr ... fix dos EOL chars
  *
- * Revision 2.34  2006/07/13 22:15:02  taylor
+ * Revision 2.33.2.1  2006/07/13 22:06:38  taylor
  * handle non-MVE movies a bit better in OpenGL (don't get freaky with the window, don't lose input, etc.)
  * some cleanup to OpenGL window handling, to fix min/max/full issues, and try to make shutdown a little nicer
  *
@@ -928,7 +927,7 @@ void debug_int3(char *file, int line)
 	mprintf(("Int3(): From %s at line %d\n", file, line));
 
 	gr_activate(0);
- 
+
 #ifdef _WIN32
 #if defined _MSC_VER
 	_asm { int 3 };

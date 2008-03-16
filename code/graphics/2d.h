@@ -9,31 +9,39 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.h $
- * $Revision: 2.85 $
- * $Date: 2007-02-11 18:18:52 $
+ * $Revision: 2.79.2.7 $
+ * $Date: 2007-02-12 01:04:50 $
  * $Author: taylor $
  *
  * Header file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.84  2007/01/10 01:44:39  taylor
- * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
+ * Revision 2.79.2.6  2007/02/12 00:19:48  taylor
+ * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
  *
- * Revision 2.83  2007/01/07 13:13:38  taylor
- * cleanup various bits of obsolete or unused code
+ * Revision 2.79.2.5  2007/02/11 09:51:21  taylor
+ * remove some dead code
+ * better texture memory handling (a work in-progress)
+ * new image finding/loading
+ * get rid of -pcx32 and -jpgtga
+ * change the game_busy() reporting during bitmap page-in to only catch one frame of an animation
+ * fix numerous little bugs in gropenglbmpman relating to -img2dds
  *
- * Revision 2.82  2006/11/06 05:42:44  taylor
+ * Revision 2.79.2.4  2006/12/26 05:26:12  taylor
+ * remove some old stuff that we either don't use or don't need any longer
+ *
+ * Revision 2.79.2.3  2006/10/24 13:24:12  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
  * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
  * get rid of MAX_BUFFERS
  * make D3D vertex buffers dynamic, like OGL has already done
  *
- * Revision 2.81  2006/10/06 09:56:42  taylor
+ * Revision 2.79.2.2  2006/10/06 09:52:05  taylor
  * clean up some old software rendering stuff that we don't use any longer
  * remove grzbuffer.*, since all it did was give us 3 variables, which were moved to 2d.*
  *
- * Revision 2.80  2006/09/11 06:36:38  taylor
+ * Revision 2.79.2.1  2006/08/22 05:41:35  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
  * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
@@ -764,7 +772,7 @@ extern int gr_global_zbuffering;
 // of the values you want to use in the shade primitive.
 typedef struct shader {
 	uint	screen_sig;					// current mode this is in
-	float	r,g,b,c;						// factors and constant
+	ubyte	r,g,b,c;						// factors and constant
 	ubyte	lookup[256];
 } shader;
 
@@ -1446,7 +1454,7 @@ void gr_set_color( int r, int g, int b );
 void gr_set_color_fast(color *dst);
 
 // shader functions
-void gr_create_shader(shader *shade, float r, float g, float b, float c);
+void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c);
 void gr_set_shader(shader *shade);
 
 // new bitmap functions

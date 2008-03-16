@@ -6,23 +6,23 @@
 
 /*
  * $Logfile: /Freespace2/code/iff_defs/iff_defs.cpp $
- * $Revision: 1.14 $
- * $Date: 2007-09-02 02:10:26 $
- * $Author: Goober5000 $
+ * $Revision: 1.9.2.5 $
+ * $Date: 2007-10-15 06:43:13 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.13  2007/02/08 07:39:32  Goober5000
+ * Revision 1.9.2.4  2007/09/02 02:07:42  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
+ * Revision 1.9.2.3  2007/02/08 07:39:34  Goober5000
  * fix two bugs:
  * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
  * --ships were created with default allowed comm orders regardless of which team they were on
  *
- * Revision 1.12  2007/01/07 01:00:18  Goober5000
- * convert a mission variable to a mission flag
- *
- * Revision 1.11  2006/09/11 06:49:39  taylor
+ * Revision 1.9.2.2  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 1.10  2006/07/08 19:35:52  Goober5000
+ * Revision 1.9.2.1  2006/07/08 19:36:04  Goober5000
  * iff defs should allow specification of both flag fields
  * --Goober5000
  *
@@ -400,6 +400,10 @@ void iff_init()
 			}
 		}
 	}
+
+	// add tbl/tbm to multiplayer validation list
+	extern void fs2netd_add_table_validation(char *tblname);
+	fs2netd_add_table_validation("iff_defs.tbl");
 }
 
 // find the iff name
@@ -423,7 +427,7 @@ int iff_get_attackee_mask(int attacker_team)
 	Assert(attacker_team >= 0 && attacker_team < Num_iffs);
 
 	//	All teams attack all other teams.
-	if (The_mission.flags & MISSION_FLAG_ALL_ATTACK)
+	if (Mission_all_attack)
 	{
 		return Iff_info[attacker_team].attackee_bitmask_all_teams_at_war;
 	}

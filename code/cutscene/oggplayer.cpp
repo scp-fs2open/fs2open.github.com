@@ -1,28 +1,27 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/oggplayer.cpp $
- * $Revision: 2.5 $
- * $Date: 2007-04-11 14:50:01 $
+ * $Revision: 1.1.2.5 $
+ * $Date: 2007-04-11 14:44:32 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
- * Revision 2.4  2007/03/22 20:23:42  taylor
+ * Revision 1.1.2.4  2007/03/22 20:23:58  taylor
  * fix stupidness that screwed up RGB values (Mantis #1307)
  *
- * Revision 2.3  2007/02/10 00:02:18  taylor
+ * Revision 1.1.2.3  2007/02/10 00:01:53  taylor
  * make sure that our color is getting set properly (should properly fix the red/green tint problem, Mantis #1041)
  * slight optimization for Theora YUV->RGB converter
  *
- * Revision 2.2  2007/01/14 10:26:37  wmcoolmon
- * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
+ * Revision 1.1.2.2  2007/01/07 12:10:18  taylor
+ * remove D3D support for Theora movies, make sure that it doesn't try to play them (since it wouldn't work properly anyway)
+ * fix triple-buffer problem with page flipping (Mantis #1190)
  *
- * Revision 2.1  2007/01/07 12:29:43  taylor
- * add Theora player
- * remove DirectShow support from movie player
- * fix triple-buffer page flipping problem (Mantis bug #1190)
+ * Revision 1.1.2.1  2006/12/25 21:44:11  taylor
+ * initial OGG Theora movie support (likely to be rewritten at least in large part)
  *
- * Revision 1.0  2006/12/25 21:44:11  taylor
+ *
  *
  * $NoKeywords: $
  *
@@ -597,7 +596,7 @@ static void OGG_video_draw(theora_state *tstate)
 				glVertex2i(gl_screenXW, g_screenY);
 		glEnd();
 	} else {
-		// TODO:  FIXME!!!!
+		// TODO:  FIXME!!!
 	}
 
 	gr_flip();
@@ -825,11 +824,6 @@ THEORAFILE *theora_open(char *filename)
 		goto Error;
 	}
 
-	if ( (movie->tinfo.frame_width > 640) || (movie->tinfo.frame_height > 480) ) {
-		mprintf(("Theora ERROR:  Movies must be no larger than 640x480!\n"));
-		goto Error;
-	}
-
 	// initialize audio decoder, if there is audio
 	if (movie->vorbis_p) {
 		vorbis_synthesis_init(&movie->vstate, &movie->vinfo);
@@ -893,7 +887,7 @@ void theora_play(THEORAFILE *movie)
 						if (val < -32768)
 							val = -32768;
 
-						audiobuf[count++] = (short)val;
+						audiobuf[count++] = val;
 					}
 				}
 

@@ -9,43 +9,53 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.cpp $
- * $Revision: 2.53 $
- * $Date: 2007-02-11 18:20:18 $
+ * $Revision: 2.46.2.11 $
+ * $Date: 2007-10-29 15:32:19 $
  * $Author: taylor $
  *
  * C file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.52  2007/01/07 12:48:18  taylor
- * crazy-freaky-cool OS X sound crash fixage
- * fix sound resource exhaustion from using too many buffers
- * allow loading of ogg or wav based on which is found first rather than tbl filename (fixes crash when Theora movies end up in wav code by mistake)
+ * Revision 2.46.2.10  2007/02/11 09:56:25  taylor
+ * support for new finding/loading of sound files
+ * add support for automatically figuring out samples-per-measure based on Goober's explanation in the Wiki (not sure if it's actually right though)
+ * remove NO_SOUND
  *
- * Revision 2.51  2006/10/06 04:56:05  wmcoolmon
+ * Revision 2.46.2.9  2006/12/26 05:31:22  taylor
+ * fix some sound state stuff that was leading to crashes in OS X and undefined behavior in Windows (this isn't all that pretty, but will handled properly in post-3.6.9 revised code)
+ *
+ * Revision 2.46.2.8  2006/12/07 18:24:43  taylor
+ * various sound fixes/changes, mainly for OS X fixage
+ *
+ * Revision 2.46.2.7  2006/10/06 04:58:25  wmcoolmon
  * Fix OGG bug where sound files were always allocated 16 seconds of wavedata
  *
- * Revision 2.50  2006/08/20 00:48:28  taylor
+ * Revision 2.46.2.6  2006/08/19 04:31:24  taylor
  * cleanup
  * bugfixes
  * error-handling
  * (lots of crap got fixed to work better, and lets leave it at that, the commit log would be too long otherwise :))
  *
- * Revision 2.49  2006/07/08 18:10:59  taylor
+ * Revision 2.46.2.5  2006/07/08 18:07:31  taylor
  * require OpenAL 1.1 under Windows, I think it's causing problems for us to mix users with 1.0 and builds for 1.1
  *   (having 1.0 is fatal to sound, but the game should still work, a corresponding Launcher change goes with this too)
  * clean up some of the error messages to not say "DirectSound" is doing this or that, just say "Audio" instead
  *
- * Revision 2.48  2006/07/06 22:02:11  taylor
+ * Revision 2.46.2.4  2006/07/06 21:56:18  taylor
  * some better handling of OpenAL errors during init
  *
- * Revision 2.47  2006/06/27 04:58:58  taylor
+ * Revision 2.46.2.3  2006/06/22 14:59:45  taylor
+ * fix various things that Valgrind has been complaining about
+ *
+ * Revision 2.46.2.2  2006/06/18 16:52:04  taylor
+ * make sure we can report both AL and ALC errors
+ * fix for ds_get_free_channel(), it shouldn't return -1 on an AL error
+ *
+ * Revision 2.46.2.1  2006/06/12 03:40:26  taylor
  * sync up current OpenAL changes
  *  - "SoundDeviceOAL" reg option for user specified sound device (used instead of "Soundcard" for OpenAL)
  *  - reset current context when we are leaving, may be leaving drivers in a bad state, and it hasn't hung up in quite a while
  *  - if sound card (which DS or OAL) is set to "no sound" then be sure to disable both sound and music
- * fix various things that Valgrind complained about
- * make sure we can report both AL and ALC errors
- * fix for ds_get_free_channel(), it shouldn't return -1 on an AL error
  *
  * Revision 2.46  2006/06/01 07:33:00  taylor
  * make sure to use software device rather than hardware since we don't currently handle source rotation/reuse properly between ds and audiostr code
@@ -528,6 +538,8 @@
 #include "sound/dscap.h"
 
 #ifdef USE_OPENAL
+	#include <vector>
+
 #if !(defined(__APPLE__) || defined(_WIN32))
 	#include <AL/al.h>
 	#include <AL/alc.h>
@@ -675,15 +687,17 @@ typedef struct sound_buffer
 	int nchannels;
 	int nseconds;
 	int nbytes;
+
+	sound_buffer(): buf_id(0), source_id(-1), frequency(0), bits_per_sample(0), nchannels(0), nseconds(0), nbytes(0) {}
 } sound_buffer;
 
-#define MAX_DS_SOFTWARE_BUFFERS	256
 
 static int MAX_CHANNELS = 32;		// initialized properly in ds_init_channels()
 channel *Channels = NULL;
 static int channel_next_sig = 1;
 
-sound_buffer sound_buffers[MAX_DS_SOFTWARE_BUFFERS];
+const int BUFFER_BUMP = 50;
+std::vector<sound_buffer> sound_buffers;
 
 extern int Snd_sram;					// mem (in bytes) used up by storing sounds in system memory
 
@@ -1121,18 +1135,23 @@ Done:
 int ds_get_sid()
 {
 #ifdef USE_OPENAL
-	int i;
+	sound_buffer new_buffer;
+	uint i;
 
-	for ( i = 0; i < MAX_DS_SOFTWARE_BUFFERS; i++ ) {
-		if ( sound_buffers[i].buf_id == 0 )
-		break;
+	for (i = 0; i < sound_buffers.size(); i++) {
+		if (sound_buffers[i].buf_id == 0) {
+			return (int)i;
+		}
 	}
 
-	if ( i == MAX_DS_SOFTWARE_BUFFERS )	{
-		return -1;
+	// if we need to, bump the reserve limit (helps prevent memory fragmentation)
+	if ( sound_buffers.size() == sound_buffers.capacity() ) {
+		sound_buffers.reserve( sound_buffers.size() + BUFFER_BUMP );
 	}
 
-	return i;
+	sound_buffers.push_back( new_buffer );
+
+	return (int)(sound_buffers.size() - 1);
 #else
 	int i;
 
@@ -1673,12 +1692,10 @@ void ds_init_channels()
 void ds_init_software_buffers()
 {
 #ifdef USE_OPENAL
-	int i;
+	sound_buffers.clear();
 
-	for ( i = 0; i < MAX_DS_SOFTWARE_BUFFERS; i++ ) {
-		sound_buffers[i].buf_id = 0;
-		sound_buffers[i].source_id = -1;
-	}
+	// pre-allocate for at least BUFFER_BUMP buffers
+	sound_buffers.reserve( BUFFER_BUMP );
 #else
 	int i;
 
@@ -2346,17 +2363,17 @@ void ds_unload_buffer(int sid, int hid)
 void ds_close_software_buffers()
 {
 #ifdef USE_OPENAL
-	int i;
+	uint i;
 
-	for (i = 0; i < MAX_DS_SOFTWARE_BUFFERS; i++) {
+	for (i = 0; i < sound_buffers.size(); i++) {
 		ALuint buf_id = sound_buffers[i].buf_id;
 
-		if (buf_id != 0 && alIsBuffer(buf_id)) {
+		if ( (buf_id != 0) && alIsBuffer(buf_id) ) {
 			OpenAL_ErrorPrint( alDeleteBuffers(1, &buf_id) );
 		}
-
-		sound_buffers[i].buf_id = 0;
 	}
+
+	sound_buffers.clear();
 #else
 	int		i;
 	HRESULT	hr;
@@ -4355,7 +4372,7 @@ int ds_get_sound_id(int channel)
 }
 
 
-#ifdef USE_OPENAL
+#ifdef SCP_UNIX
 void dscap_close()
 {
 	STUB_FUNCTION;

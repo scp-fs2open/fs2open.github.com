@@ -9,41 +9,38 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.cpp $
- * $Revision: 2.72 $
- * $Date: 2007-11-22 05:48:42 $
+ * $Revision: 2.62.2.9 $
+ * $Date: 2007-11-22 05:49:36 $
  * $Author: taylor $
  *
  * C module to allow player ship selection for the mission
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.71  2007/11/22 05:31:18  taylor
- * better case for making sure that a missing ship anim doesn't lead us to a horrible death
+ * Revision 2.62.2.8  2007/11/22 05:31:39  taylor
+ * make sure that a missing ship anim doesn't lead us to a horrible death
  * minor cleanup
  *
- * Revision 2.70  2007/07/28 22:10:46  karajorma
- * Apparently I forgot to commit this to HEAD. Fixes Mantis 1437
- *
- * Revision 2.69  2007/03/22 22:14:56  taylor
- * get rid of non-standard itoa(), make use of the proper sprintf() instead
- *
- * Revision 2.68  2007/02/20 04:20:18  Goober5000
+ * Revision 2.62.2.7  2007/02/20 04:19:22  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.67  2006/12/28 00:59:32  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
+ * Revision 2.62.2.6  2007/02/12 00:23:39  taylor
+ * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
- * Revision 2.66  2006/11/06 05:43:36  taylor
+ * Revision 2.62.2.5  2006/10/24 13:31:32  taylor
  * fix a memory leak that Valgrind was complaining about (happens mainly when you have a mission without a briefing)
  *
- * Revision 2.65  2006/09/11 06:45:39  taylor
+ * Revision 2.62.2.4  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
- * Revision 2.64  2006/08/02 22:31:15  Goober5000
+ * Revision 2.62.2.3  2006/08/05 10:37:51  karajorma
+ * Remove common_select_close(). This should be handled in freespace.cpp
+ *
+ * Revision 2.62.2.2  2006/08/04 19:13:38  karajorma
+ * Fix a multiplayer crash if the server committed before the 2nd team captain unlocked.
+ *
+ * Revision 2.62.2.1  2006/08/02 22:31:10  Goober5000
  * fix display of ship copy class names in ship loadout screen
  * --Goober5000
- *
- * Revision 2.63  2006/06/23 04:57:09  wmcoolmon
- * Remove Assert, should be caught by aforementioned warning
  *
  * Revision 2.62  2006/04/20 06:32:14  Goober5000
  * proper capitalization according to Volition
@@ -707,14 +704,6 @@ typedef struct ss_icon_info
 	int				model_index;
 	anim			*ss_anim;
 	anim_instance	*ss_anim_instance;
-
-	ss_icon_info(){
-		for(int i=0; i < NUM_ICON_FRAMES; i++) icon_bmaps[i] = -1;
-		current_icon_bitmap = -1;
-		model_index = -1;
-		ss_anim = NULL;
-		ss_anim_instance = NULL;
-	}
 } ss_icon_info;
 
 typedef struct ss_slot_info
@@ -2423,18 +2412,18 @@ anim* ss_load_individual_animation(int ship_class)
 		// GRR must add a .ANI at the end for detection
 		strcat(animation_filename, ".ani");
 		
-		p_anim = anim_load(animation_filename, 1);
+		p_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
 		if (p_anim == NULL) {
 			// failed loading hi-res, revert to low res
 			strcpy(animation_filename, Ship_info[ship_class].anim_filename);
-			p_anim = anim_load(animation_filename, 1);
+			p_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
 			mprintf(("Ship ANI: Can not find %s, using lowres version instead.\n", animation_filename)); 
 		} else {
 			mprintf(("SHIP ANI: Found hires version of %s\n",animation_filename));
 		}
 	} else {
 		strcpy(animation_filename, Ship_info[ship_class].anim_filename);
-		p_anim = anim_load(animation_filename, 1);
+		p_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
 	}
 	
 	return p_anim;
@@ -3286,7 +3275,7 @@ int ss_return_ship(int wing_block, int wing_slot, int *ship_index, p_object **pp
 		*ppobjp = &Parse_objects[ws->sa_index];
 	} else {
 		*ship_index = Wings[Ss_wings[wing_block].wingnum].ship_index[wing_slot];
-		//Assert(*ship_index != -1);		
+		Assert(*ship_index != -1);		
 	}
 
 	return ws->original_ship_class;
@@ -3486,21 +3475,15 @@ void ss_load_icons(int ship_class)
 
 	icon = &Ss_icons[ship_class];
 	ship_info *sip = &Ship_info[ship_class];
-	int first_frame = -1;
-	int num_frames = 0;
 
-	if(!Cmdline_ship_choice_3d
-		&& strlen(sip->icon_filename)
-		&& (first_frame = bm_load_animation(sip->icon_filename, &num_frames)) > -1)
+	if(!Cmdline_ship_choice_3d && strlen(sip->icon_filename))
 	{
-		int	i;
-		/*
+		int				first_frame, num_frames, i;
 		first_frame = bm_load_animation(sip->icon_filename, &num_frames);
 		if ( first_frame == -1 ) {
 			Int3();	// Could not load in icon frames.. get Alan
 			return;
 		}
-		*/
 
 		for ( i = 0; i < num_frames; i++ ) {
 			icon->icon_bmaps[i] = first_frame+i;

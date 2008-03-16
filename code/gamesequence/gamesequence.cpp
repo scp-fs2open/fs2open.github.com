@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.cpp $
- * $Revision: 2.11 $
- * $Date: 2007-11-21 07:28:38 $
+ * $Revision: 2.9.2.3 $
+ * $Date: 2007-11-21 07:27:46 $
  * $Author: Goober5000 $
  *
  * File to control Game Sequencing
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.10  2007/11/19 20:24:39  Goober5000
+ * Revision 2.9.2.2  2007/11/19 20:24:37  Goober5000
  * clean up the state machine logic for starting games
+ *
+ * Revision 2.9.2.1  2007/10/15 06:43:12  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *
  * Revision 2.9  2006/01/12 17:42:56  wmcoolmon
  * Even more scripting stuff.
@@ -370,9 +373,9 @@ char *GS_event_text[] =
 	"GS_EVENT_END_DEMO",							// 60
 	"GS_EVENT_LOOP_BRIEF",
 	"GS_EVENT_CAMPAIGN_CHEAT",
-	"GS_EVENT_NET_CHAT",
+	"GS_EVENT_PXO",
 	"GS_EVENT_LAB",
-	"GS_EVENT_STORYBOOK"							// 65
+	"GS_EVENT_STORYBOOK",							// 65
 	"GS_EVENT_PXO_HELP",
 	"GS_EVENT_FICTION_VIEWER"
 };
@@ -433,7 +436,7 @@ char *GS_state_text[] =
 	"GS_STATE_GAMEPLAY_HELP",
 	"GS_STATE_END_DEMO",
 	"GS_STATE_LOOP_BRIEF",
-	"GS_STATE_NET_CHAT",
+	"GS_STATE_PXO",
 	"GS_STATE_LAB",									// 50
 	"GS_STATE_STORYBOOK",
 	"GS_STATE_PXO_HELP",

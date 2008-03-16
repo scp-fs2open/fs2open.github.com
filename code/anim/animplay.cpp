@@ -9,18 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/AnimPlay.cpp $
- * $Revision: 2.22 $
- * $Date: 2006-12-28 00:59:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.19.2.2 $
+ * $Date: 2006-09-11 01:00:27 $
+ * $Author: taylor $
  *
  * C module for playing back anim files
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.21  2006/09/11 06:45:39  taylor
- * various small compiler warning and strict compiling fixes
- *
- * Revision 2.20  2006/06/27 05:07:48  taylor
- * fix various compiler warnings and things that Valgrind complained about
+ * Revision 2.19.2.1  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
  *
  * Revision 2.19  2006/03/21 00:27:27  taylor
  * some minor cleanup
@@ -949,6 +946,7 @@ void anim_read_header(anim *ptr, CFILE *fp)
 	}
 	
 	ptr->height = cfread_short(fp);
+
 #ifndef NDEBUG
 	// get size of ani compared to power of 2
 	int r, floor_pow;
@@ -966,7 +964,7 @@ void anim_read_header(anim *ptr, CFILE *fp)
 
 	if (diff != 0) {
 		if (ptr->height > 16) {
-			mprintf(("ANI %s with size %dx%d (%.1f%% wasted)\n", ptr->name, ptr->height, ptr->height, waste));
+			mprintf(("ANI %s with size %dx%d (%.1f%% wasted)\n", ptr->name, ptr->width, ptr->height, waste));
 		}
 	}
 #endif
@@ -1000,7 +998,7 @@ void anim_read_header(anim *ptr, CFILE *fp)
 //	returns:	pointer to anim that is loaded	=> sucess
 //				NULL										=>	failure
 //
-anim *anim_load(char *real_filename, int file_mapped)
+anim *anim_load(char *real_filename, int cf_dir_type, int file_mapped)
 {
 	anim			*ptr;
 	CFILE			*fp;
@@ -1025,7 +1023,7 @@ anim *anim_load(char *real_filename, int file_mapped)
 	}
 
 	if (!ptr) {
-		fp = cfopen(name, "rb");
+		fp = cfopen(name, "rb", CFILE_NORMAL, cf_dir_type);
 		if ( !fp )
 			return NULL;
 
@@ -1082,14 +1080,14 @@ anim *anim_load(char *real_filename, int file_mapped)
 		if ( file_mapped == PAGE_FROM_MEM) {
 			// Try mapping the file to memory 
 			ptr->flags |= ANF_MEM_MAPPED;
-			ptr->cfile_ptr = cfopen(name, "rb", CFILE_MEMORY_MAPPED);
+			ptr->cfile_ptr = cfopen(name, "rb", CFILE_MEMORY_MAPPED, cf_dir_type);
 		}
 
 		// couldn't memory-map file... must be in a packfile, so stream manually
 		if ( file_mapped && !ptr->cfile_ptr ) {
 			ptr->flags &= ~ANF_MEM_MAPPED;
 			ptr->flags |= ANF_STREAMED;
-			ptr->cfile_ptr = cfopen(name, "rb");
+			ptr->cfile_ptr = cfopen(name, "rb", CFILE_NORMAL, cf_dir_type);
 		}
 
 		ptr->cache = NULL;

@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by FRED.rc
+// Microsoft Visual C++ generated include file.
+// Used by fred.rc
 //
 #define IDC_SAVE_DEFAULT_PREFS          3
 #define ID_DELETE_VARIABLE              3
@@ -99,10 +99,8 @@
 #define IDD_SPECIAL_HITPOINTS           264
 #define IDD_SET_GLOBAL_SHIP_FLAGS       266
 #define IDD_CUSTOM_WING_NAMES           267
-#define IDD_ALT_SHIP_CLASS              268
-#define IDD_RESTRICT_PATHS              269
+#define IDD_RESTRICT_PATHS              270
 #define IDD_BACKGROUND_CHOOSER          272
-#define IDB_DATA_01                     273
 #define IDB_DATA_02                     274
 #define IDB_DATA_03                     275
 #define IDB_DATA_04                     276
@@ -111,19 +109,19 @@
 #define IDB_DATA_07                     279
 #define IDB_DATA_08                     280
 #define IDB_DATA_09                     281
-#define IDB_DATA_10                     282
-#define IDB_DATA_11                     283
-#define IDB_DATA_12                     284
-#define IDB_DATA_15                     285
-#define IDB_DATA_14                     286
-#define IDB_DATA_13                     287
+#define IDB_DATA_01                     285
+#define IDB_DATA_10                     286
+#define IDB_DATA_11                     287
+#define IDB_DATA_12                     288
+#define IDB_DATA_15                     289
+#define IDB_DATA_14                     290
+#define IDB_DATA_13                     291
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
 #define IDC_WEAPON_ARTCLIP_OR_OBJECT    1008
 #define IDC_ALLY_ARRIVAL_TRACK          1009
 #define IDC_SCLASS_DEBRIS_MODEL         1009
-#define IDC_USE_AUTOPILOT_CINEMATICS    1009
 #define IDC_WEAPON_FLASH_ARTCLIP        1010
 #define IDC_SCLASS_AI_CLASS             1011
 #define IDC_SHIP_APPEAR_SKILL           1011
@@ -211,7 +209,6 @@
 #define IDC_PASSIVE_SHIP                1034
 #define IDC_FIELD_SHIP                  1034
 #define IDC_SEP_UNDERSCORES             1034
-#define IDC_ASCT1_CLASS_RADIO1          1034
 #define IDC_EXPORT_EVERYTHING           1034
 #define IDC_RADIO2                      1035
 #define IDC_AI_ACCURACY                 1035
@@ -222,7 +219,6 @@
 #define IDC_PASSIVE_ASTEROID            1035
 #define IDC_FIELD_ASTEROID              1035
 #define IDC_SEP_NOTHING                 1035
-#define IDC_ASCT1_VARIABLES_RADIO1      1035
 #define IDC_EXPORT_COMMAND_BRIEFINGS    1035
 #define IDC_RADIO3                      1036
 #define IDC_SCLASS_MAX_ROLL             1036
@@ -232,14 +228,12 @@
 #define IDC_COOP                        1036
 #define IDC_ACTIVE_FIELD                1036
 #define IDC_SEP_DASHES                  1036
-#define IDC_ASCT1_CLASS_RADIO2          1036
 #define IDC_EXPORT_BRIEFINGS            1036
 #define IDC_SPIN_POSITIONX6             1037
 #define IDC_RADIO4                      1037
 #define IDC_WAYPOINTS                   1037
 #define IDC_TEAMVTEAM                   1037
 #define IDC_PASSIVE_FIELD               1037
-#define IDC_ASCT1_VARIABLES_RADIO2      1037
 #define IDC_EXPORT_DEBRIEFINGS          1037
 #define IDC_SPIN_POSITIONX10            1038
 #define IDC_OBJECT_POSITIONY2           1038
@@ -248,13 +242,11 @@
 #define IDC_RADIO7                      1038
 #define IDC_SHIP_RESET                  1038
 #define IDC_ARRIVAL_CUE1                1038
-#define IDC_ASCT1_CLASS_RADIO3          1038
 #define IDC_EXPORT_MESSAGES             1038
 #define IDC_SPIN_POSITIONY2             1039
 #define IDC_SOUNDS                      1039
 #define IDC_RADIO5                      1039
 #define IDC_FURBALL                     1039
-#define IDC_ASCT1_VARIABLES_RADIO3      1039
 #define IDC_OBJECT_POSITIONZ2           1040
 #define IDC_GOALS                       1040
 #define IDC_GOAL1_OBJECT1               1040
@@ -262,7 +254,6 @@
 #define IDC_RADIO8                      1040
 #define IDC_DEPARTURE_CUE1              1040
 #define IDC_PRIORITY2                   1040
-#define IDC_ASCT2_CLASS_RADIO1          1040
 #define IDC_SPIN_POSITIONZ2             1041
 #define IDC_SCLASS_POWER_PLANT          1041
 #define IDC_GOAL1_ACTIVE                1041
@@ -270,7 +261,6 @@
 #define IDC_ARRIVAL_CUE2a               1041
 #define IDC_SPIN2                       1041
 #define IDC_GOALS2                      1041
-#define IDC_ASCT2_VARIABLES_RADIO1      1041
 #define IDC_OBJECT_POSITIONX15          1042
 #define IDC_SCLASS_ENGINES              1042
 #define IDC_GOAL1_OBJECT2               1042
@@ -338,6 +328,7 @@
 #define IDC_DUMP_TO_FILE                1062
 #define IDC_LOOP_BRIEF_BROWSE           1062
 #define IDC_BUG                         1062
+#define IDC_AUTOGENERATE                1062
 #define IDC_GENERATE_FILE_NAMES         1062
 #define IDC_OBJECT_POSITIONY6           1063
 #define IDC_SOUND_CLIP_VOLUME           1063
@@ -530,28 +521,17 @@
 #define IDC_SUN1                        1188
 #define IDC_SHIP_DEBRIS1                1188
 #define IDC_OLD_TEXTURE                 1188
-#define IDC_ASCT1_CLASS_COMBO1          1188
-#define IDC_SHIP_VARIABLES_COMBO        1188
 #define IDC_SUFFIX                      1188
 #define IDC_CREATED                     1189
 #define IDC_DEPARTURE_TARGET            1189
 #define IDC_SBITMAP                     1189
-#define IDC_ASCT1_VARIABLES_COMBO1      1189
-#define IDC_WEAPON_VARIABLES_COMBO      1189
-#define IDC_ASCT1_CLASS_COMBO2          1190
 #define IDC_BACKGROUND_NUM              1190
 #define IDC_WING_DISPLAY_FILTER         1191
-#define IDC_ASCT1_VARIABLES_COMBO2      1191
 #define IDC_BACKGROUND_SWAP_NUM         1191
 #define IDC_SHIP_DEBRIS2                1192
-#define IDC_ASCT1_CLASS_COMBO3          1192
 #define IDC_SHIP_LIST                   1193
 #define IDC_SHIP_DEBRIS3                1193
-#define IDC_ASCT1_VARIABLES_COMBO3      1193
 #define IDC_AI_CLASS                    1194
-#define IDC_ASCT2_CLASS_COMBO1          1194
-#define IDC_SHIP_VARIABLES_LIST         1194
-#define IDC_ASCT2_VARIABLES_COMBO1      1195
 #define IDC_NEW_WING                    1197
 #define IDC_DELETE_WING                 1197
 #define IDC_BUTTON2                     1198
@@ -593,8 +573,6 @@
 #define IDC_LIST3                       1208
 #define IDC_FILELIST                    1208
 #define IDC_YES_MESSAGE_LIST            1208
-#define IDC_COMMAND_SENDER              1209
-#define IDC_COMMAND_PERSONA             1210
 #define IDC_FILTER_WAYPOINTS            1211
 #define IDC_FILTER_STARTS               1212
 #define IDC_FILTER_SHIPS                1213
@@ -758,7 +736,6 @@
 #define IDC_GOAL_NAME                   1342
 #define IDC_HOTKEY                      1342
 #define IDC_SBITMAP_LIST                1342
-#define IDC_WEAPON_VARIABLES_LIST       1342
 #define IDC_EDIT2                       1343
 #define IDC_AMMO2                       1343
 #define IDC_TEXT                        1343
@@ -858,6 +835,7 @@
 #define IDC_DELAY_SPIN                  1408
 #define IDC_HELP_BOX                    1409
 #define IDC_HELP_BOX2                   1410
+#define IDC_MINI_HELP_BOX               1410
 #define IDC_asdf                        1412
 #define IDC_DESTROY_SPIN                1413
 #define IDC_IGNORE_ORDERS               1414
@@ -935,14 +913,16 @@
 #define IDC_NUM_PLAYERS                 1481
 #define IDC_REDALERTCARRY               1481
 #define IDC_PLAYERS_LABEL               1482
+#define IDC_NO_BANK                     1482
 #define IDC_BROWSE_ANI                  1483
 #define IDC_AFFECTED_BY_GRAVITY         1483
 #define IDC_RESPAWNS                    1484
 #define IDC_NO_DEATH_SCREAM             1484
-#define IDC_RESET_SCORES                1484
 #define IDC_RESPAWN_SPIN                1485
-#define IDC_ALWAYS_DEATH_SCREAM         1485
-#define IDC_STEALTH                     1486
+#define IDC_STEALTH                     1485
+#define IDC_ALWAYS_DEATH_SCREAM         1486
+#define IDC_NAV_CARRY                   1487
+#define IDC_NAV_NEEDSLINK               1488
 #define IDC_OBJ_TEAM                    1489
 #define IDC_CAMPAIGN_TYPE               1491
 #define IDC_SUPPORT_ALLOWED             1492
@@ -1024,7 +1004,8 @@
 #define IDC_MISSION_OPTIONS             1546
 #define IDC_PLAYER_START_AI             1546
 #define IDC_CUSTOM_TECH_DB              1547
-#define IDC_ALLOW_DOCK_TREES2           1547
+#define IDC_USE_AUTOPILOT_CINEMATICS    1547
+#define IDC_2D_MISSION                  1548
 #define IDC_LABEL1                      1549
 #define IDC_LABEL2                      1550
 #define IDC_NEW_TEXTURE                 1551
@@ -1083,26 +1064,17 @@
 #define IDC_PRIMARIES_LOCKED            1581
 #define IDC_EXPORT                      1581
 #define IDC_SECONDARIES_LOCKED          1582
-#define IDC_ASCT1_GROUP_ONE             1582
-#define IDC_ENVMAP                      1582
-#define IDC_ALT_SHIP_CLASS              1583
-#define IDC_ASCT1_GROUP_TWO             1583
-#define IDC_ASCT1_GROUP_THREE           1584
-#define IDC_ASCT2_GROUP_ONE             1585
-#define IDC_SET_CLASS_DYNAMICALLY       1586
+#define IDC_SUBSTITUTE_BRIEFING_MUSIC   1582
+#define IDC_RESTRICT_PATHS_LABEL        1584
+#define IDC_PATH_LIST                   1585
 #define IDC_BACKGROUND                  1586
-#define IDC_TEAM_LOADOUT_STORE_STATUS   1587
-#define IDC_SUBSTITUTE_BRIEFING_MUSIC   1588
-#define IDC_NAV_CARRY                   1588
-#define IDC_RESTRICT_PATHS_LABEL        1589
-#define IDC_NAV_NEEDSLINK               1589
-#define IDC_PATH_LIST                   1590
+#define IDC_ENVMAP                      1589
+#define IDC_ENVMAP_BROWSE               1590
 #define IDC_ENTRY_FORMAT                1590
 #define IDC_NO_REPLACE                  1591
-#define IDC_ENVMAP_BROWSE               1593
-#define IDC_SKYBOX_MODEL                1594
-#define IDC_MINI_HELP_BOX               1595
-#define IDC_ALT_AS_CALLSIGN             1596
+#define IDC_SKYBOX_MODEL                1592
+#define IDC_ALT_AS_CALLSIGN             1593
+#define IDC_DEACTIVATE_AUTOPILOT        1594
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
 #define ID_VIEW_ROTATE                  32775
@@ -1390,9 +1362,9 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        288
+#define _APS_NEXT_RESOURCE_VALUE        292
 #define _APS_NEXT_COMMAND_VALUE         33091
-#define _APS_NEXT_CONTROL_VALUE         1597
+#define _APS_NEXT_CONTROL_VALUE         1595
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

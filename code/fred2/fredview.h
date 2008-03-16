@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FREDView.h $
- * $Revision: 1.3 $
- * $Date: 2006-11-06 05:58:05 $
+ * $Revision: 1.2.2.1 $
+ * $Date: 2006-10-27 06:33:38 $
  * $Author: taylor $
  *
  * View class for a document/view architechure design program, which we don't

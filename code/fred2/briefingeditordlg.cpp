@@ -9,15 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BriefingEditorDlg.cpp $
- * $Revision: 1.6 $
- * $Date: 2007-04-08 08:37:37 $
+ * $Revision: 1.4.2.2 $
+ * $Date: 2007-04-08 08:28:20 $
  * $Author: karajorma $
  *
  * Briefing editor dialog box class.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.5  2007/03/07 22:43:24  karajorma
- * Make .ogg voice files selectable in FRED.
+ * Revision 1.4.2.1  2007/03/07 22:36:51  karajorma
+ * Make .ogg selectable in FRED.
  *
  * Revision 1.4  2006/05/30 02:13:22  Goober5000
  * add substitute music boxes to FRED, and reset music properly when mission is cleared

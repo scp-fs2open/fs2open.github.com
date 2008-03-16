@@ -1,14 +1,15 @@
 /*
  * $Logfile: /Freespace2/code/Graphics/Grstub.cpp $
- * $Revision: 2.4 $
- * $Date: 2007-02-11 18:25:16 $
+ * $Revision: 1.1.2.4 $
+ * $Date: 2007-02-12 00:19:48 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.3  2007/01/10 01:44:39  taylor
- * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
+ * Revision 1.1.2.3  2007/02/11 09:58:20  taylor
+ * remove -pcx32 and -jpgtga
+ * support for a couple of recent bmpman changes
  *
- * Revision 2.2  2006/09/24 22:55:17  taylor
+ * Revision 1.1.2.2  2006/09/24 22:53:22  taylor
  * more standalone server fixes:
  *  - add some basic bmpman functionality to grstub, since it needs to do something at least
  *  - add missing gr_* function ptrs to grstrub
@@ -16,7 +17,7 @@
  *  - deal with default pilot file properly (also caused a bmpman headache)
  *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
  *
- * Revision 2.1  2006/09/11 06:36:38  taylor
+ * Revision 1.1.2.1  2006/08/22 05:41:36  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
  * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway

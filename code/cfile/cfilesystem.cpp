@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileSystem.cpp $
- * $Revision: 2.41 $
- * $Date: 2007-05-28 19:45:14 $
+ * $Revision: 2.34.2.6 $
+ * $Date: 2007-05-28 19:44:57 $
  * $Author: taylor $
  *
  * Functions to keep track of and find files that can exist
@@ -20,12 +20,12 @@
  * all those locations, inherently enforcing precedence orders.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.40  2007/04/11 18:24:27  taylor
- * cleanup of chksum stuff (works properly on 64-bit systems now)
+ * Revision 2.34.2.5  2007/04/11 18:21:20  taylor
+ * cleanup of chcksum stuff (works properly on 64-bit systems now)
  * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
  * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
  *
- * Revision 2.39  2007/03/22 20:22:24  taylor
+ * Revision 2.34.2.4  2007/03/22 20:22:44  taylor
  * a little better error handling for cf_exists_full()
  * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
  * use cf_exists_full_ext() for eventmusic file checks (to check for ogg and wav)
@@ -35,18 +35,15 @@
  *  - load issue with finding incorrect files by mistake
  *  - prevent finding different file types in various paths/roots
  *
- * Revision 2.38  2007/02/09 23:57:24  taylor
+ * Revision 2.34.2.3  2007/02/09 23:56:49  taylor
  * add the number of files that CFILE is going to try and use in each root to the debug info
  * optimizations for cf_find_file_location_ext()
  *
- * Revision 2.37  2006/12/28 00:59:19  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.36  2006/09/11 05:49:05  taylor
+ * Revision 2.34.2.2  2006/08/27 18:01:45  taylor
  * various small cleanup and speedup changes
  * add a cf_find_file_location_ext() function, which you can pass a filename and a list of extensions and it will search for all of them at once
  *
- * Revision 2.35  2006/07/28 02:36:07  taylor
+ * Revision 2.34.2.1  2006/07/28 02:44:17  taylor
  * include CF_TYPE_PLAYERS in special pilot path consideration, prevents moddirs from always getting and empty data/players/
  *
  * Revision 2.34  2006/04/16 05:28:10  taylor
@@ -912,7 +909,11 @@ void cf_search_root_pack(int root_index)
 		return;
 	}
 
-	mprintf(( "Searching root pack '%s' ... ", root->path ));
+	if ( filelength(fileno(fp)) < (int)(sizeof(VP_FILE_HEADER) + (sizeof(int) * 3)) ) {
+		mprintf(( "Skipping VP file ('%s') of invalid size...\n", root->path ));
+		fclose(fp);
+		return;
+	}
 
 	VP_FILE_HEADER VP_header;
 
@@ -1843,7 +1844,7 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	// Search the default directories
 #if defined _WIN32
 	cf_create_default_path_string( filespec, sizeof(filespec)-1, pathtype, filter );
-	mprintf(("CFILE: cf_get_file_list_preallocated looking for type=%d, filter=\"%s\"\n",
+	mprintf(("cf_get_file_list_preallocated looking for type=%d, filter=\"%s\"\n",
 				pathtype, filter));
 
 	int find_handle;

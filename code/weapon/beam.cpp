@@ -9,68 +9,45 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.cpp $
- * $Revision: 2.87 $
- * $Date: 2007-11-23 23:49:41 $
- * $Author: wmcoolmon $
+ * $Revision: 2.67.2.12 $
+ * $Date: 2007-05-28 19:41:32 $
+ * $Author: taylor $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.86  2007/05/28 19:41:47  taylor
- * various bits of cleanup
- * don't draw beam impact effect if we are hitting a shield
- * updated hit shield quadrant properly for player when a beam hits
- * set shield quadrant and exit_flag properly for collision info so that we don't count damage twice and handle no_pierce_shields properly
+ * Revision 2.67.2.11  2007/05/28 18:27:36  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
  *
- * Revision 2.85  2007/04/11 18:17:26  taylor
+ * Revision 2.67.2.10  2007/04/11 18:15:01  taylor
  * cleanup error message
  * allow launch_snd from tbl to be used for beam weapon shot sound (Mantis #1263)
  *
- * Revision 2.84  2007/03/23 01:51:56  taylor
+ * Revision 2.67.2.9  2007/03/22 19:30:00  taylor
+ * fix strange bug where a beams parent will die and the object reset before the beam gets the chance to fire
+ *
+ * Revision 2.67.2.8  2007/02/20 04:19:43  Goober5000
+ * the great big duplicate model removal commit
+ *
+ * Revision 2.67.2.7  2007/02/12 00:45:23  taylor
  * bit of cleanup and minor performance tweaks
  * sync up with new generic_anim/bitmap and weapon delayed loading changes
  * with generic_anim, use Goober's animation timing for beam section and glow animations
  * make trail render list dynamic (as well as it can be)
  *
- * Revision 2.83  2007/02/20 04:20:38  Goober5000
- * the great big duplicate model removal commit
+ * Revision 2.67.2.6  2007/02/07 07:35:01  Goober5000
+ * Clean up the ship-weapon collision code for both conventional weapons and beams.  Improved readability and clarity; untangled program flow; cleaned up sloppy enhancements.  Fixed a few bugs too.
  *
- * Revision 2.82  2007/02/18 06:17:48  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.81  2007/02/11 21:26:39  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 2.80  2007/02/07 07:59:48  Goober5000
- * hm, didn't notice this new feature
- *
- * Revision 2.79  2007/02/07 07:35:22  Goober5000
- * Cleaned up the ship-weapon collision code for both conventional weapons and beams.  Improved readability and clarity; untangled program flow; cleaned up sloppy enhancements.  Fixed a few bugs too.
- *
- * Revision 2.78  2007/01/15 01:37:47  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
- *
- * Revision 2.77  2007/01/14 14:03:40  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.76  2007/01/14 10:26:39  wmcoolmon
- * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
- *
- * Revision 2.75  2006/12/28 00:59:53  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.74  2006/11/06 06:36:44  taylor
+ * Revision 2.67.2.5  2006/10/27 21:39:27  taylor
  * updated/fixed modelanim code
  *
- * Revision 2.73  2006/10/08 02:05:38  Goober5000
+ * Revision 2.67.2.4  2006/10/08 02:05:34  Goober5000
  * fix forum links
  *
- * Revision 2.72  2006/09/11 05:38:16  taylor
+ * Revision 2.67.2.3  2006/08/22 05:47:51  taylor
  * don't try to draw beam sections if there is no valid texture for it, or if there is no width
  *
- * Revision 2.71  2006/07/24 07:36:50  taylor
+ * Revision 2.67.2.2  2006/07/24 07:38:00  taylor
  * minor cleanup/optimization to beam warmup glow rendering function
  * various lighting code cleanups
  *  - try to always make sure beam origin lights occur outside of model
@@ -79,14 +56,8 @@
  *  - add ambient color to point lights (helps warp effects)
  *  - sort lights to try and get more important and/or visible lights to always happen in initial render pass
  *
- * Revision 2.70  2006/07/05 23:36:07  Goober5000
+ * Revision 2.67.2.1  2006/07/05 23:37:13  Goober5000
  * cvs comment tweaks
- *
- * Revision 2.69  2006/06/10 21:31:14  wmcoolmon
- * Oh wait, I can just do this
- *
- * Revision 2.68  2006/06/10 21:22:57  wmcoolmon
- * Fix attempt #2 for mantis bug 0000900
  *
  * Revision 2.67  2006/05/27 16:45:11  taylor
  * some minor cleanup
@@ -1420,9 +1391,11 @@ void beam_type_b_move(beam *b)
 void beam_type_c_move(beam *b)
 {	
 	vec3d temp;
+	ship *shipp;
+	int num_fire_points = 1;
 
 	// ugh
-	if(b->objp == NULL){
+	if ( (b->objp == NULL) || (b->objp->instance < 0) ) {
 		Int3();
 		return;
 	}
@@ -1433,7 +1406,17 @@ void beam_type_c_move(beam *b)
 	vm_vec_add2(&b->last_start, &b->objp->pos);	
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 
-	Ships[b->objp->instance].weapon_energy -= Weapon_info[b->weapon_info_index].energy_consumed * flFrametime;
+	shipp = &Ships[b->objp->instance];
+
+	if (shipp->beam_sys_info.turret_num_firing_points > 1) {
+		num_fire_points = shipp->beam_sys_info.turret_num_firing_points;
+	}
+
+	shipp->weapon_energy -= num_fire_points * Weapon_info[b->weapon_info_index].energy_consumed * flFrametime;
+
+	if (shipp->weapon_energy < 0.0f) {
+		shipp->weapon_energy = 0.0f;
+	}
 }
 
 // type D functions
@@ -1524,52 +1507,55 @@ void beam_move_all_pre()
 
 	// traverse through all active beams
 	moveup = GET_FIRST(&Beam_used_list);
-	while(moveup != END_OF_LIST(&Beam_used_list)){				
+	while (moveup != END_OF_LIST(&Beam_used_list)) {				
 		// get the beam
 		b = moveup;
 
+		// check if parent object has died, if so then delete beam
+		if (b->objp->type == OBJ_NONE) {
+			// set next beam
+			moveup = GET_NEXT(moveup);
+			// delete current beam
+			beam_delete(b);
+
+			continue;
+		}
+
 		// unset collision info
 		b->f_collision_count = 0;
-		
-		if(!physics_paused){
-			//WMC - cull beams if the firing ship is dead,
-			//and the beam needs the firing ship
-			if(b->type != BEAM_TYPE_C && b->sig != b->objp->signature)
-			{
-					moveup = GET_NEXT(moveup);
-					beam_delete(b);
-					continue;
-			}
+
+		if ( !physics_paused ) {
 			// move the beam
-			switch(b->type){
-			// type A beam weapons don't move
-			case BEAM_TYPE_A :			
-				beam_type_a_move(b);
-				break;
+			switch (b->type)
+			{
+				// type A beam weapons don't move
+				case BEAM_TYPE_A :			
+					beam_type_a_move(b);
+					break;
 
-			// type B beam weapons move across the target somewhat randomly
-			case BEAM_TYPE_B :
-				beam_type_b_move(b);
-				break;				
+				// type B beam weapons move across the target somewhat randomly
+				case BEAM_TYPE_B :
+					beam_type_b_move(b);
+					break;				
 
-			// type C beam weapons are attached to a fighter - pointing forward
-			case BEAM_TYPE_C:
-				beam_type_c_move(b);
-				break;
+				// type C beam weapons are attached to a fighter - pointing forward
+				case BEAM_TYPE_C:
+					beam_type_c_move(b);
+					break;
 
-			// type D
-			case BEAM_TYPE_D:
-				beam_type_d_move(b);
-				break;
+				// type D
+				case BEAM_TYPE_D:
+					beam_type_d_move(b);
+					break;
 
-			// type E
-			case BEAM_TYPE_E:
-				beam_type_e_move(b);
-				break;
+				// type E
+				case BEAM_TYPE_E:
+					beam_type_e_move(b);
+					break;
 
-			// illegal beam type
-			default :
-				Int3();
+				// illegal beam type
+				default :
+					Int3();
 			}
 		}
 
@@ -1766,9 +1752,7 @@ void beam_move_all_post()
 
 void beam_render(beam *b, float u_offset)
 {	
-//	mprintf(("about to render a beam\n"));
-	int idx;
-	int s_idx;
+	int idx, s_idx;
 	vertex h1[4];				// halves of a beam section
 	vertex *verts[4] = { &h1[0], &h1[1], &h1[2], &h1[3] };
 	vec3d fvec, top1, bottom1, top2, bottom2;
@@ -2410,7 +2394,11 @@ int beam_get_model(object *objp)
 	default:
 		// this shouldn't happen too often
 		mprintf(("Beam couldn't find a good object model/type!! (%d)\n", objp->type));
+		return -1;
 	}
+
+	// can't happen
+	Int3();
 	return -1;
 }
 
@@ -2915,12 +2903,12 @@ int beam_collide_ship(obj_pair *pair)
 	{
 		// pick out the shield quadrant
 		if (shield_collision)
-			quadrant_num = shield_get_quadrant(&mc_shield.hit_point);
+			quadrant_num = get_quadrant(&mc_shield.hit_point);
 		else if (hull_enter_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS))
-			quadrant_num = shield_get_quadrant(&mc_hull_enter.hit_point);
+			quadrant_num = get_quadrant(&mc_hull_enter.hit_point);
 
 		// make sure that the shield is active in that quadrant
-		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !shield_is_up(ship_objp, quadrant_num)))
+		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !ship_is_shield_up(ship_objp, quadrant_num)))
 			quadrant_num = -1;
 
 		// see if we hit the shield
@@ -3404,7 +3392,7 @@ void beam_handle_collisions(beam *b)
 			// maybe draw an explosion, if we aren't hitting shields
 			if ( (wi->impact_weapon_expl_index >= 0) && (b->f_collisions[idx].quadrant < 0) ) {
 				int ani_handle = Weapon_explosions.GetAnim(wi->impact_weapon_expl_index, &b->f_collisions[idx].cinfo.hit_point_world, wi->impact_explosion_radius);
-				particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &vmd_zero_vector, 0.0f, wi->impact_explosion_radius, PARTICLE_BITMAP, ani_handle );
+				particle_create( &b->f_collisions[idx].cinfo.hit_point_world, &vmd_zero_vector, 0.0f, wi->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, ani_handle );
 			}
 
 			switch(Objects[target].type){
@@ -3553,16 +3541,25 @@ int beam_ok_to_fire(beam *b)
 	}	
 
 	// type C beams are ok to fire all the time
-	if(b->type == BEAM_TYPE_C){
+	if (b->type == BEAM_TYPE_C) {
 		ship *shipp = &Ships[b->objp->instance];
-		if(shipp->weapon_energy < 0.0){
-//			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(Weapon_info[shipp->weapons.primary_bank_weapons[b->bank]].b_info.beam_warmdown*2);
-			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(2000);
-			int ship_maybe_play_primary_fail_sound();
-			if ( &Objects[shipp->objnum] == Player_obj )ship_maybe_play_primary_fail_sound();
+
+		if (shipp->weapon_energy <= 0.0f) {
+		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(Weapon_info[shipp->weapons.primary_bank_weapons[b->bank]].b_info.beam_warmdown*2);
+		//	shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(2000);
+			shipp->weapons.next_primary_fire_stamp[b->bank] = timestamp(shipp->weapons.next_primary_fire_stamp[b->bank] * 2);
+
+			if ( OBJ_INDEX(Player_obj) == shipp->objnum ) {
+				extern int ship_maybe_play_primary_fail_sound();
+				ship_maybe_play_primary_fail_sound();
+			}
+
 			mprintf(("killing fighter beam becase it ran out of energy\n"));
+
 			return 0;
-		}else return 1;
+		} else {
+			return 1;
+		}
 	}
 
 	// if the shooting turret is destroyed	

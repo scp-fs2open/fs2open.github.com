@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiBig.cpp $
- * $Revision: 1.14 $
- * $Date: 2007-07-15 04:19:24 $
+ * $Revision: 1.12.2.2 $
+ * $Date: 2007-07-15 04:19:32 $
  * $Author: Goober5000 $
  *
  * C module for AI code related to large ships
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.13  2007/02/20 04:20:10  Goober5000
+ * Revision 1.12.2.1  2007/02/20 04:19:09  Goober5000
  * the great big duplicate model removal commit
  *
  * Revision 1.12  2006/02/25 21:46:59  Goober5000

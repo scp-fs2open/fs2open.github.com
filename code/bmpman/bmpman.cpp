@@ -10,76 +10,56 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.cpp $
  *
- * $Revision: 2.103 $
- * $Date: 2007-09-02 02:10:24 $
+ * $Revision: 2.86.2.12 $
+ * $Date: 2007-09-02 02:07:39 $
  * $Author: Goober5000 $
  *
  * Code to load and manage all bitmaps for the game
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.102  2007/04/11 18:05:18  taylor
+ * Revision 2.86.2.11  2007/04/11 18:04:51  taylor
  * bm_unload_fast() should only unload the bitmap passed for animations, not the entire animation (fixes several issues)
  *
- * Revision 2.101  2007/03/22 20:13:23  taylor
+ * Revision 2.86.2.10  2007/03/22 20:14:16  taylor
  * various bits of bmpman cleanup
  * be sure to clean all three possible buffers with OGL init
  * fix a couple of bmpman loading bugs that messed up animations
  * fix bmpman bug that didn't properly account for free'd texture ram count with unload_fast
  *
- * Revision 2.100  2007/02/18 06:16:46  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.99  2007/02/11 20:25:58  Goober5000
+ * Revision 2.86.2.9  2007/02/11 20:26:00  Goober5000
  * fix some breakage ;)
  *
- * Revision 2.98  2007/02/11 18:45:38  taylor
- * fix a couple of breaks from my commits
- *
- * Revision 2.97  2007/02/11 18:18:51  taylor
+ * Revision 2.86.2.8  2007/02/11 09:51:21  taylor
  * remove some dead code
  * better texture memory handling (a work in-progress)
  * new image finding/loading
+ * get rid of -pcx32 and -jpgtga
  * change the game_busy() reporting during bitmap page-in to only catch one frame of an animation
  * fix numerous little bugs in gropenglbmpman relating to -img2dds
  *
- * Revision 2.96  2007/01/15 01:37:37  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
- *
- * Revision 2.95  2007/01/14 14:03:32  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.94  2007/01/10 01:40:06  taylor
- * remove the non-dark stuff, it only works on PCX files and stuff to use it has already been ripped out
- * per earlier discussions: remove -jpgtga and -pcx32, set image load order to DDS->TGA->JPG->PCX
- * some debug log cleanup
- * remove bitmap data from system memory once it's in API memory
- *
- * Revision 2.93  2007/01/07 12:32:06  taylor
+ * Revision 2.86.2.7  2007/01/07 12:07:40  taylor
  * fix bm_page_in_texture() so that it will load all frames of an animation (caused slowdowns in-game with it)
  *
- * Revision 2.92  2006/12/28 00:59:19  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.91  2006/09/11 06:48:40  taylor
+ * Revision 2.86.2.6  2006/09/11 01:12:50  taylor
  * fixes for stuff_string() bounds checking
  * stict compiler build fixes
  *
- * Revision 2.90  2006/08/20 00:45:37  taylor
+ * Revision 2.86.2.5  2006/08/19 04:20:22  taylor
  * ever so slight speed up for bm_set_components_* (this crap is slow, and it's called a LOT)
  *
- * Revision 2.89  2006/07/21 16:06:56  taylor
+ * Revision 2.86.2.4  2006/07/21 16:08:32  taylor
  * minor changes to game_busy() debug text
  *  - don't alloc it for bmpman, and make sure to only call on textures that we are loading
  *  - add text for model loading, gets rid of the long-wait issue when it appears to not be doing anything early on
  *
- * Revision 2.88  2006/07/05 23:35:42  Goober5000
+ * Revision 2.86.2.3  2006/07/05 23:36:55  Goober5000
  * cvs comment tweaks
  *
- * Revision 2.87  2006/06/27 04:52:50  taylor
- * fix various things that Valgrind complained about
- * comp_type for DDS images will always be set to something, an 'uncompressed' type at the least
+ * Revision 2.86.2.2  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
+ *
+ * Revision 2.86.2.1  2006/06/18 20:08:27  taylor
+ * well, that was actually pretty stupid of me :)
  *
  * Revision 2.86  2006/05/27 17:20:48  taylor
  * clean up BM_TYPE_* stuff so it's a little easier to tell what is what
@@ -998,6 +978,7 @@ static int Bm_ignore_load_count = 0;
 #define EFF_FILENAME_CHECK { if ( be->type == BM_TYPE_EFF ) strncpy( filename, be->info.ani.eff.filename, MAX_FILENAME_LEN ); else strncpy( filename, be->filename, MAX_FILENAME_LEN ); }
 
 
+
 // ===========================================
 // Mode: 0 = High memory
 //       1 = Low memory ( every other frame of ani's)
@@ -1140,6 +1121,7 @@ void bm_clean_slot(int n)
 {
 	bm_free_data(n);
 }
+
 
 void *bm_malloc( int n, int size )
 {
@@ -1446,8 +1428,6 @@ int bm_load( char *real_filename )
 	}
 
 	Assert(type != BM_TYPE_NONE);
-
-	// Error( LOCATION, "Unknown bitmap type %s\n", filename );
 
 	// Find an open slot
 	for (i = 0; i < MAX_BITMAPS; i++) {
@@ -1792,6 +1772,7 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		}
 	}
 
+
 	n = find_block_of(anim_frames);
 
 	if (n < 0) {
@@ -1886,6 +1867,23 @@ int bm_load_animation( char *real_filename, int *nframes, int *fps, int can_drop
 		cfclose(img_cfp);
 
 	return bm_bitmaps[n].handle;
+}
+
+int bm_load_either(char *filename, int *nframes, int *fps, int can_drop_frames, int dir_type)
+{
+	if(nframes != NULL)
+		*nframes = 0;
+	if(fps != NULL)
+		*fps = 0;
+	int tidx = bm_load_animation(filename, nframes, fps, can_drop_frames, dir_type);
+	if(tidx == -1)
+	{
+		tidx = bm_load(filename);
+		if(tidx != -1 && nframes != NULL)
+			*nframes = 1;
+	}
+
+	return tidx;
 }
 
 int bm_is_valid(int handle)
@@ -2040,7 +2038,7 @@ void bm_lock_pcx( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	pcx_error = pcx_read_bitmap( filename, data, NULL, (bpp >> 3), (flags & BMP_AABITMAP), 0 );
+	pcx_error = pcx_read_bitmap( filename, data, NULL, (bpp >> 3), (flags & BMP_AABITMAP), 0, be->dir_type );
 
 	if ( pcx_error != PCX_ERROR_NONE ) {
 		mprintf(("Couldn't load PCX!!! (%s)\n", filename));
@@ -2068,7 +2066,7 @@ void bm_lock_ani( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	first_frame = be->info.ani.first_frame;
 	nframes = bm_bitmaps[first_frame].info.ani.num_frames;
 
-	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename)) == NULL ) {
+	if ( (the_anim = anim_load(bm_bitmaps[first_frame].filename, bm_bitmaps[first_frame].dir_type)) == NULL ) {
 		// Error(LOCATION, "Error opening %s in bm_lock\n", be->filename);
 	}
 
@@ -2296,7 +2294,7 @@ void bm_lock_tga( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	tga_error = targa_read_bitmap( filename, data, NULL, d_size);
+	tga_error = targa_read_bitmap( filename, data, NULL, d_size, be->dir_type);
 
 	if ( tga_error != TARGA_ERROR_NONE )	{
 		bm_free_data( bitmapnum );
@@ -2333,7 +2331,7 @@ void bm_lock_dds( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	error = dds_read_bitmap( filename, data, &dds_bpp );
+	error = dds_read_bitmap( filename, data, &dds_bpp, be->dir_type );
 
 #if BYTE_ORDER == BIG_ENDIAN
 	// same as with TGA, we need to byte swap 16 & 32-bit, uncompressed, DDS images
@@ -2407,7 +2405,7 @@ void bm_lock_jpg( int handle, int bitmapnum, bitmap_entry *be, bitmap *bmp, ubyt
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	jpg_error = jpeg_read_bitmap( filename, data, NULL, d_size);
+	jpg_error = jpeg_read_bitmap( filename, data, NULL, d_size, be->dir_type );
 
 	if ( jpg_error != JPEG_ERROR_NONE )	{
 		bm_free_data( bitmapnum );
@@ -3015,7 +3013,7 @@ extern void multi_ping_send_all();
 
 void bm_page_in_stop()
 {	
-	int i;
+	int i;	
 
 #ifndef NDEBUG
 	char busy_text[60];

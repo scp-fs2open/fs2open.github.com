@@ -9,25 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Supernova.cpp $
- * $Revision: 2.13 $
- * $Date: 2007-09-02 19:06:02 $
+ * $Revision: 2.8.2.4 $
+ * $Date: 2007-09-02 19:05:59 $
  * $Author: Goober5000 $
  *
  * Include file for nebula stuff
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.12  2007/05/14 23:13:51  Goober5000
+ * Revision 2.8.2.3  2007/05/14 23:13:43  Goober5000
  * --grouped the shake/shudder code together a bit better
  * --added a sexp to generate shudder
  * --fixed a minor bug in lock-perspective
  *
- * Revision 2.11  2007/02/20 04:20:38  Goober5000
+ * Revision 2.8.2.2  2007/02/20 04:19:42  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.10  2006/12/28 00:59:48  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.9  2006/08/20 00:51:06  taylor
+ * Revision 2.8.2.1  2006/08/19 04:38:47  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
  * Revision 2.8  2006/05/27 16:42:16  taylor
@@ -118,6 +115,10 @@ static int Supernova_finished = 0;
 static int Supernova_popup = 0;
 static float Supernova_fade_to_white = 0.0f;
 static int Supernova_particle_stamp = -1;
+
+// supernova camera pos
+vec3d Supernova_camera_pos;
+matrix Supernova_camera_orient;
 
 int Supernova_status = SUPERNOVA_NONE;
 
@@ -213,15 +214,13 @@ void supernova_do_particles()
 			whee.vel = norm;
 			vm_vec_scale(&whee.vel, 30.0f);						
 			vm_vec_add2(&whee.vel, &Player_obj->phys_info.vel);			
-			whee.normal = norm;
-			whee.texture_id = particle_get_fire_id();
-			particle_emit(&whee);
+			whee.normal = norm;			
+			particle_emit(&whee, PARTICLE_FIRE, 0);
 
 			vm_vec_unrotate(&b, &tb, &Player_obj->orient);
 			vm_vec_add2(&b, &Player_obj->pos);
-			whee.pos = b;
-			whee.texture_id = particle_get_fire_id();
-			particle_emit(&whee);
+			whee.pos = b;			
+			particle_emit(&whee, PARTICLE_FIRE, 0);
 		}
 	}
 }
@@ -375,38 +374,11 @@ DCF(sn_cam_dist, "")
 	dc_get_arg(ARG_FLOAT);
 	sn_cam_distance = Dc_arg_float;
 }
-/*
-camid supernova_get_camera()
+void supernova_set_view(vec3d *eye_pos, matrix *eye_orient)
 {
-	static camid supernova_camera;
-	if(!supernova_camera.isValid())
-	{
-		supernova_camera = cam_create("Supernova camera");
-	}
-
-	return supernova_camera;
-}
-*/
-void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
-{
-	// supernova camera pos
-	vec3d Supernova_camera_pos;
-	static matrix Supernova_camera_orient;
-	/*
-	static camid supernova_camera;
-	if(!supernova_camera.isValid())
-	{
-		supernova_camera = cam_create("Supernova camera");
-	}
-
-	if(!supernova_camera.isValid())
-		return supernova_camera;
-
-	camera *cam = supernova_camera.getCamera();
-	*/
-
 	vec3d at;
 	vec3d sun_temp, sun;
+	vec3d move;
 	vec3d view;
 	
 	// set the controls for the heart of the sun	
@@ -416,19 +388,16 @@ void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 	vm_vec_normalize(&sun);
 
 	// always set the camera pos
-	vec3d move;
 	matrix whee;
 	vm_vector_2_matrix(&whee, &move, NULL, NULL);
 	vm_vec_scale_add(&Supernova_camera_pos, &Player_obj->pos, &whee.vec.rvec, sn_cam_distance);
 	vm_vec_scale_add2(&Supernova_camera_pos, &whee.vec.uvec, 30.0f);
-	//cam->set_position(&Supernova_camera_pos);
 	*eye_pos = Supernova_camera_pos;
 
 	// if we're no longer moving the camera
 	if(Supernova_time < (SUPERNOVA_CUT_TIME - SUPERNOVA_CAMERA_MOVE_TIME)){
 		// *eye_pos = Supernova_camera_pos;
-		//cam->set_rotation(&Supernova_camera_orient);
-		*eye_orient = Supernova_camera_orient;
+		*eye_orient = Supernova_camera_orient;		
 	} 
 	// otherwise move it
 	else {
@@ -442,12 +411,10 @@ void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 		float pct = ((SUPERNOVA_CUT_TIME - Supernova_time) / SUPERNOVA_CAMERA_MOVE_TIME);
 		vm_vec_scale_add2(&at, &move, sn_distance * pct);	
 
-		vm_vec_sub(&view, &at, &Supernova_camera_pos);
+		*eye_pos = Supernova_camera_pos;
+		vm_vec_sub(&view, &at, eye_pos);
 		vm_vec_normalize(&view);
 		vm_vector_2_matrix(&Supernova_camera_orient, &view, NULL, NULL);
-		//cam->set_rotation(&Supernova_camera_orient);
 		*eye_orient = Supernova_camera_orient;
 	}
-
-	//return supernova_camera;
 }

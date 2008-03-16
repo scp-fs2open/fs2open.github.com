@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.h $
- * $Revision: 2.7 $
- * $Date: 2006-09-11 06:49:39 $
+ * $Revision: 2.6.2.1 $
+ * $Date: 2006-09-11 01:15:04 $
  * $Author: taylor $
  * 
  *

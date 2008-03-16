@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Fvi.cpp $
- * $Revision: 2.8 $
- * $Date: 2007-02-10 00:08:59 $
+ * $Revision: 2.7.2.1 $
+ * $Date: 2007-02-10 00:08:40 $
  * $Author: taylor $
  *
  * Routines to find intersections of various 3d things.

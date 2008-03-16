@@ -9,33 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiGoals.cpp $
- * $Revision: 1.36 $
- * $Date: 2007-03-22 22:19:30 $
- * $Author: taylor $
+ * $Revision: 1.28.2.6 $
+ * $Date: 2007-02-20 04:19:09 $
+ * $Author: Goober5000 $
  *
  * File to deal with manipulating AI goals, etc.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.35  2007/02/20 04:20:10  Goober5000
- * the great big duplicate model removal commit
+ * Revision 1.28.2.5  2007/02/12 00:24:33  taylor
+ * add back special "var" setting for flag_def_list and convert some of the lists to use it (more on the way)
  *
- * Revision 1.34  2007/02/10 06:39:43  Goober5000
- * new feature: shield generators that control whether the shield is up
- *
- * Revision 1.33  2007/02/10 04:49:22  Goober5000
+ * Revision 1.28.2.4  2007/02/10 04:49:19  Goober5000
  * prevent the AI from falling into the black hole of disarming a turretless ship
  *
- * Revision 1.32  2006/12/28 00:59:18  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.31  2006/11/16 00:52:28  taylor
+ * Revision 1.28.2.3  2006/11/15 00:33:16  taylor
  * add some needed wing leader checks to prevent Assert()'s and out-of-bounds problems when the leader is dead/dying (Mantis bug #1134)
  *
- * Revision 1.30  2006/11/06 03:38:32  Goober5000
+ * Revision 1.28.2.2  2006/11/06 03:38:30  Goober5000
  * --prevent the ai from "forgetting" that it's attacking a wing (fix for Mantis #1131)
  * --move AI_CHASE_WING goal check so that it will properly short-circuit when appropriate (discussed in the same bug)
  *
- * Revision 1.29  2006/09/08 06:20:14  taylor
+ * Revision 1.28.2.1  2006/09/08 06:14:43  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
  * Revision 1.28  2006/06/01 04:47:23  taylor
@@ -713,7 +707,7 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "object/objectdock.h"
-#include "object/waypoint/waypoint.h"
+#include "object/waypoint.h"
 
 
 // all ai goals dealt with in this code are goals that are specified through
@@ -1099,8 +1093,6 @@ int ai_get_subsystem_type( char *subsystem )
 		return SUBSYSTEM_GAS_COLLECT;
 	} else if ( !strnicmp(subsystem, NOX("activator"), 9) )  {
 		return SUBSYSTEM_ACTIVATION;
-	} else if ( !strnicmp(subsystem, NOX("shield"), 6) ) {
-		return SUBSYSTEM_SHIELD_GENERATOR;
 	} else {									// If unrecognized type, set to engine so artist can continue working...
 		if (!Fred_running) {
 //			Int3();							// illegal subsystem type -- find allender

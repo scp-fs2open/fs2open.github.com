@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/CHECKBOX.cpp $
- * $Revision: 2.3 $
- * $Date: 2006-09-08 06:20:15 $
+ * $Revision: 2.2.2.1 $
+ * $Date: 2006-09-08 06:14:44 $
  * $Author: taylor $
  *
  * Code to handle checkboxes.

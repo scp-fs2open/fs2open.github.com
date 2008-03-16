@@ -4,16 +4,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Autopilot/Autopilot.h $
- * $Revision: 1.12 $
- * $Date: 2007-09-02 02:10:24 $
+ * $Revision: 1.9.2.3 $
+ * $Date: 2007-09-02 02:07:38 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.11  2007/07/24 20:17:36  Kazan
+ * Revision 1.9.2.2  2007/07/24 20:08:29  Kazan
  * Make asteroid/debris fields interrupt autopilot, add "hazards near" message to autopilot.tbl, add use-nav-cinematics sexp, fix mantis #1441
  *
- * Revision 1.10  2007/07/23 15:16:48  Kazan
- * Autopilot upgrades as described, MSVC2005 project fixes
+ * Revision 1.9.2.1  2007/07/23 16:08:23  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
  * Revision 1.9  2006/02/25 21:42:31  Goober5000
  * fixes from last commit
@@ -52,6 +52,7 @@
 #define _AUTOPILOT_H_
 
 #include "globalincs/pstypes.h"
+#include <map>
 
 // milliseconds between updates
 #define NPS_TICKRATE	125
@@ -99,6 +100,7 @@ extern int CurrentNav;
 extern NavPoint Navs[MAX_NAVPOINTS];
 extern NavMessage NavMsgs[NP_NUM_MESSAGES];
 extern int LockAPConv;
+extern std::map<int,int> autopilot_wings;
 
 // Cycles through the NavPoint List
 bool Sel_NextNav();

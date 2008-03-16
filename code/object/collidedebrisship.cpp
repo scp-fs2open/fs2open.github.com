@@ -9,26 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisShip.cpp $
- * $Revision: 2.15 $
- * $Date: 2007-11-23 23:49:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.10.2.1 $
+ * $Date: 2007-02-11 09:06:13 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for ships and debris
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.14  2007/02/19 07:24:51  wmcoolmon
- * WMCoolmon experiences a duh moment. Move scripting collision variable declarations in front of overrides, to give
- * them access to these (somewhat useful) variables
- *
- * Revision 2.13  2007/02/11 21:26:35  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 2.12  2007/02/11 09:06:30  taylor
- * if we are a dying ship then don't do collision detection against our own debris (slight performance boost to exploding ships)
- *
- * Revision 2.11  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
  * Revision 2.10  2005/10/09 09:13:29  wmcoolmon
  * Added warpin/warpout speed override values to ships.tbl
  *
@@ -216,7 +203,6 @@
 
 
 #include "object/objcollide.h"
-#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "debris/debris.h"
 #include "playerman/player.h"
@@ -325,8 +311,8 @@ int collide_debris_ship( obj_pair * pair )
 				apply_ship_damage = !(pship->signature == pdebris->parent_sig);
 
 				if ( debris_hit_info.heavy == pship ) {
-					quadrant_num = shield_get_quadrant_global(pship, &hitpos);
-					if ((pship->flags & OF_NO_SHIELDS) || !shield_is_up(pship, quadrant_num) ) {
+					quadrant_num = get_ship_quadrant_from_global(&hitpos, pship);
+					if ((pship->flags & OF_NO_SHIELDS) || !ship_is_shield_up(pship, quadrant_num) ) {
 						quadrant_num = -1;
 					}
 					if (apply_ship_damage) {
@@ -394,6 +380,8 @@ int collide_debris_ship( obj_pair * pair )
 // Returns 1 if all future collisions between these can be ignored
 int collide_asteroid_ship( obj_pair * pair )
 {
+#ifndef FS2_DEMO
+
 	if (!Asteroids_enabled)
 		return 0;
 
@@ -441,7 +429,7 @@ int collide_asteroid_ship( obj_pair * pair )
 
 			if(!ship_override && !asteroid_override)
 			{
-				float		ship_damage;
+				float		ship_damage;	
 				float		asteroid_damage;
 
 				vec3d asteroid_vel = pasteroid->phys_info.vel;
@@ -490,8 +478,8 @@ int collide_asteroid_ship( obj_pair * pair )
 
 				int quadrant_num;
 				if ( asteroid_hit_info.heavy == pship ) {
-					quadrant_num = shield_get_quadrant_global(pship, &hitpos);
-					if ((pship->flags & OF_NO_SHIELDS) || !shield_is_up(pship, quadrant_num) ) {
+					quadrant_num = get_ship_quadrant_from_global(&hitpos, pship);
+					if ((pship->flags & OF_NO_SHIELDS) || !ship_is_shield_up(pship, quadrant_num) ) {
 						quadrant_num = -1;
 					}
 					ship_apply_local_damage(asteroid_hit_info.heavy, asteroid_hit_info.light, &hitpos, ship_damage, quadrant_num, CREATE_SPARKS, asteroid_hit_info.submodel_num);
@@ -555,4 +543,7 @@ int collide_asteroid_ship( obj_pair * pair )
 		}
 		return 0;
 	}
+#else
+	return 0;	// no asteroids in demo version
+#endif
 }

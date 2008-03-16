@@ -9,25 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideWeaponWeapon.cpp $
- * $Revision: 2.17 $
- * $Date: 2007-11-23 23:49:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.10.2.2 $
+ * $Date: 2006-08-22 05:45:39 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and weapons
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.16  2007/02/19 07:24:51  wmcoolmon
- * WMCoolmon experiences a duh moment. Move scripting collision variable declarations in front of overrides, to give
- * them access to these (somewhat useful) variables
- *
- * Revision 2.15  2007/02/18 06:17:10  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.13  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.12  2006/09/11 05:36:43  taylor
- * compiler warning fixes
+ * Revision 2.10.2.1  2006/06/07 20:25:10  karajorma
+ * Limbo flag support; further scripting 3.6.9 update
  *
  * Revision 2.11  2006/06/07 04:42:22  wmcoolmon
  * Limbo flag support; further scripting 3.6.9 update

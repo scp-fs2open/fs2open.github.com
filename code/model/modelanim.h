@@ -9,16 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/model/modelanim.h $
- * $Revision: 1.4 $
- * $Date: 2007-02-18 06:16:47 $
- * $Author: Goober5000 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2006-10-27 21:41:22 $
+ * $Author: taylor $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.2  2006/11/06 06:50:59  taylor
- * updated/fixed modelanim code
- *
  *
  * $NoKeywords: $
  */

@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.cpp $
- * $Revision: 2.40 $
- * $Date: 2007-09-02 02:10:26 $
+ * $Revision: 2.38.2.2 $
+ * $Date: 2007-09-02 02:07:43 $
  * $Author: Goober5000 $
  *
  * C module that contains functions to drive the Tech Menu user interface
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.39  2006/09/11 06:46:04  taylor
+ * Revision 2.38.2.1  2006/09/11 01:03:23  taylor
  * fixes for stuff_string() bounds checking
  * make sure that default entries always get used in techroom if they don't otherwise have the techroom visibility flag
  * fix crash bug where the first entry in the various lists wasn't ever initialized if there is no ship/weapon/intel info to show
@@ -1478,12 +1478,12 @@ int techroom_load_ani(anim **animpp, char *name)
 			return 0;
 		}
 
-		*animpp = anim_load(anim_filename, 1);
+		*animpp = anim_load(anim_filename, CF_TYPE_ANY, 1);
 		if ( *animpp ) {
 			return 1;
 		} else if (gr_screen.res == GR_1024) {
 			// try to load low-res version if hi-res failed
-			*animpp = anim_load(name, 1);
+			*animpp = anim_load(name, CF_TYPE_ANY, 1);
 			if (*animpp) {
 				return 1;
 			}

@@ -9,92 +9,72 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionSave.cpp $
- * $Revision: 1.39 $
- * $Date: 2007-12-30 18:30:28 $
+ * $Revision: 1.14.2.19 $
+ * $Date: 2007-11-28 21:00:33 $
  * $Author: karajorma $
  *
  * Mission saving in Fred.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.38  2007/11/21 07:28:37  Goober5000
+ * Revision 1.14.2.18  2007/11/21 07:27:45  Goober5000
  * add Wing Commander Saga's fiction viewer
  *
- * Revision 1.37  2007/09/03 01:02:49  Goober5000
- * fix for 1376
+ * Revision 1.14.2.17  2007/07/23 16:08:24  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
- * Revision 1.36  2007/07/23 15:16:48  Kazan
- * Autopilot upgrades as described, MSVC2005 project fixes
+ * Revision 1.14.2.16  2007/05/28 18:27:33  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
  *
- * Revision 1.35  2007/02/21 01:44:02  Goober5000
+ * Revision 1.14.2.15  2007/02/21 01:43:31  Goober5000
  * remove duplicate model texture replacement
  *
- * Revision 1.34  2007/02/20 04:20:10  Goober5000
+ * Revision 1.14.2.14  2007/02/20 04:19:10  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 1.33  2007/02/11 21:26:34  Goober5000
- * massive shield infrastructure commit
+ * Revision 1.14.2.13  2007/02/09 04:53:27  Goober5000
+ * merge the WCS screaming feature into the 3.6.9 (3.6.10?) branch
  *
- * Revision 1.32  2007/01/15 13:42:59  karajorma
- * Hmmm. Forgot to commit changes to support network variables and setting ammo/weapons to HEAD as well as 3.6.9.
+ * Revision 1.14.2.12  2006/10/28 20:54:35  karajorma
+ * Adding the network-variable option to SEXP variables. This change will revert variables to the same behaviour they displayed in retail (i.e they don't update for clients) unless a variable is set to be a network-variable.
  *
- * Revision 1.31  2007/01/07 21:28:10  Goober5000
- * yet more tweaks to the WCS death scream stuff
- * added a ship flag to force screaming
- *
- * Revision 1.30  2007/01/07 01:00:18  Goober5000
- * convert a mission variable to a mission flag
- *
- * Revision 1.29  2007/01/07 00:24:17  Goober5000
- * move this to the Message location of the mission
- *
- * Revision 1.28  2007/01/07 00:01:28  Goober5000
- * add a feature for specifying the source of Command messages
- *
- * Revision 1.27  2006/10/15 22:01:38  wmcoolmon
+ * Revision 1.14.2.11  2006/10/15 22:03:16  wmcoolmon
  * Fix extra jumpnode settings not saving. They still don't show up in FRED, unfortunately.
  *
- * Revision 1.26  2006/10/09 05:25:18  Goober5000
+ * Revision 1.14.2.10  2006/10/09 05:25:07  Goober5000
  * make sexp nodes dynamic
  *
- * Revision 1.25  2006/10/01 06:18:35  Goober5000
+ * Revision 1.14.2.9  2006/10/01 06:18:36  Goober5000
  * more accurate message number
  *
- * Revision 1.24  2006/09/28 23:47:24  Goober5000
+ * Revision 1.14.2.8  2006/09/28 23:47:25  Goober5000
  * fix for Mantis #1070
  *
- * Revision 1.23  2006/08/19 21:46:05  Goober5000
+ * Revision 1.14.2.7  2006/08/19 21:46:02  Goober5000
  * disable duplicate model texture replace
  *
- * Revision 1.22  2006/08/06 18:47:29  Goober5000
+ * Revision 1.14.2.6  2006/08/06 18:47:12  Goober5000
  * add the multiple background feature
  * --Goober5000
  *
- * Revision 1.21  2006/07/13 06:11:52  Goober5000
+ * Revision 1.14.2.5  2006/07/20 00:41:25  Goober5000
+ * add WCS screaming stuff to RC branch
+ * --Goober5000
+ *
+ * Revision 1.14.2.4  2006/07/13 06:11:48  Goober5000
  * * better formatting for substitute music options
  * * better handling of all special FSO comment tags
  * --Goober5000
  *
- * Revision 1.20  2006/07/06 21:00:12  Goober5000
- * remove obsolete (and hackish) flag
- * --Goober5000
- *
- * Revision 1.19  2006/07/06 20:46:39  Goober5000
- * WCS screaming stuff
- * --Goober5000
- *
- * Revision 1.18  2006/06/23 09:17:02  karajorma
+ * Revision 1.14.2.3  2006/06/23 09:15:53  karajorma
  * Make the ambient light sliders actually save their settings.
  *
- * Revision 1.17  2006/06/10 18:34:07  Goober5000
+ * Revision 1.14.2.2  2006/06/10 18:35:05  Goober5000
  * fix parsing/handling of debriefing persona indexes
  * --Goober5000
  *
- * Revision 1.16  2006/06/04 01:01:52  Goober5000
+ * Revision 1.14.2.1  2006/06/04 01:03:12  Goober5000
  * add fighterbay restriction code
  * --Goober5000
- *
- * Revision 1.15  2006/06/02 09:40:33  karajorma
- * Team Loadout from variable changes. Added alt ship classes
  *
  * Revision 1.14  2006/05/30 01:36:24  Goober5000
  * add AI Profile box to FRED
@@ -888,12 +868,12 @@ int CFred_mission_save::save_mission_info()
 		fout(" %f", The_mission.support_ships.max_subsys_repair_val);
 	}
 
-	if (!Format_fs2_open && (The_mission.flags & MISSION_FLAG_ALL_ATTACK))
-	{
-		if (optional_string_fred("+All Teams Attack"))
+	if (Mission_all_attack) {
+		if (optional_string_fred("+All Teams Attack")){
 			parse_comments();
-		else
+		} else {
 			fout("\n+All Teams Attack");
+		}
 	}
 
 	if (Entry_delay_time) {
@@ -1462,27 +1442,9 @@ int CFred_mission_save::save_players()
 		fout(" (\n");
 
 		for (j=0; j<Team_data[i].number_choices; j++)
-		{
-			//Karajorma - Check to see if a variable name should be written for the class rather than a number
-			if (!strcmp(Team_data[i].ship_list_variables[j], ""))
-			{
-				fout("\t\"%s\"\t", Ship_info[Team_data[i].ship_list[j]].name); 
-			}
-			else 
-			{
-				fout("\t@%s\t", Team_data[i].ship_list_variables[j]);
-			}
+			fout("\t\"%s\"\t%d\n", Ship_info[Team_data[i].ship_list[j]].name,
+				Team_data[i].ship_count[j]);
 
-			// Now check if we should write a variable or a number for the amount of ships available
-			if (!strcmp(Team_data[i].ship_count_variables[j], ""))
-			{
-				fout("%d\n", Team_data[i].ship_count[j]);
-			}
-			else 
-			{
-				fout("@%s\n", Team_data[i].ship_count_variables[j]);
-			}
-		}
 		fout(")");
 
 		if (optional_string_fred("+Weaponry Pool:", "$Starting Shipname:")){
@@ -1573,60 +1535,6 @@ int CFred_mission_save::save_objects()
 		// optional alternate type name
 		if(strlen(Fred_alt_names[i])){
 			fout("\n$Alt: %s\n", Fred_alt_names[i]);
-		}
-		
-		// optional alternate ship classes
-		if (Format_fs2_open)
-		{
-			// Alternate class type 1
-			for (int m=0; m < MAX_ALT_CLASS_1; m++)
-			{
-				if ((Ships[i].alt_class_one[m] > -1) || (Ships[i].alt_class_one_variable[m] > -1))
-				{
-					if (optional_string_fred("+Alt_Ship_Class_Type_1: ", "$Name:"))
-					{
-						parse_comments();
-					}
-					else 
-					{
-						fout("\n+Alt_Ship_Class_Type_1: ");
-					}
-
-					if (Ships[i].alt_class_one[m] > -1)
-					{
-						fout ("\"%s\"", Ship_info[Ships[i].alt_class_one[m]].name);
-					}
-					else 
-					{
-						fout ("@%s", Sexp_variables[Ships[i].alt_class_one_variable[m]].variable_name);
-					}
-				}
-			}
-
-			// Alternate class type 2
-			for (int n=0; n < MAX_ALT_CLASS_2; n++)
-			{
-				if ((Ships[i].alt_class_two[n] > -1) || (Ships[i].alt_class_two_variable[n] > -1))
-				{
-					if (optional_string_fred("+Alt_Ship_Class_Type_2: ", "$Name:"))
-					{
-						parse_comments();
-					}
-					else 
-					{
-						fout("\n+Alt_Ship_Class_Type_2: ");
-					}
-
-					if (Ships[i].alt_class_two[n] > -1)
-					{
-						fout ("\"%s\"", Ship_info[Ships[i].alt_class_two[n]].name);
-					}
-					else 
-					{
-						fout ("@%s", Sexp_variables[Ships[i].alt_class_two_variable[n]].variable_name);
-					}
-				}
-			}
 		}
 
 		required_string_fred("$Team:");
@@ -1909,10 +1817,6 @@ int CFred_mission_save::save_objects()
 				fout(" \"nav-needslink\"");
 			if (Ships[i].flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN)
 				fout(" \"use-alt-name-as-callsign\"");
-			if (Ships[i].flags2 & SF2_SET_CLASS_DYNAMICALLY)
-				fout(" \"set-class-dynamically\"");
-			if (Ships[i].flags2 & SF2_TEAM_LOADOUT_STORE_STATUS)
-				fout(" \"team-loadout-store\"");
 			fout(" )");
 		}
 		// -----------------------------------------------------------
@@ -2133,14 +2037,13 @@ int CFred_mission_save::save_common_object_data(object *objp, ship *shipp)
 		fout(" %d", (int) objp->hull_strength);
 	}
 
-	int shield_strength = (int) shield_get_strength(objp);
-	if (shield_strength != 100) {
+	if ((int) shield_get_strength(objp) != 100) {
 		if (optional_string_fred("+Initial Shields:", "$Name:", "+Subsystem:"))
 			parse_comments();
 		else
 			fout("\n+Initial Shields:");
 
-		fout(" %d", shield_strength);
+		fout(" %d", (int) objp->shield_quadrant[0]);
 	}
 
 	// save normal ship weapons info
@@ -2685,25 +2588,15 @@ int CFred_mission_save::save_messages()
 	parse_comments(2);
 	fout("\t\t;! %d total\n", Num_messages-Num_builtin_messages);
 
-	// Goober5000 - special Command info
-	if (Format_fs2_open)
-	{
-		if (stricmp(The_mission.command_sender, DEFAULT_COMMAND))
-			fout("\n$Command Sender: %s", The_mission.command_sender);
-
-		if (The_mission.command_persona != Default_command_persona)
-			fout("\n$Command Persona: %s", Personas[The_mission.command_persona].name);
-	}
-
 	for (i=Num_builtin_messages; i<Num_messages; i++) {
 		required_string_either_fred("$Name:", "#Reinforcements");
 		required_string_fred("$Name:");
-		parse_comments(2);
+		parse_comments(i ? 2 : 1);
 		fout(" %s", Messages[i].name);
 
 		// team
 		required_string_fred("$Team:");
-		parse_comments(1);
+		parse_comments(i ? 2 : 1);
 		if((Messages[i].multi_team < 0) || (Messages[i].multi_team >= 2)){
 			fout(" %d", -1);
 		} else {

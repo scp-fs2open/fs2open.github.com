@@ -9,22 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Localization/localize.cpp $
- * $Revision: 2.25 $
- * $Date: 2007-09-02 02:10:26 $
+ * $Revision: 2.20.2.4 $
+ * $Date: 2007-09-02 02:07:42 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.24  2007/04/11 18:11:21  taylor
+ * Revision 2.20.2.3  2007/04/11 18:09:12  taylor
  * add modular version of strings.tbl (*-lcl.tbm) (provides for Mantis #924)
  *
- * Revision 2.23  2006/12/28 00:59:27  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.22  2006/09/11 06:50:42  taylor
+ * Revision 2.20.2.2  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.21  2006/09/08 06:20:14  taylor
+ * Revision 2.20.2.1  2006/09/08 06:14:43  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
  * Revision 2.20  2006/04/20 06:32:07  Goober5000

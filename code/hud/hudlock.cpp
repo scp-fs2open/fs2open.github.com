@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDlock.cpp $
- * $Revision: 2.22 $
- * $Date: 2008-01-24 03:52:07 $
+ * $Revision: 2.20.2.2 $
+ * $Date: 2008-01-24 03:53:35 $
  * $Author: Goober5000 $
  *
  * C module that controls missile locking
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.21  2006/08/20 00:51:05  taylor
+ * Revision 2.20.2.1  2006/08/19 04:38:46  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
  * Revision 2.20  2006/01/13 03:30:59  Goober5000
@@ -491,12 +491,15 @@ void hud_draw_diamond(int x, int y, int width, int height)
 	gr_line(x4,y4,x1,y1);
 }
 
-
-// hud_show_lock_indicator() will display the lock indicator for homing missiles
-void hud_show_lock_indicator(float frametime)
+// hud_show_lock_indicator() will display the lock indicator for homing missiles.
+// lock_point_pos should be the world coordinates of the target being locked. Assuming all the 
+// necessary locking calculations are done for this frame, this function will compute 
+// where the indicator should be relative to the player's viewpoint and will render accordingly.
+void hud_show_lock_indicator(float frametime, vec3d *lock_point_pos)
 {
 	int			target_objnum, sx, sy;
 	object		*targetp;
+	vertex lock_point;
 
 	if (!Players[Player_num].lock_indicator_visible){
 		return;
@@ -511,19 +514,29 @@ void hud_show_lock_indicator(float frametime)
 	if ( !ship_secondary_bank_has_ammo(Player_obj->instance) ) {
 		return;
 	}
-	
+
+	// Get the target's current position on the screen. If he's not on there,
+	// we're not going to draw the lock indicator even if he's in front 
+	// of our ship, so bail out. 
+	g3_rotate_vertex(&lock_point, lock_point_pos); 
+	g3_project_vertex(&lock_point);
+	if (lock_point.codes & PF_OVERFLOW)
+		return;
+
 	hud_set_iff_color(targetp);
 //	nprintf(("Alan","lockx: %d, locky: %d TargetX: %d, TargetY: %d\n", Players[Player_num].lock_indicator_x, Players[Player_num].lock_indicator_y, Player->current_target_sx, Player->current_target_sy));
 
+	// We have the coordinates of the lock indicator relative to the target in our "virtual frame" 
+	// so, we calculate where it should be drawn based on the player's viewpoint.
 	if (Player_ai->current_target_is_locked) {
-		sx = Player->current_target_sx;
-		sy = Player->current_target_sy;
+		sx = fl2i(lock_point.sx); 
+		sy = fl2i(lock_point.sy);
 		gr_unsize_screen_pos(&sx, &sy);
 		// show the rotating triangles if target is locked
 		hud_draw_lock_triangles(sx, sy, frametime);
 	} else {
-		sx = Players[Player_num].lock_indicator_x;
-		sy = Players[Player_num].lock_indicator_y;
+		sx = fl2i(lock_point.sx) - (Player->current_target_sx - Players[Player_num].lock_indicator_x); 
+		sy = fl2i(lock_point.sy) - (Player->current_target_sy - Players[Player_num].lock_indicator_y);
 		gr_unsize_screen_pos(&sx, &sy);
 	}
 
@@ -763,9 +776,8 @@ int hud_lock_secondary_weapon_changed(ship_weapon *swp)
 
 }
 
-// hud_update_lock_indicator() will manage the non-rendering dependant part of
-// missle locking
-void hud_update_lock_indicator(float frametime)
+// hud_do_lock_indicator() manages missle locking, both the non-rendering calculations and the 2D HUD rendering
+void hud_do_lock_indicator(float frametime)
 {
 	ship_weapon *swp;
 	weapon_info	*wip;
@@ -805,7 +817,12 @@ void hud_update_lock_indicator(float frametime)
 		
 	Player_ai->last_secondary_index = swp->current_secondary_bank;
 
-	if ( !(wip->wi_flags & WIF_HOMING_ASPECT) ) {
+	object *tobjp = &Objects[Player_ai->target_objnum];
+	vec3d dir_to_target;
+	vm_vec_normalized_dir(&dir_to_target, &tobjp->pos, &Player_obj->pos);
+	float dot_target_orient = vm_vec_dot(&tobjp->orient.vec.fvec, &dir_to_target);
+
+	if ( !(wip->wi_flags & WIF_LOCKED_HOMING) ) {
 		hud_lock_reset();
 		return;		
 	}
@@ -814,6 +831,33 @@ void hud_update_lock_indicator(float frametime)
 	if ( (Objects[Player_ai->target_objnum].type != OBJ_SHIP) && (Objects[Player_ai->target_objnum].type != OBJ_WEAPON) ) {	
 		hud_lock_reset();
 		return;
+	}
+
+	// Javelins must lock on engines if locking on a ship and those must be in sight
+	if (wip->wi_flags & WIF_HOMING_JAVELIN && 
+		tobjp->type == OBJ_SHIP &&
+		Player->locking_subsys != NULL) {
+			vec3d subobj_pos;
+			vm_vec_unrotate(&subobj_pos, &Player->locking_subsys->system_info->pnt, &tobjp->orient);
+			vm_vec_add2(&subobj_pos, &tobjp->pos);
+			int target_subsys_in_sight = ship_subsystem_in_sight(tobjp, Player->locking_subsys, &Player_obj->pos, &subobj_pos);
+
+			if (!target_subsys_in_sight || Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE) {
+				Player->locking_subsys =
+					ship_get_closest_subsys_in_sight(&Ships[tobjp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
+			}
+	}
+
+	if (wip->wi_flags & WIF_HOMING_JAVELIN && 
+		tobjp->type == OBJ_SHIP &&
+		Player->locking_subsys == NULL) {
+			Player->locking_subsys =
+				ship_get_closest_subsys_in_sight(&Ships[tobjp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
+
+			if (Player->locking_subsys == NULL) {
+				hud_lock_reset();
+				return;
+			}
 	}
 
 	hud_lock_determine_lock_point(&lock_world_pos);
@@ -865,6 +909,8 @@ void hud_update_lock_indicator(float frametime)
 			Missile_lock_loop = -1;
 		}
 	}
+
+	hud_show_lock_indicator(frametime, &lock_world_pos);
 }
 
 // hud_draw_lock_triangles() will draw the 4 rotating triangles around a lock indicator
@@ -1226,12 +1272,15 @@ void hud_stop_looped_locking_sounds()
 // Get a new world pos for the locking point
 void hud_lock_update_lock_pos(object *target_objp, vec3d *lock_world_pos)
 {
-	if ( Player_ai->targeted_subsys ) {
+	ship_weapon *swp = &Player_ship->weapons;
+	weapon_info *wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+
+	if ( Player_ai->targeted_subsys && !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
 		get_subsystem_world_pos(target_objp, Player_ai->targeted_subsys, lock_world_pos);
 		return;
 	}
 
-	if ( Player->locking_on_center ) {
+	if ( Player->locking_on_center) {
 		*lock_world_pos = target_objp->pos;
 	} else {
 		Assert(Player->locking_subsys);
@@ -1247,13 +1296,19 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 	float			best_lock_dot=-1.0f, lock_dot=-1.0f;
 	ship_subsys	*ss;
 	vec3d		subsys_world_pos, vec_to_lock;
+	ship_weapon *swp;
+	weapon_info *wip;
 
 	if ( target_objp->type == OBJ_SHIP ) {
 		target_shipp = &Ships[target_objp->instance];
 	}
 
+	swp = &Player_ship->weapons;
+	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+
 	// if a large ship, lock to pos closest to center and within range
-	if ( (target_shipp) && (Ship_info[target_shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) ) {
+	if ( (target_shipp) && (Ship_info[target_shipp->ship_info_index].flags & (SIF_BIG_SHIP|SIF_HUGE_SHIP)) &&
+		 !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
 		// check all the subsystems and the center of the ship
 		
 		// assume best lock pos is the center of the ship
@@ -1291,6 +1346,16 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 			}
 			ss = GET_NEXT( ss );
 		}
+	} else if ((target_shipp) && wip->wi_flags & WIF_HOMING_JAVELIN) {
+		Player->locking_subsys = ship_get_closest_subsys_in_sight(target_shipp, SUBSYSTEM_ENGINE, &Player_obj->pos);
+		if (Player->locking_subsys != NULL) {
+			get_subsystem_world_pos(target_objp, Player->locking_subsys, lock_world_pos);
+			Player->locking_on_center=0;
+			Player->locking_subsys_parent=Player_ai->target_objnum;
+		} else {
+			hud_lock_reset();
+			return;
+		}
 	} else {
 		// if small ship (or weapon), just go for the center
 		*lock_world_pos = target_objp->pos;
@@ -1303,9 +1368,13 @@ void hud_lock_get_new_lock_pos(object *target_objp, vec3d *lock_world_pos)
 // Decide which point lock should be homing on
 void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 {
-	vec3d	lock_world_pos;
-	vertex	lock_point;
-	object	*target_objp;
+	vec3d		lock_world_pos;
+	object		*target_objp;
+	ship_weapon	*swp;
+	weapon_info	*wip;
+
+	vec3d vec_to_lock_pos;
+	vec3d lock_local_pos;
 
 	Assert(Player_ai->target_objnum >= 0);
 	target_objp = &Objects[Player_ai->target_objnum];
@@ -1313,12 +1382,28 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	Player->current_target_sx = -1;
 	Player->current_target_sx = -1;
 
+	swp = &Player_ship->weapons;
+	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
+
 	// If subsystem is targeted, we must try to lock on that
-	if ( Player_ai->targeted_subsys ) {
+	if ( Player_ai->targeted_subsys && !(wip->wi_flags & WIF_HOMING_JAVELIN) ) {
 		hud_lock_update_lock_pos(target_objp, &lock_world_pos);
 		Player->locking_on_center=0;
-		Player->locking_subsys=NULL;
-		Player->locking_subsys_parent=-1;
+		Player->locking_subsys=Player_ai->targeted_subsys;
+		Player->locking_subsys_parent=Player_ai->target_objnum;
+	} else if ( wip->wi_flags & WIF_HOMING_JAVELIN && target_objp->type == OBJ_SHIP) {
+		if (!Player->locking_subsys ||
+			Player->locking_subsys->system_info->type != SUBSYSTEM_ENGINE) {
+				Player->locking_subsys = ship_get_closest_subsys_in_sight(&Ships[target_objp->instance], SUBSYSTEM_ENGINE, &Player_obj->pos);
+		}
+		if (Player->locking_subsys != NULL) {
+			get_subsystem_world_pos(target_objp, Player->locking_subsys, &lock_world_pos);
+			Player->locking_on_center=0;
+			Player->locking_subsys_parent=Player_ai->target_objnum;
+		} else {
+			hud_lock_reset();
+			return;
+		}
 	} else {
 		// See if we already have a successful locked point
 		if ( hud_lock_has_homing_point() ) {
@@ -1330,12 +1415,17 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 
 	*lock_world_pos_out=lock_world_pos;
 
-	g3_rotate_vertex(&lock_point,&lock_world_pos);
-	g3_project_vertex(&lock_point);
+	vm_vec_sub(&vec_to_lock_pos,&lock_world_pos,&Player_obj->pos);
+	vm_vec_rotate(&lock_local_pos,&vec_to_lock_pos,&Player_obj->orient);
 
-	if (!(lock_point.flags & PF_OVERFLOW)) {  // make sure point projected
-		Player->current_target_sx = (int)lock_point.sx;
-		Player->current_target_sy = (int)lock_point.sy;
+	if ( lock_local_pos.xyz.z > 0.0f ) {
+		// Get the location of our target in the "virtual frame" where the locking computation will be done
+		float w = 1.0f / lock_local_pos.xyz.z;
+		float sx = ((SCREEN_CENTER_X*2) + (lock_local_pos.xyz.x*(SCREEN_CENTER_X*2)*w))*0.5f;
+		float sy = ((SCREEN_CENTER_Y*2) - (lock_local_pos.xyz.y*(SCREEN_CENTER_Y*2)*w))*0.5f;
+
+		Player->current_target_sx = (int)sx;
+		Player->current_target_sy = (int)sy;
 	}
 }
 

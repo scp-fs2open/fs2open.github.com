@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/GADGET.cpp $
- * $Revision: 2.10 $
- * $Date: 2007-03-22 22:14:57 $
+ * $Revision: 2.9.2.1 $
+ * $Date: 2007-02-12 00:23:40 $
  * $Author: taylor $
  *
  * Functions for the base gadget class

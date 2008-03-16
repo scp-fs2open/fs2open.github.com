@@ -9,92 +9,80 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtarget.cpp $
- * $Revision: 2.108 $
- * $Date: 2008-01-24 03:52:07 $
+ * $Revision: 2.87.2.19 $
+ * $Date: 2008-01-24 03:53:36 $
  * $Author: Goober5000 $
  *
  * C module to provide HUD targeting functions
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.107  2007/11/23 23:49:33  wmcoolmon
- * - Asteroid, debris, and ship collision damage type support
- * - Scripting system variable-setting optimizations
- * - Standardize override style
- * - Reinstate "Self" variable for HUD
- * - Automatic drawString moving-to-next-line
- * - Visible subsystem name can be changed through scripting; will not be changed in the log
- * - Fix many for-loop signed/unsigned warnings related to size()
- * - Asteroid, debris scripting collision handling
- * - Many, many additional Lua functions and variables
- * - Fix the dreaded random-Lua-parse-crash bug
- * - Fix struct array malf-ups due to flag_def_list change
+ * Revision 2.87.2.18  2007/12/28 02:10:38  Backslash
+ * Backslash's "let's get this stuff into 3_6_9 as well" commit.
+ * -gliding with thruster adjustments and speed cap
+ * -glide_when_pressed control (right above bank_when_pressed)
+ * -fixes to the thrusters sound and visuals while gliding
+ * -don't show muzzle flashes in 1st person
+ * -quick reticle for multitarget and asteroids
  *
- * Revision 2.106  2007/11/22 05:19:09  taylor
+ * Revision 2.87.2.17  2007/11/22 05:19:47  taylor
  * no reason to if-else the hud multiplier if it simply defaults to 1.0
  * add a little sanity checking for hud mutiplier tbl value
+ * add missing multiplier for off-screen indicator
  *
- * Revision 2.105  2007/09/16 21:01:48  Backslash
- * Whoops, missed a couple lines for Length Unit Multiplier
- *
- * Revision 2.104  2007/08/30 04:51:07  Backslash
+ * Revision 2.87.2.16  2007/08/30 04:52:29  Backslash
  * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
  * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
  * $Length Unit Multiplier: 5
  *
- * Revision 2.103  2007/07/15 02:45:18  Goober5000
+ * Revision 2.87.2.15  2007/07/15 02:45:49  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
  * removed my old supercap damage scaling change
  * moved Turey's truefire flag to ai_profiles
  *
- * Revision 2.101  2007/04/06 13:31:38  karajorma
- * Friendly stealth ships shouldn't give away their position just cause they send a message.
+ * Revision 2.87.2.14  2007/04/05 16:25:58  karajorma
+ * Remove message source boxes on friendly stealthed ships
  *
- * Revision 2.100  2007/02/20 04:20:10  Goober5000
+ * Revision 2.87.2.13  2007/02/20 04:19:10  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.99  2007/02/11 09:20:00  taylor
+ * Revision 2.87.2.12  2007/02/12 01:04:50  taylor
+ * make gr_create_shader() use ubyte's instead of float's, saves us the more expensive conversions since we already convert to ubyte anyway
+ *
+ * Revision 2.87.2.11  2007/02/11 09:12:12  taylor
  * little bit of cleanup
  * more fixage for hidden jumpnodes (Mantis #1149)
  *
- * Revision 2.98  2007/01/08 00:50:58  Goober5000
- * remove WMC's limbo code, per our discussion a few months ago
- * this will later be handled by copying ship stats using sexps or scripts
+ * Revision 2.87.2.10  2007/01/07 12:11:51  taylor
+ * rest of the weapon switch out-of-bounds/Assert() fix
  *
- * Revision 2.97  2007/01/07 12:53:35  taylor
- * add position info for weapon energy text
- * make sure that we can't target a hidden jumpnode
- * rest of the weapon switch fix
- *
- * Revision 2.96  2007/01/07 03:09:53  Goober5000
+ * Revision 2.87.2.9  2007/01/07 03:10:05  Goober5000
  * fix bug where built-in lament messages were never played
  *
- * Revision 2.95  2007/01/06 23:56:30  Goober5000
+ * Revision 2.87.2.8  2007/01/06 23:56:43  Goober5000
  * taylor's bugfix
  *
- * Revision 2.94  2006/12/28 01:22:04  Goober5000
+ * Revision 2.87.2.7  2006/12/28 01:19:13  Goober5000
  * removed obsolete limits
  *
- * Revision 2.93  2006/08/20 00:51:06  taylor
+ * Revision 2.87.2.6  2006/12/26 05:27:15  taylor
+ * make sure that we don't target a hidden jumpnode, and if we do be sure to only detarget it rather than turning off auto-targetting
+ *
+ * Revision 2.87.2.5  2006/12/07 18:17:19  taylor
+ * add "$Weapons Energy Text:" to hud_gauges.tbl so that the low energy text can be positioned as well (Mantis bug #1166)
+ *
+ * Revision 2.87.2.4  2006/08/19 04:38:46  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
- * Revision 2.92  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
- * Revision 2.91  2006/07/02 22:53:53  karajorma
+ * Revision 2.87.2.3  2006/07/02 22:50:03  karajorma
  * Restore the Hostile Warning triangles and the "On your Six" warning messages.
  *
- * Revision 2.90  2006/06/24 18:01:55  Goober5000
+ * Revision 2.87.2.2  2006/06/24 18:02:02  Goober5000
  * doh!  sorry for blaming this on you, WMC
  * --Goober5000
  *
- * Revision 2.89  2006/06/15 00:37:11  taylor
+ * Revision 2.87.2.1  2006/06/15 00:16:23  taylor
  * remove previous attempts at the Y bug fix, it's now back to the retail code for that
- *
- * Revision 2.88  2006/06/07 04:39:56  wmcoolmon
- * Limbo flag support
  *
  * Revision 2.87  2006/03/18 07:12:07  Goober5000
  * add ship-subsys-targetable and ship-subsys-untargetable
@@ -645,9 +633,7 @@
 
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
-int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED | SF_DEPART_WARP | SF_DYING | SF_ARRIVING_STAGE_1 | SF_HIDDEN_FROM_SENSORS);
-int TARGET_SHIP_IGNORE_FLAGS_2 = (0);
-
+int TARGET_SHIP_IGNORE_FLAGS = (SF_EXPLODED|SF_DEPART_WARP|SF_DYING|SF_ARRIVING_STAGE_1|SF_HIDDEN_FROM_SENSORS);
 
 // Global values for the target bracket width and height, used for debugging
 int Hud_target_w, Hud_target_h;
@@ -1607,18 +1593,19 @@ color HUD_color_homing_indicator;
 
 void hud_make_shader(shader *sh, int r, int g, int b, float dimmer = 1000.0f)
 {
-	float rf,gf,bf,cf;
+//	float rf,gf,bf,cf;
+	int R = 255, G = 255, B = 255, A = 255;
 
 	// The m matrix converts all colors to shades of green
 	//float tmp = 16.0f*(0.0015625f * i2fl(HUD_color_alpha+1.0f));
 	float tmp = 0.025f * i2fl(HUD_color_alpha+1.0f);
 
-	rf = tmp*r;
-	gf = tmp*r;
-	bf = tmp*r;
-	cf = 255.0f*((i2fl(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f));
+	R = fl2i(r * tmp);
+	G = fl2i(r * tmp); // fl2i(g * tmp);  WTF??
+	B = fl2i(r * tmp); // fl2i(b * tmp);  WTF??
+	A = fl2i((i2fl(r) / dimmer)*(i2fl(HUD_color_alpha) / 15.0f) * 255.0f);
 
-	gr_create_shader( sh, rf, gf, bf, cf );
+	gr_create_shader( sh, R, G, B, A );
 }
 
 void hud_init_targeting_colors()
@@ -1947,7 +1934,7 @@ void hud_target_common(int team_mask, int next_flag)
 		}
 
 		if (A->type == OBJ_SHIP) {
-			if ( (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[A->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
+			if (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS)
 				continue;
 
 			is_ship = 1;
@@ -1965,13 +1952,10 @@ void hud_target_common(int team_mask, int next_flag)
 			shipp = &Ships[A->instance];	// get a pointer to the ship information
 
 			if (!iff_matches_mask(shipp->team, team_mask)) {
-				// if we're in multiplayer dogfight, ignore this
-				if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
-					continue;
-				}
+				continue;
 			}
 
-			if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
+			if ( A == Player_obj || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) ){
 				continue;
 			}
 
@@ -2136,7 +2120,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 			}
 
 			// check if ignore
-			if ( (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[A->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
+			if ( Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS ){
 				continue;
 			}
 
@@ -2200,7 +2184,7 @@ void hud_target_uninspected_cargo(int next_flag)
 
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-		if ( (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
+		if ( shipp->flags & TARGET_SHIP_IGNORE_FLAGS ) {
 			continue;
 		}
 
@@ -2254,7 +2238,7 @@ void hud_target_newest_ship()
 		A = &Objects[so->objnum];
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
+		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) )
 			continue;
 
 		// ignore navbuoys
@@ -2537,7 +2521,7 @@ void hud_target_closest_locked_missile(object *locked_obj)
 			continue;
 		}
 
-		if ( !(wip->wi_flags & (WIF_HOMING_ASPECT|WIF_HOMING_HEAT) ) ){
+		if ( !(wip->wi_flags & WIF_HOMING ) ){
 			continue;
 		}
 
@@ -2582,18 +2566,25 @@ void hud_target_auto_target_next()
 	if (Game_mode & (GM_DEAD | GM_DEAD_BLEW_UP))
 		return;
 
+	// try target next ship in hotkey set, if any -- Backslash
+	if ( Player->current_hotkey_set != -1 ) {
+		hud_target_hotkey_select(Player->current_hotkey_set);
+	}
+
 	int	valid_team_mask = iff_get_attackee_mask(Player_ship->team);
 
 	// try target closest ship attacking player
-	hud_target_closest(valid_team_mask, OBJ_INDEX(Player_obj), FALSE, TRUE );
+	if ( Player_ai->target_objnum == -1 ) {
+		hud_target_closest(valid_team_mask, OBJ_INDEX(Player_obj), FALSE, TRUE );
+	}
 
 	// if none, try targeting closest hostile fighter/bomber
-	if ( Player_ai->target_objnum == -1 ){
+	if ( Player_ai->target_objnum == -1 ) {
 		hud_target_closest(valid_team_mask, -1, FALSE, TRUE);
 	}
 
 	// No fighter/bombers exists, so go ahead an target the closest hostile
-	if ( Player_ai->target_objnum == -1 ){
+	if ( Player_ai->target_objnum == -1 ) {
 		hud_target_closest(valid_team_mask, -1, FALSE);
 	}
 
@@ -2712,14 +2703,11 @@ void evaluate_ship_as_closest_target(esct *esct)
 
 	// filter on team, except in multiplayer
 	if ( !iff_matches_mask(esct->shipp->team, esct->team_mask) ) {
-		// if we're in multiplayer dogfight, ignore this
-		if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
-			return;
-		}
+		return;
 	}
 
 	// check if player or ignore ship
-	if ( (esct->shipp->objnum == OBJ_INDEX(Player_obj)) || (esct->shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (esct->shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
+	if ( (esct->shipp->objnum == OBJ_INDEX(Player_obj)) || (esct->shipp->flags & TARGET_SHIP_IGNORE_FLAGS) ) {
 		return;
 	}
 
@@ -2833,7 +2821,7 @@ int hud_target_closest(int team_mask, int attacked_objnum, int play_fail_snd, in
 		}
 
 		// bail if ship is to be ignored
-		if ( (Ships[Objects[attacked_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[Objects[attacked_objnum].instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
+		if (Ships[Objects[attacked_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS) {
 			goto Target_closest_done;
 		}
 	}
@@ -2993,7 +2981,7 @@ void hud_target_targets_target()
 		goto ttt_fail;
 	}
 
-	if ( (Ships[objp->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[objp->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
+	if ( Ships[objp->instance].flags & TARGET_SHIP_IGNORE_FLAGS ) {
 		goto ttt_fail;
 	}
 
@@ -3082,7 +3070,7 @@ void hud_target_in_reticle_new()
 
 
 		if ( A->type == OBJ_SHIP ) {
-			if ( (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[A->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
+			if ( Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS ){
 				continue;
 			}
 		}
@@ -3168,7 +3156,7 @@ void hud_target_in_reticle_old()
 		}
 
 		if ( A->type == OBJ_SHIP ) {
-			if ( (Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[A->instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
+			if ( Ships[A->instance].flags & TARGET_SHIP_IGNORE_FLAGS ){
 				continue;
 			}
 		}
@@ -3243,7 +3231,7 @@ void hud_target_subsystem_in_reticle()
 	int shipnum = targetp->instance;
 
 	if ( targetp->type == OBJ_SHIP ) {
-		if ( (Ships[shipnum].flags & TARGET_SHIP_IGNORE_FLAGS) || (Ships[shipnum].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
+		if ( Ships[shipnum].flags & TARGET_SHIP_IGNORE_FLAGS ) {
 			return;
 		}
 	}
@@ -3270,7 +3258,7 @@ void hud_target_subsystem_in_reticle()
 
 	if ( nearest_subsys != NULL ) {
 		set_targeted_subsys(Player_ai, nearest_subsys, Player_ai->target_objnum);
-		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Targeting subsystem %s.", 323), ship_subsys_get_name(Player_ai->targeted_subsys));
+		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR( "Targeting subsystem %s.", 323), Player_ai->targeted_subsys->system_info->name);
 		Ships[shipnum].last_targeted_subobject[Player_num] =  Player_ai->targeted_subsys;
 	}	
 	else {
@@ -3677,12 +3665,12 @@ void hud_show_homing_missiles()
 		wp = &Weapons[A->instance];
 
 		if (wp->homing_object == Player_obj) {
-			hud_render_triangle(&A->pos, Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_ASPECT, 1, 1);
+			hud_render_triangle(&A->pos, Weapon_info[wp->weapon_info_index].wi_flags & WIF_LOCKED_HOMING, 1, 1);
 			dist = vm_vec_dist_quick(&A->pos, &Player_obj->pos);
 
 			if (dist < nearest_dist) {
 				nearest_dist = dist;
-				if ( Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_ASPECT ) {
+				if ( Weapon_info[wp->weapon_info_index].wi_flags & WIF_LOCKED_HOMING ) {
 					closest_is_aspect=1;
 				} else {
 					closest_is_aspect=0;
@@ -4007,9 +3995,17 @@ void hud_show_selection_set()
 
 			if ( bound_rval == 0 ) {
 				gr_set_color_fast(iff_get_color(IFF_COLOR_SELECTION, 1));
-				draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,5,5);
+				float dist = hud_find_target_distance(targetp, Player_obj);
 				if ( OBJ_INDEX(targetp) == Player_ai->target_objnum ) {
+					draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,5,5);
 					HUD_drew_selection_bracket_on_target = 1;
+				}
+				else if ( Cmdline_targetinfo ) {		//Backslash -- show the distance and a lead indicator
+					draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,5,5,dist);
+					hud_show_lead_indicator_quick(&targetp->pos, targetp); //&Objects[Player_ai->target_objnum]
+				}
+				else {
+					draw_bounding_brackets(x1-5,y1-5,x2+5,y2+5,5,5);
 				}
 			}
 		}
@@ -4240,8 +4236,7 @@ void hud_show_targeting_gauges(float frametime, int in_cockpit)
 
 	// display the lock indicator
 	if (!Player->target_is_dying) {
-		hud_update_lock_indicator(frametime);
-		hud_show_lock_indicator(frametime);
+		hud_do_lock_indicator(frametime);
 
 		// update and render artillery 
 		hud_artillery_update();
@@ -4303,7 +4298,7 @@ void hud_show_hostile_triangle()
 		aip = &Ai_info[Ships[A->instance].ai_index];
 
 		// dont look at ignore ships
-		if ( (sp->flags & TARGET_SHIP_IGNORE_FLAGS) || (sp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ) {
+		if ( sp->flags & TARGET_SHIP_IGNORE_FLAGS ) {
 			continue;
 		}
 
@@ -4454,7 +4449,7 @@ int hud_get_best_primary_bank(float *range)
 // 
 // Called by the draw lead indicator code to predict where the enemy is going to be
 //
-void polish_predicted_target_pos(vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps) 
+void polish_predicted_target_pos(object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps) 
 {
 	int	iteration;
 	vec3d	player_pos = Player_obj->pos;	
@@ -4472,7 +4467,8 @@ void polish_predicted_target_pos(vec3d *enemy_pos, vec3d *predicted_enemy_pos, f
 
 	// additive velocity stuff
 	//vec3d enemy_fvec = Objects[Player_ai->target_objnum].orient.vec.fvec;
-	vec3d enemy_vel = Objects[Player_ai->target_objnum].phys_info.vel;
+	// not just the player's main target
+	vec3d enemy_vel = targetp->phys_info.vel;
 	if (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) {
 		//vm_vec_sub2( &enemy_fvec, &Player_obj->orient.vec.fvec );
 		vm_vec_sub2( &enemy_vel, &Player_obj->phys_info.vel );
@@ -4602,7 +4598,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 	{
 		int bank = swp->current_secondary_bank;
 		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
-		if ( tmp->wi_flags & WIF_HOMING_ASPECT )
+		if ( tmp->wi_flags & WIF_LOCKED_HOMING )
 		{
 			if ( !Player->target_in_lock_cone )
 			{
@@ -4671,7 +4667,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 		vm_vec_normalize(&target_moving_direction);
 		vm_vec_scale(&target_moving_direction,target_moved_dist);
 		vm_vec_add(&Players[Player_num].lead_target_pos, target_world_pos, &target_moving_direction );
-		polish_predicted_target_pos(target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
+		polish_predicted_target_pos(targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
 	}
 
 	g3_rotate_vertex(&lead_target_vertex,&Players[Player_num].lead_target_pos);
@@ -4705,7 +4701,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
 
 		//get out of here if the secondary weapon is a homer or if its out of range
-		if ( (wip->wi_flags & WIF_HOMING_HEAT) || (wip->wi_flags & WIF_HOMING_ASPECT))
+		if ( wip->wi_flags & WIF_HOMING )
 			return;
 
 		double max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);
@@ -4740,7 +4736,7 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 		vm_vec_normalize(&target_moving_direction);
 		vm_vec_scale(&target_moving_direction,target_moved_dist);
 		vm_vec_add(&Players[Player_num].lead_target_pos, target_world_pos, &target_moving_direction );
-		polish_predicted_target_pos(target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
+		polish_predicted_target_pos(targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
 	}
 
 	g3_rotate_vertex(&lead_target_vertex,&Players[Player_num].lead_target_pos);
@@ -4755,6 +4751,132 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 			} else {
 				hud_set_iff_color(targetp, 1);
 			}
+
+			if ( indicator_frame >= 0 ) {
+				sx = lead_target_vertex.sx;
+				sy = lead_target_vertex.sy;
+
+				gr_unsize_screen_posf(&sx, &sy);
+				GR_AABITMAP(indicator_frame, fl2i(sx - Lead_indicator_half[Hud_reticle_style][gr_screen.res][0]),  fl2i(sy - Lead_indicator_half[Hud_reticle_style][gr_screen.res][1]));				
+			}
+		}
+	}
+}
+
+//Backslash
+// A stripped-down version of the lead indicator, only shows primary weapons
+// and works for a specified target (not just the current selected target).
+// Ideally I'd like to later turn this into something (or make a new function) that would actually WORK with gun convergence/normals
+// instead of the existing code (copied from above) that does some calculations and then is ignored ;-)
+// (Go look, what's it actually DO with source_pos?)
+// And also, something that could be called for multiple weapons, ITTS style.
+void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp)
+{
+	vec3d		target_moving_direction, last_delta_vector, source_pos;
+	vec3d		*rel_pos;
+	vertex		lead_target_vertex;
+	polymodel	*pm;
+	ship_weapon	*swp;
+	weapon_info	*wip;
+	weapon_info	*tmp=NULL;
+	float			dist_to_target, time_to_target, target_moved_dist, prange;
+	int			bank_to_fire, indicator_frame, frame_offset;
+	float		sx, sy;
+
+	if ( (targetp->type != OBJ_SHIP) && (targetp->type != OBJ_WEAPON) && (targetp->type != OBJ_ASTEROID) ) {
+		return;
+	}
+
+	// only allow bombs to have lead indicator displayed
+	if ( targetp->type == OBJ_WEAPON ) {
+		if ( !(Weapon_info[Weapons[targetp->instance].weapon_info_index].wi_flags & WIF_BOMB) ) {
+			return;
+		}
+	}
+
+	// If the target is out of range, then draw the correct frame for the lead indicator
+	if ( Lead_indicator_gauge.first_frame == -1 ) {
+		Int3();
+		return;
+	}
+	
+	pm = model_get(Ship_info[Player_ship->ship_info_index].model_num);
+	swp = &Player_ship->weapons;
+
+	// Added to take care of situation where there are no primary banks on the player ship
+	// (this may not be possible, depending on what we decide for the weapons loadout rules)
+	if ( swp->num_primary_banks == 0 )
+		return;
+
+	bank_to_fire = hud_get_best_primary_bank(&prange);	//Backslash note: this!
+	if ( bank_to_fire < 0 )
+		return;
+	wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
+			
+	if (pm->n_guns && bank_to_fire != -1 ) {
+		rel_pos = &pm->gun_banks[bank_to_fire].pnt[0];
+	} else {
+		rel_pos = NULL;
+	}
+//							vec3d firing_vec;
+//							vm_vec_unrotate(&firing_vec, &po->gun_banks[bank_to_fire].norm[pt], &obj->orient);
+//							vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+
+	// source_pos will contain the world coordinate of where to base the lead indicator prediction
+	// from.  Normally, this will be the world pos of the gun turret of the currently selected primary
+	// weapon.
+	source_pos = Player_obj->pos;
+	if (rel_pos != NULL) {
+		vec3d	gun_point;
+		vm_vec_unrotate(&gun_point, rel_pos, &Player_obj->orient);
+		vm_vec_add2(&source_pos, &gun_point);
+	} 
+	
+	// Determine "accurate" distance to target.  This is the distance from the player ship
+	// to the closest point on the bounding box of the target
+	dist_to_target = hud_find_target_distance(targetp, Player_obj);
+
+	frame_offset = hudtarget_lead_indicator_pick_frame(prange, -1.0f, dist_to_target);
+
+	if ( frame_offset < 0 ) {
+		return;
+	}
+
+	indicator_frame = Lead_indicator_gauge.first_frame + frame_offset;
+
+	if(wip->max_speed != 0)
+	{
+		time_to_target = dist_to_target / wip->max_speed;
+	}
+	else
+	{
+		time_to_target = 0;
+	}
+
+	target_moved_dist = targetp->phys_info.speed * time_to_target;
+
+	target_moving_direction = targetp->phys_info.vel;
+
+	// if we've reached here, the lead target indicator will be displayed
+	Players[Player_num].lead_indicator_active = 1;
+
+	// test if the target is moving at all
+	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f)		// Find distance!
+		Players[Player_num].lead_target_pos =  *target_world_pos;
+	else {
+		vm_vec_normalize(&target_moving_direction);
+		vm_vec_scale(&target_moving_direction,target_moved_dist);
+		vm_vec_add(&Players[Player_num].lead_target_pos, target_world_pos, &target_moving_direction );
+		polish_predicted_target_pos(targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
+		vm_vec_add2(&Players[Player_num].lead_target_pos, rel_pos );
+	}
+
+	g3_rotate_vertex(&lead_target_vertex,&Players[Player_num].lead_target_pos);
+
+	if (lead_target_vertex.codes == 0) { // on screen
+
+		g3_project_vertex(&lead_target_vertex);
+		if (!(lead_target_vertex.flags & PF_OVERFLOW)) {
 
 			if ( indicator_frame >= 0 ) {
 				sx = lead_target_vertex.sx;
@@ -5141,7 +5263,7 @@ void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float dista
 	ypos = (float)floor(ypos);
 
 	if ( hud_gauge_active(HUD_OFFSCREEN_RANGE) && (displayed_distance > 0.0f) ) {
-		sprintf(buf,"%d",fl2i(displayed_distance+0.5f));
+		sprintf(buf, "%d", fl2i(displayed_distance + 0.5f));
 		hud_num_make_mono(buf);
 		gr_get_string_size(&w, &h, buf);	
 	} else {
@@ -5965,6 +6087,12 @@ void hud_target_next_list(int hostile, int next_flag)
 		Tl_hostile_reset_timestamp = timestamp(TL_RESET);
 		valid_team_mask = iff_get_attackee_mask(Player_ship->team);
 	} else {
+		// everyone hates a traitor including other traitors so the friendly target option shouldn't work for them
+		if (Player_ship->team == Iff_traitor) {
+			snd_play( &Snds[SND_TARGET_FAIL], 0.0f );
+			return;
+		}
+
 		timestamp_val = Tl_friendly_reset_timestamp;
 		Tl_friendly_reset_timestamp = timestamp(TL_RESET);
 		valid_team_mask = iff_get_mask(Player_ship->team);
@@ -5991,15 +6119,12 @@ void hud_target_next_list(int hostile, int next_flag)
 		A = &Objects[so->objnum];
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
+		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) )
 			continue;
 
 		// choose from the correct team
 		if ( !iff_matches_mask(shipp->team, valid_team_mask) ) {
-			// if we're in multiplayer dogfight, ignore this
-			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
-				continue;
-			}
+			continue;
 		}
 
 		// always ignore navbuoys and cargo
@@ -6189,15 +6314,12 @@ int hud_target_closest_repair_ship(int goal_objnum)
 			continue;
 		}
 
-		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
+		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) )
 			continue;
 
 		// only consider friendly ships
 		if ( !(Player_ship->team == shipp->team)) {
-			// if we're in multiplayer dogfight, ignore this
-			if(!((Game_mode & GM_MULTIPLAYER) && (Netgame.type_flags & NG_TYPE_DOGFIGHT))) {
-				continue;
-			}
+			continue;
 		}
 
 		if(hud_target_invalid_awacs(A)){
@@ -6236,13 +6358,10 @@ int hud_target_closest_repair_ship(int goal_objnum)
 
 void hud_target_toggle_hidden_from_sensors()
 {
-	if (TARGET_SHIP_IGNORE_FLAGS & SF_HIDDEN_FROM_SENSORS)
-	{
+	if ( TARGET_SHIP_IGNORE_FLAGS & SF_HIDDEN_FROM_SENSORS ) {
 		TARGET_SHIP_IGNORE_FLAGS &= ~SF_HIDDEN_FROM_SENSORS;
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Target hiding from sensors disabled"));
-	}
-	else
-	{
+	} else {
 		TARGET_SHIP_IGNORE_FLAGS |= SF_HIDDEN_FROM_SENSORS;
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("Target hiding from sensors enabled"));
 	}
@@ -6262,7 +6381,7 @@ void hud_target_closest_uninspected_object()
 		A = &Objects[so->objnum];
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) ){
+		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) ){
 			continue;
 		}
 
@@ -6324,7 +6443,7 @@ void hud_target_uninspected_object(int next_flag)
 		A = &Objects[so->objnum];
 		shipp = &Ships[A->instance];	// get a pointer to the ship information
 
-		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) || (shipp->flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
+		if ( (A == Player_obj) || (shipp->flags & TARGET_SHIP_IGNORE_FLAGS) )
 			continue;
 
 		// ignore all non-cargo carrying craft
@@ -6460,7 +6579,6 @@ void hud_target_last_transmit()
 	int play_fail_sound = 1;
 	int transmit_index = Transmit_target_current_slot;
 	Assert(transmit_index >= 0);
-
 	for ( i = 0; i < MAX_TRANSMIT_TARGETS; i++ ) {
 		if ( Transmit_target_list[transmit_index].objnum >= 0 ) {
 			int transmit_objnum = Transmit_target_list[transmit_index].objnum;
@@ -6469,9 +6587,7 @@ void hud_target_last_transmit()
 				play_fail_sound = 0;
 			} else {
 				if ( Transmit_target_list[transmit_index].objsig == Objects[Transmit_target_list[transmit_index].objnum].signature ) {
-					if ( !(Ships[Objects[transmit_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS)
-						&& !(Ships[Objects[transmit_objnum].instance].flags2 & TARGET_SHIP_IGNORE_FLAGS_2) )
-					{
+					if ( !(Ships[Objects[transmit_objnum].instance].flags & TARGET_SHIP_IGNORE_FLAGS) ) {
 						Transmit_target_current_slot = transmit_index-1;
 						if ( Transmit_target_current_slot < 0 ) {
 							Transmit_target_current_slot = MAX_TRANSMIT_TARGETS - 1;
@@ -6523,6 +6639,11 @@ void hud_target_last_transmit_add(int ship_num)
 	Assert(ship_objnum >= 0 && ship_objnum < MAX_OBJECTS);
 	ship_objp = &Objects[ship_objnum];
 	Assert(ship_objp->type == OBJ_SHIP);
+
+	// don't add ourselves to the list
+	if (Player_obj == ship_objp) {
+		return;
+	}
 
 	Transmit_target_list[Transmit_target_next_slot].objnum = ship_objnum;
 	Transmit_target_list[Transmit_target_next_slot].objsig = ship_objp->signature;

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.h $
- * $Revision: 2.12 $
- * $Date: 2006-09-11 06:51:17 $
+ * $Revision: 2.11.2.1 $
+ * $Date: 2006-09-11 01:17:07 $
  * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $

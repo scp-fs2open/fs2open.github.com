@@ -9,32 +9,29 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjCollide.cpp $
- * $Revision: 2.18 $
- * $Date: 2007-09-30 22:37:08 $
+ * $Revision: 2.11.2.6 $
+ * $Date: 2007-09-30 22:37:05 $
  * $Author: Goober5000 $
  *
  * Helper routines for all the collision detection functions
  * Also keeps track of all the object pairs.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.17  2007/07/28 21:31:11  Goober5000
+ * Revision 2.11.2.5  2007/07/28 21:31:05  Goober5000
  * this should really be capitalized
  *
- * Revision 2.16  2007/07/24 13:04:10  Kazan
+ * Revision 2.11.2.4  2007/07/24 13:03:15  Kazan
  * Resolve Mantis 1281
  *
- * Revision 2.15  2007/02/20 04:20:27  Goober5000
+ * Revision 2.11.2.3  2007/02/20 04:19:34  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.14  2007/02/10 00:08:59  taylor
+ * Revision 2.11.2.2  2007/02/10 00:08:40  taylor
  * performance optimizations:
  *  - fvi_ray_boundingbox() is faster and should be less prone to compiler/optimization/platform specific issues
  *  - clean up or obj_check_all_collisions() which is a good bit faster now
  *
- * Revision 2.13  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.12  2006/09/11 06:45:40  taylor
+ * Revision 2.11.2.1  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
  * Revision 2.11  2005/10/17 05:48:18  taylor
@@ -536,11 +533,21 @@ void obj_add_pair( object *A, object *B, int check_time, int add_to_end )
 		awip = &Weapon_info[Weapons[A->instance].weapon_info_index];
 		bwip = &Weapon_info[Weapons[B->instance].weapon_info_index];
 		
-		if (bwip->subtype == WP_LASER && (awip->wi_flags & WIF_BOMB)) {
-				check_collision = collide_weapon_weapon;
-				swapped=1;			
-		} else {
-				check_collision = collide_weapon_weapon;
+		if (awip->subtype != WP_LASER || bwip->subtype != WP_LASER) {
+			if (awip->subtype == WP_LASER) {
+				if ( bwip->wi_flags & WIF_BOMB ) {
+					check_collision = collide_weapon_weapon;
+				}
+			} else if (bwip->subtype == WP_LASER) {
+				if ( awip->wi_flags & WIF_BOMB ) {
+					check_collision = collide_weapon_weapon;
+					swapped=1;			
+				}
+			} else {
+				if ( (awip->wi_flags&WIF_BOMB) || (bwip->wi_flags&WIF_BOMB) ) {
+					check_collision = collide_weapon_weapon;
+				}
+			}
 		}
 /*
 		int	atype, btype;

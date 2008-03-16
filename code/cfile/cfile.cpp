@@ -9,19 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/cfile.cpp $
- * $Revision: 2.47 $
- * $Date: 2007-11-21 07:28:37 $
+ * $Revision: 2.40.2.7 $
+ * $Date: 2007-11-21 07:27:45 $
  * $Author: Goober5000 $
  *
  * Utilities for operating on files
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.46  2007/04/11 18:24:27  taylor
- * cleanup of chksum stuff (works properly on 64-bit systems now)
+ * Revision 2.40.2.6  2007/04/11 18:21:20  taylor
+ * cleanup of chcksum stuff (works properly on 64-bit systems now)
  * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
  * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
  *
- * Revision 2.45  2007/03/22 20:22:24  taylor
+ * Revision 2.40.2.5  2007/03/22 20:22:44  taylor
  * a little better error handling for cf_exists_full()
  * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
  * use cf_exists_full_ext() for eventmusic file checks (to check for ogg and wav)
@@ -31,18 +31,18 @@
  *  - load issue with finding incorrect files by mistake
  *  - prevent finding different file types in various paths/roots
  *
- * Revision 2.44  2007/02/11 09:31:11  taylor
+ * Revision 2.40.2.4  2007/02/11 09:32:19  taylor
+ * forgot to remove .avi and .mpg from CF_TYPE_ROOT
+ *
+ * Revision 2.40.2.3  2007/02/11 09:25:42  taylor
  * some CFILE cleanup and slight directory order reorg
  * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
  * remove NO_SOUND
  *
- * Revision 2.43  2007/01/07 12:32:38  taylor
- * remove avi and mpg from supported extensions
+ * Revision 2.40.2.2  2006/12/26 05:11:57  taylor
+ * add .ogg files to movie locations
  *
- * Revision 2.42  2006/08/15 00:25:23  Backslash
- * add .ogg to the list of recognized movie file extensions
- *
- * Revision 2.41  2006/07/28 02:34:52  taylor
+ * Revision 2.40.2.1  2006/07/28 02:43:48  taylor
  * don't lowercase the dir for chdir on non-Win32 since it could be, and probably is, case sensitive
  *
  * Revision 2.40  2006/04/20 06:32:00  Goober5000
@@ -416,7 +416,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_VOICE_SPECIAL,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "special",				".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_VOICE_TRAINING,		"data" DIR_SEPARATOR_STR "voice" DIR_SEPARATOR_STR "training",				".wav .ogg",						CF_TYPE_VOICE	},
 	{ CF_TYPE_MUSIC,				"data" DIR_SEPARATOR_STR "music",											".wav .ogg",						CF_TYPE_DATA	},
-	{ CF_TYPE_MOVIES,				"data" DIR_SEPARATOR_STR "movies",											".mve .ogg",						CF_TYPE_DATA	},
+	{ CF_TYPE_MOVIES,				"data" DIR_SEPARATOR_STR "movies",											".mve .msb .ogg",					CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff",			CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf",							CF_TYPE_DATA	},
 	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .dds",	CF_TYPE_DATA	},
@@ -2140,11 +2140,3 @@ int cflush(CFILE *cfile)
 	Assert(cb->fp != NULL);
 	return fflush(cb->fp);
 }
-
-
-
-
-
-
-
-

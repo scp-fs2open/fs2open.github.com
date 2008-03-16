@@ -9,25 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.cpp $
- * $Revision: 1.12 $
- * $Date: 2007-07-23 15:16:48 $
+ * $Revision: 1.7.2.5 $
+ * $Date: 2008-01-08 17:24:22 $
  * $Author: Kazan $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.11  2007/02/11 09:31:11  taylor
+ * Revision 1.7.2.4  2007/10/28 16:35:12  taylor
+ * add "2D Mission" checkbox to mission specs window (Mantis #1387)
+ *
+ * Revision 1.7.2.3  2007/07/23 16:08:24  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
+ * Revision 1.7.2.2  2007/02/11 09:25:42  taylor
  * some CFILE cleanup and slight directory order reorg
  * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
  * remove NO_SOUND
  *
- * Revision 1.10  2007/01/07 01:00:18  Goober5000
- * convert a mission variable to a mission flag
- *
- * Revision 1.9  2007/01/07 00:01:28  Goober5000
- * add a feature for specifying the source of Command messages
- *
- * Revision 1.8  2006/07/30 20:01:56  Kazan
+ * Revision 1.7.2.1  2006/07/30 20:00:47  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
  * Revision 1.7  2006/05/30 02:13:22  Goober5000
@@ -266,7 +266,6 @@
 #include "gamesnd/eventmusic.h"
 #include "cfile/cfile.h"
 #include "mission/missionparse.h"
-#include "mission/missionmessage.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -298,8 +297,6 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_ai_profile = -1;
 	m_event_music = -1;
 	m_substitute_event_music = _T("");
-	m_command_persona = -1;
-	m_command_sender = _T("");
 	m_full_war = FALSE;
 	m_red_alert = FALSE;
 	m_scramble = FALSE;
@@ -317,6 +314,8 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_no_briefing = FALSE;
 	m_no_debriefing = FALSE;
 	m_autpilot_cinematics = FALSE;
+	m_no_autpilot = FALSE;
+	m_2d_mission = FALSE;
 	m_max_hull_repair_val = 0.0f;
 	m_max_subsys_repair_val = 100.0f;
 	m_contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
@@ -342,8 +341,6 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_AI_PROFILE, m_ai_profile);
 	DDX_CBIndex(pDX, IDC_EVENT_MUSIC, m_event_music);
 	DDX_Text(pDX, IDC_SUBSTITUTE_EVENT_MUSIC, m_substitute_event_music);
-	DDX_CBIndex(pDX, IDC_COMMAND_PERSONA, m_command_persona);
-	DDX_Text(pDX, IDC_COMMAND_SENDER, m_command_sender);
 	DDX_Check(pDX, IDC_FULL_WAR, m_full_war);
 	DDX_Check(pDX, IDC_RED_ALERT, m_red_alert);
 	DDX_Check(pDX, IDC_SCRAMBLE, m_scramble);
@@ -362,6 +359,8 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_NO_BRIEFING, m_no_briefing);
 	DDX_Check(pDX, IDC_NO_DEBRIEFING, m_no_debriefing);
 	DDX_Check(pDX, IDC_USE_AUTOPILOT_CINEMATICS, m_autpilot_cinematics);
+	DDX_Check(pDX, IDC_2D_MISSION, m_2d_mission);
+	DDX_Check(pDX, IDC_DEACTIVATE_AUTOPILOT, m_no_autpilot);
 	DDX_Text(pDX, IDC_MAX_HULL_REPAIR_VAL, m_max_hull_repair_val);
 	DDV_MinMaxFloat(pDX, m_max_hull_repair_val, 0, 100);
 	DDX_Text(pDX, IDC_MAX_SUBSYS_REPAIR_VAL, m_max_subsys_repair_val);
@@ -408,6 +407,9 @@ int CMissionNotesDlg::query_modified()
 		return 1;
 	}
 	if (Current_soundtrack_num != m_event_music - 1){
+		return 1;
+	}
+	if (Mission_all_attack != m_full_war){
 		return 1;
 	}
 
@@ -473,13 +475,6 @@ void CMissionNotesDlg::OnOK()
 		The_mission.flags |= MISSION_FLAG_SCRAMBLE;
 	} else {
 		The_mission.flags &= ~MISSION_FLAG_SCRAMBLE;
-	}
-
-	// set attack all
-	if ( m_full_war ) {
-		The_mission.flags |= MISSION_FLAG_ALL_ATTACK;
-	} else {
-		The_mission.flags &= ~MISSION_FLAG_ALL_ATTACK;
 	}
 
 	// set flags for dock trees
@@ -575,6 +570,20 @@ void CMissionNotesDlg::OnOK()
 		The_mission.flags &= ~MISSION_FLAG_USE_AP_CINEMATICS;
 	}
 
+	// 2D mission
+	if ( m_2d_mission ) {
+		The_mission.flags |= MISSION_FLAG_2D_MISSION;
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_2D_MISSION;
+	}
+	
+	// set autopilot disabled
+	if ( m_no_autpilot ) {
+		The_mission.flags |= MISSION_FLAG_DEACTIVATE_AP;
+	} else {
+		The_mission.flags &= ~MISSION_FLAG_DEACTIVATE_AP;
+	}
+
 	if ( flags != The_mission.flags ){
 		set_modified();
 	}
@@ -600,11 +609,10 @@ void CMissionNotesDlg::OnOK()
 	MODIFY(Current_soundtrack_num, m_event_music - 1);
 	strcpy(The_mission.substitute_event_music_name, m_substitute_event_music);
 
-	MODIFY(The_mission.command_persona, ((CComboBox *) GetDlgItem(IDC_COMMAND_PERSONA))->GetItemData(m_command_persona));
-	if (m_command_sender.GetAt(0) == '#')
-		strcpy(The_mission.command_sender, m_command_sender.Mid(1));
-	else
-		strcpy(The_mission.command_sender, m_command_sender);
+	MODIFY(Mission_all_attack, m_full_war);
+	if (query_modified()){
+		set_modified();
+	}
 
 	theApp.record_window_data(&Mission_notes_wnd_data, this);
 
@@ -625,7 +633,7 @@ void CMissionNotesDlg::OnCancel()
 
 BOOL CMissionNotesDlg::OnInitDialog() 
 {
-	int i, box_index = 0, mission_command_persona_box_index = -1;
+	int i;
 	CComboBox *box;
 	CEdit *edit;
 
@@ -642,7 +650,6 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_mission_desc_orig = m_mission_desc = convert_multiline_string(The_mission.mission_desc);
 	m_red_alert = (The_mission.flags & MISSION_FLAG_RED_ALERT) ? 1 : 0;
 	m_scramble = (The_mission.flags & MISSION_FLAG_SCRAMBLE) ? 1 : 0;
-	m_full_war = (The_mission.flags & MISSION_FLAG_ALL_ATTACK) ? 1 : 0;
 	m_daisy_chained_docking = (The_mission.flags & MISSION_FLAG_ALLOW_DOCK_TREES) ? 1 : 0;
 	m_disallow_support = (The_mission.support_ships.max_support_ships == 0) ? 1 : 0;
 	m_no_promotion = (The_mission.flags & MISSION_FLAG_NO_PROMOTION) ? 1 : 0;
@@ -656,7 +663,8 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_no_briefing = (The_mission.flags & MISSION_FLAG_NO_BRIEFING) ? 1 : 0;
 	m_no_debriefing = (The_mission.flags & MISSION_FLAG_NO_DEBRIEFING) ? 1 : 0;
 	m_autpilot_cinematics = (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) ? 1 : 0;
-	
+	m_2d_mission = (The_mission.flags & MISSION_FLAG_2D_MISSION) ? 1 : 0;
+	m_no_autpilot =  (The_mission.flags & MISSION_FLAG_DEACTIVATE_AP) ? 1 : 0;
 
 	m_loading_640=_T(The_mission.loading_screen[GR_640]);
 	m_loading_1024=_T(The_mission.loading_screen[GR_1024]);
@@ -680,25 +688,6 @@ BOOL CMissionNotesDlg::OnInitDialog()
 		box->AddString(Soundtracks[i].name);		
 	}
 
-	box = (CComboBox *) GetDlgItem(IDC_COMMAND_PERSONA);
-	for (i=0; i<Num_personas; i++){
-		if (Personas[i].flags & PERSONA_FLAG_COMMAND){
-			box->AddString(Personas[i].name);
-			box->SetItemData(box_index, i);
-			if (i == The_mission.command_persona)
-				mission_command_persona_box_index = box_index;
-			box_index++;
-		}
-	}
-
-	box = (CComboBox *) GetDlgItem(IDC_COMMAND_SENDER);
-	box->AddString(DEFAULT_COMMAND);
-	for (i=0; i<MAX_SHIPS; i++){
-		if (Ships[i].objnum >= 0)
-			if (Ship_info[Ships[i].ship_info_index].flags & SIF_HUGE_SHIP)
-				box->AddString(Ships[i].ship_name);
-	}
-
 	// squad info
 	if(strlen(The_mission.squad_name) > 0){
 		m_squad_name = _T(The_mission.squad_name);
@@ -710,12 +699,9 @@ BOOL CMissionNotesDlg::OnInitDialog()
 
 	m_type = The_mission.game_type;
 	m_ai_profile = (The_mission.ai_profile - Ai_profiles);
-
 	m_event_music = Current_soundtrack_num + 1;
 	m_substitute_event_music = The_mission.substitute_event_music_name;
-
-	m_command_persona = mission_command_persona_box_index;
-	m_command_sender = The_mission.command_sender;
+	m_full_war = Mission_all_attack;
 
 	// set up the game type checkboxes accoring to m_type
 	if ( m_type & MISSION_TYPE_SINGLE ){
@@ -942,3 +928,4 @@ void CMissionNotesDlg::OnCustomWingNames()
 
 	UpdateData(FALSE);	
 }
+

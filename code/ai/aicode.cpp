@@ -9,130 +9,94 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/AiCode.cpp $
- * $Revision: 1.109 $
- * $Date: 2007-09-02 18:53:22 $
- * $Author: Goober5000 $
+ * $Revision: 1.72.2.27 $
+ * $Date: 2008-01-08 01:41:11 $
+ * $Author: Kazan $
  * 
  * AI code that does interesting stuff
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.108  2007/09/02 02:10:23  Goober5000
+ * Revision 1.72.2.26  2007/09/02 18:52:50  Goober5000
+ * fix for #1455 plus a bit of cleanup
+ *
+ * Revision 1.72.2.25  2007/09/02 02:07:37  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 1.107  2007/08/11 16:52:02  Goober5000
+ * Revision 1.72.2.24  2007/08/11 16:51:55  Goober5000
  * some tweaks for a field that's mostly unused anyway
  *
- * Revision 1.106  2007/07/28 21:31:10  Goober5000
+ * Revision 1.72.2.23  2007/07/28 21:31:03  Goober5000
  * this should really be capitalized
  *
- * Revision 1.105  2007/07/23 15:16:47  Kazan
- * Autopilot upgrades as described, MSVC2005 project fixes
+ * Revision 1.72.2.22  2007/07/23 16:08:22  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
- * Revision 1.104  2007/07/15 18:00:55  Goober5000
+ * Revision 1.72.2.21  2007/07/15 18:00:50  Goober5000
  * Kazan's autopilot fix
  *
- * Revision 1.103  2007/07/15 08:19:59  Goober5000
+ * Revision 1.72.2.20  2007/07/15 08:20:04  Goober5000
  * fix and clean up the warpout conditions
  *
- * Revision 1.102  2007/04/05 15:59:44  karajorma
+ * Revision 1.72.2.19  2007/04/05 15:58:00  karajorma
  * I could have sworn I committed this! Anyway, make the wingman complain when you shoot them instead of command. Send traitor messages from wingmen if command is silenced.
  *
- * Revision 1.101  2007/02/20 04:20:10  Goober5000
+ * Revision 1.72.2.18  2007/02/20 04:19:09  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 1.100  2007/02/18 06:16:46  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 1.99  2007/02/11 21:26:34  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 1.98  2007/02/11 09:47:35  taylor
+ * Revision 1.72.2.17  2007/02/11 09:39:08  taylor
  * some minor performance improvements
  * remove NO_SOUND
  *
- * Revision 1.97  2007/02/10 06:39:43  Goober5000
- * new feature: shield generators that control whether the shield is up
- *
- * Revision 1.96  2007/01/15 01:37:37  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
- *
- * Revision 1.95  2007/01/14 14:03:31  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 1.94  2007/01/08 00:50:58  Goober5000
- * remove WMC's limbo code, per our discussion a few months ago
- * this will later be handled by copying ship stats using sexps or scripts
- *
- * Revision 1.93  2007/01/07 01:00:18  Goober5000
- * convert a mission variable to a mission flag
- *
- * Revision 1.92  2006/12/28 00:59:18  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.91  2006/11/16 00:49:35  taylor
+ * Revision 1.72.2.16  2006/11/15 00:19:33  taylor
  * fix stupid bay depart object animation bug (Mantis bug #1133, part 2)
  *
- * Revision 1.90  2006/11/06 06:43:58  taylor
+ * Revision 1.72.2.15  2006/11/06 05:19:59  taylor
  * if a submodel anim fails to start then move directly to ready position flag (set it up to do this, just forgot to do it ;))  (fix for Mantis bug #1133)
  *
- * Revision 1.89  2006/11/06 06:24:57  taylor
- * updated/fixed modelanim code
- *
- * Revision 1.88  2006/11/06 02:19:58  Goober5000
+ * Revision 1.72.2.14  2006/11/06 02:20:00  Goober5000
  * minor bugfixes
  *
- * Revision 1.87  2006/10/15 00:40:56  Goober5000
+ * Revision 1.72.2.13  2006/10/27 21:29:26  taylor
+ * updated/fixed modelanim code
+ *
+ * Revision 1.72.2.12  2006/10/15 00:41:01  Goober5000
  * better safety check
  *
- * Revision 1.86  2006/09/20 05:19:01  Goober5000
+ * Revision 1.72.2.11  2006/09/20 05:19:02  Goober5000
  * more descriptive warning message for docking paths
  *
- * Revision 1.85  2006/09/11 06:49:38  taylor
+ * Revision 1.72.2.10  2006/09/11 01:15:03  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 1.84  2006/08/20 00:49:39  taylor
+ * Revision 1.72.2.9  2006/08/19 04:35:04  taylor
  * slight optimizations
  * fix AI shields to not get overly charged or overly drained when AI does equalize (it's closer to player now, but still within retail intent of function, I think)
  *
- * Revision 1.83  2006/08/14 21:59:14  Goober5000
+ * Revision 1.72.2.8  2006/08/14 21:59:13  Goober5000
  * extremely minor optimizations
  *
- * Revision 1.82  2006/07/26 03:44:17  Kazan
- * Resolve Mantis #1010
+ * Revision 1.72.2.7  2006/07/26 15:04:04  Kazan
+ * resolve SVN 1011
  *
- * Revision 1.81  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
- * Revision 1.80  2006/07/06 21:00:12  Goober5000
- * remove obsolete (and hackish) flag
- * --Goober5000
- *
- * Revision 1.79  2006/07/05 23:48:20  Goober5000
+ * Revision 1.72.2.6  2006/07/05 23:47:59  Goober5000
  * fix for Mantis #571
  * --Goober5000/Backslash
  *
- * Revision 1.78  2006/07/05 23:35:42  Goober5000
+ * Revision 1.72.2.5  2006/07/05 23:36:55  Goober5000
  * cvs comment tweaks
  *
- * Revision 1.77  2006/07/02 03:33:50  Goober5000
+ * Revision 1.72.2.4  2006/07/02 03:34:16  Goober5000
  * okay, I have no idea what I was doing there
  * --Goober5000
  *
- * Revision 1.76  2006/06/27 05:10:02  taylor
+ * Revision 1.72.2.3  2006/06/27 04:22:03  taylor
  * account for some minor floating point error in the undock speed check
  *
- * Revision 1.75  2006/06/27 04:06:18  Goober5000
+ * Revision 1.72.2.2  2006/06/27 04:06:17  Goober5000
  * handle docked objects during death roll
  * --Goober5000
  *
- * Revision 1.74  2006/06/07 04:37:36  wmcoolmon
- * "Limbo" flag support
- *
- * Revision 1.73  2006/06/04 01:01:52  Goober5000
+ * Revision 1.72.2.1  2006/06/04 01:03:12  Goober5000
  * add fighterbay restriction code
  * --Goober5000
  *
@@ -1190,7 +1154,6 @@
 #include "ai/ai.h"
 #include "globalincs/linklist.h"
 #include "object/object.h"
-#include "object/objectshield.h"
 #include "physics/physics.h"
 #include "ship/ship.h"
 #include "model/model.h"
@@ -1211,6 +1174,7 @@
 #include "ai/aibig.h"
 #include "hud/hud.h"
 #include "object/objcollide.h"
+#include "object/objectshield.h"
 #include "asteroid/asteroid.h"
 #include "hud/hudlock.h"
 #include "mission/missiontraining.h"
@@ -1226,6 +1190,7 @@
 #include "parse/parselo.h"
 #include "object/objectdock.h"
 #include "object/deadobjectdock.h"
+#include "object/waypoint.h"
 #include "ai/aiinternal.h"
 #include "iff_defs/iff_defs.h"
 #include "network/multimsgs.h"
@@ -1233,9 +1198,9 @@
 //#include "network/multi_team.h"
 #include "network/multi.h"
 #include "ai/ai_profiles.h"
-#include "object/waypoint/waypoint.h"
 
 #include "autopilot/autopilot.h"
+#include <map>
 
 
 #pragma optimize("", off)
@@ -1335,6 +1300,9 @@ typedef struct {
 ignore_object	Ignore_objects[MAX_IGNORE_OBJECTS];
 */
 
+// few forward decs i needed - kazan
+object * get_wing_leader(int wingnum);
+int get_wing_index(object *objp, int wingnum);
 
 control_info	AI_ci;
 
@@ -1364,12 +1332,13 @@ object *En_objp;
 
 ai_class *Ai_classes = NULL;
 int	Ai_firing_enabled = 1;
-int	Num_ai_classes = 0;
-int Num_alloced_ai_classes = 0;
+int	Num_ai_classes;
+int Num_alloced_ai_classes;
 
 int	AI_FrameCount = 0;
 int	Ship_info_inited = 0;
 int	AI_watch_object = 0; // Debugging, object to spew debug info for.
+int	Mission_all_attack = 0;					//	!0 means all teams attack all teams.
 
 char *Skill_level_names(int level, int translate)
 {
@@ -3012,14 +2981,13 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 			if (shipp->flags & SF_DYING)
 				return;
 
-			// don't fire at an arriving ship
-			if (shipp->flags & SF_ARRIVING)
-				return;
-
 			if (is_ignore_object(aip, OBJ_INDEX(eno->trial_objp)))
 				return;
 
 			if (eno->trial_objp->flags & OF_PROTECTED)
+				return;
+
+			if (shipp->flags & SF_ARRIVING)
 				return;
 
 			ship_info *sip = &Ship_info[shipp->ship_info_index];
@@ -5224,30 +5192,70 @@ void ai_fly_to_ship()
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
+	vec3d perp, zero, goal_point;
+	memset(&zero, 0, sizeof(vec3d));
 	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
 		Player_ship->objnum != shipp->objnum &&
 		//sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) && 
 		(shipp->flags2 & SF2_NAVPOINT_CARRY || (shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
 		)) // capital ship and AutoPilotEngaged
 	{
-			vec3d tmp, proj_pos;
-			
-			//vm_vec_scale
-			memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vec3d));
-			vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
-									  // this makes tmp a displacement
-			vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
-			
+			// snap wings into formation them into formation
+			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) 
+			{
+				if (aip->wing != -1)
+				{
+					int wing_index = get_wing_index(Pl_objp, aip->wing);
+					object *leader_objp = get_wing_leader(aip->wing);
+					
+					if (leader_objp != Pl_objp)
+					{
+						// not leader.. get our position relative to leader
+						get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+					}
+					else
+					{
+						j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
+						switch (autopilot_wings[aip->wing] % 2)
+						{
+							case 1: // back-left
+								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_normalize(&perp);
+								vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
+								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+								break;
 
-			ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
-		/*
-		}
-		else
-		{
-			if (dist_to_goal > 0.1f) {
-				ai_turn_towards_vector(target_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+							default: //back-right
+							case 0:
+								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_normalize(&perp);
+								vm_vec_scale(&perp, 166.0f*j);
+								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+								break;
+						}
+
+					}
+					Pl_objp->pos = goal_point;
+				}
+				vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
+				vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
 			}
-		}*/
+			else
+			{
+				vec3d tmp, proj_pos;
+				
+				//vm_vec_scale
+				memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vec3d));
+				vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
+										  // this makes tmp a displacement
+				vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
+				
+
+				ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+			}
+
 	}
 	else
 	{
@@ -5389,6 +5397,7 @@ void ai_waypoints()
 	float		prev_dot_to_goal;
 	vec3d	temp_vec;
 	vec3d	*slop_vec;
+	int j;
 
 	aip = &Ai_info[Ships[Pl_objp->instance].ai_index];
 
@@ -5452,7 +5461,8 @@ void ai_waypoints()
 	// and "keep reasonable distance" 
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
-
+	vec3d perp, zero, goal_point;
+	memset(&zero, 0, sizeof(vec3d));
 	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
 		Player_ship->objnum != shipp->objnum &&
 		//&& sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) 
@@ -5473,18 +5483,61 @@ void ai_waypoints()
 			vm_vec_copy_normalize(&col_vec, &Objects[collide_objnum].phys_info.vel);
 			vm_vec_sub(&col_direct, &col_vec, &Objects[collide_objnum].orient.vec.fvec);
 			*/
+// snap wings into formation them into formation
+			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) 
+			{
+				if (aip->wing != -1)
+				{
+					int wing_index = get_wing_index(Pl_objp, aip->wing);
+					object *leader_objp = get_wing_leader(aip->wing);
+					
+					if (leader_objp != Pl_objp)
+					{
+						// not leader.. get our position relative to leader
+						get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+					}
+					else
+					{
+						j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
+						switch (autopilot_wings[aip->wing] % 2)
+						{
+							case 1: // back-left
+								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_normalize(&perp);
+								vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
+								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+								break;
 
-			
-			vec3d tmp, proj_pos;
-			
-			//vm_vec_scale
-			memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vec3d));
-			vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
-									  // this makes tmp a displacement
-			vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
+							default: //back-right
+							case 0:
+								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
+								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
+								vm_vec_normalize(&perp);
+								vm_vec_scale(&perp, 166.0f*j);
+								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+								break;
+						}
 
-			ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+					}
+					Pl_objp->pos = goal_point;
+				}
+				vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
+				vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
+			}
+			else
+			{
+				vec3d tmp, proj_pos;
+				
+				//vm_vec_scale
+				memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vec3d));
+				vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
+										  // this makes tmp a displacement
+				vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
+				
 
+				ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+			}
 		/*}
 		else
 		{
@@ -6287,7 +6340,7 @@ int ai_select_primary_weapon_OLD(object *objp, object *other_objp, int flags)
 //	Returns primary_bank index.
 /**
  * Etc. Etc. This is like the 4th rewrite of the code here. Special thanks to Bobboau
- * for finding the shield_get_strength function.
+ * for finding the get_shield_strength function.
  * 
  * The AI will now intelligently choose the best weapon to use based on the overall shield
  * status of the target.
@@ -6472,7 +6525,6 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		return i_hullfactor_prev_bank;							// Return
 	}
 
-	/*
 	// Somehow no weapons were found - just take the first one
 	if ( swp->current_primary_bank < 0 ) 
 	{
@@ -6485,7 +6537,6 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 	Assert( swp->current_primary_bank != -1 );		// get Alan or Allender
 
 	return swp->current_primary_bank;
-	*/
 }
 
 //	--------------------------------------------------------------------------
@@ -6587,13 +6638,8 @@ void set_primary_weapon_linkage(object *objp)
 			}
 		}
 
-		//Assert(total_ammo);	// Goober5000: div-0 check
-		//WMC - Just use an if()
-		if(!total_ammo)
-			ammo_pct = 100.0f;
-		else
-			ammo_pct = float (current_ammo) / float (total_ammo) * 100.0f;
-		
+		Assert(total_ammo);	// Goober5000: div-0 check
+		ammo_pct = float (current_ammo) / float (total_ammo) * 100.0f;
 
 		// link according to defined levels
 		if (ammo_pct > The_mission.ai_profile->link_ammo_levels_always[Game_skill_level])
@@ -7036,7 +7082,7 @@ int ai_fire_secondary_weapon(object *objp, int priority1, int priority2)
 
 	weapon_info	*wip = &Weapon_info[shipp->weapons.secondary_bank_weapons[current_bank]];
 
-	if ((wip->wi_flags & WIF_HOMING_ASPECT) && (!Ai_info[shipp->ai_index].current_target_is_locked)) {
+	if ((wip->wi_flags & WIF_LOCKED_HOMING) && (!Ai_info[shipp->ai_index].current_target_is_locked)) {
 		//nprintf(("AI", "Not firing secondary weapon because not aspect locked.\n"));
 		swp->next_secondary_fire_stamp[current_bank] = timestamp(250);
 	} else if ((wip->wi_flags & WIF_BOMB) || (vm_vec_dist_quick(&objp->pos, &En_objp->pos) > 50.0f)) {
@@ -8453,22 +8499,31 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 	int	num_weapon_types;
 	int	weapon_id_list[MAX_WEAPON_TYPES], weapon_bank_list[MAX_WEAPON_TYPES];
 	ship	*shipp;
+	ship	*tshpp;
 	ship_weapon	*swp;
 	weapon_info	*wip;
-
+	object *tobjp = &Objects[aip->target_objnum];
+	
 	shipp = &Ships[aip->shipnum];
+	tshpp = NULL;
 	swp = &shipp->weapons;
+
+	object *aiobjp = &Objects[shipp->objnum];
 
 	// AL 3-7-98: This probably should never happen, but check to ensure that current_secondary_bank is valid
 	if ( (swp->current_secondary_bank < 0) || (swp->current_secondary_bank > swp->num_secondary_banks) ) {
 		return;
 	}
 
+	if (tobjp->type == OBJ_SHIP) {
+		tshpp = &Ships[tobjp->instance];
+	}
+
 	num_weapon_types = get_available_secondary_weapons(Pl_objp, weapon_id_list, weapon_bank_list);
 
 	wip = &Weapon_info[swp->secondary_bank_weapons[swp->current_secondary_bank]];
 
-	if (num_weapon_types && (wip->wi_flags & WIF_HOMING_ASPECT)) {
+	if (num_weapon_types && (wip->wi_flags & WIF_LOCKED_HOMING)) {
 		if (dist_to_enemy > 300.0f - MIN(enemy_radius, 100.0f))
 			aip->ai_flags |= AIF_SEEK_LOCK;
 		else
@@ -8476,16 +8531,20 @@ void update_aspect_lock_information(ai_info *aip, vec3d *vec_to_enemy, float dis
 
 		//	Update locking information for aspect seeking missiles.
 		aip->current_target_is_locked = 0;
-		dot_to_enemy = vm_vec_dot(vec_to_enemy, &Pl_objp->orient.vec.fvec);
+		dot_to_enemy = vm_vec_dot(vec_to_enemy, &aiobjp->orient.vec.fvec);
 
 		float	needed_dot = 0.9f - 0.5f * enemy_radius/(dist_to_enemy + enemy_radius);	//	Replaced MIN_TRACKABLE_DOT with 0.9f
-		if (dot_to_enemy > needed_dot) {
-			aip->aspect_locked_time += flFrametime;
-			// nprintf(("AI", "+ Lock time = %7.3f\n", aip->aspect_locked_time));
-			if (aip->aspect_locked_time >= wip->min_lock_time) {
-				aip->aspect_locked_time = wip->min_lock_time;
-				aip->current_target_is_locked = 1;
-			}
+		if (dot_to_enemy > needed_dot &&
+			(wip->wi_flags & WIF_HOMING_ASPECT ||
+			wip->wi_flags & WIF_HOMING_JAVELIN &&
+			(tshpp == NULL ||
+			ship_get_closest_subsys_in_sight(tshpp, SUBSYSTEM_ENGINE, &aiobjp->pos)))) {
+				aip->aspect_locked_time += flFrametime;
+				// nprintf(("AI", "+ Lock time = %7.3f\n", aip->aspect_locked_time));
+				if (aip->aspect_locked_time >= wip->min_lock_time) {
+					aip->aspect_locked_time = wip->min_lock_time;
+					aip->current_target_is_locked = 1;
+				}
 		} else {
 			aip->aspect_locked_time -= flFrametime*2;
 			// nprintf(("AI", "- Lock time = %7.3f\n", aip->aspect_locked_time));
@@ -11942,7 +12001,6 @@ void process_subobjects(int objnum)
 		case SUBSYSTEM_COMMUNICATION:
 		case SUBSYSTEM_WEAPONS:
 		case SUBSYSTEM_SENSORS:
-		case SUBSYSTEM_SHIELD_GENERATOR:
 		case SUBSYSTEM_UNKNOWN:
 			break;
 
@@ -11962,7 +12020,9 @@ void process_subobjects(int objnum)
 
 	//	Deal with a ship with blown out engines.
 	if (ship_get_subsystem_strength(shipp, SUBSYSTEM_ENGINE) == 0.0f) {
-		if ( (sip->flags & (SIF_FIGHTER | SIF_BOMBER)) && !(shipp->flags & SF_DYING) ) {
+		// Karajorma - if Player_use_ai is ever fixed to work on multiplayer it should be checked that any player ships 
+		// aren't under AI control here
+		if ( (!(objp->flags & OF_PLAYER_SHIP) ) && (sip->flags & (SIF_FIGHTER | SIF_BOMBER)) && !(shipp->flags & SF_DYING) ) {
 			// AL: Only attack forever if not trying to depart to a docking bay.  Need to have this in, since
 			//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
 			//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
@@ -12167,6 +12227,21 @@ void get_absolute_wing_pos(vec3d *result_pos, object *leader_objp, int wing_inde
 
 	vm_vec_unrotate(&rotated_wing_delta, &wing_delta, &leader_objp->orient);	//	Rotate into leader's reference.
 
+	vm_vec_add(result_pos, &leader_objp->pos, &rotated_wing_delta);	//	goal_point is absolute 3-space point.
+}
+
+
+// autopilot variant.. removes some scaling crap
+void get_absolute_wing_pos_autopilot(vec3d *result_pos, object *leader_objp, int wing_index, int formation_object_flag)
+{
+	vec3d	wing_delta, rotated_wing_delta;
+	float		wing_spread_size;
+
+	get_wing_delta(&wing_delta, wing_index);		//	Desired location in leader's reference frame
+	wing_spread_size = MAX(50.0f, 3.0f * get_wing_largest_radius(leader_objp, formation_object_flag) + 15.0f);
+
+	vm_vec_scale(&wing_delta, wing_spread_size * 1.5f);
+	vm_vec_unrotate(&rotated_wing_delta, &wing_delta, &leader_objp->orient);	//	Rotate into leader's reference.
 	vm_vec_add(result_pos, &leader_objp->pos, &rotated_wing_delta);	//	goal_point is absolute 3-space point.
 }
 
@@ -12929,31 +13004,28 @@ void ai_transfer_shield(object *objp, int quadrant_num)
 	int	i;
 	float	transfer_amount;
 	float	transfer_delta;
-	float	max_quad_strength;
-	float	quad_strength;
+	float	max_quadrant_strength;
 
-	max_quad_strength = shield_get_max_quad(objp);
-	quad_strength = shield_get_quad(objp, quadrant_num);
+	max_quadrant_strength = get_max_shield_quad(objp);
 
 	transfer_amount = 0.0f;
-	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quad_strength;
+	transfer_delta = (SHIELD_BALANCE_RATE/2) * max_quadrant_strength;
 
-	if (quad_strength + (MAX_SHIELD_SECTIONS-1) * transfer_delta > max_quad_strength)
-		transfer_delta = (max_quad_strength - quad_strength) / (MAX_SHIELD_SECTIONS-1);
+	if (objp->shield_quadrant[quadrant_num] + (MAX_SHIELD_SECTIONS-1)*transfer_delta > max_quadrant_strength)
+		transfer_delta = (max_quadrant_strength - objp->shield_quadrant[quadrant_num])/(MAX_SHIELD_SECTIONS-1);
 
-	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
-	{
-		if (i == quadrant_num)
-			continue;
+	for (i=0; i<MAX_SHIELD_SECTIONS; i++)
+		if (i != quadrant_num) {
+			if (objp->shield_quadrant[i] >= transfer_delta) {
+				objp->shield_quadrant[i] -= transfer_delta;
+				transfer_amount += transfer_delta;
+			} else {
+				transfer_amount += objp->shield_quadrant[i];
+				objp->shield_quadrant[i] = 0.0f;
+			}
+		}
 
-		float this_quad_strength = shield_get_quad(objp, i);
-		float this_transfer_delta = (transfer_delta < this_quad_strength) ? transfer_delta : this_quad_strength;
-
-		shield_add_quad(objp, i, -this_transfer_delta);
-		transfer_amount += this_transfer_delta;
-	}
-
-	shield_add_quad(objp, quadrant_num, transfer_amount);
+	objp->shield_quadrant[quadrant_num] += transfer_amount;
 }
 
 void ai_balance_shield(object *objp)
@@ -12963,38 +13035,34 @@ void ai_balance_shield(object *objp)
 	float	delta;
 
 	// if we are already at the max shield strength for all quads then just bail now
-	if (shield_get_strength(objp) == shield_get_max_strength(objp))
+	if ( Ships[objp->instance].ship_max_shield_strength == shield_get_strength(objp) )
 		return;
 
-	shield_strength_avg = shield_get_strength(objp) / MAX_SHIELD_SECTIONS;
+
+	shield_strength_avg = shield_get_strength(objp)/MAX_SHIELD_SECTIONS;
+
 	delta = SHIELD_BALANCE_RATE * shield_strength_avg;
 
-	for (i = 0; i < MAX_SHIELD_SECTIONS; i++)
-	{
-		float quad_strength = shield_get_quad(objp, i);
-
-		if (quad_strength < shield_strength_avg)
-		{
-			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor		
+	for (i=0; i<MAX_SHIELD_SECTIONS; i++) {
+		if (objp->shield_quadrant[i] < shield_strength_avg) {
+			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
 			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, delta);
 			else
-				shield_add_quad(objp, i, delta / MAX_SHIELD_SECTIONS);
+				objp->shield_quadrant[i] += delta/MAX_SHIELD_SECTIONS;
 
-			if (quad_strength > shield_strength_avg)
-				shield_set_quad(objp, i, shield_strength_avg);
+			if (objp->shield_quadrant[i] > shield_strength_avg)
+				objp->shield_quadrant[i] = shield_strength_avg;
 
-		}
-		else
-		{
+		} else {
 			// only do it the retail way if using smart shields (since that's a bigger thing) - taylor
 			if (The_mission.ai_profile->flags & AIPF_SMART_SHIELD_MANAGEMENT)
 				shield_add_strength(objp, -delta);
 			else
-				shield_add_quad(objp, i, -delta / MAX_SHIELD_SECTIONS);
+				objp->shield_quadrant[i] -= delta/MAX_SHIELD_SECTIONS;
 
-			if (quad_strength < shield_strength_avg)
-				shield_set_quad(objp, i, shield_strength_avg);
+			if (objp->shield_quadrant[i] < shield_strength_avg)
+				objp->shield_quadrant[i] = shield_strength_avg;
 		}
 	}
 }
@@ -13034,7 +13102,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 				ai_balance_shield(objp);
 		}
 
-		// nprintf(("AI", "Time: %7.3f Next: %7.3f, Shields: %7.3f %7.3f %7.3f %7.3f\n", f2fl(Missiontime), f2fl(Missiontime) + delay, get_shield_quad(objp, 0), get_shield_quad(objp, 1), get_shield_quad(objp, 2), get_shield_quad(objp, 3));
+		// nprintf(("AI", "Time: %7.3f Next: %7.3f, Shields: %7.3f %7.3f %7.3f %7.3f\n", f2fl(Missiontime), f2fl(Missiontime) + delay, objp->shield_quadrant[0], objp->shield_quadrant[1], objp->shield_quadrant[2], objp->shield_quadrant[3]));
 	}
 }
 
@@ -13318,8 +13386,7 @@ void ai_manage_bay_doors(object *pl_objp, ai_info *aip, bool done)
 //				 0		=> success
 int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_mask, vec3d *pos, vec3d *fvec)
 {
-	int			path_index;
-	int			bay_path;
+	int			path_index, bay_path;
 	pnode		*pnp;
 	vec3d		*next_point;
 
@@ -13930,7 +13997,7 @@ int maybe_request_support(object *objp)
 
 	//	Set desire based on hull strength.
 	//	Note: We no longer repair hull, so this would cause repeated repair requests.
-	// Goober5000 - Added back in upon mission flag condition
+	// Added back in upon mission flag condition - Goober5000
 	if (The_mission.flags & MISSION_FLAG_SUPPORT_REPAIRS_HULL)
 	{
 		desire += 6 - (int) (get_hull_pct(objp) * 6.0f);
@@ -13941,10 +14008,6 @@ int maybe_request_support(object *objp)
 	desire += mrs_subsystem(shipp, SUBSYSTEM_COMMUNICATION);
 	desire += mrs_subsystem(shipp, SUBSYSTEM_WEAPONS);
 	desire += mrs_subsystem(shipp, SUBSYSTEM_SENSORS);
-
-	// Goober5000 - shields are key I would think
-	if (shipp->subsys_info[SUBSYSTEM_SHIELD_GENERATOR].num > 0)
-		desire += mrs_subsystem(shipp, SUBSYSTEM_SHIELD_GENERATOR);
 
 
 	//	Set desire based on percentage of secondary weapons.
@@ -14305,7 +14368,7 @@ int aas_1(object *objp, ai_info *aip, vec3d *safe_pos)
 		//	If an aspect locked missile, assume it will detonate at the homing position.
 		//	If not, which is not possible in a default FreeSpace weapon, then predict it will detonate at some
 		//	time in the future, this time based on max lifetime and life left.
-		if (wip->wi_flags & WIF_HOMING_ASPECT) {
+		if (wip->wi_flags & WIF_LOCKED_HOMING) {
 			expected_pos = weaponp->homing_pos;
 			if (weaponp->homing_object && weaponp->homing_object->type == OBJ_SHIP) {
 				target_ship_obj = weaponp->homing_object;
@@ -14610,13 +14673,11 @@ int ai_need_new_target(object *pl_objp, int target_objnum)
 		return 1;
 	}
 
-	ship *shipp = &Ships[objp->instance];
 	if ( objp->type == OBJ_SHIP ) {
-		if ( shipp->flags & SF_DYING ) {
+		if ( Ships[objp->instance].flags & SF_DYING ) {
 			return 1;
-		} else if (shipp->team == Ships[pl_objp->instance].team) {
+		} else if (Ships[objp->instance].team == Ships[pl_objp->instance].team)
 			return 1;
-		}
 	}
 
 	return 0;
@@ -15442,7 +15503,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 				mission_do_departure(objp_hit);
 				gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_START_FORCED );	//	Force player to warp out.
 
-				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 2*(shield_get_strength(objp_hitter) + shipp_hitter->ship_max_hull_strength) );
+				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 2*(get_shield_strength(objp_hitter) + shipp_hitter->ship_max_hull_strength) );
 				//ship_apply_global_damage( objp_hitter, objp_hit, NULL, 1.0f );
 			} else if (Missiontime - pp->last_warning_message_time > F1_0*4) {
 				// warning every 4 sec
@@ -15645,7 +15706,7 @@ void ai_update_lethality(object *ship_obj, object *other_obj, float damage)
 
 
 //	Object *objp_ship was hit by either weapon *objp_weapon or collided into by ship hit_objp at point *hitpos.
-void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int quadrant_num, vec3d *hit_normal)
+void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_quadrant, vec3d *hit_normal)
 {
 	int		hitter_objnum = -2;
 	object	*objp_hitter = NULL;

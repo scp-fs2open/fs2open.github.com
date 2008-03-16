@@ -9,23 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.cpp $
- * $Revision: 2.28 $
- * $Date: 2008-01-19 00:27:41 $
+ * $Revision: 2.23.2.5 $
+ * $Date: 2008-01-19 00:27:07 $
  * $Author: Goober5000 $
  *
  * C module to handle HUD configuration
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.27  2007/09/02 02:10:25  Goober5000
+ * Revision 2.23.2.4  2007/09/02 02:07:41  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 2.26  2007/08/17 03:29:44  Goober5000
+ * Revision 2.23.2.3  2007/08/17 03:29:48  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
- * Revision 2.25  2006/09/11 06:49:39  taylor
+ * Revision 2.23.2.2  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.24  2006/09/08 06:20:14  taylor
+ * Revision 2.23.2.1  2006/09/08 06:14:43  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
  * Revision 2.23  2006/01/26 03:23:29  Goober5000

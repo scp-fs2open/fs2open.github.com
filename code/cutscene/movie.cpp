@@ -9,43 +9,55 @@
 
 /*
  * $Logfile: /Freespace2/code/cutscene/movie.cpp $
- * $Revision: 2.40 $
- * $Date: 2007-01-07 12:29:43 $
+ * $Revision: 2.31.2.11 $
+ * $Date: 2007-02-11 09:23:14 $
  * $Author: taylor $
  *
  * movie player code
  * 
  * $Log: not supported by cvs2svn $
- * Revision 2.39  2006/12/28 00:59:19  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
+ * Revision 2.31.2.10  2007/01/07 12:10:18  taylor
+ * remove D3D support for Theora movies, make sure that it doesn't try to play them (since it wouldn't work properly anyway)
+ * fix triple-buffer problem with page flipping (Mantis #1190)
  *
- * Revision 2.38  2006/11/16 00:50:38  taylor
+ * Revision 2.31.2.9  2006/12/26 05:13:29  taylor
+ * add support for Theora movies (the default format)
+ * some little bits of cleanup
+ * add second gr_clear() so that double-buffer'd visuals will work properly (ie, not flicker when playing MVE/OGG)
+ *
+ * Revision 2.31.2.8  2006/12/07 17:57:25  taylor
+ * cleanup for movie init stuff (this will be even cleaner once the rest of the Theora code finally gets in)
+ * get rid of the clear screen hack for Windows, we can handle that better now
+ *
+ * Revision 2.31.2.7  2006/11/15 00:24:47  taylor
  * clean up AVI movie stuff a bit:
  *  - use the default black brush for clearing the screen, it's a little less stupid this way
  *  - have the AVI player send messages back to the game rather than trying to poll for that extra crap
  *  - remove the only DivX6 fix, there is better addressed by newer window handling code
  *
- * Revision 2.37  2006/09/11 05:54:37  taylor
- * switch to using cf_find_file_location_ext() when looking for movies
- *
- * Revision 2.36  2006/09/09 21:28:19  taylor
+ * Revision 2.31.2.6  2006/09/09 21:27:50  taylor
  * be sure to reset color and clear color before MVE playback (fix for Mantis bug #1041)
  *
- * Revision 2.35  2006/08/20 00:44:36  taylor
+ * Revision 2.31.2.5  2006/08/28 17:14:52  taylor
+ * stupid, stupid, stupid...
+ *  - fix AVI/MPG movie playback
+ *  - fix missing campaign craziness
+ *
+ * Revision 2.31.2.4  2006/08/27 18:02:26  taylor
+ * switch to using cf_find_file_location_ext() when looking for movies
+ *
+ * Revision 2.31.2.3  2006/08/19 04:14:57  taylor
  * add decoder for 8-bit MVEs
  * a basic fix for finding AVIs over MVEs, for mod dir stuff (this needs some CFILE support added to be a true fix, it's on the TODO list)
  * little bits of cleanup for old/unused code
  * make sure MVE filenames are correct in mvelib
  *
- * Revision 2.34  2006/08/15 00:26:07  Backslash
- * add .ogg to the list of recognized movie file extensions
- *
- * Revision 2.33  2006/07/13 22:15:02  taylor
+ * Revision 2.31.2.2  2006/07/13 22:06:38  taylor
  * handle non-MVE movies a bit better in OpenGL (don't get freaky with the window, don't lose input, etc.)
  * some cleanup to OpenGL window handling, to fix min/max/full issues, and try to make shutdown a little nicer
  *
- * Revision 2.32  2006/06/27 05:07:48  taylor
- * fix various compiler warnings and things that Valgrind complained about
+ * Revision 2.31.2.1  2006/06/18 16:54:36  taylor
+ * various compiler warning fixes
  *
  * Revision 2.31  2006/05/27 17:13:22  taylor
  * add NO_DIRECT3D support

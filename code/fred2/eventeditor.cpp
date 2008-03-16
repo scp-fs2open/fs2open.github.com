@@ -9,32 +9,32 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/EventEditor.cpp $
- * $Revision: 1.9 $
- * $Date: 2007-11-23 23:05:39 $
- * $Author: wmcoolmon $
+ * $Revision: 1.2.2.7 $
+ * $Date: 2007-09-02 20:07:47 $
+ * $Author: Goober5000 $
  *
  * Event editor dialog box class and event tree class
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.8  2007/09/02 20:07:43  Goober5000
- * fix for 1471
- *
- * Revision 1.7  2007/09/02 02:10:24  Goober5000
+ * Revision 1.2.2.6  2007/09/02 02:07:40  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 1.6  2007/03/07 22:43:24  karajorma
- * Make .ogg voice files selectable in FRED.
+ * Revision 1.2.2.5  2007/07/23 16:08:23  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
- * Revision 1.5  2007/02/15 02:03:55  phreak
- * Apparently Visual C++ 2005 follows standard syntax rules.
+ * Revision 1.2.2.4  2007/05/20 21:21:30  wmcoolmon
+ * FRED2 support for numbered SEXP operator arguments, minihelp box, fixed "Insert Event" when no events are present.
  *
- * Revision 1.4  2007/02/11 09:37:18  taylor
- * dd VALID_FNAME() macro and put it around a few places (more to come)
+ * Revision 1.2.2.3  2007/03/07 22:36:52  karajorma
+ * Make .ogg selectable in FRED.
+ *
+ * Revision 1.2.2.2  2007/02/11 09:35:11  taylor
+ * add VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
  * move CLAMP() macro from opengl header to global header
  * update COUNT_ESTIMATE to match new bmpman changes
  *
- * Revision 1.3  2006/10/09 05:25:18  Goober5000
+ * Revision 1.2.2.1  2006/10/09 05:25:07  Goober5000
  * make sexp nodes dynamic
  *
  * Revision 1.2  2006/04/30 16:39:43  phreak

@@ -9,64 +9,55 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.cpp $
- * $Revision: 2.71 $
- * $Date: 2007-12-30 18:30:29 $
+ * $Revision: 2.52.2.14 $
+ * $Date: 2007-12-08 20:07:54 $
  * $Author: karajorma $
  *
  * Controls messaging to player during the mission
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.70  2007/09/02 03:07:55  Backslash
- * (code by KeldorKatarn)
- * Reactivated HUD_ship_sent_printf to enable more flexible handling of ship names in displayed messages.
- * Added functionality for WCSaga to use class name instead of ship name for enemy wings.
- *
- * Revision 2.69  2007/09/02 02:10:27  Goober5000
+ * Revision 2.52.2.13  2007/09/02 02:07:44  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 2.68  2007/07/24 05:08:13  Goober5000
+ * Revision 2.52.2.12  2007/07/24 05:08:08  Goober5000
  * allow mission messages in dogfights (Mantis #1436)
  *
- * Revision 2.67  2007/07/23 15:56:42  Kazan
- * remove unused function... unused function that should probably never be used
+ * Revision 2.52.2.11  2007/07/23 16:08:26  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
- * Revision 2.66  2007/07/23 15:16:50  Kazan
- * Autopilot upgrades as described, MSVC2005 project fixes
- *
- * Revision 2.65  2007/05/26 12:08:26  Goober5000
+ * Revision 2.52.2.10  2007/05/26 12:08:18  Goober5000
  * when importing FS1 missions, account for the shuffled Head-TP4
  *
- * Revision 2.64  2007/04/13 00:36:43  taylor
+ * Revision 2.52.2.9  2007/04/13 00:36:11  taylor
  * cleanup and initialize persona_index properly for general safety reasons
  * slight change to karajorma's NO_BUILTIN_MESSAGES check, now it will be properly compiled away in release builds rather than an empty function
  *
- * Revision 2.63  2007/04/06 13:28:49  karajorma
- * Changed my mind This is an Int3() not an assertion
+ * Revision 2.52.2.8  2007/04/05 16:33:25  karajorma
+ * What was I thinking? Fixed
  *
- * Revision 2.62  2007/03/21 21:06:54  karajorma
+ * Revision 2.52.2.7  2007/03/21 20:54:25  karajorma
  * Bump the number of debriefing stages.
  * Fix an annoying (and erroneous) warning in the campaign editor.
  *
- * Revision 2.61  2007/01/10 01:45:56  taylor
- * don't bother trying to load message WAV when sound is disabled
+ * Revision 2.52.2.6  2007/02/11 09:07:33  taylor
+ * little bit of debug message cleanup
+ * don't bother dealing with message wav file if sound is disabled
  *
- * Revision 2.60  2007/01/07 00:01:28  Goober5000
- * add a feature for specifying the source of Command messages
- *
- * Revision 2.58  2006/12/28 00:59:32  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.57  2006/11/06 05:45:13  taylor
+ * Revision 2.52.2.5  2006/10/24 13:36:05  taylor
  * fix Personas memory leak (not really an issue, I just got tired of seeing it in the Valgrind reports)
  *
- * Revision 2.56  2006/09/30 21:58:08  Goober5000
+ * Revision 2.52.2.4  2006/09/30 21:58:05  Goober5000
  * more flexible checking of generic messages
  *
- * Revision 2.55  2006/09/11 06:50:42  taylor
+ * Revision 2.52.2.3  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.54  2006/09/11 06:08:09  taylor
+ * Revision 2.52.2.2  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
+ *
+ * Revision 2.52.2.1  2006/07/20 00:41:26  Goober5000
+ * add WCS screaming stuff to RC branch
+ * --Goober5000
  *
  * Revision 2.53  2006/07/06 20:46:39  Goober5000
  * WCS screaming stuff
@@ -805,7 +796,7 @@ char *Persona_type_names[MAX_PERSONA_TYPES] =
 //XSTR:ON
 };
 
-int Default_command_persona;
+int Command_persona;
 
 ///////////////////////////////////////////////////////////////////
 // used to distort incoming messages when comms are damaged
@@ -879,10 +870,10 @@ void persona_parse()
 
 			Personas[Num_personas].flags |= (1<<i);
 
-			// save the Command persona in a global
+			// save the Terran Command persona in a global
 			if ( Personas[Num_personas].flags & PERSONA_FLAG_COMMAND ) {
-				if (Default_command_persona < 0)
-					Default_command_persona = Num_personas;
+//				Assert ( Command_persona == -1 );
+				Command_persona = Num_personas;
 			}
 
 			break;
@@ -1099,17 +1090,8 @@ void messages_init()
 	int rval, i;
 	static int table_read = 0;
 
-	//WMC - Init stuff.
-	Num_messages = Num_message_avis = Num_message_waves = 0;
-	Message_debug_index = -1;
-	Message_shipnum = -1;
-	Num_messages_playing = 0;
-	Message_wave_muted = 0;
-	Next_mute_time = 1;
-
 	if ( !table_read ) {
-		Num_builtin_messages = Num_builtin_avis = Num_builtin_waves = 0;
-		Default_command_persona = -1;
+		Command_persona = -1;
 
 		if ((rval = setjmp(parse_abort)) != 0) {
 			mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "messages.tbl", rval));
@@ -1150,6 +1132,8 @@ void messages_init()
 		Message_waves[i].num = -1;
 	}
 
+	Message_shipnum = -1;
+	Num_messages_playing = 0;
 	for ( i = 0; i < MAX_PLAYING_MESSAGES; i++ ) {
 		Playing_messages[i].anim = NULL;
 		Playing_messages[i].wave = -1;
@@ -1163,6 +1147,9 @@ void messages_init()
 	for ( i = 0; i < Num_personas; i++ ){
 		Personas[i].flags &= ~PERSONA_FLAG_USED;
 	}
+
+	Message_wave_muted = 0;
+	Next_mute_time = 1;
 
 	memset(Message_times, 0, sizeof(int)*MAX_MISSION_MESSAGES);
 
@@ -1617,7 +1604,7 @@ void message_play_anim( message_q *q )
 	// attached to it.  Deal with munging the name
 
 	// support ships use a wingman head.
-	// terran command uses its own set of heads.
+	// terran command uses it's own set of heads.
 	int subhead_selected = FALSE;
 	if ( (q->message_num < Num_builtin_messages) || !(_strnicmp(HEAD_PREFIX_STRING, ani_name, strlen(HEAD_PREFIX_STRING)-1)) ) {
 		persona_index = m->persona_index;
@@ -1625,7 +1612,7 @@ void message_play_anim( message_q *q )
 		// if this ani should be converted to a terran command, set the persona to the command persona
 		// so the correct head plays.
 		if ( q->flags & MQF_CONVERT_TO_COMMAND ) {
-			persona_index = The_mission.command_persona;
+			persona_index = Command_persona;
 			strcpy( ani_name, COMMAND_HEAD_PREFIX );
 		}
 
@@ -1674,7 +1661,7 @@ void message_play_anim( message_q *q )
 		message_mission_free_avi( m->avi_info.index );
 	}
 
-	anim_info->anim_data = anim_load( ani_name, 0 );
+	anim_info->anim_data = anim_load( ani_name, CF_TYPE_ANY, 0 );
 
 	if ( anim_info->anim_data == NULL ) {
 		nprintf (("messaging", "Cannot load message avi %s.  Will not play.\n", ani_name));
@@ -1750,6 +1737,15 @@ void message_queue_process()
 			if ( (Playing_messages[i].wave != -1) && wave_done ) {
 				if ( !ani_done ) {
 					anim_stop_playing( Playing_messages[i].anim );
+				}
+			}
+
+			//if player is a traitor remove all messages that aren't traitor related
+			if ((Playing_messages[i].builtin_type != MESSAGE_OOPS) && (Playing_messages[i].builtin_type != MESSAGE_HAMMER_SWINE)) {
+				if ( (Player_ship->team == Iff_traitor) && ( !(Game_mode & GM_MULTIPLAYER) || !(Netgame.type_flags & NG_TYPE_DOGFIGHT) ) ) {
+					message_kill_playing(i);
+					i++;
+					continue;
 				}
 			}
 
@@ -2037,9 +2033,12 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	}
 
 	// if player is a traitor, no messages for him!!!
+	// unless those messages are traitor related
 	// Goober5000 - allow messages during multiplayer dogfight (Mantis #1436)
 	if ( (Player_ship->team == Iff_traitor) && ( !(Game_mode & GM_MULTIPLAYER) || !(Netgame.type_flags & NG_TYPE_DOGFIGHT) ) ) {
-		return;
+		if ((builtin_type != MESSAGE_OOPS) && (builtin_type != MESSAGE_HAMMER_SWINE)) {
+			return;
+		}
 	}
 
 	m_persona = Messages[message_num].persona_index;
@@ -2072,7 +2071,7 @@ void message_queue_message( int message_num, int priority, int timing, char *who
 	// to this message, then set a bit to tell the wave/anim playing code to play the command version
 	// of the wave and head
 	MessageQ[i].flags = 0;
-	if ( !stricmp(who_from, The_mission.command_sender) && (m_persona != -1) && (Personas[m_persona].flags & PERSONA_FLAG_WINGMAN) ) {
+	if ( !stricmp(who_from, TERRAN_COMMAND) && (m_persona != -1) && (Personas[m_persona].flags & PERSONA_FLAG_WINGMAN) ) {
 		MessageQ[i].flags |= MQF_CONVERT_TO_COMMAND;
 		MessageQ[i].source = HUD_SOURCE_TERRAN_CMD;
 	}
@@ -2240,7 +2239,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 			// if the ship is NULL and special_who is not NULL, then this is from special_who
 			// otherwise, message is from ship.
 			if ( m_source == MESSAGE_SOURCE_COMMAND ) {
-				who_from = The_mission.command_sender;
+				who_from = TERRAN_COMMAND;
 				source = HUD_SOURCE_TERRAN_CMD;
 			} else if ( m_source == MESSAGE_SOURCE_SPECIAL ) {
 				who_from = (char *)data;
@@ -2261,7 +2260,7 @@ void message_send_unique_to_player( char *id, void *data, int m_source, int prio
 
 				// if the ship_index is -1, then make the message come from Terran command
 				if ( ship_index == -1 ) {
-					who_from = The_mission.command_sender;
+					who_from = TERRAN_COMMAND;
 					source = HUD_SOURCE_TERRAN_CMD;
 				} else {
 					who_from = Ships[ship_index].ship_name;
@@ -2336,7 +2335,7 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 		// be sure that this ship can actually send a message!!! (i.e. not-not-flyable -- get it!)
 		Assert( !(Ship_info[shipp->ship_info_index].flags & SIF_NOT_FLYABLE) );		// get allender or alan
 	} else {
-		persona_index = The_mission.command_persona;				// use the terran command persona
+		persona_index = Command_persona;				// use the terran command persona
 	}
 
 	// try to find a builtin message with the given type for the given persona
@@ -2360,23 +2359,17 @@ void message_send_builtin_to_player( int type, ship *shipp, int priority, int ti
 			}
 
 			// get who this message is from -- kind of a hack since we assume Terran Command in the
-			// absence of a ship.  This will be fixed later
+			// absense of a ship.  This will be fixed later
 			if ( shipp ) {
-				who_from = shipp->ship_name;
 				source = HUD_team_get_source( shipp->team );
+				who_from = shipp->ship_name;
 			} else {
-				who_from = The_mission.command_sender;
-
-				// Goober5000 - if Command is a ship that is present, change the source accordingly
-				int shipnum = ship_name_lookup(who_from);
-				if (shipnum >= 0)
-					source = HUD_team_get_source( Ships[shipnum].team );
-				else
-					source = HUD_SOURCE_TERRAN_CMD;
+				source = HUD_SOURCE_TERRAN_CMD;
+				who_from = TERRAN_COMMAND;
 			}
 
 			// maybe change the who from here for special rearm cases (always seems like that is the case :-) )
-			if ( !stricmp(who_from, The_mission.command_sender) && (type == MESSAGE_REARM_ON_WAY) ){
+			if ( !stricmp(who_from, TERRAN_COMMAND) && (type == MESSAGE_REARM_ON_WAY) ){
 				who_from = SUPPORT_NAME;
 			}
 

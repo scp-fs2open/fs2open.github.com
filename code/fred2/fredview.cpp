@@ -9,8 +9,8 @@
 													
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDView.cpp $
- * $Revision: 1.17 $
- * $Date: 2007-12-08 20:02:16 $
+ * $Revision: 1.6.2.11 $
+ * $Date: 2007-11-29 11:26:51 $
  * $Author: karajorma $
  *
  * View class for a document/view architechure design program, which we don't
@@ -19,34 +19,37 @@
  * There is also a lot of our code in here related to these things.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.16  2007/07/28 21:31:10  Goober5000
+ * Revision 1.6.2.11  2007/11/29 11:26:51  karajorma
+ * Make the Run Freespace menu option work again
+ *
+ * Revision 1.6.2.10  2007/07/28 21:31:04  Goober5000
  * this should really be capitalized
  *
- * Revision 1.15  2007/07/28 04:43:40  Goober5000
+ * Revision 1.6.2.9  2007/07/28 04:43:43  Goober5000
  * a couple of tweaks
  *
- * Revision 1.14  2007/02/20 04:20:10  Goober5000
+ * Revision 1.6.2.8  2007/07/23 16:08:24  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
+ * Revision 1.6.2.7  2007/02/20 04:19:09  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 1.13  2007/02/15 02:03:56  phreak
- * Apparently Visual C++ 2005 follows standard syntax rules.
+ * Revision 1.6.2.6  2007/02/09 05:40:40  Goober5000
+ * merge the voice acting manager into the 3.6.9 (3.6.10?) branch
  *
- * Revision 1.12  2006/11/06 05:58:05  taylor
+ * Revision 1.6.2.5  2006/10/27 06:33:38  taylor
  * add a "Render full detail" view option to render models at their full detail for the LOD (for render/detail boxes, Mantis bug #1121)
  *
- * Revision 1.11  2006/10/09 05:25:18  Goober5000
+ * Revision 1.6.2.4  2006/10/09 05:25:07  Goober5000
  * make sexp nodes dynamic
  *
- * Revision 1.10  2006/09/29 06:38:28  Goober5000
- * merge voice file manager into voice acting manager, plus make a few tweaks to it
- *
- * Revision 1.9  2006/09/11 06:08:08  taylor
- * make Species_info[] and Asteroid_info[] dynamic
- *
- * Revision 1.8  2006/09/02 20:07:34  Goober5000
+ * Revision 1.6.2.3  2006/09/02 20:07:39  Goober5000
  * remove unnecessary warning
  *
- * Revision 1.7  2006/06/27 02:48:41  Goober5000
+ * Revision 1.6.2.2  2006/08/27 18:12:41  taylor
+ * make Species_info[] and Asteroid_info[] dynamic
+ *
+ * Revision 1.6.2.1  2006/06/27 02:38:49  Goober5000
  * slight optimization
  * --Goober5000
  *
@@ -3734,14 +3737,14 @@ int CFREDView::global_error_check_player_wings(int multi)
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list))
 	{
-		i = ptr->instance;
+		int ship_instance = ptr->instance;
 		err = 0;
 
 		// this ship is a player?
 		if (ptr->type == OBJ_START)
 		{
 			// check if this ship is in a wing
-			z = Ships[i].wingnum;
+			z = Ships[ship_instance].wingnum;
 			if (z < 0)
 			{
 				err = 1;
@@ -3790,12 +3793,12 @@ int CFREDView::global_error_check_player_wings(int multi)
 			{
 				if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) 
 				{
-					if (error("Player %s should be part of %s wing", Ships[i].ship_name, tvt_wing_list))
+					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, tvt_wing_list))
 						return 1;
 				}
 				else
 				{
-					if (error("Player %s should be part of %s wing", Ships[i].ship_name, starting_wing_list))
+					if (error("Player %s should be part of %s wing", Ships[ship_instance].ship_name, starting_wing_list))
 						return 1;
 				}
 			}

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionShipChoice.h $
- * $Revision: 2.9 $
- * $Date: 2006-11-06 05:43:36 $
+ * $Revision: 2.8.2.1 $
+ * $Date: 2006-10-24 13:31:32 $
  * $Author: taylor $
  *
  * Header file to support functions that allow player ship selection for the mission

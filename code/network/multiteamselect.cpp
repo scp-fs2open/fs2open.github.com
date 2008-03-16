@@ -9,17 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiTeamSelect.cpp $
- * $Revision: 2.23 $
- * $Date: 2006-08-14 22:02:41 $
+ * $Revision: 2.20.2.3 $
+ * $Date: 2006-08-14 22:02:43 $
  * $Author: Goober5000 $
  *
  * Multiplayer Team Selection Code
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.22  2006/08/14 19:58:42  karajorma
+ * Revision 2.20.2.2  2006/08/14 19:57:42  karajorma
  * Fix a Multiplayer bug where anything that included the name of a player wing was automatically considered to be a part of that wing.
  *
- * Revision 2.21  2006/08/02 22:47:40  Goober5000
+ * Revision 2.20.2.1  2006/08/02 22:47:38  Goober5000
  * fix display of ship copy class names in ship loadout screen
  * --Goober5000
  *
@@ -1198,7 +1198,7 @@ void multi_ts_create_wings()
 	int idx,s_idx;
 	
 	// the standalone never went through this screen so he should never call this function!
-	// the standalone and all other clients will have this equivalent function performed whey they receieve
+	// the standalone and all other clients will have this equivalent function performed whey they recieve
 	// the post_sync_data_packet!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 	Assert(!(Game_mode & GM_STANDALONE_SERVER));	
 	

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Swarm.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-11-06 06:36:44 $
+ * $Revision: 2.8.2.1 $
+ * $Date: 2006-10-27 21:39:27 $
  * $Author: taylor $
  *
  * C module for managing swarm missiles

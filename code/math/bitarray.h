@@ -6,8 +6,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/BitArray.h $
- * $Revision: 1.4 $
- * $Date: 2007-07-28 21:17:55 $
+ * $Revision: 1.3.2.1 $
+ * $Date: 2007-07-28 21:17:53 $
  * $Author: Goober5000 $
  *
  * Cool stuff with bit arrays

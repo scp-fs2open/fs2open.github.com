@@ -9,65 +9,49 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.cpp $
- * $Revision: 2.99 $
- * $Date: 2007-09-02 19:06:01 $
+ * $Revision: 2.72.2.22 $
+ * $Date: 2007-09-02 19:05:59 $
  * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.98  2007/09/02 02:10:28  Goober5000
+ * Revision 2.72.2.21  2007/09/02 02:07:47  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 2.97  2007/05/28 20:05:06  taylor
+ * Revision 2.72.2.20  2007/05/28 20:04:49  taylor
  * more resilient checking of stars.tbl and it's modular versions
  *
- * Revision 2.96  2007/03/22 20:07:16  taylor
+ * Revision 2.72.2.19  2007/03/22 20:06:56  taylor
  * when parsing a modular tbl, allow a duplicate sun entry to overwrite an existing one
  *
- * Revision 2.95  2007/02/18 06:17:34  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.94  2007/02/11 09:47:35  taylor
+ * Revision 2.72.2.18  2007/02/11 09:39:09  taylor
  * some minor performance improvements
  * remove NO_SOUND
  *
- * Revision 2.93  2007/01/15 02:19:03  wmcoolmon
- * Finish off warning fixage
+ * Revision 2.72.2.17  2007/01/07 12:16:01  taylor
+ * be sure to page in skybox textures properly
  *
- * Revision 2.92  2007/01/14 14:03:40  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.91  2007/01/14 10:26:39  wmcoolmon
- * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
- *
- * Revision 2.90  2007/01/10 01:45:06  taylor
- * compiler warning fixage
- *
- * Revision 2.89  2007/01/07 12:46:19  taylor
- * fix problem with model unloading that happened because skyboxes aren't reset properly
- * be sure that skybox textures are paged in properly
- * there needs to be a case insensitive string check when looking for existing bitmap filenames
- *
- * Revision 2.88  2007/01/07 03:44:50  Goober5000
+ * Revision 2.72.2.16  2007/01/07 03:44:47  Goober5000
  * don't display any error messages when there are no background bitmaps to load
  *
- * Revision 2.87  2006/12/28 00:59:48  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
+ * Revision 2.72.2.15  2006/12/26 05:32:18  taylor
+ * be sure to reset our skybox model properly, it can lead to a bad model unload bug on level load otherwise
  *
- * Revision 2.86  2006/11/24 22:46:25  Goober5000
+ * Revision 2.72.2.14  2006/12/07 18:26:03  taylor
+ * stupid of me to use a case-sensitive comparison there, but then it wasn't really a problem until Goober's bitmap list support ;)
+ *
+ * Revision 2.72.2.13  2006/11/24 22:40:15  Goober5000
  * FRED again updates backgrounds while the user is editing them
  *
- * Revision 2.85  2006/11/16 00:51:43  taylor
+ * Revision 2.72.2.12  2006/11/15 00:30:10  taylor
  * clean up skybox model selection and usage to work better with FRED
  * make sure to go ahead and set the skybox model when it's set/changed in FRED
  * go ahead and load/set the envmap  when it's set/changed in FRED
  * get rid of extra envmap image types, only DDS is actually supported (not sure what the hell I was thinking there)
  *
- * Revision 2.84  2006/11/06 06:46:08  taylor
+ * Revision 2.72.2.11  2006/11/06 05:26:38  taylor
  * fix some of the envmap issues
  *  - use proper hand-ness for OGL
  *  - fix distortion
@@ -76,7 +60,7 @@
  * basic cleanup and get rid of a couple of struct/variable naming issues (compiler sanity)
  * make double sure that we aren't using culling of z-buffering when rendering starfield bitmaps
  *
- * Revision 2.83  2006/11/06 06:19:17  taylor
+ * Revision 2.72.2.10  2006/10/27 06:42:30  taylor
  * rename set_warp_globals() to model_set_warp_globals()
  * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
  * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
@@ -84,36 +68,33 @@
  * minor bits of cleanup
  * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
  *
- * Revision 2.82  2006/09/11 06:51:17  taylor
+ * Revision 2.72.2.9  2006/09/11 01:17:07  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.81  2006/09/04 06:08:20  wmcoolmon
- * Don't force fs2_open to load motion debris.
- *
- * Revision 2.80  2006/08/20 00:49:09  taylor
+ * Revision 2.72.2.8  2006/08/19 04:33:00  taylor
  * slight optimizations
  * compiler warning fixes
  *
- * Revision 2.79  2006/08/06 18:47:29  Goober5000
+ * Revision 2.72.2.7  2006/08/06 18:47:12  Goober5000
  * add the multiple background feature
  * --Goober5000
  *
- * Revision 2.78  2006/07/30 02:20:17  Goober5000
+ * Revision 2.72.2.6  2006/07/30 02:20:01  Goober5000
  * bah, revert
  *
- * Revision 2.76  2006/07/06 05:29:39  Goober5000
+ * Revision 2.72.2.4  2006/07/06 05:29:57  Goober5000
  * commented annoying redundant warnings
  * --Goober5000
  *
- * Revision 2.75  2006/07/06 04:06:04  Goober5000
+ * Revision 2.72.2.3  2006/07/06 04:06:01  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
  * --Goober5000
  *
- * Revision 2.74  2006/07/05 23:36:07  Goober5000
+ * Revision 2.72.2.2  2006/07/05 23:37:13  Goober5000
  * cvs comment tweaks
  *
- * Revision 2.73  2006/07/04 07:42:50  Goober5000
+ * Revision 2.72.2.1  2006/07/04 07:42:19  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
  * --Goober5000
@@ -796,7 +777,7 @@ void stars_load_debris_vclips(debris_vclip *vclips)
 			vclips[i].nframes = 1;
 
 			if (vclips[i].bm <= 0) {
-				mprintf(("Couldn't load motion debris animation/bitmap '%s'\n", vclips[i].name ));
+				Error( LOCATION, "Couldn't load animation/bitmap '%s'\n", vclips[i].name );
 			}
 		}
 	}
@@ -1118,7 +1099,7 @@ void parse_startbl(char *filename)
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		return;
-	} 
+	}
 
 	read_file_text(filename);
 	reset_parse();
@@ -1519,7 +1500,7 @@ void stars_post_level_init()
 
 	// if we have no sun instances, create one
 	if ( !Suns.size() ) {
-		if ( !Sun_bitmaps.size() || !strlen(Sun_bitmaps[0].filename) ) {
+		if ( !strlen(Sun_bitmaps[0].filename) ) {
 			mprintf(("Trying to add default sun but no default exists!!\n"));
 		} else {
 			mprintf(("Adding default sun.\n"));
@@ -2559,7 +2540,7 @@ void stars_draw_debris()
 			
 		g3_rotate_vertex(&p, &d->pos);
 
-		if (p.codes == 0 && Debris_vclips[d->vclip].bm > -1) {
+		if (p.codes == 0) {
 			int frame = Missiontime / (DEBRIS_ROT_MIN + (i % DEBRIS_ROT_RANGE) * DEBRIS_ROT_RANGE_SCALER);
 			frame %= Debris_vclips[d->vclip].nframes;
 
@@ -2919,9 +2900,7 @@ void stars_page_in()
 		return;
 
 	for (idx = 0; idx < MAX_DEBRIS_VCLIPS; idx++) {
-		if(Debris_vclips[idx].bm > -1) {
-			bm_page_in_xparent_texture(Debris_vclips[idx].bm, Debris_vclips[idx].nframes);
-		}
+		bm_page_in_xparent_texture(Debris_vclips[idx].bm, Debris_vclips[idx].nframes);
 	}	
 }
 
@@ -3415,14 +3394,13 @@ void stars_load_first_valid_background()
 // Goober5000
 int stars_get_first_valid_background()
 {
-	int i;
-	uint j;
+	uint i, j;
 
 	if (Num_backgrounds == 0)
 		return -1;
 
 	// get the first background with > 50% of its suns and > 50% of its bitmaps present
-	for (i = 0; i < Num_backgrounds; i++)
+	for (i = 0; i < (uint)Num_backgrounds; i++)
 	{
 		uint total_suns = 0;
 		uint total_bitmaps = 0;

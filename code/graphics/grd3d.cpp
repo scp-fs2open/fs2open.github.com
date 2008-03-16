@@ -9,34 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3D.cpp $
- * $Revision: 2.101 $
- * $Date: 2007-01-11 18:46:35 $
- * $Author: bobboau $
+ * $Revision: 2.95.2.4 $
+ * $Date: 2007-02-12 00:19:48 $
+ * $Author: taylor $
  *
  * Code for our Direct3D renderer
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.100  2007/01/11 07:07:46  bobboau
- * makeing D3D compatable with 32 bit index buffers, and fixing a minor directx
- * technicality in the texture compression code.
- *
- * Revision 2.99  2006/12/28 00:59:26  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.98  2006/11/06 06:33:48  taylor
+ * Revision 2.95.2.3  2006/10/27 21:37:11  taylor
  * more cleanup of warp_global crap
  * scale render/detail box limits with detail level setting
  * make sure that we reset culling and zbuffer after each model buffer that gets rendered
  *
- * Revision 2.97  2006/11/06 05:42:44  taylor
+ * Revision 2.95.2.2  2006/10/24 13:24:12  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
  * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
  * get rid of MAX_BUFFERS
  * make D3D vertex buffers dynamic, like OGL has already done
  *
- * Revision 2.96  2006/09/11 06:38:32  taylor
- * crap.  ... again
+ * Revision 2.95.2.1  2006/08/23 16:15:46  taylor
+ * crap.
  *
  * Revision 2.95  2006/05/27 17:07:48  taylor
  * remove grd3dparticle.* and grd3dbatch.*, they are obsolete
@@ -1578,17 +1571,8 @@ void gr_d3d_flip()
 		if ( Gr_cursor != -1 )	{
 			gr_set_bitmap(Gr_cursor);				
 			gr_bitmap( mx, my, false);
-		}
-		//was crashing for some reason
-/*		else
-		{
-			//WMC - Backup cheapo cursor
-			gr_set_color(0, 255, 0);
-			gr_line(mx, my, mx+8, my+8);
-			gr_line(mx, my, mx, my+16);
-			gr_line(mx, my+16, mx+8, my+8);
-		}
-*/	} 	
+		}		
+	} 	
 
 	d3d_stop_frame();
 

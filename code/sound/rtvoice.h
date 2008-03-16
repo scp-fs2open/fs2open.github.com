@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/rtvoice.h $
- * $Revision: 2.4 $
- * $Date: 2007-02-10 00:18:22 $
+ * $Revision: 2.3.2.1 $
+ * $Date: 2007-02-10 00:17:40 $
  * $Author: taylor $
  *
  * Header file for real-time voice code

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/OrientEditor.cpp $
- * $Revision: 1.2 $
- * $Date: 2006-12-28 00:59:20 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2007-11-24 04:33:48 $
  * $Author: wmcoolmon $
  *
  * Object orientation editor (or just object editor) dialog box handling code
@@ -219,13 +219,13 @@ BOOL orient_editor::OnInitDialog()
 
 	m_spin1.SetRange((short)99999, (short)-99999);
 	m_spin1.SetPos((int) convert(m_position_x));
-	m_spin2.SetRange( (short)99999, (short)-99999);
+	m_spin2.SetRange((short)99999, (short)-99999);
 	m_spin2.SetPos((int) convert(m_position_y));
-	m_spin3.SetRange( (short)99999, (short)-99999);
+	m_spin3.SetRange((short)99999, (short)-99999);
 	m_spin3.SetPos((int) convert(m_position_z));
-	m_spin4.SetRange( (short)99999, (short)-99999);
-	m_spin5.SetRange( (short)99999, (short)-99999);
-	m_spin6.SetRange( (short)99999, (short)-99999);
+	m_spin4.SetRange((short)99999, (short)-99999);
+	m_spin5.SetRange((short)99999, (short)-99999);
+	m_spin6.SetRange((short)99999, (short)-99999);
 	UpdateData(FALSE);
 	return TRUE;
 }

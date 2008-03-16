@@ -9,17 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileArchive.cpp $
- * $Revision: 2.8 $
- * $Date: 2006-12-28 00:59:19 $
- * $Author: wmcoolmon $
+ * $Revision: 2.7 $
+ * $Date: 2005-07-24 18:31:17 $
+ * $Author: taylor $
  *
  * Low-level code for reading data out of large archive files or normal files.  All
  * reads/seeks come through here.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.7  2005/07/24 18:31:17  taylor
- * little 64-bit strangeness (longs are 64-bit here rather than 32)
- *
  * Revision 2.6  2004/07/26 20:47:25  Kazan
  * remove MCD complete
  *
@@ -116,7 +113,6 @@
 #include "cfile/cfile.h"
 #include "cfile/cfilearchive.h"
 #include "luaconf.h"
-
 
 
 #define CHECK_POSITION
@@ -338,3 +334,4 @@ int cfread_lua_number(double *buf, CFILE *cfile)
 	return items_read;
 
 }
+

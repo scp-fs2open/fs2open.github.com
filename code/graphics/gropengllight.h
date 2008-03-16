@@ -10,18 +10,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLLight.h $
- * $Revision: 1.11 $
- * $Date: 2007-03-22 20:49:53 $
+ * $Revision: 1.9.2.2 $
+ * $Date: 2007-03-22 20:50:27 $
  * $Author: taylor $
  *
  * header file containing definitions for HT&L lighting in OpenGL
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.10  2007/01/07 13:07:22  taylor
- * slight change to emission light settings
- * change default ambient light settings back to proper values
- * add support for lighting falloff with directional lights
- * some minor performance improvements
+ * Revision 1.9.2.1  2006/12/07 18:10:16  taylor
+ * restore default ambient light values to retail-like settings (I based the previous values on default D3D, which was rather dumb of me)
+ * restore lighting falloff capability from retail and non-HTL modes (only used for asteroids as far as I know)
+ * various cleanups and speedups for dealing with lights
  *
  * Revision 1.9  2006/04/12 01:10:35  taylor
  * some cleanup and slight reorg

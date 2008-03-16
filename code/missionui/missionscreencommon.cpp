@@ -9,29 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionScreenCommon.cpp $
- * $Revision: 2.39 $
- * $Date: 2007-02-18 06:16:47 $
- * $Author: Goober5000 $
+ * $Revision: 2.32.2.4 $
+ * $Date: 2007-02-10 00:17:40 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.38  2007/02/10 00:18:22  taylor
- * remove NO_SOUND
- *
- * Revision 2.37  2007/01/14 14:03:33  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.36  2006/12/28 00:59:32  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.35  2006/11/06 05:43:36  taylor
+ * Revision 2.32.2.3  2006/10/24 13:31:32  taylor
  * fix a memory leak that Valgrind was complaining about (happens mainly when you have a mission without a briefing)
  *
- * Revision 2.34  2006/08/20 00:51:06  taylor
+ * Revision 2.32.2.2  2006/08/19 04:38:46  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
- * Revision 2.33  2006/07/17 01:12:19  taylor
+ * Revision 2.32.2.1  2006/07/17 01:09:03  taylor
  * fix some missile autocentering issues
  *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
  *  - don't try to autocenter loadout icons when rendered 3d
@@ -865,9 +854,9 @@ void common_select_init()
 
 		// Load in the background transition anim
 		if ( Game_mode & GM_MULTIPLAYER )
-			Background_anim = anim_load("BriefTransMulti", 1);	// 1 as last parm means file is mem-mapped
+			Background_anim = anim_load("BriefTransMulti", CF_TYPE_ANY, 1);	// 1 as last parm means file is mem-mapped
 		else  {
-			Background_anim = anim_load("BriefTrans", 1);	// 1 as last parm means file is mem-mapped
+			Background_anim = anim_load("BriefTrans", CF_TYPE_ANY, 1);	// 1 as last parm means file is mem-mapped
 		}
 
 		Assert( Background_anim != NULL );
@@ -1378,22 +1367,13 @@ void load_wing_icons(char *filename)
 	int first_frame, num_frames;
 
 	first_frame = bm_load_animation(filename, &num_frames);
-	//WMC - See what happens now
-	/*if ( first_frame == -1 ) {
+	if ( first_frame == -1 ) {
 		Error(LOCATION, "Could not load icons from %s\n", filename);
 		return;
-	}*/
+	}
 
-	if(first_frame > -1)
-	{
-		Wing_slot_disabled_bitmap = first_frame;
-		Wing_slot_empty_bitmap = first_frame + 1;
-	}
-	else
-	{
-		Wing_slot_disabled_bitmap = -1;
-		Wing_slot_empty_bitmap = -1;
-	}
+	Wing_slot_disabled_bitmap = first_frame;
+	Wing_slot_empty_bitmap = first_frame + 1;
 //	Wing_slot_player_empty_bitmap = first_frame + 2;
 }
 
@@ -1830,10 +1810,6 @@ int restore_wss_data(ubyte *block)
 
 void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, bool resize)
 {
-	//WMC - sanity check
-	if(model_id < 0)
-		return;
-
 	matrix	object_orient	= IDENTITY_MATRIX;
 	angles rot_angles = {0.0f,0.0f,0.0f};
 	float zoom = closeup_zoom * 2.5f;
@@ -1947,10 +1923,6 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 
 void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos, float closeup_zoom, float rev_rate, int flags, bool resize)
 {
-	//WMC - sanity check
-	if(model_id < 0)
-		return;
-
 	angles rot_angles, view_angles;
 	matrix model_orient;
 
@@ -1981,11 +1953,7 @@ void draw_model_rotating(int model_id, int x1, int y1, int x2, int y2, float *ro
 	else
 	{
 		polymodel *pm = model_get(model_id);
-		vec3d pos = vmd_zero_vector;
-		if(pm != NULL)
-			pos.xyz.z = -(pm->rad * 1.5f);
-		else
-			pos.xyz.x = -15.0f;
+		vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
 		g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
 		flags |= MR_IS_MISSILE;
 	}

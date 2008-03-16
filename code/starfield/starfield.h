@@ -9,22 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/StarField.h $
- * $Revision: 2.22 $
- * $Date: 2007-02-18 06:17:34 $
+ * $Revision: 2.16.2.4 $
+ * $Date: 2006-11-24 22:40:16 $
  * $Author: Goober5000 $
  *
  * Code to handle and draw starfields, background space image bitmaps, floating
  * debris, etc.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.20  2006/11/24 22:46:25  Goober5000
- * FRED again updates backgrounds while the user is editing them
- *
- * Revision 2.19  2006/11/16 00:53:12  taylor
+ * Revision 2.16.2.3  2006/11/15 00:36:07  taylor
  * various bits of little cleanup
  * get rid of some more compiler warnings
  *
- * Revision 2.18  2006/11/06 06:46:08  taylor
+ * Revision 2.16.2.2  2006/11/06 05:26:38  taylor
  * fix some of the envmap issues
  *  - use proper hand-ness for OGL
  *  - fix distortion
@@ -33,7 +30,7 @@
  * basic cleanup and get rid of a couple of struct/variable naming issues (compiler sanity)
  * make double sure that we aren't using culling of z-buffering when rendering starfield bitmaps
  *
- * Revision 2.17  2006/08/06 18:47:29  Goober5000
+ * Revision 2.16.2.1  2006/08/06 18:47:12  Goober5000
  * add the multiple background feature
  * --Goober5000
  *

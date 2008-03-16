@@ -9,22 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/ds.h $
- * $Revision: 2.21 $
- * $Date: 2007-02-11 18:20:19 $
+ * $Revision: 2.18.2.3 $
+ * $Date: 2007-02-11 09:56:25 $
  * $Author: taylor $
  *
  * Header file for interface to DirectSound
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.20  2006/07/06 22:02:11  taylor
+ * Revision 2.18.2.2  2006/07/06 21:56:18  taylor
  * some better handling of OpenAL errors during init
  *
- * Revision 2.19  2006/06/27 04:58:58  taylor
- * sync up current OpenAL changes
- *  - "SoundDeviceOAL" reg option for user specified sound device (used instead of "Soundcard" for OpenAL)
- *  - reset current context when we are leaving, may be leaving drivers in a bad state, and it hasn't hung up in quite a while
- *  - if sound card (which DS or OAL) is set to "no sound" then be sure to disable both sound and music
- * fix various things that Valgrind complained about
+ * Revision 2.18.2.1  2006/06/18 16:52:04  taylor
  * make sure we can report both AL and ALC errors
  * fix for ds_get_free_channel(), it shouldn't return -1 on an AL error
  *

@@ -9,33 +9,30 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGL.h $
- * $Revision: 2.23 $
- * $Date: 2007-10-04 16:18:46 $
+ * $Revision: 2.18.2.5 $
+ * $Date: 2007-10-04 16:18:19 $
  * $Author: taylor $
  *
  * Include file for OpenGL renderer
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.22  2007/04/13 00:31:57  taylor
+ * Revision 2.18.2.4  2007/04/13 00:31:23  taylor
  * some basic cleanup for the extension code
  * fix the old bug that didn't report a missing extension name properly
  * get rid of the message that says to use D3D, that's not normally going to be an option anyway
  * add ARB_point_sprite support, mostly for fun since no code will actually use it until after 3.6.10
  *
- * Revision 2.21  2007/02/11 09:37:18  taylor
- * dd VALID_FNAME() macro and put it around a few places (more to come)
+ * Revision 2.18.2.3  2007/02/11 09:35:11  taylor
+ * add VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
  * move CLAMP() macro from opengl header to global header
  * update COUNT_ESTIMATE to match new bmpman changes
  *
- * Revision 2.20  2006/08/09 14:42:24  taylor
+ * Revision 2.18.2.2  2006/08/09 14:40:43  taylor
  * fix for setting of texture lod bias
  *
- * Revision 2.19  2006/06/27 05:00:57  taylor
- * be sure to properly reset fullscreen/minimized state vars as we switch between them
- * remove the temporary -alpha_alpha_blend option
- * fix screenshots on big endian
- * fix various things that Valgrind complained about
+ * Revision 2.18.2.1  2006/06/15 23:33:53  taylor
+ * apparently missed this commit a month or so ago with the other OS X fixes
  *
  * Revision 2.18  2006/05/13 07:29:52  taylor
  * OpenGL envmap support

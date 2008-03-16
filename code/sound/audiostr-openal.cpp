@@ -1,28 +1,41 @@
 /*
  * $Logfile: $
- * $Revision: 1.34 $
- * $Date: 2007-03-22 20:35:21 $
+ * $Revision: 1.29.2.9 $
+ * $Date: 2007-10-28 16:45:56 $
  * $Author: taylor $
  *
  * OpenAL based audio streaming
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.33  2007/03/22 20:31:37  taylor
+ * Revision 1.29.2.8  2007/03/22 20:35:45  taylor
+ * be sure to page in textures for change ship class sexp preload
+ * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
+ * make event music keep extension if it exists, so that the special data will be accurate
+ * bits of cleanup from old MS code that we don't need
+ *
+ * Revision 1.29.2.7  2007/02/18 08:59:03  taylor
+ * fix super-stupid bug :)
+ *
+ * Revision 1.29.2.6  2007/02/12 07:31:03  taylor
  * a little cleanup
  * handle issue where we don't deal with an error condition properly and hit a NULL ptr
  *
- * Revision 1.32  2007/01/07 12:48:18  taylor
- * crazy-freaky-cool OS X sound crash fixage
- * fix sound resource exhaustion from using too many buffers
+ * Revision 1.29.2.5  2007/01/07 12:15:09  taylor
  * allow loading of ogg or wav based on which is found first rather than tbl filename (fixes crash when Theora movies end up in wav code by mistake)
  *
- * Revision 1.31  2006/08/20 00:48:28  taylor
+ * Revision 1.29.2.4  2006/12/26 05:31:22  taylor
+ * fix some sound state stuff that was leading to crashes in OS X and undefined behavior in Windows (this isn't all that pretty, but will handled properly in post-3.6.9 revised code)
+ *
+ * Revision 1.29.2.3  2006/12/07 18:24:43  taylor
+ * various sound fixes/changes, mainly for OS X fixage
+ *
+ * Revision 1.29.2.2  2006/08/19 04:31:24  taylor
  * cleanup
  * bugfixes
  * error-handling
  * (lots of crap got fixed to work better, and lets leave it at that, the commit log would be too long otherwise :))
  *
- * Revision 1.30  2006/06/27 05:06:05  taylor
+ * Revision 1.29.2.1  2006/06/18 16:50:19  taylor
  * we don't use alc functions here so no real need for the header
  *
  * Revision 1.29  2006/06/02 08:05:33  taylor
@@ -1980,7 +1993,7 @@ void audiostream_set_volume_all(float volume, int type)
 		if ( Audio_streams[i].status == ASF_FREE )
 			continue;
 
-		if ( Audio_streams[i].type == type ) {
+		if ( (Audio_streams[i].type == type) || ((Audio_streams[i].type == ASF_MENUMUSIC) && (type == ASF_EVENTMUSIC)) ) {
 			int converted_volume;
 			converted_volume = ds_convert_volume(volume);
 			Audio_streams[i].Set_Volume(converted_volume);

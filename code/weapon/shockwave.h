@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.h $
- * $Revision: 2.13 $
- * $Date: 2007-01-07 12:57:36 $
+ * $Revision: 2.11.2.2 $
+ * $Date: 2006-12-07 18:30:20 $
  * $Author: taylor $
  *
  * Header file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.12  2006/09/11 06:51:17  taylor
+ * Revision 2.11.2.1  2006/09/11 01:17:07  taylor
  * fixes for stuff_string() bounds checking
  *
  * Revision 2.11  2005/12/04 19:02:36  wmcoolmon

@@ -9,35 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipEditorDlg.cpp $
- * $Revision: 1.13 $
- * $Date: 2007-09-03 01:02:49 $
- * $Author: Goober5000 $
+ * $Revision: 1.5.2.3 $
+ * $Date: 2006-11-03 21:26:51 $
+ * $Author: karajorma $
  *
  * Single ship editing dialog
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.12  2007/02/11 21:26:34  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 1.11  2007/01/29 03:39:25  Goober5000
- * --fix the empty ship name / U.R.A. Moron bug caused by WMC's commit
- * --properly update a ship score when its class changes (in FRED or via change-ship-class or via ship loadout)
- *
- * Revision 1.10  2006/12/28 00:59:20  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.9  2006/11/03 21:36:56  karajorma
- * Fix for Mantis 1017. - Hope we've seen the end of that damn persona bug
- *
- * Revision 1.8  2006/07/30 20:01:56  Kazan
+ * Revision 1.5.2.2  2006/07/30 20:00:47  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
- * Revision 1.7  2006/06/04 01:01:52  Goober5000
+ * Revision 1.5.2.1  2006/06/04 01:03:13  Goober5000
  * add fighterbay restriction code
  * --Goober5000
- *
- * Revision 1.6  2006/06/02 09:48:38  karajorma
- * Added the alt ship class button
  *
  * Revision 1.5  2006/05/30 05:37:29  Goober5000
  * add capability to restrict arrival/departure paths
@@ -366,7 +350,6 @@
 #include "globalincs/linklist.h"
 #include "InitialStatus.h"
 #include "WeaponEditorDlg.h"
-#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "TextViewDlg.h"
 #include "playerman/player.h"				// used for the max_keyed_target stuff
@@ -380,7 +363,6 @@
 #include "ShipSpecialDamage.h"
 #include "ShipTexturesDlg.h"
 #include "ShipSpecialHitpoints.h"
-#include "AltShipClassDlg.h"
 #include "species_defs/species_defs.h"
 #include "iff_defs/iff_defs.h"
 #include "restrictpaths.h"
@@ -572,7 +554,6 @@ BEGIN_MESSAGE_MAP(CShipEditorDlg, CDialog)
 	ON_BN_CLICKED(IDC_SPECIAL_EXP, OnSpecialExp)
 	ON_BN_CLICKED(IDC_TEXTURES, OnTextures)
 	ON_BN_CLICKED(IDC_SPECIAL_HITPOINTS, OnSpecialHitpoints)
-	ON_BN_CLICKED(IDC_ALT_SHIP_CLASS, OnAltShipClass)
 	ON_BN_CLICKED(IDC_RESTRICT_ARRIVAL, OnRestrictArrival)
 	ON_BN_CLICKED(IDC_RESTRICT_DEPARTURE, OnRestrictDeparture)
 	ON_WM_INITMENU()
@@ -1217,9 +1198,6 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_WEAPONS)->EnableWindow(m_ship_class >= 0);
 		GetDlgItem(IDC_FLAGS)->EnableWindow(TRUE);
 		GetDlgItem(IDC_TEXTURES)->EnableWindow(TRUE);
-		GetDlgItem(IDC_ALT_SHIP_CLASS)->EnableWindow(TRUE);	
-		GetDlgItem(IDC_SPECIAL_EXP)->EnableWindow(TRUE);	
-		GetDlgItem(IDC_SPECIAL_HITPOINTS)->EnableWindow(TRUE);	
 	} else {
 		GetDlgItem(IDC_SHIP_NAME)->EnableWindow(FALSE);
 		GetDlgItem(IDC_SHIP_CLASS)->EnableWindow(FALSE);
@@ -1228,9 +1206,6 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_WEAPONS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_FLAGS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_TEXTURES)->EnableWindow(FALSE);
-		GetDlgItem(IDC_ALT_SHIP_CLASS)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SPECIAL_EXP)->EnableWindow(FALSE);
-		GetDlgItem(IDC_SPECIAL_HITPOINTS)->EnableWindow(FALSE);
 	}
 
 	// disable textures for multiple ships
@@ -1517,9 +1492,6 @@ int CShipEditorDlg::update_ship(int ship)
 	if ((Ships[ship].ship_info_index != m_ship_class) && (m_ship_class != -1)) {
 		change_ship_type(ship, m_ship_class);
 		set_modified();
-
-		m_score.init(Ships[ship].score);
-		m_score.display();
 	}
 
 	if (m_team != -1)
@@ -1812,9 +1784,6 @@ void CShipEditorDlg::OnSelchangeShipClass()
 			if (Ships[ptr->instance].ship_info_index != m_ship_class) {
 				change_ship_type(ptr->instance, m_ship_class);
 				set_modified();
-
-				m_score.init(Ships[ptr->instance].score);
-				m_score.display();
 			}
 
 		ptr = GET_NEXT(ptr);
@@ -1899,7 +1868,7 @@ void CShipEditorDlg::OnShipReset()
 			}
 
 			objp->phys_info.speed = 0.0f;
-			shield_set_strength(objp, 100.0f);
+			objp->shield_quadrant[0] = 100.0f;
 			objp->hull_strength = 100.0f;
 
 			sip = &Ship_info[Ships[ship].ship_info_index];
@@ -2104,7 +2073,7 @@ void CShipEditorDlg::show_hide_sexp_help()
 {
 	CRect rect, help;
 	GetDlgItem(IDC_HELP_BOX)->GetWindowRect(help);
-	long box_size = (help.bottom - help.top);
+	float box_size = (help.bottom - help.top);
 
 	if (Show_sexp_help){
 		cue_height += box_size;
@@ -2402,12 +2371,6 @@ void CShipEditorDlg::OnTextures()
 void CShipEditorDlg::OnSpecialHitpoints() 
 {
 	ShipSpecialHitpoints dlg;
-	dlg.DoModal();
-}
-
-void CShipEditorDlg::OnAltShipClass() 
-{
-	AltShipClassDlg dlg;
 	dlg.DoModal();
 }
 

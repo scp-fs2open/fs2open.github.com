@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/Sound.h $
- * $Revision: 2.15 $
- * $Date: 2007-02-11 18:20:19 $
+ * $Revision: 2.13.2.2 $
+ * $Date: 2007-02-11 09:56:25 $
  * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.14  2006/09/08 06:20:15  taylor
+ * Revision 2.13.2.1  2006/09/08 06:14:44  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
  * Revision 2.13  2006/04/20 06:32:30  Goober5000

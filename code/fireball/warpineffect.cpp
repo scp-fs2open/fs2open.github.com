@@ -9,22 +9,22 @@
 
 /* 
  * $Logfile: /Freespace2/code/Fireball/WarpInEffect.cpp $
- * $Revision: 2.37 $
- * $Date: 2007-11-22 05:02:44 $
+ * $Revision: 2.32.2.5 $
+ * $Date: 2007-11-22 05:02:28 $
  * $Author: taylor $
  *
  * Code for rendering the warp in effects for ships
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.36  2006/11/16 01:10:47  taylor
+ * Revision 2.32.2.4  2006/11/16 01:07:23  taylor
  * do no culling on the warp effect model_render call properly (doesn't appear to break anything now that it actually set to not cull)
  *
- * Revision 2.35  2006/11/06 06:33:48  taylor
+ * Revision 2.32.2.3  2006/10/27 21:37:11  taylor
  * more cleanup of warp_global crap
  * scale render/detail box limits with detail level setting
  * make sure that we reset culling and zbuffer after each model buffer that gets rendered
  *
- * Revision 2.34  2006/11/06 06:19:17  taylor
+ * Revision 2.32.2.2  2006/10/27 06:42:29  taylor
  * rename set_warp_globals() to model_set_warp_globals()
  * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
  * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
@@ -32,7 +32,7 @@
  * minor bits of cleanup
  * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
  *
- * Revision 2.33  2006/07/21 16:04:46  taylor
+ * Revision 2.32.2.1  2006/07/21 16:08:03  taylor
  * little cleanup
  *
  * Revision 2.32  2006/03/31 10:20:01  wmcoolmon

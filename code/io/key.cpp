@@ -9,16 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Key.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-12-28 00:59:27 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-03-03 16:18:19 $
+ * $Author: taylor $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.8  2005/03/03 16:18:19  taylor
- * lockup fixes, and it's Linux friendly too :)
- *
  * Revision 2.7  2005/02/04 10:12:30  taylor
  * merge with Linux/OSX tree - p0204
  *

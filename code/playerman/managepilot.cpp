@@ -9,26 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Playerman/ManagePilot.cpp $
- * $Revision: 2.31 $
- * $Date: 2007-11-23 23:25:15 $
- * $Author: wmcoolmon $
+ * $Revision: 2.26.2.5 $
+ * $Date: 2007-12-20 01:57:43 $
+ * $Author: turey $
  *
  * ManagePilot.cpp has code to load and save pilot files, and to select and 
  * manage the pilot
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.30  2007/09/29 00:24:51  turey
- * Mouse defaults to enabled as suggested in Mantis bug: http://scp.indiegames.us/mantis/view.php?id=1498
+ * Revision 2.26.2.4  2007/10/28 16:45:05  taylor
+ * fix anothing something that Valgrind complained about
  *
- * Revision 2.29  2007/04/11 14:59:35  taylor
+ * Revision 2.26.2.3  2007/04/11 14:59:16  taylor
  * get rid of stale NO_JOYSTICK define
  *
- * Revision 2.28  2007/02/11 09:31:12  taylor
+ * Revision 2.26.2.2  2007/02/11 09:25:42  taylor
  * some CFILE cleanup and slight directory order reorg
  * add cfopen_special() for quickly opening files that have already been found with cf_find_file_location_ext()
  * remove NO_SOUND
  *
- * Revision 2.27  2006/09/24 22:55:17  taylor
+ * Revision 2.26.2.1  2006/09/24 22:53:22  taylor
  * more standalone server fixes:
  *  - add some basic bmpman functionality to grstub, since it needs to do something at least
  *  - add missing gr_* function ptrs to grstrub
@@ -1054,21 +1054,8 @@ int read_pilot_file(char *callsign, int single, player *p)
 
 	Game_skill_level = cfread_int(file);
 
-	bool axis_warning_shown = false;
 	for (i=0; i<NUM_JOY_AXIS_ACTIONS; i++) {
-		int newaxis = cfread_int(file);
-		if(newaxis > NUM_JOY_AXIS_ACTIONS)
-		{
-			if(!axis_warning_shown)
-			{
-				axis_warning_shown = true;
-				Warning(LOCATION, "Bad axis reading for pilot file - pilot file may be corrupt. Axis: %d, reading: %d", i, newaxis);
-			}
-		}
-		else
-		{
-			Axis_map_to[i] = newaxis;
-		}
+		Axis_map_to[i] = cfread_int(file);
 		Invert_axis[i] = cfread_int(file);
 	}
 
@@ -1806,19 +1793,22 @@ void player_set_squad_bitmap(player *p, char *fname)
 	}
 
 	// if he has another bitmap already - unload it
-	if(p->insignia_texture >= 0){
+	if (p->insignia_texture >= 0) {
 		bm_release(p->insignia_texture);
 	}
 
 	p->insignia_texture = -1;
 
 	// try and set the new one
-	strncpy(p->squad_filename, fname, MAX_FILENAME_LEN);
-	if(strlen(p->squad_filename) > 0){
+	if (fname != p->squad_filename) {
+		strncpy(p->squad_filename, fname, MAX_FILENAME_LEN);
+	}
+
+	if (strlen(p->squad_filename) > 0) {
 		p->insignia_texture = bm_load_duplicate(fname);
 		
 		// lock is as a transparent texture
-		if(p->insignia_texture != -1){
+		if (p->insignia_texture != -1) {
 			bm_lock(p->insignia_texture, 16, BMP_TEX_XPARENT);
 			bm_unlock(p->insignia_texture);
 		}

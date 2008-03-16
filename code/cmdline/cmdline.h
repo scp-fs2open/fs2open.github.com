@@ -11,31 +11,39 @@
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.h $
 
- * $Revision: 2.95 $
- * $Date: 2007-04-11 18:24:27 $
- * $Author: taylor $
+ * $Revision: 2.89.2.9 $
+ * $Date: 2008-01-08 01:41:13 $
+ * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.94  2007/01/10 01:40:43  taylor
- * little bit of cleanup
- * per earlier discussions: remove -jpgtga and -pcx32
+ * Revision 2.89.2.8  2007/10/15 06:43:08  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *
- * Revision 2.93  2006/11/16 00:50:00  taylor
+ * Revision 2.89.2.7  2007/04/11 18:21:22  taylor
+ * cleanup of chcksum stuff (works properly on 64-bit systems now)
+ * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
+ * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
+ *
+ * Revision 2.89.2.6  2007/04/06 12:55:37  karajorma
+ * Add the -cap_object_update command line to force multiplayer clients to a more server friendly object update setting.
+ *
+ * Revision 2.89.2.5  2007/02/11 09:24:08  taylor
+ * remove -pcx32 and -jpgtga
+ *
+ * Revision 2.89.2.4  2006/11/15 00:21:40  taylor
  * clean up some cmdline options which were/weren't FSO only
  * add back the "-32bit" option, for retail compatibility (doesn't do anything, it's just there to avoid the unknown option message)
  * add "-debug_window" to turn on the Windows-only extra debug output window (it's off by default now, only logging to file instead)
  *
- * Revision 2.92  2006/07/08 18:11:33  taylor
+ * Revision 2.89.2.3  2006/07/08 18:09:41  taylor
  * remove -allslev
  * make CTRL-SHIFT-S hotkey work in mission simulator (it's a toggle, so you can turn it on or off while on the screen)
  * fix a bug where blank lines would show up in the campaign list for branch/alternate type missions that are otherwise marked as not completed
  *
- * Revision 2.91  2006/06/27 04:55:53  taylor
- * add -disable_fbo to troubleshoot crappy ATI drivers
- * remove the temporary -alpha_alpha_blend option
- * tack on an extra byte to the flags.lch file so that the launcher can easily detect if it's an OpenAL build or not
+ * Revision 2.89.2.2  2006/06/18 17:21:49  taylor
+ * add a -disable_fbo troubleshooting option for those ATI users having trouble with FBOs, but can still use envmapping otherwise
  *
- * Revision 2.90  2006/06/15 00:37:11  taylor
+ * Revision 2.89.2.1  2006/06/15 00:16:23  taylor
  * remove previous attempts at the Y bug fix, it's now back to the retail code for that
  *
  * Revision 2.89  2006/05/27 17:17:57  taylor
@@ -629,6 +637,7 @@ extern int Cmdline_start_netgame;
 extern int Cmdline_timeout;
 extern int Cmdline_use_last_pilot;
 extern int Cmdline_window;
+extern char *Cmdline_res;
 
 
 // FSO OPTIONS -------------------------------------------------
@@ -671,6 +680,7 @@ extern int Cmdline_targetinfo;
 extern int Cmdline_3dwarp;
 extern int Cmdline_ship_choice_3d;
 extern int Cmdline_warp_flash;
+extern int Cmdline_autopilot_interruptable;
 
 // Audio related
 extern int Cmdline_query_speech;
@@ -686,8 +696,9 @@ extern int Cmdline_wcsaga;
 extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)
 extern int Cmdline_ingamejoin;
 extern int Cmdline_mpnoreturn;
-extern int Cmdline_SpewMission_CRCs;
-extern int Cmdline_SpewTable_CRCs;
+extern char *Cmdline_spew_mission_crcs;
+extern char *Cmdline_spew_table_crcs;
+extern int Cmdline_objupd;
 
 // Troubleshooting
 extern int Cmdline_d3d_lesstmem;

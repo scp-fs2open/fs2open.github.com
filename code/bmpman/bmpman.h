@@ -10,34 +10,32 @@
 /*
  * $Logfile: /Freespace2/code/Bmpman/BmpMan.h $
  *
- * $Revision: 2.44 $
- * $Date: 2007-03-22 20:13:23 $
+ * $Revision: 2.37.2.6 $
+ * $Date: 2007-03-22 20:14:16 $
  * $Author: taylor $
  *
  * Prototypes for Bitmap Manager functions
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.43  2007/01/10 01:40:07  taylor
- * remove the non-dark stuff, it only works on PCX files and stuff to use it has already been ripped out
- * per earlier discussions: remove -jpgtga and -pcx32, set image load order to DDS->TGA->JPG->PCX
- * some debug log cleanup
- * remove bitmap data from system memory once it's in API memory
+ * Revision 2.37.2.5  2007/02/11 09:51:21  taylor
+ * remove some dead code
+ * better texture memory handling (a work in-progress)
+ * new image finding/loading
+ * get rid of -pcx32 and -jpgtga
+ * change the game_busy() reporting during bitmap page-in to only catch one frame of an animation
+ * fix numerous little bugs in gropenglbmpman relating to -img2dds
  *
- * Revision 2.42  2007/01/07 12:32:06  taylor
+ * Revision 2.37.2.4  2007/01/07 12:07:40  taylor
  * fix bm_page_in_texture() so that it will load all frames of an animation (caused slowdowns in-game with it)
  *
- * Revision 2.41  2006/12/28 00:59:19  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.40  2006/07/05 23:41:43  Goober5000
+ * Revision 2.37.2.3  2006/07/05 23:41:02  Goober5000
  * spelling
  *
- * Revision 2.39  2006/07/05 23:35:42  Goober5000
+ * Revision 2.37.2.2  2006/07/05 23:36:55  Goober5000
  * cvs comment tweaks
  *
- * Revision 2.38  2006/06/27 04:52:50  taylor
- * fix various things that Valgrind complained about
- * comp_type for DDS images will always be set to something, an 'uncompressed' type at the least
+ * Revision 2.37.2.1  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
  *
  * Revision 2.37  2006/05/27 17:20:48  taylor
  * clean up BM_TYPE_* stuff so it's a little easier to tell what is what
@@ -557,6 +555,9 @@ int bm_release( int n, int clear_render_targets = 0 );
 // number of the first frame and nframes is set.
 extern int bm_load_animation( char * filename, int * nframes = NULL, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY );
 
+//Loads either animation (bm_load_animation) or still image (bm_load)
+extern int bm_load_either(char *filename, int *nframes = NULL, int *fps = NULL, int can_drop_frames = 0, int dir_type = CF_TYPE_ANY);
+
 // This locks down a bitmap and returns a pointer to a bitmap
 // that can be accessed until you call bm_unlock.   Only lock
 // a bitmap when you need it!  This will convert it into the 
@@ -571,7 +572,7 @@ extern uint bm_get_signature( int bitmapnum);
 // Unlocks a bitmap
 extern void bm_unlock( int bitmapnum );
 
-//WMC - Needed this for scripting
+//WMC - Returns 0 if invalid, nonzero if valid
 extern int bm_is_valid(int handle);
 
 // Gets info.   w,h,or flags,nframes or fps can be NULL if you don't care.

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Io/Joy.cpp $
- * $Revision: 2.4 $
- * $Date: 2006-09-20 05:05:07 $
+ * $Revision: 2.3.2.1 $
+ * $Date: 2006-09-20 05:00:47 $
  * $Author: taylor $
  *
  * Code to read the joystick

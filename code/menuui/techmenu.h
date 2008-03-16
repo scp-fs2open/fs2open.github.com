@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/TechMenu.h $
- * $Revision: 2.5 $
- * $Date: 2006-09-11 06:50:42 $
+ * $Revision: 2.4.2.1 $
+ * $Date: 2006-09-11 01:16:31 $
  * $Author: taylor $
  *
  * Header file for code that controls the Tech Room menu

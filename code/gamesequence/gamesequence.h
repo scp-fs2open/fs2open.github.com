@@ -9,15 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/GameSequence/GameSequence.h $
- * $Revision: 2.12 $
- * $Date: 2007-11-21 07:28:38 $
+ * $Revision: 2.10.2.3 $
+ * $Date: 2007-11-21 07:27:46 $
  * $Author: Goober5000 $
  *
  * Header file for Game Sequencing items
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.11  2007/11/19 20:24:39  Goober5000
+ * Revision 2.10.2.2  2007/11/19 20:24:37  Goober5000
  * clean up the state machine logic for starting games
+ *
+ * Revision 2.10.2.1  2007/10/15 06:43:12  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *
  * Revision 2.10  2006/01/14 01:51:49  wmcoolmon
  * Grr...fix out-of-sync game states
@@ -437,7 +440,7 @@
 #define GS_EVENT_END_DEMO						60		// end of demo campaign
 #define GS_EVENT_LOOP_BRIEF						61		// campaign loop brief
 #define GS_EVENT_CAMPAIGN_CHEAT					62		// skip to a mission in a campaign
-#define GS_EVENT_NET_CHAT						63		// #Kazan# - Go to net chat for Fs2NetD
+#define GS_EVENT_PXO							63
 #define GS_EVENT_LAB							64		// WMC - I-FRED concept
 #define GS_EVENT_STORYBOOK						65		// WMC - the storybook
 #define GS_EVENT_PXO_HELP						66
@@ -501,7 +504,7 @@ extern char *GS_event_text[];		// text description for the GS_EVENT_* #defines a
 #define GS_STATE_GAMEPLAY_HELP						46
 #define GS_STATE_END_DEMO							47		// end of demo campaign (upsell then main menu)
 #define GS_STATE_LOOP_BRIEF							48
-#define GS_STATE_NET_CHAT							49			// #Kazan# - state for the pxo chat readded by penguin
+#define GS_STATE_PXO								49
 #define GS_STATE_LAB								50
 #define GS_STATE_STORYBOOK							51
 #define GS_STATE_PXO_HELP							52

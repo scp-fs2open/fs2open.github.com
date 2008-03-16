@@ -9,42 +9,50 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionCampaign.cpp $
- * $Revision: 2.53 $
- * $Date: 2007-11-19 19:50:15 $
+ * $Revision: 2.40.2.14 $
+ * $Date: 2007-11-19 19:50:12 $
  * $Author: Goober5000 $
  *
  * source for dealing with campaigns
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.52  2007/09/02 02:10:27  Goober5000
+ * Revision 2.40.2.13  2007/10/28 16:39:17  taylor
+ * fix a loadout bug where the current mission name would get substituted for the previous one by mistake
+ *
+ * Revision 2.40.2.12  2007/09/02 02:07:43  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 2.51  2007/03/21 21:06:54  karajorma
+ * Revision 2.40.2.11  2007/03/21 20:54:24  karajorma
  * Bump the number of debriefing stages.
  * Fix an annoying (and erroneous) warning in the campaign editor.
  *
- * Revision 2.50  2007/02/11 09:10:14  taylor
+ * Revision 2.40.2.10  2007/02/11 09:09:55  taylor
  * fix simroom crash bug from Goober's rencent change
  * add NULL handling to make sure we don't crap out on sorting
  *
- * Revision 2.49  2007/02/11 06:38:54  Goober5000
+ * Revision 2.40.2.9  2007/02/11 06:38:56  Goober5000
  * when alphabetizing campaigns, ignore "the" at the beginning of a title
  *
- * Revision 2.48  2007/02/10 06:55:58  Goober5000
+ * Revision 2.40.2.8  2007/02/10 06:55:49  Goober5000
  * sort campaigns by title, not by file name
  *
- * Revision 2.47  2006/10/06 09:33:10  taylor
+ * Revision 2.40.2.7  2006/10/01 19:27:28  taylor
  * fix for the "branch" bug (still a minor usability issue however, see Mantis bug for details)
  * add a popup to the loopbrief screen when you press ESC, so that we can either accept or decline the loop offer
  *
- * Revision 2.46  2006/09/14 18:48:17  taylor
+ * Revision 2.40.2.6  2006/09/14 18:47:39  taylor
  * prevent FRED from hitting an Assert() that it shouldn't have had to hit in the first place
  *
- * Revision 2.45  2006/09/11 06:46:36  taylor
+ * Revision 2.40.2.5  2006/09/11 01:04:20  taylor
  * fixes for stuff_string() bounds checking
  * compiler warning fixes
  *
- * Revision 2.44  2006/09/11 06:02:14  taylor
+ * Revision 2.40.2.4  2006/08/28 17:14:52  taylor
+ * stupid, stupid, stupid...
+ *  - fix AVI/MPG movie playback
+ *  - fix missing campaign craziness
+ *
+ * Revision 2.40.2.3  2006/08/27 18:11:37  taylor
  * quite a few fixes to handle missing campaigns better
  * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
  * clean up the getting of a list of available campaigns
@@ -52,15 +60,12 @@
  * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
  * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
  *
- * Revision 2.43  2006/06/27 05:07:49  taylor
- * fix various compiler warnings and things that Valgrind complained about
+ * Revision 2.40.2.2  2006/06/22 14:59:45  taylor
+ * fix various things that Valgrind has been complaining about
  *
- * Revision 2.42  2006/06/10 18:34:08  Goober5000
+ * Revision 2.40.2.1  2006/06/10 18:35:05  Goober5000
  * fix parsing/handling of debriefing persona indexes
  * --Goober5000
- *
- * Revision 2.41  2006/06/02 08:59:58  karajorma
- * Swaped from stuff_int_list to stuff_ship_list when parsing in a list of ships allowed in the campaign.
  *
  * Revision 2.40  2006/04/20 06:32:07  Goober5000
  * proper capitalization according to Volition
@@ -780,11 +785,7 @@ void mission_campaign_get_sw_info()
 		for (i = 0; i < Num_ship_classes; i++ )
 			Campaign.ships_allowed[i] = 0;
 
-		// Karajorma - Swapping this function call for one to stuff_ship_list as it offers better protection 
-		// against bad data and better error reporting
-		//count = stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
-		count = stuff_ship_list(ship_list, MAX_SHIP_CLASSES, CAMPAIGN_LOADOUT_SHIP_LIST);
-
+		count = stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
 
 		// now set the array elements stating which ships we are allowed
 		for (i = 0; i < count; i++ ) {
@@ -1814,11 +1815,17 @@ int mission_campaign_savefile_load( char *cfilename, player *pl )
 		// end techroom data ---------------------------------------------------
 
 		// begin player loadout ------------------------------------------------
+		char trash[MAX_FILENAME_LEN+DATE_TIME_LENGTH];
 		int pool_count;
 		wss_unit *slot;
-		
-		cfread_string_len(Player_loadout.filename, MAX_FILENAME_LEN, fp);
-		cfread_string_len(Player_loadout.last_modified, DATE_TIME_LENGTH, fp);	
+
+		if (set_defaults) {
+			cfread_string_len(Player_loadout.filename, MAX_FILENAME_LEN, fp);
+			cfread_string_len(Player_loadout.last_modified, DATE_TIME_LENGTH, fp);
+		} else {
+			cfread_string_len(trash, MAX_FILENAME_LEN, fp);
+			cfread_string_len(trash + MAX_FILENAME_LEN, DATE_TIME_LENGTH, fp);
+		}
 
 		// read in ship pool
 		for ( i = 0; i < ship_count; i++ ) {

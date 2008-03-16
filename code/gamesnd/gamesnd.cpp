@@ -9,23 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.cpp $
- * $Revision: 2.35 $
- * $Date: 2007-09-02 02:10:25 $
+ * $Revision: 2.30.2.4 $
+ * $Date: 2007-09-02 02:07:41 $
  * $Author: Goober5000 $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.34  2007/01/07 12:33:59  taylor
- * fix for Mantis bug #1195
+ * Revision 2.30.2.3  2007/01/07 12:11:05  taylor
+ * we are only supposed to init 5 slots here, not 6 ;)  (Mantis bug #1195)
  *
- * Revision 2.33  2006/12/28 00:59:26  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.32  2006/09/11 06:49:39  taylor
+ * Revision 2.30.2.2  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.31  2006/09/11 06:08:08  taylor
+ * Revision 2.30.2.1  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
  * Revision 2.30  2006/05/27 17:09:43  taylor
@@ -307,6 +304,9 @@ int Num_iface_sounds = 0;
 game_snd *Snds_iface = NULL;
 int *Snds_iface_handle = NULL;
 
+#define GAME_SND	0
+#define IFACE_SND	1
+
 void gamesnd_add_sound_slot(int type, int num);
 
 void gamesnd_play_iface(int n)
@@ -325,10 +325,14 @@ int gamesnd_get_by_name(char* name)
 		char *p = strchr( Snds[i].filename, '.' );
 		if(p == NULL)
 		{
-			if(!strextcmp(Snds[i].filename, name))
+			if(!stricmp(Snds[i].filename, name))
 			{
 				return i;
 			}
+		}
+		else if(!strnicmp(Snds[i].filename, name, p-Snds[i].filename))
+		{
+			return i;
 		}
 	}
 	return -1;
@@ -521,7 +525,6 @@ void gamesnd_parse_soundstbl()
 	// open localization
 	lcl_ext_open();
 
-	//WMC - Made sounds.tbl optional, October 5, 2006
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "sounds.tbl", rval));
 		lcl_ext_close();
@@ -537,7 +540,7 @@ void gamesnd_parse_soundstbl()
 		Assert( num_game_sounds < Num_game_sounds);
 		gamesnd_parse_line( &Snds[num_game_sounds], "$Name:" );
 		num_game_sounds++;
-		gamesnd_add_sound_slot( GS_GAME_SND, num_game_sounds );
+		gamesnd_add_sound_slot( GAME_SND, num_game_sounds );
 	}
 	required_string("#Game Sounds End");
 
@@ -547,7 +550,7 @@ void gamesnd_parse_soundstbl()
 		Assert( num_iface_sounds < Num_iface_sounds);
 		gamesnd_parse_line(&Snds_iface[num_iface_sounds], "$Name:");
 		num_iface_sounds++;
-		gamesnd_add_sound_slot( GS_IFACE_SND, num_iface_sounds );
+		gamesnd_add_sound_slot( IFACE_SND, num_iface_sounds );
 	}
 	required_string("#Interface Sounds End");
 
@@ -688,7 +691,7 @@ void gamesnd_add_sound_slot(int type, int num)
 	int i;
 
 	switch (type) {
-		case GS_GAME_SND:
+		case GAME_SND:
 		{
 			Assert( Snds != NULL );
 			Assert( num < (Num_game_sounds + increase_by) );
@@ -706,7 +709,7 @@ void gamesnd_add_sound_slot(int type, int num)
 		}
 		break;
 
-		case GS_IFACE_SND:
+		case IFACE_SND:
 		{
 			Assert( Snds_iface != NULL );
 			Assert( num < (Num_game_sounds + increase_by) );

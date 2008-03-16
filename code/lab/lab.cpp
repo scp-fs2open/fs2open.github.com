@@ -9,36 +9,36 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/lab.cpp $
- * $Revision: 1.37 $
- * $Date: 2007-07-15 02:45:18 $
+ * $Revision: 1.28.2.9 $
+ * $Date: 2007-07-15 02:45:49 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.36  2007/03/22 22:34:59  taylor
- * get rid of non-standard itoa(), make use of the proper sprintf() instead
- *
- * Revision 1.35  2007/02/27 01:44:48  Goober5000
+ * Revision 1.28.2.8  2007/02/27 01:44:44  Goober5000
  * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
  *
- * Revision 1.34  2007/02/11 06:19:05  Goober5000
+ * Revision 1.28.2.7  2007/02/12 02:19:45  taylor
+ * fix a couple of things that I missed earlier
+ *
+ * Revision 1.28.2.6  2007/02/11 06:19:07  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
  *
- * Revision 1.33  2006/11/06 05:59:36  taylor
+ * Revision 1.28.2.5  2006/10/27 06:35:29  taylor
  * add "Render full detail" support to the lab as well
  *
- * Revision 1.32  2006/09/11 06:08:09  taylor
+ * Revision 1.28.2.4  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
- * Revision 1.31  2006/08/20 00:47:10  taylor
+ * Revision 1.28.2.3  2006/08/19 04:26:32  taylor
  * add render option for no glowmaps
  * remove render option for fog (why was this even there??)
  * add tech model view for missiles with special tech models (will hopefully help spur some work towards fixing the currently broken models)
  * handle Z-buf issue that made the lab interface disappear when the transparent render option was ticked
  *
- * Revision 1.30  2006/07/08 11:30:13  taylor
+ * Revision 1.28.2.2  2006/07/08 11:27:28  taylor
  * hopefully this should get missile viewing working decently again
  *
- * Revision 1.29  2006/07/06 21:59:34  taylor
+ * Revision 1.28.2.1  2006/07/06 21:49:12  taylor
  * add a render option to make the model not spin around, easier to work with in some cases, and better screenshots
  *
  * Revision 1.28  2006/05/13 07:09:25  taylor
@@ -1124,13 +1124,17 @@ void lab_init()
 	cbp = cwp->AddChild(new Button("Weapon variables", x, 0, weap_variables_window));
 }
 
+extern void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient);
+extern void game_render_frame(vec3d *eye_pos, matrix *eye_orient);
 void lab_do_frame(float frametime)
 {
 	gr_clear();
 	if(Lab_in_mission)
 	{
-		camid cid = game_render_frame_setup();
-		game_render_frame( cid );
+		vec3d eye_pos;
+		matrix eye_orient;
+		game_render_frame_setup(&eye_pos, &eye_orient);
+		game_render_frame( &eye_pos, &eye_orient );
 	}
 	else
 	{

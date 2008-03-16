@@ -6,20 +6,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.cpp $
- * $Revision: 2.15 $
- * $Date: 2007-07-28 21:31:11 $
+ * $Revision: 2.11.2.4 $
+ * $Date: 2007-07-28 21:31:06 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.14  2007/07/28 21:17:56  Goober5000
+ * Revision 2.11.2.3  2007/07/28 21:17:55  Goober5000
  * make the parse object array dynamic; also made the docking bitstrings dynamic
  *
- * Revision 2.13  2007/02/20 04:20:27  Goober5000
+ * Revision 2.11.2.2  2007/02/20 04:19:34  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.12  2006/07/21 05:41:10  Goober5000
+ * Revision 2.11.2.1  2006/07/21 05:41:07  Goober5000
  * add another method for calculating dimensions of docked objects, plus improve an existing one
  * --Goober5000
  *

@@ -6,14 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ObjectDock.h $
- * $Revision: 2.10 $
- * $Date: 2006-09-08 06:20:14 $
+ * $Revision: 2.8.2.2 $
+ * $Date: 2006-09-08 06:14:44 $
  * $Author: taylor $
  *
  * New docking system
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.9  2006/07/21 05:41:10  Goober5000
+ * Revision 2.8.2.1  2006/07/21 05:41:07  Goober5000
  * add another method for calculating dimensions of docked objects, plus improve an existing one
  * --Goober5000
  *

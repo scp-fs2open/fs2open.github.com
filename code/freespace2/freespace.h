@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/FREESPACE2/FreeSpace.h $
- * $Revision: 2.13 $
- * $Date: 2006-07-13 22:16:38 $
+ * $Revision: 2.12.2.1 $
+ * $Date: 2006-07-13 22:11:36 $
  * $Author: taylor $
  *
  * FreeSpace, the game, not the project, header information.
@@ -202,7 +202,6 @@
 #include "globalincs/pstypes.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
-#include "camera/camera.h"
 
 // --------------------------------------------------------------------------------------------------------
 // FREESPACE DEFINES/VARS
@@ -428,8 +427,8 @@ void game_unpause();
 //WMC - Stuff for scripting, these make the game go
 extern void game_level_init(int seed = -1);
 extern void game_post_level_init();
-extern camid game_render_frame_setup();
-extern void game_render_frame(camid cid);
+extern void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient);
+extern void game_render_frame(vec3d *eye_pos, matrix *eye_orient);
 extern void game_simulation_frame();
 extern void game_update_missiontime();
 extern void game_render_post_frame();

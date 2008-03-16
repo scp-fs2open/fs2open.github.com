@@ -9,15 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/TgaUtils/TgaUtils.cpp $
- * $Revision: 2.22 $
- * $Date: 2007-03-22 20:13:23 $
+ * $Revision: 2.20.2.2 $
+ * $Date: 2007-03-22 20:14:17 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.21  2007/01/10 01:49:16  taylor
- * remove non-dark support
- * per earlier discussions: remove -jpgtga and -pcx32
+ * Revision 2.20.2.1  2007/02/11 09:24:08  taylor
+ * remove -pcx32 and -jpgtga
  *
  * Revision 2.20  2006/04/20 06:32:30  Goober5000
  * proper capitalization according to Volition
@@ -633,7 +632,7 @@ int targa_uncompress( ubyte *dst, ubyte *src, int bitmap_width, int bytes_per_pi
 //
 // returns - true if succesful, false otherwise
 //
-int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int dest_size)
+int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, int dest_size, int cf_type)
 {
 	Assert(real_filename);
 	targa_header header;
@@ -649,7 +648,7 @@ int targa_read_bitmap(char *real_filename, ubyte *image_data, ubyte *palette, in
 	if ( p ) *p = 0;
 	strcat( filename, ".tga" );
 
-	targa_file = cfopen( filename , "rb" );
+	targa_file = cfopen( filename , "rb", CFILE_NORMAL, cf_type );
 	if ( !targa_file ){
 		return TARGA_ERROR_READING;
 	}		

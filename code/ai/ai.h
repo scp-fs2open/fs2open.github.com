@@ -9,29 +9,12 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/ai.h $
- * $Revision: 1.19 $
- * $Date: 2007-08-11 16:52:02 $
+ * $Revision: 1.12.2.2 $
+ * $Date: 2007-08-11 16:51:55 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.18  2007/02/18 06:16:46  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 1.17  2007/02/11 21:26:34  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 1.16  2007/01/14 14:03:31  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 1.15  2007/01/07 01:00:18  Goober5000
- * convert a mission variable to a mission flag
- *
- * Revision 1.14  2006/12/28 00:59:18  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.13  2006/06/04 01:01:52  Goober5000
+ * Revision 1.12.2.1  2006/06/04 01:03:12  Goober5000
  * add fighterbay restriction code
  * --Goober5000
  *
@@ -462,6 +445,7 @@ typedef struct ai_goal {
 
 #define	MAX_AI_BEHAVIORS		22	//	Number of AIM_xxxx types
 
+#define	MAX_WAYPOINTS_PER_LIST	20
 #define	MAX_ENEMY_DISTANCE	2500.0f			//	maximum distance from which a ship will pursue an enemy.
 
 #define AI_GOAL_NONE				-1
@@ -746,6 +730,7 @@ typedef struct ai_info {
 #define MAX_BURST_DAMAGE	20		// max damage that can be done in BURST_DURATION
 #define BURST_DURATION		500	// decay time over which Player->damage_this_burst falls from MAX_BURST_DAMAGE to 0
 
+extern int Mission_all_attack;	//	!0 means all teams attack all teams.
 extern int Total_goal_ship_names;
 extern char Goal_ship_names[MAX_GOAL_SHIP_NAMES][NAME_LENGTH];
 
@@ -803,7 +788,7 @@ extern void ai_stay_still(object *still_objp, vec3d *view_pos);
 extern void ai_set_default_behavior(object *obj, int classnum);
 extern void ai_do_default_behavior(object *obj);
 extern void ai_start_waypoints(object *objp, int waypoint_list_index, int wp_flags);
-extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int quadrant_num, vec3d *hit_normal);
+extern void ai_ship_hit(object *objp_ship, object *hit_objp, vec3d *hitpos, int shield_quadrant, vec3d *hit_normal);
 extern void ai_ship_destroy(int shipnum, int method);
 extern void ai_turn_towards_vector(vec3d *dest, object *objp, float frametime, float turn_time, vec3d *slide_vec, vec3d *rel_pos, float bank_override, int flags, vec3d *rvec = NULL, int sexp_flags = 0);
 extern void init_ai_object(int objnum);
@@ -819,7 +804,7 @@ extern void ai_update_danger_weapon(int objnum, int weapon_objnum);
 // called externally from MissionParse.cpp to position ships in wings upon arrival into the
 // mission.
 extern void get_absolute_wing_pos( vec3d *result_pos, object *leader_objp, int wing_index, int formation_object_flag);
-
+extern void get_absolute_wing_pos_autopilot( vec3d *result_pos, object *leader_objp, int wing_index, int formation_object_flag);
 
 //	Interface from goals code to AI.  Set ship to guard.  *objp guards *other_objp
 extern void ai_set_guard_object(object *objp, object *other_objp);

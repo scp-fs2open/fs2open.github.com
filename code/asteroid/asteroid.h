@@ -9,21 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/Asteroid/Asteroid.h $
- * $Revision: 2.16 $
- * $Date: 2007-11-23 23:49:32 $
+ * $Revision: 2.12.2.4 $
+ * $Date: 2007-05-28 18:27:32 $
  * $Author: wmcoolmon $
  *
  * Header file for asteroids
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.15  2006/11/16 00:53:12  taylor
+ * Revision 2.12.2.3  2006/11/15 00:36:08  taylor
  * various bits of little cleanup
  * get rid of some more compiler warnings
  *
- * Revision 2.14  2006/09/11 06:49:38  taylor
+ * Revision 2.12.2.2  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.13  2006/09/11 06:08:08  taylor
+ * Revision 2.12.2.1  2006/08/27 18:12:39  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
  * Revision 2.12  2005/09/25 20:31:42  Goober5000

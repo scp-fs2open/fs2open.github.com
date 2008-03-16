@@ -9,16 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3dMath.cpp $
- * $Revision: 2.11 $
- * $Date: 2007-02-18 06:17:34 $
- * $Author: Goober5000 $
+ * $Revision: 2.8.2.1 $
+ * $Date: 2006-09-11 01:00:28 $
+ * $Author: taylor $
  *
  * 3d Math routines used by the Renderer lib
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.9  2006/09/11 06:45:40  taylor
- * various small compiler warning and strict compiling fixes
- *
  * Revision 2.8  2005/04/05 05:53:24  taylor
  * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
  *

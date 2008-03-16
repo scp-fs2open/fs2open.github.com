@@ -9,14 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/Psnet2.cpp $
- * $Revision: 2.16 $
- * $Date: 2006-08-20 00:47:35 $
+ * $Revision: 2.14.2.3 $
+ * $Date: 2007-10-15 06:43:19 $
  * $Author: taylor $
  *
  * C file containing application level network-interface.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.15  2006/06/27 05:04:16  taylor
+ * Revision 2.14.2.2  2006/08/19 04:28:22  taylor
+ * add custom IP option to maybe help get around NAT issues (I haven't heard whether this actually works or not yet though, but it's been out for testing all week)
+ *
+ * Revision 2.14.2.1  2006/06/12 03:38:15  taylor
  * try to allow RAS VPN connects since they probably aren't dial-up and shouldn't be seen as such
  *
  * Revision 2.14  2005/10/10 17:21:08  taylor
@@ -1305,7 +1308,7 @@ void psnet_rel_close_socket( PSNET_SOCKET_RELIABLE *sockp )
 	// if the socket is out of range
 	if(*sockp>=MAXRELIABLESOCKETS)
 	{
-		ml_printf("Invalid socket id passed to nw_NewCloseSocket() -- %d\n",*sockp);
+		ml_printf("Invalid socket id passed to nw_NewCloseSocket() -- %d",*sockp);
 		return;
 	}	
 	ml_printf("Closing socket %d\n",*sockp);

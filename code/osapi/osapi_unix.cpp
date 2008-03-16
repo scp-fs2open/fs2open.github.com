@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/OsApi/OsApi.cpp $
- * $Revision: 2.13 $
- * $Date: 2007-02-10 00:12:35 $
+ * $Revision: 2.12.2.1 $
+ * $Date: 2007-02-10 00:12:17 $
  * $Author: taylor $
  *
  * Low level Windows code

@@ -9,14 +9,11 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_ingame.cpp $
- * $Revision: 2.29 $
- * $Date: 2007-02-11 21:26:35 $
- * $Author: Goober5000 $
+ * $Revision: 2.28 $
+ * $Date: 2005-12-29 08:08:39 $
+ * $Author: wmcoolmon $
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.28  2005/12/29 08:08:39  wmcoolmon
- * Codebase commit, most notably including objecttypes.tbl
- *
  * Revision 2.27  2005/10/30 20:20:43  Goober5000
  * comment fixage
  *
@@ -407,7 +404,6 @@
 
 #include "globalincs/globals.h"
 #include "object/object.h"
-#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "network/multi.h"
@@ -2225,7 +2221,7 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 	
 	// shield percentages
 	for(idx=0; idx<MAX_SHIELD_SECTIONS; idx++){
-		f_tmp = shield_get_quad(objp, idx);
+		f_tmp = objp->shield_quadrant[idx];
 		ADD_FLOAT(f_tmp);
 	}
 	
@@ -2265,7 +2261,7 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
  	GET_FLOAT(lookup->hull_strength);
 	for(idx=0;idx<MAX_SHIELD_SECTIONS;idx++){
 		GET_FLOAT(f_tmp);
-		shield_set_quad(lookup, idx, f_tmp);
+		lookup->shield_quadrant[idx] = f_tmp;
 	}
 
 	PACKET_SET_SIZE();

@@ -1,77 +1,39 @@
 /*
  * $Logfile: /Freespace2/code/ai/aiturret.cpp $
- * $Revision: 1.59 $
- * $Date: 2007-03-22 20:08:49 $
+ * $Revision: 1.39.2.9 $
+ * $Date: 2007-03-22 20:09:05 $
  * $Author: taylor $
  *
  * Functions for AI control of turrets
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.58  2007/02/20 04:20:10  Goober5000
+ * Revision 1.39.2.8  2007/02/20 04:19:09  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 1.57  2007/02/18 06:16:46  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 1.56  2007/02/11 06:19:05  Goober5000
+ * Revision 1.39.2.7  2007/02/11 06:19:07  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
  *
- * Revision 1.55  2007/02/05 08:27:13  wmcoolmon
- * Couple of commented-out features.
- *
- * Revision 1.54  2007/01/22 21:45:10  Goober5000
- * removed code that isn't used (see Mantis 1219)
- *
- * Revision 1.53  2007/01/15 01:37:37  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
- *
- * Revision 1.52  2007/01/14 14:03:31  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 1.51  2007/01/08 00:50:58  Goober5000
- * remove WMC's limbo code, per our discussion a few months ago
- * this will later be handled by copying ship stats using sexps or scripts
- *
- * Revision 1.50  2007/01/07 12:36:51  taylor
+ * Revision 1.39.2.6  2006/12/07 17:51:39  taylor
  * make fire-on-normal return value a little more obvious
- * fix the "infinite genius" move I made by breaking turret movements  ;)
+ * fix the "infinite genius" move I made by breaking turret movements ;)
  *
- * Revision 1.49  2006/12/28 00:59:18  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.48  2006/11/06 07:00:05  taylor
- * fix return values (something that was different between 3_6_9 and HEAD)
- *
- * Revision 1.47  2006/11/06 06:32:30  taylor
+ * Revision 1.39.2.5  2006/10/27 21:33:06  taylor
  * updated/fixed modelanim code
  * add ships.tbl subsystem flag ("+fire-down-normals") which will force a turret to fire down it's barrel line (Mantis bug #591)
  *
- * Revision 1.46  2006/09/13 03:17:06  taylor
+ * Revision 1.39.2.4  2006/09/13 03:06:46  taylor
  * restore MAX_AIFTT_TURRETS to retail level, and add comment as to what it means for the next person that tries to change it
  *
- * Revision 1.45  2006/09/11 09:43:35  taylor
+ * Revision 1.39.2.3  2006/09/11 09:42:53  taylor
  * revert to retail behavior for turret_should_pick_new_target()
  * fix out-of-bounds issue
  *
- * Revision 1.44  2006/09/08 06:16:18  taylor
+ * Revision 1.39.2.2  2006/09/08 06:06:34  taylor
  * fix for Mantis bug #687 (at least until better swarming code can be written, post-3.6.9)
  * a quick speed/sanity check for turrets to be sure that they actually have a weapon to fire before processing them
  *
- * Revision 1.43  2006/09/04 18:06:36  Goober5000
+ * Revision 1.39.2.1  2006/09/04 18:05:09  Goober5000
  * fix macros
- *
- * Revision 1.42  2006/09/04 06:13:31  wmcoolmon
- * Update to allow flak range to be manually overridden, and safeguard against NULL predicted_pos
- *
- * Revision 1.41  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
- * Revision 1.40  2006/06/07 04:36:52  wmcoolmon
- * Fix muzzleflashes for non-flak weapons. Begin commit of limbo code.
  *
  * Revision 1.39  2006/06/01 04:40:41  taylor
  * be sure to to reset ok_to_fire between weapon checks to make sure we don't count something by mistake
@@ -439,7 +401,6 @@ int get_turret_weapon_next_fire_stamp(ship_weapon *swp, int weapon_num)
 	else
 		return swp->next_primary_fire_stamp[weapon_num];
 }
-
 
 //This function is kinda slow
 //Returns the longest-ranged weapon on a turret
@@ -995,9 +956,6 @@ void ship_get_global_turret_info(object *objp, model_subsystem *tp, vec3d *gpos,
 //		*gvec: vector fro *gpos to *targetp
 void ship_get_global_turret_gun_info(object *objp, ship_subsys *ssp, vec3d *gpos, vec3d *gvec, int use_angles, vec3d *targetp)
 {
-	Assert(ssp != NULL);
-	Assert(ssp->system_info != NULL);
-
 	vec3d * gun_pos;
 	model_subsystem *tp = ssp->system_info;
 
@@ -1678,10 +1636,6 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	int secnum = 0;
 	for(i = 0; i < (MAX_SHIP_WEAPONS); i++)
 	{
-		//WMC - Only fire more than once if we have multiple guns flag set.
-		if(num_valid > 0 && !(ss->flags & MSS_FLAG_USE_MULTIPLE_GUNS))
-			break;
-
 		if(i < MAX_SHIP_PRIMARY_BANKS)
 		{
 			if(i >= swp->num_primary_banks)
@@ -1867,30 +1821,30 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 		return;
 	}
 
-  	//This can't happen. See above code
-  	//Assert(ss->turret_enemy_objnum != -1);
-  
- 	float dot = vm_vec_dot(&v2e, &gvec);
-  
-  	// Ok, the turret is lined up... now line up a particular gun.
-  	bool ok_to_fire = false;
-  	bool something_was_ok_to_fire=false;
-  	vec3d tv2e;	//so flak can get their jitter without screwing up other guns
-  
- 	if (dot > tp->turret_fov ) {
- 		// We're ready to fire... now get down to specifics, like where is the
- 		// actual gun point and normal, not just the one for whole turret.
- 		ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
- 		ss->turret_next_fire_pos++;
-  
- 		// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
- 		vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
- 		dist_to_enemy = vm_vec_normalize(&v2e);
- 		dot = vm_vec_dot(&v2e, &gvec);
-  
-  		for(i = 0; i < num_valid; i++)
-  		{
-  			wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
+	//This can't happen. See above code
+	//Assert(ss->turret_enemy_objnum != -1);
+
+	float dot = vm_vec_dot(&v2e, &gvec);
+
+	// Ok, the turret is lined up... now line up a particular gun.
+	bool ok_to_fire = false;
+	bool something_was_ok_to_fire=false;
+	vec3d tv2e;	//so flak can get their jitter without screwing up other guns
+
+	if (dot > tp->turret_fov ) {
+		// We're ready to fire... now get down to specifics, like where is the
+		// actual gun point and normal, not just the one for whole turret.
+		ship_get_global_turret_gun_info(&Objects[parent_objnum], ss, &gpos, &gvec, use_angles, &predicted_enemy_pos);
+		ss->turret_next_fire_pos++;
+
+		// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
+		vm_vec_sub(&v2e, &predicted_enemy_pos, &gpos);
+		dist_to_enemy = vm_vec_normalize(&v2e);
+		dot = vm_vec_dot(&v2e, &gvec);
+
+		for(i = 0; i < num_valid; i++)
+		{
+			wip = get_turret_weapon_wip(&ss->weapons, valid_weapons[i]);
 			tv2e = v2e;
 
 			// make sure to reset this for current weapon
@@ -1930,6 +1884,20 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
 				}
 				if ( turret_should_fire_aspect(ss, dot, wip) )
+				{
+					ok_to_fire = true;
+				}
+			}
+			else if ( wip->wi_flags & WIF_HOMING_JAVELIN )
+			{	// if javelin heat seeker
+				if ((dist_to_enemy < 50.0f) || (dot > AICODE_TURRET_DUMBFIRE_ANGLE ))
+				{
+					turret_update_enemy_in_range(ss, 2*wip->fire_wait);
+				}
+				// Check if turret should fire and enemy's engines are
+				// in line of sight
+				if (turret_should_fire_aspect(ss, dot, wip) &&
+					ship_get_closest_subsys_in_sight(&Ships[lep->signature], SUBSYSTEM_ENGINE, &gpos))
 				{
 					ok_to_fire = true;
 				}

@@ -9,13 +9,16 @@
 
  /*
  * $Logfile: /Freespace2/code/Inetfile/CFtp.cpp $
- * $Revision: 2.4 $
- * $Date: 2005-08-20 20:38:08 $
+ * $Revision: 2.4.2.1 $
+ * $Date: 2007-10-15 06:43:13 $
  *  $Author: taylor $
  *
  * FTP Client class (get only)
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.4  2005/08/20 20:38:08  taylor
+ * more unix->SCP_UNIX define fixing
+ *
  * Revision 2.3  2004/07/26 20:47:33  Kazan
  * remove MCD complete
  *
@@ -48,28 +51,53 @@
  *
  * $NoKeywords: $
  */
-#include <windows.h>
-#include <process.h>
+
 #include <stdio.h>
 
 #include "globalincs/pstypes.h"
+
+#ifdef WIN32
+#include <windows.h>
+#include <process.h>
+#else
+#include <sys/time.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/select.h>
+#include <errno.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
+#define WSAGetLastError()  (errno)
+#endif
+
 #include "inetfile/cftp.h"
 
 
-
+#ifdef WIN32
 void FTPObjThread( void * obj )
+#else
+int FTPObjThread( void *obj )
+#endif
 {
 	((CFtpGet *)obj)->WorkerThread();
+
+#ifdef SCP_UNIX
+	return 0;
+#endif
 }
 
 void CFtpGet::AbortGet()
 {
 	m_Aborting = true;
+
 	while(!m_Aborted) ; //Wait for the thread to end
+
 	fclose(LOCALFILE);
 }
 
-CFtpGet::CFtpGet(char *URL,char *localfile,char *Username,char *Password)
+CFtpGet::CFtpGet(char *URL, char *localfile, char *Username, char *Password)
 {
 	SOCKADDR_IN listensockaddr;
 	m_State = FTP_STATE_STARTUP;
@@ -81,10 +109,13 @@ CFtpGet::CFtpGet(char *URL,char *localfile,char *Username,char *Password)
 	m_iBytesTotal = 0;
 	m_Aborting = false;
 	m_Aborted = false;
+#ifdef SCP_UNIX
+	thread_id = NULL;
+#endif
 
-	LOCALFILE = fopen(localfile,"wb");
-	if(NULL == LOCALFILE)
-	{
+	LOCALFILE = fopen(localfile, "wb");
+
+	if (NULL == LOCALFILE) {
 		m_State = FTP_STATE_CANT_WRITE_FILE;
 		return;
 	}
@@ -195,11 +226,16 @@ CFtpGet::CFtpGet(char *URL,char *localfile,char *Username,char *Password)
 	//At this point we should have a nice host,dir and filename
 	
 	//if(NULL==CreateThread(NULL,0,ObjThread,this,0,&m_dwThreadId))
-	if(NULL==_beginthread(FTPObjThread,0,this))
+#ifdef WIN32
+	if ( _beginthread(FTPObjThread,0,this) == NULL )
+#else
+	if ( (thread_id = SDL_CreateThread(FTPObjThread, this)) == NULL )
+#endif
 	{
 		m_State = FTP_STATE_INTERNAL_ERROR;
 		return;
 	}
+
 	m_State = FTP_STATE_CONNECTING;
 }
 
@@ -207,6 +243,13 @@ CFtpGet::CFtpGet(char *URL,char *localfile,char *Username,char *Password)
 
 CFtpGet::~CFtpGet()
 {
+#ifdef WIN32
+	_endthread();
+#else
+	if (thread_id)
+		SDL_WaitThread(thread_id, NULL);
+#endif
+
 	if(m_ListenSock != INVALID_SOCKET)
 	{
 		shutdown(m_ListenSock,2);
@@ -232,12 +275,12 @@ int CFtpGet::GetStatus()
 	return m_State;
 }
 
-unsigned int CFtpGet::GetBytesIn()
+uint CFtpGet::GetBytesIn()
 {
 	return m_iBytesIn;
 }
 
-unsigned int CFtpGet::GetTotalBytes()
+uint CFtpGet::GetTotalBytes()
 {
 
 	return m_iBytesTotal;
@@ -266,7 +309,7 @@ void CFtpGet::WorkerThread()
 
 }
 
-unsigned int CFtpGet::GetFile()
+uint CFtpGet::GetFile()
 {
 	//Start off by changing into the proper dir.
 	char szCommandString[200];
@@ -339,7 +382,7 @@ unsigned int CFtpGet::GetFile()
 	return 1;
 }
 
-unsigned int CFtpGet::IssuePort()
+uint CFtpGet::IssuePort()
 {
 
 	char szCommandString[200];
@@ -469,7 +512,7 @@ int CFtpGet::LoginHost()
 }
 
 
-unsigned int CFtpGet::SendFTPCommand(char *command)
+uint CFtpGet::SendFTPCommand(char *command)
 {
 
 	FlushControlChannel();
@@ -487,13 +530,13 @@ unsigned int CFtpGet::SendFTPCommand(char *command)
 
 
 
-unsigned int CFtpGet::ReadFTPServerReply()
+uint CFtpGet::ReadFTPServerReply()
 {
-	unsigned int rcode;
-	unsigned int iBytesRead;
+	uint rcode;
+	int iBytesRead;
 	char chunk[2];
 	char szcode[5];
-	unsigned int igotcrlf = 0;
+	uint igotcrlf = 0;
 	memset(recv_buffer,0,1000);
 	do
 	{
@@ -540,7 +583,7 @@ unsigned int CFtpGet::ReadFTPServerReply()
 }	
 
 
-unsigned int CFtpGet::ReadDataChannel()
+uint CFtpGet::ReadDataChannel()
 {
 	char sDataBuffer[4096];		// Data-storage buffer for the data channel
 	int nBytesRecv;						// Bytes received from the data channel
@@ -585,13 +628,17 @@ void CFtpGet::FlushControlChannel()
 	TIMEVAL timeout;   	
 	char flushbuff[3];
 
-	timeout.tv_sec=0;            
-	timeout.tv_usec=0;
+	timeout.tv_sec = 0;            
+	timeout.tv_usec = 0;
 	
 	FD_ZERO(&read_fds);
-	FD_SET(m_ControlSock,&read_fds);    
-	
-	while(select(0,&read_fds,NULL,NULL,&timeout))
+	FD_SET(m_ControlSock, &read_fds);    
+
+#ifdef WIN32
+	while ( select(0, &read_fds, NULL, NULL, &timeout) )
+#else
+	while ( select(m_ControlSock+1, &read_fds, NULL, NULL, &timeout) )
+#endif
 	{
 		recv(m_ControlSock,flushbuff,1,0);
 

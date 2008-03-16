@@ -9,28 +9,28 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrInternal.h $
- * $Revision: 2.18 $
- * $Date: 2007-01-10 01:49:16 $
+ * $Revision: 2.13.2.5 $
+ * $Date: 2007-02-11 09:58:20 $
  * $Author: taylor $
  *
  * Include file for our Graphics directory
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.17  2007/01/07 13:13:39  taylor
- * cleanup various bits of obsolete or unused code
+ * Revision 2.13.2.4  2006/12/26 05:26:12  taylor
+ * remove some old stuff that we either don't use or don't need any longer
  *
- * Revision 2.16  2006/11/06 05:42:44  taylor
+ * Revision 2.13.2.3  2006/10/24 13:24:12  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
  * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
  * get rid of MAX_BUFFERS
  * make D3D vertex buffers dynamic, like OGL has already done
  *
- * Revision 2.15  2006/10/06 09:56:42  taylor
+ * Revision 2.13.2.2  2006/10/06 09:52:05  taylor
  * clean up some old software rendering stuff that we don't use any longer
  * remove grzbuffer.*, since all it did was give us 3 variables, which were moved to 2d.*
  *
- * Revision 2.14  2006/09/08 06:20:14  taylor
+ * Revision 2.13.2.1  2006/09/08 06:14:43  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
  * Revision 2.13  2006/05/27 17:07:48  taylor

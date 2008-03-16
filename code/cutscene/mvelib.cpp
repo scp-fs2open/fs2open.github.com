@@ -1,7 +1,7 @@
 /*
  * $Logfile: /Freespace2/src/cutscene/mvelib.cpp $
- * $Revision: 2.2 $
- * $Date: 2006-08-20 00:44:36 $
+ * $Revision: 2.1.2.1 $
+ * $Date: 2006-08-19 04:14:57 $
  * $Author: taylor $
  *
  * main lib for using MVEs

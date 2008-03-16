@@ -7,33 +7,24 @@
 
 /*
  * $Logfile: /Freespace2/code/globalincs/def_files.cpp $
- * $Revision: 2.26 $
- * $Date: 2007-07-24 20:17:36 $
+ * $Revision: 2.15.2.7 $
+ * $Date: 2007-07-24 20:08:29 $
  * $Author: Kazan $
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.25  2007/07/23 15:49:07  Kazan
- * copy+pasted typo, now with extra hotsauce
+ * Revision 2.15.2.6  2007/07/23 16:08:26  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
- * Revision 2.24  2007/07/23 15:35:40  Kazan
- * typo correction in autopilot.tbl
- *
- * Revision 2.23  2007/07/23 15:16:49  Kazan
- * Autopilot upgrades as described, MSVC2005 project fixes
- *
- * Revision 2.22  2007/07/15 02:45:17  Goober5000
+ * Revision 2.15.2.5  2007/07/15 02:45:48  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
  * removed my old supercap damage scaling change
  * moved Turey's truefire flag to ai_profiles
  *
- * Revision 2.21  2007/02/27 01:44:48  Goober5000
+ * Revision 2.15.2.4  2007/02/27 01:44:44  Goober5000
  * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
  *
- * Revision 2.20  2006/12/28 00:59:26  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.19  2006/07/06 21:23:20  Goober5000
+ * Revision 2.15.2.3  2006/07/06 21:23:28  Goober5000
  * add CVS headers
  * --Goober5000
  *
@@ -258,7 +249,7 @@ char *Default_shiptypes_table = "\
 #Ship types																\n\
 ""\
 $Name:					Navbuoy											\n\
-;;$Max Debris Speed:		200												\n\
+$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		10.0											\n\
 $Fog:																	\n\
@@ -273,13 +264,12 @@ $Counts for Alone:		YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-;;$Max Debris Speed:		200												\n\
+$Max Debris Speed:		200												\n\
 $FF Multiplier:			0.10											\n\
 $EMP Multiplier:		10.0											\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
-	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Accept Player Orders:	NO											\n\
 	+Auto attacks:			YES											\n\
@@ -291,13 +281,12 @@ $Name:					Escape Pod										\n\
 $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Warp Pushable:			YES												\n\
-;;$Max Debris Speed:		200												\n\
+$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		10.0											\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
-	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Actively Pursues:		( \"navbuoy\" \"sentry gun\" \"escape pod\" \"cargo\" \"support\" \"stealth\" \"fighter\" \"bomber\" \"fighter/bomber\" \"transport\" \"freighter\" \"awacs\" \"gas miner\" \"cruiser\" \"corvette\" \"capital\" \"super cap\" \"drydock\" \"knossos device\" )	\n\
@@ -305,14 +294,13 @@ $AI:																	\n\
 ""\
 $Name:					Cargo											\n\
 $Scannable:				YES												\n\
-;;$Max Debris Speed:		200												\n\
+$Max Debris Speed:		200												\n\
 $FF Multiplier:			0.10											\n\
 $EMP Multiplier:		10.0											\n\
 $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
-	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Passive docks:			( \"cargo\" )								\n\
 ""\
@@ -323,13 +311,12 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
-;;$Max Debris Speed:		200												\n\
+$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		3.5												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
-	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"dock\" \"undock\" \"waypoints\" \"waypoints once\" \"stay near ship\" \"keep safe dist\" \"stay still\" \"play dead\" )							\n\
 	+Accept Player Orders:	YES											\n\
@@ -347,13 +334,12 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-;;$Max Debris Speed:		200												\n\
+$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
-	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"waypoints\" \"waypoints once\" \"depart\" \"attack subsys\" \"attack wing\" \"guard ship\" \"disable ship\" \"disarm ship\" \"attack any\" \"ignore ship\" \"ignore ship (new)\" \"guard wing\" \"evade ship\" \"stay still\" \"play dead\" \"stay near ship\" \"keep safe dist\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -371,13 +357,12 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
-;;$Max Debris Speed:		200												\n\
+$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
-	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"waypoints\" \"waypoints once\" \"depart\" \"attack subsys\" \"attack wing\" \"guard ship\" \"disable ship\" \"disarm ship\" \"attack any\" \"ignore ship\" \"ignore ship (new)\" \"guard wing\" \"evade ship\" \"stay still\" \"play dead\" \"stay near ship\" \"keep safe dist\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -396,13 +381,12 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
-;;$Max Debris Speed:		200												\n\
+$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
-	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"waypoints\" \"waypoints once\" \"depart\" \"attack subsys\" \"attack wing\" \"guard ship\" \"disable ship\" \"disarm ship\" \"attack any\" \"ignore ship\" \"ignore ship (new)\" \"guard wing\" \"evade ship\" \"stay still\" \"play dead\" \"stay near ship\" \"keep safe dist\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -422,13 +406,12 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushable:			YES												\n\
-;;$Max Debris Speed:		200												\n\
+$Max Debris Speed:		200												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		4.0												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
-	+Disappear factor:		1.5											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"waypoints\" \"waypoints once\" \"depart\" \"attack subsys\" \"attack wing\" \"guard ship\" \"disable ship\" \"disarm ship\" \"attack any\" \"ignore ship\" \"ignore ship (new)\" \"guard wing\" \"evade ship\" \"stay still\" \"play dead\" \"stay near ship\" \"keep safe dist\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -446,14 +429,13 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-;;$Max Debris Speed:		150												\n\
+$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		2.0												\n\
 $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			500.0										\n\
-	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -473,14 +455,13 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Scannable:				YES												\n\
-;;$Max Debris Speed:		150												\n\
+$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		1.75											\n\
 $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
-	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -500,14 +481,13 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-;;$Max Debris Speed:		150												\n\
+$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.8												\n\
 $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
-	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -526,14 +506,13 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-;;$Max Debris Speed:		150												\n\
+$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		1.0												\n\
 $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
-	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -552,14 +531,13 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-;;$Max Debris Speed:		150												\n\
+$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.9												\n\
 $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
-	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -578,14 +556,13 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-;;$Max Debris Speed:		150												\n\
+$Max Debris Speed:		150												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.3333											\n\
 $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			600.0										\n\
-	+Disappear factor:		2.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"dock\" \"waypoints\" \"waypoints once\" \"depart\" \"undock\" \"stay still\" \"play dead\" \"stay near ship\" )	\n\
 	+Accept Player Orders:	YES											\n\
@@ -605,14 +582,13 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushes:			YES												\n\
-;;$Max Debris Speed:		100												\n\
+$Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.2												\n\
 $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			750.0										\n\
-	+Disappear factor:		3.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"waypoints\" \"waypoints once\" \"depart\" \"stay still\" \"play dead\" \"stay near ship\" )						\n\
 	+Accept Player Orders:	YES											\n\
@@ -632,14 +608,13 @@ $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
 $Warp Pushes:			YES												\n\
-;;$Max Debris Speed:		100												\n\
+$Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.075											\n\
 $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			1000.0										\n\
-	+Disappear factor:		3.0											\n\
 $AI:																	\n\
 	+Valid goals:			( \"fly to ship\" \"attack ship\" \"attack wing\" \"waypoints\" \"waypoints once\" \"depart\" \"stay still\" \"play dead\" \"stay near ship\" )						\n\
 	+Auto attacks:			YES											\n\
@@ -656,14 +631,13 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-;;$Max Debris Speed:		100												\n\
+$Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.5												\n\
 $Beams Easily Hit:		YES												\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			750.0										\n\
-	+Disappear factor:		3.0											\n\
 $AI:																	\n\
 	+Accept Player Orders:	YES											\n\
 	+Auto attacks:			YES											\n\
@@ -679,13 +653,12 @@ $Praise Destruction:	YES												\n\
 $On Hotkey List:		YES												\n\
 $Target as Threat:		YES												\n\
 $Show Attack Direction:	YES												\n\
-;;$Max Debris Speed:		100												\n\
+$Max Debris Speed:		100												\n\
 $FF Multiplier:			1.0												\n\
 $EMP Multiplier:		0.10											\n\
 $Fog:																	\n\
 	+Start dist:			10.0										\n\
 	+Compl dist:			1000.0										\n\
-	+Disappear factor:		3.0											\n\
 $AI:																	\n\
 	+Auto attacks:			YES											\n\
 	+Attempt Broadside:		YES											\n\

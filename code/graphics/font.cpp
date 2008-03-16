@@ -9,29 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Font.cpp $
- * $Revision: 2.21 $
- * $Date: 2007-11-23 23:49:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.15.2.4 $
+ * $Date: 2006-12-26 05:26:12 $
+ * $Author: taylor $
  *
  * source file for font stuff
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.20  2007/01/07 13:13:38  taylor
- * cleanup various bits of obsolete or unused code
- *
- * Revision 2.19  2006/12/28 00:59:26  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.18  2006/09/11 06:45:39  taylor
+ * Revision 2.15.2.3  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
- * Revision 2.17  2006/09/11 06:36:38  taylor
+ * Revision 2.15.2.2  2006/08/22 05:41:35  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
  * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
  *
- * Revision 2.16  2006/06/27 05:07:48  taylor
- * fix various compiler warnings and things that Valgrind complained about
+ * Revision 2.15.2.1  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
  *
  * Revision 2.15  2005/10/30 06:44:57  wmcoolmon
  * Codebase commit - nebula.tbl, scripting, new dinky explosion/shockwave stuff, moving muzzle flashes
@@ -315,8 +309,8 @@
 #include "io/key.h"
 #include "bmpman/bmpman.h"
 #include "localization/localize.h"
+#include "parse/parselo.h"
 #include "globalincs/systemvars.h"
-#include "parse/parselo.h"	//For strextcmp
 
 
 
@@ -858,15 +852,15 @@ int gr_create_font(char * typeface)
 	if ( fontnum==MAX_FONTS )	{
 		Error( LOCATION, "Too many fonts!\nSee John, or change MAX_FONTS in Graphics\\Font.h\n" );
 	}
+
+	if ( fontnum == Num_fonts )	{
+		Num_fonts++;
+	}
 	
 	bool localize = true;
 
 	fp = cfopen( typeface, "rb", CFILE_NORMAL, CF_TYPE_ANY, localize );
 	if ( fp == NULL ) return -1;
-
-	if ( fontnum == Num_fonts )	{
-		Num_fonts++;
-	}
 
 	strncpy( fnt->filename, typeface, MAX_FILENAME_LEN );
 	cfread( &fnt->id, 4, 1, fp );
@@ -999,7 +993,6 @@ void gr_set_font(int fontnum)
 
 void gr_font_init()
 {
-	mprintf(("GRAPHICS: Initializing default fonts...\n"));
 	gr_init_font( NOX("font01.vf") );
 	gr_init_font( NOX("font02.vf") );
 	gr_init_font( NOX("font03.vf") );
@@ -1013,9 +1006,7 @@ int gr_init_font(char * typeface)
 
 	Loaded_fontnum = gr_create_font(typeface);
 
-	//WMC - Handle failure
-	if(Loaded_fontnum < 0)
-		return -1;
+	Assert( Loaded_fontnum > -1 );
 
 	gr_set_font( Loaded_fontnum );
 

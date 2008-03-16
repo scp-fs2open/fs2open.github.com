@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/localization/fhash.cpp $
- * $Revision: 2.5 $
- * $Date: 2007-07-28 00:37:38 $
+ * $Revision: 2.4.2.1 $
+ * $Date: 2007-07-28 00:37:35 $
  * $Author: Goober5000 $
  *
  *

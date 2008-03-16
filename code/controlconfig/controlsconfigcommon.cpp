@@ -9,29 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/ControlConfig/ControlsConfigCommon.cpp $
- * $Revision: 2.20 $
- * $Date: 2007-12-22 09:36:16 $
+ * $Revision: 2.14.2.2 $
+ * $Date: 2007-12-28 02:10:35 $
  * $Author: Backslash $
  *
  * C module for keyboard, joystick and mouse configuration common stuff (between Fred and FreeSpace)
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.19  2007/06/04 00:04:21  Backslash
- * Backslash's HEAD-only controls commit:
- * -Lateral thruster axes
- * -Slide_when_pressed
- * -Placeholders for glide_when_pressed and more controls, to give us a little breathing room while we wait for the real pilot file code
- *
- * Revision 2.18  2006/08/01 04:26:02  Kazan
- * commented out glide_while_pressed changes until taylor deems them safe
- *
- * Revision 2.17  2006/08/01 01:56:44  Goober5000
- * proper phrase case
- *
- * Revision 2.16  2006/07/31 23:57:48  Kazan
- * glide while pressed
- *
- * Revision 2.15  2006/07/20 01:51:17  Goober5000
+ * Revision 2.14.2.1  2006/07/20 01:51:20  Goober5000
  * tweak control text
  * --Goober5000
  *
@@ -462,8 +447,8 @@ int Alt_is_modifier;
 
 int Axis_enabled[JOY_NUM_AXES] = { 1, 1, 1, 0, 0, 0 };
 int Axis_enabled_defaults[JOY_NUM_AXES] = { 1, 1, 1, 0, 0, 0 };
-int Invert_axis[NUM_JOY_AXIS_ACTIONS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-int Invert_axis_defaults[NUM_JOY_AXIS_ACTIONS] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int Invert_axis[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
+int Invert_axis_defaults[JOY_NUM_AXES] = { 0, 0, 0, 0, 0, 0 };
 
 // arrays which hold the key mappings.  The array index represents a key-independent action.
 //
@@ -539,7 +524,7 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{                           KEY_PADMULTIPLY,	-1, COMPUTER_TAB,	true, "Chase View" },
 	{                           KEY_PADPERIOD,		-1, COMPUTER_TAB,	true, "External View"},
 	{                           KEY_PADENTER,		-1, COMPUTER_TAB,	true, "Toggle External Camera Lock"},
-	{                           KEY_PAD0,			-1, COMPUTER_TAB,	true, "Free Look View" }, // (Swifty) No longer used
+	{                           KEY_PAD0,			-1, COMPUTER_TAB,	true, "Free Look View", CC_TYPE_CONTINUOUS }, // Not in use anymore (Swifty)
 	{                           KEY_PADDIVIDE,		-1, COMPUTER_TAB,	true, "Current Target View" },
 	{                           KEY_PADPLUS,		-1, COMPUTER_TAB,	true, "Increase View Distance", CC_TYPE_CONTINUOUS },
 	{                           KEY_PADMINUS,		-1, COMPUTER_TAB,	true, "Decrease View Distance", CC_TYPE_CONTINUOUS },
@@ -573,8 +558,8 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{             KEY_SHIFTED | KEY_SCROLLOCK,	-1, COMPUTER_TAB,	true, "Transfer Energy Shield->Laser" },
 //	{                           -1,					-1, -1,				true, "Show Damage Popup Window" },	
 
-	{							-1,					-1, SHIP_TAB,		false, "Slide When Pressed", CC_TYPE_CONTINUOUS },
-//Backslash -- this was a convenient place for Slide When Pressed, as Show Damage Popup isn't used
+	{							-1,					-1, SHIP_TAB,		false, "Glide When Pressed", CC_TYPE_CONTINUOUS },
+//Backslash -- this was a convenient place for Glide When Pressed, as Show Damage Popup isn't used
 	{                           -1,					-1, SHIP_TAB,		true, "Bank When Pressed", CC_TYPE_CONTINUOUS },
 	{									 -1,					-1, -1,				true, "Show Nav Map" },
 	{ KEY_ALTED |	             KEY_E,				-1, COMPUTER_TAB,	true, "Add or Remove Escort" },
@@ -597,12 +582,9 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{									 KEY_3,				-1, COMPUTER_TAB, true, "(Multiplayer) Message Hostile", CC_TYPE_CONTINUOUS },
 	{									 KEY_4,				-1, COMPUTER_TAB, true, "(Multiplayer) Message Target", CC_TYPE_CONTINUOUS },
 	{ KEY_ALTED	|					 KEY_X,				-1, COMPUTER_TAB, true, "(Multiplayer) Observer Zoom to Target"},	
-
 	{             KEY_SHIFTED | KEY_PERIOD,		-1, COMPUTER_TAB,	true, "Increase Time Compression" },
 	{             KEY_SHIFTED | KEY_COMMA,			-1, COMPUTER_TAB,	true, "Decrease Time Compression" },
-
 	{									 KEY_L,				-1, COMPUTER_TAB, true, "Toggle High HUD Contrast" },	
-
 	{				  KEY_SHIFTED | KEY_N,				-1, COMPUTER_TAB, true, "(Multiplayer) Toggle Network Info"},
 	{				  KEY_SHIFTED | KEY_END,			-1, COMPUTER_TAB, true, "(Multiplayer) Self Destruct"},
 
@@ -615,25 +597,10 @@ config_item Control_config[CCFG_MAX + 1] = {
 	{ KEY_ALTED |     KEY_SHIFTED | KEY_Q,			-1, COMPUTER_TAB, true, "Toggle HUD Wireframe Target View"},
 	{							-1,					-1,	COMPUTER_TAB, false, "Top-Down View"},
 	{							-1,					-1, COMPUTER_TAB, false, "Target Padlock View"}, // (Swifty) Toggle for VM_TRACK
-
 	// Auto Navigation Systen
 	{ KEY_ALTED |					KEY_A,			-1, COMPUTER_TAB, false, "Toggle Auto Pilot"},
 	{ KEY_ALTED |					KEY_N,			-1, COMPUTER_TAB, false, "Cycle Nav Points"},
-	
 	{ KEY_ALTED |					KEY_G,			-1, SHIP_TAB, false, "Toggle Gliding"},
-	{									-1,			-1, SHIP_TAB, false, "Glide When Pressed", CC_TYPE_CONTINUOUS},
- 	// (Swifty) The four new free looking commands.
- 	{							-1,					-1,	COMPUTER_TAB, false, "Free Look Up", CC_TYPE_CONTINUOUS},
- 	{							-1,					-1,	COMPUTER_TAB, false, "Free Look Down", CC_TYPE_CONTINUOUS},
- 	{							-1,					-1,	COMPUTER_TAB, false, "Free Look Left", CC_TYPE_CONTINUOUS},
- 	{							-1,					-1,	COMPUTER_TAB, false, "Free Look Right", CC_TYPE_CONTINUOUS},
-
-	{                           -1,					-1, -1,				false, "MultiTarget Wing" },
-	{                           -1,					-1, -1,				false, "Placeholder" },
-	{                           -1,					-1, -1,				false, "Placeholder" },
-	{                           -1,					-1, -1,				false, "Placeholder" },
-	{                           -1,					-1, -1,				false, "Placeholder" },
-
 	{                           -1,					-1, -1,			 false,	"" }
 };
 

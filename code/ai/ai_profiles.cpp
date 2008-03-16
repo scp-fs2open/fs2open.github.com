@@ -6,39 +6,37 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.cpp $
- * $Revision: 1.22 $
- * $Date: 2007-09-02 02:10:23 $
- * $Author: Goober5000 $
+ * $Revision: 1.13.2.9 $
+ * $Date: 2007-10-15 06:43:08 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.21  2007/07/19 03:19:32  turey
- * Made Backslash's change to dampening tied to an ai_profiles flag, as it does affect
- *  retail behavior, and significantly affects gameplay in the BtRL Demo.
- * Also, fixed a typo.
+ * Revision 1.13.2.8  2007/09/02 02:07:37  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 1.20  2007/07/15 02:45:17  Goober5000
+ * Revision 1.13.2.7  2007/07/28 22:04:13  Goober5000
+ * apply some of Turey's changes to stable branch
+ *
+ * Revision 1.13.2.6  2007/07/15 02:45:48  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
  * removed my old supercap damage scaling change
  * moved Turey's truefire flag to ai_profiles
  *
- * Revision 1.19  2007/02/27 01:44:48  Goober5000
+ * Revision 1.13.2.5  2007/02/27 01:44:44  Goober5000
  * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
  *
- * Revision 1.18  2006/12/28 00:59:18  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.17  2006/09/11 06:49:38  taylor
+ * Revision 1.13.2.4  2006/09/11 01:15:03  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 1.16  2006/07/12 04:59:03  taylor
+ * Revision 1.13.2.3  2006/07/12 04:57:20  taylor
  * fix the endless-loop fix ;)  (this is what broke shield recharging btw)
  *
- * Revision 1.15  2006/07/06 18:19:59  Goober5000
+ * Revision 1.13.2.2  2006/07/06 18:19:55  Goober5000
  * fix dumb endless loop bug
  * --Goober5000
  *
- * Revision 1.14  2006/07/02 03:39:55  Goober5000
+ * Revision 1.13.2.1  2006/07/02 03:39:34  Goober5000
  * remove associated AI flags
  * --Goober5000
  *
@@ -353,6 +351,10 @@ void parse_ai_profiles_tbl(char *filename)
 	}
 	
 	required_string("#End");
+
+	// add tbl/tbm to multiplayer validation list
+	extern void fs2netd_add_table_validation(char *tblname);
+	fs2netd_add_table_validation(filename);
 
 	// close localization
 	lcl_ext_close();

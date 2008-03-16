@@ -50,8 +50,6 @@ public:
 	CButton	m_cargo_known;
 	CButton	m_special_warp;
 	CButton	m_disable_messages;
-	CButton	m_set_class_dynamically;
-	CButton	m_team_loadout_store_status;
 	CButton m_no_death_scream;
 	CButton m_always_death_scream;
 	CButton m_guardian;
@@ -102,8 +100,6 @@ protected:
 	afx_msg void OnRedalertcarry();
 	afx_msg void OnToggleSubsystemScanning();
 	afx_msg void OnDisableBuiltinShip();
-	afx_msg void OnSetClassDynamically();
-	afx_msg void OnTeamLoadoutStoreStatus();
 	afx_msg void OnNoDeathScream();
 	afx_msg void OnAlwaysDeathScream();
 	afx_msg void OnGuardian();

@@ -9,35 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radarorb.cpp $
- * $Revision: 1.30 $
- * $Date: 2008-01-19 00:27:43 $
+ * $Revision: 1.23.2.4 $
+ * $Date: 2008-01-19 00:27:10 $
  * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the "orb" radar mode
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.29  2007/08/17 03:29:46  Goober5000
+ * Revision 1.23.2.3  2007/08/17 03:29:51  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
- * Revision 1.28  2007/02/11 09:20:00  taylor
+ * Revision 1.23.2.2  2007/02/11 09:12:12  taylor
  * little bit of cleanup
  * more fixage for hidden jumpnodes (Mantis #1149)
  *
- * Revision 1.27  2007/01/31 02:00:21  phreak
- * memset() does not go array, length, value
- * it goes the other way around
- *
- * Revision 1.26  2007/01/08 00:50:59  Goober5000
- * remove WMC's limbo code, per our discussion a few months ago
- * this will later be handled by copying ship stats using sexps or scripts
- *
- * Revision 1.25  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
- * Revision 1.24  2006/06/07 04:44:57  wmcoolmon
- * Limbo flag support
+ * Revision 1.23.2.1  2007/02/10 00:16:57  taylor
+ * phreak missed fixing this here when he fixed it in unstable
  *
  * Revision 1.23  2006/04/12 22:23:41  taylor
  * compiler warning fixes to make GCC 4.1 shut the hell up
@@ -222,9 +209,9 @@ void radar_init_orb()
 		}
 	}
 
-	memset(orb_ring_xy,0,25*sizeof(vec3d));
-	memset(orb_ring_yz,0,25*sizeof(vec3d));
-	memset(orb_ring_xz,0,25*sizeof(vec3d));
+	memset(orb_ring_xy, 0, sizeof(orb_ring_xy));
+	memset(orb_ring_yz, 0, sizeof(orb_ring_yz));
+	memset(orb_ring_xz, 0, sizeof(orb_ring_yz));
 	
 	for (i=0; i < 25; i++)
 	{
@@ -345,15 +332,16 @@ void radar_plot_object_orb( object *objp )
 	switch (objp->type)
 	{
 		case OBJ_SHIP:
-			// Place to cull ships, such as NavBuoys
+			// Place to cull ships, such as NavBuoys		
 			break;
-
+		
 		case OBJ_JUMP_NODE:
 		{
 			// don't plot hidden jump nodes
 			if ( objp->jnp->is_hidden() )
 				return;
 
+			// filter jump nodes here if required
 			break;
 		}
 
@@ -367,7 +355,7 @@ void radar_plot_object_orb( object *objp )
 			if ( !iff_x_attacks_y(Player_ship->team, obj_team(objp)) )
 				return;
 
-			//if a local ssm is in subspace, return
+			// if a local ssm is in subspace, return
 			if (Weapons[objp->instance].lssm_stage == 3)
 				return;
 

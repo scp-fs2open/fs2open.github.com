@@ -9,73 +9,87 @@
 
 /*
  * $Logfile: /Freespace2/code/Cmdline/cmdline.cpp $
- * $Revision: 2.158 $
- * $Date: 2008-01-19 00:27:41 $
+ * $Revision: 2.140.2.23 $
+ * $Date: 2008-01-19 00:27:06 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.157  2007/08/17 03:29:44  Goober5000
+ * Revision 2.140.2.22  2008/01/08 01:41:13  Kazan
+ * add chat/pxo files to MSVC 2005 project
+ * Fix the autopilot cinematic wiggle, hopefully once and for all (every tick force all nav carry ship orientation and wing'ed-ship positions)
+ *
+ * Revision 2.140.2.21  2007/10/15 06:43:08  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
+ * Revision 2.140.2.20  2007/08/17 03:29:48  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
- * Revision 2.156  2007/07/29 03:11:01  Goober5000
+ * Revision 2.140.2.19  2007/07/29 03:10:59  Goober5000
  * allow embedded dashes in command-line options
  *
- * Revision 2.155  2007/06/24 18:04:23  karajorma
+ * Revision 2.140.2.18  2007/06/24 17:59:17  karajorma
  * Fix an issue with single character command line arguments
  *
- * Revision 2.154  2007/05/28 19:46:30  taylor
+ * Revision 2.140.2.17  2007/05/28 19:46:15  taylor
  * oops!  the exit() was supposed to come /after/ the last printf() :)
  *
- * Revision 2.153  2007/05/25 13:58:02  taylor
+ * Revision 2.140.2.16  2007/05/25 13:47:10  taylor
  * make Linux just verbally ignore invalid cmdline options rather than it being fatal
  *
- * Revision 2.152  2007/04/17 17:26:35  karajorma
+ * Revision 2.140.2.15  2007/04/17 17:15:31  karajorma
  * Remove the -fredhtl command line.
  *
- * Revision 2.151  2007/04/11 18:24:27  taylor
- * cleanup of chksum stuff (works properly on 64-bit systems now)
+ * Revision 2.140.2.14  2007/04/11 18:23:01  taylor
+ * this got chopped off of the previous commit for some reason
+ *
+ * Revision 2.140.2.13  2007/04/11 18:21:21  taylor
+ * cleanup of chcksum stuff (works properly on 64-bit systems now)
  * add chksum support for VPs, both a startup in debug builds, and via cmdline option (-verify_vps)
  * little cleanup in cmdline.cpp (get rid of the remaining "fix bugs" crap)
  *
- * Revision 2.150  2007/03/22 20:55:53  taylor
+ * Revision 2.140.2.12  2007/04/06 12:55:36  karajorma
+ * Add the -cap_object_update command line to force multiplayer clients to a more server friendly object update setting.
+ *
+ * Revision 2.140.2.11  2007/03/22 20:55:36  taylor
  * forgot to remove -jpgtga from Launcher options previously
  * get rid of -fixbugs and -nocrash crap
  *
- * Revision 2.149  2007/01/10 01:40:43  taylor
- * little bit of cleanup
- * per earlier discussions: remove -jpgtga and -pcx32
+ * Revision 2.140.2.10  2007/02/11 09:24:08  taylor
+ * remove -pcx32 and -jpgtga
  *
- * Revision 2.148  2006/11/16 00:50:00  taylor
+ * Revision 2.140.2.9  2006/11/15 00:21:40  taylor
  * clean up some cmdline options which were/weren't FSO only
  * add back the "-32bit" option, for retail compatibility (doesn't do anything, it's just there to avoid the unknown option message)
  * add "-debug_window" to turn on the Windows-only extra debug output window (it's off by default now, only logging to file instead)
  *
- * Revision 2.147  2006/09/11 05:31:11  taylor
- * minor spelling/grammer fixes
- *
- * Revision 2.146  2006/09/08 06:20:14  taylor
+ * Revision 2.140.2.8  2006/09/08 06:14:43  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
- * Revision 2.145  2006/07/28 02:37:08  taylor
+ * Revision 2.140.2.7  2006/08/22 05:42:56  taylor
+ * minor spelling/grammer fixes
+ *
+ * Revision 2.140.2.6  2006/07/28 02:44:40  taylor
  * switch from Assert() to basic error fixage for end-of-string white space check
  *
- * Revision 2.144  2006/07/25 16:26:24  taylor
+ * Revision 2.140.2.5  2006/07/25 16:25:11  taylor
  * support for cmdline option stacking (a per option setting) so that things like "-mod derelict -mod mediavp" will end up as "-mod derelict,mediavp" to the game
  * fix bug where white space chars didn't get dropped from the end of a option string like they were supposed to
  * allow for something like "-ambient_factor 100 -ambient_factor 70" to use the proper value, the last one specified, rather than just accept the first instance
  *
- * Revision 2.143  2006/07/08 18:11:33  taylor
+ * Revision 2.140.2.4  2006/07/08 18:09:41  taylor
  * remove -allslev
  * make CTRL-SHIFT-S hotkey work in mission simulator (it's a toggle, so you can turn it on or off while on the screen)
  * fix a bug where blank lines would show up in the campaign list for branch/alternate type missions that are otherwise marked as not completed
  *
- * Revision 2.142  2006/06/27 04:55:53  taylor
- * add -disable_fbo to troubleshoot crappy ATI drivers
- * remove the temporary -alpha_alpha_blend option
- * tack on an extra byte to the flags.lch file so that the launcher can easily detect if it's an OpenAL build or not
+ * Revision 2.140.2.3  2006/06/18 17:21:49  taylor
+ * add a -disable_fbo troubleshooting option for those ATI users having trouble with FBOs, but can still use envmapping otherwise
  *
- * Revision 2.141  2006/06/15 00:37:11  taylor
+ * Revision 2.140.2.2  2006/06/15 00:16:23  taylor
  * remove previous attempts at the Y bug fix, it's now back to the retail code for that
+ *
+ * Revision 2.140.2.1  2006/06/12 03:34:18  taylor
+ * remove temporary cmdline options (-spec_scale, -env_scale, -alpha_alpha_blend)
+ * tack on an extra byte to the flags.lch file so that the launcher can easily detect if it's an OpenAL build or not
  *
  * Revision 2.140  2006/05/27 17:18:56  taylor
  * d'oh!  that was supposed to be off by default!
@@ -876,7 +890,6 @@
 #include "parse/sexp.h"
 #include "globalincs/version.h"
 #include "globalincs/pstypes.h"
-#include "camera/camera.h"	//VIEWER_ZOOM_DEFAULT
 
 #ifdef _WIN32
 #include <direct.h>
@@ -916,6 +929,7 @@ static cmdline_parm Parm_list(NULL, NULL);
 static int Parm_list_inited = 0;
 
 
+extern float VIEWER_ZOOM_DEFAULT;
 extern float Viewer_zoom;
 extern int Show_framerate;	// from freespace.cpp
 
@@ -990,6 +1004,7 @@ Flag exe_params[] =
 	{ "-ship_choice_3d",	"Use models for ship selection",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-ship_choice_3d", },
 	{ "-3dwarp",			"Enable 3d warp",							true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
 	{ "-warp_flash",		"Enable flash upon warp",					true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
+	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
 	{ "-tbp",				"Toggle features for The Babylon Project",	true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-tbp", }, // TBP warp effects -Et1
 	{ "-wcsaga",			"Toggle features for Wing Commander Saga",	true,	0,					EASY_DEFAULT,		"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-wcsaga", },
 
@@ -997,13 +1012,13 @@ Flag exe_params[] =
 	{ "-nosound",			"Disable sound and music",					false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
 	{ "-nomusic",			"Disable music",							false,	0,					EASY_DEFAULT,		"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomusic", },
 
-	{ "-standalone",		"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
-	{ "-startgame",			"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
-	{ "-closed",			"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-closed", },
-	{ "-restricted",		"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-restricted", },
-	{ "-multilog",			"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-multilog", },
-	{ "-clientdamage",		"",											false,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
-	{ "-mpnoreturn",		"Disables flight deck option",				true,	0,					EASY_DEFAULT,		"Multi",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
+	{ "-standalone",		"Run as Stand Alone Server",				false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-standalone", },
+	{ "-startgame",			"Skip mainhall and start hosting",			false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-startgame", },
+	{ "-closed",			"Start hosted server as closed",			false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-closed", },
+	{ "-restricted",		"Host confirms join requests",				false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-restricted", },
+	{ "-multilog",			"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-multilog", },
+	{ "-clientdamage",		"",											false,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-clientdamage", },
+	{ "-mpnoreturn",		"Disables flight deck option",				true,	0,					EASY_DEFAULT,		"Multiplayer",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-mpnoreturn", },
 
 	{ "-oldfire",			"",											false,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-oldfire", },
 	{ "-nohtl",				"Software mode (very slow)",				true,	0,					EASY_DEFAULT,		"Troubleshoot",	"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nohtl", },
@@ -1025,6 +1040,7 @@ Flag exe_params[] =
 	{ "-fps",				"Show frames per second on HUD",			false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fps", },
 	{ "-pos",				"Show position of camera",					false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-pos", },
 	{ "-window",			"Run in window",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-window", },
+	{ "-res",				"Run at specified resolution",				true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-res", },
 	{ "-timerbar",			"",											true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-timerbar", },
 	{ "-stats",				"Show statistics",							true,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stats", },
 	{ "-coords",			"Show coordinates",							false,	0,					EASY_DEFAULT,		"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-coords", },
@@ -1112,14 +1128,10 @@ cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL); // Cmdline_nomotiondeb
 cmdline_parm noscalevid_arg("-noscalevid", NULL);	// Cmdline_noscalevid  -- disable video scaling that fits to window
 cmdline_parm spec_arg("-spec", NULL);				// Cmdline_nospec  -- use specular highlighting -Sticks
 cmdline_parm noemissive_arg("-no_emissive_light", NULL);		// Cmdline_no_emissive  -- don't use emissive light in OGL
-cmdline_parm spec_scale_arg("-spec_scale", NULL);	// Cmdline_spec_scale -- TEMPORARY - REMOVEME!!!
-cmdline_parm env_scale_arg("-env_scale", NULL);		// Cmdline_env_scale -- TEMPORARY - REMOVEME!!!
 
 float Cmdline_clip_dist = Default_min_draw_distance;
 float Cmdline_fov = 0.75f;
 float Cmdline_ogl_spec = 80.0f;
-float Cmdline_spec_scale = 1.0f; // TEMPORARY - REMOVEME!!!
-float Cmdline_env_scale = 2.0f; // TEMPORARY - REMOVEME!!!
 int Cmdline_2d_poof = 0;
 int Cmdline_alpha_env = 0;
 int Cmdline_ambient_factor = 128;
@@ -1162,10 +1174,12 @@ int Cmdline_targetinfo = 0;
 cmdline_parm use_3dwarp("-3dwarp", NULL);			// Cmdline_3dwarp
 cmdline_parm ship_choice_3d_arg("-ship_choice_3d", NULL);	// Cmdline_ship_choice_3d
 cmdline_parm use_warp_flash("-warp_flash", NULL);	// Cmdline_warp_flash
+cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", NULL);	// Cmdline_warp_flash
 
 int Cmdline_3dwarp = 0;
 int Cmdline_ship_choice_3d = 0;
 int Cmdline_warp_flash = 0;
+int Cmdline_autopilot_interruptable = 1;
 
 // Audio related
 cmdline_parm query_speech_arg("-query_speech", NULL);	// Cmdline_query_speech
@@ -1189,14 +1203,16 @@ int Cmdline_wcsaga = 0;
 cmdline_parm almission_arg("-almission", NULL);		// Cmdline_almission  -- DTP for autoload Multi mission
 cmdline_parm ingamejoin_arg("-ingame_join", NULL);	// Cmdline_ingamejoin
 cmdline_parm mpnoreturn_arg("-mpnoreturn", NULL);	// Cmdline_mpnoreturn  -- Removes 'Return to Flight Deck' in respawn dialog -C
-cmdline_parm MissionCRCs("-missioncrcs", NULL);		// Cmdline_SpewMission_CRCs
-cmdline_parm TableCRCs("-tablecrcs", NULL);			// Cmdline_SpewTable_CRCs
+cmdline_parm missioncrcspew_arg("-missioncrcs", NULL);		// Cmdline_spew_mission_crcs
+cmdline_parm tablecrcspew_arg("-tablecrcs", NULL);			// Cmdline_spew_table_crcs
+cmdline_parm objupd_arg("-cap_object_update", NULL);
 
 char *Cmdline_almission = NULL;	//DTP for autoload multi mission.
 int Cmdline_ingamejoin = 0;
 int Cmdline_mpnoreturn = 0;
-int Cmdline_SpewMission_CRCs = 0; // Kazan for making valid mission lists
-int Cmdline_SpewTable_CRCs = 0;
+char *Cmdline_spew_mission_crcs = NULL;
+char *Cmdline_spew_table_crcs = NULL;
+int Cmdline_objupd = 3;		// client object updates on LAN by default
 
 // Troubleshooting
 cmdline_parm d3d_lesstmem_arg("-d3d_bad_tsys", NULL);	// Cmdline_d3d_lesstmem
@@ -1236,7 +1252,8 @@ cmdline_parm stats_arg("-stats", NULL);				// Cmdline_show_stats
 cmdline_parm timerbar_arg("-timerbar", NULL);		// Cmdline_timerbar
 cmdline_parm save_render_targets_arg("-save_render_target", NULL);	// Cmdline_save_render_targets
 cmdline_parm debug_window_arg("-debug_window", NULL);	// Cmdline_debug_window
-cmdline_parm window("-window", NULL);				// Cmdline_window
+cmdline_parm window_arg("-window", NULL);				// Cmdline_window
+cmdline_parm res_arg("-res", NULL);					// Cmdline_lores
 #ifdef SCP_UNIX
 cmdline_parm no_grab("-nograb", NULL);				// Cmdline_no_grab
 #endif
@@ -1253,6 +1270,7 @@ int Cmdline_timerbar = 0;
 int Cmdline_save_render_targets = 0;
 int Cmdline_debug_window = 0;
 int Cmdline_window = 0;
+char *Cmdline_res = 0;
 #ifdef SCP_UNIX
 int Cmdline_no_grab = 0;
 #endif
@@ -1764,17 +1782,40 @@ bool SetCmdlineParams()
 		Cmdline_timerbar = 1;
 	}
 
-	if (MissionCRCs.found()) {
-		Cmdline_SpewMission_CRCs = 1;
-	}
+	if ( missioncrcspew_arg.found() ) {
+		Cmdline_spew_mission_crcs = missioncrcspew_arg.str();
 
-	if (TableCRCs.found()) {
-		Cmdline_SpewTable_CRCs = 1;
-	}
+		// strip off blank space at end if it's there
+		if ( Cmdline_spew_mission_crcs[strlen(Cmdline_spew_mission_crcs)-1] == ' ' ) {
+			Cmdline_spew_mission_crcs[strlen(Cmdline_spew_mission_crcs)-1] = '\0';
+		}
+ 	}
+ 
+	if ( tablecrcspew_arg.found() ) {
+		Cmdline_spew_table_crcs = tablecrcspew_arg.str();
+
+		// strip off blank space at end if it's there
+		if ( Cmdline_spew_table_crcs[strlen(Cmdline_spew_table_crcs)-1] == ' ' ) {
+			Cmdline_spew_table_crcs[strlen(Cmdline_spew_table_crcs)-1] = '\0';
+		}
+ 	}
 
 	// is this a standalone server??
 	if (standalone_arg.found()) {
 		Is_standalone = 1;
+	}
+
+	// object update control
+	if(objupd_arg.found()){
+		Cmdline_objupd = objupd_arg.get_int();
+		if (Cmdline_objupd < 0)
+		{
+			Cmdline_objupd = 0;
+		}
+		if (Cmdline_objupd > 3)
+		{
+			Cmdline_objupd = 3;
+		}
 	}
 
 	if(mpnoreturn_arg.found()) {
@@ -1879,8 +1920,11 @@ bool SetCmdlineParams()
 	}
 
 	// d3d windowed
-	if(window.found()){
+	if(window_arg.found()){
 		Cmdline_window = 1;
+	}
+	if(res_arg.found()){
+		Cmdline_res = res_arg.str();
 	}
 	if(almission_arg.found()){//DTP for autoload mission // developer oritentated
 		Cmdline_almission = almission_arg.str();
@@ -1997,38 +2041,9 @@ bool SetCmdlineParams()
 		Cmdline_warp_flash = 1;
 	}
 
-	// TEMPORARY - REMOVEME!!!
-	if ( spec_scale_arg.found() ) {
-		Cmdline_spec_scale = spec_scale_arg.get_float();
-
-		if (Cmdline_spec_scale != 1.0f && Cmdline_spec_scale != 2.0f && Cmdline_spec_scale != 4.0f) {
-			if (Cmdline_spec_scale < 1.0f)
-				Cmdline_spec_scale = 1.0f;
-			else if (Cmdline_spec_scale >= 3.0f)
-				Cmdline_spec_scale = 4.0f;
-			else if (Cmdline_spec_scale < 2.0f)
-				Cmdline_spec_scale = 2.0f;
-			else if (Cmdline_spec_scale > 2.0f)
-				Cmdline_spec_scale = 2.0f;
-		}
+	if ( allow_autpilot_interrupt.found() )	{
+		Cmdline_autopilot_interruptable = 0;
 	}
-
-	// TEMPORARY - REMOVEME!!!
-	if ( env_scale_arg.found() ) {
-		Cmdline_env_scale = env_scale_arg.get_float();
-
-		if (Cmdline_env_scale != 1.0f && Cmdline_env_scale != 2.0f && Cmdline_env_scale != 4.0f) {
-			if (Cmdline_env_scale < 1.0f)
-				Cmdline_env_scale = 1.0f;
-			else if (Cmdline_env_scale >= 3.0f)
-				Cmdline_env_scale = 4.0f;
-			else if (Cmdline_env_scale < 2.0f)
-				Cmdline_env_scale = 2.0f;
-			else if (Cmdline_env_scale > 2.0f)
-				Cmdline_env_scale = 2.0f;
-		}
-	}
-
 	// specular comand lines
 	if ( spec_exp_arg.found() ) {
 		specular_exponent_value = spec_exp_arg.get_float();

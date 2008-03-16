@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/dscap.cpp $
- * $Revision: 2.6 $
- * $Date: 2006-04-20 06:32:30 $
- * $Author: Goober5000 $
+ * $Revision: 2.6.2.1 $
+ * $Date: 2007-10-29 15:32:19 $
+ * $Author: taylor $
  *
  * C module for DirectSoundCapture code
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6  2006/04/20 06:32:30  Goober5000
+ * proper capitalization according to Volition
+ *
  * Revision 2.5  2005/04/05 11:48:23  taylor
  * remove acm-unix.cpp, replaced by acm-openal.cpp since it's properly cross-platform now
  * better error handling for OpenAL functions
@@ -85,15 +88,20 @@
  */
 
 
+#ifndef SCP_UNIX
+
 #ifndef USE_OPENAL
+#error This code has been modified to work only with OpenAL builds!
+#endif
 
 #include "globalincs/pstypes.h"
 #include "sound/ds.h"
 #include "sound/dscap.h"
+#include "directx/vdsound.h"
 
 
 
-int dscap_inited=0;						// flag to indicate that DirectSoundCapture inited ok
+int dscap_inited = 0;						// flag to indicate that DirectSoundCapture inited ok
 int dscap_recording;						// flag to indicate that sound is being recorded
 
 static LPDIRECTSOUNDCAPTURE			pDSC;		// global capture interface
@@ -102,6 +110,10 @@ static LPDIRECTSOUNDCAPTUREBUFFER	pDSCB;	// global capture buffer
 static WAVEFORMATEX	Dscap_wfx;
 
 static unsigned long Dscap_last_capture_offset;	
+
+HINSTANCE Dscap_dll_handle = NULL;
+
+HRESULT (__stdcall *pfn_DirectSoundCaptureCreate)(LPGUID lpGUID, LPDIRECTSOUNDCAPTURE *lplpDSC, LPUNKNOWN pUnkOuter);
 
 // init the DirectSoundCapture system
 // exit:	0	->		success
@@ -113,6 +125,16 @@ int dscap_init()
 	if ( dscap_inited ) {
 		return 0;
 	}
+
+	if (Dscap_dll_handle == NULL) {
+		Dscap_dll_handle = LoadLibrary("dsound.dll");
+
+		if ( !Dscap_dll_handle ) {
+			return -1;
+		}
+	}
+
+	pfn_DirectSoundCaptureCreate = (HRESULT(__stdcall *)(LPGUID lpGuid, LPDIRECTSOUNDCAPTURE *lplpDSC, IUnknown FAR *pUnkOuter))GetProcAddress(Dscap_dll_handle, "DirectSoundCaptureCreate");
 
 	if ( !pfn_DirectSoundCaptureCreate ) {
 		nprintf(( "Sound", "SOUND ==> Could not get DirectSoundCaptureCreate function pointer\n" ));
@@ -311,6 +333,11 @@ void dscap_close()
 		pDSC->Release();
 		pDSC=NULL;
 	}
+
+	if (Dscap_dll_handle != NULL) {
+		FreeLibrary(Dscap_dll_handle);
+		Dscap_dll_handle = NULL;
+	}
 }
 
 // return the max buffer size
@@ -399,4 +426,4 @@ int dscap_get_raw_data(unsigned char *outbuf, unsigned int max_size)
 	return (size1+size2);
 }
 
-#endif	// !USE_OPENAL
+#endif	// !SCP_UNIX

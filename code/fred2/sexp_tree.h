@@ -58,6 +58,8 @@
 #define NUM_BITMAP_NUMBERED_DATA	15
 //Therefore NEXT DEFINE should be 9+12 or 21
 
+
+
 // tree behavior modes (or tree subtype)
 #define ST_LABELED_ROOT		0x10000
 #define ST_ROOT_DELETABLE	0x20000
@@ -184,13 +186,10 @@ public:
 	int find_argument_number(int parent_node, int child_node);
 	int find_ancestral_argument_number(int parent_op, int child_node);
 
-	// Karajorma
-	void FixupLoadoutNameChange(const char *old_name, const char *new_name);
-	int get_loadout_variable_count(const char *var_name);
-	
 	//WMC
 	int get_sibling_place(int node);
-	int get_data_image(int node); 
+	int get_data_image(int node);
+
 
 	sexp_list_item *get_listing_opf(int opf, int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_null();

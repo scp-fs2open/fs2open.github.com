@@ -9,34 +9,19 @@
 
 /*
  * $Logfile: /Freespace2/code/Radar/Radar.cpp $
- * $Revision: 2.29 $
- * $Date: 2008-01-19 00:27:42 $
+ * $Revision: 2.22.2.3 $
+ * $Date: 2008-01-19 00:27:10 $
  * $Author: Goober5000 $
  *
  * C module containg functions to display and manage the radar
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.28  2007/08/17 03:29:46  Goober5000
+ * Revision 2.22.2.2  2007/08/17 03:29:51  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
- * Revision 2.27  2007/02/11 09:20:00  taylor
+ * Revision 2.22.2.1  2007/02/11 09:12:12  taylor
  * little bit of cleanup
  * more fixage for hidden jumpnodes (Mantis #1149)
- *
- * Revision 2.26  2007/01/08 00:50:59  Goober5000
- * remove WMC's limbo code, per our discussion a few months ago
- * this will later be handled by copying ship stats using sexps or scripts
- *
- * Revision 2.25  2006/12/28 00:59:48  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.24  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
- * Revision 2.23  2006/06/07 04:44:57  wmcoolmon
- * Limbo flag support
  *
  * Revision 2.22  2006/01/16 11:02:23  wmcoolmon
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
@@ -314,8 +299,7 @@ void radar_init_std()
 
 	Radar_gauge.first_frame = bm_load_animation(Current_radar_global->Radar_fname[gr_screen.res], &Radar_gauge.num_frames);
 	if ( Radar_gauge.first_frame < 0 ) {
-		//WMC - This is not really necessary.
-		//Warning(LOCATION,"Cannot load hud ani: %s\n", Current_radar_global->Radar_fname[gr_screen.res]);
+		Warning(LOCATION,"Cannot load hud ani: %s\n", Current_radar_global->Radar_fname[gr_screen.res]);
 	}
 
 	for (i=0; i<MAX_RADAR_COLORS; i++ )	{
@@ -433,15 +417,16 @@ void radar_plot_object_std( object *objp )
 	switch (objp->type)
 	{
 		case OBJ_SHIP:
-			// Place to cull ships, such as NavBuoys
+			// Place to cull ships, such as NavBuoys		
 			break;
-
+		
 		case OBJ_JUMP_NODE:
 		{
 			// don't plot hidden jump nodes
 			if ( objp->jnp->is_hidden() )
 				return;
 
+			// filter jump nodes here if required
 			break;
 		}
 
@@ -455,7 +440,7 @@ void radar_plot_object_std( object *objp )
 			if ( !iff_x_attacks_y(Player_ship->team, obj_team(objp)) )
 				return;
 
-			//if a local ssm is in subspace, return
+			// if a local ssm is in subspace, return
 			if (Weapons[objp->instance].lssm_stage == 3)
 				return;
 

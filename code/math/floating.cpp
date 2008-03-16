@@ -9,15 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/Floating.cpp $
- * $Revision: 2.6 $
- * $Date: 2007-01-07 13:00:24 $
+ * $Revision: 2.4.2.2 $
+ * $Date: 2006-12-07 17:53:08 $
  * $Author: taylor $
  *
  * Low-level floating point math routines
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.5  2006/06/27 05:07:49  taylor
- * fix various compiler warnings and things that Valgrind complained about
+ * Revision 2.4.2.1  2006/06/18 16:54:36  taylor
+ * various compiler warning fixes
  *
  * Revision 2.4  2005/04/12 05:26:36  taylor
  * many, many compiler warning and header fixes (Jens Granseuer)

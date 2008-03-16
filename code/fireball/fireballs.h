@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.h $
- * $Revision: 2.16 $
- * $Date: 2007-11-22 05:02:44 $
+ * $Revision: 2.14.2.2 $
+ * $Date: 2007-11-22 05:02:28 $
  * $Author: taylor $
  *
  * Prototypes for fireball functions
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.15  2007/02/11 18:19:41  taylor
+ * Revision 2.14.2.1  2007/02/11 09:53:33  taylor
  * support for tbl specified fireball explosion color ("$Light color:")
  *
  * Revision 2.14  2005/07/13 02:50:52  Goober5000

@@ -6,14 +6,14 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/RestrictPaths.cpp $
- * $Revision: 1.5 $
- * $Date: 2007-02-20 04:20:10 $
+ * $Revision: 1.3.2.2 $
+ * $Date: 2007-02-20 04:19:10 $
  * $Author: Goober5000 $
  *
  * Code for restricting arrival/departure to specific bays
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.4  2006/06/04 01:01:52  Goober5000
+ * Revision 1.3.2.1  2006/06/04 01:03:13  Goober5000
  * add fighterbay restriction code
  * --Goober5000
  *

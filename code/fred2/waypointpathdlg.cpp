@@ -9,16 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/WaypointPathDlg.cpp $
- * $Revision: 1.3 $
- * $Date: 2008-01-18 23:13:05 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2008-01-18 23:00:16 $
  * $Author: karajorma $
  *
  * Waypoint editor
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.2  2006/12/28 00:59:20  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
  * Revision 1.1  2006/01/19 02:27:32  Goober5000
  * import FRED2 back into fs2_open module
  * --Goober5000
@@ -105,12 +102,12 @@
 #include "Management.h"
 #include "MainFrm.h"
 #include "object/object.h"
+#include "object/waypoint.h"
 #include "globalincs/linklist.h"
 #include "ship/ship.h"
 #include "ai/aigoals.h"
 #include "starfield/starfield.h"
 #include "jumpnode/jumpnode.h"
-#include "object/waypoint/waypoint.h"
 
 #define ID_JUMP_NODE_MENU	8000
 #define ID_WAYPOINT_MENU	9000
@@ -179,6 +176,7 @@ void waypoint_path_dlg::OnInitMenu(CMenu* pMenu)
 			m->CheckMenuItem(ID_JUMP_NODE_MENU + i,  MF_BYCOMMAND | MF_CHECKED);
 		}
 		i++;
+
 	}
 
 	m->DeleteMenu(ID_PLACEHOLDER, MF_BYCOMMAND);

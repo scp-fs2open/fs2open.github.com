@@ -10,14 +10,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTNL.h $
- * $Revision: 1.17 $
- * $Date: 2007-01-10 01:44:39 $
+ * $Revision: 1.15.2.2 $
+ * $Date: 2007-02-12 00:19:48 $
  * $Author: taylor $
  *
  * header file containing function definitions for HT&L rendering in OpenGL
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.16  2006/10/06 09:32:16  taylor
+ * Revision 1.15.2.1  2006/10/01 19:24:46  taylor
  * bit of cleanup (technically the vertex buffer stuff is part of a much larger change slated for post-3.6.9, but this should be a little faster)
  *
  * Revision 1.15  2006/01/18 16:14:04  taylor

@@ -9,17 +9,12 @@
 
 /*
  * $Logfile: /Freespace2/code/Demo/Demo.cpp $
- * $Revision: 2.11 $
- * $Date: 2007-09-02 18:53:22 $
+ * $Revision: 2.8.2.1 $
+ * $Date: 2007-09-02 18:52:50 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.10  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
  * Revision 2.8  2005/05/12 17:49:11  taylor
  * use vm_malloc(), vm_free(), vm_realloc(), vm_strdup() rather than system named macros
  *   fixes various problems and is past time to make the switch

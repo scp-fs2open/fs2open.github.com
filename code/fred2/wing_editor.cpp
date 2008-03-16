@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/wing_editor.cpp $
- * $Revision: 1.6 $
- * $Date: 2007-02-11 09:31:11 $
+ * $Revision: 1.4.2.2 $
+ * $Date: 2007-02-11 09:25:42 $
  * $Author: taylor $
  *
  * Wing editor dialog box handler code
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.5  2006/06/04 01:01:52  Goober5000
+ * Revision 1.4.2.1  2006/06/04 01:03:13  Goober5000
  * add fighterbay restriction code
  * --Goober5000
  *

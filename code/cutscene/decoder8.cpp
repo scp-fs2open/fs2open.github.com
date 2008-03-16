@@ -1,7 +1,7 @@
 /*
  * $Logfile: /Freespace2/src/cutscene/decoder8.cpp $
- * $Revision: 2.1 $
- * $Date: 2006-08-20 00:44:36 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2006-08-19 04:14:57 $
  * $Author: taylor $
  *
  * decoder for 8-bit MVE image data

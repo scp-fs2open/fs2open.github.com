@@ -10,52 +10,79 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrOpenGLTexture.cpp $
- * $Revision: 1.59 $
- * $Date: 2007-10-04 16:18:46 $
+ * $Revision: 1.48.2.16 $
+ * $Date: 2007-10-04 16:18:19 $
  * $Author: taylor $
  *
  * source for texturing in OpenGL
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.58  2007/03/22 20:49:53  taylor
+ * Revision 1.48.2.15  2007/03/22 20:50:27  taylor
  * some generic code cleanup
  *
- * Revision 1.57  2007/02/11 18:34:56  taylor
+ * Revision 1.48.2.14  2007/02/11 10:03:29  taylor
+ * remove some dead code
  * general cleanup
+ * fix issues with texture state changes not affecting things properly
+ * fix stupid texture addressing thing that I had done a long time ago
  * deal with -img2dds error issue
  *
- * Revision 1.56  2007/01/10 01:48:32  taylor
- * fixup texture addressing stuff so that it works better
- * bits of cleanup
- * remove non-dark support
- * support for releasing bitmap system memory when transfered to API memory
+ * Revision 1.48.2.13  2006/12/27 09:24:31  taylor
+ * wurrps, someone besides me might actually want to use that ;)
  *
- * Revision 1.55  2007/01/07 13:05:21  taylor
- * various bits of cleanup
- * fix for anistotropic filtering messing up with lod bias
- * be sure that we always reset the properly active texture
- * get rid of old gamma stuff
- * loading fix for cubemaps
- * disable apple_client_storage for now
- * fix for ATI problem with framebuffers and corrupting starfield bitmaps
+ * Revision 1.48.2.12  2006/12/26 05:25:18  taylor
+ * lots of little cleanup, stale code removal, and small performance adjustments
+ * get rid of the default combine texture state, we don't need it in general, and it can screw up fonts
+ * get rid of the secondary color support, it doesn't do much in non-HTL mode, screws up various things, and has long since been obsolete but material setup
+ * get rid of the old gamma setup, it actually conflicts with newer gamma support
+ * default texture wrapping to edge clamp
+ * do second gr_clear() on init to be sure and catch double-buffer
+ * make sure that our active texture will always get reset to 0, rather than leaving it at whatever was used last
+ * fixed that damn FBO bug from it hanging on textures and causing some rendering errors for various people
+ * only lock verts once in HTL model rendering
  *
- * Revision 1.54  2006/08/09 14:42:24  taylor
+ * Revision 1.48.2.11  2006/12/07 18:14:49  taylor
+ * get rid of "vram_full", it can never actually be full the way the code works, so having this is redundant
+ * comment out APPLE_client_storage extension usage, I think this was messing some stuff up on OS X and causing memory errors
+ * fix handling of cubemap data so that they can be read properly (can't believe it took so long to notice to an obvious and stupid bug)
+ * be sure to un-bind textures during preload to avoid freaky little errors later
+ * ifdef an error message from the framebuffer error code, Apple doesn't have this one define in their headers for some reason
+ *
+ * Revision 1.48.2.10  2006/08/12 13:14:45  taylor
+ * some minor cleanup to anisotropy setting
+ * only use negative lod bias when not using anisotropy to help avoid shimmering
+ * stick lod bias setting in with anisotropy function
+ *
+ * Revision 1.48.2.9  2006/08/09 14:40:43  taylor
  * fix for setting of texture lod bias
  *
- * Revision 1.53  2006/07/17 01:11:32  taylor
+ * Revision 1.48.2.8  2006/07/17 01:06:41  taylor
  * maybe this will finally shut-up some of the people who have complained about certain mipmap issues
  *
- * Revision 1.52  2006/07/15 06:11:27  taylor
+ * Revision 1.48.2.7  2006/07/15 06:10:51  taylor
  * change clamp mode for font/interface graphics, don't want the border factored in for scaling/filtering
  *
- * Revision 1.51  2006/06/27 05:03:42  taylor
- * fix so that multiple FBOs can be used with different sizes (plus a few other minor adjustments)
- * fix various things that Valgrind complained about
+ * Revision 1.48.2.6  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
  *
- * Revision 1.50  2006/06/15 00:36:33  taylor
+ * Revision 1.48.2.5  2006/06/19 22:50:58  taylor
+ * as a temporary measure, until I can figure out what is going on here:
+ *   - disable depth buffer for RTT, may be causing the ATI issues, should work ok without it for most things
+ *   - disable mipmap generation for RTT, something strange is going on there, it's sometimes making black mipmap levels (even for the same texture)
+ *
+ * Revision 1.48.2.4  2006/06/18 16:49:40  taylor
+ * fix so that multiple FBOs can be used with different sizes (plus a few other minor adjustments)
+ *
+ * Revision 1.48.2.3  2006/06/15 00:15:17  taylor
  * fix Assert() on value of face variable, it should be able to be -1 for non-cubemap images
  *
- * Revision 1.49  2006/06/05 23:56:51  taylor
+ * Revision 1.48.2.2  2006/06/12 03:37:24  taylor
+ * sync current OGL changes:
+ *  - go back to using minimize mode which non-active, but doin't minimize when Fred_running
+ *  - remove temporary cmdline options (-spec_scale, -env_scale, -alpha_alpha_blend)
+ *  - change FBO renderbuffer link around a little to maybe avoid freaky drivers (or freaky code)
+ *
+ * Revision 1.48.2.1  2006/06/05 23:59:33  taylor
  * don't Int3() here, it's actually going to happen in some cases when using -img2dds
  *
  * Revision 1.48  2006/05/13 07:29:52  taylor
@@ -405,9 +432,11 @@ GLfloat opengl_get_max_anisotropy()
 	if ( !Is_Extension_Enabled(OGL_EXT_TEXTURE_FILTER_ANISOTROPIC) )
 		return 0.0f;
 
-	if ( !GL_max_anisotropy ) {
+	if ( !GL_max_anisotropy )
 		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &GL_max_anisotropy);
-	}
+
+	// the spec says that it should be a minimum of 2.0
+	Assert( GL_max_anisotropy >= 2.0f );
 
 	return GL_max_anisotropy;
 }

@@ -9,15 +9,12 @@
 
 /*
  * $Logfile: /Freespace2/code/Stats/Medals.cpp $
- * $Revision: 2.19 $
- * $Date: 2007-09-02 02:10:29 $
+ * $Revision: 2.16.2.2 $
+ * $Date: 2007-09-02 02:07:47 $
  * $Author: Goober5000 $
  * 
  * $Log: not supported by cvs2svn $
- * Revision 2.18  2006/12/28 00:59:53  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.17  2006/09/11 06:51:17  taylor
+ * Revision 2.16.2.1  2006/09/11 01:17:07  taylor
  * fixes for stuff_string() bounds checking
  *
  * Revision 2.16  2005/09/14 20:03:40  taylor

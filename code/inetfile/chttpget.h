@@ -9,13 +9,17 @@
 
 /*
 * $Logfile: /Freespace2/code/Inetfile/Chttpget.h $
-* $Revision: 2.2 $
-* $Date: 2005-07-13 03:15:50 $
-* $Author: Goober5000 $
+* $Revision: 2.2.2.1 $
+* $Date: 2007-10-15 06:43:14 $
+* $Author: taylor $
 *
 * HTTP Client class (get only)
 *
 * $Log: not supported by cvs2svn $
+* Revision 2.2  2005/07/13 03:15:50  Goober5000
+* remove PreProcDefine #includes in FS2
+* --Goober5000
+*
 * Revision 2.1  2004/08/11 05:06:25  Kazan
 * added preprocdefines.h to prevent what happened with fred -- make sure to make all fred2 headers include this file as the _first_ include -- i have already modified fs2 files to do this
 *
@@ -78,8 +82,8 @@ public:
 	~ChttpGet();
 	void GetFile(char *URL,char *localfile);
 	int GetStatus();
-	unsigned int GetBytesIn();
-	unsigned int GetTotalBytes();
+	uint GetBytesIn();
+	uint GetTotalBytes();
 	void AbortGet();
 	void WorkerThread();
 	bool m_Aborted;
@@ -87,14 +91,14 @@ public:
 protected:
 	int ConnectSocket();
 	char *GetHTTPLine();
-	unsigned int ReadDataChannel();
-	unsigned int m_iBytesIn;
-	unsigned int m_iBytesTotal;
-	unsigned int m_State;
+	uint ReadDataChannel();
+	uint m_iBytesIn;
+	uint m_iBytesTotal;
+	uint m_State;
 	bool m_ProxyEnabled;
 	char *m_ProxyIP;
 	char m_URL[MAX_URL_LEN];
-	unsigned short m_ProxyPort;
+	ushort m_ProxyPort;
 
 	char m_szUserName[100];
 	char m_szPassword[100];
@@ -110,6 +114,9 @@ protected:
 	FILE *LOCALFILE;
 	char recv_buffer[1000];
 
+#ifdef SCP_UNIX
+	SDL_Thread *thread_id;
+#endif
 };
 
 

@@ -30,13 +30,13 @@
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
 				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;FS2_VOICER"
+				PreprocessorDefinitions="NDEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\code.pch"
+				PrecompiledHeaderFile="$(IntDir)\code.pch"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
+				ProgramDataBaseFileName="$(IntDir)/code.pdb"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -83,72 +83,17 @@
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
 				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;FS2_VOICER"
+				PreprocessorDefinitions="_DEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
 				BufferSecurityCheck="TRUE"
 				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\code.pch"
+				PrecompiledHeaderFile="$(IntDir)\code.pch"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
 				ProgramDataBaseFileName="$(IntDir)/code.pdb"
-				BrowseInformation="1"
-				WarningLevel="4"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="4"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="NDEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\code.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="INFDebug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="2"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;INF_BUILD;FS2_VOICER"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				BufferSecurityCheck="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\code.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -200,14 +145,14 @@
 				OmitFramePointers="TRUE"
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;INF_BUILD;FS2_VOICER"
+				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua"
+				PreprocessorDefinitions="NDEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA;INF_BUILD"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\code.pch"
+				PrecompiledHeaderFile="$(IntDir)\code.pch"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
+				ProgramDataBaseFileName="$(IntDir)/code.pdb"
 				BrowseInformation="1"
 				WarningLevel="3"
 				SuppressStartupBanner="TRUE"
@@ -231,350 +176,6 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4Release|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/O2 /Ob2"
-				Optimization="4"
-				GlobalOptimizations="TRUE"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="TRUE"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="TRUE"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;FS2_VOICER"
-				RuntimeLibrary="0"
-				BufferSecurityCheck="FALSE"
-				EnableEnhancedInstructionSet="2"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\code.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="_DEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\code.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4Debug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;FS2_VOICER"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				BufferSecurityCheck="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\code.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="4"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="NDEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\code.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="INFDSRelease|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/O2 /Ob2"
-				Optimization="4"
-				GlobalOptimizations="TRUE"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="TRUE"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="TRUE"
-				OptimizeForProcessor="2"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FS2_SPEECH;INF_BUILD;FS2_VOICER"
-				RuntimeLibrary="0"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\code.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="_DEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\code.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="INFDSDebug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="2"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FS2_SPEECH;INF_BUILD;FS2_VOICER"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				BufferSecurityCheck="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\code.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="4"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="NDEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\code.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4InfRelease|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/O2 /Ob2"
-				Optimization="4"
-				GlobalOptimizations="TRUE"
-				InlineFunctionExpansion="2"
-				EnableIntrinsicFunctions="TRUE"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="TRUE"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;FS2_VOICER;INF_BUILD"
-				RuntimeLibrary="0"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\code.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="_DEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\code.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4InfDebug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="4"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;FS2_VOICER;INF_BUILD"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				BufferSecurityCheck="TRUE"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\code.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="3"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="4"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="NDEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLibrarianTool"
-				OutputFile="$(ConfigurationName)\code.lib"
-				SuppressStartupBanner="TRUE"/>
-			<Tool
-				Name="VCMIDLTool"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
@@ -590,6 +191,94 @@
 	</References>
 	<Files>
 		<Filter
+			Name="AI"
+			Filter="">
+			<File
+				RelativePath="..\..\code\ai\ai.cpp">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="INFRelease|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\ai.h">
+			</File>
+			<File
+				RelativePath="..\..\code\ai\ai_profiles.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\ai\ai_profiles.h">
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiBig.cpp">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="INFRelease|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiBig.h">
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiCode.cpp">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="INFRelease|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiGoals.cpp">
+				<FileConfiguration
+					Name="Release|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
+				<FileConfiguration
+					Name="INFRelease|Win32">
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="0"/>
+				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiGoals.h">
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiInternal.h">
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiLocal.h">
+			</File>
+			<File
+				RelativePath="..\..\code\ai\AiTurret.cpp">
+			</File>
+		</Filter>
+		<Filter
 			Name="Anim"
 			Filter="">
 			<File
@@ -604,166 +293,6 @@
 			<File
 				RelativePath="..\..\code\Anim\PackUnpack.h">
 			</File>
-			<Filter
-				Name="AI"
-				Filter="">
-				<File
-					RelativePath="..\..\code\ai\ai.cpp">
-					<FileConfiguration
-						Name="Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="INFRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="P4Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="INFDSRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="P4InfRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\code\ai\ai.h">
-				</File>
-				<File
-					RelativePath="..\..\code\ai\ai_profiles.cpp">
-				</File>
-				<File
-					RelativePath="..\..\code\ai\ai_profiles.h">
-				</File>
-				<File
-					RelativePath="..\..\code\ai\AiBig.cpp">
-					<FileConfiguration
-						Name="Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="INFRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="P4Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="INFDSRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="P4InfRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\code\ai\AiBig.h">
-				</File>
-				<File
-					RelativePath="..\..\code\ai\AiCode.cpp">
-					<FileConfiguration
-						Name="Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="INFRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="P4Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="INFDSRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="P4InfRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\code\ai\AiGoals.cpp">
-					<FileConfiguration
-						Name="Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="INFRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="P4Release|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="INFDSRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-					<FileConfiguration
-						Name="P4InfRelease|Win32">
-						<Tool
-							Name="VCCLCompilerTool"
-							Optimization="0"/>
-					</FileConfiguration>
-				</File>
-				<File
-					RelativePath="..\..\code\ai\AiGoals.h">
-				</File>
-				<File
-					RelativePath="..\..\code\ai\AiInternal.h">
-				</File>
-				<File
-					RelativePath="..\..\code\ai\AiLocal.h">
-				</File>
-				<File
-					RelativePath="..\..\code\ai\AiTurret.cpp">
-				</File>
-			</Filter>
 		</Filter>
 		<Filter
 			Name="Asteroid"
@@ -918,6 +447,12 @@
 		<Filter
 			Name="DirectX"
 			Filter="">
+			<File
+				RelativePath="..\..\code\directx\dx8show.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\directx\dx8show.h">
+			</File>
 			<File
 				RelativePath="..\..\code\directx\dxguid.lib">
 			</File>
@@ -1103,6 +638,12 @@
 				</File>
 				<File
 					RelativePath="..\..\code\Graphics\Font.h">
+				</File>
+				<File
+					RelativePath="..\..\code\graphics\grstub.cpp">
+				</File>
+				<File
+					RelativePath="..\..\code\graphics\grstub.h">
 				</File>
 				<File
 					RelativePath="..\..\code\Graphics\Line.h">
@@ -1555,24 +1096,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\Mission\MissionBriefCommon.h">
@@ -1649,24 +1172,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\MissionUI\Chatbox.h">
@@ -1691,24 +1196,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\MissionUI\MissionBrief.h">
@@ -1727,24 +1214,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\MissionUI\MissionCmdBrief.h">
@@ -1759,24 +1228,6 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
@@ -1805,24 +1256,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\MissionUI\MissionPause.h">
@@ -1837,24 +1270,6 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
@@ -1877,24 +1292,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\MissionUI\MissionScreenCommon.h">
@@ -1909,24 +1306,6 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
@@ -1955,24 +1334,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\MissionUI\MissionWeaponChoice.h">
@@ -1987,24 +1348,6 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
@@ -2024,10 +1367,10 @@
 				RelativePath="..\..\code\model\modelanim.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\Model\ModelCollide.cpp">
+				RelativePath="..\..\code\model\modelanim.h">
 			</File>
 			<File
-				RelativePath="..\..\code\model\modeldiff.cpp">
+				RelativePath="..\..\code\Model\ModelCollide.cpp">
 			</File>
 			<File
 				RelativePath="..\..\code\Model\ModelInterp.cpp">
@@ -2105,16 +1448,12 @@
 			<File
 				RelativePath="..\..\code\object\parseobjectdock.h">
 			</File>
-			<Filter
-				Name="waypoint"
-				Filter="">
-				<File
-					RelativePath="..\..\code\object\waypoint\waypoint.cpp">
-				</File>
-				<File
-					RelativePath="..\..\code\object\waypoint\waypoint.h">
-				</File>
-			</Filter>
+			<File
+				RelativePath="..\..\code\object\waypoint.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\object\waypoint.h">
+			</File>
 		</Filter>
 		<Filter
 			Name="Observer"
@@ -2327,24 +1666,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\ship\Afterburner.h">
@@ -2359,24 +1680,6 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
@@ -2399,24 +1702,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\ship\Ship.cpp">
@@ -2428,24 +1713,6 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
@@ -2468,24 +1735,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\ship\ShipContrails.h">
@@ -2504,24 +1753,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\ship\ShipFX.h">
@@ -2536,24 +1767,6 @@
 				</FileConfiguration>
 				<FileConfiguration
 					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
 					<Tool
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
@@ -2626,92 +1839,11 @@
 			<File
 				RelativePath="..\..\code\sound\phrases.xml">
 				<FileConfiguration
-					Name="Release|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
-&quot;$(InputDir)\gc&quot; /h &quot;$(InputDir)\grammar.h&quot; &quot;$(InputDir)\$(InputName)&quot;
-"
-						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
-				</FileConfiguration>
-				<FileConfiguration
 					Name="Debug|Win32">
 					<Tool
 						Name="VCCustomBuildTool"
+						Description="Building phrases.xml"
 						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
-&quot;$(InputDir)\gc&quot; /h &quot;$(InputDir)\grammar.h&quot; &quot;$(InputDir)\$(InputName)&quot;
-"
-						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDebug|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
-&quot;$(InputDir)\gc&quot; /h &quot;$(InputDir)\grammar.h&quot; &quot;$(InputDir)\$(InputName)&quot;
-"
-						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFRelease|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
-&quot;$(InputDir)\gc&quot; /h &quot;$(InputDir)\grammar.h&quot; &quot;$(InputDir)\$(InputName)&quot;
-"
-						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
-&quot;$(InputDir)\gc&quot; /h &quot;$(InputDir)\grammar.h&quot; &quot;$(InputDir)\$(InputName)&quot;
-"
-						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Debug|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
-&quot;$(InputDir)\gc&quot; /h &quot;$(InputDir)\grammar.h&quot; &quot;$(InputDir)\$(InputName)&quot;
-"
-						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
-&quot;$(InputDir)\gc&quot; /h &quot;$(InputDir)\grammar.h&quot; &quot;$(InputDir)\$(InputName)&quot;
-"
-						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSDebug|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
-&quot;$(InputDir)\gc&quot; /h &quot;$(InputDir)\grammar.h&quot; &quot;$(InputDir)\$(InputName)&quot;
-"
-						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
-&quot;$(InputDir)\gc&quot; /h &quot;$(InputDir)\grammar.h&quot; &quot;$(InputDir)\$(InputName)&quot;
-"
-						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfDebug|Win32">
-					<Tool
-						Name="VCCustomBuildTool"
-						CommandLine="&quot;$(InputDir)\gc&quot; &quot;$(InputDir)\$(InputName)&quot;
-&quot;$(InputDir)\gc&quot; /h &quot;$(InputDir)\grammar.h&quot; &quot;$(InputDir)\$(InputName)&quot;
 "
 						Outputs="&quot;$(InputDir)\phrases.cfg&quot;;&quot;$(InputDir)\grammar.h&quot;"/>
 				</FileConfiguration>
@@ -2953,24 +2085,6 @@
 						Name="VCCLCompilerTool"
 						Optimization="0"/>
 				</FileConfiguration>
-				<FileConfiguration
-					Name="P4Release|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="INFDSRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="P4InfRelease|Win32">
-					<Tool
-						Name="VCCLCompilerTool"
-						Optimization="0"/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\code\Nebula\NebLightning.h">
@@ -3048,10 +2162,10 @@
 			Name="Network"
 			Filter="">
 			<File
-				RelativePath="..\..\code\network\fs2ox.cpp">
+				RelativePath="..\..\code\network\chat_api.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\network\fs2ox.h">
+				RelativePath="..\..\code\network\chat_api.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Network\Multi.cpp">
@@ -3148,6 +2262,12 @@
 			</File>
 			<File
 				RelativePath="..\..\code\Network\multi_pmsg.h">
+			</File>
+			<File
+				RelativePath="..\..\code\network\multi_pxo.cpp">
+			</File>
+			<File
+				RelativePath="..\..\code\network\multi_pxo.h">
 			</File>
 			<File
 				RelativePath="..\..\code\Network\multi_rate.cpp">
@@ -3265,31 +2385,28 @@
 			</File>
 		</Filter>
 		<Filter
-			Name="fs2open_pxo"
+			Name="fs2netd"
 			Filter="">
 			<File
-				RelativePath="..\..\code\fs2open_pxo\Client.cpp">
+				RelativePath="..\..\code\fs2netd\fs2netd_client.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\Client.h">
+				RelativePath="..\..\code\fs2netd\fs2netd_client.h">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\protocol.h">
+				RelativePath="..\..\code\fs2netd\protocol.h">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\TCP_Client.cpp">
+				RelativePath="..\..\code\fs2netd\tcp_client.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\TCP_Socket.cpp">
+				RelativePath="..\..\code\fs2netd\tcp_client.h">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\TCP_Socket.h">
+				RelativePath="..\..\code\fs2netd\tcp_socket.cpp">
 			</File>
 			<File
-				RelativePath="..\..\code\fs2open_pxo\udpsocket.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\fs2open_pxo\udpsocket.h">
+				RelativePath="..\..\code\fs2netd\tcp_socket.h">
 			</File>
 		</Filter>
 		<Filter
@@ -3300,16 +2417,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\species_defs\species_defs.h">
-			</File>
-		</Filter>
-		<Filter
-			Name="irc"
-			Filter="">
-			<File
-				RelativePath="..\..\code\irc\irc.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\irc\irc.h">
 			</File>
 		</Filter>
 		<Filter

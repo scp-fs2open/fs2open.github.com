@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/WINDOW.cpp $
- * $Revision: 2.9 $
- * $Date: 2007-09-02 02:10:29 $
+ * $Revision: 2.8.2.1 $
+ * $Date: 2007-09-02 02:07:48 $
  * $Author: Goober5000 $
  *
  * Routines to handle UI windows.

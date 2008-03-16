@@ -1,21 +1,26 @@
 /*
  * $Logfile: /Freespace2/code/cutscene/mveplayer.cpp $
- * $Revision: 2.5 $
- * $Date: 2007-02-10 00:02:18 $
+ * $Revision: 2.1.2.4 $
+ * $Date: 2007-02-10 00:01:53 $
  * $Author: taylor $
  *
  * MVE movie playing routines
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.4  2007/01/15 01:37:37  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
+ * Revision 2.1.2.3  2006/12/26 05:14:52  taylor
+ * get rid of some stale vars that we don't use any longer
+ * a little at-exit cleanup
+ * handle rounding error on X/Y placement locations under Windows
  *
- * Revision 2.3  2007/01/07 12:29:43  taylor
- * add Theora player
- * remove DirectShow support from movie player
- * fix triple-buffer page flipping problem (Mantis bug #1190)
+ * Revision 2.1.2.2  2006/12/07 17:55:51  taylor
+ * port over some Theora player stuff:
+ *  - support for GL_ARB_texture_rectangle
+ *  - fix GL tear-down on movie exit
+ *  - fix sound tear-down order issue on OS X
+ *  - some speed increases, and get rid of the extra gr_clear() per-frame now that it's handled properly
+ *  - proper support for widescreen resolutions
  *
- * Revision 2.2  2006/08/20 00:44:36  taylor
+ * Revision 2.1.2.1  2006/08/19 04:14:57  taylor
  * add decoder for 8-bit MVEs
  * a basic fix for finding AVIs over MVEs, for mod dir stuff (this needs some CFILE support added to be a true fix, it's on the TODO list)
  * little bits of cleanup for old/unused code
@@ -87,7 +92,7 @@ typedef struct MVE_AUDIO_T {
 mve_audio_t *mas;  // mve_audio_stream
 
 // audio decompressor
-extern void mveaudio_uncompress(short *buffer, unsigned char *data);
+extern void mveaudio_uncompress(short *buffer, unsigned char *data, int length);
 #endif // USE_OPENAL
 
 // video variables
@@ -402,7 +407,7 @@ int mve_audio_data(ubyte major, ubyte *data)
 						nsamp += 4;
 
 						buf = (short *)vm_malloc(nsamp);
-						mveaudio_uncompress(buf, data); /* XXX */
+						mveaudio_uncompress(buf, data, -1); /* XXX */
 					} else {
 						nsamp -= 8;
 						data += 8;

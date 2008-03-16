@@ -9,16 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Afterburner.cpp $
- * $Revision: 2.23 $
- * $Date: 2007-02-16 23:18:15 $
- * $Author: Goober5000 $
+ * $Revision: 2.21.2.1 $
+ * $Date: 2006-10-27 21:39:27 $
+ * $Author: taylor $
  *
  * C file for managing the afterburners
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.22  2006/11/06 06:36:44  taylor
- * updated/fixed modelanim code
- *
  * Revision 2.21  2006/03/18 20:24:54  wmcoolmon
  * Nitpicketiness
  *
@@ -422,16 +419,10 @@ void afterburners_update(object *objp, float fl_frametime)
 		if ( !(objp->phys_info.flags & PF_AFTERBURNER_ON) ) {
 			// Recover afterburner fuel
 
-			float afterburner_recharge_factor;
-			if (false)
-				afterburner_recharge_factor = sip->power_output;
-			else
-				afterburner_recharge_factor = 1.0f;
-
 			if ( shipp->afterburner_fuel < sip->afterburner_fuel_capacity ) {
 				float recharge_scale;
 				recharge_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * The_mission.ai_profile->afterburner_recharge_scale[Game_skill_level];
-				shipp->afterburner_fuel += (sip->afterburner_recover_rate * fl_frametime * recharge_scale * afterburner_recharge_factor);
+				shipp->afterburner_fuel += (sip->afterburner_recover_rate * fl_frametime * recharge_scale);
 
 				if ( shipp->afterburner_fuel >  sip->afterburner_fuel_capacity){
 					shipp->afterburner_fuel = sip->afterburner_fuel_capacity;

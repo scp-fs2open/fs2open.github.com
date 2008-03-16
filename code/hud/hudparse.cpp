@@ -6,43 +6,39 @@
 
 /*
  * $Logfile: /Freespace2/code/hud/hudparse.cpp $
- * $Revision: 2.53 $
- * $Date: 2008-01-24 03:52:07 $
+ * $Revision: 2.43.2.9 $
+ * $Date: 2008-01-24 03:53:35 $
  * $Author: Goober5000 $
  *
  * Contains code to parse hud gauge locations
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.52  2007/11/22 05:19:09  taylor
+ * Revision 2.43.2.8  2007/11/22 05:19:47  taylor
  * no reason to if-else the hud multiplier if it simply defaults to 1.0
  * add a little sanity checking for hud mutiplier tbl value
+ * add missing multiplier for off-screen indicator
  *
- * Revision 2.51  2007/09/02 02:10:25  Goober5000
+ * Revision 2.43.2.7  2007/09/02 02:07:41  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 2.50  2007/08/30 04:51:07  Backslash
+ * Revision 2.43.2.6  2007/08/30 04:52:30  Backslash
  * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
  * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
  * $Length Unit Multiplier: 5
  *
- * Revision 2.49  2007/03/22 22:14:56  taylor
+ * Revision 2.43.2.5  2007/02/12 00:23:39  taylor
  * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
- * Revision 2.48  2007/02/11 21:26:34  Goober5000
- * massive shield infrastructure commit
+ * Revision 2.43.2.4  2007/01/07 13:18:32  taylor
+ * fix escort positioning issue (Mantis #1179)
  *
- * Revision 2.47  2007/01/07 12:53:35  taylor
- * add position info for weapon energy text
- * make sure that we can't target a hidden jumpnode
- * rest of the weapon switch fix
+ * Revision 2.43.2.3  2006/12/07 18:17:19  taylor
+ * add "$Weapons Energy Text:" to hud_gauges.tbl so that the low energy text can be positioned as well (Mantis bug #1166)
  *
- * Revision 2.46  2006/12/28 00:59:27  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.45  2006/09/20 05:04:42  taylor
+ * Revision 2.43.2.2  2006/09/20 04:59:29  taylor
  * the resolution checks needed to be based on the unscaled res since you would have to include correct sizes for every single resolution otherwise (fixes a bug noticed in WCS)
  *
- * Revision 2.44  2006/09/11 06:49:39  taylor
+ * Revision 2.43.2.1  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
  * Revision 2.43  2006/04/20 06:32:07  Goober5000
@@ -254,7 +250,6 @@ gauge_info gauges[MAX_HUD_GAUGE_TYPES] = {
 	{ &gauges[2],	HUD_VAR(Hud_mini_1digit),		"$Text 1 digit:",			316, 298, 511, 477,	0, 0, 0, 0, 0, -1, -1 },
 //	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			213, 298, 346, 477,	0, 0, 0, 0, 0, -1, -1 },
 	{ &gauges[2],	HUD_VAR(Hud_mini_2digit),		"$Text 2 digit:",			313, 298, 506, 477,	0, 0, 0, 0, 0, -1, -1 },
-//	{ &gauges[4],	HUD_VAR(Wenergy_text_coords),	"$Text:",					439, 318, 708, 509, 0, 0, 0, 0, 0, -1, -1 },
 	{ &gauges[5],	HUD_VAR(Escort_htext_coords),	"$Header Text:",			489, 208, 869, 331,			0, 0, 0, 0, 0, -1, -1 },
 	{ &gauges[5],	HUD_VAR(Escort_list),			"$List:",					0, 12, 0, 13,		0, 0, 0, 0, 0, HG_NOADD, -1 },
 	{ &gauges[5],	HUD_VAR(Escort_entry),			"$Ship:",					0, 11, 0, 11,		0, HUD_VAR(Escort_filename[1]), 0, 0, 0, HG_NOADD, -1 },
@@ -315,7 +310,7 @@ int hud_player_shield(gauge_data* cg, ship* gauge_owner)
 	}
 
 	object* targetp = Objects[Ai_info[gauge_owner->ai_index].target_objnum];
-	float max_shield = shield_get_max_quad(targetp);
+	float max_shield = get_max_shield_quad(targetp);
 	if(targetp->flags & OF_NO_SHIELDS)
 	{
 		return HG_RETURNLASTUPDATE;
@@ -471,7 +466,7 @@ int hud_shield_mini(gauge_data* cg, ship* gauge_owner)
 	float max_shield;
 	object* objp = &Objects[gauge_info->target_objnum];
 
-	max_shield = shield_get_max_quad(objp);
+	max_shield = get_max_shield_quad(objp);
 
 	for ( int i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 
@@ -479,12 +474,12 @@ int hud_shield_mini(gauge_data* cg, ship* gauge_owner)
 			break;
 		}
 
-		if ( shield_get_quad(objp, Quadrant_xlate[i]) < 0.1f ) {
+		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
 			continue;
 		}
 				
 		range = HUD_color_alpha;
-		hud_color_index = fl2i( (shield_get_quad(objp, Quadrant_xlate[i]) / max_shield) * range + 0.5 );
+		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 	
 		if ( hud_color_index < 0 ) {

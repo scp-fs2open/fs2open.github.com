@@ -9,17 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/CmdBrief.cpp $
- * $Revision: 1.4 $
- * $Date: 2007-04-08 08:37:37 $
+ * $Revision: 1.1.2.3 $
+ * $Date: 2007-04-08 08:28:20 $
  * $Author: karajorma $
  *
  * Command Briefing Editor
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.3  2007/03/07 22:43:24  karajorma
- * Make .ogg voice files selectable in FRED.
+ * Revision 1.1.2.2  2007/03/07 22:36:51  karajorma
+ * Make .ogg selectable in FRED.
  *
- * Revision 1.2  2006/11/06 05:49:02  taylor
+ * Revision 1.1.2.1  2006/10/24 13:41:54  taylor
  * fix the cmdbrief editor deleting the wrong stage (Mantis bug #1115)
  *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000

@@ -9,14 +9,11 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_pmsg.cpp $
- * $Revision: 2.13 $
- * $Date: 2007-02-10 06:39:43 $
- * $Author: Goober5000 $
+ * $Revision: 2.11.2.1 $
+ * $Date: 2006-10-24 13:18:35 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.12  2006/11/06 05:40:57  taylor
- * fix for Mantis bug #1104 (can't use a ":" in chat)
- *
  * Revision 2.11  2006/03/30 04:15:20  Goober5000
  * hehe, grammar
  * --Goober5000
@@ -181,6 +178,7 @@
 #include "ship/ship.h"
 #include "object/object.h"
 #include "parse/parselo.h"
+#include "sound/fsspeech.h"
 
 
 
@@ -455,8 +453,11 @@ int multi_msg_message_text(char *txt)
 // display ingame,inmission message text
 void multi_msg_display_mission_text(char *msg,int player_index)
 {
-	// play a cue voice sound
-	snd_play(&Snds[MULTI_MSG_TEXT_SOUND]);
+	// play a cue voice sound and text to speech if not from this player
+	if(Net_players[player_index].player_id != MY_NET_PLAYER_NUM) {
+		snd_play(&Snds[MULTI_MSG_TEXT_SOUND]);
+		fsspeech_play(FSSPEECH_FROM_MULTI, msg);
+	}
 
 	if(MULTI_STANDALONE(Net_players[player_index])){
 		HUD_sourced_printf(HUD_SOURCE_NETPLAYER,"%s %s",XSTR("<SERVER>", 698), msg);			
@@ -607,7 +608,6 @@ char *Multi_msg_subsys_name[SUBSYSTEM_MAX] = {
 	"Weapons",
 	"Sensors",
 	"Solar Array",
-	"Shield Generator",
 	"Unknown"
 };
 

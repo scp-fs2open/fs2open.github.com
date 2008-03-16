@@ -9,23 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multimsgs.h $
- * $Revision: 2.14 $
- * $Date: 2007-01-15 13:40:38 $
+ * $Revision: 2.9.2.4 $
+ * $Date: 2006-11-21 23:06:57 $
  * $Author: karajorma $
  *
  * Header file for the building and sending of multiplayer packets
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.13  2006/08/04 11:45:21  karajorma
- * Fix bug where end-mission SEXP only resulting in the mission ending for the server
- *
- * Revision 2.12  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
- * Revision 2.11  2006/06/07 18:47:51  karajorma
- * Fix 130 ships limit for Inferno builds
+ * Revision 2.9.2.3  2006/08/25 21:15:31  karajorma
+ * Fix TvT problem with scores appearing incorrectly.
+ * Fix a CVS issue
  *
  * Revision 2.9  2006/06/02 09:10:02  karajorma
  * Added the VARIABLE_UPDATE packet to send sexp variable value changes to client machines.
@@ -350,8 +343,6 @@ void process_game_chat_packet( ubyte *data, header *hinfo );
 
 // process a game information update
 void process_game_info_packet( ubyte *data, header *hinfo );
-
-void process_team_update_packet(ubyte *data, header *hinfo);
 
 // process a packet indicating a secondary weapon was fired
 void process_secondary_fired_packet(ubyte* data, header* hinfo, int flag);
@@ -680,7 +671,7 @@ void send_wss_slots_data_packet(int team_num, int final, net_player *p = NULL, i
 
 void send_shield_explosion_packet(int objnum, int tri_num, vec3d hit_pos);
 
-void send_player_stats_block_packet(net_player *pl, int stats_type, net_player *target = NULL, short offset = 0);
+void send_player_stats_block_packet(net_player *pl, int stats_type, net_player *target = NULL);
 
 void send_host_restr_packet(char *callsign, int code, int mode);
 

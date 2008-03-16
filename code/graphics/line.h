@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/Line.h $
- * $Revision: 2.4 $
- * $Date: 2006-10-06 09:56:42 $
+ * $Revision: 2.3.2.1 $
+ * $Date: 2006-10-06 09:52:05 $
  * $Author: taylor $
  *
  * Header file for line.cpp

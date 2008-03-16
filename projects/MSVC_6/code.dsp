@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_MBCS" /D "_LIB" /YX /FD /c
-# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_OPENAL" /U "_DEBUG" /FR /YX /FD /c
+# ADD CPP /nologo /G5 /MT /W3 /GX /Zi /O2 /Ob2 /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "USE_OPENAL" /D "NO_DIRECT3D" /U "_DEBUG" /FR /YX /FD /c
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
 BSC32=bscmake.exe
@@ -64,7 +64,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug\Profile"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_MBCS" /D "_LIB" /YX /FD /GZ /c
-# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "USE_OPENAL" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
+# ADD CPP /nologo /G5 /MTd /W3 /Gm /Gi /GX /ZI /Od /I "../../code" /I "../../oggvorbis/include" /I "../../dx8sdk/include" /I "../../lua" /I "../../openal/include" /D "_WINDOWS" /D "WIN32" /D "_DEBUG" /D "USE_OPENAL" /D "NO_DIRECT3D" /U "NDEBUG" /FR /YX /FD /GZ /GZ /c
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
 BSC32=bscmake.exe
@@ -379,6 +379,14 @@ SOURCE=..\..\code\debugconsole\timerbar.h
 # Begin Group "DirectX"
 
 # PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\directx\dx8show.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\directx\dx8show.h
+# End Source File
 # Begin Source File
 
 SOURCE=..\..\code\DirectX\vasync.h
@@ -1488,10 +1496,6 @@ SOURCE=..\..\code\Model\ModelCollide.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\model\modeldiff.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\Model\ModelInterp.cpp
 # End Source File
 # Begin Source File
@@ -1510,18 +1514,6 @@ SOURCE=..\..\code\Model\ModelsInc.h
 # Begin Group "Object"
 
 # PROP Default_Filter ""
-# Begin Group "Waypoint"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\object\waypoint\waypoint.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\waypoint\waypoint.h
-# End Source File
-# End Group
 # Begin Source File
 
 SOURCE=..\..\code\Object\CollideDebrisShip.cpp
@@ -1573,10 +1565,6 @@ SOURCE=..\..\code\object\objectdock.cpp
 # Begin Source File
 
 SOURCE=..\..\code\object\objectdock.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\object\objectshield.cpp
 # End Source File
 # Begin Source File
 
@@ -2064,7 +2052,7 @@ SOURCE=..\..\code\sound\phrases.xml
 !IF  "$(CFG)" == "code - Win32 Release"
 
 # Begin Custom Build
-InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2083,7 +2071,7 @@ BuildCmds= \
 !ELSEIF  "$(CFG)" == "code - Win32 Debug"
 
 # Begin Custom Build
-InputDir=\Languages\Visual Studio Projects\Visual C++\fs2_open\code\sound
+InputDir=..\..\code\sound
 InputPath=..\..\code\sound\phrases.xml
 InputName=phrases
 
@@ -2485,11 +2473,11 @@ SOURCE=..\..\code\ExceptionHandler\ExceptionHandler.h
 # PROP Default_Filter ""
 # Begin Source File
 
-SOURCE=..\..\code\network\fs2ox.cpp
+SOURCE=..\..\code\network\chat_api.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\network\fs2ox.h
+SOURCE=..\..\code\network\chat_api.h
 # End Source File
 # Begin Source File
 
@@ -2618,6 +2606,14 @@ SOURCE=..\..\code\Network\multi_pmsg.cpp
 # Begin Source File
 
 SOURCE=..\..\code\Network\multi_pmsg.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\network\multi_pxo.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\network\multi_pxo.h
 # End Source File
 # Begin Source File
 
@@ -2768,42 +2764,6 @@ SOURCE=..\..\code\Cmdline\cmdline.cpp
 SOURCE=..\..\code\Cmdline\cmdline.h
 # End Source File
 # End Group
-# Begin Group "fs2open_pxo"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\Client.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\Client.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\protocol.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\TCP_Client.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\TCP_Socket.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\TCP_Socket.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\udpsocket.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\fs2open_pxo\udpsocket.h
-# End Source File
-# End Group
 # Begin Group "Species_Defs"
 
 # PROP Default_Filter ""
@@ -2814,18 +2774,6 @@ SOURCE=..\..\code\species_defs\species_defs.cpp
 # Begin Source File
 
 SOURCE=..\..\code\species_defs\species_defs.h
-# End Source File
-# End Group
-# Begin Group "irc"
-
-# PROP Default_Filter ""
-# Begin Source File
-
-SOURCE=..\..\code\irc\irc.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\irc\irc.h
 # End Source File
 # End Group
 # Begin Group "jpgutils"
@@ -2862,6 +2810,38 @@ SOURCE=..\..\code\iff_defs\iff_defs.cpp
 # Begin Source File
 
 SOURCE=..\..\code\iff_defs\iff_defs.h
+# End Source File
+# End Group
+# Begin Group "fs2netd"
+
+# PROP Default_Filter ""
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\fs2netd_client.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\fs2netd_client.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\protocol.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_client.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_client.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_socket.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\fs2netd\tcp_socket.h
 # End Source File
 # End Group
 # End Target

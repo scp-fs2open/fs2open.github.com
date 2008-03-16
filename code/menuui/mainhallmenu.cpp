@@ -9,53 +9,53 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.cpp $
- * $Revision: 2.56 $
- * $Date: 2007-11-22 05:23:20 $
+ * $Revision: 2.44.2.12 $
+ * $Date: 2007-11-22 05:23:44 $
  * $Author: taylor $
  *
  * Header file for main-hall menu code
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.55  2007/11/20 01:11:12  Goober5000
+ * Revision 2.44.2.11  2007/11/20 01:11:10  Goober5000
  * recognize a Vasudan main hall even when it isn't the second one; play the appropriate music as soon as the main hall switches
  *
- * Revision 2.54  2007/09/02 02:10:26  Goober5000
+ * Revision 2.44.2.10  2007/10/15 06:43:15  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
+ * Revision 2.44.2.9  2007/09/02 02:07:42  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 2.53  2007/04/03 01:39:29  Goober5000
+ * Revision 2.44.2.8  2007/04/03 01:39:31  Goober5000
  * fixed up some error messages
  *
- * Revision 2.52  2007/03/22 20:35:19  taylor
+ * Revision 2.44.2.7  2007/03/22 20:35:44  taylor
  * be sure to page in textures for change ship class sexp preload
  * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
  * make event music keep extension if it exists, so that the special data will be accurate
  * bits of cleanup from old MS code that we don't need
  *
- * Revision 2.51  2007/02/10 00:18:22  taylor
+ * Revision 2.44.2.6  2007/02/10 00:17:40  taylor
  * remove NO_SOUND
  *
- * Revision 2.50  2006/12/28 00:59:27  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.49  2006/11/05 18:41:39  Goober5000
+ * Revision 2.44.2.5  2006/11/05 18:41:40  Goober5000
  * improve error message
  *
- * Revision 2.48  2006/09/11 06:50:42  taylor
+ * Revision 2.44.2.4  2006/10/01 08:34:43  karajorma
+ * Fixing some ugliness when the popup appears
+ *
+ * Revision 2.44.2.3  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.47  2006/09/11 06:10:28  taylor
+ * Revision 2.44.2.2  2006/08/29 21:32:25  taylor
  * crap, there was supposed to be a multi check there
  *
- * Revision 2.46  2006/09/11 06:02:14  taylor
+ * Revision 2.44.2.1  2006/08/27 18:11:37  taylor
  * quite a few fixes to handle missing campaigns better
  * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
  * clean up the getting of a list of available campaigns
  * fix simroom issue where single missions, with the [V] icon, would display wrong (this was a retail bug, but it doesn't show normally)
  * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
  * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
- *
- * Revision 2.45  2006/09/04 06:03:10  wmcoolmon
- * Allow use of the techroom, even if no current campaign exists.
  *
  * Revision 2.44  2006/05/21 22:57:30  Goober5000
  * fix for Mantis #750
@@ -994,29 +994,13 @@ void main_hall_do_multi_ready()
 	Multi_options_g.protocol = NET_TCP;	
 	gameseq_post_event( GS_EVENT_PXO );
 #else
-	
-
-#if defined(PXO_LOBBY)
-	if (Om_tracker_flag)
-	{
+	if (Om_tracker_flag) {
 		Multi_options_g.protocol = NET_TCP;
-		gameseq_post_event( GS_EVENT_NET_CHAT );
-
-	}
-	else
-	{
+		gameseq_post_event(GS_EVENT_PXO);
+	} else {
 		// go to the regular join game screen 	
 		gameseq_post_event( GS_EVENT_MULTI_JOIN_GAME );	
 	}
-#else
-	if (Om_tracker_flag)
-	{
-		Multi_options_g.protocol = NET_TCP;
-	}
-	gameseq_post_event( GS_EVENT_MULTI_JOIN_GAME );	
-#endif //PXO_LOBBY
-
-
 #endif	//MULTIPLAYER_BETA_BUILD
 
 	// select protocol
@@ -1366,7 +1350,7 @@ void main_hall_do(float frametime)
 		case READY_ROOM_REGION:
 			if (Campaign_file_missing) {
 				// error popup for a missing campaign file, don't try to enter ready room in this case
-				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
+				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.\n\n Please select another in the Campaign Room.", -1));
 				break;
 			} else if ( !(Player->flags & PLAYER_FLAGS_IS_MULTI) && !strlen(Campaign.filename) ) {
 				// no campaign loaded...
@@ -1402,11 +1386,11 @@ void main_hall_do(float frametime)
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			game_feature_not_in_demo_popup();
 #else
-			/*if (Campaign_file_missing) {
-				// error popup for a missing campaign file, don't try to enter tech room in this case
-				popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
-				break;
-			}*/
+		//	if (Campaign_file_missing) {
+		//		// error popup for a missing campaign file, don't try to enter tech room in this case
+		//		popup( PF_NO_NETWORKING, 1, POPUP_OK, XSTR( "The currently active campaign cannot be found.  Please select another in the Campaign Room.", -1));
+		//		break;
+		//	}
 			gamesnd_play_iface(SND_IFACE_MOUSE_CLICK);
 			gameseq_post_event( GS_EVENT_TECH_MENU );
 #endif

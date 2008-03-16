@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Anim/PackUnpack.cpp $
- * $Revision: 2.14 $
- * $Date: 2006-06-27 05:07:48 $
+ * $Revision: 2.13.2.2 $
+ * $Date: 2007-10-28 16:32:06 $
  * $Author: taylor $
  *
  * Code for handling packing and unpacking in Hoffoss's RLE format, used for
@@ -18,6 +18,9 @@
  * utilizing an Anim), and getting getting frames of the Anim.
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.13.2.1  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
+ *
  * Revision 2.13  2006/03/21 00:27:27  taylor
  * some minor cleanup
  *
@@ -929,7 +932,7 @@ int unpack_pixel(anim_instance *ai, ubyte *data, ubyte pix, int aabitmap, int bp
 }
 
 // unpack a pixel given the passed index and the anim_instance's palette, return bytes stuffed
-int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count, int aabitmap, int bpp)
+int unpack_pixel_count(anim_instance *ai, ubyte *data, ubyte pix, int count = 0, int aabitmap = 0, int bpp = 8)
 {
 	int bit_24;
 	int idx;

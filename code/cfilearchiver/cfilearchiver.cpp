@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Cfilearchiver/CfileArchiver.cpp $
- * $Revision: 2.5 $
- * $Date: 2007-05-11 03:09:09 $
+ * $Revision: 2.4.2.1 $
+ * $Date: 2007-05-11 03:09:21 $
  * $Author: taylor $
  *
  * Program to create an archive file for use with cfile stuff

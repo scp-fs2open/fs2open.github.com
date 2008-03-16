@@ -9,26 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionMessage.h $
- * $Revision: 2.18 $
- * $Date: 2007-07-23 15:56:42 $
+ * $Revision: 2.12.2.4 $
+ * $Date: 2007-07-23 16:08:27 $
  * $Author: Kazan $
  *
  * Header file for mission messaging
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.17  2007/07/23 15:16:50  Kazan
- * Autopilot upgrades as described, MSVC2005 project fixes
- *
- * Revision 2.16  2007/05/26 12:08:26  Goober5000
+ * Revision 2.12.2.3  2007/05/26 12:08:18  Goober5000
  * when importing FS1 missions, account for the shuffled Head-TP4
  *
- * Revision 2.15  2007/01/07 03:08:12  Goober5000
+ * Revision 2.12.2.2  2007/01/07 03:10:05  Goober5000
  * fix bug where built-in lament messages were never played
  *
- * Revision 2.14  2007/01/07 00:01:28  Goober5000
- * add a feature for specifying the source of Command messages
- *
- * Revision 2.13  2006/09/30 21:58:09  Goober5000
+ * Revision 2.12.2.1  2006/09/30 21:58:06  Goober5000
  * more flexible checking of generic messages
  *
  * Revision 2.12  2006/04/20 06:32:07  Goober5000
@@ -312,7 +306,7 @@ extern message_extra		Message_waves[MAX_MESSAGE_WAVES];
 #define MESSAGE_SOURCE_SPECIAL	4
 
 // define used for sender of a message when you want it to be Terran Command
-#define DEFAULT_COMMAND			"Command"
+#define TERRAN_COMMAND			"Command"
 
 // defines for message id's used in FreeSpace code.  Callers to message_send_to_player() should
 // probably use these defines.
@@ -414,7 +408,6 @@ typedef struct persona_s {
 
 extern Persona *Personas;
 extern int Num_personas;
-extern int Default_command_persona;
 
 // function to parse a message from either messages.tbl or the mission file.  Both files have the
 // exact same format, so this function just gets reused in both instances.

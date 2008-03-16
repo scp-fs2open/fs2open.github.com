@@ -9,27 +9,22 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.cpp $
- * $Revision: 1.35 $
- * $Date: 2007-09-02 02:10:26 $
+ * $Revision: 1.28.2.5 $
+ * $Date: 2007-09-02 02:07:42 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.34  2007/03/22 22:14:56  taylor
+ * Revision 1.28.2.4  2007/02/12 00:23:39  taylor
  * get rid of non-standard itoa(), make use of the proper sprintf() instead
  *
- * Revision 1.33  2007/03/22 21:00:48  taylor
- * fix issue where the lab menu bar would disappear at times when you click on it (Mantis #1063)
+ * Revision 1.28.2.3  2006/11/15 00:40:59  taylor
+ * fix some "stupid-windows-coder-mistakes" (otherwise known as "putting-more-than-you-should-into-header-files")
+ *   (gets rid of some/many compiler warnings, C++ language violations, and strange little bugs/errors)
  *
- * Revision 1.32  2007/01/15 02:19:03  wmcoolmon
- * Finish off warning fixage
- *
- * Revision 1.31  2006/12/28 00:59:27  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.30  2006/09/11 06:49:39  taylor
+ * Revision 1.28.2.2  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 1.29  2006/08/20 00:47:10  taylor
+ * Revision 1.28.2.1  2006/08/19 04:26:32  taylor
  * add render option for no glowmaps
  * remove render option for fog (why was this even there??)
  * add tech model view for missiles with special tech models (will hopefully help spur some work towards fixing the currently broken models)
@@ -401,6 +396,16 @@ int ClassInfoEntry::GetCoords(int *x, int *y)
 	return rval;
 }
 
+int ObjectClassInfoEntry::GetImageHandle(int id, int handle_num)
+{
+	return Entries[id].GetImageHandle(handle_num);
+}
+
+int ObjectClassInfoEntry::GetCoords(int id, int *x, int *y)
+{
+	return Entries[id].GetCoords(x, y);
+}
+
 int ObjectClassInfoEntry::GetObjectCoords(int *x, int *y, int *w, int *h)
 {
 	int rval = CIE_GC_NONE_SET;
@@ -670,6 +675,11 @@ GUIObject* GUIScreen::Add(GUIObject* new_gauge)
 	new_gauge->OnRefreshSize();
 
 	return new_gauge;
+}
+
+void GUIScreen::DeleteObject(GUIObject* dgp)
+{
+	DeletionCache.push_back(dgp);
 }
 
 int GUIScreen::OnFrame(float frametime, bool doevents)
@@ -2545,7 +2555,7 @@ bool Text::Save()
 		int the_sint =  atoi(Content.c_str());
 		if(the_sint <= SaveMax && the_sint >= SaveMin)
 		{
-			*siSavePointer = (short)the_sint;
+			*siSavePointer = the_sint;
 			return true;
 		}
 	}

@@ -9,20 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.h $
- * $Revision: 2.20 $
- * $Date: 2007-11-21 07:28:38 $
+ * $Revision: 2.16.2.4 $
+ * $Date: 2007-11-21 07:27:47 $
  * $Author: Goober5000 $
  *
  * Header file for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.19  2007/09/02 02:10:25  Goober5000
+ * Revision 2.16.2.3  2007/09/02 02:07:41  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 2.18  2007/02/10 00:18:22  taylor
+ * Revision 2.16.2.2  2007/02/10 00:17:39  taylor
  * remove NO_SOUND
  *
- * Revision 2.17  2006/08/06 19:24:56  Goober5000
+ * Revision 2.16.2.1  2006/08/06 19:27:12  Goober5000
  * deprecate change-ship-model
  *
  * Revision 2.16  2006/05/21 22:57:30  Goober5000
@@ -289,7 +289,7 @@ void	event_music_enable();
 void	event_music_pause();
 void	event_music_unpause();
 void	event_music_set_volume_all(float volume);
-void	event_music_parse_musictbl(char* filename);
+void	event_music_parse_musictbl(char *filename);
 void	event_music_change_pattern(int new_pattern);
 int	event_music_return_current_pattern();
 void	event_music_first_pattern();

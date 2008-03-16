@@ -24,13 +24,9 @@
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
 				AdditionalIncludeDirectories="..\..\code,..\..\lua"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;USE_OPENAL;FS2_SPEECH;FS2_VOICER"
-				MinimalRebuild="TRUE"
+				PreprocessorDefinitions="_DEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;USE_LUA;FS2_SPEECH;USE_OPENAL"
 				BasicRuntimeChecks="3"
-				SmallerTypeCheck="TRUE"
 				RuntimeLibrary="1"
-				BufferSecurityCheck="TRUE"
-				EnableFunctionLevelLinking="TRUE"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\freespace2.pch"
 				AssemblerListingLocation="$(IntDir)/"
@@ -46,16 +42,16 @@
 				Name="VCCustomBuildTool"/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="Quartz.lib d3d8.lib d3dx8.lib DxErr8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib libjpeg.lib code.lib openal32.lib luabuiltin.lib theora_static_d.lib"
-				OutputFile="C:\Program Files\FreeSpace2\fs2_open_d.exe"
+				AdditionalDependencies="Quartz.lib d3d8.lib d3dx8.lib DxErr8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static_d.lib libjpeg.lib code.lib openal32.lib lua.lib"
+				OutputFile="C:\Program Files\freespace2\fs2_open_3_6_10_d.exe"
 				LinkIncremental="2"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib"
+				AdditionalLibraryDirectories="$(ConfigurationName),..\..\oggvorbis\lib,..\..\openal\libs\win32"
 				IgnoreDefaultLibraryNames="libci.lib,libcd.lib,libcmt.lib"
 				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)\freespace2.pdb"
+				ProgramDatabaseFile="$(IntDir)\freespace2.pdb"
 				GenerateMapFile="TRUE"
-				MapFileName="$(ConfigurationName)\freespace2.map"
+				MapFileName="$(IntDir)\freespace2.map"
 				SubSystem="2"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -104,13 +100,13 @@
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
 				AdditionalIncludeDirectories="..\..\code,..\..\lua"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FS2_SPEECH;FS2_VOICER;USE_OPENAL"
+				PreprocessorDefinitions="NDEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;USE_LUA;FS2_SPEECH;USE_OPENAL"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\freespace2.pch"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
+				ProgramDataBaseFileName="$(IntDir)/freespace2.pdb"
 				BrowseInformation="1"
 				WarningLevel="2"
 				SuppressStartupBanner="TRUE"
@@ -122,16 +118,16 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Quartz.lib Dxerr8.lib d3d8.lib d3dx8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib openal32.lib luabuiltin.lib"
-				OutputFile="C:\Program Files\FreeSpace2\fs2_open_r.exe"
+				AdditionalDependencies="Quartz.lib Dxerr8.lib d3d8.lib d3dx8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib openal32.lib lua.lib"
+				OutputFile="C:\Program Files\freespace2\fs2_open_3_6_10.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib"
+				AdditionalLibraryDirectories="$(ConfigurationName),..\..\oggvorbis\lib,..\..\openal\libs\win32"
 				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
 				GenerateDebugInformation="FALSE"
-				ProgramDatabaseFile="$(ConfigurationName)\freespace2.pdb"
+				ProgramDatabaseFile="$(IntDir)\freespace2.pdb"
 				GenerateMapFile="TRUE"
-				MapFileName="$(ConfigurationName)\freespace2.map"
+				MapFileName="$(IntDir)\freespace2.map"
 				SubSystem="2"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -149,76 +145,6 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="INFDebug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="2"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\lua"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;INF_BUILD;FS2_VOICER"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\freespace2.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="4"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="4"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="NDEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="Quartz.lib d3d8.lib d3dx8.lib DxErr8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib ogg_static_d.lib vorbis_static_d.lib vorbisfile_static_d.lib theora_static_d.lib libjpeg.lib code.lib openal32.lib luabuiltin.lib"
-				OutputFile="C:\Program Files\FreeSpace2\fs2_open_d-Inf.exe"
-				LinkIncremental="2"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib"
-				IgnoreDefaultLibraryNames="libci.lib,libcd.lib,libcmt.lib"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)\freespace2.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName="$(ConfigurationName)\freespace2.map"
-				SubSystem="2"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Debug/Freespace2.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
@@ -250,13 +176,13 @@
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
 				AdditionalIncludeDirectories="..\..\code,..\..\lua"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FS2_SPEECH;FS2_VOICER;USE_OPENAL;INF_BUILD"
+				PreprocessorDefinitions="NDEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;USE_LUA;FS2_SPEECH;USE_OPENAL;INF_BUILD"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\freespace2.pch"
 				AssemblerListingLocation="$(IntDir)/"
 				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
+				ProgramDataBaseFileName="$(IntDir)/freespace2.pdb"
 				BrowseInformation="1"
 				WarningLevel="2"
 				SuppressStartupBanner="TRUE"
@@ -268,16 +194,16 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Quartz.lib Dxerr8.lib d3d8.lib d3dx8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib openal32.lib luabuiltin.lib"
-				OutputFile="C:\Program Files\FreeSpace2\fs2_open_r-Inf.exe"
+				AdditionalDependencies="Quartz.lib Dxerr8.lib d3d8.lib d3dx8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib code.lib openal32.lib alut.lib lua.lib"
+				OutputFile="$(ConfigurationName)\fs2_open.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib"
+				AdditionalLibraryDirectories="$(ConfigurationName),..\..\oggvorbis\lib,..\..\openal\libs\win32"
 				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
 				GenerateDebugInformation="FALSE"
-				ProgramDatabaseFile="$(ConfigurationName)\freespace2.pdb"
+				ProgramDatabaseFile="$(IntDir)\freespace2.pdb"
 				GenerateMapFile="TRUE"
-				MapFileName="$(ConfigurationName)\freespace2.map"
+				MapFileName="$(IntDir)\freespace2.map"
 				SubSystem="2"/>
 			<Tool
 				Name="VCMIDLTool"
@@ -295,446 +221,6 @@
 			<Tool
 				Name="VCResourceCompilerTool"
 				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4Release|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/O2 /Ob2"
-				Optimization="4"
-				GlobalOptimizations="TRUE"
-				EnableIntrinsicFunctions="TRUE"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="TRUE"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\lua"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FS2_SPEECH;FS2_VOICER;USE_OPENAL"
-				RuntimeLibrary="0"
-				BufferSecurityCheck="FALSE"
-				EnableEnhancedInstructionSet="2"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\freespace2.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="2"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="_DEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Quartz.lib Dxerr8.lib d3d8.lib d3dx8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib openal32.lib luabuiltin.lib"
-				OutputFile="C:\Program Files\FreeSpace2\fs2_open_r-P4.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib"
-				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
-				GenerateDebugInformation="FALSE"
-				ProgramDatabaseFile="$(ConfigurationName)\freespace2.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName="$(ConfigurationName)\freespace2.map"
-				SubSystem="2"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Release/Freespace2.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4Debug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\lua"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;FS2_VOICER"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\freespace2.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="4"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="4"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="NDEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="Quartz.lib d3d8.lib d3dx8.lib DxErr8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib ogg_static_d.lib vorbis_static_d.lib vorbisfile_static_d.lib theora_static_d.lib libjpeg.lib code.lib openal32.lib luabuiltin.lib"
-				OutputFile="C:\Program Files\FreeSpace2\fs2_open_d-P4.exe"
-				LinkIncremental="2"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib"
-				IgnoreDefaultLibraryNames="libci.lib,libcd.lib,libcmt.lib,libci.lib"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)\freespace2.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName="$(ConfigurationName)\freespace2.map"
-				SubSystem="2"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Debug/Freespace2.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="INFDSRelease|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/O2 /Ob2"
-				Optimization="4"
-				GlobalOptimizations="TRUE"
-				EnableIntrinsicFunctions="TRUE"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="TRUE"
-				OptimizeForProcessor="2"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\lua"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FS2_SPEECH;INF_BUILD;FS2_VOICER"
-				RuntimeLibrary="0"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\freespace2.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="2"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="_DEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Quartz.lib Dxerr8.lib d3d8.lib d3dx8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib luabuiltin.lib"
-				OutputFile="C:\Program Files\FreeSpace2\fs2_open_r-DSInf.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib"
-				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
-				GenerateDebugInformation="FALSE"
-				ProgramDatabaseFile="$(ConfigurationName)\freespace2.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName="$(ConfigurationName)\freespace2.map"
-				SubSystem="2"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Release/Freespace2.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="INFDSDebug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="2"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\lua"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;INF_BUILD;FS2_SPEECH;FS2_VOICER"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\freespace2.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="4"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="4"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="NDEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="Quartz.lib d3d8.lib d3dx8.lib DxErr8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib ogg_static_d.lib vorbis_static_d.lib vorbisfile_static_d.lib theora_static_d.lib libjpeg.lib code.lib luabuiltin.lib"
-				OutputFile="C:\Program Files\FreeSpace2\fs2_open_d-DSInf.exe"
-				LinkIncremental="2"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib"
-				IgnoreDefaultLibraryNames="libci.lib,libcd.lib,libcmt.lib"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)\freespace2.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName="$(ConfigurationName)\freespace2.map"
-				SubSystem="2"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Debug/Freespace2.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4InfRelease|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE"
-			CharacterSet="2">
-			<Tool
-				Name="VCCLCompilerTool"
-				AdditionalOptions="/O2 /Ob2"
-				Optimization="4"
-				GlobalOptimizations="TRUE"
-				EnableIntrinsicFunctions="TRUE"
-				FavorSizeOrSpeed="1"
-				OmitFramePointers="TRUE"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\lua"
-				PreprocessorDefinitions="NDEBUG;WIN32;_WINDOWS;FS2_SPEECH;FS2_VOICER;USE_OPENAL;INF_BUILD"
-				RuntimeLibrary="0"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\freespace2.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="2"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="3"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="_DEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalOptions="/MACHINE:I386"
-				AdditionalDependencies="Quartz.lib Dxerr8.lib d3d8.lib d3dx8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib libjpeg.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib theora_static.lib code.lib openal32.lib luabuiltin.lib"
-				OutputFile="C:\Program Files\FreeSpace2\fs2_open_r-P4Inf.exe"
-				LinkIncremental="1"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib"
-				IgnoreDefaultLibraryNames="libc.lib,libci.lib"
-				GenerateDebugInformation="FALSE"
-				ProgramDatabaseFile="$(ConfigurationName)\freespace2.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName="$(ConfigurationName)\freespace2.map"
-				SubSystem="2"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Release/Freespace2.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="NDEBUG"
-				Culture="1033"/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"/>
-			<Tool
-				Name="VCWebDeploymentTool"/>
-			<Tool
-				Name="VCManagedWrapperGeneratorTool"/>
-			<Tool
-				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
-		</Configuration>
-		<Configuration
-			Name="P4InfDebug|Win32"
-			OutputDirectory="$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)\Intermediate"
-			ConfigurationType="1"
-			UseOfMFC="0"
-			ATLMinimizesCRunTimeLibraryUsage="FALSE">
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="0"
-				OptimizeForProcessor="3"
-				OptimizeForWindowsApplication="TRUE"
-				AdditionalIncludeDirectories="..\..\code,..\..\lua"
-				PreprocessorDefinitions="_DEBUG;WIN32;_WINDOWS;FS2_SPEECH;FS2_VOICER;USE_OPENAL;INF_BUILD"
-				BasicRuntimeChecks="3"
-				RuntimeLibrary="1"
-				UsePrecompiledHeader="2"
-				PrecompiledHeaderFile="$(ConfigurationName)\Intermediate\freespace2.pch"
-				AssemblerListingLocation="$(IntDir)/"
-				ObjectFile="$(IntDir)/"
-				ProgramDataBaseFileName="$(IntDir)/"
-				BrowseInformation="1"
-				WarningLevel="4"
-				SuppressStartupBanner="TRUE"
-				DebugInformationFormat="4"
-				CompileAs="0"
-				UndefinePreprocessorDefinitions="NDEBUG"/>
-			<Tool
-				Name="VCCustomBuildTool"/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="Quartz.lib d3d8.lib d3dx8.lib DxErr8.lib odbc32.lib odbccp32.lib wsock32.lib winmm.lib vfw32.lib msacm32.lib comctl32.lib ogg_static_d.lib vorbis_static_d.lib vorbisfile_static_d.lib theora_static_d.lib libjpeg.lib code.lib openal32.lib luabuiltin.lib"
-				OutputFile="C:\Program Files\FreeSpace2\fs2_open_d-P4Inf.exe"
-				LinkIncremental="2"
-				SuppressStartupBanner="TRUE"
-				AdditionalLibraryDirectories="$(ConfigurationName);..\..\openal\libs\win32;..\..\oggvorbis\lib"
-				IgnoreDefaultLibraryNames="libci.lib,libcd.lib,libcmt.lib"
-				GenerateDebugInformation="TRUE"
-				ProgramDatabaseFile="$(ConfigurationName)\freespace2.pdb"
-				GenerateMapFile="TRUE"
-				MapFileName="$(ConfigurationName)\freespace2.map"
-				SubSystem="2"/>
-			<Tool
-				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="TRUE"
-				SuppressStartupBanner="TRUE"
-				TargetEnvironment="1"
-				TypeLibraryName=".\Debug/Freespace2.tlb"/>
-			<Tool
-				Name="VCPostBuildEventTool"/>
-			<Tool
-				Name="VCPreBuildEventTool"/>
-			<Tool
-				Name="VCPreLinkEventTool"/>
-			<Tool
-				Name="VCResourceCompilerTool"
-				PreprocessorDefinitions="_DEBUG"
 				Culture="1033"/>
 			<Tool
 				Name="VCWebServiceProxyGeneratorTool"/>
@@ -775,49 +261,7 @@
 					AdditionalIncludeDirectories="\fs2_open\code\FREESPACE2;$(NoInherit)"/>
 			</FileConfiguration>
 			<FileConfiguration
-				Name="INFDebug|Win32">
-				<Tool
-					Name="VCResourceCompilerTool"
-					AdditionalIncludeDirectories="\fs2_open\code\FREESPACE2;$(NoInherit)"/>
-			</FileConfiguration>
-			<FileConfiguration
 				Name="INFRelease|Win32">
-				<Tool
-					Name="VCResourceCompilerTool"
-					AdditionalIncludeDirectories="\fs2_open\code\FREESPACE2;$(NoInherit)"/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="P4Release|Win32">
-				<Tool
-					Name="VCResourceCompilerTool"
-					AdditionalIncludeDirectories="\fs2_open\code\FREESPACE2;$(NoInherit)"/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="P4Debug|Win32">
-				<Tool
-					Name="VCResourceCompilerTool"
-					AdditionalIncludeDirectories="\fs2_open\code\FREESPACE2;$(NoInherit)"/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="INFDSRelease|Win32">
-				<Tool
-					Name="VCResourceCompilerTool"
-					AdditionalIncludeDirectories="\fs2_open\code\FREESPACE2;$(NoInherit)"/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="INFDSDebug|Win32">
-				<Tool
-					Name="VCResourceCompilerTool"
-					AdditionalIncludeDirectories="\fs2_open\code\FREESPACE2;$(NoInherit)"/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="P4InfRelease|Win32">
-				<Tool
-					Name="VCResourceCompilerTool"
-					AdditionalIncludeDirectories="\fs2_open\code\FREESPACE2;$(NoInherit)"/>
-			</FileConfiguration>
-			<FileConfiguration
-				Name="P4InfDebug|Win32">
 				<Tool
 					Name="VCResourceCompilerTool"
 					AdditionalIncludeDirectories="\fs2_open\code\FREESPACE2;$(NoInherit)"/>

@@ -9,26 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideDebrisWeapon.cpp $
- * $Revision: 2.9 $
- * $Date: 2007-11-23 23:49:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.5 $
+ * $Date: 2005-04-05 05:53:21 $
+ * $Author: taylor $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and debris
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.8  2007/02/19 07:24:51  wmcoolmon
- * WMCoolmon experiences a duh moment. Move scripting collision variable declarations in front of overrides, to give
- * them access to these (somewhat useful) variables
- *
- * Revision 2.7  2007/01/14 10:26:38  wmcoolmon
- * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
- *
- * Revision 2.6  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.5  2005/04/05 05:53:21  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
  * Revision 2.4  2004/07/26 20:47:45  Kazan
  * remove MCD complete
  *
@@ -161,6 +148,8 @@ int collide_debris_weapon( obj_pair * pair )
 // Returns 1 if all future collisions between these can be ignored
 int collide_asteroid_weapon( obj_pair * pair )
 {
+#ifndef FS2_DEMO
+
 	if (!Asteroids_enabled)
 		return 0;
 
@@ -178,7 +167,7 @@ int collide_asteroid_weapon( obj_pair * pair )
 		hit = asteroid_check_collision(pasteroid, weapon, &hitpos );
 		if ( !hit )
 			return 0;
-			
+
 		Script_system.SetHookObjects(4, "Weapon", weapon, "Asteroid", pasteroid, "Self",weapon, "Object", pasteroid);
 
 		bool weapon_override = Script_system.IsConditionOverride(CHA_COLLIDEASTEROID, weapon);
@@ -202,9 +191,13 @@ int collide_asteroid_weapon( obj_pair * pair )
 		Script_system.RemHookVars(4, "Weapon", "Asteroid", "Self","ObjectB");
 		return 0;
 
+	} else {
+		return weapon_will_never_hit( weapon, pasteroid, pair );
 	}
 
-	return weapon_will_never_hit( weapon, pasteroid, pair );
+#else
+	return 0;
+#endif
 }				
 
 

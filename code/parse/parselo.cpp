@@ -9,77 +9,50 @@
 
 /*
  * $Source: /cvs/cvsroot/fs2open/fs2_open/code/parse/parselo.cpp,v $
- * $Revision: 2.94 $
- * $Author: wmcoolmon $
- * $Date: 2007-11-23 23:49:34 $
+ * $Revision: 2.73.2.13 $
+ * $Author: Kazan $
+ * $Date: 2007-10-20 23:28:49 $
  *
  * low level parse routines common to all types of parsers
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.93  2007/08/31 20:37:20  turey
- * Fix for Mantis bug: http://scp.indiegames.us/mantis/view.php?id=1482
- * Also, fixed an implicit cast that MSVC2005 choked on.
+ * Revision 2.73.2.12  2007/10/15 06:43:20  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
  *
- * Revision 2.92  2007/08/17 03:29:45  Goober5000
+ * Revision 2.73.2.11  2007/08/17 03:29:49  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
- * Revision 2.91  2007/07/11 20:11:32  turey
- * Ship Template fixes. It's fully working now, hopefully.
- *
- * Revision 2.90  2007/05/28 20:05:06  taylor
+ * Revision 2.73.2.10  2007/05/28 20:04:49  taylor
  * more resilient checking of stars.tbl and it's modular versions
  *
- * Revision 2.89  2007/04/11 14:58:07  taylor
+ * Revision 2.73.2.9  2007/04/11 14:56:37  taylor
  * add extra safety check to make sure that we are going to do a wildcard search for modular tables
  *
- * Revision 2.88  2007/02/05 08:26:06  wmcoolmon
- * Fix a parse bug
+ * Revision 2.73.2.8  2007/02/11 09:05:02  taylor
+ * add WMC's strextcmp() from HEAD
  *
- * Revision 2.87  2007/01/14 12:06:56  wmcoolmon
- * Fix +Override, attempted fix for code adjacent to [] causing crash in scripting.tbl (Unreproducable), and (Untested) fix for script-eval.
- *
- * Revision 2.86  2007/01/14 10:26:38  wmcoolmon
- * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
- *
- * Revision 2.85  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.84  2006/12/26 18:14:42  Goober5000
+ * Revision 2.73.2.7  2006/12/26 18:14:37  Goober5000
  * allow parsing of similar ship copy names properly (Mantis #1178)
  *
- * Revision 2.83  2006/11/13 23:11:08  phreak
- * oops, forgot a break statement
- *
- * *scrapes off the rust*
- *
- * Revision 2.82  2006/11/12 19:58:13  phreak
+ * Revision 2.73.2.6  2006/11/13 23:23:26  phreak
  * Don't copy parentheses to parse buffers if outside of quotation marks.  Otherwise
  *  the parsing syntax will be copied to said buffer and some warnings/errors would occur.
  *
- * Revision 2.81  2006/10/27 16:30:12  taylor
+ * Revision 2.73.2.5  2006/10/27 16:31:09  taylor
  * add the part of the fix which actually did something ;)
  *
- * Revision 2.80  2006/10/27 16:01:46  Goober5000
+ * Revision 2.73.2.4  2006/10/27 16:01:49  Goober5000
  * fix error line reporting (Mantis #1120)
  *
- * Revision 2.79  2006/09/13 03:57:00  taylor
- * fix some stuff_string()'s that got missed previously
- *
- * Revision 2.78  2006/09/11 06:50:42  taylor
+ * Revision 2.73.2.3  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.77  2006/09/04 05:50:58  wmcoolmon
- * Added flag-to-string function for error messages
- *
- * Revision 2.76  2006/08/03 01:33:56  Goober5000
+ * Revision 2.73.2.2  2006/08/03 01:33:25  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
  *
- * Revision 2.75  2006/07/05 23:35:43  Goober5000
+ * Revision 2.73.2.1  2006/07/05 23:36:56  Goober5000
  * cvs comment tweaks
- *
- * Revision 2.74  2006/06/02 08:55:47  karajorma
- * Added stuff_ship_list to act as a typesafe replacement for stuff_int_list and handle variables as legitimate values for both ship type and availability when parsing Team Loadout lists
  *
  * Revision 2.73  2006/04/15 19:00:52  taylor
  * forgot to add forward declaration for allocate_mission_text()  (thanks karajorma ;))
@@ -466,10 +439,6 @@
 #define	ERROR_LENGTH	64
 #define	RS_MAX_TRIES	5
 
-//To keep people from bypassing table checksums with modular tables -C
-bool	Modular_tables_loaded = false;
-bool	Module_ship_weapons_loaded = false;
-
 // to know that a modular table is currently being parsed
 bool	Parsing_modular_table = false;
 
@@ -493,9 +462,6 @@ char	*Mp = NULL, *Mp_save = NULL;
 char	*token_found;
 
 static int Parsing_paused = 0;
-
-//Karajorma 
-int stuff_loadout_quantity(int *ilp, int count, int lookup_type);
 
 // text allocation stuff
 void allocate_mission_text(int size);
@@ -1067,44 +1033,6 @@ int required_string_3(char *str1, char *str2, char *str3)
 	return -1;
 	// exit (1);
 }
-
-//	Return 0 or 1 for str1 match, str2 match.  Return -1 if neither matches.
-//	Does not update Mp if token found.  If not found, advances, trying to
-//	find the string.  Doesn't advance past the found string.
-int required_string_4(char *str1, char *str2, char *str3, char *str4)
-{
-	int	count = 0;
-
-	ignore_white_space();
-
-	while (count < RS_MAX_TRIES) {
-		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
-			// Mp += strlen(str1);
-			diag_printf("Found required string [%s]\n", token_found = str1);
-			return 0;
-		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
-			// Mp += strlen(str2);
-			diag_printf("Found required string [%s]\n", token_found = str2);
-			return 1;
-		} else if (strnicmp(str3, Mp, strlen(str3)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str3);
-			return 2;
-		} else if (strnicmp(str4, Mp, strlen(str4)) == 0) {
-			diag_printf("Found required string [%s]\n", token_found = str4);
-			return 2;
-		}
-
-		error_display(1, "Required token = [%s], [%s], [%s], or [%s], found [%.32s].\n", str1, str2, str3, str4, next_tokens());
-
-		advance_to_eoln(NULL);
-		ignore_white_space();
-		count++;
-	}
-
-	return -1;
-	// exit (1);
-}
-
 
 int required_string_either_fred(char *str1, char *str2)
 {
@@ -2031,7 +1959,7 @@ void read_raw_file_text(char *filename, int mode, char *raw_text)
 	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
 	if (mf == NULL)
 	{
-		//nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
+		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
 		longjmp(parse_abort, 5);
 	}
 
@@ -2210,27 +2138,19 @@ void stuff_float(float *f)
 	else
 		Mp += strspn(Mp, "+-0123456789.");
 
-	//WMC - add support for those nonconformists who
-	//put spaces between #s and commas
-	ignore_gray_space();
 	if (*Mp ==',')
 		Mp++;
 
 	diag_printf("Stuffed float: %f\n", *f);
 }
 
-//WMC- Retvals
-//0 - Next float should not be checked
-//1 - Next float should be checked; current float was skipped
-//2 - Next float should be checked; current float was read
 int stuff_float_optional(float *f)
 {
 	int skip_len;
 	bool comma = false;
 	
-	ignore_gray_space();
-	//WMC - include gray space
-	skip_len = strspn(Mp, "+-0123456789. \t");
+	ignore_white_space();
+	skip_len = strspn(Mp, "+-0123456789.");
 	if(*(Mp+skip_len) == ',') {
 		comma = true;
 	}
@@ -2523,16 +2443,13 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 		Assert(count < max_ints);
 		if (*Mp == '"') {
 			int num = 0;
-			char str[128] = {0};
+			char str[128];
 
 			get_string(str);
 			switch (lookup_type) {
-
-				/* Karajorma - The stuff_ship_list function should make use of this lookup type obsolete
 				case SHIP_TYPE:
 					num = ship_name_lookup(str);	// returns index of Ship[] entry with name
 					break;
-				*/
 
 				case SHIP_INFO_TYPE:
 					ok_flag = 1;
@@ -2596,191 +2513,6 @@ int stuff_int_list(int *ilp, int max_ints, int lookup_type)
 
 	return count;
 }
-
-//	Karajorma - This particular piece of code is used so often it should be a routine. Finds the opening 
-//  bracket and advances MP beyond it. 
-void advance_past_opening_parenthesis(char *message, int val)
-{
-	ignore_white_space();
-
-	if (*Mp != '(') 
-	{
-		error_display(1, message, *Mp);
-		longjmp(parse_abort, val);
-	}
-
-	Mp++;	
-	ignore_white_space();
-}
-
-// Karajorma - Stuffs the provided char array with either the contents of a quoted string or the name of a string 
-// variable. Returns FOUND_STRING if a string was found or FOUND_VARIABLE if a variable was present. 
-int get_string_or_variable (char *str)
-{
-	ignore_white_space();
-	
-	// Variable
-	if (*Mp == '@') 
-	{
-		Mp++;
-		stuff_string_white(str); 
-		int sexp_variable_index = get_index_sexp_variable_name(str); 
-		
-		// We only want String variables
-		Assert (Sexp_variables[sexp_variable_index].type & SEXP_VARIABLE_STRING);
-
-		return FOUND_VARIABLE; 
-	}
-	// Quoted string
-	else if (*Mp == '"')
-	{
-		get_string(str);
-		return FOUND_STRING;
-	}
-	/*
-	// Unquoted string
-	else
-	{
-		stuff_string(str, F_NAME, NULL);
-		return FOUND_STRING;
-	}*/
-	return FOUND_BAD_DATA;
-}
-
-// Karajorma - Stuffs an int list by parsing a list of ship choices. 
-// Unlike stuff_int_list it can deal with variables and it also has better error reporting. 
-int stuff_ship_list (int *ilp, int max_ints, int lookup_type)
-{
-	char error_message []  = {"Reading ship list.  Found [%c].  Expecting '('.\n"};
-	advance_past_opening_parenthesis(error_message, 6);
-
-	int count=0;
-	while (*Mp != ')') 
-	{
-		Assert (count < max_ints);  
-
-		//The first entry MUST be a ship 
-		
-		if (*Mp != '"') 
-		{
-			if ((lookup_type == MISSION_LOADOUT_SHIP_LIST )  && (*Mp != '@'))
-			{
-				Error(LOCATION, "Invalid ship type \"%s\" found in $Ship Choices: of mission file");
-			}
-			else if (lookup_type == CAMPAIGN_LOADOUT_SHIP_LIST )
-			{
-				Error(LOCATION, "Invalid ship type \"%s\" found in $Ship Choices: of campaign file");
-			}
-		}
-
-		int ship_index = -1; 
-		int sexp_variable_index = -1;
-		char str[128];
-
-		int item_found = get_string_or_variable (str); 
-
-		if (item_found == FOUND_STRING)
-		{
-			ship_index = ship_info_lookup(str);
-		}
-		else if (item_found == FOUND_VARIABLE)
-		{
-			Assert (lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST );
-			sexp_variable_index = get_index_sexp_variable_name(str);
-			ship_index = ship_info_lookup(Sexp_variables[sexp_variable_index].text);
-		}
-
-		// Complain if this isn't a valid ship and we are loading a mission. Campaign files can be loading containing 
-		// no ships from the current tables (when swapping mods) so don't report that as an error. 
-		if (ship_index < 0) 
-		{
-			if (lookup_type == MISSION_LOADOUT_SHIP_LIST )
-			{
-				Error(LOCATION, "Invalid ship type \"%s\" found in $Ship Choices: of mission file", str);
-			}
-		}
-		else 
-		{
-			// we've found a real ship. Add its index to the list.
-			ilp[count++] = ship_index;
-		}
-		
-		ignore_white_space();
-
-		// Now that we've gotten the first entry out of the way we want to read the number of ship
-		// of this ship class. We won't want to do this for a campaign loadout though.
-		if (lookup_type == CAMPAIGN_LOADOUT_SHIP_LIST )
-		{
-			continue;
-		}
-
-		// record the index of the variable that gave us this ship if any
-		ilp[count++] = sexp_variable_index;
-
-		// Now read in the number of ships of this type available
-		count = stuff_loadout_quantity(ilp, count, lookup_type); 
-
-		ignore_white_space();
-	}
-
-	Mp++;
-	return count;
-}
-
-
-// Karajorma - Helper routine for stuff_ship_list and stuff_weapon_list.
-int stuff_loadout_quantity(int *ilp, int count, int lookup_type)
-{	
-	// We don't have quantities for the campaign file
-	Assert (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST );
-
-	// If the "number" of weapons is actually a string then we are probably dealing with a SEXP variable
-	if (*Mp == '@') 
-	{
-		Mp++;
-		int quantity = -1; 
-		char str[128];
-		stuff_string(str, F_NAME, sizeof(str));
-
-		int index = get_index_sexp_variable_name(str); 
-			
-		if (index > -1 && index < MAX_SEXP_VARIABLES) 
-		{
-			Assert (Sexp_variables[index].type & SEXP_VARIABLE_NUMBER);
-			quantity = atoi(Sexp_variables[index].text);
-		}
-		else if ( lookup_type == MISSION_LOADOUT_SHIP_LIST )
-		{
-			Error(LOCATION, "Invalid number of ships or Invalid variable name \"%s\" found in $Ship_Choices:", str);
-		}
-		else
-		{
-			Error(LOCATION, "Invalid number of weapons or Invalid variable name \"%s\" found in +Weaponary Pool:", str);
-		}
-
-		// Values below 0 are legal for the sexp_variable but the loadout itself should never use them.
-		if (quantity < 0) 
-		{
-			quantity = 0;
-		}
-		
-		// Record the value of the index for FreeSpace 
-		ilp[count++] = quantity;
-		// Record the index itself because we may need it later.
-		ilp[count++] = index;
-	}
-	// Otherwise we are dealing with a numerical value
-	else 
-	{	
-		// Stuff the number of weapons in
-		stuff_int(&ilp[count++]);
-		// Since we have a numerical value we don't have a SEXP variable index to add for next slot. 
-		ilp[count++] = NOT_SET_BY_SEXP_VARIABLE;
-	}
-	return count; 
-}
-
-
 
 //Stuffs an integer list like stuff_int_list.
 int stuff_float_list(float* flp, int max_floats)
@@ -3287,31 +3019,6 @@ int split_str(char *src, int max_pixel_w, int *n_chars, char **p_str, int max_li
 	return line_num;
 }
 
-//WMC - Created so that we have a way to give a list of flags in an error message.
-//Uses the ordinary TBL syntax
-//Concatenates onto desc.
-int flags_to_string(char *dest, int flags, flag_def_list defs[], int defs_size)
-{
-	strcat(dest, "(");
-	int i;
-	int num = 0;
-	for(i = 0; i < defs_size; i++)
-	{
-		if(flags & defs[i].def)
-		{
-			strcat(dest, " \"");
-			strcat(dest, defs[i].name);
-			strcat(dest, "\"");
-			num++;
-		}
-	}
-
-	strcat(dest, " )");
-
-	return num;
-}
-
-
 // Goober5000
 // accounts for the dumb communications != communication, etc.
 int subsystem_stricmp(const char *str1, const char *str2)
@@ -3355,8 +3062,8 @@ char *stristr(const char *str, const char *substr)
 		return NULL;
 
 	// save both a lowercase and an uppercase version of the first character of substr
-	char substr_ch_lower = (char)tolower(*substr);
-	char substr_ch_upper = (char)toupper(*substr);
+	char substr_ch_lower = tolower(*substr);
+	char substr_ch_upper = toupper(*substr);
 
 	// find the maximum distance to search
 	char *upper_bound = (char *)str + strlen(str) - strlen(substr);
@@ -3498,32 +3205,34 @@ int replace_all(char *str, char *oldstr, char *newstr, uint max_len, int range)
 	return (val < 0) ? val : tally;
 }
 
-//WMC
-//Compares two strings, ignoring (last) extension
-//Returns 0 if equal, nonzero if not
-int strextcmp(const char *s1, const char* s2)
+// WMC
+// Compares two strings, ignoring (last) extension
+// Returns 0 if equal, nonzero if not
+int strextcmp(const char *s1, const char *s2)
 {
-	//WMC - sanity check
-	Assert(s1 != NULL && s2 != NULL);
+	// sanity check
+	Assert( (s1 != NULL) && (s2 != NULL) );
 
-	//Find last '.' in both strings
-	char *s1_end = (char*) strrchr(s1, '.');
-	char *s2_end = (char*) strrchr(s2, '.');
+	// find last '.' in both strings
+	char *s1_end = (char *)strrchr(s1, '.');
+	char *s2_end = (char *)strrchr(s2, '.');
 
-	//Get length
+	// get length
 	size_t s1_len, s2_len;
-	if(s1_end != NULL)
-		s1_len = s1_end - s1;
+
+	if (s1_end != NULL)
+		s1_len = (s1_end - s1);
 	else
 		s1_len = strlen(s1);
 
-	if(s2_end != NULL)
-		s2_len = s2_end - s2;
+	if (s2_end != NULL)
+		s2_len = (s2_end - s2);
 	else
 		s2_len = strlen(s2);
 
-	if(s2_len != s1_len)
-		return 1; //Oops
+	// if the lengths aren't the same then it's deffinitely not the same name
+	if (s2_len != s1_len)
+		return 1;
 
 	return strnicmp(s1, s2, s1_len);
 }
@@ -3634,10 +3343,6 @@ int parse_modular_table(char *name_check, void (*parse_callback)(char *filename)
 	}
 
 	Parsing_modular_table = false;
-
-	if (num_files > 0) {
-		Modular_tables_loaded = true;
-	}
 
 	return num_files;
 }

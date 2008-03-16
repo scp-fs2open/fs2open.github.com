@@ -9,18 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.h $
- * $Revision: 2.17 $
- * $Date: 2007-11-21 07:28:38 $
+ * $Revision: 2.14.2.3 $
+ * $Date: 2007-11-21 07:27:47 $
  * $Author: Goober5000 $
  *
  * Header file for briefing stuff common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.16  2007/03/21 21:06:54  karajorma
+ * Revision 2.14.2.2  2007/03/21 20:54:24  karajorma
  * Bump the number of debriefing stages.
  * Fix an annoying (and erroneous) warning in the campaign editor.
  *
- * Revision 2.15  2006/09/20 05:02:41  taylor
+ * Revision 2.14.2.1  2006/09/20 04:53:53  taylor
  * properly fix the new_recommendation_text FRED problem, plus some real cleanup for that code in general, and some memory leak fixes
  *
  * Revision 2.14  2006/01/26 04:01:58  Goober5000

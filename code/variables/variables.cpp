@@ -278,7 +278,7 @@ public:
 		if(data && data->obj)
 		switch(data->obj->type){
 		case OBJ_SHIP:
-			return shield_get_strength(data->obj);
+			return get_shield_strength(data->obj);
 		default: return 0.0f;
 		}
 		else return 0.0f;

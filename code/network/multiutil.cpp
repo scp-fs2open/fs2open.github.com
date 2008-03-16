@@ -9,17 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.cpp $
- * $Revision: 2.51 $
- * $Date: 2007-04-24 13:13:49 $
- * $Author: karajorma $
+ * $Revision: 2.45.2.8 $
+ * $Date: 2007-10-15 06:43:19 $
+ * $Author: taylor $
  *
  * C file that contains misc. functions to support multiplayer
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.50  2007/04/06 13:24:32  karajorma
- * Fix a bug where gliding ships couldn't jump out. Remove a couple of magic numbers.
+ * Revision 2.45.2.7  2007/04/24 12:07:33  karajorma
+ * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
  *
- * Revision 2.49  2006/09/24 22:55:17  taylor
+ * Revision 2.45.2.6  2007/04/24 09:52:26  karajorma
+ * Add the knock feature from Tom's build.
+ *
+ * Revision 2.45.2.5  2007/04/05 16:49:21  karajorma
+ * Fix bug whereby clients who were gliding can't jump out at the end of the mission. Remove a couple of magic numbers that looked at me the wrong way.
+ *
+ * Revision 2.45.2.4  2006/09/24 22:53:22  taylor
  * more standalone server fixes:
  *  - add some basic bmpman functionality to grstub, since it needs to do something at least
  *  - add missing gr_* function ptrs to grstrub
@@ -27,13 +33,13 @@
  *  - deal with default pilot file properly (also caused a bmpman headache)
  *  - don't bother with Multi_common_icons[] in standalone mode (they don't load, so don't let them unload either)
  *
- * Revision 2.48  2006/09/24 13:32:47  taylor
+ * Revision 2.45.2.3  2006/09/24 13:29:20  taylor
  * move FS2NetD connection checks to *after* it tries to connect ;)  (Mantis bug #1065)
  *
- * Revision 2.47  2006/09/20 05:05:28  taylor
+ * Revision 2.45.2.2  2006/09/20 05:01:36  taylor
  * add some extra FS2NetD safety checks around to prevent the code from doing stupid crash-happy things
  *
- * Revision 2.46  2006/08/20 00:51:06  taylor
+ * Revision 2.45.2.1  2006/08/19 04:38:47  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
  * Revision 2.45  2006/02/06 02:06:02  wmcoolmon
@@ -440,6 +446,7 @@
 #include "network/multi.h"
 #include "cmdline/cmdline.h"
 #include "cfile/cfile.h"
+#include "cfile/cfilesystem.h"
 #include "network/multimsgs.h"
 #include "network/multi_xfer.h"
 #include "network/multiteamselect.h"
@@ -457,7 +464,8 @@
 #include "network/multi_pause.h"
 #include "network/multi_log.h"
 #include "network/multi_rate.h"
-#include "fs2open_pxo/Client.h"
+#include "fs2netd/fs2netd_client.h"
+#include "parse/parselo.h"
 
 extern int MSG_WINDOW_X_START;	// used to position multiplayer text messages
 extern int MSG_WINDOW_Y_START;
@@ -944,6 +952,23 @@ int multi_find_player_by_net_signature(ushort net_signature)
 	return -1;
 }
 
+// returns a player num based upon it's parse_object unlike the above functions it can be used on respawning players
+int multi_find_player_by_parse_object( p_object *p_objp )
+{
+	int idx;
+
+	for(idx=0;idx<MAX_PLAYERS;idx++){
+		// compare against each player's object signature
+		if(MULTI_CONNECTED(Net_players[idx]) && (Net_players[idx].p_info.p_objp == p_objp) ){
+			// found the player
+			return idx;
+		}
+	}
+
+	// didn't find the player
+	return -1;
+}
+
 int multi_find_player_by_ship_name(char *ship_name)
 {
 	int idx;
@@ -1036,7 +1061,7 @@ void stuff_netplayer_info( net_player *nplayer, net_addr *addr, int ship_class, 
 	nplayer->state = NETPLAYER_STATE_JOINING;
 	nplayer->p_info.ship_class = ship_class;
 	nplayer->m_player = pplayer;
-	nplayer->p_info.options.obj_update_level = OBJ_UPDATE_HIGH;
+	nplayer->p_info.options.obj_update_level = Cmdline_objupd; // Set the update to the specified value
 
 	// if setting up my net flags, then set the flag to say I can do networking.
 	if ( nplayer == Net_player ){
@@ -1184,13 +1209,11 @@ int multi_create_player( int net_player_num, player *pl, char* name, net_addr* a
 	pl->objnum = -1;
 	pl->insignia_texture = -1;
 
-#ifndef NO_STANDALONE
 	// if we're the standalone server and this is the first guy to join, mark him as the host
 	// and give him all host priveleges
-	if((Game_mode & GM_STANDALONE_SERVER) && (current_player_count == 0)){
+	if ( (Game_mode & GM_STANDALONE_SERVER) && (current_player_count == 0) ) {
 		Net_players[net_player_num].flags |= NETINFO_FLAG_GAME_HOST;
 	}
-#endif
 	
 	Net_players[net_player_num].player_id = id;
 
@@ -1220,6 +1243,7 @@ void multi_make_player_ai( object *pobj )
 
 	pobj->flags &= ~(OF_PLAYER_SHIP);
 	obj_set_flags( pobj, pobj->flags | OF_COULD_BE_PLAYER );
+	obj_set_flags( pobj, pobj->flags & ~(OF_INVULNERABLE));		// Newly respawned players will still be invulnerable
 
 	// target_objnum must be -1 or else new AI ship will fire on whatever this player
 	// had targeted.
@@ -1269,8 +1293,7 @@ void delete_player(int player_num,int kicked_reason)
 		Net_players[player_num].flags &= ~(NETINFO_FLAG_GAME_HOST);
 	
 		// am I the server
-		if((Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-#ifndef NO_STANDALONE
+		if ( (Net_player != NULL) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
 			// are we a standalone server and in a mission?
 			if((Game_mode & GM_STANDALONE_SERVER) && MULTI_IN_MISSION){			
 				// choose a new host			
@@ -1291,9 +1314,7 @@ void delete_player(int player_num,int kicked_reason)
 				if(!found_new_host){
 					multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_HOST_LEFT);
 				}			 
-			} else 
-#endif // #ifndef NO_STANDALONE
-                        {
+			} else {
 				multi_quit_game(PROMPT_NONE, MULTI_END_NOTIFY_NONE, MULTI_END_ERROR_HOST_LEFT);
 			}
 		} 
@@ -1357,13 +1378,11 @@ void delete_player(int player_num,int kicked_reason)
 		multi_display_chat_msg(notify_string,0,0);
 	}
 	
-#ifndef NO_STANDALONE
 	// standalone gui type stuff
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_remove_player(&Net_players[player_num]);
 		std_connect_set_connect_count();
 	}
-#endif
 
 	// blast this memory clean
 	memset(&Net_players[player_num], 0, sizeof(net_player));
@@ -2381,9 +2400,8 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 		return JOIN_DENY_JR_STATE;
 	}
 	
-#ifndef NO_STANDALONE
 	// the standalone has some oddball situations which we must handle seperately
-	if(Game_mode & GM_STANDALONE_SERVER){		
+	if (Game_mode & GM_STANDALONE_SERVER) {		
 		// if this is the first connection, he will be the host so we must always accept him
 		if(multi_num_players() == 0){
 
@@ -2412,7 +2430,6 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 			}
 		}		
 	}
-#endif  // #ifndef NO_STANDALONE
 
 	// first off check to see if we're violating any of our max players/observers/connections boundaries	
 		// if we've already got the full 16 (MAX_PLAYERS) connections - yow
@@ -2469,25 +2486,13 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 		return JOIN_DENY_JR_TYPE;
 	}	*/
 
-#ifndef NO_STANDALONE
 	// if the player was banned by the standalone
-	if((Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign)){
+	if ( fs2netd_player_banned(addr) || ((Game_mode & GM_STANDALONE_SERVER) && std_player_is_banned(jr->callsign)) ) {
 		// maybe we should log this
 		sprintf(knock_message, "Banned user %s with IP: %s attempted to join server", knock_callsign, psnet_addr_to_string(jr_ip_string, addr));
 		ml_string(knock_message);
 		return JOIN_DENY_JR_BANNED;
 	}
-#endif
-
-	// ----------- FS2NetD IP Banning -----------
-	if(fs2netd_player_banned(addr)){
-		// we should log this too 
-		sprintf(knock_message, "Banned user %s with IP: %s attempted to join server", knock_callsign, psnet_addr_to_string(jr_ip_string, addr));
-		ml_string(knock_message);
-		return JOIN_DENY_JR_BANNED;
-	}
-	
-	
 
 	// if the game is in-mission, make sure there are ships available
 	if(MULTI_IN_MISSION && !(jr->flags & JOIN_FLAG_AS_OBSERVER)){
@@ -2534,6 +2539,15 @@ int multi_eval_join_request(join_request *jr,net_addr *addr)
 	return -1;
 }
 
+// Karajorma - called by any machine (client, host, server, standalone, etc) if the mission ends by any means
+// other than a warpout
+void multi_handle_sudden_mission_end()
+{
+	if (!(MULTIPLAYER_STANDALONE)) {
+		multi_msg_text_flush();
+	}
+}
+
 // called by any machine (client, host, server, standalone, etc), to begin warping out all player objects
 void multi_warpout_all_players()
 {
@@ -2569,6 +2583,8 @@ void multi_warpout_all_players()
 	// if we're an observer, or we're respawning, or we can't warp out. so just jump into the debrief state
 	if((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Net_player->flags & NETINFO_FLAG_RESPAWNING) ||
 		(Net_player->flags & NETINFO_FLAG_OBSERVER) || ((Player_obj->type == OBJ_SHIP) && (Player_ship->flags & SF_CANNOT_WARP)) ){		
+
+		multi_handle_sudden_mission_end(); 
 
 		if(Netgame.type_flags & NG_TYPE_DOGFIGHT){
 			gameseq_post_event(GS_EVENT_MULTI_DOGFIGHT_DEBRIEF);
@@ -2632,12 +2648,10 @@ void multi_handle_end_mission_request()
 		Netgame.game_state = NETGAME_STATE_ENDGAME;		
 		send_netgame_update_packet();					
 		
-#ifndef NO_STANDALONE
-		if(Game_mode & GM_STANDALONE_SERVER){					
+		if (Game_mode & GM_STANDALONE_SERVER) {					
 			// move to the standalone postgame (which is where we'll handle stats packets, etc)
 			gameseq_post_event(GS_EVENT_STANDALONE_POSTGAME);
 		}
-#endif
 
 		// begin the warpout process for all players and myself
 		multi_warpout_all_players();
@@ -2987,15 +3001,12 @@ void multi_process_valid_join_request(join_request *jr, net_addr *who_from, int 
 	// copy in his options
 	memcpy(&Net_players[net_player_num].p_info.options, &jr->player_options, sizeof(multi_local_options));
 
-#ifndef NO_STANDALONE
 	// if on the standalone, then do any necessary gui updating
-	if(Game_mode & GM_STANDALONE_SERVER) {		
+	if (Game_mode & GM_STANDALONE_SERVER) {		
 		std_add_player(&Net_players[net_player_num]);
 		std_connect_set_connect_count();
 		std_connect_set_host_connect_status();
-	} else 
-#endif
-   {
+	} else {
 		// let the create game screen know someone has joined
 		if(gameseq_get_state() == GS_STATE_MULTI_HOST_SETUP){
 			multi_create_handle_join(&Net_players[net_player_num]);
@@ -3229,12 +3240,10 @@ void multi_flush_mission_stuff()
 
 	multi_xfer_reset();
 
-#ifndef NO_STANDALONE
 	// standalone servers should clear their goal trees now
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_multi_setup_goal_tree();
 	}
-#endif
 	
 	// object signatures
 	// this will eventually get reset to Netgame.security the next time an object gets its signature assigned.
@@ -3300,13 +3309,11 @@ int multi_kill_limit_reached()
 // display a chat message (write to the correct spot - hud, standalone gui, chatbox, etc)
 void multi_display_chat_msg(char *msg, int player_index, int add_id)
 {
-#ifndef NO_STANDALONE
 	// if i'm a standalone, always add to the gui
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_add_chat_text(msg,player_index,add_id);
 		return;
 	}
-#endif
 	
 	// in gameplay
 	if(Game_mode & GM_IN_MISSION){					
@@ -3446,470 +3453,126 @@ int multi_string_to_status(char *valid_string)
 }
 
 // if we're in tracker mode, do a validation update on all known missions
-// **************************************** Changed for FS2NetD ***********************************
-// Origional code for this function just became _BOGUS_
-
-
-// ulgy hacking here..
-extern char *Multi_create_loading_fname[];
-extern int Multi_create_bitmap;
-extern int Please_wait_coords[GR_NUM_RESOLUTIONS][4];
-#define MC_X_COORD 0
-#define MC_Y_COORD 1
-
-void multi_update_validate_missions_DrawString(char *str)
-{
-	gamesnd_play_iface(SND_SCROLL);
-
-	  // --------- ripped from [V]'s "LOADING" screen code
-	int loading_bitmap;
-
-	loading_bitmap = bm_load(Multi_create_loading_fname[gr_screen.res]);
-
-	// draw the background, etc
-	gr_reset_clip();
-
-	GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
-
-	if(Multi_create_bitmap != -1){
-		gr_set_bitmap(Multi_create_bitmap);
-		gr_bitmap(0, 0);
-	}
-	chatbox_render();
-
-	if ( loading_bitmap > -1 ){
-		gr_set_bitmap(loading_bitmap);
-	}
-	gr_bitmap( Please_wait_coords[gr_screen.res][MC_X_COORD], Please_wait_coords[gr_screen.res][MC_Y_COORD] );
-
-	// draw str on it
-
-	int str_w, str_h;
-
-	gr_set_color_fast(&Color_normal);
-	gr_set_font(FONT2);
-	gr_get_string_size(&str_w, &str_h, str);
-	gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, str, false);
-	gr_set_font(FONT1);
-
-	gr_flip();
-
-	
-	bm_release(loading_bitmap);
-
-}
-
-
-void multi_update_ban_list()
-{
-	// if we're not on FS2NetD (PXO) then don't bother with this function
-	if (!Om_tracker_flag || !FS2OpenPXO_Socket.isInitialized())
-		return;
-
-	// destroy the file prior to updating
-	cf_delete( "banlist.cfg", CF_TYPE_DATA );
-
-#ifndef NO_STANDALONE
-	// if we're a standalone, show a dialog saying "validating missions"
-	if(Game_mode & GM_STANDALONE_SERVER){
-		std_create_gen_dialog("Updating Global Banlist");
-		std_gen_set_text("Querying FS2NetD:",1);
-	}
-#endif
-
-	multi_update_validate_missions_DrawString("Asking PXO Server for IP Banlist Masks");
-
-	// Get the banlist from the server
-	int numBans;	
-	fs2open_banmask *bans = GetBanList(numBans, FS2OpenPXO_Socket);
-
-
-#ifndef NO_STANDALONE
-	// if we're a standalone, show a dialog saying "validating missions"
-	if(Game_mode & GM_STANDALONE_SERVER){
-		std_gen_set_text("Got FS2NetD Reply:",1);
-	}
-#endif
-
-	// open the outfile
-	CFILE *banlist_cfg = cfopen("banlist.cfg", "wt", CFILE_NORMAL, CF_TYPE_DATA);
-
-	for (int i = 0; i < numBans; i++)
-	{
-		cfputs(bans[i].ip_mask, banlist_cfg);
-	}
-
-	cfclose(banlist_cfg);
-	delete[] bans;
-
-#ifndef NO_STANDALONE
-	// if we're a standalone, kill the validate dialog
-	if(Game_mode & GM_STANDALONE_SERVER){
-		std_destroy_gen_dialog();
-	}
-#endif 
-}
-
-	
-bool fs2netd_player_banned(net_addr *addr)
-{
-	if (!Om_tracker_flag || !FS2OpenPXO_Socket.isInitialized())
-		return false; // no tracker, no bannination
-
-	char line[32]; // no line should be larger than 16, but let's be safe
-	char ip_str[32];
-	memset(ip_str, 0, 32);
-	memset(line, 0, 32);
-
-	psnet_addr_to_string( ip_str, addr );
-
-	bool retval = false;
-	CFILE *banlist_cfg = cfopen("banlist.cfg", "rt", CFILE_NORMAL, CF_TYPE_DATA);
-
-	while (!cfeof(banlist_cfg) && !retval)
-	{
-		cfgets(line, 32, banlist_cfg);
-
-		if (!strnicmp(ip_str, line, strlen(line)))
-			retval = true; // BANNINATED!!!
-	}
-
-	cfclose(banlist_cfg);
-
-
-	return retval;
-
-}
-
-
 void multi_update_valid_missions()
 {
-	// if we're not on FS2NetD (PXO) then don't bother with this function
-	if ( !Om_tracker_flag )
-		return;
+	char next_filename[MAX_FILENAME_LEN+1];	
+	char next_line[512];
+	char status_string[50];
+	char temp[256];
+	char *tok;
+	CFILE *in;
+	int idx, file_index;	
+	bool was_cancelled = false;
 
-	// destroy the file prior to updating
-	cf_delete( "mvalid.cfg", CF_TYPE_DATA );
-
-	static char Server[32];
-	static int port = -1;
-
-	fs2netd_maybe_init();
-
-	// if we didn't connect to FS2NetD then bail out now
-	if ( !FS2OpenPXO_Socket.isInitialized() )
-		return;
-
-#ifndef NO_STANDALONE
 	// if we're a standalone, show a dialog saying "validating missions"
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_create_gen_dialog("Validating missions");
-		std_gen_set_text("Querying FS2NetD:",1);
+		std_gen_set_text("Querying:", 1);
 	}
-#endif
 
-	multi_update_validate_missions_DrawString("Asking PXO Server for Mission CRCs");
-
-	// ----------- Get the CRCs from the server -------------
-	//FS2OpenPXO_Socket
-	int numFrecs; 
-	file_record *frecs = GetMissionsList(numFrecs, Server, FS2OpenPXO_Socket, port);
-
-
-
-#ifndef NO_STANDALONE
-	// if we're a standalone, show a dialog saying "validating missions"
-	if(Game_mode & GM_STANDALONE_SERVER){
-		std_gen_set_text("Got FS2NetD Reply:",1);
+	// mark all missions on our list as being MVALID_STATUS_UNKNOWN
+	for (idx = 0; idx < Multi_create_mission_count; idx++) {
+		Multi_create_mission_list[idx].valid_status = MVALID_STATUS_UNKNOWN;
 	}
-#endif
-
-
-	// this is a shameless splicing of [V]'s code from the pxo spew below and my code.
-	char **file_names;
-	char full_name[MAX_FILENAME_LEN+1];
-	char wild_card[10];
-	int count, idx, i;
-	bool Found, Valid;
-	uint checksum;
-//	FILE *out;
-
-	// allocate filename space	
-	file_names = (char**)vm_malloc(sizeof(char*) * 1024); // 1024 files should be safe!
-
-	if (file_names != NULL) {
-		memset(wild_card, 0, sizeof(wild_card));
-		strcpy(wild_card, NOX("*"));
-		strcat(wild_card, FS_MISSION_FILE_EXT);
-		count = cf_get_file_list(1024, file_names, CF_TYPE_MISSIONS, wild_card);	
 	
-		// open the outfile
-		CFILE *mvalid_cfg = cfopen("mvalid.cfg", "wt", CFILE_NORMAL, CF_TYPE_DATA);
+	// attempt to open the valid mission config file
+	in = cfopen(MULTI_VALID_MISSION_FILE, "rt", CFILE_NORMAL, CF_TYPE_DATA);
 
-	 
-		// do all the checksums
-		for(idx=0; idx<count; idx++){
-			memset(full_name, 0, MAX_FILENAME_LEN+1);			
-			strcpy(full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT));
+	if (in != NULL) {		
+		// read in all listed missions
+		while ( !cfeof(in) ) {
+			// read in a line
+			memset(next_line, 0, 512);
+			cfgets(next_line, 512, in);
+			drop_trailing_white_space(next_line);
+			drop_leading_white_space(next_line);
 
-			std::string temp = "Validating ";
-			temp = temp + full_name;
+			// read in a filename
+			memset(next_filename, 0, MAX_FILENAME_LEN+1);
+			memset(temp, 0, 256);
+			tok = strtok(next_line, " ");
 
-#ifndef NO_STANDALONE
-			// if we're a standalone, show a dialog saying "validating missions"
-			if(Game_mode & GM_STANDALONE_SERVER)
-			{
-				std_gen_set_text((char *) temp.c_str(),1);
-			}
-			else
-#endif
-				multi_update_validate_missions_DrawString((char *) temp.c_str());
+			if (tok == NULL)
+				continue;
 
-			cf_chksum_long(full_name, &checksum);
+			strcpy(temp, tok);
+			drop_trailing_white_space(temp);
+			drop_leading_white_space(temp);
+			strcpy(next_filename, temp);
 			
-			Found = false;
-			Valid = false;
+			// read in the status string
+			memset(status_string, 0, 50);
+			memset(temp, 0, 256);
+			tok = strtok(NULL," \n");
 
-			cfputs("'", mvalid_cfg);
-			cfputs(full_name, mvalid_cfg);
-			cfputs("'", mvalid_cfg);
+			if (tok == NULL)
+				continue;
 
-			for (i = 0; (i < numFrecs) && (!Valid); i++)
-			{
-				if (!stricmp(full_name, frecs[i].name))
-				{
-					ml_printf("Mission Validation: %s  =>  client checksum: %u, server checksum: %u", full_name, checksum, frecs[i].crc32);
+			strcpy(temp, tok);
+			drop_trailing_white_space(temp);
+			drop_leading_white_space(temp);
+			strcpy(status_string, temp);
 
-					Found = true;
-
-					// Found now becomes a valid/invalid specifier
-					if (checksum == frecs[i].crc32)
-					{
-						Valid = true;
-					}
-				}
-			}
-
-			if (!Found)
-			{
-				cfputs(" ... (not on server)\n", mvalid_cfg);
-			}
-			else
-			{
-				if (Valid)
-				{
-					cfputs(" ... valid\n", mvalid_cfg);
-				}
-				else
-				{
-					cfputs(" ... invalid\n", mvalid_cfg);
-				}
-			}
-		}
-
-		cfclose(mvalid_cfg);
-
-		for (idx = 0; idx < count; idx++) {
-			if (file_names[idx] != NULL) {
-				vm_free(file_names[idx]);
-				file_names[idx] = NULL;
-			}
-		}
-
-		vm_free(file_names);
+			// try and find the file
+			file_index = multi_create_lookup_mission(next_filename);
 	
+			if (file_index >= 0)
+				Multi_create_mission_list[file_index].valid_status = (char)multi_string_to_status(status_string);
+		}
+
+		// close the infile
+		cfclose(in);
+		in = NULL;	
 	}
 
-	delete[] frecs;
+	// now poll for all unknown missions
+	was_cancelled = !(fs2netd_get_valid_missions());
 
-#ifndef NO_STANDALONE
+	// if the operation was cancelled, don't write anything new
+	if (was_cancelled) {
+		// if we're a standalone, kill the validate dialog
+		if(Game_mode & GM_STANDALONE_SERVER){
+			std_destroy_gen_dialog();
+		}
+
+		return;
+	}
+
+	// now rewrite the outfile with the new mission info
+	in = cfopen(MULTI_VALID_MISSION_FILE, "wt", CFILE_NORMAL, CF_TYPE_DATA);
+	if(in == NULL){
+		// if we're a standalone, kill the validate dialog
+		if(Game_mode & GM_STANDALONE_SERVER){
+			std_destroy_gen_dialog();
+		}
+
+		return;
+	}
+	for(idx=0; idx<Multi_create_mission_count; idx++){
+		switch(Multi_create_mission_list[idx].valid_status){
+		case MVALID_STATUS_VALID:
+			cfputs(Multi_create_mission_list[idx].filename, in);
+			cfputs(NOX("   valid"), in);
+			cfputs(NOX("\n"), in);
+			break;
+
+		case MVALID_STATUS_INVALID:
+			cfputs(Multi_create_mission_list[idx].filename, in);
+			cfputs(NOX("   invalid"), in);
+			cfputs(NOX("\n"), in);
+			break;
+		}
+	}
+
+	// close the outfile
+	cfclose(in);
+	in = NULL;
+
 	// if we're a standalone, kill the validate dialog
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_destroy_gen_dialog();
 	}
-#endif 
 }
-
-
-void Kaz_NoBackGround_DrawString(char *str)
-{
-	gamesnd_play_iface(SND_SCROLL);
-
-	  // --------- ripped from [V]'s "LOADING" screen code
-	int loading_bitmap;
-
-	loading_bitmap = bm_load(Multi_create_loading_fname[gr_screen.res]);
-
-	// draw the background, etc
-	gr_reset_clip();
-
-	//GR_MAYBE_CLEAR_RES(Multi_create_bitmap);
-	gr_clear();
-
-
-	if ( loading_bitmap > -1 ){
-		gr_set_bitmap(loading_bitmap);
-	}
-	gr_bitmap( Please_wait_coords[gr_screen.res][MC_X_COORD], Please_wait_coords[gr_screen.res][MC_Y_COORD] );
-
-	// draw str on it
-
-	int str_w, str_h;
-
-	gr_set_color_fast(&Color_normal);
-	gr_set_font(FONT2);
-	gr_get_string_size(&str_w, &str_h, str);
-	gr_string((gr_screen.max_w - str_w) / 2, (gr_screen.max_h - str_h) / 2, str, false);
-	gr_set_font(FONT1);
-
-	gr_flip();
-
-	bm_release(loading_bitmap);
-
-}
-
-void multi_update_valid_tables()
-{
-	// if we're not on FS2NetD (PXO) then don't bother with this function
-	if ( !Om_tracker_flag )
-		return;
-
-	static char Server[32];
-	static int port = -1;
-
-	fs2netd_maybe_init();
-
-	// if we didn't connect to FS2NetD then bail out now
-	if ( !FS2OpenPXO_Socket.isInitialized() )
-		return;
-
-#ifndef NO_STANDALONE
-	// if we're a standalone, show a dialog saying "validating missions"
-	if(Game_mode & GM_STANDALONE_SERVER){
-		std_create_gen_dialog("Validating tables");
-		std_gen_set_text("Querying FS2NetD:",1);
-	}
-#endif
-
-	//Kaz_NoBackGround_DrawString("Validating Tables");
-
-	// ----------- Get the CRCs from the server -------------
-	//FS2OpenPXO_Socket
-	int numFrecs; 
-	file_record *frecs = GetTablesList(numFrecs, Server, FS2OpenPXO_Socket, port);
-
-
-
-#ifndef NO_STANDALONE
-	// if we're a standalone, show a dialog saying "validating missions"
-	if(Game_mode & GM_STANDALONE_SERVER){
-		std_gen_set_text("Got FS2NetD Reply:",1);
-	}
-#endif
-
-
-	// this is a shameless splicing of [V]'s code from the pxo spew below and my code.
-	char **file_names;
-	char full_name[MAX_FILENAME_LEN+1];
-	char result[MAX_FILENAME_LEN + 22];
-	int count, idx, i;
-	uint checksum = 0;
-	bool Valid, Found;
-
-	// allocate filename space	
-	file_names = (char**)vm_malloc(sizeof(char*) * 1024); // 1024 files should be safe!
-
-	if (file_names != NULL) {
-		memset( file_names, 0, 1024 );
-
-		count = cf_get_file_list(1024, file_names, CF_TYPE_TABLES, NOX("*.tbl"));	
-	
-		// open the outfile
-		CFILE *tvalid_cfg = cfopen("tvalid.cfg", "wt", CFILE_NORMAL, CF_TYPE_DATA);
-
-		// do all the checksums
-		for(idx=0; idx<count; idx++){
-			memset(full_name, 0, MAX_FILENAME_LEN+1);
-			memset(result, 0, sizeof(result));
-			strcpy(full_name, cf_add_ext(file_names[idx], ".tbl"));
-
-
-			std::string temp = "Validating ";
-			temp = temp + full_name;
-
-#ifndef NO_STANDALONE
-			// if we're a standalone, show a dialog saying "validating missions"
-			if(Game_mode & GM_STANDALONE_SERVER)
-			{
-				std_gen_set_text((char *) temp.c_str(),1);
-			}
-#endif
-			//multi_update_validate_tables_DrawString((char *) temp.c_str());
-
-			cf_chksum_long(full_name, &checksum);
-
-			Valid = false;
-			Found = false;
-
-			cfputs(full_name, tvalid_cfg);
-
-			for (i = 0; (i < numFrecs) && (!Valid); i++)
-			{
-				if ( !stricmp(full_name, frecs[i].name) )
-				{
-					ml_printf("Table Validation: %s  =>  client checksum: %u, server checksum: %u", full_name, checksum, frecs[i].crc32);
-
-					Found = true;
-
-					// Found now becomes a valid/invalid specifier
-					if (checksum == frecs[i].crc32)
-					{
-						Valid = true;
-					}
-				}
-			}
-
-
-			if (!Found)
-			{
-				cfputs(" ... (not on server)\n", tvalid_cfg);
-			}
-			else
-			{
-				if (Valid)
-				{
-					cfputs(" ... valid\n", tvalid_cfg);
-				}
-				else
-				{
-					cfputs(" ... invalid\n", tvalid_cfg);
-				}
-			}
-			
-		}
-
-		cfclose(tvalid_cfg);
-
-		for (idx = 0; idx < count; idx++) {
-			if (file_names[idx] != NULL) {
-				vm_free(file_names[idx]);
-				file_names[idx] = NULL;
-			}
-		}
-
-		vm_free(file_names);
-	}
-
-	delete[] frecs;
-
-#ifndef NO_STANDALONE
-	// if we're a standalone, kill the validate dialog
-	if(Game_mode & GM_STANDALONE_SERVER){
-		std_destroy_gen_dialog();
-	}
-#endif 
-}
-
 
 // get a new id# for a player
 short multi_get_new_id()
@@ -3995,55 +3658,74 @@ DCF(multi,"changes multiplayer settings")
 void multi_spew_pxo_checksums(int max_files, char *outfile)
 {
 	char **file_names;
-	char full_name[MAX_FILENAME_LEN+1];
-	char wild_card[256];
-	int count, idx;
+	char full_name[MAX_PATH_LEN];
+	char wild_card[10];
+	int count = 0, idx;
 	uint checksum;
 	FILE *out;
 	char modname[128];
-	memset(modname, 0, 128);
+	time_t my_time = 0;
 
-	if (Cmdline_mod)
-		if (Cmdline_mod[strlen(Cmdline_mod)-1] == '/' || Cmdline_mod[strlen(Cmdline_mod)-1] == '\\')
-			strncpy(modname, Cmdline_mod, strlen(Cmdline_mod)-1);
-		else
-			strcpy(modname, Cmdline_mod);
-		
 	// allocate filename space	
-	file_names = (char**)vm_malloc(sizeof(char*) * max_files);
-	if(file_names != NULL){
-		memset(wild_card, 0, 256);
+	file_names = (char**)malloc(sizeof(char*) * max_files);
+
+	if (file_names != NULL) {
+		memset(wild_card, 0, 10);
 		strcpy(wild_card, NOX("*"));
 		strcat(wild_card, FS_MISSION_FILE_EXT);
 		count = cf_get_file_list(max_files, file_names, CF_TYPE_MISSIONS, wild_card);	
-	
-		// open the outfile
-		out = fopen(outfile, "wt");
-		if(out == NULL){
-			return;
-		}
-		
-		// do all the checksums
-		for(idx=0; idx<count; idx++){
-			memset(full_name, 0, MAX_FILENAME_LEN+1);			
-			strcpy(full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT));
 
-			if(cf_chksum_long(full_name, &checksum)){
-				fprintf(out, "# %s	:	%u\n", full_name, checksum);
-				fprintf(out, "INSERT INTO Missions SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%s\";\n\n", full_name, checksum, modname);
+		if (count <= 0)
+			goto Done;
+
+		cf_create_default_path_string(full_name, sizeof(full_name) - 1, CF_TYPE_ROOT, outfile);
+
+		// open the outfile
+		out = fopen(full_name, "wt");
+
+		if (out == NULL)
+			goto Done;
+
+		memset( modname, 0, sizeof(modname) );
+		strcpy( modname, Cmdline_spew_mission_crcs );
+
+		my_time = time(NULL);
+
+		fprintf(out, "--  Mission CRCs generated on %s \n", ctime(&my_time));
+
+		fprintf(out, "LOCK TABLES `missions` WRITE;\n");
+		fprintf(out, "INSERT INTO `missions` VALUES ");
+
+		// do all the checksums
+		for (idx = 0; idx < count; idx++) {
+			memset( full_name, 0, sizeof(full_name) );			
+			strcpy( full_name, cf_add_ext(file_names[idx], FS_MISSION_FILE_EXT) );
+
+			if ( cf_chksum_long(full_name, &checksum) ) {
+				if (idx == 0)
+					fprintf(out, "('%s',%u,NULL,NULL,NULL,'%s')", full_name, checksum, modname);
+				else
+					fprintf(out, ",('%s',%u,NULL,NULL,NULL,'%s')", full_name, checksum, modname);
 			}
 		}
+
+		fprintf(out, ";\n");
+		fprintf(out, "UNLOCK TABLES;\n");
 
 		fclose(out);
 
-		for (idx = 0; idx < count; idx++) {
-			if (file_names[idx] != NULL) {
-				vm_free(file_names[idx]);
-				file_names[idx] = NULL;
+Done:
+		if (file_names != NULL) {
+			for (idx = 0; idx < count; idx++) {
+				if (file_names[idx] != NULL) {
+					vm_free(file_names[idx]);
+					file_names[idx] = NULL;
+				}
 			}
-		}
 
-		vm_free(file_names);
+			vm_free(file_names);
+			file_names = NULL;
+		}
 	}
 }
 
@@ -4051,48 +3733,59 @@ void multi_spew_pxo_checksums(int max_files, char *outfile)
 void multi_spew_table_checksums(int max_files, char *outfile)
 {
 	char **file_names;
-	char full_name[MAX_FILENAME_LEN+1];
-	char wild_card[256];
+	char full_name[MAX_PATH_LEN];
 	int count, idx;
 	uint checksum;
-	FILE *out;
+	FILE *out = NULL;
 	char modname[128];
-	memset(modname, 0, 128);
-
-	if (Cmdline_mod)
-		if (Cmdline_mod[strlen(Cmdline_mod)-1] == '/' || Cmdline_mod[strlen(Cmdline_mod)-1] == '\\')
-			strncpy(modname, Cmdline_mod, strlen(Cmdline_mod)-1);
-		else
-			strcpy(modname, Cmdline_mod);
-		
+	time_t my_time = 0;
 
 	// allocate filename space	
 	file_names = (char**)vm_malloc(sizeof(char*) * max_files);
-	if(file_names != NULL){
-		memset(wild_card, 0, 256);
-		strcpy(wild_card, NOX("*"));
-		strcat(wild_card, ".tbl");
-		count = cf_get_file_list(max_files, file_names, CF_TYPE_TABLES, wild_card);	
-	
-		// open the outfile
-		out = fopen(outfile, "wt");
-		if(out == NULL){
-			return;
-		}
-		
-		// do all the checksums
-		for(idx=0; idx<count; idx++){
-			memset(full_name, 0, MAX_FILENAME_LEN+1);			
-			strcpy(full_name, cf_add_ext(file_names[idx], ".tbl"));
 
-			if(cf_chksum_long(full_name, &checksum)){
-				fprintf(out, "# %s	:	%u\n", full_name, checksum);
-				fprintf(out, "INSERT INTO fstables SET FileName=\"%s\", CRC32=\"%u\", Mod=\"%s\";\n\n", full_name, checksum, modname);
+	if (file_names != NULL) {
+		count = cf_get_file_list(max_files, file_names, CF_TYPE_TABLES, NOX("*.tbl"));	
+
+		if (count <= 0)
+			goto Done;
+
+		cf_create_default_path_string(full_name, sizeof(full_name) - 1, CF_TYPE_ROOT, outfile);
+
+		// open the outfile
+		out = fopen(full_name, "wt");
+
+		if (out == NULL)
+			goto Done;
+
+		memset( modname, 0, sizeof(modname) );
+		strcpy( modname, Cmdline_spew_table_crcs );
+
+		my_time = time(NULL);
+	
+		fprintf(out, "--  Table CRCs generated on %s \n", ctime(&my_time));
+
+		fprintf(out, "LOCK TABLES `fstables` WRITE;\n");
+		fprintf(out, "INSERT INTO `fstables` VALUES ");
+
+		// do all the checksums
+		for (idx = 0; idx < count; idx++) {
+			memset( full_name, 0, sizeof(full_name) );			
+			strcpy( full_name, cf_add_ext(file_names[idx], ".tbl") );
+
+			if ( cf_chksum_long(full_name, &checksum) ) {
+				if (idx == 0)
+					fprintf(out, "('%s',%u,'%s')", full_name, checksum, modname);
+				else
+					fprintf(out, ",('%s',%u,'%s')", full_name, checksum, modname);
 			}
 		}
 
+		fprintf(out, ";\n");
+		fprintf(out, "UNLOCK TABLES;\n");
+
 		fclose(out);
 
+Done:
 		for (idx = 0; idx < count; idx++) {
 			if (file_names[idx] != NULL) {
 				vm_free(file_names[idx]);
@@ -4101,6 +3794,7 @@ void multi_spew_table_checksums(int max_files, char *outfile)
 		}
 
 		vm_free(file_names);
+		file_names = NULL;
 	}
 }
 

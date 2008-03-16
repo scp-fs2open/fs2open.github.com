@@ -9,20 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/VecMat.cpp $
- * $Revision: 2.35 $
- * $Date: 2007-02-26 01:47:23 $
+ * $Revision: 2.30.2.3 $
+ * $Date: 2007-02-26 01:47:14 $
  * $Author: Goober5000 $
  *
  * C module containg functions for manipulating vectors and matricies
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.34  2007/02/18 06:16:47  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.32  2006/09/13 03:18:15  taylor
+ * Revision 2.30.2.2  2006/09/13 03:12:35  taylor
  * might as well add this, just to be on the safe side (I haven't hit it anywhere, but it could be made into a warning if it starts getting hit)
  *
- * Revision 2.31  2006/08/20 00:51:06  taylor
+ * Revision 2.30.2.1  2006/08/19 04:38:46  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
  * Revision 2.30  2006/05/24 05:09:25  wmcoolmon
@@ -405,10 +402,10 @@ float atan2_safe(float y, float x)
 	float ang;
 
 	// special case, x == 0
-	if ( x == 0.0f ) {
-		if ( y == 0.0f ) 
+	if ( x == 0 ) {
+		if ( y == 0 ) 
 			ang = 0.0f;
-		else if ( y > 0.0f )
+		else if ( y > 0 )
 			ang = PI_2;
 		else
 			ang = -PI_2;
@@ -417,7 +414,7 @@ float atan2_safe(float y, float x)
 	}
 	
 	ang = (float)atan(y/x);
-	if ( x < 0.0f ){
+	if ( x < 0 ){
 		ang += PI;
 	}
 
@@ -1043,9 +1040,13 @@ float vm_vec_delta_ang(vec3d *v0,vec3d *v1,vec3d *fvec)
 
 	vm_vec_copy_normalize(&t0,v0);
 	vm_vec_copy_normalize(&t1,v1);
-	vm_vec_copy_normalize(&t2,fvec);
 
-	t = vm_vec_delta_ang_norm(&t0,&t1,&t2);
+	if (NULL == fvec) {
+		t = vm_vec_delta_ang_norm(&t0, &t1, NULL);
+	} else {
+		vm_vec_copy_normalize(&t2,fvec);
+		t = vm_vec_delta_ang_norm(&t0,&t1,&t2);
+	}
 
 	return t;
 }

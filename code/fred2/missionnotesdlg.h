@@ -9,17 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/MissionNotesDlg.h $
- * $Revision: 1.7 $
- * $Date: 2007-07-23 15:16:48 $
+ * $Revision: 1.4.2.4 $
+ * $Date: 2008-01-08 17:24:22 $
  * $Author: Kazan $
  *
  * Mission notes editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.6  2007/01/07 00:01:28  Goober5000
- * add a feature for specifying the source of Command messages
+ * Revision 1.4.2.3  2007/10/28 16:35:13  taylor
+ * add "2D Mission" checkbox to mission specs window (Mantis #1387)
  *
- * Revision 1.5  2006/07/30 20:01:56  Kazan
+ * Revision 1.4.2.2  2007/07/23 16:08:24  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
+ *
+ * Revision 1.4.2.1  2006/07/30 20:00:47  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
  * Revision 1.4  2006/05/30 02:13:22  Goober5000
@@ -208,8 +211,6 @@ public:
 	int		m_ai_profile;
 	int		m_event_music;
 	CString	m_substitute_event_music;
-	int		m_command_persona;
-	CString	m_command_sender;
 	BOOL		m_full_war;
 	BOOL		m_red_alert;
 	BOOL		m_scramble;
@@ -227,6 +228,8 @@ public:
 	BOOL		m_no_briefing;
 	BOOL		m_no_debriefing;
 	BOOL		m_autpilot_cinematics;
+	BOOL		m_no_autpilot;
+	BOOL		m_2d_mission;
 	float		m_max_hull_repair_val;
 	float		m_max_subsys_repair_val;
 	BOOL		m_contrail_threshold_flag;

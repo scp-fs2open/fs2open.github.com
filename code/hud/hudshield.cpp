@@ -9,29 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDshield.cpp $
- * $Revision: 2.45 $
- * $Date: 2007-09-02 02:10:25 $
+ * $Revision: 2.39.2.3 $
+ * $Date: 2007-09-02 02:07:42 $
  * $Author: Goober5000 $
  *
  * C file for the display and management of the HUD shield
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.44  2007/02/20 04:20:10  Goober5000
+ * Revision 2.39.2.2  2007/02/20 04:19:10  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.43  2007/02/16 23:49:28  Goober5000
- * ugh... reverting this, because it was done wrong
- *
- * Revision 2.42  2007/02/11 21:26:34  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 2.41  2007/02/11 07:36:38  Goober5000
+ * Revision 2.39.2.1  2007/02/11 07:36:43  Goober5000
  * we probably don't need to play a sound when we equalize already-equalized shields, since we don't play one when we augment already-augmented quadrants
- *
- * Revision 2.40  2007/01/14 14:03:32  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
  *
  * Revision 2.39  2006/05/18 14:56:02  taylor
  * fix bool compiler warning for MSVC
@@ -340,13 +329,14 @@
  * $NoKeywords: $
  */
 
+
 #include "hud/hudshield.h"
 #include "graphics/2d.h"
 #include "object/object.h"
+#include "object/objectshield.h"
 #include "hud/hud.h"
 #include "hud/hudparse.h"
 #include "hud/hudtargetbox.h"
-#include "object/objectshield.h"
 #include "playerman/player.h"
 #include "gamesnd/gamesnd.h"
 #include "io/timer.h"
@@ -614,7 +604,7 @@ void hud_shield_show(object *objp)
 	else
 	{
 		bool g3_yourself = !g3_in_frame();
-		angles rot_angles = { -1.570796327f, 0.0f, 0.0f };
+		angles rot_angles = {-1.570796327f,0.0f,0.0f};
 		matrix	object_orient;
 
 		vm_angles_2_matrix(&object_orient, &rot_angles);
@@ -682,7 +672,7 @@ void hud_shield_show(object *objp)
 	// draw the four quadrants
 	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = shield_get_max_quad(objp);
+	max_shield = get_max_shield_quad(objp);
 	
 	int j, x_val, y_val, mid_val;
 
@@ -692,12 +682,12 @@ void hud_shield_show(object *objp)
 			break;
 		}
 
-		if ( shield_get_quad(objp, Quadrant_xlate[i]) < 0.1f ) {
+		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
 			continue;
 		}
 
 		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + 4);
-		hud_color_index = fl2i( (shield_get_quad(objp, Quadrant_xlate[i]) / max_shield) * range + 0.5 );
+		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 
 		if ( hud_color_index < 0 ) {
@@ -917,7 +907,7 @@ void hud_shield_equalize(object *objp, player *pl)
 	// are all quadrants equal?
 	all_equal = 1;
 	for (idx = 0; idx < MAX_SHIELD_SECTIONS - 1; idx++) {
-		if (shield_get_quad(objp, idx) != shield_get_quad(objp, idx + 1)) {
+		if (objp->shield_quadrant[idx] != objp->shield_quadrant[idx + 1]) {
 			all_equal = 0;
 			break;
 		}
@@ -963,17 +953,18 @@ void hud_shield_equalize(object *objp, player *pl)
 //
 void hud_augment_shield_quadrant(object *objp, int direction)
 {
-	float xfer_amount, energy_avail, percent_to_take, delta, max_quadrant_val;
+	float	xfer_amount, energy_avail, percent_to_take, delta;
+	float	max_quadrant_val;
 	int	i;
 
 	Assert(direction >= 0 && direction < MAX_SHIELD_SECTIONS);
 	Assert(objp->type == OBJ_SHIP);
 	
-	xfer_amount = shield_get_max_strength(objp) * SHIELD_TRANSFER_PERCENT;
-	max_quadrant_val = shield_get_max_quad(objp);
+	xfer_amount = Ships[objp->instance].ship_max_shield_strength * SHIELD_TRANSFER_PERCENT;
+	max_quadrant_val = get_max_shield_quad(objp);
 
-	if ((shield_get_quad(objp, direction) + xfer_amount) > max_quadrant_val)
-		xfer_amount = max_quadrant_val - shield_get_quad(objp, direction);
+	if ( (objp->shield_quadrant[direction] + xfer_amount) > max_quadrant_val )
+		xfer_amount = max_quadrant_val - objp->shield_quadrant[direction];
 
 	Assert(xfer_amount >= 0);
 	if ( xfer_amount == 0 ) {
@@ -988,8 +979,7 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 		if ( i == direction )
 			continue;
-
-		energy_avail += shield_get_quad(objp, i);
+		energy_avail += objp->shield_quadrant[i];
 	}
 
 	percent_to_take = xfer_amount/energy_avail;
@@ -999,11 +989,12 @@ void hud_augment_shield_quadrant(object *objp, int direction)
 	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 		if ( i == direction )
 			continue;
-
-		delta = percent_to_take * shield_get_quad(objp, i);
-
-		shield_add_quad(objp, i, -delta);
-		shield_add_quad(objp, direction, delta);
+		delta = percent_to_take * objp->shield_quadrant[i];
+		objp->shield_quadrant[i] -= delta;
+		Assert(objp->shield_quadrant[i] >= 0 );
+		objp->shield_quadrant[direction] += delta;
+		if ( objp->shield_quadrant[direction] > max_quadrant_val )
+			objp->shield_quadrant[direction] = max_quadrant_val;
 	}
 }
 
@@ -1105,7 +1096,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = shield_get_max_quad(objp);
+	max_shield = get_max_shield_quad(objp);
 
 	for ( i = 0; i < MAX_SHIELD_SECTIONS; i++ ) {
 
@@ -1113,7 +1104,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 			break;
 		}
 
-		if ( shield_get_quad(objp, Quadrant_xlate[i]) < 0.1f ) {
+		if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f ) {
 			continue;
 		}
 
@@ -1124,7 +1115,7 @@ void hud_shield_show_mini(object *objp, int x_force, int y_force, int x_hull_off
 		}
 				
 		range = HUD_color_alpha;
-		hud_color_index = fl2i( (shield_get_quad(objp, Quadrant_xlate[i]) / max_shield) * range + 0.5 );
+		hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range + 0.5);
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 	
 		if ( hud_color_index < 0 ) {

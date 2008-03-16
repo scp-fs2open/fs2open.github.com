@@ -9,9 +9,9 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Management.h $
- * $Revision: 1.4 $
- * $Date: 2007-12-19 10:54:26 $
- * $Author: karajorma $
+ * $Revision: 1.2.2.1 $
+ * $Date: 2007-02-09 05:40:40 $
+ * $Author: Goober5000 $
  *
  * This file handles the management of Objects, Ships, Wings, etc.  Basically
  * all the little structures we have that usually inter-relate that need to
@@ -19,9 +19,6 @@
  * function.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.3  2006/10/01 01:12:32  Goober5000
- * enhanced voice acting manager, now with script generator :)
- *
  * Revision 1.2  2006/04/20 06:32:01  Goober5000
  * proper capitalization according to Volition
  *
@@ -412,9 +409,6 @@ void	object_moved(object *ptr);
 int	invalidate_references(char *name, int type);
 int	query_whole_wing_marked(int wing);
 void	generate_weaponry_usage_list(int *arr);
-void	generate_weaponry_usage_list(int *arr, int wing);
-void	generate_ship_usage_list(int *arr, int wing);
-
 jump_node *jumpnode_get_by_name(CString& name);
 
 // function and defines to use when adding ships to combo boxes

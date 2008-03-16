@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_campaign.cpp $
- * $Revision: 2.16 $
- * $Date: 2006-07-15 18:16:00 $
+ * $Revision: 2.14.2.3 $
+ * $Date: 2007-10-15 06:43:16 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.15  2006/07/15 15:51:19  taylor
+ * Revision 2.14.2.2  2006/07/15 18:15:35  taylor
+ * missed the extern apparently
+ *
+ * Revision 2.14.2.1  2006/07/15 15:50:49  taylor
  * we probably need to be processing the number of weapons here rather than the number of ships ;)  (Mantis bug #988)
  *
  * Revision 2.14  2005/12/29 08:08:39  wmcoolmon
@@ -291,7 +294,6 @@ void multi_campaign_start(char *filename)
 		strcpy(Netgame.campaign_name,filename);
 		strcpy(Game_current_mission_filename,Netgame.mission_name);
 
-#ifndef NO_STANDALONE
 		// if we're the standalone server, set the mission and campaign names
 		if(Game_mode & GM_STANDALONE_SERVER){
 			memset(str,0,255);
@@ -303,7 +305,6 @@ void multi_campaign_start(char *filename)
 			// set the control on the stand_gui
 			std_multi_set_standalone_mission_name(str);
 		}
-#endif
 
 		// maybe override the Netgame.respawn setting
 		max_players = mission_parse_get_multi_mission_info( Netgame.mission_name );				
@@ -341,7 +342,6 @@ void multi_campaign_next_mission()
 		strncpy(Game_current_mission_filename, Campaign.missions[Campaign.current_mission].name, MAX_FILENAME_LEN);
 		strcpy(Netgame.mission_name,Game_current_mission_filename);			
 
-#ifndef NO_STANDALONE
 		// if we're the standalone server, set the mission and campaign names
 		if(Game_mode & GM_STANDALONE_SERVER){
 			memset(str,0,255);
@@ -353,7 +353,6 @@ void multi_campaign_next_mission()
 			// set the control on the stand_gui
 			std_multi_set_standalone_mission_name(str);
 		}
-#endif
 	}
 }
 

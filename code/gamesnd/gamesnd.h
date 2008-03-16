@@ -9,17 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/GameSnd.h $
- * $Revision: 2.18 $
- * $Date: 2007-02-10 00:18:22 $
+ * $Revision: 2.15.2.2 $
+ * $Date: 2007-02-10 00:17:39 $
  * $Author: taylor $
  *
  * Routines to keep track of which sound files go where
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.17  2006/12/28 00:59:26  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.16  2006/08/18 04:34:54  Goober5000
+ * Revision 2.15.2.1  2006/08/18 04:34:59  Goober5000
  * better handling of ballistic rearm sounds
  * --Goober5000
  *
@@ -421,9 +418,6 @@ extern int Num_iface_sounds;
 extern game_snd *Snds;
 extern game_snd *Snds_iface;
 
-#define GS_GAME_SND			0
-#define GS_IFACE_SND		1
-#define GS_NUM_SND_TYPES	2
 
 // symbolic names for misc. game sounds.  The order here must match the order in
 // sounds.tbl

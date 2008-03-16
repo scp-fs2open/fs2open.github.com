@@ -9,77 +9,72 @@
 
 /*
  * $Logfile: /Freespace2/code/Ship/Ship.h $
- * $Revision: 2.200 $
- * $Date: 2007-12-30 18:30:29 $
- * $Author: karajorma $
+ * $Revision: 2.150.2.34 $
+ * $Date: 2007-12-31 06:44:23 $
+ * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.199  2007/11/23 23:49:35  wmcoolmon
- * - Asteroid, debris, and ship collision damage type support
- * - Scripting system variable-setting optimizations
- * - Standardize override style
- * - Reinstate "Self" variable for HUD
- * - Automatic drawString moving-to-next-line
- * - Visible subsystem name can be changed through scripting; will not be changed in the log
- * - Fix many for-loop signed/unsigned warnings related to size()
- * - Asteroid, debris scripting collision handling
- * - Many, many additional Lua functions and variables
- * - Fix the dreaded random-Lua-parse-crash bug
- * - Fix struct array malf-ups due to flag_def_list change
+ * Revision 2.150.2.33  2007/12/30 15:29:24  wmcoolmon
+ * Separate cockpit model support
  *
- * Revision 2.198  2007/11/20 04:58:17  Goober5000
+ * Revision 2.150.2.32  2007/12/28 02:10:35  Backslash
+ * Backslash's "let's get this stuff into 3_6_9 as well" commit.
+ * -gliding with thruster adjustments and speed cap
+ * -glide_when_pressed control (right above bank_when_pressed)
+ * -fixes to the thrusters sound and visuals while gliding
+ * -don't show muzzle flashes in 1st person
+ * -quick reticle for multitarget and asteroids
+ *
+ * Revision 2.150.2.31  2007/12/08 20:07:55  karajorma
+ * Add the use alt as callsign option.
+ * Add a few typo and comment fixes while I'm at it
+ *
+ * Revision 2.150.2.30  2007/11/20 04:58:25  Goober5000
  * fix ship-type-destroyed
  *
- * Revision 2.197  2007/10/28 15:38:18  karajorma
- * Make Ships_Exited Dynamic. Add the hits-left-single-subsystem and get-damage-caused SEXPs. Minor changes to make diffing 3.6.9 and HEAD easier.
- *
- * Revision 2.196  2007/09/27 06:55:39  turey
- * "no primary linking" ship flag and related SEXPs - prevent a ship from linking primaries.
- *
- * Revision 2.195  2007/09/02 18:53:24  Goober5000
+ * Revision 2.150.2.29  2007/09/02 18:52:54  Goober5000
  * fix for #1455 plus a bit of cleanup
  *
- * Revision 2.194  2007/07/28 22:04:47  Goober5000
- * tweaks
+ * Revision 2.150.2.28  2007/07/23 16:08:32  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
- * Revision 2.193  2007/07/23 15:16:52  Kazan
- * Autopilot upgrades as described, MSVC2005 project fixes
- *
- * Revision 2.192  2007/07/19 05:44:00  turey
- * Small bugfix relating to restoring engines from disabled via the set-subsystem-strength SEXP.
- *
- * Revision 2.191  2007/07/15 06:29:56  Goober5000
+ * Revision 2.150.2.27  2007/07/15 06:29:53  Goober5000
  * restore WMC's ship flag
  *
- * Revision 2.190  2007/07/15 04:19:26  Goober5000
+ * Revision 2.150.2.26  2007/07/15 04:19:34  Goober5000
  * partial commit of aldo's eyepoint feature
  * it will need a keystroke to be complete
  *
- * Revision 2.189  2007/07/15 02:45:19  Goober5000
+ * Revision 2.150.2.25  2007/07/15 02:45:50  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
  * removed my old supercap damage scaling change
  * moved Turey's truefire flag to ai_profiles
  *
- * Revision 2.188  2007/06/22 04:52:22  turey
- * Added in Ship Templates code, with some syntax and warning cleanup.
+ * Revision 2.150.2.24  2007/05/28 18:27:35  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
  *
- * Revision 2.187  2007/05/25 13:58:26  taylor
+ * Revision 2.150.2.23  2007/05/25 13:49:39  taylor
  * add the rest of the texture page-in code changes that I skipped before (should fix Mantis #1389)
  *
- * Revision 2.186  2007/04/30 21:30:31  Backslash
- * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
- * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
- *
- * Revision 2.185  2007/04/13 00:28:00  taylor
+ * Revision 2.150.2.22  2007/04/13 00:26:45  taylor
  * clean out some old code we no longer use/need
  * change warning messages to not print out current tbl name, since at the point those messages show the tbl has long since been parsed
  * add an extra quick-check to ship_get_subsystem_strength() to avoid div if we don't need it
  * make Ship_subsystems[] dynamic (sort of), it's allocated in sized sets now, so we can easily change size while still working with the existing linked-list code
  *
- * Revision 2.184  2007/03/23 01:50:59  taylor
+ * Revision 2.150.2.21  2007/02/27 01:44:45  Goober5000
+ * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
+ *
+ * Revision 2.150.2.20  2007/02/25 03:58:07  Goober5000
+ * use dynamic memory instead of a static buffer for ship-specific replacement textures
+ *
+ * Revision 2.150.2.19  2007/02/20 04:19:35  Goober5000
+ * the great big duplicate model removal commit
+ *
+ * Revision 2.150.2.18  2007/02/12 00:41:38  taylor
  * bit of cleanup and minor performance tweaks
  * render ship insignia with a bit of alpha to help with blending/lighting
  * dynamic thruster particle limits
@@ -88,90 +83,53 @@
  * use generic_bitmap and generic_anim where possible to faciliate delayed graphics loading (after all ship related tbls are parsed)
  * use VALID_FNAME()
  *
- * Revision 2.183  2007/02/27 01:44:48  Goober5000
- * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
- *
- * Revision 2.182  2007/02/25 03:57:59  Goober5000
- * use dynamic memory instead of a static buffer for ship-specific replacement textures
- *
- * Revision 2.181  2007/02/20 04:20:27  Goober5000
- * the great big duplicate model removal commit
- *
- * Revision 2.180  2007/02/18 06:17:34  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.179  2007/02/11 21:26:39  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 2.178  2007/02/11 06:19:05  Goober5000
+ * Revision 2.150.2.17  2007/02/11 06:19:08  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
  *
- * Revision 2.177  2007/02/06 01:27:34  Goober5000
+ * Revision 2.150.2.16  2007/02/09 04:53:28  Goober5000
+ * merge the WCS screaming feature into the 3.6.9 (3.6.10?) branch
+ *
+ * Revision 2.150.2.15  2007/02/06 01:27:33  Goober5000
  * remove obsolete and unused shield flag
  *
- * Revision 2.176  2007/01/15 01:37:38  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
+ * Revision 2.150.2.14  2006/12/07 18:23:38  taylor
+ * fix secondary thruster length stuff
+ *  - change thruster_glow_len_factor to thruster02_glow_len_factor so it's a bit more obvious
+ *  - fix tbl entry so that it makes sense what you are setting :)
  *
- * Revision 2.175  2007/01/14 14:03:37  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
+ * Revision 2.150.2.13  2006/11/15 00:40:59  taylor
+ * fix some "stupid-windows-coder-mistakes" (otherwise known as "putting-more-than-you-should-into-header-files")
+ *   (gets rid of some/many compiler warnings, C++ language violations, and strange little bugs/errors)
  *
- * Revision 2.174  2007/01/08 00:50:59  Goober5000
- * remove WMC's limbo code, per our discussion a few months ago
- * this will later be handled by copying ship stats using sexps or scripts
- *
- * Revision 2.173  2007/01/07 21:28:11  Goober5000
- * yet more tweaks to the WCS death scream stuff
- * added a ship flag to force screaming
- *
- * Revision 2.172  2007/01/07 12:59:54  taylor
- * fix thruster 2 length factor tbl entry so that it has the proper name
- *
- * Revision 2.171  2006/12/28 00:59:48  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.170  2006/11/06 06:32:30  taylor
+ * Revision 2.150.2.12  2006/10/27 21:33:06  taylor
  * updated/fixed modelanim code
  * add ships.tbl subsystem flag ("+fire-down-normals") which will force a turret to fire down it's barrel line (Mantis bug #591)
  *
- * Revision 2.169  2006/10/08 02:05:38  Goober5000
+ * Revision 2.150.2.11  2006/10/08 02:05:34  Goober5000
  * fix forum links
  *
- * Revision 2.168  2006/10/06 13:32:23  karajorma
- * Remove the extra ship_class variable. I'd already added on as part of the team loadout changes
- *
- * Revision 2.167  2006/10/06 09:55:36  taylor
+ * Revision 2.150.2.10  2006/10/06 09:47:11  taylor
  * For redalert stored data be sure that dead ships don't come back, and departed ships come back just as they left (Mantis bug #810)
  *
- * Revision 2.166  2006/09/11 06:51:17  taylor
+ * Revision 2.150.2.9  2006/09/11 01:17:07  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.165  2006/09/04 06:17:26  wmcoolmon
- * Commit of 'new' BTRL FTL effect work
- *
- * Revision 2.164  2006/08/03 01:33:56  Goober5000
+ * Revision 2.150.2.8  2006/08/03 01:33:26  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
  *
- * Revision 2.163  2006/07/17 01:12:52  taylor
+ * Revision 2.150.2.7  2006/07/20 00:41:26  Goober5000
+ * add WCS screaming stuff to RC branch
+ * --Goober5000
+ *
+ * Revision 2.150.2.6  2006/07/17 01:09:45  taylor
  * make glow point banks dynamic
  *
- * Revision 2.162  2006/07/17 00:10:00  Goober5000
+ * Revision 2.150.2.5  2006/07/17 00:10:05  Goober5000
  * stage 2 of animation fix (add base frame time to each ship)
  * --Goober5000
  *
- * Revision 2.161  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
- * Revision 2.160  2006/07/07 01:45:57  Goober5000
- * fixed something that slipped by taylor ;)
- * (caused by having extra flags in the main branch)
- * --Goober5000
- *
- * Revision 2.159  2006/07/06 22:00:39  taylor
+ * Revision 2.150.2.4  2006/07/06 21:53:59  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
  *  - same for glowpoints, back on a per-ship basis
@@ -180,31 +138,17 @@
  *  - add support for animated specmaps (mainly for TBP and Starfox mods)
  * some minor code cleanup and compiler warning fixes
  *
- * Revision 2.158  2006/07/06 21:00:13  Goober5000
- * remove obsolete (and hackish) flag
- * --Goober5000
- *
- * Revision 2.157  2006/07/06 20:46:39  Goober5000
- * WCS screaming stuff
- * --Goober5000
- *
- * Revision 2.156  2006/07/04 07:42:48  Goober5000
+ * Revision 2.150.2.3  2006/07/04 07:42:10  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
  * --Goober5000
  *
- * Revision 2.155  2006/06/24 20:32:00  wmcoolmon
+ * Revision 2.150.2.2  2006/06/24 20:39:57  wmcoolmon
  * New function for scripting
  *
- * Revision 2.154  2006/06/07 05:19:49  wmcoolmon
- * Move fog disappearance factor to objecttypes.tbl
- *
- * Revision 2.152  2006/06/04 01:01:53  Goober5000
+ * Revision 2.150.2.1  2006/06/04 01:03:13  Goober5000
  * add fighterbay restriction code
  * --Goober5000
- *
- * Revision 2.151  2006/06/02 08:46:47  karajorma
- * Support for alt ship classes, team loadout flag and changes to Ships_exited
  *
  * Revision 2.150  2006/05/21 03:58:58  Goober5000
  * fix Mantis #834
@@ -1032,15 +976,15 @@
 #include "weapon/shockwave.h"
 #include "species_defs/species_defs.h"
 #include "globalincs/pstypes.h"
-#include "particle/particle.h"
 
 #include <vector>
 #include <string>
 
 struct object;
+class WarpEffect;
 
 //	Part of the player died system.
-extern vec3d	Original_vec_to_deader;
+extern vec3d	Dead_camera_pos, Original_vec_to_deader;
 
 //	States for player death sequence, stuffed in Player_died_state.
 #define	PDS_NONE		1
@@ -1118,7 +1062,7 @@ typedef struct ship_weapon {
 	int primary_bank_ammo[MAX_SHIP_PRIMARY_BANKS];			// Number of missiles left in primary bank
 	int primary_bank_start_ammo[MAX_SHIP_PRIMARY_BANKS];	// Number of missiles starting in primary bank
 	int primary_bank_capacity[MAX_SHIP_PRIMARY_BANKS];		// Max number of projectiles in bank
-	//int primary_next_slot[MAX_SHIP_PRIMARY_BANKS];			// Next slot to fire in the bank
+	int primary_next_slot[MAX_SHIP_PRIMARY_BANKS];			// Next slot to fire in the bank
 	int primary_bank_rearm_time[MAX_SHIP_PRIMARY_BANKS];	// timestamp which indicates when bank can get new projectile
 
 	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
@@ -1163,7 +1107,7 @@ private:
 	std::vector<float>	Arguments;
 
 public:
-	void clear(){DamageTypeIndex=-1;Calculations.clear();Arguments.clear();}
+	void clear();
 };
 
 class ArmorType
@@ -1188,9 +1132,6 @@ extern std::vector<ArmorType> Armor_types;
 
 #define NUM_TURRET_ORDER_TYPES		3
 extern char *Turret_target_order_names[NUM_TURRET_ORDER_TYPES];	//aiturret.cpp
-
-extern flag_def_list Player_orders[];
-extern int Num_player_orders;
 
 // Goober5000
 #define SSF_CARGO_REVEALED		(1 << 0)
@@ -1282,6 +1223,7 @@ typedef struct ship_subsys_info {
 #define	SF_NO_ARRIVAL_WARP		(1 << 4)		// no arrival warp in effect
 #define	SF_NO_DEPARTURE_WARP		(1 << 5)		// no departure warp in effect
 #define	SF_LOCKED					(1 << 6)		// can't manipulate ship in loadout screens
+//#define	SF_INVULNERABLE			(1 << 7)
 
 // high bits are for internal flags not saved to mission files
 // Go from bit 31 down to bit 3
@@ -1310,7 +1252,6 @@ typedef struct ship_subsys_info {
 #define	SF_SHIP_HAS_SCREAMED		(1 << 10)	// ship has let out a death scream
 #define	SF_RED_ALERT_STORE_STATUS (1 << 9)	// ship status should be stored/restored if red alert mission
 #define	SF_VAPORIZE					(1<<8)		// ship is vaporized by beam - alternative death sequence
-//#define	SF_INVULNERABLE			(1 << 7)
 
 // MWA -- don't go below whatever bitfield is used for Fred above (currently 7)!!!!
 
@@ -1339,13 +1280,9 @@ typedef struct ship_subsys_info {
 #define SF2_ALWAYS_DEATH_SCREAM				(1<<14)		// Goober5000 - for WCS
 #define SF2_NAVPOINT_NEEDSLINK				(1<<15)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
 #define SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<16)		// Karajorma - When sending messages from this ship use the alt name instead of name
-#define SF2_DISABLE_PRIMARY_LINKING			(1<<17)		// Turey - Ship cannot link primaries
-#define SF2_SET_CLASS_DYNAMICALLY			(1<<18)		// Karajorma - This ship should have its class assigned rather than simply read from the mission file 
-#define SF2_TEAM_LOADOUT_STORE_STATUS		(1<<19)		// Karajorma - This ship has been flagged for cleanup at the end of the mission
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
-extern int TARGET_SHIP_IGNORE_FLAGS_2;
 
 #define MAX_DAMAGE_SLOTS	32
 #define MAX_SHIP_ARCS		2		// How many "arcs" can be active at once... Must be less than MAX_ARC_EFFECTS in model.h. 
@@ -1402,6 +1339,9 @@ typedef struct ship {
 	int	really_final_death_time;	// Time until ship breaks up and disappears
 	vec3d	deathroll_rotvel;			// Desired death rotational velocity
 
+	WarpEffect *warpin_effect;
+	WarpEffect *warpout_effect;
+/*
 	int start_warp_time;
 	int	final_warp_time;	// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 	int warp_anim;
@@ -1409,6 +1349,11 @@ typedef struct ship {
 	int warp_anim_fps;
 	vec3d	warp_effect_pos;		// where the warp in effect comes in at
 	vec3d	warp_effect_fvec;		// The warp in effect's forward vector
+	float warp_radius;
+	int warp_stage;			//WMC - stage for warp, used by WT_SWEEPER
+	float warp_width;
+	float warp_height;
+*/
 	int	next_fireball;
 
 	int	next_hit_spark;
@@ -1577,9 +1522,6 @@ typedef struct ship {
 	// that had this same functionality
 	int current_viewpoint;
 
-	//WMC - this one
-	//camid ship_camera;
-
 	trail *ABtrail_ptr[MAX_SHIP_CONTRAILS];		//after burner trails -Bobboau
 	trail_info ab_info[MAX_SHIP_CONTRAILS];
 	int ab_count;
@@ -1611,7 +1553,7 @@ typedef struct ship {
 	int bay_doors_wanting_open;		// how many ships want/need the bay door open
 
 	// figther bay door stuff, client side
-	int bay_doors_launched_from;	// the bay door that I launched from
+	ubyte bay_doors_launched_from;	// the bay door that I launched from
 	bool bay_doors_need_open;		// keep track of whether I need the door open or not
 	int bay_doors_parent_shipnum;	// our parent ship, what we are entering/leaving
 	
@@ -1622,16 +1564,6 @@ typedef struct ship {
 
 	int thrusters_start[MAX_MAN_THRUSTERS];		//Timestamp of when thrusters started
 	int thrusters_sounds[MAX_MAN_THRUSTERS];	//Sound index for thrusters
-
-	// Karajorma - These correspond to the ones for a parse object	
-	int num_alt_class_one;						
-	int alt_class_one[MAX_ALT_CLASS_1];				// The alt class number (basically the index in Ship_info)
-	int alt_class_one_variable[MAX_ALT_CLASS_1];		// The variable backing this entry if any. 
-
-	int num_alt_class_two;  
-	int alt_class_two[MAX_ALT_CLASS_2];   
-	int alt_class_two_variable[MAX_ALT_CLASS_2];  								
-												
 /*
 	flash_ball	*debris_flare;
 	int n_debris_flare;
@@ -1642,32 +1574,30 @@ typedef struct ship {
 
 // structure and array def for ships that have exited the game.  Keeps track of certain useful
 // information.
-#define SEF_DESTROYED				(1<<0)
+#define SEF_DESTROYED			(1<<0)
 #define SEF_DEPARTED				(1<<1)
-#define SEF_CARGO_KNOWN				(1<<2)
-#define SEF_PLAYER_DELETED			(1<<3)		// ship deleted by a player in ship select
-#define SEF_BEEN_TAGGED				(1<<4)
-#define SEF_RED_ALERT_CARRY			(1<<5)
-#define SEF_SHIP_EXITED_STORE		(1<<6)		// Karajorma - Don't bump from Ships_exited even if full. 
+#define SEF_CARGO_KNOWN			(1<<2)
+#define SEF_PLAYER_DELETED		(1<<3)			// ship deleted by a player in ship select
+#define SEF_BEEN_TAGGED			(1<<4)
+#define SEF_RED_ALERT_CARRY	(1<<5)
 
+#define MAX_EXITED_SHIPS	(2*MAX_SHIPS) //DTP changed for MAX_SHIPS sake. double of max_ships.
 
 typedef struct exited_ship {
-	char	ship_name[NAME_LENGTH];
+	char		ship_name[NAME_LENGTH];
 	int		obj_signature;
-	int		ship_class;						// The ships index in Ship_info
+	int		ship_class;
 	int		team;
 	int		flags;
 	fix		time;
 	int		hull_strength;
 	fix		time_cargo_revealed;
 	char	cargo1;
-	float damage_ship[MAX_DAMAGE_SLOTS];		// A copy of the arrays from the ship so that we can figure out what damaged it
-	int   damage_ship_id[MAX_DAMAGE_SLOTS];
 
 	exited_ship() { memset(this, 0, sizeof(exited_ship)); obj_signature = ship_class = -1; }
 } exited_ship;
 
-extern std::vector<exited_ship> Ships_exited;
+extern exited_ship Ships_exited[MAX_EXITED_SHIPS];
 
 // a couple of functions to get at the data
 extern void ship_add_exited_ship( ship *shipp, int reason );
@@ -1725,7 +1655,6 @@ extern int ship_find_exited_ship_by_signature( int signature);
 #define SIF2_GENERATE_HUD_ICON				(1 << 5)	// Enable generation of a HUD shield icon
 #define SIF2_DISABLE_WEAPON_DAMAGE_SCALING	(1 << 6)	// WMC - Disable weapon scaling based on flags
 #define SIF2_GUN_CONVERGENCE				(1 << 7)	// WMC - Gun convergence based on model weapon norms.
-#define SIF2_DISABLE_PRIMARY_LINKING		(1 << 8)	// Turey - Disables Primary Linking.
 
 #define	MAX_SHIP_FLAGS	8		//	Number of distinct flags for flags field in ship_info struct
 #define	SIF_DEFAULT_VALUE		0
@@ -1784,6 +1713,7 @@ typedef struct ship_type_info {
 
 	//Ship
 	int ship_bools;	//For lack of better term
+	float debris_max_speed;
 
 	//Weapons
 	int weapon_bools;
@@ -1793,7 +1723,6 @@ typedef struct ship_type_info {
 	//Fog
 	float fog_start_dist;
 	float fog_complete_dist;
-	float fog_disappear_factor;
 
 	//AI
 	int	ai_valid_goals;
@@ -1831,10 +1760,7 @@ extern std::vector<man_thruster_renderer> Man_thrusters;
 #define MT_FORWARD			(1<<10)
 #define MT_REVERSE			(1<<11)
 
-#define MTF_NO_SCALE		(1<<0)
-
 typedef struct man_thruster {
-	int flags;
 	int use_flags;
 
 	int start_snd;
@@ -1853,7 +1779,9 @@ typedef struct man_thruster {
 
 //Warp type defines
 #define WT_DEFAULT			0
-#define WT_BTRL				1
+#define WT_IN_PLACE_ANIM	1
+#define WT_SWEEPER			2
+#define WT_HYPERSPACE		3
 
 // The real FreeSpace ship_info struct.
 typedef struct ship_info {
@@ -1873,17 +1801,19 @@ typedef struct ship_info {
 	char     *gun_mounts;			         // string used by multiplayer ship desc
 	char     *missile_banks;					// string used by multiplayer ship desc
 
+	char		cockpit_pof_file[MAX_FILENAME_LEN];	// POF file for cockpit view
+	vec3d		cockpit_offset;
 	char		pof_file[MAX_FILENAME_LEN];			// POF file to load/associate with ship
 	char		pof_file_hud[MAX_FILENAME_LEN];		// POF file to load for the HUD target box
 	int		num_detail_levels;				// number of detail levels for this ship
 	int		detail_distance[MAX_SHIP_DETAIL_LEVELS];					// distance to change detail levels at
+	int		cockpit_model_num;					// cockpit model
 	int		model_num;							// ship model
 	int		model_num_hud;						// model to use when rendering to the HUD (eg, mini supercap)
 	int		hud_target_lod;						// LOD to use for rendering to the HUD targetbox (if not already using special HUD model)
 	float		density;								// density of the ship in g/cm^3 (water  = 1)
 	float		damp;									// drag
 	float		rotdamp;								// rotational drag
-	float		delta_bank_const;
 	vec3d	max_vel;								//	max velocity of the ship in the linear directions -- read from ships.tbl
 	vec3d	afterburner_max_vel;				//	max velocity of the ship in the linear directions when afterburners are engaged -- read from ships.tbl
 	vec3d	max_rotvel;							// maximum rotational velocity
@@ -1913,32 +1843,19 @@ typedef struct ship_info {
 	int		ai_class;							//	Index into Ai_classes[].  Defined in ai.tbl
 	float		max_speed, min_speed, max_accel;
 
+	//Collision
+	int				collision_damage_type_idx;
+
 	// ship explosion info
 	shockwave_create_info shockwave;
 	int	explosion_propagates;				// If true, then the explosion propagates
 	int	shockwave_count;						// the # of total shockwaves
 
-	particle_emitter	ispew;
-	particle_emitter	dspew;
-
-	//Collisions
-	int				collision_damage_type_idx;
+	int ispew_max_particles;						//Temp field until someone works on particles -C
+	int dspew_max_particles;						//Temp field until someone works on particles -C
 
 	//Debris stuff
-	float			debris_min_lifetime;
-	float			debris_max_lifetime;
-	float			debris_min_speed;
-	float			debris_max_speed;
-	float			debris_min_rotspeed;
-	float			debris_max_rotspeed;
 	int				debris_damage_type_idx;
-	/*
-	int				debris_flags;
-	vec3d			debris_initial_vel;
-	vec3d			debris_max_vel;
-	vec3d			debris_initial_rotvel;
-	vec3d			debris_max_rotvel;
-	*/
 
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
@@ -2039,7 +1956,11 @@ typedef struct ship_info {
 	
 	bool can_glide;
 	float glide_cap;	//Backslash - for 'newtonian'-style gliding, the cap on velocity
-	
+	float glide_multiplier;	//Backslash - for gliding with thruster adjustments, the multiplier for how quickly the thrusters change glide vector
+
+	bool has_autoaim;
+	float autoaim_fov;
+
 	bool topdown_offset_def;
 	vec3d topdown_offset;
 
@@ -2188,6 +2109,7 @@ extern void ship_model_change(int n, int ship_type);
 extern void ship_process_pre( object * objp, float frametime );
 extern void ship_process_post( object * objp, float frametime );
 extern void ship_render( object * objp );
+extern void ship_render_cockpit( object * objp);
 extern void ship_delete( object * objp );
 extern int ship_check_collision_fast( object * obj, object * other_obj, vec3d * hitpos );
 extern int ship_get_num_ships();
@@ -2227,10 +2149,6 @@ extern void physics_ship_init(object *objp);
 //	Return true/false for subsystem found/not found.
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
-
-//Template stuff, here's as good a place as any.
-int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace);
-extern int ship_template_lookup(char *name = NULL);
 
 extern int ship_info_lookup(char *name = NULL);
 extern int ship_name_lookup(char *name, int inc_players = 0);	// returns the index into Ship array of name
@@ -2272,6 +2190,15 @@ extern void shield_hit_close();
 
 void ship_draw_shield( object *objp);
 
+float apply_damage_to_shield(object *objp, int quadrant, float damage);
+float compute_shield_strength(object *objp);
+
+// Returns true if the shield presents any opposition to something 
+// trying to force through it.
+// If quadrant is -1, looks at entire shield, otherwise
+// just one quadrant
+int ship_is_shield_up( object *obj, int quadrant );
+
 //=================================================
 // These two functions transfer instance specific angle
 // data into and out of the model structure, which contains
@@ -2284,18 +2211,16 @@ extern void ship_model_stop(object *objp);
 extern int ship_find_num_crewpoints(object *objp);
 extern int ship_find_num_turrets(object *objp);
 
-extern void compute_slew_matrix(matrix *orient, angles *a);
-//extern camid ship_set_eye( object *obj, int eye_index);
-extern void ship_set_eye(object *obj, int eye_index);
-extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj );		// returns in eye the correct viewing position for the given object
-//extern camid ship_get_followtarget_eye(object *obj);
+extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true );		// returns in eye the correct viewing position for the given object
 extern ship_subsys *ship_get_indexed_subsys( ship *sp, int index, vec3d *attacker_pos = NULL );	// returns index'th subsystem of this ship
 extern int ship_get_index_from_subsys(ship_subsys *ssp, int objnum, int error_bypass = 0);
 extern int ship_get_subsys_index(ship *sp, char *ss_name, int error_bypass = 0);		// returns numerical index in linked list of subsystems
 extern float ship_get_subsystem_strength( ship *shipp, int type );
 extern ship_subsys *ship_get_subsys(ship *shipp, char *subsys_name);
 extern int ship_get_num_subsys(ship *shipp);
+extern ship_subsys *ship_get_closest_subsys_in_sight(ship *sp, int subsys_type, vec3d *attacker_pos);
 
+//WMC
 char *ship_subsys_get_name(ship_subsys *ss);
 bool ship_subsys_has_instance_name(ship_subsys *ss);
 void ship_subsys_set_name(ship_subsys *ss, char *n_name);
@@ -2326,6 +2251,7 @@ extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);
 extern int ship_docking_valid(int docker, int dockee);
+extern int get_quadrant(vec3d *hit_pnt);						//	Return quadrant num of last hit ponit.
 
 extern void ship_obj_list_rebuild();	// only called by save/restore code
 extern int ship_query_state(char *name);
@@ -2366,6 +2292,7 @@ extern int Ship_auto_repair;	// flag to indicate auto-repair of subsystem should
 
 void ship_subsystem_delete(ship *shipp);
 void ship_set_default_weapons(ship *shipp, ship_info *sip);
+float ship_quadrant_shield_strength(object *hit_objp, vec3d *hitpos);
 
 int ship_dumbfire_threat(ship *sp);
 int ship_lock_threat(ship *sp);

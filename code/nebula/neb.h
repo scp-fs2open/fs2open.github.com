@@ -9,17 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.h $
- * $Revision: 2.10 $
- * $Date: 2006-12-28 00:59:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.9 $
+ * $Date: 2006-04-12 01:03:00 $
+ * $Author: taylor $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.9  2006/04/12 01:03:00  taylor
- * more s/colour/color/ changes
- * throw in a couple of safety checks for some neb2 functions
- *
  * Revision 2.8  2005/10/09 08:03:20  wmcoolmon
  * New SEXP stuff
  *
@@ -96,7 +92,6 @@
 //
 #include "globalincs/pstypes.h"
 #include "globalincs/globals.h"
-#include "camera/camera.h"
 
 struct ship;
 struct object;
@@ -138,7 +133,6 @@ extern int Neb2_slices;
 typedef struct cube_poof {
 	vec3d	pt;				// point in space
 	int		bmap;				// bitmap in space
-	int		init_timestamp;			//When we were made
 	float		rot;				// rotation angle
 	float		rot_speed;		// rotation speed
 	float		flash;			// lightning flash
@@ -176,7 +170,7 @@ int neb2_create(vec3d *offset, int num_poofs, float inner_radius, float outer_ra
 void neb2_delete(object *objp);
 
 // call before beginning all rendering
-void neb2_render_setup(camid cid);
+void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient);
 
 // renders a nebula object
 void neb2_render(object *objp);

@@ -6,8 +6,8 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/RestrictPaths.h $
- * $Revision: 1.3 $
- * $Date: 2006-06-04 01:01:52 $
+ * $Revision: 1.2.2.1 $
+ * $Date: 2006-06-04 01:03:13 $
  * $Author: Goober5000 $
  *
  * Code for restricting arrival/departure to specific bays

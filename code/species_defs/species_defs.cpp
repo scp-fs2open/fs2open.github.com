@@ -9,25 +9,25 @@
 
 /*
  * $Logfile: /Freespace2/code/species_defs/species_defs.cpp $
- * $Revision: 1.38 $
- * $Date: 2007-09-02 02:10:28 $
- * $Author: Goober5000 $
+ * $Revision: 1.32.2.6 $
+ * $Date: 2007-10-17 20:58:25 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.37  2007/07/28 04:43:40  Goober5000
+ * Revision 1.32.2.5  2007/10/15 06:43:22  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
+ * Revision 1.32.2.4  2007/09/02 02:07:47  Goober5000
+ * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
+ *
+ * Revision 1.32.2.3  2007/07/28 04:43:43  Goober5000
  * a couple of tweaks
  *
- * Revision 1.36  2006/12/28 00:59:48  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.35  2006/09/11 06:51:17  taylor
+ * Revision 1.32.2.2  2006/09/11 01:17:07  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 1.34  2006/09/11 06:08:09  taylor
+ * Revision 1.32.2.1  2006/08/27 18:12:42  taylor
  * make Species_info[] and Asteroid_info[] dynamic
- *
- * Revision 1.33  2006/09/04 06:00:11  wmcoolmon
- * Changes to allow for a species with no shield anim
  *
  * Revision 1.32  2006/02/13 03:11:19  Goober5000
  * nitpick
@@ -301,7 +301,7 @@ void parse_species_tbl(char *filename)
 
 	if ((rval = setjmp(parse_abort)) != 0)
 	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : NOX("<default species_defs.tbl>")));
+		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", (filename) ? filename : NOX("<default species_defs.tbl>"), rval));
 		lcl_ext_close();
 		return;
 	}
@@ -352,9 +352,6 @@ void parse_species_tbl(char *filename)
 		else
 		{
 			strcpy(species->species_name, species_name);
-
-			//WMC - No init function, so here we go.
-			species->shield_anim.first_frame = -1;
 		}
 
 		// Goober5000 - IFF
@@ -444,7 +441,7 @@ void parse_species_tbl(char *filename)
 
 
 		// Shield Hit Animation
-		if (optional_string("+Shield_Hit_ani:"))
+		if ((!no_create && required_string("+Shield_Hit_ani:")) || optional_string("+Shield_Hit_ani:"))
 		{
 			generic_anim_init(&species->shield_anim, NULL);
 			stuff_string(species->shield_anim.filename, F_NAME, MAX_FILENAME_LEN);
@@ -483,6 +480,10 @@ void parse_species_tbl(char *filename)
 	}
 	
 	required_string("#END");
+
+	// add tbl/tbm to multiplayer validation list
+	extern void fs2netd_add_table_validation(char *tblname);
+	fs2netd_add_table_validation(filename);
 
 	// close localization
 	lcl_ext_close();

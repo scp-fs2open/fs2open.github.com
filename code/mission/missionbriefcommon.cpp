@@ -9,29 +9,26 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionBriefCommon.cpp $
- * $Revision: 2.56 $
- * $Date: 2007-09-02 02:10:26 $
+ * $Revision: 2.49.2.6 $
+ * $Date: 2007-09-02 02:07:43 $
  * $Author: Goober5000 $
  *
  * C module for briefing code common to FreeSpace and FRED
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.55  2007/06/30 23:32:25  Goober5000
+ * Revision 2.49.2.5  2007/06/30 23:32:21  Goober5000
  * fix an off-by-one error
  *
- * Revision 2.54  2007/02/10 00:10:31  taylor
+ * Revision 2.49.2.4  2007/02/10 00:10:13  taylor
  * a quick debug test to catch an error and FRED doesn't catch on it's own yet
  *
- * Revision 2.53  2006/12/28 00:59:32  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.52  2006/09/20 05:02:41  taylor
+ * Revision 2.49.2.3  2006/09/20 04:53:53  taylor
  * properly fix the new_recommendation_text FRED problem, plus some real cleanup for that code in general, and some memory leak fixes
  *
- * Revision 2.51  2006/09/11 06:50:42  taylor
+ * Revision 2.49.2.2  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.50  2006/09/11 06:08:09  taylor
+ * Revision 2.49.2.1  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
  * Revision 2.49  2006/01/13 03:31:09  Goober5000
@@ -658,10 +655,7 @@ void brief_parse_icon_tbl()
 	int num_species_covered;
 
 	const int max_icons = Species_info.size() * MAX_BRIEF_ICONS;
-
-	//WMC - Don't need these I guess.
-	if(max_icons < 1)
-		return;
+	Assert( max_icons > 0 );
 
 	generic_anim *temp_icon_bitmaps = new generic_anim[max_icons];
 	hud_anim *temp_icon_fade_anims = new hud_anim[max_icons];
@@ -2520,9 +2514,8 @@ grid *brief_create_default_grid(void)
 
 	rgrid = brief_create_grid(&Global_grid, &fvec, &rvec, &cvec, 100, 100, 5.0f);
 
-	//WMC - Tentative change, not needed?
-	//physics_init(&rgrid->physics);
-	//rgrid->physics.flags |= (PF_ACCELERATES | PF_SLIDE_ENABLED);
+	physics_init(&rgrid->physics);
+	rgrid->physics.flags |= (PF_ACCELERATES | PF_SLIDE_ENABLED);
 	return rgrid;
 }
 

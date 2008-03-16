@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.h $
- * $Revision: 2.7 $
- * $Date: 2007-11-19 20:24:40 $
+ * $Revision: 2.6.2.1 $
+ * $Date: 2007-11-19 20:24:38 $
  * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen

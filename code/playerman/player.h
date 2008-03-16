@@ -206,7 +206,6 @@
 #include "network/multi_options.h"
 #include "parse/sexp.h"
 #include "globalincs/globals.h"
-#include "camera/camera.h"
 
 struct campaign_info;
 
@@ -386,7 +385,7 @@ extern player *Player;								// pointer to my information
 
 extern int Player_use_ai;
 extern int view_centering;
-extern angles chase_slew_angles;
+extern angles chase_slew_angles;					// The viewing angles in which viewer_slew_angles will chase to. 				
 
 extern void player_init();							// initialization per level
 extern void player_level_init();
@@ -434,7 +433,7 @@ void player_get_padlock_orient(matrix *eye_orient);
 void player_display_packlock_view();
 
 // get the player's eye position and orient
-camid player_get_cam();
+void player_get_eye(vec3d *eye_pos, matrix *eye_orient);
 
 //=============================================================
 //===================== PLAYER WARPOUT STUFF ==================

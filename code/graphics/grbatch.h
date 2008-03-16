@@ -9,16 +9,10 @@
 #ifndef	__GRBATCH_H__
 #define	__GRBATCH_H__
 
-#define LOCAL_SPACE 0
-#define WORLD_SPACE 1
-#include "graphics/2d.h"
-
 
 class geometry_batcher
 {
 private:
-//	vec3d* cam_position;
-//	matrix* cam_matrix;
 	int n_to_render;		// the number of primitives to render
 	int n_allocated;		// the number of verts allocated
 	vertex *vert;
@@ -28,13 +22,10 @@ private:
 	// you need to figure out how many verts are going to be required
 	void allocate_internal(int n_verts);
 
-protected:
 	void clone(const geometry_batcher &geo);
 
 public:
-	int space;
-
-	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL), vert_list(NULL),space(LOCAL_SPACE){};
+	geometry_batcher(): n_to_render(0), n_allocated(0), vert(NULL), vert_list(NULL) {};
 	~geometry_batcher();
 
     geometry_batcher(const geometry_batcher &geo) { clone(geo); }
@@ -77,13 +68,10 @@ public:
 
 
 float batch_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r = 255, int g = 255, int b = 255);
-int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, int alpha = GR_ALPHABLEND_FILTER, float depth = 0.0f);
-geometry_batcher* batch_get_geometry(uint geo);
+int batch_add_bitmap(int texture, int tmap_flags, vertex *pnt, int orient, float rad, float alpha = 1.0f, float depth = 0.0f);
 void batch_render_all();
+void batch_render_bitmaps();
+void batch_render_lasers();
 void batch_reset();
-uint find_good_batch_item(int texture, int flags=0, int alpha = GR_ALPHABLEND_FILTER);
-void batch_add_flag(uint geo, int flag);
-void batch_remove_flag(uint geo, int flag);
-void batch_set_flag(uint geo, int flag);
 
 #endif

@@ -9,27 +9,18 @@
 
 /*
  * $Logfile: /Freespace2/code/Nebula/Neb.cpp $
- * $Revision: 2.58 $
- * $Date: 2007-09-02 02:10:27 $
+ * $Revision: 2.50.2.4 $
+ * $Date: 2007-09-02 02:07:45 $
  * $Author: Goober5000 $
  *
  * Nebula effect
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.57  2007/02/10 20:23:51  taylor
+ * Revision 2.50.2.3  2007/02/10 20:23:24  taylor
  * make sure that we don't set the 2d view matrix and then not reset it (Mantis #1269)
  * clean up some of the fullneb mess that was causing some initial setup issues (colors wrong, etc.)
  *
- * Revision 2.56  2007/01/15 01:37:38  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
- *
- * Revision 2.55  2007/01/14 10:26:38  wmcoolmon
- * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
- *
- * Revision 2.54  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.53  2006/11/06 06:46:08  taylor
+ * Revision 2.50.2.2  2006/11/06 05:26:38  taylor
  * fix some of the envmap issues
  *  - use proper hand-ness for OGL
  *  - fix distortion
@@ -38,11 +29,8 @@
  * basic cleanup and get rid of a couple of struct/variable naming issues (compiler sanity)
  * make double sure that we aren't using culling of z-buffering when rendering starfield bitmaps
  *
- * Revision 2.52  2006/09/11 06:50:42  taylor
+ * Revision 2.50.2.1  2006/09/11 01:16:31  taylor
  * fixes for stuff_string() bounds checking
- *
- * Revision 2.51  2006/06/07 05:19:49  wmcoolmon
- * Move fog disappearance factor to objecttypes.tbl
  *
  * Revision 2.50  2006/04/12 01:03:00  taylor
  * more s/colour/color/ changes
@@ -364,7 +352,6 @@
 #include "mission/missionparse.h"
 #include "ship/ship.h"
 #include "cmdline/cmdline.h"
-#include "io/timer.h"		//WMC - timestamp stuff
 
 
 
@@ -576,7 +563,7 @@ float neb2_get_alpha_2shell(float inner_radius, float outer_radius, float magic_
 float neb2_get_alpha_offscreen(float sx, float sy, float incoming_alpha);
 
 // do a pre-render of the background nebula
-void neb2_pre_render(camid cid);
+void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient);
 
 // fill in the position of the eye for this frame
 void neb2_get_eye_pos(vec3d *eye);
@@ -604,7 +591,7 @@ void neb2_init()
 	if ((rval = setjmp(parse_abort)) != 0) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error code = %i.\n", "nebula.tbl", rval));
 		return;
-	} 
+	}
 
 	// read in the nebula.tbl
 	read_file_text("nebula.tbl");
@@ -657,8 +644,7 @@ void neb2_init()
 	}*/
 
 	// should always have 6 neb poofs
-	//WMC - Why? Guess we'll find out...
-	//Assert(Neb2_poof_count == 6);
+	Assert(Neb2_poof_count == 6);
 }
 
 // set detail level
@@ -756,12 +742,8 @@ void neb2_post_level_init()
 
 	// load in all nebula bitmaps
 	for(idx=0; idx<Neb2_poof_count; idx++){
-		if(Neb2_poofs[idx] < 0)
-		{
-			Neb2_poofs[idx] = bm_load_animation(Neb2_poof_filenames[idx]);
-			if(Neb2_poofs[idx] < 0) {
-				Neb2_poofs[idx] = bm_load(Neb2_poof_filenames[idx]);
-			}
+		if(Neb2_poofs[idx] < 0){
+			Neb2_poofs[idx] = bm_load(Neb2_poof_filenames[idx]);
 		}
 	}
 
@@ -818,7 +800,7 @@ void neb2_level_close()
 }
 
 // call before beginning all rendering
-void neb2_render_setup(camid cid)
+void neb2_render_setup(vec3d *eye_pos, matrix *eye_orient)
 {
 	// standalone servers can bail here
 	if (Game_mode & GM_STANDALONE_SERVER)
@@ -852,7 +834,7 @@ void neb2_render_setup(camid cid)
 
 
 	// pre-render the real background nebula
-	neb2_pre_render(cid);		
+	neb2_pre_render(eye_pos, eye_orient);		
 }
 
 // level paging code
@@ -925,11 +907,18 @@ int neb2_skip_render(object *objp, float z_depth)
 		}
 
 		// small ships over the fog limit by a small factor
-		if(sip->class_type > -1)
-		{
-			if(z_depth >= (fog_far * Ship_types[sip->class_type].fog_disappear_factor)) {
-				return 1;
-			}
+		if((sip->flags & SIF_SMALL_SHIP) && (z_depth >= (fog_far * 1.5f))){
+			return 1;
+		}
+
+		// big ships
+		if((sip->flags & SIF_BIG_SHIP) && (z_depth >= (fog_far * 2.0f))){
+			return 1;
+		}
+
+		// huge ships
+		if((sip->flags & SIF_HUGE_SHIP) && (z_depth >= (fog_far * 3.0f))){
+			return 1;
 		}
 		break;
 
@@ -1201,7 +1190,6 @@ void neb2_gen_slice(int xyz, int src, vec3d *cube_center)
 
 				// set the bitmap
 				Neb2_cubes[src][idx1][idx2].bmap = neb2_get_bitmap();
-				Neb2_cubes[src][idx1][idx2].init_timestamp = timestamp();
 
 				// set the rotation speed
 				Neb2_cubes[src][idx1][idx2].rot = 0.0f;
@@ -1222,7 +1210,6 @@ void neb2_gen_slice(int xyz, int src, vec3d *cube_center)
 
 				// set the bitmap
 				Neb2_cubes[idx1][src][idx2].bmap = neb2_get_bitmap();
-				Neb2_cubes[idx1][src][idx2].init_timestamp = timestamp();
 
 				// set the rotation speed
 				Neb2_cubes[idx1][src][idx2].rot = 0.0f;
@@ -1243,7 +1230,6 @@ void neb2_gen_slice(int xyz, int src, vec3d *cube_center)
 				
 				// set the bitmap
 				Neb2_cubes[idx1][idx2][src].bmap = neb2_get_bitmap();
-				Neb2_cubes[idx1][idx2][src].init_timestamp = timestamp();
 
 				// set the rotation speed
 				Neb2_cubes[idx1][idx2][src].rot = 0.0f;
@@ -1443,33 +1429,8 @@ void neb2_render_player()
 					continue;
 				}
 	
-				// set the bitmap and render
-				int bm_id = Neb2_cubes[idx1][idx2][idx3].bmap;
-
-				//WMC - just in case something bad happens
-				if(bm_id < 0)
-					continue;
-
-				//WMC try animating, if applicable. this copies model_interp_get_texture.
-				int nframes = 0;
-				int fps = 0;
-				bm_get_info(bm_id, NULL, NULL, NULL, &nframes, &fps);
-				if(nframes < 2)
-				{
-					gr_set_bitmap(bm_id, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
-				}
-				else
-				{
-					float total_time = (float)nframes / (float)fps;
-					float cur_time = f2fl( (game_get_overall_frametime() - Neb2_cubes[idx1][idx2][idx3].init_timestamp) % fl2f(total_time) );
-
-					int frame = fl2i((cur_time * nframes) / total_time);
-
-					if (frame < 0) frame = 0;
-					if (frame >= nframes) frame = nframes - 1;
-
-					gr_set_bitmap(bm_id + frame, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
-				}
+				// set the bitmap and render				
+				gr_set_bitmap(Neb2_cubes[idx1][idx2][idx3].bmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, (alpha + Neb2_cubes[idx1][idx2][idx3].flash));
 
 /*#ifndef NDEBUG
 				//	float this_area;
@@ -1633,7 +1594,7 @@ int tbmap = -1;
 // It doesn't use much, but it APPEARS to be fairly useless unless someone wants
 // to enlighten me.
 //
-void neb2_pre_render(camid cid)
+void neb2_pre_render(vec3d *eye_pos, matrix *eye_orient)
 {
 	// if the mission is not a fullneb mission, skip
 	if (!(The_mission.flags & MISSION_FLAG_FULLNEB))
@@ -1643,11 +1604,12 @@ void neb2_pre_render(camid cid)
 	if (Neb2_render_mode != NEB2_RENDER_POF)
 		return;
 
+
 	// set the view clip
 	gr_screen.clip_width = this_esize;
 	gr_screen.clip_height = this_esize;
 	g3_start_frame(1);							// Turn on zbuffering
-	g3_set_view(cid.getCamera());
+	g3_set_view_matrix(eye_pos, eye_orient, Viewer_zoom);
 	gr_set_clip(0, 0, this_esize, this_esize);		
 
 	// render the background properly
@@ -2066,9 +2028,9 @@ DCF(neb2_fog_color, "")
 	dc_get_arg(ARG_INT);
 	b = Dc_arg_int;
 
-	Neb2_fog_color_r = (ubyte)r;
-	Neb2_fog_color_g = (ubyte)g;
-	Neb2_fog_color_b = (ubyte)b;
+	Neb2_fog_color_r = r;
+	Neb2_fog_color_g = g;
+	Neb2_fog_color_b = b;
 }
 
 //WMC - Going bye-bye for ship types too

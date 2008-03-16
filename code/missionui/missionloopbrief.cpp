@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionLoopBrief.cpp $
- * $Revision: 2.9 $
- * $Date: 2006-10-06 09:33:10 $
+ * $Revision: 2.8.2.1 $
+ * $Date: 2006-10-01 19:27:28 $
  * $Author: taylor $
  *
  * Campaign Loop briefing screen

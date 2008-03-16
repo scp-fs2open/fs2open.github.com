@@ -9,30 +9,24 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/FredRender.cpp $
- * $Revision: 1.12 $
- * $Date: 2008-01-05 02:33:41 $
- * $Author: wmcoolmon $
+ * $Revision: 1.5.2.5 $
+ * $Date: 2007-11-29 11:29:14 $
+ * $Author: karajorma $
  *
  * Handles rendering the scene in the window for Fred.  Also handles several other
  * miscellaneous tasks.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.11  2007/12/30 18:30:28  karajorma
- * Catch-up update. This stuff is all in 3.6.9 but somehow missed being added to HEAD.
- *
- * Revision 1.10  2007/07/28 04:43:39  Goober5000
+ * Revision 1.5.2.4  2007/07/28 04:43:43  Goober5000
  * a couple of tweaks
  *
- * Revision 1.9  2007/02/20 04:20:10  Goober5000
+ * Revision 1.5.2.3  2007/02/20 04:19:09  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 1.8  2006/12/28 00:59:20  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.7  2006/11/06 05:58:05  taylor
+ * Revision 1.5.2.2  2006/10/27 06:33:38  taylor
  * add a "Render full detail" view option to render models at their full detail for the LOD (for render/detail boxes, Mantis bug #1121)
  *
- * Revision 1.6  2006/11/06 05:54:13  taylor
+ * Revision 1.5.2.1  2006/10/24 13:44:54  taylor
  * add envmap selection to background editor
  * change skybox selection to be a text entry or browse instead of only text entry
  * allow envmap selected in background editor to be used by FRED
@@ -420,7 +414,7 @@ int	Fixed_briefing_size = 1;
 
 fix		lasttime = 0;
 vec3d	my_pos = {0.0f, 0.0f, -5.0f};
-vec3d	view_pos, eye_pos, Last_eye_pos = { 0.0f };
+vec3d	view_pos, eye_pos, Viewer_pos, Last_eye_pos = { 0.0f };
 vec3d	Last_control_pos = { 0.0f };
 vec3d	Grid_center;
 vec3d	Constraint = { 1.0f, 0.0f, 1.0f };
@@ -1804,7 +1798,7 @@ void render_frame()
 	light_reset();
 
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
-	//Viewer_pos = eye_pos;  // for starfield code
+	Viewer_pos = eye_pos;  // for starfield code
 	
 	fred_enable_htl();
 	if ( Bg_bitmap_dialog ) {
@@ -2325,7 +2319,7 @@ void render_compass(void)
 	draw_compass_arrow(&v);
 
 	g3_end_frame(); // ** Accounted for
-	gr_reset_clip();
+
 }
 
 void draw_compass_arrow(vec3d *v0)

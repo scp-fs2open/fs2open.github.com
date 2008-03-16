@@ -9,37 +9,34 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/BgBitmapDlg.cpp $
- * $Revision: 1.12 $
- * $Date: 2007-09-02 02:10:24 $
+ * $Revision: 1.5.2.7 $
+ * $Date: 2007-09-02 02:07:39 $
  * $Author: Goober5000 $
  *
  * Background space images manager dialog
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.11  2006/12/28 00:59:20  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
+ * Revision 1.5.2.6  2007/05/28 18:27:32  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
  *
- * Revision 1.10  2006/11/24 22:46:25  Goober5000
+ * Revision 1.5.2.5  2006/11/24 22:40:15  Goober5000
  * FRED again updates backgrounds while the user is editing them
  *
- * Revision 1.9  2006/11/16 00:51:43  taylor
+ * Revision 1.5.2.4  2006/11/15 00:30:10  taylor
  * clean up skybox model selection and usage to work better with FRED
  * make sure to go ahead and set the skybox model when it's set/changed in FRED
  * go ahead and load/set the envmap  when it's set/changed in FRED
  * get rid of extra envmap image types, only DDS is actually supported (not sure what the hell I was thinking there)
  *
- * Revision 1.8  2006/11/06 05:54:13  taylor
+ * Revision 1.5.2.3  2006/10/24 13:44:54  taylor
  * add envmap selection to background editor
  * change skybox selection to be a text entry or browse instead of only text entry
  * allow envmap selected in background editor to be used by FRED
  * make texture replacement work in FRED for ships (Mantis bug #1068)
  *
- * Revision 1.7  2006/08/06 18:47:29  Goober5000
+ * Revision 1.5.2.2  2006/08/06 18:47:12  Goober5000
  * add the multiple background feature
  * --Goober5000
- *
- * Revision 1.6  2006/07/20 21:43:05  karajorma
- * Fix for Mantis 996
  *
  * Revision 1.5.2.1  2006/07/20 21:15:11  karajorma
  * Fix for Mantis 996
@@ -777,7 +774,6 @@ void bg_bitmap_dlg::build_nebfile_list()
 void bg_bitmap_dlg::sun_data_init()
 {
 	int idx;
-	uint idx2;
 	CComboBox *ccb = (CComboBox*) GetDlgItem(IDC_SUN1);
 	CListBox *clb = (CListBox*) GetDlgItem(IDC_SUN1_LIST);
 	background_t *background = &Backgrounds[get_active_background()];
@@ -793,9 +789,9 @@ void bg_bitmap_dlg::sun_data_init()
  	}
 
 	// add all suns by bitmap filename to the list
-	for (idx2 = 0; idx2 < background->suns.size(); idx2++)
+	for (idx = 0; idx < (int)background->suns.size(); idx++)
 	{	
-		clb->AddString(background->suns[idx2].filename);
+		clb->AddString(background->suns[idx].filename);
 	}		
 
 	// if we have at least one item, select it
@@ -942,7 +938,6 @@ void bg_bitmap_dlg::OnSunDropdownChange()
 void bg_bitmap_dlg::bitmap_data_init()
 {
 	int idx;
-	uint idx2;
 	CComboBox *ccb = (CComboBox*) GetDlgItem(IDC_SBITMAP);
 	CListBox *clb = (CListBox*) GetDlgItem(IDC_SBITMAP_LIST);
 	background_t *background = &Backgrounds[get_active_background()];
@@ -958,9 +953,9 @@ void bg_bitmap_dlg::bitmap_data_init()
  	}
 
 	// add all bitmaps by bitmap filename to the list
-	for (idx2 = 0; idx2 < background->bitmaps.size(); idx2++)
+	for (idx = 0; idx < (int)background->bitmaps.size(); idx++)
 	{	
-		clb->AddString(background->bitmaps[idx2].filename);
+		clb->AddString(background->bitmaps[idx].filename);
 	}		
 
 	// if we have at least one item, select it
@@ -1361,7 +1356,7 @@ void bg_bitmap_dlg::OnImportBackground()
 		mprintf(("BGBITMAPDLG: Unable to parse '%s'!  Error code = %i.\n", filename, rval));
 		sprintf(error_str, "Could not parse file: %s", filename);
 
-		MessageBox(error_str, "Unable to import mission background!", MB_ICONERROR | MB_OK);
+		MessageBox((LPCTSTR) error_str, (LPCTSTR) "Unable to import mission background!", MB_ICONERROR | MB_OK);
 		return;
 	}
 

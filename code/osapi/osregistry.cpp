@@ -414,8 +414,8 @@ uint  os_config_read_uint( char *section, char *name, uint default_value )
 	LONG lResult;
 	uint tmp_val;	
 
-	if(!Os_reg_inited){
-		return NULL;
+	if ( !Os_reg_inited ) {
+		return default_value;
 	}
 
 	if ( section )	{

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Math/StaticRand.h $
- * $Revision: 2.6 $
- * $Date: 2007-02-11 22:46:39 $
+ * $Revision: 2.5.2.1 $
+ * $Date: 2007-02-11 22:46:36 $
  * $Author: Goober5000 $
  *
  * header for Static Random functions

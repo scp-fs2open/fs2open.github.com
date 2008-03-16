@@ -1,16 +1,16 @@
 /*
  * $Logfile: /Freespace2/code/graphics/generic.cpp $
- * $Revision: 1.4 $
- * $Date: 2007-03-22 21:55:01 $
+ * $Revision: 1.1.2.3 $
+ * $Date: 2007-02-12 00:22:05 $
  * $Author: taylor $
  *
  * Generic graphics functions
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.3  2007/01/07 12:54:35  taylor
- * be sure that we can handle both "none" and "<none>" in ignored filenames
+ * Revision 1.1.2.2  2006/12/26 05:15:40  taylor
+ * support both "none" and "<none>" on filenames to skip (will do this better later, ran out of time)
  *
- * Revision 1.2  2006/10/07 02:43:44  Goober5000
+ * Revision 1.1.2.1  2006/10/07 02:43:46  Goober5000
  * bypass annoying warnings for nonexistent bitmaps
  *
  * Revision 1.1  2005/11/21 23:55:00  taylor
@@ -26,6 +26,7 @@
 #include "graphics/generic.h"
 
 
+// Goober5000
 void generic_anim_init(generic_anim *ga, char *filename)
 {
 	if (filename == NULL) {
@@ -40,6 +41,7 @@ void generic_anim_init(generic_anim *ga, char *filename)
 	ga->total_time = 1.0f;
 }
 
+// Goober5000
 void generic_bitmap_init(generic_bitmap *gb, char *filename)
 {
 	if (filename == NULL) {
@@ -52,6 +54,7 @@ void generic_bitmap_init(generic_bitmap *gb, char *filename)
 	gb->bitmap_id = -1;
 }
 
+// Goober5000
 // load a generic_anim
 // return 0 is successful, otherwise return -1
 int generic_anim_load(generic_anim *ga)

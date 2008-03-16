@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDconfig.h $
- * $Revision: 2.7 $
- * $Date: 2008-01-19 00:27:41 $
+ * $Revision: 2.5.2.2 $
+ * $Date: 2008-01-19 00:27:08 $
  * $Author: Goober5000 $
  *
  * Header file for HUD configuration
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.6  2007/08/17 03:29:44  Goober5000
+ * Revision 2.5.2.1  2007/08/17 03:29:48  Goober5000
  * generalize the way radar ranges are handled (inspired by Shade's fix)
  *
  * Revision 2.5  2005/07/13 03:15:51  Goober5000

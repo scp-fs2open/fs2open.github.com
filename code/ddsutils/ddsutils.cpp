@@ -272,7 +272,7 @@ Done:
 }
 
 //reads pixel info from a dds file
-int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp)
+int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp, int cf_type)
 {
 	int retval;
 	int w,h,ct,lvl;
@@ -290,7 +290,7 @@ int dds_read_bitmap(char *filename, ubyte *data, ubyte *bpp)
 	strcat(real_name, ".dds");
 
 	// open it up and go to the data section
-	cfp = cfopen(real_name, "rb");
+	cfp = cfopen(real_name, "rb", CFILE_NORMAL, cf_type);
 
 	// just in case
 	if (cfp == NULL)
@@ -493,7 +493,7 @@ const char *dds_error_string(int code)
 			return "Cubemaps must have all 6 faces";
 
 		default:
-			break;
+			return "Abort, retry, fail?";
 	}
 
 	//get a warning otherwise

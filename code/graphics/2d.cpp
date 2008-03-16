@@ -9,54 +9,47 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/2d.cpp $
- * $Revision: 2.86 $
- * $Date: 2007-11-23 23:49:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.73.2.10 $
+ * $Date: 2007-11-22 04:49:39 $
+ * $Author: taylor $
  *
  * Main file for 2d primitives.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.85  2007/11/22 04:49:58  taylor
- * initial support for cursors that are larger than 32x32
- * fix bug where animated cursors would be constantly loaded/unloaded
+ * Revision 2.73.2.9  2007/02/12 01:04:50  taylor
+ * make gr_create_shader() use ubyte's instead of float's, saves us the more expensive conversions since we already convert to ubyte anyway
  *
- * Revision 2.84  2007/02/19 07:08:04  wmcoolmon
- * Fixed minor precedence issue.
+ * Revision 2.73.2.8  2007/02/12 00:19:48  taylor
+ * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
  *
- * Revision 2.83  2007/02/10 00:04:03  taylor
+ * Revision 2.73.2.7  2007/02/10 00:03:43  taylor
  * performance/accuracy optimization for the (un)size functions
  *
- * Revision 2.82  2007/01/10 01:44:39  taylor
- * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
+ * Revision 2.73.2.6  2006/12/26 05:26:12  taylor
+ * remove some old stuff that we either don't use or don't need any longer
  *
- * Revision 2.81  2007/01/07 13:13:38  taylor
- * cleanup various bits of obsolete or unused code
- *
- * Revision 2.80  2006/12/28 00:59:26  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.79  2006/11/16 00:53:12  taylor
+ * Revision 2.73.2.5  2006/11/15 00:36:07  taylor
  * various bits of little cleanup
  * get rid of some more compiler warnings
  *
- * Revision 2.78  2006/11/06 05:42:44  taylor
+ * Revision 2.73.2.4  2006/10/24 13:24:12  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
  * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
  * get rid of MAX_BUFFERS
  * make D3D vertex buffers dynamic, like OGL has already done
  *
- * Revision 2.77  2006/10/06 09:56:42  taylor
+ * Revision 2.73.2.3  2006/10/06 09:52:05  taylor
  * clean up some old software rendering stuff that we don't use any longer
  * remove grzbuffer.*, since all it did was give us 3 variables, which were moved to 2d.*
  *
- * Revision 2.76  2006/09/11 06:36:38  taylor
+ * Revision 2.73.2.2  2006/08/22 05:41:35  taylor
  * clean up the grstub mess (for work on standalone server, and just for sanity sake)
  * move color and shader functions to 2d.cpp since they are exactly the same everywhere
  * don't bother with the function pointer for gr_set_font(), it's the same everywhere anyway
  *
- * Revision 2.75  2006/09/04 06:12:35  wmcoolmon
- * Conditional hook
+ * Revision 2.73.2.1  2006/06/07 03:23:15  wmcoolmon
+ * Scripting system prep for 3.6.9
  *
  * Revision 2.74  2006/06/07 03:21:53  wmcoolmon
  * Scripting system prep for 3.6.9
@@ -1475,8 +1468,7 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 			break;
 
 		case GR_STUB: 
-			//WMC - This function is missing...?
-			//gr_stub_init();
+			gr_stub_init();
 			break;
 
 		default:
@@ -1502,15 +1494,14 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 		int nframes;						// used to pass, not really needed (should be 1)
 
 		//if it still hasn't loaded then this usually means that the executable isn't in the same directory as the main fs2 install
-		//if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 )
-		//{
-			/*Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
+		if ( (Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes)) < 0 )
+		{
+			Error(LOCATION, "\nWeb cursor bitmap not found.  This is most likely due to one of three reasons:\n"
 				"\t1) You're running FreeSpace Open from somewhere other than your FreeSpace 2 folder;\n"
 				"\t2) You've somehow corrupted your FreeSpace 2 installation;\n"
 				"\t3) You haven't installed FreeSpace 2 at all.\n"
-				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.  If neither of these solutions fixes your problem, you've found a bug and should report it.");*/
-		//}	
-		Web_cursor_bitmap = bm_load_animation("cursorweb", &nframes);
+				"Number 1 can be fixed by simply moving the FreeSpace Open executable file to the FreeSpace 2 folder.  Numbers 2 and 3 can be fixed by installing or reinstalling FreeSpace 2.  If neither of these solutions fixes your problem, you've found a bug and should report it.");
+		}	
 	}
 
 	mprintf(("GRAPHICS: Initializing default colors...\n"));
@@ -1524,7 +1515,6 @@ bool gr_init(int res, int mode, int depth, int custom_x, int custom_y)
 	// NOTE: Don't clear the render target faces at the start, only when they are actually updated in freespace.cpp.
 
 	if (Cmdline_env) {
-		mprintf(("GRAPHICS: Initializing environment map templates...\n"));
 		// get a render target for static environment maps
 		gr_screen.static_environment_map = bm_make_render_target(512, 512, BMP_FLAG_RENDER_TARGET_STATIC|BMP_FLAG_CUBEMAP);
 
@@ -1659,7 +1649,7 @@ void gr_set_color_fast(color *dst)
 }
 
 // shader functions
-void gr_create_shader(shader *shade, float r, float g, float b, float c )
+void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c )
 {
 	shade->screen_sig = gr_screen.signature;
 	shade->r = r;
@@ -1676,7 +1666,7 @@ void gr_set_shader(shader *shade)
 
 		gr_screen.current_shader = *shade;
 	} else {
-		gr_create_shader( &gr_screen.current_shader, 0.0f, 0.0f, 0.0f, 0.0f );
+		gr_create_shader( &gr_screen.current_shader, 0, 0, 0, 0 );
 	}
 }
 
@@ -2170,43 +2160,22 @@ void gr_rect(int x, int y, int w, int h, bool resize)
 
 void gr_shade(int x, int y, int w, int h, bool resize)
 {
-	if(gr_screen.mode == GR_STUB)
+	int r, g, b, a;
+
+	if (gr_screen.mode == GR_STUB)
 		return;
 
-		int r,g,b,a;
-
-	if(resize)
-	{
+	if (resize) {
 		gr_resize_screen_pos(&x, &y);
 		gr_resize_screen_pos(&w, &h);
 	}
 
-	//WMC - this is the original shade code.
-	//Lots of silly unneccessary calcs.
-	/*
-	float shade1 = 1.0f;
-	float shade2 = 6.0f;
+	r = (int)gr_screen.current_shader.r;
+	g = (int)gr_screen.current_shader.g;
+	b = (int)gr_screen.current_shader.b;
+	a = (int)gr_screen.current_shader.c;
 
-	r = fl2i(gr_screen.current_shader.r*255.0f*shade1);
-	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
-	g = fl2i(gr_screen.current_shader.g*255.0f*shade1);
-	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
-	b = fl2i(gr_screen.current_shader.b*255.0f*shade1);
-	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
-	a = fl2i(gr_screen.current_shader.c*255.0f*shade2);
-	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;
-	*/
-
-	r = fl2i(gr_screen.current_shader.r);
-	if ( r < 0 ) r = 0; else if ( r > 255 ) r = 255;
-	g = fl2i(gr_screen.current_shader.g);
-	if ( g < 0 ) g = 0; else if ( g > 255 ) g = 255;
-	b = fl2i(gr_screen.current_shader.b);
-	if ( b < 0 ) b = 0; else if ( b > 255 ) b = 255;
-	a = fl2i(gr_screen.current_shader.c);
-	if ( a < 0 ) a = 0; else if ( a > 255 ) a = 255;
-
-	g3_draw_2d_rect(x,y,w,h,r,g,b,a);
+	g3_draw_2d_rect(x, y, w, h, r, g, b, a);
 }
 
 #ifdef USE_PYTHON

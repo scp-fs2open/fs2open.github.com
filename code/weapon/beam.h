@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Beam.h $
- * $Revision: 2.14 $
- * $Date: 2007-11-23 23:49:42 $
+ * $Revision: 2.12.2.2 $
+ * $Date: 2007-05-28 18:27:36 $
  * $Author: wmcoolmon $
  *
  * all sorts of cool stuff about ships
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.13  2007/03/23 01:51:56  taylor
+ * Revision 2.12.2.1  2007/02/12 00:45:24  taylor
  * bit of cleanup and minor performance tweaks
  * sync up with new generic_anim/bitmap and weapon delayed loading changes
  * with generic_anim, use Goober's animation timing for beam section and glow animations

@@ -9,24 +9,21 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionBrief.cpp $
- * $Revision: 2.46 $
- * $Date: 2007-11-19 20:24:39 $
+ * $Revision: 2.42.2.3 $
+ * $Date: 2007-11-19 20:24:37 $
  * $Author: Goober5000 $
  *
  * C module that contains code to display the mission briefing to the player
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.45  2007/03/22 20:35:20  taylor
+ * Revision 2.42.2.2  2007/03/22 20:35:44  taylor
  * be sure to page in textures for change ship class sexp preload
  * add a ASF_MENUMUSIC type for things that aren't mission-based event music (since that is handled differently now)
  * make event music keep extension if it exists, so that the special data will be accurate
  * bits of cleanup from old MS code that we don't need
  *
- * Revision 2.44  2007/02/20 04:20:18  Goober5000
+ * Revision 2.42.2.1  2007/02/20 04:19:22  Goober5000
  * the great big duplicate model removal commit
- *
- * Revision 2.43  2006/12/28 00:59:32  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
  *
  * Revision 2.42  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
@@ -1369,9 +1366,11 @@ void brief_init()
 
 	// init the scene-cut data
 	brief_transition_reset();
-	
+
+#ifndef FS2_DEMO	
 	hud_anim_init(&Fade_anim, Brief_static_coords[gr_screen.res][0], Brief_static_coords[gr_screen.res][1], Brief_static_name[gr_screen.res]);
 	hud_anim_load(&Fade_anim);
+#endif
 
 	nprintf(("Alan","Entering brief_init()\n"));
 	common_select_init();
@@ -1715,10 +1714,12 @@ int brief_setup_closeup(brief_icon *bi)
 		*/
 		break;
 	case ICON_ASTEROID_FIELD:
+#ifndef FS2_DEMO
 		strcpy(pof_filename, Asteroid_info[ASTEROID_TYPE_LARGE].pof_files[0]);
 		strcpy(Closeup_icon->closeup_label, XSTR( "asteroid", 431));
 		vm_vec_make(&Closeup_cam_pos, 0.0f, 0.0f, -334.0f);
 		Closeup_zoom = 0.5f;
+#endif
 		break;
 	case ICON_JUMP_NODE:
 		strcpy(pof_filename, NOX("subspacenode.pof"));
@@ -2303,9 +2304,9 @@ void brief_close()
 	// unload the audio streams used for voice playback
 	brief_voice_unload_all();
 
-	if(Fade_anim.first_frame > -1) {
-		bm_unload(Fade_anim.first_frame);
-	}
+#ifndef FS2_DEMO
+	bm_unload(Fade_anim.first_frame);
+#endif
 
 	Brief_ui_window.destroy();
 
@@ -2386,31 +2387,20 @@ void brief_unpause()
 
 void brief_maybe_blit_scene_cut(float frametime)
 {
-	if(Fade_anim.first_frame < 0)
-	{
-		if(Start_fade_up_anim)
-		{
-			Fade_anim.time_elapsed = 0.0f;
-			Start_fade_up_anim = 0;
-			Start_fade_down_anim = 1;
-			Current_brief_stage = Quick_transition_stage;
-
-			if ( Current_brief_stage < 0 ) {
-				brief_transition_reset();
-				Current_brief_stage = Last_brief_stage;
-			}
-		}
-
-		if(Start_fade_down_anim)
-		{
-			Fade_anim.time_elapsed = 0.0f;
-			Start_fade_up_anim = 0;
-			Start_fade_down_anim = 0;
-		}
-
-		return;
-	}
 	if ( Start_fade_up_anim ) {
+
+#ifdef FS2_DEMO
+		Fade_anim.time_elapsed = 0.0f;
+		Start_fade_up_anim = 0;
+		Start_fade_down_anim = 1;
+		Current_brief_stage = Quick_transition_stage;
+
+		if ( Current_brief_stage < 0 ) {
+			brief_transition_reset();
+			Current_brief_stage = Last_brief_stage;
+		}
+		goto Fade_down_anim_start;
+#else
 		int framenum;
 
 		Fade_anim.time_elapsed += frametime;
@@ -2445,11 +2435,20 @@ void brief_maybe_blit_scene_cut(float frametime)
 		// Blit the bitmap for this frame
 		gr_set_bitmap(Fade_anim.first_frame + framenum);
 		gr_bitmap(Fade_anim.sx, Fade_anim.sy);
+#endif
 	}
 
 
 	Fade_down_anim_start:
 	if ( Start_fade_down_anim ) {
+
+#ifdef FS2_DEMO
+		Fade_anim.time_elapsed = 0.0f;
+		Start_fade_up_anim = 0;
+		Start_fade_down_anim = 0;
+		return;
+#else
+
 		int framenum;
 
 		Fade_anim.time_elapsed += frametime;
@@ -2471,6 +2470,8 @@ void brief_maybe_blit_scene_cut(float frametime)
 		// Blit the bitmap for this frame
 		gr_set_bitmap(Fade_anim.first_frame + (Fade_anim.num_frames-1) - framenum);
 		gr_bitmap(Fade_anim.sx, Fade_anim.sy);
+
+#endif
 	}
 }
 

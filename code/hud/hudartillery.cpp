@@ -9,16 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HudArtillery.cpp $
- * $Revision: 2.17 $
- * $Date: 2007-09-02 02:10:25 $
+ * $Revision: 2.14.2.2 $
+ * $Date: 2007-09-02 02:07:41 $
  * $Author: Goober5000 $
  *
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.16  2006/12/28 00:59:27  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.15  2006/09/11 06:49:39  taylor
+ * Revision 2.14.2.1  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
  * Revision 2.14  2005/10/14 07:22:24  Goober5000
@@ -153,7 +150,7 @@ int ssm_info_lookup(char *name)
 
 // game init
 void ssm_init()
-{
+{	
 	int rval;
 	ssm_info bogus, *s;
 	char weapon_name[NAME_LENGTH];

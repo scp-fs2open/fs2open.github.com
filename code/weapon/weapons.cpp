@@ -12,38 +12,48 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.209  2007/09/02 02:10:29  Goober5000
+ * Revision 2.180.2.24  2007/10/21 03:40:41  taylor
+ * fix bug with +remove that made a beam section still appear partially valid
+ * fix temp-var snaffu that hendered debugging
+ *
+ * Revision 2.180.2.23  2007/10/15 06:43:22  taylor
+ * FS2NetD v.2  (still a work in progress, but is ~98% complete)
+ *
+ * Revision 2.180.2.22  2007/09/02 02:07:48  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 2.208  2007/08/16 00:45:54  phreak
+ * Revision 2.180.2.21  2007/08/16 00:45:37  phreak
  * Local SSMs shouldn't jump into subspace if they're not homing.
  *
- * Revision 2.207  2007/07/15 06:29:56  Goober5000
+ * Revision 2.180.2.20  2007/07/15 06:29:53  Goober5000
  * restore WMC's ship flag
  *
- * Revision 2.206  2007/07/15 02:45:20  Goober5000
+ * Revision 2.180.2.19  2007/07/15 02:45:51  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
  * removed my old supercap damage scaling change
  * moved Turey's truefire flag to ai_profiles
  *
- * Revision 2.205  2007/07/13 22:28:13  turey
- * Initial commit of Training Weapons / Simulated Hull code.
- *
- * Revision 2.203  2007/05/28 19:38:10  taylor
+ * Revision 2.180.2.18  2007/05/28 19:37:55  taylor
  * fix armor index bug for shockwaves
  *
- * Revision 2.202  2007/04/14 23:44:08  taylor
+ * Revision 2.180.2.17  2007/05/28 18:27:36  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
+ *
+ * Revision 2.180.2.16  2007/04/14 23:43:40  taylor
  * only add player-allowed flag on #Weak weapons when their non-weak versions also have the flag (Goober #73)
  *
- * Revision 2.201  2007/03/23 01:52:28  taylor
- * fix breakage
- *
- * Revision 2.200  2007/03/22 20:04:04  taylor
+ * Revision 2.180.2.15  2007/03/22 19:31:25  taylor
  * little bit of cleanup
  * set "#Weak" weapons to always get the "player allowed" flag (Mantis #1301)
  *
- * Revision 2.199  2007/03/22 20:02:46  taylor
+ * Revision 2.180.2.14  2007/02/20 04:27:23  Goober5000
+ * revert to retail behavior
+ *
+ * Revision 2.180.2.13  2007/02/20 04:19:44  Goober5000
+ * the great big duplicate model removal commit
+ *
+ * Revision 2.180.2.12  2007/02/12 00:54:31  taylor
  * make use of generic_anim and generic_bitmap where possible
  * bunch of cleanup and little optimizations
  * add "+remove" tbl option to completely get rid of particular beam sections
@@ -51,72 +61,50 @@
  * if we are using a POF missile which isn't loaded yet, try and load it before going crazy
  * bug fix and optimization for laser color setting
  *
- * Revision 2.198  2007/02/20 04:27:22  Goober5000
- * revert to retail behavior
- *
- * Revision 2.197  2007/02/20 04:20:38  Goober5000
- * the great big duplicate model removal commit
- *
- * Revision 2.196  2007/02/18 06:17:48  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.195  2007/02/11 21:26:39  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 2.194  2007/02/11 06:02:38  Goober5000
- * fix spelling
- *
- * Revision 2.193  2007/02/03 03:28:48  phreak
- * spawn weapons now have the option of passing a target lock onto their children.
- *
- * http://www.hard-light.net/forums/index.php/topic,45166.0.html
- *
- * Revision 2.192  2007/01/15 00:55:13  wmcoolmon
- * Fix HEAD
- *
- * Revision 2.191  2007/01/14 14:03:40  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.190  2007/01/12 04:33:49  Goober5000
+ * Revision 2.180.2.11  2007/01/12 04:33:50  Goober5000
  * hmm... I guess when I fixed this back in 2004, I fixed it the wrong way :D
  *
- * Revision 2.189  2007/01/07 12:41:37  taylor
- * make expl info dyanmic
- * fix possible out-of-bounds on expl lod checking
- * fix memory leak from modular tables
+ * Revision 2.180.2.10  2007/01/07 12:16:31  taylor
+ * fix a couple of memory leaks with modular tables
  *
- * Revision 2.188  2006/12/28 00:59:54  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
+ * Revision 2.180.2.9  2006/12/26 05:32:59  taylor
+ * make weapon_expl info dynamic
  *
- * Revision 2.187  2006/09/11 06:48:40  taylor
+ * Revision 2.180.2.8  2006/12/07 18:30:20  taylor
+ * cleanup shockwave code a bit
+ * make Shockwave_info dynamic
+ * lot of fixage to allow 2D and 3D shockwaves to work better
+ * fix for Mantis bug #1148
+ * properly handle both "none" and "<none>" for 2D and 3D shockwave names
+ * better handling, preloading wise, of 3D shockwaves and their textures
+ *
+ * Revision 2.180.2.7  2006/09/11 01:12:50  taylor
  * fixes for stuff_string() bounds checking
  * stict compiler build fixes
  *
- * Revision 2.186  2006/09/11 05:44:23  taylor
+ * Revision 2.180.2.6  2006/08/22 05:50:12  taylor
  * make muzzle flash info dynamic
  * add support for modular mflash tables (*-mfl.tbm)
  *
- * Revision 2.185  2006/07/08 11:30:40  taylor
+ * Revision 2.180.2.5  2006/07/08 11:29:14  taylor
  * debug-build-only issue, make sure that thrusters are properly enabled if needed for POF based weapons when using cheat keys
  *
- * Revision 2.184  2006/07/06 04:06:04  Goober5000
+ * Revision 2.180.2.4  2006/07/06 04:06:01  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
  * --Goober5000
  *
- * Revision 2.183  2006/07/04 07:42:50  Goober5000
+ * Revision 2.180.2.3  2006/07/04 07:42:20  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
  * --Goober5000
  *
- * Revision 2.182  2006/06/27 05:06:39  taylor
+ * Revision 2.180.2.2  2006/06/18 16:53:59  taylor
  * make sure we don't process cmeasure homing more than once (this should also fix the incompatible network packet)
  * fix flag check to be sure that we properly detonate missiles tracking cmeasures
  *
- * Revision 2.181  2006/06/07 05:20:52  wmcoolmon
- * Not sure why I didn't catch this when compiling earlier...
+ * Revision 2.180.2.1  2006/06/04 17:57:00  wmcoolmon
+ * Remove $Collide Ship and $Collide Weapon options from 3.6.9, as these are not finalized
  *
  * Revision 2.180  2006/05/27 16:45:11  taylor
  * some minor cleanup
@@ -1095,7 +1083,6 @@
 #include "weapon/weapon.h"
 #include "render/3d.h"
 #include "object/object.h"
-#include "object/objectshield.h"
 #include "ship/ship.h"
 #include "fireball/fireballs.h"
 #include "playerman/player.h"
@@ -1137,7 +1124,6 @@ DCF_BOOL( weapon_flyby, Weapon_flyby_sound_enabled )
 #endif
 
 static int Weapon_flyby_sound_timer;	
-extern bool Module_ship_weapons_loaded;
 
 weapon Weapons[MAX_WEAPONS];
 weapon_info Weapon_info[MAX_WEAPON_TYPES];
@@ -1207,6 +1193,7 @@ int		Weapon_impact_timer;			// timer, initialized at start of each mission
 
 extern int compute_num_homing_objects(object *target_objp);
 
+extern void fs2netd_add_table_validation(char *tblname);
 
 
 weapon_explosions::weapon_explosions()
@@ -1407,7 +1394,7 @@ void parse_weapon_expl_tbl(char *filename)
 	}
 
 	read_file_text(filename);
-	reset_parse();
+	reset_parse();		
 
 	required_string("#Start");
 	while (required_string_either("#End","$Name:"))
@@ -1664,8 +1651,6 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags2 |= WIF2_SAME_TURRET_COOLDOWN;
 		else if (!stricmp(NOX("apply no light"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_MR_NO_LIGHTING;
-		else if (!stricmp(NOX("inherit parent target"), weapon_strings[i]))
-			weaponp->wi_flags2 |= WIF2_INHERIT_PARENT_TARGET;
 		else if (!stricmp(NOX("training"), weapon_strings[i]))
 			weaponp->wi_flags2 |= WIF2_TRAINING;
 		else
@@ -1708,10 +1693,6 @@ void parse_wi_flags(weapon_info *weaponp)
 		Warning(LOCATION,"\"small only\" and \"huge\" flags are mutually exclusive.\nThey are used together in %s\nAI will most likely not use this weapon",weaponp->name);
 	}
 
-	if ((weaponp->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (!(weaponp->wi_flags & WIF_CHILD)))
-	{
-		Warning(LOCATION,"Weapon %s has the \"inherit parent target\" flag, but not the \"child\" flag.  No changes in behavior will occur.", weaponp->name);
-	}
 }
 
 void parse_shockwave_info(shockwave_create_info *sci, char *pre_char)
@@ -2263,7 +2244,7 @@ int parse_weapon(int subtype, bool replace)
 	if(optional_string("$Damage Type:")) {
 		//This is checked for validity on every armor type
 		//If it's invalid (or -1), then armor has no effect
-		stuff_string(buf, F_NAME, NAME_LENGTH);
+		stuff_string(buf, F_NAME, WEAPONS_MULTITEXT_LENGTH);
 		wip->damage_type_idx = damage_type_add(buf);
 	}
 
@@ -2374,7 +2355,10 @@ int parse_weapon(int subtype, bool replace)
 				if(wip->wi_flags & WIF_HOMING_ASPECT) {
 					wip->wi_flags &= ~WIF_HOMING_ASPECT;
 				}
-				
+				if(wip->wi_flags & WIF_HOMING_JAVELIN) {
+					wip->wi_flags &= ~WIF_HOMING_JAVELIN;
+				}
+
 				wip->wi_flags |= WIF_HOMING_HEAT | WIF_TURNS;
 			}
 			else if (!stricmp(temp_type, NOX("ASPECT")))
@@ -2382,8 +2366,22 @@ int parse_weapon(int subtype, bool replace)
 				if(wip->wi_flags & WIF_HOMING_HEAT) {
 					wip->wi_flags &= ~WIF_HOMING_HEAT;
 				}
-				
+				if(wip->wi_flags & WIF_HOMING_JAVELIN) {
+					wip->wi_flags &= ~WIF_HOMING_JAVELIN;
+				}
+
 				wip->wi_flags |= WIF_HOMING_ASPECT | WIF_TURNS;
+			}
+			else if (!stricmp(temp_type, NOX("JAVELIN")))
+			{
+				if(wip->wi_flags & WIF_HOMING_HEAT) {
+					wip->wi_flags &= ~WIF_HOMING_HEAT;
+				}
+				if(wip->wi_flags & WIF_HOMING_ASPECT) {
+					wip->wi_flags &= ~WIF_HOMING_ASPECT;
+				}
+
+				wip->wi_flags |= WIF_HOMING_JAVELIN | WIF_TURNS;
 			}
 			//If you want to add another weapon, remember you need to reset
 			//ALL homing flags.
@@ -2413,7 +2411,7 @@ int parse_weapon(int subtype, bool replace)
 				}
 			}
 		}
-		else if (wip->wi_flags & WIF_HOMING_ASPECT)
+		else if (wip->wi_flags & WIF_HOMING_ASPECT || wip->wi_flags & WIF_HOMING_JAVELIN)
 		{
 			if(optional_string("+Turn Time:")) {
 				stuff_float(&wip->turn_time);
@@ -2455,7 +2453,7 @@ int parse_weapon(int subtype, bool replace)
 		}
 		else
 		{
-			Error(LOCATION, "Illegal homing type = %s.\nMust be HEAT or ASPECT.\n", temp_type);
+			Error(LOCATION, "Illegal homing type = %s.\nMust be HEAT, ASPECT or JAVELIN.\n", temp_type);
 		}
 
 	}
@@ -2654,6 +2652,15 @@ int parse_weapon(int subtype, bool replace)
 	if ( optional_string("$Anim:") ) {
 		stuff_string(wip->anim_filename, F_NAME, MAX_FILENAME_LEN);
 	}
+/*
+	if(optional_string("$Collide Ship:")) {
+		wip->sc_collide_ship = Script_system.ParseChunk("$Collide Ship");
+	}
+
+	if(optional_string("$Collide Weapon:")) {
+		wip->sc_collide_weapon = Script_system.ParseChunk("$Collide Weapon");
+	}
+*/
 
 	if ( optional_string("$Impact Explosion:") ) {
 		stuff_string(fname, F_NAME, NAME_LENGTH);
@@ -2686,6 +2693,9 @@ int parse_weapon(int subtype, bool replace)
 		// look it up
 		wip->muzzle_flash = mflash_lookup(fname);
 	}
+
+	if (wip->muzzle_flash > -1)
+		wip->wi_flags |= WIF_MFLASH;
 
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
 	if( optional_string("$EMP Intensity:") ){
@@ -2988,6 +2998,7 @@ int parse_weapon(int subtype, bool replace)
 			} else {
 				if (wip->b_info.beam_num_sections < MAX_BEAM_SECTIONS) {
 					bsip = &wip->b_info.sections[wip->b_info.beam_num_sections++];
+					generic_anim_init(&bsip->texture, NULL);
 				} else {
 					Warning(LOCATION, "Too many beam sections for weapon %s - max is %d", wip->name, MAX_BEAM_SECTIONS);
 					bsip = &tbsw;
@@ -3040,10 +3051,12 @@ int parse_weapon(int subtype, bool replace)
 			if ( optional_string("+Translation:") )
 				stuff_float(&bsip->translation);
 
-			// if we are actually removing this index, the reset it and we'll
+			// if we are actually removing this index then reset it and we'll
 			// clean up the entries later
-			if (remove)
+			if (remove) {
 				memset( bsip, 0, sizeof(beam_weapon_section_info) );
+				generic_anim_init(&bsip->texture, NULL);
+			}
 		}
 	}
 
@@ -3385,6 +3398,9 @@ void parse_weaponstbl(char *filename)
 		strcpy(parse_error_text, "");
 	}
 
+	// add tbl/tbm to multiplayer validation list
+	fs2netd_add_table_validation(filename);
+
 	// close localization
 	lcl_ext_close();
 }
@@ -3580,7 +3596,7 @@ void weapon_clean_entries()
 
 void weapon_release_bitmaps()
 {
-	int i;
+	int i, j;
 	weapon_info *wip;
 
 	// not for FRED...
@@ -3630,8 +3646,8 @@ void weapon_release_bitmaps()
 			}
 
 			// section textures
-			for (int i = 0; i < wip->b_info.beam_num_sections; i++) {
-				beam_weapon_section_info *bsi = &wip->b_info.sections[i];
+			for (j = 0; j < wip->b_info.beam_num_sections; j++) {
+				beam_weapon_section_info *bsi = &wip->b_info.sections[j];
 
 				if (bsi->texture.first_frame >= 0) {
 					bm_release(bsi->texture.first_frame);
@@ -3765,7 +3781,11 @@ void weapon_load_bitmaps(int weapon_index)
 	if ( (wip->wi_flags & WIF_TRAIL) && (wip->tr_info.texture.bitmap_id < 0) )
 		generic_bitmap_load(&wip->tr_info.texture);
 
-	if ( (wip->wi_flags & WIF_PARTICLE_SPEW) && (wip->particle_spew_anim.first_frame < 0) ) {
+	//WMC - Don't try to load an anim if no anim is specified, Mmkay?
+	if ( (wip->wi_flags & WIF_PARTICLE_SPEW)
+		&& (wip->particle_spew_anim.first_frame < 0)
+		&& (strlen(wip->particle_spew_anim.filename) > 0) ) {
+
 		wip->particle_spew_anim.first_frame = bm_load(wip->particle_spew_anim.filename);
 
 		if (wip->particle_spew_anim.first_frame >= 0) {
@@ -3895,9 +3915,7 @@ void weapon_init()
 
 		parse_weaponstbl("weapons.tbl");
 
-		int num_files = parse_modular_table(NOX("*-wep.tbm"), parse_weaponstbl);
-		if (num_files > 0)
-			Module_ship_weapons_loaded = true;
+		parse_modular_table(NOX("*-wep.tbm"), parse_weaponstbl);
 
 		// do post-parse cleanup
 		weapon_do_post_parse();
@@ -4219,12 +4237,14 @@ void weapon_delete(object *obj)
 		missle_obj_list_remove(wp->missile_list_index);
 		wp->missile_list_index = -1;
 	}
+
 /*
 	if (wp->flak_index >= 0){
 		flak_delete(wp->flak_index);
 		wp->flak_index = -1;
 	}
 */
+
 	if (wp->trail_ptr != NULL) {
 		trail_object_died(wp->trail_ptr);
 		wp->trail_ptr = NULL;
@@ -4241,7 +4261,10 @@ void weapon_maybe_play_warning(weapon *wp)
 	if ( wp->homing_object == Player_obj ) {
 		if ( !(wp->weapon_flags & WF_LOCK_WARNING_PLAYED) ) {
 			wp->weapon_flags |= WF_LOCK_WARNING_PLAYED;
-			if ( Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_HEAT ) {
+			// Use heatlock-warning sound for Heat and Javelin for now
+			// Possibly add an additional third sound later
+			if ( Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_HEAT ||
+				 Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_JAVELIN ) {
 				snd_play(&Snds[SND_HEATLOCK_WARN]);
 			} else {
 				Assert(Weapon_info[wp->weapon_info_index].wi_flags & WIF_HOMING_ASPECT);
@@ -4368,11 +4391,20 @@ void find_homing_object(object *weapon_objp, int num)
 
 				dot = vm_vec_dot(&vec_to_object, &weapon_objp->orient.vec.fvec);
 
+				ship_subsys *target_engines = NULL;
+				if (wip->wi_flags & WIF_HOMING_JAVELIN && objp->type == OBJ_SHIP) {
+					ship *target_ship = &Ships[ship_get_by_signature(objp->signature)];
+					target_engines = ship_get_closest_subsys_in_sight(target_ship, SUBSYSTEM_ENGINE, &objp->pos);
+					if (target_engines == NULL)
+						continue;
+				}
+
 				if (dot > wip->fov) {
 					if (dist < best_dist) {
 						best_dist = dist;
-						wp->homing_object = objp;
-						wp->target_sig = objp->signature;
+						wp->homing_object	= objp;
+						wp->target_sig		= objp->signature;
+						wp->homing_subsys	= target_engines;
 
 						cmeasure_maybe_alert_success(objp);
 					}
@@ -4431,9 +4463,11 @@ void find_homing_object_cmeasures_1(object *weapon_objp)
 				{
 					float	chance;
 					if (wip->wi_flags & WIF_HOMING_ASPECT) {
-						chance = cm_wip->cm_aspect_effectiveness/wip->seeker_strength;	//	aspect seeker this likely to chase a countermeasure
+						// aspect seeker this likely to chase a countermeasure
+						chance = cm_wip->cm_aspect_effectiveness/wip->seeker_strength;
 					} else {
-						chance = cm_wip->cm_heat_effectiveness/wip->seeker_strength;	//	heat seeker this likely to chase a countermeasure
+						// heat seeker and javelin HS this likely to chase a countermeasure
+						chance = cm_wip->cm_heat_effectiveness/wip->seeker_strength;
 					}
 					if ((objp->signature != wp->cmeasure_ignore_objnum) && (objp->signature != wp->cmeasure_chase_objnum))
 					{
@@ -4577,8 +4611,8 @@ void weapon_home(object *obj, int num, float frame_time)
 		return;
 	}
 
-	// AL 4-8-98: If orgiginal target for aspect lock missile is lost, stop homing
-	if (wip->wi_flags & WIF_HOMING_ASPECT) {
+	// AL 4-8-98: If orgiginal target for aspect or javelin HS lock missile is lost, stop homing
+	if (wip->wi_flags & WIF_LOCKED_HOMING) {
 		if ( wp->target_sig > 0 ) {
 			if ( wp->homing_object->signature != wp->target_sig ) {
 				wp->homing_object = &obj_used_list;
@@ -4596,6 +4630,27 @@ void weapon_home(object *obj, int num, float frame_time)
 		}
 	}
 
+	// Make sure Javelin HS missiles always home on engine subsystems if ships
+	if (wip->wi_flags & WIF_HOMING_JAVELIN &&
+		hobjp->type == OBJ_SHIP &&
+		wp->target_sig > 0 &&
+		wp->homing_subsys != NULL &&
+		wp->homing_subsys->system_info->type != SUBSYSTEM_ENGINE) {
+			ship *enemy = &Ships[ship_get_by_signature(wp->target_sig)];
+			wp->homing_subsys = ship_get_closest_subsys_in_sight(enemy, SUBSYSTEM_ENGINE, &Objects[wp->objnum].pos);
+	}
+
+	// If Javelin HS missile doesn't home in on a subsystem but homing in on a
+	// ship, lose lock alltogether
+	// Javelins can only home in one Engines or bombs.
+	if (wip->wi_flags & WIF_HOMING_JAVELIN &&
+		hobjp->type == OBJ_SHIP &&
+		wp->target_sig > 0 &&
+		wp->homing_subsys == NULL) {
+			wp->homing_object = &obj_used_list;
+			return;
+	}
+
 /*
 	if (hobjp->type == OBJ_NONE) {
 		find_homing_object(obj, num);
@@ -4605,18 +4660,20 @@ void weapon_home(object *obj, int num, float frame_time)
 
 	switch (hobjp->type) {
 	case OBJ_NONE:
-		if (wip->wi_flags & WIF_HOMING_ASPECT)
+		if (wip->wi_flags & WIF_LOCKED_HOMING) {
 			find_homing_object_by_sig(obj, wp->target_sig);
-		else
+		} else {
 			find_homing_object(obj, num);
+		}
 		return;
 		break;
 	case OBJ_SHIP:
 		if (hobjp->signature != wp->target_sig) {
-			if (wip->wi_flags & WIF_HOMING_ASPECT)
+			if (wip->wi_flags & WIF_LOCKED_HOMING) {
 				find_homing_object_by_sig(obj, wp->target_sig);
-			else
+			} else {
 				find_homing_object(obj, num);
+			}
 			return;
 		}
 		break;
@@ -4627,10 +4684,11 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		// only allowed to home on bombs
 		Assert(Weapon_info[Weapons[hobjp->instance].weapon_info_index].wi_flags & WIF_BOMB);
-		if (wip->wi_flags & WIF_HOMING_ASPECT)
+		if (wip->wi_flags & WIF_LOCKED_HOMING) {
 			find_homing_object_by_sig(obj, wp->target_sig);
-		else
+		} else {
 			find_homing_object(obj, num);
+		}
 		break;
 	default:
 		return;
@@ -4730,7 +4788,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 							// If player has apect lock, we don't want to find a homing point on the closest
 							// octant... setting the timestamp to 0 ensures this.
-							if (wip->wi_flags & WIF_HOMING_ASPECT) {
+							if (wip->wi_flags & WIF_LOCKED_HOMING) {
 								wp->pick_big_attack_point_timestamp = 0;
 							} else {
 								wp->pick_big_attack_point_timestamp = 1;
@@ -4796,7 +4854,7 @@ void weapon_home(object *obj, int num, float frame_time)
 
 		//	Only lead target if more than one second away.  Otherwise can miss target.  I think this
 		//	is what's causing Harbingers to miss the super destroyer. -- MK, 4/15/98
-		if ((wip->wi_flags & WIF_HOMING_ASPECT) && (old_dot > 0.1f) && (time_to_target > 0.1f))
+		if ((wip->wi_flags & WIF_LOCKED_HOMING) && (old_dot > 0.1f) && (time_to_target > 0.1f))
 			vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, MIN(time_to_target, 2.0f));
 
 		//nprintf(("AI", "Dot = %7.3f, dist = %7.3f, time_to = %6.3f, deg/sec = %7.3f\n", old_dot, dist_to_target, time_to_target, angles/flFrametime));
@@ -4815,11 +4873,11 @@ void weapon_home(object *obj, int num, float frame_time)
 					//if (flFrametime * (1.0f - old_dot) > 1.0f)
 					//	Int3();
 				}
-		} else if (wip->wi_flags & WIF_HOMING_ASPECT) {	//	subtract life as if max turn is 90 degrees.
+		} else if (wip->wi_flags & WIF_LOCKED_HOMING) {	//	subtract life as if max turn is 90 degrees.
 			if (wip->fov < 0.95f)
 				wp->lifeleft -= flFrametime * (0.95f - old_dot);
 		} else {
-			Warning(LOCATION, "Tried to make weapon '%s' home, but found it wasn't aspect-seeking or heat-seeking!", wip->name);
+			Warning(LOCATION, "Tried to make weapon '%s' home, but found it wasn't aspect-seeking or heat-seeking or a Javelin!", wip->name);
 		}
 
 
@@ -4876,7 +4934,7 @@ void weapon_process_pre( object *obj, float frame_time)
 	weapon_info *wip = &Weapon_info[wp->weapon_info_index];
 
 	// if the object is a corkscrew style weapon, process it now
-	if(wp->cscrew_index >= 0){
+	if((obj->type == OBJ_WEAPON) && (Weapons[obj->instance].cscrew_index >= 0)){
 		cscrew_process_pre(obj);
 	}
 
@@ -5287,6 +5345,23 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 				wp->homing_object = &Objects[target_objnum];
 				wp->homing_subsys = target_subsys;
 				weapon_maybe_play_warning(wp);
+			} else if ( (wip->wi_flags & WIF_HOMING_JAVELIN) && target_is_locked) {
+				if (Objects[target_objnum].type == OBJ_SHIP &&
+					(wp->homing_subsys == NULL ||
+					wp->homing_subsys->system_info->type != SUBSYSTEM_ENGINE)) {
+						ship *target_ship = &Ships[Objects[target_objnum].instance];
+						wp->homing_subsys = ship_get_closest_subsys_in_sight(target_ship, SUBSYSTEM_ENGINE, &Objects[weapon_objnum].pos);
+						if (wp->homing_subsys == NULL) {
+							wp->homing_object = &obj_used_list;
+						} else {
+							wp->homing_object = &Objects[target_objnum];
+							weapon_maybe_play_warning(wp);
+						}
+				} else {
+					wp->homing_object = &Objects[target_objnum];
+					wp->homing_subsys = target_subsys;
+					weapon_maybe_play_warning(wp);
+				}
 			} else if ( wip->wi_flags & WIF_HOMING_HEAT ) {
 				//	Make a heat seeking missile try to home.  If the target is outside the view cone, it will
 				//	immediately drop it and try to find one in its view cone.
@@ -5309,7 +5384,8 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 		// DB - removed 7:14 pm 9/6/99. was totally messing up lifetimes for all weapons.
 		//	MK, 7:11 am, 9/7/99.  Put it back in, but with a proper check here to make sure it's an aspect seeker and
 		//	put a sanity check in the color changing laser code that was broken by this code.
-		if (target_is_locked && (wp->target_num != -1) && (wip->wi_flags & WIF_HOMING_ASPECT) ) {
+		if (target_is_locked && (wp->target_num != -1) &&
+			(wip->wi_flags & WIF_LOCKED_HOMING) ) {
 			wp->lifeleft *= 1.2f;
 		}
 
@@ -5330,11 +5406,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	weapon		*wp;
 	weapon_info	*wip;
 
-	if(!Num_weapon_types)
-		return -1;
-	
-	if(weapon_type < 0 || weapon_type >= Num_weapon_types)
-		weapon_type = 0;
+	Assert(weapon_type >= 0 && weapon_type < Num_weapon_types);
 
 	wip = &Weapon_info[weapon_type];
 
@@ -5531,7 +5603,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 	vm_vec_zero(&objp->phys_info.max_vel);
 	objp->phys_info.max_vel.xyz.z = wip->max_speed;
 	vm_vec_zero(&objp->phys_info.max_rotvel);
-	shield_set_quad(objp, 0, wip->damage);
+	objp->shield_quadrant[0] = wip->damage;
 	if (wip->wi_flags & WIF_BOMB){
 		objp->hull_strength = 50.0f;
 	} else {
@@ -5566,7 +5638,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);
 	}
-	
+
 	// Turey - maybe make the initial speed of the weapon take into account the velocity of the parent.
 	// Improves aiming during gliding.
 	if ((parent_objp != NULL) && (The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)) {
@@ -5672,7 +5744,7 @@ void spawn_child_weapons(object *objp)
 	int	parent_num;
 	ushort starting_sig;
 	weapon	*wp;
-	weapon_info	*wip, *child_wip;
+	weapon_info	*wip;
 
 	Assert(objp->type == OBJ_WEAPON);
 	Assert((objp->instance >= 0) && (objp->instance < MAX_WEAPONS));
@@ -5682,7 +5754,6 @@ void spawn_child_weapons(object *objp)
 	wip = &Weapon_info[wp->weapon_info_index];
 
 	child_id = wip->spawn_type;
-	child_wip = &Weapon_info[child_id];
 
 	parent_num = objp->parent;
 
@@ -5717,12 +5788,6 @@ void spawn_child_weapons(object *objp)
 
 		vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
 		weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
-
-		//if the child inherits parent target, do it only if the parent weapon was locked to begin with
-		if ((child_wip->wi_flags2 & WIF2_INHERIT_PARENT_TARGET) && (wp->homing_object != &obj_used_list))
-		{
-			weapon_set_tracking_info(weapon_objnum, parent_num, wp->target_num, 1, wp->homing_subsys);
-		}
 
 		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
 		if (weapon_objnum != -1) {
@@ -5777,6 +5842,7 @@ void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
 void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed)
 {
 	int	is_hull_hit;
+	float shield_str;
 
 	// If non-missiles (namely lasers) expire without hitting a ship, don't play impact sound
 	if	( wip->subtype != WP_MISSILE ) {		
@@ -5816,11 +5882,14 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 
 		is_hull_hit = 1;
 		if ( hit_obj->type == OBJ_SHIP ) {
-			float quad = shield_get_quad(hit_obj, shield_get_quadrant_global(hit_obj, hitpos));
+			shield_str = ship_quadrant_shield_strength(hit_obj, hitpos);
+		} else {
+			shield_str = 0.0f;
+		}
 
-			// play a shield hit if shields are above 10% max in this quadrant
-			if (quad / shield_get_max_quad(hit_obj) > 0.1f)
-				is_hull_hit = 0;
+		// play a shield hit if shields are above 10% max in this quadrant
+		if ( shield_str > 0.1f ) {
+			is_hull_hit = 0;
 		}
 
 		if ( !is_hull_hit ) {
@@ -6157,7 +6226,9 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 //
 //	Call to figure out if a weapon is armed or not
 //
-//Weapon is not armed when...
+//Weapon is armed when...
+//1: Weapon is shot down by weapon
+//OR
 //1: weapon is destroyed before arm time
 //2: weapon is destroyed before arm distance from ship
 //3: weapon is outside arm radius from target ship
@@ -6188,12 +6259,9 @@ bool weapon_armed(weapon *wp)
 
 		if(		((wip->arm_time) && ((Missiontime - wp->creation_time) < wip->arm_time))
 			|| ((wip->arm_dist) && (pobj != NULL && pobj->type != OBJ_NONE && (vm_vec_dist(&wobj->pos, &pobj->pos) < wip->arm_dist)))
-			|| ((wip->arm_radius) && (
-				(wp->homing_object == NULL && wp->target_num < 0)
-				|| (wp->homing_object != NULL && wp->homing_subsys == NULL && vm_vec_dist(&wobj->pos, &wp->homing_object->pos) > wip->arm_radius)
-				|| (wp->homing_object != NULL && wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&wobj->pos, &spos) > wip->arm_radius)
-				|| (wp->target_num > -1 && vm_vec_dist(&wobj->pos, &Objects[wp->target_num].pos) > wip->arm_radius)
-				)))
+			|| ((wip->arm_radius) && (wp->homing_object == NULL
+				|| (wp->homing_subsys == NULL && vm_vec_dist(&wobj->pos, &wp->homing_object->pos) > wip->arm_radius)
+				|| (wp->homing_subsys != NULL && get_subsystem_pos(&spos, wp->homing_object, wp->homing_subsys) && vm_vec_dist(&wobj->pos, &spos) > wip->arm_radius))))
 		{
 			return false;
 		}
@@ -6252,12 +6320,12 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos )
 	if ( wip->impact_weapon_expl_index > -1 && armed_weapon)
 	{
 		expl_ani_handle = Weapon_explosions.GetAnim(wip->impact_weapon_expl_index, hitpos, wip->impact_explosion_radius);
-		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->impact_explosion_radius, PARTICLE_BITMAP, expl_ani_handle );
+		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
 	}
 	else if(wip->dinky_impact_weapon_expl_index > -1 && !armed_weapon)
 	{
 		expl_ani_handle = Weapon_explosions.GetAnim(wip->dinky_impact_weapon_expl_index, hitpos, wip->dinky_impact_explosion_radius);
-		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->dinky_impact_explosion_radius, PARTICLE_BITMAP, expl_ani_handle );
+		particle_create( hitpos, &vmd_zero_vector, 0.0f, wip->dinky_impact_explosion_radius, PARTICLE_BITMAP_PERSISTENT, expl_ani_handle );
 	}
 
 	weapon_obj->flags |= OF_SHOULD_BE_DEAD;
@@ -6389,8 +6457,7 @@ void weapon_mark_as_used(int weapon_type)
 
 void weapons_page_in()
 {
-	int i, j;
-	int idx;
+	int i, j, idx;
 
 	Assert( used_weapons != NULL );
 
@@ -6734,7 +6801,7 @@ void weapon_maybe_spew_particle(object *obj)
 			vm_vec_add(&particle_pos, &obj->pos, &direct);
 
 			if (wip->particle_spew_anim.first_frame < 0)
-				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_BITMAP, particle_get_smoke_id());
+				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_SMOKE);
 			else
 				particle_create(&particle_pos, &vel, wip->particle_spew_lifetime, wip->particle_spew_radius, PARTICLE_BITMAP, wip->particle_spew_anim.first_frame);
 		}

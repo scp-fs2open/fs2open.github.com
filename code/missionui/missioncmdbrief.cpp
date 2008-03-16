@@ -9,15 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionCmdBrief.cpp $
- * $Revision: 2.21 $
- * $Date: 2007-11-19 20:24:40 $
+ * $Revision: 2.19.2.2 $
+ * $Date: 2007-11-19 20:24:37 $
  * $Author: Goober5000 $
  *
  * Mission Command Briefing Screen
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.20  2007/02/11 09:08:45  taylor
- * slight debug message fixage
+ * Revision 2.19.2.1  2007/02/11 09:07:33  taylor
+ * little bit of debug message cleanup
+ * don't bother dealing with message wav file if sound is disabled
  *
  * Revision 2.19  2006/02/19 00:32:47  Goober5000
  * additional error checking
@@ -843,7 +844,7 @@ void cmd_brief_ani_wave_init(int index)
 			break;
 		}
 
-		Cur_cmd_brief->stage[index].cmd_anim = anim_load(name, 1);
+		Cur_cmd_brief->stage[index].cmd_anim = anim_load(name, CF_TYPE_ANY, 1);
 		if ( Cur_cmd_brief->stage[index].cmd_anim ) {
 			break;
 		}
@@ -859,7 +860,7 @@ void cmd_brief_ani_wave_init(int index)
 
 	// check to see if cb anim loaded, if not, try the default one
 	if ( !Cur_cmd_brief->stage[index].cmd_anim ) {
-		Cur_cmd_brief->stage[index].cmd_anim = anim_load(NOX("CB_default"), 1);
+		Cur_cmd_brief->stage[index].cmd_anim = anim_load(NOX("CB_default"), CF_TYPE_ANY, 1);
 	}
 }
 

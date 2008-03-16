@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FredStubs.cpp $
- * $Revision: 1.7 $
- * $Date: 2007-09-29 14:29:59 $
+ * $Revision: 1.4.2.3 $
+ * $Date: 2007-09-29 13:58:33 $
  * $Author: karajorma $
  *
  * Bogus C file for functions and variable stubs that Fred needs because it
@@ -20,13 +20,13 @@
  * to each other.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.6  2007/02/11 09:37:18  taylor
- * dd VALID_FNAME() macro and put it around a few places (more to come)
+ * Revision 1.4.2.2  2007/02/11 09:35:11  taylor
+ * add VALID_FNAME() macro and put it around a few places (more to come)
  * clean out some old variables
  * move CLAMP() macro from opengl header to global header
  * update COUNT_ESTIMATE to match new bmpman changes
  *
- * Revision 1.5  2006/07/14 03:50:31  taylor
+ * Revision 1.4.2.1  2006/07/14 03:49:33  taylor
  * add missing stub for game_get_overall_frametime()
  *
  * Revision 1.4  2006/04/20 06:32:01  Goober5000
@@ -655,6 +655,7 @@ float Viewer_zoom;
 
 int Warpout_forced = 0;
 float Warpout_time;
+vec3d Camera_pos;
 vec3d Dead_player_last_vel;
 int game_start_mission(){return 0;}
 int Game_weapons_tbl_valid;
@@ -693,6 +694,7 @@ void get_version_string_short(char *){}
 void game_tst_mark(struct object *, struct ship *){}
 int tst;
 int game_do_cd_mission_check(char *){return 1;}
+//int Player_multi_died_check;
 int Show_framerate = 0;
 
 void game_feature_not_in_demo_popup() {}
@@ -714,8 +716,8 @@ fix game_get_overall_frametime() { return 0; }
 //WMC
 void game_level_init(int seed){}
 void game_post_level_init(){}
-camid game_render_frame_setup(){return camid();}
-void game_render_frame(camid cid){}
+void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient){}
+void game_render_frame(vec3d *eye_pos, matrix *eye_orient){}
 void game_simulation_frame(){}
 void game_update_missiontime(){}
 void game_render_post_frame(){}

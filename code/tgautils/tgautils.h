@@ -47,7 +47,7 @@
 #ifndef __TARGA_H
 #define __TARGA_H
 
-struct CFILE;
+#include "cfile/cfile.h"
 
 // --------------------
 //
@@ -66,7 +66,7 @@ struct CFILE;
 // --------------------
 
 int targa_read_header(char *filename, CFILE *img_cfp = NULL, int *w = 0, int *h = 0, int *bpp = 0, ubyte *palette=NULL );
-int targa_read_bitmap(char *filename, ubyte *data, ubyte *palette, int dest_size );
+int targa_read_bitmap(char *filename, ubyte *data, ubyte *palette, int dest_size, int cf_type = CF_TYPE_ANY );
 int targa_write_bitmap(char *filename, ubyte *data, ubyte *palette, int w, int h, int bpp);
 
 // The following are used by the tools\vani code.

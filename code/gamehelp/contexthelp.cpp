@@ -9,17 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/GameHelp/ContextHelp.cpp $
- * $Revision: 2.14 $
- * $Date: 2007-09-02 02:10:25 $
+ * $Revision: 2.11.2.2 $
+ * $Date: 2007-09-02 02:07:40 $
  * $Author: Goober5000 $
  *
  * Functions to drive the context-sensitive help 
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.13  2006/12/28 00:59:26  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.12  2006/09/11 06:49:39  taylor
+ * Revision 2.11.2.1  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
  * Revision 2.11  2005/07/18 03:44:00  taylor
@@ -239,8 +236,8 @@ shader Grey_shader;
 ////////////////////////////////////////////////////////////////////
 // Module globals
 ////////////////////////////////////////////////////////////////////
-static int help_left_bracket_bitmap = -1;
-static int help_right_bracket_bitmap = -1;
+static int help_left_bracket_bitmap;
+static int help_right_bracket_bitmap;
 static help_overlay help_overlaylist[MAX_HELP_OVERLAYS];
 
 static int current_helpid = -1;		// the currently active overlay_id, only really used for the debug console funxions
@@ -517,16 +514,14 @@ void help_overlay_init()
 	help_right_bracket_bitmap = bm_load("right_bracket");
 	if(help_right_bracket_bitmap < 0){
 		// we failed to load the bitmap - this is very bad
-		//WMC - Just don't show it.
-		//Int3();
+		Int3();
 	}
 
 	// load left_bracket bitmap
 	help_left_bracket_bitmap = bm_load("left_bracket");
 	if(help_left_bracket_bitmap < 0){
 		// we failed to load the bitmap - this is very bad
-		//WMC - Just don't show it.
-		//Int3();
+		Int3();
 	}
 
 	atexit(close_help);
@@ -688,22 +683,16 @@ void help_overlay_blit(int overlay_id)
 	}
 
 	// this draws each right bracket
-	if(help_right_bracket_bitmap > 0)
-	{
-		for (idx = 0; idx < rbracketcount; idx++) {
-			gr_set_bitmap(help_right_bracket_bitmap);
-			gr_bitmap(help_overlaylist[overlay_id].rbracketlist[gr_screen.res][idx].x_coord, help_overlaylist[overlay_id].rbracketlist[gr_screen.res][idx].y_coord);
-		}
+	for (idx = 0; idx < rbracketcount; idx++) {
+		gr_set_bitmap(help_right_bracket_bitmap);
+		gr_bitmap(help_overlaylist[overlay_id].rbracketlist[gr_screen.res][idx].x_coord, help_overlaylist[overlay_id].rbracketlist[gr_screen.res][idx].y_coord);
 	}
 
-	if(help_left_bracket_bitmap > 0)
-	{
-		// this draws each left bracket
-		for (idx = 0; idx < lbracketcount; idx++) {
-			gr_set_bitmap(help_left_bracket_bitmap);
-			gr_bitmap(help_overlaylist[overlay_id].lbracketlist[gr_screen.res][idx].x_coord, help_overlaylist[overlay_id].lbracketlist[gr_screen.res][idx].y_coord);
-		}
-	}
+	// this draws each left bracket
+	for (idx = 0; idx < lbracketcount; idx++) {
+		gr_set_bitmap(help_left_bracket_bitmap);
+		gr_bitmap(help_overlaylist[overlay_id].lbracketlist[gr_screen.res][idx].x_coord, help_overlaylist[overlay_id].lbracketlist[gr_screen.res][idx].y_coord);
+	}	
 
 	// this draws each 2d line for the help screen
 	//gr_set_color_fast(&Color_yellow);

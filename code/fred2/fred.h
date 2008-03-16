@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/FRED.h $
- * $Revision: 1.3 $
- * $Date: 2007-09-03 01:02:49 $
+ * $Revision: 1.1 $
+ * $Date: 2006-01-19 02:27:31 $
  * $Author: Goober5000 $
  *
  * FRED.h : main header file for the FRED application
@@ -18,13 +18,6 @@
  * application (MFC level at least), processes the INI file.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.2  2007/02/11 21:26:34  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 1.1  2006/01/19 02:27:31  Goober5000
- * import FRED2 back into fs2_open module
- * --Goober5000
- *
  * Revision 1.5  2005/07/13 02:40:50  Goober5000
  * remove PreProcDefine #includes in FRED
  * --Goober5000
@@ -146,20 +139,12 @@
 #include "BriefingEditorDlg.h"
 #include "globalincs/systemvars.h"
 
-#define MODIFY(a, b) do {		\
-	if (a != (b)) {				\
-		a = (b);				\
-		set_modified();			\
-	}							\
+#define MODIFY(a, b) do {	\
+	if (a != (b)) {			\
+		a = (b);					\
+		set_modified();		\
+	}								\
 } while(0)
-
-#define MODIFY_SHIELDS(objp, strength) do {				\
-	if ((int) shield_get_strength(objp) != (int) strength) {	\
-		shield_set_strength(objp, strength);					\
-		set_modified();											\
-	}															\
-} while(0)
-
 
 #define	F_RENDER_SHIP_MODELS	0x01
 #define	F_RENDER_SHIP_ICONS	0x02

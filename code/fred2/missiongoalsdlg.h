@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/MissionGoalsDlg.h $
- * $Revision: 1.2 $
- * $Date: 2006-10-09 05:25:18 $
+ * $Revision: 1.1.2.1 $
+ * $Date: 2006-10-09 05:25:07 $
  * $Author: Goober5000 $
  *
  * Mission goals editor dialog box handling code

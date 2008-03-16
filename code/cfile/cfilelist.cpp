@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/CFile/CfileList.cpp $
- * $Revision: 2.8 $
- * $Date: 2007-05-20 02:51:08 $
+ * $Revision: 2.6.2.2 $
+ * $Date: 2007-05-20 02:51:26 $
  * $Author: taylor $
  *
  * Code for doing directory lists and sorts
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.7  2006/08/20 00:45:10  taylor
+ * Revision 2.6.2.1  2006/08/19 04:16:49  taylor
  * "byte" was the same as "ubyte", but since "byte" has to be an extra #define on everything but Windows, lets just get rid of it
  *
  * Revision 2.6  2005/01/31 23:27:51  taylor

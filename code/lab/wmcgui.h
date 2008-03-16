@@ -9,11 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/lab/wmcgui.h $
- * $Revision: 1.25 $
- * $Date: 2006-03-22 18:11:28 $
+ * $Revision: 1.25.2.1 $
+ * $Date: 2006-11-15 00:40:59 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.25  2006/03/22 18:11:28  taylor
+ * GCC 4.1 barfed on this
+ *
  * Revision 1.24  2006/01/20 07:10:34  Goober5000
  * reordered #include files to quash Microsoft warnings
  * --Goober5000
@@ -185,8 +188,8 @@ private:
 public:
 	ObjectClassInfoEntry(){Object=-1;Coords[0]=Coords[1]=Coords[2]=Coords[3]=INT_MAX;}
 	bool Parse();
-	int GetImageHandle(int id, int handle_num){return Entries[id].GetImageHandle(handle_num);}
-	int GetCoords(int id, int *x, int *y){return Entries[id].GetCoords(x,y);}
+	int GetImageHandle(int id, int handle_num);
+	int GetCoords(int id, int *x, int *y);
 	
 	int GetObjectCoords(int *x, int *y, int *w, int *h);
 };
@@ -354,7 +357,7 @@ public:
 
 	//Set funcs
 	GUIObject *Add(GUIObject* new_gauge);
-	void DeleteObject(GUIObject* dgp){DeletionCache.push_back(dgp);}
+	void DeleteObject(GUIObject* dgp);
 
 	//On funcs
 	int OnFrame(float frametime, bool doevents);

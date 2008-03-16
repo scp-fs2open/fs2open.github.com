@@ -585,7 +585,7 @@ BEGIN
     "S",            ID_EDITORS_SHIPS,       VIRTKEY, SHIFT, NOINVERT
     "T",            ID_CONTROL_OBJ,         VIRTKEY, NOINVERT
     "V",            ID_LOOKAT_OBJ,          VIRTKEY, CONTROL, NOINVERT
-    "V",            ID_TOGGLE_VIEWPOINT,    VIRTKEY, ALT, NOINVERT
+    "V",            ID_TOGGLE_VIEWPOINT,    VIRTKEY, SHIFT, NOINVERT
     "V",            ID_EDITORS_VOICE,       VIRTKEY, SHIFT, NOINVERT
     "W",            ID_MARK_WING,           VIRTKEY, NOINVERT
     "W",            ID_FORM_WING,           VIRTKEY, CONTROL, NOINVERT
@@ -608,7 +608,6 @@ BEGIN
     VK_SPACE,       ID_MISC_STATISTICS,     VIRTKEY, ALT, NOINVERT
     VK_TAB,         ID_NEXT_OBJ,            VIRTKEY, NOINVERT
     VK_TAB,         ID_PREV_OBJ,            VIRTKEY, CONTROL, NOINVERT
-    VK_TAB,         ID_PREV_OBJ,            VIRTKEY, SHIFT, NOINVERT
 END
 
 IDR_ACC_CAMPAIGN ACCELERATORS MOVEABLE PURE 
@@ -874,7 +873,7 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,355,184,50,14
 END
 
-IDD_MISSION_NOTES DIALOGEX 0, 0, 320, 414
+IDD_MISSION_NOTES DIALOGEX 0, 0, 464, 324
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Mission Specs"
 FONT 8, "MS Sans Serif"
@@ -898,94 +897,95 @@ BEGIN
                     UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | 
                     UDS_ARROWKEYS,142,94,11,14
     PUSHBUTTON      "Custom Wing Names",IDC_CUSTOM_WING_NAMES,13,115,136,14
-    EDITTEXT        IDC_SQUAD_NAME,51,143,98,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "Logo",IDC_SQUAD_LOGO_BUTTON,11,158,31,14
-    EDITTEXT        IDC_SQUAD_LOGO,51,158,98,14,ES_AUTOHSCROLL | ES_READONLY
-    PUSHBUTTON      "640x480",IDC_LOADING_SCREEN_BUTTON640,11,193,40,14
-    EDITTEXT        IDC_LOADING_SCREEN640,51,193,97,14,ES_AUTOHSCROLL
-    PUSHBUTTON      "1024x768",IDC_LOADING_SCREEN_BUTTON1024,11,209,40,16
-    EDITTEXT        IDC_LOADING_SCREEN1024,51,209,97,16,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SQUAD_NAME,356,124,98,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Logo",IDC_SQUAD_LOGO_BUTTON,316,139,31,14
+    EDITTEXT        IDC_SQUAD_LOGO,356,139,98,14,ES_AUTOHSCROLL | 
+                    ES_READONLY
+    PUSHBUTTON      "640x480",IDC_LOADING_SCREEN_BUTTON640,317,284,40,14
+    EDITTEXT        IDC_LOADING_SCREEN640,357,284,97,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "1024x768",IDC_LOADING_SCREEN_BUTTON1024,317,300,40,16
+    EDITTEXT        IDC_LOADING_SCREEN1024,357,300,97,16,ES_AUTOHSCROLL
     CONTROL         "All Teams at War",IDC_FULL_WAR,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,163,7,72,10
+                    WS_TABSTOP,165,22,72,10
     CONTROL         "Red Alert Mission",IDC_RED_ALERT,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,163,17,78,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,165,33,78,10
     CONTROL         "Scramble Mission",IDC_SCRAMBLE,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,163,27,72,10
+                    WS_TABSTOP,165,42,72,10
     CONTROL         "No Briefing",IDC_NO_BRIEFING,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,163,37,72,10
+                    WS_TABSTOP,165,52,72,10
     CONTROL         "No Debriefing",IDC_NO_DEBRIEFING,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,163,47,72,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,165,62,72,10
     CONTROL         "Disallow Promotions/Badges",IDC_NO_PROMOTION,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,163,57,106,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,165,73,106,10
     CONTROL         "Disable Built-in Messages",IDC_DISABLE_BUILTIN_MSGS,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,67,123,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,165,82,123,10
     CONTROL         "Disable Built-in Command Messages",
                     IDC_DISABLE_BUILTIN_COMMAND_MSGS,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,163,77,129,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,165,92,129,10
     CONTROL         "No Traitor",IDC_NO_TRAITOR,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,163,87,123,10
+                    WS_TABSTOP,165,102,123,10
     CONTROL         "All Ships Beam-Freed By Default",
                     IDC_BEAM_FREE_ALL_BY_DEFAULT,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,163,97,123,10
+                    WS_TABSTOP,304,38,123,10
     CONTROL         "Allow Daisy-Chained Docking",IDC_ALLOW_DOCK_TREES,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,107,123,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,304,47,123,10
     CONTROL         "Disallow Support Ships",IDC_SUPPORT_ALLOWED,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,163,170,95,10
+                    BS_AUTOCHECKBOX | WS_TABSTOP,309,168,95,10
     CONTROL         "Support Ships Repair Hull",IDC_SUPPORT_REPAIRS_HULL,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,180,123,10
-    EDITTEXT        IDC_MAX_HULL_REPAIR_VAL,242,194,59,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_MAX_SUBSYS_REPAIR_VAL,242,210,59,14,ES_AUTOHSCROLL
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,309,179,123,10
+    EDITTEXT        IDC_MAX_HULL_REPAIR_VAL,389,193,59,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_MAX_SUBSYS_REPAIR_VAL,389,211,59,14,ES_AUTOHSCROLL
     CONTROL         "Toggle (off in nebula; on elsewhere)",
                     IDC_SPECS_TOGGLE_TRAILS,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,163,243,141,10
+                    WS_TABSTOP,309,242,141,10
     CONTROL         "Minimium speed to display",IDC_CONTRAIL_THRESHOLD_CHECK,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,254,93,10
-    EDITTEXT        IDC_CONTRAIL_THRESHOLD,262,253,48,14,ES_READONLY
-    COMBOBOX        IDC_AI_PROFILE,63,279,93,140,CBS_DROPDOWNLIST | 
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,309,253,93,10
+    EDITTEXT        IDC_CONTRAIL_THRESHOLD,411,252,48,14,ES_READONLY
+    COMBOBOX        IDC_AI_PROFILE,59,134,93,140,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_EVENT_MUSIC,221,279,93,140,CBS_DROPDOWNLIST | 
+    COMBOBOX        IDC_EVENT_MUSIC,211,134,93,140,CBS_DROPDOWNLIST | 
                     WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_SUBSTITUTE_EVENT_MUSIC,221,296,93,140,CBS_DROPDOWN | 
+    COMBOBOX        IDC_SUBSTITUTE_EVENT_MUSIC,211,150,93,140,CBS_DROPDOWN | 
                     WS_VSCROLL | WS_TABSTOP
-    EDITTEXT        IDC_MISSION_DESC,5,323,307,38,ES_MULTILINE | 
+    EDITTEXT        IDC_MISSION_DESC,0,182,299,57,ES_MULTILINE | 
                     ES_AUTOVSCROLL | ES_WANTRETURN
-    EDITTEXT        IDC_MISSION_NOTES,5,369,307,38,ES_MULTILINE | 
+    EDITTEXT        IDC_MISSION_NOTES,1,254,297,57,ES_MULTILINE | 
                     ES_AUTOVSCROLL | ES_WANTRETURN
-    DEFPUSHBUTTON   "OK",IDOK,264,7,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,264,25,50,14
+    DEFPUSHBUTTON   "OK",IDOK,347,7,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,403,7,50,14
     LTEXT           "Max Respawns",IDC_STATIC,8,97,52,8
     RTEXT           "Title",IDC_STATIC,7,10,29,8
-    RTEXT           "Designer Notes",IDC_STATIC,5,361,50,8
+    RTEXT           "Designer Notes",IDC_STATIC,1,243,50,8
     LTEXT           "xx/xx/xx",IDC_MODIFIED,57,51,101,8
     RTEXT           "Designer",IDC_STATIC,7,25,29,8
     RTEXT           "Created:",IDC_STATIC,23,42,28,8
     LTEXT           "xx/xx/xx",IDC_CREATED,57,42,103,8
     RTEXT           "Last Modified:",IDC_STATIC,7,51,45,8
-    LTEXT           "Mission Description",IDC_STATIC,5,313,62,8
-    LTEXT           "Music",IDC_STATIC,164,282,32,8
-    GROUPBOX        "Squadron Reassign",IDC_STATIC,5,133,151,45
-    LTEXT           "Name",IDC_STATIC,17,144,28,8
-    GROUPBOX        "Loading Screen",IDC_STATIC,5,183,151,46
-    GROUPBOX        "Support Ships",IDC_STATIC,161,161,154,67
-    LTEXT           "Hull Repair Ceiling",IDC_STATIC,163,196,60,8
-    LTEXT           "Subsytem Repair Ceiling",IDC_STATIC,163,212,75,8
-    LTEXT           "%",IDC_STATIC,304,198,8,8
-    LTEXT           "%",IDC_STATIC,304,213,8,8
-    GROUPBOX        "Ship Trails",IDC_STATIC,161,233,154,39
-    LTEXT           "Substitute Music",IDC_STATIC,164,298,52,8
-    LTEXT           "AI Profile",IDC_STATIC,6,281,32,8
+    LTEXT           "Mission Description",IDC_STATIC,0,170,62,8
+    LTEXT           "Music",IDC_STATIC,153,137,32,8
+    GROUPBOX        "Squadron Reassign",IDC_STATIC,310,114,150,44
+    LTEXT           "Name",IDC_STATIC,322,125,28,8
+    GROUPBOX        "Loading Screen",IDC_STATIC,309,274,151,46
+    GROUPBOX        "Support Ships",IDC_STATIC,305,158,154,71
+    LTEXT           "Hull Repair Ceiling",IDC_STATIC,309,195,60,8
+    LTEXT           "Subsytem Repair Ceiling",IDC_STATIC,309,216,75,8
+    LTEXT           "%",IDC_STATIC,452,196,8,8
+    LTEXT           "%",IDC_STATIC,452,210,8,8
+    GROUPBOX        "Ship Trails",IDC_STATIC,306,231,154,41
+    LTEXT           "Substitute Music",IDC_STATIC,153,153,52,8
+    LTEXT           "AI Profile",IDC_STATIC,1,137,32,8
     CONTROL         "Player Starts under AI Control (NO MULTI)",
                     IDC_PLAYER_START_AI,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,7,298,149,10
-    GROUPBOX        "Built-in Command Messages",IDC_STATIC,5,233,151,39
-    COMBOBOX        IDC_COMMAND_SENDER,56,243,93,140,CBS_DROPDOWN | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Sender",IDC_STATIC,11,245,32,8
-    COMBOBOX        IDC_COMMAND_PERSONA,56,256,93,140,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
-    LTEXT           "Persona",IDC_STATIC,11,258,32,8
+                    WS_TABSTOP,3,153,149,10
     CONTROL         "Use Autopilot Cinematics",IDC_USE_AUTOPILOT_CINEMATICS,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,163,118,123,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,304,58,123,10
+    CONTROL         "2D Mission",IDC_2D_MISSION,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,304,70,123,10
+    CONTROL         "Deactivate Hardcoded Autopilot",
+                    IDC_DEACTIVATE_AUTOPILOT,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,304,81,123,10
+    LTEXT           "Retail Flags:",IDC_STATIC,167,7,40,8
+    LTEXT           "FS2 Open Flags",IDC_STATIC,304,25,52,8
 END
 
 IDD_PREFERENCES DIALOG DISCARDABLE  0, 0, 333, 81
@@ -1128,8 +1128,6 @@ BEGIN
     LTEXT           "Target",IDC_STATIC,172,166,22,8
     LTEXT           "Persona",IDC_STATIC,149,39,27,8
     LTEXT           "Alt Name",IDC_STATIC,14,80,30,8
-    PUSHBUTTON      "Alt Ship Class",IDC_ALT_SHIP_CLASS,180,101,69,14,0,
-                    WS_EX_STATICEDGE
     PUSHBUTTON      "Restrict Arrival Paths",IDC_RESTRICT_ARRIVAL,15,213,134,
                     14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Restrict Departure Paths",IDC_RESTRICT_DEPARTURE,171,
@@ -1400,57 +1398,41 @@ BEGIN
                     IDC_STATIC,7,7,221,18
 END
 
-IDD_LOADOUT_EDITOR DIALOG DISCARDABLE  0, 0, 204, 322
+IDD_LOADOUT_EDITOR DIALOG DISCARDABLE  0, 0, 204, 199
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Team Loadout Editor"
 MENU IDR_PLAYER_EDIT_MENU
 FONT 8, "MS Sans Serif"
 BEGIN
-    LISTBOX         IDC_SHIP_LIST,7,108,91,103,LBS_OWNERDRAWFIXED | 
+    LISTBOX         IDC_SHIP_LIST,7,19,91,103,LBS_OWNERDRAWFIXED | 
                     LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
                     WS_TABSTOP
-    EDITTEXT        IDC_SHIP_POOL,67,215,32,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_SHIP_POOL,67,124,32,14,ES_AUTOHSCROLL
     CONTROL         "Spin1",IDC_SPIN1,"msctls_updown32",UDS_SETBUDDYINT | 
-                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,57,215,9,
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,57,124,11,
                     14
-    LISTBOX         IDC_WEAPON_LIST,104,108,93,103,LBS_OWNERDRAWFIXED | 
+    LISTBOX         IDC_WEAPON_LIST,104,19,93,103,LBS_OWNERDRAWFIXED | 
                     LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
                     WS_TABSTOP
-    EDITTEXT        IDC_WEAPON_POOL,165,215,32,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_WEAPON_POOL,165,124,32,14,ES_AUTOHSCROLL
     CONTROL         "Spin2",IDC_POOL_SPIN,"msctls_updown32",UDS_SETBUDDYINT | 
-                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,155,215,9,
-                    14
-    EDITTEXT        IDC_DELAY,119,279,32,14,ES_AUTOHSCROLL
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,155,124,
+                    11,14
+    EDITTEXT        IDC_DELAY,119,158,32,14,ES_AUTOHSCROLL
     CONTROL         "Spin1",IDC_DELAY_SPIN,"msctls_updown32",UDS_SETBUDDYINT | 
-                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,47,278,9,
+                    UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,47,156,9,
                     14
-    DEFPUSHBUTTON   "OK",IDOK,48,301,41,14
-    PUSHBUTTON      "Cancel",IDCANCEL,99,301,41,14
+    DEFPUSHBUTTON   "OK",IDOK,48,178,41,14
+    PUSHBUTTON      "Cancel",IDCANCEL,99,178,41,14
     LTEXT           "Available starting ships",IDC_STATIC,7,7,74,8
-    LTEXT           "Extra available",IDC_STATIC,7,217,52,8
-    LTEXT           "Amount used in wings:",IDC_STATIC,7,262,72,8
-    LTEXT           "",IDC_WINGS_SHP_COUNT,81,262,18,8
-    LTEXT           "Player entry delay",IDC_STATIC,59,281,58,8
+    LTEXT           "Extra available",IDC_STATIC,7,127,52,8
+    LTEXT           "Amount used in wings:",IDC_STATIC,7,141,72,8
+    LTEXT           "",IDC_WINGS_SHP_COUNT,81,141,18,8
+    LTEXT           "Player entry delay",IDC_STATIC,59,160,58,8
     LTEXT           "Available weapons pool",IDC_STATIC,104,7,76,8
-    LTEXT           "Amount used in wings:",IDC_STATIC,104,262,72,8
-    LTEXT           "",IDC_WINGS_WPN_COUNT,179,262,18,8
-    LTEXT           "Extra available",IDC_STATIC,104,217,52,8
-    LISTBOX         IDC_SHIP_VARIABLES_LIST,7,31,91,62,LBS_OWNERDRAWFIXED | 
-                    LBS_HASSTRINGS | LBS_NOINTEGRALHEIGHT | WS_VSCROLL | 
-                    WS_TABSTOP
-    LISTBOX         IDC_WEAPON_VARIABLES_LIST,104,31,93,62,
-                    LBS_OWNERDRAWFIXED | LBS_HASSTRINGS | 
-                    LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "From Variable",IDC_STATIC,7,19,45,10
-    LTEXT           "From Table Entry",IDC_STATIC,7,97,56,10
-    COMBOBOX        IDC_SHIP_VARIABLES_COMBO,7,244,91,71,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_WEAPON_VARIABLES_COMBO,104,244,93,71,
-                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    LTEXT           "From Variable",IDC_STATIC,104,19,45,10
-    LTEXT           "From Table Entry",IDC_STATIC,104,97,56,10
-    LTEXT           "Set Amount From Variable",IDC_STATIC,7,234,84,10
-    LTEXT           "Set Amount From Variable",IDC_STATIC,104,234,93,10
+    LTEXT           "Amount used in wings:",IDC_STATIC,104,141,72,8
+    LTEXT           "",IDC_WINGS_WPN_COUNT,179,141,18,8
+    LTEXT           "Extra available",IDC_STATIC,104,127,52,8
 END
 
 IDD_ORIENT_EDITOR DIALOG DISCARDABLE  0, 0, 229, 119
@@ -1501,7 +1483,7 @@ BEGIN
     GROUPBOX        "Position",IDC_STATIC,7,7,74,64
 END
 
-IDD_EVENT_EDITOR DIALOGEX 0, 0, 437, 439
+IDD_EVENT_EDITOR DIALOGEX 0, 0, 437, 431
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Mission Event Edit"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
@@ -1529,8 +1511,8 @@ BEGIN
     EDITTEXT        IDC_CHAIN_DELAY,211,228,45,14,ES_AUTOHSCROLL | ES_NUMBER
     EDITTEXT        IDC_OBJ_TEXT,86,246,117,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_OBJ_KEY_TEXT,86,262,117,14,ES_AUTOHSCROLL
-    EDITTEXT        IDC_HELP_BOX,7,298,423,135,ES_MULTILINE | ES_READONLY | 
-                    WS_VSCROLL,WS_EX_TRANSPARENT
+    EDITTEXT        IDC_HELP_BOX,7,298,423,126,ES_MULTILINE | ES_READONLY,
+                    WS_EX_TRANSPARENT
     PUSHBUTTON      "New Msg",IDC_NEW_MSG,229,59,50,14,0,WS_EX_STATICEDGE
     PUSHBUTTON      "Delete Msg",IDC_DELETE_MSG,229,77,50,14,0,
                     WS_EX_STATICEDGE
@@ -2166,7 +2148,7 @@ BEGIN
     LTEXT           "Wave Filename",IDC_STATIC,7,139,50,8
 END
 
-IDD_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 266, 250
+IDD_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 286, 250
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Additional Ship Properties"
 FONT 8, "MS Sans Serif"
@@ -2184,7 +2166,7 @@ BEGIN
                     WS_TABSTOP,7,43,59,10
     CONTROL         "Toggle Subsystem Scanning",
                     IDC_TOGGLE_SUBSYSTEM_SCANNING,"Button",BS_3STATE | 
-                    WS_TABSTOP,7,52,105,10
+                    WS_TABSTOP,7,52,116,10
     CONTROL         "Reinforcement Unit",IDC_REINFORCEMENT,"Button",
                     BS_3STATE | WS_TABSTOP,7,62,75,10
     CONTROL         "Protect Ship",IDC_PROTECT_SHIP,"Button",BS_3STATE | 
@@ -2204,53 +2186,48 @@ BEGIN
     CONTROL         "Guardianed",IDC_GUARDIAN,"Button",BS_3STATE | 
                     WS_TABSTOP,7,146,55,10
     CONTROL         "Primitive Sensors",IDC_PRIMITIVE_SENSORS,"Button",
-                    BS_3STATE | WS_TABSTOP,7,155,69,10
+                    BS_3STATE | WS_TABSTOP,7,156,69,10
     CONTROL         "No Subspace Drive",IDC_NO_SUBSPACE_DRIVE,"Button",
-                    BS_3STATE | WS_TABSTOP,7,164,78,10
+                    BS_3STATE | WS_TABSTOP,7,165,78,10
     CONTROL         "Hidden from Sensors",IDC_HIDDEN_FROM_SENSORS,"Button",
-                    BS_3STATE | WS_TABSTOP,7,173,81,10
+                    BS_3STATE | WS_TABSTOP,7,174,81,10
     CONTROL         "Stealth",IDC_STEALTH,"Button",BS_3STATE | WS_TABSTOP,7,
-                    182,55,10
+                    183,55,10
     CONTROL         "Invisible to Friendlies When Stealthed",
                     IDC_FRIENDLY_STEALTH_INVISIBLE,"Button",BS_3STATE | 
-                    WS_TABSTOP,7,191,131,10
+                    WS_TABSTOP,7,192,132,10
     CONTROL         "Kamikaze",IDC_KAMIKAZE,"Button",BS_3STATE | WS_TABSTOP,
-                    7,202,43,10
-    EDITTEXT        IDC_KDAMAGE,51,211,57,12,ES_AUTOHSCROLL
-    LTEXT           "Damage",IDC_STATIC,19,213,28,8
+                    7,204,42,10
+    EDITTEXT        IDC_KDAMAGE,51,213,57,12,ES_AUTOHSCROLL
+    LTEXT           "Damage",IDC_STATIC,19,215,28,8
     CONTROL         "No Dynamic Goals",IDC_NO_DYNAMIC,"Button",BS_3STATE | 
-                    WS_TABSTOP,156,7,75,10
+                    WS_TABSTOP,165,7,75,10
     CONTROL         "Red Alert Carry Status",IDC_REDALERTCARRY,"Button",
-                    BS_3STATE | WS_TABSTOP,156,17,85,10
+                    BS_3STATE | WS_TABSTOP,165,17,85,10
     CONTROL         "Affected By Gravity",IDC_AFFECTED_BY_GRAVITY,"Button",
-                    BS_3STATE | WS_TABSTOP,156,27,77,10
-    CONTROL         "Never Scream on Death",IDC_NO_DEATH_SCREAM,"Button",
-                    BS_3STATE | WS_TABSTOP,156,37,96,10
-    CONTROL         "Always Scream on Death",IDC_ALWAYS_DEATH_SCREAM,"Button",
-                    BS_3STATE | WS_TABSTOP,156,47,98,10
-    CONTROL         "Vaporize on Death",IDC_VAPORIZE,"Button",BS_3STATE | 
-                    WS_TABSTOP,156,57,97,10
+                    BS_3STATE | WS_TABSTOP,165,27,77,10
     CONTROL         "Special Warp",IDC_SPECIAL_WARP,"Button",BS_AUTOCHECKBOX | 
-                    WS_TABSTOP,156,67,59,10
+                    WS_TABSTOP,165,37,59,10
     CONTROL         "Targetable as Bomb",IDC_TARGETABLE_AS_BOMB,"Button",
-                    BS_3STATE | WS_TABSTOP,156,77,79,10
+                    BS_3STATE | WS_TABSTOP,165,47,79,10
     CONTROL         "Disable Built-in Messages",IDC_DISABLE_BUILTIN_SHIP,
-                    "Button",BS_3STATE | WS_TABSTOP,156,87,96,10
-    CONTROL         "Set Class Dynamically",IDC_SET_CLASS_DYNAMICALLY,"Button",
-                    BS_3STATE | WS_TABSTOP,156,97,85,10
-    CONTROL         "Team Loadout Store Status",
-                    IDC_TEAM_LOADOUT_STORE_STATUS,"Button",BS_3STATE | 
-                    WS_TABSTOP,156,107,103,10
-    EDITTEXT        IDC_RESPAWN_PRIORITY,212,117,49,14,ES_AUTOHSCROLL
-    LTEXT           "Respawn Priority",IDC_STATIC,156,120,54,8
-    DEFPUSHBUTTON   "OK",IDOK,117,230,65,14
-    PUSHBUTTON      "Cancel",IDCANCEL,196,230,65,14
+                    "Button",BS_3STATE | WS_TABSTOP,165,57,96,10
+    CONTROL         "Never Scream On Death",IDC_NO_DEATH_SCREAM,"Button",
+                    BS_3STATE | WS_TABSTOP,165,67,96,10
+    CONTROL         "Always Scream on Death",IDC_ALWAYS_DEATH_SCREAM,"Button",
+                    BS_3STATE | WS_TABSTOP,165,77,98,10
+    CONTROL         "Vaporize on Death",IDC_VAPORIZE,"Button",BS_3STATE | 
+                    WS_TABSTOP,165,87,97,10
+    EDITTEXT        IDC_RESPAWN_PRIORITY,221,97,49,14,ES_AUTOHSCROLL
+    LTEXT           "Respawn Priority",IDC_STATIC,165,99,54,8
+    DEFPUSHBUTTON   "OK",IDOK,7,229,65,14
+    PUSHBUTTON      "Cancel",IDCANCEL,214,229,65,14
     CONTROL         "AutoNav Carry Status",IDC_NAV_CARRY,"Button",BS_3STATE | 
-                    WS_TABSTOP,156,134,84,10
+                    WS_TABSTOP,165,114,97,10
     CONTROL         "AutoNav Needs Link",IDC_NAV_NEEDSLINK,"Button",
-                    BS_3STATE | WS_TABSTOP,156,144,82,10
+                    BS_3STATE | WS_TABSTOP,165,125,97,10
     CONTROL         "Use Alt Name In Messages",IDC_ALT_AS_CALLSIGN,"Button",
-                    BS_AUTOCHECKBOX | WS_TABSTOP,156,154,99,8
+                    BS_3STATE | WS_TABSTOP,165,138,99,8
 END
 
 IDD_ADD_VARIABLE DIALOG DISCARDABLE  0, 0, 422, 102
@@ -2370,19 +2347,18 @@ BEGIN
     PUSHBUTTON      "Cancel",ID_CANCEL,177,24,50,14
 END
 
-IDD_SET_GLOBAL_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 114, 96
+IDD_SET_GLOBAL_SHIP_FLAGS DIALOG DISCARDABLE  0, 0, 114, 79
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Set Global Ship Flags"
 FONT 8, "MS Sans Serif"
 BEGIN
-    PUSHBUTTON      "Global No-Shields",IDC_NO_SHIELDS,7,7,100,14
     PUSHBUTTON      "Global No-Subspace-Drive",IDC_NO_SUBSPACE_DRIVE,7,24,
                     100,14
+    PUSHBUTTON      "Global No-Shields",IDC_NO_SHIELDS,7,7,100,14
     PUSHBUTTON      "Global Primitive-Sensors",IDC_PRIMITIVE_SENSORS,7,41,
                     100,14
     PUSHBUTTON      "Global Affected-By-Gravity",IDC_AFFECTED_BY_GRAVITY,7,
                     58,100,14
-    PUSHBUTTON      "Global Reset Ship Scores",IDC_RESET_SCORES,7,75,100,14
 END
 
 IDD_VOICE_MANAGER DIALOG DISCARDABLE  0, 0, 407, 218
@@ -2578,6 +2554,12 @@ BEGIN
         BOTTOMMARGIN, 198
     END
 
+    IDD_MISSION_NOTES, DIALOG
+    BEGIN
+        RIGHTMARGIN, 460
+        BOTTOMMARGIN, 320
+    END
+
     IDD_PREFERENCES, DIALOG
     BEGIN
         LEFTMARGIN, 7
@@ -2647,7 +2629,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 197
         TOPMARGIN, 7
-        BOTTOMMARGIN, 315
+        BOTTOMMARGIN, 192
     END
 
     IDD_ORIENT_EDITOR, DIALOG
@@ -2663,7 +2645,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 430
         TOPMARGIN, 7
-        BOTTOMMARGIN, 414
+        BOTTOMMARGIN, 424
     END
 
     IDD_BG_BITMAP, DIALOG
@@ -2803,9 +2785,9 @@ BEGIN
     IDD_SHIP_FLAGS, DIALOG
     BEGIN
         LEFTMARGIN, 7
-        RIGHTMARGIN, 261
+        RIGHTMARGIN, 279
         TOPMARGIN, 7
-        BOTTOMMARGIN, 244
+        BOTTOMMARGIN, 243
     END
 
     IDD_ADD_VARIABLE, DIALOG
@@ -2861,7 +2843,7 @@ BEGIN
         LEFTMARGIN, 7
         RIGHTMARGIN, 107
         TOPMARGIN, 7
-        BOTTOMMARGIN, 89
+        BOTTOMMARGIN, 72
     END
 
     IDD_VOICE_MANAGER, DIALOG
@@ -3365,90 +3347,6 @@ BEGIN
 END
 
 #endif    // English (U.S.) resources
-/////////////////////////////////////////////////////////////////////////////
-
-
-/////////////////////////////////////////////////////////////////////////////
-// English (U.K.) resources
-
-#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENG)
-#ifdef _WIN32
-LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_UK
-#pragma code_page(1252)
-#endif //_WIN32
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Dialog
-//
-
-IDD_ALT_SHIP_CLASS DIALOG DISCARDABLE  0, 0, 278, 319
-STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Alternate Ship Class Editor"
-FONT 8, "MS Sans Serif"
-BEGIN
-    DEFPUSHBUTTON   "OK",IDOK,197,298,32,14
-    PUSHBUTTON      "Cancel",IDCANCEL,239,298,32,14
-    GROUPBOX        "Class 1",IDC_ASCT1_GROUP_ONE,21,24,238,53,WS_GROUP
-    CONTROL         "Set By Class",IDC_ASCT1_CLASS_RADIO1,"Button",
-                    BS_AUTORADIOBUTTON | WS_TABSTOP,29,43,55,10
-    CONTROL         "Set By Variable",IDC_ASCT1_VARIABLES_RADIO1,"Button",
-                    BS_AUTORADIOBUTTON | WS_TABSTOP,155,43,64,10
-    COMBOBOX        IDC_ASCT1_CLASS_COMBO1,29,56,92,178,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_ASCT1_VARIABLES_COMBO1,155,56,92,178,
-                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    GROUPBOX        "Class 2",IDC_ASCT1_GROUP_TWO,21,85,238,53,WS_GROUP
-    CONTROL         "Set By Class",IDC_ASCT1_CLASS_RADIO2,"Button",
-                    BS_AUTORADIOBUTTON,29,104,55,10
-    CONTROL         "Set By Variable",IDC_ASCT1_VARIABLES_RADIO2,"Button",
-                    BS_AUTORADIOBUTTON | WS_TABSTOP,155,104,64,10
-    COMBOBOX        IDC_ASCT1_CLASS_COMBO2,29,118,92,178,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_ASCT1_VARIABLES_COMBO2,155,118,92,178,
-                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    GROUPBOX        "Class 3",IDC_ASCT1_GROUP_THREE,23,144,238,53,WS_GROUP
-    CONTROL         "Set By Class",IDC_ASCT1_CLASS_RADIO3,"Button",
-                    BS_AUTORADIOBUTTON,31,163,55,10
-    CONTROL         "Set By Variable",IDC_ASCT1_VARIABLES_RADIO3,"Button",
-                    BS_AUTORADIOBUTTON | WS_TABSTOP,157,163,64,10
-    COMBOBOX        IDC_ASCT1_CLASS_COMBO3,31,176,92,178,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_ASCT1_VARIABLES_COMBO3,157,176,92,178,
-                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    GROUPBOX        "Type 1",IDC_STATIC,7,13,264,192
-    GROUPBOX        "Type 2",IDC_STATIC,7,212,264,79
-    GROUPBOX        "Class 1",IDC_ASCT2_GROUP_ONE,21,228,238,53,WS_GROUP
-    CONTROL         "Set By Class",IDC_ASCT2_CLASS_RADIO1,"Button",
-                    BS_AUTORADIOBUTTON | WS_TABSTOP,29,247,55,10
-    CONTROL         "Set By Variable",IDC_ASCT2_VARIABLES_RADIO1,"Button",
-                    BS_AUTORADIOBUTTON | WS_TABSTOP,155,247,64,10
-    COMBOBOX        IDC_ASCT2_CLASS_COMBO1,29,260,92,178,CBS_DROPDOWNLIST | 
-                    WS_VSCROLL | WS_TABSTOP
-    COMBOBOX        IDC_ASCT2_VARIABLES_COMBO1,155,260,92,178,
-                    CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// DESIGNINFO
-//
-
-#ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
-BEGIN
-    IDD_ALT_SHIP_CLASS, DIALOG
-    BEGIN
-        LEFTMARGIN, 7
-        RIGHTMARGIN, 271
-        TOPMARGIN, 7
-        BOTTOMMARGIN, 312
-    END
-END
-#endif    // APSTUDIO_INVOKED
-
-#endif    // English (U.K.) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

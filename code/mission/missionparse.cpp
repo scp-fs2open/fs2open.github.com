@@ -9,209 +9,169 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionParse.cpp $
- * $Revision: 2.237 $
- * $Date: 2008-01-17 07:44:43 $
+ * $Revision: 2.178.2.47 $
+ * $Date: 2008-01-17 07:43:23 $
  * $Author: Goober5000 $
  *
  * main upper level code for parsing stuff
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.236  2007/12/30 18:30:29  karajorma
- * Catch-up update. This stuff is all in 3.6.9 but somehow missed being added to HEAD.
+ * Revision 2.178.2.46  2007/12/29 21:03:46  karajorma
+ * Since you can't actually save a mission without this entry and FS2 crashes without it this probably shouldn't be optional.
  *
- * Revision 2.235  2007/12/15 09:41:43  wmcoolmon
- * Maybe-catch an interesting crash upon attempting to revert a mission with no cargo.
+ * Revision 2.178.2.45  2007/12/08 20:07:54  karajorma
+ * Add the use alt as callsign option.
+ * Add a few typo and comment fixes while I'm at it
  *
- * Revision 2.234  2007/11/23 23:17:16  wmcoolmon
- * Fix un/signed warnings related to size(), optimize Knossos-finding
+ * Revision 2.178.2.44  2007/11/28 21:00:34  karajorma
+ * Change the way that score is parsed from mission files to make it easier on developers.
  *
- * Revision 2.233  2007/11/21 07:28:38  Goober5000
+ * Revision 2.178.2.43  2007/11/24 04:33:49  wmcoolmon
+ * Various minor sign/casting fixes
+ *
+ * Revision 2.178.2.42  2007/11/21 07:27:47  Goober5000
  * add Wing Commander Saga's fiction viewer
  *
- * Revision 2.232  2007/11/20 04:58:16  Goober5000
+ * Revision 2.178.2.41  2007/11/20 04:58:22  Goober5000
  * fix ship-type-destroyed
  *
- * Revision 2.231  2007/11/19 18:11:03  Goober5000
+ * Revision 2.178.2.40  2007/11/19 18:11:01  Goober5000
  * remove warning... properly this time
  *
- * Revision 2.230  2007/11/18 06:57:40  Goober5000
+ * Revision 2.178.2.39  2007/11/18 06:57:06  Goober5000
  * gak -- stupid mistake
  *
- * Revision 2.229  2007/11/14 14:14:25  karajorma
+ * Revision 2.178.2.38  2007/11/14 13:49:31  karajorma
  * Fix peristent variables in missions played from the techroom
  *
- * Revision 2.228  2007/10/12 20:30:02  karajorma
- * Typo
- *
- * Revision 2.227  2007/09/03 01:02:49  Goober5000
- * fix for 1376
- *
- * Revision 2.226  2007/09/02 18:53:22  Goober5000
+ * Revision 2.178.2.37  2007/09/02 18:52:51  Goober5000
  * fix for #1455 plus a bit of cleanup
  *
- * Revision 2.225  2007/09/02 02:10:27  Goober5000
+ * Revision 2.178.2.36  2007/09/02 02:07:44  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 2.224  2007/08/03 01:37:05  Goober5000
- * fix compile error
- *
- * Revision 2.223  2007/07/28 21:17:55  Goober5000
+ * Revision 2.178.2.35  2007/07/28 21:17:54  Goober5000
  * make the parse object array dynamic; also made the docking bitstrings dynamic
  *
- * Revision 2.222  2007/07/23 15:16:50  Kazan
- * Autopilot upgrades as described, MSVC2005 project fixes
+ * Revision 2.178.2.34  2007/07/23 16:08:27  Kazan
+ * Autopilot updates, minor misc fixes, working MSVC2005 project files
  *
- * Revision 2.221  2007/05/26 12:08:26  Goober5000
+ * Revision 2.178.2.33  2007/05/26 12:08:19  Goober5000
  * when importing FS1 missions, account for the shuffled Head-TP4
  *
- * Revision 2.220  2007/04/09 18:25:31  karajorma
+ * Revision 2.178.2.32  2007/04/09 18:23:08  karajorma
  * Fix for Mantis 1312
  *
- * Revision 2.219  2007/03/23 06:31:31  karajorma
- * Fix assertion on red-alert carry status in multi games
+ * Revision 2.178.2.31  2007/03/23 06:25:31  karajorma
+ * That probably shouldn't be an assertion
  *
- * Revision 2.218  2007/02/25 03:57:58  Goober5000
+ * Revision 2.178.2.30  2007/02/25 03:58:06  Goober5000
  * use dynamic memory instead of a static buffer for ship-specific replacement textures
  *
- * Revision 2.217  2007/02/21 01:44:02  Goober5000
+ * Revision 2.178.2.29  2007/02/21 01:43:32  Goober5000
  * remove duplicate model texture replacement
  *
- * Revision 2.216  2007/02/20 04:20:18  Goober5000
+ * Revision 2.178.2.28  2007/02/20 04:19:22  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.215  2007/02/18 06:16:47  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.214  2007/02/13 01:46:03  Goober5000
+ * Revision 2.178.2.27  2007/02/13 01:45:56  Goober5000
  * fix a hideous bug with the knossos special warp stuff
  * (how did this ever actually work correctly?)
  *
- * Revision 2.213  2007/02/11 21:26:34  Goober5000
- * massive shield infrastructure commit
+ * Revision 2.178.2.26  2007/02/09 04:53:27  Goober5000
+ * merge the WCS screaming feature into the 3.6.9 (3.6.10?) branch
  *
- * Revision 2.212  2007/02/10 03:17:31  Goober5000
- * made support ship shield control a bit less of a hack
- *
- * Revision 2.211  2007/02/08 07:39:32  Goober5000
+ * Revision 2.178.2.25  2007/02/08 07:39:34  Goober5000
  * fix two bugs:
  * --default ship flags in the iff_defs table were not correctly translated from parse flags to ship/object flags
  * --ships were created with default allowed comm orders regardless of which team they were on
  *
- * Revision 2.210  2007/02/03 23:16:33  Goober5000
+ * Revision 2.178.2.24  2007/02/03 23:16:41  Goober5000
  * fix an old subtle bug
  *
- * Revision 2.209  2007/01/14 14:03:33  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.208  2007/01/07 21:28:10  Goober5000
- * yet more tweaks to the WCS death scream stuff
- * added a ship flag to force screaming
- *
- * Revision 2.207  2007/01/07 12:55:57  taylor
+ * Revision 2.178.2.23  2007/01/07 12:18:09  taylor
  * safety check to make sure that we don't end up with non-player-usable weapons in the weaponselect pool (Mantis bug #1196)
  *
- * Revision 2.206  2007/01/07 01:00:18  Goober5000
- * convert a mission variable to a mission flag
- *
- * Revision 2.205  2007/01/07 00:24:18  Goober5000
- * move this to the Message location of the mission
- *
- * Revision 2.204  2007/01/07 00:01:28  Goober5000
- * add a feature for specifying the source of Command messages
- *
- * Revision 2.203  2006/12/28 00:59:32  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.202  2006/11/25 06:37:06  Goober5000
+ * Revision 2.178.2.22  2006/11/25 06:36:59  Goober5000
  * holy crap, this had the potential to mark the locked-true sexp as known-false, which would seriously screw a lot of stuff up
  *
- * Revision 2.201  2006/11/15 04:02:31  Goober5000
+ * Revision 2.178.2.21  2006/11/15 04:02:28  Goober5000
  * a much better fix for built-in arrival messages... it needs a new feature to fully work for custom wings though
  *
- * Revision 2.200  2006/11/06 06:36:44  taylor
+ * Revision 2.178.2.20  2006/11/13 23:09:59  karajorma
+ * Dragoniz3r's fix for builtin messages not being sent when custom named wings arrive.
+ *
+ * Revision 2.178.2.19  2006/10/27 21:39:27  taylor
  * updated/fixed modelanim code
  *
- * Revision 2.199  2006/11/06 05:44:33  taylor
+ * Revision 2.178.2.18  2006/10/24 13:34:33  taylor
  * remove a basically useless debug message
  * fix parse_init() so that it doesn't absolutely have to init sexps (doesn't need them when getting basic info, and causes memory fragmentation otherwise)
  * fix multiplayer mission info getting to just get basic info (fixes a couple of minor multi issues that were already fixed in single)
  *
- * Revision 2.198  2006/10/09 20:50:13  Goober5000
+ * Revision 2.178.2.17  2006/10/09 20:50:02  Goober5000
  * betterized some things with mission arrivals and departures
  *
- * Revision 2.197  2006/10/09 05:25:18  Goober5000
+ * Revision 2.178.2.16  2006/10/09 05:25:07  Goober5000
  * make sexp nodes dynamic
  *
- * Revision 2.196  2006/09/11 06:47:07  taylor
+ * Revision 2.178.2.15  2006/09/11 01:06:20  taylor
  * fixes for stuff_string() bounds checking
  * compiler warning and stict compiling fixes
  *
- * Revision 2.195  2006/09/11 06:08:09  taylor
+ * Revision 2.178.2.14  2006/08/27 18:12:41  taylor
  * make Species_info[] and Asteroid_info[] dynamic
  *
- * Revision 2.194  2006/09/04 05:54:14  wmcoolmon
- * Fix bug (under Win32) where FRED would warn about unacceptable accepted orders, but not do anything about them.
- *
- * Revision 2.193  2006/08/21 04:02:41  Goober5000
- * a tweak and a fix
- *
- * Revision 2.192  2006/08/20 00:51:06  taylor
- * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
- *
- * Revision 2.191  2006/08/19 21:46:05  Goober5000
+ * Revision 2.178.2.13  2006/08/19 21:46:02  Goober5000
  * disable duplicate model texture replace
  *
- * Revision 2.190  2006/08/06 18:47:29  Goober5000
+ * Revision 2.178.2.12  2006/08/19 04:38:46  taylor
+ * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
+ *
+ * Revision 2.178.2.11  2006/08/06 18:47:12  Goober5000
  * add the multiple background feature
  * --Goober5000
  *
- * Revision 2.189  2006/07/30 20:01:56  Kazan
+ * Revision 2.178.2.10  2006/07/30 20:00:47  Kazan
  * resolve 1018 and an interface problem in fred2's ship editor
  *
- * Revision 2.188  2006/07/17 00:10:00  Goober5000
+ * Revision 2.178.2.9  2006/07/20 00:41:26  Goober5000
+ * add WCS screaming stuff to RC branch
+ * --Goober5000
+ *
+ * Revision 2.178.2.8  2006/07/17 00:10:05  Goober5000
  * stage 2 of animation fix (add base frame time to each ship)
  * --Goober5000
  *
- * Revision 2.187  2006/07/13 06:11:52  Goober5000
+ * Revision 2.178.2.7  2006/07/13 06:11:48  Goober5000
  * * better formatting for substitute music options
  * * better handling of all special FSO comment tags
  * --Goober5000
  *
- * Revision 2.186  2006/07/06 21:00:13  Goober5000
- * remove obsolete (and hackish) flag
- * --Goober5000
- *
- * Revision 2.185  2006/07/06 20:46:39  Goober5000
- * WCS screaming stuff
- * --Goober5000
- *
- * Revision 2.184  2006/07/06 06:04:51  Goober5000
+ * Revision 2.178.2.6  2006/07/06 06:04:45  Goober5000
  * fix subtle change from retail... dunno if it's a bug, but best to stay on the safe side
  * --Goober5000
  *
- * Revision 2.183  2006/07/06 04:06:03  Goober5000
+ * Revision 2.178.2.5  2006/07/06 04:06:00  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
  * --Goober5000
  *
- * Revision 2.182  2006/07/04 07:42:48  Goober5000
+ * Revision 2.178.2.4  2006/07/04 07:42:09  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
  * --Goober5000
  *
- * Revision 2.181  2006/07/01 00:30:48  Goober5000
+ * Revision 2.178.2.3  2006/07/01 00:30:51  Goober5000
  * fix the "Game of TAG" bug; hopefully this won't unfix something else
  * --Goober5000
  *
- * Revision 2.180  2006/06/04 01:01:53  Goober5000
+ * Revision 2.178.2.2  2006/06/07 20:47:53  karajorma
+ * Allow Change-Ship-Class to work with ships which haven't arrived yet (For BHX)
+ *
+ * Revision 2.178.2.1  2006/06/04 01:03:13  Goober5000
  * add fighterbay restriction code
  * --Goober5000
- *
- * Revision 2.179  2006/06/02 09:05:30  karajorma
- * Team Loadout changes to accept variables names as legitimate values for ship class and quantity in loadout.
- * Added the new alt class system
  *
  * Revision 2.178  2006/05/31 03:05:42  Goober5000
  * some cosmetic changes in preparation for bay arrival/departure code
@@ -1300,9 +1260,8 @@
 #include "network/multimsgs.h"
 #include "network/multi_respawn.h"
 #include "network/multi_endgame.h"
-#include "object/objectshield.h"
 #include "object/parseobjectdock.h"
-#include "object/waypoint/waypoint.h"
+#include "object/waypoint.h"
 #include "missionui/fictionviewer.h"
 #include "cmdline/cmdline.h"
 #include "popup/popup.h"
@@ -1436,7 +1395,7 @@ char *Ai_behavior_names[MAX_AI_BEHAVIORS] = {
 	"Warp Out",
 };
 
-char *Cargo_names[MAX_CARGO] = {0};
+char *Cargo_names[MAX_CARGO];
 char Cargo_names_buf[MAX_CARGO][NAME_LENGTH];
 
 char *Ship_class_names[MAX_SHIP_CLASSES];		// to be filled in from Ship_info array
@@ -1529,8 +1488,6 @@ char *Parse_object_flags_2[MAX_PARSE_OBJECT_FLAGS_2] = {
 	"always-death-scream",
 	"nav-needslink",
 	"use-alt-name-as-callsign",
-	"set-class-dynamically",
-	"team-loadout-store",
 };
 
 
@@ -1576,7 +1533,7 @@ extern fix game_get_overall_frametime();	// for texture animation
 
 // local prototypes
 void parse_player_info2(mission *pm);
-void post_process_mission(mission *pm);
+void post_process_mission();
 int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
@@ -1592,11 +1549,6 @@ void parse_object_set_handled_flag_helper(p_object *pobjp, p_dock_function_info 
 void parse_object_clear_all_handled_flags();
 int parse_object_on_arrival_list(p_object *pobjp);
 int add_path_restriction();
-
-// Karajorma 
-void process_loadout_objects();
-bool attempt_assignation_from_alt_classes(p_object *pobj);
-void assign_ship_from_loadout(p_object *pobj, team_data *current_team, int new_ship_loadout_index);
 
 // Goober5000
 void mission_parse_mark_non_arrival(p_object *p_objp);
@@ -1749,7 +1701,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	//
 	// NOTE: this can be dangerous so be sure that any get_mission_info() call (defaults to basic info) will
 	//       only reference data parsed before this point!! (like current FRED2 and game code does)
-	if (basic)
+	if (basic == true)
 		return;
 
 
@@ -1764,7 +1716,6 @@ void parse_mission_info(mission *pm, bool basic = false)
 	pm->support_ships.ship_class = -1;
 	pm->support_ships.tally = 0;
 	pm->support_ships.support_available_for_species = 0;
-	pm->support_ships.ssi_flags = 0;
 
 	// for each species, store whether support is available
 	for (int species = 0; species < (int)Species_info.size(); species++)
@@ -1809,8 +1760,10 @@ void parse_mission_info(mission *pm, bool basic = false)
 		}
 	}
 
-	if (optional_string("+All Teams Attack")) {
-		pm->flags |= MISSION_FLAG_ALL_ATTACK;
+	if (optional_string("+All Teams Attack")){
+		Mission_all_attack = 1;
+	} else {
+		Mission_all_attack = 0;
 	}
 
 	//	Maybe delay the player's entry.
@@ -1972,9 +1925,9 @@ void parse_player_info(mission *pm)
 void parse_player_info2(mission *pm)
 {
 	char str[NAME_LENGTH];
-	int nt, i, total, list[MAX_SHIP_CLASSES * 4], list2[MAX_WEAPON_TYPES * 2]; //, num_starting_wings;
+	int nt, i, total, list[MAX_SHIP_CLASSES * 2], list2[MAX_WEAPON_TYPES * 2], num_starting_wings;
 	team_data *ptr;
-	// char starting_wings[MAX_STARTING_WINGS][NAME_LENGTH];
+	char starting_wings[MAX_STARTING_WINGS][NAME_LENGTH];
 
 	// read in a ship/weapon pool for each team.
 	for ( nt = 0; nt < Num_teams; nt++ ) {
@@ -1987,43 +1940,29 @@ void parse_player_info2(mission *pm)
 			stuff_string( Player_start_shipname, F_NAME, NAME_LENGTH );
 
 		required_string("$Ship Choices:");
-		total = stuff_ship_list(list, MAX_SHIP_CLASSES * 4, MISSION_LOADOUT_SHIP_LIST);
+		total = stuff_int_list(list, MAX_SHIP_CLASSES * 2, SHIP_INFO_TYPE);
 
-		// make sure we have a count which is divisible by four since four values are added for each ship
-		Assert((total%4) == 0); 
-
+		Assert(!(total & 0x01));  // make sure we have an even count
 
 		num_ship_choices = 0;
-		total /= 4;							// there are only 1/4 the ships really on the list.
+		total /= 2;							// there are only 1/2 the ships really on the list.
 		for (i=0; i<total; i++) {
 			// in a campaign, see if the player is allowed the ships or not.  Remove them from the
 			// pool if they are not allowed
 			if (Game_mode & GM_CAMPAIGN_MODE || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_AM_MASTER))) {
-				if ( !Campaign.ships_allowed[list[i*4]] )
+				if ( !Campaign.ships_allowed[list[i*2]] )
 					continue;
 			}
 
-			ptr->ship_list[num_ship_choices] = list[i * 4];
-			strcpy(ptr->ship_list_variables[num_ship_choices], Sexp_variables[list[(i * 4) + 1]].variable_name);
-			ptr->ship_count[num_ship_choices] = list[(i * 4) + 2];
-			ptr->loadout_total += list[(i * 4) + 2];
-			strcpy(ptr->ship_count_variables[num_ship_choices], Sexp_variables[list[(i * 4)+3]].variable_name);
+			ptr->ship_list[num_ship_choices] = list[i * 2];
+			ptr->ship_count[num_ship_choices] = list[i * 2 + 1];
 			num_ship_choices++;
 		}
 		ptr->number_choices = num_ship_choices;
 
-		/* Karajorma - Well this is pretty funny. The code sets the num_starting_wings variable and then never uses it 
-		// again! Furthermore there isn't actually any way to set "+Starting Wings:" in the first place. Like the 
-		// "+Default_ship:" code below this appears to be either a feature that was never added or a leftover from 
-		// FS1 as it was never used in the [V] missions. 
-
 		num_starting_wings = 0;
 		if (optional_string("+Starting Wings:"))
 			num_starting_wings = stuff_string_list(starting_wings, MAX_STARTING_WINGS);
-		*/
-
-		// Karajorma - Unlike the Starting Wings: code this actually does do something if you add the entry to a mission
-		// Might be worth adding a box to FRED so people can set this. The Team Loadout code could definitely use it.
 
 		ptr->default_ship = -1;
 		if (optional_string("+Default_ship:")) {
@@ -2044,13 +1983,13 @@ void parse_player_info2(mission *pm)
 			}
 		}
 
-		if (ptr->default_ship == -1)  // invalid or not specified, make first in list*/
+		if (ptr->default_ship == -1)  // invalid or not specified, make first in list
 			ptr->default_ship = ptr->ship_list[0];
 
 		for (i=0; i<MAX_WEAPON_TYPES; i++)
 			ptr->weaponry_pool[i] = 0;
 
-		required_string("+Weaponry Pool:"); 
+		required_string("+Weaponry Pool:");
 		total = stuff_int_list(list2, MAX_WEAPON_TYPES * 2, WEAPON_POOL_TYPE);
 
 		Assert( !(total & 0x01) );  // make sure we have an even count
@@ -2063,7 +2002,7 @@ void parse_player_info2(mission *pm)
 					continue;
 			}
 
-			if ( (list2[i] >= 0) && (list2[i] < MAX_WEAPON_TYPES) ) {
+				if ( (list2[i] >= 0) && (list2[i] < MAX_WEAPON_TYPES) ) {
 				// always allow the pool to be added in FRED, it is a verbal warning
 				// to let the mission dev know about the problem
 				if ( (Weapon_info[list2[i]].wi_flags & WIF_PLAYER_ALLOWED) || Fred_running )
@@ -2682,26 +2621,29 @@ void position_ship_for_knossos_warpin(p_object *p_objp)
 {
 	object *objp = p_objp->created_object;
 	ship *shipp = &Ships[objp->instance];
-	object *knossos_objp = NULL;
+	object *knossos_objp;
 
 	// Assume no valid knossos device
 	shipp->special_warp_objnum = -1;
 
 	// find knossos device
+	int found = FALSE;
 	for (ship_obj *so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so))
 	{
+		knossos_objp = &Objects[so->objnum];
+
 		if (Ship_info[Ships[knossos_objp->instance].ship_info_index].flags & SIF_KNOSSOS_DEVICE)
 		{
 			// be close to the right device (allow multiple knossoses)
 			if ( vm_vec_dist_quick(&knossos_objp->pos, &p_objp->pos) < 2.0f*(knossos_objp->radius + objp->radius) )
 			{
-				knossos_objp = &Objects[so->objnum];
+				found = TRUE;
 				break;
 			}
 		}
 	}
 
-	if (knossos_objp == NULL)
+	if (!found)
 		return;
 
 	// set ship special_warp_objnum
@@ -2897,8 +2839,8 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// Goober5000
 	shipp->special_hitpoint_index = p_objp->special_hitpoint_index;
-	shipp->ship_max_shield_strength = p_objp->parse_max_shield_strength;
-	shipp->ship_max_hull_strength = p_objp->parse_max_hull_strength;
+	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
+	shipp->ship_max_hull_strength = p_objp->ship_max_hull_strength;
 
 	// Goober5000 - ugh, this is really stupid having to do this here; if the
 	// ship creation code was better organized this wouldn't be necessary
@@ -3019,41 +2961,6 @@ int parse_create_object_sub(p_object *p_objp)
 		}
 	}
 
-	// Karajorma - Copy across the alt ship classes for FRED. 
-	if (Fred_running)
-	{
-		shipp->num_alt_class_one = p_objp->num_alt_class_one;
-		shipp->num_alt_class_two = p_objp->num_alt_class_two;
-
-		for (int m=0;  m< p_objp->num_alt_class_one ; m++)
-		{
-			if (p_objp->alt_class_one_variable[m] == -1)
-			{
-				shipp->alt_class_one[m] = p_objp->alt_class_one[m]; 
-				shipp->alt_class_one_variable[m] = -1; 
-			}
-			else 
-			{
-				shipp->alt_class_one[m] = -1;
-				shipp->alt_class_one_variable[m] = p_objp->alt_class_one_variable[m];
-			}
-		}
-
-		for (int n=0; n < p_objp->num_alt_class_two ; n++)
-		{
-			if (p_objp->alt_class_two_variable[n] == -1)
-			{
-				shipp->alt_class_two[n] = p_objp->alt_class_two[n]; 
-				shipp->alt_class_two_variable[n] = -1; 
-			}
-			else 
-			{
-				shipp->alt_class_two[n] = -1;
-				shipp->alt_class_two_variable[n] = p_objp->alt_class_two_variable[n];
-			}
-		}
-	}
-
 
 	// check the parse object's flags for possible things to set on this newly created ship
 	resolve_parse_flags(&Objects[objnum], p_objp->flags, p_objp->flags2);
@@ -3061,7 +2968,7 @@ int parse_create_object_sub(p_object *p_objp)
 
 	// other flag checks
 ////////////////////////
-	if (p_objp->parse_max_shield_strength == 0.0f)
+	if (p_objp->ship_max_shield_strength == 0.0f)
 		Objects[objnum].flags |= OF_NO_SHIELDS;
 
 	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the
@@ -3105,6 +3012,7 @@ int parse_create_object_sub(p_object *p_objp)
 		// MWA  5/15/98 -- Added the following debug code because some orders that ships
 		// will accept were apparently written out incorrectly with Fred.  This Int3() should
 		// trap these instances.
+#ifndef NDEBUG
 		if (Fred_running)
 		{
 			int default_orders, remaining_orders;
@@ -3113,21 +3021,10 @@ int parse_create_object_sub(p_object *p_objp)
 			remaining_orders = p_objp->orders_accepted & ~default_orders;
 			if (remaining_orders)
 			{
-#ifdef WIN32
-				char buf[4096];
-				sprintf(buf, "Ship %s can be given orders by the player, that \nare not part of the valid orders for its type. \nThis is most commonly caused by changing ship classes in FRED.\nInvalid orders are: \n", shipp->ship_name);
-				flags_to_string(buf, remaining_orders, Player_orders, Num_player_orders);
-				strcat(buf, "\nDo you wish to clear these orders? (Changes will take effect on next save)");
-				int z = MessageBox(NULL, buf, "Parse Warning", MB_ICONQUESTION | MB_YESNO);
-
-				if (z == IDYES) {
-					shipp->orders_accepted &= ~(remaining_orders);
-				}
-#else
 				Warning(LOCATION, "Ship %s has orders which it will accept that are\nnot part of default orders accepted.\n\nPlease reedit this ship and change the orders again\n", shipp->ship_name);
-#endif
 			}
 		}
+#endif
 	}
 
 	if (p_objp->flags & P_SF_DOCK_LEADER)
@@ -3324,17 +3221,20 @@ int parse_create_object_sub(p_object *p_objp)
 	if (Fred_running)
 	{
 		Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity;
+		// shipp->hull_hit_points_taken = (float) p_objp->initial_hull;
 		Objects[objnum].hull_strength = (float) p_objp->initial_hull;
-		shield_set_strength(&Objects[objnum], (float) p_objp->initial_shields);
+		Objects[objnum].shield_quadrant[0] = (float) p_objp->initial_shields;
+
 	}
 	else
 	{
 		int max_allowed_sparks, num_sparks, i;
 		polymodel *pm;
 
-		Objects[objnum].hull_strength = shipp->ship_max_hull_strength * ((float) p_objp->initial_hull / 100.0f);
+		// shipp->hull_hit_points_taken = (float) p_objp->initial_hull * sip->max_hull_hit_points / 100.0f;
+		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
 		for (i = 0; i<MAX_SHIELD_SECTIONS; i++)
-			shield_set_quad(&Objects[objnum], i, shield_get_max_quad(&Objects[objnum]) * ((float) p_objp->initial_shields / 100.0f));
+			Objects[objnum].shield_quadrant[i] = (float) (p_objp->initial_shields * get_max_shield_quad(&Objects[objnum]) / 100.0f);
 
 		// initial velocities now do not apply to ships which warp in after mission starts
 		if (!(Game_mode & GM_IN_MISSION))
@@ -3423,50 +3323,6 @@ int parse_create_object_sub(p_object *p_objp)
 		demo_POST_obj_create(p_objp->name, Objects[objnum].signature);
 
 	return objnum;
-}
-
-// Karajorma
-int parse_alt_class(p_object *p_objp, int num_alts, bool alt_type_1) 
-{
-	char alt_ship_class[128]; 
-	int recorded_as = get_string_or_variable(alt_ship_class);
-
-	int alt_class_index = -1; 
-	int variable_index = -1;
-
-	// ship name
-	if (recorded_as == FOUND_STRING)
-	{
-		alt_class_index = ship_info_lookup(alt_ship_class);
-	}
-	// string variable
-	else 
-	{
-		variable_index = get_index_sexp_variable_name(alt_ship_class);
-		alt_class_index = ship_info_lookup(Sexp_variables[variable_index].text);
-	}
-	
-	if (alt_class_index < 0 )
-	{
-		Warning(LOCATION, "Ship \"%s\" has an invalid Alternate Ship Class type (ships.tbl probably changed). Skipping this entry", p_objp->name); 
-	}
-	else
-	{
-		if (alt_type_1)
-		{
-			p_objp->alt_class_one[num_alts] = alt_class_index; 
-			p_objp->alt_class_one_variable[num_alts++] = variable_index; 
-			p_objp->num_alt_class_one = num_alts; 
-		}
-		else 
-		{
-			p_objp->alt_class_two[num_alts] = alt_class_index; 
-			p_objp->alt_class_two_variable[num_alts++] = variable_index; 
-			p_objp->num_alt_class_two = num_alts; 
-		}
-	}	
-
-	return num_alts; 
 }
 
 // Goober5000
@@ -3563,12 +3419,6 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 	if (parse_flags2 & P2_SF2_SECONDARIES_LOCKED) 
 		shipp->flags2 |= SF2_SECONDARIES_LOCKED;
 
-	if (parse_flags2 & P2_SF2_SET_CLASS_DYNAMICALLY) 
-		shipp->flags2 |= SF2_SET_CLASS_DYNAMICALLY;
-
-	if (parse_flags2 & P2_SF2_TEAM_LOADOUT_STORE_STATUS) 
-		shipp->flags2 |= SF2_TEAM_LOADOUT_STORE_STATUS;
-
 	if (parse_flags2 & P2_SF2_NO_DEATH_SCREAM)
 		shipp->flags2 |= SF2_NO_DEATH_SCREAM;
 	
@@ -3589,7 +3439,7 @@ void resolve_parse_flags(object *objp, int parse_flags, int parse_flags2)
 // if we are just getting player starts, then don't create the objects
 int parse_object(mission *pm, int flag, p_object *p_objp)
 {
-	int	i, j, count, delay, num_alts;
+	int	i, j, count, delay;
 	char name[NAME_LENGTH], flag_strings[MAX_PARSE_OBJECT_FLAGS][NAME_LENGTH];
 	char flag_strings_2[MAX_PARSE_OBJECT_FLAGS_2][NAME_LENGTH];
 
@@ -3613,24 +3463,6 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 
 		p_objp->ship_class = 0;
 		Num_unknown_ship_classes++;
-	}
-
-	// Karajorma - See if there are any alternate classes specified for this ship. 
-
-	// Type 1 Alts
-	p_objp->num_alt_class_one = 0;
-	num_alts = 0;
-	while (optional_string("+Alt_Ship_Class_Type_1:") && (num_alts < MAX_ALT_CLASS_1))
-	{		
-		num_alts = parse_alt_class(p_objp, num_alts, true); 
-	}
-
-	// Type 2 Alts
-	p_objp->num_alt_class_two = 0;
-	num_alts = 0;
-	while (optional_string("+Alt_Ship_Class_Type_2:") && (num_alts < MAX_ALT_CLASS_2))
-	{
-		parse_alt_class(p_objp, num_alts, false); 
 	}
 
 	// if this is a multiplayer dogfight mission, skip support ships
@@ -3895,15 +3727,15 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	// get hitpoint values
 	if (p_objp->special_hitpoint_index != -1)
 	{
-		p_objp->parse_max_shield_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].text);
-		p_objp->parse_max_hull_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].text);
+		p_objp->ship_max_shield_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+SHIELD_STRENGTH].text);
+		p_objp->ship_max_hull_strength = (float) atoi(Sexp_variables[p_objp->special_hitpoint_index+HULL_STRENGTH].text);
 	}
 	else
 	{
-		p_objp->parse_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
-		p_objp->parse_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
+		p_objp->ship_max_shield_strength = Ship_info[p_objp->ship_class].max_shield_strength;
+		p_objp->ship_max_hull_strength = Ship_info[p_objp->ship_class].max_hull_strength;
 	}
-	Assert(p_objp->parse_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
+	Assert(p_objp->ship_max_hull_strength > 0.0f);	// Goober5000: div-0 check (not shield because we might not have one)
 
 	// if the kamikaze flag is set, we should have the next flag
 	if (optional_string("+Kamikaze Damage:"))
@@ -4115,8 +3947,6 @@ void mission_parse_maybe_create_parse_object(p_object *pobjp)
 	{
 		int	real_objnum = parse_create_object(pobjp);	// this object may later get destroyed depending on wing status!!!!
 
-		Subsys_index = pobjp->subsys_index;  // free elements that are no longer needed.
-
 		// if the ship is supposed to be destroyed before the mission, then blow up the ship and mark the pieces
 		// as last forever.  Only call this stuff when you are blowing up the ship
 		if (pobjp->destroy_before_mission_time >= 0)
@@ -4261,214 +4091,7 @@ void parse_objects(mission *pm, int flag)
 	// Goober5000 - I moved the docking stuff to post_process_ships_wings because of interdependencies
 	// between ships and wings.  Neither docking stuff nor ship stuff (for ships present at mission start)
 	// will be valid until after post_process_ships_wings is run.
-
-	// Karajorma - Now that we've parsed all the objects we can set the class of those which were flagged 
-	// to be set based on the number of ships available in the loadout. 
-	if (!Fred_running)
-	{
-		process_loadout_objects();
-	}	
 }
-
-// Karajorma - Checks the list of Parse_objects to see if any of them should be reassigned based on the 
-// number of ships of that class that were present in the loadout. 
-void process_loadout_objects()
-{
-	std::vector<int> reassignments;
-	
-	// Loop through all the Parse_objects looking for ships that should be affected by the loadout code.
-	for (int i=0; i < (int)Parse_objects.size(); i++)
-	{
-		p_object *pobj = &Parse_objects[i];
-		if (pobj->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY)
-		{
-			bool successful = attempt_assignation_from_alt_classes(pobj);
-
-			if (!successful)
-			{
-				// We've cycled through all the alt classes and we still haven't found one that matches
-				// So we store the ship so we can come back to it later.
-				reassignments.push_back(i);
-			}
-		}
-	}
-	
-	// Now we go though the ships we were unable to assign earlier and reassign them on a first come first 
-	// served basis.
-	for (int m=0; m < (int)reassignments.size(); m++)
-	{
-		// What is the ship class of the object and what team is it on? 
-		p_object *p_obj = &Parse_objects[reassignments[m]];
-		team_data *current_team = &Team_data[p_obj->team];
-		bool loadout_assigned = false;
-		Assert (p_obj->flags2 & P2_SF2_SET_CLASS_DYNAMICALLY);
-
-		// First thing to check is whether we actually have any ships left to assign
-		if (current_team->loadout_total == 0)
-		{
-			/* We'll do this code once the default ship code can be used to set a global default. Till then it's much better
-			// to simply use the ship that the mission designer specified. 
-			// Check that the team default ship and this ship aren't the same (this may be a different ship
-			// from any of the alt ship classes). We don't need to do anything if it is the same. 
-			if (p_obj->ship_class != current_team->default_ship)
-			{
-				swap_parse_object(p_obj, current_team->default_ship);
-			}*/
-
-			// If there is nothing left to assign we should use the ship in the mission file
-			loadout_assigned = true;
-		}
-		// We do have ships left in the team loadout that we can assign
-		else
-		{
-			// Go through the loadout until we find an unassigned ship
-			for (int j=0; j < current_team->number_choices; j++)
-			{
-				if (current_team->ship_count[j] > 0)
-				{
-					assign_ship_from_loadout(p_obj, current_team, j);
-					// We will need to assign a new class too (if a p_object the same class was available
-					// it should have been assigned by attempt_loadout_assignation_from_defaults()
-					Assert (p_obj->ship_class != current_team->ship_list[j]);
-					swap_parse_object(p_obj, current_team->ship_list[j]);
-
-					loadout_assigned = true;
-					break ;
-				}
-			}
-		}
-			
-		// We should never reach here with an unassigned loadout
-		Assert (loadout_assigned);
-	}
-}
-
-// Karajorma - There are three places the game looks when attempting to determine the ship class for team loadout. 
-// The class specified in the mission file and the two alt ship classes. This function checks all three
-// and reports false if it can't set the ship class from the values held in any of them. 
-bool attempt_assignation_from_alt_classes(p_object *pobj)
-{
-	team_data *data_for_team = &Team_data[pobj->team];
-
-	int loadout_index = SHIP_CURRENTLY_UNASSIGNED;
-
-	// First lets check if the ship specified in the mission file is of an assignable class
-	loadout_index = is_ship_available_from_loadout(data_for_team, pobj->ship_class);
-	if ((loadout_index != SHIP_CLASS_NOT_IN_LOADOUT) && (loadout_index != SHIP_CLASS_ALL_ASSIGNED))
-	{
-		Assert (data_for_team->loadout_total > 0);
-		assign_ship_from_loadout(pobj, data_for_team, loadout_index);
-			
-		// Since the ship in the mission file matched one available in the loadout we need go no further
-		return true;
-	}
-
-	// Now check if we have any matches from the first set of alt classes. 
-	if (pobj->num_alt_class_one > 0)
-	{
-		int default_ship_index = 0;
-		while ((default_ship_index < pobj->num_alt_class_one) && 
-			  ((loadout_index == SHIP_CLASS_NOT_IN_LOADOUT) ||(loadout_index == SHIP_CLASS_ALL_ASSIGNED))) 
-		{
-			loadout_index = is_ship_available_from_loadout(data_for_team, pobj->alt_class_one[default_ship_index]);
-			default_ship_index++;
-		}
-	}
-			
-	if ((loadout_index != SHIP_CLASS_NOT_IN_LOADOUT) && (loadout_index != SHIP_CLASS_ALL_ASSIGNED))
-	{
-		// We've found a hit in the suggested_loadouts. Asssign it and swap the ships
-		assign_ship_from_loadout(pobj, data_for_team, loadout_index);
-		swap_parse_object(pobj, data_for_team->ship_list[loadout_index]);
-
-		// Ship assigned.  
-		return true; 
-	}
-
-	// If we still haven't successfully assigned the ship we'll attempt to assign it from the second set of alt 
-	// classes. If the first entry in the array does contain a ship class we will set the p_object to that value so it
-	// makes no sense to check anything other than the first entry
-	if (pobj->num_alt_class_two > 0)
-	{
-		loadout_index = is_ship_available_from_loadout(data_for_team, pobj->alt_class_two[0]);
-			
-		if ((loadout_index != SHIP_CLASS_NOT_IN_LOADOUT) && (loadout_index != SHIP_CLASS_ALL_ASSIGNED))
-		{
-			// we don't touch the team loadout data at all but we do need to check if we need to 
-			// swap ship class
-			if (pobj->ship_class != pobj->alt_class_two[0])
-			{
-				swap_parse_object(pobj, pobj->alt_class_two[0]);
-			}
-					
-			return true;
-		}
-		else 
-		{
-			assign_ship_from_loadout(pobj, data_for_team, loadout_index);
-			
-			// Do we actually need to change class?
-			if (pobj->ship_class != pobj->alt_class_two[0])
-			{
-				swap_parse_object(pobj, pobj->alt_class_two[0]);
-			}
-			return true;
-		}
-	}
-	// Ship couldn't be assigned to one of the defaults
-	return false;
-}
-
-// Karajorma - Checks if any ships of a certain ship class are still available in the team loadout
-// Returns the index of the ship in team_data->ship_list if found or SHIP_CLASS_ALL_ASSIGNED/SHIP_CLASS_NOT_IN_LOADOUT
-int is_ship_available_from_loadout(team_data *current_team, int ship_class)
-{
-	// first find out if the ship is even in the loadout
-	int index = is_ship_in_loadout(current_team, ship_class);
-
-	if (index != SHIP_CLASS_NOT_IN_LOADOUT)
-	{
-		// Found the matching ship but are there any left? 
-		if (current_team->ship_count[index] > 0)
-		{
-			return index;
-		}
-		else 
-		{
-			return SHIP_CLASS_ALL_ASSIGNED;
-		}
-	}
-
-	return SHIP_CLASS_NOT_IN_LOADOUT;	
-}
-
-// Karajorma - Checks if a certain ship class is in the team loadout. Returns the team_data->ship_index if it is or 
-// SHIP_CLASS_NOT_IN_LOADOUT if it isn't.
-int is_ship_in_loadout(team_data *current_team, int ship_class)
-{
-	// Search through the available ships to see if there is a matching ship class in the loadout
-	for (int i=0; i < current_team->number_choices; i++)
-	{
-		if (ship_class == current_team->ship_list[i])
-		{
-			return i;
-		}
-	}
-	// If we get this far we haven't found a match
-	return SHIP_CLASS_NOT_IN_LOADOUT;
-}
-
-// Karajorma - Updates the loadout quanities for a ship class.
-void assign_ship_from_loadout(p_object *pobj, team_data *current_team, int new_ship_loadout_index)
-{
-	// Fix the loadout variables to show that the class has less available if there are still ships available
-	if (current_team->ship_count[new_ship_loadout_index] > 0)
-	{
-		current_team->ship_count[new_ship_loadout_index]--;
-		current_team->loadout_total--;
-	}
-}
-
 // Karajorma - Replaces a p_object with a new one based on a Ship_info index.
 void swap_parse_object(p_object *p_obj, int new_ship_class)
 {
@@ -4484,30 +4107,28 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 	// Hitpoints
 	// We need to take into account that the ship might have been assigned special hitpoints so we can't 
 	// simply swap old for new. 
-	Assert (p_obj->parse_max_hull_strength > 0);
+	Assert (p_obj->ship_max_hull_strength > 0);
 	Assert (old_ship_info->max_hull_strength > 0);
 	
-	//WMC - there was some oddness going on with fl2i and i2fl, even though
-	//all of these are floats
-	float hp_multiplier = p_obj->parse_max_hull_strength / old_ship_info->max_hull_strength;
-	p_obj->parse_max_hull_strength = new_ship_info->max_hull_strength * hp_multiplier;
+	float hp_multiplier = p_obj->ship_max_hull_strength / i2fl(old_ship_info->max_hull_strength);
+	p_obj->ship_max_hull_strength = fl2i(new_ship_info->max_hull_strength * hp_multiplier);
 
 
 	// Shields
 	// Again we have to watch out for special hitpoints but this time we can't assume that there will be a 
 	// shield. So first lets see if there is one. 
-	if ((p_obj->parse_max_shield_strength != old_ship_info->max_shield_strength) && 
-		(p_obj->parse_max_shield_strength > 0) &&
+	if ((p_obj->ship_max_shield_strength != old_ship_info->max_shield_strength) && 
+		(p_obj->ship_max_shield_strength > 0) &&
 		(new_ship_info->max_shield_strength > 0))
 	{
 		// This ship is using special hitpoints to alter the shield strength
-		float shield_multiplier = p_obj->parse_max_shield_strength / i2fl(old_ship_info->max_shield_strength);
-		p_obj->parse_max_shield_strength = new_ship_info->max_shield_strength * shield_multiplier;
+		float shield_multiplier = p_obj->ship_max_shield_strength / i2fl(old_ship_info->max_shield_strength);
+		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength * shield_multiplier;
 	}
 	// Not using special hitpoints or a class which has a shield strength of zero
 	else
 	{
-		p_obj->parse_max_shield_strength = new_ship_info->max_shield_strength;
+		p_obj->ship_max_shield_strength = new_ship_info->max_shield_strength;
 	}
 	
 	// Primary weapons
@@ -5609,35 +5230,6 @@ void parse_messages(mission *pm, int flags)
 {
 	required_string("#Messages");
 
-	// command stuff by Goober5000 ---------------------------------------
-	strcpy(pm->command_sender, DEFAULT_COMMAND);
-	if (optional_string("$Command Sender:"))
-	{
-		char temp[NAME_LENGTH];
-		stuff_string(temp, F_NAME, NAME_LENGTH);
-
-		if (*temp == '#')
-			strcpy(pm->command_sender, &temp[1]);
-		else
-			strcpy(pm->command_sender, temp);
-	}
-
-	pm->command_persona = Default_command_persona;
-	if (optional_string("$Command Persona:"))
-	{
-		int idx;
-		char temp[NAME_LENGTH];
-		stuff_string(temp, F_NAME, NAME_LENGTH);
-
-		idx = message_persona_name_lookup(temp);
-		if (idx >= 0)
-			pm->command_persona = idx;
-		else
-			Warning(LOCATION, "Supplied Command Persona is invalid!  Defaulting to %s.", Personas[Default_command_persona].name);
-	}
-	// end of command stuff ----------------------------------------------
-
-
 	mprintf(("Starting mission message count : %d\n", Num_message_waves));
 
 	// the message_parse function can be found in MissionMessage.h.  The format in the
@@ -6216,13 +5808,13 @@ int parse_mission(mission *pm, int flags)
 		}
 	}
 
-	post_process_mission(pm);
+	post_process_mission();
 
 	// success
 	return 0;
 }
 
-void post_process_mission(mission *pm)
+void post_process_mission()
 {
 	int			i;
 	int			indices[MAX_SHIPS], objnum;
@@ -6255,10 +5847,6 @@ void post_process_mission(mission *pm)
 	if ( Player_obj->phys_info.vel.xyz.z > 0.0f )
 		Player->ci.forward_cruise_percent = Player_obj->phys_info.vel.xyz.z / Player_ship->current_max_speed * 100.0f;
 
-	// now that we have the player ship...
-	// if the player doesn't have shields, support shouldn't either
-	if (Player_obj->flags & OF_NO_SHIELDS)
-		pm->support_ships.ssi_flags |= SSIF_NO_SHIELDS;
 
 	// set up wing indexes
 	for (i = 0; i < MAX_STARTING_WINGS; i++ ) {
@@ -7308,6 +6896,12 @@ void mission_parse_support_arrived( int objnum )
 		}
 	}
 
+	/* Goober5000 - this is taken care of in mission_bring_in_support_ship
+	//	MK: A bit of a hack.  If on player's team and player isn't allowed shields, don't give this ship shields.
+	if ((Player_obj->flags & OF_NO_SHIELDS) && (Player_ship->team == Ships[Objects[objnum].instance].team))
+		Objects[objnum].flags |= OF_NO_SHIELDS;
+	*/
+
 	Ships[Objects[objnum].instance].flags |= SF_WARPED_SUPPORT;
 
 	Arriving_support_ship = NULL;
@@ -7779,6 +7373,42 @@ int allocate_subsys_status()
 	return Subsys_index++;
 }
 
+// Goober5000
+int insert_subsys_status(p_object *pobjp)
+{
+	int i;
+
+	// this is not good; we have to allocate another slot, but then bump all the
+	// slots upward so that this particular parse object's subsystems are contiguous
+	allocate_subsys_status();
+
+	// shift elements upward
+	for (i = Subsys_index - 1; i > (pobjp->subsys_index + pobjp->subsys_count); i--)
+	{
+		memcpy(&Subsys_status[i], &Subsys_status[i-1], sizeof(subsys_status));
+	}
+
+	// return index for new element
+	return pobjp->subsys_index + pobjp->subsys_count;
+}
+
+// Goober5000
+subsys_status *parse_get_subsys_status(p_object *pobjp, char *subsys_name)
+{
+	int i;
+	subsys_status *sssp;
+
+	for (i = 0; i < pobjp->subsys_count; i++)
+	{
+		sssp = &Subsys_status[pobjp->subsys_index + i];
+
+		if (!subsystem_stricmp(sssp->name, subsys_name))
+			return sssp;
+	}
+
+	return NULL;
+}
+
 // find (or add) the name in the list and return an index to it.
 int get_parse_name_index(char *name)
 {
@@ -8064,8 +7694,8 @@ void mission_bring_in_support_ship( object *requester_objp )
 	}
 
 	// set support ship hitpoints
-	pobj->parse_max_hull_strength = Ship_info[i].max_hull_strength;
-	pobj->parse_max_shield_strength = Ship_info[i].max_shield_strength;
+	pobj->ship_max_hull_strength = Ship_info[i].max_hull_strength;
+	pobj->ship_max_shield_strength = Ship_info[i].max_shield_strength;
 
 	pobj->team = requester_shipp->team;
 
@@ -8122,8 +7752,8 @@ void mission_bring_in_support_ship( object *requester_objp )
 	pobj->flags = 0;
 	pobj->flags2 = 0;
 
-	if (The_mission.support_ships.ssi_flags & SSIF_NO_SHIELDS)
-		pobj->flags |= P_OF_NO_SHIELDS;
+	if ( Player_obj->flags & OF_NO_SHIELDS )
+		pobj->flags |= P_OF_NO_SHIELDS;	// support ships have no shields when player has not shields
 
 	if ( Ships[Player_obj->instance].flags2 & SF2_NO_SUBSPACE_DRIVE )
 		pobj->flags2 |= P2_SF2_NO_SUBSPACE_DRIVE;	// support ships have no subspace drive when player has not subspace drive

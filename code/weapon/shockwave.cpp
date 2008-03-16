@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Shockwave.cpp $
- * $Revision: 2.34 $
- * $Date: 2007-02-11 09:37:18 $
+ * $Revision: 2.26.2.8 $
+ * $Date: 2007-02-11 09:35:11 $
  * $Author: taylor $
  *
  * C file for creating and managing shockwaves
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.33  2007/01/07 12:57:36  taylor
+ * Revision 2.26.2.7  2006/12/07 18:30:20  taylor
  * cleanup shockwave code a bit
  * make Shockwave_info dynamic
  * lot of fixage to allow 2D and 3D shockwaves to work better
@@ -24,12 +24,12 @@
  * properly handle both "none" and "<none>" for 2D and 3D shockwave names
  * better handling, preloading wise, of 3D shockwaves and their textures
  *
- * Revision 2.32  2006/11/06 06:33:48  taylor
+ * Revision 2.26.2.6  2006/10/27 21:37:11  taylor
  * more cleanup of warp_global crap
  * scale render/detail box limits with detail level setting
  * make sure that we reset culling and zbuffer after each model buffer that gets rendered
  *
- * Revision 2.31  2006/11/06 06:19:17  taylor
+ * Revision 2.26.2.5  2006/10/27 06:42:30  taylor
  * rename set_warp_globals() to model_set_warp_globals()
  * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
  * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
@@ -37,16 +37,16 @@
  * minor bits of cleanup
  * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
  *
- * Revision 2.30  2006/10/06 09:33:56  taylor
+ * Revision 2.26.2.4  2006/10/01 19:29:35  taylor
  * if shockwaves weren't loaded then don't try to unload them (fixes standalone crash)
  *
- * Revision 2.29  2006/09/11 05:37:33  taylor
+ * Revision 2.26.2.3  2006/08/22 05:47:00  taylor
  * make sure that we properly page in textures for 3d shockwave models
  *
- * Revision 2.28  2006/08/20 00:51:07  taylor
+ * Revision 2.26.2.2  2006/08/19 04:38:47  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
- * Revision 2.27  2006/07/06 22:01:50  taylor
+ * Revision 2.26.2.1  2006/07/06 21:55:38  taylor
  * add some minor error catches for invalid values
  *
  * Revision 2.26  2006/05/27 16:45:11  taylor

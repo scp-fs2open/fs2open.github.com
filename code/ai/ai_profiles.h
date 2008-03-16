@@ -6,26 +6,24 @@
 
 /*
  * $Logfile: /Freespace2/code/ai/ai_profiles.h $
- * $Revision: 1.9 $
- * $Date: 2007-07-28 22:04:46 $
+ * $Revision: 1.4.2.5 $
+ * $Date: 2007-07-28 22:04:14 $
  * $Author: Goober5000 $
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.8  2007/07/19 03:19:32  turey
- * Made Backslash's change to dampening tied to an ai_profiles flag, as it does affect
- *  retail behavior, and significantly affects gameplay in the BtRL Demo.
- * Also, fixed a typo.
- *
- * Revision 1.7  2007/07/15 02:45:17  Goober5000
+ * Revision 1.4.2.4  2007/07/15 02:45:48  Goober5000
  * fixed a small bug in the lab
  * moved WMC's no damage scaling flag to ai_profiles and made it work correctly
  * removed my old supercap damage scaling change
  * moved Turey's truefire flag to ai_profiles
  *
- * Revision 1.6  2007/02/27 01:44:48  Goober5000
+ * Revision 1.4.2.3  2007/02/27 01:44:44  Goober5000
  * add two features for WCS: specifyable shield/weapon recharge rates, and removal of linked fire penalty
  *
- * Revision 1.5  2006/07/02 03:39:55  Goober5000
+ * Revision 1.4.2.2  2006/07/02 04:13:43  Goober5000
+ * bah
+ *
+ * Revision 1.4.2.1  2006/07/02 03:39:34  Goober5000
  * remove associated AI flags
  * --Goober5000
  *

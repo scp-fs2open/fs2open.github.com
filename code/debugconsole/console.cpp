@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/DebugConsole/Console.cpp $
- * $Revision: 2.8 $
- * $Date: 2007-02-18 21:26:50 $
+ * $Revision: 2.6.2.2 $
+ * $Date: 2007-02-18 21:26:52 $
  * $Author: Goober5000 $
  *
  * Routines for managing the debug console window.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.7  2006/09/08 06:20:14  taylor
+ * Revision 2.6.2.1  2006/09/08 06:14:43  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
  * Revision 2.6  2005/04/25 00:07:22  wmcoolmon

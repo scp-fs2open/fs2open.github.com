@@ -9,38 +9,28 @@
 
 /*
  * $Logfile: /Freespace2/code/Hud/HUDtargetbox.cpp $
- * $Revision: 2.73 $
- * $Date: 2007-11-23 23:49:33 $
- * $Author: wmcoolmon $
+ * $Revision: 2.65.2.6 $
+ * $Date: 2007-08-30 04:52:30 $
+ * $Author: Backslash $
  *
  * C module for drawing the target monitor box on the HUD
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.72  2007/08/30 04:51:07  Backslash
- * The long-awaited HUD $Length Unit Multiplier setting!  (With lots of help from KeldorKatarn)
- * Multiplies all speeds and distances displayed by the HUD by a given constant multiplier. The value is declared in hud_gauges.tbl (right after $Max Escort Ships) as
- * $Length Unit Multiplier: 5
- *
- * Revision 2.71  2007/07/15 04:19:25  Goober5000
+ * Revision 2.65.2.5  2007/07/15 04:19:33  Goober5000
  * partial commit of aldo's eyepoint feature
  * it will need a keystroke to be complete
  *
- * Revision 2.70  2007/02/20 04:20:10  Goober5000
+ * Revision 2.65.2.4  2007/02/20 04:19:10  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.69  2007/02/11 21:26:34  Goober5000
- * massive shield infrastructure commit
+ * Revision 2.65.2.3  2006/12/26 05:27:15  taylor
+ * make sure that we don't target a hidden jumpnode, and if we do be sure to only detarget it rather than turning off auto-targetting
  *
- * Revision 2.68  2007/01/07 12:53:35  taylor
- * add position info for weapon energy text
- * make sure that we can't target a hidden jumpnode
- * rest of the weapon switch fix
- *
- * Revision 2.67  2006/08/03 01:33:56  Goober5000
+ * Revision 2.65.2.2  2006/08/03 01:33:25  Goober5000
  * add a second method for specifying ship copies, plus allow the parser to recognize ship class copy names that aren't consistent with the table
  * --Goober5000
  *
- * Revision 2.66  2006/07/17 01:12:19  taylor
+ * Revision 2.65.2.1  2006/07/17 01:09:03  taylor
  * fix some missile autocentering issues
  *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
  *  - don't try to autocenter loadout icons when rendered 3d
@@ -1327,8 +1317,6 @@ void hud_render_target_ship_info(object *target_objp)
 		// PRINT SUBSYS NAME
 		// hud_set_default_color();
 		// get turret subsys name
-		//WMC - If the turret does not have a custom name, get the proper turret name
-		//    - If it does have a custom name (sub_name), use that one instead
 		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET && !ship_subsys_has_instance_name(Player_ai->targeted_subsys)) {
 			get_turret_subsys_name(&Player_ai->targeted_subsys->weapons, outstr);
 		} else {
@@ -2088,7 +2076,7 @@ void hud_show_target_data(float frametime)
 			sy += dy;
 			
 			// data can be found in target montior
-			// gr_printf(TARGET_WINDOW_X1+TARGET_WINDOW_WIDTH+3, TARGET_WINDOW_Y1+5*h, "Shields: %d", (int) shield_get_strength(&Objects[Player_ai->target_objnum]));
+			// gr_printf(TARGET_WINDOW_X1+TARGET_WINDOW_WIDTH+3, TARGET_WINDOW_Y1+5*h, "Shields: %d", (int) Players[Player_num].current_target->ship_max_shield_strength);
 			if (aip->target_objnum != -1) {
 				char	target_str[32];
 				float	dot, dist;
@@ -2118,7 +2106,7 @@ void hud_show_target_data(float frametime)
 				sy += dy;
 
 				if ( aip->targeted_subsys != NULL ) {
-					sprintf(outstr, "Subsys: %s", ship_subsys_get_name(aip->targeted_subsys));
+					sprintf(outstr, "Subsys: %s", aip->targeted_subsys->system_info->name);
 					gr_printf(sx, sy, outstr);
 				}
 				sy += dy;

@@ -9,20 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Gamesnd/EventMusic.cpp $
- * $Revision: 2.49 $
- * $Date: 2008-01-20 17:18:06 $
+ * $Revision: 2.40.2.8 $
+ * $Date: 2008-01-20 17:16:18 $
  * $Author: karajorma $
  *
  * C module for high-level control of event driven music 
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.48  2007/11/21 07:28:38  Goober5000
+ * Revision 2.40.2.7  2007/11/21 07:27:47  Goober5000
  * add Wing Commander Saga's fiction viewer
  *
- * Revision 2.47  2007/09/02 02:10:25  Goober5000
+ * Revision 2.40.2.6  2007/09/02 02:07:41  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 2.46  2007/03/22 20:22:25  taylor
+ * Revision 2.40.2.5  2007/03/22 20:22:45  taylor
  * a little better error handling for cf_exists_full()
  * add a cf_exists_full_ext() which can find a series of extensions and returns true if any of them exist
  * use cf_exists_full_ext() for eventmusic file checks (to check for ogg and wav)
@@ -32,21 +32,18 @@
  *  - load issue with finding incorrect files by mistake
  *  - prevent finding different file types in various paths/roots
  *
- * Revision 2.45  2007/02/11 18:20:18  taylor
+ * Revision 2.40.2.4  2007/02/11 09:56:25  taylor
  * support for new finding/loading of sound files
  * add support for automatically figuring out samples-per-measure based on Goober's explanation in the Wiki (not sure if it's actually right though)
  * remove NO_SOUND
  *
- * Revision 2.44  2007/01/15 01:37:37  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
+ * Revision 2.40.2.3  2007/01/15 01:55:46  Goober5000
+ * thanks to WMC for catching this -- it was a goof from back in 2003!
  *
- * Revision 2.43  2006/12/28 00:59:26  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.42  2006/09/11 06:49:39  taylor
+ * Revision 2.40.2.2  2006/09/11 01:15:04  taylor
  * fixes for stuff_string() bounds checking
  *
- * Revision 2.41  2006/08/06 19:24:56  Goober5000
+ * Revision 2.40.2.1  2006/08/06 19:27:12  Goober5000
  * deprecate change-ship-model
  *
  * Revision 2.40  2006/05/30 02:13:22  Goober5000
@@ -2037,16 +2034,10 @@ void event_music_get_soundtrack_name(char *outbuf)
 // set the current soundtrack based on name
 void event_music_set_soundtrack(char *name)
 {
-	if(name == NULL)
-	{
-		Current_soundtrack_num = -1;
-		return;
-	}
-
 	Current_soundtrack_num = event_music_get_soundtrack_index(name);
 
-	if ( Current_soundtrack_num < 0 ) {
-		mprintf(("Current soundtrack set to -1 in event_music_set_soundtrack; could not find '%s'\n", name));
+	if ( Current_soundtrack_num == -1 ) {
+		mprintf(("Current soundtrack set to -1 in event_music_set_soundtrack\n"));
 	}
 }
 
@@ -2087,7 +2078,7 @@ void event_music_set_score(int score_index, char *name)
 void event_music_reset_choices()
 {
 	Current_soundtrack_num = -1;
-	//mprintf(("Current soundtrack set to -1 in event_music_reset_choices\n"));
+	mprintf(("Current soundtrack set to -1 in event_music_reset_choices\n"));
 	Mission_music[SCORE_BRIEFING] = -1;
 	Mission_music[SCORE_FICTION_VIEWER] = -1;
 	event_music_set_score(SCORE_DEBRIEF_SUCCESS, "Success");

@@ -9,13 +9,17 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionLog.cpp $
- * $Revision: 2.16 $
- * $Date: 2006-05-21 02:12:21 $
- * $Author: Goober5000 $
+ * $Revision: 2.16.2.1 $
+ * $Date: 2007-10-28 16:39:58 $
+ * $Author: taylor $
  *
  * File to deal with Mission logs
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.16  2006/05/21 02:12:21  Goober5000
+ * fix for Mantis #827
+ * --Goober5000
+ *
  * Revision 2.15  2006/05/20 02:03:01  Goober5000
  * fix for Mantis #755, plus make the missionlog #defines uniform
  * --Goober5000
@@ -659,31 +663,49 @@ int mission_log_get_time_indexed( int type, char *pname, char *sname, int count,
 	log_entry *entry;
 
 	entry = &log_entries[0];
+
 	for (i = 0; i < last_entry; i++) {
 		found = 0;
+
 		if ( entry->type == type ) {
 			// if we are looking for a dock/undock entry, then we don't care about the order in which the names
 			// were passed into this function.  Count the entry as found if either name matches both in the other
 			// set.
 			if ( (type == LOG_SHIP_DOCKED) || (type == LOG_SHIP_UNDOCKED) ) {
-				Assert ( sname );
-				if ( (!stricmp(entry->pname, pname) && !stricmp(entry->sname, sname)) || (!stricmp(entry->pname, sname) && !stricmp(entry->sname, pname)) )
+				if (sname == NULL) {
+					Int3();
+					return 0;
+				}
+
+				if ( (!stricmp(entry->pname, pname) && !stricmp(entry->sname, sname)) || (!stricmp(entry->pname, sname) && !stricmp(entry->sname, pname)) ) {
 					found = 1;
+				}
 			} else {
 				// for non dock/undock goals, then the names are important!
-				Assert( pname );
-				if ( stricmp(entry->pname, pname) )
+				if (pname == NULL) {
+					Int3();
+					return 0;
+				}
+
+				if ( stricmp(entry->pname, pname) ) {
 					goto next_entry;
-				if ( !sname || !stricmp(sname, entry->sname) )
+				}
+
+				if ( (sname == NULL) || !stricmp(sname, entry->sname) ) {
 					found = 1;
+				}
 			}
 
 			if ( found ) {
 				count--;
+
 				if ( !count ) {
 					entry->flags |= MLF_ESSENTIAL;				// since the goal code asked for this entry, mark it as essential
-					if ( time )
+
+					if (time) {
 						*time = entry->timestamp;
+					}
+
 					return 1;
 				}
 			}

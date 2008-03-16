@@ -9,23 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/Fireball/FireBalls.cpp $
- * $Revision: 2.38 $
- * $Date: 2007-09-02 02:10:24 $
+ * $Revision: 2.33.2.4 $
+ * $Date: 2007-09-02 02:07:39 $
  * $Author: Goober5000 $
  *
  * Code to move, render and otherwise deal with fireballs.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.37  2007/07/28 21:31:10  Goober5000
+ * Revision 2.33.2.3  2007/07/28 21:31:04  Goober5000
  * this should really be capitalized
  *
- * Revision 2.36  2007/02/11 18:19:41  taylor
+ * Revision 2.33.2.2  2007/02/11 09:53:33  taylor
  * support for tbl specified fireball explosion color ("$Light color:")
  *
- * Revision 2.35  2006/12/28 00:59:19  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.34  2006/09/11 06:48:40  taylor
+ * Revision 2.33.2.1  2006/09/11 01:12:50  taylor
  * fixes for stuff_string() bounds checking
  * stict compiler build fixes
  *
@@ -635,7 +632,7 @@ void parse_fireball_tbl(char *filename)
 	}
 
 	read_file_text(filename);
-	reset_parse();		
+	reset_parse();
 
 	required_string("#Start");
 
@@ -778,11 +775,9 @@ void fireball_load_data()
 			if ( (i == FIREBALL_WARP_EFFECT) && (idx > MAX_WARP_LOD) )
 				continue;
 
-			fd->lod[idx].num_frames = 0;
-			fd->lod[idx].fps = 0;
 			fd->lod[idx].bitmap_id	= bm_load_animation( fd->lod[idx].filename, &fd->lod[idx].num_frames, &fd->lod[idx].fps, 1 );
 			if ( fd->lod[idx].bitmap_id < 0 ) {
-				Warning(LOCATION, "Could not load %s anim file\n", fd->lod[idx].filename);
+				Error(LOCATION, "Could not load %s anim file\n", fd->lod[idx].filename);
 			}
 		}
 	} 
@@ -987,51 +982,34 @@ void fireball_set_framenum(int num)
 		return;
 	}
 
-	if ( fb->fireball_info_index == FIREBALL_WARP_EFFECT || fb->fireball_info_index == FIREBALL_KNOSSOS_EFFECT )
-	{
-		if(fl->bitmap_id > 0)
-		{
-			float total_time = i2fl(fl->num_frames) / fl->fps;	// in seconds
+	if ( fb->fireball_info_index == FIREBALL_WARP_EFFECT || fb->fireball_info_index == FIREBALL_KNOSSOS_EFFECT )	{
+		float total_time = i2fl(fl->num_frames) / fl->fps;	// in seconds
 
-			framenum = fl2i(fb->time_elapsed * fl->num_frames / total_time + 0.5);
+		framenum = fl2i(fb->time_elapsed * fl->num_frames / total_time + 0.5);
 
-			if ( framenum < 0 ) framenum = 0;
+		if ( framenum < 0 ) framenum = 0;
 
-			framenum = framenum % fl->num_frames;
+		framenum = framenum % fl->num_frames;
 
-			if ( fb->orient )	{
-				// warp out effect plays backwards
-				framenum = fl->num_frames-framenum-1;
-				fb->current_bitmap = fl->bitmap_id + framenum;
-			} else {
-				fb->current_bitmap = fl->bitmap_id + framenum;
-			}
-		}
-		else
-		{
-			fb->current_bitmap = fl->bitmap_id;
-		}
-	}
-	else
-	{
-		if(fl->bitmap_id > -1)
-		{
-			framenum = fl2i(fb->time_elapsed / fb->total_time * fl->num_frames + 0.5);
-
-			// ensure we don't go past the number of frames of animation
-			if ( framenum > (fl->num_frames-1) ) {
-				framenum = (fl->num_frames-1);
-				Objects[fb->objnum].flags |= OF_SHOULD_BE_DEAD;
-			}
-
-			if ( framenum < 0 ) framenum = 0;
+		if ( fb->orient )	{
+			// warp out effect plays backwards
+			framenum = fl->num_frames-framenum-1;
+			fb->current_bitmap = fl->bitmap_id + framenum;
+		} else {
 			fb->current_bitmap = fl->bitmap_id + framenum;
 		}
-		else
-		{
+	} else {
+
+		framenum = fl2i(fb->time_elapsed / fb->total_time * fl->num_frames + 0.5);
+
+		// ensure we don't go past the number of frames of animation
+		if ( framenum > (fl->num_frames-1) ) {
+			framenum = (fl->num_frames-1);
 			Objects[fb->objnum].flags |= OF_SHOULD_BE_DEAD;
-			fb->current_bitmap = -1;
 		}
+
+		if ( framenum < 0 ) framenum = 0;
+		fb->current_bitmap = fl->bitmap_id + framenum;
 	}
 }
 
@@ -1243,32 +1221,29 @@ int fireball_get_lod(vec3d *pos, fireball_info *fd, float size)
 		}
 	}
 
-	if(fd->lod[0].bitmap_id > -1)
-	{
-		if(!g3_get_bitmap_dims(fd->lod[0].bitmap_id, &v, size, &x, &y, &w, &h, &bm_size)) {
-			if (Detail.hardware_textures == 4) {
-				// straight LOD
-				if(w <= bm_size/8){
-					ret_lod = 3;
-				} else if(w <= bm_size/2){
-					ret_lod = 2;
-				} else if(w <= (1.56*bm_size)){
-					ret_lod = 1;
-				} else {
-					ret_lod = 0;
-				}		
+	if(!g3_get_bitmap_dims(fd->lod[0].bitmap_id, &v, size, &x, &y, &w, &h, &bm_size)) {
+		if (Detail.hardware_textures == 4) {
+			// straight LOD
+			if(w <= bm_size/8){
+				ret_lod = 3;
+			} else if(w <= bm_size/2){
+				ret_lod = 2;
+			} else if(w <= (1.56*bm_size)){
+				ret_lod = 1;
 			} else {
-				// less aggressive LOD for lower detail settings
-				if(w <= bm_size/8){
-					ret_lod = 3;
-				} else if(w <= bm_size/3){
-					ret_lod = 2;
-				} else if(w <= (1.2*bm_size)){
-					ret_lod = 1;
-				} else {
-					ret_lod = 0;
-				}		
-			}
+				ret_lod = 0;
+			}		
+		} else {
+			// less aggressive LOD for lower detail settings
+			if(w <= bm_size/8){
+				ret_lod = 3;
+			} else if(w <= bm_size/3){
+				ret_lod = 2;
+			} else if(w <= (1.2*bm_size)){
+				ret_lod = 1;
+			} else {
+				ret_lod = 0;
+			}		
 		}
 	}
 
@@ -1494,8 +1469,7 @@ void fireballs_page_in()
 			if ( (i == FIREBALL_WARP_EFFECT) && (idx > MAX_WARP_LOD) )
 				continue;
 
-			if(fd->lod[idx].bitmap_id > -1)
-				bm_page_in_texture( fd->lod[idx].bitmap_id, fd->lod[idx].num_frames );
+			bm_page_in_texture( fd->lod[idx].bitmap_id, fd->lod[idx].num_frames );
 		}
 	}
 

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/UI/KEYTRAP.cpp $
- * $Revision: 2.4 $
- * $Date: 2006-09-08 06:20:15 $
+ * $Revision: 2.3.2.1 $
+ * $Date: 2006-09-08 06:14:44 $
  * $Author: taylor $
  *
  * Routines for gadgets that trap keypresses.

@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_rate.h $
- * $Revision: 2.7 $
- * $Date: 2006-06-27 05:07:49 $
+ * $Revision: 2.6.2.1 $
+ * $Date: 2006-06-18 16:54:36 $
  * $Author: taylor $
  * 
  * $Log: not supported by cvs2svn $

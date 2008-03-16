@@ -9,13 +9,16 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/MultiUtil.h $
- * $Revision: 2.7 $
- * $Date: 2007-04-24 13:13:04 $
- * $Author: karajorma $
+ * $Revision: 2.6.2.2 $
+ * $Date: 2007-10-15 06:43:19 $
+ * $Author: taylor $
  *
  * Header file to support misc. multiplayer support functions
  *
  * $Log: not supported by cvs2svn $
+ * Revision 2.6.2.1  2007/04/24 12:07:34  karajorma
+ * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
+ *
  * Revision 2.6  2005/07/13 03:35:33  Goober5000
  * remove PreProcDefine #includes in FS2
  * --Goober5000
@@ -174,6 +177,7 @@ struct active_game;
 struct ship;
 struct server_item;
 struct ship_info;
+struct p_object;
 
 // two types of signatures that we can request,  permanent signatures are all below 1000.  non-permanent are above 1000
 #define MULTI_SIG_SHIP					1
@@ -194,6 +198,7 @@ extern int multi_find_player_by_object( object *obj );
 extern int multi_find_player_by_signature( int signature );
 extern int multi_find_player_by_callsign(char *callsign);
 extern int multi_find_player_by_net_signature(ushort net_signature);
+extern int multi_find_player_by_parse_object(p_object *p_objp );
 extern int multi_find_player_by_ship_name(char *ship_name);
 extern int multi_create_player(int player_num, player *pl,char* name, net_addr* addr, int ship_class, short id);
 extern int multi_find_open_netplayer_slot();
@@ -375,17 +380,14 @@ int multi_get_connection_speed();
 // if we're in tracker mode, do a validation update on all known missions
 void multi_update_valid_missions();
 
-// if we're in tracker mode, get the ip banmask list
-void multi_update_ban_list();
-
-// if we're in tracker mode, check if this addr matches a banmask
-bool fs2netd_player_banned(net_addr *addr);
-
 // get a new id# for a player
 short multi_get_new_id();
 
 // Karajorma - sends the player to the correct debrief for this game type
 void send_debrief_event();
+
+// Karajorma - Performs any cleanup needed by missions which don't end with a warpout.
+void multi_handle_sudden_mission_end();
 
 // make a bunch of fake players - don't rely on this to be very safe - its mostly used for interface testing
 #ifndef NDEBUG

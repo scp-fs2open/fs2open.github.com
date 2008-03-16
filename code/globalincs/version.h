@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/version.h $
- * $Revision: 2.15 $
- * $Date: 2007-03-22 20:52:17 $
+ * $Revision: 2.13.2.2 $
+ * $Date: 2007-03-22 20:52:38 $
  * $Author: taylor $
  *
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.14  2006/06/15 01:35:00  Goober5000
- * version bumpage
+ * Revision 2.13.2.1  2006/06/12 03:34:46  taylor
+ * bump version to 3.6.9
  *
  * Revision 2.13  2006/02/11 22:10:11  Goober5000
  * bumped to 3.6.8 because of version-specific commenting

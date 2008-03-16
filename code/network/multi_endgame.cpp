@@ -9,12 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/Network/multi_endgame.cpp $
- * $Revision: 2.12 $
- * $Date: 2007-12-30 18:30:29 $
- * $Author: karajorma $
+ * $Revision: 2.10.2.3 $
+ * $Date: 2007-10-15 06:43:17 $
+ * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.11  2007/04/24 13:13:04  karajorma
+ * Revision 2.10.2.2  2007/10/12 19:10:07  karajorma
+ * Partial (?) fix for Mantis 1084. At least it shouldn't Int3() when the server exits any more.
+ *
+ * Revision 2.10.2.1  2007/04/24 12:07:33  karajorma
  * Fix a number of places where the player of a dogfight game could end up in the standard debrief.
  *
  * Revision 2.10  2005/10/10 17:21:07  taylor
@@ -560,7 +563,18 @@ void multi_endgame_cleanup()
 	if(!(Game_mode & GM_STANDALONE_SERVER)){
 		Net_player->flags &= ~(NETINFO_FLAG_CONNECTED|NETINFO_FLAG_DO_NETWORKING);
 	}
-		
+	
+	/*this is a semi-hack so that if we're the master and we're quitting, we don't get an assert
+
+    Karajorma - From the looks of things this code actually CAUSES an Int3 and doesn't cause an assert anymore
+	besides if the game is over why are we setting flags on a Player_obj anyway? 
+
+	if((Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Player_obj != NULL)){
+		Player_obj->flags &= ~(OF_PLAYER_SHIP);
+		obj_set_flags( Player_obj, Player_obj->flags | OF_COULD_BE_PLAYER );
+	}
+	*/
+	
 	// shut my socket down (will also let the server know i've received any notifications/error from him)
 	// psnet_rel_close_socket( &(Net_player->reliable_socket) );
 
@@ -591,13 +605,10 @@ void multi_endgame_cleanup()
 		gameseq_pop_state();
 	}
 
-#ifndef NO_STANDALONE
-	if(Game_mode & GM_STANDALONE_SERVER){
+	if (Game_mode & GM_STANDALONE_SERVER) {
 		// multi_standalone_quit_game();		
 		multi_standalone_reset_all();
-	} else 
-#endif
-        {		
+	} else {		
 		Player->flags |= PLAYER_FLAGS_IS_MULTI;		
 
 		// if we're in Parallax Online mode, log back in there	

@@ -9,46 +9,51 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/Sexp_tree.cpp $
- * $Revision: 1.20 $
- * $Date: 2007-12-30 18:30:28 $
- * $Author: karajorma $
+ * $Revision: 1.8.2.13 $
+ * $Date: 2007-12-20 01:57:39 $
+ * $Author: turey $
  *
  * Sexp tree handler class.  Almost everything is handled by this class.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.19  2007/11/23 23:05:40  wmcoolmon
- * Updated event editor with minihelp box and numbered icons
+ * Revision 1.8.2.12  2007/11/26 18:43:52  karajorma
+ * Fix Mantis 0397
  *
- * Revision 1.18  2007/07/13 22:28:11  turey
- * Initial commit of Training Weapons / Simulated Hull code.
+ * Revision 1.8.2.11  2007/08/15 06:57:00  Goober5000
+ * fix problems with the mini help box
+ * (interestingly this feature was committed to stable but not HEAD)
  *
- * Revision 1.17  2007/02/20 04:20:10  Goober5000
+ * Revision 1.8.2.10  2007/05/28 18:27:33  wmcoolmon
+ * Added armor support for asteroid, debris, ship, and beam damage
+ *
+ * Revision 1.8.2.9  2007/05/20 21:24:09  wmcoolmon
+ * .
+ *
+ * Revision 1.8.2.8  2007/05/20 21:21:31  wmcoolmon
+ * FRED2 support for numbered SEXP operator arguments, minihelp box, fixed "Insert Event" when no events are present.
+ *
+ * Revision 1.8.2.7  2007/02/20 04:19:10  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 1.16  2007/01/15 13:42:59  karajorma
- * Hmmm. Forgot to commit changes to support network variables and setting ammo/weapons to HEAD as well as 3.6.9.
+ * Revision 1.8.2.6  2006/10/28 20:54:35  karajorma
+ * Adding the network-variable option to SEXP variables. This change will revert variables to the same behaviour they displayed in retail (i.e they don't update for clients) unless a variable is set to be a network-variable.
  *
- * Revision 1.15  2006/12/28 00:59:20  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 1.14  2006/10/09 05:25:18  Goober5000
+ * Revision 1.8.2.5  2006/10/09 05:25:07  Goober5000
  * make sexp nodes dynamic
  *
- * Revision 1.13  2006/10/09 04:44:58  Goober5000
+ * Revision 1.8.2.4  2006/10/09 04:44:49  Goober5000
  * preliminary commit of sexp node bump... fred only, just changing some names for clarity
  *
- * Revision 1.12  2006/09/13 17:29:43  taylor
+ * Revision 1.8.2.3  2006/09/13 17:30:25  taylor
  * fix for Mantis bug #1006
  *
- * Revision 1.11  2006/08/06 19:24:56  Goober5000
+ * Revision 1.8.2.2  2006/08/06 19:27:12  Goober5000
  * deprecate change-ship-model
  *
- * Revision 1.10  2006/07/31 21:13:03  Goober5000
- * fix for Mantis #1020
- * --Goober5000
+ * Revision 1.8.2.1  2006/07/31 21:09:10  karajorma
+ * Fix for Mantis 1020.
  *
- * Revision 1.9  2006/06/02 09:46:03  karajorma
- * Prevented the modify variable dialog deleting or changing the type of variables which are used in Team Loadout
+ * ship-subsys-guardian-threshold will now include subsystems without you having to type them in.
  *
  * Revision 1.8  2006/03/01 04:01:37  Goober5000
  * fix comm message localization
@@ -1111,7 +1116,7 @@ int sexp_tree::allocate_node()
 		mprintf(("Bumping dynamic tree node limit from %d to %d...\n", old_size, tree_nodes.size()));
 
 #ifndef NDEBUG
-		for (uint i = old_size; i < tree_nodes.size(); i++)
+		for (int i = old_size; i < (int)tree_nodes.size(); i++)
 		{
 			sexp_tree_item *item = &tree_nodes[i];
 			Assert(item->type == SEXPT_UNUSED);
@@ -1412,15 +1417,11 @@ void sexp_tree::right_clicked(int mode)
 	ScreenToClient(&click_point);
 	h = HitTest(CPoint(click_point), &_flags);  // find out what they clicked on
 
-	for (i=0; i<(int)tree_nodes.size(); i++)
-		if (tree_nodes[i].handle == h)
-			break;
-
 	if (h && menu.LoadMenu(IDR_MENU_EDIT_SEXP_TREE)) {
 		update_help(h);
 		popup_menu = menu.GetSubMenu(0);
 		ASSERT(popup_menu != NULL);
-		//SelectDropTarget(h);	// WTF: Why was this here???
+		//SelectDropTarget(h);  // WTF: Why was this here???
 
 		add_op_menu = replace_op_menu = insert_op_menu = NULL;
 
@@ -2361,8 +2362,6 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 
 			// modify sexp_tree
 			modify_sexp_tree_variable(old_name, sexp_var_index);
-
-			FixupLoadoutNameChange(old_name, dlg.m_cur_variable_name);
 
 			// Don't sort until after modify, since modify uses index
 			if (dlg.m_modified_name) {
@@ -4064,8 +4063,8 @@ void sexp_tree::move_branch(int source, int parent)
 
 HTREEITEM sexp_tree::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 {
-	int image1, image2;
 	uint i;
+	int image1, image2;
 	HTREEITEM h = 0, child, next;
 
 	if (source) {
@@ -4102,8 +4101,8 @@ HTREEITEM sexp_tree::move_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM a
 
 void sexp_tree::copy_branch(HTREEITEM source, HTREEITEM parent, HTREEITEM after)
 {
-	int image1, image2;
 	uint i;
+	int image1, image2;
 	HTREEITEM h, child;
 
 	if (source) {
@@ -4411,11 +4410,12 @@ void sexp_tree::update_help(HTREEITEM h)
 			}
 */
 	help_box = (CEdit *) GetParent()->GetDlgItem(IDC_HELP_BOX);
-	mini_help_box = (CEdit *) GetParent()->GetDlgItem(IDC_MINI_HELP_BOX);
 	if (!help_box || !::IsWindow(help_box->m_hWnd))
 		return;
 
-	mini_help_box->SetWindowText("");
+	mini_help_box = (CEdit *) GetParent()->GetDlgItem(IDC_MINI_HELP_BOX);
+	if (!mini_help_box || !::IsWindow(mini_help_box->m_hWnd))
+		return;
 
 	for (i=0; i<(int)tree_nodes.size(); i++)
 		if (tree_nodes[i].handle == h)
@@ -4423,6 +4423,7 @@ void sexp_tree::update_help(HTREEITEM h)
 
 	if ((i >= (int)tree_nodes.size()) || !tree_nodes[i].type) {
 		help_box->SetWindowText("");
+		mini_help_box->SetWindowText("");
 		return;
 	}
 
@@ -4543,7 +4544,8 @@ void sexp_tree::update_help(HTREEITEM h)
 // stuff node indices into find[]
 int sexp_tree::find_text(char *text, int *find)
 {
-	int i, find_count;
+	uint i;
+	int find_count;
 
 	// initialize find
 	for (i=0; i<MAX_SEARCH_MESSAGE_DEPTH; i++) {
@@ -4552,7 +4554,7 @@ int sexp_tree::find_text(char *text, int *find)
 
 	find_count = 0;
 
-	for (i=0; i<(int)tree_nodes.size(); i++) {
+	for (i=0; i<tree_nodes.size(); i++) {
 		// only look at used and editable nodes
 		if ((tree_nodes[i].flags & EDITABLE && (tree_nodes[i].type != SEXPT_UNUSED))) {
 			// find the text
@@ -6115,47 +6117,4 @@ int sexp_tree::get_variable_count(const char *var_name)
 	}
 
 	return count;
-}
-
-int sexp_tree::get_loadout_variable_count(const char *var_name)
-{
-	int count = 0; 
-
-	for (int i=0; i < MAX_TVT_TEAMS; i++)
-	{
-		for(int idx=0; idx<Team_data[i].number_choices; idx++)
-		{
-			if (!strcmp(var_name, Team_data[i].ship_list_variables[idx])) 
-			{
-				count++; 
-			}
-
-			if (!strcmp(var_name, Team_data[i].ship_count_variables[idx]))
-			{
-				count++; 
-			}
-		}
-	}
-	
-	return count; 
-}
-
-// Checks Team_Data for any references to variables that have had their name changed
-void sexp_tree::FixupLoadoutNameChange(const char *old_name, const char *new_name)
-{
-	for (int i=0; i < MAX_TVT_TEAMS; i++)
-	{
-		for(int idx=0; idx<Team_data[i].number_choices; idx++)
-		{
-			if (!strcmp(Team_data[i].ship_list_variables[idx], old_name)) 
-			{
-				strcpy(Team_data[i].ship_list_variables[idx], new_name);
-			}
-
-			if (!strcmp(Team_data[i].ship_count_variables[idx], old_name)) 
-			{
-				strcpy(Team_data[i].ship_count_variables[idx], new_name);
-			}
-		}
-	}
 }

@@ -9,31 +9,34 @@
 
 /*
  * $Logfile: /Freespace2/code/GlobalIncs/WinDebug.cpp $
- * $Revision: 2.45 $
- * $Date: 2007-04-03 02:19:22 $
- * $Author: Goober5000 $
+ * $Revision: 2.38.2.7 $
+ * $Date: 2007-10-28 16:36:34 $
+ * $Author: taylor $
  *
  * Debug stuff
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.44  2007/04/03 01:39:28  Goober5000
+ * Revision 2.38.2.6  2007/10/17 21:03:05  taylor
+ * change Warning() and Error() to use const format variables (can't remember who said to do this)
+ * fix memory error when zero'ing buffers for error messages on non-Windows platforms
+ *
+ * Revision 2.38.2.5  2007/04/03 02:19:26  Goober5000
+ * meh, space
+ *
+ * Revision 2.38.2.4  2007/04/03 01:39:31  Goober5000
  * fixed up some error messages
  *
- * Revision 2.43  2007/01/15 01:37:38  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
+ * Revision 2.38.2.3  2006/12/07 18:04:03  taylor
+ * clean up warning code for Windows
+ * handle messagebox popups better (until I done with even cooler code for handling that)
+ * cleanup window state code a bit, and deal with activation and cursor handling better
+ * handle WM_ERASEBKGND msg ourselves, prevents some flickering issues and gets rid of the need to self-paint the window to clear it
+ * slightly better Win9x/WinME compatibility for the main window
  *
- * Revision 2.42  2007/01/07 13:15:42  taylor
- * fix up Windows window/cursor handling so that it's up-to-date and more compatible
- * make sure that we handle background clearing ourselves, fixes several little issues
- * fix popup warnings to work a bit better and not screw up the game so much or make it difficult to interact with them
- *
- * Revision 2.41  2006/12/28 00:59:26  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.40  2006/09/09 04:07:57  taylor
+ * Revision 2.38.2.2  2006/09/09 04:07:21  taylor
  * fix for vanishing FRED2 cursor (Mantis bug #997), plus a little cleanup
  *
- * Revision 2.39  2006/09/08 06:20:14  taylor
+ * Revision 2.38.2.1  2006/09/08 06:14:43  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
  * Revision 2.38  2006/04/20 06:32:01  Goober5000
@@ -897,6 +900,9 @@ int PE_Debug::DumpDebugInfo( DumpBuffer& dumpBuffer, const BYTE* caller, HINSTAN
 		//JAS dumpBuffer.Printf( "    address: %8X\r\n", caller ) ;
 		return 0;
 	}
+
+	Int3();
+
 }
 
 const char* Separator = "------------------------------------------------------------------\r\n" ;
@@ -1041,7 +1047,6 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 
 	if (val == IDCANCEL)
 		exit(1);
-
 #ifndef INTERPLAYQA
 	Int3();
 #else
@@ -1051,7 +1056,7 @@ void _cdecl WinAssert(char * text, char * filename, int linenum )
 	gr_activate(1);
 
 	Messagebox_active = false;
-} 
+}
 
 void LuaDebugPrint(lua_Debug &ar)
 {
@@ -1160,7 +1165,7 @@ void LuaError(struct lua_State *L, char *format, ...)
 	Messagebox_active = false;
 }
 
-void _cdecl Error( char * filename, int line, char * format, ... )
+void _cdecl Error( char * filename, int line, const char * format, ... )
 {
 	int val;
 	va_list args;
@@ -1212,18 +1217,49 @@ void _cdecl Error( char * filename, int line, char * format, ... )
 	Messagebox_active = false;
 }
 
-void _cdecl Warning( char *filename, int line, char *format, ... )
+void _cdecl Warning( char *filename, int line, const char *format, ... )
 {
 #ifndef NDEBUG
 	va_list args;
 	int result;
+	int i;
+	int slen = 0;
 
-	if (Cmdline_nowarn)
-		return;
+	// output to the debug log before anything else (so that we have a complete record)
+
+	memset( AssertText1, 0, sizeof(AssertText1) );
+	memset( AssertText2, 0, sizeof(AssertText2) );
 
 	va_start(args, format);
 	vsprintf(AssertText1, format, args);
 	va_end(args);
+
+	slen = strlen(AssertText1);
+
+	// strip out the newline char so the output looks better
+	for (i = 0; i < slen; i++){
+		if (AssertText1[i] == (char)0x0a) {
+			AssertText2[i] = ' ';
+		} else {
+			AssertText2[i] = AssertText1[i];
+		}
+	}
+
+	// kill off extra white space at end
+	if (AssertText2[slen-1] == (char)0x20) {
+		AssertText2[slen-1] = '\0';
+	} else {
+		// just being careful
+		AssertText2[slen] = '\0';
+	}
+
+	mprintf(("WARNING: \"%s\" at %s:%d\n", AssertText2, strrchr(filename, '\\')+1, line));
+
+	// now go for the additional popup window, if we want it ...
+
+	if (Cmdline_nowarn) {
+		return;
+	}
 
 	filename = strrchr(filename, '\\')+1;
 	sprintf(AssertText2, "Warning: %s\r\nFile: %s\r\nLine: %d\r\n", AssertText1, filename, line );
@@ -1739,9 +1775,9 @@ void *_vm_malloc( int size, int quiet )
 		register_malloc(actual_size, filename, line, ptr);
 
 	#endif
+#endif
 
 	return ptr;
-#endif
 }
 
 #ifndef NDEBUG

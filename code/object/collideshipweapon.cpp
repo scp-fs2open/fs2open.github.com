@@ -9,70 +9,32 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/CollideShipWeapon.cpp $
- * $Revision: 2.45 $
- * $Date: 2007-11-23 23:49:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.27.2.8 $
+ * $Date: 2007-02-20 04:19:34 $
+ * $Author: Goober5000 $
  *
  * Routines to detect collisions and do physics, damage, etc for weapons and ships
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.44  2007/03/22 21:55:01  taylor
- * some generic_bitmap fixes to go with new changes (not in CVS just yet, don't freak out)
- * make use of VALID_FNAME() where possible
- * fix an animation time issue (sub-second animation playback caused div-by-0)
+ * Revision 2.27.2.7  2007/02/12 02:19:45  taylor
+ * fix a couple of things that I missed earlier
  *
- * Revision 2.43  2007/02/20 04:20:27  Goober5000
- * the great big duplicate model removal commit
- *
- * Revision 2.42  2007/02/19 07:24:51  wmcoolmon
- * WMCoolmon experiences a duh moment. Move scripting collision variable declarations in front of overrides, to give
- * them access to these (somewhat useful) variables
- *
- * Revision 2.41  2007/02/18 06:17:10  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.40  2007/02/11 21:26:35  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 2.39  2007/02/11 06:19:05  Goober5000
+ * Revision 2.27.2.6  2007/02/11 06:19:08  Goober5000
  * invert the do-collision flag into a don't-do-collision flag, plus fixed a wee lab bug
  *
- * Revision 2.38  2007/02/07 07:59:48  Goober5000
- * hm, didn't notice this new feature
+ * Revision 2.27.2.5  2007/02/07 07:35:01  Goober5000
+ * Clean up the ship-weapon collision code for both conventional weapons and beams.  Improved readability and clarity; untangled program flow; cleaned up sloppy enhancements.  Fixed a few bugs too.
  *
- * Revision 2.37  2007/02/07 07:35:21  Goober5000
- * Cleaned up the ship-weapon collision code for both conventional weapons and beams.  Improved readability and clarity; untangled program flow; cleaned up sloppy enhancements.  Fixed a few bugs too.
- *
- * Revision 2.36  2007/02/06 01:27:34  Goober5000
+ * Revision 2.27.2.4  2007/02/06 01:27:33  Goober5000
  * remove obsolete and unused shield flag
  *
- * Revision 2.35  2007/01/14 14:03:36  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.34  2007/01/08 00:50:58  Goober5000
- * remove WMC's limbo code, per our discussion a few months ago
- * this will later be handled by copying ship stats using sexps or scripts
- *
- * Revision 2.33  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.32  2006/10/08 02:05:38  Goober5000
+ * Revision 2.27.2.3  2006/10/08 02:05:33  Goober5000
  * fix forum links
  *
- * Revision 2.31  2006/09/11 05:36:43  taylor
+ * Revision 2.27.2.2  2006/08/22 05:45:39  taylor
  * compiler warning fixes
  *
- * Revision 2.30  2006/07/09 01:55:41  Goober5000
- * consolidate the "for reals" crap into a proper ship flag; also move the limbo flags over to SF2_*; etc.
- * this should fix Mantis #977
- * --Goober5000
- *
- * Revision 2.29  2006/06/07 04:42:22  wmcoolmon
- * Limbo flag support; further scripting 3.6.9 update
- *
- * Revision 2.28  2006/06/07 03:51:38  wmcoolmon
+ * Revision 2.27.2.1  2006/06/07 03:52:21  wmcoolmon
  * Scripting system prep for 3.6.9
  *
  * Revision 2.27  2006/03/05 21:45:12  taylor
@@ -314,7 +276,6 @@
 
 #include "object/objcollide.h"
 #include "object/object.h"
-#include "object/objectshield.h"
 #include "weapon/weapon.h"
 #include "ship/ship.h"
 #include "ship/shiphit.h"
@@ -457,8 +418,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	Assert( shipp->objnum == OBJ_INDEX(ship_objp));
 
 	// Make ships that are warping in not get collision detection done
-	if ( shipp->flags & SF_ARRIVING )
-		return 0;
+	if ( shipp->flags & SF_ARRIVING ) return 0;
 
 	// if one object is a capital, only check player and player weapons with
 	// the capital -- too slow for now otherwise.
@@ -477,18 +437,18 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	}
 	
 	ship_model_start(ship_objp);
-  
+
 	int	valid_hit_occurred = 0;				// If this is set, then hitpos is set
-  	int	quadrant_num = -1;
+	int	quadrant_num = -1;
 	polymodel *pm = model_get(sip->model_num);
-  
-  	//	total time is flFrametime + time_limit (time_limit used to predict collisions into the future)
-  	vec3d weapon_end_pos;
+
+	//	total time is flFrametime + time_limit (time_limit used to predict collisions into the future)
+	vec3d weapon_end_pos;
 	vm_vec_scale_add( &weapon_end_pos, &weapon_objp->pos, &weapon_objp->phys_info.vel, time_limit );
-  
-  
+
+
 	// Goober5000 - I tried to make collision code here much saner... here begin the (major) changes
-  
+
 	// set up collision structs
 	mc.model_num = sip->model_num;
 	mc.submodel_num = -1;
@@ -503,7 +463,7 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	//
 	//	Note: This code is obviously stupid. We want to add the shield point if there is shield to hit, but:
 	//		1. We want the size/color of the hit effect to indicate shield damage done.  (i.e., for already-weak shield, smaller effect)
-	//		2. Currently (8/9/97), shield_apply_damage() passes leftover damage to hull, which might not make sense.  If
+	//		2. Currently (8/9/97), apply_damage_to_shield() passes lefer damage to hull, which might not make sense.  If
 	//			wouldn't have collided with hull, shouldn't do damage.  Once this is fixed, the code below needs to cast the
 	//			vector through to the hull if there is leftover damage.
 	//
@@ -525,18 +485,18 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 	// check both kinds of collisions
 	int shield_collision = (pm->shield.ntris > 0) ? model_collide(&mc_shield) : 0;
 	int hull_collision = model_collide(&mc_hull);
-  
+
 	// check shields for impact
 	if (!(ship_objp->flags & OF_NO_SHIELDS))
 	{
 		// pick out the shield quadrant
 		if (shield_collision)
-			quadrant_num = shield_get_quadrant(&mc_shield.hit_point);
+			quadrant_num = get_quadrant(&mc_shield.hit_point);
 		else if (hull_collision && (sip->flags2 & SIF2_SURFACE_SHIELDS))
-			quadrant_num = shield_get_quadrant(&mc_hull.hit_point);
+			quadrant_num = get_quadrant(&mc_hull.hit_point);
 
 		// make sure that the shield is active in that quadrant
-		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !shield_is_up(ship_objp, quadrant_num)))
+		if ((quadrant_num >= 0) && ((shipp->flags & SF_DYING) || !ship_is_shield_up(ship_objp, quadrant_num)))
 			quadrant_num = -1;
 
 		// see if we hit the shield
@@ -554,23 +514,23 @@ int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float ti
 				quadrant_num = -1;
 			else
 				valid_hit_occurred = 1;
-  		}
-  	}
-  
+		}
+	}
+
 	// see which impact we use
 	if (shield_collision && valid_hit_occurred)
-  	{
+	{
 		memcpy(&mc, &mc_shield, sizeof(mc_info));
 		Assert(quadrant_num >= 0);
-  	}
+	}
 	else if (hull_collision)
 	{
 		memcpy(&mc, &mc_hull, sizeof(mc_info));
 		valid_hit_occurred = 1;
 	}
 
-  
-  	//nprintf(("AI", "Frame %i, Hit tri = %i\n", Framecount, mc.shield_hit_tri));
+
+	//nprintf(("AI", "Frame %i, Hit tri = %i\n", Framecount, mc.shield_hit_tri));
 	ship_model_stop(ship_objp);
 
 	// deal with predictive collisions.  Find their actual hit time and see if they occured in current frame

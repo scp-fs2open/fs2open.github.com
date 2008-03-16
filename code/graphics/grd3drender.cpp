@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/GrD3DRender.cpp $
- * $Revision: 2.90 $
- * $Date: 2006-09-11 06:36:38 $
+ * $Revision: 2.88.2.2 $
+ * $Date: 2006-08-22 05:41:35 $
  * $Author: taylor $
  *
  * Code to actually render stuff using Direct3D
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.89  2006/07/05 23:35:42  Goober5000
+ * Revision 2.88.2.1  2006/07/05 23:36:55  Goober5000
  * cvs comment tweaks
  *
  * Revision 2.88  2006/05/27 17:07:48  taylor

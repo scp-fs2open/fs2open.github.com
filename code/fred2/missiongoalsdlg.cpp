@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/MissionGoalsDlg.cpp $
- * $Revision: 1.3 $
- * $Date: 2007-09-02 02:10:25 $
+ * $Revision: 1.1.2.2 $
+ * $Date: 2007-09-02 02:07:40 $
  * $Author: Goober5000 $
  *
  * Mission goals editor dialog box handling code
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.2  2006/10/09 05:25:18  Goober5000
+ * Revision 1.1.2.1  2006/10/09 05:25:07  Goober5000
  * make sexp nodes dynamic
  *
  * Revision 1.1  2006/01/19 02:27:31  Goober5000

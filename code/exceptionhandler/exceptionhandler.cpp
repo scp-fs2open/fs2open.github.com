@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/ExceptionHandler/ExceptionHandler.cpp $
- * $Revision: 2.11 $
- * $Date: 2006-11-16 00:51:04 $
+ * $Revision: 2.10.2.1 $
+ * $Date: 2006-11-15 00:26:03 $
  * $Author: taylor $
  *
  * Main file for dealing with exception handling

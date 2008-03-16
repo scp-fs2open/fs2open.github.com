@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Fred2/FREDDoc.cpp $
- * $Revision: 1.15 $
- * $Date: 2008-01-17 07:44:42 $
+ * $Revision: 1.6.2.10 $
+ * $Date: 2008-01-17 07:43:23 $
  * $Author: Goober5000 $
  *
  * FREDDoc.cpp : implementation of the CFREDDoc class
@@ -19,28 +19,31 @@
  * mainly.  Most of the MFC related stuff is handled in FredView.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.14  2007/12/15 07:41:13  karajorma
- * Unbreak FRED compiling
- *
- * Revision 1.13  2007/11/23 23:05:40  wmcoolmon
- * Updated event editor with minihelp box and numbered icons
- *
- * Revision 1.12  2007/09/02 02:10:24  Goober5000
+ * Revision 1.6.2.9  2007/09/02 02:07:40  Goober5000
  * added fixes for #1415 and #1483, made sure every read_file_text had a corresponding setjmp, and sync'd the parse error messages between HEAD and stable
  *
- * Revision 1.11  2007/07/28 21:31:10  Goober5000
+ * Revision 1.6.2.8  2007/07/28 21:31:04  Goober5000
  * this should really be capitalized
  *
- * Revision 1.10  2006/10/08 08:04:52  Goober5000
- * bah
+ * Revision 1.6.2.7  2007/05/28 19:47:46  taylor
+ * this is a bit cleaner way to do it :)
  *
- * Revision 1.9  2006/10/08 05:21:44  Goober5000
+ * Revision 1.6.2.6  2007/05/26 15:11:15  Goober5000
+ * that was weird
+ *
+ * Revision 1.6.2.5  2007/05/20 21:21:30  wmcoolmon
+ * FRED2 support for numbered SEXP operator arguments, minihelp box, fixed "Insert Event" when no events are present.
+ *
+ * Revision 1.6.2.4  2006/10/08 05:24:03  Goober5000
+ * bah!
+ *
+ * Revision 1.6.2.3  2006/10/08 05:21:35  Goober5000
  * nitpick
  *
- * Revision 1.8  2006/10/01 00:53:58  Goober5000
+ * Revision 1.6.2.2  2006/10/01 00:54:29  Goober5000
  * fix crlf
  *
- * Revision 1.7  2006/07/10 21:48:33  taylor
+ * Revision 1.6.2.1  2006/07/10 21:47:17  taylor
  * fix undo system
  * restore the two autosave points that got removed for some reason (yes, these are needed for things to work properly)
  *
@@ -1186,6 +1189,7 @@ void CFREDDoc::OnFileImportFSM()
 {
 	char fs1_mission_path[MAX_PATH_LEN];
 	char fs2_mission_path[MAX_PATH_LEN];
+	char dest_directory[MAX_PATH+1];
 
 	// path stuff
 	{
@@ -1225,10 +1229,10 @@ void CFREDDoc::OnFileImportFSM()
 	if (dlgFile.DoModal() != IDOK)
 		return;
 
+	memset( dest_directory, 0, sizeof(dest_directory) );
+
 	// get location to save to    
 #if ( _MFC_VER >= 0x0700 )
-	char dest_directory[MAX_PATH];
-
 	//ITEMIDLIST fs2_mission_pidl = {0};
 
 	//SHParseDisplayName(A2CW(fs2_mission_path), NULL, fs2_mission_pidl, 0, 0);
@@ -1255,8 +1259,9 @@ void CFREDDoc::OnFileImportFSM()
     if(dlgFolder.DoModal() != IDOK)
         return;
 
-	const char *dest_directory = dlgFolder.GetFolderPath();
+	strcpy( dest_directory, dlgFolder.GetFolderPath() );
 #endif
+
 	// clean things up first
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);

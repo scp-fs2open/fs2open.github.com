@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/stdafx.h $
- * $Revision: 1.3 $
- * $Date: 2007-08-15 07:16:35 $
+ * $Revision: 1.1.2.2 $
+ * $Date: 2007-08-15 07:16:28 $
  * $Author: Goober5000 $
  *
 // stdafx.h : include file for standard system include files,

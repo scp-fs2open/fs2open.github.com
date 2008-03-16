@@ -9,52 +9,33 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/MODEL.H $
- * $Revision: 2.103 $
- * $Date: 2007-02-26 04:30:48 $
+ * $Revision: 2.80.2.16 $
+ * $Date: 2007-02-21 01:43:32 $
  * $Author: Goober5000 $
  *
  * header file for information about polygon models
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.102  2007/02/21 01:44:02  Goober5000
- * remove duplicate model texture replacement
+ * Revision 2.80.2.15  2007/02/12 00:19:48  taylor
+ * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
  *
- * Revision 2.101  2007/02/18 06:16:47  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
- *
- * Revision 2.100  2007/02/10 06:39:43  Goober5000
- * new feature: shield generators that control whether the shield is up
- *
- * Revision 2.99  2007/02/02 22:49:07  Goober5000
- * fixed two of Bobboau's bizarre bugs
- *
- * Revision 2.98  2007/01/14 14:03:33  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.97  2007/01/10 01:44:39  taylor
- * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
- *
- * Revision 2.96  2006/12/28 22:47:03  Goober5000
+ * Revision 2.80.2.14  2006/12/28 22:47:15  Goober5000
  * fix spelling... *twitch*
  *
- * Revision 2.95  2006/12/28 00:59:32  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.94  2006/11/28 05:47:28  Goober5000
+ * Revision 2.80.2.13  2006/11/28 05:48:21  Goober5000
  * the grammar nazi strikes again!
+ * (and sneaks an extra #define in there while he's at it!)
  *
- * Revision 2.93  2006/11/06 06:42:22  taylor
+ * Revision 2.80.2.12  2006/11/01 18:35:57  taylor
  * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
  *
- * Revision 2.92  2006/11/06 06:37:59  taylor
- * ok, so apparently that did actually do something  ;)
+ * Revision 2.80.2.11  2006/10/28 04:00:09  taylor
+ * ok, so apparently that did actually do something ;)
  *
- * Revision 2.91  2006/11/06 06:36:44  taylor
+ * Revision 2.80.2.10  2006/10/27 21:39:27  taylor
  * updated/fixed modelanim code
  *
- * Revision 2.90  2006/11/06 06:19:17  taylor
+ * Revision 2.80.2.9  2006/10/27 06:42:29  taylor
  * rename set_warp_globals() to model_set_warp_globals()
  * remove two old/unused MR flags (MR_ALWAYS_REDRAW, used for caching that doesn't work; MR_SHOW_DAMAGE, didn't do anything)
  * add MR_FULL_DETAIL to render an object regardless of render/detail box setting
@@ -62,24 +43,24 @@
  * minor bits of cleanup
  * change a couple of vm_vec_scale_add2() calls to just vm_vec_add2() calls in ship.cpp, since that was the final result anyway
  *
- * Revision 2.89  2006/11/06 05:42:44  taylor
+ * Revision 2.80.2.8  2006/10/24 13:24:11  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
  * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
  * get rid of MAX_BUFFERS
  * make D3D vertex buffers dynamic, like OGL has already done
  *
- * Revision 2.88  2006/07/17 01:12:51  taylor
+ * Revision 2.80.2.7  2006/07/17 01:09:45  taylor
  * make glow point banks dynamic
  *
- * Revision 2.87  2006/07/17 00:10:00  Goober5000
+ * Revision 2.80.2.6  2006/07/17 00:10:05  Goober5000
  * stage 2 of animation fix (add base frame time to each ship)
  * --Goober5000
  *
- * Revision 2.86  2006/07/13 22:16:38  taylor
+ * Revision 2.80.2.5  2006/07/13 22:11:36  taylor
  * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
  *
- * Revision 2.85  2006/07/06 22:00:39  taylor
+ * Revision 2.80.2.4  2006/07/06 21:53:58  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
  *  - same for glowpoints, back on a per-ship basis
@@ -88,21 +69,18 @@
  *  - add support for animated specmaps (mainly for TBP and Starfox mods)
  * some minor code cleanup and compiler warning fixes
  *
- * Revision 2.84  2006/07/06 04:06:04  Goober5000
+ * Revision 2.80.2.3  2006/07/06 04:06:01  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
  * --Goober5000
  *
- * Revision 2.83  2006/07/05 23:35:42  Goober5000
+ * Revision 2.80.2.2  2006/07/05 23:36:56  Goober5000
  * cvs comment tweaks
  *
- * Revision 2.82  2006/07/04 07:42:48  Goober5000
+ * Revision 2.80.2.1  2006/07/04 07:42:09  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
  * --Goober5000
- *
- * Revision 2.81  2006/06/07 04:45:55  wmcoolmon
- * Begin multi-turret-guns toggle work
  *
  * Revision 2.80  2006/05/31 03:05:42  Goober5000
  * some cosmetic changes in preparation for bay arrival/departure code
@@ -744,16 +722,15 @@ struct object;
 #define SUBSYSTEM_TURRET			2
 #define SUBSYSTEM_RADAR				3
 #define SUBSYSTEM_NAVIGATION		4
-#define SUBSYSTEM_COMMUNICATION		5
+#define SUBSYSTEM_COMMUNICATION	5
 #define SUBSYSTEM_WEAPONS			6
 #define SUBSYSTEM_SENSORS			7
 #define SUBSYSTEM_SOLAR				8
 #define SUBSYSTEM_GAS_COLLECT		9
 #define SUBSYSTEM_ACTIVATION		10
-#define SUBSYSTEM_SHIELD_GENERATOR	11
-#define SUBSYSTEM_UNKNOWN			12
+#define SUBSYSTEM_UNKNOWN			11
 
-#define SUBSYSTEM_MAX				13				//	maximum value for subsystem_xxx, for error checking
+#define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
 
 #define MAX_TFP						10				// maximum number of turret firing points
 
@@ -969,6 +946,7 @@ typedef struct bsp_info {
 	vec3d	render_box_max;
 	int		use_render_box;	//0==do nothing, 1==only render this object if you are inside the box, -1==only if your out
 	bool	gun_rotation;//for animated weapon models
+	bool	no_collisions; // for $no_collisions property - kazan
 
 } bsp_info;
 
@@ -1157,27 +1135,19 @@ typedef struct insignia {
 #define PM_FLAG_ALLOW_TILING		(1<<0)					// Allow texture tiling
 #define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
 
-//WMC - combined these two structs for efficiency
 // Goober5000
-/*
 typedef struct texture_anim_info {
 	int num_frames;
 	float total_time;		// in seconds
 } texture_anim_info;
-*/
 
 // Goober5000
 typedef struct texture_info {
 	int original_texture;	// what gets read in from file
 	int texture;			// what texture you draw with; reset to original_textures by model_set_instance
 
-	int num_frames;			// Number of frames in texture
-	float anim_total_time;	// Only for animation
-
-	/*
 	bool is_anim;			// whether this is an animated texture
 	texture_anim_info anim;	// animation info (if animated)
-	*/
 } texture_info;
 
 // taylor
@@ -1242,6 +1212,8 @@ typedef struct polymodel {
 	ship_bay_t		*ship_bay;							// contains path indexes for ship bay approach/depart paths
 
 	shield_info	shield;								// new shield information
+	ubyte	*shield_collision_tree;
+	int		sldc_size;
 
 	int			n_paths;
 	model_path	*paths;
@@ -1276,9 +1248,6 @@ typedef struct polymodel {
 	float gun_submodel_rotation;
 
 } polymodel;
-
-// Goober5000
-void model_diff(int modelnum1, int modelnum2, void (*print_string)(char *));
 
 // Call once to initialize the model system
 void model_init();

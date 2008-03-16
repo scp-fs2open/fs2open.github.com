@@ -9,20 +9,20 @@
 
 /*
  * $Logfile: /Freespace2/code/FRED2/DebriefingEditorDlg.cpp $
- * $Revision: 1.6 $
- * $Date: 2007-04-08 08:37:37 $
+ * $Revision: 1.2.2.4 $
+ * $Date: 2007-04-08 08:28:20 $
  * $Author: karajorma $
  *
  * Debriefing editor dialog.  Used to edit mission debriefings of course.
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.5  2007/03/07 22:43:24  karajorma
- * Make .ogg voice files selectable in FRED.
+ * Revision 1.2.2.3  2007/03/07 22:36:51  karajorma
+ * Make .ogg selectable in FRED.
  *
- * Revision 1.4  2006/09/20 05:02:41  taylor
+ * Revision 1.2.2.2  2006/09/20 04:53:53  taylor
  * properly fix the new_recommendation_text FRED problem, plus some real cleanup for that code in general, and some memory leak fixes
  *
- * Revision 1.3  2006/09/14 23:29:47  taylor
+ * Revision 1.2.2.1  2006/09/14 23:29:03  taylor
  * add default recommendation text for debriefing, it's either this or making sure that it's nul
  *
  * Revision 1.2  2006/01/26 04:01:58  Goober5000

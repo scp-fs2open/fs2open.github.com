@@ -9,22 +9,27 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/ReadyRoom.cpp $
- * $Revision: 2.28 $
- * $Date: 2007-11-20 01:11:13 $
+ * $Revision: 2.23.2.6 $
+ * $Date: 2007-11-20 01:11:10 $
  * $Author: Goober5000 $
  *
  * Ready Room code, which is the UI screen for selecting Campaign/mission to play next mainly.
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.27  2007/02/11 09:10:14  taylor
+ * Revision 2.23.2.5  2007/02/11 09:09:55  taylor
  * fix simroom crash bug from Goober's rencent change
  * add NULL handling to make sure we don't crap out on sorting
  *
- * Revision 2.26  2006/10/06 09:33:10  taylor
+ * Revision 2.23.2.4  2006/10/01 19:27:28  taylor
  * fix for the "branch" bug (still a minor usability issue however, see Mantis bug for details)
  * add a popup to the loopbrief screen when you press ESC, so that we can either accept or decline the loop offer
  *
- * Revision 2.25  2006/09/11 06:02:14  taylor
+ * Revision 2.23.2.3  2006/08/28 17:14:52  taylor
+ * stupid, stupid, stupid...
+ *  - fix AVI/MPG movie playback
+ *  - fix missing campaign craziness
+ *
+ * Revision 2.23.2.2  2006/08/27 18:11:37  taylor
  * quite a few fixes to handle missing campaigns better
  * change load order for campaign loading to a full check: Player-specified -> BUILTIN_CAMPAIGN -> First Avaiable.
  * clean up the getting of a list of available campaigns
@@ -32,7 +37,7 @@
  * fix bug where, if a campaign failed to load, it would still appear available for savefile useage
  * fix bug where, when resetting the campaign info, the num_missions var wasn't 0'd and it could cause a sexp Assert() during reset
  *
- * Revision 2.24  2006/07/08 18:11:33  taylor
+ * Revision 2.23.2.1  2006/07/08 18:09:41  taylor
  * remove -allslev
  * make CTRL-SHIFT-S hotkey work in mission simulator (it's a toggle, so you can turn it on or off while on the screen)
  * fix a bug where blank lines would show up in the campaign list for branch/alternate type missions that are otherwise marked as not completed

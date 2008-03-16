@@ -9,94 +9,62 @@
 
 /*
  * $Logfile: /Freespace2/code/Model/ModelRead.cpp $
- * $Revision: 2.136 $
- * $Date: 2007-12-15 09:12:56 $
- * $Author: wmcoolmon $
+ * $Revision: 2.105.2.21 $
+ * $Date: 2007-12-03 04:47:02 $
+ * $Author: Goober5000 $
  *
  * file which reads and deciphers POF information
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.135  2007/12/03 04:46:59  Goober5000
- * catch invalid bounding boxes caused by buggy POF editors ;)
- *
- * Revision 2.134  2007/12/02 08:21:49  Goober5000
+ * Revision 2.105.2.20  2007/12/02 08:21:46  Goober5000
  * watch out for bad MOI values
  *
- * Revision 2.133  2007/11/23 23:17:45  wmcoolmon
- * Fix array malfup due to flag_def_list change
- *
- * Revision 2.132  2007/10/21 22:11:14  Goober5000
+ * Revision 2.105.2.19  2007/10/21 22:11:17  Goober5000
  * fix a minor bug in the dockpoint system (affects sm2-07a in the Port)
  *
- * Revision 2.131  2007/02/26 04:30:48  Goober5000
- * add model compare capability (currently only via debug console)
- *
- * Revision 2.130  2007/02/21 01:44:02  Goober5000
+ * Revision 2.105.2.18  2007/02/21 01:43:32  Goober5000
  * remove duplicate model texture replacement
  *
- * Revision 2.129  2007/02/20 04:20:18  Goober5000
+ * Revision 2.105.2.17  2007/02/20 04:19:22  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.128  2007/02/18 06:16:47  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ * Revision 2.105.2.16  2007/02/12 00:19:48  taylor
+ * IBX version 2 support (includes Bobboau's earlier D3D fixes for it)
  *
- * Revision 2.127  2007/02/10 06:39:43  Goober5000
- * new feature: shield generators that control whether the shield is up
- *
- * Revision 2.126  2007/02/02 22:49:07  Goober5000
- * fixed two of Bobboau's bizarre bugs
- *
- * Revision 2.125  2007/02/01 22:15:58  karajorma
- * Well that's going to cause a few crashes (Thanks to ni1s for spotting it)
- *
- * Revision 2.124  2007/01/15 01:37:38  wmcoolmon
- * Fix CVS & correct various warnings under MSVC 2003
- *
- * Revision 2.123  2007/01/14 14:03:33  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.122  2007/01/10 01:44:39  taylor
- * add support for new IBX format which can support up to UINT_MAX worth of verts (NOTE: D3D code still needs to be made compatible with this!!)
- *
- * Revision 2.121  2006/12/28 22:47:03  Goober5000
+ * Revision 2.105.2.15  2006/12/28 22:47:15  Goober5000
  * fix spelling... *twitch*
  *
- * Revision 2.120  2006/12/28 00:59:32  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
+ * Revision 2.105.2.14  2006/11/04 17:22:54  Goober5000
+ * improve error message
  *
- * Revision 2.119  2006/11/06 06:42:22  taylor
+ * Revision 2.105.2.13  2006/11/01 18:35:57  taylor
  * make glow_point array for thrusters and glow_point_banks dynamic (a proper fix for old Mantis bug #43)
  *
- * Revision 2.118  2006/11/06 06:38:34  taylor
+ * Revision 2.105.2.12  2006/10/28 04:01:33  taylor
  * forgot this part of the render box fix (obviously no one ever really tried to use this feature, since it has never worked)
  *
- * Revision 2.117  2006/11/06 05:42:45  taylor
+ * Revision 2.105.2.11  2006/10/24 13:24:11  taylor
  * various bits of cleanup (slight reformatting to help readability, remove old/dead code bits, etc.)
  * deal with a index_buffer memory leak that Valgrind has always complained about
  * make HTL model buffers dynamic (get rid of MAX_BUFFERS_PER_SUBMODEL)
  * get rid of MAX_BUFFERS
  * make D3D vertex buffers dynamic, like OGL has already done
  *
- * Revision 2.116  2006/11/04 17:21:49  Goober5000
- * improve error message
- *
- * Revision 2.115  2006/08/20 00:51:06  taylor
+ * Revision 2.105.2.10  2006/08/19 04:38:47  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
- * Revision 2.114  2006/07/21 16:06:56  taylor
+ * Revision 2.105.2.9  2006/07/21 16:08:32  taylor
  * minor changes to game_busy() debug text
  *  - don't alloc it for bmpman, and make sure to only call on textures that we are loading
  *  - add text for model loading, gets rid of the long-wait issue when it appears to not be doing anything early on
  *
- * Revision 2.113  2006/07/17 01:12:51  taylor
+ * Revision 2.105.2.8  2006/07/17 01:09:45  taylor
  * make glow point banks dynamic
  *
- * Revision 2.112  2006/07/13 22:16:38  taylor
+ * Revision 2.105.2.7  2006/07/13 22:11:37  taylor
  * fix for animated texture map issues (*part one*), this should be faster than before too, and fix inf-loop/div-by-0 issues
  *
- * Revision 2.111  2006/07/06 22:00:39  taylor
+ * Revision 2.105.2.6  2006/07/06 21:53:58  taylor
  * rest of the map/glow changes
  *  - put glowmap activity back on a per-ship basis (via a SF2_* flag) rather than per-model
  *  - same for glowpoints, back on a per-ship basis
@@ -105,24 +73,24 @@
  *  - add support for animated specmaps (mainly for TBP and Starfox mods)
  * some minor code cleanup and compiler warning fixes
  *
- * Revision 2.110  2006/07/06 04:26:00  Goober5000
- * fix a couple of typos
+ * Revision 2.105.2.5  2006/07/06 04:20:34  Goober5000
+ * GAH - repair a borked commit (plus a couple of typos)
  * --Goober5000
  *
- * Revision 2.109  2006/07/06 04:06:04  Goober5000
+ * Revision 2.105.2.4  2006/07/06 04:06:01  Goober5000
  * 1) complete (almost) changeover to reorganized texture mapping system
  * 2) finally fix texture animation; textures now animate at the correct speed
  * --Goober5000
  *
- * Revision 2.108  2006/07/05 23:35:43  Goober5000
+ * Revision 2.105.2.3  2006/07/05 23:36:56  Goober5000
  * cvs comment tweaks
  *
- * Revision 2.107  2006/07/04 07:42:48  Goober5000
+ * Revision 2.105.2.2  2006/07/04 07:42:10  Goober5000
  * --in preparation for fixing an annoying animated texture bug, reorganize the various texture structs and glow point structs and clarify several parts of the texture code :P
  * --this breaks animated glow maps, and animated regular maps still aren't fixed, but these will be remedied shortly
  * --Goober5000
  *
- * Revision 2.106  2006/06/04 01:01:53  Goober5000
+ * Revision 2.105.2.1  2006/06/04 01:03:13  Goober5000
  * add fighterbay restriction code
  * --Goober5000
  *
@@ -1314,9 +1282,9 @@ void model_set_bay_path_nums(polymodel *pm);
 //determine the order that they are tried in ai_goal_fixup_dockpoints
 flag_def_list Dock_type_names[] =
 {
-	{ "cargo",		DOCK_TYPE_CARGO,	0},
-	{ "rearm",		DOCK_TYPE_REARM,	0},
-	{ "generic",	DOCK_TYPE_GENERIC,	0},
+	{ "cargo",		DOCK_TYPE_CARGO,	0 },
+	{ "rearm",		DOCK_TYPE_REARM,	0 },
+	{ "generic",	DOCK_TYPE_GENERIC,	0 }
 };
 
 int Num_dock_type_names = sizeof(Dock_type_names) / sizeof(flag_def_list);
@@ -1455,6 +1423,10 @@ void model_unload(int modelnum, int force)
 		vm_free(pm->gun_banks);
 	}
 
+	if ( pm->shield_collision_tree ) {
+		vm_free(pm->shield_collision_tree);
+	}
+
 	// run through Ship_info[] and if the model has been loaded we'll need to reset the modelnum to -1.
 	for (i = 0; i < Num_ship_classes; i++) {
 		if ( pm->id == Ship_info[i].model_num ) {
@@ -1482,7 +1454,7 @@ void model_free_all()
 		return;
 	}
 
-	mprintf(( "GRAPHICS: Freeing all existing models...\n" ));
+	mprintf(( "Freeing all existing models...\n" ));
 
 	for (i=0;i<MAX_POLYGON_MODELS;i++) {
 		// forcefully unload all loaded models (be careful with this)
@@ -1667,9 +1639,7 @@ static void set_subsystem_info( model_subsystem *subsystemp, char *props, char *
 		subsystemp->type = SUBSYSTEM_GAS_COLLECT;
 	} else if ( strstr(lcdname, "activator") ) {
 		subsystemp->type = SUBSYSTEM_ACTIVATION;
-	} else if ( strstr(lcdname, "shield") ) {
-		subsystemp->type = SUBSYSTEM_SHIELD_GENERATOR;
-	} else { // If unrecognized type, set to unknown so artist can continue working...
+	}  else { // If unrecognized type, set to unknown so artist can continue working...
 		subsystemp->type = SUBSYSTEM_UNKNOWN;
 		mprintf(("Warning: Ignoring unrecognized subsystem %s, believed to be in ship %s\n", dname, Global_filename));
 	}
@@ -2023,7 +1993,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 	if (!fp) {
 		if (ferror == 1) {
 			Error( LOCATION, "Can't open model file <%s>", filename );
-		} else if(ferror == 0) {
+		} else {
 			Warning( LOCATION, "Can't open model file <%s>", filename );
 		}
 
@@ -2168,6 +2138,10 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 	// reset glow points!! - Goober5000
 	pm->n_glow_point_banks = 0;
+
+	// reset SLDC
+	pm->shield_collision_tree = NULL;
+	pm->sldc_size = 0;
 
 	id = cfread_int(fp);
 	len = cfread_int(fp);
@@ -2416,6 +2390,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 				//parse_triggers(pm->submodel[n].n_triggers, &pm->submodel[n].triggers, &props[0]);
 
+				if (strstr(props, "$no_collisions") != NULL )
+					pm->submodel[n].no_collisions = true;
+				else
+					pm->submodel[n].no_collisions = false;
+
 				if ( (p = strstr(props, "$gun_rotation:")) == NULL )
 					pm->submodel[n].gun_rotation = true;
 				else
@@ -2499,6 +2478,16 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				break;
 
 			}
+
+			case ID_SLDC: // kazan - Shield Collision tree
+				{
+					pm->sldc_size = cfread_int(fp);
+					pm->shield_collision_tree = (ubyte *)vm_malloc(pm->sldc_size);
+					cfread(pm->shield_collision_tree,1,pm->sldc_size,fp);
+					swap_sldc_data(pm->shield_collision_tree);
+					//mprintf(( "Shield Collision Tree, %d bytes in size\n", pm->sldc_size));
+				}
+				break;
 
 			case ID_SHLD:
 				{
@@ -2911,7 +2900,6 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 				{
 					char tmp_name[256];
 					cfread_string_len(tmp_name,127,fp);
-
 					model_load_texture(pm, i, tmp_name);
 					//mprintf(0,"<%s>\n",name_buf);
 				}
@@ -3190,15 +3178,16 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		}
 
 		// try to load an ANI
-		tmap->base_map.texture = bm_load_animation(tmp_name, &tmap->base_map.num_frames, &fps, 1, CF_TYPE_MAPS);
+		tmap->base_map.texture = bm_load_animation(tmp_name, &tmap->base_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
 		if (tmap->base_map.texture >= 0)
 		{
-			tmap->base_map.anim_total_time = (float) i2fl(tmap->base_map.num_frames) / ((fps > 0) ? fps : 1);
+			tmap->base_map.is_anim = true;
+			tmap->base_map.anim.total_time = (float) i2fl(tmap->base_map.anim.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->base_map.num_frames = 1;
+			tmap->base_map.anim.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->base_map.texture = bm_load(tmp_name);
@@ -3227,15 +3216,16 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strlwr(tmp_name);
 
 		// try to load an ANI
-		tmap->glow_map.texture = bm_load_animation(tmp_name, &tmap->glow_map.num_frames, &fps, 1, CF_TYPE_MAPS);
+		tmap->glow_map.texture = bm_load_animation(tmp_name, &tmap->glow_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
 		if (tmap->glow_map.texture >= 0)
 		{
-			tmap->glow_map.anim_total_time = (float) i2fl(tmap->glow_map.num_frames) / ((fps > 0) ? fps : 1);
+			tmap->glow_map.is_anim = true;
+			tmap->glow_map.anim.total_time = (float) i2fl(tmap->glow_map.anim.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->glow_map.num_frames = 1;
+			tmap->glow_map.anim.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->glow_map.texture = bm_load(tmp_name);
@@ -3263,15 +3253,16 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strlwr(tmp_name);
 
 		// try to load an ANI
-		tmap->spec_map.texture = bm_load_animation(tmp_name, &tmap->spec_map.num_frames, &fps, 1, CF_TYPE_MAPS);
+		tmap->spec_map.texture = bm_load_animation(tmp_name, &tmap->spec_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
 		if (tmap->spec_map.texture >= 0)
 		{
-			tmap->spec_map.anim_total_time = (float) i2fl(tmap->spec_map.num_frames) / ((fps > 0) ? fps : 1);
+			tmap->spec_map.is_anim = true;
+			tmap->spec_map.anim.total_time = (float) i2fl(tmap->spec_map.anim.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->spec_map.num_frames = 1;
+			tmap->spec_map.anim.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->spec_map.texture = bm_load(tmp_name);
@@ -3315,9 +3306,6 @@ int model_load(char *filename, int n_subsystems, model_subsystem *subsystems, in
 {
 	int i, num, arc_idx;
 	polymodel *pm = NULL;
-
-	if ( filename == NULL || strlen(filename) < 1)
-		return -1;
 
 	if ( !model_initted )
 		model_init();
@@ -3761,18 +3749,11 @@ polymodel * model_get(int model_num)
 	Assert( model_num > -1 );
 
 	int num = model_num % MAX_POLYGON_MODELS;
-
-	//WMC - considering the modulus, these would be very serious indeed
-	//Assert( num > -1 );
-	//Assert( num < MAX_POLYGON_MODELS );
-	if( Polygon_models[num] == NULL){
-		Warning(LOCATION, "model_get was called for a nonexistent model slot");
-		return NULL;
-	}
-	if(Polygon_models[num]->id != model_num) {
-		Warning(LOCATION, "model_get was called with an invalid model handle");
-		return NULL;
-	}
+	
+	Assert( num > -1 );
+	Assert( num < MAX_POLYGON_MODELS );
+	Assert( Polygon_models[num] );
+	Assert( Polygon_models[num]->id == model_num );
 
 	return Polygon_models[num];
 }
@@ -4419,53 +4400,54 @@ int model_rotate_gun(int model_num, model_subsystem *turret, matrix *orient, ang
 	if ( !(turret->flags & MSS_FLAG_TURRET_MATRIX) )
 		model_make_turret_matrix(model_num, turret );
 
-  	Assert( turret->flags & MSS_FLAG_TURRET_MATRIX);
- //	Assert( gun->movement_axis == MOVEMENT_AXIS_X );				// Gun must be able to change pitch
- //	Assert( base->movement_axis == MOVEMENT_AXIS_Z );	// Parent must be able to change heading
-  
-  	//------------	
-  	// rotate the dest point into the turret gun normal's frame of
-  	// reference, but not using the turret's angles.
- 	// Call this vector of_dst
-  	vec3d of_dst;							
- 	matrix world_to_turret_matrix;		// converts world coordinates to turret's FOR
- 	vec3d world_to_turret_translate;	// converts world coordinates to turret's FOR
-  	vec3d tempv;
-  
- 	vm_vec_unrotate( &tempv, &base->offset, orient);
- 	vm_vec_add( &world_to_turret_translate, pos, &tempv );
-  
- 	vm_matrix_x_matrix( &world_to_turret_matrix, orient, &turret->turret_matrix );
-  
- 	vm_vec_sub( &tempv, dst, &world_to_turret_translate );
- 	vm_vec_rotate( &of_dst, &tempv, &world_to_turret_matrix );
-  
- 	vm_vec_normalize(&of_dst);
-  
- 	//------------	
- 	// Find the heading and pitch that the gun needs to turn to
- 	// by extracting them from the of_dst vector.
- 	// Call this the desired_angles
- 	angles desired_angles;
+	Assert( turret->flags & MSS_FLAG_TURRET_MATRIX);
+//	Assert( gun->movement_axis == MOVEMENT_AXIS_X );				// Gun must be able to change pitch
+//	Assert( base->movement_axis == MOVEMENT_AXIS_Z );	// Parent must be able to change heading
+
+	//------------	
+	// rotate the dest point into the turret gun normal's frame of
+	// reference, but not using the turret's angles.
+	// Call this vector of_dst
+	vec3d of_dst;							
+	matrix world_to_turret_matrix;		// converts world coordinates to turret's FOR
+	vec3d world_to_turret_translate;	// converts world coordinates to turret's FOR
+	vec3d tempv;
+
+	vm_vec_unrotate( &tempv, &base->offset, orient);
+	vm_vec_add( &world_to_turret_translate, pos, &tempv );
+
+	vm_matrix_x_matrix( &world_to_turret_matrix, orient, &turret->turret_matrix );
+
+	vm_vec_sub( &tempv, dst, &world_to_turret_translate );
+	vm_vec_rotate( &of_dst, &tempv, &world_to_turret_matrix );
+
+	vm_vec_normalize(&of_dst);
+
+	//------------	
+	// Find the heading and pitch that the gun needs to turn to
+	// by extracting them from the of_dst vector.
+	// Call this the desired_angles
+	angles desired_angles;
 //	vm_extract_angles_vector(&desired_angles, &of_dst);
-  
- 	desired_angles.p = (float)acos(of_dst.xyz.z);
- 	desired_angles.h = PI - atan2_safe(of_dst.xyz.x, of_dst.xyz.y);
- 	desired_angles.b = 0.0f;
-  
- 	//	mprintf(( "Z = %.1f, atan= %.1f\n", of_dst.xyz.z, desired_angles.p ));
-  
- 	//------------	
- 	// Gradually turn the turret towards the desired angles
-  	float step_size = turret->turret_turning_rate * flFrametime;
-  
- 	vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
- 	vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
-  
+
+	desired_angles.p = (float)acos(of_dst.xyz.z);
+	desired_angles.h = PI - atan2_safe(of_dst.xyz.x, of_dst.xyz.y);
+	desired_angles.b = 0.0f;
+
+	//	mprintf(( "Z = %.1f, atan= %.1f\n", of_dst.xyz.z, desired_angles.p ));
+
+	//------------	
+	// Gradually turn the turret towards the desired angles
+	float step_size = turret->turret_turning_rate * flFrametime;
+
+	vm_interp_angle(&base_angles->h, desired_angles.h, step_size);
+	vm_interp_angle(&gun_angles->p, desired_angles.p, step_size);
+
 //	base_angles->h -= step_size*(key_down_timef(KEY_1)-key_down_timef(KEY_2) );
 //	gun_angles->p += step_size*(key_down_timef(KEY_3)-key_down_timef(KEY_4) );
-  
+
 	return 1;
+
 }
 
 
@@ -4910,7 +4892,7 @@ int model_find_dock_index(int modelnum, int dock_type, int index_to_start_at)
 }
 
 // function to return an index into the docking_bays array which matches the string passed
-// Fred uses strings to identify docking positions.  This functin also accepts generic strings
+// Fred uses strings to identify docking positions.  This function also accepts generic strings
 // so that a desginer doesn't have to know exact names if building a mission from hand.
 int model_find_dock_name_index( int modelnum, char *name )
 {
@@ -5272,84 +5254,49 @@ void swap_bsp_data( polymodel * pm, void *model_ptr )
 #endif
 }
 
-
-void dc_printf_helper(char *text)
+void swap_sldc_data(ubyte *buffer)
 {
-	dc_printf(text);
-}
+#if BYTE_ORDER == BIG_ENDIAN
+	char *type_p = (char *)(Mc_pm->shield_collision_tree+offset);
+	int *size_p = (int *)(Mc_pm->shield_collision_tree+offset+1);
+	*size_p = INTEL_INT(*size_p);
 
-// Goober5000
-DCF(modeldiff, "Compare two models")
-{
-	if (Dc_command)
+	// split and polygons
+	vec3d *minbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+5);
+	vec3d *maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+17);
+
+	minbox_p->xyz.x = INTEL_FLOAT(&minbox_p->xyz.x);
+	minbox_p->xyz.y = INTEL_FLOAT(&minbox_p->xyz.y);
+	minbox_p->xyz.z = INTEL_FLOAT(&minbox_p->xyz.z);
+
+	maxbox_p->xyz.x = INTEL_FLOAT(&maxbox_p->xyz.x);
+	maxbox_p->xyz.y = INTEL_FLOAT(&maxbox_p->xyz.y);
+	maxbox_p->xyz.z = INTEL_FLOAT(&maxbox_p->xyz.z);
+
+
+	// split
+	unsigned int *front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
+	unsigned int *back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
+
+	// polygons
+	unsigned int *num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
+
+	unsigned int *shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
+
+	if (*type_p == 0) // SPLIT
 	{
-		char name1[NAME_LENGTH];
-		char name2[NAME_LENGTH];
-		int modelnum1 = -1;
-		int modelnum2 = -1;
-		bool loaded1 = false;
-		bool loaded2 = false;
-
-		dc_get_arg(ARG_STRING);
-		strcpy(name1, Dc_arg);
-		dc_get_arg(ARG_STRING);
-		strcpy(name2, Dc_arg);
-
-		if (!stristr(name1, ".pof"))
-			strcat(name1, ".pof");
-		if (!stristr(name2, ".pof"))
-			strcat(name2, ".pof");
-
-		int i;
-		for (i = 0; i < Num_ship_classes; i++)
+			*front_offset_p = INTEL_INT(*front_offset_p);
+			*back_offset_p = INTEL_INT(*back_offset_p);
+			mc_check_sldc(buffer+*front_offset_p);
+			mc_check_sldc(buffer+*back_offset_p);
+	}
+	else
+	{
+		*num_polygons_p = INTEL_INT(*num_polygons_p);
+		for (unsigned int i = 0; i < *num_polygons_p; i++)
 		{
-			ship_info *sip = &Ship_info[i];
-
-			if (modelnum1 < 0 && !stricmp(name1, sip->pof_file))
-			{
-				if (sip->model_num < 0)
-				{
-					sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-					loaded1 = true;
-				}
-				modelnum1 = sip->model_num;
-			}
-			
-			if (modelnum2 < 0 && !stricmp(name2, sip->pof_file))
-			{
-				if (sip->model_num < 0)
-				{
-					sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-					loaded2 = true;
-				}
-				modelnum2 = sip->model_num;
-			}
-		}
-
-		if (modelnum1 < 0 && modelnum2 < 0)
-			dc_printf("Could not load %s or %s.\n", name1, name2);
-		else if (modelnum1 < 0)
-			dc_printf("Could not load %s.\n", name1);
-		else if (modelnum2 < 0)
-			dc_printf("Could not load %s.\n", name2);
-		else if (modelnum1 == modelnum2)
-			dc_printf("The models are the same.\n");
-		else
-			model_diff(modelnum1, modelnum2, dc_printf_helper);
-
-		if (loaded1)
-			model_unload(modelnum1);
-		if (loaded2)
-			model_unload(modelnum2);
+			shld_polys[i] = INTEL_INT(shld_polys[i]);
+		}			
 	}
-	
-	if (Dc_help)
-	{
-		dc_printf("Usage: modeldiff modelA modelB\nSearches ships.tbl for the two models, then displays the differences between\nthem.\n");
-	}
-	
-	if (Dc_status)
-	{
-		// nothing to show
-	}
+#endif
 }

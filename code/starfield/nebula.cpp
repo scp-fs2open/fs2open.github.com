@@ -9,16 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Starfield/Nebula.cpp $
- * $Revision: 2.9 $
- * $Date: 2007-01-14 10:26:39 $
- * $Author: wmcoolmon $
+ * $Revision: 2.8 $
+ * $Date: 2005-04-05 05:53:25 $
+ * $Author: taylor $
  *
  * Code to load & display nebulas
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.8  2005/04/05 05:53:25  taylor
- * s/vector/vec3d/g, better support for different compilers (Jens Granseuer)
- *
  * Revision 2.7  2005/01/31 10:34:39  taylor
  * merge with Linux/OSX tree - p0131
  *
@@ -313,12 +310,12 @@ void nebula_init( char *filename, angles * pbh )
 
 void nebula_render()
 {
+	int i;
 	// int r, g, b;
 
 	// no nebula for you!
 	return;
-/*
-	int i;
+
 	if ( !Nebula_loaded ) {
 		return;
 	}
@@ -358,7 +355,6 @@ void nebula_render()
 	if((The_mission.flags & MISSION_FLAG_FULLNEB) && (Neb2_render_mode == NEB2_RENDER_NONE)){
 		gr_fog_set(GR_FOGMODE_NONE, 0, 0, 0);
 	}
-*/
 }
 
 DCF(nebula,"Loads a different nebula")

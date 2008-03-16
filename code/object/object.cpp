@@ -9,56 +9,46 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.cpp $
- * $Revision: 2.78 $
- * $Date: 2007-11-23 23:49:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.63.2.12 $
+ * $Date: 2007-12-20 01:57:41 $
+ * $Author: turey $
  *
  * Code to manage objects
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.77  2007/09/30 22:28:29  Goober5000
+ * Revision 2.63.2.11  2007/10/28 16:42:16  taylor
+ * slighly cleaner/faster version of object secondary fire control
+ *
+ * Revision 2.63.2.10  2007/09/30 22:28:25  Goober5000
  * another patch by razorjack -- remove something that never worked
  *
- * Revision 2.76  2007/07/28 21:31:11  Goober5000
+ * Revision 2.63.2.9  2007/07/28 21:31:05  Goober5000
  * this should really be capitalized
  *
- * Revision 2.75  2007/07/13 22:28:12  turey
- * Initial commit of Training Weapons / Simulated Hull code.
+ * Revision 2.63.2.8  2007/06/04 03:09:51  Backslash
+ * Another Gliding fix for 3_6_9: Makes it so switching gliding back off doesn't make your ship instantly switch direction.
  *
- * Revision 2.74  2007/04/30 21:30:30  Backslash
- * Backslash's big Gliding commit!  Gliding now obeys physics and collisions, and can be modified with thrusters.  Also has a adjustable maximum speed cap.
- * Added a simple glide indicator.  Fixed a few things involving fspeed vs speed during gliding, including maneuvering thrusters and main engine noise.
- *
- * Revision 2.73  2007/02/20 04:20:27  Goober5000
+ * Revision 2.63.2.7  2007/02/20 04:19:34  Goober5000
  * the great big duplicate model removal commit
  *
- * Revision 2.72  2007/02/19 07:55:20  wmcoolmon
- * More scripting tweaks/bugfixes.
- *
- * Revision 2.71  2007/02/16 07:06:46  Goober5000
+ * Revision 2.63.2.6  2007/02/16 07:06:45  Goober5000
  * uhh... wrong?
  *
- * Revision 2.70  2007/02/11 21:26:35  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 2.69  2007/02/11 18:35:45  taylor
+ * Revision 2.63.2.5  2007/02/11 10:04:46  taylor
  * cleanup and minor performance improvements
  * add support for new fireball specific lighting values from tbl
  * remove NO_SOUND
  *
- * Revision 2.68  2006/12/28 00:59:39  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.67  2006/09/11 06:45:40  taylor
+ * Revision 2.63.2.4  2006/09/11 01:00:28  taylor
  * various small compiler warning and strict compiling fixes
  *
- * Revision 2.66  2006/08/20 00:47:57  taylor
+ * Revision 2.63.2.3  2006/08/19 04:29:08  taylor
  * very slight speed optimization to avoid math that we really don't need to do anyway
  *
- * Revision 2.65  2006/07/05 23:35:43  Goober5000
+ * Revision 2.63.2.2  2006/07/05 23:36:56  Goober5000
  * cvs comment tweaks
  *
- * Revision 2.64  2006/06/27 04:06:18  Goober5000
+ * Revision 2.63.2.1  2006/06/27 04:06:17  Goober5000
  * handle docked objects during death roll
  * --Goober5000
  *
@@ -88,7 +78,7 @@
  * Various warning fixes, scripting globals fix; added "plr" and "slf" global variables for in-game hooks; various lua functions; GCC fixes for scripting.
  *
  * Revision 2.55  2006/01/13 03:31:09  Goober5000
- * bercommit of custom IFF stuff :)
+ * übercommit of custom IFF stuff :)
  *
  * Revision 2.54  2006/01/12 17:42:56  wmcoolmon
  * Even more scripting stuff.
@@ -671,7 +661,7 @@
  * control their own afterburners
  * 
  * 174   12/22/97 1:42a Lawrance
- * Change in shield_set_strength() avoid weird rounding error
+ * Change in set_shield_strength() avoid weird rounding error
  * 
  * 173   12/12/97 1:43p John
  * took out old debug light code
@@ -712,6 +702,7 @@
 #include "object/objectshield.h"
 #include "lighting/lighting.h"
 #include "observer/observer.h"
+#include "parse/scripting.h"
 #include "asteroid/asteroid.h"
 #include "radar/radar.h"
 #include "jumpnode/jumpnode.h"
@@ -722,7 +713,6 @@
 #include "object/objectdock.h"
 #include "mission/missionparse.h" //For 2D Mode
 #include "iff_defs/iff_defs.h"
-#include "parse/scripting.h"
 
 
 
@@ -904,6 +894,17 @@ int free_object_slots(int num_used)
 }
 
 // Goober5000
+float get_max_shield_quad(object *objp)
+{
+	Assert(objp);
+	if(objp->type != OBJ_SHIP) {
+		return 0.0f;
+	}
+
+	return Ships[objp->instance].ship_max_shield_strength / MAX_SHIELD_SECTIONS;
+}
+
+// Goober5000
 float get_hull_pct(object *objp)
 {
 	Assert(objp);
@@ -949,7 +950,7 @@ float get_shield_pct(object *objp)
 	if (objp->type != OBJ_SHIP)
 		return 0.0f;
 
-	float total_strength = shield_get_max_strength(objp);
+	float total_strength = Ships[objp->instance].ship_max_shield_strength;
 
 	if (total_strength == 0.0f)
 		return 0.0f;
@@ -1136,36 +1137,6 @@ int obj_create(ubyte type,int parent_obj,int instance, matrix * orient,
 	}
 	obj->num_pairs = 0;
 	obj->net_signature = 0;			// be sure to reset this value so new objects don't take on old signatures.	
-
-	//WMC
-	/*
-	char buf[NAME_LENGTH];
-	sprintf(buf, "Object %d", objnum);
-	obj->core_camera = cam_create(buf, &vmd_zero_vector, &vmd_identity_matrix, obj);
-
-	//Top-down camera
-	sprintf(buf, "Object %d topdown", objnum);
-	vec3d tdv = vmd_zero_vector;
-	matrix tdm = vmd_identity_matrix;
-	angles rot_angles = { PI_2, 0.0f, 0.0f };
-	bool position_override = false;
-	if(obj->type == OBJ_SHIP)
-	{
-		ship_info *sip = &Ship_info[Ships[Viewer_obj->instance].ship_info_index];
-		if(sip->topdown_offset_def) {
-			tdv.xyz.x = sip->topdown_offset.xyz.x;
-			tdv.xyz.y = sip->topdown_offset.xyz.y;
-			tdv.xyz.z = sip->topdown_offset.xyz.z;
-			position_override = true;
-		}
-	}
-	if(!position_override)
-	{
-		tdv.xyz.y = radius * 25.0f;
-	}
-	vm_angles_2_matrix(&tdm, &rot_angles);
-	obj->topdown_camera = cam_create(buf, &tdv, &tdm, obj);
-	*/
 
 	// Goober5000
 	obj->dock_list = NULL;
@@ -1447,36 +1418,41 @@ void obj_move_call_physics(object *objp, float frametime)
 				// objp->phys_info.side_slip_time_const = Ship_info[shipp->ship_info_index].damp;
 			// }
 
-			for (int i = 0; i < shipp->weapons.num_secondary_banks; i++)
-			{
-				//if there are no missles left don't bother
-				if (shipp->weapons.secondary_bank_ammo[i] == 0)
-					continue;
+			if (shipp->weapons.num_secondary_banks > 0) {
+				polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
+				Assert( pm != NULL );
+				Assert( pm->missile_banks != NULL );
 
-				int points = model_get(Ship_info[shipp->ship_info_index].model_num)->missile_banks[i].num_slots;
-				int missles_left = shipp->weapons.secondary_bank_ammo[i];
-				int next_point = shipp->weapons.secondary_next_slot[i];
+				for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
+					//if there are no missles left don't bother
+					if (shipp->weapons.secondary_bank_ammo[i] == 0)
+						continue;
 
-				//ok so...we want to move up missles but only if there is a missle there to be moved up
-				//there is a missle behind next_point, and how ever many missles there are left after that
+					int points = pm->missile_banks[i].num_slots;
+					int missles_left = shipp->weapons.secondary_bank_ammo[i];
+					int next_point = shipp->weapons.secondary_next_slot[i];
 
-				if (points > missles_left) {
-					//there are more slots than missles left, so not all of the slots will have missles drawn on them
-					for (int k = next_point; k < next_point+missles_left; k ++) {
-						float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
-						if (s_pct < 1.0)
-							s_pct += shipp->reload_time[i] * frametime;
-						if (s_pct > 1.0)
-							s_pct = 1.0f;
-					}
-				} else {
-					//we don't have to worry about such things
-					for (int k = 0; k < points; k++) {
-						float &s_pct = shipp->secondary_point_reload_pct[i][k];
-						if (s_pct < 1.0)
-							s_pct += shipp->reload_time[i] * frametime;
-						if (s_pct > 1.0)
-							s_pct = 1.0f;
+					//ok so...we want to move up missles but only if there is a missle there to be moved up
+					//there is a missle behind next_point, and how ever many missles there are left after that
+
+					if (points > missles_left) {
+						//there are more slots than missles left, so not all of the slots will have missles drawn on them
+						for (int k = next_point; k < next_point+missles_left; k ++) {
+							float &s_pct = shipp->secondary_point_reload_pct[i][k % points];
+							if (s_pct < 1.0)
+								s_pct += shipp->reload_time[i] * frametime;
+							if (s_pct > 1.0)
+								s_pct = 1.0f;
+						}
+					} else {
+						//we don't have to worry about such things
+						for (int k = 0; k < points; k++) {
+							float &s_pct = shipp->secondary_point_reload_pct[i][k];
+							if (s_pct < 1.0)
+								s_pct += shipp->reload_time[i] * frametime;
+							if (s_pct > 1.0)
+								s_pct = 1.0f;
+						}
 					}
 				}
 			}
@@ -2137,7 +2113,7 @@ void obj_render(object *obj)
 	if ( obj->flags & OF_SHOULD_BE_DEAD ) return;
 //	if ( obj == Viewer_obj ) return;
 
-	MONITOR_INC( NumObjectsRend, 1 );
+	MONITOR_INC( NumObjectsRend, 1 );	
 
 	//WMC - By definition, override statements are executed before the actual statement
 	Script_system.SetHookObject("Self", obj);
@@ -2191,7 +2167,7 @@ void obj_render(object *obj)
 			Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
 		}
 	}
-	
+
 	Script_system.RunCondition(CHA_OBJECTRENDER, '\0', NULL, obj);
 	Script_system.RemHookVar("Self");
 }
@@ -2592,7 +2568,7 @@ void object_set_gliding(object *objp, bool enable)
 
 	if(enable) {
 		objp->phys_info.flags |= PF_GLIDING;
-//		objp->phys_info.glide_saved_vel = Player_obj->phys_info.vel;
+		objp->phys_info.glide_saved_vel = Player_obj->phys_info.vel;
 	} else {
 		objp->phys_info.flags &= ~PF_GLIDING;
 		vm_vec_rotate(&objp->phys_info.prev_ramp_vel, &objp->phys_info.vel, &objp->orient);	//Backslash
@@ -2618,37 +2594,5 @@ int obj_get_by_signature(int sig)
 
 		objp = GET_NEXT(objp);
 	}
-	return -1;
-}
-
-//Gets object model
-int object_get_model(object *objp)
-{
-	switch(objp->type)
-	{
-		case OBJ_ASTEROID:
-		{
-			asteroid *asp = &Asteroids[objp->instance];
-			return Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype];
-		}
-		case OBJ_DEBRIS:
-		{
-			debris *debrisp = &Debris[objp->instance];
-			return debrisp->model_num;
-		}
-		case OBJ_SHIP:
-		{
-			ship *shipp = &Ships[objp->instance];
-			return Ship_info[shipp->ship_info_index].model_num;
-		}
-		case OBJ_WEAPON:
-		{
-			weapon *wp = &Weapons[objp->instance];
-			return Weapon_info[wp->weapon_info_index].model_num;
-		}
-		default:
-			break;
-	}
-
 	return -1;
 }

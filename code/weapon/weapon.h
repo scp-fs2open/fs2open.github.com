@@ -12,10 +12,7 @@
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.79  2007/07/13 22:28:13  turey
- * Initial commit of Training Weapons / Simulated Hull code.
- *
- * Revision 2.77  2007/03/22 20:02:46  taylor
+ * Revision 2.69.2.3  2007/02/12 00:54:31  taylor
  * make use of generic_anim and generic_bitmap where possible
  * bunch of cleanup and little optimizations
  * add "+remove" tbl option to completely get rid of particular beam sections
@@ -23,32 +20,11 @@
  * if we are using a POF missile which isn't loaded yet, try and load it before going crazy
  * bug fix and optimization for laser color setting
  *
- * Revision 2.76  2007/02/18 06:17:48  Goober5000
- * revert Bobboau's commits for the past two months; these will be added in later in a less messy/buggy manner
+ * Revision 2.69.2.2  2006/12/26 05:32:59  taylor
+ * make weapon_expl info dynamic
  *
- * Revision 2.75  2007/02/03 03:28:48  phreak
- * spawn weapons now have the option of passing a target lock onto their children.
- *
- * http://www.hard-light.net/forums/index.php/topic,45166.0.html
- *
- * Revision 2.74  2007/01/14 14:03:40  bobboau
- * ok, something aparently went wrong, last time, so I'm commiting again
- * hopefully it should work this time
- * damnit WORK!!!
- *
- * Revision 2.73  2007/01/07 12:41:37  taylor
- * make expl info dyanmic
- * fix possible out-of-bounds on expl lod checking
- * fix memory leak from modular tables
- *
- * Revision 2.72  2006/12/28 00:59:54  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.71  2006/09/11 06:51:17  taylor
+ * Revision 2.69.2.1  2006/09/11 01:17:07  taylor
  * fixes for stuff_string() bounds checking
- *
- * Revision 2.70  2006/06/07 04:48:38  wmcoolmon
- * Limbo flag support; removed unneeded muzzle flash flag
  *
  * Revision 2.69  2006/02/25 21:47:19  Goober5000
  * spelling
@@ -624,6 +600,7 @@ extern int Num_weapon_subtypes;
 //#define	WIF_AREA_EFFECT	(1 << 7)				//	Explosion has an area effect
 //#define	WIF_SHOCKWAVE		(1 << 8)				//	Explosion has a shockwave
 //WMC - These are no longer needed so these spots are free
+#define	WIF_HOMING_JAVELIN	(1 << 8)				// WC Saga Javelin HS style heatseeker, locks only on target's engines
 #define  WIF_TURNS			(1 << 9)				// Set this if the weapon ever changes heading.  If you
 															// don't set this and the weapon turns, collision detection
 															// won't work, I promise!
@@ -647,7 +624,7 @@ extern int Num_weapon_subtypes;
 #define	WIF_BEAM				(1 << 26)			// if this is a beam weapon : NOTE - VERY SPECIAL CASE
 #define	WIF_TAG				(1 << 27)			// this weapon has a tag effect when it hits
 #define	WIF_SHUDDER			(1 << 28)			// causes the weapon to shudder. shudder is proportional to the mass and damage of the weapon
-//#define	WIF_MFLASH			(1 << 29)			// has muzzle flash
+#define	WIF_MFLASH			(1 << 29)			// has muzzle flash
 #define	WIF_LOCKARM			(1 << 30)			// if the missile was fired without a lock, it does significanlty less damage on impact
 #define  WIF_STREAM			(1 << 31)			// handled by "trigger down/trigger up" instead of "fire - wait - fire - wait"
 
@@ -661,10 +638,10 @@ extern int Num_weapon_subtypes;
 #define WIF2_SAME_TURRET_COOLDOWN		(1 << 7)	// the weapon has the same cooldown time on turrets
 #define WIF2_MR_NO_LIGHTING				(1 << 8)	// don't render with lighting, regardless of user options
 #define WIF2_TRANSPARENT				(1 << 9)	// render as transparent
-#define WIF2_INHERIT_PARENT_TARGET		(1 << 10)	// child weapons home in on the target their parent is homing on.
-#define WIF2_TRAINING					(1 << 11)	// Weapon does shield/hull damage, but doesn't hurt subsystems, whack you, or put marks on your ship.
+#define WIF2_TRAINING					(1 << 10)	// Weapon does shield/hull damage, but doesn't hurt subsystems, whack you, or put marks on your ship.
 
-#define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT)
+#define	WIF_HOMING					(WIF_HOMING_HEAT | WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
+#define WIF_LOCKED_HOMING           (WIF_HOMING_ASPECT | WIF_HOMING_JAVELIN)
 #define  WIF_HURTS_BIG_SHIPS		(WIF_BOMB | WIF_BEAM | WIF_HUGE | WIF_BIG_ONLY)
 
 #define	WEAPON_EXHAUST_DELTA_TIME	75		//	Delay in milliseconds between exhaust blobs
@@ -727,7 +704,7 @@ typedef struct weapon {
 	int		particle_spew_time;			// time to spew next bunch of particles	
 
 	// flak info
-	//short flak_index;							// flak info index
+	short flak_index;							// flak info index
 
 	//local ssm stuff		
 	fix lssm_warpout_time;		//time at which the missile warps out
@@ -978,6 +955,11 @@ typedef struct weapon_info {
 	float alpha_max;			// maximum alpha value to use
 	float alpha_min;			// minimum alpha value to use
 	float alpha_cycle;			// cycle between max and min by this much each frame
+
+	//WMC - scripting stuff
+	script_hook sc_collide_ship;
+	script_hook sc_collide_weapon;
+
 } weapon_info;
 
 // Data structure to track the active missiles

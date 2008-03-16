@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Freespace2/LevelPaging.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-09-11 05:44:23 $
+ * $Revision: 2.9.2.1 $
+ * $Date: 2006-08-22 05:50:12 $
  * $Author: taylor $
  *
  * Code to page in all the bitmaps at the beginning of a level.

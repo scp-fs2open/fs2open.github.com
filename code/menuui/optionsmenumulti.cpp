@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenuMulti.cpp $
- * $Revision: 2.11 $
- * $Date: 2007-02-10 00:18:22 $
+ * $Revision: 2.10.2.1 $
+ * $Date: 2007-02-10 00:17:40 $
  * $Author: taylor $
  *
  * $Log: not supported by cvs2svn $

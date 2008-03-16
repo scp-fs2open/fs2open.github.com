@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Graphics/gropenglbmpman.h $
- * $Revision: 1.7 $
- * $Date: 2007-02-11 18:18:52 $
+ * $Revision: 1.6.2.1 $
+ * $Date: 2007-02-11 09:51:21 $
  * $Author: taylor $
  *
  * OpenGL specific bmpman routines

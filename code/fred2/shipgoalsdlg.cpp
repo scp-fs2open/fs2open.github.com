@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/fred2/ShipGoalsDlg.cpp $
- * $Revision: 1.4 $
- * $Date: 2007-02-20 04:20:10 $
+ * $Revision: 1.3.2.1 $
+ * $Date: 2007-02-20 04:19:10 $
  * $Author: Goober5000 $
  *
  * Initial orders editor dialog box handling code.  This dialog is used for both

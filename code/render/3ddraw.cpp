@@ -9,20 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Render/3ddraw.cpp $
- * $Revision: 2.56 $
- * $Date: 2007-01-14 19:35:54 $
- * $Author: Goober5000 $
+ * $Revision: 2.52.2.2 $
+ * $Date: 2006-10-06 10:03:02 $
+ * $Author: taylor $
  *
  * 3D rendering primitives
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.55  2007/01/14 10:26:39  wmcoolmon
- * Attempt to remove various warnings under MSVC 2003, mostly related to casting, but also some instances of inaccessible code.
- *
- * Revision 2.54  2006/10/06 10:04:03  taylor
- * handle another null vec warning which can happen during a multiplayer respawn or certain death sequences (Mantis bug #1090)
- *
- * Revision 2.53  2006/08/20 00:51:06  taylor
+ * Revision 2.52.2.1  2006/08/19 04:38:47  taylor
  * maybe optimize the (PI/2), (PI*2) and (RAND_MAX/2) stuff a little bit
  *
  * Revision 2.52  2006/05/27 16:47:12  taylor
@@ -715,7 +709,74 @@ free_points:
 	return 0;	//say it drew
 }
 
+int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap_flags)
+{
+	//idiot-proof
+	if(width == 0 || height == 0)
+			return 0;
 
+	Assert(pos != NULL);
+	Assert(ori != NULL);
+	
+	//Let's begin.
+	
+	const int NUM_VERTICES = 4;
+	vec3d p[NUM_VERTICES] = {0};
+	vertex v[NUM_VERTICES];
+	//float h = sqrt(2*(radius*radius));
+
+	p[0].xyz.x = width;
+	p[0].xyz.y = height;
+
+	p[1].xyz.x = -width;
+	p[1].xyz.y = height;
+
+	p[2].xyz.x = -width;
+	p[2].xyz.y = -height;
+
+	p[3].xyz.x = width;
+	p[3].xyz.y = -height;
+
+	for(int i = 0; i < NUM_VERTICES; i++)
+	{
+		vec3d tmp = vmd_zero_vector;
+
+		//Set spacing correctly
+		//vm_vec_scale2(&p[i], radius, 1.0f);
+		//Rotate correctly
+		vm_vec_unrotate(&tmp, &p[i], ori);
+		//Move to point in space
+		vm_vec_add2(&tmp, pos);
+
+		//Convert to vertex
+		g3_transfer_vertex(&v[i], &tmp);
+	}
+
+	v[0].u = 1.0f;
+	v[0].v = 0.0f;
+
+	v[1].u = 0.0f;
+	v[1].v = 0.0f;
+	
+	v[2].u = 0.0f;
+	v[2].v = 1.0f;
+
+	v[3].u = 1.0f;
+	v[3].v = 1.0f;
+
+	vertex *ptlist[4] = { &v[3], &v[2], &v[1], &v[0] };	
+	g3_draw_poly(NUM_VERTICES, ptlist, tmap_flags);
+
+	return 0;
+}
+
+int g3_draw_polygon(vec3d *pos, vec3d *norm, float width, float height, int tmap_flags)
+{
+	matrix m;
+	vm_vector_2_matrix(&m, norm, NULL, NULL);
+
+	return g3_draw_polygon(pos, &m, width, height, tmap_flags);
+}
 
 // Draw a polygon.  Same as g3_draw_poly, but it bashes sw to a constant value
 // for all vertexes.  Needs to be done after clipping to get them all.
@@ -2846,17 +2907,17 @@ void flash_ball::initialize(int number, float min_ray_width, float max_ray_width
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
-			ray[i].start.r = (ubyte) ((rand()%(max_r-min_r))+min_r);
+			ray[i].start.r = (rand()%(max_r-min_r))+min_r;
 		}else{
 			ray[i].start.r = 255;
 		}
 		if(min_g != 255){
-			ray[i].start.g = (ubyte) ((rand()%(max_g-min_g))+min_g);
+			ray[i].start.g = (rand()%(max_g-min_g))+min_g;
 		}else{
 			ray[i].start.g = 255;
 		}
 		if(min_b != 255){
-			ray[i].start.b = (ubyte) ((rand()%(max_b-min_b))+min_b);
+			ray[i].start.b = (rand()%(max_b-min_b))+min_b;
 		}else{
 			ray[i].start.b = 255;
 		}
@@ -2984,17 +3045,17 @@ void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_
 	for(i = 0; i<n_rays; i++){
 	//colors
 		if(min_r != 255){
-			ray[i].start.r = (ubyte) ((rand()%(max_r-min_r))+min_r);
+			ray[i].start.r = (rand()%(max_r-min_r))+min_r;
 		}else{
 			ray[i].start.r = 255;
 		}
 		if(min_g != 255){
-			ray[i].start.g = (ubyte) ((rand()%(max_g-min_g))+min_g);
+			ray[i].start.g = (rand()%(max_g-min_g))+min_g;
 		}else{
 			ray[i].start.g = 255;
 		}
 		if(min_b != 255){
-			ray[i].start.b = (ubyte) ((rand()%(max_b-min_b))+min_b);
+			ray[i].start.b = (rand()%(max_b-min_b))+min_b;
 		}else{
 			ray[i].start.b = 255;
 		}

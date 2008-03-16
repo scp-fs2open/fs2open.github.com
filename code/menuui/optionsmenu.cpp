@@ -9,15 +9,15 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/OptionsMenu.cpp $
- * $Revision: 2.22 $
- * $Date: 2007-02-10 00:18:22 $
+ * $Revision: 2.20.2.2 $
+ * $Date: 2007-02-10 00:17:40 $
  * $Author: taylor $
  *
  * C module that contains functions to drive the Options user interface
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.21  2006/06/27 05:07:49  taylor
- * fix various compiler warnings and things that Valgrind complained about
+ * Revision 2.20.2.1  2006/06/22 14:59:44  taylor
+ * fix various things that Valgrind has been complaining about
  *
  * Revision 2.20  2006/05/27 16:59:05  taylor
  * comment out some code which used only if neither D3D nor OGL

@@ -9,29 +9,23 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/Object.h $
- * $Revision: 2.28 $
- * $Date: 2007-11-23 23:49:34 $
- * $Author: wmcoolmon $
+ * $Revision: 2.21.2.5 $
+ * $Date: 2007-12-20 01:57:41 $
+ * $Author: turey $
  *
  * <insert description of file here>
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.27  2007/09/30 22:28:29  Goober5000
+ * Revision 2.21.2.4  2007/09/30 22:28:26  Goober5000
  * another patch by razorjack -- remove something that never worked
  *
- * Revision 2.26  2007/07/28 21:31:11  Goober5000
+ * Revision 2.21.2.3  2007/07/28 21:31:05  Goober5000
  * this should really be capitalized
  *
- * Revision 2.25  2007/07/13 22:28:12  turey
- * Initial commit of Training Weapons / Simulated Hull code.
- *
- * Revision 2.24  2007/02/11 21:26:35  Goober5000
- * massive shield infrastructure commit
- *
- * Revision 2.23  2006/09/08 06:20:14  taylor
+ * Revision 2.21.2.2  2006/09/08 06:14:44  taylor
  * fix things that strict compiling balked at (from compiling with -ansi and -pedantic)
  *
- * Revision 2.22  2006/06/27 04:06:18  Goober5000
+ * Revision 2.21.2.1  2006/06/27 04:06:17  Goober5000
  * handle docked objects during death roll
  * --Goober5000
  *
@@ -552,21 +546,9 @@ typedef struct object {
 		class jump_node *jnp;		// WMC - Direct pointer to the object. Used only for jump nodes as of now
 	};
 
-	//camid core_camera;				//WMC - Core camera for the object
-	//camid topdown_camera;			//WMC - Top down camera
-
 	dock_instance	*dock_list;			// Goober5000 - objects this object is docked to
 	dock_instance	*dead_dock_list;	// Goober5000 - objects this object was docked to when destroyed; replaces dock_objnum_when_dead
 } object;
-
-struct object_h {
-	object *objp;
-	int sig;
-
-	bool IsValid(){return (this != NULL && objp != NULL && objp->signature == sig);}
-	object_h(object *in){objp=in; Assert(in!=NULL); sig=in->signature;}
-	object_h(){objp=NULL;sig=-1;}
-};
 
 // object backup struct used by Fred.
 typedef struct object_orient_pos {
@@ -660,6 +642,7 @@ void obj_init_all_ships_physics();
 float get_hull_pct(object *objp);
 float get_sim_hull_pct(object *objp);
 float get_shield_pct(object *objp);
+float get_max_shield_quad(object *objp);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
 void obj_get_average_ship_pos(vec3d *pos);
@@ -708,7 +691,6 @@ void obj_move_one_docked_object(object *objp, object *parent_objp);
 void object_set_gliding(object *objp, bool enable=true);
 bool object_get_gliding(object *objp);
 int obj_get_by_signature(int sig);
-int object_get_model(object *objp);
 
 
 #endif

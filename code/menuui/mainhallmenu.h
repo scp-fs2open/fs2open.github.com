@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/MenuUI/MainHallMenu.h $
- * $Revision: 2.7 $
- * $Date: 2007-11-20 01:11:12 $
+ * $Revision: 2.6.2.1 $
+ * $Date: 2007-11-20 01:11:10 $
  * $Author: Goober5000 $
  *
  * Header file for main-hall menu code

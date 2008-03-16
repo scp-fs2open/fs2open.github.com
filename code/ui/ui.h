@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Ui/UI.H $
- * $Revision: 2.9 $
- * $Date: 2006-09-11 05:39:48 $
+ * $Revision: 2.8.2.1 $
+ * $Date: 2006-08-22 05:48:46 $
  * $Author: taylor $
  *
  * Include file for our user interface.

@@ -9,19 +9,13 @@
 
 /*
  * $Logfile: /Freespace2/code/Weapon/Flak.cpp $
- * $Revision: 2.10 $
- * $Date: 2006-12-28 00:59:54 $
+ * $Revision: 2.8 $
+ * $Date: 2006-01-04 21:48:36 $
  * $Author: wmcoolmon $
  *
  * flak functions
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.9  2006/06/07 04:48:38  wmcoolmon
- * Limbo flag support; removed unneeded muzzle flash flag
- *
- * Revision 2.8  2006/01/04 21:48:36  wmcoolmon
- * Flak weapons only use detonation range if targets are further away than $Det range
- *
  * Revision 2.7  2005/12/29 08:08:42  wmcoolmon
  * Codebase commit, most notably including objecttypes.tbl
  *

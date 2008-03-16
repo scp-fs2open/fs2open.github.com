@@ -9,38 +9,32 @@
 
 /*
  * $Logfile: /Freespace2/code/MissionUI/MissionWeaponChoice.cpp $
- * $Revision: 2.80 $
- * $Date: 2007-11-18 07:43:12 $
+ * $Revision: 2.72.2.6 $
+ * $Date: 2007-11-18 07:43:15 $
  * $Author: Goober5000 $
  *
  * C module for the weapon loadout screen
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.79  2007/03/23 01:51:57  taylor
+ * Revision 2.72.2.5  2007/03/22 20:50:28  taylor
+ * some generic code cleanup
+ *
+ * Revision 2.72.2.4  2007/02/12 00:45:23  taylor
  * bit of cleanup and minor performance tweaks
  * sync up with new generic_anim/bitmap and weapon delayed loading changes
  * with generic_anim, use Goober's animation timing for beam section and glow animations
  * make trail render list dynamic (as well as it can be)
  *
- * Revision 2.78  2007/03/22 20:49:53  taylor
- * some generic code cleanup
- *
- * Revision 2.77  2007/01/07 12:51:30  taylor
+ * Revision 2.72.2.3  2007/01/07 12:12:46  taylor
  * fix NULL ptr reference when a weapon doesn't have a tech description
  *
- * Revision 2.76  2006/12/28 22:47:02  Goober5000
+ * Revision 2.72.2.2  2006/12/28 22:47:15  Goober5000
  * fix spelling... *twitch*
  *
- * Revision 2.75  2006/12/28 00:59:32  wmcoolmon
- * WMC codebase commit. See pre-commit build thread for details on changes.
- *
- * Revision 2.74  2006/07/17 01:12:19  taylor
+ * Revision 2.72.2.1  2006/07/17 01:09:03  taylor
  * fix some missile autocentering issues
  *  - use MR_AUTOCENTER and MR_IS_MISSILE flags to generate an autocenter for a missile if one doesn't already exist
  *  - don't try to autocenter loadout icons when rendered 3d
- *
- * Revision 2.73  2006/06/23 04:56:31  wmcoolmon
- * Change an Assert to a more verbose Warning, in the case of issues restoring a red alert ship. Also, try and get some backup allocation of weapons in.
  *
  * Revision 2.72  2006/05/13 07:09:25  taylor
  * minor cleanup and a couple extra error checks
@@ -1072,15 +1066,6 @@ typedef struct wl_icon_info
 	int				can_use;
 	anim			*wl_anim;
 	anim_instance	*wl_anim_instance;
-
-	wl_icon_info(){
-		for(int i = 0; i < NUM_ICON_FRAMES; i++)icon_bmaps[i]=-1;
-		laser_bmap = -1;
-		model_index = -1;
-		can_use = 0;
-		wl_anim = NULL;
-		wl_anim_instance = NULL;
-	}
 } wl_icon_info;
 
 wl_icon_info	Wl_icons_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
@@ -2035,18 +2020,18 @@ void wl_load_anim(int weapon_class)
 			// now check if file exists
 			// GRR must add a .ANI at the end for detection
 			strcat(animation_filename,".ani");
-			icon->wl_anim = anim_load(animation_filename, 1);
+			icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
 
 			if (icon->wl_anim == NULL) {
 				mprintf(("Weapon ANI: Can not find %s, using lowres version instead.\n",animation_filename)); 
 				strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
-				icon->wl_anim = anim_load(animation_filename, 1);
+				icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
 			}
 		} else {
 			strcpy(animation_filename, Weapon_info[weapon_class].anim_filename);
 			// load the compressed ship animation into memory 
 			// NOTE: if last parm of load_anim is 1, the anim file is mapped to memory 
-			icon->wl_anim = anim_load(animation_filename, 1);
+			icon->wl_anim = anim_load(animation_filename, CF_TYPE_ANY, 1);
 		}
 
 		if ( icon->wl_anim == NULL )
@@ -2375,7 +2360,7 @@ void wl_start_slot_animation(int n)
 	
 	// maybe we have to load this animation
 	if ( wl_ship->anim == NULL ) {
-		wl_ship->anim = anim_load(Ship_info[ship_class].overhead_filename, 1);
+		wl_ship->anim = anim_load(Ship_info[ship_class].overhead_filename, CF_TYPE_ANY, 1);
 		if ( wl_ship->anim == NULL ) {
 			Int3();		// couldn't load anim filename.. get Alan
 			return;
@@ -2468,10 +2453,13 @@ void wl_get_ship_class_weapons(int ship_class, int *wep, int *wep_count)
 void wl_get_ship_weapons(int ship_index, int *wep, int *wep_count)
 {
 	int			i;
+	wing			*wp;
 	ship_weapon	*swp;
 
 	Assert(ship_index >= 0);
 
+	Assert(Ships[ship_index].wingnum >= 0);
+	wp = &Wings[Ships[ship_index].wingnum];
 	swp = &Ships[ship_index].weapons;
 
 	for ( i = 0; i < swp->num_primary_banks; i++ )
@@ -2595,17 +2583,8 @@ void wl_get_default_weapons(int ship_class, int slot_num, int *wep, int *wep_cou
 			int ship_index = -1;
 			p_object *pobjp;
 			ss_return_ship(slot_num/MAX_WING_SLOTS, slot_num%MAX_WING_SLOTS, &ship_index, &pobjp);
-			if(ship_index != -1)
-			{
-				wl_get_ship_weapons(ship_index, wep, wep_count);
-			}
-			else
-			{
-				char buf[NAME_LENGTH];
-				ss_return_name(slot_num/MAX_WING_SLOTS, slot_num%MAX_WING_SLOTS, buf);
-				Warning(LOCATION, "Could not find default weapon info for ship '%s', using class info instead.", buf);
-				wl_get_ship_class_weapons(ship_class, wep, wep_count);
-			}
+			Assert(ship_index != -1);
+			wl_get_ship_weapons(ship_index, wep, wep_count);
 		}
 	}
 
@@ -4138,8 +4117,7 @@ void pick_from_ship_slot(int num)
 		return;
 	}
 
-	if(!Wl_icons[wep[num]].can_use)
-		popup(0, 1, POPUP_OK, "Weapon in slot is invalid for this ship");
+	Assert(Wl_icons[wep[num]].can_use);
 
 	wl_set_carried_icon(num, Selected_wl_slot, wep[num]);
 	common_flash_button_init();
@@ -4329,7 +4307,7 @@ void start_weapon_animation(int weapon_class)
 	if ( icon->wl_anim == NULL ) {
 		wl_load_anim(weapon_class);
 		/*
-		icon->anim = anim_load(Weapon_info[weapon_class].anim_filename, 1);
+		icon->anim = anim_load(Weapon_info[weapon_class].anim_filename, CF_TYPE_ANY, 1);
 		if ( icon->anim == NULL ) {
 			Int3();	// could not open the weapon animation
 			return;

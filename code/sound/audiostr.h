@@ -9,14 +9,14 @@
 
 /*
  * $Logfile: /Freespace2/code/Sound/AudioStr.h $
- * $Revision: 2.7 $
- * $Date: 2007-03-22 20:35:21 $
+ * $Revision: 2.5.2.2 $
+ * $Date: 2007-03-22 20:35:45 $
  * $Author: taylor $
  *
  * Routines to stream large WAV files from disk
  *
  * $Log: not supported by cvs2svn $
- * Revision 2.6  2007/02/10 00:18:22  taylor
+ * Revision 2.5.2.1  2007/02/10 00:17:40  taylor
  * remove NO_SOUND
  *
  * Revision 2.5  2005/07/13 03:35:29  Goober5000

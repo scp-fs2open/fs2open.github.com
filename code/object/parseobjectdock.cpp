@@ -6,8 +6,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Object/ParseObjectDock.cpp $
- * $Revision: 1.4 $
- * $Date: 2007-07-28 21:17:56 $
+ * $Revision: 1.3.2.1 $
+ * $Date: 2007-07-28 21:17:55 $
  * $Author: Goober5000 $
  *
  * Implementation of new docking system for parse objects

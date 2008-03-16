@@ -9,8 +9,8 @@
 
 /*
  * $Logfile: /Freespace2/code/Mission/MissionGoals.cpp $
- * $Revision: 2.19 $
- * $Date: 2006-09-08 06:20:14 $
+ * $Revision: 2.18.2.1 $
+ * $Date: 2006-09-08 06:14:43 $
  * $Author: taylor $
  *
  * Module for working with Mission goals
