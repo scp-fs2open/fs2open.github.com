@@ -1533,7 +1533,11 @@ void read_player_controls(object *objp, float frametime)
 					// Wait at least 3 seconds before making sure warp speed is set.
 					if ( Warpout_time > MINIMUM_PLAYER_WARPOUT_TIME )	{
 						// If we are going around 5% of the target speed, progress to next stage
-						float diff = fl_abs(objp->phys_info.fspeed - target_warpout_speed )/target_warpout_speed;
+						float diff = 0.0f;
+						if(target_warpout_speed == 0.0f)
+							diff = objp->phys_info.fspeed;
+						else
+							diff = fl_abs(objp->phys_info.fspeed - target_warpout_speed )/target_warpout_speed;
 						if ( diff < TARGET_WARPOUT_MATCH_PERCENT )	{
 							gameseq_post_event( GS_EVENT_PLAYER_WARPOUT_DONE_STAGE1 );
 						}
