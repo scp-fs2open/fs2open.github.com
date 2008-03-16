@@ -1,0 +1,8 @@
+The "projects" directory contains ready projects for:
+Microsoft Visual C++ 6
+Microsoft Visual C++ 2005
+Anjuta 1 (please see README with project before using)
+
+
+See the ChangeLog to see what's new.
+See the INSTALL file for instructions on how to build fs2_open.
