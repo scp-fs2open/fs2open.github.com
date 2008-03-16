@@ -6744,7 +6744,7 @@ ADE_FUNC(drawImage, l_Graphics, "Image name/Texture handle, [x1=0, y1=0, x2, y2,
 	}
 	else
 	{
-		if(!ade_get_args(L, "o|iibiiffff", l_Texture.Get(&idx),&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2))
+		if(!ade_get_args(L, "o|iiiiffff", l_Texture.Get(&idx),&x1,&y1,&x2,&y2,&uv_x1,&uv_y1,&uv_x2,&uv_y2))
 			return ADE_RETURN_NIL;
 	}
 
@@ -6796,7 +6796,7 @@ ADE_FUNC(drawMonochromeImage, l_Graphics, "Image name/Texture handle, x1, y1, [x
 	}
 	else
 	{
-		if(!ade_get_args(L, "oii|biiiib", l_Texture.Get(&idx),&x,&y,&x2,&y2,&sx,&sy,&m))
+		if(!ade_get_args(L, "oii|iiiib", l_Texture.Get(&idx),&x,&y,&x2,&y2,&sx,&sy,&m))
 			return ADE_RETURN_NIL;
 	}
 
