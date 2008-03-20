@@ -127,6 +127,10 @@ void script_parse_table(char *filename)
 		while(st->ParseCondition(filename));
 		required_string("#End");
 	}
+
+	// add tbl/tbm to multiplayer validation list
+	extern void fs2netd_add_table_validation(char *tblname);
+	fs2netd_add_table_validation(filename);
 }
 
 //Initializes the (global) scripting system, as well as any subsystems.

@@ -27,6 +27,7 @@
  */
 
 #include "globalincs/pstypes.h"
+#include "fs2netd/fs2netd_client.h"
 #include "fs2netd/tcp_client.h"
 #include "cfile/cfile.h"
 #include "network/multi_log.h"
@@ -39,6 +40,7 @@
 #include "network/multiutil.h"
 #include "network/multiui.h"
 #include "network/stand_gui.h"
+#include "network/multi_pxo.h"
 #include "bmpman/bmpman.h"
 #include "graphics/2d.h"
 #include "graphics/font.h"
@@ -59,8 +61,8 @@
 #include <vector>
 
 
-#define FS2NETD_DEFAULT_PORT			"12000"
-#define FS2NETD_DEFAULT_SERVER			"64.92.160.252" // "fs2netd.game-warden.com"
+#define FS2NETD_DEFAULT_PORT			"12009"
+#define FS2NETD_DEFAULT_SERVER			"fs2netd.game-warden.com"
 #define FS2NETD_DEFAULT_CHAT_SERVER		"fs2netd.game-warden.com"
 #define FS2NETD_DEFAULT_BANNER_URL		"http://fs2netd.game-warden.com/files/banners"
 
@@ -71,6 +73,7 @@ extern void HUD_printf(char *format, ...);
 extern int game_hacked_data();
 void multi_update_valid_tables(); // from multiutil
 extern int Multi_create_force_heartbeat;			// to force a master heardbeat packet be sent (rather than waiting for timeout)
+extern void send_udp_hole_punch(char *ip, short port, short state);
 
 static int PXO_SID = -1; // FS2 Open PXO Session ID
 static char PXO_Server[64] = { 0 };
@@ -80,6 +83,8 @@ static bool In_process = false;
 static bool Logged_in = false;
 static int do_full_packet = 1;
 static fix timeout = -1;
+static fix NextHeartBeat = -1;
+static ushort GameServerPort = 0;
 
 static int FS2NetD_file_list_count = -1;
 static file_record *FS2NetD_file_list = NULL;
@@ -88,6 +93,12 @@ static int FS2NetD_ban_list_count = -1;
 static fs2open_banmask *FS2NetD_ban_list = NULL;
 
 std::vector<crc_valid_status> Table_valid_status;
+
+// channel to associate when creating a server
+char Multi_fs_tracker_channel[MAX_PATH] = "";
+
+// channel to use when polling the tracker for games
+char Multi_fs_tracker_filter[MAX_PATH] = "";
 
 
 void fs2netd_options_config_init()
@@ -200,7 +211,7 @@ void fs2netd_connect()
 
 int fs2netd_login_do()
 {
-	if (PXO_SID == -1) {
+	if (PXO_SID < 0) {
 		if ( Is_standalone && std_gen_is_active() ) {
 			std_gen_set_text("Verifying username and password", 1);
 		} else {
@@ -229,7 +240,7 @@ int fs2netd_login_do()
 		}
 
 		if (PXO_SID >= 0) {
-			ml_printf("FS2NetD MSG: Login %s is valid, session ID is %i!", Multi_tracker_login, PXO_SID);
+			ml_printf("FS2NetD MSG: Login '%s' is valid, session ID is %i!", Multi_tracker_login, PXO_SID);
 			do_full_packet = 1;
 			timeout = -1;
 		}
@@ -277,13 +288,11 @@ bool fs2netd_login()
 		return false;
 	}
 
-	if ( Logged_in ) {
-		if ( (PXO_SID != -1) && !(FS2NetD_CheckValidSID(PXO_SID)) ) {
-			PXO_SID = -1;
-		} else {
-			return true;
-		}
+	if ( Logged_in && (PXO_SID >= 0) ) {
+		return true;
 	}
+
+	Logged_in = false;
 
 	fs2netd_connect();
 
@@ -382,7 +391,7 @@ void fs2netd_do_frame()
 	char buffer[300], str[256];
 	ubyte pid = 0;
 	int itemp;
-	static fix NextPing = -1, NextHeartBeat = -1;
+	static fix NextPing = -1;
 	static fix GotPong = -1;
 	bool reset = false;
 
@@ -416,6 +425,7 @@ void fs2netd_do_frame()
 		PXO_SID = -1;
 
 		NextHeartBeat = -1;
+		NextHolePunch = -1;
 		NextPing = -1;
 		GotPong = -1;
 
@@ -428,7 +438,7 @@ void fs2netd_do_frame()
 				gamesnd_play_iface(SND_GENERAL_FAIL);
 				popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, "ERROR:\nLost connection to the FS2NetD server!");
 			}
-	
+
 			return;
 		} else {
 			ml_printf("FS2NetD NOTICE:  Connection to server has been reestablished!");
@@ -452,18 +462,40 @@ void fs2netd_do_frame()
 
 		FS2NetD_Ping();
 
-		ml_printf("FS2NetD sent PING");
+		// also send out a SID check to keep our login verified
+		if ( FS2NetD_CheckValidSID(PXO_SID) < 0 ) {
+			ml_printf("FS2NetD WARNING:  Unable to validate login!");
+			FS2NetD_Disconnect();
+
+			Logged_in = false;
+			PXO_SID = -1;
+
+			NextHeartBeat = -1;
+			NextHolePunch = -1;
+			NextPing = -1;
+			GotPong = -1;
+
+			// try to log in again
+			fs2netd_login();
+
+			// make sure that we are good to go
+			if ( !Is_connected ) {
+				if (!Is_standalone) {
+					gamesnd_play_iface(SND_GENERAL_FAIL);
+					popup(PF_USE_AFFIRMATIVE_ICON | PF_TITLE_BIG | PF_TITLE_RED, 1, POPUP_OK, "ERROR:\nLost connection to the FS2NetD server!");
+				}
+		
+				return;
+			} else {
+				ml_printf("FS2NetD NOTICE:  Connection to server has been reestablished!");
+			}
+		}
+
+		ml_printf("FS2NetD sent PING/IDENT");
 	}
 
-	// send out server heartbeat every 2 minutes, unless forced to by an update
-	if ( (Net_player->flags & NETINFO_FLAG_AM_MASTER) && (Multi_create_force_heartbeat || (NextHeartBeat == -1) || (timer_get_fixed_seconds() >= NextHeartBeat)) ) {
-		Multi_create_force_heartbeat = 0;
-		NextHeartBeat = timer_get_fixed_seconds() + (120 * F1_0);
-
-		FS2NetD_SendHeartBeat(Netgame.name, Netgame.mission_name, Netgame.title, Netgame.type_flags, Netgame.server_addr.port, multi_num_players());
-
-		ml_printf("FS2NetD sent HeartBeat");
-	}
+	// handle server heart beats
+	fs2netd_server_send_heartbeat();
 
 	// Check for GWall messages - ping replies, etc
 	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
@@ -492,7 +524,7 @@ void fs2netd_do_frame()
 			}
 
 			// we don't have the full packet, so bail
-			if (rc_total < buffer_size) {
+			if ( rc_total < (buffer_offset+buffer_size-BASE_PACKET_SIZE) ) {
 				break;
 			}
 
@@ -549,15 +581,104 @@ void fs2netd_do_frame()
 					break;
 				}
 
+				case PCKT_CHAT_CHAN_COUNT_REPLY: {
+					PXO_GET_STRING( str );
+					PXO_GET_INT( itemp );
+
+					if ( (itemp < 0) || (itemp > USHRT_MAX) ) {
+						itemp = 0;
+					}
+
+					multi_pxo_channel_count_update(str, itemp);
+
+					break;
+				}
+
+				case PCKT_VALID_SID_REPLY: {
+					ubyte login_status = 0;
+
+					PXO_GET_DATA( login_status );
+
+					ml_printf("FS2NetD IDENT:  Got %s login check", (login_status == 1) ? NOX("valid") : NOX("invalid"));
+
+					if (login_status != 1) {
+						Logged_in = false;
+						PXO_SID = -1;
+					}
+				}
+
 				default: {
 					ml_printf("Unexpected FS2NetD Packet - PID = %x", pid);
 					break;
 				}
 			}
 
-			buffer_offset += (buffer_size - BASE_PACKET_SIZE);
+			buffer_offset += buffer_size;
 		}
 	}
+}
+
+void fs2netd_server_send_heartbeat(bool force)
+{
+	if ( !Om_tracker_flag ) {
+		return;
+	}
+
+	// if we aren't hosting this game then bail
+	if ( !(Net_player->flags & NETINFO_FLAG_GAME_HOST) ) {
+		return;
+	}
+
+	// is it actually time for a new hb?
+	if ( !force && (timer_get_fixed_seconds() < NextHeartBeat) ) {
+		return;
+	}
+
+	// don't bother if there is nothing to actually send yet
+	if ( !strlen(Netgame.mission_name) ) {
+		return;
+	}
+
+	FS2NetD_SendHeartBeat();
+
+	GameServerPort = Netgame.server_addr.port;
+
+	// we only need to send the chat channel update once per game server that is created
+	if (NextHeartBeat == -1) {
+		// sleep a little bit first to make sure that the server had time to register
+		Sleep(50);
+
+		fs2netd_update_chat_channel();
+	}
+
+	// set timeout for every 2 minutes
+	NextHeartBeat = timer_get_fixed_seconds() + (120 * F1_0);
+	Multi_create_force_heartbeat = 0;
+
+	ml_printf("FS2NetD sent HeartBeat");
+}
+
+void fs2netd_server_disconnect()
+{
+	if ( !Om_tracker_flag ) {
+		return;
+	}
+
+	// if we aren't hosting this game then bail
+	if ( !(Net_player->flags & NETINFO_FLAG_GAME_HOST) ) {
+		return;
+	}
+
+	if (GameServerPort == 0) {
+		return;
+	}
+
+	FS2NetD_SendServerDisconnect(GameServerPort);
+
+	GameServerPort = 0;
+	NextHeartBeat = -1;
+
+	ml_printf("FS2NetD sent game_server disconnect");
 }
 
 int fs2netd_load_servers_do()
@@ -699,7 +820,7 @@ void fs2netd_debrief_init()
 			
 				fs2netd_login();
 
-				if (PXO_SID != -1) {
+				if (PXO_SID >= 0) {
 					if ( !FS2NetD_SendPlayerData(PXO_SID, Players[Player_num].callsign, Multi_tracker_login, &Players[Player_num]) ) {
 						multi_display_chat_msg( XSTR("<stats have been accepted>", 850), 0, 0 );
 						Multi_debrief_stats_accept_code = 1;
@@ -974,7 +1095,7 @@ bool fs2netd_get_valid_missions()
 	}
 
 	// maybe try to init first
-	fs2netd_connect();
+	fs2netd_login();
 
 	// if we didn't connect to FS2NetD then bail out now
 	if ( !Is_connected ) {
@@ -1090,7 +1211,7 @@ int fs2netd_update_valid_tables()
 	}
 
 	// maybe try to init first
-	fs2netd_connect();
+	fs2netd_login();
 
 	// if we didn't connect to FS2NetD then bail out now
 	if ( !Is_connected ) {
@@ -1238,3 +1359,38 @@ void fs2netd_close()
 		FS2NetD_ban_list = NULL;
 	}
 }
+
+void fs2netd_update_chat_channel()
+{
+	if ( !Om_tracker_flag ) {
+		return;
+	}
+
+	if ( !Is_connected ) {
+		return;
+	}
+
+	if ( !strlen(Multi_fs_tracker_channel) ) {
+		return;
+	}
+
+	FS2NetD_ChatChannelUpdate(Multi_fs_tracker_channel);
+}
+
+void fs2netd_update_game_count(char *chan_name)
+{
+	if ( !Om_tracker_flag ) {
+		return;
+	}
+
+	if ( !Is_connected ) {
+		return;
+	}
+
+	if ( (chan_name == NULL) || !strlen(chan_name) ) {
+		return;
+	}
+
+	FS2NetD_GameCountUpdate(chan_name);
+}
+

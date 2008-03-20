@@ -484,7 +484,6 @@ int Multi_pxo_must_autojoin = 1;					// still need to autojoin a channel
 int Multi_pxo_mode = MULTI_PXO_MODE_NORMAL;
 
 // our nick for this session
-int x = NAME_LENGTH;
 char Multi_pxo_nick[NAME_LENGTH+1];
 
 // check for button presses
@@ -1555,11 +1554,9 @@ void multi_pxo_init(int use_last_channel)
 	// make sure we autojoin
 	Multi_pxo_must_autojoin = 1;
 
-#ifdef USE_PXO
 	// clear all tracker channel related strings
-	memset(Multi_fs_tracker_channel,0,255);
-	memset(Multi_fs_tracker_filter,0,255);
-#endif
+	memset(Multi_fs_tracker_channel, 0, MAX_PATH);
+	memset(Multi_fs_tracker_filter, 0, MAX_PATH);
 }
 
 // do frame for the PXO screen
@@ -1652,19 +1649,17 @@ void multi_pxo_close()
 	bm_release(Multi_pxo_bitmap);
 	bm_release(Multi_pxo_com_bitmap);
 
-#ifdef USE_PXO
 	// record the last channel we were on, if any
-	memset(Multi_fs_tracker_channel,0,255);
-	memset(Multi_fs_tracker_filter,0,255);
+	memset(Multi_fs_tracker_channel, 0, MAX_PATH);
+	memset(Multi_fs_tracker_filter, 0, MAX_PATH);
 
-	if( ON_CHANNEL() && strlen(Multi_pxo_channel_current.name) ){
+	if ( ON_CHANNEL() && strlen(Multi_pxo_channel_current.name) ) {
 		// channel name
 		strcpy(Multi_fs_tracker_channel, Multi_pxo_channel_current.name);
 		
 		// filter name
 		strcpy(Multi_fs_tracker_filter, Multi_pxo_channel_current.name);
 	} 
-#endif
 
 	// disconnect from the server
 	DisconnectFromChatServer();
@@ -2318,13 +2313,8 @@ void multi_pxo_api_process()
 	// give some time to psnet
 	PSNET_TOP_LAYER_PROCESS();
 
-#ifdef USE_PXO
-	// give some time to the game tracker API
-	IdleGameTracker();
-
-	// give some time to the user tracker API
-	PollPTrackNet();
-#endif
+	// give some time to FS2NetD
+	fs2netd_do_frame();
 	
 	// get any incoming text 
 	do
@@ -2406,8 +2396,6 @@ void multi_pxo_api_process()
 				strcpy(Multi_pxo_channel_current.name, cmd->data);
 
 				// if we don't already have this guy on the list, add him
-				pxo_channel *lookup;
-
 				lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name, Multi_pxo_channels);
 	
 				if (lookup == NULL) {
@@ -2498,7 +2486,10 @@ void multi_pxo_channel_count_update(char *name, int count)
 		lookup->num_servers = (ushort)count;
 
 		nprintf(("Network","PXO : updated channel %s server count to %d\n",name,count));
-	}	
+		ml_printf("PXO : updated channel %s server count to %d", name, count);
+	} else {
+		ml_printf("PXO : unable to locate channel when trying to update count for %s", name);
+	}
 }
 
 // status bar stuff -----------------------------------------------
@@ -2648,7 +2639,6 @@ void multi_pxo_make_channels(char *chan_str)
 
 	// if we don't already have this guy on the list, add him
 	if(ON_CHANNEL()){
-		pxo_channel *lookup;
 		lookup = multi_pxo_find_channel(Multi_pxo_channel_current.name,Multi_pxo_channels);
 		if(lookup == NULL){
 			// create a new channel with the given name and place it on the channel list, return a pointer or NULL on fail
@@ -2780,29 +2770,24 @@ void multi_pxo_process_channels()
 // send a request to refresh our channel server counts
 void multi_pxo_channel_refresh_servers()
 {
-#ifdef USE_PXO
 	pxo_channel *lookup;
-	filter_game_list_struct filter;
-	
+
 	// traverse the list of existing channels we know about and query the game tracker about them
 	lookup = Multi_pxo_channels;
-	if(lookup == NULL){
+
+	if (lookup == NULL) {
 		return;
 	}
+
 	do {
-		if(strlen(lookup->name)){
-			// copy in the info
-			memset(&filter,0,sizeof(filter_game_list_struct));
-			strcpy(filter.channel,lookup->name);
-			
+		if ( strlen(lookup->name) ) {
 			// send the request
-			RequestGameCountWithFilter(&filter);
+			fs2netd_update_game_count(lookup->name);
 		}
 
 		// next item
 		lookup = lookup->next;
-	} while((lookup != NULL) && (lookup != Multi_pxo_channels));
-#endif
+	} while ( (lookup != NULL) && (lookup != Multi_pxo_channels) );
 
 	// record the time
 	Multi_pxo_channel_server_refresh = f2fl(timer_get_fixed_seconds());
@@ -2812,16 +2797,9 @@ void multi_pxo_channel_refresh_servers()
 void multi_pxo_channel_refresh_current()
 {
 	// send a request for a server count on this channel
-	if(strlen(Multi_pxo_channel_current.name)){
-#ifdef USE_PXO
-		// fill in the data
-		filter_game_list_struct filter;
-		memset(&filter,0,sizeof(filter_game_list_struct));
-		strcpy(filter.channel,Multi_pxo_channel_current.name);
-
+	if ( strlen(Multi_pxo_channel_current.name) ) {
 		// send the request
-		RequestGameCountWithFilter(&filter);
-#endif
+		fs2netd_update_game_count(Multi_pxo_channel_current.name);
 	}		
 }
 

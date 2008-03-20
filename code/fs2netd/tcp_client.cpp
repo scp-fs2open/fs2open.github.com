@@ -672,23 +672,59 @@ Recieve_Only:
 	return -1;
 }
 
-void FS2NetD_SendHeartBeat(const char *myName, const char *MisName, const char *title, int flags, short targetport, short players)
+void FS2NetD_SendHeartBeat()
 {
 	int buffer_size;
-	char buffer[250];
+	char buffer[550];
+	ubyte tvar;
 
 	// Clear any old dead crap data
 	FS2NetD_IgnorePackets();
 
 	// create and send hb packet  (serverlist_hb_packet)
-	INIT_PACKET( PCKT_SLIST_HB );
+	INIT_PACKET( PCKT_SLIST_HB_2 );
 
-	PXO_ADD_STRING( myName );
-	PXO_ADD_STRING( MisName );
-	PXO_ADD_STRING( title );
-	PXO_ADD_INT( flags );
-	PXO_ADD_SHORT( players );
-	PXO_ADD_USHORT( targetport );
+	PXO_ADD_STRING( Netgame.name );
+	PXO_ADD_STRING( Netgame.mission_name );
+	PXO_ADD_STRING( Netgame.title );
+	PXO_ADD_STRING( Netgame.campaign_name );
+
+	tvar = (ubyte)Netgame.campaign_mode;
+	PXO_ADD_DATA( tvar );
+
+	PXO_ADD_INT( Netgame.flags );
+	PXO_ADD_INT( Netgame.type_flags );
+
+	PXO_ADD_SHORT( (short)multi_num_players() );
+	PXO_ADD_SHORT( Netgame.max_players );
+
+	tvar = (ubyte)Netgame.mode;
+	PXO_ADD_DATA( tvar );
+
+	tvar = (ubyte)Netgame.rank_base;
+	PXO_ADD_DATA( tvar );
+
+	tvar = (ubyte)Netgame.game_state;
+	PXO_ADD_DATA( tvar );
+
+	tvar = (ubyte)multi_get_connection_speed();
+	PXO_ADD_DATA( tvar );
+
+	DONE_PACKET();
+
+	FS2NetD_SendData(buffer, buffer_size);
+}
+
+void FS2NetD_SendServerDisconnect(ushort port)
+{
+	int buffer_size;
+	char buffer[100];
+
+	// Clear any old dead crap data
+	FS2NetD_IgnorePackets();
+
+	// create and send hb packet  (serverlist_hb_packet)
+	INIT_PACKET( PCKT_SLIST_DISCONNECT );
 
 	DONE_PACKET();
 
@@ -840,8 +876,7 @@ void FS2NetD_Pong(int tstamp)
 
 int FS2NetD_CheckValidSID(int SID)
 {
-	int rc, buffer_size, buffer_offset;
-	bool my_packet = false;
+	int buffer_size;
 	char buffer[150];
 
 	// Clear any old dead crap data
@@ -856,25 +891,6 @@ int FS2NetD_CheckValidSID(int SID)
 
 	if (FS2NetD_SendData(buffer, buffer_size) == -1)
 		return -1;
-
-	// we sleep a little while waiting for a reply, don't bother to timeout on this one
-	Sleep(15);
-
-	ubyte login_status = 0;
-
-	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
-		if (rc < BASE_PACKET_SIZE)
-			return -1;
-
-		VRFY_PACKET2( PCKT_VALID_SID_REPLY );
-
-		if (!my_packet)
-			return -1;
-			
-		PXO_GET_DATA( login_status );
-
-		return (int)login_status;
-	}
 
 	return 0;
 }
@@ -969,3 +985,43 @@ Recieve_Only:
 
 	return 0;
 }
+
+void FS2NetD_ChatChannelUpdate(char *chan_name)
+{
+	int buffer_size;
+	char buffer[MAX_PATH+BASE_PACKET_SIZE+15];
+
+	Assert( chan_name );
+	Assert( strlen(chan_name) && (strlen(chan_name) < MAX_PATH) );
+
+	// Clear any old dead crap data
+	FS2NetD_IgnorePackets();
+
+	// (fs2open_ping)
+	INIT_PACKET( PCKT_CHAT_CHANNEL_UPD );
+
+	PXO_ADD_STRING( chan_name );
+
+	DONE_PACKET();
+
+	FS2NetD_SendData(buffer, buffer_size);
+}
+
+void FS2NetD_GameCountUpdate(char *chan_name)
+{
+	int buffer_size;
+	char buffer[MAX_PATH+BASE_PACKET_SIZE+10];
+
+	// Clear any old dead crap data
+	FS2NetD_IgnorePackets();
+
+	// create and send request packet
+	INIT_PACKET( PCKT_CHAT_CHAN_COUNT_RQST );
+
+	PXO_ADD_STRING( chan_name );
+
+	DONE_PACKET();
+
+	FS2NetD_SendData(buffer, buffer_size);
+}
+

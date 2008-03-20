@@ -4351,6 +4351,8 @@ void multi_create_game_do()
 		Net_player->state = NETPLAYER_STATE_HOST_SETUP;	
 		send_netplayer_update_packet();
 
+		fs2netd_server_send_heartbeat(true);
+
 		Multi_create_files_loaded = 1;
 	}
 
@@ -5398,6 +5400,8 @@ void multi_create_list_select_item(int n)
 		} else {
 			multi_options_update_mission(ng, Multi_create_list_mode == MULTI_CREATE_SHOW_CAMPAIGNS ? 1 : 0);
 		}
+
+		fs2netd_server_send_heartbeat(true);
 	}
 }
 
