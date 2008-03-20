@@ -325,6 +325,7 @@
 #include "graphics/font.h"
 #include "network/multi.h"
 #include "network/multiui.h"
+#include "network/multi_log.h"
 #include "stats/medals.h"
 //#include "network/multi_update.h"
 #include "globalincs/alphacolors.h"
@@ -1870,8 +1871,14 @@ void multi_pxo_handle_kick()
 // handle being disconnected
 void multi_pxo_handle_disconnect()
 {
-	popup(PF_USE_AFFIRMATIVE_ICON,1,POPUP_OK,XSTR("You have been disconnected from the server",942));
-	gameseq_post_event(GS_EVENT_MAIN_MENU);
+	ml_printf("PXO:  Got DISCONNECT from server!");
+
+	if ( popup_active() ) {
+		popup_change_text( XSTR("You have been disconnected from the server", 942) );
+	} else {
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("You have been disconnected from the server", 942));
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	}
 }
 
 // return string2, which is the first substring of string 1 without a space
@@ -2178,8 +2185,7 @@ int multi_pxo_connect_do()
 		// failed to connect, return fail
 		case -1 :
 			mpxo_failed = 1;
-			popup_change_text(XSTR("Failed to connect to Parallax Online!", 947));
-			return 0;
+			return 1;
 
 		// connected, return success
 		case 1 :
@@ -2283,7 +2289,19 @@ int multi_pxo_connect()
 
 	// otherwise disconnect just to be safe
 	DisconnectFromChatServer();
-	gameseq_post_event(GS_EVENT_MAIN_MENU);
+
+	// we failed to connect, so give a nice popup about that
+	if (mpxo_failed) {
+		popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Failed to connect to Parallax Online!", 947));
+	}
+
+	// if we are coming from the mainhall then fail to the join game screen rather
+	// than keeping the user constantly at the mainhall
+	if (gameseq_get_previous_state() == GS_STATE_MAIN_MENU) {
+		gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
+	} else {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	}
 
 	// did not successfully connect
 	return 0;
