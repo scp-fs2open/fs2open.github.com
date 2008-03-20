@@ -73,35 +73,34 @@
 
 
 // Packet IDs
-#define PCKT_SLIST_REQUEST			0x1
-#define PCKT_SLIST_REPLY			0x2
-#define PCKT_SLIST_HB				0x3
-#define PCKT_LOGIN_AUTH				0x4
-#define PCKT_LOGIN_REPLY			0x5
-#define PCKT_MISSIONS_RQST			0x6
-#define PCKT_MISSIONS_REPLY			0x7
-#define PCKT_TABLES_RQST			0x8
-#define PCKT_TABLES_REPLY			0x9
-#define PCKT_PILOT_GET				0xa
-#define PCKT_PILOT_REPLY			0xb
-#define PCKT_PILOT_UPDATE			0xc
-#define PCKT_PILOT_UREPLY			0xd
-#define PCKT_PING					0xe
-#define PCKT_PONG					0xf
+#define PCKT_SLIST_REQUEST			0x01
+#define PCKT_SLIST_REPLY			0x02
+#define PCKT_SLIST_HB				0x03
+#define PCKT_LOGIN_AUTH				0x04
+#define PCKT_LOGIN_REPLY			0x05
+#define PCKT_MISSIONS_RQST			0x06
+#define PCKT_MISSIONS_REPLY			0x07
+#define PCKT_TABLES_RQST			0x08
+#define PCKT_TABLES_REPLY			0x09
+#define PCKT_PILOT_GET				0x0a
+#define PCKT_PILOT_REPLY			0x0b
+#define PCKT_PILOT_UPDATE			0x0c
+#define PCKT_PILOT_UREPLY			0x0d
+#define PCKT_PING					0x0e
+#define PCKT_PONG					0x0f
 
 #define PCKT_MISSION_CHECK			0x10
 #define PCKT_MCHECK_REPLY			0x11
-
 #define PCKT_BANLIST_RQST			0x12
 #define PCKT_BANLIST_RPLY			0x13
-
-// this only goes from the server out
 #define PCKT_NETOWRK_WALL			0x14
-
 #define PCKT_VALID_SID_RQST			0x15
 #define PCKT_VALID_SID_REPLY		0x16
-
-
+#define PCKT_CHAT_CHANNEL_UPD		0x17
+#define PCKT_CHAT_CHAN_COUNT_RQST	0x18
+#define PCKT_CHAT_CHAN_COUNT_REPLY	0x19
+#define PCKT_SLIST_HB_2				0x1a
+#define PCKT_SLIST_DISCONNECT		0x1b
 
 
 //***********************************************************************************************************************

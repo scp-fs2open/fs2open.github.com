@@ -255,6 +255,7 @@
 #include "network/multiui.h"
 #include "network/multiutil.h"
 #include "network/multi_pmsg.h"
+#include "fs2netd/fs2netd_client.h"
 
 
 // ----------------------------------------------------------------------------------------------------------
@@ -618,7 +619,9 @@ void multi_endgame_cleanup()
 		if((Multi_endgame_notify_code != -1) || (Multi_endgame_error_code != -1) && !(Game_mode & GM_STANDALONE_SERVER)){
 			multi_endgame_popup(Multi_endgame_notify_code,Multi_endgame_error_code,Multi_endgame_wsa_error);			
 		}		
-	}	
+	}
+
+	fs2netd_server_disconnect();
 
 	/*
 	extern CFILE *obj_stream;

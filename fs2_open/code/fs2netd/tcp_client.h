@@ -92,6 +92,7 @@
 #include "fs2netd/tcp_socket.h"
 
 struct player;
+struct netgame_info;
 
 int FS2NetD_SendPlayerData(int SID, const char* player_name, const char* user, player *pl, int timeout = 15);
 int FS2NetD_GetPlayerData(int SID, const char* player_name, player *pl, bool CanCreate = false, int timeout = 15);
@@ -99,10 +100,13 @@ bool FS2NetD_CheckSingleMission(const char *m_name, uint crc32, int timeout = 15
 int FS2NetD_CheckValidSID(int SID);
 int FS2NetD_GetServerList(int timeout = 15);
 void FS2NetD_Ping();
-void FS2NetD_SendHeartBeat(const char *myName, const char *MisName, const char *title, int flags, short targetport, short players);
+void FS2NetD_SendHeartBeat();
+void FS2NetD_SendServerDisconnect(ushort port);
 int FS2NetD_Login(const char *username, const char *password, int timeout = 15);
 void FS2NetD_Pong(int tstamp);
 int FS2NetD_ValidateTableList(int timeout = 30);
+void FS2NetD_ChatChannelUpdate(char *chan_name);
+void FS2NetD_GameCountUpdate(char *chan_name);
 fs2open_banmask *FS2NetD_GetBanList(int *numBanMasks, int timeout = 15);
 
 // longer timeouts - mySQL operations
