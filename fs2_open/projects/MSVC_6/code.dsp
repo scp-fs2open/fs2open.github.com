@@ -1161,14 +1161,6 @@ SOURCE=..\..\code\MenuUI\SnazzyUI.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\code\menuui\storybook.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\code\menuui\storybook.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\code\MenuUI\TechMenu.cpp
 # End Source File
 # Begin Source File

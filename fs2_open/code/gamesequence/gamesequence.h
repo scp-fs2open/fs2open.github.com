@@ -442,9 +442,8 @@
 #define GS_EVENT_CAMPAIGN_CHEAT					62		// skip to a mission in a campaign
 #define GS_EVENT_PXO							63
 #define GS_EVENT_LAB							64		// WMC - I-FRED concept
-#define GS_EVENT_STORYBOOK						65		// WMC - the storybook
-#define GS_EVENT_PXO_HELP						66
-#define GS_EVENT_FICTION_VIEWER					67
+#define GS_EVENT_PXO_HELP						65
+#define GS_EVENT_FICTION_VIEWER					66
 
 // IMPORTANT:  When you add a new event, update the initialization for GS_event_text[]
 //             which is done in GameSequence.cpp
@@ -506,12 +505,11 @@ extern char *GS_event_text[];		// text description for the GS_EVENT_* #defines a
 #define GS_STATE_LOOP_BRIEF							48
 #define GS_STATE_PXO								49
 #define GS_STATE_LAB								50
-#define GS_STATE_STORYBOOK							51
-#define GS_STATE_PXO_HELP							52
-#define GS_STATE_START_GAME							53
-#define GS_STATE_FICTION_VIEWER						54
+#define GS_STATE_PXO_HELP							51
+#define GS_STATE_START_GAME							52
+#define GS_STATE_FICTION_VIEWER						53
 
-#define GS_NUM_STATES							55			//Last one++
+#define GS_NUM_STATES							54			//Last one++
 
 // IMPORTANT:  When you add a new state, update the initialization for GS_state_text[]
 //             which is done in GameSequence.cpp

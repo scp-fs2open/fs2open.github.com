@@ -1308,11 +1308,6 @@ void main_hall_do(float frametime)
 		gameseq_post_event(GS_EVENT_LAB);
 		break;
 #ifndef NDEBUG
-	case KEY_F4:
-		gameseq_post_event(GS_EVENT_STORYBOOK);
-		break;
-	
-
 	case KEY_1:		
 		// no soup for you!
 		movie_play("endprt2b.mve");
