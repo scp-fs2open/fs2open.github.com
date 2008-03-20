@@ -975,6 +975,14 @@ SOURCE=..\..\code\Io\Timer.cpp
 
 SOURCE=..\..\code\Io\Timer.h
 # End Source File
+# Begin Source File
+
+SOURCE=..\..\code\io\trackir.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\io\trackir.h
+# End Source File
 # End Group
 # Begin Group "JumpNode"
 
@@ -1560,6 +1568,14 @@ SOURCE=..\..\code\object\objectdock.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\code\object\objectshield.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\objectshield.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\code\Object\ObjectSnd.cpp
 # End Source File
 # Begin Source File
@@ -1577,6 +1593,14 @@ SOURCE=..\..\code\object\parseobjectdock.cpp
 # Begin Source File
 
 SOURCE=..\..\code\object\parseobjectdock.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\waypoint.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\code\object\waypoint.h
 # End Source File
 # End Group
 # Begin Group "Observer"

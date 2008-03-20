@@ -125,6 +125,10 @@ SOURCE=..\..\lua\lgc.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\lua\linit.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\lua\liolib.c
 # End Source File
 # Begin Source File
@@ -150,6 +154,10 @@ SOURCE=..\..\lua\lobject.c
 # Begin Source File
 
 SOURCE=..\..\lua\lopcodes.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\lua\loslib.c
 # End Source File
 # Begin Source File
 
@@ -185,6 +193,10 @@ SOURCE=..\..\lua\ltm.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\lua\lua.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\lua\lundump.c
 # End Source File
 # Begin Source File
@@ -194,6 +206,10 @@ SOURCE=..\..\lua\lvm.c
 # Begin Source File
 
 SOURCE=..\..\lua\lzio.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\lua\print.c
 # End Source File
 # End Group
 # Begin Group "Header Files"
@@ -270,6 +286,10 @@ SOURCE=..\..\lua\ltm.h
 # Begin Source File
 
 SOURCE=..\..\lua\lua.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\lua\luaconf.h
 # End Source File
 # Begin Source File
 
