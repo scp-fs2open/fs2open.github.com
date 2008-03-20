@@ -413,14 +413,14 @@ void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_n
 			g3_transfer_vertex( &verts[2], &vecs[2] );
 			g3_transfer_vertex( &verts[3], &vecs[3] );
 			g3_transfer_vertex( &verts[4], &vecs[4] );
- 		}
+		}
 
-		gr_set_cull(0); // fixes rendering problem in D3D - taylor
+		int cull = gr_set_cull(0); // fixes rendering problem in D3D - taylor
 		draw_face( &verts[0], &verts[4], &verts[1] );
 		draw_face( &verts[1], &verts[4], &verts[2] );
 		draw_face( &verts[4], &verts[3], &verts[2] );
 		draw_face( &verts[0], &verts[3], &verts[4] );
-		gr_set_cull(1);
+		gr_set_cull(cull);
 	}
 
 	if (Warp_ball_bitmap > -1) {

@@ -1777,7 +1777,7 @@ void beam_render(beam *b, float u_offset)
 	vm_vec_normalize_quick(&fvec);		
 
 	// turn off backface culling
-	gr_set_cull(0);
+	int cull = gr_set_cull(0);
 
 	bwi = &Weapon_info[b->weapon_info_index].b_info;
 
@@ -1873,7 +1873,7 @@ void beam_render(beam *b, float u_offset)
 	}		
 	
 	// turn backface culling back on
-	gr_set_cull(1);	
+	gr_set_cull(cull);	
 }
 
 // generate particles for the muzzle glow

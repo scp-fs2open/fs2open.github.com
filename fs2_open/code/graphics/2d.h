@@ -1047,7 +1047,7 @@ typedef struct screen {
 	void (*gf_get_pixel)(int x, int y, int *r, int *g, int *b);
 
 	// poly culling
-	void (*gf_set_cull)(int cull);
+	int (*gf_set_cull)(int cull);
 
 	// cross fade
 	void (*gf_cross_fade)(int bmap1, int bmap2, int x1, int y1, int x2, int y2, float pct);

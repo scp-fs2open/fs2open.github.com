@@ -1887,7 +1887,7 @@ void stars_draw_bitmaps(int show_bitmaps)
 	}
 
 	// turn off culling
-	gr_set_cull(0);
+	int cull = gr_set_cull(0);
 
 	// turn off zbuffering
 	int saved_zbuffer_mode = gr_zbuffer_get();
@@ -1946,7 +1946,7 @@ void stars_draw_bitmaps(int show_bitmaps)
 	}
 
 	// turn on culling
-	gr_set_cull(1);
+	gr_set_cull(cull);
 
 	// restore zbuffer
 	gr_zbuffer_set(saved_zbuffer_mode);

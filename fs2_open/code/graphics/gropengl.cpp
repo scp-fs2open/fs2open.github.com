@@ -2861,11 +2861,7 @@ void opengl_tmapper_internal3d( int nv, vertex **verts, uint flags )
 		}
 	}
 
-	bool reset_cull = false;
-	if ( glIsEnabled(GL_CULL_FACE) ) {
-		gr_set_cull(0);
-		reset_cull = true;
-	}
+	int cull = gr_set_cull(0);
 
 	// use what opengl_setup_render_states() gives us since this works much better for nebula and transparency
 	if ( !(flags & (TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD)) )
@@ -2891,10 +2887,7 @@ void opengl_tmapper_internal3d( int nv, vertex **verts, uint flags )
 
 	glEnd();
 
-
-	if (reset_cull) {
-		gr_set_cull(1);
-	}
+	gr_set_cull(cull);
 }
 
 void gr_opengl_tmapper( int nverts, vertex **verts, uint flags )
@@ -3251,15 +3244,22 @@ void gr_opengl_get_pixel(int x, int y, int *r, int *g, int *b)
 	// Not used.
 }
 
-void gr_opengl_set_cull(int cull)
+static int CullEnabled = 0;
+int gr_opengl_set_cull(int cull)
 {
+	int last_state = CullEnabled;
+
 	if (cull) {
 		glEnable (GL_CULL_FACE);
 		glFrontFace (GL_CCW);
 		glCullFace (GL_BACK);
+		CullEnabled = 1;
 	} else {
 		glDisable (GL_CULL_FACE);
+		CullEnabled = 0;
 	}
+
+	return last_state;
 }
 
 void gr_opengl_filter_set(int filter)
