@@ -943,6 +943,13 @@ char * ParseIRCMessage(char *Line, int iMode)
 	}
 
 
+	if(stricmp(szCmd, "403")==0)
+	{
+		// ERR_NOSUCHCHANNEL - Used to indicate the given channel name is invalid.
+		Joined_channel = -1;
+		return NULL;
+	}
+
 	if(stricmp(szCmd,"401")==0)
 	{
 		//This is whois user info, we can get their tracker info from here.  -5
