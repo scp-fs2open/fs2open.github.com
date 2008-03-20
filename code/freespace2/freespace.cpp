@@ -1788,7 +1788,6 @@
 #include "menuui/snazzyui.h"
 #include "menuui/techmenu.h"
 #include "menuui/trainingmenu.h"
-#include "menuui/storybook.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
@@ -7413,10 +7412,6 @@ void game_process_event( int current_state, int event )
 			gameseq_set_state(GS_STATE_CAMPAIGN_ROOM);
 			break;
 
-		case GS_EVENT_STORYBOOK:
-			gameseq_set_state(GS_STATE_STORYBOOK);
-			break;
-
 		case GS_EVENT_CREDITS:
 			gameseq_set_state( GS_STATE_CREDITS );
 			break;
@@ -7730,10 +7725,6 @@ void game_leave_state( int old_state, int new_state )
 			if (new_state == GS_STATE_MAIN_MENU) {
 				freespace_stop_mission();
 			}
-			break;
-
-		case GS_STATE_STORYBOOK:
-			storybook_close();
 			break;
 
 		case GS_STATE_SHIP_SELECT:
@@ -8139,10 +8130,6 @@ void game_enter_state( int old_state, int new_state )
 
 		case GS_STATE_CAMPAIGN_ROOM:
 			campaign_room_init();
-			break;
-
-		case GS_STATE_STORYBOOK:
-			storybook_init();
 			break;
 
 		case GS_STATE_SHIP_SELECT:
@@ -8719,11 +8706,6 @@ void game_do_state(int state)
 		case GS_STATE_CMD_BRIEF:
 			game_set_frametime(GS_STATE_CMD_BRIEF);
 			cmd_brief_do_frame(flFrametime);
-			break;
-
-		case GS_STATE_STORYBOOK:
-			game_set_frametime(GS_STATE_STORYBOOK);
-			storybook_do_frame(flFrametime);
 			break;
 
 		case GS_STATE_CREDITS:
