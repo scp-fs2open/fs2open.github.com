@@ -5192,73 +5192,53 @@ void ai_fly_to_ship()
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
-	vec3d perp, zero, goal_point;
-	memset(&zero, 0, sizeof(vec3d));
-	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
-		Player_ship->objnum != shipp->objnum &&
-		//sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) && 
-		(shipp->flags2 & SF2_NAVPOINT_CARRY || (shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
-		)) // capital ship and AutoPilotEngaged
+	object *wing_leader = get_wing_leader(aip->wing);
+
+	vec3d perp, goal_point;
+
+	bool carry_flag = ((shipp->flags2 & SF2_NAVPOINT_CARRY) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY)));
+
+	if (AutoPilotEngaged && timestamp_elapsed(LockAPConv) && carry_flag
+		&& ((The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) || (Pl_objp != wing_leader)) )
 	{
-			// snap wings into formation them into formation
-			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) 
-			{
-				if (aip->wing != -1)
-				{
-					int wing_index = get_wing_index(Pl_objp, aip->wing);
-					object *leader_objp = get_wing_leader(aip->wing);
-					
-					if (leader_objp != Pl_objp)
-					{
-						// not leader.. get our position relative to leader
-						get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
-					}
-					else
-					{
-						j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
-						switch (autopilot_wings[aip->wing] % 2)
-						{
-							case 1: // back-left
-								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
-								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
-								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
-								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
-								break;
+		// snap wings into formation them into formation
+		if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) {
+			if (aip->wing != -1) {
+				int wing_index = get_wing_index(Pl_objp, aip->wing);
 
-							default: //back-right
-							case 0:
-								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
-								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
-								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, 166.0f*j);
-								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
-								break;
-						}
+				if (wing_leader != Pl_objp) {
+					// not leader.. get our position relative to leader
+					get_absolute_wing_pos_autopilot(&goal_point, wing_leader, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+				} else {
+					j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
 
+					switch (autopilot_wings[aip->wing] % 2) {
+						case 1: // back-left
+							vm_vec_copy_normalize(&perp, &Player_obj->orient.vec.rvec);
+							vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
+							vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+							break;
+
+						default: //back-right
+						case 0:
+							vm_vec_copy_normalize(&perp, &Player_obj->orient.vec.rvec);
+							vm_vec_scale(&perp, 166.0f*j);
+							vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+							break;
 					}
-					Pl_objp->pos = goal_point;
+
 				}
-				vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
-				vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
-			}
-			else
-			{
-				vec3d tmp, proj_pos;
-				
-				//vm_vec_scale
-				memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vec3d));
-				vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
-										  // this makes tmp a displacement
-				vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
-				
 
-				ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+				Pl_objp->pos = goal_point;
 			}
 
-	}
-	else
-	{
+			vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
+			vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
+		} else {
+			vm_vec_scale_add(&perp, &Pl_objp->pos, &wing_leader->phys_info.vel, 1000.0f);
+			ai_turn_towards_vector(&perp, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+		}
+	} else {
 		if (dist_to_goal > 0.1f) {
 			ai_turn_towards_vector(target_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
 		}
@@ -5409,7 +5389,7 @@ void ai_waypoints()
 		aip->wp_dir = 1;
 	}
 
-	wpl = &Waypoint_lists[Ai_info[Ships[Pl_objp->instance].ai_index].wp_list];
+	wpl = &Waypoint_lists[aip->wp_list];
 
 	Assert(wpl->count);	// What? Is this zero? Probably wp_index never got initialized!
 
@@ -5449,8 +5429,8 @@ void ai_waypoints()
 	//	If a wing leader, take turns more slowly, based on size of wing.
 	int	scale;
 
-	if (Ai_info[Ships[Pl_objp->instance].ai_index].wing >= 0) {
-		scale = Wings[Ai_info[Ships[Pl_objp->instance].ai_index].wing].current_count;
+	if (aip->wing >= 0) {
+		scale = Wings[aip->wing].current_count;
 		scale = (int) ((scale+1)/2);
 	} else {
 		scale = 1;
@@ -5461,98 +5441,58 @@ void ai_waypoints()
 	// and "keep reasonable distance" 
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
-	vec3d perp, zero, goal_point;
-	memset(&zero, 0, sizeof(vec3d));
-	if (AutoPilotEngaged && timestamp() >= LockAPConv &&
-		Player_ship->objnum != shipp->objnum &&
-		//&& sip->flags & (SIF_BIG_SHIP | SIF_HUGE_SHIP) 
-		(shipp->flags2 & SF2_NAVPOINT_CARRY ||
-			(shipp->wingnum != -1 && Wings[shipp->wingnum].flags & WF_NAV_CARRY )
-		)) // capital ship and AutoPilotEngaged
+
+	object *wing_leader = get_wing_leader(aip->wing);
+
+	vec3d perp, goal_point;
+
+	bool carry_flag = ((shipp->flags2 & SF2_NAVPOINT_CARRY) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags & WF_NAV_CARRY)));
+
+	if (AutoPilotEngaged && timestamp_elapsed(LockAPConv) && carry_flag
+		&& ((The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) || (Pl_objp != wing_leader)) )
 	{
-		
-		//int collide_objnum = pp_collide_any(&Objects[shipp->objnum].pos, wp_cur, // current point, destination point
-		//									model_get_core_radius( sip->modelnum ) * 1.5f, // radius w/ buffer
-		//									Pl_objp, NULL, 0);
-		// fly parrel to collider - so figure out vector between collider and radius
-		//if (collide_objnum != -1)
-		//{
+		// snap wings into formation them into formation
+		if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) {
+			if (aip->wing != -1) {
+				int wing_index = get_wing_index(Pl_objp, aip->wing);
 
-			/*
-			vec3d col_vec, col_direct;
-			vm_vec_copy_normalize(&col_vec, &Objects[collide_objnum].phys_info.vel);
-			vm_vec_sub(&col_direct, &col_vec, &Objects[collide_objnum].orient.vec.fvec);
-			*/
-// snap wings into formation them into formation
-			if (The_mission.flags & MISSION_FLAG_USE_AP_CINEMATICS) 
-			{
-				if (aip->wing != -1)
-				{
-					int wing_index = get_wing_index(Pl_objp, aip->wing);
-					object *leader_objp = get_wing_leader(aip->wing);
-					
-					if (leader_objp != Pl_objp)
-					{
-						// not leader.. get our position relative to leader
-						get_absolute_wing_pos_autopilot(&goal_point, leader_objp, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+				if (wing_leader != Pl_objp) {
+					// not leader.. get our position relative to leader
+					get_absolute_wing_pos_autopilot(&goal_point, wing_leader, wing_index, aip->ai_flags & AIF_FORMATION_OBJECT);
+				} else {
+					j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
+
+					switch (autopilot_wings[aip->wing] % 2) {
+						case 1: // back-left
+							vm_vec_copy_normalize(&perp, &Player_obj->orient.vec.rvec);
+							vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
+							vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+							break;
+
+						default: //back-right
+						case 0:
+							vm_vec_copy_normalize(&perp, &Player_obj->orient.vec.rvec);
+							vm_vec_scale(&perp, 166.0f*j);
+							vm_vec_add(&goal_point, &Player_obj->pos, &perp);
+							break;
 					}
-					else
-					{
-						j = 1+int( (float)floor(double(autopilot_wings[aip->wing]-1)/2.0) );
-						switch (autopilot_wings[aip->wing] % 2)
-						{
-							case 1: // back-left
-								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
-								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
-								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, -166.0f*j); // 166m is supposedly the optimal range according to tolwyn
-								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
-								break;
 
-							default: //back-right
-							case 0:
-								vm_vec_add(&perp, &zero, &Player_obj->orient.vec.rvec);
-								//vm_vec_sub(&perp, &perp, &Player_obj->orient.vec.fvec);
-								vm_vec_normalize(&perp);
-								vm_vec_scale(&perp, 166.0f*j);
-								vm_vec_add(&goal_point, &Player_obj->pos, &perp);
-								break;
-						}
-
-					}
-					Pl_objp->pos = goal_point;
 				}
-				vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
-				vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
-			}
-			else
-			{
-				vec3d tmp, proj_pos;
-				
-				//vm_vec_scale
-				memcpy(&tmp, &Objects[Player_ship->objnum].phys_info.vel, sizeof(vec3d));
-				vm_vec_scale(&tmp, 1000); // let's target the players's position 1000 seconds from now
-										  // this makes tmp a displacement
-				vm_vec_add(&proj_pos, &tmp, &Pl_objp->pos); // add the displacement to the current position 
-				
 
-				ai_turn_towards_vector(&proj_pos, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+				Pl_objp->pos = goal_point;
 			}
-		/*}
-		else
-		{
-			if (dist_to_goal > 0.1f) {
-				ai_turn_towards_vector(wp_cur, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
-			}
-		}*/
-	}
-	else
-	{
+
+			vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
+			vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
+		} else {
+			vm_vec_scale_add(&perp, &Pl_objp->pos, &wing_leader->phys_info.vel, 1000.0f);
+			ai_turn_towards_vector(&perp, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
+		}
+	} else {
 		if (dist_to_goal > 0.1f) {
 			ai_turn_towards_vector(wp_cur, Pl_objp, flFrametime, sip->srotation_time*3.0f*scale, slop_vec, NULL, 0.0f, 0);
 		}
 	}
-
 
 	
 	// ----------------------------------------------
@@ -12063,12 +12003,16 @@ int get_wing_index(object *objp, int wingnum)
 //	Currently, the wing leader is defined as the first object in the wing.
 //	wingnum		Wing number in Wings array.
 //	If wing leader is disabled, swap it with another ship.
-object * get_wing_leader(int wingnum)
+object *get_wing_leader(int wingnum)
 {
-	wing		*wingp;
-	int		ship_num;
+	wing *wingp;
+	int ship_num = 0;
 
-	Assert((wingnum >= 0) && (wingnum < MAX_WINGS));
+	if (wingnum < 0) {
+		return NULL;
+	}
+
+	Assert( wingnum < MAX_WINGS );
 
 	wingp = &Wings[wingnum];
 
@@ -12080,12 +12024,15 @@ object * get_wing_leader(int wingnum)
 	int n = 0;
 	while (ship_get_subsystem_strength(&Ships[ship_num], SUBSYSTEM_ENGINE) == 0.0f) {
 		n++;
-		if (n >= wingp->current_count)
-			break;	
+
+		if (n >= wingp->current_count) {
+			break;
+		}
+
 		ship_num = wingp->ship_index[n];
 	}
 
-	if (( n != 0) && (n != wingp->current_count)) {
+	if ( (n != 0) && (n != wingp->current_count) ) {
 		int t = wingp->ship_index[0];
 		wingp->ship_index[0] = wingp->ship_index[n];
 		wingp->ship_index[n] = t;
@@ -12451,7 +12398,6 @@ int ai_formation()
 	ai_info	*aip, *laip;
 	int		wingnum;
 	int		wing_index;		//	Index in wing struct, defines 3-space location in wing.
-	int		player_wing;	// index of the players wingnum
 	vec3d	goal_point, future_goal_point_5, future_goal_point_2, future_goal_point_x, future_goal_point_1000x, vec_to_goal, dir_to_goal;
 	float		dot_to_goal, dist_to_goal, leader_speed;
 
@@ -12478,32 +12424,35 @@ int ai_formation()
 		leader_objp = &Objects[aip->goal_objnum];
 	} else {	//	Formation flying in waypoint mode.
 		Assert(aip->ai_flags & AIF_FORMATION_WING);
-		if (aip->mode != AIM_WAYPOINTS && aip->mode != AIM_FLY_TO_SHIP) {
+
+		if ( (aip->mode != AIM_WAYPOINTS) && (aip->mode != AIM_FLY_TO_SHIP) ) {
 			aip->ai_flags &= ~AIF_FORMATION_WING;
 			return 1;
 		}
 
 		wingnum = aip->wing;
 
-		if (wingnum == -1)
+		if (wingnum == -1) {
 			return 1;
+		}
 
 		// disable formation flying for any ship in the players wing
-		player_wing = Ships[Player_obj->instance].wingnum;
-		if ( (player_wing != -1) && (wingnum == player_wing) && !AutoPilotEngaged)
-			return 1;
+		// ... except when using auto-pilot
+		if ( !AutoPilotEngaged ) {
+			if (wingnum == Ships[Player_obj->instance].wingnum) {
+				return 1;
+			}
+		}
 
 		wing_index = get_wing_index(Pl_objp, wingnum);
 
 		leader_objp = get_wing_leader(wingnum);
-
 	}
 
 	// if Pl_objp is docked with a ship in his own wing, only the most massive one
 	// in the whole assembly actually flies in formation
 	// Goober5000 - this is really stupid code
-	if (object_is_docked(Pl_objp))
-	{
+	if ( object_is_docked(Pl_objp) ) {
 		// assume I am the most massive
 		dock_function_info dfi;
 		dfi.parameter_variables.int_value = aip->wing;
@@ -12523,15 +12472,15 @@ int ai_formation()
 	laip = &Ai_info[Ships[leader_objp->instance].ai_index];
 
 	//	Make sure we're really in this wing.
-	if (wing_index == -1)
-		return 1;
-
-	//	If this ship is the leader, abort, as he doesn't have to follow anyone.
-	if (wing_index == 0) {
-		// nprintf(("AI", "Hmm, wing leader %s in ai_formation for no good reason.\n", shipp->ship_name));
+	if (wing_index == -1) {
 		return 1;
 	}
 
+	// skip ourselves, if we happen to be the leader
+	if (leader_objp == Pl_objp) {
+		return 1;
+	}
+	
 	if (aip->mode == AIM_WAYPOINTS) {
 		aip->wp_list = laip->wp_list;
 		if (laip->wp_index < Waypoint_lists[laip->wp_list].count)
