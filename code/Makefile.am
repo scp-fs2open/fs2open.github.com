@@ -370,6 +370,8 @@ FS2_SOURCES =	\
 	io/mouse.h	\
 	io/timer.cpp	\
 	io/timer.h	\
+	io/trackir.cpp	\
+	io/trackir.h	\
 	jpgutils/jpgutils.cpp	\
 	jpgutils/jpgutils.h	\
 	jumpnode/jumpnode.cpp	\
@@ -417,8 +419,6 @@ FS2_SOURCES =	\
 	menuui/readyroom.h	\
 	menuui/snazzyui.cpp	\
 	menuui/snazzyui.h	\
-	menuui/storybook.cpp	\
-	menuui/storybook.h	\
 	menuui/techmenu.cpp	\
 	menuui/techmenu.h	\
 	menuui/trainingmenu.cpp	\
@@ -557,9 +557,13 @@ FS2_SOURCES =	\
 	object/objectdock.h	\
 	object/object.cpp	\
 	object/object.h	\
+	object/objectshield.cpp	\
+	object/objectshield.h	\
 	object/objectsort.cpp	\
 	object/parseobjectdock.cpp	\
 	object/parseobjectdock.h	\
+	object/waypoint.cpp	\
+	object/waypoint.h	\
 	observer/observer.cpp	\
 	observer/observer.h	\
 	palman/palman.cpp	\
