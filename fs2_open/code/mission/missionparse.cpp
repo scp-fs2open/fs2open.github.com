@@ -4435,6 +4435,12 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		// update housekeeping variables
 		wingp->ship_index[wingp->current_count] = Objects[objnum].instance;
 
+		// since wing order and object order aren't necessarily the same thing
+		// be sure to reset the special ship to the correct ship_index[] offset
+		if (p_objp->special_ship) {
+			wingp->special_ship = wingp->current_count;
+		}
+
 		// set up wingman status index
 		hud_wingman_status_set_index(wingp->ship_index[wingp->current_count]);
 
@@ -4836,36 +4842,36 @@ void parse_wing(mission *pm)
 	}
 
 	// set the wing number for all ships in the wing
-	for (i = 0; i < wingp->wave_count; i++ )
-	{
+	for (i = 0; i < wingp->wave_count; i++ ) {
 		char *ship_name = ship_names[i];
-		int j, assigned = 0;
+		int assigned = 0;
+		uint j;
 
 		// Goober5000 - since the ship/wing creation stuff is reordered to accommodate multiple docking,
 		// everything is still only in the parse array at this point (in both FRED and FS2)
 
 		// find the parse object and assign it the wing number
-		for (j = 0; j < (int)Parse_objects.size(); j++)
-		{
+		for (j = 0; j < Parse_objects.size(); j++) {
 			p_object *p_objp = &Parse_objects[j];
 
-			if (!strcmp(ship_name, p_objp->name))
-			{
+			if ( !strcmp(ship_name, p_objp->name) ) {
 				// get Allender -- ship appears to be in multiple wings
 				Assert (p_objp->wingnum == -1);
 
 				p_objp->wingnum = wingnum;
 				p_objp->pos_in_wing = i;
+				p_objp->special_ship = (i == wingp->special_ship) ? true : false;
 
 				assigned++;
 			}
 		}
 
 		// error checking
-		if (assigned == 0)
+		if (assigned == 0) {
 			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is not present in #Objects section.\n", wingp->name, ship_name);
-		else if (assigned > 1)
+		} else if (assigned > 1) {
 			Error(LOCATION, "Cannot load mission -- for wing %s, ship %s is specified multiple times in wing.\n", wingp->name, ship_name);
+		}
 	}
 
 	// Goober5000 - wing creation stuff moved to post_process_ships_wings

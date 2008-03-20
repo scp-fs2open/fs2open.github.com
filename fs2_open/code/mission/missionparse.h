@@ -865,6 +865,7 @@ typedef struct p_object {
 
 	int	wingnum;							// set to -1 if not in a wing -- Wing array index otherwise
 	int pos_in_wing;						// Goober5000 - needed for FRED with the new way things work
+	bool special_ship;						// what "$Special Ship:" actually points to in the wing array (for later cleanup)
 
 	int	flags;								// mission savable flags
 	int flags2;								// Goober5000
