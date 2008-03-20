@@ -24,6 +24,7 @@
 #define WSAGetLastError()  (errno)
 #else
 #include <winsock.h>
+typedef int socklen_t;
 #endif
 
 #include <stdio.h>
@@ -189,12 +190,7 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 
 		if(SOCKET_ERROR == connect(Chatsock,(SOCKADDR *)&Chataddr,sizeof(SOCKADDR_IN)))
 		{
-#ifdef _WIN32
 			if(WSAEWOULDBLOCK == WSAGetLastError())
-#else
-			int my_error = errno;
-			if (my_error == EINPROGRESS)
-#endif
 			{
 				Socket_connecting = 1;
 				return 0;
@@ -227,12 +223,23 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 			FD_ZERO(&write_fds);
 			FD_SET(Chatsock, &write_fds);    
 			//Writable -- that means it's connected
-#ifdef WIN32
-			if ( select(0, NULL, &write_fds, NULL, &timeout) )
-#else
-			if ( select(Chatsock+1, NULL, &write_fds, NULL, &timeout) > 0 )
-#endif
+			if (select(Chatsock+1, NULL, &write_fds, NULL, &timeout) > 0)
 			{
+				// make sure that we don't have any connect() errors (since it's non-blocking)
+				int err_val = 0;
+				size_t err_val_size = sizeof(err_val);
+				getsockopt(Chatsock, SOL_SOCKET, SO_ERROR, (char*)&err_val, (socklen_t*)&err_val_size);
+
+				if (err_val)
+				{
+					if (err_val != WSAEWOULDBLOCK)
+					{
+						return -1;
+					}
+
+					return 0;
+				}
+
 				Socket_connected = 1;
 				sprintf(signon_str,NOX("/USER %s %s %s :%s"),NOX("user"),NOX("user"),NOX("user"),Chat_tracker_id);
 				SendChatString(signon_str,1);
@@ -244,11 +251,7 @@ int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid)
 			FD_ZERO(&error_fds);
 			FD_SET(Chatsock,&error_fds);    
 			//error -- that means it's not going to connect
-#ifdef WIN32
-			if ( select(0, NULL, NULL, &error_fds, &timeout) )
-#else
 			if ( select(Chatsock+1, NULL, NULL, &error_fds, &timeout) )
-#endif
 			{
 				return -1;
 			}
