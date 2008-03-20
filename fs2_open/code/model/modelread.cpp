@@ -2427,6 +2427,108 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 					}
 				}
 
+				// Added for new handling of turret orientation - KeldorKatarn
+				matrix	*orient = &pm->submodel[n].orientation;
+
+				if ( (p = strstr(props, "$uvec:")) != NULL ) {
+					p += 6;
+
+					char *parsed_string = p;
+
+					while (*parsed_string == ' ') {
+						parsed_string++; // Skip spaces
+					}
+
+					orient->vec.uvec.xyz.x = (float)(strtod(parsed_string, (char **)NULL));
+
+					// Find end of number
+					parsed_string = strchr(parsed_string, ',');
+					Assert(parsed_string != NULL);
+					parsed_string++;
+
+					while (*parsed_string == ' ') {
+						parsed_string++; // Skip spaces
+					}
+
+					orient->vec.uvec.xyz.y = (float)(strtod(parsed_string, (char **)NULL));
+
+					// Find end of number
+					parsed_string = strchr(parsed_string, ',');
+					Assert(parsed_string != NULL);
+					parsed_string++;
+
+					while (*parsed_string == ' ') {
+						parsed_string++; // Skip spaces
+					}
+
+					orient->vec.uvec.xyz.z = (float)(strtod(parsed_string, (char **)NULL));
+
+					if ( (p = strstr(props, "$fvec:")) != NULL ) {
+						parsed_string = p + 6;
+
+						while (*parsed_string == ' ') {
+							parsed_string++; // Skip spaces
+						}
+
+						orient->vec.fvec.xyz.x = (float)(strtod(parsed_string, (char **)NULL));
+
+						// Find end of number
+						parsed_string = strchr(parsed_string, ',');
+						Assert(parsed_string != NULL);
+						parsed_string++;
+
+						while (*parsed_string == ' ') {
+							parsed_string++; // Skip spaces
+						}
+
+						orient->vec.fvec.xyz.y = (float)(strtod(parsed_string, (char **)NULL));
+
+						// Find end of number
+						parsed_string = strchr(parsed_string, ',');
+						Assert(parsed_string != NULL);
+						parsed_string++;
+
+						while (*parsed_string == ' ') {
+							parsed_string++; // Skip spaces
+						}
+
+						orient->vec.fvec.xyz.z = (float)(strtod(parsed_string, (char **)NULL));
+
+						vm_vec_normalize(&orient->vec.uvec);
+						vm_vec_normalize(&orient->vec.fvec);
+
+						vm_vec_crossprod(&orient->vec.rvec, &orient->vec.uvec, &orient->vec.fvec);
+						vm_vec_crossprod(&orient->vec.fvec, &orient->vec.rvec, &orient->vec.uvec);
+
+						vm_vec_normalize(&orient->vec.fvec);
+						vm_vec_normalize(&orient->vec.rvec);
+
+						vm_orthogonalize_matrix(orient);
+					} else {
+						int parent_num = pm->submodel[n].parent;
+
+						if (parent_num > -1) {
+							*orient = pm->submodel[parent_num].orientation;
+						} else {
+							*orient = vmd_identity_matrix;
+						}
+
+						Warning( LOCATION, "Improper custom orientation matrix, you must define a up vector, then a forward vector");
+					}
+				} else {
+					int parent_num = pm->submodel[n].parent;
+
+					if (parent_num > -1) {
+						*orient = pm->submodel[parent_num].orientation;
+					} else {
+						*orient = vmd_identity_matrix;
+					}
+
+					if (strstr(props, "$fvec:") != NULL) {
+						Warning( LOCATION, "Improper custom orientation matrix, you must define a up vector, then a forward vector");
+					}
+				}
+
 				if ( !rotating_submodel_has_subsystem ) {
 					nprintf(("Model", "Model %s: Rotating Submodel without subsystem: %s\n", pm->filename, pm->submodel[n].name));
 
@@ -4020,9 +4122,18 @@ void model_find_obj_dir(vec3d *w_vec, vec3d *m_vec, object *ship_obj, int sub_mo
 	mn = sub_model_num;
 
 	// instance up the tree for this point
-	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
-		
-		vm_angles_2_matrix(&m, &pm->submodel[mn].angs);
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		// By using this kind of computation, the rotational angles can always
+		// be computed relative to the submodel itself, instead of relative
+		// to the parent - KeldorKatarn
+		matrix rotation_matrix = pm->submodel[mn].orientation;
+		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
+
+		matrix inv_orientation;
+		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+
+		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
 		vm_vec_unrotate(&tvec, &vec, &m);
 		vec = tvec;
 
@@ -4047,11 +4158,20 @@ void model_rot_sub_into_obj(vec3d * outpnt, vec3d *mpnt,polymodel *pm, int sub_m
 	mn = sub_model_num;
 
 	//instance up the tree for this point
-	while ((mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
-		
-		vm_angles_2_matrix(&m,&pm->submodel[mn].angs );
-		vm_vec_unrotate(&tpnt,&pnt,&m);
-		vm_vec_add(&pnt,&tpnt,&pm->submodel[mn].offset );
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		// By using this kind of computation, the rotational angles can always
+		// be computed relative to the submodel itself, instead of relative
+		// to the parent - KeldorKatarn
+		matrix rotation_matrix = pm->submodel[mn].orientation;
+		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
+ 
+		matrix inv_orientation;
+		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+
+		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
+		vm_vec_unrotate(&tpnt, &pnt, &m);
+		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
 
 		mn = pm->submodel[mn].parent;
 	}
@@ -4462,8 +4582,7 @@ void model_find_submodel_offset(vec3d *outpnt, int model_num, int sub_model_num)
 	mn = sub_model_num;
 
 	//instance up the tree for this point
-	while ((mn >= 0) && (pm->submodel[mn].parent >= 0))
-	{
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
 		vm_vec_add2(outpnt, &pm->submodel[mn].offset);
 
 		mn = pm->submodel[mn].parent;
@@ -4485,12 +4604,21 @@ void model_find_world_point(vec3d * outpnt, vec3d *mpnt,int model_num,int sub_mo
 	mn = sub_model_num;
 
 	//instance up the tree for this point
-	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
-		
-		vm_angles_2_matrix(&m,&pm->submodel[mn].angs );
-		vm_vec_unrotate(&tpnt,&pnt,&m);
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		// By using this kind of computation, the rotational angles can always
+		// be computed relative to the submodel itself, instead of relative
+		// to the parent - KeldorKatarn
+		matrix rotation_matrix = pm->submodel[mn].orientation;
+		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
 
-		vm_vec_add(&pnt,&tpnt,&pm->submodel[mn].offset );
+		matrix inv_orientation;
+		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+
+		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
+		vm_vec_unrotate(&tpnt, &pnt, &m);
+
+		vm_vec_add(&pnt, &tpnt, &pm->submodel[mn].offset);
 
 		mn = pm->submodel[mn].parent;
 	}
@@ -4528,7 +4656,18 @@ void world_find_model_point(vec3d *out, vec3d *world_pt, polymodel *pm, int subm
 
 	// put into submodel RF
 	vm_vec_sub2(&tempv2, &pm->submodel[submodel_num].offset);
-	vm_angles_2_matrix(&m, &pm->submodel[submodel_num].angs);
+
+	// By using this kind of computation, the rotational angles can always
+	// be computed relative to the submodel itself, instead of relative
+	// to the parent - KeldorKatarn
+	matrix rotation_matrix = pm->submodel[submodel_num].orientation;
+	vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[submodel_num].angs);
+
+	matrix inv_orientation;
+	vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[submodel_num].orientation);
+
+	vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
 	vm_vec_rotate(out, &tempv2, &m);
 }
 
@@ -4630,10 +4769,19 @@ void model_find_world_dir(vec3d * out_dir, vec3d *in_dir,int model_num, int sub_
 	mn = sub_model_num;
 
 	//instance up the tree for this point
-	while ((mn >= 0) && (pm->submodel[mn].parent >= 0)) {
-		
-		vm_angles_2_matrix(&m,&pm->submodel[mn].angs );
-		vm_vec_unrotate(&tpnt,&pnt,&m);
+	while ( (mn >= 0) && (pm->submodel[mn].parent >= 0) ) {
+		// By using this kind of computation, the rotational angles can always
+		// be computed relative to the submodel itself, instead of relative
+		// to the parent - KeldorKatarn
+		matrix rotation_matrix = pm->submodel[mn].orientation;
+		vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
+
+		matrix inv_orientation;
+		vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+
+		vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+
+		vm_vec_unrotate(&tpnt, &pnt, &m);
 		pnt = tpnt;
 
 		mn = pm->submodel[mn].parent;

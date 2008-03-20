@@ -2837,7 +2837,20 @@ void model_interp_subcall(polymodel * pm, int mn, int detail_level)
 
 	vm_vec_add2(&Interp_offset,&pm->submodel[mn].offset);
 
-	g3_start_instance_angles(&pm->submodel[mn].offset, &pm->submodel[mn].angs);
+	// Compute final submodel orientation by using the orientation matrix and the rotation angles.
+	// By using this kind of computation, the rotational angles can always be computed relative
+	// to the submodel itself, instead of relative to the parent - KeldorKatarn
+	matrix rotation_matrix = pm->submodel[mn].orientation;
+	vm_rotate_matrix_by_angles(&rotation_matrix, &pm->submodel[mn].angs);
+
+	matrix inv_orientation;
+	vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[mn].orientation);
+
+	matrix submodel_matrix;
+	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
+
+	g3_start_instance_matrix(&pm->submodel[mn].offset, &submodel_matrix, true);
+
 	if ( !(Interp_flags & MR_NO_LIGHTING ) )	{
 		light_rotate_all();
 	}
@@ -4716,10 +4729,18 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 							angs.p = PI2 - angs.p;
 							angs.h = PI2 - angs.h;
 
-//								gr_set_color_fast(&Color_bright_blue);
-//								gr_printf(0, 10, "b %0.2f, p %0.2f, h %0.2f", angs.b, angs.p, angs.h);
+							// Compute final submodel orientation by using the orientation
+							// matrix and the rotation angles.
+							// By using this kind of computation, the rotational angles can
+							// always be computed relative to the submodel itself, instead
+							// of relative to the parent - KeldorKatarn
+							matrix rotation_matrix = pm->submodel[bank->submodel_parent].orientation;
+							vm_rotate_matrix_by_angles(&rotation_matrix, &angs);
 
-							vm_angles_2_matrix(&m, &angs);
+							matrix inv_orientation;
+							vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[bank->submodel_parent].orientation);
+
+							vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
 
 							vec3d offset = pm->submodel[bank->submodel_parent].offset;
 							vm_vec_sub(&pnt, &pnt, &offset);
