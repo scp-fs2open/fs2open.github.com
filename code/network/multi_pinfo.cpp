@@ -866,7 +866,11 @@ void multi_pinfo_build_stats()
 	// sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_HIT],"%d",sc->p_shots_hit);
 	
 	// primary hit pct
-	sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_PCT],"%d%%",(int)(100.0f * ((float)sc->p_shots_hit / (float)sc->p_shots_fired)));
+	if (sc->p_shots_fired > 0) {
+		sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_PCT], "%d%%", (int)(100.0f * ((float)sc->p_shots_hit / (float)sc->p_shots_fired)));
+	} else {
+		sprintf(Multi_pinfo_stats_vals[MPI_PSHOTS_PCT], "%d%%", 0);
+	}
 	// primary shots fired
 	sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_FIRED],"%d",sc->s_shots_fired);
 
@@ -874,7 +878,11 @@ void multi_pinfo_build_stats()
 	// sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_HIT],"%d",sc->s_shots_hit);
 	
 	// primary hit pct
-	sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_PCT],"%d%%",(int)(100.0f * ((float)sc->s_shots_hit / (float)sc->s_shots_fired)));
+	if (sc->s_shots_fired > 0) {
+		sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_PCT], "%d%%", (int)(100.0f * ((float)sc->s_shots_hit / (float)sc->s_shots_fired)));
+	} else {
+		sprintf(Multi_pinfo_stats_vals[MPI_SSHOTS_PCT], "%d%%", 0);
+	}
 }
 
 // if the pilot's image was currently loading when we started the popup, load it up now if its finished
