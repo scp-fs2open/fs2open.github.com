@@ -153,7 +153,7 @@
 bool env_enabled = false;
 bool cell_enabled = false;
 
-#define MAX_BUF_SIZE	512
+#define MAX_BUF_SIZE	1024
 static char buffer[MAX_BUF_SIZE], buffer_tmp[MAX_BUF_SIZE];
 
 
@@ -300,6 +300,7 @@ void Error( char * filename, int line, const char * format, ... )
 	exit(EXIT_FAILURE);
 }
 
+extern lua_Debug Ade_debug_info;
 void LuaError(struct lua_State *L, char *format, ...)
 {
 	va_list args;
@@ -317,6 +318,27 @@ void LuaError(struct lua_State *L, char *format, ...)
 
 	// Order UP!!
 	fprintf(stderr, "LUA ERROR: \"%s\"\n", buffer);
+	fprintf(stderr, "\n");
+
+	fprintf(stderr, "------------------------------------------------------------------\n");
+	fprintf(stderr, "ADE Debug:\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Name:  %s\n",  Ade_debug_info.name);
+	fprintf(stderr, "Name of:  %s\n",  Ade_debug_info.namewhat);
+	fprintf(stderr, "Function type:  %s\n",  Ade_debug_info.what);
+	fprintf(stderr, "Defined on:  %d\n",  Ade_debug_info.linedefined);
+	fprintf(stderr, "Upvalues:  %d\n",  Ade_debug_info.nups);
+	fprintf(stderr, "\n" );
+	fprintf(stderr, "Source:  %s\n",  Ade_debug_info.source);
+	fprintf(stderr, "Short source:  %s\n",  Ade_debug_info.short_src);
+	fprintf(stderr, "Current line:  %d\n",  Ade_debug_info.currentline);
+	
+	fprintf(stderr, "------------------------------------------------------------------\n");
+	fprintf(stderr, "LUA Stack:\n");
+	fprintf(stderr, "\n");
+	ade_stackdump(L, buffer);
+	fprintf(stderr, "%s\n", buffer);
+	fprintf(stderr, "\n");
 
 	exit(EXIT_FAILURE);
 }
