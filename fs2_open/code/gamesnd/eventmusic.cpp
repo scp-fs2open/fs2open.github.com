@@ -1998,17 +1998,15 @@ void event_sexp_change_soundtrack(char *name)
 
 	int i, new_soundtrack = -1;
 
-	if ( Event_music_enabled == FALSE || Event_music_level_inited == FALSE )
-	{
-		return;
-	}
-
-	for (i=0; i<Num_soundtracks; i++)
-	{
-		if (!stricmp(name, Soundtracks[i].name))
-		{
+	for (i = 0; i < Num_soundtracks; i++) {
+		if ( !stricmp(name, Soundtracks[i].name) ) {
 			new_soundtrack = i;
 		}
+	}
+
+	// if we are already on this soundtrack then bail
+	if (new_soundtrack == Current_soundtrack_num) {
+		return;
 	}
 
 	event_music_level_close();
