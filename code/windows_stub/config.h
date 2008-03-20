@@ -226,7 +226,7 @@ typedef struct _LARGE_INTEGER {
 #define closesocket(x)	close(x)
 #define WSAEALREADY     EALREADY
 #define WSAEINVAL       EINVAL
-#define WSAEWOULDBLOCK  EWOULDBLOCK
+#define WSAEWOULDBLOCK  EINPROGRESS
 #define WSAEISCONN      EISCONN
 #define WSAENOTSOCK     ENOTSOCK
 #define WSAECONNRESET   ECONNRESET
