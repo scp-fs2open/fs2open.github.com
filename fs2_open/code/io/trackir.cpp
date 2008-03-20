@@ -1,7 +1,12 @@
-#include <windows.h>
 
-#include "trackir.h"
+
+#include "globalincs/pstypes.h"
+#include "io/trackir.h"
 #include "osapi/osapi.h"
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 // CALLING THESE FUNCTIONS DIRECTLY IS VERY VERY DANGEROUS. 
 // Use TrackIR functions sans "_Proc" since they (hopefully) won't cause any crashes if the function pointers are NULL
