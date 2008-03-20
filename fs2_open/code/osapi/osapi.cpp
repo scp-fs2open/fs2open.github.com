@@ -345,6 +345,24 @@ const char *detect_home(void)
 
 // initialization/shutdown functions -----------------------------------------------
 
+void os_set_process_affinity()
+{
+	HANDLE pHandle = GetCurrentProcess();
+	DWORD pMaskProcess = 0, pMaskSystem = 0;
+
+	if ( GetProcessAffinityMask(pHandle, &pMaskProcess, &pMaskSystem) ) {
+		// only do this if we have at least 2 procs
+		if (pMaskProcess >= 3) {
+			// prefer running on the second processor by default
+			pMaskProcess = os_config_read_uint(NULL, "ProcessorAffinity", 2);
+
+			if (pMaskProcess > 0) {
+				SetProcessAffinityMask(pHandle, pMaskProcess);
+			}
+		}
+	}
+}
+
 // If app_name is NULL or ommited, then TITLE is used
 // for the app name, which is where registry keys are stored.
 void os_init(char * wclass, char * title, char *app_name, char *version_string )
@@ -359,7 +377,7 @@ void os_init(char * wclass, char * title, char *app_name, char *version_string )
 	strcpy( szWinClass, wclass );	
 
 	INITIALIZE_CRITICAL_SECTION( Os_lock );
-
+/*
 	#ifdef THREADED_PROCESS
 		// Create an even to signal that the window is created, 
 		// so that we don't return from this function until 
@@ -372,12 +390,15 @@ void os_init(char * wclass, char * title, char *app_name, char *version_string )
 		CloseHandle(Window_created);
 		Window_created = NULL;
 	#endif // THREADED
-
+*/
 	// initialized
 	Os_inited = 1;
 
 	// check to see if we're running under msdev
 	os_check_debugger();
+
+	// deal with processor affinity
+	os_set_process_affinity();
 
 	atexit(os_deinit);
 }
