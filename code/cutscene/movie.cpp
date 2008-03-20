@@ -150,7 +150,7 @@ int movie_find(char *filename, char *out_name)
 
 	// remove extension
 	strcpy( tmp_name, filename );
-	char *p = strchr(tmp_name, '.');
+	char *p = strrchr(tmp_name, '.');
 	if ( p ) *p = 0;
 
     int rc = cf_find_file_location_ext(tmp_name, NUM_EXT, movie_ext, CF_TYPE_ANY, sizeof(full_path) - 1, full_path, &size, &offset, 0);
@@ -183,10 +183,16 @@ bool movie_play(char *name)
 	char full_name[MAX_PATH];
 	int rc = 0;
 
+	memset(full_name, 0, sizeof(full_name));
+
 	rc = movie_find(name, full_name);
 
 	if (rc == MOVIE_NONE) {
-		mprintf(("MOVIE ERROR: Unable to open movie file '%s' in any supported format.\n", name));
+		strcpy(full_name, name);
+		char *p = strrchr(full_name, '.');
+		if ( p ) *p = 0;
+
+		mprintf(("Movie Error:  Unable to open '%s' movie in any supported format.\n", full_name));
 		return false;
 	}
 
