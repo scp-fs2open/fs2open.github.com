@@ -895,6 +895,7 @@ typedef struct bsp_info {
 	int		movement_axis;			// which axis this subobject moves or rotates on.
 
 	vec3d	offset;					// 3d offset from parent object
+	matrix	orientation;			// 3d orientation relative to parent object
 
 	int		bsp_data_size;
 	ubyte		*bsp_data;
@@ -910,7 +911,7 @@ typedef struct bsp_info {
 	int		blown_off;				// If set, this subobject is blown off. Stuffed by model_set_instance
 	int		my_replacement;		// If not -1 this subobject is what should get rendered instead of this one
 	int		i_replace;				// If this is not -1, then this subobject will replace i_replace when it is damaged
-	angles	angs;						// The angles from parent.  Stuffed by model_set_instance
+	angles	angs;					// The rotation angles of this subobject (Within its own orientation, NOT relative to parent - KeldorKatarn)
 
 	int		is_live_debris;		// whether current submodel is a live debris model
 	int		num_live_debris;		// num live debris models assocaiated with a submodel
