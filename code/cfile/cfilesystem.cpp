@@ -924,6 +924,8 @@ void cf_search_root_pack(int root_index)
 	VP_header.index_offset = INTEL_INT( VP_header.index_offset );
 	VP_header.num_files = INTEL_INT( VP_header.num_files );
 
+	mprintf(( "Searching root pack '%s' ... ", root->path ));
+
 	// Read index info
 	fseek(fp, VP_header.index_offset, SEEK_SET);
 
@@ -1286,6 +1288,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	int cfs_slow_search = 0;
 	char longname[MAX_PATH_LEN];
 	char filespec[MAX_FILENAME_LEN];
+	char *p = NULL;
 
 #if defined WIN32
 	long findhandle;
@@ -1353,7 +1356,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 			// strip any extension and add the one we want to check for
 			// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
 			//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
-			char *p = strrchr(filespec, '.');
+			p = strrchr(filespec, '.');
 			if ( p && (strlen(p) > 2) )
 				(*p) = 0;
 
@@ -1406,7 +1409,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	// first off, make sure that we don't have an extension
 	// (NOTE: to be fully retail compatible, we need to support multiple periods for something like *_1.5.wav,
 	//        which means that we need to strip a length of >2 only, assuming that all valid ext are at least 2 chars)
-	char *p = strrchr(filespec, '.');
+	p = strrchr(filespec, '.');
 	if ( p && (strlen(p) > 2) )
 		(*p) = 0;
 
@@ -1417,16 +1420,18 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	// (FIXME: this assumes that everything in ext_list[] is the same length!)
 	uint filespec_len_big = filespec_len + strlen(ext_list[0]);
 
-	std::vector<int> file_list_index;
+	std::vector<cf_file*> file_list_index;
 	int last_root_index = -1;
 	int last_path_index = -1;
+
+	file_list_index.reserve(Num_files);
 
 	// next, run though and pick out base matches
 	for (i = 0; i < Num_files; i++) {
 		cf_file *f = cf_get_file(i);
 
 		// ... only search paths that we're supposed to
-		if ( (pathtype != CF_TYPE_ANY) && (pathtype != f->pathtype_index) )
+		if ( (num_search_dirs == 1) && (pathtype != f->pathtype_index) )
 			continue;
 
 		// ... check that our names are the same length (accounting for the missing extension on our own name)
@@ -1450,7 +1455,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 			continue;
 
 		// ... we check based on location, so if location changes after the first find then bail
-		if (last_root_index < 0) {
+		if (last_root_index == -1) {
 			last_root_index = f->root_index;
 			last_path_index = f->pathtype_index;
 		} else {
@@ -1462,7 +1467,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 		}
 
 		// ok, we have a good base match, so add it to our cache
-		file_list_index.push_back( i );
+		file_list_index.push_back( f );
 	}
 
 	int file_list_size = (int)file_list_index.size();
@@ -1475,7 +1480,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 	// now try and find our preferred match
 	for (cur_ext = 0; cur_ext < ext_num; cur_ext++) {
 		for (i = 0; i < file_list_size; i++) {
-			cf_file *f = cf_get_file( file_list_index[i] );
+			cf_file *f = file_list_index[i];
 	
 			SAFE_STRCAT( filespec, ext_list[cur_ext], sizeof(filespec)-1 );
 
@@ -1548,7 +1553,7 @@ int cf_find_file_location_ext( char *filename, const int ext_num, const char **e
 
 			// ok, we're still here, so strip off the extension again in order to
 			// prepare for the next run
-			char *p = strrchr(filespec, '.');
+			p = strrchr(filespec, '.');
 			if ( p && (strlen(p) > 2) )
 				(*p) = 0;
 		}
@@ -1844,8 +1849,6 @@ int cf_get_file_list_preallocated( int max, char arr[][MAX_FILENAME_LEN], char *
 	// Search the default directories
 #if defined _WIN32
 	cf_create_default_path_string( filespec, sizeof(filespec)-1, pathtype, filter );
-	mprintf(("cf_get_file_list_preallocated looking for type=%d, filter=\"%s\"\n",
-				pathtype, filter));
 
 	int find_handle;
 	_finddata_t find;
