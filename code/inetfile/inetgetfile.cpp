@@ -77,15 +77,18 @@
 
 void InetGetFile::AbortGet()
 {
+#ifdef USE_INETFILE
 	if (m_bUseHTTP) {
 		http->AbortGet();
 	} else {
 		ftp->AbortGet();
 	}
+#endif
 }
 
 InetGetFile::InetGetFile(char *URL, char *localfile)
 {
+#ifdef USE_INETFILE
 	m_HardError = 0;
 	http = NULL;
 	ftp = NULL;
@@ -143,6 +146,7 @@ printf("using ftp! (%s)\n", URL);
 	}
 
 	Sleep(1000);
+#endif
 }
 
 InetGetFile::~InetGetFile()
@@ -156,6 +160,7 @@ InetGetFile::~InetGetFile()
 
 bool InetGetFile::IsConnecting()
 {
+#ifdef USE_INETFILE
 	int state;
 
 	if (m_bUseHTTP) {
@@ -169,10 +174,14 @@ bool InetGetFile::IsConnecting()
 	} else {
 		return false;
 	}
+#else
+	return false;
+#endif
 }
 
 bool InetGetFile::IsReceiving()
 {
+#ifdef USE_INETFILE
 	int state;
 
 	if (m_bUseHTTP) {
@@ -186,10 +195,14 @@ bool InetGetFile::IsReceiving()
 	} else {
 		return false;
 	}
+#else
+	return false;
+#endif
 }
 
 bool InetGetFile::IsFileReceived()
 {
+#ifdef USE_INETFILE
 	int state;
 
 	if (m_bUseHTTP) {
@@ -203,10 +216,14 @@ bool InetGetFile::IsFileReceived()
 	} else {
 		return false;
 	}
+#else
+	return false;
+#endif
 }
 
 bool InetGetFile::IsFileError()
 {
+#ifdef USE_INETFILE
 	int state;
 
 	if (m_HardError)
@@ -239,12 +256,13 @@ printf("state: %i\n", state);
 		default:
 			return false;
 	}
-
+#endif
 	return false;
 }
 
 int InetGetFile::GetErrorCode()
 {
+#ifdef USE_INETFILE
 	int state;
 
 	if (m_HardError)
@@ -282,24 +300,32 @@ int InetGetFile::GetErrorCode()
 		default:
 			return INET_ERROR_NO_ERROR;
 	}
-
+#endif
 	return INET_ERROR_NO_ERROR;
 }
 
 int InetGetFile::GetTotalBytes()
 {
+#ifdef USE_INETFILE
 	if (m_bUseHTTP) {
 		return http->GetTotalBytes();
 	} else {
 		return ftp->GetTotalBytes();
 	}
+#else
+	return 0;
+#endif
 }
 
 int InetGetFile::GetBytesIn()
 {
+#ifdef USE_INETFILE
 	if (m_bUseHTTP) {
 		return http->GetBytesIn();
 	} else {
 		return ftp->GetBytesIn();
 	}
+#else
+	return 0;
+#endif
 }
