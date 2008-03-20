@@ -17,15 +17,6 @@ EXTRA_DIST =	\
 	projects/MSVC_6/libjpeg.dsp	\
 	projects/MSVC_6/liblua.dsp	\
 	projects/MSVC_6/wxFRED2.dsp	\
-	projects/MSVC_7/Freespace2.sln	\
-	projects/MSVC_7/Freespace2.vcproj	\
-	projects/MSVC_7/code.vcproj	\
-	projects/MSVC_7/fred2_open.vcproj	\
-	projects/MSVC_7/libjpeg.vcproj	\
-	projects/MSVC_7/lua.vcproj	\
-	projects/MSVC_7/wxFRED2.vcproj	\
-	projects/anjuta1/FS2_Open.prj	\
-	projects/anjuta1/README	\
 	projects/Xcode/English.lproj/InfoPlist.strings	\
 	projects/Xcode/FS2_Open.icns	\
 	projects/Xcode/FS2_Open.xcodeproj/project.pbxproj	\
