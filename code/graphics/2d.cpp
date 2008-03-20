@@ -1865,7 +1865,7 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 	gr_zbuffer_set(GR_ZBUFF_NONE);	
 
 	// turn off culling
-	gr_set_cull(0);
+	int cull = gr_set_cull(0);
 
 	// draw each section
 	last_e1 = vmd_zero_vector;
@@ -1998,7 +1998,7 @@ void gr_pline_special(vec3d **pts, int num_pts, int thickness,bool resize)
 	gr_zbuffer_set(saved_zbuffer_mode);
 
 	// restore culling
-	gr_set_cull(1);		
+	gr_set_cull(cull);		
 }
 
 

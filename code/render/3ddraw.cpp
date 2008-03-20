@@ -993,9 +993,9 @@ int g3_draw_bitmap_3d(vertex *pnt,int orient, float rad,uint tmap_flags, float d
 	P[2].u = 1.0f;	P[2].v = 1.0f;
 	P[3].u = 0.0f;	P[3].v = 1.0f;
 
-	gr_set_cull(0);
+	int cull = gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags);
-	gr_set_cull(1);
+	gr_set_cull(cull);
 
 	return 0;
 }
@@ -1082,9 +1082,9 @@ int g3_draw_bitmap_3d(vertex *pnt, int orient, float rad, uint tmap_flags, float
 //	P[2].u = 1.0f;	P[2].v = 1.0f;
 //	P[3].u = 0.0f;	P[3].v = 1.0f;
 
-	gr_set_cull(0);
+	int cull = gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags);
-	gr_set_cull(1);
+	gr_set_cull(cull);
 
 	return 0;
 }
@@ -1134,9 +1134,9 @@ int g3_draw_bitmap_3d_v(vertex *pnt, int orient, float rad, uint tmap_flags, flo
 	P[2].u = 1.0f;	P[2].v = 1.0f;
 	P[3].u = 0.0f;	P[3].v = 1.0f;
 
-	gr_set_cull(0);
+	int cull = gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags  | TMAP_FLAG_RGB | TMAP_FLAG_GOURAUD);
-	gr_set_cull(1);
+	gr_set_cull(cull);
 
 	return 0;
 }
@@ -1339,9 +1339,9 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	P[2].u = 1.0f;	P[2].v = 1.0f;
 	P[3].u = 0.0f;	P[3].v = 1.0f;
 
-	gr_set_cull(0);
+	int cull = gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags);
-	gr_set_cull(1);
+	gr_set_cull(cull);
 
 	return 0;
 }
@@ -1400,9 +1400,9 @@ int g3_draw_rotated_bitmap_3d(vertex *pnt,float angle, float rad,uint tmap_flags
 	P[2].u = 1.0f;	P[2].v = 1.0f;
 	P[3].u = 0.0f;	P[3].v = 1.0f;
 
-	gr_set_cull(0);
+	int cull = gr_set_cull(0);
 	g3_draw_poly(4,ptlist,tmap_flags);
-	gr_set_cull(1);
+	gr_set_cull(cull);
 
 	return 0;
 }
@@ -2468,7 +2468,7 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
 	// turn off culling
-	gr_set_cull(0);
+	int cull = gr_set_cull(0);
 
 	// render all polys
 	for(idx=0; idx<div_x; idx++){
@@ -2518,7 +2518,7 @@ int g3_draw_perspective_bitmap(angles *a, float scale_x, float scale_y, int div_
 	}
 
 	// turn on culling
-	gr_set_cull(1);
+	gr_set_cull(cull);
 
 	// restore zbuffer
 	gr_zbuffer_set(saved_zbuffer_mode);
@@ -2535,13 +2535,13 @@ void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a)
 
 	memset(v,0,sizeof(vertex)*4);
 	saved_zbuf = gr_zbuffer_get();
-	
+
 	// start the frame, no zbuffering, no culling
 	if (!Fred_running)
 		g3_start_frame(1);
 
 	gr_zbuffer_set(GR_ZBUFF_NONE);		
-	gr_set_cull(0);		
+	int cull = gr_set_cull(0);		
 
 	// stuff coords		
 	v[0].sx = i2fl(x);
@@ -2601,7 +2601,7 @@ void g3_draw_2d_rect(int x, int y, int w, int h, int r, int g, int b, int a)
 
 	// restore zbuffer and culling
 	gr_zbuffer_set(saved_zbuf);
-	gr_set_cull(1);
+	gr_set_cull(cull);
 }
 
 // draw a 2d bitmap on a poly
@@ -2652,18 +2652,12 @@ int g3_draw_2d_poly_bitmap(float x, float y, float w, float h, uint additional_t
 	v[3].flags = PF_PROJECTED;
 	v[3].codes = 0;
 
-	// no filtering
-	gr_filter_set(0);
-
 	// set debrief	
 	ret = g3_draw_poly_constant_sw(4, vertlist, TMAP_FLAG_TEXTURED | additional_tmap_flags, 0.1f);
 
 	g3_end_frame();
 	
 	gr_zbuffer_set(saved_zbuffer_mode);	
-
-	// put filtering back on
-	gr_filter_set(1);
 
 	return ret;
 }
@@ -2756,9 +2750,6 @@ int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additiona
 		V->flags = PF_PROJECTED;
 		V->codes = 0;	
 	}
-	
-	// no filtering
-	gr_filter_set(0);
 
 	// set debrief	
 	ret = g3_draw_poly_constant_sw(6*n_bm, bitmap_2d_poly_vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TRILIST | additional_tmap_flags, 0.1f);
@@ -2766,9 +2757,6 @@ int g3_draw_2d_poly_bitmap_list(bitmap_2d_list* b_list, int n_bm, uint additiona
 	g3_end_frame();
 	
 	gr_zbuffer_set(saved_zbuffer_mode);	
-
-	// put filtering back on
-	gr_filter_set(1);
 
 	return ret;
 }
@@ -2856,9 +2844,6 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 		V->flags = PF_PROJECTED;
 		V->codes = 0;	
 	}
-	
-	// no filtering
-	gr_filter_set(0);
 
 	// set debrief	
 	ret = g3_draw_poly_constant_sw(6*n_bm, bitmap_2d_poly_vertlist, TMAP_FLAG_TEXTURED | TMAP_FLAG_TRILIST | additional_tmap_flags, 0.1f);
@@ -2866,9 +2851,6 @@ int g3_draw_2d_poly_bitmap_rect_list(bitmap_rect_list* b_list, int n_bm, uint ad
 	g3_end_frame();
 	
 	gr_zbuffer_set(saved_zbuffer_mode);	
-
-	// put filtering back on
-	gr_filter_set(1);
 
 	return ret;
 }

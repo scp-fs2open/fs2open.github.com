@@ -1954,6 +1954,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	int i;
 	int nv;
 	model_tmap_vert *verts;
+	int cull = 0;
 
 	// Goober5000
 	int tmap_num = w(p+40);
@@ -2018,10 +2019,10 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						Interp_list[i]->b = 250;
 		
 					}
-					gr_set_cull(0);
+					cull = gr_set_cull(0);
 					gr_set_color( 0, 0, 0 );
 					g3_draw_poly( nv, Interp_list, 0 );
-					gr_set_cull(1);
+					gr_set_cull(cull);
 				}
 				if(!splodeing)return;
 			}
@@ -2038,12 +2039,12 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 				Interp_list[i]->b = (unsigned char)(200*salpha);
 				model_interp_edge_alpha(&Interp_list[i]->r, &Interp_list[i]->g, &Interp_list[i]->b, Interp_verts[verts[i].vertnum], Interp_norms[verts[i].normnum], salpha, false);
 			}
-			gr_set_cull(0);
+			cull = gr_set_cull(0);
 			gr_set_bitmap( splodeingtexture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, salpha );
 		//	gr_set_color( 255, 250, 200 );
 		//	g3_draw_poly( nv, Interp_list, 0 );
 			g3_draw_poly( nv, Interp_list,  TMAP_FLAG_TEXTURED|TMAP_FLAG_GOURAUD);
-			gr_set_cull(1);
+			gr_set_cull(cull);
 			return;
 		}
 	}
@@ -2546,7 +2547,7 @@ void model_draw_paths_htl( int model_num )
 		return;
 	}	
 
-	gr_set_cull(0);
+	int cull = gr_set_cull(0);
 	for (i=0; i<pm->n_paths; i++ )	{
 		for (j=0; j<pm->paths[i].nverts; j++ )
 		{
@@ -2577,7 +2578,7 @@ void model_draw_paths_htl( int model_num )
 		}
 	}
 
-	gr_set_cull(1);
+	gr_set_cull(cull);
 }
 
 // docking bay and fighter bay paths
@@ -2591,7 +2592,7 @@ void model_draw_bay_paths_htl(int model_num)
 		return;
 	}
 
-	gr_set_cull(0);
+	int cull = gr_set_cull(0);
 	// render docking bay normals
 	gr_set_color(0, 255, 0);
 	for(idx=0; idx<pm->n_docks; idx++){
@@ -2620,7 +2621,7 @@ void model_draw_bay_paths_htl(int model_num)
 		}
 	}	
 
-	gr_set_cull(1);
+	gr_set_cull(cull);
 }
 
 
@@ -3358,6 +3359,7 @@ float scale_it( float min, float max, float v, float v1, float v2 )
 
 void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum, int lighting_skip, int *replacement_textures)
 {
+	int cull = 0;
 	// replacement textures - Goober5000
 	model_set_replacement_textures(replacement_textures);
 
@@ -3387,7 +3389,7 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 
 	// maybe turn off (hardware) culling
 	if(flags & MR_NO_CULL){
-		gr_set_cull(0);
+		cull = gr_set_cull(0);
 	}
 
 	Interp_objnum = objnum;
@@ -3458,7 +3460,7 @@ void model_render(int model_num, matrix *orient, vec3d * pos, uint flags, int ob
 
 	// maybe turn culling back on
 	if(flags & MR_NO_CULL){
-		gr_set_cull(1);
+		gr_set_cull(cull);
 	}
 
 	// turn off fog after each model renders
@@ -4300,6 +4302,7 @@ extern int Warp_model;
 void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags, int objnum )
 {
 	int i;
+	int cull = 0;
 	polymodel * pm;
 
 	uint save_gr_zbuffering_mode;
@@ -4830,7 +4833,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 								vm_vec_sub(&tempv,&View_position,&pnt);
 								vm_vec_normalize(&tempv);
 
-								gr_set_cull(0);
+								cull = gr_set_cull(0);
 
 								if (The_mission.flags & MISSION_FLAG_FULLNEB) {
 									gr_set_bitmap(bank->glow_neb_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);		
@@ -4840,7 +4843,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 								g3_draw_poly( 4, verts, TMAP_FLAG_TILED | TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT); // added TMAP_FLAG_TILED flag for beam texture tileing -Bobboau
 
-								gr_set_cull(1);
+								gr_set_cull(cull);
 
 								break;
 							}
@@ -4860,7 +4863,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	vm_vec_zero(&controle_rotval);
 
-	gr_set_cull(0);	
+	cull = gr_set_cull(0);	
 
 	// Draw the thruster subobjects
 	if (is_outlines_only_htl) {
@@ -4899,7 +4902,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	gr_set_fill_mode(GR_FILL_MODE_SOLID);
 
-	gr_set_cull(1);	
+	gr_set_cull(cull);	
 
 	if ( Interp_flags & MR_SHOW_PATHS ){
 		if (Cmdline_nohtl) model_draw_paths(model_num);
@@ -4983,7 +4986,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 	}
 
 	// fixes disappearing HUD in OGL - taylor
-	gr_set_cull(1);
+	int cull = gr_set_cull(1);
 
 	if (!Cmdline_nohtl) {
 
@@ -5008,7 +5011,7 @@ void submodel_render(int model_num, int submodel_num, matrix *orient, vec3d * po
 		model_interp_sub( pm->submodel[submodel_num].bsp_data, pm, &pm->submodel[submodel_num], 0 );
 	}
 
-	gr_set_cull(0);
+	gr_set_cull(cull);
 
 	if ( pm->submodel[submodel_num].num_arcs )	{
 		interp_render_lightning( pm, &pm->submodel[submodel_num]);
@@ -6215,6 +6218,7 @@ void model_render_children_buffers(bsp_info *model, polymodel *pm, int mn, int d
 
 void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 {
+	int cull = 0;
 	if (model->indexed_vertex_buffer == -1)
 		return;
 
@@ -6252,11 +6256,7 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 		scale.xyz.z = Interp_warp_scale_z;
 	}
 
-	if (Interp_flags & MR_NO_CULL) {
-		gr_set_cull(0);
-	} else {
-		gr_set_cull(1);
-	}
+	cull = gr_set_cull( (Interp_flags & MR_NO_CULL) ? 0 : 1 );
 
 	int no_texturing = (Interp_flags & MR_NO_TEXTURING);
 	int zbuffer_save = gr_zbuffering_mode;
@@ -6358,9 +6358,8 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 		SPECMAP = -1;
 		BUMPMAP = -1;
 
-		// reset culling if it was disabled
-		if ( !(Interp_flags & MR_NO_CULL) )
-			gr_set_cull(1);
+		// reset culling
+		gr_set_cull(cull);
 
 		// reset z-buffer
 		gr_zbuffer_set(zbuffer_save);

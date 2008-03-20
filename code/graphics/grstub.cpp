@@ -312,8 +312,9 @@ void gr_stub_set_clip(int x, int y, int w, int h, bool resize)
 {
 }
 
-void gr_stub_set_cull(int cull)
+int gr_stub_set_cull(int cull)
 {
+	return 0;
 }
 
 void gr_stub_set_gamma(float gamma)
