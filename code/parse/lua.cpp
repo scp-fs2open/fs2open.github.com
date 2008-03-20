@@ -1196,12 +1196,12 @@ ADE_FUNC(read, l_File, "number or string, ...", "number or string, ...",
 			{
 				buf[total_read] = '\0';
 				lua_pushstring(L, buf);
-				vm_free(buf);
 			}
 			else
 			{
 				lua_pushnil(L);
 			}
+			vm_free(buf);
 			num_returned++;
 		}
 		if(type != LUA_TNUMBER && type != LUA_TSTRING)
@@ -5785,7 +5785,7 @@ ADE_FUNC(error, l_Base, "string", NULL, "Displays a FreeSpace error message with
 
 ADE_FUNC(createOrientation, l_Base, "orientation", "[p/r1c1, b/r1c2, h/r1c3, r2c1, r2c2, r2c3, r3c1, r3c2, r3c3]", "Given 0, 3, or 9 arguments, creates an orientation object with that orientation.")
 {
-	matrix m = {0};
+	matrix m;
 	int numargs = ade_get_args(L, "|fffffffff", &m.a1d[0], &m.a1d[1], &m.a1d[2], &m.a1d[3], &m.a1d[4], &m.a1d[5], &m.a1d[6], &m.a1d[7], &m.a1d[8]);
 	if(!numargs)
 	{
@@ -8028,7 +8028,7 @@ int script_state::CreateLuaState()
 
 	//*****INITIALIZE ADE
 	uint i;
-	mprintf(("LUA: Beginning ADE initialization"));
+	mprintf(("LUA: Beginning ADE initialization\n"));
 	for(i = 0; i < Ade_table_entries.size(); i++)
 	{
 		//WMC - Do only toplevel table entries, doi
@@ -8470,8 +8470,8 @@ int ade_set_args(lua_State *L, char *fmt, ...)
 			case 'u':
 			case 'v':
 				//WMC - Default upvalues, to reserve space for real ones
-				//* Function name
-				//* Whether function is in set mode (for virtvars), default is 0
+				// - Function name
+				// - Whether function is in set mode (for virtvars), default is 0
 				//WMC - WARNING!!!
 				//WARNING!!! Making changes to any 'u' or 'v' functions must also
 				//WARNING!!! be changed in ade_table_entry::SetTable()
