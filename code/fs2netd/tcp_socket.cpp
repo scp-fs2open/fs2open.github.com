@@ -244,7 +244,8 @@ int FS2NetD_ConnectToServer(char *host, ushort port)
 				return 0;
 			} else {
 #ifdef SCP_UNIX
-				ml_printf("FS2NetD ERROR: Couldn't connect to remote system at %s (\"%s\")!", inet_ntoa(PXO_addr.sin_addr), strerror(errno));
+				int errv = errno;
+				ml_printf("FS2NetD ERROR: Couldn't connect to remote system at %s (\"%s\")!", inet_ntoa(PXO_addr.sin_addr), strerror(errv));
 #else
 				ml_printf("FS2NetD ERROR: Couldn't connect to remote system at %s!", inet_ntoa(PXO_addr.sin_addr));
 #endif
@@ -278,6 +279,20 @@ int FS2NetD_ConnectToServer(char *host, ushort port)
 
 		// if it's writeable then we are fully connected
 		if ( select(mySocket+1, NULL, &write_fds, NULL, &timeout) > 0 ) {
+			// make sure that we don't have any connect() errors (since it's non-blocking)
+			int err_val = 0;
+			size_t err_val_size = sizeof(err_val);
+			getsockopt(mySocket, SOL_SOCKET, SO_ERROR, (char*)&err_val, (socklen_t*)&err_val_size);
+
+			if (err_val) {
+				// if we aren't still in blocking mode then we can't connect
+				if (err_val != WSAEWOULDBLOCK) {
+					return -1;
+				}
+
+				return 0;
+			}
+
 			Connected = true;
 			return 1;
 		}
