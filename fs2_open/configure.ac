@@ -140,17 +140,20 @@ case "$target" in
         echo "Using 64-bit Unix defines (for $host_os)"
         fs2_os_unix="yes"
 		D_CFLAGS="$D_CFLAGS -m64 -march=athlon64 -ansi -pedantic"
+		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
         ;;
 	*-*-linux*)
 		# linux
 		echo "Using Unix defines (for $host_os)"
 		fs2_os_unix="yes"
+		D_CFLAGS="$D_CFLAGS -DLUA_USE_LINUX"
 		;;
 	*-*-darwin*)
 		# OSX
 		echo "Using OSX defines (for $host_os)"
 		fs2_os_osx="yes"
 		D_LDFLAGS="$D_LDFLAGS -lobjc -fPIC -Wl,-noprebind"
+		D_CFLAGS="$D_CFLAGS -DLUA_USE_MACOSX"
 		;;
 	*)
 		# Unknown
@@ -204,7 +207,7 @@ fi
 
 if test "$fs2_debug" = "yes" ; then
 	AC_DEFINE([_DEBUG])
-	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -funroll-loops"
+	D_CFLAGS="$D_CFLAGS -O0 -g -Wall -Wextra -Wno-unused-parameter -Wshadow -funroll-loops -DLUA_USE_APICHECK"
 	D_LDFLAGS="$D_LDFLAGS -g"
 
 	if test "$fs2_fred" = "yes" ; then
