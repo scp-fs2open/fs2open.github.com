@@ -1,7 +1,13 @@
-#include "osapi/osapi.h"
 
 #ifndef _TRACKIR_H
 #define _TRACKIR_H
+
+#include "globalincs/pstypes.h"
+#include "osapi/osapi.h"
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 // Set up function pointers
 typedef int (*TRACKIR_INIT_FUNC)( HWND );
