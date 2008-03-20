@@ -4194,10 +4194,11 @@ strcpy(parse_error_text, temp_error);
 		required_string("$Variance:");
 		stuff_float(&tpart.variance);
 
-		if (afterburner)
-			sip->normal_thruster_particles.push_back( tpart );
-		else
+		if (afterburner) {
 			sip->afterburner_thruster_particles.push_back( tpart );
+		} else {
+			sip->normal_thruster_particles.push_back( tpart );
+		}
 	}
 
 	// if the ship is a stealth ship
