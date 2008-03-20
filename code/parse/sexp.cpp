@@ -5735,7 +5735,7 @@ int sexp_are_waypoints_done_delay(int n)
 int sexp_ship_type_destroyed(int n)
 {
 	int percent;
-	uint type;
+	int type;
 	char *shiptype;
 
 	percent = eval_num(n);
@@ -5749,7 +5749,7 @@ int sexp_ship_type_destroyed(int n)
 		return SEXP_FALSE;
 	}
 
-	if ( type >= Ship_type_counts.size() || Ship_type_counts[type].total == 0 )
+	if ( type >= (int)Ship_type_counts.size() || Ship_type_counts[type].total == 0 )
 		return SEXP_FALSE;
 
 	//We are safe from array indexing probs b/c of previous if.
@@ -11154,7 +11154,7 @@ void sexp_ship_create(int n)
 	int new_ship_class = -1;
 	char *new_ship_name;
 	vec3d new_ship_pos = vmd_zero_vector;
-	angles new_ship_ang = {0};
+	angles new_ship_ang = {0.0f, 0.0f, 0.0f};
 	matrix new_ship_ori = vmd_identity_matrix;
 	bool change_angles = false;
 
@@ -11220,7 +11220,7 @@ void sexp_weapon_create(int n)
 	ship_subsys *targeted_ss;
 
 	vec3d weapon_pos = vmd_zero_vector;
-	angles weapon_angles = {0};
+	angles weapon_angles = {0.0f, 0.0f, 0.0f};
 	matrix weapon_orient = vmd_identity_matrix;
 	int is_locked;
 	bool change_angles = false;
