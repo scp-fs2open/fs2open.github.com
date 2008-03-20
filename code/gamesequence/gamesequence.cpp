@@ -292,6 +292,7 @@
 // local variables
 typedef struct state_stack {
 	int	current_state;
+	int previous_state;
 	int	event_queue[MAX_GAMESEQ_EVENTS];
 	int	queue_tail, queue_head;
 } state_stack;
@@ -454,6 +455,7 @@ void gameseq_init()
 	for (i=0; i<GS_STACK_SIZE; i++ )	{
 		// gs[i].current_state = GS_STATE_MAIN_MENU;
 		gs[i].current_state = 0;
+		gs[i].previous_state = 0;
 		gs[i].queue_tail=0;
 		gs[i].queue_head=0;
 	}
@@ -508,6 +510,11 @@ int gameseq_get_state(int depth)
 	return gs[gs_current_stack - depth].current_state;
 }
 
+int gameseq_get_previous_state()
+{
+	return gs[gs_current_stack].previous_state;
+}
+
 int gameseq_get_depth()
 {
 	return gs_current_stack;
@@ -535,6 +542,7 @@ void gameseq_set_state(int new_state, int override)
 	game_leave_state(gs[gs_current_stack].current_state,new_state);
 
 	gs[gs_current_stack].current_state = new_state;
+	gs[gs_current_stack].previous_state = old_state;
 
 	game_enter_state(old_state,gs[gs_current_stack].current_state);
 	state_reentry--;
@@ -566,6 +574,7 @@ void gameseq_push_state( int new_state )
 	game_leave_state(old_state,new_state);
 
 	gs[gs_current_stack].current_state = new_state;
+	gs[gs_current_stack].previous_state = old_state;
 	gs[gs_current_stack].queue_tail = 0;
 	gs[gs_current_stack].queue_head = 0;
 
@@ -596,6 +605,7 @@ void gameseq_pop_state()
 		// set the popped_state to be the one we moved into
 		gs_current_stack--;
 		popped_state = gs[gs_current_stack].current_state;
+		gs[gs_current_stack].previous_state = old_state;
 
 		// swap all remaining events from the state which just got popped to this new state
 		while(gs[gs_current_stack+1].queue_head != gs[gs_current_stack+1].queue_tail){
