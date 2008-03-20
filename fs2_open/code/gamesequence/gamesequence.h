@@ -535,6 +535,7 @@ void gameseq_push_state( int new_state );
 void gameseq_pop_state( void );
 int gameseq_get_pushed_state();
 int gameseq_get_depth();
+int gameseq_get_previous_state();
 void gameseq_pop_and_discard_state(void);
 
 
