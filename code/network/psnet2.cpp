@@ -1306,11 +1306,14 @@ void psnet_rel_close_socket( PSNET_SOCKET_RELIABLE *sockp )
 	reliable_header diss_conn_header;
 
 	// if the socket is out of range
-	if(*sockp>=MAXRELIABLESOCKETS)
-	{
-		ml_printf("Invalid socket id passed to nw_NewCloseSocket() -- %d",*sockp);
+	if (*sockp >= MAXRELIABLESOCKETS) {
+		if (*sockp != INVALID_SOCKET) {
+			ml_printf("Invalid socket id passed to nw_NewCloseSocket() -- %d",*sockp);
+		}
+
 		return;
 	}	
+
 	ml_printf("Closing socket %d\n",*sockp);
 	
 	// go through every buffer and "free it up(tm)"
