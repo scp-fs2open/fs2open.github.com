@@ -271,11 +271,8 @@ void flak_muzzle_flash(vec3d *pos, vec3d *dir, physics_info *pip, int turret_wea
 	if(!(Weapon_info[turret_weapon_class].wi_flags & WIF_FLAK)){
 		return;
 	}
-	Assert(Weapon_info[turret_weapon_class].muzzle_flash > -1);
-	if(!(Weapon_info[turret_weapon_class].muzzle_flash > -1)){
-		return;
-	}
-	Assert(Weapon_info[turret_weapon_class].muzzle_flash >= 0);
+
+//	Assert(Weapon_info[turret_weapon_class].muzzle_flash >= 0);
 	if(Weapon_info[turret_weapon_class].muzzle_flash < 0){
 		return;
 	}
