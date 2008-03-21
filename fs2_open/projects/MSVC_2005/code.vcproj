@@ -2751,6 +2751,14 @@
 				RelativePath="..\..\code\Io\Timer.h"
 				>
 			</File>
+			<File
+				RelativePath="..\..\code\io\trackir.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\io\trackir.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="JumpNode"
@@ -3333,34 +3341,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\MenuUI\SnazzyUI.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\code\menuui\storybook.cpp"
-				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-						UndefinePreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-			</File>
-			<File
-				RelativePath="..\..\code\menuui\storybook.h"
 				>
 			</File>
 			<File
@@ -4435,6 +4415,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\code\object\objectshield.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\object\objectshield.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\code\Object\ObjectSnd.cpp"
 				>
 				<FileConfiguration
@@ -4512,6 +4500,14 @@
 			</File>
 			<File
 				RelativePath="..\..\code\object\parseobjectdock.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\object\waypoint.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\code\object\waypoint.h"
 				>
 			</File>
 		</Filter>
