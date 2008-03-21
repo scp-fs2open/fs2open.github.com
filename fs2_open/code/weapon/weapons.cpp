@@ -3692,6 +3692,12 @@ void weapon_release_bitmaps()
 	}
 }
 
+bool weapon_is_used(int weapon_index)
+{
+	Assert( (weapon_index >= 0) || (weapon_index < Num_weapon_types) );
+	return (used_weapons[weapon_index] > 0);
+}
+
 void weapon_load_bitmaps(int weapon_index)
 {
 	weapon_info *wip;

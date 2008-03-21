@@ -962,6 +962,13 @@ int beam_fire(beam_fire_info *fire_info)
 		return -1;
 	}
 
+	// make sure that our textures are loaded as well
+	extern bool weapon_is_used(int weapon_index);
+	extern void weapon_load_bitmaps(int weapon_index);
+	if ( !weapon_is_used(fire_info->beam_info_index) ) {
+		weapon_load_bitmaps(fire_info->beam_info_index);
+	}
+
 	// remove from the free list
 	list_remove( &Beam_free_list, new_item );
 	
