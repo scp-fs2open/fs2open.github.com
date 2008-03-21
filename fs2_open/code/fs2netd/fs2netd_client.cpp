@@ -425,7 +425,6 @@ void fs2netd_do_frame()
 		PXO_SID = -1;
 
 		NextHeartBeat = -1;
-		NextHolePunch = -1;
 		NextPing = -1;
 		GotPong = -1;
 
@@ -471,7 +470,6 @@ void fs2netd_do_frame()
 			PXO_SID = -1;
 
 			NextHeartBeat = -1;
-			NextHolePunch = -1;
 			NextPing = -1;
 			GotPong = -1;
 
