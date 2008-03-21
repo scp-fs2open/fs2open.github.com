@@ -4382,6 +4382,8 @@ strcpy(parse_error_text, temp_error);
 				sp->turret_turning_rate = 0.0f;
 				sp->weapon_rotation_pbank = -1;
 
+				memset(sp->alt_sub_name, 0, sizeof(sp->alt_sub_name) );
+
 				for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++) {
 					sp->primary_banks[i] = -1;
 					sp->primary_bank_capacity[i] = 0;
@@ -4430,6 +4432,11 @@ strcpy(parse_error_text, temp_error);
 				{
 					Error(LOCATION, "Optional not working");
 				}
+			}
+
+			if(optional_string("$Alt Subsystem Name:")) {
+				stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+				strcpy(sp->alt_sub_name, buf);
 			}
 
 			if(optional_string("$Armor Type:")) {
@@ -6076,7 +6083,13 @@ void subsys_set(int objnum, int ignore_subsys_info)
 
 		ship_system->system_info = model_system;				// set the system_info pointer to point to the data read in from the model
 
-		memset(ship_system->sub_name, '\0', sizeof(ship_system->sub_name));
+		// if the table has set an name copy it
+		if (strlen(ship_system->system_info->alt_sub_name) > 0) {
+			strncpy(ship_system->sub_name, ship_system->system_info->alt_sub_name, NAME_LENGTH-1);
+		}
+		else {
+			memset(ship_system->sub_name, '\0', sizeof(ship_system->sub_name));
+		}
 
 		// zero flags
 		ship_system->flags = 0;
