@@ -1842,6 +1842,7 @@ sexp_oper Operators[] = {
 	{ "unlock-primary-weapon",		OP_UNLOCK_PRIMARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "lock-secondary-weapon",		OP_LOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
 	{ "unlock-secondary-weapon",	OP_UNLOCK_SECONDARY_WEAPON,		1, INT_MAX },		// Karajorma
+	{ "change-subsystem-name",		OP_CHANGE_SUBSYSTEM_NAME,		3, INT_MAX },		// Karajorma
 
 	{ "ship-invulnerable",			OP_SHIP_INVULNERABLE,			1, INT_MAX	},
 	{ "ship-vulnerable",			OP_SHIP_VULNERABLE,			1, INT_MAX	},
@@ -12495,6 +12496,45 @@ void sexp_deal_with_weapons_lock (int node, bool primary, bool lock)
 	} while (node != -1);
 }
 
+//Karajorma - Changes the subsystem name displayed on the HUD.  
+void sexp_change_subsystem_name(int node) 
+{
+	ship *shipp;
+	int ship_index;
+	char *new_name;
+	ship_subsys *subsystem_to_rename;
+
+	Assert (node != -1);
+
+	// Check that a ship has been supplied
+	ship_index = ship_name_lookup(CTEXT(node));
+	if (ship_index < 0) {
+		return;
+	}
+
+	shipp = &Ships[ship_index];
+
+	node = CDR(node);
+
+	if (node < 0) {
+		return;
+	}
+
+	new_name = CTEXT(node);
+
+	node = CDR(node);
+	
+	// loop through all the subsystems the SEXP has provided
+	while (node >= 0) {
+
+		//Get the new subsystem name
+		subsystem_to_rename = ship_get_subsys(&Ships[ship_index], CTEXT(node));
+		ship_subsys_set_name (subsystem_to_rename, new_name); 
+
+		node = CDR(node);
+	}
+}
+
 // Goober5000
 void sexp_change_ship_class(int n)
 {
@@ -16568,6 +16608,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_CHANGE_SUBSYSTEM_NAME:
+				sexp_change_subsystem_name(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_NUM_SHIPS_IN_BATTLE:	// phreak
 				sexp_val=sexp_num_ships_in_battle(node);
 				break;
@@ -17261,6 +17306,7 @@ int query_operator_return_type(int op)
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
 		case OP_RESET_ORDERS:
+		case OP_CHANGE_SUBSYSTEM_NAME:
 			return OPR_NULL;
 
 		case OP_AI_CHASE:
@@ -18331,8 +18377,19 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
-				return OPF_SHIP;
+			return OPF_SHIP;
 
+		case OP_CHANGE_SUBSYSTEM_NAME:
+			if (argnum == 0) {
+				return OPF_SHIP;
+			}
+			else if (argnum == 1) {
+				return OPF_STRING;
+			}
+			else {
+				return OPF_SUBSYSTEM;
+			}
+		
 		case OP_IS_SECONDARY_SELECTED:
 		case OP_IS_PRIMARY_SELECTED:
 			if(argnum == 0){
@@ -19552,6 +19609,7 @@ int get_subcategory(int sexp_id)
 		case OP_UNLOCK_PRIMARY_WEAPON:
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
+		case OP_CHANGE_SUBSYSTEM_NAME:
 
 			return CHANGE_SUBCATEGORY_SUBSYSTEMS_AND_CARGO;
 			
@@ -21779,6 +21837,14 @@ sexp_help_struct Sexp_help[] = {
 		"\t(all): Name(s) of ship(s) to lock"
 	},
 
+	// Karajorma
+	{ OP_CHANGE_SUBSYSTEM_NAME, "change-subsystem-name\r\n"
+		"\tChanges the name of the specified subsystem on the specified ship\r\n"
+		"\tTakes 3 or more arguments\r\n"
+		"\t1: Name(s) of ship(s)\r\n"
+		"\t2: New name for the subsystem (names larger than the maximum display size will be truncated\r\n"
+		"\t3: Name(s) of subsystem(s) to rename\r\n"
+	},
 
 	//phreak
 	{ OP_NUM_SHIPS_IN_BATTLE, "num-ships-in-battle\r\n"
