@@ -1823,7 +1823,7 @@ sexp_oper Operators[] = {
 	{ "set-subsystem-strength",	OP_SET_SUBSYSTEM_STRNGTH,			3, 4,			},
 	{ "subsys-set-random",			OP_SUBSYS_SET_RANDOM,			3, INT_MAX	},
 	{ "self-destruct",				OP_SELF_DESTRUCT,				1, INT_MAX,	},
-	{ "transfer-cargo",				OP_TRANSFER_CARGO,				1, 2,			},
+	{ "transfer-cargo",				OP_TRANSFER_CARGO,				2, 2,			},
 	{ "exchange-cargo",				OP_EXCHANGE_CARGO,				2, 2,			},
 	{ "set-cargo",					OP_SET_CARGO,					2, 3,			},
 	{ "jettison-cargo-delay",		OP_JETTISON_CARGO,				2, INT_MAX,		},
@@ -9730,12 +9730,10 @@ void sexp_transfer_cargo(int n)
 	// we must be sure that these two objects are indeed docked
 	if (!dock_check_find_direct_docked_object(&Objects[Ships[shipnum1].objnum], &Objects[Ships[shipnum2].objnum]))
 	{
-		Int3();			// you are trying to transfer cargo between two ships not docked
 		return;
 	}
 
 	if ( !stricmp(Cargo_names[Ships[shipnum1].cargo1 & CARGO_INDEX_MASK], "nothing") ) {
-		Int3();			// you are transfering no cargo!!!!
 		return;
 	}
 
