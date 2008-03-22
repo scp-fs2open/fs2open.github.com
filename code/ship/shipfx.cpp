@@ -3759,12 +3759,12 @@ void shipfx_stop_cloak(ship *shipp, int warmdown)
 class CombinedVariable
 {
 public:
-	static const ubyte TYPE_NONE  = 0;
-	static const ubyte TYPE_FLOAT = 1;
-	static const ubyte TYPE_IMAGE = 2;
-	static const ubyte TYPE_INT = 3;
-	static const ubyte TYPE_SOUND = 4;
-	static const ubyte TYPE_STRING  = 5;
+	static const int TYPE_NONE;
+	static const int TYPE_FLOAT;
+	static const int TYPE_IMAGE;
+	static const int TYPE_INT;
+	static const int TYPE_SOUND;
+	static const int TYPE_STRING;
 private:
 	int Type;
 	union StorageUnion
@@ -3776,164 +3776,225 @@ private:
 		char	*su_String;
 	} StorageUnion;
 public:
-	CombinedVariable()
+	//TYPE_NONE
+	CombinedVariable();
+	//TYPE_FLOAT
+	CombinedVariable(float n_Float);
+	//TYPE_INT
+	CombinedVariable(int n_Int);
+	//TYPE_IMAGE, TYPE_SOUND
+	CombinedVariable(int n_Int, ubyte type_override);
+	//TYPE_STRING
+	CombinedVariable(char *n_String);
+	//All types
+	~CombinedVariable();
+
+	//Returns 1 if buffer was successfully written to
+	int getFloat(float *output);
+	//Returns handle or < 0 on failure/wrong type
+	int getHandle();
+	//Returns handle, or < 0 on failure/wrong type
+	int getImage();
+	//Returns 1 if buffer was successfully written to
+	int getInt(int *output);
+	//Returns handle, or < 0 on failure/wrong type
+	int getSound();
+	//Returns 1 if buffer was successfully written to
+	int getString(char *output, size_t output_max);
+
+	//Returns true if TYPE_NONE
+	bool isEmpty();
+};
+
+//Workaround for MSVC6
+const int CombinedVariable::TYPE_NONE=0;
+const int CombinedVariable::TYPE_FLOAT = 1;
+const int CombinedVariable::TYPE_IMAGE = 2;
+const int CombinedVariable::TYPE_INT = 3;
+const int CombinedVariable::TYPE_SOUND = 4;
+const int CombinedVariable::TYPE_STRING  = 5;
+
+//Member functions
+CombinedVariable::CombinedVariable()
+{
+	Type = TYPE_NONE;
+}
+
+CombinedVariable::CombinedVariable(float n_Float)
+{
+	Type = TYPE_FLOAT;
+	StorageUnion.su_Float = n_Float;
+}
+
+CombinedVariable::CombinedVariable(int n_Int)
+{
+	Type = TYPE_INT;
+	StorageUnion.su_Int = n_Int;
+}
+
+CombinedVariable::CombinedVariable(int n_Int, ubyte type_override)
+{
+	if(type_override == TYPE_IMAGE)
 	{
-		Type = TYPE_NONE;
+		Type = TYPE_IMAGE;
+		StorageUnion.su_Image = n_Int;
 	}
-	CombinedVariable(float n_Float)
+	else if(type_override == TYPE_SOUND)
 	{
-		Type = TYPE_FLOAT;
-		StorageUnion.su_Float = n_Float;
+		Type = TYPE_SOUND;
+		StorageUnion.su_Sound = n_Int;
 	}
-	CombinedVariable(int n_Int)
+	else
 	{
 		Type = TYPE_INT;
 		StorageUnion.su_Int = n_Int;
 	}
-	CombinedVariable(int n_Int, ubyte type_override)
+}
+
+CombinedVariable::CombinedVariable(char *n_String)
+{
+	Type = TYPE_STRING;
+	StorageUnion.su_String = (char *)malloc(strlen(n_String)+1);
+	strcpy(StorageUnion.su_String, n_String);
+}
+
+CombinedVariable::~CombinedVariable()
+{
+	if(Type == TYPE_STRING)
 	{
-		switch(type_override)
-		{
-			case TYPE_IMAGE:
-				Type = TYPE_IMAGE;
-				StorageUnion.su_Image = n_Int;
-				break;
-			case TYPE_SOUND:
-				Type = TYPE_SOUND;
-				StorageUnion.su_Sound = n_Int;
-				break;
-			default:
-				Type = TYPE_INT;
-				StorageUnion.su_Int = n_Int;
-		}
+		free(StorageUnion.su_String);
 	}
-	CombinedVariable(char *n_String)
+}
+
+int CombinedVariable::getFloat(float *output)
+{
+	if(Type == TYPE_FLOAT)
 	{
-		Type = TYPE_STRING;
-		StorageUnion.su_String = (char *)malloc(strlen(n_String)+1);
-		strcpy(StorageUnion.su_String, n_String);
+		*output  = StorageUnion.su_Float;
+		return 1;
 	}
-	~CombinedVariable()
+	if(Type == TYPE_IMAGE)
 	{
-		switch(Type)
-		{
-			case TYPE_STRING:
-				free(StorageUnion.su_String);
-				break;
-			default:
-				break;
-		}
+		*output = i2fl(StorageUnion.su_Image);
+		return 1;
+	}
+	if(Type == TYPE_INT)
+	{
+		*output = i2fl(StorageUnion.su_Int);
+		return 1;
+	}
+	if(Type == TYPE_SOUND)
+	{
+		*output = i2fl(StorageUnion.su_Sound);
+		return 1;
+	}
+	if(Type == TYPE_STRING)
+	{
+		*output = (float)atof(StorageUnion.su_String);
+		return 1;
+	}
+	return 0;
+}
+int CombinedVariable::getHandle()
+{
+	int i = 0;
+	if(this->getInt(&i))
+		return i;
+	else
+		return -1;
+}
+int CombinedVariable::getImage()
+{
+	if(Type == TYPE_IMAGE)
+		return this->getHandle();
+	else
+		return -1;
+}
+int CombinedVariable::getInt(int *output)
+{
+	if(output == NULL)
+		return 0;
+
+	if(Type == TYPE_FLOAT)
+	{
+		*output  = fl2i(StorageUnion.su_Float);
+		return 1;
+	}
+	if(Type == TYPE_IMAGE)
+	{
+		*output = StorageUnion.su_Image;
+		return 1;
+	}
+	if(Type == TYPE_INT)
+	{
+		*output = StorageUnion.su_Int;
+		return 1;
+	}
+	if(Type == TYPE_SOUND)
+	{
+		*output = StorageUnion.su_Sound;
+		return 1;
+	}
+	if(Type == TYPE_STRING)
+	{
+		*output = atoi(StorageUnion.su_String);
+		return 1;
 	}
 
-	int getString(char *output, size_t output_max)
-	{
-		switch(Type)
-		{
-			case TYPE_FLOAT:
-				snprintf(output, output_max, "%f", StorageUnion.su_Float);
-				return 1;
-			case TYPE_IMAGE:
-				if(bm_is_valid(StorageUnion.su_Image))
-					snprintf(output, output_max, "%s", bm_get_filename(StorageUnion.su_Image));
-				return 1;
-			case TYPE_INT:
-				snprintf(output, output_max, "%i", StorageUnion.su_Int);
-				return 1;
-			case TYPE_SOUND:
-				Error(LOCATION, "Sound CombinedVariables are not supported yet.");
-				/*if(snd_is_valid(StorageUnion.su_Sound))
-					snprintf(output, output_max, "%s", snd_get_filename(StorageUnion.su_Sound));*/
-				return 1;
-			case TYPE_STRING:
-				strncpy(output, StorageUnion.su_String, output_max);
-				return 1;
-			default:
-				return 0;
-		}
-	}
+	return 0;
+}
+int CombinedVariable::getSound()
+{
+	if(Type == TYPE_SOUND)
+		return this->getHandle();
+	else
+		return -1;
+}
+int CombinedVariable::getString(char *output, size_t output_max)
+{
+	if(output == NULL || output_max == 0)
+		return 0;
 
-	int getFloat(float *output)
+	if(Type == TYPE_FLOAT)
 	{
-		switch(Type)
-		{
-			case TYPE_FLOAT:
-				*output  = StorageUnion.su_Float;
-				return 1;
-			case TYPE_IMAGE:
-				*output = i2fl(StorageUnion.su_Image);
-				return 1;
-			case TYPE_INT:
-				*output = i2fl(StorageUnion.su_Int);
-				return 1;
-			case TYPE_SOUND:
-				*output = i2fl(StorageUnion.su_Sound);
-				break;
-			case TYPE_STRING:
-				*output = (float)atof(StorageUnion.su_String);
-				return 1;
-			default:
-				return 0;
-		}
+		snprintf(output, output_max, "%f", StorageUnion.su_Float);
+		return 1;
 	}
-
-	//Returns < 0 on failure.
-	int getHandle()
+	if(Type == TYPE_IMAGE)
 	{
-		int i = 0;
-		if(this->getInt(&i))
-			return i;
-		else
-			return -1;
+		if(bm_is_valid(StorageUnion.su_Image))
+			snprintf(output, output_max, "%s", bm_get_filename(StorageUnion.su_Image));
+		return 1;
 	}
-
-	int getImage()
+	if(Type == TYPE_INT)
 	{
-		if(Type == TYPE_IMAGE)
-			return this->getHandle();
-		else
-			return -1;
+		snprintf(output, output_max, "%i", StorageUnion.su_Int);
+		return 1;
 	}
-
-	int getInt(int *output)
+	if(Type == TYPE_SOUND)
 	{
-		switch(Type)
-		{
-			case TYPE_FLOAT:
-				*output  = fl2i(StorageUnion.su_Float);
-				return 1;
-			case TYPE_IMAGE:
-				*output = StorageUnion.su_Image;
-				return 1;
-			case TYPE_INT:
-				*output = StorageUnion.su_Int;
-				return 1;
-			case TYPE_SOUND:
-				*output = StorageUnion.su_Sound;
-				return 1;
-			case TYPE_STRING:
-				*output = atoi(StorageUnion.su_String);
-				return 1;
-			default:
-				return 0;
-		}
+		Error(LOCATION, "Sound CombinedVariables are not supported yet.");
+		/*if(snd_is_valid(StorageUnion.su_Sound))
+			snprintf(output, output_max, "%s", snd_get_filename(StorageUnion.su_Sound));*/
+		return 1;
 	}
-
-	int getSound()
+	if(Type == TYPE_STRING)
 	{
-		if(Type == TYPE_SOUND)
-			return this->getHandle();
-		else
-			return -1;
+		strncpy(output, StorageUnion.su_String, output_max);
+		return 1;
 	}
-
-	bool isEmpty()
-	{
-		return (Type != TYPE_NONE);
-	}
-};
+	return 0;
+}
+bool CombinedVariable::isEmpty()
+{
+	return (Type != TYPE_NONE);
+}
 
 void parse_combined_variable_list(CombinedVariable *dest, flag_def_list *src, size_t num)
 {
+	if(dest == NULL || src == NULL || num == 0)
+		return;
+
 	char buf[NAME_LENGTH*2];
 	flag_def_list *sp = NULL;
 	CombinedVariable *dp = NULL;
@@ -4557,7 +4618,7 @@ int WE_Homeworld::warpStart()
 	stage = 1;
 	total_time_start = timestamp();
 	total_time_end = 0;
-	for(int i = 0; i <= NUM_STAGES; i++)
+	for(int i = 0; i <= WE_HOMEWORLD_NUM_STAGES; i++)
 	{
 		total_time_end += stage_duration[i];
 	}

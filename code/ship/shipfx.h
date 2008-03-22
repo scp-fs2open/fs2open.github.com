@@ -333,11 +333,10 @@ public:
 };
 
 //********************-----CLASS: WE_Default-----********************//
+#define WE_DEFAULT_NUM_STAGES			2
 class WE_Default : public WarpEffect
 {
 private:
-	static const int NUM_STAGES = 2;
-
 	//portal object
 	object *portal_objp;
 
@@ -350,7 +349,7 @@ private:
 	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 
 	//Data "storage"
-	int stage_duration[NUM_STAGES+1];
+	int stage_duration[WE_DEFAULT_NUM_STAGES+1];
 
 	//sweeper polygon and clip effect
 	vec3d	pos;
@@ -368,11 +367,10 @@ public:
 };
 
 //********************-----CLASS: WE_BTRL-----********************//
+#define WE_BTRL_NUM_STAGES				2
 class WE_BTRL : public WarpEffect
 {
 private:
-	static const int NUM_STAGES = 2;
-
 	//Total data
 	int total_time_start;
 	int total_time_end;
@@ -382,7 +380,7 @@ private:
 	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 
 	//Data "storage"
-	int stage_duration[NUM_STAGES+1];
+	int stage_duration[WE_BTRL_NUM_STAGES+1];
 
 	//anim
 	int anim;
@@ -402,11 +400,10 @@ public:
 };
 
 //********************-----CLASS: WE_Homeworld-----********************//
+#define WE_HOMEWORLD_NUM_STAGES			5
 class WE_Homeworld : public WarpEffect
 {
 private:
-	static const int NUM_STAGES = 5;
-
 	//Total data
 	int total_time_start;
 	int total_time_end;
@@ -416,7 +413,7 @@ private:
 	int	stage_time_end;			// pops when ship is completely warped out or warped in.  Used for both warp in and out.
 
 	//Data "storage"
-	int stage_duration[NUM_STAGES+1];
+	int stage_duration[WE_HOMEWORLD_NUM_STAGES+1];
 
 	//anim
 	int anim;
