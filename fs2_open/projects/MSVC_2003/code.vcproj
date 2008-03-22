@@ -30,7 +30,7 @@
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
 				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="NDEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA"
+				PreprocessorDefinitions="NDEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;NO_DIRECT3D"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile="$(IntDir)\code.pch"
@@ -83,7 +83,7 @@
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
 				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua,..\..\openal\include"
-				PreprocessorDefinitions="_DEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA"
+				PreprocessorDefinitions="_DEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;NO_DIRECT3D"
 				MinimalRebuild="TRUE"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="1"
@@ -146,7 +146,7 @@
 				OptimizeForProcessor="2"
 				OptimizeForWindowsApplication="TRUE"
 				AdditionalIncludeDirectories="..\..\code,..\..\oggvorbis\include,..\..\lua"
-				PreprocessorDefinitions="NDEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;USE_LUA;INF_BUILD"
+				PreprocessorDefinitions="NDEBUG;AL_VERSION_1_1;WIN32;_WINDOWS;FS2_SPEECH;USE_OPENAL;INF_BUILD;NO_DIRECT3D"
 				RuntimeLibrary="0"
 				UsePrecompiledHeader="2"
 				PrecompiledHeaderFile="$(IntDir)\code.pch"
@@ -1059,12 +1059,6 @@
 			</File>
 			<File
 				RelativePath="..\..\code\MenuUI\SnazzyUI.h">
-			</File>
-			<File
-				RelativePath="..\..\code\menuui\storybook.cpp">
-			</File>
-			<File
-				RelativePath="..\..\code\menuui\storybook.h">
 			</File>
 			<File
 				RelativePath="..\..\code\MenuUI\TechMenu.cpp">
