@@ -9215,20 +9215,18 @@ void sexp_send_random_message(int n)
 	sexp_send_one_message( name, who_from, priority, 0, 0 );
 }
 
-void sexp_self_destruct(int n)
+void sexp_self_destruct(int node)
 {
-	char *ship_name;
-	int shipnum;
+	int n, ship_num;
 
-	while ( n != -1 ) {
-		// get the ship name and be sure that it is still in the mission.  Destroy it if we find it
-		ship_name = CTEXT(n);
-		shipnum = ship_name_lookup( ship_name );
-		if ( shipnum == -1 )
-			return;
-		ship_self_destruct( &Objects[Ships[shipnum].objnum] );
+	for (n = node; n != -1; n = CDR(n))	{
+		// get the ship
+		ship_num = ship_name_lookup(CTEXT(n));
 
-		n = CDR(n);
+		// if it still exists, destroy it
+		if (ship_num >= 0) {
+			ship_self_destruct(&Objects[Ships[ship_num].objnum]);
+		}
 	}
 }
 
