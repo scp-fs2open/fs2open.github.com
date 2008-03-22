@@ -54,19 +54,19 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo /o"Release/Profile/wxFRED2.bsc" "Release\Profile\*.sbr"
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28_xrc.lib wxmsw28_html.lib wxmsw28_adv.lib wxmsw28_core.lib wxbase28_xml.lib wxbase28.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregex.lib wxexpat.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libci.lib" /out:"Release/wxfred2_open_3_6_9.exe" /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28_xrc.lib wxmsw28_html.lib wxmsw28_adv.lib wxmsw28_core.lib wxbase28_xml.lib wxbase28.lib wxtiff.lib wxjpeg.lib wxpng.lib wxzlib.lib wxregex.lib wxexpat.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libc.lib" /nodefaultlib:"libci.lib" /out:"Release/wxfred2_open_trunk_r.exe" /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
 # SUBTRACT LINK32 /nodefaultlib
 # Begin Custom Build - Copying build...
 ProjDir=.
-InputPath=.\Release\wxfred2_open_3_6_9.exe
+InputPath=.\Release\wxfred2_open_trunk_r.exe
 SOURCE="$(InputPath)"
 
 BuildCmds= \
-	copy $(InputPath) "$(FS2PATH)\wxfred2_open_3_6_9.exe" \
+	copy $(InputPath) "$(FS2PATH)\wxfred2_open_trunk_r.exe" \
 	copy "$(ProjDir)\..\..\code\wxfred2\wxfred.xrc" "$(FS2PATH)\wxfred.xrc" \
 	
 
-"$(FS2PATH)\wxfred2_open_3_6_9.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"$(FS2PATH)\wxfred2_open_trunk_r.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 
 "$(FS2PATH)\wxfred.xrc" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
@@ -97,19 +97,19 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo /o"Debug/Profile/wxFRED2.bsc" "Debug\Profile\*.sbr"
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28d_xrc.lib wxmsw28d_html.lib wxmsw28d_adv.lib wxmsw28d_core.lib wxbase28d_xml.lib wxbase28d.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexd.lib wxexpatd.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libcd.lib" /nodefaultlib:"libcid.lib" /out:"Debug/wxfred2_open_3_6_9_debug.exe" /pdbtype:sept /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
+# ADD LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib comctl32.lib rpcrt4.lib wsock32.lib winmm.lib wxmsw28d_xrc.lib wxmsw28d_html.lib wxmsw28d_adv.lib wxmsw28d_core.lib wxbase28d_xml.lib wxbase28d.lib wxtiffd.lib wxjpegd.lib wxpngd.lib wxzlibd.lib wxregexd.lib wxexpatd.lib /nologo /subsystem:windows /map /debug /machine:I386 /nodefaultlib:"libcd.lib" /nodefaultlib:"libcid.lib" /out:"Debug/wxfred2_open_trunk_d.exe" /pdbtype:sept /libpath:"$(WXWIN)/lib" /libpath:"$(WXWIN)/lib/vc_lib"
 # SUBTRACT LINK32 /nodefaultlib
 # Begin Custom Build - Copying build...
 ProjDir=.
-InputPath=.\Debug\wxfred2_open_3_6_9_debug.exe
+InputPath=.\Debug\wxfred2_open_trunk_d.exe
 SOURCE="$(InputPath)"
 
 BuildCmds= \
-	copy $(InputPath) "$(FS2PATH)/wxfred2_open_3_6_9_debug.exe" \
+	copy $(InputPath) "$(FS2PATH)/wxfred2_open_trunk_d.exe" \
 	copy "$(ProjDir)\..\..\code\wxfred2\wxfred.xrc" "$(FS2PATH)\wxfred.xrc" \
 	
 
-"$(FS2PATH)/wxfred2_open_3_6_9_debug.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
+"$(FS2PATH)/wxfred2_open_trunk_d.exe" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
    $(BuildCmds)
 
 "$(FS2PATH)\wxfred.xrc" : $(SOURCE) "$(INTDIR)" "$(OUTDIR)"
