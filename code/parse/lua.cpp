@@ -4520,15 +4520,21 @@ ADE_VIRTVAR(Position, l_Subsystem, "vector", "Subsystem position with regards to
 	if(!sso->IsValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
+	/*
 	polymodel *pm = model_get(Ship_info[Ships[sso->objp->instance].ship_info_index].model_num);
-	Assert(pm != NULL);
+
+	if(pm == NULL)
+		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	bsp_info *sm = &pm->submodel[sso->ss->system_info->subobj_num];
+	*/
 
 	if(ADE_SETTING_VAR && v != NULL)
-		sm->offset = *v;
+	{
+		sso->ss->system_info->pnt = *v;
+	}
 
-	return ade_set_args(L, "o", l_Vector.Set(sm->offset));
+	return ade_set_args(L, "o", l_Vector.Set(sso->ss->system_info->pnt));
 }
 
 ADE_VIRTVAR(GunPosition, l_Subsystem, "vector", "Subsystem gun position with regards to main ship (Local vector)", "vector", "Gun position, or null vector if subsystem handle is invalid")
