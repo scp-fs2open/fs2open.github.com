@@ -4683,18 +4683,27 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[Turret weapon index = 1, Flak range = 100]",
 	wnum--;	//Lua->FS2
 
 	//Get default turret info
-	vec3d gpos, gvec, fvec;
-	ship_get_global_turret_info(sso->objp, sso->ss->system_info, &gpos, &gvec);
+	vec3d gpos, gvec;
+	model_subsystem *tp = sso->ss->system_info;
+	//ship_get_global_turret_info(sso->objp, sso->ss->system_info, &gpos, &gvec);
 
+	//Rotate turret position with ship
+	vm_vec_unrotate(&gpos, &tp->pnt, &sso->objp->orient);
+	//Add turret position to appropriate world space
+	vm_vec_add2(&gpos, &sso->objp->pos);
+
+	//Rotate turret heading with turret base and gun
 	//Now rotate a matrix by angles
+	vec3d turret_heading = vmd_zero_vector;
 	matrix m = IDENTITY_MATRIX;
 	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_1.angs);
 	vm_rotate_matrix_by_angles(&m, &sso->ss->submodel_info_2.angs);
+	vm_vec_unrotate(&turret_heading, &tp->turret_norm, &m);
 
-	//Rotate the vector
-	vm_vec_unrotate(&fvec, &gvec, &m);
+	//Rotate into world space
+	vm_vec_unrotate(&gvec, &turret_heading, &sso->objp->orient);	
 
-	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objp), &gpos, &fvec, NULL, flak_range);
+	bool rtn = turret_fire_weapon(wnum, sso->ss, OBJ_INDEX(sso->objp), &gpos, &gvec, NULL, flak_range);
 
 	return ade_set_args(L, "b", rtn);
 }
