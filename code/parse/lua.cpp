@@ -2740,7 +2740,6 @@ ADE_FUNC(getScreenCoords, l_Vector, NULL, "Gets screen cordinates of a world vec
 	
 	g3_rotate_vertex(&vtx,&v3);
 	g3_project_vertex(&vtx);
-	gr_unsize_screen_posf( &vtx.sx, &vtx.sy );
 
 	if(do_g3)
 		g3_end_frame();
@@ -6368,7 +6367,7 @@ ADE_FUNC(getMouseX, l_Mouse, NULL, "Gets Mouse X pos", "number", "Mouse x positi
 
 	int x;
 
-	mouse_get_pos_unscaled(&x, NULL);
+	mouse_get_pos(&x, NULL);
 
 	return ade_set_args(L, "i", x);
 }
@@ -6380,7 +6379,7 @@ ADE_FUNC(getMouseY, l_Mouse, NULL, "Gets Mouse Y pos", "number", "Mouse y positi
 
 	int y;
 
-	mouse_get_pos_unscaled(NULL, &y);
+	mouse_get_pos(NULL, &y);
 
 	return ade_set_args(L, "i", y);
 }
