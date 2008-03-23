@@ -131,9 +131,10 @@ public:
 	size_t Size;
 
 	//Metadata
-	char *ReturnValues;
 	char *Arguments;
 	char *Description;
+	char *ReturnType;
+	char *ReturnDescription;
 
 	//Subentries, of course.
 	//std::vector<ade_table_entry> Subentries;
