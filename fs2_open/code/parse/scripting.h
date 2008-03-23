@@ -36,7 +36,8 @@ struct image_desc
 #define CHC_WEAPONCLASS		6
 #define CHC_OBJECTTYPE		7
 #define CHC_KEYPRESS		8
-#define CHC_VERSION		9
+#define CHC_VERSION			9
+#define CHC_APPLICATION		10
 
 //Actions
 #define CHA_NONE			-1

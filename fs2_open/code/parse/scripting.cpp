@@ -37,6 +37,7 @@ flag_def_list Script_conditions[] =
 	{"Weapon class",CHC_WEAPONCLASS,	0},
 	{"KeyPress",	CHC_KEYPRESS,		0},
 	{"Version",		CHC_VERSION,		0},
+	{"Application",	CHC_APPLICATION,	0},
 };
 
 int Num_script_conditions = sizeof(Script_conditions)/sizeof(flag_def_list);
@@ -285,6 +286,19 @@ bool ConditionedHook::ConditionsValid(int action, object *objp)
 						}
 					}
 					break;
+				}
+			case CHC_APPLICATION:
+				{
+					if(Fred_running)
+					{
+						if(stricmp("FRED2_Open", scp->data.name) && stricmp("FRED2_Open", scp->data.name) && stricmp("FRED 2", scp->data.name) && stricmp("FRED", scp->data.name))
+							return false;
+					}
+					else
+					{
+						if(stricmp("FS2_Open", scp->data.name) && stricmp("FS2Open", scp->data.name) && stricmp("Freespace 2", scp->data.name) && stricmp("Freespace", scp->data.name))
+							return false;
+					}
 				}
 			default:
 				break;
@@ -1213,6 +1227,7 @@ bool script_state::ParseCondition(char *filename)
 			case CHC_WEAPONCLASS:
 			case CHC_OBJECTTYPE:
 			case CHC_VERSION:
+			case CHC_APPLICATION:
 			default:
 				stuff_string(sct.data.name, F_NAME, NAME_LENGTH);
 				break;
