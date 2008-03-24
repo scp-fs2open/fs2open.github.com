@@ -7295,7 +7295,8 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 			}
 
 #ifndef NDEBUG
-			if (wingp->total_destroyed != wingp->total_arrived_count)
+			//WMC - Ships can depart too, besides being destroyed :P
+			if ((wingp->total_destroyed + wingp->total_departed) != wingp->total_arrived_count)
 			{
 				// apparently, there have been reports of ships still present in the mission when this log
 				// entry if written.  Do a sanity check here to find out for sure.
