@@ -3776,32 +3776,6 @@ strcpy(parse_error_text, temp_error);
 		sip->draw_models = true;
 		stuff_bool_list(sip->draw_secondary_models, sip->num_secondary_banks);
 	}
-	
-	// copy to regular allowed_weapons array
-	for (i=0; i<MAX_SHIP_WEAPONS; i++)
-	{
-		for (j=0; j<MAX_WEAPON_TYPES; j++)
-		{
-			if (sip->allowed_bank_restricted_weapons[i][j] & REGULAR_WEAPON)
-				sip->allowed_weapons[j] |= REGULAR_WEAPON;
-
-			if (sip->allowed_bank_restricted_weapons[i][j] & DOGFIGHT_WEAPON)
-				sip->allowed_weapons[j] |= DOGFIGHT_WEAPON;
-		}
-	}
-
-	//Set ship ballistic flag if necessary
-	for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++)
-	{
-		for (j=0; j<MAX_WEAPON_TYPES; j++)
-		{
-			if(sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags2 & WIF2_BALLISTIC))
-			{
-				sip->flags |= SIF_BALLISTIC_PRIMARIES;
-				break;
-			}
-		}
-	}
 
 	if(optional_string("$Shields:"))
 		stuff_float(&sip->max_shield_strength);
@@ -3949,6 +3923,32 @@ strcpy(parse_error_text, temp_error);
 	if (sip->num_primary_banks > MAX_SHIP_PRIMARY_BANKS)
 	{
 		Error(LOCATION, "Ship Class %s has too many primary banks (%d).  Maximum for ships is currently %d.\n", sip->name, sip->num_primary_banks, MAX_SHIP_PRIMARY_BANKS);
+	}
+
+	// copy to regular allowed_weapons array
+	for (i=0; i<MAX_SHIP_WEAPONS; i++)
+	{
+		for (j=0; j<MAX_WEAPON_TYPES; j++)
+		{
+			if (sip->allowed_bank_restricted_weapons[i][j] & REGULAR_WEAPON)
+				sip->allowed_weapons[j] |= REGULAR_WEAPON;
+
+			if (sip->allowed_bank_restricted_weapons[i][j] & DOGFIGHT_WEAPON)
+				sip->allowed_weapons[j] |= DOGFIGHT_WEAPON;
+		}
+	}
+
+	//Set ship ballistic flag if necessary
+	for (i=0; i<MAX_SHIP_PRIMARY_BANKS; i++)
+	{
+		for (j=0; j<MAX_WEAPON_TYPES; j++)
+		{
+			if(sip->allowed_bank_restricted_weapons[i][j] && (Weapon_info[j].wi_flags2 & WIF2_BALLISTIC))
+			{
+				sip->flags |= SIF_BALLISTIC_PRIMARIES;
+				break;
+			}
+		}
 	}
 
 	find_and_stuff_optional("$AI Class:", &sip->ai_class, F_NAME, Ai_class_names, Num_ai_classes, "AI class names");
