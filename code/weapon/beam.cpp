@@ -1947,6 +1947,7 @@ void beam_generate_muzzle_particles(beam *b)
 		vm_vec_add2(&particle_pos, &b->objp->pos);
 		p_temp = particle_dir;
 		vm_vec_unrotate(&particle_dir, &p_temp, &b->objp->orient);
+		vm_vec_add2(&particle_dir, &b->objp->phys_info.vel);	//move along with our parent
 
 		// now generate some interesting values for the particle
 		float p_time_ref = wip->b_info.beam_life + ((float)wip->b_info.beam_warmup / 1000.0f);		
