@@ -71,10 +71,10 @@
  */
 
 #include "stdafx.h"
-#include <mmsystem.h>
 #include "FRED.h"
 #include "CmdBrief.h"
 #include "cfile/cfile.h"
+#include "sound/audiostr.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -94,6 +94,8 @@ cmd_brief_dlg::cmd_brief_dlg(CWnd* pParent /*=NULL*/)
 	m_stage_title = _T("");
 	m_wave_filename = _T("");
 	//}}AFX_DATA_INIT
+
+	m_wave_id = -1;
 }
 
 void cmd_brief_dlg::DoDataExchange(CDataExchange* pDX)
@@ -219,18 +221,27 @@ void cmd_brief_dlg::update_data(int update)
 
 void cmd_brief_dlg::OnOK()
 {
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
+
 	update_data();
 	CDialog::OnOK();
 }
 
 void cmd_brief_dlg::OnNext() 
 {
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
+
 	m_cur_stage++;
 	update_data();
 }
 
 void cmd_brief_dlg::OnPrev() 
 {
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
+
 	m_cur_stage--;
 	update_data();
 }
@@ -241,6 +252,9 @@ void cmd_brief_dlg::OnAddStage()
 
 	if (Cur_cmd_brief->num_stages >= CMD_BRIEF_STAGES_MAX)
 		return;
+
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
 
 	m_cur_stage = i = Cur_cmd_brief->num_stages++;
 	copy_stage(i - 1, i);
@@ -258,6 +272,9 @@ void cmd_brief_dlg::OnInsertStage()
 		OnAddStage();
 		return;
 	}
+
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
 
 	z = m_cur_stage;
 	m_cur_stage = -1;
@@ -278,7 +295,10 @@ void cmd_brief_dlg::OnDeleteStage()
 
 	if (m_cur_stage < 0)
 		return;
-	
+
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
+
 	Assert(Cur_cmd_brief->num_stages);
 	z = m_cur_stage;
 	m_cur_stage = -1;
@@ -336,6 +356,9 @@ void cmd_brief_dlg::OnBrowseWave()
 	int z;
 	CString name;
 
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
+
 	UpdateData(TRUE);
 	z = cfile_push_chdir(CF_TYPE_VOICE_CMD_BRIEF);
 	CFileDialog dlg(TRUE, "wav", NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST | OFN_NOCHANGEDIR,
@@ -352,17 +375,27 @@ void cmd_brief_dlg::OnBrowseWave()
 
 BOOL cmd_brief_dlg::DestroyWindow() 
 {
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
+
 	m_play_bm.DeleteObject();
 	return CDialog::DestroyWindow();
 }
 
 void cmd_brief_dlg::OnPlay() 
 {
-	char path[MAX_PATH_LEN + 1];
 	GetDlgItem(IDC_WAVE_FILENAME)->GetWindowText(m_wave_filename);
 
-	int size, offset;
-	cf_find_file_location((char *) (LPCSTR) m_wave_filename, CF_TYPE_ANY, m_wave_filename.GetLength(), path, &size, &offset );
+	if (m_wave_id >= 0) {
+		audiostream_close_file(m_wave_id, 0);
+		m_wave_id = -1;
+		return;
+	}
 
-	PlaySound(path, NULL, SND_ASYNC | SND_FILENAME);
+	// we use ASF_EVENTMUSIC here so that it will keep the extension in place
+	m_wave_id = audiostream_open((char *)(LPCSTR) m_wave_filename, ASF_EVENTMUSIC);
+
+	if (m_wave_id >= 0) {
+		audiostream_play(m_wave_id, 1.0f, 0);
+	}
 }

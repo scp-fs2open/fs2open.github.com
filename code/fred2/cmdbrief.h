@@ -90,6 +90,7 @@ public:
 protected:
 	int m_cur_stage;
 	int m_last_stage;
+	int m_wave_id;
 	cmd_brief *last_cmd_brief;
 
 	void copy_stage(int from, int to);

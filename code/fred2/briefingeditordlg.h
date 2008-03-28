@@ -217,6 +217,7 @@ protected:
 	int m_last_stage;
 	int m_cur_icon;
 	int m_last_icon;
+	int m_voice_id;
 	int stage_saved;
 	int icon_saved;
 	int modified;

@@ -121,13 +121,13 @@
  */
 
 #include "stdafx.h"
-#include <mmsystem.h>
 #include "FRED.h"
 #include "DebriefingEditorDlg.h"
 #include "FREDDoc.h"
 #include "mission/missionbriefcommon.h"
 #include "parse/sexp.h"
 #include "cfile/cfile.h"
+#include "sound/audiostr.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -152,6 +152,7 @@ debriefing_editor_dlg::debriefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	modified = 0;
 	m_cur_stage = 0;
 	m_last_stage = -1;
+	m_voice_id = -1;
 	select_sexp_node = -1;
 }
 
@@ -341,12 +342,18 @@ void debriefing_editor_dlg::update_data(int update)
 
 void debriefing_editor_dlg::OnNext() 
 {
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
+
 	m_cur_stage++;
 	update_data();
 }
 
 void debriefing_editor_dlg::OnPrev() 
 {
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
+
 	m_cur_stage--;
 	update_data();
 }
@@ -355,6 +362,9 @@ void debriefing_editor_dlg::OnBrowse()
 {
 	int z;
 	CString name;
+
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
 
 	UpdateData(TRUE);
 
@@ -382,6 +392,9 @@ void debriefing_editor_dlg::OnAddStage()
 	if (Debriefing->num_stages >= MAX_DEBRIEF_STAGES)
 		return;
 
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
+
 	m_cur_stage = i = Debriefing->num_stages++;
 	copy_stage(i - 1, i, 1);
 	update_data(1);
@@ -393,7 +406,10 @@ void debriefing_editor_dlg::OnDeleteStage()
 
 	if (m_cur_stage < 0)
 		return;
-	
+
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
+
 	Assert(Debriefing->num_stages);
 	z = m_cur_stage;
 	m_cur_stage = -1;
@@ -421,6 +437,9 @@ void debriefing_editor_dlg::OnInsertStage()
 		OnAddStage();
 		return;
 	}
+
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
 
 	z = m_cur_stage;
 	m_cur_stage = -1;
@@ -483,6 +502,8 @@ void debriefing_editor_dlg::OnEndlabeleditTree(NMHDR* pNMHDR, LRESULT* pResult)
 
 void debriefing_editor_dlg::OnClose() 
 {
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
 	m_cur_stage = -1;
 	update_data(1);
 	CDialog::OnClose();
@@ -520,17 +541,25 @@ BOOL debriefing_editor_dlg::OnCommand(WPARAM wParam, LPARAM lParam)
 
 BOOL debriefing_editor_dlg::DestroyWindow() 
 {
+	audiostream_close_file(m_voice_id, 0);
 	m_play_bm.DeleteObject();
 	return CDialog::DestroyWindow();
 }
 
 void debriefing_editor_dlg::OnPlay() 
 {
-	char path[MAX_PATH_LEN + 1];
 	GetDlgItem(IDC_VOICE)->GetWindowText(m_voice);
 
-	int size, offset;
-	cf_find_file_location((char *) (LPCSTR) m_voice, CF_TYPE_ANY, m_voice.GetLength(), path, &size, &offset );
+	if (m_voice_id >= 0) {
+		audiostream_close_file(m_voice_id, 0);
+		m_voice_id = -1;
+		return;
+	}
 
-	PlaySound(path, NULL, SND_ASYNC | SND_FILENAME);
+	// we use ASF_EVENTMUSIC here so that it will keep the extension in place
+	m_voice_id = audiostream_open((char *)(LPCSTR) m_voice, ASF_EVENTMUSIC);
+
+	if (m_voice_id >= 0) {
+		audiostream_play(m_voice_id, 1.0f, 0);
+	}
 }
