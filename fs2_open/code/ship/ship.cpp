@@ -4569,7 +4569,12 @@ strcpy(parse_error_text, temp_error);
 							stuff_int(&current_trigger->start); 
 						else
 							current_trigger->start = 0;
-		
+
+						if ( optional_string("+reverse_delay:") )
+							stuff_int(&current_trigger->reverse_start);
+						else
+							current_trigger->reverse_start = 0;
+
 						if(optional_string("+absolute_angle:")){
 							current_trigger->absolute = true;
 							stuff_vector(&current_trigger->angle );
@@ -4614,7 +4619,8 @@ strcpy(parse_error_text, temp_error);
 
 						current_trigger->reverse_start = -1;	//have some code figure this out for us
 
-						if(optional_string("+reverse_delay:"))stuff_int(&current_trigger->reverse_start);
+						if ( optional_string("+reverse_delay:") )
+							stuff_int(&current_trigger->reverse_start);
 		
 						if(optional_string("+absolute_angle:")){
 							current_trigger->absolute = true;
