@@ -322,7 +322,7 @@ int gamesnd_get_by_name(char* name)
 {
 	for(int i = 0; i < Num_game_sounds; i++)
 	{
-		char *p = strchr( Snds[i].filename, '.' );
+		char *p = strrchr( Snds[i].filename, '.' );
 		if(p == NULL)
 		{
 			if(!stricmp(Snds[i].filename, name))
