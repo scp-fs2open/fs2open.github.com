@@ -821,7 +821,7 @@ void fireball_init()
 	// Goober5000 - reset Knossos warp flag
 	Knossos_warp_ani_used = 0;
 
-	mprintf(("loading warp model"));
+	mprintf(("Loading warp model\n"));
 	Warp_model = -1;
 
 	// Goober5000 - check for existence of file before trying to load it

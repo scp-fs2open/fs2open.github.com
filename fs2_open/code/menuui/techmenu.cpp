@@ -1527,7 +1527,7 @@ void techroom_intel_init()
 	while (optional_string("$Entry:")) {
 		Assert(Intel_info_size < MAX_INTEL_ENTRIES);
 		if (Intel_info_size >= MAX_INTEL_ENTRIES) {
-			mprintf(("TECHMENU: Too many intel entries!"));
+			mprintf(("TECHMENU: Too many intel entries!\n"));
 			break;
 		}
 

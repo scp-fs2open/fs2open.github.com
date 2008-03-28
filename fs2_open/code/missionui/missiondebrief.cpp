@@ -1841,7 +1841,7 @@ void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_lo
 
 	if (mission_loop_desc == NULL) {
 		strcpy(buffer, XSTR("<No Mission Loop Description Available>", 1490));
-		mprintf(("No mission loop description avail"));
+		mprintf(("No mission loop description available\n"));
 	} else {
 		strcpy(buffer, mission_loop_desc);
 	}

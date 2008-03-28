@@ -1370,7 +1370,7 @@ void multi_process_reliable_details()
 		if(Serverconn != 0xffffffff){
 			int status = psnet_rel_get_status(Serverconn);
 			if(status == RNF_BROKEN){
-				mprintf(("CLIENT SOCKET DISCONNECTED"));
+				mprintf(("CLIENT SOCKET DISCONNECTED\n"));
 
 				// quit the game
 				if(!multi_endgame_ending()){

@@ -588,9 +588,8 @@ int snd_init(int use_a3d, int use_eax, unsigned int sample_rate, unsigned short 
 //		Warning(LOCATION, "Could not properly initialize the Microsoft ADPCM codec.\nPlease see the readme.txt file for detailed instructions on installing the Microsoft ADPCM codec.");
 	}
 
-	if ( OGG_init() == -1)
-	{
-		mprintf(("Could not initialize the OGG vorbis converter."));
+	if ( OGG_init() == -1 ) {
+		mprintf(("Could not initialize the OGG vorbis converter.\n"));
 	}
 
 	// Init the audio streaming stuff
