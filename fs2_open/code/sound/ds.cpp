@@ -1019,7 +1019,7 @@ int ds_parse_sound_info(char *real_filename, sound_info *s_info)
 
 	// remove extension
 	strcpy( filename, real_filename );
-	char *p = strchr(filename, '.');
+	char *p = strrchr(filename, '.');
 	if ( p ) *p = 0;
 
 	rc = cf_find_file_location_ext(filename, NUM_EXT, audio_ext, CF_TYPE_ANY, sizeof(fullpath) - 1, fullpath, &FileSize, &FileOffset);
