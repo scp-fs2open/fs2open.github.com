@@ -108,6 +108,7 @@ public:
 protected:
 	int m_cur_stage;
 	int m_last_stage;
+	int m_voice_id;
 	int modified;
 
 	void copy_stage(int from, int to, int clear_formula = 0);

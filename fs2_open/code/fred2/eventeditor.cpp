@@ -179,7 +179,6 @@
  */
 
 #include "stdafx.h"
-#include <mmsystem.h>
 #include "FRED.h"
 #include "FREDDoc.h"
 #include "EventEditor.h"
@@ -188,6 +187,7 @@
 #include "Sexp_tree.h"
 #include "mission/missionmessage.h"
 #include "cfile/cfile.h"
+#include "sound/audiostr.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -226,6 +226,7 @@ event_editor::event_editor(CWnd* pParent /*=NULL*/)
 	m_event_tree.link_modified(&modified);
 	modified = 0;
 	select_sexp_node = -1;
+	m_wave_id = -1;
 }
 
 void event_editor::DoDataExchange(CDataExchange* pDX)
@@ -631,6 +632,9 @@ void event_editor::OnOk()
 	char buf[256], names[2][MAX_MISSION_EVENTS][NAME_LENGTH];
 	int i, count;
 
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
+
 	save();
 	if (query_modified())
 		set_modified();
@@ -699,6 +703,9 @@ void event_editor::OnOk()
 void event_editor::update_cur_message()
 {
 	int enable = TRUE;
+
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
 
 	if (m_cur_msg < 0) {
 		enable = FALSE;
@@ -918,6 +925,9 @@ void event_editor::OnCancel()
 // this is called the clicking the ID_CANCEL button
 void event_editor::On_Cancel()
 {
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
+
 	theApp.record_window_data(&Events_wnd_data, this);
 	delete Event_editor_dlg;
 	Event_editor_dlg = NULL;
@@ -926,6 +936,9 @@ void event_editor::On_Cancel()
 void event_editor::OnClose() 
 {
 	int z;
+
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
 
 	if (query_modified()) {
 		z = MessageBox("Do you want to keep your changes?", "Close", MB_ICONQUESTION | MB_YESNOCANCEL);
@@ -1355,7 +1368,7 @@ void event_editor::OnDeleteMsg()
 	if((m_cur_msg < 0) || (m_cur_msg >= m_num_messages)){
 		return;
 	}
-	
+
 	if (m_messages[m_cur_msg].avi_info.name){
 		free(m_messages[m_cur_msg].avi_info.name);
 	}
@@ -1408,6 +1421,9 @@ void event_editor::OnBrowseWave()
 {
 	int z;
 	CString name;
+
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
 
 	UpdateData(TRUE);
 	if (!stricmp(m_wave_filename, "<None>"))
@@ -1491,6 +1507,9 @@ void event_editor::OnSelchangeWaveFilename()
 	int z;
 	CComboBox *box;
 
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
+
 	box = (CComboBox *) GetDlgItem(IDC_WAVE_FILENAME);
 	z = box -> GetCurSel();
 	UpdateData(TRUE);
@@ -1503,31 +1522,28 @@ void event_editor::OnSelchangeWaveFilename()
 
 BOOL event_editor::DestroyWindow() 
 {
+	audiostream_close_file(m_wave_id, 0);
+	m_wave_id = -1;
+
 	m_play_bm.DeleteObject();
 	return CDialog::DestroyWindow();
 }
 
 void event_editor::OnPlay() 
 {
-	char path[MAX_PATH_LEN + 1];
 	GetDlgItem(IDC_WAVE_FILENAME)->GetWindowText(m_wave_filename);
 
-	int size, offset;
-	cf_find_file_location((char *)(LPCSTR)m_wave_filename, CF_TYPE_ANY, m_wave_filename.GetLength(), path, &size, &offset );
-
-	if (!offset)
-	{
-			PlaySound(path, NULL, SND_ASYNC | SND_FILENAME);
+	if (m_wave_id >= 0) {
+		audiostream_close_file(m_wave_id, 0);
+		m_wave_id = -1;
+		return;
 	}
-	else
-	{
-		CString msg =	"You can not preview sounds inside a .VP packfile.\r\n" +
-						m_wave_filename + " is in the packfile " + path + ".\r\n" +
-						"If you've since extracted this file, restart FRED2 Open to preview this sound.";
-						
-						
-				
-		MessageBox(msg, "Unable to preview sound", MB_OK | MB_ICONINFORMATION);
+
+	// we use ASF_EVENTMUSIC here so that it will keep the extension in place
+	m_wave_id = audiostream_open((char *)(LPCSTR) m_wave_filename, ASF_EVENTMUSIC);
+
+	if (m_wave_id >= 0) {
+		audiostream_play(m_wave_id, 1.0f, 0);
 	}
 }
 

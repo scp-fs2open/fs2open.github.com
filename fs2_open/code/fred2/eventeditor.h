@@ -257,6 +257,7 @@ private:
 	int m_num_messages;
 	MMessage m_messages[MAX_MISSION_MESSAGES];
 	int m_msg_sig[MAX_MISSION_MESSAGES];
+	int m_wave_id;
 };
 
 extern event_editor *Event_editor_dlg; // global reference needed by event tree class

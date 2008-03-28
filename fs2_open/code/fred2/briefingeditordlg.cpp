@@ -209,7 +209,6 @@
  */
 
 #include "stdafx.h"
-#include <mmsystem.h>
 #include "FRED.h"
 #include "BriefingEditorDlg.h"
 #include "FREDDoc.h"
@@ -226,6 +225,7 @@
 #include "cfile/cfile.h"
 #include "object/objectdock.h"
 #include "iff_defs/iff_defs.h"
+#include "sound/audiostr.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -276,6 +276,7 @@ briefing_editor_dlg::briefing_editor_dlg(CWnd* pParent /*=NULL*/)
 	m_current_briefing = -1;
 	m_flipicon = FALSE;
 	//}}AFX_DATA_INIT
+	m_voice_id = -1;
 	m_cur_stage = 0;
 	m_last_stage = m_cur_icon = m_last_icon = -1;
 	m_tree.link_modified(&modified);  // provide way to indicate trees are modified in dialog
@@ -447,6 +448,8 @@ void briefing_editor_dlg::OnClose()
 	m_cur_stage = -1;
 	update_data(1);
 
+	audiostream_close_file(m_voice_id, 0);
+
 	for ( bs = 0; bs < Num_teams; bs++ ) {
 		for (s=0; s<Briefing[bs].num_stages; s++) {
 			sp = &Briefing[bs].stages[s];
@@ -470,6 +473,9 @@ void briefing_editor_dlg::OnClose()
 
 void briefing_editor_dlg::reset_editor()
 {
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
+
 	m_cur_stage = -1;
 	update_data(0);
 }
@@ -885,6 +891,8 @@ void briefing_editor_dlg::OnNext()
 {
 	m_cur_stage++;
 	m_cur_icon = -1;
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
 	update_data();
 	OnGotoView();
 }
@@ -893,6 +901,8 @@ void briefing_editor_dlg::OnPrev()
 {
 	m_cur_stage--;
 	m_cur_icon = -1;
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
 	update_data();
 	OnGotoView();
 }
@@ -903,6 +913,9 @@ void briefing_editor_dlg::OnBrowse()
 	CString name;
 
 	UpdateData(TRUE);
+
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
 
 	if (The_mission.game_type & MISSION_TYPE_TRAINING)
 		z = cfile_push_chdir(CF_TYPE_VOICE_TRAINING);
@@ -930,6 +943,8 @@ void briefing_editor_dlg::OnAddStage()
 
 	m_cur_stage = i = Briefing->num_stages++;
 	copy_stage(i - 1, i);
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
 	update_data(1);
 }
 
@@ -939,7 +954,10 @@ void briefing_editor_dlg::OnDeleteStage()
 
 	if (m_cur_stage < 0)
 		return;
-	
+
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
+
 	Assert(Briefing->num_stages);
 	z = m_cur_stage;
 	m_cur_stage = -1;
@@ -995,6 +1013,9 @@ void briefing_editor_dlg::OnInsertStage()
 		OnAddStage();
 		return;
 	}
+
+	audiostream_close_file(m_voice_id, 0);
+	m_voice_id = -1;
 
 	z = m_cur_stage;
 	m_cur_stage = -1;
@@ -1502,18 +1523,26 @@ void briefing_editor_dlg::OnEndlabeleditTree(NMHDR* pNMHDR, LRESULT* pResult)
 BOOL briefing_editor_dlg::DestroyWindow() 
 {
 	m_play_bm.DeleteObject();
+	audiostream_close_file(m_voice_id, 0);
 	return CDialog::DestroyWindow();
 }
 
 void briefing_editor_dlg::OnPlay() 
 {
-	char path[MAX_PATH_LEN + 1];
 	GetDlgItem(IDC_VOICE)->GetWindowText(m_voice);
 
-	int size, offset;
-	cf_find_file_location((char *) (LPCSTR) m_voice, CF_TYPE_ANY, m_voice.GetLength(), path, &size, &offset );
+	if (m_voice_id >= 0) {
+		audiostream_close_file(m_voice_id, 0);
+		m_voice_id = -1;
+		return;
+	}
 
-	PlaySound(path, NULL, SND_ASYNC | SND_FILENAME);
+	// we use ASF_EVENTMUSIC here so that it will keep the extension in place
+	m_voice_id = audiostream_open((char *)(LPCSTR) m_voice, ASF_EVENTMUSIC);
+
+	if (m_voice_id >= 0) {
+		audiostream_play(m_voice_id, 1.0f, 0);
+	}
 }
 
 void briefing_editor_dlg::OnCopyView() 

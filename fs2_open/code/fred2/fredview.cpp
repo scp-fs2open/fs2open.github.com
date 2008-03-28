@@ -648,6 +648,7 @@
 #include "debugconsole/dbugfile.h"
 #include "object/objectdock.h"
 #include "species_defs/species_defs.h"
+#include "sound/audiostr.h"
 
 #include "osapi/osapi.h"
 
@@ -5141,6 +5142,8 @@ void CFREDView::OnEditorsVoiceManager()
 
 void CFREDView::OnDestroy() 
 {
+	audiostream_close();
+	snd_close();
 	DBUGFILE_OUTPUT_0("About to gr_close");
  	gr_close();
    	os_set_window(0);	 
