@@ -2119,7 +2119,7 @@ void ship_select_do(float frametime)
 			ship_info *sip = &Ship_info[Carried_ss_icon.ship_class];
 			if(Ss_icons[Carried_ss_icon.ship_class].model_index == -1) {
 				Ss_icons[Carried_ss_icon.ship_class].model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-				mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d", sip->name, Ss_icons[Carried_ss_icon.ship_class].model_index));
+				mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, Ss_icons[Carried_ss_icon.ship_class].model_index));
 			}
 			gr_set_color_fast(&Icon_colors[ICON_FRAME_SELECTED]);
 			//gr_set_shader(&Icon_shaders[ICON_FRAME_SELECTED]);
@@ -2348,7 +2348,7 @@ void draw_ship_icon_with_number(int screen_offset, int ship_class)
 		ship_info *sip = &Ship_info[ship_class];
 		if(ss_icon->model_index == -1) {
 			ss_icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-			mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d", sip->name, ss_icon->model_index));
+			mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, ss_icon->model_index));
 		}
 		gr_set_color_fast(color_to_draw);
 		//gr_set_shader(shader_to_use);
@@ -2441,7 +2441,7 @@ void start_ship_animation(int ship_class, int play_sound)
 
 	if ( Cmdline_ship_choice_3d || !strlen(sip->anim_filename) ) {
 		if (ship_class < 0) {
-			mprintf(("No ship class passed in to start_ship_animation - why?"));
+			mprintf(("No ship class passed in to start_ship_animation\n"));
 			ShipSelectModelNum = -1;
 			return;
 		}
@@ -2453,7 +2453,7 @@ void start_ship_animation(int ship_class, int play_sound)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
 		
 		if (sip->model_num < 0) {
-			mprintf(("Couldn't load model file in missionshipchoice.cpp - tell UnknownPlayer"));
+			mprintf(("Couldn't load model file in missionshipchoice.cpp\n"));
 		}
 	} else {
 		ss_icon_info *ss_icon;
@@ -2949,7 +2949,7 @@ void ss_blit_ship_icon(int x,int y,int ship_class,int bmap_num)
 			ship_info *sip = &Ship_info[ship_class];
 			if(icon->model_index == -1) {
 				icon->model_index = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
-				mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d", sip->name, icon->model_index));
+				mprintf(("SL WARNING: Had to attempt to page in model for %s paged in manually! Result: %d\n", sip->name, icon->model_index));
 			}
 			if(icon->model_index != -1)
 			{

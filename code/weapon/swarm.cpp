@@ -598,7 +598,7 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, weapon_inf
 	tsi = &Turret_swarm_info[tsi_index];
 	if (turret->turret_swarm_info_index != -1) {
 		// overlapping firing intervals..., stop old and start new
-		mprintf(("Overlapping turret swarm firing intervals"));
+		mprintf(("Overlapping turret swarm firing intervals\n"));
 		turret_swarm_delete(turret->turret_swarm_info_index);
 		turret->turret_swarm_info_index = -1;
 		shipp->num_turret_swarm_info--;

@@ -884,7 +884,7 @@ int opengl_create_texture_sub(int bitmap_handle, int bitmap_type, int bmap_w, in
 	}
 	
 	if (t->texture_id == 0) {
-		mprintf(("!!OpenGL DEBUG!! t->texture_id == 0"));
+		mprintf(("!!OpenGL DEBUG!! t->texture_id == 0\n"));
 		return 0;
 	}
 	

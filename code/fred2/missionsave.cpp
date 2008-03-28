@@ -619,7 +619,7 @@ int CFred_mission_save::save_mission_file(char *pathname)
 
 	cfclose(fp);
 	if (err) {
-		mprintf(("Mission saving error code #%d", err));
+		mprintf(("Mission saving error code #%d\n", err));
 
 	} else {
 		strcpy(backup_name, pathname);
@@ -714,7 +714,7 @@ int CFred_mission_save::autosave_mission_file(char *pathname)
 
 	cfclose(fp);
 	if (err)
-		mprintf(("Mission saving error code #%d", err));
+		mprintf(("Mission saving error code #%d\n", err));
 
 	return err;
 }
@@ -3758,7 +3758,7 @@ int CFred_mission_save::save_campaign_file(char *pathname)
 
 	cfclose(fp);
 	if (err)
-		mprintf(("Campaign saving error code #%d", err));
+		mprintf(("Campaign saving error code #%d\n", err));
 	else
 		Campaign_wnd->error_checker();
 

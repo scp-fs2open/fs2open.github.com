@@ -3574,7 +3574,7 @@ int bm_set_render_target(int handle, int face)
 
 		if ( (bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET_STATIC) && (bm_bitmaps[n].type != BM_TYPE_RENDER_TARGET_DYNAMIC) ) {
 			// odds are that someone passed a normal texture created with bm_load()
-			mprintf(("Trying to set invalid bitmap (slot: %i, handle: %i) as render target!", n, handle));
+			mprintf(("Trying to set invalid bitmap (slot: %i, handle: %i) as render target!\n", n, handle));
 			return 0;
 		}
 	}

@@ -206,7 +206,7 @@ void fiction_viewer_init()
 	if (Fiction_viewer_bitmap < 0)
 	{
 		Int3();
-		mprintf(("No fiction viewer graphics -- cannot display fiction viewer!"));
+		mprintf(("No fiction viewer graphics -- cannot display fiction viewer!\n"));
 		return;
 	}
 

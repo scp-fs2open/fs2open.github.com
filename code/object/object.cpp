@@ -1207,7 +1207,7 @@ void obj_delete(int objnum)
 		break;
 	case OBJ_GHOST:
 		if((!Game_mode & GM_MULTIPLAYER)){
-			mprintf(("Warning: Tried to delete a ghost!"));
+			mprintf(("Warning: Tried to delete a ghost!\n"));
 			objp->flags &= ~OF_SHOULD_BE_DEAD;
 			return;
 		} else {

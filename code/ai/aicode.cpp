@@ -6300,7 +6300,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, int flags)
 		// this can be NULL in the case of a target death and attacker weapon
 		// change.  using notification message instead of a fault
 	//	Int3();
-		mprintf(("'other_objpp == NULL' in ai_select_primary_weapon(), line %i", __LINE__));
+		mprintf(("'other_objpp == NULL' in ai_select_primary_weapon()\n"));
 		return -1;
 	}
 

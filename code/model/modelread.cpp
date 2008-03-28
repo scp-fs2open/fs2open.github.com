@@ -2238,7 +2238,7 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 						&& IS_VEC_NULL(&pm->moment_of_inertia.vec.uvec)
 						&& IS_VEC_NULL(&pm->moment_of_inertia.vec.fvec) )
 					{
-						mprintf(("Model %s has a null moment of inertia!  (This is only a problem if the model is a ship.)", filename));
+						mprintf(("Model %s has a null moment of inertia!  (This is only a problem if the model is a ship.)\n", filename));
 					}
 
 				} else {

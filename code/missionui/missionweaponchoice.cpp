@@ -1595,7 +1595,7 @@ void wl_render_overhead_view(float frametime)
 		
 		if (wl_ship->model_num < 0)
 		{
-			mprintf(("Couldn't load model file in missionweaponchoice.cpp - tell WMCoolmon"));
+			mprintf(("Couldn't load model file in missionweaponchoice.cpp\n"));
 		}
 		else
 		{

@@ -1579,7 +1579,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	required_string("$Version:");
 	stuff_float(&pm->version);
 	if (pm->version != MISSION_VERSION)
-		mprintf(("Older mission, should update it (%.2f<-->%.2f)", pm->version, MISSION_VERSION));
+		mprintf(("Older mission, should update it (%.2f<-->%.2f)\n", pm->version, MISSION_VERSION));
 
 	required_string("$Name:");
 	stuff_string(pm->name, F_NAME, NAME_LENGTH);
@@ -3459,7 +3459,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	find_and_stuff("$Class:", &p_objp->ship_class, F_NAME, Ship_class_names, Num_ship_classes, "ship class");
 	if (p_objp->ship_class < 0)
 	{
-		mprintf(("MISSIONS: Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0", p_objp->name));
+		mprintf(("MISSIONS: Ship \"%s\" has an invalid ship type (ships.tbl probably changed).  Making it type 0\n", p_objp->name));
 
 		p_objp->ship_class = 0;
 		Num_unknown_ship_classes++;

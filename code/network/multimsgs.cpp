@@ -2122,7 +2122,7 @@ void process_accept_packet(ubyte* data, header* hinfo)
 	if (code & ACCEPT_INGAME) {
 		// the game filename
 		GET_STRING(Game_current_mission_filename);
-		mprintf(("Got mission filename %s", Game_current_mission_filename));
+		mprintf(("Got mission filename %s\n", Game_current_mission_filename));
 		Select_default_ship = 0;
 
 		// determine if I'm being placed on a team

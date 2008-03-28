@@ -1146,7 +1146,7 @@ void set_current_hud(int player_ship_num)
 		{
 			default_hud.copy(&owner->ship_hud);
 		}
-		mprintf(("NEW_HUD: Hud created for ship %s", owner->ship_name));
+		mprintf(("NEW_HUD: Hud created for ship %s\n", owner->ship_name));
 	}
 	current_hud = &owner->ship_hud;
 	current_hud->owner = owner;
