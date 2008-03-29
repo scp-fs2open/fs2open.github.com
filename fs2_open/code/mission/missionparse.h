@@ -805,17 +805,14 @@ typedef struct subsys_status {
 	int	subsys_cargo_name;
 } subsys_status;
 
-// Goober5000 - texture replacement info
-#define TEXTURE_NAME_LENGTH	128
-
 typedef struct texture_replace {
 	char ship_name[NAME_LENGTH];
-	char old_texture[TEXTURE_NAME_LENGTH];
-	char new_texture[TEXTURE_NAME_LENGTH];
+	char old_texture[MAX_FILENAME_LEN];
+	char new_texture[MAX_FILENAME_LEN];
 	int new_texture_id;
 } texture_replace;
 
-extern texture_replace Fred_texture_replacements[MAX_SHIPS * MAX_MODEL_TEXTURES];
+extern texture_replace *Fred_texture_replacements;
 
 
 #define MAX_OBJECT_STATUS	10

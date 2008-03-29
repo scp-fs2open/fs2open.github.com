@@ -159,7 +159,7 @@ BOOL CShipTexturesDlg::OnInitDialog()
 {	
 	int i, j, k, z, duplicate;
 	char *p = NULL;
-	char texture_file[TEXTURE_NAME_LENGTH];
+	char texture_file[MAX_FILENAME_LEN];
 	CComboBox *box;
 
 	// get our model

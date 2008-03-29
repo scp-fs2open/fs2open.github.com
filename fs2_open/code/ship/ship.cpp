@@ -3201,8 +3201,8 @@ int parse_ship(char *filename, bool replace)
 
 	// ship class texture replacement - Goober5000 and taylor
 	int PLACEHOLDER_num_texture_replacements = 0;
-	char PLACEHOLDER_old_texture[TEXTURE_NAME_LENGTH];
-	char PLACEHOLDER_new_texture[TEXTURE_NAME_LENGTH];
+	char PLACEHOLDER_old_texture[MAX_FILENAME_LEN];
+	char PLACEHOLDER_new_texture[MAX_FILENAME_LEN];
 	int PLACEHOLDER_new_texture_id;
 	if (optional_string("$Texture Replace:"))
 	{

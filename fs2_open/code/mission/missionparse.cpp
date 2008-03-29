@@ -1339,7 +1339,7 @@ p_object Player_start_pobject;
 char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
 int Num_parse_names;
 
-texture_replace Fred_texture_replacements[MAX_SHIPS * MAX_MODEL_TEXTURES];
+texture_replace *Fred_texture_replacements = NULL;
 
 int Num_path_restrictions;
 path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
@@ -3858,6 +3858,7 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 			// *** account for FRED
 			if (Fred_running)
 			{
+				Assert( Fred_texture_replacements != NULL );
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].ship_name, p_objp->name);
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].old_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].old_texture);
 				strcpy(Fred_texture_replacements[Fred_num_texture_replacements].new_texture, p_objp->replacement_textures[p_objp->num_texture_replacements].new_texture);
