@@ -721,7 +721,7 @@ int g3_draw_polygon(vec3d *pos, matrix *ori, float width, float height, int tmap
 	//Let's begin.
 	
 	const int NUM_VERTICES = 4;
-	vec3d p[NUM_VERTICES] = {0};
+	vec3d p[NUM_VERTICES] = { ZERO_VECTOR };
 	vertex v[NUM_VERTICES];
 	//float h = sqrt(2*(radius*radius));
 

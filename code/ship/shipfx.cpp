@@ -4355,11 +4355,11 @@ int WE_Default::warpFrame(float frametime)
 
 
 		// Find the closest point on line from center of wormhole
-		vec3d pos;
+		vec3d cpos;
 		float dist;
 
-		fvi_ray_plane(&pos, &objp->pos, &fvec, &pos, &fvec, 0.0f );
-		dist = vm_vec_dist( &pos, &objp->pos );
+		fvi_ray_plane(&cpos, &objp->pos, &fvec, &pos, &fvec, 0.0f );
+		dist = vm_vec_dist( &cpos, &objp->pos );
 
 	//	mprintf(( "Warp pos = %.1f, rad=%.1f, center dist = %.1f\n", warp_pos, objp->radius, dist ));
 
