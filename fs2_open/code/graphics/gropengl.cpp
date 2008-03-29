@@ -1755,6 +1755,9 @@ void gr_opengl_set_clip(int x, int y, int w, int h, bool resize)
 
 	gr_screen.clip_aspect = i2fl(w) / i2fl(h);
 
+	gr_screen.clip_center_x = (gr_screen.clip_left + gr_screen.clip_right) / 2;
+	gr_screen.clip_center_y = (gr_screen.clip_top + gr_screen.clip_bottom) / 2;
+
 	// just return early if we aren't actually going to need the scissor test
 	if ( (x == 0) && (y == 0) && (w == max_w) && (h == max_h) ) {
 		glDisable(GL_SCISSOR_TEST);
@@ -1782,6 +1785,9 @@ void gr_opengl_reset_clip()
 	}
 
 	gr_screen.clip_aspect = i2fl(gr_screen.clip_width) / i2fl(gr_screen.clip_height);
+
+	gr_screen.clip_center_x = (gr_screen.clip_left + gr_screen.clip_right) / 2;
+	gr_screen.clip_center_y = (gr_screen.clip_top + gr_screen.clip_bottom) / 2;
 
 	glDisable(GL_SCISSOR_TEST);
 }

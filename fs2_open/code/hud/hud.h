@@ -338,9 +338,6 @@
 #include "graphics/2d.h"
 #include "hud/hudparse.h"
 
-#define SCREEN_CENTER_X ((gr_screen.clip_left + gr_screen.clip_right)	/ 2.0f)
-#define SCREEN_CENTER_Y ((gr_screen.clip_top + gr_screen.clip_bottom)   / 2.0f)
-
 struct object;
 
 typedef struct hud_anim {

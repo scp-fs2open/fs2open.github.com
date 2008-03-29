@@ -3560,8 +3560,8 @@ void HUD_get_nose_coordinates(int *x, int *y)
 		return;
 	}
 
-	*x = x_nose - SCREEN_CENTER_X;
-	*y = y_nose - SCREEN_CENTER_Y;
+	*x = x_nose - gr_screen.clip_center_x;
+	*y = y_nose - gr_screen.clip_center_y;
 
 	return;
 }
