@@ -10361,8 +10361,6 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								vec3d firing_vec, last_delta_vec, player_forward_vec;
 								float dist_to_target, time_to_target, angle_to_target;
 
-								aip->targeted_subsys->system_info->subobj_num;
-
 								// If a subsystem is targeted, fire in that direction instead
 								if (aip->targeted_subsys != NULL)
 								{

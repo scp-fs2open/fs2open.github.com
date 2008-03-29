@@ -438,9 +438,9 @@ void windebug_memwatch_init()
 #endif
 
 // retrieve the current working directory
-int _getcwd(char *buffer, unsigned int len)
+int _getcwd(char *out_buf, unsigned int len)
 {
-	if (getcwd(buffer, len) == NULL) {
+	if (getcwd(out_buf, len) == NULL) {
 		Error(__FILE__, __LINE__, "buffer overflow in getcwd (buf size = %u)", len);
 	}
 

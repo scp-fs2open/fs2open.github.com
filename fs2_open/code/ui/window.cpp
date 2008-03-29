@@ -719,53 +719,53 @@ void UI_WINDOW::add_XSTR(UI_XSTR *xstr)
 	}	
 }
 
-void UI_WINDOW::draw_one_xstr(UI_XSTR *x, int frame)
+void UI_WINDOW::draw_one_xstr(UI_XSTR *xs, int frame)
 {
 	font *f_backup = NULL;		
 	char str[255] = "";
 
 	// sanity
-	if((x == NULL) || (x->xstr == NULL)){
+	if((xs == NULL) || (xs->xstr == NULL)){
 		return;
 	}
 
 	// if it has an associated gadet that is hidden, do nothing
-	if((x->assoc != NULL) && (x->assoc->hidden)){
+	if((xs->assoc != NULL) && (xs->assoc->hidden)){
 		return;
 	}
 	
 	// maybe set the font
-	if(x->font_id >= 0){
+	if(xs->font_id >= 0){
 		// backup the current font
 		Assert(Current_font != NULL);
 		f_backup = Current_font;
 
 		// set the new font
-		gr_set_font(x->font_id);
+		gr_set_font(xs->font_id);
 	}
 
 	// set the color
-	if(x->assoc == NULL){			
+	if(xs->assoc == NULL){			
 		gr_set_color_fast(&Color_normal);
 	} else {
 		// just buttons for now
-		switch(x->assoc->kind){
+		switch(xs->assoc->kind){
 		case UI_KIND_BUTTON:					
 			// override case
 			if((frame != -1) && (frame < 3)){
-				gr_set_color_fast(Xstr_colors[x->clr][frame]);
+				gr_set_color_fast(Xstr_colors[xs->clr][frame]);
 			}
 			// normal checking
 			else {
 				// if the button is pressed
-				if(((UI_BUTTON*)x->assoc)->button_down()){
-					gr_set_color_fast(Xstr_colors[x->clr][2]);
+				if(((UI_BUTTON*)xs->assoc)->button_down()){
+					gr_set_color_fast(Xstr_colors[xs->clr][2]);
 				} 
 				// if the mouse is just over it
-				else if(x->assoc->is_mouse_on()){
-					gr_set_color_fast(Xstr_colors[x->clr][1]);
+				else if(xs->assoc->is_mouse_on()){
+					gr_set_color_fast(Xstr_colors[xs->clr][1]);
 				} else {
-					gr_set_color_fast(Xstr_colors[x->clr][0]);
+					gr_set_color_fast(Xstr_colors[xs->clr][0]);
 				}
 				break;
 			}
@@ -774,28 +774,28 @@ void UI_WINDOW::draw_one_xstr(UI_XSTR *x, int frame)
 		// all other controls just draw the normal frame
 		default :
 			if((frame != -1) && (frame < 3)){
-				gr_set_color_fast(Xstr_colors[x->clr][frame]);
+				gr_set_color_fast(Xstr_colors[xs->clr][frame]);
 			} else {
-				gr_set_color_fast(Xstr_colors[x->clr][0]);
+				gr_set_color_fast(Xstr_colors[xs->clr][0]);
 			}
 			break;
 		}		
 
 		// if the gadget disabled, just draw the normal nonhighlighted frame
-		if(x->assoc->disabled()){
-			gr_set_color_fast(Xstr_colors[x->clr][0]);
+		if(xs->assoc->disabled()){
+			gr_set_color_fast(Xstr_colors[xs->clr][0]);
 		}
 	}
 
 	// print this puppy out	
-	int xoffset = lcl_get_xstr_offset(x->xstr_id, gr_screen.res);
-	strncpy(str, XSTR(x->xstr, x->xstr_id), 254);
+	int xoffset = lcl_get_xstr_offset(xs->xstr_id, gr_screen.res);
+	strncpy(str, XSTR(xs->xstr, xs->xstr_id), 254);
 	if(str[0] == '&'){
 		if(strlen(str) > 1){			
-			gr_string((x->x) + xoffset, x->y, str + 1);
+			gr_string((xs->x) + xoffset, xs->y, str + 1);
 		}
 	} else {
-		gr_string((x->x) + xoffset, x->y, str);
+		gr_string((xs->x) + xoffset, xs->y, str);
 	}
 
 	// maybe restore the old font

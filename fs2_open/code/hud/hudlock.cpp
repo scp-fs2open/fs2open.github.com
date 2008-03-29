@@ -820,7 +820,6 @@ void hud_do_lock_indicator(float frametime)
 	object *tobjp = &Objects[Player_ai->target_objnum];
 	vec3d dir_to_target;
 	vm_vec_normalized_dir(&dir_to_target, &tobjp->pos, &Player_obj->pos);
-	float dot_target_orient = vm_vec_dot(&tobjp->orient.vec.fvec, &dir_to_target);
 
 	if ( !(wip->wi_flags & WIF_LOCKED_HOMING) ) {
 		hud_lock_reset();

@@ -1094,7 +1094,7 @@ typedef struct homing_beep_info
 	float	precalced_interp;		// a precalculated value used in a linear interpretation
 } homing_beep_info;
 
-homing_beep_info Homing_beep = { -1, 0, 150, 1000, 30.0f, 1500.0f };
+homing_beep_info Homing_beep = { -1, 0, 150, 1000, 30.0f, 1500.0f, 1.729412f };
 
 // Set at the start of a mission, used to decide how to draw the separation for the warning missile indicators
 float Min_warning_missile_dist;
@@ -4778,7 +4778,6 @@ void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp)
 	polymodel	*pm;
 	ship_weapon	*swp;
 	weapon_info	*wip;
-	weapon_info	*tmp=NULL;
 	float			dist_to_target, time_to_target, target_moved_dist, prange;
 	int			bank_to_fire, indicator_frame, frame_offset;
 	float		sx, sy;

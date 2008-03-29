@@ -156,7 +156,7 @@ triggered_rotation::~triggered_rotation()
 {
 }
 
-void triggered_rotation::add_queue(queued_animation *the_queue, int direction)
+void triggered_rotation::add_queue(queued_animation *the_queue, int dir)
 {
 	int i;
 	queued_animation new_queue;
@@ -164,7 +164,7 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int direction)
 	memcpy( &new_queue, the_queue, sizeof(queued_animation) );
 
 
-	if (direction == -1) {
+	if (dir == -1) {
 		new_queue.start = new_queue.reverse_start;
 		vm_vec_negate( &new_queue.angle );
 	}
@@ -208,9 +208,9 @@ void triggered_rotation::add_queue(queued_animation *the_queue, int direction)
 
 	if (new_queue.instance == instance) {
 		// same animation is playing that we are about to think about playing some point in the future
-		if ( (this->direction.xyz.x * rot_vel.xyz.x) == new_queue.vel.xyz.x &&
-				(this->direction.xyz.y * rot_vel.xyz.y) == new_queue.vel.xyz.y &&
-				(this->direction.xyz.z * rot_vel.xyz.z) == new_queue.vel.xyz.z)
+		if ( (direction.xyz.x * rot_vel.xyz.x) == new_queue.vel.xyz.x &&
+				(direction.xyz.y * rot_vel.xyz.y) == new_queue.vel.xyz.y &&
+				(direction.xyz.z * rot_vel.xyz.z) == new_queue.vel.xyz.z)
 		{
 			// they're going in opposite directions, one of them is a reversal!
 			// so this means thata there is some sort of delay that's getting fubared becase of other queue items getting removed due to reversal

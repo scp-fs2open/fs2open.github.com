@@ -113,7 +113,7 @@ class triggered_rotation
 		void start(queued_animation *q);
 		void set_to_end(queued_animation *q);
 
-		void add_queue(queued_animation *new_queue, int direction);
+		void add_queue(queued_animation *new_queue, int dir);
 		void process_queue();
 
 		vec3d current_ang;

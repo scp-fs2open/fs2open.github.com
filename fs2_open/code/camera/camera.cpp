@@ -462,11 +462,12 @@ void subtitle::do_frame(float frametime)
 	gr_set_color_fast(&text_color);
 
 	int font_height = gr_get_font_height();
-	int y = text_pos[1];
+	int x = fl2i(text_pos[0]);
+	int y = fl2i(text_pos[1]);
 
 	for(unsigned int i = 0; i < text_lines.size(); i++)
 	{
-		gr_string(text_pos[0], y, (char*)text_lines[i].c_str(), false);
+		gr_string(x, y, (char*)text_lines[i].c_str(), false);
 		y += font_height;
 	}
 
