@@ -1223,20 +1223,20 @@ void hud_calculate_lock_start_pos()
 	double delta_x;
 	double target_mag, target_x, target_y;
 
-	delta_x = Player->current_target_sx - SCREEN_CENTER_X;
-	delta_y = Player->current_target_sy - SCREEN_CENTER_Y;
+	delta_x = Player->current_target_sx - gr_screen.clip_center_x;
+	delta_y = Player->current_target_sy - gr_screen.clip_center_y;
 
-	if (!delta_x && !delta_y) {
-		Players[Player_num].lock_indicator_start_x = fl2i(SCREEN_CENTER_X + Lock_start_dist);
-		Players[Player_num].lock_indicator_start_y = fl2i(SCREEN_CENTER_Y);
+	if ( (delta_x == 0.0) && (delta_y == 0.0) ) {
+		Players[Player_num].lock_indicator_start_x = fl2i(gr_screen.clip_center_x + Lock_start_dist);
+		Players[Player_num].lock_indicator_start_y = gr_screen.clip_center_y;
 		return;
 	}
 
 	hypotenuse = _hypot(delta_y, delta_x);
 
 	if (hypotenuse >= Lock_start_dist) {
-		Players[Player_num].lock_indicator_start_x = fl2i(SCREEN_CENTER_X);
-		Players[Player_num].lock_indicator_start_y = fl2i(SCREEN_CENTER_Y);
+		Players[Player_num].lock_indicator_start_x = gr_screen.clip_center_x;
+		Players[Player_num].lock_indicator_start_y = gr_screen.clip_center_y;
 		return;
 	}
 
@@ -1244,20 +1244,11 @@ void hud_calculate_lock_start_pos()
 	target_x = target_mag * (delta_x / hypotenuse);
 	target_y = target_mag * (delta_y / hypotenuse);
 
-	Players[Player_num].lock_indicator_start_x = fl2i(SCREEN_CENTER_X - target_x);
-	Players[Player_num].lock_indicator_start_y = fl2i(SCREEN_CENTER_Y - target_y);
+	Players[Player_num].lock_indicator_start_x = fl2i(gr_screen.clip_center_x - target_x);
+	Players[Player_num].lock_indicator_start_y = fl2i(gr_screen.clip_center_y - target_y);
 
-	if (Players[Player_num].lock_indicator_start_x > gr_screen.clip_right)
-		Players[Player_num].lock_indicator_start_x = gr_screen.clip_right;
-
-	if (Players[Player_num].lock_indicator_start_y > gr_screen.clip_bottom)
-		Players[Player_num].lock_indicator_start_y = gr_screen.clip_bottom;
-
-	if (Players[Player_num].lock_indicator_start_x < gr_screen.clip_left)
-		Players[Player_num].lock_indicator_start_x = gr_screen.clip_left;
-
-	if (Players[Player_num].lock_indicator_start_y < gr_screen.clip_top)
-		Players[Player_num].lock_indicator_start_y = gr_screen.clip_top;
+	CLAMP(Players[Player_num].lock_indicator_start_x, gr_screen.clip_left, gr_screen.clip_right);
+	CLAMP(Players[Player_num].lock_indicator_start_y, gr_screen.clip_top, gr_screen.clip_bottom);
 }
 
 // hud_stop_looped_locking_sounds() will terminate any hud related looping sounds that are playing
@@ -1421,8 +1412,8 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	if ( lock_local_pos.xyz.z > 0.0f ) {
 		// Get the location of our target in the "virtual frame" where the locking computation will be done
 		float w = 1.0f / lock_local_pos.xyz.z;
-		float sx = ((SCREEN_CENTER_X*2) + (lock_local_pos.xyz.x*(SCREEN_CENTER_X*2)*w))*0.5f;
-		float sy = ((SCREEN_CENTER_Y*2) - (lock_local_pos.xyz.y*(SCREEN_CENTER_Y*2)*w))*0.5f;
+		float sx = ((gr_screen.clip_center_x*2) + (lock_local_pos.xyz.x*(gr_screen.clip_center_x*2)*w))*0.5f;
+		float sy = ((gr_screen.clip_center_y*2) - (lock_local_pos.xyz.y*(gr_screen.clip_center_y*2)*w))*0.5f;
 
 		Player->current_target_sx = (int)sx;
 		Player->current_target_sy = (int)sy;
