@@ -800,6 +800,15 @@ void parse_medal_tbl()
 }
 */
 
+// an atexit() call!!
+void fred_close()
+{
+	if (Fred_texture_replacements != NULL) {
+		vm_free(Fred_texture_replacements);
+		Fred_texture_replacements = NULL;
+	}
+}
+
 void parse_init(bool basic = false);
 void brief_init_colors();
 
@@ -916,6 +925,10 @@ bool fred_init()
 
 	iff_init();			// Goober5000
 	species_init();		// Kazan
+
+	// for fred specific replacement texture stuff
+	Fred_texture_replacements = (texture_replace*) vm_malloc( sizeof(texture_replace) * MAX_SHIPS * MAX_MODEL_TEXTURES );
+	atexit(fred_close);
 
 	// Goober5000
 	for (i = 0; i < MAX_IFFS; i++)
