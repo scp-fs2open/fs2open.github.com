@@ -117,7 +117,6 @@
 #include "cutscene/cutscenes.h" // cutscene_mark_viewable()
 #include "cutscene/mvelib.h"
 #include "cutscene/oggplayer.h"
-#include "menuui/mainhallmenu.h"
 
 extern int Game_mode;
 
@@ -196,9 +195,6 @@ bool movie_play(char *name)
 		return false;
 	}
 
-	// kill all background sounds
-	main_hall_pause();
-
 	// clear the screen and hide the mouse cursor
 	Mouse_hidden++;
 	gr_reset_clip();
@@ -251,9 +247,8 @@ bool movie_play(char *name)
 		}
 	}
 
-	// show the mouse cursor again, and unpause the mainhall music
+	// show the mouse cursor again
 	Mouse_hidden--;
-	main_hall_unpause();
 
 	return true;
 }

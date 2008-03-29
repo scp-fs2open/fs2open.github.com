@@ -560,6 +560,7 @@ void cutscenes_screen_play()
 //	full_name = cf_add_ext(name, NOX(".mve"));
 
 	main_hall_stop_music();
+	main_hall_stop_ambient();
 	int rval = movie_play(name);
 	main_hall_start_music();
 
