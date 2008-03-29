@@ -950,6 +950,9 @@ enum
 	EASY_DEFAULT_MEM = EASY_DEFAULT | EASY_MEM_OFF
 };
 
+#define BUILD_CAP_OPENAL	(1<<0)
+#define BUILD_CAP_NO_D3D	(1<<1)
+
 typedef struct
 {
 	// DO NOT CHANGE THE SIZE OF THIS STRING!
@@ -2118,11 +2121,9 @@ bool SetCmdlineParams()
 		Cmdline_ambient_factor = ambient_factor_arg.get_int();
 
 	if ( get_flags_arg.found() ) {
-		mprintf(("I got to get_flags_arg.found()!!\n"));
 		FILE *fp = fopen("flags.lch","w");
 
-		if(fp == NULL)
-		{
+		if (fp == NULL) {
 			MessageBox(NULL,"Error creating flag list for launcher", "Error", MB_OK);
 			return false; 
 		}
@@ -2143,13 +2144,25 @@ bool SetCmdlineParams()
 		fwrite(&num_flags, sizeof(int), 1, fp);
 		fwrite(&exe_params, sizeof(exe_params), 1, fp);
 
+		{
+			// cheap and bastardly cap check for builds
+			// (needs to be compatible with older Launchers, which means having
+			//  this implies an OpenAL build for old Launchers)
+			ubyte build_caps = 0;
+
+#ifndef USE_DIRECT3D
+			build_caps |= BUILD_CAP_NO_D3D;
+#endif
 #ifdef USE_OPENAL
-		// for cheap and bastardly OpenAL check hack
-		char openal = 0;
-		fwrite(&openal, 1, 1, fp);
+			build_caps |= BUILD_CAP_OPENAL;
 #endif
 
+			fwrite(&build_caps, 1, 1, fp);
+		}
+
+		fflush(fp);
 		fclose(fp);
+
 		return false; 
 	}
 
