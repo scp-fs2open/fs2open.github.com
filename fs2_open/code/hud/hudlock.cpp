@@ -1227,15 +1227,15 @@ void hud_calculate_lock_start_pos()
 
 	if ( (delta_x == 0.0) && (delta_y == 0.0) ) {
 		Players[Player_num].lock_indicator_start_x = fl2i(gr_screen.clip_center_x + Lock_start_dist);
-		Players[Player_num].lock_indicator_start_y = gr_screen.clip_center_y;
+		Players[Player_num].lock_indicator_start_y = fl2i(gr_screen.clip_center_y);
 		return;
 	}
 
 	hypotenuse = _hypot(delta_y, delta_x);
 
 	if (hypotenuse >= Lock_start_dist) {
-		Players[Player_num].lock_indicator_start_x = gr_screen.clip_center_x;
-		Players[Player_num].lock_indicator_start_y = gr_screen.clip_center_y;
+		Players[Player_num].lock_indicator_start_x = fl2i(gr_screen.clip_center_x);
+		Players[Player_num].lock_indicator_start_y = fl2i(gr_screen.clip_center_y);
 		return;
 	}
 
@@ -1411,8 +1411,8 @@ void hud_lock_determine_lock_point(vec3d *lock_world_pos_out)
 	if ( lock_local_pos.xyz.z > 0.0f ) {
 		// Get the location of our target in the "virtual frame" where the locking computation will be done
 		float w = 1.0f / lock_local_pos.xyz.z;
-		float sx = ((gr_screen.clip_center_x*2) + (lock_local_pos.xyz.x*(gr_screen.clip_center_x*2)*w))*0.5f;
-		float sy = ((gr_screen.clip_center_y*2) - (lock_local_pos.xyz.y*(gr_screen.clip_center_y*2)*w))*0.5f;
+		float sx = ((gr_screen.clip_center_x*2.0f) + (lock_local_pos.xyz.x*(gr_screen.clip_center_x*2.0f)*w))*0.5f;
+		float sy = ((gr_screen.clip_center_y*2.0f) - (lock_local_pos.xyz.y*(gr_screen.clip_center_y*2.0f)*w))*0.5f;
 
 		Player->current_target_sx = (int)sx;
 		Player->current_target_sy = (int)sy;

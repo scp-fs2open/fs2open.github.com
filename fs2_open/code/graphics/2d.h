@@ -875,7 +875,7 @@ typedef struct screen {
 	// same as above except in 1024x768 or 640x480 dimensions
 	int		clip_left_unscaled, clip_right_unscaled, clip_top_unscaled, clip_bottom_unscaled;
 	// center of clip area
-	int		clip_center_x, clip_center_y;
+	float	clip_center_x, clip_center_y;
 
 	int		current_alphablend_mode;		// See GR_ALPHABLEND defines above
 	int		current_bitblt_mode;				// See GR_BITBLT_MODE defines above
