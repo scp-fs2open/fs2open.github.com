@@ -268,7 +268,7 @@
 
 struct ship;
 
-#define MAX_MISSION_MESSAGES	500
+#define MAX_MISSION_MESSAGES	1000
 //Bumped to 500 from 300 06/15/2004 -C
 
 // keep seperate lists of AVI's and wav files.  I suspect that many messages will have
