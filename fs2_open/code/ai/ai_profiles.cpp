@@ -310,6 +310,12 @@ void parse_ai_profiles_tbl(char *filename)
 			if (optional_string("$Player Weapon Recharge Scale:"))
 				parse_float_list(profile->weapon_energy_scale, NUM_SKILL_LEVELS);
 
+			if (optional_string("$Max Turret Target Ownage:"))
+				parse_float_list(profile->max_turret_ownage_target, NUM_SKILL_LEVELS);
+
+			if (optional_string("$Max Turret Player Ownage:"))
+				parse_float_list(profile->max_turret_ownage_player, NUM_SKILL_LEVELS);
+
 			set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AIPF_BIG_SHIPS_CAN_ATTACK_BEAM_TURRETS_ON_UNTARGETED_SHIPS);
 
 			set_flag(profile, "$smart primary weapon selection:", AIPF_SMART_PRIMARY_WEAPON_SELECTION);

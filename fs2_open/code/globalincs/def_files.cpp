@@ -771,6 +771,14 @@ $Player Shield Recharge Scale: 4, 2, 1.5, 1.25, 1						\n\
 ;; factor applied to the speed at which the player's weapons recharge	\n\
 $Player Weapon Recharge Scale: 10, 4, 2.5, 2, 1.5						\n\
 																		\n\
+;; maximum number of turrets on one ship allowed to be attacking a		\n\
+;; target at a given time												\n\
+$Max Turret Target Ownage: 3, 4, 7, 12, 19								\n\
+																		\n\
+;; maximum number of turrets on one ship allowed to be attacking the	\n\
+;; player at a given time												\n\
+$Max Turret Player Ownage: 3, 4, 7, 12, 19								\n\
+																		\n\
 																		\n\
 ;; General AI-related flags.  These were previously all lumped together	\n\
 ;; under the New AI mission flag.										\n\

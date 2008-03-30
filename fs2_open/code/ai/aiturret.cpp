@@ -632,7 +632,11 @@ void evaluate_obj_as_target(object *objp, eval_enemy_obj_struct *eeo)
 		dist *= (1.0f + 0.1f*num_att_turrets);
 
 		// return if we're over the cap
-		int max_turrets = 3 + Game_skill_level * Game_skill_level;
+//		int max_turrets = 3 + Game_skill_level * Game_skill_level;
+		int max_turrets = The_mission.ai_profile->max_turret_ownage_target[Game_skill_level];
+		if (objp->flags & OF_PLAYER_SHIP) {
+			max_turrets = The_mission.ai_profile->max_turret_ownage_player[Game_skill_level];
+		}
 		if (num_att_turrets > max_turrets) {
 			return;
 		}
