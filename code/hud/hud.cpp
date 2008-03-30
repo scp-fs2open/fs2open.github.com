@@ -3538,8 +3538,8 @@ void HUD_get_nose_coordinates(int *x, int *y)
 	vertex	v0;
 	vec3d	p0;
 
-	int x_nose;
-	int y_nose;
+	float x_nose;
+	float y_nose;
 	
 	vm_vec_scale_add(&p0, &Player_obj->pos, &Player_obj->orient.vec.fvec, 100.0f);
 	g3_rotate_vertex(&v0, &p0);
@@ -3547,9 +3547,16 @@ void HUD_get_nose_coordinates(int *x, int *y)
 	if (v0.codes == 0) {
 		g3_project_vertex(&v0);
 
-		if (! (v0.codes & PF_OVERFLOW)) {
-			x_nose = fl2i(v0.sx);
-			y_nose = fl2i(v0.sy);
+		if ( !(v0.codes & PF_OVERFLOW) ) {
+			x_nose = v0.sx;
+			y_nose = v0.sy;
+		} else {
+			// Means that the ship forward vector is not going through the frame buffer.
+			// We're assigning a high negative value so that the the bitmaps will be drawn offscreen so that
+			// we can give the illusion that the player is looking away from the slewable HUD reticle.
+			*x = -100000;
+			*y = -100000;
+			return;
 		}
 	} else {
 		// Means that the ship forward vector is not going through the frame buffer.
@@ -3560,8 +3567,8 @@ void HUD_get_nose_coordinates(int *x, int *y)
 		return;
 	}
 
-	*x = x_nose - gr_screen.clip_center_x;
-	*y = y_nose - gr_screen.clip_center_y;
+	*x = fl2i(x_nose - gr_screen.clip_center_x);
+	*y = fl2i(y_nose - gr_screen.clip_center_y);
 
 	return;
 }

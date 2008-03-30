@@ -1400,8 +1400,8 @@ void gr_init_res(int res, int mode, int max_w, int max_h)
 	gr_screen.clip_width = gr_screen.clip_width_unscaled = gr_screen.max_w;
 	gr_screen.clip_height = gr_screen.clip_height_unscaled = gr_screen.max_h;
 	gr_screen.clip_aspect = i2fl(gr_screen.clip_width) / i2fl(gr_screen.clip_height);
-	gr_screen.clip_center_x = (gr_screen.clip_left + gr_screen.clip_right) / 2;
-	gr_screen.clip_center_y = (gr_screen.clip_top + gr_screen.clip_bottom) / 2;
+	gr_screen.clip_center_x = (gr_screen.clip_left + gr_screen.clip_right) * 0.5f;
+	gr_screen.clip_center_y = (gr_screen.clip_top + gr_screen.clip_bottom) * 0.5f;
 
 	if (gr_screen.custom_size >= 0) {
 		gr_unsize_screen_pos( &gr_screen.max_w_unscaled, &gr_screen.max_h_unscaled );
