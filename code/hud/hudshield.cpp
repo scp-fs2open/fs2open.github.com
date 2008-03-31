@@ -552,7 +552,7 @@ void hud_shield_show(object *objp)
 	sip = &Ship_info[sp->ship_info_index];
 
 //	bool digitus_improbus = (fod_model != -2 && strstr(sp->ship_name, "Sathanas") != NULL);
-	if ( sip->shield_icon_index == 255 && !(sip->flags & SIF2_GENERATE_HUD_ICON) /*&& !digitus_improbus*/) {
+	if ( sip->shield_icon_index == 255 && !(sip->flags2 & SIF2_GENERATE_HUD_ICON) /*&& !digitus_improbus*/) {
 		return;
 	}
 

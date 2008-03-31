@@ -5014,7 +5014,7 @@ void ship_set_default_player_ship()
 
 void parse_shiptbl(char *filename)
 {
-	int i, j, rval;
+	int rval;
 
 	// open localization
 	lcl_ext_open();
@@ -5066,48 +5066,6 @@ void parse_shiptbl(char *filename)
 	//Set default player ship
 	ship_set_default_player_ship();
 
-	// Goober5000 - validate ballistic primaries
-	for(i = 0; i < Num_ship_classes; i++)
-	{
-		int pbank_capacity_specified = 0;
-		ship_info *sip = &Ship_info[i];
-
-		// determine whether this ship had primary capacities specified for it
-		for (j = 0; j < sip->num_primary_banks; j++)
-		{
-			if (sip->primary_bank_ammo_capacity[j] > 0)
-			{
-				pbank_capacity_specified = 1;
-				break;
-			}
-		}
-
-		// be friendly; ensure ballistic flags check out
-		if (pbank_capacity_specified)
-		{
-			if (!(sip->flags & SIF_BALLISTIC_PRIMARIES))
-			{
-				Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\n", sip->name);
-	
-				for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
-				{
-					sip->primary_bank_ammo_capacity[j] = 0;
-				}
-			}
-		}
-		else
-		{
-			if (sip->flags & SIF_BALLISTIC_PRIMARIES)
-			{
-				Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
-				for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++)
-				{
-					sip->primary_bank_ammo_capacity[j] = 1;
-				}
-			}
-		}
-	}
-
 	// add tbl/tbm to multiplayer validation list
 	fs2netd_add_table_validation(filename);
 
@@ -5140,6 +5098,58 @@ int ship_show_velocity_dot = 0;
 
 
 DCF_BOOL( show_velocity_dot, ship_show_velocity_dot )
+
+// clean up ship entries, making sure various flags and settings are correct
+void ship_parse_post_cleanup()
+{
+	int i, j;
+	ship_info *sip;
+
+	for (i = 0; i < Num_ship_classes; i++) {
+		sip = &Ship_info[i];
+
+		// ballistic primary fixage...
+		{
+			bool pbank_capacity_specified = false;
+
+			// determine whether this ship had primary capacities specified for it
+			for (j = 0; j < sip->num_primary_banks; j++) {
+				if (sip->primary_bank_ammo_capacity[j] > 0) {
+					pbank_capacity_specified = true;
+					break;
+				}
+			}
+
+			// be friendly; ensure ballistic flags check out
+			if (pbank_capacity_specified) {
+				if ( !(sip->flags & SIF_BALLISTIC_PRIMARIES) ) {
+					Warning(LOCATION, "Pbank capacity specified for non-ballistic-primary-enabled ship %s.\nResetting capacities to 0.\n", sip->name);
+
+					for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
+						sip->primary_bank_ammo_capacity[j] = 0;
+					}
+				}
+			} else {
+				if (sip->flags & SIF_BALLISTIC_PRIMARIES) {
+					Warning(LOCATION, "Pbank capacity not specified for ballistic-primary-enabled ship %s.\nDefaulting to capacity of 1 per bank.\n", sip->name);
+
+					for (j = 0; j < MAX_SHIP_PRIMARY_BANKS; j++) {
+						sip->primary_bank_ammo_capacity[j] = 1;
+					}
+				}
+			}
+		} // ... ballistic primaries
+
+		// ultra stupid compatbility handling for the once broken "generate hud" flag.
+		// it was previously testing the afterburner flag, so that's what we check for that
+		if ( (sip->shield_icon_index == 255) && (sip->flags & SIF_AFTERBURNER)
+				&& !(sip->flags2 & SIF2_GENERATE_HUD_ICON) )
+		{
+			Warning(LOCATION, "Compatibility warning:\nNo shield icon specified for '%s' but the \"generate icon\" flag is not specified.\nEnabling flag by default.\n", sip->name);
+			sip->flags2 |= SIF2_GENERATE_HUD_ICON;
+		}
+	}
+}
 
 // Called once at the beginning of the game to parse ships.tbl and stuff the Ship_info[]
 // structure
@@ -5192,6 +5202,8 @@ void ship_init()
 
 			//Then other ones
 			parse_modular_table(NOX("*-shp.tbm"), parse_shiptbl);
+
+			ship_parse_post_cleanup();
 
 			ships_inited = 1;
 
