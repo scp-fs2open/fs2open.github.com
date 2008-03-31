@@ -3038,6 +3038,11 @@ int read_model_file(polymodel * pm, char *filename, int n_subsystems, model_subs
 
 			case ID_PATH:
 				pm->n_paths = cfread_int( fp );
+
+				if (pm->n_paths <= 0) {
+					break;
+				}
+
 				pm->paths = (model_path *)vm_malloc(sizeof(model_path)*pm->n_paths);
 				Assert( pm->paths != NULL );
 
@@ -3669,6 +3674,8 @@ void model_maybe_fixup_subsys_path(polymodel *pm, int path_num)
 	vec3d	*v1, *v2, dir;
 	float	dist;
 	int		index_1, index_2;
+
+	Assert( (path_num >= 0) && (path_num < pm->n_paths) );
 
 	model_path *mp;
 	mp = &pm->paths[path_num];
