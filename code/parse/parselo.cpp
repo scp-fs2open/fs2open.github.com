@@ -2831,8 +2831,9 @@ char *split_str_once(char *src, int max_pixel_w)
 	Assert(max_pixel_w > 0);
 	
 	gr_get_string_size(&w, NULL, src);
-	if ( w <= max_pixel_w )
+	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
 		return NULL;  // string doesn't require a cut
+	}
 
 	len = strlen(src);
 	for (i=0; i<len; i++) {
