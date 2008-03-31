@@ -5405,13 +5405,13 @@ void swap_bsp_data( polymodel * pm, void *model_ptr )
 void swap_sldc_data(ubyte *buffer)
 {
 #if BYTE_ORDER == BIG_ENDIAN
-	char *type_p = (char *)(Mc_pm->shield_collision_tree+offset);
-	int *size_p = (int *)(Mc_pm->shield_collision_tree+offset+1);
+	char *type_p = (char *)(buffer);
+	int *size_p = (int *)(buffer+1);
 	*size_p = INTEL_INT(*size_p);
 
 	// split and polygons
-	vec3d *minbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+5);
-	vec3d *maxbox_p = (vec3d*)(Mc_pm->shield_collision_tree+offset+17);
+	vec3d *minbox_p = (vec3d*)(buffer+5);
+	vec3d *maxbox_p = (vec3d*)(buffer+17);
 
 	minbox_p->xyz.x = INTEL_FLOAT(&minbox_p->xyz.x);
 	minbox_p->xyz.y = INTEL_FLOAT(&minbox_p->xyz.y);
@@ -5423,20 +5423,18 @@ void swap_sldc_data(ubyte *buffer)
 
 
 	// split
-	unsigned int *front_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
-	unsigned int *back_offset_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
+	unsigned int *front_offset_p = (unsigned int*)(buffer+29);
+	unsigned int *back_offset_p = (unsigned int*)(buffer+33);
 
 	// polygons
-	unsigned int *num_polygons_p = (unsigned int*)(Mc_pm->shield_collision_tree+offset+29);
+	unsigned int *num_polygons_p = (unsigned int*)(buffer+29);
 
-	unsigned int *shld_polys = (unsigned int*)(Mc_pm->shield_collision_tree+offset+33);
+	unsigned int *shld_polys = (unsigned int*)(buffer+33);
 
 	if (*type_p == 0) // SPLIT
 	{
 			*front_offset_p = INTEL_INT(*front_offset_p);
 			*back_offset_p = INTEL_INT(*back_offset_p);
-			mc_check_sldc(buffer+*front_offset_p);
-			mc_check_sldc(buffer+*back_offset_p);
 	}
 	else
 	{
