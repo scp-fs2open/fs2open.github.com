@@ -1280,6 +1280,11 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 			// WMC - since armor aborbs damage, subtract the amount of damage before we apply armor
 			damage_left -= damage_to_apply;
 
+			// if this subsystem doesn't carry damage then subtract it off of our total return
+			if (subsys->system_info->flags & MSS_FLAG_CARRY_NO_DAMAGE) {
+				damage -= MIN(subsys->current_hits, damage_to_apply);
+			}
+
 			//Apply armor to damage
 			if (subsys->system_info->armor_type_idx >= 0) {
 				damage_to_apply = Armor_types[subsys->system_info->armor_type_idx].GetDamage(damage_to_apply, dmg_type_idx);
@@ -1287,8 +1292,6 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 
 			subsys->current_hits -= damage_to_apply;
 			ship_p->subsys_info[subsys->system_info->type].current_hits -= damage_to_apply;
-
-			
 
 			if (subsys->current_hits < 0.0f) {
 				damage_left -= subsys->current_hits;
@@ -1313,17 +1316,14 @@ float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, fl
 //nprintf(("AI", "j=%i, sys = %s, dam = %6.1f, dam left = %6.1f, subhits = %5.0f\n", j, subsys->system_info->name, damage_to_apply, damage_left, subsys->current_hits));
 	}
 
+	if (damage < 0.0f) {
+		damage = 0.0f;
+	}
+
 	//	Note: I changed this to return damage_left and it completely screwed up balance.
 	//	It had taken a few MX-50s to destory an Anubis (with 40% hull), then it took maybe ten.
 	//	So, I left it alone. -- MK, 4/15/98
-	//WMC - MK, whoever you are, thank you for that comment.
-	if(count)
-	{
-		if(subsys_list[0].ptr->system_info->flags & MSS_FLAG_CARRY_NO_DAMAGE)
-		{
-			return damage_left;
-		}
-	}
+
 	return damage;
 }
 
