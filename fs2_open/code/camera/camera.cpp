@@ -421,18 +421,27 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, char* in_text, float in_display_t
 	if(image_id != -1)
 	{
 		text_pos[0] = image_pos[0] + w;	//Still set from bm_get_info call
-		deltax = text_pos[0] / 1024.0f;	//MikeStar;
-		text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
+		if (!center_x)
+		{
+			deltax = text_pos[0] / 1024.0f;	//MikeStar;
+			text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
+		}
 	}
 	else
 	{
 		text_pos[0] = image_pos[0];
-		deltax = text_pos[0] / 1024.0f;	//MikeStar;
-		text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
+		if (!center_x)
+		{
+			deltax = text_pos[0] / 1024.0f;	//MikeStar;
+			text_pos[0] = gr_screen.max_w * deltax;	//MikeStar;
+		}
 	}
 	text_pos[1] = image_pos[1];
-	deltay = text_pos[1] / 768.0f;	//MikeStar;
-	text_pos[1] = gr_screen.max_h * deltay;	//MikeStar;
+	if (!center_y)
+	{
+		deltay = text_pos[1] / 768.0f;	//MikeStar;
+		text_pos[1] = gr_screen.max_h * deltay;	//MikeStar;
+	}
 
 	time_displayed = 0.0f;
 	time_displayed_end = 2.0f*fade_time + display_time;
