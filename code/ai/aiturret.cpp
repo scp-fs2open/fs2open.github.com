@@ -1641,7 +1641,7 @@ void ai_fire_from_turret(ship *shipp, ship_subsys *ss, int parent_objnum)
 	for(i = 0; i < (MAX_SHIP_WEAPONS); i++)
 	{
 		//WMC - Only fire more than once if we have multiple guns flag set.
-		if(num_valid > 0 && !(ss->flags & MSS_FLAG_USE_MULTIPLE_GUNS))
+		if(num_valid > 0 && !(tp->flags & MSS_FLAG_USE_MULTIPLE_GUNS))
 			break;
 
 		if(i < MAX_SHIP_PRIMARY_BANKS)
