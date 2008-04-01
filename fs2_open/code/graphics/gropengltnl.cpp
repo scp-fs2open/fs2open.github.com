@@ -563,34 +563,10 @@ void gr_opengl_destroy_buffer(int idx)
 
 #define DO_RENDER() {	\
 	if ( (ibuffer != NULL) || (sbuffer != NULL) ) {	\
-		if ( multiple_elements ) {	\
-			start_tmp = 0;	\
-			end_tmp = (GL_max_elements_indices - 1);	\
-			count_tmp = (end_tmp - start_tmp + 1);	\
-\
-			if (ibuffer) {	\
-				vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_INT, ibuffer + start_tmp);	\
-			} else {	\
-				vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, sbuffer + start_tmp);	\
-			}	\
-\
-			while (end_tmp < end) {	\
-				start_tmp += (GL_max_elements_indices - 1);	\
-				end_tmp = MIN( (start_tmp + GL_max_elements_indices - 1), end );	\
-				count_tmp = (end_tmp - start_tmp + 1);	\
-\
-				if (ibuffer) {	\
-					vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_INT, ibuffer + start_tmp);	\
-				} else {	\
-					vglDrawRangeElements(GL_TRIANGLES, start_tmp, end_tmp, count_tmp, GL_UNSIGNED_SHORT, sbuffer + start_tmp);	\
-				}	\
-			}	\
+		if (ibuffer) {	\
+			vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_INT, ibuffer + start);	\
 		} else {	\
-			if (ibuffer) {	\
-				vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_INT, ibuffer + start);	\
-			} else {	\
-				vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, sbuffer + start);	\
-			}	\
+			vglDrawRangeElements(GL_TRIANGLES, start, end, count, GL_UNSIGNED_SHORT, sbuffer + start);	\
 		}	\
 	} else {	\
 		glDrawArrays(GL_TRIANGLES, 0, vbp->n_verts);	\
@@ -620,7 +596,6 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuff
 
 	int end = ((n_prim * 3) - 1);
 	int count = (end - start + 1); //(n_prim * 3);
-	int start_tmp, end_tmp, count_tmp, multiple_elements = 0;
 
 	int textured = (flags & TMAP_FLAG_TEXTURED);
 
@@ -630,10 +605,6 @@ void gr_opengl_render_buffer(int start, int n_prim, ushort *sbuffer, uint *ibuff
 
 	// disable all arbs before we start
 	opengl_switch_arb(-1, 0);
-
-	// see if we need to optimize glDrawRangeElements
-	if ( count > GL_max_elements_indices )
-		multiple_elements = 1;
 
 	if ( glIsEnabled(GL_CULL_FACE) )
 		glFrontFace(GL_CW);
