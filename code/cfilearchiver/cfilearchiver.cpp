@@ -162,8 +162,8 @@ void pack_file( char *filespec, char *filename, int filesize, _fs_time_t time_wr
 	}
 
 	if ( strlen(filename) > 31 )	{
-		printf( "Filename '%s' too long\n", filename );
-		exit(1);
+		printf( "Filename '%s' too long!  Skipping...\n", filename );
+		return;
 	}
 
 	memset( path, 0, sizeof(path) );
@@ -255,7 +255,7 @@ void pack_directory( char * filespec)
 	find_handle = _findfirst( tmp1, &find );
 	if( find_handle != -1 )	{
 		if ( find.attrib & _A_SUBDIR )	{
-			if (strcmp( "..", find.name) && strcmp( ".", find.name))	{
+			if (strcmp( "..", find.name) && strcmp( ".", find.name) && strcmp( ".svn", find.name))	{
 				strcpy( tmp, filespec );
 				strcat( tmp, "\\" );
 				strcat( tmp, find.name );
@@ -267,7 +267,7 @@ void pack_directory( char * filespec)
 
 		while( !_findnext( find_handle, &find ) )	{
 			if ( find.attrib & _A_SUBDIR )	{
-				if (strcmp( "..", find.name) && strcmp( ".", find.name))	{
+				if (strcmp( "..", find.name) && strcmp( ".", find.name) && strcmp( ".svn", find.name))	{
 					strcpy( tmp, filespec );
 					strcat( tmp, "\\" );
 					strcat( tmp, find.name );
@@ -297,6 +297,10 @@ void pack_directory( char * filespec)
 			}
 
 			if ( (strcmp(dir->d_name, ".") == 0) || (strcmp(dir->d_name, "..") == 0) ) {
+				continue;
+			}
+
+			if ( (strcmp(dir->d_name, ".svn") == 0) ) {
 				continue;
 			}
 
