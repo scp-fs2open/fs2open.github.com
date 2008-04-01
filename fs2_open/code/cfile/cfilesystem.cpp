@@ -1660,8 +1660,10 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 	if (find_handle != -1) {
 		do {
 			if (num_files >= max)
-
 				break;
+
+			if ( strlen(find.name) >= MAX_FILENAME_LEN )
+				continue;
 
 			if (!(find.attrib & _A_SUBDIR)) {
 				if ( !Get_file_list_filter || (*Get_file_list_filter)(find.name) ) {
@@ -1698,6 +1700,10 @@ int cf_get_file_list( int max, char **list, int pathtype, char *filter, int sort
 		{
 			if (num_files >= max)
 				break;
+
+			if ( strlen(dir->d_name) >= MAX_FILENAME_LEN ) {
+				continue;
+			}
 
 			if (fnmatch(filter, dir->d_name, 0) != 0)
 				continue;
