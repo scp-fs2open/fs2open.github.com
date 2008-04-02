@@ -3461,7 +3461,8 @@ void multi_update_valid_missions()
 	char temp[256];
 	char *tok;
 	CFILE *in;
-	int idx, file_index;	
+	int file_index;
+	uint idx;	
 	bool was_cancelled = false;
 
 	// if we're a standalone, show a dialog saying "validating missions"
@@ -3471,7 +3472,7 @@ void multi_update_valid_missions()
 	}
 
 	// mark all missions on our list as being MVALID_STATUS_UNKNOWN
-	for (idx = 0; idx < Multi_create_mission_count; idx++) {
+	for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {
 		Multi_create_mission_list[idx].valid_status = MVALID_STATUS_UNKNOWN;
 	}
 	
@@ -3548,7 +3549,8 @@ void multi_update_valid_missions()
 
 		return;
 	}
-	for(idx=0; idx<Multi_create_mission_count; idx++){
+
+	for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {
 		switch(Multi_create_mission_list[idx].valid_status){
 		case MVALID_STATUS_VALID:
 			cfputs(Multi_create_mission_list[idx].filename, in);
