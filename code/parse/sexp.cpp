@@ -1751,6 +1751,7 @@ sexp_oper Operators[] = {
 	{ "skill-level-at-least",		OP_SKILL_LEVEL_AT_LEAST,	1, 1, },
 	{ "num-ships-in-battle",		OP_NUM_SHIPS_IN_BATTLE,			0,	1},			//phreak
 	{ "num-ships-in-wing",			OP_NUM_SHIPS_IN_WING,			1,	INT_MAX},	// Karajorma
+	{ "is-player",					OP_IS_PLAYER,				2,	INT_MAX},	// Karajorma
 	{ "num-players",				OP_NUM_PLAYERS,				0, 0, },
 	{ "num_kills",					OP_NUM_KILLS,				1, 1			},
 	{ "num_assists",				OP_NUM_ASSISTS,				1, 1			},
@@ -14235,6 +14236,70 @@ int sexp_missile_locked(int node)
 	return SEXP_FALSE;
 }
 
+int sexp_is_player (int node) 
+{
+	int sindex, standard_check = 1, np_index;
+	p_object *p_objp;
+
+	standard_check = is_sexp_true(node);
+
+	if (!(Game_mode & GM_MULTIPLAYER)){	
+		sindex = ship_name_lookup(CTEXT(CDR(node)));
+
+		// There can only be one player ship in singleplayer so if more than one ship is specifed the sexp is false
+		if (CDDR(node) < 0 ) {
+			return SEXP_FALSE;
+		}
+
+		if(sindex >= 0){
+			if(Player_obj == &Objects[Ships[sindex].objnum]){
+				if (standard_check) {
+					if (Player_use_ai) {
+						return SEXP_FALSE;
+					}
+				}
+				return SEXP_TRUE;
+			}
+		}
+		return SEXP_FALSE;
+	}
+
+	// For multiplayer we need to decide what to do about respawning players
+	else {		
+		node = CDR(node);
+		while (node >= 0) {
+			// reset the netplayer index
+			np_index = -1; 
+
+			sindex = ship_name_lookup(CTEXT(node));
+			if(sindex >= 0){
+				if(Ships[sindex].objnum >= 0) {
+					// try and find the player
+					np_index = multi_find_player_by_object(&Objects[Ships[sindex].objnum]);
+				}
+			}
+			
+			if (standard_check && np_index < 0) {
+				// Respawning ships don't have an objnum so we need to take a different approach 
+				p_objp = mission_parse_get_arrival_ship(CTEXT(node));
+				if (p_objp != NULL) {
+					np_index = multi_find_player_by_parse_object(p_objp);
+				}
+			}
+			
+			// if we couldn't find a valid netplayer index then the ship isn't a player
+			if((np_index < 0) || (np_index >= MAX_PLAYERS)){
+				return SEXP_FALSE;
+			}
+			
+			node = CDR(node);
+		}
+
+		// if we reached this far they all checked out
+		return SEXP_TRUE;
+	}
+}
+
 int sexp_return_player_data(int node, int type)
 {
 	int sindex, np_index = -1;
@@ -14311,6 +14376,10 @@ int sexp_return_player_data(int node, int type)
 	// AI ships also have a respawn count so we can return valid data for that at least
 	else if ( (Game_mode & GM_MULTIPLAYER) && (type == OP_SHIP_DEATHS || type == OP_RESPAWNS_LEFT ) ) {
 		p_objp = mission_parse_get_arrival_ship(CTEXT(node));
+		if (p_objp == NULL) {
+			return 0;
+		}
+
 		if (p_objp->flags & P_OF_PLAYER_START) { 
 			switch (type) {				
 				case OP_SHIP_DEATHS: 
@@ -16337,6 +16406,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_is_tagged(node);
 				break;
 
+			case OP_IS_PLAYER:
+				sexp_val = sexp_is_player(node);
+				break;
+
 			case OP_NUM_KILLS:
 			case OP_NUM_ASSISTS:
 			case OP_SHIP_SCORE: 
@@ -17027,6 +17100,7 @@ int query_operator_return_type(int op)
 		case OP_MISSILE_LOCKED:
 		case OP_NAV_IS_VISITED:
 		case OP_NAV_ISLINKED:
+		case OP_IS_PLAYER:
 			return OPR_BOOL;
 
 		case OP_PLUS:
@@ -18192,6 +18266,13 @@ int query_operator_argument_type(int op, int argnum)
 
 		case OP_IS_TAGGED:
 			return OPF_SHIP;
+
+		case OP_IS_PLAYER:
+			if (argnum == 0) {
+				return OPF_BOOL;
+			} else {
+				return OPF_SHIP;
+			}
 
 		case OP_NUM_KILLS:
 		case OP_NUM_ASSISTS:
@@ -21341,6 +21422,12 @@ sexp_help_struct Sexp_help[] = {
 
 	{ OP_IS_TAGGED, "is-tagged\r\n"
 		"\tReturns whether a given ship is tagged or not\r\n"},
+
+	{ OP_IS_PLAYER, "is-player\r\n"
+		"\tReturns true if all the ships specified are currently under control of a player.\r\n"
+		"\t1 \t(SinglePlayer) When true ships under AI control return false even if they are the player ship\r\n"
+		"\t \t(Multiplayer) When true ships that are respawning return true if the player is still connected\r\n"
+		"\tRest \tList of ships to test"},
 
 	{ OP_NUM_KILLS, "num-kills\r\n"
 		"\tReturns the # of kills a player has. The ship specified in the first field should be the ship the player is in.\r\n"
