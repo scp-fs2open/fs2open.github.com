@@ -10339,7 +10339,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 					int pt; //point
 					if (winfo_p->wi_flags2 & WIF2_CYCLE){
 						//pnt = pm->gun_banks[bank_to_fire].pnt[shipp->last_fired_point[bank_to_fire]+j%num_slots];
-						pt = shipp->last_fired_point[bank_to_fire]+j%num_slots;
+						pt = (shipp->last_fired_point[bank_to_fire]+j)%num_slots;
 //mprintf(("fireing from %d\n",shipp->last_fired_point[bank_to_fire]+j%num_slots));
 					}else{
 						//pnt = pm->gun_banks[bank_to_fire].pnt[j];
@@ -10393,7 +10393,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 								}
 
 								vm_vec_scale_add(&predicted_target_pos, &target_position, &target_velocity_vec, time_to_target);
-								polish_predicted_target_pos(&Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
+								polish_predicted_target_pos(winfo_p, &Objects[aip->target_objnum], &target_position, &predicted_target_pos, dist_to_target, &last_delta_vec, 1);
 								vm_vec_sub(&firing_vec, &predicted_target_pos, &obj->pos);
 
 								// Deactivate autoaiming if the target leaves the autoaim-FOV cone
@@ -10485,7 +10485,7 @@ int ship_fire_primary(object * obj, int stream_weapons, int force)
 
 			if(shipp->weapon_energy < 0.0f){
 				shipp->weapon_energy = 0.0f;
-			}			
+			}
 
 
 			banks_fired |= (1<<bank_to_fire);				// mark this bank as fired.

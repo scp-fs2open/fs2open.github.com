@@ -4449,7 +4449,7 @@ int hud_get_best_primary_bank(float *range)
 // 
 // Called by the draw lead indicator code to predict where the enemy is going to be
 //
-void polish_predicted_target_pos(object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps) 
+void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps) 
 {
 	int	iteration;
 	vec3d	player_pos = Player_obj->pos;	
@@ -4458,8 +4458,8 @@ void polish_predicted_target_pos(object *targetp, vec3d *enemy_pos, vec3d *predi
 
 	ship *shipp;
 	shipp = &Ships[Player_obj->instance];
-	Assert(shipp->weapons.current_primary_bank < shipp->weapons.num_primary_banks);
-	weapon_info	*wip = &Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]];
+//	Assert(shipp->weapons.current_primary_bank < shipp->weapons.num_primary_banks);
+//	weapon_info	*wip = &Weapon_info[shipp->weapons.primary_bank_weapons[shipp->weapons.current_primary_bank]];
 
 	float	weapon_speed = wip->max_speed;
 
@@ -4598,12 +4598,9 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 	{
 		int bank = swp->current_secondary_bank;
 		tmp = &Weapon_info[swp->secondary_bank_weapons[bank]];
-		if ( tmp->wi_flags & WIF_LOCKED_HOMING )
-		{
-			if ( !Player->target_in_lock_cone )
-			{
-				srange = -1.0f;
-			}
+		if ( !(tmp->wi_flags & WIF_HOMING) && !(tmp->wi_flags & WIF_LOCKED_HOMING && Player->target_in_lock_cone) ) {
+			//The secondary lead indicator is handled farther below if it is a non-locking type
+			srange = -1.0f;
 		}
 	}
 
@@ -4661,13 +4658,13 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 	Players[Player_num].lead_indicator_active = 1;
 
 	// test if the target is moving at all
-	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f)		// Find distance!
+	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f && !(The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) )		// Find distance!
 		Players[Player_num].lead_target_pos =  *target_world_pos;
 	else {
 		vm_vec_normalize(&target_moving_direction);
 		vm_vec_scale(&target_moving_direction,target_moved_dist);
 		vm_vec_add(&Players[Player_num].lead_target_pos, target_world_pos, &target_moving_direction );
-		polish_predicted_target_pos(targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
+		polish_predicted_target_pos(wip, targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
 	}
 
 	g3_rotate_vertex(&lead_target_vertex,&Players[Player_num].lead_target_pos);
@@ -4730,13 +4727,13 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 	Players[Player_num].lead_indicator_active = 1;
 
 	// test if the target is moving at all
-	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f)		// Find distance!
+	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f && !(The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) )		// Find distance!
 		Players[Player_num].lead_target_pos =  *target_world_pos;
 	else {
 		vm_vec_normalize(&target_moving_direction);
 		vm_vec_scale(&target_moving_direction,target_moved_dist);
 		vm_vec_add(&Players[Player_num].lead_target_pos, target_world_pos, &target_moving_direction );
-		polish_predicted_target_pos(targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
+		polish_predicted_target_pos(wip, targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
 	}
 
 	g3_rotate_vertex(&lead_target_vertex,&Players[Player_num].lead_target_pos);
@@ -4860,13 +4857,13 @@ void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp)
 	Players[Player_num].lead_indicator_active = 1;
 
 	// test if the target is moving at all
-	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f)		// Find distance!
+	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f && !(The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) )		// Find distance!
 		Players[Player_num].lead_target_pos =  *target_world_pos;
 	else {
 		vm_vec_normalize(&target_moving_direction);
 		vm_vec_scale(&target_moving_direction,target_moved_dist);
 		vm_vec_add(&Players[Player_num].lead_target_pos, target_world_pos, &target_moving_direction );
-		polish_predicted_target_pos(targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
+		polish_predicted_target_pos(wip, targetp, target_world_pos, &Players[Player_num].lead_target_pos, dist_to_target, &last_delta_vector, 1); // Not used:, float time_to_enemy)
 		vm_vec_add2(&Players[Player_num].lead_target_pos, rel_pos );
 	}
 
@@ -5078,7 +5075,7 @@ void hud_target_change_check()
 //
 // draws the offscreen target indicator
 //
-void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float distance)
+void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float distance, int draw_solid)
 {
 	char buf[32];
 	int w = 0, h = 0;
@@ -5326,8 +5323,13 @@ void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float dista
 		}
 	}
 
-	hud_tri(x3,y3,x2,y2,x1,y1);
-	hud_tri(x4,y4,x5,y5,x6,y6);
+	if (draw_solid) {
+		hud_tri(x3,y3,x2,y2,x1,y1);
+		hud_tri(x4,y4,x5,y5,x6,y6);
+	} else {
+		hud_tri_empty(x3,y3,x2,y2,x1,y1);
+		hud_tri_empty(x4,y4,x5,y5,x6,y6);
+	}
 	if (on_right || on_bottom){
 		gr_line(fl2i(x2),fl2i(y2),fl2i(x5),fl2i(y5));
 	} else if (on_left) {
@@ -5630,7 +5632,7 @@ void hud_maybe_flash_weapon(int index)
 }
 
 // render the coutermeasure HUD gauge
-void hud_show_cmeasure_gague()
+void hud_show_cmeasure_gauge()
 {
 	if ( Cmeasure_gauge.first_frame == -1) {
 		Int3();	// failed to load coutermeasure gauge background

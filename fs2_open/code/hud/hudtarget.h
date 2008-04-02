@@ -329,6 +329,7 @@
 struct ship;
 struct ship_subsys;
 struct object;
+struct weapon_info;
 
 #define INCREASING	0
 #define DECREASING	1
@@ -344,7 +345,7 @@ struct object;
 // structure and defines used for hotkey targeting
 //WMC - bumped from 50 to 150; 10/24/2005
 #define MAX_HOTKEY_TARGET_ITEMS		150		// maximum number of ships that can be targeted on *all* keys
-#define SELECTION_SET					0x5000	// variable used for drawing brackets.  The bracketinng code uses
+#define SELECTION_SET					0x5000	// variable used for drawing brackets.  The bracketing code uses
 															// TEAM_* values.  I picked this value to be totally out of that
 															// range.  Only used for drawing selection sets
 #define MESSAGE_SENDER					0x5001	// variable used for drawing brackets around a message sender.
@@ -391,7 +392,7 @@ void	hud_target_missile(object *source_obj, int next_flag);
 void	hud_target_next_list(int hostile=1, int next_flag=1);
 int	hud_target_closest_repair_ship(int goal_objnum=-1);
 void	hud_target_auto_target_next();
-void hud_show_remote_detonate_missile();
+void	hud_show_remote_detonate_missile();
 
 void	hud_target_uninspected_object(int next_flag);
 void	hud_target_newest_ship();
@@ -423,9 +424,9 @@ void hud_show_weapons();
 void hud_start_flash_weapon(int index);
 void hud_show_auto_icons();
 void hud_show_weapon_energy_gauge();
-void hud_show_cmeasure_gague();
+void hud_show_cmeasure_gauge();
 void hud_show_brackets(object *targetp, vertex *projected_v);
-void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float distance=0.0f);
+void hud_draw_offscreen_indicator(vertex* target_point, vec3d *tpos, float distance=0.0f, int draw_solid=1);
 void hud_show_homing_missiles(void);
 
 int hud_sensors_ok(ship *sp, int show_msg = 1);
@@ -454,6 +455,6 @@ void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3);
 
 float hud_find_target_distance( object *targetee, object *targeter );
 
-extern void polish_predicted_target_pos(object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps);
+extern void polish_predicted_target_pos(weapon_info *wip, object *targetp, vec3d *enemy_pos, vec3d *predicted_enemy_pos, float dist_to_enemy, vec3d *last_delta_vec, int num_polish_steps);
 
 #endif
