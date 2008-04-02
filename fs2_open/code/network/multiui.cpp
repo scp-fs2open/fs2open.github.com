@@ -683,6 +683,9 @@
 #include "cfile/cfile.h"
 #include "fs2netd/fs2netd_client.h"
 
+#include <vector>
+#include <algorithm>
+
 
 // -------------------------------------------------------------------------------------------------------------
 // 
@@ -3974,21 +3977,14 @@ int Multi_create_list_max_display[GR_NUM_RESOLUTIONS] = {
 };
 
 
-int Multi_create_list_count;											// number of items in listbox
+int Multi_create_list_count;
 int Multi_create_list_mode;											// 0 == mission mode, 1 == campaign mode
 int Multi_create_list_start;											// where to start displaying from
 int Multi_create_list_select;											// which item is currently highlighted
 int Multi_create_files_loaded;
 
-char Multi_create_files_array[MULTI_CREATE_MAX_LIST_ITEMS][MAX_FILENAME_LEN];
-
-int Multi_create_mission_count;											// how many we have
-int Multi_create_campaign_count;
-multi_create_info Multi_create_mission_list[MULTI_CREATE_MAX_LIST_ITEMS];
-multi_create_info Multi_create_campaign_list[MULTI_CREATE_MAX_LIST_ITEMS];
-
-// use a pointer for the file list.  Will point to either the missions or the campaigns
-multi_create_info *Multi_create_file_list;
+std::vector<multi_create_info> Multi_create_mission_list;
+std::vector<multi_create_info> Multi_create_campaign_list;
 
 // LOCAL function definitions
 void multi_create_check_buttons();
@@ -4025,14 +4021,17 @@ int Multi_create_should_show_popup = 0;
 int Multi_create_force_heartbeat = 0;			// to force a master heardbeat packet be sent (rather than waiting for timeout)
 
 // sorting function to sort mission lists.. Basic sorting on mission name
-int multi_create_sort_func(const void *a, const void *b)
+bool multi_create_sort_func(const multi_create_info &m1, const multi_create_info &m2)
 {
-	multi_create_info *m1, *m2;
+	int test = strcmp(m1.name, m2.name);
 
-	m1 = (multi_create_info *)a;
-	m2 = (multi_create_info *)b;
-
-	return ( strcmp(m1->name, m2->name) );
+	if (test < 0) {
+		return true;
+	} else if (test > 0) {
+		return false;
+	} else {
+		return true;
+	}
 }
 
 void multi_create_setup_list_data(int mode)
@@ -4045,58 +4044,54 @@ void multi_create_setup_list_data(int mode)
 	if((Multi_create_list_mode != mode) && (mode != -1)){
 		Multi_create_list_mode = mode;	
 		switched_modes = 1;
-
-		// set up the list pointers
-		if ( Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS ) {
-			Multi_create_file_list = Multi_create_mission_list;			
-		} else if ( Multi_create_list_mode == MULTI_CREATE_SHOW_CAMPAIGNS ) {
-			Multi_create_file_list = Multi_create_campaign_list;			
-		} else {
-			Int3();
-		}
 	}
 
 	// get the mission count based upon the filter selected
 	if(Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS){		
-		switch(Multi_create_filter){
-		case MISSION_TYPE_MULTI:
-			Multi_create_list_count = Multi_create_mission_count;
-			break;
-		default : 
-			Multi_create_list_count = 0;
-			// find all missions which match 
-			for(idx=0;idx<Multi_create_mission_count;idx++){
-				if(Multi_create_mission_list[idx].flags & Multi_create_filter){
-					Multi_create_list_count++;
-				}
-			}
+		switch (Multi_create_filter) {
+			case MISSION_TYPE_MULTI:
+				Multi_create_list_count = (int)Multi_create_mission_list.size();
+				break;
 
-			// if we switched modes and we have more than 0 items, sort them
-			if(switched_modes && (Multi_create_list_count > 0)){
-				should_sort = 1;
-			}
-			break;
+			default : 
+				Multi_create_list_count = 0;
+
+				// find all missions which match 
+				for (idx = 0; idx < (int)Multi_create_mission_list.size(); idx++) {
+					if(Multi_create_mission_list[idx].flags & Multi_create_filter){
+						Multi_create_list_count++;
+					}
+				}
+
+				// if we switched modes and we have more than 0 items, sort them
+				if (switched_modes && (Multi_create_list_count > 0)){
+					should_sort = 1;
+				}
+
+				break;
 		}
 	} else if(Multi_create_list_mode == MULTI_CREATE_SHOW_CAMPAIGNS){
-		switch(Multi_create_filter){
-		case MISSION_TYPE_MULTI:
-			Multi_create_list_count = Multi_create_campaign_count;
-			break;
-		default :
-			Multi_create_list_count = 0;
-			// find all missions which match 
-			for(idx=0;idx<Multi_create_campaign_count;idx++){
-				if(Multi_create_campaign_list[idx].flags & Multi_create_filter){
-					Multi_create_list_count++;
-				}
-			}
+		switch (Multi_create_filter) {
+			case MISSION_TYPE_MULTI:
+				Multi_create_list_count = (int)Multi_create_campaign_list.size();
+				break;
 
-			// if we switched modes and we have more than 0 items, sort them
-			if(switched_modes && (Multi_create_list_count > 0)){
-				should_sort = 1;
+			default :
+				Multi_create_list_count = 0;
+
+				// find all missions which match 
+				for (idx = 0; idx < Multi_create_campaign_list.size(); idx++) {
+					if(Multi_create_campaign_list[idx].flags & Multi_create_filter){
+						Multi_create_list_count++;
+					}
+				}
+
+				// if we switched modes and we have more than 0 items, sort them
+				if(switched_modes && (Multi_create_list_count > 0)){
+					should_sort = 1;
+				}
+				break;
 			}
-			break;
-		}
 	}
 	
 	// reset the list start and selected indices
@@ -4105,8 +4100,12 @@ void multi_create_setup_list_data(int mode)
 	multi_create_list_select_item(Multi_create_list_start);	
 
 	// sort the list of missions if necessary
-	if( should_sort ) {		
-		qsort(Multi_create_file_list, Multi_create_list_count, sizeof(multi_create_info), multi_create_sort_func);		
+	if( should_sort ) {
+		if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
+			std::sort( Multi_create_mission_list.begin(), Multi_create_mission_list.begin() + Multi_create_list_count, multi_create_sort_func);
+		} else {
+			std::sort( Multi_create_campaign_list.begin(), Multi_create_campaign_list.begin() + Multi_create_list_count, multi_create_sort_func);
+		}
 	}
 
 	// reset the slider
@@ -4203,19 +4202,15 @@ void multi_create_game_init()
 	Multi_create_filter = MISSION_TYPE_MULTI;
 
 	// initialize the list mode, and load in a list
-	memset(Multi_create_mission_list, 0, sizeof(multi_create_info) * MULTI_CREATE_MAX_LIST_ITEMS);
-	memset(Multi_create_campaign_list, 0, sizeof(multi_create_info) * MULTI_CREATE_MAX_LIST_ITEMS);
+	Multi_create_mission_list.clear();
+	Multi_create_campaign_list.clear();
 
-	for(idx=0; idx<MULTI_CREATE_MAX_LIST_ITEMS; idx++){
-		Multi_create_mission_list[idx].valid_status = MVALID_STATUS_UNKNOWN;
-		Multi_create_campaign_list[idx].valid_status = MVALID_STATUS_UNKNOWN;
-	}
 	Multi_create_list_mode = MULTI_CREATE_SHOW_MISSIONS;
 	Multi_create_list_start = -1;
 	Multi_create_list_select = -1;
 	Multi_create_list_count = 0;
 
-	Multi_create_slider.create(&Multi_create_window, Mc_slider_coords[gr_screen.res][MC_X_COORD], Mc_slider_coords[gr_screen.res][MC_Y_COORD], Mc_slider_coords[gr_screen.res][MC_W_COORD],Mc_slider_coords[gr_screen.res][MC_H_COORD], MULTI_CREATE_MAX_LIST_ITEMS, Mc_slider_bitmap[gr_screen.res], &multi_create_list_scroll_up, &multi_create_list_scroll_down, NULL);
+	Multi_create_slider.create(&Multi_create_window, Mc_slider_coords[gr_screen.res][MC_X_COORD], Mc_slider_coords[gr_screen.res][MC_Y_COORD], Mc_slider_coords[gr_screen.res][MC_W_COORD],Mc_slider_coords[gr_screen.res][MC_H_COORD], -1, Mc_slider_bitmap[gr_screen.res], &multi_create_list_scroll_up, &multi_create_list_scroll_down, NULL);
 
 	// create the player list select button
 	Multi_create_player_select_button.create(&Multi_create_window, "", Mc_players_coords[gr_screen.res][MC_X_COORD], Mc_players_coords[gr_screen.res][MC_Y_COORD], Mc_players_coords[gr_screen.res][MC_W_COORD], Mc_players_coords[gr_screen.res][MC_H_COORD], 0, 1);
@@ -4237,10 +4232,7 @@ void multi_create_game_init()
 	
 	// send any pilots as appropriate
 	multi_data_send_my_junk();
-	Multi_create_file_list = Multi_create_mission_list;
 
-	Multi_create_campaign_count = 0;
-	Multi_create_mission_count = 0;
 	Multi_create_files_loaded = 0;	
 }
 
@@ -5021,12 +5013,21 @@ void multi_create_list_load_missions()
 {
 	char *fname, mission_name[NAME_LENGTH+1];
 	char wild_card[10];
-	int file_count,idx;
+	int file_count, idx;
+	char **file_list = NULL;
+
+	Multi_create_mission_list.clear();
 
 	memset( wild_card, 0, sizeof(wild_card) );
 	snprintf(wild_card, sizeof(wild_card) - 1, "*%s", FS_MISSION_FILE_EXT);
-	file_count = cf_get_file_list_preallocated(MULTI_CREATE_MAX_LIST_ITEMS, Multi_create_files_array, NULL, CF_TYPE_MISSIONS, wild_card);
-	Multi_create_mission_count = 0;
+
+	file_list = (char**) vm_malloc( sizeof(char*) * 1024 );
+
+	if (file_list == NULL) {
+		return;
+	}
+
+	file_count = cf_get_file_list(1024, file_list, CF_TYPE_MISSIONS, wild_card);
 
 	// maybe create a standalone dialog
 	if (Game_mode & GM_STANDALONE_SERVER) {
@@ -5039,7 +5040,7 @@ void multi_create_list_load_missions()
 		char *filename;
 		uint m_respawn;
 
-		fname = Multi_create_files_array[idx];
+		fname = file_list[idx];
 		
 		// tack on any necessary file extension
 		filename = cf_add_ext( fname, FS_MISSION_FILE_EXT );
@@ -5066,27 +5067,36 @@ void multi_create_list_load_missions()
 			max_players = mission_parse_get_multi_mission_info( filename );				
 			m_respawn = The_mission.num_respawns;
 
-			if ( Multi_create_mission_count < MULTI_CREATE_MAX_LIST_ITEMS ) {
-				multi_create_info *mcip;
+			multi_create_info mcip;
 
-				mcip = &Multi_create_mission_list[Multi_create_mission_count];				
-				strcpy(mcip->filename, filename );
-				strcpy(mcip->name, mission_name );
-				mcip->flags = flags;
-				mcip->respawn = m_respawn;
-				mcip->max_players = (ubyte)max_players;
+			strcpy(mcip.filename, filename );
+			strcpy(mcip.name, mission_name );
+			mcip.flags = flags;
+			mcip.respawn = m_respawn;
+			mcip.max_players = (ubyte)max_players;
 
-				// get any additional information for possibly builtin missions
-				fs_builtin_mission *fb = game_find_builtin_mission(filename);
-				if(fb != NULL){					
-				}
-
-				Multi_create_mission_count++;
+			// get any additional information for possibly builtin missions
+			fs_builtin_mission *fb = game_find_builtin_mission(filename);
+			if(fb != NULL){					
 			}
+
+			Multi_create_mission_list.push_back( mcip );
 		}
 	}
 
-	Multi_create_slider.set_numberItems(Multi_create_mission_count > Multi_create_list_max_display[gr_screen.res] ? Multi_create_mission_count-Multi_create_list_max_display[gr_screen.res] : 0);
+	if (file_list) {
+		for (idx = 0; idx < file_count; idx++) {
+			if (file_list[idx]) {
+				vm_free(file_list[idx]);
+				file_list[idx] = NULL;
+			}
+		}
+
+		vm_free(file_list);
+		file_list = NULL;
+	}
+
+	Multi_create_slider.set_numberItems(int(Multi_create_mission_list.size()) > Multi_create_list_max_display[gr_screen.res] ? int(Multi_create_mission_list.size())-Multi_create_list_max_display[gr_screen.res] : 0);
 
 	// maybe create a standalone dialog
 	if (Game_mode & GM_STANDALONE_SERVER) {
@@ -5101,6 +5111,20 @@ void multi_create_list_load_campaigns()
 	int campaign_type,max_players;
 	char title[255];
 	char wild_card[10];
+	char **file_list = NULL;
+
+	Multi_create_campaign_list.clear();
+
+	memset( wild_card, 0, sizeof(wild_card) );
+	snprintf(wild_card, sizeof(wild_card) - 1, "*%s", FS_CAMPAIGN_FILE_EXT);
+
+	file_list = (char**) vm_malloc( sizeof(char*) * 1024 );
+
+	if (file_list == NULL) {
+		return;
+	}
+
+	file_count = cf_get_file_list(1024, file_list, CF_TYPE_MISSIONS, wild_card);
 
 	// maybe create a standalone dialog
 	if (Game_mode & GM_STANDALONE_SERVER) {
@@ -5108,16 +5132,11 @@ void multi_create_list_load_campaigns()
 		std_gen_set_text("Campaign:", 1);
 	}
 
-	Multi_create_campaign_count = 0;
-	memset( wild_card, 0, sizeof(wild_card) );
-	snprintf(wild_card, sizeof(wild_card) - 1, "*%s", FS_CAMPAIGN_FILE_EXT);
-	file_count = cf_get_file_list_preallocated(MULTI_CREATE_MAX_LIST_ITEMS, Multi_create_files_array, NULL, CF_TYPE_MISSIONS, wild_card);
-
 	for (idx = 0; idx < file_count; idx++) {
 		int flags;
 		char *filename, name[NAME_LENGTH];
 
-		fname = Multi_create_files_array[idx];
+		fname = file_list[idx];
 		
 		// tack on any necessary file extension
 		filename = cf_add_ext( fname, FS_CAMPAIGN_FILE_EXT );
@@ -5140,38 +5159,47 @@ void multi_create_list_load_campaigns()
 		// if the campaign is a multiplayer campaign, then add the data to the campaign list items
 		flags = mission_campaign_parse_is_multi( filename, name );
 		if( flags != CAMPAIGN_TYPE_SINGLE && mission_campaign_get_info(filename,title,&campaign_type,&max_players)) {
-			if ( Multi_create_campaign_count < MULTI_CREATE_MAX_LIST_ITEMS ) {
-				multi_create_info *mcip;
+			multi_create_info mcip;
 
-				mcip = &Multi_create_campaign_list[Multi_create_campaign_count];
-				strcpy(mcip->filename, filename );
-				strcpy(mcip->name, name );
-				
-				// setup various flags
-				if ( flags == CAMPAIGN_TYPE_MULTI_COOP ){
-					mcip->flags = MISSION_TYPE_MULTI_COOP | MISSION_TYPE_MULTI;
-				} else if ( flags == CAMPAIGN_TYPE_MULTI_TEAMS ) {
-					mcip->flags = MISSION_TYPE_MULTI_TEAMS | MISSION_TYPE_MULTI;
-				} else {
-					Int3();			// bogus campaign multi type -- find allender
-				}							
+			strcpy(mcip.filename, filename );
+			strcpy(mcip.name, name );
+			
+			// setup various flags
+			if ( flags == CAMPAIGN_TYPE_MULTI_COOP ){
+				mcip.flags = MISSION_TYPE_MULTI_COOP | MISSION_TYPE_MULTI;
+			} else if ( flags == CAMPAIGN_TYPE_MULTI_TEAMS ) {
+				mcip.flags = MISSION_TYPE_MULTI_TEAMS | MISSION_TYPE_MULTI;
+			} else {
+				Int3();			// bogus campaign multi type -- find allender
+			}							
 
-				// 0 respawns for campaign files (should be contained within the mission files themselves)
-				mcip->respawn = 0;
+			// 0 respawns for campaign files (should be contained within the mission files themselves)
+			mcip.respawn = 0;
 
-				// 0 max players for campaign files
-				mcip->max_players = (unsigned char)max_players;
+			// 0 max players for campaign files
+			mcip.max_players = (unsigned char)max_players;
 
-				// get any additional information for possibly builtin missions
-				fs_builtin_mission *fb = game_find_builtin_mission(filename);
-				if(fb != NULL){					
-				}
+			// get any additional information for possibly builtin missions
+			fs_builtin_mission *fb = game_find_builtin_mission(filename);
+			if(fb != NULL){					
+			}
 
-				Multi_create_campaign_count++;
+			Multi_create_campaign_list.push_back( mcip );
+		}
+	}
+
+	if (file_list) {
+		for (idx = 0; idx < file_count; idx++) {
+			if (file_list[idx]) {
+				vm_free(file_list[idx]);
+				file_list[idx] = NULL;
 			}
 		}
-	}	
-	
+
+		vm_free(file_list);
+		file_list = NULL;
+	}
+
 	// maybe create a standalone dialog
 	if (Game_mode & GM_STANDALONE_SERVER) {
 		std_destroy_gen_dialog();		
@@ -5216,21 +5244,31 @@ void multi_create_list_do()
 	int y_start = Mc_list_coords[gr_screen.res][MC_Y_COORD];		
 
 	start_index = multi_create_select_to_index(Multi_create_list_start);
-	stop_index = Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS ? Multi_create_mission_count : Multi_create_campaign_count;
-	for(idx=start_index; idx<stop_index; idx++){
+	stop_index = (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) ? Multi_create_mission_list.size() : Multi_create_campaign_list.size();
+
+	for (idx = start_index; idx < stop_index; idx++) {
+		multi_create_info *mcip;
+
+		if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
+			mcip = &Multi_create_mission_list[idx];
+		} else {
+			mcip = &Multi_create_campaign_list[idx];
+		}
+		
 		// see if we should drop out
 		if(count == Multi_create_list_max_display[gr_screen.res]){
 			break;
 		}
 
 		// see if we should filter out this mission
-		if ( !(Multi_create_file_list[idx].flags & Multi_create_filter) ){
+		if ( !(mcip->flags & Multi_create_filter) ) {
 			continue;
 		}
 		
 		// highlight the selected item
-		multi_create_select_to_filename(Multi_create_list_select,selected_name);
-		if(!strcmp(selected_name,Multi_create_file_list[idx].filename)){		
+		multi_create_select_to_filename(Multi_create_list_select, selected_name);
+
+		if ( !strcmp(selected_name, mcip->filename) ) {		
 			gr_set_color_fast(&Color_text_selected);
 		} else {
 			gr_set_color_fast(&Color_text_normal);
@@ -5240,20 +5278,20 @@ void multi_create_list_do()
 		multi_create_list_blit_icons(idx, y_start);		
 		
 		// force fit the mission name string
-		strcpy(selected_name,Multi_create_file_list[idx].name);
-		gr_force_fit_string(selected_name,255,Mc_column1_w[gr_screen.res]);
-		gr_string(Mc_mission_name_x[gr_screen.res],y_start,selected_name);
+		strcpy(selected_name, mcip->name);
+		gr_force_fit_string(selected_name, 255, Mc_column1_w[gr_screen.res]);
+		gr_string(Mc_mission_name_x[gr_screen.res], y_start, selected_name);
 
 		// draw the max players if in mission mode		
-		sprintf(selected_name,"%d",(int)Multi_create_file_list[idx].max_players);
-		gr_string(Mc_mission_count_x[gr_screen.res],y_start,selected_name);		
+		sprintf(selected_name, "%d", (int)mcip->max_players);
+		gr_string(Mc_mission_count_x[gr_screen.res], y_start, selected_name);		
 
 		// force fit the mission filename string
-		strcpy(selected_name,Multi_create_file_list[idx].filename);
-		gr_force_fit_string(selected_name,255,Mc_column3_w[gr_screen.res]);
-		gr_string(Mc_mission_fname_x[gr_screen.res],y_start,selected_name);
+		strcpy(selected_name, mcip->filename);
+		gr_force_fit_string(selected_name, 255, Mc_column3_w[gr_screen.res]);
+		gr_string(Mc_mission_fname_x[gr_screen.res], y_start, selected_name);
 
-		y_start+=10;
+		y_start += 10;
 		count++;
 	}
 }
@@ -5265,6 +5303,7 @@ void multi_create_list_select_item(int n)
 	char title[NAME_LENGTH+1];
 	netgame_info ng_temp;
 	netgame_info *ng;
+	multi_create_info *mcip = NULL;
 
 	char *campaign_desc;
 
@@ -5290,26 +5329,33 @@ void multi_create_list_select_item(int n)
 		Multi_create_force_heartbeat = 1;
 
 		// set the mission name
-		if(Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS){
-			multi_create_select_to_filename(n,ng->mission_name);		
+		if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
+			multi_create_select_to_filename(n, ng->mission_name);
 		} else {
-			multi_create_select_to_filename(n,ng->campaign_name);
+			multi_create_select_to_filename(n, ng->campaign_name);
 		}
 
 		// make sure the netgame type is properly set
 		int old_type = Netgame.type_flags;
 		abs_index = multi_create_select_to_index(n);
-		if(abs_index != -1){
-			if(Multi_create_file_list[abs_index].flags & MISSION_TYPE_MULTI_TEAMS){
+
+		if (abs_index != -1) {
+			if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
+				mcip = &Multi_create_mission_list[abs_index];
+			} else {
+				mcip = &Multi_create_campaign_list[abs_index];
+			}
+
+			if (mcip->flags & MISSION_TYPE_MULTI_TEAMS) {
 				// if we're in squad war mode, leave it as squad war
 				if(old_type & NG_TYPE_SW){
 					ng->type_flags = NG_TYPE_SW;
 				} else {
 					ng->type_flags = NG_TYPE_TVT;
 				}
-			} else if(Multi_create_file_list[abs_index].flags & MISSION_TYPE_MULTI_COOP){
+			} else if (mcip->flags & MISSION_TYPE_MULTI_COOP) {
 				ng->type_flags = NG_TYPE_COOP;
-			} else if(Multi_create_file_list[abs_index].flags & MISSION_TYPE_MULTI_DOGFIGHT){
+			} else if (mcip->flags & MISSION_TYPE_MULTI_DOGFIGHT) {
 				ng->type_flags = NG_TYPE_DOGFIGHT;
 			}
 		}
@@ -5344,12 +5390,14 @@ void multi_create_list_select_item(int n)
 			}
 
 			// set the respawns as appropriate
-			if(Netgame.options.respawn <= Multi_create_file_list[abs_index].respawn){
-				ng->respawn = Netgame.options.respawn;
-				nprintf(("Network","Using netgame options for respawn count (%d %d)\n",Netgame.options.respawn,Multi_create_file_list[abs_index].respawn));
-			} else {
-				ng->respawn = Multi_create_file_list[abs_index].respawn;
-				nprintf(("Network","Using mission settings for respawn count (%d %d)\n",Netgame.options.respawn,Multi_create_file_list[abs_index].respawn));
+			if (mcip) {
+				if(Netgame.options.respawn <= mcip->respawn){
+					ng->respawn = Netgame.options.respawn;
+					nprintf(("Network", "Using netgame options for respawn count (%d %d)\n", Netgame.options.respawn, mcip->respawn));
+				} else {
+					ng->respawn = mcip->respawn;
+					nprintf(("Network", "Using mission settings for respawn count (%d %d)\n", Netgame.options.respawn, mcip->respawn));
+				}
 			}
 			break;
 		case MULTI_CREATE_SHOW_CAMPAIGNS:
@@ -5412,11 +5460,17 @@ void multi_create_list_blit_icons(int list_index, int y_start)
 	int max_index;
 
 	// get a pointer to the list item
-	max_index = Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS ? Multi_create_mission_count - 1 : Multi_create_campaign_count - 1;
-	if((list_index < 0) || (list_index > max_index)){
+	max_index = (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) ? Multi_create_mission_list.size() - 1 : Multi_create_campaign_list.size() - 1;
+
+	if ( (list_index < 0) || (list_index > max_index) ) {
 		return;
-	}	
-	mcip = &Multi_create_file_list[list_index];
+	}
+
+	if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
+		mcip = &Multi_create_mission_list[list_index];
+	} else {
+		mcip = &Multi_create_campaign_list[list_index];
+	}
 
 	// blit the multiplayer type icons
 	if(mcip->flags & MISSION_TYPE_MULTI_COOP){
@@ -5628,30 +5682,30 @@ short multi_create_get_mouse_id()
 
 void multi_create_select_to_filename(int select_index,char *filename)
 {
-	int idx;
+	uint idx;
 
 	// look through the mission list
-	if(Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS){
-		for(idx=0;idx<Multi_create_mission_count;idx++){
-			if(Multi_create_file_list[idx].flags & Multi_create_filter){
+	if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
+		for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {
+			if (Multi_create_mission_list[idx].flags & Multi_create_filter) {
 				select_index--;
 			}
 
 			// if we found the item
-			if(select_index < 0){
-				strcpy(filename,Multi_create_file_list[idx].filename);
+			if (select_index < 0) {
+				strcpy(filename, Multi_create_mission_list[idx].filename);
 				return;
 			}
 		}
 	}
 	// look through the campaign list
-	else if(Multi_create_list_mode == MULTI_CREATE_SHOW_CAMPAIGNS){
-		for(idx=0;idx<Multi_create_campaign_count;idx++){
+	else if (Multi_create_list_mode == MULTI_CREATE_SHOW_CAMPAIGNS) {
+		for (idx = 0; idx < Multi_create_campaign_list.size(); idx++) {
 			select_index--;
 
 			// if we found the item
-			if(select_index < 0){
-				strcpy(filename,Multi_create_file_list[idx].filename);
+			if (select_index < 0) {
+				strcpy(filename, Multi_create_campaign_list[idx].filename);
 				return;
 			}		
 		}
@@ -5662,29 +5716,29 @@ void multi_create_select_to_filename(int select_index,char *filename)
 
 int multi_create_select_to_index(int select_index)
 {
-	int idx;
+	uint idx;
 	int lookup_index = 0;
 
 	// look through the mission list
-	if(Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS){
-		for(idx=0;idx<Multi_create_mission_count;idx++){
-			if(Multi_create_file_list[idx].flags & Multi_create_filter){
+	if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
+		for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {
+			if (Multi_create_mission_list[idx].flags & Multi_create_filter) {
 				lookup_index++;
 			} 
 
 			// if we found the item
-			if(select_index < lookup_index){				
+			if (select_index < lookup_index) {				
 				return idx;
 			}
 		}
 	}
 	// look through the campaign list
-	else if(Multi_create_list_mode == MULTI_CREATE_SHOW_CAMPAIGNS){
-		for(idx=0;idx<Multi_create_campaign_count;idx++){
+	else if (Multi_create_list_mode == MULTI_CREATE_SHOW_CAMPAIGNS) {
+		for (idx = 0; idx < Multi_create_campaign_list.size(); idx++) {
 			select_index--;
 
 			// if we found the item
-			if(select_index < 0){				
+			if (select_index < 0) {				
 				return idx;
 			}		
 		}
@@ -5847,7 +5901,7 @@ int multi_create_ok_to_commit()
 	// if we're playing on the tracker
 	if(MULTI_IS_TRACKER_GAME){
 //#ifdef PXO_CHECK_VALID_MISSIONS		
-		if((Multi_create_file_list == Multi_create_mission_list) && (Multi_create_file_list[abs_index].valid_status != MVALID_STATUS_VALID)){
+		if ( (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) && (Multi_create_mission_list[abs_index].valid_status != MVALID_STATUS_VALID) ) {
 			if(popup(PF_USE_AFFIRMATIVE_ICON | PF_USE_NEGATIVE_ICON, 2, XSTR("&Back", 995), XSTR("&Continue", 780), XSTR("You have selected a mission which is either invalid or unknown to PXO. Your stats will not be saved if you continue",996)) <= 0){
 				return 0;
 			}
@@ -5906,10 +5960,10 @@ int multi_create_verify_cds()
 // returns an index into Multi_create_mission_list
 int multi_create_lookup_mission(char *fname)
 {
-	int idx;
+	uint idx;
 
-	for(idx=0; idx<Multi_create_mission_count; idx++){
-		if(!stricmp(fname, Multi_create_mission_list[idx].filename)){
+	for (idx = 0; idx < Multi_create_mission_list.size(); idx++) {
+		if ( !stricmp(fname, Multi_create_mission_list[idx].filename) ) {
 			return idx;
 		}
 	}
@@ -5921,10 +5975,10 @@ int multi_create_lookup_mission(char *fname)
 // returns an index into Multi_create_campaign_list
 int multi_create_lookup_campaign(char *fname)
 {
-	int idx;
+	uint idx;
 
-	for(idx=0; idx<Multi_create_campaign_count; idx++){
-		if(!stricmp(fname, Multi_create_campaign_list[idx].filename)){
+	for (idx = 0; idx < Multi_create_campaign_list.size(); idx++) {
+		if ( !stricmp(fname, Multi_create_campaign_list[idx].filename) ) {
 			return idx;
 		}
 	}
@@ -5947,8 +6001,25 @@ void multi_create_sw_clicked()
 {
 	netgame_info ng_temp;
 	netgame_info *ng;
+	multi_create_info *mcip;
 
 	int file_index = multi_create_select_to_index(Multi_create_list_select);
+
+	if (file_index < 0) {
+		Int3();
+
+		if ( Multi_create_sw_checkbox.checked() ) {
+			Multi_create_sw_checkbox.set_state(0);
+		}
+
+		return;
+	}
+
+	if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
+		mcip = &Multi_create_mission_list[file_index];
+	} else {
+		mcip = &Multi_create_campaign_list[file_index];
+	}
 
 	// either a temporary netgame or the real one
 	if(MULTIPLAYER_MASTER){
@@ -5961,13 +6032,10 @@ void multi_create_sw_clicked()
 	// maybe switch squad war off
 	if(!Multi_create_sw_checkbox.checked()){
 		// if the mission selected is a coop mission, go back to coop mode
-		Assert(file_index != -1);
-		if(file_index == -1){
-			ng->type_flags = NG_TYPE_COOP;			
-		}		
-		if(Multi_create_file_list[file_index].flags & MISSION_TYPE_MULTI_TEAMS){
+
+		if (mcip->flags & MISSION_TYPE_MULTI_TEAMS) {
 			ng->type_flags = NG_TYPE_TVT;
-		} else if(Multi_create_file_list[file_index].flags & MISSION_TYPE_MULTI_DOGFIGHT){
+		} else if (mcip->flags & MISSION_TYPE_MULTI_DOGFIGHT) {
 			ng->type_flags = NG_TYPE_DOGFIGHT;
 		} else {
 			ng->type_flags = NG_TYPE_COOP;
@@ -5975,13 +6043,8 @@ void multi_create_sw_clicked()
 	}
 	// switch squad war on
 	else {
-		Assert(file_index != -1);
-		if((file_index == -1) || !(Multi_create_file_list[file_index].flags & MISSION_TYPE_MULTI_TEAMS)){			
-			Multi_create_sw_checkbox.set_state(0);			
-		} else {
-			// at this point we know its safe to switch squad war on
-			ng->type_flags = NG_TYPE_SW;
-		}
+		// at this point we know its safe to switch squad war on
+		ng->type_flags = NG_TYPE_SW;
 	}
 
 	// update 
@@ -6415,7 +6478,11 @@ void multi_host_options_init()
 
 		// if he has a valid mission selected
 		if(abs_index >= 0){
-			Multi_ho_mission_respawn = (int)Multi_create_file_list[abs_index].respawn;
+			if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
+				Multi_ho_mission_respawn = (int)Multi_create_mission_list[abs_index].respawn;
+			} else {
+				Multi_ho_mission_respawn = (int)Multi_create_campaign_list[abs_index].respawn;
+			}
 		} else {
 			Multi_ho_mission_respawn = -1;
 		}

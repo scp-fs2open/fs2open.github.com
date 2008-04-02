@@ -334,6 +334,10 @@
 
 #include "globalincs/globals.h"
 #include "ui/ui.h"
+#include "network/multi.h"
+
+#include <vector>
+
 
 struct net_player;
 struct net_addr;
@@ -350,20 +354,19 @@ void multi_common_set_text(char *str,int auto_scroll = 0);
 #define MULTI_JOIN_SERVER_TIMEOUT			(MULTI_JOIN_REFRESH_TIME + (MULTI_JOIN_REFRESH_TIME /2))
 #define MULTI_JOIN_SERVER_TIMEOUT_LOCAL	(MULTI_JOIN_REFRESH_TIME_LOCAL + (MULTI_JOIN_REFRESH_TIME_LOCAL / 2))
 
-// maximum number of items which can be on the list
-#if defined(DEMO) || defined(OEM_BUILD) // not for FS2_DEMO
-	#define MULTI_CREATE_MAX_LIST_ITEMS			1
-#else
-	#define MULTI_CREATE_MAX_LIST_ITEMS			200
-#endif
 
-typedef struct {
+typedef struct multi_create_info {
 	char		filename[MAX_FILENAME_LEN];	// filename of the mission
 	char		name[NAME_LENGTH];				// name of the mission
 	int		flags;								// flags to tell what type of multiplayer game (coop, team v. team)
 	uint     respawn;								//	mission specified respawn count
 	ubyte		max_players;						// max players allowed for this file	
 	char		valid_status;						// see MVALID_* defines above
+
+	multi_create_info() {
+		memset(this, 0, sizeof(multi_create_info));
+		valid_status = MVALID_STATUS_UNKNOWN;
+	}
 } multi_create_info;
 
 // load all common icons
@@ -399,13 +402,8 @@ void multi_common_unload_palette();
 void multi_common_verify_cd();
 
 // variables to hold the mission and campaign lists
-extern int Multi_create_mission_count;										// how many we have
-extern int Multi_create_campaign_count;
-extern multi_create_info Multi_create_mission_list[MULTI_CREATE_MAX_LIST_ITEMS];
-extern multi_create_info Multi_create_campaign_list[MULTI_CREATE_MAX_LIST_ITEMS];
-
-extern char Multi_create_files_array[MULTI_CREATE_MAX_LIST_ITEMS][MAX_FILENAME_LEN];
-extern int Multi_create_files_array_count;
+extern std::vector<multi_create_info> Multi_create_mission_list;
+extern std::vector<multi_create_info> Multi_create_campaign_list;
 
 void multi_create_list_load_missions();
 void multi_create_list_load_campaigns();

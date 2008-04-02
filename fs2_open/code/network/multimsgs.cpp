@@ -4103,7 +4103,7 @@ void send_mission_items( net_player *pl )
 	// reaching a certain maximum
 	type = MISSION_LIST_ITEMS;
 	ADD_DATA( type );
-	for (i = 0; i < Multi_create_mission_count; i++ ) {		
+	for (i = 0; i < (int)Multi_create_mission_list.size(); i++ ) {		
 		stop = 0;
 		ADD_DATA( stop );
 
@@ -4132,7 +4132,7 @@ void send_mission_items( net_player *pl )
 	type = CAMPAIGN_LIST_ITEMS;
 	BUILD_HEADER(MISSION_ITEM);
 	ADD_DATA( type );
-	for (i = 0; i < Multi_create_campaign_count; i++ ) {		
+	for (i = 0; i < (int)Multi_create_campaign_list.size(); i++ ) {		
 		stop = 0;
 		ADD_DATA( stop );
 
@@ -4179,6 +4179,7 @@ void process_mission_item_packet(ubyte *data,header *hinfo)
 	char filename[MAX_FILENAME_LEN], name[NAME_LENGTH], valid_status;
 	ubyte stop, type,max_players;
 	uint respawn;
+	multi_create_info mcip;
 
 	Assert(gameseq_get_state() == GS_STATE_MULTI_HOST_SETUP);
 	offset = HEADER_LENGTH;
@@ -4198,27 +4199,24 @@ void process_mission_item_packet(ubyte *data,header *hinfo)
 			// STANDALONE_ONLY			
 			GET_DATA(valid_status);
 
-			if ( Multi_create_mission_count < MULTI_CREATE_MAX_LIST_ITEMS ) {
-				strcpy(Multi_create_mission_list[Multi_create_mission_count].filename, filename );
-				strcpy(Multi_create_mission_list[Multi_create_mission_count].name, name );
-				Multi_create_mission_list[Multi_create_mission_count].flags = flags;
-				Multi_create_mission_list[Multi_create_mission_count].respawn = respawn;
-				Multi_create_mission_list[Multi_create_mission_count].max_players = max_players;
+			strcpy(mcip.filename, filename );
+			strcpy(mcip.name, name );
+			mcip.flags = flags;
+			mcip.respawn = respawn;
+			mcip.max_players = max_players;
 
-				// STANDALONE_ONLY				
-				Multi_create_mission_list[Multi_create_mission_count].valid_status = valid_status;
+			// STANDALONE_ONLY				
+			mcip.valid_status = valid_status;
 
-				Multi_create_mission_count++;
-			}
+			Multi_create_mission_list.push_back( mcip );
 		} else if ( type == CAMPAIGN_LIST_ITEMS ) {
-			if ( Multi_create_campaign_count < MULTI_CREATE_MAX_LIST_ITEMS ) {
-				strcpy(Multi_create_campaign_list[Multi_create_campaign_count].filename, filename );
-				strcpy(Multi_create_campaign_list[Multi_create_campaign_count].name, name );
-				Multi_create_campaign_list[Multi_create_campaign_count].flags = flags;
-				Multi_create_campaign_list[Multi_create_campaign_count].respawn = 0;
-				Multi_create_campaign_list[Multi_create_campaign_count].max_players = max_players;
-				Multi_create_campaign_count++;
-			}
+			strcpy(mcip.filename, filename );
+			strcpy(mcip.name, name );
+			mcip.flags = flags;
+			mcip.respawn = 0;
+			mcip.max_players = max_players;
+
+			Multi_create_campaign_list.push_back( mcip );
 		}
 
 		GET_DATA( stop );
