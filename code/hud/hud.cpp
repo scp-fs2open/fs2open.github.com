@@ -1986,7 +1986,7 @@ void HUD_render_2d(float frametime)
 			}
 			
 			if ( show_gauge_flag ) {
-				hud_show_cmeasure_gague();
+				hud_show_cmeasure_gauge();
 			}
 		}
 
@@ -3498,7 +3498,7 @@ void HUD_set_offsets(object *viewer_obj, int wiggedy_wack, matrix *eye_orient)
 		
 		flags = g3_rotate_vertex(&pt,&tmp);
 
-		g3_project_vertex(&pt); 
+		g3_project_vertex(&pt);
 
 		gr_unsize_screen_posf( &pt.sx, &pt.sy );
 		HUD_offset_x -= 0.45f * (i2fl(gr_screen.clip_width_unscaled)*0.5f - pt.sx);
