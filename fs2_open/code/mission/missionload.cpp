@@ -299,7 +299,7 @@ int mission_load(char *filename_ext)
 	mprintf(("MISSION LOAD: '%s'\n", filename_ext));
 
 	strncpy(filename, filename_ext, 127);
-	ext = strchr(filename, '.');
+	ext = strrchr(filename, '.');
 	if (ext) {
 		mprintf(( "Hmmm... Extension passed to mission_load...\n" ));
 		*ext = 0;				// remove any extension!

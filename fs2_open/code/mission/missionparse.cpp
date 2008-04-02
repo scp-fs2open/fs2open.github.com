@@ -6062,7 +6062,7 @@ int get_mission_info(char *filename, mission *mission_p, bool basic)
 {
 	char real_fname[MAX_FILENAME_LEN];
 	strcpy(real_fname, filename);
-	char *p = strchr(real_fname, '.');
+	char *p = strrchr(real_fname, '.');
 	if (p) *p = 0; // remove any extension
 	strcat(real_fname, FS_MISSION_FILE_EXT);  // append mission extension
 
