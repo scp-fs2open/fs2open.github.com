@@ -4020,10 +4020,27 @@ int Multi_create_should_show_popup = 0;
 
 int Multi_create_force_heartbeat = 0;			// to force a master heardbeat packet be sent (rather than waiting for timeout)
 
+bool Multi_create_sort_mode = false;		// default to mission name sorting, "true" is mission filename sorting
+
+
 // sorting function to sort mission lists.. Basic sorting on mission name
 bool multi_create_sort_func(const multi_create_info &m1, const multi_create_info &m2)
 {
-	int test = strcmp(m1.name, m2.name);
+	if (Multi_create_filter != MISSION_TYPE_MULTI) {
+		if ( (m1.flags & Multi_create_filter) && !(m2.flags & Multi_create_filter) ) {
+			return false;
+		} else if ( (m2.flags & Multi_create_filter) && !(m1.flags & Multi_create_filter) ) {
+			return true;
+		}
+	}
+
+	int test = 0;
+
+	if (Multi_create_sort_mode) {
+		test = stricmp(m1.filename, m2.filename);
+	} else {
+		test = stricmp(m1.name, m2.name);
+	}
 
 	if (test < 0) {
 		return true;
@@ -4031,6 +4048,40 @@ bool multi_create_sort_func(const multi_create_info &m1, const multi_create_info
 		return false;
 	} else {
 		return true;
+	}
+}
+
+void multi_create_list_sort(int mode)
+{
+	bool sort_missions = false;
+	bool sort_campaigns = false;
+
+	if (Multi_create_list_count < 0) {
+		return;
+	}
+
+	switch (mode) {
+		case MULTI_CREATE_SHOW_MISSIONS:
+			sort_missions = true;
+			break;
+
+		case MULTI_CREATE_SHOW_CAMPAIGNS:
+			sort_campaigns = true;
+			break;
+
+		default:
+			sort_missions = true;
+			sort_campaigns = true;
+			break;
+	}
+
+
+	if (sort_missions) {
+		std::sort( Multi_create_mission_list.begin(), Multi_create_mission_list.end(), multi_create_sort_func);
+	}
+
+	if (sort_campaigns) {
+		std::sort( Multi_create_campaign_list.begin(), Multi_create_campaign_list.end(), multi_create_sort_func);
 	}
 }
 
@@ -4051,6 +4102,11 @@ void multi_create_setup_list_data(int mode)
 		switch (Multi_create_filter) {
 			case MISSION_TYPE_MULTI:
 				Multi_create_list_count = (int)Multi_create_mission_list.size();
+
+				// if we switched modes and we have more than 0 items, sort them
+				if (switched_modes && (Multi_create_list_count > 0)){
+					should_sort = 1;
+				}
 				break;
 
 			default : 
@@ -4074,6 +4130,11 @@ void multi_create_setup_list_data(int mode)
 		switch (Multi_create_filter) {
 			case MISSION_TYPE_MULTI:
 				Multi_create_list_count = (int)Multi_create_campaign_list.size();
+
+				// if we switched modes and we have more than 0 items, sort them
+				if (switched_modes && (Multi_create_list_count > 0)){
+					should_sort = 1;
+				}
 				break;
 
 			default :
@@ -4093,19 +4154,15 @@ void multi_create_setup_list_data(int mode)
 				break;
 			}
 	}
-	
+
 	// reset the list start and selected indices
 	Multi_create_list_start = 0;
 	Multi_create_list_select = -1;
 	multi_create_list_select_item(Multi_create_list_start);	
 
 	// sort the list of missions if necessary
-	if( should_sort ) {
-		if (Multi_create_list_mode == MULTI_CREATE_SHOW_MISSIONS) {
-			std::sort( Multi_create_mission_list.begin(), Multi_create_mission_list.begin() + Multi_create_list_count, multi_create_sort_func);
-		} else {
-			std::sort( Multi_create_campaign_list.begin(), Multi_create_campaign_list.begin() + Multi_create_list_count, multi_create_sort_func);
-		}
+	if (should_sort) {
+		multi_create_list_sort(mode);
 	}
 
 	// reset the slider
@@ -4330,7 +4387,9 @@ void multi_create_game_do()
 			}
 
 			// update the file list
-			multi_create_setup_list_data(MULTI_CREATE_SHOW_MISSIONS);						
+			multi_create_setup_list_data(MULTI_CREATE_SHOW_MISSIONS);
+			// the above function doesn't sort initially, so we need this to take care of it
+			multi_create_list_sort(MULTI_CREATE_SHOW_MISSIONS);
 		}
 
 		// don't bother setting netgame state if ont the server
@@ -4352,15 +4411,22 @@ void multi_create_game_do()
 	k = Multi_create_window.process(k,0);
 
 	switch(k){	
-	// same as the cancel button
-	case KEY_ESC:
-		if(help_overlay_active(MULTI_CREATE_OVERLAY)){
-			help_overlay_set_state(MULTI_CREATE_OVERLAY,0);
-		} else {		
-			gamesnd_play_iface(SND_USER_SELECT);		
-			multi_quit_game(PROMPT_HOST);		
+		// same as the cancel button
+		case KEY_ESC: {
+			if ( help_overlay_active(MULTI_CREATE_OVERLAY) ) {
+				help_overlay_set_state(MULTI_CREATE_OVERLAY, 0);
+			} else {		
+				gamesnd_play_iface(SND_USER_SELECT);		
+				multi_quit_game(PROMPT_HOST);		
+			}
+
+			break;
 		}
-		break;	
+
+		case KEY_CTRLED | KEY_SHIFTED | KEY_S:
+			Multi_create_sort_mode = !Multi_create_sort_mode;
+			multi_create_list_sort(Multi_create_list_mode);
+			break;
 	}	
 
 	if ( mouse_down(MOUSE_LEFT_BUTTON) ) {
