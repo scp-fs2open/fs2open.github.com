@@ -2499,7 +2499,8 @@ flag_def_list Subsystem_flags[] = {
 	{ "untargetable",		MSS_FLAG_UNTARGETABLE,		0 },
 	{ "carry no damage",	MSS_FLAG_CARRY_NO_DAMAGE,	0 },
 	{ "use multiple guns",	MSS_FLAG_USE_MULTIPLE_GUNS,	0 },
-	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL,	0 }
+	{ "fire down normals",	MSS_FLAG_FIRE_ON_NORMAL,	0 },
+	{ "check hull",			MSS_FLAG_TURRET_HULL_CHECK,	0 }
 };
 
 int Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list);
