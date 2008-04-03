@@ -1326,17 +1326,26 @@ int fs2netd_get_pilot_info(const char *callsign, player *out_plr, bool first_cal
 		strncpy( new_plr.callsign, callsign, CALLSIGN_LEN );
 
 		memset( out_plr, 0, sizeof(player) );
+
+		timeout = timer_get_fixed_seconds() + (30 * F1_0);
 	}
 
 	int rc = FS2NetD_GetPlayerData(-2, callsign, &new_plr, false, (int)first_call );
 
 	// some sort of failure
 	if (rc > 0) {
+		timeout = -1;
 		return -2;
 	}
 
 	if (rc == 0) {
 		memcpy( out_plr, &new_plr, sizeof(player) );
+	}
+
+	// if timeout passes then bail on failure
+	if ( timer_get_fixed_seconds() > timeout ) {
+		timeout = -1;
+		return -2;
 	}
 
 	// we should only be returning -1 (processing) or 0 (got data successfully)
