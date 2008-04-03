@@ -4383,6 +4383,8 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 		if (p_objp->wingnum != wingnum)
 			continue;
 
+		Assert( (p_objp->pos_in_wing >= 0) && (p_objp->pos_in_wing < MAX_SHIPS_PER_WING) );
+	
 		// when ingame joining, we need to create a specific ship out of the list of ships for a
 		// wing.  specific_instance is a 0 based integer which specified which ship in the wing
 		// to create.  So, only create the ship we actually need to.
@@ -4434,16 +4436,10 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			aip->ai_flags |= AIF_NO_DYNAMIC;
 
 		// update housekeeping variables
-		wingp->ship_index[wingp->current_count] = Objects[objnum].instance;
-
-		// since wing order and object order aren't necessarily the same thing
-		// be sure to reset the special ship to the correct ship_index[] offset
-		if (p_objp->special_ship) {
-			wingp->special_ship = wingp->current_count;
-		}
+		wingp->ship_index[p_objp->pos_in_wing] = Objects[objnum].instance;
 
 		// set up wingman status index
-		hud_wingman_status_set_index(wingp->ship_index[wingp->current_count]);
+		hud_wingman_status_set_index(wingp->ship_index[p_objp->pos_in_wing]);
 
 		p_objp->wing_status_wing_index = Ships[Objects[objnum].instance].wing_status_wing_index;
 		p_objp->wing_status_wing_pos = Ships[Objects[objnum].instance].wing_status_wing_pos;
@@ -4497,6 +4493,24 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 	// we should always have enough ships in the list!!!
 	Assert (num_to_create == 0);
 
+	// wing current_count needs to match the end of the ship_index[] list, but there
+	// is a very off chance it could have holes in it, so make sure to compact the list
+	for (i = 0; i < (MAX_SHIPS_PER_WING-1); i++) {
+		if (wingp->ship_index[i] == -1) {
+			j = i;
+			while ( j < (MAX_SHIPS_PER_WING-1) ) {
+				wingp->ship_index[j] = wingp->ship_index[j+1];
+
+				// update "special" ship too
+				if (wingp->special_ship == j+1) {
+					wingp->special_ship--;
+				}
+
+				j++;
+			}
+		}
+	}
+			
 	// possibly play some event driven music here.  Send a network packet indicating the wing was
 	// created.  Only do this stuff if actually in the mission.
 	if ( (objnum != -1) && (Game_mode & GM_IN_MISSION) ) {		// if true, we have created at least one new ship.
@@ -4861,7 +4875,6 @@ void parse_wing(mission *pm)
 
 				p_objp->wingnum = wingnum;
 				p_objp->pos_in_wing = i;
-				p_objp->special_ship = (i == wingp->special_ship) ? true : false;
 
 				assigned++;
 			}
