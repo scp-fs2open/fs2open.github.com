@@ -1880,7 +1880,7 @@ void beam_render(beam *b, float u_offset)
 	}		
 	
 	// turn backface culling back on
-	gr_set_cull(cull);	
+	gr_set_cull(cull);
 }
 
 // generate particles for the muzzle glow
@@ -1947,13 +1947,13 @@ void beam_generate_muzzle_particles(beam *b)
 		vm_vec_add2(&particle_pos, &b->objp->pos);
 		p_temp = particle_dir;
 		vm_vec_unrotate(&particle_dir, &p_temp, &b->objp->orient);
-		vm_vec_add2(&particle_dir, &b->objp->phys_info.vel);	//move along with our parent
 
 		// now generate some interesting values for the particle
 		float p_time_ref = wip->b_info.beam_life + ((float)wip->b_info.beam_warmup / 1000.0f);		
 		float p_life = frand_range(p_time_ref * 0.5f, p_time_ref * 0.7f);
 		float p_vel = (wip->b_info.beam_muzzle_radius / p_life) * frand_range(0.85f, 1.2f);
 		vm_vec_scale(&particle_dir, -p_vel);
+		vm_vec_add2(&particle_dir, &b->objp->phys_info.vel);	//move along with our parent
 
 		memset(&pinfo, 0, sizeof(particle_info));
 		pinfo.pos = particle_pos;
