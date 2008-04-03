@@ -4821,8 +4821,8 @@ void gr_opengl_init(int reinit)
 	if ( !Cmdline_nohtl && !Cmdline_novbo && Is_Extension_Enabled(OGL_ARB_VERTEX_BUFFER_OBJECT) )
 		VBO_ENABLED = 1;
 
-	if ( Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) )
-		Use_PBOs = 1;
+	//if ( Is_Extension_Enabled(OGL_ARB_PIXEL_BUFFER_OBJECT) )
+	//	Use_PBOs = 1;
 
 	// setup the best fog function found
 	// start with NV Radial Fog (GeForces only)  -- needs t&l, will have to wait
