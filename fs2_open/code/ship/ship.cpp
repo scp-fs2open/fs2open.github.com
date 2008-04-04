@@ -9353,6 +9353,22 @@ void ship_model_change(int n, int ship_type)
 		}
 	}
 
+	if (sp->shield_integrity != NULL) {
+		vm_free(sp->shield_integrity);
+		sp->shield_integrity = NULL;
+	}
+
+	//	Allocate shield and initialize it.
+	if (pm->shield.ntris) {
+		sp->shield_integrity = (float *) vm_malloc(sizeof(float) * pm->shield.ntris);
+
+		for (i = 0; i < pm->shield.ntris; i++) {
+			sp->shield_integrity[i] = 1.0f;
+		}
+	} else {
+		sp->shield_integrity = NULL;
+	}
+
 	for (i=0; i<sip->num_detail_levels; i++ )	{
 		pm->detail_depth[i] = i2fl(sip->detail_distance[i]);
 	}
@@ -9373,6 +9389,7 @@ void ship_model_change(int n, int ship_type)
 void change_ship_type(int n, int ship_type, int by_sexp)
 {
 	ship_info	*sip;
+	ship_info	*sip_orig;
 	ship			*sp;
 	object		*objp;
 	float hull_pct, shield_pct;
@@ -9380,6 +9397,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	Assert( n >= 0 && n < MAX_SHIPS );
 	sp = &Ships[n];
 	sip = &(Ship_info[ship_type]);
+	sip_orig = &Ship_info[sp->ship_info_index];
 	objp = &Objects[sp->objnum];
 
 	// Goober5000 - maintain the original hull and shield percentages when called by sexp
@@ -9412,11 +9430,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// Goober5000 - extra checks
 	Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
 	Assert(shield_pct >= 0.0f && shield_pct <= 1.0f);
-	if (hull_pct <= 0.0f) hull_pct = 0.1f;
-	if (hull_pct > 1.0f) hull_pct = 1.0f;
-	if (shield_pct < 0.0f) shield_pct = 0.0f;
-	if (shield_pct > 1.0f) shield_pct = 1.0f;
-
+	CLAMP(hull_pct, 0.1f, 1.0f);
+	CLAMP(shield_pct, 0.0f, 1.0f);
 
 	// point to new ship data
 	ship_model_change(n, ship_type);
@@ -9424,7 +9439,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	//WMC - set warp effects
 	ship_set_warp_effects(objp, sip);
-
 
 	// set the correct hull strength
 	if (Fred_running) {
@@ -9453,14 +9467,17 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->ship_max_shield_strength = sip->max_shield_strength;
 		}
 
+		// make sure that shields are enabled if they need to be
+		if (sp->ship_max_shield_strength > 0.0f) {
+			objp->flags &= ~OF_NO_SHIELDS;
+		}
+
 		shield_set_strength(objp, shield_pct * sp->ship_max_shield_strength);
 	}
-
 
 	// Goober5000: div-0 checks
 	Assert(sp->ship_max_hull_strength > 0.0f);
 	Assert(objp->hull_strength > 0.0f);
-
 
 	// subsys stuff done only after hull stuff is set
 
@@ -9470,7 +9487,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// fix up the subsystems
 	subsys_set( sp->objnum );
 
-	sp->afterburner_fuel = sip->afterburner_fuel_capacity;
+	sp->afterburner_fuel = MAX(0, sip->afterburner_fuel_capacity - (sip_orig->afterburner_fuel_capacity - sp->afterburner_fuel));
+
+	sp->cmeasure_count = MAX(0, sip->cmeasure_max - (sip_orig->cmeasure_max - sp->cmeasure_count));
+
+	sp->current_max_speed = sip->max_speed * (sp->current_max_speed / sip_orig->max_speed);
 
 	ship_set_default_weapons(sp, sip);
 	physics_ship_init(&Objects[sp->objnum]);
@@ -9482,7 +9503,9 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// above removed by Goober5000 in favor of new ship_set_new_ai_class function :)
 	ship_set_new_ai_class(n, sip->ai_class);
-	
+
+	model_anim_set_initial_states(sp);
+
 	//======================================================
 
 	// Bobboau's thruster stuff again
