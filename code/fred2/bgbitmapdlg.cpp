@@ -1384,15 +1384,18 @@ void bg_bitmap_dlg::OnImportBackground()
 	Mp = saved_mp;
 
 	// pick one (if count is 0, it's retail with just one background)
-	if (count > 1)
+	if (count > 0)
 	{
-		int i, which;
+		int i, which = 0;
 
-		BackgroundChooser dlg(count);
-		if (dlg.DoModal() == IDCANCEL)
-			return;
+		if (count > 1)
+		{
+			BackgroundChooser dlg(count);
+			if (dlg.DoModal() == IDCANCEL)
+				return;
 
-		which = dlg.GetChosenBackground();
+			which = dlg.GetChosenBackground();
+		}
 
 		for (i = 0; i < which + 1; i++)
 			skip_to_string("$Bitmap List:");
