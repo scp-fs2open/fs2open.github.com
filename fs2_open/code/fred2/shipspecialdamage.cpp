@@ -132,6 +132,7 @@ BOOL ShipSpecialDamage::OnInitDialog()
 		m_special_exp_enabled = TRUE;
 	}
 
+
 	CDialog::OnInitDialog();
 
 	// maybe gray out lots of stuff
@@ -163,6 +164,25 @@ void ShipSpecialDamage::OnOK()
 {
 	UpdateData(TRUE);
 
+	object *objp;
+
+	objp = GET_FIRST(&obj_used_list);
+	while (objp != END_OF_LIST(&obj_used_list)) {
+		if ((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) {
+			if (objp->flags & OF_MARKED)
+				update_ship(objp->instance);
+		}
+
+		objp = GET_NEXT(objp);
+	}
+
+	CDialog::OnOK();
+}
+
+void ShipSpecialDamage::update_ship(int shipnum)
+{
+	ship *shipp = &Ships[shipnum];
+
 	// TODO: Add extra validation here
 	if (m_special_exp_enabled) {
 
@@ -173,17 +193,17 @@ void ShipSpecialDamage::OnOK()
 			return;
 		}
 
-		if (Ships[m_ship_num].special_exp_index == -1) {
+		if (shipp->special_exp_index == -1) {
 			// get free sexp_variables
-			start = sexp_variable_allocate_block(Ships[m_ship_num].ship_name, SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_EXP);
+			start = sexp_variable_allocate_block(shipp->ship_name, SEXP_VARIABLE_BLOCK | SEXP_VARIABLE_BLOCK_EXP);
 			if (start == -1) {
 				MessageBox("Unable to allocate storage, try deleting Sexp variables");
 				return;
 			} else {
-				Ships[m_ship_num].special_exp_index = start;
+				shipp->special_exp_index = start;
 			}
 		} else {
-			start = Ships[m_ship_num].special_exp_index;
+			start = shipp->special_exp_index;
 		}
 		// set to update
 		set_modified();
@@ -197,17 +217,16 @@ void ShipSpecialDamage::OnOK()
 		sprintf(Sexp_variables[start+SHOCK_SPEED].text, "%d", m_shock_speed);
 
 	} else {
-		if (Ships[m_ship_num].special_exp_index != -1) {
+		if (shipp->special_exp_index != -1) {
 			// set to update
 			set_modified();
 
 			// free block
-			sexp_variable_block_free(Ships[m_ship_num].ship_name, Ships[m_ship_num].special_exp_index, SEXP_VARIABLE_BLOCK |SEXP_VARIABLE_BLOCK_EXP);
+			sexp_variable_block_free(shipp->ship_name, Ships[m_ship_num].special_exp_index, SEXP_VARIABLE_BLOCK |SEXP_VARIABLE_BLOCK_EXP);
 
 			// set index to no exp block
-			Ships[m_ship_num].special_exp_index = -1;
+			shipp->special_exp_index = -1;
 		}
 	}
-
-	CDialog::OnOK();
 }
+

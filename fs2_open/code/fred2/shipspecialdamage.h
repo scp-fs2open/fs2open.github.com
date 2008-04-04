@@ -24,6 +24,7 @@ class ShipSpecialDamage : public CDialog
 // Construction
 public:
 	ShipSpecialDamage(CWnd* pParent = NULL);   // standard constructor
+	void update_ship(int ship);
 
 // Dialog Data
 	//{{AFX_DATA(ShipSpecialDamage)
