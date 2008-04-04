@@ -3341,7 +3341,7 @@ int parse_ship(char *filename, bool replace)
 		stuff_vector(&sip->max_vel);
 
 	// calculate the max speed from max_velocity
-	sip->max_speed = vm_vec_mag(&sip->max_vel);
+	sip->max_speed = sip->max_vel.xyz.z;	//vm_vec_mag(&sip->max_vel);
 
 	if(optional_string("$Rotation Time:"))
 	{
