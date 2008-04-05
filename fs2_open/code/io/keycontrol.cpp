@@ -2354,7 +2354,49 @@ int button_function_critical(int n, net_player *p = NULL)
 			return 0;
 	}
 	
-	switch (n) {				
+	switch (n) {
+		// cycle to next primary weapon
+		case CYCLE_NEXT_PRIMARY:			
+			if (at_self) {
+				control_used(CYCLE_NEXT_PRIMARY);
+			}
+
+			hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
+			if (ship_select_next_primary(Player_obj, CYCLE_PRIMARY_NEXT)) {
+				ship* shipp = &Ships[objp->instance];
+				if ( timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank]) ) {
+					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(250);	//	1/4 second delay until can fire
+				}
+
+				// multiplayer server should maintain bank/link status here
+				if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+					Assert(npl != NULL);
+					multi_server_update_player_weapons(npl,shipp);										
+				}
+			}			
+			break;
+
+		// cycle to previous primary weapon
+		case CYCLE_PREV_PRIMARY:
+			if (at_self) {
+				control_used(CYCLE_PREV_PRIMARY);
+			}
+
+			hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
+			if (ship_select_next_primary(objp, CYCLE_PRIMARY_PREV)) {
+				ship* shipp = &Ships[objp->instance];
+				if ( timestamp_elapsed(shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank]) ) {
+					shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(250);	//	1/4 second delay until can fire
+				}
+
+				// multiplayer server should maintain bank/link status here
+				if ( (Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER) ) {
+					Assert(npl != NULL);
+					multi_server_update_player_weapons(npl,shipp);										
+				}
+			}			
+			break;
+
 		// cycle to next secondary weapon
 		case CYCLE_SECONDARY:
 			if(at_self)
@@ -2821,41 +2863,12 @@ int button_function(int n)
 	switch (n) {
 		// cycle to next primary weapon
 		case CYCLE_NEXT_PRIMARY:			
-			// bogus?
-			if((Player_obj == NULL) || (Player_ship == NULL)){
-				break;
-			}
-
-			hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
-			if (ship_select_next_primary(Player_obj, CYCLE_PRIMARY_NEXT)) {
-				ship* shipp = Player_ship;
-				shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(250);	//	1/4 second delay until can fire				
-				// multiplayer server should maintain bank/link status here
-				// if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-//					Assert(npl != NULL);
-//					multi_server_update_player_weapons(npl,shipp);										
-//				}					
-			}			
+			return button_function_critical(CYCLE_NEXT_PRIMARY);
 			break;
 
 		// cycle to previous primary weapon
 		case CYCLE_PREV_PRIMARY:			
-			// bogus?
-			if((Player_obj == NULL) || (Player_ship == NULL)){
-				break;
-			}
-
-			hud_gauge_popup_start(HUD_WEAPONS_GAUGE);
-			if (ship_select_next_primary(Player_obj, CYCLE_PRIMARY_PREV)) {
-				ship* shipp = Player_ship;
-				shipp->weapons.next_primary_fire_stamp[shipp->weapons.current_primary_bank] = timestamp(250);	//	1/4 second delay until can fire
-
-				// multiplayer server should maintain bank/link status here
-				// if((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)){
-					// Assert(npl != NULL);
-					// multi_server_update_player_weapons(npl,shipp);										
-				// }					
-			}			
+			return button_function_critical(CYCLE_PREV_PRIMARY);
 			break;
 
 		// cycle to next secondary weapon
