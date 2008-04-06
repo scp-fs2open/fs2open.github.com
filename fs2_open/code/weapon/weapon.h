@@ -760,6 +760,15 @@ typedef struct beam_weapon_info {
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 } beam_weapon_info;
 
+typedef struct spawn_weapon_info 
+{
+	short	spawn_type;							//	Type of weapon to spawn when detonated.
+	short	spawn_count;						//	Number of weapons of spawn_type to spawn.
+	float	spawn_angle;						//  Angle to spawn the child weapons in.  default is 180
+} spawn_weapon_info;
+
+#define MAX_SPAWN_TYPES_PER_WEAPON 5
+
 // use this to extend a beam to "infinity"
 #define BEAM_FAR_LENGTH				30000.0f
 
@@ -831,10 +840,10 @@ typedef struct weapon_info {
 	float rearm_rate;							// rate per second at which secondary weapons are loaded during rearming
 	float	weapon_range;						// max range weapon can be effectively fired.  (May be less than life * speed)
 
-	// spawn weapons
-	short	spawn_type;							//	Type of weapon to spawn when detonated.
-	short	spawn_count;						//	Number of weapons of spawn_type to spawn.
-	float	spawn_angle;						//  Angle to spawn the child weapons in.  default is 180
+    // spawn weapons
+    int num_spawn_weapons_defined;
+    int total_children_spawned;
+    spawn_weapon_info spawn_info[MAX_SPAWN_TYPES_PER_WEAPON];
 
 	// swarm count
 	short swarm_count;						// how many swarm missiles are fired for this weapon
