@@ -2591,15 +2591,25 @@ int CFred_mission_save::save_messages()
 	parse_comments(2);
 	fout("\t\t;! %d total\n", Num_messages-Num_builtin_messages);
 
+	// Goober5000 - special Command info
+	if (Format_fs2_open)
+	{
+		if (stricmp(The_mission.command_sender, DEFAULT_COMMAND))
+			fout("\n$Command Sender: %s", The_mission.command_sender);
+
+		if (The_mission.command_persona != Default_command_persona)
+			fout("\n$Command Persona: %s", Personas[The_mission.command_persona].name);
+	}
+
 	for (i=Num_builtin_messages; i<Num_messages; i++) {
 		required_string_either_fred("$Name:", "#Reinforcements");
 		required_string_fred("$Name:");
-		parse_comments(i ? 2 : 1);
+		parse_comments(2);
 		fout(" %s", Messages[i].name);
 
 		// team
 		required_string_fred("$Team:");
-		parse_comments(i ? 2 : 1);
+		parse_comments(1);
 		if((Messages[i].multi_team < 0) || (Messages[i].multi_team >= 2)){
 			fout(" %d", -1);
 		} else {

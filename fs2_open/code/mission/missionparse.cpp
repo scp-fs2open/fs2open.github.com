@@ -1701,7 +1701,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 	//
 	// NOTE: this can be dangerous so be sure that any get_mission_info() call (defaults to basic info) will
 	//       only reference data parsed before this point!! (like current FRED2 and game code does)
-	if (basic == true)
+	if (basic)
 		return;
 
 
@@ -1811,6 +1811,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		}
 	}
 
+
 	// wing stuff by Goober5000 ------------------------------------------
 	// the wing name arrays are initialized in ship_level_init
 	if (optional_string("$Starting wing names:"))
@@ -1834,6 +1835,7 @@ void parse_mission_info(mission *pm, bool basic = false)
 		Error(LOCATION, "The first starting wing and the first team-versus-team wing must have the same wing name.\n");
 	}
 	// end of wing stuff -------------------------------------------------
+
 
 	// set up the Num_teams variable accoriding to the game_type variable'
 	Num_teams = 1;				// assume 1
@@ -5267,6 +5269,35 @@ void parse_waypoints(mission *pm)
 void parse_messages(mission *pm, int flags)
 {
 	required_string("#Messages");
+
+	// command stuff by Goober5000 ---------------------------------------
+	strcpy(pm->command_sender, DEFAULT_COMMAND);
+	if (optional_string("$Command Sender:"))
+	{
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+
+		if (*temp == '#')
+			strcpy(pm->command_sender, &temp[1]);
+		else
+			strcpy(pm->command_sender, temp);
+	}
+
+	pm->command_persona = Default_command_persona;
+	if (optional_string("$Command Persona:"))
+	{
+		int idx;
+		char temp[NAME_LENGTH];
+		stuff_string(temp, F_NAME, NAME_LENGTH);
+
+		idx = message_persona_name_lookup(temp);
+		if (idx >= 0)
+			pm->command_persona = idx;
+		else
+			Warning(LOCATION, "Supplied Command Persona is invalid!  Defaulting to %s.", Personas[Default_command_persona].name);
+	}
+	// end of command stuff ----------------------------------------------
+
 
 	mprintf(("Starting mission message count : %d\n", Num_message_waves));
 

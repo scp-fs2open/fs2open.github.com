@@ -306,7 +306,7 @@ extern message_extra		Message_waves[MAX_MESSAGE_WAVES];
 #define MESSAGE_SOURCE_SPECIAL	4
 
 // define used for sender of a message when you want it to be Terran Command
-#define TERRAN_COMMAND			"Command"
+#define DEFAULT_COMMAND			"Command"
 
 // defines for message id's used in FreeSpace code.  Callers to message_send_to_player() should
 // probably use these defines.
@@ -408,6 +408,7 @@ typedef struct persona_s {
 
 extern Persona *Personas;
 extern int Num_personas;
+extern int Default_command_persona;
 
 // function to parse a message from either messages.tbl or the mission file.  Both files have the
 // exact same format, so this function just gets reused in both instances.

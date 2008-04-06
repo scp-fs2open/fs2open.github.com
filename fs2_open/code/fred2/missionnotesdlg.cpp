@@ -266,6 +266,7 @@
 #include "gamesnd/eventmusic.h"
 #include "cfile/cfile.h"
 #include "mission/missionparse.h"
+#include "mission/missionmessage.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -297,6 +298,8 @@ CMissionNotesDlg::CMissionNotesDlg(CWnd* pParent /*=NULL*/) : CDialog(CMissionNo
 	m_ai_profile = -1;
 	m_event_music = -1;
 	m_substitute_event_music = _T("");
+	m_command_persona = -1;
+	m_command_sender = _T("");
 	m_full_war = FALSE;
 	m_red_alert = FALSE;
 	m_scramble = FALSE;
@@ -341,6 +344,8 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_AI_PROFILE, m_ai_profile);
 	DDX_CBIndex(pDX, IDC_EVENT_MUSIC, m_event_music);
 	DDX_Text(pDX, IDC_SUBSTITUTE_EVENT_MUSIC, m_substitute_event_music);
+	DDX_CBIndex(pDX, IDC_COMMAND_PERSONA, m_command_persona);
+	DDX_Text(pDX, IDC_COMMAND_SENDER, m_command_sender);
 	DDX_Check(pDX, IDC_FULL_WAR, m_full_war);
 	DDX_Check(pDX, IDC_RED_ALERT, m_red_alert);
 	DDX_Check(pDX, IDC_SCRAMBLE, m_scramble);
@@ -609,6 +614,12 @@ void CMissionNotesDlg::OnOK()
 	MODIFY(Current_soundtrack_num, m_event_music - 1);
 	strcpy(The_mission.substitute_event_music_name, m_substitute_event_music);
 
+	MODIFY(The_mission.command_persona, ((CComboBox *) GetDlgItem(IDC_COMMAND_PERSONA))->GetItemData(m_command_persona));
+	if (m_command_sender.GetAt(0) == '#')
+		strcpy(The_mission.command_sender, m_command_sender.Mid(1));
+	else
+		strcpy(The_mission.command_sender, m_command_sender);
+
 	MODIFY(Mission_all_attack, m_full_war);
 	if (query_modified()){
 		set_modified();
@@ -633,7 +644,7 @@ void CMissionNotesDlg::OnCancel()
 
 BOOL CMissionNotesDlg::OnInitDialog() 
 {
-	int i;
+	int i, box_index = 0, mission_command_persona_box_index = -1;
 	CComboBox *box;
 	CEdit *edit;
 
@@ -650,6 +661,7 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_mission_desc_orig = m_mission_desc = convert_multiline_string(The_mission.mission_desc);
 	m_red_alert = (The_mission.flags & MISSION_FLAG_RED_ALERT) ? 1 : 0;
 	m_scramble = (The_mission.flags & MISSION_FLAG_SCRAMBLE) ? 1 : 0;
+	m_full_war = Mission_all_attack;
 	m_daisy_chained_docking = (The_mission.flags & MISSION_FLAG_ALLOW_DOCK_TREES) ? 1 : 0;
 	m_disallow_support = (The_mission.support_ships.max_support_ships == 0) ? 1 : 0;
 	m_no_promotion = (The_mission.flags & MISSION_FLAG_NO_PROMOTION) ? 1 : 0;
@@ -688,6 +700,25 @@ BOOL CMissionNotesDlg::OnInitDialog()
 		box->AddString(Soundtracks[i].name);		
 	}
 
+	box = (CComboBox *) GetDlgItem(IDC_COMMAND_PERSONA);
+	for (i=0; i<Num_personas; i++){
+		if (Personas[i].flags & PERSONA_FLAG_COMMAND){
+			box->AddString(Personas[i].name);
+			box->SetItemData(box_index, i);
+			if (i == The_mission.command_persona)
+				mission_command_persona_box_index = box_index;
+			box_index++;
+		}
+	}
+
+	box = (CComboBox *) GetDlgItem(IDC_COMMAND_SENDER);
+	box->AddString(DEFAULT_COMMAND);
+	for (i=0; i<MAX_SHIPS; i++){
+		if (Ships[i].objnum >= 0)
+			if (Ship_info[Ships[i].ship_info_index].flags & SIF_HUGE_SHIP)
+				box->AddString(Ships[i].ship_name);
+	}
+
 	// squad info
 	if(strlen(The_mission.squad_name) > 0){
 		m_squad_name = _T(The_mission.squad_name);
@@ -699,9 +730,12 @@ BOOL CMissionNotesDlg::OnInitDialog()
 
 	m_type = The_mission.game_type;
 	m_ai_profile = (The_mission.ai_profile - Ai_profiles);
+
 	m_event_music = Current_soundtrack_num + 1;
 	m_substitute_event_music = The_mission.substitute_event_music_name;
-	m_full_war = Mission_all_attack;
+
+	m_command_persona = mission_command_persona_box_index;
+	m_command_sender = The_mission.command_sender;
 
 	// set up the game type checkboxes accoring to m_type
 	if ( m_type & MISSION_TYPE_SINGLE ){

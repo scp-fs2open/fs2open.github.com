@@ -211,6 +211,8 @@ public:
 	int		m_ai_profile;
 	int		m_event_music;
 	CString	m_substitute_event_music;
+	int		m_command_persona;
+	CString	m_command_sender;
 	BOOL		m_full_war;
 	BOOL		m_red_alert;
 	BOOL		m_scramble;
