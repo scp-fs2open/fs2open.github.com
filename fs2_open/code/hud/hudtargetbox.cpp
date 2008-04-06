@@ -1050,6 +1050,9 @@ void hud_render_target_jump_node(object *target_objp)
 	emp_hud_string(Targetbox_coords[gr_screen.res][TBOX_NAME][0], Targetbox_coords[gr_screen.res][TBOX_NAME][1], EG_TBOX_NAME, target_objp->jnp->get_name_ptr());	
 
 	dist = vm_vec_dist_quick(&target_objp->pos, &Player_obj->pos);
+	if ( Hud_unit_multiplier > 0.0f ) {	// use a different displayed distance scale
+		dist = dist * Hud_unit_multiplier;
+	}
 
 	// account for hud shaking
 	hx = fl2i(HUD_offset_x);
@@ -1228,6 +1231,7 @@ void hud_render_target_ship_info(object *target_objp)
 	{
 		strcpy( outstr, target_shipp->ship_name );
 	}
+	end_string_at_first_hash_symbol(outstr);
 
 	if ( hud_gauge_maybe_flash(HUD_TARGET_MONITOR) == 1 ) {
 		hud_set_iff_color(target_objp, 1);
@@ -1250,11 +1254,11 @@ void hud_render_target_ship_info(object *target_objp)
 	char temp_name[NAME_LENGTH+2] = "";
 
 	// if this ship has an alternate type name
-	if(target_shipp->alt_type_index >= 0){
+	if (target_shipp->alt_type_index >= 0) {
 		mission_parse_lookup_alt_index(target_shipp->alt_type_index, temp_name);
 	} else {
-		strcpy(temp_name, Ship_info[target_shipp->ship_info_index].name);	
-		end_string_at_first_hash_symbol(temp_name);			
+		strcpy(temp_name, Ship_info[target_shipp->ship_info_index].name);
+		end_string_at_first_hash_symbol(temp_name);
 	}
 
 	if (Lcl_gr) {

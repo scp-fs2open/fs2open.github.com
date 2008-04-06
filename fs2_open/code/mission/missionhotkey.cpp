@@ -233,6 +233,7 @@
 #include "globalincs/alphacolors.h"
 #include "weapon/beam.h"
 #include "iff_defs/iff_defs.h"
+#include "parse/parselo.h"
 
 
 static int Key_sets[MAX_KEYED_TARGETS] = {
@@ -1464,6 +1465,7 @@ void mission_hotkey_do_frame(float frametime)
 	
 		// draw ship/wing name
 		strcpy(buf, Hotkey_lines[line].label);
+		end_string_at_first_hash_symbol(buf);
 		if (Hotkey_lines[line].type == HOTKEY_LINE_SUBSHIP) {
 			// indent
 			gr_force_fit_string(buf, 255, Hotkey_list_coords[gr_screen.res][0] + Hotkey_list_coords[gr_screen.res][2] - (Hotkey_ship_x[gr_screen.res]+20));

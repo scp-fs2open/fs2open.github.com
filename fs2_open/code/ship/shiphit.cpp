@@ -742,6 +742,7 @@
 #include "network/multi_pmsg.h"
 #include "asteroid/asteroid.h"
 #include "parse/scripting.h"
+#include "parse/parselo.h"
 
 //#pragma optimize("", off)
 //#pragma auto_inline(off)
@@ -1358,6 +1359,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 			}
 		} else {
 			strcpy(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
+			end_string_at_first_hash_symbol(p->killer_parent_name);
 		}
 		break;
 
@@ -1381,6 +1383,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 			}
 		} else {
 			strcpy(p->killer_parent_name, Ships[Objects[killer_objp->parent].instance].ship_name);
+			end_string_at_first_hash_symbol(p->killer_parent_name);
 		}
 		break;
 
@@ -1409,6 +1412,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 			}
 		} else {
 			strcpy(p->killer_parent_name, Ships[killer_objp->instance].ship_name);
+			end_string_at_first_hash_symbol(p->killer_parent_name);
 		}
 		break;
 	
@@ -1432,6 +1436,7 @@ void shiphit_record_player_killer(object *killer_objp, player *p)
 		if(beam_obj != -1){			
 			if((Objects[beam_obj].type == OBJ_SHIP) && (Objects[beam_obj].instance >= 0)){
 				strcpy(p->killer_parent_name, Ships[Objects[beam_obj].instance].ship_name);
+				end_string_at_first_hash_symbol(p->killer_parent_name);
 			}
 			p->killer_species = Ship_info[Ships[Objects[beam_obj].instance].ship_info_index].species;
 		} else {			
