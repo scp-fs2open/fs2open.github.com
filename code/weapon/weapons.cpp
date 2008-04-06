@@ -1551,7 +1551,7 @@ void parse_wi_flags(weapon_info *weaponp)
 			weaponp->wi_flags |= WIF_ELECTRONICS;		
 		else if (!strnicmp(NOX("Spawn"), weapon_strings[i], 5))
 		{
-			if (weaponp->spawn_type == -1)
+            if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
 			{
 				//We need more spawning slots
 				//allocate in slots of 10
@@ -1565,21 +1565,24 @@ void parse_wi_flags(weapon_info *weaponp)
 				temp_string = weapon_strings[i];
 
 				weaponp->wi_flags |= WIF_SPAWN;
-				weaponp->spawn_type = (short)Num_spawn_types;
+				weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_type = (short)Num_spawn_types;
 				skip_length = strlen(NOX("Spawn")) + strspn(&temp_string[strlen(NOX("Spawn"))], NOX(" \t"));
 				char *num_start = strchr(&temp_string[skip_length], ',');
 				if (num_start == NULL) {
-					weaponp->spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
+					weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
 					name_length = 999;
 				} else {
-					weaponp->spawn_count = (short)atoi(num_start+1);
+					weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count = (short)atoi(num_start+1);
 					name_length = num_start - temp_string - skip_length;
 				}
 
+                weaponp->total_children_spawned += weaponp->spawn_info[weaponp->num_spawn_weapons_defined].spawn_count;
+
 				Spawn_names[Num_spawn_types] = vm_strndup( &weapon_strings[i][skip_length], name_length );
 				Num_spawn_types++;
+                weaponp->num_spawn_weapons_defined++;
 			} else {
-				Warning(LOCATION, "Illegal to have two spawn types for one weapon.\nIgnoring weapon %s", weaponp->name);
+				Warning(LOCATION, "Illegal to have more than %d spawn types for one weapon.\nIgnoring weapon %s", MAX_SPAWN_TYPES_PER_WEAPON, weaponp->name);
 			}
 		} else if (!stricmp(NOX("Remote Detonate"), weapon_strings[i]))
 			weaponp->wi_flags |= WIF_REMOTE;
@@ -1854,7 +1857,15 @@ void init_weapon_entry(int weap_info_index)
 	wip->weapon_range = 999999999.9f;
 	// *Minimum weapon range, default is 0 -Et1
 	wip->WeaponMinRange = 0.0f;
-	wip->spawn_type = -1;
+
+    wip->num_spawn_weapons_defined = 0;
+
+    for (i = 0; i < MAX_SPAWN_TYPES_PER_WEAPON; i++)
+    {
+	    wip->spawn_info[i].spawn_type  = -1;
+	    wip->spawn_info[i].spawn_angle = 180;
+        wip->spawn_info[i].spawn_count = DEFAULT_WEAPON_SPAWN_COUNT;
+    }
 	
 	// Trails
 	wip->tr_info.pt = vmd_zero_vector;
@@ -1898,9 +1909,7 @@ void init_weapon_entry(int weap_info_index)
 	wip->elec_sensors_mult=1.0f;
 	wip->elec_randomness=4000;
 	wip->elec_use_new_style=0;
-	
-	wip->spawn_angle = 180;
-	
+
 	wip->lssm_warpout_delay=0;			//delay between launch and warpout (ms)
 	wip->lssm_warpin_delay=0;			//delay between warpout and warpin (ms)
 	wip->lssm_stage5_vel=0;		//velocity during final stage
@@ -1911,7 +1920,6 @@ void init_weapon_entry(int weap_info_index)
 	wip->cm_heat_effectiveness = 1.0f;
 	wip->cm_effective_rad = MAX_CMEASURE_TRACK_DIST;
 
-	
 	wip->b_info.beam_type = -1;
 	wip->b_info.beam_life = -1.0f;
 	wip->b_info.beam_warmup = -1;
@@ -2804,8 +2812,18 @@ int parse_weapon(int subtype, bool replace)
 
 	//read in the spawn angle info
 	//if the weapon isn't a spawn weapon, then this is not going to be used.
-	if (optional_string("$Spawn Angle:")) {
-		stuff_float(&wip->spawn_angle);
+    int num_spawn_angs_defined = 0;
+    float dum_float;
+
+	while (optional_string("$Spawn Angle:"))
+    {
+        stuff_float(&dum_float);
+
+        if (num_spawn_angs_defined < MAX_SPAWN_TYPES_PER_WEAPON)
+        {
+            wip->spawn_info[num_spawn_angs_defined].spawn_angle = dum_float;
+            num_spawn_angs_defined++;
+        }
 	}
 
 	if (wip->wi_flags2 & WIF2_LOCAL_SSM && optional_string("$Local SSM:"))
@@ -3286,26 +3304,33 @@ void parse_cmeasure(bool replace)
 // convert the strings in Spawn_names to indices in the Weapon_types array.
 void translate_spawn_types()
 {
-	int	i, j;
+    int	i, j, k;
 
-	for (i = 0; i < Num_weapon_types; i++) {
-		if ( (Weapon_info[i].spawn_type > -1) && (Weapon_info[i].spawn_type < Num_spawn_types) ) {
-			int	spawn_type = Weapon_info[i].spawn_type;
+    for (i = 0; i < Num_weapon_types; i++)
+    {
+        for (j = 0; j < Weapon_info[i].num_spawn_weapons_defined; j++)
+        {
+            if ( (Weapon_info[i].spawn_info[j].spawn_type > -1) && (Weapon_info[i].spawn_info[j].spawn_type < Num_spawn_types) )
+            {
+                int	spawn_type = Weapon_info[i].spawn_info[j].spawn_type;
 
-			Assert( spawn_type < Num_spawn_types );
+                Assert( spawn_type < Num_spawn_types );
 
-			for (j = 0; j < Num_weapon_types; j++) {
-				if ( !stricmp(Spawn_names[spawn_type], Weapon_info[j].name) ) {
-					Weapon_info[i].spawn_type = (short)j;
+                for (k = 0; k < Num_weapon_types; k++) 
+                {
+                    if ( !stricmp(Spawn_names[spawn_type], Weapon_info[k].name) ) 
+                    {
+                        Weapon_info[i].spawn_info[j].spawn_type = (short)k;
 
-					if (i == j)
-						Warning(LOCATION, "Weapon %s spawns itself.  Infinite recursion?\n", Weapon_info[i].name);
+                        if (i == k)
+                            Warning(LOCATION, "Weapon %s spawns itself.  Infinite recursion?\n", Weapon_info[i].name);
 
-					break;
-				}
-			}
-		}
-	}
+                        break;
+                    }
+                }
+            }
+        }
+    }
 }
 
 static char Default_cmeasure_name[NAME_LENGTH] = "";
@@ -5561,7 +5586,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 			// for weapons that respawn, add the number of respawnable weapons to the net signature pool
 			// to reserve N signatures for the spawned weapons
 			if ( wip->wi_flags & WIF_SPAWN ){
-				multi_set_network_signature( (ushort)(Objects[objnum].net_signature + wip->spawn_count), MULTI_SIG_NON_PERMANENT );
+                multi_set_network_signature( (ushort)(Objects[objnum].net_signature + wip->total_children_spawned), MULTI_SIG_NON_PERMANENT );
 			}
 		} else {
 			Objects[objnum].net_signature = multi_assign_network_signature( MULTI_SIG_NON_PERMANENT );
@@ -5745,7 +5770,7 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 //	Spawn child weapons from object *objp.
 void spawn_child_weapons(object *objp)
 {
-	int	i;
+	int	i, j;
 	int	child_id;
 	int	parent_num;
 	ushort starting_sig;
@@ -5758,8 +5783,6 @@ void spawn_child_weapons(object *objp)
 	wp = &Weapons[objp->instance];
 	Assert((wp->weapon_info_index >= 0) && (wp->weapon_info_index < MAX_WEAPON_TYPES));
 	wip = &Weapon_info[wp->weapon_info_index];
-
-	child_id = wip->spawn_type;
 
 	parent_num = objp->parent;
 
@@ -5778,35 +5801,41 @@ void spawn_child_weapons(object *objp)
 		multi_set_network_signature( objp->net_signature, MULTI_SIG_NON_PERMANENT );
 	}
 
-	for (i=0; i<wip->spawn_count; i++) {
-		int		weapon_objnum;
-		vec3d	tvec, pos;
-		matrix	orient;
+    for (i = 0; i < wip->num_spawn_weapons_defined; i++)
+    {
+        for (j = 0; j < wip->spawn_info[i].spawn_count; j++) 
+        {
+    		int		weapon_objnum;
+	    	vec3d	tvec, pos;
+		    matrix	orient;
 
-		// for multiplayer, use the static randvec functions based on the network signatures to provide
-		// the randomness so that it is the same on all machines.
-		if ( Game_mode & GM_MULTIPLAYER ) {
-			static_rand_cone(objp->net_signature + i, &tvec, &objp->orient.vec.fvec, wip->spawn_angle);
-		} else {
-			vm_vec_random_cone(&tvec, &objp->orient.vec.fvec, wip->spawn_angle);
-		}
-		vm_vec_scale_add(&pos, &objp->pos, &tvec, objp->radius);
+            child_id = wip->spawn_info[i].spawn_type;
 
-		vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
-		weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
+		    // for multiplayer, use the static randvec functions based on the network signatures to provide
+		    // the randomness so that it is the same on all machines.
+		    if ( Game_mode & GM_MULTIPLAYER ) {
+    			static_rand_cone(objp->net_signature + j, &tvec, &objp->orient.vec.fvec, wip->spawn_info[i].spawn_angle);
+	    	} else {
+		    	vm_vec_random_cone(&tvec, &objp->orient.vec.fvec, wip->spawn_info[i].spawn_angle);
+		    }
+		    vm_vec_scale_add(&pos, &objp->pos, &tvec, objp->radius);
 
-		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
-		if (weapon_objnum != -1) {
-			float rand_val;
+		    vm_vector_2_matrix(&orient, &tvec, NULL, NULL);
+		    weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags & WF_LOCKED_WHEN_FIRED, 1);
 
-			if ( Game_mode & GM_NORMAL ){
-				rand_val = frand();
-			} else {
-				rand_val = static_randf(objp->net_signature + i);
-			}
+    		//	Assign a little randomness to lifeleft so they don't all disappear at the same time.
+		    if (weapon_objnum != -1) {
+			    float rand_val;
 
-			Weapons[Objects[weapon_objnum].instance].lifeleft *= rand_val*0.4f + 0.8f;
-		}
+			    if ( Game_mode & GM_NORMAL ){
+				    rand_val = frand();
+			    } else {
+    				rand_val = static_randf(objp->net_signature + j);
+			    }
+
+			    Weapons[Objects[weapon_objnum].instance].lifeleft *= rand_val*0.4f + 0.8f;
+		    }
+        }
 
 	}
 
@@ -6482,8 +6511,10 @@ void weapons_page_in()
 			continue;
 
 		// if it's got a spawn type then grab it
-		if (Weapon_info[i].spawn_type > -1)
-			used_weapons[(int)Weapon_info[i].spawn_type]++;
+        for (j = 0; j < Weapon_info[i].num_spawn_weapons_defined; j++)
+        {
+            used_weapons[(int)Weapon_info[i].spawn_info[j].spawn_type]++;
+        }
 	}
 
 	// release anything loaded that we don't have marked as used for this mission
