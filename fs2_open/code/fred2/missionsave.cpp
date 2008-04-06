@@ -1949,16 +1949,19 @@ int CFred_mission_save::save_objects()
 			fout(" %d", Ships[i].group);
 		}
 
-		// Only bother with the ships score if it is not the default value with FSO missions
-		// Always write it out for retail missions though
-		if (!Format_fs2_open || Ship_info[Ships[i].ship_info_index].score != Ships[i].score ) {
-			if (optional_string_fred("+Score:", "$Name:"))
-				parse_comments();
-			else
-				fout("\n+Score:");
-
-			fout(" %d", Ships[i].score);
+		// always write out the score to ensure backwards compatibility. If the score is the same as the value 
+		// in the table write out a flag to tell the game to simply use whatever is in the table instead
+		if (Format_fs2_open && Ship_info[Ships[i].ship_info_index].score == Ships[i].score ) {
+			fout_and_bypass("\n;;FSO 3.6.10;; +Use Table Score:");
 		}
+
+		if (optional_string_fred("+Score:", "$Name:"))
+			parse_comments();
+		else
+			fout("\n+Score:");
+
+		fout(" %d", Ships[i].score);
+		
 
 		// deal with the persona for this ship as well.
 		if ( Ships[i].persona_index != -1 ) {

@@ -3811,10 +3811,28 @@ int parse_object(mission *pm, int flag, p_object *p_objp)
 	if (optional_string("+Group:"))
 		stuff_int(&p_objp->group);
 
-	if (optional_string("+Score:"))
-		stuff_int(&p_objp->score);
-	else 
+	bool table_score = false; 
+	if (optional_string("+Use Table Score:")) {
+		table_score = true; 
+	}
+
+	if (optional_string("+Score:")) {
+		if (!table_score) {
+			stuff_int(&p_objp->score);
+		}
+		// throw away the value the mission file has and use the table value.
+		else {
+			int temp_score; 
+			stuff_int(&temp_score); 
+		}
+	}
+	else {
+		table_score = true;
+	}
+	
+	if (table_score) {
 		p_objp->score = Ship_info[p_objp->ship_class].score;
+	}
 
 	// parse the persona index if present
 	p_objp->persona_index = -1;
@@ -4111,8 +4129,8 @@ void swap_parse_object(p_object *p_obj, int new_ship_class)
 	Assert (p_obj->ship_max_hull_strength > 0);
 	Assert (old_ship_info->max_hull_strength > 0);
 	
-	float hp_multiplier = p_obj->ship_max_hull_strength / i2fl(old_ship_info->max_hull_strength);
-	p_obj->ship_max_hull_strength = fl2i(new_ship_info->max_hull_strength * hp_multiplier);
+	float hp_multiplier = p_obj->ship_max_hull_strength / old_ship_info->max_hull_strength;
+	p_obj->ship_max_hull_strength = new_ship_info->max_hull_strength * hp_multiplier;
 
 
 	// Shields
