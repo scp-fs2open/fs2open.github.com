@@ -1572,6 +1572,10 @@ void clear_mission()
 
 	The_mission.contrail_threshold = CONTRAIL_THRESHOLD_DEFAULT;
 
+	// Goober5000
+	The_mission.command_persona = Default_command_persona;
+	strcpy(The_mission.command_sender, DEFAULT_COMMAND); 
+
 	// Goober5000: reset ALL mission flags, not just nebula!
 	The_mission.flags = 0;
 	The_mission.support_ships.max_support_ships = -1;	// negative means infinite

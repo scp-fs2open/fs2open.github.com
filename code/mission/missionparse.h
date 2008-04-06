@@ -693,6 +693,10 @@ typedef struct mission {
 	int		ambient_light_level;
 
 	// Goober5000
+	int	command_persona;
+	char command_sender[NAME_LENGTH];
+
+	// Goober5000
 	char event_music_name[NAME_LENGTH];
 	char briefing_music_name[NAME_LENGTH];
 	char substitute_event_music_name[NAME_LENGTH];
