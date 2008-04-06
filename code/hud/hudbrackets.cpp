@@ -753,7 +753,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		  ( y1 > gr_screen.clip_height && y2 > gr_screen.clip_height ) )
 		return;
 
-	// *** everything blow is taken care of with this unsize ***
+	// *** everything below is taken care of with this unsize ***
 	gr_unsize_screen_pos(&x1, &y1);
 	gr_unsize_screen_pos(&x2, &y2);
 
@@ -853,7 +853,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				{
 					tinfo_name = Ships[t_objp->instance].ship_name;
 				}
-
+				end_string_at_first_hash_symbol(tinfo_name);
 				
 				tinfo_class = Ship_info[Ships[t_objp->instance].ship_info_index].name;
 				
