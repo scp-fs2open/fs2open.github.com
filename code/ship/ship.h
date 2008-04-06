@@ -1263,23 +1263,22 @@ typedef struct ship_subsys_info {
 
 
 // Bits for ship.flags2
-#define	SF2_LIGHTS_ON						(1<<0)		// ship has 'GLOW' lights turned on (Bobboau's lights)
-#define SF2_PRIMITIVE_SENSORS				(1<<1)		// Goober5000 - primitive sensor display
-#define SF2_FRIENDLY_STEALTH_INVIS			(1<<2)		// Goober5000 - when stealth, don't appear on radar even if friendly
-#define SF2_STEALTH							(1<<3)		// Goober5000 - is this particular ship stealth
-#define SF2_DONT_COLLIDE_INVIS				(1<<4)		// Goober5000 - is this particular ship don't-collide-invisible
-#define SF2_NO_SUBSPACE_DRIVE				(1<<5)		// Goober5000 - this ship has no subspace drive
-#define SF2_NAVPOINT_CARRY					(1<<6)		// Kazan      - This ship autopilots with the player
-#define SF2_AFFECTED_BY_GRAVITY				(1<<7)		// Goober5000 - ship affected by gravity points
-#define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<8)		// Goober5000 - switch whether subsystems are scanned
-#define SF2_NO_BUILTIN_MESSAGES				(1<<9)		// Karajorma - ship should not send built-in messages
-#define SF2_PRIMARIES_LOCKED				(1<<10)		// Karajorma - This ship can't fire primary weapons
-#define SF2_SECONDARIES_LOCKED				(1<<11)		// Karajorma - This ship can't fire secondary weapons
-#define SF2_GLOWMAPS_DISABLED				(1<<12)		// taylor - to disable glow maps
-#define SF2_NO_DEATH_SCREAM					(1<<13)		// Goober5000 - for WCS
-#define SF2_ALWAYS_DEATH_SCREAM				(1<<14)		// Goober5000 - for WCS
-#define SF2_NAVPOINT_NEEDSLINK				(1<<15)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
-#define SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<16)		// Karajorma - When sending messages from this ship use the alt name instead of name
+#define SF2_PRIMITIVE_SENSORS				(1<<0)		// Goober5000 - primitive sensor display
+#define SF2_FRIENDLY_STEALTH_INVIS			(1<<1)		// Goober5000 - when stealth, don't appear on radar even if friendly
+#define SF2_STEALTH							(1<<2)		// Goober5000 - is this particular ship stealth
+#define SF2_DONT_COLLIDE_INVIS				(1<<3)		// Goober5000 - is this particular ship don't-collide-invisible
+#define SF2_NO_SUBSPACE_DRIVE				(1<<4)		// Goober5000 - this ship has no subspace drive
+#define SF2_NAVPOINT_CARRY					(1<<5)		// Kazan      - This ship autopilots with the player
+#define SF2_AFFECTED_BY_GRAVITY				(1<<6)		// Goober5000 - ship affected by gravity points
+#define SF2_TOGGLE_SUBSYSTEM_SCANNING		(1<<7)		// Goober5000 - switch whether subsystems are scanned
+#define SF2_NO_BUILTIN_MESSAGES				(1<<8)		// Karajorma - ship should not send built-in messages
+#define SF2_PRIMARIES_LOCKED				(1<<9)		// Karajorma - This ship can't fire primary weapons
+#define SF2_SECONDARIES_LOCKED				(1<<10)		// Karajorma - This ship can't fire secondary weapons
+#define SF2_GLOWMAPS_DISABLED				(1<<11)		// taylor - to disable glow maps
+#define SF2_NO_DEATH_SCREAM					(1<<12)		// Goober5000 - for WCS
+#define SF2_ALWAYS_DEATH_SCREAM				(1<<13)		// Goober5000 - for WCS
+#define SF2_NAVPOINT_NEEDSLINK				(1<<14)		// Kazan	- This ship requires "linking" for autopilot (when player ship gets within specified distance SF2_NAVPOINT_NEEDSLINK is replaced by SF2_NAVPOINT_CARRY)
+#define SF2_USE_ALT_NAME_AS_CALLSIGN		(1<<15)		// Karajorma - When sending messages from this ship use the alt name instead of name
 
 // If any of these bits in the ship->flags are set, ignore this ship when targetting
 extern int TARGET_SHIP_IGNORE_FLAGS;
