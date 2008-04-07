@@ -4241,21 +4241,26 @@ void sexp_tree::OnLButtonUp(UINT nFlags, CPoint point)
 }
 
 const static UINT Numbered_data_bitmaps[] = {
-	IDB_DATA_01,
-	IDB_DATA_02,
-	IDB_DATA_03,
-	IDB_DATA_04,
+	IDB_DATA_00,
 	IDB_DATA_05,
-	IDB_DATA_06,
-	IDB_DATA_07,
-	IDB_DATA_08,
-	IDB_DATA_09,
 	IDB_DATA_10,
-	IDB_DATA_11,
-	IDB_DATA_12,
-	IDB_DATA_13,
-	IDB_DATA_14,
 	IDB_DATA_15,
+	IDB_DATA_20,
+	IDB_DATA_25,
+	IDB_DATA_30,
+	IDB_DATA_35,
+	IDB_DATA_40,
+	IDB_DATA_45,
+	IDB_DATA_50,
+	IDB_DATA_55,
+	IDB_DATA_60,
+	IDB_DATA_65,
+	IDB_DATA_70,
+	IDB_DATA_75,
+	IDB_DATA_80,
+	IDB_DATA_85,
+	IDB_DATA_90,
+	IDB_DATA_95
 };
 
 void sexp_tree::setup(CEdit *ptr)
@@ -4946,15 +4951,25 @@ int sexp_tree::find_ancestral_argument_number(int parent_op, int child_node)
 */
 int sexp_tree::get_data_image(int node)
 {
-	int count = get_sibling_place(node);
+	int count = get_sibling_place(node) + 1;
 
-	if(count < 0)
+	if (count <= 0) {
 		return BITMAP_DATA;
+	}
 
-	if(count > NUM_BITMAP_NUMBERED_DATA)
+	if (count % 5) {
 		return BITMAP_DATA;
+	}
 
-	return BITMAP_NUMBERED_DATA + count;
+	int idx = (count % 100) / 5;
+
+	int num = sizeof(Numbered_data_bitmaps)/sizeof(UINT);
+
+	if (idx > num) {
+		return BITMAP_DATA;
+	}
+
+	return BITMAP_NUMBERED_DATA + idx;
 }
 
 int sexp_tree::get_sibling_place(int node)

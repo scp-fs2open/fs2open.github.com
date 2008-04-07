@@ -101,21 +101,25 @@
 #define IDD_CUSTOM_WING_NAMES           267
 #define IDD_RESTRICT_PATHS              270
 #define IDD_BACKGROUND_CHOOSER          272
-#define IDB_DATA_02                     274
-#define IDB_DATA_03                     275
-#define IDB_DATA_04                     276
 #define IDB_DATA_05                     277
-#define IDB_DATA_06                     278
-#define IDB_DATA_07                     279
-#define IDB_DATA_08                     280
-#define IDB_DATA_09                     281
-#define IDB_DATA_01                     285
 #define IDB_DATA_10                     286
-#define IDB_DATA_11                     287
-#define IDB_DATA_12                     288
-#define IDB_DATA_15                     289
-#define IDB_DATA_14                     290
-#define IDB_DATA_13                     291
+#define IDB_DATA_00                     297
+#define IDB_DATA_20                     300
+#define IDB_DATA_25                     301
+#define IDB_DATA_30                     302
+#define IDB_DATA_35                     303
+#define IDB_DATA_40                     304
+#define IDB_DATA_45                     305
+#define IDB_DATA_50                     306
+#define IDB_DATA_55                     307
+#define IDB_DATA_60                     308
+#define IDB_DATA_65                     309
+#define IDB_DATA_70                     310
+#define IDB_DATA_75                     311
+#define IDB_DATA_80                     312
+#define IDB_DATA_85                     313
+#define IDB_DATA_90                     314
+#define IDB_DATA_95                     315
 #define IDC_SHIP_CLASS                  1003
 #define IDC_SHIP_WING                   1004
 #define IDC_SOUND_CLIP_NAME             1007
@@ -1364,7 +1368,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_3D_CONTROLS                     1
-#define _APS_NEXT_RESOURCE_VALUE        292
+#define _APS_NEXT_RESOURCE_VALUE        316
 #define _APS_NEXT_COMMAND_VALUE         33091
 #define _APS_NEXT_CONTROL_VALUE         1595
 #define _APS_NEXT_SYMED_VALUE           105
