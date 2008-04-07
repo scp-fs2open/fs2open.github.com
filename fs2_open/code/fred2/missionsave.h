@@ -141,11 +141,15 @@
 #include "ship/ship.h"
 #include "object/waypoint.h"
 
+#include <string>
+#include <vector>
+
 #define BACKUP_DEPTH	9
 
 class CFred_mission_save {
 private:
 	char *raw_ptr;
+	std::vector<std::string> fso_ver_comment;
 	int err;
 	CFILE *fp;
 
@@ -183,15 +187,18 @@ public:
 	int save_reinforcements();
 	void save_ai_goals(ai_goal *goalp, int ship);
 	int fout(char *format, ...);
-	int fout_ext(char *format, ...);
+	int fout_version(char *format, ...);
+	int fout_ext(char *pre_str, char *format, ...);
 	void parse_comments(int = 1);
 	CFred_mission_save() : err(0), raw_ptr(Mission_text_raw) { }
 	int save_mission_file(char *pathname);
 	int autosave_mission_file(char *pathname);
 	int save_campaign_file(char *pathname);		
 
+	void fso_comment_push(char *ver);
+	void fso_comment_pop(bool pop_all = false);
+
 	// Goober5000
-	int fout_and_bypass(char *format, ...);
 	void bypass_comment(char *comment);
 };
 
