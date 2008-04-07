@@ -1230,8 +1230,8 @@ void hud_render_target_ship_info(object *target_objp)
 	else
 	{
 		strcpy( outstr, target_shipp->ship_name );
+		end_string_at_first_hash_symbol(outstr);
 	}
-	end_string_at_first_hash_symbol(outstr);
 
 	if ( hud_gauge_maybe_flash(HUD_TARGET_MONITOR) == 1 ) {
 		hud_set_iff_color(target_objp, 1);
@@ -1258,8 +1258,8 @@ void hud_render_target_ship_info(object *target_objp)
 		mission_parse_lookup_alt_index(target_shipp->alt_type_index, temp_name);
 	} else {
 		strcpy(temp_name, Ship_info[target_shipp->ship_info_index].name);
-		end_string_at_first_hash_symbol(temp_name);
 	}
+	end_string_at_first_hash_symbol(temp_name);
 
 	if (Lcl_gr) {
 		lcl_translate_targetbox_name(temp_name);
@@ -1425,7 +1425,7 @@ void hud_blit_target_integrity(int disabled,int force_obj_num)
 	}
 }
 
-// determine if the subsystem is in line-of sight, without taking into accout whether the player ship is
+// determine if the subsystem is in line-of sight, without taking into account whether the player ship is
 // facing the subsystem
 int hud_targetbox_subsystem_in_view(object *target_objp, int *sx, int *sy)
 {

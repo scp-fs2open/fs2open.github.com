@@ -851,9 +851,10 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				}
 				else
 				{
-					tinfo_name = Ships[t_objp->instance].ship_name;
+					strcpy(buffer, Ships[t_objp->instance].ship_name);
+					end_string_at_first_hash_symbol(buffer);
+					tinfo_name = buffer;
 				}
-				end_string_at_first_hash_symbol(tinfo_name);
 				
 				tinfo_class = Ship_info[Ships[t_objp->instance].ship_info_index].name;
 				
@@ -862,9 +863,8 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 					mission_parse_lookup_alt_index(Ships[t_objp->instance].alt_type_index, buffer);
 				} else {
 					strcpy(buffer, Ship_info[Ships[t_objp->instance].ship_info_index].name);	
-					end_string_at_first_hash_symbol(buffer);
 				}
-
+				end_string_at_first_hash_symbol(buffer);
 				tinfo_class = buffer;
 
 				break;
