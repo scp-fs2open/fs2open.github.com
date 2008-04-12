@@ -124,7 +124,7 @@ BOOL starfield_editor::OnInitDialog()
 	CDialog::OnInitDialog();
 	theApp.init_window(&Starfield_wnd_data, this);
 	
-	m_slider.SetRange(100, MAX_STARS);
+	m_slider.SetRange(0, MAX_STARS);
 	m_slider.SetPos(Num_stars);
 	sprintf(buf, "%d", Num_stars);
 	GetDlgItem(IDC_TOTAL)->SetWindowText(buf);
