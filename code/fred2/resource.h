@@ -103,6 +103,7 @@
 #define IDD_BACKGROUND_CHOOSER          272
 #define IDB_DATA_05                     277
 #define IDB_DATA_10                     286
+#define IDB_DATA_15                     296
 #define IDB_DATA_00                     297
 #define IDB_DATA_20                     300
 #define IDB_DATA_25                     301

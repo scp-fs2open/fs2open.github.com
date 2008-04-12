@@ -374,7 +374,7 @@ void bg_bitmap_dlg::create()
 		box->AddString(Nebula_colors[i]);
 	}	
 
-	m_slider.SetRange(100, MAX_STARS);
+	m_slider.SetRange(0, MAX_STARS);
 	m_slider.SetPos(Num_stars);
 	sprintf(buf, "%d", Num_stars);
 	GetDlgItem(IDC_TOTAL)->SetWindowText(buf);
