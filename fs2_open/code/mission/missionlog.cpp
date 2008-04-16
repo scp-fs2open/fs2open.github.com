@@ -1060,6 +1060,7 @@ void mission_log_scrollback(int line, int list_x, int list_y, int list_w, int li
 			else
 				gr_force_fit_string(buf, 256, list_w - seg->x);
 
+			end_string_at_first_hash_symbol(buf);
 			gr_string(list_x + seg->x, list_y + y, buf);
 
 			// possibly "print" some symbols for interesting log entries

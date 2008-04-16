@@ -355,6 +355,7 @@ typedef struct hud_frames {
 	int	num_frames;
 } hud_frames;
 
+extern int HUD_draw;
 extern int HUD_contrast;
 
 
