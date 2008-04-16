@@ -4976,7 +4976,7 @@ void weapon_process_pre( object *obj, float frame_time)
 	}*/
 
 	//WMC - Originally flak_maybe_detonate, moved here.
-	if(wip->det_range > 0.0f)
+	if(wp->det_range > 0.0f)
 	{
 		vec3d temp;
 		vm_vec_sub(&temp, &obj->pos, &wp->start_pos);
