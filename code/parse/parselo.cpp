@@ -3127,14 +3127,16 @@ char *get_pointer_to_first_hash_symbol(char *src)
 	char *p, *p2;
 	Assert(src);
 
-	p = strchr(src, '(');
+/*	p = strchr(src, '(');
 	if (p != NULL)
 	{
 		p2 = strchr(p, ')');
 		if (p2 != NULL)
 			return p;
 	}
-
+*/
+//	Backslash - The above used to be for very old versions of FSPort.  Now it's not needed, and
+//	interferes with some situations where we want to strip the hash symbol but keep the ( ).
 	return strchr(src, '#');
 }
 

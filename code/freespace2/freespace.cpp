@@ -1833,6 +1833,7 @@
 #include "osapi/osregistry.h"
 #include "parse/encrypt.h"
 #include "parse/lua.h"
+#include "parse/parselo.h"
 #include "parse/scripting.h"
 #include "parse/sexp.h"
 #include "particle/particle.h"
@@ -4168,7 +4169,7 @@ void game_show_framerate()
 #endif
 
 
-	if (Show_framerate)	{
+	if (Show_framerate && HUD_draw)	{
 		gr_set_color_fast(&HUD_color_debug);
 
 		if (frametotal != 0.0f)
@@ -4190,7 +4191,7 @@ void game_show_framerate()
 // MONITOR_INC(BmpNew, bitmaps_new_this_frame);
 
 #ifdef _WIN32
-	if (Cmdline_show_stats) {
+	if (Cmdline_show_stats && HUD_draw) {
 		char mem_buffer[50];
 
 #ifndef NO_DIRECT3D
@@ -4394,7 +4395,7 @@ void game_show_framerate()
 
 void game_show_eye_pos(vec3d *eye_pos, matrix* eye_orient)
 {
-	if(!Cmdline_show_pos)
+	if ( !Cmdline_show_pos && HUD_draw )
 		return;
 
 	//Do stuff
@@ -4976,19 +4977,17 @@ void say_view_target()
 	if (!(Game_mode & GM_DEAD_DIED) && ((Game_mode & (GM_DEAD_BLEW_UP)) || ((Last_view_target != NULL) && (Last_view_target != view_target)))) {
 		if (view_target != Player_obj){
 
-			char *view_target_name = NULL;
+			char view_target_name[128] = "";
 			switch(Objects[Player_ai->target_objnum].type) {
 			case OBJ_SHIP:
-				view_target_name = Ships[Objects[Player_ai->target_objnum].instance].ship_name;
+				strcpy(view_target_name, Ships[Objects[Player_ai->target_objnum].instance].ship_name);
 				break;
 			case OBJ_WEAPON:
-				view_target_name = Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].name;
+				strcpy(view_target_name, Weapon_info[Weapons[Objects[Player_ai->target_objnum].instance].weapon_info_index].name);
 				Viewer_mode &= ~VM_OTHER_SHIP;
 				break;
 			case OBJ_JUMP_NODE: {
-				char	jump_node_name[128];
-				strcpy(jump_node_name, XSTR( "jump node", 184));
-				view_target_name = jump_node_name;
+				strcpy(view_target_name, XSTR( "jump node", 184));
 				Viewer_mode &= ~VM_OTHER_SHIP;
 				break;
 				}
@@ -4998,6 +4997,7 @@ void say_view_target()
 				break;
 			}
 
+			end_string_at_first_hash_symbol(view_target_name);
 			if ( view_target_name ) {
 				HUD_fixed_printf(0.0f, XSTR( "Viewing %s%s\n", 185), (Viewer_mode & VM_OTHER_SHIP) ? XSTR( "from ", 186) : "", view_target_name);
 				Show_viewing_from_self = 1;
@@ -5575,7 +5575,7 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	// maybe offset the HUD (jitter stuff) and measure the 2D displacement between the player's view and ship vector
 	dont_offset = ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_OBSERVER));
 	HUD_set_offsets(Viewer_obj, !dont_offset, &eye_no_jitter);
-	
+
 	// for multiplayer clients, call code in Shield.cpp to set up the Shield_hit array.  Have to
 	// do this becaues of the disjointed nature of this system (in terms of setup and execution).
 	// must be done before ships are rendered
@@ -6423,7 +6423,7 @@ void game_frame(int paused)
 						popupdead_start();
 					}
 				}
-			}	
+			}
 
 			DEBUG_GET_TIME( render3_time2 )
 			DEBUG_GET_TIME( render2_time1 )
@@ -7940,7 +7940,7 @@ void game_leave_state( int old_state, int new_state )
 			}
 			break;
 
-		case GS_STATE_MULTI_MISSION_SYNC:			
+		case GS_STATE_MULTI_MISSION_SYNC:
 			common_select_close();
 
 			// if we're moving into the options menu we don't need to do anything else
