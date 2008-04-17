@@ -4718,9 +4718,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 						vec3d pnt = gpt->pnt;
 						vec3d norm = gpt->norm;
 					
-						if (bank->submodel_parent > 0) { //this is were it rotates for the submodel parent-Bobboau
-							matrix m;
-
+						if (bank->submodel_parent > 0) { //this is where it rotates for the submodel parent-Bobboau
 							if (pm->submodel[bank->submodel_parent].blown_off)
 								continue;
 
@@ -4740,14 +4738,15 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 							matrix inv_orientation;
 							vm_copy_transpose_matrix(&inv_orientation, &pm->submodel[bank->submodel_parent].orientation);
 
-							vm_matrix_x_matrix(&m, &rotation_matrix, &inv_orientation);
+							matrix submodel_matrix;
+							vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
 
 							vec3d offset = pm->submodel[bank->submodel_parent].offset;
 							vm_vec_sub(&pnt, &pnt, &offset);
 							vec3d p = pnt;
 							vec3d n = norm;
-							vm_vec_rotate(&pnt, &p, &m);
-							vm_vec_rotate(&norm, &n, &m);
+							vm_vec_rotate(&pnt, &p, &submodel_matrix);
+							vm_vec_rotate(&norm, &n, &submodel_matrix);
 							vm_vec_add2(&pnt, &offset);
 						}
 
@@ -4884,7 +4883,7 @@ void model_really_render(int model_num, matrix *orient, vec3d * pos, uint flags,
 
 	vm_vec_zero(&controle_rotval);
 
-	cull = gr_set_cull(0);	
+	cull = gr_set_cull(0);
 
 	// Draw the thruster subobjects
 	if (is_outlines_only_htl) {
@@ -6187,19 +6186,37 @@ void model_render_children_buffers(bsp_info *model, polymodel *pm, int mn, int d
 			return;
 	}
 
-	if (model->gun_rotation) {
-		if (pm->gun_submodel_rotation > PI2 )
-			pm->gun_submodel_rotation -= PI2;
-		else if (pm->gun_submodel_rotation < 0.0f )
-			pm->gun_submodel_rotation += PI2;
-	
-		angles ang = pm->submodel[mn].angs;
-		ang.b += pm->gun_submodel_rotation;
+	// Get submodel rotation data and use submodel orientation matrix
+	// to put together a matrix describing the final orientation of
+	// the submodel relative to its parent
+	angles ang = pm->submodel[mn].angs;
 
-		g3_start_instance_angles(&pm->submodel[mn].offset, &ang);
-	} else {
-		g3_start_instance_angles(&pm->submodel[mn].offset, &pm->submodel[mn].angs);
+	// Add barrel rotation if needed
+	if (model->gun_rotation) {
+		if ( pm->gun_submodel_rotation > PI2 ) {
+			pm->gun_submodel_rotation -= PI2;
+		} else if ( pm->gun_submodel_rotation < 0.0f ) {
+			pm->gun_submodel_rotation += PI2;
+		}
+
+		ang.b += pm->gun_submodel_rotation;
 	}
+
+	// Compute final submodel orientation by using the orientation matrix
+	// and the rotation angles.
+	// By using this kind of computation, the rotational angles can always
+	// be computed relative to the submodel itself, instead of relative
+	// to the parent
+	matrix rotation_matrix = model->orientation;
+	vm_rotate_matrix_by_angles(&rotation_matrix, &ang);
+
+	matrix inv_orientation;
+	vm_copy_transpose_matrix(&inv_orientation, &model->orientation);
+
+	matrix submodel_matrix;
+	vm_matrix_x_matrix(&submodel_matrix, &rotation_matrix, &inv_orientation);
+
+	g3_start_instance_matrix(&pm->submodel[mn].offset, &submodel_matrix, true);
 
 	if ( !(Interp_flags & MR_NO_LIGHTING) )
 		light_rotate_all();
