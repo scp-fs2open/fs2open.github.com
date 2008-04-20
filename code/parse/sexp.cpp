@@ -1797,6 +1797,7 @@ sexp_oper Operators[] = {
 	{ "unscramble-messages",		OP_UNSCRAMBLE_MESSAGES,		0,	0,},
 	{ "disable-builtin-messages",	OP_DISABLE_BUILTIN_MESSAGES,	0,	INT_MAX,},	// Karajorma
 	{ "enable-builtin-messages",	OP_ENABLE_BUILTIN_MESSAGES,		0,	INT_MAX,},	// Karajorma
+	{ "set-persona",				OP_SET_PERSONA,					2,	INT_MAX,},	// Karajorma
 
 	{ "add-goal",					OP_ADD_GOAL,					2, 2, },
 	{ "remove-goal",				OP_REMOVE_GOAL,					2, 2, },			// Goober5000
@@ -3031,6 +3032,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 			case OPF_ROTATING_SUBSYSTEM:
 			case OPF_SUBSYSTEM:
 			case OPF_SUBSYSTEM_OR_NONE:
+			case OPF_SUBSYS_OR_GENERIC:
 			{
 				char *shipname;
 				int shipnum,ship_class;
@@ -3043,6 +3045,11 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 				// none is okay for subsys_or_none
 				if (type == OPF_SUBSYSTEM_OR_NONE && !stricmp(CTEXT(node), SEXP_NONE_STRING))
 				{
+					break;
+				}
+
+				//  subsys_or_generic has a few extra options it accepts
+				if (type == OPF_SUBSYS_OR_GENERIC && (!(stricmp(CTEXT(node), SEXP_ALL_ENGINES_STRING)) || !(stricmp(CTEXT(node), SEXP_ALL_TURRETS_STRING)) )) {
 					break;
 				}
 
@@ -3694,6 +3701,21 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 								return SEXP_CHECK_INVALID_MSG_SOURCE;
 				}
 
+				break;
+
+			//Karajorma
+			case OPF_PERSONA:
+				if (type2 != SEXP_ATOM_STRING){
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+
+				for (i=0; i < Num_personas ; i++) {
+					if (!strcmp(CTEXT(node), Personas[i].name))
+						break;
+				}
+
+				if (i == Num_personas) 
+					return SEXP_CHECK_INVALID_PERSONA_NAME; 
 				break;
 				
 			case OPF_KEYPRESS:
@@ -10528,6 +10550,47 @@ void sexp_toggle_builtin_messages (int node, bool enable_messages)
 	}
 }
 
+void sexp_set_persona (int node) 
+{
+	int persona_index = -1, sindex, i; 
+	char *persona_name; 
+
+	persona_name = CTEXT(node);
+
+	for (i = 0 ; i < Num_personas ; i++) {
+		if (!strcmp(persona_name, Personas[i].name) && (Personas[i].flags & PERSONA_FLAG_WINGMAN)) {
+			persona_index = i;
+			break;
+		}
+	}
+
+	if (persona_index == -1) {
+		Warning(LOCATION, "Unable to change to persona type: '%s'. Persona is not a wingman!", persona_name);
+		return; 
+	}
+
+	node = CDR(node); 
+	Assert (node >=0);
+
+	// now loop through the list of ships
+	while (node >= 0) {
+		sindex = ship_name_lookup( CTEXT(node) );
+
+		if (sindex < 0) {
+			return;
+		}
+
+		if (Ships[sindex].objnum < 0) {
+			return;
+		}
+
+		Ships[sindex].persona_index = persona_index; 
+
+		node = CDR(node); 
+	}
+
+}
+
 // function to deal with getting status of goals for previous missions (in the current campaign).
 // the status parameter is used to tell this function if we are looking for a goal_satisfied, goal_failed,
 // or goal incomplete event
@@ -11068,7 +11131,7 @@ void sexp_ship_guardian_threshold(int num)
 void sexp_ship_subsys_guardian_threshold(int num)
 {
 	char *ship_name, *hull_name;
-	int ship_num, threshold;
+	int ship_num, threshold, subsys_type = SUBSYSTEM_UNKNOWN;;
 	ship_subsys *ss;
 	int n = -1;
 
@@ -11100,10 +11163,24 @@ void sexp_ship_subsys_guardian_threshold(int num)
 		if (hull_name != NULL) {
 			if ( !strcmp(hull_name, SEXP_HULL_STRING) ) {
 				Ships[ship_num].ship_guardian_threshold = threshold;
-			} else {
+			}
+			else if (!strcmp(hull_name, SEXP_ALL_ENGINES_STRING) || !strcmp(hull_name, SEXP_ALL_TURRETS_STRING)) {
+				subsys_type = ai_get_subsystem_type(hull_name);
+				// search through all subsystems
+				for (ss = GET_FIRST(&Ships[ship_num].subsys_list); ss != GET_LAST(&Ships[ship_num].subsys_list); ss = GET_NEXT(ss)) {
+					if (subsys_type == ai_get_subsystem_type(ss->sub_name)) {
+						ss->subsys_guardian_threshold = threshold;
+					}
+				}
+			}				
+			else {
 				ss = ship_get_subsys(&Ships[ship_num], hull_name);
-				Assert( ss != NULL );
-				ss->subsys_guardian_threshold = threshold;
+				if ( ss == NULL ) {
+					Warning(LOCATION, "Invalid subsystem passed to ship-subsys-guardian-threshold: %s does not have a %s subsystem", ship_name, hull_name);
+				} 
+				else {
+					ss->subsys_guardian_threshold = threshold;
+				}
 			}
 		}
 	}
@@ -16054,6 +16131,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_PERSONA:
+				sexp_set_persona (node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_SEND_MESSAGE_LIST:
 				sexp_send_message_list(node);
 				sexp_val = SEXP_TRUE;
@@ -17376,6 +17458,7 @@ int query_operator_return_type(int op)
 		case OP_LOCK_SECONDARY_WEAPON:
 		case OP_UNLOCK_SECONDARY_WEAPON:
 		case OP_RESET_ORDERS:
+		case OP_SET_PERSONA:
 		case OP_CHANGE_SUBSYSTEM_NAME:
 			return OPR_NULL;
 
@@ -17580,7 +17663,7 @@ int query_operator_argument_type(int op, int argnum)
 			else if (argnum == 1)
 				return OPF_SHIP;
 			else
-				return OPF_SUBSYSTEM;
+				return OPF_SUBSYS_OR_GENERIC;
 
 		case OP_SHIP_SUBSYS_TARGETABLE:
 		case OP_SHIP_SUBSYS_UNTARGETABLE:
@@ -18004,6 +18087,12 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_ENABLE_BUILTIN_MESSAGES:
 		case OP_DISABLE_BUILTIN_MESSAGES:
 				return OPF_WHO_FROM;
+
+		case OP_SET_PERSONA:
+			if (argnum == 0) 
+				return OPF_PERSONA;
+			else
+				return OPF_SHIP;
 
 		case OP_SELF_DESTRUCT:
 			return OPF_SHIP;
@@ -19141,6 +19230,9 @@ char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SOUNDTRACK_NAME:
 			return "Invalid soundtrack name";
+
+		case SEXP_CHECK_INVALID_PERSONA_NAME:
+			return "Invalid persona name";
 	}
 
 	sprintf(Sexp_error_text, "Sexp error code %d", num);
@@ -19642,6 +19734,7 @@ int get_subcategory(int sexp_id)
 		case OP_UNSCRAMBLE_MESSAGES:
 		case OP_ENABLE_BUILTIN_MESSAGES:
 		case OP_DISABLE_BUILTIN_MESSAGES:
+		case OP_SET_PERSONA:
 			return CHANGE_SUBCATEGORY_MESSAGING_AND_MISSION_GOALS;
 			
 		case OP_ADD_GOAL:
@@ -20542,6 +20635,13 @@ sexp_help_struct Sexp_help[] = {
 		"If no arguments are supplied all built in messages are disabled.\r\n"
 		"Using the Any Wingman option silences for all ships in wings.\r\n"
 		"\tAll:\tName of ship to allow to talk." },
+
+	// Karajorma	
+	{ OP_SET_PERSONA, "Set Persona (Action operator)\r\n"
+		"\tSets the persona of the supplied ship to the persona supplied\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tPersona to use."
+		"\tRest:\tName of the ship." },
 
 	{ OP_SELF_DESTRUCT, "Self destruct (Action operator)\r\n"
 		"\tCauses the specified ship(s) to self destruct.\r\n\r\n"

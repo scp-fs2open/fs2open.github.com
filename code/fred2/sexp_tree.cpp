@@ -820,6 +820,7 @@
 #include "weapon/weapon.h"
 #include "hud/hudartillery.h"
 #include "iff_defs/iff_defs.h"
+#include "mission/missionmessage.h"
 
 #define TREE_NODE_INCREMENT	100
 
@@ -3139,6 +3140,7 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 		case OPF_SUBSYSTEM:
 		case OPF_AWACS_SUBSYSTEM:
 		case OPF_ROTATING_SUBSYSTEM:
+		case OPF_SUBSYS_OR_GENERIC:
 			str = "<name of subsystem>";
 			break;
 
@@ -3189,6 +3191,10 @@ int sexp_tree::get_default_value(sexp_list_item *item, int op, int i)
 
 		case OPF_ANYTHING:
 			str = "<any data>";
+			break;
+
+		case OPF_PERSONA:
+			str = "<persona name>";
 			break;
 
 		default:
@@ -3259,6 +3265,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_SKYBOX_MODEL_NAME:
 		case OPF_SHIP_OR_NONE:
 		case OPF_SUBSYSTEM_OR_NONE:
+		case OPF_SUBSYS_OR_GENERIC:
 		case OPF_BACKGROUND_BITMAP:
 		case OPF_SUN_BITMAP:
 		case OPF_NEBULA_STORM_TYPE:
@@ -3287,6 +3294,12 @@ int sexp_tree::query_default_argument_available(int op, int i)
 					return 1;
 
 			return 0;
+
+		case OPF_PERSONA:
+			if (Num_personas)
+				return 1;
+			return 0;
+			
 
 		case OPF_POINT:
 		case OPF_WAYPOINT_PATH:
@@ -4821,6 +4834,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_subsystem_or_none(parent_node, arg_index);
 			break;
 
+		case OPF_SUBSYS_OR_GENERIC:
+			list = get_listing_opf_subsys_or_generic(parent_node, arg_index);
+			break;
+
 		case OPF_JUMP_NODE_NAME:
 			list = get_listing_opf_jump_nodes();
 			break;
@@ -4859,6 +4876,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 		case OPF_TURRET_TARGET_ORDER:
 			list = get_listing_opf_turret_target_order();
+			break;
+
+		case OPF_PERSONA:
+			list = get_listing_opf_persona();
 			break;
 
 		default:
@@ -5566,6 +5587,20 @@ sexp_list_item *sexp_tree::get_listing_opf_message()
 	return head.next;
 }
 
+sexp_list_item *sexp_tree::get_listing_opf_persona()
+{
+	int i;
+	sexp_list_item head;
+
+	for (i = 0; i < Num_personas; i++) {
+		if (Personas[i].flags & PERSONA_FLAG_WINGMAN) {
+			head.add_data (Personas[i].name);
+		}
+	}
+
+	return head.next;
+}
+
 sexp_list_item *sexp_tree::get_listing_opf_who_from()
 {
 	object *ptr;
@@ -5899,6 +5934,17 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem_or_none(int parent_node, in
 	sexp_list_item head;
 
 	head.add_data(SEXP_NONE_STRING);
+	head.add_list(get_listing_opf_subsystem(parent_node, arg_index));
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_subsys_or_generic(int parent_node, int arg_index)
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_ALL_ENGINES_STRING);
+	head.add_data(SEXP_ALL_TURRETS_STRING);
 	head.add_list(get_listing_opf_subsystem(parent_node, arg_index));
 
 	return head.next;
