@@ -246,7 +246,9 @@ public:
 	sexp_list_item *get_listing_opf_flexible_argument();
 	sexp_list_item *get_listing_opf_ship_or_none();
 	sexp_list_item *get_listing_opf_subsystem_or_none(int parent_node, int arg_index);
+	sexp_list_item *get_listing_opf_subsys_or_generic(int parent_node, int arg_index);
 	sexp_list_item *get_listing_opf_turret_target_order();
+	sexp_list_item *get_listing_opf_persona();
 	// ---------------------------------------------------------
 
 	int m_mode;

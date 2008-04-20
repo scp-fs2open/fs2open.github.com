@@ -943,6 +943,9 @@ struct ship_subsys;
 #define OPF_NEBULA_POOF			58		// phreak - name of a nebula poof
 #define OPF_TURRET_TARGET_ORDER	59		// WMC - name of a turret target type (see aiturret.cpp)
 #define OPF_SUBSYSTEM_OR_NONE	60		// Goober5000 - an "optional" subsystem argument
+#define OPF_PERSONA				61		// Karajorma - name of a persona
+#define OPF_SUBSYS_OR_GENERIC	62		// Karajorma - a subsystem or a generic name (like engine) which covers all subsystems of that type
+
 
 // Operand return types
 #define	OPR_NUMBER				1	// returns number
@@ -1349,7 +1352,7 @@ struct ship_subsys;
 #define OP_ALLOW_TREASON					(0x00b3 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 #define OP_SHIP_COPY_DAMAGE					(0x00b4 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Goober5000
 #define OP_CHANGE_SUBSYSTEM_NAME			(0x00b5 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG)	// Karajorma
-
+#define OP_SET_PERSONA						(0x00b6 | OP_CATEGORY_CHANGE | OP_NONCAMPAIGN_FLAG) // Karajorma
 
 
 /* made obsolete by Goober5000
@@ -1448,7 +1451,9 @@ struct ship_subsys;
 
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"
-#define SEXP_SIM_HULL_STRING			"Simulated Hull"
+#define SEXP_SIM_HULL_STRING		"Simulated Hull"
+#define SEXP_ALL_ENGINES_STRING		"<All Engines>"
+#define SEXP_ALL_TURRETS_STRING		"<All Turrets>"
 #define SEXP_ARGUMENT_STRING		"<argument>"
 #define SEXP_NONE_STRING			"<none>"
 
@@ -1606,6 +1611,7 @@ char *CTEXT(int n);
 #define SEXP_CHECK_INVALID_SOUNDTRACK_NAME		-136
 #define SEXP_CHECK_INVALID_INTEL_NAME			-137
 #define SEXP_CHECK_INVALID_SKYBOX_NAME			-138
+#define SEXP_CHECK_INVALID_PERSONA_NAME			-139
 
 #define TRAINING_CONTEXT_SPEED		(1<<0)
 #define TRAINING_CONTEXT_FLY_PATH	(1<<1)
