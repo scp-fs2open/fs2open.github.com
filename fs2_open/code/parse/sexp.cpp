@@ -10947,22 +10947,19 @@ void sexp_ships_visible(int n, int visible)
 	sexp_deal_with_ship_flag(n, 0, 0, SF_HIDDEN_FROM_SENSORS, 0, P_SF_HIDDEN_FROM_SENSORS, 0, !visible);
 
 	// we also have to add any escort ships that were made visible
-	if (visible)
+	for (; n >= 0; n = CDR(n))
 	{
-		for (; n >= 0; n = CDR(n))
-		{
-			int shipnum = ship_name_lookup(CTEXT(n));
-			if (shipnum < 0)
-				continue;
+		int shipnum = ship_name_lookup(CTEXT(n));
+		if (shipnum < 0)
+			continue;
 
-			if (Ships[shipnum].flags & SF_ESCORT)
-				hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
-		}
-	}
-	else {
-		if (Player_ai->target_objnum == Ships[n].objnum) {
+		if (!visible && Player_ai->target_objnum == Ships[shipnum].objnum) {
 			hud_cease_targeting(); 
 		}
+
+		else if (visible && (Ships[shipnum].flags & SF_ESCORT)) {
+				hud_add_ship_to_escort(Ships[shipnum].objnum, 1);
+		}		
 	}
 }
 
