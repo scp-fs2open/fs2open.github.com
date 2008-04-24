@@ -837,6 +837,7 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		object* t_objp = &Objects[target_objnum];
 		char* tinfo_name = NULL;
 		char* tinfo_class = NULL;
+		char temp[NAME_LENGTH];
 		char buffer[NAME_LENGTH];
 		char empty='\0';
 
@@ -851,9 +852,9 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 				}
 				else
 				{
-					strcpy(buffer, Ships[t_objp->instance].ship_name);
-					end_string_at_first_hash_symbol(buffer);
-					tinfo_name = buffer;
+					strcpy(temp, Ships[t_objp->instance].ship_name);
+					end_string_at_first_hash_symbol(temp);
+					tinfo_name = temp;
 				}
 				
 				tinfo_class = Ship_info[Ships[t_objp->instance].ship_info_index].name;
