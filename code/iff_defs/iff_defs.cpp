@@ -268,6 +268,12 @@ void iff_init()
 					iff->flags |= IFFF_SUPPORT_ALLOWED;
 				else if (!stricmp(NOX("exempt from all teams at war"), flag_strings[i]))
 					iff->flags |= IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR;
+				else if (!stricmp(NOX("orders hidden"), flag_strings[i]))
+					iff->flags |= IFFF_ORDERS_HIDDEN;
+				else if (!stricmp(NOX("orders shown"), flag_strings[i]))
+					iff->flags |= IFFF_ORDERS_SHOWN;
+				else if (!stricmp(NOX("wing name hidden"), flag_strings[i]))
+					iff->flags |= IFFF_WING_NAME_HIDDEN;
 				else
 					Warning(LOCATION, "Bogus string in iff flags: %s\n", flag_strings[i]);
 			}

@@ -952,7 +952,8 @@ void hud_targetbox_show_extra_ship_info(ship *target_shipp, object *target_objp)
 	if ( not_training && (hud_gauge_active(HUD_TARGET_MONITOR_EXTRA_DATA)) && (Targetbox_show_extra_info) ) {
 		// Print out current orders if the targeted ship is friendly
 		// AL 12-26-97: only show orders and time to target for friendly ships
-		if ( (Player_ship->team == target_shipp->team) && !(ship_get_SIF(target_shipp) & SIF_NOT_FLYABLE) ) {
+		// Backslash: actually let's consult the IFF table.  Maybe we want to show orders for certain teams, or hide orders for friendlies
+		if ( ((Player_ship->team == target_shipp->team) || ((Iff_info[target_shipp->team].flags & IFFF_ORDERS_SHOWN) && !(Iff_info[target_shipp->team].flags & IFFF_ORDERS_HIDDEN)) ) && !(ship_get_SIF(target_shipp) & SIF_NOT_FLYABLE) ) {
 			extra_data_shown=1;
 			if ( ship_return_orders(outstr, target_shipp) ) {
 				gr_force_fit_string(outstr, 255, 162);
@@ -1221,14 +1222,13 @@ void hud_render_target_ship_info(object *target_objp)
 	target_shipp = &Ships[target_objp->instance];
 	target_sip = &Ship_info[target_shipp->ship_info_index];
 
-	if (Cmdline_wcsaga &&
-		(target_shipp->wingnum != -1) && 
-		(target_shipp->team != Player_ship->team)) 
-	{
+//	if (Cmdline_wcsaga &&
+//		(target_shipp->wingnum != -1) && 
+//		(target_shipp->team != Player_ship->team)) 
+//	Backslash - Instead of rely on command line, let's use a flag in Iff_defs.tbl
+	if ( (Iff_info[target_shipp->team].flags & IFFF_WING_NAME_HIDDEN) && (target_shipp->wingnum != -1) ) {
 		strcpy( outstr, "");
-	}
-	else
-	{
+	} else {
 		strcpy( outstr, target_shipp->ship_name );
 		end_string_at_first_hash_symbol(outstr);
 	}

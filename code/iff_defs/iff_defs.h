@@ -55,7 +55,10 @@
 // iff flags
 #define IFFF_SUPPORT_ALLOWED				(1 << 0)	// this IFF can call for support
 #define IFFF_EXEMPT_FROM_ALL_TEAMS_AT_WAR	(1 << 1)	// self-explanatory
-#define MAX_IFF_FLAGS						2
+#define IFFF_ORDERS_HIDDEN					(1 << 2)	// the HUD will not show a targeted ship's orders
+#define IFFF_ORDERS_SHOWN					(1 << 3)	// the HUD will show a targeted ship's orders (friendly has by default)
+#define IFFF_WING_NAME_HIDDEN				(1 << 4)	// the HUD will not show a targeted ship's name if it is in a wing
+#define MAX_IFF_FLAGS						5
 
 // Goober5000
 typedef struct iff_info {
