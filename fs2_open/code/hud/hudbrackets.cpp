@@ -844,14 +844,13 @@ void draw_bounding_brackets(int x1, int y1, int x2, int y2, int w_correction, in
 		switch(t_objp->type)
 		{
 			case OBJ_SHIP:
-				if ( Cmdline_wcsaga &&
-					(Ships[t_objp->instance].wingnum >= 0) && 
-					(iff_x_attacks_y(Player_ship->team, Ships[t_objp->instance].team)) )
-				{
+//				if ( Cmdline_wcsaga &&
+//					(Ships[t_objp->instance].wingnum >= 0) && 
+//					(iff_x_attacks_y(Player_ship->team, Ships[t_objp->instance].team)) )
+//	Backslash - Instead of rely on command line, let's use a flag in Iff_defs.tbl
+				if ( (Iff_info[Ships[t_objp->instance].team].flags & IFFF_WING_NAME_HIDDEN) && (Ships[t_objp->instance].wingnum != -1) ) {
 					tinfo_name = &empty;
-				}
-				else
-				{
+				} else {
 					strcpy(temp, Ships[t_objp->instance].ship_name);
 					end_string_at_first_hash_symbol(temp);
 					tinfo_name = temp;
