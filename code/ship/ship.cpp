@@ -7939,10 +7939,22 @@ void ship_dying_frame(object *objp, int ship_num)
 		}
 
 		if ( timestamp_elapsed(shipp->really_final_death_time))	{
+			// Copied from lock all turrets sexp
+			// Locks all turrets on ship that is about to split.
+			ship_subsys *subsys;
+			subsys = GET_FIRST(&shipp->subsys_list);
+			while ( subsys != END_OF_LIST(&shipp->subsys_list) ) 
+			{
+			// just mark all turrets as locked
+				if (subsys->system_info->type == SUBSYSTEM_TURRET) {
+					subsys->weapons.flags |= SW_FLAG_TURRET_LOCK;
+				}
+				subsys = GET_NEXT(subsys);
+			}
 
 			//mprintf(( "Ship really dying!!\n" ));
 			// do large_ship_split and explosion
-			if ( shipp->large_ship_blowup_index >= 0 )	{
+			if ( shipp->large_ship_blowup_index >= 0 ) {
 				if ( shipfx_large_blowup_do_frame(shipp, flFrametime) )	{
 					// do all accounting for respawning client and server side here.
 					if(objp == Player_obj) {				
