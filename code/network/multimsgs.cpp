@@ -2559,7 +2559,6 @@ struct fs2_game_update
 // is used to change the current mission, current state, etc.
 void send_netgame_update_packet(net_player *pl)
 {
-	ml_printf("Sending GAME_UPDATE");
 	int packet_size;
 	int idx;
 	ubyte data[MAX_PACKET_SIZE];
@@ -2856,7 +2855,6 @@ void process_game_query(ubyte* data, header* hinfo)
 // sends information about netplayers in the game. if called on the server, broadcasts information about _all_ players
 void send_netplayer_update_packet( net_player *pl )
 {
-	ml_printf("Sending NETPLAYER_UPDATE");
 	int packet_size,idx;
 	ubyte data[MAX_PACKET_SIZE],val;
 
@@ -4942,7 +4940,6 @@ void process_player_order_packet(ubyte *data, header *hinfo)
 //     would have to keep track of up to potentially 14 other ack handles  (ouch).
 void send_file_sig_packet(ushort sum_sig,int length_sig)
 {
-	ml_printf("Sending FILE_SIG_INFO");
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;
 
@@ -5211,7 +5208,6 @@ void process_subsystem_cargo_hidden_packet( ubyte *data, header *hinfo )
 
 void send_netplayer_load_packet(net_player *pl)
 {
-	ml_printf("Sending LOAD_MISSION_NOW");
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;
 
@@ -5265,7 +5261,6 @@ void process_netplayer_load_packet(ubyte *data, header *hinfo)
 
 void send_jump_into_mission_packet(net_player *pl)
 {
-	ml_printf("Sending JUMP_INTO_GAME");
 	ubyte data[MAX_PACKET_SIZE];
 	int packet_size = 0;
 
@@ -6107,7 +6102,6 @@ void process_mission_goal_info_packet( ubyte *data, header *hinfo )
 
 void send_player_settings_packet(net_player *p)
 {
-	ml_printf("Sending PLAYER_SETTINGS");
 	ubyte data[MAX_PACKET_SIZE];
 	ubyte stop;
 	int idx;
@@ -6272,7 +6266,6 @@ void process_deny_packet(ubyte *data, header *hinfo)
 // TOTAL                            459				NOTE : keep this in mind when/if adding new data to this packet
 void send_post_sync_data_packet(net_player *p, int std_request)
 {
-	ml_printf("Sending POST_SYNC_DATA");
 	ubyte data[MAX_PACKET_SIZE], val;
 	char bval;
 	ship *shipp;		
@@ -6654,7 +6647,6 @@ void process_post_sync_data_packet(ubyte *data, header *hinfo)
 
 void send_wss_slots_data_packet(int team_num,int final,net_player *p,int std_request)
 {
-	ml_printf("Sending WSS_SLOTS_DATA");
 	ubyte data[MAX_PACKET_SIZE],val;
 	short val_short;
 	int idx,i;
