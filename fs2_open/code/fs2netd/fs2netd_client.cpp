@@ -765,6 +765,99 @@ int fs2netd_load_servers()
 	return 0;
 }
 
+
+static char Chk_mission_name[NAME_LENGTH+1];
+static uint Chk_mission_crc = 0;
+
+int fs2netd_check_mission_do()
+{
+	if (timeout == -1) {
+		timeout = timer_get_fixed_seconds() + (15 * F1_0);
+	}
+
+	// if timeout passes then bail on stats failure
+	if ( timer_get_fixed_seconds() > timeout ) {
+		timeout = -1;
+		return 4;
+	}
+
+	int rescode = FS2NetD_CheckSingleMission(Chk_mission_name, Chk_mission_crc, do_full_packet);
+
+	do_full_packet = 0;
+
+	if (rescode) {
+		timeout = -1;
+		return rescode;
+	}
+
+	return 0;
+}
+
+bool fs2netd_check_mission(char *mission_name)
+{
+	int rc = 0;
+
+	// don't bother with this if we aren't on FS2NetD
+	if ( !Om_tracker_flag ) {
+		return 0;
+	}
+
+	if ( !(Game_mode & GM_MULTIPLAYER) ) {
+		return 0;
+	}
+
+	if ( !Is_connected ) {
+		return 0;
+	}
+
+	strcpy(Chk_mission_name, mission_name);
+	cf_chksum_long(Chk_mission_name, &Chk_mission_crc);
+
+	do_full_packet = 1;
+
+	In_process = true;
+
+	if (Is_standalone) {
+		do { rc = fs2netd_check_mission_do(); } while (!rc);
+	} else {
+		rc = popup_till_condition(fs2netd_check_mission_do, XSTR("&Cancel", 779), XSTR("Sending stats...", -1));
+	}
+
+	In_process = false;
+
+	switch (rc) {
+		// operation canceled, or invalid
+		case 0:
+			return false;
+
+		// successful, but invalid
+		case 1:
+			return false;
+
+		// successful and valid
+		case 2:
+			return true;
+
+		// failed to send request packet
+		case 3:
+			if ( !Is_standalone ) {
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Server request failed!", -1));
+			}
+
+			return false;
+		
+		// it timed out
+		case 4:
+			if ( !Is_standalone ) {
+				popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Server request timed out!", -1));
+			}
+
+			return false;
+	}
+
+	return false;
+}
+
 void fs2netd_debrief_init()
 {
 	if ( !(Game_mode & GM_MULTIPLAYER) ) {
@@ -780,12 +873,7 @@ void fs2netd_debrief_init()
 	}
 
 
-	uint CurrentMissionChsum;
-	bool mValidStatus = false;
-
-	cf_chksum_long(Netgame.mission_name, &CurrentMissionChsum);
-
-	mValidStatus = FS2NetD_CheckSingleMission(Netgame.mission_name, CurrentMissionChsum);
+	bool mValidStatus = fs2netd_check_mission(Netgame.mission_name);
 
 	if ( ((multi_num_players() > 1) || (Multi_num_players_at_start > 1)) && !game_hacked_data() && mValidStatus ) {
 		// verify that we are logged in before doing anything else

@@ -96,7 +96,7 @@ struct netgame_info;
 
 int FS2NetD_SendPlayerData(int SID, const char* player_name, const char* user, player *pl, int timeout = 15);
 int FS2NetD_GetPlayerData(int SID, const char* player_name, player *pl, bool CanCreate = false, int timeout = 15);
-bool FS2NetD_CheckSingleMission(const char *m_name, uint crc32, int timeout = 15);
+int FS2NetD_CheckSingleMission(const char *m_name, uint crc32, int timeout = 15);
 int FS2NetD_CheckValidSID(int SID);
 int FS2NetD_GetServerList(int timeout = 15);
 void FS2NetD_Ping();

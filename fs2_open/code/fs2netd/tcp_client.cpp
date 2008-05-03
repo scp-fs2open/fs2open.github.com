@@ -175,7 +175,7 @@
 extern std::vector<crc_valid_status> Table_valid_status;
 
 
-bool FS2NetD_CheckSingleMission(const char *m_name, uint crc32, int timeout)
+int FS2NetD_CheckSingleMission(const char *m_name, uint crc32, int timeout)
 {
 	int rc, buffer_size, buffer_offset;
 	bool my_packet = false;
@@ -197,7 +197,7 @@ bool FS2NetD_CheckSingleMission(const char *m_name, uint crc32, int timeout)
 	DONE_PACKET();
 
 	if ( FS2NetD_SendData(buffer, buffer_size) == -1 )
-		return false;
+		return 3;
 
 
 Recieve_Only:
@@ -207,12 +207,12 @@ Recieve_Only:
 
 	if ( (rc = FS2NetD_GetData(buffer, sizeof(buffer))) != -1 ) {
 		if (rc < BASE_PACKET_SIZE)
-			return false;
+			return 0;
 
 		VRFY_PACKET2( PCKT_MCHECK_REPLY );
 
 		if (!my_packet)
-			return false;
+			return 0;
 
 		PXO_GET_DATA( status );
 		Assert( (status == 0) || (status == 1) );
@@ -220,9 +220,11 @@ Recieve_Only:
 		// anything beyond 'true' is considered a failure of some kind
 		if (status > 1)
 			status = 0;
+
+		return status+1;
 	}
 
-	return (status == 1);
+	return 0;
 }
 
 int FS2NetD_SendPlayerData(int SID, const char *player_name, const char *user, player *pl, int timeout)
