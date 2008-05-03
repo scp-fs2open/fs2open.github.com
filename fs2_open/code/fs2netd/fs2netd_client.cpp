@@ -603,6 +603,8 @@ void fs2netd_do_frame()
 						Logged_in = false;
 						PXO_SID = -1;
 					}
+
+					break;
 				}
 
 				default: {
