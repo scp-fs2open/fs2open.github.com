@@ -46,6 +46,8 @@
 #include "graphics/font.h"
 #include "globalincs/alphacolors.h"
 #include "network/multi_options.h"
+#include "cmdline/cmdline.h"
+#include "cfile/cfilesystem.h"
 
 #ifdef WIN32
 //#include <windows.h>
@@ -1491,3 +1493,50 @@ void fs2netd_update_game_count(char *chan_name)
 	FS2NetD_GameCountUpdate(chan_name);
 }
 
+void fs2netd_spew_table_checksums(char *outfile)
+{
+	char full_name[MAX_PATH_LEN];
+	int count, idx;
+	FILE *out = NULL;
+	char modname[128];
+	time_t my_time = 0;
+
+	if ( Table_valid_status.empty() ) {
+		return;
+	}
+
+	cf_create_default_path_string(full_name, sizeof(full_name) - 1, CF_TYPE_ROOT, outfile);
+
+	// open the outfile
+	out = fopen(full_name, "wt");
+
+	if (out == NULL) {
+		return;
+	}
+
+	memset( modname, 0, sizeof(modname) );
+	strcpy( modname, Cmdline_spew_table_crcs );
+
+	my_time = time(NULL);
+	
+	fprintf(out, "--  Table CRCs generated on %s \n", ctime(&my_time));
+
+	fprintf(out, "LOCK TABLES `fstables` WRITE;\n");
+	fprintf(out, "INSERT INTO `fstables` VALUES ");
+
+	count = (int)Table_valid_status.size();
+
+	// do all the checksums
+	for (idx = 0; idx < count; idx++) {
+		if (idx == 0) {
+			fprintf(out, "('%s',%u,'%s')", Table_valid_status[idx].name, Table_valid_status[idx].crc32, modname);
+		} else {
+			fprintf(out, ",('%s',%u,'%s')", Table_valid_status[idx].name, Table_valid_status[idx].crc32, modname);
+		}
+	}
+
+	fprintf(out, ";\n");
+	fprintf(out, "UNLOCK TABLES;\n");
+
+	fclose(out);
+}
