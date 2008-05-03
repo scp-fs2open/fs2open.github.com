@@ -1497,7 +1497,6 @@ void process_ingame_ships_packet( ubyte *data, header *hinfo )
 
 void send_ingame_ships_packet(net_player *player)
 {
-	ml_printf("Sending SHIPS_INGAME_PACKET");
 	ubyte data[MAX_PACKET_SIZE];
 	ubyte p_type;
 	ship_obj *so;
@@ -2182,7 +2181,6 @@ void process_ingame_ship_request_packet(ubyte *data, header *hinfo)
 
 void multi_ingame_send_ship_update(net_player *p)
 {
-	ml_printf("Sending ship update -> ");
 	ship_obj *moveup;
 	
 	// get the first object on the list
@@ -2204,7 +2202,6 @@ void multi_ingame_send_ship_update(net_player *p)
 // for now, I guess we'll just send hull and shield % values
 void send_ingame_ship_update_packet(net_player *p,ship *sp)
 {
-	ml_printf("Sending INGAME_SHIP_UPDATE");
 	ubyte data[MAX_PACKET_SIZE];
 	object *objp;
 	int idx;
