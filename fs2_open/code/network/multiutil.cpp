@@ -3731,7 +3731,7 @@ Done:
 	}
 }
 
-
+/*
 void multi_spew_table_checksums(int max_files, char *outfile)
 {
 	char **file_names;
@@ -3799,6 +3799,7 @@ Done:
 		file_names = NULL;
 	}
 }
+*/
 
 DCF(pxospew,"spew PXO 32 bit checksums for all visible mission files")
 {

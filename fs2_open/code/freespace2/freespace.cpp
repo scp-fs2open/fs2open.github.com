@@ -1900,7 +1900,7 @@ extern int Om_tracker_flag; // needed for FS2OpenPXO config
 //  This function is defined in code\network\multiutil.cpp so will be linked from multiutil.obj
 //  it's required fro the -missioncrcs command line option - Kazan
 void multi_spew_pxo_checksums(int max_files, char *outfile);
-void multi_spew_table_checksums(int max_files, char *outfile);
+void fs2netd_spew_table_checksums(char *outfile);
 
 extern bool frame_rate_display;
 
@@ -9104,7 +9104,7 @@ int game_main(char *cmdline)
 		multi_spew_pxo_checksums(1024, "mission_crcs.txt");
 
 		if (Cmdline_spew_table_crcs) {
-			multi_spew_table_checksums(50, "table_crcs.txt");
+			fs2netd_spew_table_checksums("table_crcs.txt");
 		}
 
 		game_shutdown();
@@ -9113,7 +9113,7 @@ int game_main(char *cmdline)
 
 
 	if (Cmdline_spew_table_crcs) {
-		multi_spew_table_checksums(50, "table_crcs.txt");
+		fs2netd_spew_table_checksums("table_crcs.txt");
 		game_shutdown();
 		return 0;
 	}
