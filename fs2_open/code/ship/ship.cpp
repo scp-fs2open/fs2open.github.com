@@ -11240,8 +11240,14 @@ done_secondary:
 	if (swp->secondary_bank_ammo[bank] <= 0) {
 		// NOTE: these are set to 1 since they will get reduced by 1 in the
 		//       swarm/corkscrew code once this function returns
-		shipp->num_swarm_missiles_to_fire = 1;
-		shipp->num_corkscrew_to_fire = 1;
+
+		if (shipp->num_swarm_missiles_to_fire > 1) {
+			shipp->num_swarm_missiles_to_fire = 1;
+		}
+
+		if (shipp->num_corkscrew_to_fire > 1) {
+			shipp->num_corkscrew_to_fire = 1;
+		}
 	}
 
 	// AL 3-7-98: Move to next valid secondary bank if out of ammo
