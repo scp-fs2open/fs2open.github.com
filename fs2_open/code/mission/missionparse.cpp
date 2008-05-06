@@ -4456,10 +4456,17 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, int force, int spec
 			aip->ai_flags |= AIF_NO_DYNAMIC;
 
 		// update housekeeping variables
-		wingp->ship_index[p_objp->pos_in_wing] = Objects[objnum].instance;
+		// NOTE:  for the initial wing setup we use actual position to get around
+		//        object order isses, but ships in all following waves just get
+		//        tacked onto the end of the list
+		if (wingp->current_wave == 1) {
+			wingp->ship_index[p_objp->pos_in_wing] = Objects[objnum].instance;
+		} else {
+			wingp->ship_index[wingp->current_count] = Objects[objnum].instance;
+		}
 
 		// set up wingman status index
-		hud_wingman_status_set_index(wingp->ship_index[p_objp->pos_in_wing]);
+		hud_wingman_status_set_index(Objects[objnum].instance);
 
 		p_objp->wing_status_wing_index = Ships[Objects[objnum].instance].wing_status_wing_index;
 		p_objp->wing_status_wing_pos = Ships[Objects[objnum].instance].wing_status_wing_pos;
