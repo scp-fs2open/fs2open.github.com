@@ -16048,7 +16048,7 @@ void ship_subsystem_set_new_ai_class(int ship_num, char *subsystem, int new_ai_c
 
 		ss = GET_NEXT( ss );
 	}
-	Int3();	// subsystem not found
+	// Int3();	// subsystem not found
 }
 
 // Goober5000 - will attempt to load an insignia bitmap and set it as active for the wing

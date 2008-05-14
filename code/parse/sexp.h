@@ -1452,8 +1452,8 @@ struct ship_subsys;
 // defines for string constants
 #define SEXP_HULL_STRING			"Hull"
 #define SEXP_SIM_HULL_STRING		"Simulated Hull"
-#define SEXP_ALL_ENGINES_STRING		"<All Engines>"
-#define SEXP_ALL_TURRETS_STRING		"<All Turrets>"
+#define SEXP_ALL_ENGINES_STRING		"<all engines>"
+#define SEXP_ALL_TURRETS_STRING		"<all turrets>"
 #define SEXP_ARGUMENT_STRING		"<argument>"
 #define SEXP_NONE_STRING			"<none>"
 
