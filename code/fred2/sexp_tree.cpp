@@ -4892,15 +4892,12 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 	// every-time-argument... meaning if either w_arg or e_arg is >= 1, we can continue
 	w_arg = find_ancestral_argument_number(OP_WHEN_ARGUMENT, current_node);
 	e_arg = find_ancestral_argument_number(OP_EVERY_TIME_ARGUMENT, current_node);
-	if (w_arg < 1 && e_arg < 1 /* && the same for any future _ARGUMENT sexps */ )
-	{
+	if (w_arg < 1 && e_arg < 1 /* && the same for any future _ARGUMENT sexps */ ) {
 		return list;
 	}
 
-	// also skip if the list is empty, and *also* skip for OPF_NULL, because
-	// it takes no data (though it can take plenty of operators)
-	if (list == NULL || opf == OPF_NULL)
-	{
+	// also skip for OPF_NULL, because it takes no data (though it can take plenty of operators)
+	if (opf == OPF_NULL) {
 		return list;
 	}
 
