@@ -231,7 +231,7 @@ void ssm_level_init()
 }
 
 // start a subspace missile effect
-void ssm_create(vec3d *target, vec3d *start, int ssm_index, ssm_firing_info *override)
+void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *override, int team)
 {	
 	ssm_strike *ssm;		
 	matrix dir;
@@ -280,13 +280,17 @@ void ssm_create(vec3d *target, vec3d *start, int ssm_index, ssm_firing_info *ove
 	else {
 		// forward orientation
 		vec3d temp;
-		vm_vec_sub(&temp, target, start);
-		vm_vec_normalize(&temp);
+
+        vm_vec_sub(&temp, &target->pos, start);
+        vm_vec_normalize(&temp);
+
 		vm_vector_2_matrix(&dir, &temp, NULL, NULL);
 
 		// stuff info
 		ssm->sinfo.ssm_index = ssm_index;
-		ssm->sinfo.target = *target;
+		ssm->sinfo.target = target;
+        ssm->sinfo.ssm_team = team;
+
 		for(idx=0; idx<Ssm_info[ssm_index].count; idx++){
 			ssm->sinfo.delay_stamp[idx] = timestamp(200 + (int)frand_range(-199.0f, 1000.0f));
 			ssm_get_random_start_pos(&ssm->sinfo.start_pos[idx], start, &dir, ssm_index);
@@ -326,6 +330,7 @@ void ssm_process()
 	int idx, finished;
 	ssm_strike *moveup, *next_one;
 	ssm_info *si;
+    int weapon_objnum;
 	
 	// process all strikes	
 	moveup=GET_FIRST(&Ssm_used_list);
@@ -351,12 +356,16 @@ void ssm_process()
 						vec3d temp;
 						matrix orient;
 
-						vm_vec_sub(&temp, &moveup->sinfo.target, &moveup->sinfo.start_pos[idx]);
+						vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
 						vm_vec_normalize(&temp);
 						vm_vector_2_matrix(&orient, &temp, NULL, NULL);
 
 						// fire the missile and flash the screen
-						weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
+						weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
+
+                        Weapons[Objects[weapon_objnum].instance].team = moveup->sinfo.ssm_team;
+                        Weapons[Objects[weapon_objnum].instance].homing_object = moveup->sinfo.target;
+                        Weapons[Objects[weapon_objnum].instance].target_sig = moveup->sinfo.target->signature;
 
 						// this makes this particular missile done
 						moveup->done_flags[idx] = 1;
@@ -368,7 +377,7 @@ void ssm_process()
 					vec3d temp;
 					matrix orient;
 
-					vm_vec_sub(&temp, &moveup->sinfo.target, &moveup->sinfo.start_pos[idx]);
+                    vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
 					vm_vec_normalize(&temp);
 					vm_vector_2_matrix(&orient, &temp, NULL, NULL);
 					moveup->fireballs[idx] = fireball_create(&moveup->sinfo.start_pos[idx], FIREBALL_WARP_EFFECT, -1, si->warp_radius, 0, &vmd_zero_vector, si->warp_time, 0, &orient);

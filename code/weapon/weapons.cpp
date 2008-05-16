@@ -5664,7 +5664,14 @@ int weapon_create( vec3d * pos, matrix * porient, int weapon_type, int parent_ob
 		if(parent_objp != NULL){
 			vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, vm_vec_dot(&parent_objp->phys_info.vel, &parent_objp->orient.vec.fvec) + objp->phys_info.max_vel.xyz.z/4 );
 		} else {
-			vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z/4 );
+            if (!is_locked)
+            {
+			    vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z/4 );
+            }
+            else
+            {
+                vm_vec_copy_scale(&objp->phys_info.desired_vel, &objp->orient.vec.fvec, objp->phys_info.max_vel.xyz.z );
+            }
 		}
 		objp->phys_info.vel = objp->phys_info.desired_vel;
 		objp->phys_info.speed = vm_vec_mag(&objp->phys_info.vel);

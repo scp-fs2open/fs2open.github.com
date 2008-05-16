@@ -1951,7 +1951,7 @@ sexp_oper Operators[] = {
 	{ "supernova-start",				OP_SUPERNOVA_START,				1,	1			},
 	{ "shields-on",					OP_SHIELDS_ON,					1, INT_MAX			}, //-Sesquipedalian
 	{ "shields-off",					OP_SHIELDS_OFF,					1, INT_MAX			}, //-Sesquipedalian
-	{ "ship-tag",				OP_SHIP_TAG,				3, 7			},	// Goober5000
+	{ "ship-tag",				OP_SHIP_TAG,				3, 8			},	// Goober5000
 	{ "ship-untag",				OP_SHIP_UNTAG,				1, 1			},	// Goober5000
 	{ "explosion-effect",			OP_EXPLOSION_EFFECT,			11, 13 },			// Goober5000
 	{ "warp-effect",			OP_WARP_EFFECT,					12, 12 },		// Goober5000
@@ -11143,6 +11143,7 @@ void sexp_ship_subsys_untargetable(int n, int untargetable)
 void sexp_ship_tag( int n, int tag )
 {
 	int ship_num, tag_level, tag_time, ssm_index(0);
+    int ssm_team;
 
 	// check to see if ship destroyed or departed.  In either case, do nothing.
 	if ( mission_log_get_time(LOG_SHIP_DEPARTED, CTEXT(n), NULL, NULL) || mission_log_get_time(LOG_SHIP_DESTROYED, CTEXT(n), NULL, NULL) )
@@ -11192,9 +11193,20 @@ void sexp_ship_tag( int n, int tag )
 		if (n < 0)
 			return;
 		start.xyz.z = (float)eval_num(n);
+
+        n = CDR(n);
+
+        if (n < 0)
+        {
+            ssm_team = 0;
+        }
+        else
+        {
+            ssm_team = iff_lookup(CTEXT(n));
+        }
 	}
 
-	ship_apply_tag(ship_num, tag_level, (float)tag_time, &Objects[Ships[ship_num].objnum].pos, &start, ssm_index);
+	ship_apply_tag(ship_num, tag_level, (float)tag_time, &Objects[Ships[ship_num].objnum], &start, ssm_index, ssm_team);
 }
 
 // sexpression to toggle invulnerability flag of ships.
@@ -17832,6 +17844,8 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_SHIP_TAG:
 			if (argnum == 0)
 				return OPF_SHIP;
+            else if (argnum == 7)
+                return OPF_IFF;
 			else
 				return OPF_POSITIVE;
 
@@ -20978,14 +20992,15 @@ sexp_help_struct Sexp_help[] = {
 
 	// Goober5000
 	{ OP_SHIP_TAG, "ship-tag\r\n"
-		"\tTags a ship.  Takes 3 or 7 arguments...\r\n"
+		"\tTags a ship.  Takes 3 or 8 arguments...\r\n"
 		"\t1: The name of a ship.\r\n"
 		"\t2: The tag level (currently 1, 2, or 3).\r\n"
 		"\t3: The tag time (in seconds).\r\n"
 		"\t4: A SSM missile (optional - used only for TAG-C).\r\n"
 		"\t5: The X origin of the SSM missile (optional - used only for TAG-C).\r\n"
 		"\t6: The Y origin of the SSM missile (optional - used only for TAG-C).\r\n"
-		"\t7: The Z origin of the SSM missile (optional - used only for TAG-C)." },
+		"\t7: The Z origin of the SSM missile (optional - used only for TAG-C).\r\n" 
+        "\t8: The team the SSM missile belongs to (optional - used only for TAG-C).\r\n" },
 
 /*	made obsolete by Goober5000 - it only works in debug builds anyway
 	{ OP_INT3, "Error (Debug directive)\r\n"

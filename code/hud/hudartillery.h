@@ -82,11 +82,12 @@ typedef struct ssm_info {
 
 // creation info for the strike (useful for multiplayer)
 typedef struct ssm_firing_info {
-	int			delay_stamp[MAX_SSM_COUNT];	// timestamps
-	vec3d		start_pos[MAX_SSM_COUNT];		// start positions
+	int     delay_stamp[MAX_SSM_COUNT];	    // timestamps
+	vec3d   start_pos[MAX_SSM_COUNT];       // start positions
 	
-	int			ssm_index;							// index info ssm_info array
-	vec3d		target;								// target for the strike	
+	int             ssm_index;							// index info ssm_info array
+	struct object*  target;								// target for the strike
+    int             ssm_team;                           // team that fired the ssm.
 } ssm_firing_info;
 
 // the strike itself
@@ -119,7 +120,7 @@ void hud_artillery_update();
 void hud_artillery_render();
 
 // start a subspace missile effect
-void ssm_create(vec3d *target, vec3d *start, int ssm_index, ssm_firing_info *override);
+void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *override, int team);
 
 // Goober5000
 extern int ssm_info_lookup(char *name);
