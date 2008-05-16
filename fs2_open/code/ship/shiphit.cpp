@@ -748,7 +748,7 @@
 //#pragma auto_inline(off)
 
 struct ssm_firing_info;
-extern void ssm_create(vec3d *target, vec3d *start, int ssm_index, ssm_firing_info *override);
+extern void ssm_create(object *target, vec3d *start, int ssm_index, ssm_firing_info *override, int team);
 
 typedef struct spark_pair {
 	int index1, index2;
@@ -2808,7 +2808,7 @@ static void ship_do_damage(object *ship_obj, object *other_obj, vec3d *hitpos, f
 }
 
 // Goober5000
-void ship_apply_tag(int ship_num, int tag_level, float tag_time, vec3d *target, vec3d *start, int ssm_index)
+void ship_apply_tag(int ship_num, int tag_level, float tag_time, object *target, vec3d *start, int ssm_index, int ssm_team)
 {
 	// set time first tagged
 	if (Ships[ship_num].time_first_tagged == 0)
@@ -2837,7 +2837,7 @@ void ship_apply_tag(int ship_num, int tag_level, float tag_time, vec3d *target, 
 
 		HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Firing artillery", 1570));
 
-		ssm_create(target, start, ssm_index, NULL);
+		ssm_create(target, start, ssm_index, NULL, ssm_team);
 	}
 }
 
@@ -2850,14 +2850,12 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 	Assert(ship_obj);	// Goober5000
 	Assert(other_obj);	// Goober5000
 
-	ship *ship_p	= &Ships[ship_obj->instance];	
+	ship *ship_p = &Ships[ship_obj->instance];	
+    weapon *wp = &Weapons[other_obj->instance];
 
 	//	If got hit by a weapon, tell the AI so it can react.  Only do this line in single player,
 	// or if I am the master in a multiplayer game
 	if ( other_obj->type == OBJ_WEAPON && ( !(Game_mode & GM_MULTIPLAYER) || ((Game_mode & GM_MULTIPLAYER) && (Net_player->flags & NETINFO_FLAG_AM_MASTER)) )) {
-		weapon	*wp;
-
-		wp = &Weapons[other_obj->instance];
 		//	If weapon hits ship on same team and that ship not targeted and parent of weapon not player,
 		//	don't do damage.
 		//	Ie, player can always do damage.  AI can only damage team if that ship is targeted.
@@ -2909,11 +2907,10 @@ void ship_apply_local_damage(object *ship_obj, object *other_obj, vec3d *hitpos,
 		weapon_info *wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 
 		// ssm stuff
-		vec3d *target = hitpos;
-		vec3d *start = &Objects[ship_obj->instance].pos;
+		vec3d *start = hitpos;
 		int ssm_index = wip->SSM_index;
 
-		ship_apply_tag(ship_obj->instance, wip->tag_level, wip->tag_time, target, start, ssm_index);
+		ship_apply_tag(ship_obj->instance, wip->tag_level, wip->tag_time, ship_obj, start, ssm_index, wp->team);
 	}
 
 #ifndef NDEBUG

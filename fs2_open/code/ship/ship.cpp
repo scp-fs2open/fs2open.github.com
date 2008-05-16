@@ -8231,7 +8231,9 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 
 	Assert( frametime > 0.0f );
 
-	if (flame_anim->first_frame >= 0) {
+	if ((flame_anim->first_frame >= 0) &&
+        (flame_anim->total_time > 0.0f))
+    {
 		weaponp->thruster_frame += frametime * rate;
 
 		// Sanity checks
@@ -8259,7 +8261,9 @@ void ship_do_weapon_thruster_frame( weapon *weaponp, object *objp, float frameti
 
 	// Do it for glow bitmaps
 
-	if (glow_anim->first_frame >= 0) {
+	if ((glow_anim->first_frame >= 0) &&
+        (glow_anim->total_time > 0.0f))
+    {
 		weaponp->thruster_glow_frame += frametime * rate;
 
 		// Sanity checks
@@ -15881,10 +15885,7 @@ void ship_update_artillery_lock()
 		if(aip->artillery_lock_time >= 2.0f){
 			HUD_printf("Firing artillery");
 
-			vec3d temp;
-			vm_vec_unrotate(&temp, &aip->artillery_lock_pos, &Objects[aip->artillery_objnum].orient);
-			vm_vec_add2(&temp, &Objects[aip->artillery_objnum].pos);			
-			ssm_create(&temp, &Objects[so->objnum].pos, 0, NULL);				
+			ssm_create(&Objects[aip->artillery_objnum], &cinfo->hit_point_world, 0, NULL, shipp->team);				
 
 			// reset the artillery			
 			aip->artillery_lock_time = 0.0f;			
