@@ -6833,21 +6833,6 @@ void ship_render(object * obj)
 				model_set_fog_level(neb2_get_fog_intensity(obj));
 			}
 
-			if (shipp->cloak_stage>0)
-			{
-				//cloaking
-				if (shipp->cloak_stage==2)
-				{
-					model_setup_cloak(&shipp->current_translation,1,shipp->cloak_alpha);
-					render_flags |= MR_FORCE_TEXTURE | MR_NO_LIGHTING;
-				}
-				else
-				{
-					model_setup_cloak(&shipp->current_translation,0,255);
-				}
-			}
-
-
 			//draw weapon models
 			if (sip->draw_models) {
 				int i,k;
@@ -8673,8 +8658,6 @@ void ship_process_post(object * obj, float frametime)
 	ship_subsys_disrupted_maybe_check(shipp);
 
 	ship_dying_frame(obj, num);
-
-	shipfx_cloak_frame(shipp, frametime);
 
 	ship_chase_shield_energy_targets(shipp, obj, frametime);
 
@@ -10706,11 +10689,6 @@ void ship_process_targeting_lasers()
 			fire_info.targeting_laser_offset = m->gun_banks[shipp->targeting_laser_bank].pnt[0];			
 			shipp->targeting_laser_objnum = beam_fire_targeting(&fire_info);			
 
-			if (shipp->cloak_stage ==2)
-			{
-				shipfx_start_cloak(shipp,500);
-			}
-
 			// hmm, why didn't it fire?
 			if(shipp->targeting_laser_objnum < 0){
 				Int3();
@@ -11229,12 +11207,7 @@ done_secondary:
 				Player->stats.ms_shots_fired += num_fired;
 			}
 		}
-
-		if ((shipp->cloak_stage > 0) && (shipp->cloak_stage < 3))
-		{
-			shipfx_start_cloak(shipp,500);
-		}
-		
+	
 		// maybe announce a shockwave weapon
 		ai_maybe_announce_shockwave_weapon(obj, weapon);
 	}
