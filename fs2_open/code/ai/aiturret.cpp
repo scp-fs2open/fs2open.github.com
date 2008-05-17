@@ -1355,11 +1355,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			// fire a beam weapon
 			beam_fire(&fire_info);
 
-			if (parent_ship->cloak_stage == 2) {
-				beam_weapon_info *bip=&wip->b_info;
-				shipfx_start_cloak(parent_ship,bip->beam_warmup + bip->beam_warmdown + (int)(bip->beam_life*1000.0f) + 1000);
-			}
-
 			return true;
 		}
 		// don't fire swam, but set up swarm info instead
@@ -1425,11 +1420,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 							snd_play_3d( &Snds[wip->launch_snd], turret_pos, &View_position );						
 						}
 					}
-				}
-
-				if ((parent_ship->cloak_stage > 0) && (parent_ship->cloak_stage < 3))
-				{
-					shipfx_start_cloak(parent_ship,500);
 				}
 			}
 
