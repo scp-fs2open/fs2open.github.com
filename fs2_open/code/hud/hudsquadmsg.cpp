@@ -1472,7 +1472,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 			continue;
 
 		// send the command to the wing
-		if ( Wings[i].current_count > 1 ) {
+		if ( Wings[i].current_count > 0 ) {
 			if ( hud_squadmsg_send_wing_command(i, command, send_message, player_num) ) {
 				send_message = 0;
 			}
