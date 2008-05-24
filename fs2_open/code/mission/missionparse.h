@@ -742,7 +742,7 @@ extern char Mission_filename[80];  // filename of mission in The_mission (Fred o
 #define	MAX_GOAL_TYPE_NAMES	3
 
 // alternate ship type names
-#define MAX_ALT_TYPE_NAMES				25
+#define MAX_ALT_TYPE_NAMES				100
 extern char Mission_alt_types[MAX_ALT_TYPE_NAMES][NAME_LENGTH];
 extern int Mission_alt_type_count;
 
@@ -866,6 +866,7 @@ typedef struct p_object {
 
 	int	wingnum;							// set to -1 if not in a wing -- Wing array index otherwise
 	int pos_in_wing;						// Goober5000 - needed for FRED with the new way things work
+	bool special_ship;						// what "$Special Ship:" actually points to in the wing array (for later cleanup)
 
 	int	flags;								// mission savable flags
 	int flags2;								// Goober5000
