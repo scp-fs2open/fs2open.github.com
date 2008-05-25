@@ -4141,7 +4141,7 @@ void multi_create_setup_list_data(int mode)
 				Multi_create_list_count = 0;
 
 				// find all missions which match 
-				for (idx = 0; idx < Multi_create_campaign_list.size(); idx++) {
+				for (idx = 0; idx < (int)Multi_create_campaign_list.size(); idx++) {
 					if(Multi_create_campaign_list[idx].flags & Multi_create_filter){
 						Multi_create_list_count++;
 					}
