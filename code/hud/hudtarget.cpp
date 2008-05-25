@@ -4657,8 +4657,11 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 	// if we've reached here, the lead target indicator will be displayed
 	Players[Player_num].lead_indicator_active = 1;
 
+	if(The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+		vm_vec_sub2(&target_moving_direction, &Player_obj->phys_info.vel);
+
 	// test if the target is moving at all
-	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f && !(The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) )		// Find distance!
+	if ( vm_vec_mag_quick(&target_moving_direction) < 0.1f )		// Find distance!
 		Players[Player_num].lead_target_pos =  *target_world_pos;
 	else {
 		vm_vec_normalize(&target_moving_direction);
@@ -4726,8 +4729,11 @@ void hud_show_lead_indicator(vec3d *target_world_pos)
 	// if we've reached here, the lead target indicator will be displayed
 	Players[Player_num].lead_indicator_active = 1;
 
+	if(The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+		vm_vec_sub2(&target_moving_direction, &Player_obj->phys_info.vel);
+
 	// test if the target is moving at all
-	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f && !(The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) )		// Find distance!
+	if ( vm_vec_mag_quick(&target_moving_direction) < 0.1f )		// Find distance!
 		Players[Player_num].lead_target_pos =  *target_world_pos;
 	else {
 		vm_vec_normalize(&target_moving_direction);
@@ -4856,8 +4862,11 @@ void hud_show_lead_indicator_quick(vec3d *target_world_pos, object *targetp)
 	// if we've reached here, the lead target indicator will be displayed
 	Players[Player_num].lead_indicator_active = 1;
 
+	if(The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY)
+		vm_vec_sub2(&target_moving_direction, &Player_obj->phys_info.vel);
+
 	// test if the target is moving at all
-	if ( vm_vec_mag_quick(&targetp->phys_info.vel) < 0.1f && !(The_mission.ai_profile->flags & AIPF_USE_ADDITIVE_WEAPON_VELOCITY) )		// Find distance!
+	if ( vm_vec_mag_quick(&target_moving_direction) < 0.1f )		// Find distance!
 		Players[Player_num].lead_target_pos =  *target_world_pos;
 	else {
 		vm_vec_normalize(&target_moving_direction);
