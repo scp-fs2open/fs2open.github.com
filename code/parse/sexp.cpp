@@ -1610,6 +1610,7 @@
 #include "hud/hudartillery.h"
 #include "object/objectdock.h"
 #include "globalincs/systemvars.h"
+#include "globalincs/version.h"
 #include "camera/camera.h"
 #include "iff_defs/iff_defs.h"
 #include "nebula/neb.h"
@@ -22556,3 +22557,132 @@ op_menu_struct op_submenu[] =
 int Num_sexp_help = sizeof(Sexp_help) / sizeof(sexp_help_struct);
 int Num_op_menus = sizeof(op_menu) / sizeof(op_menu_struct);
 int Num_submenus = sizeof(op_submenu) / sizeof(op_menu_struct);
+
+//Internal file used by output_sexps, should not be called from output_sexps
+static void output_sexp_html(int sexp_idx, FILE *fp)
+{
+	if(sexp_idx < 0 || sexp_idx > Num_operators)
+		return;
+
+	bool printed=false;
+
+	for(int i = 0; i < Num_sexp_help; i++)
+	{
+		if(Sexp_help[i].id == Operators[sexp_idx].value)
+		{
+			char* new_buf = new char[2*strlen(Sexp_help[i].help)];
+			char* dest_ptr = new_buf;
+			char* curr_ptr = Sexp_help[i].help;
+			char* end_ptr = curr_ptr + strlen(Sexp_help[i].help);
+			while(curr_ptr < end_ptr)
+			{
+				if(*curr_ptr == '\n')
+				{
+					strcpy(dest_ptr, "\n<br>");
+					dest_ptr+=5;
+				}
+				else
+				{
+					*dest_ptr++ = *curr_ptr;
+				}
+				curr_ptr++;
+			}
+			*dest_ptr = '\0';
+
+			fprintf(fp, "<dt><b>%s</b></dt>\n<dd>%s</dd>\n", Operators[sexp_idx].text, new_buf);
+			delete[] new_buf;
+
+			printed = true;
+		}
+	}
+
+	if(!printed)
+		fprintf(fp, "<dt><b>%s</b></dt>\n<dd>Min arguments: %d, Max arguments: %d</dd>\n", Operators[sexp_idx].text, Operators[sexp_idx].min, Operators[sexp_idx].max);
+}
+
+//Outputs sexp.html file
+bool output_sexps(char *filepath)
+{
+	FILE *fp = fopen(filepath,"w");
+
+	if(fp == NULL)
+	{
+		MessageBox(NULL,"Error creating SEXP operator list", "Error", MB_OK);
+		return false; 
+	}
+
+	//Header
+	fprintf(fp, "<html>\n<head>\n\t<title>SEXP Output: %d.%d.%d</title>\n</head>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+	fputs("<body>", fp);
+	fprintf(fp,"\t<h1>Sexp Output - Build %d.%d.%d</h1>\n", FS_VERSION_MAJOR, FS_VERSION_MINOR, FS_VERSION_BUILD);
+
+	std::vector<int> done_sexp_ids;
+	int x,y,z;
+
+	//Output an overview
+	fputs("<dl>", fp);
+	for(x = 0; x < Num_op_menus; x++)
+	{
+		fprintf(fp, "<dt><a href=\"#%d\">%s</a></dt>", (op_menu[x].id & OP_CATEGORY_MASK), op_menu[x].name);
+		for(y = 0; y < Num_submenus; y++)
+		{
+			if(((op_submenu[y].id & OP_CATEGORY_MASK) == op_menu[x].id))
+			{
+				fprintf(fp, "<dd><a href=\"#%d\">%s</a></dd>", op_submenu[y].id & (OP_CATEGORY_MASK | SUBCATEGORY_MASK), op_submenu[y].name);
+			}
+		}
+	}
+	fputs("</dl>", fp);
+
+	//Output the full descriptions
+	fputs("<dl>", fp);
+	for(x = 0; x < Num_op_menus; x++)
+	{
+		fprintf(fp, "<dt id=\"%d\"><h2>%s</h2></dt>\n", (op_menu[x].id & OP_CATEGORY_MASK), op_menu[x].name);
+		fputs("<dd>", fp);
+		fputs("<dl>", fp);
+		for(y = 0; y < Num_submenus; y++)
+		{
+			if(((op_submenu[y].id & OP_CATEGORY_MASK) == op_menu[x].id))
+			{
+				fprintf(fp, "<dt id=\"%d\"><h3>%s</h3></dt>\n", op_submenu[y].id & (OP_CATEGORY_MASK | SUBCATEGORY_MASK), op_submenu[y].name);
+				fputs("<dd>", fp);
+				fputs("<dl>", fp);
+				for(z = 0; z < Num_operators; z++)
+				{
+					if(((Operators[z].value & OP_CATEGORY_MASK) == op_menu[x].id)
+						&& (get_subcategory(Operators[z].value) != -1)
+						&& (get_subcategory(Operators[z].value) == op_submenu[y].id))
+					{
+						output_sexp_html(z, fp);
+					}
+				}
+				fputs("</dl>", fp);
+				fputs("</dd>", fp);
+			}
+		}
+		for(z = 0; z < Num_operators; z++)
+		{
+			if(((Operators[z].value & OP_CATEGORY_MASK) == op_menu[x].id)
+				&& (get_subcategory(Operators[z].value) == -1))
+			{
+				output_sexp_html(z, fp);
+			}
+		}
+		fputs("</dl>", fp);
+		fputs("</dd>", fp);
+	}
+	for(z = 0; z < Num_operators; z++)
+	{
+		if(!(Operators[z].value & OP_CATEGORY_MASK))
+		{
+			output_sexp_html(z, fp);
+		}
+	}
+	fputs("</dl>", fp);
+	fputs("</body>\n</html>\n", fp);
+
+	fclose(fp);
+
+	return true;
+}

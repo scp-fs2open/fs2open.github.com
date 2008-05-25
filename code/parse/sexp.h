@@ -1798,4 +1798,8 @@ extern int Num_sexp_help;
 extern int Num_op_menus;
 extern int Num_submenus;
 
+//WMC
+//Outputs sexp.html file
+bool output_sexps(char *filepath);
+
 #endif
