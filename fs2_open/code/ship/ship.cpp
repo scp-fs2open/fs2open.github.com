@@ -14073,6 +14073,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 	ai_info	*aip;
 	ai_goal	*aigp;
 	char		*order_text;
+	char temp_name[256];
 	
 	Assert(sp->ai_index >= 0);
 	aip = &Ai_info[sp->ai_index];
@@ -14088,13 +14089,18 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		return NULL;
 
 	strcpy(outbuf, order_text);
+
+	if ( aigp->ship_name ) {
+		strcpy(temp_name, aigp->ship_name);
+		end_string_at_first_hash_symbol(temp_name);
+	}
 	switch (aigp->ai_mode ) {
 
 		case AI_GOAL_FORM_ON_WING:
 		case AI_GOAL_GUARD_WING:
 		case AI_GOAL_CHASE_WING:
 			if ( aigp->ship_name ) {
-				strcat(outbuf, aigp->ship_name);
+				strcat(outbuf, temp_name);
 				strcat(outbuf, XSTR( "'s Wing", 494));
 			} else {
 				strcpy(outbuf, XSTR( "no orders", 495));
@@ -14110,7 +14116,7 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_REARM_REPAIR:
 			if ( aigp->ship_name ) {
-				strcat(outbuf, aigp->ship_name);
+				strcat(outbuf, temp_name);
 			} else {
 				strcpy(outbuf, XSTR( "no orders", 495));
 			}
@@ -14119,8 +14125,8 @@ char *ship_return_orders(char *outbuf, ship *sp)
 		case AI_GOAL_DESTROY_SUBSYSTEM: {
 			char name[NAME_LENGTH];
 			if ( aip->targeted_subsys != NULL ) {
-				sprintf(outbuf, XSTR( "atk %s %s", 496), aigp->ship_name, hud_targetbox_truncate_subsys_name(aip->targeted_subsys->system_info->name));
-				strcat(outbuf, name);
+				sprintf(outbuf, XSTR( "atk %s %s", 496), temp_name, hud_targetbox_truncate_subsys_name(aip->targeted_subsys->system_info->name));
+				strcat(outbuf, name);	//what is this for?
 			} else {
 				strcpy(outbuf, XSTR( "no orders", 495) );
 			}
