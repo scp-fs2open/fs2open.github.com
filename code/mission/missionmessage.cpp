@@ -1990,7 +1990,9 @@ void message_queue_process()
 	// if this is a ship do we use name or alt name?
 	if ( Message_shipnum != -1 && (Ships[Message_shipnum].flags2 & SF2_USE_ALT_NAME_AS_CALLSIGN) ) {
 		mission_parse_lookup_alt_index(Ships[Message_shipnum].alt_type_index, who_from); 
-	}		
+	}
+
+	end_string_at_first_hash_symbol(who_from);
 
 	HUD_sourced_printf( q->source, NOX("%s: %s"), who_from, buf );
 

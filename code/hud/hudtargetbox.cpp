@@ -985,6 +985,7 @@ void hud_targetbox_show_extra_ship_info(ship *target_shipp, object *target_objp)
 		if (dock_count == 1)
 		{
 			sprintf(outstr, XSTR("Docked: %s", 339), Ships[dock_get_first_docked_object(target_objp)->instance].ship_name);
+			end_string_at_first_hash_symbol(outstr);
 		}
 		// docked to multiple objects
 		else
