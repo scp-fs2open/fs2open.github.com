@@ -181,7 +181,7 @@ BOOL CShipTexturesDlg::OnInitDialog()
 	for (i=0; i<pm->n_textures; i++)
 	{
 		// get texture file name
-		bm_get_filename(pm->maps[i].base_map.original_texture, texture_file);
+		bm_get_filename(pm->maps[i].base_map.GetOriginalTexture(), texture_file);
 
 		// skip blank textures
 		if (!strlen(texture_file))

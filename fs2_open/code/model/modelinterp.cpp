@@ -1973,7 +1973,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 	int is_invisible = 0;
 
 	if (Interp_warp_bitmap < 0) {
-		if ( (!Interp_thrust_scale_subobj) && (pm->maps[tmap_num].base_map.texture < 0) ) {
+		if ( (!Interp_thrust_scale_subobj) && (pm->maps[tmap_num].base_map.GetTexture() < 0) ) {
 			// Don't draw invisible polygons.
 			if ( !(Interp_flags & MR_SHOW_INVISIBLE_FACES) )
 				return;
@@ -2164,7 +2164,7 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 			if ( Interp_tmap_flags & TMAP_FLAG_TEXTURED )	{
 				// subspace special case
 				if ( Interp_subspace /*&& (D3D_enabled || OGL_enabled)*/ ) {										
-					gr_set_bitmap( pm->maps[tmap_num].base_map.texture, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );					
+					gr_set_bitmap( pm->maps[tmap_num].base_map.GetTexture(), GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.2f );					
 				}
 				// all other textures
 				else {					
@@ -2180,10 +2180,10 @@ void model_interp_tmappoly(ubyte * p,polymodel * pm)
 						texture = model_interp_get_texture(&pm->maps[tmap_num].base_map, base_frametime);
 						
 						// doing glow maps?
-						if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.texture >= 0) ) {
+						if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.GetTexture() >= 0) ) {
 							// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
-							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.is_anim) ) {
-								GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.anim.num_frames);
+							if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.GetNumFrames() > 1) ) {
+								GLOWMAP = pm->maps[tmap_num].glow_map.GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.GetNumFrames());
 							} else {
 								GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map, base_frametime);
 							}
@@ -5326,7 +5326,7 @@ int model_find_texture(int model_num, int bitmap)
 
 	// find the texture
 	for(idx=0; idx<pm->n_textures; idx++){
-		if(pm->maps[idx].base_map.texture == bitmap){
+		if(pm->maps[idx].base_map.GetTexture() == bitmap){
 			return 1;
 		}
 	}
@@ -5434,9 +5434,9 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 	for (idx = 0; idx < pm->n_textures; idx++) {
 		texture_map *tmap = &pm->maps[idx];
 
-		bm_page_in_texture(tmap->base_map.texture);
-		bm_page_in_texture(tmap->glow_map.texture);
-		bm_page_in_texture(tmap->spec_map.texture);
+		tmap->base_map.PageIn();
+		tmap->glow_map.PageIn();
+		tmap->spec_map.PageIn();
 	//	bm_page_in_texture(tmap->norm_map.texture);
 	}
 
@@ -5449,18 +5449,6 @@ void model_page_in_textures(int modelnum, int ship_info_index)
 
 	if (ship_info_index >= 0)
 		ship_page_in_textures(ship_info_index);
-}
-
-void model_page_out_texture_info(texture_info *tinfo, bool release)
-{
-	if (tinfo->texture >= 0) {
-		if (release) {
-			bm_release(tinfo->texture);
-			tinfo->texture = -1;
-		} else {
-			bm_unload(tinfo->texture);
-		}
-	}
 }
 
 // unload all textures for a given model
@@ -5484,9 +5472,9 @@ void model_page_out_textures(int model_num, bool release)
 	for (i = 0; i < pm->n_textures; i++) {
 		texture_map *tmap = &pm->maps[i];
 
-		model_page_out_texture_info(&tmap->base_map, release);
-		model_page_out_texture_info(&tmap->glow_map, release);
-		model_page_out_texture_info(&tmap->spec_map, release);
+		tmap->base_map.PageOut(release);
+		tmap->glow_map.PageOut(release);
+		tmap->spec_map.PageOut(release);
 	//	model_page_out_texture_info(&tmap->norm_map, release);
 	}
 
@@ -6326,10 +6314,10 @@ void model_render_buffers(bsp_info *model, polymodel *pm, bool is_child)
 			texture = model_interp_get_texture(&pm->maps[tmap_num].base_map, base_frametime);
 
 			// doing glow maps?
-			if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.texture >= 0) ) {
+			if ( !(Interp_flags & MR_NO_GLOWMAPS) && (pm->maps[tmap_num].glow_map.GetTexture() >= 0) ) {
 				// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
-				if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.is_anim) ) {
-					GLOWMAP = pm->maps[tmap_num].glow_map.texture + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.anim.num_frames);
+				if ( (Interp_objnum >= 0) && (Objects[Interp_objnum].type == OBJ_SHOCKWAVE) && (pm->maps[tmap_num].glow_map.GetNumFrames() > 1) ) {
+					GLOWMAP = pm->maps[tmap_num].glow_map.GetTexture() + shockwave_get_framenum(Objects[Interp_objnum].instance, pm->maps[tmap_num].glow_map.GetNumFrames());
 				} else {
 					GLOWMAP = model_interp_get_texture(&pm->maps[tmap_num].glow_map, base_frametime);
 				}
@@ -6767,27 +6755,26 @@ int model_should_render_engine_glow(int objnum, int bank_obj)
 // uses same algorithms as in ship_do_thruster_frame
 int model_interp_get_texture(texture_info *tinfo, fix base_frametime)
 {
-	int texture, frame;
-	texture_anim_info *anim;
-	float cur_time;
+	int texture, frame, num_frames;
+	float cur_time, total_time;
 
 	// get texture
-	texture = tinfo->texture;
+	num_frames = tinfo->GetNumFrames();
+	texture = tinfo->GetTexture();
+	total_time = tinfo->GetTotalTime();
 
 	// maybe animate it
-	if (texture >= 0 && tinfo->is_anim)
+	if (texture >= 0 && num_frames > 1)
 	{
-		anim = &tinfo->anim;
-
 		// sanity check total_time first thing
-		Assert(anim->total_time > 0.0f);
+		Assert(total_time > 0.0f);
 
-		cur_time = f2fl((game_get_overall_frametime() - base_frametime) % fl2f(anim->total_time));
+		cur_time = f2fl((game_get_overall_frametime() - base_frametime) % fl2f(total_time));
 
 		// get animation frame
-		frame = fl2i((cur_time * anim->num_frames) / anim->total_time);
+		frame = fl2i((cur_time * num_frames) / total_time);
 		if (frame < 0) frame = 0;
-		if (frame >= anim->num_frames) frame = anim->num_frames - 1;
+		if (frame >= num_frames) frame = num_frames - 1;
 
 		// advance to the correct frame
 		texture += frame;
@@ -6834,4 +6821,96 @@ void index_list::release()
 
 	ibuffer = NULL;
 	sbuffer = NULL;
+}
+
+//********************-----CLASS: texture_info-----********************//
+texture_info::texture_info()
+{
+	clear();
+}
+void texture_info::clear()
+{
+	texture = original_texture = -1;
+	num_frames = 0;
+	total_time = 0.0f;
+}
+int texture_info::GetNumFrames()
+{
+	return num_frames;
+}
+int texture_info::GetOriginalTexture()
+{
+	return original_texture;
+}
+int texture_info::GetTexture()
+{
+	return texture;
+}
+float texture_info::GetTotalTime()
+{
+	return total_time;
+}
+int texture_info::LoadTexture(char *filename, char *dbg_name = "<UNKNOWN>")
+{
+	this->original_texture = bm_load_either(filename, NULL, NULL, 1, CF_TYPE_MAPS);
+	if(this->original_texture < 0)
+		nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", dbg_name, filename));
+	this->ResetTexture();
+
+	return texture;
+}
+void texture_info::PageIn()
+{
+	bm_page_in_texture(texture);
+}
+
+void texture_info::PageOut(bool release)
+{
+	if (texture >= 0) {
+		if (release) {
+			bm_release(texture);
+			texture = -1;
+			num_frames = 0;
+			total_time = 0.0f;
+		} else {
+			bm_unload(texture);
+		}
+	}
+}
+int texture_info::ResetTexture()
+{
+	return this->SetTexture(original_texture);
+}
+int texture_info::SetTexture(int n_tex)
+{
+	if(n_tex != -1 && !bm_is_valid(n_tex))
+		return texture;
+
+	//Set the new texture
+	texture = n_tex;
+
+	//If it is intentionally invalid, blank everything else
+	if(n_tex == -1)
+	{
+		num_frames = 0;
+		total_time = 0.0f;
+	}
+	else
+	{
+		//Determine the num_frames and total_time values.
+		int fps = 0;
+		this->num_frames = 1;
+
+		bm_get_info(texture, NULL, NULL, NULL, &this->num_frames, &fps);
+		if(fps <= 0)
+		{
+			this->total_time = 0.0f;
+		}
+		else
+		{
+			this->total_time = (float)num_frames / (float) fps;
+		}
+	}
+
+	return texture;
 }

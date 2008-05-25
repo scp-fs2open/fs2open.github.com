@@ -1139,20 +1139,30 @@ typedef struct insignia {
 #define PM_FLAG_AUTOCEN				(1<<1)					// contains autocentering info	
 
 // Goober5000
-typedef struct texture_anim_info {
-	int num_frames;
-	float total_time;		// in seconds
-} texture_anim_info;
-
-// Goober5000
-typedef struct texture_info {
+class texture_info {
+private:
 	int original_texture;	// what gets read in from file
 	int texture;			// what texture you draw with; reset to original_textures by model_set_instance
 
-	bool is_anim;			// whether this is an animated texture
-	texture_anim_info anim;	// animation info (if animated)
-} texture_info;
+	//WMC - Removed unneeded struct and is_anim to clean this up.
+	//If num_frames is < 2, it doesn't need to be treated like an animation.
+	int num_frames;
+	float total_time;		// in seconds
+public:
+	texture_info();
+	void clear();
+	int GetNumFrames();
+	int GetOriginalTexture();
+	int GetTexture();
+	float GetTotalTime();
+	int LoadTexture(char *filename, char *dbg_name);
+	void PageIn();
+	void PageOut(bool release);
+	int ResetTexture();
+	int SetTexture(int n_tex);
+};
 
+#define TM_NUM_TYPES		3		//WMC - This is used for scripting; search for it and update accordingly
 // taylor
 typedef struct texture_map {
 	texture_info base_map;		// the standard base map

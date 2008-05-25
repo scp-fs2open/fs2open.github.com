@@ -6559,7 +6559,7 @@ void weapons_page_in()
 				}
 		
 				for (j = 0; j < pm->n_textures; j++)
-					bm_page_in_texture(pm->maps[j].base_map.texture);
+					pm->maps[j].base_map.PageIn();
 
 				break;
 			}

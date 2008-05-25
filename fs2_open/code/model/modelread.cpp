@@ -3237,18 +3237,12 @@ void model_init_texture_map(texture_map *tmap)
 
 	memset(tmap, 0, sizeof(texture_map));
 
-	tmap->base_map.original_texture = -1;
-	tmap->base_map.texture = -1;
-
-	tmap->glow_map.original_texture = -1;
-	tmap->glow_map.texture = -1;
-
-	tmap->spec_map.original_texture = -1;
-	tmap->spec_map.texture = -1;
+	tmap->base_map.clear();
+	tmap->glow_map.clear();
+	tmap->spec_map.clear();
 
 #ifdef BUMPMAPPING
-	tmap->bump_map.original_texture = -1;
-	tmap->bump_map.texture = -1;
+	tmap->bump_map.clear();
 #endif
 }
 
@@ -3258,7 +3252,6 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	// NOTE: it doesn't help to use more than MAX_FILENAME_LEN here as bmpman will use that restriction
 	//       we also have to make sure there is always a trailing NUL since overflow doesn't add it
 	char tmp_name[MAX_FILENAME_LEN];
-	int fps;
 	memset(tmp_name, 0, MAX_FILENAME_LEN);
 	strncpy(tmp_name, file, MAX_FILENAME_LEN-1);
 	strlwr(tmp_name);
@@ -3271,7 +3264,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 	{
 		// Don't load textures for thruster animations or invisible textures
 		// or warp models!-Bobboau
-		tmap->base_map.texture = -1;
+		tmap->base_map.clear();
 	}
 	else
 	{
@@ -3284,36 +3277,41 @@ void model_load_texture(polymodel *pm, int i, char *file)
 			tmap->is_ambient = true;
 		}
 
+		tmap->base_map.LoadTexture(tmp_name, pm->filename);
+		if(tmap->base_map.GetTexture() < 0)
+			Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename);
 		// try to load an ANI
-		tmap->base_map.texture = bm_load_animation(tmp_name, &tmap->base_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
+		/*
+		tmap->base_map.texture = bm_load_animation(tmp_name, &tmap->base_map.num_frames, &fps, 1, CF_TYPE_MAPS);
 		if (tmap->base_map.texture >= 0)
 		{
-			tmap->base_map.is_anim = true;
-			tmap->base_map.anim.total_time = (float) i2fl(tmap->base_map.anim.num_frames) / ((fps > 0) ? fps : 1);
+			tmap->base_map.total_time = (float) i2fl(tmap->base_map.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->base_map.anim.num_frames = 1;
+			tmap->base_map.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->base_map.texture = bm_load(tmp_name);
 			if (tmap->base_map.texture < 0)
 			{
+				tmap->base_map.num_frames = 0;
 				Warning(LOCATION, "Couldn't open texture '%s'\nreferenced by model '%s'\n", tmp_name, pm->filename);
 				nprintf(("Maps", " or %s.pcx.", tmp_name));
 			}
 
 			nprintf(("Maps", "\n"));
 		}
+		*/
 	}
-	tmap->base_map.original_texture = tmap->base_map.texture;
+	//tmap->base_map.original_texture = tmap->base_map.texture;
 	// -------------------------------------------------------------------------
 
 	// glow maps ---------------------------------------------------------------
-	if (Cmdline_noglow || (tmap->base_map.texture < 0))
+	if (Cmdline_noglow || (tmap->base_map.GetTexture() < 0))
 	{
-		tmap->glow_map.texture = -1;
+		tmap->glow_map.clear();
 	}
 	else
 	{
@@ -3322,35 +3320,38 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strncat(tmp_name, "-glow", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
 		strlwr(tmp_name);
 
+		tmap->glow_map.LoadTexture(tmp_name, pm->filename);
 		// try to load an ANI
-		tmap->glow_map.texture = bm_load_animation(tmp_name, &tmap->glow_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
+		/*
+		tmap->glow_map.texture = bm_load_animation(tmp_name, &tmap->glow_map.num_frames, &fps, 1, CF_TYPE_MAPS);
 		if (tmap->glow_map.texture >= 0)
 		{
-			tmap->glow_map.is_anim = true;
-			tmap->glow_map.anim.total_time = (float) i2fl(tmap->glow_map.anim.num_frames) / ((fps > 0) ? fps : 1);
+			tmap->glow_map.total_time = (float) i2fl(tmap->glow_map.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->glow_map.anim.num_frames = 1;
+			tmap->glow_map.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->glow_map.texture = bm_load(tmp_name);
 			if (tmap->glow_map.texture < 0)
 			{
+				tmap->glow_map.num_frames = 0;
 				nprintf(("Maps", " or %s.pcx.", tmp_name));
 			}
 
 			nprintf(("Maps", "\n"));
 		}
+		*/
 	}
-	tmap->glow_map.original_texture = tmap->glow_map.texture;
+	//tmap->glow_map.original_texture = tmap->glow_map.texture;
 	// -------------------------------------------------------------------------
 
 	// specular maps -----------------------------------------------------------
-	if (Cmdline_nospec || (tmap->base_map.texture < 0))
+	if (Cmdline_nospec || (tmap->base_map.GetTexture() < 0))
 	{
-		tmap->spec_map.texture = -1;
+		tmap->spec_map.clear();
 	}
 	else
 	{
@@ -3359,29 +3360,30 @@ void model_load_texture(polymodel *pm, int i, char *file)
 		strncat(tmp_name, "-shine", MAX_FILENAME_LEN - strlen(tmp_name) - 1); // part of this may get chopped off if string is too long
 		strlwr(tmp_name);
 
+		tmap->spec_map.LoadTexture(tmp_name, pm->filename);
 		// try to load an ANI
-		tmap->spec_map.texture = bm_load_animation(tmp_name, &tmap->spec_map.anim.num_frames, &fps, 1, CF_TYPE_MAPS);
+		/*tmap->spec_map.texture = bm_load_animation(tmp_name, &tmap->spec_map.num_frames, &fps, 1, CF_TYPE_MAPS);
 		if (tmap->spec_map.texture >= 0)
 		{
-			tmap->spec_map.is_anim = true;
-			tmap->spec_map.anim.total_time = (float) i2fl(tmap->spec_map.anim.num_frames) / ((fps > 0) ? fps : 1);
+			tmap->spec_map.total_time = (float) i2fl(tmap->spec_map.num_frames) / ((fps > 0) ? fps : 1);
 		}
 		else
 		{
 			nprintf(("Maps", "For \"%s\" I couldn't find %s.ani", pm->filename, tmp_name));
-			tmap->spec_map.anim.num_frames = 1;
+			tmap->spec_map.num_frames = 1;
 
 			// try to load a non-ANI
 			tmap->spec_map.texture = bm_load(tmp_name);
 			if (tmap->spec_map.texture < 0)
 			{
+				tmap->spec_map.num_frames = 0;
 				nprintf(("Maps", " or %s.pcx.", tmp_name));
 			}
 
 			nprintf(("Maps", "\n"));
-		}
+		}*/
 	}
-	tmap->spec_map.original_texture = tmap->spec_map.texture;
+	//tmap->spec_map.original_texture = tmap->spec_map.texture;
 	// -------------------------------------------------------------------------
 
 #ifdef BUMPMAPPING
@@ -4810,11 +4812,11 @@ void model_clear_instance(int model_num)
 	pm->gun_submodel_rotation = 0.0f;
 	// reset textures to original ones
 	for (i=0; i<pm->n_textures; i++ )	{
-		pm->maps[i].base_map.texture = pm->maps[i].base_map.original_texture;
-		pm->maps[i].glow_map.texture = pm->maps[i].glow_map.original_texture;
-		pm->maps[i].spec_map.texture = pm->maps[i].spec_map.original_texture;
+		pm->maps[i].base_map.ResetTexture();
+		pm->maps[i].glow_map.ResetTexture();
+		pm->maps[i].spec_map.ResetTexture();
 #ifdef BUMPMAPPING
-		pm->maps[i].bump_map.texture = pm->maps[i].bump_map.original_texture;
+		pm->maps[i].bump_map.ResetTexture();;
 #endif
 	}
 	
