@@ -3274,6 +3274,12 @@ void bm_get_components(ubyte *pixel, ubyte *r, ubyte *g, ubyte *b, ubyte *a)
 // get filename
 void bm_get_filename(int bitmapnum, char *filename)
 {
+	if(!bm_is_valid(bitmapnum))
+	{
+		strcpy(filename, "");
+		return;
+	}
+
 	int n = bitmapnum % MAX_BITMAPS;
 
 	// return filename

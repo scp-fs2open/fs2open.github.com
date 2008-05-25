@@ -574,6 +574,9 @@ CFILE *ctmpfile();
 // Closes the file
 int cfclose(CFILE *cfile);
 
+//Checks if the given handle is valid
+int cf_is_valid(CFILE *cfile);
+
 // Returns size of file...
 int cfilelength(CFILE *fp);
 

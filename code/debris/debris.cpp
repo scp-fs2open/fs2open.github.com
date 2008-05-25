@@ -496,8 +496,8 @@ void debris_render(object * obj)
 		pm = model_get( db->model_num );
 
 		if ( pm && (pm->n_textures == 1) ) {
-			swapped = pm->maps[0].base_map.texture;
-			pm->maps[0].base_map.texture = Species_info[db->species].debris_texture.bitmap_id;
+			swapped = pm->maps[0].base_map.GetTexture();
+			pm->maps[0].base_map.SetTexture(Species_info[db->species].debris_texture.bitmap_id);
 		}
 	}
 
@@ -521,7 +521,7 @@ void debris_render(object * obj)
 	}
 
 	if ((swapped!=-1) && pm)	{
-		pm->maps[0].base_map.texture = swapped;
+		pm->maps[0].base_map.SetTexture(swapped);
 	}
 }
 

@@ -47,15 +47,17 @@ flag_def_list Script_actions[] =
 	{"On Game Init",			CHA_GAMEINIT,		0},
 	{"On Splash Screen",		CHA_SPLASHSCREEN,	0},
 	{"On Frame",				CHA_ONFRAME,		0},
+	{"On Mission Start",		CHA_MISSIONSTART,	0},
 	{"On HUD Draw",				CHA_HUDDRAW,		0},
 	{"On Ship Collision",		CHA_COLLIDESHIP,	0},
 	{"On Weapon Collision",		CHA_COLLIDEWEAPON,	0},
 	{"On Debris Collision",		CHA_COLLIDEDEBRIS,	0},
 	{"On Asteroid Collision",	CHA_COLLIDEASTEROID,0},
 	{"On Object Render",		CHA_OBJECTRENDER,	0},
-	{"On Warpin",				CHA_WARPIN,			0},
-	{"On Warpout",				CHA_WARPOUT,		0},
+	{"On Warp In",				CHA_WARPIN,			0},
+	{"On Warp Out",				CHA_WARPOUT,		0},
 	{"On Death",				CHA_DEATH,			0},
+	{"On Mission End",			CHA_MISSIONEND,		0},
 };
 
 int Num_script_actions = sizeof(Script_actions)/sizeof(flag_def_list);
@@ -153,6 +155,23 @@ void script_init (void)
 	parse_modular_table(NOX("*-sct.tbm"), script_parse_table);
 	mprintf(("SCRIPTING: Inititialization complete.\n"));
 }
+/*
+//WMC - Doesn't work as debug console interferes with any non-alphabetic chars.
+DCF(script, "Evaluates a line of scripting")
+{
+	if(Dc_command)
+	{
+		dc_get_arg(ARG_STRING);
+		Script_system.EvalString(Dc_arg);
+	}
+
+	if(Dc_help)
+	{
+		dc_printf("Usage: script <script\n");
+		dc_printf("<script> --  Scripting to evaluate.\n");
+	}
+}
+*/
 
 //*************************CLASS: ConditionedScript*************************
 extern char Game_current_mission_filename[];
@@ -1048,7 +1067,9 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 			cfread(raw_lua, len, 1, cfp);
 			cfclose(cfp);
 
-			if(!luaL_loadbuffer(GetLuaSession(), raw_lua, len, debug_str))
+			//WMC - use filename instead of debug_str so that the filename
+			//gets passed.
+			if(!luaL_loadbuffer(GetLuaSession(), raw_lua, len, filename))
 			{
 				//Stick it in the registry
 				*out_index = luaL_ref(GetLuaSession(), LUA_REGISTRYINDEX);
@@ -1058,7 +1079,7 @@ void script_state::ParseChunkSub(int *out_lang, int *out_index, char* debug_str)
 				if(lua_isstring(GetLuaSession(), -1))
 					LuaError(GetLuaSession());
 				else
-					LuaError(GetLuaSession(), "Error parsing %s", debug_str);
+					LuaError(GetLuaSession(), "Error parsing %s", filename);
 				*out_index = -1;
 			}
 			vm_free(raw_lua);

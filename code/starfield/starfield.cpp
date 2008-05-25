@@ -2678,7 +2678,7 @@ void stars_page_in()
 		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
-			bm_page_in_texture( pm->maps[idx].base_map.original_texture );
+			pm->maps[idx].base_map.PageIn();
 		}
 
 		pm = model_get(Subspace_model_outer);
@@ -2686,7 +2686,7 @@ void stars_page_in()
 		nprintf(( "Paging", "Paging in textures for subspace effect.\n" ));
 
 		for (idx = 0; idx < pm->n_textures; idx++) {
-			bm_page_in_texture(pm->maps[idx].base_map.original_texture);
+			pm->maps[idx].base_map.PageIn();
 		}
 
 		if (Subspace_glow_bitmap < 0) {

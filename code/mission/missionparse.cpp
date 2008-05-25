@@ -2943,7 +2943,7 @@ int parse_create_object_sub(p_object *p_objp)
 		for (j = 0; j < pm->n_textures; j++)
 		{
 			// get texture file name
-			bm_get_filename(pm->maps[j].base_map.texture, texture_file);
+			bm_get_filename(pm->maps[j].base_map.GetTexture(), texture_file);
 
 			// get rid of file extension
 			p = strchr(texture_file, '.');

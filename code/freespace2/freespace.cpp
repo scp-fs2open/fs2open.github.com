@@ -2677,37 +2677,48 @@ void game_flash_diminish(float frametime)
 
 void game_level_close()
 {
-	// save player-persistent variables
-	mission_campaign_save_player_persistent_variables();	// Goober5000
+	//WMC - this is actually pretty damn dangerous, but I don't want a modder
+	//to accidentally use an override here without realizing it.
+	if(!Script_system.IsConditionOverride(CHA_MISSIONEND))
+	{
+		// save player-persistent variables
+		mission_campaign_save_player_persistent_variables();	// Goober5000
 
-	// De-Initialize the game subsystems
-	sexp_music_close();	// Goober5000
-	event_music_level_close();
-	game_stop_looped_sounds();
-	snd_stop_all();
-	obj_snd_level_close();					// uninit object-linked persistant sounds
-	gamesnd_unload_gameplay_sounds();	// unload gameplay sounds from memory
-	anim_level_close();						// stop and clean up any anim instances
-	message_mission_shutdown();			// called after anim_level_close() to make sure instances are clear
-	shockwave_level_close();
-	fireball_level_close();	
-	shield_hit_close();
-	mission_event_shutdown();
-	asteroid_level_close();
-	jumpnode_level_close();
-//	model_cache_reset();						// Reset/free all the model caching stuff
-	flak_level_close();						// unload flak stuff
-	neb2_level_close();						// shutdown gaseous nebula stuff
-	ct_level_close();
-	beam_level_close();
-	mflash_level_close();
-	mission_brief_common_reset();		// close out parsed briefing/mission stuff
-	cameras_close();
-	subtitles_close();
-	trail_level_close();
+		// De-Initialize the game subsystems
+		sexp_music_close();	// Goober5000
+		event_music_level_close();
+		game_stop_looped_sounds();
+		snd_stop_all();
+		obj_snd_level_close();					// uninit object-linked persistant sounds
+		gamesnd_unload_gameplay_sounds();	// unload gameplay sounds from memory
+		anim_level_close();						// stop and clean up any anim instances
+		message_mission_shutdown();			// called after anim_level_close() to make sure instances are clear
+		shockwave_level_close();
+		fireball_level_close();	
+		shield_hit_close();
+		mission_event_shutdown();
+		asteroid_level_close();
+		jumpnode_level_close();
+	//	model_cache_reset();						// Reset/free all the model caching stuff
+		flak_level_close();						// unload flak stuff
+		neb2_level_close();						// shutdown gaseous nebula stuff
+		ct_level_close();
+		beam_level_close();
+		mflash_level_close();
+		mission_brief_common_reset();		// close out parsed briefing/mission stuff
+		cameras_close();
+		subtitles_close();
+		trail_level_close();
 
-	audiostream_unpause_all();
-	Game_paused = 0;
+		audiostream_unpause_all();
+		Game_paused = 0;
+	}
+	else
+	{
+		Error(LOCATION, "Scripting Mission End override is not fully supported yet.");
+	}
+
+	Script_system.RunCondition(CHA_MISSIONEND);
 }
 
 uint load_gl_init;
@@ -3252,6 +3263,8 @@ void game_post_level_init()
 	//load_mission_stuff = time(NULL);
 	freespace_mission_load_stuff();
 	//load_mission_stuff = time(NULL) - load_mission_stuff;
+
+	Script_system.RunCondition(CHA_MISSIONSTART);
 }
 
 // tells the server to load the mission and initialize structures
@@ -9859,11 +9872,11 @@ void Time_model( int modelnum )
 		char filename[1024];
 		ubyte pal[768];
 
-		int bmp_num = pm->maps[i].base_map.original_texture;
+		int bmp_num = pm->maps[i].base_map.GetOriginalTexture();
 		if ( bmp_num > -1 )	{
-			bm_get_palette(pm->maps[i].base_map.original_texture, pal, filename );		
+			bm_get_palette(bmp_num, pal, filename );		
 			int w,h;
-			bm_get_info( pm->maps[i].base_map.original_texture,&w, &h );
+			bm_get_info( bmp_num,&w, &h );
 
 
 			if ( (w > 512) || (h > 512) )	{

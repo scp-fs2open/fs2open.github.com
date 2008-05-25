@@ -1005,7 +1005,7 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 	// If in write mode, just try to open the file straight off
 	// the harddisk.  No fancy packfile stuff here!
 	
-	if ( strchr(mode,'w') )	{
+	if ( strchr(mode,'w') || strchr(mode,'+') || strchr(mode,'a') )	{
 		// For write-only files, require a full path or a path type
 #ifdef SCP_UNIX
 		if ( strpbrk(file_path, "/") ) {
@@ -1026,8 +1026,40 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 		Assert( !(type & CFILE_MEMORY_MAPPED) );
 
 		// JOHN: TODO, you should create the path if it doesn't exist.
-				
-		FILE *fp = fopen(longname, mode);
+		
+		//WMC - For some godawful reason, fread does not return the correct number of bytes read
+		//in text mode, which messes up FS2_Open's raw_position indicator in fgets. As a consequence, you
+		//_must_ open files that are gonna be read in binary mode.
+
+		char happy_mode[8];
+		if(strcspn(mode, "ra+") != strlen(mode) && (strchr(mode, 't') || !strchr(mode, 'b')))
+		{
+			//*****BEGIN PROCESSING OF MODE*****
+			//Copies all 'mode' characters over, except for t, and adds b if needed.
+			unsigned int max = sizeof(happy_mode) - 2;	//space for null and 'b'
+			bool need_b = true;
+			for(unsigned int i = 0; i < strlen(mode); i++)
+			{
+				if(i > max)
+					break;
+
+				if(mode[i] != 't')
+					happy_mode[i] = mode[i];
+
+				if(mode[i] == 'b')
+					need_b = false;
+			}
+			happy_mode[i] = '\0';
+			if(need_b)
+				strcat(happy_mode, "b");
+			//*****END PROCESSING OF MODE*****
+		}
+		else
+		{
+			strcpy(happy_mode, mode);
+		}
+
+		FILE *fp = fopen(longname, happy_mode);
 		if (fp)	{
 			return cf_open_fill_cfblock(fp, dir_type);
  		}
@@ -1272,6 +1304,25 @@ int cfclose( CFILE * cfile )
 	return result;
 }
 
+int cf_is_valid(CFILE *cfile)
+{
+	//Was a valid pointer passed?
+	if(cfile == NULL)
+		return 0;
+
+	//Does it have a valid ID?
+	if(cfile->id < 0 || cfile->id >= MAX_CFILE_BLOCKS)
+		return 0;
+
+	//Is it used?
+	Cfile_block *cb = &Cfile_block_list[cfile->id];	
+	if(cb->type != CFILE_BLOCK_USED && (cb->fp != NULL || cb->data != NULL))
+		return 0;
+
+	//It's good, as near as we can tell.
+	return 1;
+}
+
 
 
 
@@ -1300,7 +1351,10 @@ CFILE *cf_open_fill_cfblock(FILE *fp, int type)
 		cfbp->fp = fp;
 		cfbp->dir_type = type;
 		
-		cf_init_lowlevel_read_code(cfp,0,filelength(fileno(fp)) );
+		int pos = ftell(fp);
+		if(pos == -1L)
+			pos = 0;
+		cf_init_lowlevel_read_code(cfp,0,filelength(fileno(fp)), 0 );
 
 		return cfp;
 	}
@@ -1334,7 +1388,7 @@ CFILE *cf_open_packed_cfblock(FILE *fp, int type, int offset, int size)
 		cfbp->fp = fp;
 		cfbp->dir_type = type;
 
-		cf_init_lowlevel_read_code(cfp,offset, size );
+		cf_init_lowlevel_read_code(cfp,offset, size, 0 );
 
 		return cfp;
 	}
@@ -1376,7 +1430,7 @@ CFILE *cf_open_mapped_fill_cfblock(FILE *fp, int type)
 #endif
 		cfbp->dir_type = type;
 
-		cf_init_lowlevel_read_code(cfp,0 , 0 );
+		cf_init_lowlevel_read_code(cfp, 0, 0, 0 );
 #if defined _WIN32
 		cfbp->hMapFile = CreateFileMapping(cfbp->hInFile, NULL, PAGE_READONLY, 0, 0, NULL);
 		if (cfbp->hMapFile == NULL) { 
@@ -1702,23 +1756,36 @@ int cfilelength( CFILE * cfile )
 //
 int cfwrite(void *buf, int elsize, int nelem, CFILE *cfile)
 {
-	Assert(cfile != NULL);
-	Assert(buf != NULL);
-	Assert(elsize > 0);
-	Assert(nelem > 0);
+	if(!cf_is_valid(cfile))
+		return 0;
 
-	Cfile_block *cb;
-	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-	cb = &Cfile_block_list[cfile->id];	
+	if(buf == NULL || elsize == 0 || nelem == 0)
+		return 0;
+
+	Cfile_block *cb = &Cfile_block_list[cfile->id];	
+
+	if(cb->lib_offset != 0)
+	{
+		Error(LOCATION, "Attempt to write to a VP file (unsupported)");
+		return 0;
+	}
+
+	if(cb->data != NULL)
+	{
+		Warning(LOCATION, "Writing is not supported for mem-mapped files");
+		return EOF;
+	}
 
 	int result = 0;
 
-	// cfwrite() not supported for memory-mapped files
-	Assert( !cb->data );
-
-	Assert(cb->fp != NULL);
-	Assert(cb->lib_offset == 0 );
 	result = fwrite(buf, elsize, nelem, cb->fp);
+
+	//WMC - update filesize and position
+	if(result > 0)
+	{
+		cb->size = filelength(fileno(cb->fp));
+		cb->raw_position += result;
+	}
 
 	return result;	
 }
@@ -1731,19 +1798,74 @@ int cfwrite(void *buf, int elsize, int nelem, CFILE *cfile)
 //
 int cfputc(int c, CFILE *cfile)
 {
-	int result;
+	if(!cf_is_valid(cfile))
+		return EOF;
 
-	Assert(cfile != NULL);
-	Cfile_block *cb;
-	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-	cb = &Cfile_block_list[cfile->id];	
+	Cfile_block *cb = &Cfile_block_list[cfile->id];	
 
-	result = 0;
-	// cfputc() not supported for memory-mapped files
+	if(cb->lib_offset != 0)
+	{
+		Error(LOCATION, "Attempt to write character to a VP file (unsupported)");
+		return EOF;
+	}
+
+	if(cb->data != NULL)
+	{
+		Warning(LOCATION, "Writing is not supported for mem-mapped files");
+		return EOF;
+	}
+
+	// writing not supported for memory-mapped files
 	Assert( !cb->data );
 
-	Assert(cb->fp != NULL);
-	result = fputc(c, cb->fp);
+	int result = fputc(c, cb->fp);
+
+	//WMC - update filesize and position
+	if(result != EOF)
+	{
+		cb->size = filelength(fileno(cb->fp));
+		cb->raw_position += 1;
+	}
+
+	return result;	
+}
+
+
+// cfputs() writes a string to a file
+//
+// returns:   success ==> non-negative value
+//				  error   ==> EOF
+//
+int cfputs(char *str, CFILE *cfile)
+{
+	if(!cf_is_valid(cfile))
+		return EOF;
+
+	if(str == NULL)
+		return EOF;
+
+	Cfile_block *cb = &Cfile_block_list[cfile->id];	
+
+	if(cb->lib_offset != 0)
+	{
+		Error(LOCATION, "Attempt to write character to a VP file (unsupported)");
+		return EOF;
+	}
+
+	if(cb->data != NULL)
+	{
+		Warning(LOCATION, "Writing is not supported for mem-mapped files");
+		return EOF;
+	}
+
+	int result = fputs(str, cb->fp);
+
+	//WMC - update filesize and position
+	if(result != EOF)
+	{
+		cb->size = filelength(fileno(cb->fp));
+		cb->raw_position += strlen(str);
+	}
 
 	return result;	
 }
@@ -1756,8 +1878,6 @@ int cfputc(int c, CFILE *cfile)
 //
 int cfgetc(CFILE *cfile)
 {
-	Assert(cfile != NULL);
-	
 	char tmp;
 
 	int result = cfread(&tmp, 1, 1, cfile );
@@ -1795,7 +1915,7 @@ char *cfgets(char *buf, int n, CFILE *cfile)
 			int ret = cfread( &tmp_c, 1, 1, cfile );
 			if ( ret != 1 )	{
 				*buf = 0;
-				if ( buf > t )	{		
+				if ( buf > t )	{
 					return t;
 				} else {
 					return NULL;
@@ -1809,31 +1929,6 @@ char *cfgets(char *buf, int n, CFILE *cfile)
 	*buf++ = 0;
 
 	return  t;
-}
-
-// cfputs() writes a string to a file
-//
-// returns:   success ==> non-negative value
-//				  error   ==> EOF
-//
-int cfputs(char *str, CFILE *cfile)
-{
-	Assert(cfile != NULL);
-	Assert(str != NULL);
-
-	Cfile_block *cb;
-	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-	cb = &Cfile_block_list[cfile->id];	
-
-	int result;
-
-	result = 0;
-	// cfputs() not supported for memory-mapped files
-	Assert( !cb->data );
-	Assert(cb->fp != NULL);
-	result = fputs(str, cb->fp);
-
-	return result;	
 }
 
 
@@ -2138,5 +2233,11 @@ int cflush(CFILE *cfile)
 	Assert( !cb->data );
 
 	Assert(cb->fp != NULL);
-	return fflush(cb->fp);
+
+	int result = fflush(cb->fp);
+
+	//WMC - update filesize
+	cb->size = filelength(fileno(cb->fp));
+
+	return result;
 }

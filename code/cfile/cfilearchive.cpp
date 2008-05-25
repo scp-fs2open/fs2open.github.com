@@ -119,7 +119,7 @@
 
 // Called once to setup the low-level reading code.
 
-void cf_init_lowlevel_read_code( CFILE * cfile, int offset, int size )
+void cf_init_lowlevel_read_code( CFILE * cfile, int lib_offset, int size, int pos )
 {
 	Assert(cfile != NULL);
 
@@ -127,8 +127,8 @@ void cf_init_lowlevel_read_code( CFILE * cfile, int offset, int size )
 	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
 	cb = &Cfile_block_list[cfile->id];	
 
-	cb->lib_offset = offset;
-	cb->raw_position = 0;
+	cb->lib_offset = lib_offset;
+	cb->raw_position = pos;
 	cb->size = size;
 
 	if ( cb->fp )	{
@@ -268,22 +268,22 @@ int cfseek( CFILE *cfile, int offset, int where )
 //
 int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 {
-	Assert(cfile != NULL);
-	Assert(buf != NULL);
-	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
-
-	Cfile_block *cb;
-	cb = &Cfile_block_list[cfile->id];	
-
-	// cfread() not supported for memory-mapped files
-	Assert( !cb->data );
-	Assert(cb->fp != NULL);
+	if(!cf_is_valid(cfile))
+		return 0;
 
 	int size = elsize*nelem;
 
-	Assert(nelem > 0);
-	Assert(elsize > 0);
-	Assert(size > 0);
+	if(buf == NULL || size <= 0)
+		return 0;
+
+	Cfile_block *cb = &Cfile_block_list[cfile->id];	
+
+	// cfread() not supported for memory-mapped files
+	if(cb->data != NULL)
+	{
+		Warning(LOCATION, "Writing is not supported for mem-mapped files");
+		return 0;
+	}
 
 	if ( (cb->raw_position+size) > cb->size ) {
 		size = cb->size - cb->raw_position;
@@ -310,16 +310,20 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 
 int cfread_lua_number(double *buf, CFILE *cfile)
 {
-	Assert(cfile != NULL);
-	Assert(buf != NULL);
-	Assert(cfile->id >= 0 && cfile->id < MAX_CFILE_BLOCKS);
+	if(!cf_is_valid(cfile))
+		return 0;
 
-	Cfile_block *cb;
-	cb = &Cfile_block_list[cfile->id];	
+	if(buf == NULL)
+		return 0;
+
+	Cfile_block *cb = &Cfile_block_list[cfile->id];	
 
 	// cfread() not supported for memory-mapped files
-	Assert( !cb->data );
-	Assert(cb->fp != NULL);
+	if(cb->data != NULL)
+	{
+		Warning(LOCATION, "Writing is not supported for mem-mapped files");
+		return 0;
+	}
 
 	long orig_pos = ftell(cb->fp);
 	int items_read = fscanf(cb->fp, LUA_NUMBER_SCAN, buf);

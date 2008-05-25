@@ -53,6 +53,8 @@ struct image_desc
 #define CHA_OBJECTRENDER	9
 #define CHA_SPLASHSCREEN	10
 #define CHA_GAMEINIT		11
+#define CHA_MISSIONSTART	12
+#define CHA_MISSIONEND		13
 
 
 struct script_condition

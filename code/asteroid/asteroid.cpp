@@ -2454,11 +2454,7 @@ void asteroid_page_in()
 
 				// Page in textures
 				for (j=0; j<asip->modelp[k]->n_textures; j++ )	{
-					int bitmap_num = asip->modelp[k]->maps[j].base_map.original_texture;
-
-					if ( bitmap_num > -1 )	{
-						bm_page_in_texture( bitmap_num );
-					}					
+					asip->modelp[k]->maps[j].base_map.PageIn();			
 				}
 
 			}

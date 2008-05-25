@@ -1385,6 +1385,68 @@ int ai_goal_find_empty_slot( ai_goal *goals, int active_goal )
 	return oldest_index;
 }
 
+int ai_goal_num(ai_goal *goals)
+{
+	int gindex = 0;
+	int num_goals = 0;
+	for(gindex = 0; gindex < MAX_AI_GOALS; gindex++)
+	{
+		if(goals[gindex].ai_mode != AI_GOAL_NONE)
+			num_goals++;
+	}
+
+	return num_goals;
+}
+
+
+void ai_add_goal_sub_scripting(int type, int mode, int submode, int priority, char *shipname, ai_goal *aigp )
+{
+	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
+
+	aigp->time = Missiontime;
+	aigp->type = type;											// from player for sure -- could be to ship or to wing
+	aigp->ai_mode = mode;										// major mode for this goal
+	aigp->ai_submode = submode;								// could mean different things depending on mode
+
+	if ( mode == AI_GOAL_WARP )
+		aigp->wp_index = submode;
+
+	if ( mode == AI_GOAL_CHASE_WEAPON ) {
+		aigp->wp_index = submode;								// submode contains the instance of the weapon
+		aigp->weapon_signature = Objects[Weapons[submode].objnum].signature;
+	}
+
+	if ( shipname != NULL )
+		aigp->ship_name = ai_get_goal_ship_name( shipname, &aigp->ship_name_index );
+	else
+		aigp->ship_name = NULL;
+
+	aigp->priority = priority;
+}
+
+void ai_add_ship_goal_scripting(int mode, int submode, int priority, char *shipname, ai_info *aip)
+{
+	int empty_index;
+	ai_goal *aigp;
+
+	empty_index = ai_goal_find_empty_slot(aip->goals, aip->active_goal);
+	aigp = &aip->goals[empty_index];
+
+	//WMC - hack to get docking setup correctly
+	if ( mode == AI_GOAL_DOCK ) {
+		aigp->docker.name = Ships[aip->shipnum].ship_name;
+		aigp->dockee.name = shipname;
+		aigp->flags &= ~AIGF_DOCK_INDEXES_VALID;
+	}
+	ai_add_goal_sub_scripting(AIG_TYPE_PLAYER_SHIP, mode, submode, priority, shipname, aigp);
+
+	if ( (mode == AI_GOAL_REARM_REPAIR) || ((mode == AI_GOAL_DOCK) && (submode == AIS_DOCK_0)) ) {
+		ai_goal_fixup_dockpoints( aip, aigp );
+	}
+
+	aigp->signature = Ai_goal_signature++;
+}
+
 // adds a goal from a player to the given ship's ai_info structure.  'type' tells us if goal
 // is issued to ship or wing (from player),  mode is AI_GOAL_*. submode is the submode the
 // ship should go into.  shipname is the object of the action.  aip is the ai_info pointer

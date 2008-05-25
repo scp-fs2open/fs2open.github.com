@@ -90,6 +90,6 @@ extern Cfile_block Cfile_block_list[MAX_CFILE_BLOCKS];
 extern CFILE Cfile_list[MAX_CFILE_BLOCKS];
 
 // Called once to setup the low-level reading code.
-void cf_init_lowlevel_read_code( CFILE * cfile, int offset, int size );
+void cf_init_lowlevel_read_code( CFILE * cfile, int lib_offset, int size, int pos );
 
 #endif

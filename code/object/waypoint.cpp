@@ -120,3 +120,12 @@ int waypoint_lookup(char *name)
 
 	return -1;
 }
+
+//Return waypoint list index
+int waypoint_get_list(object *objp)
+{
+	if(objp->type != OBJ_WAYPOINT)
+		return -1;
+
+	return (objp->instance/65536);
+}

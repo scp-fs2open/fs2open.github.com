@@ -32,4 +32,7 @@ int waypoint_create(vec3d *pos, int list);
 //Queries for waypoint with given name, returns -1 on failure
 int waypoint_lookup(char *name);
 
+//Returns Waypoint_lists[] index for a given waypoint
+int waypoint_get_list(struct object *objp);
+
 #endif //_WAYPOINT_H

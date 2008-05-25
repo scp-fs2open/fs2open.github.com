@@ -263,7 +263,10 @@ extern void ai_post_process_mission();
 extern void ai_maybe_add_form_goal( wing *wingp );
 extern void ai_process_mission_orders( int objnum, ai_info *aip );
 
+extern int ai_goal_num(ai_goal *goals);
+
 // adds goals to ships/wing through sexpressions
+extern void ai_add_ship_goal_scripting(int mode, int submode, int priority, char *shipname, ai_info *aip);
 extern void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip );
 extern void ai_add_wing_goal_sexp( int sexp, int type, int wingnum );
 extern void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp );
