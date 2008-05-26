@@ -2439,6 +2439,7 @@ ship_obj		Ship_obj_list;							// head of linked list of ship_obj structs
 
 ship_info		Ship_info[MAX_SHIP_CLASSES];
 reinforcements	Reinforcements[MAX_REINFORCEMENTS];
+std::vector<ship_info> Ship_templates;
 
 static char **tspecies_names = NULL;
 
@@ -2806,14 +2807,12 @@ int warptype_match(char *p)
 //Result: Perfectly valid ship_info entry, just with no name
 //Called from parse_ship so that modular tables are cumulative,
 //rather than simply replacing the previous entry
-void init_ship_entry(int ship_info_index)
+void init_ship_entry(ship_info *sip)
 {
-	Assert(ship_info_index >= 0 && ship_info_index < MAX_SHIP_CLASSES);
-	ship_info *sip = &Ship_info[ship_info_index];
 	int i,j;
 	
 	sip->name[0] = '\0';
-	sprintf(sip->short_name, "ShipClass%d", ship_info_index);
+	sprintf(sip->short_name, "AShipClass");
 	sip->species = 0;
 	sip->class_type = -1;
 	
@@ -3088,12 +3087,145 @@ int parse_ship(char *filename, bool replace)
 		//Init vars
 		sip = &Ship_info[Num_ship_classes];
 		first_time = true;
-		init_ship_entry(Num_ship_classes);
+		init_ship_entry(sip);
 		
 		strcpy(sip->name, buf);
 		Num_ship_classes++;
 	}
 
+	// Use a template for this ship.
+	if( optional_string( "+Use Template:" ) ) {
+		// Should never resolve to true, but just in case...
+		if( !create_if_not_found ) {
+			Warning(LOCATION, "Both '+nocreate' and '+Use Template:' were specified for ship class '%s', ignoring '+Use Template:'", buf);
+		}
+		else {
+			char template_name[SHIP_MULTITEXT_LENGTH];
+			stuff_string(template_name, F_NAME, SHIP_MULTITEXT_LENGTH);
+			int template_id = ship_template_lookup( template_name);
+			if ( template_id != -1 ) {
+				first_time = false;
+				memcpy(sip, &Ship_templates[template_id], sizeof(ship_info));
+				strcpy(sip->name, buf);
+			}
+			else {
+				Warning(LOCATION, "Unable to find ship template '%s' requested by ship class '%s', ignoring template request...", template_name, buf);
+			}
+		}
+	}
+
+	rtn = parse_ship_values(sip, false, first_time, replace);
+
+	// if we have a ship copy, then check to be sure that our base ship exists
+	// This should really be moved -C
+	// Goober5000 - made nonfatal and a bit clearer
+	if (sip->flags & SIF_SHIP_COPY)
+	{
+		strcpy(name_tmp, sip->name);
+
+		if (end_string_at_first_hash_symbol(name_tmp))
+		{
+			if (ship_info_lookup(name_tmp) < 0)
+			{
+				Warning(LOCATION, "Ship %s is a copy, but base ship %s couldn't be found.", sip->name, name_tmp);
+				sip->flags &= ~SIF_SHIP_COPY;
+			}
+		}
+		else
+		{
+			Warning(LOCATION, "Ships %s is a copy, but does not use the ship copy name extension.");
+			sip->flags &= ~SIF_SHIP_COPY;
+		}
+	}
+
+	strcpy(parse_error_text, "");
+
+
+	return rtn;	//0 for success
+}
+
+// function to parse the information for a specific ship type template.
+int parse_ship_template()
+{
+	char buf[SHIP_MULTITEXT_LENGTH];
+	ship_info new_template;
+	ship_info *sip = &new_template;
+	int rtn = 0;
+	
+	required_string("$Template:");
+	stuff_string(buf, F_NAME, SHIP_MULTITEXT_LENGTH);
+	
+	if( optional_string("+nocreate") ) {
+		Warning(LOCATION, "+nocreate flag used on ship template. Ship templates can not be modified. Ignoring +nocreate.");
+	}
+	
+	strcpy(parse_error_text, "\nin ship template: ");
+	strcat(parse_error_text, buf);
+	
+	diag_printf ("Ship template name -- %s\n", buf);
+	//Check if the template exists already
+	int template_id;
+	template_id = ship_template_lookup( buf );
+	
+	if( template_id != -1 ) {
+		sip = &Ship_templates[template_id];
+		Warning(LOCATION, "Error:  Ship template %s already exists. All ship template names must be unique.", sip->name);
+		if ( !skip_to_start_of_string_either("$Template:", "#End")) {
+			Int3();
+		}
+		return -1;
+	}
+	else {
+		
+		init_ship_entry(sip);
+		strcpy(sip->name, buf);
+		//Use another template for this template. This allows for template heirarchies. - Turey
+		if( optional_string("+Use Template:") ) {
+			char template_name[SHIP_MULTITEXT_LENGTH];
+			stuff_string(template_name, F_NAME, SHIP_MULTITEXT_LENGTH);
+			int template_id = ship_template_lookup( template_name);
+			
+			if ( template_id != -1 ) {
+				memcpy(sip, &Ship_templates[template_id], sizeof(ship_info));
+				strcpy(sip->name, buf);
+			}
+			else {
+				Warning(LOCATION, "Unable to find ship template '%s' requested by ship template '%s', ignoring template request...", template_name, buf);
+			}
+		}
+	}
+	
+	rtn = parse_ship_values( sip, true, true, false );
+	
+	// Now that we're done everything, check to see if the template exists already, and if it doesn't, add it to the vector.
+	if ( ship_template_lookup( sip->name ) != -1 ) {
+		Warning(LOCATION, "Ship Template '%s' already exists, discarding duplicate...", sip->name);
+	}
+	else {
+		Ship_templates.push_back(*sip);
+	}
+	
+	return rtn;
+}
+
+// Puts values into a ship_info.
+int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace)
+{
+	char buf[SHIP_MULTITEXT_LENGTH];
+	char* info_type_name;
+	int i, j, num_allowed;
+	int allowed_weapons[MAX_WEAPON_TYPES];
+	int pbank_capacity_count, sbank_capacity_count;
+	int rtn = 0;
+	char name_tmp[NAME_LENGTH];
+	
+	if ( !isTemplate ) {
+		info_type_name = "Ship Class";
+	}
+	else {
+		info_type_name = "Ship Template";
+	}	
+	
 	if(optional_string("$Short name:"))
 		stuff_string(sip->short_name, F_NAME, NAME_LENGTH);
 	else if(first_time)
@@ -3341,7 +3473,7 @@ int parse_ship(char *filename, bool replace)
 		stuff_vector(&sip->max_vel);
 
 	// calculate the max speed from max_velocity
-	sip->max_speed = sip->max_vel.xyz.z;	//vm_vec_mag(&sip->max_vel);
+	sip->max_speed = vm_vec_mag(&sip->max_vel);
 
 	if(optional_string("$Rotation Time:"))
 	{
@@ -4347,7 +4479,7 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	while (cont_flag) {
-		int r = required_string_3("#End", "$Subsystem:", "$Name" );
+		int r = required_string_4("#End", "$Subsystem:", "$Name", "$Template" );
 		switch (r) {
 		case 0:
 			cont_flag = 0;
@@ -4686,6 +4818,11 @@ strcpy(parse_error_text, temp_error);
 		case 2:
 			cont_flag = 0;
 			break;
+			case 3:
+				if (isTemplate) {
+					cont_flag = 0;
+					break;
+				}
 		default:
 			Int3();	// Impossible return value from required_string_3.
 		}
@@ -4716,28 +4853,6 @@ strcpy(parse_error_text, temp_error);
 	}
 
 	model_anim_fix_reverse_times(sip);
-
-	// if we have a ship copy, then check to be sure that our base ship exists
-	// This should really be moved -C
-	// Goober5000 - made nonfatal and a bit clearer
-	if (sip->flags & SIF_SHIP_COPY)
-	{
-		strcpy(name_tmp, sip->name);
-
-		if (end_string_at_first_hash_symbol(name_tmp))
-		{
-			if (ship_info_lookup(name_tmp) < 0)
-			{
-				Warning(LOCATION, "Ship %s is a copy, but base ship %s couldn't be found.", sip->name, name_tmp);
-				sip->flags &= ~SIF_SHIP_COPY;
-			}
-		}
-		else
-		{
-			Warning(LOCATION, "Ships %s is a copy, but does not use the ship copy name extension.");
-			sip->flags &= ~SIF_SHIP_COPY;
-		}
-	}
 
 	strcpy(parse_error_text, "");
 
@@ -5050,6 +5165,17 @@ void parse_shiptbl(char *filename)
 		required_string("#End");
 	}
 
+	if( optional_string("#Ship Templates") ) {
+		while ( required_string_either("#End","$Template:") ) {
+			
+			if ( parse_ship_template() ) {
+				continue;
+			}
+		}
+		
+		required_string("#End");
+	}
+
 	//Add ship classes
 	if(optional_string("#Ship Classes"))
 	{
@@ -5209,6 +5335,10 @@ void ship_init()
 			ships_inited = 1;
 
 			// cleanup
+			
+			//Unload ship templates, we don't need them anymore.
+			Ship_templates.clear();
+			
 			vm_free(tspecies_names);
 			tspecies_names = NULL;
 		}
@@ -9065,6 +9195,7 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 {
 	int			i, n, objnum, j, k, t;
 	ship_info	*sip;
+	ship			*sp;
 	ship			*shipp;
 
 	t = ship_get_num_ships();
@@ -9429,8 +9560,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// Goober5000 - extra checks
 	Assert(hull_pct > 0.0f && hull_pct <= 1.0f);
 	Assert(shield_pct >= 0.0f && shield_pct <= 1.0f);
-	CLAMP(hull_pct, 0.1f, 1.0f);
-	CLAMP(shield_pct, 0.0f, 1.0f);
+	if (hull_pct <= 0.0f) hull_pct = 0.1f;
+	if (hull_pct > 1.0f) hull_pct = 1.0f;
+	if (shield_pct < 0.0f) shield_pct = 0.0f;
+	if (shield_pct > 1.0f) shield_pct = 1.0f;
+
 
 	// point to new ship data
 	ship_model_change(n, ship_type);
@@ -9438,6 +9572,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	//WMC - set warp effects
 	ship_set_warp_effects(objp, sip);
+
 
 	// set the correct hull strength
 	if (Fred_running) {
@@ -9466,17 +9601,14 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->ship_max_shield_strength = sip->max_shield_strength;
 		}
 
-		// make sure that shields are enabled if they need to be
-		if (sp->ship_max_shield_strength > 0.0f) {
-			objp->flags &= ~OF_NO_SHIELDS;
-		}
-
 		shield_set_strength(objp, shield_pct * sp->ship_max_shield_strength);
 	}
+
 
 	// Goober5000: div-0 checks
 	Assert(sp->ship_max_hull_strength > 0.0f);
 	Assert(objp->hull_strength > 0.0f);
+
 
 	// subsys stuff done only after hull stuff is set
 
@@ -9492,6 +9624,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	sp->current_max_speed = sip->max_speed * (sp->current_max_speed / sip_orig->max_speed);
 
+	sp->afterburner_fuel = sip->afterburner_fuel_capacity;
+
 	ship_set_default_weapons(sp, sip);
 	physics_ship_init(&Objects[sp->objnum]);
 	ets_init_ship(&Objects[sp->objnum]);
@@ -9502,7 +9636,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 	// above removed by Goober5000 in favor of new ship_set_new_ai_class function :)
 	ship_set_new_ai_class(n, sip->ai_class);
-
 	model_anim_set_initial_states(sp);
 
 	//======================================================
@@ -11640,6 +11773,19 @@ int ship_info_lookup_sub(char *token)
 		if (!stricmp(token, Ship_info[i].name))
 			return i;
 
+	return -1;
+}
+
+// Return the index of Ship_templates[].name that is *token.
+int ship_template_lookup(char *token)
+{
+	int	i;
+	
+	for ( i = 0; i < (int)Ship_templates.size(); i++ ) {
+		if ( !stricmp(token, Ship_templates[i].name) ) {
+			return i;
+		}
+	}
 	return -1;
 }
 

@@ -1034,6 +1034,40 @@ int required_string_3(char *str1, char *str2, char *str3)
 	// exit (1);
 }
 
+int required_string_4(char *str1, char *str2, char *str3, char *str4)
+{
+	int	count = 0;
+	
+	ignore_white_space();
+	
+	while (count < RS_MAX_TRIES) {
+		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
+			// Mp += strlen(str1);
+			diag_printf("Found required string [%s]\n", token_found = str1);
+			return 0;
+		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
+			// Mp += strlen(str2);
+			diag_printf("Found required string [%s]\n", token_found = str2);
+			return 1;
+		} else if (strnicmp(str3, Mp, strlen(str3)) == 0) {
+			diag_printf("Found required string [%s]\n", token_found = str3);
+			return 2;
+		} else if (strnicmp(str4, Mp, strlen(str4)) == 0) {
+			diag_printf("Found required string [%s]\n", token_found = str4);
+			return 2;
+		}
+		
+		error_display(1, "Required token = [%s], [%s], [%s], or [%s], found [%.32s].\n", str1, str2, str3, str4, next_tokens());
+		
+		advance_to_eoln(NULL);
+		ignore_white_space();
+		count++;
+	}
+	
+	return -1;
+	// exit (1);
+}
+
 int required_string_either_fred(char *str1, char *str2)
 {
 	ignore_white_space();
@@ -3124,10 +3158,10 @@ bool end_string_at_first_hash_symbol(char *src)
 // Goober5000
 char *get_pointer_to_first_hash_symbol(char *src)
 {
-	char *p, *p2;
 	Assert(src);
 
-/*	p = strchr(src, '(');
+/*	char *p, *p2;
+	p = strchr(src, '(');
 	if (p != NULL)
 	{
 		p2 = strchr(p, ')');
