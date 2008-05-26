@@ -498,7 +498,7 @@ void barracks_squad_change_popup();
 
 void barracks_init_stats(scoring_struct *stats)
 {
-	int Max_stat_lines = Num_ship_classes + 21;
+	int Max_stat_lines = Num_ship_classes + 23;
 	int i;
 	float f;
 
@@ -615,6 +615,16 @@ void barracks_init_stats(scoring_struct *stats)
 	Assert(Num_stat_lines < Max_stat_lines);
 	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Assists:", 63));
 	sprintf(Stats[Num_stat_lines], "%d", stats->assists);
+	Num_stat_lines++;
+
+	Assert(Num_stat_lines < Max_stat_lines);
+	Stat_labels[Num_stat_lines][0] = 0;
+	Stats[Num_stat_lines][0] = 0;
+	Num_stat_lines++;
+
+	Assert(Num_stat_lines < Max_stat_lines);
+	STRCPY1(Stat_labels[Num_stat_lines], "Current Score:");
+	sprintf(Stats[Num_stat_lines], "%d", stats->score);
 	Num_stat_lines++;
 
 	Assert(Num_stat_lines < Max_stat_lines);
