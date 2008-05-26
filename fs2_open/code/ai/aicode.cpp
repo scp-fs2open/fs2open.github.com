@@ -3283,7 +3283,7 @@ void force_avoid_player_check(object *objp, ai_info *aip)
 //	Set *attacked as object to attack for object *attacker
 //	If attacked == NULL, then attack any enemy object.
 //	Attack point *rel_pos on object.  This is for supporting attacking subsystems.
-void ai_attack_object(object *attacker, object *attacked, int priority, ship_subsys *ssp)
+void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp)
 {
 	int temp;
 	ai_info	*aip;
@@ -3358,7 +3358,7 @@ void ai_attack_object(object *attacker, object *attacked, int priority, ship_sub
 //	--------------------------------------------------------------------------
 //	Set *attacked as object to attack for object *attacker
 //	Attack point *rel_pos on object.  This is for supporting attacking subsystems.
-void ai_attack_wing(object *attacker, int wingnum, int priority)
+void ai_attack_wing(object *attacker, int wingnum)
 {
 	ai_info	*aip;
 
@@ -3393,7 +3393,7 @@ void ai_attack_wing(object *attacker, int wingnum, int priority)
 
 //	--------------------------------------------------------------------------
 //	Set *evaded as object for *evader to evade.
-void ai_evade_object(object *evader, object *evaded, int priority)
+void ai_evade_object(object *evader, object *evaded)
 {
 	ai_info	*aip;
 
@@ -3466,7 +3466,7 @@ int compact_ignore_new_objects(ai_info *aip, int force = 0)
 }
 
 //	Ignore some object without changing mode.
-void ai_ignore_object(object *ignorer, object *ignored, int priority, int ignore_new)
+void ai_ignore_object(object *ignorer, object *ignored, int ignore_new)
 {
 	ai_info	*aip;
 
@@ -4127,7 +4127,7 @@ void ai_do_objects_undocked_stuff( object *docker, object *dockee )
 //		AIDO_DOCK		set goal of docking
 //		AIDO_DOCK_NOW	immediately dock, used for ships that need to be docked at mission start
 //		AIDO_UNDOCK		set goal of undocking
-void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int priority, int dock_type)
+void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int dock_type)
 {
 	Assert(docker != NULL);
 	Assert(dockee != NULL);
@@ -11967,7 +11967,7 @@ void process_subobjects(int objnum)
 			//     a ship may get repaired... and it should still try to depart.  Since docking bay departures
 			//     are not handled as goals, we don't want to leave the AIM_BAY_DEPART mode.
 			if ( aip->mode != AIM_BAY_DEPART ) {
-				ai_attack_object(objp, NULL, 99, NULL);		//	Regardless of current mode, enter attack mode.
+				ai_attack_object(objp, NULL, NULL);		//	Regardless of current mode, enter attack mode.
 				aip->submode = SM_ATTACK_FOREVER;				//	Never leave attack submode, don't avoid, evade, etc.
 				aip->submode_start_time = Missiontime;
 			}
@@ -16250,7 +16250,7 @@ int ai_issue_rearm_request(object *requester_objp)
 }
 
 // make objp rearm and repair goal_objp
-void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int dockee_index, int priority )
+void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int dockee_index )
 {
 	ai_info *aip, *goal_aip;
 
@@ -16259,7 +16259,7 @@ void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int doc
 
 	// nprintf(("AI", "Ship %s preparing to rearm ship %s.\n", shipp->ship_name, requester_shipp->ship_name));
 
-	ai_dock_with_object(objp, docker_index, goal_objp, dockee_index, priority, AIDO_DOCK);
+	ai_dock_with_object(objp, docker_index, goal_objp, dockee_index, AIDO_DOCK);
 	aip->ai_flags |= AIF_REPAIRING;						//	Tell that repair guy is busy trying to repair someone.
 
 	goal_aip = &Ai_info[Ships[goal_objp->instance].ai_index];

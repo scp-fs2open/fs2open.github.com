@@ -2899,7 +2899,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, i
 
 			z = get_operator_index(CTEXT(op_node));
 			if ( (query_operator_return_type(z) == OPR_AI_GOAL) && (argnum == Operators[op].min - 1) )
-				if ( (i < 0) || (i > 89) )
+				if ( (i < 0) || (i > 200) )
 					return SEXP_CHECK_NUM_RANGE_INVALID;
 
 		} else if (Sexp_nodes[node].subtype == SEXP_ATOM_STRING) {
