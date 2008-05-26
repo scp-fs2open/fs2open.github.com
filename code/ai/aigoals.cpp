@@ -722,6 +722,8 @@
 #define PLAYER_PRIORITY_WING				95
 #define PLAYER_PRIORITY_SUPPORT_LOW		10
 
+#define MAX_GOAL_PRIORITY				200
+
 // define for which goals cause other goals to get purged
 // Goober5000 - okay, this seems really stupid.  If any ship in the mission is assigned a goal
 // in PURGE_GOALS_ALL_SHIPS, *every* other ship will have certain goals purged.  So I added
@@ -1672,9 +1674,9 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_goal *aigp, char *actor_name )
 		Int3();			// get ALLENDER -- invalid ai-goal specified for ai object!!!!
 	}
 
-	if ( aigp->priority >= PLAYER_PRIORITY_MIN ) {
-		nprintf (("AI", "bashing sexpression priority of goal %s from %d to %d.\n", text, aigp->priority, PLAYER_PRIORITY_MIN-1));
-		aigp->priority = PLAYER_PRIORITY_MIN-1;
+	if ( aigp->priority > MAX_GOAL_PRIORITY ) {
+		nprintf (("AI", "bashing sexpression priority of goal %s from %d to %d.\n", text, aigp->priority, MAX_GOAL_PRIORITY));
+		aigp->priority = MAX_GOAL_PRIORITY;
 	}
 
 	// Goober5000 - since none of the goals act on the actor,
@@ -1776,7 +1778,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int doc
 
 	case AI_GOAL_UNDOCK:
 		aigp->ship_name = name;
-		aigp->priority = 100;
+		aigp->priority = MAX_GOAL_PRIORITY;
 		aigp->ai_mode = AI_GOAL_UNDOCK;
 		aigp->ai_submode = AIS_UNDOCK_0;
 		break;
@@ -2233,7 +2235,7 @@ int ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		Assert( sindex != -1 );		// should be true because of above status
 		ignored = &Objects[Ships[sindex].objnum];
 
-		ai_ignore_object(objp, ignored, 100, (aigp->ai_mode == AI_GOAL_IGNORE_NEW));
+		ai_ignore_object(objp, ignored, (aigp->ai_mode == AI_GOAL_IGNORE_NEW));
 
 		return AI_GOAL_SATISFIED;
 	}
@@ -2552,13 +2554,13 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 		//	Mike -- debug code!
 		//	If a ship has a subobject on it, attack that instead of the main ship!
-		ai_attack_object( objp, other_obj, current_goal->priority, NULL);
+		ai_attack_object( objp, other_obj, NULL);
 		break;
 
 	case AI_GOAL_CHASE_WEAPON:
 		Assert( Weapons[current_goal->wp_index].objnum != -1 );
 		other_obj = &Objects[Weapons[current_goal->wp_index].objnum];
-		ai_attack_object( objp, other_obj, current_goal->priority, NULL );
+		ai_attack_object( objp, other_obj, NULL );
 		break;
 
 	case AI_GOAL_GUARD:
@@ -2607,7 +2609,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		// be sure that we have indices for docking points here!  If we ever had names, they should
 		// get fixed up in goal_achievable so that the points can be checked there for validity
 		Assert (current_goal->flags & AIGF_DOCK_INDEXES_VALID);
-		ai_dock_with_object( objp, current_goal->docker.index, other_obj, current_goal->dockee.index, current_goal->priority, AIDO_DOCK );
+		ai_dock_with_object( objp, current_goal->docker.index, other_obj, current_goal->dockee.index, AIDO_DOCK );
 		break;
 	}
 
@@ -2670,7 +2672,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		}
 
 		// passing 0, 0 is okay because the undock code will figure out where to undock from
-		ai_dock_with_object( objp, 0, other_obj, 0, current_goal->priority, AIDO_UNDOCK );
+		ai_dock_with_object( objp, 0, other_obj, 0, AIDO_UNDOCK );
 		break;
 
 
@@ -2684,7 +2686,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		shipnum = ship_name_lookup( current_goal->ship_name );
 		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
-		ai_attack_object( objp, other_obj, current_goal->priority, NULL);
+		ai_attack_object( objp, other_obj, NULL);
 		ai_set_attack_subsystem( objp, current_goal->ai_submode );		// submode stored the subsystem type
 		if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM) {
 			if (aip->target_objnum != -1) {
@@ -2702,11 +2704,11 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	case AI_GOAL_CHASE_WING:
 		wingnum = wing_name_lookup( current_goal->ship_name );
 		Assert( wingnum >= 0 );
-		ai_attack_wing(objp, wingnum, current_goal->priority);
+		ai_attack_wing(objp, wingnum);
 		break;
 
 	case AI_GOAL_CHASE_ANY:
-		ai_attack_object( objp, NULL, current_goal->priority, NULL );
+		ai_attack_object( objp, NULL, NULL );
 		break;
 
 	case AI_GOAL_WARP: {
@@ -2721,7 +2723,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		shipnum = ship_name_lookup( current_goal->ship_name );
 		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
-		ai_evade_object( objp, other_obj, current_goal->priority );
+		ai_evade_object( objp, other_obj);
 		break;
 
 	case AI_GOAL_STAY_STILL:
@@ -2776,7 +2778,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		shipnum = ship_name_lookup( current_goal->ship_name );
 		Assert( shipnum >= 0 );
 		other_obj = &Objects[Ships[shipnum].objnum];
-		ai_rearm_repair( objp, current_goal->docker.index, other_obj, current_goal->dockee.index, current_goal->priority );
+		ai_rearm_repair( objp, current_goal->docker.index, other_obj, current_goal->dockee.index );
 		break;
 
 	default:

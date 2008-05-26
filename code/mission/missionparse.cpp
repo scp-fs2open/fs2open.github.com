@@ -2711,7 +2711,7 @@ void parse_dock_one_docked_object(p_object *pobjp, p_object *parent_pobjp)
 
 	// dock them
 	nprintf(("AI", "Initially docked: %s to parent %s\n", Ships[objp->instance].ship_name, Ships[parent_objp->instance].ship_name));
-	ai_dock_with_object(objp, dockpoint, parent_objp, parent_dockpoint, 89, AIDO_DOCK_NOW);
+	ai_dock_with_object(objp, dockpoint, parent_objp, parent_dockpoint, AIDO_DOCK_NOW);
 }
 
 int parse_create_object_sub(p_object *objp);

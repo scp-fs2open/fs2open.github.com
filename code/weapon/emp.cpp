@@ -458,7 +458,7 @@ void emp_process_ship(ship *shipp)
 		// if we got a valid ship object to target
 		if((ship_lookup >= 0) && (Ships[ship_lookup].objnum >= 0)){
 			// attack the object
-			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum], 89, NULL);
+			ai_attack_object(objp, &Objects[Ships[ship_lookup].objnum], NULL);
 		}
 	}
 }

@@ -774,7 +774,7 @@ void initial_status::dock(object *objp, int dockpoint, object *other_objp, int o
 	dock_function_info dfi;
 
 	// do the docking (do it in reverse so that the current object stays put)
-	ai_dock_with_object(other_objp, other_dockpoint, objp, dockpoint, 89, AIDO_DOCK_NOW);
+	ai_dock_with_object(other_objp, other_dockpoint, objp, dockpoint, AIDO_DOCK_NOW);
 
 	// unmark the handled flag in preparation for the next step
 	dock_evaluate_all_docked_objects(objp, &dfi, initial_status_unmark_dock_handled_flag);

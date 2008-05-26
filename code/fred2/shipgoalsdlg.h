@@ -67,6 +67,7 @@
 #define _SHIPGOALSDLG_H
 
 #define ED_MAX_GOALS 10
+#define MAX_EDITOR_GOAL_PRIORITY	200
 
 /////////////////////////////////////////////////////////////////////////////
 // ShipGoalsDlg dialog

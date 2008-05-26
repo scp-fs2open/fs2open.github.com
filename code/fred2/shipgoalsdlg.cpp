@@ -299,25 +299,25 @@ void ShipGoalsDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_OBJECT10, m_object[9]);
 
 	DDX_Text(pDX, IDC_PRIORITY1, m_priority[0]);
-	DDV_MinMaxInt(pDX, m_priority[0], 0, 89);
+	DDV_MinMaxInt(pDX, m_priority[0], 0, MAX_EDITOR_GOAL_PRIORITY);
 	DDX_Text(pDX, IDC_PRIORITY2, m_priority[1]);
-	DDV_MinMaxInt(pDX, m_priority[1], 0, 89);
+	DDV_MinMaxInt(pDX, m_priority[1], 0, MAX_EDITOR_GOAL_PRIORITY);
 	DDX_Text(pDX, IDC_PRIORITY3, m_priority[2]);
-	DDV_MinMaxInt(pDX, m_priority[2], 0, 89);
+	DDV_MinMaxInt(pDX, m_priority[2], 0, MAX_EDITOR_GOAL_PRIORITY);
 	DDX_Text(pDX, IDC_PRIORITY4, m_priority[3]);
-	DDV_MinMaxInt(pDX, m_priority[3], 0, 89);
+	DDV_MinMaxInt(pDX, m_priority[3], 0, MAX_EDITOR_GOAL_PRIORITY);
 	DDX_Text(pDX, IDC_PRIORITY5, m_priority[4]);
-	DDV_MinMaxInt(pDX, m_priority[4], 0, 89);
+	DDV_MinMaxInt(pDX, m_priority[4], 0, MAX_EDITOR_GOAL_PRIORITY);
 	DDX_Text(pDX, IDC_PRIORITY6, m_priority[5]);
-	DDV_MinMaxInt(pDX, m_priority[5], 0, 89);
+	DDV_MinMaxInt(pDX, m_priority[5], 0, MAX_EDITOR_GOAL_PRIORITY);
 	DDX_Text(pDX, IDC_PRIORITY7, m_priority[6]);
-	DDV_MinMaxInt(pDX, m_priority[6], 0, 89);
+	DDV_MinMaxInt(pDX, m_priority[6], 0, MAX_EDITOR_GOAL_PRIORITY);
 	DDX_Text(pDX, IDC_PRIORITY8, m_priority[7]);
-	DDV_MinMaxInt(pDX, m_priority[7], 0, 89);
+	DDV_MinMaxInt(pDX, m_priority[7], 0, MAX_EDITOR_GOAL_PRIORITY);
 	DDX_Text(pDX, IDC_PRIORITY9, m_priority[8]);
-	DDV_MinMaxInt(pDX, m_priority[8], 0, 89);
+	DDV_MinMaxInt(pDX, m_priority[8], 0, MAX_EDITOR_GOAL_PRIORITY);
 	DDX_Text(pDX, IDC_PRIORITY10, m_priority[9]);
-	DDV_MinMaxInt(pDX, m_priority[9], 0, 89);
+	DDV_MinMaxInt(pDX, m_priority[9], 0, MAX_EDITOR_GOAL_PRIORITY);
 
 	DDX_CBIndex(pDX, IDC_SUBSYSTEM1, m_subsys[0]);
 	DDX_CBIndex(pDX, IDC_SUBSYSTEM2, m_subsys[1]);
@@ -541,17 +541,17 @@ BOOL ShipGoalsDlg::OnInitDialog()
 
 	CDialog::OnInitDialog();
 
-	// restrict spin controls to a range of 0 - 89
-	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN1)) -> SetRange(0, 89);
-	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN2)) -> SetRange(0, 89);
-	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN3)) -> SetRange(0, 89);
-	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN4)) -> SetRange(0, 89);
-	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN5)) -> SetRange(0, 89);
-	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN6)) -> SetRange(0, 89);
-	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN7)) -> SetRange(0, 89);
-	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN8)) -> SetRange(0, 89);
-	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN9)) -> SetRange(0, 89);
-	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN10)) -> SetRange(0, 89);
+	// restrict spin controls to a range of 0 - MAX_EDITOR_GOAL_PRIORITY
+	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN1)) -> SetRange(0, MAX_EDITOR_GOAL_PRIORITY);
+	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN2)) -> SetRange(0, MAX_EDITOR_GOAL_PRIORITY);
+	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN3)) -> SetRange(0, MAX_EDITOR_GOAL_PRIORITY);
+	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN4)) -> SetRange(0, MAX_EDITOR_GOAL_PRIORITY);
+	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN5)) -> SetRange(0, MAX_EDITOR_GOAL_PRIORITY);
+	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN6)) -> SetRange(0, MAX_EDITOR_GOAL_PRIORITY);
+	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN7)) -> SetRange(0, MAX_EDITOR_GOAL_PRIORITY);
+	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN8)) -> SetRange(0, MAX_EDITOR_GOAL_PRIORITY);
+	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN9)) -> SetRange(0, MAX_EDITOR_GOAL_PRIORITY);
+	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN10)) -> SetRange(0, MAX_EDITOR_GOAL_PRIORITY);
 
 	return TRUE;
 }
@@ -637,7 +637,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			mode = goalp[item].ai_mode;
 		}
 
-		if (m_priority[item] < 0 || m_priority[item] > 89){
+		if (m_priority[item] < 0 || m_priority[item] > MAX_EDITOR_GOAL_PRIORITY){
 			m_priority[item] = 50;
 		}
 

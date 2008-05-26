@@ -779,11 +779,11 @@ void set_wingnum(int objnum, int wingnum);
 char *ai_get_goal_ship_name(char *name, int *index);
 
 extern void init_ai_system(void);
-extern void ai_attack_object(object *attacker, object *attacked, int priority, ship_subsys *ssp);
-extern void ai_evade_object(object *evader, object *evaded, int priority);
-extern void ai_ignore_object(object *ignorer, object *ignored, int priority, int ignore_new);
+extern void ai_attack_object(object *attacker, object *attacked, ship_subsys *ssp);
+extern void ai_evade_object(object *evader, object *evaded);
+extern void ai_ignore_object(object *ignorer, object *ignored, int ignore_new);
 extern void ai_ignore_wing(object *ignorer, int wingnum, int priority);
-extern void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int priority, int dock_type);
+extern void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int dock_type);
 extern void ai_stay_still(object *still_objp, vec3d *view_pos);
 extern void ai_set_default_behavior(object *obj, int classnum);
 extern void ai_do_default_behavior(object *obj);
@@ -811,7 +811,7 @@ extern void ai_set_guard_object(object *objp, object *other_objp);
 extern void ai_set_evade_object(object *objp, object *other_objp);
 extern void ai_set_guard_wing(object *objp, int wingnum);
 extern void ai_warp_out(object *objp, vec3d *vp);
-extern void ai_attack_wing(object *attacker, int wingnum, int priority);
+extern void ai_attack_wing(object *attacker, int wingnum);
 extern void ai_deathroll_start(object *ship_obj);
 extern void ai_fly_in_formation(int wing_num);		//	Force wing to fly in formation.
 extern void ai_disband_formation(int wing_num);		//	Force wing to disband formation flying.
@@ -819,7 +819,7 @@ extern int set_target_objnum(ai_info *aip, int objnum);
 extern void ai_form_on_wing(object *objp, object *goal_objp);
 extern void ai_do_stay_near(object *objp, object *other_obj, float dist);
 extern ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int parent_objnum);
-extern void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int dockee_index, int priority );
+extern void ai_rearm_repair( object *objp, int docker_index, object *goal_objp, int dockee_index );
 extern void ai_add_rearm_goal( object *requester_objp, object *support_objp );
 extern void create_model_path(object *pl_objp, object *mobjp, int path_num, int subsys_path=0);
 
