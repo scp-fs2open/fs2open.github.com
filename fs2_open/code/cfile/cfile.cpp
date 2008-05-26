@@ -1038,7 +1038,8 @@ CFILE *cfopen(char *file_path, char *mode, int type, int dir_type, bool localize
 			//Copies all 'mode' characters over, except for t, and adds b if needed.
 			unsigned int max = sizeof(happy_mode) - 2;	//space for null and 'b'
 			bool need_b = true;
-			for(unsigned int i = 0; i < strlen(mode); i++)
+			unsigned int i;
+			for( i = 0; i < strlen(mode); i++)
 			{
 				if(i > max)
 					break;
