@@ -870,7 +870,9 @@ int Dead_key_set[] = {
 	TIME_SLOW_DOWN
 };
 
-int Critical_key_set[] = {		
+int Critical_key_set[] = {	
+	CYCLE_NEXT_PRIMARY,		
+	CYCLE_PREV_PRIMARY,				
 	CYCLE_SECONDARY,			
 	CYCLE_NUM_MISSLES,			
 	INCREASE_WEAPON,			
@@ -890,8 +892,6 @@ int Critical_key_set[] = {
 };
 
 int Non_critical_key_set[] = {
-	CYCLE_NEXT_PRIMARY,		
-	CYCLE_PREV_PRIMARY,			
 	MATCH_TARGET_SPEED,			
 	TOGGLE_AUTO_MATCH_TARGET_SPEED,			
 	TARGET_NEXT,	
