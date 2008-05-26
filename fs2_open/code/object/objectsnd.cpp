@@ -660,22 +660,22 @@ int obj_snd_stop_lowest_vol(float new_vol)
 // ---------------------------------------------------------------------------------------
 // maybe_play_flyby_snd()
 //
-// Based on how close the object is to the player ship (and relative speed), maybe
+// Based on how close the object is to the camera (and relative speed), maybe
 // play a flyby sound.  Only play flyby sound for OBJ_SHIP objects.
 //
 // NOTE: global data Flyby_last_objp, Flyby_next_sound, Flyby_next_repeat are 
 //			used.
 //
-void maybe_play_flyby_snd(float closest_dist, object *closest_objp)
+void maybe_play_flyby_snd(float closest_dist, object *closest_objp, object *listener_objp)
 {
-	if ( closest_objp == NULL || closest_objp->type != OBJ_SHIP ) {
-		goto play_no_flyby_sound;
+	if ( closest_objp == NULL || closest_objp->type != OBJ_SHIP || closest_objp == listener_objp ) {
+		return;
 	}
 
 	if ( closest_dist < FLYBY_MIN_DISTANCE ) {
 		float relative_speed;
 		vec3d diff;
-		vm_vec_sub(&diff, &Player_obj->phys_info.vel, &closest_objp->phys_info.vel);
+		vm_vec_sub(&diff, &listener_objp->phys_info.vel, &closest_objp->phys_info.vel);
 
 
 		relative_speed = vm_vec_mag_quick(&diff);
@@ -687,7 +687,7 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp)
 						Flyby_next_repeat = timestamp(FLYBY_MIN_REPEAT_TIME);
 					}
 					else 
-						goto play_no_flyby_sound;
+						return;
 				}				
 
 				Assert(closest_objp->type == OBJ_SHIP);
@@ -721,9 +721,6 @@ void maybe_play_flyby_snd(float closest_dist, object *closest_objp)
 			}
 		}
 	}
-
-	play_no_flyby_sound:
-	return;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -755,10 +752,21 @@ void obj_snd_do_frame()
 	closest_dist = 1000000.0f;
 	closest_objp = NULL;
 
+	object *observer_obj = NULL;
+	if (Viewer_obj != NULL) {
+		observer_obj = Viewer_obj;
+	} else if (Viewer_mode & VM_OTHER_SHIP && Player_ai->target_objnum != -1) {
+		// apparently Viewer_obj is still null when Viewing Other Ship externally
+		observer_obj = &Objects[Player_ai->target_objnum];
+	} else {
+		observer_obj = Player_obj;
+	}
+
 	for ( osp = GET_FIRST(&obj_snd_list); osp !=END_OF_LIST(&obj_snd_list); osp = GET_NEXT(osp) ) {
 		Assert(osp != NULL);
 		objp = &Objects[osp->objnum];
-		if ( Player_obj == objp ) {
+		if ( Player_obj == objp && observer_obj == Player_obj ) {
+			// we don't play the engine sound if the view is from the player
 			continue;
 		}
 		
@@ -778,8 +786,8 @@ void obj_snd_do_frame()
 			distance = 0.0f;
 		}
 
-		// save closest distance (used for flyby sound) if this is a small ship
-		if ( (objp->type == OBJ_SHIP) && (distance < closest_dist) ) {
+		// save closest distance (used for flyby sound) if this is a small ship (and not the observer)
+		if ( (objp->type == OBJ_SHIP) && (distance < closest_dist) && (objp != observer_obj) ) {
 			if ( Ship_info[Ships[objp->instance].ship_info_index].flags & SIF_SMALL_SHIP ) {
 				closest_dist = distance;
 				closest_objp = objp;
@@ -916,7 +924,7 @@ void obj_snd_do_frame()
 					if ( !(ship_get_SIF(sp) & (SIF_BIG_SHIP | SIF_HUGE_SHIP)) ) {
 						int new_freq;
 						// calc doppler effect
-						new_freq = obj_snd_get_freq(osp->freq, objp, Player_obj, &source_pos);
+						new_freq = obj_snd_get_freq(osp->freq, objp, observer_obj, &source_pos);
 						if ( abs(new_freq - osp->freq) > OBJSND_CHANGE_FREQUENCY_THRESHOLD ) {
 							snd_set_pitch( osp->instance, new_freq);
 						}
@@ -929,7 +937,7 @@ void obj_snd_do_frame()
 	}	// end for
 
 	// see if we want to play a flyby sound
-	maybe_play_flyby_snd(closest_dist, closest_objp);
+	maybe_play_flyby_snd(closest_dist, closest_objp, observer_obj);
 }
 
 // ---------------------------------------------------------------------------------------
