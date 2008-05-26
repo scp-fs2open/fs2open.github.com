@@ -1829,6 +1829,8 @@ ADE_INDEXER(l_ShipOrders, "number Index/string TextureFilename", "Array of ship 
 	object_h *objh = NULL;
 	char *s = NULL;
 	order_h *oh = NULL;
+	int i; 
+
 	if (!ade_get_args(L, "os|o", l_ShipOrders.GetPtr(&objh), &s, l_Order.GetPtr(&oh)))
 		return ade_set_error(L, "o", l_Order.Set(order_h()));
 
@@ -1845,7 +1847,7 @@ ADE_INDEXER(l_ShipOrders, "number Index/string TextureFilename", "Array of ship 
 		return ade_set_error(L, "o", l_Order.Set(order_h()));
 
 	int num = 0;
-	for(int i = 0; i < MAX_AI_GOALS; i++)
+	for(i = 0; i < MAX_AI_GOALS; i++)
 	{
 		if(aip->goals[i].ai_mode != AI_GOAL_NONE)
 		{
