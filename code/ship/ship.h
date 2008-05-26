@@ -2149,6 +2149,10 @@ extern void physics_ship_init(object *objp);
 //	Stuff vector *pos with absolute position.
 extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
 
+//Template stuff, here's as good a place as any.
+int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool replace);
+extern int ship_template_lookup(char *name = NULL);
+
 extern int ship_info_lookup(char *name = NULL);
 extern int ship_name_lookup(char *name, int inc_players = 0);	// returns the index into Ship array of name
 extern int ship_type_name_lookup(char *name);
