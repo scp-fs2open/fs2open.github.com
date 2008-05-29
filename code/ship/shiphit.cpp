@@ -839,7 +839,12 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, vec3d* hitpos
 			vec3d fb_vel;
 			vm_vec_crossprod(&fb_vel, &objp->phys_info.rotvel, &center_to_subsys);
 			vm_vec_add2(&fb_vel, &objp->phys_info.vel);
-			fireball_create( &temp_vec, FIREBALL_EXPLOSION_MEDIUM, OBJ_INDEX(objp), fireball_rad, 0, &fb_vel );
+
+			int fireball_type = fireball_ship_explosion_type(sip);
+			if(fireball_type < 0) {
+				fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+			}
+			fireball_create( &temp_vec, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(objp), fireball_rad, 0, &fb_vel );
 		}
 	}
 

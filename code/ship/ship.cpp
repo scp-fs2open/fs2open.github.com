@@ -2865,6 +2865,7 @@ void init_ship_entry(ship_info *sip)
 	
 	sip->explosion_propagates = 0;
 	sip->shockwave_count = 1;
+	sip->explosion_bitmap_anims.clear();
 /*	sip->inner_rad = 0.0f;
 	sip->outer_rad = 0.0f;
 	sip->damage = 0.0f;
@@ -3666,6 +3667,13 @@ int parse_ship_values(ship_info* sip, bool isTemplate, bool first_time, bool rep
 	
 	if(optional_string("$Shockwave name:")) {
 		stuff_string( sci->name, F_NAME, NAME_LENGTH);
+	}
+
+	if(optional_string("$Explosion Animations:")){
+		int temp[MAX_FIREBALL_TYPES];
+		int parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
+		sip->explosion_bitmap_anims.clear();
+		sip->explosion_bitmap_anims.insert(sip->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
 	}
 
 char temp_error[64];
@@ -5022,6 +5030,14 @@ void parse_ship_type()
 		if(optional_string("+Passive docks:")) {
 			parse_string_flag_list(&stp->ai_passive_dock, Dock_type_names, Num_dock_type_names);
 		}
+	}
+
+	if(optional_string("$Explosion Animations:"))
+	{
+		int temp[MAX_FIREBALL_TYPES];
+		int parsed_ints = stuff_int_list(temp, MAX_FIREBALL_TYPES, RAW_INTEGER_TYPE);
+		stp->explosion_bitmap_anims.clear();
+		stp->explosion_bitmap_anims.insert(stp->explosion_bitmap_anims.begin(), temp, temp+parsed_ints);
 	}
 
 	if (!nocreate)
@@ -7861,8 +7877,12 @@ void ship_dying_frame(object *objp, int ship_num)
 				model_find_world_point(&outpnt, &pnt1, sip->model_num, pm->detail[0], &objp->orient, &objp->pos );
 
 				float rad = objp->radius*0.1f;
-				int fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
-				fireball_create( &outpnt, fireball_type, OBJ_INDEX(objp), rad, 0, &objp->phys_info.vel );
+				
+				int fireball_type = fireball_ship_explosion_type(sip);
+				if(fireball_type < 0) {
+					fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+				}
+				fireball_create( &outpnt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), rad, 0, &objp->phys_info.vel );
 				// start the next fireball up in the next 50 - 200 ms (2-3 per frame)
 				shipp->next_fireball = timestamp_rand(333,500);
 
@@ -7884,8 +7904,12 @@ void ship_dying_frame(object *objp, int ship_num)
 				vm_vec_add(&outpnt, &objp->pos, &rand_vec);
 
 				float rad = objp->radius*0.2f;
-				int fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
-				fireball_create( &outpnt, fireball_type, OBJ_INDEX(objp), rad, 0, &objp->phys_info.vel );
+
+				int fireball_type = fireball_ship_explosion_type(sip);
+				if(fireball_type < 0) {
+					fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+				}
+				fireball_create( &outpnt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), rad, 0, &objp->phys_info.vel );
 				// start the next fireball up in the next 50 - 200 ms (2-3 per frame)
 				shipp->next_fireball = timestamp_rand(333,500);
 
@@ -7948,7 +7972,12 @@ void ship_dying_frame(object *objp, int ship_num)
 
 				float rad = frand()*0.30f;
 				rad += objp->radius*0.40f;
-				fireball_create( &outpnt, FIREBALL_EXPLOSION_MEDIUM, OBJ_INDEX(objp), rad, 0, &objp->phys_info.vel );
+
+				int fireball_type = fireball_ship_explosion_type(sip);
+				if(fireball_type < 0) {
+					fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+				}
+				fireball_create( &outpnt, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(objp), rad, 0, &objp->phys_info.vel );
 			}
 		}
 
@@ -8019,15 +8048,20 @@ void ship_dying_frame(object *objp, int ship_num)
 			} else {
 				// only do big fireball if not big ship
 				float big_rad;
-				int fireball_objnum, fireball_type;
+				int fireball_objnum, fireball_type, default_fireball_type;
 				float explosion_life;
 				big_rad = objp->radius*1.75f;
-				fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+
+				default_fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
 				if (knossos_ship) {
 					big_rad = objp->radius * 1.2f;
-					fireball_type = FIREBALL_EXPLOSION_LARGE1;
+					default_fireball_type = FIREBALL_EXPLOSION_LARGE1;
 				}
-				fireball_objnum = fireball_create( &objp->pos, fireball_type, OBJ_INDEX(objp), big_rad, 0, &objp->phys_info.vel );
+				fireball_type = fireball_ship_explosion_type(sip);
+				if(fireball_type < 0) {
+					fireball_type = default_fireball_type;
+				}
+				fireball_objnum = fireball_create( &objp->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), big_rad, 0, &objp->phys_info.vel );
 				if ( fireball_objnum >= 0 )	{
 					explosion_life = fireball_lifeleft(&Objects[fireball_objnum]);
 				} else {
@@ -15305,6 +15339,8 @@ void ship_page_in()
 	int num_ship_types_used = 0;
 	int test_id = -1;
 
+	memset( &fireball_used, 0, sizeof(int) * MAX_FIREBALL_TYPES );
+
 	for (i = 0; i < Num_ship_classes; i++) {
 		if ( !ship_class_used[i] )
 			continue;
@@ -15398,6 +15434,17 @@ void ship_page_in()
 
 		// Page in the shockwave stuff. -C
 		sip->shockwave.load();
+		if(sip->explosion_bitmap_anims.size() > 0) {
+			int num_fireballs = sip->explosion_bitmap_anims.size();
+			for(j = 0; j < num_fireballs; j++){
+				fireball_used[sip->explosion_bitmap_anims[j]] = 1;
+			}
+		} else if(Ship_types[sip->class_type].explosion_bitmap_anims.size() > 0) { 
+			int num_fireballs = Ship_types[sip->class_type].explosion_bitmap_anims.size();
+			for(j = 0; j < num_fireballs; j++){
+				fireball_used[Ship_types[sip->class_type].explosion_bitmap_anims[j]] = 1;
+			}
+		}
 	}
 
 	nprintf(( "Paging", "There are %d ship classes used in this mission.\n", num_ship_types_used ));

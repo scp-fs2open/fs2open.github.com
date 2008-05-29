@@ -8887,8 +8887,12 @@ void sexp_explosion_effect(int n)
 
 	// create the fireball -------------------------
 	if (explosion_size && inner_radius && outer_radius)
-		fireball_create( &origin, fireball_type, -1, (float)explosion_size );
-
+	{
+		if(fireball_type == FIREBALL_EXPLOSION_MEDIUM)
+			fireball_create( &origin, fireball_type, FIREBALL_MEDIUM_EXPLOSION, -1, (float)explosion_size );
+		else
+			fireball_create( &origin, fireball_type, FIREBALL_LARGE_EXPLOSION, -1, (float)explosion_size );
+	}
 
 	// apply area affect damage --------------------
 	if (max_damage || max_blast)
@@ -9016,11 +9020,11 @@ void sexp_warp_effect(int n)
 	// fireball type
 	if (eval_num(n) == 0)
 	{
-		fireball_type = FIREBALL_WARP_EFFECT;
+		fireball_type = FIREBALL_WARP;
 	}
 	else if (eval_num(n) == 1)
 	{
-		fireball_type = FIREBALL_KNOSSOS_EFFECT;
+		fireball_type = FIREBALL_KNOSSOS;
 	}
 	else
 	{
@@ -9059,7 +9063,8 @@ void sexp_warp_effect(int n)
 	vm_vector_2_matrix(&m_orient, &v_orient, NULL, NULL);
 
 	// create fireball -----------------------------
-	fireball_create(&origin, fireball_type, -1, (float)radius, 0, NULL, (float)duration, -1, &m_orient, 0, extra_flags, warp_open_sound_index, warp_close_sound_index);
+
+	fireball_create(&origin, fireball_type, FIREBALL_WARP_EFFECT, -1, (float)radius, 0, NULL, (float)duration, -1, &m_orient, 0, extra_flags, warp_open_sound_index, warp_close_sound_index);
 }
 
 // this function get called by send-message or send-message random with the name of the message, sender,
