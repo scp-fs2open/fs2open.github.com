@@ -394,8 +394,11 @@ static void debris_start_death_roll(object *debris_obj, debris *debris_p)
 		if( MULTIPLAYER_MASTER )
 			send_debris_update_packet(debris_obj,DEBRIS_UPDATE_NUKE);
 
-		int fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
-		fireball_create( &debris_obj->pos, fireball_type, OBJ_INDEX(debris_obj), debris_obj->radius*1.75f);
+		int fireball_type = fireball_ship_explosion_type(&Ship_info[debris_p->ship_info_index]);
+		if(fireball_type < 0) {
+			fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+		}
+		fireball_create( &debris_obj->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(debris_obj), debris_obj->radius*1.75f);
 
 		// only play debris destroy sound if hull piece and it has been around for at least 2 seconds
 		if ( Missiontime > debris_p->time_started + 2*F1_0 ) {

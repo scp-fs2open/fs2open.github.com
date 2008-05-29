@@ -659,8 +659,12 @@ void shipfx_subsystem_mabye_create_live_debris(object *ship_obj, ship *ship_p, s
 		pm->submodel[submodel_num].angs = copy_angs;
 		model_find_world_point(&end_world_pos, &start_model_pos, pm->id, submodel_num, &ship_obj->orient, &ship_obj->pos);
 
+		int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
+		if(fireball_type < 0) {
+			fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+		}
 		// create fireball here.
-		fireball_create(&end_world_pos, FIREBALL_EXPLOSION_MEDIUM, OBJ_INDEX(ship_obj), pm->submodel[live_debris_submodel].rad);
+		fireball_create(&end_world_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_obj), pm->submodel[live_debris_submodel].rad);
 
 		// create debris
 		live_debris_obj = debris_create(ship_obj, pm->id, live_debris_submodel, &end_world_pos, exp_center, 1, exp_mag);
@@ -826,9 +830,13 @@ void shipfx_blow_off_subsystem(object *ship_obj,ship *ship_p,ship_subsys *subsys
 	// create live debris objects, if any
 	// TODO:  some MULITPLAYER implcations here!!
 	shipfx_subsystem_mabye_create_live_debris(ship_obj, ship_p, subsys, exp_center, 1.0f);
-
+	
+	int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
+	if(fireball_type < 0) {
+		fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+	}
 	// create first fireball
-	fireball_create( &subobj_pos, FIREBALL_EXPLOSION_MEDIUM, OBJ_INDEX(ship_obj), psub->radius );
+	fireball_create( &subobj_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_obj), psub->radius );
 }
 
 
@@ -1161,11 +1169,11 @@ void shipfx_warpin_start( object *objp )
 				knossos_orient.vec.fvec.xyz.z = -knossos_orient.vec.fvec.xyz.z;
 			}
 
-			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index, &knossos_orient);
+			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, shipp->special_warp_objnum, effect_radius, 0, NULL, effect_time, shipp->ship_info_index, &knossos_orient);
 		}
 		else
 		{
-			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
+			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 0, NULL, effect_time, shipp->ship_info_index);
 		}
 
 		//WMC - bail
@@ -1611,17 +1619,17 @@ void shipfx_warpout_start( object *objp )
 		if (shipp->special_warp_objnum >= 0) {
 			// cap radius to size of knossos
 			effect_radius = MIN(effect_radius, 0.8f*Objects[shipp->special_warp_objnum].radius);
-			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, shipp->special_warp_objnum, effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
+			warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, shipp->special_warp_objnum, effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
 		} else {
 
 			// * For now, all the effects flag does is to use our orange effect when warping out    -Et1
 			if( Cmdline_tbp )
 			{
-				warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
+				warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
 			}
 			else
 			{
-				warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
+				warp_objnum = fireball_create(&shipp->warp_effect_pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), effect_radius, 1, NULL, effect_time, shipp->ship_info_index);
 			}
 		}
 		if (warp_objnum < 0 )	{	// JAS: This must always be created, if not, just warp the ship out
@@ -2797,8 +2805,9 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 	// maybe make fireball to cover wipe.
 	if ( timestamp_elapsed(half_ship->next_fireball) ) {
 		if ( half_ship->length_left > 0.2f*fl_abs(half_ship->explosion_vel) )	{
-
-			polymodel* pm = model_get(Ship_info[Ships[half_ship->parent_obj->instance].ship_info_index].model_num);
+			ship_info *sip = &Ship_info[Ships[half_ship->parent_obj->instance].ship_info_index];
+			
+			polymodel* pm = model_get(sip->model_num);
 
 			vec3d model_clip_plane_pt, orig_ship_world_center, temp;
 
@@ -2824,9 +2833,13 @@ static void maybe_fireball_wipe(clip_ship* half_ship, int* sound_handle)
 			rad = MIN(rad, half_ship->parent_obj->radius);
 
 			// mprintf(("xc %.1f model %.1f\n", rad, half_ship->parent_obj->radius*0.25));
-			int fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+
+			int fireball_type = fireball_ship_explosion_type(sip);
+			if(fireball_type < 0) {
+				fireball_type = FIREBALL_EXPLOSION_LARGE1 + rand()%FIREBALL_NUM_LARGE_EXPLOSIONS;
+			}
 			int low_res_fireballs = Bs_exp_fire_low;
-			fireball_create(&model_clip_plane_pt, fireball_type, OBJ_INDEX(half_ship->parent_obj), rad, 0, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, NULL, low_res_fireballs);
+			fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, 0, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, NULL, low_res_fireballs);
 
 			// start the next fireball up (3-4 per frame) + 30%
 			int time_low, time_high;
@@ -4207,11 +4220,11 @@ int WE_Default::warpStart()
 	{
 		// maybe special warpout
 		if (portal_objp != NULL) {
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS_EFFECT, portal_objnum, radius, 1, NULL, warp_time, shipp->ship_info_index);
+			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, portal_objnum, radius, 1, NULL, warp_time, shipp->ship_info_index);
 		} else if(Cmdline_tbp) {
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index);
+			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index);
 		} else {
-			warp_objnum = fireball_create(&pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index);
+			warp_objnum = fireball_create(&pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 1, NULL, warp_time, shipp->ship_info_index);
 		}
 	}
 	else if(direction == WD_WARP_IN)
@@ -4228,11 +4241,11 @@ int WE_Default::warpStart()
 				knossos_orient.vec.fvec.xyz.z = -knossos_orient.vec.fvec.xyz.z;
 			}
 
-			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS_EFFECT, portal_objnum, radius, 0, NULL, warp_time, shipp->ship_info_index, &knossos_orient);
+			warp_objnum = fireball_create(&pos, FIREBALL_KNOSSOS, FIREBALL_WARP_EFFECT, portal_objnum, radius, 0, NULL, warp_time, shipp->ship_info_index, &knossos_orient);
 		}
 		else
 		{
-			warp_objnum = fireball_create(&pos, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, NULL, warp_time, shipp->ship_info_index);
+			warp_objnum = fireball_create(&pos, FIREBALL_WARP, FIREBALL_WARP_EFFECT, OBJ_INDEX(objp), radius, 0, NULL, warp_time, shipp->ship_info_index);
 		}
 	}
 

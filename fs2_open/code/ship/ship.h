@@ -976,6 +976,7 @@
 #include "weapon/shockwave.h"
 #include "species_defs/species_defs.h"
 #include "globalincs/pstypes.h"
+#include "fireball/fireballs.h"
 
 #include <vector>
 #include <string>
@@ -1731,6 +1732,9 @@ typedef struct ship_type_info {
 	int ai_passive_dock;
 	std::vector<int> ai_actively_pursues;
 
+	//Resources
+	std::vector<int> explosion_bitmap_anims;
+
 	//Regen values - need to be converted after all types have loaded
 	std::vector<std::string> ai_actively_pursues_temp;
 } ship_type_info;
@@ -1849,6 +1853,7 @@ typedef struct ship_info {
 	shockwave_create_info shockwave;
 	int	explosion_propagates;				// If true, then the explosion propagates
 	int	shockwave_count;						// the # of total shockwaves
+	std::vector<int> explosion_bitmap_anims;
 
 	int ispew_max_particles;						//Temp field until someone works on particles -C
 	int dspew_max_particles;						//Temp field until someone works on particles -C

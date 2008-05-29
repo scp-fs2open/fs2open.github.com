@@ -222,18 +222,27 @@
 #include "globalincs/pstypes.h"
 
 struct object;
+struct ship_info;
 
-// these values correspond to the fireball.tbl entries
+// values correspond to the fireball render types
+#define FIREBALL_MEDIUM_EXPLOSION	0
+#define FIREBALL_LARGE_EXPLOSION	1
+#define FIREBALL_WARP_EFFECT		2
+
+// these values correspond to the fireball.tbl default entries
 #define FIREBALL_EXPLOSION_MEDIUM	0				// Used for the 4 little explosions before a ship explodes
-#define FIREBALL_WARP_EFFECT			1				// Used for the warp in / warp out effect
-#define FIREBALL_KNOSSOS_EFFECT		2				// Used for the KNOSSOS warp in / warp out effect
+#define FIREBALL_WARP			1				// Used for the warp in / warp out effect
+#define FIREBALL_KNOSSOS		2				// Used for the KNOSSOS warp in / warp out effect
 #define FIREBALL_ASTEROID				3
 #define FIREBALL_EXPLOSION_LARGE1	4				// Used for the big explosion when a ship breaks into pieces
 #define FIREBALL_EXPLOSION_LARGE2	5				// Used for the big explosion when a ship breaks into pieces
-// #define FIREBALL_EXPLOSION_LARGE3	6				// Used for the big explosion when a ship breaks into pieces
-#define MAX_FIREBALL_TYPES				6				// How many types there are
+
+#define MAX_FIREBALL_TYPES				32				// The maximum number of fireballs that can be defined
+#define NUM_DEFAULT_FIREBALLS			6
 
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
+
+extern int fireball_used[MAX_FIREBALL_TYPES];
 
 // all this moved here by Goober5000 because it makes more sense in the H file
 typedef struct fireball_lod {
@@ -259,6 +268,7 @@ typedef struct fireball_info	{
 typedef struct fireball {					
 	int		objnum;					// If -1 this object is unused
 	int		fireball_info_index;	// Index into Fireball_info array
+	int		fireball_render_type;
 	int		current_bitmap;
 	int		orient;					// For fireballs, which orientation.  For warps, 0 is warpin, 1 is warpout
 	int		flags;					// see #define FBF_*
@@ -279,7 +289,7 @@ void fireball_process_post(object * obj, float frame_time);
 // reversed is for warp_in/out effects
 // Velocity: If not NULL, the fireball will move at a constant velocity.
 // warp_lifetime: If warp_lifetime > 0.0f then makes the explosion loop so it lasts this long.  Only works for warp effect
-int fireball_create(vec3d *pos, int fireball_type, int parent_obj, float size, int reversed=0, vec3d *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0, int extra_flags=0, int warp_open_sound=0, int warp_close_sound=0); 
+int fireball_create(vec3d *pos, int fireball_type, int render_type, int parent_obj, float size, int reversed=0, vec3d *velocity=NULL, float warp_lifetime=0.0f, int ship_class=-1, matrix *orient=NULL, int low_res=0, int extra_flags=0, int warp_open_sound=0, int warp_close_sound=0); 
 void fireball_render_plane(int plane);
 void fireball_close();
 void fireball_level_close();
@@ -299,6 +309,9 @@ float fireball_lifeleft_percent( object *obj );
 
 // returns the lighting color (in [0...1] range) to use for explosion
 void fireball_get_color(int idx, float *red, float *green, float *blue);
+
+// returns the index of the fireball bitmap for this ship. -1 if there is none.
+int fireball_ship_explosion_type(ship_info *sip);
 
 // internal function to draw warp grid.
 extern void warpin_render(object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, int warp_3d = 0 );

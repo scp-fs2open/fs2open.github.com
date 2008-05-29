@@ -514,7 +514,11 @@ fireball Fireballs[MAX_FIREBALLS];
 
 fireball_info Fireball_info[MAX_FIREBALL_TYPES];
 
+int fireball_used[MAX_FIREBALL_TYPES];
+
 int Num_fireballs = 0;
+
+int Num_fireball_types = 0;
 
 int fireballs_inited = 0;
 
@@ -594,14 +598,14 @@ static void fireball_set_default_color(int idx)
 			Fireball_info[idx].exp_color[2] = 0.125f;
 			break;
 
-		case FIREBALL_WARP_EFFECT:
+		case FIREBALL_WARP:
 			Fireball_info[idx].exp_color[0] = 0.75f;
 			Fireball_info[idx].exp_color[1] = 0.75f;
 			Fireball_info[idx].exp_color[2] = 1.0f;
 			break;
 
 
-		case FIREBALL_KNOSSOS_EFFECT:
+		case FIREBALL_KNOSSOS:
 			Fireball_info[idx].exp_color[0] = 0.75f;
 			Fireball_info[idx].exp_color[1] = 1.0f;
 			Fireball_info[idx].exp_color[2] = 0.75f;
@@ -650,16 +654,18 @@ void parse_fireball_tbl(char *filename)
 			if (optional_string("+Explosion_Medium")) {
 				lod_check.override = FIREBALL_EXPLOSION_MEDIUM;
 			} else if (optional_string("+Warp_Effect")) {
-				lod_check.override = FIREBALL_WARP_EFFECT;
+				lod_check.override = FIREBALL_WARP;
 			} else if (optional_string("+Knossos_Effect")) {
-				lod_check.override = FIREBALL_KNOSSOS_EFFECT;
+				lod_check.override = FIREBALL_KNOSSOS;
 			} else if (optional_string("+Asteroid")) {
 				lod_check.override = FIREBALL_ASTEROID;
 			} else if (optional_string("+Explosion_Large1")) {
 				lod_check.override = FIREBALL_EXPLOSION_LARGE1;
-			} else {
-				required_string("+Explosion_Large2");
+			} else if (optional_string("+Explosion_Large2")){
 				lod_check.override = FIREBALL_EXPLOSION_LARGE2;
+			} else {
+				required_string("+Custom_Fireball");
+				stuff_int(&lod_check.override);
 			}
 		}
 
@@ -721,6 +727,7 @@ void fireball_parse_tbl()
 		if ( (i < MAX_FIREBALL_TYPES) && (LOD_checker[i].override < 0) ) {
 			strcpy( Fireball_info[i].lod[0].filename, LOD_checker[i].filename );
 			Fireball_info[i].lod_count = LOD_checker[i].num_lods;
+			Num_fireball_types++;
 
 			if (LOD_color[i].alpha == 255) {
 				Fireball_info[i].exp_color[0] = (LOD_color[i].red / 255.0f);
@@ -736,7 +743,7 @@ void fireball_parse_tbl()
 	// this handles (and should only have to handle) TBM related entries
 	for (i = 0; i < (int)LOD_checker.size(); i++) {
 		// try entry replacement
-		if ( (LOD_checker[i].override >= 0) && (LOD_checker[i].override < MAX_FIREBALL_TYPES) ) {
+		if ( (LOD_checker[i].override >= 0) && (LOD_checker[i].override < Num_fireball_types) ) {
 			strcpy( Fireball_info[LOD_checker[i].override].lod[0].filename, LOD_checker[i].filename );
 			Fireball_info[LOD_checker[i].override].lod_count = LOD_checker[i].num_lods;
 
@@ -751,7 +758,7 @@ void fireball_parse_tbl()
 	}
 
 	// fill in extra LOD filenames
-	for (i = 0; i < MAX_FIREBALL_TYPES; i++) {
+	for (i = 0; i < Num_fireball_types; i++) {
 		for (j = 1; j < Fireball_info[i].lod_count; j++) {
 			sprintf( Fireball_info[i].lod[j].filename, "%s_%d", Fireball_info[i].lod[0].filename, j);
 		}
@@ -767,12 +774,12 @@ void fireball_load_data()
 	int				i, idx;
 	fireball_info	*fd;
 
-	for ( i = 0; i < MAX_FIREBALL_TYPES; i++ ) {
+	for ( i = 0; i < Num_fireball_types; i++ ) {
 		fd = &Fireball_info[i];
 
 		for(idx=0; idx<fd->lod_count; idx++){
 			// we won't use a warp effect lod greater than MAX_WARP_LOD so don't load it either
-			if ( (i == FIREBALL_WARP_EFFECT) && (idx > MAX_WARP_LOD) )
+			if ( (i == FIREBALL_WARP) && (idx > MAX_WARP_LOD) )
 				continue;
 
 			fd->lod[idx].bitmap_id	= bm_load_animation( fd->lod[idx].filename, &fd->lod[idx].num_frames, &fd->lod[idx].fps, 1 );
@@ -868,29 +875,20 @@ void fireball_render(object * obj)
 		g3_transfer_vertex(&p, &obj->pos);
 	}
 
-	switch( fb->fireball_info_index )	{
-	
-		case FIREBALL_EXPLOSION_MEDIUM:
+	switch( fb->fireball_render_type )	{
+
+		case FIREBALL_MEDIUM_EXPLOSION:
 			gr_set_bitmap(Fireballs[num].current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
 			g3_draw_bitmap(&p, fb->orient, obj->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT );
 			break;
 
-		case FIREBALL_EXPLOSION_LARGE1:
-		case FIREBALL_EXPLOSION_LARGE2:
-		// case FIREBALL_EXPLOSION_LARGE3:
-			/*
-			if (!tcache_hit(Fireballs[num].current_bitmap)) {
-				// if we're over 200k exp vram upload this frame, change to lower lod
-			}*/
-
-		case FIREBALL_ASTEROID:
+		case FIREBALL_LARGE_EXPLOSION:
 			// Make the big explosions rotate with the viewer.
 			gr_set_bitmap(Fireballs[num].current_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.3f );
 			g3_draw_rotated_bitmap(&p, (i2fl(fb->orient)*PI)/180.0f, obj->radius, TMAP_FLAG_TEXTURED | TMAP_HTL_3D_UNLIT);
 			break;
 
-		case FIREBALL_WARP_EFFECT:
-		case FIREBALL_KNOSSOS_EFFECT: {
+		case FIREBALL_WARP_EFFECT: {
 			
 				float percent_life = fb->time_elapsed / fb->total_time;
 
@@ -982,7 +980,7 @@ void fireball_set_framenum(int num)
 		return;
 	}
 
-	if ( fb->fireball_info_index == FIREBALL_WARP_EFFECT || fb->fireball_info_index == FIREBALL_KNOSSOS_EFFECT )	{
+	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
 		float total_time = i2fl(fl->num_frames) / fl->fps;	// in seconds
 
 		framenum = fl2i(fb->time_elapsed * fl->num_frames / total_time + 0.5);
@@ -1025,10 +1023,10 @@ int fireball_is_perishable(object * obj)
 
 	fb = &Fireballs[num];
 
-	if ( fb->fireball_info_index == FIREBALL_EXPLOSION_MEDIUM )	
+	if ( fb->fireball_render_type == FIREBALL_MEDIUM_EXPLOSION )	
 		return 1;
 
-	if ( !((fb->fireball_info_index == FIREBALL_WARP_EFFECT) || (fb->fireball_info_index == FIREBALL_KNOSSOS_EFFECT)) )	{
+	if ( !(fb->fireball_render_type == FIREBALL_WARP_EFFECT) )	{
 		if ( !(obj->flags & OF_WAS_RENDERED))	{
 			return 1;
 		}
@@ -1091,7 +1089,7 @@ int fireball_is_warp(object * obj)
 
 	fb = &Fireballs[num];
 
-	if ( fb->fireball_info_index == FIREBALL_WARP_EFFECT || fb->fireball_info_index == FIREBALL_KNOSSOS_EFFECT)	
+	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT)	
 		return 1;
 
 	return 0;
@@ -1103,7 +1101,7 @@ void fireball_maybe_play_warp_close_sound(fireball *fb)
 	float life_left;
 
 	// If not a warphole fireball, do a quick out
-	if ( !(fb->fireball_info_index == FIREBALL_WARP_EFFECT || fb->fireball_info_index == FIREBALL_KNOSSOS_EFFECT)) {
+	if ( !(fb->fireball_render_type == FIREBALL_WARP_EFFECT)) {
 		return;
 	}
 
@@ -1262,7 +1260,7 @@ int fireball_get_lod(vec3d *pos, fireball_info *fd, float size)
 }
 
 //	Create a fireball, return object index.
-int fireball_create( vec3d * pos, int fireball_type, int parent_obj, float size, int reverse, vec3d *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, int warp_open_sound, int warp_close_sound)
+int fireball_create( vec3d * pos, int fireball_type, int render_type, int parent_obj, float size, int reverse, vec3d *velocity, float warp_lifetime, int ship_class, matrix *orient_override, int low_res, int extra_flags, int warp_open_sound, int warp_close_sound)
 {
 	int				n, objnum, fb_lod;
 	object			*obj;
@@ -1271,7 +1269,7 @@ int fireball_create( vec3d * pos, int fireball_type, int parent_obj, float size,
 	fireball_lod	*fl;
 
 	Assert( fireball_type > -1 );
-	Assert( fireball_type < MAX_FIREBALL_TYPES );
+	Assert( fireball_type < Num_fireball_types );
 
 	fd = &Fireball_info[fireball_type];
 
@@ -1280,7 +1278,7 @@ int fireball_create( vec3d * pos, int fireball_type, int parent_obj, float size,
 		return -1;
 
 	if ( !(Game_detail_flags & DETAIL_FLAG_FIREBALLS) )	{
-		if ( !((fireball_type == FIREBALL_WARP_EFFECT) || (fireball_type == FIREBALL_KNOSSOS_EFFECT)) )	{
+		if ( !((fireball_type == FIREBALL_WARP) || (fireball_type == FIREBALL_KNOSSOS)) )	{
 			return -1;
 		}
 	}
@@ -1324,7 +1322,7 @@ int fireball_create( vec3d * pos, int fireball_type, int parent_obj, float size,
 	}
 
 	// if this is a warpout fireball, never go higher than LOD 1
-	if(fireball_type == FIREBALL_WARP_EFFECT){
+	if(fireball_type == FIREBALL_WARP){
 		/*
 		if(fb_lod > 1){
 			fb_lod = 1;
@@ -1361,25 +1359,22 @@ int fireball_create( vec3d * pos, int fireball_type, int parent_obj, float size,
 	obj = &Objects[objnum];
 
 	fb->fireball_info_index = fireball_type;
+	fb->fireball_render_type = render_type;
 	fb->time_elapsed = 0.0f;
 	fb->objnum = objnum;
 	fb->current_bitmap = -1;
 	
-	switch( fb->fireball_info_index )	{
+	switch( fb->fireball_render_type )	{
 
-		case FIREBALL_EXPLOSION_MEDIUM:	
+		case FIREBALL_MEDIUM_EXPLOSION:	
 			fb->orient = (myrand()>>8) & 7;							// 0 - 7
 			break;
 
-		case FIREBALL_EXPLOSION_LARGE1:
-		case FIREBALL_EXPLOSION_LARGE2:
-		// case FIREBALL_EXPLOSION_LARGE3:
-		case FIREBALL_ASTEROID:
+		case FIREBALL_LARGE_EXPLOSION:
 			fb->orient = (myrand()>>8) % 360;						// 0 - 359
 			break;
 
 		case FIREBALL_WARP_EFFECT:
-		case FIREBALL_KNOSSOS_EFFECT:
 			// Play sound effect for warp hole opening up
 			fireball_play_warphole_open_sound(ship_class, fb);
 
@@ -1399,7 +1394,7 @@ int fireball_create( vec3d * pos, int fireball_type, int parent_obj, float size,
 			break;
 	}
 
-	if ( fb->fireball_info_index == FIREBALL_WARP_EFFECT || fb->fireball_info_index == FIREBALL_KNOSSOS_EFFECT )	{
+	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
 		Assert( warp_lifetime > 4.0f );		// Warp lifetime must be at least 4 seconds!
 		fb->total_time = warp_lifetime;	// in seconds
 	} else {
@@ -1456,20 +1451,22 @@ void fireballs_page_in()
 {
 	int				i, idx;
 	fireball_info	*fd;
-	
-	for ( i = 0; i < MAX_FIREBALL_TYPES ; i++ ) {
-		fd = &Fireball_info[i];
 
-		// if this is a Knossos ani, only load if Knossos_warp_ani_used is true
-		if ( (i == FIREBALL_KNOSSOS_EFFECT) && !Knossos_warp_ani_used)
-			continue;
+	for ( i = 0; i < Num_fireball_types; i++ ) {
+		if((i < NUM_DEFAULT_FIREBALLS) || fireball_used[i]){
+			fd = &Fireball_info[i];
 
-		for(idx=0; idx<fd->lod_count; idx++) {
-			// we won't use a warp effect lod greater than MAX_WARP_LOD so don't load it either
-			if ( (i == FIREBALL_WARP_EFFECT) && (idx > MAX_WARP_LOD) )
+			// if this is a Knossos ani, only load if Knossos_warp_ani_used is true
+			if ( (i == FIREBALL_KNOSSOS) && !Knossos_warp_ani_used)
 				continue;
 
-			bm_page_in_texture( fd->lod[idx].bitmap_id, fd->lod[idx].num_frames );
+			for(idx=0; idx<fd->lod_count; idx++) {
+				// we won't use a warp effect lod greater than MAX_WARP_LOD so don't load it either
+				if ( (i == FIREBALL_WARP) && (idx > MAX_WARP_LOD) )
+					continue;
+
+				bm_page_in_texture( fd->lod[idx].bitmap_id, fd->lod[idx].num_frames );
+			}
 		}
 	}
 
@@ -1481,7 +1478,7 @@ void fireball_get_color(int idx, float *red, float *green, float *blue)
 {
 	Assert( red && blue && green );
 
-	if ( (idx < 0) || (idx >= MAX_FIREBALL_TYPES) ) {
+	if ( (idx < 0) || (idx >= Num_fireball_types) ) {
 		Int3();
 		
 		*red = 1.0f;
@@ -1496,4 +1493,17 @@ void fireball_get_color(int idx, float *red, float *green, float *blue)
 	*red = fbi->exp_color[0];
 	*green = fbi->exp_color[1];
 	*blue = fbi->exp_color[2];
+}
+
+int fireball_ship_explosion_type(ship_info *sip)
+{
+	int index = -1;
+	int ship_fireballs = sip->explosion_bitmap_anims.size();
+	int objecttype_fireballs = Ship_types[sip->class_type].explosion_bitmap_anims.size();
+	if(ship_fireballs > 0){
+		index = sip->explosion_bitmap_anims[rand()%ship_fireballs];
+	} else if(objecttype_fireballs > 0){
+		index = Ship_types[sip->class_type].explosion_bitmap_anims[rand()%objecttype_fireballs];
+	}
+	return index;
 }
