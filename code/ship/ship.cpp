@@ -3011,9 +3011,6 @@ int parse_ship(char *filename, bool replace)
 {
 	char buf[SHIP_MULTITEXT_LENGTH];
 	ship_info *sip;
-	int i, j, num_allowed;
-	int allowed_weapons[MAX_WEAPON_TYPES];
-	int pbank_capacity_count, sbank_capacity_count;
 	bool create_if_not_found  = true;
 	int rtn = 0;
 	char name_tmp[NAME_LENGTH];
@@ -9229,7 +9226,6 @@ int ship_create(matrix *orient, vec3d *pos, int ship_type, char *ship_name)
 {
 	int			i, n, objnum, j, k, t;
 	ship_info	*sip;
-	ship			*sp;
 	ship			*shipp;
 
 	t = ship_get_num_ships();
