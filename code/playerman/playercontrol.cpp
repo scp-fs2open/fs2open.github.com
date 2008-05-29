@@ -707,7 +707,7 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 	int axis[NUM_JOY_AXIS_ACTIONS];
 	float	t = 0;
 	float   u = 0;
-	vec3d trans;
+	vec3d trans = ZERO_VECTOR;
 
 	if ( Viewer_mode & VM_EXTERNAL) {
 		if (! (Viewer_mode & VM_EXTERNAL_CAMERA_LOCKED) ) {
@@ -724,6 +724,9 @@ void view_modify(angles *ma, angles *da, float max_p, float max_h, float frame_t
 		trans.xyz.x = -0.4f*TrackIR_GetX();
 		trans.xyz.y = 0.4f*TrackIR_GetY();
 		trans.xyz.z = -TrackIR_GetZ();
+
+		if(trans.xyz.z < 0)
+			trans.xyz.z = 0.0f;
 
 		vm_vec_unrotate(&leaning_position,&trans,&Eye_matrix);
 	} else {

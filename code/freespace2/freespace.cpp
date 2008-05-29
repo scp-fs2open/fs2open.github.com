@@ -5553,8 +5553,6 @@ void game_render_frame_setup(vec3d *eye_pos, matrix *eye_orient)
 		}
 	}
 
-	apply_view_shake(eye_orient);
-
 	// setup neb2 rendering
 	neb2_render_setup(eye_pos, eye_orient);
 
@@ -5677,6 +5675,7 @@ void game_render_frame( vec3d *eye_pos, matrix *eye_orient )
 	//Draw viewer cockpit
 	if(Viewer_obj != NULL && Viewer_mode != VM_TOPDOWN)
 	{
+		gr_zbuffer_clear(TRUE);
 		ship_render_cockpit(Viewer_obj);
 	}
 	//================ END OF 3D RENDERING STUFF ====================
