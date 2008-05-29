@@ -1696,7 +1696,10 @@ void beam_move_all_post()
 		}
 		// done firing, so go into the warmdown phase
 		else*/ {
-			if((moveup->life_left <= 0.0f) && (moveup->warmdown_stamp == -1)){
+			if((moveup->life_left <= 0.0f) &&
+               (moveup->warmdown_stamp == -1) &&
+               (moveup->framecount > 1))
+            {
 				beam_start_warmdown(moveup);
 				
 				moveup = GET_NEXT(moveup);	
@@ -2070,7 +2073,7 @@ void beam_render_all()
 		// each beam type renders a little bit differently
 		if ( (moveup->warmup_stamp == -1) && (moveup->warmdown_stamp == -1) && !(moveup->flags & BF_SAFETY) ) {
 			// HACK -  if this is the first frame the beam is firing, don't render it
-			if (moveup->life_left >= (moveup->life_total - 0.0001f)) {
+            if (moveup->framecount <= 0) {
 				moveup = GET_NEXT(moveup);
 				continue;
 			}			
@@ -2350,8 +2353,11 @@ void beam_delete(beam *b)
 
 	// handle model animation reversal (closing)
 	// (beam animations should end pretty much immediately - taylor)
-	if (b->subsys->turret_animation_position == MA_POS_READY)
-		b->subsys->turret_animation_done_time = timestamp(50);
+    if ((b->subsys) &&
+        (b->subsys->turret_animation_position == MA_POS_READY))
+    {
+        b->subsys->turret_animation_done_time = timestamp(50);
+    }
 
 	// subtract one
 	Beam_count--;
